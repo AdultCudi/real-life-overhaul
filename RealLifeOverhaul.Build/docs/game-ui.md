@@ -45,6 +45,14 @@ for a panel the game does not know by name. When the game opens one of its own a
 off like any other; the panel's `PhoneAppRoot` then takes the mod's dot away. The badge is the copy's own
 (`SmartphoneAppButton.UpdateBadgeCount`), as Contacts uses it.
 
+The phone takes apps once `FullMenu.Start` has made the game's buttons, at the load, whether the menu shows or not
+(`PhoneApp.PhoneUp`). `Install` itself only checks the name against the names of both phones' buttons (read in one
+search per load, `PhoneNames`) and puts the app in a line (`InstallQueue`); the full menu's `PhoneAppQueue` puts one on a
+frame, its buttons hidden and the pagers held (`PhoneGridPager.Holding`), and after the line's last shows them all and
+has each pager lay its grid out once. The app it hands back counts as installed at once; opening it before its turn puts
+it on there and then. With Developer diagnostics on, "Phone apps check (paced install): ..." gives the frames and the
+slowest install.
+
 Proven: every member named above, and both templates' structure. Inferred: that a copy made after `Awake`/`Start`
 lays out as the ninth child (it is an ordinary child of a layout group).
 

@@ -75,6 +75,7 @@ internal static partial class Program
         LoadPace();
         DayWarms();      // the mod's code for the game's midnight compiled ahead: what the walk takes in, sliced as whole, the budget (DayWarmCheck.cs)
         AppsSources();   // the phone apps: panels built when first opened, the box's parts kept, tables written as they scroll (AppsCheck.cs)
+        PhoneInstalls(); // the phone apps go on one a frame in their order, the phones' names read once, the pages laid out once (PhoneInstallCheck.cs)
         Cordons();       // who is inside a cordon's tape and where they are put outside it, and every cordon running that rule (CordonCheck.cs)
         MapRows();       // the mod's places on the city map: a row and an icon for every kind, a row of its own for every claimed building, nothing before the map can take it (MapRowCheck.cs)
         CameraYields();  // when the mod's camera stands aside for the game's own camera moments and what it gives back, the highway's bridges among them (CameraYieldCheck.cs)

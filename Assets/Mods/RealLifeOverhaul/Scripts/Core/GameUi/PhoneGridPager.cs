@@ -98,6 +98,15 @@ namespace RealLifeOverhaul.GameUi
 
         /// <summary>The HUD phone's pager and the full menu row's, while they stand.</summary>
         public static PhoneGridPager Hud { get; private set; }
+
+        /// <summary>
+        /// Above 0 while the mod's apps are put on the phone (PhoneApp): a button's arrival lays no grid out, and the line's last
+        /// has each pager lay its grid out once for all of them.
+        /// </summary>
+        internal static int Holding;
+
+        /// <summary>The passes laid out in the session, for PhoneApp's self-check: none while <see cref="Holding"/>.</summary>
+        internal static int Passes { get; private set; }
         public static PhoneGridPager Strip { get; private set; }
 
         public int Pages { get; private set; } = 1;
@@ -142,7 +151,10 @@ namespace RealLifeOverhaul.GameUi
             Hud = pager;
             pager.HearBadges();
             pager.HearLayout();
-            pager.Refresh();
+            if (Holding == 0)
+            {
+                pager.Refresh();
+            }
             return pager;
         }
 
@@ -208,7 +220,10 @@ namespace RealLifeOverhaul.GameUi
             pager._ready = true;
             Strip = pager;
             pager.HearLayout();
-            pager.Refresh();
+            if (Holding == 0)
+            {
+                pager.Refresh();
+            }
             return pager;
         }
 
@@ -280,7 +295,10 @@ namespace RealLifeOverhaul.GameUi
 
         private void OnTransformChildrenChanged()
         {
-            Refresh();
+            if (Holding == 0)
+            {
+                Refresh();
+            }
         }
 
         // The screen or the interface's scale changed: the page and its button may stand elsewhere.
@@ -292,9 +310,9 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>A button was shown or hidden by any hand (its PageMark): one pass before the canvas is drawn, however many changed.</summary>
         internal void Changed()
         {
-            if (_working || _aside || _pending || !_ready || !isActiveAndEnabled)
+            if (_working || _aside || _pending || !_ready || !isActiveAndEnabled || Holding > 0)
             {
-                return;   // our own changes, or the grid is not showing: looked at again when it is
+                return;   // our own changes, the grid is not showing (looked at again when it is), or apps going on (laid out after the last)
             }
             _pending = true;
             Canvas.willRenderCanvases += _late;
@@ -446,6 +464,7 @@ namespace RealLifeOverhaul.GameUi
                 return;
             }
             _working = true;
+            Passes++;
             try
             {
                 if (!_aside && SomeoneElse())

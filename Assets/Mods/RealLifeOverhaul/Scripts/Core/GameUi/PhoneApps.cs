@@ -15,13 +15,24 @@ namespace RealLifeOverhaul.GameUi
     /// <summary>
     /// One app on the game's phone: a button on each phone and a panel among the game's app panels, all copies of the
     /// game's; Open switches the panels as FullMenu.SelectApp does. The panel (a copy of MyEmployees) is built when the
-    /// app is first opened (<see cref="Ready"/>). Opening and the build are timed (HotSpots); costs nothing a frame.
+    /// app is first opened (<see cref="Ready"/>). An install waits in a line put on one app a frame (<see cref="Pump"/>);
+    /// the buttons of a line show together after its last, and the pages are laid out once for them. Opening and the build
+    /// are timed (HotSpots); costs nothing a frame once the line is empty.
     /// </summary>
     public sealed class PhoneApp
     {
         public static IModLogger Logger;
 
         private static readonly Dictionary<string, PhoneApp> ById = new Dictionary<string, PhoneApp>(32, StringComparer.Ordinal);
+        private static readonly InstallQueue<PhoneApp> Waiting = new InstallQueue<PhoneApp>();
+        private static readonly PhoneNames Names = new PhoneNames();
+        private static readonly List<GameObject> Made = new List<GameObject>(80);   // buttons put on since the line began, shown together after its last
+        private static readonly SpreadWatch Spread = new SpreadWatch();
+        private static FullMenu _upMenu;        // the full menu found with its buttons made: the phone stays up for it
+        private static PhoneAppQueue _pump;
+        private static bool _batch;             // a line is being put on: its self-check line is written after its last
+        private static int _batchApps, _most, _heldPasses, _searchesBefore, _askedBefore;
+        private static string _slowest;
 
         private readonly PhoneAppDef _def;
         private SmartphoneUI _phone;
@@ -33,12 +44,13 @@ namespace RealLifeOverhaul.GameUi
         private Transform _dormant;
         private int _badge;
         private bool _pending;     // on the phone, its panel not built yet
+        private bool _queued;      // waiting in the line: its buttons not made yet
         private readonly int _hotOpened, _hotBuilt;
 
         /// <summary>The app's panel among the game's; null until the app is first opened (<see cref="Ready"/>).</summary>
         public GameObject Root { get; private set; }
-        /// <summary>On the phone: its buttons are there, and its panel is, or is still to be built.</summary>
-        public bool Installed => (_pending ? _menu != null : Root != null) && (_def.NoButtons || (_hudButton != null && _menuButton != null));
+        /// <summary>On the phone, or waiting in the line to go on: its buttons are there, and its panel is, or is still to be built.</summary>
+        public bool Installed => _queued ? _menu != null : (_pending ? _menu != null : Root != null) && (_def.NoButtons || (_hudButton != null && _menuButton != null));
         public bool Showing => Root != null && Root.activeInHierarchy;
         public PhoneGridPager Pager => _pager;
 
@@ -49,7 +61,11 @@ namespace RealLifeOverhaul.GameUi
             _hotBuilt = HotSpots.Slot("Apps: " + def.Id + " built");
         }
 
-        /// <summary>The game's phone can take an app: its parts are there and the full menu made its buttons. At most once a second until true.</summary>
+        /// <summary>
+        /// The game's phone can take an app: its parts are there and the full menu made its buttons (FullMenu.Start, at the
+        /// load), whether the menu shows or not: the apps go on in the first moments after a load, not all in the frames the
+        /// menu is first opened. Once true, one comparison for that menu.
+        /// </summary>
         public static bool PhoneUp
         {
             get
@@ -59,13 +75,56 @@ namespace RealLifeOverhaul.GameUi
                 {
                     return false;
                 }
-                // FullMenu makes its buttons in Start.
+                FullMenu menu = uis.fullMenu;
+                if (ReferenceEquals(menu, _upMenu))
+                {
+                    return true;
+                }
                 SmartphoneUI phone = uis.smartphoneUI;
-                return uis.fullMenu.GetComponentInChildren<FullMenuAppButton>(false) != null && phone.appButtons != null && phone.appButtons.Count > 0;
+                if (phone.appButtons == null || phone.appButtons.Count == 0 || !MenuBuilt(menu))
+                {
+                    return false;
+                }
+                _upMenu = menu;
+                return true;
             }
         }
 
-        /// <summary>Puts the app on the phone; null if the phone is not there yet (<paramref name="tryAgain"/>) or not as expected.</summary>
+        // FullMenu.Start makes a button for each of the game's apps from its template, named after the app, under the template's
+        // parent, and the menu is closed again: a look along that row, never down the whole menu.
+        private static bool MenuBuilt(FullMenu menu)
+        {
+            Transform template = null;
+            try
+            {
+                FieldInfo field = GameContract.MenuAppTemplate.Field;
+                template = field != null ? field.GetValue(menu) as Transform : null;
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+            if (template == null || template.parent == null)
+            {
+                return menu.GetComponentInChildren<FullMenuAppButton>(false) != null;   // without the template: a button showing
+            }
+            Transform row = template.parent;
+            for (int i = 0; i < row.childCount; i++)
+            {
+                Transform child = row.GetChild(i);
+                if (child != template && child.gameObject.activeSelf && Enum.TryParse(child.name, out AppName _) && child.GetComponent<FullMenuAppButton>() != null)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Puts the app in the line to go on the phone, one a frame (<see cref="Pump"/>), and gives it at once: it counts as
+        /// installed, and opening it puts it on there and then. Null if the phone is not there yet (<paramref name="tryAgain"/>)
+        /// or the app cannot go on it.
+        /// </summary>
         public static PhoneApp Install(PhoneAppDef def, out bool tryAgain)
         {
             tryAgain = true;
@@ -77,24 +136,24 @@ namespace RealLifeOverhaul.GameUi
             SmartphoneUI phone = uis.smartphoneUI;
             FullMenu menu = uis.fullMenu;
             tryAgain = false;
+            if (def == null || string.IsNullOrEmpty(def.Id))
+            {
+                UiClone.Fallback("an app without a name is not added to the phone");
+                return null;
+            }
             var app = new PhoneApp(def) { _phone = phone, _menu = menu };
+            if (!_batch)
+            {
+                _searchesBefore = Names.Searches;   // the line this app may begin counts its search of the phones from here
+                _askedBefore = Names.Asked;
+            }
             try
             {
-                if (menu.appsContainer.Find(def.Id) != null || Enum.TryParse(def.Id, out AppName _) || Named(phone.transform, menu.transform, def.Id))
+                if (menu.appsContainer.Find(def.Id) != null || Enum.TryParse(def.Id, out AppName _) || OnPhone(phone, menu, def.Id))
                 {
                     UiClone.Fallback("an app called '" + def.Id + "' is already on the phone, a second one is not added");
                     return null;
                 }
-                string templateUsed;
-                Transform hudTemplate = Template(phone, GameContract.HudAppTemplate, phone.transform, typeof(SmartphoneAppButton), out templateUsed);
-                string menuTemplateUsed;
-                Transform menuTemplate = Template(menu, GameContract.MenuAppTemplate, menu.transform, typeof(FullMenuAppButton), out menuTemplateUsed);
-                if (hudTemplate == null || menuTemplate == null || hudTemplate.parent == null || menuTemplate.parent == null)
-                {
-                    UiClone.Fallback("the phone's app button was not found (" + (hudTemplate == null ? "HUD phone" : "full menu") + "), so '" + def.Id + "' is not added");
-                    return null;
-                }
-
                 if (def.Build == null)
                 {
                     UiClone.Fallback("'" + def.Id + "' has nothing to build its panel with, so it is not added");
@@ -102,64 +161,17 @@ namespace RealLifeOverhaul.GameUi
                 }
                 app._dormant = UiClone.Dormant(menu.canvasGroup != null ? menu.canvasGroup.transform : menu.transform, "RealLife Dormant " + def.Id);
                 app._pending = true;   // built when the app is first opened (Ready)
+                ById[def.Id] = app;
+                Names.Learn(def.Id);
                 if (def.NoButtons)
                 {
                     if (Meta.Dev.Verbose)
                     {
                         Logger?.Info("Game UI: app '" + def.Id + "' is among the phone's apps without a button: the mod opens it itself; its panel is built when it is first opened.");
                     }
-                    ById[def.Id] = app;
                     return app;
                 }
-
-                Sprite like = null;
-                SmartphoneAppButton persona;
-                if (phone.appButtons.TryGetValue(AppName.Persona, out persona) && persona != null)
-                {
-                    Image picture = persona.transform.Find("Icon") != null ? persona.transform.Find("Icon").GetComponent<Image>() : null;
-                    like = picture != null ? picture.sprite : null;
-                }
-                Sprite icon = def.Icon != null ? def.Icon(like) : null;
-
-                Transform hud = UnityEngine.Object.Instantiate(hudTemplate, hudTemplate.parent, false);
-                hud.name = def.Id;
-                hud.gameObject.tag = "Untagged";
-                app._hudButton = hud.GetComponent<SmartphoneAppButton>();
-                Transform inMenu = UnityEngine.Object.Instantiate(menuTemplate, menuTemplate.parent, false);
-                inMenu.name = def.Id;
-                inMenu.gameObject.tag = "Untagged";
-                app._menuButton = inMenu.GetComponent<FullMenuAppButton>();
-                if (app._hudButton == null || app._menuButton == null)
-                {
-                    UnityEngine.Object.Destroy(hud.gameObject);
-                    UnityEngine.Object.Destroy(inMenu.gameObject);
-                    UiClone.Fallback("the phone's app button is no longer an app button, so '" + def.Id + "' is not added");
-                    app.Remove();
-                    return null;
-                }
-                Dress(hud, app._hudButton, def.TitleKey, def.TitleArguments, icon, app.Open);
-                Dress(inMenu, app._menuButton, def.TitleKey, def.TitleArguments, icon, app.Open);
-                app._hudButton.HideOutline();
-                app._hudButton.UpdateBadgeCount(0);
-                app._menuButton.HideSelectedIcon();
-                hud.gameObject.SetActive(true);
-                inMenu.gameObject.SetActive(true);
-
-                app._pager = PhoneGridPager.On(hudTemplate.parent, hudTemplate);
-                // The full menu's row ends at the money, the date and the time ("RightData").
-                Transform bar = menuTemplate.parent.parent;
-                app._strip = PhoneGridPager.OnStrip(menuTemplate.parent, menuTemplate, bar != null ? bar.Find("RightData") as RectTransform : null);
-
-                if (Meta.Dev.Verbose)
-                {
-                    int place = app._pager != null ? app._pager.PlaceOf(hud) : 0;
-                    Logger?.Info("Game UI: app '" + def.Id + "' is on the phone. Button copied from " + templateUsed + " (HUD) and " + menuTemplateUsed
-                                 + " (full menu); place " + place + " of " + (app._pager != null ? app._pager.Count : 0) + " apps, "
-                                 + (app._pager == null ? "no pages" : app._pager.SteppedAside ? "pages left to another mod" : app._pager.Pages + " page(s)")
-                                 + "; full menu row " + (app._strip == null ? "not paged" : app._strip.SteppedAside ? "paged by another mod" : app._strip.Pages + " page(s)")
-                                 + "; icon " + (icon == null ? "the template's" : icon.name) + "; its panel is built when it is first opened.");
-                }
-                ById[def.Id] = app;
+                app.Queue(menu);
                 return app;
             }
             catch (Exception e)
@@ -171,31 +183,287 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // A button of that name on either phone: an app of that name is on it, its panel perhaps not built yet.
-        private static bool Named(Transform phone, Transform menu, string id)
+        // A button of that name on either phone, or an app of the mod's under it: both phones are searched once, when first
+        // seen, then asked by name, so no install searches a whole phone.
+        private static bool OnPhone(SmartphoneUI phone, FullMenu menu, string id)
         {
-            SmartphoneAppButton[] hud = phone.GetComponentsInChildren<SmartphoneAppButton>(true);
-            for (int i = 0; i < hud.Length; i++)
+            int phoneId = phone.GetInstanceID(), menuId = menu.GetInstanceID();
+            if (!Names.Read(phoneId, menuId))
             {
-                if (hud[i].name == id)
+                Names.Begin(phoneId, menuId);
+                SmartphoneAppButton[] hud = phone.GetComponentsInChildren<SmartphoneAppButton>(true);
+                for (int i = 0; i < hud.Length; i++)
                 {
-                    return true;
+                    Names.Learn(hud[i].name);
+                }
+                FullMenuAppButton[] inMenu = menu.GetComponentsInChildren<FullMenuAppButton>(true);
+                for (int i = 0; i < inMenu.Length; i++)
+                {
+                    Names.Learn(inMenu[i].name);
                 }
             }
-            FullMenuAppButton[] inMenu = menu.GetComponentsInChildren<FullMenuAppButton>(true);
-            for (int i = 0; i < inMenu.Length; i++)
+            return Names.Has(id);
+        }
+
+        // In the line, and the full menu's pump woken. The first of a line begins its self-check's count.
+        private void Queue(FullMenu menu)
+        {
+            if (!_batch)
             {
-                if (inMenu[i].name == id)
+                _batch = true;
+                _batchApps = 0;
+                _most = 0;
+                _heldPasses = 0;
+                _slowest = null;
+                Spread.Begin();
+            }
+            _queued = true;
+            Waiting.Add(this);
+            if (_pump == null)
+            {
+                _pump = menu.GetComponent<PhoneAppQueue>();
+                if (_pump == null)
                 {
-                    return true;
+                    _pump = menu.gameObject.AddComponent<PhoneAppQueue>();
                 }
             }
-            return false;
+            _pump.enabled = true;
+        }
+
+        /// <summary>
+        /// One frame of the line, from the full menu's pump: the next app put on, or after the last the line's buttons shown and
+        /// the pages laid out once. False when nothing is left to do: the pump then switches itself off.
+        /// </summary>
+        internal static bool Pump()
+        {
+            if (GameManager.isCitySceneBeingUnloaded)
+            {
+                Drop();
+                return false;
+            }
+            if (Waiting.Count == 0 && Made.Count == 0 && !_batch)
+            {
+                return false;
+            }
+            long began = System.Diagnostics.Stopwatch.GetTimestamp();
+            if (Waiting.Count == 0)
+            {
+                Finish();   // a frame of its own: the buttons shown and the two pagers' one pass each
+                Spread.Frame(began);
+                Said();
+                return false;
+            }
+            WorkSlice slice = WorkSlice.Of(InstallQueue<PhoneApp>.SliceMs, 1);
+            int put = 0;
+            while (Waiting.Next(ref slice, out PhoneApp app))
+            {
+                app.PutNow();
+                put++;
+            }
+            _most = Math.Max(_most, put);
+            Spread.Frame(began);
+            return true;
+        }
+
+        // Taken out of the line and put on now: opened before its turn came. False if it could not be put on.
+        private bool Place()
+        {
+            if (!_queued)
+            {
+                return true;
+            }
+            Waiting.Take(this);
+            PutNow();
+            if (Waiting.Count == 0)
+            {
+                Finish();
+                Said();
+            }
+            return Installed;
+        }
+
+        // Put on with the pagers held: a copy's arrival lays no grid out, and the line's last has each pager lay its grid out once.
+        private void PutNow()
+        {
+            _queued = false;
+            long began = System.Diagnostics.Stopwatch.GetTimestamp();
+            int passes = PhoneGridPager.Passes;
+            PhoneGridPager.Holding++;
+            try
+            {
+                Put();
+            }
+            finally
+            {
+                PhoneGridPager.Holding--;
+                _heldPasses += PhoneGridPager.Passes - passes;
+            }
+            if (Spread.Item(_batchApps, began))
+            {
+                _slowest = _def.Id;
+            }
+            _batchApps++;
+        }
+
+        // The buttons, copied from the game's and dressed, left hidden until the line's last is on (Finish).
+        private void Put()
+        {
+            if (_menu == null || _phone == null)
+            {
+                Remove();   // the interface it was meant for has gone
+                return;
+            }
+            SmartphoneUI phone = _phone;
+            FullMenu menu = _menu;
+            try
+            {
+                string templateUsed;
+                Transform hudTemplate = Template(phone, GameContract.HudAppTemplate, phone.transform, typeof(SmartphoneAppButton), out templateUsed);
+                string menuTemplateUsed;
+                Transform menuTemplate = Template(menu, GameContract.MenuAppTemplate, menu.transform, typeof(FullMenuAppButton), out menuTemplateUsed);
+                if (hudTemplate == null || menuTemplate == null || hudTemplate.parent == null || menuTemplate.parent == null)
+                {
+                    UiClone.Fallback("the phone's app button was not found (" + (hudTemplate == null ? "HUD phone" : "full menu") + "), so '" + _def.Id + "' is not added");
+                    Remove();
+                    return;
+                }
+
+                Sprite like = null;
+                SmartphoneAppButton persona;
+                if (phone.appButtons.TryGetValue(AppName.Persona, out persona) && persona != null)
+                {
+                    Transform named = persona.transform.Find("Icon");
+                    Image picture = named != null ? named.GetComponent<Image>() : null;
+                    like = picture != null ? picture.sprite : null;
+                }
+                Sprite icon = _def.Icon != null ? _def.Icon(like) : null;   // painted once a session and kept (AppIconPainter)
+
+                Transform hud = UnityEngine.Object.Instantiate(hudTemplate, hudTemplate.parent, false);
+                hud.gameObject.SetActive(false);   // the template is asleep already; a live button copied instead is not
+                hud.name = _def.Id;
+                hud.gameObject.tag = "Untagged";
+                _hudButton = hud.GetComponent<SmartphoneAppButton>();
+                Transform inMenu = UnityEngine.Object.Instantiate(menuTemplate, menuTemplate.parent, false);
+                inMenu.gameObject.SetActive(false);
+                inMenu.name = _def.Id;
+                inMenu.gameObject.tag = "Untagged";
+                _menuButton = inMenu.GetComponent<FullMenuAppButton>();
+                if (_hudButton == null || _menuButton == null)
+                {
+                    UnityEngine.Object.Destroy(hud.gameObject);
+                    UnityEngine.Object.Destroy(inMenu.gameObject);
+                    UiClone.Fallback("the phone's app button is no longer an app button, so '" + _def.Id + "' is not added");
+                    Remove();
+                    return;
+                }
+                Dress(hud, _hudButton, _def.TitleKey, _def.TitleArguments, icon, Open);
+                Dress(inMenu, _menuButton, _def.TitleKey, _def.TitleArguments, icon, Open);
+                _hudButton.HideOutline();
+                _hudButton.UpdateBadgeCount(_badge);   // a badge asked for while it waited
+                _menuButton.HideSelectedIcon();
+                Made.Add(hud.gameObject);
+                Made.Add(inMenu.gameObject);
+
+                _pager = PhoneGridPager.On(hudTemplate.parent, hudTemplate);
+                // The full menu's row ends at the money, the date and the time ("RightData").
+                Transform bar = menuTemplate.parent.parent;
+                _strip = PhoneGridPager.OnStrip(menuTemplate.parent, menuTemplate, bar != null ? bar.Find("RightData") as RectTransform : null);
+
+                if (Meta.Dev.Verbose)
+                {
+                    Logger?.Info("Game UI: app '" + _def.Id + "' is on the phone. Button copied from " + templateUsed + " (HUD) and " + menuTemplateUsed
+                                 + " (full menu); icon " + (icon == null ? "the template's" : icon.name)
+                                 + "; shown with the others put on with it, after the last; its panel is built when it is first opened.");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                UiClone.Fallback("'" + _def.Id + "' could not be put on the phone and is left off");
+                Remove();
+            }
+        }
+
+        // After the line's last: its buttons shown together, and each pager lays its grid out once for all of them.
+        private static void Finish()
+        {
+            long began = System.Diagnostics.Stopwatch.GetTimestamp();
+            PhoneGridPager.Holding++;
+            try
+            {
+                for (int i = 0; i < Made.Count; i++)
+                {
+                    if (Made[i] != null)
+                    {
+                        Made[i].SetActive(true);
+                    }
+                }
+            }
+            finally
+            {
+                PhoneGridPager.Holding--;
+                Made.Clear();
+            }
+            PhoneGridPager hud = PhoneGridPager.Hud, strip = PhoneGridPager.Strip;
+            if (hud != null)
+            {
+                hud.Refresh();
+            }
+            if (strip != null)
+            {
+                strip.Refresh();
+            }
+            if (Spread.Item(-1, began) || _slowest == null)
+            {
+                _slowest = "the buttons shown and the pages laid out";
+            }
+        }
+
+        // The line's self-check, with Developer diagnostics on: once, after its last.
+        private static void Said()
+        {
+            if (!_batch)
+            {
+                return;
+            }
+            _batch = false;
+            if (!Meta.Dev.Verbose || _batchApps == 0)
+            {
+                return;
+            }
+            int searches = Names.Searches - _searchesBefore, asked = Names.Asked - _askedBefore;
+            string verdict = _most > 1 ? "FAIL, " + _most + " apps in one frame" : searches > 1 ? "FAIL, the phones searched " + searches + " times"
+                : _heldPasses > 0 ? "FAIL, the pages laid out while the apps went on" : Spread.Verdict(true);
+            PhoneGridPager hud = PhoneGridPager.Hud, strip = PhoneGridPager.Strip;
+            string hudSaid = hud != null ? hud.Count + " apps on the HUD phone, " + hud.Pages + " page(s)" : "no HUD pages";
+            string stripSaid = strip != null ? "the full menu's row " + strip.Pages + " page(s)" : "the full menu's row not paged";
+            Logger?.Info("Phone apps check (paced install): " + Spread.Said(_slowest) + "; at most " + _most + " app(s) put on in a frame (wanted 1); the phones searched "
+                         + searches + " time(s) for " + asked + " name(s) asked (wanted at most 1); the pages laid out " + _heldPasses
+                         + " time(s) while they went on (wanted 0), then once on each phone (" + hudSaid + "; " + stripSaid + "): " + verdict + ".");
+        }
+
+        // The interface is going with the city: nothing waits for it.
+        internal static void Drop()
+        {
+            for (int i = 0; i < Waiting.Count; i++)
+            {
+                Waiting[i]._queued = false;
+                Waiting[i]._menu = null;
+            }
+            Waiting.Clear();
+            Made.Clear();
+            _batch = false;
+            _pump = null;
+            _upMenu = null;
         }
 
         /// <summary>The app's panel is there, built on the first call; false if it cannot be (the app is then taken off the phone).</summary>
         public bool Ready()
         {
+            if (_queued && !Place())
+            {
+                return false;   // asked for before its turn in the line: put on now
+            }
             if (!_pending)
             {
                 return Root != null;
@@ -320,11 +588,15 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>The number on the HUD button, as Contacts shows its unread messages; 0 takes it away.</summary>
         public void SetBadge(int count)
         {
-            if (_hudButton == null || count == _badge)
+            if (count == _badge)
             {
                 return;
             }
             _badge = count;
+            if (_hudButton == null)
+            {
+                return;   // still in the line: it goes on with this number
+            }
             try
             {
                 _hudButton.UpdateBadgeCount(count);
@@ -343,6 +615,10 @@ namespace RealLifeOverhaul.GameUi
         public void Open()
         {
             using var hotSpot = HotSpots.Time(_hotOpened);
+            if (_queued)
+            {
+                Place();   // opened before its turn in the line: put on now
+            }
             string gone = Gone();
             if (gone != null)
             {
@@ -617,9 +893,15 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>Takes everything this app added off the phone; safe twice and after the interface has gone. The shared pages stay.</summary>
         public void Remove()
         {
+            if (_queued)
+            {
+                _queued = false;
+                Waiting.Take(this);
+            }
             if (_def != null && _def.Id != null && ById.TryGetValue(_def.Id, out PhoneApp known) && known == this)
             {
                 ById.Remove(_def.Id);
+                Names.Forget(_def.Id);   // its buttons are renamed as they go: the name is free again
             }
             Retire(_hudButton != null ? _hudButton.gameObject : null);
             Retire(_menuButton != null ? _menuButton.gameObject : null);

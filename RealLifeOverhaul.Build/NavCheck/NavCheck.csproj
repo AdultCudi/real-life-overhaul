@@ -92,6 +92,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Leisure\LeisureReach.cs" Link="Mod\LeisureReach.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\CityLife\TableSeat.cs" Link="Mod\TableSeat.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WorkSlice.cs" Link="Mod\WorkSlice.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\InstallQueue.cs" Link="Mod\InstallQueue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\PhoneNames.cs" Link="Mod\PhoneNames.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CodeWarm.cs" Link="Mod\CodeWarm.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\InputPrint.cs" Link="Mod\InputPrint.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Garage\BikeRules.cs" Link="Mod\BikeRules.cs" />
