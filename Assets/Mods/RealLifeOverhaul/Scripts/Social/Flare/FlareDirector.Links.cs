@@ -149,6 +149,8 @@ namespace RealLifeOverhaul.Flare
             if (Running)
             {
                 FlareBridges.MarketBuzz?.Invoke(place, -1);   // the talk reaches the market for its trade
+                int day = Save != null ? Save.Day : 0;
+                CityTalk(place, -1, null, 5000000 + day, FlareRules.Roll(_file.Seed, day, 866));   // the district hears it and stays away until it is answered
             }
         }
 
@@ -196,6 +198,10 @@ namespace RealLifeOverhaul.Flare
         /// <summary>For the council: what the account's word adds to an endorsement, thousandths of the most it may.</summary>
         public int EndorseShare()
         {
+            if (CityOn && _city.Indexed >= 0)
+            {
+                return FlareCityRules.EndorseShare(_city.CityFollowers, FlareCityRules.AdultsOf(_city), _file.Reputation);   // the city's voters who follow the player
+            }
             return Running ? FlareRules.EndorseShare(_file.Followers, _file.Reputation) : 0;
         }
     }

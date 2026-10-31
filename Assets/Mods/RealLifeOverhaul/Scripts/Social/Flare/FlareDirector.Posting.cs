@@ -233,6 +233,10 @@ namespace RealLifeOverhaul.Flare
                 }
                 if (FlareLiveRules.PileOn(p))
                 {
+                    if (CityOn)
+                    {
+                        _city.ScandalDay = p.Day;   // the residents who follow the player turn against their businesses until an honest post answers it
+                    }
                     bool paper = FlareLiveRules.StoryOnce(_file.Net, p.Day + 1, "reallife_flare_news_pileon", "name", MyName, "handle", MyHandle);
                     Logger?.Info("Flare: the post went badly and was seen by " + p.Reach + ": a pile-on of angry replies"
                                  + (paper ? ", and tomorrow's City Ledger has it." : " (the City Ledger has today's already)."));

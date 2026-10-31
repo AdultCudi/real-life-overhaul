@@ -37,6 +37,7 @@ namespace RealLifeOverhaul.Flare
                 r.Text = DealLines(file, h, day);
                 r.Number = h.Ended ? 0 : h.Id;
             }
+            WriteOffers();   // Flare in the city: the city's businesses' offers of paid posts (FlareApp.City)
             List<FlareCampaign> campaigns = _director.Campaigns();
             for (int i = 0; i < campaigns.Count; i++)
             {

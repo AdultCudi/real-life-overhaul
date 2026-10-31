@@ -227,6 +227,24 @@ namespace RealLifeOverhaul.Flare
             {
                 w.Int(c.Voices[v]);
             }
+
+            w.Int(c.NextOffer);
+            w.Int(c.CreatorDay);
+            w.Int(c.ScandalDay);
+            w.Int(c.Offers.Count);
+            foreach (FlareOffer o in c.Offers)
+            {
+                w.Int(o.Id);
+                w.Text(o.Key);
+                w.Text(o.Name);
+                w.Int(o.Posts);
+                w.Int(o.Done);
+                w.Long(o.Fee);
+                w.Int(o.Day);
+                w.Int(o.Until);
+                w.Int(o.Accepted ? 1 : 0);
+                w.Int(o.Next);
+            }
             w.Flush();
         }
 
@@ -342,6 +360,19 @@ namespace RealLifeOverhaul.Flare
                 {
                     c.Voices[v] = id;
                 }
+            }
+
+            c.NextOffer = r.Int();
+            c.CreatorDay = r.Int();
+            c.ScandalDay = r.Int();
+            int offers = Bounded(r.Int(), FlareCityRules.OffersMost * 4);
+            for (int i = 0; i < offers; i++)
+            {
+                c.Offers.Add(new FlareOffer
+                {
+                    Id = r.Int(), Key = r.TextOrNull(), Name = r.TextOrNull(), Posts = Math.Max(1, r.Int()), Done = r.Int(), Fee = Math.Max(0, r.Long()), Day = r.Int(), Until = r.Int(),
+                    Accepted = r.Int() != 0, Next = r.Int()
+                });
             }
             return c;
         }

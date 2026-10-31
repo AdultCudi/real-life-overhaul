@@ -125,10 +125,11 @@ internal static partial class Program
         string scripts = ModScripts();
         var keys = new List<string>();
         foreach (string file in Directory.GetFiles(System.IO.Path.Combine(scripts, "Social", "Flare", "City"), "*.cs")
-                     .Concat(new[] { System.IO.Path.Combine(scripts, "Social", "Flare", "FlareDirector.Residents.cs"), System.IO.Path.Combine(scripts, "Social", "Flare", "FlareDirector.Tests.City.cs"),
-                                     System.IO.Path.Combine(scripts, "Social", "Flare", "FlareApp.City.cs") }))
+                     .Concat(new[] { "FlareDirector.Residents.cs", "FlareDirector.Tests.City.cs", "FlareApp.City.cs", "FlareDirector.Creator.cs", "FlareDirector.Studio.cs", "FlareText.cs", "FlareText.Live.cs" }
+                                 .Select(f => System.IO.Path.Combine(scripts, "Social", "Flare", f))))
         {
-            foreach (Match m in Regex.Matches(File.ReadAllText(file), "\"(reallife_(?:flare_city|flare_ad|guide_flare_city|meta_title_flare_city|transaction_flare)[a-z0-9_]*)\""))
+            const string Ours = "flare_city|flare_ad|flare_offer|flare_creator|flare_studio|flare_post_deal|guide_flare_city|meta_title_flare_city|transaction_flare";
+            foreach (Match m in Regex.Matches(File.ReadAllText(file), "\"(reallife_(?:" + Ours + ")[a-z0-9_]*)\""))
             {
                 string k = m.Groups[1].Value;
                 if (!k.EndsWith("_", StringComparison.Ordinal) && !keys.Contains(k))
@@ -142,10 +143,11 @@ internal static partial class Program
             keys.Add("reallife_flare_city_target_" + t);
         }
         keys.Add("reallife_opt_tip_living_flare");
-        Check(AllIn(keys.ToArray(), out string missing) && keys.Count > 40, "flare city texts: every key its screens, sheet, notices and tests name in en, pt and zh-cn (" + keys.Count + "; " + missing + ")");
+        Check(AllIn(keys.ToArray(), out string missing) && keys.Count > 70 && keys.Contains("reallife_flare_studio_crowdfund") && keys.Contains("reallife_flare_post_deal_2"), "flare city texts: every key its screens, sheet, notices and tests name in en, pt and zh-cn (" + keys.Count + "; " + missing + ")");
         Dictionary<string, string> en = LocaleFile("en");
         string[] notices = { "reallife_flare_city_test_off", "reallife_flare_city_test_wait", "reallife_flare_city_test_day_done", "reallife_flare_city_test_no_business",
-                             "reallife_flare_city_test_post_done", "reallife_flare_city_test_ad_done", "reallife_flare_city_test_page_done" };
+                             "reallife_flare_city_test_post_done", "reallife_flare_city_test_ad_done", "reallife_flare_city_test_page_done", "reallife_flare_city_test_offer_done",
+                             "reallife_flare_city_test_offer_none", "reallife_flare_offer_note", "reallife_flare_creator_note" };
         Check(notices.All(k => Fits(en, k)), "flare city texts: every notice is 240 characters or fewer");
         string page = en.TryGetValue("reallife_guide_flare_city", out string p) ? p : string.Empty;
         string guide = File.ReadAllText(System.IO.Path.Combine(scripts, "Social", "Flare", "City", "FlareCityGuide.cs"));
@@ -156,7 +158,8 @@ internal static partial class Program
             facts &= guide.Contains(".Fact(\"" + m.Groups[1].Value + "\"");
             count++;
         }
-        Check(facts && count >= 8 && page.Contains("# Ads") && page.Contains("{flarecity_ad_cpm}"), "flare city texts: the Guide page's every figure is filled from the code (" + count + ")");
+        Check(facts && count >= 18 && page.Contains("# Ads") && page.Contains("{flarecity_ad_cpm}") && page.Contains("# Paid posts and income") && page.Contains("# Your game studio")
+              && page.Contains("# The market and the council") && page.Contains("{flarecity_offer_fee}") && page.Contains("{flarecity_kicks_most}"), "flare city texts: the Guide page's every figure is filled from the code (" + count + ")");
         foreach (string lang in new[] { "pt", "zh-cn" })
         {
             Dictionary<string, string> words = LocaleFile(lang);

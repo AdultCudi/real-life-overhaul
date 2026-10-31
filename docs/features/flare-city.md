@@ -2,16 +2,16 @@
 
 ## In a sentence
 
-Under the living economy's master option **Living population** and its own option **Flare in the city**, Flare's followers are the population's residents: every adult follows a few of the city's accounts from who they are, a post is seen resident by resident, and what residents hear of a business draws them to it from its rivals in the same pools (never made from nothing), measured the next day in visits and takings; every business has a page with its followers, a rating and reviews by residents who really shopped there, ads reach the residents they target, and the city's people on the feed are residents too.
+Under the living economy's master option **Living population** and its own option **Flare in the city**, Flare's followers are the population's residents: every adult follows a few of the city's accounts from who they are, a post is seen resident by resident, and what residents hear of a business draws them to it from its rivals in the same pools (never made from nothing), measured the next day in visits and takings; every business has a page with its followers, a rating and reviews by residents who really shopped there, ads reach the residents they target, and the city's people on the feed are residents too. The city's businesses pay the player for posts as the account grows, Flare pays a creator income from Influencer on, a game studio of the player's posts its news and asks the residents who play games for hype and pledges, a viral thread moves the market by the investors it reached, and the player's word in an election is worth the city's adults who follow them.
 
 ## Where the code is
 
-- Folder: [`Scripts/Social/Flare/City`](../../Assets/Mods/RealLifeOverhaul/Scripts/Social/Flare/City/); the director's part `Scripts/Social/Flare/FlareDirector.Residents.cs` and its tests `FlareDirector.Tests.City.cs`; the app's lines and the ad sheet `FlareApp.City.cs`; the wiring `Scripts/Wiring/Wiring.FlareCityLinks.cs`.
+- Folder: [`Scripts/Social/Flare/City`](../../Assets/Mods/RealLifeOverhaul/Scripts/Social/Flare/City/); the director's parts `Scripts/Social/Flare/FlareDirector.Residents.cs`, `FlareDirector.Creator.cs` (offers, paid posts, the creator income) and `FlareDirector.Studio.cs` (the game studio on Flare), and its tests `FlareDirector.Tests.City.cs`; the app's lines, the offers and the ad sheet `FlareApp.City.cs`; the wiring `Scripts/Wiring/Wiring.FlareCityLinks.cs` (the population's attention source and day, and the game studio's three bridges).
 - Options: "Flare in the city" (`living_flare`), under "Living population" (`living_population`) and Flare (`social_media`). Off, or while the population does not run on this machine (another city, a Going Public guest), nothing of it runs: Flare's talk about a business is in business pressure's figure as before (`FlareDirector.FootfallOf`, at most 6%).
 - The design: `not-in-repo/plans/tech-overhaul/DRAFT2.md` section 4, and the brief `handover/briefs/living/flare.md`.
 
 ```
-Social/Flare/City/                  the first eleven are game-free and compiled by EconomyCheck (FlareResidentChecks.cs, FlareResidentChecks.More.cs)
+Social/Flare/City/                  all but the last three are game-free and compiled by EconomyCheck (FlareResidentChecks.cs, .More.cs, .Creator.cs)
   FlareCityCatalogue                  every figure, with its unit and why
   FlareCityState                      the accounts, each resident's follows by person slot (with the person's id), each business's figures by slot (with its key), the funnel, the ads, the voices
   FlareCityRules                      the rolls, what a household cares for, a resident's first follows, the day's sweep and indexes, the player's city followers kept with the account
@@ -21,11 +21,14 @@ Social/Flare/City/                  the first eleven are game-free and compiled 
   FlareCityRules.Voices               the city's four hundred voices as residents, their manner from who they are
   FlareCityRules.Ads                  a target by district, age, class and interest, the price, a day of an ad, the city's own ads
   FlareCityRules.Player               founder-led talk of the player's businesses, a scandal turned against them
+  FlareCityRules.Creator              the city's businesses' offers of paid posts, sponsorships, the creator income
+  FlareCityRules.Studio               a studio's posts heard by residents who play games, a devlog's hype, a campaign's pledges
+  FlareCityRules.Civic                a post about an issue and the feed's mood, the player's word in an election
   FlareCityPass                       the residents' day in slices: bind, indexes, voices, follows, the lift, fading, visits, ads, founder, posts, the city followers, attention
   FlareCityStore                      the save's line, "reallife:flare_city"
-  FlareCityViews                      the screens as data: the account in the city, a business's page, an ad, a post's funnel
+  FlareCityViews                      the screens as data: the account in the city, a business's page, an ad, a post's funnel, the offers
   FlareCityShare                      Going Public, part R: the host's voices and its guests' businesses' figures
-  FlareCityGame                       the only file of it that touches the game: keys and registrations, what districts bear, an ad's money
+  FlareCityGame                       the only file of it that touches the game: keys and registrations, what districts bear, the money of an ad, a paid post and the creator income
   FlareCityGuide                      the feature's entry, the Guide page's figures, the option and the tests on the options page
   FlareBridges.City                   what it asks of the population (the residents this machine runs, its pools)
 ```
@@ -58,9 +61,27 @@ The four hundred people of the feed ("c0" to "c399") are residents drawn from th
 
 Each day 2.5% of the player's followers in the city hear of each of the player's businesses because they follow its founder, so a big following lifts them all; while an arrest that trended this week has no honest post answering it, 40% of them hear of it against each business.
 
+## Paid posts and a creator's income
+
+From Local on, the city's businesses (the city's own and the rivals', never a business of the player's or of a session player) offer to pay for a post about them: a roll a day by the account's tier (4% at Local to 25% at Celebrity), at most one offer open at a time, the business drawn by its room for customers. A post pays 12 for each thousand followers at today's prices, times the city's trust in the account (its reputation, 0.75 to 1.25), 25 at the least. From Known on a quarter of the offers are sponsorships: four posts, one every three days, each at 90% of a single post's fee. An offer stands three days on the Business tab; taking it puts the first post up at once (a paid partnership, `reallife_flare_post_deal_*`) and pays it; the rest go up on their days by themselves. A paid post is the player's post about the business: heard by the player's followers like any post, so the business that paid gets real customers from it, measured in the post's funnel. The Company's own campaigns (influencer deals, the sponsored post) stay the Company's, with their customers through the population's levers.
+
+From Influencer on, Flare pays a creator income every 30 days: 3 for each thousand views the player's posts had in those days, at today's prices. The first month counts from the day the account reached Influencer.
+
+## The game studio on Flare
+
+The game studio (Tech/Studio) asks Flare through `StudioBridges` (`Talk`, `Devlog`, `Crowdfund`), set by `Wiring.FlareCityLinks`. A studio's news (the announcement, a trailer, the expo, previews, the launch, the critics' score, an update, an add-on, an award) is a post on the studio's own account ("s:" and its place), heard by its followers and by residents of its district who come across it, those who play games interested (the population's games); while the residents' day is being worked it is heard once it is done. A devlog is the studio's post shared by the player (heard by the player's followers at 70% of a post): its hype is 0.4 thousandths for each interested resident over the city's adults who play games, 8% of the audience at the most (a trailer's). A crowdfunding campaign is backed by the followers of the player or the studio who play games and see it (30%), 12% of them, each by their household's class (10, 25 or 60), and by 8 per mille of the player's followers beyond the city at 20 each, never past the goal; each resident counts once. With the residents' side off, on a guest, or while its day is being worked, the player's followers stand in (a devlog's hype a few points for each tenfold, a campaign's pledges as those beyond the city give).
+
+## The market and the council
+
+A viral post about a business is heard by the residents first; the city's retail investors among those interested (residents whose household has 10,000 or more in savings) give its trade's sector one buzz on the stock market and one more for each hundred of them, eight at the most. The market-abuse rule stands as it was. A post about an issue moves the feed's mood about the city's running by the residents it reached: Flare's own 10 points when 2% of the city's adults were interested, between 2 and 30. The player's word in an election (`CivicBridges.Following`) is worth the share of the city's adults who follow the player, all of it when half of them do, for a trusted account (reputation 50 or more; less in step below).
+
+## Crises and boycotts
+
+A post of the player's that went badly and was seen widely (Flare's pile-on) is a scandal for the residents as an arrest that trended is: for 7 days, unless an honest post of the player's answers it, 40% of the player's followers in the city hear of it against each of the player's businesses. A scandal a brand had at a shop (Brands) is heard by the shop's district as bad talk, so its residents stay away from it until the talk fades or is answered; an influencer's scandal and a hire that backfired are heard by their followers the same way.
+
 ## The screens
 
-`FlareCityViews` holds each screen as data for the interface kit (living/ui): the account in the city (followers here and beyond, the newest posts' and ads' funnels), a business's page (followers, rating, pull, the newest reviews by their residents, what it heard and brought, one action: Run an ad), an ad (target, reach, days, price, or why it cannot run) and one post's funnel. Until the kit draws them, Flare's app shows the same data: a business card's lines and its Run an ad button, the ad sheet, and the account's lines at the top of the player's own Profile.
+`FlareCityViews` holds each screen as data for the interface kit (living/ui): the account in the city (followers here and beyond, the newest posts' and ads' funnels), a business's page (followers, rating, pull, the newest reviews by their residents, what it heard and brought, one action: Run an ad), an ad (target, reach, days, price, or why it cannot run), one post's funnel and the offers (each business, its fee a post, its posts, where it stands; the open one can be taken). Until the kit draws them, Flare's app shows the same data: a business card's lines and its Run an ad button, the ad sheet, the offers on the Business tab with Take the offer, and the account's lines at the top of the player's own Profile.
 
 ## The save and Going Public
 
@@ -70,8 +91,8 @@ In a session the host owns the residents and what they hear, as it owns the popu
 
 ## Tests
 
-Options, Tests: Flare in the city: play the residents' day now; a post about my first business, heard now; a small free ad for my first business; my first business's page in the log. Each says why in a notice when it cannot run, and writes a `Flare check (...)` line.
+Options, Tests: Flare in the city: play the residents' day now; a post about my first business, heard now; a small free ad for my first business; my first business's page in the log; an offer of a paid post now. Each says why in a notice when it cannot run, and writes a `Flare check (...)` line.
 
 ## Checks
 
-EconomyCheck (`--flare-city`): the follows (every adult, the player's city share, the home districts first, a niche influencer's followers, the voices, the same seed the same follows, a death and a newcomer, the account's count kept), a post heard (seen as Flare's reach says, interested, shares, the unique-reach bound, viral, bad talk), attention moving people between rivals and never making them (twin cities: the same spending and takings in all), the lift within 5%, the funnel's share, bad talk and answers, reviews by customers who really spent there, the stars, ads (targets, delivery, price, the city's own), the save's round trip and a damaged line, the rebind by key, the costs (a slice near 2 ms, the line's size), every screen, part R, the texts and the sources.
+EconomyCheck (`--flare-city`): the follows (every adult, the player's city share, the home districts first, a niche influencer's followers, the voices, the same seed the same follows, a death and a newcomer, the account's count kept), a post heard (seen as Flare's reach says, interested, shares, the unique-reach bound, viral, bad talk), attention moving people between rivals and never making them (twin cities: the same spending and takings in all), the lift within 5%, the funnel's share, bad talk and answers, reviews by customers who really spent there, the stars, ads (targets, delivery, price, the city's own), the save's round trip and a damaged line, the rebind by key, the costs (a slice near 2 ms, the line's size), offers (none below Local, one open at a time, never a player's business, sponsorships), the fee and the creator income at the game's prices, a sponsorship's days, a devlog's hype and a campaign's pledges from the residents who play games (each once, never past the goal), the market's kicks by the investors reached, the feed's mood and the player's word in an election by the city's adults, the save keeping the offers, every screen, part R, the texts and the sources.

@@ -22,6 +22,7 @@ internal static partial class Program
         FlareResidentAds();
         FlareResidentSave();
         FlareResidentCosts();
+        FlareResidentCreator();
         FlareResidentMore();
     }
 

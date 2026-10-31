@@ -22,6 +22,7 @@ namespace RealLifeOverhaul.Flare
                 .Test("reallife_flare_city_test_post", () => FlareDirector.Instance?.TestResidentsPost())
                 .Test("reallife_flare_city_test_ad", () => FlareDirector.Instance?.TestResidentsAd())
                 .Test("reallife_flare_city_test_page", () => FlareDirector.Instance?.TestResidentsPage())
+                .Test("reallife_flare_city_test_offer", () => FlareDirector.Instance?.TestResidentsOffer())
                 .Fact("flarecity_adult_age", () => Whole(FlareCityCatalogue.AdultAge))
                 .Fact("flarecity_share_newcomer", () => Whole(FlareCityCatalogue.CityShare[0] / 10) + "%")
                 .Fact("flarecity_share_celebrity", () => Whole(FlareCityCatalogue.CityShare[FlareCityCatalogue.CityShare.Length - 1] / 10) + "%")
@@ -30,6 +31,17 @@ namespace RealLifeOverhaul.Flare
                 .Fact("flarecity_scandal_days", () => Whole(FlareCityCatalogue.ScandalDays))
                 .Fact("flarecity_visits_review", () => Whole(FlareCityCatalogue.VisitsPerReview))
                 .Fact("flarecity_ad_cpm", () => Guide.Money(Prices.At(FlareCityCatalogue.AdCpm)))
+                .Fact("flarecity_offer_from", () => Whole(FlareRules.TierFrom[1]))
+                .Fact("flarecity_offer_fee", () => Guide.Money(Prices.At(FlareCityRules.OfferFeeThousand / 100)))
+                .Fact("flarecity_offer_days", () => Whole(FlareCityRules.OfferDays))
+                .Fact("flarecity_sponsor_posts", () => Whole(FlareCityRules.SponsorPosts))
+                .Fact("flarecity_sponsor_gap", () => Whole(FlareCityRules.SponsorGap))
+                .Fact("flarecity_creator_from", () => Whole(FlareRules.TierFrom[FlareCityRules.CreatorFrom]))
+                .Fact("flarecity_creator_days", () => Whole(FlareCityRules.CreatorDays))
+                .Fact("flarecity_creator_rate", () => Guide.Money(Prices.At(FlareCityRules.CreatorThousandViews / 100)))
+                .Fact("flarecity_devlog_most", () => Whole(FlareCityRules.DevlogHypeMost / 10) + "%")
+                .Fact("flarecity_investors", () => Whole(FlareCityCatalogue.InvestorsPerKick))
+                .Fact("flarecity_kicks_most", () => Whole(FlareCityCatalogue.MarketKicksMost))
                 .ResetData(() => FlareDirector.Instance?.ForgetCity());
         }
 
@@ -49,7 +61,8 @@ namespace RealLifeOverhaul.Flare
                 .AddButton("reallife_flare_city_test_day", () => FlareDirector.Instance?.TestResidentsDay())
                 .AddButton("reallife_flare_city_test_post", () => FlareDirector.Instance?.TestResidentsPost())
                 .AddButton("reallife_flare_city_test_ad", () => FlareDirector.Instance?.TestResidentsAd())
-                .AddButton("reallife_flare_city_test_page", () => FlareDirector.Instance?.TestResidentsPage());
+                .AddButton("reallife_flare_city_test_page", () => FlareDirector.Instance?.TestResidentsPage())
+                .AddButton("reallife_flare_city_test_offer", () => FlareDirector.Instance?.TestResidentsOffer());
         }
     }
 }

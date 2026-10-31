@@ -97,6 +97,51 @@ namespace RealLifeOverhaul.Flare
             return b.ToString();
         }
 
+        // The city's businesses' offers of paid posts on the Business tab: the open one with its button, the rest with where they stand.
+        private void WriteOffers()
+        {
+            FlareCityView v = CityAds ? _director.CityOffersView() : null;
+            if (v == null)
+            {
+                return;
+            }
+            Section(FlareText.T(v.RowsHeader));
+            if (v.Rows.Count == 0)
+            {
+                Note(FlareText.T(v.Empty));
+                return;
+            }
+            foreach (FlareViewRow row in v.Rows)
+            {
+                FlareOffer o = _director.OfferOf(row.Post);
+                if (o == null)
+                {
+                    continue;
+                }
+                bool open = row.Subtitle.EndsWith("offer_open", System.StringComparison.Ordinal);
+                FlareRow r = Row(CellDeal);
+                r.Key = FlareText.Fill("reallife_flare_offer_row", "business", row.Title, "fee", FlareText.Money((int)row.Value));
+                r.Text = OfferLine(o, open);
+                r.Number = open ? -o.Id : 0;
+            }
+        }
+
+        private static string OfferLine(FlareOffer o, bool open)
+        {
+            string paid = FlareText.Money((int)(o.Fee * o.Done / 100));
+            if (open)
+            {
+                return o.Posts == 1 ? FlareText.Fill("reallife_flare_offer_one", "until", o.Until.ToString(CultureInfo.InvariantCulture))
+                    : FlareText.Fill("reallife_flare_offer_sponsor", "posts", o.Posts.ToString(CultureInfo.InvariantCulture), "gap",
+                        FlareCityRules.SponsorGap.ToString(CultureInfo.InvariantCulture), "until", o.Until.ToString(CultureInfo.InvariantCulture));
+            }
+            if (o.Running)
+            {
+                return FlareText.Fill("reallife_flare_offer_running", "done", o.Done.ToString(CultureInfo.InvariantCulture), "posts", o.Posts.ToString(CultureInfo.InvariantCulture), "paid", paid);
+            }
+            return o.Accepted ? FlareText.Fill("reallife_flare_offer_done", "posts", o.Posts.ToString(CultureInfo.InvariantCulture), "paid", paid) : FlareText.T("reallife_flare_offer_lapsed");
+        }
+
         private static long Hero(FlareCityView v, int i) => i < v.Hero.Count ? v.Hero[i].Value : 0;
 
         private static long Detail(FlareCityView v, int i) => i < v.Details.Count ? v.Details[i].Value : 0;

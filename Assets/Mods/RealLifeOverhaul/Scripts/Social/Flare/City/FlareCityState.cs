@@ -78,6 +78,7 @@ namespace RealLifeOverhaul.Flare
     public struct HeardReport
     {
         public int Seen, Interested, Shared, Discovered, Followed, Lost;
+        public int Investors;        // ...of the interested, residents with savings to put in the market (FlareCityRules.Investor)
         public long Impressions;     // thousandths of a resident added to its business
     }
 
@@ -129,6 +130,10 @@ namespace RealLifeOverhaul.Flare
         // ---- the funnel, the ads and the voices
         public readonly List<FlareFunnel> Funnels = new List<FlareFunnel>(FlareCityCatalogue.FunnelsMost);
         public readonly List<FlareAd> Ads = new List<FlareAd>(8);
+        public readonly List<FlareOffer> Offers = new List<FlareOffer>(8);   // the city's businesses' offers of paid posts (FlareCityRules.Creator)
+        public int NextOffer = 1;
+        public int CreatorDay = -1;                  // the last day a creator income was paid (or the account reached its tier); -1 not yet
+        public int ScandalDay = -1;                  // the last day a post of the player's went badly and many saw it (a pile-on): a scandal until answered
         public int[] Voices = new int[FlareLiveRules.Citizens];   // the person id behind each of the city's voices ("c0" to "c399"), 0 for none yet
 
         // ---- the day's indexes (not saved)

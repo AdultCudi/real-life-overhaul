@@ -109,6 +109,7 @@ namespace RealLifeOverhaul.Flare
                     continue;
                 }
                 r.Interested++;
+                r.Investors += Investor(s, p) ? 1 : 0;
                 r.Impressions += Impress(c, s, p, post);
                 if (Mille(seed, id, SaltShare, 0) < share)
                 {
@@ -140,9 +141,32 @@ namespace RealLifeOverhaul.Flare
 
         private static bool Interested(FlareCityState c, PopulationState s, int p, int id, int seed, in CityPost post)
         {
+            if (post.Kind == GamesKind)
+            {
+                return Mille(seed, id, SaltInterest, 0) < (PlaysGames(s, p) ? FlareCityCatalogue.InterestMatch : FlareCityCatalogue.InterestOther);
+            }
             int h = s.People.Household[p];
             uint tastes = h >= 0 && s.Households.Alive(h) ? s.Households.Tastes[h] : 0u;
             return Mille(seed, id, SaltInterest, 0) < InterestOf(tastes, post.Kind, FlareCityCatalogue.InterestMatch, FlareCityCatalogue.InterestOther);
+        }
+
+        /// <summary>Whether a resident plays games: a genre they like (the population's games, GameRules).</summary>
+        public static bool PlaysGames(PopulationState s, int p)
+        {
+            return p >= 0 && p < s.People.Games.Length && (s.People.Games[p] & ((1 << GameRules.Genres) - 1)) != 0;
+        }
+
+        /// <summary>Whether a resident is one of the city's retail investors: their household has savings to put in the market.</summary>
+        public static bool Investor(PopulationState s, int p)
+        {
+            int h = s.People.Household[p];
+            return h >= 0 && s.Households.Alive(h) && s.Households.Savings[h] >= FlareCityCatalogue.InvestorSavings;
+        }
+
+        /// <summary>The stock market's kicks a viral post about a business gives its trade's sector: one, and one more for each so many investors it reached.</summary>
+        public static int MarketKicks(int investors)
+        {
+            return 1 + Math.Min(FlareCityCatalogue.MarketKicksMost - 1, Math.Max(0, investors) / FlareCityCatalogue.InvestorsPerKick);
         }
 
         // The people round a resident who shared it: their household, two at work and a neighbour, each seeing it now and then.
@@ -204,6 +228,7 @@ namespace RealLifeOverhaul.Flare
                 return;
             }
             r.Interested++;
+            r.Investors += Investor(s, p) ? 1 : 0;
             r.Impressions += Impress(c, s, p, post);
             if (post.Account >= 0 && !Follows(c, p, post.Account))
             {

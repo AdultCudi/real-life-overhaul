@@ -80,6 +80,21 @@ namespace RealLifeOverhaul.Flare
             return BizBooks.Book(-cents / 100f, new TransactionInfo(AdKey), null, reg != null ? reg.Address : null, force: false);
         }
 
+        public const string DealKey = "reallife_transaction_flare_deal";         // a business of the city's paying the player for a post about it
+        public const string CreatorKey = "reallife_transaction_flare_creator";   // Flare's creator income for the views of the player's posts
+
+        /// <summary>A paid post's fee booked to the player, as the mod's other personal income is (no business of theirs).</summary>
+        public static bool PayDeal(long cents)
+        {
+            return cents <= 0 || BizBooks.Book(cents / 100f, new TransactionInfo(DealKey), null, null, force: true);
+        }
+
+        /// <summary>A month's creator income booked to the player.</summary>
+        public static bool PayCreator(long cents)
+        {
+            return cents <= 0 || BizBooks.Book(cents / 100f, new TransactionInfo(CreatorKey), null, null, force: true);
+        }
+
         /// <summary>The game's prices against the start's, thousandths.</summary>
         public static int PriceLevel => Prices.Level;
     }

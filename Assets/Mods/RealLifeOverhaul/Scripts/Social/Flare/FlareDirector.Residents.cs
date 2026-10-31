@@ -187,6 +187,11 @@ namespace RealLifeOverhaul.Flare
                 }
             }
             HearLater();
+            PopulationState residents = Residents;
+            if (residents != null)
+            {
+                CreatorDay(residents, Save != null ? Save.Day : p.Day);   // offers, the paid posts due and a creator income (FlareDirector.Creator)
+            }
             Logger?.Info("Flare in the city: day " + p.Day + (p.Placed >= 0 ? ", " + p.Placed + " residents' follows read back" : string.Empty)
                          + (p.Generated > 0 ? ", " + p.Generated + " residents' first follows made" : string.Empty) + ": " + _city.CityFollowers + " residents follow you"
                          + (p.Reconciled != 0 ? " (" + (p.Reconciled > 0 ? "+" : string.Empty) + p.Reconciled + " with the account)" : string.Empty) + ", " + p.Reviewed + " reviews by customers, "
@@ -317,12 +322,32 @@ namespace RealLifeOverhaul.Flare
         private bool CityScandal()
         {
             int day = Save != null ? Save.Day : 0;
-            if (_file == null || _file.ArrestDay < 0 || day - _file.ArrestDay > FlareCityCatalogue.ScandalDays)
+            if (_file == null)
             {
                 return false;
             }
-            FlarePost answer = _file.LastOwn(FlareSource.Arrested);
-            return answer == null || answer.Day < _file.ArrestDay || answer.Tone != FlareTone.Honest;
+            bool arrest = _file.ArrestDay >= 0 && day - _file.ArrestDay <= FlareCityCatalogue.ScandalDays;
+            FlarePost answer = arrest ? _file.LastOwn(FlareSource.Arrested) : null;
+            if (arrest && (answer == null || answer.Day < _file.ArrestDay || answer.Tone != FlareTone.Honest))
+            {
+                return true;
+            }
+            int pileOn = _city != null ? _city.ScandalDay : -1;
+            return pileOn >= 0 && day - pileOn <= FlareCityCatalogue.ScandalDays && !HonestSince(pileOn);
+        }
+
+        // An honest post of the player's on or after a day: what answers a pile-on.
+        private bool HonestSince(int day)
+        {
+            for (int i = _file.Posts.Count - 1; i >= 0; i--)
+            {
+                FlarePost p = _file.Posts[i];
+                if (p.Author == FlareAuthor.Player && p.Day >= day && p.Tone == FlareTone.Honest && !p.Bad && p.Source != FlareSource.Reply)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         // ---------------------------------------------------------------- posts heard by the residents
@@ -337,7 +362,18 @@ namespace RealLifeOverhaul.Flare
             CityPost post = CityPostOf(p, FlareCityState.PlayerAccount, p.Bad ? -1 : 1);
             post.Gain = FlareCityRules.CityGain(p.Gained, (int)_file.Tier);
             post.Measured = true;
-            CityHear(post, CityFunnel(FunnelKind.Post, p.Id, p.Place, p.Day));
+            _lastHeard = CityHear(post, CityFunnel(FunnelKind.Post, p.Id, p.Place, p.Day));
+            _lastHeardPost = p.Id;
+        }
+
+        private HeardReport _lastHeard;   // the player's last post as the residents heard it, for its market and council effects (CityInfluence)
+        private int _lastHeardPost = -1;
+
+        /// <summary>The player's post as the residents heard it now: its report, or none when it is still to be heard (the day's indexes being made).</summary>
+        private bool HeardNow(FlarePost p, out HeardReport r)
+        {
+            r = _lastHeard;
+            return CityOn && p != null && _lastHeardPost == p.Id && r.Seen > 0;
         }
 
         /// <summary>A review or an announcement heard: by its author's followers (the player's, a voice's), good or bad by its stars.</summary>
@@ -466,12 +502,12 @@ namespace RealLifeOverhaul.Flare
             return who >= 0 && who < FlareLiveRules.Citizens ? _city.AccountOf("v:" + who.ToString(CultureInfo.InvariantCulture)) : -1;
         }
 
-        // Heard now, or once the day's indexes are made.
-        private void CityHear(CityPost post, FlareFunnel funnel)
+        // Heard now, or once the day's indexes are made (then an empty report).
+        private HeardReport CityHear(CityPost post, FlareFunnel funnel)
         {
             if (!CityOn)
             {
-                return;
+                return default(HeardReport);
             }
             PopulationState s = Residents;
             if (s == null || _cityPass.Busy || _city.Indexed < 0)
@@ -481,20 +517,21 @@ namespace RealLifeOverhaul.Flare
                     _cityLater.Add(post);
                     _cityLaterFunnels.Add(funnel);
                 }
-                return;
+                return default(HeardReport);
             }
-            HearNow(s, post, funnel);
+            return HearNow(s, post, funnel);
         }
 
-        private void HearNow(PopulationState s, CityPost post, FlareFunnel funnel)
+        private HeardReport HearNow(PopulationState s, CityPost post, FlareFunnel funnel)
         {
+            HeardReport r = default(HeardReport);
             try
             {
                 if (post.Business >= _city.BusinessCount)
                 {
                     post.Business = -1;   // a business newer than the day's figures: its talk counts from the next day
                 }
-                HeardReport r = FlareCityRules.Hear(_city, s, post, Save != null ? Save.Day : s.Day, _cityPass.AccountBiz, _cityPass.Scratch, funnel);
+                r = FlareCityRules.Hear(_city, s, post, Save != null ? Save.Day : s.Day, _cityPass.AccountBiz, _cityPass.Scratch, funnel);
                 if (post.Business >= 0 && _cityPass.Weights.Length > 0)
                 {
                     _city.Attention[post.Business] = FlareCityRules.AttentionOf(_city, s, post.Business, _cityPass.Weights);
@@ -511,6 +548,7 @@ namespace RealLifeOverhaul.Flare
             {
                 CityFault("a post heard", e);
             }
+            return r;
         }
 
         /// <summary>A post's or an ad's funnel record, new (the oldest goes past the most kept).</summary>

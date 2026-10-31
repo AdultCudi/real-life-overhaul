@@ -93,6 +93,15 @@ namespace RealLifeOverhaul.Flare
         public const int CityAdsDay = 6;                 // the city's and the rivals' businesses that run an ad a day (parity: the same rules as the player's)
         public const int CityAdReach = 1500;             // residents a day of one of their ads
 
+        // ---- the market and the council: the residents behind a viral thread and a following
+
+        public const int InvestorSavings = 10000;        // whole money of savings from which a household puts some in the stock market (about a third of the city's)
+        public const int InvestorsPerKick = 100;         // interested investors a viral post reaches for each kick more it gives its trade's sector on the market
+        public const int MarketKicksMost = 8;            // kicks at the most: eight times the market's own buzz (MarketInputs.BuzzKickBp), a viral thread of a celebrity
+        public const int IssueMoodAt = 20;               // per mille of the city's adults interested in a post about an issue for the feed's old move of its mood (FlareRules.MoodIssuePost)
+        public const int IssueMoodLeast = 2, IssueMoodMost = 30;   // points of the feed's mood a post about an issue moves, by the residents it reached
+        public const int EndorseFull = 500;              // per mille of the city's adults following the player at which the player's word in an election is worth the most
+
         // ---- the voices: the city's people who post most, residents
 
         public const int VoiceYoungLean = 2000;          // thousandths: residents of 18 to 39 are twice as likely to be a voice

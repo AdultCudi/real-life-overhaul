@@ -10,7 +10,8 @@ namespace RealLifeOverhaul.Flare
         Account = 0,
         Business = 1,
         Ad = 2,
-        Funnel = 3
+        Funnel = 3,
+        Offers = 4
     }
 
     /// <summary>How a figure is written (the renderer uses the game's own number and money formatting).</summary>
@@ -181,6 +182,26 @@ namespace RealLifeOverhaul.Flare
             return p >= 0 && s.People.Female[p] != 0;
         }
 
+        /// <summary>
+        /// The city's businesses' offers of paid posts, newest first: each business, its fee a post and its posts, and where it stands (open, taken, done,
+        /// not taken); the open one can be taken.
+        /// </summary>
+        public static FlareCityView Offers(FlareCityState c, int day)
+        {
+            var v = new FlareCityView { Kind = FlareViewKind.Offers, Title = K + "title_offers", TitleKey = true, RowsHeader = K + "rows_offers", Empty = K + "empty_offers" };
+            for (int i = c.Offers.Count - 1; i >= 0 && v.Rows.Count < RowsMost; i--)
+            {
+                FlareOffer o = c.Offers[i];
+                string state = o.Open(day) ? "offer_open" : o.Running ? "offer_running" : o.Accepted ? "offer_done" : "offer_lapsed";
+                v.Rows.Add(new FlareViewRow { Title = o.Name, Value = o.Fee / 100, Format = FlareViewFormat.Money, Second = o.Posts, Post = o.Id, Subtitle = K + state });
+                if (state == "offer_open")
+                {
+                    v.Primary = K + "action_accept";
+                }
+            }
+            return v;
+        }
+
         /// <summary>The words of an ad's target, by its number (FlareDirector.AdOf's targets).</summary>
         public static string TargetKey(int target)
         {
@@ -195,7 +216,8 @@ namespace RealLifeOverhaul.Flare
             K + "detail_came", K + "detail_spent", K + "detail_reviews", K + "action_ad", K + "empty_reviews",
             K + "title_ad", K + "fig_reach", K + "fig_days", K + "fig_cost", K + "detail_target", K + "detail_holds", K + "action_run",
             K + "target_0", K + "target_1", K + "target_2", K + "target_3", K + "target_4",
-            K + "fig_seen", K + "fig_interested", K + "fig_came", K + "fig_spent", K + "fig_followed"
+            K + "fig_seen", K + "fig_interested", K + "fig_came", K + "fig_spent", K + "fig_followed",
+            K + "title_offers", K + "rows_offers", K + "empty_offers", K + "offer_open", K + "offer_running", K + "offer_done", K + "offer_lapsed", K + "action_accept"
         };
     }
 }

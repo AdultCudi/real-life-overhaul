@@ -1,6 +1,7 @@
 using System;
 using RealLifeOverhaul.Flare;
 using RealLifeOverhaul.Population;
+using RealLifeOverhaul.Tech;
 
 namespace RealLifeOverhaul
 {
@@ -25,13 +26,64 @@ namespace RealLifeOverhaul
                 FlareBridges.Pools = Pools;
                 CityPopulation.DayLived += Lived;
                 PopulationAttention.Register(Source, Attention);
+                StudioBridges.Talk = Talk;
+                StudioBridges.Devlog = Devlog;
+                StudioBridges.Crowdfund = Crowdfund;
             }
 
             internal static void Disconnect()
             {
+                StudioBridges.Talk = null;
+                StudioBridges.Devlog = null;
+                StudioBridges.Crowdfund = null;
                 PopulationAttention.Unregister(Source);
                 CityPopulation.DayLived -= Lived;
                 FlareBridges.ResetCity();
+            }
+
+            // The game studio on Flare (Tech/Studio/StudioBridges): its news as its account's posts, a devlog's hype, a campaign's pledges; Flare off, nothing.
+            private static void Talk(int news, string place, string game, long figure)
+            {
+                try
+                {
+                    FlareDirector flare = FlareDirector.Instance;
+                    if (flare != null && flare.Running)
+                    {
+                        flare.StudioNews(news, place, game, figure);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareCityLinks.Talk", e);
+                }
+            }
+
+            private static int Devlog(string place, string game)
+            {
+                try
+                {
+                    FlareDirector flare = FlareDirector.Instance;
+                    return flare != null && flare.Running ? flare.StudioDevlog(place, game) : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareCityLinks.Devlog", e);
+                    return 0;
+                }
+            }
+
+            private static long Crowdfund(string place, long goal)
+            {
+                try
+                {
+                    FlareDirector flare = FlareDirector.Instance;
+                    return flare != null && flare.Running ? flare.StudioCrowdfund(place, goal) : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareCityLinks.Crowdfund", e);
+                    return 0;
+                }
             }
 
             // The population this machine runs: none while Living population is off, on a city it does not know, or on a guest following the host.

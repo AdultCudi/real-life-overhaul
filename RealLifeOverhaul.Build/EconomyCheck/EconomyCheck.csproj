@@ -758,6 +758,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Voices.cs" Link="Mod\FlareCity\FlareCityRules.Voices.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Ads.cs" Link="Mod\FlareCity\FlareCityRules.Ads.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Player.cs" Link="Mod\FlareCity\FlareCityRules.Player.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Creator.cs" Link="Mod\FlareCity\FlareCityRules.Creator.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Studio.cs" Link="Mod\FlareCity\FlareCityRules.Studio.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Civic.cs" Link="Mod\FlareCity\FlareCityRules.Civic.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityPass.cs" Link="Mod\FlareCity\FlareCityPass.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityStore.cs" Link="Mod\FlareCity\FlareCityStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityViews.cs" Link="Mod\FlareCity\FlareCityViews.cs" />

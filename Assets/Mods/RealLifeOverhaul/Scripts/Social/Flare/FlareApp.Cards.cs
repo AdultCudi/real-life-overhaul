@@ -249,9 +249,10 @@ namespace RealLifeOverhaul.Flare
                 FlareKit.Set(_lines, row.Text);
                 FlareKit.Place(_lines.rectTransform, pad, pad + th + 6f, width - pad * 2f, lh + 4f);
                 float y = pad + th + lh + 20f;
-                if (row.Number > 0)
+                if (row.Number != 0)
                 {
-                    _end.Show(Look, FlareText.T("reallife_flare_hire_end"), false, pad, y);
+                    // a deal of the player's can be ended; an offer of a business's (a number below nought) can be taken
+                    _end.Show(Look, FlareText.T(row.Number > 0 ? "reallife_flare_hire_end" : "reallife_flare_offer_accept"), row.Number < 0, pad, y);
                     y += 58f + 10f;
                 }
                 else
