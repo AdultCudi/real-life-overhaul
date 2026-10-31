@@ -1020,6 +1020,16 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_studio_test_finish", () => Tech.TechDirector.Instance?.TestStudioFinish())
                 .AddButton("reallife_studio_test_launch", () => Tech.TechDirector.Instance?.TestStudioLaunch())
                 .AddButton("reallife_studio_test_year", () => Tech.TechDirector.Instance?.TestStudioYear())
+                .AddToggle(Settings.LivingFirmsId, "reallife_tech_mkt_enabled", Settings.LivingFirms,
+                    v => Settings.LivingFirms = v)
+                .AddButton("reallife_tech_mkt_test_software", () => Tech.TechDirector.Instance?.TestSectorDesks((int)Tech.FirmKind.Software))
+                .AddButton("reallife_tech_mkt_test_lab", () => Tech.TechDirector.Instance?.TestSectorDesks((int)Tech.FirmKind.AiLab))
+                .AddButton("reallife_tech_mkt_test_consultancy", () => Tech.TechDirector.Instance?.TestSectorDesks((int)Tech.FirmKind.Consultancy))
+                .AddButton("reallife_tech_mkt_test_security", () => Tech.TechDirector.Instance?.TestSectorDesks((int)Tech.FirmKind.Security))
+                .AddButton("reallife_tech_mkt_test_agency", () => Tech.TechDirector.Instance?.TestSectorDesks((int)Tech.FirmKind.WebAgency))
+                .AddButton("reallife_tech_mkt_test_centres", () => Tech.TechDirector.Instance?.TestSectorDesks(-1))
+                .AddButton("reallife_tech_mkt_test_markets", () => Tech.TechDirector.Instance?.TestSectorMarkets())
+                .AddButton("reallife_tech_mkt_test_year", () => Tech.TechDirector.Instance?.TestSectorYear())
                 .Guarded(o => Population.PopulationOptions.AddPopulation(o))   // the population's tests (Scripts/Population)
                 .AddDropdown(Settings.EconomyCompanyLevelId, "reallife_co_level",
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCompanyLevel,

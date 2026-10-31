@@ -345,7 +345,7 @@ namespace RealLifeOverhaul.Tech
             _infra.LastDay = day;
             ReadInfra();
             int cycle = HiringGame.Cycle, level = Prices.Level, outages = 0, share = ScaleNow();
-            int wanted = InfraRules.ColoWanted(cycle, share), let = 0;
+            int wanted = _sectorOn ? SectorRules.RacksToLet(_sector, _infra, cycle, share) : InfraRules.ColoWanted(cycle, share), let = 0;   // the city's firms' racks at the centres' share, or the old 40
             int capacity = 0, gpu = 0;
             for (int i = 0; i < _infra.Centres.Count; i++)
             {
@@ -358,7 +358,7 @@ namespace RealLifeOverhaul.Tech
                 var r = new CentreDay();
                 InfraRules.Hire(d, share);
                 int cover = InfraRules.Cover(d, share);
-                if (InfraRules.Outage(_infra.Seed, d, day, cover))
+                if (InfraRules.Outage(_infra.Seed, d, day, cover) && !Spared(d, day))
                 {
                     d.DownUntil = day + 1;
                     d.Outages++;
@@ -380,7 +380,7 @@ namespace RealLifeOverhaul.Tech
                     let--;
                 }
                 r.Takings = r.Outage ? 0 : InfraRules.ColoDay(d, share) * level / 1000;
-                r.Power = Utility(0, InfraRules.Power(d));
+                r.Power = Utility(0, PowerDrawn(d, day)) * (_sectorOn ? SectorRules.PowerFactor(_sector, day) : 1000) / 1000;   // a spike's tariff unless its price was fixed at the desk
                 r.Water = Utility(1, InfraRules.Water(d));
                 r.WriteDown = InfraRules.WriteDown(d);
                 d.Book -= r.WriteDown;
@@ -388,7 +388,7 @@ namespace RealLifeOverhaul.Tech
                 {
                     int working = EndScaleRules.Working(cover);
                     capacity += (int)((long)InfraRules.Units(d, share) * working / 1000);
-                    gpu += (int)((long)InfraRules.GpuUnits(d, share) * working / 1000);
+                    gpu += (int)((long)InfraRules.GpuUnits(d, share) * working / 1000 * (_sectorOn ? SectorRules.GpuWorking(_sector, day) : 1000) / 1000);
                 }
                 int dated = day - 1;
                 FirmsGame.Takings(r.Takings, reg, d.Name, dated);
@@ -408,6 +408,24 @@ namespace RealLifeOverhaul.Tech
             Settle(day - 1);
             TechBridges.Books?.Invoke(day - 1);
             _ownHosting = 0;
+        }
+
+        // A data centre's power a day, thousandths of a kWh: its racks', the AI racks' cut while they are throttled for a spike.
+        private long PowerDrawn(DataCentre d, int day)
+        {
+            long kwh = InfraRules.Power(d);
+            if (_sectorOn && SectorRules.GpuWorking(_sector, day) < 1000)
+            {
+                kwh -= (long)d.GpuRacks * InfraCatalogue.GpuRackKw * 24 * 1000 * SectorCatalogue.ThrottleCut / 1000;
+            }
+            return Math.Max(0L, kwh);
+        }
+
+        // An outage a data centre's post-mortem keeps from happening (seeded by the place and the day); none without the sector.
+        private bool Spared(DataCentre d, int day)
+        {
+            return _sectorOn && SectorRules.OutageFactor(_sector, day) < 1000
+                   && TechRandom.Mille(_infra.Seed, TechRandom.Of(d.Place), day, 97) >= SectorRules.OutageFactor(_sector, day);
         }
 
         // A utility's day at the tariff of the city's utilities (power 0, water 1), cents at today's prices.
@@ -461,8 +479,11 @@ namespace RealLifeOverhaul.Tech
             }
             int ownUnits = (int)Math.Min(capacity, _ownHosting * 1000 / Math.Max(1, (long)InfraCatalogue.UnitDay * InfraCatalogue.OwnHostingShare / 1000 * level));
             int regions = share > 0 ? InfraRules.Regions(_infra.Centres) : 0;
-            int city = InfraRules.CityDemand(c, cycle, Math.Max(0, capacity - ownUnits), false, share, regions);
-            int cityGpu = InfraRules.CityDemand(c, cycle, Math.Max(0, gpu), true, share, regions);
+            long market = _sectorOn ? SectorRules.CloudMarket(_sector, false, cycle, share, c.Hyper, InfraRules.Regions(_infra.Centres)) : 0;
+            int city = _sectorOn ? SectorRules.CloudDemand(c, market, Math.Max(0, capacity - ownUnits)) : InfraRules.CityDemand(c, cycle, Math.Max(0, capacity - ownUnits), false, share, regions);
+            int cityGpu = _sectorOn
+                ? SectorRules.CloudDemand(c, SectorRules.CloudMarket(_sector, true, cycle, share, c.Hyper, InfraRules.Regions(_infra.Centres)), Math.Max(0, gpu))
+                : InfraRules.CityDemand(c, cycle, Math.Max(0, gpu), true, share, regions);   // the city's firms' and labs' compute at the cloud's price and name, or the old demand with the rivals' fixed half
             long takings = InfraRules.Takings(c, city, cityGpu) * level / 1000 + _ownHosting;
             c.Sold = city + ownUnits;
             c.GpuSold = cityGpu;
@@ -477,7 +498,7 @@ namespace RealLifeOverhaul.Tech
                 Story("reallife_tech_news_cloud_down", "name", c.Name);
                 TechBridges.Fame?.Invoke(0, -1);
             }
-            if (InfraRules.PriceWar(c, city, day, InfraRules.WarMarket(c, share, regions)))
+            if (InfraRules.PriceWar(c, city, day, _sectorOn ? Math.Max(1L, market) : InfraRules.WarMarket(c, share, regions)))
             {
                 TechBridges.Stock?.Invoke(107, -30);
                 Story("reallife_tech_news_price_war", "name", c.Name);
