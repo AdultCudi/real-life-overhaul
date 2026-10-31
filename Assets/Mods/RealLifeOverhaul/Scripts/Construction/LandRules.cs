@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Construction
 {
@@ -243,5 +244,59 @@ namespace RealLifeOverhaul.Construction
             int a = BuildCatalogue.Clamp(ask, 0, BuildCatalogue.AskChancePermille.Length - 1);
             return BuildCatalogue.Clamp(BuildCatalogue.AskChancePermille[a] + (reputation - 50) * 3, 50, 900);
         }
+    }
+
+    /// <summary>
+    /// The district's lots found by id and by their place along a strip without walking the list: built once each time the
+    /// lots are read again, it answers what a walk from the first lot would, the first match, so two lots with one id or one
+    /// place answer as before. The bare ground check asked for a lot by walking all of them for each of some two thousand
+    /// columns (143 and 181 ms in a frame in the own-spike scan, 28 Oct 2026). COST: nothing per frame; a pass over the lots
+    /// when they change, then one lookup a question. Game-free.
+    /// </summary>
+    public sealed class LotFinder
+    {
+        private readonly Dictionary<string, int> _byId = new Dictionary<string, int>(2048, StringComparer.Ordinal);
+        private readonly Dictionary<long, int> _byStart = new Dictionary<long, int>(2048);   // strip and first space to the lot
+        private readonly Dictionary<long, int> _byEnd = new Dictionary<long, int>(2048);     // strip and the space after its last to the lot
+
+        /// <summary>The number of the reading of the lots this was built from (its owner's count; int.MinValue before any).</summary>
+        public int Built { get; private set; } = int.MinValue;
+
+        /// <summary>Built again over <paramref name="lots"/>, marked as reading <paramref name="reading"/>.</summary>
+        public void Build(IReadOnlyList<LotView> lots, int reading)
+        {
+            _byId.Clear();
+            _byStart.Clear();
+            _byEnd.Clear();
+            for (int i = 0; i < lots.Count; i++)
+            {
+                LotView l = lots[i];
+                if (l.Id != null && !_byId.ContainsKey(l.Id))
+                {
+                    _byId.Add(l.Id, i);
+                }
+                long start = Key(l.Strip, l.Index), end = Key(l.Strip, l.Index + Math.Max(1, l.Spaces));
+                if (!_byStart.ContainsKey(start))
+                {
+                    _byStart.Add(start, i);
+                }
+                if (!_byEnd.ContainsKey(end))
+                {
+                    _byEnd.Add(end, i);
+                }
+            }
+            Built = reading;
+        }
+
+        /// <summary>The first lot with this id, or -1.</summary>
+        public int First(string id) => id != null && _byId.TryGetValue(id, out int at) ? at : -1;
+
+        /// <summary>The first lot of a strip whose first space is <paramref name="index"/>, or -1.</summary>
+        public int Starting(int strip, int index) => _byStart.TryGetValue(Key(strip, index), out int at) ? at : -1;
+
+        /// <summary>The first lot of a strip whose spaces end just before <paramref name="index"/>, or -1.</summary>
+        public int Ending(int strip, int index) => _byEnd.TryGetValue(Key(strip, index), out int at) ? at : -1;
+
+        private static long Key(int strip, int index) => ((long)strip << 32) | (uint)index;
     }
 }

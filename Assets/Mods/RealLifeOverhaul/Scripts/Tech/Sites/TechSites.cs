@@ -25,6 +25,8 @@ namespace RealLifeOverhaul.Tech
         private bool _laying;            // a lift has put the player on a company's floor: its lobby is laid now, under the dark screen
         private bool _censusDone;        // the city's office buildings counted in the log, once a city load
         private float _censusAt;         // real time the count is made by at the latest
+        private double _pickMs = -1.0;   // ms the towers' first pick of the load took (the self-check line beside the count)
+        private const double LoadPassMs = 6.0;   // ms each of the load's two whole-city passes (the towers' pick, the count) may take, each in a tick of its own
         private Frontages _fronts;
         private ServerRoomView _room;
         private LobbyView _lobby;
@@ -159,13 +161,19 @@ namespace RealLifeOverhaul.Tech
             EventHold.Keep(ref GlobalEvents.onEnterBuilding, _onEnter, ref _enterSeen);
             EventHold.Keep(ref GlobalEvents.onExitBuilding, _onExit, ref _exitSeen);
             int day = Save.Day;
+            bool pickedBefore = _hq.Picked;
             if (!_hqBroken)
             {
                 try
                 {
                     if (Settings.TechSiteHq)
                     {
+                        long began = System.Diagnostics.Stopwatch.GetTimestamp();
                         _hq.Tick(day);
+                        if (!pickedBefore && _hq.Picked)
+                        {
+                            _pickMs = (System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+                        }
                         _floors.Tick(_hq);
                     }
                     else if (_hq.Picked)
@@ -181,7 +189,10 @@ namespace RealLifeOverhaul.Tech
                     _floors.Off("the headquarters stood down");
                 }
             }
-            Census();
+            if (pickedBefore || !_hq.Picked)
+            {
+                Census();   // never in the tick the towers were first picked: the two whole-city passes were 12.1 ms in one frame (the own-spike scan, 28 Oct 2026)
+            }
             Inside(day);
             if (!_frontBroken)
             {
@@ -408,7 +419,17 @@ namespace RealLifeOverhaul.Tech
             _censusDone = true;
             try
             {
+                long began = System.Diagnostics.Stopwatch.GetTimestamp();
                 OfficeCensus.Log(Logger);
+                double census = (System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+                if (Meta.Dev.Verbose)
+                {
+                    bool pass = census < LoadPassMs && _pickMs < LoadPassMs;
+                    string pick = _pickMs >= 0.0 ? FormattableString.Invariant($"{_pickMs:F1} ms") : "no time (the headquarters are off)";
+                    Logger?.Info("Tech sites check (the load's passes a tick apart): the towers picked in " + pick + ", "
+                                 + FormattableString.Invariant($"the office buildings counted in {census:F1} ms in a later tick (wanted: under {LoadPassMs:F0} ms each, never both in one frame): ")
+                                 + (pass ? "PASS" : "FAIL") + ".");
+                }
             }
             catch (Exception e)
             {

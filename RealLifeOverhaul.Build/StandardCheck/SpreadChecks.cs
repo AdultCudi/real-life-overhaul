@@ -32,7 +32,34 @@ internal static partial class Program
         ("Driving/CarHandling.cs", null, new[] { "_design.Begin(", "_design.Step()" }, new[] { "HandlingModel.Design(" },
             "the whole design of the handling is for the offline checks, never a frame of play"),
         ("DistrictSave/DistrictSaveCodec.cs", "Write", new[] { "SerializationPolicy = Policy;" }, new[] { "new SaveGameSerializationPolicy" },
-            "one serialization policy for the session, as the game keeps: a new one at every save makes Odin build every formatter again")
+            "one serialization policy for the session, as the game keeps: a new one at every save makes Odin build every formatter again"),
+        // The city side's own spikes (the own-spike scan, 28 Oct 2026; perf/city-spikes).
+        ("Construction/ConstructionDirector.BareGround.cs", "BareGroundFrame", new[] { "WorkSlice.Of(BareSliceMs", "_bare.Step()" }, new[] { "BuildGroundRules.Audit(" },
+            "the load's bare ground check goes a slice of a millisecond a frame (BareAudit): whole in one frame it was 143 and 181 ms"),
+        ("Construction/ConstructionDirector.BareGround.cs", null, new string[0], new[] { "BuildGroundRules.Audit(", "while (_bare.Step())" },
+            "the whole bare ground check in one go is for the offline checks, never a frame of play"),
+        ("Construction/ConstructionDirector.Spaces.cs", "Space", new[] { "LotsFound().First(id)" }, new[] { "for (" },
+            "a lot found by its id in one lookup (LotFinder), never a walk over every lot of the district for each column"),
+        ("Construction/ConstructionDirector.Spaces.cs", "Before", new[] { "LotsFound().Ending(" }, new[] { "for (" },
+            "the lot before one on its strip found in one lookup, never a walk over every lot"),
+        ("Construction/ConstructionDirector.Spaces.cs", "After", new[] { "LotsFound().Starting(" }, new[] { "for (" },
+            "the lot after one on its strip found in one lookup, never a walk over every lot"),
+        ("Traffic/Solid/SolidStreets.cs", "Awake", new[] { "PrewarmStandIns" }, new string[0],
+            "the sixteen stand-ins for people in the road are made behind the loading screen: made in the look that first needed one they were 37 ms"),
+        ("Traffic/Solid/SolidGame.cs", "MakeNext", new[] { "break;" }, new string[0],
+            "in play a stand-in not yet made is made one a look, never all of them at once"),
+        ("Traffic/Drivers/CityDrivers.cs", "Awake", new[] { "PrewarmLines" }, new string[0],
+            "the two hold lines for the player's car are made behind the loading screen: made in the look that first wanted one they were 9 ms"),
+        ("Transport/BusZones.Pieces.cs", "Probe", new[] { "ProbeOne(hid)", "return;" }, new[] { "OnMesh(" },
+            "the bus stops' pieces are asked about the walkable ground one a tick: a stop's pieces all fall due together"),
+        ("Transport/TransitDirector.cs", "PrewarmDressings", new[] { "while (_spare.Count < AwayMost" }, new string[0],
+            "a spare bus body for each bus that may drive off at once is built behind the loading screen, so none is built in a tick of play"),
+        ("Tech/Sites/TechSites.cs", "Slow", new[] { "if (pickedBefore || !_hq.Picked)" }, new string[0],
+            "the office count never runs in the tick the tech towers are first picked: the two whole-city passes were 12.1 ms in one frame"),
+        ("Performance/Tweaks/FarDistricts.cs", "Survey", new[] { "WorkSlice.Of(SliceMs, SurveyLookEvery)" }, new string[0],
+            "the far squares' survey looks at the clock every few renderers, so its slice holds"),
+        ("Performance/Tweaks/FarDistricts.cs", "Refresh", new[] { "_moves.EnsureCapacity(" }, new string[0],
+            "the survey's map of parents is given its room behind the screen, never rebuilt at each doubling in a tick of play")
     };
 
     private static void SpreadChecks()

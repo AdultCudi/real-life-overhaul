@@ -120,6 +120,7 @@ namespace RealLifeOverhaul
             Instance = this;
             _brakes = gameObject.AddComponent<SolidBrakes>();
             ScenePrewarm.Add("streets: the road map and the city's marked crossings being listed for the traffic", Prewarm);
+            ScenePrewarm.Add("traffic: the stand-ins for people in the road being made", PrewarmStandIns);
         }
 
         private void OnDestroy()
@@ -264,6 +265,12 @@ namespace RealLifeOverhaul
             }
         }
 
+        // Behind the loading screen (ScenePrewarm): the sixteen stand-ins made where no frame is seen (SolidGame.MakeAll).
+        private bool PrewarmStandIns()
+        {
+            return _game.MakeAll(transform);
+        }
+
         /// <summary>Behind the loading screen (ScenePrewarm): the road map and the marked crossings (a 90 ms search). False while there is no road data yet.</summary>
         public static bool Prewarm()
         {
@@ -311,6 +318,10 @@ namespace RealLifeOverhaul
             {
                 _nextSenses = now + 1f;
                 _game.Read(pooled, walkers);
+            }
+            if (_game.How != SolidGame.Mode.Unknown)
+            {
+                _game.MakeNext(transform);   // the stand-ins, one a look until all are made (SolidGame.MakeNext)
             }
             GatherPeople(player, walkers);
             Phase(1);

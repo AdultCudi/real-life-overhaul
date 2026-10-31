@@ -19,6 +19,8 @@ namespace RealLifeOverhaul.Construction
         private readonly List<DesignChoice> _choices = new List<DesignChoice>(DesignsAsked);
         private readonly List<LotView> _lots = new List<LotView>(128);
         private int _lotsStamp = int.MinValue;
+        private int _lotsRead;                                    // each reading of the lots, and each test's lot joining them: the finder's mark
+        private readonly LotFinder _found = new LotFinder();      // the lots by id and by their place on a strip (LandRules.cs)
         private readonly List<LotView> _testLots = new List<LotView>(2);
 
         /// <summary>The district's lots at this load (and a test's lot), read again when the district says they changed.</summary>
@@ -31,6 +33,7 @@ namespace RealLifeOverhaul.Construction
                 {
                     _lotsStamp = stamp;
                     ReadLots(_lots);
+                    _lotsRead++;
                     _devOrderStale = true;
                 }
                 if (_testLots.Count > 0)
@@ -40,6 +43,7 @@ namespace RealLifeOverhaul.Construction
                         if (!HasLot(_testLots[i].Id))
                         {
                             _lots.Add(_testLots[i]);
+                            _lotsRead++;
                         }
                     }
                 }
@@ -49,14 +53,18 @@ namespace RealLifeOverhaul.Construction
 
         private bool HasLot(string id)
         {
-            for (int i = 0; i < _lots.Count; i++)
+            return LotsFound().First(id) >= 0;
+        }
+
+        // The finder over the lots as read now, built again when they were read again or a test's lot joined them; never through
+        // Lots, which asks it.
+        private LotFinder LotsFound()
+        {
+            if (_found.Built != _lotsRead)
             {
-                if (_lots[i].Id == id)
-                {
-                    return true;
-                }
+                _found.Build(_lots, _lotsRead);
             }
-            return false;
+            return _found;
         }
 
         /// <summary>A lot of the district (or a test's, or a landmark's site) by its id; false for one not there at this load.</summary>
@@ -67,14 +75,10 @@ namespace RealLifeOverhaul.Construction
                 lot = WithRows(id, lot);   // build mode's cells: a site bought short of its strip's depth
                 return true;   // a site of several spaces: one lot to its projects, its plot and its building
             }
-            IReadOnlyList<LotView> lots = Lots;
-            for (int i = 0; id != null && i < lots.Count; i++)
+            if (Space(id, out LotView space))
             {
-                if (lots[i].Id == id)
-                {
-                    lot = WithRows(id, lots[i]);
-                    return true;
-                }
+                lot = WithRows(id, space);
+                return true;
             }
             return LandmarkSite(id, out lot);
         }

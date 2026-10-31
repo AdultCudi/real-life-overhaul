@@ -51,6 +51,7 @@ namespace RealLifeOverhaul
 
         private const double SliceMs = 1.0;   // milliseconds of a tick the sorting or holding may take
         private const int LookEvery = 64;              // renderers between two looks at the clock
+        private const int SurveyLookEvery = 8;         // renderers sorted between two looks at the clock: the first of a new hierarchy walks up to its root
         private const float HiddenEvery = 0.25f;   // seconds between looks at whether the screen is black, while a scene waits
 
         private readonly bool _byEnabled;
@@ -58,6 +59,7 @@ namespace RealLifeOverhaul
         private readonly Dictionary<int, bool> _moves = new Dictionary<int, bool>(4096);   // while sorting: a parent object (its id) on or under something that moves
         private int _mapMask = ~0;   // the layers both the map's masks draw; all where the map is not known
         private int _offMapHeld;       // renderers held that the city map does not draw
+        private long _surveyWorst;     // Stopwatch ticks: the slowest tick of the survey so far, for its line
         private bool _waitHidden;   // a scene came or went in play: gathered behind the next black screen
 
         private readonly Dictionary<long, Cell> _byKey = new Dictionary<long, Cell>(512);
@@ -384,6 +386,12 @@ namespace RealLifeOverhaul
                     added = true;
                 }
             }
+            if (added)
+            {
+                // Room for every parent the survey may meet, made here behind the screen: the map grown as the survey went was rebuilt
+                // whole at each doubling, in a tick of play (part of the survey's 5.6 ms ticks and 274 KB a second, the own-spike scan, 28 Oct 2026).
+                _moves.EnsureCapacity(_survey.Count - _surveyCursor);
+            }
             if (added && _byEnabled)
             {
                 // which objects the game switches itself, over everything loaded: once a round of new scenes
@@ -401,7 +409,8 @@ namespace RealLifeOverhaul
         // sorts the gathered renderers into squares, a slice a tick
         private void Survey()
         {
-            WorkSlice slice = WorkSlice.Of(SliceMs, LookEvery);
+            long began = System.Diagnostics.Stopwatch.GetTimestamp();
+            WorkSlice slice = WorkSlice.Of(SliceMs, SurveyLookEvery);
             for (; _surveyCursor < _survey.Count && slice.More(); _surveyCursor++)
             {
                 MeshRenderer renderer = _survey[_surveyCursor];
@@ -432,16 +441,22 @@ namespace RealLifeOverhaul
                 cell.OnMap.Add(((_mapMask >> renderer.gameObject.layer) & 1) != 0);
                 _scenery++;
             }
+            _surveyWorst = Math.Max(_surveyWorst, System.Diagnostics.Stopwatch.GetTimestamp() - began);
             if (_surveyCursor >= _survey.Count)
             {
                 _survey.Clear();
                 _survey.TrimExcess();
                 _gathered.TrimExcess();
                 _moves.Clear();
+                _moves.TrimExcess();   // the room made for the survey behind the screen (Refresh) given back
                 _surveyCursor = 0;
                 _settled = false;
+                double worst = _surveyWorst * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
                 PerfDirector.Logger?.Info("Performance: " + _id + " looked through the scenery: " + _scenery + " mesh renderers in " + _cells.Count + " squares of " + CellSize
-                                          + " m; " + _leftAlone + " left alone (of things that move" + (_byEnabled ? ", disabled, or the game switches them itself" : string.Empty) + ").");
+                                          + " m; " + _leftAlone + " left alone (of things that move" + (_byEnabled ? ", disabled, or the game switches them itself" : string.Empty) + "); "
+                                          + "the slowest tick of it " + worst.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + " ms (wanted: under "
+                                          + SpreadWatch.WantedMs.ToString("F0", System.Globalization.CultureInfo.InvariantCulture) + "): " + SpreadWatch.Verdict(worst) + ".");
+                _surveyWorst = 0;
             }
         }
 

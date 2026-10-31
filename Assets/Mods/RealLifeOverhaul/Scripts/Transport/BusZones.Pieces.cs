@@ -111,7 +111,10 @@ namespace RealLifeOverhaul
             return bounds;
         }
 
-        // A piece whose footprint the walkable ground still has a hole under (it is baked in) is put back and stays.
+        // A piece whose footprint the walkable ground still has a hole under (it is baked in) is put back and stays. One piece a tick:
+        // a stop's furniture goes in one frame, so its pieces all fall due together, and each asks the mesh five times (all of them in
+        // one tick were part of the director's 6.3 and 12.7 ms ticks in the own-spike scan, 28 Oct 2026). The ground they ask about is
+        // settled long before (ProbeAfter), so a piece asked a tick or two later is answered the same.
         private static void Probe(float now)
         {
             for (int i = 0; i < Hidden.Count; i++)
@@ -122,35 +125,45 @@ namespace RealLifeOverhaul
                     continue;
                 }
                 hid.ProbeAt = 0f;
-                if (OnMesh(hid.Foot))
+                if (ProbeOne(hid))
                 {
-                    continue;
+                    Hidden.RemoveAt(i);
                 }
-                int around = 0;
-                float reach = hid.Reach + 0.45f;
-                around += OnMesh(hid.Foot + Vector3.forward * reach) ? 1 : 0;
-                around += OnMesh(hid.Foot - Vector3.forward * reach) ? 1 : 0;
-                around += OnMesh(hid.Foot + Vector3.right * reach) ? 1 : 0;
-                around += OnMesh(hid.Foot - Vector3.right * reach) ? 1 : 0;
-                if (around < 3)
-                {
-                    continue;   // the edge of the walkable ground: no hole in a way anybody walks
-                }
-                hid.Piece.SetActive(true);
-                for (int k = 0; k < hid.Off.Count; k++)
-                {
-                    if (hid.Off[k] != null)
-                    {
-                        hid.Off[k].enabled = true;
-                    }
-                }
-                MeshCuts.Note("street furniture put back at a bus stop (its hole is baked in)", Carves(hid));
-                Stay.Add(hid.Piece);
-                Hidden.RemoveAt(i--);
-                _putBack++;
-                Logger?.Info("Transit: '" + hid.Piece.name + "' at " + hid.Where
-                             + " is put back: the walkable ground under it is baked without it, so with it switched off it would stop the player unseen.");
+                return;
             }
+        }
+
+        // One piece asked about: true when it is put back (and so leaves the list of pieces switched off).
+        private static bool ProbeOne(Hid hid)
+        {
+            if (OnMesh(hid.Foot))
+            {
+                return false;
+            }
+            int around = 0;
+            float reach = hid.Reach + 0.45f;
+            around += OnMesh(hid.Foot + Vector3.forward * reach) ? 1 : 0;
+            around += OnMesh(hid.Foot - Vector3.forward * reach) ? 1 : 0;
+            around += OnMesh(hid.Foot + Vector3.right * reach) ? 1 : 0;
+            around += OnMesh(hid.Foot - Vector3.right * reach) ? 1 : 0;
+            if (around < 3)
+            {
+                return false;   // the edge of the walkable ground: no hole in a way anybody walks
+            }
+            hid.Piece.SetActive(true);
+            for (int k = 0; k < hid.Off.Count; k++)
+            {
+                if (hid.Off[k] != null)
+                {
+                    hid.Off[k].enabled = true;
+                }
+            }
+            MeshCuts.Note("street furniture put back at a bus stop (its hole is baked in)", Carves(hid));
+            Stay.Add(hid.Piece);
+            _putBack++;
+            Logger?.Info("Transit: '" + hid.Piece.name + "' at " + hid.Where
+                         + " is put back: the walkable ground under it is baked without it, so with it switched off it would stop the player unseen.");
+            return true;
         }
 
         // How many carving obstacles switching a piece back on changes.
