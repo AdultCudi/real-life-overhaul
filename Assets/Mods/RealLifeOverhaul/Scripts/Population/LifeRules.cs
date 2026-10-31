@@ -118,6 +118,9 @@ namespace RealLifeOverhaul.Population
             int h = pt.Household[p];
             int cls = h >= 0 ? s.Households.Class[h] : 1;
             int id = pt.Id[p];
+            int head = h >= 0 ? s.Households.First[h] : -1;
+            ushort parent = pt.Role[p] == (byte)Role.Child && head >= 0 && head != p ? pt.Games[head] : (ushort)0;
+            pt.Games[p] = GameRules.Birthday(s.Seed, id, day, age, cls, pt.Female[p] == 1, pt.Games[p], parent);   // tastes change slowly with age
             var status = (Status)pt.Status[p];
             if (age == PopulationCatalogue.SchoolFrom && status == Status.Child)
             {

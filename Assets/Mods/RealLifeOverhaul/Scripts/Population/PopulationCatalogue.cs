@@ -353,6 +353,67 @@ namespace RealLifeOverhaul.Population
 
         public const int TasteTilt = 300;                // thousandths a kind is spent more or less by a household that likes it or not
 
+        // ---- games (the game studio's audience): who plays on what, and which genres they like
+
+        /// <summary>
+        /// Thousandths of people of an age who play on each platform (PC, console, phone), by band: 6-12, 13-17, 18-34, 35-54, 55-64, 65 and over. The
+        /// Entertainment Software Association's yearly figures for the United States: some three in five people play, most of them on phones, about half
+        /// of players on consoles and fewer on PCs, the young most on consoles and the old most on phones.
+        /// </summary>
+        public static readonly int[][] GamePlatformShare =
+        {
+            new[] { 250, 480, 380 },
+            new[] { 400, 520, 700 },
+            new[] { 380, 380, 620 },
+            new[] { 260, 250, 480 },
+            new[] { 170, 100, 340 },
+            new[] { 100, 40, 200 },
+        };
+
+        /// <summary>Thousandths a class plays on each platform against the share (working, middle, upper): a console and a PC cost money, a phone is in every pocket.</summary>
+        public static readonly int[][] GameClassLean =
+        {
+            new[] { 850, 850, 1050 },
+            new[] { 1000, 1000, 1000 },
+            new[] { 1150, 1150, 950 },
+        };
+
+        /// <summary>Thousandths women play on each platform against the share, men the rest of the way to two thousand (about as many women as men play, more of them on phones).</summary>
+        public static readonly int[] GameWomen = { 900, 850, 1050 };
+
+        /// <summary>
+        /// Of each platform's players, thousandths who like each genre, by platform then genre: the game studio's own table (Tech/Studio/StudioCatalogue's
+        /// GenreShare, which EconomyCheck holds this equal to), so the city's players have the world's tastes and the studio's first day is the world's.
+        /// </summary>
+        public static readonly int[][] GameGenreShare =
+        {
+            new[] { 300, 200, 300, 280, 250, 120, 120, 150, 150, 350, 200, 100 },
+            new[] { 400, 300, 300, 80, 120, 300, 250, 80, 180, 380, 100, 220 },
+            new[] { 120, 80, 150, 180, 120, 80, 100, 450, 50, 100, 500, 150 }
+        };
+
+        /// <summary>
+        /// Thousandths each age band likes each genre against its platform's share (bands as above; genres Action, Adventure, RPG, Strategy, Simulation,
+        /// Sports, Racing, Puzzle, Horror, Shooter, Casual, Family): children family games and racing, the young shooters and horror, the old puzzles.
+        /// </summary>
+        public static readonly int[][] GameAgeLean =
+        {
+            new[] { 1100, 1100, 800, 700, 1000, 1100, 1200, 1100, 300, 600, 1300, 1600 },
+            new[] { 1150, 1000, 1150, 1000, 900, 1100, 1100, 800, 1200, 1200, 800, 700 },
+            new[] { 1150, 1000, 1150, 1000, 900, 1050, 1000, 800, 1200, 1200, 800, 600 },
+            new[] { 1000, 1000, 1000, 1100, 1000, 1000, 1000, 1100, 800, 900, 1100, 1000 },
+            new[] { 700, 900, 700, 1100, 1100, 900, 800, 1400, 500, 500, 1400, 1000 },
+            new[] { 700, 900, 700, 1100, 1100, 900, 800, 1400, 500, 500, 1400, 1000 },
+        };
+
+        /// <summary>Thousandths women like each genre against the share (genres as above), men the rest of the way to two thousand.</summary>
+        public static readonly int[] GameWomenLean = { 900, 1050, 1000, 900, 1150, 800, 850, 1200, 950, 750, 1200, 1100 };
+
+        public const int GameInherit = 350;              // per mille of a child's genres taken from a parent's likes when first drawn
+        public const int GameHome = 1300;                // thousandths a child plays on a platform a parent plays on (it is in the home)
+        public const int GameDrift = 80;                 // per mille of a person's bits drawn again for their new age at each birthday: tastes change slowly
+        public const int GameLikeMost = 950;             // per mille: no genre is a sure thing
+
         // ---- businesses: what a customer spends, by business type, whole money (the game's prices of its goods, a typical basket)
 
         /// <summary>

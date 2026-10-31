@@ -278,6 +278,9 @@ namespace RealLifeOverhaul.Population
             pt.Since[p] = s.Day;
             Join(s, h, p);
             Schooling(s, p, who * 31 + n, age, cls);
+            int head = s.Households.First[h];
+            ushort parent = role == Role.Child && head >= 0 && head != p ? pt.Games[head] : (ushort)0;
+            pt.Games[p] = GameRules.Draw(seed, pt.Id[p], s.Day, age, (int)cls, female, parent);   // the games they play, a child's leaning on the head's
             return p;
         }
 

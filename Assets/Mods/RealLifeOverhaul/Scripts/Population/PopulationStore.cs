@@ -12,12 +12,13 @@ namespace RealLifeOverhaul.Population
     /// save keeps its records (DistrictSaveZip compresses its pieces on the save's workers while this writes them). The payload is binary columns,
     /// each record's figures one column after another so the zip finds their likeness, every number as a variable-length whole (small ones one
     /// byte): a header, the districts and buildings as they were (a load binds the records to the city as it stands, CityTable.Rebind), the
-    /// households with their two months of ledger, the people, the employers and businesses by their keys, the region, the books, the districts'
-    /// month and the links to other systems' people. Since version 2 (the owner's bigger city: some 20,000 households under the 2 MB budget) ids and
-    /// places are told against the one before, days against today, and the ledger in whole money with each line told against what the others make
-    /// it (<see cref="WriteLedgers"/>); version 1 is still read. A later version adds columns at the end, which this reader does not ask for; a line
-    /// it cannot read is kept as it was (Core/SaveLines) and the city is generated again. Game-free. COST: nothing per frame; at a save the writing
-    /// (the compressing on workers), at a load the reading, both measured by EconomyCheck.
+    /// households, the people with their games, the households' two months of ledger, the employers and businesses by their keys, the region, the
+    /// books, the districts' month, the links to other systems' people and the game studio's start. Since version 2 (the owner's bigger city: some
+    /// 20,000 households under the 2 MB budget, in a year of any length) each number is told against what the rest make it: ids and places against
+    /// the one before, days against today, a rent against its flat's, pay against the going rate, and the ledger in whole money against the
+    /// household's day and shares (<see cref="WriteLedgers"/>). Version 1 is still read, its people's games drawn as it loads. A later version adds
+    /// columns at the end, which this reader does not ask for; a line it cannot read is kept as it was (Core/SaveLines) and the city is generated
+    /// again. Game-free. COST: nothing per frame; at a save the writing (the compressing on workers), at a load the reading, both measured by EconomyCheck.
     /// </summary>
     public static class PopulationStore
     {
@@ -159,7 +160,10 @@ namespace RealLifeOverhaul.Population
             w.Deltas(hh.First, n, 0);
             w.Ints(hh.Savings, n);
             w.Ints(hh.Debt, n);
-            w.Ints(hh.Rent, n);
+            for (int h = 0; h < n; h++)
+            {
+                w.Long((long)hh.Rent[h] - RentOf(s, h));   // most pay their flat's rent today, an owner its upkeep
+            }
             w.Ints(hh.Landlord, n);
             w.Bytes(hh.Cars, n);
             w.UInts(hh.Tastes, n);
@@ -167,7 +171,6 @@ namespace RealLifeOverhaul.Population
             w.Bytes(hh.Flags, n);
             w.Ago(hh.Since, n, s.Day);
             w.Ints(hh.Follows, n);
-            WriteLedgers(w, s);
 
             PersonTable pt = s.People;
             n = pt.Count;
@@ -184,10 +187,15 @@ namespace RealLifeOverhaul.Population
             w.Bytes(pt.Skill, n);
             w.Bytes(pt.Hours, n);
             w.Ints(pt.Job, n);
-            w.Ints(pt.Pay, n);
+            for (int i = 0; i < n; i++)
+            {
+                w.Long((long)pt.Pay[i] - PayOf(s, i));   // pay near the going rate for their field, skill and class
+            }
             w.Near(pt.Partner, n);
             w.Ints(pt.Since, n);
             w.Bytes(pt.Flags, n);
+            w.UShorts(pt.Games, n);
+            WriteLedgers(w, s);
 
             EmployerTable et = s.Employers;
             n = et.Count;
@@ -284,6 +292,7 @@ namespace RealLifeOverhaul.Population
                 w.Text(link.Key);
                 w.Int(link.Person);
             }
+            w.Ints(s.GameStart, GameRules.Cells);
             w.Flush();
         }
 
@@ -335,6 +344,10 @@ namespace RealLifeOverhaul.Population
                     Traffic = r.Int(), Rent = r.Int(), X = r.Int(), Z = r.Int()
                 });
             }
+            if (version >= 2)
+            {
+                CityTable.Lay(s);   // the flats as they were, so each rent is told against its flat's (a load lays them again for the city as it stands)
+            }
 
             bool one = version < 2;   // the first version's columns: every number as it is
             HouseholdTable hh = s.Households;
@@ -350,7 +363,7 @@ namespace RealLifeOverhaul.Population
             r.Deltas(hh.First, n, 0, one);
             r.Ints(hh.Savings, n);
             r.Ints(hh.Debt, n);
-            r.Ints(hh.Rent, n);
+            r.Ints(hh.Rent, n);   // told against the flat's rent in version 2: put right once the landlords and flags are read
             r.Ints(hh.Landlord, n);
             r.Bytes(hh.Cars, n);
             r.UInts(hh.Tastes, n);
@@ -358,6 +371,10 @@ namespace RealLifeOverhaul.Population
             r.Bytes(hh.Flags, n);
             r.Ago(hh.Since, n, s.Day, one);
             r.Ints(hh.Follows, n);
+            for (int h = 0; h < n && !one; h++)
+            {
+                hh.Rent[h] = (int)(hh.Rent[h] + RentOf(s, h));
+            }
             if (one)
             {
                 for (int line = 0; line < Ledger.Lines; line++)
@@ -368,10 +385,6 @@ namespace RealLifeOverhaul.Population
                 {
                     r.Strided(hh.Last, n, Ledger.Lines, line);
                 }
-            }
-            else
-            {
-                ReadLedgers(r, s);
             }
             hh.Refree();
 
@@ -392,9 +405,18 @@ namespace RealLifeOverhaul.Population
             r.Bytes(pt.Hours, n);
             r.Ints(pt.Job, n);
             r.Ints(pt.Pay, n);
+            for (int i = 0; i < n && !one; i++)
+            {
+                pt.Pay[i] = (int)(pt.Pay[i] + PayOf(s, i));
+            }
             r.Near(pt.Partner, n, one);
             r.Ints(pt.Since, n);
             r.Bytes(pt.Flags, n);
+            if (!one)
+            {
+                r.UShorts(pt.Games, n);
+                ReadLedgers(r, s);
+            }
             pt.Refree();
 
             EmployerTable et = s.Employers;
@@ -507,159 +529,266 @@ namespace RealLifeOverhaul.Population
             {
                 s.Links.Add(new PersonLink { Kind = (LinkKind)r.Int(), Key = r.Text(), Person = r.Int(), Slot = -1 });
             }
+            if (one)
+            {
+                GameRules.DrawAll(s);   // a line from before the games: everyone's drawn now, and the studio's start is this day's
+            }
+            else
+            {
+                r.Ints(s.GameStart, GameRules.Cells);
+            }
             s.IndexRecords();
+            GameRules.CountAll(s);
+            GameRules.Start(s);
             return s;
         }
 
         // ---------------------------------------------------------------- the ledgers (version 2)
 
-        // The lines of the last month written as they are (the rest are told against them).
-        private static readonly int[] PlainLines = { Ledger.Wages, Ledger.Benefits, Ledger.Pension, Ledger.Returns, Ledger.IncomeTax, Ledger.Rent, Ledger.DebtChange };
+        // The lines a month's household day foretells (its pay, benefits, pension, returns and income tax, then its rent).
+        private static readonly int[] DayLines = { Ledger.Wages, Ledger.Benefits, Ledger.Pension, Ledger.Returns, Ledger.IncomeTax, Ledger.Rent };
 
         /// <summary>
-        /// The households' two months of ledger in whole money (no screen shows a line's cents): the last month's income, income tax, rent and debt as
-        /// they are; its spending as a total and each kind told against what that total would be at the household's level of income and tastes (the
-        /// catalogue's shares, drawn in whole numbers so every machine guesses the same); its sales and property tax against its shopping and rent, its
-        /// saving against what its other lines leave; and the running month against the last one's pace. Each is a small number for most households.
+        /// The households' two months of ledger in whole money (no screen shows a line's cents), after the people, each line told against what the rest
+        /// make it: its pay, benefits, pension, returns, income tax and rent against the household's day as it stands times the month's days (most
+        /// households' are the same every day); its spending as a total against what that day leaves, and each kind against what that total would be at
+        /// the month's level of income and the household's tastes (the catalogue's shares, drawn in whole numbers so every machine guesses the same); its
+        /// sales and property tax against its shopping and rent, its saving against what its other lines leave. The last month is told for all its days,
+        /// the running one for those lived. Each is a small number for most households; the reading does the same arithmetic and gets every line back.
         /// </summary>
         private static void WriteLedgers(Writer w, PopulationState s)
         {
             HouseholdTable hh = s.Households;
-            int n = hh.Count, lines = Ledger.Lines;
-            var last = new int[n * lines];
-            for (int i = 0; i < last.Length; i++)
-            {
-                last[i] = Money(hh.Last[i]);
-            }
-            var guess = new int[n * Ledger.SpendKinds];
-            var spent = new int[n];
-            var shares = new int[PopulationCatalogue.Categories];
+            int n = hh.Count;
+            DayIncome[] day = Days(s, n);
             int md = GenerateRules.MonthDays(s.YearDays);
-            for (int h = 0; h < n; h++)
-            {
-                spent[h] = Guess(s, last, h, md, shares, guess);
-            }
-            foreach (int line in PlainLines)
-            {
-                for (int h = 0; h < n; h++)
-                {
-                    w.Long(last[h * lines + line]);
-                }
-            }
-            w.Ints(spent, n);
-            for (int k = 0; k < Ledger.SpendKinds; k++)
-            {
-                for (int h = 0; h < n; h++)
-                {
-                    w.Long((long)last[h * lines + Ledger.SpendFirst + k] - guess[h * Ledger.SpendKinds + k]);
-                }
-            }
-            for (int h = 0; h < n; h++)
-            {
-                w.Long((long)last[h * lines + Ledger.SalesTax] - SalesTaxOf(last, h));
-            }
-            for (int h = 0; h < n; h++)
-            {
-                w.Long((long)last[h * lines + Ledger.PropertyTax] - PropertyTaxOf(last, h));
-            }
-            for (int h = 0; h < n; h++)
-            {
-                w.Long((long)last[h * lines + Ledger.Saving] - SavingOf(last, h, spent[h]));
-            }
-            int into = MonthInto(s, md);
-            for (int line = 0; line < lines; line++)
-            {
-                for (int h = 0; h < n; h++)
-                {
-                    w.Long((long)Money(hh.Month[h * lines + line]) - Pace(last[h * lines + line], into, md));
-                }
-            }
+            int[] last = WriteMonth(w, s, hh.Last, md, day, null);
+            WriteMonth(w, s, hh.Month, MonthInto(s, md), day, last);
         }
 
         private static void ReadLedgers(Reader r, PopulationState s)
         {
             HouseholdTable hh = s.Households;
-            int n = hh.Count, lines = Ledger.Lines;
-            var last = new int[n * lines];
-            foreach (int line in PlainLines)
+            int n = hh.Count;
+            DayIncome[] day = Days(s, n);
+            int md = GenerateRules.MonthDays(s.YearDays);
+            int[] last = ReadMonth(r, s, hh.Last, md, day, null);
+            ReadMonth(r, s, hh.Month, MonthInto(s, md), day, last);
+        }
+
+        // Each household's day as it stands (SpendRules.Income without the bank's rate): what its months are told against.
+        private static DayIncome[] Days(PopulationState s, int n)
+        {
+            var day = new DayIncome[n];
+            for (int h = 0; h < n; h++)
+            {
+                if (s.Households.Alive(h))
+                {
+                    SpendRules.Income(s, h, s.Day, 0, out day[h]);
+                }
+            }
+            return day;
+        }
+
+        // A month written (whole money, as the summary says); the kinds of the running month told against the last month's own split (prior). Its lines returned.
+        private static int[] WriteMonth(Writer w, PopulationState s, int[] cents, int days, DayIncome[] day, int[] prior)
+        {
+            int n = s.Households.Count, lines = Ledger.Lines;
+            var m = new int[n * lines];
+            for (int i = 0; i < m.Length; i++)
+            {
+                m[i] = Money(cents[i]);
+            }
+            foreach (int line in DayLines)
             {
                 for (int h = 0; h < n; h++)
                 {
-                    last[h * lines + line] = r.Int();
+                    w.Long((long)m[h * lines + line] - Foretold(s, h, line, days, day[h]));
                 }
             }
-            int[] spent = r.Ints(n);
-            var guess = new int[n * Ledger.SpendKinds];
-            var shares = new int[PopulationCatalogue.Categories];
-            int md = GenerateRules.MonthDays(s.YearDays);
             for (int h = 0; h < n; h++)
             {
-                GuessFrom(s, last, h, md, spent[h], shares, guess);
+                w.Long(m[h * lines + Ledger.DebtChange]);
+            }
+            var spent = new int[n];
+            var guess = new int[n * Ledger.SpendKinds];
+            var shares = new int[PopulationCatalogue.Categories];
+            for (int h = 0; h < n; h++)
+            {
+                long total = 0;
+                for (int k = 0; k < Ledger.SpendKinds; k++)
+                {
+                    total += m[h * lines + Ledger.SpendFirst + k];
+                }
+                spent[h] = (int)Math.Max(int.MinValue / 4, Math.Min(int.MaxValue / 4, total));
+                w.Long(spent[h] - Guess(s, m, h, days, spent[h], shares, guess));
+                Like(prior, h, spent[h], guess);
             }
             for (int k = 0; k < Ledger.SpendKinds; k++)
             {
                 for (int h = 0; h < n; h++)
                 {
-                    last[h * lines + Ledger.SpendFirst + k] = (int)(r.Long() + guess[h * Ledger.SpendKinds + k]);
+                    w.Long((long)m[h * lines + Ledger.SpendFirst + k] - guess[h * Ledger.SpendKinds + k]);
                 }
             }
             for (int h = 0; h < n; h++)
             {
-                last[h * lines + Ledger.SalesTax] = (int)(r.Long() + SalesTaxOf(last, h));
+                w.Long((long)m[h * lines + Ledger.SalesTax] - SalesTaxOf(m, h));
             }
             for (int h = 0; h < n; h++)
             {
-                last[h * lines + Ledger.PropertyTax] = (int)(r.Long() + PropertyTaxOf(last, h));
+                w.Long((long)m[h * lines + Ledger.PropertyTax] - PropertyTaxOf(m, h));
             }
             for (int h = 0; h < n; h++)
             {
-                last[h * lines + Ledger.Saving] = (int)(r.Long() + SavingOf(last, h, spent[h]));
+                w.Long((long)m[h * lines + Ledger.Saving] - SavingOf(m, h, spent[h]));
             }
-            int into = MonthInto(s, md);
-            for (int line = 0; line < lines; line++)
+            return m;
+        }
+
+        private static int[] ReadMonth(Reader r, PopulationState s, int[] cents, int days, DayIncome[] day, int[] prior)
+        {
+            int n = s.Households.Count, lines = Ledger.Lines;
+            var m = new int[n * lines];
+            foreach (int line in DayLines)
             {
                 for (int h = 0; h < n; h++)
                 {
-                    hh.Month[h * lines + line] = Cents(r.Long() + Pace(last[h * lines + line], into, md));
+                    m[h * lines + line] = (int)(r.Long() + Foretold(s, h, line, days, day[h]));
                 }
             }
-            for (int i = 0; i < last.Length; i++)
+            for (int h = 0; h < n; h++)
             {
-                hh.Last[i] = Cents(last[i]);
+                m[h * lines + Ledger.DebtChange] = r.Int();
             }
+            var spent = new int[n];
+            var guess = new int[n * Ledger.SpendKinds];
+            var shares = new int[PopulationCatalogue.Categories];
+            for (int h = 0; h < n; h++)
+            {
+                long told = r.Long();
+                int expected = Guess(s, m, h, days, 0, shares, null);   // the total the day foretells, the kinds' guess made once the total is known
+                spent[h] = (int)(told + expected);
+                Guess(s, m, h, days, spent[h], shares, guess);
+                Like(prior, h, spent[h], guess);
+            }
+            for (int k = 0; k < Ledger.SpendKinds; k++)
+            {
+                for (int h = 0; h < n; h++)
+                {
+                    m[h * lines + Ledger.SpendFirst + k] = (int)(r.Long() + guess[h * Ledger.SpendKinds + k]);
+                }
+            }
+            for (int h = 0; h < n; h++)
+            {
+                m[h * lines + Ledger.SalesTax] = (int)(r.Long() + SalesTaxOf(m, h));
+            }
+            for (int h = 0; h < n; h++)
+            {
+                m[h * lines + Ledger.PropertyTax] = (int)(r.Long() + PropertyTaxOf(m, h));
+            }
+            for (int h = 0; h < n; h++)
+            {
+                m[h * lines + Ledger.Saving] = (int)(r.Long() + SavingOf(m, h, spent[h]));
+            }
+            for (int i = 0; i < m.Length; i++)
+            {
+                cents[i] = Cents(m[i]);
+            }
+            return m;
         }
 
-        // A household's spending total, and its guess of each kind, from its last month's lines in whole money.
-        private static int Guess(PopulationState s, int[] last, int h, int md, int[] shares, int[] guess)
+        // A household's kinds guessed as its prior month split them, for a total spent: a household's own tastes, car and habits carry over; the
+        // shares' guess kept where the prior month spent nothing.
+        private static void Like(int[] prior, int h, int spent, int[] guess)
         {
+            if (prior == null)
+            {
+                return;
+            }
             long total = 0;
             for (int k = 0; k < Ledger.SpendKinds; k++)
             {
-                total += last[h * Ledger.Lines + Ledger.SpendFirst + k];
+                total += prior[h * Ledger.Lines + Ledger.SpendFirst + k];
             }
-            int spent = (int)Math.Max(int.MinValue / 4, Math.Min(int.MaxValue / 4, total));
-            GuessFrom(s, last, h, md, spent, shares, guess);
-            return spent;
+            if (total <= 0)
+            {
+                return;
+            }
+            for (int k = 0; k < Ledger.SpendKinds; k++)
+            {
+                guess[h * Ledger.SpendKinds + k] = (int)((long)spent * prior[h * Ledger.Lines + Ledger.SpendFirst + k] / total);
+            }
         }
 
-        private static void GuessFrom(PopulationState s, int[] last, int h, int md, int spent, int[] shares, int[] guess)
+        // A line of a month as the household's day as it stands foretells it, whole money: the day's figure times the month's days.
+        private static long Foretold(PopulationState s, int h, int line, int days, in DayIncome day)
+        {
+            long cents;
+            switch (line)
+            {
+                case Ledger.Wages: cents = day.Wages; break;
+                case Ledger.Benefits: cents = day.Benefits; break;
+                case Ledger.Pension: cents = day.Pension; break;
+                case Ledger.Returns: cents = day.Returns; break;
+                case Ledger.IncomeTax: cents = day.IncomeTax; break;
+                default: cents = s.Households.Alive(h) ? s.Households.Rent[h] : 0; break;
+            }
+            return Money(cents * days);
+        }
+
+        /// <summary>
+        /// A household's spending in a month: the total its income lines and rent leave at the shares' sum (returned), and with <paramref name="guess"/>,
+        /// each kind's share of the total given (<paramref name="spent"/>), at the month's level of income and the household's tastes.
+        /// </summary>
+        private static int Guess(PopulationState s, int[] m, int h, int days, int spent, int[] shares, int[] guess)
         {
             int row = h * Ledger.Lines;
-            long income = (long)last[row + Ledger.Wages] + last[row + Ledger.Benefits] + last[row + Ledger.Pension] + last[row + Ledger.Returns] - last[row + Ledger.IncomeTax];
-            int level = SpendRules.Level(income * 100 / Math.Max(1, md), s.Median);
+            long income = (long)m[row + Ledger.Wages] + m[row + Ledger.Benefits] + m[row + Ledger.Pension] + m[row + Ledger.Returns] - m[row + Ledger.IncomeTax];
+            int level = SpendRules.Level(income * 100 / Math.Max(1, days), s.Median);
             WholeShares(level, s.Households.Tastes[h], s.Households.Cars[h] > 0, shares);
+            long essentials = shares[(int)Spend.Utilities] + shares[(int)Spend.Groceries] + shares[(int)Spend.Transport];
+            long left = Math.Max(0L, income - m[row + Ledger.Rent]);
+            long floor = Math.Max(0L, income) * essentials / 1000 * 600 / 1000;
+            bool lean = left * essentials / 1000 < floor;   // too little after rent: the essentials alone, as SpendRules.Budget spends then
             long sum = 0;
             for (int k = 0; k < Ledger.SpendKinds; k++)
             {
-                sum += shares[(int)Spend.Utilities + k];
+                int kind = (int)Spend.Utilities + k;
+                bool essential = kind == (int)Spend.Utilities || kind == (int)Spend.Groceries || kind == (int)Spend.Transport;
+                shares[kind] = lean && !essential ? 0 : shares[kind];
+                sum += shares[kind];
             }
-            for (int k = 0; k < Ledger.SpendKinds; k++)
+            for (int k = 0; guess != null && k < Ledger.SpendKinds; k++)
             {
                 guess[h * Ledger.SpendKinds + k] = sum > 0 ? (int)((long)spent * shares[(int)Spend.Utilities + k] / sum) : 0;
             }
+            return (int)Math.Min(int.MaxValue / 4, lean ? floor : left * Math.Min(1000L, sum) / 1000);
         }
 
-        // SpendRules.Shares drawn in a straight line between the catalogue's rows instead of on a log scale: whole numbers alone, the same on every machine.
+        // 1000 x log2(1 + i/32), for whole-number logarithms the same on every machine (Math.Log's last digit may not be).
+        private static readonly int[] Log2Table =
+        {
+            0, 44, 87, 129, 170, 209, 248, 285, 322, 358, 392, 426, 459, 492, 524, 555, 585, 615, 644, 672, 700, 728, 755, 781, 807, 833, 858, 883, 907, 931, 954, 977, 1000
+        };
+
+        private const int Log2Of3 = 1585;   // 1000 x log2(3)
+
+        // 1000 x log2(x / 1000) for x of a thousand or more: the table drawn between its points, a doubling a thousand.
+        private static int Log2(int x)
+        {
+            int whole = 0;
+            while (x >= 2000)
+            {
+                x /= 2;
+                whole += 1000;
+            }
+            int at = Math.Max(0, x - 1000) * 32;
+            int i = Math.Min(31, at / 1000), part = at - i * 1000;
+            return whole + Log2Table[i] + (Log2Table[i + 1] - Log2Table[i]) * part / 1000;
+        }
+
+        // SpendRules.Shares as a guess in whole numbers alone (the log scale between the catalogue's rows by the table above), the same on every machine.
         private static void WholeShares(int level, uint tastes, bool car, int[] into)
         {
             int[] low, high;
@@ -673,13 +802,13 @@ namespace RealLifeOverhaul.Population
             {
                 low = PopulationCatalogue.SpendShares[0];
                 high = PopulationCatalogue.SpendShares[1];
-                t = (level - SpendRules.LevelLow) * 1000 / (SpendRules.LevelMid - SpendRules.LevelLow);
+                t = Log2(level * 1000 / SpendRules.LevelLow);   // the low row's level to the middle's doubles it
             }
             else if (level < SpendRules.LevelHigh)
             {
                 low = PopulationCatalogue.SpendShares[1];
                 high = PopulationCatalogue.SpendShares[2];
-                t = (level - SpendRules.LevelMid) * 1000 / (SpendRules.LevelHigh - SpendRules.LevelMid);
+                t = Log2(level * 1000 / SpendRules.LevelMid) * 1000 / Log2Of3;   // the middle's to the high row's is three times it
             }
             else
             {
@@ -729,16 +858,45 @@ namespace RealLifeOverhaul.Population
             return Math.Max(0, s.Day - 1) % md + 1;
         }
 
-        // A last month's line at the running month's pace.
-        private static long Pace(int last, int into, int md)
+        // What a household's rent is foretold to be: its flat's rent today, an owner's upkeep (and mortgage) of it; nothing for one away.
+        private static long RentOf(PopulationState s, int h)
         {
-            return (long)last * into / md;
+            HouseholdTable hh = s.Households;
+            int b = hh.Building[h];
+            if (!hh.Alive(h) || b < 0 || b >= s.FlatRent.Length)
+            {
+                return 0;
+            }
+            long market = CityTable.FlatRentNow(s, b, hh.Unit[h]);
+            if (hh.Landlord[h] == Landlords.Own)
+            {
+                int share = PopulationCatalogue.OwnerCostShare + ((hh.Flags[h] & HouseholdFlags.Mortgage) != 0 ? PopulationCatalogue.MortgageShare : 0);
+                return market * share / 1000;
+            }
+            return market;
+        }
+
+        // What a person's pay is foretold to be: the going rate for their field, skill and household's class (0 for one with no field).
+        private static long PayOf(PopulationState s, int p)
+        {
+            PersonTable pt = s.People;
+            int h = pt.Household[p];
+            if (pt.Id[p] == 0 || pt.Field[p] == 0 || h < 0 || h >= s.Households.Count)
+            {
+                return 0;
+            }
+            return LabourRules.PayFor(s, pt.Field[p], pt.Skill[p], s.Households.Class[h]);
         }
 
         // Cents in whole money, a half away from nothing; and back.
         private static int Money(int cents)
         {
             return cents >= 0 ? (int)(((long)cents + 50) / 100) : -(int)((-(long)cents + 50) / 100);
+        }
+
+        private static long Money(long cents)
+        {
+            return cents >= 0 ? (cents + 50) / 100 : -((-cents + 50) / 100);
         }
 
         private static int Cents(long money)
@@ -871,6 +1029,14 @@ namespace RealLifeOverhaul.Population
                 }
             }
 
+            public void UShorts(ushort[] a, int n)
+            {
+                for (int i = 0; i < n; i++)
+                {
+                    Long(a[i]);
+                }
+            }
+
             // A day as the days before today.
             public void Ago(int[] a, int n, int today)
             {
@@ -1000,6 +1166,14 @@ namespace RealLifeOverhaul.Population
                 {
                     long v = Long();
                     into[i] = plain ? (int)v : v == 0 ? -1 : v > 0 ? (int)(i + v - 1) : (int)(i + v);
+                }
+            }
+
+            public void UShorts(ushort[] into, int n)
+            {
+                for (int i = 0; i < n; i++)
+                {
+                    into[i] = (ushort)Long();
                 }
             }
 

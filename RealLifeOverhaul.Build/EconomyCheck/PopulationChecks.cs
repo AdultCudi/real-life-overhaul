@@ -24,6 +24,7 @@ internal static partial class Program
         PopulationCosts();
         PopulationSaveChecks();
         PopulationLinkChecks();
+        PopulationGamesChecks();
         PopulationTextChecks();
     }
 
@@ -306,6 +307,7 @@ internal static partial class Program
             Mix(s.People.Job[i]);
             Mix(s.People.Pay[i]);
             Mix(s.People.Education[i]);
+            Mix(s.People.Games[i]);
         }
         return h;
     }

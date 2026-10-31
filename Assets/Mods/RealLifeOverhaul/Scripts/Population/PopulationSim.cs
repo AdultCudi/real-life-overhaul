@@ -44,6 +44,8 @@ namespace RealLifeOverhaul.Population
         private Phase _phase = Phase.Idle;
         private int _cursor, _day, _tightness;
         private int _residentOut;   // thousandths of the city's own labour force out of work today, which slows the region's fill
+        private int[] _games = new int[GameRules.Cells], _gamesByDistrict = new int[0], _gamesByClass = new int[PopulationCatalogue.Classes * GameRules.Cells];   // the day's counts as made
+        private bool _gamesMade;   // the figures' pass of this job counted them
         private bool _generating;
 
         public bool Busy => _phase != Phase.Idle;
@@ -261,6 +263,14 @@ namespace RealLifeOverhaul.Population
                         {
                             s.Figures[d].Clear();
                         }
+                        Array.Clear(_games, 0, _games.Length);
+                        if (_gamesByDistrict.Length != s.Districts.Count * GameRules.Cells)
+                        {
+                            _gamesByDistrict = new int[s.Districts.Count * GameRules.Cells];
+                        }
+                        Array.Clear(_gamesByDistrict, 0, _gamesByDistrict.Length);
+                        Array.Clear(_gamesByClass, 0, _gamesByClass.Length);
+                        _gamesMade = true;
                         Next(Phase.FiguresHouseholds);
                         break;
                     case Phase.FiguresHouseholds:
@@ -281,6 +291,11 @@ namespace RealLifeOverhaul.Population
                         break;
                     case Phase.Done:
                         s.Day = _day;
+                        if (_gamesMade)
+                        {
+                            _gamesMade = false;
+                            PublishGames(s);
+                        }
                         for (int d = 0; d < s.IncomeAnchor.Length && d < s.Figures.Length; d++)
                         {
                             if (s.IncomeAnchor[d] <= 0)
@@ -391,8 +406,16 @@ namespace RealLifeOverhaul.Population
             {
                 f.MeanRent += s.Households.Rent[h];
             }
+            int c = Math.Min((int)s.Households.Class[h], PopulationCatalogue.Classes - 1);
             for (int p = s.Households.First[h]; p >= 0; p = s.People.Next[p])
             {
+                ushort games = s.People.Games[p];
+                if (games != 0)
+                {
+                    GameRules.Add(games, _games, 0);
+                    GameRules.Add(games, _gamesByDistrict, d * GameRules.Cells);
+                    GameRules.Add(games, _gamesByClass, c * GameRules.Cells);
+                }
                 f.People++;
                 switch ((Status)s.People.Status[p])
                 {
@@ -405,6 +428,19 @@ namespace RealLifeOverhaul.Population
                     default: f.Home++; break;
                 }
             }
+        }
+
+        // The day's games counts in use: the city's, each district's and each class's; the population's start taken from the first.
+        private void PublishGames(PopulationState s)
+        {
+            Array.Copy(_games, s.GameCounts, GameRules.Cells);
+            if (s.GameByDistrict.Length != _gamesByDistrict.Length)
+            {
+                s.GameByDistrict = new int[_gamesByDistrict.Length];
+            }
+            Array.Copy(_gamesByDistrict, s.GameByDistrict, _gamesByDistrict.Length);
+            Array.Copy(_gamesByClass, s.GameByClass, _gamesByClass.Length);
+            GameRules.Start(s);
         }
 
         // The rest of the districts' figures: their flats and free flats, jobs, vacancies and commuters, and the means.
