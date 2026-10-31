@@ -15,8 +15,6 @@ namespace RealLifeOverhaul
     /// <summary>The game's side of the life events: reads the conditions events ask for and carries out a picked event.</summary>
     internal static class LifeEventRunner
     {
-        private const string EmptyBusinessType = "ba:businesstype_empty";
-
         private const float EnergyFloor = 15f;              // points: losses stop well clear of fainting and the hospital
         private const float WorstEnergyMultiplier = 1.9f;   // the game's most on energy spent: 1.25 unhappy times 1.5 starving
         private const float HungerFloor = 5f;               // points
@@ -51,7 +49,7 @@ namespace RealLifeOverhaul
             flags |= If(save.Happiness >= 60f, Need.Happy);
             flags |= If(save.Happiness < 35f, Need.Unhappy);
             flags |= hasVehicle ? Need.HasVehicle : Need.NoVehicle;
-            flags |= If(OwnsBusiness(save), Need.HasBusiness);
+            flags |= If(LineNeedsGame.OwnsBusiness(save), Need.HasBusiness);
             if (LifeAccounts.HasHome())
             {
                 flags |= Need.HasHome;
@@ -67,24 +65,6 @@ namespace RealLifeOverhaul
         }
 
         private static Need If(bool holds, Need need) => holds ? need : Need.None;
-
-        // The test the game uses when it counts the player's businesses.
-        private static bool OwnsBusiness(GameInstance save)
-        {
-            if (save.BuildingRegistrations == null)
-            {
-                return false;
-            }
-            foreach (BuildingRegistration registration in save.BuildingRegistrations)
-            {
-                if (registration != null && GoingPublic.Mine(registration) && registration.businessTypeName != EmptyBusinessType
-                    && !string.IsNullOrEmpty(registration.BusinessName))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
 
         public static void Run(LifeEvent lifeEvent)
         {

@@ -282,7 +282,7 @@ namespace RealLifeOverhaul.Roommates
             }
             if ((events & DayEvents.Cooked) != 0)
             {
-                if (RoommateGame.LeaveMeal(RoommateRules.Roll(m.Person.Seed, day, 8)))
+                if (RoommateGame.FitsAt("reallife_text_roommate_cooked", s.HomeStreet, s.HomeNumber) && RoommateGame.LeaveMeal(RoommateRules.Roll(m.Person.Seed, day, 8)))
                 {
                     s.Meals++;
                     s.Topics |= Topic.Cooked;
@@ -291,7 +291,7 @@ namespace RealLifeOverhaul.Roommates
                 }
                 else if (Verbose)
                 {
-                    Logger?.Info("Roommates check (cooked): no portion was left (home life or its routines are off, or the fridge is full of portions): PASS.");
+                    Logger?.Info("Roommates check (cooked): no portion was left (home life or its routines are off, the home has no fridge, or the fridge is full of portions): PASS.");
                 }
             }
             if ((events & DayEvents.Raid) != 0)

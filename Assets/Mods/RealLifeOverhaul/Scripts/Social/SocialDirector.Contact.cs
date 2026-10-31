@@ -262,6 +262,15 @@ namespace RealLifeOverhaul
             {
                 kind = 0;
             }
+            if (kind == 0 && !LineNeeds.AnyFits(SocialCatalogue.TextLiftAsk))
+            {
+                // A lift is asked only of somebody with a car (Core/LineNeeds); a friend asks for something else, anyone else nothing.
+                if (!friend)
+                {
+                    return;
+                }
+                kind = canCarry && Random.value < 0.5f ? 2 : 1;
+            }
             SocialOffer offer = SocialState.Offer;
             offer.Person = person.Index;
             offer.Expires = SocialLife.Now + 6f * 60f;

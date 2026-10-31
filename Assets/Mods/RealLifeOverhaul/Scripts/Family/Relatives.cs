@@ -91,9 +91,12 @@ namespace RealLifeOverhaul.Family
                 DinnerToday(day, which, false);
             }
 
-            // Mom drops by on a Sunday now and then, once there is a household to drop in on.
+            // Mom drops by on a Sunday now and then, once there is a household to drop in on, and a home to drop in on: every
+            // visit's words are of the home, one of its fridge (Core/LineNeeds), so without a home she does not come.
+            string visit;
             if (TimeHelper.GetDayOfWeek(day) == DayOfWeekOrdered.Sunday && day - s.LastMomVisitDay >= 14 && PhoneContacts.Mom != null
-                && (FamilyState.Bond == Bond.Married || FamilyState.AtHome() > 0) && Random.value < 0.5f)
+                && (FamilyState.Bond == Bond.Married || FamilyState.AtHome() > 0) && Random.value < 0.5f
+                && (visit = FamilyText.Pick(Visits, ref _lastVisit)) != null)
             {
                 s.LastMomVisitDay = day;
                 ModState.AddModifier(ModState.Family);
@@ -104,7 +107,7 @@ namespace RealLifeOverhaul.Family
                         s.Children[i].Closeness = Mathf.Min(100f, s.Children[i].Closeness + 1f);
                     }
                 }
-                FamilyText.Message(PhoneContacts.Mom, FamilyText.Pick(Visits, ref _lastVisit), Args.Us);
+                FamilyText.Message(PhoneContacts.Mom, visit, Args.Us);
             }
 
             // The in-laws: a favour asked, a loan paid back, a favour that went unanswered.
@@ -126,9 +129,14 @@ namespace RealLifeOverhaul.Family
             }
             else if (s.InLawAsk == 0 && day - s.InLawAskDay >= 12 && Random.value < 0.25f)
             {
-                s.InLawAskDay = day;
-                s.InLawAsk = Random.Range(1, 4);
-                InLawsSay(InLawAsks[s.InLawAsk]);
+                // A favour the player can do: a lift only of somebody with a car (Core/LineNeeds); the empty first place is never drawn.
+                int ask = LineNeeds.Pick(InLawAsks, -1, FamilyText.Random01);
+                if (ask > 0)
+                {
+                    s.InLawAskDay = day;
+                    s.InLawAsk = ask;
+                    InLawsSay(InLawAsks[ask]);
+                }
             }
         }
 

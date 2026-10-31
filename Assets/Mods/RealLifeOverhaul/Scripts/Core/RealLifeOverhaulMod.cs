@@ -238,6 +238,7 @@ namespace RealLifeOverhaul
                     v => Settings.NoticeLook = v)
                 .AddButton("reallife_test_notice_look", GameUi.NoticeLook.Test)
                 .AddButton("reallife_test_event", () => LifeEvents.Instance?.TriggerEventNow())
+                .AddButton("reallife_test_event_fridge", () => LifeEvents.Instance?.TriggerFridgeBill())
                 .AddButton("reallife_moods_test", MoodsTest.Run)
                 .AddButton("reallife_maptrees_test", MapTreeGuard.RunTest)
                 .AddButton("reallife_test_accident", () => TrafficAccidents.Instance?.StageAccidentNow())
