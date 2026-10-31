@@ -285,6 +285,7 @@
         public const string SeasonRainId = "season_rain";
         public const string SeasonLeavesId = "season_leaves";
         public const string SeasonBarId = "season_bar";
+        public const string SeasonBarSizeId = "season_bar_size";   // ...how large it is drawn
         public const string SeasonCoatsId = "season_coats";
         public const string SeasonBesideAlcwareId = "season_beside_alcware";
         public const string StreetEventsId = "street_events";
@@ -669,6 +670,7 @@
         public static bool SeasonRain = true;            // ...the seasons' own rain: spring showers, autumn rain, summer thunderstorms with lightning
         public static bool SeasonLeaves = true;          // ...leaves falling round the player in autumn
         public static bool SeasonBar = true;             // ...the season and its day under the date on the top bar
+        public static int SeasonBarSize = 0;             // ...its size: 0 Normal (as it always was), 1 Large, 2 Largest (SeasonRules.BarScale)
         public static bool SeasonCoats = false;          // ...people in the street dressed warmer in autumn and winter, from the game's own clothes (off by default)
         public static bool SeasonBesideAlcware = false;  // ...these seasons kept on with Alcware - Seasons switched on too (off: they stand down for it)
         public static bool StreetEvents = true;          // markets, parades, protests, fun runs, film shoots, fireworks
@@ -1070,6 +1072,7 @@
             SeasonRain = Bool(modId, SeasonRainId, SeasonRain);
             SeasonLeaves = Bool(modId, SeasonLeavesId, SeasonLeaves);
             SeasonBar = Bool(modId, SeasonBarId, SeasonBar);
+            SeasonBarSize = System.Math.Max(0, System.Math.Min(2, Int(modId, SeasonBarSizeId, SeasonBarSize)));
             SeasonCoats = Bool(modId, SeasonCoatsId, SeasonCoats);
             SeasonBesideAlcware = Bool(modId, SeasonBesideAlcwareId, SeasonBesideAlcware);
             StreetEvents = Bool(modId, StreetEventsId, StreetEvents);

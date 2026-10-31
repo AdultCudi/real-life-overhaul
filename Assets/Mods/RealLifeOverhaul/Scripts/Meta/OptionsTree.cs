@@ -266,9 +266,10 @@ namespace RealLifeOverhaul.Meta
                 S("events").For("events").Opts("city_fires").Opt("fire_frequency", "city_fires").Opts("weather_matters").Opt("weather_frequency", "weather_matters")
                     .Opts("street_events").Opt("street_event_frequency", "street_events").Opt("street_protest_notes", "street_events")
                     .Also("rain storm market parade protest").Also("street_protest_notes", "demonstration demonstrations notification notifications"),
-                S("seasons").For("seasons").Main("seasons").Opts("snow_look", "season_trees", "season_sky", "season_rain", "season_leaves", "season_bar", "season_coats",
-                    "season_beside_alcware")
-                    .Also("season seasons winter spring summer autumn snow snowfall cold demand coffee tea ice cream gifts flowers sales"),
+                S("seasons").For("seasons").Main("seasons").Opts("snow_look", "season_trees", "season_sky", "season_rain", "season_leaves", "season_bar")
+                    .Opt("season_bar_size", "season_bar").Opts("season_coats", "season_beside_alcware")
+                    .Also("season seasons winter spring summer autumn snow snowfall cold demand coffee tea ice cream gifts flowers sales")
+                    .Also("season_bar_size", "icon picture size bigger larger top bar date calendar"),
                 S("accidents").For("traffic", "ragdoll", "people").Opts("traffic_accidents").Opt("accident_frequency", "traffic_accidents")
                     .Opt("accident_notices", "traffic_accidents").Opt("accident_marker", "traffic_accidents").Opts("siren", "people",
                     "crash_consequences", "ragdolls").Opt("player_knockdown", "ragdolls").Opt("ped_incidents", "ragdolls")

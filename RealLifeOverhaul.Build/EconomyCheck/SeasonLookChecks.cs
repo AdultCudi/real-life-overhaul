@@ -21,6 +21,7 @@ internal static partial class Program
         SeasonLookCost();
         SeasonLookSources();
         SeasonBarIndependence();   // the season under the date and Alcware Seasons (LoadPathChecks.cs)
+        SeasonBarSize();           // its size option (SeasonBarSizeChecks.cs)
     }
 
     private static void SeasonLookDays()

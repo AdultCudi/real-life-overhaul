@@ -132,6 +132,25 @@ namespace RealLifeOverhaul.Seasons
             return seasonsOn && barOn && !otherSeasonUnderDate;
         }
 
+        public const int BarNormal = 0;               // the season under the date's size option (Settings.SeasonBarSize): as it always was
+        public const int BarLarge = 1;                // ...half as large again
+        public const int BarLargest = 2;              // ...twice as large: its picture 56 of the top bar's units, near the date's own line's height
+
+        // Times the piece's first size, picture, words and box alike, so it grows as one. Normal is exactly 1, so its sizes stay the same to the pixel.
+        private static readonly float[] BarScales = { 1f, 1.5f, 2f };
+
+        /// <summary>The size option's value as one of its steps: a value outside them (a hand-edited options file) is taken as the nearest.</summary>
+        public static int BarSizeOf(int setting)
+        {
+            return setting < BarNormal ? BarNormal : setting > BarLargest ? BarLargest : setting;
+        }
+
+        /// <summary>How many times its first size the season under the date is drawn at the size option's <paramref name="setting"/>.</summary>
+        public static float BarScale(int setting)
+        {
+            return BarScales[BarSizeOf(setting)];
+        }
+
         /// <summary>The season of a day: CalendarRules.Winter, Spring, Summer or Autumn.</summary>
         public static int SeasonOf(int day, int year)
         {
