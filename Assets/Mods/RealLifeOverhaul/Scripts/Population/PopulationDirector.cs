@@ -207,7 +207,7 @@ namespace RealLifeOverhaul.Population
                 int away = CityTable.Rebind(read, new List<CityBuilding>(_buildings), new List<PopDistrict>(_districts));
                 LabourRules.Setup(read, _seeds);
                 _sim.State = read;
-                _sim.Measure = MeasureRules.Measure(read.Buildings, read.Districts.Count, null);
+                _sim.Measure = MeasureRules.Measure(read.Buildings, read.Districts, null);
                 CityTable.Middles(read);
                 Begin(read, false);
                 Logger?.Info("Living population: loaded (" + _readWhy + ") on day " + Save.Day + ": " + read.Households.Live + " households, " + read.People.Live + " people in "

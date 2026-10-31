@@ -58,7 +58,7 @@ internal static partial class Program
         int gone = -1, goneHouseholds = 0;
         for (int b = 0; b < fewer.Count; b++)
         {
-            if (fewer[b].Use == Use.Homes && !fewer[b].Villa && MeasureRules.Flats(fewer[b]) > 20)
+            if (fewer[b].Use == Use.Homes && !fewer[b].Villa && MeasureRules.Flats(fewer[b], city.Districts[fewer[b].District]) > 20)
             {
                 gone = b;
                 break;

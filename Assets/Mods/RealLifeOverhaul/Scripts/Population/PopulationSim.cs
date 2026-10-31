@@ -43,6 +43,7 @@ namespace RealLifeOverhaul.Population
         private DemandInputs _inputs;
         private Phase _phase = Phase.Idle;
         private int _cursor, _day, _tightness;
+        private int _residentOut;   // thousandths of the city's own labour force out of work today, which slows the region's fill
         private bool _generating;
 
         public bool Busy => _phase != Phase.Idle;
@@ -54,7 +55,7 @@ namespace RealLifeOverhaul.Population
         {
             State = s;
             GenerateRules.Begin(s, seed, day, yearDays);
-            Measure = MeasureRules.Measure(s.Buildings, s.Districts.Count, null);
+            Measure = MeasureRules.Measure(s.Buildings, s.Districts, null);
             _seeds = seeds;
             _day = day;
             _generating = true;
@@ -75,7 +76,7 @@ namespace RealLifeOverhaul.Population
             {
                 _seeds = seeds;
                 LabourRules.Setup(s, seeds);
-                Measure = MeasureRules.Measure(s.Buildings, s.Districts.Count, null);
+                Measure = MeasureRules.Measure(s.Buildings, s.Districts, null);
             }
             s.Day = day;
             _generating = false;
@@ -200,7 +201,7 @@ namespace RealLifeOverhaul.Population
                         break;
                     case Phase.LabourBegin:
                         LabourRules.Openings(s, _open);
-                        _tightness = Tightness(s);
+                        _tightness = Tightness(s, out _residentOut);
                         Next(Phase.Labour);
                         break;
                     case Phase.Labour:
@@ -214,7 +215,7 @@ namespace RealLifeOverhaul.Population
                         Through(s.People.Count, Phase.Commuters);
                         break;
                     case Phase.Commuters:
-                        LabourRules.Commuters(s, _day);
+                        LabourRules.Commuters(s, _day, _residentOut);
                         Next(Phase.MoneyBegin);
                         break;
 
@@ -568,13 +569,19 @@ namespace RealLifeOverhaul.Population
         }
 
         // Thousandths of open vacancies over jobseekers in the city, a thousand at most: how easily the out of work find work today.
-        private static int Tightness(PopulationState s)
+        // Vacancies over the city's jobseekers, thousandths (at most a thousand), and the share of its labour force out of work.
+        private static int Tightness(PopulationState s, out int residentOut)
         {
-            int vacancies = VacanciesNow(s), seekers = 0;
+            int vacancies = VacanciesNow(s), seekers = 0, workers = 0;
             for (int p = 0; p < s.People.Count; p++)
             {
-                seekers += s.People.Id[p] != 0 && s.People.Status[p] == (byte)Status.Unemployed ? 1 : 0;
+                if (s.People.Id[p] != 0)
+                {
+                    seekers += s.People.Status[p] == (byte)Status.Unemployed ? 1 : 0;
+                    workers += s.People.Status[p] == (byte)Status.Worker ? 1 : 0;
+                }
             }
+            residentOut = (int)(1000L * seekers / Math.Max(1, seekers + workers));
             return seekers <= 0 ? 1000 : (int)Math.Min(1000L, 1000L * vacancies / seekers);
         }
 
