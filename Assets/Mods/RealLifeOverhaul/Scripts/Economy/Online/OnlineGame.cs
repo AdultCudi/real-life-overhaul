@@ -18,6 +18,9 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The season of a game day: 0 winter, 1 spring, 2 summer, 3 autumn. Default: spring.</summary>
         public static Func<int, int> Season;
 
+        /// <summary>Thousandths of the anchor day's online spending of a business type's kind among the city's households (the living population), by the type; 0 for none. Default: none.</summary>
+        public static Func<string, int> People;
+
         /// <summary>Metres of road between two places, measured a slice a call: -1 while still looking, 0 with no way. Default: 0, the guess stays.</summary>
         public static Func<Vector3, Vector3, int> Road;
 

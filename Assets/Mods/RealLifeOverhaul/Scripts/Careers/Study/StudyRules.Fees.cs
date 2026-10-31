@@ -213,7 +213,13 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The students an academy teaches a day: as many as its staff can take, of those who come (more with the council's grants up).</summary>
         public static int AcademyStudents(int staff, int council)
         {
-            int demand = StudyCatalogue.AcademyDemand * (council > 0 ? 12 : council < 0 ? 8 : 10) / 10;
+            return AcademyStudents(staff, council, 1000);
+        }
+
+        /// <summary>The same with the city's residents who want a course against the anchor day's (the living population: adults out of work, and workers short of skills).</summary>
+        public static int AcademyStudents(int staff, int council, int people)
+        {
+            int demand = (int)((long)StudyCatalogue.AcademyDemand * (council > 0 ? 12 : council < 0 ? 8 : 10) / 10 * Math.Max(0, people) / 1000);
             return Math.Max(0, Math.Min(staff * StudyCatalogue.AcademyPerStaff, demand + staff * 4));
         }
 

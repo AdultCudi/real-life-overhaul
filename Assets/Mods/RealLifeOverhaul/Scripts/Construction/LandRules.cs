@@ -241,8 +241,15 @@ namespace RealLifeOverhaul.Construction
         /// <summary>The chance a day, in thousandths, that a buyer takes a flat at the asking price chosen, by the company's reputation.</summary>
         public static int BuyerChance(int ask, int reputation)
         {
+            return BuyerChance(ask, reputation, 1000);
+        }
+
+        /// <summary>The same with the city's buyers against the anchor day's (the living population: households forming and the savings to buy with).</summary>
+        public static int BuyerChance(int ask, int reputation, int buyers)
+        {
             int a = BuildCatalogue.Clamp(ask, 0, BuildCatalogue.AskChancePermille.Length - 1);
-            return BuildCatalogue.Clamp(BuildCatalogue.AskChancePermille[a] + (reputation - 50) * 3, 50, 900);
+            long chance = (long)(BuildCatalogue.AskChancePermille[a] + (reputation - 50) * 3) * Math.Max(0, buyers) / 1000;
+            return BuildCatalogue.Clamp((int)Math.Min(int.MaxValue, chance), 50, 900);
         }
     }
 

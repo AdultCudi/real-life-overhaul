@@ -1,5 +1,9 @@
 using System;
+using RealLifeOverhaul.Careers;
+using RealLifeOverhaul.Construction;
 using RealLifeOverhaul.Economy;
+using RealLifeOverhaul.Economy.Dealership;
+using RealLifeOverhaul.Hustles;
 using RealLifeOverhaul.Population;
 
 namespace RealLifeOverhaul
@@ -18,12 +22,28 @@ namespace RealLifeOverhaul
             {
                 OwnBankBridges.People = BankPeople;
                 OwnBankBridges.Branch = BranchPeople;
+                EstateBridges.People = EstatePeople;
+                EstateBridges.HousingIn = HousingIn;
+                ConstructionBridges.People = BuildPeople;
+                DealerBridges.Buyers = CarBuyers;
+                OnlineBridges.People = Online;
+                HustleBridges.Sellers = Sellers;
+                HustleBridges.Buyers = Bargains;
+                CareersBridges.Learners = Learners;
             }
 
             internal static void Disconnect()
             {
                 OwnBankBridges.People = null;
                 OwnBankBridges.Branch = null;
+                EstateBridges.People = null;
+                EstateBridges.HousingIn = null;
+                ConstructionBridges.People = null;
+                DealerBridges.Reset();
+                OnlineBridges.People = null;
+                HustleBridges.Sellers = null;
+                HustleBridges.Buyers = null;
+                CareersBridges.Learners = null;
             }
 
             // True while the people's figures stand for the mod's own businesses: the option on and a day measured (a guest's, the host's).
@@ -53,6 +73,95 @@ namespace RealLifeOverhaul
                 {
                     Fault("DemandLinks.BankPeople", e);
                     return -1;
+                }
+            }
+
+            // The property business: hotel guests, car hire's customers, a landlord's applicants and their budgets, the agency's owners; 0 for none.
+            private static int EstatePeople(EstateDemand d)
+            {
+                try
+                {
+                    if (!Live)
+                    {
+                        return 0;
+                    }
+                    PopDemand of = d == EstateDemand.Guests ? PopDemand.HotelGuests : d == EstateDemand.Hirers ? PopDemand.CarHire : d == EstateDemand.Seekers ? PopDemand.Tenants
+                                   : d == EstateDemand.Budget ? PopDemand.TenantBudget : PopDemand.Instructions;
+                    return Math.Max(1, CityDemand.Factor(of));   // never nought, which the climate reads as none
+                }
+                catch (Exception e)
+                {
+                    Fault("DemandLinks.EstatePeople", e);
+                    return 0;
+                }
+            }
+
+            // The construction company: flat buyers, the city's businesses rebuilding and refitting, the council's own buildings; 0 for none.
+            private static int BuildPeople(BuildDemand d)
+            {
+                try
+                {
+                    if (!Live)
+                    {
+                        return 0;
+                    }
+                    PopDemand of = d == BuildDemand.Buyers ? PopDemand.FlatBuyers : d == BuildDemand.Public ? PopDemand.PublicTenders : PopDemand.ClientTenders;
+                    return Math.Max(1, CityDemand.Factor(of));
+                }
+                catch (Exception e)
+                {
+                    Fault("DemandLinks.BuildPeople", e);
+                    return 0;
+                }
+            }
+
+            // A demand's factor for a bridge that reads 0 as none: never nought while live.
+            private static int Of(PopDemand d, string where)
+            {
+                try
+                {
+                    return Live ? Math.Max(1, CityDemand.Factor(d)) : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault(where, e);
+                    return 0;
+                }
+            }
+
+            private static int CarBuyers() => Of(PopDemand.CarBuyers, "DemandLinks.CarBuyers");
+
+            private static int Sellers() => Of(PopDemand.Listings, "DemandLinks.Sellers");
+
+            private static int Bargains() => Of(PopDemand.Bargains, "DemandLinks.Bargains");
+
+            private static int Learners() => Of(PopDemand.Students, "DemandLinks.Learners");
+
+            // The households' online spending of the kind a business type sells; 0 for none.
+            private static int Online(string businessType)
+            {
+                try
+                {
+                    return Live ? Math.Max(1, CityDemand.Online(businessType)) : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("DemandLinks.Online", e);
+                    return 0;
+                }
+            }
+
+            // A district's households taking or looking for a flat against the city's; 0 for none.
+            private static int HousingIn(string district)
+            {
+                try
+                {
+                    return Live ? Math.Max(1, CityDemand.HousingLean(district)) : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("DemandLinks.HousingIn", e);
+                    return 0;
                 }
             }
 

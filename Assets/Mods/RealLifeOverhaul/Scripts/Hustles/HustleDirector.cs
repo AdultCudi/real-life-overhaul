@@ -51,6 +51,13 @@ namespace RealLifeOverhaul.Hustles
 
         private static bool Verbose => Meta.Dev.Verbose;
 
+        // What the city's people bring the Marketplace now, thousandths of the anchor day's: a thousand with no living population.
+        private static int People(Func<int> factor)
+        {
+            int f = factor != null ? factor() : 0;
+            return f > 0 ? f : 1000;
+        }
+
         private void Awake()
         {
             Instance = this;
@@ -327,7 +334,7 @@ namespace RealLifeOverhaul.Hustles
                 int day = _state.LastHour / 24;
                 if (_state.Day != day)
                 {
-                    HustleRules.Morning(_state, day, _homes, _cars, _colours, HustleGame.Level);
+                    HustleRules.Morning(_state, day, _homes, _cars, _colours, HustleGame.Level, People(HustleBridges.Sellers));
                     if (Verbose)
                     {
                         Logger?.Info("Hustles: the listings of day " + day + ": " + _state.Listings.Count + " thing(s), " + _state.Gigs.Count + " visit(s) asked for or booked (seed "
@@ -336,11 +343,11 @@ namespace RealLifeOverhaul.Hustles
                 }
                 Reconcile();
                 Worths();
-                HustleRules.Hour(_state, _state.LastHour, _worths, _events);
+                HustleRules.Hour(_state, _state.LastHour, _worths, _events, People(HustleBridges.Buyers));
             }
             if (_state.Day != stamp / 24)
             {
-                HustleRules.Morning(_state, stamp / 24, _homes, _cars, _colours, HustleGame.Level);
+                HustleRules.Morning(_state, stamp / 24, _homes, _cars, _colours, HustleGame.Level, People(HustleBridges.Sellers));
             }
             Tell(_events);
             Changed();

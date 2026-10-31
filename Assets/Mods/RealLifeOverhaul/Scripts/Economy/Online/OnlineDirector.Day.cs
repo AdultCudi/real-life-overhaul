@@ -259,6 +259,7 @@ namespace RealLifeOverhaul.Economy
             OnlineGame.GuessRoads(place, _centres, _hasCentre);
             place.Site.Mbps = Speed(place.Reg, -1);
             int campaign = OnlineBridges.Campaign != null && place.Reg != null ? OnlineBridges.Campaign(place.Reg) : 0;
+            place.Site.People = OnlineBridges.People != null && place.Reg != null ? Math.Max(0, OnlineBridges.People(place.Reg.businessTypeName)) : 0;   // the households' online share of what the shop sells
             OnlineRules.Plan(place.Shop, place.Site, day, campaign, cycle, season, _state.Shops.Count);
             if (Verbose && say)
             {

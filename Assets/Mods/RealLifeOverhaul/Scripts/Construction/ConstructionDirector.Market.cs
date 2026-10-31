@@ -226,7 +226,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return;
             }
-            _state.NextClientDay = day + TenderRules.NextIn(_state.Seed, day, TenderSource.Client);
+            _state.NextClientDay = day + TenderRules.NextIn(_state.Seed, day, TenderSource.Client, TenderPeople(TenderSource.Client));
             BuildRandom random = BuildRandom.Of(_state.Seed, day, 227);
             if (!ConstructionGame.Client(random.Range(0, 100000), out BuildingView b))
             {
@@ -256,7 +256,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return;
             }
-            _state.NextPublicDay = day + TenderRules.NextIn(_state.Seed, day, TenderSource.Public);
+            _state.NextPublicDay = day + TenderRules.NextIn(_state.Seed, day, TenderSource.Public, TenderPeople(TenderSource.Public));
             IReadOnlyList<LotView> lots = Lots;
             BuildRandom random = BuildRandom.Of(_state.Seed, day, 229);
             int start = random.Range(0, Math.Max(1, lots.Count));

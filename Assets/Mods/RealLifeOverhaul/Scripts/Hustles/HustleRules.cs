@@ -60,6 +60,12 @@ namespace RealLifeOverhaul.Hustles
         /// </summary>
         public static void Morning(HustleState s, int day, IList<HustlePlace> homes, IList<MarketModel> cars, IList<string> colours, int level)
         {
+            Morning(s, day, homes, cars, colours, level, 1000);
+        }
+
+        /// <summary>The same with the city's households that would sell things second hand against the anchor day's (the living population): as many more listings, or fewer.</summary>
+        public static void Morning(HustleState s, int day, IList<HustlePlace> homes, IList<MarketModel> cars, IList<string> colours, int level, int sellers)
+        {
             s.Listings.Clear();
             for (int i = s.Gigs.Count - 1; i >= 0; i--)
             {
@@ -75,11 +81,12 @@ namespace RealLifeOverhaul.Hustles
                 return;
             }
             var dice = new DealerDice(s.Seed, day, SaltListings);
-            for (int n = 0; n < HustleCatalogue.GoodsADay; n++)
+            int goods = Listed(HustleCatalogue.GoodsADay, sellers, ref dice), listedCars = Listed(HustleCatalogue.CarsADay, sellers, ref dice);
+            for (int n = 0; n < goods; n++)
             {
                 s.Listings.Add(Goods(s.Next(), homes, level, ref dice));
             }
-            for (int n = 0; cars != null && cars.Count > 0 && n < HustleCatalogue.CarsADay; n++)
+            for (int n = 0; cars != null && cars.Count > 0 && n < listedCars; n++)
             {
                 s.Listings.Add(CarListing(s.Next(), homes, cars, colours, level, ref dice));
             }
@@ -89,6 +96,14 @@ namespace RealLifeOverhaul.Hustles
             {
                 s.Gigs.Add(Request(s.Next(), day, homes, level, s.Rating, ref gigs));
             }
+        }
+
+        // A day's listings of a kind at the sellers' factor: the whole part, and one more by the chance of what is left; no draw at a thousand, so a day reads as before.
+        private static int Listed(int usual, int sellers, ref DealerDice dice)
+        {
+            long t = (long)usual * Math.Max(0, Math.Min(HustleCatalogue.ListingsPeopleMost, sellers));
+            int whole = (int)(t / 1000), left = (int)(t % 1000);
+            return whole + (left > 0 && dice.Chance(left) ? 1 : 0);
         }
 
         private static Listing Goods(int id, IList<HustlePlace> homes, int level, ref DealerDice dice)
@@ -405,13 +420,19 @@ namespace RealLifeOverhaul.Hustles
         /// <summary>The chance a listed thing draws a buyer this hour (thousandths): by its price against its worth and its condition.</summary>
         public static int OfferChance(int asking, int worth, int condition, bool car, int hour)
         {
+            return OfferChance(asking, worth, condition, car, hour, 1000);
+        }
+
+        /// <summary>The same with the city's buyers of goods against the anchor day's (the living population).</summary>
+        public static int OfferChance(int asking, int worth, int condition, bool car, int hour, int buyers)
+        {
             if (hour < HustleCatalogue.BuyersFrom || hour >= HustleCatalogue.BuyersUntil || worth <= 0)
             {
                 return 0;
             }
             int price = Line(HustleCatalogue.PriceAt, HustleCatalogue.PriceDraw, (int)Math.Min(5000L, asking * 1000L / worth));
             int shape = Line(HustleCatalogue.ConditionAt, HustleCatalogue.ConditionDraw, HustleCatalogue.Clamp(condition, 0, 100));
-            long c = (long)(car ? HustleCatalogue.OfferChanceCar : HustleCatalogue.OfferChanceGoods) * price / 1000 * shape / 1000;
+            long c = (long)(car ? HustleCatalogue.OfferChanceCar : HustleCatalogue.OfferChanceGoods) * price / 1000 * shape / 1000 * Math.Max(0, buyers) / 1000;
             return (int)Math.Min(800, c);
         }
 
@@ -505,6 +526,12 @@ namespace RealLifeOverhaul.Hustles
         /// </summary>
         public static void Hour(HustleState s, int stamp, IList<int> worths, List<HustleEvent> events)
         {
+            Hour(s, stamp, worths, events, 1000);
+        }
+
+        /// <summary>The same with the city's buyers of goods against the anchor day's (the living population).</summary>
+        public static void Hour(HustleState s, int stamp, IList<int> worths, List<HustleEvent> events, int buyers)
+        {
             int day = stamp / 24, hour = stamp % 24;
             for (int i = 0; i < s.Items.Count; i++)
             {
@@ -536,7 +563,7 @@ namespace RealLifeOverhaul.Hustles
                     continue;
                 }
                 var dice = new DealerDice(s.Seed, stamp, o.Id, SaltBuyers);
-                if (!dice.Chance(OfferChance(o.Asking, worths[i], o.Condition, o.Car, hour)))
+                if (!dice.Chance(OfferChance(o.Asking, worths[i], o.Condition, o.Car, hour, buyers)))
                 {
                     continue;
                 }

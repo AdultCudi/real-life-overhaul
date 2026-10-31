@@ -46,6 +46,9 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The city's economy: 0 boom, 1 steady, 2 slowdown, 3 recession. Default: steady.</summary>
         public static Func<int> Cycle;
 
+        /// <summary>Thousandths of the anchor day's residents who want a course (the living population); 0 for none, as before. Default: none.</summary>
+        public static Func<int> Learners;
+
         /// <summary>The family's children (Family): into the list given. Default: none.</summary>
         public static Action<List<ChildView>> Children;
 
@@ -199,6 +202,7 @@ namespace RealLifeOverhaul.Careers
 
         public static void Reset()
         {
+            Learners = null;
             SchoolsTab = null;
             Boards = null;
             ShowBoard = null;
