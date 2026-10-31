@@ -172,6 +172,42 @@ namespace RealLifeOverhaul.Population
             return 0;
         }
 
+        /// <summary>
+        /// The residents who like a genre (0 to 11, the studio's Genre) on a platform they play on (0 PC, 1 console, 2 phone) at the last day's figures,
+        /// and at the population's start, whose ratio to the world's people then is the game studio's world factor (Wiring/PopulationLinks); false while
+        /// the population does not run. A guest's are the host's. COST: two array reads.
+        /// </summary>
+        public static bool Players(int genre, int platform, out long now, out long start)
+        {
+            now = start = 0;
+            PopulationState s = Live;
+            if (s == null || genre < 0 || genre >= GameRules.Genres || platform < 0 || platform >= GameRules.Platforms)
+            {
+                return false;
+            }
+            int cell = genre * GameRules.Platforms + platform;
+            now = s.GameCounts[cell];
+            start = s.GameStart[cell];
+            return true;
+        }
+
+        /// <summary>The residents of a district (its id) who like a genre on a platform they play on, at the last day's figures; -1 for none known.</summary>
+        public static int PlayersIn(string district, int genre, int platform)
+        {
+            PopulationState s = Live;
+            int d = s != null ? s.DistrictOf(district) : -1;
+            int at = d * GameRules.Cells + genre * GameRules.Platforms + platform;
+            return d >= 0 && genre >= 0 && genre < GameRules.Genres && platform >= 0 && platform < GameRules.Platforms && at < s.GameByDistrict.Length ? s.GameByDistrict[at] : -1;
+        }
+
+        /// <summary>The residents of a class (0 working, 1 middle, 2 upper) who like a genre on a platform they play on, at the last day's figures; -1 for none known.</summary>
+        public static int PlayersOfClass(int cls, int genre, int platform)
+        {
+            PopulationState s = Live;
+            bool known = s != null && cls >= 0 && cls < PopulationCatalogue.Classes && genre >= 0 && genre < GameRules.Genres && platform >= 0 && platform < GameRules.Platforms;
+            return known ? s.GameByClass[cls * GameRules.Cells + genre * GameRules.Platforms + platform] : -1;
+        }
+
         /// <summary>A day of the population has been lived (its figures and every business's takings are in place): raised on the main thread, once a game day.</summary>
         public static event Action DayLived;
 

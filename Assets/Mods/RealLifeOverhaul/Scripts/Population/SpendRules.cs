@@ -26,7 +26,7 @@ namespace RealLifeOverhaul.Population
         public const int DebtPayBuffer = 30;     // days of its pay it keeps in savings before paying debt off
 
         // A spending kind's three anchor levels: half the middle, the middle, three times it (thousandths of the city's middle).
-        private const int LevelLow = 500, LevelMid = 1000, LevelHigh = 3000;
+        public const int LevelLow = 500, LevelMid = 1000, LevelHigh = 3000;   // thousandths of the city's middle income: the catalogue's three rows of shares
 
         /// <summary>The household's pay, benefits and pensions a day, cents (no returns): what its savings are measured in.</summary>
         public static long GrossDaily(PopulationState s, int h)

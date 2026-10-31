@@ -17,7 +17,8 @@ namespace RealLifeOverhaul
         /// (Core/CustomerScale); the business features' levers (issues, the company's campaigns, brands, faults, Flare, the interior), which wrote a clamped
         /// promotion before, are what people hear of a business instead (two sources of PopulationAttention: those levers, and the game's own promotion since
         /// the business's anchor); and the mod's own people (the partner, roommates, household staff, people met, the tech sector's professionals and
-        /// jobseekers) are residents too. Nothing per frame: each is asked once a game day or when a figure is written.
+        /// jobseekers) are residents too; the game studio's audience is the residents' games (StudioBridges.Population). Nothing per frame: each is asked
+        /// once a game day or when a figure is written.
         /// </summary>
         public static class PopulationLinks
         {
@@ -37,6 +38,7 @@ namespace RealLifeOverhaul
                 PopulationAttention.Register(PromotionSource, PromotionOf);
                 PopulationBridges.People = People;
                 PopulationBridges.UseOf = UseOf;
+                StudioBridges.Population = Audience;
             }
 
             internal static void Disconnect()
@@ -49,7 +51,29 @@ namespace RealLifeOverhaul
                 PopulationAttention.Unregister(LeversSource);
                 PopulationAttention.Unregister(PromotionSource);
                 PopulationBridges.Reset();
+                StudioBridges.Population = null;
                 LeverAttention.Clear();
+            }
+
+            // The game studio's audience of a genre on a platform: the residents who like it there times the world's people over the residents at the
+            // population's start (GameRules.Audience), so the studio's first day is the documented world's; -1 (the documented world) with no population.
+            private static long Audience(int genre, int platform, int day, out long residents)
+            {
+                residents = 0;
+                try
+                {
+                    if (!Settings.LivingPopulation || !CityPopulation.Players(genre, platform, out long now, out long start))
+                    {
+                        return -1;
+                    }
+                    residents = now;
+                    return GameRules.Audience(now, start, StudioBridges.World(genre, platform, day));
+                }
+                catch (Exception e)
+                {
+                    Fault("PopulationLinks.Audience", e);
+                    return -1;
+                }
             }
 
             // A district's income on the city economy's scale from the households (the host's, for a guest, comes with the city economy's own part).
