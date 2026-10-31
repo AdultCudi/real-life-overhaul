@@ -16,7 +16,8 @@ namespace RealLifeOverhaul.Construction
     /// the big rectangle that has buildings in it"): a block's free spaces are sold in runs side by side, a run bought is
     /// one site, and its building is one that fills it. A site is kept as its first space's land (LotFile.Spaces counts
     /// the rest along its strip), so a save's land, projects and tenders keep naming one lot each.
-    /// COST: nothing per frame; a pass over the district's lots when the Land tab is drawn or land is bought.
+    /// COST: nothing per frame; a pass over the district's lots when the Land tab is drawn or land is bought, each lot found by
+    /// its id or its place on a strip in one lookup (LotFinder).
     /// </summary>
     public sealed partial class ConstructionDirector
     {
@@ -119,20 +120,13 @@ namespace RealLifeOverhaul.Construction
             return true;
         }
 
-        // A lot of the district by id as the plan has it, never joined.
+        // A lot of the district by id as the plan has it, never joined: the first of that id, as a walk from the first lot finds it.
         private bool Space(string id, out LotView lot)
         {
-            IReadOnlyList<LotView> lots = Lots;
-            for (int i = 0; id != null && i < lots.Count; i++)
-            {
-                if (lots[i].Id == id)
-                {
-                    lot = lots[i];
-                    return true;
-                }
-            }
-            lot = default(LotView);
-            return false;
+            IReadOnlyList<LotView> lots = Lots;   // read first: a new reading is what the finder is built from
+            int at = LotsFound().First(id);
+            lot = at >= 0 ? lots[at] : default(LotView);
+            return at >= 0;
         }
 
         /// <summary>True when a space is for sale: free ground of the grid, nobody's land, no building, no developers.</summary>
@@ -175,31 +169,17 @@ namespace RealLifeOverhaul.Construction
         private bool Before(LotView l, out LotView before)
         {
             IReadOnlyList<LotView> lots = Lots;
-            for (int i = 0; i < lots.Count; i++)
-            {
-                if (lots[i].Strip == l.Strip && lots[i].Index + Math.Max(1, lots[i].Spaces) == l.Index)
-                {
-                    before = lots[i];
-                    return true;
-                }
-            }
-            before = default(LotView);
-            return false;
+            int at = LotsFound().Ending(l.Strip, l.Index);
+            before = at >= 0 ? lots[at] : default(LotView);
+            return at >= 0;
         }
 
         private bool After(LotView l, out LotView after)
         {
             IReadOnlyList<LotView> lots = Lots;
-            for (int i = 0; OnSpaces(l) && i < lots.Count; i++)
-            {
-                if (lots[i].Strip == l.Strip && lots[i].Index == l.Index + Math.Max(1, l.Spaces))
-                {
-                    after = lots[i];
-                    return true;
-                }
-            }
-            after = default(LotView);
-            return false;
+            int at = OnSpaces(l) ? LotsFound().Starting(l.Strip, l.Index + Math.Max(1, l.Spaces)) : -1;
+            after = at >= 0 ? lots[at] : default(LotView);
+            return at >= 0;
         }
 
         /// <summary>Why <paramref name="spaces"/> free spaces in a row from a first cannot be bought now (a text key), or null.</summary>

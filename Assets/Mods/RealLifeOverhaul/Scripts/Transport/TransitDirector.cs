@@ -543,11 +543,12 @@ namespace RealLifeOverhaul
                     built++;
                 }
             }
-            // The buses' bodies: the three the director keeps, and one spare for a bus driving off, so that no bus is built in play until a fifth is wanted.
+            // The buses' bodies: the three the director keeps, and a spare for each bus that may be driving off at once (AwayMost), so that no
+            // bus is built in play (one built in a tick was the 9.3 ms worst tick of a player's log, 28 Oct 2026, with one spare kept).
             _bus.Prepare();
             _next.Prepare();
             _seenOff.Prepare();
-            if (_spare.Count == 0 && _made == 0)
+            while (_spare.Count < AwayMost && _made == 0)
             {
                 var spare = new TransitBus(_root.gameObject);
                 spare.Prepare();

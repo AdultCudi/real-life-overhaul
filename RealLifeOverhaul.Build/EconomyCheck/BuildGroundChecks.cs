@@ -17,6 +17,7 @@ internal static partial class Program
         BuildGroundFailChecks();
         BuildGroundSourceChecks();
         BuildGroundTextChecks();
+        BareSpreadChecks();   // the check spread over frames, its lots found in one lookup (BareSpreadChecks.cs)
     }
 
     // The plan as the game reads it at a new game's load (LifeGame.Lots): its lots, then the big places' ground.
@@ -272,7 +273,7 @@ internal static partial class Program
               && ModSource(@"Uptown\DistrictBuildings.cs").Contains("UptownLots.Get(lotId) ?? UptownLots.PlaceOf(lotId)"),
             "bare ground: each place's ground is found by its id (PlaceOf) where Get finds none, its district Cedar Heights', and no lot of the plan is taken for a place");
         string director = ModSource(@"Construction\ConstructionDirector.BareGround.cs"), cd = ModSource(@"Construction\ConstructionDirector.cs"), bm = ModSource(@"Construction\ConstructionDirector.BuildMode.cs");
-        Check(ModSource(@"Construction\BuildGroundRules.cs").Contains("Build mode check (bare ground): ") && director.Contains("BuildGroundRules.Audit(grid, _blocks, FactsOf, BareStep)")
+        Check(ModSource(@"Construction\BuildGroundRules.cs").Contains("Build mode check (bare ground): ") && director.Contains("_bare.Begin(grid, _blocks, _bareFacts, BareStep)")
               && director.Contains("!Verbose") && cd.Contains("BareGroundSecond();") && cd.Contains("_bareChecked = false;"),
             "bare ground: the load writes 'Build mode check (bare ground)' once, a second after the district stands, with Developer diagnostics on");
         Check(bm.Contains("ReadHeld(_cells);") && bm.Contains("f.Held = true;") && bm.Contains("LandmarkHeld(lot.Id)") && bm.Contains("public bool HeldCard(int index") && bm.Contains("f.Stands = LotBuilt(lot.Id)"),

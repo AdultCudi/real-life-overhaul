@@ -92,6 +92,10 @@ namespace RealLifeOverhaul.Construction
 
         private void OnUpdate()
         {
+            if (_bare.Running)
+            {
+                BareGroundFrame();   // the load's bare ground check, a slice a frame (ConstructionDirector.BareGround.cs)
+            }
             float now = Time.unscaledTime;
             if (now < _next)
             {
@@ -185,6 +189,7 @@ namespace RealLifeOverhaul.Construction
             _lastHour = -1;
             _lotsStamp = int.MinValue;
             _bareChecked = false;   // a new load: its bare ground check
+            _bare.Stop();           // ... and the last load's, if it still ran, forgotten
             _trackDirty = true;
             Logger?.Info("Construction: " + (version > 0 ? "read (line version " + version + ")" : "a new save for the construction game") + ": " + state.Projects.Count + " project(s), "
                          + state.Crews.Count + " crew(s), " + state.Lots.Count + " lot(s) owned, " + state.Developments.Count + " development(s) known; the company "
@@ -335,6 +340,7 @@ namespace RealLifeOverhaul.Construction
             DesksDown();
             TrackDown();
             ParkWorldsDown();
+            _bare.Stop();   // the bare ground check, if it still ran
             DropShowPlace("the construction game stood down");
             if (was)
             {

@@ -200,7 +200,7 @@ namespace RealLifeOverhaul.Construction
             return r;
         }
 
-        private static bool SquareUnder(CellGrid grid, List<int> columns, float x, float z)
+        internal static bool SquareUnder(CellGrid grid, List<int> columns, float x, float z)
         {
             for (int i = 0; i < columns.Count; i++)
             {
@@ -213,7 +213,7 @@ namespace RealLifeOverhaul.Construction
         }
 
         // The nearest square of the block's columns, in m (the larger of the two ways the spot is outside the column's rectangle).
-        private static float Gap(CellGrid grid, List<int> columns, float x, float z)
+        internal static float Gap(CellGrid grid, List<int> columns, float x, float z)
         {
             float best = float.MaxValue;
             for (int i = 0; i < columns.Count; i++)
@@ -227,6 +227,157 @@ namespace RealLifeOverhaul.Construction
                 best = Math.Min(best, Math.Max(dAlong, dBack));
             }
             return best;
+        }
+    }
+
+    /// <summary>
+    /// <see cref="BuildGroundRules.Audit"/> a step at a time, for the load's check in play: one column's facts or one row of a
+    /// block's spots a step, in the very order the whole check takes them, so the report is the same to the last bit. Done
+    /// whole in one frame the check was 143 and 181 ms (the own-spike scan, 28 Oct 2026): each column's facts ask the game
+    /// about its building. COST: nothing while idle; a step is one column's facts or some hundred spots.
+    /// </summary>
+    public sealed class BareAudit
+    {
+        private CellGrid _grid;
+        private IReadOnlyList<BlockView> _blocks;
+        private Func<int, BuildModeRules.ColumnFacts> _facts;
+        private float _step;
+        private double _each;
+        private BareReport _r;
+        private int _column;              // the next column whose facts are asked
+        private int _block;               // the block being walked; -1 before the first
+        private float _z;                 // the next row of spots of that block
+        private double _bare;             // its bare ground so far
+        private readonly List<int> _mine = new List<int>(64);
+
+        /// <summary>True from <see cref="Begin"/> until the last step.</summary>
+        public bool Running { get; private set; }
+
+        /// <summary>The grid the check walks: a grid made again under it is a new check.</summary>
+        public CellGrid Grid => _grid;
+
+        /// <summary>The report, once the last step is done; null while it runs.</summary>
+        public BareReport Report => Running ? null : _r;
+
+        /// <summary>A new check over <paramref name="grid"/>, its columns classed by <paramref name="facts"/>, the blocks walked at <paramref name="step"/> m.</summary>
+        public void Begin(CellGrid grid, IReadOnlyList<BlockView> blocks, Func<int, BuildModeRules.ColumnFacts> facts, float step)
+        {
+            _grid = grid;
+            _blocks = blocks;
+            _facts = facts;
+            _step = step;
+            _each = (double)step * step;
+            _r = new BareReport { Columns = grid.Columns.Count, Cells = grid.CellCount, Held = grid.Held.Count, Blocks = blocks.Count };
+            _column = 0;
+            _block = -1;
+            Running = true;
+        }
+
+        /// <summary>Stopped where it is: nothing reported.</summary>
+        public void Stop()
+        {
+            Running = false;
+            _r = null;
+            _facts = null;
+        }
+
+        /// <summary>One step; false once the check is done (the report is then ready).</summary>
+        public bool Step()
+        {
+            if (!Running)
+            {
+                return false;
+            }
+            if (_column < _grid.Columns.Count)
+            {
+                ClassOne(_column++);
+                return true;
+            }
+            if (_block < 0)
+            {
+                for (int i = 0; i < _grid.Held.Count; i++)
+                {
+                    HeldView h = _grid.Held[i];
+                    _r.HeldKinds[(int)h.Kind]++;
+                    _r.HeldM2 += (h.X2 - h.X1) * (double)(h.Z2 - h.Z1);
+                    _r.PlacesDown += h.Kind == HeldWhat.Place && !h.Stands ? 1 : 0;
+                }
+                return Open(0);
+            }
+            BlockView block = _blocks[_block];
+            if (_z < block.Z2)
+            {
+                Row(block, _z);
+                _z += _step;
+                return true;
+            }
+            _r.BareM2 += _bare;
+            if (_bare > _r.WorstM2)
+            {
+                _r.WorstM2 = _bare;
+                _r.WorstBlock = block.Block.ToString(CultureInfo.InvariantCulture);
+            }
+            return Open(_block + 1);
+        }
+
+        private void ClassOne(int c)
+        {
+            ColumnClass k = BuildGroundRules.ClassOf(_facts(c));
+            _r.Classes[(int)k]++;
+            if (k == ColumnClass.Unclassified && _r.FirstColumn == null)
+            {
+                _r.FirstColumn = "column " + c.ToString(CultureInfo.InvariantCulture) + " of block " + _grid.Columns[c].Block.ToString(CultureInfo.InvariantCulture)
+                                 + ", lot " + _grid.Columns[c].LotId;
+            }
+        }
+
+        // The next block begun: its columns found, its first row; the end when there is none.
+        private bool Open(int b)
+        {
+            _block = b;
+            if (b >= _blocks.Count)
+            {
+                Running = false;
+                _facts = null;
+                return false;
+            }
+            BlockView block = _blocks[b];
+            _mine.Clear();
+            for (int c = 0; c < _grid.Columns.Count; c++)
+            {
+                if (_grid.Columns[c].Block == block.Block)
+                {
+                    _mine.Add(c);
+                }
+            }
+            _bare = 0;
+            _z = block.Z1 + _step * 0.5f;
+            return true;
+        }
+
+        private void Row(BlockView block, float z)
+        {
+            for (float x = block.X1 + _step * 0.5f; x < block.X2; x += _step)
+            {
+                if (BuildGroundRules.SquareUnder(_grid, _mine, x, z))
+                {
+                    _r.CellM2 += _each;
+                }
+                else if (_grid.HeldAt(x, z) >= 0)
+                {
+                    // counted once in HeldM2; here the ground of this block walked
+                }
+                else if (BuildGroundRules.Gap(_grid, _mine, x, z) <= BuildGroundRules.MarginMost)
+                {
+                    _r.MarginM2 += _each;
+                }
+                else
+                {
+                    _bare += _each;
+                    _r.FirstBare = _r.FirstBare ?? "block " + block.Block.ToString(CultureInfo.InvariantCulture) + " at " + x.ToString("0", CultureInfo.InvariantCulture)
+                                   + ", " + z.ToString("0", CultureInfo.InvariantCulture);
+                }
+            }
         }
     }
 }
