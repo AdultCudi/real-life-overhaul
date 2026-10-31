@@ -450,6 +450,15 @@ namespace RealLifeOverhaul.Household
                         return;
                     }
                 }
+                else if (!HouseholdGame.CanKeep(home))
+                {
+                    // Nowhere to put a dinner by: a cook takes the evening off, unpaid; a butler cleans and buys no shopping.
+                    if (role.Kind == StaffKind.Cook)
+                    {
+                        Note(day, HouseholdText.T("reallife_household_note_no_fridge", StaffFill.For(m.Name)));
+                        return;
+                    }
+                }
                 else
                 {
                     int d = HouseholdRules.DishOn(_state.Seed, day, m.Kind);
@@ -518,7 +527,7 @@ namespace RealLifeOverhaul.Household
                     Note(day, HouseholdText.T("reallife_household_note_cleaned", f));
                     break;
                 case StaffKind.Cook:
-                    Note(day, HouseholdText.T("reallife_household_note_cooked", f));
+                    Note(day, HouseholdText.T(HouseholdText.CookedKey, f));
                     break;
                 default:
                     Note(day, HouseholdText.T(put > 0 ? "reallife_household_note_butler" : "reallife_household_note_butler_clean", f));

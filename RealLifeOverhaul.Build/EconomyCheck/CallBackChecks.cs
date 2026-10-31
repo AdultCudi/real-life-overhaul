@@ -329,6 +329,10 @@ internal static partial class Program
                     {
                         keys.UnionWith(arrays["Expecting"]);   // (line = FamilyText.Pick(Expecting, ...): the partner's texts while expecting)
                     }
+                    else if (file == "Relatives.cs" && shown == "visit" && arrays.ContainsKey("Visits"))
+                    {
+                        keys.UnionWith(arrays["Visits"]);   // (visit = FamilyText.Pick(Visits, ...): Mom's Sunday visit, when one fits the home)
+                    }
                     else if (file == "Chores.cs" && shown == "ChoreRules.AskKey(kind)")
                     {
                         foreach (Match k in literal.Matches(MemberText(ModSource(@"Family\ChoreRules.cs"), "public static string AskKey(")))

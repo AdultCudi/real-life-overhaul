@@ -49,6 +49,9 @@ namespace RealLifeOverhaul.Household
 
         public static bool Inside(string street, int number) => RoommateGame.Inside(street, number);
 
+        /// <summary>True if this home can take what a cook puts by: a fridge among its furniture (Core/LineNeeds, the cooked note's needs).</summary>
+        public static bool CanKeep(BuildingRegistration home) => LineNeedsGame.HomeHas(home, LineNeeds.Of(HouseholdText.CookedKey));
+
         /// <summary>
         /// The home of the player's they stand in, false when they are not in one. On a Hamptons house's plot the game counts
         /// the player inside the house (HamptonsHouse.OnEnterPlot enters it), garden and drive included.

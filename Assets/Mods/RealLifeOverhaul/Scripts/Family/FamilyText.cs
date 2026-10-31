@@ -114,8 +114,13 @@ namespace RealLifeOverhaul.Family
             return data;
         }
 
+        /// <summary>A notice; nothing for no line (a pool none of whose lines fits the player: <see cref="Pick"/>).</summary>
         public static void Toast(NotificationType type, string key, in Args a, float seconds = 9f)
         {
+            if (key == null)
+            {
+                return;
+            }
             Notifications.Show(type, key, Data(a), seconds);
         }
 
@@ -153,6 +158,10 @@ namespace RealLifeOverhaul.Family
         /// </summary>
         public static void Message(Contact contact, string key, in Args a, bool notify = true)
         {
+            if (key == null)
+            {
+                return;   // a pool with no line that fits the player (Pick)
+            }
             if (contact == null)
             {
                 Toast(NotificationType.Info, key, a);
@@ -230,17 +239,23 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        /// <summary>One of several lines for the same moment, never the one said last time.</summary>
+        /// <summary>
+        /// One of several lines for the same moment, never the one said last time, and never one whose words take for granted
+        /// what the player has not got (Core/LineNeeds: a fridge, a flat, a landlord); null when none of them fits.
+        /// </summary>
         public static string Pick(string[] keys, ref int last)
         {
-            int index = Random.Range(0, keys.Length);
-            if (index == last && keys.Length > 1)
+            int index = LineNeeds.Pick(keys, last, Random01);
+            if (index < 0)
             {
-                index = (index + 1 + Random.Range(0, keys.Length - 1)) % keys.Length;
+                return null;
             }
             last = index;
             return keys[index];
         }
+
+        /// <summary>The game's dice, 0 to 1, made once: Core/LineNeeds is handed it at every pick.</summary>
+        internal static readonly System.Func<float> Random01 = () => Random.value;
 
         /// <summary>"today", "tomorrow", "Saturday, in 4 days".</summary>
         public static string When(int day)
