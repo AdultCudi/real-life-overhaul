@@ -50,8 +50,20 @@ namespace RealLifeOverhaul.Ledger
         /// <summary>The host of a Going Public session: a guest's report for the city's paper (Social/News).</summary>
         public static Action<int, float, float, string, int> Report;
 
+        /// <summary>The listed companies at the market's last close, for the milestones; false (the list untouched) while no market runs here.</summary>
+        public static Func<List<LedgerCompany>, bool> Companies;
+
+        /// <summary>The rival tycoons the player took over from a day up to another (not that day), with what each cost.</summary>
+        public static Action<int, int, List<LedgerBeat>> Beaten;
+
+        /// <summary>Test button: a takeover story's facts for a rival of the catalogue, nothing changed; null without the rivals' catalogue.</summary>
+        public static Func<int, LedgerBeat> TestBeat;
+
         public static void Reset()
         {
+            Companies = null;
+            Beaten = null;
+            TestBeat = null;
             PaperDay = null;
             Paper = null;
             Filter = null;

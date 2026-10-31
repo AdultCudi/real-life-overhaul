@@ -651,8 +651,11 @@ namespace RealLifeOverhaul
                     v => Settings.LedgerOnline = v)
                 .AddToggle(Settings.LedgerOnlineNotesId, "reallife_ledger_opt_online_notes", Settings.LedgerOnlineNotes,
                     v => Settings.LedgerOnlineNotes = v)
+                .AddToggle(Settings.LedgerStoriesId, "reallife_ledger_opt_stories", Settings.LedgerStories,
+                    v => Settings.LedgerStories = v)
                 .AddButton("reallife_ledger_test_open", () => Ledger.LedgerDirector.Instance?.TestOpen())
                 .AddButton("reallife_ledger_test_online", () => Ledger.LedgerDirector.Instance?.TestOnline())
+                .AddButton("reallife_ledger_test_stories", () => Ledger.LedgerDirector.Instance?.TestStories())
                 .AddButton("reallife_social_test_paper", () =>
                 {
                     SocialDirector.Instance?.TestPaper();   // the city's paper written again from its log...

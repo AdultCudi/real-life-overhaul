@@ -108,6 +108,15 @@ namespace RealLifeOverhaul.Ledger
             K("_macro_news_rival", LedgerSection.Business, 45, "rival"),
             K("_macro_news", LedgerSection.Economy, 40),
 
+            // business: a rival tycoon taken over (LedgerStories), a lead for the front page above all but a death in the
+            // street; a takeover by a listed company, heavy when it took a player's company
+            K("_ledger_beaten_1", LedgerSection.Business, 96, "beaten_1"),
+            K("_ledger_beaten_2", LedgerSection.Business, 96, "beaten_2"),
+            K("_ledger_beaten_3", LedgerSection.Business, 96, "beaten_3"),
+            K("_ledger_beaten_plain", LedgerSection.Business, 96, "beaten_plain"),
+            K("_ledger_bought_own", LedgerSection.Business, 90, "bought_own"),
+            K("_ledger_bought_city", LedgerSection.Business, 64, "bought_city"),
+
             // business: the player's own shops and their staff
             K("_co_news_strike", LedgerSection.Business, 72, "strike"),
             K("_ob_news_closed", LedgerSection.Business, 90),
@@ -120,6 +129,16 @@ namespace RealLifeOverhaul.Ledger
             K("_news_shop_loss", LedgerSection.Business, 30),
             K("_news_shop_good", LedgerSection.Business, 25),
             K("_news_shop_none", LedgerSection.Business, 10),
+
+            // the markets' milestones (LedgerStories): a player's company leads the markets page, at a billion or as the most
+            // valuable it leads the front page; the city's companies lead the markets page on a quiet day
+            K("_ledger_top_first", LedgerSection.Markets, 95, "top_first"),
+            K("_ledger_mile_big", LedgerSection.Markets, 94, "mile_big"),
+            K("_ledger_top_again", LedgerSection.Markets, 88, "top_again"),
+            K("_ledger_mile_own", LedgerSection.Markets, 85, "mile_own"),
+            K("_ledger_top_lost", LedgerSection.Markets, 84, "top_lost"),
+            K("_ledger_top_city", LedgerSection.Markets, 72, "top_city"),
+            K("_ledger_mile_city", LedgerSection.Markets, 62, "mile_city"),
 
             // the markets (MarketText), a player's own company's first
             K("_mkt_news_own_meeting_revolt", LedgerSection.Markets, 80, "own_revolt"),

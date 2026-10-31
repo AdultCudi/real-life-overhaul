@@ -223,6 +223,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--ledgerstories")
+        {
+            LedgerStoriesChecks();   // (the City Ledger's milestone and rival stories alone, while working on them: LedgerStoriesChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--plotjoin")
         {
             PlotJoinChecks();   // (leftover plots alone, while working on them: PlotJoinChecks.cs)
@@ -495,6 +501,7 @@ internal static partial class Program
         Invest();       // a large investor's tools: holdings by kind, worked orders, dividends put back, rollovers and ladders (InvestChecks.cs)
         Listing();
         Ledger();
+        LedgerStoriesChecks();   // the City Ledger's milestone and rival stories: kinds, the ladder, the record, the most valuable, a rival taken over, the save, the real market, sources, texts (LedgerStoriesChecks.cs)
         Newsstand();
         Flare();
         FlareLive();   // Flare as a living network: the feed, the City Office, the reactions, the filter, pictures, Going Public, the save, the texts (FlareLiveChecks.cs)

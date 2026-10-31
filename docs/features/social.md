@@ -316,6 +316,17 @@ Each morning after six the paper is written once (`News.Compose`): the worst two
 It arrives as messages from the `reallife-ledger` contact (one notification) and is read out when that contact is called.
 The log, the paper and the fillers seen are in modData.
 
+### Milestones and rivals beaten (`LedgerStories`)
+
+Read when an edition is first printed (`LedgerDirector.Stories`), kept when it is written again, behind the option `ledger_stories`:
+- A rival tycoon the player took over (`Tycoon.DefeatedDay` in the edition's window, the cost from the rivals' counter note, the break-up money until it is paid): a front page business story in one of three versions, drawn from the rivals' seed, the day and the rival, or a plain one without the cost. It replaces the rivals' own one line of the same takeover.
+- A listed company's market value at the last close against the ladder (100 and 250 million, 500 million, each billion to ten, then 25, 50 and 100 billion): a player's company has one story for the highest figure it passed (front page weight from a billion), a city company one for its first billion. The city's companies start between about 140 million and 58 billion, so every figure can be reached.
+- The city's most valuable company: it changes hands only when the leader is 2% ahead of the holder (or the holder left the market); a player's company has its own stories for the first time, again, and losing it.
+- A takeover completed by a listed bidder (the bidder stays on the company that left): a business story naming the buyer, in place of the markets' line.
+- The record is `LedgerState.Marks` (the highest figure per company, whether it was ever first) and `TopId`, one `M|` line of `reallife:ledger`. A save without it sets every company where it stands on its first morning, with no story; an older version leaves the line alone.
+- Going Public: the host prints them from the shared market and they go to guests in the edition as any piece; nothing new is on the market's tape. A guest following the host's paper keeps its record in step quietly, and sends its own rival's story (a piece about its player) with its other pieces.
+- Self-check (Developer diagnostics): `City Ledger check (milestones and rivals)` once an edition. Test: "Put a rival's takeover and a stock milestone in today's City Ledger".
+
 ## Rules kept
 
 - Nothing in the save the game cannot load: `reallife:social*` strings in modData, and contacts made exactly as `Phone/PhoneContacts` makes its own (id, description key, the call dialog set again on every load).

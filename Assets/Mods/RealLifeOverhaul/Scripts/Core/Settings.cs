@@ -325,6 +325,7 @@
         public const string LedgerKiosksId = "ledger_kiosks";
         public const string LedgerOnlineId = "ledger_online";
         public const string LedgerOnlineNotesId = "ledger_online_notes";
+        public const string LedgerStoriesId = "ledger_stories";
         public const string HotelsId = "travel_hotels";
         public const string HolidaysId = "travel_holidays";
         public const string TravelExtrasId = "travel_extras";
@@ -711,6 +712,7 @@
         public static bool LedgerKiosks = true;          // newspaper kiosks near the player's home sell the paper (off: subscribers only)
         public static bool LedgerOnline = true;          // Newsstand
         public static bool LedgerOnlineNotes = true;     // a notification each morning the online editions are in
+        public static bool LedgerStories = true;         // the paper's stories of a rival taken over, a company's stock milestones and the city's most valuable
         public static bool Hotels = true;                // eight places to stay: reception at the door, the room as a panel
         public static bool Holidays = true;              // trips bought at the game's travel agencies; burnout after weeks without a break
         public static bool TravelExtras = true;          // suitcase, travel insurance, a companion, trade fair invitations
@@ -1114,6 +1116,7 @@
             LedgerKiosks = Bool(modId, LedgerKiosksId, LedgerKiosks);
             LedgerOnline = Bool(modId, LedgerOnlineId, LedgerOnline);
             LedgerOnlineNotes = Bool(modId, LedgerOnlineNotesId, LedgerOnlineNotes);
+            LedgerStories = Bool(modId, LedgerStoriesId, LedgerStories);
             Hotels = Bool(modId, HotelsId, Hotels);
             Holidays = Bool(modId, HolidaysId, Holidays);
             TravelExtras = Bool(modId, TravelExtrasId, TravelExtras);

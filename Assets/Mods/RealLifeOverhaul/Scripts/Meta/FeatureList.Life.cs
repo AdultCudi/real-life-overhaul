@@ -233,7 +233,7 @@ namespace RealLifeOverhaul.Meta
             Features.Add("ledger", "reallife_meta_title_ledger")
                 .Group("reallife_ledger_header")
                 .About("reallife_guide_ledger_about").Help("reallife_guide_ledger")
-                .Owns(Settings.SocialNewspaperId, Settings.LedgerKiosksId, Settings.LedgerOnlineId, Settings.LedgerOnlineNotesId)
+                .Owns(Settings.SocialNewspaperId, Settings.LedgerKiosksId, Settings.LedgerOnlineId, Settings.LedgerOnlineNotesId, Settings.LedgerStoriesId)
                 .Data(Ledger.LedgerStore.Key, Ledger.NewsstandStore.Key)
                 .Contact(SocialPhone.LedgerId)
                 .Objects("RealLifeOverhaul Ledger Copy")
@@ -252,6 +252,10 @@ namespace RealLifeOverhaul.Meta
                 .Fact("ledger_online_review", () => Guide.Money(Prices.At(Ledger.NewsstandCatalogue.WeekAtStart[Ledger.NewsstandCatalogue.Review])))
                 .Fact("ledger_online_pass", () => Guide.Money(Prices.At(Ledger.NewsstandCatalogue.WeekAtStart[Ledger.NewsstandCatalogue.Pass])))
                 .Fact("ledger_online_days", () => Whole(Ledger.NewsstandCatalogue.KeepDays))
+                .Fact("ledger_mile_first", () => Guide.Money(Ledger.LedgerStories.Ladder[0]))
+                .Fact("ledger_mile_big", () => Guide.Money(Ledger.LedgerStories.Ladder[Ledger.LedgerStories.BigRung - 1]))
+                .Fact("ledger_mile_city", () => Guide.Money(Ledger.LedgerStories.Ladder[Ledger.LedgerStories.CityRung - 1]))
+                .Fact("ledger_top_lead", () => Guide.Percent(Ledger.LedgerStories.TopLeadBp / 10000f))
                 .Cleanup(() => Ledger.LedgerDirector.Instance?.StopAll())
                 .ResetData(() => Ledger.LedgerDirector.Instance?.Forget());   // the director reads the (now empty) save again on its next second
 
