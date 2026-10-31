@@ -29,7 +29,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                     row.Set(0, deal.Customer);
                     row.Set(1, DealerGame.CarName(car.Type));
                     row.Set(2, yard.Name);
-                    Money(row, 3, deal.Offer);
+                    Money(row, 3, DealerRules.Price(yard, deal, car));
                     Money(row, 4, car.Asking);
                     row.Set(5, Extras(deal));
                     int left = Mathf.Max(0, deal.Expires - now);
@@ -138,10 +138,15 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 box.Line(DealerText.T("reallife_dealer_deal_wants_drive"), CellTone.Yellow);
             }
+            int offer = DealerRules.Price(yard, d, car);
             box.Section("reallife_ibox_sec_offer");
-            box.RowPair("reallife_ibox_offer", DealerText.Money(d.Offer), "reallife_ibox_asking", DealerText.Money(car.Asking));
-            box.Note(DealerText.Fill("reallife_dealer_deal_what", "car", DealerGame.CarName(car.Type), "name", yard.Name, "offer", DealerText.Money(d.Offer), "asking", DealerText.Money(car.Asking),
+            box.RowPair("reallife_ibox_offer", DealerText.Money(offer), "reallife_ibox_asking", DealerText.Money(car.Asking));
+            box.Note(DealerText.Fill("reallife_dealer_deal_what", "car", DealerGame.CarName(car.Type), "name", yard.Name, "offer", DealerText.Money(offer), "asking", DealerText.Money(car.Asking),
                 "left", DealerText.Hours(Mathf.Max(0, d.Expires - now))));
+            if (yard.Fixed)
+            {
+                box.Line(DealerText.T("reallife_dealer_deal_fixed"), CellTone.Green);
+            }
             if (d.WantsFinance)
             {
                 bool lends = yard.Finance && DealerRules.Lends(d.Score);
@@ -155,19 +160,19 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             if (DealerRules.Tier(yard.Warranty, d.Tier, state) >= 0)   // the warranty the sale would take: none when no more can be kept
             {
-                int premium = DealerRules.Premium(d.Offer, d.Tier, Prices.At(DealerCatalogue.PremiumLeast));
+                int premium = DealerRules.Premium(offer, d.Tier, Prices.At(DealerCatalogue.PremiumLeast));
                 box.Line(DealerText.T("reallife_dealer_deal_warranty", "tier", DealerText.Tier(d.Tier), "premium", DealerText.Money(premium)));
             }
             if (d.Extras != 0 && yard.Extras)
             {
-                int sell = ExtrasPrice(d.Extras, d.Offer, out int cost);
+                int sell = ExtrasPrice(d.Extras, offer, out int cost);
                 box.Line(DealerText.Fill("reallife_dealer_deal_extras", "extras", DealerText.Extras(d.Extras), "price", DealerText.Money(sell), "margin", DealerText.Money(sell - cost)));
             }
             if (d.Lift > 0)
             {
                 box.Line(DealerText.T("reallife_dealer_deal_lift"), CellTone.Green);
             }
-            int steps = DealerRules.CounterSteps(d, car.Asking);
+            int steps = yard.Fixed ? 1 : DealerRules.CounterSteps(d, car.Asking);   // nothing to counter at fixed prices
             int step = Choice(steps - 1);
             int counter = DealerRules.CounterAt(d, car.Asking, step);
             if (d.Stage == OfferStage.Open && steps > 1)

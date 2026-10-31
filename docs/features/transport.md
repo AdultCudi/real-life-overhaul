@@ -352,6 +352,8 @@ So a Honza is 120 to service, 180 for tyres, 90 for brakes, 40 a period to insur
 | insurance | per car, 28 days, renews itself; pays 80 % of a repair bill over the first 100 | 0.6 % of list price, 40 to 2,500, +25 % per claim (a claim is forgotten after 56 days) |
 | registration and inspection | once a game year (`daysPerYear`), renewable from 30 days before | 60 + 0.2 % (300 at most), 75 more when late |
 
+The Garage contact opens on a summary when the player has two cars or more and one is uninsured: "Insure all" insures every car without a policy, each at its own premium (`CarPhone.PremiumOf`), booked one line a car as the renewals are, or none when the money does not cover them all; "Go through the cars" opens the pages. A car's page and Insure all both buy through `CarPhone.Insure`, so the premium and the dates cannot differ. With "Developer diagnostics" on, each press writes `Car check (insure all)`.
+
 A service is asked for standing in a filling station's repair bay (the game's own bay, trucks in the truck bay).
 The game shows its own panel there ("Repair [F]", "Wash [P]": `GasStationOverlay` in the game's box over a place); `Garage/GarageBay` gives that panel a second line (what is due and what it comes to, `CarOwnership.BayLine`) and a third button, "Garage", on the game's confirm key.
 

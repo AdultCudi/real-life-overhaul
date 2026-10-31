@@ -33,6 +33,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 .Fact("dealer_skill_least", () => Share(DealerCatalogue.SkillLeast))
                 .Fact("dealer_skill_most", () => Share(DealerCatalogue.SkillMost))
                 .Fact("dealer_floor", () => Share(DealerCatalogue.StaffFloor))
+                .Fact("dealer_fixed_offers", () => Share(DealerCatalogue.FixedOffers))
                 .Fact("dealer_deal_hours", () => Whole(DealerCatalogue.DealHours))
                 .Fact("dealer_counters", () => Whole(DealerCatalogue.CountersMost))
                 .Fact("dealer_trade", () => Share(DealerCatalogue.TradeShare))

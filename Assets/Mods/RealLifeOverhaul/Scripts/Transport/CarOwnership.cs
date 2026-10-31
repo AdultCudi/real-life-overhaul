@@ -601,7 +601,7 @@ namespace RealLifeOverhaul
                 if (record.InsuredUntil > 0 && today > record.InsuredUntil && !first)
                 {
                     // One policy renews however many days have gone by (no back premiums).
-                    float premium = Mathf.Round(CarRules.PremiumOf(instance.VehicleType.price, record.Claims, GarageBridges.InsuranceOf(instance.id)));
+                    float premium = CarPhone.PremiumOf(instance, record);   // as the Garage page shows it and CarPhone.Insure charges it
                     var data = new Dictionary<string, string>(2) { { "car", name }, { "amount", TransitText.Money(premium) } };
                     if (RealLifeOverhaul.Economy.BizBooks.Book(-premium, new TransactionInfo("reallife_transaction_car_insurance"), null, null, force: false))
                     {
