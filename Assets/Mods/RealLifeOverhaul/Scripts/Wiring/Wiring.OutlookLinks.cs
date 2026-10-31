@@ -207,7 +207,7 @@ namespace RealLifeOverhaul
                     {
                         return false;
                     }
-                    BudgetWeek week = OfficeRules.Week(government.Electorate(), government.State.Levers, state.Budget);
+                    BudgetWeek week = OfficeRules.Week(government.Payers(), government.State.Levers, state.Budget);
                     r.CouncilOn = true;
                     r.Reserve = Prices.At((int)Mathf.Clamp(state.Reserve, int.MinValue / 2, int.MaxValue / 2));
                     r.Revenue = Prices.At(week.Revenue);

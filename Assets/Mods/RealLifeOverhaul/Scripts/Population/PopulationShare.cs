@@ -20,8 +20,8 @@ namespace RealLifeOverhaul.Population
         public const int Version = 1;
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-        /// <summary>The host's part as it stands.</summary>
-        public static string Write(PopulationState s)
+        /// <summary>The host's part as it stands, with the demand the mod's own businesses read (PopDemandShare's sections, which a reader before them skips) when given.</summary>
+        public static string Write(PopulationState s, PopDemandState demand = null)
         {
             var t = new StringBuilder(4096 + s.Businesses.Count * 48);
             t.Append("v=").Append(Version).Append("~h:");
@@ -57,11 +57,15 @@ namespace RealLifeOverhaul.Population
             Join(t, s.GameCounts);
             t.Append('|');
             Join(t, s.GameStart);
+            PopDemandShare.Write(t, demand);
             return t.ToString();
         }
 
-        /// <summary>The host's part applied to a guest's state; false, the state untouched, for a line this version cannot read.</summary>
-        public static bool Apply(PopulationState mine, string text)
+        /// <summary>
+        /// The host's part applied to a guest's state, and to its demand when given (left as it was when the host sends none); false, the state untouched, for a
+        /// line this version cannot read.
+        /// </summary>
+        public static bool Apply(PopulationState mine, string text, PopDemandState demand = null)
         {
             if (mine == null || string.IsNullOrEmpty(text) || !text.StartsWith("v=", StringComparison.Ordinal))
             {
@@ -112,6 +116,7 @@ namespace RealLifeOverhaul.Population
                     mine.GameCounts[i] = (int)g[i];
                     mine.GameStart[i] = (int)g[GameRules.Cells + i];
                 }
+                PopDemandShare.Apply(demand, Find(parts, PopDemandShare.Factors), Find(parts, PopDemandShare.Districts));
                 return true;
             }
             catch (FormatException)

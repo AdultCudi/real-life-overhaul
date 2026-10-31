@@ -17,7 +17,25 @@ namespace RealLifeOverhaul.Economy
         public int Weekday;         // 0 Monday to 6 Sunday
         public int RentScale;       // the option's rental income, thousandths of the market's rent; 0 is read as 1000
 
+        // What the city's people bring the property business (the living population), thousandths of the anchor day's; 0 is read as 1000 (as before).
+        public int Guests;          // hotel guests: business travel, the visitors the city draws, residents' own trips
+        public int Hirers;          // car hire's customers: visitors, and residents without a car
+        public int Seekers;         // households taking or looking for a flat: a landlord's applicants
+        public int Budget;          // what they would pay in rent against the market's: their offers
+        public int Movers;          // households moving and owners selling: the agency's instructions
+        public Func<string, int> HousingIn;   // a district's households in the housing market against the city's, thousandths, by the game's id; null or 0 for none
+
         public static EstateClimate Steady => new EstateClimate { Cycle = 1, Index = EstateCatalogue.IndexStart, DaysPerYear = EstateCatalogue.DaysPerYearDefault, TaxPercent = 20 };
+    }
+
+    /// <summary>What the city's people bring a part of the property business, as EstateBridges.People is asked for it.</summary>
+    public enum EstateDemand
+    {
+        Guests = 0,
+        Hirers = 1,
+        Seekers = 2,
+        Budget = 3,
+        Movers = 4
     }
 
     /// <summary>What a day did to a tenancy. Only <see cref="Lump"/> moves money: the day's rent is paid by the game's nightly run.</summary>

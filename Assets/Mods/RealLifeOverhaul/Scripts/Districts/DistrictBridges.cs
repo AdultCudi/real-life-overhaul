@@ -39,8 +39,12 @@ namespace RealLifeOverhaul.Districts
         public static InternetReader Internet;
         public static CouncilReader Council;
 
+        /// <summary>Crimes the residents of a district would report over the crime layer's days, by its id (the living population); 0 for none. Default: none.</summary>
+        public static Func<string, int> Crime;
+
         public static void Reset()
         {
+            Crime = null;
             Income = null;
             Footfall = null;
             Bears = null;

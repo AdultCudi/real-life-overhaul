@@ -13,6 +13,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         public int Satisfaction;            // the game's customer satisfaction of the building (0 to 100; 50 is even)
         public int Staff;                   // salespeople on shift there now
         public int Skill;                   // their average customer service skill (0 to 100)
+        public int Buyers;                  // thousandths of the anchor day's car buyers among the city's people (the living population: replacing a car or buying a first); 0 is read as 1000
     }
 
     /// <summary>What an hour of a dealership came to.</summary>
@@ -375,6 +376,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 }
                 StockCar car = y.Cars[c];
                 int lift = IsFeatured(featured, c) ? (int)((long)mood.Convert * DealerCatalogue.FeaturedOffer / 1000) : mood.Convert;
+                lift = (int)Math.Min(int.MaxValue, (long)lift * (h.Buyers > 0 ? h.Buyers : 1000) / 1000);   // beyond the visitors, the city's buyers by income and the age of their cars
                 if (!dice.Chance(FixedChance(OfferChance(car.Asking, worths[c], day - car.Bought, h.Skill, car.Condition, lift), y.Fixed)))
                 {
                     continue;

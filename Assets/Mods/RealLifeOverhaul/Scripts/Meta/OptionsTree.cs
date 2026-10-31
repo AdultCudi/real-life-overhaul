@@ -52,6 +52,16 @@ namespace RealLifeOverhaul.Meta
             return this;
         }
 
+        /// <summary>More features this section stands for, after those of <see cref="For"/> (a page of the Guide with no options of its own); its "About this" is unchanged.</summary>
+        public TreeSection With(params string[] features)
+        {
+            var all = new string[Features.Length + features.Length];
+            Features.CopyTo(all, 0);
+            features.CopyTo(all, Features.Length);
+            Features = all;
+            return this;
+        }
+
         /// <summary>The feature whose Guide page explains this section, when the section is not a feature of its own.</summary>
         public TreeSection Guide(string feature)
         {
@@ -384,7 +394,8 @@ namespace RealLifeOverhaul.Meta
                 S("living").For("living", "population").Main("living_population").Opt("living_desks", "living_population")
                     .Also("living population economy overhaul desk desks session sessions meeting team morale output burnout office manager delegate mini screen")
                     .Also("living_population", "residents people households census births deaths migration commuters jobs unemployment vacancies")
-                    .Also("living_population", "housing landlord landlords tax taxes spending customers demand district districts who contributes"),
+                    .Also("living_population", "housing landlord landlords tax taxes spending customers demand district districts who contributes")
+                    .With("population_demand"),   // the Guide's page on where the businesses' customers come from
                 S("studio").For("studio").Opt("living_studio", "living_population")
                     .Also("game studio games genre platform console mobile pc hype trailer expo review score critics sales piracy drm patch update dlc sequel port publisher bonus royalty rival"),
                 S("endscale").For("economy_endscale").Opts("economy_endscale")

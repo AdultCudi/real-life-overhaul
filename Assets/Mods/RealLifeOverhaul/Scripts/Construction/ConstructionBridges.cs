@@ -96,6 +96,9 @@ namespace RealLifeOverhaul.Construction
     /// </summary>
     public static class ConstructionBridges
     {
+        /// <summary>What the city's people bring the company now, thousandths of the anchor day's (the living population); 0 for none, as before. Default: none.</summary>
+        public static Func<BuildDemand, int> People;
+
         // ------------------------------------------------------------------ the district
 
         /// <summary>The district's lots at this load, into the caller's list (cleared). Default: none, so no land is for sale.</summary>
@@ -460,6 +463,7 @@ namespace RealLifeOverhaul.Construction
 
         public static void Reset()
         {
+            People = null;
             Lots = null;
             LotsStamp = null;
             DistrictLives = null;

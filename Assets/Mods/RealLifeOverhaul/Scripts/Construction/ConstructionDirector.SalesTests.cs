@@ -290,7 +290,7 @@ namespace RealLifeOverhaul.Construction
                 }
                 ViewingHost host = HostOf(p, key);
                 int quality = ShowQuality(p);
-                int chance = ShowFlatRules.BuyerChance(quality, p.ShowStandard, d._state.Firm.Reputation, host);
+                int chance = ShowFlatRules.BuyerChance(quality, p.ShowStandard, d._state.Firm.Reputation, host, People(BuildDemand.Buyers));
                 int soldBefore = p.FlatsSold;
                 long balanceBefore = p.OffPlanBalance + p.Deposits;
                 int price = ShowFlatRules.Price(d.OffPlanPrice(p), quality, p.ShowStandard);
