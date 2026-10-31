@@ -26,7 +26,8 @@ namespace RealLifeOverhaul.Ledger
         /// <summary>The keys of pieces about a player, the only ones a guest may send for the paper.</summary>
         public static readonly string[] PersonalPrefixes =
         {
-            P + "_news_player", P + "_study_news", P + "_life_news", P + "_own_news", P + "_flare_news", P + "_co_news", P + "_ob_news", P + "_news_shop", P + "_news_story"
+            P + "_news_player", P + "_study_news", P + "_life_news", P + "_own_news", P + "_flare_news", P + "_co_news", P + "_ob_news", P + "_news_shop", P + "_news_story",
+            P + "_ledger_beaten"   // a guest's rival taken over (LedgerStories): the rivals are each player's own
         };
 
         private const string P = "reallife";   // in parts: keys' beginnings, not keys

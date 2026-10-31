@@ -403,12 +403,15 @@ namespace RealLifeOverhaul.Ledger
             GuestPiecesInto(e, day);
             LedgerBridges.Market?.Invoke(e, since);
             LedgerBridges.Economy?.Invoke(e);
+            StoriesInto(e, since, day, fresh);
             e.Pieces.RemoveAll(p => p == null);
+            int stories = LedgerStories.Count(e.Pieces);
             if (e.Pieces.Count > LedgerCatalogue.PiecesMost)
             {
                 e.Pieces.Sort((a, b) => b.Weight.CompareTo(a.Weight));
                 e.Pieces.RemoveRange(LedgerCatalogue.PiecesMost, e.Pieces.Count - LedgerCatalogue.PiecesMost);
             }
+            StoriesCheck(e, stories);
             KeepEarlier(_state.Edition, day);   // the edition it replaces, to be read again on the phone
             _state.Edition = e;
             LedgerBridges.TextsEdition?.Invoke(e);   // RLO Texts asks for the briefs' words now, ahead of the reading

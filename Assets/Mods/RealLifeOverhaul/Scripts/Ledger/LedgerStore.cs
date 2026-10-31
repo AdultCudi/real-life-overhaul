@@ -11,6 +11,7 @@ namespace RealLifeOverhaul.Ledger
     ///   LG1|subscribed|cancelled|paid until|since|weeks|last morning|copy day|delivered|bought|copies|kiosks for
     ///   K|x|y|z|heading|building                     a kiosk near the home
     ///   V|policies                                    the council's policies at the last edition
+    ///   M|top id|id:rung:topped,...                   the companies' milestones printed (LedgerStories); none in an older save
     ///   E|day|has market|market day|index|change|week|rate|inflation|cycle   the latest edition
     ///   P|section|weight|key|head|name|value...       a piece of it
     ///   S|key|level|change                            a sector
@@ -51,8 +52,46 @@ namespace RealLifeOverhaul.Ledger
             {
                 b.Append("\nV|").Append(Clean(s.Council));
             }
+            Marks(b, s);
             Edition(b, s.Edition);
             return b.ToString();
+        }
+
+        // The companies' milestones, only once the paper keeps them: a save without the line is one whose first morning sets
+        // every company where it stands. Each company is "id:rung:topped".
+        private static void Marks(StringBuilder b, LedgerState s)
+        {
+            if (!s.MarksKept)
+            {
+                return;
+            }
+            b.Append("\nM|").Append(s.TopId).Append('|');
+            for (int i = 0; i < s.Marks.Count; i++)
+            {
+                LedgerMark m = s.Marks[i];
+                b.Append(i > 0 ? "," : string.Empty).Append(m.Id).Append(':').Append(m.Rung).Append(':').Append(Bit(m.Topped));
+            }
+        }
+
+        private static void ReadMarks(string[] f, LedgerState s)
+        {
+            if (f.Length < 3)
+            {
+                return;
+            }
+            s.MarksKept = true;
+            s.TopId = Math.Max(0, Int(f[1]));
+            s.Marks.Clear();
+            string[] marks = f[2].Length > 0 ? f[2].Split(',') : new string[0];
+            for (int i = 0; i < marks.Length && s.Marks.Count < LedgerStories.MarksMost; i++)
+            {
+                string[] m = marks[i].Split(':');
+                int id = m.Length >= 3 ? Int(m[0]) : 0;
+                if (id > 0)
+                {
+                    s.Marks.Add(new LedgerMark { Id = id, Rung = Math.Max(0, Math.Min(LedgerStories.Ladder.Length, Int(m[1]))), Topped = m[2] == "1" });
+                }
+            }
         }
 
         /// <summary>An edition's lines as the store writes them, each after a line break.</summary>
@@ -169,6 +208,9 @@ namespace RealLifeOverhaul.Ledger
                             break;
                         case "V":
                             s.Council = f.Length >= 2 && f[1].Length > 0 ? f[1] : null;
+                            break;
+                        case "M":
+                            ReadMarks(f, s);
                             break;
                         default:
                             EditionLine(f, ref e);

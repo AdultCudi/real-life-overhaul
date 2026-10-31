@@ -245,8 +245,8 @@ namespace RealLifeOverhaul.Meta
                 S("standing").For("standing").Main("standing").Opts("standing_street", "standing_press", "standing_corruption", "standing_request_notes")
                     .Also("fame reputation recognition wealth famous reporter interview press bribe lobby charity")
                     .Also("standing_request_notes", "fundraiser fundraising donation sponsor request requests"),
-                S("ledger").For("ledger").Main("social_newspaper").Opts("ledger_kiosks", "ledger_online").Opt("ledger_online_notes", "ledger_online")
-                    .Also("newspaper paper news kiosk subscription delivery online newsstand internet phone"),
+                S("ledger").For("ledger").Main("social_newspaper").Opts("ledger_kiosks", "ledger_online").Opt("ledger_online_notes", "ledger_online").Opts("ledger_stories")
+                    .Also("newspaper paper news kiosk subscription delivery online newsstand internet phone milestone billion valuable takeover rival"),
                 S("leisure").For("leisure").Main("leisure").Opt("leisure_chess", "city_life").Opts("leisure_fishing", "leisure_night_out", "leisure_sights", "leisure_cinema")
                     .Opt("night_life", "city_life").Opts("photo_mode").Buttons("reallife_leisure_test_records").Also("fun hobby nightclub bar"),
                 S("lifeevents").For("life").Main("life_events").Opts("life_frequency").Also("random luck surprise"),

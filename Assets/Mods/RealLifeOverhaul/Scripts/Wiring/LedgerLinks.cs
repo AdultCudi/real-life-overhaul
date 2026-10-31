@@ -15,8 +15,9 @@ namespace RealLifeOverhaul
         /// <summary>
         /// The City Ledger (LedgerBridges) with what it prints, read once a morning: the city's paper, the market's last
         /// close and news, the economy's figures, the street's events, the weather, the night life, the council and the
-        /// player's office, the street's other fixtures, the City Ledger's contact, the internet at the player's homes
-        /// for Newsstand, and the Planner. In a Going Public session a guest's street news goes to the host's paper.
+        /// player's office, the listed companies' worth and the rivals taken over (the paper's milestone and rival stories),
+        /// the street's other fixtures, the City Ledger's contact, the internet at the player's homes for Newsstand, and the
+        /// Planner. In a Going Public session a guest's street news goes to the host's paper.
         /// </summary>
         public static class LedgerLinks
         {
@@ -40,6 +41,9 @@ namespace RealLifeOverhaul
                 News.Forward = (kind, where, detail, amount) => LedgerDirector.Instance?.GuestReport((int)kind, where.x, where.z, detail, amount);
                 LedgerBridges.Filter = Flare.FlareDirector.Filter;
                 LedgerBridges.Report = (kind, x, z, detail, amount) => News.Report((NewsKind)kind, new Vector3(x, 0f, z), detail, amount);
+                LedgerBridges.Companies = Companies;
+                LedgerBridges.Beaten = Beaten;
+                LedgerBridges.TestBeat = TestBeat;
             }
 
             internal static void Disconnect()
@@ -139,6 +143,12 @@ namespace RealLifeOverhaul
                         {
                             continue;   // a dividend paid to the player is their own news, not the city's
                         }
+                        LedgerPiece bought = n.Kind == MarketNewsKind.BidDone && Settings.LedgerStories ? Bought(n, s) : null;
+                        if (bought != null)
+                        {
+                            e.Pieces.Add(bought);   // the buyer named: a business story in place of the markets' line
+                            continue;
+                        }
                         string key = MarketText.NewsKey(n, s, out string[] data);
                         if (key.Length == 0)
                         {
@@ -169,6 +179,124 @@ namespace RealLifeOverhaul
                     case MarketNewsKind.Crash: return Math.Min(8, Math.Abs(n.A) / 100);
                     default: return 0;
                 }
+            }
+
+            // A takeover completed with a listed bidder (the bid's bidder stays on the company when it leaves; a bid that failed
+            // clears BidDay): the business story naming both. Null for a private buyer, or a rival's holding the player took.
+            private static LedgerPiece Bought(in MarketNews n, MarketState s)
+            {
+                Stock k = s.Stock(n.Stock);
+                Stock bidder = k != null && k.BidderId > 0 && k.BidDay > 0 ? s.Stock(k.BidderId) : null;
+                if (bidder == null || ReferenceEquals(bidder, k))
+                {
+                    return null;
+                }
+                return LedgerStories.Bought(bidder.Name, k.Name, MarketText.Price(n.A), k.Own != null);
+            }
+
+            // Every listed company at its last close, a player's own marked (in a session, any player's: the same on every machine).
+            private static bool Companies(List<LedgerCompany> into)
+            {
+                try
+                {
+                    MarketDirector market = MarketDirector.Instance;
+                    MarketState s = Settings.Markets && market != null ? market.State : null;
+                    if (s == null)
+                    {
+                        return false;
+                    }
+                    for (int i = 0; i < s.Stocks.Count; i++)
+                    {
+                        Stock k = s.Stocks[i];
+                        if (!k.Listed || k.Daily.Count == 0 || k.Shares <= 0)
+                        {
+                            continue;
+                        }
+                        into.Add(new LedgerCompany { Id = k.Id, Name = k.Name, Value = k.Shares * (double)k.Daily[k.Daily.Count - 1].C / 100.0, Player = k.Own != null });
+                    }
+                    return into.Count > 0;
+                }
+                catch (Exception ex)
+                {
+                    Fault("LedgerLinks.Companies", ex);
+                    return false;
+                }
+            }
+
+            // The rivals the player took over on the days from 'since' up to 'day': read from the rivals' own file, which keeps
+            // the day for good, the takeover's cost among the counters and the break-up money until it is paid.
+            private static void Beaten(int since, int day, List<LedgerBeat> into)
+            {
+                try
+                {
+                    Rivals.RivalDirector rivals = Rivals.RivalDirector.Instance;
+                    Rivals.RivalFile f = rivals != null ? rivals.File : null;
+                    for (int i = 0; f != null && i < f.Tycoons.Length; i++)
+                    {
+                        Rivals.Tycoon t = f.Tycoons[i];
+                        if (t.DefeatedDay < since || t.DefeatedDay >= day || t.DefeatedDay < 0)
+                        {
+                            continue;
+                        }
+                        double cost = 0.0;
+                        for (int c = f.Counters.Count - 1; c >= 0; c--)
+                        {
+                            Rivals.RivalCounterNote note = f.Counters[c];
+                            if (note.Tycoon == t.Index && note.Kind == Rivals.RivalCounter.Takeover && note.Day == t.DefeatedDay)
+                            {
+                                cost = note.Cost;
+                                break;
+                            }
+                        }
+                        into.Add(Beat(f.Seed, t.Index, t.DefeatedDay, t.BreakUp > 0 ? cost : 0.0, t.BreakUp, Math.Max(1, t.BreakUpDay - day)));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Fault("LedgerLinks.Beaten", ex);
+                }
+            }
+
+            // The test's takeover: the first rival in play (else the catalogue's first), priced from their fortune at the
+            // takeover's premium and break-up share; nothing of the rivals changes.
+            private static LedgerBeat TestBeat(int day)
+            {
+                try
+                {
+                    Rivals.RivalDirector rivals = Rivals.RivalDirector.Instance;
+                    Rivals.RivalFile f = rivals != null ? rivals.File : null;
+                    int index = 0;
+                    for (int i = 0; f != null && i < f.Tycoons.Length; i++)
+                    {
+                        if (f.Tycoons[i].Active)
+                        {
+                            index = i;
+                            break;
+                        }
+                    }
+                    Rivals.TycoonDef d = Rivals.RivalCatalogue.Tycoons[index];
+                    double worth = f != null && f.Tycoons[index].Worth > 0 ? f.Tycoons[index].Worth : Prices.At((int)Math.Min(int.MaxValue, d.StartWorth));
+                    return Beat(f != null ? f.Seed : 0, index, day, worth * (1.0 + Rivals.RivalCatalogue.TakeoverPremiumBp / 10000.0),
+                        worth * Rivals.RivalCatalogue.BreakUpPermille / 1000.0, Rivals.RivalCatalogue.BreakUpDays);
+                }
+                catch (Exception ex)
+                {
+                    Fault("LedgerLinks.TestBeat", ex);
+                    return null;
+                }
+            }
+
+            private static LedgerBeat Beat(int seed, int tycoon, int day, double cost, double back, int days)
+            {
+                Rivals.TycoonDef d = Rivals.RivalCatalogue.Tycoons[Rivals.RivalCatalogue.Clamp(tycoon, 0, Rivals.RivalCatalogue.TycoonCount - 1)];
+                MarketDirector market = MarketDirector.Instance;
+                Stock own = market != null ? market.MyCompany : null;
+                string player = Rivals.RivalGame.PlayerName();
+                return new LedgerBeat
+                {
+                    Tycoon = tycoon, Day = day, Seed = seed, Rival = d.Name, Holding = d.Holding, Buyer = own != null ? own.Name : player, Owner = player,
+                    Quip = Rivals.RivalText.Quip(tycoon), Cost = cost, Back = back, Days = days
+                };
             }
 
             private static int Move(int now, int before)

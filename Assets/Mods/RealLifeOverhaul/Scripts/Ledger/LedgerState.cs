@@ -19,6 +19,17 @@ namespace RealLifeOverhaul.Ledger
         public string Building;          // the address of the building it stands in front of (it lights up on the map)
     }
 
+    /// <summary>
+    /// The highest round figure of the market value a listed company has been printed at (<see cref="LedgerStories"/>):
+    /// its place on the ladder, and whether it was ever the city's most valuable while the paper watched.
+    /// </summary>
+    public struct LedgerMark
+    {
+        public int Id;                   // the company's id on the market
+        public int Rung;                 // figures of LedgerStories.Ladder it has passed: 0 none
+        public bool Topped;              // it has been the city's most valuable company
+    }
+
     /// <summary>What the City Ledger keeps of a save (<see cref="LedgerStore"/>). Game-free.</summary>
     public sealed class LedgerState
     {
@@ -39,5 +50,11 @@ namespace RealLifeOverhaul.Ledger
 
         public string Council;           // the council's policies as they stood at the last edition (the wiring's words); null none yet
         public LedgerEdition Edition;
+
+        // The companies' milestones: false for a save without them (or with the stories off), whose first morning sets every
+        // company where it stands without a story, so an old save never prints a burst of milestones passed long ago.
+        public bool MarksKept;
+        public int TopId;                // the city's most valuable company at the last edition; 0 none
+        public readonly List<LedgerMark> Marks = new List<LedgerMark>(LedgerStories.MarksMost);
     }
 }
