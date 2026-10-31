@@ -256,7 +256,7 @@ internal static partial class Program
         string[] says = { "fixed prices", "preços fixos", "固定价格" };
         for (int l = 0; l < 3 && l < langs.Length; l++)
         {
-            next &= langs[l].TryGetValue("reallife_changes_next", out string n) && n.Contains(says[l]);
+            next &= WhatsNewHas(langs[l], says[l]);   // the next row, or the version row it is numbered into at release
         }
         Check(next, "dealer fixed: What's new has the line in English, Portuguese and Chinese");
     }
