@@ -8,6 +8,7 @@ The tech sector and the professions: tech firms of the player's own, hiring, the
 - `TechBridges.cs`: what it asks of the others.
 - `Firms`: the firms, one folder a part (Hiring, Infra, People, Sites, Venture).
 - `Studio`: the game studio under Living population, from the concept at the desk to its life after launch ([The game studio](../../../../../docs/features/game-studio.md)).
+- `Sector`: the other tech firms under Living population: shared markets from the city, rivals by the same rules, the city's IT work, data centres' demand and fourteen desk sessions ([The tech firms' markets](../../../../../docs/features/tech-firms.md)).
 - `Sites/TowerFloors.cs`: the tech companies' towers on the floors core ([Floors](../../../../../docs/features/floors.md)): a building held a tower, a company a floor, the game's own panel at its door and its lift; the lobby and the rest of a company's floor are `TechSites`' own, laid again by the core's lift.
 
 ## Documentation

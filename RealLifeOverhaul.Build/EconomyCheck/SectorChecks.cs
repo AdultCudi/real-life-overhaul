@@ -33,6 +33,7 @@ internal static partial class Program
         SectorScreens();
         SectorSims(print);
         SectorTimings();
+        SectorTexts();
         Console.WriteLine("  Tech firms' markets: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 
