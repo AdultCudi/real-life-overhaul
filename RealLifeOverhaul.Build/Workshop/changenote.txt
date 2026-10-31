@@ -1,8 +1,4 @@
-0.63.1
+0.63.2
 
 Fixed
-- A building you put up on your own land now stays yours when it is handed over. A block of homes with flats sold before it was built, or put up for sale flat by flat, went at once to one of the city's landlords, before you could cut the ribbon. It is now yours until its last flat is sold, letting only its unsold flats meanwhile, and then belongs to its residents. A block that went that way with flats still unsold is yours again. A Let it grow building of yours now also asks its budget's rent and tells you when it is yours.
-- There was no way to work in a tech firm of your own. Now click a free desk in its office and start in the game's work panel: your hours count for the firm the next morning as a professional of your level and skills, with no pay.
-- After a busy moment RLO Texts could stop wording messages and conversations for the rest of the session, so the written lines showed instead. It now asks the model as often as your PC's speed allows, keeps room for what people say to your face, and picks up again on its own after a slow spell. On Flare, while a model is there, posts, replies and answers to your messages now wait for its words and go up when they come, instead of showing a written line.
-- A call from a friend went away when you opened the phone or clicked its notice. Clicking the notice now answers it, so does calling them from the phone, and the ring waits while the phone is open.
-- Mom's family dinners now say how to come. Her invitation and her text on the day say where and when, and on the day her own call, like the Family contact, offers Go to Mom's from midday.
+- Random events, texts and bills now come only when what they speak of is really yours: a fridge, a sink, a bathtub, a bed or a computer in your home, a car, a landlord while you rent, the neighbours upstairs in a flat. No more repair bill for a fridge you do not own.
