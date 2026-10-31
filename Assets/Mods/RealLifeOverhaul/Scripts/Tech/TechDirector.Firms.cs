@@ -148,6 +148,7 @@ namespace RealLifeOverhaul.Tech
             {
                 FirmPlace firm = _firms[f];
                 var c = new Crew();
+                TechBridges.TeamWeekAt(firm.File.Place, Save.Day, out int week, out _);   // the week its team meeting set, if any
                 int security = FirmsCatalogue.SecurityBase, reliability = FirmsCatalogue.ReliabilityBase, seniors = 0, hours = 0;
                 long faultWeighted = 0;
                 firm.People = 0;
@@ -163,7 +164,7 @@ namespace RealLifeOverhaul.Tech
                     c.Seats++;
                     int h = person.HoursYesterday;
                     hours += h;
-                    int points = TalentRules.Output(p, person.MainPoints, Save.Day) * FirmsCatalogue.PointsPerDay * h / TalentCatalogue.DayHours / 1000;
+                    int points = MeetingRules.Points(TalentRules.Output(p, person.MainPoints, Save.Day) * FirmsCatalogue.PointsPerDay * h / TalentCatalogue.DayHours / 1000, week);
                     RoleDef r = p.Def;
                     switch (r.Family)
                     {

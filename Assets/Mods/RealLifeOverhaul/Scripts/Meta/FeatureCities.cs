@@ -119,6 +119,7 @@ namespace RealLifeOverhaul.Meta
             new Line("economy_bank_branch", CityScope.AnyCity, "the player's bank's branches"),
             new Line("economy_ownbank", CityScope.AnyCity, "the player's bank"),
             new Line("economy_endscale", CityScope.AnyCity, "the end game's figures"),
+            new Line("living", CityScope.AnyCity, "the player's firms and the desks in their offices"),
             new Line("faults", CityScope.NewYork, "faults kept in New York's streets and districts"),
             new Line("home_roommates", CityScope.AnyCity, "the player's home"),
             new Line("interiors", CityScope.AnyCity, "the player's interiors, by the game's own district data"),

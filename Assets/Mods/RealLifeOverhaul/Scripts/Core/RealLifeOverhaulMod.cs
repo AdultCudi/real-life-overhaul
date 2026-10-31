@@ -1006,6 +1006,12 @@ namespace RealLifeOverhaul
                     v => Settings.EndScale = v)
                 .AddButton("reallife_endscale_test_phase", () => EndScaleTests.Phase(false))
                 .AddButton("reallife_endscale_test_full", () => EndScaleTests.Phase(true))
+                .AddToggle(Settings.LivingPopulationId, "reallife_living_enabled", Settings.LivingPopulation,
+                    v => Settings.LivingPopulation = v)
+                .AddToggle(Settings.LivingDesksId, "reallife_session_enabled", Settings.LivingDesks,
+                    v => Settings.LivingDesks = v)
+                .AddButton("reallife_session_test_meeting", () => Sessions.SessionDirector.Instance?.TestMeeting())
+                .AddButton("reallife_session_test_managers", () => Sessions.SessionDirector.Instance?.TestManagers())
                 .AddDropdown(Settings.EconomyCompanyLevelId, "reallife_co_level",
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCompanyLevel,
                     v => Settings.EconomyCompanyLevel = v)
@@ -1586,6 +1592,8 @@ namespace RealLifeOverhaul
             Guard.Step("Economy.CompanyDirector", () => Guard.Add<Economy.CompanyDirector>(_root));
             Guard.Step("Tech.TechDirector", () => Guard.Add<Tech.TechDirector>(_root));   // after the company, so that its day follows the company's
             Guard.Step("Careers.CareersDirector", () => Guard.Add<Careers.CareersDirector>(_root));   // after the tech sector, whose roles it reads
+            Guard.Step("Sessions.SessionDirector", () => Sessions.SessionDirector.Logger = context.Logger);
+            Guard.Step("Sessions.SessionDirector", () => Guard.Add<Sessions.SessionDirector>(_root));   // a look once a second: the desk sessions at the player's firms
             Guard.Step("FitOut.FitOutDirector", () => FitOut.FitOutDirector.Logger = context.Logger);
             Guard.Step("FitOut.FitOutDirector", () => Guard.Add<FitOut.FitOutDirector>(_root));   // before the features whose floors it builds
             Guard.Step("Floors.FloorsDirector", () => Guard.Add<Floors.FloorsDirector>(_root));   // a look once a second: the places on floors of the mod's buildings

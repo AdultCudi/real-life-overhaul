@@ -28,6 +28,24 @@ namespace RealLifeOverhaul
             return MacroCatalogue.MonthDays(year);
         }
 
+        /// <summary>
+        /// The days a monthly price is billed over, whatever the save's year: the game pays wages and rents by its real days,
+        /// so a subscription or a connection sold by the month earns its month's price over thirty of them. Tech has always
+        /// billed so (FirmsCatalogue.MonthDays).
+        /// </summary>
+        public const int BillingMonthDays = 30;
+
+        /// <summary>
+        /// The one month rule for what the mod bills by the month (tech's subscriptions, the broadband company's
+        /// connections): with Living population on, <see cref="BillingMonthDays"/> for both, so the same monthly price earns
+        /// the same a day; off, the broadband company bills by the save's month as it always did (five days in a 60-day year).
+        /// Only the money a day follows it: when a network is dug, trusted and its market moves stays on the save's months.
+        /// </summary>
+        public static int BroadbandBillingDays(bool living, int year)
+        {
+            return living ? BillingMonthDays : MonthDays(year);
+        }
+
         /// <summary>The day of the year, 1 to the year's length.</summary>
         public static int DayOfYear(int day, int year)
         {

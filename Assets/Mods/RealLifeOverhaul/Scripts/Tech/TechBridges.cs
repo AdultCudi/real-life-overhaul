@@ -9,6 +9,29 @@ namespace RealLifeOverhaul.Tech
     /// </summary>
     public static class TechBridges
     {
+        /// <summary>A firm's week as its weekly team meeting set it: extra output and burnout a day worked, thousandths; false with none.</summary>
+        public delegate bool TeamAsk(string place, int day, out int output, out int burnout);
+
+        /// <summary>The week a firm's team meeting set (the desk sessions, Wiring/Wiring.SessionLinks). Default: none.</summary>
+        public static TeamAsk TeamWeek;
+
+        /// <summary><see cref="TeamWeek"/> asked: nothing with no answer, or if the sessions fault.</summary>
+        public static void TeamWeekAt(string place, int day, out int output, out int burnout)
+        {
+            output = burnout = 0;
+            try
+            {
+                if (TeamWeek == null || !TeamWeek(place, day, out output, out burnout))
+                {
+                    output = burnout = 0;
+                }
+            }
+            catch (Exception)
+            {
+                output = burnout = 0;
+            }
+        }
+
         /// <summary>The player's standing as an employer, -10 to 10 (Standing's workers). Default: 0.</summary>
         public static Func<int> Esteem;
 

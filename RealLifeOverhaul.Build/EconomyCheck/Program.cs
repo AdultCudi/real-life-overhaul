@@ -134,6 +134,13 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length >= 1 && args[0] == "--living")
+        {
+            Sessions();     // (the desk sessions and the tech money scale alone, while working on them: SessionChecks.cs, TechScaleChecks.cs; "scale" after it prints the tables)
+            TechScale();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--managers")
         {
             Managers();   // (the managers' checks alone, the directory's among them, while working on them: ManagerChecks.cs, ManagerDirectoryChecks.cs)
@@ -607,6 +614,8 @@ internal static partial class Program
         SaveLinesKept();
         Morning();
         EndScale();     // the end game at scale: each venture's costs, upkeep, staff and income by size, the payback, old saves phased in, the option off (EndScaleChecks.cs)
+        Sessions();     // the desk sessions: the registry, the schedule and furniture, managers' seeded choices, reminders, the save's line, the weekly team meeting and its week, the sources, the texts (SessionChecks.cs)
+        TechScale();    // the tech money scale: budgets, audience to sales and the bands, costs, one market, a studio over ten years against the end game, the one month rule (TechScaleChecks.cs)
         BugReports();   // "Report a bug": report.txt, the user folder taken out, a log's tail, the mod's lines, nothing sent (BugReportChecks.cs)
         Rivals();       // the rival tycoons: growth, pace, bounds, counters, a takeover, a seed, the save and the texts (RivalChecks.cs)
         Wages();        // wages the mod raises: the report's 30 days reproduced, the cap, one rise a period, the repair on load, every write bounded (WageChecks.cs)

@@ -49,6 +49,7 @@ namespace RealLifeOverhaul
             { "RealLifeOverhaul.Household", "home_household" },
             { "RealLifeOverhaul.Shops", "newshops" },
             { "RealLifeOverhaul.Outlook", "economy_app" },
+            { "RealLifeOverhaul.Sessions", "living" },
         };
 
         // Namespaces that are the mod's own machinery, whatever a class of them is called.
