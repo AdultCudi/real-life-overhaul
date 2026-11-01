@@ -12,7 +12,8 @@ namespace RealLifeOverhaul
     public sealed class District
     {
         public string Id;                          // the game's neighbourhood id, which is also its name's locale key
-        public int Electorate;
+        public int Electorate;                     // its voters: its adult residents where the living population runs, else the floor space's guess
+        public int FloorElectorate;                // the floor space's guess, which the council's revenue stands on
         public CityBuildingController Polling;     // the building that is its polling place; null if none could be designated
         public string PollingAddress;
         public Vector3 Door;                       // that building's door
@@ -20,7 +21,8 @@ namespace RealLifeOverhaul
 
     /// <summary>
     /// What civic life reads from the city, once per load: districts (the game's neighbourhoods), voters, polling places and
-    /// the player's buildings. The game keeps no population, so an electorate comes from floor space.
+    /// the player's buildings. The game keeps no population, so an electorate comes from floor space; where the living population
+    /// runs, each district's voters are its adult residents instead, read again each day (<see cref="Refresh"/>).
     /// </summary>
     public sealed class CivicCity
     {
@@ -31,6 +33,7 @@ namespace RealLifeOverhaul
         public readonly List<District> Districts = new List<District>(8);
         private readonly List<string> _ids = new List<string>(12);   // the city's districts, New York's seven first (Core/CityCheck)
         public int Electorate { get; private set; }
+        public int FloorElectorate { get; private set; }   // the floor space's guess in all, whoever votes
         public bool Ready { get; private set; }
 
         /// <summary>Looks the city over. False if the game's lists are not there yet: ask again later.</summary>
@@ -38,6 +41,7 @@ namespace RealLifeOverhaul
         {
             Districts.Clear();
             Electorate = 0;
+            FloorElectorate = 0;
             Ready = false;
             CityManager city = InstanceBehavior<CityManager>.Instance;
             List<string> ids = CityCheck.NewYorkDistricts(NeighborhoodHelper.Neighborhoods, _ids);
@@ -62,13 +66,32 @@ namespace RealLifeOverhaul
                         residents += building.BuildingType == Residential ? building.totalSqm / 30f : building.totalSqm / 150f;
                     }
                 }
-                var district = new District { Id = id, Electorate = Mathf.Max(400, Mathf.RoundToInt(residents * 0.72f)) };   // 72 % of residents are of voting age
+                var district = new District { Id = id, FloorElectorate = Mathf.Max(400, Mathf.RoundToInt(residents * 0.72f)) };   // 72 % of residents are of voting age
+                district.Electorate = district.FloorElectorate;
                 Designate(district, buildings, city);
                 Districts.Add(district);
-                Electorate += district.Electorate;
+                FloorElectorate += district.FloorElectorate;
             }
+            Refresh();
             Ready = Districts.Count > 0;
             return Ready;
+        }
+
+        /// <summary>
+        /// Each district's voters again: its adult residents where the living population counts them (never under the floor space's least of 400, a polling
+        /// place's least), the floor space's guess elsewhere. Once a day and after a load; a walk of the districts.
+        /// </summary>
+        public void Refresh()
+        {
+            int all = 0;
+            for (int i = 0; i < Districts.Count; i++)
+            {
+                District d = Districts[i];
+                int adults = CivicBridges.Adults != null ? CivicBridges.Adults(d.Id) : -1;
+                d.Electorate = adults > 0 ? Mathf.Max(400, adults) : d.FloorElectorate;
+                all += d.Electorate;
+            }
+            Electorate = all;
         }
 
         // The polling place: a school if the district has one, then a bank, an agency, a clinic; else its first retail building by address.

@@ -17,9 +17,11 @@ namespace RealLifeOverhaul.Population
             Features.Add("population", "reallife_meta_title_population")
                 .About("reallife_guide_population_about").Help("reallife_guide_population")
                 .Data(PopulationStore.Key)
+                .Data(PopDemandStore.Key)
                 .Test("reallife_pop_test_generate", () => PopulationDirector.Instance?.TestGenerate())
                 .Test("reallife_pop_test_month", () => PopulationDirector.Instance?.TestMonth())
                 .Test("reallife_pop_test_household", () => PopulationDirector.Instance?.TestHousehold())
+                .Test("reallife_pop_test_demand", () => PopulationDirector.Instance?.TestDemand())
                 .Fact("pop_flat_net", () => Whole(PopulationCatalogue.HomeNetShare / 10) + "%")
                 .Fact("pop_flat_least", () => Whole(FlatSqm(false)))
                 .Fact("pop_flat_most", () => Whole(FlatSqm(true)))
@@ -74,7 +76,8 @@ namespace RealLifeOverhaul.Population
             return options
                 .AddButton("reallife_pop_test_generate", () => PopulationDirector.Instance?.TestGenerate())
                 .AddButton("reallife_pop_test_month", () => PopulationDirector.Instance?.TestMonth())
-                .AddButton("reallife_pop_test_household", () => PopulationDirector.Instance?.TestHousehold());
+                .AddButton("reallife_pop_test_household", () => PopulationDirector.Instance?.TestHousehold())
+                .AddButton("reallife_pop_test_demand", () => PopulationDirector.Instance?.TestDemand());
         }
     }
 }

@@ -41,6 +41,12 @@ namespace RealLifeOverhaul.Population
             Notifications.Show(type, key, data, 10f);
         }
 
+        /// <summary>A share in thousandths as a whole per cent (a demand against its first day: 1,040 is "104%").</summary>
+        public static string Permille(long thousandths)
+        {
+            return ((thousandths + 5) / 10).ToString(Inv) + "%";
+        }
+
         /// <summary>A screen's view model as one line for the log, in English: its title, figures, rows and action.</summary>
         public static string Describe(PopulationView v)
         {

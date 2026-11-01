@@ -498,7 +498,7 @@ namespace RealLifeOverhaul
                 }
                 case 1:
                 {
-                    BudgetWeek week = OfficeRules.Week(gov.Electorate(), gov.State.Levers, s.Budget);
+                    BudgetWeek week = OfficeRules.Week(gov.Payers(), gov.State.Levers, s.Budget);
                     string text = Fill("reallife_civic_office_budget_page", "levels", CivicOffice.Levels(s.Budget), "revenue", Money(Prices.At(week.Revenue)),
                         "spending", Money(Prices.At(week.Spending)), "balance", Money(Prices.At(week.Balance)),
                         "reserve", Money(Prices.At((int)Mathf.Clamp(s.Reserve, int.MinValue / 2, int.MaxValue / 2))),
@@ -623,7 +623,7 @@ namespace RealLifeOverhaul
             }
             if (department >= Proposal.Length)
             {
-                BudgetWeek week = OfficeRules.Week(gov.Electorate(), gov.State.Levers, Proposal);
+                BudgetWeek week = OfficeRules.Week(gov.Payers(), gov.State.Levers, Proposal);
                 string text = Fill("reallife_civic_office_budget_proposal", "levels", CivicOffice.Levels(Proposal), "revenue", Money(Prices.At(week.Revenue)),
                     "spending", Money(Prices.At(week.Spending)), "balance", Money(Prices.At(week.Balance)));
                 return CityHallPhone.Page(text, "reallife_civic_office_button_put_budget",

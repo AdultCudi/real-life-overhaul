@@ -101,6 +101,7 @@ namespace RealLifeOverhaul.Tech
     public sealed class HiringFile
     {
         public int Seed, FirstDay, LastDay = -1, NextId = 1;
+        public int People;                      // not saved: thousandths of the anchor day's professions' jobseekers among the city's people (the living population); 0 is read as 1000
         public readonly List<Seeker> Seekers = new List<Seeker>(HiringCatalogue.SeekersMost);
         public readonly List<JobAd> Ads = new List<JobAd>(HiringCatalogue.AdsMost);
         public readonly List<RivalAd> RivalAds = new List<RivalAd>(HiringCatalogue.RivalAdsMost);

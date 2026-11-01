@@ -35,6 +35,9 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The player's standing as an employer, -10 to 10 (Standing's workers). Default: 0.</summary>
         public static Func<int> Esteem;
 
+        /// <summary>Thousandths of the anchor day's professions' jobseekers among the city's people (the living population); 0 for none, as before. Default: none.</summary>
+        public static Func<int> Seekers;
+
         /// <summary>A rival's name for an approach to one of the player's people at a business. Default: one of the city's tech companies.</summary>
         public static Func<BuildingRegistration, string> Rival;
 
@@ -83,6 +86,48 @@ namespace RealLifeOverhaul.Tech
             catch (Exception)
             {
                 // the sessions' fault: the studio runs on, its sessions as they were
+            }
+        }
+
+        /// <summary>A desk session's record at a business: the day last held (-1 never) and whether a manager takes it; false while sessions are off.</summary>
+        public delegate bool DeskAsk(string place, string session, out int held, out bool delegated);
+
+        /// <summary>The sessions' records (Wiring/Wiring.SectorLinks). Default: none, so no session is shown as due.</summary>
+        public static DeskAsk DeskRecord;
+
+        /// <summary><see cref="DeskRecord"/> asked: false with no answer, or if the sessions fault.</summary>
+        public static bool DeskRecordAt(string place, string session, out int held, out bool delegated)
+        {
+            held = -1;
+            delegated = false;
+            try
+            {
+                return DeskRecord != null && DeskRecord(place, session, out held, out delegated);
+            }
+            catch (Exception)
+            {
+                held = -1;
+                delegated = false;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// The other tech firms' desk sessions put in or taken out as the sector starts and stops: the firms' kinds,
+        /// and the data centres' while the player has one. Default: nothing.
+        /// </summary>
+        public static Action<bool, bool> SectorSessions;
+
+        /// <summary><see cref="SectorSessions"/> told; a fault in the sessions changes nothing here.</summary>
+        public static void SectorSessionsNow(bool firms, bool centres)
+        {
+            try
+            {
+                SectorSessions?.Invoke(firms, centres);
+            }
+            catch (Exception)
+            {
+                // the sessions' fault: the firms run on, their sessions as they were
             }
         }
 
@@ -328,6 +373,7 @@ namespace RealLifeOverhaul.Tech
 
         public static void Reset()
         {
+            Seekers = null;
             UtilitiesByPhone = null;
             Esteem = null;
             Comfort = null;
@@ -340,6 +386,8 @@ namespace RealLifeOverhaul.Tech
             Stock = null;
             OwnStock = null;
             StudioSessions = null;
+            SectorSessions = null;
+            DeskRecord = null;
             Desks = null;
             Prosecute = null;
             Claim = null;

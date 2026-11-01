@@ -52,6 +52,12 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The chance, in thousandths, that an idle car is hired on a day. Each input moves it one way only.</summary>
         public static int Demand(int carClass, int season, int evt, int cycle, int rate, int rating)
         {
+            return Demand(carClass, season, evt, cycle, rate, rating, 1000);
+        }
+
+        /// <summary>The same with the city's hirers against the anchor day's (the living population: visitors, and residents without a car).</summary>
+        public static int Demand(int carClass, int season, int evt, int cycle, int rate, int rating, int hirers)
+        {
             int k = EstateCatalogue.Clamp(carClass, 0, EstateCatalogue.HireClasses - 1);
             long d = EstateCatalogue.HireDemand[k];
             d = d * (k == EstateCatalogue.HireClasses - 1 && season == 1 ? EstateCatalogue.HireLuxurySummer : EstateCatalogue.HireSeason[EstateCatalogue.Clamp(season, 0, 3)]) / 1000;
@@ -59,6 +65,7 @@ namespace RealLifeOverhaul.Economy
             d = d * EstateCatalogue.HireCycle[EstateCatalogue.Clamp(cycle, 0, 3)] / 1000;
             d = d * EstateCatalogue.Clamp(1000 - (rate - 1000) * EstateCatalogue.HireSlope / 10, EstateCatalogue.RateDemandLeast, EstateCatalogue.RateDemandMost) / 1000;
             d = d * (EstateCatalogue.HireRatingLeast + EstateCatalogue.Clamp(rating, 0, 1000) * EstateCatalogue.HireRatingSpan / 1000) / 1000;
+            d = d * Math.Max(0, hirers) / 1000;
             return (int)Math.Min(EstateCatalogue.HireDemandMost, Math.Max(0, d));
         }
 
@@ -82,7 +89,7 @@ namespace RealLifeOverhaul.Economy
                 return false;
             }
             int key = EstateRules.Hash(car.Id);
-            if (!whatever && EstateRules.Roll(seed, day, ForHire, key) >= Demand(Class(car.Price), c.Season, c.Event, c.Cycle, car.Rate, rating))
+            if (!whatever && EstateRules.Roll(seed, day, ForHire, key) >= Demand(Class(car.Price), c.Season, c.Event, c.Cycle, car.Rate, rating, EstateRules.People(c.Hirers)))
             {
                 return false;
             }

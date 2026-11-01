@@ -62,6 +62,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [The stock market, your listed company and trading bots](economy-markets.md).
 - [Running a business](economy-company.md).
 - [The game studio](game-studio.md): games from a concept pitched at your desk to a life after launch, sold to a real audience with no cap, against rival studios.
+- [The tech firms' markets](tech-firms.md): software, AI, consultancy, security, web, design and data centres in markets sized from the city, against rivals by the same rules, with desk sessions for each kind.
 - [The staff rota planner](economy-rota.md).
 - [Managers for your empire](economy-managers.md).
 - [The company's hierarchy](economy-hierarchy.md): one policy over the managers, escalations up to you, regional managers and executives.

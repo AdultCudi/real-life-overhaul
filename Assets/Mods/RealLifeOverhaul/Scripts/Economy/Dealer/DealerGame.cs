@@ -11,6 +11,18 @@ using Vehicles.VehicleTypes;
 
 namespace RealLifeOverhaul.Economy.Dealership
 {
+    /// <summary>What the car showroom asks of the rest of the mod, each with a default; Wiring fills them in.</summary>
+    public static class DealerBridges
+    {
+        /// <summary>Thousandths of the anchor day's car buyers among the city's people (the living population); 0 for none, as before. Default: none.</summary>
+        public static Func<int> Buyers;
+
+        public static void Reset()
+        {
+            Buyers = null;
+        }
+    }
+
     /// <summary>
     /// Everything the dealership reads from or does to the game. A car of the stock is a game vehicle at the showroom's address,
     /// so the game spawns and saves it; money moves as the game's own transactions there. Nothing per frame.
@@ -173,6 +185,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 h.ShopCustomers = 0f;   // a building the game cannot size has no visitors
             }
             h.Promotion = reg.promotion != null ? reg.promotion.total : 0;
+            h.Buyers = DealerBridges.Buyers != null ? Mathf.Max(0, DealerBridges.Buyers()) : 0;
             h.BaseMultiplier = save.gameVariables != null ? save.gameVariables.baseCustomerPromotionMultiplier : 0.5f;
             h.Satisfaction = reg.satisfaction != null ? reg.satisfaction.overall : 50;
             Staff(reg, out h.Staff, out h.Skill);

@@ -37,6 +37,7 @@ namespace RealLifeOverhaul.Utilities
         // read each day, never saved
         public int Scale;                                               // the end game's share today, set by the company before the rules run
         public int Cover = EndScaleRules.Full;                          // how far its crews cover what they need, thousandths
+        public readonly int[] People = new int[Districts];              // thousandths of each district's homes and businesses against the anchor day's (the living population); 0 is read as 1000
 
         public bool Running => State == CompanyState.Running;
         public bool Exists => State != CompanyState.None;
@@ -104,11 +105,21 @@ namespace RealLifeOverhaul.Utilities
         /// <summary>A district's homes and businesses at the city's real size.</summary>
         public static int MarketAtScale(int district) => BroadbandCatalogue.Market[district] * BroadbandCatalogue.MarketScale / 1000;
 
-        /// <summary>A district's connections for the company: the old number, or, dug at scale, the real size as the scale comes in.</summary>
+        /// <summary>
+        /// A district's connections for the company: the old number, or, dug at scale, the real size as the scale comes in; either moved by the district's homes
+        /// and businesses against the anchor day's where the living population runs (households forming and leaving, businesses opening and closing).
+        /// </summary>
         public static int MarketOf(Network n, int district)
         {
             int before = BroadbandCatalogue.Market[district];
-            return n != null && n.Scaled[district] ? EndScaleRules.Mix(before, MarketAtScale(district), n.Scale) : before;
+            int size = n != null && n.Scaled[district] ? EndScaleRules.Mix(before, MarketAtScale(district), n.Scale) : before;
+            return (int)Math.Min(int.MaxValue / 4, (long)size * PeopleOf(n, district) / 1000);
+        }
+
+        /// <summary>Thousandths of a district's homes and businesses against the anchor day's: a thousand with no living population.</summary>
+        public static int PeopleOf(Network n, int district)
+        {
+            return n != null && district >= 0 && district < Network.Districts && n.People[district] > 0 ? n.People[district] : 1000;
         }
 
         /// <summary>What extending a network dug before the scale costs: the scale's network less what it cost; 0 with nothing to extend.</summary>

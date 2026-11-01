@@ -154,8 +154,8 @@ internal static partial class Program
     private static void HeadhunterProductRoom()
     {
         Check(FirmsCatalogue.ProductsPerFirm == 12 && FirmsCatalogue.ProductsMost == 36 && FirmsCatalogue.WithdrawnKept == 12 && FirmsCatalogue.FeaturesMost == 24
-              && FirmsCatalogue.ProductsStored == 48,
-            "products: 12 a firm, 36 together, 12 withdrawn kept, 24 features at most, 48 read back from the save");
+              && FirmsCatalogue.ProductsStored == SectorCatalogue.ProductsMost + FirmsCatalogue.WithdrawnKept && SectorCatalogue.ProductsMost == 48 && SectorCatalogue.ProductsPerFirm == 16,
+            "products: 12 a firm, 36 together, 12 withdrawn kept, 24 features at most; under Living population 16 a firm and 48 together, so 60 read back from the save");
         FirmsFile two = ProductFile(8, 8);
         Check(FirmsRules.LiveCount(two, null) == 16 && FirmsRules.Room(two, "St~1") == FirmsRules.RoomYes && FirmsRules.Room(two, "St~2") == FirmsRules.RoomYes,
             "products: two firms with 8 each (16 together, where the old limit stopped both) can each start another");
@@ -281,7 +281,7 @@ internal static partial class Program
             "hire sources: the game's own discard takes the candidate out, and the arrival check reads the save's list");
         string app = ModSource(@"Tech\TechDirector.FirmsApp.cs");
         string newProduct = MemberText(app, "internal Product NewProduct(");
-        Check(CodeAt(newProduct, "FirmsRules.Room(_firmsFile, place) != FirmsRules.RoomYes") > 0 && CodeAt(newProduct, "FirmsCatalogue.ProductsMost") < 0
+        Check(CodeAt(newProduct, "FirmsRules.Room(_firmsFile, place, _sectorOn) != FirmsRules.RoomYes") > 0 && CodeAt(newProduct, "FirmsCatalogue.ProductsMost") < 0
               && CodeAt(MemberText(app, "internal void Withdraw(int id)"), "FirmsRules.TrimWithdrawn(_firmsFile, p)") > 0,
             "products sources: a new product asks the room rule, and a withdrawal trims the list");
         string pages = ModSource(@"Tech\Firms\TechApp.Pages.cs");

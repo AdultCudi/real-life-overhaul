@@ -51,6 +51,7 @@ namespace RealLifeOverhaul.Population
                     moved += s.Region.MovedInLast + s.Region.MovedOutLast;
                 }
             }
+            DemandWhole();
             UseFigures();
             PopulationGame.RedrawMine();
             SharedCity.Changed(PopulationShare.Part);

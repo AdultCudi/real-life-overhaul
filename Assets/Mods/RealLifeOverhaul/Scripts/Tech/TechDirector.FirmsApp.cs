@@ -118,7 +118,7 @@ namespace RealLifeOverhaul.Tech
         internal Product NewProduct(string place, ProductKind kind, Segment segment, int scope)
         {
             FirmPlace firm = FirmOf(place);
-            if (firm == null || !FirmsRules.Makes(firm.File.K, kind) || FirmsRules.Room(_firmsFile, place) != FirmsRules.RoomYes || Save == null)
+            if (firm == null || !FirmsRules.Makes(firm.File.K, kind) || FirmsRules.Room(_firmsFile, place, _sectorOn) != FirmsRules.RoomYes || Save == null)
             {
                 return null;   // the page does not offer the button then, and says which limit it is
             }
@@ -229,6 +229,7 @@ namespace RealLifeOverhaul.Tech
                 return false;
             }
             long upfront = FirmsRules.Take(w, firm.File.Place, Save.Day) * Prices.Level / 1000;
+            SectorRules.Urgent(w, Save.Day);   // an attack is answered in days, not a week
             if (upfront > 0)
             {
                 FirmsGame.Takings(upfront, firm.Reg, firm.File.Name, null);

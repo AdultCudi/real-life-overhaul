@@ -40,8 +40,12 @@ namespace RealLifeOverhaul.Utilities
             }
         }
 
+        /// <summary>A district's homes and businesses against the anchor day's, thousandths, by the game's id (the living population); 0 for none, as before. Default: none.</summary>
+        public static Func<string, int> Connections;
+
         public static void Reset()
         {
+            Connections = null;
             Grade = null;
             Household = null;
             CloseFor = null;
