@@ -15,6 +15,7 @@ namespace RealLifeOverhaul.Flare
         public const int StudioNewsArg = 20;             // a business post's Arg from here on is a studio's news (Arg - 20 is Tech.StudioNews; 30 a devlog)
         public const int DevlogArg = 30;
         public const int CrowdfundArg = 31;
+        public const int SectorNewsArg = 40;             // ...and from here a tech firm's news (Arg - 40 is Tech.SectorNews: Tech/Sector/SectorBridges)
         public const int GamesKind = -2;                 // a post about games: interested are the residents who play (the population's games), not a household's taste
         public const int DevlogHypeMost = 80;            // thousandths of the audience a devlog excites at the most: a trailer's (StudioCatalogue.HypeTrailer)
         public const int DevlogPerFan = 400;             // thousandths of hype for each interested resident, over the city's adults who care for games
@@ -95,6 +96,27 @@ namespace RealLifeOverhaul.Flare
             cents += (long)Math.Max(0, beyond) * BeyondPledges / 1000 * BeyondPledgeWhole * 100;
             return Math.Min(goal, cents);
         }
+
+        /// <summary>A tech firm's news as residents take it: a launch, a benchmark or an award good (+1), an outage, a breach or an incident bad (-1), a rival's neither.</summary>
+        public static int SectorSign(int news)
+        {
+            switch (news)
+            {
+                case 0:   // Tech.SectorNews.Launch
+                case 3:   // Benchmark
+                case 7:   // Award
+                    return 1;
+                case 1:   // Outage
+                case 2:   // Breach
+                case 8:   // Incident
+                    return -1;
+                default:
+                    return 0;
+            }
+        }
+
+        /// <summary>A rival's news (a product shipped, a price cut, a tender won): the city's own post, never a firm of the player's.</summary>
+        public static bool SectorRival(int news) => news == 4 || news == 5 || news == 6;
 
         /// <summary>A campaign's pledges with no residents to count: the player's followers alone, as those beyond the city give.</summary>
         public static long PledgesFollowers(int followers, long goal)

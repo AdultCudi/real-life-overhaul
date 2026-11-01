@@ -125,10 +125,10 @@ internal static partial class Program
         string scripts = ModScripts();
         var keys = new List<string>();
         foreach (string file in Directory.GetFiles(System.IO.Path.Combine(scripts, "Social", "Flare", "City"), "*.cs")
-                     .Concat(new[] { "FlareDirector.Residents.cs", "FlareDirector.Tests.City.cs", "FlareApp.City.cs", "FlareDirector.Creator.cs", "FlareDirector.Studio.cs", "FlareDirector.Trends.cs", "FlareText.cs", "FlareText.Live.cs" }
+                     .Concat(new[] { "FlareDirector.Residents.cs", "FlareDirector.Tests.City.cs", "FlareApp.City.cs", "FlareDirector.Creator.cs", "FlareDirector.Studio.cs", "FlareDirector.Trends.cs", "FlareDirector.Sector.cs", "FlareText.cs", "FlareText.Live.cs" }
                                  .Select(f => System.IO.Path.Combine(scripts, "Social", "Flare", f))))
         {
-            const string Ours = "flare_city|flare_ad|flare_offer|flare_creator|flare_studio|flare_post_deal|guide_flare_city|meta_title_flare_city|transaction_flare";
+            const string Ours = "flare_city|flare_ad|flare_offer|flare_creator|flare_studio|flare_sector|flare_post_deal|guide_flare_city|meta_title_flare_city|transaction_flare";
             foreach (Match m in Regex.Matches(File.ReadAllText(file), "\"(reallife_(?:" + Ours + ")[a-z0-9_]*)\""))
             {
                 string k = m.Groups[1].Value;
@@ -143,7 +143,8 @@ internal static partial class Program
             keys.Add("reallife_flare_city_target_" + t);
         }
         keys.Add("reallife_opt_tip_living_flare");
-        Check(AllIn(keys.ToArray(), out string missing) && keys.Count > 70 && keys.Contains("reallife_flare_studio_crowdfund") && keys.Contains("reallife_flare_post_deal_2"), "flare city texts: every key its screens, sheet, notices and tests name in en, pt and zh-cn (" + keys.Count + "; " + missing + ")");
+        Check(AllIn(keys.ToArray(), out string missing) && keys.Count > 70 && keys.Contains("reallife_flare_studio_crowdfund") && keys.Contains("reallife_flare_post_deal_2")
+              && keys.Contains("reallife_flare_sector_news_8"), "flare city texts: every key its screens, sheet, notices and tests name in en, pt and zh-cn (" + keys.Count + "; " + missing + ")");
         Dictionary<string, string> en = LocaleFile("en");
         string[] notices = { "reallife_flare_city_test_off", "reallife_flare_city_test_wait", "reallife_flare_city_test_day_done", "reallife_flare_city_test_no_business",
                              "reallife_flare_city_test_post_done", "reallife_flare_city_test_ad_done", "reallife_flare_city_test_page_done", "reallife_flare_city_test_offer_done",

@@ -477,9 +477,9 @@ namespace RealLifeOverhaul.Flare
             for (int i = 0; i < _file.Posts.Count; i++)
             {
                 FlarePost p = _file.Posts[i];
-                if (p.Day != day || p.Author != FlareAuthor.Business || p.Source != FlareSource.BusinessPost || p.Place == null)
+                if (p.Day != day || p.Author != FlareAuthor.Business || p.Source != FlareSource.BusinessPost || p.Place == null || p.Arg >= FlareCityRules.StudioNewsArg)
                 {
-                    continue;
+                    continue;   // a studio's or a tech firm's news was heard as it was posted (FlareDirector.Studio, .Sector)
                 }
                 string key = FlareCityPass.PlaceToKey(p.Place);
                 if (key != null)

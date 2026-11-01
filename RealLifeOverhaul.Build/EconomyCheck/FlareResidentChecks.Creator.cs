@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using RealLifeOverhaul.Flare;
 using RealLifeOverhaul.Population;
+using SectorNews = RealLifeOverhaul.Tech.SectorNews;
 
 // Flare in the city, the player as a creator, the studio on Flare, the market and the council (the brief's fourth, sixth, seventh, eighth and ninth
 // steps), game-free on the population's city: the city's businesses offer paid posts only from Local on, one open at a time, never the player's own,
@@ -132,5 +133,20 @@ internal static partial class Program
         string residents = File.ReadAllText(System.IO.Path.Combine(ModScripts(), "Social", "Flare", "FlareDirector.Residents.cs"));
         Check(links.Contains("StudioBridges.Talk = Talk;") && links.Contains("StudioBridges.Devlog = Devlog;") && links.Contains("StudioBridges.Crowdfund = Crowdfund;") && links.Contains("StudioBridges.Talk = null;")
               && residents.Contains("CreatorDay(residents,"), "flare city sources: the studio's three bridges are Flare's, and the creator's day follows the residents' day");
+
+        // the other tech firms' news (Tech/Sector/SectorBridges.Talk)
+        bool signs = FlareCityRules.SectorSign((int)SectorNews.Launch) == 1 && FlareCityRules.SectorSign((int)SectorNews.Benchmark) == 1
+                     && FlareCityRules.SectorSign((int)SectorNews.Award) == 1 && FlareCityRules.SectorSign((int)SectorNews.Outage) == -1
+                     && FlareCityRules.SectorSign((int)SectorNews.Breach) == -1 && FlareCityRules.SectorSign((int)SectorNews.Incident) == -1
+                     && FlareCityRules.SectorSign((int)SectorNews.RivalShipped) == 0 && FlareCityRules.SectorSign((int)SectorNews.TenderWon) == 0;
+        bool rivals = FlareCityRules.SectorRival((int)SectorNews.RivalShipped) && FlareCityRules.SectorRival((int)SectorNews.RivalCut)
+                      && FlareCityRules.SectorRival((int)SectorNews.TenderWon) && !FlareCityRules.SectorRival((int)SectorNews.Launch)
+                      && !FlareCityRules.SectorRival((int)SectorNews.Award) && !FlareCityRules.SectorRival((int)SectorNews.Outage);
+        string sector = File.ReadAllText(System.IO.Path.Combine(ModScripts(), "Social", "Flare", "FlareDirector.Sector.cs"));
+        string live = File.ReadAllText(System.IO.Path.Combine(ModScripts(), "Social", "Flare", "FlareText.Live.cs"));
+        Check(signs && rivals && (int)SectorNews.Count == 9 && FlareCityRules.SectorNewsArg > FlareCityRules.CrowdfundArg && links.Contains("SectorBridges.Talk = SectorTalk;")
+              && links.Contains("SectorBridges.Talk = null;") && sector.Contains("if (Following || string.IsNullOrEmpty(name))") && sector.Contains("Kind = (int)Spend.Digital")
+              && live.Contains("if (p.Arg >= FlareCityRules.SectorNewsArg)") && residents.Contains("p.Arg >= FlareCityRules.StudioNewsArg)"),
+            "flare city sources: the other tech firms' news is Flare's: a firm of the player's posts on its page, its launch drawing residents and its outage keeping them away, a rival's is the city's own post, on the host alone");
     }
 }

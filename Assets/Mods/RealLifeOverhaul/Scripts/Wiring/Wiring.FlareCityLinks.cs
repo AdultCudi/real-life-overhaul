@@ -12,7 +12,8 @@ namespace RealLifeOverhaul
         /// clamp and becomes an attention source through PopulationAttention"): Flare reads the population this machine runs and its pools
         /// (FlareBridges.Residents, Pools), hears of each day the population lived (CityPopulation.DayLived) and is one of the population's
         /// attention sources, so what residents heard of a business draws people to it from its rivals in the same pools. Nothing per frame: the
-        /// population asks the source once a game day a business, and its day's event comes once a game day.
+        /// population asks the source once a game day a business, and its day's event comes once a game day. The game studio's news, devlogs and
+        /// crowdfunding (StudioBridges) and the other tech firms' news (SectorBridges.Talk) are Flare's posts, heard by the residents.
         /// </summary>
         public static class FlareCityLinks
         {
@@ -29,10 +30,12 @@ namespace RealLifeOverhaul
                 StudioBridges.Talk = Talk;
                 StudioBridges.Devlog = Devlog;
                 StudioBridges.Crowdfund = Crowdfund;
+                SectorBridges.Talk = SectorTalk;
             }
 
             internal static void Disconnect()
             {
+                SectorBridges.Talk = null;
                 StudioBridges.Talk = null;
                 StudioBridges.Devlog = null;
                 StudioBridges.Crowdfund = null;
@@ -55,6 +58,23 @@ namespace RealLifeOverhaul
                 catch (Exception e)
                 {
                     Fault("FlareCityLinks.Talk", e);
+                }
+            }
+
+            // The other tech firms on Flare (Tech/Sector/SectorBridges): a firm of the player's posts its news on its page, a rival's is the city's; Flare off, nothing.
+            private static void SectorTalk(int news, string place, string name, long figure)
+            {
+                try
+                {
+                    FlareDirector flare = FlareDirector.Instance;
+                    if (flare != null && flare.Running)
+                    {
+                        flare.SectorNews(news, place, name, figure);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareCityLinks.SectorTalk", e);
                 }
             }
 
