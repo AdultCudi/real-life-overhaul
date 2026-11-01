@@ -50,6 +50,7 @@ namespace RealLifeOverhaul.Ui
         public string PeopleCount;
         public UiPersonRow[] People = new UiPersonRow[0];
         public string PeopleMore;                  // a link to all of them in the table; null for none
+        public string TrainWords;                  // the train button's words, said once over the skills
         public float AssignX, AssignY, AssignW;    // written back: where the choice stood, so the page opens its list under it
     }
 
@@ -96,6 +97,9 @@ namespace RealLifeOverhaul.Ui
         public UiDataTableModel Table = new UiDataTableModel();
         public UiStaffPerson Person;               // one person's page; null for the squad
         public UiStaffPreview Preview;             // the row under the cursor, beside the table; null for none
+        public bool EmptyOnly;                     // nobody at all to list (not a filter's empty list): the empty state takes the page
+        public UiIcon EmptyIcon = UiIcon.People;
+        public string EmptyTitle, EmptyBody, EmptyAction;
         public int OpenList = -1;                  // the choice whose list is open: a filter's index, UiStaff.ListAssign or ListMass; -1 for none
         public string[] Options = new string[0];
         public int OptionChosen = -1;
@@ -119,16 +123,17 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class UiStaff
     {
-        public const int SwitchCommand = 200, AssignCommand = 201, TrainCommand = 202, OptionCommand = 203, PreviewCommand = 204;
+        public const int SwitchCommand = 200, AssignCommand = 201, TrainCommand = 202, OptionCommand = 203, PreviewCommand = 204, EmptyCommand = 205;
+        public const int HeldCommand = 206;                 // a page's target while a card stands over it: it answers nothing until the card goes
+        private const float PersonGridRow = 60f;            // px: a person with a face and two bars, as the window's people
         public const int PreviewLink = -1;                  // PreviewCommand's argument for the link to the page; an action's index otherwise
         public const float PreviewLeast = 1360f;            // px: the narrowest page that takes the preview beside its table
         private const float PreviewShare = 0.24f;           // of the page's width, the preview's
-        private const float PeopleLeast = 2f * 60f + 40f;   // px: room for the people's title and two of them, or they are left out
+        private const float PeopleLeast = 60f + 40f;        // px: room for the people's title and a row of them, or they are left out
         public const int ListAssign = 10, ListMass = 11;   // OpenList for the assignment's and a mass action's choice; 0 up a filter's
         private const float WorkShare = 0.5f;               // of the page's width, the skills' and work's column beside the demands
         private const float DemandRow = 48f;                // px: a demand with its line under its name
         private const float MetColumn = 136f;               // px: the met mark and its words
-        private const float AssignShare = 0.6f;             // of the work column, the assignment's choice
 
         public static void Lay(UiScene s, UiStaffModel m, UiFrame frame, bool dark, IUiKeys keys)
         {
@@ -165,6 +170,15 @@ namespace RealLifeOverhaul.Ui
             {
                 s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
             }
+            if (m.Card != null)
+            {
+                // The card has the keys and the pointer: the page under it answers nothing, so no press or rest lands there.
+                for (int i = 0; i < s.NodeCount; i++)
+                {
+                    s.Nodes[i].Command = HeldCommand;
+                    s.Nodes[i].Disabled = true;
+                }
+            }
             UiDraw.PromptBar(s, under, keys);
             if (m.Card != null)
             {
@@ -176,17 +190,44 @@ namespace RealLifeOverhaul.Ui
         public static void Squad(UiScene s, UiAt at, UiStaffModel m, float x, float y, float w, float h, IUiKeys keys)
         {
             float top = y;
+            if (m.EmptyOnly)
+            {
+                UiDraw.EmptyState(s, at, x, y, w, h, m.EmptyIcon, m.EmptyTitle, m.EmptyBody, m.EmptyAction, EmptyCommand, keys);
+                return;
+            }
             if (!string.IsNullOrEmpty(m.Next) || m.LeadActions.Length > 0)
             {
                 y = UiAppWindow.Lead(s, at, m.Next, m.LeadActions, x, y, w, keys);
             }
             float pw = m.Preview != null && m.Table.RowCount > 0 && w >= PreviewLeast ? UiDraw.SnapDown(w * PreviewShare) : 0f;
+            if (pw <= 0f && m.Preview != null && m.Preview.Actions.Length > 0 && m.Table.RowCount > 0)
+            {
+                // Too narrow for the preview: the row's own action stands at the right over the table, so it is still pressed.
+                float right = x + w;
+                for (int i = m.Preview.Actions.Length - 1; i >= 0; i--)
+                {
+                    ref UiActionModel a = ref m.Preview.Actions[i];
+                    float bw = UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, a.Key, keys);
+                    right -= bw;
+                    UiDraw.Button(s, at, right, y, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, PreviewCommand, i, a.Disabled);
+                    right -= UiTokens.S3;
+                }
+                y += UiTokens.Control + UiTokens.S4;
+            }
             m.TableX = x;
             m.TableY = y;
             UiDataTable.Lay(s, at, m.Table, x, y, pw > 0f ? w - pw - UiTokens.S6 : w, top + h - y, keys);
             if (pw > 0f)
             {
+                int first = s.NodeCount;
                 Preview(s, at, m.Preview, x + w - pw, y, pw, top + h - y, keys);
+                // Right from the preview goes nowhere (the window's close is not the way on), Left goes back to the row it shows.
+                int row = m.Table.Selected >= 0 ? s.FindNode(UiDataTable.First + UiDataTable.Row, m.Table.Selected) : -1;
+                for (int i = first; i < s.NodeCount; i++)
+                {
+                    s.Nodes[i].Right = i;
+                    s.Nodes[i].Left = row;
+                }
             }
         }
 
@@ -247,7 +288,8 @@ namespace RealLifeOverhaul.Ui
                 py += UiTokens.S6;
                 UiDraw.Text(s, on, ix, py, inner, UiStyle.SectionHeader, UiRole.Text, p.DemandsTitle, UiFlags.Label | UiFlags.Truncate);
                 py += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2;
-                float foot = y + ph - UiTokens.S4 - (string.IsNullOrEmpty(p.Link) ? 0f : UiTokens.S2 + UiTokens.Control);
+                float foot = y + ph - UiTokens.S4 - (string.IsNullOrEmpty(p.Link) ? 0f : UiTokens.S2 + UiTokens.Control)
+                             - (p.Actions.Length > 0 ? UiTokens.S4 + p.Actions.Length * (UiTokens.Control + UiTokens.S2) - UiTokens.S2 : 0f);
                 for (int i = 0; i < p.Demands.Length && py + UiTokens.ControlSmall <= foot; i++)
                 {
                     PreviewDemand(s, on, ref p.Demands[i], ix, py, inner);
@@ -295,74 +337,104 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>
-        /// One person: the head across with the actions at its right, then two columns, the skills and the work at the left
-        /// and the wants and demands at the right.
+        /// One person: the head across with the actions at its right, then two columns (the skills and the work at the left,
+        /// the wants and demands at the right), and under both the people beside them in two columns. The skills, the
+        /// satisfaction and the choice of business share one label column, so their tracks and the choice start at one edge
+        /// and their figures end at one. Right from the left column stays there, as nothing at the right takes a press.
         /// </summary>
         public static void Person(UiScene s, UiAt at, UiStaffPerson p, float x, float y, float w, float h, IUiKeys keys)
         {
             float bottom = y + h;
             y = UiAppWindow.Profile(s, at, p.Profile, p.Actions, x, y, w, keys);
             float lw = UiDraw.SnapDown(w * WorkShare), gap = UiTokens.S8, rw = w - lw - gap;
-            float ly = Skills(s, at, p, x, y, lw, keys);
-            ly = Work(s, at, p, x, ly, lw, keys);
-            if (p.People.Length > 0 && bottom - ly >= PeopleLeast)
+            int left = s.NodeCount;
+            bool train = false;
+            for (int i = 0; i < p.Skills.Length; i++)
             {
-                // Who works beside them, as Football Manager lists a player's team-mates: as many as fit, then the way to all.
-                UiAppWindow.People(s, at, p.PeopleTitle, p.PeopleCount, p.People, p.PeopleMore, null, UiRole.None, null, x, ly, lw, bottom - ly);
+                train |= !string.IsNullOrEmpty(p.Skills[i].Train);
             }
-            Demands(s, at, p, x + lw + gap, y, rw, bottom - y);
+            float bw = train ? lw - UiTokens.ControlSmall - UiTokens.S3 : lw;   // the bars' and rows' width: the train buttons stand past it
+            float labels = Labels(p, bw);
+            float ly = Skills(s, at, p, x, y, lw, bw, labels);
+            ly = Work(s, at, p, x, ly, bw, labels);
+            for (int i = left; i < s.NodeCount; i++)
+            {
+                s.Nodes[i].Right = i;
+            }
+            float ry = Demands(s, at, p, x + lw + gap, y, rw, bottom - y);
+            float py = Math.Max(ly, ry);
+            if (p.People.Length > 0 && bottom - py >= PeopleLeast)
+            {
+                PeopleGrid(s, at, p, x, py, lw, rw, gap, bottom);
+            }
         }
 
-        // The skills as graded bars on one label column, each with its train button at the right where the game offers it.
-        private static float Skills(UiScene s, UiAt at, UiStaffPerson p, float x, float y, float w, IUiKeys keys)
+        // The one label column the skills, the satisfaction and the choice of business share.
+        private static float Labels(UiStaffPerson p, float w)
+        {
+            var labels = new string[p.Skills.Length + 2];
+            for (int i = 0; i < p.Skills.Length; i++)
+            {
+                labels[i] = p.Skills[i].Label;
+            }
+            labels[p.Skills.Length] = p.Satisfaction >= 0 ? p.SatisfactionLabel : null;
+            labels[p.Skills.Length + 1] = p.AssignLabel;
+            return UiDraw.LabelColumn(w, labels);
+        }
+
+        // The skills as graded bars on the shared label column, each with the game's train button at its end as a glyph on a
+        // tile, where the game offers it; the button's words stand once, at the right of the block's title.
+        private static float Skills(UiScene s, UiAt at, UiStaffPerson p, float x, float y, float w, float bw, float labels)
         {
             if (p.Skills.Length == 0)
             {
                 return y;
             }
-            y = Title(s, at, p.SkillsTitle, x, y, w);
-            float trainW = 0f;
-            var labels = new string[p.Skills.Length];
-            for (int i = 0; i < p.Skills.Length; i++)
+            bool train = bw < w;
+            if (train && !string.IsNullOrEmpty(p.TrainWords))
             {
-                labels[i] = p.Skills[i].Label;
-                if (!string.IsNullOrEmpty(p.Skills[i].Train))
-                {
-                    trainW = Math.Max(trainW, UiDraw.ButtonWidth(UiButtonKind.Secondary, p.Skills[i].Train, UiIcon.Cap, UiAction.Count, keys));
-                }
+                float tw = UiDraw.Snap(UiTextRules.Width(p.TrainWords, UiStyle.Small) + UiTokens.S1);
+                float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader));
+                UiDraw.Text(s, at, x, y, w - tw - UiTokens.IconSmall - UiTokens.S4, UiStyle.SectionHeader, UiRole.Text, p.SkillsTitle, UiFlags.Label | UiFlags.Truncate);
+                UiDraw.Icon(s, at, x + w - tw - UiTokens.IconSmall - UiTokens.S1, y + (lh - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Cap, UiRole.None, UiFlags.Middle, true);
+                UiDraw.TextMiddle(s, at, x + w - tw, y, lh, tw, UiStyle.Small, UiRole.Text2, p.TrainWords, UiFlags.Label | UiFlags.Right);
+                y += lh + UiTokens.S3;
             }
-            float bw = trainW > 0f ? w - trainW - UiTokens.S4 : w;
-            float lw = UiDraw.LabelColumn(bw, labels);
+            else
+            {
+                y = Title(s, at, p.SkillsTitle, x, y, w);
+            }
             for (int i = 0; i < p.Skills.Length; i++)
             {
                 float ry = y + i * UiTokens.Control;
-                UiDraw.GradeBar(s, at, x, ry + (UiTokens.Control - UiTokens.PairRow) / 2f, bw, p.Skills[i].Label, p.Skills[i].Value, lw);
+                UiDraw.GradeBar(s, at, x, ry + (UiTokens.Control - UiTokens.PairRow) / 2f, bw, p.Skills[i].Label, p.Skills[i].Value, labels);
                 if (!string.IsNullOrEmpty(p.Skills[i].Train))
                 {
-                    UiDraw.Button(s, at, x + w - trainW, ry + (UiTokens.Control - UiTokens.ControlSmall) / 2f, trainW, UiTokens.ControlSmall, UiButtonKind.Secondary,
-                        p.Skills[i].Train, UiIcon.Cap, UiAction.Count, keys, TrainCommand, i);
+                    UiDraw.IconButton(s, at, x + w - UiTokens.ControlSmall, ry + (UiTokens.Control - UiTokens.ControlSmall) / 2f, UiTokens.ControlSmall, UiIcon.Cap,
+                        UiIconTints.Of(UiIcon.Cap), TrainCommand, i);
                 }
             }
             return y + p.Skills.Length * UiTokens.Control + UiTokens.S6;
         }
 
-        // The work: where they are assigned as the game's choice, their satisfaction graded, a few facts as rows, and a note.
-        private static float Work(UiScene s, UiAt at, UiStaffPerson p, float x, float y, float w, IUiKeys keys)
+        // The work: where they are assigned as the game's choice (from the shared label column to the bars' end), their
+        // satisfaction graded on the same column, a few facts as rows ending where the figures end, and a note.
+        private static float Work(UiScene s, UiAt at, UiStaffPerson p, float x, float y, float w, float labels)
         {
             y = Title(s, at, p.WorkTitle, x, y, w);
+            float cx = x + labels + UiTokens.S3;
             if (p.AssignLabel != null)
             {
-                float cw = UiDraw.SnapDown(w * AssignShare);
-                UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, w - cw - UiTokens.S3, UiStyle.Body, UiRole.Text2, p.AssignLabel, UiFlags.Label | UiFlags.Truncate);
-                UiDraw.Choice(s, at, x + w - cw, y, cw, p.AssignValue, AssignCommand, 0, p.AssignDisabled);
-                p.AssignX = x + w - cw;
+                UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, labels, UiStyle.Body, UiRole.Text2, p.AssignLabel, UiFlags.Label | UiFlags.Truncate);
+                UiDraw.Choice(s, at, cx, y, x + w - cx, p.AssignValue, AssignCommand, 0, p.AssignDisabled);
+                p.AssignX = cx;
                 p.AssignY = y;
-                p.AssignW = cw;
-                y += UiTokens.Control + UiTokens.S2;
+                p.AssignW = x + w - cx;
+                y += UiTokens.Control + UiTokens.S3;
             }
             if (p.Satisfaction >= 0)
             {
-                y += UiDraw.GradeBar(s, at, x, y, w, p.SatisfactionLabel, p.Satisfaction, UiDraw.LabelColumn(w, p.SatisfactionLabel, p.RowLabels.Length > 0 ? p.RowLabels[0] : null));
+                y += UiDraw.GradeBar(s, at, x, y, w, p.SatisfactionLabel, p.Satisfaction, labels);
             }
             for (int i = 0; i < p.RowLabels.Length && i < p.RowValues.Length; i++)
             {
@@ -379,16 +451,78 @@ namespace RealLifeOverhaul.Ui
             return y + UiTokens.S6;
         }
 
+        // The people beside them across the page in the page's two columns, each their face,
+        // name, role and two graded bars as the window's people are drawn, as many as fit, then the way to all of them.
+        private static void PeopleGrid(UiScene s, UiAt at, UiStaffPerson p, float x, float y, float colW, float rightW, float gap, float bottom)
+        {
+            float w = colW + gap + rightW;
+            float cw = UiTextRules.Width(p.PeopleCount ?? string.Empty, UiStyle.Small) + UiTokens.S1;
+            UiDraw.Text(s, at, x, y, w - cw - UiTokens.S4, UiStyle.SectionHeader, UiRole.Text, p.PeopleTitle, UiFlags.Label | UiFlags.Truncate);
+            if (!string.IsNullOrEmpty(p.PeopleCount))
+            {
+                UiDraw.Text(s, at, x + w - cw, y, cw, UiStyle.Small, UiRole.Muted, p.PeopleCount, UiFlags.Right);
+            }
+            float ty = y + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3;
+            float moreH = string.IsNullOrEmpty(p.PeopleMore) ? 0f : UiTokens.Control;
+            int fit = Math.Max(0, (int)((bottom - moreH - ty) / PersonGridRow)) * 2;
+            int shown = Math.Min(p.People.Length, fit);
+            int rightFirst = -1;
+            for (int i = 0; i < shown; i++)
+            {
+                int column = i % 2;
+                if (column == 1 && rightFirst < 0)
+                {
+                    rightFirst = s.NodeCount;
+                }
+                int before = s.NodeCount;
+                PersonCell(s, at, ref p.People[i], x + column * (colW + gap), ty + (i / 2) * PersonGridRow, column == 0 ? colW : rightW, i);
+                if (column == 1)
+                {
+                    for (int n = before; n < s.NodeCount; n++)
+                    {
+                        s.Nodes[n].Right = n;   // the right column's people: nothing lies further right
+                    }
+                }
+            }
+            if (moreH > 0f)
+            {
+                UiDraw.LinkRow(s, at, x, ty + ((shown + 1) / 2) * PersonGridRow, colW, UiTokens.Control, p.PeopleMore, UiAppWindow.AllCommand, 0);
+            }
+        }
+
+        // One person of the grid: their face, their name, their role behind its glyph, and two attributes graded.
+        private static void PersonCell(UiScene s, UiAt at, ref UiPersonRow person, float x, float y, float w, int index)
+        {
+            float rowH = PersonGridRow - UiTokens.S1;
+            int row = UiDraw.Box(s, at, x - UiTokens.S2, y, w + UiTokens.S4, rowH, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
+            UiAt inside = at.In(row);
+            float face = UiTokens.AvatarRow;
+            UiDraw.Portrait(s, inside, x, y + (rowH - face) / 2f, face, person.Name, person.Hue, UiRole.None);
+            float tx = x + face + UiTokens.S3, half = UiDraw.SnapDown((x + w - tx) * 0.46f);
+            float lh = UiTextRules.LineHeight(UiStyle.Title);
+            float top = y + (rowH - lh - UiTokens.S1 - UiTokens.Icon) / 2f;
+            UiDraw.Text(s, inside, tx, top, half, UiStyle.Title, UiRole.Text, person.Name, UiFlags.Truncate | UiFlags.Middle);
+            UiDraw.Icon(s, inside, tx, top + lh + UiTokens.S1, UiTokens.IconSmall, person.RoleIcon, person.RoleTint, UiFlags.Middle, true);
+            UiDraw.TextMiddle(s, inside, tx + UiTokens.IconSmall + UiTokens.S1, top + lh + UiTokens.S1 - (UiTokens.Icon - UiTokens.IconSmall) / 2f, UiTokens.Icon,
+                half - UiTokens.IconSmall - UiTokens.S1, UiStyle.Small, UiRole.Text2, person.Role, UiFlags.Truncate);
+            float bx = tx + half + UiTokens.S3, bw = x + w - bx;
+            float by = y + (rowH - UiTokens.PairRow * 2f) / 2f;
+            float lw = UiDraw.LabelColumn(bw, person.FirstLabel, person.SecondLabel);
+            UiDraw.GradeBar(s, inside, bx, by, bw, person.FirstLabel, person.First, lw);
+            UiDraw.GradeBar(s, inside, bx, by + UiTokens.PairRow, bw, person.SecondLabel, person.Second, lw);
+            UiDraw.Node(s, at, x - UiTokens.S2, y, w + UiTokens.S4, rowH, UiAppWindow.PersonCommand, index, row);
+        }
+
         // The wants and demands: each its kind's glyph on a tile, its name and a line under it, how much it matters as a chip
-        // and whether it is met, as many as the room holds.
-        private static void Demands(UiScene s, UiAt at, UiStaffPerson p, float x, float y, float w, float h)
+        // and whether it is met, as many as the room holds. Returns the y under them.
+        private static float Demands(UiScene s, UiAt at, UiStaffPerson p, float x, float y, float w, float h)
         {
             float bottom = y + h;
             y = Title(s, at, p.DemandsTitle, x, y, w);
             if (p.Demands.Length == 0)
             {
-                UiDraw.Text(s, at, x, y, w, UiStyle.Body, UiRole.Text2, p.DemandsEmpty, UiFlags.Label | UiFlags.Wrap, 3);
-                return;
+                int words = UiDraw.Text(s, at, x, y, w, UiStyle.Body, UiRole.Text2, p.DemandsEmpty, UiFlags.Label | UiFlags.Wrap, 3);
+                return UiDraw.Snap(s.Items[words].Y + s.Items[words].H) + UiTokens.S6;
             }
             bool met = false;
             for (int i = 0; i < p.Demands.Length; i++)
@@ -432,6 +566,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 y += DemandRow;
             }
+            return y + UiTokens.S6;
         }
 
         // The tabs' run across their band, as the window lays them (each its tile, its name and its count, a step apart).

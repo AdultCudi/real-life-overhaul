@@ -42,7 +42,8 @@ internal static partial class Program
 
     private static readonly int[] StaffCommands =
     {
-        UiAppWindow.NavCommand, UiAppWindow.ActionCommand, UiStaff.SwitchCommand, UiStaff.AssignCommand, UiStaff.TrainCommand, UiStaff.OptionCommand, UiStaff.PreviewCommand,
+        UiAppWindow.NavCommand, UiAppWindow.ActionCommand, UiStaff.SwitchCommand, UiStaff.AssignCommand, UiStaff.TrainCommand, UiStaff.OptionCommand, UiStaff.PreviewCommand, UiStaff.EmptyCommand,
+        UiStaff.HeldCommand,
         UiAppWindow.PersonCommand, UiAppWindow.AllCommand,
         UiDataTable.First + UiDataTable.Head, UiDataTable.First + UiDataTable.Filter, UiDataTable.First + UiDataTable.Search, UiDataTable.First + UiDataTable.Row,
         UiDataTable.First + UiDataTable.Pick, UiDataTable.First + UiDataTable.Mass, UiDataTable.First + UiDataTable.Done, UiDataTable.First + UiDataTable.Clear,
@@ -72,8 +73,10 @@ internal static partial class Program
         Check(mass[1].Arg == 2 && mass[1].Kind == UiButtonKind.Destructive && mass[4].Arg == 0 && mass[4].Kind == UiButtonKind.Primary,
             "staff: firing stands first and assigning a business (the employees' main) last, each pointing at the game's own action by its place");
         Check(mass[2].Arg == 1 && mass[3].Arg == 3 && mass[3].Icon == UiIcon.None, "staff: the rest keep the game's order, and another mod's action keeps a plain button");
-        Check(m.Table.Rows[0].Ring == UiRole.Ok && m.Table.Rows[1].Ring == UiRole.Danger && StaffViews.Mood(30) == UiRole.Danger && StaffViews.Mood(60) == UiRole.Warn
-              && StaffViews.Mood(61) == UiRole.Ok, "staff: a face's ring is the mood by the game's own steps (red to 30, yellow to 60)");
+        Check(m.Table.Rows[0].Ring == UiTokens.Grade(80) && m.Table.Rows[1].Ring == UiTokens.Grade(20) && StaffViews.Mood(64) == UiTokens.Grade(64),
+            "staff: a face's ring is the mood on the same scale as the satisfaction's meter, so the two never disagree");
+        Check(StaffViews.LabelOf("Days Hired: <b>{daysHired}</b>", "daysHired") == "Days Hired" && StaffViews.LabelOf("Jours depuis l\u2019embauche\u00a0: <b>{daysHired}</b>", "daysHired")
+              == "Jours depuis l\u2019embauche", "staff: the game's own label of a 'Label: value' text, its tags, colon and placeholder taken off");
         v.PickedCount = 0;
         StaffViews.Staff(m, en, v);
         Check(m.Table.Mass[1].Disabled && !m.Table.Mass[0].Disabled, "staff: with nobody picked the mass actions are held and Pick all is not");

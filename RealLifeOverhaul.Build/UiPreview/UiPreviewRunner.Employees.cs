@@ -25,7 +25,7 @@ public static partial class UiPreviewRunner
             else if (person)
             {
                 screen.HoverCommand = UiAppWindow.ActionCommand;
-                screen.HoverArg = 1;
+                screen.HoverArg = st == "person_long" ? 2 : 1;   // the long name's sick day holds its bonus, so the mouse rests on the schedule
                 screen.FocusCommand = UiStaff.TrainCommand;
                 screen.Walk = new[] { Down, Down, Down, Down, Down, Right, Up, Up, Left };
             }
@@ -44,9 +44,9 @@ public static partial class UiPreviewRunner
             else
             {
                 screen.HoverCommand = UiDataTable.First + UiDataTable.Row;
-                screen.HoverArg = 2;
+                screen.HoverArg = st == "employees_1" ? 0 : 2;
                 screen.FocusCommand = UiDataTable.First + UiDataTable.Row;
-                screen.FocusArg = 1;
+                screen.FocusArg = st == "employees_1" ? 0 : 1;
                 screen.Walk = new[] { Down, Down, Down, Right, Right, Down, Down, Left };
             }
             screens.Add(screen);

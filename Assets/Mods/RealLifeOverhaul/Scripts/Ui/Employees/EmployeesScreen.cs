@@ -120,6 +120,8 @@ namespace RealLifeOverhaul.Ui
                     return Option(arg);
                 case UiStaff.PreviewCommand:
                     return arg == UiStaff.PreviewLink && _previewRow < _rows.Count && OpenPerson(_previewRow);
+                case UiStaff.EmptyCommand:
+                    return ShowTab(true);   // nobody hired yet: the way out is the candidates
                 case UiAppWindow.PersonCommand:
                     return arg >= 0 && arg < _mates.Count && OpenMate(_mates[arg]);
                 case UiAppWindow.AllCommand:

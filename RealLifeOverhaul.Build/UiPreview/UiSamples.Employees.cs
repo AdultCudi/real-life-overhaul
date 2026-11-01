@@ -64,7 +64,14 @@ internal static partial class UiSamples
         {
             case "employees_1":
                 v.EmployeeCount = 1;
-                v.Employees = new[] { Employee(t, 0) };
+                v.Employees = new[] { Employee(t, 1) };
+                v.Selected = 0;
+                v.Preview = new StaffPreviewView
+                {
+                    Name = v.Employees[0].Name, Role = v.Employees[0].Role, RoleIcon = StaffViews.SkillIcon(Skills[0]), Business = v.Employees[0].Business,
+                    Status = v.Employees[0].Task, StatusTone = v.Employees[0].TaskTone, Skill = v.Employees[0].Skill, Satisfaction = v.Employees[0].Satisfaction, Age = 29,
+                    Hours = 36, Wage = v.Employees[0].Wage, Demands = 7, DemandsMet = 4, DemandRows = PersonSample(t, v.Employees[0].Name, false, false, false).Demands
+                };
                 break;
             case "employees_0":
                 v.EmployeeCount = 0;
@@ -190,13 +197,13 @@ internal static partial class UiSamples
         }
         v.CandidateRows = rows;
         v.Listed = count + 4;   // the job board's four hidden by the game's toggle
-        v.Selected = 0;
+        v.Selected = 1;   // the cursor on the second row, as the keys' shot rings it
         v.Preview = new StaffPreviewView
         {
-            Candidate = true, Name = rows[0].Name, Role = rows[0].Role, RoleIcon = StaffViews.SkillIcon(Skills[2]), Skill = rows[0].Skill, Age = 27, Wage = rows[0].Wage,
-            Schedule = rows[0].Schedule, Source = rows[0].Source, Expires = rows[0].Expires,
-            Status = StaffViews.Fill(t("reallife_ui_staff_expires", "Expires in {time}"), "time", rows[0].Expires), StatusTone = UiRole.Warn,
-            DemandRows = PersonSample(t, rows[0].Name, true, false, false).Demands
+            Candidate = true, Name = rows[1].Name, Role = rows[1].Role, RoleIcon = StaffViews.SkillIcon(Skills[3]), Skill = rows[1].Skill, Age = 27, Wage = rows[1].Wage,
+            Schedule = rows[1].Schedule, Source = rows[1].Source, Expires = rows[1].Expires,
+            Status = StaffViews.Fill(t("reallife_ui_staff_expires", "Expires in {time}"), "time", rows[1].Expires), StatusTone = UiRole.Muted,
+            DemandRows = PersonSample(t, rows[1].Name, true, false, false).Demands
         };
     }
 
@@ -252,8 +259,7 @@ internal static partial class UiSamples
                 new UiStaffSkill { Label = t(Skills[2], SkillWords[2]), Value = 34, Train = training ? null : train },
             };
         string met = t("reallife_ui_staff_met", "Met"), notMet = t("reallife_ui_staff_not_met", "Not met");
-        string hours = candidate ? null : t("myemployees_employee_hours", "Scheduled {assignedWeeklyHours} hours\nWorked {workedHoursThisWeek} hours")
-            .Replace("{assignedWeeklyHours}", "36").Replace("{workedHoursThisWeek}", "22").Replace("\n", ", ");
+        string hours = candidate ? null : StaffViews.Fill(t("reallife_ui_staff_week_hours", "{worked} of {scheduled} hours"), "worked", "22", "scheduled", "36");
         p.Demands = new[]
         {
             Demand(t, UiIcon.Clock, "ba:jobdemand_fulltime", "Full-time", hours, 2, candidate ? -1 : 1, met, notMet),
@@ -265,14 +271,19 @@ internal static partial class UiSamples
             Demand(t, UiIcon.Package, "ba:jobdemand_seatedatofficechair", "Office Chair", null, 0, candidate ? -1 : 0, met, notMet),
         };
         p.MatesAt = candidate ? p.Role : p.Business;
-        p.Mates = new[]
+        // A candidate's are the staff with their skill; an employee's work beside them at the same business.
+        int[] kinds = candidate ? new[] { 4, 4, 4 } : new[] { 0, 2, 1, 3, 0, 1 };
+        string[] names = { "Nadia Haddad", "Dana Whitfield", "Ines Duarte", "Sam Okoro", "Priya Raman", "Luca Moretti" };
+        int[] skills = { 77, 85, 69, 47, 72, 58 }, moods = { 68, 74, 80, 63, 55, 71 };
+        p.Mates = new StaffMate[kinds.Length];
+        for (int i = 0; i < kinds.Length; i++)
         {
-            new StaffMate { Name = "Nadia Haddad", Role = t(Skills[0], SkillWords[0]), RoleIcon = StaffViews.SkillIcon(Skills[0]), Skill = 77, Satisfaction = 68 },
-            new StaffMate { Name = "Dana Whitfield", Role = t(Skills[2], SkillWords[2]), RoleIcon = StaffViews.SkillIcon(Skills[2]), Skill = 85, Satisfaction = 74 },
-            new StaffMate { Name = "Ines Duarte", Role = t(Skills[1], SkillWords[1]), RoleIcon = StaffViews.SkillIcon(Skills[1]), Skill = 69, Satisfaction = 80 },
-            new StaffMate { Name = "Sam Okoro", Role = t(Skills[3], SkillWords[3]), RoleIcon = StaffViews.SkillIcon(Skills[3]), Skill = 47, Satisfaction = 63 },
-        };
-        p.MatesTotal = candidate ? 4 : 6;
+            p.Mates[i] = new StaffMate
+            {
+                Name = names[i], Role = t(Skills[kinds[i]], SkillWords[kinds[i]]), RoleIcon = StaffViews.SkillIcon(Skills[kinds[i]]), Skill = skills[i], Satisfaction = moods[i]
+            };
+        }
+        p.MatesTotal = kinds.Length;
         return p;
     }
 
@@ -297,11 +308,24 @@ internal static partial class UiSamples
             rows[i] = new RivalRow
             {
                 Name = Firsts[(i + 4) % Firsts.Length] + " " + Lasts[(i * 3 + 11) % Lasts.Length], Skill = t(Skills[kind], SkillWords[kind]), Level = 92 - i * 7,
-                Hours = 24 + (i * 6) % 20, Talking = i == 2, Poached = i == 5
+                Hours = 24 + (i * 6) % 20, Talking = i == 4, Poached = i == 5, SkillKey = Skills[kind]
             };
         }
         var m = new UiStaffModel();
-        StaffViews.Rival(m, t, t("bizman_presentation_rival_employees_list", "Employees working at {businessName}").Replace("{businessName}", "Golden Crust Bakery"), rows, 0);
+        // The cursor on the third, as the keys' shot rings it; the game's offer for them beside the table.
+        var offer = new RivalChosenView
+        {
+            Age = 33, Wage = "$26.40",
+            Demands = new[]
+            {
+                Demand(t, UiIcon.Clock, "ba:jobdemand_fulltime", "Full-time", null, 2, -1, null, null),
+                Demand(t, UiIcon.Calendar, "ba:jobdemand_freeweekends", "No weekends", null, 1, -1, null, null),
+                Demand(t, UiIcon.Package, "ba:jobdemand_coffeemachine", "Coffee Machine", null, 0, -1, null, null),
+                Demand(t, UiIcon.Heart, "ba:jobdemand_silverhealthinsurance", "Silver Health Insurance", null, 1, -1, null, null),
+            }
+        };
+        StaffViews.Rival(m, t, t("bizman_presentation_rival_employees_list", "Employees working at {businessName}").Replace("{businessName}", "Golden Crust Bakery"), rows, 2,
+            offer);
         return m;
     }
 
@@ -326,7 +350,7 @@ internal static partial class UiSamples
             { "ba:jobdemand_fulltime", "Temps plein" }, { "ba:jobdemand_freeweekends", "Pas de week-ends" }, { "ba:jobdemand_nomornings", "Pas de services le matin" },
             { "ba:jobdemand_coffeemachine", "Machine à café" }, { "ba:jobdemand_silverhealthinsurance", "Assurance santé Argent" },
             { "ba:jobdemand_cleanworkplace", "Environnement de travail propre" }, { "ba:jobdemand_seatedatofficechair", "Chaise de bureau" },
-            { "myemployees_employee_hours", "Planifié {assignedWeeklyHours} heures\nTravaillé {workedHoursThisWeek} heures" },
+            { "myemployees_days_hired", "Jours depuis l’embauche : <b>{daysHired}</b>" }, { "common_days", "{value} jours" }, { "smartphone_myemployees", "MyEmployees" },
         };
         return (key, english) => fr.TryGetValue(key, out string words) ? words : t(key, english);
     }

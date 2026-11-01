@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Buildings.BuildingTypes.Shared;
+using Entities;
+using Extensions;
 using EnhancedUI.EnhancedScroller;
 using Localizor.LanguageChangeEvent;
 using UI.Smartphone.Apps.BizMan;
@@ -28,6 +30,8 @@ namespace RealLifeOverhaul.Ui
         private bool _dirty = true;
         private float _next;
         private long _seen;
+        private string _offerOf;           // whose offer is held: the game makes it afresh from their record, once a choice
+        private RivalChosenView _offer;
 
         public RivalStaffScreen(RivalEmployeesUi ui)
         {
@@ -72,8 +76,8 @@ namespace RealLifeOverhaul.Ui
                     }
                     _chosen = arg;
                     return true;
-                case UiAppWindow.ActionCommand:
-                    return Negotiate(data);
+                case UiStaff.PreviewCommand:
+                    return arg == 0 && Negotiate(data);
                 default:
                     return false;
             }
@@ -98,7 +102,7 @@ namespace RealLifeOverhaul.Ui
         {
         }
 
-        public bool Act(UiAction action) => action == UiAction.Alt && Press(UiAppWindow.ActionCommand, 0);
+        public bool Act(UiAction action) => false;   // Negotiate carries F on its own button
 
         public void Reveal(int list, int index)
         {
@@ -148,10 +152,37 @@ namespace RealLifeOverhaul.Ui
                 {
                     Name = row != null ? row.EmployeeName : string.Empty, Skill = row != null ? row.PrimarySkill.Item1 : string.Empty,
                     Level = row != null ? Mathf.RoundToInt(row.PrimarySkill.Item2) : 0, Hours = e != null ? e.GetExpectedHoursPerWeek() : 0,
-                    Talking = e != null && e.HasActiveSalaryNegotiation, Poached = e != null && e.isPoached
+                    Talking = e != null && e.HasActiveSalaryNegotiation, Poached = e != null && e.isPoached, SkillKey = e != null ? e.primarySkillName : null
                 };
             }
-            StaffViews.Rival(_m, UiText.Words, string.IsNullOrEmpty(titled) ? UiText.T("smartphone_rivals") : titled, rows, _chosen);
+            RivalChosenView offer = data.Count > 0 ? Offer(data[_chosen]) : null;
+            StaffViews.Rival(_m, UiText.Words, string.IsNullOrEmpty(titled) ? UiText.T("smartphone_rivals") : titled, rows, _chosen, offer);
+        }
+
+        // The chosen one as the game would offer them: the game makes the person it negotiates with from its own record
+        // (AiBusinessEmployeeData.GetEmployeeInstance, seeded by their id, so the same each time), read once a choice, never
+        // kept or added anywhere. The wage is what they would be paid at the city's prices (Core/PaidWage).
+        private RivalChosenView Offer(RivalEmployeeModel row)
+        {
+            AiBusinessEmployeeData data = row != null ? row.EmployeeData : null;
+            if (data == null)
+            {
+                return null;
+            }
+            if (data.id == _offerOf && _offer != null)
+            {
+                return _offer;
+            }
+            EmployeeInstance e = data.GetEmployeeInstance();
+            _offerOf = data.id;
+            _offer = new RivalChosenView();
+            if (e != null)
+            {
+                _offer.Age = e.characterData != null ? TimeHelper.GetYearsByDays(e.characterData.ageInDays) : 0;
+                _offer.Wage = PaidWage.NowMoney(e.hourlyWage, e.id).ToCurrencyFormat();
+                _offer.Demands = EmployeesScreen.DemandsOf(e, true, null);
+            }
+            return _offer;
         }
 
         // The chosen row's own Negotiate in the game's table: its cell brought into the game's (unseen) view and pressed, so

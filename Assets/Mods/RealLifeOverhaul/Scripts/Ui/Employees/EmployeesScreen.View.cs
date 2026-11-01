@@ -30,7 +30,7 @@ namespace RealLifeOverhaul.Ui
 
         // The game's header of each column, which sorts its table (BaTable: a header's name is the model's field); null: none.
         private static readonly string[] EmployeeHeaders = { "EmployeeName", "CurrentBusinessName", "PrimarySkill", "HourlyWage", "Satisfaction", "Task" };
-        private static readonly string[] CandidateHeaders = { "EmployeeName", "PrimarySkill", "HourlyWage", "Schedule", null, "ExpiresIn" };
+        private static readonly string[] CandidateHeaders = { "EmployeeName", "PrimarySkill", "Schedule", null, "HourlyWage", "ExpiresIn" };
 
         private const string TrainingTask = "myemployees_task_training";   // the game's task words while they train (EmployeeInstance.GetCurrentTask)
         private const string AbsentTask = "myemployees_task_absent";
@@ -734,7 +734,12 @@ namespace RealLifeOverhaul.Ui
         // met, by the game's own rule its box asks (JobDemand.Fulfilled), and the hours or days scheduled and worked.
         private void Demands(EmployeeInstance e, StaffPersonView p, bool candidate) => p.Demands = DemandsOf(e, candidate, p.Demands);
 
-        private static UiStaffDemand[] DemandsOf(EmployeeInstance e, bool candidate, UiStaffDemand[] into)
+        /// <summary>
+        /// A person's wants and demands from their record (an employee, a candidate, a rival's staff as the game would offer
+        /// them), each with how much it matters and, for the hired, whether it is met by the game's own rule its box asks
+        /// (JobDemand.Fulfilled), with the hours or days scheduled and worked under the demand that asks for them.
+        /// </summary>
+        internal static UiStaffDemand[] DemandsOf(EmployeeInstance e, bool candidate, UiStaffDemand[] into)
         {
             List<string> demands = e.demands;
             int n = demands != null ? demands.Count : 0;
@@ -748,15 +753,16 @@ namespace RealLifeOverhaul.Ui
                 string note = null;
                 if (!candidate && d is HoursWorkingPerWeek)
                 {
-                    note = "myemployees_employee_hours".Localize(new { e.assignedWeeklyHours, e.workedHoursThisWeek }).ToString();
+                    note = StaffViews.Fill(UiText.T("reallife_ui_staff_week_hours"), "worked", UiText.Whole(e.workedHoursThisWeek), "scheduled", UiText.Whole(e.assignedWeeklyHours));
                 }
                 else if (!candidate && d is DaysWorkingPerWeek)
                 {
-                    note = "myemployees_employee_days".Localize(new { assignedWeeklyDays = e.assignedWeeklyDays.Count, workedDays = e.workedDays }).ToString();
+                    note = StaffViews.Fill(UiText.T("reallife_ui_staff_week_days"), "worked", UiText.Whole(e.workedDays), "scheduled",
+                        UiText.Whole(e.assignedWeeklyDays != null ? e.assignedWeeklyDays.Count : 0));
                 }
                 rows[i] = new UiStaffDemand
                 {
-                    Icon = DemandIcon(key), Name = key.GetLocalization(), Note = OneLine(note),
+                    Icon = DemandIcon(key), Name = key.GetLocalization(), Note = note,
                     Priority = d != null ? d.PriorityLocalizeKey.GetLocalization() : null, PriorityTone = d != null ? PriorityTone(d.priority) : UiRole.Muted,
                     Met = candidate || d == null ? -1 : fulfilled ? 1 : 0, MetWords = fulfilled ? met : notMet
                 };
@@ -826,9 +832,6 @@ namespace RealLifeOverhaul.Ui
 
         // What they do now, as the game's table colours it: no task red, sick amber, training the cyan, at work quiet.
         private static UiRole TaskTone(string task, bool absent) => task == null ? UiRole.Danger : task == AbsentTask || absent ? UiRole.Warn : task == TrainingTask ? UiRole.Accent : UiRole.Muted;
-
-        // The game's two lines ("Scheduled 36 hours" over "Worked 12 hours") on the one line under a demand's name.
-        private static string OneLine(string text) => string.IsNullOrEmpty(text) ? null : text.Replace("\r", string.Empty).Replace("\n", ", ");
 
         private static string Words(Transform t)
         {
