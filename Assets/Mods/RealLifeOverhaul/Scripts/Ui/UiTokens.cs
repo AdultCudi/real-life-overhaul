@@ -64,6 +64,11 @@ namespace RealLifeOverhaul.Ui
         Grade4,
         Grade5,
         Tile,         // an icon's tile: a slate a step lighter than the panel, the icon in its own colour on it
+        Ramp1,        // five steps of a figure low to high, for a map and its legend: an ordered ramp, never the chart's hues
+        Ramp2,
+        Ramp3,
+        Ramp4,
+        Ramp5,
         Count
     }
 
@@ -353,6 +358,11 @@ namespace RealLifeOverhaul.Ui
             0xB4D45AFF,   // Grade4
             0x74D35AFF,   // Grade5: excellent
             0x344457FF,   // Tile: neutral, as a warm colour faded on slate turns brown and olive
+            0x6880D4FF,   // Ramp1: low. Lightness rises a step at a time, blue to yellow, so the order reads under colour blindness
+            0x3BA8D9FF,   // Ramp2
+            0x1ACBBDFF,   // Ramp3
+            0x91DF7FFF,   // Ramp4
+            0xFEEA74FF,   // Ramp5: high
         };
 
         /// <summary>A role's colour, as 0xRRGGBBAA. One look: the flag stays for the callers that still pass it.</summary>
@@ -363,6 +373,9 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>An attribute's grade colour for a value of 0 to 100, poor to excellent in five steps.</summary>
         public static UiRole Grade(int value) => value < 30 ? UiRole.Grade1 : value < 50 ? UiRole.Grade2 : value < 65 ? UiRole.Grade3 : value < 80 ? UiRole.Grade4 : UiRole.Grade5;
+
+        /// <summary>A step of the ramp for a figure from low (0) to high (4), as a map is coloured and its legend keyed.</summary>
+        public static UiRole Ramp(int step) => (UiRole)((int)UiRole.Ramp1 + System.Math.Max(0, System.Math.Min(4, step)));
 
         /// <summary>The chart hue of a slice, in order and then round again.</summary>
         public static UiRole Chart(int slice) => (UiRole)((int)UiRole.Chart1 + ((slice % 8) + 8) % 8);

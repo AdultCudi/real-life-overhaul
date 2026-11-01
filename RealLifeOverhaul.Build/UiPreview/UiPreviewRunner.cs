@@ -122,7 +122,9 @@ public static class UiPreviewRunner
         {
             new Screen { Name = "1_person_info_panel", AppName = "Rosa Stanley", Lay = (s, f, d, k) => UiInfoPanel.Lay(s, UiSamples.Person(English), f, d, k), Backdrop = "13.jpg",
                 HoverCommand = UiInfoPanel.LinkCommand, HoverArg = 1 * 16 + 1, Extra = true },
-            new Screen { Name = "2_people_info_view", AppName = "The city's people", Lay = (s, f, d, k) => UiInfoView.Lay(s, UiSamples.People(English), f, d, k), Backdrop = "11.jpg" },
+            // The city map with its blocks coloured by rent, as the info view would leave it: the game's own map, painted for the preview.
+            new Screen { Name = "2_people_info_view", AppName = "The city's people", Lay = (s, f, d, k) => UiInfoView.Lay(s, UiSamples.People(English), f, d, k),
+                Backdrop = "map_rent.png" },
             new Screen { Name = "3_studio_app_window", AppName = "Tech", Lay = (s, f, d, k) => UiAppWindow.Lay(s, UiSamples.Studio(English), f, d, k), Backdrop = "02.jpg",
                 App = UiSamples.AppTech, HoverCommand = UiAppWindow.RowCommand, HoverArg = 1, Extra = true },
             new Screen { Name = "4_desk_session_decision", AppName = "Desk", Lay = (s, f, d, k) => UiDecision.Lay(s, UiSamples.Meeting(English), f, d, k), Backdrop = "11.jpg" },

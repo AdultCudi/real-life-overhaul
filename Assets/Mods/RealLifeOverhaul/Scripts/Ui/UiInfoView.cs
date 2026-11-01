@@ -39,7 +39,8 @@ namespace RealLifeOverhaul.Ui
         private const float Cell = 44f;        // px: a view's icon button
         private const float DonutSize = 112f;  // px
 
-        private static readonly UiRole[] Steps = { UiRole.Chart5, UiRole.Chart1, UiRole.Chart3, UiRole.Chart4, UiRole.Chart2 };
+        // An ordered ramp, so the map's colours never read as the donut's categories beside them.
+        private static readonly UiRole[] Steps = { UiRole.Ramp1, UiRole.Ramp2, UiRole.Ramp3, UiRole.Ramp4, UiRole.Ramp5 };
 
         public static void Lay(UiScene s, UiInfoViewModel m, UiFrame frame, bool dark, IUiKeys keys)
         {

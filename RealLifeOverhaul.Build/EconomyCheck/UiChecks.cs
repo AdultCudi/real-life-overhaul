@@ -223,7 +223,19 @@ internal static partial class Program
             }
             Check(pair >= 8.0 && beside >= 12.0, "ui tokens: the chart's hues stay apart under " + names[k] + " (closest pair " + pair.ToString("0.0") + ", closest neighbours " + beside.ToString("0.0")
                 + "; at least 8 and 12)");
+            // A map's ramp is ordered: each step lighter than the last as this eye sees it, and apart from its neighbours.
+            double rise = double.MaxValue, apart = double.MaxValue;
+            for (int i = 0; i < 4; i++)
+            {
+                double[] a = SeenLab(UiTokens.Colour(UiTokens.Ramp(i)), kinds[k]), b = SeenLab(UiTokens.Colour(UiTokens.Ramp(i + 1)), kinds[k]);
+                rise = Math.Min(rise, b[0] - a[0]);
+                apart = Math.Min(apart, LabDistance(a, b));
+            }
+            Check(rise >= 5.0 && apart >= 12.0, "ui tokens: the map's ramp rises in lightness and stays apart under " + names[k] + " (least rise " + rise.ToString("0.0")
+                + " L*, closest neighbours " + apart.ToString("0.0") + "; at least 5 and 12)");
         }
+        float low = UiContrast(UiRole.Ramp1, UiRole.Panel, true);
+        Check(low >= UiCheckRules.LargeContrast, "ui tokens: the ramp's lowest step reads 3:1 on the panel as a legend's swatch (" + low.ToString("0.00") + ")");
     }
 
     // A colour as an eye with a colour vision deficiency sees it, in CIELAB.
