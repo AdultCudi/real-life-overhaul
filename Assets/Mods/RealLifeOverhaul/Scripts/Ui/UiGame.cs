@@ -339,6 +339,7 @@ namespace RealLifeOverhaul.Ui
             m.AllApps = UiScreenSwitches.On("all_apps");
             m.AllAppsOpen = UiShell.AppsOpen;
             m.AppsPress = true;
+            m.AllAppsLabel = UiText.T("reallife_ui_shell_all_apps");
         }
 
         /// <summary>The game's own pictures the kit uses in place of the family's, named for the look behind the loading screen.</summary>

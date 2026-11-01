@@ -20,6 +20,19 @@ namespace RealLifeOverhaul.Ui
         private const int ChromeFirst = 9010, ChromeLast = 9019;   // the frame's own commands: the app row, All apps and what may join them
         private const int RowMost = 10;                            // tiles before All apps: the phone's first page is eight, with room for a long one
 
+        /// <summary>
+        /// News waiting on a tile (an app, a folder): a small soft white dot at its top right corner, clear of the glyph, set
+        /// in a ring of what stands round the tile so it reads on a slate tile and on the chosen cyan alike. One mark for
+        /// news on every tile; a list row counts it in a badge.
+        /// </summary>
+        public static void NewsDot(UiScene s, UiAt on, float right, float top, UiRole ring, UiFlags flags = UiFlags.None)
+        {
+            const float outer = UiTokens.S4, inner = UiTokens.S2;   // 16 px with its ring, 8 px the dot
+            float x = right - outer / 2f, y = top - outer / 2f;   // centred on the corner: past the glyph's box but for a hair
+            int r = Circle(s, on, x, y, outer, outer, ring, UiFlags.Overflow | flags);
+            Circle(s, on.In(r), x + (outer - inner) / 2f, y + (outer - inner) / 2f, inner, inner, UiRole.Text, UiFlags.Overflow | flags);
+        }
+
         /// <summary>True for a command of the frame's (the app row, All apps), which the host hands to its Chrome.</summary>
         public static bool IsChrome(int command) => command >= ChromeFirst && command <= ChromeLast;
 
@@ -39,24 +52,29 @@ namespace RealLifeOverhaul.Ui
         // px the keys' prompts may take at the bar's right while the keys lead; the row stays centred clear of them on both sides.
         private const float PromptRoom = 520f;
 
+        private const byte RowRegion = 240;   // the d-pad's column of its own: Left and Right walk the row, Up leaves it
+
         // The row, centred in the bar's upper row. Pressable only where the frame answers it (the full menu); elsewhere a
-        // tile is a picture of where the player is.
-        private static void AppRow(UiScene s, UiAt on, float y, float w, UiStatusModel m)
+        // tile is a picture of where the player is. Its tiles are linked left and right, the All apps tile last, so the
+        // d-pad walks the whole row and never jumps up into the page on its way.
+        private static void AppRow(UiScene s, UiAt on, float y, float w, UiStatusModel m, IUiKeys keys)
         {
             int shown = AppsShown(m, w);
             if (shown == 0 && !m.AllApps)
             {
                 return;
             }
+            UiAt row = on.InRegion(RowRegion);
             float tile = UiTokens.IconTile;
             int count = shown + (m.AllApps ? 1 : 0);
             float total = count * tile + (count - 1) * TileGap;
             float ax = SnapDown((w - total) / 2f), ay = y + (UiFrame.Toolbar - tile) / 2f;
+            int first = s.NodeCount;
             for (int i = 0; i < shown; i++)
             {
                 UiRole tint = m.AppTints != null && i < m.AppTints.Length ? m.AppTints[i] : UiRole.Text2;
                 int badge = m.AppBadges != null && i < m.AppBadges.Length ? m.AppBadges[i] : 0;
-                AppTile(s, on, ax, ay, tile, m.Apps[i], tint, i == m.App, badge, m.AppsPress ? AppRowCommand : -1, i);
+                AppTile(s, row, ax, ay, tile, m.Apps[i], tint, i == m.App, badge, m.AppsPress ? AppRowCommand : -1, i);
                 ax += tile + TileGap;
             }
             if (m.AllApps)
@@ -66,11 +84,21 @@ namespace RealLifeOverhaul.Ui
                 {
                     rest += m.AppBadges[i];   // the apps the row leaves out tell their news on All apps
                 }
-                AppTile(s, on, ax, ay, tile, UiIcon.Grid, UiIconTints.Of(UiIcon.Grid), m.AllAppsOpen, rest, m.AppsPress ? AllAppsCommand : -1, 0);
+                AppTile(s, row, ax, ay, tile, UiIcon.Grid, UiIconTints.Of(UiIcon.Grid), m.AllAppsOpen, rest, m.AppsPress ? AllAppsCommand : -1, 0);
+                if (m.AppsPress && keys != null && keys.Pad != UiPad.None && !string.IsNullOrEmpty(m.AllAppsLabel))
+                {
+                    s.AddPrompt(UiAction.View, m.AllAppsLabel);   // the pad's View opens it from anywhere: said while a pad leads
+                }
+            }
+            for (int n = first; n < s.NodeCount; n++)
+            {
+                s.Nodes[n].Left = n > first ? n - 1 : -1;
+                s.Nodes[n].Right = n < s.NodeCount - 1 ? n + 1 : -1;
             }
         }
 
-        // One tile: the glyph in its colour on slate (dark on the cyan when chosen), its badge at the top right corner.
+        // One tile: the glyph in its colour on slate (dark on the cyan when chosen), a dot of news on its corner, clear of
+        // the glyph (the count is on All apps and on the app's own page).
         private static void AppTile(UiScene s, UiAt on, float x, float y, float tile, UiIcon icon, UiRole tint, bool chosen, int badge, int command, int arg)
         {
             int face = Tile(s, on, x, y, tile, tint, chosen);
@@ -79,10 +107,7 @@ namespace RealLifeOverhaul.Ui
             Icon(s, on.In(face), x + (tile - g) / 2f, y + (tile - g) / 2f, g, icon, chosen ? UiRole.OnAccent : tint, UiFlags.Middle | UiFlags.Chrome, true);
             if (badge > 0)
             {
-                // On the tile's corner as the phone wears it, a step out, still inside the bar and short of the next tile.
-                Badge(s, on.In(face), x + tile + UiTokens.S1, y - UiTokens.S1, badge, !chosen);   // on the chosen tile's cyan a cyan badge would not show
-                s.Items[s.ItemCount - 1].Flags |= UiFlags.Overflow | UiFlags.Chrome;
-                s.Items[s.ItemCount - 2].Flags |= UiFlags.Overflow | UiFlags.Chrome;
+                NewsDot(s, on.In(face), x + tile, y, UiRole.StatusBar, UiFlags.Chrome);
             }
             if (command >= 0)
             {

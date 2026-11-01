@@ -25,7 +25,7 @@ public static partial class UiPreviewRunner
             screens.Add(new Screen { Name = "shell_all_apps_" + fo, AppName = "Contacts", Icon = UiIcon.AddressBook,
                 Lay = (s, f, d, k) =>
                 {
-                    UiListDetail.Lay(s, UiSamples.ContactsWindow(English), f, d, k);
+                    UiListDetail.Lay(s, UiSamples.ContactsWindow(English), Held(f), d, k);
                     UiAllApps.LayOver(s, UiSamples.AllApps(English, fo), f, k);
                 },
                 Backdrop = fo == UiShellApps.Other ? "11.jpg" : "13.jpg", Bar = () => UiSamples.ShellBar(UiSamples.RowContacts, true),
@@ -41,7 +41,7 @@ public static partial class UiPreviewRunner
         screens.Add(new Screen { Name = "shell_question_over_window", AppName = "Contacts", Backdrop = "13.jpg", Icon = UiIcon.AddressBook,
             Lay = (s, f, d, k) =>
             {
-                UiListDetail.Lay(s, UiSamples.ContactsWindow(English), f, d, k);
+                UiListDetail.Lay(s, UiSamples.ContactsWindow(English), Held(f), d, k);
                 UiCard.LayOver(s, UiSamples.Question(English, true, false), f, k);
             },
             Bar = () => UiSamples.ShellBar(UiSamples.RowContacts, false), HoverCommand = UiCard.ButtonCommand, HoverArg = 0, Walk = new[] { Left, Right } });
@@ -56,14 +56,29 @@ public static partial class UiPreviewRunner
         for (int first = 0; first < 14; first += 3)
         {
             int from = first;
-            screens.Add(new Screen { Name = "shell_notices_" + from, AppName = "Notices", Lay = (s, f, d, k) => UiNotices.LayCards(s, UiSamples.NoticeCards(English, from, 3, false), f, d, k),
+            screens.Add(new Screen { Name = "shell_notices_" + from, AppName = "Notices", Lay = (s, f, d, k) => WithBar(s, f, k, () => UiNotices.LayCards(s, UiSamples.NoticeCards(English, from, 3, false), f, d, k)), NoKeys = true, Bar = UiSamples.WalkingBar,
                 Backdrop = from % 2 == 0 ? "02.jpg" : "11.jpg", HoverCommand = UiNotices.CardCommand, HoverArg = 1, Walk = new[] { Down, Down } });
         }
-        screens.Add(new Screen { Name = "shell_notice_long", AppName = "Notices", Lay = (s, f, d, k) => UiNotices.LayCards(s, UiSamples.NoticeCards(English, 3, 1, true), f, d, k),
+        screens.Add(new Screen { Name = "shell_notice_long", AppName = "Notices", Lay = (s, f, d, k) => WithBar(s, f, k, () => UiNotices.LayCards(s, UiSamples.NoticeCards(English, 3, 1, true), f, d, k)), NoKeys = true, Bar = UiSamples.WalkingBar,
             Backdrop = "13.jpg", HoverCommand = UiNotices.CardCommand, HoverArg = 0, Walk = new[] { Down } });
         screens.Add(new Screen { Name = "shell_notice_list", AppName = "Notifications", Lay = (s, f, d, k) => UiNotices.LayList(s, UiSamples.NoticeList(English, false), f, d, k),
             Backdrop = "13.jpg", Icon = UiIcon.Bell, HoverCommand = UiNotices.ClearCommand, HoverArg = 0, Walk = new[] { Up, Down }, Bar = UiSamples.WalkingBar });
         screens.Add(new Screen { Name = "shell_notice_list_empty", AppName = "Notifications", Lay = (s, f, d, k) => UiNotices.LayList(s, UiSamples.NoticeList(English, true), f, d, k),
-            Backdrop = "11.jpg", Icon = UiIcon.Bell, Walk = new[] { Up, Down }, Bar = UiSamples.WalkingBar });
+            Backdrop = "11.jpg", Icon = UiIcon.Bell, Walk = new[] { Up, Down }, HoverCommand = UiDraw.CloseCommand, HoverArg = 0, Bar = UiSamples.WalkingBar });
+    }
+
+    // The window under an overlay, as the game leaves it while the overlay holds the keys: laid as the mouse leads.
+    private static UiFrame Held(UiFrame f)
+    {
+        f.Pointer = true;
+        f.Held = true;
+        return f;
+    }
+
+    // The notice cards over the HUD's status bar, as they stand while walking: the bar under them, the cards on top.
+    private static void WithBar(UiScene s, UiFrame f, IUiKeys k, System.Action cards)
+    {
+        cards();
+        UiDraw.StatusBar(s, f, k);
     }
 }

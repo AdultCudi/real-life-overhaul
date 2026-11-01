@@ -316,6 +316,8 @@ government
 hud_confirm_are_you_sure
 itemhelper_notification_you_are_to_stuffed_to_eat_this
 job_board
+main_menu_mods_warning_body
+main_menu_mods_warning_header
 menu_save
 myemployees_hourlywage
 myemployees_manage_schedule

@@ -27,7 +27,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         // A message on the card; false when the panel should draw it.
-        private static bool Show(string title, string body, KeyValuePair<string, Action>[] buttons)
+        private static bool Show(string title, string body, KeyValuePair<string, Action>[] buttons, bool danger)
         {
             if (!UiDirector.On || !UiScreenSwitches.On("mod_box") || !UiFonts.Ready)
             {
@@ -36,7 +36,7 @@ namespace RealLifeOverhaul.Ui
             try
             {
                 Bind();
-                _screen.Set(title, body, buttons);
+                _screen.Set(title, body, buttons, danger);
                 _root.SetActive(true);
                 _host.Show();
                 return true;
@@ -100,10 +100,11 @@ namespace RealLifeOverhaul.Ui
 
             public bool Dirty => _dirty;
 
-            public void Set(string title, string body, KeyValuePair<string, Action>[] buttons)
+            public void Set(string title, string body, KeyValuePair<string, Action>[] buttons, bool danger)
             {
                 _buttons = buttons == null || buttons.Length == 0 ? new[] { new KeyValuePair<string, Action>("reallife_meta_ok", null) } : buttons;
-                _m.Icon = _buttons.Length > 1 ? UiIcon.Warning : UiIcon.Info;
+                _m.Icon = danger ? UiIcon.Warning : UiIcon.Info;   // a reset or a removal warns; a note informs
+                _m.BodyLines = 28;       // its explanations run long (what a reset keeps and what it ends), each line of it read
                 _m.Title = title;
                 _m.Body = body;
                 _m.Buttons = new UiActionModel[_buttons.Length];
@@ -124,10 +125,11 @@ namespace RealLifeOverhaul.Ui
                     for (int i = 0; i < _m.Buttons.Length; i++)
                     {
                         bool last = i == _m.Buttons.Length - 1;
-                        _m.Buttons[i].Kind = last ? UiButtonKind.Primary : UiButtonKind.Secondary;
+                        _m.Buttons[i].Kind = last ? (danger ? UiButtonKind.Destructive : UiButtonKind.Primary) : UiButtonKind.Secondary;
                         _m.Buttons[i].Key = last ? UiAction.Alt : i == 0 ? UiAction.Back : UiAction.Count;
                     }
                 }
+                _m.Focus = danger && _m.Buttons.Length > 1 ? 0 : -1;   // what cannot be undone is never where the keys start
                 _m.Prompts = new[]
                 {
                     new UiPrompt { Action = UiAction.Move, Label = UiText.T("reallife_ui_prompt_move") },

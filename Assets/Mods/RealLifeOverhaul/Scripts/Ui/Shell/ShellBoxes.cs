@@ -201,6 +201,7 @@ namespace RealLifeOverhaul.Ui
                 Button cancel = GameContract.AskCancel.Field?.GetValue(_box) as Button, confirm = GameContract.AskConfirm.Field?.GetValue(_box) as Button;
                 _m.Buttons = Answers(Words(GameContract.AskCancelLabel, _box), cancel != null && cancel.gameObject.activeSelf, cancel == null || !cancel.interactable,
                     Words(GameContract.AskConfirmLabel, _box), confirm, negative);
+                _m.Focus = negative && _m.Buttons.Length > 1 ? 0 : -1;   // a negative box starts on its way back
                 _m.Prompts = CardPrompts();
                 _m.PromptCount = _m.Prompts.Length;
                 UiCard.Lay(s, _m, frame.As(UiFrameKind.Card), dark, keys);
@@ -245,7 +246,8 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The way back first, the confirming one last: Back on the one, F on the other; a negative confirm in the danger's look.
-        private static UiActionModel[] Answers(string back, bool backShown, bool backHeld, string yes, Button confirm, bool negative)
+        // While a field takes the keys, the confirm carries no letter's cap: Enter confirms there, and F would be typed.
+        private static UiActionModel[] Answers(string back, bool backShown, bool backHeld, string yes, Button confirm, bool negative, bool typing = false)
         {
             var list = new List<UiActionModel>(2);
             if (backShown)
@@ -254,7 +256,7 @@ namespace RealLifeOverhaul.Ui
             }
             list.Add(new UiActionModel
             {
-                Label = yes, Kind = negative ? UiButtonKind.Armed : UiButtonKind.Primary, Key = UiAction.Alt, Command = UiCard.ButtonCommand, Arg = 1,
+                Label = yes, Kind = negative ? UiButtonKind.Destructive : UiButtonKind.Primary, Key = typing ? UiAction.Count : UiAction.Alt, Command = UiCard.ButtonCommand, Arg = 1,
                 Disabled = confirm == null || !confirm.interactable
             });
             return list.ToArray();
@@ -347,6 +349,8 @@ namespace RealLifeOverhaul.Ui
                 _m.Checked = UiWidgets.On(toggle);
                 _m.Buttons = Answers(UiWidgets.Label(_no) ?? UiText.T("reallife_ui_box_cancel"), _no != null && _no.gameObject.activeSelf, _no == null || !_no.interactable,
                     Words(GameContract.AckConfirmLabel, _box), _yes, false);
+                _m.Focus = _m.Buttons.Length - 1;   // on its agree, never on the opt-out line a reflexive Enter would tick for good
+                _m.BodyLines = 20;                  // the game's warnings run long
                 _m.Prompts = CardPrompts();
                 _m.PromptCount = _m.Prompts.Length;
                 UiCard.Lay(s, _m, frame.As(UiFrameKind.Card), dark, keys);
@@ -475,7 +479,7 @@ namespace RealLifeOverhaul.Ui
                 _shown = _m.Field;
                 _m.Placeholder = UiText.T("reallife_ui_box_type_here");
                 _m.Typing = true;
-                _m.Buttons = Answers(UiText.T("reallife_ui_box_cancel"), true, false, Words(GameContract.TypeButtonText, _box), confirm, false);
+                _m.Buttons = Answers(UiText.T("reallife_ui_box_cancel"), true, false, Words(GameContract.TypeButtonText, _box), confirm, false, true);
                 _m.Prompts = CardPrompts();
                 _m.PromptCount = _m.Prompts.Length;
                 UiCard.Lay(s, _m, frame.As(UiFrameKind.Card), dark, keys);

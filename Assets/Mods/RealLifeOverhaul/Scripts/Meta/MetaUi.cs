@@ -288,14 +288,20 @@ namespace RealLifeOverhaul.Meta
         /// The RLO interface's card for the mod's own messages (Ui/Shell/ShellModBox): true when it drew this one, false to
         /// leave it to the panel here (the interface off, its switch off, its fonts not in yet). Set once by the interface.
         /// </summary>
-        public static Func<string, string, KeyValuePair<string, Action>[], bool> Kit;
+        public static Func<string, string, KeyValuePair<string, Action>[], bool, bool> Kit;
 
         /// <summary>A message with an OK button, or with the buttons given (label key, what it does; the panel closes first).</summary>
         public static void Message(string title, string body, params KeyValuePair<string, Action>[] buttons)
         {
+            Show(title, body, false, buttons);
+        }
+
+        // The message on the interface's card when it can draw it (marked as a danger when its doing button cannot be undone), else on the panel here.
+        private static void Show(string title, string body, bool danger, KeyValuePair<string, Action>[] buttons)
+        {
             try
             {
-                if (Kit != null && Kit(title, body, buttons))
+                if (Kit != null && Kit(title, body, buttons, danger))
                 {
                     return;
                 }
@@ -317,7 +323,13 @@ namespace RealLifeOverhaul.Meta
         /// <summary>A question with a button that does it and one that does not.</summary>
         public static void Confirm(string title, string body, string yesKey, Action yes)
         {
-            Message(title, body, new KeyValuePair<string, Action>(yesKey, yes), new KeyValuePair<string, Action>("reallife_meta_cancel", null));
+            Confirm(title, body, yesKey, yes, false);
+        }
+
+        /// <summary>A question whose doing button cannot be undone (a reset, a removal) when <paramref name="danger"/>: the card warns and starts on Cancel.</summary>
+        public static void Confirm(string title, string body, string yesKey, Action yes, bool danger)
+        {
+            Show(title, body, danger, new[] { new KeyValuePair<string, Action>(yesKey, yes), new KeyValuePair<string, Action>("reallife_meta_cancel", null) });
         }
 
         // The game's font, found behind the loading screen (Core/GameUi/GameFont), asked for when a panel is shown until there is one.

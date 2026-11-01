@@ -74,7 +74,7 @@ namespace RealLifeOverhaul.Ui
             float h = UiTextRules.LineHeight(UiStyle.Title);
             if (!string.IsNullOrEmpty(n.Body))
             {
-                h += UiTokens.S1 + UiTextRules.WrappedHeight(n.Body, UiStyle.Body, inner, BodyLines);
+                h += UiTokens.S1 + UiTextRules.WrappedHeight(Clip(n.Body, inner), UiStyle.Body, inner, BodyLines);
             }
             return UiDraw.Snap(Math.Max(Glyph, h) + UiTokens.S4 * 2f);
         }
@@ -98,10 +98,31 @@ namespace RealLifeOverhaul.Ui
             }
             if (!string.IsNullOrEmpty(n.Body))
             {
-                UiDraw.Text(s, at, cx, ty + lh + UiTokens.S1, cw, UiStyle.Body, UiRole.Text2, n.Body, UiFlags.Wrap | UiFlags.Middle, BodyLines);
+                UiDraw.Text(s, at, cx, ty + lh + UiTokens.S1, cw, UiStyle.Body, UiRole.Text2, Clip(n.Body, cw), UiFlags.Wrap | UiFlags.Middle, BodyLines);
             }
             UiDraw.Node(s, UiAt.Screen, x, y, CardWidth, h, CardCommand, index, card);
             return h;
+        }
+
+        // A card's body at most three lines, ending at a whole word: the rest is on the notice list. Once a layout.
+        private static string Clip(string body, float width)
+        {
+            if (UiTextRules.Lines(body, UiStyle.Body, width, BodyLines + 1, out float _) <= BodyLines)
+            {
+                return body;
+            }
+            string cut = body;
+            int space = cut.LastIndexOf(' ');
+            while (space > 0)
+            {
+                cut = cut.Substring(0, space).TrimEnd(' ', ',', '.', ':', ';');
+                if (UiTextRules.Lines(cut + "…", UiStyle.Body, width, BodyLines + 1, out float _) <= BodyLines)
+                {
+                    return cut + "…";
+                }
+                space = cut.LastIndexOf(' ');
+            }
+            return UiTextRules.Cut(body, UiStyle.Body, width);
         }
 
         /// <summary>How many rows the list shows in its room.</summary>

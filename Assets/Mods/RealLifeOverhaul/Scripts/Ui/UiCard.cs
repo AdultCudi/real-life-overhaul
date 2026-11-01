@@ -13,7 +13,9 @@ namespace RealLifeOverhaul.Ui
         public bool HasField;                        // a text box: one field of words
         public string Field;                         // its words
         public string Placeholder;                   // what it asks for while empty
-        public bool Typing;                          // the field takes the keys now
+        public bool Typing;                          // the field takes the keys now: a caret shows where the words go
+        public int Focus = -1;                       // the button the keys start on (a negative box: the way back), or -1 for the first target
+        public int BodyLines = 8;                    // how far a long body wraps before it ends at a whole word (the mod's long notes take more)
         public UiActionModel[] Buttons = new UiActionModel[0];   // the way back first, the confirming one last
         public UiPrompt[] Prompts = new UiPrompt[0];
         public int PromptCount;
@@ -32,7 +34,11 @@ namespace RealLifeOverhaul.Ui
         public const int ButtonCommand = 1, CheckCommand = 2, FieldCommand = 3;
         public const float Width = 640f;      // px: the card, as wide as a long sentence reads in one sweep
         private const float Emblem = 56f;     // px: the emblem's tile
-        private const int BodyLines = 8;      // a long body wraps this far, then ends at a whole word
+        private const float CaretWidth = 2f;  // px: the field's caret
+        private const int TitleLines = 2;     // a long translation of a header takes a second line, never a cut word
+
+        // The header's height: one line, or two for a long translation.
+        private static float TitleHeight(UiCardModel m, float inner) => UiDraw.Snap(UiTextRules.WrappedHeight(m.Title, UiStyle.AppTitle, inner, TitleLines));
 
         public static void Lay(UiScene s, UiCardModel m, UiFrame frame, bool dark, IUiKeys keys)
         {
@@ -50,6 +56,8 @@ namespace RealLifeOverhaul.Ui
         public static void LayOver(UiScene s, UiCardModel m, UiFrame frame, IUiKeys keys)
         {
             s.PromptCount = 0;
+            s.Pointer = frame.Pointer;
+            s.Held = false;   // the window under it was laid held; the layer over it has the keys
             Card(s, m, frame, keys, new UiAt { Parent = -1, Clip = -1, Layer = 1, Order = -1 });
             UiDraw.PromptBar(s, frame, keys);   // its own bar over the window's, as its canvas stands over the window's in the game
         }
@@ -67,16 +75,21 @@ namespace RealLifeOverhaul.Ui
             float g = UiDraw.Snap(Emblem * 0.57f);
             UiDraw.Icon(s, at.In(tile), ex + (Emblem - g) / 2f, ey + (Emblem - g) / 2f, g, m.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
             float cx = ex + Emblem + UiTokens.S5, cy = y + UiTokens.S6;
-            float titleH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.AppTitle));
-            UiDraw.Text(s, at, cx, cy, inner, UiStyle.AppTitle, UiRole.AccentText, m.Title, UiFlags.Label | UiFlags.Truncate);
-            cy += titleH + UiTokens.S2;
-            if (!string.IsNullOrEmpty(m.Body))
+            float titleH = TitleHeight(m, inner);
+            bool body = !string.IsNullOrEmpty(m.Body);
+            if (!body)
             {
-                float bh = UiTextRules.WrappedHeight(m.Body, UiStyle.Body, inner, BodyLines);
-                UiDraw.Text(s, at, cx, cy, inner, UiStyle.Body, UiRole.Text2, m.Body, UiFlags.Label | UiFlags.Wrap | UiFlags.Middle, BodyLines);
+                cy = ey + UiDraw.SnapDown((Emblem - titleH) / 2f);   // a title alone stands level with its emblem, the field a step under both
+            }
+            UiDraw.Text(s, at, cx, cy, inner, UiStyle.AppTitle, UiRole.AccentText, m.Title, UiFlags.Label | UiFlags.Wrap, TitleLines);
+            cy += titleH + UiTokens.S2;
+            if (body)
+            {
+                float bh = UiTextRules.WrappedHeight(m.Body, UiStyle.Body, inner, m.BodyLines);
+                UiDraw.Text(s, at, cx, cy, inner, UiStyle.Body, UiRole.Text2, m.Body, UiFlags.Label | UiFlags.Wrap | UiFlags.Middle, m.BodyLines);
                 cy += UiDraw.Snap(bh);
             }
-            cy = Math.Max(cy, ey + Emblem) + UiTokens.S5;
+            cy = Math.Max(cy, ey + Emblem) + (body ? UiTokens.S5 : UiTokens.S4);
             if (m.HasField)
             {
                 cy += Field(s, at, m, cx, cy, inner) + UiTokens.S4;
@@ -91,7 +104,11 @@ namespace RealLifeOverhaul.Ui
                 ref UiActionModel b = ref m.Buttons[i];
                 float bw = UiDraw.ButtonWidth(b.Kind, b.Label, b.Icon, b.Key, keys);
                 bx -= bw;
-                UiDraw.Button(s, at, bx, cy, bw, UiTokens.Control, b.Kind, b.Label, b.Icon, b.Key, keys, ButtonCommand, i, b.Disabled);
+                int node = UiDraw.Button(s, at, bx, cy, bw, UiTokens.Control, b.Kind, b.Label, b.Icon, b.Key, keys, ButtonCommand, i, b.Disabled);
+                if (i == m.Focus)
+                {
+                    s.FocusFirst = node;   // a negative box starts on its way back, so a reflexive Enter never does what cannot be undone
+                }
                 bx -= UiTokens.S3;
             }
             for (int i = 0; i < m.PromptCount; i++)
@@ -106,12 +123,13 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The card's height for its words, its field or line and its buttons.</summary>
         public static float Height(UiCardModel m, float inner, IUiKeys keys)
         {
-            float h = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.AppTitle)) + UiTokens.S2;
-            if (!string.IsNullOrEmpty(m.Body))
+            float h = TitleHeight(m, inner) + UiTokens.S2;
+            bool body = !string.IsNullOrEmpty(m.Body);
+            if (body)
             {
-                h += UiDraw.Snap(UiTextRules.WrappedHeight(m.Body, UiStyle.Body, inner, BodyLines));
+                h += UiDraw.Snap(UiTextRules.WrappedHeight(m.Body, UiStyle.Body, inner, m.BodyLines));
             }
-            h = Math.Max(h, Emblem) + UiTokens.S5;
+            h = Math.Max(h, Emblem) + (body ? UiTokens.S5 : UiTokens.S4);
             if (m.HasField)
             {
                 h += UiTokens.Control + UiTokens.S4;
@@ -129,8 +147,16 @@ namespace RealLifeOverhaul.Ui
             float h = UiTokens.Control;
             bool empty = string.IsNullOrEmpty(m.Field);
             int face = UiDraw.Box(s, at, x, y, w, h, UiRole.Field, UiRole.None, UiTokens.RadiusMedium);   // as the search field: the ring alone says where the keys are
-            UiDraw.TextMiddle(s, at.In(face), x + UiTokens.S4, y, h, w - UiTokens.S4 * 2f, UiStyle.Body, empty ? UiRole.Muted : UiRole.Text,
+            float lead = m.Typing && empty ? UiTokens.S2 : 0f;   // the caret before the words it asks for, not over their first letter
+            UiDraw.TextMiddle(s, at.In(face), x + UiTokens.S4 + lead, y, h, w - UiTokens.S4 * 2f - lead, UiStyle.Body, empty ? UiRole.Muted : UiRole.Text,
                 empty ? m.Placeholder : m.Field, UiFlags.Truncate | (empty ? UiFlags.Label : UiFlags.None));
+            if (m.Typing)
+            {
+                // The caret: a thin cyan line where the next letter goes, as a game's own field shows it takes the keys.
+                float cx = x + UiTokens.S4 + Math.Min(empty ? 0f : UiTextRules.Width(m.Field, UiStyle.Body) + UiTokens.S1 / 2f, w - UiTokens.S4 * 2f);
+                float ch = UiTokens.Icon;
+                UiDraw.Box(s, at.In(face), cx, y + (h - ch) / 2f, CaretWidth, ch, UiRole.Accent, UiRole.None, 0f, UiFlags.Decor);
+            }
             UiDraw.Node(s, at, x, y, w, h, FieldCommand, 0, face);
             return h;
         }
@@ -139,17 +165,19 @@ namespace RealLifeOverhaul.Ui
         private static float CheckLine(UiScene s, UiAt at, UiCardModel m, float x, float y, float w)
         {
             float h = UiTokens.Control;
-            int face = UiDraw.Box(s, at, x - UiTokens.S2, y, w + UiTokens.S2 * 2f, h, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
+            int face = UiDraw.Box(s, at, x, y, w, h, UiRole.None, UiRole.None, UiTokens.RadiusLarge);   // inside the words' column, its ring too
             UiAt inside = at.In(face);
             float box = UiTokens.KeyCap;   // 24 px: on the grid in a 40 px row
-            int tick = UiDraw.Box(s, inside, x, y + (h - box) / 2f, box, box, m.Checked ? UiRole.Accent : UiRole.Field, m.Checked ? UiRole.None : UiRole.PanelEdge,
+            float bx = x + UiTokens.S2;
+            int tick = UiDraw.Box(s, inside, bx, y + (h - box) / 2f, box, box, m.Checked ? UiRole.Accent : UiRole.Field, m.Checked ? UiRole.None : UiRole.PanelEdge,
                 UiTokens.RadiusSmall, m.Checked ? UiFlags.Selected : UiFlags.None);
             if (m.Checked)
             {
-                UiDraw.Icon(s, inside.In(tick), x + (box - UiTokens.Icon) / 2f, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Check, UiRole.OnAccent, UiFlags.Middle | UiFlags.Centre);
+                UiDraw.Icon(s, inside.In(tick), bx + (box - UiTokens.Icon) / 2f, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Check, UiRole.OnAccent, UiFlags.Middle | UiFlags.Centre);
             }
-            UiDraw.TextMiddle(s, inside, x + box + UiTokens.S3, y, h, w - box - UiTokens.S3, UiStyle.Body, UiRole.Text, m.Check, UiFlags.Label | UiFlags.Truncate);
-            UiDraw.Node(s, at, x - UiTokens.S2, y, w + UiTokens.S2 * 2f, h, CheckCommand, 0, face);
+            float tx = bx + box + UiTokens.S3;
+            UiDraw.TextMiddle(s, inside, tx, y, h, x + w - tx, UiStyle.Body, UiRole.Text, m.Check, UiFlags.Label | UiFlags.Truncate);
+            UiDraw.Node(s, at, x, y, w, h, CheckCommand, 0, face);
             return h;
         }
     }

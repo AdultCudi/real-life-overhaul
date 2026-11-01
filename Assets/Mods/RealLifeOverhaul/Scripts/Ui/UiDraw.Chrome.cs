@@ -29,6 +29,7 @@ namespace RealLifeOverhaul.Ui
         public static int Window(UiScene s, UiFrame frame, string place, IUiKeys keys)
         {
             s.Pointer = frame.Pointer;
+            s.Held = frame.Held;
             frame.Window(out float x, out float y, out float w, out float h);
             int panel = Box(s, UiAt.Screen, x, y, w, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel | UiFlags.Chrome);   // fixed in size, so its room is the page's to fill
             TitleStrip(s, UiAt.Screen.In(panel), x, y, w, frame.Icon, string.IsNullOrEmpty(place) ? frame.Title : place, true, UiStyle.AppTitle);
@@ -102,7 +103,7 @@ namespace RealLifeOverhaul.Ui
             Box(s, on, 0f, y, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor | UiFlags.Chrome);
             if (m != null)
             {
-                AppRow(s, on, y, w, m);   // UiDraw.AppRow.cs
+                AppRow(s, on, y, w, m, keys);   // UiDraw.AppRow.cs
             }
             s.PromptX = 0f;
             s.PromptY = y;

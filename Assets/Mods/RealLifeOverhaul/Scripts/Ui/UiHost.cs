@@ -61,7 +61,7 @@ namespace RealLifeOverhaul.Ui
         private string _title;
         private UiIcon _icon;
         private Vector2 _laidSize;
-        private bool _laidDark, _arrive, _typing, _typeSoon;
+        private bool _laidDark, _arrive, _typing, _typeSoon, _held;
         private UiPad _laidPad;
         private int _heldX, _heldY;
         private float _nextRepeat;
@@ -164,6 +164,11 @@ namespace RealLifeOverhaul.Ui
             {
                 EndTyping();
                 _view?.SetHover(-1);
+            }
+            if (_held != hold)
+            {
+                _held = hold;
+                Layout();   // a held screen drops its key caps and prompts: the keys are the layer's over it, one key one thing
             }
             enabled = !hold;
         }
@@ -447,7 +452,7 @@ namespace RealLifeOverhaul.Ui
             var rect = (RectTransform)transform;
             Vector2 size = rect.rect.size;
             float scale = _view.Scale;
-            var frame = new UiFrame { Width = size.x / scale, Height = size.y / scale, Top = _top, Band = _band, Title = _title, Icon = _icon, Pointer = !_mode.Ring };
+            var frame = new UiFrame { Width = size.x / scale, Height = size.y / scale, Top = _top, Band = _band, Title = _title, Icon = _icon, Pointer = !_mode.Ring || _held, Held = _held };
             int command = -1, arg = 0;
             if (_view.Focus >= 0 && _view.Focus < _scene.NodeCount)
             {

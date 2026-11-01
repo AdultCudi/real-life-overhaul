@@ -33,6 +33,7 @@ internal static partial class UiSamples
         m.AllAppsOpen = appsOpen;
         m.AllAppsBadge = 2;
         m.AppsPress = true;
+        m.AllAppsLabel = "All apps";
         return m;
     }
 
@@ -68,7 +69,7 @@ internal static partial class UiSamples
             new ShellRow { Id = "RealLifePlanner", Key = "reallife_planner_app", English = "Planner", Badge = 1 },
             new ShellRow { Id = "RealLifeCareer", Key = "reallife_career_app", English = "Career" },
             new ShellRow { Id = "RealLifeCampus", Key = "reallife_campus_app", English = "Campus" },
-            new ShellRow { Id = "RealLifeOpenRoles", Key = "reallife_roles_app", English = "Open roles" },
+            new ShellRow { Id = "RealLifeOpenRoles", Key = "reallife_roles_app", English = "Open Roles" },
         },
         new[]
         {
@@ -125,7 +126,7 @@ internal static partial class UiSamples
             };
         }
         m.RowCount = rows.Length;
-        m.Empty = t(folder == UiShellApps.Other ? "reallife_ui_shell_none_other" : "reallife_ui_shell_none", "No apps in this folder yet.");
+        m.Empty = folder == UiShellApps.Other ? t("reallife_ui_shell_none_other", "No other mod has put an app on the phone. Apps of other mods show here.") : t("reallife_ui_shell_none", "No apps in this folder yet. Apps you put in it on the phone show here.");
         m.Prompts = new[]
         {
             new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
@@ -157,24 +158,23 @@ internal static partial class UiSamples
         new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
     };
 
-    /// <summary>The game's question box: plain, negative (the danger's look) or with a long body.</summary>
+    /// <summary>
+    /// The game's question box, with words of real boxes: the mod's sale of shares (plain), the game's unsaved changes
+    /// (negative: the danger's look, the keys starting on the way back) and the mod's Permadeath question (a long body).
+    /// </summary>
     public static UiCardModel Question(UiWords t, bool negative, bool longBody)
     {
-        string body = negative
-            ? t("reallife_ui_test_question_negative_body", "This is a test of a question about something that cannot be undone. Nothing is lost either way.")
-            : t("reallife_ui_test_question_body", "This is a test question. Pick either answer: nothing else happens.");
-        if (longBody)
-        {
-            body = body + " " + t("reallife_ui_test_ack_body", "This is a test of a warning you agree to. Ticking the line changes nothing here, as the test is never remembered.")
-                   + " " + t("reallife_ui_test_mod_box_body", "This is the mod's own message on the RLO interface's card. Either button closes it.");
-        }
+        string title = negative ? t("hud_confirm_are_you_sure", "Are you sure?") : longBody ? t("reallife_pd_ask_header", "Switch Permadeath on?")
+            : t("reallife_vc_confirm_sell_title", "Sell a tenth of your shares?");
+        string body = negative ? t("change_character_clothes_unsaved_changes_warning", "Unsaved changes will be lost. Continue?") : longBody ? t("reallife_pd_ask_body", "From now on this character can die for good, after a warning: a crash at very high speed, being hit by fast traffic on foot, a mugging refused, an illness left untreated or days without food. A death is saved at once and the save can never be played again. This is for this save only, and you can switch it off again while your character lives.")
+            : t("reallife_vc_confirm_sell_body", "The lead investor buys them at a fifth under the last round's price. You keep the rest.");
         var m = new UiCardModel
         {
-            Icon = negative ? UiIcon.Warning : UiIcon.Info, Title = t("hud_confirm_are_you_sure", "Are you sure?"), Body = body,
+            Icon = negative ? UiIcon.Warning : UiIcon.Info, Title = title, Body = body, Focus = negative ? 0 : -1,
             Buttons = new[]
             {
                 new UiActionModel { Label = t("common_cancel", "Cancel"), Kind = UiButtonKind.Secondary, Key = UiAction.Back, Command = UiCard.ButtonCommand, Arg = 0 },
-                new UiActionModel { Label = t("common_confirm", "Confirm"), Kind = negative ? UiButtonKind.Armed : UiButtonKind.Primary, Key = UiAction.Alt, Command = UiCard.ButtonCommand, Arg = 1 },
+                new UiActionModel { Label = t("common_confirm", "Confirm"), Kind = negative ? UiButtonKind.Destructive : UiButtonKind.Primary, Key = UiAction.Alt, Command = UiCard.ButtonCommand, Arg = 1 },
             },
             Prompts = CardPrompts(t)
         };
@@ -182,14 +182,13 @@ internal static partial class UiSamples
         return m;
     }
 
-    /// <summary>The game's acknowledgement: its warning, the line to tick, Cancel and I agree.</summary>
+    /// <summary>The game's own acknowledgement (its warning about mods made by players), its line to tick, Cancel and I agree.</summary>
     public static UiCardModel Acknowledge(UiWords t, bool ticked)
     {
         var m = new UiCardModel
         {
-            Icon = UiIcon.Warning, Title = t("reallife_ui_test_ack_title", "A test warning"),
-            Body = t("reallife_ui_test_ack_body", "This is a test of a warning you agree to. Ticking the line changes nothing here, as the test is never remembered."),
-            Check = t("reallife_ui_box_dont_show", "Do not show this again"), Checked = ticked,
+            Icon = UiIcon.Warning, Title = t("main_menu_mods_warning_header", "Community Mods Warning"), Body = t("main_menu_mods_warning_body", "You are about to access user generated content\n\n- These mods are created by the community. They are not developed, endorsed, or supported by Hovgaard Games.\n\n- Hovgaard Games does not review, monitor, or scan mods for security, stability, or content.\n\n- Mods may cause crashes, game instability, save file corruption, or other unexpected behavior. In rare cases, malicious mods could pose security risks to your computer. Install and use mods at your own risk.\n\n- We strongly recommend backing up your save files before using mods."), BodyLines = 20,
+            Check = t("reallife_ui_box_dont_show", "Do not show this again"), Checked = ticked, Focus = 1,
             Buttons = new[]
             {
                 new UiActionModel { Label = t("reallife_ui_box_cancel", "Cancel"), Kind = UiButtonKind.Secondary, Key = UiAction.Back, Command = UiCard.ButtonCommand, Arg = 0 },
@@ -201,18 +200,18 @@ internal static partial class UiSamples
         return m;
     }
 
-    /// <summary>The game's text box: what it asks, the field empty or typed in, Cancel and its own confirm (held while empty).</summary>
+    /// <summary>The game's text box as the mod's brands ask for a name: the field empty or typed in, Cancel and Rename (held while empty, no letter's cap while typing).</summary>
     public static UiCardModel TextBox(UiWords t, string typed)
     {
         bool empty = string.IsNullOrEmpty(typed);
         var m = new UiCardModel
         {
-            Icon = UiIcon.Message, Title = t("reallife_ui_test_text_box_ask", "A name for the test"), HasField = true, Field = typed, Typing = true,
+            Icon = UiIcon.Message, Title = t("reallife_brand_name_placeholder", "The brand's name"), HasField = true, Field = typed, Typing = true,
             Placeholder = t("reallife_ui_box_type_here", "Type here"),
             Buttons = new[]
             {
                 new UiActionModel { Label = t("reallife_ui_box_cancel", "Cancel"), Kind = UiButtonKind.Secondary, Key = UiAction.Back, Command = UiCard.ButtonCommand, Arg = 0 },
-                new UiActionModel { Label = t("reallife_ui_test_text_box_ok", "Done"), Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiCard.ButtonCommand, Arg = 1, Disabled = empty },
+                new UiActionModel { Label = t("reallife_brand_name_confirm", "Rename"), Kind = UiButtonKind.Primary, Key = UiAction.Count, Command = UiCard.ButtonCommand, Arg = 1, Disabled = empty },
             },
             Prompts = CardPrompts(t)
         };
@@ -220,17 +219,16 @@ internal static partial class UiSamples
         return m;
     }
 
-    /// <summary>The mod's own message on the card: its title, its words, Cancel and OK.</summary>
+    /// <summary>The mod's own message on the card, its longest real one: the reset of its data, marked as a danger (it cannot be undone), Cancel first.</summary>
     public static UiCardModel ModBox(UiWords t)
     {
         var m = new UiCardModel
         {
-            Icon = UiIcon.Warning, Title = t("reallife_ui_test_mod_box_title", "A test message"),
-            Body = t("reallife_ui_test_mod_box_body", "This is the mod's own message on the RLO interface's card. Either button closes it."),
+            Icon = UiIcon.Warning, Focus = 0, Title = t("reallife_meta_resetdata_title", "Reset the mod's data in this save"), Body = t("reallife_meta_resetdata_explain", "This makes the save as if the mod had just been added to it, and keeps the mod running:\n\n- everything the mod has going is ended (accidents and other incidents, jobs, the mod's people and things on the street);\n- its moods are taken off;\n- its stored data is removed: which life events you have seen, illness, fines owed, job and career progress, your driving licence, your record and court cases, the people you know, custom shop work, and the clothes picked for this save (the picks on the options page stay).\n\nPhone contacts and their messages stay. A backup of the save file is made first (if that fails, nothing is done). The save file itself is not changed until you save."), BodyLines = 28,
             Buttons = new[]
             {
                 new UiActionModel { Label = t("reallife_meta_cancel", "Cancel"), Kind = UiButtonKind.Secondary, Key = UiAction.Back, Command = UiCard.ButtonCommand, Arg = 1 },
-                new UiActionModel { Label = t("reallife_meta_ok", "OK"), Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiCard.ButtonCommand, Arg = 0 },
+                new UiActionModel { Label = t("reallife_meta_resetdata_yes", "Back up and reset"), Kind = UiButtonKind.Destructive, Key = UiAction.Alt, Command = UiCard.ButtonCommand, Arg = 0 },
             },
             Prompts = CardPrompts(t)
         };

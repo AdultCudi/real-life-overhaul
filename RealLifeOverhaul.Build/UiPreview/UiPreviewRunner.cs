@@ -38,6 +38,7 @@ public static partial class UiPreviewRunner
         public bool Extra;        // also a hover shot and a keys shot (the prototype's two that show input)
         public UiIcon Icon;       // the window's icon, as the host is given it in the game
         public Func<UiStatusModel> Bar;   // the status bar it stands over, when not the sample's with App open (the frame's app row)
+        public bool NoKeys;       // takes no key (the notice cards): its keys and pad shots show it as the keys leave it, no ring, no path
     }
 
     private sealed class Shot
@@ -276,10 +277,10 @@ public static partial class UiPreviewRunner
             var scene = new UiScene();
             UiFrame frame = UiFrame.FullMenu(canvasW / CanvasH, shot.Screen.AppName);
             frame.Icon = shot.Screen.Icon;
-            frame.Pointer = !shot.Keys;   // as UiHost lays a screen out while the mouse leads
+            frame.Pointer = !shot.Keys || shot.Screen.NoKeys;   // as UiHost lays a screen out while the mouse leads (always, for one that takes no key)
             IUiKeys keys = shot.Pad == UiPad.None ? (IUiKeys)UiDefaultKeys.Keyboard : UiDefaultKeys.XboxPad;
             shot.Screen.Lay(scene, frame, shot.Dark, keys);
-            view.Ring = shot.Keys;
+            view.Ring = shot.Keys && !shot.Screen.NoKeys;
             view.Write(scene, false);
             int focus = shot.Screen.FocusCommand >= 0 ? scene.FindNode(shot.Screen.FocusCommand, shot.Screen.FocusArg) : UiFocusRules.First(scene);
             focus = focus >= 0 ? focus : UiFocusRules.First(scene);
@@ -299,7 +300,7 @@ public static partial class UiPreviewRunner
                 }
                 view.SetHover(hover);
             }
-            if (shot.Path && focus >= 0)
+            if (shot.Path && focus >= 0 && !shot.Screen.NoKeys)
             {
                 FocusPath(host, scene, focus, shot.Screen.Walk);
             }
