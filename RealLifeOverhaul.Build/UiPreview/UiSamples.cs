@@ -650,7 +650,7 @@ internal static partial class UiSamples
         {
             AppName = t("reallife_ui_contacts_app", "Contacts"),
             GroupsLabel = t("reallife_ui_contacts_groups", "Groups"),
-            PlayerName = "Richy Man",
+            PlayerName = "Alex Carter",
             PlayerHue = 40f,
             PlayerSummary = "13 contacts · 5 unread",
             ListTitle = t("reallife_ui_contacts_all", "All contacts"),
@@ -702,7 +702,7 @@ internal static partial class UiSamples
             Row("Uncle Fred", "Good. Once you’ve got keys, open your first shop. I’ll check in.", "09:02", 1, 40f, true, false, false, null),
             Row("Anderson Recruitment Corp.", "Shall I send the shortlist over?", "08:52", 2, 320f, true, true, false, null),
             Row("City Office", "Fine of $125 deducted from your bank account.", "07:40", 1, 300f, false, true, false, null),
-            Row("Maya Okafor", "Happy to cover Tuesday evenings instead.", "09:15", 0, 12f, true, false, true, t("reallife_ui_contacts_earlier", "Earlier")),
+            Row("Maya Okafor", "You: Let me look at the rota tonight.", "09:20", 0, 12f, true, false, true, t("reallife_ui_contacts_earlier", "Earlier")),
             Row("NY AutoTow Service", "Stuck somewhere? One call and we’ll haul you out, any hour.", "Sun", 0, 230f, true, false, false, null),
             Row("City Workforce Inc.", "Your HQ application is approved. Let us know which roles to fill.", "Thu", 0, 275f, true, false, false, null),
             Row("CityAds", "Your billboard on 7th Ave ends Friday. Renew?", "Wed", 0, 350f, false, false, false, null),
@@ -723,7 +723,7 @@ internal static partial class UiSamples
         m.ActionCount = m.Actions.Length;
         m.Messages = new[]
         {
-            new UiMessageModel { From = UiFrom.Them, Text = "Morning. The café is busy and the new grinder is great.", Time = "07:58" },
+            new UiMessageModel { From = UiFrom.Them, Text = "Morning. The café is busy today.", Time = "07:58" },
             new UiMessageModel { From = UiFrom.Them, Text = "Could I drop the Sunday shift? I’ve picked up a class on weekends.", Time = "09:14" },
             new UiMessageModel { From = UiFrom.Them, Text = "Happy to cover Tuesday evenings instead.", Time = "09:15" },
             new UiMessageModel { From = UiFrom.Me, Text = "Let me look at the rota tonight.", Time = "09:20" },
@@ -735,7 +735,7 @@ internal static partial class UiSamples
         {
             new UiServiceModel { Title = "Approve schedule change", Price = t("reallife_ui_price_free", "Free"), About = "Remove her Sunday shift." },
             new UiServiceModel { Title = "Pay a bonus", Price = "$200", About = "Raises satisfaction for a few weeks." },
-            new UiServiceModel { Title = "Negotiate salary", Price = t("reallife_ui_price_quote", "Quote"), About = "Currently $22/h. She’s asking for $24/h." },
+            new UiServiceModel { Title = "Negotiate salary", Price = "$24/h", About = "Currently $22/h. She’s asking for $24/h." },
         };
         m.ServiceCount = m.Services.Length;
         m.Stats = new[]

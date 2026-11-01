@@ -108,11 +108,11 @@ internal static partial class UiSamples
             Nav = new[]
             {
                 new UiNavEntry { Icon = UiIcon.Grid, Label = "Overview" }, new UiNavEntry { Icon = UiIcon.GameController, Label = "Games", Count = "5" },
-                new UiNavEntry { Icon = UiIcon.People, Label = "Team", Count = "12" }, new UiNavEntry { Icon = UiIcon.ChartLineUp, Label = "Market" },
+                new UiNavEntry { Icon = UiIcon.People, Label = "Team", Count = "12" }, new UiNavEntry { Icon = UiIcon.Globe, Label = "Market" },
                 new UiNavEntry { Icon = UiIcon.Flag, Label = "Rivals", Count = "8" }, new UiNavEntry { Icon = UiIcon.Coin, Label = "Money" },
                 new UiNavEntry { Icon = UiIcon.Trophy, Label = "Awards", Count = "2" },
             },
-            Next = "Next: start a second game. Draft a concept, then pitch it at your desk.", NextTone = UiRole.Warn,
+            Next = "Next: start a second game. Draft a concept, then pitch it at your desk.",
             Actions = new[]
             {
                 new UiActionModel { Label = "Build our own engine", Kind = UiButtonKind.Secondary, Key = UiAction.Option, Command = UiAppWindow.ActionCommand },
@@ -149,7 +149,7 @@ internal static partial class UiSamples
             MoreTitle = "The games market",
             MoreColumns = new[]
             {
-                new UiColumn { Title = "Rival game" }, new UiColumn { Title = "Studio", Width = 176f }, new UiColumn { Title = "Score", Width = 56f, Right = true },
+                new UiColumn { Title = "Rival game" }, new UiColumn { Title = "Studio", Grow = true }, new UiColumn { Title = "Score", Width = 56f, Right = true },
                 new UiColumn { Title = "Copies", Width = 72f, Right = true },
             },
             MoreGrade = 2,
@@ -170,7 +170,7 @@ internal static partial class UiSamples
                 Person("Ava Lindqvist", UiIcon.Code, UiRole.CatTech, "Lead engineer", 86, 72),
                 Person("Marcus Hale", UiIcon.Code, UiRole.CatTech, "Engineer", 64, 58),
                 Person("Priya Raman", UiIcon.PaintBrush, UiRole.CatRetail, "Game designer", 77, 81),
-                Person("Tom Becker", UiIcon.PaintBrush, UiRole.CatRetail, "Designer", 52, 44),
+                Person("Tom Becker", UiIcon.PaintBrush, UiRole.CatRetail, "Level designer", 52, 44),
                 Person("Elena Sokolova", UiIcon.Bug, UiRole.Chart3, "Tester", 61, 66),
                 Person("Jonah Reyes", UiIcon.Lightbulb, UiRole.Chart4, "Producer", 70, 38),
                 Person("Kenji Mori", UiIcon.Code, UiRole.CatTech, "Engineer", 58, 61),
@@ -213,14 +213,14 @@ internal static partial class UiSamples
             Nav = new[]
             {
                 new UiNavEntry { Icon = UiIcon.IdCard, Label = "Profile" }, new UiNavEntry { Icon = UiIcon.Calendar, Label = "Schedule" },
-                new UiNavEntry { Icon = UiIcon.Coin, Label = "Pay" }, new UiNavEntry { Icon = UiIcon.ChartLineUp, Label = "Reviews", Count = "3" },
-                new UiNavEntry { Icon = UiIcon.Handshake, Label = "Requests", Count = "2" },
+                new UiNavEntry { Icon = UiIcon.Coin, Label = "Pay" }, new UiNavEntry { Icon = UiIcon.Star, Label = "Reviews", Count = "3" },
+                new UiNavEntry { Icon = UiIcon.Envelope, Label = "Requests", Count = "2" },
             },
             Profile = new UiProfileModel
             {
-                Name = "Maya Okafor", Hue = UiColour.HueOf("Maya Okafor"), Ring = UiRole.Ok, Role = "Customer service at Bloom Caf\u00e9", RoleIcon = UiIcon.Headset,
-                RoleTint = UiRole.None, Status = "At work", StatusTone = UiRole.Ok,
-                FactLabels = new[] { "Age", "Pay an hour", "Hired", "Hours a week" }, FactValues = new[] { "29", "$22", "214 days ago", "32 of 40" },
+                Name = "Maya Okafor", Hue = UiColour.HueOf("Maya Okafor"), Ring = UiRole.Ok, Role = "Customer Service", RoleIcon = UiIcon.Headset,
+                Employer = "Bloom Caf\u00e9", EmployerIcon = UiIcon.Coffee, Status = "At work", StatusTone = UiRole.Ok,
+                FactLabels = new[] { "Age", "Hourly wage", "Hired", "Hours a week" }, FactValues = new[] { "29", "$22", "214 days ago", "32 of 40" },
                 RatingLabel = "Ability", Rating = 7,
             },
             Actions = new[]
@@ -229,12 +229,12 @@ internal static partial class UiSamples
                 new UiActionModel { Label = "Raise pay", Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiAppWindow.ActionCommand, Arg = 1 },
             },
             AttributesTitle = "Attributes",
-            AttributeLabels = new[] { "Customer care", "Speed", "Cleanliness", "Punctuality", "Teamwork", "Energy" },
-            AttributeValues = new[] { 82, 74, 66, 90, 71, 48 },
+            AttributeLabels = new[] { "Customer care", "Speed", "Cleanliness", "Punctuality", "Teamwork", "Energy", "Satisfaction", "Skill", "Learning" },
+            AttributeValues = new[] { 82, 74, 66, 90, 71, 48, 64, 82, 58 },
             TableTitle = "This week's shifts",
             Columns = new[]
             {
-                new UiColumn { Title = "Day" }, new UiColumn { Title = "Hours", Width = 120f }, new UiColumn { Title = "Till", Width = 96f },
+                new UiColumn { Title = "Day" }, new UiColumn { Title = "Hours", Width = 120f }, new UiColumn { Title = "Till", Grow = true },
                 new UiColumn { Title = "Status", Width = 136f, Right = true },
             },
             Rows = new[]
@@ -246,18 +246,19 @@ internal static partial class UiSamples
                 Shift("Friday", "08:00 to 16:00", "Front", "Up next", UiRole.Accent),
             },
             MoreTitle = "Reviews",
-            MoreColumns = new[] { new UiColumn { Title = "Review" }, new UiColumn { Title = "Score", Width = 56f, Right = true }, new UiColumn { Title = "Outcome", Width = 216f } },
+            MoreColumns = new[] { new UiColumn { Title = "Review" }, new UiColumn { Title = "Score", Width = 56f, Right = true }, new UiColumn { Title = "Outcome", Grow = true } },
             MoreGrade = 1,
             MoreRows = new[]
             {
-                Review("After 180 days", 78, "Pay raised to $22 an hour"), Review("After 90 days", 71, "Kept on, more hours"), Review("First month", 64, "Training done"),
+                Review(UiIcon.Coin, "After 180 days", 78, "Pay raised to $22 an hour"), Review(UiIcon.Clock, "After 90 days", 71, "Kept on, more hours"),
+                Review(UiIcon.Cap, "First month", 64, "Training done"),
             },
             PeopleTitle = "On her shifts", PeopleCount = "6 people",
             People = new[]
             {
-                Colleague("Luis Romero", UiIcon.ForkKnife, UiRole.CatFood, "Barista", 77, 68),
-                Colleague("Hana Sato", UiIcon.Headset, UiRole.CatFood, "Customer service", 63, 52),
-                Colleague("Dana Whitfield", UiIcon.Key, UiRole.Chart4, "Shift manager", 85, 74),
+                Colleague("Nadia Haddad", UiIcon.Coffee, UiRole.CatFood, "Barista", 77, 68),
+                Colleague("Hana Sato", UiIcon.Headset, UiRole.CatFood, "Customer Service", 63, 52),
+                Colleague("Dana Whitfield", UiIcon.Clock, UiRole.Chart4, "Shift manager", 85, 74),
                 Colleague("Theo Brandt", UiIcon.Truck, UiRole.CatIndustry, "Delivery", 58, 41),
                 Colleague("Ines Duarte", UiIcon.Coffee, UiRole.CatFood, "Barista", 69, 80),
                 Colleague("Sam Okoro", UiIcon.Package, UiRole.CatRetail, "Stock and tills", 47, 63),
@@ -273,14 +274,15 @@ internal static partial class UiSamples
         return m;
     }
 
+    // The row's icon is its till, a counter or a car's window, so it says what differs from the row above.
     private static UiAppRow Shift(string day, string hours, string till, string status, UiRole tone) =>
-        new UiAppRow { Icon = UiIcon.Calendar, Tint = UiRole.None, Cells = new[] { day, hours, till, status }, Grade = -1, Status = status, StatusTone = tone };
+        new UiAppRow { Icon = till == "Drive-in" ? UiIcon.Car : UiIcon.Store, Tint = UiRole.None, Cells = new[] { day, hours, till, status }, Grade = -1, Status = status, StatusTone = tone };
 
-    private static UiAppRow Review(string name, int score, string outcome) =>
-        new UiAppRow { Icon = UiIcon.ChartLineUp, Tint = UiRole.None, Cells = new[] { name, score.ToString(System.Globalization.CultureInfo.InvariantCulture), outcome }, Grade = score };
+    private static UiAppRow Review(UiIcon outcome, string name, int score, string what) =>
+        new UiAppRow { Icon = outcome, Tint = UiRole.None, Cells = new[] { name, score.ToString(System.Globalization.CultureInfo.InvariantCulture), what }, Grade = score };
 
     private static UiPersonRow Colleague(string name, UiIcon role, UiRole tint, string title, int skill, int mood) =>
-        new UiPersonRow { Name = name, Hue = UiColour.HueOf(name), RoleIcon = role, RoleTint = UiRole.None, Role = title, FirstLabel = "Skill", First = skill, SecondLabel = "Mood", Second = mood };
+        new UiPersonRow { Name = name, Hue = UiColour.HueOf(name), RoleIcon = role, RoleTint = UiRole.None, Role = title, FirstLabel = "Skill", First = skill, SecondLabel = "Satisfaction", Second = mood };
 
     /// <summary>A desk session as a decision card: the weekly meeting, its three choices with what each costs and gives.</summary>
     public static UiDecisionModel Meeting(UiWords t)
