@@ -66,7 +66,7 @@ namespace RealLifeOverhaul.GameUi
 
         // The empty tiles of a short page: made as first needed, the first count on, the rest off. A gap is as wide as a
         // button where the row sizes its children; the phone's grid gives every child a cell.
-        private void ShowGaps(int count)
+        private void ShowGaps(int count, bool hiding)
         {
             while (_gaps.Count < count)
             {
@@ -85,7 +85,7 @@ namespace RealLifeOverhaul.GameUi
             for (int g = 0; g < _gaps.Count; g++)
             {
                 bool on = g < count;
-                if (_gaps[g] != null && _gaps[g].gameObject.activeSelf != on)
+                if (_gaps[g] != null && on != hiding && _gaps[g].gameObject.activeSelf != on)
                 {
                     _gaps[g].gameObject.SetActive(on);
                 }

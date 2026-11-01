@@ -147,6 +147,14 @@ namespace RealLifeOverhaul
 
         public bool Seated => _player != null;
 
+        /// <summary>Where the player stood before they were seated, and which way they faced; false when they are not seated.</summary>
+        public bool StoodAt(out Vector3 at, out Quaternion facing)
+        {
+            at = _stoodAt;
+            facing = _stoodFacing;
+            return _player != null;
+        }
+
         /// <summary>
         /// Sits the player down; false, with nothing changed, if they cannot be seated now. With <paramref name="bagAllowed"/>
         /// a shopping bag may stay in the hand, as the game's own seats allow (SeatController.CanSit).

@@ -1,4 +1,4 @@
-0.63.5
+0.63.8
 
 Fixed
-- Your own company on the stock market kept the sector of your first business for good, even after you sold it, and its share price followed that sector. The sector now follows what the company earns in: its takings over about a quarter, reviewed at the start of each quarter, with a notice and a City Ledger line when it moves. A company already listed is set by its last quarter's takings when you load. A tech firm counts as software. The company's page shows the sector, its takings by sector and the next review.
+- With Hotelier & Restaurateur or another mod that puts its own app on the phone, the phone could grow off the top of the screen with every app showing and no pages. That app showing itself again was taken for another mod paging the phone, so the pages were left to it. Such an app now joins the pages, and if another mod does page the phone, the phone is kept within the screen.

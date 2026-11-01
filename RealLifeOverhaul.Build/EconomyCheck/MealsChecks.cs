@@ -260,15 +260,36 @@ internal static partial class Program
         return ModSource(@"Meals\" + name);
     }
 
-    // The plate stays on the table until the eating animation has ended (not until a bare timer), and goes at once when the meal is cancelled.
+    // The plate stays on the table until the eating animation has ended, the game's own seated eating included, read off the animator
+    // rather than a bare timer; the cap is a round of that eating on the animator's own clock; a save, a selected button or a question
+    // no longer cut the meal short; a move, a click away or an activity still end it at once with the plate.
     private static void MealPlateStaysChecks()
     {
-        string director = MealsSource("MealsDirector.cs"), takeout = MealsSource("MealsDirector.Takeout.cs"), body = MealsSource("MealBody.cs");
+        string director = MealsSource("MealsDirector.cs"), takeout = MealsSource("MealsDirector.Takeout.cs"), body = MealsSource("MealBody.cs"), game = MealsSource("MealsGame.cs");
         Check(director.Contains("Time.time >= _until && EatingFinished()") && takeout.Contains("Time.time >= _until && EatingFinished()"),
             "meals: at the meal's time both the walked meal and the rested one end the eating animation first, and the plate goes after it");
-        Check(director.Contains("_body.WoundDown || Time.time >= _windUntil") && body.Contains("OverWeight <= 0.02f") && body.Contains("public bool WindDown()"),
-            "meals: the plate waits for the clip to fade off the body, with a cap so it can never stay");
-        Check(MealsRules.WindDownMost > 0f && MealsRules.WindDownMost <= 3f, "meals: the wait for the animation is short and capped (" + MealsRules.WindDownMost + " s)");
+        string finished = MemberText(director, "private bool EatingFinished()");
+        Check(finished.Contains("bool down = _body.WoundDown;") && finished.Contains("_body.Clock < _windUntil") && finished.Contains("MealsRules.WindDownSeconds(_body.EatingLength)") && !finished.Contains("Time.time"),
+            "meals: the plate waits for the eating to end, capped by a round of the game's eating, on the eating's own clock");
+        string wind = MemberText(body, "public bool WindDown()"), wound = MemberText(body, "public bool WoundDown");
+        Check(InOrder(wind, "_gameLayer = GameEatingLayer(out _gameState, out _gameLength);", "StopEating();") && wound.Contains("animator.IsInTransition(_gameLayer)")
+              && wound.Contains("GetCurrentAnimatorStateInfo(_gameLayer).fullPathHash != _gameState") && wound.Contains("_overWinding && _animator != null && _animator.OverWeight > 0.02f"),
+            "meals: the game's own seated eating is found on its layer before it is ended, and the plate stays until that layer has left it; the mod's clip until it has faded");
+        Check(!Regex.IsMatch(wound, @"=>\s*_animator != null && _animator\.OverWeight <= 0\.02f"), "meals: a plate carried with the mod's clip no longer goes the moment the game's eating is told to end");
+        string layer = MemberText(body, "private int GameEatingLayer(out int state, out float length)");
+        Check(layer.Contains("info.shortNameHash == GameEatHash") && layer.Contains("GetCurrentAnimatorClipInfo(layer, Clips)") && !layer.Contains("new ") && body.Contains("GameEat = \"ConsumingFoodSitting\""),
+            "meals: the game's eating is found by its state's name or its clip's, into a list kept, never a new array");
+        Check(MealsRules.WindDownSeconds(0f) == MealsRules.WindDownLeast && MealsRules.WindDownSeconds(4f) == 4f + MealsRules.WindDownSpare && MealsRules.WindDownSpare >= 0.5f && MealsRules.WindDownSeconds(60f) == MealsRules.WindDownMost
+              && MealsRules.WindDownSeconds(-3f) == MealsRules.WindDownLeast && MealsRules.WindDownMost <= 12f,
+            "meals: the plate's wait is a round of the game's eating and its transition, at least " + MealsRules.WindDownLeast + " s, at most " + MealsRules.WindDownMost + " s");
+        string save = MemberText(director, "private void OnSave()");
+        Check(!save.Contains("End(") && save.Contains("MealsGame.SaveStood(at, facing)") && MemberText(game, "public static void SaveStood(Vector3 at, Quaternion facing)").Contains("save.LastPlayerPosition = at;"),
+            "meals: a save (an autosave comes within seconds of eating) goes on around the meal, and writes where the player stood");
+        string meal = MemberText(director, "private void Meal()");
+        string taken = MemberText(game, "public static bool TakenAway()");
+        Check(Occurs(meal, "MealsGame.TakenAway()") == 2 && taken.Contains("PlayerActivityUI.IsPanelOpen") && taken.Contains("Wiring.Scenes.PlayerInScene") && taken.Contains("timeMachine.isRunning")
+              && !taken.Contains("PlayerHeld") && !taken.Contains("IsUiOpen"),
+            "meals: on the way and at the table only an activity, a time skip or a scene of the mod's ends the meal, never a button left selected, the map or a question");
         Check(director.Contains("End(false, \"the player moved off\", true)") && director.Contains("_winding = false;"), "meals: a cancelled meal ends at once and takes the plate with it");
     }
 
@@ -320,11 +341,11 @@ internal static partial class Program
         Check(InOrder(end, "if (_step == Step.None)", "_step = Step.None;", "MealsGame.Unlisten(", "MealsGame.StopWalk(player);", "MealsGame.ShowDisplay(seat, false, ref _shown);", "_body.Release();",
                 "MealsGame.Bench(seat, false, _benchBefore);", "MealsGame.Reserve(seat, false);"),
             "meals sources: End takes the listeners off, stops the walk, puts the tray away, stands the player up and gives the seat and the bench back");
-        Check(MemberText(director, "private void OnSave()").Contains("End(") && MemberText(director, "private void OnDisable()").Contains("End(") && MemberText(director, "private void OnDestroy()").Contains("End(")
+        Check(MemberText(director, "private void OnDisable()").Contains("End(") && MemberText(director, "private void OnDestroy()").Contains("End(")
               && MemberText(director, "private void Slow(float now)").Contains("End(false, \"a load\""),
-            "meals sources: a save, a load, the component stopping and the city unloading each end the meal");
+            "meals sources: a load, the component stopping and the city unloading each end the meal");
         string meal = MemberText(director, "private void Meal()");
-        Check(meal.Contains("if (!Wanted)") && meal.Contains("MealsGame.Inside != _inside") && meal.Contains("MealsGame.ScreenUp()") && meal.Contains("MealsGame.MovePressed()") && meal.Contains("Time.time > _until"),
+        Check(meal.Contains("if (!Wanted)") && meal.Contains("MealsGame.Inside != _inside") && meal.Contains("MealsGame.ScreenUp()") && meal.Contains("MealsGame.TakenAway()") && meal.Contains("MealsGame.MovePressed()") && meal.Contains("Time.time > _until"),
             "meals sources: the option off, a door or a journey, a screen (a bed, a time skip), moving off and a walk that never arrives each end it");
         Check(MemberText(director, "private void Moved()").Contains("End(") && MemberText(director, "private void Blocked()").Contains("End("), "meals sources: walking elsewhere, or clicking away while seated, ends it");
         Check(MemberText(director, "private void Update()").Contains("End(false, \"a fault\", true);"), "meals sources: a fault gives everything back before the guard stops the feature");
