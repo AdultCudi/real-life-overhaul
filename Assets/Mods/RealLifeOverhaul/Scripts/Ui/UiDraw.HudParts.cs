@@ -27,7 +27,6 @@ namespace RealLifeOverhaul.Ui
         public string Value;     // "2 of 3"
         public float ZoneFrom, ZoneTo;   // 0 to 1: the good zone
         public float Marker;     // 0 to 1: where the marker is now
-        public bool Hit;         // the last press landed in the zone
     }
 
     /// <summary>
@@ -41,8 +40,9 @@ namespace RealLifeOverhaul.Ui
         public const float GaugeTrack = 16f;
 
         /// <summary>
-        /// The game's key for an action on its cap (a word or a pad's glyph), as its world box prints "[F]": drawn as a box and
-        /// its words, not as the kit's key cap, because the game answers this key, not the kit. Returns its width.
+        /// The game's key for an action on its cap (its word, or a pad's glyph drawn as the kit draws the pad's), as its world
+        /// box prints "[F]". The game answers this key, not the kit, so the cap names no action of the kit's and is laid after
+        /// its row's target, which therefore owns no key. Returns its width.
         /// </summary>
         public static float GameKey(UiScene s, UiAt at, float x, float y, UiGameKey key, bool onAccent = false)
         {
@@ -50,24 +50,17 @@ namespace RealLifeOverhaul.Ui
             {
                 return 0f;
             }
-            float h = UiTokens.KeyCap;
-            float w = key.Glyph != UiIcon.None ? h : Math.Max(h, Snap(UiTextRules.Width(key.Name, UiStyle.KeyCap) + UiTokens.S2 * 2f));
-            // On the cyan the cap is the dark ink faint and its key the dark ink, as a primary button's cap reads.
-            int face = Box(s, at, x, y, w, h, onAccent ? UiRole.OnAccent : UiRole.Track, UiRole.None, UiTokens.RadiusSmall, UiFlags.Middle);
-            if (onAccent)
-            {
-                s.Items[face].Alpha = 0.16f;
-            }
-            UiAt inside = at.In(face);
+            float h = UiTokens.KeyCap, w = GameKeyWidth(key);
             UiRole ink = onAccent ? UiRole.OnAccent : UiRole.Text;
-            if (key.Glyph != UiIcon.None)
+            // On the cyan the cap is the dark ink faint and its key the dark ink, as a primary button's cap reads.
+            var item = new UiItem
             {
-                Icon(s, inside, x + UiTokens.S1, y + UiTokens.S1, h - UiTokens.S2, key.Glyph, ink, UiFlags.Middle | UiFlags.Centre);
-            }
-            else
-            {
-                TextMiddle(s, inside, x, y, h, w, UiStyle.KeyCap, ink, key.Name, UiFlags.Centre);
-            }
+                Kind = UiKind.KeyCap, Fill = onAccent ? UiRole.OnAccent : UiRole.Track, Edge = ink, Ink = ink, Style = UiStyle.KeyCap, Icon = key.Glyph,
+                Text = key.Glyph != UiIcon.None ? string.Empty : key.Name ?? string.Empty, X = x, Y = y, W = w, H = h, Radius = UiTokens.RadiusSmall,
+                Clip = at.Clip, Node = -1, Layer = at.Layer, Order = at.Order, Parent = at.Parent, Alpha = onAccent ? 0.16f : 1f, Value = (int)UiAction.Count,
+                Flags = UiFlags.Middle
+            };
+            s.Add(ref item);
             return w;
         }
 
@@ -113,8 +106,8 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>
         /// A timing gauge: its words and its figure on a pair row, the track under them with the good zone marked in the good
-        /// tone and the marker standing across it where it is now, taller than the track so it reads as it moves. A press that
-        /// landed shows the zone full; the marker never changes colour. Returns its height.
+        /// green at full strength and the marker standing across it where it is now, the height of the track so it reads as it
+        /// moves. The marker never changes colour. Returns its height.
         /// </summary>
         public static float Timing(UiScene s, UiAt at, float x, float y, float w, ref UiTimingModel m)
         {
@@ -129,7 +122,7 @@ namespace RealLifeOverhaul.Ui
             int track = Box(s, at, x, ty, w, GaugeTrack, UiRole.Track, UiRole.None, UiTokens.RadiusSmall, UiFlags.Middle);
             UiAt on = at.In(track);
             float from = Math.Max(0f, Math.Min(1f, m.ZoneFrom)), to = Math.Max(from, Math.Min(1f, m.ZoneTo));
-            Box(s, on, x + w * from, ty + inner, Math.Max(UiTokens.S1, w * (to - from)), GaugeTrack - inner * 2f, m.Hit ? UiRole.Ok : UiRole.OkSoft, UiRole.None, UiTokens.RadiusSmall,
+            Box(s, on, x + w * from, ty + inner, Math.Max(UiTokens.S1, w * (to - from)), GaugeTrack - inner * 2f, UiRole.Ok, UiRole.None, UiTokens.RadiusSmall,
                 UiFlags.Middle | UiFlags.Share);
             float mx = x + w * Math.Max(0f, Math.Min(1f, m.Marker)) - UiTokens.S1 / 2f;
             mx = Math.Max(x, Math.Min(mx, x + w - UiTokens.S1));

@@ -13,9 +13,12 @@ namespace RealLifeOverhaul.Ui
     public struct UiToolChoice
     {
         public UiIcon Icon;
+        public string Picture;     // the game's own picture of it (a floor's swatch, an item's image) by its key (UiPictures), or null for the glyph
+        public float Aspect;       // the picture's width over its height
         public string Name;        // "Brick wall"
         public string Figure;      // "$120"; null for none
         public bool Disabled;      // not to be had here: dimmed and inert
+        public string Reason;      // why, in place of its figure ("Not sold here")
     }
 
     /// <summary>The tool row: its tools, the one in hand, and that tool's choices in the panel that rises above it.</summary>
@@ -40,11 +43,12 @@ namespace RealLifeOverhaul.Ui
         public const int ToolCommand = 270, ChoiceCommand = 271;
         public const int MostAcross = 8;                    // choices a row of the panel: more wrap to a second
         private const float Gap = 8f;                       // px between two tool tiles, as between the app row's
-        private const float Card = 104f;                    // px: a choice, its tile and two lines of its name
+        private const float Card = 104f;                    // px: a choice's width, a tile with two short words beside it
+        private const float CardH = 120f;                   // px: its height, the tile, two lines of its name and its figure
         private const float CardTile = 48f;                 // px: a choice's tile
         private const byte RowRegion = 242, PanelRegion = 243;
 
-        /// <summary>Lays the row in the bar's upper row and, with a tool in hand, its panel above the bar.</summary>
+        /// <summary>Lays the row in the bar's upper row and, with a tool in hand, its panel above the bar: after the bar, which it stands on.</summary>
         public static void Draw(UiScene s, UiAt at, UiToolRowModel m, UiFrame frame)
         {
             float tile = UiTokens.IconTile;
@@ -64,7 +68,11 @@ namespace RealLifeOverhaul.Ui
                 s.Items[face].Flags |= UiFlags.Chrome;
                 float g = UiTokens.S8;   // a tool's glyph, chunky as a game's, on the grid in its 40 px tile
                 UiDraw.Icon(s, row.In(face), tx + (tile - g) / 2f, ty + (tile - g) / 2f, g, m.Tools[i].Icon, i == m.Tool ? UiRole.OnAccent : UiRole.None, UiFlags.Middle | UiFlags.Chrome, true);
-                UiDraw.Node(s, row, tx, ty, tile, tile, ToolCommand, i, face);
+                int node = UiDraw.Node(s, row, tx, ty, tile, tile, ToolCommand, i, face);
+                if (i == m.Tool || (m.Tool < 0 && i == 0))
+                {
+                    s.FocusFirst = node;   // the keys start on the tool in hand, where the player works
+                }
             }
             for (int n = first; n < s.NodeCount; n++)
             {
@@ -83,7 +91,7 @@ namespace RealLifeOverhaul.Ui
             int across = Math.Min(MostAcross, Math.Max(1, m.Choices.Length));
             int rows = (m.Choices.Length + MostAcross - 1) / MostAcross;
             w = UiTokens.S3 * 2f + across * Card + (across - 1) * UiTokens.S2;
-            h = UiFrame.Strip + UiTokens.S3 + rows * Card + (rows - 1) * UiTokens.S2 + UiTokens.S3;
+            h = UiFrame.Strip + UiTokens.S3 + rows * CardH + (rows - 1) * UiTokens.S2 + UiTokens.S3;
         }
 
         // The panel rising from the tool in hand: centred over it as far as the screen lets it, its choices in rows.
@@ -96,37 +104,77 @@ namespace RealLifeOverhaul.Ui
             UiAt on = at.In(panel);
             UiTool tool = m.Tools[m.Tool];
             float cy = UiDraw.TitleStrip(s, on, x, y, w, tool.Icon, tool.Name, false) + UiTokens.S3;
+            bool tiles = Differ(m);
             for (int i = 0; i < m.Choices.Length; i++)
             {
                 float cx = x + UiTokens.S3 + (i % MostAcross) * (Card + UiTokens.S2);
-                Choice(s, on, ref m.Choices[i], i, i == m.Choice, cx, cy + (i / MostAcross) * (Card + UiTokens.S2));
+                Choice(s, on, ref m.Choices[i], i, i == m.Choice, tiles, cx, cy + (i / MostAcross) * (CardH + UiTokens.S2));
             }
         }
 
-        // A choice: its glyph on its tile (the cyan when in hand), its name under it on two lines, its figure under that.
-        private static void Choice(UiScene s, UiAt at, ref UiToolChoice c, int index, bool chosen, float x, float y)
+        // A tile says something only where the choices differ: by their pictures, or by their glyphs.
+        private static bool Differ(UiToolRowModel m)
+        {
+            for (int i = 0; i < m.Choices.Length; i++)
+            {
+                if (!string.IsNullOrEmpty(m.Choices[i].Picture) || m.Choices[i].Icon != m.Choices[0].Icon)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // A choice: its picture or glyph on its tile (the cyan when in hand), or the cyan fill itself where no tile says
+        // anything, its name under it on two lines, its figure under that, or why it is greyed.
+        private static void Choice(UiScene s, UiAt at, ref UiToolChoice c, int index, bool chosen, bool tiles, float x, float y)
         {
             int drawn = s.ItemCount;
-            int face = UiDraw.Box(s, at, x, y, Card, Card, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
+            int face = UiDraw.Box(s, at, x, y, Card, CardH, tiles || !chosen ? UiRole.None : UiRole.RowSel, UiRole.None, UiTokens.RadiusLarge, chosen ? UiFlags.Selected : UiFlags.None);
             UiAt inside = at.In(face);
-            float tx = x + (Card - CardTile) / 2f;
-            int t = UiDraw.Tile(s, inside, tx, y + UiTokens.S2, CardTile, UiRole.None, chosen);
-            UiDraw.Icon(s, inside.In(t), tx + (CardTile - UiTokens.S8) / 2f, y + UiTokens.S2 + (CardTile - UiTokens.S8) / 2f, UiTokens.S8, c.Icon, chosen ? UiRole.OnAccent : UiRole.None,
-                UiFlags.Middle | UiFlags.Centre, true);
-            float ny = y + UiTokens.S2 + CardTile + UiTokens.S1;
-            float lh = UiTextRules.LineHeight(UiStyle.Small);
-            bool figure = !string.IsNullOrEmpty(c.Figure);
-            int lines = figure ? 1 : 2;
-            UiDraw.Text(s, inside, x + UiTokens.S1, ny, Card - UiTokens.S2, UiStyle.Small, UiRole.Text, c.Name, UiFlags.Centre | UiFlags.Wrap | UiFlags.Truncate | UiFlags.Middle, lines);
-            if (figure)
+            float ny = y + UiTokens.S3;
+            if (tiles)
             {
-                UiDraw.Text(s, inside, x + UiTokens.S1, ny + lh + UiTokens.S1, Card - UiTokens.S2, UiStyle.SmallStrong, UiRole.Text2, c.Figure, UiFlags.Centre | UiFlags.Middle);
+                float tx = x + (Card - CardTile) / 2f, ty = y + UiTokens.S2;
+                int t = UiDraw.Tile(s, inside, tx, ty, CardTile, UiRole.None, chosen);
+                if (!string.IsNullOrEmpty(c.Picture))
+                {
+                    Picture(s, inside.In(t), c.Picture, c.Aspect, tx + UiTokens.S1, ty + UiTokens.S1, CardTile - UiTokens.S2);
+                }
+                else
+                {
+                    UiDraw.Icon(s, inside.In(t), tx + (CardTile - UiTokens.S8) / 2f, ty + (CardTile - UiTokens.S8) / 2f, UiTokens.S8, c.Icon, chosen ? UiRole.OnAccent : UiRole.None,
+                        UiFlags.Middle | UiFlags.Centre, true);
+                }
+                ny = ty + CardTile + UiTokens.S1;
             }
-            int node = UiDraw.Node(s, at, x, y, Card, Card, ChoiceCommand, index, face, c.Disabled);
+            float lh = UiTextRules.LineHeight(UiStyle.Small);
+            UiDraw.Text(s, inside, x + UiTokens.S1, ny, Card - UiTokens.S2, UiStyle.Small, UiRole.Text, c.Name, UiFlags.Centre | UiFlags.Wrap | UiFlags.Truncate | UiFlags.Middle, 2);
+            string under = c.Disabled && !string.IsNullOrEmpty(c.Reason) ? c.Reason : c.Figure;
+            if (!string.IsNullOrEmpty(under))
+            {
+                UiDraw.Text(s, inside, x + UiTokens.S1, ny + lh * 2f + UiTokens.S1, Card - UiTokens.S2, UiStyle.SmallStrong, c.Disabled ? UiRole.WarnText : UiRole.Text2, under,
+                    UiFlags.Centre | UiFlags.Middle | UiFlags.Truncate);
+            }
+            int node = UiDraw.Node(s, at, x, y, Card, CardH, ChoiceCommand, index, face, c.Disabled);
             if (c.Disabled)
             {
                 UiDraw.Dim(s, drawn, node);
+                s.Items[s.ItemCount - 1].Alpha = 1f;   // the reason reads whole: it says why the rest is dim
             }
+        }
+
+        // The game's own picture of a choice, letterboxed in its tile at its own shape, as the catalogue shows goods.
+        private static void Picture(UiScene s, UiAt at, string key, float aspect, float x, float y, float size)
+        {
+            float a = aspect > 0f ? aspect : 1f;
+            float pw = a >= 1f ? size : size * a, ph = a >= 1f ? size / a : size;
+            var item = new UiItem
+            {
+                Kind = UiKind.Picture, Text = key, Value = a, X = x + (size - pw) / 2f, Y = y + (size - ph) / 2f, W = pw, H = ph,
+                Flags = UiFlags.Share | UiFlags.Middle, Clip = at.Clip, Node = -1, Layer = at.Layer, Order = at.Order, Parent = at.Parent, Alpha = 1f
+            };
+            s.Add(ref item);
         }
     }
 }

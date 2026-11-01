@@ -71,7 +71,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart LampsOut = ContractBook.Part("street_lamps_out", "faults", "street lights gone dark among the city's faults");
         public static readonly GamePart FarDistricts = ContractBook.Part("far_districts", "performance", "the far districts trial of the performance benchmark");
         public static readonly GamePart UiProbe = ContractBook.Part("ui_probe", "diagnostics", "the interface part of the performance probe");
-        public static readonly GamePart HudKit = ContractBook.Part("hud_kit", "ui", "the RLO interface's HUD: its status bar's pills and the pieces over the running game");
+        public static readonly GamePart HudKit = ContractBook.Part("hud_kit", "ui", "the RLO interface's status bar and the pieces over the running game");
         public static readonly GamePart BodyFade = ContractBook.Part("body_fade", "ragdoll", "showing a body the game faded beside a car");
         public static readonly GamePart BusStops = ContractBook.Part("bus_stops", "transport", "bus stops kept clear of parked cars");
         public static readonly GamePart SchoolDeskPart = ContractBook.Part("school_desk", "careers_study", "attending a class at a desk of the school");
@@ -218,6 +218,7 @@ namespace RealLifeOverhaul
         public static readonly GameMember HudHappiness = Prop(HudKit, Game, "Helpers.HappinessHelper", "Happiness", "Single", true);
         public static readonly GameMember HudRain = StaticField(HudKit, Sky, "BigAmbitions.DayNightCycle.RainHelper", "isRaining", "Boolean");
         public static readonly GameMember HudCamera = StaticMethod(HudKit, Game, "GameManager", "GetMainCamera", "Camera");
+        public static readonly GameMember HudNotices = Method(HudKit, Game, "UI.Notification.NotificationsListUI", "Toggle", "Void", "Boolean");
 
         // Events/Weather
         public static readonly GameMember RainIntensity = StaticField(Thunder, Sky, "BigAmbitions.DayNightCycle.RainHelper", "NextRainMaxIntensity", "Single");

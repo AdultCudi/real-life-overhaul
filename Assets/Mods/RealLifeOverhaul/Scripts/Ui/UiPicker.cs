@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.Ui
         public string PageWords = "{0} of {1}";            // the page counter, {0} this page and {1} the pages
         public bool Locked;                                // custody: no close and no Back, the player must pick
         public string EmptyTitle, EmptyBody;
+        public UiIcon EmptyIcon = UiIcon.MapTrifold;      // what would fill the list, on the empty state's tile
         public UiPrompt[] Prompts = new UiPrompt[0];
         public int PromptCount;
     }
@@ -63,12 +64,29 @@ namespace RealLifeOverhaul.Ui
                 h += UiTokens.S2 * 2f + context * UiTokens.PairRow;
             }
             int shown = Shown(m);
-            h += shown == 0 ? UiDraw.EmptyHeight(Width - UiTokens.S6 * 2f, m.EmptyTitle, m.EmptyBody) + UiTokens.S4 : UiTokens.S2 + shown * Row + UiTokens.S2;
+            h += shown == 0 ? EmptyRoom(m) : UiTokens.S2 + shown * Row + UiTokens.S2;
             if (Pages(m) > 1)
             {
                 h += Foot;
             }
             return UiDraw.Snap(h);
+        }
+
+        // The empty state's room: its glyph's tile and its words with a step of room round them, so nothing floats in a hole.
+        private static float EmptyRoom(UiPickerModel m) =>
+            UiDraw.Snap(UiTokens.S12 + UiTokens.S4 + UiDraw.EmptyHeight(Width - UiTokens.S6 * 2f, m.EmptyTitle, m.EmptyBody) - UiTokens.S12 * 2f + UiTokens.S6 * 2f);
+
+        // A tile says something only where the entries differ: a list of one kind of thing reads by its names.
+        private static bool Differ(UiPickerModel m)
+        {
+            for (int i = 1; i < m.Entries.Length; i++)
+            {
+                if (!m.Entries[i].Note && m.Entries[i].Icon != m.Entries[0].Icon)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static int Shown(UiPickerModel m)
@@ -117,14 +135,15 @@ namespace RealLifeOverhaul.Ui
             int first = page * Math.Max(1, m.PerPage), shown = Shown(m);
             if (shown == 0)
             {
-                UiDraw.Empty(s, on, x + UiTokens.S6, cy + UiTokens.S2, Width - UiTokens.S6 * 2f, h - (cy - y) - UiTokens.S4, m.EmptyTitle, m.EmptyBody);
+                UiDraw.EmptyState(s, on, x + UiTokens.S6, cy, Width - UiTokens.S6 * 2f, EmptyRoom(m), m.EmptyIcon, m.EmptyTitle, m.EmptyBody);
                 return h;
             }
             float ey = cy + UiTokens.S2;
             UiAt list = on.InRegion(ListRegion);
+            bool tiles = Differ(m);
             for (int i = 0; i < shown; i++)
             {
-                Entry(s, list, ref m.Entries[first + i], first + i, x + UiTokens.S2, ey, Width - UiTokens.S2 * 2f);
+                Entry(s, list, ref m.Entries[first + i], first + i, x + UiTokens.S2, ey, Width - UiTokens.S2 * 2f, tiles);
                 ey += Row;
             }
             if (pages > 1)
@@ -135,7 +154,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         // An entry: its glyph on a tile, its name over its line, its figure at the right, or the reason it is greyed as a chip.
-        private static void Entry(UiScene s, UiAt at, ref UiPickEntry e, int index, float x, float y, float w)
+        private static void Entry(UiScene s, UiAt at, ref UiPickEntry e, int index, float x, float y, float w, bool tiles)
         {
             float tile = UiTokens.IconTile;
             if (e.Note)
@@ -147,10 +166,13 @@ namespace RealLifeOverhaul.Ui
             int drawn = s.ItemCount;
             int face = UiDraw.Box(s, at, x, y, w, Row, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
             UiAt inside = at.In(face);
-            float tx = x + UiTokens.S2;
-            int t = UiDraw.Tile(s, inside, tx, y + (Row - tile) / 2f, tile, UiRole.None, false);
-            UiDraw.Icon(s, inside.In(t), tx + (tile - UiTokens.Icon) / 2f, y + (Row - UiTokens.Icon) / 2f, UiTokens.Icon, e.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
-            float nx = tx + tile + UiTokens.S3;
+            float tx = x + UiTokens.S2, nx = x + UiTokens.S3;
+            if (tiles)
+            {
+                int t = UiDraw.Tile(s, inside, tx, y + (Row - tile) / 2f, tile, UiRole.None, false);
+                UiDraw.Icon(s, inside.In(t), tx + (tile - UiTokens.Icon) / 2f, y + (Row - UiTokens.Icon) / 2f, UiTokens.Icon, e.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
+                nx = tx + tile + UiTokens.S3;
+            }
             float right = x + w - UiTokens.S3;
             if (e.Disabled && !string.IsNullOrEmpty(e.Reason))
             {

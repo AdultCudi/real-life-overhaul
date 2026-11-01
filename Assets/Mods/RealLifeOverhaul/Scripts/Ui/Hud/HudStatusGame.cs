@@ -1,9 +1,9 @@
 using System;
 using System.Runtime.CompilerServices;
 using BigAmbitions.DayNightCycle;
+using Helpers;
 using RealLifeOverhaul.Seasons;
 using TMPro;
-using Helpers;
 using UI;
 using UI.PlayerHUD;
 using UnityEngine;
@@ -15,7 +15,7 @@ namespace RealLifeOverhaul.Ui
     /// (GameSpeedController), the player's energy, hunger and happiness as the game's top bar reads them, the mod's
     /// hygiene, stress and home (HomeState, while the needs are on), the season (the mod's calendar, while the seasons are
     /// on) and its weather (the mod's snow, the game's rain), the place as the game's HUD names it (PlayerHUD's nearest
-    /// building and district), and the alerts the notice list holds. It stands behind UiChrome.Bar, after the time, the day,
+    /// building and district), and the notices the game's list keeps. It stands behind UiChrome.Bar, after the time, the day,
     /// the money and the app row (UiGame.Bar). A member that fails leaves its pill out with one line in Player.log. Cost:
     /// a few reads each time the bar is laid out; <see cref="Signature"/> a few loads a frame while the HUD shows.
     /// </summary>
@@ -23,6 +23,12 @@ namespace RealLifeOverhaul.Ui
     {
         /// <summary>Set while the HUD's own bar is laid out: only there are the pills targets (UiDraw.HudBar).</summary>
         public static bool ForHud;
+
+        /// <summary>True while the HUD shows: every bar drawn then carries the app row (UiGame.Bar), as the owner wants it while walking.</summary>
+        public static bool Shows;
+
+        /// <summary>True while the HUD's All apps stands over it: its tile filled cyan.</summary>
+        public static bool AllAppsOpen;
 
         private static bool _said;
 
@@ -36,25 +42,21 @@ namespace RealLifeOverhaul.Ui
             }
             try
             {
-                Fill(m);
+                // Each pill from where the game or the mod keeps it, each in its own small method so a member a build lacks fails alone.
+                UIs uis = InstanceBehavior<UIs>.Instance;
+                Speed(m, uis);
+                Needs(m);
+                Season(m);
+                Place(m, uis);
+                m.Alerts = SaveGameManager.Current != null && SaveGameManager.Current.notifications != null ? SaveGameManager.Current.notifications.Count : 0;   // the notices the game's list keeps
             }
             catch (Exception e)
             {
                 Say("the pills beyond the time and the money were left out (" + e.GetType().Name + ": " + e.Message + ")");
             }
             m.PillsPress = ForHud;
+            m.AllAppsOpen |= AllAppsOpen;
             return m;
-        }
-
-        // Each pill from where the game or the mod keeps it, in its own small method so a member a build lacks fails alone.
-        private static void Fill(UiStatusModel m)
-        {
-            UIs uis = InstanceBehavior<UIs>.Instance;
-            Speed(m, uis);
-            Needs(m);
-            Season(m);
-            Place(m, uis);
-            m.Alerts = UiHud.AlertsWaiting != null ? Math.Max(0, UiHud.AlertsWaiting()) : 0;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -127,8 +129,8 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>
-        /// What the pills show, as one number: the game's minute, the money to the cent, the needs' whole numbers, the pause
-        /// and the speed. The HUD lays its bar out again only when it changes. Nothing is allocated.
+        /// What the pills show, as one number: the game's minute, the money to the cent, the needs' whole numbers, the pause,
+        /// the speed and the notices kept. The HUD lays its bar out again only when it changes. Nothing is allocated.
         /// </summary>
         public static int Signature()
         {
@@ -146,6 +148,7 @@ namespace RealLifeOverhaul.Ui
                 h = h * 31 + Whole(save.Energy) * 10201 + Whole(save.Hunger) * 101 + Whole(HappinessHelper.Happiness);
                 h = h * 31 + Whole(HomeState.Hygiene) * 10201 + Whole(HomeState.Stress) * 101 + Whole(HomeState.Tidy);
                 h = h * 31 + (speed != null ? (speed.Paused ? 1 : 0) + (speed.isFastForwarding ? 2 : 0) : 7);
+                h = h * 31 + (save.notifications != null ? save.notifications.Count : 0);
                 return h;
             }
         }

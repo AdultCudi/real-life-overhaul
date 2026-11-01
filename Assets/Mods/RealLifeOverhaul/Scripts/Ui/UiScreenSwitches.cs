@@ -21,9 +21,10 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The sections of Mod settings the switches stand in, each under the RLO interface's section, each at most ten rows.</summary>
         public const string Apps = "uiscreens_apps";      // phone apps and the overhaul's pages
         public const string Boxes = "uiscreens_boxes";    // the boxes and the notices every screen uses
+        public const string Hud = "uiscreens_hud";        // the HUD over the running game and its pieces
 
         /// <summary>Every section, in the page's order; a section with no switch yet is left off the page.</summary>
-        public static readonly string[] Sections = { Apps, Boxes };
+        public static readonly string[] Sections = { Apps, Boxes, Hud };
 
         private static readonly UiScreenDef[] Switched = Gather();
         private static readonly bool[] Values = Fill(Switched.Length);

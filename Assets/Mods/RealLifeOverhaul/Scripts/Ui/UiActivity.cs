@@ -62,6 +62,7 @@ namespace RealLifeOverhaul.Ui
         public const float CardWidth = 560f;      // px: compact, the world round it
         public const float StripWidth = 720f;     // px: the strip, centred over the bar's apps
         public const float StripHeight = 76f;     // px: a tile's row and the meter under it
+        public const float StripShort = 64f;      // px: a tile's row alone, while there is no meter (walking there, waiting)
         private const byte CardBody = 1, CardButtons = 2;
 
         /// <summary>True for the states the strip shows; the card shows the rest.</summary>
@@ -103,7 +104,7 @@ namespace RealLifeOverhaul.Ui
             float h = CardHeight(m, keys);
             int panel = UiDraw.Box(s, at, x, y, CardWidth, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt on = at.In(panel);
-            float cy = UiDraw.TitleStrip(s, on, x, y, CardWidth, m.Icon, m.Headline, m.CanCancel);
+            float cy = UiDraw.TitleStrip(s, on, x, y, CardWidth, m.Icon, m.Headline, false);   // Cancel on Back is its way out: one target for it
             float ix = x + UiTokens.S4, iw = CardWidth - UiTokens.S4 * 2f;
             if (m.Lines.Length > 0)
             {
@@ -125,11 +126,35 @@ namespace RealLifeOverhaul.Ui
             cy += UiTokens.S4;
             UiAt buttons = on.InRegion(CardButtons);
             float bw = UiDraw.SnapDown((iw - UiTokens.S3) / 2f);
+            int cancel = -1;
             if (m.CanCancel)
             {
-                UiDraw.Button(s, buttons, ix, cy, bw, UiTokens.Control, UiButtonKind.Secondary, m.CancelLabel, UiIcon.None, UiAction.Back, keys, ButtonCommand, 0);
+                cancel = UiDraw.Button(s, buttons, ix, cy, bw, UiTokens.Control, UiButtonKind.Secondary, m.CancelLabel, UiIcon.None, UiAction.Back, keys, ButtonCommand, 0);
             }
-            UiDraw.Button(s, buttons, ix + iw - bw, cy, bw, UiTokens.Control, UiButtonKind.Primary, m.StartLabel, UiIcon.Play, UiAction.Alt, keys, ButtonCommand, 1, m.StartDisabled);
+            int start = UiDraw.Button(s, buttons, ix + iw - bw, cy, bw, UiTokens.Control, UiButtonKind.Primary, m.StartLabel, UiIcon.Play, UiAction.Alt, keys, ButtonCommand, 1, m.StartDisabled);
+            Link(s, cancel, start);
+        }
+
+        // The card's d-pad: the duration's two steps side by side over Cancel and Start; below them only the frame's app row.
+        private static void Link(UiScene s, int cancel, int start)
+        {
+            int less = s.FindNode(StepCommand, -1), more = s.FindNode(StepCommand, 1);
+            if (less >= 0 && more >= 0)
+            {
+                s.Nodes[less].Right = more;
+                s.Nodes[more].Left = less;
+                s.Nodes[less].Down = cancel >= 0 ? cancel : start;
+                s.Nodes[more].Down = start;
+                s.Nodes[less].Up = less;
+                s.Nodes[more].Up = more;
+            }
+            if (cancel >= 0)
+            {
+                s.Nodes[cancel].Right = start;
+                s.Nodes[start].Left = cancel;
+                s.Nodes[cancel].Up = less >= 0 ? less : cancel;
+            }
+            s.Nodes[start].Up = more >= 0 ? more : start;
         }
 
         // The duration: its words and figure, and the slider between the two steps that move it a notch, as the game's own
@@ -164,11 +189,16 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>The strip's place: centred over the status bar's apps, a grid step above the bar.</summary>
-        public static void StripPlace(UiFrame frame, out float x, out float y)
+        public static void StripPlace(UiFrame frame, UiActivityModel m, out float x, out float y)
         {
             x = UiDraw.SnapDown((frame.Width - StripWidth) / 2f);
-            y = frame.BandY - UiTokens.S3 - StripHeight;
+            y = frame.BandY - UiTokens.S3 - Height(m);
         }
+
+        /// <summary>The strip's height: with its meter while there is one, its tile's row alone while not.</summary>
+        public static float Height(UiActivityModel m) => Metered(m) ? StripHeight : StripShort;
+
+        private static bool Metered(UiActivityModel m) => m.HasProgress || m.State == UiActivityState.Finished;
 
         /// <summary>
         /// The strip while it runs (and while the player walks to it, waits for it, or it has just finished): the glyph on its
@@ -177,7 +207,7 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
         public static void DrawStrip(UiScene s, UiAt at, UiActivityModel m, float x, float y)
         {
-            float w = StripWidth, h = StripHeight;
+            float w = StripWidth, h = Height(m);
             int panel = UiDraw.Box(s, at, x, y, w, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt on = at.In(panel);
             float pad = UiTokens.S3, tile = UiTokens.IconTile;
@@ -222,7 +252,7 @@ namespace RealLifeOverhaul.Ui
                     UiFlags.Right | UiFlags.Middle);
             }
             float my = y + h - pad - UiTokens.S2;
-            if (m.HasProgress || m.State == UiActivityState.Finished)
+            if (Metered(m))
             {
                 var bar = new UiProgressModel { Share = m.State == UiActivityState.Finished ? 1f : m.Progress.Share, Tone = m.State == UiActivityState.Finished ? UiRole.Ok : m.Progress.Tone };
                 UiDraw.Progress(s, on, x + pad, my, w - pad * 2f, ref bar);
@@ -238,14 +268,10 @@ namespace RealLifeOverhaul.Ui
             float x = right - w, h = UiTokens.ControlSmall;
             int face = UiDraw.Box(s, at, x, y, w, h, on ? UiRole.Accent : UiRole.Field, UiRole.None, UiTokens.RadiusLarge, on ? UiFlags.Selected : UiFlags.None);
             UiAt inside = at.In(face);
-            float cx = x + UiTokens.S2;
-            if (kw > 0f)
-            {
-                UiDraw.GameKey(s, inside, cx, y + (h - UiTokens.KeyCap) / 2f, key, on);
-                cx += kw + UiTokens.S2;
-            }
+            float cx = x + UiTokens.S2 + (kw > 0f ? kw + UiTokens.S2 : 0f);
             UiDraw.TextMiddle(s, inside, cx, y, h, lw, UiStyle.Body, on ? UiRole.OnAccent : UiRole.Text, label, UiFlags.Label);
             UiDraw.Node(s, at, x, y, w, h, command, 0, face);
+            UiDraw.GameKey(s, inside, x + UiTokens.S2, y + (h - UiTokens.KeyCap) / 2f, key, on);   // after the target: the game, not the button, answers it
             return w;
         }
     }

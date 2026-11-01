@@ -27,6 +27,7 @@ namespace RealLifeOverhaul.Ui
         public UiObjectiveGroup[] Groups = new UiObjectiveGroup[0];
         public bool Collapsed;
         public string EmptyTitle, EmptyBody;                       // a useful sentence when nothing is set
+        public UiIcon EmptyIcon = UiIcon.Trophy;                   // what would fill the panel, on the empty state's tile
     }
 
     /// <summary>
@@ -54,7 +55,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (m.Groups.Length == 0)
             {
-                return UiDraw.Snap(h + UiDraw.EmptyHeight(Width - UiTokens.S4 * 2f, m.EmptyTitle, m.EmptyBody) + UiTokens.S4);
+                return UiDraw.Snap(h + EmptyRoom(m));
             }
             for (int g = 0; g < m.Groups.Length; g++)
             {
@@ -62,6 +63,10 @@ namespace RealLifeOverhaul.Ui
             }
             return UiDraw.Snap(h + UiTokens.S2);
         }
+
+        // The empty state's room: its glyph's tile and its words with a step of room round them, so nothing floats in a hole.
+        private static float EmptyRoom(UiObjectivesModel m) =>
+            UiDraw.Snap(UiTokens.S12 + UiTokens.S4 + UiDraw.EmptyHeight(Width - UiTokens.S4 * 2f, m.EmptyTitle, m.EmptyBody) - UiTokens.S12 * 2f + UiTokens.S5 * 2f);
 
         private static float GroupHeight(ref UiObjectiveGroup group)
         {
@@ -104,7 +109,7 @@ namespace RealLifeOverhaul.Ui
             float ix = x + UiTokens.S4, iw = Width - UiTokens.S4 * 2f;
             if (m.Groups.Length == 0)
             {
-                UiDraw.Empty(s, on, ix, cy, iw, h - UiFrame.Strip - UiTokens.S4, m.EmptyTitle, m.EmptyBody);
+                UiDraw.EmptyState(s, on, ix, cy, iw, EmptyRoom(m), m.EmptyIcon, m.EmptyTitle, m.EmptyBody);
                 return y + h;
             }
             for (int g = 0; g < m.Groups.Length; g++)

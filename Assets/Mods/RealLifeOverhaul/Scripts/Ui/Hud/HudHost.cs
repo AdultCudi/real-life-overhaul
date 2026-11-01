@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using Extensions;
 using UI;
-using UI.PlayerHUD;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -23,8 +22,8 @@ namespace RealLifeOverhaul.Ui
 
     /// <summary>
     /// The HUD host (w0-hudkit): the kit's pieces over the running game, on a canvas of its own nested in the game's HUD
-    /// canvas, so the game's scaler (3840 x 2160, its UI zoom) scales it as it scales the game's own HUD, and sorted just
-    /// above the HUD and below the game's question boxes, notices and other mods' canvases. Three kinds of piece:
+    /// canvas (UiOverCanvas), so the game's scaler (3840 x 2160, its UI zoom) scales it as it scales the game's own HUD, and
+    /// sorted just above the HUD and below the game's question boxes, notices and other mods' canvases. Three kinds of piece:
     /// - the HUD itself (HudScreen: the status bar and the pieces docked at the edges), one view laid out only when its
     ///   model or what the pills show changes (HudStatusGame.Signature), taking the mouse and never a key;
     /// - world prompts (HudFollower), each a small view moved, never laid out again, to beside its point: one
@@ -41,6 +40,7 @@ namespace RealLifeOverhaul.Ui
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("ui", "HudHost", typeof(HudHost));   // its Update (Core/Guard)
         private static readonly int HotUpdate = HotSpots.Slot("Ui: HudHost.Update");
+        private const float AppsEvery = 5f;   // seconds between reads of the row's apps while walking: their news change slowly, the walk costs a few dozen buttons
 
         private readonly UiScene _scene = new UiScene();
         private readonly HudScreen _screen = new HudScreen();
@@ -57,6 +57,8 @@ namespace RealLifeOverhaul.Ui
         private GameObject _modalRoot;
         private UiHost _modal;
         private float _leftX, _leftY, _leftW, _leftH;   // the left column, which a world prompt keeps off: worked out at each layout
+        private AllAppsScreen _allApps;
+        private float _appsDue;                         // when the app row's list is read again from the game while walking
 
         /// <summary>The one HUD host, while it stands.</summary>
         public static HudHost Instance { get; private set; }
@@ -81,35 +83,13 @@ namespace RealLifeOverhaul.Ui
                 return Instance;
             }
             UIs uis = InstanceBehavior<UIs>.Instance;
-            PlayerHUD hud = uis != null ? uis.playerHUD : null;
-            if (hud == null)
+            RectTransform rect = UiOverCanvas.Make(uis != null ? uis.playerHUD : null, "RealLife Interface HUD");
+            if (rect == null)
             {
-                return null;
+                return null;   // the HUD is built a little after the city: asked again at the next press
             }
-            Canvas[] above = hud.GetComponentsInParent<Canvas>(true);
-            if (above.Length == 0)
-            {
-                return null;
-            }
-            var overrides = new bool[above.Length];
-            for (int i = 0; i < above.Length; i++)
-            {
-                overrides[i] = above[i].overrideSorting;
-            }
-            Canvas root = above[UiBindRules.Root(above.Length)];
-            var go = new GameObject("RealLife Interface HUD", typeof(RectTransform));
-            var rect = (RectTransform)go.transform;
-            rect.SetParent(root.transform, false);
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = rect.offsetMax = Vector2.zero;
-            var canvas = go.AddComponent<Canvas>();
-            canvas.overrideSorting = true;
-            canvas.sortingOrder = above[UiBindRules.Sorter(overrides, above.Length)].sortingOrder + 1;   // just over the HUD: the game's question boxes and notices stay above
-            go.AddComponent<GraphicRaycaster>();
-            HudHost host = go.AddComponent<HudHost>();
+            HudHost host = rect.gameObject.AddComponent<HudHost>();
             host.Build(rect);
-            go.SetActive(false);
             return host;
         }
 
@@ -126,6 +106,8 @@ namespace RealLifeOverhaul.Ui
             {
                 host._modal.Hide();
             }
+            HudStatusGame.Shows = false;
+            HudStatusGame.AllAppsOpen = false;
             Destroy(host.gameObject);
             if (Meta.Dev.Verbose && why != null)
             {
@@ -144,8 +126,8 @@ namespace RealLifeOverhaul.Ui
             _view.Ring = false;   // the HUD takes no key, so the keys' ring never shows on it
             _change = new UiView(rect, "MoneyChange") { Scale = _scale };
             _changeGroup = _change.Root.gameObject.AddComponent<CanvasGroup>();
-            _changeGroup.blocksRaycasts = false;
             _changeGroup.alpha = 0f;
+            _screen.AllApps = OpenAllApps;   // pressed from the guarded pointer handler
         }
 
         /// <summary>The HUD shows: laid out fresh, then kept current while it shows.</summary>
@@ -153,6 +135,8 @@ namespace RealLifeOverhaul.Ui
         {
             gameObject.SetActive(true);
             enabled = true;
+            HudStatusGame.Shows = true;
+            _appsDue = 0f;
             _flow.Reset();
             _laidSize = Vector2.zero;
             _view.Open();
@@ -163,6 +147,7 @@ namespace RealLifeOverhaul.Ui
         {
             EndModal();
             _view.Still();
+            HudStatusGame.Shows = false;
             gameObject.SetActive(false);
         }
 
@@ -217,7 +202,32 @@ namespace RealLifeOverhaul.Ui
             }
             _modal.Hide();
             _modalRoot.SetActive(false);
+            HudStatusGame.AllAppsOpen = false;
             _screen.Dirty = true;
+        }
+
+        // The All apps tile on the walking bar: the frame's own All apps (the shell's screen, its folders and its presses)
+        // over the city on the HUD's modal host; an app pressed there opens as the full menu's row opens it.
+        private bool OpenAllApps()
+        {
+            if (!UiScreenSwitches.On("all_apps"))
+            {
+                return false;
+            }
+            if (_allApps == null)
+            {
+                _allApps = new AllAppsScreen { Close = EndModal };
+                _allApps.Opening = id =>
+                {
+                    EndModal();
+                    return ShellApps.Press(id);
+                };
+            }
+            UiShellApps.Refresh();
+            _allApps.Show(-1, null);
+            Modal(_allApps, UiText.T("reallife_ui_shell_all_apps"), UiIcon.Grid);
+            HudStatusGame.AllAppsOpen = true;
+            return true;
         }
 
         private bool ModalUp => _modalRoot != null && _modalRoot.activeSelf;
@@ -243,15 +253,21 @@ namespace RealLifeOverhaul.Ui
 
         private void OnUpdate()
         {
-            if (!UiDirector.On)
+            if (!UiDirector.On || !UiScreenSwitches.On("hud"))
             {
-                Hide();   // the interface switched off: the game's own HUD alone, at once
+                Hide();   // the interface or the HUD's own switch turned off: the game's own HUD alone, at once
                 return;
             }
             Vector2 size = _rect.rect.size;
             if (size != _laidSize)
             {
                 Rescale(size);
+            }
+            if (!UiShell.Taken && Time.unscaledTime >= _appsDue)
+            {
+                // The row's apps and their news, read from the game's own buttons a few times a minute while walking.
+                _appsDue = Time.unscaledTime + AppsEvery;
+                _screen.Dirty |= UiShellApps.Refresh();
             }
             int signature = HudStatusGame.Signature();
             if (signature != _signature || _screen.Dirty)
@@ -296,6 +312,7 @@ namespace RealLifeOverhaul.Ui
                 _scene.Begin(_screen.Id, frame.Width, frame.Height, true);
                 _scene.Floats = true;
                 UiHud.Draw(_scene, _screen.Model, frame, UiGame.Instance.Keys, false);
+                UiHud.OnBar(_scene, _screen.Model, frame);
                 _screen.Dirty = false;
             }
             else

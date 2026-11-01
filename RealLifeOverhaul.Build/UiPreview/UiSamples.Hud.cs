@@ -26,6 +26,15 @@ internal static partial class UiSamples
             Energy = night ? 18 : 72, Hunger = night ? 12 : 48, Happiness = night ? 24 : 64, Hygiene = night ? 22 : 81, Stress = night ? 86 : 34, HomeNeed = night ? 30 : 70,
             Alerts = night ? 12 : 3, PillsPress = true,
         };
+        // While walking the bar keeps the frame's app row: the phone's first home page, then All apps (the owner, item 11).
+        UiStatusModel row = ShellBar(-1, false);
+        m.Apps = row.Apps;
+        m.AppTints = row.AppTints;
+        m.AppBadges = row.AppBadges;
+        m.AllApps = true;
+        m.AllAppsBadge = row.AllAppsBadge;
+        m.AppsPress = true;
+        m.AllAppsLabel = t("reallife_ui_shell_all_apps", "All apps");
         return m;
     }
 
@@ -81,7 +90,7 @@ internal static partial class UiSamples
     public static UiInfoModel HudBusiness(UiWords t) => new UiInfoModel
     {
         Title = "Bloom Café", Icon = UiIcon.Coffee, Tabs = new[] { UiIcon.Building, UiIcon.Coffee, UiIcon.People }, Tab = 1,
-        Status = "Open until 22:00", StatusIcon = UiIcon.Clock, StatusTone = UiRole.Ok, Facts = "Coffee shop, 70 Fifth Avenue",
+        Status = "Open until 22:00", StatusIcon = UiIcon.Clock, StatusTone = UiRole.None, Facts = "Coffee shop, 70 Fifth Avenue",
         Sections = new[]
         {
             new UiInfoSection
@@ -90,13 +99,13 @@ internal static partial class UiSamples
                 Rows = new[]
                 {
                     new UiInfoRow { Label = "Takings today", Value = "$1,862", Ink = UiRole.OkText }, new UiInfoRow { Label = "Customers today", Value = "143" },
-                    new UiInfoRow { Label = "Rating", Value = "4.2 of 5" },
+                    new UiInfoRow { Label = "Open", Value = "07:00 to 22:00" },
                 }
             },
             new UiInfoSection
             {
                 Label = "Staff", Value = "4 on shift", Link = true,
-                Rows = new[] { new UiInfoRow { Label = "Manager", Value = "Maya Okafor", Link = true }, new UiInfoRow { Label = "Wages a day", Value = "$612" } }
+                Rows = new[] { new UiInfoRow { Label = "Wages a day", Value = "$612" }, new UiInfoRow { Label = "Next shift change", Value = "18:00" } }
             },
             new UiInfoSection
             {
@@ -111,14 +120,14 @@ internal static partial class UiSamples
     public static UiInfoModel HudVehicle(UiWords t) => new UiInfoModel
     {
         Title = "Honza Mimo", Icon = UiIcon.Car, Tabs = new[] { UiIcon.Car, UiIcon.Person }, Tab = 0,
-        Status = "Parked on West 24th Street", StatusIcon = UiIcon.MapPin, StatusTone = UiRole.Text2, Facts = "Yours since Day 380, hatchback",
+        Status = "Parked on West 24th Street", StatusIcon = UiIcon.MapPin, StatusTone = UiRole.None, Facts = "Yours since Day 380, hatchback",
         Sections = new[]
         {
             new UiInfoSection
             {
                 Label = "Vehicle", Value = "In good order", Rows = new[]
                 {
-                    new UiInfoRow { Label = "Fuel", Value = "62%" }, new UiInfoRow { Label = "Condition", Value = "88%", Ink = UiRole.OkText },
+                    new UiInfoRow { Label = "Plate", Value = "NYB 4417" }, new UiInfoRow { Label = "Bought for", Value = "$14,900" },
                     new UiInfoRow { Label = "Worth now", Value = "$11,300" },
                 }
             },
@@ -131,8 +140,20 @@ internal static partial class UiSamples
     };
 
     /// <summary>The HUD with a thing's info panel docked at the top left: a business, or a car.</summary>
-    public static void HudInfo(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool vehicle) =>
-        Hud(s, f, dark, k, t, new UiHudModel { Info = vehicle ? HudVehicle(t) : HudBusiness(t) }, HudBar(t, false, false, false));
+    public static void HudInfo(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool vehicle)
+    {
+        var m = new UiHudModel
+        {
+            Info = vehicle ? HudVehicle(t) : HudBusiness(t),
+            Prompts = new[]
+            {
+                new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") }, new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_select", "Select") },
+                new UiPrompt { Action = UiAction.Back, Label = t("common_close", "Close") },
+            },
+        };
+        m.PromptCount = m.Prompts.Length;
+        Hud(s, f, dark, k, t, m, HudBar(t, false, false, false));
+    }
 
     // ------------------------------------------------------------------------------------------------- the world prompt
 
@@ -170,13 +191,13 @@ internal static partial class UiSamples
     /// <summary>The shift at the café: its hours as a meter, where and until when, Clock out.</summary>
     public static UiSidePanelModel HudShift(UiWords t, bool collapsed) => new UiSidePanelModel
     {
-        Title = "Shift at Bloom Café", Icon = UiIcon.Briefcase, Collapsed = collapsed,
+        Title = "Barista shift", Icon = UiIcon.Briefcase, Collapsed = collapsed,
         Rows = new[]
         {
             new UiInfoRow { Label = "Role", Value = "Barista" }, new UiInfoRow { Label = "Until", Value = "18:00" },
             new UiInfoRow { Label = "Pay this shift", Value = "$96", Ink = UiRole.OkText },
         },
-        HasProgress = true, Progress = new UiProgressModel { Label = "Hours worked", Value = "3 of 6", Share = 0.5f },
+        HasProgress = true, Progress = new UiProgressModel { Label = "Hours worked", Value = "2 h 32 min of 6 h", Share = 0.42f },
         Actions = new[] { new UiActionModel { Label = "Clock out" } },
     };
 
@@ -186,8 +207,8 @@ internal static partial class UiSamples
         Title = "Current job", Icon = UiIcon.IdBadge, Collapsed = collapsed,
         Rows = new[]
         {
-            new UiInfoRow { Label = "Employer", Value = "Bloom Café", Link = true }, new UiInfoRow { Label = "Address", Value = "70 Fifth Avenue", Link = true },
-            new UiInfoRow { Label = "Today", Value = "12:00 to 18:00" }, new UiInfoRow { Label = "Tomorrow", Value = "Day off" },
+            new UiInfoRow { Label = "Address", Value = "70 Fifth Avenue", Link = true }, new UiInfoRow { Label = "Tomorrow", Value = "Day off" },
+            new UiInfoRow { Label = "Hours a week", Value = "30" },
         },
         Actions = new[] { new UiActionModel { Label = t("common_setdestination", "Set destination"), Icon = UiIcon.Navigation }, new UiActionModel { Label = "Quit", Kind = UiButtonKind.Destructive } },
     };
@@ -216,7 +237,7 @@ internal static partial class UiSamples
         {
             new UiObjectiveGroup
             {
-                Title = "To do", Icon = UiIcon.Warning, Lines = new[]
+                Title = "To do", Icon = UiIcon.Bell, Lines = new[]
                 {
                     new UiObjectiveLine { Text = "Bloom Café is out of coffee beans", Locate = true },
                     new UiObjectiveLine { Text = "Pay the rent for 70 Fifth Avenue by Day 414", Progress = "$9,400" },
@@ -272,7 +293,7 @@ internal static partial class UiSamples
         var delivery = new UiSidePanelModel
         {
             Title = "Delivery to Hudson Street", Icon = UiIcon.Truck,
-            Rows = new[] { new UiInfoRow { Label = "Boxes", Value = "4 of 12" }, new UiInfoRow { Label = "Due", Value = "16:00", Ink = UiRole.WarnText } },
+            Rows = new[] { new UiInfoRow { Label = "Boxes", Value = "4 of 12" }, new UiInfoRow { Label = "Due", Value = "15:00", Ink = UiRole.WarnText } },
             HasProgress = true, Progress = new UiProgressModel { Label = "Time left", Value = "28 min", Share = 0.22f, Tone = UiRole.Warn },
         };
         Hud(s, f, dark, k, t, new UiHudModel { Side = new[] { timing, delivery } }, HudBar(t, false, false, false));
@@ -340,10 +361,10 @@ internal static partial class UiSamples
                 new UiInfoRow { Label = "Ends at", Value = "18:30" },
             },
             HasDuration = state == UiActivityState.NotStarted, DurationLabel = "Hours", DurationValue = "4 hours", DurationShare = 0.5f,
-            HasProgress = state == UiActivityState.Running || state == UiActivityState.Started, Progress = new UiProgressModel { Share = state == UiActivityState.Started ? 0.04f : 0.62f },
-            Clock = state == UiActivityState.Finished ? "18:30" : "16:58",
+            HasProgress = state == UiActivityState.Running || state == UiActivityState.Started, Progress = new UiProgressModel { Share = state == UiActivityState.Started ? 0.04f : 0.12f },
+            Clock = "14:32",
             StateWords = state == UiActivityState.Moving ? "On your way, 2 min" : state == UiActivityState.Waiting ? "Waiting for the doors to open at 12:00"
-                : state == UiActivityState.Finished ? "Done: $64 earned" : "1 hour, 32 minutes remaining",
+                : state == UiActivityState.Finished ? "Done: $64 earned" : "3 hours, 58 minutes remaining",
             CanSkip = true, SkipLabel = t("playeractivityui_timemachine", "Skip time"), SkipKey = GameKey(k, "O", UiIcon.PadX),
             CanFast = true, Fast = state == UiActivityState.Running, FastLabel = t("playeractivityui_fast_forward", "Fast forward"), FastKey = GameKey(k, "P", UiIcon.PadY),
             CanCancel = true, CancelLabel = t("common_cancel", "Cancel"), StartLabel = "Start",
@@ -379,7 +400,15 @@ internal static partial class UiSamples
     };
 
     public static void HudSkipScene(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t) =>
-        WithBar(Over(HudBar(t, false, true, true)), () => UiTimeSkip.Lay(s, HudSkip(t, false), f, dark, k));
+        WithBar(Skipping(HudBar(t, false, true, true)), () => UiTimeSkip.Lay(s, HudSkip(t, false), f, dark, k));
+
+    // The bar under the veil reads the clock the veil counts.
+    private static UiStatusModel Skipping(UiStatusModel bar)
+    {
+        bar.Time = "03:40";
+        bar.Day = "Wed, Day 413";
+        return Over(bar);
+    }
 
     // ------------------------------------------------------------------------------------------------- the city map
 
@@ -414,7 +443,7 @@ internal static partial class UiSamples
 
     // ------------------------------------------------------------------------------------------------- the tool row
 
-    /// <summary>The interior designer's tools with the floors in hand: eight floors to choose from, one in hand, one not sold here.</summary>
+    /// <summary>The interior designer's tools with the furniture in hand: eight pieces to choose from, one in hand, one not sold here.</summary>
     public static UiToolRowModel HudToolRow(UiWords t, bool open) => new UiToolRowModel
     {
         Tools = new[]
@@ -422,13 +451,14 @@ internal static partial class UiSamples
             new UiTool { Icon = UiIcon.Sofa, Name = "Furniture" }, new UiTool { Icon = UiIcon.PaintBrush, Name = "Walls" }, new UiTool { Icon = UiIcon.Grid, Name = "Floors" },
             new UiTool { Icon = UiIcon.Lightbulb, Name = "Lights" }, new UiTool { Icon = UiIcon.Package, Name = "Storage" }, new UiTool { Icon = UiIcon.Trash, Name = "Sell" },
         },
-        Tool = open ? 2 : -1, Choice = 1,
+        Tool = open ? 0 : -1, Choice = 1,
         Choices = new[]
         {
-            new UiToolChoice { Icon = UiIcon.Grid, Name = "Oak boards", Figure = "$18 a tile" }, new UiToolChoice { Icon = UiIcon.Grid, Name = "Grey concrete", Figure = "$9 a tile" },
-            new UiToolChoice { Icon = UiIcon.Grid, Name = "White marble", Figure = "$42 a tile" }, new UiToolChoice { Icon = UiIcon.Grid, Name = "Black and white tiles", Figure = "$14 a tile" },
-            new UiToolChoice { Icon = UiIcon.Grid, Name = "Red brick", Figure = "$12 a tile" }, new UiToolChoice { Icon = UiIcon.Grid, Name = "Carpet, blue", Figure = "$11 a tile" },
-            new UiToolChoice { Icon = UiIcon.Grid, Name = "Walnut parquet", Figure = "$26 a tile", Disabled = true }, new UiToolChoice { Icon = UiIcon.Grid, Name = "Rubber mat", Figure = "$7 a tile" },
+            new UiToolChoice { Icon = UiIcon.Sofa, Name = "Two seat sofa", Figure = "$640" }, new UiToolChoice { Icon = UiIcon.Coffee, Name = "Espresso machine", Figure = "$1,450" },
+            new UiToolChoice { Icon = UiIcon.Lightbulb, Name = "Floor lamp", Figure = "$85" }, new UiToolChoice { Icon = UiIcon.Package, Name = "Wall shelf", Figure = "$120" },
+            new UiToolChoice { Icon = UiIcon.Image, Name = "Framed print", Figure = "$60" }, new UiToolChoice { Icon = UiIcon.Cpu, Name = "Office computer", Figure = "$980" },
+            new UiToolChoice { Icon = UiIcon.MusicNotes, Name = "Ceiling speaker", Figure = "$210", Disabled = true, Reason = "Not sold here" },
+            new UiToolChoice { Icon = UiIcon.GameController, Name = "Arcade cabinet", Figure = "$2,400" },
         },
     };
 
@@ -437,6 +467,7 @@ internal static partial class UiSamples
     {
         UiStatusModel bar = HudBar(t, false, false, false);
         bar.Apps = null;   // the tool row stands where the apps were
+        bar.AllApps = false;
         bar.MoneyChange = null;
         var m = new UiHudModel
         {

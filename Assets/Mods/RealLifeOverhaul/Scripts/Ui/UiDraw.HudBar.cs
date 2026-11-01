@@ -180,9 +180,13 @@ namespace RealLifeOverhaul.Ui
         }
 
         // What follows the time: the pause in words while paused, else the game's speed as chevrons once the game has said it.
-        private static float TimeTail(UiStatusModel m) =>
-            m.Paused && !string.IsNullOrEmpty(m.PausedWords) ? Snap(UiTextRules.Width(m.PausedWords, UiStyle.SmallStrong) + UiTokens.S1)
-            : m.Speed > 0 ? Chevron * 3f : 0f;
+        // One slot for both, as wide as the wider, so pausing never moves the pills beside it.
+        private static float TimeTail(UiStatusModel m)
+        {
+            float words = string.IsNullOrEmpty(m.PausedWords) ? 0f : Snap(UiTextRules.Width(m.PausedWords, UiStyle.SmallStrong) + UiTokens.S1);
+            float chevrons = m.Speed > 0 || m.Paused ? Chevron * 3f : 0f;
+            return Math.Max(chevrons, words);
+        }
 
         // The time pill: the play or pause mark, the time, the day, and the speed's chevrons or the pause's words.
         private static void TimePill(UiScene s, UiAt at, float x, float y, float w, UiStatusModel m, bool day)
@@ -278,10 +282,10 @@ namespace RealLifeOverhaul.Ui
             int face = PillFace(s, at, x, y, w);
             UiAt inside = at.In(face);
             float cx = x + UiTokens.S2;
-            UiIcon mood = m.Happiness >= 60 ? UiIcon.SmileyHappy : m.Happiness >= 30 ? UiIcon.SmileyMeh : UiIcon.SmileySad;
+            // One glyph a need in its own colour: how happy is the meter's to say, never the face's.
             cx = Need(s, inside, cx, y, meter, UiIcon.Lightning, m.Energy, false);
             cx = Need(s, inside, cx, y, meter, UiIcon.ForkKnife, m.Hunger, false);
-            cx = Need(s, inside, cx, y, meter, mood, m.Happiness, false);
+            cx = Need(s, inside, cx, y, meter, UiIcon.SmileyHappy, m.Happiness, false);
             cx = Need(s, inside, cx, y, meter, UiIcon.Drop, m.Hygiene, false);
             cx = Need(s, inside, cx, y, meter, UiIcon.Brain, m.Stress, true);
             Need(s, inside, cx, y, meter, UiIcon.Home, m.HomeNeed, false);

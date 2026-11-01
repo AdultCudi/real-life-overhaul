@@ -7,19 +7,21 @@ namespace RealLifeOverhaul.Ui
     /// The HUD over the running game as a screen of the kit (UiHud): its model's pieces at the screen's edges and the status
     /// bar with its pills, laid out by the HUD host (HudHost) whenever the model or what the pills show changes. It takes no
     /// key: the mouse presses. Its pills press the game's own methods, as the game's top bar does (the pause button,
-    /// Topbar.ClickMoney, Topbar.ClickPersona); the app row and the alerts go to whoever owns them (UiHud.ChromePressed,
-    /// UiHud.AlertsPressed), and a piece's own commands to whoever put it up (<see cref="PiecePressed"/>). Cost: a layout a
-    /// change; nothing a frame.
+    /// Topbar.ClickMoney, Topbar.ClickPersona); the app row presses each app's own button as the full menu's row does
+    /// (ShellApps.Press), All apps stands the frame's All apps over the city (<see cref="AllApps"/>), the bell opens the
+    /// game's own notice list (NotificationsListUI.Toggle), and a piece's own commands to whoever put it up (<see cref="PiecePressed"/>).
+    /// Cost: a layout a change; nothing a frame.
     /// </summary>
     public sealed class HudScreen : IUiScreen
     {
-        private const int FrameFirst = UiDraw.CloseCommand + 10, FrameLast = UiDraw.CloseCommand + 19;   // the app row and All apps: the frame's own (9010 to 9019)
-
         /// <summary>What the HUD shows besides the bar; whoever changes it sets <see cref="Dirty"/>.</summary>
         public readonly UiHudModel Model = new UiHudModel { MoneyChange = false };
 
         /// <summary>A piece's own command pressed (an info panel's link, a side panel's button, a tool): true when it did something.</summary>
         public Func<int, int, bool> PiecePressed;
+
+        /// <summary>The All apps tile pressed: the HUD host stands the frame's All apps over the city.</summary>
+        public Func<bool> AllApps;
 
         public string Id => "hud";
 
@@ -42,6 +44,7 @@ namespace RealLifeOverhaul.Ui
                     s.AddPrompt(Model.Prompts[i].Action, Model.Prompts[i].Label);
                 }
                 UiDraw.PromptBar(s, frame, keys);
+                UiHud.OnBar(s, Model, frame);
                 LastBar = UiChrome.Bar != null ? UiChrome.Bar() : null;
             }
             finally
@@ -62,13 +65,31 @@ namespace RealLifeOverhaul.Ui
                 case UiDraw.NeedsPillCommand:
                     return TopBar(false);
                 case UiDraw.AlertsPillCommand:
-                    return UiHud.AlertsPressed != null && UiHud.AlertsPressed();
+                    return Notices();
             }
-            if (command >= FrameFirst && command <= FrameLast)
+            if (command == UiDraw.AppRowCommand)
             {
-                return UiHud.ChromePressed != null && UiHud.ChromePressed(command, arg);
+                return OpenRow(arg);
+            }
+            if (command == UiDraw.AllAppsCommand)
+            {
+                return AllApps != null && AllApps();
             }
             return PiecePressed != null && PiecePressed(command, arg);
+        }
+
+        // The row's arg-th app pressed while walking: its own button, as the full menu's row presses it (ShellApps.Press).
+        private static bool OpenRow(int index)
+        {
+            int seen = 0;
+            for (int i = 0; i < UiShellApps.Items.Count; i++)
+            {
+                if (UiShellApps.Items[i].InRow && seen++ == index)
+                {
+                    return ShellApps.Press(UiShellApps.Items[i].Id);
+                }
+            }
+            return false;
         }
 
         // The game's pause button: its own method, which keeps its rules (a time lock while a scene runs, Going Public's shared clock).
@@ -80,6 +101,18 @@ namespace RealLifeOverhaul.Ui
                 return false;
             }
             uis.gameSpeed.TogglePause();
+            return true;
+        }
+
+        // The bell opens the game's own notice list, which the frame draws over (ShellNotices), as the game's own bell does.
+        private static bool Notices()
+        {
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            if (uis == null || uis.notificationsListUI == null)
+            {
+                return false;
+            }
+            uis.notificationsListUI.Toggle(true);
             return true;
         }
 

@@ -53,8 +53,8 @@ namespace RealLifeOverhaul.Ui
         public const float Width = UiInfoView.Width;   // px: the same panel as an info view's
         private const float Menu = 104f;               // px: the views' menu, two icons across, as an info view's
         private const float Cell = 44f;                // px: a view's icon button
-        private const float FilterRow = UiTokens.ControlSmall;
-        private const float SwitchW = 36f, SwitchH = 20f, Knob = 16f;   // px: a switch's track and its knob
+        private const float FilterRow = UiTokens.Control;   // px: the kit's switch stands a control high
+        private const float SwitchBox = 52f;                // px: the box the kit's switch hugs, its track and a grid step before it
         private const byte MenuRegion = 1, PanelRegion = 2;
 
         private static readonly UiRole[] Ramp = { UiRole.Ramp1, UiRole.Ramp2, UiRole.Ramp3, UiRole.Ramp4, UiRole.Ramp5 };
@@ -82,7 +82,8 @@ namespace RealLifeOverhaul.Ui
             }
             if (!string.IsNullOrEmpty(m.LegendTitle))
             {
-                h += UiTokens.S3 + UiTokens.PairRow + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)) + UiTokens.S2 + UiDraw.Snap(UiTokens.S2 + UiTokens.S1 + UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S3;
+                h += UiTokens.S3 + UiTokens.PairRow + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)) + UiTokens.S2
+                     + UiDraw.Snap(UiTokens.S2 + UiTokens.S1 + UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S3;
             }
             if (m.Picked)
             {
@@ -140,34 +141,69 @@ namespace RealLifeOverhaul.Ui
             {
                 Picked(s, on, m, px, y + h - PickedHeight(m), ix, iw, keys);
             }
+            Link(s, m);
             return h;
         }
 
-        // A filter: its switch, its glyph, its name (the three one target that turns it), and its locate button at the right.
+        // The d-pad's way through the panel: from the views' right column to the search, down the filters one by one (a
+        // locate beside its switch), on to Set destination, and back up the same way.
+        private static void Link(UiScene s, UiMapPanelModel m)
+        {
+            int search = s.FindNode(SearchCommand, 0);
+            if (search < 0)
+            {
+                return;
+            }
+            for (int i = 0; i < m.Views.Length; i++)
+            {
+                int view = s.FindNode(ViewCommand, i);
+                if (view >= 0 && (i % 2 == 1 || i == m.Views.Length - 1))
+                {
+                    s.Nodes[view].Right = search;
+                }
+            }
+            int shown = s.FindNode(ViewCommand, m.View);
+            s.Nodes[search].Left = shown;
+            int above = search;
+            for (int i = 0; i < m.Filters.Length; i++)
+            {
+                int filter = s.FindNode(FilterCommand, i), locate = s.FindNode(LocateCommand, i);
+                if (filter < 0)
+                {
+                    continue;
+                }
+                s.Nodes[above].Down = filter;
+                s.Nodes[filter].Up = above;
+                if (locate >= 0)
+                {
+                    s.Nodes[filter].Right = locate;
+                    s.Nodes[locate].Left = filter;
+                    s.Nodes[locate].Up = above;
+                }
+                above = filter;
+            }
+            int destination = s.FindNode(DestinationCommand, 0);
+            if (destination >= 0)
+            {
+                s.Nodes[above].Down = destination;
+                s.Nodes[destination].Up = above;
+            }
+        }
+
+        // A filter: the kit's switch that turns it, its glyph, its name, and its locate button at the right.
         private static void Filter(UiScene s, UiAt at, ref UiMapFilter f, int index, float x, float y, float w)
         {
             float lb = UiTokens.MinTarget;
-            float tw = w - (f.Locate ? lb + UiTokens.S2 : 0f);
-            int face = UiDraw.Box(s, at, x - UiTokens.S1, y, tw + UiTokens.S1, FilterRow, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
-            UiAt inside = at.In(face);
-            Switch(s, inside, x, y + (FilterRow - SwitchH) / 2f, f.On);
-            float gx = x + SwitchW + UiTokens.S3;
-            UiDraw.Icon(s, inside, gx, y + (FilterRow - UiTokens.Icon) / 2f, UiTokens.Icon, f.Icon, UiRole.None, UiFlags.Middle);
+            UiDraw.Switch(s, at, x - UiTokens.S2, y, SwitchBox, f.On, null, FilterCommand, index, false);
+            float gx = x - UiTokens.S2 + SwitchBox + UiTokens.S3;
+            UiDraw.Icon(s, at, gx, y + (FilterRow - UiTokens.Icon) / 2f, UiTokens.Icon, f.Icon, UiRole.None, UiFlags.Middle);
             float nx = gx + UiTokens.Icon + UiTokens.S2;
-            UiDraw.TextMiddle(s, inside, nx, y, FilterRow, x + tw - UiTokens.S2 - nx, UiStyle.Body, f.On ? UiRole.Text : UiRole.Text2, f.Name, UiFlags.Label | UiFlags.Truncate);
-            UiDraw.Node(s, at, x - UiTokens.S1, y, tw + UiTokens.S1, FilterRow, FilterCommand, index, face);
+            float right = x + w - (f.Locate ? lb + UiTokens.S2 : 0f);
+            UiDraw.TextMiddle(s, at, nx, y, FilterRow, right - nx, UiStyle.Body, f.On ? UiRole.Text : UiRole.Text2, f.Name, UiFlags.Label | UiFlags.Truncate);
             if (f.Locate)
             {
                 UiDraw.IconButton(s, at, x + w - lb, y + (FilterRow - lb) / 2f, lb, UiIcon.Locate, UiRole.None, LocateCommand, index, false, UiAction.Count, false, true);
             }
-        }
-
-        // A switch's track and knob: the knob at the right on the cyan while on, at the left on the track while off.
-        private static void Switch(UiScene s, UiAt at, float x, float y, bool on)
-        {
-            int track = UiDraw.Circle(s, at, x, y, SwitchW, SwitchH, on ? UiRole.Accent : UiRole.Track, UiFlags.Middle);
-            float kx = on ? x + SwitchW - Knob - UiTokens.Hairline * 2f : x + UiTokens.Hairline * 2f;
-            UiDraw.Circle(s, at.In(track), kx, y + (SwitchH - Knob) / 2f, Knob, Knob, on ? UiRole.OnAccent : UiRole.Text2, UiFlags.Middle | UiFlags.Share);
         }
 
         // The picked place on its band at the panel's foot: its glyph and name, its rows, and Set destination.

@@ -119,13 +119,20 @@ namespace RealLifeOverhaul.Ui
             if (actions > 0)
             {
                 cy += UiTokens.S3;
-                float bw = actions == 1 ? iw : UiDraw.SnapDown((iw - UiTokens.S2) / 2f);
+                // Each button as wide as its words, the room left shared between them, so a long label keeps one line.
+                float first = UiDraw.ButtonWidth(UiButtonKind.Secondary, m.Actions[0].Label, UiIcon.None, UiAction.Count, keys);
+                float second = actions > 1 ? UiDraw.ButtonWidth(UiButtonKind.Secondary, m.Actions[1].Label, UiIcon.None, UiAction.Count, keys) : 0f;
+                float spare = Math.Max(0f, iw - first - second - (actions > 1 ? UiTokens.S2 : 0f));
+                float bw = actions == 1 ? iw : UiDraw.SnapDown(first + spare / 2f);
+                float bx = ix;
                 for (int a = 0; a < actions; a++)
                 {
                     ref UiActionModel act = ref m.Actions[a];
+                    float w = a == 0 ? bw : ix + iw - bx;
                     // Quiet buttons: the panel stays up while the player walks, so nothing on it outshouts the world's one main action.
-                    UiDraw.Button(s, on, ix + a * (bw + UiTokens.S2), cy, bw, UiTokens.ControlSmall, act.Kind == UiButtonKind.Destructive ? UiButtonKind.Destructive : UiButtonKind.Secondary,
-                        act.Label, act.Icon, UiAction.Count, keys, ActionCommand, index * 4 + a, act.Disabled);
+                    UiDraw.Button(s, on, bx, cy, w, UiTokens.ControlSmall, act.Kind == UiButtonKind.Destructive ? UiButtonKind.Destructive : UiButtonKind.Secondary,
+                        act.Label, UiIcon.None, UiAction.Count, keys, ActionCommand, index * 4 + a, act.Disabled);
+                    bx += w + UiTokens.S2;
                 }
             }
             return y + h;

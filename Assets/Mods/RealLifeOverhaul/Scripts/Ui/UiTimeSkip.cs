@@ -37,7 +37,7 @@ namespace RealLifeOverhaul.Ui
             float x = UiDraw.SnapDown((frame.Width - Width) / 2f), y = UiDraw.SnapDown((frame.BandY - h) / 2f);
             int panel = UiDraw.Box(s, UiAt.Screen, x, y, Width, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt on = UiAt.Screen.In(panel);
-            float cy = UiDraw.TitleStrip(s, on, x, y, Width, UiIcon.Clock, m.Title, m.CanCancel);
+            float cy = UiDraw.TitleStrip(s, on, x, y, Width, UiIcon.Clock, m.Title, false);   // Cancel on Back is its way out: one target for it
             float ix = x + UiTokens.S6, iw = Width - UiTokens.S6 * 2f;
             cy += UiTokens.S5;
             float ch = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display));

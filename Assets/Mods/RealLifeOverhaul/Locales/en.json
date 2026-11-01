@@ -28377,12 +28377,17 @@
   "reallife_contract_part_ui_text_box": "the game's text box drawn on the RLO interface",
   "reallife_contract_part_ui_notice_list": "the game's list of notices drawn on the RLO interface",
   "reallife_ui_hud_paused": "Paused",
-  "reallife_ui_test_hud": "Show the HUD's status bar over the city",
+  "reallife_ui_test_hud": "Show the status bar over the city",
   "reallife_ui_test_hud_box": "Show a box over you that follows you",
   "reallife_ui_test_hud_prompt": "Where you are",
   "reallife_ui_test_hud_district": "District",
-  "reallife_ui_test_hud_shown": "The HUD's status bar is over the city now. Press the test again to take it away.",
-  "reallife_ui_test_hud_gone": "The HUD's status bar is gone. The game's own HUD shows alone.",
+  "reallife_ui_test_hud_shown": "The status bar is over the city now. Press the test again to take it away.",
+  "reallife_ui_test_hud_gone": "The status bar is gone. The game's own top bar shows alone.",
   "reallife_ui_test_hud_prompt_shown": "A box now follows you. Turn the camera away and it waits at the edge of the screen. Press the test again, or Close, to take it away.",
-  "reallife_ui_test_hud_wait": "The game's HUD is not built yet. Wait until you are in the city and press the test again."
+  "reallife_ui_test_hud_wait": "The game's top bar is not built yet. Wait until you are in the city and press the test again.",
+  "reallife_ui_screen_hud": "The status bar over the city",
+  "reallife_opt_tip_ui_screen_hud": "The status bar along the foot of the screen over the city, with the time, the weather, the place, the money and your needs. Off: the game's own top bar alone.",
+  "reallife_opt_sec_uiscreens_hud": "RLO interface: status bar and world",
+  "reallife_ui_test_hud_switch": "The status bar's own switch is off in Mod settings, under RLO interface: status bar and world. Turn it on to see the test.",
+  "reallife_contract_part_hud_kit": "the RLO interface's status bar and the pieces over the running game"
 }

@@ -184,11 +184,11 @@ internal static partial class Program
                 continue;
             }
             s.Begin("strip", frame.Width, frame.Height, true);
-            UiActivity.StripPlace(frame, out float x, out float y);
+            UiActivity.StripPlace(frame, a, out float x, out float y);
             UiActivity.DrawStrip(s, UiAt.Screen, a, x, y);
             bool skip = s.FindNode(UiActivity.SkipCommand, 0) >= 0, fast = s.FindNode(UiActivity.FastCommand, 0) >= 0, out1 = s.FindNode(UiActivity.CancelCommand, 0) >= 0;
             bool walking = state == UiActivityState.Moving || state == UiActivityState.Waiting, done = state == UiActivityState.Finished;
-            bool right = UiActivity.Strip(state) && y + UiActivity.StripHeight <= frame.BandY - UiTokens.S2 && Math.Abs(x + UiActivity.StripWidth / 2f - frame.Width / 2f) <= UiTokens.Grid
+            bool right = UiActivity.Strip(state) && y + UiActivity.Height(a) <= frame.BandY - UiTokens.S2 && Math.Abs(x + UiActivity.StripWidth / 2f - frame.Width / 2f) <= UiTokens.Grid
                          && (walking ? out1 && !skip && !fast : done ? !skip && !fast && !out1 : skip && fast && !out1);
             if (!right && wrong == null)
             {
@@ -268,8 +268,11 @@ internal static partial class Program
         int sig = game.IndexOf("public static int Signature()", StringComparison.Ordinal), end = game.IndexOf("private static int Whole", StringComparison.Ordinal);
         Check(sig > 0 && end > sig && !game.Substring(sig, end - sig).Contains("new ") && !game.Substring(sig, end - sig).Contains("+ \""),
             "hud: the pills' signature, read every frame while the HUD shows, allocates nothing");
-        Check(host.Contains("GetComponentsInParent<Canvas>(true)") && host.Contains("UiBindRules.Sorter(") && host.Contains("overrideSorting = true"),
-            "hud: the host nests in the game's HUD canvas (its scaler and UI zoom), walking switched off canvases too, sorted just above the HUD");
+        string over = File.ReadAllText(System.IO.Path.Combine(folder, "..", "Host", "UiOverCanvas.cs"));
+        Check(host.Contains("UiOverCanvas.Make(uis != null ? uis.playerHUD : null") && over.Contains("GetComponentsInParent<Canvas>(true)") && over.Contains("UiBindRules.Sorter(")
+              && over.Contains("overrideSorting = true") && over.Contains("UiHostRules.Above("),
+            "hud: the host nests in the game's HUD canvas (its scaler and UI zoom) through the host's library, walking switched off canvases too, sorted just above the HUD");
+        Check(host.Contains("!UiScreenSwitches.On(\"hud\")") && host.Contains("!UiDirector.On"), "hud: the interface's switch or the HUD's own turned off takes the HUD away at once");
     }
 
     // What a frame of the HUD costs in its game-free parts, measured: placing a world prompt, the money's change, and the

@@ -114,6 +114,11 @@ namespace RealLifeOverhaul.Ui
                 Notifications.Show(NotificationType.Warning, "reallife_ui_test_fonts", null, 8f);
                 return null;
             }
+            if (!UiScreenSwitches.On("hud"))
+            {
+                Notifications.Show(NotificationType.Warning, "reallife_ui_test_hud_switch", null, 8f);
+                return null;
+            }
             HudHost host = HudHost.Ensure();
             if (host == null)
             {

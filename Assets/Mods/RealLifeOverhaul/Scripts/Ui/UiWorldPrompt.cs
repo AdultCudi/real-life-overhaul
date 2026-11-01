@@ -86,27 +86,31 @@ namespace RealLifeOverhaul.Ui
                 cy += bh;
             }
             int actions = m.Hover ? 0 : Math.Min(UiWorldPromptModel.MostActions, m.Actions.Length);
-            float ay = cy + UiTokens.S2;
+            float ay = cy + UiTokens.S2, caps = 0f;
             for (int i = 0; i < actions; i++)
             {
-                Action(s, on, ref m.Actions[i], i, x + UiTokens.S2, ay, Width - UiTokens.S2 * 2f);
+                caps = Math.Max(caps, UiDraw.GameKeyWidth(m.Actions[i].Key));   // every label on one left edge, whatever its key
+            }
+            for (int i = 0; i < actions; i++)
+            {
+                Action(s, on, ref m.Actions[i], i, x + UiTokens.S2, ay, Width - UiTokens.S2 * 2f, caps);
                 ay += ActionRow + UiTokens.S1;
             }
             return panel;
         }
 
         // An action's row: the game's key on its cap, its words; the main one on the cyan, a greyed one dimmed and inert.
-        private static void Action(UiScene s, UiAt at, ref UiPromptAction a, int index, float x, float y, float w)
+        private static void Action(UiScene s, UiAt at, ref UiPromptAction a, int index, float x, float y, float w, float caps)
         {
             bool main = a.Main && !a.Disabled;
             int drawn = s.ItemCount;
             int face = UiDraw.Box(s, at, x, y, w, ActionRow, main ? UiRole.Accent : UiRole.Field, UiRole.None, UiTokens.RadiusLarge, a.Disabled ? UiFlags.Disabled : UiFlags.None);
             UiAt inside = at.In(face);
-            float cx = x + UiTokens.S2;
-            float kw = UiDraw.GameKey(s, inside, cx, y + (ActionRow - UiTokens.KeyCap) / 2f, a.Key, main);
-            cx += kw > 0f ? kw + UiTokens.S2 : 0f;
+            float kx = x + UiTokens.S2;
+            float cx = kx + (caps > 0f ? caps + UiTokens.S2 : 0f);
             UiDraw.TextMiddle(s, inside, cx, y, ActionRow, x + w - UiTokens.S3 - cx, UiStyle.Body, main ? UiRole.OnAccent : UiRole.Text, a.Label, UiFlags.Label | UiFlags.Truncate);
             int node = UiDraw.Node(s, at, x, y, w, ActionRow, ActionCommand, index, face, a.Disabled);
+            UiDraw.GameKey(s, inside, kx, y + (ActionRow - UiTokens.KeyCap) / 2f, a.Key, main);   // after the target: the game, not the row, answers it
             if (a.Disabled)
             {
                 UiDraw.Dim(s, drawn, node);

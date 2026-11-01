@@ -30,19 +30,10 @@ namespace RealLifeOverhaul.Ui
     /// of the apps with its panel rising above it, a world prompt beside its point (UiHudRules.Beside), and the money's
     /// change over the money pill. The HUD takes no key: the game reads its keys and the kit shows which (UiGameKey); the
     /// mouse presses. Commands are each piece's own (200 to 279, the info panel's 1 to 3), the bar's pills (9020 to 9023)
-    /// and the frame's app row (9010 to 9019). Game-free. Cost: a layout a change.
+    /// and the frame's app row and All apps (9010 to 9019, UiDraw.AppRow). Game-free. Cost: a layout a change.
     /// </summary>
     public static class UiHud
     {
-        /// <summary>The bar's app row and All apps pressed on the HUD: answered by whoever owns the frame (the shell), or not at all.</summary>
-        public static Func<int, int, bool> ChromePressed;
-
-        /// <summary>The alerts pill pressed on the HUD: the notice list opened by whoever owns it, or not at all.</summary>
-        public static Func<bool> AlertsPressed;
-
-        /// <summary>How many notices wait, for the alerts pill: told by whoever owns the notice list; unset, the pill stays out.</summary>
-        public static Func<int> AlertsWaiting;
-
         /// <summary>The left column's x, a grid step from the edge as an info panel docks.</summary>
         public const float Left = UiTokens.S2;
 
@@ -58,11 +49,22 @@ namespace RealLifeOverhaul.Ui
                 s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
             }
             UiDraw.PromptBar(s, frame, keys);
+            OnBar(s, m, frame);
+        }
+
+        /// <summary>What stands on the bar itself, drawn after it: a build tool row in place of the apps, with its panel.</summary>
+        public static void OnBar(UiScene s, UiHudModel m, UiFrame frame)
+        {
+            if (m.Tools != null)
+            {
+                UiToolRow.Draw(s, UiAt.Screen, m.Tools, frame);
+            }
         }
 
         /// <summary>
-        /// The pieces in their places, without the bar: the left column, the side panels, the strip, the tool row, the money's
-        /// change, and the world prompt when <paramref name="prompt"/> (the game draws it in a view that follows its point).
+        /// The pieces in their places, without the bar: the left column, the side panels, the strip, the money's change, and the
+        /// world prompt when <paramref name="prompt"/> (the game draws it in a view that follows its point). The tool row stands
+        /// on the bar and is drawn after it (<see cref="OnBar"/>).
         /// </summary>
         public static void Draw(UiScene s, UiHudModel m, UiFrame frame, IUiKeys keys, bool prompt)
         {
@@ -81,12 +83,8 @@ namespace RealLifeOverhaul.Ui
             }
             if (m.Activity != null && UiActivity.Strip(m.Activity.State))
             {
-                UiActivity.StripPlace(frame, out float ax, out float ay);
+                UiActivity.StripPlace(frame, m.Activity, out float ax, out float ay);
                 UiActivity.DrawStrip(s, UiAt.Screen, m.Activity, ax, ay);
-            }
-            if (m.Tools != null)
-            {
-                UiToolRow.Draw(s, UiAt.Screen, m.Tools, frame);
             }
             UiStatusModel bar = UiChrome.Bar != null ? UiChrome.Bar() : null;
             if (m.MoneyChange && bar != null && !string.IsNullOrEmpty(bar.MoneyChange) && !string.IsNullOrEmpty(bar.Money))
