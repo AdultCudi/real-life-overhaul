@@ -166,6 +166,11 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--living-years")
+        {
+            LivingYears();   // (the living economy's features together over the markets' ten years, a report that checks nothing: LivingYearsChecks.cs)
+            return 0;
+        }
         if (args.Length == 1 && args[0] == "--managers")
         {
             Managers();   // (the managers' checks alone, the directory's among them, while working on them: ManagerChecks.cs, ManagerDirectoryChecks.cs)

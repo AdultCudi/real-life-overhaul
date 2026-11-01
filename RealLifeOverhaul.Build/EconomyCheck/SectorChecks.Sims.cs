@@ -33,7 +33,7 @@ internal static partial class Program
     // product built to launch and on, its marketing and price as set, an AI model trained on rented compute at a level.
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]
     private static SectorRun SectorProductSim(ProductKind kind, Segment segment, int engineers, int designers, int support, int sellers, int sres, int marketing, int days, int seed,
-        int tier = 1, int train = 1)
+        int tier = 1, int train = 1, Action<SectorFile, int> cityDay = null)
     {
         var ff = new FirmsFile { Seed = seed };
         var f = new SectorFile { Seed = seed };
@@ -57,6 +57,7 @@ internal static partial class Program
         var run = new SectorRun { Payback = -1, Conserved = true };
         for (int day = 1; day <= days; day++)
         {
+            cityDay?.Invoke(f, day);   // (LivingYearsChecks: the living city's figures for the day; none, the documented city)
             SectorRules.BeginDay(f, day, 1);
             SectorRules.Count(f, p);
             SectorRules.Attract(f);
@@ -123,7 +124,7 @@ internal static partial class Program
     // An IT firm of so many builders and sellers taking every offer it has people for, working its contracts by the firms' own
     // rules, for so many days in the documented city.
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]
-    private static SectorRun SectorServicesSim(FirmKind kind, int builders, int sellers, int days, int seed, bool old = false)
+    private static SectorRun SectorServicesSim(FirmKind kind, int builders, int sellers, int days, int seed, bool old = false, Action<SectorFile, int> cityDay = null)
     {
         var ff = new FirmsFile { Seed = seed };
         var f = new SectorFile { Seed = seed };
@@ -141,6 +142,7 @@ internal static partial class Program
         var run = new SectorRun { Payback = -1, Conserved = true };
         for (int day = 1; day <= days; day++)
         {
+            cityDay?.Invoke(f, day);   // (LivingYearsChecks: the living city's figures for the day; none, the documented city)
             notes.Clear();
             if (old)
             {
