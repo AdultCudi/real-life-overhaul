@@ -27849,5 +27849,6 @@
   "reallife_tech_test_desk_seat_pass": "Test passed: you sat at the desk for a game minute and stood up free to walk.",
   "reallife_tech_test_desk_seat_fail": "Test failed: you were not seated at the desk, or could not walk afterwards. The log's Desk check (seat) line says what held you.",
   "reallife_changes_063_3_title": "0.63.3",
-  "reallife_changes_063_3": "Fixed: working at a desk of your own tech firm now seats you on its chair, and you can walk away when the work ends. Before, the seat failed, so you worked standing and were stuck at the desk afterwards. Job desks and your bank's counter now let you go the same way, however the work ends."
+  "reallife_changes_063_3": "Fixed: working at a desk of your own tech firm now seats you on its chair, and you can walk away when the work ends. Before, the seat failed, so you worked standing and were stuck at the desk afterwards. Job desks and your bank's counter now let you go the same way, however the work ends.",
+  "reallife_session_button_work": "Work here"
 }

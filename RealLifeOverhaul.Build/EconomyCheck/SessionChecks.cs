@@ -24,6 +24,7 @@ internal static partial class Program
         SessionMeeting();
         SessionMeetingWeek();
         SessionSources();
+        SessionSharedDesk();
         SessionTexts();
         SessionTimings();
         Console.WriteLine("  Desk sessions: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
@@ -312,7 +313,7 @@ internal static partial class Program
         Check(panel.Contains("private static readonly FeatureGuard FrameGuard = Guard.For(\"living\", \"SessionPanel\", typeof(SessionPanel));") && panel.Contains("return Guard.Ended(this);")
               && game.Contains("Guard.For(\"living\", \"SessionGame.Behaviour\", typeof(Behaviour))") && game.Contains("GameContract.CtaBehaviours.Field") && game.Contains("_list.Insert(0, _behaviour);"),
             "sessions sources: every call of the game's into the panel and the click is behind the guard; the click is an entry at the front of the game's calls to action, as the careers' desk");
-        Check(panel.Contains("DeskGame.WalkTo(_station, Arrived)") && panel.Contains("DeskGame.SitOn(seat, _station, out _stood);") && panel.Contains("DeskGame.StandUp(_stood, _station);")
+        Check(panel.Contains("DeskGame.WalkTo(_station, Arrived)") && panel.Contains("if (!DeskGame.SitOn(seat, _station, out _stood))") && panel.Contains("DeskGame.StandUp(_stood, _station);")
               && panel.Contains("if (_done >= _length)") && panel.Contains("_director.Held(Def, _choices);") && panel.Contains("_director.Stopped(Def, _done, _length);") && panel.Contains("HasTimeMachine() => _state == PlayerActivityState.Running"),
             "sessions sources: the session is sat at the owner's desk with the game's own skip and fast forward; held only when its time is sat whole, stopped early it holds nothing");
         Check(director.Contains("public static bool On => Settings.LivingPopulation && Settings.LivingDesks") && director.Contains("return On && d._file != null && d._file.Effect(")
@@ -336,6 +337,45 @@ internal static partial class Program
               && tree.Contains("S(\"living\").For(\"living\", \"population\").Main(\"living_population\").Opt(\"living_desks\", \"living_population\")") && links.Contains("SessionRegistry.Add(Meeting());")
               && links.Contains("SessionRegistry.Remove(MeetingRules.Id);") && links.Contains("DesksLeast = 2") && links.Contains("TechTypes.GameStudio") && links.Contains("FirmsGame.WebAgency"),
             "sessions sources: the master option and the sessions' switch in Options, the meeting added by the wiring at every tech firm and the game's office businesses, and taken out again");
+    }
+
+    // The owner's desk under Living population is also a free desk of the player's own tech firm, where main's own work
+    // (Tech/TechDirector.OwnDesk) offers a click of its own. The game shows only the first click that answers for a thing
+    // (CtaManager.UpdateCta), so two features on one desk would hide one of them. One click per desk: the own work takes another
+    // free desk first, and where the sessions' desk is the only free one it leaves the click to them and their panel offers it.
+    private static void SessionSharedDesk()
+    {
+        string own = ModSource(@"Tech\TechDirector.OwnDesk.cs");
+        string offer = MethodText(own, "private void OfferDesk(BuildingRegistration reg)");
+        string free = MethodText(own, "private EmployeeStationController FreeDesk(EmployeeStationController session)");
+        Check(offer.Contains("session = TechBridges.SessionDeskNow();") && offer.Contains("free = FreeDesk(session);")
+              && offer.Contains("_sharedDesk = free != null && ReferenceEquals(free, session) ? free : null;") && offer.Contains("if (free == null || _sharedDesk != null)")
+              && ComesBefore(offer, "if (free == null || _sharedDesk != null)", "DeskGame.OtherTarget = free;"),
+            "sessions shared desk: the own desk's work never offers a click on the sessions' desk; there it is offered through their panel");
+        Check(free.Contains("if (!ReferenceEquals(_desks[i], session))") && free.Contains("return sessionFree ? session : null;"),
+            "sessions shared desk: the own desk's work takes a free desk other than the sessions' first, theirs only when no other is free");
+        Check(MethodText(own, "public bool WorksAt(EmployeeStationController desk)").Contains("ReferenceEquals(desk, _sharedDesk)")
+              && MethodText(own, "public void WorkAt(EmployeeStationController desk)").Contains("DeskClicked(desk);")
+              && MethodText(own, "private void DeskDown()").Contains("_sharedDesk = null;"),
+            "sessions shared desk: the work chosen there goes the way a click on a free desk goes, refusals said, and is forgotten when the firms stand down");
+
+        string panel = ModSource(@"Sessions\SessionPanel.cs");
+        string page = MethodText(panel, "private void Page()");
+        string work = MethodText(panel, "private void Work()");
+        Check(page.Contains("bool work = SessionBridges.WorkHereNow(_station);") && page.Contains("(work ? 1 : 0)") && page.Contains("\"WorkRealLifeSessionDesk\", \"reallife_session_button_work\"")
+              && work.Contains("if (_state != PlayerActivityState.NotStarted || _pressed || _step >= 0)") && ComesBefore(work, "End(false, false);", "_director.WorkAfter(_station);"),
+            "sessions shared desk: the panel's first page offers Work here while the work is offered at its desk; pressed, nothing of a session is spent and the work follows");
+        string desk = ModSource(@"Sessions\SessionDirector.Desk.cs");
+        string wait = MethodText(desk, "private IEnumerator WorkWhenFree(EmployeeStationController desk)");
+        Check(wait.Contains("while (SessionGame.PanelBusy && UnityEngine.Time.unscaledTime < until)") && wait.Contains("if (!SessionGame.PanelBusy && On && ReferenceEquals(desk, _desk))")
+              && wait.Contains("SessionBridges.WorkNow(desk);") && desk.Contains("private const float WorkWaitSeconds = 2f;"),
+            "sessions shared desk: the work is offered once the game's panel has let the session go, two real seconds at most, and only at the desk still held");
+        string links = ModSource(@"Wiring\Wiring.SessionLinks.cs");
+        Check(links.Contains("TechBridges.SessionDesk = SessionDesk;") && links.Contains("SessionBridges.WorkHere = WorkHere;") && links.Contains("SessionBridges.Work = Work;")
+              && links.Contains("TechBridges.SessionDesk = null;") && links.Contains("SessionBridges.WorkHere = null;") && links.Contains("SessionBridges.Work = null;")
+              && links.Contains("return SessionDirector.On ? SessionGame.Target : null;") && ModSource(@"Tech\TechBridges.cs").Contains("SessionDesk = null;"),
+            "sessions shared desk: wired both ways and taken off again; with Living population or its sessions off there is no sessions' desk and the own work is as before");
+        Check(AllIn(new[] { "reallife_session_button_work" }, out string missing), "sessions shared desk: the button's text in en, pt and zh-cn (" + missing + ")");
     }
 
     // ---------------------------------------------------------------- the texts

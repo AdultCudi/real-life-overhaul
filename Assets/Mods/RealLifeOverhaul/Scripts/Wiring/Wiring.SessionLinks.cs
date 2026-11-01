@@ -20,12 +20,18 @@ namespace RealLifeOverhaul
                 SessionBridges.Manager = Manager;
                 SessionBridges.OpenManagers = OpenManagers;
                 TechBridges.TeamWeek = TeamWeek;
+                TechBridges.SessionDesk = SessionDesk;
+                SessionBridges.WorkHere = WorkHere;
+                SessionBridges.Work = Work;
                 SessionRegistry.Add(Meeting());
             }
 
             internal static void Disconnect()
             {
                 SessionRegistry.Remove(MeetingRules.Id);
+                SessionBridges.Work = null;
+                SessionBridges.WorkHere = null;
+                TechBridges.SessionDesk = null;
                 TechBridges.TeamWeek = null;
                 SessionBridges.OpenManagers = null;
                 SessionBridges.Manager = null;
@@ -86,6 +92,38 @@ namespace RealLifeOverhaul
                     Fault("SessionLinks.TeamWeek", e);
                     output = burnout = 0;
                     return false;
+                }
+            }
+
+            // The owner's desk the sessions hold, and the own desk's work offered through their panel there: one click per desk.
+            private static EmployeeStationController SessionDesk()
+            {
+                return SessionDirector.On ? SessionGame.Target : null;
+            }
+
+            private static bool WorkHere(EmployeeStationController desk)
+            {
+                try
+                {
+                    TechDirector tech = TechDirector.Instance;
+                    return tech != null && tech.WorksAt(desk);
+                }
+                catch (Exception e)
+                {
+                    Fault("SessionLinks.WorkHere", e);
+                    return false;
+                }
+            }
+
+            private static void Work(EmployeeStationController desk)
+            {
+                try
+                {
+                    TechDirector.Instance?.WorkAt(desk);
+                }
+                catch (Exception e)
+                {
+                    Fault("SessionLinks.Work", e);
                 }
             }
 

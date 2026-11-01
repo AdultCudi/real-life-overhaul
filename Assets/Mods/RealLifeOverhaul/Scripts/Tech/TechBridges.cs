@@ -73,6 +73,26 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        /// <summary>
+        /// The owner's desk the desk sessions hold in the business the player stands in (Wiring/Wiring.SessionLinks): a click on it
+        /// opens the sessions' panel, which offers the work at it too, so the own desk's work is offered there through that panel
+        /// and not by a click of its own. Default: none.
+        /// </summary>
+        public static Func<EmployeeStationController> SessionDesk;
+
+        /// <summary><see cref="SessionDesk"/> asked: none with no answer, or if the sessions fault.</summary>
+        public static EmployeeStationController SessionDeskNow()
+        {
+            try
+            {
+                return SessionDesk != null ? SessionDesk() : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         /// <summary>The game studio's desk sessions put in (true) or taken out of the sessions' registry as the studio starts and stops. Default: nothing.</summary>
         public static Action<bool> StudioSessions;
 
@@ -421,6 +441,7 @@ namespace RealLifeOverhaul.Tech
             SectorSessions = null;
             DeskRecord = null;
             Desks = null;
+            SessionDesk = null;
             Prosecute = null;
             Claim = null;
             Fame = null;

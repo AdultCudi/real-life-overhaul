@@ -99,9 +99,9 @@ internal static partial class Program
             }
         }
         callers.Sort(StringComparer.Ordinal);
-        string known = "DeskWork.cs, OwnBankDirector.Branches.cs, TechDirector.DeskSeat.cs, TechDirector.OwnDesk.cs";
+        string known = "DeskWork.cs, OwnBankDirector.Branches.cs, SessionPanel.cs, TechDirector.DeskSeat.cs, TechDirector.OwnDesk.cs";
         Check(string.Join(", ", callers) == known,
-            "desk seat: the callers of a seat are the job's desk, the bank counter, the own firm's stint and its test; a new one is checked for its ends here first ("
+            "desk seat: the callers of a seat are the job's desk, the bank counter, a desk session at the owner's desk, the own firm's stint and its test; a new one is checked for its ends here first ("
             + string.Join(", ", callers) + ")");
         Check(bare.Count == 0, "desk seat: no caller drops a seat's answer: a seat refused ends the work at once (" + string.Join(", ", bare) + ")");
         Check(unreleased.Count == 0, "desk seat: every file that seats the player also stands them up (" + string.Join(", ", unreleased) + ")");
@@ -150,6 +150,19 @@ internal static partial class Program
         Check(deskEnd.Contains("else if (begun && _seated)") && deskEnd.Contains("DeskGame.StandUp(") && deskEnd.Contains("else if (begun)") && deskEnd.Contains("DeskGame.StandFrom(_station);")
               && MethodText(desk, "public void Finish()").Contains("End(true, true);") && MethodText(desk, "public void Close()").Contains("End(false, true);"),
             "desk seat: a job's desk stands the player up through its one End however it ends: Stop, the time up, the game's panel, the job closing");
+
+        // A desk session at the owner's desk (Living population: the team meeting, the studio's and the other firms' sessions, Flare's content plan).
+        string session = ModSource(@"Sessions\SessionPanel.cs");
+        string sat = MethodText(session, "private void Arrived()");
+        int sessionRefused = sat.IndexOf("if (!DeskGame.SitOn(seat, _station, out _stood))", StringComparison.Ordinal);
+        Check(sessionRefused > 0 && sat.IndexOf("End(false, false);", sessionRefused, StringComparison.Ordinal) > sessionRefused
+              && ComesBefore(sat, "_seated = true;", "if (!DeskGame.SitOn(") && ComesBefore(sat, "if (!DeskGame.SitOn(", "_state = PlayerActivityState.Started;")
+              && ComesBefore(sat, "_state = PlayerActivityState.Started;", "_director.Sat(Def);"),
+            "desk seat: a desk session is begun the moment the seat holds (End stands the player up from then on), and a seat refused ends it with nothing spent");
+        string sessionEnd = MethodText(session, "private void End(bool settle, bool walking)");
+        Check(sessionEnd.Contains("else if (begun && _seated)") && sessionEnd.Contains("DeskGame.StandUp(_stood, _station);")
+              && MethodText(session, "public void Finish()").Contains("End(true, true);") && MethodText(session, "public void Close()").Contains("End(false, true);"),
+            "desk seat: a desk session stands the player up through its one End however it ends: Stop, the time up, the game's panel, the sessions stopping");
 
         // A job's start that throws half way.
         string skip = ModSource(@"Jobs\ShiftSkip.cs");

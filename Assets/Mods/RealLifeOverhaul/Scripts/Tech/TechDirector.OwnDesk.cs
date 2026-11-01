@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.Tech
         private string _deskInside;                  // the firm (its place key) the player stands in, once a second; null outside
         private float _deskLookAt;
         private OwnStint _stint;                     // the player's stint at a desk, from the panel's offer until it is over
+        private EmployeeStationController _sharedDesk;   // the free desk offered through the desk sessions' panel, theirs to click (TechBridges.SessionDesk); null otherwise
 
         // Once a second while the firms run: the firm the player stands in, a free desk of it to click, a stint watched.
         private void DeskSecond()
@@ -59,20 +60,24 @@ namespace RealLifeOverhaul.Tech
         }
 
         // A free desk of the firm the player is in is the one they may click; nothing to click elsewhere, while they work, or with working for oneself off.
+        // The desk sessions' own desk (Living population) answers its click with their panel, which offers this work too: another
+        // free desk is clicked for the work first, and where theirs is the only free one, the work is offered there through it.
         private void OfferDesk(BuildingRegistration reg)
         {
-            EmployeeStationController free = null;
+            EmployeeStationController free = null, session = null;
             if (reg != null && _stint == null && Settings.CareersOwn)
             {
-                free = FreeDesk();
+                session = TechBridges.SessionDeskNow();
+                free = FreeDesk(session);
                 if (free == null && Time.realtimeSinceStartup >= _deskLookAt)
                 {
                     FirmsGame.Desks(_desks);   // a desk placed or freed since the last look
                     _deskLookAt = Time.realtimeSinceStartup + DeskLookSeconds;
-                    free = FreeDesk();
+                    free = FreeDesk(session);
                 }
             }
-            if (free == null)
+            _sharedDesk = free != null && ReferenceEquals(free, session) ? free : null;
+            if (free == null || _sharedDesk != null)
             {
                 if (DeskGame.OtherTarget != null && _onDesk != null && ReferenceEquals(DeskGame.OtherClicked, _onDesk))
                 {
@@ -93,17 +98,37 @@ namespace RealLifeOverhaul.Tech
             DeskGame.OtherClicked = _onDesk;
         }
 
-        // The first desk of the building's (in the order of its items) that nobody sits at now.
-        private EmployeeStationController FreeDesk()
+        // The first desk of the building's (in the order of its items) that nobody sits at now, the sessions' desk only when no other is free.
+        private EmployeeStationController FreeDesk(EmployeeStationController session)
         {
+            bool sessionFree = false;
             for (int i = 0; i < _desks.Count; i++)
             {
                 if (FirmsGame.Free(_desks[i]))
                 {
-                    return _desks[i];
+                    if (!ReferenceEquals(_desks[i], session))
+                    {
+                        return _desks[i];
+                    }
+                    sessionFree = true;
                 }
             }
-            return null;
+            return sessionFree ? session : null;
+        }
+
+        /// <summary>True while the work is offered at the desk sessions' own desk, the only free one (their panel then offers it; SessionBridges.WorkHere).</summary>
+        public bool WorksAt(EmployeeStationController desk)
+        {
+            return _firmsOn && _stint == null && desk != null && ReferenceEquals(desk, _sharedDesk) && FirmsGame.Free(desk);
+        }
+
+        /// <summary>The work at the sessions' desk chosen on their panel: as a click on a free desk, with its refusals said (SessionBridges.Work).</summary>
+        public void WorkAt(EmployeeStationController desk)
+        {
+            if (WorksAt(desk))
+            {
+                DeskClicked(desk);
+            }
         }
 
         // A click on the desk: why not, in the game's notification; else the player walks to it and the game's work panel offers a stint.
@@ -289,6 +314,7 @@ namespace RealLifeOverhaul.Tech
                 DeskGame.OtherClicked = null;
             }
             _deskInside = null;
+            _sharedDesk = null;
             _desks.Clear();
         }
 
