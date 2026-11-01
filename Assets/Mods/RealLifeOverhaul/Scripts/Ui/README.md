@@ -90,7 +90,7 @@ Use these, and never draw a part of your own. All are in `UiDraw.Chrome.cs` unle
 - **Icon colours** (`UiIconTints.Of`): each icon has one colour, set once, the same on every screen and on the style
   sheet: an app or a section its category's, a genre its own, a state the state's. Pass `UiRole.None` as an icon's tint
   to get it, and give each role one glyph. Never recolour a glyph to say a state: tell it with a meter, a chip, a ring
-  or the warning's own glyph.
+  or the warning's own glyph. Only a trend arrow takes good or bad's colour. A portrait's ring is the person's mood.
 - **Rows and links** (`InfoRow`, `SectionRow`, `Band`): compact rows, the label in grey-blue at the left and the value
   in soft white at the right, or a cyan link with its magnifier that opens the thing or moves the camera. A section
   stands on a darker band under its label in capitals.
@@ -102,7 +102,8 @@ Use these, and never draw a part of your own. All are in `UiDraw.Chrome.cs` unle
   `LabelColumn`, so their tracks start at one edge), `StatBar` (the same thin graded bar under its label), `Stars` (a
   rating by halves, gold and grey) and the spark line (`UiSpark`).
 - **Colours for data**: `UiTokens.Chart(i)` for a slice, `UiTokens.Grade(value)` for a graded figure, `UiTokens.Ramp(step)`
-  for a map coloured by a figure and its legend (an ordered ramp, never the chart's hues), and the Cat roles
+  for a map coloured by a figure and its legend (one violet strengthening with the figure, never the chart's hues and
+  never white), and the Cat roles
   (`CatFood`, `CatRetail`, `CatOffice`, `CatIndustry`, `CatTech`, `CatServices`) for a business family's icons and
   slices, never for a large fill.
 - **The game's own icons**: `UiIcons.Own` lets the game's picture stand in for an icon where the game has one. In the
