@@ -147,7 +147,8 @@ namespace RealLifeOverhaul.Flare
             }
             int h = s.People.Household[p];
             uint tastes = h >= 0 && s.Households.Alive(h) ? s.Households.Tastes[h] : 0u;
-            return Mille(seed, id, SaltInterest, 0) < InterestOf(tastes, post.Kind, FlareCityCatalogue.InterestMatch, FlareCityCatalogue.InterestOther);
+            int more = Trending(c, s, post) ? FlareCityCatalogue.TrendInterest : 0;   // what is trending interests more of those who hear of it
+            return Mille(seed, id, SaltInterest, 0) < InterestOf(tastes, post.Kind, FlareCityCatalogue.InterestMatch, FlareCityCatalogue.InterestOther) + more;
         }
 
         /// <summary>Whether a resident plays games: a genre they like (the population's games, GameRules).</summary>

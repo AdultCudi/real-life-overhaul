@@ -28,6 +28,7 @@ namespace RealLifeOverhaul.Flare
         public readonly CityVoice[] Voices = new CityVoice[FlareLiveRules.Citizens];
         public readonly string[] VoiceDistricts = new string[FlareLiveRules.Citizens];   // each voice's district by the game's own id
         public readonly Dictionary<string, FlareCityFigures> Businesses = new Dictionary<string, FlareCityFigures>(StringComparer.Ordinal);   // by Flare's place
+        public readonly List<FlareTrendSeen> Trends = new List<FlareTrendSeen>(FlareCityCatalogue.TrendsMost);   // what is trending among the host's residents
     }
 
     /// <summary>
@@ -40,6 +41,7 @@ namespace RealLifeOverhaul.Flare
     ///   "FR1|day"
     ///   "V|voice|person|female|age|district|persona"                      each voice with a resident (the district by the game's id)
     ///   "B|place|followers|rating|reviews|attention|came|spent|heard|sour|reviewer|female|stars"   each business of a session player's
+    ///   "T|kind|what|district|day|moved"                                 each trend, newest first (the district by the game's id, empty for the whole city)
     /// </summary>
     public static class FlareCityShare
     {
@@ -80,6 +82,11 @@ namespace RealLifeOverhaul.Flare
                     .Append(n > 0 ? newest[0].Person.ToString(Inv) : "0").Append('|').Append(slot >= 0 && s.People.Female[slot] != 0 ? '1' : '0').Append('|')
                     .Append(n > 0 ? newest[0].Stars.ToString(Inv) : "0");
             }
+            foreach (FlareTrendSeen t in FlareCityRules.Seen(c, s))
+            {
+                b.Append('\n').Append("T|").Append(((int)t.Kind).ToString(Inv)).Append('|').Append(t.What.ToString(Inv)).Append('|').Append(Esc(t.District)).Append('|')
+                    .Append(t.Day.ToString(Inv)).Append('|').Append(t.Moved.ToString(Inv));
+            }
             return b.ToString();
         }
 
@@ -99,6 +106,7 @@ namespace RealLifeOverhaul.Flare
             Array.Clear(into.Voices, 0, into.Voices.Length);
             Array.Clear(into.VoiceDistricts, 0, into.VoiceDistricts.Length);
             into.Businesses.Clear();
+            into.Trends.Clear();
             into.Day = day;
             for (int i = 1; i < lines.Length; i++)
             {
@@ -126,6 +134,12 @@ namespace RealLifeOverhaul.Flare
                     {
                         into.Businesses[place] = fig;
                     }
+                }
+                else if (f.Length >= 6 && f[0] == "T" && into.Trends.Count < FlareCityCatalogue.TrendsMost && Int(f[1], 0, (int)TrendKind.Genre, out int kind)
+                         && Int(f[2], 0, FlareCityRules.Kinds - 1, out int what) && Int(f[4], int.MinValue, int.MaxValue, out int since) && Int(f[5], 0, int.MaxValue, out int moved))
+                {
+                    string district = Unesc(f[3]);
+                    into.Trends.Add(new FlareTrendSeen { Kind = (TrendKind)kind, What = what, District = string.IsNullOrEmpty(district) ? null : district, Day = since, Moved = moved });
                 }
             }
             return true;

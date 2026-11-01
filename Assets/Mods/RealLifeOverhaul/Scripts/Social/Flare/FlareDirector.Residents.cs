@@ -191,6 +191,10 @@ namespace RealLifeOverhaul.Flare
             if (residents != null)
             {
                 CreatorDay(residents, Save != null ? Save.Day : p.Day);   // offers, the paid posts due and a creator income (FlareDirector.Creator)
+                if (p.Started != null)
+                {
+                    TrendNotice(p.Started, residents);   // the city's own talk started a trend today (FlareDirector.Trends)
+                }
             }
             Logger?.Info("Flare in the city: day " + p.Day + (p.Placed >= 0 ? ", " + p.Placed + " residents' follows read back" : string.Empty)
                          + (p.Generated > 0 ? ", " + p.Generated + " residents' first follows made" : string.Empty) + ": " + _city.CityFollowers + " residents follow you"

@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Flare
     {
         public enum Phase
         {
-            Idle, Begin, People, Voices, Count, Generate, Sweep, Followers, Lift, Decay, Visits, Ads, Founder, Posts, Reconcile, Attention, Done
+            Idle, Begin, People, Voices, Count, Generate, Sweep, Followers, Lift, Decay, Trends, Visits, Ads, Founder, Posts, Reconcile, Attention, Done
         }
 
         public FlareCityState City;
@@ -37,6 +37,8 @@ namespace RealLifeOverhaul.Flare
 
         // what the day did, for the one log line
         public int Generated, Changed, Reviewed, Followed, Heard, Advertised, Reconciled, Placed = -1;
+        public FlareTrend Started;                              // a trend the city's talk started today, for the notice; null none
+        public int TrendMoved;                                  // residents or households the trends moved today (taken to it, or let go)
         public long Lifted, FounderGood, FounderBad;
 
         private Phase _phase = Phase.Idle;
@@ -58,8 +60,9 @@ namespace RealLifeOverhaul.Flare
             State = s;
             Pools = dd;
             Day = day;
-            Generated = Changed = Reviewed = Followed = Heard = Advertised = Reconciled = 0;
+            Generated = Changed = Reviewed = Followed = Heard = Advertised = Reconciled = TrendMoved = 0;
             Placed = -1;
+            Started = null;
             Lifted = 0;
             _phase = Phase.Begin;
             _cursor = 0;
@@ -143,6 +146,11 @@ namespace RealLifeOverhaul.Flare
                     break;
                 case Phase.Decay:
                     FlareCityRules.Decay(c);
+                    _phase = Phase.Trends;
+                    break;
+                case Phase.Trends:
+                    Started = FlareCityRules.CityTrend(c, s, Day);
+                    TrendMoved = FlareCityRules.TrendsDay(c, s, Day, PersonSlot);
                     _cursor = 0;
                     _phase = Phase.Visits;
                     break;

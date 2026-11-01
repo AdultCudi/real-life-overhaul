@@ -76,6 +76,10 @@ namespace RealLifeOverhaul.Flare
         {
             if (_at.Tab == 0)
             {
+                if (WriteCityTrends())   // Flare in the city: what is trending among the residents (FlareApp.City)
+                {
+                    Section(FlareText.T("reallife_flare_city_trend_tags"));
+                }
                 FlareLiveRules.Trending(file.Posts, now, 12, _tags, _tagCounts);
                 for (int i = 0; i < _tags.Count; i++)
                 {

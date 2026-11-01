@@ -23,6 +23,7 @@ namespace RealLifeOverhaul.Flare
                 .Test("reallife_flare_city_test_ad", () => FlareDirector.Instance?.TestResidentsAd())
                 .Test("reallife_flare_city_test_page", () => FlareDirector.Instance?.TestResidentsPage())
                 .Test("reallife_flare_city_test_offer", () => FlareDirector.Instance?.TestResidentsOffer())
+                .Test("reallife_flare_city_test_trend", () => FlareDirector.Instance?.TestResidentsTrend())
                 .Fact("flarecity_adult_age", () => Whole(FlareCityCatalogue.AdultAge))
                 .Fact("flarecity_share_newcomer", () => Whole(FlareCityCatalogue.CityShare[0] / 10) + "%")
                 .Fact("flarecity_share_celebrity", () => Whole(FlareCityCatalogue.CityShare[FlareCityCatalogue.CityShare.Length - 1] / 10) + "%")
@@ -42,6 +43,11 @@ namespace RealLifeOverhaul.Flare
                 .Fact("flarecity_devlog_most", () => Whole(FlareCityRules.DevlogHypeMost / 10) + "%")
                 .Fact("flarecity_investors", () => Whole(FlareCityCatalogue.InvestorsPerKick))
                 .Fact("flarecity_kicks_most", () => Whole(FlareCityCatalogue.MarketKicksMost))
+                .Fact("flarecity_trend_rise", () => Whole(FlareCityCatalogue.TrendRiseDays))
+                .Fact("flarecity_trend_days", () => Whole(FlareCityCatalogue.TrendDays))
+                .Fact("flarecity_trend_reach", () => Whole(FlareCityCatalogue.TrendReach / 10) + "%")
+                .Fact("flarecity_trend_district", () => Whole(FlareCityCatalogue.TrendDistrictReach / 10) + "%")
+                .Fact("flarecity_trend_stick", () => Whole(FlareCityCatalogue.TrendStick / 10) + "%")
                 .ResetData(() => FlareDirector.Instance?.ForgetCity());
         }
 
@@ -62,7 +68,8 @@ namespace RealLifeOverhaul.Flare
                 .AddButton("reallife_flare_city_test_post", () => FlareDirector.Instance?.TestResidentsPost())
                 .AddButton("reallife_flare_city_test_ad", () => FlareDirector.Instance?.TestResidentsAd())
                 .AddButton("reallife_flare_city_test_page", () => FlareDirector.Instance?.TestResidentsPage())
-                .AddButton("reallife_flare_city_test_offer", () => FlareDirector.Instance?.TestResidentsOffer());
+                .AddButton("reallife_flare_city_test_offer", () => FlareDirector.Instance?.TestResidentsOffer())
+                .AddButton("reallife_flare_city_test_trend", () => FlareDirector.Instance?.TestResidentsTrend());
         }
     }
 }

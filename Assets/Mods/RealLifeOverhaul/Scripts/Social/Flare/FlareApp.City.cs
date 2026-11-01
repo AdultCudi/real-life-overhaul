@@ -80,6 +80,26 @@ namespace RealLifeOverhaul.Flare
             Note(b.ToString());
         }
 
+        // What is trending among the residents, at the top of Explore: each trend, how far along, how many it moved and the days left.
+        private bool WriteCityTrends()
+        {
+            FlareCityView v = CityShown ? _director.CityTrendsView() : null;
+            if (v == null)
+            {
+                return false;
+            }
+            Section(FlareText.T(v.Title));
+            var b = new StringBuilder(240);
+            foreach (FlareViewRow r in v.Rows)
+            {
+                string trend = FlareText.Fill(r.Title, "what", FlareText.T(r.What), "district", r.Where != null ? FlareGame.DistrictName(r.Where) : string.Empty);
+                b.Append(b.Length > 0 ? "\n" : string.Empty).Append(FlareText.Fill("reallife_flare_city_trend_line", "trend", trend, "stage", FlareText.T(r.Subtitle),
+                    "moved", FlareText.N((int)r.Value), "days", FlareText.N((int)r.Second)));
+            }
+            Note(v.Rows.Count > 0 ? b.ToString() : FlareText.T(v.Empty));
+            return true;
+        }
+
         // A guest's business card from the host's figures.
         private string FollowedLines(FlareCityFigures f)
         {

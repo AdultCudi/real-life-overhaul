@@ -198,6 +198,10 @@ namespace RealLifeOverhaul.Flare
                 Logger?.Info("Flare: the viral post about " + p.Name + " is a buzz on the stock market for its trade"
                              + (residents ? " (" + heard.Investors + " investors reached, " + kicks + " kick(s))." : "."));
             }
+            if (residents && p.Viral && p.Place != null && !p.Bad)
+            {
+                TrendFromPost(p);   // what went viral moves the residents' tastes (FlareDirector.Trends)
+            }
         }
 
         /// <summary>A draft for an issue the city's news had today: one a day.</summary>

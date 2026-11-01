@@ -11,7 +11,8 @@ namespace RealLifeOverhaul.Flare
         Business = 1,
         Ad = 2,
         Funnel = 3,
-        Offers = 4
+        Offers = 4,
+        Trends = 5
     }
 
     /// <summary>How a figure is written (the renderer uses the game's own number and money formatting).</summary>
@@ -49,6 +50,8 @@ namespace RealLifeOverhaul.Flare
         public long Second;          // a second figure (a funnel's takings beside its visits), or 0
         public string Target;        // where it leads: a business's place, or null
         public int Post = -1;        // ...or a post's number
+        public string What;          // a trend: the locale key of what trends (a kind of goods, a genre), written into the title's words
+        public string Where;         // ...and its district by the game's id, or null for the whole city
     }
 
     /// <summary>
@@ -202,6 +205,31 @@ namespace RealLifeOverhaul.Flare
             return v;
         }
 
+        /// <summary>What is trending among the residents, newest first: what and where, how far along, how many it moved and the days left.</summary>
+        public static FlareCityView Trends(IList<FlareTrendSeen> trends, int day)
+        {
+            var v = new FlareCityView { Kind = FlareViewKind.Trends, Title = K + "trend_title", TitleKey = true, Empty = K + "trend_empty" };
+            for (int i = 0; trends != null && i < trends.Count && v.Rows.Count < RowsMost; i++)
+            {
+                FlareTrendSeen t = trends[i];
+                int age = day - t.Day;
+                string stage = age < FlareCityCatalogue.TrendRiseDays ? "trend_rising" : age < FlareCityCatalogue.TrendDays ? "trend_height" : "trend_fading";
+                v.Rows.Add(new FlareViewRow
+                {
+                    Title = K + (t.Kind == TrendKind.Genre ? "trend_genre" : t.District != null ? "trend_district" : "trend_goods"), TitleKey = true,
+                    What = t.Kind == TrendKind.Genre ? Tech.StudioViews.GenreKey(t.What) : TrendKindKey(t.What), Where = t.Kind == TrendKind.Genre ? null : t.District,
+                    Subtitle = K + stage, Value = t.Moved, Format = FlareViewFormat.Count, Second = FlareCityRules.DaysLeft(t.Day, day)
+                });
+            }
+            return v;
+        }
+
+        /// <summary>The words of a kind of goods or going out that may trend (FlareCityRules.TrendGoods, TrendGoingOut).</summary>
+        public static string TrendKindKey(int kind)
+        {
+            return K + "trend_kind_" + Math.Max(0, Math.Min(kind, FlareCityRules.Kinds - 1)).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
         /// <summary>The words of an ad's target, by its number (FlareDirector.AdOf's targets).</summary>
         public static string TargetKey(int target)
         {
@@ -217,7 +245,8 @@ namespace RealLifeOverhaul.Flare
             K + "title_ad", K + "fig_reach", K + "fig_days", K + "fig_cost", K + "detail_target", K + "detail_holds", K + "action_run",
             K + "target_0", K + "target_1", K + "target_2", K + "target_3", K + "target_4",
             K + "fig_seen", K + "fig_interested", K + "fig_came", K + "fig_spent", K + "fig_followed",
-            K + "title_offers", K + "rows_offers", K + "empty_offers", K + "offer_open", K + "offer_running", K + "offer_done", K + "offer_lapsed", K + "action_accept"
+            K + "title_offers", K + "rows_offers", K + "empty_offers", K + "offer_open", K + "offer_running", K + "offer_done", K + "offer_lapsed", K + "action_accept",
+            K + "trend_title", K + "trend_empty", K + "trend_rising", K + "trend_height", K + "trend_fading", K + "trend_goods", K + "trend_district", K + "trend_genre"
         };
     }
 }

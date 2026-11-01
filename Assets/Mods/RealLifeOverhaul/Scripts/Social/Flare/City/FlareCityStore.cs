@@ -245,6 +245,26 @@ namespace RealLifeOverhaul.Flare
                 w.Int(o.Accepted ? 1 : 0);
                 w.Int(o.Next);
             }
+
+            w.Int(c.NextTrend);
+            w.Int(c.Trends.Count);
+            foreach (FlareTrend t in c.Trends)
+            {
+                w.Int(t.Id);
+                w.Int((int)t.Kind);
+                w.Int(t.What);
+                w.Int(t.District);
+                w.Int(t.Day);
+                w.Int(t.Mine ? 1 : 0);
+                w.Int(t.Let);
+                w.Int(t.Ids.Count);
+                int last = 0;
+                for (int i = 0; i < t.Ids.Count; i++)
+                {
+                    w.Int(t.Ids[i] - last);   // each id as its step from the one before: a byte or two
+                    last = t.Ids[i];
+                }
+            }
             w.Flush();
         }
 
@@ -374,6 +394,32 @@ namespace RealLifeOverhaul.Flare
                     Accepted = r.Int() != 0, Next = r.Int()
                 });
             }
+
+            c.NextTrend = Math.Max(1, r.Int());
+            int trends = Bounded(r.Int(), FlareCityCatalogue.TrendsMost * 4);
+            for (int i = 0; i < trends; i++)
+            {
+                var t = new FlareTrend
+                {
+                    Id = r.Int(), Kind = (TrendKind)Math.Max(0, Math.Min((int)TrendKind.Genre, r.Int())), What = r.Int(), District = r.Int(), Day = r.Int(), Mine = r.Int() != 0,
+                    Let = r.Int()
+                };
+                int moved = Bounded(r.Int(), FlareCityCatalogue.TrendMovedMost);
+                int last = 0;
+                for (int m = 0; m < moved; m++)
+                {
+                    last += r.Int();
+                    t.Ids.Add(last);
+                    t.Slots.Add(-1);   // found again by id as it fades (FlareCityRules.TrendsDay)
+                }
+                t.Let = Math.Max(0, Math.Min(t.Let, moved));
+                bool whole = t.Kind == TrendKind.Genre ? t.What >= 0 && t.What < Population.GameRules.Genres : FlareCityRules.TasteBit(t.What) >= 0;
+                if (whole && (t.Kind != TrendKind.District || t.District >= 0) && c.Trends.Count < FlareCityCatalogue.TrendsMost)
+                {
+                    c.Trends.Add(t);
+                }
+            }
+            FlareCityRules.TrendLookups(c);
             return c;
         }
 

@@ -102,6 +102,21 @@ namespace RealLifeOverhaul.Flare
         public const int IssueMoodLeast = 2, IssueMoodMost = 30;   // points of the feed's mood a post about an issue moves, by the residents it reached
         public const int EndorseFull = 500;              // per mille of the city's adults following the player at which the player's word in an election is worth the most
 
+        // ---- trends: what is viral moves the residents' tastes for a few weeks (FlareCityRules.Trends)
+
+        public const int TrendsMost = 3;                 // trends running at once
+        public const int TrendChance = 30;               // per mille a day the city's own talk starts a trend (about one a month)
+        public const int TrendRiseDays = 5;              // days a trend takes to reach its height, taking more residents each day
+        public const int TrendDays = 21;                 // days from its start to when it begins to fade
+        public const int TrendFadeDays = 5;              // days it takes to fade, letting a fifth of those it moved go each day
+        public const int TrendStick = 100;               // per mille of those it moved who keep the taste for good: tastes move, slowly
+        public const int TrendReach = 250;               // per mille of the city's households without the taste a trend of goods gives it by its height (about 5% more spent on the kind)
+        public const int TrendDistrictReach = 300;       // ...of a district's households, for a district's going out
+        public const int TrendGenreReach = 60;           // per mille of the adults who play games and do not like the genre who take to it (its audience about a quarter bigger)
+        public const int TrendHum = 40;                  // per mille of each district's adults a day who hear of a trending district's places of its kind, at its height
+        public const int TrendInterest = 150;            // per mille more of the residents who hear a post about what is trending are interested
+        public const int TrendMovedMost = 12000;         // residents or households one trend moves at the most (what the save keeps of it)
+
         // ---- the voices: the city's people who post most, residents
 
         public const int VoiceYoungLean = 2000;          // thousandths: residents of 18 to 39 are twice as likely to be a voice

@@ -125,7 +125,7 @@ internal static partial class Program
         string scripts = ModScripts();
         var keys = new List<string>();
         foreach (string file in Directory.GetFiles(System.IO.Path.Combine(scripts, "Social", "Flare", "City"), "*.cs")
-                     .Concat(new[] { "FlareDirector.Residents.cs", "FlareDirector.Tests.City.cs", "FlareApp.City.cs", "FlareDirector.Creator.cs", "FlareDirector.Studio.cs", "FlareText.cs", "FlareText.Live.cs" }
+                     .Concat(new[] { "FlareDirector.Residents.cs", "FlareDirector.Tests.City.cs", "FlareApp.City.cs", "FlareDirector.Creator.cs", "FlareDirector.Studio.cs", "FlareDirector.Trends.cs", "FlareText.cs", "FlareText.Live.cs" }
                                  .Select(f => System.IO.Path.Combine(scripts, "Social", "Flare", f))))
         {
             const string Ours = "flare_city|flare_ad|flare_offer|flare_creator|flare_studio|flare_post_deal|guide_flare_city|meta_title_flare_city|transaction_flare";
@@ -147,7 +147,8 @@ internal static partial class Program
         Dictionary<string, string> en = LocaleFile("en");
         string[] notices = { "reallife_flare_city_test_off", "reallife_flare_city_test_wait", "reallife_flare_city_test_day_done", "reallife_flare_city_test_no_business",
                              "reallife_flare_city_test_post_done", "reallife_flare_city_test_ad_done", "reallife_flare_city_test_page_done", "reallife_flare_city_test_offer_done",
-                             "reallife_flare_city_test_offer_none", "reallife_flare_offer_note", "reallife_flare_creator_note" };
+                             "reallife_flare_city_test_offer_none", "reallife_flare_offer_note", "reallife_flare_creator_note", "reallife_flare_city_test_trend_done",
+                             "reallife_flare_city_test_trend_none" };
         Check(notices.All(k => Fits(en, k)), "flare city texts: every notice is 240 characters or fewer");
         string page = en.TryGetValue("reallife_guide_flare_city", out string p) ? p : string.Empty;
         string guide = File.ReadAllText(System.IO.Path.Combine(scripts, "Social", "Flare", "City", "FlareCityGuide.cs"));

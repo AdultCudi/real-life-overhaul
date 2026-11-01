@@ -134,6 +134,10 @@ namespace RealLifeOverhaul.Flare
         public int NextOffer = 1;
         public int CreatorDay = -1;                  // the last day a creator income was paid (or the account reached its tier); -1 not yet
         public int ScandalDay = -1;                  // the last day a post of the player's went badly and many saw it (a pile-on): a scandal until answered
+        public readonly List<FlareTrend> Trends = new List<FlareTrend>(FlareCityCatalogue.TrendsMost);   // what is trending (FlareCityRules.Trends)
+        public int NextTrend = 1;
+        public uint TrendCity;                       // the day's lookups: a bit for each kind trending in the whole city...
+        public int[] TrendDistrict = FlareCityRules.NoDistricts();   // ...and the district each kind trends in, -1 none (not saved)
         public int[] Voices = new int[FlareLiveRules.Citizens];   // the person id behind each of the city's voices ("c0" to "c399"), 0 for none yet
 
         // ---- the day's indexes (not saved)
