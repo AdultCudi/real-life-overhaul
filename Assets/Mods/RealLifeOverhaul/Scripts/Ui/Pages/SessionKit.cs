@@ -193,6 +193,10 @@ namespace RealLifeOverhaul.Ui
                 {
                     int i = choices.Count;
                     string trade = 1 + i < labels.Length ? Words(labels[1 + i]) : null;
+                    if (trade != null && trade.StartsWith(words + ":", StringComparison.Ordinal))
+                    {
+                        trade = trade.Substring(words.Length + 1).TrimStart();   // the panel's line names the choice the card already names
+                    }
                     choices.Add(new UiChoiceModel { Key = (UiAction)((int)UiAction.Pick1 + i), Name = words, Trade = trade, Disabled = !b.interactable });
                     _choices.Add(b);
                 }

@@ -126,8 +126,8 @@ internal static class UiSamples
             Question = "What is this week's meeting for?",
             Choices = new[]
             {
-                new UiChoiceModel { Key = UiAction.Pick1, Name = "Lift morale", Trade = "Lift morale: burnout eases for the people present; output this week is a little lower." },
-                new UiChoiceModel { Key = UiAction.Pick2, Name = "Push output", Trade = "Push output: more gets done this week; burnout builds each day they work." },
+                new UiChoiceModel { Key = UiAction.Pick1, Name = "Lift morale", Trade = "Burnout eases for the people present; output this week is a little lower." },
+                new UiChoiceModel { Key = UiAction.Pick2, Name = "Push output", Trade = "More gets done this week; burnout builds each day they work." },
             },
             Actions = new[]
             {

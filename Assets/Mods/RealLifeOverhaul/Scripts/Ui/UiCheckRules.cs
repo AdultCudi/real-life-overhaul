@@ -355,9 +355,9 @@ namespace RealLifeOverhaul.Ui
                 for (int i = p + 1; i < s.ItemCount; i++)
                 {
                     ref UiItem it = ref s.Items[i];
-                    if ((it.Flags & UiFlags.Decor) != 0 || it.Layer != frame.Layer)
+                    if ((it.Flags & UiFlags.Decor) != 0 || it.Layer != frame.Layer || (it.Kind == UiKind.Text && string.IsNullOrEmpty(it.Text)))
                     {
-                        continue;
+                        continue;   // words that are not there fill nothing: an empty frame with an empty title is still empty
                     }
                     if (it.Clip < 0)
                     {

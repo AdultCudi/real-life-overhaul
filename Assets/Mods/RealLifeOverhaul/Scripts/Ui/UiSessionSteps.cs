@@ -51,14 +51,19 @@ namespace RealLifeOverhaul.Ui
             float x = px + UiTokens.S8, w = pw - UiTokens.S8 * 2f, y = cy + UiTokens.S8;
             UiDraw.Text(s, inside, x, y, w, UiStyle.Hero, UiRole.Text, m.Title, UiFlags.Label | UiFlags.Truncate);
             y += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Hero)) + UiTokens.S2;
-            float aboutH = UiTextRules.WrappedHeight(m.About, UiStyle.Body, w, 2);
-            UiDraw.Text(s, inside, x, y, w, UiStyle.Body, UiRole.Text2, m.About, UiFlags.Label | UiFlags.Wrap, 2);
-            y += UiDraw.Snap(aboutH) + UiTokens.S6;
+            if (!string.IsNullOrEmpty(m.About))
+            {
+                float aboutH = UiTextRules.WrappedHeight(m.About, UiStyle.Body, w, 2);
+                UiDraw.Text(s, inside, x, y, w, UiStyle.Body, UiRole.Text2, m.About, UiFlags.Label | UiFlags.Wrap, 2);
+                y += UiDraw.Snap(aboutH);
+            }
+            y += UiTokens.S6;
             if (m.StepCount > 0)
             {
                 y += UiDraw.Snap(UiDraw.Steps(s, inside, x, y, w, m.StepLabel, m.StepCount, m.Step)) + UiTokens.S6;
             }
-            float main = w - SideWidth - UiTokens.S8;
+            bool side = m.SummaryCount > 0;   // a summary box only where there is a summary: an empty frame reads as a hole
+            float main = side ? w - SideWidth - UiTokens.S8 : w;
             float qy = y;
             UiDraw.Text(s, inside, x, qy, main, UiStyle.SectionTitle, UiRole.Text, m.Question, UiFlags.Label | UiFlags.Wrap, 2);
             qy += UiDraw.Snap(UiTextRules.WrappedHeight(m.Question, UiStyle.SectionTitle, main, 2)) + UiTokens.S4;
@@ -67,18 +72,23 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.ChoiceCard(s, inside.Arriving(i), x, qy, main, ref m.Choices[i], keys, ChoiceCommand, i, out float h);
                 qy += h + UiTokens.S3;
             }
-            float sx = x + main + UiTokens.S8;
-            int summary = UiDraw.Box(s, inside, sx, y, SideWidth, UiTokens.S16, UiRole.Field, UiRole.RowEdge, UiTokens.RadiusLarge);
-            UiAt inSummary = inside.In(summary);
-            float sy = y + UiTokens.S5, sw = SideWidth - UiTokens.S5 * 2f;
-            UiDraw.Text(s, inSummary, sx + UiTokens.S5, sy, sw, UiStyle.SectionHeader, UiRole.Muted, m.SummaryTitle, UiFlags.Label);
-            sy += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2;
-            for (int i = 0; i < m.SummaryCount; i++)
+            float summaryH = 0f;
+            if (side)
             {
-                sy += UiDraw.KeyValue(s, inSummary, sx + UiTokens.S5, sy, sw, m.Summary[i].Key, m.Summary[i].Value);
+                float sx = x + main + UiTokens.S8;
+                int summary = UiDraw.Box(s, inside, sx, y, SideWidth, UiTokens.S16, UiRole.Field, UiRole.RowEdge, UiTokens.RadiusLarge);
+                UiAt inSummary = inside.In(summary);
+                float sy = y + UiTokens.S5, sw = SideWidth - UiTokens.S5 * 2f;
+                UiDraw.Text(s, inSummary, sx + UiTokens.S5, sy, sw, UiStyle.SectionHeader, UiRole.Muted, m.SummaryTitle, UiFlags.Label);
+                sy += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2;
+                for (int i = 0; i < m.SummaryCount; i++)
+                {
+                    sy += UiDraw.KeyValue(s, inSummary, sx + UiTokens.S5, sy, sw, m.Summary[i].Key, m.Summary[i].Value);
+                }
+                s.Items[summary].H = UiDraw.Snap(sy - y + UiTokens.S3);   // the frame fits its lines: the rule under the last and a little air
+                summaryH = s.Items[summary].H;
             }
-            s.Items[summary].H = UiDraw.Snap(sy - y + UiTokens.S3);   // the frame fits its lines: the rule under the last and a little air
-            float foot = Math.Max(qy - UiTokens.S3, y + s.Items[summary].H);
+            float foot = Math.Max(qy - UiTokens.S3, y + summaryH);
             float by = Math.Min(cy + ch - UiTokens.S8 - UiTokens.Control, foot + UiTokens.S8);
             float bx = px + pw - UiTokens.S8;
             for (int i = m.ActionCount - 1; i >= 0; i--)
