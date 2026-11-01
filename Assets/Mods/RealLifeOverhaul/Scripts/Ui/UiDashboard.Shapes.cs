@@ -28,6 +28,10 @@ namespace RealLifeOverhaul.Ui
     {
         private const float CardWidth = SideWidth;   // a profile's card, as wide as the side column so the pages line up
 
+        // Two panels side by side share a foot only while the shorter one's padding and the step together stay within the
+        // slack a frame may hold under its last line.
+        private const float Level = UiTokens.MostSlack - UiTokens.S5;
+
         private static void Shaped(UiScene s, UiAt at, UiDashboardModel m, float x, float y, float w, float h, IUiKeys keys)
         {
             switch (m.Shape)
@@ -111,7 +115,7 @@ namespace RealLifeOverhaul.Ui
             }
             ledgerH += UiTokens.S5;
             float peopleH = EntriesHeight(m, pw, h);
-            float panelH = UiDraw.Snap(Math.Abs(ledgerH - peopleH) <= UiTokens.MostSlack ? Math.Max(ledgerH, peopleH) : ledgerH);
+            float panelH = UiDraw.Snap(Math.Abs(ledgerH - peopleH) <= Level ? Math.Max(ledgerH, peopleH) : ledgerH);
 
             int ledger = UiDraw.Box(s, at, x, y, lw, panelH, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt inLedger = at.In(ledger);
@@ -126,7 +130,7 @@ namespace RealLifeOverhaul.Ui
                     ly += Line(s, inLedger, x + UiTokens.S5, ly, iw, line.Key, line.Value);
                 }
             }
-            Entries(s, at, m, px, y, pw, Math.Abs(ledgerH - peopleH) <= UiTokens.MostSlack ? panelH : peopleH, h);
+            Entries(s, at, m, px, y, pw, Math.Abs(ledgerH - peopleH) <= Level ? panelH : peopleH, h);
         }
 
         // A ledger's line: what it is at the left, its sum at the right in the serif's even figures, a rule under them.
@@ -157,7 +161,7 @@ namespace RealLifeOverhaul.Ui
                 sideH = UiDraw.Snap(Math.Min(sideH, h));
             }
             float feedH = EntriesHeight(m, fw, h);
-            bool level = side && Math.Abs(feedH - sideH) <= UiTokens.MostSlack;
+            bool level = side && Math.Abs(feedH - sideH) <= Level;
             Entries(s, at, m, x, y, fw, level ? Math.Max(feedH, sideH) : feedH, h);
             if (!side)
             {

@@ -385,6 +385,8 @@ internal static partial class Program
                 // The one screen draws the studio's page and the other tech firms' pages: both are checked.
                 cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = "Tech", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.StudioFirm(t), f, dark, k) });
                 cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (another firm)", Title = "Tech", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.TechFirm(t), f, dark, k) });
+                // Beta 3's empty studio: no staff, no game, thirty days of nothing taken. Every page has its zero state checked too.
+                cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (empty, new)", Title = "Your firm", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.StudioEmpty(t), f, dark, k) });
                 continue;
             }
             if (def.Id == "flare_city")
@@ -505,6 +507,7 @@ internal static partial class Program
                         Check(UiCheckRules.Stacked(s, say) == 0, "ui screens: no label stands over another saying the same thing: " + where);
                         Check(UiCheckRules.EmptyPanels(s, say) == 0, "ui screens: no panel stands empty: " + where);
                         Check(UiCheckRules.Floating(s, say) == 0, "ui screens: an overlay's words stand on a card of their own: " + where);
+                        Check(UiCheckRules.Strays(s, say) == 0, "ui screens: no mark lies over a panel it does not belong to: " + where);
                         Check(UiCheckRules.TypeLevels(s, say) == 0, "ui screens: three sizes of type at most: " + where);
                         Check(UiCheckRules.UnknownCommands(s, c.Commands, say) == 0, "ui screens: every target runs a command its template answers: " + where);
                         if (lang == "en")
@@ -717,6 +720,17 @@ internal static partial class Program
         Check(UiCheckRules.TypeLevels(beta, null) == 1, "ui rules: more than three sizes of type are found");
         UiDraw.Node(beta, UiAt.Screen, 24f, 600f, 200f, 48f, 0, 0, -1);
         Check(UiCheckRules.UnknownCommands(beta, DashboardCommands, null) == 1, "ui rules: a button whose command its template answers nowhere is found (beta 3's Call read as a group)");
+        var games = new UiScene();
+        games.Begin("strays", played.Width, played.Height, true);
+        int table = UiDraw.Box(games, UiAt.Screen, 24f, 300f, 1000f, 300f, UiRole.Panel, UiRole.None, 0f, UiFlags.Panel);
+        int team = UiDraw.Box(games, UiAt.Screen, 1040f, 300f, 380f, 300f, UiRole.Panel, UiRole.None, 0f, UiFlags.Panel);
+        UiDraw.Text(games, UiAt.Screen.In(table), 44f, 320f, 400f, UiStyle.Body, UiRole.Text, "No game yet.", UiFlags.None);
+        UiDraw.Text(games, UiAt.Screen.In(team), 1060f, 320f, 300f, UiStyle.Small, UiRole.Text2, "Designers (0)", UiFlags.None);
+        Check(UiCheckRules.Strays(games, null) == 0, "ui rules: marks inside their own panels pass");
+        UiDraw.Text(games, UiAt.Screen, 576f, 380f, 300f, UiStyle.Small, UiRole.Text2, "Engineers (0)", UiFlags.None);
+        Check(UiCheckRules.Strays(games, null) == 1, "ui rules: beta 3's team row lying over the games table is found");
+        UiDraw.Spark(games, UiAt.Screen.In(table), 900f, 340f, 400f, 40f, new[] { 0f, 1f }, UiRole.Accent);
+        Check(UiCheckRules.Spills(games, null) > 0, "ui rules: a sparkline running out of its panel into the next is found");
     }
 
     // ---------------------------------------------------------------- sources

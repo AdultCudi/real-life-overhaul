@@ -117,7 +117,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_tech_mkt_page_facts", "reallife_tech_mkt_page_support", "reallife_tech_mkt_page_limit", "reallife_tech_mkt_page_offers_month",
                 "reallife_tech_mkt_page_desk", "reallife_tech_mkt_page_reputation", "reallife_tech_mkt_market_businesssoftware", "reallife_tech_mkt_market_apps",
                 "reallife_ui_sample_firm", "reallife_ui_sample_firm_note", "reallife_ui_sample_engine", "reallife_studio_genre_adventure",
-                "reallife_studio_genre_simulation", "reallife_studio_genre_strategy"
+                "reallife_studio_genre_simulation", "reallife_studio_genre_strategy", "reallife_studio_next_hire", "reallife_studio_page_needed_how"
             }),
             new UiScreenDef("session_panel", UiTemplate.Session, "ActivityScreen", new[]
             {

@@ -145,7 +145,7 @@ namespace RealLifeOverhaul.Ui
             }
             for (int i = 0; i < panels.Length; i++)
             {
-                s.Items[panels[i]].H = most - own[i] <= UiTokens.MostSlack ? most : own[i];
+                s.Items[panels[i]].H = most - own[i] <= UiTokens.MostSlack - UiTokens.S5 ? most : own[i];
             }
             return most;
         }

@@ -33,6 +33,7 @@ internal static class UiSamples
             new Sample { Name = "flare_trends", App = "Flare in the city", Lay = (s, f, d, k) => UiDashboard.Lay(s, FlareTrends(t), f, d, k), Walk = "RRL" },
             new Sample { Name = "flare_business", App = "Flare in the city", Lay = (s, f, d, k) => UiDashboard.Lay(s, FlareBusiness(t), f, d, k), Walk = "DDU" },
             new Sample { Name = "studio", App = "Tech", Lay = (s, f, d, k) => UiDashboard.Lay(s, StudioFirm(t), f, d, k), Walk = "LDDDDRDDLU" },
+            new Sample { Name = "studio_empty", App = "Your firm", Lay = (s, f, d, k) => UiDashboard.Lay(s, StudioEmpty(t), f, d, k), Walk = "DLR" },
             new Sample { Name = "tech_firm", App = "Tech", Lay = (s, f, d, k) => UiDashboard.Lay(s, TechFirm(t), f, d, k), Walk = "DDDDRDDLU" },
             new Sample { Name = "session_panel", App = "Desk", Lay = (s, f, d, k) => UiSessionSteps.Lay(s, DeskPanel(t), f, d, k), Walk = "RDLUL" },
         };
@@ -350,6 +351,64 @@ internal static class UiSamples
             Action = new UiActionModel { Label = "Start a game", Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiDashboard.ActionCommand },
         };
         return Counted(m, t, "Start a game");
+    }
+
+    /// <summary>
+    /// A new studio as the owner opened it in beta 3: nobody in it, no game, nothing taken. Its next step is to hire, each
+    /// needed group says how to fill it, its takings draw no flat line, and its facts say None in one case.
+    /// </summary>
+    public static UiDashboardModel StudioEmpty(UiWords t)
+    {
+        var m = new UiDashboardModel
+        {
+            Title = "Pioneer Game studio",
+            Subtitle = t("reallife_studio_next_hire", "Next: hire programmers and designers for {studio} in the Business app, then set their roles in Open Roles, on its Team tab.")
+                .Replace("{studio}", "Pioneer Game studio"),
+            SubtitleInk = UiRole.WarnText,
+            StatsFirst = true,
+            Figures = new[]
+            {
+                new UiFigureModel { Label = t("reallife_studio_page_games_out", "Games out"), Value = "0" },
+                new UiFigureModel { Label = t("reallife_studio_page_copies", "Copies sold"), Value = "0" },
+                new UiFigureModel { Label = t("reallife_studio_page_takings", "Takings, 30 days"), Value = "$0", Span = 2, Trend = new float[24] },
+            },
+            Table = FirmTable(t, new[] { "reallife_studio_page_col_game", "reallife_studio_page_col_genre", "reallife_studio_page_col_score", "reallife_studio_page_col_copies",
+                "reallife_studio_page_col_kept", "reallife_studio_page_col_status" }, new[] { "Game", "Genre", "Score", "Copies", "Kept", "Status" }, 2,
+                "reallife_studio_page_no_games", "No game yet. Draft a concept, then pitch it at your desk.", new string[0][]),
+            More = FirmTable(t, new[] { "reallife_studio_page_col_rival", "reallife_studio_page_col_studio", "reallife_studio_page_col_genre", "reallife_studio_page_col_score",
+                "reallife_studio_page_col_copies" }, new[] { "Rival game", "Studio", "Genre", "Score", "Copies" }, 3, "reallife_studio_studio_rivals_none", "No rival game is out yet.",
+                new string[0][]),
+            StatsTitle = t("reallife_studio_page_team", "Team"),
+            Stats = new[]
+            {
+                Group(t, "reallife_studio_page_group_engineers", "Engineers", 0, 0),
+                Group(t, "reallife_studio_page_group_designers", "Designers", 0, 0),
+            },
+            StatsNote = t("reallife_studio_page_needed_how", "To fill a group, hire people in the Business app, then set their roles in Open Roles, on its Team tab."),
+            SideTitle = t("reallife_studio_page_facts", "Sales and support"),
+            Side = new[]
+            {
+                new UiPairModel { Key = t("reallife_studio_page_tickets", "Tickets a day"), Value = "None" },
+                new UiPairModel { Key = t("reallife_studio_page_pirated", "Pirated copies"), Value = "0" },
+                new UiPairModel { Key = t("reallife_studio_page_drm", "DRM"), Value = "Off" },
+                new UiPairModel { Key = t("reallife_studio_page_asks", "Fan requests"), Value = "None" },
+                new UiPairModel { Key = t("reallife_studio_page_engine", "Engine"), Value = "Under licence" },
+                new UiPairModel { Key = t("reallife_studio_page_trend", "Hot genre"), Value = "None" },
+                new UiPairModel { Key = t("reallife_studio_page_known", "Team knows"), Value = "None" },
+            },
+            Others = new[] { new UiActionModel { Label = "Build our own engine", Kind = UiButtonKind.Secondary, Key = UiAction.Option, Command = UiDashboard.OtherCommand } },
+        };
+        m.FigureCount = m.Figures.Length;
+        m.StatCount = m.Stats.Length;
+        m.SideCount = m.Side.Length;
+        m.OtherCount = m.Others.Length;
+        m.Prompts = new[]
+        {
+            new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
+            new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
+        };
+        m.PromptCount = m.Prompts.Length;
+        return m;
     }
 
     /// <summary>

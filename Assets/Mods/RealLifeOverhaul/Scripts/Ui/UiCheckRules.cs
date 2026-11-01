@@ -830,6 +830,40 @@ namespace RealLifeOverhaul.Ui
             return 1;
         }
 
+        /// <summary>
+        /// Marks lying over a panel they do not belong to, as beta 3 drew the Team's first row inside the Games table: a mark
+        /// stands on its own panel or on the ground beside one, never over another's words.
+        /// </summary>
+        public static int Strays(UiScene s, Action<string> say)
+        {
+            int found = 0;
+            for (int i = 0; i < s.ItemCount; i++)
+            {
+                ref UiItem it = ref s.Items[i];
+                if ((it.Flags & (UiFlags.Decor | UiFlags.Prompt | UiFlags.Panel)) != 0 || it.Clip >= 0 || (it.Kind == UiKind.Text && string.IsNullOrEmpty(it.Text)))
+                {
+                    continue;
+                }
+                for (int p = 0; p < s.ItemCount; p++)
+                {
+                    ref UiItem panel = ref s.Items[p];
+                    if (p == i || (panel.Flags & UiFlags.Panel) == 0 || panel.Layer != it.Layer || panel.Clip >= 0 || UiDraw.Inside(s, i, p) || UiDraw.Inside(s, p, i))
+                    {
+                        continue;
+                    }
+                    float w = Math.Min(it.X + it.W, panel.X + panel.W) - Math.Max(it.X, panel.X);
+                    float h = Math.Min(it.Y + it.H, panel.Y + panel.H) - Math.Max(it.Y, panel.Y);
+                    if (w > Tolerance && h > Tolerance)
+                    {
+                        found++;
+                        say?.Invoke(s.Name + ": " + Describe(s, i) + " lies over " + Describe(s, p) + ", a panel it does not belong to");
+                        break;
+                    }
+                }
+            }
+            return found;
+        }
+
         /// <summary>Targets whose command their template does not define: a button no press answers.</summary>
         public static int UnknownCommands(UiScene s, int[] known, Action<string> say)
         {
