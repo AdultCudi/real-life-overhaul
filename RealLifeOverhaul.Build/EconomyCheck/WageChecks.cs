@@ -179,6 +179,10 @@ internal static partial class Program
                     continue;
                 }
                 string name = System.IO.Path.GetFileName(file);
+                if (name == "WageShown.cs" && line.Contains("row.hourlyWage ="))
+                {
+                    continue;   // the game's screen's own copy of a row (BaseEmployeeModel), drawn at the paid wage: no employee's wage (StaffWageChecks)
+                }
                 writes.Add(name + ":" + (i + 1));
                 bool fromRules = line.Contains("WageRules.") || line.Contains("after / 100f");
                 bounded &= fromRules && (name == "TalentGame.cs" || name == "BusinessGame.cs" || name == "HiringGame.cs");

@@ -22429,7 +22429,7 @@
   "reallife_hire_test_orphan_fail": "Test failed: a walk of the city's businesses tripped on a record with no building. The log says which.",
   "reallife_hire_test_orphan_off": "Load a save first. This test does not run in a Going Public session.",
   "reallife_changes_next_title": "Next version",
-  "reallife_changes_next": "Nothing yet.",
+  "reallife_changes_next": "Fixed: the game's own employee screens (My Employees, the Contacts card, BizMan's HR plans and schedule) showed the game's wage, while you paid it at the city's prices plus any agreed raise, as the Company app's Staff page said. They now show what you pay, the Staff page names each part, and hiring tells you what a candidate costs at the city's prices.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Fixed: when every building that could hold the utilities office is yours, power and water accounts are applied for and reconnected in the Utilities app, by phone, at the same prices, and the notices say so; once a building is free the office opens again and the app says where. Fixed: after withdrawing an application and applying to the same post again, the Career app opened the withdrawn one and the interview could not be reached. Each application now has its own row, and the interview, offer and withdrawal go to the live one. Fixed: a save holding a business record whose building the city does not have (another mod can leave one behind) no longer switches the tech sector off at every load. The mod now leaves such a record out wherever it reads the city's businesses, names its address once in the log and changes nothing of it.",
   "reallife_co_mass_raise": "Give a raise",
@@ -26706,5 +26706,10 @@
   "reallife_lst_test_sector_none": "Test not started: your businesses took no money in the last quarter, so there is nothing to set the sector by.",
   "reallife_lst_test_sector_done": "Sector check: from {from} to {to}, by the last quarter's takings. The log says how.",
   "reallife_changes_063_5_title": "0.63.5",
-  "reallife_changes_063_5": "Fixed: your own company on the stock market kept the sector of your first business for good, even after you sold it, and its share price followed that sector. The sector now follows what the company earns in: its takings over about a quarter, reviewed at the start of each quarter, with a notice and a City Ledger line when it moves. A company already listed is set by its last quarter's takings when you load. A tech firm counts as software. The company's page shows the sector, its takings by sector and the next review."
+  "reallife_changes_063_5": "Fixed: your own company on the stock market kept the sector of your first business for good, even after you sold it, and its share price followed that sector. The sector now follows what the company earns in: its takings over about a quarter, reviewed at the start of each quarter, with a notice and a City Ledger line when it moves. A company already listed is set by its last quarter's takings when you load. A tech firm counts as software. The company's page shows the sector, its takings by sector and the next review.",
+  "reallife_wage_row_game": "The game's wage, an hour:",
+  "reallife_wage_row_city": "The city's prices, an hour:",
+  "reallife_wage_row_paid": "Paid, an hour:",
+  "reallife_wage_hire_city": "Wages here are paid at the city's prices, {percent} of the figure agreed. {name} asks {ask} an hour, which costs you {cost}. Any wage you offer is paid the same way.",
+  "reallife_contract_part_wages_shown": "the wage paid (the city's prices and agreed raises) in the game's own employee screens"
 }

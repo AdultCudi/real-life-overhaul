@@ -1488,6 +1488,8 @@ namespace RealLifeOverhaul
             Guard.Step("FoundingWatch", () => Guard.Add<FoundingWatch>(_root));   // no Update; a one-second timer, a pass over the buildings once a game hour
             Guard.Step("RivalOfferGuard", () => RivalOfferGuard.Logger = context.Logger);
             Guard.Step("RivalOfferGuard", () => Guard.Add<RivalOfferGuard>(_root));   // no Update
+            Guard.Step("WageShown", () => WageShown.Logger = context.Logger);
+            Guard.Step("WageShown", () => Guard.Add<WageShown>(_root));   // no Update; a one-second timer, a reference comparison a table
             Guard.Step("StaffLeave", () => StaffLeave.Logger = context.Logger);
             Guard.Step("SpecialNames", () => Guard.Add<SpecialNames>(_root));   // one reference comparison a frame while a building is named
             Guard.Step("HeldUnits", () => Guard.Add<HeldUnits>(_root));   // no Update; a look once a second, two at the game's night

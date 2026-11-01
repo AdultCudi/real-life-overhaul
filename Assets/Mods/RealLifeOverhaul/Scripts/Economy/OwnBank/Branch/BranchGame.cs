@@ -129,7 +129,7 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>
         /// What a branch costs a day, in cents at today's prices: its rent (none in a building the player owns) and its staff's
-        /// wages over the week's shifts, a seventh of them. The game pays both itself; this is for the branch's page.
+        /// wages over the week's shifts as they are paid (Core/PaidWage), a seventh of them. The game pays both itself; this is for the branch's page.
         /// </summary>
         public static long CostDay(BuildingRegistration reg)
         {
@@ -149,7 +149,7 @@ namespace RealLifeOverhaul.Economy
                     EmployeeInstance e = shift != null ? Employee(shift.employeeId) : null;
                     if (e != null)
                     {
-                        wages += Math.Max(0, shift.endingHour - shift.startingHour) * Math.Max(0f, e.hourlyWage) * 100.0;
+                        wages += Math.Max(0, shift.endingHour - shift.startingHour) * (double)PaidWage.Now(e.hourlyWage, e.id);
                     }
                 }
             }

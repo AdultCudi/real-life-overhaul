@@ -121,6 +121,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart ShopHelp = ContractBook.Part("shop_help", "newshops", "the new kinds of shop's pages in the game's help");
         public static readonly GamePart StaffHelp = ContractBook.Part("staff_help", null, "the Staff and roles entries in the game's help: its list of categories, built again with them in");
         public static readonly GamePart PickedRaises = ContractBook.Part("picked_raises", "economy_company", "a raise for several employees picked in the game's My Employees app");
+        public static readonly GamePart WagesShown = ContractBook.Part("wages_shown", null, "the wage paid (the city's prices and agreed raises) in the game's own employee screens");
 
         // The pieces, each group under the code that reads it.
 
@@ -530,6 +531,13 @@ namespace RealLifeOverhaul
             "MassActionsDict", "Dictionary<String,EmployeeMassAction>");
         public static readonly GameMember MassActionTabs = StaticField(PickedRaises, Game, "UI.Smartphone.Apps.MyEmployees.EmployeeMassActionHelper",
             "MassActionsByTabDict", "Dictionary<String,String[]>");
+
+        // Core/WageShown: the single labels that name one wage (My Employees' box, the Contacts card, an HR manager plan's
+        // average) and what the plan's label is about; the tables are found by their type, so any of these may go alone
+        public static readonly GameMember WageBoxLabel = Optional(Field(WagesShown, Game, "UI.Smartphone.Apps.MyEmployees.MyEmployees", "hourlyWageLabel", "TextLocalizationComponent"));
+        public static readonly GameMember WageCardBox = Optional(Field(WagesShown, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "wageGameObject", "GameObject"));
+        public static readonly GameMember WagePlanLabel = Optional(Field(WagesShown, Game, "UI.Smartphone.Apps.BizMan.HRManagers.HrManagerPlanUI", "averageSalaryLabel", "TextLocalizationComponent"));
+        public static readonly GameMember WagePlan = Optional(Field(WagesShown, Game, "UI.Smartphone.Apps.BizMan.HRManagers.HrManagerPlanUI", "_currentPlan", "HrManagerPlan"));
 
         /// <summary>The five pieces Build 3675 lacks (the funeral helper's two properties are one, its type).</summary>
         public static readonly GameMember[] LackedBy3675 = { PlayerDead, FuneralActive, FenceIndex, ResumeTarget, StationNameKey, ConfirmByKey };

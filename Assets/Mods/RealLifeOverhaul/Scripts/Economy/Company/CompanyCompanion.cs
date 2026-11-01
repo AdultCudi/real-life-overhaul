@@ -8,7 +8,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>One employee's row: base, the city's part and the raise, in hundredths an hour, as the company pays them.</summary>
         public static Dictionary<string, object> Wage(string id, int baseCents, int index, int raiseCents)
         {
-            int indexedCents = CompanyCatalogue.Share(baseCents, index);
+            int indexedCents = PaidWage.Cents(baseCents, index, 0);
             return CompanionSnapshot.Row("employeeId", id, "baseHourlyCents", baseCents,
                 "cityHourlyCents", indexedCents - baseCents, "raiseHourlyCents", raiseCents,
                 "ordinaryHourlyCents", (long)indexedCents + raiseCents);

@@ -111,7 +111,7 @@ namespace RealLifeOverhaul.Economy
             return new ManagerHand
             {
                 Id = e.id, Name = NameOf(e), Place = place.Place, PlaceName = place.Name, Skill = SkillOf(e),
-                Wage = CompanyCatalogue.Share(Mathf.RoundToInt(e.hourlyWage * 100f), index)
+                Wage = WageNow(e, index)
             };
         }
 
@@ -390,10 +390,10 @@ namespace RealLifeOverhaul.Economy
             return StaffRules.Going(Mathf.RoundToInt(EmployeeHelper.CalculateHourlyWageForSkill(e.characterData.skills[0]) * 100f), StaffRules.Market(index, cycle, income));
         }
 
-        /// <summary>The game's hourly wage of somebody at today's prices, hundredths.</summary>
+        /// <summary>What somebody is paid an hour, hundredths: the game's wage at today's prices and any raise agreed on top (Core/PaidWage).</summary>
         public static int WageNow(EmployeeInstance e, int index)
         {
-            return CompanyCatalogue.Share(Mathf.RoundToInt(e.hourlyWage * 100f), index);
+            return PaidWage.Cents(PaidWage.Base(e.hourlyWage), index, PaidWage.RaiseOf(e.id));
         }
 
         /// <summary>A candidate hired the game's own way (EmployeeHelper.HireCandidate), at the place their job board found them for.</summary>
