@@ -66,7 +66,7 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Lays the gallery's page out into a scene.</summary>
         public static void Lay(UiScene s, UiGalleryModel m, UiFrame frame, bool dark, IUiKeys keys)
         {
-            s.Begin("gallery", frame.Width, frame.Height + frame.Band, dark);
+            s.Begin("gallery", frame.Width, frame.Height, dark);
             frame.Content(out float cx, out float cy, out float cw, out float ch);
             UiAt screen = UiAt.Screen;
             int bg = UiDraw.Box(s, screen, 0f, 0f, frame.Width, frame.Height, UiRole.Bg, UiRole.None, 0f, UiFlags.Decor);   // the host's whole area
@@ -84,19 +84,20 @@ namespace RealLifeOverhaul.Ui
                 case 3: Messages(s, at, m, cx, y, cw); break;
                 case 4:
                     Lists(s, at, m, cx, y, cw, h, keys);
-                    UiDraw.Question(s, 0f, 0f, frame.Width, frame.Height, m.QuestionTitle, m.QuestionBody, m.Answers, m.Answers.Length, keys);
+                    UiDraw.Question(s, 0f, frame.ContentTop, frame.Width, frame.BandY - frame.ContentTop, m.QuestionTitle, m.QuestionBody, m.Answers, m.Answers.Length, keys);
                     break;
                 default:
                     Messages(s, at, m, cx, y, cw);
                     UiDraw.Call(s, cx, y, cw, h, m.CallName, 12f, m.CallState, true, m.CallOptions, m.CallOptions.Length, m.CallEnd, Sample, Sample);
-                    UiDraw.Toast(s, 0f, 0f, frame.Width, frame.Height, m.ToastTitle, m.ToastSub);
+                    UiDraw.Toast(s, 0f, frame.ContentTop, frame.Width, frame.BandY - frame.ContentTop, m.ToastTitle, m.ToastSub);
                     break;
             }
             for (int i = 0; i < m.PromptCount; i++)
             {
                 s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
             }
-            UiDraw.PromptBar(s, 0f, frame.Height, frame.Width, frame.Band, keys);
+            UiDraw.PromptBar(s, 0f, frame.BandY, frame.Width, frame.Band, keys);
+            UiDraw.Chrome(s, frame);
         }
 
         // A framed panel with its caption, its height set once its content is in (Fit); returns its index and the first line under the caption.

@@ -23,6 +23,7 @@ internal static partial class Program
     {
         int before = _run, failedBefore = _failed;
         var watch = Stopwatch.StartNew();
+        UiChrome.Status = () => UiSamples.Status;   // the masthead's money, day and time, as the game's bar writes them
         UiTokenChecks();
         UiFontChecks();
         UiTextChecks();
@@ -47,11 +48,10 @@ internal static partial class Program
             all &= UiTokens.Colour((UiRole)r, true) != 0 && UiTokens.Colour((UiRole)r, false) != 0;
         }
         Check(all, "ui tokens: no role is left without a colour in either theme");
-        Check(UiTokens.Colour(UiRole.Bg, true) == 0x0C0C0FFF && UiTokens.Colour(UiRole.Panel, true) == 0x141518FF && UiTokens.Colour(UiRole.Row, true) == 0x161619FF
-              && UiTokens.Colour(UiRole.Field, true) == 0x1E1E22FF && UiTokens.Colour(UiRole.Accent, true) == 0xFB7188FF && UiTokens.Colour(UiRole.AccentText, true) == 0xFF8296FF
-              && UiTokens.Colour(UiRole.Text, true) == 0xEEEEF2FF && UiTokens.Colour(UiRole.Text2, true) == 0xA4A4ABFF && UiTokens.Colour(UiRole.Ok, true) == 0x61DA92FF
-              && UiTokens.Colour(UiRole.Danger, true) == 0xE64343FF && UiTokens.Colour(UiRole.RowSel, true) == 0x2B1F20FF && UiTokens.Colour(UiRole.Bubble, true) == 0x212126FF,
-            "ui tokens: dark is the owner's wireframe (DESIGN_SPEC's table, converted from its oklch)");
+        Check(UiTokens.Colour(UiRole.Bg, true) == 0x12110EFF && UiTokens.Colour(UiRole.Text, true) == 0xF1EBDDFF && UiTokens.Colour(UiRole.Accent, true) == 0xF2A58AFF
+              && UiTokens.Colour(UiRole.Bg, false) == 0xFFF1E5FF && UiTokens.Colour(UiRole.Text, false) == 0x1A1712FF && UiTokens.Colour(UiRole.Accent, false) == 0x990F3DFF,
+            "ui tokens: the City Ledger the owner chose (1 Nov): ink-black with paper-white words and the markets paper's salmon; the salmon paper with its ink and claret");
+        Check(UiTokens.RadiusPanel == 0f && UiTokens.RadiusLarge <= 2f && UiTokens.FrameRule >= 2f, "ui tokens: print is square, a framed panel wears its column rule");
         foreach (bool dark in new[] { true, false })
         {
             string theme = dark ? "dark" : "light";
@@ -111,7 +111,8 @@ internal static partial class Program
         {
             UiType t = UiTokens.Type((UiStyle)i);
             sizes &= t.Size >= UiTokens.MinText && t.Leading >= 1f;
-            weights &= t.Weight == 600 || t.Weight == 700 || t.Weight == 800;
+            UiFace held = UiFontMetrics.Face(t.Family, t.Weight);
+            weights &= held != null && held.Weight == t.Weight;   // the very cut the bundle holds, never a neighbour standing in
         }
         Check(sizes && UiTokens.MinText >= 15f, "ui tokens: every style is at least the smallest text (15 px at 1080p), readable at play distance");
         Check(weights, "ui tokens: every style is a weight the bundle holds");
@@ -137,25 +138,26 @@ internal static partial class Program
 
     private static void UiFontChecks()
     {
-        Check(UiFontMetrics.FaceCount == 6, "ui fonts: six faces, Sora and Manrope at 600, 700 and 800");
+        Check(UiFontMetrics.FaceCount == 7, "ui fonts: seven faces, Source Serif 4's display cut at 600 and 700, its text cut at 500 and 700, Libre Franklin at 600, 700 and 800");
         bool faces = true;
-        foreach (UiFamily family in new[] { UiFamily.Sora, UiFamily.Manrope })
+        foreach ((UiFamily family, int weight) in new[] { (UiFamily.SerifDisplay, 600), (UiFamily.SerifDisplay, 700), (UiFamily.Serif, 500), (UiFamily.Serif, 700),
+                     (UiFamily.Franklin, 600), (UiFamily.Franklin, 700), (UiFamily.Franklin, 800) })
         {
-            foreach (int weight in new[] { 600, 700, 800 })
-            {
-                UiFace f = UiFontMetrics.Face(family, weight);
-                faces &= f != null && f.Family == family && f.Weight == weight && f.UnitsPerEm > 0 && f.Ascender > 0 && f.Descender < 0 && f.LineEm > 1f && f.LineEm < 1.6f;
-            }
+            UiFace f = UiFontMetrics.Face(family, weight);
+            faces &= f != null && f.Family == family && f.Weight == weight && f.UnitsPerEm > 0 && f.Ascender > 0 && f.Descender < 0 && f.LineEm > 1f && f.LineEm < 1.6f;
         }
         Check(faces, "ui fonts: each face has its own metrics and a line of 1 to 1.6 em");
-        UiFace sora = UiFontMetrics.Face(UiFamily.Sora, 700), manrope = UiFontMetrics.Face(UiFamily.Manrope, 700);
-        Check(sora.Advance('A') > 0 && sora.Advance('ł') > 0 && sora.Advance('ğ') > 0 && sora.Advance('ж') < 0,
-            "ui fonts: Sora draws Latin and Latin Extended (Polish, Turkish), not Cyrillic");
-        Check(manrope.Advance('ж') > 0 && manrope.Advance('ç') > 0 && manrope.Advance('İ') > 0, "ui fonts: Manrope draws Cyrillic, Portuguese and Turkish letters");
+        bool scripts = true;
+        foreach (UiFamily family in new[] { UiFamily.SerifDisplay, UiFamily.Serif, UiFamily.Franklin })
+        {
+            UiFace f = UiFontMetrics.Face(family, 700);
+            scripts &= f.Advance('A') > 0 && f.Advance('ł') > 0 && f.Advance('ğ') > 0 && f.Advance('İ') > 0 && f.Advance('ç') > 0 && f.Advance('ж') > 0 && f.Advance('\u2212') > 0;
+        }
+        Check(scripts, "ui fonts: both families draw Latin, Latin Extended (Polish, Turkish, Portuguese), Cyrillic and the minus sign");
         string fonts = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\UiAssets"));
         string script = File.Exists(System.IO.Path.Combine(fonts, "scripts", "fonts.py")) ? File.ReadAllText(System.IO.Path.Combine(fonts, "scripts", "fonts.py")) : "";
         bool pinned = script.Length > 0;
-        foreach (string file in new[] { "Sora[wght].ttf", "Manrope[wght].ttf" })
+        foreach (string file in new[] { "SourceSerif4[opsz,wght].ttf", "LibreFranklin[wght].ttf" })
         {
             string path = System.IO.Path.Combine(fonts, "fonts", file);
             string hash = File.Exists(path) ? Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant() : "missing";
@@ -167,7 +169,7 @@ internal static partial class Program
         string contents = System.IO.Path.Combine(fonts, "contents", "reallife_ui.json");
         string listed = File.Exists(contents) ? File.ReadAllText(contents) : "";
         string bundle = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Bundles\reallife_ui"));
-        Check(File.Exists(bundle) && listed.Contains("\"faces\"") && listed.Contains("Sora-ExtraBold SDF") && listed.Contains("Manrope-SemiBold SDF"),
+        Check(File.Exists(bundle) && listed.Contains("\"faces\"") && listed.Contains("SerifDisplay-Bold SDF") && listed.Contains("Serif-Medium SDF") && listed.Contains("Franklin-ExtraBold SDF"),
             "ui fonts: the bundle is built and its contents list holds every face");
     }
 
@@ -277,6 +279,7 @@ internal static partial class Program
         public UiScreenDef Def;
         public string Name;
         public Action<UiScene, UiFrame, bool, IUiKeys, UiWords> Lay;
+        public string Title = "Contacts";   // the app's name in the masthead
     }
 
     private static List<UiScreenCase> UiCases()
@@ -292,19 +295,19 @@ internal static partial class Program
                     cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (a line that takes replies)", Lay = (s, f, dark, k, t) => UiListDetail.Lay(s, UiSamples.Contacts(t, true), f, dark, k) });
                     break;
                 case UiTemplate.Dashboard:
-                    cases.Add(new UiScreenCase { Def = d, Name = d.Id, Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.Dashboard(t), f, dark, k) });
+                    cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = "Economy", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.Dashboard(t), f, dark, k) });
                     break;
                 case UiTemplate.Session:
-                    cases.Add(new UiScreenCase { Def = d, Name = d.Id, Lay = (s, f, dark, k, t) => UiSessionSteps.Lay(s, UiSamples.Session(t), f, dark, k) });
+                    cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = "Desk", Lay = (s, f, dark, k, t) => UiSessionSteps.Lay(s, UiSamples.Session(t), f, dark, k) });
                     break;
                 case UiTemplate.Form:
-                    cases.Add(new UiScreenCase { Def = d, Name = d.Id, Lay = (s, f, dark, k, t) => UiForm.Lay(s, UiSamples.Form(t), f, dark, k) });
+                    cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = "CityAds", Lay = (s, f, dark, k, t) => UiForm.Lay(s, UiSamples.Form(t), f, dark, k) });
                     break;
                 case UiTemplate.Gallery:
                     for (int page = 0; page < UiGallery.PageCount; page++)
                     {
                         int p = page;
-                        cases.Add(new UiScreenCase { Def = d, Name = d.Id + " page " + page, Lay = (s, f, dark, k, t) => UiGallery.Lay(s, UiSamples.Gallery(t, p), f, dark, k) });
+                        cases.Add(new UiScreenCase { Def = d, Name = d.Id + " page " + page, Title = "Interface gallery", Lay = (s, f, dark, k, t) => UiGallery.Lay(s, UiSamples.Gallery(t, p), f, dark, k) });
                     }
                     break;
             }
@@ -330,7 +333,7 @@ internal static partial class Program
                 // A screen the game runs labels only with keys its entry names, so the texts check sees each one translated.
                 var used = new List<string>();
                 UiWords en = UiWords("en");
-                c.Lay(s, UiFrame.FullMenu(16f / 9f), true, UiDefaultKeys.Keyboard, (key, english) =>
+                c.Lay(s, UiFrame.FullMenu(16f / 9f, c.Title), true, UiDefaultKeys.Keyboard, (key, english) =>
                 {
                     used.Add(key);
                     return en(key, english);
@@ -350,7 +353,7 @@ internal static partial class Program
                 UiWords t = UiWords(lang);
                 foreach (float aspect in UiAspects)
                 {
-                    UiFrame frame = UiFrame.FullMenu(aspect);
+                    UiFrame frame = UiFrame.FullMenu(aspect, c.Title);
                     foreach (IUiKeys keys in new IUiKeys[] { UiDefaultKeys.Keyboard, UiDefaultKeys.XboxPad })
                     {
                         if (keys != UiDefaultKeys.Keyboard && lang != "en")

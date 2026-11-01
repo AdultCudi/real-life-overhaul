@@ -10,14 +10,11 @@ using UnityEngine.UI;
 
 /// <summary>
 /// Renders the kit offline, as the game will draw it: the mod's own Scripts/Ui files (copied in by preview.ps1) laying
-/// out each sample screen and drawing it with the real fonts from the built bundle, inside the full menu's frame painted
-/// flat as the kit paints it (a solid top bar with the app's name, the date and the money, and the bottom bar of
-/// prompts; no blurred backdrop), at 1920 x 1080 and 1280 x 720, in the dark and the light look, one with the pad's
-/// focus path drawn over it. The canvas is the game's 3840 x 2160 in canvas units, so 720p is the same layout at two
-/// thirds, as the game's own scaler shows it. Themes renders the theme study: Contacts and the weekly meeting in each
-/// direction, dark, at 1080p, into themes/<name>. Run (see preview.ps1):
-///   Unity.exe -batchmode -quit -projectPath UiAssets/UnityProject -executeMethod UiPreviewRunner.Render -bundle path -out folder
-///   Unity.exe ... -executeMethod UiPreviewRunner.Themes -bundle path -study path -out folder
+/// out each sample screen and drawing it with the real fonts from the built bundle over the game's whole full menu, its
+/// masthead and prompt band painted flat by the kit, at 1920 x 1080 and 1280 x 720, in the dark and the light look, one
+/// with the pad's focus path drawn over it. The canvas is the game's 3840 x 2160 in canvas units, so 720p is the same
+/// layout at two thirds, as the game's own scaler shows it. Run (see preview.ps1):
+///   Unity.exe -batchmode -quit -projectPath UiAssets/UnityProject -executeMethod UiPreviewRunner.Render -bundle path -out folder [-only prefix]
 /// </summary>
 public static class UiPreviewRunner
 {
@@ -29,7 +26,7 @@ public static class UiPreviewRunner
     private sealed class Screen
     {
         public string Name;
-        public string AppName;    // the game's bar names the app
+        public string AppName;    // the masthead names the app
         public LayOut Lay;
         public int FocusCommand = -1, FocusArg;
         public Vector2Int[] Walk;
@@ -45,49 +42,6 @@ public static class UiPreviewRunner
         public UiPad Pad;
     }
 
-    /// <summary>The theme study: Contacts and the weekly meeting in each direction, dark, 1080p, into themes/name.</summary>
-    public static void Themes()
-    {
-        try
-        {
-            string bundle = Argument("-bundle", Path.GetFullPath("../../Assets/Mods/RealLifeOverhaul/Bundles/reallife_ui"));
-            string study = Argument("-study", Path.GetFullPath("../build/bundles/reallife_ui_themes"));
-            string outFolder = Argument("-out", Path.GetFullPath("../../../not-in-repo/previews/ui"));
-            PlayerSettings.colorSpace = ColorSpace.Linear;
-            UiFonts.LoadNow(bundle);
-            UiFonts.LoadStudy(study);
-            UiFontMetrics.Register(RealLifeOverhaul.Preview.UiThemeMetrics.Faces);
-            TMP_FontAsset cjk = TMP_FontAsset.CreateFontAsset("Microsoft YaHei", "Regular") ?? TMP_FontAsset.CreateFontAsset("Malgun Gothic", "Regular");
-            if (cjk != null)
-            {
-                UiFonts.SetFallback(cjk);
-            }
-            var contacts = new Screen { Name = "contacts", AppName = "Contacts", Lay = (s, f, d, k) => UiListDetail.Lay(s, UiSamples.Contacts(English, false), f, d, k),
-                FocusCommand = UiListDetail.Row, FocusArg = 4 };
-            var session = new Screen { Name = "session", AppName = "Desk", Lay = (s, f, d, k) => UiSessionSteps.Lay(s, UiSamples.Session(English), f, d, k) };
-            int count = 0;
-            foreach (UiTheme theme in new[] { UiTheme.Wireframe, UiTheme.Ledger, UiTheme.Terminal, UiTheme.Phone })
-            {
-                UiTokens.Theme = theme;
-                string folder = Path.Combine(outFolder, "themes", theme.ToString().ToLowerInvariant());
-                Directory.CreateDirectory(folder);
-                foreach (Screen screen in new[] { contacts, session })
-                {
-                    RenderShot(new Shot { Screen = screen, Name = screen.Name + "_dark_1080", Width = 1920, Height = 1080, Dark = true }, folder);
-                    count++;
-                }
-            }
-            UiTokens.Theme = UiTheme.Wireframe;
-            Debug.Log(Tag + "rendered " + count + " theme shots into " + Path.Combine(outFolder, "themes"));
-            EditorApplication.Exit(0);
-        }
-        catch (Exception e)
-        {
-            Debug.LogError(Tag + e);
-            EditorApplication.Exit(1);
-        }
-    }
-
     private static readonly Vector2Int Up = new Vector2Int(0, -1), Down = new Vector2Int(0, 1), Left = new Vector2Int(-1, 0), Right = new Vector2Int(1, 0);
 
     public static void Render()
@@ -96,6 +50,7 @@ public static class UiPreviewRunner
         {
             string bundle = Argument("-bundle", Path.GetFullPath("../../Assets/Mods/RealLifeOverhaul/Bundles/reallife_ui"));
             string outFolder = Argument("-out", Path.GetFullPath("../../../not-in-repo/previews/ui"));
+            string only = Argument("-only", "");
             Directory.CreateDirectory(outFolder);
             if (PlayerSettings.colorSpace != ColorSpace.Linear)
             {
@@ -113,26 +68,14 @@ public static class UiPreviewRunner
             {
                 UiFonts.SetFallback(cjk);
             }
-            var screens = new List<Screen>
-            {
-                new Screen { Name = "contacts", AppName = "Contacts", Lay = (s, f, d, k) => UiListDetail.Lay(s, UiSamples.Contacts(English, true), f, d, k), FocusCommand = UiListDetail.Row, FocusArg = 2,
-                    Walk = new[] { Up, Down, Down, Right, Up, Right, Down, Down, Left, Left, Left } },
-                new Screen { Name = "dashboard", AppName = "Economy", Lay = (s, f, d, k) => UiDashboard.Lay(s, UiSamples.Dashboard(English), f, d, k),
-                    Walk = new[] { Down, Down, Down, Right, Down, Left, Up, Up } },
-                new Screen { Name = "session", AppName = "Desk", Lay = (s, f, d, k) => UiSessionSteps.Lay(s, UiSamples.Session(English), f, d, k),
-                    Walk = new[] { Down, Down, Down, Right, Left, Up } },
-                new Screen { Name = "form", AppName = "CityAds", Lay = (s, f, d, k) => UiForm.Lay(s, UiSamples.Form(English), f, d, k),
-                    Walk = new[] { Down, Down, Down, Down, Right, Left } },
-            };
-            for (int page = 0; page < UiGallery.PageCount; page++)
-            {
-                int p = page;
-                screens.Add(new Screen { Name = "gallery_" + page, AppName = "Interface gallery", Lay = (s, f, d, k) => UiGallery.Lay(s, UiSamples.Gallery(English, p), f, d, k),
-                    Walk = new[] { Down, Down, Right, Down, Right, Down, Left } });
-            }
+            UiChrome.Status = () => UiSamples.Status;
             var shots = new List<Shot>();
-            foreach (Screen screen in screens)
+            foreach (Screen screen in Screens())
             {
+                if (only.Length > 0 && !screen.Name.StartsWith(only, StringComparison.Ordinal))
+                {
+                    continue;
+                }
                 shots.Add(new Shot { Screen = screen, Name = screen.Name + "_dark_1080", Width = 1920, Height = 1080, Dark = true });
                 shots.Add(new Shot { Screen = screen, Name = screen.Name + "_light_1080", Width = 1920, Height = 1080, Dark = false });
                 shots.Add(new Shot { Screen = screen, Name = screen.Name + "_dark_720", Width = 1280, Height = 720, Dark = true });
@@ -151,6 +94,34 @@ public static class UiPreviewRunner
             Debug.LogError(Tag + e);
             EditorApplication.Exit(1);
         }
+    }
+
+    // Every screen the kit draws, with its app's name, the target focus rests on and a walk of the d-pad for the path shot.
+    private static List<Screen> Screens()
+    {
+        var screens = new List<Screen>
+        {
+            new Screen { Name = "contacts", AppName = "Contacts", Lay = (s, f, d, k) => UiListDetail.Lay(s, UiSamples.Contacts(English, false), f, d, k), FocusCommand = UiListDetail.Row, FocusArg = 4,
+                Walk = new[] { Up, Down, Down, Right, Up, Right, Down, Down, Left, Left, Left } },
+            new Screen { Name = "dashboard", AppName = "Economy", Lay = (s, f, d, k) => UiDashboard.Lay(s, UiSamples.Dashboard(English), f, d, k),
+                Walk = new[] { Down, Down, Down, Right, Down, Left, Up, Up } },
+            new Screen { Name = "session", AppName = "Desk", Lay = (s, f, d, k) => UiSessionSteps.Lay(s, UiSamples.Session(English), f, d, k),
+                Walk = new[] { Down, Down, Down, Right, Left, Up } },
+            new Screen { Name = "form", AppName = "CityAds", Lay = (s, f, d, k) => UiForm.Lay(s, UiSamples.Form(English), f, d, k),
+                Walk = new[] { Down, Down, Down, Down, Right, Left } },
+        };
+        for (int page = 0; page < UiGallery.PageCount; page++)
+        {
+            int p = page;
+            screens.Add(new Screen { Name = "gallery_" + page, AppName = "Interface gallery", Lay = (s, f, d, k) => UiGallery.Lay(s, UiSamples.Gallery(English, p), f, d, k),
+                Walk = new[] { Down, Down, Right, Down, Right, Down, Left } });
+        }
+        foreach (UiSamples.Sample sample in UiSamples.Overhaul(English))
+        {
+            UiSamples.Sample x = sample;
+            screens.Add(new Screen { Name = x.Name, AppName = x.App, Lay = (s, f, d, k) => x.Lay(s, f, d, k), Walk = new[] { Down, Down, Right, Down, Left, Up } });
+        }
+        return screens;
     }
 
     private static void RenderShot(Shot shot, string outFolder)
@@ -179,31 +150,21 @@ public static class UiPreviewRunner
             cr.pivot = new Vector2(0f, 1f);
             cr.sizeDelta = new Vector2(canvasW, CanvasH);
             cr.position = Vector3.zero;
+            RectTransform host = UiView.NewRect(cr, "Host");
+            UiView.Stretch(host);
 
-            FullMenu(cr, canvasW, shot);
-            RectTransform apps = UiView.NewRect(cr, "Apps");
-            apps.anchorMin = new Vector2(0f, 0f);
-            apps.anchorMax = new Vector2(1f, 1f);
-            apps.pivot = new Vector2(0f, 1f);
-            apps.offsetMin = new Vector2(0f, UiFrame.FullMenuBand * UiTokens.CanvasPerPx);
-            apps.offsetMax = new Vector2(0f, -UiFrame.FullMenuTop * UiTokens.CanvasPerPx);
-
-            var view = new UiView(apps, "Screen") { Motion = UiMotionSetting.Off };
+            var view = new UiView(host, "Screen") { Motion = UiMotionSetting.Off };
             var scene = new UiScene();
-            var frame = new UiFrame
-            {
-                Width = canvasW / UiTokens.CanvasPerPx,
-                Height = CanvasH / UiTokens.CanvasPerPx - UiFrame.FullMenuTop - UiFrame.FullMenuBand,
-                Band = UiFrame.FullMenuBand
-            };
+            UiFrame frame = UiFrame.FullMenu(canvasW / CanvasH, shot.Screen.AppName);
             IUiKeys keys = shot.Pad == UiPad.None ? (IUiKeys)UiDefaultKeys.Keyboard : UiDefaultKeys.XboxPad;
             shot.Screen.Lay(scene, frame, shot.Dark, keys);
             view.Write(scene, false);
             int focus = shot.Screen.FocusCommand >= 0 ? scene.FindNode(shot.Screen.FocusCommand, shot.Screen.FocusArg) : UiFocusRules.First(scene);
-            view.SetFocus(focus >= 0 ? focus : UiFocusRules.First(scene), false, 0f);
-            if (shot.Path)
+            focus = focus >= 0 ? focus : UiFocusRules.First(scene);
+            view.SetFocus(focus, false, 0f);
+            if (shot.Path && focus >= 0)
             {
-                FocusPath(apps, scene, focus, shot.Screen.Walk);
+                FocusPath(host, scene, focus, shot.Screen.Walk);
             }
             Canvas.ForceUpdateCanvases();
             foreach (TMP_Text t in root.GetComponentsInChildren<TMP_Text>(true))
@@ -230,58 +191,6 @@ public static class UiPreviewRunner
         {
             UnityEngine.Object.DestroyImmediate(root);
         }
-    }
-
-    // The full menu's frame as the kit paints it, flat: the background, a solid top bar (173 canvas units, the game's)
-    // with a hairline under it, the app's name, the money, the day and the time, and the bottom bar's own prompts at its
-    // two ends. No blurred backdrop and no translucent glass (RLO-UI-015).
-    private static void FullMenu(RectTransform canvas, float canvasW, Shot shot)
-    {
-        RectTransform bg = UiView.NewRect(canvas, "Backdrop");
-        UiView.Stretch(bg);
-        bg.gameObject.AddComponent<Image>().color = Role(UiRole.Bg, shot.Dark);
-        RectTransform bar = UiView.NewRect(canvas, "TopBar");
-        bar.anchorMin = new Vector2(0f, 1f);
-        bar.anchorMax = new Vector2(1f, 1f);
-        bar.pivot = new Vector2(0.5f, 1f);
-        bar.sizeDelta = new Vector2(0f, 173f);
-        bar.gameObject.AddComponent<Image>().color = Role(UiRole.Header, shot.Dark);
-        RectTransform rule = UiView.NewRect(bar, "Rule");
-        rule.anchorMin = new Vector2(0f, 0f);
-        rule.anchorMax = new Vector2(1f, 0f);
-        rule.pivot = new Vector2(0.5f, 0f);
-        rule.sizeDelta = new Vector2(0f, UiTokens.FrameRule > 0f ? UiTokens.FrameRule * UiTokens.CanvasPerPx : UiTokens.CanvasPerPx);
-        rule.gameObject.AddComponent<Image>().color = Role(UiTokens.FrameRule > 0f ? UiRole.Text : UiRole.PanelEdge, shot.Dark);
-        Color ink = Role(UiRole.Text, shot.Dark), quiet = Role(UiRole.Text2, shot.Dark);
-        Label(bar, shot.Screen.AppName, 100f, -44f, 64f, TextAlignmentOptions.TopLeft, ink, UiStyle.AppTitle, false, 900f);
-        Label(bar, "$48,210     Tuesday (Day 12)     14:32", canvasW - 1500f, -58f, 40f, TextAlignmentOptions.TopRight, quiet, UiStyle.Title, false, 1400f);
-        Label(canvas, "Help [F1]", 50f, -(CanvasH - 98f), 32f, TextAlignmentOptions.TopLeft, quiet, UiStyle.Prompt, true, 400f);
-        Label(canvas, "Submit bug report [F2]", 400f, -(CanvasH - 98f), 32f, TextAlignmentOptions.TopLeft, quiet * new Color(1f, 1f, 1f, 0.55f), UiStyle.Prompt, true, 700f);
-        Label(canvas, "Close [Escape]", canvasW - 650f, -(CanvasH - 98f), 32f, TextAlignmentOptions.TopRight, quiet, UiStyle.Prompt, true, 600f);
-    }
-
-    private static Color Role(UiRole role, bool dark)
-    {
-        uint c = UiTokens.Colour(role, dark);
-        return new Color(((c >> 24) & 0xFF) / 255f, ((c >> 16) & 0xFF) / 255f, ((c >> 8) & 0xFF) / 255f, (c & 0xFF) / 255f);
-    }
-
-    private static void Label(Transform parent, string words, float x, float y, float size, TextAlignmentOptions align, Color ink, UiStyle style, bool caps, float w)
-    {
-        RectTransform r = UiView.NewRect(parent, words);
-        r.anchorMin = r.anchorMax = new Vector2(0f, 1f);
-        r.pivot = new Vector2(0f, 1f);
-        r.anchoredPosition = new Vector2(x, y);
-        r.sizeDelta = new Vector2(w, size * 1.4f);
-        var t = r.gameObject.AddComponent<TextMeshProUGUI>();
-        t.font = UiFonts.For(style);
-        t.fontSize = size;
-        t.alignment = align;
-        t.color = ink;
-        t.fontStyle = caps ? FontStyles.UpperCase : FontStyles.Normal;
-        t.textWrappingMode = TextWrappingModes.NoWrap;
-        UiCase letters = UiTokens.Type(style).Case;
-        t.text = letters == UiCase.Upper ? words.ToUpperInvariant() : letters == UiCase.Lower ? words.ToLowerInvariant() : words;
     }
 
     // The pad's path from the first target, a screen's own walk of the d-pad: each stop numbered and joined by a line, as

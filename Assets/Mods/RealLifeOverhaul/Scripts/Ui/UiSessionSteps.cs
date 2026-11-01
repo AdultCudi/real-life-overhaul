@@ -38,7 +38,7 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Lays a session's step out into a scene.</summary>
         public static void Lay(UiScene s, UiSessionModel m, UiFrame frame, bool dark, IUiKeys keys)
         {
-            s.Begin("session", frame.Width, frame.Height + frame.Band, dark);
+            s.Begin("session", frame.Width, frame.Height, dark);
             frame.Content(out float cx, out float cy, out float cw, out float ch);
             UiAt screen = UiAt.Screen;
             int bg = UiDraw.Box(s, screen, 0f, 0f, frame.Width, frame.Height, UiRole.Bg, UiRole.None, 0f, UiFlags.Decor);   // the host's whole area
@@ -93,7 +93,8 @@ namespace RealLifeOverhaul.Ui
             {
                 s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
             }
-            UiDraw.PromptBar(s, 0f, frame.Height, frame.Width, frame.Band, keys);
+            UiDraw.PromptBar(s, 0f, frame.BandY, frame.Width, frame.Band, keys);
+            UiDraw.Chrome(s, frame);
         }
     }
 }

@@ -44,7 +44,8 @@ namespace RealLifeOverhaul.Ui
         private IUiSound _sound;
         private Func<bool> _dark;
         private Func<UiMotionSetting> _motion;
-        private float _band;
+        private float _top, _band;
+        private string _title;
         private Vector2 _laidSize;
         private bool _laidDark, _arrive, _typing;
         private UiPad _laidPad;
@@ -63,15 +64,17 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The view, for the host's owner to set the canvas scale on (2 in the game).</summary>
         public UiView View => _view;
 
-        /// <summary>Sets the screen and what it reads; the prompt band is the height under the host's own rect (the game's bottom bar).</summary>
-        public void Bind(IUiScreen screen, IUiInput input, IUiSound sound, Func<bool> dark, Func<UiMotionSetting> motion, float band)
+        /// <summary>Sets the screen and what it reads: the host's rect is the whole full menu, its masthead and band the kit's own, titled with the app's name.</summary>
+        public void Bind(IUiScreen screen, IUiInput input, IUiSound sound, Func<bool> dark, Func<UiMotionSetting> motion, float top, float band, string title)
         {
             _screen = screen;
             _input = input;
             _sound = sound;
             _dark = dark;
             _motion = motion;
+            _top = top;
             _band = band;
+            _title = title;
             if (_view == null)
             {
                 _view = new UiView(transform, "Screen");
@@ -296,7 +299,7 @@ namespace RealLifeOverhaul.Ui
             var rect = (RectTransform)transform;
             Vector2 size = rect.rect.size;
             float scale = _view.Scale;
-            var frame = new UiFrame { Width = size.x / scale, Height = size.y / scale, Band = _band };
+            var frame = new UiFrame { Width = size.x / scale, Height = size.y / scale, Top = _top, Band = _band, Title = _title };
             int command = -1, arg = 0;
             if (_view.Focus >= 0 && _view.Focus < _scene.NodeCount)
             {

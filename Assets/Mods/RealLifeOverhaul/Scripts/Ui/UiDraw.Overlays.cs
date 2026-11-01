@@ -10,6 +10,34 @@ namespace RealLifeOverhaul.Ui
         /// own capitals, centred in a band; a TabPrev prompt shows both tab keys. Ink and caps are the band's own (the
         /// game's bottom bar), the same in both themes.
         /// </summary>
+        /// <summary>
+        /// The frame's own bars, painted flat: the masthead (the app's name at the left in the masthead's face, the money,
+        /// the day and the time at the right, the column rule under it) and a hairline over the prompt band. Decor and
+        /// words only: no target, so focus never lands on the frame.
+        /// </summary>
+        public static void Chrome(UiScene s, UiFrame frame)
+        {
+            if (frame.Top > 0f)
+            {
+                int bar = Box(s, UiAt.Screen, 0f, 0f, frame.Width, frame.Top, UiRole.Header, UiRole.None, 0f, UiFlags.Decor);
+                UiAt on = UiAt.Screen.In(bar);
+                Box(s, on, 0f, frame.Top - UiTokens.FrameRule, frame.Width, UiTokens.FrameRule, UiRole.Text, UiRole.None, 0f, UiFlags.Decor);
+                frame.Content(out float cx, out float _, out float cw, out float _);
+                string status = UiChrome.Status != null ? UiChrome.Status() : null;
+                float sw = string.IsNullOrEmpty(status) ? 0f : UiTextRules.Width(status, UiStyle.Title) + UiTokens.S1;
+                float tw = cw - sw - UiTokens.S8;
+                TextMiddle(s, on, cx, 0f, frame.Top - UiTokens.FrameRule, tw, UiStyle.AppTitle, UiRole.Text, frame.Title ?? string.Empty, UiFlags.Truncate);
+                if (sw > 0f)
+                {
+                    TextMiddle(s, on, cx + cw - sw, 0f, frame.Top - UiTokens.FrameRule, sw, UiStyle.Title, UiRole.Text2, status, UiFlags.Right);
+                }
+            }
+            if (frame.Band > 0f)
+            {
+                Box(s, UiAt.Screen, 0f, frame.BandY, frame.Width, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
+            }
+        }
+
         public static void PromptBar(UiScene s, float x, float y, float w, float h, IUiKeys keys)
         {
             s.PromptX = x;

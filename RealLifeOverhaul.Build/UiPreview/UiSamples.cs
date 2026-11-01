@@ -7,6 +7,23 @@ using RealLifeOverhaul.Ui;
 // text source, so the checks measure every language; the fixtures' names and messages stay as the wireframe has them.
 internal static class UiSamples
 {
+    /// <summary>The masthead's money, day and time in every preview and check: the game's own bar writes them so.</summary>
+    public const string Status = "$48,210     Tuesday (Day 12)     14:32";
+
+    /// <summary>A screen of the overhaul drawn from its own view model, with the app it stands in.</summary>
+    public sealed class Sample
+    {
+        public string Name;
+        public string App;
+        public Action<UiScene, UiFrame, bool, IUiKeys> Lay;
+    }
+
+    /// <summary>The overhaul's screens as their own runners draw them from sample view models.</summary>
+    public static System.Collections.Generic.List<Sample> Overhaul(UiWords t)
+    {
+        return new System.Collections.Generic.List<Sample>();
+    }
+
     /// <summary>The wireframe's Contacts with Maya Okafor selected, as the kit's list-and-detail template draws it.</summary>
     public static UiListDetailModel Contacts(UiWords t, bool composer)
     {

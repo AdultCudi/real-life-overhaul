@@ -30,9 +30,12 @@ public static class UiFontBuilder
     private const int Padding = 5;         // px of distance field around a glyph, a tenth of the em as TextMeshPro's own default
     private const int Version = 1;
 
-    private static readonly string[] Families = { "Sora", "Manrope" };
-    private static readonly string[] Styles = { "SemiBold", "Bold", "ExtraBold" };
-    private static readonly int[] Weights = { 600, 700, 800 };
+    // The City Ledger's faces: Source Serif 4's display cut for heads, its text cut for reading, Libre Franklin for the
+    // paper's labels and figures (UiAssets/scripts/fonts.py cuts them; UiTokens names them by family and weight).
+    private static readonly string[] Families = { "SerifDisplay", "SerifDisplay", "Serif", "Serif", "Franklin", "Franklin", "Franklin" };
+    private static readonly string[] Styles = { "SemiBold", "Bold", "Medium", "Bold", "SemiBold", "Bold", "ExtraBold" };
+    private static readonly int[] Weights = { 600, 700, 500, 700, 600, 700, 800 };
+    private static readonly string[] Licences = { "OFL-SourceSerif4", "OFL-LibreFranklin" };
     private static readonly Vector2Int[] AtlasSizes = { new Vector2Int(1024, 1024), new Vector2Int(2048, 1024), new Vector2Int(2048, 2048) };
 
     [Serializable]
@@ -88,25 +91,21 @@ public static class UiFontBuilder
             for (int f = 0; f < Families.Length; f++)
             {
                 uint[] codes = Characters(Path.Combine(fonts, Families[f] + ".chars.txt"));
-                for (int s = 0; s < Styles.Length; s++)
-                {
-                    string name = Families[f] + "-" + Styles[s];
-                    TMP_FontAsset asset = Face(Path.Combine(fonts, name + ".ttf"), name, codes, out Vector2Int size);
-                    made[name] = asset;
-                    names.Add(Generated + "/" + name + " SDF.asset");
-                    entries.Add(new FaceEntry { asset = name + " SDF", family = Families[f], weight = Weights[s], characters = asset.characterTable.Count, atlasWidth = size.x, atlasHeight = size.y });
-                    Debug.Log(Tag + name + ": " + asset.characterTable.Count + " characters on a " + size.x + " x " + size.y + " atlas");
-                }
+                string name = Families[f] + "-" + Styles[f];
+                TMP_FontAsset asset = Face(Path.Combine(fonts, name + ".ttf"), name, codes, out Vector2Int size);
+                made[name] = asset;
+                names.Add(Generated + "/" + name + " SDF.asset");
+                entries.Add(new FaceEntry { asset = name + " SDF", family = Families[f], weight = Weights[f], characters = asset.characterTable.Count, atlasWidth = size.x, atlasHeight = size.y });
+                Debug.Log(Tag + name + ": " + asset.characterTable.Count + " characters on a " + size.x + " x " + size.y + " atlas");
             }
             Tie(made);
             var list = new FaceList { version = Version, samplingSize = SamplingSize, faces = entries.ToArray() };
             File.WriteAllText(Generated + "/" + FacesAsset + ".json", JsonUtility.ToJson(list, true), new UTF8Encoding(false));
             names.Add(Generated + "/" + FacesAsset + ".json");
-            foreach (string family in Families)
+            foreach (string licence in Licences)
             {
-                string licence = Path.Combine(licences, "OFL-" + family + ".txt");
-                File.Copy(licence, Generated + "/OFL-" + family + ".txt", true);
-                names.Add(Generated + "/OFL-" + family + ".txt");
+                File.Copy(Path.Combine(licences, licence + ".txt"), Generated + "/" + licence + ".txt", true);
+                names.Add(Generated + "/" + licence + ".txt");
             }
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
@@ -124,86 +123,6 @@ public static class UiFontBuilder
             Directory.CreateDirectory(outFolder);
             File.Copy(Path.Combine(staging, BundleName), Path.Combine(outFolder, BundleName), true);
             Debug.Log(Tag + "built " + Path.Combine(outFolder, BundleName) + " (" + new FileInfo(Path.Combine(outFolder, BundleName)).Length + " bytes)");
-            EditorApplication.Exit(0);
-        }
-        catch (Exception e)
-        {
-            Debug.LogError(Tag + e);
-            EditorApplication.Exit(1);
-        }
-    }
-
-    [Serializable]
-    public class ThemeFace
-    {
-        public string name;
-        public string family;
-        public int weight;
-    }
-
-    [Serializable]
-    public class ThemeSpec
-    {
-        public string bundle;
-        public ThemeFace[] faces;
-        public string[] licences;
-    }
-
-    /// <summary>
-    /// The theme study's bundle (UiAssets/scripts/fonts.py --themes writes its themes.json): the faces of the three
-    /// directions put to the owner, for the previews alone. Each face as Build makes one, with its licence beside it;
-    /// never written into the mod's Bundles folder.
-    /// </summary>
-    public static void BuildThemes()
-    {
-        try
-        {
-            string fonts = Argument("-fontsFolder", Path.GetFullPath("../build/fonts"));
-            string outFolder = Argument("-outFolder", Path.GetFullPath("../build/bundles"));
-            string licences = Argument("-licences", Path.GetFullPath("../fonts/themes"));
-            var spec = JsonUtility.FromJson<ThemeSpec>(File.ReadAllText(Path.Combine(fonts, "themes.json")));
-            if (spec == null || spec.faces == null || spec.faces.Length == 0 || string.IsNullOrEmpty(spec.bundle))
-            {
-                Fail("themes.json is empty: run UiAssets/scripts/fonts.py --themes first");
-            }
-            if (AssetDatabase.IsValidFolder(Generated))
-            {
-                AssetDatabase.DeleteAsset(Generated);
-            }
-            AssetDatabase.CreateFolder("Assets", "Generated");
-            var names = new List<string>();
-            var codesByFamily = new Dictionary<string, uint[]>();
-            foreach (ThemeFace f in spec.faces)
-            {
-                if (!codesByFamily.TryGetValue(f.family, out uint[] codes))
-                {
-                    codes = Characters(Path.Combine(fonts, f.family + ".chars.txt"));
-                    codesByFamily[f.family] = codes;
-                }
-                TMP_FontAsset asset = Face(Path.Combine(fonts, f.name + ".ttf"), f.name, codes, out Vector2Int size);
-                names.Add(Generated + "/" + f.name + " SDF.asset");
-                Debug.Log(Tag + f.name + ": " + asset.characterTable.Count + " characters on a " + size.x + " x " + size.y + " atlas");
-            }
-            foreach (string licence in spec.licences)
-            {
-                File.Copy(Path.Combine(licences, licence + ".txt"), Generated + "/" + licence + ".txt", true);
-                names.Add(Generated + "/" + licence + ".txt");
-            }
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
-            string staging = Path.GetFullPath("BundleOutput");
-            Directory.CreateDirectory(staging);
-            var bundle = new AssetBundleBuild { assetBundleName = spec.bundle, assetNames = names.ToArray() };
-            AssetBundleManifest manifest = BuildPipeline.BuildAssetBundles(staging, new[] { bundle },
-                BuildAssetBundleOptions.ChunkBasedCompression | BuildAssetBundleOptions.StrictMode | BuildAssetBundleOptions.ForceRebuildAssetBundle,
-                BuildTarget.StandaloneWindows64);
-            if (manifest == null)
-            {
-                Fail("BuildAssetBundles returned nothing");
-            }
-            Directory.CreateDirectory(outFolder);
-            File.Copy(Path.Combine(staging, spec.bundle), Path.Combine(outFolder, spec.bundle), true);
-            Debug.Log(Tag + "built " + Path.Combine(outFolder, spec.bundle) + " (" + new FileInfo(Path.Combine(outFolder, spec.bundle)).Length + " bytes)");
             EditorApplication.Exit(0);
         }
         catch (Exception e)
@@ -265,22 +184,18 @@ public static class UiFontBuilder
     // other's weight table, so <b> and a text's weight pick the family's own cut, not a thickened copy.
     private static void Tie(Dictionary<string, TMP_FontAsset> made)
     {
-        foreach (string family in Families)
+        for (int f = 0; f < Families.Length; f++)
         {
-            for (int s = 0; s < Styles.Length; s++)
+            TMP_FontAsset asset = made[Families[f] + "-" + Styles[f]];
+            TMP_FontWeightPair[] table = asset.fontWeightTable;   // the asset's own array: its setter is the package's alone
+            for (int w = 0; w < Families.Length; w++)
             {
-                TMP_FontAsset asset = made[family + "-" + Styles[s]];
-                TMP_FontWeightPair[] table = asset.fontWeightTable;   // the asset's own array: its setter is the package's alone
-                for (int w = 0; w < Styles.Length; w++)
+                if (Families[w] == Families[f])
                 {
-                    table[Weights[w] / 100 - 1].regularTypeface = made[family + "-" + Styles[w]];
+                    table[Weights[w] / 100 - 1].regularTypeface = made[Families[w] + "-" + Styles[w]];
                 }
-                if (family == "Sora")
-                {
-                    asset.fallbackFontAssetTable = new List<TMP_FontAsset> { made["Manrope-" + Styles[s]] };
-                }
-                EditorUtility.SetDirty(asset);
             }
+            EditorUtility.SetDirty(asset);
         }
     }
 
@@ -299,7 +214,7 @@ public static class UiFontBuilder
                 Fail("the bundle does not load: " + path);
             }
             var list = JsonUtility.FromJson<FaceList>(bundle.LoadAsset<TextAsset>(FacesAsset).text);
-            if (list == null || list.version != Version || list.faces == null || list.faces.Length != Families.Length * Styles.Length)
+            if (list == null || list.version != Version || list.faces == null || list.faces.Length != Families.Length)
             {
                 Fail("the faces list is not what this builder writes");
             }
@@ -322,7 +237,7 @@ public static class UiFontBuilder
                 entry.bytes = Profiler.GetRuntimeMemorySizeLong(asset.atlasTexture);
                 total += entry.bytes;
             }
-            if (bundle.LoadAsset<TextAsset>("OFL-Sora") == null || bundle.LoadAsset<TextAsset>("OFL-Manrope") == null)
+            if (bundle.LoadAsset<TextAsset>("OFL-SourceSerif4") == null || bundle.LoadAsset<TextAsset>("OFL-LibreFranklin") == null)
             {
                 Fail("a licence is missing from the bundle");
             }

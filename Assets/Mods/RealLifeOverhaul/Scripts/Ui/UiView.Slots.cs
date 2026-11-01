@@ -200,12 +200,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     Place(slot.Rect, it.X, it.Y, it.W, it.H);
                     var a = (AvatarSlot)slot;
-                    Sprite face = UiTokens.RoundFaces ? UiSprites.Circle : UiSprites.Fill(UiTokens.RadiusSmall);
-                    if (a.Circle.sprite != face)
-                    {
-                        a.Circle.sprite = face;
-                    }
-                    a.Circle.pixelsPerUnitMultiplier = UiTokens.RoundFaces ? UiSprites.CircleScale(it.H * Scale) : 1f;
+                    a.Circle.pixelsPerUnitMultiplier = UiSprites.CircleScale(it.H * Scale);
                     a.Circle.color = ToColor(UiColour.AvatarFill(it.Value, _dark), it.Alpha);
                     a.Letters.font = UiFonts.For(UiStyle.Title);
                     a.Letters.fontSize = it.W * InitialsShare * Scale;
@@ -274,7 +269,7 @@ namespace RealLifeOverhaul.Ui
             b.Fill.raycastTarget = face;
             b.Hit.Face(face ? this : null, it.Node);
             // A framed panel's head rule, where the theme wears one: the column rule of a printed page, solid and square.
-            bool rule = (it.Flags & UiFlags.Panel) != 0 && UiTokens.FrameRule > 0f;
+            bool rule = (it.Flags & UiFlags.Panel) != 0;
             if (rule && b.Rule == null)
             {
                 RectTransform rr = NewRect(b.Rect, "Rule");

@@ -109,7 +109,7 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Lays a list-and-detail screen out into a scene at a frame, in a theme, with the keys bound now.</summary>
         public static void Lay(UiScene s, UiListDetailModel m, UiFrame frame, bool dark, IUiKeys keys)
         {
-            s.Begin("list-detail", frame.Width, frame.Height + frame.Band, dark);
+            s.Begin("list-detail", frame.Width, frame.Height, dark);
             frame.Content(out float cx, out float cy, out float cw, out float ch);
             UiAt screen = UiAt.Screen;
             int bg = UiDraw.Box(s, screen, 0f, 0f, frame.Width, frame.Height, UiRole.Bg, UiRole.None, 0f, UiFlags.Decor);   // the host's whole area
@@ -124,10 +124,11 @@ namespace RealLifeOverhaul.Ui
             {
                 s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
             }
-            UiDraw.PromptBar(s, 0f, frame.Height, frame.Width, frame.Band, keys);
+            UiDraw.PromptBar(s, 0f, frame.BandY, frame.Width, frame.Band, keys);
+            UiDraw.Chrome(s, frame);
             if (m.Overlay == UiOverlay.Question)
             {
-                UiDraw.Question(s, 0f, 0f, frame.Width, frame.Height, m.OverlayTitle, m.OverlayBody, m.Answers, m.AnswerCount, keys);
+                UiDraw.Question(s, 0f, frame.ContentTop, frame.Width, frame.BandY - frame.ContentTop, m.OverlayTitle, m.OverlayBody, m.Answers, m.AnswerCount, keys);
             }
             else if (m.Overlay == UiOverlay.Call)
             {
@@ -135,7 +136,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (!string.IsNullOrEmpty(m.ToastTitle))
             {
-                UiDraw.Toast(s, 0f, 0f, frame.Width, frame.Height, m.ToastTitle, m.ToastSub);
+                UiDraw.Toast(s, 0f, frame.ContentTop, frame.Width, frame.BandY - frame.ContentTop, m.ToastTitle, m.ToastSub);
             }
         }
 
