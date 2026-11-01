@@ -27,11 +27,13 @@ namespace RealLifeOverhaul.Ui
         private static GameObject _root;
         private static UiHost _host;
         private static Canvas _canvas;
+        private static CanvasGroup _group;   // the kit's own fade, held to the full menu's
         private static int _order;
         private static CanvasGroup _layout;
         private static float _layoutAlpha = 1f;
         private static bool _layoutInteractable = true, _layoutBlocks = true, _hiding;
         private static bool _classic;
+        private static Button _calling;   // the game's call button while its call runs in its own view: the kit comes back when the game frees it
         private static bool _gaveUp;      // a fault of the kit's own screen: the game's app for the rest of the session
         private static bool _stopped;     // the app never looked as expected in this city: the game's own until the next city
         private static int _misses;
@@ -104,6 +106,7 @@ namespace RealLifeOverhaul.Ui
             rect.anchorMax = Vector2.one;
             rect.offsetMin = rect.offsetMax = Vector2.zero;
             _canvas = _root.AddComponent<Canvas>();
+            _group = _root.AddComponent<CanvasGroup>();
             Sort();
             _root.AddComponent<GraphicRaycaster>();
             _host = _root.AddComponent<UiHost>();
@@ -164,6 +167,7 @@ namespace RealLifeOverhaul.Ui
             _host = null;
             _app = null;
             _canvas = null;
+            _group = null;
             _layout = null;
             _hiding = false;
             _classic = false;
@@ -173,7 +177,7 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        /// <summary>The game's own view until the app closes: a call, an offer with its buttons, a table only it can show.</summary>
+        /// <summary>The game's own view until the app closes: an offer with its buttons, a table only it can show.</summary>
         public static void Classic()
         {
             _classic = true;
@@ -183,6 +187,34 @@ namespace RealLifeOverhaul.Ui
                 _host.Hide();
                 _root.SetActive(false);
             }
+        }
+
+        /// <summary>
+        /// A call the game runs in its own view: the kit steps aside so the call is seen and answered there, and comes
+        /// back the moment the game frees its call button again (the call finished or was cancelled).
+        /// </summary>
+        public static void Call(Button call)
+        {
+            Classic();
+            _calling = call;
+        }
+
+        // The call has ended: the kit is drawn over the app again, as it was.
+        private static void HandBack()
+        {
+            _calling = null;
+            _classic = false;
+            if (_root == null)
+            {
+                return;
+            }
+            Conceal();
+            Sort();
+            Fade();
+            _root.SetActive(true);
+            _root.transform.SetAsLastSibling();
+            _host.Show();
+            UiDirector.Logger?.Info("Contacts (kit): the call ended, the kit is back over the app");
         }
 
         /// <summary>A fault in the kit's screen (its host has counted it): the game's app back for the rest of the session.</summary>
@@ -204,6 +236,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Conceal();
                 Sort();
+                Fade();
                 _root.SetActive(true);
                 _root.transform.SetAsLastSibling();
                 _host.Show();
@@ -217,7 +250,8 @@ namespace RealLifeOverhaul.Ui
 
         internal static void Hidden()
         {
-            _classic = false;   // the classic view lasts until the app closes; the next opening is the kit's again
+            _classic = false;   // the classic view lasts until the app closes, and the next opening is the kit's again
+            _calling = null;
             if (_root == null)
             {
                 return;
@@ -229,9 +263,17 @@ namespace RealLifeOverhaul.Ui
         // The game's question box over the app: the kit steps aside while it is up, so the box is seen and answered.
         internal static void Watch()
         {
+            if (_calling != null && _calling.interactable)
+            {
+                HandBack();
+            }
             if (_root == null || _classic)
             {
                 return;
+            }
+            if (Fade() && _host.enabled)
+            {
+                _host.Hide();   // the menu is closing (View on map does that on its way to the map): no key acts on a screen leaving
             }
             bool asked = GameConfirm.IsOpen;
             if (_root.activeSelf == asked)
@@ -242,6 +284,20 @@ namespace RealLifeOverhaul.Ui
                     _host.Show();
                 }
             }
+        }
+
+        // The game fades its full menu in and out, and View on map closes it on the way to the map. The kit stands on a
+        // canvas of its own, so it takes the menu's fade to come and go with it rather than hang on over the map. True
+        // while the menu is closing.
+        private static bool Fade()
+        {
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            CanvasGroup menu = uis != null && uis.fullMenu != null ? uis.fullMenu.canvasGroup : null;
+            if (_group != null && menu != null && !Mathf.Approximately(_group.alpha, menu.alpha))
+            {
+                _group.alpha = menu.alpha;
+            }
+            return uis != null && uis.fullMenu != null && !global::UI.Smartphone.FullMenu.IsOpen;
         }
 
         // Kept as found, so it goes back so: another mod may have set the layout's group too.
