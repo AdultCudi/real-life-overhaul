@@ -56,12 +56,18 @@ mixed with a few other games: the owner's choice of 1 November 2026. The rules a
    When a screen needs something no template has, add it to the kit as a reusable piece (a block, a component), with
    its sample and its checks, never as a one-off drawn in the screen.
 3. **A runner**: a class implementing `IUiScreen` (and `IUiTyping` for a search) that owns the model and answers the
-   presses. Register it in `UiScreens` with its template (`UiTemplate` names each one) and every key it labels with.
-4. **Samples**: add the screen's sample to `RealLifeOverhaul.Build/UiPreview/UiSamples.cs` (the prototype's are in
-   `UiSamples.Cs2.cs`), so EconomyCheck lays it out in every language and frame, with the keys, a pad and the mouse
-   leading, and `preview.ps1` renders it. EconomyCheck picks a screen's sample by its template (`UiCases` in
-   `UiChecks.cs`, where each template's own sample stands as a `template_` entry), so a screen whose page differs adds
-   its own case there, as the studio's and the population's do.
+   presses. Register it in `UiScreens` with its template (`UiTemplate` names each one) and every key it labels with,
+   in its area's file, `UiScreens.<Area>.cs` (`UiScreens.Contacts.cs`, `UiScreens.Kit.cs`, `UiScreens.Pages.cs`).
+4. **Samples**: add the screen's sample to its area's `RealLifeOverhaul.Build/UiPreview/UiSamples.<Area>.cs` (the
+   first screens' are in `UiSamples.cs`, the prototype's in `UiSamples.Cs2.cs`), so EconomyCheck lays it out in every
+   language and frame, with the keys, a pad and the mouse leading. EconomyCheck picks a screen's sample by its template
+   (`TemplateCases` in `UiChecks.cs`, where each template's own sample stands as a `template_` entry), so a screen
+   whose page differs adds its own cases in its area's `UiChecks.<Area>.cs`, as the studio's and the population's do in
+   `UiChecks.Pages.cs`. `preview.ps1` renders the entries of each area's `UiPreviewRunner.<Area>.cs`, each over the
+   game's picture it stands on (`Backdrop`; an entry without one stops the run).
+   Each area is a partial method in the three lists (`UiScreens.Gather`, `UiPreviewRunner.Screens`, `UiCases`), so
+   jobs on different areas never edit one file; a new area adds its line to the three lists. The registry parts and the
+   samples are linked into EconomyCheck by a pattern, so a new area's files need no line in its project.
 5. **A host**: the game file that shows it creates a `UiHost` over the full menu (as `ContactsKit` does). It binds it
    to the game's input (`UiGame`) and the motion setting. The look it still passes (`UiDirector.Dark`) changes nothing,
    as the kit has one look.

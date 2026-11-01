@@ -18,7 +18,7 @@ using UnityEngine.UI;
 /// shows it. Run (see preview.ps1):
 ///   Unity.exe -batchmode -quit -projectPath UiAssets/UnityProject -executeMethod UiPreviewRunner.Render -bundle path -out folder [-only prefix,prefix]
 /// </summary>
-public static class UiPreviewRunner
+public static partial class UiPreviewRunner
 {
     private const string Tag = "[UiPreview] ";
     private const float CanvasH = 2160f;
@@ -140,33 +140,92 @@ public static class UiPreviewRunner
         };
     }
 
-    // Every screen the kit draws, with its app's name, the target focus rests on and a walk of the d-pad for the path shot.
+    // Every screen the kit draws, gathered from each area's part (UiPreviewRunner.<Area>.cs) with its app's name, the target
+    // focus rests on, a walk of the d-pad for the path shot and the game's picture it stands over. Each area has a file of its
+    // own, so jobs on different areas never edit one list; an area with no file yet is a partial method nobody wrote, and
+    // the compiler drops its call. A new area adds its line to both lists below.
     private static List<Screen> Screens()
     {
-        var screens = new List<Screen>
+        var screens = new List<Screen>();
+        AddContacts(screens);
+        AddKit(screens);
+        AddPages(screens);
+        AddShell(screens);
+        AddPhone(screens);
+        AddGrids(screens);
+        AddHud(screens);
+        AddBizMan(screens);
+        AddEconoView(screens);
+        AddEmployees(screens);
+        AddPersona(screens);
+        AddActivity(screens);
+        AddBizOps(screens);
+        AddBuy(screens);
+        AddDialog(screens);
+        AddHudScreens(screens);
+        AddWorld(screens);
+        AddFlare(screens);
+        AddLife(screens);
+        AddMoney(screens);
+        AddNews(screens);
+        AddSettings(screens);
+        AddStocks(screens);
+        AddCompany(screens);
+        AddConstruction(screens);
+        AddEstate(screens);
+        AddTech(screens);
+        AddVentures(screens);
+        AddWork(screens);
+        AddDesigner(screens);
+        AddMap(screens);
+        AddOverlays(screens);
+        AddPause(screens);
+        AddSweep(screens);
+        foreach (Screen screen in screens)
         {
-            new Screen { Name = "contacts", AppName = "Contacts", Lay = (s, f, d, k) => UiListDetail.Lay(s, UiSamples.Contacts(English, false), f, d, k), FocusCommand = UiListDetail.Row, FocusArg = 4,
-                HoverCommand = UiListDetail.Row, HoverArg = 1, Walk = new[] { Up, Down, Down, Right, Up, Right, Down, Down, Left, Left, Left } },
-            new Screen { Name = "dashboard", AppName = "Economy", Lay = (s, f, d, k) => UiDashboard.Lay(s, UiSamples.Dashboard(English), f, d, k),
-                HoverCommand = UiDashboard.RowCommand, HoverArg = 2, Walk = new[] { Down, Down, Down, Right, Down, Left, Up, Up } },
-            new Screen { Name = "session", AppName = "Desk", Lay = (s, f, d, k) => UiSessionSteps.Lay(s, UiSamples.Session(English), f, d, k),
-                Walk = new[] { Down, Down, Down, Right, Left, Up } },
-            new Screen { Name = "form", AppName = "CityAds", Lay = (s, f, d, k) => UiForm.Lay(s, UiSamples.Form(English), f, d, k),
-                Walk = new[] { Down, Down, Down, Down, Right, Left } },
-        };
-        for (int page = 0; page < UiGallery.PageCount; page++)
-        {
-            int p = page;
-            screens.Add(new Screen { Name = "gallery_" + page, AppName = "Interface gallery", Lay = (s, f, d, k) => UiGallery.Lay(s, UiSamples.Gallery(English, p), f, d, k),
-                Walk = new[] { Down, Down, Right, Down, Right, Down, Left } });
-        }
-        foreach (UiSamples.Sample sample in UiSamples.Overhaul(English))
-        {
-            UiSamples.Sample x = sample;
-            screens.Add(new Screen { Name = x.Name, AppName = x.App, Lay = (s, f, d, k) => x.Lay(s, f, d, k), Walk = Moves(x.Walk), HoverCommand = UiDashboard.RowCommand, HoverArg = 1 });
+            if (string.IsNullOrEmpty(screen.Backdrop))
+            {
+                // A screen judged on black hides its glare and how the street's signs read behind it.
+                throw new InvalidOperationException(screen.Name + " has no backdrop: every screen stands over a picture of the game's world");
+            }
         }
         return screens;
     }
+
+    static partial void AddContacts(List<Screen> screens);
+    static partial void AddKit(List<Screen> screens);
+    static partial void AddPages(List<Screen> screens);
+    static partial void AddShell(List<Screen> screens);
+    static partial void AddPhone(List<Screen> screens);
+    static partial void AddGrids(List<Screen> screens);
+    static partial void AddHud(List<Screen> screens);
+    static partial void AddBizMan(List<Screen> screens);
+    static partial void AddEconoView(List<Screen> screens);
+    static partial void AddEmployees(List<Screen> screens);
+    static partial void AddPersona(List<Screen> screens);
+    static partial void AddActivity(List<Screen> screens);
+    static partial void AddBizOps(List<Screen> screens);
+    static partial void AddBuy(List<Screen> screens);
+    static partial void AddDialog(List<Screen> screens);
+    static partial void AddHudScreens(List<Screen> screens);
+    static partial void AddWorld(List<Screen> screens);
+    static partial void AddFlare(List<Screen> screens);
+    static partial void AddLife(List<Screen> screens);
+    static partial void AddMoney(List<Screen> screens);
+    static partial void AddNews(List<Screen> screens);
+    static partial void AddSettings(List<Screen> screens);
+    static partial void AddStocks(List<Screen> screens);
+    static partial void AddCompany(List<Screen> screens);
+    static partial void AddConstruction(List<Screen> screens);
+    static partial void AddEstate(List<Screen> screens);
+    static partial void AddTech(List<Screen> screens);
+    static partial void AddVentures(List<Screen> screens);
+    static partial void AddWork(List<Screen> screens);
+    static partial void AddDesigner(List<Screen> screens);
+    static partial void AddMap(List<Screen> screens);
+    static partial void AddOverlays(List<Screen> screens);
+    static partial void AddPause(List<Screen> screens);
+    static partial void AddSweep(List<Screen> screens);
 
     // A sample's walk of the d-pad, written as letters (U, D, L, R).
     private static Vector2Int[] Moves(string walk)
