@@ -1,15 +1,13 @@
-"""The interface's typefaces, from their pinned sources to what the build and the mod read.
+"""The interface's typeface, from its pinned source to what the build and the mod read.
 
-    python -I UiAssets/scripts/fonts.py            # build\\fonts and Scripts/Ui/UiFontMetrics.Data.cs
+    python -I UiAssets/scripts/fonts.py            # build\fonts and Scripts/Ui/UiFontMetrics.Data.cs
     python -I UiAssets/scripts/fonts.py --check    # fails if the committed metrics differ from the fonts
 
-The City Ledger (the owner's choice, 1 Nov 2026) sets its heads and messages in Source Serif 4 and its labels, buttons,
-prompts and figures in Libre Franklin. Both ship in UiAssets/fonts as Google Fonts publishes them (variable fonts, SIL
-Open Font License 1.1, OFL-*.txt beside them). TextMeshPro rasterises a variable font at its default instance only, so
-each face the type scale names is cut here as a static font (fontTools' instancer) into UiAssets/build/fonts, at its
-weight and, for Source Serif, at its optical size (the display cut for headlines, the text cut for reading), with the
-list of the characters its atlas holds: the scripts of the mod's eleven languages that the face covers (Latin, Latin
-Extended and Cyrillic in both).
+The interface is set in Overpass, the open face Cities: Skylines II uses (the owner's choice of direction, 1 Nov 2026,
+design/DIRECTION_CS2.md): Regular, SemiBold and Bold, as Red Hat publishes them (static fonts, SIL Open Font License 1.1,
+OFL-Overpass.txt beside them). Each weight is cut here into UiAssets/build/fonts with its figures made tabular, since
+TextMeshPro applies no OpenType features and a column of figures must line up, with the list of the characters its atlas
+holds: the scripts of the mod's eleven languages that the face covers (Latin, Latin Extended and Cyrillic).
 
 The same pass writes the faces' metrics (units per em, line metrics, every listed character's advance) into
 Scripts/Ui/UiFontMetrics.Data.cs. The kit lays text out with those numbers in the game and in EconomyCheck alike, so
@@ -32,21 +30,15 @@ SOURCES = os.path.join(ROOT, "UiAssets", "fonts")
 BUILD = os.path.join(ROOT, "UiAssets", "build", "fonts")
 METRICS = os.path.join(ROOT, "Assets", "Mods", "RealLifeOverhaul", "Scripts", "Ui", "UiFontMetrics.Data.cs")
 
-# google/fonts at the commit the files were taken from, and their SHA-256: a changed file is a new font, made on purpose.
-# "pin" holds the axes a face is cut at besides its weight.
+# Red Hat's Overpass repository at the commit the files were taken from, and their SHA-256: a changed file is a new font,
+# made on purpose. "tabular" swaps the figures for their tabular cuts in the character map.
 FAMILIES = [
-    {"name": "SerifDisplay", "file": "SourceSerif4[opsz,wght].ttf", "licence": "OFL-SourceSerif4",
-     "sha256": "97b2d4da6e3cb494b5a1e66ae176914d852ccabef49e0c02c0df25f3e39aca0b", "pin": {"opsz": 48},
-     "from": "google/fonts 6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec ofl/sourceserif4",
-     "weights": [(600, "SemiBold"), (700, "Bold")]},
-    {"name": "Serif", "file": "SourceSerif4[opsz,wght].ttf", "licence": "OFL-SourceSerif4",
-     "sha256": "97b2d4da6e3cb494b5a1e66ae176914d852ccabef49e0c02c0df25f3e39aca0b", "pin": {"opsz": 16},
-     "from": "google/fonts 6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec ofl/sourceserif4",
-     "weights": [(500, "Medium"), (700, "Bold")]},
-    {"name": "Franklin", "file": "LibreFranklin[wght].ttf", "licence": "OFL-LibreFranklin",
-     "sha256": "2329f394b10ed1c71107df20fddc11e2bb1b68c1ecbb385f975b36fd64a971f8",
-     "from": "google/fonts 6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec ofl/librefranklin",
-     "weights": [(600, "SemiBold"), (700, "Bold"), (800, "ExtraBold")]},
+    {"name": "Overpass", "licence": "OFL-Overpass", "tabular": True,
+     "from": "RedHatOfficial/Overpass c580d28bfab7f39013568e684a65eeb23eff588d fonts/ttf",
+     "files": {400: ("Overpass-Regular.ttf", "bf107d7ae99031c2193cd187acc9d4e5ebd45b6ea0e6845159ce68f87eb623aa"),
+               600: ("Overpass-SemiBold.ttf", "d72444ce96344d20cb4b0798dde08c45a8fd22b152e7dec03fc8da5d58ef1e9f"),
+               700: ("Overpass-Bold.ttf", "623f1f421fecc29095d76b3aa472c409e1b0b5db70ef2b3ba4b699546ce3d4af")},
+     "weights": [(400, "Regular"), (600, "SemiBold"), (700, "Bold")]},
 ]
 
 # The blocks an atlas takes what its face has of: the languages' letters, their punctuation, currency and the few
@@ -77,7 +69,10 @@ def cut(family):
             source = os.path.join(SOURCES, name)
             if sha256(source) != pinned:
                 raise SystemExit("FONTS: %s is not the pinned file" % name)
-            TTFont(source).save(path)
+            font = TTFont(source)
+            if family.get("tabular"):
+                tabular(font)
+            font.save(path)
         else:
             source = os.path.join(SOURCES, family["file"])
             got = sha256(source)
@@ -89,6 +84,24 @@ def cut(family):
             static.save(path)
         made.append((weight, path, TTFont(path)))
     return made
+
+
+def tabular(font):
+    """Writes the face's tnum substitutions into its character map, so its default figures are the tabular ones."""
+    swaps = {}
+    gsub = font["GSUB"].table
+    for record in gsub.FeatureList.FeatureRecord:
+        if record.FeatureTag != "tnum":
+            continue
+        for index in record.Feature.LookupListIndex:
+            for sub in gsub.LookupList.Lookup[index].SubTable:
+                swaps.update(getattr(sub, "mapping", None) or {})
+    if not swaps:
+        raise SystemExit("FONTS: the face has no tabular figures to swap in")
+    for table in font["cmap"].tables:
+        for code, glyph in list(table.cmap.items()):
+            if glyph in swaps:
+                table.cmap[code] = swaps[glyph]
 
 
 def characters(font):
