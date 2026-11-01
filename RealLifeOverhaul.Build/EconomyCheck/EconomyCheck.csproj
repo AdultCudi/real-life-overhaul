@@ -768,4 +768,26 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\Demand\CityDemand.cs" Link="Mod\Population\Demand\CityDemand.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Flare in the city (FlareResidentChecks.cs): residents who follow, hear and go where they heard good things; reviews, ads, the funnel, the save and the shared part, all game-free. -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityCatalogue.cs" Link="Mod\FlareCity\FlareCityCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityState.cs" Link="Mod\FlareCity\FlareCityState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.cs" Link="Mod\FlareCity\FlareCityRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Hear.cs" Link="Mod\FlareCity\FlareCityRules.Hear.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Attention.cs" Link="Mod\FlareCity\FlareCityRules.Attention.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Reviews.cs" Link="Mod\FlareCity\FlareCityRules.Reviews.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Voices.cs" Link="Mod\FlareCity\FlareCityRules.Voices.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Ads.cs" Link="Mod\FlareCity\FlareCityRules.Ads.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Player.cs" Link="Mod\FlareCity\FlareCityRules.Player.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Creator.cs" Link="Mod\FlareCity\FlareCityRules.Creator.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Studio.cs" Link="Mod\FlareCity\FlareCityRules.Studio.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Civic.cs" Link="Mod\FlareCity\FlareCityRules.Civic.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Trends.cs" Link="Mod\FlareCity\FlareCityRules.Trends.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Plan.cs" Link="Mod\FlareCity\FlareCityRules.Plan.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityPass.cs" Link="Mod\FlareCity\FlareCityPass.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityStore.cs" Link="Mod\FlareCity\FlareCityStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityViews.cs" Link="Mod\FlareCity\FlareCityViews.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityShare.cs" Link="Mod\FlareCity\FlareCityShare.cs" />
+  </ItemGroup>
+
 </Project>

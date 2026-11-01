@@ -194,6 +194,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--flare-city")
+        {
+            FlareResidentChecks();   // (Flare in the city alone, while working on it: FlareResidentChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--population")
         {
             PopulationChecks();   // (the city's population alone, while working on it: PopulationChecks.cs; RLO_POPULATION_REPORT=1 prints the figures)
@@ -751,6 +757,7 @@ internal static partial class Program
         Household();    // household staff: the kinds and their hours, wages from the going rate, the cook's dishes, candidates, unpaid visits, the save, money only through the game's call, the texts (HouseholdChecks.cs)
         HeavyLicence(); // the heavy goods licence: which trucks need it, the school's steps and waits, its save part, heavy loads on the courier round, the sources and texts (HeavyLicenceChecks.cs)
         PopulationChecks(); // the city's population: the measure, generation, a day with every cent placed, ten years, the labour market, the anchors, the costs (PopulationChecks.cs)
+        FlareResidentChecks();  // Flare in the city: residents who follow and hear, attention that moves people between rivals and never makes them, the lift, reviews from real customers, ads, the save, the costs (FlareResidentChecks.cs)
         PopDemandChecks();  // what the people bring the mod's own businesses: the measure, the anchor, ten years, the save, the shared part, the screens, the costs (PopDemandChecks.cs)
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;

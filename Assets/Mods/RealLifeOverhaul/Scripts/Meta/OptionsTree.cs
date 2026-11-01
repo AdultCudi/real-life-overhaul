@@ -246,6 +246,8 @@ namespace RealLifeOverhaul.Meta
                 S("flare").For("flare").Main("social_media")
                     .Opts("social_media_notices", "flare_busy", "flare_city_office", "flare_share_posts", "flare_share_pictures", "flare_filter", "flare_theme", "flare_pictures", "flare_city_photos")
                     .Also("social media app followers posts likes selfie influencer"),
+                S("flarecity").For("flare_city").Need("social_media").Opt("living_flare", "living_population")
+                    .Also("residents followers reach seen interested funnel visits takings reviews rating stars ads advertise target district age income interest attention pull"),
                 S("texts").For("texts").Main("texts").Opts("texts_device", "texts_threads", "texts_replies", "texts_posts", "texts_people", "texts_official", "texts_rivals", "texts_ledger")
                     .Buttons("reallife_texts_status").Also("model words messages replies comments texts gpu processor pack lite staff gossip memory language"),
                 S("textsai").For("textsai").Need("texts").Opts("texts_service")

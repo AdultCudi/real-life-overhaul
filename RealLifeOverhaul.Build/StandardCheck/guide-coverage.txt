@@ -13,6 +13,7 @@ crime	reallife_guide_crime	crime and police stops
 designs	reallife_guide_designs	ready-made designs
 desk-sessions	reallife_guide_living	desk sessions and the living economy's master option
 game-studio	reallife_guide_studio	the game studio rebuilt
+flare-city	reallife_guide_flare_city	Flare connected to the city's residents
 tech-firms	reallife_guide_firms	the other tech firms rebuilt: shared markets, rivals and desk sessions
 district-save	-	how the save keeps the mod's places: nothing a player sees
 districts	reallife_guide_districtview	the district view

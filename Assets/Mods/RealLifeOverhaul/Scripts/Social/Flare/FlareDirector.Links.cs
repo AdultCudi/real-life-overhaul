@@ -14,7 +14,7 @@ namespace RealLifeOverhaul.Flare
         private void Influence(FlarePost p, FlareDraft d)
         {
             int day = p.Day;
-            int buzz = FlareRules.BuzzOf(p);
+            int buzz = CityOn ? 0 : FlareRules.BuzzOf(p);   // with the residents' side on, the post was heard by them (CityPlayerPost) and moves people itself
             if (buzz != 0 && FlareLiveRules.FirstToday(_file.Net, day, FlareLiveRules.TalkKey(p.Place)))   // a business is talked about once a day, however many posts
             {
                 int now = FlareRules.AddBuzz(_file, p.Place, buzz, day, FlareRules.BuzzDays);
@@ -131,7 +131,9 @@ namespace RealLifeOverhaul.Flare
             int day = SaveGameManager.Current.Day;
             string district = d._file.Net.Watches.Count > 0 ? GameRegistrations.District(reg) : null;
             int clean = district != null && d._file.Net.WatchIn(district, day, FlareOrder.Cleanup) != FlareOrder.None ? FlareLiveRules.CleanFootfall : 0;
-            return FlareRules.Footfall(d._file.Buzz.Count > 0 ? d._file.BuzzAt(FlareGame.Place(reg), day) : 0, clean);
+            int talk = d._file.Buzz.Count > 0 ? d._file.BuzzAt(FlareGame.Place(reg), day) : 0;
+            // With the residents' side on, Flare's talk is the population's attention (FlareDirector.Residents): only a clean street and a deal's late first day stay here.
+            return FlareRules.Footfall(d.CityOn ? Math.Min(0, talk) : talk, clean);
         }
 
         /// <summary>For brands: how a scandal at a shop spreads, thousandths of its loss, by the account's reputation.</summary>
@@ -147,6 +149,8 @@ namespace RealLifeOverhaul.Flare
             if (Running)
             {
                 FlareBridges.MarketBuzz?.Invoke(place, -1);   // the talk reaches the market for its trade
+                int day = Save != null ? Save.Day : 0;
+                CityTalk(place, -1, null, 5000000 + day, FlareRules.Roll(_file.Seed, day, 866));   // the district hears it and stays away until it is answered
             }
         }
 
@@ -194,6 +198,10 @@ namespace RealLifeOverhaul.Flare
         /// <summary>For the council: what the account's word adds to an endorsement, thousandths of the most it may.</summary>
         public int EndorseShare()
         {
+            if (CityOn && _city.Indexed >= 0)
+            {
+                return FlareCityRules.EndorseShare(_city.CityFollowers, FlareCityRules.AdultsOf(_city), _file.Reputation);   // the city's voters who follow the player
+            }
             return Running ? FlareRules.EndorseShare(_file.Followers, _file.Reputation) : 0;
         }
     }

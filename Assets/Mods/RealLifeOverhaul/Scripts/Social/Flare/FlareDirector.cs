@@ -58,7 +58,9 @@ namespace RealLifeOverhaul.Flare
             _openBusinessTab = () => Open(TabBusiness);
             _openMessages = () => Open(TabMessages);
             _openCompose = () => Open(TabPost);
+            _cityStep = CityStep;
             ShareRegister();
+            CityShareRegister();   // Flare in the city's own part (FlareDirector.Residents)
             FlareFacePainter.HoldAtLoad();   // the likeliest faces are drawn while the loading screen is up (Core/LoadHold)
             StartCoroutine(Guard.Routine(Tick()));
         }
@@ -143,6 +145,7 @@ namespace RealLifeOverhaul.Flare
                 PhotosSecond();
                 CommentsSecond();   // a comment's words came back: the next is asked; one comparison otherwise
             }
+            CitySecond();   // the residents' side (FlareDirector.Residents): started, stood down or brought to the day; a few comparisons otherwise
         }
 
         private void StartUp()
@@ -196,6 +199,7 @@ namespace RealLifeOverhaul.Flare
                 FinishDay();
                 FlareStore.Save(Save.modData, _file);
             }
+            CityStop(keep, "Flare stands down");
             _dayStep = -1;
             _hourSteps.Clear();
             ShareStop();
@@ -237,6 +241,7 @@ namespace RealLifeOverhaul.Flare
         /// <summary>For the options page: everything of Flare's for this save is forgotten, and a new account opens on the next second.</summary>
         public void Forget()
         {
+            ForgetCity();
             _running = false;
             _file = null;
             ForgetAsked();
@@ -391,6 +396,7 @@ namespace RealLifeOverhaul.Flare
                     break;
                 case FlareHourSteps.Milestones:
                     Milestones(day, hour);
+                    PlanHour(day, hour);   // this week's content plan: its post due, a storm answered (FlareDirector.Desk)
                     break;
                 default:
                     LiveHour(day, hour, step);   // the cases, the invitations, the unread count, the words (FlareDirector.Live)
@@ -721,6 +727,7 @@ namespace RealLifeOverhaul.Flare
                     FinishHours();   // the save holds every hour that has begun, done
                     FinishDay();     // and the day that has turned
                     FlareStore.Save(Save.modData, _file);
+                    CitySave();      // the residents' side, its own line
                 }
             }
             catch (Exception e)

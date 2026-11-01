@@ -10,7 +10,7 @@ namespace RealLifeOverhaul.Flare
     public sealed partial class FlareApp
     {
         private const float SheetMost = 1400f, ChipHeight = 60f;   // canvas units
-        private const int SheetNone = 0, SheetCompose = 1, SheetHire = 2;
+        private const int SheetNone = 0, SheetCompose = 1, SheetHire = 2, SheetAd = 3;
 
         private Image _shade, _sheet, _close, _field, _picBack, _picRemove, _camera, _selfie, _latest, _send;
         private TextMeshProUGUI _sheetTitle, _fieldText, _counter, _preview, _why, _sendLabel;
@@ -236,7 +236,7 @@ namespace RealLifeOverhaul.Flare
             }
             _chipsUsed = _labelsUsed = 0;
             float width = _sheetView.rect.width;
-            float y = _sheetKind == SheetHire ? WriteHire(file, width) : WriteCompose(file, width);
+            float y = _sheetKind == SheetHire ? WriteHire(file, width) : _sheetKind == SheetAd ? WriteAd(width) : WriteCompose(file, width);
             for (int i = _chipsUsed; i < _chips.Count; i++)
             {
                 FlareKit.Show(_chips[i].Back, false);
@@ -409,6 +409,11 @@ namespace RealLifeOverhaul.Flare
 
         private void SendClicked()
         {
+            if (_sheetKind == SheetAd)
+            {
+                AdSend();   // FlareApp.City
+                return;
+            }
             if (_sheetKind == SheetHire)
             {
                 int who = (FlareDeal)_hireDeal != FlareDeal.Plan ? _hireWho : -1;
