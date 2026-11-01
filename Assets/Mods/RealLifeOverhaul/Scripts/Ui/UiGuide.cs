@@ -20,6 +20,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_test_text_box", "reallife_ui_test_mod_box", "reallife_ui_test_notices", "reallife_ui_test_contacts_switch")
                 .Test("reallife_phone_test_second", "reallife_phone_test_kit_folder", "reallife_phone_test_classic")
                 .Test("reallife_ui_test_employees", "reallife_ui_test_employee_page", "reallife_ui_test_employees_switch")
+                .Test("reallife_ui_test_econoview", "reallife_ui_test_econoview_loans", "reallife_ui_test_econoview_switch")
                 .Cleanup(() => UiDirector.RemoveAll("cleaned up"), 0);
         }
     }
