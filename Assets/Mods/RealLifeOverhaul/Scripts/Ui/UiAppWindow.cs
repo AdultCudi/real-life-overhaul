@@ -2,7 +2,7 @@ using System;
 
 namespace RealLifeOverhaul.Ui
 {
-    /// <summary>An entry of an app window's sidebar: its icon in its colour, its name and a count.</summary>
+    /// <summary>An entry of an app window's sections: its icon in its colour, its name and a count.</summary>
     public struct UiNavEntry
     {
         public UiIcon Icon;
@@ -36,17 +36,60 @@ namespace RealLifeOverhaul.Ui
         public int Second;
     }
 
-    /// <summary>What an app window shows: its sidebar, its next step and actions, its figures, a table and a list of people.</summary>
+    /// <summary>A person's head on a page, Football Manager's: the face and its ring, the name, the role, a state, the key facts and a rating.</summary>
+    public sealed class UiProfileModel
+    {
+        public string Name;
+        public float Hue;
+        public UiRole Ring = UiRole.Ok;
+        public string Role;                        // "Customer service at Bloom Cafe"
+        public UiIcon RoleIcon = UiIcon.Briefcase;
+        public UiRole RoleTint = UiRole.CatOffice;
+        public string Status;                      // a chip beside the role ("At work"); null for none
+        public UiRole StatusTone = UiRole.Ok;
+        public string[] FactLabels = new string[0];
+        public string[] FactValues = new string[0];
+        public string RatingLabel;                 // "Ability"
+        public int Rating = -1;                    // halves of five stars, 0 to 10, or -1 for none
+    }
+
+    /// <summary>
+    /// The one thing a page is about, put first as a game puts it (the game in development, the shop being fitted): its
+    /// picture on a large tile, what it is, its name, where it stands as a bar, and when the next step comes.
+    /// </summary>
+    public sealed class UiHeroModel
+    {
+        public UiIcon Icon;
+        public UiRole Tint;                         // None for the icon's own colour
+        public string Kicker;                       // "In development"
+        public string Title;                        // "Cinder Valley"
+        public string Line;                         // "Simulation, 64% made"
+        public int Progress = -1;                   // 0 to 100, or -1 for no bar
+        public string Note;                         // "Playtest in 6 days"
+        public UiIcon NoteIcon = UiIcon.Calendar;
+    }
+
+    /// <summary>
+    /// What an app window shows: its sections, then a page of the blocks it holds, each left out when empty: a person's
+    /// head or the next step, the actions, the hero beside the figures, graded attributes, a table and a second under it,
+    /// and people.
+    /// </summary>
     public sealed class UiAppModel
     {
         public string Title;
         public UiIcon Icon = UiIcon.Grid;
         public UiNavEntry[] Nav = new UiNavEntry[0];
         public int NavSelected;
-        public string Next;                         // the next step, a sentence
+        public bool TabsAcross;                     // the sections as icon tabs across the top, as an app of a few has them; the sidebar otherwise
+        public UiProfileModel Profile;              // a person's head at the top of the page, with the actions at its right
+        public string Next;                         // the next step, a sentence (a page without a head)
         public UiRole NextTone = UiRole.Accent;
         public UiActionModel[] Actions = new UiActionModel[0];
+        public UiHeroModel Hero;                    // the page's one thing, beside the figures, which then take a third
         public UiFigureModel[] Figures = new UiFigureModel[0];
+        public string AttributesTitle;
+        public string[] AttributeLabels = new string[0];
+        public int[] AttributeValues = new int[0];  // 0 to 100, each graded from red to green
         public string TableTitle;
         public UiColumn[] Columns = new UiColumn[0];
         public int GradeColumn = -1;                // the column whose figure is coloured by its grade
@@ -58,6 +101,7 @@ namespace RealLifeOverhaul.Ui
         public string PeopleTitle;
         public string PeopleCount;
         public UiPersonRow[] People = new UiPersonRow[0];
+        public string PeopleMore;                   // a link under the people to the rest of them ("See all 12 in Team"); null for none
         public string Note;                         // a quiet line under the people (what a group needs and how to fill it)
         public UiRole NoteTone = UiRole.Warn;
         public UiPrompt[] Prompts = new UiPrompt[0];
@@ -65,49 +109,58 @@ namespace RealLifeOverhaul.Ui
     }
 
     /// <summary>
-    /// The app window, after Cities: Skylines II's large windows with Football Manager's sidebar (design/DIRECTION_CS2.md,
-    /// section 4.3): a centred window with the city round it, a sidebar of the app's sections as tinted icons, then the
-    /// page: its next step and its actions, its figures on a band, a table whose rows lead with an icon in their own colour
-    /// and grade their figure from red to green, and a list of people with their faces and graded attributes. Commands:
-    /// <see cref="NavCommand"/>, <see cref="RowCommand"/>, <see cref="PersonCommand"/> and <see cref="ActionCommand"/>
+    /// The app window, after Cities: Skylines II's large windows with Football Manager's sidebar and profile
+    /// (design/DIRECTION_CS2.md, sections 4.3 and 4.4): a centred window with the city round it, the app's sections as a
+    /// sidebar of tinted icons or as icon tabs across the top, then a page of blocks. <see cref="Shell"/> draws the
+    /// window and its sections and gives the page's room, and the blocks (<see cref="Profile"/>, <see cref="Lead"/>,
+    /// <see cref="Figures"/>, <see cref="Attributes"/>, <see cref="Table"/>, <see cref="People"/>) are public, so an app
+    /// whose page is shaped otherwise lays out its own from the same parts. Commands: <see cref="NavCommand"/>,
+    /// <see cref="RowCommand"/>, <see cref="PersonCommand"/>, <see cref="ActionCommand"/> and <see cref="MoreCommand"/>
     /// (an index each). Game-free. Cost: a layout a change.
     /// </summary>
     public static class UiAppWindow
     {
-        public const int NavCommand = 1, RowCommand = 2, PersonCommand = 3, ActionCommand = 4, MoreCommand = 5;
-        public const float Sidebar = 232f;    // px
-        private const float NavRow = 48f;     // px: a sidebar entry, its tile centred on the grid
-        private const float Row = 40f;        // px: a table's row with its icon tile
-        private const float PersonRow = 60f;  // px: a person with a face and two bars
+        public const int NavCommand = 1, RowCommand = 2, PersonCommand = 3, ActionCommand = 4, MoreCommand = 5, AllCommand = 6;
+        public const float Sidebar = 232f;          // px
+        private const float NavRow = 48f;           // px: a section's entry or tab, its tile centred on the grid
+        private const float Row = 40f;              // px: a table's row with its icon tile
+        private const float PersonRow = 60f;        // px: a person with a face and two bars
         private const float PeopleShare = 0.4f;
+        private const float AttributeColumn = 280f; // px: the least an attribute's column takes before the bars run in fewer
+        private const int MostFacts = 4;
+        private const float HeroTile = 72f;         // px: the hero's picture
+        private const float FigureShare = 0.32f;    // of the width, the figures' beside a hero
 
         public static void Lay(UiScene s, UiAppModel m, UiFrame frame, bool dark, IUiKeys keys)
         {
             s.Begin("app window", frame.Width, frame.Height, dark);
-            frame.Icon = m.Icon;
-            int win = UiDraw.Window(s, frame, m.Title, keys);
-            UiAt at = UiAt.Screen.In(win);
-            frame.Window(out float wx, out float wy, out float ww, out float wh);
-            float top = wy + UiFrame.Strip, h = wh - UiFrame.Strip;
-            if (m.Nav.Length > 0)
+            UiAt at = Shell(s, frame, m.Title, m.Icon, m.Nav, m.NavSelected, m.TabsAcross, keys, out float x, out float y, out float w, out float bottom);
+            y = m.Profile != null ? Profile(s, at, m.Profile, m.Actions, x, y, w, keys) : Lead(s, at, m.Next, m.NextTone, m.Actions, x, y, w, keys);
+            if (m.Hero != null)
             {
-                Nav(s, at, m, wx, top, h);
+                float fw = m.Figures.Length > 0 ? UiDraw.SnapDown(w * FigureShare) : 0f;
+                float hh = Hero(s, at, m.Hero, x, y, fw > 0f ? w - fw - UiTokens.S4 : w);
+                if (fw > 0f)
+                {
+                    Figures(s, at, m.Figures, x + w - fw, y, fw, hh);
+                }
+                y += hh + UiTokens.S5;
             }
-            float x = wx + (m.Nav.Length > 0 ? Sidebar : 0f) + UiTokens.S5, w = wx + ww - UiTokens.S5 - x;
-            float y = top + UiTokens.S4;
-            y = Lead(s, at, m, x, y, w, keys);
-            y = Figures(s, at, m, x, y, w);
-            float bottom = wy + wh - UiTokens.S4;
+            else
+            {
+                y = Figures(s, at, m.Figures, x, y, w);
+            }
+            y = Attributes(s, at, m.AttributesTitle, m.AttributeLabels, m.AttributeValues, x, y, w);
             float pw = m.People.Length > 0 ? UiDraw.SnapDown(w * PeopleShare) : 0f;
             float tw = m.People.Length > 0 ? w - pw - UiTokens.S6 : w;
-            float under = Table(s, at, m.TableTitle, m.Columns, m.GradeColumn, m.Rows, RowCommand, x, y, tw, bottom - y);
+            float under = m.Columns.Length > 0 ? Table(s, at, m.TableTitle, m.Columns, m.GradeColumn, m.Rows, RowCommand, x, y, tw, bottom - y) : y;
             if (m.MoreRows.Length > 0 && bottom - under > UiTokens.S16 * 2f)
             {
                 Table(s, at, m.MoreTitle, m.MoreColumns, m.MoreGrade, m.MoreRows, MoreCommand, x, under + UiTokens.S6, tw, bottom - under - UiTokens.S6);
             }
             if (m.People.Length > 0)
             {
-                People(s, at, m, x + tw + UiTokens.S6, y, pw, bottom - y);
+                People(s, at, m.PeopleTitle, m.PeopleCount, m.People, m.PeopleMore, m.Note, m.NoteTone, x + tw + UiTokens.S6, y, pw, bottom - y);
             }
             for (int i = 0; i < m.PromptCount; i++)
             {
@@ -116,76 +169,255 @@ namespace RealLifeOverhaul.Ui
             UiDraw.PromptBar(s, frame, keys);
         }
 
-        // The sections down the left on a darker band, each a tinted icon on its tile, its name and its count; the shown one
-        // in the cyan at a fifth with its bar, as a management game's menu.
-        private static void Nav(UiScene s, UiAt at, UiAppModel m, float x, float y, float h)
+        /// <summary>
+        /// The window over the city with its strip, and the app's sections: down a sidebar, or across the top as icon tabs
+        /// when asked and they fit (a longer translation takes the sidebar instead). Returns the window to lay the page in,
+        /// with the page's room: its left, top, width and the bottom it ends at.
+        /// </summary>
+        public static UiAt Shell(UiScene s, UiFrame frame, string title, UiIcon icon, UiNavEntry[] nav, int selected, bool across, IUiKeys keys,
+            out float x, out float y, out float w, out float bottom)
         {
+            frame.Icon = icon;
+            int win = UiDraw.Window(s, frame, title, keys);
+            UiAt at = UiAt.Screen.In(win);
+            frame.Window(out float wx, out float wy, out float ww, out float wh);
+            float top = wy + UiFrame.Strip;
+            bool side = nav != null && nav.Length > 0;
+            int shown = -1;
+            if (side && across && TabsFit(nav, ww - UiTokens.S2 * 2f))
+            {
+                top = Tabs(s, at, nav, selected, wx, top, ww, out shown);
+                side = false;
+            }
+            else if (side)
+            {
+                Nav(s, at, nav, selected, wx, top, wh - UiFrame.Strip, out shown);
+            }
+            if (shown >= 0)
+            {
+                s.FocusFirst = shown;   // the keys start on the section in view, never on the close
+            }
+            x = wx + (side ? Sidebar : 0f) + UiTokens.S5;
+            w = wx + ww - UiTokens.S5 - x;
+            y = top + UiTokens.S4;
+            bottom = wy + wh - UiTokens.S4;
+            return at;
+        }
+
+        // The sections down the left on a darker band, each its icon in its colour on a tile, its name and its count; the
+        // shown one in the cyan at a fifth with its tile filled cyan, as a management game's menu.
+        private static void Nav(UiScene s, UiAt at, UiNavEntry[] nav, int selected, float x, float y, float h, out int shownNode)
+        {
+            shownNode = -1;
             UiDraw.Band(s, at, x, y, Sidebar, h);
             float ny = y + UiTokens.S3;
-            for (int i = 0; i < m.Nav.Length; i++)
+            for (int i = 0; i < nav.Length; i++)
             {
-                bool shown = i == m.NavSelected;
+                bool shown = i == selected;
                 float ex = x + UiTokens.S2, ew = Sidebar - UiTokens.S4;
                 int face = UiDraw.Box(s, at, ex, ny, ew, NavRow, shown ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusLarge, shown ? UiFlags.Selected : UiFlags.None);
                 UiAt inside = at.In(face);
-                if (shown)
-                {
-                    UiDraw.Box(s, inside, ex, ny + UiTokens.S2, UiTokens.SelectBar, NavRow - UiTokens.S4, UiRole.Accent, UiRole.None, UiTokens.SelectBar / 2f);
-                }
                 float tile = UiTokens.ControlSmall;
-                int t = UiDraw.Tile(s, inside, ex + UiTokens.S3, ny + (NavRow - tile) / 2f, tile, m.Nav[i].Tint, shown);   // the shown section's tile in the cyan, as a game marks the tool in hand
+                int t = UiDraw.Tile(s, inside, ex + UiTokens.S3, ny + (NavRow - tile) / 2f, tile, nav[i].Tint, shown);   // the shown section's tile in the cyan, as a game marks the tool in hand
                 float g = UiTokens.Icon;
-                UiDraw.Icon(s, inside.In(t), ex + UiTokens.S3 + (tile - g) / 2f, ny + (NavRow - g) / 2f, g, m.Nav[i].Icon, shown ? UiRole.OnAccent : m.Nav[i].Tint,
+                UiDraw.Icon(s, inside.In(t), ex + UiTokens.S3 + (tile - g) / 2f, ny + (NavRow - g) / 2f, g, nav[i].Icon, shown ? UiRole.OnAccent : nav[i].Tint,
                     UiFlags.Middle | UiFlags.Centre, true);
-                float cw = string.IsNullOrEmpty(m.Nav[i].Count) ? 0f : UiTextRules.Width(m.Nav[i].Count, UiStyle.Small) + UiTokens.S1;
+                float cw = string.IsNullOrEmpty(nav[i].Count) ? 0f : UiTextRules.Width(nav[i].Count, UiStyle.Small) + UiTokens.S1;
                 float lx = ex + UiTokens.S3 + tile + UiTokens.S3;
-                UiDraw.TextMiddle(s, inside, lx, ny, NavRow, ex + ew - UiTokens.S3 - cw - UiTokens.S2 - lx, UiStyle.Nav, shown ? UiRole.AccentText : UiRole.Text, m.Nav[i].Label,
+                UiDraw.TextMiddle(s, inside, lx, ny, NavRow, ex + ew - UiTokens.S3 - cw - UiTokens.S2 - lx, UiStyle.Nav, shown ? UiRole.AccentText : UiRole.Text, nav[i].Label,
                     UiFlags.Label | UiFlags.Truncate);
                 if (cw > 0f)
                 {
-                    UiDraw.TextMiddle(s, inside, ex + ew - UiTokens.S3 - cw, ny, NavRow, cw, UiStyle.Small, UiRole.Muted, m.Nav[i].Count, UiFlags.Right);
+                    UiDraw.TextMiddle(s, inside, ex + ew - UiTokens.S3 - cw, ny, NavRow, cw, UiStyle.Small, UiRole.Muted, nav[i].Count, UiFlags.Right);
                 }
-                UiDraw.Node(s, at, ex, ny, ew, NavRow, NavCommand, i, face);
+                int node = UiDraw.Node(s, at, ex, ny, ew, NavRow, NavCommand, i, face);
+                shownNode = shown ? node : shownNode;
                 ny += NavRow + UiTokens.S1;
             }
         }
 
-        // The next step at the left with its icon, the actions at the right, the primary last. Returns the y under it.
-        private static float Lead(UiScene s, UiAt at, UiAppModel m, float x, float y, float w, IUiKeys keys)
+        // The sections across the top on the band, each its icon in its colour on a tile, its name and its count; the shown
+        // one filled cyan with dark words, as Cities: Skylines II marks the tool in hand. Returns the y under them.
+        private static float Tabs(UiScene s, UiAt at, UiNavEntry[] nav, int selected, float x, float y, float w, out int shownNode)
         {
-            if (string.IsNullOrEmpty(m.Next) && m.Actions.Length == 0)
+            shownNode = -1;
+            float h = NavRow + UiTokens.S2 * 2f;
+            UiDraw.Band(s, at, x, y, w, h);
+            float tx = x + UiTokens.S2, ty = y + UiTokens.S2;   // the first tile then stands level with the page's left edge
+            for (int i = 0; i < nav.Length; i++)
+            {
+                bool shown = i == selected;
+                float tw = TabWidth(nav[i], out float lw, out float cw);
+                int face = UiDraw.Box(s, at, tx, ty, tw, NavRow, shown ? UiRole.Accent : UiRole.None, UiRole.None, UiTokens.RadiusLarge, shown ? UiFlags.Selected : UiFlags.None);
+                UiAt inside = at.In(face);
+                float tile = UiTokens.ControlSmall;
+                int t = UiDraw.Tile(s, inside, tx + UiTokens.S3, ty + (NavRow - tile) / 2f, tile, nav[i].Tint, shown);
+                float g = UiTokens.Icon;
+                UiDraw.Icon(s, inside.In(t), tx + UiTokens.S3 + (tile - g) / 2f, ty + (NavRow - g) / 2f, g, nav[i].Icon, shown ? UiRole.OnAccent : nav[i].Tint,
+                    UiFlags.Middle | UiFlags.Centre, true);
+                float lx = tx + UiTokens.S3 + tile + UiTokens.S3;
+                UiDraw.TextMiddle(s, inside, lx, ty, NavRow, lw, UiStyle.Nav, shown ? UiRole.OnAccent : UiRole.Text, nav[i].Label, UiFlags.Label);
+                if (cw > 0f)
+                {
+                    UiDraw.TextMiddle(s, inside, lx + lw + UiTokens.S2, ty, NavRow, cw, UiStyle.Small, shown ? UiRole.OnAccent : UiRole.Muted, nav[i].Count, UiFlags.None);
+                }
+                int node = UiDraw.Node(s, at, tx, ty, tw, NavRow, NavCommand, i, face);
+                shownNode = shown ? node : shownNode;
+                tx += tw + UiTokens.S1;
+            }
+            return y + h;
+        }
+
+        // A tab's width on the grid: its tile, its name and its count, with the name's and the count's own widths.
+        private static float TabWidth(UiNavEntry e, out float label, out float count)
+        {
+            label = UiDraw.Snap(UiTextRules.Width(e.Label, UiStyle.Nav) + UiTokens.S1);
+            count = string.IsNullOrEmpty(e.Count) ? 0f : UiDraw.Snap(UiTextRules.Width(e.Count, UiStyle.Small) + UiTokens.S1);
+            return UiTokens.S3 + UiTokens.ControlSmall + UiTokens.S3 + label + (count > 0f ? UiTokens.S2 + count : 0f) + UiTokens.S4;
+        }
+
+        private static bool TabsFit(UiNavEntry[] nav, float w)
+        {
+            float sum = 0f;
+            for (int i = 0; i < nav.Length; i++)
+            {
+                sum += TabWidth(nav[i], out _, out _) + (i > 0 ? UiTokens.S1 : 0f);
+            }
+            return sum <= w;
+        }
+
+        /// <summary>The next step at the left with its icon, the actions at the right, the primary last. Returns the y under it.</summary>
+        public static float Lead(UiScene s, UiAt at, string next, UiRole tone, UiActionModel[] actions, float x, float y, float w, IUiKeys keys)
+        {
+            if (string.IsNullOrEmpty(next) && (actions == null || actions.Length == 0))
             {
                 return y;
             }
             float h = UiTokens.Control;
-            float right = x + w;
-            for (int i = m.Actions.Length - 1; i >= 0; i--)
+            float right = Buttons(s, at, actions, x + w, y, keys);
+            if (!string.IsNullOrEmpty(next))
             {
-                ref UiActionModel a = ref m.Actions[i];
-                float bw = UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, a.Key, keys);
-                right -= bw;
-                UiDraw.Button(s, at, right, y, bw, h, a.Kind, a.Label, a.Icon, a.Key, keys, ActionCommand, i, a.Disabled);
-                right -= UiTokens.S3;
-            }
-            if (!string.IsNullOrEmpty(m.Next))
-            {
-                UiDraw.Icon(s, at, x, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Lightbulb, m.NextTone, UiFlags.Middle, true);
-                UiDraw.TextMiddle(s, at, x + UiTokens.Icon + UiTokens.S2, y, h, right - UiTokens.S6 - x - UiTokens.Icon - UiTokens.S2, UiStyle.BodyStrong, UiRole.Text, m.Next,
+                UiDraw.Icon(s, at, x, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Lightbulb, tone, UiFlags.Middle, true);
+                UiDraw.TextMiddle(s, at, x + UiTokens.Icon + UiTokens.S2, y, h, right - UiTokens.S6 - x - UiTokens.Icon - UiTokens.S2, UiStyle.BodyStrong, UiRole.Text, next,
                     UiFlags.Label | UiFlags.Truncate);
             }
             return y + h + UiTokens.S4;
         }
 
-        // The figures across a band, each its label in capitals over its number, a hairline between, a figure's line beside it.
-        private static float Figures(UiScene s, UiAt at, UiAppModel m, float x, float y, float w)
+        // The actions as buttons ending at a right edge, the primary last. Returns the left edge of the first.
+        private static float Buttons(UiScene s, UiAt at, UiActionModel[] actions, float right, float y, IUiKeys keys)
         {
-            int count = Math.Min(m.Figures.Length, 4);
+            for (int i = (actions == null ? 0 : actions.Length) - 1; i >= 0; i--)
+            {
+                ref UiActionModel a = ref actions[i];
+                float bw = UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, a.Key, keys);
+                right -= bw;
+                UiDraw.Button(s, at, right, y, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, ActionCommand, i, a.Disabled);
+                right -= UiTokens.S3;
+            }
+            return right;
+        }
+
+        /// <summary>
+        /// A person's head as Football Manager draws it: the face in its ring, the name, the role behind its badge with a
+        /// state chip, the key facts as labels over values, the rating in stars at the right, and the actions at the top
+        /// right. Returns the y under it.
+        /// </summary>
+        public static float Profile(UiScene s, UiAt at, UiProfileModel p, UiActionModel[] actions, float x, float y, float w, IUiKeys keys)
+        {
+            float ring = UiTokens.S1, face = UiTokens.AvatarHero, side = face + ring * 2f;
+            UiDraw.Portrait(s, at, x + ring, y + ring, face, p.Name, p.Hue, p.Ring);
+            float right = Buttons(s, at, actions, x + w, y, keys);
+            float tx = x + side + UiTokens.S5;
+            float nameH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Hero));
+            float ty = y + UiTokens.S1;
+            UiDraw.Text(s, at, tx, ty, right - UiTokens.S6 - tx, UiStyle.Hero, UiRole.Text, p.Name, UiFlags.Truncate);
+            ty += nameH + UiTokens.S1;
+            float rh = UiTokens.PairRow;
+            UiDraw.Icon(s, at, tx, ty + (rh - UiTokens.Icon) / 2f, UiTokens.Icon, p.RoleIcon, p.RoleTint, UiFlags.Middle, true);
+            float rx = tx + UiTokens.Icon + UiTokens.S2;
+            float chip = string.IsNullOrEmpty(p.Status) ? 0f : UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(p.Status, UiStyle.SmallStrong) + UiTokens.S1);
+            float rw = Math.Min(UiDraw.Snap(UiTextRules.Width(p.Role ?? string.Empty, UiStyle.Body) + UiTokens.S1), UiDraw.SnapDown(right - UiTokens.S6 - rx - (chip > 0f ? chip + UiTokens.S3 : 0f)));
+            UiDraw.TextMiddle(s, at, rx, ty, rh, rw, UiStyle.Body, UiRole.Text2, p.Role, UiFlags.Truncate);
+            if (chip > 0f)
+            {
+                UiDraw.Chip(s, at, rx + rw + UiTokens.S3, ty + (rh - UiTokens.Badge - UiTokens.S1) / 2f, p.Status, p.StatusTone);
+            }
+            ty += rh + UiTokens.S3;
+            float labelH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1;
+            float factsH = labelH + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title));
+            float starsW = p.Rating >= 0 ? UiDraw.Snap(5f * UiTokens.Icon + 8f * UiTokens.Hairline) : 0f;
+            float factsRight = x + w - (starsW > 0f ? starsW + UiTokens.S8 : 0f);
+            int count = Math.Min(MostFacts, Math.Min(p.FactLabels.Length, p.FactValues.Length));
+            float slot = count > 0 ? UiDraw.SnapDown((factsRight - tx) / count) : 0f;
+            for (int i = 0; i < count; i++)
+            {
+                float fx = tx + i * slot;
+                UiDraw.Text(s, at, fx, ty, slot - UiTokens.S4, UiStyle.SectionHeader, UiRole.Text2, p.FactLabels[i], UiFlags.Label | UiFlags.Truncate);
+                UiDraw.Text(s, at, fx, ty + labelH, slot - UiTokens.S4, UiStyle.Title, UiRole.Text, p.FactValues[i], UiFlags.Truncate);
+            }
+            if (starsW > 0f)
+            {
+                float sx = x + w - starsW;
+                UiDraw.Text(s, at, sx, ty, starsW, UiStyle.SectionHeader, UiRole.Text2, p.RatingLabel, UiFlags.Label | UiFlags.Truncate);
+                UiDraw.Stars(s, at, sx, ty + labelH, UiTokens.Icon, p.Rating);
+            }
+            return y + UiDraw.Snap(Math.Max(side, ty + factsH - y)) + UiTokens.S6;
+        }
+
+        /// <summary>
+        /// The page's one thing on a band: its picture on a large tile in its colour, what it is in capitals, its name, a
+        /// line under it, where it stands as a graded bar, and when the next step comes at the right. Returns its height.
+        /// </summary>
+        public static float Hero(UiScene s, UiAt at, UiHeroModel hero, float x, float y, float w)
+        {
+            float h = UiTokens.S4 * 2f + HeroTile;
+            UiDraw.Box(s, at, x, y, w, h, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
+            float tx = x + UiTokens.S4, ty = y + UiTokens.S4;
+            int tile = UiDraw.Tile(s, at, tx, ty, HeroTile, hero.Tint, false);
+            float g = UiTokens.S10;
+            UiDraw.Icon(s, at.In(tile), tx + (HeroTile - g) / 2f, ty + (HeroTile - g) / 2f, g, hero.Icon, hero.Tint, UiFlags.Middle | UiFlags.Centre, true);
+            float noteW = string.IsNullOrEmpty(hero.Note) ? 0f : UiDraw.Snap(UiTokens.Icon + UiTokens.S2 + UiTextRules.Width(hero.Note, UiStyle.BodyStrong) + UiTokens.S1);
+            float ix = tx + HeroTile + UiTokens.S5, iw = x + w - UiTokens.S4 - ix;
+            float kh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)), nh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Hero));
+            float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body));
+            float cy = ty + UiDraw.SnapDown((HeroTile - kh - UiTokens.S1 - nh - lh - (hero.Progress >= 0 ? UiTokens.S2 + UiTokens.S1 : 0f)) / 2f);
+            float textW = iw - (noteW > 0f ? noteW + UiTokens.S6 : 0f);
+            UiDraw.Text(s, at, ix, cy, textW, UiStyle.SectionHeader, UiRole.Text2, hero.Kicker, UiFlags.Label | UiFlags.Truncate);
+            cy += kh + UiTokens.S1;
+            float titleY = cy;
+            UiDraw.Text(s, at, ix, cy, textW, UiStyle.Hero, UiRole.Text, hero.Title, UiFlags.Truncate);
+            cy += nh;
+            UiDraw.Text(s, at, ix, cy, iw, UiStyle.Body, UiRole.Text2, hero.Line, UiFlags.Truncate);
+            cy += lh;
+            if (hero.Progress >= 0)
+            {
+                UiDraw.Meter(s, at, ix, cy + UiTokens.S2, iw, UiTokens.S1, hero.Progress, UiRole.Accent);
+            }
+            if (noteW > 0f)
+            {
+                float nx = x + w - UiTokens.S4 - noteW, ny = titleY + UiDraw.SnapDown((nh - UiTokens.Icon) / 2f);   // level with the name
+                UiDraw.Icon(s, at, nx, ny, UiTokens.Icon, hero.NoteIcon, UiRole.Warn, UiFlags.Middle, true);
+                UiDraw.TextMiddle(s, at, nx + UiTokens.Icon + UiTokens.S2, ny, UiTokens.Icon, noteW - UiTokens.Icon - UiTokens.S2, UiStyle.BodyStrong, UiRole.Text, hero.Note, UiFlags.None);
+            }
+            return h;
+        }
+
+        /// <summary>
+        /// The figures across a band, each its label in capitals over its number, a hairline between, a figure's line beside
+        /// it; as tall as a hero beside them when given its height. Returns the y under them.
+        /// </summary>
+        public static float Figures(UiScene s, UiAt at, UiFigureModel[] figures, float x, float y, float w, float height = 0f)
+        {
+            int count = Math.Min(figures == null ? 0 : figures.Length, 4);
             if (count == 0)
             {
                 return y;
             }
-            float h = UiTokens.S3 * 2f + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display));
+            float own = UiTokens.S3 * 2f + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display));
+            float h = Math.Max(own, height);
             UiDraw.Box(s, at, x, y, w, h, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
+            float top = y + UiDraw.SnapDown((h - own) / 2f);   // held in the middle of a taller band
             float slot = UiDraw.SnapDown(w / count);
             for (int i = 0; i < count; i++)
             {
@@ -195,16 +427,16 @@ namespace RealLifeOverhaul.Ui
                     UiDraw.Box(s, at, fx, y + UiTokens.S3, UiTokens.Hairline, h - UiTokens.S3 * 2f, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
                 }
                 float ix = fx + UiTokens.S4, iw = slot - UiTokens.S4 * 2f;
-                UiDraw.Text(s, at, ix, y + UiTokens.S3, iw, UiStyle.SectionHeader, UiRole.Text2, m.Figures[i].Label, UiFlags.Label | UiFlags.Truncate);
-                float ny = y + UiTokens.S3 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1;
-                float vw = UiTextRules.Width(m.Figures[i].Value, UiStyle.Display) + UiTokens.S1;
-                UiDraw.Text(s, at, ix, ny, Math.Min(iw, vw), UiStyle.Display, UiRole.Text, m.Figures[i].Value, UiFlags.Truncate);
-                if (UiDraw.Drawn(m.Figures[i].Trend) && iw - vw > UiTokens.S16 * 2f)
+                UiDraw.Text(s, at, ix, top + UiTokens.S3, iw, UiStyle.SectionHeader, UiRole.Text2, figures[i].Label, UiFlags.Label | UiFlags.Truncate);
+                float ny = top + UiTokens.S3 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1;
+                float vw = UiTextRules.Width(figures[i].Value, UiStyle.Display) + UiTokens.S1;
+                UiDraw.Text(s, at, ix, ny, Math.Min(iw, vw), UiStyle.Display, UiRole.Text, figures[i].Value, UiFlags.Truncate);
+                if (UiDraw.Drawn(figures[i].Trend) && iw - vw > UiTokens.S16 * 2f)
                 {
                     var line = new UiItem
                     {
                         Kind = UiKind.Spark, Fill = UiRole.Accent, X = ix + vw + UiTokens.S4, Y = ny, W = iw - vw - UiTokens.S4, H = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display)),
-                        Points = m.Figures[i].Trend, Clip = at.Clip, Node = -1, Layer = at.Layer, Order = -1, Parent = at.Parent, Alpha = 1f
+                        Points = figures[i].Trend, Clip = at.Clip, Node = -1, Layer = at.Layer, Order = -1, Parent = at.Parent, Alpha = 1f
                     };
                     s.Add(ref line);
                 }
@@ -212,9 +444,40 @@ namespace RealLifeOverhaul.Ui
             return y + h + UiTokens.S5;
         }
 
-        // A table: its title, its head in capitals, then rows that lead with an icon tile in their own colour, the graded
-        // figure in its grade's colour and the status as a soft chip. Rows a press opens are targets. Returns the y under it.
-        private static float Table(UiScene s, UiAt at, string title, UiColumn[] columns, int graded, UiAppRow[] rows, int command, float x, float y, float w, float h)
+        /// <summary>
+        /// Attributes as a management game grades them: a title in capitals, then a bar each in its grade's colour, running
+        /// down as many columns as the width holds (three at most), as Football Manager lists a player's. Returns the y under them.
+        /// </summary>
+        public static float Attributes(UiScene s, UiAt at, string title, string[] labels, int[] values, float x, float y, float w)
+        {
+            int n = labels == null || values == null ? 0 : Math.Min(labels.Length, values.Length);
+            if (n == 0)
+            {
+                return y;
+            }
+            float ty = y;
+            if (!string.IsNullOrEmpty(title))
+            {
+                UiDraw.Text(s, at, x, ty, w, UiStyle.SectionHeader, UiRole.Text, title, UiFlags.Label | UiFlags.Truncate);
+                ty += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3;
+            }
+            float gap = UiTokens.S8;
+            int columns = Math.Max(1, Math.Min(3, (int)((w + gap) / (AttributeColumn + gap))));
+            float cw = UiDraw.SnapDown((w - gap * (columns - 1)) / columns);
+            int rows = (n + columns - 1) / columns;
+            float lw = UiDraw.LabelColumn(cw, labels);
+            for (int i = 0; i < n; i++)
+            {
+                UiDraw.GradeBar(s, at, x + (i / rows) * (cw + gap), ty + (i % rows) * UiTokens.PairRow, cw, labels[i], values[i], lw);
+            }
+            return ty + rows * UiTokens.PairRow + UiTokens.S6;
+        }
+
+        /// <summary>
+        /// A table: its title, its head in capitals, then rows that lead with an icon tile in their own colour, the graded
+        /// figure in its grade's colour and the status as a soft chip. Rows a press opens are targets. Returns the y under it.
+        /// </summary>
+        public static float Table(UiScene s, UiAt at, string title, UiColumn[] columns, int graded, UiAppRow[] rows, int command, float x, float y, float w, float h)
         {
             float ty = y;
             if (!string.IsNullOrEmpty(title))
@@ -270,7 +533,10 @@ namespace RealLifeOverhaul.Ui
             {
                 fixedW += columns[c].Width + UiTokens.S4;
             }
-            widths[0] = Math.Max(UiTokens.S16, w - fixedW);
+            if (n > 0)
+            {
+                widths[0] = Math.Max(UiTokens.S16, w - fixedW);
+            }
             float cx = x;
             for (int c = 0; c < n; c++)
             {
@@ -284,22 +550,27 @@ namespace RealLifeOverhaul.Ui
             return lefts;
         }
 
-        // The people: their title and count, then each with their face, name, role behind its icon, and two attributes as a
-        // management game grades them. A note under them says what a group needs and how to fill it.
-        private static void People(UiScene s, UiAt at, UiAppModel m, float x, float y, float w, float h)
+        /// <summary>
+        /// People: their title and count, then each with their face, name, role behind its icon, and two attributes as a
+        /// management game grades them, as many as the room holds, then a link to the rest. A note under them says what a
+        /// group needs and how to fill it.
+        /// </summary>
+        public static void People(UiScene s, UiAt at, string title, string count, UiPersonRow[] people, string more, string note, UiRole noteTone, float x, float y,
+            float w, float h)
         {
             float ty = y;
-            UiDraw.Text(s, at, x, ty, w - UiTokens.S16, UiStyle.SectionHeader, UiRole.Text, m.PeopleTitle, UiFlags.Label | UiFlags.Truncate);
-            if (!string.IsNullOrEmpty(m.PeopleCount))
+            UiDraw.Text(s, at, x, ty, w - UiTokens.S16, UiStyle.SectionHeader, UiRole.Text, title, UiFlags.Label | UiFlags.Truncate);
+            if (!string.IsNullOrEmpty(count))
             {
-                UiDraw.Text(s, at, x + w - UiTokens.S16, ty, UiTokens.S16, UiStyle.Small, UiRole.Muted, m.PeopleCount, UiFlags.Right);
+                UiDraw.Text(s, at, x + w - UiTokens.S16, ty, UiTokens.S16, UiStyle.Small, UiRole.Muted, count, UiFlags.Right);
             }
             ty += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3;
-            float noteH = string.IsNullOrEmpty(m.Note) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(m.Note, UiStyle.Small, w - UiTokens.Icon - UiTokens.S2, 3)) + UiTokens.S4;
+            float noteH = string.IsNullOrEmpty(note) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(note, UiStyle.Small, w - UiTokens.Icon - UiTokens.S2, 3)) + UiTokens.S4;
             const float face = UiTokens.AvatarRow;
-            for (int i = 0; i < m.People.Length && ty + PersonRow <= y + h - noteH; i++)
+            float moreH = string.IsNullOrEmpty(more) ? 0f : UiTokens.Control;
+            for (int i = 0; i < people.Length && ty + PersonRow <= y + h - noteH - moreH; i++)
             {
-                ref UiPersonRow p = ref m.People[i];
+                ref UiPersonRow p = ref people[i];
                 int row = UiDraw.Box(s, at, x - UiTokens.S2, ty, w + UiTokens.S4, PersonRow - UiTokens.S1, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
                 UiAt inside = at.In(row);
                 UiDraw.Portrait(s, inside, x, ty + (PersonRow - UiTokens.S1 - face) / 2f, face, p.Name, p.Hue, UiRole.None);
@@ -312,16 +583,28 @@ namespace RealLifeOverhaul.Ui
                     half - UiTokens.IconSmall - UiTokens.S1, UiStyle.Small, UiRole.Text2, p.Role, UiFlags.Truncate);
                 float bx = tx + half + UiTokens.S3, bw = x + w - bx;
                 float by = ty + (PersonRow - UiTokens.S1 - UiTokens.PairRow * 2f) / 2f;
-                UiDraw.GradeBar(s, inside, bx, by, bw, p.FirstLabel, p.First);
-                UiDraw.GradeBar(s, inside, bx, by + UiTokens.PairRow, bw, p.SecondLabel, p.Second);
+                float lw = UiDraw.LabelColumn(bw, p.FirstLabel, p.SecondLabel);
+                UiDraw.GradeBar(s, inside, bx, by, bw, p.FirstLabel, p.First, lw);
+                UiDraw.GradeBar(s, inside, bx, by + UiTokens.PairRow, bw, p.SecondLabel, p.Second, lw);
                 UiDraw.Node(s, at, x - UiTokens.S2, ty, w + UiTokens.S4, PersonRow - UiTokens.S1, PersonCommand, i, row);
                 ty += PersonRow;
+            }
+            if (moreH > 0f)
+            {
+                // A link as a link: cyan words and the arrow, the whole row a target.
+                int row = UiDraw.Box(s, at, x - UiTokens.S2, ty, w + UiTokens.S4, moreH, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
+                float mw = UiDraw.Snap(UiTextRules.Width(more, UiStyle.BodyStrong) + UiTokens.S1);
+                UiDraw.TextMiddle(s, at.In(row), x, ty, moreH, Math.Min(mw, w - UiTokens.Icon - UiTokens.S2), UiStyle.BodyStrong, UiRole.AccentText, more, UiFlags.Label | UiFlags.Truncate);
+                UiDraw.Icon(s, at.In(row), x + Math.Min(mw, w - UiTokens.Icon - UiTokens.S2) + UiTokens.S1, ty + (moreH - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Next,
+                    UiRole.AccentText, UiFlags.Middle);
+                UiDraw.Node(s, at, x - UiTokens.S2, ty, w + UiTokens.S4, moreH, AllCommand, 0, row);
+                ty += moreH;
             }
             if (noteH > 0f)
             {
                 float ny = ty + UiTokens.S2;
-                UiDraw.Icon(s, at, x, ny, UiTokens.Icon, UiIcon.Info, m.NoteTone, UiFlags.Middle, true);
-                UiDraw.Text(s, at, x + UiTokens.Icon + UiTokens.S2, ny + UiTokens.Hairline, w - UiTokens.Icon - UiTokens.S2, UiStyle.Small, UiRole.Text2, m.Note,
+                UiDraw.Icon(s, at, x, ny, UiTokens.Icon, UiIcon.Info, noteTone, UiFlags.Middle, true);
+                UiDraw.Text(s, at, x + UiTokens.Icon + UiTokens.S2, ny + UiTokens.Hairline, w - UiTokens.Icon - UiTokens.S2, UiStyle.Small, UiRole.Text2, note,
                     UiFlags.Label | UiFlags.Wrap | UiFlags.Middle, 3);
             }
         }

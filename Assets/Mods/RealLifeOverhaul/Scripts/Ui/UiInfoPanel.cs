@@ -87,7 +87,7 @@ namespace RealLifeOverhaul.Ui
                 float bx = ix - UiTokens.S1;
                 for (int i = 0; i < m.Footer.Length; i++)
                 {
-                    UiDraw.IconButton(s, at, bx, cy + UiTokens.S2, UiTokens.Control, m.Footer[i], i < m.FooterTints.Length ? m.FooterTints[i] : UiRole.Accent, FooterCommand, i);
+                    UiDraw.IconButton(s, at, bx, cy + UiTokens.S2, UiTokens.Control, m.Footer[i], i < m.FooterTints.Length ? m.FooterTints[i] : UiRole.None, FooterCommand, i);
                     bx += UiTokens.Control + UiTokens.S2;
                 }
             }
@@ -118,8 +118,12 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < m.Tabs.Length; i++)
             {
                 float ty = y + UiTokens.S2 + i * (TabSize + UiTokens.S2);
-                UiRole tint = i < m.TabTints.Length ? m.TabTints[i] : UiRole.Text2;
-                UiDraw.IconButton(s, at, x + (TabStrip - TabSize) / 2f, ty, TabSize, m.Tabs[i], tint, TabCommand, i, i == m.Tab, UiAction.Count, true);
+                UiRole tint = i < m.TabTints.Length ? m.TabTints[i] : UiRole.None;
+                int node = UiDraw.IconButton(s, at, x + (TabStrip - TabSize) / 2f, ty, TabSize, m.Tabs[i], tint, TabCommand, i, i == m.Tab, UiAction.Count, true);
+                if (i == m.Tab)
+                {
+                    s.FocusFirst = node;   // the keys start where the panel is, so one tab is lit, not two
+                }
             }
         }
 

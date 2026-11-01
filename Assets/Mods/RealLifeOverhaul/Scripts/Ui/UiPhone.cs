@@ -29,8 +29,8 @@ namespace RealLifeOverhaul.Ui
 
     /// <summary>
     /// The phone's home, Big Ambitions' phone in the kit's tokens (design/DIRECTION_CS2.md, section 4.7): a slate phone at
-    /// the bottom right as the game holds it, the time and the day at its head, a grid of apps as chunky icons on soft tiles
-    /// of their category's colour with their names, and the page controls fixed in a bar at its foot, so the next page is
+    /// the bottom right as the game holds it, the time, the day and a close at its head, a grid of apps as chunky icons in
+    /// their category's colour on slate tiles with their names, and the page controls fixed in a bar at its foot, so the next page is
     /// always in one place (the owner, 1 Nov: "The next button must be at the bottom"). Commands: <see cref="AppCommand"/>
     /// (an app's index on the page), <see cref="PageCommand"/> (-1 back, +1 on). Game-free. Cost: a layout a change.
     /// </summary>
@@ -54,9 +54,12 @@ namespace RealLifeOverhaul.Ui
             UiAt at = UiAt.Screen.In(body);
             float ix = x + UiTokens.S5, iw = Width - UiTokens.S5 * 2f;
             float ty = y + UiTokens.S4;
-            UiDraw.TextMiddle(s, at, ix, ty, UiTokens.Icon, iw / 2f, UiStyle.SmallStrong, UiRole.Text, m.Time, UiFlags.None);
-            UiDraw.TextMiddle(s, at, ix + iw / 2f, ty, UiTokens.Icon, iw / 2f, UiStyle.SectionHeader, UiRole.Text2, m.Name, UiFlags.Right | UiFlags.Truncate);
-            ty += UiTokens.Icon + UiTokens.S6;
+            float head = UiTokens.MinTarget, third = UiDraw.SnapDown(iw / 3f);
+            UiDraw.TextMiddle(s, at, ix, ty, head, third, UiStyle.SmallStrong, UiRole.Text, m.Time, UiFlags.None);
+            UiDraw.TextMiddle(s, at, ix + third, ty, head, third, UiStyle.SectionHeader, UiRole.Text2, m.Name, UiFlags.Centre | UiFlags.Truncate);
+            // The phone's own way back for the mouse, where a window has its close.
+            UiDraw.IconButton(s, at, ix + iw - head, ty, head, UiIcon.Close, UiRole.Text, UiDraw.CloseCommand, 0, false, UiAction.Count, false, true);
+            ty += head + UiTokens.S5;
             UiDraw.Text(s, at, ix, ty, iw, UiStyle.Display, UiRole.Text, m.Day, UiFlags.Truncate);
             ty += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display)) + UiTokens.S1;
             if (!string.IsNullOrEmpty(m.Note))
@@ -90,7 +93,7 @@ namespace RealLifeOverhaul.Ui
                 for (int i = 0; i < m.Next.Length; i++)
                 {
                     float tw = UiDraw.Snap(UiTextRules.Width("88:88", UiStyle.BodyStrong) + UiTokens.S3);
-                    UiDraw.TextMiddle(s, at, ix, ny, UiTokens.PairRow, tw, UiStyle.BodyStrong, UiRole.AccentText, m.Next[i].Label, UiFlags.None);
+                    UiDraw.TextMiddle(s, at, ix, ny, UiTokens.PairRow, tw, UiStyle.BodyStrong, UiRole.Text, m.Next[i].Label, UiFlags.None);   // a time, not a link
                     UiDraw.TextMiddle(s, at, ix + tw, ny, UiTokens.PairRow, iw - tw, UiStyle.Body, UiRole.Text, m.Next[i].Value, UiFlags.Truncate);
                     ny += UiTokens.PairRow;
                 }
@@ -120,14 +123,31 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Node(s, at, tx, y, Tile, Tile, AppCommand, index, face);
         }
 
+        // An arrow with no page that way: it stays in its place, so the bar never moves, but dims and takes no press.
+        private static void Rest(UiScene s, int node)
+        {
+            s.Nodes[node].Disabled = true;
+            ref UiItem glyph = ref s.Items[s.ItemCount - 1];
+            glyph.Flags |= UiFlags.Disabled;
+            glyph.Alpha = 0.4f;
+        }
+
         // The page bar fixed at the foot: back a page, the pages as dots, on a page; the same place on every page.
         private static void Foot(UiScene s, UiAt at, UiPhoneModel m, float x, float y)
         {
             UiDraw.Box(s, at, x, y, Width, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             float b = UiTokens.Control;
             float by = y + (FootH - b) / 2f;
-            UiDraw.IconButton(s, at, x + UiTokens.S5, by, b, UiIcon.Back, UiRole.Text2, PageCommand, -1, false, UiAction.TabPrev);
-            UiDraw.IconButton(s, at, x + Width - UiTokens.S5 - b, by, b, UiIcon.Next, UiRole.Text2, PageCommand, 1, false, UiAction.TabNext);
+            int back = UiDraw.IconButton(s, at, x + UiTokens.S5, by, b, UiIcon.Back, UiRole.Text2, PageCommand, -1, false, UiAction.TabPrev);
+            if (m.Page <= 0)
+            {
+                Rest(s, back);
+            }
+            int on = UiDraw.IconButton(s, at, x + Width - UiTokens.S5 - b, by, b, UiIcon.Next, UiRole.Text2, PageCommand, 1, false, UiAction.TabNext);
+            if (m.Page >= m.Pages - 1)
+            {
+                Rest(s, on);
+            }
             float dot = UiTokens.S2, gap = UiTokens.S2;
             float total = m.Pages * dot + (m.Pages - 1) * gap;
             float dx = x + UiDraw.SnapDown((Width - total) / 2f);

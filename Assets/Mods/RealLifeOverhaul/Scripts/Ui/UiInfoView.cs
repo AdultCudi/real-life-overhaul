@@ -18,8 +18,9 @@ namespace RealLifeOverhaul.Ui
         public string[] ChartValues = new string[0];
         public float[] ChartShares = new float[0];
         public string LegendTitle;                 // "Map legend"
-        public string ScaleLabel;                  // what the city is coloured by ("Rent")
+        public string ScaleLabel;                  // what the city is coloured by ("Rent by block")
         public string ScaleLow, ScaleHigh;
+        public UiRole[] ScaleSteps;                // the map's colours low to high, as the game file tints the city; null for the kit's five
         public UiPrompt[] Prompts = new UiPrompt[0];
         public int PromptCount;
     }
@@ -87,7 +88,7 @@ namespace RealLifeOverhaul.Ui
                 by += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3;
                 UiDraw.Text(s, at, ix, by, iw, UiStyle.Body, UiRole.Text2, m.ScaleLabel, UiFlags.Label | UiFlags.Truncate);
                 by += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)) + UiTokens.S2;
-                UiDraw.Scale(s, at, ix, by, iw, m.ScaleLow, m.ScaleHigh, Steps);
+                UiDraw.Scale(s, at, ix, by, iw, m.ScaleLow, m.ScaleHigh, m.ScaleSteps ?? Steps);
             }
             for (int i = 0; i < m.PromptCount; i++)
             {
@@ -125,8 +126,12 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < m.Views.Length; i++)
             {
                 float cx = x + UiTokens.S2 + (i % 2) * (Cell + UiTokens.S1), cy = y + UiTokens.S2 + (i / 2) * (Cell + UiTokens.S1);
-                UiRole tint = i < m.ViewTints.Length ? m.ViewTints[i] : UiRole.Text2;
-                UiDraw.IconButton(s, at, cx, cy, Cell, m.Views[i], tint, ViewCommand, i, i == m.View);
+                UiRole tint = i < m.ViewTints.Length ? m.ViewTints[i] : UiRole.None;
+                int node = UiDraw.IconButton(s, at, cx, cy, Cell, m.Views[i], tint, ViewCommand, i, i == m.View);
+                if (i == m.View)
+                {
+                    s.FocusFirst = node;
+                }
             }
         }
     }
