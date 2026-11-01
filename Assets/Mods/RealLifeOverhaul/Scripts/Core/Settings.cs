@@ -1021,6 +1021,7 @@
             LivingDesks = Bool(modId, LivingDesksId, LivingDesks);
             UiInterface = Bool(modId, UiInterfaceId, UiInterface);
             UiMotion = Int(modId, UiMotionId, UiMotion);
+            Ui.UiScreenSwitches.Load((id, on) => Bool(modId, id, on));   // each screen's own switch, declared in its entry (Ui/UiScreenSwitches)
             LivingStudio = Bool(modId, LivingStudioId, LivingStudio);
             LivingFlare = Bool(modId, LivingFlareId, LivingFlare);
             LivingFirms = Bool(modId, LivingFirmsId, LivingFirms);

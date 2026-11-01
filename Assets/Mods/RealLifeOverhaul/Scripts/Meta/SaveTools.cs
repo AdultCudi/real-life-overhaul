@@ -107,7 +107,7 @@ namespace RealLifeOverhaul.Meta
                 return;
             }
             MetaUi.Confirm(title, "reallife_meta_remove_explain".GetLocalization().Replace("{save}", SaveGameManager.Current.SaveGameName) + InConvertedShops(),
-                "reallife_meta_remove_yes", () => MetaUi.Instance.Run(Prepare()));
+                "reallife_meta_remove_yes", () => MetaUi.Instance.Run(Prepare()), true);
         }
 
         public static void AskReset()
@@ -119,7 +119,7 @@ namespace RealLifeOverhaul.Meta
                 MetaUi.Message(title, why);
                 return;
             }
-            MetaUi.Confirm(title, "reallife_meta_resetdata_explain".GetLocalization(), "reallife_meta_resetdata_yes", () => MetaUi.Instance.Run(ResetData()));
+            MetaUi.Confirm(title, "reallife_meta_resetdata_explain".GetLocalization(), "reallife_meta_resetdata_yes", () => MetaUi.Instance.Run(ResetData()), true);
         }
 
         // What the last save held of the mod's at the moment it was written, after the purge inside the save event.

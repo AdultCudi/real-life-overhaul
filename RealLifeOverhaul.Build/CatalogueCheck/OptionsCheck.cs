@@ -90,6 +90,14 @@ namespace RealLifeOverhaul
             labelOf["perf_far_districts"] = "reallife_perf_far_districts2";
             ids.Add("perf_step_timing");
             var switches = new HashSet<string>(ids.Where(i => i.StartsWith("perf_")), StringComparer.Ordinal);   // the options that are on or off
+            // Each screen on the RLO interface asks for its own switch in its entry (Ui/UiScreenSwitches): its id and label follow from the screen's id.
+            foreach (RealLifeOverhaul.Ui.UiScreenDef def in RealLifeOverhaul.Ui.UiScreenSwitches.All)
+            {
+                string option = RealLifeOverhaul.Ui.UiScreenSwitches.OptionOf(def.Id);
+                ids.Add(option);
+                labelOf[option] = RealLifeOverhaul.Ui.UiScreenSwitches.LabelOf(def.Id);
+                switches.Add(option);
+            }
             var buttons = new HashSet<string>(StringComparer.Ordinal);    // label keys of buttons and keys the sources put on the page
             var keyRows = new HashSet<string>(StringComparer.Ordinal);    // label keys of the mod's keys: each a row that waits for a key
             var tests = new HashSet<string>(StringComparer.Ordinal);

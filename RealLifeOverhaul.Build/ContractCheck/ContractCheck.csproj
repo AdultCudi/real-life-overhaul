@@ -34,6 +34,7 @@
   <ItemGroup>
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\ContractBook.cs" Link="Mod\ContractBook.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameContract.cs" Link="Mod\GameContract.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameContract.*.cs" Link="Mod\%(Filename)%(Extension)" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\FeatureGuard.cs" Link="Mod\FeatureGuard.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\SaveLines.cs" Link="Mod\SaveLines.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameBuild.cs" Link="Mod\GameBuild.cs" />

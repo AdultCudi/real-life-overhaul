@@ -20,5 +20,18 @@ namespace RealLifeOverhaul.GameUi
         public Action Closed;
         /// <summary>An app the mod opens itself (a newspaper picked up, a counter's page): a panel among the game's, no buttons.</summary>
         public bool NoButtons;
+
+        /// <summary>
+        /// The app's face on the RLO interface: its kit screen, made once a city. With the interface and the screen's own
+        /// switch (<see cref="KitScreen"/>) on, the frame draws it over the app's panel (Ui/Shell/UiShell.Face), the panel
+        /// built and kept unseen under it; otherwise the panel shows as it always has. Null for an app not on the kit yet.
+        /// </summary>
+        public Func<RealLifeOverhaul.Ui.IUiScreen> Kit;
+
+        /// <summary>The kit screen's id in UiScreens, which its switch is keyed by; with <see cref="Kit"/>.</summary>
+        public string KitScreen;
+
+        /// <summary>The window's icon on the kit; with <see cref="Kit"/>.</summary>
+        public RealLifeOverhaul.Ui.UiIcon KitIcon;
     }
 }

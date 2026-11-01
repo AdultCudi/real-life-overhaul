@@ -289,6 +289,7 @@ click_to_learn
 click_to_talk
 click_to_work
 common_address
+common_agree
 common_available_for_rent
 common_balance
 common_cancel
@@ -343,8 +344,11 @@ educationdoorcontroller_closed
 ferris_wheel
 filebrowser_delete
 government
+hud_confirm_are_you_sure
 itemhelper_notification_you_are_to_stuffed_to_eat_this
 job_board
+main_menu_mods_warning_body
+main_menu_mods_warning_header
 menu_save
 myemployees_age
 myemployees_current_business
@@ -368,6 +372,14 @@ playeractivityui_time_remaining
 playerhud_currentjob_day_off
 poi_custom_location
 rival
+smartphone_bizman
+smartphone_contacts
+smartphone_econoview
+smartphone_marketinsider
+smartphone_myemployees
+smartphone_persona
+smartphone_rivals
+smartphone_vooglemaps
 tax_import
 timestamp_full
 topbar_date_format

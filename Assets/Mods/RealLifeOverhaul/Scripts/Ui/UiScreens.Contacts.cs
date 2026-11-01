@@ -24,7 +24,7 @@ namespace RealLifeOverhaul.Ui
                     "bizman_headhunters_skill_level_title", "contactcategoryname_general", "contactcategoryname_business", "contactcategoryname_finance",
                     "contactcategoryname_furnitureandequipment", "contactcategoryname_importsandgoods", "contactcategoryname_employees",
                     "contactcategoryname_rivals"
-                }),
+                }).Switch(UiScreenSwitches.Apps),
             });
         }
     }
