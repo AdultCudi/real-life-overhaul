@@ -26573,5 +26573,7 @@
   "reallife_changes_063_2_title": "0.63.2",
   "reallife_changes_063_2": "Naprawiono: losowe zdarzenia, wiadomości i rachunki pojawiają się teraz tylko wtedy, gdy to, o czym mówią, naprawdę należy do ciebie: lodówka, zlew, wanna, łóżko lub komputer w twoim domu, samochód, właściciel mieszkania, dopóki wynajmujesz, sąsiedzi z góry w mieszkaniu. Koniec z rachunkiem za naprawę lodówki, której nie masz.",
   "reallife_changes_063_3_title": "0.63.3",
-  "reallife_changes_063_3": "Naprawiono: praca przy biurku w twojej własnej firmie technologicznej teraz sadza cię na jego krześle, a gdy praca się kończy, możesz odejść. Wcześniej siadanie się nie udawało, więc praca szła na stojąco, a potem nie dało się odejść od biurka. Biurka w pracy i okienko twojego banku teraz też cię puszczają, niezależnie od tego, jak kończy się praca."
+  "reallife_changes_063_3": "Naprawiono: praca przy biurku w twojej własnej firmie technologicznej teraz sadza cię na jego krześle, a gdy praca się kończy, możesz odejść. Wcześniej siadanie się nie udawało, więc praca szła na stojąco, a potem nie dało się odejść od biurka. Biurka w pracy i okienko twojego banku teraz też cię puszczają, niezależnie od tego, jak kończy się praca.",
+  "reallife_changes_063_4_title": "0.63.4",
+  "reallife_changes_063_4": "Naprawiono: od wersji 0.62.0 telefon mógł urosnąć na całą wysokość ekranu, pokazując wszystkie aplikacje naraz i bez stron. Aplikacje moda trafiały na telefon ukryte i były pokazywane później, czego inny mod dzielący telefon na strony nigdy nie zauważał. Teraz trafiają na telefon razem, gdy wszystkie są gotowe, od razu widoczne, więc strony znowu działają."
 }

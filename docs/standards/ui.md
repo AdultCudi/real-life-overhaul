@@ -125,3 +125,14 @@ Why: the game's rules and saves stay correct, and a game update costs a screen, 
 surfaces with crisp hairline edges, and use colour sparingly and on purpose.
 
 Why: the owner, 1 November: "Gradients don't look nice. I want a proper themed thing." Checked by: EconomyCheck (`no gradient, glow, blur or soft shadow in the kit`).
+
+### RLO-UI-016: The page uses its screen
+
+**MUST.** Start a full-screen page under the masthead and run it across the width. It leaves no more than 64 px of
+nothing at the left, top or right of the room between the masthead and the prompt band, and at 16:9 its frames and
+words cover at least a quarter of that room. A form of several sections runs in two columns, a short table's rows
+breathe, and the masthead and the prompt band are only as tall as their words need. A short page may end where its
+content ends, but it never floats in the middle.
+
+Why: the owner, 1 November: the full-screen pages wasted the screen, with the studio's form floating in the middle and
+the masthead too tall. Checked by: EconomyCheck (`the page uses its screen`).

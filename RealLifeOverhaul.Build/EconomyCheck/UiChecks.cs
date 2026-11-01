@@ -52,6 +52,10 @@ internal static partial class Program
               && UiTokens.Colour(UiRole.Bg, false) == 0xFFF1E5FF && UiTokens.Colour(UiRole.Text, false) == 0x1A1712FF && UiTokens.Colour(UiRole.Accent, false) == 0x990F3DFF,
             "ui tokens: the City Ledger the owner chose (1 Nov): ink-black with paper-white words and the markets paper's salmon; the salmon paper with its ink and claret");
         Check(UiTokens.RadiusPanel == 0f && UiTokens.RadiusLarge <= 2f && UiTokens.FrameRule >= 2f, "ui tokens: print is square, a framed panel wears its column rule");
+        float mast = UiFrame.MastheadHeight;
+        Check(mast % UiTokens.Grid == 0f && mast >= UiTextRules.LineHeight(UiStyle.AppTitle) + UiTokens.FrameRule
+              && mast - UiTextRules.LineHeight(UiStyle.AppTitle) - UiTokens.FrameRule <= UiTokens.S3 * 2f + UiTokens.Grid,
+            "ui tokens: the masthead is as tall as its words need (the app's name, a step of air either side and the rule, " + mast + " px)");
         foreach (bool dark in new[] { true, false })
         {
             string theme = dark ? "dark" : "light";
@@ -288,12 +292,18 @@ internal static partial class Program
         foreach (UiScreenDef def in UiScreens.All)
         {
             UiScreenDef d = def;
-            if (def.Id == "flare_city" || def.Id == "studio" || def.Id == "session_panel")
+            if (def.Id == "studio")
+            {
+                // The one screen draws the studio's page and the other tech firms' pages: both are checked.
+                cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = "Tech", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.StudioFirm(t), f, dark, k) });
+                cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (another firm)", Title = "Tech", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.TechFirm(t), f, dark, k) });
+                continue;
+            }
+            if (def.Id == "flare_city" || def.Id == "session_panel")
             {
                 Action<UiScene, UiFrame, bool, IUiKeys, UiWords> lay = def.Id == "flare_city" ? (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.FlareCity(t), f, dark, k)
-                    : def.Id == "studio" ? (s, f, dark, k, t) => UiForm.Lay(s, UiSamples.StudioFirm(t), f, dark, k)
                     : (Action<UiScene, UiFrame, bool, IUiKeys, UiWords>)((s, f, dark, k, t) => UiSessionSteps.Lay(s, UiSamples.DeskPanel(t), f, dark, k));
-                cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = def.Id == "flare_city" ? "Flare" : def.Id == "studio" ? "Tech" : "Desk", Lay = lay });
+                cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = def.Id == "flare_city" ? "Flare" : "Desk", Lay = lay });
                 continue;
             }
             if (def.Id == "population")
@@ -385,6 +395,7 @@ internal static partial class Program
                         Check(UiCheckRules.NoPrompts(s, say) == 0, "ui screens: a prompt bar that says how to go back: " + where);
                         Check(UiCheckRules.Contradictions(s, say) == 0, "ui screens: no indicator contradicts its value: " + where);
                         Check(UiCheckRules.DeadSpace(s, say) == 0, "ui screens: no frame holds dead space: " + where);
+                        Check(UiCheckRules.Unfilled(s, frame, say) == 0, "ui screens: the page uses its screen, anchored under the masthead and across the width: " + where);
                         Check(UiCheckRules.KeyClash(s, say) == 0, "ui screens: one key does one thing: " + where);
                         Check(UiFocusRules.Unreached(s, out string missed) == 0, "ui screens: the d-pad reaches every target: " + where + " (" + missed + ")");
                         Check(UiCheckRules.LowContrast(s, say) == 0, "ui screens: every text and icon stands out (dark): " + where);
@@ -532,6 +543,24 @@ internal static partial class Program
         hole.Items[frame].H = 400f;
         UiDraw.Button(hole, UiAt.Screen.In(frame), 20f, 320f, 200f, UiTokens.Control, UiButtonKind.Secondary, "Begin", UiIcon.None, UiAction.Count, null, 1, 0);
         Check(UiCheckRules.DeadSpace(hole, null) > 0, "ui rules: a frame with a hole between its lines is found");
+        // The owner's review of the studio's page (1 Nov): a card floating in the middle of the screen, a third of the
+        // width empty at either side and gaps over and under it. Anchored under the masthead and across the width it passes.
+        UiFrame played = UiFrame.FullMenu(16f / 9f, "Tech");
+        played.Room(out float roomX, out float roomY, out float roomW, out float roomH);
+        var floating = new UiScene();
+        floating.Begin("floating", played.Width, played.Height, true);
+        int ground = UiDraw.Box(floating, UiAt.Screen, 0f, 0f, played.Width, played.Height, UiRole.Bg, UiRole.None, 0f, UiFlags.Decor);
+        int card = UiDraw.Box(floating, UiAt.Screen.In(ground), UiDraw.SnapDown(roomX + (roomW - 880f) / 2f), UiDraw.SnapDown(roomY + (roomH - 588f) / 2f), 880f, 588f,
+            UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
+        Check(UiCheckRules.Unfilled(floating, played, null) == 3, "ui rules: a card floating in the middle of the page is found at its left, over it and at its right");
+        floating.Items[card].X = roomX;
+        floating.Items[card].Y = roomY;
+        floating.Items[card].W = roomW;
+        Check(UiCheckRules.Unfilled(floating, played, null) == 0, "ui rules: the same card anchored under the masthead and across the width passes");
+        floating.Items[card].H = UiDraw.Snap(roomH * UiCheckRules.LeastFill * 0.5f);
+        Check(UiCheckRules.Unfilled(floating, played, null) == 1, "ui rules: a strip across the top of an empty page is found");
+        UiDraw.Text(floating, UiAt.Screen.In(ground), roomX, roomY + roomH - UiTokens.S12, roomW, UiStyle.Title, UiRole.Text, "A line", UiFlags.None);
+        Check(UiCheckRules.Unfilled(floating, played, null) == 1, "ui rules: a short line's long box does not count as covering the page");
         // The session's keys (1 Nov): Enter on a choice and on Begin, and one key on two buttons.
         var keyed = new UiScene();
         keyed.Begin("keyed", 800f, 600f, true);

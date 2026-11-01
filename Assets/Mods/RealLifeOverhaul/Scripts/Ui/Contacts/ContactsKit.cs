@@ -70,7 +70,7 @@ namespace RealLifeOverhaul.Ui
             canvas.sortingOrder = menu.sortingOrder + 1;   // just over the full menu: the game's own question boxes and notices stay above
             _root.AddComponent<GraphicRaycaster>();
             _host = _root.AddComponent<UiHost>();
-            _host.Bind(new ContactsScreen(app), UiGame.Instance, UiGame.Instance, UiDirector.Dark, UiDirector.Motion, UiFrame.FullMenuTop, UiFrame.FullMenuBand,
+            _host.Bind(new ContactsScreen(app), UiGame.Instance, UiGame.Instance, UiDirector.Dark, UiDirector.Motion, UiFrame.MastheadHeight, UiFrame.BandHeight,
                 UiText.T("reallife_ui_contacts_app"));
             _host.View.Scale = UiTokens.CanvasPerPx;
             _host.Failed = Fallback;

@@ -29,18 +29,21 @@ namespace RealLifeOverhaul.Ui
         /// <summary>
         /// A dashboard's figure: its label in capitals, the number large, and its change with an arrow that follows the
         /// change's sign, green when the change is good for the player and red when bad (rent up: red, up), over an optional
-        /// sparkline in the same colour; returns the height.
+        /// sparkline in the same colour; returns the height. A figure with room beside its number draws its line there instead,
+        /// as tall as the number and its change, so a wide panel shows the days without growing the row.
         /// </summary>
-        public static float Figure(UiScene s, UiAt at, float x, float y, float w, ref UiFigureModel figure, bool large)
+        public static float Figure(UiScene s, UiAt at, float x, float y, float w, ref UiFigureModel figure, bool large, bool beside = false)
         {
             UiStyle number = large ? UiStyle.Display : UiStyle.Number;
+            bool line = figure.Trend != null && figure.Trend.Length > 1;
             float lh = UiTextRules.LineHeight(UiStyle.SectionHeader);
+            float nw = line && beside ? SnapDown((w - UiTokens.S8) / 2f) : w;
             Text(s, at, x, y, w, UiStyle.SectionHeader, UiRole.Muted, figure.Label, UiFlags.Label | UiFlags.Truncate);
             float ny = y + Snap(lh) + UiTokens.S2;
             float nh = UiTextRules.LineHeight(number);
             var count = new UiItem
             {
-                Kind = UiKind.Text, Flags = UiFlags.Truncate | UiFlags.CountUp, Ink = UiRole.Text, Style = number, X = x, Y = ny, W = w, H = nh,
+                Kind = UiKind.Text, Flags = UiFlags.Truncate | UiFlags.CountUp, Ink = UiRole.Text, Style = number, X = x, Y = ny, W = nw, H = nh,
                 Text = figure.Value ?? string.Empty, Clip = at.Clip, Node = -1, Layer = at.Layer, Order = at.Order, Parent = at.Parent, Alpha = 1f, Value = 1f
             };
             s.Add(ref count);
@@ -48,15 +51,22 @@ namespace RealLifeOverhaul.Ui
             if (!string.IsNullOrEmpty(figure.Change))
             {
                 UiRole ink = figure.Good ? UiRole.OkText : UiRole.DangerText;
-                float line = Math.Max(UiTextRules.LineHeight(UiStyle.SmallStrong), UiTokens.Icon);
+                float lineH = Math.Max(UiTextRules.LineHeight(UiStyle.SmallStrong), UiTokens.Icon);
                 Icon(s, at, x, cy, UiTokens.Icon, UiModels.Rises(ref figure) ? UiIcon.TrendUp : UiIcon.TrendDown, ink);
-                TextMiddle(s, at, x + UiTokens.Icon + UiTokens.S1, cy, line, w - UiTokens.Icon - UiTokens.S1, UiStyle.SmallStrong, ink, figure.Change, UiFlags.Truncate);
-                cy += Snap(line);
+                TextMiddle(s, at, x + UiTokens.Icon + UiTokens.S1, cy, lineH, nw - UiTokens.Icon - UiTokens.S1, UiStyle.SmallStrong, ink, figure.Change, UiFlags.Truncate);
+                cy += Snap(lineH);
             }
-            if (figure.Trend != null && figure.Trend.Length > 1)
+            // A line under a change takes the change's colour; one without a change says nothing good or bad, so it takes the accent.
+            UiRole tint = string.IsNullOrEmpty(figure.Change) ? UiRole.Accent : figure.Good ? UiRole.Ok : UiRole.Danger;
+            if (line && beside)
+            {
+                float sx = x + nw + UiTokens.S8;
+                Spark(s, at, sx, ny, x + w - sx, cy - ny, figure.Trend, tint);
+            }
+            else if (line)
             {
                 cy += UiTokens.S2;
-                Spark(s, at, x, cy, w, UiTokens.S12, figure.Trend, figure.Good ? UiRole.Ok : UiRole.Danger);
+                Spark(s, at, x, cy, w, UiTokens.S12, figure.Trend, tint);
                 cy += UiTokens.S12;
             }
             return cy - y;

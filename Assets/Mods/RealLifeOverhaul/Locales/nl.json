@@ -26573,5 +26573,7 @@
   "reallife_changes_063_2_title": "0.63.2",
   "reallife_changes_063_2": "Opgelost: willekeurige gebeurtenissen, berichten en rekeningen komen nu alleen als datgene waar ze over gaan echt van jou is: een koelkast, een gootsteen, een bad, een bed of een computer in je huis, een auto, een huisbaas zolang je huurt, de bovenburen in een appartement. Geen reparatierekening meer voor een koelkast die je niet hebt.",
   "reallife_changes_063_3_title": "0.63.3",
-  "reallife_changes_063_3": "Opgelost: werken aan een bureau van je eigen techbedrijf zet je nu op de stoel ervan, en je kunt weglopen als het werk klaar is. Eerst mislukte het zitten, dus werkte je staand en zat je daarna vast bij het bureau. Bureaus van banen en de balie van je bank laten je nu op dezelfde manier gaan, hoe het werk ook eindigt."
+  "reallife_changes_063_3": "Opgelost: werken aan een bureau van je eigen techbedrijf zet je nu op de stoel ervan, en je kunt weglopen als het werk klaar is. Eerst mislukte het zitten, dus werkte je staand en zat je daarna vast bij het bureau. Bureaus van banen en de balie van je bank laten je nu op dezelfde manier gaan, hoe het werk ook eindigt.",
+  "reallife_changes_063_4_title": "0.63.4",
+  "reallife_changes_063_4": "Opgelost: sinds 0.62.0 kon de telefoon zo hoog als het scherm worden, met alle apps tegelijk en zonder pagina's. De apps van de mod werden verborgen op de telefoon gezet en pas later getoond, wat een andere mod die de telefoon in pagina's verdeelt nooit merkte. Nu komen ze samen op de telefoon zodra ze allemaal klaar zijn, meteen zichtbaar, zodat de pagina's weer werken."
 }

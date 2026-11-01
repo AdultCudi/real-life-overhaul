@@ -26573,5 +26573,7 @@
   "reallife_changes_063_2_title": "0.63.2",
   "reallife_changes_063_2": "Corregido: los eventos aleatorios, los mensajes y las facturas ahora solo llegan cuando aquello de lo que hablan es realmente tuyo: una nevera, un fregadero, una bañera, una cama o un ordenador en tu casa, un coche, un casero mientras alquilas, los vecinos de arriba en un piso. Se acabó la factura de reparación de una nevera que no tienes.",
   "reallife_changes_063_3_title": "0.63.3",
-  "reallife_changes_063_3": "Corregido: trabajar en un escritorio de tu propia empresa tecnológica ahora te sienta en su silla, y puedes irte caminando cuando termina el trabajo. Antes, sentarse fallaba, así que trabajabas de pie y te quedabas atascado en el escritorio después. Los escritorios de los empleos y el mostrador de tu banco ahora te dejan ir igual, termine como termine el trabajo."
+  "reallife_changes_063_3": "Corregido: trabajar en un escritorio de tu propia empresa tecnológica ahora te sienta en su silla, y puedes irte caminando cuando termina el trabajo. Antes, sentarse fallaba, así que trabajabas de pie y te quedabas atascado en el escritorio después. Los escritorios de los empleos y el mostrador de tu banco ahora te dejan ir igual, termine como termine el trabajo.",
+  "reallife_changes_063_4_title": "0.63.4",
+  "reallife_changes_063_4": "Corregido: desde la 0.62.0 el teléfono podía crecer tanto como la pantalla, con todas las apps a la vez y sin páginas. Las apps del mod se ponían en el teléfono ocultas y se mostraban después, algo que otro mod que pagina el teléfono nunca notaba. Ahora entran juntas en el teléfono cuando todas están listas, ya visibles, así que las páginas vuelven a funcionar."
 }

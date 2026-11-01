@@ -88,7 +88,7 @@ namespace RealLifeOverhaul.Ui
             var blocker = go.AddComponent<Image>();
             blocker.color = new Color(0f, 0f, 0f, 0f);   // takes the clicks the game's own screen under it would otherwise get
             var host = go.AddComponent<UiHost>();
-            host.Bind(screen, UiGame.Instance, UiGame.Instance, Dark, Motion, UiFrame.FullMenuTop, UiFrame.FullMenuBand, title);
+            host.Bind(screen, UiGame.Instance, UiGame.Instance, Dark, Motion, UiFrame.MastheadHeight, UiFrame.BandHeight, title);
             host.View.Scale = UiTokens.CanvasPerPx;
             closing(host);
             host.Show();
@@ -195,7 +195,7 @@ namespace RealLifeOverhaul.Ui
                 _gallery.SetActive(false);
             };
             _galleryHost = _gallery.AddComponent<UiHost>();
-            _galleryHost.Bind(screen, UiGame.Instance, UiGame.Instance, Dark, Motion, UiFrame.FullMenuTop, UiFrame.FullMenuBand, UiText.T("reallife_ui_gallery_title"));
+            _galleryHost.Bind(screen, UiGame.Instance, UiGame.Instance, Dark, Motion, UiFrame.MastheadHeight, UiFrame.BandHeight, UiText.T("reallife_ui_gallery_title"));
             _galleryHost.View.Scale = UiTokens.CanvasPerPx;
         }
     }

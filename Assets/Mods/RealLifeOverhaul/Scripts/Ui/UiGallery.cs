@@ -45,6 +45,8 @@ namespace RealLifeOverhaul.Ui
         public string CallEnd;
         public string ToastTitle;
         public string ToastSub;
+        public string[] TokenCaptions = new string[0];  // the tokens' panels: type, colours, motion, sizes
+        public string[] TokenColumns = new string[0];   // their columns, by UiGallery.Column*
         public UiPrompt[] Prompts = new UiPrompt[0];
         public int PromptCount;
     }
@@ -53,8 +55,10 @@ namespace RealLifeOverhaul.Ui
     /// The kit's gallery: every component in its states, a page a family (controls, lists, figures, messages, a question,
     /// a call), the tab keys turning the pages and Option turning the look, so the owner sees the whole kit in both themes
     /// from Options, Tests. Each page is a row of framed panels with a caption, every panel of a row as tall as the
-    /// fullest one's content, so no frame holds a hole. Commands: <see cref="PageCommand"/> (a tab) and
-    /// <see cref="Sample"/> (anything else: the gallery only shows). Game-free. Cost: a layout a change.
+    /// fullest one's content, so no frame holds a hole, and under them a table of the kit's own tokens (its type, colours,
+    /// motion and sizes) that takes the room left in whole rows, so a page reaches its band without padding. Commands:
+    /// <see cref="PageCommand"/> (a tab) and <see cref="Sample"/> (anything else: the gallery only shows). Game-free.
+    /// Cost: a layout a change.
     /// </summary>
     public static class UiGallery
     {
@@ -62,6 +66,9 @@ namespace RealLifeOverhaul.Ui
         public const int CaptionButtons = 0, CaptionNav = 1, CaptionInputs = 2, CaptionRows = 3, CaptionCards = 4, CaptionData = 5, CaptionFigures = 6,
             CaptionStats = 7, CaptionStatus = 8, CaptionThread = 9, CaptionStates = 10, Captions = 11;
         public const int PageCount = 6;
+        public const int TokensType = 0, TokensColours = 1, TokensMotion = 2, TokensSizes = 3, TokenKinds = 4;
+        public const int ColumnStyle = 0, ColumnFace = 1, ColumnSize = 2, ColumnWeight = 3, ColumnRole = 4, ColumnDark = 5, ColumnLight = 6, ColumnMotion = 7,
+            ColumnFull = 8, ColumnCalm = 9, ColumnToken = 10, ColumnPx = 11, Columns = 12;
 
         /// <summary>Lays the gallery's page out into a scene.</summary>
         public static void Lay(UiScene s, UiGalleryModel m, UiFrame frame, bool dark, IUiKeys keys)
@@ -76,21 +83,26 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Tabs(s, at, cx + cw - tabsW, cy, tabsW, m.Pages, m.Page, keys, PageCommand);
             float y = cy + UiTokens.Control + UiTokens.S5;
             float h = UiDraw.SnapDown(cy + ch - y);
+            float under;
             switch (m.Page)
             {
-                case 0: Controls(s, at, m, cx, y, cw, keys); break;
-                case 1: Lists(s, at, m, cx, y, cw, h, keys); break;
-                case 2: Figures(s, at, m, cx, y, cw, keys); break;
-                case 3: Messages(s, at, m, cx, y, cw); break;
-                case 4:
-                    Lists(s, at, m, cx, y, cw, h, keys);
-                    UiDraw.Question(s, 0f, frame.ContentTop, frame.Width, frame.BandY - frame.ContentTop, m.QuestionTitle, m.QuestionBody, m.Answers, m.Answers.Length, keys);
-                    break;
-                default:
-                    Messages(s, at, m, cx, y, cw);
-                    UiDraw.Call(s, cx, y, cw, h, m.CallName, 12f, m.CallState, true, m.CallOptions, m.CallOptions.Length, m.CallEnd, Sample, Sample);
-                    UiDraw.Toast(s, 0f, frame.ContentTop, frame.Width, frame.BandY - frame.ContentTop, m.ToastTitle, m.ToastSub);
-                    break;
+                case 0: under = Controls(s, at, m, cx, y, cw, keys); break;
+                case 1: under = Lists(s, at, m, cx, y, cw, h, keys); break;
+                case 2: under = Figures(s, at, m, cx, y, cw, keys); break;
+                case 3: under = Messages(s, at, m, cx, y, cw); break;
+                case 4: under = Lists(s, at, m, cx, y, cw, h, keys); break;
+                default: under = Messages(s, at, m, cx, y, cw); break;
+            }
+            // The pages under the question and the call show the tokens their own pages show.
+            Tokens(s, at, m, cx, under + UiTokens.S4, cw, cy + ch - under - UiTokens.S4, m.Page == 4 ? TokensColours : m.Page == 5 ? TokensSizes : m.Page);
+            if (m.Page == 4)
+            {
+                UiDraw.Question(s, 0f, frame.ContentTop, frame.Width, frame.BandY - frame.ContentTop, m.QuestionTitle, m.QuestionBody, m.Answers, m.Answers.Length, keys);
+            }
+            else if (m.Page == 5)
+            {
+                UiDraw.Call(s, cx, y, cw, h, m.CallName, 12f, m.CallState, true, m.CallOptions, m.CallOptions.Length, m.CallEnd, Sample, Sample);
+                UiDraw.Toast(s, 0f, frame.ContentTop, frame.Width, frame.BandY - frame.ContentTop, m.ToastTitle, m.ToastSub);
             }
             for (int i = 0; i < m.PromptCount; i++)
             {
@@ -124,7 +136,7 @@ namespace RealLifeOverhaul.Ui
             return h;
         }
 
-        private static void Controls(UiScene s, UiAt at, UiGalleryModel m, float x, float y, float w, IUiKeys keys)
+        private static float Controls(UiScene s, UiAt at, UiGalleryModel m, float x, float y, float w, IUiKeys keys)
         {
             float col = UiDraw.SnapDown((w - UiTokens.S4 * 2f) / 3f);
             int pb = Panel(s, at, x, y, col, m.Captions[CaptionButtons], out float by);
@@ -165,10 +177,10 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Selector(s, f, ix + UiTokens.S2, fy, fw + UiTokens.S6, m.Fields[3], m.ChoiceValue, Sample, 23);
             fy += UiTokens.Control + UiTokens.S1;
             UiDraw.Selector(s, f, ix + UiTokens.S2, fy, fw + UiTokens.S6, m.Fields[4], m.MotionValue, Sample, 24);
-            Fit(s, y, y, pb, pn, pf);
+            return y + Fit(s, y, y, pb, pn, pf);
         }
 
-        private static void Lists(UiScene s, UiAt at, UiGalleryModel m, float x, float y, float w, float h, IUiKeys keys)
+        private static float Lists(UiScene s, UiAt at, UiGalleryModel m, float x, float y, float w, float h, IUiKeys keys)
         {
             float col = UiDraw.SnapDown((w - UiTokens.S4 * 2f) / 3f);
             int pr = Panel(s, at, x, y, col, m.Captions[CaptionRows], out float ry);
@@ -206,10 +218,10 @@ namespace RealLifeOverhaul.Ui
             dy += UiTokens.S5;
             float tableH = UiDraw.TableHeight(m.Table, UiDraw.SnapDown(y + h - UiTokens.S4 - dy));
             UiDraw.Table(s, d, dx + UiTokens.S2, dy, col - UiTokens.S4, tableH, m.Table, Sample);
-            Fit(s, y, dy + tableH - UiTokens.S1, pr, pc, pd);
+            return y + Fit(s, y, dy + tableH - UiTokens.S1, pr, pc, pd);
         }
 
-        private static void Figures(UiScene s, UiAt at, UiGalleryModel m, float x, float y, float w, IUiKeys keys)
+        private static float Figures(UiScene s, UiAt at, UiGalleryModel m, float x, float y, float w, IUiKeys keys)
         {
             int n = Math.Min(3, m.Figures.Length);
             float fw = UiDraw.SnapDown((w - UiTokens.S4 * 2f) / 3f);
@@ -258,10 +270,10 @@ namespace RealLifeOverhaul.Ui
                     kx += UiDraw.KeyCap(s, ss, kx, cy, action, keys, UiRole.Track, UiRole.Text) + UiTokens.S3;
                 }
             }
-            Fit(s, y2, y2, ps, pt);
+            return y2 + Fit(s, y2, y2, ps, pt);
         }
 
-        private static void Messages(UiScene s, UiAt at, UiGalleryModel m, float x, float y, float w)
+        private static float Messages(UiScene s, UiAt at, UiGalleryModel m, float x, float y, float w)
         {
             float tw = UiDraw.SnapDown(w * 0.6f);
             int pm = Panel(s, at, x, y, tw, m.Captions[CaptionThread], out float ty);
@@ -287,6 +299,110 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Empty(s, st.In(empty), sx + UiTokens.S5, sy, ww, emptyH, m.EmptyTitle, m.EmptyBody);
             int busy = UiDraw.Box(s, st, sx + UiTokens.S5, sy + emptyH + UiTokens.S3, ww, busyH, UiRole.Field, UiRole.None, UiTokens.RadiusLarge);
             UiDraw.Busy(s, st.In(busy), sx + UiTokens.S5, sy + emptyH + UiTokens.S3, ww, busyH, m.BusyLabel);
+            return y + ph;
+        }
+
+        // A kind of the kit's tokens in a framed table under a page, as many whole rows as the room left takes (a list that
+        // scrolls for the rest); nothing when not even a row would fit.
+        private static void Tokens(UiScene s, UiAt at, UiGalleryModel m, float x, float y, float w, float room, int kind)
+        {
+            float top = UiTokens.S5 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S4;
+            float most = room - top - UiTokens.S4;
+            if (m.TokenCaptions.Length < TokenKinds || m.TokenColumns.Length < Columns || most < UiTokens.ControlSmall + UiTokens.TableRow)
+            {
+                return;
+            }
+            UiTableModel table = TokenTable(m, kind);
+            float tableH = UiDraw.TableHeight(table, most);
+            int panel = Panel(s, at, x, y, w, m.TokenCaptions[kind], out float tableY);
+            UiDraw.Table(s, at.In(panel), x + UiTokens.S2, tableY, w - UiTokens.S4, tableH, table, Sample);
+            s.Items[panel].H = UiDraw.Snap(tableY + tableH + UiTokens.S4 - y);
+        }
+
+        // The rows of a kind of token: each text style in its face and size, each colour role in both looks, each motion at
+        // full and calm, and the spacing steps and the sizes of the controls.
+        private static UiTableModel TokenTable(UiGalleryModel m, int kind)
+        {
+            const float figure = UiTokens.S16 * 2f + UiTokens.S8;
+            var rows = new System.Collections.Generic.List<string[]>(40);
+            UiColumn[] columns;
+            switch (kind)
+            {
+                case TokensType:
+                    columns = new[] { Column(m, ColumnStyle, 0f), Column(m, ColumnFace, 0f), Column(m, ColumnSize, figure), Column(m, ColumnWeight, figure) };
+                    for (int i = 0; i < (int)UiStyle.Count; i++)
+                    {
+                        UiType t = UiTokens.Type((UiStyle)i);
+                        rows.Add(new[] { Words(((UiStyle)i).ToString()), Face(t.Family), Px(t.Size), t.Weight.ToString(Inv) });
+                    }
+                    break;
+                case TokensColours:
+                    columns = new[] { Column(m, ColumnRole, 0f), Column(m, ColumnDark, figure), Column(m, ColumnLight, figure) };
+                    for (int i = 1; i < (int)UiRole.Count; i++)
+                    {
+                        rows.Add(new[] { Words(((UiRole)i).ToString()), Hex(UiTokens.Colour((UiRole)i, true)), Hex(UiTokens.Colour((UiRole)i, false)) });
+                    }
+                    break;
+                case TokensMotion:
+                    columns = new[] { Column(m, ColumnMotion, 0f), Column(m, ColumnFull, figure), Column(m, ColumnCalm, figure) };
+                    for (int i = 0; i < (int)UiMotionKind.Count; i++)
+                    {
+                        rows.Add(new[] { Words(((UiMotionKind)i).ToString()), Ms(UiTokens.Duration((UiMotionKind)i, UiMotionSetting.Full)),
+                            Ms(UiTokens.Duration((UiMotionKind)i, UiMotionSetting.Calm)) });
+                    }
+                    break;
+                default:
+                    columns = new[] { Column(m, ColumnToken, 0f), Column(m, ColumnPx, figure) };
+                    foreach (System.Collections.Generic.KeyValuePair<string, float> size in Sizes)
+                    {
+                        rows.Add(new[] { size.Key, Px(size.Value) });
+                    }
+                    break;
+            }
+            return new UiTableModel { Columns = columns, Rows = rows.ToArray(), RowCount = rows.Count, Selected = -1 };
+        }
+
+        private static readonly System.Globalization.CultureInfo Inv = System.Globalization.CultureInfo.InvariantCulture;
+
+        // The kit's spacing steps and the sizes its controls are built on, by their names in UiTokens.
+        private static readonly System.Collections.Generic.KeyValuePair<string, float>[] Sizes =
+        {
+            Size("S1", UiTokens.S1), Size("S2", UiTokens.S2), Size("S3", UiTokens.S3), Size("S4", UiTokens.S4), Size("S5", UiTokens.S5), Size("S6", UiTokens.S6),
+            Size("S8", UiTokens.S8), Size("S10", UiTokens.S10), Size("S12", UiTokens.S12), Size("S16", UiTokens.S16), Size("Control", UiTokens.Control),
+            Size("Control small", UiTokens.ControlSmall), Size("Chip", UiTokens.Chip), Size("Least target", UiTokens.MinTarget), Size("Pair row", UiTokens.PairRow),
+            Size("Table row", UiTokens.TableRow), Size("Table row, most", UiTokens.TableRowMost), Size("List row", UiTokens.Row), Size("Avatar", UiTokens.AvatarRow),
+            Size("Avatar, hero", UiTokens.AvatarHero), Size("Icon", UiTokens.Icon), Size("Key cap", UiTokens.KeyCap), Size("Badge", UiTokens.Badge),
+            Size("Column rule", UiTokens.FrameRule), Size("Focus ring", UiTokens.FocusStroke), Size("Smallest text", UiTokens.MinText)
+        };
+
+        private static System.Collections.Generic.KeyValuePair<string, float> Size(string name, float px) => new System.Collections.Generic.KeyValuePair<string, float>(name, px);
+
+        private static UiColumn Column(UiGalleryModel m, int column, float width) => new UiColumn { Title = m.TokenColumns[column], Width = width, Right = width > 0f };
+
+        // A token's name as words: "SectionTitle" reads "Section title".
+        private static string Words(string name)
+        {
+            var b = new System.Text.StringBuilder(name.Length + 4);
+            for (int i = 0; i < name.Length; i++)
+            {
+                char c = name[i];
+                b.Append(i > 0 && char.IsUpper(c) ? " " + char.ToLowerInvariant(c) : c.ToString());
+            }
+            return b.ToString();
+        }
+
+        private static string Face(UiFamily family) => family == UiFamily.Franklin ? "Libre Franklin" : family == UiFamily.SerifDisplay ? "Source Serif 4 Display" : "Source Serif 4";
+
+        private static string Px(float px) => px.ToString("0.#", Inv) + " px";
+
+        private static string Ms(float seconds) => (seconds * 1000f).ToString("0", Inv) + " ms";
+
+        // A colour as its hex, with its share where it is not whole.
+        private static string Hex(uint rgba)
+        {
+            uint a = rgba & 0xFF;
+            string hex = "#" + (rgba >> 8).ToString("X6", Inv);
+            return a == 0xFF ? hex : hex + " " + (a * 100 / 255).ToString(Inv) + "%";
         }
 
         private static float TabsWidth(string[] tabs, IUiKeys keys)

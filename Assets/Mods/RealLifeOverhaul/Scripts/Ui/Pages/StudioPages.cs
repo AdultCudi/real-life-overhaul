@@ -1,99 +1,88 @@
-using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.Tech;
 
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// A screen of the game studio or another tech firm (StudioViews, SectorViews: StudioScreen) as the kit's form: its
-    /// title and what it is, what to do next, each section's lines and choices (a selector, or a slider of steps, with
-    /// what the pick gives under it), and the primary action with at most two others at the foot. The fields' choices
-    /// and the foot's actions are handed back so a press reaches the feature's own act. Game-free.
-    /// Cost: a model a screen, when it opens or a pick changes.
+    /// A tech firm's whole page (StudioViews.Page, SectorViews.Page: a FirmPage) as the kit's dashboard: the title with what
+    /// to do next under it in its weight's colour, the primary action and the others at the head's right, the figures with
+    /// the takings' line in a wide panel, the main table over the second, the team as bars and the facts as pairs at the side.
+    /// The actions are handed back so a press reaches the feature's own act. Game-free. Cost: a model a page, when it opens
+    /// or after a press.
     /// </summary>
     public static class StudioPages
     {
-        public const int MostOthers = 2;   // actions at the foot beside the primary: a card keeps to a few
+        public const int MostOthers = 2;                                   // actions beside the primary: a page keeps to a few
+        public const float FigureColumn = UiTokens.S16 * 2f + UiTokens.S4;   // px: a table's column of figures or a short status
 
-        public static UiFormModel Model(StudioScreen v, UiWords t, List<ViewChoice> choices, List<ViewAction> actions)
+        public static UiDashboardModel Page(FirmPage page, UiWords t, List<ViewAction> others, out ViewAction primary)
         {
-            choices.Clear();
-            actions.Clear();
-            var m = new UiFormModel { Title = Fill(t, v.TitleKey, v.TitlePairs) };
-            m.About = string.IsNullOrEmpty(v.ChipKey) ? v.Subtitle : (string.IsNullOrEmpty(v.Subtitle) ? t(v.ChipKey, v.ChipKey) : v.Subtitle + " (" + t(v.ChipKey, v.ChipKey) + ")");
-            var fields = new List<UiFieldModel>(16);
+            StudioScreen v = page.Screen;
+            others.Clear();
+            primary = v.Primary;
+            var m = new UiDashboardModel { Title = Fill(t, v.TitleKey, v.TitlePairs), StatsFirst = true };
             if (v.Next != null)
             {
-                fields.Add(Note(Line(t, v.Next), true, null));
-                choices.Add(null);
+                m.Subtitle = Fill(t, v.Next.Key, v.Next.Pairs);
+                m.SubtitleInk = v.Next.Tone == ViewTone.Bad ? UiRole.DangerText : v.Next.Tone == ViewTone.Warn ? UiRole.WarnText : v.Next.Tone == ViewTone.Good ? UiRole.OkText : UiRole.Text;
             }
-            foreach (ViewSection section in v.Sections)
+            m.Figures = new UiFigureModel[page.Figures.Count];
+            for (int i = 0; i < page.Figures.Count; i++)
             {
-                string head = t(section.TitleKey, section.TitleKey);
-                foreach (ViewLine line in section.Lines)
+                ViewFigure f = page.Figures[i];
+                m.Figures[i] = new UiFigureModel { Label = t(f.LabelKey, f.LabelKey), Value = f.Value, Change = f.Change, Rising = f.Rising, Good = f.Good, Trend = f.Trend, Span = f.Wide ? 2 : 1 };
+            }
+            m.FigureCount = m.Figures.Length;
+            m.Table = Table(page.Main, t);
+            m.More = Table(page.More, t);
+            m.StatsTitle = t(page.TeamKey, page.TeamKey);
+            m.Stats = new UiStatModel[page.Team.Count];
+            for (int i = 0; i < page.Team.Count; i++)
+            {
+                ViewRole r = page.Team[i];
+                string group = t(StudioViews.GroupKey(r.Group), StudioViews.GroupKey(r.Group));
+                m.Stats[i] = new UiStatModel
                 {
-                    fields.Add(Note(Line(t, line), false, head));
-                    choices.Add(null);
-                    head = null;
-                }
-                foreach (ViewChoice c in section.Choices)
-                {
-                    int count = c.Options.Count;
-                    int picked = count == 0 ? 0 : Math.Max(0, Math.Min(count - 1, c.Picked));
-                    fields.Add(new UiFieldModel
-                    {
-                        Kind = c.Slider ? UiFieldKind.Slider : UiFieldKind.Choice, Section = head, Label = t(c.LabelKey, c.LabelKey),
-                        Value = count > 0 ? c.Options[picked] : string.Empty, Share = count > 1 ? picked / (float)(count - 1) : 0f
-                    });
-                    choices.Add(c);
-                    head = null;
-                    if (c.Trade != null)
-                    {
-                        fields.Add(Note(Line(t, c.Trade), false, null));
-                        choices.Add(null);
-                    }
-                    if (c.Go != null && c.Go.Enabled && actions.Count < MostOthers + 1)
-                    {
-                        actions.Add(c.Go);
-                    }
-                }
-            }
-            if (fields.Count == 0 && !string.IsNullOrEmpty(v.EmptyKey))
-            {
-                fields.Add(Note(t(v.EmptyKey, v.EmptyKey), false, null));
-                choices.Add(null);
-            }
-            for (int i = 0; i < v.Others.Count && actions.Count < MostOthers; i++)
-            {
-                actions.Add(v.Others[i]);
-            }
-            if (v.Primary != null)
-            {
-                actions.Add(v.Primary);
-            }
-            m.Fields = fields.ToArray();
-            m.FieldCount = m.Fields.Length;
-            m.Actions = new UiActionModel[actions.Count];
-            int keyed = 0;
-            for (int i = 0; i < actions.Count; i++)
-            {
-                ViewAction a = actions[i];
-                bool primary = a == v.Primary;
-                m.Actions[i] = new UiActionModel
-                {
-                    Label = t(a.Key, a.Key), Kind = primary ? UiButtonKind.Primary : a.Danger ? UiButtonKind.Destructive : UiButtonKind.Secondary,
-                    Key = primary ? UiAction.Alt : keyed++ == 0 ? UiAction.Option : UiAction.Count, Command = UiForm.ActionCommand, Disabled = !a.Enabled
+                    Label = t(StudioViews.GroupCountKey, StudioViews.GroupCountKey).Replace("{group}", group).Replace("{count}", r.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                    Figure = r.Needed ? t(StudioViews.NeededKey, StudioViews.NeededKey) : r.Skill.ToString(System.Globalization.CultureInfo.InvariantCulture), Value = r.Skill
                 };
             }
-            m.ActionCount = m.Actions.Length;
-            var prompts = new List<UiPrompt>(4)
+            m.StatCount = m.Stats.Length;
+            m.SideTitle = t(page.FactsKey, page.FactsKey);
+            m.Side = new UiPairModel[page.Facts.Count];
+            for (int i = 0; i < page.Facts.Count; i++)
             {
-                new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
-                new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_change", "Change") },
-            };
-            if (v.Primary != null)
+                m.Side[i] = new UiPairModel { Key = t(page.Facts[i].LabelKey, page.Facts[i].LabelKey), Value = page.Facts[i].Value };
+            }
+            m.SideCount = m.Side.Length;
+            for (int i = 0; i < v.Others.Count && others.Count < MostOthers; i++)
             {
-                prompts.Add(new UiPrompt { Action = UiAction.Alt, Label = t(v.Primary.Key, v.Primary.Key) });
+                // The Tech app's close button is the kit's Back, on the prompt bar already.
+                if (v.Others[i].Act != StudioAct.Close && v.Others[i].Act != SectorAct.Close)
+                {
+                    others.Add(v.Others[i]);
+                }
+            }
+            m.Others = new UiActionModel[others.Count];
+            for (int i = 0; i < others.Count; i++)
+            {
+                ViewAction a = others[i];
+                m.Others[i] = new UiActionModel
+                {
+                    Label = t(a.Key, a.Key), Kind = a.Danger ? UiButtonKind.Destructive : UiButtonKind.Secondary, Key = i == 0 ? UiAction.Option : UiAction.Count,
+                    Command = UiDashboard.OtherCommand, Disabled = !a.Enabled
+                };
+            }
+            m.OtherCount = m.Others.Length;
+            m.HasAction = primary != null;
+            if (m.HasAction)
+            {
+                m.Action = new UiActionModel { Label = t(primary.Key, primary.Key), Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiDashboard.ActionCommand, Disabled = !primary.Enabled };
+            }
+            var prompts = new List<UiPrompt>(3) { new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") } };
+            if (m.HasAction)
+            {
+                prompts.Add(new UiPrompt { Action = UiAction.Alt, Label = m.Action.Label });
             }
             prompts.Add(new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") });
             m.Prompts = prompts.ToArray();
@@ -101,21 +90,19 @@ namespace RealLifeOverhaul.Ui
             return m;
         }
 
-        /// <summary>The value a choice sends when it steps to its next option (the options' own values where they have them).</summary>
-        public static int NextValue(ViewChoice c)
+        // A view's table as the kit's: its columns named, figures to the right in a column of their own width, its rows as written.
+        private static UiTableModel Table(ViewTable v, UiWords t)
         {
-            int count = c.Options.Count;
-            if (count == 0)
+            var columns = new UiColumn[v.ColumnKeys.Length];
+            for (int i = 0; i < columns.Length; i++)
             {
-                return 0;
+                bool figure = i < v.Figures.Length && v.Figures[i];
+                columns[i] = new UiColumn { Title = t(v.ColumnKeys[i], v.ColumnKeys[i]), Width = figure ? FigureColumn : 0f, Right = figure };
             }
-            int next = (Math.Max(0, c.Picked) + 1) % count;
-            return c.Values.Count == count ? c.Values[next] : next;
+            var table = new UiTableModel { Columns = columns, Rows = v.Rows.ToArray(), RowCount = v.Rows.Count, Selected = -1 };
+            table.EmptyTitle = string.IsNullOrEmpty(v.EmptyKey) ? t("reallife_ui_page_empty", "Nothing here yet") : t(v.EmptyKey, v.EmptyKey);
+            return table;
         }
-
-        private static UiFieldModel Note(string words, bool strong, string section) => new UiFieldModel { Kind = UiFieldKind.Note, Label = words, On = strong, Section = section };
-
-        private static string Line(UiWords t, ViewLine l) => Fill(t, l.Key, l.Pairs);
 
         // A key's words with its names filled: name, value, name, value (as the game's own Fill does).
         private static string Fill(UiWords t, string key, string[] pairs)

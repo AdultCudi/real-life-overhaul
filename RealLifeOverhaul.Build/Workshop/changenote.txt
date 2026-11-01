@@ -1,4 +1,4 @@
-0.63.3
+0.63.4
 
 Fixed
-- Working at a desk of your own tech firm now seats you on its chair, and you can walk away when the work ends. Before, the seat failed, so you worked standing and were stuck at the desk afterwards. Job desks and your bank's counter now let you go the same way, however the work ends.
+- Since 0.62.0 the phone could grow as tall as the screen, with every app showing at once and no pages. The mod's apps were put on the phone hidden and switched on later, which another mod that pages the phone never noticed. They now join the phone together once they are all ready, already shown, so the pages work again.

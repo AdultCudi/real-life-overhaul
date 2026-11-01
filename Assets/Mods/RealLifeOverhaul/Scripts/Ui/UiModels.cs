@@ -130,6 +130,7 @@ namespace RealLifeOverhaul.Ui
         public bool Rising;      // the change goes up: read only when its words carry no sign
         public bool Good;        // the change is good for the player (green), or bad (red): rent rising is bad, jobs rising good
         public float[] Trend;    // a sparkline's values, oldest first, or null
+        public int Span;         // places of the row it stands in, 0 or 1 for one: a wide figure draws its line beside the number
     }
 
     /// <summary>A column of a table.</summary>
@@ -148,6 +149,7 @@ namespace RealLifeOverhaul.Ui
         public int RowCount;
         public int Selected = -1;
         public float Offset;
+        public float RowHeight;   // px a row takes, 0 for the dense TableRow. A page with room to spare lets its rows breathe (UiDraw.Breathe)
         public string EmptyTitle;
         public string EmptyBody;
     }

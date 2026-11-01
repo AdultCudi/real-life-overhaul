@@ -109,9 +109,11 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>
         /// A choice for a desk session: its key's cap, its name and the trade-off it makes, and a note at the right (the
-        /// time it takes). Returns the focus target; height in <paramref name="height"/>.
+        /// time it takes), at least a given height (cards side by side stand level). Returns the focus target, and its
+        /// height in <paramref name="height"/>.
         /// </summary>
-        public static int ChoiceCard(UiScene s, UiAt at, float x, float y, float w, ref UiChoiceModel choice, IUiKeys keys, int command, int arg, out float height)
+        public static int ChoiceCard(UiScene s, UiAt at, float x, float y, float w, ref UiChoiceModel choice, IUiKeys keys, int command, int arg, out float height,
+            float least = 0f)
         {
             bool sel = choice.Selected;
             float capW = HasKey(choice.Key, keys) ? KeyCapWidth(choice.Key, keys) : 0f;
@@ -120,7 +122,7 @@ namespace RealLifeOverhaul.Ui
             float tw = x + w - UiTokens.S5 - (nw > 0f ? nw + UiTokens.S4 : 0f) - tx;
             float nameH = UiTextRules.LineHeight(UiStyle.Title);
             float tradeH = UiTextRules.WrappedHeight(choice.Trade, UiStyle.Small, tw, 2);
-            height = Snap(UiTokens.S5 * 2f + nameH + UiTokens.S1 + tradeH);
+            height = Math.Max(least, ChoiceCardHeight(ref choice, keys, w));
             int face = Box(s, at, x, y, w, height, sel ? UiRole.RowSel : UiRole.Field, sel ? UiRole.RowSelEdge : UiRole.RowEdge, UiTokens.RadiusLarge,
                 (sel ? UiFlags.Selected : UiFlags.None) | (choice.Disabled ? UiFlags.Disabled : UiFlags.None));
             UiAt inside = at.In(face);
@@ -143,13 +145,22 @@ namespace RealLifeOverhaul.Ui
             return Node(s, at, x, y, w, height, command, arg, face, choice.Disabled, -1, 0, choice.Key);
         }
 
+        /// <summary>The height <see cref="ChoiceCard"/> takes at a width: its padding, the name and its trade on up to two lines.</summary>
+        public static float ChoiceCardHeight(ref UiChoiceModel choice, IUiKeys keys, float w)
+        {
+            float capW = HasKey(choice.Key, keys) ? KeyCapWidth(choice.Key, keys) : 0f;
+            float nw = string.IsNullOrEmpty(choice.Note) ? 0f : UiTextRules.Width(choice.Note, UiStyle.Small) + UiTokens.S1;
+            float tw = w - UiTokens.S5 * 2f - (capW > 0f ? capW + UiTokens.S4 : 0f) - (nw > 0f ? nw + UiTokens.S4 : 0f);
+            return Snap(UiTokens.S5 * 2f + UiTextRules.LineHeight(UiStyle.Title) + UiTokens.S1 + UiTextRules.WrappedHeight(choice.Trade, UiStyle.Small, tw, 2));
+        }
+
         /// <summary>
         /// The height a table takes in at most a height: its head and the rows that fit whole (all of them when they do), or
         /// room for its empty state; so its frame fits its rows and never shows a sliver of one.
         /// </summary>
         public static float TableHeight(UiTableModel table, float most)
         {
-            float headH = UiTokens.ControlSmall, rowH = UiTokens.TableRow;
+            float headH = UiTokens.ControlSmall, rowH = RowOf(table);
             int rows = table.Rows != null ? table.RowCount : 0;
             if (rows == 0)
             {
@@ -160,13 +171,27 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>
+        /// Lets a table's rows grow towards <see cref="UiTokens.TableRowMost"/> when all of them fit a room with height to
+        /// spare, so a short table takes the page's height in calmer rows instead of stopping over an empty band. A table
+        /// that scrolls keeps the dense row.
+        /// </summary>
+        public static void Breathe(UiTableModel table, float room)
+        {
+            int rows = table.Rows != null ? table.RowCount : 0;
+            float rowsRoom = room - UiTokens.ControlSmall;
+            table.RowHeight = rows == 0 || rows * UiTokens.TableRow > rowsRoom ? 0f : Math.Min(UiTokens.TableRowMost, Math.Max(UiTokens.TableRow, SnapDown(rowsRoom / rows)));
+        }
+
+        private static float RowOf(UiTableModel table) => table.RowHeight > UiTokens.TableRow ? table.RowHeight : UiTokens.TableRow;
+
+        /// <summary>
         /// A table that stays readable: capitals over its columns, rows of a fixed height on alternate fills, figures to the
         /// right, the selected row marked; its rows scroll in their frame and only those in view are laid out. Each row is a
         /// focus target of one list. Give it <see cref="TableHeight"/>. Returns the list.
         /// </summary>
         public static short Table(UiScene s, UiAt at, float x, float y, float w, float h, UiTableModel table, int command)
         {
-            float headH = UiTokens.ControlSmall, rowH = UiTokens.TableRow;
+            float headH = UiTokens.ControlSmall, rowH = RowOf(table);
             int cols = table.Columns.Length;
             float fixedW = 0f, shares = 0f;
             for (int c = 0; c < cols; c++)

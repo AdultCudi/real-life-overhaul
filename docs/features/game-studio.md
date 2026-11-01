@@ -20,6 +20,7 @@ Tech/Studio/                    the first nine are game-free and compiled by Eco
   StudioShare                     the rival studios as a part of the shared city (Going Public), letter V
   StudioBridges                   the audience (the population, or the documented world) and Flare's bridges
   StudioViews                     every screen as data: title, chip, what to do next, sections, choices with their trade-offs, one primary action
+  StudioViews.Page, FirmPage      the studio's whole page as data for the mod's design system: figures, games, the market, the team, sales and support
   StudioGame                      the studio's money keys, capital at the studio, the way to the desk
   StudioGuide                     the feature's entry and the Guide page's figures
   TechApp.Studio                  the screens drawn in the Tech app until the mod's design system draws the same data

@@ -108,7 +108,7 @@ namespace RealLifeOverhaul.Tech
     }
 
     /// <summary>The game studio's screens built from its state: the concept, a game's page, and the studio's own part of its firm's page. Game-free.</summary>
-    public static class StudioViews
+    public static partial class StudioViews
     {
         public const int ScreenConcept = 0, ScreenGame = 1, ScreenStudio = 2;
         public static readonly int[] ReleaseSteps = { 15, 30, 45, 60 };   // days from today a release date can be set to, beside as soon as ready

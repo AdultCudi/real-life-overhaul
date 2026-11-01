@@ -48,8 +48,13 @@ off like any other; the panel's `PhoneAppRoot` then takes the mod's dot away. Th
 The phone takes apps once `FullMenu.Start` has made the game's buttons, at the load, whether the menu shows or not
 (`PhoneApp.PhoneUp`). `Install` itself only checks the name against the names of both phones' buttons (read in one
 search per load, `PhoneNames`) and puts the app in a line (`InstallQueue`); the full menu's `PhoneAppQueue` puts one on a
-frame, its buttons hidden and the pagers held (`PhoneGridPager.Holding`), and after the line's last shows them all and
-has each pager lay its grid out once. The app it hands back counts as installed at once; opening it before its turn puts
+frame, its buttons made asleep in a waiting room under the full menu (off both phones) and the pagers held
+(`PhoneGridPager.Holding`), and after the line's last moves them all into their grids, shown as they join, and has each
+pager lay its grid out once. A button never waits hidden inside a grid: other mods' pagers see a button when it joins
+the grid, not when it is switched on (BizSuite's on its own word, AlunaPhonePages when the grid's names change, and it
+leaves out for good any button hidden there when it takes over), so 0.62.0, which made them hidden in the grid and
+switched them on after the last, left a player's phone with every app showing and no pages. The test Check the phone's
+pages takes every button off and puts it back as a load does, then writes "Phone check (pages): ...". The app it hands back counts as installed at once; opening it before its turn puts
 it on there and then. With Developer diagnostics on, "Phone apps check (paced install): ..." gives the frames and the
 slowest install.
 

@@ -467,6 +467,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Studio\StudioShare.cs" Link="Mod\StudioShare.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Studio\StudioBridges.cs" Link="Mod\StudioBridges.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Studio\StudioViews.cs" Link="Mod\StudioViews.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Studio\StudioViews.Page.cs" Link="Mod\StudioViews.Page.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Studio\FirmPage.cs" Link="Mod\FirmPage.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Sessions\SessionRules.cs" Link="Mod\SessionRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Sessions\SessionFile.cs" Link="Mod\SessionFile.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Sessions\SessionStore.cs" Link="Mod\SessionStore.cs" />
@@ -519,6 +521,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sector\SectorStore.cs" Link="Mod\Sector\SectorStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sector\SectorBridges.cs" Link="Mod\Sector\SectorBridges.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sector\SectorViews.cs" Link="Mod\Sector\SectorViews.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sector\SectorViews.Page.cs" Link="Mod\Sector\SectorViews.Page.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\StudyCatalogue.cs" Link="Mod\StudyCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\StudyRules.cs" Link="Mod\StudyRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\StudyRules.Learning.cs" Link="Mod\StudyRules.Learning.cs" />
