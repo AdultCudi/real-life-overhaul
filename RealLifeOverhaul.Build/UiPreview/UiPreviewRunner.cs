@@ -33,6 +33,9 @@ public static class UiPreviewRunner
         public int FocusCommand = -1, FocusArg;
         public int HoverCommand = -1, HoverArg;   // the target the mouse rests on in the hover shot, or the second target
         public Vector2Int[] Walk;
+        public string Backdrop;   // the game's world behind it, a picture's file in the backdrops folder, or null for black
+        public int App = -1;      // the app the status bar marks as open
+        public bool Extra;        // also a hover shot and a keys shot (the prototype's two that show input)
     }
 
     private sealed class Shot
@@ -56,6 +59,8 @@ public static class UiPreviewRunner
             string bundle = Argument("-bundle", Path.GetFullPath("../../Assets/Mods/RealLifeOverhaul/Bundles/reallife_ui"));
             string outFolder = Argument("-out", Path.GetFullPath("../../../not-in-repo/previews/ui"));
             string[] only = Argument("-only", "").Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            string set = Argument("-set", "");
+            _backdrops = Argument("-backdrops", "");
             Directory.CreateDirectory(outFolder);
             if (PlayerSettings.colorSpace != ColorSpace.Linear)
             {
@@ -75,20 +80,25 @@ public static class UiPreviewRunner
             }
             UiChrome.Status = () => UiSamples.Status;
             var shots = new List<Shot>();
-            foreach (Screen screen in Screens())
+            bool prototype = set == "cs2";
+            foreach (Screen screen in prototype ? Prototype() : Screens())
             {
                 if (only.Length > 0 && Array.FindIndex(only, o => screen.Name.StartsWith(o, StringComparison.Ordinal)) < 0)
                 {
                     continue;
                 }
-                shots.Add(new Shot { Screen = screen, Name = screen.Name + "_dark_1080", Width = 1920, Height = 1080, Dark = true });
-                shots.Add(new Shot { Screen = screen, Name = screen.Name + "_light_1080", Width = 1920, Height = 1080, Dark = false });
-                shots.Add(new Shot { Screen = screen, Name = screen.Name + "_dark_720", Width = 1280, Height = 720, Dark = true });
-                shots.Add(new Shot { Screen = screen, Name = screen.Name + "_light_720", Width = 1280, Height = 720, Dark = false });
-                shots.Add(new Shot { Screen = screen, Name = screen.Name + "_dark_1080_mouse_hover", Width = 1920, Height = 1080, Dark = true, Hover = true });
-                shots.Add(new Shot { Screen = screen, Name = screen.Name + "_light_1080_mouse_hover", Width = 1920, Height = 1080, Dark = false, Hover = true });
-                shots.Add(new Shot { Screen = screen, Name = screen.Name + "_dark_1080_keys", Width = 1920, Height = 1080, Dark = true, Keys = true });
-                shots.Add(new Shot { Screen = screen, Name = screen.Name + "_dark_1080_pad_focus_path", Width = 1920, Height = 1080, Dark = true, Path = true, Keys = true, Pad = UiPad.Xbox });
+                // One look now: each screen at 1080 and 720, with the mouse resting on a target and with the keys leading.
+                shots.Add(new Shot { Screen = screen, Name = screen.Name + "_1080", Width = 1920, Height = 1080, Dark = true });
+                shots.Add(new Shot { Screen = screen, Name = screen.Name + "_720", Width = 1280, Height = 720, Dark = true });
+                if (!prototype || screen.Extra)
+                {
+                    shots.Add(new Shot { Screen = screen, Name = screen.Name + "_1080_mouse_hover", Width = 1920, Height = 1080, Dark = true, Hover = true });
+                    shots.Add(new Shot { Screen = screen, Name = screen.Name + "_1080_keys", Width = 1920, Height = 1080, Dark = true, Keys = true });
+                }
+                if (!prototype)
+                {
+                    shots.Add(new Shot { Screen = screen, Name = screen.Name + "_1080_pad_focus_path", Width = 1920, Height = 1080, Dark = true, Path = true, Keys = true, Pad = UiPad.Xbox });
+                }
             }
             foreach (Shot shot in shots)
             {
@@ -102,6 +112,25 @@ public static class UiPreviewRunner
             Debug.LogError(Tag + e);
             EditorApplication.Exit(1);
         }
+    }
+
+    // The prototype's six screens over the game's own streets (design/DIRECTION_CS2.md, section 7).
+    private static List<Screen> Prototype()
+    {
+        return new List<Screen>
+        {
+            new Screen { Name = "1_person_info_panel", AppName = "Rosa Stanley", Lay = (s, f, d, k) => UiInfoPanel.Lay(s, UiSamples.Person(English), f, d, k), Backdrop = "13.jpg",
+                HoverCommand = UiInfoPanel.LinkCommand, HoverArg = 1 * 16 + 1, Extra = true },
+            new Screen { Name = "2_people_info_view", AppName = "The city's people", Lay = (s, f, d, k) => UiInfoView.Lay(s, UiSamples.People(English), f, d, k), Backdrop = "11.jpg" },
+            new Screen { Name = "3_studio_app_window", AppName = "Tech", Lay = (s, f, d, k) => UiAppWindow.Lay(s, UiSamples.Studio(English), f, d, k), Backdrop = "02.jpg",
+                App = UiSamples.AppTech, HoverCommand = UiAppWindow.RowCommand, HoverArg = 1, Extra = true },
+            new Screen { Name = "4_desk_session_decision", AppName = "Desk", Lay = (s, f, d, k) => UiDecision.Lay(s, UiSamples.Meeting(English), f, d, k), Backdrop = "11.jpg" },
+            new Screen { Name = "5_contacts_app_window", AppName = "Contacts", Lay = (s, f, d, k) => UiListDetail.Lay(s, UiSamples.ContactsWindow(English), f, d, k), Backdrop = "13.jpg",
+                App = UiSamples.AppContacts, FocusCommand = UiListDetail.Row, FocusArg = 4 },
+            new Screen { Name = "6_phone_home", AppName = "Phone", Lay = (s, f, d, k) => UiPhone.Lay(s, UiSamples.PhoneHome(English), f, d, k), Backdrop = "02.jpg" },
+            new Screen { Name = "7_icon_style_sheet", AppName = "Interface gallery", Lay = (s, f, d, k) => UiGallery.Lay(s, UiSamples.Gallery(English, UiGallery.IconsPage), f, d, k),
+                Backdrop = "13.jpg" },
+        };
     }
 
     // Every screen the kit draws, with its app's name, the target focus rests on and a walk of the d-pad for the path shot.
@@ -169,9 +198,13 @@ public static class UiPreviewRunner
             cr.pivot = new Vector2(0f, 1f);
             cr.sizeDelta = new Vector2(canvasW, CanvasH);
             cr.position = Vector3.zero;
+            RectTransform world = UiView.NewRect(cr, "World");
+            UiView.Stretch(world);
             RectTransform host = UiView.NewRect(cr, "Host");
             UiView.Stretch(host);
 
+            Backdrop(cr, shot.Screen.Backdrop);
+            UiChrome.Bar = () => UiSamples.Bar(shot.Screen.App);
             var view = new UiView(host, "Screen") { Motion = UiMotionSetting.Off };
             var scene = new UiScene();
             UiFrame frame = UiFrame.FullMenu(canvasW / CanvasH, shot.Screen.AppName);
@@ -228,6 +261,27 @@ public static class UiPreviewRunner
             UnityEngine.Object.DestroyImmediate(root);
         }
     }
+
+    // The game's world behind the screen: a street picture fitted to cover the canvas, cropped at its edges where the
+    // aspects differ, so a panel's translucency is judged on a real scene and not on black.
+    private static void Backdrop(RectTransform canvas, string file)
+    {
+        string path = string.IsNullOrEmpty(file) || string.IsNullOrEmpty(_backdrops) ? null : Path.Combine(_backdrops, file);
+        if (path == null || !File.Exists(path))
+        {
+            return;
+        }
+        var tex = new Texture2D(2, 2, TextureFormat.RGB24, false);
+        tex.LoadImage(File.ReadAllBytes(path));
+        RectTransform world = (RectTransform)canvas.Find("World");
+        var img = world.gameObject.AddComponent<RawImage>();
+        img.texture = tex;
+        float canvasAspect = canvas.sizeDelta.x / canvas.sizeDelta.y, picture = tex.width / (float)tex.height;
+        img.uvRect = canvasAspect > picture ? new Rect(0f, (1f - picture / canvasAspect) / 2f, 1f, picture / canvasAspect)
+            : new Rect((1f - canvasAspect / picture) / 2f, 0f, canvasAspect / picture, 1f);
+    }
+
+    private static string _backdrops = "";
 
     // The pad's path from the first target, a screen's own walk of the d-pad: each stop numbered and joined by a line, as
     // the d-pad moves the one focus (UiFocusRules); a press that leads nowhere is left out.

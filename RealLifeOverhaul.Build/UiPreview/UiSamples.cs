@@ -5,7 +5,7 @@ using RealLifeOverhaul.Ui;
 // contacts_source.html), for the offline previews and EconomyCheck's layout checks. Fixtures, never shipped: the mod's
 // screens build their models from the game's data and the locale keys. Words a screen labels with go through the given
 // text source, so the checks measure every language; the fixtures' names and messages stay as the wireframe has them.
-internal static class UiSamples
+internal static partial class UiSamples
 {
     /// <summary>The masthead's money, day and time in every preview and check: the game's own bar writes them so.</summary>
     public const string Status = "$48,210     Tuesday (Day 12)     14:32";

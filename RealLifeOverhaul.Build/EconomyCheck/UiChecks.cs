@@ -44,79 +44,88 @@ internal static partial class Program
 
     private static void UiTokenChecks()
     {
-        Check(UiTokens.ThemeLength(true) == (int)UiRole.Count && UiTokens.ThemeLength(false) == (int)UiRole.Count, "ui tokens: both themes give a colour for every role");
+        Check(UiTokens.ThemeLength() == (int)UiRole.Count, "ui tokens: the one look gives a colour for every role");
         bool all = true;
         for (int r = 1; r < (int)UiRole.Count; r++)
         {
-            all &= UiTokens.Colour((UiRole)r, true) != 0 && UiTokens.Colour((UiRole)r, false) != 0;
+            all &= (UiRole)r == UiRole.Bg || UiTokens.Colour((UiRole)r) != 0;
         }
-        Check(all, "ui tokens: no role is left without a colour in either theme");
-        Check(UiTokens.Colour(UiRole.Bg, true) == 0x12110EFF && UiTokens.Colour(UiRole.Text, true) == 0xDAD2C3FF && UiTokens.Colour(UiRole.Accent, true) == 0xE39A81FF
-              && UiTokens.Colour(UiRole.Bg, false) == 0xDED1C0FF && UiTokens.Colour(UiRole.Text, false) == 0x221D17FF && UiTokens.Colour(UiRole.Accent, false) == 0x8E1E3FFF,
-            "ui tokens: the City Ledger retuned for low glare (the owner, 1 Nov): soft warm words on ink-black with a quieter salmon, a dim warm paper with its ink and claret");
-        // The owner (1 Nov): nothing that hits the eyes. No near-white words or rules in dark, no bright paper in light, and the
-        // masthead's and the panels' rules a dim line rather than a cream one.
-        float textL = UiLightness(UiTokens.Colour(UiRole.Text, true)), avatarInk = UiTokens.AvatarDarkInkL * 100f;
-        Check(textL <= 86f && avatarInk <= 88f, "ui tokens: no near-white in dark: the words at L* " + textL.ToString("0") + ", an avatar's initials at " + avatarInk.ToString("0") + " (at most 86 and 88)");
-        float brightest = 0f;
-        foreach (UiRole r in new[] { UiRole.Bg, UiRole.Panel, UiRole.Header, UiRole.Row, UiRole.Field, UiRole.Bubble, UiRole.PromptCap, UiRole.OnAccent })
+        Check(all && UiTokens.Colour(UiRole.Bg) == 0, "ui tokens: no role is left without a colour, and the ground is clear, so the world shows behind every panel");
+        Check(UiTokens.Colour(UiRole.Panel) >> 8 == 0x2B3A4A && UiTokens.Colour(UiRole.Header) >> 8 == 0x223040 && UiTokens.Colour(UiRole.Band) >> 8 == 0x1E2A37
+              && UiTokens.Colour(UiRole.StatusBar) >> 8 == 0x1A2430 && UiTokens.Colour(UiRole.Pill) == 0x263445FF && UiTokens.Colour(UiRole.Text) == 0xE6EDF3FF
+              && UiTokens.Colour(UiRole.Text2) == 0xA9B8C7FF && UiTokens.Colour(UiRole.Accent) == 0x3DBBEBFF && UiTokens.Colour(UiRole.Ok) == 0x74D35AFF
+              && UiTokens.Colour(UiRole.Warn) == 0xF2C14EFF && UiTokens.Colour(UiRole.Danger) == 0xEE6352FF,
+            "ui tokens: the Cities: Skylines II look (DIRECTION_CS2, section 3): slate panels, a darker strip, band and bar, soft white words, the cyan and the status colours");
+        // The owner (1 Nov): nothing that hits the eyes. No pure white anywhere, and every surface a cool dark slate.
+        bool white = false;
+        for (int r = 1; r < (int)UiRole.Count; r++)
         {
-            brightest = Math.Max(brightest, UiLightness(UiTokens.Colour(r, false)));
+            white |= UiTokens.Colour((UiRole)r) >> 8 == 0xFFFFFF;
         }
-        Check(brightest <= 91f && UiTokens.AvatarLightL <= 0.82f, "ui tokens: no bright paper in light: its brightest surface at L* " + brightest.ToString("0") + " (at most 91), an avatar's circle at " + UiTokens.AvatarLightL.ToString("0.00"));
-        foreach (bool dark in new[] { true, false })
+        float textL = UiLightness(UiTokens.Colour(UiRole.Text)), avatarInk = UiTokens.AvatarDarkInkL * 100f;
+        Check(!white && textL <= 94f && avatarInk <= 94f, "ui tokens: no pure white anywhere: the words at L* " + textL.ToString("0") + ", an avatar's initials at " + avatarInk.ToString("0")
+            + " (at most 94)");
+        bool cool = true;
+        foreach (UiRole r in new[] { UiRole.Panel, UiRole.Header, UiRole.Band, UiRole.StatusBar, UiRole.Pill, UiRole.Field, UiRole.Bubble, UiRole.Notice })
         {
-            UiColour panelColour = UiColour.Of(UiRole.Panel, dark).Over(UiColour.Of(UiRole.Bg, dark));
-            float rule = UiColour.Contrast(UiColour.Of(UiRole.Rule, dark).Over(panelColour), panelColour);
-            Check(rule > 1.2f && rule < 2.5f, "ui tokens (" + (dark ? "dark" : "light") + "): a panel's rule is a dim line, seen but never glaring (" + rule.ToString("0.00") + ":1 on the panel)");
+            uint c = UiTokens.Colour(r);
+            uint red = (c >> 24) & 0xFF, green = (c >> 16) & 0xFF, blue = (c >> 8) & 0xFF;
+            cool &= blue > red && blue >= green && UiLightness(c) < 40f;
         }
-        Check(UiTokens.RadiusPanel == 0f && UiTokens.RadiusLarge <= 2f && UiTokens.FrameRule >= 2f, "ui tokens: print is square, a framed panel wears its column rule");
-        float mast = UiFrame.MastheadHeight;
-        Check(mast % UiTokens.Grid == 0f && mast >= UiTextRules.LineHeight(UiStyle.AppTitle) + UiTokens.FrameRule
-              && mast - UiTextRules.LineHeight(UiStyle.AppTitle) - UiTokens.FrameRule <= UiTokens.S3 * 2f + UiTokens.Grid,
-            "ui tokens: the masthead is as tall as its words need (the app's name, a step of air either side and the rule, " + mast + " px)");
-        foreach (bool dark in new[] { true, false })
+        Check(cool, "ui tokens: every surface is a cool dark slate, blue over red: no brown, red or cream panel (DIRECTION_CS2, section 3)");
+        UiColour ground = UiColour.Of(UiRole.Panel, true).Over(UiCheckRules.World);
+        float rule = UiColour.Contrast(UiColour.Of(UiRole.Rule, true).Over(ground), ground);
+        Check(rule > 1.1f && rule < 2.5f, "ui tokens: a hairline is a dim line on the panel, seen but never glaring (" + rule.ToString("0.00") + ":1 on the panel)");
+        Check(UiTokens.RadiusPanel == 4f && UiTokens.RadiusLarge == 4f && UiTokens.RadiusMedium == 4f && UiTokens.FrameRule == UiTokens.Hairline,
+            "ui tokens: panels, buttons and pills at 4 px corners, a hairline under a title strip (DIRECTION_CS2, section 3)");
+        Check(UiFrame.MastheadHeight == 0f && UiFrame.BandHeight == UiFrame.Toolbar + UiFrame.StatusRow && UiFrame.BandHeight % UiTokens.Grid == 0f && UiFrame.Strip % UiTokens.Grid == 0f,
+            "ui tokens: no masthead: the status bar along the foot holds the apps and the pills, a title strip heads each panel, all on the grid");
+        UiRole[] surfaces = { UiRole.Panel, UiRole.Header, UiRole.Band, UiRole.Field, UiRole.Bubble, UiRole.Hover, UiRole.StatusBar, UiRole.Pill };
+        foreach (UiRole ink in new[] { UiRole.Text, UiRole.Text2, UiRole.AccentText })
         {
-            string theme = dark ? "dark" : "light";
-            UiColour panel = UiColour.Of(UiRole.Panel, dark);
-            UiRole[] surfaces = { UiRole.Bg, UiRole.Panel, UiRole.Header, UiRole.Row, UiRole.Field, UiRole.Bubble, UiRole.Hover, UiRole.RowSel };
-            UiRole[] inks = { UiRole.Text, UiRole.Text2, UiRole.Muted, UiRole.AccentText };
-            foreach (UiRole ink in inks)
+            foreach (UiRole surface in surfaces)
             {
-                foreach (UiRole surface in surfaces)
-                {
-                    float c = UiContrast(ink, surface, dark);
-                    Check(c >= UiCheckRules.NormalContrast, "ui tokens (" + theme + "): " + ink + " on " + surface + " stands " + c.ToString("0.00") + ":1, WCAG AA wants 4.5");
-                }
+                float c = UiContrast(ink, surface, true);
+                Check(c >= UiCheckRules.NormalContrast, "ui tokens: " + ink + " on " + surface + " stands " + c.ToString("0.00") + ":1, WCAG AA wants 4.5");
             }
-            Check(UiContrast(UiRole.OnAccent, UiRole.Accent, dark) >= UiCheckRules.NormalContrast, "ui tokens (" + theme + "): words on the accent reach 4.5:1 (" + UiContrast(UiRole.OnAccent, UiRole.Accent, dark).ToString("0.00") + ")");
-            Check(UiContrast(UiRole.NoticeText, UiRole.Notice, dark) >= UiCheckRules.NormalContrast, "ui tokens (" + theme + "): a quiet badge's words reach 4.5:1");
-            foreach (UiRole[] pair in new[] { new[] { UiRole.OkText, UiRole.OkSoft }, new[] { UiRole.WarnText, UiRole.WarnSoft }, new[] { UiRole.DangerText, UiRole.DangerSoft }, new[] { UiRole.AccentText, UiRole.AccentSoft } })
-            {
-                UiColour soft = UiColour.Of(pair[1], dark).Over(panel);
-                float c = UiColour.Contrast(UiColour.Of(pair[0], dark).Over(soft), soft);
-                Check(c >= UiCheckRules.NormalContrast, "ui tokens (" + theme + "): " + pair[0] + " on its soft fill reaches 4.5:1 (" + c.ToString("0.00") + ")");
-            }
-            float worst = 21f;
-            int worstHue = 0;
-            for (int hue = 0; hue < 360; hue++)
-            {
-                float c = UiColour.Contrast(UiColour.AvatarInk(hue, dark), UiColour.AvatarFill(hue, dark));
-                if (c < worst)
-                {
-                    worst = c;
-                    worstHue = hue;
-                }
-            }
-            Check(worst >= UiCheckRules.NormalContrast, "ui tokens (" + theme + "): every avatar's initials reach 4.5:1 on their circle, at every hue (worst " + worst.ToString("0.00") + " at " + worstHue + ")");
-            foreach (UiRole surface in new[] { UiRole.Bg, UiRole.Panel, UiRole.Row })
-            {
-                float c = UiContrast(UiRole.Focus, surface, dark);
-                Check(c >= UiCheckRules.LargeContrast, "ui tokens (" + theme + "): the focus ring stands out 3:1 from " + surface + " (" + c.ToString("0.00") + ")");
-            }
-            Check(UiColour.Contrast(UiColour.Of(UiRole.PromptInk, dark), UiColour.Of(UiRole.Bg, dark)) >= UiCheckRules.NormalContrast,
-                "ui tokens (" + theme + "): the prompts' words stand out on the flat band the kit paints");
         }
+        foreach (UiRole surface in new[] { UiRole.Panel, UiRole.Header, UiRole.Band, UiRole.StatusBar, UiRole.Pill })
+        {
+            float c = UiContrast(UiRole.Muted, surface, true);
+            Check(c >= UiCheckRules.NormalContrast, "ui tokens: Muted on " + surface + " stands " + c.ToString("0.00") + ":1, WCAG AA wants 4.5 (a label, never on a bubble or a chosen row)");
+        }
+        foreach (UiRole ink in new[] { UiRole.Text, UiRole.AccentText })
+        {
+            float c = UiContrast(ink, UiRole.RowSel, true);
+            Check(c >= UiCheckRules.NormalContrast, "ui tokens: " + ink + " on a chosen row stands " + c.ToString("0.00") + ":1, WCAG AA wants 4.5");
+        }
+        Check(UiContrast(UiRole.OnAccent, UiRole.Accent, true) >= UiCheckRules.NormalContrast, "ui tokens: words on the cyan reach 4.5:1 (" + UiContrast(UiRole.OnAccent, UiRole.Accent, true).ToString("0.00") + ")");
+        Check(UiContrast(UiRole.NoticeText, UiRole.Notice, true) >= UiCheckRules.NormalContrast, "ui tokens: a quiet badge's words reach 4.5:1");
+        foreach (UiRole[] pair in new[] { new[] { UiRole.OkText, UiRole.OkSoft }, new[] { UiRole.WarnText, UiRole.WarnSoft }, new[] { UiRole.DangerText, UiRole.DangerSoft }, new[] { UiRole.AccentText, UiRole.AccentSoft } })
+        {
+            UiColour soft = UiColour.Of(pair[1], true).Over(ground);
+            float c = UiColour.Contrast(UiColour.Of(pair[0], true).Over(soft), soft);
+            Check(c >= UiCheckRules.NormalContrast, "ui tokens: " + pair[0] + " on its soft fill reaches 4.5:1 (" + c.ToString("0.00") + ")");
+        }
+        float worst = 21f;
+        int worstHue = 0;
+        for (int hue = 0; hue < 360; hue++)
+        {
+            float c = UiColour.Contrast(UiColour.AvatarInk(hue, true), UiColour.AvatarFill(hue, true));
+            if (c < worst)
+            {
+                worst = c;
+                worstHue = hue;
+            }
+        }
+        Check(worst >= UiCheckRules.NormalContrast, "ui tokens: every avatar's initials reach 4.5:1 on their circle, at every hue (worst " + worst.ToString("0.00") + " at " + worstHue + ")");
+        foreach (UiRole surface in new[] { UiRole.Panel, UiRole.Band, UiRole.StatusBar })
+        {
+            float c = UiContrast(UiRole.Focus, surface, true);
+            Check(c >= UiCheckRules.LargeContrast, "ui tokens: the focus ring stands out 3:1 from " + surface + " (" + c.ToString("0.00") + ")");
+        }
+        Check(UiContrast(UiRole.PromptInk, UiRole.StatusBar, true) >= UiCheckRules.NormalContrast, "ui tokens: the prompts' words stand out on the status bar");
+        UiChartChecks();
         bool grid = true, rising = true;
         for (int i = 0; i < UiTokens.Steps.Length; i++)
         {
@@ -137,7 +146,7 @@ internal static partial class Program
             UiFace held = UiFontMetrics.Face(t.Family, t.Weight);
             weights &= held != null && held.Weight == t.Weight;   // the very cut the bundle holds, never a neighbour standing in
         }
-        Check(sizes && UiTokens.MinText >= 15f, "ui tokens: every style is at least the smallest text (15 px at 1080p), readable at play distance");
+        Check(sizes && UiTokens.MinText >= 13f, "ui tokens: every style is at least the smallest text (13 px at 1080p, a section's label: DIRECTION_CS2, section 3)");
         Check(weights, "ui tokens: every style is a weight the bundle holds");
         Check(UiCheckRules.SlowMotion(null) == 0, "ui tokens: feedback, focus, selection and arrivals take 60 to 240 ms, a fill at most 600");
         Check(UiTokens.Stagger <= 0.03f && UiTokens.Slide <= UiTokens.S3 && UiTokens.StaggerMost <= 10f, "ui tokens: a list's stagger and a slide are short, as games move");
@@ -160,36 +169,105 @@ internal static partial class Program
         return (float)(y > 0.008856 ? 116.0 * Math.Pow(y, 1.0 / 3.0) - 16.0 : 903.3 * y);
     }
 
+    // An ink on a surface where the kit draws it: the status bar and its pills over the world, everything else on a panel over
+    // the world, taken at its brightest (UiCheckRules.World).
     private static float UiContrast(UiRole ink, UiRole surface, bool dark)
     {
-        UiColour under = UiColour.Of(surface, dark).Over(UiColour.Of(UiRole.Bg, dark));
+        UiColour world = UiCheckRules.World;
+        UiColour bar = UiColour.Of(UiRole.StatusBar, dark).Over(world);
+        UiColour panel = UiColour.Of(UiRole.Panel, dark).Over(world);
+        UiColour under = surface == UiRole.Panel ? panel : surface == UiRole.StatusBar ? bar : surface == UiRole.Pill ? UiColour.Of(UiRole.Pill, dark).Over(bar)
+            : UiColour.Of(surface, dark).Over(panel);
         return UiColour.Contrast(UiColour.Of(ink, dark).Over(under), under);
     }
+
+    // The chart's eight hues stay apart under colour blindness (DIRECTION_CS2, section 3): each pair under protanopia,
+    // deuteranopia and tritanopia (Machado, Oliveira and Fernandes 2009, full severity), measured in CIELAB, and each slice
+    // from the one beside it in a donut by more.
+    private static void UiChartChecks()
+    {
+        double[][,] kinds =
+        {
+            new[,] { { 0.152286, 1.052583, -0.204868 }, { 0.114503, 0.786281, 0.099216 }, { -0.003882, -0.048116, 1.051998 } },
+            new[,] { { 0.367322, 0.860646, -0.227968 }, { 0.280085, 0.672501, 0.047413 }, { -0.011820, 0.042940, 0.968881 } },
+            new[,] { { 1.255528, -0.076749, -0.178779 }, { -0.078411, 0.930809, 0.147602 }, { 0.004733, 0.691367, 0.303900 } },
+        };
+        string[] names = { "protanopia", "deuteranopia", "tritanopia" };
+        for (int k = 0; k < kinds.Length; k++)
+        {
+            var labs = new double[8][];
+            for (int i = 0; i < 8; i++)
+            {
+                labs[i] = SeenLab(UiTokens.Colour(UiTokens.Chart(i)), kinds[k]);
+            }
+            double pair = double.MaxValue, beside = double.MaxValue;
+            for (int i = 0; i < 8; i++)
+            {
+                beside = Math.Min(beside, LabDistance(labs[i], labs[(i + 1) % 8]));
+                for (int j = i + 1; j < 8; j++)
+                {
+                    pair = Math.Min(pair, LabDistance(labs[i], labs[j]));
+                }
+            }
+            Check(pair >= 8.0 && beside >= 12.0, "ui tokens: the chart's hues stay apart under " + names[k] + " (closest pair " + pair.ToString("0.0") + ", closest neighbours " + beside.ToString("0.0")
+                + "; at least 8 and 12)");
+        }
+    }
+
+    // A colour as an eye with a colour vision deficiency sees it, in CIELAB.
+    private static double[] SeenLab(uint rgba, double[,] m)
+    {
+        double[] c = { Linear((rgba >> 24) & 0xFF), Linear((rgba >> 16) & 0xFF), Linear((rgba >> 8) & 0xFF) };
+        var seen = new double[3];
+        for (int r = 0; r < 3; r++)
+        {
+            seen[r] = Math.Max(0.0, Math.Min(1.0, m[r, 0] * c[0] + m[r, 1] * c[1] + m[r, 2] * c[2]));
+        }
+        double x = 0.4124 * seen[0] + 0.3576 * seen[1] + 0.1805 * seen[2], y = 0.2126 * seen[0] + 0.7152 * seen[1] + 0.0722 * seen[2];
+        double z = 0.0193 * seen[0] + 0.1192 * seen[1] + 0.9505 * seen[2];
+        double fx = LabF(x / 0.95047), fy = LabF(y), fz = LabF(z / 1.08883);
+        return new[] { 116.0 * fy - 16.0, 500.0 * (fx - fy), 200.0 * (fy - fz) };
+    }
+
+    private static double Linear(uint channel)
+    {
+        double c = channel / 255.0;
+        return c <= 0.04045 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4);
+    }
+
+    private static double LabF(double t) => t > 0.008856 ? Math.Pow(t, 1.0 / 3.0) : 7.787 * t + 16.0 / 116.0;
+
+    private static double LabDistance(double[] a, double[] b) => Math.Sqrt((a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]) + (a[2] - b[2]) * (a[2] - b[2]));
 
     // ---------------------------------------------------------------- fonts
 
     private static void UiFontChecks()
     {
-        Check(UiFontMetrics.FaceCount == 7, "ui fonts: seven faces, Source Serif 4's display cut at 600 and 700, its text cut at 500 and 700, Libre Franklin at 600, 700 and 800");
+        Check(UiFontMetrics.FaceCount == 3, "ui fonts: three faces, Overpass at 400, 600 and 700 (DIRECTION_CS2: never serif)");
         bool faces = true;
-        foreach ((UiFamily family, int weight) in new[] { (UiFamily.SerifDisplay, 600), (UiFamily.SerifDisplay, 700), (UiFamily.Serif, 500), (UiFamily.Serif, 700),
-                     (UiFamily.Franklin, 600), (UiFamily.Franklin, 700), (UiFamily.Franklin, 800) })
+        foreach ((UiFamily family, int weight) in new[] { (UiFamily.Overpass, 400), (UiFamily.Overpass, 600), (UiFamily.Overpass, 700) })
         {
             UiFace f = UiFontMetrics.Face(family, weight);
             faces &= f != null && f.Family == family && f.Weight == weight && f.UnitsPerEm > 0 && f.Ascender > 0 && f.Descender < 0 && f.LineEm > 1f && f.LineEm < 1.6f;
         }
         Check(faces, "ui fonts: each face has its own metrics and a line of 1 to 1.6 em");
         bool scripts = true;
-        foreach (UiFamily family in new[] { UiFamily.SerifDisplay, UiFamily.Serif, UiFamily.Franklin })
+        bool tabular = true;
+        foreach (int weight in new[] { 400, 600, 700 })
         {
-            UiFace f = UiFontMetrics.Face(family, 700);
+            UiFace f = UiFontMetrics.Face(UiFamily.Overpass, weight);
             scripts &= f.Advance('A') > 0 && f.Advance('ł') > 0 && f.Advance('ğ') > 0 && f.Advance('İ') > 0 && f.Advance('ç') > 0 && f.Advance('ж') > 0 && f.Advance('\u2212') > 0;
+            for (char d = '1'; d <= '9'; d++)
+            {
+                tabular &= f.Advance(d) == f.Advance('0');
+            }
         }
-        Check(scripts, "ui fonts: both families draw Latin, Latin Extended (Polish, Turkish, Portuguese), Cyrillic and the minus sign");
+        Check(scripts, "ui fonts: Overpass draws Latin, Latin Extended (Polish, Turkish, Portuguese), Cyrillic and the minus sign in each weight");
+        Check(tabular, "ui fonts: every figure is as wide as every other, so a column of numbers lines up (the tabular cuts swapped in by fonts.py)");
         string fonts = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\UiAssets"));
         string script = File.Exists(System.IO.Path.Combine(fonts, "scripts", "fonts.py")) ? File.ReadAllText(System.IO.Path.Combine(fonts, "scripts", "fonts.py")) : "";
         bool pinned = script.Length > 0;
-        foreach (string file in new[] { "SourceSerif4[opsz,wght].ttf", "LibreFranklin[wght].ttf" })
+        foreach (string file in new[] { "Overpass-Regular.ttf", "Overpass-SemiBold.ttf", "Overpass-Bold.ttf" })
         {
             string path = System.IO.Path.Combine(fonts, "fonts", file);
             string hash = File.Exists(path) ? Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant() : "missing";
@@ -201,7 +279,7 @@ internal static partial class Program
         string contents = System.IO.Path.Combine(fonts, "contents", "reallife_ui.json");
         string listed = File.Exists(contents) ? File.ReadAllText(contents) : "";
         string bundle = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Bundles\reallife_ui"));
-        Check(File.Exists(bundle) && listed.Contains("\"faces\"") && listed.Contains("SerifDisplay-Bold SDF") && listed.Contains("Serif-Medium SDF") && listed.Contains("Franklin-ExtraBold SDF"),
+        Check(File.Exists(bundle) && listed.Contains("\"faces\"") && listed.Contains("Overpass-Regular SDF") && listed.Contains("Overpass-SemiBold SDF") && listed.Contains("Overpass-Bold SDF"),
             "ui fonts: the bundle is built and its contents list holds every face");
     }
 
@@ -332,10 +410,21 @@ internal static partial class Program
         UiFrame pointer = keys;
         pointer.Pointer = true;
         UiDashboard.Lay(s, UiSamples.PopulationContributors(UiWords("en")), keys, true, UiDefaultKeys.Keyboard);
-        bool keysMove = Prompted(s, UiAction.Move) && Prompted(s, UiAction.Confirm) && Prompted(s, UiAction.Back);
+        bool keysNamed = Prompted(s, UiAction.Move) && Prompted(s, UiAction.Confirm) && Prompted(s, UiAction.Back) && PromptsDrawn(s) > 0;
         UiDashboard.Lay(s, UiSamples.PopulationContributors(UiWords("en")), pointer, true, UiDefaultKeys.Keyboard);
-        Check(keysMove && !Prompted(s, UiAction.Move) && !Prompted(s, UiAction.Confirm) && Prompted(s, UiAction.Alt) && Prompted(s, UiAction.Back),
-            "ui input: with the mouse leading the band drops Move and Select, which the mouse does by pointing, and keeps the shortcuts and Back");
+        Check(keysNamed && PromptsDrawn(s) == 0 && Prompted(s, UiAction.Back),
+            "ui input: with the keys leading the status bar names every key and the way back; with the mouse leading it shows none, as the mouse does it by pointing");
+    }
+
+    // The prompts the status bar draws: none while the mouse leads.
+    private static int PromptsDrawn(UiScene s)
+    {
+        int n = 0;
+        for (int i = 0; i < s.ItemCount; i++)
+        {
+            n += s.Items[i].Kind == UiKind.Text && (s.Items[i].Flags & UiFlags.Prompt) != 0 ? 1 : 0;
+        }
+        return n;
     }
 
     private static bool Prompted(UiScene s, UiAction action)
@@ -436,7 +525,30 @@ internal static partial class Program
                     break;
             }
         }
+        cases.AddRange(PrototypeCases());
         return cases;
+    }
+
+    // The Cities: Skylines II prototype's six screens (DIRECTION_CS2, section 7), held to every rule the kit's screens are: the
+    // person's info panel, the city's people as an info view, the studio and Contacts as app windows, the desk session as a
+    // decision card and the phone's home.
+    private static IEnumerable<UiScreenCase> PrototypeCases()
+    {
+        UiScreenDef gallery = Array.Find(UiScreens.All, d => d.Template == UiTemplate.Gallery);
+        UiScreenDef contacts = Array.Find(UiScreens.All, d => d.Template == UiTemplate.ListDetail);
+        yield return new UiScreenCase { Def = gallery, Name = "cs2 person info panel", Title = "Rosa Stanley", Commands = new[] { UiInfoPanel.TabCommand, UiInfoPanel.LinkCommand, UiInfoPanel.FooterCommand },
+            Lay = (s, f, dark, k, t) => UiInfoPanel.Lay(s, UiSamples.Person(t), f, dark, k) };
+        yield return new UiScreenCase { Def = gallery, Name = "cs2 people info view", Title = "The city's people", Commands = new[] { UiInfoView.ViewCommand },
+            Lay = (s, f, dark, k, t) => UiInfoView.Lay(s, UiSamples.People(t), f, dark, k) };
+        yield return new UiScreenCase { Def = gallery, Name = "cs2 studio app window", Title = "Tech",
+            Commands = new[] { UiAppWindow.NavCommand, UiAppWindow.RowCommand, UiAppWindow.PersonCommand, UiAppWindow.ActionCommand, UiAppWindow.MoreCommand },
+            Lay = (s, f, dark, k, t) => UiAppWindow.Lay(s, UiSamples.Studio(t), f, dark, k) };
+        yield return new UiScreenCase { Def = gallery, Name = "cs2 desk session decision", Title = "Desk", Commands = new[] { UiDecision.ChoiceCommand, UiDecision.ButtonCommand },
+            Lay = (s, f, dark, k, t) => UiDecision.Lay(s, UiSamples.Meeting(t), f, dark, k) };
+        yield return new UiScreenCase { Def = contacts, Name = "cs2 contacts app window", Title = "Contacts", Commands = ListDetailCommands,
+            Lay = (s, f, dark, k, t) => UiListDetail.Lay(s, UiSamples.ContactsWindow(t), f, dark, k) };
+        yield return new UiScreenCase { Def = gallery, Name = "cs2 phone home", Title = "Phone", Commands = new[] { UiPhone.AppCommand, UiPhone.PageCommand },
+            Lay = (s, f, dark, k, t) => UiPhone.Lay(s, UiSamples.PhoneHome(t), f, dark, k) };
     }
 
     private static void UiScreenChecks()
@@ -510,19 +622,14 @@ internal static partial class Program
                         Check(UiCheckRules.Strays(s, say) == 0, "ui screens: no mark lies over a panel it does not belong to: " + where);
                         Check(UiCheckRules.TypeLevels(s, say) == 0, "ui screens: three sizes of type at most: " + where);
                         Check(UiCheckRules.UnknownCommands(s, c.Commands, say) == 0, "ui screens: every target runs a command its template answers: " + where);
-                        if (lang == "en")
+                        if (lang == "en" && keys == UiDefaultKeys.Keyboard)
                         {
-                            c.Lay(s, frame, false, keys, t);
-                            Check(UiCheckRules.LowContrast(s, say) == 0, "ui screens: every text and icon stands out (light): " + where);
-                            if (keys == UiDefaultKeys.Keyboard)
-                            {
-                                // As the mouse sees it: the band without Move and Select still says how to go back, and nothing else moves.
-                                UiFrame pointer = frame;
-                                pointer.Pointer = true;
-                                c.Lay(s, pointer, true, keys, t);
-                                Check(UiCheckRules.NoPrompts(s, say) == 0 && !Prompted(s, UiAction.Move) && !Prompted(s, UiAction.Confirm) && UiCheckRules.Overlaps(s, say) == 0,
-                                    "ui screens: with the mouse leading, the band keeps Back and leaves out what the mouse does itself: " + where);
-                            }
+                            // As the mouse sees it: the status bar shows no prompt, still knows the way back, and nothing else moves.
+                            UiFrame pointer = frame;
+                            pointer.Pointer = true;
+                            c.Lay(s, pointer, true, keys, t);
+                            Check(UiCheckRules.NoPrompts(s, say) == 0 && PromptsDrawn(s) == 0 && UiCheckRules.Overlaps(s, say) == 0,
+                                "ui screens: with the mouse leading, the status bar shows no prompts and nothing else moves: " + where);
                         }
                     }
                 }
@@ -717,6 +824,7 @@ internal static partial class Program
         UiDraw.Text(beta, new UiAt { Parent = -1, Clip = -1, Layer = 1, Order = -1 }, 900f, 300f, 300f, UiStyle.Hero, UiRole.Text, "Maya Okafor", UiFlags.None);
         Check(UiCheckRules.Floating(beta, null) == 1, "ui rules: a call's words straight over the page are found");
         UiDraw.Text(beta, UiAt.Screen.In(sheet), 44f, 260f, 300f, UiStyle.Number, UiRole.Text, "12", UiFlags.None);
+        UiDraw.Text(beta, UiAt.Screen.In(sheet), 44f, 300f, 300f, UiStyle.Display, UiRole.Text, "48,210", UiFlags.None);
         Check(UiCheckRules.TypeLevels(beta, null) == 1, "ui rules: more than three sizes of type are found");
         UiDraw.Node(beta, UiAt.Screen, 24f, 600f, 200f, 48f, 0, 0, -1);
         Check(UiCheckRules.UnknownCommands(beta, DashboardCommands, null) == 1, "ui rules: a button whose command its template answers nowhere is found (beta 3's Call read as a group)");

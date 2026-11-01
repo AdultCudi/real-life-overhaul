@@ -72,8 +72,8 @@ internal static partial class Program
             for (int n = 0; n < scene.NodeCount; n++)
             {
                 ref UiNode node = ref scene.Nodes[n];
-                bool leads = node.Command == UiDashboard.RowCommand ? node.Arg >= 0 && node.Arg < v.Rows.Count && v.Rows[node.Arg].Target.Valid
-                    : node.Command == UiDashboard.ActionCommand && v.PrimaryTarget.Valid;
+                bool leads = node.Command == UiDraw.CloseCommand || (node.Command == UiDashboard.RowCommand ? node.Arg >= 0 && node.Arg < v.Rows.Count && v.Rows[node.Arg].Target.Valid
+                    : node.Command == UiDashboard.ActionCommand && v.PrimaryTarget.Valid);   // the window's close is the host's Back
                 dead += leads ? 0 : 1;
             }
         }
@@ -150,9 +150,9 @@ internal static partial class Program
         }
         Check(am.Shape == UiPageShape.Feed && am.Title == null && rows == 1 && am.EntryLeads[0] && !am.EntryLeads[1],
             "ui pages: Flare's account is a feed headed by its tabs, and only an entry that opens a business is a target");
-        Check(am.Entries[0].Preview == "A post · seen by 1,240 · 38 came · $412 spent" && am.Entries[0].Time == "Today"
-              && am.Entries[1].Preview.StartsWith("An ad · seen by 300", StringComparison.Ordinal) && am.Entries[1].Time == "2 days ago"
-              && am.Entries[2].Preview == "A post · seen by 0 · kept 12 away · $140 lost" && am.Entries[2].Time == "Yesterday",
+        Check(am.Entries[0].Preview == "A post, seen by 1,240, 38 came, $412 spent" && am.Entries[0].Time == "Today"
+              && am.Entries[1].Preview.StartsWith("An ad, seen by 300", StringComparison.Ordinal) && am.Entries[1].Time == "2 days ago"
+              && am.Entries[2].Preview == "A post, seen by 0, kept 12 away, $140 lost" && am.Entries[2].Time == "Yesterday",
             "ui pages: what each post on Flare's account did is said in words, one that put people off as kept away, and each says when it went up");
         UiDashboardModel tm = FlareCityPages.Model(trends, en, money, resident, tabs, 1, account);
         UiDashboard.Lay(scene, tm, frame, true, UiDefaultKeys.Keyboard);
@@ -197,7 +197,7 @@ internal static partial class Program
         string said = "none";
         int broken = UiCheckRules.Overlaps(scene, l => said = l) + UiCheckRules.Spills(scene, l => said = l) + UiCheckRules.Unfit(scene, l => said = l) + UiCheckRules.EmptyPanels(scene, l => said = l)
                      + UiCheckRules.NoPrompts(scene, l => said = l) + UiCheckRules.TypeLevels(scene, l => said = l);
-        Check(scene.NodeCount == 0 && broken == 0 && sample.Title == UiWords("en")("reallife_ui_sample_firm", "A sample studio"),
+        Check(scene.NodeCount == 1 && scene.Nodes[0].Command == UiDraw.CloseCommand && broken == 0 && sample.Title == UiWords("en")("reallife_ui_sample_firm", "A sample studio"),
             "ui pages: on a save with no tech firm the firm's test opens a sample studio named as one, with nothing on it to press (" + said + ")");
     }
 
@@ -210,7 +210,7 @@ internal static partial class Program
         int none = 0;
         for (int n = 0; n < scene.NodeCount; n++)
         {
-            none += ContactsRoutes.Route(scene.Nodes[n].Command, scene.Nodes[n].Arg) == ContactsRoute.None ? 1 : 0;
+            none += scene.Nodes[n].Command != UiDraw.CloseCommand && ContactsRoutes.Route(scene.Nodes[n].Command, scene.Nodes[n].Arg) == ContactsRoute.None ? 1 : 0;   // the close is the host's Back
         }
         int map = scene.FindNode(UiListDetail.Action, ContactsRoutes.MapArg), call = scene.FindNode(UiListDetail.Action, ContactsRoutes.CallArg);
         Check(none == 0 && map >= 0 && call >= 0 && scene.Nodes[call].Key == UiAction.Alt && scene.Nodes[map].Key == UiAction.Option,
