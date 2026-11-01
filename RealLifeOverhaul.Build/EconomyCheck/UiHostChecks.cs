@@ -44,14 +44,14 @@ internal static partial class Program
         string kit = File.ReadAllText(System.IO.Path.Combine(folder, "Contacts", "ContactsKit.cs"));
         Check(kit.Contains("new UiGameHost(new ContactsGameScreen())") && kit.Contains("StepAside(") && kit.Contains("\"Layout 30-70\""),
             "ui host: Contacts runs on the host, its layout the one leaf it hides, its call handed back by the host");
-        // Each runner has its own switch (the gallery is the kit's tool, not a screen of play), and each switch its words.
+        // Each runner has its own switch (the two galleries are the kit's tools, not screens of play), and each switch its words.
         var en = LocaleFile("en");
         var pt = LocaleFile("pt");
         var zh = LocaleFile("zh-cn");
         string unswitched = "none", unworded = "none";
         foreach (UiScreenDef def in UiScreens.All)
         {
-            if (def.Runner != null && def.Id != "gallery" && def.Section == null)
+            if (def.Runner != null && def.Id != "gallery" && def.Id != "kit_parts" && def.Section == null)
             {
                 unswitched = def.Id;
             }

@@ -384,11 +384,11 @@ namespace RealLifeOverhaul.Ui
             int node;
             switch (row.Control)
             {
-                case UiSettingControl.Switch: node = ControlSwitch(s, inside, cx, cy, ControlWidth, row.On, row.Value, RowCommand, index, row.Greyed); break;
-                case UiSettingControl.Slider: node = ControlSlider(s, inside, cx, cy, ControlWidth, row.Value, row.Share, RowCommand, index, row.Greyed); break;
-                case UiSettingControl.Choice: node = ControlChoice(s, inside, cx, cy, ControlWidth, row.Value, RowCommand, index, row.Greyed); break;
-                case UiSettingControl.Key: node = ControlKey(s, inside, cx, cy, ControlWidth, row.Value, row.Listening, RowCommand, index, row.Greyed); break;
-                case UiSettingControl.Text: node = ControlText(s, inside, cx, cy, ControlWidth, row.Value, null, RowCommand, index, row.Greyed); break;
+                case UiSettingControl.Switch: node = UiDraw.Switch(s, inside, cx, cy, ControlWidth, row.On, row.Value, RowCommand, index, row.Greyed); break;
+                case UiSettingControl.Slider: node = UiDraw.Slider(s, inside, cx, cy, ControlWidth, row.Value, row.Share, RowCommand, index, row.Greyed); break;
+                case UiSettingControl.Choice: node = UiDraw.Choice(s, inside, cx, cy, ControlWidth, row.Value, RowCommand, index, row.Greyed); break;
+                case UiSettingControl.Key: node = UiDraw.KeyBinding(s, inside, cx, cy, ControlWidth, row.Value, row.Listening, RowCommand, index, row.Greyed); break;
+                case UiSettingControl.Text: node = UiDraw.TextField(s, inside, cx, cy, ControlWidth, row.Value, null, RowCommand, index, row.Greyed); break;
                 default:
                     node = UiDraw.Button(s, inside, cx, cy, ControlWidth, UiTokens.Control, UiButtonKind.Secondary, row.Value, UiIcon.None, UiAction.Count, null, RowCommand, index, row.Greyed);
                     break;
@@ -398,102 +398,6 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Dim(s, drawn, node);   // its section's main switch is off: it waits in its place, quieter, and takes no press
             }
             return node;
-        }
-
-        // ------------------------------------------------------------------------------------------------- the controls
-        // Each in its control-only form: a box at a row's right, its words drawn by the row; the conversation's form slot
-        // draws with them too. The kit's own controls (UiDraw.Switch, Slider, Choice, TextField, KeyBinding, Stepper) take
-        // these places with the same parameters.
-
-        internal static int ControlStepper(UiScene s, UiAt at, float x, float y, float w, string figure, bool canLess, bool canMore, int lessCommand, int typeCommand,
-            int moreCommand, int arg, bool disabled)
-        {
-            float h = UiTokens.Control, b = UiTokens.Control;
-            int drawn = s.ItemCount;
-            int less = UiDraw.IconButton(s, at, x, y, b, UiIcon.Minus, UiRole.Text, lessCommand, arg);
-            if (!canLess || disabled)
-            {
-                UiDraw.Dim(s, drawn, less);
-            }
-            int face = UiDraw.Box(s, at, x + b + UiTokens.S2, y, w - (b + UiTokens.S2) * 2f, h, UiRole.Field, UiRole.None, UiTokens.RadiusMedium);
-            UiDraw.TextMiddle(s, at.In(face), x + b + UiTokens.S2 + UiTokens.S3, y, h, w - (b + UiTokens.S2) * 2f - UiTokens.S3 * 2f, UiStyle.BodyStrong, UiRole.Text, figure,
-                UiFlags.Centre | UiFlags.Truncate);
-            int typed = UiDraw.Node(s, at, x + b + UiTokens.S2, y, w - (b + UiTokens.S2) * 2f, h, typeCommand, arg, face, disabled);
-            drawn = s.ItemCount;
-            int more = UiDraw.IconButton(s, at, x + w - b, y, b, UiIcon.Plus, UiRole.Text, moreCommand, arg);
-            if (!canMore || disabled)
-            {
-                UiDraw.Dim(s, drawn, more);
-            }
-            return typed;
-        }
-
-        internal static int ControlSwitch(UiScene s, UiAt at, float x, float y, float w, bool on, string word, int command, int arg, bool disabled)
-        {
-            float h = UiTokens.Control;
-            int face = UiDraw.Box(s, at, x, y, w, h, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
-            UiAt inside = at.In(face);
-            const float trackW = UiTokens.S12 - UiTokens.S1, trackH = UiTokens.S6;
-            float tx = x + w - UiTokens.S2 - trackW;
-            if (!string.IsNullOrEmpty(word))
-            {
-                UiDraw.TextMiddle(s, inside, x + UiTokens.S2, y, h, tx - UiTokens.S3 - x - UiTokens.S2, UiStyle.Body, on ? UiRole.Text : UiRole.Text2, word, UiFlags.Right | UiFlags.Label);
-            }
-            int track = UiDraw.Box(s, inside, tx, y + (h - trackH) / 2f, trackW, trackH, on ? UiRole.Accent : UiRole.Track, UiRole.None, trackH / 2f, UiFlags.Circle);
-            float knob = trackH - UiTokens.S2;
-            UiDraw.Circle(s, at.In(track), on ? tx + trackW - UiTokens.S1 - knob : tx + UiTokens.S1, y + (h - knob) / 2f, knob, knob, on ? UiRole.OnAccent : UiRole.Text2);
-            return UiDraw.Node(s, at, x, y, w, h, command, arg, face, disabled);
-        }
-
-        internal static int ControlSlider(UiScene s, UiAt at, float x, float y, float w, string figure, float share, int command, int arg, bool disabled)
-        {
-            share = share < 0f ? 0f : share > 1f ? 1f : share;
-            float h = UiTokens.Control;
-            int face = UiDraw.Box(s, at, x, y, w, h, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
-            UiAt inside = at.In(face);
-            float fw = UiDraw.Snap(Math.Max(UiTextRules.Width(figure, UiStyle.BodyStrong), UiTokens.S10) + UiTokens.S1);
-            UiDraw.TextMiddle(s, inside, x + w - UiTokens.S2 - fw, y, h, fw, UiStyle.BodyStrong, UiRole.Text, figure, UiFlags.Right);
-            float tx = x + UiTokens.S2, tw = w - UiTokens.S2 * 2f - fw - UiTokens.S3;
-            float ty = y + (h - UiTokens.S1) / 2f;
-            int track = UiDraw.Box(s, inside, tx, ty, tw, UiTokens.S1, UiRole.Track, UiRole.None, UiTokens.S1 / 2f, UiFlags.Middle | UiFlags.Share);
-            if (share > 0f)
-            {
-                UiDraw.Box(s, at.In(track), tx, ty, Math.Max(UiTokens.S1, tw * share), UiTokens.S1, UiRole.Accent, UiRole.None, UiTokens.S1 / 2f, UiFlags.Middle | UiFlags.Share);
-            }
-            float knob = UiTokens.S4;
-            UiDraw.Circle(s, at.In(track), tx + tw * share - knob / 2f, y + (h - knob) / 2f, knob, knob, UiRole.Text, UiFlags.Share | UiFlags.Middle | UiFlags.Overflow);
-            return UiDraw.Node(s, at, x, y, w, h, command, arg, face, disabled);
-        }
-
-        internal static int ControlChoice(UiScene s, UiAt at, float x, float y, float w, string value, int command, int arg, bool disabled)
-        {
-            float h = UiTokens.Control;
-            w -= UiTokens.S2;   // ends where a switch's track and a slider's figure end
-            int face = UiDraw.Box(s, at, x, y, w, h, UiRole.Field, UiRole.None, UiTokens.RadiusMedium);
-            UiAt inside = at.In(face);
-            UiDraw.Icon(s, inside, x + w - UiTokens.S3 - UiTokens.Icon, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Down, UiRole.AccentText, UiFlags.Middle);
-            UiDraw.TextMiddle(s, inside, x + UiTokens.S3, y, h, w - UiTokens.S3 * 2f - UiTokens.Icon - UiTokens.S2, UiStyle.Body, UiRole.Text, value, UiFlags.Truncate);
-            return UiDraw.Node(s, at, x, y, w, h, command, arg, face, disabled);
-        }
-
-        internal static int ControlText(UiScene s, UiAt at, float x, float y, float w, string text, string placeholder, int command, int arg, bool disabled)
-        {
-            float h = UiTokens.Control;
-            w -= UiTokens.S2;
-            int face = UiDraw.Box(s, at, x, y, w, h, UiRole.Field, UiRole.None, UiTokens.RadiusMedium);
-            bool typed = !string.IsNullOrEmpty(text);
-            UiDraw.TextMiddle(s, at.In(face), x + UiTokens.S3, y, h, w - UiTokens.S3 * 2f, UiStyle.Body, typed ? UiRole.Text : UiRole.Muted, typed ? text : placeholder, UiFlags.Truncate);
-            return UiDraw.Node(s, at, x, y, w, h, command, arg, face, disabled);
-        }
-
-        internal static int ControlKey(UiScene s, UiAt at, float x, float y, float w, string keyWords, bool listening, int command, int arg, bool disabled)
-        {
-            float h = UiTokens.Control;
-            w -= UiTokens.S2;
-            int face = UiDraw.Box(s, at, x, y, w, h, listening ? UiRole.AccentSoft : UiRole.Field, UiRole.None, UiTokens.RadiusMedium);
-            UiDraw.TextMiddle(s, at.In(face), x + UiTokens.S3, y, h, w - UiTokens.S3 * 2f, listening ? UiStyle.Body : UiStyle.BodyStrong, listening ? UiRole.AccentText : UiRole.Text, keyWords,
-                UiFlags.Centre | UiFlags.Truncate);
-            return UiDraw.Node(s, at, x, y, w, h, command, arg, face, disabled);
         }
     }
 }
