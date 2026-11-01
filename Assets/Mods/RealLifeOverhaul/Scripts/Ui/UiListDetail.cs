@@ -162,7 +162,7 @@ namespace RealLifeOverhaul.Ui
             y += UiTokens.KeyCap + UiTokens.S3;
             // The foot first, so the groups know their room: the player, the note and the side actions above it.
             float foot = top + h - UiTokens.AvatarSmall;
-            UiDraw.PlayerCard(s, at, x + UiTokens.S2, foot, w - UiTokens.S2 * 2f, m.PlayerName, m.PlayerHue, m.PlayerSummary);
+            UiDraw.PlayerCard(s, at, x + UiTokens.S3, foot, w - UiTokens.S3 - UiTokens.S2, m.PlayerName, m.PlayerHue, m.PlayerSummary);   // on the groups' tiles' edge
             float by = foot - UiTokens.S6;
             if (!string.IsNullOrEmpty(m.SideNote))
             {

@@ -385,9 +385,9 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
         public static float Hero(UiScene s, UiAt at, UiHeroModel hero, float x, float y, float w)
         {
-            float h = UiTokens.S4 * 2f + HeroTile;
+            float h = HeroHeight(hero);
             UiDraw.Box(s, at, x, y, w, h, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
-            float tx = x + UiTokens.S4, ty = y + UiTokens.S4;
+            float tx = x + UiTokens.S4, ty = y + UiDraw.SnapDown((h - HeroTile) / 2f);
             int tile = UiDraw.Tile(s, at, tx, ty, HeroTile, hero.Tint, false);
             float g = UiTokens.S10;
             UiDraw.Icon(s, at.In(tile), tx + (HeroTile - g) / 2f, ty + (HeroTile - g) / 2f, g, hero.Icon, hero.Tint, UiFlags.Middle | UiFlags.Centre, true);
@@ -395,7 +395,7 @@ namespace RealLifeOverhaul.Ui
             float ix = tx + HeroTile + UiTokens.S5, iw = x + w - UiTokens.S4 - ix;
             float kh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)), nh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display));
             float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body));
-            float cy = ty + UiDraw.SnapDown((HeroTile - kh - UiTokens.S1 - nh - lh - (hero.Progress >= 0 ? UiTokens.S2 + UiTokens.S1 : 0f)) / 2f);
+            float cy = y + UiTokens.S4;   // the words from the band's top, as the figures beside it start, so both read on one line
             float textW = iw - (noteW > 0f ? noteW + UiTokens.S6 : 0f);
             UiDraw.Text(s, at, ix, cy, textW, UiStyle.SectionHeader, UiRole.Text2, hero.Kicker, UiFlags.Label | UiFlags.Truncate);
             cy += kh + UiTokens.S1;
@@ -417,9 +417,18 @@ namespace RealLifeOverhaul.Ui
             return h;
         }
 
+        // A hero's band: the taller of its picture and its words, with a step of room round its words.
+        private static float HeroHeight(UiHeroModel hero)
+        {
+            float words = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display))
+                          + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)) + (hero.Progress >= 0 ? UiTokens.S2 + UiTokens.S1 : 0f);
+            return UiDraw.Snap(UiTokens.S4 * 2f + Math.Max(HeroTile, words));
+        }
+
         /// <summary>
         /// The figures across a band, each its label in capitals over its number, a hairline between, a figure's line beside
-        /// it; as tall as a hero beside them when given its height. Returns the y under them.
+        /// it; as tall as a hero beside them when given its height, their words then from the top as the hero's. Returns the
+        /// y under them.
         /// </summary>
         public static float Figures(UiScene s, UiAt at, UiFigureModel[] figures, float x, float y, float w, float height = 0f)
         {
@@ -431,7 +440,7 @@ namespace RealLifeOverhaul.Ui
             float own = UiTokens.S3 * 2f + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display));
             float h = Math.Max(own, height);
             UiDraw.Box(s, at, x, y, w, h, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
-            float top = y + UiDraw.SnapDown((h - own) / 2f);   // held in the middle of a taller band
+            float top = height > 0f ? y + UiTokens.S4 - UiTokens.S3 : y;   // beside a hero, its label on the hero's kicker's line
             float slot = UiDraw.SnapDown(w / count);
             for (int i = 0; i < count; i++)
             {

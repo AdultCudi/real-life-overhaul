@@ -324,11 +324,13 @@ namespace RealLifeOverhaul.Ui
                 TextMiddle(s, at, x, y, h, w, UiStyle.Body, ink, value, UiFlags.Right | UiFlags.Truncate);
                 return;
             }
-            int face = Box(s, at, x - UiTokens.S1, y, w + UiTokens.S1 * 2f, h, UiRole.None, UiRole.None, UiTokens.RadiusMedium, UiFlags.Right);   // set from the row's right edge by its words' width
-            UiAt inside = at.In(face);
             // The magnifier one fixed gap before the drawn words, as Cities: Skylines II sets its links, whatever the grid made of the
-            // box; it is the link's mark, not a target of its own, so it may stand in the words' box.
+            // box; it is the link's mark, not a target of its own, so it may stand in the words' box. The hover's face wraps the
+            // mark and the words alike, set from the row's right edge.
             float words = Math.Min(UiTextRules.Width(value, UiStyle.Body), w - UiTokens.IconSmall - UiTokens.S1);
+            float fw = Snap(words + LinkGap + UiTokens.IconSmall + UiTokens.S1 * 2f), fx = x + w + UiTokens.S1 - fw;
+            int face = Box(s, at, fx, y, fw, h, UiRole.None, UiRole.None, UiTokens.RadiusMedium, UiFlags.Right);
+            UiAt inside = at.In(face);
             Icon(s, inside, x + w - words - LinkGap - UiTokens.IconSmall, y + (h - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Search, UiRole.AccentText,
                 UiFlags.Middle | UiFlags.Decor);
             TextMiddle(s, inside, x + UiTokens.IconSmall + UiTokens.S1, y, h, w - UiTokens.IconSmall - UiTokens.S1, UiStyle.Body, UiRole.AccentText, value, UiFlags.Right | UiFlags.Truncate);
