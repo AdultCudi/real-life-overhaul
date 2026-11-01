@@ -529,8 +529,8 @@ namespace RealLifeOverhaul.GameUi
                 }
                 Spread.Begin();
                 Finish();
-                string hudSays = hud != null ? hud.PageCheck() : "gone: FAIL";
-                string stripSays = strip != null ? strip.PageCheck() : "not paged: PASS";
+                string hudSays = hud != null ? hud.PageCheck() + "; " + hud.MoreEverywhere() : "gone: FAIL";
+                string stripSays = strip != null ? strip.PageCheck() + "; " + strip.MoreEverywhere() : "not paged: PASS";
                 bool same = hud != null && hud.Pages == pagesBefore && (strip == null || strip.Pages == stripBefore);
                 bool ok = !hudSays.Contains("FAIL") && !stripSays.Contains("FAIL") && same;
                 Logger?.Info("Phone check (pages): " + moved + " buttons taken off and put back as a load puts them; the HUD phone " + hudSays + "; the full menu's row " + stripSays

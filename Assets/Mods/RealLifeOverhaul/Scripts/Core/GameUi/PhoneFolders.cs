@@ -9,14 +9,12 @@ namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
     /// The tiles a pager lays its folders out with: a folder's (a copy of the app button with an icon of its first nine
-    /// apps), the Back tile, and empty tiles that keep the HUD phone's dock on the last row. Each carries a PhoneTile, so no
-    /// pager counts it as an app. Costs nothing a frame.
+    /// apps) and the Back tile. Each carries a PhoneTile, so no pager counts it as an app. Costs nothing a frame.
     /// </summary>
     internal sealed class PhoneFolders
     {
         private const string FolderPrefix = "RealLife Folder ";   // followed by the folder's id
         private const string BackName = "RealLife Folder Back";
-        private const string GapName = "RealLife Folder Gap";
         private const string BackKey = "reallife_phone_folder_back";   // "Back", under the folder's name on the Back tile
         private const string FolderIconName = "AppIcon-PhoneFolder";
         private const string BackIconName = "AppIcon-PhoneBack";
@@ -42,7 +40,6 @@ namespace RealLifeOverhaul.GameUi
         private readonly PhoneGridPager _pager;
         private readonly Transform _template;
         private readonly Folder[] _folders = new Folder[PhoneLayoutRules.FolderCount];
-        private readonly List<Transform> _gaps = new List<Transform>(PagerRules.PhoneTiles);
         private TextLocalizationComponent _backTitle;
         private global::UI.Elements.Badge _backBadge;
         private int _backBadgeShown = -1;
@@ -192,12 +189,12 @@ namespace RealLifeOverhaul.GameUi
             return copy.transform;
         }
 
-        // What a pager of the mod's puts on a button, off a copy of a live one: no page mark, right click or wheel.
+        // What a pager of the mod's puts on a button, off a copy of a live one: no page mark, right click or tile mark.
         private static void Unmark(GameObject copy)
         {
             foreach (MonoBehaviour script in copy.GetComponentsInChildren<MonoBehaviour>(true))
             {
-                if (script is PageMark || script is PhoneAppPress || script is MoreAppsWheel || script is PhoneTile)
+                if (script is PageMark || script is PhoneAppPress || script is PhoneTile)
                 {
                     UnityEngine.Object.DestroyImmediate(script);
                 }
@@ -308,33 +305,6 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>The first <paramref name="count"/> empty tiles on, the rest off: made as they are first needed.</summary>
-        public void ShowGaps(int count)
-        {
-            while (_gaps.Count < count)
-            {
-                var gap = new GameObject(GapName, typeof(RectTransform));   // no picture, nothing to click: a tile the layout keeps empty
-                gap.AddComponent<PhoneTile>();
-                gap.SetActive(false);
-                gap.transform.SetParent(_pager.transform, false);
-                _gaps.Add(gap.transform);
-            }
-            for (int g = 0; g < _gaps.Count; g++)
-            {
-                bool on = g < count;
-                if (_gaps[g] != null && _gaps[g].gameObject.activeSelf != on)
-                {
-                    _gaps[g].gameObject.SetActive(on);
-                }
-            }
-        }
-
-        /// <summary>An empty tile, made by <see cref="ShowGaps"/>.</summary>
-        public Transform Gap(int index)
-        {
-            return index >= 0 && index < _gaps.Count ? _gaps[index] : null;
-        }
-
         /// <summary>A folder tile's number, its apps' added up: written only when it changes.</summary>
         public void Badge(int folder, int count)
         {
@@ -390,11 +360,6 @@ namespace RealLifeOverhaul.GameUi
             }
             Retire(BackTile);
             BackTile = null;
-            for (int g = 0; g < _gaps.Count; g++)
-            {
-                Retire(_gaps[g]);
-            }
-            _gaps.Clear();
         }
 
         // Out of the grid at once, then destroyed: the pager counts what is left at once (a destroyed object stays a child until the frame ends).

@@ -261,6 +261,20 @@ namespace RealLifeOverhaul.Ui
                     face.color = new Color(1f, 1f, 1f, it.Alpha);
                     break;
                 }
+                case UiKind.Picture:
+                {
+                    Place(slot.Rect, it.X, it.Y, it.W, it.H);
+                    Image picture = ((ImageSlot)slot).Image;
+                    Sprite sprite = UiPictures.Of((int)it.Value);
+                    if (picture.sprite != sprite)
+                    {
+                        picture.sprite = sprite;
+                    }
+                    picture.type = Image.Type.Simple;
+                    picture.preserveAspect = true;   // letterboxed in its box, as another mod drew it
+                    picture.color = new Color(1f, 1f, 1f, sprite != null ? it.Alpha : 0f);
+                    break;
+                }
                 case UiKind.Slice:
                 {
                     Place(slot.Rect, it.X, it.Y, it.W, it.H);

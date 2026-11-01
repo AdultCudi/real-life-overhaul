@@ -41,8 +41,8 @@ namespace RealLifeOverhaul.GameUi
         }
 
         // The game's apps first in the game's order, then the mod's in their fixed order, then other mods' (PagerRules.Arrange).
-        // The game's buttons are found once by name, a mod button's rank read once from its name. If any stands out of that
-        // order, every button after the game's is moved to the end in it, so the layout shows the pages in order.
+        // The game's buttons are found once by name, a mod button's rank read once from its name. Where each stands among the
+        // grid's children is the view's order, set by Order.
         private void GameFirst()
         {
             int count = _found.Count;
@@ -74,14 +74,12 @@ namespace RealLifeOverhaul.GameUi
             {
                 _ranks.Clear();   // buttons taken off leave their names behind
             }
-            int lastGame = -1;
             for (int i = 0; i < count; i++)
             {
                 Transform found = _found[i];
                 _isGame[i] = _gameButtons.Contains(found);
                 if (_isGame[i])
                 {
-                    lastGame = found.GetSiblingIndex();
                     _rank[i] = -1;
                 }
                 else if (!_ranks.TryGetValue(found, out _rank[i]))
@@ -98,10 +96,7 @@ namespace RealLifeOverhaul.GameUi
                 _place = new int[count * 2];
                 _badge = new int[count * 2];
                 _itemOf = new int[count * 2];
-                _docked = new bool[count * 2];
             }
-            bool among = false;
-            int before = -1;
             for (int i = 0; i < count; i++)
             {
                 Transform item = _found[_order[i]];
@@ -111,16 +106,6 @@ namespace RealLifeOverhaul.GameUi
                 {
                     var press = item.GetComponent<PhoneAppPress>() ?? item.gameObject.AddComponent<PhoneAppPress>();   // a right click moves it (PhoneMove)
                     press.Pager = this;
-                }
-                int at = item.GetSiblingIndex();
-                among |= i >= _gameShown && (at < lastGame || at < before);   // among the game's, or out of the order worked out
-                before = i >= _gameShown ? at : before;
-            }
-            if (among && !_aside && !FoldersWanted)   // in folders the order is the view's: Order
-            {
-                for (int i = _gameShown; i < count; i++)
-                {
-                    _apps[i].SetAsLastSibling();   // in order: the others keep theirs among themselves
                 }
             }
         }
@@ -141,17 +126,15 @@ namespace RealLifeOverhaul.GameUi
         // The option on and room for a folder's page.
         private bool FoldersWanted => PhoneLayoutPrefs.On && PhoneLayoutRules.FoldersFit(_strip, Tiles);
 
-        // Without folders every button; in folders the home screen's or the open folder's items, the dock row, each folder's
-        // count and its small pictures. A folder left empty closes.
+        // Without folders every button; in folders the home screen's or the open folder's items (the two kept first lead the
+        // HUD phone's home screen), each folder's count and its small pictures. A folder left empty closes.
         private void View()
         {
             _items.Clear();
-            _dock.Clear();
             int count = _apps.Count;
             for (int i = 0; i < count; i++)
             {
                 _itemOf[i] = -1;
-                _docked[i] = false;
             }
             _inDock = 0;
             _foldered = FoldersWanted && !_noFolders && (_folders != null || MakeFolders());
@@ -186,12 +169,12 @@ namespace RealLifeOverhaul.GameUi
             {
                 _view = new int[(count + PhoneLayoutRules.FolderCount) * 2];
             }
-            int n = PhoneLayoutRules.View(_kind, _place, count, _open, !_strip, _view, _dockAt, out int docked, _members);
+            int n = PhoneLayoutRules.View(_kind, _place, count, _open, !_strip, _view, _members);
             if (_open >= 0 && _members[_open] == 0)
             {
                 _open = -1;   // its last app moved out or switched off
                 _page = _homePage;
-                n = PhoneLayoutRules.View(_kind, _place, count, _open, !_strip, _view, _dockAt, out docked, _members);
+                n = PhoneLayoutRules.View(_kind, _place, count, _open, !_strip, _view, _members);
                 Keys();
             }
             for (int j = 0; j < n; j++)
@@ -207,11 +190,6 @@ namespace RealLifeOverhaul.GameUi
                     _items.Add(_folders.Tile(-1 - entry));
                 }
             }
-            for (int d = 0; d < docked; d++)
-            {
-                _docked[_dockAt[d]] = true;
-                _dock.Add(_apps[_dockAt[d]]);
-            }
             _folders.Fill(_apps, _kind, _place, count);
         }
 
@@ -226,7 +204,7 @@ namespace RealLifeOverhaul.GameUi
             for (int i = 0; i < _apps.Count; i++)
             {
                 Transform app = _apps[i];
-                bool show = _itemOf[i] >= 0 ? PageOf(_itemOf[i]) == _page : _docked[i];   // on the page that shows, or in the dock row
+                bool show = _itemOf[i] >= 0 && PageOf(_itemOf[i]) == _page;
                 var mark = app.GetComponent<PageMark>();
                 if (!show && mark == null)
                 {
@@ -243,8 +221,13 @@ namespace RealLifeOverhaul.GameUi
             }
             if (_foldered)
             {
-                ShowTiles();
+                ShowFolders();
             }
+            int onPage = PagerRules.PageSize(_page, _items.Count, ItemTiles);
+            int gaps = PhoneLayoutRules.Gaps(onPage, ItemTiles, Pages);
+            ShowGaps(gaps);
+            More();
+            Order(gaps);
             if (_strip)
             {
                 PlaceStripPage();
@@ -253,7 +236,6 @@ namespace RealLifeOverhaul.GameUi
             {
                 PlaceGridPage();
             }
-            More();
             Paint();   // the folders' badges too, with or without the button
             if (_checkDue && _strip && Meta.Dev.Verbose && isActiveAndEnabled)
             {
@@ -262,9 +244,8 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The folders' tiles of the page that shows, the Back tile, the empty tiles that keep the dock on the last row, then
-        // every item in the order the layout is to place it.
-        private void ShowTiles()
+        // The folders' tiles of the page that shows, and the Back tile on a folder's page.
+        private void ShowFolders()
         {
             int per = PagerRules.PerPage(_items.Count, ItemTiles);
             int first = _page * per;
@@ -279,45 +260,34 @@ namespace RealLifeOverhaul.GameUi
                 }
             }
             _folders.Back(_open);
-            int gaps = PhoneLayoutRules.Gaps(onPage, ItemTiles, !_strip && _open < 0 && _dock.Count > 0);
-            _folders.ShowGaps(gaps);
-            Order(gaps);
         }
 
-        // The layout places what shows in sibling order, so everything stands in the view's order: the game's apps, the Back
-        // tile, the other items, the empty tiles, the dock, then the buttons in closed folders. Moved only when out of order.
+        // The layout places what shows in sibling order, so everything stands in the view's order: a folder's Back tile, the
+        // items, the empty tiles that fill a short page, the More apps button, then the buttons no view holds (in closed
+        // folders). Only the page's items show among the items, so the button is always the page's last tile. Moved only
+        // when out of order.
         private void Order(int gaps)
         {
             _sorted.Clear();
-            for (int i = 0; i < _apps.Count; i++)
-            {
-                if (_kind[i] == PhoneLayoutRules.GameItem)
-                {
-                    _sorted.Add(_apps[i]);
-                }
-            }
-            if (_open >= 0 && _folders.BackTile != null)
+            if (_foldered && _open >= 0 && _folders.BackTile != null)
             {
                 _sorted.Add(_folders.BackTile);
             }
             for (int j = 0; j < _items.Count; j++)
             {
-                if (!_gameButtons.Contains(_items[j]))
-                {
-                    _sorted.Add(_items[j]);
-                }
+                _sorted.Add(_items[j]);
             }
             for (int g = 0; g < gaps; g++)
             {
-                _sorted.Add(_folders.Gap(g));
+                _sorted.Add(Gap(g));
             }
-            for (int d = 0; d < _dock.Count; d++)
+            if (_more != null)
             {
-                _sorted.Add(_dock[d]);
+                _sorted.Add(_more);
             }
             for (int i = 0; i < _apps.Count; i++)
             {
-                if (_kind[i] != PhoneLayoutRules.GameItem && _itemOf[i] < 0 && !_docked[i])
+                if (_itemOf[i] < 0)
                 {
                     _sorted.Add(_apps[i]);
                 }

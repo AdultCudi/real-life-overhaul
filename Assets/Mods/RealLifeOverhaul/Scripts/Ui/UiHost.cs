@@ -114,6 +114,20 @@ namespace RealLifeOverhaul.Ui
             _view.SetFocus(UiFocusRules.First(_scene), false, Time.unscaledTime);
         }
 
+        /// <summary>
+        /// The keys have gone back to the game (a screen that holds them only while asked, as the phone does): the ring goes
+        /// and the mouse leads again, nothing else moves.
+        /// </summary>
+        public void PointerLeads()
+        {
+            if (_screen == null || _view == null)
+            {
+                return;
+            }
+            _mode.Start(false);
+            LeadChanged();
+        }
+
         /// <summary>The screen is hidden: typing ends, motion stops where it ends, the host sleeps.</summary>
         public void Hide()
         {

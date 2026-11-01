@@ -64,6 +64,7 @@ namespace RealLifeOverhaul.Ui
         private void OnDestroy()
         {
             ContactsKit.Remove("the mod unloading");
+            PhoneKit.Remove("the mod unloading");
             if (Instance == this)
             {
                 Instance = null;
@@ -79,6 +80,7 @@ namespace RealLifeOverhaul.Ui
                 if (FrameGuard.Off)
                 {
                     ContactsKit.Remove("its faults");
+                    PhoneKit.Remove("its faults");
                     continue;
                 }
                 try
@@ -89,6 +91,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     Guard.Fail(FrameGuard, e, this);
                     ContactsKit.Remove("a fault");
+                    PhoneKit.Remove("a fault");
                 }
             }
         }
@@ -104,6 +107,8 @@ namespace RealLifeOverhaul.Ui
             {
                 ContactsKit.Remove("no city");
                 ContactsKit.Rearm();
+                PhoneKit.Remove("no city");
+                PhoneKit.Rearm();
                 _said = 0;
                 _waited = 0;
                 return;
@@ -111,6 +116,7 @@ namespace RealLifeOverhaul.Ui
             if (!On)
             {
                 ContactsKit.Remove("the switch is off");
+                PhoneKit.Remove("the switch is off");
                 if (_said == 0)
                 {
                     _said = 1;
@@ -119,6 +125,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             ContactsKit.Install();
+            PhoneKit.Install();
             if (_said != 2 && UiFonts.Ready && (ContactsKit.Settled || ++_waited >= MostWait))
             {
                 _said = 2;
@@ -132,7 +139,7 @@ namespace RealLifeOverhaul.Ui
             string fonts = UiFonts.Own ? "fonts: the bundle's own (" + UiFonts.Faces + " faces)"
                 : UiFonts.Faces > 0 ? "fonts: " + UiFonts.Faces + " of " + UiFonts.FacesWanted + " faces from " + UiFonts.BundleFile + ", the game's font for the rest"
                 : "fonts: not loaded from " + (UiFonts.BundleFile ?? "(no path)") + ", the game's font stands in";
-            return "UI: the RLO interface is on; " + fonts + "; screens: Contacts (" + ContactsKit.State + "), desk sessions ("
+            return "UI: the RLO interface is on; " + fonts + "; screens: Contacts (" + ContactsKit.State + "), the phone (" + PhoneKit.State + "), desk sessions ("
                    + (Settings.LivingDesks ? "over the game's panel as each opens" : "off") + "), and from Options, Tests: the gallery, Contacts, the city's people, Flare in the city, a firm.";
         }
     }

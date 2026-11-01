@@ -12,12 +12,12 @@ namespace RealLifeOverhaul.GameUi
     /// <summary>The pager's More apps button: its tile, its page line, its icon and the badges.</summary>
     public sealed partial class PhoneGridPager
     {
-        // On the page's last tile, while there are pages.
+        // A tile of the grid while there are pages; Order puts it after the page's items and gaps, the page's last tile.
         private void More()
         {
-            if (!PagerRules.ButtonShown(Pages) || _aside || !isActiveAndEnabled)
+            if (!PagerRules.ButtonShown(Pages) || _aside)
             {
-                if (_more != null && _more.gameObject.activeSelf)   // out of sight it is placed, or made, when the grid shows again (OnEnable)
+                if (_more != null && _more.gameObject.activeSelf)
                 {
                     _more.gameObject.SetActive(false);
                 }
@@ -27,20 +27,6 @@ namespace RealLifeOverhaul.GameUi
             {
                 return;
             }
-            if (!Tile(MoreTile, out Vector3 centre, out Vector2 size))
-            {
-                _more.gameObject.SetActive(false);
-                return;
-            }
-            _more.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, size.x);
-            _more.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, size.y);
-            _more.localScale = transform.localScale;
-            _more.position = transform.TransformPoint(centre);
-            int grid = transform.GetSiblingIndex(), now = _more.GetSiblingIndex();
-            if (now != grid + 1)
-            {
-                _more.SetSiblingIndex(now < grid ? grid : grid + 1);   // drawn just after the grid, as one of its tiles
-            }
             if (!_more.gameObject.activeSelf)
             {
                 _more.gameObject.SetActive(true);
@@ -48,46 +34,104 @@ namespace RealLifeOverhaul.GameUi
             Label();
         }
 
-        // The middle of a page's tile (from 0) in the grid's space, and its size.
-        private bool Tile(int tile, out Vector3 centre, out Vector2 size)
+        /// <summary>
+        /// Where the More apps button stands now, for the checks: a tile of the grid and the page's last, or not there with
+        /// one page. Ok is false when it stands anywhere else.
+        /// </summary>
+        internal string MoreSays(out bool ok)
         {
-            centre = Vector3.zero;
-            size = Vector2.zero;
-            var box = ((RectTransform)transform).rect;
-            if (_strip)
+            int shown = 0, at = -1;
+            for (int i = 0; i < transform.childCount; i++)
             {
-                var layout = GetComponent<HorizontalLayoutGroup>();
-                var cell = _template as RectTransform;
-                if (layout == null || cell == null)
+                Transform child = transform.GetChild(i);
+                if (child == _template || !child.gameObject.activeSelf || !(child is RectTransform placed) || Ignored(placed))
                 {
-                    return false;
+                    continue;
                 }
-                float pitch = Pitch(layout, cell);
-                float height = cell.rect.height;
-                float top = layout.padding.top + (box.height - layout.padding.vertical - height) * ((int)layout.childAlignment / 3 * 0.5f);
-                size = new Vector2(pitch - layout.spacing, height);
-                centre = new Vector3(_pagesLeft + tile * pitch + size.x * 0.5f, box.yMax - top - height * 0.5f, 0f);
-                return size.x >= 1f;
+                if (child == _more)
+                {
+                    at = shown;
+                }
+                shown++;
             }
-            var grid = GetComponent<GridLayoutGroup>();
-            if (grid == null)
+            if (!PagerRules.ButtonShown(Pages))
             {
-                return false;
+                ok = at < 0;
+                return "one page, " + (ok ? "no More apps button" : "a More apps button that should not be there");
             }
-            RowAsBuilt built = AsBuilt(grid);
-            int columns = Columns(grid, built);
-            int rows = (Tiles + columns - 1) / columns;
-            float column = tile % columns, line = tile / columns;
-            float needed = rows * grid.cellSize.y + (rows - 1) * grid.spacing.y;
-            float from = grid.padding.top + (box.height - grid.padding.vertical - needed) * ((int)built.Alignment / 3 * 0.5f);
-            size = grid.cellSize;
-            centre = new Vector3(box.xMin + GridLeft(grid, built) + column * (size.x + grid.spacing.x) + size.x * 0.5f,
-                                 box.yMax - from - line * (size.y + grid.spacing.y) - size.y * 0.5f, 0f);
-            return size.x >= 1f;
+            int want = PhoneLayoutRules.MoreTile(_strip, Tiles);
+            ok = at == want && shown == want + 1;
+            return "the More apps button on tile " + (at + 1) + " of " + shown + " (wanted " + (want + 1) + " of " + (want + 1) + ")";
         }
 
-        // Made once from the apps' template, asleep until dressed, without the game's scripts that would make it an app. Only
-        // one object of its name under the grid's parent: one a pager left before is taken away.
+        // The empty tiles of a short page: made as first needed, the first count on, the rest off. A gap is as wide as a
+        // button where the row sizes its children; the phone's grid gives every child a cell.
+        private void ShowGaps(int count)
+        {
+            while (_gaps.Count < count)
+            {
+                var gap = new GameObject(GapName, typeof(RectTransform));   // no picture, nothing to click: a tile the layout keeps empty
+                gap.AddComponent<PhoneTile>();
+                if (_template is RectTransform cell)
+                {
+                    var room = gap.AddComponent<LayoutElement>();
+                    room.minWidth = room.preferredWidth = cell.rect.width;
+                    room.minHeight = room.preferredHeight = cell.rect.height;
+                }
+                gap.SetActive(false);
+                gap.transform.SetParent(transform, false);
+                _gaps.Add(gap.transform);
+            }
+            for (int g = 0; g < _gaps.Count; g++)
+            {
+                bool on = g < count;
+                if (_gaps[g] != null && _gaps[g].gameObject.activeSelf != on)
+                {
+                    _gaps[g].gameObject.SetActive(on);
+                }
+            }
+        }
+
+        private Transform Gap(int index)
+        {
+            return index >= 0 && index < _gaps.Count ? _gaps[index] : null;
+        }
+
+        // The button and the empty tiles taken away: stepping aside, or the pager gone.
+        private void DropTiles()
+        {
+            if (_more != null)
+            {
+                Retire(_more);
+                _more = null;
+            }
+            for (int g = 0; g < _gaps.Count; g++)
+            {
+                Retire(_gaps[g]);
+            }
+            _gaps.Clear();
+        }
+
+        // Out of the grid at once, then destroyed, so a pager counts what is left at once.
+        private static void Retire(Transform tile)
+        {
+            if (tile == null)
+            {
+                return;
+            }
+            if (GameManager.isCitySceneBeingUnloaded)
+            {
+                Destroy(tile.gameObject);
+                return;
+            }
+            tile.gameObject.SetActive(false);
+            tile.SetParent(null, false);
+            Destroy(tile.gameObject);
+        }
+
+        // Made once from the apps' template, asleep until dressed, without the game's scripts that would make it an app, then
+        // put in the grid as a tile of its own (PhoneTile: no pager counts it as an app). Only one object of its name: one a
+        // pager left before, in the grid or beside it where earlier versions put it, is taken away.
         private bool MakeMore()
         {
             Transform parent = transform.parent;
@@ -95,16 +139,8 @@ namespace RealLifeOverhaul.GameUi
             {
                 return false;
             }
-            for (int i = parent.childCount - 1; i >= 0; i--)
-            {
-                Transform old = parent.GetChild(i);
-                if (old.name == MoreName)
-                {
-                    old.gameObject.SetActive(false);
-                    old.name = MoreName + " (gone)";
-                    Destroy(old.gameObject);
-                }
-            }
+            Forget(parent);
+            Forget(transform);
             Transform dormant = UiClone.Dormant(parent, MoreName + " (making)");
             GameObject copy = UiClone.Asleep(_template.gameObject, dormant, MoreName);
             if (copy == null)
@@ -113,16 +149,6 @@ namespace RealLifeOverhaul.GameUi
                 return false;
             }
             var rect = (RectTransform)copy.transform;
-            var row = (RectTransform)transform;
-            rect.anchorMin = row.anchorMin;   // anchored as the row or grid is: it moves with them
-            rect.anchorMax = row.anchorMax;
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.localRotation = Quaternion.identity;
-            if (Tile(0, out Vector3 _, out Vector2 size))
-            {
-                rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, size.x);   // the tile's size, before the page's line is placed
-                rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, size.y);
-            }
             Image picture = Picture(copy.transform);   // through the game's own field, before its script is taken off
             var title = copy.GetComponentInChildren<TextLocalizationComponent>(true);
             UiClone.StripGameScripts(copy, KeptOnMore);
@@ -151,13 +177,29 @@ namespace RealLifeOverhaul.GameUi
                 _morePage = PageLine(rect, title, picture);
             }
             _moreBadge = copy.GetComponentInChildren<global::UI.Elements.Badge>(true);
-            copy.AddComponent<MoreAppsWheel>().Pager = this;
+            copy.AddComponent<PhoneTile>();
             copy.SetActive(false);
-            rect.SetParent(parent, false);
+            rect.SetParent(transform, false);
             Destroy(dormant.gameObject);
             _more = rect;
             _labelPage = _labelPages = _badgeShown = -1;
             return true;
+        }
+
+        // A More apps button another pager left under this transform: taken away at once.
+        private static void Forget(Transform under)
+        {
+            for (int i = under.childCount - 1; i >= 0; i--)
+            {
+                Transform old = under.GetChild(i);
+                if (old.name == MoreName)
+                {
+                    old.gameObject.SetActive(false);
+                    old.name = MoreName + " (gone)";
+                    old.SetParent(null, false);
+                    Destroy(old.gameObject);
+                }
+            }
         }
 
         // What stays of the game's scripts: its hover and sound, and the badge.
@@ -291,7 +333,7 @@ namespace RealLifeOverhaul.GameUi
         }
 
         // Read from the badge's words ("99+" is 99), whoever set it; 0 while the badge is down.
-        private static int BadgeCount(Transform button)
+        internal static int BadgeCount(Transform button)
         {
             var badge = button != null ? button.GetComponentInChildren<global::UI.Elements.Badge>(true) : null;
             if (badge == null || !badge.gameObject.activeSelf)

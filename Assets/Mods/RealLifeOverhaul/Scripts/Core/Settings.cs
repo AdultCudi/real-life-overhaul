@@ -217,6 +217,7 @@
         public const string LivingDesksId = "living_desks";
         public const string UiInterfaceId = "ui_interface";
         public const string UiMotionId = "ui_motion";
+        public const string UiPhoneId = "ui_phone";
         public const string LivingStudioId = "living_studio";
         public const string LivingFlareId = "living_flare";
         public const string LivingFirmsId = "living_firms";
@@ -591,6 +592,7 @@
         public static bool LivingPopulation = true;      // the living economy overhaul's master switch, on in the beta (off: the game and the mod exactly as before it)
         public static bool UiInterface = true;           // the RLO interface: the overhaul's screens and the apps it redraws, in its own look (off: the game's own screens)
         public static int UiMotion = 0;                  // the RLO interface's motion: 0 full, 1 calm (slower, half the distance), 2 off
+        public static bool UiPhone = true;               // the phone on the RLO interface (off: the game's phone with the mod's pages)
         public static bool LivingDesks = true;           // ...hands-on management sessions at a firm's own office desk, and managers who take them (Desks)
         public static bool LivingStudio = true;          // ...the game studio rebuilt: genres, platforms, production at the desk, hype, reviews, sales from a real audience (Studio)
         public static bool LivingFlare = true;           // ...Flare in the city: residents follow, hear and go where they heard good things; reviews from real customers, ads (Social/Flare/City)
@@ -1021,6 +1023,7 @@
             LivingDesks = Bool(modId, LivingDesksId, LivingDesks);
             UiInterface = Bool(modId, UiInterfaceId, UiInterface);
             UiMotion = Int(modId, UiMotionId, UiMotion);
+            UiPhone = Bool(modId, UiPhoneId, UiPhone);
             LivingStudio = Bool(modId, LivingStudioId, LivingStudio);
             LivingFlare = Bool(modId, LivingFlareId, LivingFlare);
             LivingFirms = Bool(modId, LivingFirmsId, LivingFirms);

@@ -55,8 +55,8 @@ namespace RealLifeOverhaul.GameUi
             Pager.CloseFolder();
         }
 
-        // Nothing of the game's that the key closes first is up, in the order of the game's CancelButtonHandler.
-        private static bool KeyIsFree()
+        /// <summary>Nothing of the game's that the key closes first is up, in the order of the game's CancelButtonHandler; the RLO interface's phone asks it too.</summary>
+        internal static bool KeyIsFree()
         {
             if (_without || TravelList.AnyOpen)
             {

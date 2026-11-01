@@ -1021,6 +1021,11 @@ namespace RealLifeOverhaul
                     v => Settings.UiInterface = v)
                 .AddDropdown(Settings.UiMotionId, "reallife_ui_motion", new[] { "reallife_ui_motion_0", "reallife_ui_motion_1", "reallife_ui_motion_2" }, Settings.UiMotion,
                     v => Settings.UiMotion = v)
+                .AddToggle(Settings.UiPhoneId, "reallife_ui_phone", Settings.UiPhone,
+                    v => Settings.UiPhone = v)
+                .AddButton("reallife_phone_test_second", Ui.PhoneKit.TestSecondPage)
+                .AddButton("reallife_phone_test_kit_folder", Ui.PhoneKit.TestFolder)
+                .AddButton("reallife_phone_test_classic", Ui.PhoneKit.TestClassic)
                 .AddButton("reallife_ui_test_gallery", () => Ui.UiDirector.Instance?.TestGallery())
                 .AddButton("reallife_ui_test_contacts", () => Ui.UiDirector.Instance?.TestContacts())
                 .AddButton("reallife_ui_test_population", () => Ui.UiDirector.Instance?.TestPopulation())

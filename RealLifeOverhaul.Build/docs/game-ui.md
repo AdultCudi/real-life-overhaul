@@ -82,8 +82,8 @@ last page shorter; every page starts where the game's own row starts (the row's 
 the button never moves. The button is a copy of the template app button with the game's scripts that make it an app taken off (only
 `ButtonEffects` and the badge kept), a light grey tile painted by `AppIconPainter` with the game's `Icon-Arrows` in dark ink
 (a code-drawn double chevron if that sprite is not in memory), the name "More apps" and the page "2 / 3" under the
-picture; it stands beside the row under `Topbar`, placed on the tile by hand, so neither the layout nor other mods'
-pagers count it. It goes to the next page and from the last to the first; the wheel over the row or the button turns
+picture; it is a tile of the row itself (a `PhoneTile` on it, so no pager counts it as an app), put after the page's
+apps and the empty tiles that fill a short page, so the row's own layout puts it on the last tile. It goes to the next page and from the last to the first; the wheel over the row or the button turns
 the page and stops at the ends; opening an app shows its page. With one page it is hidden. The row's alignment and
 padding are put back when only the game's own apps are left, when the pager goes or steps aside. With Developer
 diagnostics on, each opening writes one line: where the row ends against where the money begins. Checked offline
@@ -105,8 +105,12 @@ and re-reads the grid when its child count changes). Two pagers would undo each 
 for good** as soon as it sees a component on the grid from an assembly that is neither the game's nor the mod's, or
 finds a button it had hidden shown again. It then shows everything it hid and logs one line. For that to work the
 mod's button stays what those pagers look for: a real `SmartphoneAppButton`, a direct child of the grid, with no
-"Template" in its name. The More apps button is not in the grid, so those pagers never see it; when this pager
-steps aside it takes the button away.
+"Template" in its name. The More apps button is a tile of the grid (a `PhoneTile`, never a `SmartphoneAppButton`),
+after the page's apps and the empty tiles of a short page, so the grid's own layout puts it on the last tile of every
+page and every folder however the container moves (until 2 Nov 2026 it was laid over a cell worked out by hand, which
+moved between rows with the dock and went stale under the container's tweens); when this pager steps aside it takes
+the button and the empty tiles away. The test Check the phone's pages walks every page of the home screen and the
+folders and says where the button stood on each.
 
 ## 2. The frame of an app (`GameUi.AppShell`, copied from MyEmployees)
 
@@ -1254,7 +1258,7 @@ edge, the scroll reaching the page's end, for the page the app wrote, for Career
 longest courses, and for a page of every kind of part in the longest words of each of the mod's nine languages; one log line a
 page ("Left pane check (app, page): PASS"), and a last line that says PASS only if every page did.
 
-## 37. Folders and a dock on the phone's home screen (`PhoneLayoutRules`, `PhoneFolders`, `PhoneGridPager`)
+## 37. Folders and two apps first on the phone's home screen (`PhoneLayoutRules`, `PhoneFolders`, `PhoneGridPager`)
 
 The game's phone has no folders and no dock: two buttons wide and four rows on the HUD phone, one row in the full
 menu, every app a button. A folder of the mod's is made of the game's own parts only:
@@ -1267,9 +1271,11 @@ menu, every app a button. A folder of the mod's is made of the game's own parts 
 - **A folder's page** puts the folder's apps on the same grid, after a Back tile (the More apps button's light tile
   with the game's `Icon-Arrows` mirrored: `AppIconPainter.Paint(..., mirrored: true)`). Every other button of the grid is
   switched off with a `PageMark`, as a button on another page is, so another mod's pager is seen at once.
-- **The dock** is the grid's last row on the home screen. The grid lays out what shows in the order it stands, so a
-  short page is filled before the dock with empty tiles (a bare `RectTransform` each), and the pager puts every child
-  it counts in the view's order whatever the page (`PhoneGridPager.Order`).
+- **Two apps first** (the dock until 2 Nov 2026, still saved as "dock"): the HUD phone's home screen leads with them, ahead
+  of the game's own; the full menu's row has them right after the game's. The grid lays out what shows in the order it
+  stands, so the pager puts every child in the view's order whatever the page (`PhoneGridPager.Order`): the Back tile,
+  the items, the empty tiles of a short page (a `RectTransform` with a `LayoutElement` of a button's size each), then the
+  More apps button.
 - **The badge** of a folder is the game's `Badge.UpdateBadge` with the numbers of its apps added up, read back from
   each button's own badge text (whoever set it).
 - **The cancel key** is `PlayerAction.Cancel`, which `GameManager` sends to `CancelButtonHandler.HandleEscapeClick`; with

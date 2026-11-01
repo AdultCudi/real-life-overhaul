@@ -53,11 +53,7 @@ namespace RealLifeOverhaul.GameUi
             _aside = true;
             ShowAll();
             RestoreRow();
-            if (_more != null)
-            {
-                Destroy(_more.gameObject);
-                _more = null;
-            }
+            DropTiles();
             DropFolders();
             UiClone.Fallback(_strip ? "another mod pages the full menu's app buttons, so this one leaves the pages to it"
                                     : "another mod pages the phone's home screen, so this one leaves the pages to it");
