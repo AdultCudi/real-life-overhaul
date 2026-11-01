@@ -27985,5 +27985,11 @@
   "reallife_ui_page_studio": "你的公司",
   "reallife_ui_page_desk": "办公桌",
   "reallife_ui_test_flare": "在 RLO 界面中打开城市中的 Flare",
-  "reallife_ui_test_firm": "在 RLO 界面中打开你的第一家科技公司"
+  "reallife_ui_test_firm": "在 RLO 界面中打开你的第一家科技公司",
+  "reallife_phone_test_pages": "检查手机分页",
+  "reallife_phone_test_pages_pass": "手机分页：所有应用都已按读档时的方式重新放上，手机一次只显示一页。详情见 Player.log。",
+  "reallife_phone_test_pages_fail": "手机分页：手机显示了超过一页，或页数发生了变化。详情见 Player.log。",
+  "reallife_phone_test_pages_busy": "模组的应用仍在装上手机。请稍后再试。",
+  "reallife_changes_063_4_title": "0.63.4",
+  "reallife_changes_063_4": "已修复：从 0.62.0 起，手机可能会变得和屏幕一样高，所有应用同时显示，没有分页。模组的应用先以隐藏状态放上手机，之后才显示，另一个为手机分页的模组察觉不到这一点。现在它们会在全部准备好后一起加入手机，加入时就已显示，分页因此恢复正常。"
 }

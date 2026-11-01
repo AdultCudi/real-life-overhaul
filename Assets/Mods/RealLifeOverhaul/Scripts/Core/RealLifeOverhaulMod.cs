@@ -235,6 +235,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_phone_layout_reset", GameUi.PhoneMove.ResetAll)
                 .AddButton("reallife_phone_test_check", GameUi.PhoneMove.TestCheck)
                 .AddButton("reallife_phone_test_folder", GameUi.PhoneMove.TestFolder)
+                .AddButton("reallife_phone_test_pages", GameUi.PhoneApp.TestPages)
                 .AddButton("reallife_leftpane_test", Meta.LeftPaneTest.Run)
                 .AddToggle(Settings.NoticeLookId, "reallife_notice_look", Settings.NoticeLook,
                     v => Settings.NoticeLook = v)

@@ -6,6 +6,7 @@ using BAModAPI;
 using Localizor;
 using Localizor.LanguageChangeEvent;
 using UI;
+using UI.Notification;
 using UI.Smartphone;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,17 +17,26 @@ namespace RealLifeOverhaul.GameUi
     /// One app on the game's phone: a button on each phone and a panel among the game's app panels, all copies of the
     /// game's; Open switches the panels as FullMenu.SelectApp does. The panel (a copy of MyEmployees) is built when the
     /// app is first opened (<see cref="Ready"/>). An install waits in a line put on one app a frame (<see cref="Pump"/>);
-    /// the buttons of a line show together after its last, and the pages are laid out once for them. Opening and the build
-    /// are timed (HotSpots); costs nothing a frame once the line is empty.
+    /// its buttons are made in a waiting room off both phones, and after the line's last they all go into their grids at
+    /// once, shown, and the pages are laid out once for them. Opening and the build are timed (HotSpots); costs nothing a
+    /// frame once the line is empty.
     /// </summary>
     public sealed class PhoneApp
     {
         public static IModLogger Logger;
 
+        // A button made, and the grid it goes into after the line's last.
+        private struct Arrival
+        {
+            public GameObject Button;
+            public Transform Grid;
+        }
+
         private static readonly Dictionary<string, PhoneApp> ById = new Dictionary<string, PhoneApp>(32, StringComparer.Ordinal);
         private static readonly InstallQueue<PhoneApp> Waiting = new InstallQueue<PhoneApp>();
         private static readonly PhoneNames Names = new PhoneNames();
-        private static readonly List<GameObject> Made = new List<GameObject>(80);   // buttons put on since the line began, shown together after its last
+        private static readonly List<Arrival> Made = new List<Arrival>(80);   // buttons made since the line began, put in their grids together after its last
+        private static Transform _room;         // where the line's buttons wait, asleep, off both phones (WaitingRoom)
         private static readonly SpreadWatch Spread = new SpreadWatch();
         private static FullMenu _upMenu;        // the full menu found with its buttons made: the phone stays up for it
         private static PhoneAppQueue _pump;
@@ -305,7 +315,7 @@ namespace RealLifeOverhaul.GameUi
             _batchApps++;
         }
 
-        // The buttons, copied from the game's and dressed, left hidden until the line's last is on (Finish).
+        // The buttons, copied from the game's and dressed, waiting off the phones until the line's last is on (Finish).
         private void Put()
         {
             if (_menu == null || _phone == null)
@@ -338,12 +348,16 @@ namespace RealLifeOverhaul.GameUi
                 }
                 Sprite icon = _def.Icon != null ? _def.Icon(like) : null;   // painted once a session and kept (AppIconPainter)
 
-                Transform hud = UnityEngine.Object.Instantiate(hudTemplate, hudTemplate.parent, false);
+                // Never into the grids while the line runs: other mods' pagers (AlunaPhonePages, BizSuite) see a button
+                // when it arrives, not when it is switched on, and AlunaPhonePages leaves out for good any button hidden in
+                // the grid when it takes over. A button that waited hidden there was shown on every page.
+                Transform room = WaitingRoom(menu);
+                Transform hud = UnityEngine.Object.Instantiate(hudTemplate, room, false);
                 hud.gameObject.SetActive(false);   // the template is asleep already; a live button copied instead is not
                 hud.name = _def.Id;
                 hud.gameObject.tag = "Untagged";
                 _hudButton = hud.GetComponent<SmartphoneAppButton>();
-                Transform inMenu = UnityEngine.Object.Instantiate(menuTemplate, menuTemplate.parent, false);
+                Transform inMenu = UnityEngine.Object.Instantiate(menuTemplate, room, false);
                 inMenu.gameObject.SetActive(false);
                 inMenu.name = _def.Id;
                 inMenu.gameObject.tag = "Untagged";
@@ -361,8 +375,8 @@ namespace RealLifeOverhaul.GameUi
                 _hudButton.HideOutline();
                 _hudButton.UpdateBadgeCount(_badge);   // a badge asked for while it waited
                 _menuButton.HideSelectedIcon();
-                Made.Add(hud.gameObject);
-                Made.Add(inMenu.gameObject);
+                Made.Add(new Arrival { Button = hud.gameObject, Grid = hudTemplate.parent });
+                Made.Add(new Arrival { Button = inMenu.gameObject, Grid = menuTemplate.parent });
 
                 _pager = PhoneGridPager.On(hudTemplate.parent, hudTemplate);
                 // The full menu's row ends at the money, the date and the time ("RightData").
@@ -373,7 +387,7 @@ namespace RealLifeOverhaul.GameUi
                 {
                     Logger?.Info("Game UI: app '" + _def.Id + "' is on the phone. Button copied from " + templateUsed + " (HUD) and " + menuTemplateUsed
                                  + " (full menu); icon " + (icon == null ? "the template's" : icon.name)
-                                 + "; shown with the others put on with it, after the last; its panel is built when it is first opened.");
+                                 + "; it goes into the grids with the others of its line, after the last; its panel is built when it is first opened.");
                 }
             }
             catch (Exception e)
@@ -384,7 +398,19 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // After the line's last: its buttons shown together, and each pager lays its grid out once for all of them.
+        // Asleep under the full menu, outside both phones' grids and the HUD phone, where no pager and no search for the
+        // HUD phone's buttons looks. Made once for the menu.
+        private static Transform WaitingRoom(FullMenu menu)
+        {
+            if (_room == null)
+            {
+                _room = UiClone.Dormant(menu.canvasGroup != null ? menu.canvasGroup.transform : menu.transform, "RealLife Waiting Buttons");
+            }
+            return _room;
+        }
+
+        // After the line's last: its buttons go into their grids together, shown as they arrive, and each pager lays its
+        // grid out once for all of them.
         private static void Finish()
         {
             long began = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -393,9 +419,11 @@ namespace RealLifeOverhaul.GameUi
             {
                 for (int i = 0; i < Made.Count; i++)
                 {
-                    if (Made[i] != null)
+                    Arrival arrival = Made[i];
+                    if (arrival.Button != null && arrival.Grid != null)
                     {
-                        Made[i].SetActive(true);
+                        arrival.Button.transform.SetParent(arrival.Grid, false);
+                        arrival.Button.SetActive(true);
                     }
                 }
             }
@@ -452,9 +480,87 @@ namespace RealLifeOverhaul.GameUi
             }
             Waiting.Clear();
             Made.Clear();
+            _room = null;   // it goes with the menu
             _batch = false;
             _pump = null;
             _upMenu = null;
+        }
+
+        /// <summary>
+        /// Test: every app's two buttons are taken off the phones into the waiting room and put back as a load's line puts
+        /// them (Finish), then both grids are asked whether they show a page and the count they worked out
+        /// (PhoneGridPager.PageCheck): "Phone check (pages)" in Player.log and a notice.
+        /// </summary>
+        public static void TestPages()
+        {
+            try
+            {
+                PhoneGridPager hud = PhoneGridPager.Hud, strip = PhoneGridPager.Strip;
+                UIs uis = InstanceBehavior<UIs>.Instance;
+                FullMenu menu = uis != null ? uis.fullMenu : null;
+                if (hud == null || menu == null)
+                {
+                    Notifications.Show(NotificationType.Error, "reallife_phone_test_none", null, 8f, null, null, true, false);
+                    return;
+                }
+                if (Waiting.Count > 0 || Made.Count > 0)
+                {
+                    Notifications.Show(NotificationType.Error, "reallife_phone_test_pages_busy", null, 8f, null, null, true, false);
+                    return;
+                }
+                int pagesBefore = hud.Pages, stripBefore = strip != null ? strip.Pages : 0, moved = 0;
+                Transform room = WaitingRoom(menu);
+                PhoneGridPager.Holding++;
+                try
+                {
+                    foreach (PhoneApp app in ById.Values)
+                    {
+                        if (app == null || app._def.NoButtons || app._hudButton == null || app._menuButton == null)
+                        {
+                            continue;
+                        }
+                        // A grid another mod pages is left alone: taking its buttons off and back would undo its pages.
+                        moved += (hud.SteppedAside ? 0 : Leave(app._hudButton.transform, room)) + (strip == null || strip.SteppedAside ? 0 : Leave(app._menuButton.transform, room));
+                    }
+                }
+                finally
+                {
+                    PhoneGridPager.Holding--;
+                }
+                Spread.Begin();
+                Finish();
+                string hudSays = hud != null ? hud.PageCheck() : "gone: FAIL";
+                string stripSays = strip != null ? strip.PageCheck() : "not paged: PASS";
+                bool same = hud != null && hud.Pages == pagesBefore && (strip == null || strip.Pages == stripBefore);
+                bool ok = !hudSays.Contains("FAIL") && !stripSays.Contains("FAIL") && same;
+                Logger?.Info("Phone check (pages): " + moved + " buttons taken off and put back as a load puts them; the HUD phone " + hudSays + "; the full menu's row " + stripSays
+                             + "; pages before and after " + pagesBefore + " and " + (hud != null ? hud.Pages : 0) + " (HUD), " + stripBefore + " and " + (strip != null ? strip.Pages : 0)
+                             + " (row): " + (ok ? "PASS" : same ? "FAIL" : "FAIL, the page count changed") + ".");
+                Notifications.Show(ok ? NotificationType.Success : NotificationType.Error, ok ? "reallife_phone_test_pages_pass" : "reallife_phone_test_pages_fail", null, 8f, null, null, true, false);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+        }
+
+        // One button off its grid into the waiting room, to join again with the others; 1 if it was moved.
+        private static int Leave(Transform button, Transform room)
+        {
+            Transform grid = button.parent;
+            if (grid == null || grid == room)
+            {
+                return 0;
+            }
+            button.gameObject.SetActive(false);
+            var mark = button.GetComponent<PageMark>();
+            if (mark != null)
+            {
+                mark.Off = false;   // it comes back as a load brings it, not as a page left it
+            }
+            button.SetParent(room, false);
+            Made.Add(new Arrival { Button = button.gameObject, Grid = grid });
+            return 1;
         }
 
         /// <summary>The app's panel is there, built on the first call; false if it cannot be (the app is then taken off the phone).</summary>

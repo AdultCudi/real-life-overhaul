@@ -142,12 +142,7 @@ internal static partial class Program
         string putNow = Body(phone, "private void PutNow()");
         Check(putNow.Contains("PhoneGridPager.Holding++") && putNow.Contains("PhoneGridPager.Holding--") && putNow.IndexOf("Holding--", StringComparison.Ordinal) > putNow.IndexOf("finally", StringComparison.Ordinal),
             "phone apps: an app is put on with the pagers held, let go on every path");
-        string finish = Body(phone, "private static void Finish()");
-        Check(finish.Contains("Made[i].SetActive(true)") && finish.Contains("hud.Refresh()") && finish.Contains("strip.Refresh()") && Count(finish, ".Refresh()") == 2,
-            "phone apps: after the line's last its buttons show together and each pager lays its grid out once");
-        string putBody = Body(phone, "private void Put()");
-        Check(putBody.Contains("Made.Add(hud.gameObject)") && putBody.Contains("Made.Add(inMenu.gameObject)") && !putBody.Contains("SetActive(true)"),
-            "phone apps: an app's buttons stay hidden until the line's last is on");
+        PhoneArrivals(phone);
         Check(Body(phone, "public void Open()").Contains("Place();") && Body(phone, "public bool Ready()").Contains("Place()") && Body(phone, "public void Remove()").Contains("Waiting.Take(this)"),
             "phone apps: an app opened before its turn is put on at once, and one taken off leaves the line");
         Check(Body(phone, "private static void Said()").Contains("\"Phone apps check (paced install): \""), "phone apps: the line writes its self-check line after its last");
@@ -156,5 +151,40 @@ internal static partial class Program
             "phone apps: a held pager lays nothing out for a button's arrival, and lays out once when let go");
         Check(Body(pump, "private void OnUpdate()").Contains("if (!PhoneApp.Pump())") && Body(pump, "private void OnUpdate()").Contains("enabled = false;"),
             "phone apps: the pump switches itself off once the line is empty, costing nothing a frame after");
+    }
+
+    // A player's phone with every app on every page and no pages (#bug-reports, 1 Nov 2026, "Big phone"): from 0.62.0 the
+    // line made each button hidden inside the HUD phone's grid and switched them all on after its last. Other mods' pagers
+    // see a button when it joins the grid, not when it is switched on (BizSuite's PhoneAppsPager pages on its own word,
+    // AlunaPhonePages when the grid's set of names changes, and it leaves out for good any button hidden in the grid when it
+    // takes over), and this mod's pager steps aside for them, so nobody paged the mod's buttons. A button now waits off both
+    // phones and joins its grid shown.
+    private static void PhoneArrivals(string phone)
+    {
+        string putBody = Body(phone, "private void Put()");
+        Check(putBody.Contains("Transform room = WaitingRoom(menu);") && putBody.Contains("Instantiate(hudTemplate, room, false)") && putBody.Contains("Instantiate(menuTemplate, room, false)")
+              && !putBody.Contains("SetActive(true)"),
+            "phone apps: an app's buttons are made asleep off both phones, never hidden inside a grid while the line runs");
+        Check(putBody.Contains("Made.Add(new Arrival { Button = hud.gameObject, Grid = hudTemplate.parent })")
+              && putBody.Contains("Made.Add(new Arrival { Button = inMenu.gameObject, Grid = menuTemplate.parent })"),
+            "phone apps: each button made keeps the grid it joins after the line's last");
+        string finish = Body(phone, "private static void Finish()");
+        int joins = finish.IndexOf("arrival.Button.transform.SetParent(arrival.Grid, false)", StringComparison.Ordinal);
+        int shown = finish.IndexOf("arrival.Button.SetActive(true)", StringComparison.Ordinal);
+        int letGo = finish.IndexOf("PhoneGridPager.Holding--", StringComparison.Ordinal);
+        Check(joins >= 0 && shown > joins && letGo > shown && finish.IndexOf("hud.Refresh()", StringComparison.Ordinal) > letGo && finish.Contains("strip.Refresh()")
+              && Count(finish, ".Refresh()") == 2,
+            "phone apps: after the line's last its buttons join their grids together, shown as they join, and each pager then lays its grid out once");
+        string room = Body(phone, "private static Transform WaitingRoom(");
+        Check(room.Contains("UiClone.Dormant(menu.canvasGroup != null ? menu.canvasGroup.transform : menu.transform") && !room.Contains("phone"),
+            "phone apps: the waiting room sleeps under the full menu, outside the HUD phone, where other mods look for its buttons");
+        Check(Body(phone, "internal static void Drop()").Contains("_room = null;"), "phone apps: the waiting room is forgotten with the interface it stood in");
+        int intoGrid = 0;
+        for (int at = phone.IndexOf("Instantiate(", StringComparison.Ordinal); at >= 0; at = phone.IndexOf("Instantiate(", at + 1, StringComparison.Ordinal))
+        {
+            int end = phone.IndexOf(';', at);
+            intoGrid += end > at && phone.Substring(at, end - at).Contains("Template.parent") ? 1 : 0;
+        }
+        Check(intoGrid == 0, "phone apps: no button of the mod's is copied straight into a phone's grid (" + intoGrid + " found)");
     }
 }

@@ -27985,5 +27985,11 @@
   "reallife_ui_page_studio": "Your firm",
   "reallife_ui_page_desk": "Desk",
   "reallife_ui_test_flare": "Open Flare in the city on the RLO interface",
-  "reallife_ui_test_firm": "Open your first tech firm on the RLO interface"
+  "reallife_ui_test_firm": "Open your first tech firm on the RLO interface",
+  "reallife_phone_test_pages": "Check the phone's pages",
+  "reallife_phone_test_pages_pass": "Phone pages: every app went back on as a load puts it, and the phone shows one page at a time. The details are in Player.log.",
+  "reallife_phone_test_pages_fail": "Phone pages: the phone shows more than a page, or its page count changed. The details are in Player.log.",
+  "reallife_phone_test_pages_busy": "The mod's apps are still going on the phone. Try again in a moment.",
+  "reallife_changes_063_4_title": "0.63.4",
+  "reallife_changes_063_4": "Fixed: since 0.62.0 the phone could grow as tall as the screen, with every app showing at once and no pages. The mod's apps were put on the phone hidden and switched on later, which another mod that pages the phone never noticed. They now join the phone together once they are all ready, already shown, so the pages work again."
 }

@@ -27985,5 +27985,11 @@
   "reallife_ui_page_studio": "Sua empresa",
   "reallife_ui_page_desk": "Mesa",
   "reallife_ui_test_flare": "Abrir o Flare na cidade na interface RLO",
-  "reallife_ui_test_firm": "Abrir sua primeira empresa de tecnologia na interface RLO"
+  "reallife_ui_test_firm": "Abrir sua primeira empresa de tecnologia na interface RLO",
+  "reallife_phone_test_pages": "Verificar as páginas do celular",
+  "reallife_phone_test_pages_pass": "Páginas do celular: todos os apps voltaram como um carregamento os coloca, e o celular mostra uma página por vez. Os detalhes estão no Player.log.",
+  "reallife_phone_test_pages_fail": "Páginas do celular: o celular mostra mais de uma página, ou o número de páginas mudou. Os detalhes estão no Player.log.",
+  "reallife_phone_test_pages_busy": "Os apps do mod ainda estão entrando no celular. Tente de novo daqui a pouco.",
+  "reallife_changes_063_4_title": "0.63.4",
+  "reallife_changes_063_4": "Corrigido: desde a 0.62.0 o celular podia ficar da altura da tela, com todos os apps aparecendo ao mesmo tempo e sem páginas. Os apps do mod eram colocados no celular escondidos e ligados depois, e outro mod que pagina o celular nunca percebia. Agora eles entram no celular juntos quando todos estão prontos, já visíveis, então as páginas voltam a funcionar."
 }
