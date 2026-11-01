@@ -79,8 +79,8 @@ namespace RealLifeOverhaul.Population
                     continue;   // a district of villas has no rental market to move
                 }
                 int vacancy = (int)(1000L * vacant[d] / flats[d]);
-                int step = (PopulationCatalogue.TargetVacancy - vacancy) * PopulationCatalogue.RentStep / 10;
-                s.RentIndex[d] = PopulationCatalogue.Clamp(s.RentIndex[d] + s.RentIndex[d] * step / 1000, PopulationCatalogue.RentLeast, PopulationCatalogue.RentMost);
+                long step = (long)s.RentIndex[d] * (PopulationCatalogue.TargetVacancy - vacancy) * PopulationCatalogue.RentStep / 1000000;
+                s.RentIndex[d] = PopulationCatalogue.Clamp((int)(s.RentIndex[d] + step), PopulationCatalogue.RentLeast, PopulationCatalogue.RentMost);
             }
             for (int h = 0; h < s.Households.Count; h++)
             {
@@ -89,6 +89,27 @@ namespace RealLifeOverhaul.Population
                     SetRent(s, h);
                 }
             }
+        }
+
+        /// <summary>
+        /// Thousandths of the region's households that would come to a district who still do at its rents: all of them at the game's own rent,
+        /// fewer as the index rises past it (by its square: at half again the rent, under half of them), more where it has fallen, at most
+        /// <see cref="PopulationCatalogue.RegionPullMost"/>.
+        /// </summary>
+        public static int RegionPull(PopulationState s, int d)
+        {
+            long index = d >= 0 && d < s.RentIndex.Length ? Math.Max(1, s.RentIndex[d]) : 1000;
+            return (int)Math.Min(PopulationCatalogue.RegionPullMost, 1000000000L / (index * index));
+        }
+
+        /// <summary>
+        /// Per mille a month of a district's households that want another flat and find none in the city who leave for the region: more as its
+        /// rents rise, by the index's square over a million.
+        /// </summary>
+        public static int WantLeave(PopulationState s, int d)
+        {
+            long index = d >= 0 && d < s.RentIndex.Length ? Math.Max(0, s.RentIndex[d]) : 1000;
+            return (int)Math.Min(1000L, PopulationCatalogue.WantLeave * index * index / 1000000);
         }
 
         /// <summary>True when a household's rent takes more of its income than it will bear, or its flat is too small for its people.</summary>
@@ -135,7 +156,7 @@ namespace RealLifeOverhaul.Population
                 {
                     continue;   // beyond what it would ever pay
                 }
-                int score = Score(s, b, CityTable.FlatSqmOf(s, b, unit), size, disposable, rent, cls, work);
+                int score = Score(s, b, unit, CityTable.FlatSqmOf(s, b, unit), size, disposable, rent, cls, work);
                 if (score > bestScore)
                 {
                     bestScore = score;
@@ -154,16 +175,20 @@ namespace RealLifeOverhaul.Population
             return bestFlat;
         }
 
-        // How well a flat suits a household: room for its people, rent against what it would pay, a district of its class, near its work.
-        private static int Score(PopulationState s, int b, int sqm, int size, long disposable, long rent, int cls, int work)
+        // How well a flat suits a household: room for its people, a standard of flat that fits what it would pay (its rent at the game's own
+        // prices, its size and district, against about 28% of income), what the district's index adds on top of that as price alone (each
+        // thousandth of its income twice as much against it), a district of its class, near its work. Scored by its rent today alone, a cheap
+        // district's rising rents brought its flats nearer that 28% and drew more movers to it, and it climbed to its bound.
+        private static int Score(PopulationState s, int b, int unit, int sqm, int size, long disposable, long rent, int cls, int work)
         {
             int score = 0;
             int room = sqm / Math.Max(1, size);
             score += room >= PopulationCatalogue.WantSqm ? 300 : room * 300 / PopulationCatalogue.WantSqm;
             if (disposable > 0)
             {
-                long share = rent * 1000 / disposable;
-                score += (int)Math.Max(-400, 300 - Math.Abs(share - 280));
+                long standard = CityTable.FlatRentAtGame(s, b, unit);
+                score += (int)Math.Max(-400, 300 - Math.Abs(standard * 1000 / disposable - 280));
+                score -= (int)Math.Max(-400, Math.Min(400, (rent - standard) * 1000 / disposable * PopulationCatalogue.RentPremiumWeight / 1000));
             }
             PopDistrict d = s.Districts[s.Buildings[b].District];
             score += (cls == 0 ? d.Working : cls == 1 ? d.Middle : d.Upper) * 3;

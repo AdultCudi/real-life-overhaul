@@ -19,6 +19,7 @@ internal static partial class Program
         int startPeople = s.People.Live, startHouseholds = s.Households.Live;
         long births = 0, deaths = 0, inCity = 0, outCity = 0;
         int lowest = int.MaxValue, highest = 0, worstUnemployment = 0, bestUnemployment = 1000;
+        int[] rentsFirst = (int[])s.RentIndex.Clone(), rentsTwo = rentsFirst, rentsEight = rentsFirst;
         var clock = Stopwatch.StartNew();
         int days = s.YearDays * 10;
         for (int day = 2; day <= days + 1; day++)
@@ -40,6 +41,8 @@ internal static partial class Program
                 int u = Unemployment(s);
                 worstUnemployment = Math.Max(worstUnemployment, u);
                 bestUnemployment = Math.Min(bestUnemployment, u);
+                rentsTwo = day == s.YearDays * 2 ? (int[])s.RentIndex.Clone() : rentsTwo;
+                rentsEight = day == s.YearDays * 8 ? (int[])s.RentIndex.Clone() : rentsEight;
             }
         }
         double ms = clock.Elapsed.TotalMilliseconds;
@@ -72,6 +75,24 @@ internal static partial class Program
             rents &= s.RentIndex[d] >= PopulationCatalogue.RentLeast && s.RentIndex[d] <= PopulationCatalogue.RentMost;
         }
         Check(rents, "population years: every district's rents stay within their bounds as they follow its vacancy");
+        // Three hundredths over two years is under a point of vacancy at the market's pace: a district still drifting, not one still climbing.
+        bool rentsSettle = true;
+        for (int d = 0; d < s.RentIndex.Length && d < rentsFirst.Length; d++)
+        {
+            rentsSettle &= s.RentIndex[d] - rentsEight[d] <= Math.Max(30, rentsTwo[d] - rentsFirst[d]);
+        }
+        Check(rentsSettle, "population years: a district's rents rise while its flats are short and settle as people come and go: none climbs in the last two years by more than it did in the first two ("
+                           + string.Join("/", rentsTwo) + " after two years, " + string.Join("/", rentsEight) + " after eight, " + string.Join("/", s.RentIndex) + " after ten)");
+        int usual = PopulationCatalogue.UnemploymentStart;
+        Check(LabourRules.WageTarget(usual) == 1000 && LabourRules.WageTarget(usual * 2) == 1000 - LabourRules.WageCurve && LabourRules.WageTarget(0) == 1000 + LabourRules.WageCurve
+              && LabourRules.WageTarget(1000) == LabourRules.WageTargetLeast && LabourRules.WageTarget(-50) <= LabourRules.WageTargetMost && LabourRules.WageTargetLeast > LabourRules.WageLeast
+              && LabourRules.WageTarget(usual * 3) < LabourRules.WageTarget(usual * 2),
+            "population years: the wage curve: a field's pay is drawn to its start at the city's usual unemployment, about 7% lower at twice it and as much higher at none, never to the floor that guards it");
+        var market = new PopulationState();
+        market.RentIndex = new[] { 1000, 1500, 700 };
+        Check(HousingRules.RegionPull(market, 0) == 1000 && HousingRules.RegionPull(market, 1) < 500 && HousingRules.RegionPull(market, 2) == PopulationCatalogue.RegionPullMost
+              && HousingRules.WantLeave(market, 0) == PopulationCatalogue.WantLeave && HousingRules.WantLeave(market, 1) > PopulationCatalogue.WantLeave * 2 && HousingRules.WantLeave(market, 2) < PopulationCatalogue.WantLeave,
+            "population years: the region's households come at a district's own rents and fewer past them, more of those who find no flat leave where rents have climbed, fewer where they fell");
         bool linked = true;
         int members = 0;
         for (int h = 0; h < s.Households.Count; h++)

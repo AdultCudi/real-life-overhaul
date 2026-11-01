@@ -169,11 +169,12 @@ internal static partial class Program
             DemandDay(sim, s, m, job, ++day);
             if (m.AnchorDay < 0)
             {
-                Check(Array.TrueForAll(m.Factors, f => f == 1000), "population demand: every factor stays a thousand until the city has lived through a month's turn (day " + day + ")");
+                Check(Array.TrueForAll(m.Factors, f => f == 1000), "population demand: every factor stays a thousand until the city has lived through its first months' turns (day " + day + ")");
             }
             anchored = m.AnchorDay;
         }
-        Check(anchored == day && s.MonthNumber == first + 1, "population demand: the anchor is taken on the first day of the city's second month (day " + anchored + ")");
+        Check(anchored == day && s.MonthNumber == first + PopDemandCatalogue.SettleMonths && PopDemandCatalogue.SettleMonths >= 2,
+            "population demand: the anchor is taken on the first day after the city's first " + PopDemandCatalogue.SettleMonths + " months, the generation's moving wave behind it (day " + anchored + ")");
         bool all = Array.TrueForAll(m.Factors, f => f == 1000);
         Check(all, "population demand: on the anchor day every demand reads exactly a thousand, so every business keeps today's figures");
         bool online = true;

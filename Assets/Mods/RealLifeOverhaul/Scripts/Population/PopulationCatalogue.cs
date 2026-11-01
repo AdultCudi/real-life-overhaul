@@ -321,7 +321,7 @@ namespace RealLifeOverhaul.Population
         public const int PensionLeast = 6000;            // cents a day at the least (the state pension's floor)
         public const int ChildBenefit = 800;             // cents a day for each child under 18 in a household with low pay
         public const int ChildBenefitBelow = 15000;      // cents a day of household pay under which it is paid
-        public const int ReturnPoints = 300;             // hundredths of a per cent a year earned on savings over the bank rate's part (3%)
+        public const int ReturnPoints = 300;             // hundredths of a per cent a year of 365 days earned on savings over the bank rate's part (3%; SpendRules.Income)
 
         /// <summary>Savings when a city is generated, in days of the household's pay, by class: the least and the most (US Federal Reserve SCF shape).</summary>
         public static readonly (int Least, int Most)[] SavingsDays = { (3, 40), (30, 240), (200, 2400) };
@@ -339,14 +339,19 @@ namespace RealLifeOverhaul.Population
         /// city's middle (half, the middle, three times), drawn between them on a log scale. Poorer households spend more of it on food,
         /// utilities and getting about, richer on eating out, the home, jewellery and services, and save the rest (US Bureau of Labor
         /// Statistics, Consumer Expenditure Survey 2022, shares by income quintile; Engel's law). Rent and Saving are not in the table:
-        /// rent is the flat's, saving is what is left.
+        /// rent is the flat's, saving is what is left. The bills column is utilities and the household's other bills no business of the
+        /// city takes (insurance, health care, pension contributions, schooling: the survey's other quarter of spending), so what is left
+        /// is saved at real rates (the survey's middle about a twentieth of income after tax, the top about a fifth): without them the
+        /// households saved a sixth to a third of what was left after rent, and ten years of a 365-day calendar grew the city's savings
+        /// pool two and a half times. The bills go nowhere in the city (the books' utilities); a household's spending in the Economy app
+        /// counts them.
         /// </summary>
         public static readonly int[][] SpendShares =
         {
-            //          rent util groc  eat coff cloth elec furn book flow jewel gym cine thea night casi tran care prof digi save
-            new[] {     0, 128, 309,  81,  24,  54,  34,  24,  22,   4,   4,  16,  13,   3,  24,   5, 161,  19,  11,  24,   0 },   // half the city's middle: 960 spent, little saved
-            new[] {     0,  87, 174, 106,  27,  56,  37,  35,  25,   6,  11,  20,  12,   7,  27,   6, 124,  20,  20,  27,   0 },   // the middle: 827 spent
-            new[] {     0,  35,  70,  95,  20,  55,  32,  38,  24,   9,  30,  20,   7,  16,  22,   9,  75,  20,  32,  22,   0 },   // three times the middle: 631 spent, a third saved
+            //          rent bill groc  eat coff cloth elec furn book flow jewel gym cine thea night casi tran care prof digi save
+            new[] {     0, 148, 309,  81,  24,  54,  34,  24,  22,   4,   4,  16,  13,   3,  24,   5, 161,  19,  11,  24,   0 },   // half the city's middle: 980 spent, little saved
+            new[] {     0, 210, 174, 106,  27,  56,  37,  35,  25,   6,  11,  20,  12,   7,  27,   6, 124,  20,  20,  27,   0 },   // the middle: 950 spent, a twentieth saved
+            new[] {     0, 204,  70,  95,  20,  55,  32,  38,  24,   9,  30,  20,   7,  16,  22,   9,  75,  20,  32,  22,   0 },   // three times the middle: 800 spent, a fifth saved
         };
 
         public const int EssentialsKinds = 3;            // Utilities, Groceries and Transport come first when money is short
@@ -517,7 +522,9 @@ namespace RealLifeOverhaul.Population
         // ---- the region round the city (POPULATION.md section 5): commuters and visitors, an aggregate
 
         public const int CommuterSpend = 1600;           // cents a day a commuter spends in the city on a working day (lunch, coffee, a shop near work)
-        public const int CommuterFill = 120;             // thousandths of the vacancies the region fills a day while it has people to send
+        // thousandths of the vacancies the region fills a month while it has people to send (a day's share is this over the month's days): a
+        // month of the save's year as the residents' own job finding is a rate of the save's year, so neither side outruns the other at any year length
+        public const int CommuterFillMonth = 600;
         public const int RegionPool = 400000;            // the region's people who could take a job in the city (the boroughs and the suburbs round Manhattan hold millions)
         public const int RegionWorkersShare = 600;       // thousandths of them in work elsewhere: the city draws from the rest first
 
@@ -545,12 +552,23 @@ namespace RealLifeOverhaul.Population
         public const int RentBurdenLeave = 700;          // ... past which, with nothing cheaper free, it leaves the city
         public const int UnemployedLeaveDays = 365;      // game days out of work in a year of 365 (scaled) after which a household may leave
         public const int LeaveChance = 120;              // per mille a year such a household leaves
-        public const int MigrantsPerVacancy = 400;       // thousandths of a household a day that would come to the city for each hundred open vacancies (more when it has flats to spare)
-        public const int ArrivalShare = 300;             // thousandths a month of a district's free flats past its target that the region's households take (Manhattan never lacks them)
+        public const int MigrantsPerVacancy = 2000;      // thousandths of a household a month of the save's year that would come to the city for each hundred open vacancies (more when it has flats to spare)
+        public const int ArrivalShare = 300;             // thousandths a month of a district's free flats past its target that the region's households take (Manhattan never lacks them)...
+        // ...as many as the district's rents let: the region's households weigh the city's rents against the region's own (the game's base rent), so
+        // at its index's thousand they all come and at twice it half of them (RegionPull), at most this many thousandths of them where rents have fallen
+        public const int RegionPullMost = 1500;
+        // per mille a month of households that want another flat (crowded, or their rent past bearing) and find none free in the city that take one
+        // in the region instead, at the district's index over a thousand times this: as New York's crowded and priced out families move to the
+        // boroughs and New Jersey. With RegionPull it is how the base districts' housing market clears, the owner having kept new building to the
+        // mod's own land (POPULATION.md section 14): rents rise until enough go and few enough come, rather than to their bound.
+        public const int WantLeave = 60;
 
         // ---- housing (POPULATION.md section 8)
 
-        public const int RentStep = 4;                   // thousandths a month rents move for each 10 thousandths vacancy is off its target: three points off is some 15% a year
+        // millionths of the index a month for each thousandth a district's vacancy is off its target: 1.2% a year for each point, the pace rent
+        // surveys find (rents rise about a point a year for each point vacancy is below its natural rate; New York's a few per cent a year with
+        // two to three per cent of its flats free). A month is the save's, so ten of its years move rents alike at any year length.
+        public const int RentStep = 100;
         public const int RentLeast = 650;                // thousandths of the game's own rent a district's index goes down to
         public const int RentMost = 1800;                // ... and up to
         public const int RentResidential = 65;           // thousandths: the game's residential rent multiplier (BuildingTypeData buildingPriceMultiplierForRent)
@@ -558,6 +576,7 @@ namespace RealLifeOverhaul.Population
         public const int BasePricePerSqm = 20554;        // whole money: the game's base building price a square metre (NeighborhoodData)
         public const int ResidentialPriceMultiplier = 1500;   // thousandths (BuildingTypeData buildingPriceMultiplier for residential)
         public const int AffordableShare = 350;          // thousandths of income a household is willing to pay in rent when it chooses a flat
+        public const int RentPremiumWeight = 2000;       // thousandths of a point off a flat's score for each thousandth of a household's income its district's index adds (HousingRules.Score)
         public const int WantSqm = 13;                   // m2 of flat a person wants at the least before the household looks for more (about a room a person)
 
         // ---- the city's economy as other features read it (CityEconomy.DistrictIncome's 600 to 1400 scale)

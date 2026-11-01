@@ -68,12 +68,13 @@ namespace RealLifeOverhaul.Population
         }
 
         /// <summary>
-        /// True once a population has lived through a month's turn since it was generated: its moves, arrivals and the region's wishes are then in its
-        /// figures, so the anchor is taken from a city in its ordinary run, not from its first morning.
+        /// True once a population has lived through <see cref="PopDemandCatalogue.SettleMonths"/> months' turns since it was generated: its moves, arrivals
+        /// and the region's wishes are then in its figures, and the households the generation placed in flats that do not suit them have moved, so the
+        /// anchor is taken from a city in its ordinary run, not from its first morning or the wave after it.
         /// </summary>
         public static bool Settled(PopulationState s)
         {
-            return s != null && s.MonthNumber > GenerateRules.MonthOf(s.Generated, s.YearDays);
+            return s != null && s.MonthNumber >= GenerateRules.MonthOf(s.Generated, s.YearDays) + PopDemandCatalogue.SettleMonths;
         }
 
         /// <summary>A car's worth of a household's income for its car buying, thousandths: richer households replace sooner, within bounds.</summary>

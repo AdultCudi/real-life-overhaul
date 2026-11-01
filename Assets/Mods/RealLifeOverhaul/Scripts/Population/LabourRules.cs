@@ -31,12 +31,14 @@ namespace RealLifeOverhaul.Population
     {
         public const int StartVacancy = 30;      // thousandths of each employer's slots left open when a city is generated (US JOLTS openings run 3 to 7%)
         public const int Looks = 6;              // employers of a field a jobseeker looks at in a day
-        public const int Tight = 50;             // thousandths of a field's jobs open past which its pay rises (the region fills openings quickly: two or three in a hundred as a rule)
-        public const int Slack = 10;             // ... under which it falls, if its own people are out of work as well (pay is slow to fall: a quiet field holds)
-        public const int SlackOutOfWork = 80;    // thousandths of a field's labour force out of work for its pay to fall
-        public const int WageRise = 15;          // thousandths a month a tight field's pay rises
-        public const int WageFall = 10;          // ... a slack one's falls
-        public const int WageLeast = 800, WageMost = 1600;   // thousandths of its start a field's pay keeps within
+        // The wage curve: a field's pay is pulled towards a level set by how many of its own people are out of work against the city's usual
+        // share, about 7% lower where twice as many are looking and as much higher where none are (Blanchflower and Oswald's wage curve, an
+        // elasticity near a tenth), within a band the region's pay holds it to: commuters come for the region's pay, so the city's cannot drift
+        // far from it either way. Moving towards a level rather than by steps keeps the bounds a guard and never a resting place.
+        public const int WageCurve = 70;         // thousandths off the start for each time the field's unemployment is past the city's usual (PopulationCatalogue.UnemploymentStart)
+        public const int WageTargetLeast = 860, WageTargetMost = 1200;   // thousandths: the most the field's own market moves its pay either way
+        public const int WageAdjust = 80;        // thousandths of the gap to that level a field's pay closes in a month: slow, most of the way within the save's year
+        public const int WageLeast = 800, WageMost = 1600;   // thousandths of its start a field's pay keeps within: a guard past the curve's own band
         public const int WageFollow = 100;       // thousandths of the gap to the going rate a worker's pay closes in a month
         public const int SkillPerYear = 3;       // points of skill a year of work brings, to the most
         public const int FindRate = 3800;        // per mille a year: how fast a jobseeker finds work while there is plenty (about three months out of work on average)
@@ -443,7 +445,7 @@ namespace RealLifeOverhaul.Population
         /// </summary>
         public static void Commuters(PopulationState s, int day, int residentOut)
         {
-            int fill = (int)((long)PopulationCatalogue.CommuterFill * LocalFill(residentOut) / 1000);
+            int fill = (int)((long)PopulationCatalogue.CommuterFillMonth / GenerateRules.MonthDays(s.YearDays) * LocalFill(residentOut) / 1000);
             EmployerTable et = s.Employers;
             RegionState r = s.Region;
             int free = Math.Max(0, (int)((long)r.Pool * (1000 - PopulationCatalogue.RegionWorkersShare) / 1000) - r.Commuting);
@@ -472,21 +474,31 @@ namespace RealLifeOverhaul.Population
         }
 
         /// <summary>
-        /// The month's pay rises and falls: a field with many of its jobs open (the city and the region short of its people) pays more, one with few
-        /// less; workers' pay closes on the rate.
+        /// The level a field's pay is drawn to, thousandths of its start, by the share of its own labour force out of work (thousandths) against
+        /// the city's usual share: the wage curve, within its band.
         /// </summary>
-        public static void Month(PopulationState s, int[] vacancies, int[] slots, int[] seekers, int[] workers)
+        public static int WageTarget(int outOfWork)
+        {
+            int usual = PopulationCatalogue.UnemploymentStart;
+            long off = (long)WageCurve * (Math.Max(0, outOfWork) - usual) / usual;
+            return PopulationCatalogue.Clamp((int)(1000 - off), WageTargetLeast, WageTargetMost);
+        }
+
+        /// <summary>
+        /// The month's pay: each field's moves part of the way to the level its own people out of work set (<see cref="WageTarget"/>), so it
+        /// falls while they look and comes back as they find work; workers' pay closes on the rate.
+        /// </summary>
+        public static void Month(PopulationState s, int[] seekers, int[] workers)
         {
             for (int f = 1; f < PopulationCatalogue.Fields && f < s.FieldWage.Length; f++)
             {
-                if (slots[f] <= 0)
+                if (seekers[f] + workers[f] <= 0)
                 {
                     continue;
                 }
-                int tight = (int)(1000L * vacancies[f] / slots[f]);
-                int outOfWork = seekers[f] + workers[f] > 0 ? (int)(1000L * seekers[f] / (seekers[f] + workers[f])) : 0;
+                int outOfWork = (int)(1000L * seekers[f] / (seekers[f] + workers[f]));
                 int w = s.FieldWage[f];
-                w = tight > Tight ? w + w * WageRise / 1000 : tight < Slack && outOfWork > SlackOutOfWork ? w - w * WageFall / 1000 : w;
+                w += (int)((long)(WageTarget(outOfWork) - w) * WageAdjust / 1000);
                 s.FieldWage[f] = PopulationCatalogue.Clamp(w, WageLeast, WageMost);
             }
             PersonTable pt = s.People;

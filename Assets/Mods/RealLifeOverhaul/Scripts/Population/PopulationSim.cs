@@ -32,8 +32,6 @@ namespace RealLifeOverhaul.Population
         private readonly List<int>[] _open = new List<int>[PopulationCatalogue.Fields];
         private readonly int[] _shares = new int[PopulationCatalogue.Categories];
         private readonly int[] _budget = new int[PopulationCatalogue.Categories];
-        private readonly int[] _vacancies = new int[PopulationCatalogue.Fields];
-        private readonly int[] _slots = new int[PopulationCatalogue.Fields];
         private readonly int[] _seekers = new int[PopulationCatalogue.Fields];
         private readonly int[] _workers = new int[PopulationCatalogue.Fields];
         private long[] _disposable = new long[0];
@@ -162,7 +160,7 @@ namespace RealLifeOverhaul.Population
                         Next(Phase.MonthWages);
                         break;
                     case Phase.MonthWages:
-                        LabourRules.Month(s, _vacancies, _slots, _seekers, _workers);
+                        LabourRules.Month(s, _seekers, _workers);
                         Next(Phase.MonthRents);
                         break;
                     case Phase.MonthRents:
@@ -577,18 +575,6 @@ namespace RealLifeOverhaul.Population
                 f.MigrantsWanting = 0;
             }
             Array.Clear(s.WantFlats, 0, s.WantFlats.Length);
-            Array.Clear(_vacancies, 0, _vacancies.Length);
-            Array.Clear(_slots, 0, _slots.Length);
-            for (int e = 0; e < et.Count; e++)
-            {
-                if (et.Players[e])
-                {
-                    continue;   // the player staffs those
-                }
-                int f = PopulationCatalogue.Clamp(et.Field[e], 0, PopulationCatalogue.Fields - 1);
-                _vacancies[f] += et.Vacancies(e);
-                _slots[f] += et.Slots[e];
-            }
             Array.Clear(_seekers, 0, _seekers.Length);
             Array.Clear(_workers, 0, _workers.Length);
             for (int p = 0; p < s.People.Count; p++)

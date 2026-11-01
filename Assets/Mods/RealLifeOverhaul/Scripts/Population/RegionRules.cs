@@ -87,9 +87,10 @@ namespace RealLifeOverhaul.Population
                 {
                     s.WantFlats[hh.District[h]]++;
                 }
-                if (disposable > 0 && hh.Rent[h] * 1000L / disposable > PopulationCatalogue.RentBurdenLeave)
+                if (disposable > 0 && hh.Rent[h] * 1000L / disposable > PopulationCatalogue.RentBurdenLeave
+                    || PopDraw.Mille(s.Seed, PopDraw.Priced, id, month, HousingRules.WantLeave(s, hh.District[h])))
                 {
-                    Leave(s, h, day);   // nothing cheaper to be had and the rent past bearing: it goes to the region
+                    Leave(s, h, day);   // nothing to be had here: it takes a flat in the region, surely past bearing its rent, more often the dearer the district
                     return true;
                 }
                 hh.Flags[h] |= HouseholdFlags.WantsMove;
@@ -168,8 +169,7 @@ namespace RealLifeOverhaul.Population
         /// </summary>
         public static int Arrivals(PopulationState s, LifeRules.LifeDay ld, int day, int vacancies, List<int>[] open)
         {
-            int monthDays = GenerateRules.MonthDays(s.YearDays);
-            long wanting = (long)vacancies * PopulationCatalogue.MigrantsPerVacancy / 1000 * monthDays / 100;
+            long wanting = (long)vacancies * PopulationCatalogue.MigrantsPerVacancy / 1000 / 100;
             int came = 0;
             for (int d = 0; d < s.Districts.Count && d < ld.Free.Length; d++)
             {
@@ -179,7 +179,7 @@ namespace RealLifeOverhaul.Population
                 }
                 int floor = (int)((long)(d < s.Figures.Length ? s.Figures[d].Flats : 0) * PopulationCatalogue.TargetVacancy / 1000);
                 int spare = ld.Free[d].Count - floor;
-                for (int n = 0; n < (long)spare * PopulationCatalogue.ArrivalShare / 1000; n++)
+                for (int n = 0; n < (long)spare * PopulationCatalogue.ArrivalShare / 1000 * HousingRules.RegionPull(s, d) / 1000; n++)
                 {
                     came += Arrive(s, ld, d, day, 100000 + d * 1000 + n, open) ? 1 : 0;
                 }
@@ -202,6 +202,10 @@ namespace RealLifeOverhaul.Population
                     }
                     s.Region.Wanting++;
                     continue;
+                }
+                if (!PopDraw.Mille(s.Seed, PopDraw.Priced, n, day, HousingRules.RegionPull(s, d)))
+                {
+                    continue;   // priced out: it stays in the region, where the rent is the game's own
                 }
                 came += Arrive(s, ld, d, day, n, open) ? 1 : 0;
             }

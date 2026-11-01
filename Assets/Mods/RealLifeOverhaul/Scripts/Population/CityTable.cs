@@ -245,8 +245,18 @@ namespace RealLifeOverhaul.Population
             CityBuilding b = s.Buildings[building];
             int d = b.District;
             int index = d >= 0 && d < s.RentIndex.Length ? s.RentIndex[d] : 1000;
-            long rent = unit == 0 && b.Use == Use.Homes ? GameUnitRent(b, s.Districts) : s.FlatRent[building];
-            return (int)Math.Min(int.MaxValue / 4, rent * index / 1000);
+            return (int)Math.Min(int.MaxValue / 4, (long)FlatRentAtGame(s, building, unit) * index / 1000);
+        }
+
+        /// <summary>A flat's rent at the game's own prices, cents a day, before its district's index: its standard (its size and district).</summary>
+        public static int FlatRentAtGame(PopulationState s, int building, int unit)
+        {
+            if (building < 0 || building >= s.FlatRent.Length)
+            {
+                return 0;
+            }
+            CityBuilding b = s.Buildings[building];
+            return unit == 0 && b.Use == Use.Homes ? (int)Math.Min(int.MaxValue / 4, GameUnitRent(b, s.Districts)) : s.FlatRent[building];
         }
 
         /// <summary>The metres between two districts' middles.</summary>

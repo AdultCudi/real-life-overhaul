@@ -75,8 +75,11 @@ namespace RealLifeOverhaul.Population
             int savings = s.Households.Savings[h];
             if (savings > 0)
             {
+                // A year's rate spread over the money's year whatever the save's (CalendarRules.MoneyYearDays): the savings are money, made in
+                // days of pay and saved by the day. Over the save's year a 60-day calendar paid it six times over, so a rich household's
+                // savings (up to 2,400 days of pay) earned more each day than its work did, and compounded past any band in a long game.
                 long bp = PopulationCatalogue.ReturnPoints + Math.Max(-PopulationCatalogue.ReturnPoints, baseBp);
-                inc.Returns = (int)Math.Min(int.MaxValue / 8, (long)savings * 100 * bp / 10000 / Math.Max(1, s.YearDays));
+                inc.Returns = (int)Math.Min(int.MaxValue / 8, (long)savings * 100 * bp / 10000 / CalendarRules.MoneyYearDays);
             }
         }
 
