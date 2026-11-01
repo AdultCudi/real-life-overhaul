@@ -110,6 +110,48 @@ Use these, and never draw a part of your own. All are in `UiDraw.Chrome.cs` unle
   (a thin bar in a tone), `GradeBar` (an attribute graded red to green; a block of them shares one label column from
   `LabelColumn`, so their tracks start at one edge), `StatBar` (the same thin graded bar under its label), `Stars` (a
   rating by halves, gold and grey) and the spark line (`UiSpark`).
+- **Controls** (`UiDraw.Fields.cs`), each in its control-only form inside one 40 px row at the right of a line whose
+  words the line draws, so a host mirrors the game's widget and a settings list lines them up in one column: `Choice`
+  (the game's Dropdown: the value and its chevron; `ChoiceList` opens its options on the overlay under it, eight in view,
+  the chosen one ticked), `Slider` (one row: the track from the column's left edge, the knob and the figure at its
+  right edge; a press holds it, shown by the quiet cyan, and only then do Left and Right step it; the older labelled
+  `Slider` keeps its two lines and the same track), `Stepper` (the game's AmountSelector: minus, the typed figure,
+  plus, each end greyed), `Switch` (the game's Toggle, its state in words, flush with the column's right edge),
+  `CheckLine` (a requirement met or not, read only), `TextField` (the game's input field; typing through the host, its
+  caret shown while typed in) and `KeyBinding` (the bound key on its cap, or "Press a key" while it waits). Use them for
+  any setting or form; not for an action (a `Button`) or a page's sections (the window's sidebar or tabs). A screen
+  whose held slider steps with Left and Right implements `IUiStepping` (`IUiStepping.cs`); the host gives it the step
+  instead of a focus move only while it says the control is held, so the d-pad still crosses a page of controls.
+- **Empty state with a way out** (`UiDraw.EmptyState`): a part's room that holds nothing shows the glyph of what would be
+  there on its tile, a true sentence and, when there is one, the button that fills it (Clear search).
+- **The big table** (`UiDataTable`): a staff list or a market of thousands of rows. Columns from a spec (`UiDataColumn`:
+  words, a figure, money, a date, a status chip, a graded meter or a person with face and role), a sortable head with
+  the order's arrow, a tool row of filter choices and a search (or, while picking, how many are picked, Done and the mass
+  actions, the main one last), only the rows in view laid out, the row the detail shows in the cyan fifth, totals at the
+  foot, and an empty sentence in its room. A long translated head takes two lines. Use it where the player sorts,
+  filters or acts on many rows; not for a few facts (`InfoRow`) or a short list on a page (`UiAppWindow.Table`).
+- **Charts** (`UiChart`, `UiChartModel`): a line over time (one to four series, the last value named at each line's
+  end), bars by category (each its category's colour and value, every category named) and a market's candles over their
+  volume, on a band with a round-stepped value axis and hairline rules. Each point is a target read in a slate card by
+  focus or by the mouse resting on it (`IUiPointing`). Use it where a trend or a comparison is the point; not for a
+  single figure (`Figures` with its spark) or a share of a whole (`Donut`).
+- **Catalogue** (`UiCatalogue`): cards of goods or choices in a grid that scrolls inside its frame, each its picture on
+  a slate tile (the game's own, through `UiPictures`, laid in its own shape and never stretched, or a glyph in its
+  colour), its name, its price and a state chip, the chosen card's foot cyan, and its detail beside the grid with the
+  actions under it. Use it for stores, business types, furniture, vehicles, photos and buildings; not for a list of
+  people (the table, or people rows).
+- **Statement** (`UiStatement`): money over time as a bank statement, the account and its balance as the one large
+  figure, the period's choice, dated lines grouped by day under bands that fold (or an income statement's headings),
+  money in, money out and the balance after each, and the period's totals at the foot. Use it for EconoView, Finance,
+  banks, bills and a share account; not for a summary of a few sums (`Figures`).
+- **Track** (`UiTrack`): a short line of steps (a career ladder, a game's milestones, a building's stages), each its
+  glyph on a tile, its name, a note and a state chip, the rule cyan up to the current step, whose tile is filled cyan.
+  Use it for five or so steps in order; not for a long history (a statement or a table).
+- **Centred words**: every single line flagged `Middle` (all `TextMiddle` words, key caps, initials) is drawn by its
+  capitals (TextMeshPro's Capline), so words sit on the middle of a button, chip or pill, not up to 2.7 px high as the
+  line box put them. Centre words with `TextMiddle`; never nudge a label by hand.
+- **The parts' gallery** (`UiPartsGallery`, `UiPartsGalleryScreen`, Options, Tests): every part above in each state,
+  as a screen would hold it.
 - **Colours for data**: `UiTokens.Chart(i)` for a slice, `UiTokens.Grade(value)` for a graded figure, `UiTokens.Ramp(step)`
   for a map coloured by a figure and its legend (one violet strengthening with the figure, never the chart's hues and
   never white), and the Cat roles
@@ -214,9 +256,9 @@ rest is the review.
 - **Look**: `UiTokens`, `UiColour`, `UiFontMetrics(.Data)`, `UiTextRules`.
 - **Icons and faces**: `UiIcon`, `UiIcons`, `UiIconRaster`, `UiIconPaths.Data` (written by `UiAssets/scripts/icons.py`,
   never by hand), `UiPortraits`.
-- **Layout**: `UiScene`, `UiDraw*` (`UiDraw.Chrome` holds the window, the status bar and the parts above), the
-  templates, `UiFrame` (where a screen stands over the world, and what the status bar says).
-- **Rules**: `UiFocusMode`, `UiFocusRules`, `UiCheckRules`, `UiMotionRules`.
+- **Layout**: `UiScene`, `UiDraw*` (`UiDraw.Chrome` holds the window, the status bar and the parts above, `UiDraw.Fields`
+  the controls), `UiDataTable`, `UiChart`, `UiCatalogue`, `UiStatement`, `UiTrack`, the templates, `UiFrame` (where a screen stands over the world, and what the status bar says).
+- **Rules**: `UiFocusMode`, `UiFocusRules`, `UiCheckRules`, `UiPartRules`, `UiMotionRules`.
 - **Registry**: `UiScreens`, `IUiScreen`.
 - **Drawing**: `UiView*`, `UiHost`, `UiTweens`, `UiSprites`, `UiFonts`, `UiSpark`, `UiHit`.
 - **Screens**: `Pages/`, the overhaul's pages (`*Pages`, game-free) and the screens that run them with their features'
