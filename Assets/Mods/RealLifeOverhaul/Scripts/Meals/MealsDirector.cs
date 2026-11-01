@@ -34,7 +34,8 @@ namespace RealLifeOverhaul.Meals
         private MealSeat _seat;
         private bool _cooked;            // a plate from the home's cooker, carried over
         private bool _winding;           // the meal's time is up and the plate waits for the eating animation to end
-        private float _windUntil;
+        private float _windFrom;         // the body's clock (MealBody.Clock): when the eating was ended
+        private float _windUntil;        // the same clock: the cap, after which the plate goes anyway
         private bool _here;              // at the seat the game's own rest has the player on: no walk, and no sitting down or getting up of ours
         private bool _own;               // a dish of the player's own (packed at home): a plate, never the place's tray
         private float _fill;             // what the meal filled, of the game's 100: how long it is eaten
@@ -319,7 +320,7 @@ namespace RealLifeOverhaul.Meals
                     SetOff(player);
                     return;
                 case Step.Walking:
-                    if (MealsGame.ScreenUp())
+                    if (MealsGame.TakenAway())
                     {
                         End(false, "a screen came up on the way", true);
                     }
@@ -333,9 +334,9 @@ namespace RealLifeOverhaul.Meals
                     {
                         End(false, "the player moved off", true);
                     }
-                    else if (MealsGame.ScreenUp())
+                    else if (MealsGame.TakenAway())
                     {
-                        End(false, "a screen came up", true);
+                        End(false, "an activity, a time skip or a scene of the mod's took the player", true);
                     }
                     else if (Time.time >= _until && EatingFinished())
                     {
@@ -431,20 +432,39 @@ namespace RealLifeOverhaul.Meals
             Say("seated at " + _seat.Kind + " with " + _food + "; eating by " + _body.EatingBy + " for " + MealsRules.EatSeconds(_fill).ToString("0", Inv) + " s", eats && (_here || _body.Seated));
         }
 
-        // The meal's time is up: the eating animation is ended first and the plate stays until the arm is down (or the cap, WindDownMost). A move, a screen
-        // or a click ends the meal at once and the plate with it. One cheap test a frame while the plate is out.
+        // The meal's time is up: the eating animation is ended first and the plate stays until it has ended, read off the animator, or
+        // the cap of one round of the game's eating (MealsRules.WindDownSeconds), both on the animator's own clock, so a faster game
+        // speed ends neither early. Every eaten meal ends here: walked to, cooked and carried, or eaten from a bag or a packed portion
+        // at the rested seat. A move, a click away or an activity ends the meal at once and the plate with it. A few reads a frame.
         private bool EatingFinished()
         {
             if (!_winding)
             {
                 _winding = true;
-                _windUntil = Time.time + MealsRules.WindDownMost;
                 if (!_body.WindDown())
                 {
                     return true;
                 }
+                _windFrom = _body.Clock;
+                _windUntil = _windFrom + MealsRules.WindDownSeconds(_body.EatingLength);
             }
-            return _body.WoundDown || Time.time >= _windUntil;
+            bool down = _body.WoundDown;
+            if (!down && _body.Clock < _windUntil)
+            {
+                return false;
+            }
+            Wound(down);
+            return true;
+        }
+
+        // One line per meal: how long the plate stayed after the eating was ended, and what it waited for.
+        private void Wound(bool down)
+        {
+            if (Meta.Dev.Verbose)
+            {
+                Say("the plate stayed " + (_body.Clock - _windFrom).ToString("0.00", Inv) + " s after the eating was ended, waiting for " + _body.WoundBy
+                    + (down ? ", until it had ended" : ", until the cap of " + (_windUntil - _windFrom).ToString("0.0", Inv) + " s"), down);
+            }
         }
 
         // The game's own event for a new walk order or a movement key: on the way, the player has gone elsewhere.
@@ -465,9 +485,15 @@ namespace RealLifeOverhaul.Meals
             }
         }
 
+        // A save goes on around a meal: eating is itself one of the game's autosave triggers (GameEvent.AutosaveTriggers), so a save
+        // that is due comes within seconds of the first bite, mid meal. Nothing of a meal is in the save but where the player is, and the
+        // game has just written the seat there: the place they stood up from is written instead, as if they were on their feet.
         private void OnSave()
         {
-            End(false, "a save is being written: the player stands where they stood", true);
+            if (_step != Step.None && _body.StoodAt(out Vector3 at, out Quaternion facing))
+            {
+                MealsGame.SaveStood(at, facing);
+            }
         }
 
         /// <summary>

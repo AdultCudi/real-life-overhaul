@@ -199,33 +199,42 @@ namespace RealLifeOverhaul.GameUi
             return mark != null && mark.Off;
         }
 
+        // The page's buttons, folder tiles and empty tiles hidden first, then shown: a mod that sizes the phone by the buttons
+        // showing (Hotelier and Restaurateur) never sees more than a page's.
         private void Apply()
         {
-            for (int i = 0; i < _apps.Count; i++)
-            {
-                Transform app = _apps[i];
-                bool show = _itemOf[i] >= 0 && PageOf(_itemOf[i]) == _page;
-                var mark = app.GetComponent<PageMark>();
-                if (!show && mark == null)
-                {
-                    mark = app.gameObject.AddComponent<PageMark>();
-                }
-                if (mark != null)
-                {
-                    mark.Off = !show;
-                }
-                if (app.gameObject.activeSelf != show)
-                {
-                    app.gameObject.SetActive(show);
-                }
-            }
-            if (_foldered)
-            {
-                ShowFolders();
-            }
             int onPage = PagerRules.PageSize(_page, _items.Count, ItemTiles);
             int gaps = PhoneLayoutRules.Gaps(onPage, ItemTiles, Pages);
-            ShowGaps(gaps);
+            for (int hiding = 1; hiding >= 0; hiding--)
+            {
+                for (int i = 0; i < _apps.Count; i++)
+                {
+                    Transform app = _apps[i];
+                    bool show = _itemOf[i] >= 0 && PageOf(_itemOf[i]) == _page;
+                    if (show == (hiding == 1))
+                    {
+                        continue;
+                    }
+                    var mark = app.GetComponent<PageMark>();
+                    if (!show && mark == null)
+                    {
+                        mark = app.gameObject.AddComponent<PageMark>();
+                    }
+                    if (mark != null)
+                    {
+                        mark.Off = !show;
+                    }
+                    if (app.gameObject.activeSelf != show)
+                    {
+                        app.gameObject.SetActive(show);
+                    }
+                }
+                if (_foldered)
+                {
+                    ShowFolders(hiding == 1);
+                }
+                ShowGaps(gaps, hiding == 1);
+            }
             More();
             Order(gaps);
             if (_strip)
@@ -244,8 +253,9 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The folders' tiles of the page that shows, and the Back tile on a folder's page.
-        private void ShowFolders()
+        // The folders' tiles of the page that shows, and the Back tile on a folder's page: only those going in the pass
+        // that hides, only those coming in the pass that shows.
+        private void ShowFolders(bool hiding)
         {
             int per = PagerRules.PerPage(_items.Count, ItemTiles);
             int first = _page * per;
@@ -256,10 +266,17 @@ namespace RealLifeOverhaul.GameUi
                 if (tile != null)
                 {
                     int at = _items.IndexOf(tile);
-                    _folders.Show(f, at >= first && at < first + onPage);
+                    bool on = at >= first && at < first + onPage;
+                    if (on != hiding)
+                    {
+                        _folders.Show(f, on);
+                    }
                 }
             }
-            _folders.Back(_open);
+            if ((_open >= 0) != hiding)
+            {
+                _folders.Back(_open);
+            }
         }
 
         // The layout places what shows in sibling order, so everything stands in the view's order: a folder's Back tile, the

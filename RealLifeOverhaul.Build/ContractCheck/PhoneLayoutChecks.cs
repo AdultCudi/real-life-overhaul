@@ -443,7 +443,7 @@ internal static partial class Program
         Check(pager.Contains("private bool FoldersWanted => PhoneLayoutPrefs.On && PhoneLayoutRules.FoldersFit(_strip, Tiles);"), "folders only with the option on and room for them");
         string apply = Body(pager, "private void Apply()");
         Check(Body(pager, "public void Refresh()")?.Contains("Pages = PagerRules.Pages(_items.Count, ItemTiles)") == true && apply != null
-              && apply.Contains("PhoneLayoutRules.Gaps(onPage, ItemTiles, Pages)") && apply.Contains("ShowGaps(gaps);") && apply.Contains("Order(gaps);"),
+              && apply.Contains("PhoneLayoutRules.Gaps(onPage, ItemTiles, Pages)") && apply.Contains("ShowGaps(gaps, hiding == 1);") && apply.Contains("Order(gaps);"),
             "the pages come from the view and its tiles, a short page is filled with empty tiles on every view");
         string order = Body(pager, "private void Order(int gaps)");
         Check(order != null && order.Contains("if (inOrder)") && order.Contains("SetAsLastSibling()") && order.IndexOf("_folders.BackTile", StringComparison.Ordinal) < order.IndexOf("_items[j]", StringComparison.Ordinal)
