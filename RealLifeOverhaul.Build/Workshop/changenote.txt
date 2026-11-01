@@ -1,4 +1,6 @@
-0.63.6
+0.63.7
 
 Fixed
-- The game's own employee screens (My Employees, the Contacts card, BizMan's HR plans and schedule) showed the game's wage, while you paid it at the city's prices plus any agreed raise, as the Company app's Staff page said. They now show what you pay, the Staff page names each part, and hiring tells you what a candidate costs at the city's prices.
+- The plate could still leave the table before your character had finished eating. It now stays until the eating animation has ended, at any game speed, and an autosave or a click on a button such as the game speed no longer ends the meal early.
+- Your own bank's lines in Finance and in the game's transactions named your headquarters, not the name you gave the bank. They now carry the bank's name.
+- A fixed pay from your own bank was cut back on busy days, as the bank had lent the cash out first, so it moved like a share of the profit. The bank now holds your fixed pay back before it lends and pays it in full every day it can spare it, and the pay's page says what held any of it back.
