@@ -14,8 +14,8 @@ namespace RealLifeOverhaul.Ui
     /// apps (ShellPages), each button's news from the HUD phone's button of the same name, and the folder the player keeps
     /// it in (PhoneLayoutPrefs). Pressing presses the app's own full-menu button, so the game's ShowApp, the mod's
     /// PhoneApp.Open and other mods' handlers run as a click would; Voogle Maps, which has no full-menu button, through
-    /// the HUD phone's. When the phone's own model is merged in, <see cref="UiShellApps.Source"/> points at it instead
-    /// (notes/host-phone.md). Cost: a walk of the row's buttons when the full menu opens and once a second while it shows.
+    /// the HUD phone's. While the kit phone stands, the list is the phone's own model instead (<see cref="FromPhone"/>).
+    /// Cost: a walk of the row's buttons when the full menu opens and once a second while it shows.
     /// </summary>
     public static class ShellApps
     {
@@ -25,16 +25,10 @@ namespace RealLifeOverhaul.Ui
         private static readonly List<Transform> Buttons = new List<Transform>(64);
         private static readonly Dictionary<string, Transform> HudByName = new Dictionary<string, Transform>(64, StringComparer.Ordinal);
 
-        private static int[] _home = new int[64];
-        private static int[] _inFolder = new int[64];
-
         /// <summary>
-        /// Fills the frame's list from the phone's own model (PhoneItems, while the kit phone stands), so the app row, All
-        /// apps and the phone show one order, one glyph and one colour an app: the home screen in the player's order, each
-        /// folder's apps where its tile stands, other mods' buttons with their own pictures. The row is the home screen's
-        /// first apps, as many as the phone's first page holds (a folder's tile is no app: All apps holds its apps). Without
-        /// the phone's model (its switch off, or stood down to the classic phone) the full menu's row as before. Returns
-        /// the version, which moves with the phone's and the overhaul's pages'.
+        /// Fills the frame's list from the phone's own model while the kit phone stands (UiShellApps.FromPhone), then the
+        /// overhaul's pages; without it (its switch off, or stood down to the classic phone) the full menu's row as before.
+        /// Returns the version, which moves with the phone's and the pages'.
         /// </summary>
         public static int FromPhone(List<UiShellApp> into)
         {
@@ -43,42 +37,9 @@ namespace RealLifeOverhaul.Ui
             {
                 return FromRow(into);
             }
-            if (_home.Length < items.Count + PhoneLayoutRules.FolderCount)
-            {
-                _home = new int[(items.Count + PhoneLayoutRules.FolderCount) * 2];
-                _inFolder = new int[_home.Length];
-            }
-            int hash = unchecked(17 * 31 + items.Version);
-            int n = items.Home(_home), inRow = 0;
-            for (int e = 0; e < n; e++)
-            {
-                int entry = _home[e];
-                if (entry >= 0)
-                {
-                    FromItem(into, items, entry, inRow < RowMost);
-                    inRow++;
-                    continue;
-                }
-                int m = items.InFolder(-1 - entry, _inFolder);
-                for (int k = 0; k < m; k++)
-                {
-                    FromItem(into, items, _inFolder[k], false);
-                }
-            }
+            int hash = UiShellApps.FromPhone(items, into, RowMost);
             ShellPages.Add(into, ref hash);
             return hash;
-        }
-
-        private static void FromItem(List<UiShellApp> into, PhoneItems items, int index, bool inRow)
-        {
-            ref PhoneItem it = ref items.Items[index];
-            UiShellKind kind = it.Kind == PhoneItemKind.Game ? UiShellKind.Game : it.Kind == PhoneItemKind.Mod ? UiShellKind.Mod : UiShellKind.Other;
-            UiIcon icon = it.Icon != UiIcon.None ? it.Icon : PhoneLooks.OtherMods;
-            into.Add(new UiShellApp
-            {
-                Id = it.Id, Title = it.Title, Icon = icon, Tint = it.Tint != UiRole.None ? it.Tint : UiIconTints.Of(icon), Badge = it.Badge, Kind = kind, InRow = inRow,
-                Folder = UiShellApps.FolderOf(it.Id, kind, it.Folder, PhoneLayoutRules.DefaultOf(it.Id)), Picture = it.Picture
-            });
         }
 
         /// <summary>Fills the frame's list from the full menu's row; returns its version, which moves with any app, title or badge.</summary>

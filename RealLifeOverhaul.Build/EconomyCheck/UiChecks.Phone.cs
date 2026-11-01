@@ -47,10 +47,47 @@ internal static partial class Program
         PhoneScreenChecks();
         PhoneNavStill();
         PhoneNextKept();
+        PhoneShellApps();
         PhoneKitSources();
         PhoneKitTexts();
         PhoneKitTiming();
         Console.WriteLine("  Kit phone: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
+    }
+
+    // The frame's app row and All apps read the phone's own model: the row is the home screen's first apps in the phone's
+    // order, every app stands once in All apps (a folder's in its folder), other mods' in Other mods with their pictures.
+    private static void PhoneShellApps()
+    {
+        PhoneItems items = UiSamples.PhoneApps((key, english) => english, true);
+        var apps = new List<UiShellApp>();
+        int version = UiShellApps.FromPhone(items, apps, PagerRules.PhoneTiles);
+        var home = new int[64];
+        int n = items.Home(home);
+        var want = new List<string>();
+        for (int e = 0; e < n && want.Count < PagerRules.PhoneTiles; e++)
+        {
+            if (home[e] >= 0)
+            {
+                want.Add(items.Items[home[e]].Id);
+            }
+        }
+        List<string> row = apps.Where(a => a.InRow).Select(a => a.Id).ToList();
+        Check(row.SequenceEqual(want) && row.Count == PagerRules.PhoneTiles && row[0] == "RealLifePlanner" && row[1] == "RealLifeFlare",
+            "phone and frame: the app row is the phone's home screen's first apps in its own order (" + string.Join(", ", row) + ")");
+        bool once = apps.Count == items.Count && apps.Select(a => a.Id).Distinct().Count() == items.Count;
+        bool looks = true, folders = true;
+        foreach (UiShellApp a in apps)
+        {
+            int i = items.IndexOf(a.Id);
+            looks &= i >= 0 && a.Icon == (items.Items[i].Icon != UiIcon.None ? items.Items[i].Icon : PhoneLooks.OtherMods) && a.Picture == items.Items[i].Picture;
+            folders &= a.Kind == UiShellKind.Other ? a.Folder == UiShellApps.Other : items.Items[i].Folder < 0 || a.Folder == items.Items[i].Folder;
+        }
+        UiShellApp bank = apps.FirstOrDefault(a => a.Id == "EmpireBankApp");
+        Check(once && looks && folders && bank.Picture == UiSamples.PictureBank && bank.Folder == UiShellApps.Other && bank.Icon == PhoneLooks.OtherMods,
+            "phone and frame: All apps holds every app of the phone once, with the phone's glyph and colour, in the folder the phone keeps it in, other mods' with their own pictures");
+        items.Begin();
+        items.End(true);
+        Check(UiShellApps.FromPhone(items, new List<UiShellApp>(), PagerRules.PhoneTiles) != version, "phone and frame: the frame's list moves with the phone's model");
     }
 
     // ---------------------------------------------------------------- the looks
