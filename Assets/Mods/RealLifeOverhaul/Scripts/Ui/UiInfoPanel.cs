@@ -64,7 +64,20 @@ namespace RealLifeOverhaul.Ui
             s.Begin("info panel", frame.Width, frame.Height, dark);
             s.Pointer = frame.Pointer;
             s.Floats = true;
-            float x = UiTokens.S2, y = UiTokens.S4;
+            Draw(s, m, UiTokens.S2, UiTokens.S4);
+            for (int i = 0; i < m.PromptCount; i++)
+            {
+                s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
+            }
+            UiDraw.PromptBar(s, frame, keys);
+        }
+
+        /// <summary>
+        /// The tabs and the panel alone at a top left (px of the layout), for a screen that stands it among other pieces (the
+        /// HUD's left column over the running game). Returns the y under the panel.
+        /// </summary>
+        public static float Draw(UiScene s, UiInfoModel m, float x, float y)
+        {
             float px = x;
             if (m.Tabs.Length > 0)
             {
@@ -91,12 +104,11 @@ namespace RealLifeOverhaul.Ui
                     bx += UiTokens.Control + UiTokens.S2;
                 }
             }
-            for (int i = 0; i < m.PromptCount; i++)
-            {
-                s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
-            }
-            UiDraw.PromptBar(s, frame, keys);
+            return y + h;
         }
+
+        /// <summary>The width the panel takes with its tabs' strip beside it.</summary>
+        public static float OuterWidth(UiInfoModel m) => (m.Tabs.Length > 0 ? TabStrip + UiTokens.S2 : 0f) + Width;
 
         /// <summary>The panel's height: its strip, its head, its sections and its footer.</summary>
         public static float Height(UiInfoModel m)

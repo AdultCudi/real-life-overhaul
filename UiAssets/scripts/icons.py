@@ -154,6 +154,12 @@ ICONS = [
     ("PiggyBank", "piggy-bank", "duotone", "7e7cd1997ce99297e65565a1f02255654dd0818d071d7f3b9771a55c7c9e0371"),
     ("Tag", "tag", "duotone", "3d1cc09e77869fd52efab0633cfb5ad050632f5f1c1ed1851298915ae3d80909"),
     ("Percent", "percent", "duotone", "fd52fb7203e16246355a64685fc1c570f2df8a0937dd1b282c67bc8ec6379a33"),
+    ("Drop", "drop", "duotone", "b263461c657b14c1c9c1e845e05e71d73afac85260c23bfe34b28901788b3286"),
+    ("Brain", "brain", "duotone", "21c4456e71486b819599cc5feecde1451dc172c82f40ae10f8469f434567979b"),
+    ("Cloud", "cloud", "duotone", "d1a4338eccb1f8ea3353303980f15859a0a1bbc6af9d1546613182705a9b5c16"),
+    ("CloudRain", "cloud-rain", "duotone", "b96c8f795c1c4964cb5331fd2d89a2a4d3d6f3148de1541539c87f0f19a02f93"),
+    ("CloudSnow", "cloud-snow", "duotone", "538d41a27d912d5a133d0b9b5073b807fe905f11cb51987b4baf4fb5a929df61"),
+    ("SkipForward", "skip-forward", "duotone", "a76c0760fa058cbfbf9a1b7da7fb7fb43145dee3bfc24c4c381d1497bdf86e2c"),
 ]
 
 # Phosphor's fill weight of every duotone icon, its second variant: the chunky solid glyph a toolbar's tile asks for
@@ -254,6 +260,12 @@ FILLS = {
     "PiggyBank": "5c6958d4a302538ca70df3664c905e05ddb7762e3f7cd72f6c5ab65f0ccdc3df",
     "Tag": "e47e31e6769f655f8a58ad4d243c6fdba13902b02eb70fa3126e58d9b5febb5b",
     "Percent": "5dcd4b8a7fd5177aa49c58a0a6467c2340e0041f1fbc016e3f2ddb186bd2754b",
+    "Drop": "547974bcf9a14a058c7622a2412bdf25700bd83e610128829f96687e7f8499e6",
+    "Brain": "084f1324acaa199634182fec64d2594e2725fd52128251de15664ba27dd9da38",
+    "Cloud": "f6cd33004a4073b56c2df63264711617c8a6cddfba89b19c7029b77b43f55ece",
+    "CloudRain": "d2f32ce7bf06a9225f5c466d1f2c683cb729526d67c8b5f4741cd270b01e8cf3",
+    "CloudSnow": "b63199e4b3dac2c77522126fafefb0bd0c444d9be13c5cf59379e135ab61648a",
+    "SkipForward": "2f13f5cbeab47627d30782e7942001e7f80f7da993df053d3be2b8c6cb737ae2",
 }
 
 # The shapes an icon may be drawn with, and the attributes each may carry. Anything else stops the run, so an icon is never

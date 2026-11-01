@@ -14,7 +14,8 @@ namespace RealLifeOverhaul.Ui
         InfoView,         // the city coloured by one figure, its rows, donut and map legend at the left (4.2)
         AppWindow,        // an app's window over the city: sections down a sidebar or across as tabs, a page of blocks (4.3, 4.4)
         Decision,         // a moment's decision over the dimmed world: faces or an emblem, numbered choices (4.5)
-        Phone             // the phone's home: apps on tiles, what comes next, the pages' bar at its foot (4.7)
+        Phone,            // the phone's home: apps on tiles, what comes next, the pages' bar at its foot (4.7)
+        Hud               // the HUD over the running game: the status bar and the pieces at its edges or over a point of the world (4.6)
     }
 
     /// <summary>One registered screen: its id, its template, the class that runs it, and the words its labels use.</summary>

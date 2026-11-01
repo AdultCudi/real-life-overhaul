@@ -105,16 +105,24 @@ namespace RealLifeOverhaul.Ui
         public string Day;            // "Tue, Day 12"
         public bool Paused;
         public int Speed;             // 1 to 3, as the game's speed buttons, or 0 while the game has not said
+        public string PausedWords;    // the time pill's words while the game is paused ("Paused"), in place of the speed's chevrons
         public string Season;         // "Autumn"
         public UiIcon Weather = UiIcon.CloudSun;
         public string Temperature;    // beside the weather's icon, as the game writes it; null for the season alone
         public string Place;          // the district the player is in
+        public string District;       // the district beside the place, when Place is the nearest building's address
         public string Money;          // "$48,210"
         public int MoneyTrend;        // +1 rising today, -1 falling, 0 still
+        public string MoneyChange;    // the last change, merged per minute as the game merges it ("+$1,240"), rising from the money and fading; null for none
+        public bool MoneyChangeRises; // the change adds to the money: green and an arrow up
         public int Energy = -1;       // 0 to 100, or -1 to leave the meter out
         public int Hunger = -1;
         public int Happiness = -1;
+        public int Hygiene = -1;      // RLO's needs beside the game's three (Home/HomeNeedsBar): 0 to 100, or -1 to leave each out
+        public int Stress = -1;       // the more the worse: its meter fills as it rises and turns red
+        public int HomeNeed = -1;
         public int Alerts;            // notifications waiting
+        public bool PillsPress;       // the time, the money, the needs and the alerts are targets: only the HUD answers them (UiDraw.HudBar)
         public UiIcon[] Apps;         // the toolbar's app buttons, in order
         public UiRole[] AppTints;     // each one's category colour
         public int App = -1;          // the app that is open, filled cyan

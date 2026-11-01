@@ -28170,5 +28170,14 @@
   "reallife_ob_toast_div_short": "{bank}只支付了{wanted}股息中的{amount}：{why}",
   "reallife_ob_toast_div_none": "{bank}这次没有支付股息：{why}",
   "reallife_ob_test_div": "银行：今天是自动股息日",
-  "reallife_ob_test_no_div": "测试未开始：自动股息已关闭。请先在银行标签页选择多久一次。"
+  "reallife_ob_test_no_div": "测试未开始：自动股息已关闭。请先在银行标签页选择多久一次。",
+  "reallife_ui_hud_paused": "已暂停",
+  "reallife_ui_test_hud": "在城市上方显示 HUD 的状态栏",
+  "reallife_ui_test_hud_box": "在你头上显示一个跟随你的提示框",
+  "reallife_ui_test_hud_prompt": "你所在的位置",
+  "reallife_ui_test_hud_district": "街区",
+  "reallife_ui_test_hud_shown": "HUD 的状态栏现在显示在城市上方。再按一次此测试即可移除。",
+  "reallife_ui_test_hud_gone": "HUD 的状态栏已移除。现在只显示游戏自己的 HUD。",
+  "reallife_ui_test_hud_prompt_shown": "现在有一个提示框跟随你。把镜头转开，它会停在屏幕边缘。再按一次此测试或点“关闭”即可移除。",
+  "reallife_ui_test_hud_wait": "游戏的 HUD 还没有准备好。请等你进入城市后再按一次此测试。"
 }

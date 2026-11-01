@@ -28170,5 +28170,14 @@
   "reallife_ob_toast_div_short": "{bank} paid you {amount} of a {wanted} dividend: {why}",
   "reallife_ob_toast_div_none": "{bank} paid no dividend this time: {why}",
   "reallife_ob_test_div": "Bank: the automatic dividend's day today",
-  "reallife_ob_test_no_div": "Test not started: automatic dividends are off. Choose how often on the Bank tab first."
+  "reallife_ob_test_no_div": "Test not started: automatic dividends are off. Choose how often on the Bank tab first.",
+  "reallife_ui_hud_paused": "Paused",
+  "reallife_ui_test_hud": "Show the HUD's status bar over the city",
+  "reallife_ui_test_hud_box": "Show a box over you that follows you",
+  "reallife_ui_test_hud_prompt": "Where you are",
+  "reallife_ui_test_hud_district": "District",
+  "reallife_ui_test_hud_shown": "The HUD's status bar is over the city now. Press the test again to take it away.",
+  "reallife_ui_test_hud_gone": "The HUD's status bar is gone. The game's own HUD shows alone.",
+  "reallife_ui_test_hud_prompt_shown": "A box now follows you. Turn the camera away and it waits at the edge of the screen. Press the test again, or Close, to take it away.",
+  "reallife_ui_test_hud_wait": "The game's HUD is not built yet. Wait until you are in the city and press the test again."
 }

@@ -1026,6 +1026,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_ui_test_contacts", () => Ui.UiDirector.Instance?.TestContacts())
                 .AddButton("reallife_ui_test_population", () => Ui.UiDirector.Instance?.TestPopulation())
                 .AddButton("reallife_ui_test_flare", () => Ui.UiDirector.Instance?.TestFlareCity())
+                .AddButton("reallife_ui_test_hud", () => Ui.UiDirector.Instance?.TestHud())
+                .AddButton("reallife_ui_test_hud_box", () => Ui.UiDirector.Instance?.TestHudPrompt())
                 .AddButton("reallife_ui_test_firm", () => Ui.UiDirector.Instance?.TestFirm())
                 .AddToggle(Settings.LivingStudioId, "reallife_studio_enabled", Settings.LivingStudio,
                     v => Settings.LivingStudio = v)

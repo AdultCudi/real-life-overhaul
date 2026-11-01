@@ -28170,5 +28170,14 @@
   "reallife_ob_toast_div_short": "{bank} pagou a você {amount} de um dividendo de {wanted}: {why}",
   "reallife_ob_toast_div_none": "{bank} não pagou dividendo desta vez: {why}",
   "reallife_ob_test_div": "Banco: o dia do dividendo automático hoje",
-  "reallife_ob_test_no_div": "Teste não iniciado: os dividendos automáticos estão desligados. Escolha a frequência na aba Banco primeiro."
+  "reallife_ob_test_no_div": "Teste não iniciado: os dividendos automáticos estão desligados. Escolha a frequência na aba Banco primeiro.",
+  "reallife_ui_hud_paused": "Pausado",
+  "reallife_ui_test_hud": "Mostrar a barra de status do HUD sobre a cidade",
+  "reallife_ui_test_hud_box": "Mostrar uma caixa sobre você que te acompanha",
+  "reallife_ui_test_hud_prompt": "Onde você está",
+  "reallife_ui_test_hud_district": "Bairro",
+  "reallife_ui_test_hud_shown": "A barra de status do HUD está sobre a cidade agora. Aperte o teste de novo para tirá-la.",
+  "reallife_ui_test_hud_gone": "A barra de status do HUD saiu. Só o HUD do próprio jogo aparece.",
+  "reallife_ui_test_hud_prompt_shown": "Uma caixa agora te acompanha. Vire a câmera e ela espera na borda da tela. Aperte o teste de novo, ou Fechar, para tirá-la.",
+  "reallife_ui_test_hud_wait": "O HUD do jogo ainda não está pronto. Espere até estar na cidade e aperte o teste de novo."
 }
