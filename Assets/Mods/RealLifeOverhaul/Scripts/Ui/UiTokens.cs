@@ -278,7 +278,7 @@ namespace RealLifeOverhaul.Ui
             0x24221DFF,   // Field
             0x282621FF,   // Bubble
             0x22201CFF,   // Hover: a quiet step over the panel, well under the selection's fill
-            0x2C241FFF,   // RowSel: the salmon in the ink
+            0x34271FFF,   // RowSel: the salmon in the ink, clearly warmer than any hover
             0xE39A8166,   // RowSelEdge: the salmon at 40%
             0xDAD2C3FF,   // Text: a soft warm white, 9.5:1 at worst and easy at night
             0xB3AB9CFF,   // Text2
@@ -319,7 +319,7 @@ namespace RealLifeOverhaul.Ui
             0xDACDBBFF,   // Field
             0xD5C6B2FF,   // Bubble
             0xDFD3C3FF,   // Hover: a quiet step under the panel, well short of the selection's fill
-            0xE2C5B4FF,   // RowSel: the claret in the paper
+            0xDEBDA9FF,   // RowSel: the claret in the paper, clearly deeper than any hover
             0x8E1E3F66,   // RowSelEdge: the claret at 40%
             0x221D17FF,   // Text: the ink, a warm black
             0x41382EFF,   // Text2

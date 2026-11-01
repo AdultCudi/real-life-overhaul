@@ -290,7 +290,7 @@ namespace RealLifeOverhaul.Ui
                 default:
                     // A face with a fill of its own (a button, a card) steps a little towards the words: a quiet change
                     // that never matches the selection's fill, where one fixed hover colour vanished on a field.
-                    _face.Fill.color = Color.Lerp(Colour(_face.Role, _face.Alpha), Colour(UiRole.Text), 0.07f);
+                    _face.Fill.color = Color.Lerp(Colour(_face.Role, _face.Alpha), Colour(UiRole.Text), 0.045f);
                     break;
             }
         }
