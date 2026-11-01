@@ -104,6 +104,7 @@ namespace RealLifeOverhaul.Ui
     {
         public string Time;           // "14:32"
         public string Day;            // "Tue, Day 12"
+        public string DayWidest;      // the widest day of the week written the same way: the time pill keeps its width all week
         public bool Paused;
         public int Speed;             // 1 to 3, as the game's speed buttons, or 0 while the game has not said
         public string PausedWords;    // the time pill's words while the game is paused ("Paused"), in place of the speed's chevrons

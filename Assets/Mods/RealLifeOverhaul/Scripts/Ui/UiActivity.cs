@@ -251,11 +251,41 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Text(s, on, cx + tw - clockW, hy + nh + UiTokens.S1 - (UiTextRules.LineHeight(UiStyle.BodyStrong) - sh) / 2f, clockW, UiStyle.BodyStrong, UiRole.Text, m.Clock,
                     UiFlags.Right | UiFlags.Middle);
             }
+            Row(s, CancelCommand, SkipCommand, FastCommand);
             float my = y + h - pad - UiTokens.S2;
             if (Metered(m))
             {
                 var bar = new UiProgressModel { Share = m.State == UiActivityState.Finished ? 1f : m.Progress.Share, Tone = m.State == UiActivityState.Finished ? UiRole.Ok : m.Progress.Tone };
                 UiDraw.Progress(s, on, x + pad, my, w - pad * 2f, ref bar);
+            }
+        }
+
+        // The strip's buttons left to right as the d-pad's row, its ends going nowhere sideways (only Down leaves for the bar).
+        private static void Row(UiScene s, int a, int b, int c)
+        {
+            int first = -1, last = -1;
+            foreach (int command in new[] { a, b, c })
+            {
+                int node = s.FindNode(command, 0);
+                if (node < 0)
+                {
+                    continue;
+                }
+                if (last >= 0)
+                {
+                    s.Nodes[last].Right = node;
+                    s.Nodes[node].Left = last;
+                }
+                else
+                {
+                    first = node;
+                }
+                last = node;
+            }
+            if (first >= 0)
+            {
+                s.Nodes[first].Left = first;
+                s.Nodes[last].Right = last;
             }
         }
 

@@ -65,7 +65,7 @@ namespace RealLifeOverhaul.Ui
             if (cap)
             {
                 KeyCap(s, inside, cx, y + (h - UiTokens.KeyCap) / 2f, key, keys, kind == UiButtonKind.Primary ? UiRole.OnAccent : UiRole.Track, ink);
-                s.Items[s.ItemCount - 1].Alpha = kind == UiButtonKind.Primary ? 0.16f : 1f;
+                OnCyan(ref s.Items[s.ItemCount - 1], kind == UiButtonKind.Primary);
                 s.Items[s.ItemCount - 1].Flags |= UiFlags.Middle | UiFlags.Centre;
                 cx += capW + UiTokens.S2;
             }
@@ -89,6 +89,25 @@ namespace RealLifeOverhaul.Ui
                 s.Items[i].Alpha *= HeldAlpha;   // held as the game holds it: the face and its words faded, so it reads as not pressable now
             }
             return Node(s, at, x, y, w, h, command, arg, face, disabled, -1, 0, key);
+        }
+
+        /// <summary>
+        /// A key cap on the cyan: a keyboard key's word in the dark ink on a faint cap, a pad's glyph as a solid dark disc with
+        /// the glyph in the cyan, since the faint cap leaves a pad's letter at about 3:1 there.
+        /// </summary>
+        internal static void OnCyan(ref UiItem cap, bool onAccent)
+        {
+            if (!onAccent)
+            {
+                return;
+            }
+            bool pad = cap.Icon != UiIcon.None;
+            cap.Alpha = pad ? 1f : 0.16f;
+            if (pad)
+            {
+                cap.Ink = UiRole.Accent;
+                cap.Edge = UiRole.Accent;
+            }
         }
 
         /// <summary>The height a button of a fixed width needs: a control's, or two lines' when its words take two there.</summary>

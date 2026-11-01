@@ -23,6 +23,7 @@ namespace RealLifeOverhaul.Ui
     /// <summary>A timing gauge: a zone to land in and the marker moving across it (a trade's timing, the Leisure gauge).</summary>
     public struct UiTimingModel
     {
+        public UiGameKey Key;    // the game's key that presses, before the words
         public string Label;     // "Hit the mark"
         public string Value;     // "2 of 3"
         public float ZoneFrom, ZoneTo;   // 0 to 1: the good zone
@@ -60,6 +61,7 @@ namespace RealLifeOverhaul.Ui
                 Clip = at.Clip, Node = -1, Layer = at.Layer, Order = at.Order, Parent = at.Parent, Alpha = onAccent ? 0.16f : 1f, Value = (int)UiAction.Count,
                 Flags = UiFlags.Middle
             };
+            UiDraw.OnCyan(ref item, onAccent);
             s.Add(ref item);
             return w;
         }
@@ -112,7 +114,9 @@ namespace RealLifeOverhaul.Ui
         public static float Timing(UiScene s, UiAt at, float x, float y, float w, ref UiTimingModel m)
         {
             float vw = string.IsNullOrEmpty(m.Value) ? 0f : Math.Min(w * 0.5f, UiTextRules.Width(m.Value, UiStyle.BodyStrong) + UiTokens.S1);
-            TextMiddle(s, at, x, y, UiTokens.PairRow, w - vw - UiTokens.S3, UiStyle.Body, UiRole.Text2, m.Label, UiFlags.Truncate);
+            float kw = GameKey(s, at, x, y, m.Key);
+            float lx = x + (kw > 0f ? kw + UiTokens.S2 : 0f);
+            TextMiddle(s, at, lx, y, UiTokens.PairRow, x + w - vw - UiTokens.S3 - lx, UiStyle.Body, UiRole.Text2, m.Label, UiFlags.Truncate);
             if (vw > 0f)
             {
                 TextMiddle(s, at, x + w - vw, y, UiTokens.PairRow, vw, UiStyle.BodyStrong, UiRole.Text, m.Value, UiFlags.Right | UiFlags.Truncate);

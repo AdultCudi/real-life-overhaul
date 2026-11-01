@@ -174,12 +174,27 @@ namespace RealLifeOverhaul.Ui
                 return 0f;
             }
             float tw = Snap(UiTextRules.Width(m.Time, UiStyle.BodyStrong) + UiTokens.S1);
-            float dw = day && !string.IsNullOrEmpty(m.Day) ? Snap(UiTextRules.Width(m.Day, UiStyle.Body) + UiTokens.S1) : 0f;
+            float dw = day ? DayWidth(m) : 0f;
             float tail = TimeTail(m);
             return Snap(UiTokens.S2 + UiTokens.Icon + UiTokens.S2 + tw + (dw > 0f ? UiTokens.S3 + dw : 0f) + (tail > 0f ? UiTokens.S3 + tail : 0f) + UiTokens.S2);
         }
 
         // What follows the time: the pause in words while paused, else the game's speed as chevrons once the game has said it.
+        // The day's slot: as wide as the widest day of the week in the player's language, so a new day never moves the pills.
+        private static float DayWidth(UiStatusModel m)
+        {
+            if (string.IsNullOrEmpty(m.Day))
+            {
+                return 0f;
+            }
+            float w = UiTextRules.Width(m.Day, UiStyle.Body);
+            if (!string.IsNullOrEmpty(m.DayWidest))
+            {
+                w = Math.Max(w, UiTextRules.Width(m.DayWidest, UiStyle.Body));
+            }
+            return Snap(w + UiTokens.S1);
+        }
+
         // One slot for both, as wide as the wider, so pausing never moves the pills beside it.
         private static float TimeTail(UiStatusModel m)
         {
@@ -201,7 +216,7 @@ namespace RealLifeOverhaul.Ui
             cx += tw;
             if (day && !string.IsNullOrEmpty(m.Day))
             {
-                float dw = Snap(UiTextRules.Width(m.Day, UiStyle.Body) + UiTokens.S1);
+                float dw = DayWidth(m);
                 TextMiddle(s, inside, cx + UiTokens.S3, y, PillH, dw, UiStyle.Body, UiRole.Text2, m.Day, UiFlags.Chrome);
                 cx += UiTokens.S3 + dw;
             }
@@ -287,7 +302,7 @@ namespace RealLifeOverhaul.Ui
             cx = Need(s, inside, cx, y, meter, UiIcon.ForkKnife, m.Hunger, false);
             cx = Need(s, inside, cx, y, meter, UiIcon.SmileyHappy, m.Happiness, false);
             cx = Need(s, inside, cx, y, meter, UiIcon.Drop, m.Hygiene, false);
-            cx = Need(s, inside, cx, y, meter, UiIcon.Brain, m.Stress, true);
+            cx = Need(s, inside, cx, y, meter, UiIcon.Brain, m.Stress < 0 ? -1 : 100 - m.Stress, false);   // as calm: every meter in the row reads full as good
             Need(s, inside, cx, y, meter, UiIcon.Home, m.HomeNeed, false);
             PillTarget(s, at, x, y, w, NeedsPillCommand, face, m);
         }

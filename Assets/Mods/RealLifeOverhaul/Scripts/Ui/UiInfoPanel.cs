@@ -98,11 +98,14 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDraw.Box(s, at, px, cy, Width, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
                 float bx = ix - UiTokens.S1;
+                int first = s.NodeCount;
                 for (int i = 0; i < m.Footer.Length; i++)
                 {
                     UiDraw.IconButton(s, at, bx, cy + UiTokens.S2, UiTokens.Control, m.Footer[i], i < m.FooterTints.Length ? m.FooterTints[i] : UiRole.None, FooterCommand, i);
                     bx += UiTokens.Control + UiTokens.S2;
                 }
+                s.Nodes[first].Left = first;   // the footer is a row: its ends go nowhere sideways, not across the panel
+                s.Nodes[s.NodeCount - 1].Right = s.NodeCount - 1;
             }
             return y + h;
         }
@@ -154,6 +157,13 @@ namespace RealLifeOverhaul.Ui
             if (!string.IsNullOrEmpty(m.Name))
             {
                 UiDraw.Portrait(s, at, fx, fy, Portrait, m.Name, m.Hue, m.Ring);
+                tx = fx + Portrait + UiTokens.S4;
+            }
+            else if (m.Icon != UiIcon.None)
+            {
+                // A place has no face: its glyph on a tile of the portrait's size, as the model has always said.
+                int tile = UiDraw.Tile(s, at, fx, fy, Portrait, UiRole.None, false);
+                UiDraw.Icon(s, at.In(tile), fx + (Portrait - UiTokens.S8) / 2f, fy + (Portrait - UiTokens.S8) / 2f, UiTokens.S8, m.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
                 tx = fx + Portrait + UiTokens.S4;
             }
             float tw = x + Width - UiTokens.S4 - tx;

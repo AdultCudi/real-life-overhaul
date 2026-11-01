@@ -19,7 +19,7 @@ internal static partial class UiSamples
     {
         var m = new UiStatusModel
         {
-            Time = night ? "22:47" : "14:32", Day = night ? "Fri, Day 415" : "Tue, Day 412", Paused = paused, Speed = fast ? 3 : 1, PausedWords = t("reallife_ui_hud_paused", "Paused"),
+            Time = night ? "22:47" : "14:32", Day = night ? "Fri, Day 415" : "Tue, Day 412", DayWidest = "Wed, Day 888", Paused = paused, Speed = fast ? 3 : 1, PausedWords = t("reallife_ui_hud_paused", "Paused"),
             Season = t("reallife_season_name_autumn", "Autumn"), Weather = night ? UiIcon.CloudRain : UiIcon.CloudSun, Temperature = night ? "9°C" : "14°C",
             Place = night ? "1250 Avenue of the Americas" : "70 Fifth Avenue", District = night ? "Lower Manhattan" : "Midtown", Money = night ? "$2,415" : "$48,210",
             MoneyTrend = night ? -1 : 1, MoneyChange = night ? "-$385" : "+$1,240", MoneyChangeRises = !night,
@@ -164,10 +164,10 @@ internal static partial class UiSamples
         Rows = new[] { new UiInfoRow { Label = "Bloom Café", Value = "Open until 22:00", Ink = UiRole.OkText }, new UiInfoRow { Label = "Floors", Value = "Ground and 1st" } },
         Actions = new[]
         {
-            new UiPromptAction { Label = "Enter", Key = GameKey(k, "F", UiIcon.PadA), Main = true },
+            new UiPromptAction { Label = "Go inside", Key = GameKey(k, "F", UiIcon.PadA), Main = true },
             new UiPromptAction { Label = "Look at the building", Key = GameKey(k, "P", UiIcon.PadY) },
             new UiPromptAction { Label = "Ring the doorbell", Key = GameKey(k, "O", UiIcon.PadX) },
-            new UiPromptAction { Label = "Rent this space", Key = GameKey(k, "Enter", UiIcon.PadB), Disabled = true },
+            new UiPromptAction { Label = "Rent this space", Key = GameKey(k, "Enter", UiIcon.PadB), Disabled = true, Reason = "Taken" },
         },
     };
 
@@ -194,7 +194,7 @@ internal static partial class UiSamples
         Title = "Barista shift", Icon = UiIcon.Briefcase, Collapsed = collapsed,
         Rows = new[]
         {
-            new UiInfoRow { Label = "Role", Value = "Barista" }, new UiInfoRow { Label = "Until", Value = "18:00" },
+            new UiInfoRow { Label = "Until", Value = "18:00" },
             new UiInfoRow { Label = "Pay this shift", Value = "$96", Ink = UiRole.OkText },
         },
         HasProgress = true, Progress = new UiProgressModel { Label = "Hours worked", Value = "2 h 32 min of 6 h", Share = 0.42f },
@@ -288,7 +288,8 @@ internal static partial class UiSamples
         {
             Title = "Plastering", Icon = UiIcon.Wrench,
             Rows = new[] { new UiInfoRow { Label = "Room", Value = "Kitchen, 18 Bleecker Street" }, new UiInfoRow { Label = "Pay", Value = "$140" } },
-            HasTiming = true, Timing = new UiTimingModel { Label = "Press when the marker is in the green", Value = "2 of 3", ZoneFrom = 0.58f, ZoneTo = 0.74f, Marker = 0.41f },
+            HasTiming = true,
+            Timing = new UiTimingModel { Key = GameKey(UiDefaultKeys.Keyboard, "F", UiIcon.PadA), Label = "Press in the green", Value = "Hits 2 of 3", ZoneFrom = 0.58f, ZoneTo = 0.74f, Marker = 0.41f },
         };
         var delivery = new UiSidePanelModel
         {
@@ -309,7 +310,7 @@ internal static partial class UiSamples
             Title = locked ? "Choose your lawyer" : "Take the subway", Icon = locked ? UiIcon.Scales : UiIcon.MapTrifold, Locked = locked, PerPage = 8,
             Context = locked
                 ? new[] { new UiInfoRow { Label = "Hearing", Value = "Tomorrow, 09:00" }, new UiInfoRow { Label = "Charge", Value = "Speeding, third time" } }
-                : new[] { new UiInfoRow { Label = "From", Value = "23rd Street station" }, new UiInfoRow { Label = "Your money", Value = "$48,210" } },
+                : new[] { new UiInfoRow { Label = "From", Value = "23rd Street station" }, new UiInfoRow { Label = "Fare", Value = "$2.75 a ride" } },
             EmptyTitle = "No station is open", EmptyBody = "The subway runs from 05:00. Walk, take a taxi or wait for the first train.",
             Prompts = new[]
             {
@@ -325,16 +326,14 @@ internal static partial class UiSamples
         m.Entries = locked
             ? new[]
             {
-                Station(UiIcon.Scales, "Public defender", "Free, busy this week", "Free"), Station(UiIcon.Scales, "Rhee and Partners", "Traffic cases, 4.6 of 5", "$1,200"),
-                Station(UiIcon.Scales, "Carver Law", "Wins most hearings", "$3,400"), Closed(UiIcon.Scales, "Marlowe and Vance", "Fully booked", "Booked until Day 420"),
+                Station(UiIcon.Scales, "Public defender", "Busy this week", "Free"), Station(UiIcon.Scales, "Rhee and Partners", "Traffic cases", "$1,200"),
+                Station(UiIcon.Scales, "Carver Law", "Wins most hearings", "$3,400"), Closed(UiIcon.Scales, "Marlowe and Vance", "Partners of Carver Law", "Booked until Day 420"),
             }
             : new[]
             {
-                Station(UiIcon.MapTrifold, "Union Square", "Line 1, 3 min", "$2.75"), Station(UiIcon.MapTrifold, "Herald Square", "Line 2, 4 min", "$2.75"),
-                Station(UiIcon.MapTrifold, "Times Square", "Line 1, 7 min", "$2.75"), Closed(UiIcon.MapTrifold, "Grand Central", "Line 3", "Closed for works until Day 414"),
-                Station(UiIcon.MapTrifold, "Bleecker Street", "Line 2, 9 min", "$2.75"), Station(UiIcon.MapTrifold, "Canal Street", "Line 1, 12 min", "$2.75"),
-                Closed(UiIcon.MapTrifold, "Brooklyn Bridge", "Line 3", "Closed at night"), Station(UiIcon.MapTrifold, "Wall Street", "Line 2, 16 min", "$2.75"),
-                Station(UiIcon.MapTrifold, "South Ferry", "Line 1, 19 min", "$2.75"), Station(UiIcon.MapTrifold, "Harlem 125th Street", "Line 3, 22 min", "$2.75"),
+                Line(1, "Union Square", "3 min"), Line(2, "Herald Square", "4 min"), Line(1, "Times Square", "7 min"), Shut(3, "Grand Central", "Closed for works until Day 414"),
+                Line(2, "Bleecker Street", "9 min"), Line(1, "Canal Street", "12 min"), Shut(3, "Brooklyn Bridge", "Closed at night"), Line(2, "Wall Street", "16 min"),
+                Line(1, "South Ferry", "19 min"), Line(3, "Harlem 125th Street", "22 min"),
             };
         return m;
     }
@@ -342,6 +341,18 @@ internal static partial class UiSamples
     private static UiPickEntry Station(UiIcon icon, string name, string detail, string figure) => new UiPickEntry { Icon = icon, Name = name, Detail = detail, Figure = figure };
 
     private static UiPickEntry Closed(UiIcon icon, string name, string detail, string reason) => new UiPickEntry { Icon = icon, Name = name, Detail = detail, Disabled = true, Reason = reason };
+
+    // A station by its line's number in the line's own colour, its ride's minutes as the figure that decides.
+    private static UiPickEntry Line(int line, string name, string minutes) =>
+        new UiPickEntry { Icon = UiIcon.MapTrifold, Mark = line.ToString(System.Globalization.CultureInfo.InvariantCulture), MarkTone = UiTokens.Chart(line - 1), Name = name, Detail = "Line " + line, Figure = minutes };
+
+    private static UiPickEntry Shut(int line, string name, string reason)
+    {
+        UiPickEntry e = Line(line, name, null);
+        e.Disabled = true;
+        e.Reason = reason;
+        return e;
+    }
 
     /// <summary>The picker over the street with the HUD's bar.</summary>
     public static void HudPickerScene(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool locked, bool empty) =>
@@ -361,8 +372,8 @@ internal static partial class UiSamples
                 new UiInfoRow { Label = "Ends at", Value = "18:30" },
             },
             HasDuration = state == UiActivityState.NotStarted, DurationLabel = "Hours", DurationValue = "4 hours", DurationShare = 0.5f,
-            HasProgress = state == UiActivityState.Running || state == UiActivityState.Started, Progress = new UiProgressModel { Share = state == UiActivityState.Started ? 0.04f : 0.12f },
-            Clock = "14:32",
+            HasProgress = state == UiActivityState.Running || state == UiActivityState.Started, Progress = new UiProgressModel { Share = 0.01f },
+            Clock = state == UiActivityState.Finished ? "18:30" : "14:32",
             StateWords = state == UiActivityState.Moving ? "On your way, 2 min" : state == UiActivityState.Waiting ? "Waiting for the doors to open at 12:00"
                 : state == UiActivityState.Finished ? "Done: $64 earned" : "3 hours, 58 minutes remaining",
             CanSkip = true, SkipLabel = t("playeractivityui_timemachine", "Skip time"), SkipKey = GameKey(k, "O", UiIcon.PadX),
@@ -386,7 +397,12 @@ internal static partial class UiSamples
             WithBar(Over(HudBar(t, false, false, false)), () => UiActivity.LayCard(s, a, f, dark, k));
             return;
         }
-        Hud(s, f, dark, k, t, new UiHudModel { Activity = a, MoneyChange = false }, HudBar(t, false, state == UiActivityState.Running, false));
+        UiStatusModel bar = HudBar(t, false, state == UiActivityState.Running, false);
+        if (state == UiActivityState.Finished)
+        {
+            bar.Time = "18:30";   // the shift's end, as the strip's clock says it
+        }
+        Hud(s, f, dark, k, t, new UiHudModel { Activity = a, MoneyChange = false }, bar);
     }
 
     // ------------------------------------------------------------------------------------------------- the time skip

@@ -12,6 +12,8 @@ namespace RealLifeOverhaul.Ui
         public bool Disabled;      // seen but not chosen: its reason says why
         public string Reason;      // "Closed until 06:00": a chip in place of its figure
         public bool Note;          // a line of the list that is no entry (the game's note rows): no tile, no target
+        public string Mark;        // a short code on the tile in place of the glyph (a subway line's "2"), as a bullet; null for the glyph
+        public UiRole MarkTone;    // the bullet's colour, the line's own: a chart hue, with the code in the dark ink on it
     }
 
     /// <summary>
@@ -81,7 +83,7 @@ namespace RealLifeOverhaul.Ui
         {
             for (int i = 1; i < m.Entries.Length; i++)
             {
-                if (!m.Entries[i].Note && m.Entries[i].Icon != m.Entries[0].Icon)
+                if (!m.Entries[i].Note && (m.Entries[i].Icon != m.Entries[0].Icon || m.Entries[i].Mark != m.Entries[0].Mark))
                 {
                     return true;
                 }
@@ -170,7 +172,17 @@ namespace RealLifeOverhaul.Ui
             if (tiles)
             {
                 int t = UiDraw.Tile(s, inside, tx, y + (Row - tile) / 2f, tile, UiRole.None, false);
-                UiDraw.Icon(s, inside.In(t), tx + (tile - UiTokens.Icon) / 2f, y + (Row - UiTokens.Icon) / 2f, UiTokens.Icon, e.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
+                if (!string.IsNullOrEmpty(e.Mark))
+                {
+                    // A line's bullet, as the subway signs it: its colour on a small disc, its code in the dark ink.
+                    float d = UiTokens.ControlSmall, dy = y + (Row - d) / 2f;
+                    int disc = UiDraw.Circle(s, inside.In(t), tx + (tile - d) / 2f, dy, d, d, e.MarkTone == UiRole.None ? UiRole.Accent : e.MarkTone, UiFlags.Middle);
+                    UiDraw.TextMiddle(s, inside.In(disc), tx + (tile - d) / 2f, dy, d, d, UiStyle.BodyStrong, UiRole.OnAccent, e.Mark, UiFlags.Centre | UiFlags.Truncate);
+                }
+                else
+                {
+                    UiDraw.Icon(s, inside.In(t), tx + (tile - UiTokens.Icon) / 2f, y + (Row - UiTokens.Icon) / 2f, UiTokens.Icon, e.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
+                }
                 nx = tx + tile + UiTokens.S3;
             }
             float right = x + w - UiTokens.S3;

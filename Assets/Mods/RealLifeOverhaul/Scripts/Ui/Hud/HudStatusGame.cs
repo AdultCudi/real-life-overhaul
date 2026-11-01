@@ -2,6 +2,7 @@ using System;
 using System.Runtime.CompilerServices;
 using BigAmbitions.DayNightCycle;
 using Helpers;
+using Localizor;
 using RealLifeOverhaul.Seasons;
 using TMPro;
 using UI;
@@ -31,6 +32,8 @@ namespace RealLifeOverhaul.Ui
         public static bool AllAppsOpen;
 
         private static bool _said;
+        private static int _widestDay = -1;   // the day the widest day's words were worked out for
+        private static string _widest;
 
         /// <summary>The bar's model: the game's time, day, money and apps, then the HUD's pills.</summary>
         public static UiStatusModel Bar()
@@ -45,6 +48,7 @@ namespace RealLifeOverhaul.Ui
                 // Each pill from where the game or the mod keeps it, each in its own small method so a member a build lacks fails alone.
                 UIs uis = InstanceBehavior<UIs>.Instance;
                 Speed(m, uis);
+                m.DayWidest = Widest();
                 Needs(m);
                 Season(m);
                 Place(m, uis);
@@ -57,6 +61,35 @@ namespace RealLifeOverhaul.Ui
             m.PillsPress = ForHud;
             m.AllAppsOpen |= AllAppsOpen;
             return m;
+        }
+
+        // The widest of the coming week's days in the game's own words (UiGame.Bar writes the day so), worked out once a day,
+        // so the time pill keeps one width all week.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static string Widest()
+        {
+            GameInstance save = SaveGameManager.Current;
+            if (save == null)
+            {
+                return null;
+            }
+            if (save.Day != _widestDay)
+            {
+                _widestDay = save.Day;
+                _widest = null;
+                float most = -1f;
+                for (int d = save.Day; d < save.Day + 7; d++)
+                {
+                    string words = LocalizorManager.GetLocalization("timestamp_full", new { day = d, time = string.Empty }).Trim();
+                    float w = UiTextRules.Width(words, UiStyle.Body);
+                    if (w > most)
+                    {
+                        most = w;
+                        _widest = words;
+                    }
+                }
+            }
+            return _widest;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

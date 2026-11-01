@@ -9,6 +9,7 @@ namespace RealLifeOverhaul.Ui
         public UiGameKey Key;      // the game's key (Interact, Secondary, Special, Confirm), which the game reads
         public bool Main;          // the one the game's Interact does: on the cyan
         public bool Disabled;      // the game greys it (ButtonInfo.interactable): seen, but a press does nothing
+        public string Reason;      // why it is greyed, at the row's right ("Taken"); null for none
     }
 
     /// <summary>
@@ -108,12 +109,23 @@ namespace RealLifeOverhaul.Ui
             UiAt inside = at.In(face);
             float kx = x + UiTokens.S2;
             float cx = kx + (caps > 0f ? caps + UiTokens.S2 : 0f);
-            UiDraw.TextMiddle(s, inside, cx, y, ActionRow, x + w - UiTokens.S3 - cx, UiStyle.Body, main ? UiRole.OnAccent : UiRole.Text, a.Label, UiFlags.Label | UiFlags.Truncate);
+            float rw = a.Disabled && !string.IsNullOrEmpty(a.Reason) ? UiDraw.Snap(UiTextRules.Width(a.Reason, UiStyle.SmallStrong) + UiTokens.S1) : 0f;
+            UiDraw.TextMiddle(s, inside, cx, y, ActionRow, x + w - UiTokens.S3 - cx - (rw > 0f ? rw + UiTokens.S3 : 0f), UiStyle.Body, main ? UiRole.OnAccent : UiRole.Text, a.Label,
+                UiFlags.Label | UiFlags.Truncate);
+            int reason = -1;
+            if (rw > 0f)
+            {
+                reason = UiDraw.TextMiddle(s, inside, x + w - UiTokens.S3 - rw, y, ActionRow, rw, UiStyle.SmallStrong, UiRole.WarnText, a.Reason, UiFlags.Right | UiFlags.Truncate);
+            }
             int node = UiDraw.Node(s, at, x, y, w, ActionRow, ActionCommand, index, face, a.Disabled);
             UiDraw.GameKey(s, inside, kx, y + (ActionRow - UiTokens.KeyCap) / 2f, a.Key, main);   // after the target: the game, not the row, answers it
             if (a.Disabled)
             {
                 UiDraw.Dim(s, drawn, node);
+                if (reason >= 0)
+                {
+                    s.Items[reason].Alpha = 1f;   // the reason reads whole: it says why the rest is dim
+                }
             }
         }
     }

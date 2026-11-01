@@ -133,7 +133,8 @@ namespace RealLifeOverhaul.Ui
                 UiFlags.Label | UiFlags.Truncate);
             UiDraw.Icon(s, inside, ix + iw - UiTokens.IconSmall, hy + (UiTokens.PairRow - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, group.Collapsed ? UiIcon.Down : UiIcon.Up,
                 UiRole.Text2, UiFlags.Middle);
-            UiDraw.Node(s, at, ix - UiTokens.S1, hy, iw + UiTokens.S2, UiTokens.PairRow, GroupCommand, index, face);
+            int header = UiDraw.Node(s, at, ix - UiTokens.S1, hy, iw + UiTokens.S2, UiTokens.PairRow, GroupCommand, index, face);
+            s.Nodes[header].Left = s.Nodes[header].Right = header;   // a band's whole width: sideways leads nowhere
             float ly = hy + UiTokens.PairRow;
             for (int i = 0; !group.Collapsed && group.Lines != null && i < group.Lines.Length; i++)
             {
@@ -147,11 +148,12 @@ namespace RealLifeOverhaul.Ui
         {
             float h = LineHeight(ref line);
             float right = x + w;
+            int locate = -1;
             if (line.Locate)
             {
                 float b = UiTokens.MinTarget;
                 right -= b;
-                UiDraw.IconButton(s, at, right, y + UiDraw.SnapDown((h - b) / 2f), b, UiIcon.Locate, UiRole.None, LocateCommand, arg, false, UiAction.Count, false, true);
+                locate = UiDraw.IconButton(s, at, right, y + UiDraw.SnapDown((h - b) / 2f), b, UiIcon.Locate, UiRole.None, LocateCommand, arg, false, UiAction.Count, false, true);
                 right -= UiTokens.S2;
             }
             if (!string.IsNullOrEmpty(line.Progress))
@@ -176,7 +178,14 @@ namespace RealLifeOverhaul.Ui
             int face = UiDraw.Box(s, at, tx - UiTokens.S1, y, tw + UiTokens.S1, h, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
             float lh = UiTextRules.WrappedHeight(line.Text, UiStyle.Body, tw, 2);
             UiDraw.Text(s, at.In(face), tx, y + (h - lh) / 2f, tw, UiStyle.Body, line.Done ? UiRole.Text2 : UiRole.Text, line.Text, UiFlags.Wrap | UiFlags.Middle, 2);
-            UiDraw.Node(s, at, tx - UiTokens.S1, y, tw + UiTokens.S1, h, LineCommand, arg, face);
+            int words = UiDraw.Node(s, at, tx - UiTokens.S1, y, tw + UiTokens.S1, h, LineCommand, arg, face);
+            s.Nodes[words].Left = words;
+            s.Nodes[words].Right = locate >= 0 ? locate : words;
+            if (locate >= 0)
+            {
+                s.Nodes[locate].Left = words;
+                s.Nodes[locate].Right = locate;
+            }
             return h;
         }
     }

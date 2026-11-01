@@ -105,11 +105,36 @@ namespace RealLifeOverhaul.Ui
             UiTool tool = m.Tools[m.Tool];
             float cy = UiDraw.TitleStrip(s, on, x, y, w, tool.Icon, tool.Name, false) + UiTokens.S3;
             bool tiles = Differ(m);
+            int first = s.NodeCount;
             for (int i = 0; i < m.Choices.Length; i++)
             {
                 float cx = x + UiTokens.S3 + (i % MostAcross) * (Card + UiTokens.S2);
                 Choice(s, on, ref m.Choices[i], i, i == m.Choice, tiles, cx, cy + (i / MostAcross) * (CardH + UiTokens.S2));
             }
+            Rows(s, first, s.NodeCount);
+        }
+
+        // Each row of choices as the d-pad's row: Left and Right to the next that can be had, a row's end going nowhere sideways.
+        private static void Rows(UiScene s, int from, int to)
+        {
+            for (int n = from; n < to; n++)
+            {
+                int row = (n - from) / MostAcross;
+                s.Nodes[n].Right = Along(s, from, to, n, 1, row);
+                s.Nodes[n].Left = Along(s, from, to, n, -1, row);
+            }
+        }
+
+        private static int Along(UiScene s, int from, int to, int n, int step, int row)
+        {
+            for (int m = n + step; m >= from && m < to && (m - from) / MostAcross == row; m += step)
+            {
+                if (!s.Nodes[m].Disabled)
+                {
+                    return m;
+                }
+            }
+            return n;
         }
 
         // A tile says something only where the choices differ: by their pictures, or by their glyphs.
