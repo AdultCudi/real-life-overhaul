@@ -89,13 +89,15 @@ namespace RealLifeOverhaul.Ui
             }
             int rowsShown = Math.Min((m.Apps.Length + Across - 1) / Across, (int)((gridBottom + UiTokens.S3 - ty) / rowH));
             float ny = ty + rowsShown * rowH + UiTokens.S2;
-            if (m.Next.Length > 0 && ny + UiTokens.S8 + m.Next.Length * UiTokens.PairRow <= gridBottom)
+            float headH = UiTokens.S3 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2;
+            int fits = Math.Min(m.Next.Length, (int)((gridBottom - ny - headH) / UiTokens.PairRow));   // as many of the day's things as the room holds
+            if (fits > 0)
             {
                 UiDraw.Box(s, at, ix, ny, iw, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
                 ny += UiTokens.S3;
                 UiDraw.Text(s, at, ix, ny, iw, UiStyle.SectionHeader, UiRole.Text, m.NextTitle, UiFlags.Label | UiFlags.Truncate);
                 ny += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2;
-                for (int i = 0; i < m.Next.Length; i++)
+                for (int i = 0; i < fits; i++)
                 {
                     float tw = UiDraw.Snap(UiTextRules.Width("88:88", UiStyle.BodyStrong) + UiTokens.S3);
                     UiDraw.TextMiddle(s, at, ix, ny, UiTokens.PairRow, tw, UiStyle.BodyStrong, UiRole.Text, m.Next[i].Label, UiFlags.None);   // a time, not a link

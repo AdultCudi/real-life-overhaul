@@ -40,7 +40,7 @@ namespace RealLifeOverhaul.Ui
             UiRole ring = tone == UiTone.Ok ? UiRole.Ok : tone == UiTone.Warn ? UiRole.Warn : tone == UiTone.Danger ? UiRole.Danger : UiRole.None;
             Portrait(s, at, x + pad, y + pad, size, name, hue, ring);
             // The actions first, from the right, so the name knows its room.
-            float ax = x + w - pad;
+            float ax = x + w - UiTokens.S5;   // the actions end where the columns under them end
             float ay = y + pad + (size - UiTokens.Control) / 2f;
             for (int i = actionCount - 1; i >= 0; i--)
             {

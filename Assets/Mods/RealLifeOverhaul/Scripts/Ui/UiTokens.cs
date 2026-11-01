@@ -306,7 +306,7 @@ namespace RealLifeOverhaul.Ui
             0xE6EDF314,   // RowEdge: 8%
             0x1A2430CC,   // Field: a search box, an input, a secondary button, set into the panel
             0x31425AE6,   // Bubble: their message, a shade over the slate so its words keep 4.5:1
-            0xE6EDF30F,   // Hover: a still 6% lift, under the selection's fill, quiet enough for the secondary words on it
+            0xE6EDF305,   // Hover: a still lift, under the selection's fill; 2% in the game's linear light looks as 6% would, quiet enough for secondary words
             0x2E5167FF,   // RowSel: the cyan at 18% over the slate as a tone; blended in the game's linear light it came out twice as strong
             0x3DBBEB66,   // RowSelEdge: the cyan at 40%
             0xE6EDF3FF,   // Text: soft white, never paper white

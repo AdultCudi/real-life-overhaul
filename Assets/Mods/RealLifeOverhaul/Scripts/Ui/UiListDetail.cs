@@ -116,7 +116,7 @@ namespace RealLifeOverhaul.Ui
             UiAt onBg = screen.In(bg);
             frame.Window(out float wx, out float wy, out float ww, out float wh);
             UiDraw.Band(s, onBg, wx, wy + UiFrame.Strip, cx + SideWidth + UiTokens.S2 - wx, wh - UiFrame.Strip);   // the groups on the window's darker band, as a game's menu
-            Sidebar(s, onBg.InRegion(RegionGroups), m, cx, cy, SideWidth, ch, keys);
+            Sidebar(s, onBg.InRegion(RegionGroups), m, wx + UiTokens.S2, cy, cx + SideWidth - wx - UiTokens.S2, ch, keys);   // one inset each side of the band, as the app window's sidebar
             float lx = cx + SideWidth + UiTokens.S4;
             List(s, onBg.InRegion(RegionList), m, lx, cy, ListWidth, ch);
             float dx = lx + ListWidth + UiTokens.S4;
@@ -219,6 +219,7 @@ namespace RealLifeOverhaul.Ui
             float offset = Math.Max(0f, Math.Min(m.RowsOffset, contentH - vh));
             short clip = s.AddClip(x, y, w, vh, offset);
             s.Clips[clip].ContentHeight = contentH;
+            UiDraw.ScrollThumb(s, at, x + w + UiTokens.S1 / 2f, y, vh, offset, contentH);   // in the gap before the divider, so a cut last row reads as more below
             if (m.RowCount == 0)
             {
                 s.AddList(0, 0, 0, clip, -1);

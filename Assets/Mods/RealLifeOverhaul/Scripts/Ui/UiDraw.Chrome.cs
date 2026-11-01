@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Ui
         /// <summary>px between a link's words and its mark, measured from the drawn words as Cities: Skylines II keeps it.</summary>
         public const float LinkGap = 5f;
 
-        private const float SliceGap = 0.006f;   // of the turn: about two pixels at a donut's rim
+        private const float SliceGap = 0.01f;    // of the turn: wide enough to stay a clean hair of slate from rim to hole at every angle
 
         /// <summary>
         /// An app's window over the world: the slate panel at its share of the screen, its title strip (the app's icon, the
@@ -444,6 +444,21 @@ namespace RealLifeOverhaul.Ui
                 most = Math.Max(most, UiTextRules.Width(labels[i] ?? string.Empty, UiStyle.Body) + UiTokens.S1);
             }
             return Snap(Math.Min(w * 0.42f, most));
+        }
+
+        /// <summary>
+        /// A list's thin scroll thumb at its right edge, as a city builder's lists show it, when its rows run past its room:
+        /// how much is in view and where. It only shows: the wheel and the keys scroll the list.
+        /// </summary>
+        public static void ScrollThumb(UiScene s, UiAt at, float x, float y, float h, float offset, float content)
+        {
+            if (content <= h + 0.5f)
+            {
+                return;
+            }
+            float th = Math.Max(UiTokens.S6, h * h / content);
+            float ty = y + (h - th) * Math.Max(0f, Math.Min(1f, offset / (content - h)));
+            Box(s, at, x, ty, UiTokens.S1, th, UiRole.Muted, UiRole.None, UiTokens.S1 / 2f, UiFlags.Decor);
         }
 
         /// <summary>A rating in stars out of five, by halves: gold for what it has, grey for the rest, as Football Manager rates. Returns its width.</summary>
