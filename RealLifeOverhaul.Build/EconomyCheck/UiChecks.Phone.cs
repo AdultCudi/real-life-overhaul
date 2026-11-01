@@ -472,6 +472,20 @@ internal static partial class Program
         Check(kit.Contains("pager.SteppedAside") && kit.Contains("\"VoogleRoute_PhoneGps\"") && PhoneBody(kit, "private static void StandDown(string why)")?.Contains("_stopped = true;") == true,
             "phone sources: another pager of the phone or another mod's screen on it has the kit stand down to the classic phone for the session");
         Check(!System.Text.RegularExpressions.Regex.IsMatch(kit, @"\bvoid (Update|LateUpdate|FixedUpdate)\(\)\s*\{(?![^}]*HotSpots)"), "phone sources: its frame is timed (HotSpots)");
+        // While the phone holds the keys the game's walking, camera and shortcuts leave them alone, by the game's own path:
+        // its keys object selected on the interface's layer (GameManager.HasInputSelected); every way out gives it back.
+        string take = PhoneBody(kit, "private static void Take()") ?? string.Empty, leave = PhoneBody(kit, "private static void Leave()") ?? string.Empty;
+        Check(take.Contains("events.SetSelectedGameObject(_keys);") && take.Contains("Keys.Suspended = true;") && take.Contains("Typing(events)")
+              && kit.Contains("_keys.layer = ui >= 0 ? ui : UiLayer;") && kit.Contains("private const int UiLayer = 5;"),
+            "phone sources: taking the keys selects the phone's keys object on the interface's layer, so the game stops the player, the camera and its shortcuts, and never over a field being typed in");
+        Check(leave.Contains("events.currentSelectedGameObject == _keys") && leave.Contains("Keys.Suspended = _suspendedBefore;") && leave.Contains("_selectedBefore")
+              && leave.Contains("_host.Exclusive = false;"),
+            "phone sources: giving the keys back restores the selection only while it is the phone's, and the mod's keys as they were");
+        string frame = PhoneBody(kit, "internal static void Frame(") ?? string.Empty;
+        Check(frame.Contains("if (Gate.Focused && !Held())") && PhoneBody(kit, "public static void Remove(string why)")?.Contains("Leave();") == true
+              && PhoneBody(kit, "internal static void Hidden()")?.Contains("Leave();") == true && PhoneBody(kit, "private static void Collapsed(bool collapsed)")?.Contains("Leave();") == true
+              && PhoneBody(kit, "public void Leave()")?.Contains("PhoneKit.Leave();") == true,
+            "phone sources: the keys go back on every way out: the key again, Back at home, a click away, the phone folding or hidden, a fault, the switch off");
         Check(kit.Contains("[DefaultExecutionOrder(-31000)]") && kit.Contains("Guard.Fail(FrameGuard, e, this);") && kit.Contains("PhoneFolderKeys.KeyIsFree()"),
             "phone sources: its frame runs before the game's keys, behind the guard, and Esc in a folder gives way to the game first");
         string poll = PhoneBody(items, "internal static bool Poll(") ?? string.Empty;

@@ -7,6 +7,7 @@ using TMPro;
 using UI;
 using UI.Notification;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
@@ -34,12 +35,16 @@ namespace RealLifeOverhaul.Ui
         private const float PressDip = 0.08f;       // seconds the pressed tile dips before its app opens
         private const float VolumeStep = 0.1f;      // of the game's volume slider, a press
         private const string OtherScreen = "VoogleRoute_PhoneGps";   // another mod's screen drawn on the phone
+        private const int UiLayer = 5;              // Unity's interface layer, the game's LayerHelper.UiLayerIndex, when the name is not found
 
-        private static readonly PhoneInput Input = new PhoneInput();
+        private static readonly PhoneInput Gate = new PhoneInput();
         private static readonly PhoneActions Actions = new PhoneActions();
         private static readonly UiInfoRow[] NextRows = new UiInfoRow[8];
 
         private static GameObject _root;
+        private static GameObject _keys;             // selected while the phone holds the keys: the game then leaves them alone
+        private static bool _suspendedBefore;        // the mod's own keys as they were when the phone took the keys
+        private static GameObject _selectedBefore;   // what the event system had selected then (a button last clicked), given back
         private static UiHost _host;
         private static PhoneScreen _screen;
         private static Canvas _canvas;
@@ -148,6 +153,12 @@ namespace RealLifeOverhaul.Ui
             // phone under it (its head would fold the phone away).
             var blocker = _root.AddComponent<Image>();
             blocker.color = new Color(0f, 0f, 0f, 0f);
+            // What the event system selects while the phone holds the keys, on the interface's layer: the game's own way of
+            // keeping its keys away from the player and the camera while its interface has them (GameManager.HasInputSelected).
+            _keys = new GameObject("RealLife Phone Keys", typeof(RectTransform));
+            _keys.transform.SetParent(_root.transform, false);
+            int ui = LayerMask.NameToLayer("UI");
+            _keys.layer = ui >= 0 ? ui : UiLayer;
             _canvas = _root.AddComponent<Canvas>();
             _root.AddComponent<GraphicRaycaster>();
             PhoneItemsGame.Read(pager);
@@ -155,7 +166,7 @@ namespace RealLifeOverhaul.Ui
             UiPictures.Source = PhoneItemsGame.Picture;
             _screen = new PhoneScreen(PhoneItemsGame.Items, Actions, UiText.Words) { Docked = true };
             _host = _root.AddComponent<UiHost>();
-            _host.Bind(_screen, Input, UiGame.Instance, UiDirector.Dark, UiDirector.Motion, 0f, 0f, null, UiIcon.None);
+            _host.Bind(_screen, Gate, UiGame.Instance, UiDirector.Dark, UiDirector.Motion, 0f, 0f, null, UiIcon.None);
             _host.View.Scale = UiTokens.CanvasPerPx;
             _host.Failed = Fallback;
             _onCollapse = Guard.Listener<bool>(Collapsed);
@@ -246,6 +257,7 @@ namespace RealLifeOverhaul.Ui
                 UiDirector.Logger?.Error(e);
             }
             _root = null;
+            _keys = null;
             _host = null;
             _screen = null;
             _canvas = null;
@@ -389,9 +401,13 @@ namespace RealLifeOverhaul.Ui
                     UiGame.Instance.Play(UiCue.Error);
                 }
             }
-            if (Keys.Down(KeyAction.Phone) || PadView())
+            if (Gate.Focused && !Held())
             {
-                if (Input.Focused)
+                Leave();   // a click away, or the game selected something of its own: the keys are back with the game
+            }
+            if (PhoneKey() || PadView())
+            {
+                if (Gate.Focused)
                 {
                     Leave();
                 }
@@ -401,7 +417,7 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             Wheel();
-            if (!Input.Focused && _screen.Folder >= 0 && FolderKey())
+            if (!Gate.Focused && _screen.Folder >= 0 && FolderKey())
             {
                 _screen.CloseFolder();
                 UiGame.Instance.Play(UiCue.Back);
@@ -424,6 +440,33 @@ namespace RealLifeOverhaul.Ui
             }
             PlayerAction.Cancel.Reset();
             return true;
+        }
+
+        // While the phone holds the keys the mod's own keys are suspended, its own key too, so it is read here as Keys binds it.
+        private static bool PhoneKey()
+        {
+            if (!Gate.Focused)
+            {
+                return Keys.Down(KeyAction.Phone);
+            }
+            if (!UnityEngine.Input.GetKeyDown(Keys.Key(KeyAction.Phone)))
+            {
+                return false;
+            }
+            switch (Keys.Modifier(KeyAction.Phone))
+            {
+                case KeyModifier.Shift: return UnityEngine.Input.GetKey(KeyCode.LeftShift) || UnityEngine.Input.GetKey(KeyCode.RightShift);
+                case KeyModifier.Ctrl: return UnityEngine.Input.GetKey(KeyCode.LeftControl) || UnityEngine.Input.GetKey(KeyCode.RightControl);
+                case KeyModifier.Alt: return UnityEngine.Input.GetKey(KeyCode.LeftAlt) || UnityEngine.Input.GetKey(KeyCode.RightAlt);
+                default: return true;
+            }
+        }
+
+        // The phone's keys object is what the event system has selected.
+        private static bool Held()
+        {
+            EventSystem events = EventSystem.current;
+            return _keys != null && events != null && events.currentSelectedGameObject == _keys;
         }
 
         private static bool PadView()
@@ -453,26 +496,55 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // The keys and the pad to the phone; the host takes them from the game each frame while it holds them.
+        // The keys and the pad to the phone, by the game's own path: the phone's keys object selected on the interface's
+        // layer, so the game's walking, camera, car and shortcuts leave them alone (GameManager.ShouldBlockKeyboardShortcuts),
+        // the mod's own keys suspended, and the host taking the kit's keys from the game each frame. Never over a field
+        // the player is typing in.
         private static void Take()
         {
-            Input.Focused = true;
+            EventSystem events = EventSystem.current;
+            if (_keys == null || events == null || Typing(events))
+            {
+                UiGame.Instance.Play(UiCue.Error);
+                return;
+            }
+            _selectedBefore = events.currentSelectedGameObject;
+            events.SetSelectedGameObject(_keys);
+            _suspendedBefore = Keys.Suspended;
+            Keys.Suspended = true;
+            Gate.Focused = true;
             _host.Exclusive = true;
             UiGame.Instance.Play(UiCue.Confirm);
         }
 
+        // Every way out (the key again, Back at home, a click away, the phone folding or hidden, a fault, the switch off)
+        // gives back exactly what Take took: the selection only if it is still the phone's, the mod's keys as they were.
         private static void Leave()
         {
-            if (!Input.Focused)
+            if (!Gate.Focused)
             {
                 return;
             }
-            Input.Focused = false;
+            Gate.Focused = false;
+            Keys.Suspended = _suspendedBefore;
+            EventSystem events = EventSystem.current;
+            if (_keys != null && events != null && events.currentSelectedGameObject == _keys)
+            {
+                events.SetSelectedGameObject(_selectedBefore != null && _selectedBefore.activeInHierarchy ? _selectedBefore : null);
+            }
+            _selectedBefore = null;
             if (_host != null)
             {
                 _host.Exclusive = false;
                 _host.PointerLeads();
             }
+        }
+
+        // A text field is being typed in: the keys are its own.
+        private static bool Typing(EventSystem events)
+        {
+            GameObject now = events.currentSelectedGameObject;
+            return now != null && now.activeInHierarchy && (now.GetComponent<TMP_InputField>() != null || now.GetComponent<InputField>() != null);
         }
 
         // The game's readings the phone shows: its name, the time, the radio, the private driver, the fold. Written into the
@@ -566,7 +638,7 @@ namespace RealLifeOverhaul.Ui
 
         private sealed class PhoneActions : IPhoneActions
         {
-            public bool Focused => Input.Focused;
+            public bool Focused => Gate.Focused;
 
             public void Open(int item)
             {
