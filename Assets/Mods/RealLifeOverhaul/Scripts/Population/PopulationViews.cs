@@ -134,6 +134,10 @@ namespace RealLifeOverhaul.Population
             v.Details.Add(ViewFigure.Of("reallife_pop_fig_vacancies", vacancies, ViewFormat.Count));
             v.Details.Add(ViewFigure.Of("reallife_pop_fig_commuters", commuters, ViewFormat.Count));
             v.Details.Add(ViewFigure.Of("reallife_pop_fig_taxes", s.Books.TaxesLast / 100, ViewFormat.Money));
+            v.Details.Add(ViewFigure.Of("reallife_pop_fig_homes_wanted", s.Growth.Wanted, ViewFormat.Count));
+            v.Details.Add(ViewFigure.Of("reallife_pop_fig_homes_built", s.Growth.Built, ViewFormat.Count));
+            v.Details.Add(ViewFigure.Of("reallife_pop_fig_firms_opened", s.Growth.Opened, ViewFormat.Count));
+            v.Details.Add(ViewFigure.Of("reallife_pop_fig_firms_closed", s.Growth.Closed, ViewFormat.Count));
             v.Primary = "reallife_pop_act_contributors";
             v.PrimaryTarget = ViewTarget.To(ViewKind.Contributors, 0);
             v.Empty = "reallife_pop_empty_city";

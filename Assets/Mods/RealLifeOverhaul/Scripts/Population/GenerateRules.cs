@@ -89,12 +89,13 @@ namespace RealLifeOverhaul.Population
             {
                 return false;
             }
-            Make(s, b, unit, who);
+            Make(s, b, unit, who, false);
             return true;
         }
 
         /// <summary>
-        /// A household from the region into a free flat, drawn as the generation's own but from the day as well, so no two that come are alike;
+        /// A household from the region into a free flat, drawn as the generation's own but from the day as well, so no two that come are alike, and
+        /// with a mover's age (<see cref="PopulationCatalogue.MoverAges"/>: those who move to a city are young, so the city does not age in place);
         /// its slot, or -1 when the flat is taken. Its workers look for jobs and its money is set by the caller (LabourRules, <see cref="Finish"/>).
         /// </summary>
         public static int Arrive(PopulationState s, int b, int unit, int day)
@@ -104,10 +105,10 @@ namespace RealLifeOverhaul.Population
                 return -1;
             }
             int who = unchecked(Who(s, b, unit) * 31 + day * 7919 + 17);
-            return Make(s, b, unit, who);
+            return Make(s, b, unit, who, true);
         }
 
-        private static int Make(PopulationState s, int b, int unit, int who)
+        private static int Make(PopulationState s, int b, int unit, int who, bool mover)
         {
             CityBuilding cb = s.Buildings[b];
             PopDistrict d = s.Districts[cb.District];
@@ -123,9 +124,9 @@ namespace RealLifeOverhaul.Population
             hh.Unit[h] = unit;
             hh.District[h] = (byte)cb.District;
             hh.Class[h] = (byte)cls;
-            hh.Since[h] = s.Day - PopDraw.Between(seed, PopDraw.Move, who, 0, 0, s.YearDays * 8);
+            hh.Since[h] = mover ? s.Day : s.Day - PopDraw.Between(seed, PopDraw.Move, who, 0, 0, s.YearDays * 8);
             s.Occupant[s.FlatFirst[b] + unit] = h;
-            People(s, h, who, cls, size);
+            People(s, h, who, cls, size, mover);
             hh.Tastes[h] = Tastes(seed, who, Age(s, hh.First[h]), (int)cls);
             return h;
         }
@@ -169,12 +170,12 @@ namespace RealLifeOverhaul.Population
         }
 
         // The household's members: its kind (alone, a couple, a parent with children, people sharing, three generations), their ages and sexes, then each one's schooling and work.
-        private static void People(PopulationState s, int h, int who, PopClass cls, int size)
+        private static void People(PopulationState s, int h, int who, PopClass cls, int size, bool mover)
         {
             int seed = s.Seed;
             if (size <= 1)
             {
-                int age = BandAge(seed, who, 0, PopulationCatalogue.SingleAges);
+                int age = BandAge(seed, who, 0, mover ? PopulationCatalogue.MoverAges : PopulationCatalogue.SingleAges);
                 Member(s, h, who, 0, age, PopDraw.Mille(seed, PopDraw.Sex, who, 0, 500), Role.Head, cls);
                 return;
             }
@@ -192,7 +193,8 @@ namespace RealLifeOverhaul.Population
             bool couple = kind == 0 || (three && size >= 4 && PopDraw.Mille(seed, PopDraw.Kind, who, 1, 700));
             bool elders = three && size >= 5 && PopDraw.Mille(seed, PopDraw.Kind, who, 2, PopulationCatalogue.BothGrandparents);
             int children = size - (couple ? 2 : 1) - (three ? (elders ? 2 : 1) : 0);
-            int headAge = couple && children == 0 ? BandAge(seed, who, 0, PopulationCatalogue.CoupleAges) : PopDraw.Between(seed, PopDraw.Age, who, 0, 24, 54);
+            int headAge = couple && children == 0 ? BandAge(seed, who, 0, mover ? PopulationCatalogue.MoverAges : PopulationCatalogue.CoupleAges)
+                : PopDraw.Between(seed, PopDraw.Age, who, 0, 24, mover ? MoverParentMost : 54);
             bool headFemale = couple ? PopDraw.Mille(seed, PopDraw.Sex, who, 0, 500) : PopDraw.Mille(seed, PopDraw.Sex, who, 0, 820);   // most lone parents are mothers
             int head = Member(s, h, who, 0, headAge, headFemale, Role.Head, cls);
             if (couple)
@@ -493,6 +495,7 @@ namespace RealLifeOverhaul.Population
             }
         }
 
+        public const int MoverParentMost = 44;   // years: the eldest a parent who comes from the region with children at home is drawn at (movers are young)
         public const int RegulatedShare = 350;   // thousandths of its income after tax a regulated tenancy's rent is set at when a city is generated
         public const int RegulatedLeast = 250;   // ... but never under this share of the market's
     }

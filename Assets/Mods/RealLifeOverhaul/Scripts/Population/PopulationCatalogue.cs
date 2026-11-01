@@ -540,6 +540,10 @@ namespace RealLifeOverhaul.Population
         /// </summary>
         public static readonly int[] Fertility = { 12, 60, 104, 140, 100, 32, 4 };
 
+        // thousandths of that rate for a woman with no partner at home: about 40% of US births are to unmarried mothers (CDC, Births: Final Data for
+        // 2023) and about three in five of those to couples living together, so some one birth in six is to a mother living without a partner
+        public const int LoneBirths = 190;
+
         public const int MortalityA = 32;                // millionths: Gompertz's death rate at age 0 (US life tables: about 0.13% at 40, 0.9% at 60, 6% at 80)
         public const int MortalityB = 95;                // thousandths: how fast it doubles with age (every 7.3 years)
         public const int InfantMortality = 5;            // thousandths in the first year
@@ -579,6 +583,50 @@ namespace RealLifeOverhaul.Population
         public const int AffordableShare = 350;          // thousandths of income a household is willing to pay in rent when it chooses a flat
         public const int RentPremiumWeight = 2000;       // thousandths of a point off a flat's score for each thousandth of a household's income its district's index adds (HousingRules.Score)
         public const int WantSqm = 13;                   // m2 of flat a person wants at the least before the household looks for more (about a room a person)
+
+        // ---- turnover: who leaves and who comes (the brief's fair turnover; sources in POPULATION.md section 15)
+
+        // per mille a year of households whose adults are all past retirement that leave the city: to family, a smaller place in the region or
+        // care. The Census Bureau's P23-218 counts about 6.2% of Americans 65 and over moving each year; these are the ones who leave the city,
+        // more past 80 as care takes them. Without them a city of fixed homes keeps its elders and turns into a retirement town.
+        public const int OlderLeave = 22;
+        public const int OldestLeave = 60;
+        public const int OldestFrom = 80;                // years: the head's age from which OldestLeave holds
+        // per mille a year of the other households that leave for elsewhere in the country, by the head's age: New York loses about 4% of its
+        // people a year so (the IRS's migration data for 2022: some 352,100 left the city for other states and counties), the young most often
+        public const int YoungLeave = 26;
+        public const int SettledLeave = 14;
+        public const int SettledFrom = 45;               // years: the head's age from which SettledLeave holds
+        public const int FamilyLeave = 15;               // ... more for a household with children: families leave the city for room and schools in the suburbs
+
+        /// <summary>
+        /// The age of the head of a household that comes from the region, per mille in each band from 18 (bands as <see cref="AgeBands"/>): movers are
+        /// young. The American Community Survey's mobility by age (table B07001) peaks in the twenties and falls past 35; few movers are past 65.
+        /// </summary>
+        public static readonly int[] MoverAges = { 190, 390, 200, 100, 65, 35, 20 };
+
+        // ---- growth: homes built on the mod's land (POPULATION.md section 14: only on the mod's own land)
+
+        // thousandths of the city's homes a year it builds at the most pressure: a healthy real city adds half a per cent to one (New York added
+        // 30,170 homes net in 2023 on a stock of 3.7 million, 0.8%, the NYC Comptroller from City Planning's counts)
+        public const int PaceMost = 10;
+        public const int VacancyBuild = 70;              // thousandths of the city's flats free under which the city wants more homes
+        public const int VacancySpan = 40;               // ... thousandths under that at which the shortage alone is the most pressure
+        public const int WaitingWeight = 4;              // pressure points for each thousandth of the city's flats a month asked for and not found
+        public const int PullRoom = 20;                  // the homes pull of the mod's land while the year's homes are still wanted: from this...
+        public const int PullClosed = -100;              // ... and this once they are started, so the developers wait (Uptown's DemandRules reads it)
+
+        // ---- firms: the office floors' firms move with the city (the brief's firm churn)
+
+        // thousandths of the measured office floor's desks that stood empty when the city was generated: Manhattan's office vacancy was about a
+        // tenth before 2020 (Cresa's Q3 2019 report, 9.7%), so the measured jobs are the let floors and firms have that room to grow into
+        public const int OfficeVacancyStart = 100;
+        public const int StockLeast = 800;               // thousandths of the start's office jobs the firms fall to at the least
+        public const int FirmAdjust = 60;                // thousandths of the gap to the city's wanted level the firms close in a month
+        // per mille a year of firms that open and close whatever the city does (the Census Bureau's Business Dynamics Statistics: establishments
+        // enter at 10 to 12% a year, 11.6% in 2022, and leave at nearly as much); the city's growth comes on top as more open than close
+        public const int FirmChurn = 95;
+        public const int TenantFirmJobs = 25;            // jobs of an office building's other firms counted as one firm when the churn is counted
 
         // ---- the city's economy as other features read it (CityEconomy.DistrictIncome's 600 to 1400 scale)
 

@@ -51,7 +51,20 @@ namespace RealLifeOverhaul.Population
             }
             if (LongOutOfWork(s, h, day) && PopDraw.Mille(s.Seed, PopDraw.Migrate, id, month, PopulationCatalogue.LeaveChance / 12 + 1))
             {
-                Leave(s, h, day);
+                LeaveFreeing(s, ld, h, day);
+                return true;
+            }
+            int youngest = YoungestIfRetired(s, h, day);
+            if (youngest >= 0 && PopDraw.Daily(s.Seed, PopDraw.Older, id, month, youngest >= PopulationCatalogue.OldestFrom ? PopulationCatalogue.OldestLeave : PopulationCatalogue.OlderLeave, 12))
+            {
+                LeaveFreeing(s, ld, h, day);   // its flat back on the market this month, where the region's younger households are first in line
+                return true;
+            }
+            int rate = (HeadAge(s, h, day) < PopulationCatalogue.SettledFrom ? PopulationCatalogue.YoungLeave : PopulationCatalogue.SettledLeave)
+                       + (HasChild(s, h, day) ? PopulationCatalogue.FamilyLeave : 0);
+            if (youngest < 0 && PopDraw.Daily(s.Seed, PopDraw.Older, id, month + 5000, rate, 12))
+            {
+                LeaveFreeing(s, ld, h, day);   // a job, family or a cheaper life elsewhere in the country: the young move most
                 return true;
             }
             bool wants = HousingRules.WantsMove(s, h, disposable);
@@ -90,12 +103,59 @@ namespace RealLifeOverhaul.Population
                 if (disposable > 0 && hh.Rent[h] * 1000L / disposable > PopulationCatalogue.RentBurdenLeave
                     || PopDraw.Mille(s.Seed, PopDraw.Priced, id, month, HousingRules.WantLeave(s, hh.District[h])))
                 {
-                    Leave(s, h, day);   // nothing to be had here: it takes a flat in the region, surely past bearing its rent, more often the dearer the district
+                    LeaveFreeing(s, ld, h, day);   // nothing to be had here: it takes a flat in the region, surely past bearing its rent, more often the dearer the district
                     return true;
                 }
                 hh.Flags[h] |= HouseholdFlags.WantsMove;
             }
             return false;
+        }
+
+        // A household leaves and its flat goes on the month's free list at once, so this month's movers and arrivals can take it.
+        private static void LeaveFreeing(PopulationState s, LifeRules.LifeDay ld, int h, int day)
+        {
+            int b = s.Households.Building[h], unit = s.Households.Unit[h], d = s.Households.District[h];
+            Leave(s, h, day);
+            if (b >= 0 && unit >= 0 && b < s.FlatFirst.Length && d < ld.Free.Length && ld.Free[d] != null && s.Occupant[s.FlatFirst[b] + unit] == -1)
+            {
+                ld.Free[d].Add(s.FlatFirst[b] + unit);
+            }
+        }
+
+        // True when a child under 18 lives in the household.
+        private static bool HasChild(PopulationState s, int h, int day)
+        {
+            for (int p = s.Households.First[h]; p >= 0; p = s.People.Next[p])
+            {
+                if (s.Age(p, day) < PopulationCatalogue.AdultLeast)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // The head's age (the household's first member), 0 for none.
+        private static int HeadAge(PopulationState s, int h, int day)
+        {
+            int head = s.Households.First[h];
+            return head >= 0 ? s.Age(head, day) : 0;
+        }
+
+        // The youngest member's age when every member is past retirement, else -1: an older household with nobody of working age or younger at home.
+        private static int YoungestIfRetired(PopulationState s, int h, int day)
+        {
+            int youngest = int.MaxValue;
+            for (int p = s.Households.First[h]; p >= 0; p = s.People.Next[p])
+            {
+                int age = s.Age(p, day);
+                if (age < PopulationCatalogue.RetireAge)
+                {
+                    return -1;
+                }
+                youngest = Math.Min(youngest, age);
+            }
+            return youngest == int.MaxValue ? -1 : youngest;
         }
 
         private static bool HasLinked(PopulationState s, int h)

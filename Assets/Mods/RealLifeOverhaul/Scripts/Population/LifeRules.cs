@@ -20,10 +20,14 @@ namespace RealLifeOverhaul.Population
         public const int SameSexShare = 50;                // thousandths of couples of the same sex
         public const int PartnerLooks = 10;                // single adults a seeker looks at
 
-        /// <summary>The day's life, as it is lived: who is looking for a partner, who leaves home, the free flats, the day's births and deaths.</summary>
+        /// <summary>The day's life, as it is lived: who is looking for a partner (and has been this month), who leaves home, the free flats, the day's births and deaths.</summary>
         public sealed class LifeDay
         {
             public readonly List<int> Seeking = new List<int>(256);
+            // singles who looked on an earlier day of the month and found nobody: they look again with each day's, so a month's singles meet as many
+            // others at any year length (by the day alone a year of 365 days met a sixth as many each day and paired two fifths fewer)
+            public readonly List<int> Waiting = new List<int>(256);
+            public readonly List<int> WaitingIds = new List<int>(256);   // their ids: a slot freed and given again in the month is somebody else
             public readonly List<int> Leaving = new List<int>(64);
             public readonly List<int> Splitting = new List<int>(32);
             public List<int>[] Free = new List<int>[0];
@@ -68,9 +72,13 @@ namespace RealLifeOverhaul.Population
             }
             var status = (Status)pt.Status[p];
             int cls = s.Households.Class[h];
-            if (pt.Female[p] == 1 && age >= MotherFrom && age <= MotherTo && pt.Partner[p] >= 0 && pt.Household[pt.Partner[p]] == h)
+            if (pt.Female[p] == 1 && age >= MotherFrom && age <= MotherTo)
             {
                 int rate = PopulationCatalogue.Fertility[PopulationCatalogue.Clamp((age - MotherFrom) / 5, 0, PopulationCatalogue.Fertility.Length - 1)];
+                if (pt.Partner[p] < 0 || pt.Household[pt.Partner[p]] != h)
+                {
+                    rate = rate * PopulationCatalogue.LoneBirths / 1000;   // a woman with no partner at home has children too, less often
+                }
                 if (PopDraw.Daily(s.Seed, PopDraw.Birth, id, day, rate, s.YearDays))
                 {
                     Born(s, ld, h, day, cls);
@@ -343,6 +351,7 @@ namespace RealLifeOverhaul.Population
                     ld.Parted++;
                     if (!Form(s, ld, p, day, true))
                     {
+                        s.Growth.Unformed++;   // a home the city lacked: the housing pressure counts it
                         LeaveCity(s, p, day);
                     }
                 }
@@ -357,15 +366,42 @@ namespace RealLifeOverhaul.Population
                     {
                         s.WantFlats[d]++;
                     }
+                    s.Growth.Unformed++;
                 }
             }
         }
 
-        // Singles who looked today, paired: each with one of the others of a fitting sex and age, the nearest district first.
+        // Singles who looked today and earlier in the month, paired: each with one of the others of a fitting sex and age, the nearest district first;
+        // those still single wait for the next day's.
         private static void Pair(PopulationState s, LifeDay ld, int day)
         {
             PersonTable pt = s.People;
             List<int> seeking = ld.Seeking;
+            for (int i = 0; i < ld.Waiting.Count; i++)
+            {
+                int w = ld.Waiting[i];
+                if (pt.Alive(w) && pt.Id[w] == ld.WaitingIds[i] && pt.Partner[w] < 0 && pt.Household[w] >= 0 && !seeking.Contains(w))
+                {
+                    seeking.Add(w);
+                }
+            }
+            ld.Waiting.Clear();
+            ld.WaitingIds.Clear();
+            PairAll(s, seeking, day, ld);
+            for (int i = 0; i < seeking.Count; i++)
+            {
+                int w = seeking[i];
+                if (pt.Alive(w) && pt.Partner[w] < 0 && pt.Household[w] >= 0)
+                {
+                    ld.Waiting.Add(w);
+                    ld.WaitingIds.Add(pt.Id[w]);
+                }
+            }
+        }
+
+        private static void PairAll(PopulationState s, List<int> seeking, int day, LifeDay ld)
+        {
+            PersonTable pt = s.People;
             for (int i = 0; i < seeking.Count; i++)
             {
                 int a = seeking[i];

@@ -11,7 +11,8 @@ namespace RealLifeOverhaul.Population
         public const int Vacant = 1, Class = 2, Size = 3, Kind = 4, Age = 5, Sex = 6, Education = 7, Status = 8, Field = 9, Skill = 10,
             Savings = 11, Debt = 12, Car = 13, Taste = 14, Owner = 15, Mortgage = 16, Part = 17, Partner = 18, Child = 19, Death = 20,
             Couple = 21, Split = 22, Leave = 23, Quit = 24, Find = 25, Move = 26, Migrate = 27, Birth = 28, Flat = 29, Link = 30,
-            University = 31, Retire = 32, Commuter = 33, Unemployed = 34, Work = 35, Choice = 36, Games = 37, Priced = 38;
+            University = 31, Retire = 32, Commuter = 33, Unemployed = 34, Work = 35, Choice = 36, Games = 37, Priced = 38,
+            Older = 39, Mover = 40;
 
         /// <summary>A whole number that is always the same for these four.</summary>
         public static uint Hash(int seed, int purpose, int who, int when)

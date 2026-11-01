@@ -782,6 +782,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\HousingRules.cs" Link="Mod\Population\HousingRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\LifeRules.cs" Link="Mod\Population\LifeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\RegionRules.cs" Link="Mod\Population\RegionRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\GrowthRules.cs" Link="Mod\Population\GrowthRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\CityFirmRules.cs" Link="Mod\Population\CityFirmRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationSim.cs" Link="Mod\Population\PopulationSim.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationStore.cs" Link="Mod\Population\PopulationStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationShare.cs" Link="Mod\Population\PopulationShare.cs" />

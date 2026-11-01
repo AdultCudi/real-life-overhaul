@@ -38,6 +38,7 @@ namespace RealLifeOverhaul
                 PopulationAttention.Register(PromotionSource, PromotionOf);
                 PopulationBridges.People = People;
                 PopulationBridges.UseOf = UseOf;
+                PopulationBridges.LandHomes = LandHomes;
                 StudioBridges.Population = Audience;
             }
 
@@ -169,6 +170,39 @@ namespace RealLifeOverhaul
                     return 0;
                 }
                 return CustomerRules.PromotionAttention(s.Businesses.AnchorPromotion[b], PopulationGame.PromotionNow(reg));
+            }
+
+            // The homes floor Uptown's or Cedar Heights' land can still take, from the construction game; -1 for the game's districts and while it rests.
+            private static int LandHomes(string district)
+            {
+                try
+                {
+                    int band = Array.IndexOf(DistrictSplit.Ids, district);
+                    Construction.ConstructionDirector c = Construction.ConstructionDirector.Instance;
+                    return band >= 0 && c != null ? c.HomesRoomSqm(band) : -1;
+                }
+                catch (Exception e)
+                {
+                    Fault("PopulationLinks.LandHomes", e);
+                    return -1;
+                }
+            }
+
+            // The city's growth started a building on the band's land: the living population counts its homes or offices against the year's wanted
+            // (ConstructionLinks hands it to the construction game's bridge).
+            internal static void GrowthStarted(int band, int use, int sqm)
+            {
+                try
+                {
+                    if (Settings.LivingPopulation && band >= 0 && band < DistrictSplit.Ids.Length && PopulationDirector.Instance != null)
+                    {
+                        PopulationDirector.Instance.GrowthStarted(DistrictSplit.Ids[band], use, sqm);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("PopulationLinks.GrowthStarted", e);
+                }
             }
 
             // A building of the player's whose use the estate changed (homes to offices, say: the redevelopment's Convert): its use in the mod's records, -1 for none.

@@ -15,9 +15,14 @@ using RealLifeOverhaul.Tech;
 // floor), every business's demand, digital spending, the residents who play, every product's payback on both cities, and the documented city
 // standing for the living one on its first day.
 //
-// "--living-years" lives 3,650 days at the game's default year of 60 days (61 of its years: a long game, held to the long run's bands too) and
-// at 365, with the businesses' demand. The full run holds a short version at no cost of its own (LivingShort, on the demand's ten years) and the
-// one clock (LivingClock: a year of 365 days against the default's first).
+// "--living-years" lives sixty of the save's years at the game's default year of 60 days and at 365, the city growing on the mod's land beside
+// Build 3682's (LivingGrowthChecks.cs: Uptown and Cedar Heights, empty on the first day, built by the developers' stand-in while the population's
+// homes pull is open), the businesses' demand through the money's 3,650 days. Over the sixty years the growth's bands hold: the people grow a
+// third to one per cent a year on average and never fall more than 3% in a decade; births and deaths at real rates and the ages never a
+// retirement town's; free flats 3 to 8%, rents off their bounds, unemployment 4 to 9%; the firms move with the jobs and open and close at a real
+// churn; homes built half to one per cent a year while the land lasts, slowing as it runs out. The full run holds a short version at no cost of
+// its own (LivingShort, on the demand's ten years), the one clock (LivingClock: a year of 365 days against the default's first) and three years
+// of the growing city (LivingGrowShort).
 internal static partial class Program
 {
     private const int LivingSeed = 1234;         // the city PopulationYears and the demand's ten years live, so the runs can be read together
@@ -26,7 +31,7 @@ internal static partial class Program
     // The bands of ten of the save's years: the people moving, inside realistic bands, at any year length. A city of
     // fixed homes whose generated households are larger than Manhattan's low fertility keeps: its people drift a few per cent as its children grow up.
     private const int PeopleBand = 100;                                // thousandths either way of the first day's people, at every year's end
-    private const int HouseholdsBand = 50;                             // ...of its households
+    private const int HouseholdsBand = 80;                             // ...of its households (a growing city adds them as its homes go up)
     private const int UnemploymentLeast = 20, UnemploymentMost = 100;  // thousandths of the labour force
     private const int BirthsLeast = 6, BirthsMost = 16, DeathsLeast = 4, DeathsMost = 12;   // a thousand people a year of the save (Manhattan: about 11 and 7)
     private const int RentBandLeast = 800, RentBandMost = 1600;        // thousandths of the game's own rent, each district at every year's end: a cheap district
@@ -40,9 +45,24 @@ internal static partial class Program
                                                                        // the own bank's own band (PopDemandBusinessChecks), half to twice their first day
     private const int ReferenceBand = 20;                              // thousandths: the documented city stands for the living one's first day within this
 
+    // The growth's bands over the sixty years (the brief: a realistic population that grows, its homes and firms with it).
+    private const int LivingGrowthYears = 60;
+    private const double GrowthLeast = 0.003, GrowthMost = 0.010;      // the people's growth a year on average over the sixty years (compounded)
+    private const int DecadeFallMost = 30;                             // thousandths the people may fall in any ten years at the most
+    private const int FirstYearBand = 20;                              // thousandths the first year's people keep to of the first day's
+    private const int GrowBirthsLeast = 8, GrowBirthsMost = 14;        // births a thousand people a year (US 10.7 in 2023, CDC; New York near 11)
+    private const int GrowDeathsLeast = 4, GrowDeathsMost = 11;        // deaths a thousand people a year (US about 9, New York about 7 to 8, a young city's 4 to 6)
+    private const int ElderMost = 200, ChildrenLeast = 150;            // thousandths of people 65 and over at the most and under 18 at the least (New York 16% and 20%)
+    private const int VacancyLeast = 30, VacancyMost = 80;             // thousandths of the city's flats free
+    private const int GrowUnemploymentLeast = 40, GrowUnemploymentMost = 90;
+    private const int FirmsPerJobBand = 120;                           // thousandths either way the firms a thousand jobs keep to of the first day's
+    private const int ChurnLeast = 50, ChurnMost = 200;                // thousandths of the firms opened, and closed, in a year
+    private const double HomesLeast = 0.004, HomesMost = 0.011;        // the homes' growth a year over the first ten years, while the land lasts
+
     private sealed class LivingYear
     {
         public int Day, People, Households, Unemployment, Small, Mid, Large, Digital, RentLeast = int.MaxValue, RentMost, RentTopped, RentMean, WageLeast = int.MaxValue, WageMost, WageFloored;
+        public int Flats, Vacancy, Children, Elders, Jobs, Firms, Opened, Closed, Built, Wanted, Land, Stock;   // the growth's: shares in thousandths
         public int Births, Deaths;   // in the year that ended here
         public long Players, PlayersStart;
         public int[] Games = new int[GameRules.Cells];
@@ -80,24 +100,23 @@ internal static partial class Program
         var clock = System.Diagnostics.Stopwatch.StartNew();
         foreach (int year in new[] { CalendarRules.YearDefault, 365 })
         {
-            LivingRun run = LivingLive(year, LivingMoneyDays);
+            LivingRun run = LivingLive(year, year * LivingGrowthYears);
             string label = " (years of " + year + " days)";
             LivingReport(run, label);
             LivingBands(run, 10, label);
-            if (LivingMoneyDays / year > 10)
-            {
-                LivingLongRun(run, label);
-            }
+            LivingLongRun(run, label);
+            LivingGrowthBands(run, label);
             LivingReference(run, label);
             LivingMoney(run, label, true);
         }
         Console.WriteLine("  living years took " + clock.ElapsedMilliseconds + " ms");
     }
 
-    // A city generated at a year's length and lived so many days with the businesses' demand, a snapshot at each year's end.
+    // The growing city generated at a year's length and lived so many days, with the businesses' demand through the money's days, a snapshot at each
+    // year's end.
     private static LivingRun LivingLive(int yearDays, int days)
     {
-        PopulationSim sim = PopulationMade(LivingSeed, out PopulationState s, out _, yearDays);
+        PopulationSim sim = LivingBandMade(LivingSeed, yearDays, out PopulationState s, out BandBuilder builder);
         var m = new PopDemandState();
         var job = new PopDemandJob();
         job.Begin(s, sim.Demand, sim.Pulls, m);
@@ -107,8 +126,18 @@ internal static partial class Program
         for (int day = 2; day <= days + 1; day++)
         {
             int month = s.MonthNumber;
-            DemandDay(sim, s, m, job, day);
-            LivingDay(run, sim, s, m, month, day);
+            bool money = day <= LivingMoneyDays + 1;
+            if (money)
+            {
+                DemandDay(sim, s, m, job, day);
+            }
+            else
+            {
+                sim.BeginDay(day, Ordinary, null);   // past the money's horizon the demand is read no more: the people alone
+                sim.RunAll();
+            }
+            BandDay(sim, s, builder, day);
+            LivingDay(run, sim, s, money ? m : null, month, day);
         }
         return run;
     }
@@ -189,6 +218,36 @@ internal static partial class Program
             y.WageMost = Math.Max(y.WageMost, s.FieldWage[f]);
             y.WageFloored += s.FieldWage[f] <= LabourRules.WageLeast ? 1 : 0;
         }
+        int vacant = 0, children = 0, elders = 0;
+        for (int d = 0; d < s.Figures.Length && d < s.Districts.Count; d++)
+        {
+            y.Jobs += s.Figures[d].Jobs;
+            if (!s.Districts[d].Villas)
+            {
+                y.Flats += s.Figures[d].Flats;
+                vacant += s.Figures[d].Vacant;
+            }
+        }
+        for (int p = 0; p < s.People.Count; p++)
+        {
+            if (s.People.Id[p] != 0)
+            {
+                int age = s.Age(p, day);
+                children += age < PopulationCatalogue.AdultLeast ? 1 : 0;
+                elders += age >= PopulationCatalogue.RetireAge ? 1 : 0;
+            }
+        }
+        y.Vacancy = vacant * 1000 / Math.Max(1, y.Flats);
+        y.Children = children * 1000 / Math.Max(1, y.People);
+        y.Elders = elders * 1000 / Math.Max(1, y.People);
+        y.Firms = CityFirmRules.Count(s);
+        GrowthState g = s.Growth;
+        y.Opened = g.OpenedLast;
+        y.Closed = g.ClosedLast;
+        y.Built = g.BuiltLast;
+        y.Wanted = g.Wanted;
+        y.Land = GrowthRules.LandLeft(g);
+        y.Stock = g.Stock;
         return y;
     }
 
@@ -216,7 +275,7 @@ internal static partial class Program
             city &= y.RentMean >= RentCityLeast && y.RentMean <= RentCityMost;
             wages &= y.WageFloored == 0 && y.WageLeast >= LabourRules.WageTargetLeast - 20 && y.WageMost <= LabourRules.WageTargetMost;
             digital &= y.Digital >= DigitalBandLeast && y.Digital <= DigitalBandMost;
-            int share = y.PlayersStart > 0 ? (int)(y.Players * 1000 / y.PlayersStart) : 1000;
+            int share = y.PlayersStart > 0 ? (int)(GameRules.Share(y.Players, y.People, first.People) * 1000 / y.PlayersStart) : 1000;   // a share of the people: tastes, not size
             players &= share >= PlayersBandLeast && share <= PlayersBandMost;
             int births1000 = y.Births * 1000 / Math.Max(1, y.People), deaths1000 = y.Deaths * 1000 / Math.Max(1, y.People);
             births &= births1000 >= BirthsLeast && births1000 <= BirthsMost && deaths1000 >= DeathsLeast && deaths1000 <= DeathsMost;
@@ -230,7 +289,8 @@ internal static partial class Program
                              + RentCityLeast + " to " + RentCityMost + where + " (the last year " + last.RentLeast + " to " + last.RentMost + ", on average " + last.RentMean + ")");
         Check(wages, "living years" + label + ": every field's pay on its wage curve every year, none at its floor (" + last.WageLeast + " to " + last.WageMost + " in the last)");
         Check(digital, "living years" + label + ": the households' digital spending a person within " + DigitalBandLeast + " to " + DigitalBandMost + " of the first day's every year (" + last.Digital + " in the last)");
-        Check(players, "living years" + label + ": the residents who play within " + PlayersBandLeast + " to " + PlayersBandMost + " of the start every year (" + (last.PlayersStart > 0 ? last.Players * 1000 / last.PlayersStart : 0)
+        Check(players, "living years" + label + ": the residents who play, a share of the people, within " + PlayersBandLeast + " to " + PlayersBandMost + " of the start every year ("
+                       + (last.PlayersStart > 0 ? GameRules.Share(last.Players, last.People, first.People) * 1000 / last.PlayersStart : 0)
                        + " in the last)");
         if (run.Demand)
         {
@@ -254,25 +314,78 @@ internal static partial class Program
 
     private static bool Within(long value, long start, int band) => start > 0 && Math.Abs(value - start) * 1000 <= start * band;
 
-    // A long game in a short year (61 of its years in the money's ten): the people, rents, pay and digital spending stay in their bounds, never resting
-    // on one.
+    // A long game: through the sixty years no district's rents and no field's pay rest on a bound and digital spending stays inside its own.
     private static void LivingLongRun(LivingRun run, string label)
     {
-        LivingYear first = run.Years[0];
         bool ok = true;
         int lowest = int.MaxValue, highest = 0, rentMost = 0, wageLeast = int.MaxValue, digitalMost = 0;
         for (int i = 1; i < run.Years.Count; i++)
         {
             LivingYear y = run.Years[i];
-            ok &= Within(y.People, first.People, 150) && y.RentTopped == 0 && y.WageFloored == 0 && y.Digital < SectorCatalogue.DigitalMost && y.Digital > SectorCatalogue.DigitalLeast;
+            ok &= y.RentTopped == 0 && y.WageFloored == 0 && y.Digital < SectorCatalogue.DigitalMost && y.Digital > SectorCatalogue.DigitalLeast;
             lowest = Math.Min(lowest, y.People);
             highest = Math.Max(highest, y.People);
             rentMost = Math.Max(rentMost, y.RentMost);
             wageLeast = Math.Min(wageLeast, y.WageLeast);
             digitalMost = Math.Max(digitalMost, y.Digital);
         }
-        Check(ok, "living years" + label + ": through " + (run.Years.Count - 1) + " of the save's years the people stay within a seventh of the first day's (" + lowest + " to " + highest
-                  + "), no district's rents and no field's pay at a bound (rents to " + rentMost + ", pay down to " + wageLeast + "), digital spending inside its bounds (to " + digitalMost + ")");
+        Check(ok, "living years" + label + ": through " + (run.Years.Count - 1) + " of the save's years (people " + lowest + " to " + highest
+                  + ") no district's rents and no field's pay at a bound (rents to " + rentMost + ", pay down to " + wageLeast + "), digital spending inside its bounds (to " + digitalMost + ")");
+    }
+
+    // The growth's bands over the whole run (sixty of the save's years in --living-years).
+    private static void LivingGrowthBands(LivingRun run, string label)
+    {
+        LivingYear first = run.Years[0], last = run.Years[run.Years.Count - 1];
+        int years = run.Years.Count - 1;
+        double growth = years > 0 && first.People > 0 ? Math.Pow((double)last.People / first.People, 1.0 / years) - 1 : 0;
+        bool decades = true;
+        for (int i = 10; i <= years; i++)
+        {
+            decades &= (long)run.Years[i].People * 1000 >= (long)run.Years[i - 10].People * (1000 - DecadeFallMost);
+        }
+        bool firstYear = years >= 1 && Within(run.Years[1].People, first.People, FirstYearBand);
+        bool rates = true, ages = true, vacancy = true, unemployment = true, churn = true, firms = true;
+        string where = string.Empty;
+        long firmsPerJob = (long)first.Firms * 1000000 / Math.Max(1, first.Jobs);
+        for (int i = 1; i <= years; i++)
+        {
+            LivingYear y = run.Years[i];
+            int births = y.Births * 1000 / Math.Max(1, y.People), deaths = y.Deaths * 1000 / Math.Max(1, y.People);
+            bool r = births >= GrowBirthsLeast && births <= GrowBirthsMost && deaths >= GrowDeathsLeast && deaths <= GrowDeathsMost;
+            if (!r && where.Length == 0)
+            {
+                where = " (year " + i + ": births " + births + ", deaths " + deaths + " a thousand)";
+            }
+            rates &= r;
+            ages &= y.Elders <= ElderMost && y.Children >= ChildrenLeast;
+            vacancy &= y.Vacancy >= VacancyLeast && y.Vacancy <= VacancyMost;
+            unemployment &= y.Unemployment >= GrowUnemploymentLeast && y.Unemployment <= GrowUnemploymentMost;
+            long perJob = (long)y.Firms * 1000000 / Math.Max(1, y.Jobs);
+            firms &= Math.Abs(perJob - firmsPerJob) * 1000 <= firmsPerJob * FirmsPerJobBand;
+            if (i >= 2)
+            {
+                int was = run.Years[i - 1].Firms;
+                churn &= y.Opened * 1000L >= was * (long)ChurnLeast && y.Opened * 1000L <= was * (long)ChurnMost && y.Closed * 1000L >= was * (long)ChurnLeast
+                         && y.Closed * 1000L <= was * (long)ChurnMost;
+            }
+        }
+        int ten = Math.Min(10, years);
+        double homes = ten > 0 && first.Flats > 0 ? Math.Pow((double)run.Years[ten].Flats / first.Flats, 1.0 / ten) - 1 : 0;
+        int earlyBuilt = ten > 0 ? run.Years[ten].Flats - first.Flats : 0, lateBuilt = years >= 20 ? last.Flats - run.Years[years - 10].Flats : 0;
+        string pct = (growth * 100).ToString("F2", CultureInfo.InvariantCulture);
+        Check(growth >= GrowthLeast && growth <= GrowthMost && decades && firstYear, "living years" + label + ": the people grow " + pct + "% a year on average over " + years
+              + " years (" + first.People + " to " + last.People + "), never falling more than " + DecadeFallMost / 10 + "% in ten years, the first year within " + FirstYearBand / 10 + "% of the first day");
+        Check(rates, "living years" + label + ": births " + GrowBirthsLeast + " to " + GrowBirthsMost + " and deaths " + GrowDeathsLeast + " to " + GrowDeathsMost + " a thousand people every year"
+              + where + " (" + last.Births + " and " + last.Deaths + " in the last)");
+        Check(ages, "living years" + label + ": never a retirement town: at most " + ElderMost / 10 + "% past 65 and at least " + ChildrenLeast / 10 + "% under 18 every year (the last "
+              + last.Elders / 10.0 + "% and " + last.Children / 10.0 + "%)");
+        Check(vacancy && unemployment, "living years" + label + ": free flats " + VacancyLeast / 10 + " to " + VacancyMost / 10 + "% and unemployment " + GrowUnemploymentLeast / 10 + " to "
+              + GrowUnemploymentMost / 10 + "% every year (the last " + last.Vacancy / 10.0 + "% and " + last.Unemployment / 10.0 + "%)");
+        Check(firms && churn, "living years" + label + ": the firms keep to the jobs (" + first.Firms + " for " + first.Jobs + " jobs to " + last.Firms + " for " + last.Jobs
+              + ") and open and close at " + ChurnLeast / 10 + " to " + ChurnMost / 10 + "% a year (" + last.Opened + " and " + last.Closed + " in the last)");
+        Check(homes >= HomesLeast && homes <= HomesMost && (years < 20 || lateBuilt <= earlyBuilt), "living years" + label + ": homes grow " + (homes * 100).ToString("F2", CultureInfo.InvariantCulture)
+              + "% a year over the first ten years (" + first.Flats + " to " + run.Years[ten].Flats + "), slowing as the land runs out (" + earlyBuilt + " in the first ten years, " + lateBuilt + " in the last)");
     }
 
     // The documented city stands for the living one on its first day: so a market is the same size whether the population runs or not.
@@ -341,7 +454,7 @@ internal static partial class Program
         {
             LivingYear y = run.YearOf(Math.Max(1, day));
             int cell = genre * GameRules.Platforms + platform;
-            residents = cell >= 0 && cell < y.Games.Length ? y.Games[cell] : 0;
+            residents = cell >= 0 && cell < y.Games.Length ? GameRules.Share(y.Games[cell], y.People, run.Years[0].People) : 0;   // as CityPopulation.Players hands it over
             return cell >= 0 && cell < run.GameStart.Length ? GameRules.Audience(residents, run.GameStart[cell], StudioBridges.World(genre, platform, day, year)) : -1;
         };
     }
@@ -382,7 +495,8 @@ internal static partial class Program
     private static void LivingReport(LivingRun run, string label)
     {
         Console.WriteLine("  the population" + label + " through " + (run.Years.Count - 1) + " of its years (" + (run.Years.Count - 1) * run.YearDays + " days):");
-        Console.WriteLine("  year  people  households  unemployed  births/deaths  small/mid/large firms  digital  players/start  rents least..most (bound) mean  pay least..most");
+        Console.WriteLine("  year  people  households  unemployed  births/deaths  small/mid/large firms  digital  players/start  rents least..most (bound) mean  pay least..most"
+                          + "  flats free  under18/65+  jobs firms opened/closed  built wanted land");
         for (int i = 0; i < run.Years.Count; i++)
         {
             LivingYear y = run.Years[i];
@@ -393,7 +507,9 @@ internal static partial class Program
             Console.WriteLine("  " + i.ToString().PadLeft(4) + "  " + y.People.ToString().PadLeft(6) + "  " + y.Households.ToString().PadLeft(10) + "  " + (y.Unemployment / 10.0).ToString("F1", CultureInfo.InvariantCulture).PadLeft(9) + "%"
                               + "  " + (y.Births + "/" + y.Deaths).PadLeft(13) + "  " + (y.Small + "/" + y.Mid + "/" + y.Large).PadLeft(21) + "  " + y.Digital.ToString().PadLeft(7)
                               + "  " + (y.PlayersStart > 0 ? (y.Players * 1000 / y.PlayersStart).ToString() : "-").PadLeft(13)
-                              + "  " + (y.RentLeast + ".." + y.RentMost + " (" + y.RentTopped + ") " + y.RentMean).PadLeft(30) + "  " + y.WageLeast + ".." + y.WageMost);
+                              + "  " + (y.RentLeast + ".." + y.RentMost + " (" + y.RentTopped + ") " + y.RentMean).PadLeft(30) + "  " + y.WageLeast + ".." + y.WageMost
+                              + "  " + y.Flats + " " + (y.Vacancy / 10.0).ToString("F1", CultureInfo.InvariantCulture) + "%  " + y.Children / 10 + "%/" + y.Elders / 10 + "%  " + y.Jobs + " " + y.Firms
+                              + " " + y.Opened + "/" + y.Closed + "  " + y.Built + " " + y.Wanted + " " + y.Land);
         }
         if (run.Demand)
         {
@@ -421,6 +537,51 @@ internal static partial class Program
         LivingReference(run, label);
         LivingMoney(run, label, report);
         LivingClock(run);
+        LivingGrowShort();
+    }
+
+    // Three of the default's years of the growing city: the growth's yearly bands where three years can hold them.
+    private static void LivingGrowShort()
+    {
+        const int Years = 3;
+        PopulationSim sim = LivingBandMade(LivingSeed, CalendarRules.YearDefault, out PopulationState s, out BandBuilder builder);
+        var run = new LivingRun { YearDays = CalendarRules.YearDefault };
+        LivingStart(run, sim, s);
+        for (int day = 2; day <= CalendarRules.YearDefault * Years + 1; day++)
+        {
+            int month = s.MonthNumber;
+            sim.BeginDay(day, Ordinary, null);
+            sim.RunAll();
+            BandDay(sim, s, builder, day);
+            LivingDay(run, sim, s, null, month, day);
+        }
+        string label = " (three years of the growing city)";
+        if (Environment.GetEnvironmentVariable("RLO_POPULATION_REPORT") == "1")
+        {
+            LivingReport(run, label);
+        }
+        LivingYear first = run.Years[0], last = run.Years[Years];
+        Check(Within(run.Years[1].People, first.People, FirstYearBand) && last.People > first.People && last.Flats > first.Flats && builder.Built > 0 && s.Growth.BuiltAll > 0,
+            "living years" + label + ": the people near the first day's in the first year and more by the third (" + first.People + " to " + last.People + "), homes built on the mod's land ("
+            + first.Flats + " to " + last.Flats + " flats, " + builder.Built + " buildings)");
+        bool ok = true;
+        string where = string.Empty;
+        for (int i = 1; i < run.Years.Count; i++)
+        {
+            LivingYear y = run.Years[i];
+            int births = y.Births * 1000 / Math.Max(1, y.People), deaths = y.Deaths * 1000 / Math.Max(1, y.People);
+            bool one = births >= GrowBirthsLeast && births <= GrowBirthsMost && deaths >= GrowDeathsLeast && deaths <= GrowDeathsMost && y.Elders <= ElderMost && y.Children >= ChildrenLeast
+                       && y.Vacancy >= VacancyLeast && y.Vacancy <= VacancyMost && y.Unemployment >= GrowUnemploymentLeast && y.Unemployment <= GrowUnemploymentMost
+                       && (i < 2 || y.Opened * 1000L >= run.Years[i - 1].Firms * (long)ChurnLeast && y.Closed * 1000L >= run.Years[i - 1].Firms * (long)ChurnLeast);
+            if (!one && where.Length == 0)
+            {
+                where = " (year " + i + ": births " + births + ", deaths " + deaths + ", 65+ " + y.Elders + ", under 18 " + y.Children + ", free " + y.Vacancy + ", out of work " + y.Unemployment
+                        + ", opened " + y.Opened + ", closed " + y.Closed + ")";
+            }
+            ok &= one;
+        }
+        Check(ok, "living years" + label + ": births and deaths at real rates, never a retirement town, free flats, unemployment and the firms' churn in their bands every year" + where);
+        GrowthChecks();
     }
 
     // The one clock: the same city lived through one of the save's years at 365 days goes as it does through the default's first (60 days): its

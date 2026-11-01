@@ -235,7 +235,21 @@ namespace RealLifeOverhaul.Population
             if (had == 0)
             {
                 Array.Copy(s.GameCounts, s.GameStart, Math.Min(s.GameCounts.Length, s.GameStart.Length));
+                s.Growth.PeopleStart = s.People.Live;
             }
+            if (s.Growth.PeopleStart <= 0)
+            {
+                s.Growth.PeopleStart = s.People.Live;   // a save from before the growth: its people at this load stand for the start's
+            }
+        }
+
+        /// <summary>
+        /// The residents who play read as the city's tastes, not its size: their count at the start's people (the studio sells to the world, whose
+        /// people the city's do not make; a city that grows on its new land is no bigger a market for a game sold everywhere).
+        /// </summary>
+        public static long Share(long now, long people, long peopleStart)
+        {
+            return people > 0 && peopleStart > 0 ? Math.Max(0L, now) * peopleStart / people : Math.Max(0L, now);
         }
 
         /// <summary>

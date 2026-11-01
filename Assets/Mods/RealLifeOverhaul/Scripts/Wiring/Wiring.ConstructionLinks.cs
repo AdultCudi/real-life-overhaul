@@ -100,6 +100,7 @@ namespace RealLifeOverhaul
                 ConstructionBridges.HideLook = HideLook;
                 ConstructionBridges.Extend = Extend;
                 ConstructionBridges.Convert = Convert;
+                ConstructionBridges.GrowthStarted = PopulationLinks.GrowthStarted;   // the living population counts the city's growth's starts (Wiring.PopulationLinks)
                 ConstructionBridges.LetUnit = LetUnit;
                 ConstructionBridges.Retraffic = Retraffic;
                 ConstructionBridges.StandingAll = StandingAll;
@@ -229,6 +230,7 @@ namespace RealLifeOverhaul
                 ConstructionBridges.HideLook = null;
                 ConstructionBridges.Extend = null;
                 ConstructionBridges.Convert = null;
+                ConstructionBridges.GrowthStarted = null;
                 ConstructionBridges.LetUnit = null;
                 ConstructionBridges.Retraffic = null;
                 ConstructionBridges.StandingAll = null;

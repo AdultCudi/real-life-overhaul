@@ -23,7 +23,7 @@ namespace RealLifeOverhaul.Population
     public static class PopulationStore
     {
         public const string Key = "reallife:population";
-        public const int Version = 2;
+        public const int Version = 3;   // 3: the city's growth (GrowthState) after the studio's start
         private static readonly byte[] Magic = { (byte)'R', (byte)'L', (byte)'O', (byte)'P' };
 
         /// <summary>The line through the district save's zip, its pieces compressed on the workers; null when a piece failed (write it with <see cref="Encode"/>).</summary>
@@ -43,15 +43,18 @@ namespace RealLifeOverhaul.Population
         }
 
         /// <summary>The line through one stream of the runtime's own gzip: for a save whose pieces failed, and for the checks.</summary>
-        public static string Encode(PopulationState s)
+        public static string Encode(PopulationState s) => EncodeVersion(s, Version);
+
+        /// <summary>The line as a version from 2 on wrote it (the checks' line of an older save): the columns that version had, and its head.</summary>
+        public static string EncodeVersion(PopulationState s, int version)
         {
             using (var raw = new MemoryStream())
             {
                 using (var gz = new GZipStream(raw, CompressionLevel.Optimal, true))
                 {
-                    Write(s, gz);
+                    Write(s, gz, version);
                 }
-                return Head + Convert.ToBase64String(raw.GetBuffer(), 0, (int)raw.Length);
+                return "v=" + version + "~" + Convert.ToBase64String(raw.GetBuffer(), 0, (int)raw.Length);
             }
         }
 
@@ -91,11 +94,13 @@ namespace RealLifeOverhaul.Population
 
         // ---------------------------------------------------------------- writing
 
-        public static void Write(PopulationState s, Stream to)
+        public static void Write(PopulationState s, Stream to) => Write(s, to, Version);
+
+        private static void Write(PopulationState s, Stream to, int version)
         {
             var w = new Writer(to);
             w.Bytes(Magic);
-            w.Int(Version);
+            w.Int(version);
             w.Int(s.Seed);
             w.Int(s.Day);
             w.Int(s.YearDays);
@@ -293,6 +298,10 @@ namespace RealLifeOverhaul.Population
                 w.Int(link.Person);
             }
             w.Ints(s.GameStart, GameRules.Cells);
+            if (version >= 3)
+            {
+                WriteGrowth(w, s.Growth);
+            }
             w.Flush();
         }
 
@@ -537,10 +546,72 @@ namespace RealLifeOverhaul.Population
             {
                 r.Ints(s.GameStart, GameRules.Cells);
             }
+            if (version >= 3)
+            {
+                ReadGrowth(r, s.Growth);   // before it the growth starts empty: the firms at the start's level, the land measured at the first month
+            }
             s.IndexRecords();
             GameRules.CountAll(s);
             GameRules.Start(s);
             return s;
+        }
+
+        // ---------------------------------------------------------------- the growth (version 3)
+
+        private static void WriteGrowth(Writer w, GrowthState g)
+        {
+            w.Int(g.Land.Length);
+            w.Ints(g.Land, g.Land.Length);
+            w.Ints(g.LandStart, g.Land.Length);
+            w.Int(g.Pressure);
+            w.Int(g.Wanted);
+            w.Int(g.Started);
+            w.Int(g.Built);
+            w.Int(g.StartedLast);
+            w.Int(g.BuiltLast);
+            w.Int(g.BuiltAll);
+            w.Int(g.Unformed);
+            w.Int(g.Year);
+            w.Int(g.Stock);
+            w.Int(g.Opened);
+            w.Int(g.Closed);
+            w.Int(g.OpenedLast);
+            w.Int(g.ClosedLast);
+            w.Int(g.FirmsYear);
+            w.Long(g.SpendAnchor);
+            w.Int(g.LabourAnchor);
+            w.Int(g.OfficesWanted);
+            w.Int(g.OfficesStarted);
+            w.Int(g.PeopleStart);
+            w.Int(g.OfficeAnchor);
+        }
+
+        private static void ReadGrowth(Reader r, GrowthState g)
+        {
+            int n = Count(r, PopulationCatalogue.DistrictsMost);
+            g.Land = r.Ints(n);
+            g.LandStart = r.Ints(n);
+            g.Pressure = r.Int();
+            g.Wanted = r.Int();
+            g.Started = r.Int();
+            g.Built = r.Int();
+            g.StartedLast = r.Int();
+            g.BuiltLast = r.Int();
+            g.BuiltAll = r.Int();
+            g.Unformed = r.Int();
+            g.Year = r.Int();
+            g.Stock = PopulationCatalogue.Clamp(r.Int(), PopulationCatalogue.StockLeast, CityFirmRules.StockMost);
+            g.Opened = r.Int();
+            g.Closed = r.Int();
+            g.OpenedLast = r.Int();
+            g.ClosedLast = r.Int();
+            g.FirmsYear = r.Int();
+            g.SpendAnchor = r.Long();
+            g.LabourAnchor = r.Int();
+            g.OfficesWanted = r.Int();
+            g.OfficesStarted = r.Int();
+            g.PeopleStart = r.Int();
+            g.OfficeAnchor = r.Int();
         }
 
         // ---------------------------------------------------------------- the ledgers (version 2)

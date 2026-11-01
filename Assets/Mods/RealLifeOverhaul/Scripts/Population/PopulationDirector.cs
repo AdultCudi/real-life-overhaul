@@ -354,6 +354,12 @@ namespace RealLifeOverhaul.Population
                 if (_attentionCursor == -2)
                 {
                     PopulationGame.ReadSeeds(_seeds, Staff());   // the businesses as they stand: one pass over the game's registrations
+                    _attentionCursor = GenerateRules.MonthOf(_jobDay, _state.YearDays) != _state.MonthNumber ? -3 : 0;
+                    return false;
+                }
+                if (_attentionCursor == -3)
+                {
+                    Rescan();   // a month turns: the buildings finished since, and the mod's land left
                     _attentionCursor = 0;
                     return false;
                 }
@@ -374,6 +380,69 @@ namespace RealLifeOverhaul.Population
             {
                 Fault("the day's turn", e);
                 return true;
+            }
+        }
+
+        private readonly List<CityBuilding> _scan = new List<CityBuilding>(2048);
+
+        // The month's look at the city as it stands (POPULATION.md section 14): a building finished, demolished, extended or converted since joins the
+        // table as a load binds it (the households of a flat gone look for another at the month's moves), and each district's own land left for homes
+        // is measured from the construction game. One pass over the game's buildings and a lookup each; binding again only when one differs.
+        private void Rescan()
+        {
+            PopulationState s = _state;
+            if (s == null || _sim.Busy)
+            {
+                return;
+            }
+            if (PopulationGame.ReadCity(_buildings, _districts))
+            {
+                _scan.Clear();
+                for (int i = 0; i < _buildings.Count; i++)
+                {
+                    CityBuilding b = _buildings[i];
+                    int d = b.District >= 0 && b.District < _districts.Count ? s.DistrictOf(_districts[b.District].Id) : -1;
+                    if (d < 0)
+                    {
+                        continue;   // a district the table does not know joins at the next load
+                    }
+                    b.District = d;
+                    _scan.Add(b);
+                }
+                if (GrowthRules.Differs(s, _scan))
+                {
+                    int homes = GrowthRules.Homes(s);
+                    int away = _sim.Rebuild(new List<CityBuilding>(_scan));
+                    Logger?.Info("Living population: the city's buildings changed since the last look; " + s.Buildings.Count + " buildings, " + (GrowthRules.Homes(s) - homes) + " flats more"
+                                 + (away > 0 ? ", " + away + " household(s) to look for another flat" : string.Empty) + ".");
+                }
+            }
+            for (int d = 0; d < s.Districts.Count; d++)
+            {
+                int sqm = PopulationBridges.LandHomes != null ? PopulationBridges.LandHomes(s.Districts[d].Id) : -1;
+                GrowthRules.SetLand(s, d, sqm < 0 ? -1 : GrowthRules.FlatsOf(s, d, sqm));
+            }
+        }
+
+        /// <summary>
+        /// The city's developers started a building of a use (homes 0, offices 2) and so many m2 in a district of the mod's: the year's homes or offices
+        /// started, the pull closed once enough are.
+        /// </summary>
+        internal void GrowthStarted(string district, int use, int sqm)
+        {
+            PopulationState s = _state;
+            int d = s != null ? s.DistrictOf(district) : -1;
+            if (d < 0 || _broken)
+            {
+                return;
+            }
+            if (use == 0)
+            {
+                GrowthRules.Start(s, GrowthRules.FlatsOf(s, d, sqm), _sim.Pulls);
+            }
+            else if (use == 2)
+            {
+                GrowthRules.StartOffices(s, GrowthRules.JobsOf(sqm), _sim.Pulls);
             }
         }
 

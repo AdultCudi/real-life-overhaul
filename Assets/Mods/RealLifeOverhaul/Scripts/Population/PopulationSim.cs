@@ -85,6 +85,27 @@ namespace RealLifeOverhaul.Population
             _phase = month != s.MonthNumber ? Phase.MonthRoll : Phase.LifeBegin;
         }
 
+        /// <summary>
+        /// The city's table bound to its buildings as they stand now (one finished, demolished, extended or converted since the load), as a load binds
+        /// a saved population (CityTable.Rebind: a household whose flat is gone looks for another at the month's moves); the employers set again and
+        /// the homes finished counted. Between jobs only. The households marked away, or -1 while a job runs.
+        /// </summary>
+        public int Rebuild(List<CityBuilding> buildings)
+        {
+            PopulationState s = State;
+            if (Busy || s == null || buildings == null)
+            {
+                return -1;
+            }
+            int before = GrowthRules.Homes(s);
+            int away = CityTable.Rebind(s, buildings, new List<PopDistrict>(s.Districts));
+            LabourRules.Setup(s, _seeds);
+            Measure = MeasureRules.Measure(s.Buildings, s.Districts, null);
+            CityTable.Middles(s);
+            GrowthRules.Finished(s, GrowthRules.Homes(s) - before);
+            return away;
+        }
+
         /// <summary>Runs the job to its end at once.</summary>
         public void RunAll()
         {
@@ -535,6 +556,13 @@ namespace RealLifeOverhaul.Population
                 s.Businesses.LastTakings[b] = s.Businesses.MonthTakings[b];
             }
             HousingRules.Pulls(s, Measure, TakingsLast, TakingsBefore, Pulls);
+            long spending = 0;
+            for (int d = 0; d < s.Figures.Length; d++)
+            {
+                spending += s.Figures[d].Spending;
+            }
+            GrowthRules.Month(s, Pulls);      // the homes the city wants, and the mod's land's homes pull from them
+            CityFirmRules.Month(s, spending);     // the office floors' firms follow the people
             for (int h = 0; h < s.Households.Count; h++)
             {
                 if (s.Households.Alive(h))
@@ -587,6 +615,8 @@ namespace RealLifeOverhaul.Population
                 _seekers[f] += s.People.Status[p] == (byte)Status.Unemployed ? 1 : 0;
                 _workers[f] += s.People.Status[p] == (byte)Status.Worker ? 1 : 0;
             }
+            Life.Waiting.Clear();   // a new month's singles look afresh
+            Life.WaitingIds.Clear();
             s.MonthNumber = GenerateRules.MonthOf(_day, s.YearDays);
         }
 

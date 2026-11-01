@@ -173,7 +173,8 @@ namespace RealLifeOverhaul.Population
             et.Building[e] = building;
             et.Kind[e] = (byte)kind;
             et.Field[e] = (byte)field;
-            et.Slots[e] = Math.Max(0, slots);
+            et.Base[e] = Math.Max(0, slots);
+            et.Slots[e] = kind == EmployerKind.Tenants ? CityFirmRules.SlotsNow(s, e) : et.Base[e];   // the firms' level of the city's growth, a new floor let over the months
             et.Business[e] = business;
             et.Players[e] = players;
             if (business >= 0)
@@ -182,8 +183,8 @@ namespace RealLifeOverhaul.Population
             }
         }
 
-        // An employer with more people than slots lets the commuters go first, then the last residents taken on.
-        private static void Shed(PopulationState s, int e)
+        /// <summary>An employer with more people than slots lets the commuters go first, then the last residents taken on.</summary>
+        public static void Shed(PopulationState s, int e)
         {
             EmployerTable et = s.Employers;
             int over = et.Filled[e] + et.Commuters[e] - et.Slots[e];

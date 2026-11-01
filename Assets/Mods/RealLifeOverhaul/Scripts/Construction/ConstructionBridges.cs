@@ -199,6 +199,12 @@ namespace RealLifeOverhaul.Construction
         /// <summary>A district building on a lot made another use, a game building type its structure takes: null when done, else why not. Default: none.</summary>
         public static Func<string, string, string> Convert;
 
+        /// <summary>
+        /// The city's growth started a building in a district (0 Uptown, 1 Cedar Heights) of a use (BuildUse) and so many m2 of floor: the living population
+        /// counts the year's homes and offices started against those it wants.
+        /// </summary>
+        public static Action<int, int, int> GrowthStarted;
+
         /// <summary>The unit of the city's building on a lot let to its tenant now (a grown building's, plans/growables.md): null when done, else why not. Default: refused.</summary>
         public static Func<string, string> LetUnit;
 
@@ -500,6 +506,7 @@ namespace RealLifeOverhaul.Construction
             LetUnit = null;
             Retraffic = null;
             Convert = null;
+            GrowthStarted = null;
             StandingAll = null;
             Holdings = null;
             SpacesOf = null;

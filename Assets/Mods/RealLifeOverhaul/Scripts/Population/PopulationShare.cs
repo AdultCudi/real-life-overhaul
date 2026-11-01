@@ -57,6 +57,9 @@ namespace RealLifeOverhaul.Population
             Join(t, s.GameCounts);
             t.Append('|');
             Join(t, s.GameStart);
+            GrowthState gr = s.Growth;   // the city's growth: a section a reader from before it never asks for
+            t.Append("~w:");
+            Join(t, gr.Pressure, gr.Wanted, gr.Started, gr.Built, gr.StartedLast, gr.BuiltLast, gr.BuiltAll, gr.Stock, gr.Opened, gr.Closed, gr.OpenedLast, gr.ClosedLast, gr.PeopleStart);
             PopDemandShare.Write(t, demand);
             return t.ToString();
         }
@@ -115,6 +118,14 @@ namespace RealLifeOverhaul.Population
                 {
                     mine.GameCounts[i] = (int)g[i];
                     mine.GameStart[i] = (int)g[GameRules.Cells + i];
+                }
+                long[] w = Find(parts, "w:") is string growth ? Numbers(growth, '|', 13) : null;
+                if (w != null)
+                {
+                    GrowthState gr = mine.Growth;
+                    gr.Pressure = (int)w[0]; gr.Wanted = (int)w[1]; gr.Started = (int)w[2]; gr.Built = (int)w[3]; gr.StartedLast = (int)w[4]; gr.BuiltLast = (int)w[5];
+                    gr.BuiltAll = (int)w[6]; gr.Stock = (int)w[7]; gr.Opened = (int)w[8]; gr.Closed = (int)w[9]; gr.OpenedLast = (int)w[10]; gr.ClosedLast = (int)w[11];
+                    gr.PeopleStart = (int)w[12];
                 }
                 PopDemandShare.Apply(demand, Find(parts, PopDemandShare.Factors), Find(parts, PopDemandShare.Districts));
                 return true;

@@ -136,6 +136,14 @@ namespace RealLifeOverhaul.Population
             {
                 Detail(v, m, shown[i]);
             }
+            GrowthState growth = CityPopulation.Live != null ? CityPopulation.Live.Growth : null;
+            if (growth != null && demands[0] == PopDemand.FlatBuyers)
+            {
+                // the builders' work the city's growth asks for: the homes it wants a year and those started and finished this year
+                v.Details.Add(ViewFigure.Of("reallife_pop_fig_homes_wanted", growth.Wanted, ViewFormat.Count));
+                v.Details.Add(ViewFigure.Of("reallife_pop_fig_homes_started", growth.Started, ViewFormat.Count));
+                v.Details.Add(ViewFigure.Of("reallife_pop_fig_homes_built", growth.Built, ViewFormat.Count));
+            }
             v.Primary = "reallife_pop_dem_act_all";
             v.PrimaryTarget = ViewTarget.To(ViewKind.Demands, 0);
             return v;

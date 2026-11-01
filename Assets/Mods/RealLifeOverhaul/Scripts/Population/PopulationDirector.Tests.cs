@@ -62,7 +62,9 @@ namespace RealLifeOverhaul.Population
             });
             Logger?.Info("Living population test: " + days + " day(s) lived at once in " + ((UnityEngine.Time.realtimeSinceStartup - started) * 1000f).ToString("0", CultureInfo.InvariantCulture)
                          + " ms: people " + people + " to " + s.People.Live + ", " + births + " births, " + deaths + " deaths, " + moved + " households came or left; the population is on day "
-                         + s.Day + ", ahead of the game's " + Save.Day + ".");
+                         + s.Day + ", ahead of the game's " + Save.Day + "; growth: pressure " + s.Growth.Pressure + ", homes wanted " + s.Growth.Wanted + " a year, started "
+                         + s.Growth.Started + ", built " + s.Growth.Built + ", the mod's land " + GrowthRules.LandLeft(s.Growth) + " in 1000 left, firms at " + s.Growth.Stock + " in 1000, opened "
+                         + s.Growth.Opened + ", closed " + s.Growth.Closed + ".");
         }
 
         /// <summary>Options, Tests: a household picked at random, and what it earned, paid, spent and saved this month in a notice.</summary>

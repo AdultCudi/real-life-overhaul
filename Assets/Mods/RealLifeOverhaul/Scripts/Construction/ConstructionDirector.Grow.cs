@@ -127,6 +127,40 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
+        /// <summary>
+        /// The homes floor a district's land can still take, m2, for the living population's growth (POPULATION.md section 14: the city grows on the
+        /// mod's land alone): each free space's usual building, and each of the city's standing home buildings' storeys under the building code (the
+        /// redevelopers' extensions); -1 while the district is not standing or the construction game rests (a Going Public session). Asked once a month.
+        /// </summary>
+        public int HomesRoomSqm(int district)
+        {
+            if (!Running || GoingPublic.InSession || !DistrictLives())
+            {
+                return -1;
+            }
+            long sqm = 0;
+            CellGrid grid = Cells;
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            for (int c = 0; c < grid.Columns.Count; c++)
+            {
+                if (IsFreeColumn(c) && LotOfColumn(c, out LotView lot) && lot.District == district && seen.Add(lot.Id))
+                {
+                    sqm += LandRules.UsualArea(lot.Width, lot.Depth, lot.Class);
+                }
+            }
+            ReadStanding();
+            int limit = UptownStoreys();
+            for (int i = 0; i < _standing.Count; i++)
+            {
+                StandingView b = _standing[i];
+                if (BuildCatalogue.UseOf(b.Type) == (int)BuildUse.Homes && DistrictOfLot(b.Lot) == district && CityTakes(b))
+                {
+                    sqm += (long)RedevelopRules.ExtensionRoom(b.Storeys, limit) * Math.Max(0, b.SizeSqm);
+                }
+            }
+            return (int)Math.Min(int.MaxValue / 4, sqm);
+        }
+
         /// <summary>Grown sites under way now in a district (the player's own are not the city's to count).</summary>
         public int GrowingIn(int district)
         {
@@ -223,6 +257,17 @@ namespace RealLifeOverhaul.Construction
                     g.Until = day + GrowRules.PlansDays(_state.Seed, g.Id);
                     _state.Grows.Add(g);
                     _state.CityLand += g.Price;
+                    if (ConstructionBridges.GrowthStarted != null && !Down("GrowthStarted"))
+                    {
+                        try
+                        {
+                            ConstructionBridges.GrowthStarted(district, (int)g.Use, GrowArea(g));   // the living population counts the year's homes and offices started, its pull closed once enough are
+                        }
+                        catch (Exception e)
+                        {
+                            Faulty("GrowthStarted", e);
+                        }
+                    }
                     TidyGrows();
                     GrowsChanged();
                     Paper("reallife_grow_paper_bought", GrowName(g), count);

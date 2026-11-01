@@ -21,10 +21,17 @@ namespace RealLifeOverhaul.Population
         /// </summary>
         public static Func<string, int, int> UseOf;
 
+        /// <summary>
+        /// The homes floor a district's own land can still take, m2 (its free land and the building code's room over its homes), by its id; -1 for a district
+        /// the mod builds nothing new in (the game's own, POPULATION.md section 14). Asked at a month's turn.
+        /// </summary>
+        public static Func<string, int> LandHomes;
+
         public static void Reset()
         {
             People = null;
             UseOf = null;
+            LandHomes = null;
         }
     }
 }

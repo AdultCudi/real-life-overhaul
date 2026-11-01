@@ -355,6 +355,7 @@ namespace RealLifeOverhaul.Population
         public byte[] Kind = new byte[0];
         public byte[] Field = new byte[0];         // the field of most of its jobs
         public int[] Slots = new int[0];
+        public int[] Base = new int[0];            // an office building's other firms: the jobs its let floors held when measured (CityFirmRules moves Slots from it); not saved
         public int[] Filled = new int[0];          // residents in its jobs
         public int[] Commuters = new int[0];       // people from the region in its jobs
         public int[] Business = new int[0];        // its business's slot, -1 for none (an office's other floors, the public sector)
@@ -376,6 +377,7 @@ namespace RealLifeOverhaul.Population
             Kind[e] = (byte)kind;
             Field[e] = (byte)field;
             Slots[e] = Math.Max(0, slots);
+            Base[e] = Slots[e];
             Filled[e] = 0;
             Commuters[e] = 0;
             Business[e] = business;
@@ -397,6 +399,7 @@ namespace RealLifeOverhaul.Population
             Array.Resize(ref Kind, capacity);
             Array.Resize(ref Field, capacity);
             Array.Resize(ref Slots, capacity);
+            Array.Resize(ref Base, capacity);
             Array.Resize(ref Filled, capacity);
             Array.Resize(ref Commuters, capacity);
             Array.Resize(ref Business, capacity);
@@ -627,6 +630,7 @@ namespace RealLifeOverhaul.Population
         public readonly RegionState Region = new RegionState();
         public readonly CityBooks Books = new CityBooks();
         public readonly List<PersonLink> Links = new List<PersonLink>(64);
+        public readonly GrowthState Growth = new GrowthState();
         public int[] RentIndex = new int[0];     // thousandths of the game's own rent, by district
         public DistrictFigures[] Figures = new DistrictFigures[0];
         public int[] WantFlats = new int[0];     // households that looked for a flat in each district this month and found none

@@ -19,6 +19,20 @@ namespace RealLifeOverhaul.Population
         /// <summary>True while the population runs (Living population on, a city it knows, the people generated or loaded).</summary>
         public static bool Running => Live != null;
 
+        /// <summary>
+        /// The construction demand: homes a year the city wants started on the mod's land (POPULATION.md section 14), 0 with none or no population. The city's
+        /// developers answer it through the mod's land's homes pull (<see cref="Pull"/>); the player's construction company through its tenders.
+        /// </summary>
+        public static int HomesWanted => Live != null ? Live.Growth.Wanted : 0;
+
+        /// <summary>Homes finished in the city in the running year of the population (any builder's).</summary>
+        public static int HomesBuilt => Live != null ? Live.Growth.Built : 0;
+
+        /// <summary>Firms opened and closed in the running year of the population.</summary>
+        public static int FirmsOpened => Live != null ? Live.Growth.Opened : 0;
+
+        public static int FirmsClosed => Live != null ? Live.Growth.Closed : 0;
+
         /// <summary>True on a Going Public guest that follows the host's population: the figures are the host's, the people the host's to keep.</summary>
         public static bool Following { get; internal set; }
 
@@ -186,7 +200,7 @@ namespace RealLifeOverhaul.Population
                 return false;
             }
             int cell = genre * GameRules.Platforms + platform;
-            now = s.GameCounts[cell];
+            now = GameRules.Share(s.GameCounts[cell], s.People.Live > 0 ? s.People.Live : s.HostPeople, s.Growth.PeopleStart);
             start = s.GameStart[cell];
             return true;
         }
