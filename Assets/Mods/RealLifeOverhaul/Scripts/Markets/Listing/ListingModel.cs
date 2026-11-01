@@ -109,6 +109,11 @@ namespace RealLifeOverhaul.Markets
         public int BoughtBp, SoldBp, BackBp;     // ...what the founder bought and sold of the company in it, and what it bought back
         public double Carry;                     // the other holders' part of the profit not yet moved, under a whole unit
         public readonly List<OwnDeal> Deals = new List<OwnDeal>(8);
+        public bool Mixed;                       // its takings by trade are followed (ListingSector); false: listed before they were, or by an older version
+        public readonly double[] Mix = new double[MarketInputs.Trades.Length];   // ...a day by trade, money, over about a quarter
+        public int Had;                          // ...the sectors (bits) it took money in since the last review
+        public int Lead = -1;                    // a sector that led the one it is in at the last review (-1 none)...
+        public int LeadCount;                    // ...at so many reviews in a row
 
         public long Others(Stock s)
         {

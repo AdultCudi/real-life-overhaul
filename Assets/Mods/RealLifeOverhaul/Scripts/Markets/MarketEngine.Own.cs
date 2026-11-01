@@ -198,6 +198,7 @@ namespace RealLifeOverhaul.Markets
         private void OwnBusiness(Stock s, in MarketEnv env, int from, int day)
         {
             double moved = 0.0;
+            ListingSector.Take(s.Own, env, Year);   // yesterday's takings by trade: the business it is in now
             // Statement days from before the days played now (set aside while its founder was a guest) count all the same.
             for (int d = env.OwnFrom + 1; d < from && d <= env.OwnFrom + env.OwnDays; d++)
             {
@@ -217,6 +218,11 @@ namespace RealLifeOverhaul.Markets
                     if (s.ResultsDay <= day)
                     {
                         s.ResultsDay = MarketTrading.NextTradingDay(day);
+                    }
+                    int to = ListingSector.Review(s.Own, (int)s.Sector, false, out int trade);
+                    if (to >= 0)
+                    {
+                        Resector(s, (MarketSector)to, trade, day, env);
                     }
                 }
                 moved += ListingRules.Day(s, env, Year, d);
@@ -244,6 +250,57 @@ namespace RealLifeOverhaul.Markets
             {
                 Receive(s, -whole, ListingMoney.HoldersBack);
             }
+        }
+
+        /// <summary>
+        /// A company listed before its business was followed (an older save), or the test: its sector from the books' takings
+        /// by trade over so many days, at once. Only on its founder's machine playing alone, before any guest has the market.
+        /// True when it moved; a company with nothing in its books is followed from now.
+        /// </summary>
+        public bool SectorFromBooks(Stock s, long[] takings, int days, bool again)
+        {
+            Finish();
+            if (s == null || s.Own == null || !s.Listed || State.Following)
+            {
+                return false;
+            }
+            if (!ListingSector.Seed(s.Own, takings, days, again))
+            {
+                s.Own.Mixed = true;
+                return false;
+            }
+            int to = ListingSector.Review(s.Own, (int)s.Sector, true, out int trade);
+            ListingSector.Seed(s.Own, takings, days, true);   // the review spent what it was earning in: the next review reads this quarter's too
+            if (to < 0)
+            {
+                return false;
+            }
+            Resector(s, (MarketSector)to, trade, State.Day, State.Env);
+            return true;
+        }
+
+        // The company moves to another sector: the sectors' indices do not jump, its profile is the new sector's with its own
+        // margin and debt kept, and the city hears of it.
+        private void Resector(Stock s, MarketSector to, int trade, int day, in MarketEnv env)
+        {
+            MarketSector from = s.Sector;
+            Index(out int _);
+            double value = MarketIndex.Value(s);
+            SectorWeigh((int)from, value, false);
+            string tradeId = trade >= 0 && trade < MarketInputs.Trades.Length ? MarketInputs.Trades[trade] : s.Def.Trade;
+            s.Def = MarketCatalogue.PlayerDef(s.Id, s.Name, s.Ticker, to, s.Own.DebtBp, tradeId);
+            s.Sector = to;
+            SectorWeigh((int)to, value, true);
+            s.Own.LeverY = ListingRules.LeverMargin(s, env);
+            s.DebtRate = MarketValuation.UsualDebtRate(s, env);
+            ListingRules.Figures(s, env, Year);
+            ListingFile f = State.Listing;
+            if (s.Own.Owner == State.Me && f != null && f.StockId == s.Id)
+            {
+                f.Sector = (int)to;
+                f.Trade = trade >= 0 ? trade : f.Trade;
+            }
+            Say(new MarketNews { Day = day, Kind = MarketNewsKind.OwnSector, Stock = s.Id, A = (int)from, B = (int)to });
         }
 
         private void OwnResults(Stock s, int day)

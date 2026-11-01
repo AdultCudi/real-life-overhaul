@@ -570,7 +570,7 @@ namespace RealLifeOverhaul.Economy
             box.Section("reallife_mgr_sec_manager");
             int review = mp.Region != null && !CompanyDirector.Sick(mp.Region) ? mp.Region.Skill : 0;   // a regional manager off sick reviews nothing
             box.RowPair("reallife_mgr_skill", h.Skill.ToString(), "reallife_mgr_mistake_chance", CompanyText.Share(ManagerRules.MistakeChance(h.Skill, review)));
-            box.Row("reallife_co_emp_wage", CompanyText.Wage(h.Wage));
+            box.Row("reallife_wage_row_paid", CompanyText.Wage(h.Wage));
             box.Row("reallife_mgr_allowance", CompanyText.T("reallife_co_row_a_day", "amount",
                 CompanyText.Money(ManagerRules.Allowance(ManagerCatalogue.RolePlace, h.Skill, _director.Index))));
             if (mp.Own != null && mp.Own.Id != h.Id)
@@ -748,7 +748,7 @@ namespace RealLifeOverhaul.Economy
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_co_back", () => Go("ra:" + district));
             box.Section("reallife_mgr_sec_manager");
             box.Row("reallife_mgr_skill", h.Skill.ToString());
-            box.Row("reallife_co_emp_wage", CompanyText.Wage(h.Wage));
+            box.Row("reallife_wage_row_paid", CompanyText.Wage(h.Wage));
             box.Row("reallife_mgr_allowance", CompanyText.T("reallife_co_row_a_day", "amount",
                 CompanyText.Money(ManagerRules.Allowance(ManagerCatalogue.RoleRegion, h.Skill, _director.Index))));
             string holds = _director.RegionHeldBy(h.Id);

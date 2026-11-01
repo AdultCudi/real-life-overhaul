@@ -122,6 +122,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Networking\NetworkCatalogue.cs" Link="Mod\NetworkCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Diagnostics\FurnitureRules.cs" Link="Mod\FurnitureRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\Prices.cs" Link="Mod\Prices.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\PaidWage.cs" Link="Mod\PaidWage.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\LineNeeds.cs" Link="Mod\LineNeeds.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WholeMoney.cs" Link="Mod\WholeMoney.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Life\LifeMoneyRules.cs" Link="Mod\LifeMoneyRules.cs" />
@@ -336,6 +337,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Listing\ListingRules.cs" Link="Mod\ListingRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Listing\ListingBook.cs" Link="Mod\ListingBook.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Listing\ListingVotes.cs" Link="Mod\ListingVotes.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Listing\ListingSector.cs" Link="Mod\ListingSector.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketSetup.cs" Link="Mod\MarketSetup.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketCarryOver.cs" Link="Mod\MarketCarryOver.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketCodec.cs" Link="Mod\MarketCodec.cs" />
@@ -594,6 +596,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\Branch\OwnBankRules.Branch.cs" Link="Mod\OwnBankRules.Branch.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\Tiers\BankTiers.cs" Link="Mod\BankTiers.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\Tiers\OwnBankRules.Tiers.cs" Link="Mod\OwnBankRules.Tiers.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\Dividends\BankDividends.cs" Link="Mod\BankDividends.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\Dividends\OwnBankRules.Dividends.cs" Link="Mod\OwnBankRules.Dividends.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerCatalogue.cs" Link="Mod\DealerCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerState.cs" Link="Mod\DealerState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerRules.cs" Link="Mod\DealerRules.cs" />

@@ -24,6 +24,7 @@ namespace RealLifeOverhaul.Economy
 
         // Read from the game; never saved.
         public string Name = string.Empty;
+        public int Base;                // the game's own hourly wage, hundredths, as the game charges it before the city's prices
         public int Wage;                // the game's hourly wage at today's prices, hundredths
         public int Going;               // the going rate for them, hundredths an hour
         public int Hours;               // hundredths of an hour worked on the day that has ended

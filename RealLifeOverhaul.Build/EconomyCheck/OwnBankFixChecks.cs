@@ -95,7 +95,7 @@ internal static partial class Program
               && app.Contains("_director.Found(name, licence, capital, out string why)") && app.Contains("_director.Sell(value, out string why)"),
             "own bank fix: founding and selling go ahead only at the sums the player confirmed");
         int pay = found.IndexOf("OwnBankGame.Pay(capital", System.StringComparison.Ordinal);
-        Check(pay > 0 && found.IndexOf("OwnBankGame.Give(licence, OwnBankCatalogue.LicenceKey, hq, GameBooks.Licensing)", pay, System.StringComparison.Ordinal) > pay
+        Check(pay > 0 && found.IndexOf("OwnBankGame.Give(licence, OwnBankCatalogue.LicenceKey, hq, named, GameBooks.Licensing)", pay, System.StringComparison.Ordinal) > pay
               && found.IndexOf("|| !OwnBankGame.Pay(capital", System.StringComparison.Ordinal) < 0,
             "own bank fix: a capital payment the game refuses gives the licence back");
     }

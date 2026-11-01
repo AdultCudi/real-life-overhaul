@@ -1,4 +1,4 @@
-0.63.4
+0.63.5
 
 Fixed
-- Since 0.62.0 the phone could grow as tall as the screen, with every app showing at once and no pages. The mod's apps were put on the phone hidden and switched on later, which another mod that pages the phone never noticed. They now join the phone together once they are all ready, already shown, so the pages work again.
+- Your own company on the stock market kept the sector of your first business for good, even after you sold it, and its share price followed that sector. The sector now follows what the company earns in: its takings over about a quarter, reviewed at the start of each quarter, with a notice and a City Ledger line when it moves. A company already listed is set by its last quarter's takings when you load. A tech firm counts as software. The company's page shows the sector, its takings by sector and the next review.

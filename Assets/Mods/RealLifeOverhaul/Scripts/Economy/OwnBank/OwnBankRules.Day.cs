@@ -11,8 +11,9 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>
         /// One day of a running bank: confidence, savers (no new money past its level's deposits), loans, lending (no further
-        /// than its level's book), the fund, the staff, the profit into the capital, a fire sale if the savers cannot be paid,
-        /// the regulator, then the owner's pay out of the profit. A bank closed is wound up at once (into.WoundUp).
+        /// than its level's book, and never into a fixed pay it holds back), the fund, the staff, the profit into the capital,
+        /// a fire sale if the savers cannot be paid, the regulator, then the owner's pay and an automatic dividend when one
+        /// falls due. A bank closed is wound up at once (into.WoundUp).
         /// </summary>
         public static void Day(OwnBank b, BankCity c, int day, IList<FundQuote> quotes, BankDay into)
         {
@@ -125,7 +126,10 @@ namespace RealLifeOverhaul.Economy
                 b.Reserves += repaid;
                 into.Repaid += repaid;
             }
-            Lend(b, c, m, into, working, LoanRoom(b, caps));
+            // A fixed pay is held back from the lending and the fund with the day's running costs still to come out of the
+            // cash, so the evening finds the pay over the reserve; a bank paying no fixed sum lends exactly as before.
+            long hold = PayAhead(b) > 0 ? Running(b, c, tier, level, y, out _, out long ahead) + ahead : 0;
+            Lend(b, c, m, into, working, LoanRoom(b, caps), hold);
 
             if (b.Reserves > 0)
             {
@@ -140,16 +144,11 @@ namespace RealLifeOverhaul.Economy
             b.Reserves += counter;
             into.Counter = counter;
 
-            OwnBankFund.Day(b, c, day, quotes, into);
+            OwnBankFund.Day(b, c, day, quotes, into, hold);
 
             // Staff: the hall of its level and a share of what it holds, giving way at scale to its crews' wages, its level's
             // systems and the deposit insurance. What the scale adds never takes the capital below nothing in one day.
-            int s = c.Scale;
-            long before = BankTiers.HallDayCents[tier] * level / PriceRules.Start
-                          + (b.Savings * OwnBankCatalogue.StaffOnSavings + (b.Lent + b.InArrears) * OwnBankCatalogue.StaffOnLoans) / (1000L * y);
-            long staff = s <= 0 ? before : before * (EndScaleRules.Full - s) / EndScaleRules.Full + Crews(b) * OwnBankCatalogue.CostYearDays / y * level / PriceRules.Start;
-            long systems = s <= 0 ? 0 : EndScaleRules.Mix(0L, BankTiers.SystemsDayCents[tier] * OwnBankCatalogue.CostYearDays / y * level / PriceRules.Start
-                                                           + b.Savings * OwnBankCatalogue.InsuranceBp / (10000L * y), s);
+            long staff = Running(b, c, tier, level, y, out long before, out long systems);
             long spare = b.Capital + into.Interest + into.Reserve + into.Recovered + into.Counter - into.Savers - into.Lost - into.Court - Math.Min(before, staff);
             staff = Math.Min(before, staff) + EndScaleRules.Take(ref spare, Math.Max(0, staff - before));
             systems = EndScaleRules.Take(ref spare, systems);
@@ -176,8 +175,11 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
 
-            // The owner's pay out of the day's profit; the rest stays in the capital (OwnerPay).
-            long pay = OwnerPay(b, into.Profit, c.Level);
+            // The owner's pay, a share of the day's profit or the fixed sum; the rest stays in the capital (OwnerPay).
+            long pay = OwnerPay(b, into.Profit, c.Level, out long wanted, out int held);
+            b.PayWanted = wanted;
+            b.PayGiven = pay;
+            b.PayHeld = held;
             if (pay > 0)
             {
                 b.Capital -= pay;
@@ -186,6 +188,7 @@ namespace RealLifeOverhaul.Economy
                 b.PaidMonth += pay;
                 b.PaidAll += pay;
             }
+            Dividends(b, c, day, into);
             if (b.Scare > 0)
             {
                 b.Scare = Math.Max(0, b.Scare - Math.Max(1, b.Scare * OwnBankCatalogue.ScareFade / (1000 * m)));
@@ -202,10 +205,22 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        // The day's staff as it stands (before: the hall and its share of what the bank holds, as before the scale) and, at
+        // scale, its systems and deposit insurance, before what the scale adds is weighed against the capital.
+        private static long Running(OwnBank b, BankCity c, int tier, long level, int y, out long before, out long systems)
+        {
+            int s = c.Scale;
+            before = BankTiers.HallDayCents[tier] * level / PriceRules.Start
+                     + (b.Savings * OwnBankCatalogue.StaffOnSavings + (b.Lent + b.InArrears) * OwnBankCatalogue.StaffOnLoans) / (1000L * y);
+            systems = s <= 0 ? 0 : EndScaleRules.Mix(0L, BankTiers.SystemsDayCents[tier] * OwnBankCatalogue.CostYearDays / y * level / PriceRules.Start
+                                                      + b.Savings * OwnBankCatalogue.InsuranceBp / (10000L * y), s);
+            return s <= 0 ? before : before * (EndScaleRules.Full - s) / EndScaleRules.Full + Crews(b) * OwnBankCatalogue.CostYearDays / y * level / PriceRules.Start;
+        }
+
         // Each segment goes LendFollow of a month's way to the loans its borrowers want, as far as the reserves over what
-        // the deposits need, the capital over the lending line and the room its level's book leaves allow; nothing in a run
-        // or a breach, nor while the book is at its level's most.
-        private static void Lend(OwnBank b, BankCity c, int m, BankDay into, int working, long book)
+        // the deposits need (less the cash held back, hold), the capital over the lending line and the room its level's
+        // book leaves allow; nothing in a run or a breach, nor while the book is at its level's most.
+        private static void Lend(OwnBank b, BankCity c, int m, BankDay into, int working, long book, long hold)
         {
             if (b.Run || b.Stage == Regulator.Breach || book <= 0)
             {
@@ -223,8 +238,8 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
-            long cash = b.Reserves - ReserveNeed(b);
-            long room = CapitalNow(b) * 1000 / OwnBankCatalogue.LendRatio - RiskWeighted(b);
+            long cash = FreeCash(b) - hold;
+            long room = FreeCapital(b) * 1000 / OwnBankCatalogue.LendRatio - RiskWeighted(b);
             if (cash <= 0 || room <= 0)
             {
                 return;
@@ -390,6 +405,8 @@ namespace RealLifeOverhaul.Economy
             b.Deadline = b.Deadline > 0 ? b.Deadline - days : 0;
             b.RunFrom = b.RunFrom > 0 ? b.RunFrom - days : 0;
             b.WatchTold = b.WatchTold == int.MinValue ? int.MinValue : b.WatchTold - days;
+            b.DivFrom -= days;
+            b.DivDay = b.DivDay > 0 ? b.DivDay - days : 0;
         }
     }
 }
