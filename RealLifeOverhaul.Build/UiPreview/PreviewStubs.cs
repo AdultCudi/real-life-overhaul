@@ -27,6 +27,14 @@ namespace RealLifeOverhaul
         public static Action<T1, T2> Wrap<T1, T2>(Action<T1, T2> handler) => handler;
 
         public static UnityAction<T> Listener<T>(UnityAction<T> handler) => handler;
+
+        public static void NoMesh(UnityEngine.UI.VertexHelper mesh) => mesh.Clear();
+
+        public static void FailMesh(FeatureGuard guard, Exception e, UnityEngine.UI.VertexHelper mesh)
+        {
+            Debug.LogException(e);
+            mesh.Clear();
+        }
     }
 
     public static class HotSpots
