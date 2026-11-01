@@ -27,6 +27,10 @@ The rules are in [docs/standards/ui.md](../../../../../docs/standards/ui.md) (RL
    in every language, look and frame, and `preview.ps1` renders it.
 5. **A host**: the game file that shows it creates a `UiHost` over the full menu (as `ContactsKit` does). It binds it
    to the game's input (`UiGame`), the look (`UiDirector.Dark`) and the motion setting.
+   The game keeps its full menu and apps switched off until they open, so the host binds over them switched off: every
+   search of the scene passes `true` or `false` for switched off objects, the canvases are walked with
+   `GetComponentsInParent<Canvas>(true)` and `UiBindRules`, and a screen not built yet is looked at again
+   (`UiBindRules.Wait`), never given up for the session. EconomyCheck fails a search that does not say.
 
 ## Review checklist
 

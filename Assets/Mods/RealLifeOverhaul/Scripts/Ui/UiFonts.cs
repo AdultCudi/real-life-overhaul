@@ -43,6 +43,15 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Whether the bundle's own faces are drawing (false: the game's font stands in).</summary>
         public static bool Own { get; private set; }
 
+        /// <summary>The bundle's file as it was looked for, for the interface's line at load.</summary>
+        public static string BundleFile { get; private set; }
+
+        /// <summary>How many of the faces came in from the bundle.</summary>
+        public static int Faces { get; private set; }
+
+        /// <summary>Of the faces the bundle should hold.</summary>
+        public static int FacesWanted => Names.Length;
+
         /// <summary>Starts reading the bundle in the background; <see cref="Step"/> finishes it.</summary>
         public static void Begin(string bundlePath)
         {
@@ -50,6 +59,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
+            BundleFile = bundlePath;
             if (string.IsNullOrEmpty(bundlePath) || !System.IO.File.Exists(bundlePath))
             {
                 Said?.Invoke("UI: the interface's fonts are not installed (" + bundlePath + "); the game's font stands in");
@@ -157,6 +167,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 AddFallback(f);
             }
+            Faces = got;
             Own = got == Assets.Length;
             if (!Own)
             {
