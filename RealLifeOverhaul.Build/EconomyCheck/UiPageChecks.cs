@@ -219,7 +219,8 @@ internal static partial class Program
               && ContactsRoutes.Route(0, 0) == ContactsRoute.None && ContactsRoutes.Route(1, 0) != ContactsRoute.Call,
             "ui contacts: Call is its own route, never the group list it was read as in beta 3");
         string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Contacts"));
-        string screen = File.ReadAllText(System.IO.Path.Combine(folder, "ContactsScreen.cs")), kit = File.ReadAllText(System.IO.Path.Combine(folder, "ContactsKit.cs"));
+        string screen = File.ReadAllText(System.IO.Path.Combine(folder, "ContactsScreen.cs")), kit = File.ReadAllText(System.IO.Path.Combine(folder, "ContactsKit.cs"))
+            + File.ReadAllText(System.IO.Path.Combine(folder, "..", "Host", "UiGameHost.cs"));
         string press = Between(screen, "public bool Press(int command, int arg)", "private static bool Done(");
         var routed = new HashSet<string>(StringComparer.Ordinal);
         foreach (Match match in Regex.Matches(press, @"case ContactsRoute\.(\w+):"))
@@ -234,7 +235,7 @@ internal static partial class Program
         string callNow = Between(screen, "private bool CallNow(Contact open)", "private static bool Click(");
         Check(all && press.Contains("Click(_map)") && callNow.Contains("_call.onClick.Invoke()") && callNow.Contains("ContactsKit.Call(_call)"),
             "ui contacts: the screen acts on every route, View on map through the game's own button and Call through the listener the game wires on its call button");
-        Check(screen.Contains("\"Contacts (kit): \"") && kit.Contains("_calling.interactable") && kit.Contains("HandBack()") && kit.Contains("menu.alpha"),
+        Check(screen.Contains("\"Contacts (kit): \"") && kit.Contains("call.interactable") && kit.Contains("_back()") && kit.Contains("menu.alpha"),
             "ui contacts: each press says its line in Player.log, a call hands the kit back when the game frees its call button, and the kit fades with the full menu");
     }
 }

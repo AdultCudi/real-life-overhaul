@@ -9,11 +9,12 @@ namespace RealLifeOverhaul.Ui
 {
     /// <summary>
     /// The RLO interface in the game: its fonts read behind the loading screen, its one pool of tweens, the game's own
-    /// font as the last fallback, the City Ledger's look by the Flare look option (dark, light or the phone's clock), and
-    /// once a second the screens it draws over the game's: the Contacts app (ContactsKit) while the switch is on, the
-    /// game's own app the moment it is off or anything fails. Once a city it says in Player.log whether it is on, whether
-    /// its fonts came in and which screens it drew over. The gallery opens from Options, Tests. Cost: nothing per frame;
-    /// a one-second timer comparing two switches and an app's state.
+    /// font as the last fallback, and once a second the screens it draws over the game's, each while the interface and its
+    /// own switch are on: the Contacts app (ContactsKit), the full menu's frame and the mod apps' faces (UiShell, with
+    /// the overhaul's pages, ShellPages), the boxes (ShellBoxes, ShellModBox) and the notices (ShellNotices); the game's own
+    /// screen the moment a switch is off or anything fails. A switch flipped mid screen gives the old face back at once.
+    /// Once a city it says in Player.log whether it is on, whether its fonts came in and which screens it drew over. The
+    /// gallery opens from Options, Tests. Cost: nothing per frame; a one-second timer comparing the switches and the screens' states.
     /// </summary>
     public sealed partial class UiDirector : MonoBehaviour
     {
@@ -58,13 +59,35 @@ namespace RealLifeOverhaul.Ui
             UiChrome.Bar = UiGame.Bar;
             UiIcons.Own = UiGame.OwnIcon;
             RealLifeOverhaul.GameUi.GameSprites.Want(UiGame.OwnIconNames);
+            UiShell.Start();
+            ShellModBox.Start();
+            UiScreenSwitches.Changed = Guard.Wrap(SwitchesChanged);
             StartCoroutine(Guard.Routine(Tick()));
+        }
+
+        // A screen's switch flipped on the options page: its old face back (or the kit's) now, not at the next second.
+        private void SwitchesChanged()
+        {
+            if (!FrameGuard.Off)
+            {
+                Slow();
+            }
+        }
+
+        // Every screen the kit draws over given back: the game's own, exactly as found.
+        internal static void RemoveAll(string why)
+        {
+            ContactsKit.Remove(why);
+            PhoneKit.Remove(why);
+            UiShell.Remove(why);
+            ShellPages.Remove(why);
+            ShellBoxes.Remove(why);
+            ShellNotices.Remove(why);
         }
 
         private void OnDestroy()
         {
-            ContactsKit.Remove("the mod unloading");
-            PhoneKit.Remove("the mod unloading");
+            RemoveAll("the mod unloading");
             if (Instance == this)
             {
                 Instance = null;
@@ -79,8 +102,7 @@ namespace RealLifeOverhaul.Ui
                 yield return second;
                 if (FrameGuard.Off)
                 {
-                    ContactsKit.Remove("its faults");
-                    PhoneKit.Remove("its faults");
+                    RemoveAll("its faults");
                     continue;
                 }
                 try
@@ -90,8 +112,7 @@ namespace RealLifeOverhaul.Ui
                 catch (Exception e)
                 {
                     Guard.Fail(FrameGuard, e, this);
-                    ContactsKit.Remove("a fault");
-                    PhoneKit.Remove("a fault");
+                    RemoveAll("a fault");
                 }
             }
         }
@@ -105,18 +126,20 @@ namespace RealLifeOverhaul.Ui
             bool city = SaveGameManager.Current != null && !UI.Load.LoadScene.isLoading;
             if (!city)
             {
-                ContactsKit.Remove("no city");
+                RemoveAll("no city");
                 ContactsKit.Rearm();
-                PhoneKit.Remove("no city");
                 PhoneKit.Rearm();
+                UiShell.Rearm();
+                ShellPages.Rearm();
+                ShellBoxes.Rearm();
+                ShellNotices.Rearm();
                 _said = 0;
                 _waited = 0;
                 return;
             }
             if (!On)
             {
-                ContactsKit.Remove("the switch is off");
-                PhoneKit.Remove("the switch is off");
+                RemoveAll("the switch is off");
                 if (_said == 0)
                 {
                     _said = 1;
@@ -124,8 +147,26 @@ namespace RealLifeOverhaul.Ui
                 }
                 return;
             }
-            ContactsKit.Install();
-            PhoneKit.Install();
+            if (UiScreenSwitches.On("contacts"))
+            {
+                ContactsKit.Install();
+            }
+            else
+            {
+                ContactsKit.Remove("its switch is off");
+            }
+            ShellPages.Install();
+            UiShell.Tick();
+            ShellBoxes.Install();
+            ShellNotices.Install();
+            if (UiScreenSwitches.On("phone"))
+            {
+                PhoneKit.Install();
+            }
+            else
+            {
+                PhoneKit.Remove("its switch is off");
+            }
             if (_said != 2 && UiFonts.Ready && (ContactsKit.Settled || ++_waited >= MostWait))
             {
                 _said = 2;
@@ -139,8 +180,9 @@ namespace RealLifeOverhaul.Ui
             string fonts = UiFonts.Own ? "fonts: the bundle's own (" + UiFonts.Faces + " faces)"
                 : UiFonts.Faces > 0 ? "fonts: " + UiFonts.Faces + " of " + UiFonts.FacesWanted + " faces from " + UiFonts.BundleFile + ", the game's font for the rest"
                 : "fonts: not loaded from " + (UiFonts.BundleFile ?? "(no path)") + ", the game's font stands in";
-            return "UI: the RLO interface is on; " + fonts + "; screens: Contacts (" + ContactsKit.State + "), the phone (" + PhoneKit.State + "), desk sessions ("
-                   + (Settings.LivingDesks ? "over the game's panel as each opens" : "off") + "), and from Options, Tests: the gallery, Contacts, the city's people, Flare in the city, a firm.";
+            return "UI: the RLO interface is on; " + fonts + "; screens: Contacts (" + ContactsKit.State + "), the phone (" + PhoneKit.State + "), " + ShellBoxes.States() + ", " + ShellNotices.States()
+                   + ", pages (" + ShellPages.States() + "), desk sessions (" + (Settings.LivingDesks ? "over the game's panel as each opens" : "off")
+                   + "); the full menu's frame while an app on the kit shows; from Options, Tests: the gallery and each screen.";
         }
     }
 }

@@ -457,12 +457,13 @@ internal static partial class Program
     {
         string kit = PhoneRead("Phone/PhoneKit.cs"), items = PhoneRead("Phone/PhoneItemsGame.cs"), screen = PhoneRead("Phone/PhoneScreen.cs");
         Check(kit.Length > 0 && items.Length > 0 && screen.Length > 0, "phone sources: the kit phone's files are where they were");
-        Check(PhoneBody(kit, "private static void Build(")?.Contains("pager.GetComponent<CanvasGroup>() ?? pager.gameObject.AddComponent<CanvasGroup>()") == true
-              && !kit.Contains("_container.gameObject.AddComponent<CanvasGroup>") && !kit.Contains("SetActive(false)"),
-            "phone sources: the game's grid is hidden by a group on the grid itself, never on its parents, and nothing of the game's is switched off");
-        string restore = PhoneBody(kit, "private static void Restore()") ?? string.Empty;
-        Check(restore.Contains("_grid.alpha = _gridAlpha;") && restore.Contains("_grid.blocksRaycasts = _gridBlocks;"),
-            "phone sources: the grid's group is given back exactly as found");
+        string conceal = PhoneBody(kit, "private static void Conceal()") ?? string.Empty;
+        Check(kit.Contains("new UiConceal()") && conceal.Contains("Buttons.Add(_grid.GetChild(i));") && conceal.Contains("Buttons.Prune();")
+              && !kit.Contains("AddComponent<CanvasGroup>") && !kit.Contains("SetActive(false)"),
+            "phone sources: the game's buttons are hidden one by one through the host's UiConceal, never the grid other mods fill, and nothing of the game's is switched off");
+        Check(PhoneBody(kit, "public static void Remove(")?.Contains("Buttons.Clear();") == true && PhoneBody(kit, "internal static void Shown()")?.Contains("Buttons.Hide();") == true
+              && PhoneBody(kit, "internal static void Frame(")?.Contains("Conceal();") == true,
+            "phone sources: a button added while the phone shows hides at once, and every one is given back exactly as found");
         Check(PhoneBody(items, "internal static bool Press(int index)")?.Contains("button.onClick.Invoke();") == true && kit.Contains("_collapse.onClick.Invoke();")
               && kit.Contains("_skip.onClick.Invoke();") && kit.Contains("_driver.onClick.Invoke();"),
             "phone sources: every press goes to the game's own button, so its handlers and other mods' run as a click would");
@@ -498,7 +499,7 @@ internal static partial class Program
         string locales = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
         string[] keys =
         {
-            "reallife_ui_phone", "reallife_opt_tip_ui_phone", "reallife_keys_phone", "reallife_phone_next", "reallife_phone_next_none", "reallife_phone_other_mods",
+            "reallife_ui_screen_phone", "reallife_opt_tip_ui_screen_phone", "reallife_keys_phone", "reallife_phone_next", "reallife_phone_next_none", "reallife_phone_other_mods",
             "reallife_phone_other_app", "reallife_phone_driver", "reallife_phone_test_second", "reallife_phone_test_kit_folder", "reallife_phone_test_classic",
             "reallife_phone_kit_test_none", "reallife_phone_kit_test_pass", "reallife_phone_kit_test_fail", "reallife_phone_kit_test_on", "reallife_phone_kit_test_off",
             "reallife_phone_place_first", "reallife_phone_move_info_first", "reallife_phone_move_first_full"

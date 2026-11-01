@@ -18,9 +18,9 @@ namespace RealLifeOverhaul.Ui
     /// they walk the city. The kit's phone stands inside the game's phone container, so it folds down and comes up with the
     /// game's collapse and hides whenever the game hides its phone (the full menu, the map, a mini game); it keeps its own
     /// size, the game's phone's, taller only with the radio row and never taller than the screen, whatever other mods do
-    /// to the game's container. The game's grid of buttons stays alive under it, unseen and untouchable through a
-    /// CanvasGroup on the grid alone, and every tile presses its button's own onClick, so the game's, the mod's and other
-    /// mods' apps open as before. The collapse, the radio and the private driver press the game's own buttons. The phone
+    /// to the game's container. The game's grid of buttons stays alive under it, each button unseen and untouchable through
+    /// the host's UiConceal (the grid is a parent other mods fill, so never the grid itself), and every tile presses
+    /// its button's own onClick, so the game's, the mod's and other mods' apps open as before. The collapse, the radio and the private driver press the game's own buttons. The phone
     /// takes the keys and the pad only when asked (the Phone key, the pad's View) and gives them back on Back at home.
     /// Another pager of the phone (one the classic pager stepped aside for) or another mod's screen on it has the kit
     /// stand down to the classic phone for the session, with one line in Player.log; a fault of the kit gives the classic
@@ -51,10 +51,10 @@ namespace RealLifeOverhaul.Ui
         private static RectTransform _container;
         private static CollapsibleWindow _window;
         private static SmartphoneUI _phone;
-        private static RectTransform _scaler;        // the phone's canvas, whose height is the screen's in canvas units
-        private static CanvasGroup _grid;
-        private static float _gridAlpha = 1f;
-        private static bool _gridInteractable = true, _gridBlocks = true, _hiding;
+        private static readonly UiConceal Buttons = new UiConceal();   // the grid's buttons, hidden and given back as found
+        private static Transform _grid;
+        private static RectTransform _scaler;        // the phone's root canvas, whose height is the screen's in canvas units
+        private static int _gridSeen;                // the grid's children as last handed to Buttons
         private static Button _collapse, _driver, _skip;
         private static Slider _volume;
         private static TMP_Text _song, _title, _driverLabel;
@@ -81,7 +81,7 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Puts the kit phone over the game's once per city; asked again once a second while the switches are on.</summary>
         public static void Install()
         {
-            if (!Settings.UiPhone)
+            if (!UiScreenSwitches.On(PhoneScreen.ScreenId))
             {
                 Remove("its switch is off");
                 return;
@@ -127,9 +127,9 @@ namespace RealLifeOverhaul.Ui
             _phone = phone;
             _window = window;
             _container = (RectTransform)window.transform;
-            Canvas[] above = phone.GetComponentsInParent<Canvas>(true);
-            _scaler = above.Length > 0 ? (RectTransform)above[UiBindRules.Root(above.Length)].transform : null;
-            _grid = pager.GetComponent<CanvasGroup>() ?? pager.gameObject.AddComponent<CanvasGroup>();
+            _grid = pager.transform;
+            _gridSeen = 0;
+            _scaler = RootCanvas(_container);
             _collapse = (GameContract.PhoneCollapse.Field?.GetValue(window) as GameObject)?.GetComponent<Button>();
             _driver = GameContract.PhoneDriver.Field?.GetValue(phone) as Button;
             _driverLabel = _driver != null ? _driver.GetComponentInChildren<TMP_Text>(true) : null;
@@ -262,7 +262,7 @@ namespace RealLifeOverhaul.Ui
             try
             {
                 Leave();
-                Restore();
+                Buttons.Clear();
                 if (_window != null && _onCollapse != null)
                 {
                     _window.onStateChange.RemoveListener(_onCollapse);
@@ -285,6 +285,8 @@ namespace RealLifeOverhaul.Ui
             _window = null;
             _container = null;
             _grid = null;
+            _gridSeen = 0;
+            _scaler = null;
             _onCollapse = null;
             _pressItem = -1;
             _minute = _day = -1;
@@ -316,6 +318,7 @@ namespace RealLifeOverhaul.Ui
             try
             {
                 Conceal();
+                Buttons.Hide();
                 Sort();
                 Size();
                 Readings(true);
@@ -351,31 +354,43 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // Kept as found, so it goes back so: another mod may have set the grid's group too.
+        // Walked by hand: the game builds the phone switched off, and the engine keeps rootCanvas up only while it is on.
+        private static RectTransform RootCanvas(Transform from)
+        {
+            RectTransform top = null;
+            for (Transform t = from; t != null; t = t.parent)
+            {
+                if (t.GetComponent<Canvas>() != null)
+                {
+                    top = t as RectTransform;
+                }
+            }
+            return top;
+        }
+
+        // The grid is a parent other mods fill, so its buttons are hidden one by one, each given back as found. Asked every
+        // frame the phone shows: the pager and other mods add and drop buttons at any time, and a new one hides at once.
         private static void Conceal()
         {
-            if (_grid == null || _hiding)
+            if (_grid == null)
             {
                 return;
             }
-            _gridAlpha = _grid.alpha;
-            _gridInteractable = _grid.interactable;
-            _gridBlocks = _grid.blocksRaycasts;
-            _hiding = true;
-            _grid.alpha = 0f;
-            _grid.interactable = false;
-            _grid.blocksRaycasts = false;
-        }
-
-        private static void Restore()
-        {
-            if (_grid != null && _hiding)
+            int seen = _grid.childCount;
+            for (int i = 0; i < _grid.childCount; i++)
             {
-                _grid.alpha = _gridAlpha;
-                _grid.interactable = _gridInteractable;
-                _grid.blocksRaycasts = _gridBlocks;
+                seen = unchecked(seen * 31 + _grid.GetChild(i).GetInstanceID());
             }
-            _hiding = false;
+            if (seen == _gridSeen)
+            {
+                return;
+            }
+            _gridSeen = seen;
+            Buttons.Prune();
+            for (int i = 0; i < _grid.childCount; i++)
+            {
+                Buttons.Add(_grid.GetChild(i));
+            }
         }
 
         // Just over the phone's own canvas: the game's question boxes, notices and other mods' canvases stay above it.
@@ -385,9 +400,9 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
-            Canvas[] above = _root.transform.parent.GetComponentsInParent<Canvas>(true);
+            Canvas phone = _root.transform.parent.GetComponentInParent<Canvas>(true);
             _canvas.overrideSorting = true;
-            _canvas.sortingOrder = (above.Length > 0 ? above[0].sortingOrder : 0) + 1;
+            _canvas.sortingOrder = (phone != null ? phone.sortingOrder : 0) + 1;
         }
 
         private static void Collapsed(bool collapsed)
@@ -436,6 +451,7 @@ namespace RealLifeOverhaul.Ui
                     Take();
                 }
             }
+            Conceal();
             Wheel();
             if (!Gate.Focused && _screen.Folder >= 0 && FolderKey())
             {
@@ -777,8 +793,9 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Test: the phone switched between the classic phone and the RLO phone for this session.</summary>
         public static void TestClassic()
         {
-            Settings.UiPhone = !Settings.UiPhone;
-            if (!Settings.UiPhone)
+            UiScreenSwitches.Set(UiScreenSwitches.OptionOf(PhoneScreen.ScreenId), !UiScreenSwitches.On(PhoneScreen.ScreenId));
+            bool on = UiScreenSwitches.On(PhoneScreen.ScreenId);
+            if (!on)
             {
                 Remove("the test switched it off");
             }
@@ -788,8 +805,8 @@ namespace RealLifeOverhaul.Ui
                 Rearm();
                 Install();
             }
-            Notifications.Show(NotificationType.Info, Settings.UiPhone ? "reallife_phone_kit_test_on" : "reallife_phone_kit_test_off", null, 8f, null, null, true, false);
-            string now = Settings.UiPhone ? "the RLO phone again (" + State + ")" : "the classic one, the grid seen and touchable again";
+            Notifications.Show(NotificationType.Info, on ? "reallife_phone_kit_test_on" : "reallife_phone_kit_test_off", null, 8f, null, null, true, false);
+            string now = on ? "the RLO phone again (" + State + ")" : "the classic one, the grid seen and touchable again";
             UiDirector.Logger?.Info("Phone check (switch): the phone is " + now + ": PASS.");
         }
 

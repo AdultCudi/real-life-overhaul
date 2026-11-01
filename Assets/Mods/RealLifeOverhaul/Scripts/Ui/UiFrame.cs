@@ -36,6 +36,7 @@ namespace RealLifeOverhaul.Ui
         public UiIcon Icon;     // the strip's icon
         public UiFrameKind Kind;
         public bool Pointer;    // the mouse leads (UiFocusMode): no key caps or prompts, the mouse does it by pointing
+        public bool Held;       // a layer of the kit's stands over the screen with the keys: its buttons' caps go, one key one thing
 
         /// <summary>No masthead: the status bar at the foot says the money, the day and the time.</summary>
         public static float MastheadHeight => 0f;
@@ -118,6 +119,13 @@ namespace RealLifeOverhaul.Ui
         public UiIcon[] Apps;         // the toolbar's app buttons, in order
         public UiRole[] AppTints;     // each one's category colour
         public int App = -1;          // the app that is open, filled cyan
+        public int[] AppBadges;       // each one's news, as its own button counts it; null for none
+        public int[] AppPictures;     // another mod's own picture for its tile (UiDraw.PictureKey); null or 0 for the glyph
+        public bool AllApps;          // the All apps tile ends the row
+        public bool AllAppsOpen;      // the All apps panel is up: its tile filled cyan
+        public int AllAppsBadge;      // news of apps the row never lists (another mod's), on the All apps tile
+        public bool AppsPress;        // the tiles are targets: true where the frame answers them (the full menu)
+        public string AllAppsLabel;   // the prompt's words for the pad's View, which opens All apps from anywhere
     }
 
     /// <summary>The status bar's source; the game file sets it. Status is the older one line, kept for the game file's log.</summary>

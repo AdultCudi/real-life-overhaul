@@ -22,6 +22,7 @@ namespace RealLifeOverhaul.Ui
         Pick7,
         Pick8,
         Pick9,
+        View,         // the pad's View: All apps in the full menu; no key of the keyboard's, so its prompt shows only with a pad
         Count
     }
 
@@ -116,6 +117,7 @@ namespace RealLifeOverhaul.Ui
                 case UiAction.Option: return ps ? UiIcon.PadTriangle : UiIcon.PadY;
                 case UiAction.TabPrev: return ps ? UiIcon.PadL1 : UiIcon.PadLb;
                 case UiAction.TabNext: return ps ? UiIcon.PadR1 : UiIcon.PadRb;
+                case UiAction.View: return UiIcon.Grid;   // the pad's View button, as All apps' own tile shows it
                 default: return UiIcon.None;
             }
         }

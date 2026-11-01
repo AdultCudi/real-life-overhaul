@@ -35,6 +35,7 @@ internal static partial class Program
         UiRulesFailOnce();
         UiSourceChecks();
         UiBindChecks();
+        UiHostChecks();
         UiTextKeys();
         UiTimings();
         Console.WriteLine("  Interface kit: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
@@ -499,6 +500,7 @@ internal static partial class Program
         public Action<UiScene, UiFrame, bool, IUiKeys, UiWords> Lay;
         public string Title = "Contacts";   // the app's name in the masthead
         public int[] Commands;              // every command its template answers: a target with another is a button nothing answers
+        public bool Overlay;                // over the world and every screen, taking no key (the notice cards): no prompt bar of its own
     }
 
     private static readonly int[] ListDetailCommands = { UiListDetail.Group, UiListDetail.SideAction, UiListDetail.Search, UiListDetail.Row, UiListDetail.Action,
@@ -727,7 +729,7 @@ internal static partial class Program
                         Check(UiCheckRules.SmallTargets(s, say) == 0, "ui screens: every target at least the least size: " + where);
                         Check(UiCheckRules.TooSmall(s, say) == 0, "ui screens: no text under the smallest size: " + where);
                         Check(UiCheckRules.Crowded(s, say) == 0, "ui screens: one primary action a layer, and no crowd: " + where);
-                        Check(UiCheckRules.NoPrompts(s, say) == 0, "ui screens: a prompt bar that says how to go back: " + where);
+                        Check(c.Overlay || UiCheckRules.NoPrompts(s, say) == 0, "ui screens: a prompt bar that says how to go back: " + where);
                         Check(UiCheckRules.Contradictions(s, say) == 0, "ui screens: no indicator contradicts its value: " + where);
                         Check(UiCheckRules.DeadSpace(s, say) == 0, "ui screens: no frame holds dead space: " + where);
                         Check(UiCheckRules.Unfilled(s, frame, say) == 0, "ui screens: the page uses its screen, anchored at its window's top and across its width: " + where);
@@ -748,7 +750,7 @@ internal static partial class Program
                             UiFrame pointer = frame;
                             pointer.Pointer = true;
                             c.Lay(s, pointer, true, keys, t);
-                            Check(UiCheckRules.NoPrompts(s, say) == 0 && PromptsDrawn(s) == 0 && UiCheckRules.Overlaps(s, say) == 0,
+                            Check((c.Overlay || UiCheckRules.NoPrompts(s, say) == 0) && PromptsDrawn(s) == 0 && UiCheckRules.Overlaps(s, say) == 0,
                                 "ui screens: with the mouse leading, the status bar shows no prompts and nothing else moves: " + where);
                         }
                     }
@@ -1097,10 +1099,10 @@ internal static partial class Program
             }
         }
         Check(files >= 40 && blind == "none", "ui binding: every search of the scene in the kit says whether it takes switched off objects (" + blind + ")");
-        string kit = File.ReadAllText(System.IO.Path.Combine(folder, "Contacts", "ContactsKit.cs"));
+        string kit = File.ReadAllText(System.IO.Path.Combine(folder, "Host", "UiGameHost.cs"));
         string director = File.ReadAllText(System.IO.Path.Combine(folder, "UiDirector.cs"));
         Check(kit.Contains("GetComponentsInParent<Canvas>(true)") && kit.Contains("UiBindRules.Stops(") && kit.Contains("UiBindRules.Wait(") && director.Contains("ContactsKit.Rearm()"),
-            "ui binding: the Contacts kit binds over the switched off menu, looks again when the app is not built yet and is looked at afresh each city");
+            "ui binding: the host binds over the switched off menu, looks again when a screen is not built yet and is looked at afresh each city");
         Check(director.Contains("\"UI: the RLO interface is on; \"") && director.Contains("UiFonts.BundleFile") && director.Contains("ContactsKit.State"),
             "ui binding: the director says once a city that the interface is on, how its fonts came in and which screens it drew over");
     }
