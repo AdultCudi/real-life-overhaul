@@ -21,7 +21,73 @@ internal static class UiSamples
     /// <summary>The overhaul's screens as their own runners draw them from sample view models.</summary>
     public static System.Collections.Generic.List<Sample> Overhaul(UiWords t)
     {
-        return new System.Collections.Generic.List<Sample>();
+        return new System.Collections.Generic.List<Sample>
+        {
+            new Sample { Name = "population", App = "Economy", Lay = (s, f, d, k) => UiDashboard.Lay(s, PopulationCity(t), f, d, k) },
+        };
+    }
+
+    /// <summary>The population's city view as PopulationPages makes it from PopulationViews.City: the residents' city at a glance.</summary>
+    public static UiDashboardModel PopulationCity(UiWords t)
+    {
+        var m = new UiDashboardModel
+        {
+            Title = "The city",
+            Subtitle = "Day 47 · 8,230 households",
+            TableTitle = "Districts",
+            SideTitle = t("reallife_ui_page_details", "Details"),
+            Figures = new[]
+            {
+                new UiFigureModel { Label = "People", Value = "16,040" },
+                new UiFigureModel { Label = "Households", Value = "8,230" },
+                new UiFigureModel { Label = "In work", Value = "93.6%" },
+                new UiFigureModel { Label = "Spent today", Value = "$1.42M" },
+            },
+            Side = new[]
+            {
+                new UiPairModel { Key = "Working class", Value = "41%" },
+                new UiPairModel { Key = "Middle class", Value = "44%" },
+                new UiPairModel { Key = "Upper class", Value = "15%" },
+                new UiPairModel { Key = "Taxes today", Value = "$212,400" },
+            },
+            HasAction = true,
+            Action = new UiActionModel { Label = "Who contributes", Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiDashboard.ActionCommand },
+        };
+        m.FigureCount = m.Figures.Length;
+        m.SideCount = m.Side.Length;
+        m.Table = new UiTableModel
+        {
+            Columns = new[]
+            {
+                new UiColumn { Title = "Districts" },
+                new UiColumn { Title = string.Empty },
+                new UiColumn { Title = string.Empty, Width = UiTokens.S16 * 3f, Right = true },
+            },
+            Rows = new[]
+            {
+                new[] { "Midtown", "Upper and middle", "3,610" },
+                new[] { "Murray Hill", "Middle", "2,480" },
+                new[] { "Garment District", "Working", "1,950" },
+                new[] { "Hell's Kitchen", "Middle", "2,120" },
+                new[] { "Lower Manhattan", "Working", "1,890" },
+                new[] { "Industry City", "Working", "1,740" },
+                new[] { "The Hamptons", "Upper", "310" },
+                new[] { "Uptown", "Middle", "1,120" },
+                new[] { "Cedar Heights", "Working", "820" },
+            },
+            RowCount = 9,
+            Selected = 0,
+            EmptyTitle = t("reallife_ui_page_empty", "Nothing here yet"),
+        };
+        m.Prompts = new[]
+        {
+            new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
+            new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_select", "Select") },
+            new UiPrompt { Action = UiAction.Alt, Label = "Who contributes" },
+            new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
+        };
+        m.PromptCount = m.Prompts.Length;
+        return m;
     }
 
     /// <summary>The wireframe's Contacts with Maya Okafor selected, as the kit's list-and-detail template draws it.</summary>

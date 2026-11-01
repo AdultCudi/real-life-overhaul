@@ -1022,6 +1022,7 @@ namespace RealLifeOverhaul
                     v => Settings.UiMotion = v)
                 .AddButton("reallife_ui_test_gallery", () => Ui.UiDirector.Instance?.TestGallery())
                 .AddButton("reallife_ui_test_contacts", () => Ui.UiDirector.Instance?.TestContacts())
+                .AddButton("reallife_ui_test_population", () => Ui.UiDirector.Instance?.TestPopulation())
                 .AddToggle(Settings.LivingStudioId, "reallife_studio_enabled", Settings.LivingStudio,
                     v => Settings.LivingStudio = v)
                 .AddButton("reallife_studio_test_start", () => Tech.TechDirector.Instance?.TestStudioStart())

@@ -44,6 +44,55 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        /// <summary>Options, Tests: the population's views (the city, then where its rows lead) over the screen.</summary>
+        public void TestPopulation()
+        {
+            try
+            {
+                if (!On)
+                {
+                    Notifications.Show(NotificationType.Warning, "reallife_ui_test_off", null, 8f);
+                    return;
+                }
+                if (!UiFonts.Ready || !Population.CityPopulation.Running)
+                {
+                    Notifications.Show(NotificationType.Warning, "reallife_ui_test_not_ready", null, 8f);
+                    return;
+                }
+                var screen = new PopulationScreen();
+                Overlay(screen, UiText.T("reallife_ui_page_population"), host => screen.Close = () =>
+                {
+                    host.Hide();
+                    host.gameObject.SetActive(false);
+                    Destroy(host.gameObject);
+                });
+            }
+            catch (Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        // A canvas of its own over every other, scaled as the game's, with a host for one screen on it.
+        private UiHost Overlay(IUiScreen screen, string title, Action<UiHost> closing)
+        {
+            var go = new GameObject("RealLife Interface " + screen.Id, typeof(RectTransform));
+            var canvas = go.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 32000;
+            var scaler = go.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(3840f, 2160f);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+            go.AddComponent<GraphicRaycaster>();
+            var host = go.AddComponent<UiHost>();
+            host.Bind(screen, UiGame.Instance, UiGame.Instance, Dark, Motion, UiFrame.FullMenuTop, UiFrame.FullMenuBand, title);
+            host.View.Scale = UiTokens.CanvasPerPx;
+            closing(host);
+            host.Show();
+            return host;
+        }
+
         /// <summary>Options, Tests: the phone's Contacts, which the kit draws while the switch is on.</summary>
         public void TestContacts()
         {

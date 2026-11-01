@@ -19,6 +19,8 @@ namespace RealLifeOverhaul.Ui
         public string StatsTitle;
         public UiStatModel[] Stats = new UiStatModel[0];
         public int StatCount;
+        public UiActionModel Action;          // the page's one primary action, drawn where tabs would be
+        public bool HasAction;
         public UiPrompt[] Prompts = new UiPrompt[0];
         public int PromptCount;
     }
@@ -34,7 +36,7 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class UiDashboard
     {
-        public const int TabCommand = 1, RowCommand = 2;
+        public const int TabCommand = 1, RowCommand = 2, ActionCommand = 3;
         public const float SideWidth = 380f;     // px
         public const int MostFigures = 4;        // figures in the row: more and they stop being glanceable
 
@@ -57,6 +59,11 @@ namespace RealLifeOverhaul.Ui
             {
                 float tabsW = TabsWidth(m.Tabs, keys);
                 UiDraw.Tabs(s, at, cx + cw - tabsW, y, tabsW, m.Tabs, m.Tab, keys, TabCommand);
+            }
+            else if (m.HasAction)
+            {
+                float bw = UiDraw.ButtonWidth(m.Action.Kind, m.Action.Label, m.Action.Icon, m.Action.Key, keys);
+                UiDraw.Button(s, at, cx + cw - bw, y, bw, UiTokens.Control, m.Action.Kind, m.Action.Label, m.Action.Icon, m.Action.Key, keys, ActionCommand, 0, m.Action.Disabled);
             }
             y += UiDraw.Snap(Math.Max(titleH, UiTokens.Control)) + UiTokens.S6;
             int count = Math.Min(m.FigureCount, MostFigures);

@@ -83,6 +83,10 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_prompt_back", "phone_call_button", "phone_view_on_map_button", "contacts_delete_all_button", "contactcategoryname_rivals",
                 "common_address", "myemployees_hourlywage", "contacts_today_opening_hours", "bizman_headhunters_skill_level_title"
             }),
+            new UiScreenDef("population", UiTemplate.Dashboard, "PopulationScreen", new[]
+            {
+                "reallife_ui_page_details", "reallife_ui_page_empty", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back"
+            }),
             new UiScreenDef("template_dashboard", UiTemplate.Dashboard, null, new[]
             {
                 "reallife_ui_prompt_move", "reallife_ui_prompt_page", "reallife_ui_prompt_select", "reallife_ui_prompt_back"

@@ -288,6 +288,11 @@ internal static partial class Program
         foreach (UiScreenDef def in UiScreens.All)
         {
             UiScreenDef d = def;
+            if (def.Id == "population")
+            {
+                cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = "Economy", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.PopulationCity(t), f, dark, k) });
+                continue;
+            }
             switch (def.Template)
             {
                 case UiTemplate.ListDetail:
@@ -644,7 +649,7 @@ internal static partial class Program
         mine.AddRange(new[]
         {
             "reallife_ui_enabled", "reallife_opt_tip_ui_interface", "reallife_ui_motion", "reallife_opt_tip_ui_motion", "reallife_ui_motion_0", "reallife_ui_motion_1",
-            "reallife_ui_motion_2", "reallife_opt_sec_ui", "reallife_ui_test_gallery", "reallife_ui_test_contacts", "reallife_ui_test_off", "reallife_ui_test_not_ready",
+            "reallife_ui_motion_2", "reallife_opt_sec_ui", "reallife_ui_test_gallery", "reallife_ui_test_contacts", "reallife_ui_test_population", "reallife_ui_page_population", "reallife_ui_test_off", "reallife_ui_test_not_ready",
             "reallife_ui_note_fallback", "reallife_guide_ui", "reallife_guide_ui_about", "reallife_meta_title_ui"
         });
         Check(AllIn(mine.ToArray(), out string missing), "ui texts: every key in en, pt and zh-cn (" + missing + ")");
