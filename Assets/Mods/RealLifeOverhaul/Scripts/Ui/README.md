@@ -26,9 +26,12 @@ mixed with a few other games: the owner's choice of 1 November 2026. The rules a
      screen or Calendar. A window over the city with its title strip, the app's sections as a sidebar of tinted icon
      entries (Football Manager's left menu) or, for an app of few sections, icon tabs across the top (`TabsAcross`: a
      translation too long for the tabs takes the sidebar). Then a page of blocks, each left out when empty: a person's
-     head (`UiProfileModel`: the face in its ring, the role and a status chip, key facts, stars) or the next step, the
-     actions, a band of figures, graded attributes, tables whose rows lead with an icon tile in their own colour with a
-     graded figure and a status chip, and people with portraits and two graded attribute bars, as many as fit and then
+     head (`UiProfileModel`: the face in its ring, the role, the firm behind its badge and a status chip, key facts and
+     stars on one rhythm) or the next step, the
+     actions, a band of figures, graded attributes, tables whose rows lead with an icon tile that says what differs
+     between them (left out when every row would show the same one; one column may take the room left with
+     `UiColumn.Grow`, so the first keeps to its words) with a graded figure and a status chip, and people with portraits
+     and two graded attribute bars, as many as fit and then
      a link to the rest (`PeopleMore`). A page about one thing puts it first as a hero (`UiHeroModel`: its picture on a
      large tile, its name, a progress bar and when the next step comes) with the figures beside it. The blocks are
      public (`Shell`, `Profile`, `Lead`, `Hero`, `Figures`, `Attributes`, `Table`, `People`), so a page shaped
@@ -86,7 +89,8 @@ Use these, and never draw a part of your own. All are in `UiDraw.Chrome.cs` unle
   one chosen. On a tile, draw the icon's filled cut (the last argument of `UiDraw.Icon`).
 - **Icon colours** (`UiIconTints.Of`): each icon has one colour, set once, the same on every screen and on the style
   sheet: an app or a section its category's, a genre its own, a state the state's. Pass `UiRole.None` as an icon's tint
-  to get it. Pass a colour only when the icon says a state (an info mark in amber for a warning).
+  to get it, and give each role one glyph. Never recolour a glyph to say a state: tell it with a meter, a chip, a ring
+  or the warning's own glyph.
 - **Rows and links** (`InfoRow`, `SectionRow`, `Band`): compact rows, the label in grey-blue at the left and the value
   in soft white at the right, or a cyan link with its magnifier that opens the thing or moves the camera. A section
   stands on a darker band under its label in capitals.
