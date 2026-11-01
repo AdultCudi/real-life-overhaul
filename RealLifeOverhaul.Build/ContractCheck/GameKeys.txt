@@ -345,6 +345,7 @@ ferris_wheel
 filebrowser_delete
 government
 hud_confirm_are_you_sure
+input_key_menu
 itemhelper_notification_you_are_to_stuffed_to_eat_this
 job_board
 main_menu_mods_warning_body
@@ -368,7 +369,9 @@ notification_need_empty_hands_to_interact
 persona_education_not_started
 phone_call_button
 phone_view_on_map_button
+playeractivityui_fast_forward
 playeractivityui_time_remaining
+playeractivityui_timemachine
 playerhud_currentjob_day_off
 poi_custom_location
 rival
@@ -383,6 +386,7 @@ smartphone_vooglemaps
 tax_import
 timestamp_full
 topbar_date_format
+tutorial_objectives
 tutorial_quest_establish_first_business_objective_1
 tutorial_quest_get_some_sleep_objective_4
 workpanel_business_is_currently_closed
