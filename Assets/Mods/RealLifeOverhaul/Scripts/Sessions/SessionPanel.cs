@@ -285,6 +285,10 @@ namespace RealLifeOverhaul.Sessions
         {
             try
             {
+                if (state != PlayerActivityState.NotStarted)
+                {
+                    Ui.SessionKit.Hide(this);   // the time in the chair is the game's own panel's: its skip and fast forward
+                }
                 if (state == PlayerActivityState.Finished)
                 {
                     End(true, true);   // however the panel ends it: the minutes sat settled once, and the player stood up
@@ -353,6 +357,7 @@ namespace RealLifeOverhaul.Sessions
         {
             try
             {
+                Ui.SessionKit.Hide(this);
                 UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;
                 if (_state == PlayerActivityState.Running && uis != null && uis.timeMachine != null && uis.timeMachine.isRunning)
                 {

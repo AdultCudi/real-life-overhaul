@@ -133,6 +133,30 @@ namespace RealLifeOverhaul.Ui
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ResetCancel() => PlayerAction.Cancel.Reset();
 
+        public void TakeAll()
+        {
+            try
+            {
+                ResetAll();
+            }
+            catch (Exception e) when (Guard.Missing(e))
+            {
+                Guard.DoesWithout(e, "holding the game's own keys back while a screen of the RLO interface stands over the game's panel");
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ResetAll()
+        {
+            PlayerAction.Confirm.Reset();
+            PlayerAction.Cancel.Reset();
+            PlayerAction.Interact.Reset();
+            PlayerAction.SecondaryInteract.Reset();
+            PlayerAction.SpecialInteract.Reset();
+            PlayerAction.RotateLeft.Reset();
+            PlayerAction.RotateRight.Reset();
+        }
+
         private static bool QuestionUp() => GameConfirm.IsOpen;
 
         public string Name(UiAction action)

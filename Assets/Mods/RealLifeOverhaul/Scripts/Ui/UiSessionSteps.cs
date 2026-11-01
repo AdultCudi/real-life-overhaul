@@ -54,7 +54,10 @@ namespace RealLifeOverhaul.Ui
             float aboutH = UiTextRules.WrappedHeight(m.About, UiStyle.Body, w, 2);
             UiDraw.Text(s, inside, x, y, w, UiStyle.Body, UiRole.Text2, m.About, UiFlags.Label | UiFlags.Wrap, 2);
             y += UiDraw.Snap(aboutH) + UiTokens.S6;
-            y += UiDraw.Snap(UiDraw.Steps(s, inside, x, y, w, m.StepLabel, m.StepCount, m.Step)) + UiTokens.S6;
+            if (m.StepCount > 0)
+            {
+                y += UiDraw.Snap(UiDraw.Steps(s, inside, x, y, w, m.StepLabel, m.StepCount, m.Step)) + UiTokens.S6;
+            }
             float main = w - SideWidth - UiTokens.S8;
             float qy = y;
             UiDraw.Text(s, inside, x, qy, main, UiStyle.SectionTitle, UiRole.Text, m.Question, UiFlags.Label | UiFlags.Wrap, 2);

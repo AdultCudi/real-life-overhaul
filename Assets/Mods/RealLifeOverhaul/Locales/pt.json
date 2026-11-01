@@ -27977,5 +27977,13 @@
   "reallife_ui_page_details": "Detalhes",
   "reallife_ui_page_empty": "Nada aqui ainda",
   "reallife_ui_page_population": "As pessoas da cidade",
-  "reallife_ui_test_population": "Abrir as pessoas da cidade na interface RLO"
+  "reallife_ui_test_population": "Abrir as pessoas da cidade na interface RLO",
+  "reallife_ui_flare_tab_account": "Conta",
+  "reallife_ui_flare_tab_trends": "Tendências",
+  "reallife_ui_flare_tab_offers": "Ofertas",
+  "reallife_ui_page_flare": "Flare na cidade",
+  "reallife_ui_page_studio": "Sua empresa",
+  "reallife_ui_page_desk": "Mesa",
+  "reallife_ui_test_flare": "Abrir o Flare na cidade na interface RLO",
+  "reallife_ui_test_firm": "Abrir sua primeira empresa de tecnologia na interface RLO"
 }

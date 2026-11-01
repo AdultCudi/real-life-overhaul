@@ -8,7 +8,8 @@ namespace RealLifeOverhaul.Ui
         Toggle = 0,
         Slider,
         Choice,
-        Pair
+        Pair,
+        Note       // a line of words (what a choice gives, what to do next): no target
     }
 
     /// <summary>One field of a form, under the section header it opens (or null to continue the section above).</summary>
@@ -74,7 +75,7 @@ namespace RealLifeOverhaul.Ui
             float contentH = 0f;
             for (int i = 0; i < m.FieldCount; i++)
             {
-                contentH += FieldHeight(ref m.Fields[i]);
+                contentH += FieldHeight(ref m.Fields[i], w);
             }
             float room = UiDraw.SnapDown(cy + ch - UiTokens.S8 - UiTokens.Control - UiTokens.S6 - y);
             float vh = Math.Min(room, UiDraw.Snap(contentH));
@@ -85,7 +86,7 @@ namespace RealLifeOverhaul.Ui
             int targets = 0;
             for (int i = 0; i < m.FieldCount; i++)
             {
-                targets += m.Fields[i].Kind != UiFieldKind.Pair ? 1 : 0;
+                targets += m.Fields[i].Kind != UiFieldKind.Pair && m.Fields[i].Kind != UiFieldKind.Note ? 1 : 0;
             }
             short list = s.AddList(targets, 0, targets, clip, -1);
             int index = 0;
@@ -113,6 +114,11 @@ namespace RealLifeOverhaul.Ui
                     case UiFieldKind.Choice:
                         node = UiDraw.Selector(s, arriving, fx, fy, w, f.Label, f.Value, FieldCommand, i);
                         fy += UiTokens.Control;
+                        break;
+                    case UiFieldKind.Note:
+                        float nh = UiTextRules.WrappedHeight(f.Label, UiStyle.Body, w - UiTokens.S6, 2);
+                        UiDraw.Text(s, arriving, fx + UiTokens.S3, fy, w - UiTokens.S6, UiStyle.Body, f.On ? UiRole.Text : UiRole.Text2, f.Label, UiFlags.Wrap | UiFlags.Truncate, 2);
+                        fy += UiDraw.Snap(nh) + UiTokens.S2;
                         break;
                     default:
                         fy += UiDraw.KeyValue(s, arriving, fx + UiTokens.S3, fy, w - UiTokens.S6, f.Label, f.Value);
@@ -145,13 +151,14 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Chrome(s, frame);
         }
 
-        private static float FieldHeight(ref UiFieldModel f)
+        private static float FieldHeight(ref UiFieldModel f, float w)
         {
             float h = f.Section != null ? UiDraw.Snap(UiTokens.S4 + UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2 : 0f;
             switch (f.Kind)
             {
                 case UiFieldKind.Slider: return h + UiTokens.Control + UiTokens.S4 + UiTokens.S1;
                 case UiFieldKind.Pair: return h + UiTokens.PairRow + UiTokens.S1;
+                case UiFieldKind.Note: return h + UiDraw.Snap(UiTextRules.WrappedHeight(f.Label, UiStyle.Body, w - UiTokens.S6, 2)) + UiTokens.S2 + UiTokens.S1;
                 default: return h + UiTokens.Control + UiTokens.S1;
             }
         }

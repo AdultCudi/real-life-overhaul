@@ -288,6 +288,14 @@ internal static partial class Program
         foreach (UiScreenDef def in UiScreens.All)
         {
             UiScreenDef d = def;
+            if (def.Id == "flare_city" || def.Id == "studio" || def.Id == "session_panel")
+            {
+                Action<UiScene, UiFrame, bool, IUiKeys, UiWords> lay = def.Id == "flare_city" ? (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.FlareCity(t), f, dark, k)
+                    : def.Id == "studio" ? (s, f, dark, k, t) => UiForm.Lay(s, UiSamples.StudioFirm(t), f, dark, k)
+                    : (Action<UiScene, UiFrame, bool, IUiKeys, UiWords>)((s, f, dark, k, t) => UiSessionSteps.Lay(s, UiSamples.DeskPanel(t), f, dark, k));
+                cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = def.Id == "flare_city" ? "Flare" : def.Id == "studio" ? "Tech" : "Desk", Lay = lay });
+                continue;
+            }
             if (def.Id == "population")
             {
                 cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = "Economy", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.PopulationCity(t), f, dark, k) });
@@ -649,7 +657,7 @@ internal static partial class Program
         mine.AddRange(new[]
         {
             "reallife_ui_enabled", "reallife_opt_tip_ui_interface", "reallife_ui_motion", "reallife_opt_tip_ui_motion", "reallife_ui_motion_0", "reallife_ui_motion_1",
-            "reallife_ui_motion_2", "reallife_opt_sec_ui", "reallife_ui_test_gallery", "reallife_ui_test_contacts", "reallife_ui_test_population", "reallife_ui_page_population", "reallife_ui_test_off", "reallife_ui_test_not_ready",
+            "reallife_ui_motion_2", "reallife_opt_sec_ui", "reallife_ui_test_gallery", "reallife_ui_test_contacts", "reallife_ui_test_population", "reallife_ui_page_population", "reallife_ui_test_flare", "reallife_ui_test_firm", "reallife_ui_page_flare", "reallife_ui_page_studio", "reallife_ui_test_off", "reallife_ui_test_not_ready",
             "reallife_ui_note_fallback", "reallife_guide_ui", "reallife_guide_ui_about", "reallife_meta_title_ui"
         });
         Check(AllIn(mine.ToArray(), out string missing), "ui texts: every key in en, pt and zh-cn (" + missing + ")");

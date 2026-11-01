@@ -87,6 +87,19 @@ namespace RealLifeOverhaul.Ui
             {
                 "reallife_ui_page_details", "reallife_ui_page_empty", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back"
             }),
+            new UiScreenDef("flare_city", UiTemplate.Dashboard, "FlareCityScreen", new[]
+            {
+                "reallife_ui_flare_tab_account", "reallife_ui_flare_tab_trends", "reallife_ui_flare_tab_offers", "reallife_ui_page_details", "reallife_ui_page_empty",
+                "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_page", "reallife_ui_prompt_back"
+            }),
+            new UiScreenDef("studio", UiTemplate.Form, "StudioPageScreen", new[]
+            {
+                "reallife_ui_page_empty", "reallife_ui_prompt_move", "reallife_ui_prompt_change", "reallife_ui_prompt_back"
+            }),
+            new UiScreenDef("session_panel", UiTemplate.Session, "ActivityScreen", new[]
+            {
+                "reallife_ui_page_desk", "reallife_ui_prompt_move", "reallife_ui_prompt_choose", "reallife_ui_prompt_back"
+            }),
             new UiScreenDef("template_dashboard", UiTemplate.Dashboard, null, new[]
             {
                 "reallife_ui_prompt_move", "reallife_ui_prompt_page", "reallife_ui_prompt_select", "reallife_ui_prompt_back"

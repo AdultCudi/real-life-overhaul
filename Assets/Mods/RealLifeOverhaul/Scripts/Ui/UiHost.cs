@@ -55,6 +55,9 @@ namespace RealLifeOverhaul.Ui
         private TMP_InputField _field;
         private UnityEngine.Events.UnityAction<string> _onTyped, _onTypingEnded;
 
+        /// <summary>The screen stands over a panel of the game's that answers the same keys: the host takes them from the game each frame.</summary>
+        public bool Exclusive;
+
         /// <summary>Told once when the host stops after a fault, so its owner gives the game's own screen back.</summary>
         public Action<Exception> Failed;
 
@@ -140,6 +143,10 @@ namespace RealLifeOverhaul.Ui
             float now = Time.unscaledTime;
             _state = default(UiInputState);
             _input.Read(ref _state);
+            if (Exclusive)
+            {
+                _input.TakeAll();
+            }
             Vector2 size = ((RectTransform)transform).rect.size;
             bool dark = _dark != null && _dark();
             if (_screen.Dirty || size != _laidSize || dark != _laidDark || (_state.Pad != _laidPad && !_typing))

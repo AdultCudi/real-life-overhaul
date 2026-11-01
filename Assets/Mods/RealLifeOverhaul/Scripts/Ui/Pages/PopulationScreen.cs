@@ -41,7 +41,7 @@ namespace RealLifeOverhaul.Ui
             }
             ViewTarget to = command == UiDashboard.RowCommand && arg >= 0 && arg < _view.Rows.Count ? _view.Rows[arg].Target
                 : command == UiDashboard.ActionCommand ? _view.PrimaryTarget : ViewTarget.None;
-            if (!to.Valid || to.Kind == ViewKind.Demands || to.Kind == ViewKind.Demand)
+            if (!to.Valid)
             {
                 return false;
             }
@@ -81,6 +81,13 @@ namespace RealLifeOverhaul.Ui
         {
         }
 
+        // The demand the population's director shows (null while it is settling or not running).
+        private static PopDemandState Demand()
+        {
+            PopDemandState m = PopulationDirector.Instance != null ? PopulationDirector.Instance.DemandShown : null;
+            return m != null && m.AnchorDay >= 0 ? m : null;
+        }
+
         private static PopulationView Build(ViewTarget to)
         {
             PopulationState s = CityPopulation.Live;
@@ -96,6 +103,8 @@ namespace RealLifeOverhaul.Ui
                 case ViewKind.Person: return PopulationViews.Person(s, to.Index);
                 case ViewKind.Business: return CityPopulation.Pools != null ? PopulationViews.Business(s, CityPopulation.Pools, to.Index) : null;
                 case ViewKind.Contributors: return CityPopulation.Pools != null ? PopulationViews.Contributors(s, CityPopulation.Pools) : null;
+                case ViewKind.Demands: return Demand() != null ? PopDemandViews.Demands(Demand()) : null;
+                case ViewKind.Demand: return Demand() != null ? PopDemandViews.Demand(Demand(), to.Index) : null;
                 default: return PopulationViews.City(s);
             }
         }

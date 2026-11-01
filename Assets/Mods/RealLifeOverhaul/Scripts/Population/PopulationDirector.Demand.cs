@@ -16,6 +16,9 @@ namespace RealLifeOverhaul.Population
         private readonly PopDemandJob _demandJob = new PopDemandJob();
         private PopDemandState _demand;            // this player's own; null while not running
         private PopDemandState _guestDemand;       // a guest's copy of the host's
+
+        /// <summary>The demand state the screens show, read-only: a guest's copy of the host's in a Going Public session, else this player's own; null while not running.</summary>
+        internal PopDemandState DemandShown => CityPopulation.Following ? _guestDemand : _demand;
         private bool _demandBegun;                 // the day's measure is under way
 
         // A step of the day's measure, after the population's own day; true when done (the factors in use from then).

@@ -24,7 +24,126 @@ internal static class UiSamples
         return new System.Collections.Generic.List<Sample>
         {
             new Sample { Name = "population", App = "Economy", Lay = (s, f, d, k) => UiDashboard.Lay(s, PopulationCity(t), f, d, k) },
+            new Sample { Name = "flare_city", App = "Flare", Lay = (s, f, d, k) => UiDashboard.Lay(s, FlareCity(t), f, d, k) },
+            new Sample { Name = "studio", App = "Tech", Lay = (s, f, d, k) => UiForm.Lay(s, StudioFirm(t), f, d, k) },
+            new Sample { Name = "session_panel", App = "Desk", Lay = (s, f, d, k) => UiSessionSteps.Lay(s, DeskPanel(t), f, d, k) },
         };
+    }
+
+    /// <summary>Flare's account in the city as FlareCityPages makes it: the tabs, the followers' figures, the posts that carried, the details.</summary>
+    public static UiDashboardModel FlareCity(UiWords t)
+    {
+        var m = new UiDashboardModel
+        {
+            Title = "Bloom Cafe on Flare",
+            Subtitle = "Followers in the city, by the residents who follow",
+            Tabs = new[] { t("reallife_ui_flare_tab_account", "Account"), t("reallife_ui_flare_tab_trends", "Trends"), t("reallife_ui_flare_tab_offers", "Offers") },
+            SideTitle = t("reallife_ui_page_details", "Details"),
+            Figures = new[]
+            {
+                new UiFigureModel { Label = "Followers", Value = "2,418" },
+                new UiFigureModel { Label = "This week", Value = "+164" },
+                new UiFigureModel { Label = "Reach", Value = "11,900" },
+                new UiFigureModel { Label = "Rating", Value = "4.3 / 5" },
+            },
+            Side = new[]
+            {
+                new UiPairModel { Key = "Visits from posts", Value = "312" },
+                new UiPairModel { Key = "Takings from posts", Value = "$4,860" },
+                new UiPairModel { Key = "Best district", Value = "Midtown" },
+            },
+        };
+        m.FigureCount = m.Figures.Length;
+        m.SideCount = m.Side.Length;
+        m.Table = new UiTableModel
+        {
+            Columns = new[] { new UiColumn { Title = "Posts that carried" }, new UiColumn { Title = string.Empty }, new UiColumn { Title = string.Empty, Width = UiTokens.S16 * 3f, Right = true } },
+            Rows = new[]
+            {
+                new[] { "Morning espresso, half price", "Monday", "1,240" },
+                new[] { "The new grinder is in", "Tuesday", "860" },
+                new[] { "Live music on Friday", "Wednesday", "790" },
+                new[] { "Oat milk now free", "Thursday", "530" },
+                new[] { "Closed for the parade", "Friday", "210" },
+                new[] { "Our first birthday", "Saturday", "1,870" },
+            },
+            RowCount = 6,
+            Selected = 0,
+            EmptyTitle = t("reallife_ui_page_empty", "Nothing here yet"),
+        };
+        m.Prompts = new[]
+        {
+            new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
+            new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_select", "Select") },
+            new UiPrompt { Action = UiAction.TabPrev, Label = t("reallife_ui_prompt_page", "Page") },
+            new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
+        };
+        m.PromptCount = m.Prompts.Length;
+        return m;
+    }
+
+    /// <summary>A game studio's page as StudioPages makes it from StudioViews.Studio: what to do next, the studio's lines, its choices and actions.</summary>
+    public static UiFormModel StudioFirm(UiWords t)
+    {
+        var m = new UiFormModel
+        {
+            Title = "Pixel Harbour Games",
+            About = "A game studio of 12 people, Midtown (Making a game)",
+            Fields = new[]
+            {
+                new UiFieldModel { Kind = UiFieldKind.Note, Label = "Next: hold this week's playtest at your desk; the build is ready.", On = true },
+                new UiFieldModel { Kind = UiFieldKind.Note, Section = "In the works", Label = "Harbour Lights, a cosy farming game, is 64% made; launch in 41 days." },
+                new UiFieldModel { Kind = UiFieldKind.Note, Label = "Hype is high: 18,400 people follow it on Flare." },
+                new UiFieldModel { Kind = UiFieldKind.Choice, Section = "Marketing", Label = "Campaign", Value = "Streamers" },
+                new UiFieldModel { Kind = UiFieldKind.Note, Label = "More wishlists among young players; costs $4,200 a week." },
+                new UiFieldModel { Kind = UiFieldKind.Slider, Label = "Budget a week", Value = "$4,200", Share = 0.4f },
+            },
+            Actions = new[]
+            {
+                new UiActionModel { Label = "Open roles", Kind = UiButtonKind.Secondary, Key = UiAction.Option, Command = UiForm.ActionCommand },
+                new UiActionModel { Label = "Hold the playtest", Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiForm.ActionCommand },
+            },
+        };
+        m.FieldCount = m.Fields.Length;
+        m.ActionCount = m.Actions.Length;
+        m.Prompts = new[]
+        {
+            new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
+            new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_change", "Change") },
+            new UiPrompt { Action = UiAction.Alt, Label = "Hold the playtest" },
+            new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
+        };
+        m.PromptCount = m.Prompts.Length;
+        return m;
+    }
+
+    /// <summary>A desk session's step as ActivityScreen mirrors the game's panel: the step's words, the choices on 1, 2 and 3, Cancel on Esc.</summary>
+    public static UiSessionModel DeskPanel(UiWords t)
+    {
+        var m = new UiSessionModel
+        {
+            Title = "Weekly team meeting",
+            Question = "What is this week's meeting for?",
+            Choices = new[]
+            {
+                new UiChoiceModel { Key = UiAction.Pick1, Name = "Lift morale", Trade = "Lift morale: burnout eases for the people present; output this week is a little lower." },
+                new UiChoiceModel { Key = UiAction.Pick2, Name = "Push output", Trade = "Push output: more gets done this week; burnout builds each day they work." },
+            },
+            Actions = new[]
+            {
+                new UiActionModel { Label = "Cancel", Kind = UiButtonKind.Secondary, Key = UiAction.Back, Command = UiSessionSteps.ActionCommand },
+            },
+        };
+        m.ChoiceCount = m.Choices.Length;
+        m.ActionCount = m.Actions.Length;
+        m.Prompts = new[]
+        {
+            new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
+            new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_choose", "Choose") },
+            new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
+        };
+        m.PromptCount = m.Prompts.Length;
+        return m;
     }
 
     /// <summary>The population's city view as PopulationPages makes it from PopulationViews.City: the residents' city at a glance.</summary>

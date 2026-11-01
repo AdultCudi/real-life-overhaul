@@ -58,6 +58,9 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Back taken: the game's own Cancel left untouched for this frame's later readers.</summary>
         void TakeBack();
 
+        /// <summary>Every key the kit reads taken from the game this frame (a screen over a panel of the game's that answers the same keys).</summary>
+        void TakeAll();
+
         /// <summary>The keys bound now, as the prompt bar names them.</summary>
         IUiKeys Keys { get; }
     }

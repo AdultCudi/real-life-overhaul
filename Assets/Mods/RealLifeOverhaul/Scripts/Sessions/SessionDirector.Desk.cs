@@ -154,6 +154,7 @@ namespace RealLifeOverhaul.Sessions
                 return false;
             }
             _panel = panel;
+            Ui.SessionKit.Show(panel);   // the RLO interface over the panel's pages while they are chosen; the panel keeps the flow and the seat
             return true;
         }
 

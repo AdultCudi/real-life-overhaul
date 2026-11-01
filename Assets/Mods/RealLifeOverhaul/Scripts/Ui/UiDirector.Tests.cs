@@ -74,7 +74,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         // A canvas of its own over every other, scaled as the game's, with a host for one screen on it.
-        private UiHost Overlay(IUiScreen screen, string title, Action<UiHost> closing)
+        internal UiHost Overlay(IUiScreen screen, string title, Action<UiHost> closing)
         {
             var go = new GameObject("RealLife Interface " + screen.Id, typeof(RectTransform));
             var canvas = go.AddComponent<Canvas>();
@@ -85,12 +85,63 @@ namespace RealLifeOverhaul.Ui
             scaler.referenceResolution = new Vector2(3840f, 2160f);
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
             go.AddComponent<GraphicRaycaster>();
+            var blocker = go.AddComponent<Image>();
+            blocker.color = new Color(0f, 0f, 0f, 0f);   // takes the clicks the game's own screen under it would otherwise get
             var host = go.AddComponent<UiHost>();
             host.Bind(screen, UiGame.Instance, UiGame.Instance, Dark, Motion, UiFrame.FullMenuTop, UiFrame.FullMenuBand, title);
             host.View.Scale = UiTokens.CanvasPerPx;
             closing(host);
             host.Show();
             return host;
+        }
+
+        /// <summary>Options, Tests: Flare in the city (the account, the trends, the offers, a business's page) over the screen.</summary>
+        public void TestFlareCity()
+        {
+            try
+            {
+                if (!On)
+                {
+                    Notifications.Show(NotificationType.Warning, "reallife_ui_test_off", null, 8f);
+                    return;
+                }
+                if (!UiFonts.Ready || Flare.FlareDirector.Instance == null)
+                {
+                    Notifications.Show(NotificationType.Warning, "reallife_ui_test_not_ready", null, 8f);
+                    return;
+                }
+                var screen = new FlareCityScreen();
+                Overlay(screen, UiText.T("reallife_ui_page_flare"), host => screen.Close = () => Destroy(host.gameObject));
+            }
+            catch (Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        /// <summary>Options, Tests: the first of the player's tech firms (the studio's page, or another firm's) over the screen.</summary>
+        public void TestFirm()
+        {
+            try
+            {
+                if (!On)
+                {
+                    Notifications.Show(NotificationType.Warning, "reallife_ui_test_off", null, 8f);
+                    return;
+                }
+                Tech.TechDirector d = Tech.TechDirector.Instance;
+                if (!UiFonts.Ready || d == null || d.FirmPlaces.Count == 0)
+                {
+                    Notifications.Show(NotificationType.Warning, "reallife_ui_test_not_ready", null, 8f);
+                    return;
+                }
+                var screen = new StudioPageScreen(d.FirmPlaces[0].File.Place);
+                Overlay(screen, UiText.T("reallife_ui_page_studio"), host => screen.Close = () => Destroy(host.gameObject));
+            }
+            catch (Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
         }
 
         /// <summary>Options, Tests: the phone's Contacts, which the kit draws while the switch is on.</summary>
