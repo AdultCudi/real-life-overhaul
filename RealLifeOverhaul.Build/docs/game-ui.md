@@ -101,9 +101,23 @@ too (it listens to `SmartphoneUI.OnUpdatedBadgeCount`). Every child the layout p
 
 Other mods page this grid as well (studied, not copied: BizSuite's `PhoneAppsPager` puts a component on the grid and
 shows or hides every child but the template; AlunaPhonePages pages every child that has a `SmartphoneAppButton`,
-and re-reads the grid when its child count changes). Two pagers would undo each other, so this one **steps aside
-for good** as soon as it sees a component on the grid from an assembly that is neither the game's nor the mod's, or
-finds a button it had hidden shown again. It then shows everything it hid and logs one line. For that to work the
+and re-reads the grid when its child count changes; both put a script of their own on the grid). Two pagers would
+undo each other, so this one **steps aside for good** for a pager (`PagerAsideRules`): one of those two scripts on the
+grid, or a hand that shows a button of the game's or the mod's that it had hidden on another page. It then shows
+everything it hid and logs one line saying what it saw. Other mods that only add a button or size the phone are no
+pagers. Hotelier & Restaurateur (Workshop 3828430270, known from a player's Player.log, not studied) puts its own button
+on the HUD phone and grows the phone to fit every button showing, two columns and rows of 225 beyond the game's four
+("Phone grown by 227 for 9 apps in 2 columns (4 rows shown before)"); it pages nothing. Its button joins the pages like
+any other mod's, and shown again by its own mod while on another page it joins them again rather than stepping this
+pager aside (before 2 Nov 2026 it stepped aside, every button showed, and the phone grew 3377 for 37 apps, off the top of the
+screen). A page turn hides the last page's buttons before it shows the next page's, so a mod counting the buttons
+showing never sees more than the seven of a page. A mod that shows its button again on every frame (more than
+`FightRun` passes each under a second apart) would cost a pass a frame, so it is left the grid. A script of another
+mod on the grid is no pager by itself. Stood aside on the HUD phone, a phone another mod made taller than the screen is
+kept within it: each part from the grid up to the phone's canvas, read with its height as built when the pager came and
+watched (`PhoneFrameWatch`), gives back what it gained as far as it runs past the screen's top or bottom, told once in
+Player.log. The test Check the phone's pages also shows a stand-in for another mod's button again on a page not
+showing and wants it paged off again with no step aside. For that to work the
 mod's button stays what those pagers look for: a real `SmartphoneAppButton`, a direct child of the grid, with no
 "Template" in its name. The More apps button is not in the grid, so those pagers never see it; when this pager
 steps aside it takes the button away.

@@ -221,24 +221,33 @@ namespace RealLifeOverhaul.GameUi
             return mark != null && mark.Off;
         }
 
+        // The page's buttons hidden first, then shown: a mod that sizes the phone by the buttons showing (Hotelier and
+        // Restaurateur) never sees more than a page's.
         private void Apply()
         {
-            for (int i = 0; i < _apps.Count; i++)
+            for (int hiding = 1; hiding >= 0; hiding--)
             {
-                Transform app = _apps[i];
-                bool show = _itemOf[i] >= 0 ? PageOf(_itemOf[i]) == _page : _docked[i];   // on the page that shows, or in the dock row
-                var mark = app.GetComponent<PageMark>();
-                if (!show && mark == null)
+                for (int i = 0; i < _apps.Count; i++)
                 {
-                    mark = app.gameObject.AddComponent<PageMark>();
-                }
-                if (mark != null)
-                {
-                    mark.Off = !show;
-                }
-                if (app.gameObject.activeSelf != show)
-                {
-                    app.gameObject.SetActive(show);
+                    Transform app = _apps[i];
+                    bool show = _itemOf[i] >= 0 ? PageOf(_itemOf[i]) == _page : _docked[i];   // on the page that shows, or in the dock row
+                    if (show == (hiding == 1))
+                    {
+                        continue;
+                    }
+                    var mark = app.GetComponent<PageMark>();
+                    if (!show && mark == null)
+                    {
+                        mark = app.gameObject.AddComponent<PageMark>();
+                    }
+                    if (mark != null)
+                    {
+                        mark.Off = !show;
+                    }
+                    if (app.gameObject.activeSelf != show)
+                    {
+                        app.gameObject.SetActive(show);
+                    }
                 }
             }
             if (_foldered)
