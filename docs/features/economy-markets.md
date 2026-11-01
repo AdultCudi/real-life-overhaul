@@ -74,16 +74,22 @@ The first five are game-free and compiled by EconomyCheck (`ListingChecks.cs`), 
 
   A bid comes while the price is well under the worth, wins only under 30% held and if the holders take it; then the businesses pass to the buyer through Economy/Services' own hand-over of a sale (`ServicesDirector.HandOver`), a few an hour as the game lets them go, what is left after seven days paid for.
 
+- **The sector** (`ListingSector`): the one the company earns most in now, never its first business's for good.
+  On the way to the market it follows the last quarter's takings by trade (`MarketBridges.TradeTakings`, every business of the player's) until the prospectus is out.
+  Listed, each market morning adds yesterday's takings by trade (the day's `MarketEnv.TradeOf`, already on the tape) to a mix that forgets over about a quarter, and at each quarter's turn a review moves it: at once when it earned nothing in its sector since the last review, else when another sector leads by 10% of the takings at two reviews in a row, so a company split near evenly never flickers.
+  A trade's sector is the catalogue's first company in it; the tech sector's five firms count as web development (software).
+  A move keeps the sector indices level, remakes the company's profile for the new sector with its own margin and debt, and is news (`OwnSector`): a notice and a City Ledger line. A company listed before this is moved by its last quarter's books at the load, once.
+
 ### The save
 
-The market's own line (`reallife:markets`): a player's company is a record of `k` with its own fields after the rest (founder, name, ticker, sector, usual debt, the `OwnListing` figures, the founder's deals, its trade); the way to the market and the books are part `l`, a company set aside part `u`.
+The market's own line (`reallife:markets`): a player's company is a record of `k` with its own fields after the rest (founder, name, ticker, sector, usual debt, the `OwnListing` figures, the founder's deals, its trade, then its takings by trade with a review's lead, empty for a company not followed); the way to the market and the books are part `l`, a company set aside part `u`.
 Neither part is in the city's line a host sends.
 
 A line without them reads as before, and a market with no player's company writes exactly what it did.
 
 ### Tests (options page, the stock market's tests)
 
-"Put a test company of mine on the market" (no requirement, nothing paid or raised; a test company's books if the save has too few, read again from the statements once it is gone), "My company's results the next market morning", "My company's yearly meeting at today's close", "An investor buys in to press my company's board", "A bid for my company" (a test's company hands nothing over), "Take my test company off the market".
+"Put a test company of mine on the market" (no requirement, nothing paid or raised; a test company's books if the save has too few, read again from the statements once it is gone), "My company's results the next market morning", "My company's yearly meeting at today's close", "An investor buys in to press my company's board", "A bid for my company" (a test's company hands nothing over), "Take my test company off the market", "Check my company's sector" (the last quarter's books now, as an older save's load does; not in a Going Public session).
 
 ### Log lines
 
@@ -91,6 +97,8 @@ A line without them reads as before, and a market with no player's company write
 - `Listing: the prospectus of Harbour Lights Group (HLG) on day 152: 248333 new shares (2500 bp) beside the founder's 745000, ...`
 - `Listing check (asked): Deal 1000 for Harbour Lights Group at 160/30, quoted 6731 (673 cents a share): put on the tape for the next moment: PASS`
 - `Listing: the year's fees for Harbour Lights Group: the exchange 5000, the audit 10000; findings 0.`
+- `Listing check (sector): from Restaurants to Specialists (Harbour Lights Group on the market; the last 15 days' takings by trade: clothing 300000 (Stores), jewelry 450000 (Specialists); next review on day 226): PASS`
+- `Listing: Harbour Lights Group's business is followed from now; by the last 15 days' takings it moves from Restaurants to Specialists.`
 - `Listing: Harbour Lights Group was taken over at 840 cents a share by a private buyer; its 6 business(es) pass to the buyer by day 212.`
 - `Selling a business: handed over to a private buyer in a takeover: ...`
 
@@ -415,7 +423,7 @@ The project keeps its futures' ids and what each had made (`ProjectFile.Hedges`,
 
 ### A company of the player's with a construction business
 
-A construction company's money is the player's own (`ConstructionGame.Take`), not its office's statement, which holds only its wages and rent; so the listed company's books (`ListingLinks.Statements`) add the construction company's own takings and costs by day (`BuildState.Books`, kept 400 days, counted by `TakeIn` and `PayOut` wherever the company's `Earned` and `Spent` were), and a company whose largest business is a construction company is placed in the construction sector. A company listed before this keeps the sector it was listed in.
+A construction company's money is the player's own (`ConstructionGame.Take`), not its office's statement, which holds only its wages and rent; so the listed company's books (`ListingLinks.Statements`) add the construction company's own takings and costs by day (`BuildState.Books`, kept 400 days, counted by `TakeIn` and `PayOut` wherever the company's `Earned` and `Spent` were), and a construction company's works count towards the construction sector in the listed company's sector (`ListingSector`).
 
 ### Going Public
 

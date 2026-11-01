@@ -299,6 +299,7 @@ common_day_number
 common_days_left
 common_energy
 common_friday
+common_hourly_wage
 common_in_training
 common_monday
 common_neighborhood

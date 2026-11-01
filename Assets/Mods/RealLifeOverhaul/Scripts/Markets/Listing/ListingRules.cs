@@ -71,7 +71,7 @@ namespace RealLifeOverhaul.Markets
                 Id = id, Def = d, Name = d.Name, Ticker = d.Ticker, Sector = d.Sector, Size = d.Size, Status = StockStatus.Listed, ListedDay = day,
                 Shares = Math.Max(1L, f.OldShares + f.NewShares)
             };
-            s.Own = new OwnListing { Owner = owner, Test = f.Test, Founder = f.OldShares, PayBp = ListingCatalogue.PayRefBp, DebtBp = debtBp };
+            s.Own = new OwnListing { Owner = owner, Test = f.Test, Founder = f.OldShares, PayBp = ListingCatalogue.PayRefBp, DebtBp = debtBp, Mixed = true };
             Seed(s, env, year, revY, niY, revQ, niQ, debt, growth);
             return s;
         }

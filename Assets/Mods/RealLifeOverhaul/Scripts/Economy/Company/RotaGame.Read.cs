@@ -227,7 +227,7 @@ namespace RealLifeOverhaul.Economy
             {
                 EmployeeInstance e = sheet.Workers[w];
                 // The game's wage at today's prices, as the city's cost of living pays it, and any agreed raise on top.
-                problem.Worker[w].Wage = Mathf.Max(0, CompanyCatalogue.Share(Mathf.RoundToInt(e.hourlyWage * 100f), Prices.Level) + (raise != null ? raise(e.id) : 0));
+                problem.Worker[w].Wage = PaidWage.Cents(PaidWage.Base(e.hourlyWage), Prices.Level, raise != null ? raise(e.id) : 0);
                 for (int s = 0; s < stations; s++)
                 {
                     problem.Can[w * stations + s] = HowWell(e, sheet.Stations[s].ItemCached);

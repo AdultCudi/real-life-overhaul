@@ -148,6 +148,26 @@ namespace RealLifeOverhaul.Economy
             });
         }
 
+        /// <summary>The automatic dividend's day brought to today, and a day run. Refused while they are off.</summary>
+        public void TestDividend()
+        {
+            if (!TestReady("The automatic dividend's day", true))
+            {
+                return;
+            }
+            TestGuard("dividend", () =>
+            {
+                if (_bank.DivEvery == BankDividends.Off)
+                {
+                    TestRefusals.TellKey(Logger, "The automatic dividend's day", "reallife_ob_test_no_div");
+                    return;
+                }
+                Keep();
+                _bank.DivFrom = _bank.LastDay + 2 - BankDividends.Days(_bank.DivEvery, GameCalendar.MonthDays, GameCalendar.DaysPerYear);
+                TestDays(1, false, "the automatic dividend's day brought to today, and a day run");
+            });
+        }
+
         public void TestFund()
         {
             if (!TestReady("The fund trades", true))

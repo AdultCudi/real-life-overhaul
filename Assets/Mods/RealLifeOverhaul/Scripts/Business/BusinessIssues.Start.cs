@@ -232,8 +232,9 @@ namespace RealLifeOverhaul
                     data["need"] = BusinessCatalogue.FireFacility.ToString();
                     break;
                 case BusinessCatalogue.Strike:
-                    data["amount"] = (issue.A / 100f).ToCurrencyFormat();
-                    data["raise"] = (issue.A / 100f).ToCurrencyFormat();
+                    // The raise is written into the game's wages, which the city's prices then scale: named as it will be paid.
+                    data["amount"] = (PaidWage.Cents(issue.A, Prices.Level, 0) / 100f).ToCurrencyFormat();
+                    data["raise"] = data["amount"];
                     data["hours"] = BusinessCatalogue.StrikeClosedHours.ToString();
                     data["count"] = issue.C.ToString();
                     break;

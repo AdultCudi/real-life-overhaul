@@ -144,6 +144,8 @@ internal static partial class Program
         if (args.Length == 1 && args[0] == "--bank-levels")
         {
             BankLevels();   // (the bank's levels and the owner's pay alone, while working on them: BankTierChecks.cs)
+            BankPayFixes();
+            BankDividendChecks();
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -642,6 +644,7 @@ internal static partial class Program
         Hiring();
         Buyout();       // buying out a notice: the price, who can be bought out, the rival's seeded once-only choice, the sources and texts (BuyoutChecks.cs)
         Tech();
+        ListSector();   // a listed company's sector from what it earns now: the mix, the review, the load, the save (ListSectorChecks.cs)
         OwnDesk();      // working at a desk of one's own tech firm: the minutes by the day, the crew's points, the professions, the save, the sources and texts (OwnDeskChecks.cs)
         DeskSeat();     // every seat at a desk or station is one pair: held or given back at once, begun before it holds, stood up on every end; the test and texts (DeskSeatChecks.cs)
         Careers();
@@ -669,6 +672,8 @@ internal static partial class Program
         PlayerBank();
         Branches();     // the bank branches: an hour's customers, visits in the bank's books, the reach over many branches, a branch that pays, the save, the option off (BranchChecks.cs)
         BankLevels();   // the bank's levels and the owner's pay: each level's limits binding, moving up, an older save's bank fitted, the pay's split, the balance figures (BankTierChecks.cs)
+        BankDividendChecks();   // the own bank's automatic dividends: the times, the share to the cent, what holds one back, off as before, the save, the page, the texts (BankDividendChecks.cs)
+        BankPayFixes(); // the own bank's name on its lines and a fixed pay paid in full: the report's national bank reproduced, what holds it back, the save, the texts (BankPayFixChecks.cs)
         Office();
         CivicFixes();   // the player's own canvasser's leaflet, the bridges to Standing and the court, the donation cap (CivicFixChecks.cs)
         Construction();   // the rebuild and plot kinds in the save, in the host's line and in the texts (ConstructionChecks.cs)
@@ -684,6 +689,7 @@ internal static partial class Program
         BugReports();   // "Report a bug": report.txt, the user folder taken out, a log's tail, the mod's lines, nothing sent (BugReportChecks.cs)
         Rivals();       // the rival tycoons: growth, pace, bounds, counters, a takeover, a seed, the save and the texts (RivalChecks.cs)
         Wages();        // wages the mod raises: the report's 30 days reproduced, the cap, one rise a period, the repair on load, every write bounded (WageChecks.cs)
+        StaffWageChecks();   // one wage everywhere: what every page and the game's own screens show is what a day charges (StaffWageChecks.cs)
         BrandRec();     // three gyms' recognition over 20 days, tenths shown, mornings missed, a quit influencer's paid posts, paid posts counted and saved (BrandRecChecks.cs)
         DayRoll();      // the game's night kept whole: the report's growing payroll and stuck brand reproduced, unknown goods taken out of the market, hours a stopped night left put right (DayRollChecks.cs)
         Founding();     // the start days of the player's businesses kept across a moving company's move: the report's 0.3 years reproduced, a moved business keeping its age, an unknown one not day 0, estimates, the save line, every feature asking the one place (FoundingChecks.cs)
