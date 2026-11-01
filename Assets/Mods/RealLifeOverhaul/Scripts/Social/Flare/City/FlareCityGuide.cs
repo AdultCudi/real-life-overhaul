@@ -24,6 +24,7 @@ namespace RealLifeOverhaul.Flare
                 .Test("reallife_flare_city_test_page", () => FlareDirector.Instance?.TestResidentsPage())
                 .Test("reallife_flare_city_test_offer", () => FlareDirector.Instance?.TestResidentsOffer())
                 .Test("reallife_flare_city_test_trend", () => FlareDirector.Instance?.TestResidentsTrend())
+                .Test("reallife_flare_city_test_plan", () => FlareDirector.Instance?.TestResidentsPlan())
                 .Fact("flarecity_adult_age", () => Whole(FlareCityCatalogue.AdultAge))
                 .Fact("flarecity_share_newcomer", () => Whole(FlareCityCatalogue.CityShare[0] / 10) + "%")
                 .Fact("flarecity_share_celebrity", () => Whole(FlareCityCatalogue.CityShare[FlareCityCatalogue.CityShare.Length - 1] / 10) + "%")
@@ -48,6 +49,7 @@ namespace RealLifeOverhaul.Flare
                 .Fact("flarecity_trend_reach", () => Whole(FlareCityCatalogue.TrendReach / 10) + "%")
                 .Fact("flarecity_trend_district", () => Whole(FlareCityCatalogue.TrendDistrictReach / 10) + "%")
                 .Fact("flarecity_trend_stick", () => Whole(FlareCityCatalogue.TrendStick / 10) + "%")
+                .Fact("flarecity_plan_hour", () => Whole(FlareCityRules.PlanHour) + ":00")
                 .ResetData(() => FlareDirector.Instance?.ForgetCity());
         }
 
@@ -69,7 +71,8 @@ namespace RealLifeOverhaul.Flare
                 .AddButton("reallife_flare_city_test_ad", () => FlareDirector.Instance?.TestResidentsAd())
                 .AddButton("reallife_flare_city_test_page", () => FlareDirector.Instance?.TestResidentsPage())
                 .AddButton("reallife_flare_city_test_offer", () => FlareDirector.Instance?.TestResidentsOffer())
-                .AddButton("reallife_flare_city_test_trend", () => FlareDirector.Instance?.TestResidentsTrend());
+                .AddButton("reallife_flare_city_test_trend", () => FlareDirector.Instance?.TestResidentsTrend())
+                .AddButton("reallife_flare_city_test_plan", () => FlareDirector.Instance?.TestResidentsPlan());
         }
     }
 }

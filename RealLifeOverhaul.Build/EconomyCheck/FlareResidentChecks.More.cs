@@ -125,10 +125,10 @@ internal static partial class Program
         string scripts = ModScripts();
         var keys = new List<string>();
         foreach (string file in Directory.GetFiles(System.IO.Path.Combine(scripts, "Social", "Flare", "City"), "*.cs")
-                     .Concat(new[] { "FlareDirector.Residents.cs", "FlareDirector.Tests.City.cs", "FlareApp.City.cs", "FlareDirector.Creator.cs", "FlareDirector.Studio.cs", "FlareDirector.Trends.cs", "FlareDirector.Sector.cs", "FlareText.cs", "FlareText.Live.cs" }
+                     .Concat(new[] { "FlareDirector.Residents.cs", "FlareDirector.Tests.City.cs", "FlareApp.City.cs", "FlareDirector.Creator.cs", "FlareDirector.Studio.cs", "FlareDirector.Trends.cs", "FlareDirector.Sector.cs", "FlareDirector.Desk.cs", "FlareText.cs", "FlareText.Live.cs" }
                                  .Select(f => System.IO.Path.Combine(scripts, "Social", "Flare", f))))
         {
-            const string Ours = "flare_city|flare_ad|flare_offer|flare_creator|flare_studio|flare_sector|flare_post_deal|guide_flare_city|meta_title_flare_city|transaction_flare";
+            const string Ours = "flare_city|flare_ad|flare_offer|flare_creator|flare_studio|flare_sector|flare_session|flare_post_deal|guide_flare_city|meta_title_flare_city|transaction_flare";
             foreach (Match m in Regex.Matches(File.ReadAllText(file), "\"(reallife_(?:" + Ours + ")[a-z0-9_]*)\""))
             {
                 string k = m.Groups[1].Value;

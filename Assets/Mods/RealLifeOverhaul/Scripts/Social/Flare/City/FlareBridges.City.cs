@@ -15,6 +15,9 @@ namespace RealLifeOverhaul.Flare
         /// <summary>The pools of its last day lived, or null.</summary>
         public static Func<PoolRules.DemandDay> Pools;
 
+        /// <summary>Flare's desk session put into the sessions' registry (true, as the residents' side starts) or taken out (false, as it stops); Wiring.FlareSessionLinks.</summary>
+        public static Action<bool> Desk;
+
         /// <summary>Flare in the city's bridges cleared (the wiring disconnects).</summary>
         public static void ResetCity()
         {

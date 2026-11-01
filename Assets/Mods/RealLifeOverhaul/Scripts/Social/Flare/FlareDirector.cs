@@ -396,6 +396,7 @@ namespace RealLifeOverhaul.Flare
                     break;
                 case FlareHourSteps.Milestones:
                     Milestones(day, hour);
+                    PlanHour(day, hour);   // this week's content plan: its post due, a storm answered (FlareDirector.Desk)
                     break;
                 default:
                     LiveHour(day, hour, step);   // the cases, the invitations, the unread count, the words (FlareDirector.Live)

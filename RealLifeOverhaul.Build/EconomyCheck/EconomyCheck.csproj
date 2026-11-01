@@ -783,6 +783,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Studio.cs" Link="Mod\FlareCity\FlareCityRules.Studio.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Civic.cs" Link="Mod\FlareCity\FlareCityRules.Civic.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Trends.cs" Link="Mod\FlareCity\FlareCityRules.Trends.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Plan.cs" Link="Mod\FlareCity\FlareCityRules.Plan.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityPass.cs" Link="Mod\FlareCity\FlareCityPass.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityStore.cs" Link="Mod\FlareCity\FlareCityStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityViews.cs" Link="Mod\FlareCity\FlareCityViews.cs" />

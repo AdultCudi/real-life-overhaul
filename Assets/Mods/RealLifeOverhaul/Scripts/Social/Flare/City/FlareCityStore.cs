@@ -265,6 +265,18 @@ namespace RealLifeOverhaul.Flare
                     last = t.Ids[i];
                 }
             }
+
+            FlarePlan plan = c.Plan ?? new FlarePlan();
+            w.Int(plan.Day);
+            w.Int(plan.Posts);
+            w.Int(plan.Gap);
+            w.Int(plan.Done);
+            w.Int(plan.Made);
+            w.Int(plan.Next);
+            w.Int(plan.Strength);
+            w.Int(plan.Answer ? 1 : 0);
+            w.Int(plan.Manager ? 1 : 0);
+            w.Int(plan.Turn);
             w.Flush();
         }
 
@@ -420,6 +432,12 @@ namespace RealLifeOverhaul.Flare
                 }
             }
             FlareCityRules.TrendLookups(c);
+
+            c.Plan = new FlarePlan
+            {
+                Day = r.Int(), Posts = Math.Max(0, Math.Min(FlareCityRules.PlanDailyPosts, r.Int())), Gap = Math.Max(1, r.Int()), Done = Math.Max(0, r.Int()), Made = Math.Max(0, r.Int()),
+                Next = r.Int(), Strength = Math.Max(0, Math.Min(1000, r.Int())), Answer = r.Int() != 0, Manager = r.Int() != 0, Turn = Math.Max(0, r.Int())
+            };
             return c;
         }
 

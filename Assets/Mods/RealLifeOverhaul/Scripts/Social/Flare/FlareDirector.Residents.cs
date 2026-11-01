@@ -112,6 +112,7 @@ namespace RealLifeOverhaul.Flare
             FlareCityState c = _cityRead ?? new FlareCityState { Seed = s.Seed };
             _cityRead = null;
             _city = c;
+            DeskHold(true);   // its desk session can be held from now (FlareDirector.Desk)
             Logger?.Info("Flare in the city: " + (c.Generated >= 0 ? "read (" + _cityWhy + "): " + c.Accounts.Count + " accounts, " + c.Funnels.Count + " measured posts, " + c.Ads.Count + " ads"
                                                     : _cityWhy + "; every adult resident's follows are made from who they are") + "; the residents' day runs in slices from now.");
             CityQueue(s);
@@ -936,6 +937,7 @@ namespace RealLifeOverhaul.Flare
             _cityLaterFunnels.Clear();
             if (was)
             {
+                DeskHold(false);
                 _cityVoices++;
                 if (_file != null)
                 {
