@@ -532,86 +532,135 @@ internal static partial class Program
         }
     }
 
+    // Each area adds its own screens' cases in a file of its own (UiChecks.<Area>.cs), so jobs on different areas never edit
+    // one list; a screen its area gives no case is laid out with its template's own sample. An area with no file yet is a
+    // partial method nobody wrote, and the compiler drops its call. A new area adds its line to both lists below.
     private static List<UiScreenCase> UiCases()
     {
         var cases = new List<UiScreenCase>();
         foreach (UiScreenDef def in UiScreens.All)
         {
-            UiScreenDef d = def;
-            if (def.Id == "studio")
+            int before = cases.Count;
+            UiCasesContacts(def, cases);
+            UiCasesKit(def, cases);
+            UiCasesPages(def, cases);
+            UiCasesShell(def, cases);
+            UiCasesPhone(def, cases);
+            UiCasesGrids(def, cases);
+            UiCasesHud(def, cases);
+            UiCasesBizMan(def, cases);
+            UiCasesEconoView(def, cases);
+            UiCasesEmployees(def, cases);
+            UiCasesPersona(def, cases);
+            UiCasesActivity(def, cases);
+            UiCasesBizOps(def, cases);
+            UiCasesBuy(def, cases);
+            UiCasesDialog(def, cases);
+            UiCasesHudScreens(def, cases);
+            UiCasesWorld(def, cases);
+            UiCasesFlare(def, cases);
+            UiCasesLife(def, cases);
+            UiCasesMoney(def, cases);
+            UiCasesNews(def, cases);
+            UiCasesSettings(def, cases);
+            UiCasesStocks(def, cases);
+            UiCasesCompany(def, cases);
+            UiCasesConstruction(def, cases);
+            UiCasesEstate(def, cases);
+            UiCasesTech(def, cases);
+            UiCasesVentures(def, cases);
+            UiCasesWork(def, cases);
+            UiCasesDesigner(def, cases);
+            UiCasesMap(def, cases);
+            UiCasesOverlays(def, cases);
+            UiCasesPause(def, cases);
+            UiCasesSweep(def, cases);
+            if (cases.Count == before)
             {
-                // The one screen draws the studio's page and the other tech firms' pages: both are checked.
-                cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = "Tech", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.StudioFirm(t), f, dark, k) });
-                cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (another firm)", Title = "Tech", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.TechFirm(t), f, dark, k) });
-                // Beta 3's empty studio: no staff, no game, thirty days of nothing taken. Every page has its zero state checked too.
-                cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (empty, new)", Title = "Your firm", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.StudioEmpty(t), f, dark, k) });
-                continue;
-            }
-            if (def.Id == "flare_city")
-            {
-                // The feed's three faces: the account's posts, a tab with nothing yet (its long words wrapped in its panel), a business's page.
-                cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = "Flare in the city", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.FlareCity(t), f, dark, k) });
-                cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (trends, none yet)", Title = "Flare in the city", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.FlareTrends(t), f, dark, k) });
-                cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (a business)", Title = "Flare in the city", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.FlareBusiness(t), f, dark, k) });
-                continue;
-            }
-            if (def.Id == "session_panel")
-            {
-                cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = "Desk", Lay = (s, f, dark, k, t) => UiSessionSteps.Lay(s, UiSamples.DeskPanel(t), f, dark, k) });
-                continue;
-            }
-            if (def.Id == "population")
-            {
-                // Each page shaped to its job: the city's districts, who contributes, a household's ledger, a person's profile, one who has moved on.
-                cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = "The city's people", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.PopulationCity(t), f, dark, k) });
-                cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (who contributes)", Title = "The city's people", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.PopulationContributors(t), f, dark, k) });
-                cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (a household)", Title = "The city's people", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.PopulationHousehold(t), f, dark, k) });
-                cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (a person)", Title = "The city's people", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.PopulationPerson(t), f, dark, k) });
-                cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (moved on)", Title = "The city's people", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.PopulationGone(t), f, dark, k) });
-                continue;
-            }
-            switch (def.Template)
-            {
-                case UiTemplate.ListDetail:
-                    cases.Add(new UiScreenCase { Def = d, Name = d.Id, Lay = (s, f, dark, k, t) => UiListDetail.Lay(s, UiSamples.Contacts(t, false), f, dark, k) });
-                    cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (a line that takes replies)", Lay = (s, f, dark, k, t) => UiListDetail.Lay(s, UiSamples.Contacts(t, true), f, dark, k) });
-                    break;
-                case UiTemplate.Dashboard:
-                    cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = "Economy", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.Dashboard(t), f, dark, k) });
-                    break;
-                case UiTemplate.Session:
-                    cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = "Desk", Lay = (s, f, dark, k, t) => UiSessionSteps.Lay(s, UiSamples.Session(t), f, dark, k) });
-                    break;
-                case UiTemplate.Form:
-                    cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = "CityAds", Lay = (s, f, dark, k, t) => UiForm.Lay(s, UiSamples.Form(t), f, dark, k) });
-                    break;
-                case UiTemplate.InfoPanel:
-                    cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (a person)", Title = "Rosa Stanley", Lay = (s, f, dark, k, t) => UiInfoPanel.Lay(s, UiSamples.Person(t), f, dark, k) });
-                    break;
-                case UiTemplate.InfoView:
-                    cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (the city's people)", Title = "The city's people", Lay = (s, f, dark, k, t) => UiInfoView.Lay(s, UiSamples.People(t), f, dark, k) });
-                    break;
-                case UiTemplate.AppWindow:
-                    cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (the studio, a sidebar)", Title = "Tech", Lay = (s, f, dark, k, t) => UiAppWindow.Lay(s, UiSamples.Studio(t), f, dark, k) });
-                    cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (an employee, tabs and a profile)", Title = "Business", Lay = (s, f, dark, k, t) => UiAppWindow.Lay(s, UiSamples.Employee(t), f, dark, k) });
-                    break;
-                case UiTemplate.Decision:
-                    cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (a desk session)", Title = "Desk", Lay = (s, f, dark, k, t) => UiDecision.Lay(s, UiSamples.Meeting(t), f, dark, k) });
-                    break;
-                case UiTemplate.Phone:
-                    cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (home)", Title = "Phone", Lay = (s, f, dark, k, t) => UiPhone.Lay(s, UiSamples.PhoneHome(t), f, dark, k) });
-                    break;
-                case UiTemplate.Gallery:
-                    for (int page = 0; page < UiGallery.PageCount; page++)
-                    {
-                        int p = page;
-                        cases.Add(new UiScreenCase { Def = d, Name = d.Id + " page " + page, Title = "Interface gallery", Lay = (s, f, dark, k, t) => UiGallery.Lay(s, UiSamples.Gallery(t, p), f, dark, k) });
-                    }
-                    break;
+                TemplateCases(def, cases);
             }
         }
         cases.AddRange(PrototypeCases());
         return cases;
+    }
+
+    static partial void UiCasesContacts(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesKit(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesPages(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesShell(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesPhone(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesGrids(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesHud(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesBizMan(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesEconoView(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesEmployees(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesPersona(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesActivity(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesBizOps(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesBuy(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesDialog(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesHudScreens(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesWorld(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesFlare(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesLife(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesMoney(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesNews(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesSettings(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesStocks(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesCompany(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesConstruction(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesEstate(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesTech(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesVentures(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesWork(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesDesigner(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesMap(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesOverlays(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesPause(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesSweep(UiScreenDef def, List<UiScreenCase> cases);
+
+    // The template's own sample: the template_ entries, and every screen whose area adds no case of its own.
+    private static void TemplateCases(UiScreenDef def, List<UiScreenCase> cases)
+    {
+        switch (def.Template)
+        {
+            case UiTemplate.ListDetail:
+                cases.Add(new UiScreenCase { Def = def, Name = def.Id, Lay = (s, f, dark, k, t) => UiListDetail.Lay(s, UiSamples.Contacts(t, false), f, dark, k) });
+                cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (a line that takes replies)", Lay = (s, f, dark, k, t) => UiListDetail.Lay(s, UiSamples.Contacts(t, true), f, dark, k) });
+                break;
+            case UiTemplate.Dashboard:
+                cases.Add(new UiScreenCase { Def = def, Name = def.Id, Title = "Economy", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.Dashboard(t), f, dark, k) });
+                break;
+            case UiTemplate.Session:
+                cases.Add(new UiScreenCase { Def = def, Name = def.Id, Title = "Desk", Lay = (s, f, dark, k, t) => UiSessionSteps.Lay(s, UiSamples.Session(t), f, dark, k) });
+                break;
+            case UiTemplate.Form:
+                cases.Add(new UiScreenCase { Def = def, Name = def.Id, Title = "CityAds", Lay = (s, f, dark, k, t) => UiForm.Lay(s, UiSamples.Form(t), f, dark, k) });
+                break;
+            case UiTemplate.InfoPanel:
+                cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (a person)", Title = "Rosa Stanley", Lay = (s, f, dark, k, t) => UiInfoPanel.Lay(s, UiSamples.Person(t), f, dark, k) });
+                break;
+            case UiTemplate.InfoView:
+                cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (the city's people)", Title = "The city's people", Lay = (s, f, dark, k, t) => UiInfoView.Lay(s, UiSamples.People(t), f, dark, k) });
+                break;
+            case UiTemplate.AppWindow:
+                cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (the studio, a sidebar)", Title = "Tech", Lay = (s, f, dark, k, t) => UiAppWindow.Lay(s, UiSamples.Studio(t), f, dark, k) });
+                cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (an employee, tabs and a profile)", Title = "Business", Lay = (s, f, dark, k, t) => UiAppWindow.Lay(s, UiSamples.Employee(t), f, dark, k) });
+                break;
+            case UiTemplate.Decision:
+                cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (a desk session)", Title = "Desk", Lay = (s, f, dark, k, t) => UiDecision.Lay(s, UiSamples.Meeting(t), f, dark, k) });
+                break;
+            case UiTemplate.Phone:
+                cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (home)", Title = "Phone", Lay = (s, f, dark, k, t) => UiPhone.Lay(s, UiSamples.PhoneHome(t), f, dark, k) });
+                break;
+            case UiTemplate.Gallery:
+                for (int page = 0; page < UiGallery.PageCount; page++)
+                {
+                    int p = page;
+                    cases.Add(new UiScreenCase { Def = def, Name = def.Id + " page " + page, Title = "Interface gallery", Lay = (s, f, dark, k, t) => UiGallery.Lay(s, UiSamples.Gallery(t, p), f, dark, k) });
+                }
+                break;
+        }
     }
 
     // The prototype's Contacts as an app window (DIRECTION_CS2, section 7): the older list and detail drawn in the new window.

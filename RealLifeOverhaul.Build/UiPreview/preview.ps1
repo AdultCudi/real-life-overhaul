@@ -38,7 +38,7 @@ Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui') -Filte
 } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Copy-Item (Join-Path $PSScriptRoot 'PreviewStubs.cs') (Join-Path $preview 'Kit')
 Get-ChildItem $PSScriptRoot -Filter 'UiSamples*.cs' | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
-Copy-Item (Join-Path $PSScriptRoot 'UiPreviewRunner.cs') (Join-Path $preview 'Editor')
+Get-ChildItem $PSScriptRoot -Filter 'UiPreviewRunner*.cs' | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Editor') }
 
 New-Item -ItemType Directory -Force $Out | Out-Null
 $Out = (Resolve-Path $Out).Path
