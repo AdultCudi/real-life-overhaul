@@ -115,6 +115,8 @@ namespace RealLifeOverhaul.Economy
         public const int ApplicantDays = 4;
         public const int OfferUnder = 80, OfferOver = 40;   // an offer against the asking rent, thousandths of the market's
         public const int OfferLeast = 700, OfferMost = 1350;
+        public const int OfferBudget = 500;         // thousandths of the change in what households would pay in rent that shows in their offers (the living population)
+        public const int PeopleMost = 4000;         // thousandths: the most a district's housing market leans a landlord's applicants (a bound for the arithmetic)
         public const int RecordLeast = 20, RecordMost = 95;
         public const int RecordPremium = 2;         // more offered for each point of record under 60: a risky tenant bids higher
         public const int TermStep = 30, TermSteps = 5, TermLeast = 60;   // days: a lease runs 60 to 180

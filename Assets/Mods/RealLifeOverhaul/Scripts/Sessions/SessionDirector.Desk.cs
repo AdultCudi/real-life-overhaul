@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using RealLifeOverhaul.Careers;
@@ -21,6 +22,7 @@ namespace RealLifeOverhaul.Sessions
         private string _deskAt;                  // the place whose desk was looked for this visit
         private int _desks, _free, _items = -1;  // the office's workstations, those nobody is rostered at, and its items when looked
         private SessionPanel _panel;
+        private const float WorkWaitSeconds = 2f;   // real seconds the work chosen on the panel waits for the game's panel to close
         private string _forced;                  // a kind the test opens due, whatever its record says, until held or the visit ends
 
         private void DeskWatch()
@@ -101,6 +103,29 @@ namespace RealLifeOverhaul.Sessions
             }
             EmployeeStationController desk = _desk;
             DeskGame.WalkTo(desk, () => OpenPanel(desk));
+        }
+
+        /// <summary>
+        /// The owner's own work at the desk chosen on the panel (SessionBridges.Work): offered once the game's panel has let the
+        /// session go, which it does on its next frames; given up after <see cref="WorkWaitSeconds"/>. A few frames after a press only.
+        /// </summary>
+        internal void WorkAfter(EmployeeStationController desk)
+        {
+            StartCoroutine(Guard.Routine(WorkWhenFree(desk)));
+        }
+
+        private IEnumerator WorkWhenFree(EmployeeStationController desk)
+        {
+            float until = UnityEngine.Time.unscaledTime + WorkWaitSeconds;
+            yield return null;
+            while (SessionGame.PanelBusy && UnityEngine.Time.unscaledTime < until)
+            {
+                yield return null;
+            }
+            if (!SessionGame.PanelBusy && On && ReferenceEquals(desk, _desk))
+            {
+                SessionBridges.WorkNow(desk);
+            }
         }
 
         private bool OpenPanel(EmployeeStationController desk)

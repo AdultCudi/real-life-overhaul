@@ -133,6 +133,7 @@ namespace RealLifeOverhaul.Tech
                 return;
             }
             _notes.Clear();
+            _hiring.People = HiringPeople();
             HiringRules.Day(_hiring, Save.Day, HiringGame.Cycle, HiringGame.Summer(Save.Day), _rivals, _rate, _districts, _notes);
             NameSeekers();
             for (int i = 0; i < _notes.Count; i++)

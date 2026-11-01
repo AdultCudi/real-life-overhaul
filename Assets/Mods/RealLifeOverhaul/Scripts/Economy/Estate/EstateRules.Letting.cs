@@ -72,15 +72,34 @@ namespace RealLifeOverhaul.Economy
             pricePerSqm = rent / (totalSqm * (maxOccupancy / 100f));
         }
 
+        /// <summary>A factor of the city's people as the climate carries it: 0 (none) is read as a thousand.</summary>
+        public static int People(int factor)
+        {
+            return factor > 0 ? factor : 1000;
+        }
+
+        /// <summary>The households in the housing market round a building: the city's, leaned by its district's (the living population); a thousand with none.</summary>
+        public static int Seekers(EstateClimate c, string district)
+        {
+            int lean = c.HousingIn != null && district != null ? c.HousingIn(district) : 0;
+            return (int)Math.Min(EstateCatalogue.PeopleMost, (long)People(c.Seekers) * People(lean) / 1000);
+        }
+
         /// <summary>The chance, in thousandths, that somebody applies on a day.</summary>
         public static int ApplicantChance(int ask, int cond, int cycle)
+        {
+            return ApplicantChance(ask, cond, cycle, 1000);
+        }
+
+        /// <summary>The same with the households really looking for a flat round the building against the anchor day's (the living population).</summary>
+        public static int ApplicantChance(int ask, int cond, int cycle, int seekers)
         {
             if (cond < EstateCatalogue.ConditionUnfit)
             {
                 return 0;
             }
             int asked = EstateCatalogue.Clamp(1000 - (ask - 1000) * EstateCatalogue.ApplicantAskSlope, EstateCatalogue.ApplicantChanceLeast, EstateCatalogue.ApplicantChanceMost);
-            long chance = (long)EstateCatalogue.ApplicantChance * asked / 1000 * EstateCatalogue.ApplicantCycle[EstateCatalogue.Clamp(cycle, 0, 3)] / 1000;
+            long chance = (long)EstateCatalogue.ApplicantChance * asked / 1000 * EstateCatalogue.ApplicantCycle[EstateCatalogue.Clamp(cycle, 0, 3)] / 1000 * Math.Max(0, seekers) / 1000;
             if (cond < EstateCatalogue.ConditionPoor)
             {
                 chance = chance * EstateCatalogue.ApplicantPoorShare / 1000;
@@ -99,13 +118,14 @@ namespace RealLifeOverhaul.Economy
             {
                 return null;
             }
-            if (!whatever && Roll(seed, day, ForApplicant, UnitKey(h, unit)) >= (int)Math.Min(1000L, (long)ApplicantChance(u.Ask, h.Cond, c.Cycle) * lift / 1000))
+            if (!whatever && Roll(seed, day, ForApplicant, UnitKey(h, unit)) >= (int)Math.Min(1000L, (long)ApplicantChance(u.Ask, h.Cond, c.Cycle, Seekers(c, h.District)) * lift / 1000))
             {
                 return null;
             }
             int n = h.NextApplicant;   // numbered across the building, so every draw below is the applicant's own
             int record = Between(Roll(seed, day, ForRecord, place + n), EstateCatalogue.RecordLeast, EstateCatalogue.RecordMost);
             int offer = u.Ask + Between(Roll(seed, day, ForOffer, place + n), -EstateCatalogue.OfferUnder, EstateCatalogue.OfferOver) + Math.Max(0, 60 - record) * EstateCatalogue.RecordPremium;
+            offer += (People(c.Budget) - 1000) * EstateCatalogue.OfferBudget / 1000;   // households with more to spend on rent offer more
             offer = EstateCatalogue.Clamp(offer, EstateCatalogue.OfferLeast, EstateCatalogue.OfferMost);
             var a = new RentApplicant
             {

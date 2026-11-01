@@ -206,6 +206,57 @@ namespace RealLifeOverhaul.Flare
             };
         }
 
+        /// <summary>
+        /// One of the city's people as a resident of the living population (Flare in the city: the voices are residents): the slot's number, the
+        /// resident's sex, age, district and what they are like, and a name of their sex nobody in the city has yet, rolled from the city's seed, the
+        /// slot and the resident's id (the same resident keeps the same name; somebody new in the slot is somebody new). Allocates a name's strings.
+        /// </summary>
+        public static FlareCitizen ResidentCitizen(int seed, int index, int person, bool female, int age, string district, FlarePersona persona, HashSet<string> taken)
+        {
+            string[] firsts = female ? Women : Men;
+            string f = null, l = null;
+            int who = index * 7919 + (person & 0xFFFFF);
+            for (int t = 0; t < NameTries && f == null; t++)
+            {
+                int roll = Wide(seed, who * NameTries + t, SaltName);
+                string a = firsts[roll % firsts.Length], b = Surnames[roll / firsts.Length % Surnames.Length];
+                if (taken == null || !taken.Contains(a + " " + b))
+                {
+                    f = a;
+                    l = b;
+                }
+            }
+            if (f == null)
+            {
+                int start = Wide(seed, who, SaltNameLow);
+                for (int k = 0; k < firsts.Length * Surnames.Length && f == null; k++)
+                {
+                    string a = firsts[(start + k / Surnames.Length) % firsts.Length], b = Surnames[(start + k) % Surnames.Length];
+                    if (!taken.Contains(a + " " + b))
+                    {
+                        f = a;
+                        l = b;
+                    }
+                }
+                f = f ?? firsts[0];
+                l = l ?? Surnames[0];
+            }
+            taken?.Add(f + " " + l);
+            return new FlareCitizen
+            {
+                Index = index, First = f, Last = l, Handle = "@" + f.ToLowerInvariant() + "_" + l.ToLowerInvariant() + (10 + FlareRules.Roll(seed, who, SaltNumber) % 90),
+                District = district, Persona = persona, Female = female, Age = Math.Max(14, age)
+            };
+        }
+
+        /// <summary>A resident's name as a review signs it, a first name and an initial ("Ada B."), the same for the same resident and seed everywhere.</summary>
+        public static string ResidentName(int seed, int person, bool female)
+        {
+            string[] firsts = female ? Women : Men;
+            int roll = Wide(seed, person & 0x3FFFFFFF, SaltName + 7);
+            return firsts[roll % firsts.Length] + " " + Surnames[roll / firsts.Length % Surnames.Length][0] + ".";
+        }
+
         /// <summary>Whether one of the city's people is a woman, as CitizensOf makes them.</summary>
         public static bool CitizenFemale(int seed, int index)
         {

@@ -69,6 +69,7 @@ namespace RealLifeOverhaul.Economy
         public int CarryLiving;                           // ...and of the game's own shops and services
         public int LastCopycatDay;
         public int Buys;            // the kinds of goods the player's businesses stock, a bit each (the last look)
+        public bool DistrictsFed;   // the districts' incomes come from the living population (Wiring/PopulationLinks), not the model's own walk; not saved
         public readonly List<CityDistrict> Districts = new List<CityDistrict>(12);
         public readonly SupplyLine[] Supply = new SupplyLine[MacroCatalogue.SupplyKinds];
         public readonly List<CityNews> News = new List<CityNews>(8);
@@ -354,6 +355,27 @@ namespace RealLifeOverhaul.Economy
 
             // The district that moved most makes the paper, if it moved enough.
             CityDistrict most = null;
+            for (int i = 0; state.DistrictsFed && i < state.Districts.Count; i++)
+            {
+                // The population moves each district's income day by day: the month's move is what it moved since the last turn.
+                CityDistrict d = state.Districts[i];
+                if (most == null || Math.Abs(d.Income - d.Before) > Math.Abs(most.Income - most.Before))
+                {
+                    most = d;
+                }
+            }
+            if (state.DistrictsFed)
+            {
+                if (most != null && Math.Abs(most.Income - most.Before) >= MacroCatalogue.IncomeNews)
+                {
+                    state.News.Add(new CityNews { Day = gameDay, Kind = CityNewsKind.District, A = most.Income - most.Before, B = most.Income, Name = most.Name });
+                }
+                for (int i = 0; i < state.Districts.Count; i++)
+                {
+                    state.Districts[i].Before = state.Districts[i].Income;
+                }
+                return;
+            }
             for (int i = 0; i < state.Districts.Count; i++)
             {
                 CityDistrict d = state.Districts[i];

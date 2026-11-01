@@ -18,16 +18,21 @@ namespace RealLifeOverhaul.Texts
         NoCard,     // the pack has no card for it, or a value the card needs was missing
         Language,   // the pack does not write the game's language
         Unwanted,   // asked again, or no longer wanted when the words came
-        Failed      // the pack could not run, or the model gave nothing
+        Failed,     // the pack could not run, or the model gave nothing
+        Held        // the budget held it back (the minute's starts used, a kind below its floor, the game busy) until its time ran out
     }
 
     /// <summary>
     /// Every line the game had for RLO Texts, counted by pack and intent with why each written line was shown; kept for the
-    /// session. Game-free. COST: two dictionary reads and an increment a line.
+    /// session. Its hourly line judges the model's share of the lines it could have worded. Game-free.
+    /// COST: two dictionary reads and an increment a line; the hourly line a pass over the rows.
     /// </summary>
     public sealed class TextShown
     {
         public const int RowsMost = 800;   // pairs of pack and intent counted at most; past it a new pair is counted under "other"
+        public const int SharePass = 80;   // per cent of the lines the model could have worded that it must word for the hourly check's PASS:
+                                           // a pack on a graphics card words nearly all, and two in ten is what a slow spell may cost
+        public const int ShareLeast = 20;  // ...judged only past this many lines: fewer say too little
 
         private static readonly int Whys = Enum.GetValues(typeof(TextShownWhy)).Length;
         private static readonly int Verdicts = Enum.GetValues(typeof(TextVerdict)).Length;
@@ -160,6 +165,7 @@ namespace RealLifeOverhaul.Texts
                 case TextShownWhy.NoCard: return "no card";
                 case TextShownWhy.Language: return "language";
                 case TextShownWhy.Unwanted: return "unwanted";
+                case TextShownWhy.Held: return "held";
                 default: return "failed";
             }
         }
@@ -176,10 +182,15 @@ namespace RealLifeOverhaul.Texts
             b.Append("RLO Texts check (what was shown").Append(when != null ? ", " + when : string.Empty).Append("): ");
             var why = new int[Whys];
             var rule = new int[Verdicts];
+            var all = new int[Whys];
             List<string> packs = Packs();
             for (int p = 0; p < packs.Count; p++)
             {
                 Totals(packs[p], why, rule);
+                for (int k = 0; k < Whys; k++)
+                {
+                    all[k] += why[k];
+                }
                 b.Append(p > 0 ? "; " : string.Empty).Append(packs[p]).Append(": the model ").Append(why[0].ToString(Inv)).Append(", written ")
                     .Append(Sum(why, 1).ToString(Inv));
                 Reasons(why, rule, b, "; ", " ");
@@ -193,9 +204,47 @@ namespace RealLifeOverhaul.Texts
                         continue;
                     }
                     b.Append(shown++ > 0 ? "," : string.Empty).Append(' ').Append(r.Intent).Append(' ').Append(r.Why[0].ToString(Inv)).Append('/').Append(r.Written.ToString(Inv));
+                    Reasons(r.Why, r.Rule, b, "; ", " ");
                 }
             }
-            return b.Append('.').ToString();
+            b.Append(". ");
+            Verdict(all, b);
+            return b.ToString();
+        }
+
+        /// <summary>Lines the model could have worded: all but those of no pack, switched off, another language or no card.</summary>
+        public static int Could(int[] why)
+        {
+            return Sum(why, 0) - why[(int)TextShownWhy.NoPack] - why[(int)TextShownWhy.Off] - why[(int)TextShownWhy.Language] - why[(int)TextShownWhy.NoCard];
+        }
+
+        // The check's verdict on the share of every way of wording (the packs and Your own AI): what was worded of what could
+        // have been, against SharePass; the most common reason when it falls short.
+        private static void Verdict(int[] why, StringBuilder b)
+        {
+            int could = Could(why);
+            int share = could > 0 ? why[0] * 100 / could : 100;
+            b.Append("The model worded ").Append(share.ToString(Inv)).Append("% of the ").Append(could.ToString(Inv)).Append(" line(s) it could have (wanted ")
+                .Append(SharePass.ToString(Inv)).Append("% or more): ");
+            if (could < ShareLeast)
+            {
+                b.Append("too few to judge yet.");
+                return;
+            }
+            if (share >= SharePass)
+            {
+                b.Append("PASS.");
+                return;
+            }
+            int worst = 0;
+            for (int k = 1; k < why.Length; k++)
+            {
+                if (k != (int)TextShownWhy.NoPack && k != (int)TextShownWhy.Off && k != (int)TextShownWhy.Language && k != (int)TextShownWhy.NoCard && (worst == 0 || why[k] > why[worst]))
+                {
+                    worst = k;
+                }
+            }
+            b.Append("most written lines were ").Append(Name((TextShownWhy)worst)).Append(" (").Append(why[worst].ToString(Inv)).Append(").");
         }
 
         /// <summary>The written line's reasons, as " (loading 3; slow 5; refused 2: Long 1, Number 1)"; nothing with none.</summary>

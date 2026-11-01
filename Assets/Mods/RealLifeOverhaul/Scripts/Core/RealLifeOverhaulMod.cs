@@ -71,6 +71,8 @@ namespace RealLifeOverhaul
             Guard.Step("the construction company's business type", () => Construction.ConstructionType.Register());   // before any save that holds one is loaded
             Shops.ShopsDirector.Logger = context.Logger;
             Guard.Step("the new kinds of shop", Shops.ShopsDirector.Start);   // before any save that holds one is loaded
+            Population.PopulationGame.Logger = context.Logger;
+            Guard.Step("the population's count in the game's customer calculators", Population.PopulationGame.InstallCalculators);   // before any customer is worked out
             Designs.DesignsDirector.Logger = context.Logger;
             // The installation firms' designs for the mod's business types, put in place or taken away on a worker.
             Guard.Step("the ready-made designs", () => Designs.DesignsDirector.Ask(Settings.Designs));
@@ -238,6 +240,7 @@ namespace RealLifeOverhaul
                     v => Settings.NoticeLook = v)
                 .AddButton("reallife_test_notice_look", GameUi.NoticeLook.Test)
                 .AddButton("reallife_test_event", () => LifeEvents.Instance?.TriggerEventNow())
+                .AddButton("reallife_test_event_fridge", () => LifeEvents.Instance?.TriggerFridgeBill())
                 .AddButton("reallife_moods_test", MoodsTest.Run)
                 .AddButton("reallife_maptrees_test", MapTreeGuard.RunTest)
                 .AddButton("reallife_test_accident", () => TrafficAccidents.Instance?.StageAccidentNow())
@@ -710,6 +713,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_flare_test_invite", () => Flare.FlareDirector.Instance?.TestInvite())
                 .AddButton("reallife_flare_test_escalate", () => Flare.FlareDirector.Instance?.TestEscalate())
                 .AddButton("reallife_flare_test_back", () => Flare.FlareDirector.Instance?.TestBack())
+                .Guarded(o => Flare.FlareCityOptions.AddFlareCity(o))   // Flare in the city's option and tests (Scripts/Social/Flare/City)
                 .AddSplitter()
                 .AddHeader("reallife_fame_header")
                 .AddToggle(Settings.StandingId, "reallife_fame_enabled", Settings.Standing,
@@ -1012,6 +1016,23 @@ namespace RealLifeOverhaul
                     v => Settings.LivingDesks = v)
                 .AddButton("reallife_session_test_meeting", () => Sessions.SessionDirector.Instance?.TestMeeting())
                 .AddButton("reallife_session_test_managers", () => Sessions.SessionDirector.Instance?.TestManagers())
+                .AddToggle(Settings.LivingStudioId, "reallife_studio_enabled", Settings.LivingStudio,
+                    v => Settings.LivingStudio = v)
+                .AddButton("reallife_studio_test_start", () => Tech.TechDirector.Instance?.TestStudioStart())
+                .AddButton("reallife_studio_test_finish", () => Tech.TechDirector.Instance?.TestStudioFinish())
+                .AddButton("reallife_studio_test_launch", () => Tech.TechDirector.Instance?.TestStudioLaunch())
+                .AddButton("reallife_studio_test_year", () => Tech.TechDirector.Instance?.TestStudioYear())
+                .AddToggle(Settings.LivingFirmsId, "reallife_tech_mkt_enabled", Settings.LivingFirms,
+                    v => Settings.LivingFirms = v)
+                .AddButton("reallife_tech_mkt_test_software", () => Tech.TechDirector.Instance?.TestSectorDesks((int)Tech.FirmKind.Software))
+                .AddButton("reallife_tech_mkt_test_lab", () => Tech.TechDirector.Instance?.TestSectorDesks((int)Tech.FirmKind.AiLab))
+                .AddButton("reallife_tech_mkt_test_consultancy", () => Tech.TechDirector.Instance?.TestSectorDesks((int)Tech.FirmKind.Consultancy))
+                .AddButton("reallife_tech_mkt_test_security", () => Tech.TechDirector.Instance?.TestSectorDesks((int)Tech.FirmKind.Security))
+                .AddButton("reallife_tech_mkt_test_agency", () => Tech.TechDirector.Instance?.TestSectorDesks((int)Tech.FirmKind.WebAgency))
+                .AddButton("reallife_tech_mkt_test_centres", () => Tech.TechDirector.Instance?.TestSectorDesks(-1))
+                .AddButton("reallife_tech_mkt_test_markets", () => Tech.TechDirector.Instance?.TestSectorMarkets())
+                .AddButton("reallife_tech_mkt_test_year", () => Tech.TechDirector.Instance?.TestSectorYear())
+                .Guarded(o => Population.PopulationOptions.AddPopulation(o))   // the population's tests (Scripts/Population)
                 .AddDropdown(Settings.EconomyCompanyLevelId, "reallife_co_level",
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCompanyLevel,
                     v => Settings.EconomyCompanyLevel = v)
@@ -1110,6 +1131,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_infra_test_price_war", () => Tech.TechDirector.Instance?.TestPriceWar())
                 .AddButton("reallife_infra_test_offer", () => Tech.TechDirector.Instance?.TestCentreOffer())
                 .AddButton("reallife_tech_test_net", () => Tech.TechDirector.Instance?.TestNet())
+                .AddButton("reallife_tech_test_own_desk", () => Tech.TechDirector.Instance?.TestOwnDesk())
+                .AddButton("reallife_tech_test_desk_seat", () => Tech.TechDirector.Instance?.TestDeskSeat())
                 .AddToggle(Settings.TechStartupsId, "reallife_vc_enabled", Settings.TechStartups,
                     v => Settings.TechStartups = v)
                 .AddButton("reallife_vc_test_pitch", () => Tech.TechDirector.Instance?.TestPitch())
@@ -1277,6 +1300,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_family_test_adopt", () => Family.FamilyDirector.Instance?.TestChild(true))
                 .AddButton("reallife_family_test_year", () => Family.FamilyDirector.Instance?.TestYear())
                 .AddButton("reallife_family_test_walk", () => Family.FamilyDirector.Instance?.TestWalk())
+                .AddButton("reallife_family_test_dinner", () => Family.FamilyDirector.Instance?.TestDinner())
                 .AddButton("reallife_family_test_argue", () => Family.FamilyDirector.Instance?.TestArgue())
                 .AddButton("reallife_family_test_page", () => Family.FamilyDirector.Instance?.TestPage())
                 .AddButton("reallife_family_test_clear", () => Family.FamilyDirector.Instance?.TestClear())
@@ -1683,6 +1707,9 @@ namespace RealLifeOverhaul
             Guard.Step("Outlook.OutlookApp", () => Outlook.OutlookApp.Logger = context.Logger);
             // The Economy app: after the city's economy, the market and the council, whose figures it reads; its day follows the city's. No Update.
             Guard.Step("Outlook.OutlookDirector", () => Guard.Add<Outlook.OutlookDirector>(_root));
+            Guard.Step("Population.PopulationDirector", () => Population.PopulationDirector.Logger = context.Logger);
+            // The city's people: after the city's economy, the company, the estate and Uptown's buildings, whose figures it reads. No Update.
+            Guard.Step("Population.PopulationDirector", () => Guard.Add<Population.PopulationDirector>(_root));
             Guard.Step("NewBuildings.NewBuildingsDirector", () => NewBuildings.NewBuildingsDirector.Logger = context.Logger);
             // Its buildings are made behind the loading screen, once every director has declared its own.
             Guard.Step("NewBuildings.NewBuildingsDirector", () => Guard.Add<NewBuildings.NewBuildingsDirector>(_root));

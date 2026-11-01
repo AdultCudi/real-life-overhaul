@@ -172,11 +172,14 @@ namespace RealLifeOverhaul.Flare
                     Logger?.Info("Flare: " + partner.First + " saw the post with " + tagged.First + " and is " + view.ToString().ToLowerInvariant() + " about it.");
                 }
             }
+            HeardReport heard;
+            bool residents = HeardNow(p, out heard);   // with the residents' side on, the post's effects go by the residents it reached
             if (p.Source == FlareSource.Issue && FlareBridges.Issue != null)
             {
                 int weight = FlareRules.IssueWeight(_file.Followers);
                 FlareBridges.Issue(d.Arg, weight);
-                _file.MayorMood = FlareRules.Clamp(_file.MayorMood - FlareRules.MoodIssuePost, -100, 100);
+                int mood = residents ? FlareCityRules.IssueMood(heard.Interested, FlareCityRules.AdultsOf(_city)) : FlareRules.MoodIssuePost;
+                _file.MayorMood = FlareRules.Clamp(_file.MayorMood - mood, -100, 100);
                 Logger?.Info("Flare: the post about " + (FlareIssue)d.Arg + " raises it in the council by " + weight + " thousandths of a point; the feed's mood is " + _file.MayorMood + ".");
             }
             if (p.Source == FlareSource.Campaign && FlareBridges.Campaign != null)
@@ -187,8 +190,17 @@ namespace RealLifeOverhaul.Flare
             }
             if (p.Viral && p.Place != null && FlareBridges.MarketBuzz != null)
             {
-                FlareBridges.MarketBuzz(p.Place, 1);
-                Logger?.Info("Flare: the viral post about " + p.Name + " is a buzz on the stock market for its trade.");
+                int kicks = residents ? FlareCityRules.MarketKicks(heard.Investors) : 1;   // the city's retail investors it reached, each hundred a kick more
+                for (int k = 0; k < kicks; k++)
+                {
+                    FlareBridges.MarketBuzz(p.Place, 1);
+                }
+                Logger?.Info("Flare: the viral post about " + p.Name + " is a buzz on the stock market for its trade"
+                             + (residents ? " (" + heard.Investors + " investors reached, " + kicks + " kick(s))." : "."));
+            }
+            if (residents && p.Viral && p.Place != null && !p.Bad)
+            {
+                TrendFromPost(p);   // what went viral moves the residents' tastes (FlareDirector.Trends)
             }
         }
 

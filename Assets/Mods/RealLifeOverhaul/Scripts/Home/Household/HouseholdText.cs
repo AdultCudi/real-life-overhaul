@@ -41,6 +41,7 @@ namespace RealLifeOverhaul.Household
         public const string Arrived = "reallife_household_arrived";
         public const string Unpaid = "reallife_household_note_unpaid";
         public const string Quit = "reallife_household_note_quit";
+        public const string CookedKey = "reallife_household_note_cooked";   // its needs (Core/LineNeeds) are what a cook needs at a home
         public const string Moved = "reallife_household_moved";
         public const string NoHome = "reallife_household_no_home_left";
         public const string MovedOne = "reallife_household_moved_one";

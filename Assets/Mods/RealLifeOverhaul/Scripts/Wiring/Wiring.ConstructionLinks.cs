@@ -87,6 +87,8 @@ namespace RealLifeOverhaul
                 ConstructionBridges.LandPrice = lot => DistrictBuildings.LandPricePerSqm(lot);
                 ConstructionBridges.Finish = Finish;
                 ConstructionBridges.FinishOver = FinishOver;
+                ConstructionBridges.ToResidents = ToResidents;
+                ConstructionBridges.GiveBack = GiveBack;
                 ConstructionBridges.SpacesOf = SpacesRules.SpacesOf;
                 ConstructionBridges.CornerOffers = CornerLinks.Offers;   // the corner buildings that fit a corner site (Wiring.CornerLinks)
                 ConstructionBridges.CornerName = CornerLinks.Name;
@@ -139,6 +141,7 @@ namespace RealLifeOverhaul
                 ConstructionBridges.Qualified = TradesBridges.Qualified;
                 ConstructionBridges.Commission = (project, storeys, units, budget) => TradesBridges.Commission(project, storeys, units, (int)Math.Min(int.MaxValue, Math.Max(0L, budget)));
                 ConstructionBridges.DesignOf = DesignOf;
+                ConstructionBridges.People = DemandLinks.Build;   // the living population's buyers and tenders (Wiring/DemandLinks)
                 ConstructionBridges.RivalNews = MarketsBuildLinks.RivalNews;
                 ConstructionBridges.HedgePlan = MarketsBuildLinks.HedgePlan;
                 ConstructionBridges.Hedge = MarketsBuildLinks.Hedge;
@@ -195,6 +198,7 @@ namespace RealLifeOverhaul
 
             internal static void Disconnect()
             {
+                ConstructionBridges.People = null;
                 BuildModeLinks.Disconnect();
                 SiteBuilders.Reset();
                 DistrictBuildings.GroundGiven = null;
@@ -213,6 +217,8 @@ namespace RealLifeOverhaul
                 ConstructionBridges.LandPrice = null;
                 ConstructionBridges.Finish = null;
                 ConstructionBridges.FinishOver = null;
+                ConstructionBridges.ToResidents = null;
+                ConstructionBridges.GiveBack = null;
                 ConstructionBridges.SpacesOf = null;
                 ConstructionBridges.CornerOffers = null;
                 ConstructionBridges.CornerName = null;
@@ -671,6 +677,32 @@ namespace RealLifeOverhaul
                     Fault("ConstructionLinks.Finish", e);
                     why = "a fault";
                     return false;
+                }
+            }
+
+            private static string ToResidents(string lot)
+            {
+                try
+                {
+                    return DistrictBuildings.ToResidents(lot);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.ToResidents", e);
+                    return "a fault";
+                }
+            }
+
+            private static string GiveBack(string lot, int handed, double price)
+            {
+                try
+                {
+                    return DistrictBuildings.GiveBack(lot, handed, price);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.GiveBack", e);
+                    return "a fault";
                 }
             }
 

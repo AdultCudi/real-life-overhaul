@@ -9,6 +9,10 @@ namespace RealLifeOverhaul.Texts
         /// <summary>The look: words that came back checked and handed over, deadlines past handed over as the written line; how many.</summary>
         public int Look(double now)
         {
+            if (_budget.Calm(now))
+            {
+                _budget.Apply(_queue);   // a minute with no miss: a step back up
+            }
             Pass();
             try
             {
@@ -86,14 +90,15 @@ namespace RealLifeOverhaul.Texts
                     {
                         continue;   // a spoken line the service was late with: the pack in the time kept for it
                     }
-                    Over(i, !w.ViaService && BudgetMiss(w.Job), TextShownWhy.Slow);
+                    Over(i, !w.ViaService && BudgetMiss(w.Job), Late(w.Job));
                     handed++;
                 }
             }
             return handed;
         }
 
-        // A missed request's reason: the model's own failure, the queue full, or the time.
+        // A missed request's reason: the model's own failure, the queue full, or the time, and of the time the budget's
+        // holding it back apart from the model's slowness.
         private static TextShownWhy Missed(TextJob job)
         {
             string why = job.Why ?? string.Empty;
@@ -102,8 +107,11 @@ namespace RealLifeOverhaul.Texts
                 return TextShownWhy.Busy;
             }
             return why.StartsWith("its time", StringComparison.Ordinal) || why.StartsWith("it took", StringComparison.Ordinal) || why == "no time"
-                ? TextShownWhy.Slow : TextShownWhy.Failed;
+                ? Late(job) : TextShownWhy.Failed;
         }
+
+        /// <summary>A request whose time ran out: held back by the budget if the model never ran it after holding it, else too slow.</summary>
+        public static TextShownWhy Late(TextJob job) => job.Held && !job.Ran ? TextShownWhy.Held : TextShownWhy.Slow;
 
         /// <summary>Takes a guess when its line is needed: the checked words if they are written, else null; let go either way.</summary>
         public string TakeGuess(string key) => TakeGuess(key, out _);
@@ -293,14 +301,16 @@ namespace RealLifeOverhaul.Texts
         }
 
         /// <summary>
-        /// Whether a miss tells the budget the model is too busy; never a background request the queue held back itself, which
-        /// would hold the budget at its lowest step for good.
+        /// Whether a miss tells the budget the model is too busy: the model ran it, or it waited behind the model's other work.
+        /// Never a request the queue held back itself (the background while the game is busy, a kind below the floor, the
+        /// minute's starts used), nor a guess nobody waited for: each would hold the budget at its lowest step for good.
         /// </summary>
         public bool BudgetMiss(TextJob job)
         {
-            return job.Ran || (job.Priority != TextPriority.Background && job.Priority <= _queue.Floor);
+            return job.Ran || (!job.Guess && !job.Held && job.Priority != TextPriority.Background && job.Priority <= _queue.Floor);
         }
 
+        // A request handed back as the written line; a guess was never shown, so it counts only in the session's figures.
         private void Over(int i, bool missed, TextShownWhy why)
         {
             if (missed)
@@ -308,7 +318,7 @@ namespace RealLifeOverhaul.Texts
                 _budget.Ended(true);
                 _budget.Apply(_queue);
             }
-            End(i, null, false, why);
+            End(i, null, false, why, _waiting[i].Request.Guess);
         }
 
         // The words checked: null if they fail, counted by verdict.
@@ -348,6 +358,7 @@ namespace RealLifeOverhaul.Texts
             w.Request.Source = SourceOf(words, w);
             if (unseen)
             {
+                w.Request.Shown = why;
                 Fallbacks++;   // the tally counts only lines shown
                 ServiceFell += w.ViaService && !w.Request.ServiceOnly ? 1 : 0;
             }
@@ -384,13 +395,19 @@ namespace RealLifeOverhaul.Texts
             {
                 Shown++;
                 ServiceShown += w.ViaService ? 1 : 0;
+                w.Request.Shown = TextShownWhy.Model;
                 Tally.Count(w.ViaService ? ServiceTally : Pack, w.Request.Intent, TextShownWhy.Model);
                 return;
             }
-            Fallbacks++;
             ServiceFell += w.ViaService && !w.Request.ServiceOnly ? 1 : 0;   // a service request that ended in the written line without reaching the pack
             bool refused = why == TextShownWhy.Refused && _verdict != TextVerdict.Ok;
-            Tally.Count(Pack, w.Request.Intent, refused ? TextShownWhy.Refused : why == TextShownWhy.Refused ? TextShownWhy.Slow : why, refused ? _verdict : TextVerdict.Ok);
+            TextShownWhy shown = refused ? TextShownWhy.Refused : why == TextShownWhy.Refused ? TextShownWhy.Slow : why;
+            w.Request.Shown = shown;
+            if (!w.Request.HoldsLine)
+            {
+                Fallbacks++;   // a held line shows nothing yet: its asker asks again, or counts the written line it shows (CountWritten)
+                Tally.Count(Pack, w.Request.Intent, shown, refused ? _verdict : TextVerdict.Ok);
+            }
             _verdict = TextVerdict.Ok;
         }
     }

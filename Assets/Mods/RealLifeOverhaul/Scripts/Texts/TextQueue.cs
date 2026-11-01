@@ -44,11 +44,14 @@ namespace RealLifeOverhaul.Texts
         public string Grammar;          // data v6: the reply's GBNF grammar (TextDecoding.Grammar); null: none
         public string BanName;          // data v6: a name the reply may never write (its first token banned); null: none
         public bool Cut;                // the worker's: the reply stopped at its most tokens
+        public bool Held;               // the queue held it back for its budget (the minute's starts, the floor, the game not quiet): a miss
+                                        // that never ran is then the budget's own, never a sign the model is too slow
     }
 
     /// <summary>
     /// The one queue every request goes through: the most urgent that can still make its deadline first, one past hope
-    /// missed at once, within a budget a minute. Thread-safe: the game's thread adds, the worker takes. Game-free.
+    /// missed at once, within a budget a minute of which a share is kept for the lines the player waits for face to face.
+    /// Thread-safe: the game's thread adds, the worker takes. Game-free.
     /// COST: a pass over at most <see cref="Most"/> requests a call.
     /// </summary>
     public sealed class TextQueue
@@ -56,14 +59,17 @@ namespace RealLifeOverhaul.Texts
         public const int Most = 48;                     // requests waiting at once
         public const int PerMinute = 12;                // requests started a minute at most: about a fifth of what two threads write
         public const int BackgroundPerMinute = 6;       // ...of which the background's
+        public const int PerMinuteMost = 240;           // ...at most on the fastest machine (TextBudget.Scaled): four a second
+        public const int SpokenShare = 4;               // one start in this many of each minute is kept for a spoken line: a burst of the
+                                                        // city's words never leaves the player waiting for the minute to turn
         public const double StartGuess = 1.5;           // seconds a reply is expected to take before any is measured
         public const double GuessWeight = 0.2;          // how much each measured time moves the expectation
         public const double ExpectedMost = 60.0;        // seconds: a speed test's figure past this failed, and the guess stays
 
         private readonly object _lock = new object();
         private readonly List<TextJob> _waiting = new List<TextJob>(Most);
-        private readonly Queue<double> _started = new Queue<double>(PerMinute + 1);
-        private readonly Queue<double> _startedBack = new Queue<double>(BackgroundPerMinute + 1);
+        private readonly Queue<double> _started = new Queue<double>(PerMinuteMost + 1);
+        private readonly Queue<double> _startedBack = new Queue<double>(PerMinuteMost + 1);
         private readonly List<TextJob> _missed = new List<TextJob>(8);
         private int _nextId = 1;
         private double _expect = StartGuess;
@@ -100,10 +106,27 @@ namespace RealLifeOverhaul.Texts
         {
             lock (_lock)
             {
-                _perMinute = Math.Max(1, perMinute);
+                _perMinute = Math.Max(1, Math.Min(perMinute, PerMinuteMost));
                 _backPerMinute = Math.Max(0, Math.Min(backgroundPerMinute, _perMinute));
             }
         }
+
+        /// <summary>Requests started a minute at most now, and of them the background's: the log's readout of the budget.</summary>
+        public int BudgetPerMinute
+        {
+            get { lock (_lock) { return _perMinute; } }
+        }
+
+        public int BackgroundBudget
+        {
+            get { lock (_lock) { return _backPerMinute; } }
+        }
+
+        /// <summary>Starts of a minute only a spoken line may take: a quarter, at least one once the minute has two.</summary>
+        public static int Kept(int perMinute) => perMinute >= 2 ? Math.Max(1, perMinute / SpokenShare) : 0;
+
+        /// <summary>A line the player waits for face to face: what they look at, never a guess at it.</summary>
+        public static bool Spoken(TextJob job) => job.Priority == TextPriority.Now && !job.Guess;
 
         /// <summary>Queues a request, dropping one of its key; false when it cannot be written in time even now.</summary>
         public bool Add(TextJob job, double now)
@@ -201,6 +224,7 @@ namespace RealLifeOverhaul.Texts
             {
                 Forget(_started, now);
                 Forget(_startedBack, now);
+                bool full = _started.Count >= _perMinute - Kept(_perMinute), spokenFull = _started.Count >= _perMinute;
                 TextJob best = null;
                 int at = -1;
                 for (int i = _waiting.Count - 1; i >= 0; i--)
@@ -213,8 +237,9 @@ namespace RealLifeOverhaul.Texts
                         at = at > i ? at - 1 : at;
                         continue;
                     }
-                    if (j.Priority > Floor || (j.Priority == TextPriority.Background && (!quiet || _startedBack.Count >= _backPerMinute)))
+                    if (j.Priority > Floor || (j.Priority == TextPriority.Background && (!quiet || _startedBack.Count >= _backPerMinute)) || (Spoken(j) ? spokenFull : full))
                     {
+                        j.Held = true;   // the budget keeps it waiting: a miss of it never steps the budget down
                         continue;
                     }
                     if (best == null || Before(j, best))
@@ -223,7 +248,7 @@ namespace RealLifeOverhaul.Texts
                         at = i;
                     }
                 }
-                if (best == null || _started.Count >= _perMinute)
+                if (best == null)
                 {
                     return null;
                 }

@@ -215,6 +215,9 @@
         public const string EndScaleId = "economy_endscale";
         public const string LivingPopulationId = "living_population";
         public const string LivingDesksId = "living_desks";
+        public const string LivingStudioId = "living_studio";
+        public const string LivingFlareId = "living_flare";
+        public const string LivingFirmsId = "living_firms";
         public const string EconomyBrandsId = "economy_brands";
         public const string EconomyBanksId = "economy_banks";
         public const string MinimapId = "nav_minimap";
@@ -585,6 +588,9 @@
         public static bool EndScale = true;              // the end game at scale (off: every figure as before)
         public static bool LivingPopulation = true;      // the living economy overhaul's master switch, on in the beta (off: the game and the mod exactly as before it)
         public static bool LivingDesks = true;           // ...hands-on management sessions at a firm's own office desk, and managers who take them (Desks)
+        public static bool LivingStudio = true;          // ...the game studio rebuilt: genres, platforms, production at the desk, hype, reviews, sales from a real audience (Studio)
+        public static bool LivingFlare = true;           // ...Flare in the city: residents follow, hear and go where they heard good things; reviews from real customers, ads (Social/Flare/City)
+        public static bool LivingFirms = true;           // ...the other tech firms rebuilt: shared markets from the city, rivals by the same rules, a desk session for each kind (Sector)
         public static bool EconomyBrands = true;         // brands and franchises (off: none of it runs, nothing is paid and footfall is without it)
         public static bool EconomyBanks = true;          // the Banks app
         public static bool Minimap = true;               // the minimap on the HUD while out in the city
@@ -1009,6 +1015,9 @@
             EndScale = Bool(modId, EndScaleId, EndScale);
             LivingPopulation = Bool(modId, LivingPopulationId, LivingPopulation);
             LivingDesks = Bool(modId, LivingDesksId, LivingDesks);
+            LivingStudio = Bool(modId, LivingStudioId, LivingStudio);
+            LivingFlare = Bool(modId, LivingFlareId, LivingFlare);
+            LivingFirms = Bool(modId, LivingFirmsId, LivingFirms);
             EconomyBrands = Bool(modId, EconomyBrandsId, EconomyBrands);
             EconomyBanks = Bool(modId, EconomyBanksId, EconomyBanks);
             Minimap = Bool(modId, MinimapId, Minimap);

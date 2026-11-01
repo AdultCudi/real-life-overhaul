@@ -133,6 +133,10 @@ namespace RealLifeOverhaul.Tech
 
         private void WriteFirm(InfoBox box, FirmsFile f, FirmPlace firm, int day)
         {
+            if (_director.SectorOn && WriteSectorFirm(box, f, firm, day))
+            {
+                return;   // under Living population the firm's page is the sector's screen (TechApp.Sector)
+            }
             Firm m = firm.File;
             Crew c = firm.Crew;
             string place = m.Place;
@@ -151,9 +155,14 @@ namespace RealLifeOverhaul.Tech
                 "product", c.Product.ToString(), "selling", c.Selling.ToString(), "support", c.Support.ToString(),
                 "spare", firm.Spare < 1000 ? TechText.T("reallife_tech_firm_spare", "share", TechText.Mille(firm.Spare)) : string.Empty));
             NetLine(box, firm);
+            _director.OwnDeskLine(box, firm);
             if (FirmsCatalogue.MakesProducts[m.Kind] != 0)
             {
                 box.Line(RoomLine(f, place));
+            }
+            if (_director.StudioRuns(m.K))
+            {
+                WriteStudioPart(box, firm);
             }
             box.Section("reallife_ibox_sec_risk");
             box.Line(TechText.Fill("reallife_tech_firm_risks", "security", TechText.Mille(c.Security), "reliability", TechText.Mille(c.Reliability), "debt", TechText.Mille(m.Debt),
@@ -201,6 +210,13 @@ namespace RealLifeOverhaul.Tech
             IReadOnlyList<Person> people = _director.People;
             var who = new StringBuilder(96);
             int shown = 0, more = 0, hours = 0;
+            int own = OwnDeskRules.HoursFor(firm.OwnMinutes, firm.OwnRole, kind, firm.File.K);
+            if (own > 0)
+            {
+                hours += own;   // the owner at a desk of theirs, first
+                who.Append(TechText.T("reallife_tech_work_person", "name", TechText.T("reallife_tech_work_you"), "hours", own.ToString()));
+                shown++;
+            }
             for (int i = 0; i < people.Count; i++)
             {
                 Person person = people[i];
@@ -313,17 +329,21 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // The two limits on products being built or on sale, with where this firm and all the firms stand.
-        private static string RoomLine(FirmsFile f, string place)
+        // The two limits on products being built or on sale, with where this firm and all the firms stand (the sector's higher ones while it runs).
+        private string RoomLine(FirmsFile f, string place)
         {
-            return TechText.Fill("reallife_tech_products_room", "firm", FirmsRules.LiveCount(f, place).ToString(), "firm_most", FirmsCatalogue.ProductsPerFirm.ToString(),
-                "all", FirmsRules.LiveCount(f, null).ToString(), "all_most", FirmsCatalogue.ProductsMost.ToString());
+            return TechText.Fill("reallife_tech_products_room", "firm", FirmsRules.LiveCount(f, place).ToString(), "firm_most", ProductsPerFirmNow.ToString(),
+                "all", FirmsRules.LiveCount(f, null).ToString(), "all_most", ProductsMostNow.ToString());
         }
 
         private void WriteNewProduct(InfoBox box, FirmsFile f, FirmPlace firm)
         {
             Firm m = firm.File;
             string place = m.Place;
+            if (FirmsRules.Makes(m.K, ProductKind.Game) && WriteConcept(box, firm))
+            {
+                return;   // a studio's game begins as a concept, pitched at the desk (Tech/Studio)
+            }
             var kinds = new List<int>(4);
             for (int k = 0; k < (int)ProductKind.Count; k++)
             {
@@ -333,7 +353,7 @@ namespace RealLifeOverhaul.Tech
                 }
             }
             box.Title(TechText.T("reallife_tech_new_title", "firm", m.Name));
-            int room = FirmsRules.Room(f, place);
+            int room = FirmsRules.Room(f, place, _director.SectorOn);
             box.Line(RoomLine(f, place), room == FirmsRules.RoomYes ? CellTone.Plain : CellTone.Yellow);
             if (room != FirmsRules.RoomYes)
             {
@@ -411,7 +431,8 @@ namespace RealLifeOverhaul.Tech
                         p.Features < p.RivalFeatures ? TableRow.Yellow : TableRow.Plain);
                 row.Set(5, TechText.Whole(p.Users), p.Users);
                 Cents(row, 6, Level(FirmsRules.MonthlyRevenue(p)));
-                int q = FirmsRules.Quality(p);
+                int studio = p.K == ProductKind.Game ? _director.StudioQualityOf(p.Id) : -1;
+                int q = studio >= 0 ? studio * 10 : FirmsRules.Quality(p);   // a studio game's quality is its parts', 0 to 100
                 row.Set(7, TechText.Mille(q), q, q < 600 ? TableRow.Red : TableRow.Plain);
                 row.Set(8, p.Bugs.ToString(), p.Bugs);
                 row.Kind = p.Stage == 0 ? TechColumns.Building : p.Stage == 1 ? TechColumns.OnSale : TechColumns.Withdrawn;
@@ -441,8 +462,8 @@ namespace RealLifeOverhaul.Tech
                         Refresh();
                     });
                     box.Line(TechText.T(f.Products.Count == 0 ? "reallife_tech_products_none" : "reallife_tech_products_start"));
-                    box.Line(TechText.Fill("reallife_tech_products_room_all", "all", FirmsRules.LiveCount(f, null).ToString(), "all_most", FirmsCatalogue.ProductsMost.ToString(),
-                        "firm_most", FirmsCatalogue.ProductsPerFirm.ToString(), "kept", FirmsCatalogue.WithdrawnKept.ToString()));
+                    box.Line(TechText.Fill("reallife_tech_products_room_all", "all", FirmsRules.LiveCount(f, null).ToString(), "all_most", ProductsMostNow.ToString(),
+                        "firm_most", ProductsPerFirmNow.ToString(), "kept", FirmsCatalogue.WithdrawnKept.ToString()));
                 }
                 else
                 {
@@ -470,6 +491,10 @@ namespace RealLifeOverhaul.Tech
 
         private void WriteProduct(InfoBox box, FirmsFile f, Product p, int day)
         {
+            if (p.K == ProductKind.Game && WriteGame(box, p))
+            {
+                return;   // the game studio's own page (Tech/Studio)
+            }
             FirmPlace firm = _director.FirmOf(p.Place);
             int id = p.Id;
             int rival = FirmsCatalogue.RivalStock(p.K, p.S);
@@ -482,6 +507,14 @@ namespace RealLifeOverhaul.Tech
                 int scope = FirmsCatalogue.GameScope[TalentCatalogue.Clamp(p.Scope, 0, 2)];
                 box.Line(TechText.Fill("reallife_tech_product_game_line", "scope", TechText.Scope(p.Scope), "done", TechText.Mille((int)System.Math.Min(1000L, (long)p.Progress * 1000 / scope)),
                     "hype", TechText.Mille(p.Hype), "sold", TechText.Whole(p.Users), "takings", TechText.Cents(Level(p.Revenue))));
+            }
+            else if (_director.SectorOn)
+            {
+                // under the sector a product has no rival of its own and no top on its features: its market's section below names the rivals
+                box.Line(TechText.Fill("reallife_tech_mkt_product_build", "features", p.Features.ToString(), "next", (FirmsRules.FeatureCost(p.Features) - p.Progress).ToString()));
+                box.Line(TechText.Fill("reallife_tech_product_sales", "customers", TechText.Whole(p.Users), "free", TechText.Whole(p.Free),
+                    "monthly", TechText.Cents(Level(FirmsRules.MonthlyRevenue(p))),
+                    "support", FirmsRules.SupportNeeded(p).ToString(), "have", firm != null ? firm.Crew.Support.ToString() : "0"));
             }
             else
             {
@@ -507,8 +540,16 @@ namespace RealLifeOverhaul.Tech
                 box.Line(TechText.Fill("reallife_tech_product_training", "done", TechText.Whole(p.Compute),
                     "need", TechText.Whole(InfraRules.TrainNeed(p.Features)), "inference", InfraRules.Inference(p).ToString()));
             }
-            box.Line(TechText.Fill("reallife_tech_product_quality", "quality", TechText.Mille(FirmsRules.Quality(p)), "bugs", p.Bugs.ToString(),
-                "appeal", firm != null ? TechText.Mille(FirmsRules.Appeal(p, firm.File, firm.Crew)) : "-"));
+            if (_director.SectorOn)
+            {
+                box.Line(TechText.Fill("reallife_tech_mkt_product_quality", "quality", TechText.Mille(SectorRules.Soundness(p.Bugs, FirmsRules.Allowance(p))), "bugs", p.Bugs.ToString()));
+                DrawSection(box, _director.SectorMarketSection(p, _studioWords));
+            }
+            else
+            {
+                box.Line(TechText.Fill("reallife_tech_product_quality", "quality", TechText.Mille(FirmsRules.Quality(p)), "bugs", p.Bugs.ToString(),
+                    "appeal", firm != null ? TechText.Mille(FirmsRules.Appeal(p, firm.File, firm.Crew)) : "-"));
+            }
             if (box.HasSelector && p.Stage < 2)
             {
                 if (p.K != ProductKind.Game)

@@ -96,6 +96,9 @@ namespace RealLifeOverhaul.Construction
     /// </summary>
     public static class ConstructionBridges
     {
+        /// <summary>What the city's people bring the company now, thousandths of the anchor day's (the living population); 0 for none, as before. Default: none.</summary>
+        public static Func<BuildDemand, int> People;
+
         // ------------------------------------------------------------------ the district
 
         /// <summary>The district's lots at this load, into the caller's list (cleared). Default: none, so no land is for sale.</summary>
@@ -135,6 +138,19 @@ namespace RealLifeOverhaul.Construction
 
         public delegate bool FinishOverCall(string lot, IList<string> over, string design, string size, int version, string type, int storeys, bool player, double price, string look,
                                             out string why);
+
+        /// <summary>
+        /// A block of the player's on a lot whose last flat is sold given to its residents: the district's record the city's, the player's
+        /// deed gone as the game's own sale leaves a building. Null when done, else why not (a session, not standing). Default: refused.
+        /// </summary>
+        public static Func<string, string> ToResidents;
+
+        /// <summary>
+        /// A block on a lot handed over on a day (the second) that an earlier version gave its residents though flats were unsold, the
+        /// player's again: the district's record theirs, their deed written at the price (the third), the landlord named for it gone.
+        /// Null when done, else why not (another building's record, a session, not standing). Default: refused.
+        /// </summary>
+        public static Func<string, int, double, string> GiveBack;
 
         // ------------------------------------------------------------------ the corner buildings (Scripts/Corners)
 
@@ -460,6 +476,7 @@ namespace RealLifeOverhaul.Construction
 
         public static void Reset()
         {
+            People = null;
             Lots = null;
             LotsStamp = null;
             DistrictLives = null;
@@ -472,6 +489,8 @@ namespace RealLifeOverhaul.Construction
             LandPrice = null;
             Finish = null;
             FinishOver = null;
+            ToResidents = null;
+            GiveBack = null;
             StandingAt = null;
             StandingOn = null;
             Demolish = null;

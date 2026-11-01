@@ -29,6 +29,12 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Per mille a rival buying up a district adds to the price of its buildings that are not the player's, by the game's district key.</summary>
         public static Func<string, int> Premium;
 
+        /// <summary>What the city's people bring a part of the property business now, thousandths of the anchor day's; 0 for none (the catalogue's figures stand). Default: none.</summary>
+        public static Func<EstateDemand, int> People;
+
+        /// <summary>A district's households taking or looking for a flat against the city's, thousandths, by the game's district id; 0 for none. Default: none.</summary>
+        public static Func<string, int> HousingIn;
+
         public static void Reset()
         {
             RentLever = null;
@@ -36,6 +42,8 @@ namespace RealLifeOverhaul.Economy
             EventOn = null;
             Changed = null;
             Premium = null;
+            People = null;
+            HousingIn = null;
         }
     }
 
@@ -115,8 +123,21 @@ namespace RealLifeOverhaul.Economy
                 Event = EstateBridges.EventOn != null ? EstateBridges.EventOn(day) : 0,
                 Season = Mathf.Clamp((int)TravelCatalogue.Season(day), 0, 3),
                 Weekday = Mathf.Clamp((int)TimeHelper.GetDayOfWeek(day) - 1, 0, 6),
-                RentScale = RentScale
+                RentScale = RentScale,
+                Guests = People(EstateDemand.Guests),
+                Hirers = People(EstateDemand.Hirers),
+                Seekers = People(EstateDemand.Seekers),
+                Budget = People(EstateDemand.Budget),
+                Movers = People(EstateDemand.Movers),
+                HousingIn = EstateBridges.HousingIn
             };
+        }
+
+        // What the city's people bring a part of the business now; 0 (none) with no living population.
+        private static int People(EstateDemand d)
+        {
+            Func<EstateDemand, int> people = EstateBridges.People;
+            return people != null ? Mathf.Max(0, people(d)) : 0;
         }
 
         /// <summary>The option's rental income as the rules take it: thousandths of the market's rent.</summary>

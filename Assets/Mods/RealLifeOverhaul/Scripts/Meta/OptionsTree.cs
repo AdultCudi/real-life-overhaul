@@ -52,6 +52,16 @@ namespace RealLifeOverhaul.Meta
             return this;
         }
 
+        /// <summary>More features this section stands for, after those of <see cref="For"/> (a page of the Guide with no options of its own); its "About this" is unchanged.</summary>
+        public TreeSection With(params string[] features)
+        {
+            var all = new string[Features.Length + features.Length];
+            Features.CopyTo(all, 0);
+            features.CopyTo(all, Features.Length);
+            Features = all;
+            return this;
+        }
+
         /// <summary>The feature whose Guide page explains this section, when the section is not a feature of its own.</summary>
         public TreeSection Guide(string feature)
         {
@@ -236,6 +246,8 @@ namespace RealLifeOverhaul.Meta
                 S("flare").For("flare").Main("social_media")
                     .Opts("social_media_notices", "flare_busy", "flare_city_office", "flare_share_posts", "flare_share_pictures", "flare_filter", "flare_theme", "flare_pictures", "flare_city_photos")
                     .Also("social media app followers posts likes selfie influencer"),
+                S("flarecity").For("flare_city").Need("social_media").Opt("living_flare", "living_population")
+                    .Also("residents followers reach seen interested funnel visits takings reviews rating stars ads advertise target district age income interest attention pull"),
                 S("texts").For("texts").Main("texts").Opts("texts_device", "texts_threads", "texts_replies", "texts_posts", "texts_people", "texts_official", "texts_rivals", "texts_ledger")
                     .Buttons("reallife_texts_status").Also("model words messages replies comments texts gpu processor pack lite staff gossip memory language"),
                 S("textsai").For("textsai").Need("texts").Opts("texts_service")
@@ -381,8 +393,16 @@ namespace RealLifeOverhaul.Meta
                 S("ownbank").For("economy_ownbank").Need("economy").Opts("economy_bank").Also("bank licence deposits savers loans regulator capital fund"),
                 S("bankbranch").For("economy_bank_branch").Need("economy").Opt("economy_bank_branch", "economy_bank")
                     .Also("bank branch branches teller tellers counter customers accounts deposit withdraw loan high street"),
-                S("living").For("living").Main("living_population").Opt("living_desks", "living_population")
-                    .Also("living population economy overhaul desk desks session sessions meeting team morale output burnout office manager delegate mini screen"),
+                S("living").For("living", "population").Main("living_population").Opt("living_desks", "living_population")
+                    .Also("living population economy overhaul desk desks session sessions meeting team morale output burnout office manager delegate mini screen")
+                    .Also("living_population", "residents people households census births deaths migration commuters jobs unemployment vacancies")
+                    .Also("living_population", "housing landlord landlords tax taxes spending customers demand district districts who contributes")
+                    .With("population_demand"),   // the Guide's page on where the businesses' customers come from
+                S("studio").For("studio").Opt("living_studio", "living_population")
+                    .Also("game studio games genre platform console mobile pc hype trailer expo review score critics sales piracy drm patch update dlc sequel port publisher bonus royalty rival"),
+                S("firms").For("firms").Opt("living_firms", "living_population")
+                    .Also("software studio consultancy cybersecurity security ai lab model web agency design studio data centre cloud market share rivals "
+                        + "startups sprint outage tender pitch incident training benchmark capacity power failover portfolio"),
                 S("endscale").For("economy_endscale").Opts("economy_endscale")
                     .Also("end game late scale billions hyperscaler cloud data centre racks broadband network fibre bank maintenance upkeep crews staff payback"),
                 S("brands").For("economy_brands").Need("economy").Opts("economy_brands").Also("chain franchise"),

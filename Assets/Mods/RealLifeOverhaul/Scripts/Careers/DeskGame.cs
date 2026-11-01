@@ -26,6 +26,10 @@ namespace RealLifeOverhaul.Careers
     {
         private static readonly List<EmployeeStationController> Found = new List<EmployeeStationController>(16);
         private static readonly Comparison<EmployeeStationController> ById = CompareById;
+        private static readonly FieldInfo BlockersField = GameContract.NavBlockers.Field;   // PlayerController._activeNavigationBlockers: the work hold told from the others
+
+        /// <summary>The notice when the game would not seat the player at a desk or take them at a station: the work did not start.</summary>
+        public const string SeatRefusedKey = "reallife_desk_seat_refused";
 
         private static PlayerController Player => InstanceBehavior<GameManager>.Instance != null ? InstanceBehavior<GameManager>.Instance.playerController : null;
 
@@ -141,8 +145,8 @@ namespace RealLifeOverhaul.Careers
             return target != Vector3.zero && FitReach.Walkable(from, target, DeskReach.SampleRadius, out _);
         }
 
-        // A station the game would let somebody work at: standing, not for sale, not at a receptionist's desk of the game's.
-        private static bool Usable(EmployeeStationController station)
+        /// <summary>A station the game would let somebody work at: standing, not for sale, not at a receptionist's desk of the game's.</summary>
+        public static bool Usable(EmployeeStationController station)
         {
             return station != null && station.gameObject.activeInHierarchy && !(station.playerItemPurchaserSettings != null && station.playerItemPurchaserSettings.enabled)
                    && station.Item != null && station.Item.assignable && !(station.parentItemController is BusinessEmployeeController);
@@ -197,6 +201,20 @@ namespace RealLifeOverhaul.Careers
                 return;
             }
             manager.AssignAiToEmployeeStation(station);
+        }
+
+        /// <summary>
+        /// The station's scheduled employee seated again at a business of the player's, as the game's WorkActivity does a frame
+        /// after the player stands up from one there; nothing while it is closed (the game seats nobody then either).
+        /// </summary>
+        public static void Restaff(EmployeeStationController station)
+        {
+            BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
+            if (station == null || manager == null || !BuildingManager.IsInsideBuilding || !manager.IsPlayerOwnedBusiness || !manager.isOpen || station.employee != null)
+            {
+                return;
+            }
+            station.UpdateEmployee();
         }
 
         /// <summary>True if somebody else is at the station now (the game seated one of its people there again).</summary>
@@ -371,7 +389,8 @@ namespace RealLifeOverhaul.Careers
 
         /// <summary>
         /// A second thing the player can click to work, owned by a feature other than the careers' (the bank branch's counter,
-        /// Economy/OwnBank/Branch), with what a click on it does. Set and cleared by its owner; asked about only while it is set.
+        /// Economy/OwnBank/Branch; a free desk of the player's own tech firm, Tech's OwnDesk), with what a click on it does. Set
+        /// by its owner, and cleared only by the owner whose <see cref="OtherClicked"/> it holds; asked about only while it is set.
         /// </summary>
         public static EntityController OtherTarget;
         public static Action<EntityController> OtherClicked;
@@ -543,6 +562,9 @@ namespace RealLifeOverhaul.Careers
             return uis != null && uis.playerActivityUI != null && ReferenceEquals(uis.playerActivityUI.GetCurrentActivity, activity);
         }
 
+        /// <summary>True while the game's work panel is up (an activity on, or one offered) or the player is in a vehicle.</summary>
+        public static bool Busy => PlayerActivityUI.IsPanelOpen || PlayerHelper.IsUsingVehicle;
+
         /// <summary>True while the game's panel still has an activity.</summary>
         public static bool Shows(IPlayerActivity activity)
         {
@@ -576,33 +598,81 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>The player sets to work at a station whose people stand, as WorkActivity does it on arriving: the station's employee, held there.</summary>
-        public static void SitAt(EmployeeStationController station)
+        /// <summary>
+        /// The player sets to work at a station as WorkActivity does it on arriving: the station's employee, held there by the
+        /// work hold, and on its chair where it is a desk (the game's desk seats its employee itself). True when they are at it
+        /// so. False when the game would not take them, with the player given back free to walk and the game's notice said: a
+        /// caller ends its work then, and marks it begun no later than a true answer, so that each of its ends stands them up
+        /// (EconomyCheck's DeskSeatChecks). Never throws.
+        /// </summary>
+        public static bool SitAt(EmployeeStationController station)
         {
             PlayerController player = Player;
             if (player == null || station == null)
             {
-                return;
+                return false;
             }
             player.SetNavigationBlocker(NavigationBlocker.WorkActivity);
-            EnergyHelper.RemoveEnergySpender("move");
-            station.UnassignEmployee();
-            station.Occupied = true;
-            station.AssignEmployee(player.Character, PlayerHelper.GetPlayerEmployeeInstance());
-            player.Character.LinkToPointAndClickObject(station);
+            try
+            {
+                EnergyHelper.RemoveEnergySpender("move");
+                Free(station);   // the game's person sent away; never the bare UnassignEmployee, which a desk's own (WorkstationController) throws in with nobody at it
+                station.Occupied = true;
+                station.AssignEmployee(player.Character, PlayerHelper.GetPlayerEmployeeInstance());
+                player.Character.LinkToPointAndClickObject(station);
+                if (Holds(station, player))
+                {
+                    return true;
+                }
+                CareersDirector.Logger?.Warn("Careers: the game did not take the player at the " + station.name + (station is DesktopWorkstationController ? " onto its chair" : " as its employee")
+                                             + ": they are given back free to walk and the work does not start.");
+            }
+            catch (Exception e)
+            {
+                CareersDirector.Logger?.Error(e);
+            }
+            StandFrom(station);
+            Refused();
+            return false;
         }
 
-        /// <summary>...and stands up from it, as WorkActivity's Finish does; the work blocker goes whatever fails before it. Never throws.</summary>
+        // True while the player is the station's employee, and on its chair where it is a desk.
+        private static bool Holds(EmployeeStationController station, PlayerController player)
+        {
+            return IsPlayers(station) && (!(station is DesktopWorkstationController) || player.Character.isSittingOn != null);
+        }
+
+        // The player is the station's employee: read by the tag the game's Employee reads its isPlayer from, set only on the frame after.
+        private static bool IsPlayers(EmployeeStationController station)
+        {
+            return station != null && station.employee != null && station.employee.gameObject.CompareTag("Player");
+        }
+
+        /// <summary>
+        /// ...and stands up from it, as WorkActivity's Finish does: the station let go only while the player is its employee
+        /// (a desk's own let-go throws with nobody at it), the pose ended, the work hold off. Each step in its own try, so a
+        /// fault in one never skips the next; safe twice, and with a station the player has already left. Never throws.
+        /// </summary>
         public static void StandFrom(EmployeeStationController station)
         {
             PlayerController player = Player;
             try
             {
-                if (station != null)
+                if (IsPlayers(station))
                 {
                     station.UnassignEmployee();
+                }
+                if (station != null && !Taken(station))
+                {
                     station.Occupied = false;
                 }
+            }
+            catch (Exception e)
+            {
+                CareersDirector.Logger?.Error(e);
+            }
+            try
+            {
                 if (player != null)
                 {
                     player.Character.Reset();
@@ -616,36 +686,63 @@ namespace RealLifeOverhaul.Careers
             {
                 Unhold(player);
             }
+            StoodSeen(player, station != null ? station.name : "station");
         }
 
-        /// <summary>The player sits on a desk's chair seat, held by the work blocker; <paramref name="stood"/> is where to stand up.</summary>
-        public static void SitOn(Transform seat, EmployeeStationController station, out Vector3 stood)
+        /// <summary>
+        /// The player sits on a desk's chair seat, held by the work hold; <paramref name="stood"/> is where to stand up. True
+        /// when seated; false, with the player given back free to walk and the game's notice said, as <see cref="SitAt"/>. Never throws.
+        /// </summary>
+        public static bool SitOn(Transform seat, EmployeeStationController station, out Vector3 stood)
         {
             PlayerController player = Player;
             stood = player != null ? player.transform.position : Vector3.zero;
             if (player == null || seat == null)
             {
-                return;
+                return false;
             }
+            Vector3 at = stood;
             player.SetNavigationBlocker(NavigationBlocker.WorkActivity);
-            EnergyHelper.RemoveEnergySpender("move");
-            if (station != null)
+            try
             {
-                station.Occupied = true;
+                EnergyHelper.RemoveEnergySpender("move");
+                if (station != null)
+                {
+                    station.Occupied = true;
+                }
+                player.Character.SitOnChair(seat);
+                if (player.Character.isSittingOn == seat)
+                {
+                    return true;
+                }
+                CareersDirector.Logger?.Warn("Careers: the player could not be seated on the " + seat.name + ": they are given back free to walk and the work does not start.");
             }
-            player.Character.SitOnChair(seat);
+            catch (Exception e)
+            {
+                CareersDirector.Logger?.Error(e);
+            }
+            StandUp(at, station);
+            Refused();
+            return false;
         }
 
-        /// <summary>...and stands up beside the desk; the work blocker goes whatever fails before it. Never throws.</summary>
+        /// <summary>...and stands up beside the desk; each step in its own try, the work hold off whatever fails before it. Safe twice. Never throws.</summary>
         public static void StandUp(Vector3 at, EmployeeStationController station)
         {
             PlayerController player = Player;
             try
             {
-                if (station != null)
+                if (station != null && !Taken(station))
                 {
                     station.Occupied = false;
                 }
+            }
+            catch (Exception e)
+            {
+                CareersDirector.Logger?.Error(e);
+            }
+            try
+            {
                 if (player != null)
                 {
                     player.Character.Reset();
@@ -664,17 +761,87 @@ namespace RealLifeOverhaul.Careers
             {
                 Unhold(player);
             }
+            StoodSeen(player, station != null ? station.name : "desk");
         }
 
-        // The work blocker off the player: the last step of every way they stand up.
+        // The work hold off the player, if it is on: the last step of every way they stand up, so a second stand-up is no warning of the game's.
         private static void Unhold(PlayerController player)
         {
             try
             {
-                if (player != null)
+                if (player != null && WorkHeld(player))
                 {
                     player.UnsetNavigationBlocker(NavigationBlocker.WorkActivity);
                 }
+            }
+            catch (Exception e)
+            {
+                CareersDirector.Logger?.Error(e);
+            }
+        }
+
+        // True while the game holds the player's walking for work, or when its holds cannot be read (then it is taken off regardless).
+        private static bool WorkHeld(PlayerController player)
+        {
+            return !(BlockersField?.GetValue(player) is HashSet<NavigationBlocker> blockers) || blockers.Contains(NavigationBlocker.WorkActivity);
+        }
+
+        /// <summary>True while the player is at a station as <see cref="SitAt"/> leaves them: its employee, on its chair where it is a desk, held by the work hold.</summary>
+        public static bool SeatedAt(EmployeeStationController station)
+        {
+            PlayerController player = Player;
+            return player != null && station != null && Holds(station, player) && WorkHeld(player);
+        }
+
+        /// <summary>
+        /// True when the player can walk again after a desk: no work hold (where the game's holds can be read), the navigation
+        /// agent on, not seated, not held still; otherwise false with what still holds them. Read on an event, never per frame.
+        /// </summary>
+        public static bool Walks(out string why) => Walks(Player, out why);
+
+        private static bool Walks(PlayerController player, out string why)
+        {
+            ThirdPersonCharacter body = player != null ? player.Character : null;
+            if (body == null)
+            {
+                why = "no player";
+            }
+            else if (BlockersField?.GetValue(player) is HashSet<NavigationBlocker> blockers && blockers.Contains(NavigationBlocker.WorkActivity))
+            {
+                why = "the work hold is still on";
+            }
+            else if (body.navmeshAgent == null || !body.navmeshAgent.enabled)
+            {
+                why = "the navigation agent is off";
+            }
+            else if (body.isSittingOn != null)
+            {
+                why = "still seated on " + body.isSittingOn.name;
+            }
+            else
+            {
+                why = body.isKinematic ? "held still (kinematic)" : null;
+            }
+            return why == null;
+        }
+
+        // With Developer diagnostics on, one line a stand-up: free to walk again, or what still holds the player.
+        private static void StoodSeen(PlayerController player, string what)
+        {
+            if (!Meta.Dev.Verbose || player == null)
+            {
+                return;
+            }
+            bool walks = Walks(player, out string why);
+            CareersDirector.Logger?.Info("Desk check (seat): stood up from the " + what + ": " + (walks ? "free to walk (no work hold, on the navigation mesh, not seated): PASS" : "FAIL, " + why));
+        }
+
+        // The game's own notice for a seat the game would not give: the work did not start.
+        private static void Refused()
+        {
+            try
+            {
+                Notifications.ShowError(SeatRefusedKey, SeatRefusedKey);
             }
             catch (Exception e)
             {

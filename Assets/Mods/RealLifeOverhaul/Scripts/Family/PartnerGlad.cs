@@ -37,7 +37,11 @@ namespace RealLifeOverhaul.Family
             }
             if (day - s.PGladDay >= After[s.PGladNext])
             {
-                PartnerVoice.Warm(lines[s.PGladNext], Args.Us);
+                // A line whose words do not fit the home (the flat, in a Hamptons house: Core/LineNeeds) is passed over; the next comes in its turn.
+                if (LineNeeds.Fits(lines[s.PGladNext]))
+                {
+                    PartnerVoice.Warm(lines[s.PGladNext], Args.Us);
+                }
                 s.PGladNext++;
             }
         }

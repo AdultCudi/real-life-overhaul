@@ -38,6 +38,7 @@ namespace RealLifeOverhaul.Economy
         public static readonly long[] KindCents = { 40000L, 35000L, 30000L, 600000L, 0L };   // the usual sum: $400 to open, $350 in, $300 out, a $6,000 loan
         public const int SumLeast = 400, SumMost = 1800;     // each visit's sum: this spread of the usual, thousandths
         public static readonly int[] AskBy = { 150, 400, 450 };   // who asks for a loan at the counter: poorly, fairly and well rated (OwnBankCatalogue.Poor, Fair, Good)
+        public const int PeopleLeast = 500, PeopleMost = 2000;   // thousandths: how far the residents round a branch move what its visits are for and their sums
 
         // What the bank charges at the counter
         public const long OpenFeeCents = 2500L;     // an account opened: $25

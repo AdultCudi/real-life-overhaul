@@ -160,7 +160,7 @@ namespace RealLifeOverhaul.Flare
         // A comment's card: the commenter as the speaker, the post and any earlier comment it answers; null if a value is missing.
         private TextRequest CommentRequest(FlarePost p, FlareComment c, string intent, long now, FlareComment before, string earlier, long asked, bool urgent)
         {
-            var r = new TextRequest { Priority = urgent ? TextPriority.Soon : TextPriority.Background, Day = (int)(c.At / 1440) };
+            var r = new TextRequest { Priority = urgent ? TextPriority.Soon : TextPriority.Background, Day = (int)(c.At / 1440), HoldsLine = true };   // never shown without words
             string home;
             if (!Commenter(c, r.Who, out home))
             {

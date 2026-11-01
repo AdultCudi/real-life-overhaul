@@ -1,0 +1,65 @@
+# The tech firms' markets
+
+## In a sentence
+
+Under the living economy's master option **Living population** and its own option **Tech firms rebuilt**, the player's software studios, AI labs, IT consultancies, cybersecurity firms, web agencies, design studios and data centres sell into markets sized from the city's people and firms, shared with rival companies and startups that play by the same rules, with no cap but the market, and each kind has its own desk sessions.
+
+## Where the code is
+
+- Folder: [`Scripts/Tech/Sector`](../../Assets/Mods/RealLifeOverhaul/Scripts/Tech/Sector/); the director's parts in `Scripts/Tech/TechDirector.Sector.cs`, `TechDirector.SectorDesk.cs` and `TechDirector.SectorTests.cs`; the fourteen desk sessions and the population's city in `Scripts/Wiring/Wiring.SectorLinks.cs`.
+- Options: "Tech firms rebuilt" (`living_firms`), under "Living population" (`living_population`). Off, the firms run by their own rules as before: a market of their own for each product, the old offers and tenders, the old cloud. The products, customers, contracts and racks are the firms' own records either way, so switching it on and off loses nothing.
+
+```
+Tech/Sector/                    the first ten are game-free and compiled by EconomyCheck (SectorChecks.cs)
+  SectorCatalogue                 every figure: the world the city stands for, paces, curves, the rivals, IT work, data centres, the sessions
+  SectorFile                      the city last read, the markets' anchors, the rival products and companies, the power price, the firms' and products' records
+  SectorRules                     the markets sized from the city, the curves in place of the clamps, a product's day in its market, reputation
+  SectorRules.Rivals              the companies' and startups' products, their day by the player's rules, tenders, who comes for the player's people
+  SectorRules.Work                the city's IT work shared among the firms, client sizes, security incidents
+  SectorRules.Infra               racks, compute and AI compute from the city's firms and labs, the cloud's share, power price spikes
+  SectorRules.Desk                the fourteen desk sessions: what each choice does, a manager's sound choice
+  SectorRules.Old                 an older save taken in: the rivals as strong as before, markets held up for old customers
+  SectorStore, SectorShare        the save's line, "reallife:tech_sector"; the shared city's part, letter R
+  SectorBridges                   the population's city and Flare's talk bridge
+  SectorViews                     every screen as data: a firm's page, a product's market, the data centres' markets
+  SectorGuide                     the feature's entry and the Guide page's figures
+  TechApp.Sector                  the screens drawn in the Tech app until the mod's design system draws the same data
+```
+
+## The markets
+
+Each kind of product and buyer is one market: software for people, businesses and companies, apps, licences, and AI for each buyer. Its buyers are the city's people (with their households' mood for digital spending), its small and mid-sized businesses or its large organisations, counted from the population's employers (a business of the game's is one firm of its size, an office building's other floors many firms in Manhattan's mix, a big public body and the mod's own companies large), times the world each stands for beyond the city, growing each markets' year. With the population not running, a documented city of the same size stands in.
+
+A product's share is its appeal among the buyers who know of it against every other product's in the market and against buying nothing (`ScaleRules.Share`). Appeal is features against the market's usual number (2r/(1+r), no clamp), soundness (no floor of 300), price against the market's going price (the money scale's curve), the firm's name (no top of 800) and its designers (a curve). Awareness is a month of marketing over the buyers (`ScaleRules.Reach`) and what the customers tell others. Customers move towards the share at the market's pace (people fastest, companies slowest, sellers speeding businesses), churn by the firms' own rule, and a product past its share loses customers to the others. A licence's deals close at its pace while it is under its share: no cap of 400 deals. Reliability and security postures are curves with no top of 950.
+
+## Rivals
+
+The listed companies that make software (Codeharbour Software, Abacus Lane Software, Shopfront Online, Tallyrow Analytics, Signpost Search, Ledgerline Payments) have a product in each market they sell in, and every running startup of a software sector one in its market. Each builds with its team by the player's feature cost (a model also needs its compute), cuts its price when it has lost a good part of its customers and raises it back, and goes down now and then. Council tenders are decided by one rule for every bidder, each company with its own name. A company that just took a lead or won a tender comes for the player's people harder. Seeded from the sector's seed.
+
+## IT work, data centres and the cloud
+
+The city's firms put out projects by their size; each of the player's firms that takes work earns its share against the city's rival IT firms (a web agency or a design studio against its fewer rival agencies) by its name and sellers, carried until a whole offer (never a daily draw); a large client's project is bigger, and a fresh portfolio draws more of them. A security firm's managed clients are attacked now and then. The city's firms rent racks (by size, at the end game's scale the region too) taken by tier and the cloud's name; they buy compute and AI compute, with the rivals' software customers' hosting and labs' training, taken by the cloud's price and name against the rival clouds. Power price spikes come every month or two.
+
+## At the desk
+
+Fourteen sessions, each held at the owner's desk in the firm's office or by its manager: a software studio's sprint planning, outage response and big customer's demands; an AI lab's training run (with a benchmark against the rival labs) and model launch; an IT consultancy's pitch or tender and scope creep; a cybersecurity firm's incident response; the data centres' capacity planning, power price spike and failover (offered while the player has a data centre); a web agency's or design studio's client pitch, revision round and portfolio piece. A session waiting on an event (an outage, an offer, a spike) is due while it waits.
+
+## Older saves
+
+On the sector's first day the companies' products start as strong as the rivals the products faced, then each market is held up so every product sits at its share with the customers it has, fading to the city's own market over a year: nothing jumps.
+
+## Going Public
+
+Only the player's own firms, products and professionals are touched. Every roll is seeded. The city, the companies, the rivals, the power price and the markets' anchors are the host's: a versioned part of the shared city (`SectorShare`, letter R) carries them to the guests, who apply it and never step the rivals; a message of another version of the mod is never applied. Each player's products stay on their own machine.
+
+## Cost
+
+Nothing per frame. The markets run inside the firms' day: a pass over the eight markets and the rival products, and a product's day each (EconomyCheck: 48 products and the rivals under 0.5 ms a day; the save's line written and read in under 2 ms). The city is read once a game day. A page builds its screen when drawn.
+
+## Tests
+
+- **Hold a software studio's, AI lab's, IT consultancy's, cybersecurity firm's, web agency's or design studio's, or the data centres' desk sessions now**: each kind's sessions held at once with a manager's sound choices, the event a session answers set up first where the test can.
+- **Show the tech markets now**: each market's buyers, the player's share and the leader in the log, the best share in a notice.
+- **A year of the tech markets now**: the rivals' year and the player's products selling through it, the takings booked today.
+
+With Developer diagnostics on: `Tech check (desk, ...)`, `Tech check (market, ...)` and `Tech check (markets, rivals)`, each with PASS.

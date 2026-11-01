@@ -83,6 +83,7 @@ namespace RealLifeOverhaul.Tech
                         "regions", InfraRules.Regions(f.Centres).ToString()));
                 }
                 Owed(box, f);
+                DrawSection(box, _director.SectorInfraSection(_studioWords));   // under Living population: the racks, compute and power price of the city's firms
                 box.Note(TechText.Fill("reallife_infra_about", "mbps", InfraCatalogue.NetNeeded.ToString(), "per", InfraCatalogue.RacksPerTechnician.ToString()));
                 Meta.Guide.Point(box, SectorGuide);
             }

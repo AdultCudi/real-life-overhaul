@@ -80,7 +80,14 @@ internal static partial class Program
         ("DistrictSave/DistrictSaveDirector.cs", "BeforeWrite", new[] { "CompanionGame.End(save);" }, new string[0],
             "the district save joins the report's text, written on a worker beside its section"),
         ("World/MapLinks.cs", "Feed", new[] { "apply: false", "Category.Show()" }, new string[0],
-            "a batch of markers is shown once, not once a marker (the row's markers were gone over for each)")
+            "a batch of markers is shown once, not once a marker (the row's markers were gone over for each)"),
+        ("Population/PopulationDirector.cs", "BeginDay", new[] { "DaySpread.Shared.Flush(this)", "DaySpread.Shared.Add(", "_dayStep", "Time.frameCount" },
+            new[] { "ReadSeeds(", "_sim.Step(", "RunAll(" }, "the city's day is queued at midnight, not lived: a day still owed is finished first, the businesses are read in the frames after"),
+        ("Population/PopulationDirector.cs", "DayStep", new[] { "WorkSlice.Of(StepMs", "_sim.Step(ref slice)", "ReadSeeds(" }, new[] { "WorkSlice.Whole", "RunAll(" },
+            "a step of the city's day is the businesses read, a slice of what people hear of them, or a slice of about a millisecond of the people's day"),
+        ("Population/PopulationDirector.cs", "OnSave", new[] { "DaySpread.Shared.Flush(this)" }, new string[0], "the save's line holds the city's whole day"),
+        ("Population/PopulationDirector.cs", "StandDown", new[] { "DaySpread.Shared.Flush(this)", "DaySpread.Shared.Drop(this)" }, new string[0],
+            "standing down plays the day owed before the line is kept, and leaves nothing queued")
     };
 
     private static void SliceChecks()

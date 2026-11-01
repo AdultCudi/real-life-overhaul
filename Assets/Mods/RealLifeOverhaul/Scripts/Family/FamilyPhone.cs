@@ -324,13 +324,24 @@ namespace RealLifeOverhaul.Family
         }
     }
 
-    /// <summary>The Family contact's call: the Family page.</summary>
+    /// <summary>The Family contact's call: the Family page, or first of all going over to Mom's while her dinner table is set.</summary>
     public sealed class FamilyPageDialog : Dialog
     {
         public FamilyPageDialog()
         {
             npcNameKey = FamilyPhone.FamilyId;
-            DialogController.current.ShowEntry(RealLifeOverhaul.Guard.Entry(Guard(() => FamilyPage.Page(0))));
+            DialogController.current.ShowEntry(RealLifeOverhaul.Guard.Entry(Guard(First)));
+        }
+
+        // Mom's text on the dinner day says to ring: the call opens on going over, with the page a press away.
+        private static DialogEntry First()
+        {
+            if (!Relatives.CanGoToMoms)
+            {
+                return FamilyPage.Page(0);
+            }
+            return FamilyTalk.Either(FamilyText.Say("reallife_family_do_moms"), "reallife_family_do_moms_yes", Relatives.GoToMoms,
+                "reallife_mom_dinner_later", () => FamilyPage.Page(0));
         }
 
         /// <summary>A call's first page, or a polite close when family life is not loaded or the page faults.</summary>

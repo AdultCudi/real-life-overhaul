@@ -372,7 +372,7 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_tech_sector_about").Help("reallife_guide_tech_sector")
                 .Owns(Settings.TechSectorId, Settings.TechOfferNotesId, Settings.TechInfraOfferId)
                 .Test("reallife_tech_test_offer", "reallife_tech_test_tender", "reallife_tech_test_outage", "reallife_tech_test_breach", "reallife_infra_test_down",
-                    "reallife_infra_test_price_war", "reallife_infra_test_offer", "reallife_tech_test_net")
+                    "reallife_infra_test_price_war", "reallife_infra_test_offer", "reallife_tech_test_net", "reallife_tech_test_own_desk", "reallife_tech_test_desk_seat")
                 .Data(Tech.FirmsStore.Key, Tech.InfraStore.Key)
                 .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Tech.TechDirector.Instance?.Forget()));

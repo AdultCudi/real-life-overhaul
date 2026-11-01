@@ -264,11 +264,15 @@ namespace RealLifeOverhaul
 
         public Func<bool> Test { get; private set; }
 
+        /// <summary>
+        /// True if the event may come now: its needs, money bounds and hours, what it is about (<see cref="Only"/>), and
+        /// what its words take for granted (Core/LineNeeds: a fridge, a landlord, a car).
+        /// </summary>
         public bool Fits(in LifeContext context)
         {
             // MinMoney 0 means any: a player in debt still gets the events that cost nothing. Bounds are at the start's prices.
             if ((Needs & context.Flags) != Needs || (MinMoney > 0 && context.Money < Prices.At(MinMoney))
-                || (MaxMoney >= 0 && context.Money > Prices.At(MaxMoney)) || (Test != null && !Test()))
+                || (MaxMoney >= 0 && context.Money > Prices.At(MaxMoney)) || (Test != null && !Test()) || !LineNeeds.Fits(Key))
             {
                 return false;
             }

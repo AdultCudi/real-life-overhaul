@@ -74,7 +74,8 @@ namespace RealLifeOverhaul.Sessions
                         DeskGame.Label(SessionText.Fill("reallife_session_label_of", "at", SessionText.Whole(_at + 1), "count", SessionText.Whole(_defs.Length)), 0)
                     }
                     : new[] { DeskGame.Label(SessionText.T(def.AboutKey), 0), DeskGame.Label(status, colour) };
-                int n = 1 + (can ? 1 : 0) + (_defs.Length > 1 ? 1 : 0) + (hand != 0 ? 1 : 0), k = 0;
+                bool work = SessionBridges.WorkHereNow(_station);   // the owner's own work at this desk, when it is the firm's only free one (Tech's own desk)
+                int n = 1 + (can ? 1 : 0) + (_defs.Length > 1 ? 1 : 0) + (hand != 0 ? 1 : 0) + (work ? 1 : 0), k = 0;
                 _buttons = new ButtonInfo[n];
                 _buttons[k++] = new ButtonInfo("CancelRealLifeSession", "common_cancel", "gray", Guard.Way(Cancel), PlayerAction.Cancel);
                 if (can)
@@ -88,7 +89,11 @@ namespace RealLifeOverhaul.Sessions
                 }
                 if (hand != 0)
                 {
-                    _buttons[k] = new ButtonInfo("HandRealLifeSession", hand > 0 ? "reallife_session_button_hand" : "reallife_session_button_take", "gray", Guard.Wrap(Hand), PlayerAction.Interact);
+                    _buttons[k++] = new ButtonInfo("HandRealLifeSession", hand > 0 ? "reallife_session_button_hand" : "reallife_session_button_take", "gray", Guard.Wrap(Hand), PlayerAction.Interact);
+                }
+                if (work)
+                {
+                    _buttons[k] = new ButtonInfo("WorkRealLifeSessionDesk", "reallife_session_button_work", "gray", Guard.Wrap(Work), PlayerAction.SpecialInteract);
                 }
                 return;
             }
@@ -125,6 +130,17 @@ namespace RealLifeOverhaul.Sessions
             }
             _director.Hand(Def);
             Page();
+        }
+
+        // The owner's own work at this desk instead: nothing of a session begun, the panel let go, and the work offered once it has gone.
+        private void Work()
+        {
+            if (_state != PlayerActivityState.NotStarted || _pressed || _step >= 0)
+            {
+                return;
+            }
+            End(false, false);
+            _director.WorkAfter(_station);
         }
 
         private void Begin()
@@ -210,19 +226,27 @@ namespace RealLifeOverhaul.Sessions
             }
             try
             {
-                _state = PlayerActivityState.Started;   // the game's panel makes it Running on its next frame
                 Transform seat = DeskGame.SeatOf(_station);
                 if (seat != null)
                 {
-                    _seated = true;
-                    DeskGame.SitOn(seat, _station, out _stood);
+                    _seated = true;   // how End stands them up, once begun
+                    if (!DeskGame.SitOn(seat, _station, out _stood))
+                    {
+                        End(false, false);   // never held: DeskGame gave the player back free to walk and said why, and nothing of the session is spent
+                        return;
+                    }
                     _nextType = Time.time + UnityEngine.Random.Range(0f, 6f);
                 }
+                _state = PlayerActivityState.Started;   // only once seated: every way out from here stands the player up (End); the game's panel makes it Running on its next frame
                 _director.Sat(Def);
             }
             catch (Exception e)
             {
                 SessionDirector.Logger?.Error(e);
+                if (_state == PlayerActivityState.MovingTowardsActivity)
+                {
+                    End(false, false);   // a fault before the seat: nothing held, nothing left on its way
+                }
             }
         }
 

@@ -191,6 +191,40 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>
+        /// Options-menu test button: the fridge's repair bill (hm12) at once if a home of the player's has a fridge, else a
+        /// notice that it cannot come (Core/LineNeeds), so the fix can be seen both ways without waiting for the roll.
+        /// </summary>
+        public void TriggerFridgeBill()
+        {
+            if (!ModState.Loaded)
+            {
+                return;
+            }
+            try
+            {
+                LifeEvent bill = null;
+                foreach (LifeEvent e in LifeEventCatalogue.All)
+                {
+                    bill = e.Id == FridgeBill ? e : bill;
+                }
+                if (bill == null || !LineNeeds.Fits(bill.Key))
+                {
+                    Logger?.Info("Life events test: the fridge's repair bill was not fired: no home of the player's has a fridge (Core/LineNeeds).");
+                    Notify(NotificationType.Warning, "reallife_test_event_fridge_no");
+                    return;
+                }
+                Logger?.Info("Life events test: the fridge's repair bill fired: a home of the player's has a fridge.");
+                LifeEventRunner.Run(bill);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+        }
+
+        private const string FridgeBill = "hm12";   // the life event a player was billed by for a fridge they did not own
+
         // LifeEventDeck keeps a save from seeing one twice.
         private void FireRandomEvent()
         {
@@ -203,6 +237,12 @@ namespace RealLifeOverhaul
             }
             ModState.LastEventId = picked.Id;
             Logger?.Info($"Life event: {picked.Id} ({ModState.SeenEvents.Count}/{LifeEventCatalogue.All.Length} seen)");
+            LineNeed needs = LineNeeds.Of(picked.Key);
+            if (needs != LineNeed.None && Meta.Dev.Verbose)
+            {
+                Logger?.Info("Line needs check (life event " + picked.Id + "): its words need " + needs + ", read from the game as "
+                             + (LineNeeds.Holds(needs) ? "so: PASS." : "not so: FAIL."));
+            }
             LifeEventRunner.Run(picked);
         }
 

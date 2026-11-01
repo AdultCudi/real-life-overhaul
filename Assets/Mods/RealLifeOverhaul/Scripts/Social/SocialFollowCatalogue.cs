@@ -183,7 +183,7 @@ namespace RealLifeOverhaul
             S("mom_divorced", "your divorce", Comfort, Family + "mom_divorced");
             S("mom_grandchild_birthday", "a grandchild's birthday", Thanks, Family + "mom_birthday");
             S("mom_wedding_invite", "the wedding", Laugh, Family + "mom_invited");
-            S("mom_holiday", "a holiday", Come, Family + "holiday_invite", Family + "holiday_at_moms");
+            S("mom_holiday", "a holiday", Come, Family + "holiday_invite", Family + "holiday_at_moms", Family + "holiday_at_moms_now");
             S("mom_holiday_missed", "a holiday", Sorry, Family + "holiday_missed");
             S("mom_visit", "her visit", Thanks, Family + "mom_visit");
             S("friend_wedding_invite", "the wedding", Laugh, Family + "friend_invited");

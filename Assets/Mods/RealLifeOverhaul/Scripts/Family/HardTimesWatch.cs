@@ -266,6 +266,7 @@ namespace RealLifeOverhaul.Family
             g.PlaceDay = m.PlaceDay;
             g.Places = m.Places;
             g.MovedDay = m.MovedDay;
+            g.Bedless = !LineNeeds.Fits(HardTimes.TowelKey);
             g.PriceLevel = Prices.Level;
             g.NetKnown = _money.NetKnown;
             g.NetWorth = _money.NetWorth;

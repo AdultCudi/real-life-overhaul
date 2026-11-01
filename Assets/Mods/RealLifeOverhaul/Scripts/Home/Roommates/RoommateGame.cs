@@ -190,6 +190,9 @@ namespace RealLifeOverhaul.Roommates
             return dish != null && HomeState.PutBy(1, dish.Number, RoommateRules.MealFill) > 0;
         }
 
+        /// <summary>True if the line's needs (Core/LineNeeds) hold at the home they share: a portion left needs a fridge there.</summary>
+        public static bool FitsAt(string key, string street, int number) => LineNeedsGame.HomeHas(HomeAt(street, number), LineNeeds.Of(key));
+
         public static bool HasMeal => HomeLifeOn && HomeState.Leftovers > 0;
 
         public static bool EatMeal()

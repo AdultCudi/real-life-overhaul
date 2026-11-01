@@ -235,7 +235,8 @@ namespace RealLifeOverhaul.Careers
             {
                 BuildingRegistration reg = _academies[i];
                 int staff = Staff(reg);
-                int students = StudyRules.AcademyStudents(staff, Council);
+                int learners = CareersBridges.Learners != null ? CareersBridges.Learners() : 0;
+                int students = StudyRules.AcademyStudents(staff, Council, learners > 0 ? learners : 1000);   // the residents who want a course, where the living population runs
                 long cents = (long)students * Prices.At(StudyCatalogue.AcademyFeeCents);
                 if (cents > 0)
                 {

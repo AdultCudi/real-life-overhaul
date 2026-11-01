@@ -89,9 +89,10 @@ namespace RealLifeOverhaul.Tech
             }
             for (int i = 0; i < _firmsFile.Products.Count; i++)
             {
-                n += FirmsRules.CanLaunch(_firmsFile.Products[i]) ? 1 : 0;
+                Product p = _firmsFile.Products[i];
+                n += FirmsRules.CanLaunch(p) && !(_studioOn && p.K == ProductKind.Game) ? 1 : 0;   // the studio counts its own games below
             }
-            return n;
+            return n + StudioWaiting();
         }
 
         private void TechBadge()
@@ -117,7 +118,7 @@ namespace RealLifeOverhaul.Tech
         internal Product NewProduct(string place, ProductKind kind, Segment segment, int scope)
         {
             FirmPlace firm = FirmOf(place);
-            if (firm == null || !FirmsRules.Makes(firm.File.K, kind) || FirmsRules.Room(_firmsFile, place) != FirmsRules.RoomYes || Save == null)
+            if (firm == null || !FirmsRules.Makes(firm.File.K, kind) || FirmsRules.Room(_firmsFile, place, _sectorOn) != FirmsRules.RoomYes || Save == null)
             {
                 return null;   // the page does not offer the button then, and says which limit it is
             }
@@ -155,7 +156,17 @@ namespace RealLifeOverhaul.Tech
         {
             Product p = _firmsOn ? _firmsFile.ProductOf(id) : null;
             FirmPlace firm = p != null ? FirmOf(p.Place) : null;
-            if (p == null || firm == null || Save == null || !FirmsRules.CanLaunch(p))
+            if (p == null || firm == null || Save == null)
+            {
+                return false;
+            }
+            if (StudioRuns(firm.File.K) && p.K == ProductKind.Game)
+            {
+                LaunchNow(_studio.GameOf(id), Save.Day);   // the studio's own launch: the critics, the reach and the window
+                ChangedTech();
+                return p.Stage == 1;
+            }
+            if (!FirmsRules.CanLaunch(p))
             {
                 return false;
             }
@@ -173,6 +184,7 @@ namespace RealLifeOverhaul.Tech
             if (p != null && p.Stage < 2)
             {
                 p.Stage = 2;
+                WithdrawGame(id);
                 FirmsRules.TrimWithdrawn(_firmsFile, p);
                 ChangedTech();
             }
@@ -217,6 +229,7 @@ namespace RealLifeOverhaul.Tech
                 return false;
             }
             long upfront = FirmsRules.Take(w, firm.File.Place, Save.Day) * Prices.Level / 1000;
+            SectorRules.Urgent(w, Save.Day);   // an attack is answered in days, not a week
             if (upfront > 0)
             {
                 FirmsGame.Takings(upfront, firm.Reg, firm.File.Name, null);
@@ -274,7 +287,13 @@ namespace RealLifeOverhaul.Tech
         /// <summary>What decides whether a firm's people can work on a kind of contract (-1: any of its work), read now.</summary>
         internal FirmFacts FactsOf(FirmPlace firm, int kind)
         {
-            return firm == null || Save == null ? default(FirmFacts) : FirmsGame.Facts(firm.Reg, firm.File.K, kind, _people, firm.File.Place, Save.Day);
+            if (firm == null || Save == null)
+            {
+                return default(FirmFacts);
+            }
+            FirmFacts facts = FirmsGame.Facts(firm.Reg, firm.File.K, kind, _people, firm.File.Place, Save.Day);
+            OwnDeskRules.Count(ref facts, firm.OwnMinutes, firm.OwnRole, kind, firm.File.K);   // the owner at a desk yesterday worked too
+            return facts;
         }
 
         /// <summary>The Utilities app on its internet page.</summary>

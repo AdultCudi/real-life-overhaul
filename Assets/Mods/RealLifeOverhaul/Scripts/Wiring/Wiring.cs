@@ -77,6 +77,8 @@ namespace RealLifeOverhaul
             Step("the player's bank", OwnBankLinks.Connect);   // after running a business: its pieces of the paper follow the company's
             Step("the end game at scale", EndScaleLinks.Connect);
             Step("the desk sessions", SessionLinks.Connect);   // after running a business and the tech sector: it reads their managers and people
+            Step("the game studio's sessions", StudioLinks.Connect);   // after the desk sessions: its kinds join theirs
+            Step("the tech firms' markets and sessions", SectorLinks.Connect);   // after the desk sessions: its kinds join theirs (the population is read each game day, not here)
             Step("the seasons", SeasonLinks.Connect);   // before the calendar: its day page asks the seasons for their line
             Step("the calendar", CalendarLinks.Connect);   // its sources read the others' schedules when it is shown
             Step("the Marketplace", HustleLinks.Connect);
@@ -89,6 +91,10 @@ namespace RealLifeOverhaul
             Step("the landmarks", LandmarkLinks.Connect);   // after the construction game's: its piece of the paper goes on top of it
             Step("the schools", SchoolLinks.Connect);   // after the landmarks': its piece of the paper goes on top of theirs
             Step("Uptown's shops of the mod's own kinds", UptownShopsLinks.Connect);   // wraps nothing
+            Step("the living population", PopulationLinks.Connect);   // after the business features: their levers become what people hear of a business
+            Step("Flare in the city", FlareCityLinks.Connect);   // after the living population: its residents follow, hear and go where they heard good things
+            Step("Flare's desk session", FlareSessionLinks.Connect);   // after the desk sessions: its kind joins theirs while Flare in the city runs
+            Step("the mod's own businesses and the city's people", DemandLinks.Connect);   // wraps nothing: each business's bridge reads the population's demand
             Step("the Economy app", OutlookLinks.Connect);   // wraps nothing: it only reads the economy, the market, the council and the districts
             Logger?.Info("Wiring: the features are connected.");
         }
@@ -101,6 +107,10 @@ namespace RealLifeOverhaul
             }
             Connected = false;
             Step("the Economy app", OutlookLinks.Disconnect);
+            Step("the mod's own businesses and the city's people", DemandLinks.Disconnect);
+            Step("Flare's desk session", FlareSessionLinks.Disconnect);
+            Step("Flare in the city", FlareCityLinks.Disconnect);
+            Step("the living population", PopulationLinks.Disconnect);
             Step("Uptown's shops of the mod's own kinds", UptownShopsLinks.Disconnect);
             Step("the schools", SchoolLinks.Disconnect);   // first: what it wrapped of the paper goes back before the landmarks'
             Step("the landmarks", LandmarkLinks.Disconnect);   // first: what it wrapped of the paper goes back before the construction game's
@@ -114,6 +124,8 @@ namespace RealLifeOverhaul
             Step("the seasons", SeasonLinks.Disconnect);
             Step("rival tycoons", RivalLinks.Disconnect);   // next, for the same reason
             Step("the player's bank", OwnBankLinks.Disconnect);   // before running a business: what it wrapped of the paper goes back first
+            Step("the tech firms' markets and sessions", SectorLinks.Disconnect);
+            Step("the game studio's sessions", StudioLinks.Disconnect);
             Step("the desk sessions", SessionLinks.Disconnect);
             Step("the end game at scale", EndScaleLinks.Disconnect);
             Step("the district view", DistrictLinks.Disconnect);

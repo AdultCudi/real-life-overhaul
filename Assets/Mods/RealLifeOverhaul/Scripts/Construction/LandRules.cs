@@ -241,8 +241,47 @@ namespace RealLifeOverhaul.Construction
         /// <summary>The chance a day, in thousandths, that a buyer takes a flat at the asking price chosen, by the company's reputation.</summary>
         public static int BuyerChance(int ask, int reputation)
         {
+            return BuyerChance(ask, reputation, 1000);
+        }
+
+        /// <summary>The same with the city's buyers against the anchor day's (the living population: households forming and the savings to buy with).</summary>
+        public static int BuyerChance(int ask, int reputation, int buyers)
+        {
             int a = BuildCatalogue.Clamp(ask, 0, BuildCatalogue.AskChancePermille.Length - 1);
-            return BuildCatalogue.Clamp(BuildCatalogue.AskChancePermille[a] + (reputation - 50) * 3, 50, 900);
+            long chance = (long)(BuildCatalogue.AskChancePermille[a] + (reputation - 50) * 3) * Math.Max(0, buyers) / 1000;
+            return BuildCatalogue.Clamp((int)Math.Min(int.MaxValue, chance), 50, 900);
+        }
+
+        /// <summary>
+        /// Whether a finished building on the player's land is handed to the district as the player's own. Every building of
+        /// theirs is, a block whose flats are on sale too until its last flat is sold: a flat sold off plan, or Sell the flats
+        /// chosen, used to give the whole block to its residents at the keys, and the district then named one of the city's
+        /// landlords its owner before the ribbon was cut. Only works won in a tender (a public building) and a block with every
+        /// flat sold are not.
+        /// </summary>
+        public static bool HandedToPlayer(ProjectKind kind, AfterUse after, int flats, int sold)
+        {
+            return kind == ProjectKind.Plot && (after == AfterUse.Keep || !AllSold(flats, sold));
+        }
+
+        /// <summary>True when every flat of a block is sold: the building is then its residents', no longer the player's.</summary>
+        public static bool AllSold(int flats, int sold)
+        {
+            return flats > 0 && sold >= flats;
+        }
+
+        /// <summary>
+        /// The share of a block's floor (0 to 100, as the game's own deed counts its tenants) the player may still let while its
+        /// flats are on sale: a flat sold is its buyer's home, so only the unsold flats' share. All of it while no flats are counted.
+        /// </summary>
+        public static int UnsoldShare(int flats, int sold)
+        {
+            if (flats <= 0)
+            {
+                return 100;
+            }
+            int left = flats - BuildCatalogue.Clamp(sold, 0, flats);
+            return (int)(100L * left / flats);
         }
     }
 

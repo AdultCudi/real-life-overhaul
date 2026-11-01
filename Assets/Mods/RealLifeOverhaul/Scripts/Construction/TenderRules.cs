@@ -125,16 +125,32 @@ namespace RealLifeOverhaul.Construction
         /// <summary>The days until the next client's, public building's or business's refit tender, from the save's seed and the day.</summary>
         public static int NextIn(int seed, int day, TenderSource source)
         {
+            return NextIn(seed, day, source, 1000);
+        }
+
+        /// <summary>
+        /// The same with the city's demand for building against the anchor day's (the living population: the districts' pull and the businesses' takings for a
+        /// client's and a refit, the council's taxes for a public building): sooner the more there is, later the less, within <see cref="BuildCatalogue.TenderPeopleLeast"/>
+        /// and <see cref="BuildCatalogue.TenderPeopleMost"/>.
+        /// </summary>
+        public static int NextIn(int seed, int day, TenderSource source, int people)
+        {
             BuildRandom random = BuildRandom.Of(seed, day, 89 + (int)source);
+            int days;
             switch (source)
             {
                 case TenderSource.Public:
-                    return random.Range(BuildCatalogue.PublicEveryLeast, BuildCatalogue.PublicEveryMost + 1);
+                    days = random.Range(BuildCatalogue.PublicEveryLeast, BuildCatalogue.PublicEveryMost + 1);
+                    break;
                 case TenderSource.Refit:
-                    return random.Range(BuildCatalogue.RefitEveryLeast, BuildCatalogue.RefitEveryMost + 1);
+                    days = random.Range(BuildCatalogue.RefitEveryLeast, BuildCatalogue.RefitEveryMost + 1);
+                    break;
                 default:
-                    return random.Range(BuildCatalogue.ClientEveryLeast, BuildCatalogue.ClientEveryMost + 1);
+                    days = random.Range(BuildCatalogue.ClientEveryLeast, BuildCatalogue.ClientEveryMost + 1);
+                    break;
             }
+            int pace = BuildCatalogue.Clamp(people, BuildCatalogue.TenderPeopleLeast, BuildCatalogue.TenderPeopleMost);
+            return Math.Max(1, (days * 1000 + pace / 2) / pace);
         }
     }
 }

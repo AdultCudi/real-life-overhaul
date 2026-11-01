@@ -176,6 +176,14 @@ namespace RealLifeOverhaul.Construction
         SellFlats = 1    // homes sold flat by flat; the building is its residents'
     }
 
+    /// <summary>What the city's people bring the player's construction company, as ConstructionBridges.People is asked for it.</summary>
+    public enum BuildDemand
+    {
+        Buyers = 0,      // flat buyers: households of an age to buy a first home, and the savings to buy with
+        Clients = 1,     // the city's businesses rebuilding and refitting: the city's pull for building, and their takings
+        Public = 2       // the council's own buildings: its taxes
+    }
+
     /// <summary>Who asked for works put out to tender. Saved as a number.</summary>
     public enum TenderSource
     {
@@ -635,6 +643,7 @@ namespace RealLifeOverhaul.Construction
         };
 
         public const int TenderHours = 30;                      // hours a tender is open: bids close the next day
+        public const int TenderPeopleLeast = 333, TenderPeopleMost = 3000;   // thousandths: how far the city's demand for building stretches or shortens the days between tenders
         public const int ClientEveryLeast = 6, ClientEveryMost = 10;   // days between two clients' tenders
         public const int PublicEveryLeast = 15, PublicEveryMost = 25;  // days between two public buildings' tenders
         public const int PublicMarginPermille = 220;            // the city pays the cost and this much more

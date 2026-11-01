@@ -76,6 +76,10 @@ namespace RealLifeOverhaul.Flare
         {
             if (_at.Tab == 0)
             {
+                if (WriteCityTrends())   // Flare in the city: what is trending among the residents (FlareApp.City)
+                {
+                    Section(FlareText.T("reallife_flare_city_trend_tags"));
+                }
                 FlareLiveRules.Trending(file.Posts, now, 12, _tags, _tagCounts);
                 for (int i = 0; i < _tags.Count; i++)
                 {
@@ -414,10 +418,15 @@ namespace RealLifeOverhaul.Flare
                     {
                         continue;
                     }
+                    string words = _director.FriendWords(p.Id, index);
+                    if (words == null && _director.FriendHeld(p.Id, index))
+                    {
+                        continue;   // RLO Texts: with a model present the reply comes only with its words (FlareDirector.Hold)
+                    }
                     var reply = new FlarePost
                     {
                         Id = -1000 - p.Id * 32 - i, Author = FlareAuthor.Friend, Who = index, Source = FlareSource.Reply, ReplyTo = p.Id,
-                        Text = _director.FriendWords(p.Id, index) ?? FlareText.Reply(FlareRules.ReplyOf(people[k], p), p, index), Seed = p.Seed + i, Slot = i,
+                        Text = words ?? FlareText.Reply(FlareRules.ReplyOf(people[k], p), p, index), Seed = p.Seed + i, Slot = i,
                         Liked = _director.IsReplyLiked(p.Id, i)
                     };
                     FlareLiveRules.SetAt(reply, p.At + r.Delay);

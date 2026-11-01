@@ -140,7 +140,7 @@ namespace RealLifeOverhaul
             {
                 if (_ringing)
                 {
-                    AnswerRing();
+                    AnswerRing("from its panel");
                 }
                 else if (_scene != null && _held == SceneBreak.None && _scene.Prompt != null)
                 {

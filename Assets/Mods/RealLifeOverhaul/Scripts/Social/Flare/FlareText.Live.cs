@@ -100,6 +100,21 @@ namespace RealLifeOverhaul.Flare
         /// <summary>The official accounts' handles: the same in every language.</summary>
         public static readonly string[] OfficialHandles = { "@cityoffice", "@citypolice", "@citytransit", "@cityutilities", "@citybank" };
 
+        // The other tech firms' posts (FlareCityRules.SectorNewsArg on): Tech.SectorNews in order.
+        private static readonly string[] SectorNewsKeys =
+        {
+            "reallife_flare_sector_news_0", "reallife_flare_sector_news_1", "reallife_flare_sector_news_2", "reallife_flare_sector_news_3", "reallife_flare_sector_news_4",
+            "reallife_flare_sector_news_5", "reallife_flare_sector_news_6", "reallife_flare_sector_news_7", "reallife_flare_sector_news_8"
+        };
+
+        // A game studio's own posts (FlareCityRules.StudioNewsArg on): Tech.StudioNews in order, then a devlog and a crowdfunding campaign.
+        private static readonly string[] StudioNewsKeys =
+        {
+            "reallife_flare_studio_news_0", "reallife_flare_studio_news_1", "reallife_flare_studio_news_2", "reallife_flare_studio_news_3", "reallife_flare_studio_news_4",
+            "reallife_flare_studio_news_5", "reallife_flare_studio_news_6", "reallife_flare_studio_news_7", "reallife_flare_studio_news_8", "reallife_flare_studio_news_9",
+            "reallife_flare_studio_devlog", "reallife_flare_studio_crowdfund"
+        };
+
         private static readonly string[] BusinessPostKeys =
         {
             "reallife_flare_biz_post_0", "reallife_flare_biz_post_1", "reallife_flare_biz_post_2", "reallife_flare_biz_post_3", "reallife_flare_biz_post_4",
@@ -242,6 +257,17 @@ namespace RealLifeOverhaul.Flare
                     {
                         return p.Arg >= FlareLiveRules.TycoonMoveArg ? Fill(Of(TycoonMoveKeys, p.Arg - FlareLiveRules.TycoonMoveArg), "name", p.Name)
                             : Fill(Of(TycoonKeys[FlareRules.Clamp(p.Who, 0, TycoonKeys.Length - 1)], p.Arg), "name", p.Name);
+                    }
+                    if (p.Arg >= FlareCityRules.SectorNewsArg)
+                    {
+                        int news = p.Arg - FlareCityRules.SectorNewsArg;
+                        string worth = news == (int)Tech.SectorNews.TenderWon ? Money(p.Who) : p.Who.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                        return Fill(Of(SectorNewsKeys, news), "name", p.Name, "product", p.Text ?? p.Name, "figure", worth);
+                    }
+                    if (p.Arg >= FlareCityRules.StudioNewsArg)
+                    {
+                        string figure = p.Arg == FlareCityRules.CrowdfundArg ? Money(p.Who) : p.Who.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                        return Fill(Of(StudioNewsKeys, p.Arg - FlareCityRules.StudioNewsArg), "name", p.Name, "game", p.Text ?? string.Empty, "figure", figure);
                     }
                     return Fill(Of(BusinessPostKeys, p.Arg), "name", p.Name, "district", district);
                 case FlareSource.Invite:

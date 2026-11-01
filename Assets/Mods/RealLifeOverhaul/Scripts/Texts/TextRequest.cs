@@ -38,6 +38,9 @@ namespace RealLifeOverhaul.Texts
         public string Person;               // data v6: whose memory the card carries; null: none
         public readonly List<TextFact> Memory = new List<TextFact>(8);   // data v6: what that person remembers, filled by the asker; the hub picks the card's lines
         public string Lang;                 // filled by the hub: the language the card asks for (data v6), or null below
+        public bool HoldsLine;              // the asker shows nothing until words come (Flare with a model present) and counts its own written
+                                            // line when it gives up (TextsHub.CountWritten): the hub counts only the model's words for it
+        public TextShownWhy Shown;          // filled by the hub: what its end was counted as (Model with words), for the asker's own counting
     }
 
     /// <summary>Where a request's words came from, for the asker's log line.</summary>

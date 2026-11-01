@@ -78,6 +78,26 @@ namespace RealLifeOverhaul.Texts
             return k;
         }
 
+        /// <summary>
+        /// Moves words to a new key, as kept: a Flare message held for its words is keyed by its minute, which moves to the
+        /// minute its words came. False with nothing under the old key.
+        /// </summary>
+        public bool Move(string from, string to)
+        {
+            if (from == null || to == null || !_byKey.TryGetValue(from, out TextKept k))
+            {
+                return false;
+            }
+            if (from == to)
+            {
+                return true;
+            }
+            _byKey.Remove(from);
+            _order.Remove(k);
+            Keep(to, k.Day, k.Intent, k.Words, k.Shared, k.Received, k.Lang);
+            return true;
+        }
+
         /// <summary>Lets go of the records whose item the game no longer has; never by age, so words never change once seen.</summary>
         public int Prune(Func<string, bool> stillThere)
         {

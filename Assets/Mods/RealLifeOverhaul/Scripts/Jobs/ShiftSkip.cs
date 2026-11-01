@@ -254,6 +254,7 @@ namespace RealLifeOverhaul
             catch (Exception e)
             {
                 JobDirector.Logger?.Error(e);
+                Finish();   // a start that failed half way is ended at once through the job's own end (SkipEnded), never left running with the player held
             }
         }
 

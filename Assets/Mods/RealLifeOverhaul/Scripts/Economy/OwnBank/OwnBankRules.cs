@@ -118,17 +118,29 @@ namespace RealLifeOverhaul.Economy
             return (int)Math.Min(OwnBankCatalogue.AnswerMost, share * OwnBankCatalogue.AnswerPer / 1000);
         }
 
-        /// <summary>The city's savings of a kind at today's prices.</summary>
+        /// <summary>
+        /// The city's savings of a kind at today's prices: the catalogue's figure, moved by what the city's people save now against their first day (the
+        /// households' savings for people's, the firms' takings and wage bills for firms'), so the bank and the rival banks share the people's own money.
+        /// </summary>
         public static long SavingsPool(BankCity c, int kind)
         {
-            return At(OwnBankCatalogue.SavingsCents[kind] / 1000 * EndScaleRules.Mix(1000, OwnBankCatalogue.PoolScale, c.Scale), c.Level);
+            return At(OwnBankCatalogue.SavingsCents[kind] / 1000 * EndScaleRules.Mix(1000, OwnBankCatalogue.PoolScale, c.Scale), c.Level) * PeopleOf(c, kind) / 1000;
         }
 
-        /// <summary>What a kind of borrower would owe the city's lenders at today's prices in this cycle.</summary>
+        /// <summary>
+        /// What a kind of borrower would owe the city's lenders at today's prices in this cycle, moved by the people's borrowing against their first day (the
+        /// households in that credit band, or the shops' takings and the companies' wage bills).
+        /// </summary>
         public static long DemandPool(BankCity c, int segment)
         {
             return At(OwnBankCatalogue.DemandCents[segment] / 1000 * EndScaleRules.Mix(1000, OwnBankCatalogue.PoolScale, c.Scale), c.Level)
-                   * OwnBankCatalogue.DemandCycle[Cycle(c)] / 1000;
+                   * OwnBankCatalogue.DemandCycle[Cycle(c)] / 1000 * PeopleOf(c, OwnBankCatalogue.Savers + segment) / 1000;
+        }
+
+        /// <summary>Thousandths of a pool's first-day figure the city's people now bring it (the savers, then the segments); a thousand with no living population.</summary>
+        public static long PeopleOf(BankCity c, int pool)
+        {
+            return c.People != null && pool >= 0 && pool < c.People.Length ? Math.Max(0, c.People[pool]) : 1000;
         }
 
         /// <summary>The savings of a kind the bank would hold, as the city's savers would share them out now.</summary>

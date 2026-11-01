@@ -147,20 +147,13 @@ namespace RealLifeOverhaul.Family
                     lines++;
                 }
             }
-            // The next family dinner on the game's calendar (Relatives.HolidayAt).
-            int year = GameCalendar.DaysPerYear;
-            int dayOfYear = (TimeHelper.CurrentDay - 1) % year;
-            for (int k = 0; k < 5; k++)
+            // The next family dinner on the game's calendar (DinnerRules, the table the day's round and Mom's texts use).
+            int which = DinnerRules.Next(TimeHelper.CurrentDay, GameCalendar.DaysPerYear, out int inDays);
+            if (which >= 0)
             {
-                int which = k % 4;
-                int on = Mathf.Clamp(Mathf.RoundToInt(year * (which == 0 ? 0.22f : which == 1 ? 0.47f : which == 2 ? 0.72f : 0.97f)), 1, year - 1) + (k / 4) * year;
-                if (on >= dayOfYear)
-                {
-                    text.Append('\n').Append(FamilyText.T("reallife_family_page_holiday",
-                        new Args { Text = FamilyText.T(Relatives.HolidayName(which)), Day = FamilyText.When(TimeHelper.CurrentDay + on - dayOfYear) }));
-                    lines++;
-                    break;
-                }
+                text.Append('\n').Append(FamilyText.T("reallife_family_page_holiday",
+                    new Args { Text = FamilyText.T(Relatives.HolidayName(which)), Day = FamilyText.When(TimeHelper.CurrentDay + inDays) }));
+                lines++;
             }
             if (lines == 0)
             {
