@@ -29,8 +29,39 @@ namespace RealLifeOverhaul.Tech
             return (500L + Clamp(firm.Reputation, 0, 1000)) * (1000 + Lift(c.Selling, SectorCatalogue.SellingHalf, SectorCatalogue.SellingGain)) / 1000;
         }
 
-        /// <summary>Every rival IT firm's pull together: the city's IT services are a crowded market.</summary>
-        public static long RivalWeight() => (500L + SectorCatalogue.RivalServiceReputation) * SectorCatalogue.RivalServiceWeight / 1000;
+        /// <summary>
+        /// Every rival's pull together in a firm's market: the city's IT services are a crowded market, its agencies (where a
+        /// web agency or design studio wins its work) a smaller one.
+        /// </summary>
+        public static long RivalWeight(bool agency) =>
+            (500L + SectorCatalogue.RivalServiceReputation) * (agency ? SectorCatalogue.RivalAgencyWeight : SectorCatalogue.RivalServiceWeight) / 1000;
+
+        /// <summary>Whether a firm wins its work among the city's agencies (a web agency or a design studio) rather than its IT firms.</summary>
+        public static bool Agency(Firm firm) => firm != null && (firm.K == FirmKind.WebAgency || firm.K == FirmKind.Design);
+
+        // The pull of every firm in each market, the rivals' first: the player's firms that take work added to their own market's.
+        private static void Pulls(FirmsFile ff, IList<Crew> crews, out long it, out long agencies)
+        {
+            it = RivalWeight(false);
+            agencies = RivalWeight(true);
+            for (int i = 0; i < ff.Firms.Count; i++)
+            {
+                Firm firm = ff.Firms[i];
+                if (FirmsCatalogue.TakesWork[Clamp(firm.Kind, 0, (int)FirmKind.Count - 1)] == 0)
+                {
+                    continue;
+                }
+                long w = Weight(firm, crews != null && i < crews.Count ? crews[i] : default(Crew));
+                if (Agency(firm))
+                {
+                    agencies += w;
+                }
+                else
+                {
+                    it += w;
+                }
+            }
+        }
 
         /// <summary>A project's client size on a roll, by the city's demand of each size; a fresh portfolio draws large clients more.</summary>
         public static int ClientOf(long[] bySize, bool portfolio, int roll)
@@ -86,15 +117,11 @@ namespace RealLifeOverhaul.Tech
             var bySize = new long[3];
             Demand(f.City, cycle, bySize);
             long projects = bySize[ClientSmall] + bySize[ClientMid] + bySize[ClientLarge];
-            long all = RivalWeight();
+            Pulls(ff, crews, out long it, out long agencies);
             bool taker = false;
             for (int i = 0; i < ff.Firms.Count; i++)
             {
-                if (FirmsCatalogue.TakesWork[Clamp(ff.Firms[i].Kind, 0, (int)FirmKind.Count - 1)] != 0)
-                {
-                    all += Weight(ff.Firms[i], i < crews.Count ? crews[i] : default(Crew));
-                    taker = true;
-                }
+                taker |= FirmsCatalogue.TakesWork[Clamp(ff.Firms[i].Kind, 0, (int)FirmKind.Count - 1)] != 0;
             }
             int offered = 0;
             for (int i = 0; i < ff.Contracts.Count; i++)
@@ -111,7 +138,7 @@ namespace RealLifeOverhaul.Tech
                 }
                 SectorFirm sf = f.FirmFor(firm.Place);
                 long weight = Weight(firm, i < crews.Count ? crews[i] : default(Crew));
-                sf.OfferCarry += projects * weight / Math.Max(1L, all) * 1000;   // millionths of an offer
+                sf.OfferCarry += projects * weight / Math.Max(1L, Agency(firm) ? agencies : it) * 1000;   // millionths of an offer
                 if (sf.OfferCarry < 1000000)
                 {
                     continue;
@@ -168,14 +195,8 @@ namespace RealLifeOverhaul.Tech
             }
             var bySize = new long[3];
             Demand(f.City, cycle, bySize);
-            long all = RivalWeight();
-            for (int i = 0; i < ff.Firms.Count; i++)
-            {
-                if (FirmsCatalogue.TakesWork[Clamp(ff.Firms[i].Kind, 0, (int)FirmKind.Count - 1)] != 0)
-                {
-                    all += Weight(ff.Firms[i], i < crews.Count ? crews[i] : default(Crew));
-                }
-            }
+            Pulls(ff, crews, out long it, out long agencies);
+            long all = Agency(firm) ? agencies : it;
             return (bySize[ClientSmall] + bySize[ClientMid] + bySize[ClientLarge]) * Weight(firm, c) / Math.Max(1L, all) * FirmsCatalogue.MonthDays;
         }
 

@@ -26,6 +26,7 @@ internal static partial class Program
         public long Customers, Buyers;           // its customers and its market's buyers at the end
         public bool Conserved;                   // every day, every market's customers within its buyers
         public int Features, Lead;               // its product's features and the market's most at the end
+        public long Takings;                     // cents: everything its work brought over the run
     }
 
     // A firm making one product of a kind with a team, run for so many days in the documented city against the rivals: the
@@ -122,7 +123,7 @@ internal static partial class Program
     // An IT firm of so many builders and sellers taking every offer it has people for, working its contracts by the firms' own
     // rules, for so many days in the documented city.
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]
-    private static SectorRun SectorServicesSim(FirmKind kind, int builders, int sellers, int days, int seed)
+    private static SectorRun SectorServicesSim(FirmKind kind, int builders, int sellers, int days, int seed, bool old = false)
     {
         var ff = new FirmsFile { Seed = seed };
         var f = new SectorFile { Seed = seed };
@@ -141,8 +142,15 @@ internal static partial class Program
         for (int day = 1; day <= days; day++)
         {
             notes.Clear();
-            SectorRules.Offers(ff, f, day, 1, crews, null, notes);
-            if (kind == FirmKind.Security)
+            if (old)
+            {
+                FirmsRules.Offers(ff, day, crews, null, notes);   // the rule before the shared market, to hold the new one against
+            }
+            else
+            {
+                SectorRules.Offers(ff, f, day, 1, crews, null, notes);
+            }
+            if (kind == FirmKind.Security && !old)
             {
                 SectorRules.Incidents(ff, day, notes);
             }
@@ -159,7 +167,10 @@ internal static partial class Program
                 if (w.Stage == (int)WorkStage.Offered && load < c.Engineering + c.Design)
                 {
                     takings += FirmsRules.Take(w, firm.Place, day);
-                    SectorRules.Urgent(w, day);
+                    if (!old)
+                    {
+                        SectorRules.Urgent(w, day);
+                    }
                     load += FirmsRules.Need(w, day);
                 }
                 else if (w.Stage == (int)WorkStage.Tender)
@@ -168,7 +179,7 @@ internal static partial class Program
                     w.Place = firm.Place;
                     w.Stage = (int)WorkStage.Bid;
                 }
-                else if (w.Stage == (int)WorkStage.Bid && day >= w.End && SectorRules.Decide(ff, f, w, firm, day, 0, 0, out _))
+                else if (w.Stage == (int)WorkStage.Bid && day >= w.End && (old ? FirmsRules.Decide(ff, w, firm, day) : SectorRules.Decide(ff, f, w, firm, day, 0, 0, out _)))
                 {
                     takings += FirmsRules.Take(w, firm.Place, day);
                 }
@@ -186,6 +197,7 @@ internal static partial class Program
             FirmsRules.Lapse(ff, day, notes);
             long costs = people * (SectorWage + FirmsCatalogue.SoftwarePerSeat) + SectorRent;
             cash += takings - costs;
+            run.Takings += takings;
             low = Math.Min(low, cash);
             if (run.Payback < 0 && cash >= 0 && day > 1)
             {
@@ -341,6 +353,22 @@ internal static partial class Program
                 "sector ten years: " + snames[i] + " on the city's IT work pays back in " + services[i].Payback + " days, inside the target of " + least[(int)PaybackKind.Services] + " to "
                 + most[(int)PaybackKind.Services] + ", earning " + services[i].Day + " a day");
         }
+        // The city's work held against the old offers: the same firm over the same ten years takes about what the old rule gave
+        // it (a design studio among the city's fewer agencies, so its takings hold), within a quarter either way.
+        FirmKind[] held = { FirmKind.Design, FirmKind.Consultancy, FirmKind.Security };
+        SectorRun[] now = { design, consult, security };
+        int[] heldSeeds = { 18, 16, 17 }, heldTeams = { 3, 4, 4 };
+        string parity = string.Empty;
+        bool holds = true;
+        for (int i = 0; i < held.Length; i++)
+        {
+            SectorRun before = SectorServicesSim(held[i], heldTeams[i], 1, Years, heldSeeds[i], true);
+            long ratio = now[i].Takings * 1000 / Math.Max(1L, before.Takings);
+            holds &= ratio >= 750 && ratio <= 1250;
+            parity += (i > 0 ? ", " : string.Empty) + held[i] + " " + ratio;
+        }
+        Check(holds, "sector ten years: a design studio, an IT consultancy and a cybersecurity firm take within a quarter of what the old offers gave them over ten years, thousandths of it ("
+                     + parity + ")");
         Check(cloud.Payback >= EndScaleRules.PaybackDaysLeast && cloud.Payback <= EndScaleRules.PaybackDaysMost && hyper.Payback >= EndScaleRules.PaybackDaysLeast && hyper.Payback <= EndScaleRules.PaybackDaysMost,
             "sector ten years: a cloud and a hyperscaler at the end game's scale, on the city's compute, pay back in " + cloud.Payback + " and " + hyper.Payback + " days, inside the end game's "
             + EndScaleRules.PaybackDaysLeast + " to " + EndScaleRules.PaybackDaysMost);
@@ -368,6 +396,7 @@ internal static partial class Program
             }
             SectorPrint("a cloud at scale", cloud);
             SectorPrint("a hyperscaler at scale", hyper);
+            Console.WriteLine("  the work's takings over ten years against the old offers, thousandths: " + parity);
         }
     }
 

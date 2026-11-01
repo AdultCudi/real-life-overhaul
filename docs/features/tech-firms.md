@@ -38,7 +38,7 @@ The listed companies that make software (Codeharbour Software, Abacus Lane Softw
 
 ## IT work, data centres and the cloud
 
-The city's firms put out projects by their size; each of the player's firms that takes work earns its share against the city's rival IT firms by its name and sellers, carried until a whole offer (never a daily draw); a large client's project is bigger, and a fresh portfolio draws more of them. A security firm's managed clients are attacked now and then. The city's firms rent racks (by size, at the end game's scale the region too) taken by tier and the cloud's name; they buy compute and AI compute, with the rivals' software customers' hosting and labs' training, taken by the cloud's price and name against the rival clouds. Power price spikes come every month or two.
+The city's firms put out projects by their size; each of the player's firms that takes work earns its share against the city's rival IT firms (a web agency or a design studio against its fewer rival agencies) by its name and sellers, carried until a whole offer (never a daily draw); a large client's project is bigger, and a fresh portfolio draws more of them. A security firm's managed clients are attacked now and then. The city's firms rent racks (by size, at the end game's scale the region too) taken by tier and the cloud's name; they buy compute and AI compute, with the rivals' software customers' hosting and labs' training, taken by the cloud's price and name against the rival clouds. Power price spikes come every month or two.
 
 ## At the desk
 

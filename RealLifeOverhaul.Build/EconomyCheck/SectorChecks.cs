@@ -447,12 +447,12 @@ internal static partial class Program
 
     // ---------------------------------------------------------------- IT work from the city
 
-    private static int SectorOffers(int reputation, int selling, SectorCityFigures city, int days, out long points)
+    private static int SectorOffers(int reputation, int selling, SectorCityFigures city, int days, out long points, FirmKind kind = FirmKind.Consultancy)
     {
         var ff = new FirmsFile { Seed = 31 };
         var f = new SectorFile { Seed = 31 };
         f.City.CopyFrom(city);
-        ff.Firms.Add(new Firm { Place = "c", Kind = (int)FirmKind.Consultancy, Reputation = reputation });
+        ff.Firms.Add(new Firm { Place = "c", Kind = (int)kind, Reputation = reputation });
         var crews = new List<Crew> { new Crew { Selling = selling } };
         var notes = new List<WorkNote>();
         int offers = 0;
@@ -486,6 +486,10 @@ internal static partial class Program
         big.Set(city.People * 2, city.Small * 2, city.Mid * 2, city.Large * 2, 1000, true);
         int bigger = SectorOffers(500, 8, big, 600, out _);
         Check(known > ordinary * 3 / 2 && bigger > ordinary * 3 / 2, "sector work: a known firm with sellers wins more, and a bigger city puts out more (" + ordinary + ", " + known + ", " + bigger + ")");
+        int agency = SectorOffers(500, 8, city, 600, out _, FirmKind.Design), web = SectorOffers(500, 8, city, 600, out _, FirmKind.WebAgency);
+        Check(agency > ordinary * 3 / 2 && agency < 600 / 2 && web == agency,
+            "sector work: a design studio or web agency wins its work among the city's fewer agencies, nearly twice an IT firm's offers, so its takings hold where the old rule had them ("
+            + agency + " in 600 days against an IT firm's " + ordinary + ")");
         var bySize = new long[3];
         SectorRules.Demand(city, 1, bySize);
         int largePlain = 0, largeFresh = 0;

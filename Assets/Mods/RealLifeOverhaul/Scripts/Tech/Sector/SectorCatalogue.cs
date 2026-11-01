@@ -156,6 +156,10 @@ namespace RealLifeOverhaul.Tech
         // thousandths: the weight of all the rival IT firms together against one of the player's: some twenty of them,
         // so an ordinary firm of the player's wins about one project in twenty
         public const int RivalServiceWeight = 20000;
+        // thousandths: the city's rival agencies together against one web agency or design studio of the player's: some ten
+        // of them, as branding and websites are bought from fewer, smaller shops, so an agency's takings from its work stay
+        // where the old rule had them
+        public const int RivalAgencyWeight = 10000;
         public const int ClientSmallWork = 700;      // thousandths of a kind's usual points a small client's project has...
         public const int ClientLargeWork = 1600;     // ...and a large one's
         public const int PortfolioReach = 400;       // thousandths more of the large clients' share a portfolio piece brings while it is fresh
