@@ -707,6 +707,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiChart.cs" Link="Mod\UiChart.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCatalogue.cs" Link="Mod\UiCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiStatement.cs" Link="Mod\UiStatement.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPickList.cs" Link="Mod\UiPickList.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiEcono.cs" Link="Mod\UiEcono.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\EconoViews.cs" Link="Mod\EconoViews.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiTrack.cs" Link="Mod\UiTrack.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\IUiStepping.cs" Link="Mod\IUiStepping.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPartRules.cs" Link="Mod\UiPartRules.cs" />
