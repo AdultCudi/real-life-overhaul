@@ -22429,7 +22429,7 @@
   "reallife_hire_test_orphan_fail": "Teste falhou: uma leitura dos negócios da cidade tropeçou num registro sem prédio. O log diz qual.",
   "reallife_hire_test_orphan_off": "Carregue um save primeiro. Este teste não roda numa sessão do Going Public.",
   "reallife_changes_next_title": "Próxima versão",
-  "reallife_changes_next": "Nada ainda.",
+  "reallife_changes_next": "Corrigido: desde a 0.62.0 o celular podia ficar da altura da tela, com todos os apps aparecendo ao mesmo tempo e sem páginas. Os apps do mod eram colocados no celular escondidos e ligados depois, e outro mod que pagina o celular nunca percebia. Agora eles entram no celular juntos quando todos estão prontos, já visíveis, então as páginas voltam a funcionar.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Corrigido: quando todos os prédios que poderiam abrigar o escritório de serviços públicos são seus, as contas de luz e água são pedidas e religadas no app Contas, por telefone, pelos mesmos preços, e os avisos dizem isso; quando um prédio fica livre o escritório volta a abrir e o app diz onde. Corrigido: depois de retirar uma candidatura e se candidatar de novo à mesma vaga, o app Carreira abria a retirada e não dava para chegar à entrevista. Cada candidatura agora tem sua própria linha, e a entrevista, a oferta e a retirada vão para a ativa. Corrigido: um save com um registro de negócio cujo prédio a cidade não tem (outro mod pode deixar um para trás) não desliga mais o setor de tecnologia a cada carregamento. O mod agora deixa esse registro de fora sempre que lê os negócios da cidade, cita o endereço dele uma vez no log e não muda nada nele.",
   "reallife_co_mass_raise": "Dar aumento",
@@ -26688,5 +26688,9 @@
   "reallife_tech_test_desk_seat_pass": "Teste passou: você sentou à mesa por um minuto de jogo e levantou livre para andar.",
   "reallife_tech_test_desk_seat_fail": "Teste falhou: você não foi sentado à mesa, ou não conseguiu andar depois. A linha Desk check (seat) do log diz o que prendeu você.",
   "reallife_changes_063_3_title": "0.63.3",
-  "reallife_changes_063_3": "Corrigido: trabalhar numa mesa da sua própria empresa de tecnologia agora faz você sentar na cadeira dela, e você pode sair andando quando o trabalho acaba. Antes, o assento falhava, então você trabalhava em pé e ficava preso na mesa depois. As mesas dos empregos e o balcão do seu banco agora liberam você do mesmo jeito, seja como for que o trabalho termine."
+  "reallife_changes_063_3": "Corrigido: trabalhar numa mesa da sua própria empresa de tecnologia agora faz você sentar na cadeira dela, e você pode sair andando quando o trabalho acaba. Antes, o assento falhava, então você trabalhava em pé e ficava preso na mesa depois. As mesas dos empregos e o balcão do seu banco agora liberam você do mesmo jeito, seja como for que o trabalho termine.",
+  "reallife_phone_test_pages": "Verificar as páginas do celular",
+  "reallife_phone_test_pages_pass": "Páginas do celular: todos os apps voltaram como um carregamento os coloca, e o celular mostra uma página por vez. Os detalhes estão no Player.log.",
+  "reallife_phone_test_pages_fail": "Páginas do celular: o celular mostra mais de uma página, ou o número de páginas mudou. Os detalhes estão no Player.log.",
+  "reallife_phone_test_pages_busy": "Os apps do mod ainda estão entrando no celular. Tente de novo daqui a pouco."
 }
