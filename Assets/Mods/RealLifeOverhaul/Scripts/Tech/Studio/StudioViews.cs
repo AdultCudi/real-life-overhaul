@@ -640,7 +640,9 @@ namespace RealLifeOverhaul.Tech
                 Line(market, P + "studio_rivals_none", ViewTone.Plain);
             }
             bool draft = f != null && f.DraftAt(s.Place) != null;
-            v.Next = s.Room ? Words(draft ? P + "next_draft" : P + "next_concept", ViewTone.Plain, "studio", s.Name) : Words(P + "next_full", ViewTone.Warn);
+            // A studio with nobody in it builds nothing: its first step is to hire (beta 3: an empty studio was told to start a game).
+            v.Next = s.People == 0 ? Words(P + "next_hire", ViewTone.Warn, "studio", s.Name)
+                : s.Room ? Words(draft ? P + "next_draft" : P + "next_concept", ViewTone.Plain, "studio", s.Name) : Words(P + "next_full", ViewTone.Warn);
             v.Primary = new ViewAction { Key = draft ? P + "button_concept_on" : P + "button_concept", Act = StudioAct.Concept, Enabled = s.Room, WhyKey = s.Room ? null : P + "next_full" };
             return v;
         }

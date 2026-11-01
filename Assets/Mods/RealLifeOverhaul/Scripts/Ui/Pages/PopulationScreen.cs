@@ -7,15 +7,25 @@ namespace RealLifeOverhaul.Ui
     /// <summary>
     /// The population's views as a screen of the kit: the city first, then wherever a row or the primary action leads
     /// (a district, a building, a household, a person, a business, who contributes), Back stepping back the way it came
-    /// and closing at the city. Each view is worked out from the live population when it opens (PopulationViews).
-    /// Cost: a view and a layout a move; nothing per frame.
+    /// and closing at the city. Back puts the focus on the row it left from, so Enter and Back always meet at one place.
+    /// Each view is worked out from the live population when it opens (PopulationViews). Cost: a view and a layout a move,
+    /// nothing per frame.
     /// </summary>
     public sealed class PopulationScreen : IUiScreen
     {
-        private readonly Stack<ViewTarget> _way = new Stack<ViewTarget>();
+        private readonly Stack<Step> _way = new Stack<Step>();
+        private readonly UiDashboardScroll _scroll = new UiDashboardScroll();
         private ViewTarget _at = ViewTarget.To(ViewKind.City, 0);
         private PopulationView _view;
         private bool _dirty = true;
+        private bool _fresh = true;          // a page just opened: focus goes where it should start, not to the last page's target
+        private int _focusCommand = -1, _focusArg;
+
+        private struct Step
+        {
+            public ViewTarget At;
+            public int Command, Arg;         // what was pressed to leave it: Back focuses it again
+        }
 
         /// <summary>Back at the city closes the screen.</summary>
         public Action Close;
@@ -27,9 +37,23 @@ namespace RealLifeOverhaul.Ui
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
             _view = Build(_at) ?? Build(ViewTarget.To(ViewKind.City, 0));
-            UiDashboardModel m = _view != null ? PopulationPages.Model(_view, UiText.Words, PopulationText.Money,
-                PopulationGame.NameOf) : new UiDashboardModel { Title = UiText.T("reallife_ui_page_empty") };
+            UiDashboardModel m = _view != null ? PopulationPages.Model(_view, UiText.Words, PopulationText.Money, PopulationGame.NameOf, UiText.Place)
+                : new UiDashboardModel { Table = new UiTableModel { EmptyTitle = UiText.T("reallife_ui_page_empty") } };
+            if (_view == null)
+            {
+                m.Prompts = new[] { new UiPrompt { Action = UiAction.Back, Label = UiText.T("reallife_ui_prompt_back") } };
+                m.PromptCount = 1;
+            }
+            _scroll.Apply(m);
             UiDashboard.Lay(s, m, frame, dark, keys);
+            _scroll.Keep(m);
+            if (_fresh)
+            {
+                int back = _focusCommand >= 0 ? s.FindNode(_focusCommand, _focusArg) : -1;
+                s.FocusFirst = back >= 0 ? back : s.FocusFirst;
+                s.FocusReset = true;
+                _fresh = false;
+            }
             _dirty = false;
         }
 
@@ -45,9 +69,9 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
-            _way.Push(_at);
+            _way.Push(new Step { At = _at, Command = command, Arg = arg });
             _at = to;
-            _dirty = true;
+            Opened(-1, 0);
             return true;
         }
 
@@ -59,8 +83,9 @@ namespace RealLifeOverhaul.Ui
         {
             if (_way.Count > 0)
             {
-                _at = _way.Pop();
-                _dirty = true;
+                Step step = _way.Pop();
+                _at = step.At;
+                Opened(step.Command, step.Arg);
                 return true;
             }
             Close?.Invoke();
@@ -75,10 +100,23 @@ namespace RealLifeOverhaul.Ui
 
         public void Reveal(int list, int index)
         {
+            _scroll.Reveal(list, index);
+            _dirty = true;
         }
 
         public void Wheel(int clip, float notches)
         {
+            _scroll.Wheel(clip, notches);
+            _dirty = true;
+        }
+
+        private void Opened(int focusCommand, int focusArg)
+        {
+            _scroll.Reset();
+            _fresh = true;
+            _focusCommand = focusCommand;
+            _focusArg = focusArg;
+            _dirty = true;
         }
 
         // The demand the population's director shows (null while it is settling or not running).

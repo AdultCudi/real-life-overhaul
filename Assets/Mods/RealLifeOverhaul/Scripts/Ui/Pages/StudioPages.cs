@@ -19,7 +19,7 @@ namespace RealLifeOverhaul.Ui
         {
             StudioScreen v = page.Screen;
             others.Clear();
-            primary = v.Primary;
+            primary = v.Primary != null && Runs(v.Primary.Act) ? v.Primary : null;
             var m = new UiDashboardModel { Title = Fill(t, v.TitleKey, v.TitlePairs), StatsFirst = true };
             if (v.Next != null)
             {
@@ -48,6 +48,13 @@ namespace RealLifeOverhaul.Ui
                 };
             }
             m.StatCount = m.Stats.Length;
+            bool needed = false;
+            for (int i = 0; i < page.Team.Count; i++)
+            {
+                needed |= page.Team[i].Needed;
+            }
+            // A "Needed" alone left the owner unsure how to fill it: the people are hired, then their roles are set in Open Roles.
+            m.StatsNote = needed ? t("reallife_studio_page_needed_how", "To fill a group, hire people in the Business app, then set their roles in Open Roles, on its Team tab.") : null;
             m.SideTitle = t(page.FactsKey, page.FactsKey);
             m.Side = new UiPairModel[page.Facts.Count];
             for (int i = 0; i < page.Facts.Count; i++)
@@ -57,8 +64,7 @@ namespace RealLifeOverhaul.Ui
             m.SideCount = m.Side.Length;
             for (int i = 0; i < v.Others.Count && others.Count < MostOthers; i++)
             {
-                // The Tech app's close button is the kit's Back, on the prompt bar already.
-                if (v.Others[i].Act != StudioAct.Close && v.Others[i].Act != SectorAct.Close)
+                if (Runs(v.Others[i].Act))
                 {
                     others.Add(v.Others[i]);
                 }
@@ -90,7 +96,32 @@ namespace RealLifeOverhaul.Ui
             return m;
         }
 
-        // A view's table as the kit's: its columns named, figures to the right in a column of their own width, its rows as written.
+        /// <summary>
+        /// Whether the page can run an act itself, through the director. The Tech app's own screens (a new product, the
+        /// contracts, the concept) open only inside that app, and its close button is the kit's Back already, so those are
+        /// left off the page rather than drawn as buttons that do nothing.
+        /// </summary>
+        public static bool Runs(int act)
+        {
+            switch (act)
+            {
+                case SectorAct.OpenRoles:
+                case SectorAct.Launch:
+                case SectorAct.Desk:
+                case SectorAct.Schedule:
+                    return true;
+                case StudioAct.Concept:
+                case StudioAct.Close:
+                case StudioAct.BeatPick:
+                case StudioAct.ProjectPick:
+                    return false;
+                default:
+                    return act >= StudioAct.Genre && act <= StudioAct.Greenlight;
+            }
+        }
+
+        // A view's table as the kit's: its columns named, figures to the right in a column of their own width, its rows as
+        // written. Its rows open nothing, so none is a target.
         private static UiTableModel Table(ViewTable v, UiWords t)
         {
             var columns = new UiColumn[v.ColumnKeys.Length];
@@ -99,9 +130,70 @@ namespace RealLifeOverhaul.Ui
                 bool figure = i < v.Figures.Length && v.Figures[i];
                 columns[i] = new UiColumn { Title = t(v.ColumnKeys[i], v.ColumnKeys[i]), Width = figure ? FigureColumn : 0f, Right = figure };
             }
-            var table = new UiTableModel { Columns = columns, Rows = v.Rows.ToArray(), RowCount = v.Rows.Count, Selected = -1 };
+            var table = new UiTableModel { Columns = columns, Rows = v.Rows.ToArray(), RowCount = v.Rows.Count, Selected = -1, Inert = true };
             table.EmptyTitle = string.IsNullOrEmpty(v.EmptyKey) ? t("reallife_ui_page_empty", "Nothing here yet") : t(v.EmptyKey, v.EmptyKey);
             return table;
+        }
+
+        /// <summary>
+        /// A sample studio's page, named as a sample, for the test that opens a firm before the player owns one: the page
+        /// can be seen on a fresh save, and nothing on it acts, as none of it is the player's. Back closes it.
+        /// </summary>
+        public static UiDashboardModel Sample(UiWords t)
+        {
+            var m = new UiDashboardModel
+            {
+                Title = t("reallife_ui_sample_firm", "A sample studio"),
+                Subtitle = t("reallife_ui_sample_firm_note", "This is a sample, so the page can be seen. Open a tech firm to see your own here."),
+                SubtitleInk = UiRole.WarnText,
+                StatsFirst = true,
+                Figures = new[]
+                {
+                    new UiFigureModel { Label = t("reallife_studio_page_games_out", "Games out"), Value = "3" },
+                    new UiFigureModel { Label = t("reallife_studio_page_copies", "Copies sold"), Value = "82,100" },
+                    new UiFigureModel
+                    {
+                        Label = t("reallife_studio_page_takings", "Takings, 30 days"), Value = "$184,200", Span = 2,
+                        Trend = new[] { 38f, 41f, 40f, 44f, 47f, 51f, 49f, 46f, 44f, 45f, 43f, 45f, 48f, 50f, 49f, 47f }
+                    },
+                },
+            };
+            m.FigureCount = m.Figures.Length;
+            m.Table = new UiTableModel
+            {
+                Columns = new[]
+                {
+                    new UiColumn { Title = t("reallife_studio_page_col_game", "Game") }, new UiColumn { Title = t("reallife_studio_page_col_genre", "Genre") },
+                    new UiColumn { Title = t("reallife_studio_page_col_score", "Score"), Width = FigureColumn, Right = true },
+                    new UiColumn { Title = t("reallife_studio_page_col_copies", "Copies"), Width = FigureColumn, Right = true },
+                    new UiColumn { Title = t("reallife_studio_page_col_kept", "Kept"), Width = FigureColumn, Right = true },
+                },
+                Rows = new[]
+                {
+                    new[] { "Ember Isle", t("reallife_studio_genre_adventure", "Adventure"), "78", "41,000", "$612,400" },
+                    new[] { "Tiny Towns", t("reallife_studio_genre_simulation", "Simulation"), "74", "28,500", "$341,900" },
+                    new[] { "Deep Signal", t("reallife_studio_genre_strategy", "Strategy"), "69", "12,600", "$128,300" },
+                },
+                RowCount = 3, Selected = -1, Inert = true,
+            };
+            m.StatsTitle = t("reallife_studio_page_team", "Team");
+            m.Stats = new[]
+            {
+                new UiStatModel { Label = t("reallife_studio_page_group_engineers", "Engineers"), Figure = "64", Value = 64 },
+                new UiStatModel { Label = t("reallife_studio_page_group_designers", "Designers"), Figure = "58", Value = 58 },
+                new UiStatModel { Label = t("reallife_studio_page_group_testers", "Testers"), Figure = "52", Value = 52 },
+            };
+            m.StatCount = m.Stats.Length;
+            m.SideTitle = t("reallife_studio_page_facts", "Sales and support");
+            m.Side = new[]
+            {
+                new UiPairModel { Key = t("reallife_studio_page_pirated", "Pirated copies"), Value = "9,800" },
+                new UiPairModel { Key = t("reallife_studio_page_engine", "Engine"), Value = t("reallife_ui_sample_engine", "Under licence") },
+            };
+            m.SideCount = m.Side.Length;
+            m.Prompts = new[] { new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") } };
+            m.PromptCount = 1;
+            return m;
         }
 
         // A key's words with its names filled: name, value, name, value (as the game's own Fill does).

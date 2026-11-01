@@ -65,6 +65,7 @@ namespace RealLifeOverhaul.Population
         public long Value;
         public ViewFormat Format;
         public ViewTarget Target;
+        public long[] Figures;       // the row's figures under its view's Columns, or null for its one Value
     }
 
     /// <summary>
@@ -83,6 +84,8 @@ namespace RealLifeOverhaul.Population
         public string Subtitle;
         public readonly List<ViewFigure> Hero = new List<ViewFigure>(4);
         public string RowsHeader;
+        public string[] Columns;           // the label keys of the figures each row carries, when it carries more than one (ViewRow.Figures)
+        public ViewFormat[] ColumnFormats;
         public readonly List<ViewRow> Rows = new List<ViewRow>(PopulationViews.RowsMost);
         public readonly List<ViewFigure> Details = new List<ViewFigure>(8);
         public string Primary;       // the primary action's label key, or null for none
@@ -112,6 +115,8 @@ namespace RealLifeOverhaul.Population
             v.Hero.Add(ViewFigure.Of("reallife_pop_fig_unemployment", Share(unemployed, workers + unemployed), ViewFormat.Permille));
             v.Hero.Add(ViewFigure.Of("reallife_pop_fig_rent", renters > 0 ? rent / renters / 100 : 0, ViewFormat.Money));
             v.RowsHeader = "reallife_pop_rows_districts";
+            v.Columns = new[] { "reallife_pop_fig_households", "reallife_pop_fig_people", "reallife_pop_fig_unemployment", "reallife_pop_fig_rent" };
+            v.ColumnFormats = new[] { ViewFormat.Count, ViewFormat.Count, ViewFormat.Permille, ViewFormat.Money };
             var order = new List<int>(s.Figures.Length);
             for (int d = 0; d < s.Figures.Length && d < s.Districts.Count; d++)
             {
@@ -124,7 +129,12 @@ namespace RealLifeOverhaul.Population
             for (int i = 0; i < order.Count && v.Rows.Count < RowsMost; i++)
             {
                 int d = order[i];
-                v.Rows.Add(new ViewRow { Title = s.Districts[d].Id, TitleKey = true, Value = s.Figures[d].People, Format = ViewFormat.Count, Target = ViewTarget.To(ViewKind.District, d) });
+                DistrictFigures f = s.Figures[d];
+                v.Rows.Add(new ViewRow
+                {
+                    Title = s.Districts[d].Id, TitleKey = true, Value = f.People, Format = ViewFormat.Count, Target = ViewTarget.To(ViewKind.District, d),
+                    Figures = new long[] { f.Households, f.People, Share(f.Unemployed, f.Workers + f.Unemployed), f.MeanRent / 100 }
+                });
             }
             v.Details.Add(ViewFigure.Of("reallife_pop_fig_births", s.BirthsLast, ViewFormat.Count));
             v.Details.Add(ViewFigure.Of("reallife_pop_fig_deaths", s.DeathsLast, ViewFormat.Count));

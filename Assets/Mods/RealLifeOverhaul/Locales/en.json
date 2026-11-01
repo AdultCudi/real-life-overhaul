@@ -28090,5 +28090,19 @@
   "reallife_pop_fig_homes_started": "Homes started this year",
   "reallife_pop_fig_homes_built": "Homes built this year",
   "reallife_pop_fig_firms_opened": "Firms opened this year",
-  "reallife_pop_fig_firms_closed": "Firms closed this year"
+  "reallife_pop_fig_firms_closed": "Firms closed this year",
+  "reallife_ui_test_fonts": "The interface's fonts are still loading. Try again in a moment.",
+  "reallife_ui_test_city": "The city's people are still settling in. Try again in a moment.",
+  "reallife_ui_test_flare_city": "Flare in the city is not running yet. It starts once Flare is on and the city has loaded.",
+  "reallife_ui_test_phone": "The phone is not built yet. Try again once the city has loaded.",
+  "reallife_ui_sample_firm": "A sample studio",
+  "reallife_ui_sample_firm_note": "This is a sample, so the page can be seen. Open a tech firm to see your own here.",
+  "reallife_ui_sample_engine": "Under licence",
+  "reallife_ui_pop_household": "The {surname} household",
+  "reallife_ui_pop_household_plain": "Household",
+  "reallife_ui_pop_last_month": "Last month",
+  "reallife_ui_pop_home": "Home and money",
+  "reallife_ui_gallery_col_kind": "Kind",
+  "reallife_studio_next_hire": "Next: hire programmers and designers for {studio} in the Business app, then set their roles in Open Roles, on its Team tab.",
+  "reallife_studio_page_needed_how": "To fill a group, hire people in the Business app, then set their roles in Open Roles, on its Team tab."
 }

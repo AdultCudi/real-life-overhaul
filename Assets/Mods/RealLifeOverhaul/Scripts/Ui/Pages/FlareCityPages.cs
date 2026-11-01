@@ -5,44 +5,47 @@ using RealLifeOverhaul.Flare;
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// A view of Flare in the city (FlareCityViews: an account, a business, its funnel, the offers, the trends) as the
-    /// kit's dashboard: its figures on top, its list as a table of whole rows, its details at the side, its one primary
-    /// action where tabs would be when it has no tabs. Residents' names come in from Flare's own name maker. Game-free.
-    /// Cost: a model a view, when a screen opens or moves.
+    /// A view of Flare in the city (FlareCityViews: an account, a business, its funnel, the offers, the trends) as a feed,
+    /// since Flare is a social app: its entries down a column with their faces (a post's business, a reviewer, a trend),
+    /// the account's figures and facts at the side, and the tabs heading it. A business's page puts its name after the
+    /// app's in the masthead and its own figures at the side. Only entries a press opens are targets. Residents' names come
+    /// in from Flare's own name maker. Game-free. Cost: a model a view, when a screen opens or moves.
     /// </summary>
     public static class FlareCityPages
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-        public static UiDashboardModel Model(FlareCityView v, UiWords t, Func<long, string> money, Func<int, bool, string> nameOf, string[] tabs, int tab)
+        /// <summary>
+        /// The feed of a view. <paramref name="account"/> is the account's own view, whose followers stand at the side of
+        /// the tabs that have no figures of their own (the trends, the offers), so no tab shows an empty side.
+        /// </summary>
+        public static UiDashboardModel Model(FlareCityView v, UiWords t, Func<long, string> money, Func<int, bool, string> nameOf, string[] tabs, int tab,
+            FlareCityView account = null, string here = null)
         {
+            bool tabbed = tabs != null && tabs.Length > 0;
             var m = new UiDashboardModel
             {
-                Title = v.TitleKey ? t(v.Title, v.Title) : v.Title ?? string.Empty,
-                Subtitle = string.IsNullOrEmpty(v.Subtitle) ? null : t(v.Subtitle, v.Subtitle),
+                Shape = UiPageShape.Feed,
+                Title = tabbed ? null : v.TitleKey ? t(v.Title, v.Title) : v.Title ?? string.Empty,   // a tab says where its page is: no title repeats it
+                Subtitle = tabbed || string.IsNullOrEmpty(v.Subtitle) ? null : t(v.Subtitle, v.Subtitle),
                 SideTitle = t("reallife_ui_page_details", "Details"),
                 Tabs = tabs ?? new string[0],
                 Tab = tab,
+                EntriesTitle = string.IsNullOrEmpty(v.RowsHeader) ? null : t(v.RowsHeader, v.RowsHeader),
             };
-            int count = Math.Min(UiDashboard.MostFigures, v.Hero.Count);
+            FlareCityView figures = v.Hero.Count == 0 && account != null ? account : v;
+            int count = Math.Min(UiDashboard.MostFigures, figures.Hero.Count);
             m.Figures = new UiFigureModel[count];
             for (int i = 0; i < count; i++)
             {
-                FlareViewFigure f = v.Hero[i];
-                m.Figures[i] = new UiFigureModel { Label = t(f.Label, f.Label), Value = Write(f.Value, f.Format, f.Text, t, money), Change = null };
+                FlareViewFigure f = figures.Hero[i];
+                m.Figures[i] = new UiFigureModel { Label = t(f.Label, f.Label), Value = Write(f.Value, f.Format, f.Text, t, money) };
             }
             m.FigureCount = count;
-            m.Table = new UiTableModel
-            {
-                Columns = new[]
-                {
-                    new UiColumn { Title = string.IsNullOrEmpty(v.RowsHeader) ? string.Empty : t(v.RowsHeader, v.RowsHeader) },
-                    new UiColumn { Title = string.Empty },
-                    new UiColumn { Title = string.Empty, Width = UiTokens.S16 * 3f, Right = true },
-                },
-                EmptyTitle = t(v.Empty ?? "reallife_ui_page_empty", "Nothing here yet"),
-            };
-            m.Table.Rows = new string[v.Rows.Count][];
+            m.Table = new UiTableModel { EmptyTitle = t(v.Empty ?? "reallife_ui_page_empty", "Nothing here yet") };
+            m.Entries = new UiRowModel[v.Rows.Count];
+            m.EntryLeads = new bool[v.Rows.Count];
+            bool leads = false;
             for (int i = 0; i < v.Rows.Count; i++)
             {
                 FlareViewRow r = v.Rows[i];
@@ -51,11 +54,13 @@ namespace RealLifeOverhaul.Ui
                 {
                     title = title.Replace("{what}", t(r.What, r.What)).Replace("{where}", r.Where != null ? t(r.Where, r.Where) : string.Empty);
                 }
+                title = UiPlaces.IsKey(title) ? UiPlaces.Words(title) : title;
                 string middle = !string.IsNullOrEmpty(r.Subtitle) ? t(r.Subtitle, r.Subtitle) : r.Second != 0 ? money(r.Second) : string.Empty;
-                m.Table.Rows[i] = new[] { title, middle, Write(r.Value, r.Format, null, t, money) };
+                m.Entries[i] = new UiRowModel { Name = title, Preview = middle, Time = Write(r.Value, r.Format, null, t, money), Hue = UiColour.HueOf(title) };
+                m.EntryLeads[i] = !string.IsNullOrEmpty(r.Target);
+                leads |= m.EntryLeads[i];
             }
-            m.Table.RowCount = v.Rows.Count;
-            m.Table.Selected = v.Rows.Count > 0 ? 0 : -1;
+            m.EntryCount = m.Entries.Length;
             m.Side = new UiPairModel[v.Details.Count];
             for (int i = 0; i < v.Details.Count; i++)
             {
@@ -63,17 +68,19 @@ namespace RealLifeOverhaul.Ui
                 m.Side[i] = new UiPairModel { Key = t(f.Label, f.Label), Value = Write(f.Value, f.Format, f.Text, t, money) };
             }
             m.SideCount = m.Side.Length;
-            m.HasAction = !string.IsNullOrEmpty(v.Primary) && m.Tabs.Length == 0;
+            // Only an action that leads somewhere else stands on the page: an offer's accept and a business's ad are the
+            // phone's Flare, and a button that opens the page it stands on would do nothing.
+            m.HasAction = !string.IsNullOrEmpty(v.Primary) && !string.IsNullOrEmpty(v.PrimaryTarget) && v.PrimaryTarget != here && !tabbed;
             if (m.HasAction)
             {
                 m.Action = new UiActionModel { Label = t(v.Primary, v.Primary), Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiDashboard.ActionCommand };
             }
-            var prompts = new System.Collections.Generic.List<UiPrompt>(5)
+            var prompts = new System.Collections.Generic.List<UiPrompt>(5) { new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") } };
+            if (leads)
             {
-                new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
-                new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_select", "Select") },
-            };
-            if (m.Tabs.Length > 0)
+                prompts.Add(new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_select", "Select") });
+            }
+            if (tabbed)
             {
                 prompts.Add(new UiPrompt { Action = UiAction.TabPrev, Label = t("reallife_ui_prompt_page", "Page") });
             }

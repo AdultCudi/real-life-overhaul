@@ -28090,5 +28090,19 @@
   "reallife_pop_fig_homes_started": "今年开工住房",
   "reallife_pop_fig_homes_built": "今年建成住房",
   "reallife_pop_fig_firms_opened": "今年新开公司",
-  "reallife_pop_fig_firms_closed": "今年关闭公司"
+  "reallife_pop_fig_firms_closed": "今年关闭公司",
+  "reallife_ui_test_fonts": "界面字体仍在加载。请稍后再试。",
+  "reallife_ui_test_city": "城市居民仍在安顿。请稍后再试。",
+  "reallife_ui_test_flare_city": "城市中的 Flare 尚未运行。开启 Flare 且城市加载完成后才会开始。",
+  "reallife_ui_test_phone": "手机尚未就绪。请在城市加载完成后再试。",
+  "reallife_ui_sample_firm": "示例工作室",
+  "reallife_ui_sample_firm_note": "这是示例，方便查看此页面。开一家科技公司即可在此看到你自己的公司。",
+  "reallife_ui_sample_engine": "授权使用",
+  "reallife_ui_pop_household": "{surname}家",
+  "reallife_ui_pop_household_plain": "家庭",
+  "reallife_ui_pop_last_month": "上个月",
+  "reallife_ui_pop_home": "住房与资金",
+  "reallife_ui_gallery_col_kind": "类型",
+  "reallife_studio_next_hire": "下一步：在企业应用里为{studio}招聘程序员和设计师，然后在职位空缺的团队标签页里设置他们的岗位。",
+  "reallife_studio_page_needed_how": "要补齐一个组，先在企业应用里招人，再在职位空缺的团队标签页里设置他们的岗位。"
 }

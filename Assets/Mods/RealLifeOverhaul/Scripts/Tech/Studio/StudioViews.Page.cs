@@ -104,7 +104,8 @@ namespace RealLifeOverhaul.Tech
             Fact(page, P + "page_engine", Engine(f, s.Place, fmt));
             Fact(page, P + "page_trend", f != null && f.TrendGenre >= 0 && day < f.TrendUntil
                 ? Cell(fmt, P + "page_trend_value", "genre", fmt.Text(GenreKey(f.TrendGenre)), "day", fmt.Day(f.TrendUntil)) : NoneWords(fmt));
-            Fact(page, P + "page_known", Known(f, s.Place, fmt));
+            string known = Known(f, s.Place, fmt);
+            Fact(page, P + "page_known", known == fmt.Text(P + "studio_known_none") ? NoneWords(fmt) : known);   // a value alone takes the page's "None", not the sentence's "no genre yet"
             return page;
         }
 

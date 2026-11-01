@@ -28090,5 +28090,19 @@
   "reallife_pop_fig_homes_started": "Casas iniciadas este ano",
   "reallife_pop_fig_homes_built": "Casas construídas este ano",
   "reallife_pop_fig_firms_opened": "Empresas abertas este ano",
-  "reallife_pop_fig_firms_closed": "Empresas fechadas este ano"
+  "reallife_pop_fig_firms_closed": "Empresas fechadas este ano",
+  "reallife_ui_test_fonts": "As fontes da interface ainda estão carregando. Tente de novo em instantes.",
+  "reallife_ui_test_city": "Os moradores da cidade ainda estão se instalando. Tente de novo em instantes.",
+  "reallife_ui_test_flare_city": "O Flare na cidade ainda não está rodando. Ele começa quando o Flare está ligado e a cidade terminou de carregar.",
+  "reallife_ui_test_phone": "O celular ainda não está pronto. Tente de novo quando a cidade terminar de carregar.",
+  "reallife_ui_sample_firm": "Um estúdio de exemplo",
+  "reallife_ui_sample_firm_note": "Isto é um exemplo, para a página poder ser vista. Abra uma empresa de tecnologia para ver a sua aqui.",
+  "reallife_ui_sample_engine": "Sob licença",
+  "reallife_ui_pop_household": "A família {surname}",
+  "reallife_ui_pop_household_plain": "Família",
+  "reallife_ui_pop_last_month": "Mês passado",
+  "reallife_ui_pop_home": "Casa e dinheiro",
+  "reallife_ui_gallery_col_kind": "Tipo",
+  "reallife_studio_next_hire": "Próximo: contrate programadores e designers para {studio} no app Negócios e depois defina os cargos deles em Cargos abertos, na aba Equipe.",
+  "reallife_studio_page_needed_how": "Para preencher um grupo, contrate pessoas no app Negócios e depois defina os cargos delas em Cargos abertos, na aba Equipe."
 }
