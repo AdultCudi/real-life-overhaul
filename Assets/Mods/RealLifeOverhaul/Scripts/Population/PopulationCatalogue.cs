@@ -201,7 +201,9 @@ namespace RealLifeOverhaul.Population
         // ---- the city's districts
 
         public const int DistrictsMost = 32;             // districts the population keeps at most: New York has nine with the mod's two
-        public const int TargetVacancy = 50;             // thousandths of a district's flats the market keeps free: the floor the region's arrivals leave (the game's ideal share of residential buildings to let, 5%)
+        // thousandths of a district's flats the market keeps free: the floor the region's arrivals leave (the game's ideal share of residential
+        // buildings to let, 5%)
+        public const int TargetVacancy = 50;
         // thousandths of a district's flats left free when a city is generated: the share its first years settle at, as the city's own grown children and
         // parting couples take flats below the market's floor (offline 4.2% to 4.6% in the first five years), so the first year does not fill a gap the
         // generation left; still above New York's real rental vacancy (1.4% in the city's 2023 Housing and Vacancy Survey)
