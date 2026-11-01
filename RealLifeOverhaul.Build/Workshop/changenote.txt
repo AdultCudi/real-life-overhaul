@@ -1,4 +1,4 @@
-0.63.5
+0.63.6
 
 Fixed
-- Your own company on the stock market kept the sector of your first business for good, even after you sold it, and its share price followed that sector. The sector now follows what the company earns in: its takings over about a quarter, reviewed at the start of each quarter, with a notice and a City Ledger line when it moves. A company already listed is set by its last quarter's takings when you load. A tech firm counts as software. The company's page shows the sector, its takings by sector and the next review.
+- The game's own employee screens (My Employees, the Contacts card, BizMan's HR plans and schedule) showed the game's wage, while you paid it at the city's prices plus any agreed raise, as the Company app's Staff page said. They now show what you pay, the Staff page names each part, and hiring tells you what a candidate costs at the city's prices.
