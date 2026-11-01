@@ -219,7 +219,7 @@ internal static partial class UiSamples
             {
                 Name = "Maya Okafor", Hue = UiColour.HueOf("Maya Okafor"), Ring = UiRole.Warn, Role = "Customer Service", RoleIcon = UiIcon.Headset,
                 Employer = "Bloom Caf\u00e9", EmployerIcon = UiIcon.Coffee, Status = "At work", StatusTone = UiRole.Ok,
-                FactLabels = new[] { "Age", "Hourly wage", "Hired", "Hours a week" }, FactValues = new[] { "29", "$22", "214 days ago", "32 of 40" },
+                FactLabels = new[] { "Age", "Hourly wage", "Hired", "Hours a week" }, FactValues = new[] { "29", "$22", "214 days ago", "36" },
                 RatingLabel = "Ability", Rating = 7,
             },
             Actions = new[]
@@ -242,7 +242,7 @@ internal static partial class UiSamples
                 Shift("Tuesday", "08:00 to 16:00", "Front", "Late 12 min", UiRole.Warn),
                 Shift("Wednesday", "12:00 to 20:00", "Drive-in", "Up next", UiRole.Accent),
                 Shift("Thursday", "12:00 to 20:00", "Front", "Booked", UiRole.Text2),
-                Shift("Friday", "08:00 to 16:00", "Front", "Booked", UiRole.Text2),
+                Shift("Sunday", "10:00 to 14:00", "Front", "Asked off", UiRole.Warn),
             },
             MoreTitle = "Reviews",
             MoreColumns = new[] { new UiColumn { Title = "Review" }, new UiColumn { Title = "Score", Width = 56f, Right = true }, new UiColumn { Title = "Outcome", Grow = true } },
@@ -370,7 +370,9 @@ internal static partial class UiSamples
             Name = "BizPhone", Time = "14:32", Page = 0, Pages = 2, NextTitle = "Up next",
             Next = new[]
             {
-                new UiInfoRow { Label = "16:00", Value = "Weekly team meeting, Lantern Bay Games" }, new UiInfoRow { Label = "Thu", Value = "Rent due on 70 Fifth Avenue" },
+                new UiInfoRow { Label = "16:00", Value = "Weekly team meeting, Lantern Bay Games" }, new UiInfoRow { Label = "18:30", Value = "Gym at Iron Works" },
+                new UiInfoRow { Label = "Wed", Value = "Cinder Valley playtest" }, new UiInfoRow { Label = "Thu", Value = "Rent due on 70 Fifth Avenue" },
+                new UiInfoRow { Label = "Fri", Value = "Pay day for 26 staff" }, new UiInfoRow { Label = "Sat", Value = "Coffee beans delivered to Bloom Café" },
             },
             Apps = new[]
             {
