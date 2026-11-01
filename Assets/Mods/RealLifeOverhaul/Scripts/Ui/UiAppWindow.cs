@@ -454,11 +454,16 @@ namespace RealLifeOverhaul.Ui
                 float ny = top + UiTokens.S3 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1;
                 float vw = UiTextRules.Width(figures[i].Value, UiStyle.Display) + UiTokens.S1;
                 UiDraw.Text(s, at, ix, ny, Math.Min(iw, vw), UiStyle.Display, UiRole.Text, figures[i].Value, UiFlags.Truncate);
-                if (UiDraw.Drawn(figures[i].Trend) && iw - vw > UiTokens.S16 * 2f)
+                // Beside a hero the band is taller than its figure: the line runs under the number to the band's foot, on the
+                // rows the hero fills with its subline and bar. Otherwise it stands beside the number where there is room.
+                float numberH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display));
+                bool under = height > own && y + h - UiTokens.S4 - (ny + numberH + UiTokens.S2) >= UiTokens.S6;
+                if (UiDraw.Drawn(figures[i].Trend) && (under || iw - vw > UiTokens.S16 * 2f))
                 {
+                    float lx = under ? ix : ix + vw + UiTokens.S4, ly = under ? ny + numberH + UiTokens.S2 : ny;
                     var line = new UiItem
                     {
-                        Kind = UiKind.Spark, Fill = UiRole.Accent, X = ix + vw + UiTokens.S4, Y = ny, W = iw - vw - UiTokens.S4, H = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display)),
+                        Kind = UiKind.Spark, Fill = UiRole.Accent, X = lx, Y = ly, W = ix + iw - lx, H = under ? y + h - UiTokens.S4 - ly : numberH,
                         Points = figures[i].Trend, Clip = at.Clip, Node = -1, Layer = at.Layer, Order = -1, Parent = at.Parent, Alpha = 1f
                     };
                     s.Add(ref line);
