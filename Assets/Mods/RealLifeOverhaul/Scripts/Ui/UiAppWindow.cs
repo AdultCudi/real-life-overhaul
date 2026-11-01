@@ -42,9 +42,11 @@ namespace RealLifeOverhaul.Ui
         public string Name;
         public float Hue;
         public UiRole Ring = UiRole.Ok;
-        public string Role;                        // "Customer service at Bloom Cafe"
+        public string Role;                        // "Customer Service"
         public UiIcon RoleIcon = UiIcon.Briefcase;
-        public UiRole RoleTint = UiRole.CatOffice;
+        public UiRole RoleTint = UiRole.None;      // None for the icon's own colour
+        public string Employer;                    // the firm, beside the role behind its badge ("Bloom Cafe"); null for none
+        public UiIcon EmployerIcon = UiIcon.Store; // the firm's kind, as its badge
         public string Status;                      // a chip beside the role ("At work"); null for none
         public UiRole StatusTone = UiRole.Ok;
         public string[] FactLabels = new string[0];
@@ -83,7 +85,6 @@ namespace RealLifeOverhaul.Ui
         public bool TabsAcross;                     // the sections as icon tabs across the top, as an app of a few has them; the sidebar otherwise
         public UiProfileModel Profile;              // a person's head at the top of the page, with the actions at its right
         public string Next;                         // the next step, a sentence (a page without a head)
-        public UiRole NextTone = UiRole.Accent;
         public UiActionModel[] Actions = new UiActionModel[0];
         public UiHeroModel Hero;                    // the page's one thing, beside the figures, which then take a third
         public UiFigureModel[] Figures = new UiFigureModel[0];
@@ -135,7 +136,7 @@ namespace RealLifeOverhaul.Ui
         {
             s.Begin("app window", frame.Width, frame.Height, dark);
             UiAt at = Shell(s, frame, m.Title, m.Icon, m.Nav, m.NavSelected, m.TabsAcross, keys, out float x, out float y, out float w, out float bottom);
-            y = m.Profile != null ? Profile(s, at, m.Profile, m.Actions, x, y, w, keys) : Lead(s, at, m.Next, m.NextTone, m.Actions, x, y, w, keys);
+            y = m.Profile != null ? Profile(s, at, m.Profile, m.Actions, x, y, w, keys) : Lead(s, at, m.Next, m.Actions, x, y, w, keys);
             if (m.Hero != null)
             {
                 float fw = m.Figures.Length > 0 ? UiDraw.SnapDown(w * FigureShare) : 0f;
@@ -287,7 +288,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>The next step at the left with its icon, the actions at the right, the primary last. Returns the y under it.</summary>
-        public static float Lead(UiScene s, UiAt at, string next, UiRole tone, UiActionModel[] actions, float x, float y, float w, IUiKeys keys)
+        public static float Lead(UiScene s, UiAt at, string next, UiActionModel[] actions, float x, float y, float w, IUiKeys keys)
         {
             if (string.IsNullOrEmpty(next) && (actions == null || actions.Length == 0))
             {
@@ -297,7 +298,7 @@ namespace RealLifeOverhaul.Ui
             float right = Buttons(s, at, actions, x + w, y, keys);
             if (!string.IsNullOrEmpty(next))
             {
-                UiDraw.Icon(s, at, x, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Lightbulb, tone, UiFlags.Middle, true);
+                UiDraw.Icon(s, at, x, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Lightbulb, UiRole.None, UiFlags.Middle, true);
                 UiDraw.TextMiddle(s, at, x + UiTokens.Icon + UiTokens.S2, y, h, right - UiTokens.S6 - x - UiTokens.Icon - UiTokens.S2, UiStyle.BodyStrong, UiRole.Text, next,
                     UiFlags.Label | UiFlags.Truncate);
             }
@@ -337,19 +338,31 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Icon(s, at, tx, ty + (rh - UiTokens.Icon) / 2f, UiTokens.Icon, p.RoleIcon, p.RoleTint, UiFlags.Middle, true);
             float rx = tx + UiTokens.Icon + UiTokens.S2;
             float chip = string.IsNullOrEmpty(p.Status) ? 0f : UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(p.Status, UiStyle.SmallStrong) + UiTokens.S1);
-            float rw = Math.Min(UiDraw.Snap(UiTextRules.Width(p.Role ?? string.Empty, UiStyle.Body) + UiTokens.S1), UiDraw.SnapDown(right - UiTokens.S6 - rx - (chip > 0f ? chip + UiTokens.S3 : 0f)));
+            float room = UiDraw.SnapDown(right - UiTokens.S6 - rx - (chip > 0f ? chip + UiTokens.S3 : 0f));
+            float rw = Math.Min(UiDraw.Snap(UiTextRules.Width(p.Role ?? string.Empty, UiStyle.Body) + UiTokens.S1), room);
             UiDraw.TextMiddle(s, at, rx, ty, rh, rw, UiStyle.Body, UiRole.Text2, p.Role, UiFlags.Truncate);
+            float after = rx + rw;
+            if (!string.IsNullOrEmpty(p.Employer))
+            {
+                // The firm behind its badge, as Football Manager puts the club's crest by the contract.
+                float bx = after + UiTokens.S4, badge = UiTokens.MinTarget;
+                int tile = UiDraw.Tile(s, at, bx, ty, badge, UiRole.None, false);
+                UiDraw.Icon(s, at.In(tile), bx + UiTokens.S1, ty + UiTokens.S1, badge - UiTokens.S2, p.EmployerIcon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
+                float ew = Math.Min(UiDraw.Snap(UiTextRules.Width(p.Employer, UiStyle.BodyStrong) + UiTokens.S1), Math.Max(0f, rx + room - bx - badge - UiTokens.S2));
+                UiDraw.TextMiddle(s, at, bx + badge + UiTokens.S2, ty, rh, ew, UiStyle.BodyStrong, UiRole.Text, p.Employer, UiFlags.Truncate);
+                after = bx + badge + UiTokens.S2 + ew;
+            }
             if (chip > 0f)
             {
-                UiDraw.Chip(s, at, rx + rw + UiTokens.S3, ty + (rh - UiTokens.Badge - UiTokens.S1) / 2f, p.Status, p.StatusTone);
+                UiDraw.Chip(s, at, after + UiTokens.S3, ty + (rh - UiTokens.Badge - UiTokens.S1) / 2f, p.Status, p.StatusTone);
             }
             ty += rh + UiTokens.S3;
             float labelH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1;
             float factsH = labelH + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title));
             float starsW = p.Rating >= 0 ? UiDraw.Snap(5f * UiTokens.Icon + 8f * UiTokens.Hairline) : 0f;
-            float factsRight = x + w - (starsW > 0f ? starsW + UiTokens.S8 : 0f);
             int count = Math.Min(MostFacts, Math.Min(p.FactLabels.Length, p.FactValues.Length));
-            float slot = count > 0 ? UiDraw.SnapDown((factsRight - tx) / count) : 0f;
+            int slots = count + (starsW > 0f ? 1 : 0);   // the rating is the last slot, so every gutter is one rhythm
+            float slot = slots > 0 ? UiDraw.SnapDown((x + w - tx) / slots) : 0f;
             for (int i = 0; i < count; i++)
             {
                 float fx = tx + i * slot;
@@ -358,7 +371,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (starsW > 0f)
             {
-                float sx = x + w - starsW;
+                float sx = tx + count * slot;
                 UiDraw.Text(s, at, sx, ty, starsW, UiStyle.SectionHeader, UiRole.Text2, p.RatingLabel, UiFlags.Label | UiFlags.Truncate);
                 UiDraw.Stars(s, at, sx, ty + labelH, UiTokens.Icon, p.Rating);
             }
@@ -379,14 +392,14 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Icon(s, at.In(tile), tx + (HeroTile - g) / 2f, ty + (HeroTile - g) / 2f, g, hero.Icon, hero.Tint, UiFlags.Middle | UiFlags.Centre, true);
             float noteW = string.IsNullOrEmpty(hero.Note) ? 0f : UiDraw.Snap(UiTokens.Icon + UiTokens.S2 + UiTextRules.Width(hero.Note, UiStyle.BodyStrong) + UiTokens.S1);
             float ix = tx + HeroTile + UiTokens.S5, iw = x + w - UiTokens.S4 - ix;
-            float kh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)), nh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Hero));
+            float kh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)), nh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display));
             float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body));
             float cy = ty + UiDraw.SnapDown((HeroTile - kh - UiTokens.S1 - nh - lh - (hero.Progress >= 0 ? UiTokens.S2 + UiTokens.S1 : 0f)) / 2f);
             float textW = iw - (noteW > 0f ? noteW + UiTokens.S6 : 0f);
             UiDraw.Text(s, at, ix, cy, textW, UiStyle.SectionHeader, UiRole.Text2, hero.Kicker, UiFlags.Label | UiFlags.Truncate);
             cy += kh + UiTokens.S1;
             float titleY = cy;
-            UiDraw.Text(s, at, ix, cy, textW, UiStyle.Hero, UiRole.Text, hero.Title, UiFlags.Truncate);
+            UiDraw.Text(s, at, ix, cy, textW, UiStyle.Display, UiRole.Text, hero.Title, UiFlags.Truncate);   // the figures' size: a screen keeps to three
             cy += nh;
             UiDraw.Text(s, at, ix, cy, iw, UiStyle.Body, UiRole.Text2, hero.Line, UiFlags.Truncate);
             cy += lh;
@@ -397,7 +410,7 @@ namespace RealLifeOverhaul.Ui
             if (noteW > 0f)
             {
                 float nx = x + w - UiTokens.S4 - noteW, ny = titleY + UiDraw.SnapDown((nh - UiTokens.Icon) / 2f);   // level with the name
-                UiDraw.Icon(s, at, nx, ny, UiTokens.Icon, hero.NoteIcon, UiRole.Warn, UiFlags.Middle, true);
+                UiDraw.Icon(s, at, nx, ny, UiTokens.Icon, hero.NoteIcon, UiRole.None, UiFlags.Middle, true);
                 UiDraw.TextMiddle(s, at, nx + UiTokens.Icon + UiTokens.S2, ny, UiTokens.Icon, noteW - UiTokens.Icon - UiTokens.S2, UiStyle.BodyStrong, UiRole.Text, hero.Note, UiFlags.None);
             }
             return h;
@@ -486,8 +499,15 @@ namespace RealLifeOverhaul.Ui
                 ty += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3;
             }
             float tile = UiTokens.ControlSmall;
-            float lead = tile + UiTokens.S3;
-            float[] cx = Columns(columns, x + lead, w - lead, out float[] cw);
+            bool icons = false;
+            float first = UiTextRules.Width(columns.Length > 0 ? columns[0].Title : string.Empty, UiStyle.SectionHeader);
+            for (int r = 0; r < rows.Length; r++)
+            {
+                icons |= rows[r].Icon != UiIcon.None;   // a table whose rows share one picture leaves it out: an icon must say what differs
+                first = Math.Max(first, rows[r].Cells != null && rows[r].Cells.Length > 0 ? UiTextRules.Width(rows[r].Cells[0], UiStyle.Title) : 0f);
+            }
+            float lead = icons ? tile + UiTokens.S3 : 0f;
+            float[] cx = Columns(columns, x + lead, w - lead, UiDraw.Snap(first + UiTokens.S6), out float[] cw);
             for (int c = 0; c < columns.Length; c++)
             {
                 UiDraw.Text(s, at, cx[c], ty, cw[c], UiStyle.SectionHeader, UiRole.Muted, columns[c].Title, UiFlags.Label | UiFlags.Truncate | (columns[c].Right ? UiFlags.Right : UiFlags.None));
@@ -500,9 +520,12 @@ namespace RealLifeOverhaul.Ui
                 ref UiAppRow row = ref rows[r];
                 int face = UiDraw.Box(s, at, x - UiTokens.S2, ty, w + UiTokens.S4, Row, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
                 UiAt inside = at.In(face);
-                int t = UiDraw.Tile(s, inside, x, ty + (Row - tile) / 2f, tile, row.Tint, false);
-                float g = UiTokens.Icon;
-                UiDraw.Icon(s, inside.In(t), x + (tile - g) / 2f, ty + (Row - g) / 2f, g, row.Icon, row.Tint, UiFlags.Middle | UiFlags.Centre, true);
+                if (row.Icon != UiIcon.None)
+                {
+                    int t = UiDraw.Tile(s, inside, x, ty + (Row - tile) / 2f, tile, row.Tint, false);
+                    float g = UiTokens.Icon;
+                    UiDraw.Icon(s, inside.In(t), x + (tile - g) / 2f, ty + (Row - g) / 2f, g, row.Icon, row.Tint, UiFlags.Middle | UiFlags.Centre, true);
+                }
                 for (int c = 0; c < columns.Length && row.Cells != null && c < row.Cells.Length; c++)
                 {
                     bool right = columns[c].Right;
@@ -522,27 +545,30 @@ namespace RealLifeOverhaul.Ui
             return ty;
         }
 
-        // The columns' lefts and widths: the first takes what the others leave.
-        private static float[] Columns(UiColumn[] columns, float x, float w, out float[] widths)
+        // The columns' lefts and widths: the first takes what the others leave, or keeps to its words when another grows,
+        // so a short name never stands across a gulf from the rest of its row.
+        private static float[] Columns(UiColumn[] columns, float x, float w, float firstWords, out float[] widths)
         {
             int n = columns.Length;
             var lefts = new float[n];
             widths = new float[n];
+            int grow = -1;
             float fixedW = 0f;
             for (int c = 1; c < n; c++)
             {
-                fixedW += columns[c].Width + UiTokens.S4;
+                grow = columns[c].Grow && grow < 0 ? c : grow;
+                fixedW += (columns[c].Grow ? 0f : columns[c].Width) + UiTokens.S4;
             }
             if (n > 0)
             {
-                widths[0] = Math.Max(UiTokens.S16, w - fixedW);
+                widths[0] = grow > 0 ? Math.Max(UiTokens.S16, Math.Min(firstWords, w - fixedW - UiTokens.S16)) : Math.Max(UiTokens.S16, w - fixedW);
             }
             float cx = x;
             for (int c = 0; c < n; c++)
             {
                 if (c > 0)
                 {
-                    widths[c] = columns[c].Width;
+                    widths[c] = c == grow ? Math.Max(UiTokens.S16, w - fixedW - widths[0]) : columns[c].Width;
                 }
                 lefts[c] = cx;
                 cx += widths[c] + UiTokens.S4;
@@ -595,15 +621,17 @@ namespace RealLifeOverhaul.Ui
                 int row = UiDraw.Box(s, at, x - UiTokens.S2, ty, w + UiTokens.S4, moreH, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
                 float mw = UiDraw.Snap(UiTextRules.Width(more, UiStyle.BodyStrong) + UiTokens.S1);
                 UiDraw.TextMiddle(s, at.In(row), x, ty, moreH, Math.Min(mw, w - UiTokens.Icon - UiTokens.S2), UiStyle.BodyStrong, UiRole.AccentText, more, UiFlags.Label | UiFlags.Truncate);
-                UiDraw.Icon(s, at.In(row), x + Math.Min(mw, w - UiTokens.Icon - UiTokens.S2) + UiTokens.S1, ty + (moreH - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Next,
-                    UiRole.AccentText, UiFlags.Middle);
+                float words = Math.Min(UiTextRules.Width(more, UiStyle.BodyStrong), w - UiTokens.Icon - UiTokens.S2);
+                UiDraw.Icon(s, at.In(row), x + words - UiTokens.S1 + UiDraw.LinkGap, ty + (moreH - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Next, UiRole.AccentText,
+                    UiFlags.Middle | UiFlags.Decor);   // the arrow's glyph stands a grid step inside its box, so its box starts a step early
                 UiDraw.Node(s, at, x - UiTokens.S2, ty, w + UiTokens.S4, moreH, AllCommand, 0, row);
                 ty += moreH;
             }
             if (noteH > 0f)
             {
                 float ny = ty + UiTokens.S2;
-                UiDraw.Icon(s, at, x, ny, UiTokens.Icon, UiIcon.Info, noteTone, UiFlags.Middle, true);
+                bool warns = noteTone == UiRole.Warn || noteTone == UiRole.Danger;   // a warning wears the warning's glyph, never a recoloured info mark
+                UiDraw.Icon(s, at, x, ny, UiTokens.Icon, warns ? UiIcon.Warning : UiIcon.Info, warns ? noteTone : UiRole.None, UiFlags.Middle, true);
                 UiDraw.Text(s, at, x + UiTokens.Icon + UiTokens.S2, ny + UiTokens.Hairline, w - UiTokens.Icon - UiTokens.S2, UiStyle.Small, UiRole.Text2, note,
                     UiFlags.Label | UiFlags.Wrap | UiFlags.Middle, 3);
             }

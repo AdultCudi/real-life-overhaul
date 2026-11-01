@@ -143,6 +143,7 @@ namespace RealLifeOverhaul.Ui
         public string Title;
         public float Width;      // px, on the grid; 0 shares the room left with the other 0s
         public bool Right;       // figures: to the right
+        public bool Grow;        // an app window's table: this column takes the room left, and the first keeps to its words
     }
 
     /// <summary>A table's view model: its columns, its rows of cells, the selected row and how far it has scrolled.</summary>
