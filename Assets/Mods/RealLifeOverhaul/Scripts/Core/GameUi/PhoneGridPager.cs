@@ -544,6 +544,40 @@ namespace RealLifeOverhaul.GameUi
             DropFolders();
         }
 
+        /// <summary>
+        /// "PASS" when the grid shows no more than a page: with this pager, a page's tiles and the page count it works out from
+        /// what stands in the grid, and no app button hidden there without its mark (which other mods' pagers never show);
+        /// stepped aside, whoever pages the grid shows and hides them. Else what is wrong.
+        /// </summary>
+        public string PageCheck()
+        {
+            int shown = 0, unmarked = 0, buttons = 0;
+            for (int i = 0; i < transform.childCount; i++)
+            {
+                Transform child = transform.GetChild(i);
+                if (child == _template || !(child is RectTransform placed) || Ignored(placed))
+                {
+                    continue;
+                }
+                bool on = child.gameObject.activeSelf;
+                shown += on ? 1 : 0;
+                if (child.GetComponent<AppButton>() != null)
+                {
+                    buttons++;
+                    unmarked += !on && !PagedOff(child) ? 1 : 0;
+                }
+            }
+            int tiles = _strip ? Tiles : PagerRules.PhoneTiles;
+            int wanted = PagerRules.Pages(_items.Count, ItemTiles);
+            string said = buttons + " app buttons in the grid, " + shown + " showing (a page holds " + tiles + ")";
+            if (_aside)
+            {
+                return said + "; another mod pages this grid: PASS (it shows and hides them)";
+            }
+            bool ok = shown <= tiles && Pages == wanted && unmarked == 0;
+            return said + ", " + Pages + " page(s) for " + _items.Count + " item(s) (wanted " + wanted + "), " + unmarked + " hidden without a page mark: " + (ok ? "PASS" : "FAIL");
+        }
+
         /// <summary>"PASS" when every button is in exactly one place and each folder's tile stands while it has apps; else what is wrong.</summary>
         public string Check()
         {
