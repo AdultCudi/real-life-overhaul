@@ -124,6 +124,28 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        private static readonly System.Collections.Generic.Dictionary<TMP_FontAsset, Material> Heavier = new System.Collections.Generic.Dictionary<TMP_FontAsset, Material>();
+
+        /// <summary>
+        /// A face's material with its strokes thickened a little, for dark words on the cyan: dark on light draws thinner
+        /// than light on dark, so a primary button's label would read weaker than the secondary one beside it. One a face,
+        /// kept for the session. Null for no face.
+        /// </summary>
+        public static Material OnLight(TMP_FontAsset font)
+        {
+            if (font == null || font.material == null)
+            {
+                return null;
+            }
+            if (!Heavier.TryGetValue(font, out Material heavy) || heavy == null)
+            {
+                heavy = new Material(font.material) { name = font.material.name + " on light" };
+                heavy.SetFloat(ShaderUtilities.ID_FaceDilate, 0.16f);
+                Heavier[font] = heavy;
+            }
+            return heavy;
+        }
+
         /// <summary>The face for a style: the bundle's cut of its family and weight, or the game's font while the bundle is not in.</summary>
         public static TMP_FontAsset For(UiStyle style)
         {

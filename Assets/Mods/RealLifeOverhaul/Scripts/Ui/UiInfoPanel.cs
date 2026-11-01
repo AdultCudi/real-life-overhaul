@@ -55,8 +55,8 @@ namespace RealLifeOverhaul.Ui
     {
         public const int TabCommand = 1, LinkCommand = 2, FooterCommand = 3;
         public const float Width = 440f;    // px: the panel, as a game's info panel is narrow
-        private const float TabStrip = 52f; // px: the icon tabs' column, a round tab with a grid step either side
-        private const float TabSize = 44f;  // px: a round tab
+        private const float TabStrip = 56f; // px: the icon tabs' column, a round tab with two grid steps either side for its focus ring
+        private const float TabSize = 40f;  // px: a round tab
         private const float Portrait = 64f; // px
 
         public static void Lay(UiScene s, UiInfoModel m, UiFrame frame, bool dark, IUiKeys keys)

@@ -184,10 +184,15 @@ namespace RealLifeOverhaul.Ui
         {
             float h = UiTokens.Control;
             float cx = x;
+            // A lone key cap means nothing to the mouse: it shows while the keys lead, and its room stays so nothing moves.
             if (keys != null)
             {
-                cx += KeyCap(s, at, cx, y + (h - UiTokens.KeyCap) / 2f - UiTokens.S1, UiAction.TabPrev, keys, UiRole.Track, UiRole.Text2) + UiTokens.S3;
-                s.Items[s.ItemCount - 1].Flags |= UiFlags.Middle;
+                cx += (s.Pointer ? KeyCapWidth(UiAction.TabPrev, keys) : KeyCap(s, at, cx, y + (h - UiTokens.KeyCap) / 2f - UiTokens.S1, UiAction.TabPrev, keys, UiRole.Track, UiRole.Text2))
+                      + UiTokens.S3;
+                if (!s.Pointer)
+                {
+                    s.Items[s.ItemCount - 1].Flags |= UiFlags.Middle;
+                }
             }
             for (int i = 0; i < labels.Length; i++)
             {
@@ -198,7 +203,7 @@ namespace RealLifeOverhaul.Ui
                 Node(s, at, cx, y, tw, h, command, i, face);
                 cx += tw + UiTokens.S1;
             }
-            if (keys != null)
+            if (keys != null && !s.Pointer)
             {
                 KeyCap(s, at, cx + UiTokens.S2, y + (h - UiTokens.KeyCap) / 2f - UiTokens.S1, UiAction.TabNext, keys, UiRole.Track, UiRole.Text2);
                 s.Items[s.ItemCount - 1].Flags |= UiFlags.Middle;

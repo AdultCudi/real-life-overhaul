@@ -151,7 +151,7 @@ namespace RealLifeOverhaul.Ui
             float capW = keys != null ? UiDraw.KeyCapWidth(UiAction.TabPrev, keys) + UiTokens.S1 + UiDraw.KeyCapWidth(UiAction.TabNext, keys) : 0f;
             UiDraw.Text(s, at, x + UiTokens.S3, y + (UiTokens.KeyCap - UiTextRules.LineHeight(UiStyle.SectionHeader)) / 2f, w - capW - UiTokens.S6, UiStyle.SectionHeader,
                 UiRole.Muted, m.GroupsLabel, UiFlags.Label | UiFlags.Middle);
-            if (keys != null)
+            if (keys != null && !s.Pointer)   // lone caps mean nothing to the mouse; their room stays, so nothing moves
             {
                 float kx = x + w - UiTokens.S3 - capW;
                 kx += UiDraw.KeyCap(s, at, kx, y, UiAction.TabPrev, keys, UiRole.Track, UiRole.Text2) + UiTokens.S1;

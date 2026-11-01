@@ -231,9 +231,20 @@ internal static partial class Program
                 rise = Math.Min(rise, b[0] - a[0]);
                 apart = Math.Min(apart, LabDistance(a, b));
             }
-            Check(rise >= 5.0 && apart >= 12.0, "ui tokens: the map's ramp rises in lightness and stays apart under " + names[k] + " (least rise " + rise.ToString("0.0")
-                + " L*, closest neighbours " + apart.ToString("0.0") + "; at least 5 and 12)");
+            Check(rise >= 6.0 && apart >= 8.0, "ui tokens: the map's ramp rises in lightness and stays apart under " + names[k] + " (least rise " + rise.ToString("0.0")
+                + " L*, closest neighbours " + apart.ToString("0.0") + "; at least 6 and 8)");
         }
+        // A map beside a donut must never say a slice's colour: every step of the ramp stands well away from every chart hue.
+        double[,] eye = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
+        double nearest = double.MaxValue;
+        for (int i = 0; i < 5; i++)
+        {
+            for (int c = 0; c < 8; c++)
+            {
+                nearest = Math.Min(nearest, LabDistance(SeenLab(UiTokens.Colour(UiTokens.Ramp(i)), eye), SeenLab(UiTokens.Colour(UiTokens.Chart(c)), eye)));
+            }
+        }
+        Check(nearest >= 15.0, "ui tokens: the map's ramp keeps away from the chart's hues (closest " + nearest.ToString("0.0") + "; at least 15)");
         float low = UiContrast(UiRole.Ramp1, UiRole.Panel, true);
         Check(low >= UiCheckRules.LargeContrast, "ui tokens: the ramp's lowest step reads 3:1 on the panel as a legend's swatch (" + low.ToString("0.00") + ")");
     }

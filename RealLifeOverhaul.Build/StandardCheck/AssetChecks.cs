@@ -64,6 +64,7 @@ internal static partial class Program
         ("Social/Flare/FlareIcons.cs", "s", "Made[glyph] = s", "a Flare glyph, drawn once a session for each"),
         ("Social/Flare/FlareKit.cs", "return", "_round = Make(false)", "Flare's two rounded shapes, drawn once a session"),
         ("Ui/UiIcons.cs", "s", "Made[(int)icon] = s", "a glyph of the interface's one icon family, drawn once a session for each"),
+        ("Ui/UiFonts.cs", "heavy", "Heavier[font] = heavy", "a face's material thickened for dark words on the cyan, one a face for the session"),
         ("Ui/UiSprites.cs", "return", "Fills[r] = s", "the interface's rounded shapes, edges, rings, glow and wash, drawn once a session for each radius"),
         ("Ui/UiSprites.cs", "_donut", "_donut = Sprite.Create", "a donut's ring, drawn once a session and filled into slices by Unity's radial fill"),
         ("Ui/UiSprites.cs", "s", "UnityEngine.Object.Destroy(gone.texture)", "a person's painted face, kept by their name, the oldest destroyed past 160"),

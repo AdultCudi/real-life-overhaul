@@ -327,13 +327,13 @@ namespace RealLifeOverhaul.Ui
             0xF2C14E29,   // WarnSoft
             0x34465AFF,   // Notice
             0xE6EDF3FF,   // NoticeText
-            0xE6EDF317,   // Line: a hairline, soft white at 9%
+            0x3A4857FF,   // Line: a hairline, a tone over the slate; the game blends in linear light, where a faint white reads twice as bright
             0xE6EDF31F,   // Track: an empty segment
             0x0B1118D1,   // Scrim: the world dimmed behind a decision; 82% in linear light leaves it at about 45% to the eye
             0x3DBBEBFF,   // Focus
             0xE6EDF3FF,   // PromptInk
             0x0E182299,   // PromptCap
-            0xE6EDF317,   // Rule: as Line, under a title strip and between sections
+            0x3A4857FF,   // Rule: as Line, under a title strip and between sections
             0x1E2A3799,   // Band: a section's band, 60% over the panel
             0x1A2430FF,   // StatusBar: the bottom strip, solid for the same reason as a panel
             0x263445FF,   // Pill
@@ -358,11 +358,11 @@ namespace RealLifeOverhaul.Ui
             0xB4D45AFF,   // Grade4
             0x74D35AFF,   // Grade5: excellent
             0x344457FF,   // Tile: neutral, as a warm colour faded on slate turns brown and olive
-            0x6880D4FF,   // Ramp1: low. Lightness rises a step at a time, blue to yellow, so the order reads under colour blindness
-            0x3BA8D9FF,   // Ramp2
-            0x1ACBBDFF,   // Ramp3
-            0x91DF7FFF,   // Ramp4
-            0xFEEA74FF,   // Ramp5: high
+            0x8874DDFF,   // Ramp1: low. One violet rising in lightness, a hue no chart slice comes near, so a map never reads as a category
+            0xA48CECFF,   // Ramp2
+            0xBFA5F8FF,   // Ramp3
+            0xD6BFFEFF,   // Ramp4
+            0xE4D9FDFF,   // Ramp5: high, still a lavender, so a dear street never glares white
         };
 
         /// <summary>A role's colour, as 0xRRGGBBAA. One look: the flag stays for the callers that still pass it.</summary>

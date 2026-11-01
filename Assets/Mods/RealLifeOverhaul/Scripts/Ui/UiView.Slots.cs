@@ -338,6 +338,11 @@ namespace RealLifeOverhaul.Ui
             {
                 t.font = font;
             }
+            Material face = it.Ink == UiRole.OnAccent ? UiFonts.OnLight(t.font) : t.font != null ? t.font.material : null;
+            if (face != null && t.fontSharedMaterial != face)
+            {
+                t.fontSharedMaterial = face;   // a pooled slot may have drawn dark words on the cyan before
+            }
             float size = type.Size * Scale;
             if (!Mathf.Approximately(t.fontSize, size))
             {
