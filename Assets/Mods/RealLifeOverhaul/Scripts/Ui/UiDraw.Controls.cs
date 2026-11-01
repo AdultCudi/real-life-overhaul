@@ -106,16 +106,29 @@ namespace RealLifeOverhaul.Ui
         /// accent selection bar at its left. Returns the focus target.
         /// </summary>
         public static int NavItem(UiScene s, UiAt at, float x, float y, float w, string label, string count, float hue, bool selected, int command, int arg,
-            bool loudCount = false)
+            bool loudCount = false, UiIcon icon = UiIcon.None, UiRole tint = UiRole.Text2)
         {
             float h = UiTokens.Control;
-            int face = Box(s, at, x, y, w, h, UiRole.None, UiRole.None, UiTokens.RadiusLarge, selected ? UiFlags.Selected : UiFlags.None);   // no fill: one loud highlight a screen
+            int face = Box(s, at, x, y, w, h, selected ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusLarge, selected ? UiFlags.Selected : UiFlags.None);
             UiAt inside = at.In(face);
             if (selected)
             {
                 Box(s, inside, x, y + UiTokens.S3, UiTokens.SelectBar, h - UiTokens.S3 * 2f, UiRole.Accent, UiRole.None, UiTokens.SelectBar / 2f);
             }
-            HueDot(s, inside, x + UiTokens.S4, y + (h - UiTokens.StatusDot) / 2f, UiTokens.StatusDot, hue);
+            float lead = UiTokens.StatusDot;
+            if (icon != UiIcon.None)
+            {
+                // A game's menu: the group's icon on its tile in its colour.
+                float tile = UiTokens.ControlSmall;
+                int t = Tile(s, inside, x + UiTokens.S3, y + (h - tile) / 2f, tile, tint, selected);
+                Icon(s, inside.In(t), x + UiTokens.S3 + (tile - UiTokens.Icon) / 2f, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, icon, selected ? UiRole.OnAccent : tint,
+                    UiFlags.Middle | UiFlags.Centre, true);
+                lead = tile - UiTokens.S1;
+            }
+            else
+            {
+                HueDot(s, inside, x + UiTokens.S4, y + (h - UiTokens.StatusDot) / 2f, UiTokens.StatusDot, hue);
+            }
             float cw = 0f;
             if (!string.IsNullOrEmpty(count))
             {
@@ -131,9 +144,9 @@ namespace RealLifeOverhaul.Ui
                     TextMiddle(s, inside, x + w - UiTokens.S4 - cw, y, h, cw, UiStyle.Small, selected ? UiRole.AccentText : UiRole.Muted, count, UiFlags.Right);
                 }
             }
-            float tx = x + UiTokens.S4 + UiTokens.StatusDot + UiTokens.S3;
+            float tx = x + UiTokens.S4 + lead + UiTokens.S3;
             float lw = w - (tx - x) - cw - UiTokens.S6;
-            UiRole ink = selected ? UiRole.AccentText : UiRole.Text2;
+            UiRole ink = selected ? UiRole.AccentText : UiRole.Text;
             if (UiTextRules.Width(label, UiStyle.Nav) <= lw)
             {
                 TextMiddle(s, inside, tx, y, h, lw, UiStyle.Nav, ink, label, UiFlags.Label | UiFlags.Truncate);
@@ -153,7 +166,7 @@ namespace RealLifeOverhaul.Ui
             float h = UiTokens.Control;
             int face = Box(s, at, x, y, w, h, UiRole.Field, UiRole.None, UiTokens.RadiusLarge);
             UiAt inside = at.In(face);
-            Icon(s, inside, x + UiTokens.S4, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Search, UiRole.Muted);
+            Icon(s, inside, x + UiTokens.S4, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Search, UiRole.Muted, UiFlags.Middle);
             float cw = string.IsNullOrEmpty(count) ? 0f : UiTextRules.Width(count, UiStyle.Small) + UiTokens.S1;
             if (cw > 0f)
             {

@@ -34,12 +34,10 @@ namespace RealLifeOverhaul.Ui
         public static float Hero(UiScene s, UiAt at, float x, float y, float w, string name, float hue, string role, string status, UiTone tone,
             UiActionModel[] actions, int actionCount, IUiKeys keys, int command)
         {
-            const float pad = UiTokens.S8, size = UiTokens.AvatarHero;
-            float h = pad + size + UiTokens.S6;
-            float ring = size + UiTokens.S2;
-            Circle(s, at, x + pad - UiTokens.S1, y + pad - UiTokens.S1, ring, ring, UiRole.Accent, UiFlags.Decor);
-            Circle(s, at, x + pad - UiTokens.Hairline * 2f, y + pad - UiTokens.Hairline * 2f, size + UiTokens.S1, size + UiTokens.S1, UiRole.Panel, UiFlags.Decor);
-            Avatar(s, at, x + pad, y + pad, size, name, hue);
+            const float pad = UiTokens.S6, size = UiTokens.AvatarHero - UiTokens.S4;
+            float h = pad + size + UiTokens.S5;
+            UiRole ring = tone == UiTone.Ok ? UiRole.Ok : tone == UiTone.Warn ? UiRole.Warn : tone == UiTone.Danger ? UiRole.Danger : UiRole.Accent;   // the ring says their state, as inZOI's
+            Portrait(s, at, x + pad, y + pad, size, name, hue, ring);
             // The actions first, from the right, so the name knows its room.
             float ax = x + w - pad;
             float ay = y + pad + (size - UiTokens.Control) / 2f;
@@ -116,14 +114,15 @@ namespace RealLifeOverhaul.Ui
             float bh = BubbleHeight(ref m, w);
             float bx = sys ? x + (w - bw) / 2f : me ? x + w - bw : x;
             UiFlags place = sys ? UiFlags.Centre : me ? UiFlags.Right : UiFlags.None;
-            int face = Box(s, at, bx, y, bw, bh, sys ? UiRole.None : me ? UiRole.Accent : UiRole.Bubble, sys ? UiRole.Line : UiRole.None, UiTokens.RadiusLarge, place);
+            // Mine in the cyan at a fifth, theirs on the slate: a solid cyan block would shout over the thread and read as chosen.
+            int face = Box(s, at, bx, y, bw, bh, sys ? UiRole.None : me ? UiRole.RowSel : UiRole.Bubble, sys ? UiRole.Line : UiRole.None, UiTokens.RadiusLarge, place);
             UiAt inside = at.In(face);
-            UiRole ink = sys ? UiRole.Text2 : me ? UiRole.OnAccent : UiRole.Text;
+            UiRole ink = sys ? UiRole.Text2 : UiRole.Text;
             float inner = bw - UiTokens.S4 * 2f;
             int words = Text(s, inside, bx + UiTokens.S4, y + UiTokens.S3, inner, style, ink, m.Text, UiFlags.Wrap | UiFlags.Truncate | (sys ? UiFlags.Centre : UiFlags.None), 12);
             if (!string.IsNullOrEmpty(m.Time))
             {
-                int t = Text(s, inside, bx + UiTokens.S4, s.Items[words].Y + s.Items[words].H + UiTokens.S1, inner, UiStyle.Small, me ? UiRole.OnAccent : UiRole.Muted, m.Time,
+                int t = Text(s, inside, bx + UiTokens.S4, s.Items[words].Y + s.Items[words].H + UiTokens.S1, inner, UiStyle.Small, me ? UiRole.Text : UiRole.Text2, m.Time,
                     sys ? UiFlags.Centre | UiFlags.Middle : me ? UiFlags.Right | UiFlags.Middle : UiFlags.Middle);
                 s.Items[t].Alpha = 1f;
             }
@@ -140,7 +139,7 @@ namespace RealLifeOverhaul.Ui
             float bw = ButtonWidth(UiButtonKind.Primary, send, UiIcon.Send, UiAction.Count, null);
             float bx = x + w - UiTokens.S2 - bw;
             Button(s, inside, bx, y + UiTokens.S2, bw, UiTokens.ControlSmall, ready ? UiButtonKind.Primary : UiButtonKind.Quiet, send, UiIcon.Send, UiAction.Count, null, sendCommand, 0, !ready);
-            TextMiddle(s, inside, x + UiTokens.S5, y, h, bx - x - UiTokens.S5 - UiTokens.S3, UiStyle.Body, ready ? UiRole.Text : UiRole.Muted, ready ? draft : placeholder,
+            TextMiddle(s, inside, x + UiTokens.S5, y, h, bx - x - UiTokens.S5 - UiTokens.S3, UiStyle.Body, ready ? UiRole.Text : UiRole.Text2, ready ? draft : placeholder,
                 ready ? UiFlags.Truncate : UiFlags.Truncate | UiFlags.Label);
             return Node(s, at, x, y, bx - x - UiTokens.S2, h, inputCommand, 0, face);
         }

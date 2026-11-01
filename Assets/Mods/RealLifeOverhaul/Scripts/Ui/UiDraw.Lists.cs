@@ -24,8 +24,19 @@ namespace RealLifeOverhaul.Ui
             {
                 Box(s, inside, x, y + UiTokens.S4, UiTokens.SelectBar, h - UiTokens.S4 * 2f, UiRole.Accent, UiRole.None, UiTokens.SelectBar / 2f);
             }
-            float ax = x + UiTokens.S4, ay = y + UiTokens.S4, size = UiTokens.AvatarRow;
-            int avatar = Avatar(s, inside, ax, ay, size, row.Name, row.Hue);
+            float ax = x + UiTokens.S3, ay = y + (h - UiTokens.AvatarRow) / 2f, size = UiTokens.AvatarRow;
+            int avatar;
+            if (row.Icon != UiIcon.None)
+            {
+                // A business or a place has no face: its icon on a tile of its family's colour says what it is.
+                avatar = Tile(s, inside, ax, ay, size, row.Tint, false);
+                float g = Snap(size * 0.6f);
+                Icon(s, inside.In(avatar), ax + (size - g) / 2f, ay + (size - g) / 2f, g, row.Icon, row.Tint, UiFlags.Middle | UiFlags.Centre, true);
+            }
+            else
+            {
+                avatar = Portrait(s, inside, ax, ay, size, row.Name, row.Hue, UiRole.None);
+            }
             if (row.Online)
             {
                 float ring = UiTokens.S4;
@@ -40,7 +51,7 @@ namespace RealLifeOverhaul.Ui
             if (!string.IsNullOrEmpty(row.Time))
             {
                 rightW = UiTextRules.Width(row.Time, UiStyle.Small) + UiTokens.S1;
-                Text(s, inside, x + w - UiTokens.S4 - rightW, top + (nameH - UiTextRules.LineHeight(UiStyle.Small)) / 2f, rightW, UiStyle.Small, UiRole.Muted, row.Time,
+                Text(s, inside, x + w - UiTokens.S4 - rightW, top + (nameH - UiTextRules.LineHeight(UiStyle.Small)) / 2f, rightW, UiStyle.Small, sel ? UiRole.Text : UiRole.Muted, row.Time,
                     UiFlags.Right | UiFlags.Middle);
             }
             if (row.Unread > 0)
@@ -60,8 +71,8 @@ namespace RealLifeOverhaul.Ui
                 Icon(s, inside, tx + nameW + UiTokens.S1, top + (nameH - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Check, UiRole.AccentText,
                     UiFlags.Middle | UiFlags.Centre);
             }
-            Text(s, inside, tx, top + nameH + UiTokens.S1, tw, row.Unread > 0 ? UiStyle.SmallStrong : UiStyle.Small, row.Unread > 0 ? UiRole.Text : UiRole.Muted, row.Preview,
-                UiFlags.Truncate | UiFlags.Middle);
+            Text(s, inside, tx, top + nameH + UiTokens.S1, tw, row.Unread > 0 ? UiStyle.SmallStrong : UiStyle.Small, row.Unread > 0 || sel ? UiRole.Text : UiRole.Muted, row.Preview,
+                UiFlags.Truncate | UiFlags.Middle);   // on the cyan of a chosen row only the main words keep 4.5:1
             return target ? Node(s, at, x, y, w, h, command, arg, face, false, list, index) : -1;
         }
 
@@ -79,16 +90,15 @@ namespace RealLifeOverhaul.Ui
             if (need <= kw)
             {
                 kw = need;
-                TextMiddle(s, at, x, y, h, kw, UiStyle.Small, UiRole.Muted, key, UiFlags.Label | UiFlags.Truncate);
+                TextMiddle(s, at, x, y, h, kw, UiStyle.Small, UiRole.Text2, key, UiFlags.Label | UiFlags.Truncate);
             }
             else
             {
                 float kh = UiTextRules.WrappedHeight(key, UiStyle.Small, kw, 2);
                 Text(s, at, x, y + (h - kh) / 2f, kw, UiStyle.Small, UiRole.Muted, key, UiFlags.Label | UiFlags.Wrap | UiFlags.Middle, 2);
             }
-            // The value in the serif, whose figures are all one width, so a column of them lines up.
+            // Overpass's figures are tabular, so a column of values lines up; no rule under, as a game's info panel packs its rows.
             TextMiddle(s, at, x + kw + UiTokens.S3, y, h, w - kw - UiTokens.S3, valueStyle, UiRole.Text, value, UiFlags.Right | UiFlags.Truncate);
-            Box(s, at, x, y + h - UiTokens.Hairline, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             return h;
         }
 
@@ -149,10 +159,10 @@ namespace RealLifeOverhaul.Ui
             }
             float top = y + (height - nameH - UiTokens.S1 - tradeH) / 2f;
             Text(s, inside, tx, top, tw, UiStyle.Title, UiRole.Text, choice.Name, UiFlags.Label | UiFlags.Middle);
-            Text(s, inside, tx, top + nameH + UiTokens.S1, tw, UiStyle.Small, UiRole.Text2, choice.Trade, UiFlags.Label | UiFlags.Wrap | UiFlags.Middle, 2);
+            Text(s, inside, tx, top + nameH + UiTokens.S1, tw, UiStyle.Small, sel ? UiRole.Text : UiRole.Text2, choice.Trade, UiFlags.Label | UiFlags.Wrap | UiFlags.Middle, 2);
             if (nw > 0f)
             {
-                TextMiddle(s, inside, x + w - UiTokens.S5 - nw, y, height, nw, UiStyle.Small, UiRole.Muted, choice.Note, UiFlags.Right);
+                TextMiddle(s, inside, x + w - UiTokens.S5 - nw, y, height, nw, UiStyle.Small, sel ? UiRole.Text : UiRole.Muted, choice.Note, UiFlags.Right);
             }
             return Node(s, at, x, y, w, height, command, arg, face, choice.Disabled, -1, 0, choice.Key);
         }
@@ -265,7 +275,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     float cw = table.Columns[c].Width > 0f ? table.Columns[c].Width : SnapDown(spare / Math.Max(1f, shares));
                     string cell = cells != null && c < cells.Length ? cells[c] : string.Empty;
-                    TextMiddle(s, inside, rx, ry, rowH, cw, c == 0 ? UiStyle.Title : UiStyle.Body, c == 0 ? UiRole.Text : UiRole.Text2, cell,
+                    TextMiddle(s, inside, rx, ry, rowH, cw, c == 0 ? UiStyle.Title : UiStyle.Body, c == 0 || sel ? UiRole.Text : UiRole.Text2, cell,
                         UiFlags.Truncate | (table.Columns[c].Right ? UiFlags.Right : UiFlags.None));
                     rx += cw + UiTokens.S4;
                 }

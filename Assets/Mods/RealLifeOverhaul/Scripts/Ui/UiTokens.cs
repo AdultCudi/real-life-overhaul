@@ -39,16 +39,37 @@ namespace RealLifeOverhaul.Ui
         Focus,        // the focus ring
         PromptInk,    // the prompt bar's words on the band the kit paints flat under the screen
         PromptCap,    // a key cap's face on that bar
-        Rule,         // the masthead's rule and a panel's head rule: the accent at low strength, never a bright line
+        Rule,         // the hairline under a title strip and between sections
+        Band,         // a section's darker band inside a panel
+        StatusBar,    // the strip along the bottom of the screen
+        Pill,         // a status pill on that strip
+        Gold,         // a star rating
+        Chart1,       // eight hues for a chart's slices and its legend, apart under colour blindness (EconomyCheck)
+        Chart2,
+        Chart3,
+        Chart4,
+        Chart5,
+        Chart6,
+        Chart7,
+        Chart8,
+        CatFood,      // a business family's colour, on its icons and slices, never on a large fill
+        CatRetail,
+        CatOffice,
+        CatIndustry,
+        CatTech,
+        CatServices,
+        Grade1,       // an attribute's grade, poor to excellent, as a management game colours a skill
+        Grade2,
+        Grade3,
+        Grade4,
+        Grade5,
         Count
     }
 
     /// <summary>The typefaces, cut as static weights in the bundle (UiAssets/scripts/fonts.py).</summary>
     public enum UiFamily : byte
     {
-        SerifDisplay = 0,   // Source Serif 4 at its display size: names, titles, the masthead
-        Serif = 1,          // Source Serif 4 at its text size: messages and what a thing is
-        Franklin = 2        // Libre Franklin: kickers, buttons, prompts, figures, the paper's labels and agate
+        Overpass = 0        // the one face: every title, row, button and figure, in three weights with tabular figures
     }
 
     /// <summary>The named text styles: a screen picks one, never a size of its own.</summary>
@@ -85,7 +106,7 @@ namespace RealLifeOverhaul.Ui
     public struct UiType
     {
         public UiFamily Family;
-        public int Weight;          // 600, 700 or 800: the cuts in the bundle
+        public int Weight;          // 400, 600 or 700: the cuts in the bundle
         public float Size;          // px
         public float Tracking;      // em: letter spacing, as TextMeshPro's characterSpacing / 100
         public float Leading;       // a line's height as a multiple of the face's own line (ascender to descender and gap)
@@ -124,12 +145,12 @@ namespace RealLifeOverhaul.Ui
     }
 
     /// <summary>
-    /// The one source of the interface's look, from the owner's Contacts wireframe (not-in-repo/design/DESIGN_SPEC.md;
-    /// docs/standards/ui.md): the colours of both themes by role, the type scale, the 4 px spacing grid and its named
-    /// steps, radii, strokes, the controls' sizes and the motion. Dark is the wireframe; light is derived from it, same
-    /// hues and roles, and waits for the owner's word. Every number is in px of a 1920 x 1080 screen; the game's canvas is
-    /// 3840 x 2160, so a px is <see cref="CanvasPerPx"/> canvas units. Game-free: EconomyCheck checks every pair of text and
-    /// surface for contrast in both themes, that every spacing step is on the grid, and that motion keeps to game timing.
+    /// The one source of the interface's look, after Cities: Skylines II mixed with a few other games (the owner's choice,
+    /// 1 Nov 2026: not-in-repo/design/DIRECTION_CS2.md; docs/standards/ui.md): the colours by role in one look, the type
+    /// scale, the 4 px spacing grid and its named steps, radii, strokes, the controls' sizes and the motion. Every number is
+    /// in px of a 1920 x 1080 screen; the game's canvas is 3840 x 2160, so a px is <see cref="CanvasPerPx"/> canvas units.
+    /// Game-free: EconomyCheck checks every pair of text and surface for contrast, the chart hues under colour blindness,
+    /// that every spacing step is on the grid, and that motion keeps to game timing.
     /// No screen may set a colour, size, spacing, radius or duration of its own (StandardCheck, RLO-UI-001 to 004).
     /// Cost: constants and two arrays read by index.
     /// </summary>
@@ -156,13 +177,13 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- radii
 
-        // The City Ledger's shapes: print is square, a key cap keeps a hair of a corner, a panel wears a thin muted rule
-        // on its head (the paper's column rule, kept quiet so it never glares), faces are round portraits.
+        // A game's soft corners: panels, buttons and pills at 4 px, portraits round, no shadows (the translucency parts a
+        // panel from the world).
         public const float RadiusSmall = 2f;    // px: segments, key caps, tags
-        public const float RadiusMedium = 2f;   // px: chips, fields, bars
-        public const float RadiusLarge = 2f;    // px: rows, buttons, cards
-        public const float RadiusPanel = 0f;    // px: panels and overlays: square, as a column of print
-        public const float FrameRule = 2f;      // px: the column rule on a panel's head and under the masthead
+        public const float RadiusMedium = 4f;   // px: chips, fields, bars
+        public const float RadiusLarge = 4f;    // px: rows, buttons, cards
+        public const float RadiusPanel = 4f;    // px: panels and overlays
+        public const float FrameRule = 1f;      // px: the hairline under a title strip
 
         // ------------------------------------------------------------------------------------------------- strokes
 
@@ -174,50 +195,51 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- sizes
 
-        public const float Control = 48f;       // px: a button, a field, a nav item
-        public const float ControlSmall = 40f;  // px: a secondary button, a chip row
-        public const float Chip = 36f;          // px: a quick reply, a filter
-        public const float MinTarget = 36f;     // px: the least a focus or pointer target may be either way (a chip): over WCAG 2.2 AA's 24
-        public const float PairRow = 44f;       // px: a key and its value with the rule under them
-        public const float TableRow = 44f;      // px: a table's row: dense as a management game's tables, still a full target
-        public const float TableRowMost = 64f;  // px: the tallest a row grows when a short table leaves room: it breathes rather than ending over a hole
+        public const float Control = 40f;       // px: a button, a field, a nav item
+        public const float ControlSmall = 32f;  // px: a secondary button, a chip row, a footer's icon button
+        public const float Chip = 28f;          // px: a quick reply, a filter, a status pill
+        public const float MinTarget = 24f;     // px: the least a focus or pointer target may be either way: a compact row, WCAG 2.2 AA's 24
+        public const float PairRow = 24f;       // px: a label and its value, as a game's info panel packs them, no rule between
+        public const float TableRow = 32f;      // px: a table's row: dense as a management game's tables
+        public const float TableRowMost = 44f;  // px: the tallest a row grows when a short table leaves room: it breathes rather than ending over a hole
         public const float MostSlack = 48f;     // px a frame may hold under its last line (two rows' gap and its padding): more reads as a hole
-        public const float Row = 80f;           // px: a list row: a 48 avatar with 16 above and below
-        public const float AvatarRow = 48f;     // px
-        public const float AvatarHero = 96f;    // px
-        public const float AvatarSmall = 40f;   // px
-        public const float Icon = 24f;          // px: an icon's box beside words (the glyph sits inside with its own margin)
-        public const float IconSmall = 16f;     // px: a tick after a name
-        public const float Badge = 24f;         // px: an unread badge's height
+        public const float Row = 56f;           // px: a list row: a 40 portrait with 8 above and below
+        public const float AvatarRow = 40f;     // px
+        public const float AvatarHero = 96f;    // px: a profile's portrait
+        public const float AvatarSmall = 32f;   // px
+        public const float Icon = 20f;          // px: an icon's box in a row (the glyph sits inside with its own margin)
+        public const float IconSmall = 16f;     // px: a tick after a name, a link's magnifier
+        public const float IconTile = 40f;      // px: an icon on a tile, a toolbar or the phone's grid
+        public const float Badge = 20f;         // px: an unread badge's height
         public const float Dot = 12f;           // px: the online dot
         public const float StatusDot = 8f;      // px: a group's or a chip's dot
-        public const float KeyCap = 28f;        // px: a prompt's key cap
+        public const float KeyCap = 24f;        // px: a prompt's key cap
         public const float Segment = 8f;        // px: a stat bar segment's height
         public const float SegmentGap = 4f;     // px
-        public const float MinText = 15f;       // px: the smallest text anywhere, readable at play distance
+        public const float MinText = 13f;       // px: the smallest text anywhere, a section's label (DIRECTION_CS2, section 3)
 
         // ------------------------------------------------------------------------------------------------- type
 
-        // Serif heads and messages, Franklin capitals for the paper's labels, buttons, prompts and figures. Every size at or
-        // over 15 px (MinText), the body at 18 so a message reads from the couch.
+        // Overpass alone, as Cities: Skylines II sets it: panel titles in cyan capitals, compact rows, figures bold and
+        // tabular. At most three sizes on a panel, never serif.
         private static readonly UiType[] Types =
         {
-            new UiType(UiFamily.SerifDisplay, 700, 34f, -0.01f, 1.0f),                  // Display: the masthead's size, so a page keeps three sizes of type
-            new UiType(UiFamily.SerifDisplay, 700, 34f, -0.01f, 1.0f),                  // AppTitle: a masthead, as written
-            new UiType(UiFamily.SerifDisplay, 700, 36f, -0.01f, 1.0f),                  // Hero
-            new UiType(UiFamily.SerifDisplay, 600, 20f, 0f, 1.0f),                      // SectionTitle: a question's or a list's title, in the text band so a page keeps three sizes
-            new UiType(UiFamily.Serif, 700, 19f, 0f, 1.0f),                             // Title
-            new UiType(UiFamily.Franklin, 600, 17f, 0.02f, 1.0f),                       // Nav
-            new UiType(UiFamily.Franklin, 700, 16f, 0.08f, 1.0f, UiCase.Upper),         // Button
-            new UiType(UiFamily.Serif, 500, 18f, 0f, 1.12f),                            // Body
-            new UiType(UiFamily.Serif, 700, 18f, 0f, 1.12f),                            // BodyStrong
-            new UiType(UiFamily.Franklin, 600, 16f, 0f, 1.0f),                          // Small
-            new UiType(UiFamily.Franklin, 800, 16f, 0f, 1.0f),                          // SmallStrong
-            new UiType(UiFamily.Franklin, 800, 15f, 0.14f, 1.0f, UiCase.Upper),         // SectionHeader: the paper's kicker
-            new UiType(UiFamily.Franklin, 700, 16f, 0.08f, 1.0f, UiCase.Upper),         // Prompt
-            new UiType(UiFamily.Franklin, 800, 15f, 0f, 1.0f),                          // Badge
-            new UiType(UiFamily.Franklin, 800, 28f, -0.01f, 1.0f),                      // Number: the market table's figures
-            new UiType(UiFamily.Franklin, 700, 15f, 0f, 1.0f, UiCase.Upper),            // KeyCap
+            new UiType(UiFamily.Overpass, 700, 26f, 0f, 1.0f),                          // Display: a big figure
+            new UiType(UiFamily.Overpass, 700, 18f, 0.04f, 1.0f, UiCase.Upper),         // AppTitle: a window's title
+            new UiType(UiFamily.Overpass, 700, 22f, 0f, 1.0f),                          // Hero: a name on a profile's head
+            new UiType(UiFamily.Overpass, 600, 15f, 0.04f, 1.0f, UiCase.Upper),         // SectionTitle: a panel's title in its strip
+            new UiType(UiFamily.Overpass, 600, 14f, 0f, 1.0f),                          // Title: a row's name
+            new UiType(UiFamily.Overpass, 600, 14f, 0.01f, 1.0f),                       // Nav: a tab, a sidebar's entry
+            new UiType(UiFamily.Overpass, 700, 13f, 0.06f, 1.0f, UiCase.Upper),         // Button
+            new UiType(UiFamily.Overpass, 400, 14f, 0f, 1.15f),                         // Body: a row's value, a message
+            new UiType(UiFamily.Overpass, 600, 14f, 0f, 1.15f),                         // BodyStrong
+            new UiType(UiFamily.Overpass, 400, 13f, 0f, 1.0f),                          // Small: a preview, a time, a legend
+            new UiType(UiFamily.Overpass, 600, 13f, 0f, 1.0f),                          // SmallStrong
+            new UiType(UiFamily.Overpass, 600, 13f, 0.06f, 1.0f, UiCase.Upper),         // SectionHeader: a section's label
+            new UiType(UiFamily.Overpass, 700, 13f, 0.06f, 1.0f, UiCase.Upper),         // Prompt
+            new UiType(UiFamily.Overpass, 700, 13f, 0f, 1.0f),                          // Badge
+            new UiType(UiFamily.Overpass, 700, 18f, 0f, 1.0f),                          // Number: a figure in a strip or a pill
+            new UiType(UiFamily.Overpass, 700, 13f, 0f, 1.0f, UiCase.Upper),            // KeyCap
         };
 
         /// <summary>A style's face and size. An index into a fixed table.</summary>
@@ -262,101 +284,90 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- colours
 
-        // 0xRRGGBBAA. Dark is the paper's late edition: warm ink-black, soft warm words and the salmon of a markets paper as
-        // its one accent. Light is a dim warm paper with its ink and the paper's claret for what acts. Green and red stay
-        // for figures that rise and fall. The owner asked for nothing that glares (1 Nov): no near-white words or rules in
-        // dark, no bright paper in light, panels told apart by tone and space rather than a frame on each.
-        private static readonly uint[] DarkColours =
+        // 0xRRGGBBAA. One look, after Cities: Skylines II (design/DIRECTION_CS2.md): cool slate panels the world shows
+        // through, soft white words that never glare, one cyan for titles, links and what is chosen, and the game's status
+        // colours. No brown, red or cream surface and no pure white anywhere. The chart hues are Okabe and Ito's, lifted for
+        // a dark panel, so a slice stays apart from its neighbour under colour blindness. Category and chart colours go on
+        // icons, slices and bars, never on a large fill.
+        private static readonly uint[] Colours =
         {
             0x00000000,   // None
-            0x12110EFF,   // Bg: ink-black, warm
-            0x1A1915FF,   // Panel: a step up from the ground, which is all that sets a panel apart
-            0xD9D1C233,   // PanelEdge: a control's edge where it needs one, 20%
-            0x171612FF,   // Header: the masthead band
-            0x1E1C18FF,   // Row: a table's every other row, a step over the panel
-            0xD9D1C21A,   // RowEdge: 10%
-            0x24221DFF,   // Field
-            0x282621FF,   // Bubble
-            0x22201CFF,   // Hover: a quiet step over the panel, well under the selection's fill
-            0x34271FFF,   // RowSel: the salmon in the ink, clearly warmer than any hover
-            0xE39A8166,   // RowSelEdge: the salmon at 40%
-            0xDAD2C3FF,   // Text: a soft warm white, 9.5:1 at worst and easy at night
-            0xB3AB9CFF,   // Text2
-            0x9A9283FF,   // Muted: 4.6:1 on the hover fill
-            0xE39A81FF,   // Accent: the markets paper's salmon, a shade quieter
-            0xEBA790FF,   // AccentText
-            0xE39A8124,   // AccentSoft: 14%
-            0x12110EFF,   // OnAccent: the ink, 8.3:1 on the salmon
-            0x7FC48CFF,   // Ok
-            0x96CFA1FF,   // OkText
-            0x7FC48C24,   // OkSoft
-            0xE5574BFF,   // Danger
-            0xEE8A7FFF,   // DangerText
-            0xE5574B2E,   // DangerSoft
-            0xE3B341FF,   // Warn
-            0xE6C46DFF,   // WarnText
-            0xE3B34129,   // WarnSoft
-            0x34312AFF,   // Notice
-            0xDAD2C3FF,   // NoticeText
-            0xD9D1C21F,   // Line: a hairline rule
-            0xD9D1C21C,   // Track
-            0x0D0C0AE6,   // Scrim: the ink at 90%, no blur, so nothing bright behind a question reads as part of it
-            0xE39A81FF,   // Focus
-            0xDAD2C3FF,   // PromptInk: the band is the kit's own and flat
-            0x12110E99,   // PromptCap
-            0xE39A8152,   // Rule: the salmon at 32%, a dim warm line
+            0x00000000,   // Bg: nothing, as the world behind is the ground
+            0x2B3A4AFA,   // Panel: slate at 98%: the game blends in linear light, where a street's crossings and neon read through a thinner panel
+            0xE6EDF31A,   // PanelEdge: a control's edge where it needs one, 10%
+            0x223040EB,   // Header: a panel's title strip, 92%
+            0x1A243055,   // Row: a list row, set a breath into the panel, so its quiet words keep their contrast
+            0xE6EDF314,   // RowEdge: 8%
+            0x1A2430CC,   // Field: a search box, an input, a secondary button, set into the panel
+            0x31425AE6,   // Bubble: their message, a shade over the slate so its words keep 4.5:1
+            0xE6EDF30F,   // Hover: a still 6% lift, under the selection's fill, quiet enough for the secondary words on it
+            0x3DBBEB2E,   // RowSel: the cyan at 18% behind a chosen row of words
+            0x3DBBEB66,   // RowSelEdge: the cyan at 40%
+            0xE6EDF3FF,   // Text: soft white, never paper white
+            0xA9B8C7FF,   // Text2
+            0x9AAABBFF,   // Muted: a step over the direction's 7A8B9C, so a label on the slate over a bright street reaches 4.5:1
+            0x3DBBEBFF,   // Accent: titles, links, chosen fills, the focus ring
+            0x6ACDF1FF,   // AccentText: the cyan a step lighter for words, so a title or a link reads on a chosen row too
+            0x3DBBEB2E,   // AccentSoft: 18%
+            0x0E1822FF,   // OnAccent: dark slate words on the cyan, where a white would not read
+            0x74D35AFF,   // Ok
+            0x8ADC72FF,   // OkText: a step lighter, for words on its soft fill
+            0x74D35A2E,   // OkSoft
+            0xEE6352FF,   // Danger
+            0xF6A69CFF,   // DangerText: lighter, so small words read on the slate and on its soft fill
+            0xEE63522E,   // DangerSoft
+            0xF2C14EFF,   // Warn
+            0xF2C14EFF,   // WarnText
+            0xF2C14E29,   // WarnSoft
+            0x34465AFF,   // Notice
+            0xE6EDF3FF,   // NoticeText
+            0xE6EDF317,   // Line: a hairline, soft white at 9%
+            0xE6EDF31F,   // Track: an empty segment
+            0x0B111899,   // Scrim: the world dimmed behind a decision, 60%
+            0x3DBBEBFF,   // Focus
+            0xE6EDF3FF,   // PromptInk
+            0x0E182299,   // PromptCap
+            0xE6EDF317,   // Rule: as Line, under a title strip and between sections
+            0x1E2A3799,   // Band: a section's band, 60% over the panel
+            0x1A2430F0,   // StatusBar: the bottom strip, 94%
+            0x263445FF,   // Pill
+            0xF5C451FF,   // Gold: a star rating
+            0x56B4E9FF,   // Chart1: sky blue
+            0xE69F2EFF,   // Chart2: orange
+            0x2FBF8FFF,   // Chart3: bluish green
+            0xF0E06AFF,   // Chart4: yellow
+            0x6D9EEFFF,   // Chart5: blue, lifted so it reads on a tile of its own colour
+            0xF07A3AFF,   // Chart6: vermilion
+            0xD889BBFF,   // Chart7: reddish purple
+            0x6B7785FF,   // Chart8: slate grey, the rest: darker than the purple beside it, so the two part under deuteranopia
+            0xF29A3DFF,   // CatFood: orange
+            0xEC86BCFF,   // CatRetail: pink, light enough to read on a tile of its own colour
+            0x6FAAF3FF,   // CatOffice: blue
+            0x9FB1C4FF,   // CatIndustry: steel
+            0xB48EF3FF,   // CatTech: violet
+            0x3FC7B6FF,   // CatServices: teal
+            0xF28477FF,   // Grade1: poor, the bad red a step lighter, as a grade is written in its own colour
+            0xF2914AFF,   // Grade2
+            0xF2C14EFF,   // Grade3
+            0xB4D45AFF,   // Grade4
+            0x74D35AFF,   // Grade5: excellent
         };
 
-        private static readonly uint[] LightColours =
-        {
-            0x00000000,   // None
-            0xDED1C0FF,   // Bg: a dim warm paper, L* 85, no glare
-            0xE6DBCCFF,   // Panel: a step lighter, still well short of white
-            0x2A221A33,   // PanelEdge: an ink edge at 20% where a control needs one
-            0xD7C9B6FF,   // Header: the masthead band, a shade deeper
-            0xE0D4C4FF,   // Row: a table's every other row, a step under the panel
-            0x2A221A1F,   // RowEdge: 12%
-            0xDACDBBFF,   // Field
-            0xD5C6B2FF,   // Bubble
-            0xDFD3C3FF,   // Hover: a quiet step under the panel, well short of the selection's fill
-            0xDEBDA9FF,   // RowSel: the claret in the paper, clearly deeper than any hover
-            0x8E1E3F66,   // RowSelEdge: the claret at 40%
-            0x221D17FF,   // Text: the ink, a warm black
-            0x41382EFF,   // Text2
-            0x4F4539FF,   // Muted: 5.4:1 at worst
-            0x8E1E3FFF,   // Accent: the paper's claret
-            0x7A1434FF,   // AccentText
-            0x8E1E3F1C,   // AccentSoft: 11%
-            0xEDE3D5FF,   // OnAccent: 6.9:1 on the claret
-            0x1E7A47FF,   // Ok
-            0x135F36FF,   // OkText
-            0x1E7A471C,   // OkSoft
-            0xB83A1BFF,   // Danger: vermilion, apart from the claret
-            0x972E16FF,   // DangerText
-            0xB83A1B1C,   // DangerSoft
-            0xA86400FF,   // Warn
-            0x7A4A00FF,   // WarnText
-            0xA864001C,   // WarnSoft
-            0xD0BEA8FF,   // Notice
-            0x352E26FF,   // NoticeText
-            0x2A221A24,   // Line: a hairline rule
-            0x2A221A33,   // Track: 20%, so an empty track or switch still shows on the paper
-            0x2A221A8C,   // Scrim: the ink at 55%, so a question dims the page rather than whitening it
-            0x8E1E3FFF,   // Focus
-            0x221D17FF,   // PromptInk
-            0xE6DBCCFF,   // PromptCap
-            0x8E1E3F47,   // Rule: the claret at 28%, a dim warm line
-        };
+        /// <summary>A role's colour, as 0xRRGGBBAA. One look: the flag stays for the callers that still pass it.</summary>
+        public static uint Colour(UiRole role, bool dark = true) => Colours[(int)role];
 
-        /// <summary>A role's colour in a look, as 0xRRGGBBAA. An index into a fixed table.</summary>
-        public static uint Colour(UiRole role, bool dark) => (dark ? DarkColours : LightColours)[(int)role];
+        /// <summary>The number of roles the table holds; EconomyCheck holds it to the roles.</summary>
+        public static int ThemeLength(bool dark = true) => Colours.Length;
 
-        /// <summary>The number of roles each look's table holds; EconomyCheck holds both tables to it.</summary>
-        public static int ThemeLength(bool dark) => (dark ? DarkColours : LightColours).Length;
+        /// <summary>An attribute's grade colour for a value of 0 to 100, poor to excellent in five steps.</summary>
+        public static UiRole Grade(int value) => value < 30 ? UiRole.Grade1 : value < 50 ? UiRole.Grade2 : value < 65 ? UiRole.Grade3 : value < 80 ? UiRole.Grade4 : UiRole.Grade5;
 
-        // An avatar without a face: initials on a circle tinted by a hue (the wireframe's oklch(0.34 0.07 h) under
-        // oklch(0.92 0.06 h) in dark; light turns it round). Lightness and chroma, applied by UiColour.FromOklch.
-        public const float AvatarDarkL = 0.34f, AvatarDarkC = 0.07f, AvatarDarkInkL = 0.86f, AvatarDarkInkC = 0.06f;   // initials a soft white, never glaring
-        public const float AvatarLightL = 0.8f, AvatarLightC = 0.05f, AvatarLightInkL = 0.3f, AvatarLightInkC = 0.08f;   // a circle as dim as the paper, no bright disc on it
+        /// <summary>The chart hue of a slice, in order and then round again.</summary>
+        public static UiRole Chart(int slice) => (UiRole)((int)UiRole.Chart1 + ((slice % 8) + 8) % 8);
+
+        // A person without a picture: initials on a circle tinted by a hue (UiColour.FromOklch), slate dim with soft white
+        // words, so no face reads brighter than the panel's text.
+        public const float AvatarDarkL = 0.42f, AvatarDarkC = 0.08f, AvatarDarkInkL = 0.93f, AvatarDarkInkC = 0.03f;
+        public const float AvatarLightL = 0.42f, AvatarLightC = 0.08f, AvatarLightInkL = 0.93f, AvatarLightInkC = 0.03f;   // one look: as dark
     }
 }

@@ -10,15 +10,16 @@ namespace RealLifeOverhaul.Ui
         {
             float lh = UiTextRules.LineHeight(UiStyle.Small);
             float fw = UiTextRules.Width(stat.Figure, UiStyle.SmallStrong) + UiTokens.S1;
+            UiRole grade = UiTokens.Grade(stat.Value);   // graded red to green, as a management game colours a skill
             Text(s, at, x, y, w - fw - UiTokens.S3, UiStyle.Small, UiRole.Text2, stat.Label, UiFlags.Label | UiFlags.Truncate);
-            Text(s, at, x + w - fw, y, fw, UiStyle.SmallStrong, UiRole.Text, stat.Figure, UiFlags.Right);
+            Text(s, at, x + w - fw, y, fw, UiStyle.SmallStrong, grade, stat.Figure, UiFlags.Right);
             float by = y + Snap(lh) + UiTokens.S2;
             float seg = (w - UiTokens.SegmentGap * (UiModels.Segments - 1)) / UiModels.Segments;
             int filled = UiModels.Filled(stat.Value);
             float shade = UiModels.Shade(stat.Value);
             for (int i = 0; i < UiModels.Segments; i++)
             {
-                int b = Box(s, at, x + i * (seg + UiTokens.SegmentGap), by, seg, UiTokens.Segment, i < filled ? UiRole.Accent : UiRole.Track, UiRole.None,
+                int b = Box(s, at, x + i * (seg + UiTokens.SegmentGap), by, seg, UiTokens.Segment, i < filled ? grade : UiRole.Track, UiRole.None,
                     UiTokens.RadiusSmall - UiTokens.Hairline, UiFlags.Share);
                 s.Items[b].Alpha = i < filled ? shade : 1f;
                 s.Items[b].Order = (short)i;

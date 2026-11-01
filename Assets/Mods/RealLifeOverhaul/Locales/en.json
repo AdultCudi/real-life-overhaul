@@ -28117,5 +28117,6 @@
   "reallife_ui_when_days": "{days} days ago",
   "reallife_ui_pop_gone_named": "{name} has moved on.",
   "reallife_studio_page_no_games_hire": "No game yet. Hire a team first, then draft a concept.",
-  "reallife_tech_mkt_page_ready": "Ready to launch"
+  "reallife_tech_mkt_page_ready": "Ready to launch",
+  "reallife_ui_gallery_page_icons": "Icons"
 }

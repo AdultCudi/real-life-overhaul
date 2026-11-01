@@ -347,6 +347,16 @@ namespace RealLifeOverhaul.Ui
                 _sound?.Play(UiCue.Confirm);
                 return;
             }
+            if (n.Command == UiDraw.CloseCommand)
+            {
+                // A window's close button does what Back does, so a screen with pages steps back before it closes.
+                _sound?.Play(_screen.Back() ? UiCue.Back : UiCue.Error);
+                if (_screen.Dirty)
+                {
+                    Layout();
+                }
+                return;
+            }
             bool done = _screen.Press(n.Command, n.Arg);
             _sound?.Play(done ? UiCue.Confirm : UiCue.Error);
             if (_screen.Dirty)

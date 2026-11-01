@@ -98,6 +98,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     t("reallife_ui_gallery_page_controls", "Controls"), t("reallife_ui_gallery_page_lists", "Lists"), t("reallife_ui_gallery_page_figures", "Figures"),
                     t("reallife_ui_gallery_page_messages", "Messages"), t("reallife_ui_gallery_page_question", "Question"), t("reallife_ui_gallery_page_call", "Call"),
+                    t("reallife_ui_gallery_page_icons", "Icons"),
                 },
                 Page = Math.Max(0, Math.Min(UiGallery.PageCount - 1, page)),
                 Captions = new[]

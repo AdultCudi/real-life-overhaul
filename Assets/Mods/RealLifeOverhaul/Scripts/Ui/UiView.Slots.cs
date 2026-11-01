@@ -64,6 +64,11 @@ namespace RealLifeOverhaul.Ui
             public readonly Image[] Dots = new Image[3];
         }
 
+        private sealed class SliceSlot : Slot
+        {
+            public Image Ring;
+        }
+
         private Slot Make(UiKind kind, RectTransform parent)
         {
             RectTransform r = NewRect(parent, kind.ToString());
@@ -134,6 +139,19 @@ namespace RealLifeOverhaul.Ui
                     s.Graphics = new Graphic[] { s.Face, s.Edge, s.Glyph, s.Label };
                     return s;
                 }
+                case UiKind.Slice:
+                {
+                    // Unity's radial fill turns a donut's ring into a slice: from the top, clockwise, to a share of the turn.
+                    var s = new SliceSlot { Rect = r, Ring = r.gameObject.AddComponent<Image>() };
+                    s.Ring.raycastTarget = false;
+                    s.Ring.sprite = UiSprites.Donut;
+                    s.Ring.type = Image.Type.Filled;
+                    s.Ring.fillMethod = Image.FillMethod.Radial360;
+                    s.Ring.fillOrigin = (int)Image.Origin360.Top;
+                    s.Ring.fillClockwise = true;
+                    s.Graphics = new Graphic[] { s.Ring };
+                    return s;
+                }
                 case UiKind.Busy:
                 {
                     var s = new BusySlot { Rect = r };
@@ -187,7 +205,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     Place(slot.Rect, it.X, it.Y, it.W, it.H);
                     Image img = ((ImageSlot)slot).Image;
-                    Sprite sprite = UiIcons.Get(it.Icon);
+                    Sprite sprite = (UiIcons.Own != null ? UiIcons.Own(it.Icon) : null) ?? UiIcons.Get(it.Icon, it.Value >= 0.5f);
                     if (img.sprite != sprite)
                     {
                         img.sprite = sprite;
@@ -221,6 +239,27 @@ namespace RealLifeOverhaul.Ui
                 case UiKind.KeyCap:
                     BindKeyCap((KeyCapSlot)slot, ref it);
                     break;
+                case UiKind.Portrait:
+                {
+                    Place(slot.Rect, it.X, it.Y, it.W, it.H);
+                    Image face = ((ImageSlot)slot).Image;
+                    Sprite painted = UiSprites.Portrait(it.Text, it.Value);
+                    if (face.sprite != painted)
+                    {
+                        face.sprite = painted;
+                    }
+                    face.type = Image.Type.Simple;
+                    face.color = new Color(1f, 1f, 1f, it.Alpha);
+                    break;
+                }
+                case UiKind.Slice:
+                {
+                    Place(slot.Rect, it.X, it.Y, it.W, it.H);
+                    Image ring = ((SliceSlot)slot).Ring;
+                    ring.fillAmount = Mathf.Clamp01(it.Value);
+                    ring.color = Colour(it.Fill, it.Alpha);
+                    break;
+                }
                 case UiKind.Busy:
                 {
                     Place(slot.Rect, it.X, it.Y, it.W, it.H);
@@ -242,7 +281,7 @@ namespace RealLifeOverhaul.Ui
         {
             Place(b.Rect, it.X, it.Y, it.W, it.H);
             bool circle = (it.Flags & UiFlags.Circle) != 0 || it.Kind == UiKind.HueDot;
-            Sprite fill = circle ? UiSprites.Circle : UiSprites.Fill(it.Radius);
+            Sprite fill = circle ? UiSprites.Circle : it.Radius < 0f ? UiSprites.FillTop(-it.Radius) : UiSprites.Fill(it.Radius);   // a negative radius rounds the top alone
             if (b.Fill.sprite != fill)
             {
                 b.Fill.sprite = fill;
@@ -258,7 +297,7 @@ namespace RealLifeOverhaul.Ui
             Show(b.Edge, edge);
             if (edge)
             {
-                Sprite e = circle ? UiSprites.CircleEdge : UiSprites.Edge(it.Radius);
+                Sprite e = circle ? UiSprites.CircleEdge : UiSprites.Edge(Mathf.Abs(it.Radius));
                 if (b.Edge.sprite != e)
                 {
                     b.Edge.sprite = e;
@@ -268,8 +307,8 @@ namespace RealLifeOverhaul.Ui
             bool face = it.Node >= 0 && _scene.Nodes[it.Node].Face == index;
             b.Fill.raycastTarget = face;
             b.Hit.Face(face ? this : null, it.Node);
-            // A framed panel's head rule, where the theme wears one: the column rule of a printed page, solid and square.
-            bool rule = (it.Flags & UiFlags.Panel) != 0;
+            // No panel wears a head rule now: a title strip's hairline is the only line on a panel's head.
+            bool rule = false;
             if (rule && b.Rule == null)
             {
                 RectTransform rr = NewRect(b.Rect, "Rule");

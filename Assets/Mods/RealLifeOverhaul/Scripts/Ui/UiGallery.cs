@@ -66,7 +66,8 @@ namespace RealLifeOverhaul.Ui
         public const int PageCommand = 1, Sample = 2, Answer = 3, CallOption = 4, CallEnd = 5;
         public const int CaptionButtons = 0, CaptionNav = 1, CaptionInputs = 2, CaptionRows = 3, CaptionCards = 4, CaptionData = 5, CaptionFigures = 6,
             CaptionStats = 7, CaptionStatus = 8, CaptionThread = 9, CaptionStates = 10, Captions = 11;
-        public const int PageCount = 6;
+        public const int PageCount = 7;
+        public const int IconsPage = 6;   // the icon style sheet: every icon of the family, its solid cut on a tile and its two-tone cut
         public const int TokensType = 0, TokensColours = 1, TokensMotion = 2, TokensSizes = 3, TokenKinds = 4;
         public const int ColumnStyle = 0, ColumnFace = 1, ColumnSize = 2, ColumnWeight = 3, ColumnRole = 4, ColumnDark = 5, ColumnLight = 6, ColumnMotion = 7,
             ColumnFull = 8, ColumnCalm = 9, ColumnToken = 10, ColumnPx = 11, ColumnKind = 12, Columns = 13;
@@ -77,7 +78,7 @@ namespace RealLifeOverhaul.Ui
             s.Begin("gallery", frame.Width, frame.Height, dark);
             frame.Content(out float cx, out float cy, out float cw, out float ch);
             UiAt screen = UiAt.Screen;
-            int bg = UiDraw.Box(s, screen, 0f, 0f, frame.Width, frame.Height, UiRole.Bg, UiRole.None, 0f, UiFlags.Decor);   // the host's whole area
+            int bg = UiDraw.Window(s, frame, null, keys);   // the app's window over the world: the page is drawn inside it
             UiAt at = screen.In(bg);
             // The masthead names the gallery already: its pages' tabs head the page, with no title repeating it.
             float tabsW = TabsWidth(m.Pages, keys);
@@ -92,10 +93,14 @@ namespace RealLifeOverhaul.Ui
                 case 2: under = Figures(s, at, m, cx, y, cw, keys); break;
                 case 3: under = Messages(s, at, m, cx, y, cw); break;
                 case 4: under = Lists(s, at, m, cx, y, cw, h, keys); break;
+                case IconsPage: under = Icons(s, at, cx, y, cw, h); break;
                 default: under = Messages(s, at, m, cx, y, cw); break;
             }
-            // The pages under the question and the call show the tokens their own pages show.
-            Tokens(s, at, m, cx, under + UiTokens.S4, cw, cy + ch - under - UiTokens.S4, m.Page == 4 ? TokensColours : m.Page == 5 ? TokensSizes : m.Page);
+            // The pages under the question and the call show the tokens their own pages show; the icon sheet takes its whole page.
+            if (m.Page != IconsPage)
+            {
+                Tokens(s, at, m, cx, under + UiTokens.S4, cw, cy + ch - under - UiTokens.S4, m.Page == 4 ? TokensColours : m.Page == 5 ? TokensSizes : m.Page);
+            }
             if (m.Page == 4)
             {
                 UiDraw.Question(s, 0f, frame.ContentTop, frame.Width, frame.BandY - frame.ContentTop, m.QuestionTitle, m.QuestionBody, m.Answers, m.Answers.Length, keys);
@@ -394,6 +399,44 @@ namespace RealLifeOverhaul.Ui
 
         private static UiColumn Column(UiGalleryModel m, int column, float width) => new UiColumn { Title = m.TokenColumns[column], Width = width, Right = width > 0f };
 
+        // The icon style sheet: every icon of the family a screen can name (the keys' and the pad's glyphs aside), each as
+        // it stands on a tile, its solid cut on a soft square of its colour, beside its two-tone cut as a row shows it, its
+        // name under them, the colours turning through the chart's hues and the families'. Returns the y under it.
+        private static float Icons(UiScene s, UiAt at, float x, float y, float w, float h)
+        {
+            UiRole[] tints = { UiRole.Chart1, UiRole.Chart2, UiRole.Chart3, UiRole.Chart4, UiRole.Chart5, UiRole.Chart6, UiRole.Chart7, UiRole.CatFood, UiRole.CatRetail,
+                UiRole.CatOffice, UiRole.CatIndustry, UiRole.CatTech, UiRole.CatServices };
+            const float cellH = UiTokens.S16 + UiTokens.S5;
+            float cell = UiDraw.SnapDown((w - UiTokens.S5 * 2f) / 12f);
+            int p = Panel(s, at, x, y, w, null, out float top);
+            UiAt inside = at.In(p);
+            int n = 0;
+            for (int i = 1; i < (int)UiIcon.Count; i++)
+            {
+                var icon = (UiIcon)i;
+                if (icon >= UiIcon.Arrows && icon <= UiIcon.PadR1)
+                {
+                    continue;   // the keys' and the pad's glyphs belong to the prompts, not the family
+                }
+                float cx = x + UiTokens.S5 + (n % 12) * cell, cy = top + (n / 12) * cellH;
+                if (cy + cellH > y + h)
+                {
+                    break;
+                }
+                UiRole tint = tints[n % tints.Length];
+                float tile = UiTokens.IconTile, small = UiTokens.S6;
+                float lead = cx + UiDraw.SnapDown((cell - tile - UiTokens.S2 - small) / 2f);
+                int face = UiDraw.Tile(s, inside, lead, cy, tile, tint, false);
+                UiDraw.Icon(s, inside.In(face), lead + UiTokens.S2, cy + UiTokens.S2, tile - UiTokens.S4, icon, tint, UiFlags.Middle | UiFlags.Centre, true);
+                UiDraw.Icon(s, inside, lead + tile + UiTokens.S2, cy + (tile - small) / 2f, small, icon, tint, UiFlags.Middle);
+                UiDraw.Text(s, inside, cx, cy + tile + UiTokens.S1, cell, UiStyle.Small, UiRole.Text2, Words(icon.ToString()), UiFlags.Centre | UiFlags.Truncate);
+                n++;
+            }
+            float bottom = top + ((n + 11) / 12) * cellH + UiTokens.S2;
+            s.Items[p].H = UiDraw.Snap(bottom - y);
+            return y + s.Items[p].H;
+        }
+
         // A token's name as words: "SectionTitle" reads "Section title".
         private static string Words(string name)
         {
@@ -406,7 +449,7 @@ namespace RealLifeOverhaul.Ui
             return b.ToString();
         }
 
-        private static string Face(UiFamily family) => family == UiFamily.Franklin ? "Libre Franklin" : family == UiFamily.SerifDisplay ? "Source Serif 4 Display" : "Source Serif 4";
+        private static string Face(UiFamily family) => "Overpass";
 
         private static string Px(float px) => px.ToString("0.#", Inv) + " px";
 

@@ -61,7 +61,7 @@ namespace RealLifeOverhaul.Ui
             s.Begin("form", frame.Width, frame.Height, dark);
             frame.Content(out float cx, out float cy, out float cw, out float ch);
             UiAt screen = UiAt.Screen;
-            int bg = UiDraw.Box(s, screen, 0f, 0f, frame.Width, frame.Height, UiRole.Bg, UiRole.None, 0f, UiFlags.Decor);   // the host's whole area
+            int bg = UiDraw.Window(s, frame, null, keys);   // the app's window over the world: the page is drawn inside it
             UiAt at = screen.In(bg);
             // The form's title stands in the masthead after the app's name, so the page opens on what it is about.
             float y = cy;

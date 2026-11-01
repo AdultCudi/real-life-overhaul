@@ -108,7 +108,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 float ox = it.Parent >= 0 ? it.X - s.Items[it.Parent].X : it.X;
                 float oy = it.Parent >= 0 ? it.Y - s.Items[it.Parent].Y : it.Y;
-                bool freeX = (it.Flags & (UiFlags.Centre | UiFlags.Right | UiFlags.Share)) != 0;
+                bool freeX = (it.Flags & (UiFlags.Centre | UiFlags.Right | UiFlags.Share | UiFlags.Prompt)) != 0;
                 bool freeY = (it.Flags & UiFlags.Middle) != 0;
                 bool box = it.Kind != UiKind.Text;
                 string why = null;
@@ -348,7 +348,7 @@ namespace RealLifeOverhaul.Ui
             {
                 ref UiItem frame = ref s.Items[p];
                 bool framed = (frame.Flags & UiFlags.Panel) != 0 || frame.Edge == UiRole.PanelEdge || frame.Edge == UiRole.RowEdge;   // a panel is one by its flag now that panels wear no edge
-                if (frame.Kind != UiKind.Box || !framed || frame.Clip >= 0)
+                if (frame.Kind != UiKind.Box || !framed || frame.Clip >= 0 || (frame.Flags & UiFlags.Chrome) != 0)
                 {
                     continue;
                 }
@@ -503,6 +503,10 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
         public static int Unfilled(UiScene s, UiFrame frame, Action<string> say)
         {
+            if (s.Floats)
+            {
+                return 0;   // a docked panel, a card or the phone stands over the world on purpose, the city round it
+            }
             frame.Room(out float rx, out float ry, out float rw, out float rh);
             var boxes = new List<float>(64);
             float left = float.MaxValue, top = float.MaxValue, right = float.MinValue;
@@ -676,7 +680,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < s.ItemCount; i++)
             {
                 ref UiItem it = ref s.Items[i];
-                if (it.Kind == UiKind.Text && it.Y >= frame.Top - Tolerance && (it.Flags & UiFlags.Prompt) == 0 && it.Text != null
+                if (it.Kind == UiKind.Text && it.Y >= frame.Top - Tolerance && (it.Flags & (UiFlags.Prompt | UiFlags.Chrome)) == 0 && it.Text != null
                     && string.Equals(it.Text.Trim(), app, StringComparison.CurrentCultureIgnoreCase))
                 {
                     found++;
@@ -799,12 +803,13 @@ namespace RealLifeOverhaul.Ui
         public static int TypeBand(UiStyle style)
         {
             float size = UiTokens.Type(style).Size;
-            return size < 16.75f ? 0 : size < 21.5f ? 1 : size < 26.5f ? 2 : size < 31.5f ? 3 : 4;
+            return size < 15.5f ? 0 : size < 20f ? 1 : size < 24f ? 2 : 3;   // the rows' and labels' 13 to 15, a window's 18, a name's 22, a big figure's 26
         }
 
         /// <summary>
-        /// More than three sizes of type on a screen (the owner, 1 Nov: no slop): its display size, its text size and its
-        /// label size are all a page needs. Sizes within a band (18 and 19, 15 and 16) read as one.
+        /// More than three sizes of type on a page (the owner, 1 Nov: no slop; DIRECTION_CS2: at most three on a panel): its
+        /// big figure, its text and its labels are all it needs. Sizes within a band (13 to 15) read as one; the frame's own
+        /// words (a window's strip, the status bar) are the frame's, not the page's.
         /// </summary>
         public static int TypeLevels(UiScene s, Action<string> say)
         {
@@ -812,7 +817,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < s.ItemCount; i++)
             {
                 ref UiItem it = ref s.Items[i];
-                if (it.Kind == UiKind.Text && !string.IsNullOrEmpty(it.Text))
+                if (it.Kind == UiKind.Text && !string.IsNullOrEmpty(it.Text) && (it.Flags & (UiFlags.Chrome | UiFlags.Prompt)) == 0)
                 {
                     bands |= 1 << TypeBand(it.Style);
                 }
@@ -870,7 +875,7 @@ namespace RealLifeOverhaul.Ui
             int found = 0;
             for (int i = 0; i < s.NodeCount; i++)
             {
-                if (Array.IndexOf(known, s.Nodes[i].Command) < 0)
+                if (s.Nodes[i].Command != UiDraw.CloseCommand && Array.IndexOf(known, s.Nodes[i].Command) < 0)   // a window's close is the host's own Back
                 {
                     found++;
                     say?.Invoke(s.Name + ": target " + i + " runs command " + s.Nodes[i].Command + ", which its template answers nowhere");
@@ -915,7 +920,7 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- helpers
 
-        private static bool Skip(ref UiItem it) => (it.Flags & (UiFlags.Decor | UiFlags.Overflow)) != 0 || it.Kind == UiKind.Spark;
+        private static bool Skip(ref UiItem it) => (it.Flags & (UiFlags.Decor | UiFlags.Overflow)) != 0 || it.Kind == UiKind.Spark || it.Kind == UiKind.Slice;   // a donut's slices lay over each other
 
         private static bool OnGrid(float v)
         {
@@ -944,11 +949,17 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>The colour under an item: the screen's background, then each filled parent's colour laid over it, outermost first.</summary>
+        /// <summary>
+        /// The world behind a translucent panel, as the checks take it: a sunlit pavement, the brightest the game's streets
+        /// run, so a word that reads over it reads over any of the city.
+        /// </summary>
+        public static readonly UiColour World = new UiColour(0.76f, 0.74f, 0.69f, 1f);
+
         public static UiColour Beneath(UiScene s, int item, bool dark)
         {
             if ((s.Items[item].Flags & UiFlags.Prompt) != 0)
             {
-                return UiColour.Of(UiRole.Bg, dark);   // the prompt band is painted flat in the background's colour, no blurred city behind it
+                return UiColour.Of(UiRole.StatusBar, dark).Over(World);   // the prompts stand on the status bar over the world
             }
             var chain = new int[32];
             int n = 0;
@@ -956,7 +967,16 @@ namespace RealLifeOverhaul.Ui
             {
                 chain[n++] = p;
             }
-            UiColour under = UiColour.Of(UiRole.Bg, dark);
+            UiColour under = World;
+            bool panelled = false;
+            for (int k = 0; k < n; k++)
+            {
+                panelled |= (s.Items[chain[k]].Flags & UiFlags.Panel) != 0;
+            }
+            if (!panelled)
+            {
+                under = PanelUnder(s, item, dark);   // a scroll region's rows hang from no parent: the panel they scroll in is still under them
+            }
             for (int k = n - 1; k >= 0; k--)
             {
                 ref UiItem p = ref s.Items[chain[k]];
@@ -971,6 +991,30 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             return under;
+        }
+
+        // The world under an item through the panel that holds its middle on its layer, the last drawn before it, or the world.
+        private static UiColour PanelUnder(UiScene s, int item, bool dark)
+        {
+            ref UiItem it = ref s.Items[item];
+            float cx = it.X + it.W / 2f, cy = it.Y + it.H / 2f;
+            if (it.Clip >= 0)
+            {
+                ref UiClip c = ref s.Clips[it.Clip];
+                cx += c.X;
+                cy += c.Y - c.Offset;
+            }
+            for (int p = item - 1; p >= 0; p--)
+            {
+                ref UiItem box = ref s.Items[p];
+                if (box.Kind == UiKind.Box && (box.Flags & UiFlags.Panel) != 0 && box.Layer == it.Layer && box.Clip < 0 && box.Fill != UiRole.None
+                    && cx >= box.X && cx <= box.X + box.W && cy >= box.Y && cy <= box.Y + box.H)
+                {
+                    UiColour fill = UiColour.Of(box.Fill, dark);
+                    return fill.WithAlpha(fill.A * box.Alpha).Over(World);
+                }
+            }
+            return World;
         }
 
         private static string Describe(UiScene s, int i)

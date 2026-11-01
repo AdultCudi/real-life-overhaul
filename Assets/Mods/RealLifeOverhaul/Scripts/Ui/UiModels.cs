@@ -57,6 +57,8 @@ namespace RealLifeOverhaul.Ui
         public bool Selected;
         public bool Pinned;
         public string Section;   // the capitals over the block the row opens, or null when it continues the block above
+        public UiIcon Icon;      // a business's or a place's icon on a tile in its family's colour, in place of a person's face
+        public UiRole Tint;
     }
 
     /// <summary>A service or an action with its price, as a detail's side column lists them.</summary>
@@ -119,6 +121,8 @@ namespace RealLifeOverhaul.Ui
         public float Hue;
         public bool Selected;
         public bool Loud;        // the count is unread: a badge, not a quiet figure
+        public UiIcon Icon;      // the group's icon on its tile in the hue's chart colour, or None for the hue's dot
+        public UiRole Tint;
     }
 
     /// <summary>A figure with its change, for a dashboard: the arrow follows the change's sign, the colour whether it is good.</summary>

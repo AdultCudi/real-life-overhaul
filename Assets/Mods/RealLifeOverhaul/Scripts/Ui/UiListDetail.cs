@@ -112,13 +112,16 @@ namespace RealLifeOverhaul.Ui
             s.Begin("list-detail", frame.Width, frame.Height, dark);
             frame.Content(out float cx, out float cy, out float cw, out float ch);
             UiAt screen = UiAt.Screen;
-            int bg = UiDraw.Box(s, screen, 0f, 0f, frame.Width, frame.Height, UiRole.Bg, UiRole.None, 0f, UiFlags.Decor);   // the host's whole area
+            int bg = UiDraw.Window(s, frame, null, keys);   // the app's window over the world: the page is drawn inside it
             UiAt onBg = screen.In(bg);
+            frame.Window(out float wx, out float wy, out float ww, out float wh);
+            UiDraw.Band(s, onBg, wx, wy + UiFrame.Strip, cx + SideWidth + UiTokens.S2 - wx, wh - UiFrame.Strip);   // the groups on the window's darker band, as a game's menu
             Sidebar(s, onBg.InRegion(RegionGroups), m, cx, cy, SideWidth, ch, keys);
             float lx = cx + SideWidth + UiTokens.S4;
             List(s, onBg.InRegion(RegionList), m, lx, cy, ListWidth, ch);
             float dx = lx + ListWidth + UiTokens.S4;
             float dw = cx + cw - dx;
+            UiDraw.Box(s, onBg, dx - UiTokens.S2, wy + UiFrame.Strip, UiTokens.Hairline, wh - UiFrame.Strip, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             Detail(s, onBg.InRegion(RegionDetail), m, dx, cy, dw, ch, keys);
             for (int i = 0; i < m.PromptCount; i++)
             {
@@ -193,7 +196,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = first; i <= last; i++)
             {
                 ref UiNavModel g = ref m.Groups[i];
-                int node = UiDraw.NavItem(s, inClip.Arriving(i - first), 0f, i * itemH, w, g.Label, g.Count, g.Hue, g.Selected, Group, i, g.Loud);
+                int node = UiDraw.NavItem(s, inClip.Arriving(i - first), 0f, i * itemH, w, g.Label, g.Count, g.Hue, g.Selected, Group, i, g.Loud, g.Icon, g.Tint);
                 s.Nodes[node].List = list;
                 s.Nodes[node].Index = i;
             }
@@ -261,7 +264,8 @@ namespace RealLifeOverhaul.Ui
 
         private static void Detail(UiScene s, UiAt at, UiListDetailModel m, float x, float y, float w, float h, IUiKeys keys)
         {
-            int panel = UiDraw.Box(s, at, x, y, w, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
+            // The detail stands on the window itself: a panel in a panel would be a box in a box.
+            int panel = UiDraw.Box(s, at, x, y, w, h, UiRole.None, UiRole.None, 0f, UiFlags.None);
             UiAt inside = at.In(panel);
             if (!m.HasDetail)
             {
@@ -424,7 +428,7 @@ namespace RealLifeOverhaul.Ui
 
         private static float BlockTitle(UiScene s, UiAt at, float x, float y, float w, string title)
         {
-            UiDraw.Text(s, at, x, y, w, UiStyle.SectionHeader, UiRole.Muted, title, UiFlags.Label);
+            UiDraw.Text(s, at, x, y, w, UiStyle.SectionHeader, UiRole.Text, title, UiFlags.Label);
             return UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3;
         }
 

@@ -77,11 +77,11 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>A glyph of the icon family in a square box.</summary>
-        public static int Icon(UiScene s, UiAt at, float x, float y, float size, UiIcon icon, UiRole tint, UiFlags flags = UiFlags.None)
+        public static int Icon(UiScene s, UiAt at, float x, float y, float size, UiIcon icon, UiRole tint, UiFlags flags = UiFlags.None, bool filled = false)
         {
             var item = new UiItem
             {
-                Kind = UiKind.Icon, Flags = flags, Fill = tint, Icon = icon, X = x, Y = y, W = size, H = size,
+                Kind = UiKind.Icon, Flags = flags, Fill = tint, Icon = icon, X = x, Y = y, W = size, H = size, Value = filled ? 1f : 0f,   // filled: the solid cut, for a tile
                 Clip = at.Clip, Node = -1, Layer = at.Layer, Order = at.Order, Parent = at.Parent, Alpha = 1f
             };
             return s.Add(ref item);
@@ -250,7 +250,7 @@ namespace RealLifeOverhaul.Ui
         public static void PlayerCard(UiScene s, UiAt at, float x, float y, float w, string name, float hue, string summary)
         {
             float size = UiTokens.AvatarSmall;
-            Avatar(s, at, x, y, size, name, hue);
+            Portrait(s, at, x, y, size, name, hue, UiRole.Accent);
             float tx = x + size + UiTokens.S3, tw = w - size - UiTokens.S3;
             float block = UiTextRules.LineHeight(UiStyle.Title) + UiTextRules.LineHeight(UiStyle.Small);
             float ty = y + (size - block) / 2f;

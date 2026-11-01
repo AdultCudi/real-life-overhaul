@@ -44,7 +44,7 @@ namespace RealLifeOverhaul.Ui
             s.Begin("session", frame.Width, frame.Height, dark);
             frame.Content(out float cx, out float cy, out float cw, out float ch);
             UiAt screen = UiAt.Screen;
-            int bg = UiDraw.Box(s, screen, 0f, 0f, frame.Width, frame.Height, UiRole.Bg, UiRole.None, 0f, UiFlags.Decor);   // the host's whole area
+            int bg = UiDraw.Window(s, frame, null, keys);   // the app's window over the world: the page is drawn inside it
             UiAt at = screen.In(bg);
             bool side = m.SummaryCount > 0;   // a summary panel only where there is a summary: an empty frame reads as a hole
             float pw = side ? cw - SideWidth - UiTokens.S4 : cw;

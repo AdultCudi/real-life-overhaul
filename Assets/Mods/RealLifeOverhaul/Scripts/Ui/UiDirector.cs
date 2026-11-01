@@ -52,6 +52,9 @@ namespace RealLifeOverhaul.Ui
                 UiTweens.Instance = gameObject.AddComponent<UiTweens>();
             }
             UiChrome.Status = UiGame.Status;
+            UiChrome.Bar = UiGame.Bar;
+            UiIcons.Own = UiGame.OwnIcon;
+            RealLifeOverhaul.GameUi.GameSprites.Want(UiGame.OwnIconNames);
             StartCoroutine(Guard.Routine(Tick()));
         }
 

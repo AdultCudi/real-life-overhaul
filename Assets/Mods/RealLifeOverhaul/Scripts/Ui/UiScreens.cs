@@ -85,7 +85,8 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_gallery_cap_colours", "reallife_ui_gallery_cap_motion", "reallife_ui_gallery_cap_sizes", "reallife_ui_gallery_col_style",
                 "reallife_ui_gallery_col_face", "reallife_ui_gallery_col_size", "reallife_ui_gallery_col_weight", "reallife_ui_gallery_col_role",
                 "reallife_ui_gallery_col_dark", "reallife_ui_gallery_col_light", "reallife_ui_gallery_col_motion", "reallife_ui_gallery_col_full",
-                "reallife_ui_gallery_col_calm", "reallife_ui_gallery_col_token", "reallife_ui_gallery_col_px", "reallife_ui_gallery_col_kind"
+                "reallife_ui_gallery_col_calm", "reallife_ui_gallery_col_token", "reallife_ui_gallery_col_px", "reallife_ui_gallery_col_kind",
+                "reallife_ui_prompt_select", "reallife_ui_prompt_choose", "reallife_studio_page_age_days", "reallife_ui_gallery_page_icons"
             }),
             new UiScreenDef("population", UiTemplate.Dashboard, "PopulationScreen", new[]
             {
