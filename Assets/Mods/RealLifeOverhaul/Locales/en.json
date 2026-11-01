@@ -28420,13 +28420,10 @@
   "reallife_ui_econo_no_loans": "No loans",
   "reallife_ui_econo_a_loan": "A loan",
   "reallife_ui_econo_loan": "Loan",
-  "reallife_ui_econo_paid_of": "Paid {paid} of {total}",
-  "reallife_ui_econo_left": "Left to pay",
-  "reallife_ui_econo_per_day": "{amount} a day",
   "reallife_ui_econo_no_funds": "No investments",
   "reallife_ui_econo_auto_on": "Adds {amount} a day",
   "reallife_ui_econo_chart_wait": "The line starts once the fund has seen a second day.",
-  "reallife_ui_econo_added": "Added since",
+  "reallife_ui_econo_added": "Added later",
   "reallife_ui_econo_withdrawn": "Withdrawn",
   "reallife_ui_econo_on": "On",
   "reallife_ui_econo_off": "Off",
@@ -28434,7 +28431,6 @@
   "reallife_ui_econo_risk_low": "Low risk",
   "reallife_ui_econo_risk_medium": "Medium risk",
   "reallife_ui_econo_risk_high": "High risk",
-  "reallife_ui_econo_due": "What is due",
   "reallife_ui_econo_basis": "How it is worked out",
   "reallife_ui_econo_deductible": "Costs that lower the tax",
   "reallife_ui_econo_no_business": "No business yet",
@@ -28462,5 +28458,8 @@
   "reallife_ui_econo_worth_by": "Worth in each fund",
   "reallife_ui_econo_taxed_on": "What the tax is on, this year",
   "reallife_ui_econo_taxed_none": "Nothing taxable has been earned yet this tax year.",
-  "reallife_contract_part_ui_econoview": "the game's EconoView drawn on the RLO interface"
+  "reallife_contract_part_ui_econoview": "the game's EconoView drawn on the RLO interface",
+  "reallife_ui_econo_find_bank": "Find a bank in Contacts",
+  "reallife_ui_econo_fund_year": "{fund}, the last year",
+  "reallife_ui_econo_statement_note": "Each business, property and loan you take on joins this statement the night after."
 }

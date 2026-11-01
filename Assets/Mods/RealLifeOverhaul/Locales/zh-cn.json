@@ -28420,9 +28420,6 @@
   "reallife_ui_econo_no_loans": "没有贷款",
   "reallife_ui_econo_a_loan": "一笔贷款",
   "reallife_ui_econo_loan": "贷款",
-  "reallife_ui_econo_paid_of": "已还 {paid}，共 {total}",
-  "reallife_ui_econo_left": "待还金额",
-  "reallife_ui_econo_per_day": "每天 {amount}",
   "reallife_ui_econo_no_funds": "没有投资",
   "reallife_ui_econo_auto_on": "每天追加 {amount}",
   "reallife_ui_econo_chart_wait": "基金满两天后才会显示走势线。",
@@ -28434,7 +28431,6 @@
   "reallife_ui_econo_risk_low": "低风险",
   "reallife_ui_econo_risk_medium": "中等风险",
   "reallife_ui_econo_risk_high": "高风险",
-  "reallife_ui_econo_due": "应缴款项",
   "reallife_ui_econo_basis": "计算依据",
   "reallife_ui_econo_deductible": "可抵税的费用",
   "reallife_ui_econo_no_business": "尚无企业",
@@ -28462,5 +28458,8 @@
   "reallife_ui_econo_worth_by": "各基金的价值",
   "reallife_ui_econo_taxed_on": "今年的计税依据",
   "reallife_ui_econo_taxed_none": "本纳税年度尚无应税收入。",
-  "reallife_contract_part_ui_econoview": "以 RLO 界面绘制的游戏 EconoView"
+  "reallife_contract_part_ui_econoview": "以 RLO 界面绘制的游戏 EconoView",
+  "reallife_ui_econo_find_bank": "在联系人中查找银行",
+  "reallife_ui_econo_fund_year": "{fund}，近一年",
+  "reallife_ui_econo_statement_note": "你新开的每家企业、购置的每处房产和每笔贷款，都会在第二天夜里加入这份报表。"
 }

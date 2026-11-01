@@ -111,6 +111,12 @@ internal static partial class UiSamples
                 v.BusinessRows = BusinessRows(t);
                 v.BusinessSales = new[] { 2180f, 1960f, 2040f, 1870f };
                 v.BusinessProfit = new[] { 840f, 650f, 750f, 600f };
+                v.BusinessItems = new[]
+                {
+                    new[] { "Coffee", "Croissant", "Cheese Sandwich" }, new[] { "Coffee", "Croissant", "Cheese Sandwich" }, new[] { "Coffee", "Croissant", "Cheese Sandwich" },
+                    new[] { "Coffee", "Croissant", "Cheese Sandwich" }
+                };
+                v.BusinessItemSales = new[] { new[] { 1120f, 640f, 420f }, new[] { 1010f, 590f, 360f }, new[] { 1060f, 600f, 380f }, new[] { 960f, 540f, 370f } };
                 v.BusinessCosts = new[]
                 {
                     new[] { 680f, 240f, 100f, 0f, 0f, 320f }, new[] { 680f, 240f, 100f, 0f, 0f, 290f }, new[] { 650f, 240f, 100f, 0f, 0f, 300f }, new[] { 650f, 240f, 100f, 0f, 0f, 280f }
@@ -260,7 +266,7 @@ internal static partial class UiSamples
             bool taken = i == payments - 1 && payments > 4;
             float amount = taken ? total : -daily;
             lines[i] = new EconoTx { Day = EconoToday - i, Type = taken ? "ba:transaction_loanpayout" : "ba:transaction_loanpayment",
-                What = (taken ? "Loan from " : "Loan payment to ") + bank, Amount = amount, Balance = EconoMoney(balance) };
+                What = taken ? "Loan Payout" : "Loan Payment", Amount = amount, Balance = EconoMoney(balance) };
             balance += daily;
         }
         return new EconoLoanView
@@ -296,17 +302,17 @@ internal static partial class UiSamples
         float balance = 48210f;
         for (int i = 0; auto && i < 5; i++)
         {
-            moves.Add(new EconoTx { Day = EconoToday - i, Type = "ba:transaction_investment", What = name + " investment", Amount = -autoValue, Balance = EconoMoney(balance) });
+            moves.Add(new EconoTx { Day = EconoToday - i, Type = "ba:transaction_investment", What = "Investment", Amount = -autoValue, Balance = EconoMoney(balance) });
             balance += autoValue;
         }
         if (withdrawn > 0f)
         {
-            moves.Add(new EconoTx { Day = EconoToday - 6, Type = "ba:transaction_investmentpayout", What = name + " payout", Amount = withdrawn, Balance = EconoMoney(balance - withdrawn) });
+            moves.Add(new EconoTx { Day = EconoToday - 6, Type = "ba:transaction_investmentpayout", What = "Investment Payout", Amount = withdrawn, Balance = EconoMoney(balance - withdrawn) });
         }
         return new EconoFundView
         {
             Key = key, Name = name, Value = value, Invested = initial + added, Interest = earned, Risk = risk, Initial = EconoMoney(initial), Added = EconoMoney(added),
-            Withdrawn = EconoMoney(withdrawn), Earned = EconoMoney(earned), AutoOn = auto, Auto = EconoMoney(autoValue), AutoValue = autoValue, Withdraw = EconoMoney(5000f),
+            Withdrawn = EconoMoney(withdrawn), AutoOn = auto, Auto = EconoMoney(autoValue), AutoValue = autoValue, Withdraw = EconoMoney(5000f),
             WithdrawValue = 5000, WithdrawMost = (long)value, History = history, HistoryDays = days, Moves = moves.ToArray()
         };
     }
@@ -324,8 +330,8 @@ internal static partial class UiSamples
             BasisAmounts = new[] { 58400f, 41200f, 17900f },
             Paid = new[]
             {
-                new EconoTx { Day = 361, Type = "ba:transaction_taxpayment", What = "Tax payment", Amount = -9840f, Balance = "$31,620" },
-                new EconoTx { Day = 301, Type = "ba:transaction_taxpayment", What = "Tax payment", Amount = -6210f, Balance = "$22,940" },
+                new EconoTx { Day = 361, Type = "ba:transaction_taxpayment", What = "Tax Payment", Amount = -9840f, Balance = "$31,620" },
+                new EconoTx { Day = 301, Type = "ba:transaction_taxpayment", What = "Tax Payment", Amount = -6210f, Balance = "$22,940" },
             }
         };
     }

@@ -505,7 +505,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Key = f.name, Name = Localised(f.name), Value = f.CurrentValue, Invested = f.initialDeposit + f.additionalInvestment, Interest = f.RoundedInterestPayment,
                 Risk = data != null ? (int)InvestmentFundHelper.DetermineRisk(data).Item1 : -1, Initial = UiText.Money(f.initialDeposit), Added = UiText.Money(f.additionalInvestment),
-                Withdrawn = UiText.Money(f.withdrawal), Earned = UiText.Money(f.RoundedInterestPayment), AutoOn = f.isAutoInvesting, Auto = UiText.Money(f.autoInvestment),
+                Withdrawn = UiText.Money(f.withdrawal), AutoOn = f.isAutoInvesting, Auto = UiText.Money(f.autoInvestment),
                 AutoValue = (long)Math.Floor(f.autoInvestment), WithdrawMost = (long)Math.Floor(f.CurrentValue)
             };
             if (page != null)
@@ -619,7 +619,6 @@ namespace RealLifeOverhaul.Ui
             v.CanDestination = true;
             v.CanBizMan = true;
             DayNames(Get<TextLocalizationComponent[]>(GameContract.EconoBusinessDays, _app.businessDetails), SaveGameManager.Current, out v.BusinessDays, out v.DayNumbers);
-            BusinessDays(v);
             _businessRows.Clear();
             Transform content = statement.defaultEntry != null ? statement.defaultEntry.parent : null;
             for (int i = 0; content != null && i < content.childCount; i++)
@@ -653,6 +652,7 @@ namespace RealLifeOverhaul.Ui
                     v.BusinessRows[v.BusinessRows[i].Parent].Folded |= !_businessRows[i].gameObject.activeSelf;   // the game folds a heading by hiding its rows
                 }
             }
+            BusinessDays(v);
         }
 
         // The four days the business's page was made from, as the game keeps them: its sales, its costs by kind and its profit.
@@ -674,6 +674,38 @@ namespace RealLifeOverhaul.Ui
                 v.BusinessSales[i] = d.TotalSales;
                 v.BusinessProfit[i] = d.TotalProfit;
                 v.BusinessCosts[i] = new[] { d.SalaryExpenses, d.RentExpenses, d.MarketingExpenses, d.Theft, d.LicensingFees, d.TotalResources };   // the order of EconoViews.CostKeys
+            }
+            Sold(v, days, n);
+        }
+
+        // Each day's goods sold, only those the game's page lists (its sales rows: it leaves out the bags), by their keys.
+        private static void Sold(EconoState v, List<FinancialSummary.BusinessIncomeStatement> days, int n)
+        {
+            var listed = new HashSet<string>(StringComparer.Ordinal);
+            for (int r = 0; r < v.BusinessRows.Length; r++)
+            {
+                if (v.BusinessRows[r].Kind > 0 && v.BusinessRows[r].Key != null)
+                {
+                    listed.Add(v.BusinessRows[r].Key);
+                }
+            }
+            v.BusinessItems = new string[n][];
+            v.BusinessItemSales = new float[n][];
+            for (int i = 0; i < n; i++)
+            {
+                var names = new List<string>(8);
+                var amounts = new List<float>(8);
+                List<FinancialSummary.BusinessIncomeStatement.TransactionGroupEntry> sales = days[i] != null ? days[i].Sales : null;
+                for (int k = 0; sales != null && k < sales.Count; k++)
+                {
+                    if (sales[k] != null && listed.Contains(sales[k].ItemName))
+                    {
+                        names.Add(Localised(sales[k].ItemName));
+                        amounts.Add(sales[k].Amount);
+                    }
+                }
+                v.BusinessItems[i] = names.ToArray();
+                v.BusinessItemSales[i] = amounts.ToArray();
             }
         }
 
@@ -908,7 +940,9 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
-                found.Add(new EconoTx { Day = t.timestamp.Day, Type = t.transactionType, What = Plain(EconoViewOverview.GenerateTransactionData(t).ToString()), Amount = t.amount,
+                string kindWords = t.transactionType + LabelSuffix;   // the kind's own name, as the game's filter calls it: the table's title already names the loan or fund
+                string what = LocalizorManager.IsLocalizedKey(kindWords) ? LocalizorManager.GetLocalization(kindWords) : Plain(EconoViewOverview.GenerateTransactionData(t).ToString());
+                found.Add(new EconoTx { Day = t.timestamp.Day, Type = t.transactionType, What = what, Amount = t.amount,
                     Balance = UiText.Money(t.balance), Time = Clock(t) });
             }
             return found.ToArray();

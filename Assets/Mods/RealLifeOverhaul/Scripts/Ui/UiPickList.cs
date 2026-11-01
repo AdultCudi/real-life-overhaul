@@ -95,16 +95,28 @@ namespace RealLifeOverhaul.Ui
             int last = Math.Min(rows - 1, (int)((offset + viewH - 0.5f) / step));
             short list = s.AddList(rows, first, last - first + 1, clip, m.Chosen);
             var inClip = new UiAt { Parent = -1, Clip = clip, Layer = at.Layer, Order = -1, Region = at.Region };
+            float fw = FigureWidth(m, rw);
             for (int r = first; r <= last; r++)
             {
-                RowAt(s, inClip.Arriving(r - first), ref m.Rows[r], r == m.Chosen, r * step, rw, list, r, command);
+                RowAt(s, inClip.Arriving(r - first), ref m.Rows[r], r == m.Chosen, r * step, rw, fw, list, r, command);
             }
             UiDraw.ScrollThumb(s, at, x + w - UiTokens.S1, ty, Math.Min(viewH, content), offset, content);
             return list;
         }
 
         // A row: the tile, the name with its chip and the line under it, the meter, and the figure over its note at the right.
-        private static void RowAt(UiScene s, UiAt at, ref UiPickRow r, bool chosen, float y, float w, short list, int index, int command)
+        // One figure column for every row, as wide as the widest figure or note, so every row's meter and words end at one edge.
+        private static float FigureWidth(UiPickListModel m, float w)
+        {
+            float most = 0f;
+            for (int i = 0; i < m.Rows.Length; i++)
+            {
+                most = Math.Max(most, Math.Max(UiTextRules.Width(m.Rows[i].Figure, UiStyle.BodyStrong), UiTextRules.Width(m.Rows[i].Note, UiStyle.Small)));
+            }
+            return most > 0f ? Math.Min(UiDraw.Snap(most + UiTokens.S1), UiDraw.SnapDown(w * FigureShare)) : 0f;
+        }
+
+        private static void RowAt(UiScene s, UiAt at, ref UiPickRow r, bool chosen, float y, float w, float fw, short list, int index, int command)
         {
             int face = UiDraw.Box(s, at, 0f, y, w, RowHeight, chosen ? UiRole.RowSel : UiRole.Band, UiRole.None, UiTokens.RadiusLarge, chosen ? UiFlags.Selected : UiFlags.None);
             UiAt inside = at.In(face);
@@ -113,12 +125,6 @@ namespace RealLifeOverhaul.Ui
             float g = UiTokens.S6;
             UiDraw.Icon(s, inside.In(t), tx + (tile - g) / 2f, ty + (tile - g) / 2f, g, r.Icon, r.Tint, UiFlags.Middle | UiFlags.Centre, true);
             float right = w - UiTokens.S4;
-            float fw = 0f;
-            if (!string.IsNullOrEmpty(r.Figure) || !string.IsNullOrEmpty(r.Note))
-            {
-                fw = UiDraw.Snap(Math.Max(UiTextRules.Width(r.Figure, UiStyle.BodyStrong), UiTextRules.Width(r.Note, UiStyle.Small)) + UiTokens.S1);
-                fw = Math.Min(fw, UiDraw.SnapDown(w * FigureShare));
-            }
             float lx = tx + tile + UiTokens.S3, lw = right - (fw > 0f ? fw + UiTokens.S4 : 0f) - lx;
             float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
             bool meter = r.Meter >= 0;
@@ -143,7 +149,7 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDraw.Meter(s, inside, lx, ly + UiTokens.S2, lw, UiTokens.S1, r.Meter, r.MeterTone == UiRole.None ? UiRole.Accent : r.MeterTone);
             }
-            if (fw > 0f)
+            if (fw > 0f && (!string.IsNullOrEmpty(r.Figure) || !string.IsNullOrEmpty(r.Note)))
             {
                 bool both = !string.IsNullOrEmpty(r.Figure) && !string.IsNullOrEmpty(r.Note);
                 float fh = both ? th + UiTokens.S1 + sh : string.IsNullOrEmpty(r.Figure) ? sh : th;

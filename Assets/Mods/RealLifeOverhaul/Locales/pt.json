@@ -28420,9 +28420,6 @@
   "reallife_ui_econo_no_loans": "Nenhum empréstimo",
   "reallife_ui_econo_a_loan": "Um empréstimo",
   "reallife_ui_econo_loan": "Empréstimo",
-  "reallife_ui_econo_paid_of": "Pago {paid} de {total}",
-  "reallife_ui_econo_left": "Falta pagar",
-  "reallife_ui_econo_per_day": "{amount} por dia",
   "reallife_ui_econo_no_funds": "Nenhum investimento",
   "reallife_ui_econo_auto_on": "Aplica {amount} por dia",
   "reallife_ui_econo_chart_wait": "A linha começa quando o fundo completar o segundo dia.",
@@ -28434,7 +28431,6 @@
   "reallife_ui_econo_risk_low": "Risco baixo",
   "reallife_ui_econo_risk_medium": "Risco médio",
   "reallife_ui_econo_risk_high": "Risco alto",
-  "reallife_ui_econo_due": "O que vence",
   "reallife_ui_econo_basis": "Como é calculado",
   "reallife_ui_econo_deductible": "Custos que reduzem o imposto",
   "reallife_ui_econo_no_business": "Nenhuma empresa ainda",
@@ -28462,5 +28458,8 @@
   "reallife_ui_econo_worth_by": "Valor em cada fundo",
   "reallife_ui_econo_taxed_on": "Sobre o que incide o imposto, este ano",
   "reallife_ui_econo_taxed_none": "Nada tributável foi ganho ainda neste ano fiscal.",
-  "reallife_contract_part_ui_econoview": "o EconoView do jogo desenhado na interface RLO"
+  "reallife_contract_part_ui_econoview": "o EconoView do jogo desenhado na interface RLO",
+  "reallife_ui_econo_find_bank": "Encontrar um banco nos Contatos",
+  "reallife_ui_econo_fund_year": "{fund}, o último ano",
+  "reallife_ui_econo_statement_note": "Cada empresa, imóvel e empréstimo que você assumir entra nesta demonstração na noite seguinte."
 }

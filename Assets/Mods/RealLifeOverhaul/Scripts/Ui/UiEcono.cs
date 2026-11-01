@@ -51,6 +51,7 @@ namespace RealLifeOverhaul.Ui
         public UiStatementModel Statement = new UiStatementModel();
         public int[] GroupRows = new int[0];
         public int[][] GroupLines = new int[0][];
+        public string StatementNote;                      // a quiet line under a short statement: what joins it and when
 
         // The overview's right: the cash with its line, where the money came from and went, and the last few lines.
         public UiFigureModel[] Cash = new UiFigureModel[0];
@@ -78,12 +79,14 @@ namespace RealLifeOverhaul.Ui
         public UiEconoControl[] Controls = new UiEconoControl[0];
         public UiChartModel Chart;
         public string NoteTitle;                          // a band of lines under the rows (the taxes' deductible kinds): its label
-        public string Note;                               // and its lines
+        public string Note;                               // and its lines, one a kind
+        public UiIcon[] NoteIcons = new UiIcon[0];        // each line's glyph, or none
         public string Link;                               // a link under the rows (the IRS contact)
         public string HistoryTitle;
         public UiColumn[] HistoryColumns = new UiColumn[0];
         public UiAppRow[] History = new UiAppRow[0];
         public string HistoryEmpty;                       // the sentence under its head when there is nothing yet
+        public string HistoryMore;                        // the link under it to every transaction, when more lines are kept than it shows
 
         // One business: its choice in the head, what it is, its link and its buttons.
         public string Choice;
@@ -94,6 +97,7 @@ namespace RealLifeOverhaul.Ui
         public UiIcon EmptyIcon = UiIcon.Chart;
         public string EmptyTitle;
         public string EmptyBody;
+        public string EmptyAction;                        // the button that leads where the page fills (a bank among the contacts), or null
 
         public int OpenList = -1;                         // UiEcono.ListType and the rest, or -1
         public string[] Options = new string[0];
@@ -125,20 +129,22 @@ namespace RealLifeOverhaul.Ui
         public const int ListType = 0, ListAmount = 1, ListPeriod = 2, ListBusiness = 3;
         public const int StatementFirst = UiStatement.First;
         public const int PickCommand = 210, FilterCommand = 211, OptionCommand = 212, LessCommand = 213, AmountCommand = 214, MoreCommand = 215,
-            SwitchCommand = 216, ButtonCommand = 217, LinkCommand = 218, ChoiceCommand = 219;
+            SwitchCommand = 216, ButtonCommand = 217, LinkCommand = 218, ChoiceCommand = 219, EmptyCommand = 220;
         public const int LinkAll = 0, LinkIrs = 1, LinkBizMan = 2;   // LinkCommand's argument
 
         private const float StatementShare = 0.62f;   // of the overview's width, the income statement's
         private const float PickShare = 0.4f;         // of a list page's width, the list's
-        private const float TaxShare = 0.58f;         // of the taxes' width, what is due
+        private const float TaxShare = 0.5f;          // of the taxes' width, what is due
+        private const float EmptyRoom = 400f;         // px: an empty page's state stands in the top of the window, under its tabs
+        private const float LineRow = 32f;            // px: a kind on a band of lines, its glyph on a small tile
         private const float Donut = 104f;             // px: a share's donut, its legend's five rows beside it
         private const float LegendRow = 20f;          // px: UiDraw.Legend's row
-        private const float LegendMost = 440f;        // px: a legend's widest
         private const float TypeField = 280f;         // px: the type filter's choice
         private const float AmountField = 200f;       // px: the amount filter's choice
         private const float BusinessField = 360f;     // px: the business's choice in its head
         private const float StepperW = 240f;          // px: an amount between its minus and plus
         private const float ChartH = 240f;            // px: a fund's year as a line
+        private const float BarsMost = 240f;          // px: a business's days as bars, under the statement's weight
         private const float FigureShare = 0.32f;      // of the chosen's width, its figures beside its picture
 
         public static void Lay(UiScene s, UiEconoModel m, UiFrame frame, bool dark, IUiKeys keys)
@@ -158,7 +164,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (!string.IsNullOrEmpty(m.EmptyTitle))
             {
-                UiDraw.EmptyState(s, at, x, y, w, bottom - y, m.EmptyIcon, m.EmptyTitle, m.EmptyBody, null, -1, keys);
+                UiDraw.EmptyState(s, at, x, y, w, Math.Min(bottom - y, EmptyRoom), m.EmptyIcon, m.EmptyTitle, m.EmptyBody, m.EmptyAction, EmptyCommand, keys);
             }
             else
             {
@@ -187,8 +193,16 @@ namespace RealLifeOverhaul.Ui
         private static void OverviewPage(UiScene s, UiAt at, UiEconoModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
             float lw = UiDraw.SnapDown(w * StatementShare), rx = x + lw + UiTokens.S6, rw = x + w - rx;
-            m.StatementList = UiStatement.Lay(s, at, m.Statement, x, y, lw, bottom - y, keys, StatementFirst);
+            float sh = StatementHeight(m.Statement, bottom - y);
+            m.StatementList = UiStatement.Lay(s, at, m.Statement, x, y, lw, sh, keys, StatementFirst);
             Field(s, m, ListPeriod, StatementFirst + UiStatement.Period);
+            if (!string.IsNullOrEmpty(m.StatementNote) && bottom - y - sh >= UiTokens.S16 * 2f)
+            {
+                float ny = y + sh + UiTokens.S5;
+                UiDraw.Icon(s, at, x, ny, UiTokens.Icon, UiIcon.Info, UiRole.None, UiFlags.Middle, true);
+                UiDraw.Text(s, at, x + UiTokens.Icon + UiTokens.S2, ny + UiTokens.Hairline, lw - UiTokens.Icon - UiTokens.S2, UiStyle.Body, UiRole.Text2, m.StatementNote,
+                    UiFlags.Label | UiFlags.Wrap | UiFlags.Middle, 3);
+            }
             float ry = UiAppWindow.Figures(s, at, m.Cash, rx, y, rw);
             ry = Share(s, at, m.In, rx, ry, rw) + UiTokens.S4;
             ry = Share(s, at, m.Out, rx, ry, rw) + UiTokens.S5;
@@ -214,7 +228,8 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>
         /// A share of money by kind on its band: its label in capitals, the donut in the chart hues and its legend beside it
-        /// with each kind's money, or its sentence when nothing moved that way. Returns the y under it.
+        /// with each kind's money. One kind alone is its legend's line on a short band, and nothing at all its sentence: a
+        /// ring of one colour says nothing a line does not. Returns the y under it.
         /// </summary>
         public static float Share(UiScene s, UiAt at, UiEconoShare share, float x, float y, float w)
         {
@@ -222,27 +237,49 @@ namespace RealLifeOverhaul.Ui
             {
                 return y;
             }
+            int count = Math.Min(share.Labels.Length, Math.Min(share.Values.Length, share.Shares.Length));
             float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader));
-            float h = ShareHeight;
+            float ix = x + UiTokens.S4, iw = w - UiTokens.S4 * 2f;
+            float body = count >= 2 ? Donut : count == 1 ? LegendRow : UiDraw.Snap(UiTextRules.WrappedHeight(share.Empty, UiStyle.Body, iw, 3));
+            float h = count >= 2 ? ShareHeight : UiTokens.S3 + lh + UiTokens.S2 + body + UiTokens.S3;
             int band = UiDraw.Box(s, at, x, y, w, h, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
             UiAt on = at.In(band);
-            float ix = x + UiTokens.S4, iw = w - UiTokens.S4 * 2f;
             UiDraw.Text(s, on, ix, y + UiTokens.S3, iw, UiStyle.SectionHeader, UiRole.Text, share.Title, UiFlags.Label | UiFlags.Truncate);
-            float dy = y + UiTokens.S3 + lh + UiTokens.S3;
-            int count = Math.Min(share.Labels.Length, Math.Min(share.Values.Length, share.Shares.Length));
-            UiDraw.Donut(s, on, ix, dy, Donut, share.Shares, count);
-            float lx = ix + Donut + UiTokens.S6, lw = Math.Min(ix + iw - lx, LegendMost);   // a wide band keeps each kind's money near its name
-            if (count == 0)
+            if (count >= 2)
             {
-                UiDraw.Text(s, on, lx, dy + UiDraw.SnapDown((Donut - UiTextRules.WrappedHeight(share.Empty, UiStyle.Body, lw, 3)) / 2f), lw, UiStyle.Body, UiRole.Text2,
-                    share.Empty, UiFlags.Label | UiFlags.Wrap, 3);
+                float dy = y + UiTokens.S3 + lh + UiTokens.S3;
+                UiDraw.Donut(s, on, ix, dy, Donut, share.Shares, count);
+                float lx = ix + Donut + UiTokens.S6;
+                UiDraw.Legend(s, on, lx, dy + UiDraw.SnapDown((Donut - count * LegendRow) / 2f), ix + iw - lx, share.Labels, share.Values, count);
+            }
+            else if (count == 1)
+            {
+                UiDraw.Legend(s, on, ix, y + UiTokens.S3 + lh + UiTokens.S2, iw, share.Labels, share.Values, 1);
             }
             else
             {
-                UiDraw.Legend(s, on, lx, dy + UiDraw.SnapDown((Donut - count * LegendRow) / 2f), lw, share.Labels, share.Values, count);
+                UiDraw.Text(s, on, ix, y + UiTokens.S3 + lh + UiTokens.S2, iw, UiStyle.Body, UiRole.Text2, share.Empty, UiFlags.Label | UiFlags.Wrap, 3);
             }
             return y + h;
         }
+
+        /// <summary>
+        /// A statement's height for its lines: its head, its column heads, its rows and its foot, no taller than the room, so
+        /// a short statement ends where its lines end with its totals under them.
+        /// </summary>
+        public static float StatementHeight(UiStatementModel m, float room)
+        {
+            int rows = UiStatement.RowCount(m);
+            if (rows == 0)
+            {
+                return room;   // its empty state takes the room, its sentence in the middle
+            }
+            float foot = m.Totals.Length > 0 ? UiTokens.Control + UiTokens.S1 : 0f;
+            float h = UiStatement.HeadHeight + UiTokens.S4 + UiTokens.ControlSmall + UiTokens.S1 + rows * LineHeightOfStatement + foot;
+            return Math.Min(room, h);
+        }
+
+        private const float LineHeightOfStatement = 40f;   // px: a statement's band and line (UiStatement's rows)
 
         // ------------------------------------------------------------------------------------------------- every transaction
 
@@ -260,25 +297,58 @@ namespace RealLifeOverhaul.Ui
                 m.FieldW[i] = widths[i];
                 fx += widths[i] + UiTokens.S2;
             }
+            int tools = s.NodeCount;
             Buttons(s, at, m.ToolActions, x + w, y, keys);
             float ty = y + h + UiTokens.S4;
-            m.StatementList = UiStatement.Lay(s, at, m.Statement, x, ty, w, bottom - ty, keys, StatementFirst);
+            m.StatementList = UiStatement.Lay(s, at, m.Statement, x, ty, w, StatementHeight(m.Statement, bottom - ty), keys, StatementFirst);
             Field(s, m, ListPeriod, StatementFirst + UiStatement.Period);
+            // The filters stand over the first day at the left, the head's days' choice under the buttons at the right: up and
+            // down keep to those columns, so a step back retraces the step taken.
+            int first = Find(s, StatementFirst + UiStatement.Group, -1), period = Find(s, StatementFirst + UiStatement.Period, -1);
+            for (int i = 0; i < s.NodeCount && first >= 0; i++)
+            {
+                if (s.Nodes[i].Command == FilterCommand)
+                {
+                    s.Nodes[i].Down = first;
+                    s.Nodes[first].Up = s.Nodes[i].Arg == 0 ? i : s.Nodes[first].Up;
+                }
+            }
+            for (int i = tools; i < s.NodeCount && period >= 0; i++)
+            {
+                if (s.Nodes[i].Command == UiAppWindow.ActionCommand)
+                {
+                    s.Nodes[i].Down = period;
+                    s.Nodes[period].Up = i;
+                }
+            }
+        }
+
+        // The first target of a command (of an argument, or any for -1), or -1.
+        private static int Find(UiScene s, int command, int arg)
+        {
+            for (int i = 0; i < s.NodeCount; i++)
+            {
+                if (s.Nodes[i].Command == command && (arg < 0 || s.Nodes[i].Arg == arg))
+                {
+                    return i;
+                }
+            }
+            return -1;
         }
 
         // ------------------------------------------------------------------------------------------------- a loan or a fund
 
         // At the left all of them: their sums, the list to choose from and how the sum shares out between them; at the right
-        // the chosen one: its picture and figures or its year as a line, the game's controls for it, its rows, and the
-        // game's records of it.
+        // the chosen one: its picture or its year as a line, the game's controls for it and its rows; under both, across the
+        // page, the game's records of it, so the two columns end level and the records take the room left.
         private static void ChosenPage(UiScene s, UiAt at, UiEconoModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
             float lw = UiDraw.SnapDown(w * PickShare), rx = x + lw + UiTokens.S6, rw = x + w - rx;
             float ly = UiAppWindow.Figures(s, at, m.Totals, x, y, lw);
             ly = Picks(s, at, m, x, ly, lw, bottom) + UiTokens.S5;
-            if (m.Split != null && bottom - ly >= ShareHeight)
+            if (m.Split != null)
             {
-                Share(s, at, m.Split, x, ly, lw);
+                ly = Share(s, at, m.Split, x, ly, lw) + UiTokens.S5;
             }
             float ry = y;
             if (m.Hero != null)
@@ -298,8 +368,8 @@ namespace RealLifeOverhaul.Ui
             }
             ry = Controls(s, at, m.ControlsTitle, m.Controls, rx, ry, rw, keys);
             ry = Rows(s, at, m.RowsTitle, m.RowLabels, m.RowValues, rx, ry, rw, 2);
-            History(s, at, m, rx, ry, rw, bottom);
             UiDraw.JoinColumns(s, x, rx - UiTokens.S3, x + w);
+            History(s, at, m, x, Math.Max(ly, ry), w, bottom);
         }
 
         // The list of things to choose from, no taller than its rows (the room under it is the next block's). Returns the y under it.
@@ -314,19 +384,36 @@ namespace RealLifeOverhaul.Ui
             return y + h;
         }
 
-        // The game's own records of the thing in view as a table under its title, or the sentence that says there are none yet.
+        // The game's own records of the thing in view as a table under its title, as many as fit with a link to every
+        // transaction when there are more, or the sentence that says there are none yet.
         private static void History(UiScene s, UiAt at, UiEconoModel m, float x, float y, float w, float bottom)
         {
-            if (m.HistoryColumns.Length == 0 || bottom - y < UiTokens.S16)
+            if (m.HistoryColumns.Length == 0 || bottom - y < UiTokens.S16 * 2f)
             {
                 return;
             }
-            float under = UiAppWindow.Table(s, at, m.HistoryTitle, m.HistoryColumns, 2, m.History, UiAppWindow.MoreCommand, x, y, w, bottom - y);
-            if (!string.IsNullOrEmpty(m.HistoryEmpty))
+            float head = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) * 2f + UiTokens.S3 + UiTokens.S2 + UiTokens.S1;
+            int fit = Math.Max(0, (int)((bottom - y - head) / HistoryRow));
+            UiAppRow[] rows = m.History;
+            bool more = rows.Length > fit && !string.IsNullOrEmpty(m.HistoryMore);
+            if (more)
+            {
+                fit = Math.Max(0, (int)((bottom - y - head - UiTokens.Control) / HistoryRow));
+                rows = new UiAppRow[fit];
+                Array.Copy(m.History, rows, fit);
+            }
+            float under = UiAppWindow.Table(s, at, m.HistoryTitle, m.HistoryColumns, 2, rows, UiAppWindow.MoreCommand, x, y, w, bottom - y);
+            if (more)
+            {
+                UiDraw.LinkRow(s, at, x, under, w, UiTokens.Control, m.HistoryMore, LinkCommand, LinkAll);
+            }
+            else if (!string.IsNullOrEmpty(m.HistoryEmpty))
             {
                 UiDraw.Text(s, at, x, under + UiTokens.S3, w, UiStyle.Body, UiRole.Text2, m.HistoryEmpty, UiFlags.Label | UiFlags.Wrap, 2);
             }
         }
+
+        private const float HistoryRow = 40f;   // px: the app window's table row
 
         /// <summary>
         /// Rows of a thing on its band under a label in capitals: its labels in the quiet grey blue and its values in soft
@@ -414,45 +501,62 @@ namespace RealLifeOverhaul.Ui
         // ------------------------------------------------------------------------------------------------- the taxes
 
         // What is due and when at the left, a row each with its time through the period as a meter, and what this year's tax
-        // is on as a donut under it; at the right how it is worked out: the rate, the deductions and the kinds that count, the
-        // way to the IRS and the taxes paid.
+        // is on as a donut under it; at the right how it is worked out: the rate, the deductions, the kinds that count and
+        // the way to the IRS; under both, across the page, the taxes paid.
         private static void TaxesPage(UiScene s, UiAt at, UiEconoModel m, float x, float y, float w, float bottom)
         {
             float lw = UiDraw.SnapDown(w * TaxShare), rx = x + lw + UiTokens.S6, rw = x + w - rx;
-            float ly = Picks(s, at, m, x, y, lw, bottom) + UiTokens.S6;
-            if (m.Split != null && bottom - ly >= ShareHeight)
+            float ly = Picks(s, at, m, x, y, lw, bottom) + UiTokens.S5;
+            if (m.Split != null)
             {
-                Share(s, at, m.Split, x, ly, lw);
+                ly = Share(s, at, m.Split, x, ly, lw) + UiTokens.S5;
             }
             float ry = Rows(s, at, m.RowsTitle, m.RowLabels, m.RowValues, rx, y, rw, 1);
-            ry = Lines(s, at, m.NoteTitle, m.Note, rx, ry, rw);
+            ry = Lines(s, at, m.NoteTitle, m.Note, m.NoteIcons, rx, ry, rw);
             if (!string.IsNullOrEmpty(m.Link))
             {
                 UiDraw.LinkRow(s, at, rx, ry, rw, UiTokens.Control, m.Link, LinkCommand, LinkIrs);
                 ry += UiTokens.Control + UiTokens.S5;
             }
-            History(s, at, m, rx, ry, rw, bottom);
             UiDraw.JoinColumns(s, x, rx - UiTokens.S3, x + w);
+            History(s, at, m, x, Math.Max(ly, ry), w, bottom);
         }
 
-        /// <summary>A band of plain lines under a label in capitals (the kinds of costs that lower the tax). Returns the y under it.</summary>
-        public static float Lines(UiScene s, UiAt at, string title, string lines, float x, float y, float w)
+        /// <summary>
+        /// A band of kinds under a label in capitals (the costs that lower the tax), each on a row with its glyph on a small
+        /// slate tile where it has one. Returns the y under it.
+        /// </summary>
+        public static float Lines(UiScene s, UiAt at, string title, string lines, UiIcon[] icons, float x, float y, float w)
         {
             if (string.IsNullOrEmpty(lines))
             {
                 return y;
             }
+            string[] kinds = lines.Split('\n');
             float iw = w - UiTokens.S4 * 2f;
             float lh = string.IsNullOrEmpty(title) ? 0f : UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2;
-            float th = UiDraw.Snap(UiTextRules.WrappedHeight(lines, UiStyle.Body, iw, 16));
-            float h = UiTokens.S3 + lh + th + UiTokens.S3;
+            float h = UiTokens.S3 + lh + kinds.Length * LineRow + UiTokens.S3;
             int band = UiDraw.Box(s, at, x, y, w, h, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
             UiAt on = at.In(band);
+            float ix = x + UiTokens.S4;
             if (lh > 0f)
             {
-                UiDraw.Text(s, on, x + UiTokens.S4, y + UiTokens.S3, iw, UiStyle.SectionHeader, UiRole.Text, title, UiFlags.Label | UiFlags.Truncate);
+                UiDraw.Text(s, on, ix, y + UiTokens.S3, iw, UiStyle.SectionHeader, UiRole.Text, title, UiFlags.Label | UiFlags.Truncate);
             }
-            UiDraw.Text(s, on, x + UiTokens.S4, y + UiTokens.S3 + lh, iw, UiStyle.Body, UiRole.Text2, lines, UiFlags.Label | UiFlags.Wrap, 16);
+            float ty = y + UiTokens.S3 + lh, tile = UiTokens.MinTarget;
+            for (int i = 0; i < kinds.Length; i++)
+            {
+                UiIcon icon = icons != null && i < icons.Length ? icons[i] : UiIcon.None;
+                float tx = ix;
+                if (icon != UiIcon.None)
+                {
+                    int t = UiDraw.Tile(s, on, ix, ty + (LineRow - tile) / 2f, tile, UiRole.None, false);
+                    UiDraw.Icon(s, on.In(t), ix + UiTokens.S1, ty + (LineRow - tile) / 2f + UiTokens.S1, tile - UiTokens.S2, icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
+                    tx = ix + tile + UiTokens.S3;
+                }
+                UiDraw.TextMiddle(s, on, tx, ty, LineRow, ix + iw - tx, UiStyle.Body, UiRole.Text2, kinds[i], UiFlags.Label | UiFlags.Truncate);
+                ty += LineRow;
+            }
             return y + h + UiTokens.S5;
         }
 
@@ -483,19 +587,20 @@ namespace RealLifeOverhaul.Ui
             float ty = y + h + UiTokens.S4;
             bool side = m.Chart != null || m.Out != null || m.Cash.Length > 0;
             float lw = side ? UiDraw.SnapDown(w * StatementShare) : w, rx = x + lw + UiTokens.S6, rw = x + w - rx;
-            m.StatementList = UiStatement.Lay(s, at, m.Statement, x, ty, lw, bottom - ty, keys, StatementFirst);
+            m.StatementList = UiStatement.Lay(s, at, m.Statement, x, ty, lw, StatementHeight(m.Statement, bottom - ty), keys, StatementFirst);
             Field(s, m, ListPeriod, StatementFirst + UiStatement.Period);
             if (!side)
             {
                 return;
             }
             float ry = UiAppWindow.Figures(s, at, m.Cash, rx, ty, rw);
+            ry = Share(s, at, m.In, rx, ry, rw) + UiTokens.S4;
             ry = Share(s, at, m.Out, rx, ry, rw) + UiTokens.S5;
             if (m.Chart != null && bottom - ry >= UiTokens.S16 * 2f)
             {
-                UiChart.Lay(s, at, m.Chart, rx, ry, rw, bottom - ry);
+                UiChart.Lay(s, at, m.Chart, rx, ry, rw, Math.Min(bottom - ry, BarsMost));
             }
-            UiDraw.JoinColumns(s, x, rx - UiTokens.S3, x + w);
+            UiDraw.JoinColumns(s, x, rx - UiTokens.S3, x + w, UiChart.First + UiChart.Point);   // across from the statement to the chart's days, never up to the head's link
         }
 
         // ------------------------------------------------------------------------------------------------- the parts

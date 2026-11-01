@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UI;
 using UI.Smartphone.Apps.EconoView;
 using UnityEngine;
 using GameEcono = UI.Smartphone.Apps.EconoView.EconoView;
@@ -130,6 +131,9 @@ namespace RealLifeOverhaul.Ui
                     return Button(page, arg);
                 case UiEcono.LinkCommand:
                     return Link(arg);
+                case UiEcono.EmptyCommand:
+                    InstanceBehavior<UIs>.Instance.fullMenu.ShowApp(AppName.Contacts);   // the game's own Contacts, where its banks are
+                    return Done(true, "Contacts opened to find a bank");
                 case UiChart.First + UiChart.Point:
                     _chartFocus = _chartFocus == arg ? -1 : arg;
                     return true;

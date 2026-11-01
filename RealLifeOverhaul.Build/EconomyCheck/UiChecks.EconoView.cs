@@ -33,7 +33,8 @@ internal static partial class Program
     {
         UiAppWindow.NavCommand, UiAppWindow.ActionCommand, UiAppWindow.RowCommand, UiAppWindow.MoreCommand, UiEcono.StatementFirst + UiStatement.Period, UiEcono.StatementFirst + UiStatement.Group,
         UiEcono.StatementFirst + UiStatement.Line, UiChart.First + UiChart.Point, UiEcono.PickCommand, UiEcono.FilterCommand, UiEcono.OptionCommand, UiEcono.LessCommand,
-        UiEcono.AmountCommand, UiEcono.MoreCommand, UiEcono.SwitchCommand, UiEcono.ButtonCommand, UiEcono.LinkCommand, UiEcono.ChoiceCommand
+        UiEcono.AmountCommand, UiEcono.MoreCommand, UiEcono.SwitchCommand, UiEcono.ButtonCommand, UiEcono.LinkCommand, UiEcono.ChoiceCommand,
+        UiEcono.EmptyCommand
     };
 
     // What the money page promises beyond the layout: each line and transaction wears the glyph of its kind; where the
@@ -87,9 +88,9 @@ internal static partial class Program
         };
         var statement = new UiStatementModel();
         EconoViews.Statement(statement, en, state, empty, state.DayNames, 0, UiIcon.Chart, null, true, out int[] heads, out int[][] under);
-        Check(statement.Groups.Length == 1 && statement.Groups[0].Lines.Length == 1 && statement.Groups[0].Lines[0].In == "80" && statement.Groups[0].Lines[0].Balance == "+60"
-              && statement.Balance == "+80" && statement.Columns[4] == "Day 8" && statement.Totals.Length == 2,
-            "econoview: a heading with nothing is left out, a line's money stands in or out with the day before beside it, the day's profit is the large figure");
+        Check(statement.Groups.Length == 1 && statement.Groups[0].Lines.Length == 1 && statement.Groups[0].Lines[0].In == "80" && statement.Groups[0].Lines[0].Balance == null
+              && statement.Balance == null && statement.Columns[4] == string.Empty && statement.Totals.Length == 3 && statement.Totals[2] == "+80" && statement.ChangeGood,
+            "econoview: a heading with nothing is left out, a line's money stands in or out, the day's profit stands at the foot and the head holds no large figure");
         var scene = new UiScene();
         UiFrame frame = UiFrame.FullMenu(16f / 9f, "EconoView");
         foreach (string st in new[] { "overview_period_open", "transactions_type_open", "business_choice_open" })

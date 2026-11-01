@@ -51,7 +51,7 @@ namespace RealLifeOverhaul.Ui
         public string Name;
         public float Value, Invested, Interest;
         public int Risk = -1;        // 0 low, 1 medium, 2 high, as the game reckons it; -1 unknown
-        public string Initial, Added, Withdrawn, Earned;   // the game's money words
+        public string Initial, Added, Withdrawn;   // the game's money words
         public bool AutoOn;
         public string Auto;          // the daily auto-invest in its field
         public long AutoValue;
@@ -111,6 +111,8 @@ namespace RealLifeOverhaul.Ui
         public EconoIncomeRow[] BusinessRows = new EconoIncomeRow[0];
         public float[] BusinessSales = new float[0], BusinessProfit = new float[0];   // its four days' sales and profit, yesterday first
         public float[][] BusinessCosts = new float[0][];   // its four days' costs by kind (EconoViews.CostKeys), yesterday first
+        public string[][] BusinessItems = new string[0][];  // its four days' goods sold, as its statement lists them, yesterday first
+        public float[][] BusinessItemSales = new float[0][];
         public bool CanDestination, CanBizMan;
         public int OpenList = -1;
     }
@@ -126,6 +128,7 @@ namespace RealLifeOverhaul.Ui
     {
         public const int MostSlices = 5;          // a donut's slices: the four largest and the rest
         public const int MostLatest = 8;          // the last transactions beside the statement
+        private const int ShortStatement = 8;     // rows: a statement this short says what will join it
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
@@ -139,6 +142,7 @@ namespace RealLifeOverhaul.Ui
             Tabs(m, t, v);
             m.EmptyTitle = null;
             m.EmptyBody = null;
+            m.EmptyAction = null;
             UiPickListModel held = m.NewPage ? null : m.Picks;   // a list's scroll stays while its page does
             m.Picks = null;
             m.Hero = null;
@@ -151,6 +155,9 @@ namespace RealLifeOverhaul.Ui
             m.Controls = new UiEconoControl[0];
             m.Note = null;
             m.NoteTitle = null;
+            m.NoteIcons = new UiIcon[0];
+            m.HistoryMore = null;
+            m.StatementNote = null;
             m.Link = null;
             m.Totals = new UiFigureModel[0];
             m.Split = null;
@@ -184,7 +191,12 @@ namespace RealLifeOverhaul.Ui
                 default: Overview(m, t, v); break;
             }
             Options(m, v);
-            m.Prompts = new[]
+            m.Prompts = m.OpenList >= 0 ? new[]
+            {
+                new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
+                new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_choose", "Choose") },
+                new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
+            } : new[]
             {
                 new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
                 new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_select", "Select") },
@@ -223,6 +235,8 @@ namespace RealLifeOverhaul.Ui
         private static void Overview(UiEconoModel m, UiWords t, EconoState v)
         {
             Statement(m.Statement, t, v, v.Income, v.DayNames, v.Period, UiIcon.Chart, null, true, out m.GroupRows, out m.GroupLines);
+            m.StatementNote = UiStatement.RowCount(m.Statement) > 0 && UiStatement.RowCount(m.Statement) < ShortStatement
+                ? t("reallife_ui_econo_statement_note", "Each business, property and loan you take on joins this statement the night after.") : null;
             int day = v.DayNumbers.Length > v.Period ? v.DayNumbers[v.Period] : 0;
             string dayWords = Fill(t("common_day_number", "Day {number}"), "number", Whole(day));
             m.Cash = new[] { new UiFigureModel { Label = t("persona_cash", "Cash"), Value = v.Money(v.Cash), Trend = v.CashTrend } };
@@ -253,9 +267,9 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>
-        /// The income statement as the kit's statement: each heading a band that folds with its day's sum, each line under it
-        /// with its glyph, its money in or out, and the day before's beside it; the day's profit as the one large figure; the
-        /// money in and out at the foot. A heading with no lines and nothing on it is left out.
+        /// The income statement as the kit's statement: each heading a band that folds with the day's sum at its right, each
+        /// line under it with its glyph and its money in or out; the money in, the money out and the profit at the foot. Its
+        /// head holds no large figure: the cash leads the page. A heading with no lines and nothing on it is left out.
         /// </summary>
         public static void Statement(UiStatementModel s, UiWords t, EconoState v, EconoIncomeRow[] rows, string[] days, int period, UiIcon icon, string number, bool foot,
             out int[] groupRows, out int[][] groupLines)
@@ -264,10 +278,9 @@ namespace RealLifeOverhaul.Ui
             s.Account = t("econoview_income_statement", "Income Statement");
             s.AccountIcon = icon;
             s.Number = number;
-            s.BalanceLabel = t("econoview_row_profit", "Profit");
+            s.BalanceLabel = null;
             s.PeriodLabel = days.Length > 0 ? days[p] : null;
-            string before = p + 1 < days.Length ? Short(days[p + 1]) : string.Empty;   // the day before's figures stand in the last column
-            s.Columns = new[] { string.Empty, string.Empty, t("reallife_ui_econo_money_in", "Money in"), t("reallife_ui_econo_money_out", "Money out"), before };
+            s.Columns = new[] { string.Empty, string.Empty, t("reallife_ui_econo_money_in", "Money in"), t("reallife_ui_econo_money_out", "Money out"), string.Empty };
             s.EmptyTitle = t("reallife_ui_econo_empty_title", "No day counted yet");
             s.EmptyBody = t("reallife_ui_econo_empty_body", "The first income statement comes in at midnight, when the day's books close.");
             var groups = new List<UiStatementGroup>(8);
@@ -307,8 +320,7 @@ namespace RealLifeOverhaul.Ui
                     lines.Add(new UiStatementLine
                     {
                         Icon = RowIcon(rows[c].Key, rows[r].Key, rows[c].Kind), What = rows[c].Name,
-                        In = inward ? words : null, Out = inward ? null : Unsigned(words),
-                        Balance = p + 1 < days.Length ? Figure(rows[c], p + 1, v.Money, true) : null
+                        In = inward ? words : null, Out = inward ? null : Unsigned(words)
                     });
                 }
                 string sum = Figure(rows[r], p, v.Money, true);
@@ -324,17 +336,24 @@ namespace RealLifeOverhaul.Ui
             s.Groups = groups.ToArray();
             groupRows = heads.ToArray();
             groupLines = under.ToArray();
-            s.Balance = total ?? v.Money(0f);
+            s.Balance = null;
             if (foot && groups.Count > 0)
             {
-                s.TotalLabels = new[] { t("reallife_ui_econo_money_in", "Money in"), t("reallife_ui_econo_money_out", "Money out") };
-                s.Totals = new[] { v.Money(moneyIn), v.Money(moneyOut) };
+                Foot(s, t, v.Money, moneyIn, moneyOut, total);
             }
             else
             {
                 s.TotalLabels = new string[0];
                 s.Totals = new string[0];
             }
+        }
+
+        // The statement's foot: the day's money in, its money out, and its profit with its sign, good or bad by it.
+        private static void Foot(UiStatementModel s, UiWords t, Func<float, string> money, float moneyIn, float moneyOut, string profit)
+        {
+            s.TotalLabels = new[] { t("reallife_ui_econo_money_in", "Money in"), t("reallife_ui_econo_money_out", "Money out"), t("econoview_row_profit", "Profit") };
+            s.Totals = new[] { money(moneyIn), money(moneyOut), profit ?? money(0f) };
+            s.ChangeGood = UiModels.Sign(profit) >= 0;
         }
 
         /// <summary>
@@ -402,14 +421,14 @@ namespace RealLifeOverhaul.Ui
             m.Filters = new[] { Pick(v.TypeOptions, v.TypeChosen), Pick(v.AmountOptions, v.AmountChosen) };
             m.ToolActions = new[]
             {
-                new UiActionModel { Label = t("econoview_full_transactions_export_to_csv", "Export to CSV"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Receipt,
+                new UiActionModel { Label = t("econoview_full_transactions_export_to_csv", "Export to CSV"), Kind = UiButtonKind.Secondary, Icon = UiIcon.None,
                     Key = UiAction.Option, Command = UiAppWindow.ActionCommand, Arg = 0 },
-                new UiActionModel { Label = t("common_close", "Close"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Close, Key = UiAction.Count, Command = UiAppWindow.ActionCommand, Arg = 1 },
+                new UiActionModel { Label = t("common_back", "Back"), Kind = UiButtonKind.Secondary, Icon = UiIcon.None, Key = UiAction.Count, Command = UiAppWindow.ActionCommand, Arg = 1 },
             };
             UiStatementModel s = m.Statement;
-            s.Account = t("econoview_full_transactions_title", "Transactions");
+            s.Account = Fill(t("reallife_ui_econo_count", "{count} transactions"), "count", Whole(v.All.Length));
             s.AccountIcon = UiIcon.Wallet;
-            s.Number = Fill(t("reallife_ui_econo_count", "{count} transactions"), "count", Whole(v.All.Length));
+            s.Number = null;
             s.BalanceLabel = t("common_balance", "Balance");
             s.Balance = v.Money(v.Cash);
             s.PeriodLabel = Pick(v.DayOptions, v.DayChosen);
@@ -473,29 +492,23 @@ namespace RealLifeOverhaul.Ui
                 m.EmptyIcon = UiIcon.Bank;
                 m.EmptyTitle = t("reallife_ui_econo_no_loans", "No loans");
                 m.EmptyBody = t("econoview_loans_noloans", "You don't have any loans. Contact your bank for more information.");
+                m.EmptyAction = t("reallife_ui_econo_find_bank", "Find a bank in Contacts");
                 return;
             }
             int chosen = Math.Max(0, Math.Min(v.Loan, v.Loans.Length - 1));
-            string perDay = t("reallife_ui_econo_per_day", "{amount} a day");
             var rows = new UiPickRow[v.Loans.Length];
             for (int i = 0; i < rows.Length; i++)
             {
                 EconoLoanView l = v.Loans[i];
-                rows[i] = new UiPickRow
-                {
-                    Icon = UiIcon.Bank, Tint = UiRole.None, Title = Lender(t, l), Sub = l.TimeLeft, Figure = v.Money(l.Left), Note = Fill(perDay, "amount", l.Daily),
-                    Meter = Paid(l), MeterTone = UiRole.Accent
-                };
+                rows[i] = new UiPickRow { Icon = UiIcon.Bank, Tint = UiRole.None, Title = Lender(t, l), Figure = v.Money(l.Left), Meter = Paid(l), MeterTone = UiRole.Accent };
             }
             m.Picks = Keep(held, rows, chosen);
             EconoLoanView c = v.Loans[chosen];
             m.Hero = new UiHeroModel
             {
                 Icon = UiIcon.Bank, Tint = UiRole.None, Kicker = t("reallife_ui_econo_loan", "Loan"), Title = Lender(t, c),
-                Line = Fill(t("reallife_ui_econo_paid_of", "Paid {paid} of {total}"), "paid", v.Money(c.Total - c.Left), "total", v.Money(c.Total)), Progress = Paid(c),
-                Note = c.TimeLeft, NoteIcon = UiIcon.Calendar
+                Line = c.TimeLeft, Progress = Paid(c)
             };
-            m.Figures = new[] { new UiFigureModel { Label = t("reallife_ui_econo_left", "Left to pay"), Value = v.Money(c.Left) } };
             float owed = 0f, daily = 0f;
             for (int i = 0; i < v.Loans.Length; i++)
             {
@@ -508,8 +521,8 @@ namespace RealLifeOverhaul.Ui
                 new UiFigureModel { Label = t("reallife_ui_econo_paid_day", "Paid a day"), Value = v.Money(daily) },
             };
             m.RowLabels = new[] { t("reallife_ui_econo_borrowed", "Borrowed"), t("reallife_ui_econo_paid_so_far", "Paid so far"),
-                t("econoview_loans_daily_interest_rate", "Daily interest rate"), t("econoview_loans_daily_payment", "Daily payment") };
-            m.RowValues = new[] { v.Money(c.Total), v.Money(c.Total - c.Left), c.Interest, c.Daily };
+                t("econoview_loans_daily_interest_rate", "Daily interest rate") };
+            m.RowValues = new[] { v.Money(c.Total), v.Money(c.Total - c.Left), c.Interest };
             m.Split = Split(t("reallife_ui_econo_owed_by", "Owed to each bank"), v.Loans.Length, i => Lender(t, v.Loans[i]), i => v.Loans[i].Left, v.Money, t);
             History(m, t, v, c.Payments, t("reallife_ui_econo_payments", "Payments"), t("reallife_ui_econo_no_payments", "No payment has been made on this loan yet."));
             m.Controls = new[]
@@ -518,7 +531,7 @@ namespace RealLifeOverhaul.Ui
                 new UiEconoControl
                 {
                     Label = t("econoview_loan_additional_payment", "Additional payment"), Figure = c.PayOff, CanLess = c.PayOffValue > 1, CanMore = c.PayOffValue < c.PayOffMost,
-                    Action = t("econoview_loan_make_payment_button", "Make payment"), ActionKind = UiButtonKind.Primary, ActionIcon = UiIcon.Coin, ActionKey = UiAction.Alt,
+                    Action = t("econoview_loan_make_payment_button", "Make payment"), ActionKind = UiButtonKind.Primary, ActionIcon = UiIcon.None, ActionKey = UiAction.Alt,
                     ActionDisabled = !c.CanPay
                 },
             };
@@ -538,6 +551,7 @@ namespace RealLifeOverhaul.Ui
                 m.EmptyIcon = UiIcon.ChartLineUp;
                 m.EmptyTitle = t("reallife_ui_econo_no_funds", "No investments");
                 m.EmptyBody = t("econoview_investments_noinvestments", "You don't have any investments. Contact your bank for more information.");
+                m.EmptyAction = t("reallife_ui_econo_find_bank", "Find a bank in Contacts");
                 return;
             }
             int chosen = Math.Max(0, Math.Min(v.Fund, v.Funds.Length - 1));
@@ -558,7 +572,8 @@ namespace RealLifeOverhaul.Ui
             string dayKey = t("common_day_number", "Day {number}");
             var chart = new UiChartModel
             {
-                Kind = UiChartKind.Line, Title = c.Name, Format = v.Money, Points = new string[c.History.Length], Reads = new string[c.History.Length],
+                Kind = UiChartKind.Line, Title = Fill(t("reallife_ui_econo_fund_year", "{fund}, the last year"), "fund", c.Name), Format = v.Money,
+                Points = new string[c.History.Length], Reads = new string[c.History.Length],
                 Series = new[] { new UiSeries { Label = t("econoview_investments_current_value", "Current value"), Values = c.History, Tint = UiRole.None } },
                 EmptyTitle = t("econoview_investments_notenoughdata", "Not enough data to show graph"),
                 EmptyBody = t("reallife_ui_econo_chart_wait", "The line starts once the fund has seen a second day.")
@@ -566,8 +581,8 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < c.History.Length; i++)
             {
                 int day = i < c.HistoryDays.Length ? c.HistoryDays[i] : i;
-                chart.Points[i] = Whole(day);
                 chart.Reads[i] = Fill(dayKey, "number", Whole(day));
+                chart.Points[i] = i == 0 && c.History.Length > 6 ? string.Empty : Whole(day);   // the first name would crowd the second at the axis's end
             }
             if (c.History.Length <= 1)
             {
@@ -587,16 +602,16 @@ namespace RealLifeOverhaul.Ui
                 new UiFigureModel { Label = t("reallife_ui_econo_earned", "Earned in all"), Value = Signed(earned, v.Money) },
             };
             m.Split = Split(t("reallife_ui_econo_worth_by", "Worth in each fund"), v.Funds.Length, i => v.Funds[i].Name, i => v.Funds[i].Value, v.Money, t);
-            m.RowLabels = new[] { t("econoview_investments_initial_investment", "Initial investment"), t("reallife_ui_econo_added", "Added since"),
-                t("reallife_ui_econo_withdrawn", "Withdrawn"), t("econoview_investments_changetotal", "Total change"), t("econoview_investments_current_value", "Current value") };
-            m.RowValues = new[] { c.Initial, c.Added, c.Withdrawn, c.Earned, v.Money(c.Value) };
+            m.RowLabels = new[] { t("econoview_investments_initial_investment", "Initial investment"), t("reallife_ui_econo_added", "Added later"),
+                t("reallife_ui_econo_withdrawn", "Withdrawn"), t("econoview_investments_changetotal", "Total change") };
+            m.RowValues = new[] { c.Initial, c.Added, c.Withdrawn, Signed(c.Interest, v.Money) };
             History(m, t, v, c.Moves, t("reallife_ui_econo_moves", "Put in and taken out"), t("reallife_ui_econo_no_moves", "Nothing has been put in or taken out in the last days."));
             m.Controls = new[]
             {
                 new UiEconoControl
                 {
                     Label = t("econoview_investments_withdraw_money", "Withdraw money"), Figure = c.Withdraw, CanLess = c.WithdrawValue > 0, CanMore = c.WithdrawValue < c.WithdrawMost,
-                    Action = t("econoview_investments_withdraw", "Withdraw"), ActionKind = UiButtonKind.Primary, ActionIcon = UiIcon.Coin, ActionKey = UiAction.Alt,
+                    Action = t("econoview_investments_withdraw", "Withdraw"), ActionKind = UiButtonKind.Primary, ActionIcon = UiIcon.None, ActionKey = UiAction.Alt,
                     ActionDisabled = c.WithdrawValue <= 0
                 },
                 new UiEconoControl { Label = t("econoview_investments_autoinvest", "Daily auto-invest"), Switch = true, On = c.AutoOn,
@@ -640,15 +655,13 @@ namespace RealLifeOverhaul.Ui
             if (!string.IsNullOrEmpty(x.Back))
             {
                 rows.Add(new UiPickRow { Icon = UiIcon.Warning, Tint = UiRole.None, Title = t("econoview_back_taxes_due", "Back taxes due"),
-                    Sub = t("econoview_taxes_due_immediately", "Due Immediately"),
-                    Figure = x.Back, FigureInk = UiRole.DangerText, Meter = -1 });
+                    Chip = t("econoview_taxes_due_immediately", "Due Immediately"), ChipTone = UiRole.Danger, Figure = x.Back, Meter = -1 });
             }
-            rows.Add(new UiPickRow { Icon = UiIcon.Receipt, Tint = UiRole.None, Title = t("econoview_taxes_owed", "Taxes owed"), Sub = x.OwedWhen, Figure = x.Owed, FigureInk = Tone(x.OwedTone),
+            rows.Add(new UiPickRow { Icon = UiIcon.Receipt, Tint = UiRole.None, Title = t("econoview_taxes_owed", "Taxes owed"), Sub = x.OwedWhen, Figure = x.Owed,
                 Meter = x.OwedProgress, MeterTone = UiRole.Accent });
             rows.Add(new UiPickRow { Icon = UiIcon.Calendar, Tint = UiRole.None, Title = t("econoview_taxes_projection", "Upcoming tax projection"), Sub = x.ProjectionWhen,
-                Figure = x.Projection, FigureInk = Tone(x.ProjectionTone), Meter = x.ProjectionProgress, MeterTone = UiRole.Accent });
+                Figure = x.Projection, Meter = x.ProjectionProgress, MeterTone = UiRole.Accent });
             m.Picks = Keep(held, rows.ToArray(), -1);
-            m.Picks.Title = t("reallife_ui_econo_due", "What is due");
             m.RowsTitle = t("reallife_ui_econo_basis", "How it is worked out");
             m.RowLabels = new[] { t("contacts_taxes_tax_rate", "Tax rate"), t("econoview_total_tax_deductions", "Total tax deductions") };
             m.RowValues = new[] { x.Rate, x.Deductions };
@@ -656,6 +669,11 @@ namespace RealLifeOverhaul.Ui
             {
                 m.NoteTitle = t("reallife_ui_econo_deductible", "Costs that lower the tax");
                 m.Note = string.Join("\n", x.DeductibleKinds);
+                m.NoteIcons = new UiIcon[x.DeductibleKinds.Length];
+                for (int i = 0; i < m.NoteIcons.Length; i++)
+                {
+                    m.NoteIcons[i] = x.DeductibleKinds.Length == DeductibleIcons.Length ? DeductibleIcons[i] : UiIcon.Receipt;
+                }
             }
             m.Link = x.Irs ? t("econoview_taxes_irs_contact", "IRS Contact") : null;
             var basis = new EconoIncomeRow[Math.Min(x.BasisNames.Length, x.BasisAmounts.Length)];
@@ -669,7 +687,15 @@ namespace RealLifeOverhaul.Ui
             History(m, t, v, x.Paid, t("econoview_taxes_paid", "Taxes paid"), t("reallife_ui_econo_no_tax_paid", "No tax has been paid in the last days."));
         }
 
-        private static UiRole Tone(int tone) => tone < 0 ? UiRole.DangerText : tone > 0 ? UiRole.OkText : UiRole.None;
+        /// <summary>
+        /// The glyphs of the game's deductible kinds, in the order its tax page lists them: appliance and office stores, interior
+        /// installers and movers, wages and the rest of running a business, stock, business classes, delivery and transport, the
+        /// factory supply depot. A list of another length takes the receipt for each.
+        /// </summary>
+        public static readonly UiIcon[] DeductibleIcons =
+        {
+            UiIcon.ShoppingCart, UiIcon.Sofa, UiIcon.People, UiIcon.Package, UiIcon.Cap, UiIcon.Truck, UiIcon.Factory
+        };
 
         // ------------------------------------------------------------------------------------------------- one business
 
@@ -686,7 +712,7 @@ namespace RealLifeOverhaul.Ui
             m.ChoiceLine = v.BusinessKind;
             m.Link = v.CanBizMan ? t("open_in_bizman", "Open in BizMan") : null;
             m.HeadActions = v.CanDestination
-                ? new[] { new UiActionModel { Label = t("common_setdestination", "Set destination"), Kind = UiButtonKind.Secondary, Icon = UiIcon.MapPin, Key = UiAction.Option,
+                ? new[] { new UiActionModel { Label = t("common_setdestination", "Set destination"), Kind = UiButtonKind.Secondary, Icon = UiIcon.None, Key = UiAction.Option,
                     Command = UiAppWindow.ActionCommand, Arg = 0 } }
                 : new UiActionModel[0];
             Statement(m.Statement, t, v, v.BusinessRows, v.BusinessDays, v.BusinessPeriod, UiIcon.Store, null, false, out m.GroupRows, out m.GroupLines);
@@ -710,8 +736,25 @@ namespace RealLifeOverhaul.Ui
                 points[i] = Fill(dayKey, "number", Whole(number));
                 reads[i] = v.BusinessDays[back];
             }
-            m.Cash = new[] { new UiFigureModel { Label = t("econoview_row_sales", "Sales"), Value = v.Money(v.BusinessSales[p]), Trend = days > 1 ? sales : null } };
+            m.Cash = new[]
+            {
+                new UiFigureModel { Label = t("econoview_row_sales", "Sales"), Value = v.Money(v.BusinessSales[p]), Trend = days > 1 ? sales : null },
+                new UiFigureModel { Label = t("econoview_row_profit", "Profit"), Value = Signed(v.BusinessProfit[p], v.Money), Trend = days > 1 ? profit : null },
+            };
+            float costs = 0f;
+            for (int k = 0; p < v.BusinessCosts.Length && v.BusinessCosts[p] != null && k < v.BusinessCosts[p].Length; k++)
+            {
+                costs += v.BusinessCosts[p][k];
+            }
+            Foot(m.Statement, t, v.Money, v.BusinessSales[p], costs, Signed(v.BusinessProfit[p], v.Money));
             string dayWords = Fill(dayKey, "number", Whole(p < v.DayNumbers.Length ? v.DayNumbers[p] : 0));
+            m.In = new UiEconoShare { Title = Fill(t("reallife_ui_econo_in", "Money in, {day}"), "day", dayWords), Empty = t("reallife_ui_econo_in_none", "Nothing came in that day.") };
+            var sold = new EconoIncomeRow[p < v.BusinessItems.Length && v.BusinessItems[p] != null ? v.BusinessItems[p].Length : 0];
+            for (int k = 0; k < sold.Length; k++)
+            {
+                sold[k] = new EconoIncomeRow { Name = v.BusinessItems[p][k], Parent = -1, Values = new[] { v.BusinessItemSales[p][k] } };
+            }
+            Shares(sold, 0, 1, m.In, v.Money, t("reallife_ui_econo_rest", "Everything else"));
             m.Out = new UiEconoShare { Title = Fill(t("reallife_ui_econo_out", "Money out, {day}"), "day", dayWords), Empty = t("reallife_ui_econo_out_none", "Nothing went out that day.") };
             Costs(m.Out, p < v.BusinessCosts.Length ? v.BusinessCosts[p] : null, t, v.Money);
             m.Chart = new UiChartModel
@@ -777,6 +820,7 @@ namespace RealLifeOverhaul.Ui
         {
             m.HistoryTitle = title;
             m.HistoryEmpty = moves.Length == 0 ? empty : null;
+            m.HistoryMore = t("econoview_last_transactions_full_view_button", "Full transactions view");
             m.HistoryColumns = new[]
             {
                 new UiColumn { Title = string.Empty },   // the table's title names its lines: a head over them would say it twice
