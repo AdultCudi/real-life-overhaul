@@ -78,7 +78,7 @@ internal static partial class Program
             }
         }
         Check(keys == 0, "ui pages: no population page shows a record's key, each place by its name or its address (" + said + ")");
-        Check(repeats == 0, "ui pages: no population page repeats the masthead under it (" + said + ")");
+        Check(repeats == 0, "ui pages: no population page repeats its window's title under it (" + said + ")");
         Check(unknown == 0 && dead == 0, "ui pages: every target of a population page opens something, a row its record and the action its page (" + dead + " that do nothing)");
         Check(layout == 0, "ui pages: every population page from the offline city keeps the layout rules (" + layoutSaid + ")");
         UiDashboardModel wm = PopulationPages.Model(who, en, money, nameOf, null);

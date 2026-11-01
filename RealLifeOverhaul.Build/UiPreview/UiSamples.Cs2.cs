@@ -14,18 +14,14 @@ internal static partial class UiSamples
         UiIcon.Calendar, UiIcon.ShoppingCart, UiIcon.Gear
     };
 
-    public static readonly UiRole[] AppTints =
-    {
-        UiRole.Chart1, UiRole.CatServices, UiRole.CatOffice, UiRole.Chart3, UiRole.Chart4, UiRole.Chart2, UiRole.CatTech, UiRole.Chart6, UiRole.Chart5,
-        UiRole.Chart7, UiRole.CatRetail, UiRole.Text2
-    };
+    public static readonly UiRole[] AppTints = System.Array.ConvertAll(Apps, UiIconTints.Of);   // each app in its icon's own colour, as the style sheet shows it
 
-    public const int AppContacts = 0, AppTech = 6;
+    public const int AppContacts = 0, AppBusiness = 2, AppTech = 6;
 
     /// <summary>The status bar on a Tuesday afternoon: the time and speed, the season, the place, the money and the player's needs.</summary>
     public static UiStatusModel Bar(int app) => new UiStatusModel
     {
-        Time = "14:32", Day = "Tue, Day 12", Speed = 2, Season = "Autumn", Weather = UiIcon.CloudSun, Place = "Midtown", Money = "$48,210", MoneyTrend = 1, Energy = 72,
+        Time = "14:32", Day = "Tue, Day 12", Speed = 2, Season = "Autumn", Weather = UiIcon.CloudSun, Temperature = "14\u00b0C", Place = "Midtown", Money = "$48,210", MoneyTrend = 1, Energy = 72,
         Hunger = 48, Happiness = 64, Alerts = 3, Apps = Apps, AppTints = AppTints, App = app
     };
 
@@ -35,7 +31,7 @@ internal static partial class UiSamples
         var m = new UiInfoModel
         {
             Title = "Rosa Stanley", Icon = UiIcon.Person, Tabs = new[] { UiIcon.People, UiIcon.Person, UiIcon.Home, UiIcon.Briefcase },
-            TabTints = new[] { UiRole.Chart1, UiRole.Accent, UiRole.Chart3, UiRole.CatOffice }, Tab = 1, Name = "Rosa Stanley",
+            Tab = 1, Name = "Rosa Stanley",
             Hue = 160f, Ring = UiRole.Ok, Status = "Content", StatusIcon = UiIcon.SmileyHappy, StatusTone = UiRole.Ok, Facts = "Age 39, shift manager at Bloom Café",
             Sections = new[]
             {
@@ -64,7 +60,7 @@ internal static partial class UiSamples
                 },
                 new UiInfoSection { Label = "Destination", Value = "Bloom Café", Link = true },
             },
-            Footer = new[] { UiIcon.Locate, UiIcon.Eye, UiIcon.Phone }, FooterTints = new[] { UiRole.Accent, UiRole.Chart7, UiRole.Ok },
+            Footer = new[] { UiIcon.Locate, UiIcon.Eye, UiIcon.Phone },
         };
         m.Prompts = new[]
         {
@@ -82,17 +78,17 @@ internal static partial class UiSamples
         {
             Title = "The city's people", Icon = UiIcon.People,
             Views = new[] { UiIcon.People, UiIcon.ChartLineUp, UiIcon.Briefcase, UiIcon.Key, UiIcon.MapTrifold, UiIcon.Store, UiIcon.Car, UiIcon.ShieldCheck },
-            ViewTints = new[] { UiRole.Chart1, UiRole.Chart3, UiRole.CatOffice, UiRole.Chart2, UiRole.Chart5, UiRole.CatRetail, UiRole.CatServices, UiRole.Chart6 },
             View = 0, HeadLabel = "Population", HeadValue = "56,700",
             Rows = new[]
             {
-                new UiInfoRow { Label = "Households", Value = "19,800" }, new UiInfoRow { Label = "People a home", Value = "2.86" },
-                new UiInfoRow { Label = "Jobs in the city", Value = "110,800" }, new UiInfoRow { Label = "Out of work", Value = "6.4%", Ink = UiRole.WarnText },
+                new UiInfoRow { Label = "Households", Value = "19,800" }, new UiInfoRow { Label = "Household size", Value = "2.86" },
+                new UiInfoRow { Label = "Jobs in the city", Value = "110,800" }, new UiInfoRow { Label = "Filled from outside the city", Value = "73%" },
+                new UiInfoRow { Label = "Out of work", Value = "6.4%", Ink = UiRole.WarnText },
                 new UiInfoRow { Label = "Mean rent", Value = "$1,140" }, new UiInfoRow { Label = "Moved in this month", Value = "312" },
                 new UiInfoRow { Label = "Moved away this month", Value = "278" },
             },
             ChartTitle = "Age groups", ChartLabels = new[] { "Children", "Young adults", "Adults", "Seniors" }, ChartValues = new[] { "18.4%", "21.9%", "41.2%", "18.5%" },
-            ChartShares = new[] { 18.4f, 21.9f, 41.2f, 18.5f }, LegendTitle = "Map legend", ScaleLabel = "Rent by building", ScaleLow = "Low", ScaleHigh = "High",
+            ChartShares = new[] { 18.4f, 21.9f, 41.2f, 18.5f }, LegendTitle = "Map legend", ScaleLabel = "Rent by block", ScaleLow = "Low", ScaleHigh = "High",
         };
         m.Prompts = new[]
         {
@@ -111,41 +107,40 @@ internal static partial class UiSamples
             Title = "Lantern Bay Games", Icon = UiIcon.GameController,
             Nav = new[]
             {
-                new UiNavEntry { Icon = UiIcon.Grid, Tint = UiRole.Chart1, Label = "Overview" },
-                new UiNavEntry { Icon = UiIcon.GameController, Tint = UiRole.CatTech, Label = "Games", Count = "5" },
-                new UiNavEntry { Icon = UiIcon.People, Tint = UiRole.Chart3, Label = "Team", Count = "12" },
-                new UiNavEntry { Icon = UiIcon.ChartLineUp, Tint = UiRole.Chart2, Label = "Market" },
-                new UiNavEntry { Icon = UiIcon.Flag, Tint = UiRole.Chart6, Label = "Rivals", Count = "7" },
-                new UiNavEntry { Icon = UiIcon.Coin, Tint = UiRole.Chart4, Label = "Money" },
-                new UiNavEntry { Icon = UiIcon.Trophy, Tint = UiRole.Gold, Label = "Awards", Count = "2" },
+                new UiNavEntry { Icon = UiIcon.Grid, Label = "Overview" }, new UiNavEntry { Icon = UiIcon.GameController, Label = "Games", Count = "5" },
+                new UiNavEntry { Icon = UiIcon.People, Label = "Team", Count = "12" }, new UiNavEntry { Icon = UiIcon.ChartLineUp, Label = "Market" },
+                new UiNavEntry { Icon = UiIcon.Flag, Label = "Rivals", Count = "8" }, new UiNavEntry { Icon = UiIcon.Coin, Label = "Money" },
+                new UiNavEntry { Icon = UiIcon.Trophy, Label = "Awards", Count = "2" },
             },
-            Next = "Next: start a game. Draft a concept, then pitch it at your desk.", NextTone = UiRole.Warn,
+            Next = "Next: start a second game. Draft a concept, then pitch it at your desk.", NextTone = UiRole.Warn,
             Actions = new[]
             {
                 new UiActionModel { Label = "Build our own engine", Kind = UiButtonKind.Secondary, Key = UiAction.Option, Command = UiAppWindow.ActionCommand },
                 new UiActionModel { Label = "Start a game", Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiAppWindow.ActionCommand, Arg = 1 },
             },
+            Hero = new UiHeroModel
+            {
+                Icon = UiIcon.GenreSimulation, Kicker = "In development", Title = "Cinder Valley", Line = "Simulation, 64% made, three of five milestones met", Progress = 64,
+                Note = "Playtest in 6 days",
+            },
             Figures = new[]
             {
-                new UiFigureModel { Label = "Games out", Value = "4" }, new UiFigureModel { Label = "Copies sold", Value = "86,400" },
-                new UiFigureModel { Label = "Rating", Value = "74" },
                 new UiFigureModel
                 {
                     Label = "Takings, 30 days", Value = "$184,200",
                     Trend = new[] { 38f, 39f, 41f, 40f, 42f, 44f, 47f, 51f, 49f, 46f, 44f, 43f, 45f, 46f, 44f, 42f, 41f, 43f, 45f, 48f, 50f, 49f, 47f, 46f }
                 },
             },
-            TableTitle = "Games",
+            TableTitle = "Games out",
             Columns = new[]
             {
                 new UiColumn { Title = "Game" }, new UiColumn { Title = "Genre", Width = 112f }, new UiColumn { Title = "Score", Width = 56f, Right = true },
-                new UiColumn { Title = "Copies", Width = 72f, Right = true }, new UiColumn { Title = "Kept", Width = 88f, Right = true },
+                new UiColumn { Title = "Copies", Width = 72f, Right = true }, new UiColumn { Title = "Earned", Width = 88f, Right = true },
                 new UiColumn { Title = "Status", Width = 128f, Right = true },
             },
             GradeColumn = 2,
             Rows = new[]
             {
-                Game(UiIcon.GenreSimulation, UiRole.Chart3, "Cinder Valley", "Simulation", "", "", "", -1, "64% made", UiRole.Accent),
                 Game(UiIcon.GenreAdventure, UiRole.Chart2, "Ember Isle", "Adventure", "78", "41,000", "$612,400", 78, Out(t, 96), UiRole.Ok),
                 Game(UiIcon.GenreSimulation, UiRole.Chart3, "Tiny Towns", "Simulation", "74", "28,500", "$341,900", 74, Out(t, 212), UiRole.Ok),
                 Game(UiIcon.GenreStrategy, UiRole.Chart5, "Deep Signal", "Strategy", "69", "12,600", "$128,300", 69, Out(t, 340), UiRole.Ok),
@@ -166,6 +161,8 @@ internal static partial class UiSamples
                 Rival(UiIcon.GenreSimulation, UiRole.Chart3, "Harbour Days", "Tidewater Interactive", 76, "28,900"),
                 Rival(UiIcon.GenrePuzzle, UiRole.Chart4, "Lantern Puzzles", "Copperkettle Games", 71, "12,300"),
                 Rival(UiIcon.GenreHorror, UiRole.CatIndustry, "The Quiet House", "Blue Kestrel Games", 68, "9,400"),
+                Rival(UiIcon.GenreRacing, UiRole.None, "Neon Laps", "Gridline Studio", 66, "8,100"),
+                Rival(UiIcon.GenreFamily, UiRole.None, "Picnic Party", "Little Acorn Games", 63, "6,700"),
             },
             PeopleTitle = "Team", PeopleCount = "12 people",
             People = new[]
@@ -176,7 +173,14 @@ internal static partial class UiSamples
                 Person("Tom Becker", UiIcon.PaintBrush, UiRole.CatRetail, "Designer", 52, 44),
                 Person("Elena Sokolova", UiIcon.Bug, UiRole.Chart3, "Tester", 61, 66),
                 Person("Jonah Reyes", UiIcon.Lightbulb, UiRole.Chart4, "Producer", 70, 38),
+                Person("Kenji Mori", UiIcon.Code, UiRole.CatTech, "Engineer", 58, 61),
+                Person("Amara Nwosu", UiIcon.PaintBrush, UiRole.CatRetail, "Artist", 74, 70),
+                Person("Sofia Rossi", UiIcon.MusicNotes, UiRole.Chart7, "Sound designer", 66, 77),
+                Person("Arjun Patel", UiIcon.Bug, UiRole.Chart3, "Tester", 49, 55),
+                Person("Mei Lin", UiIcon.Database, UiRole.CatTech, "Data analyst", 81, 64),
+                Person("Diego Alvarez", UiIcon.Megaphone, UiRole.Chart6, "Marketing", 63, 59),
             },
+            PeopleMore = "See all 12 in Team",
             Note = "Support is needed: 120 tickets a day go unanswered. Hire people in the Business app, then give them roles in Open Roles.",
         };
         m.Prompts = new[]
@@ -189,13 +193,94 @@ internal static partial class UiSamples
     }
 
     private static UiAppRow Game(UiIcon icon, UiRole tint, string name, string genre, string score, string copies, string kept, int grade, string status, UiRole tone) =>
-        new UiAppRow { Icon = icon, Tint = tint, Cells = new[] { name, genre, score, copies, kept, status }, Grade = grade, Status = status, StatusTone = tone };
+        new UiAppRow { Icon = icon, Tint = UiRole.None, Cells = new[] { name, genre, score, copies, kept, status }, Grade = grade, Status = status, StatusTone = tone };
 
     private static UiAppRow Rival(UiIcon icon, UiRole tint, string name, string studio, int score, string copies) =>
-        new UiAppRow { Icon = icon, Tint = tint, Cells = new[] { name, studio, score.ToString(System.Globalization.CultureInfo.InvariantCulture), copies }, Grade = score };
+        new UiAppRow { Icon = icon, Tint = UiRole.None, Cells = new[] { name, studio, score.ToString(System.Globalization.CultureInfo.InvariantCulture), copies }, Grade = score };
 
     private static UiPersonRow Person(string name, UiIcon role, UiRole tint, string title, int skill, int morale) =>
-        new UiPersonRow { Name = name, Hue = UiColour.HueOf(name), RoleIcon = role, RoleTint = tint, Role = title, FirstLabel = "Skill", First = skill, SecondLabel = "Morale", Second = morale };
+        new UiPersonRow { Name = name, Hue = UiColour.HueOf(name), RoleIcon = role, RoleTint = UiRole.None, Role = title, FirstLabel = "Skill", First = skill, SecondLabel = "Morale", Second = morale };
+
+    /// <summary>
+    /// An employee's page in an app window with its tabs across the top, as Football Manager draws a player: her head with
+    /// the face, the role, the facts and the rating, her attributes graded, the week's shifts and who works them with her.
+    /// </summary>
+    public static UiAppModel Employee(UiWords t)
+    {
+        var m = new UiAppModel
+        {
+            Title = "Bloom Caf\u00e9 staff", Icon = UiIcon.IdBadge, TabsAcross = true,
+            Nav = new[]
+            {
+                new UiNavEntry { Icon = UiIcon.IdCard, Label = "Profile" }, new UiNavEntry { Icon = UiIcon.Calendar, Label = "Schedule" },
+                new UiNavEntry { Icon = UiIcon.Coin, Label = "Pay" }, new UiNavEntry { Icon = UiIcon.ChartLineUp, Label = "Reviews", Count = "3" },
+                new UiNavEntry { Icon = UiIcon.Handshake, Label = "Requests", Count = "2" },
+            },
+            Profile = new UiProfileModel
+            {
+                Name = "Maya Okafor", Hue = UiColour.HueOf("Maya Okafor"), Ring = UiRole.Ok, Role = "Customer service at Bloom Caf\u00e9", RoleIcon = UiIcon.Headset,
+                RoleTint = UiRole.None, Status = "At work", StatusTone = UiRole.Ok,
+                FactLabels = new[] { "Age", "Pay an hour", "Hired", "Hours a week" }, FactValues = new[] { "29", "$22", "214 days ago", "32 of 40" },
+                RatingLabel = "Ability", Rating = 7,
+            },
+            Actions = new[]
+            {
+                new UiActionModel { Label = "Pay a bonus", Kind = UiButtonKind.Secondary, Key = UiAction.Option, Command = UiAppWindow.ActionCommand },
+                new UiActionModel { Label = "Raise pay", Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiAppWindow.ActionCommand, Arg = 1 },
+            },
+            AttributesTitle = "Attributes",
+            AttributeLabels = new[] { "Customer care", "Speed", "Cleanliness", "Punctuality", "Teamwork", "Energy" },
+            AttributeValues = new[] { 82, 74, 66, 90, 71, 48 },
+            TableTitle = "This week's shifts",
+            Columns = new[]
+            {
+                new UiColumn { Title = "Day" }, new UiColumn { Title = "Hours", Width = 120f }, new UiColumn { Title = "Till", Width = 96f },
+                new UiColumn { Title = "Status", Width = 136f, Right = true },
+            },
+            Rows = new[]
+            {
+                Shift("Monday", "08:00 to 16:00", "Front", "Worked", UiRole.Ok),
+                Shift("Tuesday", "08:00 to 16:00", "Front", "Late 12 min", UiRole.Warn),
+                Shift("Wednesday", "12:00 to 20:00", "Drive-in", "Worked", UiRole.Ok),
+                Shift("Thursday", "12:00 to 20:00", "Front", "Off sick", UiRole.Danger),
+                Shift("Friday", "08:00 to 16:00", "Front", "Up next", UiRole.Accent),
+            },
+            MoreTitle = "Reviews",
+            MoreColumns = new[] { new UiColumn { Title = "Review" }, new UiColumn { Title = "Score", Width = 56f, Right = true }, new UiColumn { Title = "Outcome", Width = 216f } },
+            MoreGrade = 1,
+            MoreRows = new[]
+            {
+                Review("After 180 days", 78, "Pay raised to $22 an hour"), Review("After 90 days", 71, "Kept on, more hours"), Review("First month", 64, "Training done"),
+            },
+            PeopleTitle = "On her shifts", PeopleCount = "6 people",
+            People = new[]
+            {
+                Colleague("Luis Romero", UiIcon.ForkKnife, UiRole.CatFood, "Barista", 77, 68),
+                Colleague("Hana Sato", UiIcon.Headset, UiRole.CatFood, "Customer service", 63, 52),
+                Colleague("Dana Whitfield", UiIcon.Key, UiRole.Chart4, "Shift manager", 85, 74),
+                Colleague("Theo Brandt", UiIcon.Truck, UiRole.CatIndustry, "Delivery", 58, 41),
+                Colleague("Ines Duarte", UiIcon.Coffee, UiRole.CatFood, "Barista", 69, 80),
+                Colleague("Sam Okoro", UiIcon.Package, UiRole.CatRetail, "Stock and tills", 47, 63),
+            },
+            Note = "Maya asks for Sundays off. Answer her in Requests, or she loses heart.", NoteTone = UiRole.Warn,
+        };
+        m.Prompts = new[]
+        {
+            new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") }, new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_select", "Select") },
+            new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
+        };
+        m.PromptCount = m.Prompts.Length;
+        return m;
+    }
+
+    private static UiAppRow Shift(string day, string hours, string till, string status, UiRole tone) =>
+        new UiAppRow { Icon = UiIcon.Calendar, Tint = UiRole.None, Cells = new[] { day, hours, till, status }, Grade = -1, Status = status, StatusTone = tone };
+
+    private static UiAppRow Review(string name, int score, string outcome) =>
+        new UiAppRow { Icon = UiIcon.ChartLineUp, Tint = UiRole.None, Cells = new[] { name, score.ToString(System.Globalization.CultureInfo.InvariantCulture), outcome }, Grade = score };
+
+    private static UiPersonRow Colleague(string name, UiIcon role, UiRole tint, string title, int skill, int mood) =>
+        new UiPersonRow { Name = name, Hue = UiColour.HueOf(name), RoleIcon = role, RoleTint = UiRole.None, Role = title, FirstLabel = "Skill", First = skill, SecondLabel = "Mood", Second = mood };
 
     /// <summary>A desk session as a decision card: the weekly meeting, its three choices with what each costs and gives.</summary>
     public static UiDecisionModel Meeting(UiWords t)
@@ -203,19 +288,30 @@ internal static partial class UiSamples
         var m = new UiDecisionModel
         {
             Kicker = "Desk session, Lantern Bay Games", Title = "Weekly team meeting", Emblem = UiIcon.People, EmblemTint = UiRole.Accent, EmblemLabel = "12 people",
-            Faces = new[] { "Ava Lindqvist", "Marcus Hale", "Priya Raman", "Tom Becker", "Elena Sokolova" },
+            Faces = new[]
+            {
+                "Ava Lindqvist", "Marcus Hale", "Priya Raman", "Tom Becker", "Elena Sokolova", "Jonah Reyes", "Kenji Mori", "Amara Nwosu", "Sofia Rossi", "Arjun Patel",
+                "Mei Lin", "Diego Alvarez"
+            },
             Body = "Twelve of your people are in the room. Morale has slipped since the crunch on Ember Isle, and the next milestone is nine days away. What is this week's meeting for?",
             Choices = new[]
             {
                 new UiDecisionChoice
                 {
                     Key = UiAction.Pick1, Name = "Lift morale", Note = "20 min",
-                    Lines = new[] { new UiConsequence { Text = "Burnout eases for the people present", Tone = 1 }, new UiConsequence { Text = "Output this week is a little lower", Tone = -1 } }
+                    Lines = new[]
+                    {
+                        new UiConsequence { Text = "Burnout eases for the people present", Tone = 1, Change = -1 },
+                        new UiConsequence { Text = "Output this week is a little lower", Tone = -1, Change = -1 }
+                    }
                 },
                 new UiDecisionChoice
                 {
                     Key = UiAction.Pick2, Name = "Push output", Note = "20 min",
-                    Lines = new[] { new UiConsequence { Text = "More gets done this week", Tone = 1 }, new UiConsequence { Text = "Burnout builds each day they work", Tone = -1 } }
+                    Lines = new[]
+                    {
+                        new UiConsequence { Text = "More gets done this week", Tone = 1, Change = 1 }, new UiConsequence { Text = "Burnout builds each day they work", Tone = -1, Change = 1 }
+                    }
                 },
                 new UiDecisionChoice
                 {
@@ -244,24 +340,22 @@ internal static partial class UiSamples
     {
         UiListDetailModel m = Contacts(t, false);
         UiIcon[] icons = { UiIcon.AddressBook, UiIcon.Person, UiIcon.Briefcase, UiIcon.IdBadge, UiIcon.Package, UiIcon.Sofa, UiIcon.Flag };
-        UiRole[] tints = { UiRole.Chart1, UiRole.Chart7, UiRole.CatOffice, UiRole.Chart3, UiRole.Chart2, UiRole.CatRetail, UiRole.Chart6 };
         for (int i = 0; i < m.GroupCount && i < icons.Length; i++)
         {
             m.Groups[i].Icon = icons[i];
-            m.Groups[i].Tint = tints[i];
+            m.Groups[i].Tint = UiRole.None;
         }
         // Businesses and offices wear their family's icon, people their faces.
         string[] firms = { "Anderson Recruitment Corp.", "City Office", "NY AutoTow Service", "City Workforce Inc.", "CityAds", "McCain\u2019s eMarketing", "Harbor Line Wholesale",
             "Lumen & Oak Interiors", "Vex Holdings" };
         UiIcon[] firmIcons = { UiIcon.IdBadge, UiIcon.Bank, UiIcon.Truck, UiIcon.Briefcase, UiIcon.Megaphone, UiIcon.Globe, UiIcon.Package, UiIcon.Sofa, UiIcon.Flag };
-        UiRole[] firmTints = { UiRole.CatOffice, UiRole.CatServices, UiRole.CatServices, UiRole.CatOffice, UiRole.CatRetail, UiRole.CatTech, UiRole.CatFood, UiRole.CatRetail, UiRole.Chart6 };
         for (int i = 0; i < m.RowCount; i++)
         {
             int f = System.Array.IndexOf(firms, m.Rows[i].Name);
             if (f >= 0)
             {
                 m.Rows[i].Icon = firmIcons[f];
-                m.Rows[i].Tint = firmTints[f];
+                m.Rows[i].Tint = UiRole.None;
             }
         }
         return m;
@@ -283,7 +377,7 @@ internal static partial class UiSamples
                 App(UiIcon.Bank, UiRole.Chart3, "Bank", 0), App(UiIcon.ChartPie, UiRole.Chart4, "Economy", 0), App(UiIcon.ChartLineUp, UiRole.Chart2, "Stocks", 0),
                 App(UiIcon.Cpu, UiRole.CatTech, "Tech", 1), App(UiIcon.Fire, UiRole.Chart6, "Flare", 3), App(UiIcon.MapTrifold, UiRole.Chart5, "Map", 0),
                 App(UiIcon.Calendar, UiRole.Chart7, "Calendar", 0), App(UiIcon.ShoppingCart, UiRole.CatRetail, "Market", 0), App(UiIcon.Building, UiRole.CatIndustry, "Estate", 0),
-                App(UiIcon.IdBadge, UiRole.Chart1, "Jobs", 0), App(UiIcon.Newspaper, UiRole.CatIndustry, "News", 0), App(UiIcon.Camera, UiRole.Chart7, "Camera", 0),
+                App(UiIcon.Handshake, UiRole.None, "Jobs", 0), App(UiIcon.Newspaper, UiRole.CatIndustry, "News", 0), App(UiIcon.Camera, UiRole.Chart7, "Camera", 0),
                 App(UiIcon.Gear, UiRole.Text2, "Settings", 0),
             },
         };
@@ -296,5 +390,5 @@ internal static partial class UiSamples
         return m;
     }
 
-    private static UiPhoneApp App(UiIcon icon, UiRole tint, string label, int badge) => new UiPhoneApp { Icon = icon, Tint = tint, Label = label, Badge = badge };
+    private static UiPhoneApp App(UiIcon icon, UiRole tint, string label, int badge) => new UiPhoneApp { Icon = icon, Tint = UiRole.None, Label = label, Badge = badge };
 }

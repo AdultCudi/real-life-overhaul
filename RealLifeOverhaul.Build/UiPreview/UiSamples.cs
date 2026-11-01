@@ -723,7 +723,7 @@ internal static partial class UiSamples
         m.ActionCount = m.Actions.Length;
         m.Messages = new[]
         {
-            new UiMessageModel { From = UiFrom.Them, Text = "Morning! Café’s busy, the new grinder is great.", Time = "07:58" },
+            new UiMessageModel { From = UiFrom.Them, Text = "Morning. The café is busy and the new grinder is great.", Time = "07:58" },
             new UiMessageModel { From = UiFrom.Them, Text = "Could I drop the Sunday shift? I’ve picked up a class on weekends.", Time = "09:14" },
             new UiMessageModel { From = UiFrom.Them, Text = "Happy to cover Tuesday evenings instead.", Time = "09:15" },
             new UiMessageModel { From = UiFrom.Me, Text = "Let me look at the rota tonight.", Time = "09:20" },

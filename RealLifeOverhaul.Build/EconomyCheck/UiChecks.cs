@@ -66,7 +66,7 @@ internal static partial class Program
         Check(!white && textL <= 94f && avatarInk <= 94f, "ui tokens: no pure white anywhere: the words at L* " + textL.ToString("0") + ", an avatar's initials at " + avatarInk.ToString("0")
             + " (at most 94)");
         bool cool = true;
-        foreach (UiRole r in new[] { UiRole.Panel, UiRole.Header, UiRole.Band, UiRole.StatusBar, UiRole.Pill, UiRole.Field, UiRole.Bubble, UiRole.Notice })
+        foreach (UiRole r in new[] { UiRole.Panel, UiRole.Header, UiRole.Band, UiRole.StatusBar, UiRole.Pill, UiRole.Field, UiRole.Bubble, UiRole.Notice, UiRole.Tile })
         {
             uint c = UiTokens.Colour(r);
             uint red = (c >> 24) & 0xFF, green = (c >> 16) & 0xFF, blue = (c >> 8) & 0xFF;
@@ -125,6 +125,18 @@ internal static partial class Program
             Check(c >= UiCheckRules.LargeContrast, "ui tokens: the focus ring stands out 3:1 from " + surface + " (" + c.ToString("0.00") + ")");
         }
         Check(UiContrast(UiRole.PromptInk, UiRole.StatusBar, true) >= UiCheckRules.NormalContrast, "ui tokens: the prompts' words stand out on the status bar");
+        // Every icon in its own colour reads on its slate tile and on the bare panel, at the 3:1 a graphic needs (WCAG 1.4.11).
+        string dim = null;
+        for (int i = 1; i < (int)UiIcon.Count; i++)
+        {
+            UiRole tint = UiIconTints.Of((UiIcon)i);
+            float onTile = UiContrast(tint, UiRole.Tile, true), onPanel = UiContrast(tint, UiRole.Panel, true);
+            if (Math.Min(onTile, onPanel) < UiCheckRules.LargeContrast && dim == null)
+            {
+                dim = (UiIcon)i + " in " + tint + " (" + onTile.ToString("0.00") + ":1 on its tile)";
+            }
+        }
+        Check(dim == null, "ui tokens: every icon's own colour reads 3:1 on its tile and on the panel" + (dim == null ? string.Empty : ": " + dim));
         UiChartChecks();
         bool grid = true, rising = true;
         for (int i = 0; i < UiTokens.Steps.Length; i++)
@@ -462,6 +474,30 @@ internal static partial class Program
     private static readonly int[] SessionCommands = { UiSessionSteps.ChoiceCommand, UiSessionSteps.ActionCommand };
     private static readonly int[] FormCommands = { UiForm.FieldCommand, UiForm.ActionCommand };
     private static readonly int[] GalleryCommands = { UiGallery.PageCommand, UiGallery.Sample, UiGallery.Answer, UiGallery.CallOption, UiGallery.CallEnd };
+    private static readonly int[] InfoPanelCommands = { UiInfoPanel.TabCommand, UiInfoPanel.LinkCommand, UiInfoPanel.FooterCommand };
+    private static readonly int[] InfoViewCommands = { UiInfoView.ViewCommand };
+    private static readonly int[] AppWindowCommands = { UiAppWindow.NavCommand, UiAppWindow.RowCommand, UiAppWindow.PersonCommand, UiAppWindow.ActionCommand,
+        UiAppWindow.MoreCommand, UiAppWindow.AllCommand };
+    private static readonly int[] DecisionCommands = { UiDecision.ChoiceCommand, UiDecision.ButtonCommand };
+    private static readonly int[] PhoneCommands = { UiPhone.AppCommand, UiPhone.PageCommand };
+
+    // Every command a template answers: a target with another is a button nothing answers.
+    private static int[] Commands(UiTemplate template)
+    {
+        switch (template)
+        {
+            case UiTemplate.ListDetail: return ListDetailCommands;
+            case UiTemplate.Dashboard: return DashboardCommands;
+            case UiTemplate.Session: return SessionCommands;
+            case UiTemplate.Form: return FormCommands;
+            case UiTemplate.InfoPanel: return InfoPanelCommands;
+            case UiTemplate.InfoView: return InfoViewCommands;
+            case UiTemplate.AppWindow: return AppWindowCommands;
+            case UiTemplate.Decision: return DecisionCommands;
+            case UiTemplate.Phone: return PhoneCommands;
+            default: return GalleryCommands;
+        }
+    }
 
     private static List<UiScreenCase> UiCases()
     {
@@ -516,6 +552,22 @@ internal static partial class Program
                 case UiTemplate.Form:
                     cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = "CityAds", Lay = (s, f, dark, k, t) => UiForm.Lay(s, UiSamples.Form(t), f, dark, k) });
                     break;
+                case UiTemplate.InfoPanel:
+                    cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (a person)", Title = "Rosa Stanley", Lay = (s, f, dark, k, t) => UiInfoPanel.Lay(s, UiSamples.Person(t), f, dark, k) });
+                    break;
+                case UiTemplate.InfoView:
+                    cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (the city's people)", Title = "The city's people", Lay = (s, f, dark, k, t) => UiInfoView.Lay(s, UiSamples.People(t), f, dark, k) });
+                    break;
+                case UiTemplate.AppWindow:
+                    cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (the studio, a sidebar)", Title = "Tech", Lay = (s, f, dark, k, t) => UiAppWindow.Lay(s, UiSamples.Studio(t), f, dark, k) });
+                    cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (an employee, tabs and a profile)", Title = "Business", Lay = (s, f, dark, k, t) => UiAppWindow.Lay(s, UiSamples.Employee(t), f, dark, k) });
+                    break;
+                case UiTemplate.Decision:
+                    cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (a desk session)", Title = "Desk", Lay = (s, f, dark, k, t) => UiDecision.Lay(s, UiSamples.Meeting(t), f, dark, k) });
+                    break;
+                case UiTemplate.Phone:
+                    cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (home)", Title = "Phone", Lay = (s, f, dark, k, t) => UiPhone.Lay(s, UiSamples.PhoneHome(t), f, dark, k) });
+                    break;
                 case UiTemplate.Gallery:
                     for (int page = 0; page < UiGallery.PageCount; page++)
                     {
@@ -529,26 +581,13 @@ internal static partial class Program
         return cases;
     }
 
-    // The Cities: Skylines II prototype's six screens (DIRECTION_CS2, section 7), held to every rule the kit's screens are: the
-    // person's info panel, the city's people as an info view, the studio and Contacts as app windows, the desk session as a
-    // decision card and the phone's home.
+    // The prototype's Contacts as an app window (DIRECTION_CS2, section 7): the older list and detail drawn in the new window.
+    // The prototype's other screens are the new templates' own samples, laid out with their entries above.
     private static IEnumerable<UiScreenCase> PrototypeCases()
     {
-        UiScreenDef gallery = Array.Find(UiScreens.All, d => d.Template == UiTemplate.Gallery);
         UiScreenDef contacts = Array.Find(UiScreens.All, d => d.Template == UiTemplate.ListDetail);
-        yield return new UiScreenCase { Def = gallery, Name = "cs2 person info panel", Title = "Rosa Stanley", Commands = new[] { UiInfoPanel.TabCommand, UiInfoPanel.LinkCommand, UiInfoPanel.FooterCommand },
-            Lay = (s, f, dark, k, t) => UiInfoPanel.Lay(s, UiSamples.Person(t), f, dark, k) };
-        yield return new UiScreenCase { Def = gallery, Name = "cs2 people info view", Title = "The city's people", Commands = new[] { UiInfoView.ViewCommand },
-            Lay = (s, f, dark, k, t) => UiInfoView.Lay(s, UiSamples.People(t), f, dark, k) };
-        yield return new UiScreenCase { Def = gallery, Name = "cs2 studio app window", Title = "Tech",
-            Commands = new[] { UiAppWindow.NavCommand, UiAppWindow.RowCommand, UiAppWindow.PersonCommand, UiAppWindow.ActionCommand, UiAppWindow.MoreCommand },
-            Lay = (s, f, dark, k, t) => UiAppWindow.Lay(s, UiSamples.Studio(t), f, dark, k) };
-        yield return new UiScreenCase { Def = gallery, Name = "cs2 desk session decision", Title = "Desk", Commands = new[] { UiDecision.ChoiceCommand, UiDecision.ButtonCommand },
-            Lay = (s, f, dark, k, t) => UiDecision.Lay(s, UiSamples.Meeting(t), f, dark, k) };
         yield return new UiScreenCase { Def = contacts, Name = "cs2 contacts app window", Title = "Contacts", Commands = ListDetailCommands,
             Lay = (s, f, dark, k, t) => UiListDetail.Lay(s, UiSamples.ContactsWindow(t), f, dark, k) };
-        yield return new UiScreenCase { Def = gallery, Name = "cs2 phone home", Title = "Phone", Commands = new[] { UiPhone.AppCommand, UiPhone.PageCommand },
-            Lay = (s, f, dark, k, t) => UiPhone.Lay(s, UiSamples.PhoneHome(t), f, dark, k) };
     }
 
     private static void UiScreenChecks()
@@ -564,8 +603,7 @@ internal static partial class Program
         };
         foreach (UiScreenCase c in UiCases())
         {
-            c.Commands = c.Commands ?? (c.Def.Template == UiTemplate.ListDetail ? ListDetailCommands : c.Def.Template == UiTemplate.Dashboard ? DashboardCommands
-                : c.Def.Template == UiTemplate.Session ? SessionCommands : c.Def.Template == UiTemplate.Form ? FormCommands : GalleryCommands);
+            c.Commands = c.Commands ?? Commands(c.Def.Template);
             if (c.Def.Runner != null)
             {
                 // A screen the game runs labels only with keys its entry names, so the texts check sees each one translated.
@@ -610,12 +648,12 @@ internal static partial class Program
                         Check(UiCheckRules.NoPrompts(s, say) == 0, "ui screens: a prompt bar that says how to go back: " + where);
                         Check(UiCheckRules.Contradictions(s, say) == 0, "ui screens: no indicator contradicts its value: " + where);
                         Check(UiCheckRules.DeadSpace(s, say) == 0, "ui screens: no frame holds dead space: " + where);
-                        Check(UiCheckRules.Unfilled(s, frame, say) == 0, "ui screens: the page uses its screen, anchored under the masthead and across the width: " + where);
+                        Check(UiCheckRules.Unfilled(s, frame, say) == 0, "ui screens: the page uses its screen, anchored at its window's top and across its width: " + where);
                         Check(UiCheckRules.KeyClash(s, say) == 0, "ui screens: one key does one thing: " + where);
                         Check(UiFocusRules.Unreached(s, out string missed) == 0, "ui screens: the d-pad reaches every target: " + where + " (" + missed + ")");
                         Check(UiCheckRules.LowContrast(s, say) == 0, "ui screens: every text and icon stands out (dark): " + where);
                         Check(UiCheckRules.RawKeys(s, say) == 0, "ui screens: no record's key on the screen, only words: " + where);
-                        Check(UiCheckRules.Repeats(s, frame, say) == 0, "ui screens: no page repeats the masthead under it: " + where);
+                        Check(UiCheckRules.Repeats(s, frame, say) == 0, "ui screens: no page repeats its window's title under it: " + where);
                         Check(UiCheckRules.Stacked(s, say) == 0, "ui screens: no label stands over another saying the same thing: " + where);
                         Check(UiCheckRules.EmptyPanels(s, say) == 0, "ui screens: no panel stands empty: " + where);
                         Check(UiCheckRules.Floating(s, say) == 0, "ui screens: an overlay's words stand on a card of their own: " + where);

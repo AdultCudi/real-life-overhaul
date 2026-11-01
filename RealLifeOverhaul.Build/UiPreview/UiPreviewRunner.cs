@@ -128,6 +128,8 @@ public static class UiPreviewRunner
             new Screen { Name = "5_contacts_app_window", AppName = "Contacts", Lay = (s, f, d, k) => UiListDetail.Lay(s, UiSamples.ContactsWindow(English), f, d, k), Backdrop = "13.jpg",
                 App = UiSamples.AppContacts, FocusCommand = UiListDetail.Row, FocusArg = 4 },
             new Screen { Name = "6_phone_home", AppName = "Phone", Lay = (s, f, d, k) => UiPhone.Lay(s, UiSamples.PhoneHome(English), f, d, k), Backdrop = "02.jpg" },
+            new Screen { Name = "8_employee_profile_app_window", AppName = "Business", Lay = (s, f, d, k) => UiAppWindow.Lay(s, UiSamples.Employee(English), f, d, k),
+                Backdrop = "13.jpg", App = UiSamples.AppBusiness },
             new Screen { Name = "7_icon_style_sheet", AppName = "Interface gallery", Lay = (s, f, d, k) => UiGallery.Lay(s, UiSamples.Gallery(English, UiGallery.IconsPage), f, d, k),
                 Backdrop = "13.jpg" },
         };
