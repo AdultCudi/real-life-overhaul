@@ -111,7 +111,7 @@ namespace RealLifeOverhaul.Ui
             _root.AddComponent<GraphicRaycaster>();
             _host = _root.AddComponent<UiHost>();
             _host.Bind(new ContactsScreen(app), UiGame.Instance, UiGame.Instance, UiDirector.Dark, UiDirector.Motion, UiFrame.MastheadHeight, UiFrame.BandHeight,
-                UiText.T("reallife_ui_contacts_app"));
+                UiText.T("reallife_ui_contacts_app"), UiIcon.AddressBook);
             _host.View.Scale = UiTokens.CanvasPerPx;
             _host.Failed = Fallback;
             _root.SetActive(false);

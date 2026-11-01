@@ -48,6 +48,7 @@ namespace RealLifeOverhaul.Ui
         private Func<UiMotionSetting> _motion;
         private float _top, _band;
         private string _title;
+        private UiIcon _icon;
         private Vector2 _laidSize;
         private bool _laidDark, _arrive, _typing;
         private UiPad _laidPad;
@@ -73,8 +74,10 @@ namespace RealLifeOverhaul.Ui
         public UiView View => _view;
 
         /// <summary>Sets the screen and what it reads: the host's rect is the whole full menu, its masthead and band the kit's own, titled with the app's name.</summary>
-        public void Bind(IUiScreen screen, IUiInput input, IUiSound sound, Func<bool> dark, Func<UiMotionSetting> motion, float top, float band, string title)
+        public void Bind(IUiScreen screen, IUiInput input, IUiSound sound, Func<bool> dark, Func<UiMotionSetting> motion, float top, float band, string title,
+            UiIcon icon = UiIcon.None)
         {
+            _icon = icon;
             _screen = screen;
             _input = input;
             _sound = sound;
@@ -371,7 +374,7 @@ namespace RealLifeOverhaul.Ui
             var rect = (RectTransform)transform;
             Vector2 size = rect.rect.size;
             float scale = _view.Scale;
-            var frame = new UiFrame { Width = size.x / scale, Height = size.y / scale, Top = _top, Band = _band, Title = _title, Pointer = !_mode.Ring };
+            var frame = new UiFrame { Width = size.x / scale, Height = size.y / scale, Top = _top, Band = _band, Title = _title, Icon = _icon, Pointer = !_mode.Ring };
             int command = -1, arg = 0;
             if (_view.Focus >= 0 && _view.Focus < _scene.NodeCount)
             {

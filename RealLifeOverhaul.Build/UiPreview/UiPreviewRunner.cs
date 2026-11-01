@@ -36,6 +36,7 @@ public static class UiPreviewRunner
         public string Backdrop;   // the game's world behind it, a picture's file in the backdrops folder, or null for black
         public int App = -1;      // the app the status bar marks as open
         public bool Extra;        // also a hover shot and a keys shot (the prototype's two that show input)
+        public UiIcon Icon;       // the window's icon, as the host is given it in the game
     }
 
     private sealed class Shot
@@ -126,11 +127,13 @@ public static class UiPreviewRunner
                 App = UiSamples.AppTech, HoverCommand = UiAppWindow.RowCommand, HoverArg = 1, Extra = true },
             new Screen { Name = "4_desk_session_decision", AppName = "Desk", Lay = (s, f, d, k) => UiDecision.Lay(s, UiSamples.Meeting(English), f, d, k), Backdrop = "11.jpg" },
             new Screen { Name = "5_contacts_app_window", AppName = "Contacts", Lay = (s, f, d, k) => UiListDetail.Lay(s, UiSamples.ContactsWindow(English), f, d, k), Backdrop = "13.jpg",
+                Icon = UiIcon.AddressBook,
                 App = UiSamples.AppContacts, FocusCommand = UiListDetail.Row, FocusArg = 4 },
             new Screen { Name = "6_phone_home", AppName = "Phone", Lay = (s, f, d, k) => UiPhone.Lay(s, UiSamples.PhoneHome(English), f, d, k), Backdrop = "02.jpg" },
             new Screen { Name = "8_employee_profile_app_window", AppName = "Business", Lay = (s, f, d, k) => UiAppWindow.Lay(s, UiSamples.Employee(English), f, d, k),
                 Backdrop = "13.jpg", App = UiSamples.AppBusiness },
             new Screen { Name = "7_icon_style_sheet", AppName = "Interface gallery", Lay = (s, f, d, k) => UiGallery.Lay(s, UiSamples.Gallery(English, UiGallery.IconsPage), f, d, k),
+                Icon = UiIcon.Grid,
                 Backdrop = "13.jpg" },
         };
     }
@@ -210,6 +213,7 @@ public static class UiPreviewRunner
             var view = new UiView(host, "Screen") { Motion = UiMotionSetting.Off };
             var scene = new UiScene();
             UiFrame frame = UiFrame.FullMenu(canvasW / CanvasH, shot.Screen.AppName);
+            frame.Icon = shot.Screen.Icon;
             frame.Pointer = !shot.Keys;   // as UiHost lays a screen out while the mouse leads
             IUiKeys keys = shot.Pad == UiPad.None ? (IUiKeys)UiDefaultKeys.Keyboard : UiDefaultKeys.XboxPad;
             shot.Screen.Lay(scene, frame, shot.Dark, keys);

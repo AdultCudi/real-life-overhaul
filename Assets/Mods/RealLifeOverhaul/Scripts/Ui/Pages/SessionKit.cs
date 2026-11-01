@@ -33,7 +33,7 @@ namespace RealLifeOverhaul.Ui
                 Hide(null);
                 _for = panel;
                 var screen = new ActivityScreen(panel);
-                _host = UiDirector.Instance.Overlay(screen, UiText.T("reallife_ui_page_desk"), host => screen.Close = () => Hide(panel));
+                _host = UiDirector.Instance.Overlay(screen, UiText.T("reallife_ui_page_desk"), host => screen.Close = () => Hide(panel), UiIcon.Presentation);
                 _host.Exclusive = true;
                 _host.Failed = e => Hide(panel);
                 _root = _host.gameObject;
