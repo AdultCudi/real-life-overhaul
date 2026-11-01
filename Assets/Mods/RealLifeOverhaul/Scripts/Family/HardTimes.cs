@@ -18,6 +18,7 @@ namespace RealLifeOverhaul.Family
             }
         }
 
+        internal const string TowelKey = "reallife_family_argue_6";   // the wet towel on the bed: its needs (Core/LineNeeds) are the moment's
         private const string Sorry = "reallife_family_argue_say_sorry";
         private const string Stand = "reallife_family_argue_say_stand";
         private const string Listen = "reallife_family_argue_say_listen";
@@ -33,7 +34,7 @@ namespace RealLifeOverhaul.Family
             new Row("reallife_family_argue_3", Joke, Explain, -5f, 5f, "reallife_family_argue_3_a", "reallife_family_argue_3_b"),
             new Row("reallife_family_argue_4", Sorry, Explain, 4f, 3f, "reallife_family_argue_4_a", "reallife_family_argue_4_b"),
             new Row("reallife_family_argue_5", Listen, Stand, 6f, -6f, "reallife_family_argue_5_a", "reallife_family_argue_5_b"),
-            new Row("reallife_family_argue_6", Joke, Shrug, 5f, -7f, "reallife_family_argue_6_a", "reallife_family_argue_6_b"),
+            new Row(TowelKey, Joke, Shrug, 5f, -7f, "reallife_family_argue_6_a", "reallife_family_argue_6_b"),
             new Row("reallife_family_argue_7", Sorry, Stand, -2f, 4f, "reallife_family_argue_7_a", "reallife_family_argue_7_b"),
             new Row("reallife_family_argue_8", Listen, Explain, 6f, 1f, "reallife_family_argue_8_a", "reallife_family_argue_8_b"),
             new Row("reallife_family_argue_9", Joke, Stand, 3f, -8f, "reallife_family_argue_9_a", "reallife_family_argue_9_b"),

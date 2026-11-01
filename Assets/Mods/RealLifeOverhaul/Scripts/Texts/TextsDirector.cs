@@ -53,6 +53,7 @@ namespace RealLifeOverhaul.Texts
         private static string _passedWhy;                  // why RLO Texts Large was passed over, for the status when no other pack runs
         private static int _pickedFor = int.MinValue;      // the device option a pick found no pack for
         private static int _runDevice = -1, _runThreads = -1;   // the options the server was started with
+        private static int _budgetStep;                    // the budget's step last told in the log
         private static List<TextDevice> _devices;
         private static readonly System.Text.StringBuilder Changes = new System.Text.StringBuilder(1024);
 
@@ -211,6 +212,19 @@ namespace RealLifeOverhaul.Texts
                 }
             }
             Hub.Look(TextClock.Now);
+            if (Hub.Budget.Step != _budgetStep)
+            {
+                BudgetTold();
+            }
+        }
+
+        // The budget changed its step: one line, on the change only, so a log says why the model was asked less.
+        private static void BudgetTold()
+        {
+            bool down = Hub.Budget.Step > _budgetStep;
+            _budgetStep = Hub.Budget.Step;
+            Logger?.Info("RLO Texts: " + (down ? "too many requests missed their time, so the model is asked less: "
+                                             : "the model kept up, so it is asked more again: ") + TextBudget.Describe(_budgetStep, Hub.Queue) + ".");
         }
 
         // The save's line of kept words: read on a new save, written at every save; the save hook kept attached.
@@ -465,6 +479,7 @@ namespace RealLifeOverhaul.Texts
             double estimate = speed.Estimate;
             Hub.AheadOnly = TextSpeed.AheadOnly(estimate);
             Hub.Queue.Expected(estimate);   // the queue starts from this machine's own figure, not its cautious guess
+            Hub.Budget.Apply(Hub.Queue);    // ...and its budget a minute from this machine's time
             KeepSpeed(speed);
             if (Hub.AheadOnly)
             {

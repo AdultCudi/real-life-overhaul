@@ -144,6 +144,7 @@ namespace RealLifeOverhaul.Flare
             {
                 PhotosSecond();
                 CommentsSecond();   // a comment's words came back: the next is asked; one comparison otherwise
+                WordsHoldSecond();  // with a model present, what is due without its words is held back until they come (FlareDirector.Hold)
             }
             CitySecond();   // the residents' side (FlareDirector.Residents): started, stood down or brought to the day; a few comparisons otherwise
         }
@@ -258,6 +259,7 @@ namespace RealLifeOverhaul.Flare
             _textDms.Clear();
             _textAnswers.Clear();
             CommentsForget();
+            HoldForget();
         }
 
         private void Install()

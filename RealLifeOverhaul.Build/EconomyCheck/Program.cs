@@ -116,6 +116,19 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--texts-fallback")
+        {
+            TextsFallback();        // (RLO Texts' budget, queue and what was shown, while working on them: TextsFallbackChecks.cs)
+            TextsShownSix();
+            TextsQueue();
+            TextsBudget();
+            TextsHubs();
+            FlareCommentsAsked();
+            FlareWordsHolds();
+            TextsSpoken();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--derivatives")
         {
             Derivatives();   // (the raw materials exchange, futures and options alone, while working on them: DerivChecks.cs)
@@ -169,6 +182,12 @@ internal static partial class Program
         if (args.Length == 1 && args[0] == "--outlook")
         {
             OutlookApp();   // (the Economy app's checks alone, while working on them: OutlookChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--own-home")
+        {
+            OwnHomes();   // (a building of the player's own staying theirs alone, while working on it: OwnHomeChecks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -507,6 +526,7 @@ internal static partial class Program
         StaffReference();   // the Staff and roles reference: generated from the code's tables, its figures held to the code, its texts and its search (StaffChecks.cs)
         FontFix();   // What's new tells of the font stutter fix in all nine languages (FontFixChecks.cs)
         MapTreesFix();   // What's new tells of the city map fix in all eleven languages; the guard and its test are wired (MapTreeChecks.cs)
+        MomCall();   // the family dinner call: the ring answered from its notice and the phone, the dinner offered by Mom's call and Family, one table of dates (MomCallChecks.cs)
         Estate();
         Online();
         Services();
@@ -551,6 +571,7 @@ internal static partial class Program
         TextsSix();   // RLO Texts' contract of data v6: the fixtures are the mod's cards now, built by the mod and rendered from the spec alone, its shape, seven languages, older packs untouched (TextsSixChecks.cs)
         TextsLanguagesSix();   // RLO Texts in every language of the mod: the seven, a pack's languages, the length and tokens by script, the checker in each, the hub, Going Public's shared text (TextsLanguageChecks.cs)
         TextsDecodingSix();    // RLO Texts' requests of data v6: the grammars read and tried, the tokens, the name kept out, the bodies, the hub's job (TextsDecodingChecks.cs)
+        TextsFallback();       // the written lines for a whole session: the budget a share of the machine's time, spoken lines kept room, what the queue held never a miss, a calm minute back up, the session replayed (TextsFallbackChecks.cs)
         TextsShownSix();       // what RLO Texts showed: the model's words against the written lines and why, by pack and intent, the hourly line, the hub counting every way (TextsShownChecks.cs)
         TextsMemorySix();      // what people remember: the lines, a card's choice the same in any order, whose keys, the save, caps and pruning, the topics (TextsMemoryChecks.cs)
         TextsCitySix();        // the city's new talk: the staff, life events, who texts, gossip, reviews, every written line, the save, RLO Texts Large, the sources (TextsCityChecks.cs)
@@ -572,6 +593,7 @@ internal static partial class Program
         StreetTextsV5();   // RLO Texts data v5 in street talk: v5's cards for a data 5 pack, v4's exact cards for a data 4 one, the moment, the name only when told, thanks, the packs' licences (StreetTextsV5Checks.cs)
         StreetConversation();   // street talk that feels alive: the order by the moment and the person, no repeats, follow-ups, patience, warmth, the panel and Esc, the turn's log line, the card's three lines, written lines once a day (StreetChatChecks.cs)
         FlareComments();   // the comments under posts that are not the player's: never more than the count, in time, the same after a save and on a guest, the cards, the texts, the cost (FlareCommentChecks.cs)
+        FlareWordsHolds();      // Flare with a model present: an item shows only with its words, held until they come; the written line only for a real failure, counted (FlareWordsHoldChecks.cs)
         FlareCommentsAsked();   // every comment the count promises written and shown: each asked again after a miss, the open thread first, the budget not locked by what the queue held back, the times, the post's own words (FlareCommentAskChecks.cs)
         FlareCrowd();    // Flare's city of four hundred and its influencers with no fixed most, Mom's and Alex's one look (FlareCrowdChecks.cs)
         StreetLook();   // somebody met in the street keeps the look the game gave them, through a save; a city person met on Flare their face; a card's age the face's (StreetLookChecks.cs)
@@ -607,6 +629,8 @@ internal static partial class Program
         Hiring();
         Buyout();       // buying out a notice: the price, who can be bought out, the rival's seeded once-only choice, the sources and texts (BuyoutChecks.cs)
         Tech();
+        OwnDesk();      // working at a desk of one's own tech firm: the minutes by the day, the crew's points, the professions, the save, the sources and texts (OwnDeskChecks.cs)
+        DeskSeat();     // every seat at a desk or station is one pair: held or given back at once, begun before it holds, stood up on every end; the test and texts (DeskSeatChecks.cs)
         Careers();
         WorkPace();     // place keys, the professions a type employs and the save's writer, as they were (WorkPaceChecks.cs)
         LifePace();     // utility accounts and Flare's shops seen from their indexes, as the passes found them (LifePaceChecks.cs)
@@ -691,6 +715,7 @@ internal static partial class Program
         OptionKeysFix(); // the options kept under the mod's own id for every copy: the older copies' values brought over once, the running copy's first, the sources, the texts (OptionKeysChecks.cs)
         HomeFixes();    // home life: the roommate's talk test with no character, the door to social life nobody read, rain and sleep in a hotel room (HomeFixChecks.cs)
         LifeFixes();    // life events: news of the player's home, building, neighbours and landlord only to a player with a home (LifeFixChecks.cs)
+        LineNeedRule(); // random lines only when what they take for granted is the player's: a fridge, a flat, a landlord, a car; every random line's English read for it (LineNeedChecks.cs)
         VehicleCosts(); // vehicle costs: a purse past an int took 2.1 billion as a life event's loss; money into an int, a car's costs on their worst input, the wrong charge paid back (VehicleCostChecks.cs)
         TravelFixes();  // travel: the hotel room refused while the game was paused (TravelFixChecks.cs)
         ChessFixes();   // street chess: the whole setup clear of crossings in both placement paths (ChessFixChecks.cs)
@@ -735,6 +760,7 @@ internal static partial class Program
         Track();        // Show on map and the construction objectives: what is under way, each line's words, the order, the cap, the claim kept, the one way to the destination, the game's objectives window, the texts (TrackChecks.cs)
         MapFilterChecks();   // a building the construction game finishes registers with the city map's filters when it stands and leaves them when it goes: the rows, the steps, the list, the sources, the text (MapChecks.cs)
         StandNowChecks();   // a building handed over stands at once, and the opening day is not missed: when it stands, the one declaration, the record set up once, the sources, the texts (StandChecks.cs)
+        OwnHomes();     // a building the player puts up on their own land stays theirs: a block on sale until its last flat is sold, then its residents', the growth leaving the player's alone, the sources, the texts (OwnHomeChecks.cs)
         ShowFlats();    // show flats and renovations: viewings, buyers and prices, a refit's hours, grade and quote, the fittings' decor, the lines, the game's residential designs, the sources, the texts (ShowFlatsChecks.cs)
         Redevelop();    // redevelopment: refurnishing with the game's designs and its price, an AI business's new layout, the lines, the sources, the texts (RedevelopChecks.cs)
         DistrictSaveChecks();   // the district save: whose a place is, what each record does, put back where it stood, the store's line, nothing at all for a game with none (DistrictSaveChecks.cs)

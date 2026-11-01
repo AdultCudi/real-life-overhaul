@@ -11,7 +11,8 @@ namespace RealLifeOverhaul
         /// Everyday life: the social life, careers, the courts, travel, home life and the garage with each other. Left at
         /// their defaults because the other side has nothing to answer with (docs/reference/wiring.md): CareerLinks.Social,
         /// TravelBridges.Transport and Leisure, Justice.Bridges.Transport, GarageBridges.PoliceNotice and RiderFalls. The
-        /// cold's energy cost asks what the player wears (Events.Weather.Wardrobe) once an hour.
+        /// cold's energy cost asks what the player wears (Events.Weather.Wardrobe) once an hour. Every random line's needs (a fridge,
+        /// a flat, a landlord, a car) are read through LineNeeds.Read, from the game, when a line is drawn.
         /// </summary>
         public static class LifeLinks
         {
@@ -35,6 +36,8 @@ namespace RealLifeOverhaul
                 HomeBridges.Sheltered = () => TravelState.InRoom;
                 HomeBridges.SleepingAway = () => HotelStay.SleepingBed;
                 LifeAccounts.Home = HasHome;
+                LineNeedsGame.Logger = Logger;
+                LineNeeds.Read = LineNeedsGame.Holds;   // what every random line takes for granted, read from the game (Core/LineNeeds)
                 Events.Weather.Wardrobe = PlayerWardrobe;
             }
 
@@ -52,6 +55,7 @@ namespace RealLifeOverhaul
                 HomeBridges.Sheltered = null;
                 HomeBridges.SleepingAway = null;
                 LifeAccounts.Home = null;
+                LineNeeds.Read = null;
                 Events.Weather.Wardrobe = null;
             }
 

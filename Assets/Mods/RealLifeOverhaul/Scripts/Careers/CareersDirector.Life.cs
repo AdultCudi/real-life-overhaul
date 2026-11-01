@@ -85,19 +85,28 @@ namespace RealLifeOverhaul.Careers
             {
                 j.Overtime += minutes;
             }
-            int before = j.Burnout;
-            j.Burnout = Math.Min(1000, j.Burnout + LifeRules.BurnoutFor(j.WeekMinutes - minutes, minutes));
-            if (before <= LifeRules.BurnoutMood && j.Burnout > LifeRules.BurnoutMood)
-            {
-                CareersGame.Mood(ModState.Burnout);
-                Tell2(NotificationType.Warning, "reallife_life_note_burnout", Data("hours", LifeRules.LongWeekHours.ToString()), TabJob, null);
-            }
+            Burn(j, j.WeekMinutes - minutes, minutes);
             if ((BossKind)j.Boss == BossKind.Mentor)
             {
                 int a, b;
                 j.Def.SkillsOf(j.Post.Rank, out a, out b);
                 int hours = Math.Max(1, minutes / 60);
                 StudyRules.Learn(_study, a, StudyCatalogue.WorkLearn * hours * (100 - StudyRules.Points(_study, a)) / 100 * LifeRules.MentorLearn / 1000, day);
+            }
+        }
+
+        /// <summary>
+        /// Burnout from minutes worked on top of a week's: the job's own day, or hours at a desk of the player's own firm
+        /// (CareersDirector.OwnDesk), so a long week builds it whichever work filled it; the mood and a word once it is felt.
+        /// </summary>
+        private void Burn(Job j, int weekBefore, int minutes)
+        {
+            int before = j.Burnout;
+            j.Burnout = Math.Min(1000, j.Burnout + LifeRules.BurnoutFor(weekBefore, minutes));
+            if (before <= LifeRules.BurnoutMood && j.Burnout > LifeRules.BurnoutMood)
+            {
+                CareersGame.Mood(ModState.Burnout);
+                Tell2(NotificationType.Warning, "reallife_life_note_burnout", Data("hours", LifeRules.LongWeekHours.ToString()), TabJob, null);
             }
         }
 

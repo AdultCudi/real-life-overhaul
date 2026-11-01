@@ -11,7 +11,9 @@ namespace RealLifeOverhaul
     /// <summary>
     /// A call to or from somebody the player knows: a chat, plans, what they asked, and the other things to say. A chat's
     /// topic is answered with one of two answers, or with the player's own typed words (PersonDialog.Composer). A call to
-    /// somebody who just texted opens on what they wrote about, as its first topic (PersonDialog.CallBack).
+    /// somebody who just texted opens on what they wrote about, as its first topic (PersonDialog.CallBack). A call placed to
+    /// somebody whose ring is on is their call answered (SocialDirector.TakeRing). Mom's, on a family dinner day while her
+    /// table is set, opens on whether the player is coming over, and "Something else" offers it too (PhoneContacts.MomsDinner).
     /// </summary>
     public sealed partial class PersonDialog : Dialog
     {
@@ -35,7 +37,8 @@ namespace RealLifeOverhaul
             _testTopic = TestTopicFor == index ? TestTopic : -1;
             TestTopic = TestTopicFor = -1;
             _p = SocialState.Get(index);
-            bool incoming = SocialPhone.Incoming == index;
+            // Answered from the ring's panel or notice (Incoming), or by calling them from the phone while it rings.
+            bool incoming = SocialPhone.Incoming == index || SocialDirector.TakeRing(index);
             SocialPhone.Incoming = -1;
             if (_p == null || !_p.Met || !Settings.Social)
             {
@@ -43,32 +46,40 @@ namespace RealLifeOverhaul
                 return;
             }
             npcNameKey = SocialPhone.IdOf(_p);
-            if (!incoming && _p.Asleep(SocialLife.Hour))
+            // Mom's text on a dinner day says to ring her: her call asks first whether the player is coming over now, and she
+            // stays up for it.
+            string dinner = _p.IsFamily ? PhoneContacts.MomsDinnerNow() : null;
+            if (!incoming && dinner == null && _p.Asleep(SocialLife.Hour))
             {
                 Show(Close(SocialLines.Pick(SocialCatalogue.Voicemail)));
                 return;
             }
             SocialOffer offer = SocialState.Offer;
             SocialPlan plan = SocialState.Plan;
+            Func<DialogEntry> open;
             if (incoming)
             {
-                DialogEntry entry = Line(SocialLines.Pick(SocialCatalogue.RingOpen));
-                entry.ConfirmTextOverride = "reallife_social_btn_whats_up".Localize();
-                entry.OnConfirm = () => offer.Active && offer.Person == _p.Index ? Asked() : Chat();
-                Show(entry);
+                open = () =>
+                {
+                    DialogEntry entry = Line(SocialLines.Pick(SocialCatalogue.RingOpen));
+                    entry.ConfirmTextOverride = "reallife_social_btn_whats_up".Localize();
+                    entry.OnConfirm = () => offer.Active && offer.Person == _p.Index ? Asked() : Chat();
+                    return entry;
+                };
             }
             else if (offer.Active && offer.Person == _p.Index)
             {
-                Show(Asked());
+                open = Asked;
             }
             else if (plan.Active && plan.Person == _p.Index)
             {
-                Show(Planned());
+                open = Planned;
             }
             else
             {
-                Show(Root());
+                open = Root;
             }
+            Show(dinner != null ? PhoneContacts.DinnerAsk(dinner, open, PhoneContacts.HangUp) : open());
         }
 
         private static void Show(DialogEntry entry)
@@ -176,10 +187,14 @@ namespace RealLifeOverhaul
             _typing = null;
             _actions.Clear();
             int day = SocialLife.Day;
+            if (_p.IsFamily && PhoneContacts.MomsDinnerNow() != null)
+            {
+                _actions.Add("dinner");   // first: her table is set today, and only today
+            }
             string favour = SocialPhone.NetworkLabel != null && SocialPhone.NetworkAsk != null ? SocialPhone.NetworkLabel(_p) : null;
             if (favour != null)
             {
-                _actions.Add("network");   // first: they texted to say they could help
+                _actions.Add("network");   // they texted to say they could help
             }
             _actions.Add("plans");
             if (SocialTalk.BirthdayIn(_p) == 0 && _p.BirthdayYear != Year(day))
@@ -255,6 +270,10 @@ namespace RealLifeOverhaul
                 case "family":
                     entry.ConfirmTextOverride = "reallife_social_btn_family".Localize();
                     entry.OnConfirm = SocialPhone.FamilyMatters;
+                    break;
+                case "dinner":
+                    entry.ConfirmTextOverride = "reallife_family_do_moms_yes".Localize();
+                    entry.OnConfirm = () => PhoneContacts.GoToMoms != null ? PhoneContacts.GoToMoms() : Close("reallife_social_call_off");
                     break;
                 default:
                     entry.ConfirmTextOverride = "reallife_social_btn_plans".Localize();

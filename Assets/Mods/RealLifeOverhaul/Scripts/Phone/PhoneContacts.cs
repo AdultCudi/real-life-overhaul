@@ -20,6 +20,42 @@ namespace RealLifeOverhaul
         public static Contact Friend { get; private set; }
         public static Contact Mom { get; private set; }
 
+        /// <summary>
+        /// Set by Wiring/FamilyLinks: today's family dinner at Mom's by name while her table is set (null otherwise), and going
+        /// over, which gives the call's last line. Mom's own call offers it, as her text says, whichever dialog her contact opens
+        /// (this one's, or the social life's PersonDialog).
+        /// </summary>
+        public static Func<string> MomsDinner;
+        public static Func<DialogEntry> GoToMoms;
+
+        /// <summary>Today's dinner at Mom's by name while her table is set, else null; never throws.</summary>
+        internal static string MomsDinnerNow()
+        {
+            try
+            {
+                return MomsDinner?.Invoke();
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                return null;
+            }
+        }
+
+        /// <summary>Mom asks whether the player is coming over now: "Go to Mom's", or the rest of the call.</summary>
+        internal static DialogEntry DinnerAsk(string dinner, Func<DialogEntry> notYet, Action hangUp)
+        {
+            return new DialogEntry
+            {
+                messageData = "reallife_mom_dinner_ask".Localize(new { text = dinner }),
+                ConfirmTextOverride = "reallife_family_do_moms_yes".Localize(),
+                OnConfirm = () => GoToMoms != null ? GoToMoms() : Closing("reallife_mom_bye"),   // (unset only while family life is unwired, when no dinner is offered)
+                SecondOptionTextOverride = "reallife_mom_dinner_later",
+                OnSecondOption = notYet,
+                OnCancel = hangUp
+            };
+        }
+
         public static void Setup()
         {
             Friend = null;
@@ -217,18 +253,29 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>Mom: one chat a day gives a lift to happiness.</summary>
+    /// <summary>Mom: one chat a day gives a lift to happiness; on a family dinner day, first of all whether the player is coming over.</summary>
     public class MomDialog : Dialog
     {
         public MomDialog()
         {
             npcNameKey = "reallife-mom";
-            if (ModState.LastMomCallDay == TimeHelper.CurrentDay)
+            string dinner = PhoneContacts.MomsDinnerNow();
+            if (dinner != null)
             {
-                DialogController.current.ShowEntry(Guard.Entry(PhoneContacts.Closing("reallife_mom_again")));
+                DialogController.current.ShowEntry(Guard.Entry(PhoneContacts.DinnerAsk(dinner, Greeting, PhoneContacts.HangUp)));
                 return;
             }
-            DialogController.current.ShowEntry(Guard.Entry(new DialogEntry
+            DialogController.current.ShowEntry(Guard.Entry(Greeting()));
+        }
+
+        // The day's chat, or a goodbye once it was had.
+        private static DialogEntry Greeting()
+        {
+            if (ModState.LastMomCallDay == TimeHelper.CurrentDay)
+            {
+                return PhoneContacts.Closing("reallife_mom_again");
+            }
+            return new DialogEntry
             {
                 messageData = "reallife_mom_greeting".Localize(),
                 ConfirmTextOverride = "reallife_mom_chat".Localize(),
@@ -239,7 +286,7 @@ namespace RealLifeOverhaul
                     return PhoneContacts.Closing(ModState.IsSick ? "reallife_mom_bye_sick" : "reallife_mom_bye");
                 },
                 OnCancel = PhoneContacts.HangUp
-            }));
+            };
         }
     }
 }

@@ -39,6 +39,7 @@ namespace RealLifeOverhaul.Flare
             r.Day = (int)(at / 1440);
             r.Seconds = Seconds(at - now);
             r.Wanted = () => _file != null && _file.Post(id) == reply && Now < at;   // words after its time are not used: it never appears late
+            r.HoldsLine = true;   // never shown without its words: no written line to count
             r.Done = words => _textAnswers.Ended(id, words != null);
             if (FlareBridges.TextAsk(r))
             {

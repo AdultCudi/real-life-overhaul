@@ -253,6 +253,7 @@ namespace RealLifeOverhaul.Meta
                 .Owns(Settings.LifeEventsId)
                 .Preset(Settings.EventFrequencyId, 4, 6, 8)
                 .Test("reallife_test_event", "reallife_moods_test")
+                .Test("reallife_test_event_fridge")
                 .Data("reallife:sick_until", "reallife:friend_day", "reallife:mom_day", "reallife:mom_gift_day", "reallife:modifiers",
                     "reallife:seen_events", "reallife:pending_fine", "reallife:pending_fine_due")
                 .Objects("RealLifeOverhaul Crosshair")

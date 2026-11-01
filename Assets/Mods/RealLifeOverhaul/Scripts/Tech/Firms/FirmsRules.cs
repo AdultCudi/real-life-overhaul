@@ -63,6 +63,76 @@ namespace RealLifeOverhaul.Tech
             return false;
         }
 
+        /// <summary>
+        /// One person's day in a firm's crew by their role: builders' points to engineering (testers' to testing), designers'
+        /// to design, product people's, sellers', and a support person who worked counted once. The same for the firm's
+        /// professionals and for the owner at a desk of their own (OwnDeskRules), so the two can never part. True when the
+        /// pay of that work counts for the research and development relief.
+        /// </summary>
+        public static bool Join(ref Crew c, RoleDef r, int points, int hours, bool senior, int faults, ref int seniors, ref long faultWeighted)
+        {
+            switch (r.Family)
+            {
+                case Family.Engineering:
+                case Family.Data:
+                case Family.Security:
+                case Family.Infrastructure:
+                    if (r.Id == TalentCatalogue.Technician)
+                    {
+                        return false;   // keeps racks running (InfraRules), builds no product: paid, but no points and no relief (Builds)
+                    }
+                    if (r.Id == TalentCatalogue.QaTester)
+                    {
+                        c.Testing += points;
+                    }
+                    else
+                    {
+                        c.Engineering += points;
+                        seniors += senior ? points : 0;
+                        faultWeighted += (long)faults * Math.Max(1, points);
+                    }
+                    return true;
+                case Family.Design:
+                    c.Design += points;
+                    c.Web += r.Id == TalentCatalogue.WebDesigner ? points : 0;
+                    return true;
+                case Family.Product:
+                    c.Product += points;
+                    return true;
+                case Family.Commercial:
+                    c.Selling += points;
+                    return false;
+                case Family.Support:
+                    c.Support += hours > 0 ? 1 : 0;
+                    return false;
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>True for a role whose day adds something to a firm's crew (<see cref="Join"/>): every family it counts, a technician aside.</summary>
+        public static bool Counts(RoleDef r)
+        {
+            if (r == null || r.Id == TalentCatalogue.Technician)
+            {
+                return false;
+            }
+            switch (r.Family)
+            {
+                case Family.Engineering:
+                case Family.Data:
+                case Family.Security:
+                case Family.Infrastructure:
+                case Family.Design:
+                case Family.Product:
+                case Family.Commercial:
+                case Family.Support:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         /// <summary>The roles a firm of a kind wants first, a newcomer's role when their skill fits. Returns how many; none for other kinds.</summary>
         public static int Wanted(int kind, int[] into)
         {

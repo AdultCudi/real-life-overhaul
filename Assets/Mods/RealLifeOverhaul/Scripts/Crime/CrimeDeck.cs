@@ -233,23 +233,18 @@ namespace RealLifeOverhaul
             return picked;
         }
 
-        /// <summary>One line out of several, never the last one shown when there is another.</summary>
+        /// <summary>
+        /// One line out of several, never the last one shown when there is another, and never one whose words take for granted
+        /// what the player has not got (Core/LineNeeds: "it isn't your car" only to somebody with one); null when none fits.
+        /// </summary>
         public static string DrawText(string[] texts, string last, Func<float> random01)
         {
             if (texts == null || texts.Length == 0)
             {
                 return null;
             }
-            if (texts.Length == 1)
-            {
-                return texts[0];
-            }
-            int index = Math.Min((int)(random01() * texts.Length), texts.Length - 1);
-            if (texts[index] == last)
-            {
-                index = (index + 1) % texts.Length;
-            }
-            return texts[index];
+            int index = LineNeeds.Pick(texts, last != null ? Array.IndexOf(texts, last) : -1, random01);
+            return index >= 0 ? texts[index] : null;
         }
     }
 }

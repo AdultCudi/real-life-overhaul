@@ -241,6 +241,12 @@ namespace RealLifeOverhaul
             Notifications.Show(type, key, data, seconds);
         }
 
+        /// <summary>A notice that does something when clicked (a guarded action, made once); never kept in the save.</summary>
+        public static void Toast(NotificationType type, string key, Dictionary<string, string> data, float seconds, Action onClick)
+        {
+            Notifications.Show(type, key, data, seconds, null, onClick, true, false);
+        }
+
         /// <summary>A word was had: neglect counts from today, and somebody who had drifted is back.</summary>
         public static void Contacted(SocialPerson person)
         {

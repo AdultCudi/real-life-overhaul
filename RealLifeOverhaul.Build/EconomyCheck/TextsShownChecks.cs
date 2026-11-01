@@ -22,7 +22,8 @@ internal static partial class Program
               && string.Join(",", t.Packs()) == "RLO Texts,RLO Texts Lite" && t.Rows.Count == 3 && t.Rows[0].Written == 1,
             "texts v6, what was shown: each line counted by pack and intent, the model's words against the written lines, a refusal by its rule");
         string line = t.Line("day 3, 14:00");
-        Check(line != null && line.StartsWith("RLO Texts check (what was shown, day 3, 14:00): RLO Texts: the model 2, written 2 (slow 1; refused 1: Long 1), by intent: street.greet 2/1, friend.crash 0/1; RLO Texts Lite: the model 0, written 1 (loading 1)", StringComparison.Ordinal)
+        Check(line != null && line == "RLO Texts check (what was shown, day 3, 14:00): RLO Texts: the model 2, written 2 (slow 1; refused 1: Long 1), by intent: street.greet 2/1 (refused 1: Long 1), friend.crash 0/1 (slow 1); "
+                                      + "RLO Texts Lite: the model 0, written 1 (loading 1), by intent: friend.crash 0/1 (loading 1). The model worded 40% of the 5 line(s) it could have (wanted 80% or more): too few to judge yet."
               && t.Line("again") == null && t.Since == 0,
             "texts v6, what was shown: the hourly line for Player.log says each pack's counts and reasons by intent, once for what came since (" + line + ")");
         var big = new TextShown();

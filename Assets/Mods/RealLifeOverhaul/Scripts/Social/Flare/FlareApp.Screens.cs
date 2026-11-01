@@ -418,10 +418,15 @@ namespace RealLifeOverhaul.Flare
                     {
                         continue;
                     }
+                    string words = _director.FriendWords(p.Id, index);
+                    if (words == null && _director.FriendHeld(p.Id, index))
+                    {
+                        continue;   // RLO Texts: with a model present the reply comes only with its words (FlareDirector.Hold)
+                    }
                     var reply = new FlarePost
                     {
                         Id = -1000 - p.Id * 32 - i, Author = FlareAuthor.Friend, Who = index, Source = FlareSource.Reply, ReplyTo = p.Id,
-                        Text = _director.FriendWords(p.Id, index) ?? FlareText.Reply(FlareRules.ReplyOf(people[k], p), p, index), Seed = p.Seed + i, Slot = i,
+                        Text = words ?? FlareText.Reply(FlareRules.ReplyOf(people[k], p), p, index), Seed = p.Seed + i, Slot = i,
                         Liked = _director.IsReplyLiked(p.Id, i)
                     };
                     FlareLiveRules.SetAt(reply, p.At + r.Delay);

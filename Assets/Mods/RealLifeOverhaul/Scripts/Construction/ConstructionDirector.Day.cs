@@ -111,6 +111,7 @@ namespace RealLifeOverhaul.Construction
             RedevelopDay(day);   // notices run out, buildings kept empty, handovers the district could not take yet (ConstructionDirector.Demolish.cs)
             GrowProjectsDay(day);   // the player's Let it grow projects carried to City Hall by their builder (ConstructionDirector.LetItGrow)
             GrowDeedsDay();         // ... and their deeds asking their tier's rent once written
+            FlatsHeldDay();         // the player's blocks with flats on sale: their unsold share let, or their residents' once the last is sold (ConstructionDirector.Projects)
             ParkDay(day);           // the car parks: the night's accounts, leases and offers, the programme's projects, the city's builders' lots (ConstructionDirector.ParkRun.cs)
             if (Verbose)
             {
@@ -353,6 +354,7 @@ namespace RealLifeOverhaul.Construction
             ConstructionGame.Give(toPlayer, "reallife_transaction_bld_sales", ProjectName(p));
             _state.TakeIn(price, ConstructionGame.Day);
             Tell(NotificationType.Success, "reallife_bld_notice_flat_sold", ProjectName(p), null, TabProjects, p.Id, p.Flats - p.FlatsSold);
+            FlatsHeld(p);   // the unsold share let, or with the last flat the building its residents'
             return true;
         }
 

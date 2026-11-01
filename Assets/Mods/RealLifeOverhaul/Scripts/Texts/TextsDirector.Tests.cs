@@ -42,7 +42,8 @@ namespace RealLifeOverhaul.Texts
         private static readonly string[] WhyKeys =
         {
             null, "reallife_texts_why_nopack", "reallife_texts_why_off", "reallife_texts_why_loading", "reallife_texts_why_busy", "reallife_texts_why_slow",
-            "reallife_texts_why_refused", "reallife_texts_why_nocard", "reallife_texts_why_language", "reallife_texts_why_unwanted", "reallife_texts_why_failed"
+            "reallife_texts_why_refused", "reallife_texts_why_nocard", "reallife_texts_why_language", "reallife_texts_why_unwanted", "reallife_texts_why_failed",
+            "reallife_texts_why_held"
         };
 
         private static readonly string[] RuleKeys =

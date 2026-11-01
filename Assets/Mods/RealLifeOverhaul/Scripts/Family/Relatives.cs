@@ -6,7 +6,10 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul.Family
 {
-    /// <summary>The wider family: Mom, the in-laws from the engagement on, four family dinners a year, and a next of kin.</summary>
+    /// <summary>
+    /// The wider family: Mom, the in-laws from the engagement on, four family dinners a year (DinnerRules: when, where and how
+    /// each is attended), and a next of kin. COST: nothing per frame; the day's round, a call or a test button.
+    /// </summary>
     internal static class Relatives
     {
         private static readonly string[] HolidayNames =
@@ -14,8 +17,10 @@ namespace RealLifeOverhaul.Family
             "reallife_family_holiday_spring", "reallife_family_holiday_summer", "reallife_family_holiday_thanksgiving", "reallife_family_holiday_winter"
         };
 
-        private static readonly float[] HolidayAt = { 0.22f, 0.47f, 0.72f, 0.97f };   // of the game's year
+        // Mom's invitation the day before says how to come, by where the dinner will be: to hers, ring her from midday
+        // (DinnerRules.MomsFrom); a household's own is at home in its hours. The day's text says it again.
         private static readonly string[] Invites = { "reallife_family_holiday_invite_1", "reallife_family_holiday_invite_2", "reallife_family_holiday_invite_3" };
+        private static readonly string[] HomeInvites = { "reallife_family_holiday_home_invite_1", "reallife_family_holiday_home_invite_2" };
         private static readonly string[] DinnerLines = { "reallife_family_holiday_done_1", "reallife_family_holiday_done_2", "reallife_family_holiday_done_3", "reallife_family_holiday_done_4" };
         private static readonly string[] MissedLines = { "reallife_family_holiday_missed_1", "reallife_family_holiday_missed_2" };
         private static readonly string[] Visits = { "reallife_family_mom_visit_1", "reallife_family_mom_visit_2", "reallife_family_mom_visit_3" };
@@ -26,7 +31,8 @@ namespace RealLifeOverhaul.Family
         internal static int HostCost => Prices.At(120);
         private const int LoanAmount = 300;   // lent to the in-laws for a week, not at today's prices
 
-        private static int _lastInvite = -1, _lastDinner = -1, _lastMissed = -1, _lastVisit = -1, _lastChat = -1;
+        private static int _lastInvite = -1, _lastHomeInvite = -1, _lastDinner = -1, _lastMissed = -1, _lastVisit = -1, _lastChat = -1;
+        private static int _tableNowDay;   // a test's dinner day at Mom's, her table set from the moment it was set; not saved
 
         private static bool On => Settings.FamilyRelatives;
 
@@ -72,42 +78,25 @@ namespace RealLifeOverhaul.Family
                 return;
             }
             int year = GameCalendar.DaysPerYear;
-            int count = (day - 1) / year;
-            int dayOfYear = (day - 1) % year;
-            for (int i = 0; i < 4; i++)
+            int which = DinnerRules.InviteOn(day, year, out int stamp);
+            if (which >= 0 && s.LastHolidayTold < stamp)
             {
-                int on = Mathf.Clamp(Mathf.RoundToInt(year * HolidayAt[i]), 1, year - 1);
-                int stamp = count * 4 + i;
-                if (dayOfYear == on - 1 && s.LastHolidayTold < stamp)
-                {
-                    s.LastHolidayTold = stamp;
-                    if (PhoneContacts.Mom != null)
-                    {
-                        FamilyText.Message(PhoneContacts.Mom, FamilyText.Pick(Invites, ref _lastInvite), Args.Us.With(FamilyText.T(HolidayNames[i])));
-                    }
-                }
-                if (dayOfYear == on && s.LastHoliday < stamp)
-                {
-                    s.LastHoliday = stamp;
-                    if (FamilyState.Together && s.LivesIn || FamilyState.AtHome() > 0)
-                    {
-                        Errands.Add(Errands.Holiday, day, 15, 23).Number = i;
-                    }
-                    else
-                    {
-                        s.MomDinnerDay = day;
-                        s.MomDinnerWhich = i;
-                        if (PhoneContacts.Mom != null)
-                        {
-                            FamilyText.Message(PhoneContacts.Mom, "reallife_family_holiday_at_moms", Args.Us.With(FamilyText.T(HolidayNames[i])));
-                        }
-                    }
-                }
+                s.LastHolidayTold = stamp;
+                Invite(which);
+            }
+            which = DinnerRules.DinnerOn(day, year, out stamp);
+            if (which >= 0 && s.LastHoliday < stamp)
+            {
+                s.LastHoliday = stamp;
+                DinnerToday(day, which, false);
             }
 
-            // Mom drops by on a Sunday now and then, once there is a household to drop in on.
+            // Mom drops by on a Sunday now and then, once there is a household to drop in on, and a home to drop in on: every
+            // visit's words are of the home, one of its fridge (Core/LineNeeds), so without a home she does not come.
+            string visit;
             if (TimeHelper.GetDayOfWeek(day) == DayOfWeekOrdered.Sunday && day - s.LastMomVisitDay >= 14 && PhoneContacts.Mom != null
-                && (FamilyState.Bond == Bond.Married || FamilyState.AtHome() > 0) && Random.value < 0.5f)
+                && (FamilyState.Bond == Bond.Married || FamilyState.AtHome() > 0) && Random.value < 0.5f
+                && (visit = FamilyText.Pick(Visits, ref _lastVisit)) != null)
             {
                 s.LastMomVisitDay = day;
                 ModState.AddModifier(ModState.Family);
@@ -118,7 +107,7 @@ namespace RealLifeOverhaul.Family
                         s.Children[i].Closeness = Mathf.Min(100f, s.Children[i].Closeness + 1f);
                     }
                 }
-                FamilyText.Message(PhoneContacts.Mom, FamilyText.Pick(Visits, ref _lastVisit), Args.Us);
+                FamilyText.Message(PhoneContacts.Mom, visit, Args.Us);
             }
 
             // The in-laws: a favour asked, a loan paid back, a favour that went unanswered.
@@ -140,10 +129,78 @@ namespace RealLifeOverhaul.Family
             }
             else if (s.InLawAsk == 0 && day - s.InLawAskDay >= 12 && Random.value < 0.25f)
             {
-                s.InLawAskDay = day;
-                s.InLawAsk = Random.Range(1, 4);
-                InLawsSay(InLawAsks[s.InLawAsk]);
+                // A favour the player can do: a lift only of somebody with a car (Core/LineNeeds); the empty first place is never drawn.
+                int ask = LineNeeds.Pick(InLawAsks, -1, FamilyText.Random01);
+                if (ask > 0)
+                {
+                    s.InLawAskDay = day;
+                    s.InLawAsk = ask;
+                    InLawsSay(InLawAsks[ask]);
+                }
             }
+        }
+
+        // Where this year's dinner is, by the household as it is today.
+        private static DinnerPlace Place => DinnerRules.PlaceFor(FamilyState.Together && FamilyState.S.LivesIn, FamilyState.AtHome());
+
+        // The day before: Mom's invitation, saying how to come by where the dinner will be.
+        private static void Invite(int which)
+        {
+            if (PhoneContacts.Mom == null)
+            {
+                return;
+            }
+            Args fill = Args.Us.With(FamilyText.T(HolidayNames[which]));
+            if (Place == DinnerPlace.Home)
+            {
+                FamilyText.Message(PhoneContacts.Mom, FamilyText.Pick(HomeInvites, ref _lastHomeInvite), fill.Hours(DinnerRules.HomeFrom, DinnerRules.HomeTo));
+                return;
+            }
+            FamilyText.Message(PhoneContacts.Mom, FamilyText.Pick(Invites, ref _lastInvite), fill);
+        }
+
+        // The day itself: a household's dinner at home (the errand, begun at the home's door in its hours), or Mom's table set
+        // from midday, offered by her call and the Family contact. Mom's text says which, and how. A test sets it from now.
+        private static DinnerPlace DinnerToday(int day, int which, bool fromNow)
+        {
+            FamilySave s = FamilyState.S;
+            Args fill = Args.Us.With(FamilyText.T(HolidayNames[which]));
+            if (Place == DinnerPlace.Home)
+            {
+                DinnerRules.HomeHours(TimeHelper.CurrentHour, fromNow, out int from, out int to);
+                Errand errand = Errands.Add(Errands.Holiday, day, from, to);
+                errand.Day = day;   // one of an earlier test that is still listed is moved to today
+                errand.FromHour = from;
+                errand.ToHour = to;
+                errand.Number = which;
+                if (PhoneContacts.Mom != null)
+                {
+                    FamilyText.Message(PhoneContacts.Mom, "reallife_family_holiday_at_home", fill.Hours(from, to));
+                }
+                return DinnerPlace.Home;
+            }
+            s.MomDinnerDay = day;
+            s.MomDinnerWhich = which;
+            _tableNowDay = fromNow ? day : 0;
+            if (PhoneContacts.Mom != null)
+            {
+                bool now = fromNow && TimeHelper.CurrentHour < DinnerRules.MomsFrom;
+                FamilyText.Message(PhoneContacts.Mom, now ? "reallife_family_holiday_at_moms_now" : "reallife_family_holiday_at_moms", fill);
+            }
+            return DinnerPlace.Moms;
+        }
+
+        /// <summary>
+        /// Options, Tests: today is a family dinner, set as the day's round sets it (at home with a household, else at Mom's),
+        /// and ready now: the errand from this hour, or her table set at once. The next dinner on the calendar is the one, and
+        /// Mom's text for the day comes as it would. Where it is, and the dinner's name, for the test's notice.
+        /// </summary>
+        internal static DinnerPlace TestToday(out string name)
+        {
+            int which = DinnerRules.Next(TimeHelper.CurrentDay, GameCalendar.DaysPerYear, out _);
+            which = which < 0 ? 2 : which;
+            name = FamilyText.T(HolidayNames[which]);
+            return DinnerToday(TimeHelper.CurrentDay, which, true);
         }
 
         public static void Dinner(Errand errand)
@@ -156,7 +213,7 @@ namespace RealLifeOverhaul.Family
             }
             FamilyState.MoneyOut(HostCost, 4);
             FamilyState.S.Errands.Remove(errand);
-            director.Pass("reallife_family_passage_holiday", 3, () => EnergyHelper.SetCurrentHunger(100f), () => AfterDinner(which));
+            director.Pass("reallife_family_passage_holiday", DinnerRules.HomeLength, () => EnergyHelper.SetCurrentHunger(100f), () => AfterDinner(which));
         }
 
         private static void AfterDinner(int which)
@@ -187,7 +244,14 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        public static bool CanGoToMoms => On && FamilyState.S.MomDinnerDay == TimeHelper.CurrentDay && TimeHelper.CurrentHour >= 12;
+        /// <summary>Mom's table today: set from midday on her dinner day (from the moment a test set it), until the player goes over.</summary>
+        public static MomsTable Table => !On ? MomsTable.None
+            : DinnerRules.Table(FamilyState.S.MomDinnerDay, TimeHelper.CurrentDay, TimeHelper.CurrentHour, _tableNowDay == TimeHelper.CurrentDay ? 0 : DinnerRules.MomsFrom);
+
+        public static bool CanGoToMoms => Table == MomsTable.Set;
+
+        /// <summary>Today's dinner at Mom's by name ("Thanksgiving") while her table is set, else null: for her own call.</summary>
+        public static string MomsDinnerName => CanGoToMoms ? FamilyText.T(HolidayName(FamilyState.S.MomDinnerWhich)) : null;
 
         public static DialogEntry GoToMoms()
         {
@@ -195,7 +259,8 @@ namespace RealLifeOverhaul.Family
             FamilyDirector director = FamilyDirector.Instance;
             int which = s.MomDinnerWhich;
             s.MomDinnerDay = 0;
-            director.WhenFree(() => director.Pass("reallife_family_passage_moms", 4, () => EnergyHelper.SetCurrentHunger(100f), () => AfterDinner(which)));
+            _tableNowDay = 0;
+            director.WhenFree(() => director.Pass("reallife_family_passage_moms", DinnerRules.MomsLength, () => EnergyHelper.SetCurrentHunger(100f), () => AfterDinner(which)));
             return FamilyTalk.Close("reallife_family_holiday_going", Args.Us.With(FamilyText.T(HolidayName(which))));
         }
 

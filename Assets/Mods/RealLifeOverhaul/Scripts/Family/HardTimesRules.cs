@@ -54,6 +54,7 @@ namespace RealLifeOverhaul.Family
         public int PlaceDay;           // the last day a new place was taken; 0 none
         public int Places;             // the player's own places now (homes and businesses)
         public int MovedDay;           // the last day the home moved; 0 none
+        public bool Bedless;           // no bed in the home they share, so no wet towel on one (Core/LineNeeds, the moment's words)
         public bool AwayTogether;      // travel: on a trip with the partner, so a night away is a night together
 
         // Home life (Scripts/Home) and careers.
@@ -534,7 +535,7 @@ namespace RealLifeOverhaul.Family
                     Take(usable, Strain.Worn, 50, ref best, ref why);
                     return best;
                 case 5:   // "There is a wet towel on the bed. There is always a wet towel on the bed."
-                    if (!g.LivesIn)
+                    if (!g.LivesIn || g.Bedless)
                     {
                         return 0;
                     }

@@ -804,23 +804,27 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>A line from a pool, never the one picked from it last: so two people greeting in turn do not say the same thing.</summary>
+    /// <summary>
+    /// A line from a pool, never the one picked from it last: so two people greeting in turn do not say the same thing. Never
+    /// one whose words take for granted what the player has not got (Core/LineNeeds: a flat, a car).
+    /// </summary>
     public static class SocialLines
     {
         private static readonly Dictionary<string[], int> Last = new Dictionary<string[], int>(64);
         private static readonly Random Dice = new Random();
+        private static readonly Func<float> Random01 = () => (float)Dice.NextDouble();   // made once: handed to every pick
 
-        /// <summary>Null for a null or empty pool.</summary>
+        /// <summary>Null for a null or empty pool, or one none of whose lines fits the player.</summary>
         public static string Pick(string[] pool)
         {
             if (pool == null || pool.Length == 0)
             {
                 return null;
             }
-            int index = Dice.Next(pool.Length);
-            if (pool.Length > 1 && Last.TryGetValue(pool, out int last) && last == index)
+            int index = LineNeeds.Pick(pool, Last.TryGetValue(pool, out int last) ? last : -1, Random01);
+            if (index < 0)
             {
-                index = (index + 1 + Dice.Next(pool.Length - 1)) % pool.Length;
+                return null;
             }
             Last[pool] = index;
             return pool[index];

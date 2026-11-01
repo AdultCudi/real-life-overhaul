@@ -103,9 +103,9 @@ internal static partial class Program
         Check(support.Contains("!FamilyPlaces.AtHome() || (Settings.FamilyAtHome && !Present)"),
             "family home: comfort after a bad day, or care when ill, only with the player at home and the partner there");
         string home = ModSource(@"Family\HomeLife.cs");
-        Check(home.Contains("FamilyText.Pick(HasBath() ? Encourage : EncourageNoBath, ref _lastEncourage)")
-              && !home.Substring(home.IndexOf("string[] EncourageNoBath", StringComparison.Ordinal), 300).Contains("\"reallife_family_encourage_5\""),
-            "family home: the comforting line that runs a bath comes only in a home with a bathtub");
+        Check(home.Contains("FamilyText.Pick(Encourage, ref _lastEncourage)") && !home.Contains("EncourageNoBath")
+              && LineNeeds.Of("reallife_family_encourage_5") == LineNeed.Bath,
+            "family home: the comforting line that runs a bath comes only in a home with a bathtub (the one rule, Core/LineNeeds)");
         Check(FixLineEverywhere("now comes in when they get home while you are in", "agora entra quando chega em casa", "现在会走进来", "kommt jetzt herein",
                                 "entre désormais quand il rentre", "ahora entra cuando llega a casa", "теперь входит, когда возвращается домой",
                                 "komt nu binnen als ze thuiskomen", "artık içeri giriyor"),

@@ -35,6 +35,15 @@ namespace RealLifeOverhaul.Flare
         /// figures on its card (the slots); false for any other business, or one with no figures yet (the plain card).
         /// </summary>
         public static Func<string, int, TextSlots, bool> TextReview;
+
+        /// <summary>Moves kept words to a new key (a held message's key follows its minute); false with none under the old.</summary>
+        public static Func<string, string, bool> TextMove;
+
+        /// <summary>Counts a written line a held item shows after all, by its intent and why (TextsHub.CountWritten).</summary>
+        public static Action<string, TextShownWhy> TextWritten;
+
+        /// <summary>Why a use cannot go to a model now; Model when it can (TextsHub.WhyNotWanted).</summary>
+        public static Func<TextUse, TextShownWhy> TextWhyNot;
     }
 
     /// <summary>Fills a card's speaker from a person of the social life by their number; false if there is none.</summary>
@@ -92,29 +101,12 @@ namespace RealLifeOverhaul.Flare
                 {
                     TextsAnswer(p, now);   // the author's answer to a reply of the player's (FlareDirector.Answers)
                 }
-                if (p.At <= now || p.Text != null || p.Shared || !_textAsked.May(p.Id))
+                if (p.At <= now || p.Text != null || p.Shared || !_textAsked.May(p.Id) || _wordsHold.Holds(PostKey(p)))
                 {
-                    continue;
+                    continue;   // a held post is the hold's to ask (FlareDirector.Hold)
                 }
                 bool shared = GoingPublic.InSession && FlareNetShare.IsShared(_file, p, hostShares);
-                TextRequest r = PostRequest(p, shared);
-                if (r == null)
-                {
-                    continue;
-                }
-                r.Key = "fp:" + p.Id;
-                r.Keep = !shared;
-                r.Shared = shared;
-                r.Day = p.Day;
-                r.Seconds = Seconds(p.At - now);
-                FlarePost post = p;
-                r.Wanted = () => _file != null && _file.Post(post.Id) == post && Now < post.At;   // words after it went up are not used
-                int id = p.Id;
-                r.Done = words => _textAsked.Ended(id, words != null);   // kept by the hub under the post's key; none: asked again on the next event
-                if (FlareBridges.TextAsk(r))
-                {
-                    _textAsked.Asked(id);   // not again while it waits
-                }
+                AskPost(p, PostRequest(p, shared), shared, Seconds(p.At - now));
             }
             for (int i = 0; i < _file.Net.Dms.Count; i++)
             {
@@ -145,59 +137,149 @@ namespace RealLifeOverhaul.Flare
                 {
                     continue;
                 }
-                string reaction = FlareTextsMap.Reaction(FlareRules.ReplyOf(person, p), kind);
-                if (reaction == null)
+                TextRequest r = FriendReplyRequest(p, index, person, kind);
+                if (r == null)
                 {
                     continue;
                 }
-                var r = new TextRequest { Use = TextUse.Replies, Intent = "citizen.reply." + kind, Key = "fr:" + p.Id + ":" + index, Speaker = "f:" + index, Keep = true, Day = p.Day };
-                r.Who.First = person.First;
-                r.Who.Name = person.First;
-                r.Who.Handle = FlareText.HandleOf(person.First);
-                r.Who.Age = TextWords.Age(_file.Seed * 13 + index, 21, 48);
-                r.Who.District = string.IsNullOrEmpty(person.District) ? FlareGame.DistrictName(null) : person.District;
-                r.Who.Style = TextWords.CitizenStyle(_file.Seed * 13 + index);
-                r.Who.When = When();
-                r.Slots.Set("reaction", reaction);
-                r.History.Add(new TextSaid(MyName, PostWords(p)));
-                r.Seconds = Seconds(p.At + re.Delay - now);
                 long at = p.At + re.Delay;
-                r.Wanted = () => Now < at;
-                r.Done = words => { };
-                FlareBridges.TextAsk(r);
+                HoldFriendReply(p, index, at, r);
+                AskFriendReply(r, at, Seconds(at - now));
             }
+        }
+
+        // A friend's reply under a post of the player's: the card of their reaction; null for a reaction with none.
+        private TextRequest FriendReplyRequest(FlarePost p, int index, FlarePerson person, string kind)
+        {
+            string reaction = FlareTextsMap.Reaction(FlareRules.ReplyOf(person, p), kind);
+            if (reaction == null)
+            {
+                return null;
+            }
+            var r = new TextRequest { Use = TextUse.Replies, Intent = "citizen.reply." + kind, Key = FriendKey(p.Id, index), Speaker = "f:" + index, Keep = true, Day = p.Day };
+            r.Who.First = person.First;
+            r.Who.Name = person.First;
+            r.Who.Handle = FlareText.HandleOf(person.First);
+            r.Who.Age = TextWords.Age(_file.Seed * 13 + index, 21, 48);
+            r.Who.District = string.IsNullOrEmpty(person.District) ? FlareGame.DistrictName(null) : person.District;
+            r.Who.Style = TextWords.CitizenStyle(_file.Seed * 13 + index);
+            r.Who.When = When();
+            r.Slots.Set("reaction", reaction);
+            r.History.Add(new TextSaid(MyName, PostWords(p)));
+            return r;
+        }
+
+        // A friend's reply asked: used if it comes before its time, or while the hold keeps the reply back for it.
+        private bool AskFriendReply(TextRequest r, long at, double seconds)
+        {
+            string key = r.Key;
+            r.Seconds = seconds;
+            r.HoldsLine = _wordsHold.Holds(key);
+            r.Wanted = () => Now < at || _wordsHold.Holds(key);
+            r.Done = words => HoldEnded(key, words != null, r.Shown);
+            bool asked = FlareBridges.TextAsk(r);
+            HoldAsked(key, asked, key, r.Shown);
+            return asked;
+        }
+
+        private static string FriendKey(int post, int index) => "fr:" + post + ":" + index;
+
+        private static string PostKey(FlarePost p) => "fp:" + p.Id;
+
+        // A post's request sent with its key, its kept words and what it waits for; true when asked. A post of the player's
+        // own feed (never the session's shared one) holds its line: the hold shows it only with its words.
+        private bool AskPost(FlarePost p, TextRequest r, bool shared, double seconds)
+        {
+            if (r == null)
+            {
+                return false;
+            }
+            string key = PostKey(p);
+            r.Key = key;
+            r.Keep = !shared;
+            r.Shared = shared;
+            r.Day = p.Day;
+            r.Seconds = seconds;
+            r.HoldsLine = !shared;
+            FlarePost post = p;
+            r.Wanted = () => _file != null && _file.Post(post.Id) == post && Now < post.At;   // words after it went up are not used; a held post's time stays ahead
+            int id = p.Id;
+            r.Done = words =>
+            {
+                _textAsked.Ended(id, words != null);   // kept by the hub under the post's key; none: asked again on the next event, or by the hold
+                HoldEnded(key, words != null, r.Shown);
+            };
+            bool asked = FlareBridges.TextAsk(r);
+            if (asked)
+            {
+                _textAsked.Asked(id);   // not again while it waits
+            }
+            HoldAsked(key, asked, key, r.Shown);
+            return asked;
         }
 
         // The answer to a message of the player's: asked when scheduled, and again while it comes back without words.
         private void TextsDm(FlareDm answer, string typed)
         {
             int data = TextData;
-            if (FlareBridges.TextAsk == null || Save == null || !FlareTextsMap.DmWants(answer, Now, data) || string.IsNullOrEmpty(typed))
+            if (FlareBridges.TextAsk == null || Save == null || !FlareTextsMap.DmWants(answer, Now, data) || string.IsNullOrEmpty(typed) || _wordsHold.Holds(DmHoldKey(answer)))
             {
-                return;
+                return;   // a held answer is the hold's to ask (FlareDirector.Hold)
             }
             string key = FlareTextsMap.DmKey(answer);
             if (!_textDms.May(key) || (FlareBridges.TextKept != null && FlareBridges.TextKept(key) != null))
             {
                 return;
             }
-            FlareDmSpeaker speaker = FlareTextsMap.DmSpeakerOf(answer.With, out int number);
-            var r = new TextRequest { Use = TextUse.People, Intent = FlareTextsMap.Dm(answer.Key, speaker, data), Key = key, Keep = true, Day = Save.Day };
-            if (!DmWho(answer, speaker, number, r))
+            AskDm(answer, DmRequest(answer, typed), Seconds(answer.At - Now));
+        }
+
+        // The answer's card: its speaker, its intent and the player's message; null for one with no card or speaker.
+        private TextRequest DmRequest(FlareDm answer, string typed)
+        {
+            int data = TextData;
+            if (Save == null || string.IsNullOrEmpty(typed))
             {
-                return;
+                return null;
+            }
+            FlareDmSpeaker speaker = FlareTextsMap.DmSpeakerOf(answer.With, out int number);
+            var r = new TextRequest { Use = TextUse.People, Intent = FlareTextsMap.Dm(answer.Key, speaker, data), Keep = true, Day = Save.Day };
+            if (r.Intent == null || !DmWho(answer, speaker, number, r))
+            {
+                return null;
             }
             InviteCard(answer, data, r);   // an invitation's answer: its own intent and values
             r.History.Add(new TextSaid(MyName, typed));
-            long at = answer.At;
-            r.Seconds = Seconds(at - Now);
-            r.Wanted = () => Now < at;
-            r.Done = words => _textDms.Ended(key, words != null);   // kept by the hub under its key; none: asked again on the next event
-            if (FlareBridges.TextAsk(r))
+            return r;
+        }
+
+        // The answer asked under its key of now; a held answer's minute moves on, and its words follow it (FlareDirector.Hold).
+        private bool AskDm(FlareDm answer, TextRequest r, double seconds)
+        {
+            if (r == null)
+            {
+                return false;
+            }
+            string key = FlareTextsMap.DmKey(answer), hold = DmHoldKey(answer);
+            r.Key = key;
+            r.Seconds = seconds;
+            r.HoldsLine = true;
+            r.Wanted = () => Now < answer.At;   // a held answer's time stays ahead while it waits
+            r.Done = words =>
+            {
+                _textDms.Ended(key, words != null);   // kept by the hub under its key; none: asked again on the next event, or by the hold
+                HoldEnded(hold, words != null, r.Shown);
+            };
+            bool asked = FlareBridges.TextAsk(r);
+            if (asked)
             {
                 _textDms.Asked(key);
             }
+            HoldAsked(hold, asked, key, r.Shown);
+            return asked;
         }
+
+        private static string DmHoldKey(FlareDm m) => "dm:" + m.Id;
 
         // The speaker of an answer to a message, by the account; false for one the model has no card for (the written line).
         private bool DmWho(FlareDm answer, FlareDmSpeaker speaker, int number, TextRequest r)

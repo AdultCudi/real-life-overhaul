@@ -183,6 +183,7 @@ namespace RealLifeOverhaul.Tech
             if (_firmsOn)
             {
                 KeepWarehouses();
+                DeskSecond();   // a desk of the player's own firm to click, a stint at one watched
             }
         }
 
