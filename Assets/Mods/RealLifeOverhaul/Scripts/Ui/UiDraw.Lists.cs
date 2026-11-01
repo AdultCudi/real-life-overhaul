@@ -107,9 +107,9 @@ namespace RealLifeOverhaul.Ui
             float titleH = UiTextRules.WrappedHeight(service.Title, UiStyle.Title, titleW, 2);
             float descH = string.IsNullOrEmpty(service.About) ? 0f : UiTextRules.WrappedHeight(service.About, UiStyle.Small, inner, 2);
             height = Snap(UiTokens.S4 * 2f + titleH + (descH > 0f ? UiTokens.S1 + descH : 0f));
-            int face = Box(s, at, x, y, w, height, UiRole.None, UiRole.None, UiTokens.RadiusLarge, service.Disabled ? UiFlags.Disabled : UiFlags.None);   // a row in its panel, not a card in a card
+            // A press target wears its face at rest, the secondary button's tone, so the mouse sees a button before it hovers.
+            int face = Box(s, at, x, y, w, height, UiRole.Field, UiRole.None, UiTokens.RadiusLarge, service.Disabled ? UiFlags.Disabled : UiFlags.None);
             UiAt inside = at.In(face);
-            Box(s, inside, x + UiTokens.S4, y + height - UiTokens.Hairline, w - UiTokens.S4 * 2f, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             Text(s, inside, x + UiTokens.S4, y + UiTokens.S4, titleW, UiStyle.Title, UiRole.Text, service.Title, UiFlags.Wrap | UiFlags.Truncate, 2);
             float titleLine = UiTextRules.LineHeight(UiStyle.Title);
             Text(s, inside, x + w - UiTokens.S4 - pw, y + UiTokens.S4 + (titleLine - UiTextRules.LineHeight(UiStyle.SmallStrong)) / 2f, pw, UiStyle.SmallStrong,

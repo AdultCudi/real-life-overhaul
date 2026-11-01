@@ -60,15 +60,20 @@ namespace RealLifeOverhaul.Ui
             // The phone's own way back for the mouse, where a window has its close.
             UiDraw.IconButton(s, at, ix + iw - head, ty, head, UiIcon.Close, UiRole.Text, UiDraw.CloseCommand, 0, false, UiAction.Count, false, true);
             ty += head + UiTokens.S5;
-            UiDraw.Text(s, at, ix, ty, iw, UiStyle.Display, UiRole.Text, m.Day, UiFlags.Truncate);
-            ty += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display)) + UiTokens.S1;
+            // The day and the weather are the status bar's: a phone that says them again under it only adds noise, so a
+            // phone over the bar leaves them out and its apps lead.
+            if (!string.IsNullOrEmpty(m.Day))
+            {
+                UiDraw.Text(s, at, ix, ty, iw, UiStyle.Display, UiRole.Text, m.Day, UiFlags.Truncate);
+                ty += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display)) + UiTokens.S1;
+            }
             if (!string.IsNullOrEmpty(m.Note))
             {
                 UiDraw.Icon(s, at, ix, ty, UiTokens.Icon, UiIcon.CloudSun, UiRole.Warn, UiFlags.Middle, true);
                 UiDraw.TextMiddle(s, at, ix + UiTokens.Icon + UiTokens.S2, ty, UiTokens.Icon, iw - UiTokens.Icon - UiTokens.S2, UiStyle.Body, UiRole.Text2, m.Note, UiFlags.Truncate);
                 ty += UiTokens.Icon;
             }
-            ty += UiTokens.S6;
+            ty += string.IsNullOrEmpty(m.Day) && string.IsNullOrEmpty(m.Note) ? 0f : UiTokens.S6;
             float cell = UiDraw.SnapDown(iw / Across);
             float labelH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S1;
             float rowH = Tile + UiTokens.S2 + labelH + UiTokens.S3;

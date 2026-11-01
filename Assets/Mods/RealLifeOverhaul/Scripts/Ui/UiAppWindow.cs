@@ -105,6 +105,7 @@ namespace RealLifeOverhaul.Ui
         public string PeopleMore;                   // a link under the people to the rest of them ("See all 12 in Team"); null for none
         public string Note;                         // a quiet line under the people (what a group needs and how to fill it)
         public UiRole NoteTone = UiRole.Warn;
+        public string NoteAction;                   // a link under the note to the place it names ("Open Requests"); null for none
         public UiPrompt[] Prompts = new UiPrompt[0];
         public int PromptCount;
     }
@@ -121,7 +122,7 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class UiAppWindow
     {
-        public const int NavCommand = 1, RowCommand = 2, PersonCommand = 3, ActionCommand = 4, MoreCommand = 5, AllCommand = 6;
+        public const int NavCommand = 1, RowCommand = 2, PersonCommand = 3, ActionCommand = 4, MoreCommand = 5, AllCommand = 6, NoteCommand = 7;
         public const float Sidebar = 232f;          // px
         private const float NavRow = 48f;           // px: a section's entry or tab, its tile centred on the grid
         private const float Row = 40f;              // px: a table's row with its icon tile
@@ -161,7 +162,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (m.People.Length > 0)
             {
-                People(s, at, m.PeopleTitle, m.PeopleCount, m.People, m.PeopleMore, m.Note, m.NoteTone, x + tw + UiTokens.S6, y, pw, bottom - y);
+                People(s, at, m.PeopleTitle, m.PeopleCount, m.People, m.PeopleMore, m.Note, m.NoteTone, m.NoteAction, x + tw + UiTokens.S6, y, pw, bottom - y);
             }
             for (int i = 0; i < m.PromptCount; i++)
             {
@@ -225,7 +226,7 @@ namespace RealLifeOverhaul.Ui
                     UiFlags.Middle | UiFlags.Centre, true);
                 float cw = string.IsNullOrEmpty(nav[i].Count) ? 0f : UiTextRules.Width(nav[i].Count, UiStyle.Small) + UiTokens.S1;
                 float lx = ex + UiTokens.S3 + tile + UiTokens.S3;
-                UiDraw.TextMiddle(s, inside, lx, ny, NavRow, ex + ew - UiTokens.S3 - cw - UiTokens.S2 - lx, UiStyle.Nav, shown ? UiRole.AccentText : UiRole.Text, nav[i].Label,
+                UiDraw.TextMiddle(s, inside, lx, ny, NavRow, ex + ew - UiTokens.S3 - cw - UiTokens.S2 - lx, UiStyle.Nav, UiRole.Text, nav[i].Label,
                     UiFlags.Label | UiFlags.Truncate);
                 if (cw > 0f)
                 {
@@ -298,7 +299,7 @@ namespace RealLifeOverhaul.Ui
             float right = Buttons(s, at, actions, x + w, y, keys);
             if (!string.IsNullOrEmpty(next))
             {
-                UiDraw.Icon(s, at, x, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Lightbulb, UiRole.None, UiFlags.Middle, true);
+                UiDraw.Icon(s, at, x, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Spark, UiRole.None, UiFlags.Middle, true);   // a suggestion's own mark, never a role's
                 UiDraw.TextMiddle(s, at, x + UiTokens.Icon + UiTokens.S2, y, h, right - UiTokens.S6 - x - UiTokens.Icon - UiTokens.S2, UiStyle.BodyStrong, UiRole.Text, next,
                     UiFlags.Label | UiFlags.Truncate);
             }
@@ -581,8 +582,8 @@ namespace RealLifeOverhaul.Ui
         /// management game grades them, as many as the room holds, then a link to the rest. A note under them says what a
         /// group needs and how to fill it.
         /// </summary>
-        public static void People(UiScene s, UiAt at, string title, string count, UiPersonRow[] people, string more, string note, UiRole noteTone, float x, float y,
-            float w, float h)
+        public static void People(UiScene s, UiAt at, string title, string count, UiPersonRow[] people, string more, string note, UiRole noteTone, string noteAction,
+            float x, float y, float w, float h)
         {
             float ty = y;
             UiDraw.Text(s, at, x, ty, w - UiTokens.S16, UiStyle.SectionHeader, UiRole.Text, title, UiFlags.Label | UiFlags.Truncate);
@@ -591,7 +592,8 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Text(s, at, x + w - UiTokens.S16, ty, UiTokens.S16, UiStyle.Small, UiRole.Muted, count, UiFlags.Right);
             }
             ty += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3;
-            float noteH = string.IsNullOrEmpty(note) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(note, UiStyle.Small, w - UiTokens.Icon - UiTokens.S2, 3)) + UiTokens.S4;
+            float noteH = string.IsNullOrEmpty(note) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(note, UiStyle.Small, w - UiTokens.Icon - UiTokens.S2, 3)) + UiTokens.S4
+                          + (string.IsNullOrEmpty(noteAction) ? 0f : UiTokens.Control);
             const float face = UiTokens.AvatarRow;
             float moreH = string.IsNullOrEmpty(more) ? 0f : UiTokens.Control;
             for (int i = 0; i < people.Length && ty + PersonRow <= y + h - noteH - moreH; i++)
@@ -617,14 +619,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (moreH > 0f)
             {
-                // A link as a link: cyan words and the arrow, the whole row a target.
-                int row = UiDraw.Box(s, at, x - UiTokens.S2, ty, w + UiTokens.S4, moreH, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
-                float mw = UiDraw.Snap(UiTextRules.Width(more, UiStyle.BodyStrong) + UiTokens.S1);
-                UiDraw.TextMiddle(s, at.In(row), x, ty, moreH, Math.Min(mw, w - UiTokens.Icon - UiTokens.S2), UiStyle.BodyStrong, UiRole.AccentText, more, UiFlags.Label | UiFlags.Truncate);
-                float words = Math.Min(UiTextRules.Width(more, UiStyle.BodyStrong), w - UiTokens.Icon - UiTokens.S2);
-                UiDraw.Icon(s, at.In(row), x + words - UiTokens.S1 + UiDraw.LinkGap, ty + (moreH - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Next, UiRole.AccentText,
-                    UiFlags.Middle | UiFlags.Decor);   // the arrow's glyph stands a grid step inside its box, so its box starts a step early
-                UiDraw.Node(s, at, x - UiTokens.S2, ty, w + UiTokens.S4, moreH, AllCommand, 0, row);
+                LinkRow(s, at, more, AllCommand, x, ty, w);
                 ty += moreH;
             }
             if (noteH > 0f)
@@ -632,9 +627,27 @@ namespace RealLifeOverhaul.Ui
                 float ny = ty + UiTokens.S2;
                 bool warns = noteTone == UiRole.Warn || noteTone == UiRole.Danger;   // a warning wears the warning's glyph, never a recoloured info mark
                 UiDraw.Icon(s, at, x, ny, UiTokens.Icon, warns ? UiIcon.Warning : UiIcon.Info, warns ? noteTone : UiRole.None, UiFlags.Middle, true);
-                UiDraw.Text(s, at, x + UiTokens.Icon + UiTokens.S2, ny + UiTokens.Hairline, w - UiTokens.Icon - UiTokens.S2, UiStyle.Small, UiRole.Text2, note,
+                int words = UiDraw.Text(s, at, x + UiTokens.Icon + UiTokens.S2, ny + UiTokens.Hairline, w - UiTokens.Icon - UiTokens.S2, UiStyle.Small, UiRole.Text2, note,
                     UiFlags.Label | UiFlags.Wrap | UiFlags.Middle, 3);
+                if (!string.IsNullOrEmpty(noteAction))
+                {
+                    LinkRow(s, at, noteAction, NoteCommand, x + UiTokens.Icon + UiTokens.S2, UiDraw.Snap(s.Items[words].Y + s.Items[words].H), w - UiTokens.Icon - UiTokens.S2);
+                }
             }
+        }
+
+        // A link as a link: cyan words and the arrow one gap after them, the whole row a target.
+        private static void LinkRow(UiScene s, UiAt at, string words, int command, float x, float y, float w)
+        {
+            float h = UiTokens.Control;
+            int row = UiDraw.Box(s, at, x - UiTokens.S2, y, w + UiTokens.S4, h, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
+            float room = w - UiTokens.Icon - UiTokens.S2;
+            float mw = UiDraw.Snap(UiTextRules.Width(words, UiStyle.BodyStrong) + UiTokens.S1);
+            UiDraw.TextMiddle(s, at.In(row), x, y, h, Math.Min(mw, room), UiStyle.BodyStrong, UiRole.AccentText, words, UiFlags.Label | UiFlags.Truncate);
+            float drawn = Math.Min(UiTextRules.Width(words, UiStyle.BodyStrong), room);
+            UiDraw.Icon(s, at.In(row), x + drawn - UiTokens.S1 + UiDraw.LinkGap, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Next, UiRole.AccentText,
+                UiFlags.Middle | UiFlags.Decor);   // the arrow's glyph stands a grid step inside its box, so its box starts a step early
+            UiDraw.Node(s, at, x - UiTokens.S2, y, w + UiTokens.S4, h, command, 0, row);
         }
     }
 }

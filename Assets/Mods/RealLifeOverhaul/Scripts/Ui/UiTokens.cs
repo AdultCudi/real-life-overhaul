@@ -307,7 +307,7 @@ namespace RealLifeOverhaul.Ui
             0x1A2430CC,   // Field: a search box, an input, a secondary button, set into the panel
             0x31425AE6,   // Bubble: their message, a shade over the slate so its words keep 4.5:1
             0xE6EDF30F,   // Hover: a still 6% lift, under the selection's fill, quiet enough for the secondary words on it
-            0x3DBBEB2E,   // RowSel: the cyan at 18% behind a chosen row of words
+            0x2E5167FF,   // RowSel: the cyan at 18% over the slate as a tone; blended in the game's linear light it came out twice as strong
             0x3DBBEB66,   // RowSelEdge: the cyan at 40%
             0xE6EDF3FF,   // Text: soft white, never paper white
             0xA9B8C7FF,   // Text2
@@ -358,11 +358,11 @@ namespace RealLifeOverhaul.Ui
             0xB4D45AFF,   // Grade4
             0x74D35AFF,   // Grade5: excellent
             0x344457FF,   // Tile: neutral, as a warm colour faded on slate turns brown and olive
-            0x8874DDFF,   // Ramp1: low. One violet rising in lightness, a hue no chart slice comes near, so a map never reads as a category
-            0xA48CECFF,   // Ramp2
-            0xBFA5F8FF,   // Ramp3
-            0xD6BFFEFF,   // Ramp4
-            0xE4D9FDFF,   // Ramp5: high, still a lavender, so a dear street never glares white
+            0xB5B3C5FF,   // Ramp1: low, a grey violet. The colour strengthens up the ramp and never runs to white, so a busy map never glares
+            0xAAA3D0FF,   // Ramp2: a violet no chart slice comes near, so a map never reads as a donut's category
+            0xA291D9FF,   // Ramp3
+            0x9B7EE1FF,   // Ramp4
+            0x9769E4FF,   // Ramp5: high, the strongest violet
         };
 
         /// <summary>A role's colour, as 0xRRGGBBAA. One look: the flag stays for the callers that still pass it.</summary>

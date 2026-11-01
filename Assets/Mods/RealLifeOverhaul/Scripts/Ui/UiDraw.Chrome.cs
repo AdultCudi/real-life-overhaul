@@ -20,6 +20,8 @@ namespace RealLifeOverhaul.Ui
         /// <summary>px between a link's words and its mark, measured from the drawn words as Cities: Skylines II keeps it.</summary>
         public const float LinkGap = 5f;
 
+        private const float SliceGap = 0.006f;   // of the turn: about two pixels at a donut's rim
+
         /// <summary>
         /// An app's window over the world: the slate panel at its share of the screen, its title strip (the app's icon, the
         /// place or the app's name in cyan capitals, the close button). Returns the panel, which the page is drawn inside.
@@ -349,19 +351,19 @@ namespace RealLifeOverhaul.Ui
                 Box(s, at, x, y, size, size, UiRole.Track, UiRole.None, 0f, UiFlags.Circle);
                 return;
             }
-            var ends = new float[count];
+            // Each slice its own arc from where the last ended, so no slice lies under another and tints its edges, with a
+            // hair of the panel between neighbours to hide the radial fill's hard seams, as a game's donut parts them.
             float run = 0f;
             for (int i = 0; i < count; i++)
             {
+                float start = run;
                 run += Math.Max(0f, shares[i]) / sum;
-                ends[i] = i == count - 1 ? 1f : run;
-            }
-            for (int i = count - 1; i >= 0; i--)
-            {
+                float end = i == count - 1 ? 1f : run;
+                float gap = count > 1 && end - start > SliceGap * 3f ? SliceGap : 0f;
                 var item = new UiItem
                 {
-                    Kind = UiKind.Slice, Fill = UiTokens.Chart(i), X = x, Y = y, W = size, H = size, Value = ends[i], Clip = at.Clip, Node = -1, Layer = at.Layer,
-                    Order = at.Order, Parent = at.Parent, Alpha = 1f, Flags = UiFlags.Circle
+                    Kind = UiKind.Slice, Fill = UiTokens.Chart(i), X = x, Y = y, W = size, H = size, Value = end - start, Points = new[] { start + gap / 2f, end - gap / 2f },
+                    Clip = at.Clip, Node = -1, Layer = at.Layer, Order = at.Order, Parent = at.Parent, Alpha = 1f, Flags = UiFlags.Circle
                 };
                 s.Add(ref item);
             }

@@ -137,12 +137,12 @@ namespace RealLifeOverhaul.Ui
                 else
                 {
                     cw = UiTextRules.Width(count, UiStyle.Small) + UiTokens.S1;
-                    TextMiddle(s, inside, x + w - UiTokens.S4 - cw, y, h, cw, UiStyle.Small, selected ? UiRole.AccentText : UiRole.Muted, count, UiFlags.Right);
+                    TextMiddle(s, inside, x + w - UiTokens.S4 - cw, y, h, cw, UiStyle.Small, selected ? UiRole.Text : UiRole.Muted, count, UiFlags.Right);
                 }
             }
             float tx = x + UiTokens.S4 + lead + UiTokens.S3;
             float lw = w - (tx - x) - cw - UiTokens.S6;
-            UiRole ink = selected ? UiRole.AccentText : UiRole.Text;
+            UiRole ink = UiRole.Text;   // the chosen row's fill marks it: cyan words on the cyan read worst on the one row that matters
             if (UiTextRules.Width(label, UiStyle.Nav) <= lw)
             {
                 TextMiddle(s, inside, tx, y, h, lw, UiStyle.Nav, ink, label, UiFlags.Label | UiFlags.Truncate);

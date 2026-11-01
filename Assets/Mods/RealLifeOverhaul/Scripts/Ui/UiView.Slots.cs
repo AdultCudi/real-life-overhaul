@@ -141,8 +141,17 @@ namespace RealLifeOverhaul.Ui
                 }
                 case UiKind.Slice:
                 {
-                    // Unity's radial fill turns a donut's ring into a slice: from the top, clockwise, to a share of the turn.
-                    var s = new SliceSlot { Rect = r, Ring = r.gameObject.AddComponent<Image>() };
+                    // Unity's radial fill turns a donut's ring into a slice: from the top, clockwise, to a share of the turn, on a
+                    // child turned to the slice's start, so each slice is its own arc.
+                    var arc = new GameObject("Arc", typeof(RectTransform));
+                    var ar = (RectTransform)arc.transform;
+                    ar.SetParent(r, false);
+                    ar.anchorMin = Vector2.zero;
+                    ar.anchorMax = Vector2.one;
+                    ar.offsetMin = Vector2.zero;
+                    ar.offsetMax = Vector2.zero;
+                    ar.pivot = new Vector2(0.5f, 0.5f);
+                    var s = new SliceSlot { Rect = r, Ring = arc.AddComponent<Image>() };
                     s.Ring.raycastTarget = false;
                     s.Ring.sprite = UiSprites.Donut;
                     s.Ring.type = Image.Type.Filled;
@@ -256,7 +265,9 @@ namespace RealLifeOverhaul.Ui
                 {
                     Place(slot.Rect, it.X, it.Y, it.W, it.H);
                     Image ring = ((SliceSlot)slot).Ring;
-                    ring.fillAmount = Mathf.Clamp01(it.Value);
+                    float start = it.Points != null && it.Points.Length > 1 ? it.Points[0] : 0f, end = it.Points != null && it.Points.Length > 1 ? it.Points[1] : it.Value;
+                    ring.fillAmount = Mathf.Clamp01(end - start);
+                    ring.rectTransform.localEulerAngles = new Vector3(0f, 0f, -start * 360f);   // clockwise from the top, as the fill runs
                     ring.color = Colour(it.Fill, it.Alpha);
                     break;
                 }

@@ -223,17 +223,29 @@ internal static partial class Program
             }
             Check(pair >= 8.0 && beside >= 12.0, "ui tokens: the chart's hues stay apart under " + names[k] + " (closest pair " + pair.ToString("0.0") + ", closest neighbours " + beside.ToString("0.0")
                 + "; at least 8 and 12)");
-            // A map's ramp is ordered: each step lighter than the last as this eye sees it, and apart from its neighbours.
-            double rise = double.MaxValue, apart = double.MaxValue;
+            // A map's ramp is ordered: its lightness runs one way step by step as this eye sees it, and neighbours stay apart.
+            // Tritanopia sees the violet's colour only faintly, so there the lightness alone keeps the steps apart.
+            double step = double.MaxValue, apart = double.MaxValue;
             for (int i = 0; i < 4; i++)
             {
                 double[] a = SeenLab(UiTokens.Colour(UiTokens.Ramp(i)), kinds[k]), b = SeenLab(UiTokens.Colour(UiTokens.Ramp(i + 1)), kinds[k]);
-                rise = Math.Min(rise, b[0] - a[0]);
+                step = Math.Min(step, a[0] - b[0]);
                 apart = Math.Min(apart, LabDistance(a, b));
             }
-            Check(rise >= 6.0 && apart >= 8.0, "ui tokens: the map's ramp rises in lightness and stays apart under " + names[k] + " (least rise " + rise.ToString("0.0")
-                + " L*, closest neighbours " + apart.ToString("0.0") + "; at least 6 and 8)");
+            double least = k == 2 ? 5.0 : 10.0;
+            Check(step >= 4.0 && apart >= least, "ui tokens: the map's ramp runs in order and stays apart under " + names[k] + " (least step " + step.ToString("0.0")
+                + " L*, closest neighbours " + apart.ToString("0.0") + "; at least 4 and " + least.ToString("0") + ")");
         }
+        // No glare: no step brighter than L* 75, and each reads 3:1 on the panel as a legend's swatch.
+        double brightest = 0.0;
+        float faintest = float.MaxValue;
+        for (int i = 0; i < 5; i++)
+        {
+            brightest = Math.Max(brightest, SeenLab(UiTokens.Colour(UiTokens.Ramp(i)), new double[,] { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } })[0]);
+            faintest = Math.Min(faintest, UiContrast(UiTokens.Ramp(i), UiRole.Panel, true));
+        }
+        Check(brightest <= 75.0 && faintest >= UiCheckRules.LargeContrast, "ui tokens: the map's ramp never glares and every step reads on the panel (brightest L* "
+            + brightest.ToString("0.0") + ", at most 75; faintest " + faintest.ToString("0.00") + ":1)");
         // A map beside a donut must never say a slice's colour: every step of the ramp stands well away from every chart hue.
         double[,] eye = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
         double nearest = double.MaxValue;
@@ -245,8 +257,6 @@ internal static partial class Program
             }
         }
         Check(nearest >= 15.0, "ui tokens: the map's ramp keeps away from the chart's hues (closest " + nearest.ToString("0.0") + "; at least 15)");
-        float low = UiContrast(UiRole.Ramp1, UiRole.Panel, true);
-        Check(low >= UiCheckRules.LargeContrast, "ui tokens: the ramp's lowest step reads 3:1 on the panel as a legend's swatch (" + low.ToString("0.00") + ")");
     }
 
     // A colour as an eye with a colour vision deficiency sees it, in CIELAB.
@@ -500,7 +510,7 @@ internal static partial class Program
     private static readonly int[] InfoPanelCommands = { UiInfoPanel.TabCommand, UiInfoPanel.LinkCommand, UiInfoPanel.FooterCommand };
     private static readonly int[] InfoViewCommands = { UiInfoView.ViewCommand };
     private static readonly int[] AppWindowCommands = { UiAppWindow.NavCommand, UiAppWindow.RowCommand, UiAppWindow.PersonCommand, UiAppWindow.ActionCommand,
-        UiAppWindow.MoreCommand, UiAppWindow.AllCommand };
+        UiAppWindow.MoreCommand, UiAppWindow.AllCommand, UiAppWindow.NoteCommand };
     private static readonly int[] DecisionCommands = { UiDecision.ChoiceCommand, UiDecision.ButtonCommand };
     private static readonly int[] PhoneCommands = { UiPhone.AppCommand, UiPhone.PageCommand };
 

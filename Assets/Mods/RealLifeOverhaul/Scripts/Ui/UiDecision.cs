@@ -202,7 +202,7 @@ namespace RealLifeOverhaul.Ui
             float ny = y + UiTokens.S3;
             string number = (index + 1).ToString(System.Globalization.CultureInfo.InvariantCulture) + ".";
             float numW = UiDraw.Snap(UiTextRules.Width("9.", UiStyle.BodyStrong) + UiTokens.S2);
-            UiDraw.Text(s, inside, x, ny, numW, UiStyle.BodyStrong, UiRole.AccentText, number, UiFlags.Middle);
+            UiDraw.Text(s, inside, x, ny, numW, UiStyle.BodyStrong, chosen ? UiRole.Text : UiRole.AccentText, number, UiFlags.Middle);
             float tx = x + numW, tw = w - numW;
             float noteW = string.IsNullOrEmpty(c.Note) ? 0f : UiDraw.Snap(UiTextRules.Width(c.Note, UiStyle.Small) + UiTokens.S1);
             float noteLead = noteW > 0f ? noteW + UiTokens.IconSmall + UiTokens.S1 + UiTokens.S3 : 0f;
