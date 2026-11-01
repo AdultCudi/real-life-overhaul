@@ -61,6 +61,9 @@ SAME_WORDS = 4                                     # a Latin-script translation 
 NOTICE_MOST = 240                                  # characters: a toast holds about 240 (Workshop/STYLE.md, NoticeCheck)
 # Texts that may stay as the English in any translation: placeholders alone, version numbers, and invented names kept in Latin letters.
 ENGLISH_OK = {
+    # 1 Nov 2026, the gallery of the RLO interface: its sample people, a typed name and a street are names
+    'reallife_ui_gallery_person_1', 'reallife_ui_gallery_person_2', 'reallife_ui_gallery_person_3', 'reallife_ui_gallery_person_4', 'reallife_ui_gallery_person_5',
+    'reallife_ui_gallery_person_6', 'reallife_ui_gallery_person_7', 'reallife_ui_gallery_query', 'reallife_ui_gallery_address',
     # 27 Oct 2026, the Polish and Korean batch: the cinema film titles are names
     'reallife_leisure_film_1', 'reallife_leisure_film_2', 'reallife_leisure_film_3', 'reallife_leisure_film_4', 'reallife_leisure_film_5', 'reallife_leisure_film_6', 'reallife_leisure_film_7', 'reallife_leisure_film_8', 'reallife_leisure_film_9', 'reallife_leisure_film_10', 'reallife_leisure_film_11', 'reallife_leisure_film_12',
     # 26 Oct 2026, the 0.57.2 language batch: the construction game firms and investors, two football clubs and a school trust are names

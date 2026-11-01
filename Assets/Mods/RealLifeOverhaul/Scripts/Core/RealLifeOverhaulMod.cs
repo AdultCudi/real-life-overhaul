@@ -1016,6 +1016,15 @@ namespace RealLifeOverhaul
                     v => Settings.LivingDesks = v)
                 .AddButton("reallife_session_test_meeting", () => Sessions.SessionDirector.Instance?.TestMeeting())
                 .AddButton("reallife_session_test_managers", () => Sessions.SessionDirector.Instance?.TestManagers())
+                .AddToggle(Settings.UiInterfaceId, "reallife_ui_enabled", Settings.UiInterface,
+                    v => Settings.UiInterface = v)
+                .AddDropdown(Settings.UiMotionId, "reallife_ui_motion", new[] { "reallife_ui_motion_0", "reallife_ui_motion_1", "reallife_ui_motion_2" }, Settings.UiMotion,
+                    v => Settings.UiMotion = v)
+                .AddButton("reallife_ui_test_gallery", () => Ui.UiDirector.Instance?.TestGallery())
+                .AddButton("reallife_ui_test_contacts", () => Ui.UiDirector.Instance?.TestContacts())
+                .AddButton("reallife_ui_test_population", () => Ui.UiDirector.Instance?.TestPopulation())
+                .AddButton("reallife_ui_test_flare", () => Ui.UiDirector.Instance?.TestFlareCity())
+                .AddButton("reallife_ui_test_firm", () => Ui.UiDirector.Instance?.TestFirm())
                 .AddToggle(Settings.LivingStudioId, "reallife_studio_enabled", Settings.LivingStudio,
                     v => Settings.LivingStudio = v)
                 .AddButton("reallife_studio_test_start", () => Tech.TechDirector.Instance?.TestStudioStart())
@@ -1618,6 +1627,9 @@ namespace RealLifeOverhaul
             Guard.Step("Careers.CareersDirector", () => Guard.Add<Careers.CareersDirector>(_root));   // after the tech sector, whose roles it reads
             Guard.Step("Sessions.SessionDirector", () => Sessions.SessionDirector.Logger = context.Logger);
             Guard.Step("Sessions.SessionDirector", () => Guard.Add<Sessions.SessionDirector>(_root));   // a look once a second: the desk sessions at the player's firms
+            Guard.Step("Ui.UiDirector", () => Ui.UiDirector.Logger = context.Logger);
+            Guard.Step("Ui.UiDirector", () => Ui.UiDirector.ModRoot = context.ModRootPath);
+            Guard.Step("Ui.UiDirector", () => Guard.Add<Ui.UiDirector>(_root));   // the fonts behind the loading screen; a look once a second at Contacts
             Guard.Step("FitOut.FitOutDirector", () => FitOut.FitOutDirector.Logger = context.Logger);
             Guard.Step("FitOut.FitOutDirector", () => Guard.Add<FitOut.FitOutDirector>(_root));   // before the features whose floors it builds
             Guard.Step("Floors.FloorsDirector", () => Guard.Add<Floors.FloorsDirector>(_root));   // a look once a second: the places on floors of the mod's buildings

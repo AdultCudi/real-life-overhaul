@@ -51,6 +51,7 @@ namespace RealLifeOverhaul
             { "RealLifeOverhaul.Outlook", "economy_app" },
             { "RealLifeOverhaul.Population", "population" },
             { "RealLifeOverhaul.Sessions", "living" },
+            { "RealLifeOverhaul.Ui", "ui" },
         };
 
         // Namespaces that are the mod's own machinery, whatever a class of them is called.

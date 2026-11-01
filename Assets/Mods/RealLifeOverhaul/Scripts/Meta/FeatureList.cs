@@ -43,6 +43,7 @@ namespace RealLifeOverhaul.Meta
             Population.PopulationGuide.Register();
             Population.PopDemandGuide.Register();
             Sessions.SessionGuide.Register();
+            Ui.UiGuide.Register();
             Tech.StudioGuide.Register();
             Flare.FlareCityGuide.Register();
             Tech.SectorGuide.Register();

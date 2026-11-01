@@ -43,6 +43,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart AppButtons = ContractBook.Part("app_buttons", "phone", "the buttons of the mod's phone apps");
         public static readonly GamePart ContactPictures = ContractBook.Part("contact_pictures", "phone", "the pictures of the mod's contacts");
         public static readonly GamePart ContactSearch = ContractBook.Part("contact_search", "phone", "the search box of the Contacts app");
+        public static readonly GamePart ContactsKit = ContractBook.Part("contacts_kit", "ui", "the Contacts app drawn on the RLO interface");
         public static readonly GamePart ContactGroupsPart = ContractBook.Part("contact_groups", "phone", "the mod's groups among the Contacts app's category buttons");
         public static readonly GamePart PhoneSkin = ContractBook.Part("phone_skin", "phone", "the phone's skin");
         public static readonly GamePart MapPicker = ContractBook.Part("map_picker", "navigation", "clicking the markers when choosing a place on the city map");
@@ -279,7 +280,25 @@ namespace RealLifeOverhaul
         public static readonly GameMember ContactCategories = Field(ContactGroupsPart, Game, "UI.Smartphone.Apps.Contacts.ContactCategorySelection", "categories", "List<ContactCategory>");
         // Optional: else the mod's buttons keep the colour of their pictures
         public static readonly GameMember ContactButtonIcon = Optional(Field(ContactGroupsPart, Game, "UI.Smartphone.Apps.Contacts.ContactCategoryButton", "iconImage", "Image"));
-        public static readonly GameMember ContactsMarkAll = Field(ContactSearch, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "markAllAsReadButton", "Button");
+        public static readonly GameMember ContactsMarkAll = Field(On(ContactSearch, ContactsKit), Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "markAllAsReadButton", "Button");
+        // The Contacts app's own buttons and header, read and pressed by the RLO interface's Contacts (Ui/Contacts): the game's logic stays the game's.
+        public static readonly GameMember KitDeleteAll = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "deleteAllButton", "Button");
+        public static readonly GameMember KitCall = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "callButton", "Button");
+        public static readonly GameMember KitMap = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "viewOnMapButton", "Button");
+        public static readonly GameMember KitEmployee = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "manageEmployeeButton", "Button");
+        public static readonly GameMember KitSchedule = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "manageScheduleButton", "Button");
+        public static readonly GameMember KitDelivery = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "manageDeliveryButton", "Button");
+        public static readonly GameMember KitCandidates = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "candidatesButton", "GameObject");
+        public static readonly GameMember KitClearChat = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "clearChatButton", "Button");
+        public static readonly GameMember KitRival = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "rivalButton", "Button");
+        public static readonly GameMember KitTaxes = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "taxesButton", "Button");
+        public static readonly GameMember KitAddress = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "addressGameObject", "GameObject");
+        public static readonly GameMember KitHours = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "openingHoursGameObject", "GameObject");
+        public static readonly GameMember KitDemands = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "scheduleDemandsGameObject", "GameObject");
+        public static readonly GameMember KitWage = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "wageGameObject", "GameObject");
+        public static readonly GameMember KitSkill = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "skillLevelGameObject", "GameObject");
+        public static readonly GameMember KitEmployeeInfo = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "employeeInfo", "GameObject");
+        public static readonly GameMember KitContactInfo = Field(ContactsKit, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "contactInfo", "GameObject");
         public static readonly GameMember TextInputField = Field(On(ContactSearch, KeyHidden), Game, "TextInputUI", "inputField", "TMP_InputField");   // also Texts/TextsGame.AskSecret
 
         // Phone/PhoneSkin

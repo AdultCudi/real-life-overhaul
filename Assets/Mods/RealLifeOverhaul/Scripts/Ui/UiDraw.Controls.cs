@@ -1,0 +1,293 @@
+using System;
+
+namespace RealLifeOverhaul.Ui
+{
+    /// <summary>A button's kind: one primary action a screen, the rest quieter.</summary>
+    public enum UiButtonKind : byte
+    {
+        Primary = 0,    // the accent, with a glow: the screen's one main action
+        Secondary,      // a field's face with a clear edge
+        Destructive,    // quiet until pressed once, then armed: a second press does it
+        Armed,          // a destructive button waiting for its second press
+        Chip,           // a quick reply or a filter
+        Quiet           // words only (a composer's Send while there is nothing to send)
+    }
+
+    /// <summary>The kit's controls: buttons, nav items, search, tabs, toggles, sliders and the left-right selector.</summary>
+    public static partial class UiDraw
+    {
+        /// <summary>
+        /// A button: its face, the bound key's cap at its left when it has one (as a game shows "[F] Call"), an icon and its
+        /// label; width from its words when <paramref name="w"/> is 0. Returns the focus target.
+        /// </summary>
+        public static int Button(UiScene s, UiAt at, float x, float y, float w, float h, UiButtonKind kind, string label, UiIcon icon, UiAction key,
+            IUiKeys keys, int command, int arg, bool disabled = false)
+        {
+            bool cap = UiKeyGlyphs.Ownable(key) && HasKey(key, keys);
+            float inner = UiTextRules.Width(label, UiStyle.Button);
+            float capW = cap ? KeyCapWidth(key, keys) : 0f;
+            float iconW = icon != UiIcon.None ? UiTokens.Icon : 0f;
+            float pad = kind == UiButtonKind.Chip ? UiTokens.S4 : UiTokens.S5;
+            float content = inner + (cap ? capW + UiTokens.S2 : 0f) + (iconW > 0f ? iconW + UiTokens.S2 : 0f);
+            if (w <= 0f)
+            {
+                w = Snap(content + pad * 2f);
+            }
+            else if (content > w - pad * 2f && iconW > 0f)
+            {
+                iconW = 0f;   // a longer translation: the words keep their room, the icon goes first
+                icon = UiIcon.None;
+                content = inner + (cap ? capW + UiTokens.S2 : 0f);
+            }
+            bool two = content > w - pad * 2f;
+            if (two)
+            {
+                inner = w - pad * 2f - (cap ? capW + UiTokens.S2 : 0f);
+                content = w - pad * 2f;
+            }
+            UiRole fill, edge, ink;
+            switch (kind)
+            {
+                case UiButtonKind.Primary: fill = UiRole.Accent; edge = UiRole.None; ink = UiRole.OnAccent; break;
+                case UiButtonKind.Destructive: fill = UiRole.Field; edge = UiRole.PanelEdge; ink = UiRole.DangerText; break;
+                case UiButtonKind.Armed: fill = UiRole.DangerSoft; edge = UiRole.Danger; ink = UiRole.DangerText; break;
+                case UiButtonKind.Chip: fill = UiRole.AccentSoft; edge = UiRole.RowSelEdge; ink = UiRole.AccentText; break;
+                case UiButtonKind.Quiet: fill = UiRole.None; edge = UiRole.None; ink = UiRole.Text2; break;
+                default: fill = UiRole.Field; edge = UiRole.PanelEdge; ink = UiRole.Text; break;
+            }
+            float radius = kind == UiButtonKind.Chip ? UiTokens.RadiusMedium : UiTokens.RadiusLarge;   // a chip's corners crisper: a game's tag, not a pill
+            int face = Box(s, at, x, y, w, h, fill, edge, radius, disabled ? UiFlags.Disabled : UiFlags.None);
+            UiAt inside = at.In(face);
+            float cx = x + Math.Max(pad, (w - content) / 2f);
+            if (cap)
+            {
+                KeyCap(s, inside, cx, y + (h - UiTokens.KeyCap) / 2f, key, keys, kind == UiButtonKind.Primary ? UiRole.OnAccent : UiRole.Track, ink);
+                s.Items[s.ItemCount - 1].Alpha = kind == UiButtonKind.Primary ? 0.16f : 1f;
+                s.Items[s.ItemCount - 1].Flags |= UiFlags.Middle | UiFlags.Centre;
+                cx += capW + UiTokens.S2;
+            }
+            if (iconW > 0f)
+            {
+                Icon(s, inside, cx, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, icon, ink, UiFlags.Middle | UiFlags.Centre);
+                cx += iconW + UiTokens.S2;
+            }
+            if (two)
+            {
+                float lh = UiTextRules.LineHeight(UiStyle.Button);
+                Text(s, inside, cx, y + (h - lh * 2f) / 2f, inner, UiStyle.Button, ink, label,
+                    UiFlags.Label | UiFlags.Wrap | UiFlags.Centre | UiFlags.Middle | (disabled ? UiFlags.Disabled : UiFlags.None), 2);
+            }
+            else
+            {
+                TextMiddle(s, inside, cx, y, h, inner + UiTokens.S1, UiStyle.Button, ink, label, UiFlags.Label | UiFlags.Centre | (disabled ? UiFlags.Disabled : UiFlags.None));
+            }
+            return Node(s, at, x, y, w, h, command, arg, face, disabled, -1, 0, key);
+        }
+
+        /// <summary>The height a button of a fixed width needs: a control's, or two lines' when its words take two there.</summary>
+        public static float ButtonHeight(UiButtonKind kind, string label, UiAction key, IUiKeys keys, float w, float height)
+        {
+            bool cap = key != UiAction.Move && key != UiAction.Count && keys != null;
+            float pad = kind == UiButtonKind.Chip ? UiTokens.S4 : UiTokens.S5;
+            float room = w - pad * 2f - (cap ? KeyCapWidth(key, keys) + UiTokens.S2 : 0f);
+            return UiTextRules.Width(label, UiStyle.Button) <= room ? height : Math.Max(height, Snap(UiTextRules.LineHeight(UiStyle.Button) * 2f + UiTokens.S3 * 2f));
+        }
+
+        /// <summary>A button's width before it is drawn, for a row of buttons laid out from the right.</summary>
+        public static float ButtonWidth(UiButtonKind kind, string label, UiIcon icon, UiAction key, IUiKeys keys)
+        {
+            bool cap = key != UiAction.Move && key != UiAction.Count && keys != null;
+            float content = UiTextRules.Width(label, UiStyle.Button) + (cap ? KeyCapWidth(key, keys) + UiTokens.S2 : 0f) + (icon != UiIcon.None ? UiTokens.Icon + UiTokens.S2 : 0f);
+            return Snap(content + (kind == UiButtonKind.Chip ? UiTokens.S4 : UiTokens.S5) * 2f);
+        }
+
+        /// <summary>
+        /// A group or a tab in a sidebar: its colour dot, its name and its count; the selected one is a filled bar with the
+        /// accent selection bar at its left. Returns the focus target.
+        /// </summary>
+        public static int NavItem(UiScene s, UiAt at, float x, float y, float w, string label, string count, float hue, bool selected, int command, int arg,
+            bool loudCount = false)
+        {
+            float h = UiTokens.Control;
+            int face = Box(s, at, x, y, w, h, selected ? UiRole.AccentSoft : UiRole.None, UiRole.None, UiTokens.RadiusLarge, selected ? UiFlags.Selected : UiFlags.None);
+            UiAt inside = at.In(face);
+            if (selected)
+            {
+                Box(s, inside, x, y + UiTokens.S3, UiTokens.SelectBar, h - UiTokens.S3 * 2f, UiRole.Accent, UiRole.None, UiTokens.SelectBar / 2f);
+            }
+            HueDot(s, inside, x + UiTokens.S4, y + (h - UiTokens.StatusDot) / 2f, UiTokens.StatusDot, hue);
+            float cw = 0f;
+            if (!string.IsNullOrEmpty(count))
+            {
+                if (loudCount)
+                {
+                    cw = Badge(s, inside, x + w - UiTokens.S3, y + (h - UiTokens.Badge) / 2f, ParseCount(count), true);
+                    s.Items[s.ItemCount - 1].Flags |= UiFlags.Middle;
+                    s.Items[s.ItemCount - 2].Flags |= UiFlags.Middle;
+                }
+                else
+                {
+                    cw = UiTextRules.Width(count, UiStyle.Small) + UiTokens.S1;
+                    TextMiddle(s, inside, x + w - UiTokens.S4 - cw, y, h, cw, UiStyle.Small, selected ? UiRole.AccentText : UiRole.Muted, count, UiFlags.Right);
+                }
+            }
+            float tx = x + UiTokens.S4 + UiTokens.StatusDot + UiTokens.S3;
+            float lw = w - (tx - x) - cw - UiTokens.S6;
+            UiRole ink = selected ? UiRole.AccentText : UiRole.Text2;
+            if (UiTextRules.Width(label, UiStyle.Nav) <= lw)
+            {
+                TextMiddle(s, inside, tx, y, h, lw, UiStyle.Nav, ink, label, UiFlags.Label | UiFlags.Truncate);
+            }
+            else
+            {
+                // A long name of the game's ("Importations / Marchandises") on two smaller lines rather than cut short.
+                float lh = UiTextRules.WrappedHeight(label, UiStyle.SmallStrong, lw, 2);
+                Text(s, inside, tx, y + (h - lh) / 2f, lw, UiStyle.SmallStrong, ink, label, UiFlags.Label | UiFlags.Wrap | UiFlags.Middle, 2);
+            }
+            return Node(s, at, x, y, w, h, command, arg, face);
+        }
+
+        /// <summary>A search box: its glyph, the words typed or its placeholder, and how many it finds. Returns the focus target.</summary>
+        public static int Search(UiScene s, UiAt at, float x, float y, float w, string placeholder, string query, string count, int command)
+        {
+            float h = UiTokens.Control;
+            int face = Box(s, at, x, y, w, h, UiRole.Field, UiRole.RowEdge, UiTokens.RadiusLarge);
+            UiAt inside = at.In(face);
+            Icon(s, inside, x + UiTokens.S4, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Search, UiRole.Muted);
+            float cw = string.IsNullOrEmpty(count) ? 0f : UiTextRules.Width(count, UiStyle.Small) + UiTokens.S1;
+            if (cw > 0f)
+            {
+                TextMiddle(s, inside, x + w - UiTokens.S4 - cw, y, h, cw, UiStyle.Small, UiRole.Muted, count, UiFlags.Right);
+            }
+            float tx = x + UiTokens.S4 + UiTokens.Icon + UiTokens.S3;
+            bool typed = !string.IsNullOrEmpty(query);
+            TextMiddle(s, inside, tx, y, h, w - (tx - x) - cw - UiTokens.S6, UiStyle.Body, typed ? UiRole.Text : UiRole.Muted, typed ? query : placeholder,
+                typed ? UiFlags.Truncate : UiFlags.Label | UiFlags.Truncate);
+            return Node(s, at, x, y, w, h, command, 0, face);
+        }
+
+        /// <summary>
+        /// Tabs as bars: the previous tab's key, the tabs' names, the next tab's key; the shown tab's name in the accent over
+        /// a bar, the rest quieter, a rule under all. Each tab is a focus target (its command with its index). Returns the height.
+        /// </summary>
+        public static float Tabs(UiScene s, UiAt at, float x, float y, float w, string[] labels, int shown, IUiKeys keys, int command)
+        {
+            float h = UiTokens.Control;
+            Box(s, at, x, y + h - UiTokens.Hairline, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
+            float cx = x;
+            if (keys != null)
+            {
+                cx += KeyCap(s, at, cx, y + (h - UiTokens.KeyCap) / 2f - UiTokens.S1, UiAction.TabPrev, keys, UiRole.Track, UiRole.Text2) + UiTokens.S3;
+                s.Items[s.ItemCount - 1].Flags |= UiFlags.Middle;
+            }
+            for (int i = 0; i < labels.Length; i++)
+            {
+                bool on = i == shown;
+                float tw = Snap(UiTextRules.Width(labels[i], UiStyle.Nav) + UiTokens.S4 * 2f);
+                int face = Box(s, at, cx, y, tw, h, UiRole.None, UiRole.None, UiTokens.RadiusSmall, on ? UiFlags.Selected : UiFlags.None);
+                TextMiddle(s, at.In(face), cx + UiTokens.S4, y - UiTokens.S1, h, tw - UiTokens.S4 * 2f + UiTokens.S1, UiStyle.Nav, on ? UiRole.AccentText : UiRole.Text2,
+                    labels[i], UiFlags.Label);
+                if (on)
+                {
+                    Box(s, at.In(face), cx + UiTokens.S2, y + h - UiTokens.TabBar, tw - UiTokens.S2 * 2f, UiTokens.TabBar, UiRole.Accent, UiRole.None, UiTokens.TabBar / 2f);
+                }
+                Node(s, at, cx, y, tw, h, command, i, face);
+                cx += tw + UiTokens.S1;
+            }
+            if (keys != null)
+            {
+                KeyCap(s, at, cx + UiTokens.S2, y + (h - UiTokens.KeyCap) / 2f - UiTokens.S1, UiAction.TabNext, keys, UiRole.Track, UiRole.Text2);
+                s.Items[s.ItemCount - 1].Flags |= UiFlags.Middle;
+            }
+            return h;
+        }
+
+        /// <summary>A setting that is on or off: its words at the left, the switch at the right. Returns the focus target.</summary>
+        public static int Toggle(UiScene s, UiAt at, float x, float y, float w, string label, bool on, int command, int arg)
+        {
+            float h = UiTokens.Control;
+            int face = Box(s, at, x, y, w, h, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
+            UiAt inside = at.In(face);
+            const float trackW = UiTokens.S12 - UiTokens.S1, trackH = UiTokens.S6;
+            float tx = x + w - UiTokens.S3 - trackW;
+            TextMiddle(s, inside, x + UiTokens.S3, y, h, tx - x - UiTokens.S6, UiStyle.Body, UiRole.Text, label, UiFlags.Label);
+            int track = Box(s, inside, tx, y + (h - trackH) / 2f, trackW, trackH, on ? UiRole.Accent : UiRole.Track, UiRole.None, trackH / 2f, UiFlags.Circle);
+            float knob = trackH - UiTokens.S2;
+            Circle(s, at.In(track), on ? tx + trackW - UiTokens.S1 - knob : tx + UiTokens.S1, y + (h - knob) / 2f, knob, knob, on ? UiRole.OnAccent : UiRole.Text2);
+            return Node(s, at, x, y, w, h, command, arg, face);
+        }
+
+        /// <summary>A value on a track: its words and figure over the track, the fill and the knob at its share. Returns the focus target.</summary>
+        public static int Slider(UiScene s, UiAt at, float x, float y, float w, string label, string figure, float share, int command, int arg)
+        {
+            share = share < 0f ? 0f : share > 1f ? 1f : share;
+            float h = UiTokens.Control + UiTokens.S4;
+            int face = Box(s, at, x, y, w, h, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
+            UiAt inside = at.In(face);
+            float fw = UiTextRules.Width(figure, UiStyle.SmallStrong) + UiTokens.S1;
+            Text(s, inside, x + UiTokens.S3, y + UiTokens.S2, w - fw - UiTokens.S8, UiStyle.Body, UiRole.Text, label, UiFlags.Label);
+            Text(s, inside, x + w - UiTokens.S3 - fw, y + UiTokens.S2, fw, UiStyle.SmallStrong, UiRole.AccentText, figure, UiFlags.Right);
+            float ty = y + h - UiTokens.S4 - UiTokens.S2, tw = w - UiTokens.S3 * 2f;
+            int track = Box(s, inside, x + UiTokens.S3, ty, tw, UiTokens.S2, UiRole.Track, UiRole.None, UiTokens.S1, UiFlags.Circle);
+            if (share > 0f)
+            {
+                Box(s, at.In(track), x + UiTokens.S3, ty, Math.Max(UiTokens.S2, tw * share), UiTokens.S2, UiRole.Accent, UiRole.None, UiTokens.S1, UiFlags.Circle | UiFlags.Share);
+            }
+            float knob = UiTokens.S5;
+            Circle(s, at.In(track), x + UiTokens.S3 + tw * share - knob / 2f, ty + UiTokens.S1 - knob / 2f, knob, knob, UiRole.Text, UiFlags.Share | UiFlags.Middle | UiFlags.Overflow);
+            return Node(s, at, x, y, w, h, command, arg, face);
+        }
+
+        /// <summary>
+        /// A choice of a few, changed with left and right as games do (no list that drops down): its words at the left, the
+        /// choice between two chevrons at the right. Returns the focus target.
+        /// </summary>
+        public static int Selector(UiScene s, UiAt at, float x, float y, float w, string label, string choice, int command, int arg)
+        {
+            float h = UiTokens.Control;
+            int face = Box(s, at, x, y, w, h, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
+            UiAt inside = at.In(face);
+            float cw = SnapDown(Math.Min(w / 2f, UiTokens.S16 * 4f));
+            float cx = x + w - UiTokens.S3 - cw;
+            TextMiddle(s, inside, x + UiTokens.S3, y, h, cx - x - UiTokens.S6, UiStyle.Body, UiRole.Text, label, UiFlags.Label);
+            int box = Box(s, inside, cx, y + UiTokens.S1, cw, h - UiTokens.S2, UiRole.Field, UiRole.RowEdge, UiTokens.RadiusMedium);
+            Icon(s, at.In(box), cx + UiTokens.S2, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Back, UiRole.AccentText, UiFlags.Middle);
+            Icon(s, at.In(box), cx + cw - UiTokens.S2 - UiTokens.Icon, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Next, UiRole.AccentText, UiFlags.Middle);
+            TextMiddle(s, at.In(box), cx + UiTokens.S2 + UiTokens.Icon, y, h, cw - (UiTokens.S2 + UiTokens.Icon) * 2f, UiStyle.SmallStrong, UiRole.Text, choice,
+                UiFlags.Centre | UiFlags.Label);
+            return Node(s, at, x, y, w, h, command, arg, face);
+        }
+
+        /// <summary>Chips in rows within a width (quick replies, filters); returns the height they take.</summary>
+        public static float Chips(UiScene s, UiAt at, float x, float y, float w, string[] labels, int count, int command)
+        {
+            float cx = x, cy = y;
+            for (int i = 0; i < count; i++)
+            {
+                float cw = Math.Min(w, ButtonWidth(UiButtonKind.Chip, labels[i], UiIcon.None, UiAction.Count, null));
+                if (cx > x && cx + cw > x + w)
+                {
+                    cx = x;
+                    cy += UiTokens.Chip + UiTokens.S2;
+                }
+                Button(s, at, cx, cy, cw, UiTokens.Chip, UiButtonKind.Chip, labels[i], UiIcon.None, UiAction.Count, null, command, i);
+                cx += cw + UiTokens.S2;
+            }
+            return count > 0 ? cy - y + UiTokens.Chip : 0f;
+        }
+
+        private static int ParseCount(string count)
+        {
+            int n = 0;
+            for (int i = 0; i < count.Length; i++)
+            {
+                char c = count[i];
+                if (c >= '0' && c <= '9')
+                {
+                    n = n * 10 + (c - '0');
+                }
+            }
+            return n;
+        }
+    }
+}
