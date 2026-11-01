@@ -17,6 +17,8 @@ namespace RealLifeOverhaul.Ui
         private readonly UiDashboardScroll _scroll = new UiDashboardScroll();
         private ViewTarget _at = ViewTarget.To(ViewKind.City, 0);
         private PopulationView _view;
+        private UiDashboardModel _shown;     // the page on the screen, whose rows name what they open
+        private string _name;                // what the row that opened this page called it, or null
         private bool _dirty = true;
         private bool _fresh = true;          // a page just opened: focus goes where it should start, not to the last page's target
         private int _focusCommand = -1, _focusArg;
@@ -25,6 +27,7 @@ namespace RealLifeOverhaul.Ui
         {
             public ViewTarget At;
             public int Command, Arg;         // what was pressed to leave it: Back focuses it again
+            public string Name;
         }
 
         /// <summary>Back at the city closes the screen.</summary>
@@ -37,8 +40,9 @@ namespace RealLifeOverhaul.Ui
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
             _view = Build(_at) ?? Build(ViewTarget.To(ViewKind.City, 0));
-            UiDashboardModel m = _view != null ? PopulationPages.Model(_view, UiText.Words, PopulationText.Money, PopulationGame.NameOf, UiText.Place)
+            UiDashboardModel m = _view != null ? PopulationPages.Model(_view, UiText.Words, PopulationText.Money, PopulationGame.NameOf, UiText.Place, _name)
                 : new UiDashboardModel { Table = new UiTableModel { EmptyTitle = UiText.T("reallife_ui_page_empty") } };
+            _shown = m;
             if (_view == null)
             {
                 m.Prompts = new[] { new UiPrompt { Action = UiAction.Back, Label = UiText.T("reallife_ui_prompt_back") } };
@@ -69,10 +73,26 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
-            _way.Push(new Step { At = _at, Command = command, Arg = arg });
+            _way.Push(new Step { At = _at, Command = command, Arg = arg, Name = _name });
             _at = to;
+            _name = command == UiDashboard.RowCommand ? RowName(arg) : null;
             Opened(-1, 0);
             return true;
+        }
+
+        // What the page on the screen calls a row: a person's or a household's entry, or a table row's first cell.
+        private string RowName(int row)
+        {
+            if (_shown == null || row < 0)
+            {
+                return null;
+            }
+            if (row < _shown.EntryCount)
+            {
+                return _shown.Entries[row].Name;
+            }
+            string[] cells = row < _shown.Table.Rows.Length ? _shown.Table.Rows[row] : null;
+            return cells != null && cells.Length > 0 ? cells[0] : null;
         }
 
         public void Focused(int command, int arg)
@@ -85,6 +105,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Step step = _way.Pop();
                 _at = step.At;
+                _name = step.Name;
                 Opened(step.Command, step.Arg);
                 return true;
             }

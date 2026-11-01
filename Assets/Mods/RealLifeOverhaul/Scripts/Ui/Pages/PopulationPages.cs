@@ -17,7 +17,12 @@ namespace RealLifeOverhaul.Ui
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private const float FigureColumn = UiTokens.S16 * 2f + UiTokens.S8;   // px: a column of figures, wide enough for "$1,234,567"
 
-        public static UiDashboardModel Model(PopulationView v, UiWords t, Func<long, string> money, Func<int, bool, string> nameOf, Func<string, string> place)
+        /// <summary>
+        /// A view's page. <paramref name="name"/> is what the row that opened it called the household or person, so a page
+        /// for one who has gone can say who.
+        /// </summary>
+        public static UiDashboardModel Model(PopulationView v, UiWords t, Func<long, string> money, Func<int, bool, string> nameOf, Func<string, string> place,
+            string name = null)
         {
             bool empty = v.Gone || (v.Hero.Count == 0 && v.Rows.Count == 0 && v.Details.Count == 0);
             var m = new UiDashboardModel
@@ -28,6 +33,10 @@ namespace RealLifeOverhaul.Ui
             m.Table = new UiTableModel { EmptyTitle = Clean(t(v.Empty ?? "reallife_ui_page_empty", "Nothing here yet"), place) };
             if (v.Gone)
             {
+                if (!string.IsNullOrEmpty(name) && (v.Kind == ViewKind.Person || v.Kind == ViewKind.Household))
+                {
+                    m.Table.EmptyTitle = t("reallife_ui_pop_gone_named", "{name} has moved on.").Replace("{name}", name);   // who, as the row named them
+                }
                 // One sentence alone told the player nothing (the critic, 1 Nov): say what happened and the way on.
                 m.Table.EmptyBody = t("reallife_ui_pop_gone_body", "People leave the city when they move away or pass on. Back takes you to where you were.");
             }

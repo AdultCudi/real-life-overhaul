@@ -110,7 +110,8 @@ namespace RealLifeOverhaul.Tech
                 table.Rows.Add(new[]
                 {
                     p.Name, fmt.Text(Mod + "_tech_product_" + p.K.ToString().ToLowerInvariant()), p.Live ? fmt.Whole(SectorRules.Have(p)) : string.Empty,
-                    p.Live ? fmt.Money(p.Revenue) : string.Empty, p.Live ? StudioViews.AgeDays(day - p.Launched, fmt) : fmt.Text(P + "page_building")
+                    p.Live ? fmt.Money(p.Revenue) : string.Empty,
+                    p.Live ? StudioViews.AgeDays(day - p.Launched, fmt) : fmt.Text(P + (FirmsRules.CanLaunch(p) ? "page_ready" : "page_building"))   // as the next step says it can launch
                 });
             }
         }

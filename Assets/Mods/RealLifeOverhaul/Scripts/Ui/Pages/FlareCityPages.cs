@@ -60,9 +60,14 @@ namespace RealLifeOverhaul.Ui
                 // A post's and a trend's figures said in words: a bare "+38" beside a name told the player nothing (the critic, 1 Nov).
                 if (v.Kind == FlareViewKind.Account)
                 {
-                    middle = t("reallife_ui_flare_did", "{what}: {came} came, {spent} spent").Replace("{what}", middle).Replace("{came}", r.Value.ToString("#,0", Inv))
-                        .Replace("{spent}", money(r.Second));
-                    time = string.Empty;
+                    // What the post did in words (one that put people off says so, never "-12 came"), and when it went up.
+                    middle = (r.Value < 0
+                            ? t("reallife_ui_flare_did_bad", "{what} · seen by {seen} · kept {kept} away · {lost} lost").Replace("{kept}", (-r.Value).ToString("#,0", Inv))
+                                .Replace("{lost}", money(-r.Second))
+                            : t("reallife_ui_flare_did", "{what} · seen by {seen} · {came} came · {spent} spent").Replace("{came}", r.Value.ToString("#,0", Inv))
+                                .Replace("{spent}", money(r.Second)))
+                        .Replace("{what}", middle).Replace("{seen}", r.Seen.ToString("#,0", Inv));
+                    time = Ago(r.Day, v.Today, t);
                 }
                 else if (v.Kind == FlareViewKind.Trends)
                 {
@@ -109,6 +114,18 @@ namespace RealLifeOverhaul.Ui
         }
 
         private static string Capital(string words) => string.IsNullOrEmpty(words) ? string.Empty : char.ToUpper(words[0], CultureInfo.CurrentCulture) + words.Substring(1);
+
+        /// <summary>How long ago an entry went up, as a feed says it: today, yesterday or so many days; nothing when either day is unknown.</summary>
+        public static string Ago(int day, int today, UiWords t)
+        {
+            if (day < 0 || today < 0)
+            {
+                return string.Empty;
+            }
+            int days = Math.Max(0, today - day);
+            return days == 0 ? t("reallife_ui_when_today", "Today") : days == 1 ? t("reallife_ui_when_yesterday", "Yesterday")
+                : t("reallife_ui_when_days", "{days} days ago").Replace("{days}", days.ToString("#,0", Inv));
+        }
 
         /// <summary>A figure in words: a count, money, a share as a signed per cent, a key's words, stars out of five, a signed count.</summary>
         public static string Write(long value, FlareViewFormat format, string text, UiWords t, Func<long, string> money)

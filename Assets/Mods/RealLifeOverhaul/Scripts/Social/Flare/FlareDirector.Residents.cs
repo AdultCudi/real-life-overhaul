@@ -712,7 +712,13 @@ namespace RealLifeOverhaul.Flare
         /// <summary>The account in the city: followers here and beyond, and what the newest posts and ads did; null while the residents' side does not run.</summary>
         public FlareCityView CityAccountView()
         {
-            return CityOn ? FlareCityViews.Account(_city, _file.Followers, PlaceName) : null;
+            if (!CityOn)
+            {
+                return null;
+            }
+            FlareCityView v = FlareCityViews.Account(_city, _file.Followers, PlaceName);
+            v.Today = Save != null ? Save.Day : -1;   // so each post can say how long ago it went up
+            return v;
         }
 
         /// <summary>A business's page as the residents see it; null while the residents' side does not run.</summary>

@@ -64,7 +64,7 @@ namespace RealLifeOverhaul.Tech
             page.Figures.Add(TakingsFigure(r, P + "page_takings", fmt));
             Head(page.Main, new[] { P + "page_col_game", P + "page_col_genre", P + "page_col_score", P + "page_col_copies", P + "page_col_kept", P + "page_col_status" },
                 new[] { false, false, true, true, true, true });
-            page.Main.EmptyKey = P + "page_no_games";
+            page.Main.EmptyKey = P + (s.People == 0 ? "page_no_games_hire" : "page_no_games");   // with nobody to make one, hiring comes first, as the next step says
             for (int i = 0; i < games.Count; i++)
             {
                 GameDev g = games[i];

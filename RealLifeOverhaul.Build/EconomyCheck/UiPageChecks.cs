@@ -106,6 +106,9 @@ internal static partial class Program
         UiDashboardModel gm = PopulationPages.Model(PopulationViews.Person(s, -1), en, money, nameOf, null);
         Check(gm.Title == null && gm.Table.EmptyTitle == en("reallife_pop_empty_person", "This person has moved on.") && gm.Table.RowCount == 0,
             "ui pages: one who has moved on says so in words alone, with no title over nothing");
+        UiDashboardModel named = PopulationPages.Model(PopulationViews.Person(s, -1), en, money, nameOf, null, "Thomas Sanders");
+        Check(named.Table.EmptyTitle == "Thomas Sanders has moved on." && !string.IsNullOrEmpty(named.Table.EmptyBody),
+            "ui pages: one who has moved on is named as the row that opened the page named them, with the way on (the critic, 1 Nov)");
         bool selected = false;
         foreach (PopulationView v in views)
         {
@@ -125,8 +128,11 @@ internal static partial class Program
         var account = new FlareCityView { Kind = FlareViewKind.Account, Title = K + "title_account", TitleKey = true, RowsHeader = K + "rows_funnel", Empty = K + "empty_funnel" };
         account.Hero.Add(FlareViewFigure.Of(K + "fig_city", 34, FlareViewFormat.Count));
         account.Hero.Add(FlareViewFigure.Of(K + "fig_beyond", 4, FlareViewFormat.Count));
-        account.Rows.Add(new FlareViewRow { Title = "Bloom Café", Subtitle = K + "row_post", Value = 38, Format = FlareViewFormat.Signed, Target = "bloom" });
-        account.Rows.Add(new FlareViewRow { Title = K + "row_ad", TitleKey = true, Subtitle = K + "row_ad", Value = 9, Format = FlareViewFormat.Signed });
+        account.Today = 12;
+        account.Rows.Add(new FlareViewRow { Title = "Bloom Café", Subtitle = K + "row_post", Value = 38, Format = FlareViewFormat.Signed, Second = 412, Target = "bloom", Day = 12,
+            Seen = 1240 });
+        account.Rows.Add(new FlareViewRow { Title = K + "row_ad", TitleKey = true, Subtitle = K + "row_ad", Value = 9, Format = FlareViewFormat.Signed, Day = 10, Seen = 300 });
+        account.Rows.Add(new FlareViewRow { Title = "Night Owl Bar", Subtitle = K + "row_post", Value = -12, Format = FlareViewFormat.Signed, Second = -140, Day = 11 });
         var trends = new FlareCityView { Kind = FlareViewKind.Trends, Title = K + "trend_title", TitleKey = true, Empty = K + "trend_empty" };
         var business = new FlareCityView { Kind = FlareViewKind.Business, Title = "Bloom Café", Subtitle = K + "sub_mine", RowsHeader = K + "rows_reviews", Empty = K + "empty_reviews",
             Primary = K + "action_ad", PrimaryTarget = "bloom" };
@@ -144,6 +150,10 @@ internal static partial class Program
         }
         Check(am.Shape == UiPageShape.Feed && am.Title == null && rows == 1 && am.EntryLeads[0] && !am.EntryLeads[1],
             "ui pages: Flare's account is a feed headed by its tabs, and only an entry that opens a business is a target");
+        Check(am.Entries[0].Preview == "A post · seen by 1,240 · 38 came · $412 spent" && am.Entries[0].Time == "Today"
+              && am.Entries[1].Preview.StartsWith("An ad · seen by 300", StringComparison.Ordinal) && am.Entries[1].Time == "2 days ago"
+              && am.Entries[2].Preview == "A post · seen by 0 · kept 12 away · $140 lost" && am.Entries[2].Time == "Yesterday",
+            "ui pages: what each post on Flare's account did is said in words, one that put people off as kept away, and each says when it went up");
         UiDashboardModel tm = FlareCityPages.Model(trends, en, money, resident, tabs, 1, account);
         UiDashboard.Lay(scene, tm, frame, true, UiDefaultKeys.Keyboard);
         string said = "none";

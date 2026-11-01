@@ -43,16 +43,29 @@ internal static class UiSamples
     public static UiDashboardModel FlareCity(UiWords t)
     {
         // As FlareCityPages makes the account's tab: a feed of what the posts did, the followers at the side, the tabs heading it.
-        var m = FlareFeed(t, 0, "What your posts did", new[] { new[] { "Bloom Café", Did(t, "A post", "38", "$412"), "" }, new[] { "Bloom Café", Did(t, "An ad", "112", "$1,630"), "" },
-            new[] { "Copperline Books", Did(t, "A post", "9", "$96"), "" }, new[] { "Bloom Café", Did(t, "A post", "21", "$240"), "" },
-            new[] { "Night Owl Bar", Did(t, "A post", "4", "$52"), "" } }, "Nothing measured yet. Post about one of your businesses and look again tomorrow.");
+        var m = FlareFeed(t, 0, "What your posts did", new[]
+        {
+            new[] { "Bloom Café", Did(t, "A post", "1,240", "38", "$412"), Ago(t, 0) },
+            new[] { "Bloom Café", Did(t, "An ad", "6,800", "112", "$1,630"), Ago(t, 1) },
+            new[] { "Copperline Books", Did(t, "A post", "410", "9", "$96"), Ago(t, 1) },
+            new[] { "Night Owl Bar", Did(t, "A post", "880", "21", "$240"), Ago(t, 3) },
+            new[] { "Pine Street Florist", Did(t, "A post", "190", "4", "$52"), Ago(t, 5) },
+        }, "Nothing measured yet. Post about one of your businesses and look again tomorrow.");
         m.EntryLeads = new[] { true, true, true, true, true };
         return m;
     }
 
     // What a post did, as FlareCityPages writes it.
-    private static string Did(UiWords t, string what, string came, string spent) =>
-        t("reallife_ui_flare_did", "{what}: {came} came, {spent} spent").Replace("{what}", what).Replace("{came}", came).Replace("{spent}", spent);
+    private static string Did(UiWords t, string what, string seen, string came, string spent) =>
+        t("reallife_ui_flare_did", "{what} · seen by {seen} · {came} came · {spent} spent").Replace("{what}", what).Replace("{seen}", seen).Replace("{came}", came)
+            .Replace("{spent}", spent);
+
+    // How long ago a post went up, as FlareCityPages.Ago writes it (the preview has the kit alone, not the pages).
+    private static string Ago(UiWords t, int days) => days == 0 ? t("reallife_ui_when_today", "Today") : days == 1 ? t("reallife_ui_when_yesterday", "Yesterday")
+        : t("reallife_ui_when_days", "{days} days ago").Replace("{days}", days.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+    // How long a game or a product has been out, as the firms' pages write it.
+    private static string Out(UiWords t, int days) => t("reallife_studio_page_age_days", "Out {days} days").Replace("{days}", days.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
     /// <summary>Flare's trends tab with nothing trending yet: its long empty words wrapped in the feed, the account's followers at the side.</summary>
     public static UiDashboardModel FlareTrends(UiWords t)
@@ -209,7 +222,7 @@ internal static class UiSamples
                     Title = t("reallife_ui_pop_home", "Home and money"),
                     Lines = new[]
                     {
-                        new UiPairModel { Key = "Rent paid", Value = "$1,140" }, new UiPairModel { Key = "Rent goes to", Value = "The city" },
+                        new UiPairModel { Key = "Rent paid", Value = "$1,140" }, new UiPairModel { Key = "Rent goes to", Value = t("reallife_pop_landlord_city", "A city landlord") },
                         new UiPairModel { Key = "Savings", Value = "$6,920" }, new UiPairModel { Key = "Debt", Value = "$0" },
                     }
                 },
@@ -241,7 +254,7 @@ internal static class UiSamples
             Subtitle = "Looking for work",
             SideTitle = t("reallife_ui_page_details", "Details"),
             Figures = new[] { new UiFigureModel { Label = "Age", Value = "27" } },
-            Side = new[] { new UiPairModel { Key = "Schooling", Value = "Postgraduate degree" }, new UiPairModel { Key = "Work", Value = "Office work" } },
+            Side = new[] { new UiPairModel { Key = "Schooling", Value = "Postgraduate degree" }, new UiPairModel { Key = t("reallife_pop_fig_field", "Line of work"), Value = "Office work" } },
             EntriesTitle = "Lives with",
             Entries = new[] { new UiRowModel { Name = "Mary Sanders", Preview = "At work", Time = t("reallife_ui_pop_age", "Age {age}").Replace("{age}", "29"), Hue = 120f } },
             HasAction = true,
@@ -262,7 +275,7 @@ internal static class UiSamples
         {
             Table = new UiTableModel
             {
-                EmptyTitle = "This person has moved on.",
+                EmptyTitle = t("reallife_ui_pop_gone_named", "{name} has moved on.").Replace("{name}", "Thomas Sanders"),
                 EmptyBody = t("reallife_ui_pop_gone_body", "People leave the city when they move away or pass on. Back takes you to where you were."),
             }
         };
@@ -317,9 +330,9 @@ internal static class UiSamples
                 "reallife_studio_page_no_games", "No game yet. Draft a concept, then pitch it at your desk.", new[]
                 {
                     new[] { "Cinder Valley", "Simulation", "", "", "", "64% made" },
-                    new[] { "Ember Isle", "Adventure", "78", "41,000", "$612,400", "96 days" },
-                    new[] { "Tiny Towns", "Simulation", "74", "28,500", "$341,900", "212 days" },
-                    new[] { "Deep Signal", "Strategy", "69", "12,600", "$128,300", "340 days" },
+                    new[] { "Ember Isle", "Adventure", "78", "41,000", "$612,400", Out(t, 96) },
+                    new[] { "Tiny Towns", "Simulation", "74", "28,500", "$341,900", Out(t, 212) },
+                    new[] { "Deep Signal", "Strategy", "69", "12,600", "$128,300", Out(t, 340) },
                     new[] { "Pocket Courts", "Sports", "58", "4,300", "$31,200", "Withdrawn" },
                 }),
             More = FirmTable(t, new[] { "reallife_studio_page_col_rival", "reallife_studio_page_col_studio", "reallife_studio_page_col_genre", "reallife_studio_page_col_score",
@@ -387,7 +400,7 @@ internal static class UiSamples
             },
             Table = FirmTable(t, new[] { "reallife_studio_page_col_game", "reallife_studio_page_col_genre", "reallife_studio_page_col_score", "reallife_studio_page_col_copies",
                 "reallife_studio_page_col_kept", "reallife_studio_page_col_status" }, new[] { "Game", "Genre", "Score", "Copies", "Kept", "Status" }, 2,
-                "reallife_studio_page_no_games", "No game yet. Draft a concept, then pitch it at your desk.", new string[0][]),
+                "reallife_studio_page_no_games_hire", "No game yet. Hire a team first, then draft a concept.", new string[0][]),
             More = FirmTable(t, new[] { "reallife_studio_page_col_rival", "reallife_studio_page_col_studio", "reallife_studio_page_col_genre", "reallife_studio_page_col_score",
                 "reallife_studio_page_col_copies" }, new[] { "Rival game", "Studio", "Genre", "Score", "Copies" }, 3, "reallife_studio_studio_rivals_none", "No rival game is out yet.",
                 new string[0][]),
@@ -450,9 +463,9 @@ internal static class UiSamples
             Table = FirmTable(t, new[] { "reallife_tech_mkt_page_col_product", "reallife_tech_mkt_page_col_kind", "reallife_tech_mkt_page_col_customers", "reallife_tech_mkt_page_col_takings",
                 "reallife_tech_mkt_page_col_status" }, new[] { "Product", "Kind", "Customers", "Takings", "Status" }, 2, "reallife_tech_mkt_page_no_products", "No product yet.", new[]
                 {
-                    new[] { "Ledgerly", "Subscription service", "12,400", "$412,000", "184 days" },
-                    new[] { "Pocket Ledger", "Phone app", "5,840", "$61,300", "96 days" },
-                    new[] { "Ledger Cloud", "Subscription service", "", "", "Being built" },
+                    new[] { "Ledgerly", "Subscription service", "12,400", "$412,000", Out(t, 184) },
+                    new[] { "Pocket Ledger", "Phone app", "5,840", "$61,300", Out(t, 96) },
+                    new[] { "Ledger Cloud", "Subscription service", "", "", t("reallife_tech_mkt_page_ready", "Ready to launch") },
                 }),
             More = FirmTable(t, new[] { "reallife_tech_mkt_page_col_rival", "reallife_tech_mkt_page_col_market", "reallife_tech_mkt_page_col_customers",
                 "reallife_tech_mkt_page_col_features" }, new[] { "Rival", "Market", "Customers", "Features" }, 2, "reallife_tech_mkt_page_no_rivals", "No rival sells in these markets yet.", new[]
@@ -802,7 +815,7 @@ internal static class UiSamples
         var m = new UiSessionModel
         {
             Title = "Weekly team meeting",
-            About = "Twenty minutes with the team at Pixel Harbour Games: lift their morale, push this week's output or hear them out.",
+            About = "Up to half an hour with the team at Pixel Harbour Games: lift their morale, push this week's output or hear them out.",
             StepLabel = t("reallife_ui_gallery_step", "Step 1 of 2"),
             StepCount = 2,
             Step = 0,
