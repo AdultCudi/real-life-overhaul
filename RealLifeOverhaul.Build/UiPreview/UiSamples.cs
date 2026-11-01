@@ -149,7 +149,7 @@ internal static class UiSamples
                 new UiPairModel { Key = t("reallife_studio_page_pirated", "Pirated copies"), Value = "9,800" },
                 new UiPairModel { Key = t("reallife_studio_page_drm", "DRM"), Value = "On in 1 of 3" },
                 new UiPairModel { Key = t("reallife_studio_page_asks", "Fan requests"), Value = "new levels, co-op play" },
-                new UiPairModel { Key = t("reallife_studio_page_engine", "Engine"), Value = "Licensed" },
+                new UiPairModel { Key = t("reallife_studio_page_engine", "Engine"), Value = "Under licence" },
                 new UiPairModel { Key = t("reallife_studio_page_trend", "Hot genre"), Value = "Strategy until Day 61" },
                 new UiPairModel { Key = t("reallife_studio_page_known", "Team knows"), Value = "Simulation, Adventure, Strategy" },
             },
