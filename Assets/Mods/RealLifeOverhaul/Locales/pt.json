@@ -22429,7 +22429,7 @@
   "reallife_hire_test_orphan_fail": "Teste falhou: uma leitura dos negócios da cidade tropeçou num registro sem prédio. O log diz qual.",
   "reallife_hire_test_orphan_off": "Carregue um save primeiro. Este teste não roda numa sessão do Going Public.",
   "reallife_changes_next_title": "Próxima versão",
-  "reallife_changes_next": "Corrigido: sua empresa na bolsa ficava para sempre no setor do seu primeiro negócio, mesmo depois de você vendê-lo, e o preço das ações seguia esse setor. Agora o setor acompanha o que a empresa ganha: as receitas de cerca de um trimestre, revistas no início de cada trimestre, com um aviso e uma nota no City Ledger quando ele muda. Uma empresa já listada é ajustada pelas receitas do último trimestre ao carregar. Uma empresa de tecnologia conta como software. A página da empresa mostra o setor, as receitas por setor e a próxima revisão.",
+  "reallife_changes_next": "Nada ainda.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Corrigido: quando todos os prédios que poderiam abrigar o escritório de serviços públicos são seus, as contas de luz e água são pedidas e religadas no app Contas, por telefone, pelos mesmos preços, e os avisos dizem isso; quando um prédio fica livre o escritório volta a abrir e o app diz onde. Corrigido: depois de retirar uma candidatura e se candidatar de novo à mesma vaga, o app Carreira abria a retirada e não dava para chegar à entrevista. Cada candidatura agora tem sua própria linha, e a entrevista, a oferta e a retirada vão para a ativa. Corrigido: um save com um registro de negócio cujo prédio a cidade não tem (outro mod pode deixar um para trás) não desliga mais o setor de tecnologia a cada carregamento. O mod agora deixa esse registro de fora sempre que lê os negócios da cidade, cita o endereço dele uma vez no log e não muda nada nele.",
   "reallife_co_mass_raise": "Dar aumento",
@@ -26704,5 +26704,7 @@
   "reallife_lst_test_sector_session": "Teste não iniciado: numa sessão do Going Public o setor só muda na revisão, igual em todas as máquinas. Tente num jogo só seu.",
   "reallife_lst_test_sector_book": "Teste não iniciado: o prospecto já saiu, então o setor fica como ele diz até sua empresa começar a ser negociada.",
   "reallife_lst_test_sector_none": "Teste não iniciado: seus negócios não tiveram receitas no último trimestre, então não há com o que definir o setor.",
-  "reallife_lst_test_sector_done": "Verificação do setor: de {from} para {to}, pelas receitas do último trimestre. O log explica como."
+  "reallife_lst_test_sector_done": "Verificação do setor: de {from} para {to}, pelas receitas do último trimestre. O log explica como.",
+  "reallife_changes_063_5_title": "0.63.5",
+  "reallife_changes_063_5": "Corrigido: sua empresa na bolsa ficava para sempre no setor do seu primeiro negócio, mesmo depois de você vendê-lo, e o preço das ações seguia esse setor. Agora o setor acompanha o que a empresa ganha: as receitas de cerca de um trimestre, revistas no início de cada trimestre, com um aviso e uma nota no City Ledger quando ele muda. Uma empresa já listada é ajustada pelas receitas do último trimestre ao carregar. Uma empresa de tecnologia conta como software. A página da empresa mostra o setor, as receitas por setor e a próxima revisão."
 }
