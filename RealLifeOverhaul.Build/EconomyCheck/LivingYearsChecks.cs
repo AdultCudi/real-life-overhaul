@@ -23,7 +23,7 @@ internal static partial class Program
     private const int LivingSeed = 1234;         // the city PopulationYears and the demand's ten years live, so the runs can be read together
     private const int LivingMoneyDays = 3650;    // the money scale's horizon: a payback and a year's profit are money, by the game day
 
-    // The bands of ten of the save's years (the balance brief, 1 Nov 2026: the people moving, inside realistic bands, at any year length). A city of
+    // The bands of ten of the save's years: the people moving, inside realistic bands, at any year length. A city of
     // fixed homes whose generated households are larger than Manhattan's low fertility keeps: its people drift a few per cent as its children grow up.
     private const int PeopleBand = 100;                                // thousandths either way of the first day's people, at every year's end
     private const int HouseholdsBand = 50;                             // ...of its households

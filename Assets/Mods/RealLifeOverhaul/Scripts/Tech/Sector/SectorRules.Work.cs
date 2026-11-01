@@ -183,7 +183,7 @@ namespace RealLifeOverhaul.Tech
             }
             // The council tenders IT work, an integration or a managed service, to the player's firms that take it: one a web agency or
             // a design studio alone could never bid on (the Tech app and the desk refuse it) would only crowd its list, and bid on would
-            // fail and cost it its name. With both taken the draw is the one it always was.
+            // fail and cost it its name. With both taken, each is the tender half the time.
             bool integration = (takes & (1 << (int)WorkKind.Integration)) != 0, managed = (takes & (1 << (int)WorkKind.Managed)) != 0;
             if ((integration || managed) && day - ff.LastTender >= FirmsCatalogue.TenderEvery && ff.Contracts.Count < SectorCatalogue.ContractsMost)
             {

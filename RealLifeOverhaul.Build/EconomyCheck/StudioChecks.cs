@@ -46,7 +46,7 @@ internal static partial class Program
     // ---------------------------------------------------------------- helpers
 
     private const string StudioPlace = "Studio Street~1";
-    private const int StudioYear = 365;  // the studio checks' calendar: the game's longest year, on which the bands were set (the living years hold the game's default, 60, too)
+    private const int StudioYear = 365;  // the studio checks' calendar: the game's longest year, on which the bands are set (the living years hold the game's default, 60, too)
     private const int StudioDay = 400;   // a day into the market's second year: the critics' bar has moved once
 
     // A budget's step on the concept's slider.

@@ -37,7 +37,7 @@ internal static partial class Program
         Console.WriteLine("  Tech firms' markets: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 
-    private const int SectorYear = 365;   // the sector checks' calendar: the game's longest year, on which the bands were set (the sims and the living years hold the game's default, 60, too)
+    private const int SectorYear = 365;   // the sector checks' calendar: the game's longest year, on which the bands are set (the sims and the living years hold the game's default, 60, too)
 
     // A sector file over the documented city with the companies' products set up at their usual features, settled at their share.
     private static SectorFile SectorFresh(int seed, int year = SectorYear)

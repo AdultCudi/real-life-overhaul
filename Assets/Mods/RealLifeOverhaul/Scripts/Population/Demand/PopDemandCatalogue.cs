@@ -80,8 +80,8 @@ namespace RealLifeOverhaul.Population
         public const int FactorMost = 10000;           // thousandths: ten times the first day's at most, a bound for the arithmetic (a market runs out of people long before)
         public const int Neutral = 1000;               // thousandths: a demand as the first day had it, or with no population
         // months' turns a new city lives before it is anchored: the first turn moves every household the generation placed in a flat that does not suit
-        // it (half again the movers of an ordinary month), and the estate agency's and the marketplace's figures anchored on that wave fell to half by
-        // the second year; by the third turn the moves are the city's ordinary run
+        // it (half again the movers of an ordinary month), and figures anchored on that wave would leave the estate agency and the Marketplace with half
+        // their customers by the second year; by the third turn the moves are the city's ordinary run
         public const int SettleMonths = 3;
 
         /// <summary>

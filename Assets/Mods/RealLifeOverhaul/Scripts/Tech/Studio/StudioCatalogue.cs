@@ -235,8 +235,8 @@ namespace RealLifeOverhaul.Tech
         public const int SeasonHoliday = 1150, SeasonSummer = 920;   // thousandths of the day's buyers at the year's end and in summer
         public const int HolidayFrom = 830, SummerFrom = 450, SummerTo = 600;   // thousandths of the calendar's year
         // A great game's word of mouth is the money scale's tail (ScaleCatalogue.Tail: a whole life of up to five times its launch
-        // window): a reach that also widened by up to a quarter for a score past 70 counted it twice, and with the critics' stretch and
-        // the genre's share made a game of 80 earn 1.75 times the scale's return for its quality and one of 90 2.7 times.
+        // window), so a high score does not widen its reach as well: that would count it twice and lift a game of 80 or 90 far past the
+        // scale's return for its quality.
         public static readonly int[] Piracy = { 200, 50, 120 };   // thousandths of would-be buyers who pirate a game sold for a price, by platform
         public const int DrmEarly = 300, DrmLater = 800, DrmDays = 90;   // what DRM leaves of piracy in its first days and after it is cracked
         public const int BugRefundsMost = 60;       // thousandths more refunds for a game left with its reported bugs

@@ -178,7 +178,7 @@ namespace RealLifeOverhaul.Population
         // How well a flat suits a household: room for its people, a standard of flat that fits what it would pay (its rent at the game's own
         // prices, its size and district, against about 28% of income), what the district's index adds on top of that as price alone (each
         // thousandth of its income twice as much against it), a district of its class, near its work. Scored by its rent today alone, a cheap
-        // district's rising rents brought its flats nearer that 28% and drew more movers to it, and it climbed to its bound.
+        // district's rising rents would bring its flats nearer that 28% and draw more movers to it, until it stood at its bound.
         private static int Score(PopulationState s, int b, int unit, int sqm, int size, long disposable, long rent, int cls, int work)
         {
             int score = 0;

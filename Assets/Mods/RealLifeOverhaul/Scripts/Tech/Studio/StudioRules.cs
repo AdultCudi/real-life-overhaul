@@ -720,9 +720,8 @@ namespace RealLifeOverhaul.Tech
         /// A game's quality as the critics score it against its genre's bar, before its bugs, DRM, backlash, fit, name and spread:
         /// at the bar <see cref="StudioCatalogue.ReviewBase"/>; under it a point and a fifth off for each point short
         /// (<see cref="StudioCatalogue.ReviewPerQuality"/>), so a weak game is punished; over it the scale's room above the base shared
-        /// over the quality left above the bar, so a perfect game reviews 100 and one half way there three quarters. A stretch over
-        /// the bar as well had a game of 90 review 94 against the start's bar, and the money scale's sales climb steepest there:
-        /// sold on the score, a fine game earned two and a half times the scale's return for its quality.
+        /// over the quality left above the bar, so a perfect game reviews 100 and one half way there three quarters. Nothing stretches
+        /// it further: the money scale's sales climb steepest at the top, where a score ahead of quality would pay far past it.
         /// </summary>
         public static int CriticsScore(int quality, int bar)
         {

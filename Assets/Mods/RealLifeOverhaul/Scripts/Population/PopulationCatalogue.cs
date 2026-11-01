@@ -339,15 +339,15 @@ namespace RealLifeOverhaul.Population
         /// city's middle (half, the middle, three times), drawn between them on a log scale. Poorer households spend more of it on food,
         /// utilities and getting about, richer on eating out, the home, jewellery and services, and save the rest (US Bureau of Labor
         /// Statistics, Consumer Expenditure Survey 2022, shares by income quintile; Engel's law). Rent and Saving are not in the table:
-        /// rent is the flat's, saving is what is left. The bills column is utilities and the household's other bills no business of the
-        /// city takes (insurance, health care, pension contributions, schooling: the survey's other quarter of spending), so what is left
-        /// is saved at real rates (the survey's middle about a twentieth of income after tax, the top about a fifth): without them the
-        /// households saved a sixth to a third of what was left after rent, and ten years of a 365-day calendar grew the city's savings
-        /// pool two and a half times. The bills go nowhere in the city (the books' utilities); a household's spending in the Economy app
-        /// counts them.
+        /// rent is the flat's, saving is what is left.
         /// </summary>
         public static readonly int[][] SpendShares =
         {
+            // The bills column is utilities and what no business of the city takes (insurance, health care, pension contributions,
+            // schooling: the survey's other quarter of spending), so what is left is saved at real rates, about a twentieth of income
+            // after tax in the middle and a fifth at the top. Without it a household would save a sixth to a third of what is left
+            // after rent and the city's savings would outgrow any bank. The bills go nowhere in the city (the books' utilities); a
+            // household's spending in the Economy app counts them.
             //          rent bill groc  eat coff cloth elec furn book flow jewel gym cine thea night casi tran care prof digi save
             new[] {     0, 148, 309,  81,  24,  54,  34,  24,  22,   4,   4,  16,  13,   3,  24,   5, 161,  19,  11,  24,   0 },   // half the city's middle: 980 spent, little saved
             new[] {     0, 210, 174, 106,  27,  56,  37,  35,  25,   6,  11,  20,  12,   7,  27,   6, 124,  20,  20,  27,   0 },   // the middle: 950 spent, a twentieth saved
@@ -552,15 +552,16 @@ namespace RealLifeOverhaul.Population
         public const int RentBurdenLeave = 700;          // ... past which, with nothing cheaper free, it leaves the city
         public const int UnemployedLeaveDays = 365;      // game days out of work in a year of 365 (scaled) after which a household may leave
         public const int LeaveChance = 120;              // per mille a year such a household leaves
-        public const int MigrantsPerVacancy = 2000;      // thousandths of a household a month of the save's year that would come to the city for each hundred open vacancies (more when it has flats to spare)
+        public const int MigrantsPerVacancy = 2000;      // thousandths of a household a month that come for each hundred open vacancies (more with flats to spare)
         public const int ArrivalShare = 300;             // thousandths a month of a district's free flats past its target that the region's households take (Manhattan never lacks them)...
         // ...as many as the district's rents let: the region's households weigh the city's rents against the region's own (the game's base rent), so
-        // at its index's thousand they all come and at twice it half of them (RegionPull), at most this many thousandths of them where rents have fallen
+        // at its index's thousand they all come and at half again under half of them (RegionPull, by the square), at most this many thousandths of
+        // them where rents have fallen
         public const int RegionPullMost = 1500;
         // per mille a month of households that want another flat (crowded, or their rent past bearing) and find none free in the city that take one
         // in the region instead, at the district's index over a thousand times this: as New York's crowded and priced out families move to the
-        // boroughs and New Jersey. With RegionPull it is how the base districts' housing market clears, the owner having kept new building to the
-        // mod's own land (POPULATION.md section 14): rents rise until enough go and few enough come, rather than to their bound.
+        // boroughs and New Jersey. With RegionPull it is how the base districts' housing market clears, new building being kept to the mod's
+        // own land (POPULATION.md section 14): rents rise until enough go and few enough come, rather than to their bound.
         public const int WantLeave = 60;
 
         // ---- housing (POPULATION.md section 8)
