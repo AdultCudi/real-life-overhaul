@@ -180,7 +180,8 @@ namespace RealLifeOverhaul.Ui
             string fonts = UiFonts.Own ? "fonts: the bundle's own (" + UiFonts.Faces + " faces)"
                 : UiFonts.Faces > 0 ? "fonts: " + UiFonts.Faces + " of " + UiFonts.FacesWanted + " faces from " + UiFonts.BundleFile + ", the game's font for the rest"
                 : "fonts: not loaded from " + (UiFonts.BundleFile ?? "(no path)") + ", the game's font stands in";
-            return "UI: the RLO interface is on; " + fonts + "; screens: Contacts (" + ContactsKit.State + "), the phone (" + PhoneKit.State + "), " + ShellBoxes.States() + ", " + ShellNotices.States()
+            return "UI: the RLO interface is on; " + fonts + "; screens: Contacts (" + ContactsKit.State + "), the phone (" + PhoneKit.State + "), "
+                   + ShellBoxes.States() + ", " + ShellNotices.States()
                    + ", pages (" + ShellPages.States() + "), desk sessions (" + (Settings.LivingDesks ? "over the game's panel as each opens" : "off")
                    + "); the full menu's frame while an app on the kit shows; from Options, Tests: the gallery and each screen.";
         }
