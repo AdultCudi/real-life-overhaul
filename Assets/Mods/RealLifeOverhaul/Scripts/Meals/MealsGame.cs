@@ -128,6 +128,35 @@ namespace RealLifeOverhaul.Meals
             return PlayerActivityUI.IsPanelOpen || Wiring.Scenes.PlayerHeld;
         }
 
+        /// <summary>
+        /// Something that takes the player from a meal under way: the game's activity panel, its time machine, or a scene or panel of
+        /// the mod's that holds them. A button left selected (the game speed's, an item's Eat), the map, a menu or a question is not:
+        /// the meal goes on behind it.
+        /// </summary>
+        public static bool TakenAway()
+        {
+            if (PlayerActivityUI.IsPanelOpen || Wiring.Scenes.PlayerInScene)
+            {
+                return true;
+            }
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            return uis != null && uis.timeMachine != null && uis.timeMachine.isRunning;
+        }
+
+        /// <summary>
+        /// The save's player written where they stood before a meal seated them, over the seat the game has just written (its own
+        /// handler runs first). Only the local player's own position, which the game itself writes at every save.
+        /// </summary>
+        public static void SaveStood(Vector3 at, Quaternion facing)
+        {
+            GameInstance save = SaveGameManager.Current;
+            if (save != null)
+            {
+                save.LastPlayerPosition = at;
+                save.LastPlayerRotation = facing;
+            }
+        }
+
         /// <summary>The game's own bite of what was eaten has played out (TryToConsume plays it on the animator's layer 7).</summary>
         public static bool BiteOver(PlayerController player)
         {
