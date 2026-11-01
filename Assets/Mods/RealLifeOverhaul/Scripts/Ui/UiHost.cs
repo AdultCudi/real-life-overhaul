@@ -20,13 +20,14 @@ namespace RealLifeOverhaul.Ui
     }
 
     /// <summary>
-    /// Runs one kit screen: lays it out when its view model, the frame, the look or the pad changes; reads the game's
-    /// bindings and a pad through its input (arrows or d-pad move the one focus, held directions repeat as a game's do,
-    /// Confirm presses, Back closes what is open, the tab keys step tabs); plays the game's own sounds; keeps the focused
-    /// row of a list in view; and opens a real text field for typing, so the game holds its shortcuts while words are
-    /// typed. Runs before the game's own Update (as the mod's other Escape-takers do), so Back a screen takes is not also
-    /// the game's. Cost a frame: nothing while its screen is hidden (disabled); while shown, a few input reads and
-    /// comparisons, a layout only on a change.
+    /// Runs one kit screen: lays it out when its view model, the frame, the look, the pad or the input's lead changes,
+    /// reads the game's bindings and a pad through its input (arrows or d-pad move the one focus, held directions repeat
+    /// as a game's do, Confirm presses, Back closes what is open, the tab keys step tabs), plays the game's own sounds,
+    /// keeps the focused row of a list in view, and opens a real text field for typing, so the game holds its shortcuts
+    /// while words are typed. The mouse and the keys each lead in turn (UiFocusMode): the ring is the keys' alone, so a
+    /// hover never moves the focus or makes a sound. Runs before the game's own Update (as the mod's other Escape-takers
+    /// do), so Back a screen takes is not also the game's. Cost a frame: nothing while its screen is hidden, and while it
+    /// shows a few input reads and comparisons, a layout only on a change.
     /// </summary>
     [DefaultExecutionOrder(-31000)]
     public sealed class UiHost : MonoBehaviour
@@ -38,6 +39,7 @@ namespace RealLifeOverhaul.Ui
         private const float RepeatEvery = 0.08f;   // seconds between repeats
 
         private readonly UiScene _scene = new UiScene();
+        private readonly UiFocusMode _mode = new UiFocusMode(UiLead.Pointer);
         private UiView _view;
         private IUiScreen _screen;
         private IUiInput _input;
@@ -85,6 +87,7 @@ namespace RealLifeOverhaul.Ui
             {
                 _view = new UiView(transform, "Screen");
                 _view.PointerEntered = Guard.Wrap<int>(PointerEntered);
+                _view.PointerExited = Guard.Wrap<int>(PointerExited);
                 _view.PointerPressed = Guard.Wrap<int>(PointerPressed);
                 _view.Wheeled = Guard.Wrap<int, float>(Wheeled);
             }
@@ -101,6 +104,8 @@ namespace RealLifeOverhaul.Ui
             _arrive = true;
             _laidSize = Vector2.zero;
             enabled = true;
+            _mode.Start(_input != null && _input.Keys != null && _input.Keys.Pad != UiPad.None);
+            _view.Ring = _mode.Ring;
             Layout();
             _view.Open();
             _view.SetFocus(UiFocusRules.First(_scene), false, Time.unscaledTime);
@@ -147,6 +152,10 @@ namespace RealLifeOverhaul.Ui
             {
                 _input.TakeAll();
             }
+            if (_state.Pointed && _mode.PointerMoved())
+            {
+                LeadChanged();
+            }
             Vector2 size = ((RectTransform)transform).rect.size;
             bool dark = _dark != null && _dark();
             if (_screen.Dirty || size != _laidSize || dark != _laidDark || (_state.Pad != _laidPad && !_typing))
@@ -186,6 +195,11 @@ namespace RealLifeOverhaul.Ui
                 step = true;
                 _nextRepeat = now + RepeatEvery;
             }
+            if ((step || _state.Confirm) && _mode.Woke())
+            {
+                LeadChanged();   // the press only shows where the focus is: nobody acts on a target they could not see
+                return;
+            }
             if (step)
             {
                 Move(dx != 0 ? dx : 0, dx != 0 ? 0 : dy, now);
@@ -210,8 +224,14 @@ namespace RealLifeOverhaul.Ui
             }
             if (_state.TabPrev || _state.TabNext)
             {
+                int strip = _view.Focus >= 0 && _view.Focus < _scene.NodeCount ? _scene.Nodes[_view.Focus].Command : -1;
                 _screen.Tab(_state.TabPrev ? -1 : 1);
                 _sound?.Play(UiCue.Tab);
+                if (_screen.Dirty)
+                {
+                    Layout();
+                }
+                FollowShown(strip);
             }
             UiAction key = _state.Alt ? UiAction.Alt : _state.Option ? UiAction.Option : _state.Pick > 0 && _state.Pick <= 9 ? (UiAction)((int)UiAction.Pick1 + _state.Pick - 1) : UiAction.Count;
             if (key != UiAction.Count)
@@ -229,11 +249,39 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // A target pressed by its own key: the focus goes to it first, so the press is seen where it lands.
+        // A target pressed by its own key: with the ring up the focus goes to it first, so the press is seen where it lands.
         private void PressKeyed(int node, float now)
         {
-            FocusNode(node, now, true);
+            FocusNode(node, now, _mode.Ring);
             PressNode(node, now);
+        }
+
+        // The tab keys moved what a strip shows (tabs, groups). A ring left on the old one would say two things at once,
+        // so the focus goes with the shown one when it stood in that strip.
+        private void FollowShown(int strip)
+        {
+            if (strip < 0 || _view.Focus < 0 || _view.Focus >= _scene.NodeCount || _scene.Nodes[_view.Focus].Command != strip)
+            {
+                return;
+            }
+            for (int i = 0; i < _scene.NodeCount; i++)
+            {
+                int face = _scene.Nodes[i].Face;
+                if (_scene.Nodes[i].Command == strip && face >= 0 && (_scene.Items[face].Flags & UiFlags.Selected) != 0)
+                {
+                    _view.SetFocus(i, false, Time.unscaledTime);
+                    return;
+                }
+            }
+        }
+
+        // The keys or the mouse took the lead: the ring comes or goes, the hover goes or comes back, and the band is laid
+        // again, since it names Move and Select only for the keys.
+        private void LeadChanged()
+        {
+            _view.Ring = _mode.Ring;
+            _view.SetHover(_mode.Ring ? -1 : _mode.Hover);
+            Layout();
         }
 
         private void Move(int dx, int dy, float now)
@@ -262,8 +310,11 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
-            _view.SetFocus(node, glide, now);
-            _sound?.Play(UiCue.Move);
+            _view.SetFocus(node, glide && _mode.Ring, now);
+            if (_mode.Ring)
+            {
+                _sound?.Play(UiCue.Move);   // the hover tick is the keys' step: a click lands silently on its own target
+            }
             ref UiNode n = ref _scene.Nodes[node];
             int command = n.Command, arg = n.Arg;
             if (n.List >= 0 && n.Clip >= 0 && !InView(node))
@@ -310,7 +361,7 @@ namespace RealLifeOverhaul.Ui
             var rect = (RectTransform)transform;
             Vector2 size = rect.rect.size;
             float scale = _view.Scale;
-            var frame = new UiFrame { Width = size.x / scale, Height = size.y / scale, Top = _top, Band = _band, Title = _title };
+            var frame = new UiFrame { Width = size.x / scale, Height = size.y / scale, Top = _top, Band = _band, Title = _title, Pointer = !_mode.Ring };
             int command = -1, arg = 0;
             if (_view.Focus >= 0 && _view.Focus < _scene.NodeCount)
             {
@@ -327,13 +378,15 @@ namespace RealLifeOverhaul.Ui
             bool arrive = _arrive;
             _arrive = false;
             _view.Write(_scene, arrive);
-            int again = command >= 0 ? _scene.FindNode(command, arg) : -1;
+            int again = command >= 0 && !_scene.FocusReset ? _scene.FindNode(command, arg) : -1;
             int top = UiFocusRules.TopLayer(_scene);
             if (again < 0 || _scene.Nodes[again].Layer != top)
             {
                 again = UiFocusRules.First(_scene);
             }
             _view.SetFocus(again, false, Time.unscaledTime);
+            _mode.Rehover(_view.PointerNode());
+            _view.SetHover(_mode.Ring ? -1 : _mode.Hover);
         }
 
         private int FindRow(int list, int index)
@@ -358,14 +411,24 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- pointer
 
+        // A hover only lifts the target's face: the focus stays where the keys or a click left it, and nothing sounds.
         private void PointerEntered(int node)
         {
-            if (!_typing && node >= 0 && node < _scene.NodeCount && node != _view.Focus && _scene.Nodes[node].Layer == UiFocusRules.TopLayer(_scene))
+            if (!_typing && node >= 0 && node < _scene.NodeCount && _scene.Nodes[node].Layer == UiFocusRules.TopLayer(_scene) && _mode.Entered(node))
             {
-                FocusNode(node, Time.unscaledTime, true);
+                _view.SetHover(node);
             }
         }
 
+        private void PointerExited(int node)
+        {
+            if (_mode.Exited(node))
+            {
+                _view.SetHover(-1);
+            }
+        }
+
+        // A click is the mouse leading: the focus goes to what was clicked without a ring, so the keys pick up from there.
         private void PointerPressed(int node)
         {
             if (_typing)
@@ -374,6 +437,10 @@ namespace RealLifeOverhaul.Ui
             }
             if (node >= 0 && node < _scene.NodeCount && _scene.Nodes[node].Layer == UiFocusRules.TopLayer(_scene))
             {
+                if (_mode.PointerMoved())
+                {
+                    _view.Ring = false;
+                }
                 FocusNode(node, Time.unscaledTime, false);
                 PressNode(node, Time.unscaledTime);
             }

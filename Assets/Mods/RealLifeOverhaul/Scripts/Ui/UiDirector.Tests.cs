@@ -7,9 +7,11 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// The RLO interface's two tests (Options, Tests): the gallery of every component in both looks, drawn over
-    /// whatever shows (Back closes it), and the phone's Contacts opened on the kit. Each says in a notice why it cannot
-    /// run when it cannot (the switch off, the fonts or the phone not there yet).
+    /// The RLO interface's tests (Options, Tests): the gallery of every component in both looks, the phone's Contacts on
+    /// the kit, the city's people, Flare in the city and a firm's page, each drawn over whatever shows (Back closes it).
+    /// Each says in its notice exactly why it cannot run when it cannot (the switch off, the fonts still loading, the
+    /// city's people still settling, Flare not started, the phone not built yet), never a bare "not ready". The firm's
+    /// test opens a sample studio, named as one, on a save that owns no tech firm, so the page can be seen on day one.
     /// </summary>
     public sealed partial class UiDirector
     {
@@ -28,7 +30,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 if (!UiFonts.Ready)
                 {
-                    Notifications.Show(NotificationType.Warning, "reallife_ui_test_not_ready", null, 8f);
+                    Notifications.Show(NotificationType.Warning, "reallife_ui_test_fonts", null, 8f);
                     return;
                 }
                 if (_gallery == null)
@@ -56,7 +58,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 if (!UiFonts.Ready || !Population.CityPopulation.Running)
                 {
-                    Notifications.Show(NotificationType.Warning, "reallife_ui_test_not_ready", null, 8f);
+                    Notifications.Show(NotificationType.Warning, !UiFonts.Ready ? "reallife_ui_test_fonts" : "reallife_ui_test_city", null, 8f);
                     return;
                 }
                 var screen = new PopulationScreen();
@@ -105,9 +107,9 @@ namespace RealLifeOverhaul.Ui
                     Notifications.Show(NotificationType.Warning, "reallife_ui_test_off", null, 8f);
                     return;
                 }
-                if (!UiFonts.Ready || Flare.FlareDirector.Instance == null)
+                if (!UiFonts.Ready || Flare.FlareDirector.Instance == null || !Flare.FlareDirector.Instance.CityOn)
                 {
-                    Notifications.Show(NotificationType.Warning, "reallife_ui_test_not_ready", null, 8f);
+                    Notifications.Show(NotificationType.Warning, !UiFonts.Ready ? "reallife_ui_test_fonts" : "reallife_ui_test_flare_city", null, 8f);
                     return;
                 }
                 var screen = new FlareCityScreen();
@@ -119,7 +121,10 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        /// <summary>Options, Tests: the first of the player's tech firms (the studio's page, or another firm's) over the screen.</summary>
+        /// <summary>
+        /// Options, Tests: the first of the player's tech firms (the studio's page, or another firm's) over the screen, or a
+        /// sample studio named as one when the player owns none yet.
+        /// </summary>
         public void TestFirm()
         {
             try
@@ -129,13 +134,14 @@ namespace RealLifeOverhaul.Ui
                     Notifications.Show(NotificationType.Warning, "reallife_ui_test_off", null, 8f);
                     return;
                 }
-                Tech.TechDirector d = Tech.TechDirector.Instance;
-                if (!UiFonts.Ready || d == null || d.FirmPlaces.Count == 0)
+                if (!UiFonts.Ready)
                 {
-                    Notifications.Show(NotificationType.Warning, "reallife_ui_test_not_ready", null, 8f);
+                    Notifications.Show(NotificationType.Warning, "reallife_ui_test_fonts", null, 8f);
                     return;
                 }
-                var screen = new StudioPageScreen(d.FirmPlaces[0].File.Place);
+                Tech.TechDirector d = Tech.TechDirector.Instance;
+                string place = d != null && d.FirmPlaces.Count > 0 ? d.FirmPlaces[0].File.Place : null;
+                var screen = new StudioPageScreen(place);
                 Overlay(screen, UiText.T("reallife_ui_page_studio"), host => screen.Close = () => Destroy(host.gameObject));
             }
             catch (Exception e)
@@ -158,7 +164,7 @@ namespace RealLifeOverhaul.Ui
                 UIs uis = InstanceBehavior<UIs>.Instance;
                 if (uis == null || uis.smartphoneUI == null || !ContactsKitReady())
                 {
-                    Notifications.Show(NotificationType.Warning, "reallife_ui_test_not_ready", null, 8f);
+                    Notifications.Show(NotificationType.Warning, "reallife_ui_test_phone", null, 8f);
                     return;
                 }
                 uis.smartphoneUI.OpenApp("Contacts");

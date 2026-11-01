@@ -54,6 +54,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
+            Stop(slot.Rect);   // an older arrival on the same object would hold its old place and fight this one
             var e = new Entry { Kind = Kind.Arrive, Slot = slot, Rect = slot.Rect, Start = start, Length = length, Rise = rise, Base = slot.Rect.anchoredPosition };
             Fade(slot, 0f);
             slot.Rect.anchoredPosition = e.Base - new Vector2(0f, rise);

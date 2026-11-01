@@ -39,6 +39,7 @@ namespace RealLifeOverhaul.Ui
         Focus,        // the focus ring
         PromptInk,    // the prompt bar's words on the band the kit paints flat under the screen
         PromptCap,    // a key cap's face on that bar
+        Rule,         // the masthead's rule and a panel's head rule: the accent at low strength, never a bright line
         Count
     }
 
@@ -155,13 +156,13 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- radii
 
-        // The City Ledger's shapes: print is square, a key cap keeps a hair of a corner, a framed panel wears a column rule
-        // on its head (the paper's), faces are round portraits.
+        // The City Ledger's shapes: print is square, a key cap keeps a hair of a corner, a panel wears a thin muted rule
+        // on its head (the paper's column rule, kept quiet so it never glares), faces are round portraits.
         public const float RadiusSmall = 2f;    // px: segments, key caps, tags
         public const float RadiusMedium = 2f;   // px: chips, fields, bars
         public const float RadiusLarge = 2f;    // px: rows, buttons, cards
         public const float RadiusPanel = 0f;    // px: panels and overlays: square, as a column of print
-        public const float FrameRule = 3f;      // px: the column rule on a framed panel's head and under the masthead
+        public const float FrameRule = 2f;      // px: the column rule on a panel's head and under the masthead
 
         // ------------------------------------------------------------------------------------------------- strokes
 
@@ -201,10 +202,10 @@ namespace RealLifeOverhaul.Ui
         // over 15 px (MinText), the body at 18 so a message reads from the couch.
         private static readonly UiType[] Types =
         {
-            new UiType(UiFamily.SerifDisplay, 700, 44f, -0.01f, 1.0f),                  // Display
+            new UiType(UiFamily.SerifDisplay, 700, 34f, -0.01f, 1.0f),                  // Display: the masthead's size, so a page keeps three sizes of type
             new UiType(UiFamily.SerifDisplay, 700, 34f, -0.01f, 1.0f),                  // AppTitle: a masthead, as written
             new UiType(UiFamily.SerifDisplay, 700, 36f, -0.01f, 1.0f),                  // Hero
-            new UiType(UiFamily.SerifDisplay, 600, 24f, 0f, 1.0f),                      // SectionTitle
+            new UiType(UiFamily.SerifDisplay, 600, 20f, 0f, 1.0f),                      // SectionTitle: a question's or a list's title, in the text band so a page keeps three sizes
             new UiType(UiFamily.Serif, 700, 19f, 0f, 1.0f),                             // Title
             new UiType(UiFamily.Franklin, 600, 17f, 0.02f, 1.0f),                       // Nav
             new UiType(UiFamily.Franklin, 700, 16f, 0.08f, 1.0f, UiCase.Upper),         // Button
@@ -261,87 +262,90 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- colours
 
-        // 0xRRGGBBAA. Dark is the paper's late edition: warm ink-black, paper-white words and the salmon of a markets paper
-        // as its one accent (the owner's pink, turned into the financial pages' own colour). Light is the salmon paper
-        // itself with its ink, and the paper's claret for what acts. Green and red stay for figures that rise and fall.
+        // 0xRRGGBBAA. Dark is the paper's late edition: warm ink-black, soft warm words and the salmon of a markets paper as
+        // its one accent. Light is a dim warm paper with its ink and the paper's claret for what acts. Green and red stay
+        // for figures that rise and fall. The owner asked for nothing that glares (1 Nov): no near-white words or rules in
+        // dark, no bright paper in light, panels told apart by tone and space rather than a frame on each.
         private static readonly uint[] DarkColours =
         {
             0x00000000,   // None
             0x12110EFF,   // Bg: ink-black, warm
-            0x191814FF,   // Panel
-            0xEDE6D84D,   // PanelEdge: a paper-white rule at 30%
-            0x1E1D18FF,   // Header: the masthead band
-            0x191814FF,   // Row
-            0xEDE6D826,   // RowEdge: 15%
-            0x22201BFF,   // Field
-            0x262420FF,   // Bubble
-            0x2B2924FF,   // Hover
-            0x2B231EFF,   // RowSel: the salmon in the ink
-            0xF2A58A73,   // RowSelEdge: the salmon at 45%
-            0xF1EBDDFF,   // Text: paper white
-            0xC7BFAFFF,   // Text2
-            0x9B9384FF,   // Muted: 5.3:1 on a field
-            0xF2A58AFF,   // Accent: the markets paper's salmon
-            0xF6B59EFF,   // AccentText
-            0xF2A58A26,   // AccentSoft: 15%
-            0x12110EFF,   // OnAccent: the ink, 9.4:1 on the salmon
+            0x1A1915FF,   // Panel: a step up from the ground, which is all that sets a panel apart
+            0xD9D1C233,   // PanelEdge: a control's edge where it needs one, 20%
+            0x171612FF,   // Header: the masthead band
+            0x1E1C18FF,   // Row: a table's every other row, a step over the panel
+            0xD9D1C21A,   // RowEdge: 10%
+            0x24221DFF,   // Field
+            0x282621FF,   // Bubble
+            0x2C2A25FF,   // Hover
+            0x2C241FFF,   // RowSel: the salmon in the ink
+            0xE39A8166,   // RowSelEdge: the salmon at 40%
+            0xDAD2C3FF,   // Text: a soft warm white, 9.5:1 at worst and easy at night
+            0xB3AB9CFF,   // Text2
+            0x9A9283FF,   // Muted: 4.6:1 on the hover fill
+            0xE39A81FF,   // Accent: the markets paper's salmon, a shade quieter
+            0xEBA790FF,   // AccentText
+            0xE39A8124,   // AccentSoft: 14%
+            0x12110EFF,   // OnAccent: the ink, 8.3:1 on the salmon
             0x7FC48CFF,   // Ok
-            0x9AD4A5FF,   // OkText
+            0x96CFA1FF,   // OkText
             0x7FC48C24,   // OkSoft
             0xE5574BFF,   // Danger
-            0xF28B80FF,   // DangerText
+            0xEE8A7FFF,   // DangerText
             0xE5574B2E,   // DangerSoft
             0xE3B341FF,   // Warn
-            0xEDC76BFF,   // WarnText
+            0xE6C46DFF,   // WarnText
             0xE3B34129,   // WarnSoft
             0x34312AFF,   // Notice
-            0xE6DFD0FF,   // NoticeText
-            0xEDE6D82E,   // Line: a hairline rule
-            0xEDE6D81F,   // Track
-            0x12110ED9,   // Scrim: the ink at 85%, no blur
-            0xF2A58AFF,   // Focus
-            0xF1EBDDFF,   // PromptInk: the band is the kit's own and flat
+            0xDAD2C3FF,   // NoticeText
+            0xD9D1C21F,   // Line: a hairline rule
+            0xD9D1C21C,   // Track
+            0x0D0C0AD9,   // Scrim: the ink at 85%, no blur
+            0xE39A81FF,   // Focus
+            0xDAD2C3FF,   // PromptInk: the band is the kit's own and flat
             0x12110E99,   // PromptCap
+            0xE39A8152,   // Rule: the salmon at 32%, a dim warm line
         };
 
         private static readonly uint[] LightColours =
         {
             0x00000000,   // None
-            0xFFF1E5FF,   // Bg: the salmon paper of the financial pages
-            0xFFF8F2FF,   // Panel: a lighter sheet laid on it
-            0x1A17124D,   // PanelEdge: an ink rule at 30%
-            0xF2DFCEFF,   // Header: the masthead band, a shade deeper
-            0xFFF8F2FF,   // Row
-            0x1A171226,   // RowEdge: 15%
-            0xF7E6D6FF,   // Field
-            0xF2DECBFF,   // Bubble
-            0xEDD6C1FF,   // Hover
-            0xF5D3C2FF,   // RowSel
-            0x990F3D73,   // RowSelEdge: the claret at 45%
-            0x1A1712FF,   // Text: the ink
-            0x4A4239FF,   // Text2
-            0x62574BFF,   // Muted: 5 to 1 on a field and on the selection
-            0x990F3DFF,   // Accent: the paper's claret, 8.4:1 under paper-white words
-            0x990F3DFF,   // AccentText
-            0x990F3D1F,   // AccentSoft: 12%
-            0xFFF8F2FF,   // OnAccent
-            0x0F8A4FFF,   // Ok
-            0x0A6B3FFF,   // OkText: 6:1 on the paper
-            0x0F8A4F1F,   // OkSoft
-            0xC8401DFF,   // Danger: vermilion, apart from the claret
-            0xA8321AFF,   // DangerText
-            0xC8401D1F,   // DangerSoft
-            0xB86E00FF,   // Warn
-            0x8A5200FF,   // WarnText
-            0xB86E001F,   // WarnSoft
-            0xE9D3BFFF,   // Notice
-            0x3A332BFF,   // NoticeText
-            0x1A17122E,   // Line: a hairline rule
-            0x1A17121F,   // Track
-            0xFFF1E5D9,   // Scrim
-            0x990F3DFF,   // Focus
-            0x1A1712FF,   // PromptInk
-            0xFFF8F2FF,   // PromptCap
+            0xDED1C0FF,   // Bg: a dim warm paper, L* 85, no glare
+            0xE6DBCCFF,   // Panel: a step lighter, still well short of white
+            0x2A221A33,   // PanelEdge: an ink edge at 20% where a control needs one
+            0xD7C9B6FF,   // Header: the masthead band, a shade deeper
+            0xE0D4C4FF,   // Row: a table's every other row, a step under the panel
+            0x2A221A1F,   // RowEdge: 12%
+            0xDACDBBFF,   // Field
+            0xD5C6B2FF,   // Bubble
+            0xD2C2ADFF,   // Hover
+            0xE2C5B4FF,   // RowSel: the claret in the paper
+            0x8E1E3F66,   // RowSelEdge: the claret at 40%
+            0x221D17FF,   // Text: the ink, a warm black
+            0x41382EFF,   // Text2
+            0x4F4539FF,   // Muted: 5.4:1 at worst
+            0x8E1E3FFF,   // Accent: the paper's claret
+            0x7A1434FF,   // AccentText
+            0x8E1E3F1C,   // AccentSoft: 11%
+            0xEDE3D5FF,   // OnAccent: 6.9:1 on the claret
+            0x1E7A47FF,   // Ok
+            0x135F36FF,   // OkText
+            0x1E7A471C,   // OkSoft
+            0xB83A1BFF,   // Danger: vermilion, apart from the claret
+            0x972E16FF,   // DangerText
+            0xB83A1B1C,   // DangerSoft
+            0xA86400FF,   // Warn
+            0x7A4A00FF,   // WarnText
+            0xA864001C,   // WarnSoft
+            0xD0BEA8FF,   // Notice
+            0x352E26FF,   // NoticeText
+            0x2A221A24,   // Line: a hairline rule
+            0x2A221A1C,   // Track
+            0x2A221A73,   // Scrim: the ink at 45%, so a question dims the page rather than whitening it
+            0x8E1E3FFF,   // Focus
+            0x221D17FF,   // PromptInk
+            0xE6DBCCFF,   // PromptCap
+            0x8E1E3F47,   // Rule: the claret at 28%, a dim warm line
         };
 
         /// <summary>A role's colour in a look, as 0xRRGGBBAA. An index into a fixed table.</summary>
@@ -352,7 +356,7 @@ namespace RealLifeOverhaul.Ui
 
         // An avatar without a face: initials on a circle tinted by a hue (the wireframe's oklch(0.34 0.07 h) under
         // oklch(0.92 0.06 h) in dark; light turns it round). Lightness and chroma, applied by UiColour.FromOklch.
-        public const float AvatarDarkL = 0.34f, AvatarDarkC = 0.07f, AvatarDarkInkL = 0.92f, AvatarDarkInkC = 0.06f;
-        public const float AvatarLightL = 0.9f, AvatarLightC = 0.05f, AvatarLightInkL = 0.4f, AvatarLightInkC = 0.08f;
+        public const float AvatarDarkL = 0.34f, AvatarDarkC = 0.07f, AvatarDarkInkL = 0.86f, AvatarDarkInkC = 0.06f;   // initials a soft white, never glaring
+        public const float AvatarLightL = 0.8f, AvatarLightC = 0.05f, AvatarLightInkL = 0.3f, AvatarLightInkC = 0.08f;   // a circle as dim as the paper, no bright disc on it
     }
 }

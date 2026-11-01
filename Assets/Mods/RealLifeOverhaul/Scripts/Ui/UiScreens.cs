@@ -85,11 +85,12 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_gallery_cap_colours", "reallife_ui_gallery_cap_motion", "reallife_ui_gallery_cap_sizes", "reallife_ui_gallery_col_style",
                 "reallife_ui_gallery_col_face", "reallife_ui_gallery_col_size", "reallife_ui_gallery_col_weight", "reallife_ui_gallery_col_role",
                 "reallife_ui_gallery_col_dark", "reallife_ui_gallery_col_light", "reallife_ui_gallery_col_motion", "reallife_ui_gallery_col_full",
-                "reallife_ui_gallery_col_calm", "reallife_ui_gallery_col_token", "reallife_ui_gallery_col_px"
+                "reallife_ui_gallery_col_calm", "reallife_ui_gallery_col_token", "reallife_ui_gallery_col_px", "reallife_ui_gallery_col_kind"
             }),
             new UiScreenDef("population", UiTemplate.Dashboard, "PopulationScreen", new[]
             {
-                "reallife_ui_page_details", "reallife_ui_page_empty", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back"
+                "reallife_ui_page_details", "reallife_ui_page_empty", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back",
+                "reallife_pop_view_city", "reallife_ui_pop_household", "reallife_ui_pop_household_plain", "reallife_ui_pop_last_month", "reallife_ui_pop_home"
             }),
             new UiScreenDef("flare_city", UiTemplate.Dashboard, "FlareCityScreen", new[]
             {
@@ -114,7 +115,9 @@ namespace RealLifeOverhaul.Ui
                 "reallife_tech_mkt_page_col_client", "reallife_tech_mkt_page_col_value", "reallife_tech_mkt_page_col_due", "reallife_tech_mkt_page_no_work",
                 "reallife_tech_mkt_page_col_done", "reallife_tech_mkt_page_col_paid", "reallife_tech_mkt_page_col_stage", "reallife_tech_mkt_page_no_done",
                 "reallife_tech_mkt_page_facts", "reallife_tech_mkt_page_support", "reallife_tech_mkt_page_limit", "reallife_tech_mkt_page_offers_month",
-                "reallife_tech_mkt_page_desk", "reallife_tech_mkt_page_reputation", "reallife_tech_mkt_market_businesssoftware", "reallife_tech_mkt_market_apps"
+                "reallife_tech_mkt_page_desk", "reallife_tech_mkt_page_reputation", "reallife_tech_mkt_market_businesssoftware", "reallife_tech_mkt_market_apps",
+                "reallife_ui_sample_firm", "reallife_ui_sample_firm_note", "reallife_ui_sample_engine", "reallife_studio_genre_adventure",
+                "reallife_studio_genre_simulation", "reallife_studio_genre_strategy"
             }),
             new UiScreenDef("session_panel", UiTemplate.Session, "ActivityScreen", new[]
             {

@@ -35,7 +35,7 @@ namespace RealLifeOverhaul.Ui
         public static float Figure(UiScene s, UiAt at, float x, float y, float w, ref UiFigureModel figure, bool large, bool beside = false)
         {
             UiStyle number = large ? UiStyle.Display : UiStyle.Number;
-            bool line = figure.Trend != null && figure.Trend.Length > 1;
+            bool line = Drawn(figure.Trend);
             float lh = UiTextRules.LineHeight(UiStyle.SectionHeader);
             float nw = line && beside ? SnapDown((w - UiTokens.S8) / 2f) : w;
             Text(s, at, x, y, w, UiStyle.SectionHeader, UiRole.Muted, figure.Label, UiFlags.Label | UiFlags.Truncate);
@@ -70,6 +70,25 @@ namespace RealLifeOverhaul.Ui
                 cy += UiTokens.S12;
             }
             return cy - y;
+        }
+
+        /// <summary>
+        /// Whether a trend has a line to draw: two values or more that differ. A firm with nothing taken yet has thirty
+        /// zeros, and their flat line said nothing (beta 3 drew it across into the next panel).
+        /// </summary>
+        public static bool Drawn(float[] trend)
+        {
+            if (trend == null || trend.Length < 2)
+            {
+                return false;
+            }
+            float low = trend[0], high = trend[0];
+            for (int i = 1; i < trend.Length; i++)
+            {
+                low = Math.Min(low, trend[i]);
+                high = Math.Max(high, trend[i]);
+            }
+            return high - low > 1e-6f;
         }
 
         /// <summary>A sparkline of values, oldest first, drawn as one line in a role's colour.</summary>

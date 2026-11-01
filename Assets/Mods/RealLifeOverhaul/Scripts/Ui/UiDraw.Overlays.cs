@@ -6,23 +6,41 @@ namespace RealLifeOverhaul.Ui
     public static partial class UiDraw
     {
         /// <summary>
-        /// The prompt bar: each of the scene's prompts as its key's cap (or the pad's glyph) and its words in the game's
-        /// own capitals, centred in a band; a TabPrev prompt shows both tab keys. Ink and caps are the band's own (the
-        /// game's bottom bar), the same in both themes.
+        /// The frame's own bars, flat: the masthead (the app, the place the page shows, the money and time, the rule) and
+        /// the band's hairline. Never a target. The place stands after the app's name in the masthead rather than as a
+        /// heading of its own, so no page repeats the masthead's words under it ("The city's people" twice), and it is left
+        /// out when it is the app's own name.
         /// </summary>
-        /// <summary>The frame's own bars, flat: the masthead (the app, the money and time, the column rule) and the band's hairline; never a target.</summary>
-        public static void Chrome(UiScene s, UiFrame frame)
+        public static void Chrome(UiScene s, UiFrame frame, string place = null)
         {
             if (frame.Top > 0f)
             {
                 int bar = Box(s, UiAt.Screen, 0f, 0f, frame.Width, frame.Top, UiRole.Header, UiRole.None, 0f, UiFlags.Decor);
                 UiAt on = UiAt.Screen.In(bar);
-                Box(s, on, 0f, frame.Top - UiTokens.FrameRule, frame.Width, UiTokens.FrameRule, UiRole.Text, UiRole.None, 0f, UiFlags.Decor);
+                Box(s, on, 0f, frame.Top - UiTokens.FrameRule, frame.Width, UiTokens.FrameRule, UiRole.Rule, UiRole.None, 0f, UiFlags.Decor);
                 frame.Content(out float cx, out float _, out float cw, out float _);
                 string status = UiChrome.Status != null ? UiChrome.Status() : null;
                 float sw = string.IsNullOrEmpty(status) ? 0f : UiTextRules.Width(status, UiStyle.Title) + UiTokens.S1;
                 float tw = cw - sw - UiTokens.S8;
-                TextMiddle(s, on, cx, 0f, frame.Top - UiTokens.FrameRule, tw, UiStyle.AppTitle, UiRole.Text, frame.Title ?? string.Empty, UiFlags.Truncate);
+                float bandH = frame.Top - UiTokens.FrameRule;
+                string app = frame.Title ?? string.Empty;
+                if (Crumb(app, place))
+                {
+                    float aw = Math.Min(tw, Snap(UiTextRules.Width(app, UiStyle.AppTitle) + UiTokens.S1));   // widths on the grid, so the mark and the place stand on it
+                    TextMiddle(s, on, cx, 0f, bandH, aw, UiStyle.AppTitle, UiRole.Text, app, UiFlags.Truncate);
+                    float gw = Snap(UiTextRules.Width(CrumbMark, UiStyle.AppTitle) + UiTokens.S1);
+                    float gx = cx + aw + UiTokens.S3;
+                    float pw = cx + tw - (gx + gw + UiTokens.S3);
+                    if (pw > UiTokens.S16)
+                    {
+                        TextMiddle(s, on, gx, 0f, bandH, gw, UiStyle.AppTitle, UiRole.Muted, CrumbMark, UiFlags.None);
+                        TextMiddle(s, on, gx + gw + UiTokens.S3, 0f, bandH, pw, UiStyle.AppTitle, UiRole.Text2, place, UiFlags.Truncate);
+                    }
+                }
+                else
+                {
+                    TextMiddle(s, on, cx, 0f, bandH, tw, UiStyle.AppTitle, UiRole.Text, app, UiFlags.Truncate);
+                }
                 if (sw > 0f)
                 {
                     TextMiddle(s, on, cx + cw - sw, 0f, frame.Top - UiTokens.FrameRule, sw, UiStyle.Title, UiRole.Text2, status, UiFlags.Right);
@@ -32,6 +50,43 @@ namespace RealLifeOverhaul.Ui
             {
                 Box(s, UiAt.Screen, 0f, frame.BandY, frame.Width, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             }
+        }
+
+        /// <summary>The mark between the app's name and the place in the masthead.</summary>
+        public const string CrumbMark = "\u203A";
+
+        /// <summary>Whether a place is shown after the app's name: only one with words of its own.</summary>
+        public static bool Crumb(string app, string place)
+        {
+            return !string.IsNullOrEmpty(place) && !string.Equals(place.Trim(), (app ?? string.Empty).Trim(), StringComparison.CurrentCultureIgnoreCase);
+        }
+
+        /// <summary>
+        /// The prompt bar: each of the scene's prompts as its key's cap (or the pad's glyph) and its words in the game's
+        /// own capitals, centred in a band. A TabPrev prompt shows both tab keys. Ink and caps are the band's own (the
+        /// game's bottom bar), the same in both themes.
+        /// </summary>
+
+        /// <summary>
+        /// The band of a frame. With the mouse leading, Move and Select go, since the mouse does those by pointing and
+        /// clicking. The shortcuts stay (a target's key, the tab keys, Back), as they work with the mouse in hand and are
+        /// quicker than travelling the cursor.
+        /// </summary>
+        public static void PromptBar(UiScene s, UiFrame frame, IUiKeys keys)
+        {
+            if (frame.Pointer)
+            {
+                int kept = 0;
+                for (int i = 0; i < s.PromptCount; i++)
+                {
+                    if (s.Prompts[i].Action != UiAction.Move && s.Prompts[i].Action != UiAction.Confirm)
+                    {
+                        s.Prompts[kept++] = s.Prompts[i];
+                    }
+                }
+                s.PromptCount = kept;
+            }
+            PromptBar(s, 0f, frame.BandY, frame.Width, frame.Band, keys);
         }
 
         public static void PromptBar(UiScene s, float x, float y, float w, float h, IUiKeys keys)
@@ -97,7 +152,7 @@ namespace RealLifeOverhaul.Ui
             float ch = Snap(UiTokens.S8 + th + UiTokens.S3 + bh + UiTokens.S6 + UiTokens.Control + UiTokens.S8);
             float cx = areaX + SnapDown((areaW - cw) / 2f), cy = areaY + SnapDown((areaH - ch) / 2f);
             var at = new UiAt { Parent = -1, Clip = -1, Layer = 1, Order = -1 };
-            int card = Box(s, at, cx, cy, cw, ch, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel);
+            int card = Box(s, at, cx, cy, cw, ch, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt inside = at.In(card);
             Text(s, inside, cx + UiTokens.S8, cy + UiTokens.S8, inner, UiStyle.SectionTitle, UiRole.Text, title, UiFlags.Label);
             Text(s, inside, cx + UiTokens.S8, cy + UiTokens.S8 + th + UiTokens.S3, inner, UiStyle.Body, UiRole.Text2, body, UiFlags.Wrap | UiFlags.Label | UiFlags.Middle, 6);
@@ -115,33 +170,38 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>
         /// The call: the contact's avatar in its ring, the name, the line's state in capitals, what the contact offers on
-        /// the call as rows with their prices, and the red End. Over the area it is given (the detail), focus held in it.
+        /// the call as rows with their prices, and the red End, on a solid card of its own over the dimmed screen (as a
+        /// question stands), so nothing of the page shows through its words. Focus is held in it.
         /// </summary>
         public static void Call(UiScene s, float areaX, float areaY, float areaW, float areaH, string name, float hue, string state, bool connected,
-            UiServiceModel[] options, int optionCount, string end, int optionCommand, int endCommand)
+            UiServiceModel[] options, int optionCount, string end, int optionCommand, int endCommand, float dimX, float dimY, float dimW, float dimH)
         {
-            Scrim(s, areaX, areaY, areaW, areaH, 1);
-            var at = new UiAt { Parent = -1, Clip = -1, Layer = 1, Order = -1 };
+            Scrim(s, dimX, dimY, dimW, dimH, 1);
+            var on = new UiAt { Parent = -1, Clip = -1, Layer = 1, Order = -1 };
             const float size = UiTokens.S16 * 2f;
-            float colW = Math.Min(areaW - UiTokens.S12 * 2f, UiTokens.S16 * 7f);
+            float colW = Math.Min(areaW - UiTokens.S12 * 2f - UiTokens.S8 * 2f, UiTokens.S16 * 7f);
             float nameH = UiTextRules.LineHeight(UiStyle.Hero), stateH = UiTextRules.LineHeight(UiStyle.Prompt);
             float rowsH = optionCount > 0 ? optionCount * (UiTokens.Control + UiTokens.S2) + UiTokens.S4 : 0f;
-            float total = size + UiTokens.S6 + nameH + UiTokens.S2 + stateH + UiTokens.S8 + rowsH + UiTokens.S16;
-            float top = areaY + SnapDown(Math.Max(UiTokens.S6, (areaH - total) / 2f));
-            float cx = areaX + SnapDown((areaW - size) / 2f);
+            float total = size + UiTokens.S6 + Snap(nameH + UiTokens.S2 + stateH) + UiTokens.S8 + rowsH + UiTokens.S16;
+            float cardW = colW + UiTokens.S8 * 2f, cardH = Snap(total + UiTokens.S8 * 2f);
+            float cardX = areaX + SnapDown((areaW - cardW) / 2f), cardY = areaY + SnapDown(Math.Max(0f, (areaH - cardH) / 2f));
+            int card = Box(s, on, cardX, cardY, cardW, cardH, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
+            UiAt at = on.In(card);
+            float top = cardY + UiTokens.S8 + UiTokens.S1;
+            float cx = cardX + SnapDown((cardW - size) / 2f);
             Circle(s, at, cx - UiTokens.S1, top - UiTokens.S1, size + UiTokens.S2, size + UiTokens.S2, connected ? UiRole.Ok : UiRole.Accent, UiFlags.Decor);
-            Circle(s, at, cx - UiTokens.Hairline * 2f, top - UiTokens.Hairline * 2f, size + UiTokens.S1, size + UiTokens.S1, UiRole.Bg, UiFlags.Decor);
+            Circle(s, at, cx - UiTokens.Hairline * 2f, top - UiTokens.Hairline * 2f, size + UiTokens.S1, size + UiTokens.S1, UiRole.Panel, UiFlags.Decor);
             Avatar(s, at, cx, top, size, name, hue);
             float y = top + size + UiTokens.S6;
-            float colX = areaX + SnapDown((areaW - colW) / 2f);
+            float colX = cardX + UiTokens.S8;
             Text(s, at, colX, y, colW, UiStyle.Hero, UiRole.Text, name, UiFlags.Centre | UiFlags.Truncate);
             y += nameH + UiTokens.S2;
             Text(s, at, colX, y, colW, UiStyle.Prompt, connected ? UiRole.OkText : UiRole.AccentText, state, UiFlags.Centre | UiFlags.Label | UiFlags.Middle);
-            y = Snap(y + stateH + UiTokens.S8 - areaY) + areaY;
+            y = Snap(y + stateH + UiTokens.S8 - cardY) + cardY;
             for (int i = 0; i < optionCount; i++)
             {
                 ref UiServiceModel o = ref options[i];
-                int face = Box(s, at, colX, y, colW, UiTokens.Control, UiRole.Field, UiRole.RowEdge, UiTokens.RadiusLarge, o.Disabled ? UiFlags.Disabled : UiFlags.None);
+                int face = Box(s, at, colX, y, colW, UiTokens.Control, UiRole.Field, UiRole.None, UiTokens.RadiusLarge, o.Disabled ? UiFlags.Disabled : UiFlags.None);
                 float pw = UiTextRules.Width(o.Price, UiStyle.SmallStrong) + UiTokens.S1;
                 TextMiddle(s, at.In(face), colX + UiTokens.S5, y, UiTokens.Control, colW - pw - UiTokens.S5 * 2f - UiTokens.S3, UiStyle.Button, UiRole.Text, o.Title, UiFlags.Truncate);
                 TextMiddle(s, at.In(face), colX + colW - UiTokens.S5 - pw, y, UiTokens.Control, pw, UiStyle.SmallStrong, UiRole.AccentText, o.Price, UiFlags.Right);
@@ -149,9 +209,9 @@ namespace RealLifeOverhaul.Ui
                 y += UiTokens.Control + UiTokens.S2;
             }
             y += optionCount > 0 ? UiTokens.S4 : 0f;
-            float ex = areaX + SnapDown((areaW - UiTokens.S16) / 2f);
+            float ex = cardX + SnapDown((cardW - UiTokens.S16) / 2f);
             int endFace = Circle(s, at, ex, y, UiTokens.S16, UiTokens.S16, UiRole.Danger);
-            TextMiddle(s, at.In(endFace), ex, y, UiTokens.S16, UiTokens.S16, UiStyle.Title, UiRole.PromptInk, end, UiFlags.Centre | UiFlags.Label);
+            TextMiddle(s, at.In(endFace), ex, y, UiTokens.S16, UiTokens.S16, UiStyle.Title, UiRole.OnAccent, end, UiFlags.Centre | UiFlags.Label);
             int n = Node(s, at, ex, y, UiTokens.S16, UiTokens.S16, endCommand, 0, endFace);
             if (optionCount == 0)
             {

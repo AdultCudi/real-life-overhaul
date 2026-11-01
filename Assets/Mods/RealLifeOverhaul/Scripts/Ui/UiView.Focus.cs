@@ -1,17 +1,23 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// The focus: the main state of a game screen, drawn as an accent ring three pixels outside the target, gliding from
-    /// the last target to the next in the focus time, while the target's face lifts to the hover fill (a primary button's
-    /// accent brightens). A press tightens the ring for a moment. Pointer, keys and pad share the one focus.
+    /// The focus, drawn as an accent ring three pixels outside the target while the keys or a pad lead, gliding from the
+    /// last target to the next in the focus time, the target's face lifted to the hover fill. While the pointer leads
+    /// there is no ring: the target under the pointer gets that same still fill instead, so hovering never moves anything.
+    /// A press tightens the ring for a moment. One highlight a list: while the ring stands on another row of a list, that
+    /// list's selected row keeps its accent bar and lets its fill go quiet, so the two never read as two selections.
     /// </summary>
     public sealed partial class UiView
     {
         private readonly Image[] _rings = new Image[Layers];
+        private readonly List<BoxSlot> _quiet = new List<BoxSlot>(4);
         private int _focus = -1;
+        private int _hover = -1;
+        private bool _ring = true;
         private BoxSlot _face;
         private Vector4 _ringFrom, _ringTo;   // x, y, w, h in px
         private float _ringStart = -1f, _ringLength;
@@ -23,6 +29,65 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>Whether the ring is still gliding or a press is still showing: the host steps it while true.</summary>
         public bool Moving => _ringStart >= 0f || _press >= 0f;
+
+        /// <summary>The ring shows only while the keys or a pad lead (UiFocusMode).</summary>
+        public bool Ring
+        {
+            get => _ring;
+            set
+            {
+                if (_ring == value)
+                {
+                    return;
+                }
+                _ring = value;
+                _ringStart = _press = -1f;   // a ring that comes back appears where the focus is, it never glides in from somewhere old
+                Lift(false);
+                Quiet(false);
+                if (_scene != null && _focus >= 0)
+                {
+                    _ringTo = _ringFrom = RingBox(_focus);
+                    _ringLayer = _scene.Nodes[_focus].Layer;
+                }
+                PlaceRing(_ringTo);
+                Lift(true);
+                Quiet(true);
+            }
+        }
+
+        /// <summary>The target under the pointer, lifted while the pointer leads, or -1 for none.</summary>
+        public void SetHover(int node)
+        {
+            if (_scene == null || node >= _scene.NodeCount)
+            {
+                node = -1;
+            }
+            if (node == _hover)
+            {
+                return;
+            }
+            Lift(false);
+            _hover = node;
+            Lift(true);
+        }
+
+        /// <summary>The target the resting pointer is over after a write (its pooled face may show another target now), or -1.</summary>
+        public int PointerNode()
+        {
+            if (_scene == null)
+            {
+                return -1;
+            }
+            for (int i = 0; i < _scene.NodeCount; i++)
+            {
+                int face = _scene.Nodes[i].Face;
+                if (SlotOf(face) is BoxSlot b && b.Hit != null && b.Hit.Inside && b.Hit.Node == i && b.Rect.gameObject.activeInHierarchy)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
 
         private void BuildFocus()
         {
@@ -36,7 +101,7 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        /// <summary>Moves focus to a node, gliding there (or at once with motion off or <paramref name="glide"/> false).</summary>
+        /// <summary>Moves focus to a node, gliding there (or at once with motion off, <paramref name="glide"/> false, or no ring shown).</summary>
         public void SetFocus(int node, bool glide, float now)
         {
             if (_scene == null || node >= _scene.NodeCount)
@@ -44,6 +109,7 @@ namespace RealLifeOverhaul.Ui
                 node = -1;
             }
             Lift(false);
+            Quiet(false);
             int from = _focus;
             _focus = node;
             if (node < 0)
@@ -60,7 +126,7 @@ namespace RealLifeOverhaul.Ui
             float length = UiTokens.Duration(UiMotionKind.Focus, Motion);
             _ringTo = target;
             _ringLayer = layer;
-            if (glide && same && length > 0f)
+            if (glide && same && _ring && length > 0f)
             {
                 _ringStart = now;
                 _ringLength = length;
@@ -72,15 +138,16 @@ namespace RealLifeOverhaul.Ui
                 PlaceRing(target);
             }
             Lift(true);
+            Quiet(true);
         }
 
         /// <summary>The ring tightens and lets go, as a press lands.</summary>
         public void Press(float now)
         {
-            _press = UiTokens.Duration(UiMotionKind.Press, Motion) > 0f ? now : -1f;
+            _press = _ring && UiTokens.Duration(UiMotionKind.Press, Motion) > 0f ? now : -1f;
         }
 
-        /// <summary>One step of the ring's glide and a press, on the real clock; false once both are still.</summary>
+        /// <summary>One step of the ring's glide and a press, on the real clock. False once both are still.</summary>
         public bool StepFocus(float now)
         {
             if (_focus < 0)
@@ -115,13 +182,18 @@ namespace RealLifeOverhaul.Ui
             return Moving;
         }
 
-        // After a write: the ring and the face found again in the new scene (the same node by its index), the face lifted.
+        // After a write: the ring and the lifted face found again in the new scene (the same node by its index).
         private void WriteFocus(bool themeChanged)
         {
             _face = null;
+            _quiet.Clear();   // the slots were bound afresh: nothing is quieted or lifted in them now
             if (_focus >= _scene.NodeCount)
             {
                 _focus = UiFocusRules.First(_scene);
+            }
+            if (_hover >= _scene.NodeCount)
+            {
+                _hover = -1;
             }
             for (int i = 0; i < Layers; i++)
             {
@@ -140,7 +212,6 @@ namespace RealLifeOverhaul.Ui
                 }
                 _ringLayer = _scene.Nodes[_focus].Layer;
                 PlaceRing(_ringStart >= 0f ? _ringFrom : _ringTo);
-                Lift(true);
             }
             else
             {
@@ -149,6 +220,8 @@ namespace RealLifeOverhaul.Ui
                     Show(_rings[i], false);
                 }
             }
+            Lift(true);
+            Quiet(true);
         }
 
         private Vector4 RingBox(int node)
@@ -162,7 +235,7 @@ namespace RealLifeOverhaul.Ui
         {
             for (int i = 0; i < Layers; i++)
             {
-                bool on = i == _ringLayer && _focus >= 0;
+                bool on = _ring && i == _ringLayer && _focus >= 0 && _scene != null && _focus < _scene.NodeCount;
                 Show(_rings[i], on);
                 if (!on)
                 {
@@ -179,7 +252,7 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // The focused target's face lifted to the hover fill (or brightened, on the accent), or put back.
+        // The lifted target's face (the focus with the ring, the hover without it) at the hover fill, or put back.
         private void Lift(bool on)
         {
             if (!on)
@@ -191,12 +264,12 @@ namespace RealLifeOverhaul.Ui
                 _face = null;
                 return;
             }
-            if (_focus < 0 || _scene == null)
+            int node = _ring ? _focus : _hover;
+            if (node < 0 || _scene == null || node >= _scene.NodeCount || _scene.Nodes[node].Disabled)
             {
                 return;
             }
-            int item = _scene.Nodes[_focus].Face;
-            _face = SlotOf(item) as BoxSlot;
+            _face = SlotOf(_scene.Nodes[node].Face) as BoxSlot;
             if (_face == null)
             {
                 return;
@@ -204,16 +277,57 @@ namespace RealLifeOverhaul.Ui
             switch (_face.Role)
             {
                 case UiRole.Accent:
-                    _face.Fill.color = Color.Lerp(Colour(UiRole.Accent), Color.white, 0.12f);
+                    _face.Fill.color = Color.Lerp(Colour(UiRole.Accent), Colour(UiRole.Text), 0.12f);
                     break;
                 case UiRole.Danger:
                 case UiRole.DangerSoft:
                 case UiRole.RowSel:
                 case UiRole.AccentSoft:
-                    break;   // already loud: the ring says it
+                    break;   // already marked: the ring says it, and a hover over the selection changes nothing
                 default:
                     _face.Fill.color = Colour(UiRole.Hover);
                     break;
+            }
+        }
+
+        // While the ring stands on another row of a list, the list's selected rows let their fill go quiet (their accent
+        // bar stays to say what is open), so one list never shows two highlights.
+        private void Quiet(bool on)
+        {
+            if (!on)
+            {
+                for (int i = 0; i < _quiet.Count; i++)
+                {
+                    BoxSlot b = _quiet[i];
+                    if (b.Rect != null)
+                    {
+                        b.Fill.color = b.Role == UiRole.None ? new Color(0f, 0f, 0f, 0f) : Colour(b.Role, b.Alpha);
+                    }
+                }
+                _quiet.Clear();
+                return;
+            }
+            if (!_ring || _scene == null || _focus < 0 || _focus >= _scene.NodeCount)
+            {
+                return;
+            }
+            short list = _scene.Nodes[_focus].List;
+            if (list < 0)
+            {
+                return;
+            }
+            for (int i = 0; i < _scene.NodeCount; i++)
+            {
+                if (i == _focus || _scene.Nodes[i].List != list)
+                {
+                    continue;
+                }
+                int face = _scene.Nodes[i].Face;
+                if (face >= 0 && (_scene.Items[face].Flags & UiFlags.Selected) != 0 && SlotOf(face) is BoxSlot b)
+                {
+                    b.Fill.color = Colour(UiRole.Row);
+                    _quiet.Add(b);
+                }
             }
         }
     }

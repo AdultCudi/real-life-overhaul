@@ -49,11 +49,11 @@ namespace RealLifeOverhaul.Ui
             switch (kind)
             {
                 case UiButtonKind.Primary: fill = UiRole.Accent; edge = UiRole.None; ink = UiRole.OnAccent; break;
-                case UiButtonKind.Destructive: fill = UiRole.Field; edge = UiRole.PanelEdge; ink = UiRole.DangerText; break;
+                case UiButtonKind.Destructive: fill = UiRole.Field; edge = UiRole.None; ink = UiRole.DangerText; break;
                 case UiButtonKind.Armed: fill = UiRole.DangerSoft; edge = UiRole.Danger; ink = UiRole.DangerText; break;
-                case UiButtonKind.Chip: fill = UiRole.AccentSoft; edge = UiRole.RowSelEdge; ink = UiRole.AccentText; break;
+                case UiButtonKind.Chip: fill = UiRole.AccentSoft; edge = UiRole.None; ink = UiRole.AccentText; break;
                 case UiButtonKind.Quiet: fill = UiRole.None; edge = UiRole.None; ink = UiRole.Text2; break;
-                default: fill = UiRole.Field; edge = UiRole.PanelEdge; ink = UiRole.Text; break;
+                default: fill = UiRole.Field; edge = UiRole.None; ink = UiRole.Text; break;
             }
             float radius = kind == UiButtonKind.Chip ? UiTokens.RadiusMedium : UiTokens.RadiusLarge;   // a chip's corners crisper: a game's tag, not a pill
             int face = Box(s, at, x, y, w, h, fill, edge, radius, disabled ? UiFlags.Disabled : UiFlags.None);
@@ -151,7 +151,7 @@ namespace RealLifeOverhaul.Ui
         public static int Search(UiScene s, UiAt at, float x, float y, float w, string placeholder, string query, string count, int command)
         {
             float h = UiTokens.Control;
-            int face = Box(s, at, x, y, w, h, UiRole.Field, UiRole.RowEdge, UiTokens.RadiusLarge);
+            int face = Box(s, at, x, y, w, h, UiRole.Field, UiRole.None, UiTokens.RadiusLarge);
             UiAt inside = at.In(face);
             Icon(s, inside, x + UiTokens.S4, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Search, UiRole.Muted);
             float cw = string.IsNullOrEmpty(count) ? 0f : UiTextRules.Width(count, UiStyle.Small) + UiTokens.S1;
@@ -250,7 +250,7 @@ namespace RealLifeOverhaul.Ui
             float cw = SnapDown(Math.Min(w / 2f, UiTokens.S16 * 4f));
             float cx = x + w - UiTokens.S3 - cw;
             TextMiddle(s, inside, x + UiTokens.S3, y, h, cx - x - UiTokens.S6, UiStyle.Body, UiRole.Text, label, UiFlags.Label);
-            int box = Box(s, inside, cx, y + UiTokens.S1, cw, h - UiTokens.S2, UiRole.Field, UiRole.RowEdge, UiTokens.RadiusMedium);
+            int box = Box(s, inside, cx, y + UiTokens.S1, cw, h - UiTokens.S2, UiRole.Field, UiRole.None, UiTokens.RadiusMedium);
             Icon(s, at.In(box), cx + UiTokens.S2, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Back, UiRole.AccentText, UiFlags.Middle);
             Icon(s, at.In(box), cx + cw - UiTokens.S2 - UiTokens.Icon, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Next, UiRole.AccentText, UiFlags.Middle);
             TextMiddle(s, at.In(box), cx + UiTokens.S2 + UiTokens.Icon, y, h, cw - (UiTokens.S2 + UiTokens.Icon) * 2f, UiStyle.SmallStrong, UiRole.Text, choice,

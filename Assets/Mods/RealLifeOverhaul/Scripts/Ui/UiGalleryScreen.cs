@@ -42,6 +42,13 @@ namespace RealLifeOverhaul.Ui
                 _page = arg;
                 _dirty = true;
             }
+            else if (command == UiGallery.Answer || command == UiGallery.CallEnd)
+            {
+                // A question answered and a call ended close as the real ones do, back to the page beneath them, so Back
+                // on the question (its Keep owns Escape) is never a key that does nothing.
+                _page = _page == 4 ? 1 : 3;
+                _dirty = true;
+            }
             return true;
         }
 
@@ -181,8 +188,8 @@ namespace RealLifeOverhaul.Ui
                 QuestionBody = t("reallife_ui_gallery_question_body", "Your contacts stay. Only their messages go, and they cannot be brought back."),
                 Answers = new[]
                 {
-                    new UiActionModel { Label = t("reallife_ui_gallery_keep", "Keep them"), Kind = UiButtonKind.Secondary, Key = UiAction.Back },
-                    new UiActionModel { Label = t("contacts_delete_all_button", "Delete all"), Kind = UiButtonKind.Armed, Key = UiAction.Count, Command = 1 },
+                    new UiActionModel { Label = t("reallife_ui_gallery_keep", "Keep them"), Kind = UiButtonKind.Secondary, Key = UiAction.Back, Command = UiGallery.Answer, Arg = 0 },
+                    new UiActionModel { Label = t("contacts_delete_all_button", "Delete all"), Kind = UiButtonKind.Armed, Key = UiAction.Count, Command = UiGallery.Answer, Arg = 1 },
                 },
                 CallName = t("reallife_ui_gallery_person_1", "Maya Okafor"),
                 CallState = t("reallife_ui_gallery_connected", "Connected"),
@@ -203,6 +210,7 @@ namespace RealLifeOverhaul.Ui
                     t("reallife_ui_gallery_col_weight", "Weight"), t("reallife_ui_gallery_col_role", "Role"), t("reallife_ui_gallery_col_dark", "Dark"),
                     t("reallife_ui_gallery_col_light", "Light"), t("reallife_ui_gallery_col_motion", "Motion"), t("reallife_ui_gallery_col_full", "Full"),
                     t("reallife_ui_gallery_col_calm", "Calm"), t("reallife_ui_gallery_col_token", "Token"), t("reallife_ui_gallery_col_px", "Pixels"),
+                    t("reallife_ui_gallery_col_kind", "Kind"),
                 },
                 ToastTitle = t("reallife_ui_gallery_toast_title", "Bonus paid"),
                 ToastSub = t("reallife_ui_gallery_person_1", "Maya Okafor"),
@@ -224,6 +232,7 @@ namespace RealLifeOverhaul.Ui
                 },
                 RowCount = 5,
                 Selected = 0,
+                Inert = true,   // a sample of a table and its selected row: nothing to press on it
             };
             // The three ways a change reads: up and good, down and good, up and bad. The arrow follows the sign, the colour the player.
             m.Figures = new[]

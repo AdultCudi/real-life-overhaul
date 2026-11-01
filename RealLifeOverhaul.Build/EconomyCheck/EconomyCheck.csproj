@@ -645,10 +645,17 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFrame.cs" Link="Mod\UiFrame.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiListDetail.cs" Link="Mod\UiListDetail.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDashboard.cs" Link="Mod\UiDashboard.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDashboard.Shapes.cs" Link="Mod\UiDashboard.Shapes.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiSessionSteps.cs" Link="Mod\UiSessionSteps.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiForm.cs" Link="Mod\UiForm.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiGallery.cs" Link="Mod\UiGallery.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFocusRules.cs" Link="Mod\UiFocusRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFocusMode.cs" Link="Mod\UiFocusMode.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPlaces.cs" Link="Mod\UiPlaces.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\ContactsRoutes.cs" Link="Mod\ContactsRoutes.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Pages\PopulationPages.cs" Link="Mod\PopulationPages.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Pages\FlareCityPages.cs" Link="Mod\FlareCityPages.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Pages\StudioPages.cs" Link="Mod\StudioPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCheckRules.cs" Link="Mod\UiCheckRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiMotionRules.cs" Link="Mod\UiMotionRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiBindRules.cs" Link="Mod\UiBindRules.cs" />

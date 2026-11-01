@@ -26,5 +26,39 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>A text source for a screen's model: a key's text, the second argument left for the checks' English.</summary>
         public static string Words(string key, string english) => T(key);
+
+        /// <summary>
+        /// A record's key as the game names the place: the business there by its own name, else the address as the game
+        /// writes it ("70 Fifth Avenue"). An office building's other firms ("|t") are the building. Never the key itself.
+        /// </summary>
+        public static string Place(string key)
+        {
+            if (!UiPlaces.IsKey(key))
+            {
+                return key ?? string.Empty;
+            }
+            try
+            {
+                if (key.Split('|').Length == 2)
+                {
+                    string name = Population.PopulationGame.BusinessName(key);
+                    if (!string.IsNullOrEmpty(name) && !UiPlaces.IsKey(name))
+                    {
+                        return name;
+                    }
+                }
+                return UiPlaces.Address(key, Street);
+            }
+            catch (System.Exception e) when (Guard.Missing(e))
+            {
+                return UiPlaces.Address(key, null);
+            }
+        }
+
+        // A street's name in the game's language, as the game's own address line writes it.
+        private static string Street(string street)
+        {
+            return Localizor.LocalizorManager.IsLocalizedKey(street) ? T(street) : null;
+        }
     }
 }

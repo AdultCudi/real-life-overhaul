@@ -28,10 +28,11 @@ namespace RealLifeOverhaul.Ui
     {
         /// <summary>
         /// A detail's hero: the avatar in its accent ring, the name, the role and the status chip, and the actions at the
-        /// right, the primary last, on the panel's own flat surface. Returns the hero's height.
+        /// right, the primary last, on the panel's own flat surface. Every action runs the template's one command with its
+        /// own argument, so a screen cannot hand a button a number its press never answers. Returns the hero's height.
         /// </summary>
         public static float Hero(UiScene s, UiAt at, float x, float y, float w, string name, float hue, string role, string status, UiTone tone,
-            UiActionModel[] actions, int actionCount, IUiKeys keys)
+            UiActionModel[] actions, int actionCount, IUiKeys keys, int command)
         {
             const float pad = UiTokens.S8, size = UiTokens.AvatarHero;
             float h = pad + size + UiTokens.S6;
@@ -47,7 +48,7 @@ namespace RealLifeOverhaul.Ui
                 ref UiActionModel a = ref actions[i];
                 float bw = ButtonWidth(a.Kind, a.Label, a.Icon, a.Key, keys);
                 ax -= bw;
-                Button(s, at, ax, ay, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, a.Command, a.Arg, a.Disabled);
+                Button(s, at, ax, ay, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, command, a.Arg, a.Disabled);
                 ax -= UiTokens.S3;
             }
             float tx = x + pad + size + UiTokens.S6;
@@ -133,7 +134,7 @@ namespace RealLifeOverhaul.Ui
         public static int Composer(UiScene s, UiAt at, float x, float y, float w, string placeholder, string draft, string send, int inputCommand, int sendCommand)
         {
             float h = UiTokens.Control + UiTokens.S2;
-            int face = Box(s, at, x, y, w, h, UiRole.Bubble, UiRole.RowEdge, UiTokens.RadiusLarge);
+            int face = Box(s, at, x, y, w, h, UiRole.Bubble, UiRole.None, UiTokens.RadiusLarge);
             UiAt inside = at.In(face);
             bool ready = !string.IsNullOrEmpty(draft);
             float bw = ButtonWidth(UiButtonKind.Primary, send, UiIcon.Send, UiAction.Count, null);

@@ -124,7 +124,7 @@ namespace RealLifeOverhaul.Ui
             {
                 s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
             }
-            UiDraw.PromptBar(s, 0f, frame.BandY, frame.Width, frame.Band, keys);
+            UiDraw.PromptBar(s, frame, keys);
             UiDraw.Chrome(s, frame);
             if (m.Overlay == UiOverlay.Question)
             {
@@ -132,7 +132,8 @@ namespace RealLifeOverhaul.Ui
             }
             else if (m.Overlay == UiOverlay.Call)
             {
-                UiDraw.Call(s, dx, cy, dw, ch, m.Name, m.Hue, m.OverlayTitle, m.CallConnected, m.Services, m.ServiceCount, m.CallEnd, CallOption, CallEnd);
+                UiDraw.Call(s, dx, cy, dw, ch, m.Name, m.Hue, m.OverlayTitle, m.CallConnected, m.Services, m.ServiceCount, m.CallEnd, CallOption, CallEnd,
+                    0f, frame.ContentTop, frame.Width, frame.BandY - frame.ContentTop);
             }
             if (!string.IsNullOrEmpty(m.ToastTitle))
             {
@@ -259,14 +260,14 @@ namespace RealLifeOverhaul.Ui
 
         private static void Detail(UiScene s, UiAt at, UiListDetailModel m, float x, float y, float w, float h, IUiKeys keys)
         {
-            int panel = UiDraw.Box(s, at, x, y, w, h, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
+            int panel = UiDraw.Box(s, at, x, y, w, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt inside = at.In(panel);
             if (!m.HasDetail)
             {
                 UiDraw.Empty(s, inside, x, y, w, h, m.NoDetailTitle, m.NoDetailBody);
                 return;
             }
-            float heroH = UiDraw.Hero(s, inside, x, y, w, m.Name, m.Hue, m.Role, m.Status, m.Tone, m.Actions, m.ActionCount, keys);
+            float heroH = UiDraw.Hero(s, inside, x, y, w, m.Name, m.Hue, m.Role, m.Status, m.Tone, m.Actions, m.ActionCount, keys, Action);
             float by = y + heroH;
             UiDraw.Box(s, inside, x, by, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             float bodyH = y + h - by;
@@ -324,9 +325,9 @@ namespace RealLifeOverhaul.Ui
             float offset = m.ThreadOffset < 0f ? most : Math.Min(m.ThreadOffset, most);
             short clip = s.AddClip(x, vy, w, vh, offset);
             s.Clips[clip].ContentHeight = contentH;
-            s.Clips[clip].Fills = true;   // a short thread sits at the foot under the line of its beginning: the room above is the thread's
+            s.Clips[clip].Fills = true;   // a short thread's room is its own, above it by a composer or below it under the hero
             var inClip = new UiAt { Parent = -1, Clip = clip, Layer = at.Layer, Order = -1, Region = at.Region };
-            float my = contentH < vh ? vh - contentH : 0f;   // a short thread sits at the bottom, by the composer
+            float my = contentH < vh && m.Composer ? vh - contentH : 0f;   // a short thread sits by the composer, or under the hero where there is none, so no block above it stands empty
             my = UiDraw.SnapDown(my);
             if (startH > 0f)
             {

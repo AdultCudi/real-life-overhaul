@@ -286,7 +286,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     b.Rule.rectTransform.sizeDelta = new Vector2(0f, UiTokens.FrameRule * Scale);
                     b.Rule.rectTransform.anchoredPosition = Vector2.zero;
-                    b.Rule.color = Colour(UiRole.Text, 1f);
+                    b.Rule.color = Colour(UiRole.Rule, 1f);
                 }
             }
         }
@@ -324,9 +324,10 @@ namespace RealLifeOverhaul.Ui
             SetText(t, it.Text);
         }
 
-        // A centred flag on a text centres its words only where its box was made wider than they are (an empty state); a
-        // box cut to its words (a button's label) was placed by centring already.
-        private static bool TextCentred(ref UiItem it) => it.W > UiTextRules.Width(it.Text, it.Style) + UiTokens.S2;
+        // A centred flag centres a text's words where its box is wider than they are (an empty state), and every line of a
+        // wrapped one, which once sat at the left of its box and ran on past it. A box cut to its words (a button's label)
+        // was placed by centring already.
+        private static bool TextCentred(ref UiItem it) => (it.Flags & UiFlags.Wrap) != 0 || it.W > UiTextRules.Width(it.Text, it.Style) + UiTokens.S2;
 
         private void BindKeyCap(KeyCapSlot k, ref UiItem it)
         {

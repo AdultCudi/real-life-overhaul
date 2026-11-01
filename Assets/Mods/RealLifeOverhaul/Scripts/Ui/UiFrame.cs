@@ -20,6 +20,7 @@ namespace RealLifeOverhaul.Ui
         public float Top;       // px: the masthead's height, 0 for a screen without one
         public float Band;      // px: the prompt band's height
         public string Title;    // the app's name in the masthead, or null
+        public bool Pointer;    // the mouse leads (UiFocusMode): the band leaves out Move and Select, which the mouse does by pointing
 
         /// <summary>
         /// The masthead's height: the app's name on its line with a step of air above and below and the column rule
