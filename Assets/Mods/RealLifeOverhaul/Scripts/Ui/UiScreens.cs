@@ -26,12 +26,26 @@ namespace RealLifeOverhaul.Ui
         public readonly string Runner;      // the IUiScreen class that runs it in the game, or null for a template's sample alone
         public readonly string[] Keys;      // the locale keys of its labels: the mod's own (reallife_) and the game's
 
+        /// <summary>The options section its own switch stands in (UiScreenSwitches), or null: a template's sample, the gallery.</summary>
+        public string Section { get; private set; }
+
         public UiScreenDef(string id, UiTemplate template, string runner, string[] keys)
         {
             Id = id;
             Template = template;
             Runner = runner;
             Keys = keys;
+        }
+
+        /// <summary>
+        /// Gives the screen its own switch in Mod settings, in a section of the RLO interface's (UiScreenSwitches.Apps and
+        /// the rest): with it off, this one screen is the game's own (or the mod's page as it was) while the rest stay on
+        /// the kit. Its id, name and tip follow from the screen's id (UiScreenSwitches).
+        /// </summary>
+        public UiScreenDef Switch(string section)
+        {
+            Section = section;
+            return this;
         }
     }
 

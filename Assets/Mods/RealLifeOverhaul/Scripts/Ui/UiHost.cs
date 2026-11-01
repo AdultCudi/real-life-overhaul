@@ -19,6 +19,16 @@ namespace RealLifeOverhaul.Ui
         void Typed(string text);
     }
 
+    /// <summary>A typing screen that sets its own limit and hears Enter (a text box of the game's, whose Enter confirms).</summary>
+    public interface IUiTypingSubmit : IUiTyping
+    {
+        /// <summary>The most characters the field takes.</summary>
+        int TypingLimit { get; }
+
+        /// <summary>Enter pressed in the field: the screen confirms what was typed.</summary>
+        void Submitted(string text);
+    }
+
     /// <summary>
     /// Runs one kit screen: lays it out when its view model, the frame, the look, the pad or the input's lead changes,
     /// reads the game's bindings and a pad through its input (arrows or d-pad move the one focus, held directions repeat
@@ -37,6 +47,7 @@ namespace RealLifeOverhaul.Ui
 
         private const float RepeatDelay = 0.35f;   // seconds a direction is held before it repeats
         private const float RepeatEvery = 0.08f;   // seconds between repeats
+        private const int SearchLimit = 64;        // characters a search field takes
 
         private readonly UiScene _scene = new UiScene();
         private readonly UiFocusMode _mode = new UiFocusMode(UiLead.Pointer);
@@ -50,7 +61,7 @@ namespace RealLifeOverhaul.Ui
         private string _title;
         private UiIcon _icon;
         private Vector2 _laidSize;
-        private bool _laidDark, _arrive, _typing;
+        private bool _laidDark, _arrive, _typing, _typeSoon, _held;
         private UiPad _laidPad;
         private int _heldX, _heldY;
         private float _nextRepeat;
@@ -58,13 +69,23 @@ namespace RealLifeOverhaul.Ui
         private bool _dragging;      // a target is held by the pointer (IUiDragging)
         private Vector2 _dragAt;     // where, in px of the layout
         private TMP_InputField _field;
-        private UnityEngine.Events.UnityAction<string> _onTyped, _onTypingEnded;
+        private UnityEngine.Events.UnityAction<string> _onTyped, _onTypingEnded, _onSubmit;
 
         /// <summary>The screen stands over a panel of the game's that answers the same keys: the host takes them from the game each frame.</summary>
         public bool Exclusive;
 
+        /// <summary>The screen takes no key, only the pointer (the notices over the world: a toast never steals the player's walk).</summary>
+        public bool PointerOnly;
+
         /// <summary>Told once when the host stops after a fault, so its owner gives the game's own screen back.</summary>
         public Action<Exception> Failed;
+
+        /// <summary>
+        /// The frame's answer to what is not the screen's: the status bar's app row and All apps (UiDraw.AppRowCommand and
+        /// after), and the window's close at the screen's top level, which closes the full menu as the game's own close does.
+        /// Null outside the full menu: those targets then do nothing.
+        /// </summary>
+        public Func<int, int, bool> Chrome;
 
         /// <summary>The scene last laid out, for checks and the test that reports a screen.</summary>
         public UiScene Scene => _scene;
@@ -115,6 +136,7 @@ namespace RealLifeOverhaul.Ui
             Layout();
             _view.Open();
             _view.SetFocus(UiFocusRules.First(_scene), false, Time.unscaledTime);
+            _typeSoon = _screen is IUiTypingSubmit;   // a box for words takes the keys as it opens, once the game has filled it (next frame)
         }
 
         /// <summary>The screen is hidden: typing ends, a drag held is let go of, motion stops where it ends, the host sleeps.</summary>
@@ -124,6 +146,35 @@ namespace RealLifeOverhaul.Ui
             EndDrag(true);
             _view?.Still();
             enabled = false;
+        }
+
+        /// <summary>What the frame draws round the screen changed (the status bar's app row): it is laid out again next frame.</summary>
+        public void Again()
+        {
+            _laidSize = Vector2.zero;
+        }
+
+        /// <summary>
+        /// Something of the kit's stands over the screen (a box, All apps): its keys rest and it stays drawn as it is, with no
+        /// arrival when it gets them back, since it never left.
+        /// </summary>
+        public void Hold(bool hold)
+        {
+            if (_screen == null)
+            {
+                return;
+            }
+            if (hold)
+            {
+                EndTyping();
+                _view?.SetHover(-1);
+            }
+            if (_held != hold)
+            {
+                _held = hold;
+                Layout();   // a held screen drops its key caps and prompts: the keys are the layer's over it, one key one thing
+            }
+            enabled = !hold;
         }
 
         private void Update()
@@ -154,6 +205,22 @@ namespace RealLifeOverhaul.Ui
             }
             float now = Time.unscaledTime;
             _state = default(UiInputState);
+            if (PointerOnly)
+            {
+                if (_screen.Dirty || ((RectTransform)transform).rect.size != _laidSize)
+                {
+                    Layout();
+                }
+                return;
+            }
+            if (_typeSoon)
+            {
+                _typeSoon = false;
+                if (_screen is IUiTypingSubmit box)
+                {
+                    BeginTyping(box);
+                }
+            }
             _input.Read(ref _state);
             if (Exclusive)
             {
@@ -252,6 +319,10 @@ namespace RealLifeOverhaul.Ui
                     _sound?.Play(UiCue.Back);
                 }
             }
+            if (_state.View && Chrome != null && Chrome(UiDraw.AllAppsCommand, 0))
+            {
+                _sound?.Play(UiCue.Confirm);   // the pad's View: All apps, as the status bar's tile
+            }
             if (_state.TabPrev || _state.TabNext)
             {
                 int strip = _view.Focus >= 0 && _view.Focus < _scene.NodeCount ? _scene.Nodes[_view.Focus].Command : -1;
@@ -317,6 +388,10 @@ namespace RealLifeOverhaul.Ui
         private void Move(int dx, int dy, float now)
         {
             int from = _view.Focus;
+            if (dx != 0 && Stepped(from, dx))
+            {
+                return;
+            }
             int next = UiFocusRules.Next(_scene, from, dx, dy);
             if (next == UiFocusRules.ScrollAsked && from >= 0)
             {
@@ -379,12 +454,19 @@ namespace RealLifeOverhaul.Ui
             }
             if (n.Command == UiDraw.CloseCommand)
             {
-                // A window's close button does what Back does, so a screen with pages steps back before it closes.
-                _sound?.Play(_screen.Back() ? UiCue.Back : UiCue.Error);
+                // A window's close button does what Back does, so a screen with pages steps back before it closes; at its
+                // top level the frame closes the full menu, as the game's own close does.
+                bool back = _screen.Back() || (Chrome != null && Chrome(n.Command, n.Arg));
+                _sound?.Play(back ? UiCue.Back : UiCue.Error);
                 if (_screen.Dirty)
                 {
                     Layout();
                 }
+                return;
+            }
+            if (UiDraw.IsChrome(n.Command))
+            {
+                _sound?.Play(Chrome != null && Chrome(n.Command, n.Arg) ? UiCue.Confirm : UiCue.Error);
                 return;
             }
             bool done = _screen.Press(n.Command, n.Arg);
@@ -401,7 +483,7 @@ namespace RealLifeOverhaul.Ui
             var rect = (RectTransform)transform;
             Vector2 size = rect.rect.size;
             float scale = _view.Scale;
-            var frame = new UiFrame { Width = size.x / scale, Height = size.y / scale, Top = _top, Band = _band, Title = _title, Icon = _icon, Pointer = !_mode.Ring };
+            var frame = new UiFrame { Width = size.x / scale, Height = size.y / scale, Top = _top, Band = _band, Title = _title, Icon = _icon, Pointer = !_mode.Ring || _held, Held = _held };
             int command = -1, arg = 0;
             if (_view.Focus >= 0 && _view.Focus < _scene.NodeCount)
             {
@@ -457,6 +539,7 @@ namespace RealLifeOverhaul.Ui
             if (!_typing && node >= 0 && node < _scene.NodeCount && _scene.Nodes[node].Layer == UiFocusRules.TopLayer(_scene) && _mode.Entered(node))
             {
                 _view.SetHover(node);
+                Pointed(_scene.Nodes[node].Command, _scene.Nodes[node].Arg);
             }
         }
 
@@ -465,6 +548,36 @@ namespace RealLifeOverhaul.Ui
             if (_mode.Exited(node))
             {
                 _view.SetHover(-1);
+                Pointed(-1, -1);
+            }
+        }
+
+        // A slider, a choice or an amount with focus takes Left and Right as its step (IUiStepping), so the d-pad stays in its column.
+        private bool Stepped(int node, int dx)
+        {
+            if (!(_screen is IUiStepping stepping) || node < 0 || node >= _scene.NodeCount || _scene.Nodes[node].Disabled || !stepping.Steps(_scene.Nodes[node].Command))
+            {
+                return false;
+            }
+            stepping.Step(_scene.Nodes[node].Command, _scene.Nodes[node].Arg, dx);
+            _sound?.Play(UiCue.Move);
+            if (_screen.Dirty)
+            {
+                Layout();
+            }
+            return true;
+        }
+
+        // The screen hears what the mouse rests on (IUiPointing), for a reading the keys' focus would show.
+        private void Pointed(int command, int arg)
+        {
+            if (_screen is IUiPointing pointing)
+            {
+                pointing.Pointed(command, arg);
+                if (_screen.Dirty)
+                {
+                    Layout();
+                }
             }
         }
 
@@ -570,10 +683,13 @@ namespace RealLifeOverhaul.Ui
                 _field = MakeField(transform);
                 _onTyped = Guard.Listener<string>(Typed);
                 _onTypingEnded = Guard.Listener<string>(TypingEnded);
+                _onSubmit = Guard.Listener<string>(Submitted);
                 _field.onValueChanged.AddListener(_onTyped);
                 _field.onEndEdit.AddListener(_onTypingEnded);
+                _field.onSubmit.AddListener(_onSubmit);
             }
             _typing = true;
+            _field.characterLimit = typing is IUiTypingSubmit limited && limited.TypingLimit > 0 ? limited.TypingLimit : SearchLimit;
             _field.gameObject.SetActive(true);
             _field.SetTextWithoutNotify(typing.TypingText ?? string.Empty);
             _field.ActivateInputField();
@@ -594,6 +710,16 @@ namespace RealLifeOverhaul.Ui
         private void TypingEnded(string text)
         {
             EndTyping();
+        }
+
+        // Enter in the field: a screen that confirms on it (a text box) hears it, after the last letter has reached it.
+        private void Submitted(string text)
+        {
+            if (_screen is IUiTypingSubmit submit)
+            {
+                submit.Typed(text);
+                submit.Submitted(text);
+            }
         }
 
         private void EndTyping()
@@ -632,7 +758,7 @@ namespace RealLifeOverhaul.Ui
             field.textViewport = area;
             field.textComponent = text;
             field.lineType = TMP_InputField.LineType.SingleLine;
-            field.characterLimit = 64;
+            field.characterLimit = SearchLimit;
             field.richText = false;
             r.gameObject.SetActive(false);
             return field;

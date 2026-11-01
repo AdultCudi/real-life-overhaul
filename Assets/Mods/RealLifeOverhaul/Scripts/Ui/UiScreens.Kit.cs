@@ -4,7 +4,7 @@ namespace RealLifeOverhaul.Ui
 {
     public static partial class UiScreens
     {
-        // The kit's own gallery and each template's sample, so the shape a screen takes is checked before one stands on it.
+        // The kit's own gallery, the gallery of its parts and each template's sample, so the shape a screen takes is checked before one stands on it.
         static partial void AddKit(List<UiScreenDef> screens)
         {
             screens.AddRange(new[]
@@ -41,6 +41,56 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_gallery_col_dark", "reallife_ui_gallery_col_light", "reallife_ui_gallery_col_motion", "reallife_ui_gallery_col_full",
                     "reallife_ui_gallery_col_calm", "reallife_ui_gallery_col_token", "reallife_ui_gallery_col_px", "reallife_ui_gallery_col_kind",
                     "reallife_ui_prompt_select", "reallife_ui_prompt_choose", "reallife_studio_page_age_days", "reallife_ui_gallery_page_icons"
+                }),
+                new UiScreenDef("kit_parts", UiTemplate.AppWindow, "UiPartsGalleryScreen", new[]
+                {
+                    "ba:vehicletype_vordpony", "ba:vehicletype_umcdesertdeliveryjob", "ba:vehicletype_umcnunavut", "ba:vehicletype_freighttruckt1",
+                    "ba:vehicletype_honzamimic", "ba:vehicletype_bima320", "ba:vehicletype_mersaidis500", "ba:vehicletype_ferdinand112", "ba:vehicletype_anselmoaf90",
+                    "ba:vehicletype_petrollsfanton", "ba:vehicletype_missamvillian", "ba:vehicletype_umcdesert", "ba:skill_customerservice", "ba:skill_cleaning",
+                    "ba:skill_programmer", "ba:skill_deliverydriver", "ba:skill_lawyer", "reallife_ui_parts_title", "reallife_ui_parts_nav_controls",
+                    "reallife_ui_parts_nav_table", "reallife_ui_parts_nav_charts", "reallife_ui_parts_nav_catalogue", "reallife_ui_parts_nav_statement",
+                    "reallife_ui_parts_nav_track", "reallife_ui_prompt_move", "reallife_ui_prompt_choose", "reallife_ui_parts_prompt_pick", "reallife_ui_prompt_change",
+                    "reallife_ui_prompt_select", "reallife_ui_prompt_page", "reallife_ui_prompt_back", "reallife_ui_parts_on", "reallife_ui_parts_off",
+                    "reallife_ui_parts_sec_choices", "reallife_ui_parts_van", "reallife_ui_parts_hours", "reallife_ui_parts_hours_value", "common_neighborhood",
+                    "ba:neighborhood_midtown", "reallife_ui_parts_sec_sliders", "reallife_ui_parts_ads", "reallife_ui_parts_staff", "reallife_ui_parts_markup",
+                    "reallife_ui_parts_sec_amounts", "ba:itemname_paperbag", "ba:itemname_croissant", "ba:itemname_storageshelf", "ba:itemname_cupcake",
+                    "reallife_ui_parts_sec_switches", "reallife_ui_parts_sundays", "reallife_ui_parts_music", "reallife_ui_parts_alcohol", "reallife_ui_parts_sec_needs",
+                    "ba:itemname_cashregister", "reallife_ui_parts_need_parking", "reallife_ui_parts_need_licence", "reallife_ui_parts_sec_fields",
+                    "reallife_ui_parts_name", "common_search", "reallife_ui_parts_search_goods", "reallife_ui_parts_licence_no", "reallife_ui_parts_licence_needs",
+                    "reallife_ui_parts_key_phone", "reallife_ui_parts_key_pause", "reallife_ui_parts_key_photo", "reallife_ui_parts_press_key",
+                    "reallife_ui_parts_at_work", "reallife_ui_parts_off_today", "common_in_training", "reallife_ui_parts_sick", "myemployees_employee_name",
+                    "myemployees_hourly_wage", "reallife_ui_parts_col_hired", "myemployees_primary_skill", "myemployees_satisfaction", "reallife_ui_parts_col_now",
+                    "reallife_ui_parts_all_firms", "reallife_ui_parts_all_skills", "reallife_ui_parts_search_staff", "reallife_ui_parts_people",
+                    "reallife_ui_parts_people_of", "reallife_ui_parts_pick", "reallife_ui_parts_picked", "reallife_ui_parts_done", "myemployees_mass_action_fire",
+                    "myemployees_mass_action_trainprimaryskill", "myemployees_mass_action_paybonuses", "common_total", "reallife_ui_parts_empty_title",
+                    "reallife_ui_parts_empty_body", "reallife_ui_parts_clear_search", "reallife_ui_parts_detail_empty_title", "reallife_ui_parts_detail_empty_body",
+                    "myemployees_age", "myemployees_current_business", "myemployees_hours_per_week", "common_energy", "common_day_number",
+                    "reallife_ui_parts_chart_year", "reallife_ui_parts_takings", "reallife_ui_parts_costs", "reallife_ui_parts_profit",
+                    "reallife_ui_parts_chart_districts", "ba:neighborhood_garmentdistrict", "ba:neighborhood_hellskitchen", "ba:neighborhood_industrycity",
+                    "ba:neighborhood_lowermanhattan", "ba:neighborhood_murrayhill", "reallife_ui_parts_customers", "reallife_ui_parts_chart_shares",
+                    "reallife_ui_parts_volume", "reallife_ui_parts_open", "reallife_ui_parts_high", "reallife_ui_parts_low", "reallife_ui_parts_close",
+                    "reallife_calendar_month_1", "reallife_calendar_month_2", "reallife_calendar_month_3", "reallife_calendar_month_4", "reallife_calendar_month_5",
+                    "reallife_calendar_month_6", "reallife_calendar_month_7", "reallife_calendar_month_8", "reallife_calendar_month_9", "reallife_calendar_month_10",
+                    "reallife_calendar_month_11", "reallife_calendar_month_12", "reallife_ui_parts_owned", "reallife_ui_parts_sold_out", "reallife_ui_parts_locked",
+                    "ba:itemname_computer", "ba:itemname_securitycamera", "ba:itemname_officephone", "ba:itemname_industrialcoffeemachine", "ba:itemname_painting40x30",
+                    "ba:itemname_loudspeaker2", "ba:itemname_floorlamp", "ba:itemname_stackofshoppingbaskets", "ba:itemname_saladbar", "ba:itemname_trophygolf",
+                    "reallife_ui_parts_decoration", "reallife_ui_parts_size", "reallife_ui_parts_stocked", "reallife_ui_parts_painting_note", "common_setdestination",
+                    "common_purchase", "reallife_ui_parts_shelves_empty", "reallife_ui_parts_shelves_empty_body", "common_friday", "common_saturday", "common_sunday",
+                    "common_monday", "common_tuesday", "reallife_ui_parts_account", "reallife_ui_parts_account_line", "common_balance", "reallife_ui_parts_this_week",
+                    "reallife_ui_parts_last_week", "reallife_ui_parts_col_when", "reallife_ui_parts_col_what", "reallife_ui_parts_col_in", "reallife_ui_parts_col_out",
+                    "reallife_ui_parts_money_in", "reallife_ui_parts_money_out", "reallife_ui_parts_change", "reallife_ui_parts_statement_empty",
+                    "reallife_ui_parts_statement_empty_body", "reallife_ui_parts_savings", "reallife_ui_parts_opened_today", "reallife_ui_parts_statement_new_body",
+                    "reallife_ui_parts_line_wages", "reallife_ui_parts_line_rent", "reallife_ui_parts_line_power", "reallife_ui_parts_line_goods",
+                    "reallife_ui_parts_line_tax", "reallife_ui_parts_step_done", "reallife_ui_parts_step_now", "reallife_ui_parts_step_next",
+                    "reallife_ui_parts_step_locked", "reallife_ui_parts_step_later", "reallife_ui_parts_track_career", "reallife_ui_parts_track_career_line",
+                    "reallife_ui_parts_rung_1", "reallife_ui_parts_rung_2", "reallife_ui_parts_rung_3", "reallife_ui_parts_rung_3_needs", "reallife_ui_parts_rung_4",
+                    "reallife_ui_parts_rung_4_needs", "reallife_ui_parts_rung_5", "reallife_ui_parts_rung_5_needs", "reallife_ui_parts_track_game",
+                    "reallife_ui_parts_track_game_line", "reallife_ui_parts_mile_1", "reallife_ui_parts_mile_2", "reallife_ui_parts_mile_3", "common_tomorrow",
+                    "reallife_ui_parts_mile_4", "reallife_ui_parts_mile_5", "reallife_ui_parts_track_build", "reallife_ui_parts_track_build_line",
+                    "reallife_ui_parts_stage_1", "reallife_ui_parts_stage_2", "reallife_ui_parts_stage_3", "common_days_left", "reallife_ui_parts_stage_4",
+                    "reallife_ui_parts_stage_5", "reallife_ui_parts_in_days", "reallife_calendar_month_1", "reallife_calendar_month_2", "reallife_calendar_month_3",
+                    "reallife_calendar_month_4", "reallife_calendar_month_5", "reallife_calendar_month_6", "reallife_calendar_month_7", "reallife_calendar_month_8",
+                    "reallife_calendar_month_9", "reallife_calendar_month_10", "reallife_calendar_month_11", "reallife_calendar_month_12"
                 }),
                 new UiScreenDef("template_info_panel", UiTemplate.InfoPanel, null, new[] { "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back" }),
                 new UiScreenDef("template_info_view", UiTemplate.InfoView, null, new[] { "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back" }),

@@ -16,6 +16,8 @@ namespace RealLifeOverhaul.Ui
     /// <summary>The kit's controls: buttons, nav items, search, tabs, toggles, sliders and the left-right selector.</summary>
     public static partial class UiDraw
     {
+        private const float HeldAlpha = 0.4f;   // a held button's face and words: plainly not pressable, still readable
+
         /// <summary>
         /// A button: its face, the bound key's cap at its left when it has one (as a game shows "[F] Call"), an icon and its
         /// label; width from its words when <paramref name="w"/> is 0. Returns the focus target.
@@ -23,8 +25,9 @@ namespace RealLifeOverhaul.Ui
         public static int Button(UiScene s, UiAt at, float x, float y, float w, float h, UiButtonKind kind, string label, UiIcon icon, UiAction key,
             IUiKeys keys, int command, int arg, bool disabled = false)
         {
-            bool cap = UiKeyGlyphs.Ownable(key) && HasKey(key, keys);
+            bool cap = !disabled && !s.Held && UiKeyGlyphs.Ownable(key) && HasKey(key, keys);   // a held button, or one under a layer with the keys, shows no cap
             float inner = UiTextRules.Width(label, UiStyle.Button);
+            int firstItem = s.ItemCount;
             float capW = cap ? KeyCapWidth(key, keys) : 0f;
             float iconW = icon != UiIcon.None ? UiTokens.Icon : 0f;
             float pad = kind == UiButtonKind.Chip ? UiTokens.S4 : UiTokens.S5;
@@ -80,6 +83,10 @@ namespace RealLifeOverhaul.Ui
             else
             {
                 TextMiddle(s, inside, cx, y, h, inner + UiTokens.S1, UiStyle.Button, ink, label, UiFlags.Label | UiFlags.Centre | (disabled ? UiFlags.Disabled : UiFlags.None));
+            }
+            for (int i = firstItem; disabled && i < s.ItemCount; i++)
+            {
+                s.Items[i].Alpha *= HeldAlpha;   // held as the game holds it: the face and its words faded, so it reads as not pressable now
             }
             return Node(s, at, x, y, w, h, command, arg, face, disabled, -1, 0, key);
         }
@@ -237,13 +244,7 @@ namespace RealLifeOverhaul.Ui
             Text(s, inside, x + UiTokens.S3, y + UiTokens.S2, w - fw - UiTokens.S8, UiStyle.Body, UiRole.Text, label, UiFlags.Label);
             Text(s, inside, x + w - UiTokens.S3 - fw, y + UiTokens.S2, fw, UiStyle.SmallStrong, UiRole.AccentText, figure, UiFlags.Right);
             float ty = y + h - UiTokens.S4 - UiTokens.S2, tw = w - UiTokens.S3 * 2f;
-            int track = Box(s, inside, x + UiTokens.S3, ty, tw, UiTokens.S2, UiRole.Track, UiRole.None, UiTokens.S1, UiFlags.Circle);
-            if (share > 0f)
-            {
-                Box(s, at.In(track), x + UiTokens.S3, ty, Math.Max(UiTokens.S2, tw * share), UiTokens.S2, UiRole.Accent, UiRole.None, UiTokens.S1, UiFlags.Circle | UiFlags.Share);
-            }
-            float knob = UiTokens.S5;
-            Circle(s, at.In(track), x + UiTokens.S3 + tw * share - knob / 2f, ty + UiTokens.S1 - knob / 2f, knob, knob, UiRole.Text, UiFlags.Share | UiFlags.Middle | UiFlags.Overflow);
+            Track(s, inside, x + UiTokens.S3, ty + UiTokens.S1, tw, share, false);   // the one slider's thin track and knob (UiDraw.Fields)
             return Node(s, at, x, y, w, h, command, arg, face);
         }
 

@@ -305,16 +305,16 @@ namespace RealLifeOverhaul.Ui
             switch (m.Form)
             {
                 case UiFormKind.Amount:
-                    UiSettingsList.ControlStepper(s, at, cx, cy, cw, m.FormValue, m.FormCanLess, m.FormCanMore, FormLess, FormCommand, FormMore, 0, false);
+                    UiDraw.Stepper(s, at, cx, cy, cw, m.FormValue, m.FormCanLess, m.FormCanMore, FormLess, FormCommand, FormMore, 0, false);
                     break;
                 case UiFormKind.Choice:
-                    UiSettingsList.ControlChoice(s, at, cx, cy, cw, m.FormValue, FormCommand, 0, false);
+                    UiDraw.Choice(s, at, cx, cy, cw, m.FormValue, FormCommand, 0, false);
                     break;
                 case UiFormKind.Switch:
-                    UiSettingsList.ControlSwitch(s, at, cx, cy, cw, m.FormOn, m.FormValue, FormCommand, 0, false);
+                    UiDraw.Switch(s, at, cx, cy, cw, m.FormOn, m.FormValue, FormCommand, 0, false);
                     break;
                 default:
-                    UiSettingsList.ControlText(s, at, cx, cy, cw, m.FormValue, null, FormCommand, 0, false);
+                    UiDraw.TextField(s, at, cx, cy, cw, m.FormValue, null, FormCommand, 0, false);
                     break;
             }
             if (!string.IsNullOrEmpty(m.FormHint))

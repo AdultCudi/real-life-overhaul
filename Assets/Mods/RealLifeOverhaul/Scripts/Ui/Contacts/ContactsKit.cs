@@ -1,4 +1,3 @@
-using System;
 using UI;
 using UI.Smartphone.Apps.Contacts;
 using UnityEngine;
@@ -7,400 +6,68 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// The game's Contacts app drawn on the RLO interface: the game's app stays alive under the kit with its own layout
-    /// unseen and untouchable, the kit's screen (ContactsScreen) reads the game's contacts and messages and presses the
-    /// game's own buttons, so every rule of the game stays the game's. The kit covers the whole full menu, masthead and
-    /// prompt band included, just above the menu's own canvas, and steps aside for the game's question box, for a call
-    /// and for a message only the game's view can answer (the classic view, until the app closes). Anything it cannot
-    /// do gives the game's app back as it was, with a line in Player.log. The game keeps the full menu and the app
-    /// switched off until they open, so the kit binds over them switched off (every search takes switched off objects);
-    /// an app not built yet is looked at again later (UiBindRules), and only a fault of the kit's own screen gives the
-    /// app back for the session. It only hides the app's layout (another mod's changes to it stay, Big Hax's among them)
-    /// and gives the layout back exactly as it found it. Cost: nothing while the app is closed; while it shows, the
-    /// host's input reads and one question-box test a frame.
+    /// The game's Contacts app drawn on the RLO interface, through the host every game screen uses (UiGameHost): the
+    /// game's app stays alive under the kit with only its layout ("Layout 30-70") unseen and untouchable, given back
+    /// exactly as found; the kit's screen (ContactsScreen) reads the game's contacts and messages and presses the game's
+    /// own buttons, so every rule of the game stays the game's. A call runs in the game's own view, the kit coming back the
+    /// moment the game frees its call button; a message only the game can answer opens the classic view until the app
+    /// closes. Its switch in Mod settings ("ui_screen_contacts") gives the game's own app back alone. Cost: what the host
+    /// costs: nothing while the app is closed; while it shows, the input reads and one box test a frame.
     /// </summary>
     public static class ContactsKit
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("ui", "ContactsKit", typeof(ContactsKit));
-
-        private static ContactsApp _app;
-        private static GameObject _root;
-        private static UiHost _host;
-        private static Canvas _canvas;
-        private static CanvasGroup _group;   // the kit's own fade, held to the full menu's
-        private static int _order;
-        private static CanvasGroup _layout;
-        private static float _layoutAlpha = 1f;
-        private static bool _layoutInteractable = true, _layoutBlocks = true, _hiding;
-        private static bool _classic;
-        private static Button _calling;   // the game's call button while its call runs in its own view: the kit comes back when the game frees it
-        private static bool _gaveUp;      // a fault of the kit's own screen: the game's app for the rest of the session
-        private static bool _stopped;     // the app never looked as expected in this city: the game's own until the next city
-        private static int _misses;
-        private static float _nextLook;
-        private static string _state = NotLooked;
-
-        private const string NotLooked = "not looked at yet";
-        private const string NoPhone = "waiting for the phone";
+        private static readonly UiGameHost Host = new UiGameHost(new ContactsGameScreen());
 
         /// <summary>Where the kit stands, for the interface's line at load: drawn, waiting for the app, or the game's own and why.</summary>
-        public static string State => _root != null ? "drawn over the game's app" : _state;
+        public static string State => Host.State;
 
         /// <summary>True once the kit has an answer for this city: over the app, waiting to look again, or the game's own.</summary>
-        public static bool Settled => _root != null || (_state != NotLooked && _state != NoPhone);
+        public static bool Settled => Host.Settled;
 
         /// <summary>True while the kit draws the app.</summary>
-        public static bool Showing => _root != null && _root.activeSelf && _app != null && _app.isActiveAndEnabled && !_classic;
+        public static bool Showing => Host.Showing;
 
-        /// <summary>Puts the kit over the game's Contacts app once per city; asked again once a second while the switch is on.</summary>
-        public static void Install()
-        {
-            if (_gaveUp || _stopped || FrameGuard.Off)
-            {
-                return;
-            }
-            if (_root != null)
-            {
-                if (_app == null)
-                {
-                    Remove("the city was unloaded");
-                }
-                return;
-            }
-            if (Time.unscaledTime < _nextLook)
-            {
-                return;
-            }
-            UIs uis = InstanceBehavior<UIs>.Instance;
-            ContactsApp app = uis != null && uis.fullMenu != null ? uis.fullMenu.contactsApp : null;
-            if (app == null)
-            {
-                _state = NoPhone;
-                return;   // the phone is built a little after the city: asked again next second
-            }
-            // The full menu and the app stay switched off until opened, so the search for the canvases takes switched off ones.
-            Transform layout = app.transform.Find("Layout 30-70");
-            Canvas[] above = app.GetComponentsInParent<Canvas>(true);
-            if (layout == null || above.Length == 0)
-            {
-                Miss(layout == null ? "its layout is not there" : "no canvas above it");
-                return;
-            }
-            var overrides = new bool[above.Length];
-            for (int i = 0; i < above.Length; i++)
-            {
-                overrides[i] = above[i].overrideSorting;
-            }
-            Canvas root = above[UiBindRules.Root(above.Length)];
-            _order = above[UiBindRules.Sorter(overrides, above.Length)].sortingOrder + 1;   // just over the full menu: the game's own question boxes and notices stay above
-            _app = app;
-            _layout = layout.GetComponent<CanvasGroup>();
-            if (_layout == null)
-            {
-                _layout = layout.gameObject.AddComponent<CanvasGroup>();
-            }
-            _root = new GameObject("RealLife Interface Contacts", typeof(RectTransform));
-            var rect = (RectTransform)_root.transform;
-            rect.SetParent(root.transform, false);
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = rect.offsetMax = Vector2.zero;
-            _canvas = _root.AddComponent<Canvas>();
-            _group = _root.AddComponent<CanvasGroup>();
-            Sort();
-            _root.AddComponent<GraphicRaycaster>();
-            _host = _root.AddComponent<UiHost>();
-            _host.Bind(new ContactsScreen(app), UiGame.Instance, UiGame.Instance, UiDirector.Dark, UiDirector.Motion, UiFrame.MastheadHeight, UiFrame.BandHeight,
-                UiText.T("reallife_ui_contacts_app"), UiIcon.AddressBook);
-            _host.View.Scale = UiTokens.CanvasPerPx;
-            _host.Failed = Fallback;
-            _root.SetActive(false);
-            if (UiDirector.Logger != null && _misses > 0)
-            {
-                UiDirector.Logger.Info("UI: the Contacts app is drawn on the RLO interface now, after " + _misses + " look(s) that found it not ready.");
-            }
-            _misses = 0;
-            _state = "drawn over the game's app";
-            app.gameObject.AddComponent<ContactsWatch>();   // on an open app its OnEnable shows the kit at once
-        }
+        /// <summary>Puts the kit over the game's Contacts app once per city; asked again once a second while its switches are on.</summary>
+        public static void Install() => Host.Install();
 
         /// <summary>A new city: an app that never looked as expected in the last one is looked at again.</summary>
-        public static void Rearm()
-        {
-            _stopped = false;
-            _misses = 0;
-            _nextLook = 0f;
-            if (!_gaveUp)
-            {
-                _state = NotLooked;
-            }
-        }
+        public static void Rearm() => Host.Rearm();
 
         /// <summary>The game's app as it was: the kit gone, the layout seen and touchable again.</summary>
-        public static void Remove(string why)
-        {
-            if (_root == null && _app == null)
-            {
-                return;
-            }
-            try
-            {
-                Restore();
-                if (_app != null)
-                {
-                    ContactsWatch watch = _app.GetComponent<ContactsWatch>();
-                    if (watch != null)
-                    {
-                        UnityEngine.Object.Destroy(watch);
-                    }
-                }
-                if (_root != null)
-                {
-                    UnityEngine.Object.Destroy(_root);
-                }
-            }
-            catch (Exception e)
-            {
-                UiDirector.Logger?.Error(e);
-            }
-            _root = null;
-            _host = null;
-            _app = null;
-            _canvas = null;
-            _group = null;
-            _layout = null;
-            _hiding = false;
-            _classic = false;
-            if (UiDirector.Logger != null && why != null && Meta.Dev.Verbose)
-            {
-                UiDirector.Logger.Info("UI: the Contacts app is the game's own again (" + why + ").");
-            }
-        }
+        public static void Remove(string why) => Host.Remove(why);
 
         /// <summary>The game's own view until the app closes: an offer with its buttons, a table only it can show.</summary>
-        public static void Classic()
-        {
-            _classic = true;
-            Restore();
-            if (_root != null)
-            {
-                _host.Hide();
-                _root.SetActive(false);
-            }
-        }
+        public static void Classic() => Host.Classic();
 
-        /// <summary>
-        /// A call the game runs in its own view: the kit steps aside so the call is seen and answered there, and comes
-        /// back the moment the game frees its call button again (the call finished or was cancelled).
-        /// </summary>
-        public static void Call(Button call)
-        {
-            Classic();
-            _calling = call;
-        }
+        /// <summary>A call the game runs in its own view: the kit steps aside and comes back when the game frees its call button.</summary>
+        public static void Call(Button call) => Host.StepAside(() => call == null || call.interactable);
 
-        // The call has ended: the kit is drawn over the app again, as it was.
-        private static void HandBack()
+        // The game's Contacts app as the host needs it: under the full menu, its layout the one leaf the kit hides.
+        private sealed class ContactsGameScreen : IUiGameScreen
         {
-            _calling = null;
-            _classic = false;
-            if (_root == null)
-            {
-                return;
-            }
-            Conceal();
-            Sort();
-            Fade();
-            _root.SetActive(true);
-            _root.transform.SetAsLastSibling();
-            _host.Show();
-            UiDirector.Logger?.Info("Contacts (kit): the call ended, the kit is back over the app");
-        }
+            private const string Layout = "Layout 30-70";   // the app's own layout, the leaf the kit hides; anything else a mod added to the app stays
 
-        /// <summary>A fault in the kit's screen (its host has counted it): the game's app back for the rest of the session.</summary>
-        public static void Fallback(Exception e)
-        {
-            UiDirector.Logger?.Warn("UI: " + UiText.T("reallife_ui_note_fallback") + " (" + (e != null ? e.GetType().Name : "?") + ")");
-            Remove("a fault");
-            _gaveUp = true;
-            _state = "the game's own after a fault of the kit's screen";
-        }
+            public string Id => "contacts";
 
-        internal static void Shown()
-        {
-            if (_root == null || _classic)
-            {
-                return;
-            }
-            try
-            {
-                Conceal();
-                Sort();
-                Fade();
-                _root.SetActive(true);
-                _root.transform.SetAsLastSibling();
-                _host.Show();
-            }
-            catch (Exception e)
-            {
-                Guard.Fail(FrameGuard, e, null);
-                Fallback(e);
-            }
-        }
+            public string Name => "the Contacts app";
 
-        internal static void Hidden()
-        {
-            _classic = false;   // the classic view lasts until the app closes, and the next opening is the kit's again
-            _calling = null;
-            if (_root == null)
-            {
-                return;
-            }
-            _host.Hide();
-            _root.SetActive(false);
-        }
+            public string Title => UiText.T("reallife_ui_contacts_app");
 
-        // The game's question box over the app: the kit steps aside while it is up, so the box is seen and answered.
-        internal static void Watch()
-        {
-            if (_calling != null && _calling.interactable)
-            {
-                HandBack();
-            }
-            if (_root == null || _classic)
-            {
-                return;
-            }
-            if (Fade() && _host.enabled)
-            {
-                _host.Hide();   // the menu is closing (View on map does that on its way to the map): no key acts on a screen leaving
-            }
-            bool asked = GameConfirm.IsOpen;
-            if (_root.activeSelf == asked)
-            {
-                _root.SetActive(!asked);
-                if (!asked)
-                {
-                    _host.Show();
-                }
-            }
-        }
+            public UiIcon Icon => UiIcon.AddressBook;
 
-        // The game fades its full menu in and out, and View on map closes it on the way to the map. The kit stands on a
-        // canvas of its own, so it takes the menu's fade to come and go with it rather than hang on over the map. True
-        // while the menu is closing.
-        private static bool Fade()
-        {
-            UIs uis = InstanceBehavior<UIs>.Instance;
-            CanvasGroup menu = uis != null && uis.fullMenu != null ? uis.fullMenu.canvasGroup : null;
-            if (_group != null && menu != null && !Mathf.Approximately(_group.alpha, menu.alpha))
-            {
-                _group.alpha = menu.alpha;
-            }
-            return uis != null && uis.fullMenu != null && !global::UI.Smartphone.FullMenu.IsOpen;
-        }
+            public UiGameKind Kind => UiGameKind.App;
 
-        // Kept as found, so it goes back so: another mod may have set the layout's group too.
-        private static void Conceal()
-        {
-            if (_layout == null || _hiding)
+            public Component Find()
             {
-                return;
+                UIs uis = InstanceBehavior<UIs>.Instance;
+                return uis != null && uis.fullMenu != null ? uis.fullMenu.contactsApp : null;   // the phone is built a little after the city
             }
-            _layoutAlpha = _layout.alpha;
-            _layoutInteractable = _layout.interactable;
-            _layoutBlocks = _layout.blocksRaycasts;
-            _hiding = true;
-            _layout.alpha = 0f;
-            _layout.interactable = false;
-            _layout.blocksRaycasts = false;
-        }
 
-        private static void Restore()
-        {
-            if (_layout != null && _hiding)
-            {
-                _layout.alpha = _layoutAlpha;
-                _layout.interactable = _layoutInteractable;
-                _layout.blocksRaycasts = _layoutBlocks;
-            }
-            _hiding = false;
-        }
+            public string Check(Component found) => found.transform.Find(Layout) == null ? "its layout is not there" : null;
 
-        // Set again each time the kit shows: a canvas made under a switched off parent is only nested once that parent comes on.
-        private static void Sort()
-        {
-            if (_canvas != null)
-            {
-                _canvas.overrideSorting = true;
-                _canvas.sortingOrder = _order;
-            }
-        }
+            public void Conceal(Component found, UiConceal conceal) => conceal.Add(found.transform.Find(Layout));
 
-        // Often the app is only not built yet, so it is looked at again a little later, a few times a city.
-        private static void Miss(string why)
-        {
-            _misses++;
-            if (UiBindRules.Stops(_misses))
-            {
-                _stopped = true;
-                _state = "the game's own for this city (" + why + ")";
-                GameUi.UiClone.Fallback("the Contacts app is not built as this version expects (" + why + "), so Contacts stays the game's own until the next city");
-                return;
-            }
-            float wait = UiBindRules.Wait(_misses);
-            _nextLook = Time.unscaledTime + wait;
-            _state = "waiting: " + why + ", looked at " + _misses + " time(s)";
-            if (_misses == 1)
-            {
-                UiDirector.Logger?.Info("UI: the Contacts app is not ready for the RLO interface yet (" + why + "); looked at again in "
-                    + wait.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + " s.");
-            }
-        }
-    }
-
-    /// <summary>
-    /// On the game's Contacts app: tells the kit the moment the app opens or closes, and watches for the game's question
-    /// box while it shows. Cost a frame: one test of the question box while the app shows; nothing while it is closed.
-    /// </summary>
-    public sealed class ContactsWatch : MonoBehaviour
-    {
-        private static readonly FeatureGuard FrameGuard = Guard.For("ui", "ContactsWatch", typeof(ContactsWatch));
-        private static readonly int HotUpdate = HotSpots.Slot("Ui: ContactsWatch.Update");
-
-        private void OnEnable()
-        {
-            if (!FrameGuard.Off)
-            {
-                ContactsKit.Shown();
-            }
-        }
-
-        private void OnDisable()
-        {
-            if (!FrameGuard.Off)
-            {
-                ContactsKit.Hidden();
-            }
-        }
-
-        private void Update()
-        {
-            using var hotSpot = HotSpots.Time(HotUpdate);
-            if (FrameGuard.Off)
-            {
-                enabled = false;
-                return;
-            }
-            try
-            {
-                ContactsKit.Watch();
-            }
-            catch (Exception e)
-            {
-                Guard.Fail(FrameGuard, e, this);
-                ContactsKit.Fallback(e);
-            }
+            public IUiScreen Make(Component found) => new ContactsScreen((ContactsApp)found);
         }
     }
 }

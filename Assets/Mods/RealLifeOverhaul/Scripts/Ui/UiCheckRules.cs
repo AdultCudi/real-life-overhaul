@@ -244,9 +244,9 @@ namespace RealLifeOverhaul.Ui
                 for (int i = 0; i < s.NodeCount; i++)
                 {
                     ref UiNode n = ref s.Nodes[i];
-                    if (n.Layer != layer)
+                    if (n.Layer != layer || UiDraw.IsChrome(n.Command))
                     {
-                        continue;
+                        continue;   // the status bar's app row is the frame's, the same on every page: the page's own targets are counted
                     }
                     targets++;
                     if (n.Face >= 0 && s.Items[n.Face].Fill == UiRole.Accent && (s.Items[n.Face].Flags & UiFlags.Selected) == 0 && n.List < 0)
@@ -875,7 +875,8 @@ namespace RealLifeOverhaul.Ui
             int found = 0;
             for (int i = 0; i < s.NodeCount; i++)
             {
-                if (s.Nodes[i].Command != UiDraw.CloseCommand && Array.IndexOf(known, s.Nodes[i].Command) < 0)   // a window's close is the host's own Back
+                // A window's close is the host's own Back, and the status bar's app row the frame's (UiDraw.IsChrome).
+                if (s.Nodes[i].Command != UiDraw.CloseCommand && !UiDraw.IsChrome(s.Nodes[i].Command) && Array.IndexOf(known, s.Nodes[i].Command) < 0)
                 {
                     found++;
                     say?.Invoke(s.Name + ": target " + i + " runs command " + s.Nodes[i].Command + ", which its template answers nowhere");

@@ -14,7 +14,8 @@ namespace RealLifeOverhaul.Ui
         Busy,         // three dots that beat while a loading state shows
         HueDot,       // a small circle in a hue's own colour (Value is the hue): a group's dot
         Slice,        // a donut's slice, drawn from the top clockwise to Value of the turn: slices lay over each other, the last first
-        Portrait      // a person's painted face (UiPortraits): Text is the name it is picked by, Value the hue of its ground
+        Portrait,     // a person's painted face (UiPortraits): Text is the name it is picked by, Value the hue of its ground
+        Picture       // a picture the game holds (UiPictures): Text is its key, Value its width over its height, which the box keeps
     }
 
     /// <summary>What an item is, beyond its kind: how its words sit and what the checks may allow it.</summary>
@@ -131,6 +132,7 @@ namespace RealLifeOverhaul.Ui
         public bool FocusReset;          // a new page: focus goes to FocusFirst (the row Back came from), not to the old page's target of the same number
         public bool Pointer;             // the mouse leads: buttons leave their key caps off, as the mouse presses by pointing
         public bool Floats;              // the page floats over the world (a docked panel, a card, the phone), never meant to fill the screen
+        public bool Held;                // something of the kit's stands over it with the keys (a box, All apps): its buttons show no key caps
         public string Name;              // the screen's id, for the checks' messages
         public float PromptX, PromptY, PromptW, PromptH;   // where the prompt bar stands
 
@@ -146,6 +148,7 @@ namespace RealLifeOverhaul.Ui
             FocusReset = false;
             Pointer = false;
             Floats = false;
+            Held = false;
             PromptW = PromptH = 0f;
         }
 
