@@ -31,8 +31,8 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>
         /// True while a loan of this many cents to a kind of borrower can be made at a counter now: the bank lends to them, is
-        /// not in a run or a breach, its cash over the reserve and its capital over the lending line both cover it, and its
-        /// level's book has room for it (<paramref name="caps"/>).
+        /// not in a run or a breach, its cash over the reserve and its capital over the lending line both cover it with the
+        /// fixed pay it holds back for the owner set aside, and its level's book has room for it (<paramref name="caps"/>).
         /// </summary>
         public static bool CounterLends(OwnBank b, int segment, long cents, in BankCaps caps)
         {
@@ -40,9 +40,9 @@ namespace RealLifeOverhaul.Economy
             {
                 return false;
             }
-            long cash = b.Reserves - ReserveNeed(b);
+            long cash = FreeCash(b);
             long risk = RiskWeighted(b) + cents * OwnBankCatalogue.LoanWeight[segment] / 1000;
-            return cash >= cents && CapitalNow(b) * 1000 >= risk * OwnBankCatalogue.LendRatio && LoanRoom(b, caps) >= cents;
+            return cash >= cents && FreeCapital(b) * 1000 >= risk * OwnBankCatalogue.LendRatio && LoanRoom(b, caps) >= cents;
         }
 
         /// <summary>

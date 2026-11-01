@@ -10,7 +10,8 @@ namespace RealLifeOverhaul.Economy
     /// The Bank tab's level and pay (Economy/OwnBank/Tiers): two rows of its list that open a page each. The level's page
     /// shows what the bank holds against its level's limits, what the next level asks for, ticked as it is met, and the
     /// button that moves it up; the pay's page chooses the owner's pay, a share of each day's profit on the game's own slider
-    /// or a fixed sum, with what was paid. Written on a click; dragging the slider writes only its own row.
+    /// or a fixed sum, with what was paid, and on a line of its own what held the last day's pay back. Written on a click;
+    /// dragging the slider writes only its own row.
     /// </summary>
     public sealed partial class OwnBankApp
     {
@@ -166,6 +167,15 @@ namespace RealLifeOverhaul.Economy
                 }));
             }
             box.Section("reallife_ob_pay_paid");
+            if (b.PayWanted > 0)
+            {
+                bool short_ = b.PayGiven < b.PayWanted;
+                box.Row("reallife_ob_pay_day", OwnBankText.Money(b.PayGiven), short_ ? CellTone.Yellow : CellTone.Plain);
+                if (short_)
+                {
+                    box.Line(HeldText(b), CellTone.Yellow);   // what held it back, on its own line, never folded into the pay
+                }
+            }
             box.Row("reallife_ob_pay_month", OwnBankText.Money(b.PaidMonth));
             box.Row("reallife_ob_pay_last", OwnBankText.Money(b.PaidLast));
             box.Row("reallife_ob_pay_all", OwnBankText.Money(b.PaidAll));
@@ -176,6 +186,23 @@ namespace RealLifeOverhaul.Economy
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_ob_box_back", Back);
             box.Note(OwnBankText.T("reallife_ob_pay_note"));
             Meta.Guide.Point(box, GuideTitle);
+        }
+
+        // Why the last day's pay came to less than asked, with how much was held back.
+        private static string HeldText(OwnBank b)
+        {
+            string amount = OwnBankText.Money(b.PayWanted - b.PayGiven);
+            switch (b.PayHeld)
+            {
+                case BankTiers.PayHeldBreach:
+                    return OwnBankText.Fill("reallife_ob_pay_held_breach", "amount", amount);
+                case BankTiers.PayHeldRun:
+                    return OwnBankText.Fill("reallife_ob_pay_held_run", "amount", amount);
+                case BankTiers.PayHeldReserves:
+                    return OwnBankText.Fill("reallife_ob_pay_held_reserves", "amount", amount, "reserve", OwnBankText.Ratio(OwnBankCatalogue.ReserveShare));
+                default:
+                    return OwnBankText.Fill("reallife_ob_pay_held_capital", "amount", amount);
+            }
         }
 
         private const int PaySteps = BankTiers.PayShareMost / BankTiers.PayStep;   // the slider's steps: 0% to 100% in fives
