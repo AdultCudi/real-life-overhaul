@@ -143,7 +143,7 @@ namespace RealLifeOverhaul.Ui
         private const float AmountField = 200f;       // px: the amount filter's choice
         private const float BusinessField = 360f;     // px: the business's choice in its head
         private const float StepperW = 240f;          // px: an amount between its minus and plus
-        private const float ChartH = 240f;            // px: a fund's year as a line
+        private const float ChartH = 320f;            // px: a fund's year as a line, its column as tall as the list's beside it
         private const float BarsMost = 240f;          // px: a business's days as bars, under the statement's weight
         private const float FigureShare = 0.32f;      // of the chosen's width, its figures beside its picture
 
@@ -323,6 +323,24 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        // The page's targets laid out since a node, across the page: Right (and Left, for a row as wide as the page) stays put
+        // rather than leaving the window for its close or the status bar.
+        private static void Stay(UiScene s, int from, bool both)
+        {
+            for (int i = from; i < s.NodeCount; i++)
+            {
+                if (s.Nodes[i].Command == UiAppWindow.NavCommand || s.Nodes[i].Command == UiDraw.CloseCommand || UiDraw.IsChrome(s.Nodes[i].Command))
+                {
+                    continue;
+                }
+                s.Nodes[i].Right = s.Nodes[i].Right >= 0 ? s.Nodes[i].Right : i;
+                if (both)
+                {
+                    s.Nodes[i].Left = s.Nodes[i].Left >= 0 ? s.Nodes[i].Left : i;
+                }
+            }
+        }
+
         // The first target of a command (of an argument, or any for -1), or -1.
         private static int Find(UiScene s, int command, int arg)
         {
@@ -410,7 +428,9 @@ namespace RealLifeOverhaul.Ui
                 rows = new UiAppRow[fit];
                 Array.Copy(m.History, rows, fit);
             }
+            int from = s.NodeCount;
             float under = UiAppWindow.Table(s, at, m.HistoryTitle, m.HistoryColumns, 2, rows, UiAppWindow.MoreCommand, x, y, w, bottom - y);
+            Stay(s, from, true);
             if (more)
             {
                 UiDraw.LinkRow(s, at, x, under, w, UiTokens.Control, m.HistoryMore, LinkCommand, LinkAll);
@@ -524,9 +544,9 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.LinkRow(s, at, x, ly - UiTokens.S2, lw, UiTokens.Control, m.Link, LinkCommand, LinkIrs);   // under what is due, where the IRS is paid
                 ly += UiTokens.Control + UiTokens.S3;
             }
+            Stay(s, 0, false);   // the right column holds words only: across from the left goes nowhere, never out of the window
             float ry = Rows(s, at, m.RowsTitle, m.RowLabels, m.RowValues, rx, y, rw, 1);
             ry = Lines(s, at, m.NoteTitle, m.Note, m.NoteIcons, rx, ry, rw);
-            UiDraw.JoinColumns(s, x, rx - UiTokens.S3, x + w);
             History(s, at, m, x, Math.Max(ly, ry), w, bottom);
         }
 

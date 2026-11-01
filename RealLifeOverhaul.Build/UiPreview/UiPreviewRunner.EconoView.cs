@@ -38,8 +38,8 @@ public static partial class UiPreviewRunner
                 screen.HoverCommand = UiEcono.FilterCommand;
                 screen.HoverArg = 0;
                 screen.FocusCommand = UiEcono.StatementFirst + UiStatement.Line;
-                screen.FocusArg = 2;
-                screen.Walk = new[] { Up, Up, Up, Right, Down, Down };
+                screen.FocusArg = 1;   // the first day's first line, there in every state
+                screen.Walk = new[] { Up, Up, Right, Down, Down, Down };
             }
             else if (st == "loans_three" || st == "loans_de" || st == "investments_year")
             {
@@ -55,7 +55,7 @@ public static partial class UiPreviewRunner
                 screen.HoverArg = 0;
                 screen.FocusCommand = UiEcono.PickCommand;
                 screen.FocusArg = 1;
-                screen.Walk = new[] { Down, Right, Left, Up };
+                screen.Walk = new[] { Down, Down, Down, Right, Up, Up };
             }
             else if (st.StartsWith("business"))
             {
