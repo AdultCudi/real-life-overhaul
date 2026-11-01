@@ -151,6 +151,70 @@ namespace RealLifeOverhaul.Markets
             Moved();
         }
 
+        /// <summary>
+        /// Test button: the player's company's sector from the last quarter's books now, as a load of a save from before its
+        /// business was followed does: listed, the market's review at once; on its way, the advisers' reading. Writes
+        /// "Listing check (sector): from X to Y" with PASS when it is where the books put it and its record keeps it.
+        /// </summary>
+        public void TestSector()
+        {
+            FinishMoment();
+            const string Test = "Listing check (sector)";
+            if (!TestReady(Test, true))
+            {
+                return;
+            }
+            if (GoingPublic.InSession || CompanyAside)
+            {
+                TestRefusals.TellKey(Logger, Test, "reallife_lst_test_sector_session");   // in a session the sector moves only at a review, on every machine alike
+                return;
+            }
+            ListingFile f = Listing;
+            Stock own = MyCompany;
+            if (own == null && f.Stage > ListingStage.Audited)
+            {
+                TestRefusals.TellKey(Logger, Test, "reallife_lst_test_sector_book");
+                return;
+            }
+            int day = Save.Day;
+            if (!Takings(day, out int days))
+            {
+                TestRefusals.TellKey(Logger, Test, "reallife_lst_test_sector_none");
+                return;
+            }
+            var sorted = new System.Text.StringBuilder(128);
+            for (int t = 0; t < _takings.Length; t++)
+            {
+                if (_takings[t] > 0)
+                {
+                    sorted.Append(sorted.Length > 0 ? ", " : string.Empty).Append(MarketInputs.Trades[t]).Append(' ').Append(_takings[t]).Append(" (").Append(ListingSector.SectorOf(t)).Append(')');
+                }
+            }
+            MarketSector was, now;
+            bool pass;
+            if (own != null)
+            {
+                was = own.Sector;
+                MarketSector want = (MarketSector)ListingSector.FromBooks(_takings, (int)was);
+                _engine.SectorFromBooks(own, _takings, days, true);
+                now = own.Sector;
+                Stock back = MarketStore.ReadStockLine(MarketStore.StockLine(_engine.State, own), Year);
+                pass = now == want && back != null && back.Sector == now && back.Own != null && back.Own.Mixed && back.Def.Trade == own.Def.Trade;
+            }
+            else
+            {
+                was = (MarketSector)MarketValuation.Clamp(f.Sector, 0, (int)MarketSector.Count - 1);
+                Classify(f);
+                now = (MarketSector)f.Sector;
+                pass = (int)now == ListingSector.Leading(_takings, out int _);
+            }
+            Logger?.Info(Test + ": from " + was + " to " + now + (own != null ? " (" + own.Name + " on the market" : " (the company on its way") + "; the last " + days + " days' takings by trade: "
+                         + sorted + "; next review on day " + ListingSector.NextReview(_engine.State.Day, Year) + "): " + (pass ? "PASS" : "FAIL"));
+            Queue(UI.Notification.NotificationType.Info, "reallife_lst_test_sector_done", "from", MarketText.Sector(was), "to", MarketText.Sector(now));
+            Moved();
+            OpenListing();
+        }
+
         private Stock TestOwn(string test)
         {
             if (!TestReady(test, true))

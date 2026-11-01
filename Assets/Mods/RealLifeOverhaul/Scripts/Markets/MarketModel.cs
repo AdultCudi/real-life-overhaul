@@ -373,6 +373,7 @@ namespace RealLifeOverhaul.Markets
         // This machine's player's own money, never in the city's line nor in the City Ledger:
         Paid = 31,          // a dividend paid to them: Stock, A the money before tax, B the bot's firm (0 their own)
         Builder = 32,       // a builder's news (BuilderMarket): Stock, A the BuilderNewsKind, B the price's move in bp, C the weight
+        OwnSector = 33,     // a player's company moved to the sector it earns most in now: Stock, A the sector it was in, B the new one
         Count
     }
 

@@ -192,7 +192,7 @@ namespace RealLifeOverhaul.Markets
                 return;
             }
             int trade = MarketInputs.TradeOf(ConstructionTrade);
-            MarketSector sector = SectorFor(trade);
+            MarketSector sector = ListingSector.SectorOf(trade);
             int day = Save.Day, from = day - Math.Max(1, Year / 4);
             OwnBooks books = MarketBridges.Books != null ? MarketBridges.Books(from, day) : default(OwnBooks);
             long own = MarketBridges.BuilderBooks != null ? MarketBridges.BuilderBooks(from, day) : -1L;
