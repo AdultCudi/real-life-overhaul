@@ -36,6 +36,21 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Told when the wheel turns over a scroll region (its clip, the notches).</summary>
         public System.Action<int, float> Wheeled;
 
+        /// <summary>Told when the pointer goes down on a target or drags from it: its node, the phase and the place in px of the layout.</summary>
+        public System.Action<int, UiDragPoint> PointerDragged;
+
+        /// <summary>A place on the screen as px of the layout, the root's top left its origin; false when it is off the root's plane.</summary>
+        public bool ToLayout(Vector2 screen, Camera camera, out Vector2 px)
+        {
+            px = Vector2.zero;
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_root, screen, camera, out Vector2 local))
+            {
+                return false;
+            }
+            px = new Vector2(local.x / Scale, -local.y / Scale);
+            return true;
+        }
+
         /// <summary>The root: anchored at its parent's top left, sized to the scene.</summary>
         public RectTransform Root => _root;
 
