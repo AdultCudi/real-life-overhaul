@@ -32,7 +32,7 @@ namespace RealLifeOverhaul.Flare
         private readonly List<FlareFunnel> _cityLaterFunnels = new List<FlareFunnel>(16);
         private static readonly int HotCityStep = HotSpots.Slot("Social: FlareDirector.CityStep");
 
-        /// <summary>True on a guest that follows the host's residents (part R): its cards show the host's figures.</summary>
+        /// <summary>True on a guest that follows the host's residents (part Q): its cards show the host's figures.</summary>
         public bool CityFollowing => _cityFollowed != null && !CityOn;
 
         /// <summary>True while the residents' side runs here.</summary>
@@ -781,7 +781,7 @@ namespace RealLifeOverhaul.Flare
             _cityVoiced = _cityVoices;
         }
 
-        // ---------------------------------------------------------------- Going Public: the host's residents, followed by its guests (part R)
+        // ---------------------------------------------------------------- Going Public: the host's residents, followed by its guests (part Q)
 
         private FlareCityFollowed _cityFollowed;   // a guest: the host's voices and its own businesses' figures, as last sent
 

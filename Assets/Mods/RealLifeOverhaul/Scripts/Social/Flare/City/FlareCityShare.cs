@@ -45,7 +45,7 @@ namespace RealLifeOverhaul.Flare
     /// </summary>
     public static class FlareCityShare
     {
-        public const char Part = 'R';
+        public const char Part = 'Q';   // R is the tech markets' (Tech/Sector/SectorStore.cs): EconomyCheck's SharedLetters fails on a letter taken twice
         public const string Version = "FR1";
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 

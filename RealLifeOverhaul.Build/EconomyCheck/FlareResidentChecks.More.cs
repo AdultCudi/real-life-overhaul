@@ -76,7 +76,7 @@ internal static partial class Program
         Check(listed && inLocales, "flare city screens: every word the screens show is a key of the list, in en, pt and zh-cn (" + FlareCityViews.Keys.Length + "; " + missing + ")");
     }
 
-    // ---------------------------------------------------------------- Going Public: part R
+    // ---------------------------------------------------------------- Going Public: part Q
 
     private static void FlareResidentShare()
     {
@@ -115,7 +115,7 @@ internal static partial class Program
         Check(!FlareCityShare.Read("FR9|1", followed) && !FlareCityShare.Read(null, followed) && !FlareCityShare.Read("garbage", followed)
               && FlareCityShare.Read("FR1|3\nV|5|x|1|30|d|2\nB|a|1\nQ|later", followed) && followed.Day == 3 && followed.Voices[5].Person == 0 && followed.Businesses.Count == 0,
             "flare city shared: another version, a damaged text or a line this version does not know is left out, never a fault");
-        Check(FlareCityShare.Part == 'R' && FlareCityShare.Version == "FR1", "flare city shared: a part of its own, versioned, that an older version never knows and leaves out");
+        Check(FlareCityShare.Part == 'Q' && FlareCityShare.Version == "FR1", "flare city shared: a part of its own, versioned, that an older version never knows and leaves out");
     }
 
     // ---------------------------------------------------------------- the words
