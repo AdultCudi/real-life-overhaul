@@ -163,7 +163,7 @@ namespace RealLifeOverhaul.Ui
             _root.AddComponent<GraphicRaycaster>();
             PhoneItemsGame.Read(pager);
             PhoneItems.Current = PhoneItemsGame.Items;
-            UiPictures.Source = PhoneItemsGame.Picture;
+            HookPictures();
             _screen = new PhoneScreen(PhoneItemsGame.Items, Actions, UiText.Words) { Docked = true };
             _host = _root.AddComponent<UiHost>();
             _host.Bind(_screen, Gate, UiGame.Instance, UiDirector.Dark, UiDirector.Motion, 0f, 0f, null, UiIcon.None);
@@ -176,6 +176,26 @@ namespace RealLifeOverhaul.Ui
             _state = "drawn over the game's phone";
             _root.AddComponent<PhoneKitWatch>();   // its OnEnable shows the kit at once while the phone shows
             UiDirector.Logger?.Info("UI: the phone is drawn on the RLO interface (" + PhoneItemsGame.Items.Count + " apps, the Phone key " + Keys.Label(KeyAction.Phone) + ").");
+        }
+
+        private static System.Func<string, Sprite> _picturesBefore;
+        private static System.Func<string, Sprite> _pictures;
+
+        // The phone answers its own pictures' keys (other mods' app icons) and hands every other key to whoever answered
+        // before (a catalogue's goods), so the kit has one way to find a picture. Hooked once a session.
+        private static void HookPictures()
+        {
+            if (_pictures != null && UiPictures.Find == _pictures)
+            {
+                return;
+            }
+            _picturesBefore = UiPictures.Find;
+            _pictures = key =>
+            {
+                int handle = UiDraw.PictureHandle(key);
+                return handle > 0 ? PhoneItemsGame.Picture(handle) : _picturesBefore != null ? _picturesBefore(key) : null;
+            };
+            UiPictures.Find = _pictures;
         }
 
         // Another pager of the phone, or another mod's screen drawn on it: theirs, and the classic phone with them.

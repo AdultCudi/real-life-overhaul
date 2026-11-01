@@ -263,15 +263,16 @@ namespace RealLifeOverhaul.Ui
                 }
                 case UiKind.Picture:
                 {
+                    // The layout gave the box the picture's own shape, so it fills it unstretched; one the game cannot find shows nothing.
                     Place(slot.Rect, it.X, it.Y, it.W, it.H);
                     Image picture = ((ImageSlot)slot).Image;
-                    Sprite sprite = UiPictures.Of((int)it.Value);
+                    Sprite sprite = UiPictures.Find != null ? UiPictures.Find(it.Text) : null;
                     if (picture.sprite != sprite)
                     {
                         picture.sprite = sprite;
                     }
                     picture.type = Image.Type.Simple;
-                    picture.preserveAspect = true;   // letterboxed in its box, as another mod drew it
+                    picture.preserveAspect = true;
                     picture.color = new Color(1f, 1f, 1f, sprite != null ? it.Alpha : 0f);
                     break;
                 }

@@ -4,16 +4,13 @@ using UnityEngine;
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// Pictures the kit shows but never draws: another mod's own app icon, read from its button by the game file. A screen
-    /// names one by a handle (an item's Value), and the renderer asks <see cref="Source"/> for it, so the layout and its
-    /// checks stay game-free. A handle of 0 or less is none. Cost: a delegate call when a picture's slot is bound.
+    /// Where a picture item's key finds its sprite: the game's own pictures of goods, furniture, vehicles and buildings,
+    /// which the game file that shows a catalogue sets. The layout keeps only the key and the picture's shape, so it stays
+    /// game-free; the renderer asks here once per bind. Cost: one call a picture shown.
     /// </summary>
     public static class UiPictures
     {
-        /// <summary>The picture of a handle; set by whoever holds the pictures (the phone's game file, an offline render).</summary>
-        public static Func<int, Sprite> Source;
-
-        /// <summary>The picture of a handle, or null for none (the slot then shows nothing over its tile).</summary>
-        public static Sprite Of(int handle) => handle > 0 && Source != null ? Source(handle) : null;
+        /// <summary>A key's sprite, or null when the game has none: the item then shows nothing.</summary>
+        public static Func<string, Sprite> Find;
     }
 }

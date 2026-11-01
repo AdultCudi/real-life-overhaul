@@ -12,7 +12,8 @@ public static partial class UiPreviewRunner
     // laid out by its own screen. The walk crosses the tiles and drops onto the nav bar.
     static partial void AddPhone(List<Screen> screens)
     {
-        UiPictures.Source = SamplePicture;
+        System.Func<string, Sprite> before = UiPictures.Find;
+        UiPictures.Find = key => UiDraw.PictureHandle(key) > 0 ? SamplePicture(UiDraw.PictureHandle(key)) : before != null ? before(key) : null;
         // Each walk reaches every target of its state: the tiles row by row, the head, the radio's buttons, the nav bar.
         Vector2Int[] walk = Moves("RRUDDLLDRRDL");
         Add(screens, "phone_home", "02.jpg", walk, t => UiSamples.Phone(t));
