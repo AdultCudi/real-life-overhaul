@@ -37,6 +37,7 @@ public static partial class UiPreviewRunner
         public int App = -1;      // the app the status bar marks as open
         public bool Extra;        // also a hover shot and a keys shot (the prototype's two that show input)
         public UiIcon Icon;       // the window's icon, as the host is given it in the game
+        public Func<UiStatusModel> Bar;   // the status bar it stands over, when not the sample's with App open (the frame's app row)
     }
 
     private sealed class Shot
@@ -270,7 +271,7 @@ public static partial class UiPreviewRunner
             UiView.Stretch(host);
 
             Backdrop(cr, shot.Screen.Backdrop);
-            UiChrome.Bar = () => UiSamples.Bar(shot.Screen.App);
+            UiChrome.Bar = shot.Screen.Bar ?? (() => UiSamples.Bar(shot.Screen.App));
             var view = new UiView(host, "Screen") { Motion = UiMotionSetting.Off };
             var scene = new UiScene();
             UiFrame frame = UiFrame.FullMenu(canvasW / CanvasH, shot.Screen.AppName);

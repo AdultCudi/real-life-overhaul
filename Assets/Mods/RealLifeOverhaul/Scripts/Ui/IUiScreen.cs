@@ -48,6 +48,7 @@ namespace RealLifeOverhaul.Ui
         public int Pick;           // the number key pressed, 1 to 9, or 0
         public UiPad Pad;          // the pad last used, None while the keyboard or mouse was
         public bool Pointed;       // the mouse moved or clicked, so it takes the lead from the keys
+        public bool View;          // the pad's View: All apps in the full menu
     }
 
     /// <summary>The input a host reads: the game's own bindings and a pad, and Back taken so the game does not act on it too.</summary>

@@ -68,13 +68,17 @@ mixed with a few other games: the owner's choice of 1 November 2026. The rules a
    Each area is a partial method in the three lists (`UiScreens.Gather`, `UiPreviewRunner.Screens`, `UiCases`), so
    jobs on different areas never edit one file; a new area adds its line to the three lists. The registry parts and the
    samples are linked into EconomyCheck by a pattern, so a new area's files need no line in its project.
-5. **A host**: the game file that shows it creates a `UiHost` over the full menu (as `ContactsKit` does). It binds it
-   to the game's input (`UiGame`) and the motion setting. The look it still passes (`UiDirector.Dark`) changes nothing,
-   as the kit has one look.
-   The game keeps its full menu and apps switched off until they open, so the host binds over them switched off: every
-   search of the scene passes `true` or `false` for switched off objects, the canvases are walked with
-   `GetComponentsInParent<Canvas>(true)` and `UiBindRules`, and a screen not built yet is looked at again
-   (`UiBindRules.Wait`), never given up for the session. EconomyCheck fails a search that does not say.
+5. **A host**: a screen of the game's goes through `UiGameHost` (`Host/`, its README gives the five steps, Contacts the
+   worked example): it binds over the game's switched off screens, hides only the game's own leaves and gives them back
+   as found, watches the screen open and close, steps aside for a call or the classic view, and falls back on a fault.
+   A mod app goes onto the kit through `PhoneAppDef.Kit` and `Shell/UiShell.Face`. Each screen asks for its own switch
+   in its entry (`.Switch(UiScreenSwitches.Apps)`), which gives that one screen back to the game alone. Every search of
+   the scene passes `true` or `false` for switched off objects; EconomyCheck fails a search that does not say, and a
+   screen that binds or hides its own way instead of through the host.
+6. **The frame** (`Shell/UiShell`): while an app of the full menu is on the kit, the menu's own backdrop and bars go
+   unseen, the paused city shows round the window, and the status bar carries the app row (`UiDraw.AppRow`: the phone's
+   first home page, then All apps, `UiAllApps`). The boxes every screen uses stand on the compact decision card
+   (`UiCard`), the notices on the notice cards and list (`UiNotices`).
 
 ## The parts a screen is made of
 
@@ -172,7 +176,9 @@ rest is the review.
 - **Layout**: `UiScene`, `UiDraw*` (`UiDraw.Chrome` holds the window, the status bar and the parts above), the
   templates, `UiFrame` (where a screen stands over the world, and what the status bar says).
 - **Rules**: `UiFocusMode`, `UiFocusRules`, `UiCheckRules`, `UiMotionRules`.
-- **Registry**: `UiScreens`, `IUiScreen`.
+- **Registry**: `UiScreens`, `IUiScreen`, `UiScreenSwitches` (each screen's own switch, from its entry).
+- **Frame, boxes and notices**: `UiDraw.AppRow`, `UiAllApps`, `UiShellApps`, `UiCard`, `UiNotices`; the game side in `Shell/`.
+- **Host**: `Host/` (`UiGameHost`, `IUiGameScreen`, `UiConceal`, `UiWidgets`, `UiGameWatch`, `UiBoxes`, `UiHostRules`).
 - **Drawing**: `UiView*`, `UiHost`, `UiTweens`, `UiSprites`, `UiFonts`, `UiSpark`, `UiHit`.
 - **Screens**: `Pages/`, the overhaul's pages (`*Pages`, game-free) and the screens that run them with their features'
   directors, and `SessionKit` over the game's own desk panel.

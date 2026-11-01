@@ -10,7 +10,7 @@ namespace RealLifeOverhaul
     /// ContractBook.TypeText writes it. Optional: the code has another way without it. Read it as GameContract.X.Field
     /// (or .Property, .Setter, .Method, .Type), null when missing. No Unity or game types in this file.
     /// </summary>
-    public static class GameContract
+    public static partial class GameContract
     {
         private const string Game = "BigAmbitions";
         private const string Plugins = "ExternalPlugins";

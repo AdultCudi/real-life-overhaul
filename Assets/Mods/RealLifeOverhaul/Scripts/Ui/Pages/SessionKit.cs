@@ -24,7 +24,7 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Over a desk session's panel as it opens (the RLO interface on, no Going Public session).</summary>
         public static void Show(IPlayerActivity panel)
         {
-            if (panel == null || !UiDirector.On || GoingPublic.InSession || UiDirector.Instance == null)
+            if (panel == null || !UiDirector.On || !UiScreenSwitches.On("session_panel") || GoingPublic.InSession || UiDirector.Instance == null)
             {
                 return;
             }

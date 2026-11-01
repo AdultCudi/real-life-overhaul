@@ -25,10 +25,19 @@ namespace RealLifeOverhaul.Ui
         private const float StickDead = 0.55f;   // of a stick's travel before it counts as a direction, so a resting stick never moves the focus
 
         /// <summary>The one instance the director's hosts share.</summary>
-        public static readonly UiGame Instance = new UiGame();
+        public static readonly UiGame Instance = new UiGame(false);
 
+        /// <summary>The input of a box the kit draws over the game's own: it reads the keys while that box is up, as the box's own are.</summary>
+        public static readonly UiGame OverBoxes = new UiGame(true);
+
+        private readonly bool _box;
         private UiPad _pad;
         private bool _failed;
+
+        private UiGame(bool box)
+        {
+            _box = box;
+        }
 
         public IUiKeys Keys => this;
 
@@ -42,7 +51,7 @@ namespace RealLifeOverhaul.Ui
             }
             try
             {
-                if (QuestionUp())
+                if (!_box && QuestionUp())
                 {
                     return;   // the game's own question box is over the screen: its keys are its own
                 }
@@ -112,7 +121,8 @@ namespace RealLifeOverhaul.Ui
             int x = pad.dpad.right.isPressed || stick.x > StickDead ? 1 : pad.dpad.left.isPressed || stick.x < -StickDead ? -1 : 0;
             int y = pad.dpad.down.isPressed || stick.y < -StickDead ? 1 : pad.dpad.up.isPressed || stick.y > StickDead ? -1 : 0;
             bool used = x != 0 || y != 0 || pad.buttonSouth.wasPressedThisFrame || pad.buttonEast.wasPressedThisFrame || pad.buttonWest.wasPressedThisFrame
-                        || pad.buttonNorth.wasPressedThisFrame || pad.leftShoulder.wasPressedThisFrame || pad.rightShoulder.wasPressedThisFrame;
+                        || pad.buttonNorth.wasPressedThisFrame || pad.leftShoulder.wasPressedThisFrame || pad.rightShoulder.wasPressedThisFrame
+                        || pad.selectButton.wasPressedThisFrame;
             if (!used)
             {
                 return;
@@ -129,6 +139,7 @@ namespace RealLifeOverhaul.Ui
             state.Option |= pad.buttonNorth.wasPressedThisFrame;
             state.TabPrev |= pad.leftShoulder.wasPressedThisFrame;
             state.TabNext |= pad.rightShoulder.wasPressedThisFrame;
+            state.View |= pad.selectButton.wasPressedThisFrame;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -286,7 +297,48 @@ namespace RealLifeOverhaul.Ui
             Timestamp now = TimeHelper.Now();
             string time = now.Hour.ToString("00", CultureInfo.InvariantCulture) + ":" + ((int)now.Minute).ToString("00", CultureInfo.InvariantCulture);
             string day = LocalizorManager.GetLocalization("timestamp_full", new { day = now.Day, time = string.Empty }).Trim();
-            return new UiStatusModel { Time = time, Day = day, Money = save.Money.ToShortCurrencyFormat(abbreviated: true) };
+            var m = new UiStatusModel { Time = time, Day = day, Money = save.Money.ToShortCurrencyFormat(abbreviated: true) };
+            if (UiShell.Taken)
+            {
+                Row(m);
+            }
+            return m;
+        }
+
+        // The app row while the frame owns the full menu: the phone's first home page, the open app filled, then All apps
+        // with the news of the apps the row leaves out.
+        private static void Row(UiStatusModel m)
+        {
+            int count = 0;
+            for (int i = 0; i < UiShellApps.Items.Count; i++)
+            {
+                count += UiShellApps.Items[i].InRow ? 1 : 0;
+            }
+            m.Apps = new UiIcon[count];
+            m.AppTints = new UiRole[count];
+            m.AppBadges = new int[count];
+            string open = ShellApps.Open();
+            int at = 0;
+            for (int i = 0; i < UiShellApps.Items.Count; i++)
+            {
+                UiShellApp a = UiShellApps.Items[i];
+                if (!a.InRow)
+                {
+                    m.AllAppsBadge += a.Badge;
+                    continue;
+                }
+                m.Apps[at] = a.Icon;
+                m.AppTints[at] = a.Tint;
+                m.AppBadges[at] = a.Badge;
+                if (a.Id == open)
+                {
+                    m.App = at;
+                }
+                at++;
+            }
+            m.AllApps = UiScreenSwitches.On("all_apps");
+            m.AllAppsOpen = UiShell.AppsOpen;
+            m.AppsPress = true;
         }
 
         /// <summary>The game's own pictures the kit uses in place of the family's, named for the look behind the loading screen.</summary>

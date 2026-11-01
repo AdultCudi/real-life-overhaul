@@ -100,20 +100,9 @@ namespace RealLifeOverhaul.Ui
             int bar = Box(s, UiAt.Screen, 0f, y, w, frame.Band, UiRole.StatusBar, UiRole.None, 0f, UiFlags.Decor | UiFlags.Chrome);
             UiAt on = UiAt.Screen.In(bar);
             Box(s, on, 0f, y, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor | UiFlags.Chrome);
-            float tile = UiTokens.IconTile;
-            if (m != null && m.Apps != null && m.Apps.Length > 0)
+            if (m != null)
             {
-                float total = m.Apps.Length * tile + (m.Apps.Length - 1) * TileGap;
-                float ax = SnapDown((w - total) / 2f), ay = y + (UiFrame.Toolbar - tile) / 2f;
-                for (int i = 0; i < m.Apps.Length; i++)
-                {
-                    UiRole tint = m.AppTints != null && i < m.AppTints.Length ? m.AppTints[i] : UiRole.Text2;
-                    int face = Tile(s, on, ax, ay, tile, tint, i == m.App);
-                    s.Items[face].Flags |= UiFlags.Chrome;
-                    float g = UiTokens.S8 - UiTokens.S1;   // 28 px: a tool's glyph, chunky as a game's
-                    Icon(s, on.In(face), ax + (tile - g) / 2f, ay + (tile - g) / 2f, g, m.Apps[i], i == m.App ? UiRole.OnAccent : tint, UiFlags.Middle | UiFlags.Chrome, true);
-                    ax += tile + TileGap;
-                }
+                AppRow(s, on, y, w, m);   // UiDraw.AppRow.cs
             }
             s.PromptX = 0f;
             s.PromptY = y;

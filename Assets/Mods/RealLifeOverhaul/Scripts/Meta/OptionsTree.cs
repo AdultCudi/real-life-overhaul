@@ -487,6 +487,48 @@ namespace RealLifeOverhaul.Meta
                     "car_handling_brakes").Also("handling suspension springs dampers roll grip steering brakes developer sliders")),
         };
 
+        // The RLO interface's switch for each screen (Ui/UiScreenSwitches): a section of them after the interface's own,
+        // built from the screens' entries, so a screen that asks for a switch needs no line here. After Groups, so it is there.
+        private static readonly bool ScreensPlaced = PlaceScreens();
+
+        private static bool PlaceScreens()
+        {
+            TreeGroup group = null;
+            int at = -1;
+            foreach (TreeGroup g in Groups)
+            {
+                for (int i = 0; i < g.Sections.Count; i++)
+                {
+                    if (g.Sections[i].Id == "ui")
+                    {
+                        group = g;
+                        at = i + 1;
+                    }
+                }
+            }
+            if (group == null)
+            {
+                return false;
+            }
+            foreach (string id in Ui.UiScreenSwitches.Sections)
+            {
+                string[] rows = Ui.UiScreenSwitches.OptionIds(id);
+                if (rows.Length == 0)
+                {
+                    continue;
+                }
+                TreeSection section = S(id).Guide("ui").Need("living_population", "ui_interface");
+                foreach (string row in rows)
+                {
+                    section.Opt(row, "ui_interface");
+                }
+                section.Also("rlo interface screen screens switch back game own classic broken old look");
+                section.Group = group;
+                group.Sections.Insert(at++, section);
+            }
+            return true;
+        }
+
         private static Dictionary<string, TreeSection> _byRow;
         private static Dictionary<string, TreeRow> _rows;
         private static Dictionary<string, TreeSection> _byFeature;

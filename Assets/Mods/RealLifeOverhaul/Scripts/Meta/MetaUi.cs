@@ -284,11 +284,21 @@ namespace RealLifeOverhaul.Meta
             return StartCoroutine(Guard.Routine(routine));
         }
 
+        /// <summary>
+        /// The RLO interface's card for the mod's own messages (Ui/Shell/ShellModBox): true when it drew this one, false to
+        /// leave it to the panel here (the interface off, its switch off, its fonts not in yet). Set once by the interface.
+        /// </summary>
+        public static Func<string, string, KeyValuePair<string, Action>[], bool> Kit;
+
         /// <summary>A message with an OK button, or with the buttons given (label key, what it does; the panel closes first).</summary>
         public static void Message(string title, string body, params KeyValuePair<string, Action>[] buttons)
         {
             try
             {
+                if (Kit != null && Kit(title, body, buttons))
+                {
+                    return;
+                }
                 MetaUi ui = Instance;
                 if (ui._message == null)
                 {
