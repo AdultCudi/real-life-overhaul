@@ -97,7 +97,7 @@ namespace RealLifeOverhaul.Ui
             float h = Height(m);
             int panel = UiDraw.Box(s, at, x, y, Width, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt on = at.In(panel);
-            UiDraw.TitleStrip(s, on, x, y, Width, UiIcon.Check, m.Title, false);
+            UiDraw.TitleStrip(s, on, x, y, Width, UiIcon.ListChecks, m.Title, false);
             float b = UiTokens.MinTarget + UiTokens.S2;
             int fold = UiDraw.IconButton(s, on, x + Width - UiTokens.S2 - b, y + (UiFrame.Strip - b) / 2f, b, m.Collapsed ? UiIcon.Down : UiIcon.Up, UiRole.Text,
                 FoldCommand, 0, false, UiAction.Count, false, true);

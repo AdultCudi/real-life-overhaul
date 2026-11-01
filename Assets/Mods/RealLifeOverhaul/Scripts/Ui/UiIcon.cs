@@ -143,6 +143,9 @@ namespace RealLifeOverhaul.Ui
         CloudRain,
         CloudSnow,
         SkipForward,   // an activity's jump to its end (the game's time machine)
+        Train,         // the subway
+        ListChecks,    // the objectives
+        ClipboardText, // the game's to-dos
         Count
     }
 
@@ -159,6 +162,12 @@ namespace RealLifeOverhaul.Ui
             {
                 case UiIcon.SkipForward:
                     return UiRole.Accent;   // with the clock's other controls
+                case UiIcon.Train:
+                    return UiRole.CatServices;   // a public service, apart from the maps' blue
+                case UiIcon.ListChecks:
+                    return UiRole.Chart3;
+                case UiIcon.ClipboardText:
+                    return UiRole.Chart2;
                 case UiIcon.Drop:
                     return UiRole.Chart1;   // hygiene's sky blue, as the mod's own needs bar had it
                 case UiIcon.Brain:

@@ -38,11 +38,11 @@ public static partial class UiPreviewRunner
         screens.Add(Hud("hud_activity_running", "05.jpg", (s, f, d, k) => UiSamples.HudActivityScene(s, f, d, k, English, UiActivityState.Running), UiActivity.SkipCommand, 0, "LR"));
         screens.Add(Hud("hud_activity_moving", "13.jpg", (s, f, d, k) => UiSamples.HudActivityScene(s, f, d, k, English, UiActivityState.Moving), UiActivity.CancelCommand, 0, "RRL"));
         screens.Add(Hud("hud_activity_finished", "05.jpg", (s, f, d, k) => UiSamples.HudActivityScene(s, f, d, k, English, UiActivityState.Finished), UiDraw.MoneyPillCommand, 0, "R"));
-        screens.Add(new Screen { Name = "hud_time_skip", AppName = "Skip time", Icon = UiIcon.Clock, Backdrop = "12.jpg",
+        screens.Add(new Screen { Name = "hud_time_skip", AppName = "Skip time", Icon = UiIcon.SkipForward, Backdrop = "11.jpg",
             Lay = (s, f, d, k) => UiSamples.HudSkipScene(s, f, d, k, English), HoverCommand = UiTimeSkip.CancelCommand, Walk = Moves("D") });
         screens.Add(new Screen { Name = "hud_map", AppName = "City map", Icon = UiIcon.MapTrifold, Backdrop = "map_rent.png",
             Lay = (s, f, d, k) => UiSamples.HudMapScene(s, f, d, k, English, true), HoverCommand = UiMapPanel.FilterCommand, HoverArg = 1, Walk = Moves("RDRDRDRDRDRDLDD") });
-        screens.Add(Hud("hud_tools", "03.jpg", (s, f, d, k) => UiSamples.HudTools(s, f, d, k, English, true), UiToolRow.ChoiceCommand, 3, "URRRLLDRR"));
+        screens.Add(Hud("hud_tools", "03.jpg", (s, f, d, k) => UiSamples.HudTools(s, f, d, k, English, true), UiToolRow.ChoiceCommand, 3, "URRRRRLLDR"));
     }
 
     // A HUD scene over its street: the mouse resting on one of its targets, the pad's walk from its first.

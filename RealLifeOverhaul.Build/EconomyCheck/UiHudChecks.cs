@@ -175,11 +175,11 @@ internal static partial class Program
             if (state == UiActivityState.NotStarted)
             {
                 UiActivity.LayCard(s, a, frame, true, UiDefaultKeys.Keyboard);
-                bool start = s.FindNode(UiActivity.ButtonCommand, 1) >= 0, cancel = s.FindNode(UiActivity.ButtonCommand, 0) >= 0, steps = s.FindNode(UiActivity.StepCommand, 1) >= 0;
+                bool start = s.FindNode(UiActivity.ButtonCommand, 1) >= 0, cancel = s.FindNode(UiActivity.ButtonCommand, 0) >= 0, steps = s.FindNode(UiActivity.StepCommand, 0) >= 0;
                 int starter = s.FindNode(UiActivity.ButtonCommand, 1);
                 if (!start || !cancel || !steps || s.Nodes[starter].Key != UiAction.Alt || UiActivity.Strip(state))
                 {
-                    wrong = "before it starts: Start on the game's Interact, Cancel and the duration's steps";
+                    wrong = "before it starts: Start on the game's Interact, Cancel and the duration's slider";
                 }
                 continue;
             }

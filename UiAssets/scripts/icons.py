@@ -160,6 +160,9 @@ ICONS = [
     ("CloudRain", "cloud-rain", "duotone", "b96c8f795c1c4964cb5331fd2d89a2a4d3d6f3148de1541539c87f0f19a02f93"),
     ("CloudSnow", "cloud-snow", "duotone", "538d41a27d912d5a133d0b9b5073b807fe905f11cb51987b4baf4fb5a929df61"),
     ("SkipForward", "skip-forward", "duotone", "a76c0760fa058cbfbf9a1b7da7fb7fb43145dee3bfc24c4c381d1497bdf86e2c"),
+    ("Train", "train", "duotone", "a29072c2bb72e15f7f05327e298cdedacddbcf7dc2b20d9ab11234deae4dd1fc"),
+    ("ListChecks", "list-checks", "duotone", "aa71967b96fc44f2e40fabf3b297e333925c994cc22a2da2177980b7eea5a55e"),
+    ("ClipboardText", "clipboard-text", "duotone", "d1e13568193ac0b89bef7b92cf351d9253f850480ccc1a52faf9061114bc8aac"),
 ]
 
 # Phosphor's fill weight of every duotone icon, its second variant: the chunky solid glyph a toolbar's tile asks for
@@ -266,6 +269,9 @@ FILLS = {
     "CloudRain": "d2f32ce7bf06a9225f5c466d1f2c683cb729526d67c8b5f4741cd270b01e8cf3",
     "CloudSnow": "b63199e4b3dac2c77522126fafefb0bd0c444d9be13c5cf59379e135ab61648a",
     "SkipForward": "2f13f5cbeab47627d30782e7942001e7f80f7da993df053d3be2b8c6cb737ae2",
+    "Train": "559c7f2fbed4fe9cb1ccb38900b6a2f24f9c2d0ce3c77347dddeeca4c7914a08",
+    "ListChecks": "eefe95747f02e0aa9f183c75aac7ffdf87f69317cd775c383a606344cc7c78ae",
+    "ClipboardText": "f455443ef50d7e60aecd2b25411be752b444943b91afdb7775900473d603a468",
 }
 
 # The shapes an icon may be drawn with, and the attributes each may carry. Anything else stops the run, so an icon is never

@@ -58,7 +58,7 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class UiActivity
     {
-        public const int ButtonCommand = 240, StepCommand = 241, SkipCommand = 242, FastCommand = 243, CancelCommand = 244;
+        public const int ButtonCommand = 240, StepCommand = 241, SkipCommand = 242, FastCommand = 243, CancelCommand = 244;   // the duration's slider is StepCommand, arg 0
         public const float CardWidth = 560f;      // px: compact, the world round it
         public const float StripWidth = 720f;     // px: the strip, centred over the bar's apps
         public const float StripHeight = 76f;     // px: a tile's row and the meter under it
@@ -74,6 +74,7 @@ namespace RealLifeOverhaul.Ui
             s.Begin("activity", frame.Width, frame.Height, dark);
             s.Pointer = frame.Pointer;
             s.Floats = true;
+            UiDraw.Scrim(s, 0f, 0f, frame.Width, frame.BandY, 0);   // the world dimmed round the decision, as the decision card dims it
             float h = CardHeight(m, keys);
             float x = UiDraw.SnapDown((frame.Width - CardWidth) / 2f), y = UiDraw.SnapDown(Math.Max(UiTokens.S8, (frame.BandY - h) / 2f));
             Card(s, UiAt.Screen, m, x, y, keys);
@@ -135,57 +136,31 @@ namespace RealLifeOverhaul.Ui
             Link(s, cancel, start);
         }
 
-        // The card's d-pad: the duration's two steps side by side over Cancel and Start; below them only the frame's app row.
+        // The card's d-pad: the slider over Cancel and Start; below them only the frame's app row.
         private static void Link(UiScene s, int cancel, int start)
         {
-            int less = s.FindNode(StepCommand, -1), more = s.FindNode(StepCommand, 1);
-            if (less >= 0 && more >= 0)
+            int slider = s.FindNode(StepCommand, 0);
+            if (slider >= 0)
             {
-                s.Nodes[less].Right = more;
-                s.Nodes[more].Left = less;
-                s.Nodes[less].Down = cancel >= 0 ? cancel : start;
-                s.Nodes[more].Down = start;
-                s.Nodes[less].Up = less;
-                s.Nodes[more].Up = more;
+                s.Nodes[slider].Down = cancel >= 0 ? cancel : start;
+                s.Nodes[slider].Up = slider;
             }
             if (cancel >= 0)
             {
                 s.Nodes[cancel].Right = start;
                 s.Nodes[start].Left = cancel;
-                s.Nodes[cancel].Up = less >= 0 ? less : cancel;
+                s.Nodes[cancel].Up = slider >= 0 ? slider : cancel;
             }
-            s.Nodes[start].Up = more >= 0 ? more : start;
+            s.Nodes[start].Up = slider >= 0 ? slider : start;
         }
 
-        // The duration: its words and figure, and the slider between the two steps that move it a notch, as the game's own
-        // slider moves by its keys.
+        // The duration: its words, then the kit's slider with its figure at the track's right (a press holds it, and Left and
+        // Right step it as the game's own slider steps by its keys).
         private static void Duration(UiScene s, UiAt at, UiActivityModel m, float x, float y, float w)
         {
-            float b = UiTokens.ControlSmall, by = y + (UiTokens.Control - b) / 2f;
             float lw = UiDraw.Snap(Math.Min(w * 0.3f, UiTextRules.Width(m.DurationLabel, UiStyle.Body) + UiTokens.S1));
             UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, lw, UiStyle.Body, UiRole.Text2, m.DurationLabel, UiFlags.Label | UiFlags.Truncate);
-            float vw = UiDraw.Snap(Math.Min(w * 0.3f, UiTextRules.Width(m.DurationValue, UiStyle.BodyStrong) + UiTokens.S1));
-            UiDraw.TextMiddle(s, at, x + w - vw, y, UiTokens.Control, vw, UiStyle.BodyStrong, UiRole.Text, m.DurationValue, UiFlags.Right | UiFlags.Truncate);
-            float sx = x + lw + UiTokens.S3, sw = w - lw - vw - UiTokens.S3 * 2f;
-            int drawn = s.ItemCount;
-            int less = UiDraw.IconButton(s, at, sx, by, b, UiIcon.Minus, UiRole.Text, StepCommand, -1);
-            if (m.DurationShare <= 0f)
-            {
-                UiDraw.Dim(s, drawn, less);
-            }
-            float tx = sx + b + UiTokens.S3, tw = sw - (b + UiTokens.S3) * 2f;
-            float share = Math.Max(0f, Math.Min(1f, m.DurationShare));
-            int track = UiDraw.Box(s, at, tx, y + (UiTokens.Control - UiTokens.S1) / 2f, tw, UiTokens.S1, UiRole.Track, UiRole.None, UiTokens.S1 / 2f, UiFlags.Middle);
-            UiDraw.Box(s, at.In(track), tx, y + (UiTokens.Control - UiTokens.S1) / 2f, Math.Max(UiTokens.S1, tw * share), UiTokens.S1, UiRole.Accent, UiRole.None, UiTokens.S1 / 2f,
-                UiFlags.Middle | UiFlags.Share);
-            float knob = UiTokens.S4;
-            UiDraw.Circle(s, at, tx + (tw - knob) * share, y + (UiTokens.Control - knob) / 2f, knob, knob, UiRole.Text, UiFlags.Middle | UiFlags.Share | UiFlags.Decor);
-            drawn = s.ItemCount;
-            int more = UiDraw.IconButton(s, at, sx + sw - b, by, b, UiIcon.Plus, UiRole.Text, StepCommand, 1);
-            if (m.DurationShare >= 1f)
-            {
-                UiDraw.Dim(s, drawn, more);
-            }
+            UiDraw.Slider(s, at, x + lw + UiTokens.S3, y, w - lw - UiTokens.S3, m.DurationValue, Math.Max(0f, Math.Min(1f, m.DurationShare)), StepCommand, 0, false);
         }
 
         /// <summary>The strip's place: centred over the status bar's apps, a grid step above the bar.</summary>
@@ -293,15 +268,16 @@ namespace RealLifeOverhaul.Ui
         private static float StripButton(UiScene s, UiAt at, float right, float y, string label, UiGameKey key, bool on, int command)
         {
             float kw = UiDraw.GameKeyWidth(key);
-            float lw = UiTextRules.Width(label, UiStyle.Body) + UiTokens.S1;
-            float w = UiDraw.Snap(UiTokens.S2 + (kw > 0f ? kw + UiTokens.S2 : 0f) + lw + UiTokens.S3);
+            float lw = UiTextRules.Width(label, UiStyle.Button) + UiTokens.S1;
+            float w = UiDraw.Snap(UiTokens.S3 + (kw > 0f ? kw + UiTokens.S2 : 0f) + lw + UiTokens.S3);
             float x = right - w, h = UiTokens.ControlSmall;
             int face = UiDraw.Box(s, at, x, y, w, h, on ? UiRole.Accent : UiRole.Field, UiRole.None, UiTokens.RadiusLarge, on ? UiFlags.Selected : UiFlags.None);
             UiAt inside = at.In(face);
-            float cx = x + UiTokens.S2 + (kw > 0f ? kw + UiTokens.S2 : 0f);
-            UiDraw.TextMiddle(s, inside, cx, y, h, lw, UiStyle.Body, on ? UiRole.OnAccent : UiRole.Text, label, UiFlags.Label);
+            // The kit's button words (capitals, the button's style), with the game's key on its cap: the game reads that key.
+            float cx = x + UiTokens.S3 + (kw > 0f ? kw + UiTokens.S2 : 0f);
+            UiDraw.TextMiddle(s, inside, cx, y, h, lw, UiStyle.Button, on ? UiRole.OnAccent : UiRole.Text, label, UiFlags.Label);
             UiDraw.Node(s, at, x, y, w, h, command, 0, face);
-            UiDraw.GameKey(s, inside, x + UiTokens.S2, y + (h - UiTokens.KeyCap) / 2f, key, on);   // after the target: the game, not the button, answers it
+            UiDraw.GameKey(s, inside, x + UiTokens.S3, y + (h - UiTokens.KeyCap) / 2f, key, on);   // after the target: the game, not the button, answers it
             return w;
         }
     }

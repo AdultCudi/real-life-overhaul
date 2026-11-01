@@ -89,8 +89,8 @@ internal static partial class UiSamples
     /// <summary>A business in the world as an info panel: Bloom Café, open, with its owner, takings and staff.</summary>
     public static UiInfoModel HudBusiness(UiWords t) => new UiInfoModel
     {
-        Title = "Bloom Café", Icon = UiIcon.Coffee, Tabs = new[] { UiIcon.Building, UiIcon.Coffee, UiIcon.People }, Tab = 1,
-        Status = "Open until 22:00", StatusIcon = UiIcon.Clock, StatusTone = UiRole.None, Facts = "Coffee shop, 70 Fifth Avenue",
+        Title = "Bloom Café", Icon = UiIcon.Coffee, Tabs = new[] { UiIcon.Store, UiIcon.Coffee, UiIcon.People }, Tab = 1,
+        Status = "Open until 22:00", StatusIcon = UiIcon.Check, StatusTone = UiRole.None, Facts = "Coffee shop, 70 Fifth Avenue",
         Sections = new[]
         {
             new UiInfoSection
@@ -164,10 +164,10 @@ internal static partial class UiSamples
         Rows = new[] { new UiInfoRow { Label = "Bloom Café", Value = "Open until 22:00", Ink = UiRole.OkText }, new UiInfoRow { Label = "Floors", Value = "Ground and 1st" } },
         Actions = new[]
         {
-            new UiPromptAction { Label = "Go inside", Key = GameKey(k, "F", UiIcon.PadA), Main = true },
+            new UiPromptAction { Label = "Go inside", Key = GameKey(k, "F", UiIcon.PadX), Main = true },
             new UiPromptAction { Label = "Look at the building", Key = GameKey(k, "P", UiIcon.PadY) },
-            new UiPromptAction { Label = "Ring the doorbell", Key = GameKey(k, "O", UiIcon.PadX) },
-            new UiPromptAction { Label = "Rent this space", Key = GameKey(k, "Enter", UiIcon.PadRb), Disabled = true, Reason = "Taken" },
+            new UiPromptAction { Label = "Ring the doorbell", Key = GameKey(k, "O", UiIcon.PadRb) },
+            new UiPromptAction { Label = "Rent this space", Key = GameKey(k, "Enter", UiIcon.PadA), Disabled = true, Reason = "Taken" },
         },
     };
 
@@ -204,13 +204,13 @@ internal static partial class UiSamples
     /// <summary>The job the player holds: where and when, Set destination and Quit.</summary>
     public static UiSidePanelModel HudJob(UiWords t, bool collapsed) => new UiSidePanelModel
     {
-        Title = "Current job", Icon = UiIcon.IdBadge, Collapsed = collapsed,
+        Title = "Current job", Icon = UiIcon.Handshake, Collapsed = collapsed,
         Rows = new[]
         {
             new UiInfoRow { Label = "Address", Value = "70 Fifth Avenue", Link = true }, new UiInfoRow { Label = "Tomorrow", Value = "Day off" },
             new UiInfoRow { Label = "Hours a week", Value = "30" },
         },
-        Actions = new[] { new UiActionModel { Label = t("common_setdestination", "Set destination"), Icon = UiIcon.Navigation }, new UiActionModel { Label = "Quit", Kind = UiButtonKind.Destructive } },
+        Actions = new[] { new UiActionModel { Label = "Quit", Kind = UiButtonKind.Destructive } },   // at work there: no way to set to where you stand
     };
 
     /// <summary>The building the player stands in: open or closed, its parking.</summary>
@@ -237,7 +237,7 @@ internal static partial class UiSamples
         {
             new UiObjectiveGroup
             {
-                Title = "To do", Icon = UiIcon.Bell, Lines = new[]
+                Title = "To do", Icon = UiIcon.ClipboardText, Lines = new[]
                 {
                     new UiObjectiveLine { Text = "Bloom Café is out of coffee beans", Locate = true },
                     new UiObjectiveLine { Text = "Pay the rent for 70 Fifth Avenue by Day 414", Progress = "$9,400" },
@@ -289,7 +289,7 @@ internal static partial class UiSamples
             Title = "Plastering", Icon = UiIcon.Wrench,
             Rows = new[] { new UiInfoRow { Label = "Room", Value = "Kitchen, 18 Bleecker Street" }, new UiInfoRow { Label = "Pay", Value = "$140" } },
             HasTiming = true,
-            Timing = new UiTimingModel { Key = GameKey(UiDefaultKeys.Keyboard, "F", UiIcon.PadA), Label = "Press in the green", Value = "Hits 2 of 3", ZoneFrom = 0.58f, ZoneTo = 0.74f, Marker = 0.41f },
+            Timing = new UiTimingModel { Key = GameKey(k, "F", UiIcon.PadX), Label = "Press in the green", Value = "Hits 2 of 3", ZoneFrom = 0.58f, ZoneTo = 0.74f, Marker = 0.41f },
         };
         var delivery = new UiSidePanelModel
         {
@@ -307,7 +307,7 @@ internal static partial class UiSamples
     {
         var m = new UiPickerModel
         {
-            Title = locked ? "Choose your lawyer" : "Take the subway", Icon = locked ? UiIcon.Scales : UiIcon.MapTrifold, Locked = locked, PerPage = 8,
+            Title = locked ? "Choose your lawyer" : "Take the subway", Icon = locked ? UiIcon.Scales : UiIcon.Train, Locked = locked, PerPage = 8, EmptyIcon = UiIcon.Train,
             Context = locked
                 ? new[] { new UiInfoRow { Label = "Hearing", Value = "Tomorrow, 09:00" }, new UiInfoRow { Label = "Charge", Value = "Speeding, third time" } }
                 : new[] { new UiInfoRow { Label = "From", Value = "23rd Street station" }, new UiInfoRow { Label = "Fare", Value = "$2.75 a ride" } },
@@ -340,7 +340,7 @@ internal static partial class UiSamples
 
     // A station by its line's number in the line's own colour, its ride's minutes as the figure that decides.
     private static UiPickEntry Line(int line, string name, string minutes) =>
-        new UiPickEntry { Icon = UiIcon.MapTrifold, Mark = line.ToString(System.Globalization.CultureInfo.InvariantCulture), MarkTone = UiTokens.Chart(line - 1), Name = name, Figure = minutes };
+        new UiPickEntry { Icon = UiIcon.Train, Mark = line.ToString(System.Globalization.CultureInfo.InvariantCulture), MarkTone = UiTokens.Chart(line - 1), Name = name, Figure = minutes };
 
     // A lawyer by their face, what they do and their fee, or why they cannot take the case.
     private static UiPickEntry Lawyer(string name, float hue, string detail, string fee, string reason) =>
@@ -373,10 +373,10 @@ internal static partial class UiSamples
             },
             HasDuration = state == UiActivityState.NotStarted, DurationLabel = "Hours", DurationValue = "4 hours", DurationShare = 0.5f,
             HasProgress = state == UiActivityState.Running || state == UiActivityState.Started, Progress = new UiProgressModel { Share = 0.01f },
-            Clock = state == UiActivityState.Finished ? "18:30" : "14:32",
+            Clock = state == UiActivityState.Finished ? "18:32" : state == UiActivityState.Running || state == UiActivityState.Started ? "14:34" : "14:32",
             StateWords = state == UiActivityState.Moving ? "On your way, 2 min" : state == UiActivityState.Waiting ? "Waiting for the doors to open at 12:00"
                 : state == UiActivityState.Finished ? "Done: $64 earned" : "3 hours, 58 minutes remaining",
-            CanSkip = true, SkipLabel = t("playeractivityui_timemachine", "Skip time"), SkipKey = GameKey(k, "O", UiIcon.PadX),
+            CanSkip = true, SkipLabel = t("playeractivityui_timemachine", "Skip time"), SkipKey = GameKey(k, "O", UiIcon.PadRb),
             CanFast = true, Fast = state == UiActivityState.Running, FastLabel = t("playeractivityui_fast_forward", "Fast forward"), FastKey = GameKey(k, "P", UiIcon.PadY),
             CanCancel = true, CancelLabel = t("common_cancel", "Cancel"), StartLabel = "Start",
             Prompts = new[]
@@ -398,10 +398,7 @@ internal static partial class UiSamples
             return;
         }
         UiStatusModel bar = HudBar(t, false, state == UiActivityState.Running, false);
-        if (state == UiActivityState.Finished)
-        {
-            bar.Time = "18:30";   // the shift's end, as the strip's clock says it
-        }
+        bar.Time = a.Clock;   // the bar reads the clock the strip does
         Hud(s, f, dark, k, t, new UiHudModel { Activity = a, MoneyChange = false }, bar);
     }
 
@@ -431,13 +428,13 @@ internal static partial class UiSamples
     /// <summary>The city map's side panel: the places' filters, the rent legend and a picked café.</summary>
     public static UiMapPanelModel HudMap(UiWords t, bool picked) => new UiMapPanelModel
     {
-        Title = "Places", Views = new[] { UiIcon.MapPin, UiIcon.Store, UiIcon.Home, UiIcon.Building, UiIcon.People, UiIcon.Car }, View = 0,
+        Title = "Rent", Icon = UiIcon.Coin, Views = new[] { UiIcon.Coin, UiIcon.Store, UiIcon.Key, UiIcon.Factory, UiIcon.People, UiIcon.Car }, View = 0,
         SearchPlaceholder = "Search for a place or an address", FiltersTitle = "Show on the map",
         Filters = new[]
         {
-            new UiMapFilter { Icon = UiIcon.MapTrifold, Name = "Subway stations", On = true, Locate = true },
+            new UiMapFilter { Icon = UiIcon.Train, Name = "Subway stations", On = true, Locate = true },
             new UiMapFilter { Icon = UiIcon.Store, Name = "Your businesses", On = true, Locate = true },
-            new UiMapFilter { Icon = UiIcon.Home, Name = "Homes for rent", On = false, Locate = true },
+            new UiMapFilter { Icon = UiIcon.Key, Name = "Homes for rent", On = false, Locate = true },
             new UiMapFilter { Icon = UiIcon.ShoppingCart, Name = "Wholesale stores", On = true, Locate = true },
             new UiMapFilter { Icon = UiIcon.Car, Name = "Car dealers", On = false, Locate = false },
             new UiMapFilter { Icon = UiIcon.Bank, Name = "Banks", On = false, Locate = true },
@@ -464,8 +461,7 @@ internal static partial class UiSamples
     {
         Tools = new[]
         {
-            new UiTool { Icon = UiIcon.Sofa, Name = "Furniture" }, new UiTool { Icon = UiIcon.PaintBrush, Name = "Walls" }, new UiTool { Icon = UiIcon.Grid, Name = "Floors" },
-            new UiTool { Icon = UiIcon.Trash, Name = "Sell" },
+            new UiTool { Icon = UiIcon.Sofa, Name = "Furniture" }, new UiTool { Icon = UiIcon.PaintBrush, Name = "Walls" }, new UiTool { Icon = UiIcon.Trash, Name = "Sell" },
         },
         Tool = open ? 0 : -1, Choice = 1,
         Choices = new[]
