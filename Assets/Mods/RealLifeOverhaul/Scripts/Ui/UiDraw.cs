@@ -258,7 +258,7 @@ namespace RealLifeOverhaul.Ui
         public static void PlayerCard(UiScene s, UiAt at, float x, float y, float w, string name, float hue, string summary)
         {
             float size = UiTokens.AvatarSmall;
-            Portrait(s, at, x, y, size, name, hue, UiRole.Accent);
+            Portrait(s, at, x, y, size, name, hue, UiRole.None);   // a ring tells a state, and the player's own card has none
             float tx = x + size + UiTokens.S3, tw = w - size - UiTokens.S3;
             float block = UiTextRules.LineHeight(UiStyle.Title) + UiTextRules.LineHeight(UiStyle.Small);
             float ty = y + (size - block) / 2f;

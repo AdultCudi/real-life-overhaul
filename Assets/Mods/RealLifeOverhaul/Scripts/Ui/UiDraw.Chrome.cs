@@ -17,6 +17,9 @@ namespace RealLifeOverhaul.Ui
         private const float PillH = 32f;     // px: a status pill, in the status bar's 44 px row
         private const float TileGap = 8f;    // px: between the toolbar's app buttons
 
+        /// <summary>px between a link's words and its mark, measured from the drawn words as Cities: Skylines II keeps it.</summary>
+        public const float LinkGap = 5f;
+
         /// <summary>
         /// An app's window over the world: the slate panel at its share of the screen, its title strip (the app's icon, the
         /// place or the app's name in cyan capitals, the close button). Returns the panel, which the page is drawn inside.
@@ -129,11 +132,11 @@ namespace RealLifeOverhaul.Ui
             {
                 // The weather's icon goes with its temperature, as a city builder's bar shows it, and the season stays words.
                 string weather = string.IsNullOrEmpty(m.Temperature) ? m.Season : m.Temperature + ", " + m.Season;
-                px += Pill(s, on, px, py, m.Weather, UiRole.Warn, weather, UiRole.Text) + UiTokens.S2;
+                px += Pill(s, on, px, py, m.Weather, UiRole.None, weather, UiRole.Text) + UiTokens.S2;
             }
             if (!string.IsNullOrEmpty(m.Place))
             {
-                Pill(s, on, px, py, UiIcon.MapPin, UiRole.Accent, m.Place, UiRole.Text);
+                Pill(s, on, px, py, UiIcon.MapPin, UiRole.None, m.Place, UiRole.Text);
             }
             float right = w - UiTokens.S4;
             if (m.Alerts > 0)
@@ -151,7 +154,7 @@ namespace RealLifeOverhaul.Ui
                 int face = Box(s, on, right - mw, py, mw, PillH, UiRole.Pill, UiRole.None, UiTokens.RadiusLarge, UiFlags.Chrome);
                 UiAt inside = on.In(face);
                 float cx = right - mw + UiTokens.S2;
-                Icon(s, inside, cx, py + (PillH - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Wallet, UiRole.Ok, UiFlags.Middle | UiFlags.Chrome);
+                Icon(s, inside, cx, py + (PillH - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Wallet, UiRole.None, UiFlags.Middle | UiFlags.Chrome);
                 cx += UiTokens.Icon + UiTokens.S2;
                 float tw = UiTextRules.Width(m.Money, UiStyle.Number) + UiTokens.S1;
                 TextMiddle(s, inside, cx, py, PillH, tw, UiStyle.Number, UiRole.Text, m.Money, UiFlags.Chrome);   // the money in the bar's largest words, as the game keeps it in view
@@ -178,7 +181,7 @@ namespace RealLifeOverhaul.Ui
             int face = Box(s, at, x, y, w, PillH, UiRole.Pill, UiRole.None, UiTokens.RadiusLarge, UiFlags.Chrome);
             UiAt inside = at.In(face);
             float cx = x + UiTokens.S2;
-            Icon(s, inside, cx, y + (PillH - UiTokens.Icon) / 2f, UiTokens.Icon, m.Paused ? UiIcon.Pause : UiIcon.Play, UiRole.Accent, UiFlags.Middle | UiFlags.Chrome);
+            Icon(s, inside, cx, y + (PillH - UiTokens.Icon) / 2f, UiTokens.Icon, m.Paused ? UiIcon.Pause : UiIcon.Play, UiRole.None, UiFlags.Middle | UiFlags.Chrome);
             cx += UiTokens.Icon + UiTokens.S2;
             TextMiddle(s, inside, cx, y, PillH, tw, UiStyle.BodyStrong, UiRole.Text, m.Time, UiFlags.Chrome);
             cx += tw;
@@ -219,7 +222,8 @@ namespace RealLifeOverhaul.Ui
                     continue;
                 }
                 UiRole tone = values[i] >= 60 ? UiRole.Ok : values[i] >= 30 ? UiRole.Warn : UiRole.Danger;
-                Icon(s, inside, cx, y + (PillH - UiTokens.Icon) / 2f, UiTokens.Icon, icons[i], tone, UiFlags.Middle | UiFlags.Chrome);
+                // The icon keeps its own colour and the meter says how full: a state is told by its bar, never by recolouring a glyph.
+                Icon(s, inside, cx, y + (PillH - UiTokens.Icon) / 2f, UiTokens.Icon, icons[i], UiRole.None, UiFlags.Middle | UiFlags.Chrome);
                 Meter(s, inside, cx + UiTokens.Icon + UiTokens.S1, y + (PillH - UiTokens.S1) / 2f, meter, UiTokens.S1, values[i], tone);
                 cx += each + UiTokens.S3;
             }
@@ -320,7 +324,11 @@ namespace RealLifeOverhaul.Ui
             }
             int face = Box(s, at, x - UiTokens.S1, y, w + UiTokens.S1 * 2f, h, UiRole.None, UiRole.None, UiTokens.RadiusMedium, UiFlags.Right);   // set from the row's right edge by its words' width
             UiAt inside = at.In(face);
-            Icon(s, inside, x, y + (h - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Search, UiRole.AccentText, UiFlags.Middle);
+            // The magnifier one fixed gap before the drawn words, as Cities: Skylines II sets its links, whatever the grid made of the
+            // box; it is the link's mark, not a target of its own, so it may stand in the words' box.
+            float words = Math.Min(UiTextRules.Width(value, UiStyle.Body), w - UiTokens.IconSmall - UiTokens.S1);
+            Icon(s, inside, x + w - words - LinkGap - UiTokens.IconSmall, y + (h - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Search, UiRole.AccentText,
+                UiFlags.Middle | UiFlags.Decor);
             TextMiddle(s, inside, x + UiTokens.IconSmall + UiTokens.S1, y, h, w - UiTokens.IconSmall - UiTokens.S1, UiStyle.Body, UiRole.AccentText, value, UiFlags.Right | UiFlags.Truncate);
             Node(s, at, x - UiTokens.S1, y, w + UiTokens.S1 * 2f, h, command, arg, face);
         }

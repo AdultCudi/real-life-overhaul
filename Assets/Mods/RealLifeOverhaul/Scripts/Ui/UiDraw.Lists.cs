@@ -64,7 +64,7 @@ namespace RealLifeOverhaul.Ui
             Text(s, inside, tx, top, nameW, UiStyle.Title, UiRole.Text, row.Name, UiFlags.Truncate | UiFlags.Middle);
             if (row.Verified)
             {
-                Icon(s, inside, tx + nameW + UiTokens.S1, top + (nameH - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Check, UiRole.AccentText,
+                Icon(s, inside, tx + nameW + UiTokens.S1, top + (nameH - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Check, UiRole.None,
                     UiFlags.Middle | UiFlags.Centre);
             }
             Text(s, inside, tx, top + nameH + UiTokens.S1, tw, row.Unread > 0 ? UiStyle.SmallStrong : UiStyle.Small, row.Unread > 0 || sel ? UiRole.Text : UiRole.Muted, row.Preview,

@@ -36,7 +36,8 @@ namespace RealLifeOverhaul.Ui
         {
             const float pad = UiTokens.S6, size = UiTokens.AvatarHero - UiTokens.S4;
             float h = pad + size + UiTokens.S5;
-            UiRole ring = tone == UiTone.Ok ? UiRole.Ok : tone == UiTone.Warn ? UiRole.Warn : tone == UiTone.Danger ? UiRole.Danger : UiRole.Accent;   // the ring says their state, as inZOI's
+            // The ring says their state, as inZOI's: no state, no ring.
+            UiRole ring = tone == UiTone.Ok ? UiRole.Ok : tone == UiTone.Warn ? UiRole.Warn : tone == UiTone.Danger ? UiRole.Danger : UiRole.None;
             Portrait(s, at, x + pad, y + pad, size, name, hue, ring);
             // The actions first, from the right, so the name knows its room.
             float ax = x + w - pad;

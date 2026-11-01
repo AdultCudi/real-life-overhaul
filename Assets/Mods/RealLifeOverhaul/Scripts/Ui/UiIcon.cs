@@ -158,6 +158,7 @@ namespace RealLifeOverhaul.Ui
                 case UiIcon.Warning: case UiIcon.SmileyMeh: case UiIcon.Bell: case UiIcon.Lightning: case UiIcon.Lightbulb:
                     return UiRole.Warn;
                 case UiIcon.Info: case UiIcon.Locate: case UiIcon.Navigation: case UiIcon.Send: case UiIcon.Spark: case UiIcon.Eye:
+                case UiIcon.Play: case UiIcon.Pause: case UiIcon.FastForward:
                     return UiRole.Accent;
                 case UiIcon.Star: case UiIcon.StarHalf: case UiIcon.Trophy: case UiIcon.Coin: case UiIcon.Key:
                     return UiRole.Gold;
