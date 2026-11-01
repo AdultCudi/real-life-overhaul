@@ -145,6 +145,7 @@ internal static partial class Program
         {
             BankLevels();   // (the bank's levels and the owner's pay alone, while working on them: BankTierChecks.cs)
             BankPayFixes();
+            BankDividendChecks();
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -671,6 +672,7 @@ internal static partial class Program
         PlayerBank();
         Branches();     // the bank branches: an hour's customers, visits in the bank's books, the reach over many branches, a branch that pays, the save, the option off (BranchChecks.cs)
         BankLevels();   // the bank's levels and the owner's pay: each level's limits binding, moving up, an older save's bank fitted, the pay's split, the balance figures (BankTierChecks.cs)
+        BankDividendChecks();   // the own bank's automatic dividends: the times, the share to the cent, what holds one back, off as before, the save, the page, the texts (BankDividendChecks.cs)
         BankPayFixes(); // the own bank's name on its lines and a fixed pay paid in full: the report's national bank reproduced, what holds it back, the save, the texts (BankPayFixChecks.cs)
         Office();
         CivicFixes();   // the player's own canvasser's leaflet, the bridges to Standing and the court, the donation cap (CivicFixChecks.cs)

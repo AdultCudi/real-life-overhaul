@@ -309,6 +309,12 @@ namespace RealLifeOverhaul.Economy
             b.PaidMonth = b.PaidLast = b.PaidAll = 0;
             b.PayWanted = b.PayGiven = 0;
             b.PayHeld = BankTiers.PayHeldNone;
+            b.DivEvery = BankDividends.Off;
+            b.DivShare = 0;
+            b.DivFrom = day;
+            b.DivKept = b.DivWanted = b.DivPaid = b.DivAll = 0;
+            b.DivDay = 0;
+            b.DivWhy = BankDividends.Paid;
             b.State = OwnBankState.Running;
             b.Name = name ?? string.Empty;
             b.Seed = seed;

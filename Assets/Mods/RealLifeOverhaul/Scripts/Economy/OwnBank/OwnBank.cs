@@ -104,6 +104,16 @@ namespace RealLifeOverhaul.Economy
         public long PayWanted, PayGiven;        // the last day run: the pay asked for and what was paid
         public int PayHeld;                     // why less was paid that day: a BankTiers PayHeld value
 
+        // Its automatic dividends (Economy/OwnBank/Dividends).
+        public int DivEvery;                    // BankDividends: Off, Weekly, Monthly or Yearly
+        public int DivShare;                    // thousandths of the profit kept over the time paid out
+        public int DivFrom;                     // the first day of the time being added up
+        public long DivKept;                    // the profit kept since then, after the owner's pay (a loss takes it down)
+        public int DivDay;                      // the day the last one fell due; 0: none yet
+        public long DivWanted, DivPaid;         // the last one: asked for and paid
+        public int DivWhy;                      // why it was less: a BankDividends value
+        public long DivAll;                     // paid out in all
+
         public BankBranch Branch(string place)
         {
             for (int i = 0; i < Branches.Count; i++)
@@ -241,6 +251,8 @@ namespace RealLifeOverhaul.Economy
         public long Systems;                    // out, at the end game's scale: its systems, compliance and deposit insurance
         public long Counter;                    // in: what the branches' counters charged their customers (OwnBankRules.Visit)
         public long Pay;                        // the owner's pay out of the capital (OwnBankRules.OwnerPay): neither takings nor a cost
+        public long PaidOut;                    // an automatic dividend out of the capital (OwnBankRules.Dividends): neither takings nor a cost
+        public bool DividendDue;                // an automatic dividend fell due today, paid or not
         public long Withdrawn, Deposited, Lent, Repaid, Defaulted, Cured, WrittenOff;
         public long Bought, Sold, FireSold;
         public bool RunStarted, RunEnded, Breached, Cured2, Fined, Watched, Closed;
@@ -255,7 +267,8 @@ namespace RealLifeOverhaul.Economy
         {
             Interest = Reserve = Dividends = Recovered = Gains = 0;
             Savers = Staff = Lost = Court = FundLost = Fees = Fine = Systems = 0;
-            Counter = Pay = 0;
+            Counter = Pay = PaidOut = 0;
+            DividendDue = false;
             Withdrawn = Deposited = Lent = Repaid = Defaulted = Cured = WrittenOff = 0;
             Bought = Sold = FireSold = 0;
             RunStarted = RunEnded = Breached = Cured2 = Fined = Watched = Closed = false;

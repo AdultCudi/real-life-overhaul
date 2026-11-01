@@ -15,7 +15,7 @@ namespace RealLifeOverhaul.Economy
                 .Owns(Settings.EconomyBankId)
                 .Data(OwnBankStore.Key, OwnBankDirector.TestKey)
                 .Test("reallife_ob_test_found", "reallife_ob_test_month", "reallife_ob_test_hard", "reallife_ob_test_run", "reallife_ob_test_deadline", "reallife_ob_test_fund",
-                    "reallife_ob_test_level", "reallife_ob_test_back")
+                    "reallife_ob_test_level", "reallife_ob_test_div", "reallife_ob_test_back")
                 .Fact("ob_licence", () => Money(OwnBankDirector.FoundLicence(Prices.Level, EndScaleGuide.Scale)))
                 .Fact("ob_capital", () => Money(OwnBankDirector.FoundCapital(Prices.Level, 0, EndScaleGuide.Scale)))
                 .Fact("ob_again_capital", () => Money(OwnBankDirector.FoundCapital(Prices.Level, 1, EndScaleGuide.Scale)))
@@ -33,6 +33,8 @@ namespace RealLifeOverhaul.Economy
                 .Fact("ob_deposits_community", () => Money(OwnBankRules.CapsOf(BankTiers.Community, Prices.Level, EndScaleGuide.Scale).Deposits))
                 .Fact("ob_deposits_regional", () => Money(OwnBankRules.CapsOf(BankTiers.Regional, Prices.Level, EndScaleGuide.Scale).Deposits))
                 .Fact("ob_pay_step", () => OwnBankText.Ratio(BankTiers.PayStep))
+                .Fact("ob_div_week", () => Whole(BankDividends.WeekDays))
+                .Fact("ob_div_step", () => OwnBankText.Ratio(BankDividends.ShareStep))
                 .Fact("ob_again_integrity", () => Whole(OwnBankCatalogue.AgainIntegrity))
                 .Fact("ob_step", () => Money(OwnBankCatalogue.CapitalStepCents))
                 .Fact("ob_min", () => OwnBankText.Ratio(OwnBankCatalogue.MinRatio))

@@ -309,6 +309,7 @@ namespace RealLifeOverhaul.Economy
                 Tell(NotificationType.Warning, "reallife_ob_toast_no_hq", TabBank);
             }
             Happened(day, city, hq);
+            TellDividend(day);
             if (_bank.Running && _bank.Month != month)
             {
                 Tell(NotificationType.Info, "reallife_ob_toast_month", TabBank, "deposits", OwnBankText.Money(_bank.Savings), "loans", OwnBankText.Money(_bank.Lent),

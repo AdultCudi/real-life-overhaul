@@ -159,8 +159,8 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// A day booked at the headquarters on the day it is for: takings, costs, the profit kept or the loss met, and the
-        /// owner's pay out of the profit into the player's cash, as a dividend is.
+        /// A day booked at the headquarters on the day it is for: takings, costs, the profit kept or the loss met, the
+        /// owner's pay out of the capital into the player's cash, as a dividend is, and an automatic dividend that fell due.
         /// </summary>
         public static void BookDay(BankDay d, BuildingRegistration hq, string bank, int day)
         {
@@ -182,6 +182,10 @@ namespace RealLifeOverhaul.Economy
             if (d.Pay > 0)
             {
                 Book(d.Pay, OwnBankCatalogue.PayKey, hq, bank, null, day, false, false);
+            }
+            if (d.PaidOut > 0)
+            {
+                Book(d.PaidOut, OwnBankCatalogue.CapitalOutKey, hq, bank, null, day, false, false);   // an automatic dividend, booked as one taken by hand
             }
         }
 
