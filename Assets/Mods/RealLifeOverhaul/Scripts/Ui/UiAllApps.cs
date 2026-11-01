@@ -20,6 +20,7 @@ namespace RealLifeOverhaul.Ui
         public string Status;     // "3 unread", "Next shift 09:00"; null when the app gives none
         public int Badge;
         public bool Open;         // the app the full menu shows now
+        public int Picture;       // another mod's own picture (UiDraw.PictureKey), drawn instead of the glyph; 0 for none
     }
 
     /// <summary>What the All apps panel shows: the folders, the chosen one's apps, and a sentence for an empty folder.</summary>
@@ -192,7 +193,14 @@ namespace RealLifeOverhaul.Ui
             float tx = x + UiTokens.S2;
             int tile = UiDraw.Tile(s, inside, tx, y + (h - RowTile) / 2f, RowTile, r.Tint, false);
             float g = UiTokens.S6;
-            UiDraw.Icon(s, inside.In(tile), tx + (RowTile - g) / 2f, y + (h - g) / 2f, g, r.Icon, r.Tint, UiFlags.Middle | UiFlags.Centre, true);
+            if (r.Picture > 0)
+            {
+                UiDraw.Picture(s, inside.In(tile), tx + (RowTile - g) / 2f, y + (h - g) / 2f, g, r.Picture);   // another mod's app: its own picture, as on the phone
+            }
+            else
+            {
+                UiDraw.Icon(s, inside.In(tile), tx + (RowTile - g) / 2f, y + (h - g) / 2f, g, r.Icon, r.Tint, UiFlags.Middle | UiFlags.Centre, true);
+            }
             float bw = 0f;
             if (r.Badge > 0 && string.IsNullOrEmpty(r.Status))   // a line that already counts the news stands for the badge
             {

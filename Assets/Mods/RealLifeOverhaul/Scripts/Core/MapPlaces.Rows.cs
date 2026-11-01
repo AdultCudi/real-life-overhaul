@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using City.CityMap;
+using Localizor.LanguageChangeEvent;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -62,7 +63,7 @@ namespace RealLifeOverhaul
                     string name = Pref + category.Id;
                     var data = new CityMapFilterData { isAvailable = Guard.Asked(() => category.Offered, false) };
                     Func<Vector3?> focus = Guard.Asked<Vector3?>(() => Nearest(category), null);
-                    object languageData = Activator.CreateInstance(parameters[4].ParameterType);
+                    object languageData = TitleData(parameters[4].ParameterType, category.TitleKey);
                     var row = create.Invoke(filters, new object[] { name, category.Icon, data, under, languageData, null, focus }) as CityMapFilter;
                     if (row == null || row.Toggle == null)
                     {
@@ -108,6 +109,13 @@ namespace RealLifeOverhaul
                 Logger?.Error(e);
                 Fail("an error (above)");
             }
+        }
+
+        // The row's label from its first moment: CreateFilter localizes the label with the row's name when this is empty, and
+        // the name is no text, so Player.log had a warning a row. Another type here (a game update) gets its default as before.
+        private static object TitleData(Type holder, string titleKey)
+        {
+            return holder == typeof(LanguageChangeEventDataHolder) ? new LanguageChangeEventDataHolder { Key = titleKey } : Activator.CreateInstance(holder);
         }
 
         private static void Fail(string why)

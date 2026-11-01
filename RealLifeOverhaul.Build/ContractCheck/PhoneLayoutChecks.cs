@@ -129,10 +129,10 @@ internal static partial class Program
                 kind[i] = n.StartsWith("Game", StringComparison.Ordinal) ? PhoneLayoutRules.GameItem : n.StartsWith("OtherMod", StringComparison.Ordinal) ? PhoneLayoutRules.OtherItem : PhoneLayoutRules.ModItem;
                 place[i] = kind[i] == PhoneLayoutRules.ModItem ? layout.Place(n) : PhoneLayoutRules.Home;
             }
-            foreach (bool dockRow in new[] { true, false })
+            foreach (bool keptFirst in new[] { true, false })
             {
                 cases++;
-                string fault = ViewFault(kind, place, count, dockRow, arranged);
+                string fault = ViewFault(kind, place, count, keptFirst, arranged);
                 if (fault != null)
                 {
                     faults++;
@@ -141,38 +141,51 @@ internal static partial class Program
             }
         }
         Check(faults == 0, cases + " grids of up to 8 of the game's, any of the mod's put on in any order, up to 3 of other mods', after up to 7 moves, on both phones: every button in exactly one place, "
-                           + "the game's first in order, other mods' last in theirs, a folder's tile exactly while it has an app, the dock at most two: " + faults + " wrong"
+                           + "the two kept first leading the HUD phone and after the game's on the row, the game's in order, other mods' last in theirs, a folder's tile exactly while it has an app: " + faults + " wrong"
                            + (first != null ? " (first: " + first + ")" : string.Empty));
         // An empty grid, arrays too short, a folder with nothing in it.
         var view = new int[4];
-        var dock = new int[2];
         var members = new int[PhoneLayoutRules.FolderCount];
-        Check(PhoneLayoutRules.View(null, null, 0, -1, true, view, dock, out int none, members) == 0 && none == 0 && members.All(m => m == 0)
-              && PhoneLayoutRules.View(new[] { 0, 1 }, new[] { -1, 0 }, 2, 3, true, view, dock, out _, members) == 0 && members[0] == 1,
+        Check(PhoneLayoutRules.View(null, null, 0, -1, true, view, members) == 0 && members.All(m => m == 0)
+              && PhoneLayoutRules.View(new[] { 0, 1 }, new[] { -1, 0 }, 2, 3, true, view, members) == 0 && members[0] == 1,
             "no buttons are an empty view, and a folder with nothing in it an empty page");
-        Check(PhoneLayoutRules.View(new[] { 1, 1, 1 }, new[] { PhoneLayoutRules.Dock, PhoneLayoutRules.Dock, PhoneLayoutRules.Dock }, 3, -1, true, view, dock, out int three, members) == 1
-              && three == 2 && view[0] == 2 && dock[0] == 0 && dock[1] == 1,
-            "a third app in the dock (put there while one was off) stands on the home screen, the first two in the dock");
-        Check(PhoneLayoutRules.View(new[] { 1, 1 }, new[] { 7, -5 }, 2, -1, true, view, dock, out _, members) == 2 && view[0] == 0 && view[1] == 1,
+        Check(PhoneLayoutRules.View(new[] { 1, 1, 1 }, new[] { PhoneLayoutRules.Dock, PhoneLayoutRules.Dock, PhoneLayoutRules.Dock }, 3, -1, true, view, members) == 3
+              && view[0] == 0 && view[1] == 1 && view[2] == 2,
+            "a third app kept first (put there while one was off) stands on the home screen after the two kept first");
+        Check(PhoneLayoutRules.View(new[] { 0, 1, 0, 1 }, new[] { -1, PhoneLayoutRules.Dock, -1, PhoneLayoutRules.Dock }, 4, -1, true, view, members) == 4
+              && view[0] == 1 && view[1] == 3 && view[2] == 0 && view[3] == 2
+              && PhoneLayoutRules.View(new[] { 0, 1, 0, 1 }, new[] { -1, PhoneLayoutRules.Dock, -1, PhoneLayoutRules.Dock }, 4, -1, false, view, members) == 4
+              && view[0] == 0 && view[1] == 2 && view[2] == 1 && view[3] == 3,
+            "the two kept first lead the HUD phone's home screen, ahead of the game's; on the full menu's row they follow the game's own");
+        Check(PhoneLayoutRules.View(new[] { 1, 1 }, new[] { 7, -5 }, 2, -1, true, view, members) == 2 && view[0] == 0 && view[1] == 1,
             "an app the layout puts in a place this version does not have stands on the home screen");
     }
 
-    private static string ViewFault(int[] kind, int[] place, int count, bool dockRow, string[] names)
+    private static string ViewFault(int[] kind, int[] place, int count, bool keptFirst, string[] names)
     {
         var view = new int[count + PhoneLayoutRules.FolderCount];
-        var dock = new int[PhoneLayoutRules.DockMost];
         var members = new int[PhoneLayoutRules.FolderCount];
         var seen = new int[count];
-        int n = PhoneLayoutRules.View(kind, place, count, -1, dockRow, view, dock, out int docked, members);
-        if (docked > PhoneLayoutRules.DockMost || !dockRow && docked != 0)
+        int n = PhoneLayoutRules.View(kind, place, count, -1, keptFirst, view, members);
+        // The apps kept first, at most two in the mod's order: on the HUD phone the view's first, on the row right after the game's.
+        var first = new List<int>();
+        for (int i = 0; i < count && first.Count < PhoneLayoutRules.DockMost; i++)
         {
-            return "the dock row holds " + docked;
+            if (kind[i] == PhoneLayoutRules.ModItem && place[i] == PhoneLayoutRules.Dock)
+            {
+                first.Add(i);
+            }
         }
-        for (int d = 0; d < docked; d++)
+        int games = kind.Take(count).Count(k => k == PhoneLayoutRules.GameItem);
+        int from = keptFirst ? 0 : games;
+        for (int d = 0; d < first.Count; d++)
         {
-            seen[dock[d]]++;
+            if (from + d >= n || view[from + d] != first[d])
+            {
+                return names[first[d]] + " (kept first) not at " + (from + d) + " of the " + (keptFirst ? "HUD phone" : "row");
+            }
         }
-        int tiles = 0, lastGame = -1, firstOther = int.MaxValue, at = 0;
+        int tiles = 0, lastGame = -1, firstOther = int.MaxValue, at = keptFirst ? first.Count : 0;
         var tileOf = new bool[PhoneLayoutRules.FolderCount];
         for (int j = 0; j < n; j++)
         {
@@ -212,8 +225,8 @@ internal static partial class Program
             {
                 return "folder " + Folders[f] + " has " + members[f] + " apps and " + (tileOf[f] ? "a" : "no") + " tile";
             }
-            int m = PhoneLayoutRules.View(kind, place, count, f, dockRow, view, dock, out int inFolder, new int[PhoneLayoutRules.FolderCount]);
-            if (m != members[f] || inFolder != 0)
+            int m = PhoneLayoutRules.View(kind, place, count, f, keptFirst, view, new int[PhoneLayoutRules.FolderCount]);
+            if (m != members[f])
             {
                 return "folder " + Folders[f] + "'s page holds " + m + " of " + members[f];
             }
@@ -233,38 +246,19 @@ internal static partial class Program
                 return names[i] + " is in " + seen[i] + " places";
             }
         }
-        if (!dockRow)
-        {
-            // On the row the docked apps stand right after the game's own.
-            int games = kind.Take(count).Count(k => k == PhoneLayoutRules.GameItem);
-            PhoneLayoutRules.View(kind, place, count, -1, false, view, dock, out _, members);
-            int dockedOnRow = 0;
-            for (int i = 0; i < count && dockedOnRow < PhoneLayoutRules.DockMost; i++)
-            {
-                if (kind[i] == PhoneLayoutRules.ModItem && place[i] == PhoneLayoutRules.Dock)
-                {
-                    if (view[games + dockedOnRow] != i)
-                    {
-                        return names[i] + " (docked) not right after the game's apps on the row";
-                    }
-                    dockedOnRow++;
-                }
-            }
-        }
         return null;
     }
 
-    // The tiles of a page: with the dock on the HUD phone's home screen, on a folder's page, on the row.
+    // The tiles of a page on the HUD phone's home screen, a folder's page and the row: the More apps button on the page's
+    // last tile in every view, the empty tiles of a short page between its items and the button.
     private static void PhoneTiles()
     {
-        Check(PhoneLayoutRules.ItemTiles(false, 8, false, false) == 8 && PhoneLayoutRules.MoreTile(false, 8, false, false) == 7,
-            "the HUD phone's home screen with an empty dock: eight tiles, the More apps button on the eighth");
-        Check(PhoneLayoutRules.ItemTiles(false, 8, false, true) == 6 && PhoneLayoutRules.MoreTile(false, 8, false, true) == 5,
-            "with the dock: six tiles above it, the More apps button on the sixth, the dock the last row");
-        Check(PhoneLayoutRules.ItemTiles(false, 8, true, true) == 7 && PhoneLayoutRules.MoreTile(false, 8, true, true) == 7,
-            "a folder's page on the HUD phone: the Back tile, seven tiles after it, the More apps button on the last; no dock row");
-        Check(PhoneLayoutRules.ItemTiles(true, 6, false, true) == 6 && PhoneLayoutRules.ItemTiles(true, 6, true, false) == 5 && PhoneLayoutRules.MoreTile(true, 6, true, false) == 5,
-            "the full menu's row of six: every tile on the home screen (no dock row there), the Back tile and five on a folder's page");
+        Check(PhoneLayoutRules.ItemTiles(false, 8, false) == 8 && PhoneLayoutRules.MoreTile(false, 8) == 7,
+            "the HUD phone's home screen: eight tiles, the More apps button on the eighth");
+        Check(PhoneLayoutRules.ItemTiles(false, 8, true) == 7 && PhoneLayoutRules.MoreTile(false, 8) == 7,
+            "a folder's page on the HUD phone: the Back tile, seven tiles after it, the More apps button on the eighth, as on the home screen");
+        Check(PhoneLayoutRules.ItemTiles(true, 6, false) == 6 && PhoneLayoutRules.ItemTiles(true, 6, true) == 5 && PhoneLayoutRules.MoreTile(true, 6) == 5,
+            "the full menu's row of six: every tile on the home screen, the Back tile and five on a folder's page, the button on the sixth in both");
         Check(!PhoneLayoutRules.FoldersFit(true, 2) && PhoneLayoutRules.FoldersFit(true, 3) && PhoneLayoutRules.FoldersFit(false, 2),
             "a row of two (a 4:3 screen) has no room for a folder's page and keeps the plain pages; three have; the HUD phone always");
         int cases = 0, faults = 0;
@@ -273,55 +267,53 @@ internal static partial class Program
         {
             foreach (int tiles in strip ? new[] { 3, 4, 5, 6, 7 } : new[] { PagerRules.PhoneTiles })
             {
+                int more = PhoneLayoutRules.MoreTile(strip, tiles);
                 foreach (bool folder in new[] { false, true })
                 {
-                    foreach (bool dock in new[] { false, true })
+                    int held = PhoneLayoutRules.ItemTiles(strip, tiles, folder);
+                    for (int count = 0; count <= 60; count++)
                     {
-                        int held = PhoneLayoutRules.ItemTiles(strip, tiles, folder, dock);
-                        int more = PhoneLayoutRules.MoreTile(strip, tiles, folder, dock);
-                        bool row = !strip && !folder && dock;
-                        for (int count = 0; count <= 60; count++)
+                        cases++;
+                        int pages = PagerRules.Pages(count, held);
+                        string fault = null;
+                        if (more != tiles - 1 || (folder ? 1 : 0) + held != tiles)
                         {
-                            cases++;
-                            int pages = PagerRules.Pages(count, held);
-                            string fault = null;
-                            if (more >= tiles || (folder ? 1 : 0) + held > tiles || row && held + PhoneLayoutRules.DockMost != tiles)
+                            fault = "the page's tiles do not add up";
+                        }
+                        for (int p = 0; p < pages && fault == null; p++)
+                        {
+                            int size = PagerRules.PageSize(p, count, held);
+                            int gaps = PhoneLayoutRules.Gaps(size, held, pages);
+                            // As the grid lays it out: the Back tile, the page's items, its empty tiles, then the button.
+                            int button = (folder ? 1 : 0) + size + gaps;
+                            if (pages > 1 && button != more)
                             {
-                                fault = "the page's tiles do not fit";
+                                fault = "page " + p + ": the More apps button on tile " + button + ", not the last (" + more + ")";
                             }
-                            for (int p = 0; p < pages && fault == null; p++)
+                            if (pages <= 1 && gaps != 0)
                             {
-                                int size = PagerRules.PageSize(p, count, held);
-                                int gaps = PhoneLayoutRules.Gaps(size, held, row);
-                                if (row && size + gaps != held)
+                                fault = "empty tiles on a view of one page";
+                            }
+                            for (int i = 0; i < size && fault == null; i++)
+                            {
+                                int tile = (folder ? 1 : 0) + PagerRules.TileOf(p * PagerRules.PerPage(count, held) + i, count, held);
+                                if (pages > 1 && tile == more || tile >= tiles || folder && tile == 0)
                                 {
-                                    fault = "page " + p + ": " + size + " items and " + gaps + " empty tiles before the dock";
-                                }
-                                if (!row && gaps != 0)
-                                {
-                                    fault = "empty tiles with no dock row";
-                                }
-                                for (int i = 0; i < size && fault == null; i++)
-                                {
-                                    int tile = (folder ? 1 : 0) + PagerRules.TileOf(p * PagerRules.PerPage(count, held) + i, count, held);
-                                    if (pages > 1 && tile == more || tile >= tiles || folder && tile == 0)
-                                    {
-                                        fault = "an item on tile " + tile + " (the More apps button's " + more + ")";
-                                    }
+                                    fault = "an item on tile " + tile + " (the More apps button's " + more + ")";
                                 }
                             }
-                            if (fault != null)
-                            {
-                                faults++;
-                                first ??= (strip ? "row of " + tiles : "HUD") + (folder ? ", a folder" : ", home") + (dock ? ", dock" : string.Empty) + ", " + count + " items: " + fault;
-                            }
+                        }
+                        if (fault != null)
+                        {
+                            faults++;
+                            first ??= (strip ? "row of " + tiles : "HUD") + (folder ? ", a folder" : ", home") + ", " + count + " items: " + fault;
                         }
                     }
                 }
             }
         }
-        Check(faults == 0, cases + " pages of 0 to 60 items on both phones, home and folder, with and without the dock: the Back tile first, no item on the More apps button's tile, "
-                           + "the dock on the last row: " + faults + " wrong" + (first != null ? " (first: " + first + ")" : string.Empty));
+        Check(faults == 0, cases + " pages of 0 to 60 items on both phones, home and folder: the Back tile first, the More apps button on the last tile of every page of every view, "
+                           + "a short page filled with empty tiles before it: " + faults + " wrong" + (first != null ? " (first: " + first + ")" : string.Empty));
     }
 
     // Who may go where.
@@ -401,13 +393,12 @@ internal static partial class Program
             place[i] = kind[i] == PhoneLayoutRules.ModItem ? PhoneLayoutRules.Defaults[(i - 8) % PhoneLayoutRules.Defaults.Length] : PhoneLayoutRules.Home;
         }
         var view = new int[count + PhoneLayoutRules.FolderCount];
-        var dock = new int[PhoneLayoutRules.DockMost];
         var members = new int[PhoneLayoutRules.FolderCount];
-        ViewPass(kind, place, count, view, dock, members, 1000);   // warmed
+        ViewPass(kind, place, count, view, members, 1000);   // warmed
         var clock = new Stopwatch();
         long before = GC.GetAllocatedBytesForCurrentThread();
         clock.Start();
-        int sum = ViewPass(kind, place, count, view, dock, members, 20000);
+        int sum = ViewPass(kind, place, count, view, members, 20000);
         clock.Stop();
         long bytes = GC.GetAllocatedBytesForCurrentThread() - before;
         double each = clock.Elapsed.TotalMilliseconds / 20000.0;
@@ -417,14 +408,14 @@ internal static partial class Program
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]
-    private static int ViewPass(int[] kind, int[] place, int count, int[] view, int[] dock, int[] members, int times)
+    private static int ViewPass(int[] kind, int[] place, int count, int[] view, int[] members, int times)
     {
         int sum = 0;
         for (int t = 0; t < times; t++)
         {
-            sum += PhoneLayoutRules.View(kind, place, count, -1, true, view, dock, out int docked, members) + docked;
-            sum += PhoneLayoutRules.View(kind, place, count, t % PhoneLayoutRules.FolderCount, true, view, dock, out _, members);
-            sum += PhoneLayoutRules.ItemTiles(false, 8, false, docked > 0) + PhoneLayoutRules.Gaps(3, 6, true);
+            sum += PhoneLayoutRules.View(kind, place, count, -1, true, view, members);
+            sum += PhoneLayoutRules.View(kind, place, count, t % PhoneLayoutRules.FolderCount, true, view, members);
+            sum += PhoneLayoutRules.ItemTiles(false, 8, t % 2 == 0) + PhoneLayoutRules.Gaps(3, 7, 2);
         }
         return sum;
     }
@@ -447,17 +438,21 @@ internal static partial class Program
         }
         string view = Body(pager, "private void View()");
         Check(view != null && view.Contains("_foldered = FoldersWanted && !_noFolders") && view.Contains("if (!_foldered)") && view.Contains("_folders.Destroy();")
-              && view.Contains("_items.Add(_apps[i]);") && view.Contains("PhoneLayoutRules.View(_kind, _place, count, _open, !_strip, _view, _dockAt, out int docked, _members)"),
+              && view.Contains("_items.Add(_apps[i]);") && view.Contains("PhoneLayoutRules.View(_kind, _place, count, _open, !_strip, _view, _members)"),
             "the pages are the rules' view: with the option off (or no room) every button as before and nothing of the folders left on the grid");
         Check(pager.Contains("private bool FoldersWanted => PhoneLayoutPrefs.On && PhoneLayoutRules.FoldersFit(_strip, Tiles);"), "folders only with the option on and room for them");
-        Check(Body(pager, "public void Refresh()")?.Contains("Pages = PagerRules.Pages(_items.Count, ItemTiles)") == true && Body(pager, "private void More()")?.Contains("Tile(MoreTile,") == true,
-            "the pages and the More apps button's tile come from the view and its tiles");
+        string apply = Body(pager, "private void Apply()");
+        Check(Body(pager, "public void Refresh()")?.Contains("Pages = PagerRules.Pages(_items.Count, ItemTiles)") == true && apply != null
+              && apply.Contains("PhoneLayoutRules.Gaps(onPage, ItemTiles, Pages)") && apply.Contains("ShowGaps(gaps, hiding == 1);") && apply.Contains("Order(gaps);"),
+            "the pages come from the view and its tiles, a short page is filled with empty tiles on every view");
         string order = Body(pager, "private void Order(int gaps)");
-        Check(order != null && order.Contains("if (inOrder)") && order.Contains("SetAsLastSibling()") && order.IndexOf("_kind[i] == PhoneLayoutRules.GameItem", StringComparison.Ordinal) < order.IndexOf("_folders.BackTile", StringComparison.Ordinal),
-            "the grid's children are put in the view's order, the game's own first, and moved only when not in it");
+        Check(order != null && order.Contains("if (inOrder)") && order.Contains("SetAsLastSibling()") && order.IndexOf("_folders.BackTile", StringComparison.Ordinal) < order.IndexOf("_items[j]", StringComparison.Ordinal)
+              && order.IndexOf("_items[j]", StringComparison.Ordinal) < order.IndexOf("Gap(g)", StringComparison.Ordinal) && order.IndexOf("Gap(g)", StringComparison.Ordinal) < order.IndexOf("_sorted.Add(_more)", StringComparison.Ordinal),
+            "the grid's children are put in the view's order (the Back tile, the items, the empty tiles, then the More apps button) and moved only when not in it");
         string collect = Body(pager, "private void Collect()");
         Check(collect != null && collect.Contains("child.GetComponent<PhoneTile>() != null"), "the pager's own tiles are never counted as apps");
-        Check(Body(pager, "private void StepAside()")?.Contains("DropFolders();") == true && Body(pager, "private void OnDestroy()")?.Contains("PhoneLayoutPrefs.Changed -= _onLayout;") == true
+        Check(Body(pager, "private void StepAside()")?.Contains("DropFolders();") == true && Body(pager, "private void StepAside()")?.Contains("DropTiles();") == true
+              && Body(pager, "private void OnDestroy()")?.Contains("PhoneLayoutPrefs.Changed -= _onLayout;") == true
               && Body(pager, "private void HearLayout()")?.Contains("PhoneLayoutPrefs.Changed += _onLayout;") == true,
             "stepping aside or going takes every tile of the folders away, and the layout's word is heard once and let go");
         Check(Body(pager, "private void Keys()")?.Contains("bool want = !_strip && _open >= 0 && !_aside;") == true, "the cancel key is heard only on the HUD phone, only while a folder is open");

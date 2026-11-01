@@ -14,8 +14,8 @@ namespace RealLifeOverhaul.Ui
     /// apps (ShellPages), each button's news from the HUD phone's button of the same name, and the folder the player keeps
     /// it in (PhoneLayoutPrefs). Pressing presses the app's own full-menu button, so the game's ShowApp, the mod's
     /// PhoneApp.Open and other mods' handlers run as a click would; Voogle Maps, which has no full-menu button, through
-    /// the HUD phone's. When the phone's own model is merged in, <see cref="UiShellApps.Source"/> points at it instead
-    /// (notes/host-phone.md). Cost: a walk of the row's buttons when the full menu opens and once a second while it shows.
+    /// the HUD phone's. While the kit phone stands, the list is the phone's own model instead (<see cref="FromPhone"/>).
+    /// Cost: a walk of the row's buttons when the full menu opens and once a second while it shows.
     /// </summary>
     public static class ShellApps
     {
@@ -24,6 +24,23 @@ namespace RealLifeOverhaul.Ui
         private static readonly string[] FirstOnHome = { "RealLifePlanner", "RealLifeFlare" };   // the old dock: first on the phone's home
         private static readonly List<Transform> Buttons = new List<Transform>(64);
         private static readonly Dictionary<string, Transform> HudByName = new Dictionary<string, Transform>(64, StringComparer.Ordinal);
+
+        /// <summary>
+        /// Fills the frame's list from the phone's own model while the kit phone stands (UiShellApps.FromPhone), then the
+        /// overhaul's pages; without it (its switch off, or stood down to the classic phone) the full menu's row as before.
+        /// Returns the version, which moves with the phone's and the pages'.
+        /// </summary>
+        public static int FromPhone(List<UiShellApp> into)
+        {
+            PhoneItems items = PhoneItems.Current;
+            if (items == null || items.Count == 0)
+            {
+                return FromRow(into);
+            }
+            int hash = UiShellApps.FromPhone(items, into, RowMost);
+            ShellPages.Add(into, ref hash);
+            return hash;
+        }
 
         /// <summary>Fills the frame's list from the full menu's row; returns its version, which moves with any app, title or badge.</summary>
         public static int FromRow(List<UiShellApp> into)

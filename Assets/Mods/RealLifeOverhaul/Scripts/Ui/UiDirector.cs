@@ -78,6 +78,7 @@ namespace RealLifeOverhaul.Ui
         internal static void RemoveAll(string why)
         {
             ContactsKit.Remove(why);
+            PhoneKit.Remove(why);
             EmployeesKit.Remove(why);
             UiShell.Remove(why);
             ShellPages.Remove(why);
@@ -128,6 +129,7 @@ namespace RealLifeOverhaul.Ui
             {
                 RemoveAll("no city");
                 ContactsKit.Rearm();
+                PhoneKit.Rearm();
                 EmployeesKit.Rearm();
                 UiShell.Rearm();
                 ShellPages.Rearm();
@@ -160,6 +162,14 @@ namespace RealLifeOverhaul.Ui
             UiShell.Tick();
             ShellBoxes.Install();
             ShellNotices.Install();
+            if (UiScreenSwitches.On("phone"))
+            {
+                PhoneKit.Install();
+            }
+            else
+            {
+                PhoneKit.Remove("its switch is off");
+            }
             if (_said != 2 && UiFonts.Ready && (ContactsKit.Settled || ++_waited >= MostWait))
             {
                 _said = 2;
@@ -173,7 +183,8 @@ namespace RealLifeOverhaul.Ui
             string fonts = UiFonts.Own ? "fonts: the bundle's own (" + UiFonts.Faces + " faces)"
                 : UiFonts.Faces > 0 ? "fonts: " + UiFonts.Faces + " of " + UiFonts.FacesWanted + " faces from " + UiFonts.BundleFile + ", the game's font for the rest"
                 : "fonts: not loaded from " + (UiFonts.BundleFile ?? "(no path)") + ", the game's font stands in";
-            return "UI: the RLO interface is on; " + fonts + "; screens: Contacts (" + ContactsKit.State + "), " + EmployeesKit.State + ", " + ShellBoxes.States() + ", " + ShellNotices.States()
+            return "UI: the RLO interface is on; " + fonts + "; screens: Contacts (" + ContactsKit.State + "), the phone (" + PhoneKit.State + "), " + EmployeesKit.State + ", "
+                   + ShellBoxes.States() + ", " + ShellNotices.States()
                    + ", pages (" + ShellPages.States() + "), desk sessions (" + (Settings.LivingDesks ? "over the game's panel as each opens" : "off")
                    + "); the full menu's frame while an app on the kit shows; from Options, Tests: the gallery and each screen.";
         }

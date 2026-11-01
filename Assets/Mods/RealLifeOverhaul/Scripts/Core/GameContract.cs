@@ -46,6 +46,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart ContactsKit = ContractBook.Part("contacts_kit", "ui", "the Contacts app drawn on the RLO interface");
         public static readonly GamePart ContactGroupsPart = ContractBook.Part("contact_groups", "phone", "the mod's groups among the Contacts app's category buttons");
         public static readonly GamePart PhoneSkin = ContractBook.Part("phone_skin", "phone", "the phone's skin");
+        public static readonly GamePart PhoneKitPart = ContractBook.Part("phone_kit", "ui", "the phone drawn on the RLO interface");
         public static readonly GamePart MapPicker = ContractBook.Part("map_picker", "navigation", "clicking the markers when choosing a place on the city map");
         public static readonly GamePart MapPlaces = ContractBook.Part("map_places", "navigation", "the mod's places in the city map's filters");
         public static readonly GamePart NavMarks = ContractBook.Part("nav_marks", "navigation", "the game's look for the markers on the minimap");
@@ -306,6 +307,13 @@ namespace RealLifeOverhaul
         public static readonly GameMember FrameData = Field(PhoneSkin, Game, "Player.HUD.SmartphoneUI.SmartPhoneFrame", "frameData", "List<SmartPhoneFrame.FrameData>");
         public static readonly GameMember FrameImage = Field(PhoneSkin, Game, "Player.HUD.SmartphoneUI.SmartPhoneFrame", "frameImage", "Image");
         public static readonly GameMember FrameMask = Field(PhoneSkin, Game, "Player.HUD.SmartphoneUI.SmartPhoneFrame", "maskImage", "Image");
+        // The phone's own controls, read and pressed by the RLO interface's phone (Ui/Phone/PhoneKit): the game's logic stays the game's.
+        public static readonly GameMember PhoneCollapse = Field(PhoneKitPart, Game, "UI.CollapsibleWindow", "collapseButton", "GameObject");
+        public static readonly GameMember PhoneTitle = Field(PhoneKitPart, Game, "Player.HUD.SmartphoneUI.SmartPhoneFrame", "titleText", "TextLocalizationComponent");
+        public static readonly GameMember PhoneDriver = Field(PhoneKitPart, Game, "SmartphoneUI", "privateDriverButton", "Button");
+        public static readonly GameMember PhoneRadioSkip = Field(PhoneKitPart, Game, "RadioControls", "skipButton", "Button");
+        public static readonly GameMember PhoneRadioVolume = Field(PhoneKitPart, Game, "RadioControls", "volumeSlider", "Slider");
+        public static readonly GameMember PhoneRadioSong = Field(PhoneKitPart, Game, "RadioControls", "currentSongLabel", "TextMeshProUGUI");
 
         // Ragdoll/Ragdoll
         public static readonly GameMember NearItemToHide = Method(BodyFade, Game, "HumanHider", "SetIsNearItemToHide", "Void", "Boolean");
