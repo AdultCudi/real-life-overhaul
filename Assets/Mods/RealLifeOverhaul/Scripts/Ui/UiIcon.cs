@@ -1,8 +1,10 @@
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// The one icon family of the interface: bold strokes with round ends on a 24-unit grid, each carrying a meaning, drawn
-    /// in code once a session (UiIcons). A screen names an icon; nothing else draws a glyph of its own.
+    /// The one icon family of the interface: Phosphor (MIT), each icon carrying a meaning, rasterized once a session from
+    /// the outlines the mod carries (UiIconPaths, UiIconRaster) into a white texture tinted by its category where shown
+    /// (UiIcons). Only the keyboard's and the pad's glyphs, which no icon set draws, stay drawn in code. A screen names an
+    /// icon, and nothing else draws a glyph of its own.
     /// </summary>
     public enum UiIcon : byte
     {
@@ -63,6 +65,78 @@ namespace RealLifeOverhaul.Ui
         PadRb,
         PadL1,
         PadR1,
+        StarHalf,      // a rating's half star
+        Play,          // the clock's speeds
+        Pause,
+        FastForward,
+        CloudSun,      // the weather
+        Wallet,
+        Lightning,
+        ForkKnife,
+        SmileyHappy,   // a mood
+        SmileyMeh,
+        SmileySad,
+        Thermometer,
+        Locate,        // a link that moves the camera to its place
+        Eye,
+        AddressBook,
+        IdCard,
+        Navigation,
+        Handshake,
+        Baby,
+        Key,
+        GenreAction,   // a game's genre, for the studio
+        GenreAdventure,
+        GenreRpg,
+        GenreStrategy,
+        GenreSimulation,
+        GenreSports,
+        GenreRacing,
+        GenrePuzzle,
+        GenreHorror,
+        GenreShooter,
+        GenreCasual,
+        GenreFamily,
+        Code,
+        PaintBrush,
+        Bug,
+        Lightbulb,
+        Headset,
+        Megaphone,
+        Database,
+        ShieldCheck,
+        HardDrives,
+        Presentation,
+        Grid,
+        GameController,
+        ChartLineUp,
+        ChartPie,
+        Trophy,
+        Rocket,
+        Package,
+        IdBadge,
+        Camera,
+        Image,
+        MusicNotes,
+        Newspaper,
+        MapTrifold,
+        ShoppingCart,
+        ShoppingBag,
+        Cpu,
+        Fire,
+        Heartbeat,
+        Car,
+        Hammer,
+        Scales,
+        Globe,
+        Envelope,
+        Ear,
+        Factory,
+        Coffee,
+        Receipt,
+        PiggyBank,
+        Tag,
+        Percent,
         Count
     }
 }
