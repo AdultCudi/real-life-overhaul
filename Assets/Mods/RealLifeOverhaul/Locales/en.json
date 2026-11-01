@@ -28400,8 +28400,6 @@
   "reallife_ui_screen_phone": "Phone",
   "reallife_opt_tip_ui_screen_phone": "The phone at the edge of the screen drawn as a phone in the RLO interface's design, its page arrows always at its foot. Off: the game's phone with the mod's pages.",
   "reallife_ui_staff_app": "My Employees",
-  "reallife_ui_staff_search": "Search names and businesses",
-  "reallife_ui_staff_search_candidates": "Search names",
   "reallife_ui_staff_count": "{shown} of {all}",
   "reallife_ui_staff_pick": "Pick several",
   "reallife_ui_staff_picked": "{count} picked",

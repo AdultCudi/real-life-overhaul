@@ -566,17 +566,18 @@ namespace RealLifeOverhaul.Ui
                 p.Source = e.candidateInfo != null ? e.candidateInfo.GetSource() : null;
                 p.Demands = 0;
                 p.DemandsMet = 0;
+                p.DemandRows = DemandsOf(e, true, p.DemandRows);
                 return p;
             }
             string task = e.GetCurrentTask();
             p.Status = TaskWords(task);
             p.StatusTone = TaskTone(task, e.isAbsent);
-            p.Demands = e.demands != null ? e.demands.Count : 0;
+            p.DemandRows = DemandsOf(e, false, p.DemandRows);
+            p.Demands = p.DemandRows.Length;
             p.DemandsMet = 0;
-            for (int i = 0; i < p.Demands; i++)
+            for (int i = 0; i < p.DemandRows.Length; i++)
             {
-                JobDemand d = JobDemandHelper.GetByName(e.demands[i]);
-                p.DemandsMet += d != null && d.Fulfilled(e, null) ? 1 : 0;   // the game's own rule its box asks
+                p.DemandsMet += p.DemandRows[i].Met > 0 ? 1 : 0;
             }
             return p;
         }
@@ -731,14 +732,13 @@ namespace RealLifeOverhaul.Ui
 
         // The wants and demands from the person's record, each with how much it matters and, for the hired, whether it is
         // met, by the game's own rule its box asks (JobDemand.Fulfilled), and the hours or days scheduled and worked.
-        private void Demands(EmployeeInstance e, StaffPersonView p, bool candidate)
+        private void Demands(EmployeeInstance e, StaffPersonView p, bool candidate) => p.Demands = DemandsOf(e, candidate, p.Demands);
+
+        private static UiStaffDemand[] DemandsOf(EmployeeInstance e, bool candidate, UiStaffDemand[] into)
         {
             List<string> demands = e.demands;
             int n = demands != null ? demands.Count : 0;
-            if (p.Demands.Length != n)
-            {
-                p.Demands = new UiStaffDemand[n];
-            }
+            UiStaffDemand[] rows = into != null && into.Length == n ? into : new UiStaffDemand[n];
             string met = UiText.T("reallife_ui_staff_met"), notMet = UiText.T("reallife_ui_staff_not_met");
             for (int i = 0; i < n; i++)
             {
@@ -754,13 +754,14 @@ namespace RealLifeOverhaul.Ui
                 {
                     note = "myemployees_employee_days".Localize(new { assignedWeeklyDays = e.assignedWeeklyDays.Count, workedDays = e.workedDays }).ToString();
                 }
-                p.Demands[i] = new UiStaffDemand
+                rows[i] = new UiStaffDemand
                 {
                     Icon = DemandIcon(key), Name = key.GetLocalization(), Note = OneLine(note),
                     Priority = d != null ? d.PriorityLocalizeKey.GetLocalization() : null, PriorityTone = d != null ? PriorityTone(d.priority) : UiRole.Muted,
                     Met = candidate || d == null ? -1 : fulfilled ? 1 : 0, MetWords = fulfilled ? met : notMet
                 };
             }
+            return rows;
         }
 
         // A demand's glyph by the game's group for it: hours, schedule, equipment, health insurance, the workplace.

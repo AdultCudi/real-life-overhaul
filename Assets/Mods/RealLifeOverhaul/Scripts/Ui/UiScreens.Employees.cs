@@ -11,7 +11,7 @@ namespace RealLifeOverhaul.Ui
             {
                 new UiScreenDef("my_employees", UiTemplate.AppWindow, "EmployeesScreen", new[]
                 {
-                    "reallife_ui_staff_app", "reallife_ui_staff_search", "reallife_ui_staff_search_candidates", "reallife_ui_staff_count", "reallife_ui_staff_pick",
+                    "reallife_ui_staff_app", "common_search", "reallife_ui_staff_count", "reallife_ui_staff_pick",
                     "reallife_ui_staff_picked", "reallife_ui_staff_done", "reallife_ui_staff_totals", "reallife_ui_staff_none_match", "reallife_ui_staff_none_match_body",
                     "reallife_ui_staff_clear", "reallife_ui_staff_no_candidates", "reallife_ui_staff_no_candidates_body", "reallife_ui_staff_no_staff",
                     "reallife_ui_staff_no_staff_body", "reallife_ui_staff_open", "reallife_ui_staff_demands_met", "reallife_ui_staff_same_skill", "reallife_ui_staff_mates",

@@ -114,7 +114,10 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>The height a table's own parts take besides its rows: the tool row, the head and the foot.</summary>
-        public static float Chrome(UiDataTableModel m) => UiTokens.Control + UiTokens.S3 + UiTokens.Control + UiTokens.S1 + (m.Totals != null ? Foot : 0f);
+        public static float Chrome(UiDataTableModel m) => (HasTools(m) ? UiTokens.Control + UiTokens.S3 : 0f) + UiTokens.Control + UiTokens.S1 + (m.Totals != null ? Foot : 0f);
+
+        // A table read only (no filter, no search, nothing to pick) has no tool row: its head stands where the row would be.
+        private static bool HasTools(UiDataTableModel m) => m.Picking || m.Filters.Length > 0 || !string.IsNullOrEmpty(m.SearchPlaceholder) || !string.IsNullOrEmpty(m.PickWords);
 
         // A person column's head stands over the names, as its rows' words start after the face.
         private static float FaceLead(UiCellKind kind) => kind == UiCellKind.Person ? UiTokens.S1 + UiTokens.AvatarSmall + UiTokens.S3 : 0f;
@@ -182,6 +185,10 @@ namespace RealLifeOverhaul.Ui
         // picking, how many are picked, the mass actions and Done. One row either way, so nothing under it moves.
         private static float Tools(UiScene s, UiAt at, UiDataTableModel m, float x, float y, float w, IUiKeys keys, int command)
         {
+            if (!HasTools(m))
+            {
+                return y;
+            }
             float h = UiTokens.Control;
             if (m.Picking)
             {
@@ -266,7 +273,9 @@ namespace RealLifeOverhaul.Ui
             m.MassFieldW = fw;
             if (!string.IsNullOrEmpty(m.MassFieldTitle) && fx - UiTokens.S4 - left >= UiTokens.S16)
             {
-                UiDraw.TextMiddle(s, at, left, y, h, fx - UiTokens.S4 - left, UiStyle.Body, UiRole.Text2, m.MassFieldTitle, UiFlags.Label | UiFlags.Truncate | UiFlags.Right);
+                // A long translation of what it asks takes a second line in the row rather than being cut.
+                float tw = fx - UiTokens.S4 - left, th = UiTextRules.WrappedHeight(m.MassFieldTitle, UiStyle.Body, tw, 2);
+                UiDraw.Text(s, at, left, y + (h - th) / 2f, tw, UiStyle.Body, UiRole.Text2, m.MassFieldTitle, UiFlags.Label | UiFlags.Wrap | UiFlags.Middle | UiFlags.Right, 2);
             }
             UiDraw.Choice(s, at, fx, y, fw, m.MassField, command + MassChoice, 0, false);
         }

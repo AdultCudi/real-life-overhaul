@@ -28400,8 +28400,6 @@
   "reallife_ui_screen_phone": "Celular",
   "reallife_opt_tip_ui_screen_phone": "O celular na borda da tela desenhado como um celular no visual da interface RLO, com as setas de página sempre no rodapé. Desligado: o celular do jogo com as páginas do mod.",
   "reallife_ui_staff_app": "Meus Funcionários",
-  "reallife_ui_staff_search": "Buscar nomes e empresas",
-  "reallife_ui_staff_search_candidates": "Buscar nomes",
   "reallife_ui_staff_count": "{shown} de {all}",
   "reallife_ui_staff_pick": "Escolher vários",
   "reallife_ui_staff_picked": "{count} escolhidos",

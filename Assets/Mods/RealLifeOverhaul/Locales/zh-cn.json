@@ -28400,8 +28400,6 @@
   "reallife_ui_screen_phone": "手机",
   "reallife_opt_tip_ui_screen_phone": "屏幕边缘的手机以 RLO 界面的外观绘制成一部手机，翻页箭头始终在底部。关闭：使用游戏自带的手机和本模组的分页。",
   "reallife_ui_staff_app": "我的员工",
-  "reallife_ui_staff_search": "搜索姓名和企业",
-  "reallife_ui_staff_search_candidates": "搜索姓名",
   "reallife_ui_staff_count": "显示 {shown} 人，共 {all} 人",
   "reallife_ui_staff_pick": "多选",
   "reallife_ui_staff_picked": "已选 {count} 人",

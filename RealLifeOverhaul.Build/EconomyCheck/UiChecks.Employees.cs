@@ -42,7 +42,8 @@ internal static partial class Program
 
     private static readonly int[] StaffCommands =
     {
-        UiAppWindow.NavCommand, UiAppWindow.ActionCommand, UiStaff.SwitchCommand, UiStaff.AssignCommand, UiStaff.TrainCommand, UiStaff.OptionCommand,
+        UiAppWindow.NavCommand, UiAppWindow.ActionCommand, UiStaff.SwitchCommand, UiStaff.AssignCommand, UiStaff.TrainCommand, UiStaff.OptionCommand, UiStaff.PreviewCommand,
+        UiAppWindow.PersonCommand, UiAppWindow.AllCommand,
         UiDataTable.First + UiDataTable.Head, UiDataTable.First + UiDataTable.Filter, UiDataTable.First + UiDataTable.Search, UiDataTable.First + UiDataTable.Row,
         UiDataTable.First + UiDataTable.Pick, UiDataTable.First + UiDataTable.Mass, UiDataTable.First + UiDataTable.Done, UiDataTable.First + UiDataTable.Clear,
         UiDataTable.First + UiDataTable.MassChoice, UiDataTable.First + UiDataTable.MassAnswer, UiCard.ButtonCommand

@@ -73,6 +73,8 @@ namespace RealLifeOverhaul.Ui
         public int[] BarValues = new int[0];
         public string Note;                        // a line with its mark (their demands met); null for none
         public bool NoteMet;
+        public string DemandsTitle;
+        public UiStaffDemand[] Demands = new UiStaffDemand[0];   // their wants and demands, compact: how much each matters and whether met
         public string Link;                        // the way to their page; null for none
         public UiActionModel[] Actions = new UiActionModel[0];   // the row's own action (negotiate), full width at the foot
     }
@@ -84,7 +86,7 @@ namespace RealLifeOverhaul.Ui
     public sealed class UiStaffModel
     {
         public string Title;
-        public UiIcon Icon = UiIcon.IdBadge;
+        public UiIcon Icon = UiIcon.People;
         public UiNavEntry[] Tabs = new UiNavEntry[0];
         public int Tab;
         public string SwitchLabel;                 // a switch at the right of the tab band (the game's toggle over a tab's table); null for none
@@ -200,6 +202,7 @@ namespace RealLifeOverhaul.Ui
             float content = UiTokens.S4 + face + ring * 2f + UiTokens.S4 + p.RowLabels.Length * UiTokens.PairRow
                             + (p.BarLabels.Length > 0 ? UiTokens.S3 + p.BarLabels.Length * UiTokens.PairRow : 0f)
                             + (string.IsNullOrEmpty(p.Note) ? 0f : UiTokens.S3 + UiTokens.PairRow) + (string.IsNullOrEmpty(p.Link) ? 0f : UiTokens.S2 + UiTokens.Control)
+                            + (p.Demands.Length > 0 ? UiTokens.S6 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2 + p.Demands.Length * UiTokens.ControlSmall : 0f)
                             + (p.Actions.Length > 0 ? UiTokens.S4 + p.Actions.Length * (UiTokens.Control + UiTokens.S2) - UiTokens.S2 : 0f) + UiTokens.S4;
             float ph = UiDraw.Snap(Math.Min(h, content));
             int band = UiDraw.Box(s, at, x, y, w, ph, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
@@ -239,6 +242,18 @@ namespace RealLifeOverhaul.Ui
                 py += UiTokens.S3;
                 py += UiDraw.CheckLine(s, on, ix, py, inner, p.Note, p.NoteMet);
             }
+            if (p.Demands.Length > 0)
+            {
+                py += UiTokens.S6;
+                UiDraw.Text(s, on, ix, py, inner, UiStyle.SectionHeader, UiRole.Text, p.DemandsTitle, UiFlags.Label | UiFlags.Truncate);
+                py += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2;
+                float foot = y + ph - UiTokens.S4 - (string.IsNullOrEmpty(p.Link) ? 0f : UiTokens.S2 + UiTokens.Control);
+                for (int i = 0; i < p.Demands.Length && py + UiTokens.ControlSmall <= foot; i++)
+                {
+                    PreviewDemand(s, on, ref p.Demands[i], ix, py, inner);
+                    py += UiTokens.ControlSmall;
+                }
+            }
             if (!string.IsNullOrEmpty(p.Link))
             {
                 py += UiTokens.S2;
@@ -254,6 +269,29 @@ namespace RealLifeOverhaul.Ui
                     py += UiTokens.Control + UiTokens.S2;
                 }
             }
+        }
+
+        // A demand on one compact row of the preview: its kind's glyph, its name, how much it matters, and whether it is met.
+        private static void PreviewDemand(UiScene s, UiAt at, ref UiStaffDemand d, float x, float y, float w)
+        {
+            float h = UiTokens.ControlSmall;
+            UiDraw.Icon(s, at, x, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, d.Icon, UiRole.None, UiFlags.Middle, true);
+            float right = x + w;
+            if (d.Met >= 0)
+            {
+                right -= UiTokens.Icon;
+                UiDraw.Icon(s, at, right, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, d.Met > 0 ? UiIcon.Check : UiIcon.Warning, UiRole.None, UiFlags.Middle, true);
+                right -= UiTokens.S2;
+            }
+            if (!string.IsNullOrEmpty(d.Priority))
+            {
+                float chip = Math.Min(UiDraw.SnapDown(w * 0.42f), UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(d.Priority, UiStyle.SmallStrong) + UiTokens.S1));
+                right -= chip;
+                UiDraw.Chip(s, at, right, y + (h - UiTokens.Badge - UiTokens.S1) / 2f, d.Priority, d.PriorityTone, chip);
+                right -= UiTokens.S2;
+            }
+            float tx = x + UiTokens.Icon + UiTokens.S2;
+            UiDraw.TextMiddle(s, at, tx, y, h, right - tx, UiStyle.Body, UiRole.Text, d.Name, UiFlags.Truncate);
         }
 
         /// <summary>

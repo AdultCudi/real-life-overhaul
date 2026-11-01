@@ -117,7 +117,7 @@ internal static partial class UiSamples
                 break;
             default:
                 Squad(t, v, 40);
-                v.SortColumn = 6;
+                v.SortColumn = 4;
                 v.SortDown = true;
                 break;
         }
@@ -143,7 +143,8 @@ internal static partial class UiSamples
         v.Preview = new StaffPreviewView
         {
             Name = top.Name, Role = top.Role, RoleIcon = StaffViews.SkillIcon(Skills[2]), Business = top.Business, Status = top.Task, StatusTone = top.TaskTone, Skill = top.Skill,
-            Satisfaction = top.Satisfaction, Age = 31, Hours = 28, Wage = top.Wage, Demands = 6, DemandsMet = 4
+            Satisfaction = top.Satisfaction, Age = 31, Hours = 28, Wage = top.Wage, Demands = 7, DemandsMet = 4,
+            DemandRows = PersonSample(t, top.Name, false, false, false).Demands
         };
     }
 
@@ -193,7 +194,8 @@ internal static partial class UiSamples
         {
             Candidate = true, Name = rows[0].Name, Role = rows[0].Role, RoleIcon = StaffViews.SkillIcon(Skills[2]), Skill = rows[0].Skill, Age = 27, Wage = rows[0].Wage,
             Schedule = rows[0].Schedule, Source = rows[0].Source, Expires = rows[0].Expires,
-            Status = StaffViews.Fill(t("reallife_ui_staff_expires", "Expires in {time}"), "time", rows[0].Expires), StatusTone = UiRole.Warn
+            Status = StaffViews.Fill(t("reallife_ui_staff_expires", "Expires in {time}"), "time", rows[0].Expires), StatusTone = UiRole.Warn,
+            DemandRows = PersonSample(t, rows[0].Name, true, false, false).Demands
         };
     }
 

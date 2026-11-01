@@ -56,6 +56,7 @@ namespace RealLifeOverhaul.Ui
         public int Age, Hours;
         public string Wage, Schedule, Source, Expires;
         public int DemandsMet, Demands;
+        public UiStaffDemand[] DemandRows = new UiStaffDemand[0];
     }
 
     /// <summary>Someone beside a person: a colleague at the same business, or (for a candidate) one of the staff of that skill.</summary>
@@ -154,6 +155,7 @@ namespace RealLifeOverhaul.Ui
     {
         public const int Business = 0;    // the employees' filter row: business (the kit's own), skill, demand, status
         public const int ColumnSkill = 2, ColumnWage = 3;
+        public const string StaffApp = "MyEmployees", RivalsApp = "Rivals";   // the game's names for the apps, as the phone's looks know them
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
@@ -161,7 +163,7 @@ namespace RealLifeOverhaul.Ui
         public static void Staff(UiStaffModel m, UiWords t, StaffView v)
         {
             m.Title = t("reallife_ui_staff_app", "My Employees");
-            m.Icon = UiIcon.IdBadge;
+            m.Icon = PhoneLooks.Glyph(StaffApp);   // the app's own glyph, as the phone and the status bar's row show it
             m.Tabs = new[]
             {
                 new UiNavEntry { Icon = UiIcon.People, Tint = UiIconTints.Of(UiIcon.People), Label = t("myemployees_employees_tab", "Employees"), Count = Whole(v.EmployeeCount) },
@@ -212,7 +214,7 @@ namespace RealLifeOverhaul.Ui
             table.RowCount = table.Rows.Length;
             table.Selected = v.Selected;
             table.Filters = v.Filters ?? new string[0];
-            table.SearchPlaceholder = v.Candidates ? t("reallife_ui_staff_search_candidates", "Search names") : t("reallife_ui_staff_search", "Search names and businesses");
+            table.SearchPlaceholder = t("common_search", "Search");
             table.Query = string.IsNullOrEmpty(v.Query) ? null : v.Query;
             table.Count = Fill(t("reallife_ui_staff_count", "{shown} of {all}"), "shown", Whole(table.RowCount), "all", Whole(v.Candidates ? v.CandidateCount : v.EmployeeCount));
             table.Picking = v.Picking;
@@ -304,7 +306,8 @@ namespace RealLifeOverhaul.Ui
             var p = new UiStaffPreview
             {
                 Name = v.Name, Hue = UiColour.HueOf(v.Name ?? string.Empty), Ring = v.Candidate ? UiRole.None : Mood(Math.Max(0, v.Satisfaction)), Role = v.Role, RoleIcon = v.RoleIcon,
-                Status = v.Status, StatusTone = v.StatusTone, Link = t("reallife_ui_staff_open", "Open their page")
+                Status = v.Status, StatusTone = v.StatusTone, Link = t("reallife_ui_staff_open", "Open their page"),
+                DemandsTitle = t("myemployees_wants_and_demands", "Wants & Demands"), Demands = v.DemandRows ?? new UiStaffDemand[0]
             };
             if (v.Candidate)
             {
@@ -583,7 +586,7 @@ namespace RealLifeOverhaul.Ui
         public static void Rival(UiStaffModel m, UiWords t, string title, RivalRow[] rows, int chosen)
         {
             m.Title = title;
-            m.Icon = UiIcon.Flag;
+            m.Icon = PhoneLooks.Glyph(RivalsApp);
             m.Tabs = new UiNavEntry[0];
             m.SwitchLabel = null;
             m.Person = null;

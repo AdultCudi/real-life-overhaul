@@ -73,7 +73,7 @@ namespace RealLifeOverhaul.Ui
 
             public string Title => UiText.T("smartphone_myemployees");
 
-            public UiIcon Icon => UiIcon.IdBadge;
+            public UiIcon Icon => PhoneLooks.Glyph(StaffViews.StaffApp);
 
             public UiGameKind Kind => UiGameKind.App;
 
@@ -107,7 +107,7 @@ namespace RealLifeOverhaul.Ui
 
             public string Title => UiText.T("smartphone_rivals");
 
-            public UiIcon Icon => UiIcon.Flag;
+            public UiIcon Icon => PhoneLooks.Glyph(StaffViews.RivalsApp);
 
             public UiGameKind Kind => UiGameKind.Box;
 

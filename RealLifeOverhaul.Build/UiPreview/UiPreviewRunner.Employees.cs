@@ -13,7 +13,7 @@ public static partial class UiPreviewRunner
             bool person = st.StartsWith("person") || st == "training_card";
             var screen = new Screen
             {
-                Name = "staff_" + st, AppName = "My Employees", Icon = UiIcon.IdBadge, Backdrop = st == "training_card" ? "05.jpg" : st.EndsWith("_fr") ? "11.jpg" : "13.jpg",
+                Name = "staff_" + st, AppName = "My Employees", Icon = UiIcon.People, Backdrop = st == "training_card" ? "05.jpg" : st.EndsWith("_fr") ? "11.jpg" : "13.jpg",
                 Bar = () => UiSamples.ShellBar(4, false), Lay = (s, f, d, k) => UiStaff.Lay(s, UiSamples.Staff(English, st), f, d, k)
             };
             if (st == "training_card")
