@@ -12,7 +12,7 @@ internal static partial class Program
         PopulationState s = PopulationCity(out List<BusinessSeed> seeds);
         int shop = seeds.FindIndex(x => x.Type == "ba:businesstype_clothingstore");
         BusinessSeed mine = seeds[shop];
-        mine.Owner = Owner.Player;
+        mine.Owner = RealLifeOverhaul.Population.Owner.Player;
         mine.Staff = 2;
         seeds[shop] = mine;
         var sim = new PopulationSim();

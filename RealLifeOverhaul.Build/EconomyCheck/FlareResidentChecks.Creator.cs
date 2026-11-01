@@ -36,7 +36,7 @@ internal static partial class Program
             }
             made++;
             int b = s.BusinessOfKey(o.Key);
-            mine |= b < 0 || s.Businesses.Owner[b] == (byte)Owner.Player || s.Businesses.Owner[b] == (byte)Owner.Guest;
+            mine |= b < 0 || s.Businesses.Owner[b] == (byte)RealLifeOverhaul.Population.Owner.Player || s.Businesses.Owner[b] == (byte)RealLifeOverhaul.Population.Owner.Guest;
             sponsors += o.Posts > 1 ? 1 : 0;
             open = 0;
             foreach (FlareOffer x in top.Offers)

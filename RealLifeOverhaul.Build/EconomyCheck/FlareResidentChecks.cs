@@ -449,7 +449,7 @@ internal static partial class Program
         bool notPlayers = true;
         for (int i = 0; i < n; i++)
         {
-            notPlayers &= s.Businesses.Owner[into[i]] != (byte)Owner.Player;
+            notPlayers &= s.Businesses.Owner[into[i]] != (byte)RealLifeOverhaul.Population.Owner.Player;
         }
         Check(n > 0 && notPlayers, "flare city ads: the city's own businesses run ads too, by the same rules (" + n + " today)");
     }

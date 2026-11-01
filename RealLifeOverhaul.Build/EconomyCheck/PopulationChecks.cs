@@ -146,7 +146,7 @@ internal static partial class Program
             {
                 seeds.Add(new BusinessSeed
                 {
-                    Street = b.Street, Number = b.Number, Type = type, Owner = Owner.City, Room = pull, Hours = 12, Price = 1000, Quality = 50, Content = 50, Staff = -1,
+                    Street = b.Street, Number = b.Number, Type = type, Owner = RealLifeOverhaul.Population.Owner.City, Room = pull, Hours = 12, Price = 1000, Quality = 50, Content = 50, Staff = -1,
                     Promotion = 500 + 750 * b.Traffic / 100
                 });
             }
