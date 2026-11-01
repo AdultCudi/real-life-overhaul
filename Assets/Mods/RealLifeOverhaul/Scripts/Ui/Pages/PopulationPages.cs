@@ -106,7 +106,8 @@ namespace RealLifeOverhaul.Ui
                 }
                 else
                 {
-                    m.Table.Rows[i] = new[] { title, string.IsNullOrEmpty(r.Subtitle) ? string.Empty : Clean(t(r.Subtitle, r.Subtitle), place), Write(ViewFigure.Of(null, r.Value, r.Format), t, money) };
+                    string sub = string.IsNullOrEmpty(r.Subtitle) ? string.Empty : Clean(t(r.Subtitle, r.Subtitle), place);
+                    m.Table.Rows[i] = new[] { title, sub, Write(ViewFigure.Of(null, r.Value, r.Format), t, money) };
                 }
                 m.Table.Leads[i] = r.Target.Valid;
             }

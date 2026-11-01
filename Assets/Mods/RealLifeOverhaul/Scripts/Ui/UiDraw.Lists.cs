@@ -84,7 +84,8 @@ namespace RealLifeOverhaul.Ui
                 float kh = UiTextRules.WrappedHeight(key, UiStyle.Small, kw, 2);
                 Text(s, at, x, y + (h - kh) / 2f, kw, UiStyle.Small, UiRole.Muted, key, UiFlags.Label | UiFlags.Wrap | UiFlags.Middle, 2);
             }
-            TextMiddle(s, at, x + kw + UiTokens.S3, y, h, w - kw - UiTokens.S3, UiStyle.Body, UiRole.Text, value, UiFlags.Right | UiFlags.Truncate);   // the serif's even figures line up down the column
+            // The value in the serif, whose figures are all one width, so a column of them lines up.
+            TextMiddle(s, at, x + kw + UiTokens.S3, y, h, w - kw - UiTokens.S3, UiStyle.Body, UiRole.Text, value, UiFlags.Right | UiFlags.Truncate);
             Box(s, at, x, y + h - UiTokens.Hairline, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             return h;
         }
