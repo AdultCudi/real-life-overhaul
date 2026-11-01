@@ -277,7 +277,7 @@ namespace RealLifeOverhaul.Ui
             0xD9D1C21A,   // RowEdge: 10%
             0x24221DFF,   // Field
             0x282621FF,   // Bubble
-            0x2C2A25FF,   // Hover
+            0x22201CFF,   // Hover: a quiet step over the panel, well under the selection's fill
             0x2C241FFF,   // RowSel: the salmon in the ink
             0xE39A8166,   // RowSelEdge: the salmon at 40%
             0xDAD2C3FF,   // Text: a soft warm white, 9.5:1 at worst and easy at night
@@ -300,7 +300,7 @@ namespace RealLifeOverhaul.Ui
             0xDAD2C3FF,   // NoticeText
             0xD9D1C21F,   // Line: a hairline rule
             0xD9D1C21C,   // Track
-            0x0D0C0AD9,   // Scrim: the ink at 85%, no blur
+            0x0D0C0AE6,   // Scrim: the ink at 90%, no blur, so nothing bright behind a question reads as part of it
             0xE39A81FF,   // Focus
             0xDAD2C3FF,   // PromptInk: the band is the kit's own and flat
             0x12110E99,   // PromptCap
@@ -318,7 +318,7 @@ namespace RealLifeOverhaul.Ui
             0x2A221A1F,   // RowEdge: 12%
             0xDACDBBFF,   // Field
             0xD5C6B2FF,   // Bubble
-            0xD2C2ADFF,   // Hover
+            0xDFD3C3FF,   // Hover: a quiet step under the panel, well short of the selection's fill
             0xE2C5B4FF,   // RowSel: the claret in the paper
             0x8E1E3F66,   // RowSelEdge: the claret at 40%
             0x221D17FF,   // Text: the ink, a warm black
@@ -340,8 +340,8 @@ namespace RealLifeOverhaul.Ui
             0xD0BEA8FF,   // Notice
             0x352E26FF,   // NoticeText
             0x2A221A24,   // Line: a hairline rule
-            0x2A221A1C,   // Track
-            0x2A221A73,   // Scrim: the ink at 45%, so a question dims the page rather than whitening it
+            0x2A221A33,   // Track: 20%, so an empty track or switch still shows on the paper
+            0x2A221A8C,   // Scrim: the ink at 55%, so a question dims the page rather than whitening it
             0x8E1E3FFF,   // Focus
             0x221D17FF,   // PromptInk
             0xE6DBCCFF,   // PromptCap

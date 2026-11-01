@@ -28103,8 +28103,12 @@
   "reallife_ui_pop_last_month": "Last month",
   "reallife_ui_pop_home": "Home and money",
   "reallife_ui_gallery_col_kind": "Kind",
-  "reallife_studio_next_hire": "Next: hire programmers and designers for {studio} in the Business app, then set their roles in Open Roles, on its Team tab.",
+  "reallife_studio_next_hire": "Next: hire engineers and designers for {studio}, so it can start a game.",
   "reallife_studio_page_needed_how": "To fill a group, hire people in the Business app, then set their roles in Open Roles, on its Team tab.",
   "reallife_pop_rows_lives_with": "Lives with",
-  "reallife_pop_empty_alone": "They live alone."
+  "reallife_pop_empty_alone": "They live alone.",
+  "reallife_ui_flare_did": "{what}: {came} came, {spent} spent",
+  "reallife_ui_flare_trend_did": "{stage}: {moved} moved, {days} days left",
+  "reallife_ui_pop_age": "Age {age}",
+  "reallife_ui_pop_gone_body": "People leave the city when they move away or pass on. Back takes you to where you were."
 }

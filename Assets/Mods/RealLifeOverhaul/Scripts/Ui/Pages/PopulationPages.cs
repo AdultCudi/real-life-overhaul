@@ -19,20 +19,25 @@ namespace RealLifeOverhaul.Ui
 
         public static UiDashboardModel Model(PopulationView v, UiWords t, Func<long, string> money, Func<int, bool, string> nameOf, Func<string, string> place)
         {
-            bool empty = v.Hero.Count == 0 && v.Rows.Count == 0 && v.Details.Count == 0;
+            bool empty = v.Gone || (v.Hero.Count == 0 && v.Rows.Count == 0 && v.Details.Count == 0);
             var m = new UiDashboardModel
             {
                 Title = empty ? null : Title(v.Title, v.TitleKey, v.NameSeed, v.Female, t, nameOf, place),
                 SideTitle = t("reallife_ui_page_details", "Details"),
             };
             m.Table = new UiTableModel { EmptyTitle = Clean(t(v.Empty ?? "reallife_ui_page_empty", "Nothing here yet"), place) };
+            if (v.Gone)
+            {
+                // One sentence alone told the player nothing (the critic, 1 Nov): say what happened and the way on.
+                m.Table.EmptyBody = t("reallife_ui_pop_gone_body", "People leave the city when they move away or pass on. Back takes you to where you were.");
+            }
             if (!empty && v.Kind == ViewKind.Household)
             {
                 Ledger(m, v, t, money, nameOf, place);
             }
             else if (!empty && v.Kind == ViewKind.Person)
             {
-                Profile(m, v, t, money);
+                Profile(m, v, t, money, nameOf);
             }
             else
             {
@@ -49,7 +54,7 @@ namespace RealLifeOverhaul.Ui
                 leads |= v.Rows[i].Target.Valid;
             }
             var prompts = new System.Collections.Generic.List<UiPrompt>(4) { new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") } };
-            if (leads && m.Shape != UiPageShape.Profile)
+            if (leads && !empty)
             {
                 prompts.Add(new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_select", "Select") });   // only where a row opens something
             }
@@ -137,6 +142,12 @@ namespace RealLifeOverhaul.Ui
                 new UiLedgerSection { Title = t("reallife_ui_pop_last_month", "Last month"), Lines = month },
                 new UiLedgerSection { Title = t("reallife_ui_pop_home", "Home and money"), Lines = home },
             };
+            People(m, v, t, money, nameOf, place);
+        }
+
+        // The people a page lists (a household's, those a person lives with) as rows with their faces, each one's age said as an age.
+        private static void People(UiDashboardModel m, PopulationView v, UiWords t, Func<long, string> money, Func<int, bool, string> nameOf, Func<string, string> place)
+        {
             m.EntriesTitle = string.IsNullOrEmpty(v.RowsHeader) ? null : t(v.RowsHeader, v.RowsHeader);
             m.Entries = new UiRowModel[v.Rows.Count];
             m.EntryLeads = new bool[v.Rows.Count];
@@ -144,24 +155,36 @@ namespace RealLifeOverhaul.Ui
             {
                 ViewRow r = v.Rows[i];
                 string name = Title(r.Title, r.TitleKey, r.NameSeed, r.Female, t, nameOf, place);
+                string figure = Write(ViewFigure.Of(null, r.Value, r.Format), t, money);
                 m.Entries[i] = new UiRowModel
                 {
                     Name = name, Preview = string.IsNullOrEmpty(r.Subtitle) ? string.Empty : Clean(t(r.Subtitle, r.Subtitle), place),
-                    Time = Write(ViewFigure.Of(null, r.Value, r.Format), t, money), Hue = UiColour.HueOf(name)
+                    Time = r.Format == ViewFormat.Years ? t("reallife_ui_pop_age", "Age {age}").Replace("{age}", figure) : figure, Hue = UiColour.HueOf(name)
                 };
                 m.EntryLeads[i] = r.Target.Valid;
             }
             m.EntryCount = m.Entries.Length;
         }
 
-        // A person as a profile: their face, name and state on a card, their figures and facts beside it.
-        private static void Profile(UiDashboardModel m, PopulationView v, UiWords t, Func<long, string> money)
+        // A person as a profile: their face, name and state across its head, their figures and facts, and the people they live
+        // with (or the words that they live alone). Pay and hours of nothing are left out: the state already says why.
+        private static void Profile(UiDashboardModel m, PopulationView v, UiWords t, Func<long, string> money, Func<int, bool, string> nameOf)
         {
             m.Shape = UiPageShape.Profile;
             m.Hue = UiColour.HueOf(m.Title);
             m.Subtitle = string.IsNullOrEmpty(v.Subtitle) ? null : t(v.Subtitle, v.Subtitle);
-            Figures(m, v, t, money);
+            var figures = new System.Collections.Generic.List<UiFigureModel>(UiDashboard.MostFigures);
+            for (int i = 0; i < v.Hero.Count && figures.Count < UiDashboard.MostFigures; i++)
+            {
+                if (v.Hero[i].Value != 0 || v.Hero[i].Format == ViewFormat.Years)
+                {
+                    figures.Add(new UiFigureModel { Label = t(v.Hero[i].Label, v.Hero[i].Label), Value = Write(v.Hero[i], t, money) });
+                }
+            }
+            m.Figures = figures.ToArray();
+            m.FigureCount = m.Figures.Length;
             Details(m, v, t, money, null);
+            People(m, v, t, money, nameOf, null);
         }
 
         private static void Figures(UiDashboardModel m, PopulationView v, UiWords t, Func<long, string> money)

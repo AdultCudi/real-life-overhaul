@@ -74,6 +74,14 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
         public static void PromptBar(UiScene s, UiFrame frame, IUiKeys keys)
         {
+            string owner = BackOwner(s);
+            for (int i = 0; owner != null && i < s.PromptCount; i++)
+            {
+                if (s.Prompts[i].Action == UiAction.Back)
+                {
+                    s.Prompts[i].Label = owner;
+                }
+            }
             if (frame.Pointer)
             {
                 int kept = 0;
@@ -87,6 +95,21 @@ namespace RealLifeOverhaul.Ui
                 s.PromptCount = kept;
             }
             PromptBar(s, 0f, frame.BandY, frame.Width, frame.Band, keys);
+        }
+
+        // The words of the button that answers Escape on the top layer (a form's Cancel, a question's Keep), or null.
+        private static string BackOwner(UiScene s)
+        {
+            int node = UiFocusRules.Keyed(s, UiAction.Back);
+            int face = node >= 0 ? s.Nodes[node].Face : -1;
+            for (int i = face + 1; face >= 0 && i < s.ItemCount; i++)
+            {
+                if (s.Items[i].Kind == UiKind.Text && (s.Items[i].Flags & UiFlags.Label) != 0 && Inside(s, i, face) && !string.IsNullOrEmpty(s.Items[i].Text))
+                {
+                    return s.Items[i].Text;
+                }
+            }
+            return null;
         }
 
         public static void PromptBar(UiScene s, float x, float y, float w, float h, IUiKeys keys)
@@ -152,7 +175,7 @@ namespace RealLifeOverhaul.Ui
             float ch = Snap(UiTokens.S8 + th + UiTokens.S3 + bh + UiTokens.S6 + UiTokens.Control + UiTokens.S8);
             float cx = areaX + SnapDown((areaW - cw) / 2f), cy = areaY + SnapDown((areaH - ch) / 2f);
             var at = new UiAt { Parent = -1, Clip = -1, Layer = 1, Order = -1 };
-            int card = Box(s, at, cx, cy, cw, ch, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
+            int card = Box(s, at, cx, cy, cw, ch, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);   // its edge parts it from the dimmed page
             UiAt inside = at.In(card);
             Text(s, inside, cx + UiTokens.S8, cy + UiTokens.S8, inner, UiStyle.SectionTitle, UiRole.Text, title, UiFlags.Label);
             Text(s, inside, cx + UiTokens.S8, cy + UiTokens.S8 + th + UiTokens.S3, inner, UiStyle.Body, UiRole.Text2, body, UiFlags.Wrap | UiFlags.Label | UiFlags.Middle, 6);
@@ -185,7 +208,7 @@ namespace RealLifeOverhaul.Ui
             float total = size + UiTokens.S6 + Snap(nameH + UiTokens.S2 + stateH) + UiTokens.S8 + rowsH + UiTokens.S16;
             float cardW = colW + UiTokens.S8 * 2f, cardH = Snap(total + UiTokens.S8 * 2f);
             float cardX = areaX + SnapDown((areaW - cardW) / 2f), cardY = areaY + SnapDown(Math.Max(0f, (areaH - cardH) / 2f));
-            int card = Box(s, on, cardX, cardY, cardW, cardH, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
+            int card = Box(s, on, cardX, cardY, cardW, cardH, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);   // its edge parts it from the dimmed page
             UiAt at = on.In(card);
             float top = cardY + UiTokens.S8 + UiTokens.S1;
             float cx = cardX + SnapDown((cardW - size) / 2f);
@@ -211,7 +234,7 @@ namespace RealLifeOverhaul.Ui
             y += optionCount > 0 ? UiTokens.S4 : 0f;
             float ex = cardX + SnapDown((cardW - UiTokens.S16) / 2f);
             int endFace = Circle(s, at, ex, y, UiTokens.S16, UiTokens.S16, UiRole.Danger);
-            TextMiddle(s, at.In(endFace), ex, y, UiTokens.S16, UiTokens.S16, UiStyle.Title, UiRole.OnAccent, end, UiFlags.Centre | UiFlags.Label);
+            TextMiddle(s, at.In(endFace), ex, y, UiTokens.S16, UiTokens.S16, UiStyle.Button, UiRole.OnAccent, end, UiFlags.Centre | UiFlags.Label);   // a button's words, as every button has
             int n = Node(s, at, ex, y, UiTokens.S16, UiTokens.S16, endCommand, 0, endFace);
             if (optionCount == 0)
             {

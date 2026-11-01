@@ -109,7 +109,7 @@ namespace RealLifeOverhaul.Ui
             bool loudCount = false)
         {
             float h = UiTokens.Control;
-            int face = Box(s, at, x, y, w, h, selected ? UiRole.AccentSoft : UiRole.None, UiRole.None, UiTokens.RadiusLarge, selected ? UiFlags.Selected : UiFlags.None);
+            int face = Box(s, at, x, y, w, h, UiRole.None, UiRole.None, UiTokens.RadiusLarge, selected ? UiFlags.Selected : UiFlags.None);   // no fill: one loud highlight a screen
             UiAt inside = at.In(face);
             if (selected)
             {

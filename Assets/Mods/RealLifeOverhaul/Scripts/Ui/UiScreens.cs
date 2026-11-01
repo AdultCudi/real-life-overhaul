@@ -90,12 +90,13 @@ namespace RealLifeOverhaul.Ui
             new UiScreenDef("population", UiTemplate.Dashboard, "PopulationScreen", new[]
             {
                 "reallife_ui_page_details", "reallife_ui_page_empty", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back",
-                "reallife_pop_view_city", "reallife_ui_pop_household", "reallife_ui_pop_household_plain", "reallife_ui_pop_last_month", "reallife_ui_pop_home"
+                "reallife_pop_view_city", "reallife_ui_pop_household", "reallife_ui_pop_household_plain", "reallife_ui_pop_last_month", "reallife_ui_pop_home",
+                "reallife_ui_pop_age", "reallife_ui_pop_gone_body"
             }),
             new UiScreenDef("flare_city", UiTemplate.Dashboard, "FlareCityScreen", new[]
             {
                 "reallife_ui_flare_tab_account", "reallife_ui_flare_tab_trends", "reallife_ui_flare_tab_offers", "reallife_ui_page_details", "reallife_ui_page_empty",
-                "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_page", "reallife_ui_prompt_back"
+                "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_page", "reallife_ui_prompt_back", "reallife_ui_flare_did", "reallife_ui_flare_trend_did"
             }),
             new UiScreenDef("studio", UiTemplate.Dashboard, "StudioPageScreen", new[]
             {

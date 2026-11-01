@@ -185,8 +185,18 @@ public static class UiPreviewRunner
             view.SetFocus(focus, false, 0f);
             if (shot.Hover)
             {
+                // As the host takes a hover: only on the top layer, so an open question or call leaves the page under it still.
+                int top = UiFocusRules.TopLayer(scene);
                 int hover = shot.Screen.HoverCommand >= 0 ? scene.FindNode(shot.Screen.HoverCommand, shot.Screen.HoverArg) : -1;
-                view.SetHover(hover >= 0 ? hover : scene.NodeCount > 1 ? 1 : 0);
+                if (hover < 0 || scene.Nodes[hover].Layer != top)
+                {
+                    hover = -1;
+                    for (int n = 0; n < scene.NodeCount && hover < 0; n++)
+                    {
+                        hover = scene.Nodes[n].Layer == top && n != focus ? n : -1;
+                    }
+                }
+                view.SetHover(hover);
             }
             if (shot.Path && focus >= 0)
             {

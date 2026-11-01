@@ -45,7 +45,8 @@ namespace RealLifeOverhaul.Ui
         // ------------------------------------------------------------------------------------------------- profile
 
         // A person's page as one profile: their face, name and state across its head with where the page leads at the right
-        // (as Contacts heads a contact), then their figures, then their facts in two columns, each part ruled off the next.
+        // (as Contacts heads a contact), then their figures, their facts in two columns and the people they live with, each
+        // part ruled off the next. The name stands here alone: the masthead leaves it out.
         private static void Profile(UiScene s, UiAt at, UiDashboardModel m, float x, float y, float w, IUiKeys keys)
         {
             const float face = UiTokens.AvatarHero;
@@ -54,8 +55,12 @@ namespace RealLifeOverhaul.Ui
             int figures = Math.Min(m.FigureCount, MostFigures);
             float stripH = figures > 0 ? StripHeight(m) : 0f;
             int rows = (m.SideCount + 1) / 2;
+            bool people = !string.IsNullOrEmpty(m.EntriesTitle);
+            int pairs = (m.EntryCount + 1) / 2;
+            float peopleH = m.EntryCount > 0 ? pairs * (UiTokens.Row + UiTokens.S2) - UiTokens.S2 : UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body));
             float headH = UiTokens.S6 + face + UiTokens.S6;
-            float h = headH + (figures > 0 ? UiTokens.S5 + stripH + UiTokens.S5 : 0f) + (m.SideCount > 0 ? UiTokens.S5 + Caption() + rows * UiTokens.PairRow + UiTokens.S4 : 0f);
+            float h = headH + (figures > 0 ? UiTokens.S5 + stripH + UiTokens.S5 : 0f) + (m.SideCount > 0 ? UiTokens.S5 + Caption() + rows * UiTokens.PairRow + UiTokens.S4 : 0f)
+                      + (people ? UiTokens.S5 + Caption() + peopleH + UiTokens.S5 : 0f);
             int panel = UiDraw.Box(s, at, x, y, w, UiDraw.Snap(h), UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt inside = at.In(panel);
             float fx = x + UiTokens.S6, fy = y + UiTokens.S6;
@@ -99,6 +104,27 @@ namespace RealLifeOverhaul.Ui
                     float cx = x + UiTokens.S5 + (i < rows ? 0f : colW + UiTokens.S12);
                     UiDraw.KeyValue(s, inside, cx, py + (i % rows) * UiTokens.PairRow, colW, m.Side[i].Key, m.Side[i].Value);
                 }
+                py += rows * UiTokens.PairRow + UiTokens.S4;
+            }
+            if (!people)
+            {
+                return;
+            }
+            UiDraw.Box(s, inside, x + UiTokens.S5, py, w - UiTokens.S5 * 2f, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
+            py += UiTokens.S5;
+            UiDraw.Text(s, inside, x + UiTokens.S5, py, w - UiTokens.S5 * 2f, UiStyle.SectionHeader, UiRole.Muted, m.EntriesTitle, UiFlags.Label | UiFlags.Truncate);
+            py += Caption();
+            if (m.EntryCount == 0)
+            {
+                UiDraw.Text(s, inside, x + UiTokens.S5, py, w - UiTokens.S5 * 2f, UiStyle.Body, UiRole.Text2, m.Table.EmptyTitle, UiFlags.Label | UiFlags.Truncate);
+                return;
+            }
+            float pw = UiDraw.SnapDown((w - UiTokens.S4 * 2f - UiTokens.S8) / 2f);
+            for (int i = 0; i < m.EntryCount; i++)
+            {
+                bool leads = m.EntryLeads == null || (i < m.EntryLeads.Length && m.EntryLeads[i]);
+                float ex = x + UiTokens.S4 + (i < pairs ? 0f : pw + UiTokens.S8), ey = py + (i % pairs) * (UiTokens.Row + UiTokens.S2);
+                UiDraw.ListRow(s, inside.Arriving(i), ex, ey, pw, ref m.Entries[i], RowCommand, i, -1, i, leads, true);
             }
         }
 
@@ -231,11 +257,9 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < m.EntryCount && ey + UiTokens.Row <= y + h - UiTokens.S5 + 0.5f; i++)
             {
                 bool leads = m.EntryLeads == null || (i < m.EntryLeads.Length && m.EntryLeads[i]);
-                if (i > 0)
-                {
-                    UiDraw.Box(s, inside, x + UiTokens.S5, ey - UiTokens.S1 - UiTokens.Hairline, w - UiTokens.S5 * 2f, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
-                }
                 UiDraw.ListRow(s, inside.Arriving(i), x + UiTokens.S4, ey, w - UiTokens.S8, ref m.Entries[i], RowCommand, i, -1, i, leads, true);
+                UiDraw.Box(s, inside, x + UiTokens.S5, ey + UiTokens.Row + UiTokens.S1 - UiTokens.Hairline, w - UiTokens.S5 * 2f, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f,
+                    UiFlags.Decor);
                 ey += UiTokens.Row + UiTokens.S2;
             }
         }

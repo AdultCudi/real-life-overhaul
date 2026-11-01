@@ -203,7 +203,7 @@ namespace RealLifeOverhaul.Ui
             {
                 if (m.Rows[i].Section != null)
                 {
-                    ry += UiDraw.SectionHeader(s, p, x + UiTokens.S4, ry - UiTokens.S4, col - UiTokens.S8, m.Rows[i].Section) - UiTokens.S2;
+                    ry += (i > 0 ? UiTokens.S4 : 0f) + UiDraw.SectionHeader(s, p, x + UiTokens.S4, ry - UiTokens.S4 + (i > 0 ? UiTokens.S4 : 0f), col - UiTokens.S8, m.Rows[i].Section) - UiTokens.S2;
                 }
                 UiDraw.ListRow(s, p.Arriving(i), x + UiTokens.S4, ry, col - UiTokens.S8, ref m.Rows[i], Sample, 30 + i, -1, i);
                 ry += UiTokens.Row + UiTokens.S2;

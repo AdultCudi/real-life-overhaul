@@ -122,7 +122,7 @@ namespace RealLifeOverhaul.Population
             v.Hero.Add(ViewFigure.Of("reallife_pop_fig_unemployment", Share(unemployed, workers + unemployed), ViewFormat.Permille));
             v.Hero.Add(ViewFigure.Of("reallife_pop_fig_rent", renters > 0 ? rent / renters / 100 : 0, ViewFormat.Money));
             v.RowsHeader = "reallife_pop_rows_districts";
-            v.Columns = new[] { "reallife_pop_fig_households", "reallife_pop_fig_people", "reallife_pop_fig_unemployment", "reallife_pop_fig_rent" };
+            v.Columns = new[] { "reallife_pop_fig_people", "reallife_pop_fig_households", "reallife_pop_fig_unemployment", "reallife_pop_fig_rent" };   // the strip's order
             v.ColumnFormats = new[] { ViewFormat.Count, ViewFormat.Count, ViewFormat.Permille, ViewFormat.Money };
             var order = new List<int>(s.Figures.Length);
             for (int d = 0; d < s.Figures.Length && d < s.Districts.Count; d++)
@@ -140,7 +140,7 @@ namespace RealLifeOverhaul.Population
                 v.Rows.Add(new ViewRow
                 {
                     Title = s.Districts[d].Id, TitleKey = true, Value = f.People, Format = ViewFormat.Count, Target = ViewTarget.To(ViewKind.District, d),
-                    Figures = new long[] { f.Households, f.People, Share(f.Unemployed, f.Workers + f.Unemployed), f.MeanRent / 100 }
+                    Figures = new long[] { f.People, f.Households, Share(f.Unemployed, f.Workers + f.Unemployed), f.MeanRent / 100 }
                 });
             }
             v.Details.Add(ViewFigure.Of("reallife_pop_fig_births", s.BirthsLast, ViewFormat.Count));

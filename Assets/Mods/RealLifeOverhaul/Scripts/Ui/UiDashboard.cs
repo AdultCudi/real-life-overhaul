@@ -74,7 +74,7 @@ namespace RealLifeOverhaul.Ui
                     s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
                 }
                 UiDraw.PromptBar(s, frame, keys);
-                UiDraw.Chrome(s, frame, m.Title);
+                UiDraw.Chrome(s, frame, m.Shape == UiPageShape.Profile ? null : m.Title);   // a profile says its name on its own head
                 return;
             }
             y = FigureRow(s, at, m, cx, y, cw, keys);

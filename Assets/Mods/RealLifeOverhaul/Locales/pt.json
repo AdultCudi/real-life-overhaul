@@ -28103,8 +28103,12 @@
   "reallife_ui_pop_last_month": "Mês passado",
   "reallife_ui_pop_home": "Casa e dinheiro",
   "reallife_ui_gallery_col_kind": "Tipo",
-  "reallife_studio_next_hire": "Próximo: contrate programadores e designers para {studio} no app Negócios e depois defina os cargos deles em Cargos abertos, na aba Equipe.",
+  "reallife_studio_next_hire": "Próximo: contrate engenheiros e designers para {studio}, para ele poder começar um jogo.",
   "reallife_studio_page_needed_how": "Para preencher um grupo, contrate pessoas no app Negócios e depois defina os cargos delas em Cargos abertos, na aba Equipe.",
   "reallife_pop_rows_lives_with": "Mora com",
-  "reallife_pop_empty_alone": "Não divide a casa com ninguém."
+  "reallife_pop_empty_alone": "Não divide a casa com ninguém.",
+  "reallife_ui_flare_did": "{what}: vieram {came}, gastaram {spent}",
+  "reallife_ui_flare_trend_did": "{stage}: {moved} aderiram, faltam {days} dias",
+  "reallife_ui_pop_age": "{age} anos",
+  "reallife_ui_pop_gone_body": "As pessoas deixam a cidade quando se mudam ou morrem. Voltar leva você de volta para onde estava."
 }

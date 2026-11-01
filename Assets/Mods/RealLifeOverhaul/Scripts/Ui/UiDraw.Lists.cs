@@ -71,9 +71,11 @@ namespace RealLifeOverhaul.Ui
             float h = UiTokens.PairRow;
             // The value is player data and may end in an ellipsis past half the row; the key is a label and takes the rest,
             // on two lines when one is too few ("Wymagania dotyczące grafiku").
-            float vw = Math.Min(UiTextRules.Width(value, UiStyle.Body) + UiTokens.S1, w * 0.55f);
-            float kw = w - vw - UiTokens.S3;
             float need = UiTextRules.Width(key, UiStyle.Small) + UiTokens.S1;
+            float room = Math.Max(w * 0.55f, w - need - UiTokens.S3);
+            UiStyle valueStyle = UiTextRules.Width(value, UiStyle.Body) + UiTokens.S1 <= room ? UiStyle.Body : UiStyle.Small;   // a long value shrinks a step rather than lose its end
+            float vw = Math.Min(UiTextRules.Width(value, valueStyle) + UiTokens.S1, room);
+            float kw = w - vw - UiTokens.S3;
             if (need <= kw)
             {
                 kw = need;
@@ -85,7 +87,7 @@ namespace RealLifeOverhaul.Ui
                 Text(s, at, x, y + (h - kh) / 2f, kw, UiStyle.Small, UiRole.Muted, key, UiFlags.Label | UiFlags.Wrap | UiFlags.Middle, 2);
             }
             // The value in the serif, whose figures are all one width, so a column of them lines up.
-            TextMiddle(s, at, x + kw + UiTokens.S3, y, h, w - kw - UiTokens.S3, UiStyle.Body, UiRole.Text, value, UiFlags.Right | UiFlags.Truncate);
+            TextMiddle(s, at, x + kw + UiTokens.S3, y, h, w - kw - UiTokens.S3, valueStyle, UiRole.Text, value, UiFlags.Right | UiFlags.Truncate);
             Box(s, at, x, y + h - UiTokens.Hairline, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             return h;
         }
@@ -99,8 +101,9 @@ namespace RealLifeOverhaul.Ui
             float titleH = UiTextRules.WrappedHeight(service.Title, UiStyle.Title, titleW, 2);
             float descH = string.IsNullOrEmpty(service.About) ? 0f : UiTextRules.WrappedHeight(service.About, UiStyle.Small, inner, 2);
             height = Snap(UiTokens.S4 * 2f + titleH + (descH > 0f ? UiTokens.S1 + descH : 0f));
-            int face = Box(s, at, x, y, w, height, UiRole.Field, UiRole.None, UiTokens.RadiusLarge, service.Disabled ? UiFlags.Disabled : UiFlags.None);
+            int face = Box(s, at, x, y, w, height, UiRole.None, UiRole.None, UiTokens.RadiusLarge, service.Disabled ? UiFlags.Disabled : UiFlags.None);   // a row in its panel, not a card in a card
             UiAt inside = at.In(face);
+            Box(s, inside, x + UiTokens.S4, y + height - UiTokens.Hairline, w - UiTokens.S4 * 2f, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             Text(s, inside, x + UiTokens.S4, y + UiTokens.S4, titleW, UiStyle.Title, UiRole.Text, service.Title, UiFlags.Wrap | UiFlags.Truncate, 2);
             float titleLine = UiTextRules.LineHeight(UiStyle.Title);
             Text(s, inside, x + w - UiTokens.S4 - pw, y + UiTokens.S4 + (titleLine - UiTextRules.LineHeight(UiStyle.SmallStrong)) / 2f, pw, UiStyle.SmallStrong,
@@ -128,9 +131,13 @@ namespace RealLifeOverhaul.Ui
             float nameH = UiTextRules.LineHeight(UiStyle.Title);
             float tradeH = UiTextRules.WrappedHeight(choice.Trade, UiStyle.Small, tw, 2);
             height = Math.Max(least, ChoiceCardHeight(ref choice, keys, w));
-            int face = Box(s, at, x, y, w, height, sel ? UiRole.RowSel : UiRole.Field, UiRole.None, UiTokens.RadiusLarge,
+            int face = Box(s, at, x, y, w, height, sel ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusLarge,
                 (sel ? UiFlags.Selected : UiFlags.None) | (choice.Disabled ? UiFlags.Disabled : UiFlags.None));
             UiAt inside = at.In(face);
+            if (!sel)
+            {
+                Box(s, inside, x + UiTokens.S5, y + height - UiTokens.Hairline, w - UiTokens.S5 * 2f, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
+            }
             if (sel)
             {
                 Box(s, inside, x, y + UiTokens.S4, UiTokens.SelectBar, height - UiTokens.S4 * 2f, UiRole.Accent, UiRole.None, UiTokens.SelectBar / 2f);
@@ -247,10 +254,7 @@ namespace RealLifeOverhaul.Ui
                 int face = Box(s, inClip.Arriving(r - first), 0f, ry, w, rowH, sel ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusMedium,
                     sel ? UiFlags.Selected : UiFlags.None);
                 UiAt inside = inClip.Arriving(r - first).In(face);
-                if (r < rows - 1)
-                {
-                    Box(s, inside, UiTokens.S2, ry + rowH - UiTokens.Hairline, w - UiTokens.S4, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
-                }
+                Box(s, inside, UiTokens.S2, ry + rowH - UiTokens.Hairline, w - UiTokens.S4, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
                 if (sel)
                 {
                     Box(s, inside, 0f, ry + UiTokens.S3, UiTokens.SelectBar, rowH - UiTokens.S3 * 2f, UiRole.Accent, UiRole.None, UiTokens.SelectBar / 2f);

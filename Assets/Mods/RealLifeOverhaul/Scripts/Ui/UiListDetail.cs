@@ -202,8 +202,9 @@ namespace RealLifeOverhaul.Ui
         private static void List(UiScene s, UiAt at, UiListDetailModel m, float x, float y, float w, float h)
         {
             float top = y;
-            y += UiDraw.PanelTitle(s, at, x + UiTokens.S1, y, w - UiTokens.S2, m.ListTitle, m.ListCount) + UiTokens.S4;
-            UiDraw.Search(s, at, x, y, w, m.SearchPlaceholder, m.Query, m.SearchCount, Search);
+            // The group column names the list already, so no title over it says "All contacts 13" twice, and the search
+            // gives a count only for what it found.
+            UiDraw.Search(s, at, x, y, w, m.SearchPlaceholder, m.Query, string.IsNullOrEmpty(m.Query) ? null : m.SearchCount, Search);
             y += UiTokens.Control + UiTokens.S4;
             float vh = UiDraw.SnapDown(top + h - y);
             // Each row is a section header (when it opens one) and its row: their tops worked out once, only those in view drawn.

@@ -56,7 +56,21 @@ namespace RealLifeOverhaul.Ui
                 }
                 title = UiPlaces.IsKey(title) ? UiPlaces.Words(title) : title;
                 string middle = !string.IsNullOrEmpty(r.Subtitle) ? t(r.Subtitle, r.Subtitle) : r.Second != 0 ? money(r.Second) : string.Empty;
-                m.Entries[i] = new UiRowModel { Name = title, Preview = middle, Time = Write(r.Value, r.Format, null, t, money), Hue = UiColour.HueOf(title) };
+                string time = Write(r.Value, r.Format, null, t, money);
+                // A post's and a trend's figures said in words: a bare "+38" beside a name told the player nothing (the critic, 1 Nov).
+                if (v.Kind == FlareViewKind.Account)
+                {
+                    middle = t("reallife_ui_flare_did", "{what}: {came} came, {spent} spent").Replace("{what}", middle).Replace("{came}", r.Value.ToString("#,0", Inv))
+                        .Replace("{spent}", money(r.Second));
+                    time = string.Empty;
+                }
+                else if (v.Kind == FlareViewKind.Trends)
+                {
+                    middle = t("reallife_ui_flare_trend_did", "{stage}: {moved} moved, {days} days left").Replace("{stage}", Capital(middle))
+                        .Replace("{moved}", r.Value.ToString("#,0", Inv)).Replace("{days}", r.Second.ToString("#,0", Inv));
+                    time = string.Empty;
+                }
+                m.Entries[i] = new UiRowModel { Name = title, Preview = middle, Time = time, Hue = UiColour.HueOf(title) };
                 m.EntryLeads[i] = !string.IsNullOrEmpty(r.Target);
                 leads |= m.EntryLeads[i];
             }
@@ -93,6 +107,8 @@ namespace RealLifeOverhaul.Ui
             m.PromptCount = m.Prompts.Length;
             return m;
         }
+
+        private static string Capital(string words) => string.IsNullOrEmpty(words) ? string.Empty : char.ToUpper(words[0], CultureInfo.CurrentCulture) + words.Substring(1);
 
         /// <summary>A figure in words: a count, money, a share as a signed per cent, a key's words, stars out of five, a signed count.</summary>
         public static string Write(long value, FlareViewFormat format, string text, UiWords t, Func<long, string> money)

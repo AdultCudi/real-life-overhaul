@@ -59,7 +59,7 @@ namespace RealLifeOverhaul.Ui
             m.Side = new UiPairModel[page.Facts.Count];
             for (int i = 0; i < page.Facts.Count; i++)
             {
-                m.Side[i] = new UiPairModel { Key = t(page.Facts[i].LabelKey, page.Facts[i].LabelKey), Value = page.Facts[i].Value };
+                m.Side[i] = new UiPairModel { Key = t(page.Facts[i].LabelKey, page.Facts[i].LabelKey), Value = Capital(page.Facts[i].Value) };
             }
             m.SideCount = m.Side.Length;
             for (int i = 0; i < v.Others.Count && others.Count < MostOthers; i++)
@@ -194,6 +194,13 @@ namespace RealLifeOverhaul.Ui
             m.Prompts = new[] { new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") } };
             m.PromptCount = 1;
             return m;
+        }
+
+        // A value standing alone starts with a capital, as its neighbours do ("New levels, co-op play" beside "Under licence"),
+        // though the same words sit lower case inside a sentence elsewhere.
+        private static string Capital(string value)
+        {
+            return string.IsNullOrEmpty(value) || !char.IsLower(value[0]) ? value : char.ToUpper(value[0], System.Globalization.CultureInfo.CurrentCulture) + value.Substring(1);
         }
 
         // A key's words with its names filled: name, value, name, value (as the game's own Fill does).

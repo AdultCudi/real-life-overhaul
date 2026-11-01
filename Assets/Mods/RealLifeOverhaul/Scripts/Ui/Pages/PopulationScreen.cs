@@ -126,6 +126,8 @@ namespace RealLifeOverhaul.Ui
             return m != null && m.AnchorDay >= 0 ? m : null;
         }
 
+        // A household or a person opens through PopulationViews.Open, which checks the slot still holds the one the row
+        // was made for, so a slot used again after a death or a move opens as gone, never as somebody else.
         private static PopulationView Build(ViewTarget to)
         {
             PopulationState s = CityPopulation.Live;
@@ -135,15 +137,9 @@ namespace RealLifeOverhaul.Ui
             }
             switch (to.Kind)
             {
-                case ViewKind.District: return PopulationViews.District(s, to.Index);
-                case ViewKind.Building: return PopulationViews.Building(s, to.Index);
-                case ViewKind.Household: return CityPopulation.Pools != null ? PopulationViews.Household(s, CityPopulation.Pools, to.Index) : null;
-                case ViewKind.Person: return PopulationViews.Person(s, to.Index);
-                case ViewKind.Business: return CityPopulation.Pools != null ? PopulationViews.Business(s, CityPopulation.Pools, to.Index) : null;
-                case ViewKind.Contributors: return CityPopulation.Pools != null ? PopulationViews.Contributors(s, CityPopulation.Pools) : null;
                 case ViewKind.Demands: return Demand() != null ? PopDemandViews.Demands(Demand()) : null;
                 case ViewKind.Demand: return Demand() != null ? PopDemandViews.Demand(Demand(), to.Index) : null;
-                default: return PopulationViews.City(s);
+                default: return PopulationViews.Open(s, CityPopulation.Pools, to);
             }
         }
     }
