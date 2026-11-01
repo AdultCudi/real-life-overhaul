@@ -509,21 +509,16 @@ namespace RealLifeOverhaul.Ui
                 Icon = UiIcon.Bank, Tint = UiRole.None, Kicker = t("reallife_ui_econo_loan", "Loan"), Title = Lender(t, c),
                 Line = c.TimeLeft, Progress = Paid(c)
             };
-            float owed = 0f, daily = 0f;
+            float owed = 0f;
             for (int i = 0; i < v.Loans.Length; i++)
             {
                 owed += v.Loans[i].Left;
-                daily += v.Loans[i].DailyValue;
             }
-            m.Totals = new[]
-            {
-                new UiFigureModel { Label = t("reallife_ui_econo_owed", "Owed in all"), Value = v.Money(owed) },
-                new UiFigureModel { Label = t("reallife_ui_econo_paid_day", "Paid a day"), Value = v.Money(daily) },
-            };
             m.RowLabels = new[] { t("reallife_ui_econo_borrowed", "Borrowed"), t("reallife_ui_econo_paid_so_far", "Paid so far"),
                 t("econoview_loans_daily_interest_rate", "Daily interest rate") };
             m.RowValues = new[] { v.Money(c.Total), v.Money(c.Total - c.Left), c.Interest };
-            m.Split = Split(t("reallife_ui_econo_owed_by", "Owed to each bank"), v.Loans.Length, i => Lender(t, v.Loans[i]), i => v.Loans[i].Left, v.Money, t);
+            m.Split = Split(Fill(t("reallife_ui_econo_owed_by", "Owed to the banks, {total} in all"), "total", v.Money(owed)), v.Loans.Length, i => Lender(t, v.Loans[i]),
+                i => v.Loans[i].Left, v.Money, t);
             History(m, t, v, c.Payments, t("reallife_ui_econo_payments", "Payments"), t("reallife_ui_econo_no_payments", "No payment has been made on this loan yet."));
             m.Controls = new[]
             {
@@ -590,18 +585,13 @@ namespace RealLifeOverhaul.Ui
                 chart.Reads = null;
             }
             m.Chart = chart;
-            float worth = 0f, earned = 0f;
+            float worth = 0f;
             for (int i = 0; i < v.Funds.Length; i++)
             {
                 worth += v.Funds[i].Value;
-                earned += v.Funds[i].Interest;
             }
-            m.Totals = new[]
-            {
-                new UiFigureModel { Label = t("reallife_ui_econo_worth", "Worth in all"), Value = v.Money(worth) },
-                new UiFigureModel { Label = t("reallife_ui_econo_earned", "Earned in all"), Value = Signed(earned, v.Money) },
-            };
-            m.Split = Split(t("reallife_ui_econo_worth_by", "Worth in each fund"), v.Funds.Length, i => v.Funds[i].Name, i => v.Funds[i].Value, v.Money, t);
+            m.Split = Split(Fill(t("reallife_ui_econo_worth_by", "Worth in the funds, {total} in all"), "total", v.Money(worth)), v.Funds.Length, i => v.Funds[i].Name,
+                i => v.Funds[i].Value, v.Money, t);
             m.RowLabels = new[] { t("econoview_investments_initial_investment", "Initial investment"), t("reallife_ui_econo_added", "Added later"),
                 t("reallife_ui_econo_withdrawn", "Withdrawn"), t("econoview_investments_changetotal", "Total change") };
             m.RowValues = new[] { c.Initial, c.Added, c.Withdrawn, Signed(c.Interest, v.Money) };
@@ -736,11 +726,7 @@ namespace RealLifeOverhaul.Ui
                 points[i] = Fill(dayKey, "number", Whole(number));
                 reads[i] = v.BusinessDays[back];
             }
-            m.Cash = new[]
-            {
-                new UiFigureModel { Label = t("econoview_row_sales", "Sales"), Value = v.Money(v.BusinessSales[p]), Trend = days > 1 ? sales : null },
-                new UiFigureModel { Label = t("econoview_row_profit", "Profit"), Value = Signed(v.BusinessProfit[p], v.Money), Trend = days > 1 ? profit : null },
-            };
+            m.Cash = new[] { new UiFigureModel { Label = t("econoview_row_sales", "Sales"), Value = v.Money(v.BusinessSales[p]), Trend = days > 1 ? sales : null } };
             float costs = 0f;
             for (int k = 0; p < v.BusinessCosts.Length && v.BusinessCosts[p] != null && k < v.BusinessCosts[p].Length; k++)
             {

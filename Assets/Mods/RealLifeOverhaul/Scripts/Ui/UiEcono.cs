@@ -367,7 +367,15 @@ namespace RealLifeOverhaul.Ui
                 ry += ChartH + UiTokens.S5;
             }
             ry = Controls(s, at, m.ControlsTitle, m.Controls, rx, ry, rw, keys);
-            ry = Rows(s, at, m.RowsTitle, m.RowLabels, m.RowValues, rx, ry, rw, 2);
+            // The chosen one's rows go under the shorter column, so the two end as near level as their blocks allow.
+            if (ly < ry)
+            {
+                ly = Rows(s, at, m.RowsTitle, m.RowLabels, m.RowValues, x, ly, lw, 1);
+            }
+            else
+            {
+                ry = Rows(s, at, m.RowsTitle, m.RowLabels, m.RowValues, rx, ry, rw, 2);
+            }
             UiDraw.JoinColumns(s, x, rx - UiTokens.S3, x + w);
             History(s, at, m, x, Math.Max(ly, ry), w, bottom);
         }
@@ -500,9 +508,9 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- the taxes
 
-        // What is due and when at the left, a row each with its time through the period as a meter, and what this year's tax
-        // is on as a donut under it; at the right how it is worked out: the rate, the deductions, the kinds that count and
-        // the way to the IRS; under both, across the page, the taxes paid.
+        // What is due and when at the left, a row each with its time through the period as a meter, what this year's tax is
+        // on as a donut and the way to the IRS under it; at the right how it is worked out: the rate, the deductions and the
+        // kinds that count; under both, across the page, the taxes paid.
         private static void TaxesPage(UiScene s, UiAt at, UiEconoModel m, float x, float y, float w, float bottom)
         {
             float lw = UiDraw.SnapDown(w * TaxShare), rx = x + lw + UiTokens.S6, rw = x + w - rx;
@@ -511,13 +519,13 @@ namespace RealLifeOverhaul.Ui
             {
                 ly = Share(s, at, m.Split, x, ly, lw) + UiTokens.S5;
             }
-            float ry = Rows(s, at, m.RowsTitle, m.RowLabels, m.RowValues, rx, y, rw, 1);
-            ry = Lines(s, at, m.NoteTitle, m.Note, m.NoteIcons, rx, ry, rw);
             if (!string.IsNullOrEmpty(m.Link))
             {
-                UiDraw.LinkRow(s, at, rx, ry, rw, UiTokens.Control, m.Link, LinkCommand, LinkIrs);
-                ry += UiTokens.Control + UiTokens.S5;
+                UiDraw.LinkRow(s, at, x, ly - UiTokens.S2, lw, UiTokens.Control, m.Link, LinkCommand, LinkIrs);   // under what is due, where the IRS is paid
+                ly += UiTokens.Control + UiTokens.S3;
             }
+            float ry = Rows(s, at, m.RowsTitle, m.RowLabels, m.RowValues, rx, y, rw, 1);
+            ry = Lines(s, at, m.NoteTitle, m.Note, m.NoteIcons, rx, ry, rw);
             UiDraw.JoinColumns(s, x, rx - UiTokens.S3, x + w);
             History(s, at, m, x, Math.Max(ly, ry), w, bottom);
         }

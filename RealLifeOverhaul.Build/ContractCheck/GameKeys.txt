@@ -311,6 +311,7 @@ common_address
 common_agree
 common_amount
 common_available_for_rent
+common_back
 common_balance
 common_cancel
 common_close
@@ -367,7 +368,6 @@ econoview_back_taxes_due
 econoview_full_transactions_all_days
 econoview_full_transactions_all_types
 econoview_full_transactions_export_to_csv
-econoview_full_transactions_title
 econoview_income_statement
 econoview_investments_autoinvest
 econoview_investments_changetotal

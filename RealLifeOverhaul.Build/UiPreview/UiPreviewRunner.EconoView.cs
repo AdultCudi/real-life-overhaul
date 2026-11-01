@@ -39,7 +39,7 @@ public static partial class UiPreviewRunner
                 screen.HoverArg = 0;
                 screen.FocusCommand = UiEcono.StatementFirst + UiStatement.Line;
                 screen.FocusArg = 2;
-                screen.Walk = new[] { Down, Down, Up, Up, Up, Right, Right };
+                screen.Walk = new[] { Up, Up, Up, Right, Down, Down };
             }
             else if (st == "loans_three" || st == "loans_de" || st == "investments_year")
             {
@@ -67,9 +67,9 @@ public static partial class UiPreviewRunner
             }
             else
             {
-                screen.HoverCommand = UiAppWindow.NavCommand;
+                screen.HoverCommand = UiEcono.EmptyCommand;   // an empty page's way out
                 screen.HoverArg = 0;
-                screen.Walk = new[] { Right, Right, Left };
+                screen.Walk = new[] { Right, Left, Down, Up };
             }
             screens.Add(screen);
         }
