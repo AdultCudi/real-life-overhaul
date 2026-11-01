@@ -235,7 +235,8 @@ namespace RealLifeOverhaul.Ui
             float ex = cardX + SnapDown((cardW - UiTokens.S16) / 2f);
             int endFace = Circle(s, at, ex, y, UiTokens.S16, UiTokens.S16, UiRole.Danger);
             TextMiddle(s, at.In(endFace), ex, y, UiTokens.S16, UiTokens.S16, UiStyle.Button, UiRole.OnAccent, end, UiFlags.Centre | UiFlags.Label);   // a button's words, as every button has
-            int n = Node(s, at, ex, y, UiTokens.S16, UiTokens.S16, endCommand, 0, endFace);
+            // Back ends the call: the band then names End by the key a pad or a keyboard has, as a question names its Keep.
+            int n = Node(s, at, ex, y, UiTokens.S16, UiTokens.S16, endCommand, 0, endFace, false, -1, 0, UiAction.Back);
             if (optionCount == 0)
             {
                 s.FocusFirst = n;

@@ -321,7 +321,9 @@ namespace RealLifeOverhaul.Ui
             return h + UiTokens.S5;
         }
 
-        private static int Span(ref UiFigureModel figure) => figure.Span > 1 ? figure.Span : 1;
+        // A figure spans its places only to draw its line beside its number. One with no line to draw (a new firm's days, all
+        // at nothing) takes one place, so the strip's figures share its width rather than end on a blank.
+        private static int Span(ref UiFigureModel figure) => figure.Span > 1 && UiDraw.Drawn(figure.Trend) ? figure.Span : 1;
 
         // The row's height: a change's line when any figure has one, and a sparkline's when one stands under its number.
         private static float FigureHeight(UiDashboardModel m)
