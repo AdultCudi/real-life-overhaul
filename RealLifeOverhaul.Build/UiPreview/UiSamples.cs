@@ -34,7 +34,6 @@ internal static class UiSamples
         {
             Title = "The city",
             Subtitle = "Day 47 · 8,230 households",
-            TableTitle = "Districts",
             SideTitle = t("reallife_ui_page_details", "Details"),
             Figures = new[]
             {

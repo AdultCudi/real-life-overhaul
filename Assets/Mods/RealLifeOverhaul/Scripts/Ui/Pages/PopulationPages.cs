@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Title = Title(v.Title, v.TitleKey, v.NameSeed, v.Female, t, nameOf),
                 Subtitle = string.IsNullOrEmpty(v.Subtitle) ? null : t(v.Subtitle, v.Subtitle),
-                TableTitle = string.IsNullOrEmpty(v.RowsHeader) ? null : t(v.RowsHeader, v.RowsHeader),
+                TableTitle = null,   // the list's header names its first column
                 SideTitle = t("reallife_ui_page_details", "Details"),
             };
             int count = Math.Min(UiDashboard.MostFigures, v.Hero.Count);
@@ -34,7 +34,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Columns = new[]
                 {
-                    new UiColumn { Title = m.TableTitle ?? string.Empty },
+                    new UiColumn { Title = string.IsNullOrEmpty(v.RowsHeader) ? string.Empty : t(v.RowsHeader, v.RowsHeader) },
                     new UiColumn { Title = string.Empty },
                     new UiColumn { Title = string.Empty, Width = UiTokens.S16 * 3f, Right = true },
                 },

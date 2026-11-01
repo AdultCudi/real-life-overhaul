@@ -83,7 +83,9 @@ namespace RealLifeOverhaul.Ui
             }
             float bodyH = UiDraw.SnapDown(cy + ch - y);
             float tw = cw - SideWidth - UiTokens.S4;
-            float tableTop = UiTokens.S5 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionTitle)) + UiTokens.S3;
+            // A table whose columns name it needs no title over it: the head row is the frame's first line then.
+            bool titled = !string.IsNullOrEmpty(m.TableTitle);
+            float tableTop = titled ? UiTokens.S5 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionTitle)) + UiTokens.S3 : UiTokens.S4;
             float tableH = UiDraw.TableHeight(m.Table, bodyH - tableTop - UiTokens.S4);
             float panelH = tableTop + tableH + UiTokens.S4;
             float sideH = Math.Min(bodyH, SideHeight(m));
@@ -93,7 +95,10 @@ namespace RealLifeOverhaul.Ui
             }
             int tablePanel = UiDraw.Box(s, at, cx, y, tw, panelH, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt inTable = at.In(tablePanel);
-            UiDraw.PanelTitle(s, inTable, cx + UiTokens.S5, y + UiTokens.S5, tw - UiTokens.S5 * 2f, m.TableTitle, null);
+            if (titled)
+            {
+                UiDraw.PanelTitle(s, inTable, cx + UiTokens.S5, y + UiTokens.S5, tw - UiTokens.S5 * 2f, m.TableTitle, null);
+            }
             UiDraw.Table(s, inTable, cx + UiTokens.S2, y + tableTop, tw - UiTokens.S4, tableH, m.Table, RowCommand);
             float sx = cx + tw + UiTokens.S4;
             int side = UiDraw.Box(s, at, sx, y, SideWidth, sideH, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
