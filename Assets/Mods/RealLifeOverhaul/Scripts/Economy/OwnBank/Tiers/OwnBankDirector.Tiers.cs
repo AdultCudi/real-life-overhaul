@@ -91,7 +91,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return false;
             }
-            if (!test && !OwnBankGame.Pay(fee, OwnBankCatalogue.LicenceKey, OwnBankGame.Headquarters(), GameBooks.Licensing))
+            if (!test && !OwnBankGame.Pay(fee, OwnBankCatalogue.LicenceKey, OwnBankGame.Headquarters(), _bank.Name, GameBooks.Licensing))
             {
                 why = "reallife_ob_why_no_cash";
                 return false;
@@ -149,7 +149,7 @@ namespace RealLifeOverhaul.Economy
             }
             _bank.PayFixed = cents;
             _bank.PayMode = BankTiers.PayFixedMode;
-            Logger?.Info("Own bank: the owner's pay set to " + cents / 100 + " a day, never more than the day's profit.");
+            Logger?.Info("Own bank: the owner's pay set to " + cents / 100 + " a day, paid whatever the day made while the bank can spare it.");
             Changed();
             return true;
         }

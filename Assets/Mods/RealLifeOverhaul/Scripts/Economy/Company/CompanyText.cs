@@ -64,6 +64,12 @@ namespace RealLifeOverhaul.Economy
             return (hundredths / 100f).ToCurrencyFormat();
         }
 
+        /// <summary>A part of a wage that may take off as well as add, with its sign in front.</summary>
+        public static string SignedWage(int hundredths)
+        {
+            return (hundredths < 0 ? "-" : "+") + Wage(System.Math.Abs(hundredths));
+        }
+
         public static string Day(int day)
         {
             return FinanceText.Day(day);

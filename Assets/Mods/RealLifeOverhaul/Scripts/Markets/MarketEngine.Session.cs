@@ -500,7 +500,12 @@ namespace RealLifeOverhaul.Markets
                 double after = joining ? MarketIndex.Total(State.Stocks, null, s, ref _capped) : MarketIndex.Total(State.Stocks, s, null, ref _capped);
                 State.IndexDivisor = before > 0.0 && after > 0.0 ? State.IndexDivisor * after / before : 0.0;
             }
-            int sec = (int)s.Sector;
+            SectorWeigh((int)s.Sector, value, joining);
+        }
+
+        // A company's value joins or leaves a sector's index at its level now: its divisor changes so it does not jump.
+        private void SectorWeigh(int sec, double value, bool joining)
+        {
             int level = State.SectorLast[sec];
             if (level > 0 && State.SectorDivisor[sec] > 0.0)
             {

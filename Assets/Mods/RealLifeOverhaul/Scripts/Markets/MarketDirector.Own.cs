@@ -86,6 +86,24 @@ namespace RealLifeOverhaul.Markets
             {
                 Logger?.Info("Stock market: playing alone, " + moved + " company or companies of another player's or the player's own set aside came or went.");
             }
+            SectorAtLoad(save.Day);
+        }
+
+        // A company listed before its business was followed took its first business's sector for good: at the load its sector
+        // comes from the last quarter's books. The market is this save's alone here, in a session too: a guest has it only
+        // once it runs (SharedCity's Ready), and a guest's own company is theirs. Once: it is followed after.
+        private void SectorAtLoad(int day)
+        {
+            Stock own = _engine.MineListed();
+            if (own == null || own.Own.Mixed)
+            {
+                return;
+            }
+            MarketSector was = own.Sector;
+            bool any = Takings(day, out int days);
+            bool moved = _engine.SectorFromBooks(own, _takings, days, false);
+            Logger?.Info("Listing: " + own.Name + "'s business is followed from now" + (moved ? "; by the last " + days + " days' takings it moves from " + was + " to " + own.Sector
+                : any ? "; the last " + days + " days' takings keep it in " + was : "; nothing in its books yet, it stays in " + was) + ".");
         }
 
         private void OwnAlone()
@@ -455,6 +473,9 @@ namespace RealLifeOverhaul.Markets
                     break;
                 case MarketNewsKind.OwnAudit:
                     Queue(NotificationType.Warning, "reallife_lst_note_audit_market", "found", ListingText.Findings(news.A));
+                    break;
+                case MarketNewsKind.OwnSector:
+                    Queue(NotificationType.Info, "reallife_lst_note_sector", "from", MarketText.Sector((MarketSector)news.A), "to", MarketText.Sector((MarketSector)news.B));
                     break;
                 case MarketNewsKind.Split:
                     Queue(NotificationType.Info, "reallife_mkt_note_split", "name", k.Name, "ratio", news.A.ToString(), "day", news.B.ToString());

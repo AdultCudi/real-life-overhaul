@@ -61,6 +61,7 @@ namespace RealLifeOverhaul
                 CompanyBridges.TaxCase = TaxCases.File;
                 CompanyBridges.Inspect = Inspect;
                 CompanyBridges.IssueFootfall = IssueFootfall;
+                PaidWage.Raise = RaiseOf;
                 HierarchyLinks.Connect();   // the professionals the executives are, from the professions
                 BusinessEvents.Closed += IssueClosed;
                 BusinessGame.Ambient = Ambient;
@@ -75,6 +76,7 @@ namespace RealLifeOverhaul
             internal static void Disconnect()
             {
                 CompanyBridges.Reset();
+                PaidWage.Raise = null;
                 BusinessDirector.Held = null;
                 FireLosses.Billed -= FireLoss;
                 BreakIns.Happened -= BreakIn;
@@ -83,6 +85,21 @@ namespace RealLifeOverhaul
                 BusinessGame.Ambient = CityEconomyDirector.FootfallOf;   // the city's economy's pairing takes it off next
                 News.Extra = _paperBefore;
                 _paperBefore = null;
+            }
+
+            // The raise the company agreed for somebody, for every page that names what they are paid (Core/PaidWage).
+            private static int RaiseOf(string id)
+            {
+                try
+                {
+                    CompanyDirector company = CompanyDirector.Instance;
+                    return company != null ? company.RaiseOf(id) : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("CompanyLinks.RaiseOf", e);
+                    return 0;
+                }
             }
 
             // The city's economy's and the company's parts of a business's footfall; business pressure bounds the sum.
