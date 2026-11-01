@@ -14,8 +14,9 @@ This standard is the set of numbered rules that every change to Real Life Overha
 | [texts.md](texts.md) | Locales, keys, British English, What's new, the Guide | RLO-TXT-001 to 014 |
 | [comments.md](comments.md) | What a comment is for, summaries, lengths | RLO-DOC-001 to 011 |
 | [git-and-review.md](git-and-review.md) | Branches, commits, pull requests, review, done, versions | RLO-GIT-001 to 011 |
+| [ui.md](ui.md) | The RLO interface: one source for every look, the City Ledger, the grid, fit, focus, keys, dead space, flat surfaces | RLO-UI-001 to 015 |
 | [dlc-and-updates.md](dlc-and-updates.md) | New districts, DLC content and another city: the city check, the DLC rule, tables by district | RLO-DLC-001 to 006 |
-| [decisions/](decisions/README.md) | The architecture decision records behind the rules | ADR-0001 to 0006 |
+| [decisions/](decisions/README.md) | The architecture decision records behind the rules | ADR-0001 to 0007 |
 
 ## How to read a rule
 
@@ -71,7 +72,7 @@ The standard starts from Microsoft's [C# coding conventions](https://learn.micro
 | Catching `Exception` | Avoid | Not covered | Required at every entry point ([RLO-ARC-007](architecture.md#rlo-arc-007-every-entry-point-is-behind-the-guard)) | A fault in the mod must never break the game's own frame. |
 | Comments | On their own line | Generous | Trailing comments for a field's unit and reason ([RLO-DOC-006](comments.md#rlo-doc-006-a-constant-with-a-unit-says-the-unit)) | 16,855 trailing comments carry units and reasons. |
 | One class per file | Implied | Prefer one core class | One main type, small companions allowed ([RLO-STY-006](code-style.md#rlo-sty-006-a-file-is-named-after-its-main-type)) | 410 files keep a small struct or enum beside the type that uses it. |
-| User interface | Not covered | Not covered | The game's own interface only ([RLO-ARC-013](architecture.md#rlo-arc-013-the-games-own-interface-only)) | Players should not be able to tell the mod's screens from the game's. |
+| User interface | Not covered | Not covered | The game's own interface, or the RLO interface's own designed screens ([RLO-ARC-013](architecture.md#rlo-arc-013-the-games-own-interface-only), [RLO-UI](ui.md)) | One consistent look: the game's where the mod copies it, the City Ledger where the kit draws. |
 | Patching the host | Not covered | Not covered | No Harmony ([RLO-ARC-011](architecture.md#rlo-arc-011-no-harmony-patches)) | See [ADR-0001](decisions/0001-no-harmony.md). |
 | Player texts | Not covered | Not covered | British English, no dashes, an exclamation mark only in speech ([texts.md](texts.md)) | The mod's style sheet, `RealLifeOverhaul.Build/Workshop/STYLE.md`. |
 | Determinism | Not covered | Not covered | Shared results identical on every machine ([multiplayer.md](multiplayer.md)) | Going Public runs one city on several machines. |

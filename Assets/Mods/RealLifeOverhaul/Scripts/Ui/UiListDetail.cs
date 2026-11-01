@@ -294,11 +294,15 @@ namespace RealLifeOverhaul.Ui
                     foot -= rh + UiTokens.S3;
                 }
             }
-            else
+            else if (!string.IsNullOrEmpty(m.NoReply))
             {
                 float nh = UiTextRules.LineHeight(UiStyle.Small);
                 UiDraw.Text(s, at, x + UiTokens.S6, bottom - UiDraw.Snap(nh), inner, UiStyle.Small, UiRole.Muted, m.NoReply, UiFlags.Centre | UiFlags.Label | UiFlags.Middle);
                 foot = bottom - UiDraw.Snap(nh) - UiTokens.S3;
+            }
+            else
+            {
+                foot = bottom;
             }
             float vy = y + UiTokens.S5;
             float vh = UiDraw.SnapDown(foot - vy);

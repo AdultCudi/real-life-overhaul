@@ -16,6 +16,9 @@ namespace RealLifeOverhaul.Ui
         private bool? _look;   // the look the gallery shows, once Option has turned it; the setting's until then
         private bool _dirty = true;
 
+        /// <summary>Back closes the gallery (it stands over whatever showed when the test opened it).</summary>
+        public Action Close;
+
         public UiGalleryScreen(UiWords words, Func<float, string> money)
         {
             _words = words;
@@ -46,7 +49,11 @@ namespace RealLifeOverhaul.Ui
         {
         }
 
-        public bool Back() => false;
+        public bool Back()
+        {
+            Close?.Invoke();
+            return Close != null;
+        }
 
         public void Tab(int step)
         {

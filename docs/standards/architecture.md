@@ -165,6 +165,8 @@ Checked by: StandardCheck.
 
 **MUST.** Build every screen, panel, notice and question from the game's own interface through `Scripts/Core/GameUi` (`AppShell`, `PhoneApps`, `InfoBox`, `DeskList`, `DoorPanel`, `WorldPanel`, `TravelList`, `GuideMark`, `UiClone`, `GameFont`, `GameSprites`). Start what a player does at a place by clicking the thing at that place, in the game's own panel. If the game has no control for something, do without it.
 
+The one exception is a screen drawn on the RLO interface's kit (`Scripts/Ui`, the City Ledger), which follows [docs/standards/ui.md](ui.md) instead ([ADR-0007](decisions/0007-rlo-interface.md)).
+
 Why: a player should not be able to tell the mod's screens from the game's ([ADR-0002](decisions/0002-game-ui-only.md)). Read `RealLifeOverhaul.Build/docs/game-ui.md` first.
 
 Checked by: review.

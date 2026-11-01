@@ -15,7 +15,7 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class UiFonts
     {
-        public const string BundleName = "reallife_ui";
+        public const string BundlePath = "Bundles/reallife_ui";   // under the mod's folder, beside its other bundles
         // The City Ledger's faces, as UiAssets/build.ps1 names them in the bundle, with the family and weight of each.
         private static readonly string[] Names =
         {

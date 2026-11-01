@@ -65,3 +65,4 @@ travel	reallife_guide_travel	hotels and holidays
 uptown	reallife_guide_uptown,reallife_guide_uptown_about	Uptown and Cedar Heights
 utilities	reallife_guide_utilities	power, water and internet
 walking	reallife_guide_walking	walking
+rlo-interface	reallife_guide_ui	the RLO interface, its switch and its motion

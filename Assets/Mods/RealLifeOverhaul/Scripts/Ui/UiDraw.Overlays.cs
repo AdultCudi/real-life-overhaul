@@ -10,11 +10,7 @@ namespace RealLifeOverhaul.Ui
         /// own capitals, centred in a band; a TabPrev prompt shows both tab keys. Ink and caps are the band's own (the
         /// game's bottom bar), the same in both themes.
         /// </summary>
-        /// <summary>
-        /// The frame's own bars, painted flat: the masthead (the app's name at the left in the masthead's face, the money,
-        /// the day and the time at the right, the column rule under it) and a hairline over the prompt band. Decor and
-        /// words only: no target, so focus never lands on the frame.
-        /// </summary>
+        /// <summary>The frame's own bars, flat: the masthead (the app, the money and time, the column rule) and the band's hairline; never a target.</summary>
         public static void Chrome(UiScene s, UiFrame frame)
         {
             if (frame.Top > 0f)

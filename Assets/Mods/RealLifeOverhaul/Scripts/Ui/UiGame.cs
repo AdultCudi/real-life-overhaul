@@ -1,6 +1,11 @@
 using System;
+using System.Globalization;
 using System.Runtime.CompilerServices;
+using BigAmbitions.DayNightCycle;
 using BigAmbitions.InputSystem;
+using Extensions;
+using Helpers;
+using Localizor;
 using RealLifeOverhaul.GameUi;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -194,6 +199,36 @@ namespace RealLifeOverhaul.Ui
                 case UiCue.Error: UiSoundHelper.Play(UiSound.Error); break;
                 default: UiSoundHelper.Play(UiSound.Click); break;
             }
+        }
+
+        // ------------------------------------------------------------------------------------------------- the masthead
+
+        /// <summary>The masthead's right side, as the game's own bar writes it: the money, then the day and the time.</summary>
+        public static string Status()
+        {
+            try
+            {
+                return StatusNow();
+            }
+            catch (Exception e) when (Guard.Missing(e))
+            {
+                Guard.DoesWithout(e, "the money and the time in the RLO interface's masthead");
+                UiChrome.Status = null;
+                return null;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static string StatusNow()
+        {
+            GameInstance save = SaveGameManager.Current;
+            if (save == null)
+            {
+                return null;
+            }
+            Timestamp now = TimeHelper.Now();
+            string time = now.Hour.ToString("00", CultureInfo.InvariantCulture) + ":" + ((int)now.Minute).ToString("00", CultureInfo.InvariantCulture);
+            return save.Money.ToCurrencyFormat() + "     " + LocalizorManager.GetLocalization("timestamp_full", new { day = now.Day, time });
         }
 
         // ------------------------------------------------------------------------------------------------- fonts

@@ -55,6 +55,9 @@ namespace RealLifeOverhaul.Ui
         private TMP_InputField _field;
         private UnityEngine.Events.UnityAction<string> _onTyped, _onTypingEnded;
 
+        /// <summary>Told once when the host stops after a fault, so its owner gives the game's own screen back.</summary>
+        public Action<Exception> Failed;
+
         /// <summary>The scene last laid out, for checks and the test that reports a screen.</summary>
         public UiScene Scene => _scene;
 
@@ -123,6 +126,7 @@ namespace RealLifeOverhaul.Ui
             catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
+                Failed?.Invoke(e);
             }
         }
 

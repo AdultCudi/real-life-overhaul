@@ -393,6 +393,8 @@ namespace RealLifeOverhaul.Meta
                 S("ownbank").For("economy_ownbank").Need("economy").Opts("economy_bank").Also("bank licence deposits savers loans regulator capital fund"),
                 S("bankbranch").For("economy_bank_branch").Need("economy").Opt("economy_bank_branch", "economy_bank")
                     .Also("bank branch branches teller tellers counter customers accounts deposit withdraw loan high street"),
+                S("ui").For("ui").Need("living_population").Main("ui_interface").Opt("ui_motion", "ui_interface")
+                    .Also("rlo interface design look ledger newspaper fonts serif motion calm animation contacts gallery dark light theme"),
                 S("living").For("living", "population").Main("living_population").Opt("living_desks", "living_population")
                     .Also("living population economy overhaul desk desks session sessions meeting team morale output burnout office manager delegate mini screen")
                     .Also("living_population", "residents people households census births deaths migration commuters jobs unemployment vacancies")

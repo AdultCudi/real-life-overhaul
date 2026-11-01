@@ -11,6 +11,7 @@ namespace RealLifeOverhaul.Ui
     [RequireComponent(typeof(CanvasRenderer))]
     public sealed class UiSpark : MaskableGraphic
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("ui", "UiSpark", typeof(UiSpark));   // the engine's calls of its mesh (Core/GuardCalls)
         private float[] _points;
 
         /// <summary>The line's width, in canvas units.</summary>
@@ -28,37 +29,50 @@ namespace RealLifeOverhaul.Ui
 
         protected override void OnPopulateMesh(VertexHelper vh)
         {
-            vh.Clear();
-            float[] p = _points;
-            if (p == null || p.Length < 2)
+            if (FrameGuard.Off)
             {
+                Guard.NoMesh(vh);
                 return;
             }
-            Rect r = rectTransform.rect;
-            float lo = p[0], hi = p[0];
-            for (int i = 1; i < p.Length; i++)
+            try
             {
-                lo = Mathf.Min(lo, p[i]);
-                hi = Mathf.Max(hi, p[i]);
+                vh.Clear();
+                float[] p = _points;
+                if (p == null || p.Length < 2)
+                {
+                    return;
+                }
+                Rect r = rectTransform.rect;
+                float lo = p[0], hi = p[0];
+                for (int i = 1; i < p.Length; i++)
+                {
+                    lo = Mathf.Min(lo, p[i]);
+                    hi = Mathf.Max(hi, p[i]);
+                }
+                float span = Mathf.Max(1e-6f, hi - lo);
+                float half = Thickness / 2f;
+                float inset = half;
+                Color32 c = color;
+                Vector2 prev = Point(r, p, 0, lo, span, inset);
+                for (int i = 1; i < p.Length; i++)
+                {
+                    Vector2 next = Point(r, p, i, lo, span, inset);
+                    Vector2 d = (next - prev).normalized;
+                    var n = new Vector2(-d.y, d.x) * half;
+                    int at = vh.currentVertCount;
+                    vh.AddVert(prev - n, c, Vector4.zero);
+                    vh.AddVert(prev + n, c, Vector4.zero);
+                    vh.AddVert(next + n, c, Vector4.zero);
+                    vh.AddVert(next - n, c, Vector4.zero);
+                    vh.AddTriangle(at, at + 1, at + 2);
+                    vh.AddTriangle(at, at + 2, at + 3);
+                    prev = next;
+                }
+
             }
-            float span = Mathf.Max(1e-6f, hi - lo);
-            float half = Thickness / 2f;
-            float inset = half;
-            Color32 c = color;
-            Vector2 prev = Point(r, p, 0, lo, span, inset);
-            for (int i = 1; i < p.Length; i++)
+            catch (System.Exception fault)
             {
-                Vector2 next = Point(r, p, i, lo, span, inset);
-                Vector2 d = (next - prev).normalized;
-                var n = new Vector2(-d.y, d.x) * half;
-                int at = vh.currentVertCount;
-                vh.AddVert(prev - n, c, Vector4.zero);
-                vh.AddVert(prev + n, c, Vector4.zero);
-                vh.AddVert(next + n, c, Vector4.zero);
-                vh.AddVert(next - n, c, Vector4.zero);
-                vh.AddTriangle(at, at + 1, at + 2);
-                vh.AddTriangle(at, at + 2, at + 3);
-                prev = next;
+                Guard.FailMesh(FrameGuard, fault, vh);
             }
         }
 
