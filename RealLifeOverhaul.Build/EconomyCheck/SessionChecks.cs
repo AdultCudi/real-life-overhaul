@@ -373,7 +373,7 @@ internal static partial class Program
         string links = ModSource(@"Wiring\Wiring.SessionLinks.cs");
         Check(links.Contains("TechBridges.SessionDesk = SessionDesk;") && links.Contains("SessionBridges.WorkHere = WorkHere;") && links.Contains("SessionBridges.Work = Work;")
               && links.Contains("TechBridges.SessionDesk = null;") && links.Contains("SessionBridges.WorkHere = null;") && links.Contains("SessionBridges.Work = null;")
-              && links.Contains("return SessionDirector.On ? SessionGame.Target : null;") && ModSource(@"Tech\TechBridges.cs").Contains("SessionDesk = null;"),
+              && links.Contains("return SessionDirector.On ? SessionGame.Target : null;") && links.Contains("Fault(\"SessionLinks.SessionDesk\", e);") && ModSource(@"Tech\TechBridges.cs").Contains("SessionDesk = null;"),
             "sessions shared desk: wired both ways and taken off again; with Living population or its sessions off there is no sessions' desk and the own work is as before");
         Check(AllIn(new[] { "reallife_session_button_work" }, out string missing), "sessions shared desk: the button's text in en, pt and zh-cn (" + missing + ")");
     }

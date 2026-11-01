@@ -98,7 +98,15 @@ namespace RealLifeOverhaul
             // The owner's desk the sessions hold, and the own desk's work offered through their panel there: one click per desk.
             private static EmployeeStationController SessionDesk()
             {
-                return SessionDirector.On ? SessionGame.Target : null;
+                try
+                {
+                    return SessionDirector.On ? SessionGame.Target : null;
+                }
+                catch (Exception e)
+                {
+                    Fault("SessionLinks.SessionDesk", e);
+                    return null;
+                }
             }
 
             private static bool WorkHere(EmployeeStationController desk)
