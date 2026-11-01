@@ -708,6 +708,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPartRules.cs" Link="Mod\UiPartRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPartsGallery.cs" Link="Mod\UiPartsGallery.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPartsGalleryScreen.cs" Link="Mod\UiPartsGalleryScreen.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiStaff.cs" Link="Mod\UiStaff.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\StaffViews.cs" Link="Mod\StaffViews.cs" />
     <Compile Include="..\UiPreview\UiSamples*.cs" Link="Shared\%(Filename)%(Extension)" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\BugReportRules.cs" Link="Mod\BugReportRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\BetaRules.cs" Link="Mod\BetaRules.cs" />
