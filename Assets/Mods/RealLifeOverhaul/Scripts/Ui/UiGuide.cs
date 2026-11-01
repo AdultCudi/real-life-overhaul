@@ -15,7 +15,7 @@ namespace RealLifeOverhaul.Ui
                 .About("reallife_guide_ui_about").Help("reallife_guide_ui")
                 .Owns(Settings.UiInterfaceId, Settings.UiMotionId)
                 .Owns(UiScreenSwitches.OptionIds())
-                .Test("reallife_ui_test_gallery", "reallife_ui_test_contacts", "reallife_ui_test_population", "reallife_ui_test_flare", "reallife_ui_test_firm")
+                .Test("reallife_ui_test_gallery", "reallife_ui_test_parts", "reallife_ui_test_contacts", "reallife_ui_test_population", "reallife_ui_test_flare", "reallife_ui_test_firm")
                 .Test("reallife_ui_test_all_apps", "reallife_ui_test_question", "reallife_ui_test_question_negative", "reallife_ui_test_acknowledge",
                     "reallife_ui_test_text_box", "reallife_ui_test_mod_box", "reallife_ui_test_notices", "reallife_ui_test_contacts_switch")
                 .Cleanup(() => UiDirector.RemoveAll("cleaned up"), 0);

@@ -244,13 +244,7 @@ namespace RealLifeOverhaul.Ui
             Text(s, inside, x + UiTokens.S3, y + UiTokens.S2, w - fw - UiTokens.S8, UiStyle.Body, UiRole.Text, label, UiFlags.Label);
             Text(s, inside, x + w - UiTokens.S3 - fw, y + UiTokens.S2, fw, UiStyle.SmallStrong, UiRole.AccentText, figure, UiFlags.Right);
             float ty = y + h - UiTokens.S4 - UiTokens.S2, tw = w - UiTokens.S3 * 2f;
-            int track = Box(s, inside, x + UiTokens.S3, ty, tw, UiTokens.S2, UiRole.Track, UiRole.None, UiTokens.S1, UiFlags.Circle);
-            if (share > 0f)
-            {
-                Box(s, at.In(track), x + UiTokens.S3, ty, Math.Max(UiTokens.S2, tw * share), UiTokens.S2, UiRole.Accent, UiRole.None, UiTokens.S1, UiFlags.Circle | UiFlags.Share);
-            }
-            float knob = UiTokens.S5;
-            Circle(s, at.In(track), x + UiTokens.S3 + tw * share - knob / 2f, ty + UiTokens.S1 - knob / 2f, knob, knob, UiRole.Text, UiFlags.Share | UiFlags.Middle | UiFlags.Overflow);
+            Track(s, inside, x + UiTokens.S3, ty + UiTokens.S1, tw, share, false);   // the one slider's thin track and knob (UiDraw.Fields)
             return Node(s, at, x, y, w, h, command, arg, face);
         }
 

@@ -185,8 +185,8 @@ namespace RealLifeOverhaul.Ui
         {
             public readonly RectTransform Rect;
             public readonly List<Transform> Order = new List<Transform>(64);
-            private readonly List<Slot>[] _pools = new List<Slot>[(int)UiKind.Portrait + 1];
-            private readonly int[] _used = new int[(int)UiKind.Portrait + 1];
+            private readonly List<Slot>[] _pools = new List<Slot>[(int)UiKind.Picture + 1];
+            private readonly int[] _used = new int[(int)UiKind.Picture + 1];
 
             public Container(RectTransform rect)
             {

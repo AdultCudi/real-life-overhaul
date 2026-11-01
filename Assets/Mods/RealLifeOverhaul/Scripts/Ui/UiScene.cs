@@ -14,7 +14,8 @@ namespace RealLifeOverhaul.Ui
         Busy,         // three dots that beat while a loading state shows
         HueDot,       // a small circle in a hue's own colour (Value is the hue): a group's dot
         Slice,        // a donut's slice, drawn from the top clockwise to Value of the turn: slices lay over each other, the last first
-        Portrait      // a person's painted face (UiPortraits): Text is the name it is picked by, Value the hue of its ground
+        Portrait,     // a person's painted face (UiPortraits): Text is the name it is picked by, Value the hue of its ground
+        Picture       // a picture the game holds (UiPictures): Text is its key, Value its width over its height, which the box keeps
     }
 
     /// <summary>What an item is, beyond its kind: how its words sit and what the checks may allow it.</summary>
