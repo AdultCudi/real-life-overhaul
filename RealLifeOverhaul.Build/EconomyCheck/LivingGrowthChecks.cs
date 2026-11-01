@@ -143,10 +143,10 @@ internal static partial class Program
               && GrowthRules.Pressure(20000, 1000, 0) == 50 && GrowthRules.Pressure(20000, 1400, 200) == 40 && GrowthRules.Pressure(20000, 1000, 200) == 90
               && GrowthRules.Pressure(0, 0, 9) == 0,
             "growth: the housing pressure is none at 7% free flats, half at 5%, the most at 3%, and households turned away add to it");
-        // The homes wanted: a per cent of the homes a year at the most pressure, none with none, and less as the land runs out.
-        Check(GrowthRules.Wanted(20000, 100, 1000) == 200 && GrowthRules.Wanted(20000, 0, 1000) == 0 && GrowthRules.Wanted(20000, 100, 500) == 100
-              && GrowthRules.Wanted(20000, 50, 1000) == 100 && GrowthRules.Wanted(20000, 100, 0) == 0,
-            "growth: the city wants at most a per cent of its homes a year, half at half the pressure or half the land, none once the land is gone");
+        // The homes wanted: New York's 0.8% of the homes a year at the most pressure, none with none, and less as the land runs out.
+        Check(GrowthRules.Wanted(20000, 100, 1000) == 160 && GrowthRules.Wanted(20000, 0, 1000) == 0 && GrowthRules.Wanted(20000, 100, 500) == 80
+              && GrowthRules.Wanted(20000, 50, 1000) == 80 && GrowthRules.Wanted(20000, 100, 0) == 0,
+            "growth: the city wants at most 0.8% of its homes a year, half at half the pressure or half the land, none once the land is gone");
         PopulationSim sim = LivingBandMade(4321, CalendarRules.YearDefault, out PopulationState s, out BandBuilder b);
         int uptown = b.Band[0], midtown = s.DistrictOf("ba:neighborhood_midtown");
         Check(s.Growth.Land[uptown] == BandLand[0] && s.Growth.Land[midtown] == -1 && GrowthRules.LandLeft(s.Growth) == 1000,
@@ -176,11 +176,11 @@ internal static partial class Program
         // The firms: the level the city asks for, within the floor's room; the slots of a floor at a level; the start's level changes nothing.
         Check(CityFirmRules.Target(1000, 1000, 500, 500) == 1000 && CityFirmRules.Target(2000, 1000, 1000, 500) == CityFirmRules.StockMost
               && CityFirmRules.Target(100, 1000, 50, 500) == PopulationCatalogue.StockLeast && CityFirmRules.Target(1100, 1000, 520, 500) == 1055
-              && CityFirmRules.OfficesWantedOf(1150, 50000, 50000, 1111) == 500 && CityFirmRules.OfficesWantedOf(1120, 50000, 50000, 1111) == 450
+              && CityFirmRules.OfficesWantedOf(1150, 50000, 50000, 1111) == 400 && CityFirmRules.OfficesWantedOf(1115, 50000, 50000, 1111) == 200
               && CityFirmRules.OfficesWantedOf(1100, 50000, 50000, 1111) == 0 && CityFirmRules.OfficesWantedOf(1150, 50000, 52000, 1111) == 0
               && CityFirmRules.SlotsOf(400, 1000) == 400 && CityFirmRules.SlotsOf(400, 1100) == 440 && CityFirmRules.StockMost == 1111,
             "growth: the firms follow three parts the city's labour force and one its spending, within the office floor's empty tenth and a fifth down; offices on new land "
-            + "only for the jobs the floors cannot hold, a hundredth a year at the most");
+            + "only for the jobs the floors cannot hold, 0.8% a year at the most");
         // A building finished joins the table, its flats free and counted as homes built; a demolished one sends its households away to look again.
         PopulationSim fresh = LivingBandMade(4321, CalendarRules.YearDefault, out PopulationState t, out BandBuilder tb);
         int homes = GrowthRules.Homes(t), people = t.People.Live;

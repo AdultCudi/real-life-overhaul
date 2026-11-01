@@ -619,7 +619,8 @@ namespace RealLifeOverhaul.Population
 
         // thousandths of the city's homes a year it builds at the most pressure: a healthy real city adds half a per cent to one (New York added
         // 30,170 homes net in 2023 on a stock of 3.7 million, 0.8%, the NYC Comptroller from City Planning's counts), New York's own pace: at 1%
-        // the city with Uptown and Cedar Heights grew past a tenth more people in its first ten years
+        // the city with Uptown and Cedar Heights grew past a tenth more people in its first ten years. The offices the mod's land is asked for
+        // (CityFirmRules) keep the same pace, as they take the same land
         public const int PaceMost = 8;
         public const int VacancyBuild = 70;              // thousandths of the city's flats free under which the city wants more homes
         public const int VacancySpan = 40;               // ... thousandths under that at which the shortage alone is the most pressure
