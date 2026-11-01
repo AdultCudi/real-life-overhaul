@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Ui
     /// region, each told to the view, which tells its host (UiFocusMode decides what a hover does). Pooled with its object
     /// and pointed at the target it shows now. Cost a frame: nothing, the engine calls it on pointer events.
     /// </summary>
-    public sealed class UiHit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler, IScrollHandler
+    public sealed class UiHit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler, IScrollHandler, IPointerDownHandler, IDragHandler
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("ui", "UiHit", typeof(UiHit));   // the engine's calls of it (Core/Guard)
 
@@ -91,6 +91,52 @@ namespace RealLifeOverhaul.Ui
             catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e);
+            }
+        }
+
+        public void OnPointerDown(PointerEventData data)
+        {
+            if (FrameGuard.Off)
+            {
+                return;
+            }
+            try
+            {
+                Dragged(data);
+            }
+            catch (Exception e)
+            {
+                Guard.Fail(FrameGuard, e);
+            }
+        }
+
+        public void OnDrag(PointerEventData data)
+        {
+            if (FrameGuard.Off)
+            {
+                return;
+            }
+            try
+            {
+                Dragged(data);
+            }
+            catch (Exception e)
+            {
+                Guard.Fail(FrameGuard, e);
+            }
+        }
+
+        // Where across its face the pointer is, for a slider's knob that follows it as the game's Slider is dragged.
+        private void Dragged(PointerEventData data)
+        {
+            if (_view == null || _node < 0 || data == null || data.button != PointerEventData.InputButton.Left || _view.PointerDragged == null)
+            {
+                return;
+            }
+            var rect = (RectTransform)transform;
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(rect, data.position, data.pressEventCamera, out Vector2 local) && rect.rect.width > 0f)
+            {
+                _view.PointerDragged(_node, Mathf.Clamp01((local.x - rect.rect.xMin) / rect.rect.width));
             }
         }
 

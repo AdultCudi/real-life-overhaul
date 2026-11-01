@@ -472,10 +472,10 @@ namespace RealLifeOverhaul.Ui
             float row = UiTokens.S5;
             float cw = UiDraw.Snap(Math.Max(UiTextRules.Width(read, UiStyle.SmallStrong), SwatchSize + UiTokens.S2 + lw + UiTokens.S4 + vw) + UiTokens.S1 + UiTokens.S3 * 2f);
             float ch = UiDraw.Snap(UiTokens.S2 * 2f + UiTextRules.LineHeight(UiStyle.SmallStrong) + UiTokens.S1 + rows * row);
-            float x = UiDraw.Snap(cx + UiTokens.S3);
+            float x = UiDraw.Snap(px + slot * (i + 1) + UiTokens.S3);   // past the column's edge, so the ring round the point's column stays whole
             if (x + cw > bx + bw - UiTokens.S2)
             {
-                x = UiDraw.SnapDown(cx - UiTokens.S3 - cw);
+                x = UiDraw.SnapDown(px + slot * i - UiTokens.S3 - cw);
             }
             x = Math.Max(bx + UiTokens.S2, x);
             float y = UiDraw.Snap(top);

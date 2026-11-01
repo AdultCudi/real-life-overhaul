@@ -165,6 +165,17 @@ internal static partial class Program
         bool let = !screen.Steps(UiPartsGallery.Slider);
         Check(loose && held && let && more >= 0 && scene.Nodes[more].Disabled && less >= 0 && !scene.Nodes[less].Disabled,
             "ui parts: Left and Right move the focus until a slider is pressed, then step it until Back lets it go, and an amount's plus greys at its end as the game's AmountSelector does");
+        // The pointer drags a slider as the game's Slider is dragged: its far right is the slider's top, its far left the bottom.
+        UiPartsGalleryModel before = UiPartsGalleryScreen.Model(en, new UiPartsState(), money);
+        screen.Dragged(UiPartsGallery.Slider, slider, 1f);
+        screen.Press(UiPartsGallery.Slider, slider);
+        bool clickHolds = screen.Steps(UiPartsGallery.Slider);
+        screen.Lay(scene, UiFrame.FullMenu(16f / 9f, "Interface parts"), true, UiDefaultKeys.Keyboard);
+        int knobAt = FindArg(scene, UiPartsGallery.Slider, slider);
+        Check(before != null && UiDraw.SliderShare(320f, "8", 1f) == 1f && UiDraw.SliderShare(320f, "8", 0f) == 0f && !clickHolds && knobAt >= 0,
+            "ui parts: the pointer sets a slider where it goes down or drags, and its click does not hold it for the keys");
+        Check(host.Contains("_view.PointerDragged = Guard.Wrap<int, float>(PointerDragged)") && File.ReadAllText(System.IO.Path.Combine(folder, "UiHit.cs")).Contains("IDragHandler"),
+            "ui parts: the host hears the pointer drag across a target, through the guard");
         bool closed = screen.Press(UiPartsGallery.Choice, van) && screen.Back() && !screen.Back();
         Check(closed, "ui parts: a choice's list opens on a press and Back shuts it before it shuts the gallery");
 

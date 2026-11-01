@@ -104,7 +104,11 @@ namespace RealLifeOverhaul.Ui
                     st.OpenChoice = st.OpenChoice == arg ? -1 : arg;
                     break;
                 case UiPartsGallery.Slider:
-                    st.Held = st.Held == arg ? -1 : arg;   // a press holds it for Left and Right, a second lets it go
+                    if (_dragged != arg)
+                    {
+                        st.Held = st.Held == arg ? -1 : arg;   // a press of the keys holds it for Left and Right, a second lets it go
+                    }
+                    _dragged = -1;   // a click was the pointer's: its knob followed the pointer already
                     break;
                 case UiPartsGallery.Field:
                     st.Typing = arg == UiPartsGallery.Arg(true, 2, 0);
@@ -201,9 +205,9 @@ namespace RealLifeOverhaul.Ui
                 st.Typing = false;
                 _dirty = true;
             }
-            if (command == UiDataTable.First + UiDataTable.Row)
+            if (command == UiDataTable.First + UiDataTable.Row && !st.Picking)
             {
-                st.Selected = RowPerson(arg);
+                st.Selected = RowPerson(arg);   // while picking, the detail stays on the last row picked
             }
             else if (command == UiChart.First + UiChart.Point || command == UiPartsGallery.BarsBase + UiChart.Point || command == UiPartsGallery.CandlesBase + UiChart.Point)
             {
@@ -212,6 +216,30 @@ namespace RealLifeOverhaul.Ui
             }
             _dirty |= st.Selected != before;
         }
+
+        public void Dragged(int command, int arg, float share)
+        {
+            if (command != UiPartsGallery.Slider || _model == null)
+            {
+                return;
+            }
+            UiPartsState st = _state;
+            float at = UiDraw.SliderShare(_model.ControlWidth, arg == UiPartsGallery.Arg(false, 1, 0) ? Words(st.Ads) : st.Staff.ToString(Inv), share);
+            if (arg == UiPartsGallery.Arg(false, 1, 0))
+            {
+                st.Ads = (int)Math.Round(at * AdsMost / 50f) * 50;
+            }
+            else if (arg == UiPartsGallery.Arg(false, 1, 1))
+            {
+                st.Staff = 1 + (int)Math.Round(at * 7f);
+            }
+            _dragged = arg;
+            _dirty = true;
+        }
+
+        private int _dragged = -1;   // the slider the pointer went down on, so its click does not also hold it
+
+        private string Words(int dollars) => _money(dollars);
 
         public void Pointed(int command, int arg)
         {
@@ -419,16 +447,17 @@ namespace RealLifeOverhaul.Ui
             Tracks(m, t);
             bool open = st.OpenChoice >= 0 && m.Page == UiPartsGallery.PageControls;
             bool picking = st.Picking && m.Page == UiPartsGallery.PageTable, held = st.Held >= 0 && m.Page == UiPartsGallery.PageControls;
+            bool typing = st.Typing && m.Page == UiPartsGallery.PageControls;
             var prompts = new List<UiPrompt>
             {
-                new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
+                new UiPrompt { Action = UiAction.Move, Label = held ? t("reallife_ui_prompt_change", "Change") : t("reallife_ui_prompt_move", "Move") },
                 new UiPrompt
                 {
                     Action = UiAction.Confirm, Label = open ? t("reallife_ui_prompt_choose", "Choose") : picking ? t("reallife_ui_parts_prompt_pick", "Pick")
-                        : held ? t("reallife_ui_prompt_change", "Change") : t("reallife_ui_prompt_select", "Select")
+                        : held || typing ? t("reallife_ui_parts_done", "Done") : t("reallife_ui_prompt_select", "Select")
                 },
             };
-            if (!open)
+            if (!open && !held && !typing)
             {
                 prompts.Add(new UiPrompt { Action = UiAction.TabPrev, Label = t("reallife_ui_prompt_page", "Page") });
             }

@@ -320,7 +320,7 @@ namespace RealLifeOverhaul.Ui
                 offset = Math.Min(offset, m.Reveal * rowH);
                 offset = Math.Max(offset, (m.Reveal + 1) * rowH - viewH);
             }
-            offset = Math.Max(0f, Math.Min(offset, rows * rowH - viewH));
+            offset = Math.Max(0f, Math.Min((float)Math.Round(offset / rowH) * rowH, rows * rowH - viewH));   // by whole rows, never a sliver of one
             m.Offset = offset;
             m.Reveal = -1;
             short clip = s.AddClip(x, y, w, viewH, offset);

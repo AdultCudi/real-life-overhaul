@@ -80,8 +80,14 @@ public static partial class UiPreviewRunner
                 screen.HoverArg = 3;
                 screen.Walk = Moves("DDDUU");
                 break;
-            case "table":
             case "table_picked":
+                screen.HoverCommand = UiDataTable.First + UiDataTable.Row;
+                screen.HoverArg = 5;
+                screen.FocusCommand = UiDataTable.First + UiDataTable.Row;
+                screen.FocusArg = 3;   // on the last row picked, which the detail shows
+                screen.Walk = Moves("UUUURRRDDDL");
+                break;
+            case "table":
             case "table_empty":
                 screen.HoverCommand = UiDataTable.First + UiDataTable.Row;
                 screen.HoverArg = 5;

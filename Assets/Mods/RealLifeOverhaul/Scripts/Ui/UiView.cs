@@ -36,6 +36,9 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Told when the wheel turns over a scroll region (its clip, the notches).</summary>
         public System.Action<int, float> Wheeled;
 
+        /// <summary>Told when the pointer goes down on a target or drags across it: its node and where, 0 to 1 across its face.</summary>
+        public System.Action<int, float> PointerDragged;
+
         /// <summary>The root: anchored at its parent's top left, sized to the scene.</summary>
         public RectTransform Root => _root;
 

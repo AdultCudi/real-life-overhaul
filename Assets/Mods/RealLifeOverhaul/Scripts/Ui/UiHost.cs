@@ -93,6 +93,7 @@ namespace RealLifeOverhaul.Ui
                 _view.PointerExited = Guard.Wrap<int>(PointerExited);
                 _view.PointerPressed = Guard.Wrap<int>(PointerPressed);
                 _view.Wheeled = Guard.Wrap<int, float>(Wheeled);
+                _view.PointerDragged = Guard.Wrap<int, float>(PointerDragged);
             }
             _laidSize = Vector2.zero;
         }
@@ -461,6 +462,21 @@ namespace RealLifeOverhaul.Ui
                 Layout();
             }
             return true;
+        }
+
+        // The pointer down on a target or dragging across it (IUiPointing): a slider's knob follows it, as the game's Slider is dragged.
+        private void PointerDragged(int node, float share)
+        {
+            if (_typing || node < 0 || node >= _scene.NodeCount || _scene.Nodes[node].Disabled || _scene.Nodes[node].Layer != UiFocusRules.TopLayer(_scene)
+                || !(_screen is IUiPointing pointing))
+            {
+                return;
+            }
+            pointing.Dragged(_scene.Nodes[node].Command, _scene.Nodes[node].Arg, share);
+            if (_screen.Dirty)
+            {
+                Layout();
+            }
         }
 
         // The screen hears what the mouse rests on (IUiPointing), for a reading the keys' focus would show.

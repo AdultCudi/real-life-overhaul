@@ -69,6 +69,7 @@ namespace RealLifeOverhaul.Ui
         public int CatalogueList = -1;
         public int TableList = -1;
         public int StatementList = -1;
+        public float ControlWidth = 320f;   // the controls page's control column, so a pointer's place on a slider maps to its value
     }
 
     /// <summary>
@@ -152,6 +153,7 @@ namespace RealLifeOverhaul.Ui
             ref float openX, ref float openY, ref float openW)
         {
             float cw = UiDraw.SnapDown(Math.Min(MostControl, w * 0.5f));
+            m.ControlWidth = cw;
             float ty = y;
             for (int sec = 0; sec < sections.Length; sec++)
             {
@@ -223,8 +225,11 @@ namespace RealLifeOverhaul.Ui
             UiAt d = at;
             if (!detail)
             {
-                UiDraw.EmptyState(s, d, dx, dy, Detail, y + h - dy, UiIcon.IdCard, m.DetailEmptyTitle, m.DetailEmptyBody, null, -1, keys);
-                return;
+                if (t.RowCount > 0)
+                {
+                    UiDraw.EmptyState(s, d, dx, dy, Detail, y + h - dy, UiIcon.IdCard, m.DetailEmptyTitle, m.DetailEmptyBody, null, -1, keys);
+                }
+                return;   // an empty table says it once, in its own room
             }
             ref UiDataRow row = ref t.Rows[t.Selected];
             float ring = UiTokens.S1, face = UiTokens.AvatarHero;
@@ -257,10 +262,13 @@ namespace RealLifeOverhaul.Ui
             UiChart.Lay(s, at, m.Candles, x + half + UiTokens.S4, y2, w - half - UiTokens.S4, h2, CandlesBase);
         }
 
-        // The d-pad keeps to the page: a move that would land on the window's close or, up and down, on the sidebar or in
-        // another column stops at the page's edge (the close is Back, so a pad's press there would shut the app), sideways the sidebar is a step
-        // away, and down from the close lands on what stands under it. Tracks keep their columns: a step's up and down are
-        // the same step of the track above and below.
+        // The d-pad keeps to the page and to its rows and columns. Sideways a move goes to the nearest target standing level
+        // with it that way (a row's next button, never a head under it), and from the page's left edge to the sidebar; up
+        // and down to the nearest sharing its width, a list stepping its own rows. A move with nowhere to go stops where it
+        // is: the window's close is never one (it is Back, so a pad's press there would shut the app), nor, up and down,
+        // the sidebar. The sidebar's own moves never reach the close sideways; the close stays reachable above the
+        // sidebar's first entry, and down from it lands on what stands under it. Tracks link a step to the same step of the
+        // track above and below.
         private static void Fence(UiScene s, int page)
         {
             int close = -1;
@@ -268,55 +276,140 @@ namespace RealLifeOverhaul.Ui
             {
                 close = s.Nodes[i].Command == UiDraw.CloseCommand ? i : close;
             }
-            int under = -1;
-            for (int i = page; i < s.NodeCount; i++)
+            int n = s.NodeCount;
+            var links = new int[n * 4];
+            for (int i = 0; i < links.Length; i++)
             {
-                ref UiNode n = ref s.Nodes[i];
-                if (n.Layer != 0 || n.Disabled)
+                links[i] = -2;   // left as the focus rules find it
+            }
+            int under = -1;
+            for (int i = 0; i < n; i++)
+            {
+                ref UiNode node = ref s.Nodes[i];
+                if (node.Layer != 0 || i == close)
                 {
                     continue;
                 }
-                s.NodeBox(i, out float x, out float y, out float w, out float h);
-                if (under < 0)
-                {
-                    under = i;
-                }
-                else
-                {
-                    s.NodeBox(under, out float ux, out float uy, out float uw, out float uh);
-                    under = x + w > ux + uw + UiTokens.S16 || (Math.Abs(x + w - (ux + uw)) <= UiTokens.S16 && y < uy) ? i : under;
-                }
-            }
-            var links = new int[(s.NodeCount - page) * 4];
-            for (int i = page; i < s.NodeCount; i++)
-            {
+                bool inPage = i >= page;
                 for (int d = 0; d < 4; d++)
                 {
                     int dx = d == 0 ? 1 : d == 1 ? -1 : 0, dy = d == 2 ? 1 : d == 3 ? -1 : 0;
-                    int next = s.Nodes[i].Layer == 0 ? UiFocusRules.Next(s, i, dx, dy) : -1;
-                    bool stop = next >= 0 && (next == close || (dy != 0 && (next < page || !Above(s, i, next))));
-                    links[(i - page) * 4 + d] = stop ? i : -1;
+                    int rules = UiFocusRules.Next(s, i, dx, dy);
+                    if (!inPage)
+                    {
+                        links[i * 4 + d] = dx != 0 && rules == close ? i : -2;   // the sidebar: never sideways onto the close
+                        continue;
+                    }
+                    int next = dx != 0 ? Level(s, i, page, dx) : node.List >= 0 && (rules == UiFocusRules.ScrollAsked || (rules >= page && Above(s, i, rules))) ? -2 : Column(s, i, page, dy);
+                    if (next == -1 && dx < 0 && rules >= 0 && rules < page && rules != close)
+                    {
+                        next = rules;   // the page's left edge: the sidebar is a step away
+                    }
+                    links[i * 4 + d] = next == -1 ? i : next;
+                }
+                if (inPage && !node.Disabled)
+                {
+                    s.NodeBox(i, out float x, out float y, out float w, out float h);
+                    if (under < 0)
+                    {
+                        under = i;
+                    }
+                    else
+                    {
+                        s.NodeBox(under, out float ux, out float uy, out float uw, out float uh);
+                        under = x + w > ux + uw + UiTokens.S16 || (Math.Abs(x + w - (ux + uw)) <= UiTokens.S16 && y < uy) ? i : under;
+                    }
                 }
             }
-            for (int i = page; i < s.NodeCount; i++)
+            for (int i = 0; i < n; i++)
             {
-                ref UiNode n = ref s.Nodes[i];
-                int at = (i - page) * 4;
-                n.Right = links[at] >= 0 ? links[at] : n.Right;
-                n.Left = links[at + 1] >= 0 ? links[at + 1] : n.Left;
-                n.Down = links[at + 2] >= 0 ? links[at + 2] : n.Down;
-                n.Up = links[at + 3] >= 0 ? links[at + 3] : n.Up;
-                if (n.Command >= UiTrack.First && n.Command <= UiTrack.First + 2)
+                ref UiNode node = ref s.Nodes[i];
+                node.Right = links[i * 4] != -2 ? links[i * 4] : node.Right;
+                node.Left = links[i * 4 + 1] != -2 ? links[i * 4 + 1] : node.Left;
+                node.Down = links[i * 4 + 2] != -2 ? links[i * 4 + 2] : node.Down;
+                node.Up = links[i * 4 + 3] != -2 ? links[i * 4 + 3] : node.Up;
+                if (i >= page && node.Command >= UiTrack.First && node.Command <= UiTrack.First + 2)
                 {
-                    int below = s.FindNode(n.Command + 1, n.Arg), above = s.FindNode(n.Command - 1, n.Arg);
-                    n.Down = below >= 0 ? below : i;
-                    n.Up = above >= 0 ? above : i;
+                    int below = s.FindNode(node.Command + 1, node.Arg), above = s.FindNode(node.Command - 1, node.Arg);
+                    node.Down = below >= 0 ? below : i;
+                    node.Up = above >= 0 ? above : i;
                 }
             }
             if (close >= 0 && under >= 0)
             {
                 s.Nodes[close].Down = under;
             }
+        }
+
+        // The nearest page target sideways that stands level with a target (their heights overlap), or -1.
+        private static int Level(UiScene s, int from, int page, int dx)
+        {
+            s.NodeBox(from, out float fx, out float fy, out float fw, out float fh);
+            int best = -1;
+            float bestAlong = float.MaxValue;
+            for (int i = page; i < s.NodeCount; i++)
+            {
+                ref UiNode c = ref s.Nodes[i];
+                if (i == from || c.Disabled || c.Layer != s.Nodes[from].Layer || !Shown(s, i))
+                {
+                    continue;
+                }
+                s.NodeBox(i, out float cx, out float cy, out float cw, out float ch);
+                float along = dx > 0 ? cx - (fx + fw) : fx - (cx + cw);
+                if (along < -UiTokens.S2 || Math.Min(fy + fh, cy + ch) - Math.Max(fy, cy) <= 0f)
+                {
+                    continue;
+                }
+                float score = along + Math.Abs(cy + ch / 2f - (fy + fh / 2f));
+                if (score < bestAlong)
+                {
+                    bestAlong = score;
+                    best = i;
+                }
+            }
+            return best;
+        }
+
+        // The nearest page target up or down that shares some of a target's width, or -1.
+        private static int Column(UiScene s, int from, int page, int dy)
+        {
+            s.NodeBox(from, out float fx, out float fy, out float fw, out float fh);
+            int best = -1;
+            float bestScore = float.MaxValue;
+            for (int i = page; i < s.NodeCount; i++)
+            {
+                ref UiNode c = ref s.Nodes[i];
+                if (i == from || c.Disabled || c.Layer != s.Nodes[from].Layer || !Shown(s, i) || (c.List >= 0 && c.List == s.Nodes[from].List))
+                {
+                    continue;
+                }
+                s.NodeBox(i, out float cx, out float cy, out float cw, out float ch);
+                float along = dy > 0 ? cy - (fy + fh) : fy - (cy + ch);
+                if (along < -UiTokens.S2 || Math.Min(fx + fw, cx + cw) - Math.Max(fx, cx) <= 0f)
+                {
+                    continue;
+                }
+                float score = along + Math.Abs(cx + cw / 2f - (fx + fw / 2f)) * 0.5f;
+                if (score < bestScore)
+                {
+                    bestScore = score;
+                    best = i;
+                }
+            }
+            return best;
+        }
+
+        // A target is in view: outside a scroll region, or inside the part of one shown.
+        private static bool Shown(UiScene s, int i)
+        {
+            ref UiNode c = ref s.Nodes[i];
+            if (c.Clip < 0)
+            {
+                return true;
+            }
+            s.NodeBox(i, out float x, out float y, out float w, out float h);
+            ref UiClip clip = ref s.Clips[c.Clip];
+            return y + h > clip.Y + 0.5f && y < clip.Y + clip.H - 0.5f;
         }
 
         // Whether two targets share some of their width: up and down keep to a column, never jumping across the page.

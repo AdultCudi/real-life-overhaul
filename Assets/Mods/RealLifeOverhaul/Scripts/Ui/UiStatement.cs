@@ -63,7 +63,7 @@ namespace RealLifeOverhaul.Ui
     {
         public const int First = 140;
         public const int Period = 0, Group = 1, Line = 2;
-        private const float BandRow = 32f;     // px: a group's band
+        private const float BandRow = 40f;     // px: a group's band, as tall as a line, so the list shows whole rows
         private const float LineRow = 40f;     // px: a dated line with its kind's tile
         private const float Tile = 28f;        // px: a line's kind on its tile
         private const float When = 96f;        // px: the time or date column
@@ -121,7 +121,7 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Box(s, at, x, ty, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             ty += UiTokens.S1;   // the rule in a grid step of its own
             float footH = m.Totals.Length > 0 ? UiTokens.Control + UiTokens.S1 : 0f;
-            float viewH = UiDraw.SnapDown(y + h - footH - ty);
+            float viewH = rows > 0 ? Math.Max(LineRow, (float)Math.Floor((y + h - footH - ty) / LineRow) * LineRow) : UiDraw.SnapDown(y + h - footH - ty);
             short list = -1;
             if (rows == 0)
             {
@@ -208,7 +208,7 @@ namespace RealLifeOverhaul.Ui
                 offset = Math.Min(offset, tops[m.Reveal]);
                 offset = Math.Max(offset, tops[m.Reveal + 1] - viewH);
             }
-            offset = Math.Max(0f, Math.Min(offset, content - viewH));
+            offset = Math.Max(0f, Math.Min((float)Math.Round(offset / LineRow) * LineRow, content - viewH));   // by whole rows, never a sliver of one
             m.Offset = offset;
             m.Reveal = -1;
             short clip = s.AddClip(x, y, w, viewH, offset);

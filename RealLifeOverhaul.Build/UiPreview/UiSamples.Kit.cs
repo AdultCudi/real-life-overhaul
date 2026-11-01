@@ -35,6 +35,7 @@ internal static partial class UiSamples
                 UiDataRow[] rows = UiPartsGalleryScreen.Model(t, st, Dollars).Table.Rows;
                 st.Picked[rows[1].Values[rows[1].Values.Length - 1]] = true;
                 st.Picked[rows[3].Values[rows[3].Values.Length - 1]] = true;
+                st.Selected = rows[3].Values[rows[3].Values.Length - 1];   // the detail shows the last one picked
                 break;
             }
             case "table_empty":

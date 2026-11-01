@@ -153,13 +153,13 @@ namespace RealLifeOverhaul.Ui
             // The card's face is clear, so the hover's still fill shows on it as on a row; its picture's tile carries its shape.
             int face = UiDraw.Box(s, at, x, y, w, h, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
             UiAt inside = at.In(face);
-            int tile = UiDraw.Box(s, inside, x + UiTokens.S2, y + UiTokens.S2, w - UiTokens.S4, th - UiTokens.S2, UiRole.Tile, UiRole.None, UiTokens.RadiusMedium);
-            Picture(s, inside.In(tile), ref c, x + UiTokens.S2, y + UiTokens.S2, w - UiTokens.S4, th - UiTokens.S2, Glyph);
+            int tile = UiDraw.Box(s, inside, x, y, w, th, UiRole.Tile, UiRole.None, UiTokens.RadiusLarge);   // the card's width, so tile and foot are one shape
+            Picture(s, inside.In(tile), ref c, x, y, w, th, Glyph);
             if (!string.IsNullOrEmpty(c.State))
             {
                 float most = w - UiTokens.S4 * 2f;
                 float cw = Math.Min(UiDraw.SnapDown(most), UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(c.State, UiStyle.SmallStrong) + UiTokens.S1));
-                UiDraw.Chip(s, inside.In(tile), x + w - UiTokens.S2 - UiTokens.S2 - cw, y + UiTokens.S2 * 2f, c.State, c.StateTone, cw);
+                UiDraw.Chip(s, inside.In(tile), x + w - UiTokens.S3 - cw, y + UiTokens.S3, c.State, c.StateTone, cw);
             }
             float fy = y + th, fh = h - th;
             int foot = UiDraw.Box(s, inside, x, fy, w, fh, chosen ? UiRole.Accent : UiRole.None, UiRole.None, UiTokens.RadiusLarge, chosen ? UiFlags.Selected : UiFlags.None);

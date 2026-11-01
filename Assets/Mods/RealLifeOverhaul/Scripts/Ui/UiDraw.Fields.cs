@@ -116,7 +116,9 @@ namespace RealLifeOverhaul.Ui
         {
             share = share < 0f ? 0f : share > 1f ? 1f : share;
             float h = UiTokens.Control;
-            int face = Box(s, at, x, y, w, h, held && !disabled ? UiRole.AccentSoft : UiRole.None, UiRole.None, UiTokens.RadiusLarge, disabled ? UiFlags.Disabled : UiFlags.None);
+            // Held is the keys' and the pad's state: the mouse drags the knob instead, so with the mouse leading no fill shows.
+            int face = Box(s, at, x, y, w, h, held && !disabled && !s.Pointer ? UiRole.AccentSoft : UiRole.None, UiRole.None, UiTokens.RadiusLarge,
+                disabled ? UiFlags.Disabled : UiFlags.None);
             UiAt inside = at.In(face);
             // The figure's room is a share of the control at least, so sliders in one column end their tracks at one edge.
             float fw = Math.Max(Snap(UiTextRules.Width(figure, UiStyle.BodyStrong) + UiTokens.S1), SnapDown(w * FigureShare));
@@ -126,6 +128,18 @@ namespace RealLifeOverhaul.Ui
             float tx = x + Knob / 2f, tw = Math.Max(UiTokens.S8, x + w - fw - UiTokens.S4 - tx);
             Track(s, inside, tx, y + h / 2f, tw, share, disabled);
             return Node(s, at, x, y, w, h, command, arg, face, disabled);
+        }
+
+        /// <summary>
+        /// The share a slider stands at for a point across its face (the pointer's, 0 to 1 from its left), by the track the
+        /// one-row <see cref="Slider"/> lays out at that width with that figure: the knob goes where the pointer is.
+        /// </summary>
+        public static float SliderShare(float w, string figure, float faceShare)
+        {
+            float fw = Math.Max(Snap(UiTextRules.Width(figure, UiStyle.BodyStrong) + UiTokens.S1), SnapDown(w * FigureShare));
+            float tx = Knob / 2f, tw = Math.Max(UiTokens.S8, w - fw - UiTokens.S4 - tx);
+            float share = (faceShare * w - tx) / tw;
+            return share < 0f ? 0f : share > 1f ? 1f : share;
         }
 
         // A slider's thin track centred on a line, its fill to the share and the knob there.
