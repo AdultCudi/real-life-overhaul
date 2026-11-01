@@ -153,6 +153,7 @@ internal static partial class Program
         {
             UiKit();   // (the interface kit alone, while working on it: UiChecks.cs)
             UiIconChecks();   // (the icons: Phosphor's outlines, both variants, filled as their winding says, pinned and regenerated: UiIconChecks.cs)
+            UiGrids();        // (the app window's page shapes and the kit's links: UiGridChecks.cs)
             PhoneKitChecks();   // (the kit phone: its pages, nav bar, height, colours, sources: UiChecks.Phone.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
@@ -685,6 +686,7 @@ internal static partial class Program
         TechScale();    // the tech money scale: budgets, audience to sales and the bands, costs, one market, a studio over ten years against the end game, the one month rule (TechScaleChecks.cs)
         UiKit();        // the interface kit: tokens, fonts, text, motion, focus, every registered screen at every frame, language and look, the rules failing once, sources, texts, timings (UiChecks.cs)
         UiIconChecks(); // the icons: Phosphor's outlines, both variants, filled as their winding says, pinned and regenerated (UiIconChecks.cs)
+        UiGrids();      // the app window's page shapes (diary, board, reader, settings list, conversation, message list, feed, edition) and the kit's links (UiGridChecks.cs)
         PhoneKitChecks();   // the kit phone: every app on one page, the nav bar still, its own height, the apps' colours, the sources (UiChecks.Phone.cs)
         Studio();       // the game studio: the plan, building, the sessions, hype and reviews, the bands and no cap, ten years, the models, after launch, bonuses, rivals, old saves, the save, the screens, the texts (StudioChecks.cs)
         SectorChecks(); // the other tech firms: the shared markets from the city, the curves for the old clamps, rivals by the same rules, IT work, data centres and the cloud, the desk sessions, old saves, the save and the shared part, the screens, ten years, the costs (SectorChecks.cs)

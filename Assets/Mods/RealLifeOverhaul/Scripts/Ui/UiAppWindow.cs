@@ -131,6 +131,9 @@ namespace RealLifeOverhaul.Ui
         private const float AttributeColumn = 280f; // px: the least an attribute's column takes before the bars run in fewer
         private const int MostFacts = 4;
         private const float HeroTile = 72f;         // px: the hero's picture
+
+        /// <summary>The hero's picture tile, for a page's own picture standing as the hero does.</summary>
+        public const float HeroTileSize = HeroTile;
         private const float FigureShare = 0.32f;    // of the width, the figures' beside a hero
 
         public static void Lay(UiScene s, UiAppModel m, UiFrame frame, bool dark, IUiKeys keys)
@@ -230,7 +233,8 @@ namespace RealLifeOverhaul.Ui
                     UiFlags.Label | UiFlags.Truncate);
                 if (cw > 0f)
                 {
-                    UiDraw.TextMiddle(s, inside, ex + ew - UiTokens.S3 - cw, ny, NavRow, cw, UiStyle.Small, UiRole.Muted, nav[i].Count, UiFlags.Right);
+                    UiRole countInk = shown ? UiRole.Text : UiRole.Muted;   // the quiet grey does not read on the chosen tone
+                    UiDraw.TextMiddle(s, inside, ex + ew - UiTokens.S3 - cw, ny, NavRow, cw, UiStyle.Small, countInk, nav[i].Count, UiFlags.Right);
                 }
                 int node = UiDraw.Node(s, at, ex, ny, ew, NavRow, NavCommand, i, face);
                 shownNode = shown ? node : shownNode;
@@ -650,18 +654,8 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // A link as a link: cyan words and the arrow one gap after them, the whole row a target.
-        private static void LinkRow(UiScene s, UiAt at, string words, int command, float x, float y, float w)
-        {
-            float h = UiTokens.Control;
-            int row = UiDraw.Box(s, at, x - UiTokens.S2, y, w + UiTokens.S4, h, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
-            float room = w - UiTokens.Icon - UiTokens.S2;
-            float mw = UiDraw.Snap(UiTextRules.Width(words, UiStyle.BodyStrong) + UiTokens.S1);
-            UiDraw.TextMiddle(s, at.In(row), x, y, h, Math.Min(mw, room), UiStyle.BodyStrong, UiRole.AccentText, words, UiFlags.Label | UiFlags.Truncate);
-            float drawn = Math.Min(UiTextRules.Width(words, UiStyle.BodyStrong), room);
-            UiDraw.Icon(s, at.In(row), x + drawn - UiTokens.S1 + UiDraw.LinkGap, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Next, UiRole.AccentText,
-                UiFlags.Middle | UiFlags.Decor);   // the arrow's glyph stands a grid step inside its box, so its box starts a step early
-            UiDraw.Node(s, at, x - UiTokens.S2, y, w + UiTokens.S4, h, command, 0, row);
-        }
+        // A link as a link: cyan words and the arrow one gap after them, the whole row a target (UiDraw.LinkRow).
+        private static void LinkRow(UiScene s, UiAt at, string words, int command, float x, float y, float w) =>
+            UiDraw.LinkRow(s, at, x, y, w, UiTokens.Control, words, command, 0);
     }
 }
