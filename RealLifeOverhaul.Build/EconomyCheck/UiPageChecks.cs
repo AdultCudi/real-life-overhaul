@@ -150,9 +150,9 @@ internal static partial class Program
         }
         Check(am.Shape == UiPageShape.Feed && am.Title == null && rows == 1 && am.EntryLeads[0] && !am.EntryLeads[1],
             "ui pages: Flare's account is a feed headed by its tabs, and only an entry that opens a business is a target");
-        Check(am.Entries[0].Preview == "A post · seen by 1,240 · 38 came · $412 spent" && am.Entries[0].Time == "Today"
-              && am.Entries[1].Preview.StartsWith("An ad · seen by 300", StringComparison.Ordinal) && am.Entries[1].Time == "2 days ago"
-              && am.Entries[2].Preview == "A post · seen by 0 · kept 12 away · $140 lost" && am.Entries[2].Time == "Yesterday",
+        Check(am.Entries[0].Preview == "A post, seen by 1,240, 38 came, $412 spent" && am.Entries[0].Time == "Today"
+              && am.Entries[1].Preview.StartsWith("An ad, seen by 300", StringComparison.Ordinal) && am.Entries[1].Time == "2 days ago"
+              && am.Entries[2].Preview == "A post, seen by 0, kept 12 away, $140 lost" && am.Entries[2].Time == "Yesterday",
             "ui pages: what each post on Flare's account did is said in words, one that put people off as kept away, and each says when it went up");
         UiDashboardModel tm = FlareCityPages.Model(trends, en, money, resident, tabs, 1, account);
         UiDashboard.Lay(scene, tm, frame, true, UiDefaultKeys.Keyboard);
