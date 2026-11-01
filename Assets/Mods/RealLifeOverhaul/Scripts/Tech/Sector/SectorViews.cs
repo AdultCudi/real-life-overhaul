@@ -57,7 +57,7 @@ namespace RealLifeOverhaul.Tech
     /// sections of their pages. The Tech app draws them today; the mod's design system (Scripts/Ui) will draw the same data.
     /// Game-free: EconomyCheck's SectorChecks build every screen offline.
     /// </summary>
-    public static class SectorViews
+    public static partial class SectorViews
     {
         private const string Mod = "reallife", P = Mod + "_tech_mkt_", D = Mod + "_tech_desk_";   // the keys' start, written so the source holds no key prefix as a literal
 

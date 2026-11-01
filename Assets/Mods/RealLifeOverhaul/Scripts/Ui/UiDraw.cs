@@ -269,7 +269,7 @@ namespace RealLifeOverhaul.Ui
         /// A page's head under the masthead: its title and the line under it at the left of a width. Returns the height of
         /// the head's row, which the controls at its right (a tab bar, the page's action) share.
         /// </summary>
-        public static float PageHead(UiScene s, UiAt at, float x, float y, float w, string title, string line)
+        public static float PageHead(UiScene s, UiAt at, float x, float y, float w, string title, string line, UiRole lineInk = UiRole.Text2)
         {
             float th = Snap(UiTextRules.LineHeight(UiStyle.SectionTitle));
             Text(s, at, x, y, w, UiStyle.SectionTitle, UiRole.Text, title, UiFlags.Label | UiFlags.Truncate);
@@ -277,7 +277,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return Snap(Math.Max(th, UiTokens.Control));
             }
-            Text(s, at, x, y + th, w, UiStyle.Small, UiRole.Text2, line, UiFlags.Label | UiFlags.Truncate);
+            Text(s, at, x, y + th, w, UiStyle.Small, lineInk, line, UiFlags.Label | UiFlags.Truncate);
             return Snap(Math.Max(th + UiTextRules.LineHeight(UiStyle.Small), UiTokens.Control));
         }
 

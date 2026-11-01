@@ -5,16 +5,16 @@ using RealLifeOverhaul.Tech;
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// A tech firm's page as a screen of the kit: the game studio's (StudioViews) or another firm's (SectorViews), its
-    /// choices stepped with Enter, its actions pressed as the Tech app presses them (the director's own acts), worked
-    /// out again after every press. Cost: a screen and a layout a press; nothing per frame.
+    /// A tech firm's whole page as a screen of the kit: the game studio's (StudioViews.Page) or another firm's
+    /// (SectorViews.Page) on the dashboard, its actions pressed as the Tech app presses them (the director's own acts), and
+    /// worked out again after every press. Cost: a page and a layout when it opens and after a press; nothing per frame.
     /// </summary>
     public sealed class StudioPageScreen : IUiScreen
     {
-        private readonly List<ViewChoice> _choices = new List<ViewChoice>(16);
-        private readonly List<ViewAction> _actions = new List<ViewAction>(4);
+        private readonly List<ViewAction> _others = new List<ViewAction>(StudioPages.MostOthers);
         private readonly UiStudioWords _words = new UiStudioWords();
         private readonly string _place;
+        private ViewAction _primary;
         private bool _dirty = true;
 
         public Action Close;
@@ -30,23 +30,29 @@ namespace RealLifeOverhaul.Ui
 
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
-            StudioScreen v = Screen();
-            UiFormModel m = v != null ? StudioPages.Model(v, UiText.Words, _choices, _actions) : new UiFormModel { Title = UiText.T("reallife_ui_page_empty") };
-            UiForm.Lay(s, m, frame, dark, keys);
+            FirmPage page = Page();
+            UiDashboardModel m;
+            if (page != null)
+            {
+                m = StudioPages.Page(page, UiText.Words, _others, out _primary);
+            }
+            else
+            {
+                _primary = null;
+                _others.Clear();
+                string empty = UiText.T("reallife_ui_page_empty");
+                m = new UiDashboardModel { Title = empty, Table = new UiTableModel { EmptyTitle = empty } };
+                m.Prompts = new[] { new UiPrompt { Action = UiAction.Back, Label = UiText.T("reallife_ui_prompt_back") } };
+                m.PromptCount = 1;
+            }
+            UiDashboard.Lay(s, m, frame, dark, keys);
             _dirty = false;
         }
 
         public bool Press(int command, int arg)
         {
-            if (command == UiForm.FieldCommand && arg >= 0 && arg < _choices.Count && _choices[arg] != null)
-            {
-                return Do(_choices[arg].Act, StudioPages.NextValue(_choices[arg]));
-            }
-            if (command == UiForm.ActionCommand && arg >= 0 && arg < _actions.Count && _actions[arg].Enabled)
-            {
-                return Do(_actions[arg].Act, _actions[arg].Arg);
-            }
-            return false;
+            ViewAction a = command == UiDashboard.ActionCommand ? _primary : command == UiDashboard.OtherCommand && arg >= 0 && arg < _others.Count ? _others[arg] : null;
+            return a != null && a.Enabled && Do(a.Act, a.Arg);
         }
 
         public void Focused(int command, int arg)
@@ -63,11 +69,7 @@ namespace RealLifeOverhaul.Ui
         {
         }
 
-        public bool Act(UiAction action)
-        {
-            int primary = _actions.Count - 1;
-            return action == UiAction.Alt && primary >= 0 && Press(UiForm.ActionCommand, primary);
-        }
+        public bool Act(UiAction action) => action == UiAction.Alt && Press(UiDashboard.ActionCommand, 0);
 
         public void Reveal(int list, int index)
         {
@@ -77,7 +79,7 @@ namespace RealLifeOverhaul.Ui
         {
         }
 
-        private StudioScreen Screen()
+        private FirmPage Page()
         {
             TechDirector d = TechDirector.Instance;
             FirmPlace firm = d != null ? d.FirmOf(_place) : null;
@@ -85,7 +87,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return null;
             }
-            return d.StudioRuns(firm.File.K) ? d.StudioFirmScreen(firm, _words) : d.SectorFirmScreen(firm, _words);
+            return d.StudioRuns(firm.File.K) ? d.StudioFirmPage(firm, _words) : d.SectorFirmPage(firm, _words);
         }
 
         private bool Do(int act, int value)

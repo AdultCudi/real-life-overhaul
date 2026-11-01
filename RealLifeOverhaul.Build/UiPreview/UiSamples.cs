@@ -26,7 +26,8 @@ internal static class UiSamples
         {
             new Sample { Name = "population", App = "Economy", Lay = (s, f, d, k) => UiDashboard.Lay(s, PopulationCity(t), f, d, k) },
             new Sample { Name = "flare_city", App = "Flare", Lay = (s, f, d, k) => UiDashboard.Lay(s, FlareCity(t), f, d, k) },
-            new Sample { Name = "studio", App = "Tech", Lay = (s, f, d, k) => UiForm.Lay(s, StudioFirm(t), f, d, k), Walk = "LRDL" },
+            new Sample { Name = "studio", App = "Tech", Lay = (s, f, d, k) => UiDashboard.Lay(s, StudioFirm(t), f, d, k), Walk = "LDDDDRDDLU" },
+            new Sample { Name = "tech_firm", App = "Tech", Lay = (s, f, d, k) => UiDashboard.Lay(s, TechFirm(t), f, d, k), Walk = "DDDDRDDLU" },
             new Sample { Name = "session_panel", App = "Desk", Lay = (s, f, d, k) => UiSessionSteps.Lay(s, DeskPanel(t), f, d, k), Walk = "RDLUL" },
         };
     }
@@ -84,38 +85,183 @@ internal static class UiSamples
     }
 
     /// <summary>
-    /// A game studio's page as StudioPages makes it from StudioViews.Studio, the page the kit's studio screen shows: what
-    /// to do next, the studio's own lines and the games market's, and its actions (the view has no choices).
+    /// A game studio's whole page as StudioPages makes it from StudioViews.Page, a studio well into the game: what to do
+    /// next and its actions, its games out, copies and 30 days' takings, its games and the games market's newest, its
+    /// team with the group it lacks, and its sales and support.
     /// </summary>
-    public static UiFormModel StudioFirm(UiWords t)
+    public static UiDashboardModel StudioFirm(UiWords t)
     {
-        var m = new UiFormModel
+        var m = new UiDashboardModel
         {
-            Title = "Pixel Harbour Games",
-            Fields = new[]
+            Title = "Lantern Bay Games",
+            Subtitle = "Next: start a game. Draft a concept, then pitch it at your desk at Lantern Bay Games.",
+            SubtitleInk = UiRole.Text,
+            StatsFirst = true,
+            Figures = new[]
             {
-                new UiFieldModel { Kind = UiFieldKind.Note, Label = "Next: start a game. Draft a concept, then pitch it at your desk at Pixel Harbour Games.", On = true },
-                new UiFieldModel { Kind = UiFieldKind.Note, Section = "Game studio", Label = "No engine of your own. Building one takes 42,000 work points, then cuts costs and lifts tech." },
-                new UiFieldModel { Kind = UiFieldKind.Note, Label = "Your team knows Simulation, Puzzle and Strategy." },
-                new UiFieldModel { Kind = UiFieldKind.Note, Label = "Support: 120 tickets a day from your players, 96 of them answered. Unanswered tickets cost the studio's name." },
-                new UiFieldModel { Kind = UiFieldKind.Note, Section = "The games market", Label = "Strategy is the hot genre until Day 61." },
-                new UiFieldModel { Kind = UiFieldKind.Note, Label = "Northlight: Ember Run, Action, score 82, 41,000 copies." },
-                new UiFieldModel { Kind = UiFieldKind.Note, Label = "Copperleaf: Tiny Towns, Simulation, score 74, 18,500 copies." },
-                new UiFieldModel { Kind = UiFieldKind.Note, Label = "Bright Mill: Deep Signal, Strategy, score 68, 9,200 copies." },
+                new UiFigureModel { Label = t("reallife_studio_page_games_out", "Games out"), Value = "4" },
+                new UiFigureModel { Label = t("reallife_studio_page_copies", "Copies sold"), Value = "86,400" },
+                new UiFigureModel
+                {
+                    Label = t("reallife_studio_page_takings", "Takings, 30 days"), Value = "$184,200", Span = 2,
+                    Trend = new[] { 38f, 39f, 41f, 40f, 42f, 44f, 47f, 51f, 49f, 46f, 44f, 43f, 45f, 46f, 44f, 42f, 41f, 43f, 45f, 48f, 50f, 49f, 47f, 46f }
+                },
             },
-            Actions = new[]
+            Table = FirmTable(t, new[] { "reallife_studio_page_col_game", "reallife_studio_page_col_genre", "reallife_studio_page_col_score", "reallife_studio_page_col_copies",
+                "reallife_studio_page_col_kept", "reallife_studio_page_col_status" }, new[] { "Game", "Genre", "Score", "Copies", "Kept", "Status" }, 2,
+                "reallife_studio_page_no_games", "No game yet. Draft a concept, then pitch it at your desk.", new[]
+                {
+                    new[] { "Cinder Valley", "Simulation", "", "", "", "64% made" },
+                    new[] { "Ember Isle", "Adventure", "78", "41,000", "$612,400", "96 days" },
+                    new[] { "Tiny Towns", "Simulation", "74", "28,500", "$341,900", "212 days" },
+                    new[] { "Deep Signal", "Strategy", "69", "12,600", "$128,300", "340 days" },
+                    new[] { "Pocket Courts", "Sports", "58", "4,300", "$31,200", "Withdrawn" },
+                }),
+            More = FirmTable(t, new[] { "reallife_studio_page_col_rival", "reallife_studio_page_col_studio", "reallife_studio_page_col_genre", "reallife_studio_page_col_score",
+                "reallife_studio_page_col_copies" }, new[] { "Rival game", "Studio", "Genre", "Score", "Copies" }, 3, "reallife_studio_studio_rivals_none", "No rival game is out yet.", new[]
+                {
+                    new[] { "Iron Tide", "Pixel Harbour Games", "Action", "82", "41,000" },
+                    new[] { "Lantern Puzzles", "Copperkettle Games", "Puzzle", "71", "12,300" },
+                    new[] { "Harbour Days", "Tidewater Interactive", "Simulation", "76", "28,900" },
+                    new[] { "The Quiet House", "Blue Kestrel Games", "Horror", "68", "9,400" },
+                    new[] { "Crown and Ledger", "Saltmarsh Studios", "Strategy", "84", "57,200" },
+                    new[] { "Ashen Road", "Hollowpine Interactive", "Role-playing", "79", "33,600" },
+                    new[] { "Paper Kites", "Gilded Quill Games", "Family", "66", "14,800" },
+                    new[] { "Signal Lost", "Pixel Harbour Games", "Shooter", "74", "36,100" },
+                    new[] { "Tile Garden", "Copperkettle Games", "Casual", "62", "8,700" },
+                    new[] { "Northern Line", "Tidewater Interactive", "Adventure", "70", "19,500" },
+                    new[] { "Mire", "Blue Kestrel Games", "Puzzle", "65", "7,200" },
+                    new[] { "Old Kingdoms", "Saltmarsh Studios", "Role-playing", "81", "48,800" },
+                }),
+            StatsTitle = t("reallife_studio_page_team", "Team"),
+            Stats = new[]
             {
-                new UiActionModel { Label = "Build our own engine", Kind = UiButtonKind.Secondary, Key = UiAction.Option, Command = UiForm.ActionCommand },
-                new UiActionModel { Label = "Start a game", Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiForm.ActionCommand },
+                Group(t, "reallife_studio_page_group_engineers", "Engineers", 5, 64),
+                Group(t, "reallife_studio_page_group_designers", "Designers", 3, 58),
+                Group(t, "reallife_studio_page_group_testers", "Testers", 2, 52),
+                Group(t, "reallife_studio_page_group_product", "Product", 1, 61),
+                Group(t, "reallife_studio_page_group_support", "Support", 0, 0),
             },
+            SideTitle = t("reallife_studio_page_facts", "Sales and support"),
+            Side = new[]
+            {
+                new UiPairModel { Key = t("reallife_studio_page_tickets", "Tickets a day"), Value = "120, 0 answered" },
+                new UiPairModel { Key = t("reallife_studio_page_pirated", "Pirated copies"), Value = "9,800" },
+                new UiPairModel { Key = t("reallife_studio_page_drm", "DRM"), Value = "On in 1 of 3" },
+                new UiPairModel { Key = t("reallife_studio_page_asks", "Fan requests"), Value = "new levels, co-op play" },
+                new UiPairModel { Key = t("reallife_studio_page_engine", "Engine"), Value = "Licensed" },
+                new UiPairModel { Key = t("reallife_studio_page_trend", "Hot genre"), Value = "Strategy until Day 61" },
+                new UiPairModel { Key = t("reallife_studio_page_known", "Team knows"), Value = "Simulation, Adventure, Strategy" },
+            },
+            Others = new[] { new UiActionModel { Label = "Build our own engine", Kind = UiButtonKind.Secondary, Key = UiAction.Option, Command = UiDashboard.OtherCommand } },
+            HasAction = true,
+            Action = new UiActionModel { Label = "Start a game", Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiDashboard.ActionCommand },
         };
-        m.FieldCount = m.Fields.Length;
-        m.ActionCount = m.Actions.Length;
+        return Counted(m, t, "Start a game");
+    }
+
+    /// <summary>
+    /// Another tech firm's whole page as StudioPages makes it from SectorViews.Page, a software firm with a product ready:
+    /// what to do next in its good news's colour, its products, customers and takings, its products and the rivals in its
+    /// markets, its team with the group it lacks, and its markets, support and limits.
+    /// </summary>
+    public static UiDashboardModel TechFirm(UiWords t)
+    {
+        var m = new UiDashboardModel
+        {
+            Title = "Signal Works",
+            Subtitle = "Ledger Cloud can launch. Launch it and it starts selling.",
+            SubtitleInk = UiRole.OkText,
+            StatsFirst = true,
+            Figures = new[]
+            {
+                new UiFigureModel { Label = t("reallife_tech_mkt_page_products", "Products"), Value = "3" },
+                new UiFigureModel { Label = t("reallife_tech_mkt_page_customers", "Customers"), Value = "18,240" },
+                new UiFigureModel
+                {
+                    Label = t("reallife_tech_mkt_page_takings", "Takings, 30 days"), Value = "$96,400", Span = 2,
+                    Trend = new[] { 18f, 18.5f, 19f, 19.4f, 19.2f, 19.8f, 20.4f, 21f, 21.3f, 21.1f, 21.6f, 22f, 22.4f, 22.2f, 22.8f, 23.1f, 23.4f, 23.2f, 23.8f, 24.1f, 24.4f, 24.2f, 24.6f, 24.9f }
+                },
+            },
+            Table = FirmTable(t, new[] { "reallife_tech_mkt_page_col_product", "reallife_tech_mkt_page_col_kind", "reallife_tech_mkt_page_col_customers", "reallife_tech_mkt_page_col_takings",
+                "reallife_tech_mkt_page_col_status" }, new[] { "Product", "Kind", "Customers", "Takings", "Status" }, 2, "reallife_tech_mkt_page_no_products", "No product yet.", new[]
+                {
+                    new[] { "Ledgerly", "Subscription service", "12,400", "$412,000", "184 days" },
+                    new[] { "Pocket Ledger", "Phone app", "5,840", "$61,300", "96 days" },
+                    new[] { "Ledger Cloud", "Subscription service", "", "", "Being built" },
+                }),
+            More = FirmTable(t, new[] { "reallife_tech_mkt_page_col_rival", "reallife_tech_mkt_page_col_market", "reallife_tech_mkt_page_col_customers",
+                "reallife_tech_mkt_page_col_features" }, new[] { "Rival", "Market", "Customers", "Features" }, 2, "reallife_tech_mkt_page_no_rivals", "No rival sells in these markets yet.", new[]
+                {
+                    new[] { "Skyvault Desk", "Business software", "38,200", "14" },
+                    new[] { "Abacus Books", "Business software", "26,900", "12" },
+                    new[] { "Tallyrow Insights", "Business software", "19,400", "11" },
+                    new[] { "Shopfront Pay", "Apps", "17,800", "9" },
+                    new[] { "Signpost Local", "Apps", "12,100", "8" },
+                    new[] { "Codeharbour CRM", "Business software", "9,600", "10" },
+                    new[] { "Ledgerline Billing", "Business software", "7,300", "9" },
+                    new[] { "Circuitry Notes", "Apps", "5,900", "7" },
+                    new[] { "Fibreway Status", "Apps", "4,200", "6" },
+                    new[] { "Quartzline Hours", "Business software", "3,100", "7" },
+                    new[] { "Signalhill Rota", "Apps", "2,600", "5" },
+                    new[] { "Skyvault Forms", "Apps", "1,900", "5" },
+                }),
+            StatsTitle = t("reallife_studio_page_team", "Team"),
+            Stats = new[]
+            {
+                Group(t, "reallife_studio_page_group_engineers", "Engineers", 6, 66),
+                Group(t, "reallife_studio_page_group_designers", "Designers", 1, 60),
+                Group(t, "reallife_studio_page_group_testers", "Testers", 1, 55),
+                Group(t, "reallife_studio_page_group_infrastructure", "Infrastructure", 0, 0),
+                Group(t, "reallife_studio_page_group_support", "Support", 2, 54),
+                Group(t, "reallife_studio_page_group_sales", "Sales", 1, 49),
+            },
+            SideTitle = t("reallife_tech_mkt_page_facts", "Markets and support"),
+            Side = new[]
+            {
+                new UiPairModel { Key = t("reallife_tech_mkt_market_businesssoftware", "Business software"), Value = "12%, the lead 31%" },
+                new UiPairModel { Key = t("reallife_tech_mkt_market_apps", "Apps"), Value = "4%, the lead 22%" },
+                new UiPairModel { Key = t("reallife_tech_mkt_page_support", "Support people"), Value = "2 of 3 needed" },
+                new UiPairModel { Key = t("reallife_tech_mkt_page_limit", "Products here"), Value = "3 of 16" },
+                new UiPairModel { Key = t("reallife_tech_mkt_page_desk", "Desk sessions"), Value = "1 due" },
+                new UiPairModel { Key = t("reallife_tech_mkt_page_reputation", "Reputation"), Value = "62%" },
+            },
+            HasAction = true,
+            Action = new UiActionModel { Label = "Launch", Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiDashboard.ActionCommand },
+        };
+        return Counted(m, t, "Launch");
+    }
+
+    // A firm page's table: its columns named by their keys, the figures from a column on to the right, its rows as written.
+    private static UiTableModel FirmTable(UiWords t, string[] keys, string[] english, int figuresFrom, string emptyKey, string empty, string[][] rows)
+    {
+        var columns = new UiColumn[keys.Length];
+        for (int i = 0; i < keys.Length; i++)
+        {
+            bool figure = i >= figuresFrom;
+            columns[i] = new UiColumn { Title = t(keys[i], english[i]), Width = figure ? UiTokens.S16 * 2f + UiTokens.S4 : 0f, Right = figure };
+        }
+        return new UiTableModel { Columns = columns, Rows = rows, RowCount = rows.Length, Selected = -1, EmptyTitle = t(emptyKey, empty) };
+    }
+
+    // A team group's bar: its name and count, its mean skill, or the word for a group the firm needs and lacks.
+    private static UiStatModel Group(UiWords t, string key, string english, int count, int skill)
+    {
+        string label = t("reallife_studio_page_group_count", "{group} ({count})").Replace("{group}", t(key, english)).Replace("{count}", count.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        return new UiStatModel { Label = label, Figure = count > 0 ? skill.ToString(System.Globalization.CultureInfo.InvariantCulture) : t("reallife_studio_page_needed", "Needed"), Value = skill };
+    }
+
+    // A firm page's counts and prompt bar: move, its primary action, back.
+    private static UiDashboardModel Counted(UiDashboardModel m, UiWords t, string primary)
+    {
+        m.FigureCount = m.Figures.Length;
+        m.StatCount = m.Stats.Length;
+        m.SideCount = m.Side.Length;
+        m.OtherCount = m.Others.Length;
         m.Prompts = new[]
         {
             new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
-            new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_select", "Select") },
-            new UiPrompt { Action = UiAction.Alt, Label = "Start a game" },
+            new UiPrompt { Action = UiAction.Alt, Label = primary },
             new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
         };
         m.PromptCount = m.Prompts.Length;

@@ -452,6 +452,31 @@ internal static partial class Program
         SectorRules.BeginDay(f, 5, 1);
         SectorRules.Count(f, p);
         SectorRules.Attract(f);
+        // A firm's whole page for the mod's design system: a software firm with a product on sale, and an agency with work.
+        var reading = new FirmReading();
+        reading.Add(TalentCatalogue.Role(0), 60);
+        var sp = new SectorPlace { Place = "p", Name = "Firm", Kind = (int)FirmKind.Software, Products = 1, Customers = 2000, SupportNeeded = 2, Team = new SectorTeam { People = 1, Builders = 1 } };
+        var ffs = new FirmsFile { Seed = 3 };
+        ffs.Products.Add(p);
+        FirmPage page = SectorViews.Page(f, ffs, sp, reading, 10, fmt);
+        bool support = false, security = false;
+        foreach (ViewRole r in page.Team)
+        {
+            support |= r.Group == TeamGroup.Support && r.Needed;
+            security |= r.Group == TeamGroup.Security && r.Needed;
+        }
+        var ffw = new FirmsFile { Seed = 3 };
+        ffw.Contracts.Add(new Contract { Id = 1, Place = "w", Kind = (int)WorkKind.Website, Client = "Elm Street Dental", Value = 400000, Due = 40, Stage = (int)WorkStage.Active });
+        ffw.Contracts.Add(new Contract { Id = 2, Place = "w", Kind = (int)WorkKind.Branding, Client = "Corner Bakery", Paid = 150000, Stage = (int)WorkStage.Done });
+        FirmPage agency = SectorViews.Page(f, ffw, new SectorPlace { Place = "w", Name = "Agency", Kind = (int)FirmKind.WebAgency, Contracts = 1 }, reading, 10, fmt);
+        FirmPage design = SectorViews.Page(f, ffw, new SectorPlace { Place = "w", Name = "Studio", Kind = (int)FirmKind.Design, Contracts = 1 }, reading, 10, fmt);
+        Check(page.Figures.Count == 3 && page.Figures[2].Wide && page.Main.Rows.Count == 1 && page.Main.Rows[0][0] == "Shown" && support && security
+              && agency.Main.Rows.Count == 1 && agency.Main.Rows[0][1] == "Elm Street Dental" && agency.More.ColumnKeys[0] == "reallife_tech_mkt_page_col_product"
+              && design.More.Rows.Count == 1 && design.More.Rows[0][1] == "Corner Bakery",
+            "sector pages: a software house's products, customers and rivals with the groups its work lacks; an agency's work under way over its apps; a design studio's work done");
+        bool pageWords = PageWords(page, out string pageMissing), agencyWords = PageWords(agency, out string agencyMissing), designWords = PageWords(design, out string designMissing);
+        Check(pageWords && agencyWords && designWords, "sector pages: every word the pages use is written in English, Portuguese and Chinese (" + pageMissing + ", " + agencyMissing + ", "
+              + designMissing + ")");
         ViewSection market = SectorViews.Market(f, p, 900, 400, fmt);
         Check(market.Lines.Count >= 5, "sector screens: a product's market says who buys, its share and where it is heading, how known it is, the going features and the rivals, and that no cap but the share holds it");
         SectionKeys(market, SectorScreenKeys);

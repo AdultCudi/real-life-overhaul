@@ -641,6 +641,89 @@ internal static partial class Program
         bool studioFine = ScreenFine(studio, en, out why), emptyFine = ScreenFine(empty, en, out string why2);
         Check(studioFine && emptyFine && emptyWords && studio.Primary.Act == StudioAct.Concept,
             "studio screens: the studio's part of its firm's page, with words where there is nothing yet (" + why + why2 + ")");
+        // The studio's whole page for the mod's design system (the owner, 1 Nov: fill the page with what the Tech app knows).
+        var reading = new FirmReading();
+        for (int i = 0; i < reading.Takings.Length; i++)
+        {
+            reading.Takings[i] = 100000 + i * 5000;
+        }
+        reading.Add(TalentCatalogue.Role(0), 60);
+        reading.Add(TalentCatalogue.Role(0), 70);
+        reading.Add(TalentCatalogue.Role(18), 50);
+        var firms = new FirmsFile();
+        int mine = 0;
+        foreach (GameDev g in f.Games)
+        {
+            mine += g.Place == StudioPlace ? 1 : 0;
+            firms.Products.Add(new Product { Id = g.Id, Place = g.Place, Name = "Game " + g.Id });
+        }
+        FirmPage page = StudioViews.Page(f, firms, new StudioPlace { Place = StudioPlace, Name = "Kestrel Works", Tickets = 300, Answered = 0 }, reading, 900, words);
+        bool lacks = false, engineers = false;
+        foreach (ViewRole r in page.Team)
+        {
+            lacks |= r.Group == TeamGroup.Support && r.Needed && r.Count == 0;
+            engineers |= r.Group == TeamGroup.Engineers && r.Count == 2 && r.Skill == 65;
+        }
+        ViewFigure takings = page.Figures.Count == 3 ? page.Figures[2] : null;
+        Check(takings != null && takings.Wide && takings.Trend.Length == FirmsCatalogue.MonthDays - StudioViews.WeekDays + 1 && takings.Trend[takings.Trend.Length - 1] > takings.Trend[0]
+              && page.Main.Rows.Count == mine && page.Main.Rows.Count > 0 && page.More.Rows.Count == f.Rivals.Count && lacks && engineers && page.Facts.Count == 7 && page.Screen.Primary != null,
+            "studio pages: three figures with a week's takings for each day in a wide one, a row for each of the studio's games, the market's newest, the team with the support it lacks while players write in");
+        Check(PageWords(page, out string missing), "studio pages: every word the page uses is written in English, Portuguese and Chinese (" + missing + ")");
+    }
+
+    // Every key a firm's page uses (its labels, its columns, its words for nothing, and the words its cells are written
+    // with, which the plain formatter leaves as their keys) has its text in en, pt and zh-cn.
+    private static bool PageWords(FirmPage page, out string missing)
+    {
+        var keys = new HashSet<string> { page.TeamKey, page.FactsKey, StudioViews.GroupCountKey, StudioViews.NeededKey };
+        foreach (ViewFigure fig in page.Figures)
+        {
+            keys.Add(fig.LabelKey);
+        }
+        foreach (ViewTable t in new[] { page.Main, page.More })
+        {
+            keys.UnionWith(t.ColumnKeys);
+            keys.Add(t.EmptyKey);
+            foreach (string[] row in t.Rows)
+            {
+                foreach (string cell in row)
+                {
+                    if (cell != null && cell.StartsWith("reallife_", StringComparison.Ordinal))
+                    {
+                        keys.Add(cell);
+                    }
+                }
+            }
+        }
+        foreach (ViewRole r in page.Team)
+        {
+            keys.Add(StudioViews.GroupKey(r.Group));
+        }
+        foreach (ViewPair pair in page.Facts)
+        {
+            keys.Add(pair.LabelKey);
+            foreach (string part in pair.Value.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (part.StartsWith("reallife_", StringComparison.Ordinal))
+                {
+                    keys.Add(part);
+                }
+            }
+        }
+        var gaps = new List<string>();
+        foreach (string lang in new[] { "en", "pt", "zh-cn" })
+        {
+            Dictionary<string, string> texts = LocaleFile(lang);
+            foreach (string key in keys)
+            {
+                if (!string.IsNullOrEmpty(key) && !texts.ContainsKey(key))
+                {
+                    gaps.Add(lang + ":" + key);
+                }
+            }
+        }
+        missing = gaps.Count == 0 ? "all " + keys.Count : string.Join(", ", gaps.GetRange(0, Math.Min(6, gaps.Count)));
+        return gaps.Count == 0;
     }
 
     // ---------------------------------------------------------------- the wiring and the sources

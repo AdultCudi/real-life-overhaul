@@ -192,6 +192,18 @@ namespace RealLifeOverhaul.Ui
                     new UiServiceModel { Title = t("reallife_ui_gallery_service_2", "Negotiate salary"), Price = t("reallife_ui_price_quote", "Quote") },
                 },
                 CallEnd = t("reallife_ui_gallery_end", "End"),
+                TokenCaptions = new[]
+                {
+                    t("reallife_ui_gallery_cap_type", "Type"), t("reallife_ui_gallery_cap_colours", "Colours"), t("reallife_ui_gallery_cap_motion", "Motion"),
+                    t("reallife_ui_gallery_cap_sizes", "Spacing and sizes"),
+                },
+                TokenColumns = new[]
+                {
+                    t("reallife_ui_gallery_col_style", "Style"), t("reallife_ui_gallery_col_face", "Face"), t("reallife_ui_gallery_col_size", "Size"),
+                    t("reallife_ui_gallery_col_weight", "Weight"), t("reallife_ui_gallery_col_role", "Role"), t("reallife_ui_gallery_col_dark", "Dark"),
+                    t("reallife_ui_gallery_col_light", "Light"), t("reallife_ui_gallery_col_motion", "Motion"), t("reallife_ui_gallery_col_full", "Full"),
+                    t("reallife_ui_gallery_col_calm", "Calm"), t("reallife_ui_gallery_col_token", "Token"), t("reallife_ui_gallery_col_px", "Pixels"),
+                },
                 ToastTitle = t("reallife_ui_gallery_toast_title", "Bonus paid"),
                 ToastSub = t("reallife_ui_gallery_person_1", "Maya Okafor"),
             };

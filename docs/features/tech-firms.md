@@ -22,6 +22,7 @@ Tech/Sector/                    the first ten are game-free and compiled by Econ
   SectorStore, SectorShare        the save's line, "reallife:tech_sector"; the shared city's part, letter R
   SectorBridges                   the population's city and Flare's talk bridge
   SectorViews                     every screen as data: a firm's page, a product's market, the data centres' markets
+  SectorViews.Page                a firm's whole page as data for the mod's design system: figures, products or work, rivals, team, shares
   SectorGuide                     the feature's entry and the Guide page's figures
   TechApp.Sector                  the screens drawn in the Tech app until the mod's design system draws the same data
 ```

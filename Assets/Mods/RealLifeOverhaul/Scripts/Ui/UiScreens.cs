@@ -81,7 +81,11 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_motion_1", "reallife_session_meeting_morale", "reallife_session_meeting_morale_trade", "reallife_session_meeting_push",
                 "reallife_session_meeting_push_trade", "reallife_ui_prompt_page", "reallife_ui_prompt_look", "reallife_ui_prompt_move",
                 "reallife_ui_prompt_back", "phone_call_button", "phone_view_on_map_button", "contacts_delete_all_button", "contactcategoryname_rivals",
-                "common_address", "myemployees_hourlywage", "contacts_today_opening_hours", "bizman_headhunters_skill_level_title"
+                "common_address", "myemployees_hourlywage", "contacts_today_opening_hours", "bizman_headhunters_skill_level_title", "reallife_ui_gallery_cap_type",
+                "reallife_ui_gallery_cap_colours", "reallife_ui_gallery_cap_motion", "reallife_ui_gallery_cap_sizes", "reallife_ui_gallery_col_style",
+                "reallife_ui_gallery_col_face", "reallife_ui_gallery_col_size", "reallife_ui_gallery_col_weight", "reallife_ui_gallery_col_role",
+                "reallife_ui_gallery_col_dark", "reallife_ui_gallery_col_light", "reallife_ui_gallery_col_motion", "reallife_ui_gallery_col_full",
+                "reallife_ui_gallery_col_calm", "reallife_ui_gallery_col_token", "reallife_ui_gallery_col_px"
             }),
             new UiScreenDef("population", UiTemplate.Dashboard, "PopulationScreen", new[]
             {
@@ -92,9 +96,25 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_flare_tab_account", "reallife_ui_flare_tab_trends", "reallife_ui_flare_tab_offers", "reallife_ui_page_details", "reallife_ui_page_empty",
                 "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_page", "reallife_ui_prompt_back"
             }),
-            new UiScreenDef("studio", UiTemplate.Form, "StudioPageScreen", new[]
+            new UiScreenDef("studio", UiTemplate.Dashboard, "StudioPageScreen", new[]
             {
-                "reallife_ui_page_empty", "reallife_ui_prompt_move", "reallife_ui_prompt_change", "reallife_ui_prompt_select", "reallife_ui_prompt_back"
+                "reallife_ui_page_empty", "reallife_ui_prompt_move", "reallife_ui_prompt_back", "reallife_studio_page_games_out", "reallife_studio_page_copies",
+                "reallife_studio_page_takings", "reallife_studio_page_col_game", "reallife_studio_page_col_genre", "reallife_studio_page_col_score",
+                "reallife_studio_page_col_copies", "reallife_studio_page_col_kept", "reallife_studio_page_col_status", "reallife_studio_page_no_games",
+                "reallife_studio_page_col_rival", "reallife_studio_page_col_studio", "reallife_studio_studio_rivals_none", "reallife_studio_page_team",
+                "reallife_studio_page_group_count", "reallife_studio_page_needed", "reallife_studio_page_group_engineers", "reallife_studio_page_group_designers",
+                "reallife_studio_page_group_testers", "reallife_studio_page_group_product", "reallife_studio_page_group_data", "reallife_studio_page_group_security",
+                "reallife_studio_page_group_infrastructure", "reallife_studio_page_group_support", "reallife_studio_page_group_sales",
+                "reallife_studio_page_group_business", "reallife_studio_page_facts", "reallife_studio_page_tickets", "reallife_studio_page_pirated",
+                "reallife_studio_page_drm", "reallife_studio_page_asks", "reallife_studio_page_engine", "reallife_studio_page_trend", "reallife_studio_page_known",
+                "reallife_tech_mkt_page_products", "reallife_tech_mkt_page_customers", "reallife_tech_mkt_page_contracts", "reallife_tech_mkt_page_offers",
+                "reallife_tech_mkt_page_takings", "reallife_tech_mkt_page_col_product", "reallife_tech_mkt_page_col_kind", "reallife_tech_mkt_page_col_customers",
+                "reallife_tech_mkt_page_col_takings", "reallife_tech_mkt_page_col_status", "reallife_tech_mkt_page_no_products", "reallife_tech_mkt_page_col_rival",
+                "reallife_tech_mkt_page_col_market", "reallife_tech_mkt_page_col_features", "reallife_tech_mkt_page_no_rivals", "reallife_tech_mkt_page_col_work",
+                "reallife_tech_mkt_page_col_client", "reallife_tech_mkt_page_col_value", "reallife_tech_mkt_page_col_due", "reallife_tech_mkt_page_no_work",
+                "reallife_tech_mkt_page_col_done", "reallife_tech_mkt_page_col_paid", "reallife_tech_mkt_page_col_stage", "reallife_tech_mkt_page_no_done",
+                "reallife_tech_mkt_page_facts", "reallife_tech_mkt_page_support", "reallife_tech_mkt_page_limit", "reallife_tech_mkt_page_offers_month",
+                "reallife_tech_mkt_page_desk", "reallife_tech_mkt_page_reputation", "reallife_tech_mkt_market_businesssoftware", "reallife_tech_mkt_market_apps"
             }),
             new UiScreenDef("session_panel", UiTemplate.Session, "ActivityScreen", new[]
             {

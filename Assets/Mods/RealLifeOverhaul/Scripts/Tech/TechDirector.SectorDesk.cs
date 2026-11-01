@@ -478,6 +478,20 @@ namespace RealLifeOverhaul.Tech
         /// <summary>A firm's page under the sector, built when the page is drawn; null while the sector is off.</summary>
         internal StudioScreen SectorFirmScreen(FirmPlace firm, IStudioFormat fmt)
         {
+            SectorPlace s = SectorPlaceOf(firm);
+            return s != null ? SectorViews.Firm(_sector, _firmsFile, s, Save.Day, fmt) : null;
+        }
+
+        /// <summary>A firm's whole page for the mod's design system, built when the page is drawn; null while the sector is off.</summary>
+        internal FirmPage SectorFirmPage(FirmPlace firm, IStudioFormat fmt)
+        {
+            SectorPlace s = SectorPlaceOf(firm);
+            return s != null ? SectorViews.Page(_sector, _firmsFile, s, ReadFirm(firm), Save.Day, fmt) : null;
+        }
+
+        // What the firm's screens know of it from the game today; null while the sector is off.
+        private SectorPlace SectorPlaceOf(FirmPlace firm)
+        {
             if (!_sectorOn || firm == null || Save == null)
             {
                 return null;
@@ -538,7 +552,7 @@ namespace RealLifeOverhaul.Tech
                     Kind = k, Due = due, Days = due ? 0 : held + SectorRules.DeskEvery[k] - day, Delegated = delegated, Blocked = SectorBlocked(k, place)
                 });
             }
-            return SectorViews.Firm(_sector, _firmsFile, s, day, fmt);
+            return s;
         }
 
         // A firm's people by what they do, those not leaving.

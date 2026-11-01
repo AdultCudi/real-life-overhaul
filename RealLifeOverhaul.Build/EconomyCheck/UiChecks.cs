@@ -292,12 +292,18 @@ internal static partial class Program
         foreach (UiScreenDef def in UiScreens.All)
         {
             UiScreenDef d = def;
-            if (def.Id == "flare_city" || def.Id == "studio" || def.Id == "session_panel")
+            if (def.Id == "studio")
+            {
+                // The one screen draws the studio's page and the other tech firms' pages: both are checked.
+                cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = "Tech", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.StudioFirm(t), f, dark, k) });
+                cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (another firm)", Title = "Tech", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.TechFirm(t), f, dark, k) });
+                continue;
+            }
+            if (def.Id == "flare_city" || def.Id == "session_panel")
             {
                 Action<UiScene, UiFrame, bool, IUiKeys, UiWords> lay = def.Id == "flare_city" ? (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.FlareCity(t), f, dark, k)
-                    : def.Id == "studio" ? (s, f, dark, k, t) => UiForm.Lay(s, UiSamples.StudioFirm(t), f, dark, k)
                     : (Action<UiScene, UiFrame, bool, IUiKeys, UiWords>)((s, f, dark, k, t) => UiSessionSteps.Lay(s, UiSamples.DeskPanel(t), f, dark, k));
-                cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = def.Id == "flare_city" ? "Flare" : def.Id == "studio" ? "Tech" : "Desk", Lay = lay });
+                cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = def.Id == "flare_city" ? "Flare" : "Desk", Lay = lay });
                 continue;
             }
             if (def.Id == "population")

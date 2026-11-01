@@ -462,6 +462,37 @@ namespace RealLifeOverhaul.Tech
             return !_studioOn || firm == null || firm.File.K != FirmKind.Games || Save == null ? null : StudioViews.Studio(_studio, StudioPlaceOf(firm), Save.Day, fmt);
         }
 
+        /// <summary>A studio's whole page for the mod's design system, built when the page is drawn; null while the studio part is off.</summary>
+        internal FirmPage StudioFirmPage(FirmPlace firm, IStudioFormat fmt)
+        {
+            return !_studioOn || firm == null || firm.File.K != FirmKind.Games || Save == null ? null
+                : StudioViews.Page(_studio, _firmsFile, StudioPlaceOf(firm), ReadFirm(firm), Save.Day, fmt);
+        }
+
+        // What a firm's page reads from the game: its last 30 days' takings, oldest first and back at the start's prices as
+        // the pages write money, and its people by group with their skill, those not leaving.
+        private FirmReading ReadFirm(FirmPlace firm)
+        {
+            var r = new FirmReading();
+            int n = r.Takings.Length, today = Save.Day, level = Math.Max(1, Prices.Level);
+            for (int i = 0; i < n; i++)
+            {
+                // A day's takings are rolled into the new day's slot (FirmsRules.Roll), so today's slot holds yesterday's
+                // and the one after it the oldest still kept.
+                r.Takings[i] = firm.File.Days[(today + 1 + i) % n] * 1000 / level;
+            }
+            for (int i = 0; i < _people.Count; i++)
+            {
+                Person person = _people[i];
+                Profile p = person.File;
+                if (p.Place == firm.File.Place && p.NoticeEnd == 0)
+                {
+                    r.Add(p.Def, (person.MainPoints * 1000 + p.A + p.B) / 3 / 1000);
+                }
+            }
+            return r;
+        }
+
         // A product's share of its studio's time among the studio's live products, thousandths.
         private int StudioShareOf(Product p)
         {

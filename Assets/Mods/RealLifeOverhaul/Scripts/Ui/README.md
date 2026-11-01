@@ -12,13 +12,15 @@ The rules are in [docs/standards/ui.md](../../../../../docs/standards/ui.md) (RL
 2. **A template**: pick the one that fits.
    - **List and detail** (`UiListDetail`): groups, a list and the selected record. Used by Contacts, and by
      anything with records and a detail.
-   - **Dashboard** (`UiDashboard`): up to four figures with their change and line, a table of whole rows and a side
-     panel. Used by the Economy app's city, district and population views.
+   - **Dashboard** (`UiDashboard`): up to four places of figures with their change and line (a wide one draws its line
+     beside the number), a table of whole rows with an optional second under it that takes the rest in whole rows, a
+     side panel of bars and pairs that keeps to its room, and the page's actions at the head. Used by the Economy app's
+     views, Flare in the city, and the tech firms' whole pages.
    - **Session steps** (`UiSessionSteps`): one card across the page, as tall as what it holds, with the steps, the
      question and the choices on 1, 2 and 3 (side by side when they fit one row), and its summary as a panel at the
      side. Used by desk sessions.
    - **Form** (`UiForm`): settings before an action, or a page of lines and actions. What to do next stands in a band
-     across the page with the actions, and the sections run in two columns. Used by the tech firms' pages.
+     across the page with the actions, and the sections run in two columns.
 3. **A runner**: a class implementing `IUiScreen` (and `IUiTyping` for a search) that owns the model and answers the
    presses. Register it in `UiScreens` with its template and every key it labels with.
 4. **Samples**: add the screen's sample to `RealLifeOverhaul.Build/UiPreview/UiSamples.cs`, so EconomyCheck lays it out
