@@ -70,6 +70,29 @@ namespace RealLifeOverhaul.Tech
             return (half * over + span - over - 1) / (span - over);   // rounded up, so the spend found reaches the share asked
         }
 
+        /// <summary>
+        /// A market's figure after so many days, grown by the save's years (the one clock, CalendarRules.MoneyYearDays): each whole year by its
+        /// rate (thousandths) on what is left of the room up to its ceiling (thousandths of its start), straight within a year. It grows at its
+        /// full rate at first and slows as it fills, never past the ceiling: a market that runs out of buyers rather than a cap, so a long game
+        /// in a short year keeps its markets in proportion. Whole numbers, the same everywhere.
+        /// </summary>
+        public static long Grown(long start, int rate, int ceiling, int days, int year)
+        {
+            long s = Math.Max(0L, start), cap = s * Math.Max(1000, ceiling) / 1000, room = cap - s;
+            if (room <= 0 || rate <= 0 || days <= 0)
+            {
+                return s;
+            }
+            int y = Math.Max(CalendarRules.YearLeast, year);
+            int years = Math.Min(400, days / y);
+            long v = s;
+            for (int i = 0; i < years; i++)
+            {
+                v += v * rate / 1000 * (cap - v) / room;
+            }
+            return v + v * rate / 1000 * (cap - v) / room * (days % y) / y;
+        }
+
         /// <summary>The spend of a step of a marketing plan (0 none to <see cref="ScaleCatalogue.MarketingStepsMost"/>) for an audience.</summary>
         public static long StepSpend(int step, long audience)
         {

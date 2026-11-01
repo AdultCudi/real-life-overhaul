@@ -31,6 +31,8 @@ The game has days and a year of so many of them (60 to 365, chosen when a game s
 
 These are the stock market's months: its trading bots' statements come at the end of them. Something paid "by the month" in the mod counts a month of `CalendarRules.MonthDays` (a twelfth of the year, rounded down) from its own first day, so a bill or a policy falls on its own day, which the calendar shows, whatever its month.
 
+The living economy keeps one clock (`CalendarRules.MoneyYearDays`'s note). Its years are the save's, as the game ages its own people by them (its staff retire at 67 years of the save's length, and the population's residents are those staff) and the mod's careers, banks, prices and stock market count theirs: residents age, are born and die, pair, move and come from the region by the save's year, the population's month is a twelfth of it, and the world beyond the city, the platforms' players and the game studio's critics' bar grow by it, filling towards a ceiling so a long game in a short year never runs away (`ScaleRules.Grown`). Money runs by the game day whatever the year: wages, prices and rents a day, subscriptions over 30 days (`BillingMonthDays`), a firm's IT budget and the residents' interest on their savings over 365 days (`MoneyYearDays`), paybacks in game days. Ten years of a check are ten of the save's years, so the city ages and its markets grow alike at any year length (EconomyCheck's living years hold years of 60 and 365 days).
+
 The headline says the day the month ends on ("March, year 1. This month ends on day 90."), in the game's own day numbers.
 
 ## What it shows, and where each date comes from

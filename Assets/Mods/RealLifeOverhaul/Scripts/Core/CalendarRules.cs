@@ -46,6 +46,18 @@ namespace RealLifeOverhaul
             return living ? BillingMonthDays : MonthDays(year);
         }
 
+        /// <summary>
+        /// The living economy's one clock (its balance, 1 Nov 2026). Its yearly figures count the save's year, as the game ages its own
+        /// people by it (its staff retire at 67 years of the save's length, and the population's residents are those staff) and the mod's
+        /// careers, banks, prices and stock market count theirs: residents age, are born and die, pair, move and come from the region by it,
+        /// the population's month is a twelfth of it (<see cref="MonthDays"/>), and the world beyond the city, the platforms' players and the
+        /// critics' bar grow by it, filling towards a ceiling so a long game in a short year never runs away (ScaleRules.Grown). Money runs
+        /// by the game day whatever the year: wages, prices and rents a day, subscriptions billed over <see cref="BillingMonthDays"/>, a money
+        /// figure written by the year spread over these days, paybacks in game days (EndScaleRules). Ten years of a check are ten of the
+        /// save's years, so the city ages and the markets grow alike at any year length the player picks.
+        /// </summary>
+        public const int MoneyYearDays = 365;
+
         /// <summary>The day of the year, 1 to the year's length.</summary>
         public static int DayOfYear(int day, int year)
         {

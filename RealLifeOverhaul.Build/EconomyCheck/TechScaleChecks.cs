@@ -26,6 +26,7 @@ internal static partial class Program
         ScaleBands(print);
         ScaleCosts();
         ScaleOneMarket();
+        ScaleGrown();
         ScaleStudioAgainstEndGame(print);
         ScaleMonthRule(print);
         ScaleTimings();
@@ -499,5 +500,20 @@ internal static partial class Program
             sink += ScaleRules.Typical(ScaleCatalogue.BudgetTypical[i % 3], i % 101, out long u, out int r) + u + r;
         }
         return sink;
+    }
+
+    // A market grown by the save's years towards its ceiling (ScaleRules.Grown, the one clock).
+    private static void ScaleGrown()
+    {
+        long one = ScaleRules.Grown(1000000, 50, 2000, 365, 365), half = ScaleRules.Grown(1000000, 50, 2000, 365 / 2, 365);
+        long ten = ScaleRules.Grown(1000000, 50, 2000, 3650, 365), twenty = ScaleRules.Grown(1000000, 50, 2000, 7300, 365), full = ScaleRules.Grown(1000000, 50, 2000, 365 * 400, 365);
+        Check(one == 1050000 && half > 1000000 && half < one && ScaleRules.Grown(1000000, 50, 2000, 60, 60) == one && ScaleRules.Grown(1000000, 50, 2000, 600, 60) == ten,
+            "scale grown: a market grows its full rate in its first year of the save, straight within it, and a year or ten alike at 60 days a year and at 365");
+        Check(ten > one && twenty - ten < ten - 1000000 && full > twenty && full <= 2000000 && ScaleRules.Grown(1000000, 50, 2000, int.MaxValue, 8) <= 2000000,
+            "scale grown: it slows as it fills and never passes its ceiling, even after centuries (" + ten.ToString("N0") + " after ten years, " + full.ToString("N0") + " filled)");
+        Check(ScaleRules.Grown(1000000, 50, 1000, 3650, 365) == 1000000 && ScaleRules.Grown(1000000, 50, 500, 3650, 365) == 1000000 && ScaleRules.Grown(1000000, 0, 2000, 3650, 365) == 1000000
+              && ScaleRules.Grown(1000000, 50, 2000, 0, 365) == 1000000 && ScaleRules.Grown(1000000, 50, 2000, -5, 365) == 1000000 && ScaleRules.Grown(0, 50, 2000, 3650, 365) == 0
+              && ScaleRules.Grown(1000000, 50, 2000, 3650, 0) == ScaleRules.Grown(1000000, 50, 2000, 3650, CalendarRules.YearLeast),
+            "scale grown: no room, no rate, no days or nothing to grow leave a market as it is; a year shorter than the calendar allows is its shortest");
     }
 }
