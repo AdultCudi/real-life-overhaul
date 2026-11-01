@@ -144,6 +144,15 @@ namespace RealLifeOverhaul.Tech
             {
                 StopStudio(true);
             }
+            bool markets = _firmsOn && SectorWanted;
+            if (markets && !_sectorOn)
+            {
+                StartSector();
+            }
+            else if (!markets && _sectorOn)
+            {
+                StopSector(true);
+            }
             bool startups = Settings.TechStartups && _firmsOn;
             if (startups && !_ventureOn)
             {
@@ -286,6 +295,10 @@ namespace RealLifeOverhaul.Tech
                 {
                     WriteStudio(Save.modData);
                 }
+                if (_sectorOn)
+                {
+                    WriteSector(Save.modData);
+                }
                 if (_ventureOn)
                 {
                     WriteVenture(Save.modData);
@@ -392,6 +405,7 @@ namespace RealLifeOverhaul.Tech
             _hiring = null;
             _firmsFile = null;
             _studio = null;
+            _sector = null;
             _venture = null;
             _infra = null;
             _news = new TechNews();

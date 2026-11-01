@@ -44,6 +44,28 @@ namespace RealLifeOverhaul.Sessions
             return On && d._file != null && d._file.Effect(place, session, day, out a, out b);
         }
 
+        /// <summary>
+        /// A kind's record at a business, for a page that says when it is due and who takes it: the day it was last held
+        /// (SessionRules.Never for never) and whether a manager takes it. False while sessions are off.
+        /// </summary>
+        public static bool Record(string place, string session, out int held, out bool delegated)
+        {
+            held = SessionRules.Never;
+            delegated = false;
+            SessionDirector d = Instance;
+            if (!On || d._file == null)
+            {
+                return false;
+            }
+            SessionRecord r = d._file.Find(place, session);
+            if (r != null)
+            {
+                held = r.Held;
+                delegated = r.Delegated;
+            }
+            return true;
+        }
+
         private void Awake()
         {
             Instance = this;

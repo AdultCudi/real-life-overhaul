@@ -398,6 +398,9 @@ namespace RealLifeOverhaul.Meta
                     .With("population_demand"),   // the Guide's page on where the businesses' customers come from
                 S("studio").For("studio").Opt("living_studio", "living_population")
                     .Also("game studio games genre platform console mobile pc hype trailer expo review score critics sales piracy drm patch update dlc sequel port publisher bonus royalty rival"),
+                S("firms").For("firms").Opt("living_firms", "living_population")
+                    .Also("software studio consultancy cybersecurity security ai lab model web agency design studio data centre cloud market share rivals "
+                        + "startups sprint outage tender pitch incident training benchmark capacity power failover portfolio"),
                 S("endscale").For("economy_endscale").Opts("economy_endscale")
                     .Also("end game late scale billions hyperscaler cloud data centre racks broadband network fibre bank maintenance upkeep crews staff payback"),
                 S("brands").For("economy_brands").Need("economy").Opts("economy_brands").Also("chain franchise"),

@@ -545,11 +545,13 @@ namespace RealLifeOverhaul.Tech
                     TalentRules.Answer(p, false, day, year);   // not answered in time: they take it
                     Tell(NotificationType.Warning, "reallife_talent_note_poach_gone", Data("name", person.Name, "rival", p.PoachBy, "day", p.NoticeEnd.ToString()), TabTeam, Row(p));
                 }
-                else if (TalentRules.Approached(Seed, p, day, Shortage(p.Def.Family), esteem, p.GameWage, p.Going, StudioPull(p.Place, day)) && !Held(p) && !gameOffer)
+                else if (TalentRules.Approached(Seed, p, day, Shortage(p.Def.Family), esteem, p.GameWage, p.Going, Math.Max(StudioPull(p.Place, day), SectorPull(p.Place, day)))
+                    && !Held(p) && !gameOffer)
                 {
                     approached++;
                     // a game studio's people are a rival studio's to court
-                    string rival = StudioPoacher(p.Place, day) ?? (TechBridges.Rival != null && person.At != null ? TechBridges.Rival(person.At) : null);
+                    // a game studio's people are a rival studio's to court, a firm's the company that just beat it in its market or a tender
+                    string rival = StudioPoacher(p.Place, day) ?? SectorPoacher(p.Place, day) ?? (TechBridges.Rival != null && person.At != null ? TechBridges.Rival(person.At) : null);
                     TalentRules.Offer(p, string.IsNullOrEmpty(rival) ? TechText.T("reallife_talent_rival_default") : rival, day);
                     Tell(NotificationType.Warning, "reallife_talent_note_poach",
                         Data("name", person.Name, "rival", p.PoachBy, "percent", (p.PoachBp / 100).ToString(), "days", TalentCatalogue.PoachAnswerDays.ToString()),

@@ -503,6 +503,18 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Staffing\StaffIndex.cs" Link="Mod\Staffing\StaffIndex.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Staffing\StaffPages.cs" Link="Mod\Staffing\StaffPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraStore.cs" Link="Mod\InfraStore.cs" />
+    <!-- The other tech firms under Living population (SectorChecks.cs): the shared markets, the rivals, IT work, data centres and the cloud, the desk sessions, the save and the screens, all game-free. -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sector\SectorCatalogue.cs" Link="Mod\Sector\SectorCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sector\SectorFile.cs" Link="Mod\Sector\SectorFile.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sector\SectorRules.cs" Link="Mod\Sector\SectorRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sector\SectorRules.Rivals.cs" Link="Mod\Sector\SectorRules.Rivals.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sector\SectorRules.Work.cs" Link="Mod\Sector\SectorRules.Work.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sector\SectorRules.Infra.cs" Link="Mod\Sector\SectorRules.Infra.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sector\SectorRules.Desk.cs" Link="Mod\Sector\SectorRules.Desk.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sector\SectorRules.Old.cs" Link="Mod\Sector\SectorRules.Old.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sector\SectorStore.cs" Link="Mod\Sector\SectorStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sector\SectorBridges.cs" Link="Mod\Sector\SectorBridges.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sector\SectorViews.cs" Link="Mod\Sector\SectorViews.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\StudyCatalogue.cs" Link="Mod\StudyCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\StudyRules.cs" Link="Mod\StudyRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\StudyRules.Learning.cs" Link="Mod\StudyRules.Learning.cs" />

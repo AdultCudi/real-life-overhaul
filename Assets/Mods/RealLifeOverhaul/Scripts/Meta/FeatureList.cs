@@ -44,6 +44,7 @@ namespace RealLifeOverhaul.Meta
             Population.PopDemandGuide.Register();
             Sessions.SessionGuide.Register();
             Tech.StudioGuide.Register();
+            Tech.SectorGuide.Register();
         }
 
         private static void RegisterGameplay()

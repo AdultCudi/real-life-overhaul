@@ -138,7 +138,9 @@ namespace RealLifeOverhaul.Tech
         public const int ProductsMost = 36;                    // products being built or on sale across the player's firms (it was 16 for all firms together)
         public const int ProductsPerFirm = 12;                 // ...and at any one firm, so a third firm is not locked out by the first two
         public const int WithdrawnKept = 12;                   // withdrawn products kept in the list; the oldest go when more are withdrawn
-        public const int ProductsStored = ProductsMost + WithdrawnKept;   // the most the save reads back, live and withdrawn together
+        // the most the save reads back, live and withdrawn together: Living population's higher limit, so switching it
+        // off loses none
+        public const int ProductsStored = SectorCatalogue.ProductsMost + WithdrawnKept;
 
         /// <summary>
         /// How hard each kind of firm leans on its office's connection (NetSpeedRules), by FirmKind: an AI lab moves training

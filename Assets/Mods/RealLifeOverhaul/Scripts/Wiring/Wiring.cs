@@ -78,6 +78,7 @@ namespace RealLifeOverhaul
             Step("the end game at scale", EndScaleLinks.Connect);
             Step("the desk sessions", SessionLinks.Connect);   // after running a business and the tech sector: it reads their managers and people
             Step("the game studio's sessions", StudioLinks.Connect);   // after the desk sessions: its kinds join theirs
+            Step("the tech firms' markets and sessions", SectorLinks.Connect);   // after the desk sessions: its kinds join theirs (the population is read each game day, not here)
             Step("the seasons", SeasonLinks.Connect);   // before the calendar: its day page asks the seasons for their line
             Step("the calendar", CalendarLinks.Connect);   // its sources read the others' schedules when it is shown
             Step("the Marketplace", HustleLinks.Connect);
@@ -119,6 +120,7 @@ namespace RealLifeOverhaul
             Step("the seasons", SeasonLinks.Disconnect);
             Step("rival tycoons", RivalLinks.Disconnect);   // next, for the same reason
             Step("the player's bank", OwnBankLinks.Disconnect);   // before running a business: what it wrapped of the paper goes back first
+            Step("the tech firms' markets and sessions", SectorLinks.Disconnect);
             Step("the game studio's sessions", StudioLinks.Disconnect);
             Step("the desk sessions", SessionLinks.Disconnect);
             Step("the end game at scale", EndScaleLinks.Disconnect);

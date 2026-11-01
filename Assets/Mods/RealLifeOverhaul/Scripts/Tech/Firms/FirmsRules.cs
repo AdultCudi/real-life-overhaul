@@ -223,11 +223,15 @@ namespace RealLifeOverhaul.Tech
         /// <summary>What product people add to a feature's points, thousandths: up to 400 with one for every few engineers.</summary>
         public static int ProductBoost(in Crew c) => Math.Min(FirmsCatalogue.ProductBoostMost, c.Product * FirmsCatalogue.ProductBoostGain / Math.Max(1, c.Engineering + c.Product));
 
-        /// <summary>A day of building: the points, split by the firm's focus, go to features, bug fixes and debt. Returns the features finished.</summary>
-        public static int Build(Firm firm, Product p, in Crew c, int points, int testing)
+        /// <summary>
+        /// A day of building: the points, split by the firm's focus, go to features, bug fixes and debt. Returns the features
+        /// finished. Under Living population the sector gives its own feature limit (none to speak of), product boost (its
+        /// curve) and a sprint's focus; left out, the firms' own.
+        /// </summary>
+        public static int Build(Firm firm, Product p, in Crew c, int points, int testing, int most = FirmsCatalogue.FeaturesMost, int boost = -1, int focus = -1)
         {
-            int[] split = FirmsCatalogue.FocusSplit[TalentCatalogue.Clamp(firm.Focus, 0, (int)Focus.Count - 1)];
-            long feature = (long)points * split[0] / 1000 * (1000 + ProductBoost(c)) / 1000 * 1000 / (1000 + firm.Debt);
+            int[] split = FirmsCatalogue.FocusSplit[TalentCatalogue.Clamp(focus >= 0 ? focus : firm.Focus, 0, (int)Focus.Count - 1)];
+            long feature = (long)points * split[0] / 1000 * (1000 + (boost >= 0 ? boost : ProductBoost(c))) / 1000 * 1000 / (1000 + firm.Debt);
             int fix = points * split[1] / 1000 / FirmsCatalogue.PointsPerFix + testing;   // a tester's point fixes a bug
             int debt = points * split[2] / 1000 * FirmsCatalogue.DebtPerPoint;
             int finished = 0;
@@ -235,7 +239,7 @@ namespace RealLifeOverhaul.Tech
             p.Progress = (int)Math.Min(int.MaxValue, p.Progress + feature);
             if (p.K != ProductKind.Game)
             {
-                while (p.Features < FirmsCatalogue.FeaturesMost && p.Progress >= FeatureCost(p.Features)
+                while (p.Features < most && p.Progress >= FeatureCost(p.Features)
                        && (p.K != ProductKind.Model || p.Compute >= InfraRules.TrainNeed(p.Features)))
                 {
                     if (p.K == ProductKind.Model)
@@ -247,7 +251,7 @@ namespace RealLifeOverhaul.Tech
                     finished++;
                     firm.Debt = Math.Min(1000, firm.Debt + FirmsCatalogue.DebtPerFeature * (1000 - c.SeniorShare) / 1000);
                 }
-                if (p.Features >= FirmsCatalogue.FeaturesMost)
+                if (p.Features >= most)
                 {
                     p.Progress = 0;
                 }
@@ -518,14 +522,17 @@ namespace RealLifeOverhaul.Tech
 
         public const int RoomYes = 0, RoomFirmFull = 1, RoomAllFull = 2;
 
-        /// <summary>Whether a firm can start another product: RoomYes, or which limit stops it (the firm's own first).</summary>
-        public static int Room(FirmsFile f, string place)
+        /// <summary>
+        /// Whether a firm can start another product: RoomYes, or which limit stops it (the firm's own first); under
+        /// Living population (<paramref name="living"/>) the sector's higher limits.
+        /// </summary>
+        public static int Room(FirmsFile f, string place, bool living = false)
         {
-            if (LiveCount(f, place) >= FirmsCatalogue.ProductsPerFirm)
+            if (LiveCount(f, place) >= (living ? SectorCatalogue.ProductsPerFirm : FirmsCatalogue.ProductsPerFirm))
             {
                 return RoomFirmFull;
             }
-            return LiveCount(f, null) >= FirmsCatalogue.ProductsMost ? RoomAllFull : RoomYes;
+            return LiveCount(f, null) >= (living ? SectorCatalogue.ProductsMost : FirmsCatalogue.ProductsMost) ? RoomAllFull : RoomYes;
         }
 
         /// <summary>
