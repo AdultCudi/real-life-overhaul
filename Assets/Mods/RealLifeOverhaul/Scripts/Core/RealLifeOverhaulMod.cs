@@ -1043,6 +1043,9 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_ui_test_mod_box", () => Ui.UiDirector.Instance?.TestModBox())
                 .AddButton("reallife_ui_test_notices", () => Ui.UiDirector.Instance?.TestNotices())
                 .AddButton("reallife_ui_test_contacts_switch", () => Ui.UiDirector.Instance?.TestContactsSwitch())
+                .AddButton("reallife_ui_test_employees", () => Ui.UiDirector.Instance?.TestEmployees())
+                .AddButton("reallife_ui_test_employee_page", () => Ui.UiDirector.Instance?.TestEmployeePage())
+                .AddButton("reallife_ui_test_employees_switch", () => Ui.UiDirector.Instance?.TestEmployeesSwitch())
                 .AddToggle(Settings.LivingStudioId, "reallife_studio_enabled", Settings.LivingStudio,
                     v => Settings.LivingStudio = v)
                 .AddButton("reallife_studio_test_start", () => Tech.TechDirector.Instance?.TestStudioStart())
