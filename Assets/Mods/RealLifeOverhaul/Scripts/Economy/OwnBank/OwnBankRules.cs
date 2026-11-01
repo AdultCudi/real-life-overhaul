@@ -295,6 +295,8 @@ namespace RealLifeOverhaul.Economy
             b.PayShare = 0;
             b.PayFixed = 0;
             b.PaidMonth = b.PaidLast = b.PaidAll = 0;
+            b.PayWanted = b.PayGiven = 0;
+            b.PayHeld = BankTiers.PayHeldNone;
             b.State = OwnBankState.Running;
             b.Name = name ?? string.Empty;
             b.Seed = seed;
@@ -351,7 +353,7 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>
         /// The most a dividend may take now, to the step: the cash over the reserve, the capital over its least and the lending
-        /// line. Nothing in a breach, a run, or for a test's bank.
+        /// line, both less the fixed pay held back for the evening. Nothing in a breach, a run, or for a test's bank.
         /// </summary>
         public static long MostOut(OwnBank b, int level)
         {
@@ -359,8 +361,8 @@ namespace RealLifeOverhaul.Economy
             {
                 return 0;
             }
-            long cash = b.Reserves - ReserveNeed(b);
-            long capital = CapitalNow(b) - Keep(b, level);
+            long cash = FreeCash(b);
+            long capital = CapitalNow(b) - Keep(b, level) - PayAhead(b);
             return ToStep(Math.Min(cash, capital));
         }
 

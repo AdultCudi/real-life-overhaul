@@ -99,8 +99,10 @@ namespace RealLifeOverhaul.Economy
         public int TierTold = BankTiers.Unknown;   // the level the player was last told the bank is ready to move up to
         public int PayMode;                     // BankTiers.PayShareMode or PayFixedMode
         public int PayShare;                    // thousandths of each day's profit paid to the owner
-        public long PayFixed;                   // cents a day paid to the owner, never more than the day's profit
+        public long PayFixed;                   // cents a day paid to the owner whatever the day made, while the bank can spare it
         public long PaidMonth, PaidLast, PaidAll;   // what the owner was paid this month, last month and in all
+        public long PayWanted, PayGiven;        // the last day run: the pay asked for and what was paid
+        public int PayHeld;                     // why less was paid that day: a BankTiers PayHeld value
 
         public BankBranch Branch(string place)
         {
@@ -229,7 +231,7 @@ namespace RealLifeOverhaul.Economy
 
     /// <summary>
     /// What a day did, in cents, as booked at the headquarters and told to the player. Its profit is kept in the bank's
-    /// capital, but for the owner's pay (<see cref="Pay"/>), which is taken out of it.
+    /// capital, and the owner's pay (<see cref="Pay"/>) is taken out of it.
     /// </summary>
     public sealed class BankDay
     {
@@ -237,7 +239,7 @@ namespace RealLifeOverhaul.Economy
         public long Savers, Staff, Lost, Court, FundLost, Fees, Fine;  // out
         public long Systems;                    // out, at the end game's scale: its systems, compliance and deposit insurance
         public long Counter;                    // in: what the branches' counters charged their customers (OwnBankRules.Visit)
-        public long Pay;                        // the owner's pay out of the day's profit (OwnBankRules.OwnerPay): neither takings nor a cost
+        public long Pay;                        // the owner's pay out of the capital (OwnBankRules.OwnerPay): neither takings nor a cost
         public long Withdrawn, Deposited, Lent, Repaid, Defaulted, Cured, WrittenOff;
         public long Bought, Sold, FireSold;
         public bool RunStarted, RunEnded, Breached, Cured2, Fined, Watched, Closed;

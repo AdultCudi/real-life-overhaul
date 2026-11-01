@@ -23,7 +23,10 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>What the fund may hold in all now: the limit's share of the deposits, as far as the cash and the capital allow.</summary>
-        public static long Room(OwnBank b)
+        public static long Room(OwnBank b) => Room(b, 0);
+
+        // As Room, with cash held back for the rest of the day (OwnBankRules.Day's hold for a fixed pay).
+        private static long Room(OwnBank b, long hold)
         {
             if (b.Strategy <= 0 || b.FundLimit <= 0)
             {
@@ -31,9 +34,9 @@ namespace RealLifeOverhaul.Economy
             }
             long value = b.FundValue;
             long byLimit = b.Savings * Math.Min(OwnBankCatalogue.FundLimitMost, b.FundLimit) / 1000;
-            long byCash = b.Reserves - OwnBankRules.ReserveNeed(b) + value;
+            long byCash = OwnBankRules.FreeCash(b) - hold + value;
             long others = OwnBankRules.RiskWeighted(b) - value * OwnBankCatalogue.FundWeight / 1000;
-            long byCapital = (OwnBankRules.CapitalNow(b) * 1000 / OwnBankCatalogue.LendRatio - others) * 1000 / OwnBankCatalogue.FundWeight;
+            long byCapital = (OwnBankRules.FreeCapital(b) * 1000 / OwnBankCatalogue.LendRatio - others) * 1000 / OwnBankCatalogue.FundWeight;
             return Math.Max(0, Math.Min(byLimit, Math.Min(byCash, byCapital)));
         }
 
@@ -41,7 +44,7 @@ namespace RealLifeOverhaul.Economy
         /// The fund's day: prices brought up to date, a day of each quarterly dividend paid, a company gone settled at its
         /// payout, one no longer allowed sold, and weekly or after a choice the fund traded back to its parts.
         /// </summary>
-        public static void Day(OwnBank b, BankCity c, int day, IList<FundQuote> quotes, BankDay into)
+        public static void Day(OwnBank b, BankCity c, int day, IList<FundQuote> quotes, BankDay into, long hold = 0)
         {
             if (quotes == null)
             {
@@ -84,13 +87,13 @@ namespace RealLifeOverhaul.Economy
             }
             if (b.Rebalance || day % 7 == 0)
             {
-                Rebalance(b, quotes, !b.Run && b.Stage != Regulator.Breach, into);
+                Rebalance(b, quotes, !b.Run && b.Stage != Regulator.Breach, into, hold);
                 b.Rebalance = false;
             }
         }
 
         // The largest eligible companies by market value, an even part each; what is not among them sold.
-        private static void Rebalance(OwnBank b, IList<FundQuote> quotes, bool mayBuy, BankDay into)
+        private static void Rebalance(OwnBank b, IList<FundQuote> quotes, bool mayBuy, BankDay into, long hold)
         {
             int n = OwnBankCatalogue.FundCompanies[b.Strategy];
             Order.Clear();
@@ -122,7 +125,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
-            long part = Room(b) / Picked.Count;
+            long part = Room(b, hold) / Picked.Count;
             for (int p = 0; p < Picked.Count; p++)
             {
                 FundQuote q = quotes[Picked[p]];
@@ -136,7 +139,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     if (mayBuy)
                     {
-                        Buy(b, q, part - have, into);
+                        Buy(b, q, part - have, into, hold);
                     }
                 }
                 else if (h != null)
@@ -148,10 +151,10 @@ namespace RealLifeOverhaul.Economy
         }
 
         // As many whole shares as about this amount buys at the last price and the spread, with the commission.
-        private static void Buy(OwnBank b, FundQuote q, long cents, BankDay into)
+        private static void Buy(OwnBank b, FundQuote q, long cents, BankDay into, long hold)
         {
             long price = (long)q.LastCents * (10000 + OwnBankCatalogue.FundSpreadBp) / 10000;
-            long cash = b.Reserves - OwnBankRules.ReserveNeed(b);
+            long cash = OwnBankRules.FreeCash(b) - hold;
             long qty = Math.Min(cents, cash) / Math.Max(1, price);
             if (qty <= 0)
             {

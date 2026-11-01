@@ -188,22 +188,63 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// The owner's pay out of a day's profit: the share chosen of it, or the fixed sum but never more than it; nothing on a
-        /// day without profit, in a breach or a run, or for a test's bank; never past what the bank can spare (its cash over
-        /// the reserve, its capital over what it keeps). The rest of the profit stays in the capital.
+        /// The owner's pay for a day: the share chosen of its profit (nothing on a day without one), or the fixed sum whatever
+        /// the day made, as a salary is; nothing in a breach or a run, or for a test's bank; never past what the bank can spare
+        /// (its cash over the reserve, its capital over what it keeps). The rest of the profit stays in the capital.
         /// </summary>
         public static long OwnerPay(OwnBank b, long profit, int level)
         {
-            if (!b.Running || b.Test || b.Run || b.Stage == Regulator.Breach || profit <= 0)
+            return OwnerPay(b, profit, level, out _, out _);
+        }
+
+        /// <summary>
+        /// The owner's pay as above, with what was asked for (<paramref name="wanted"/>) and, when less was paid, why
+        /// (<paramref name="held"/>, one of BankTiers' PayHeld values), so the pay's page names what held it back.
+        /// </summary>
+        public static long OwnerPay(OwnBank b, long profit, int level, out long wanted, out int held)
+        {
+            held = BankTiers.PayHeldNone;
+            wanted = 0;
+            if (!b.Running || b.Test)
             {
                 return 0;
             }
-            long wanted = b.PayMode == BankTiers.PayFixedMode
-                ? Math.Min(Math.Max(0, b.PayFixed), profit)
-                : profit * Clamp(b.PayShare, 0, BankTiers.PayShareMost) / BankTiers.PayShareMost;
-            long room = Math.Min(b.Reserves - ReserveNeed(b), CapitalNow(b) - Keep(b, level));
-            return Math.Max(0, Math.Min(wanted, room));
+            wanted = b.PayMode == BankTiers.PayFixedMode
+                ? Math.Max(0, b.PayFixed)
+                : profit > 0 ? profit * Clamp(b.PayShare, 0, BankTiers.PayShareMost) / BankTiers.PayShareMost : 0;
+            if (wanted <= 0)
+            {
+                return 0;
+            }
+            if (b.Stage == Regulator.Breach || b.Run)
+            {
+                held = b.Run ? BankTiers.PayHeldRun : BankTiers.PayHeldBreach;
+                return 0;
+            }
+            long cash = b.Reserves - ReserveNeed(b), capital = CapitalNow(b) - Keep(b, level);
+            long pay = Math.Max(0, Math.Min(wanted, Math.Min(cash, capital)));
+            if (pay < wanted)
+            {
+                held = cash <= capital ? BankTiers.PayHeldReserves : BankTiers.PayHeldCapital;
+            }
+            return pay;
         }
+
+        /// <summary>
+        /// The fixed pay the bank holds back through the day for the evening's pay, so its lending, its fund and its counters
+        /// never spend what the owner is owed: a fixed salary is a commitment, a share is worked out of the profit after.
+        /// Nothing in a share's mode, in a breach or a run, or for a test's bank, as nothing is paid then.
+        /// </summary>
+        public static long PayAhead(OwnBank b)
+        {
+            return b.Running && !b.Test && !b.Run && b.Stage != Regulator.Breach && b.PayMode == BankTiers.PayFixedMode ? Math.Max(0, b.PayFixed) : 0;
+        }
+
+        /// <summary>The cash over the reserve that the bank may lend, invest or pay out at a counter: less the fixed pay it holds back.</summary>
+        public static long FreeCash(OwnBank b) => b.Reserves - ReserveNeed(b) - PayAhead(b);
+
+        /// <summary>The capital its lending line is drawn from: less the fixed pay it holds back.</summary>
+        public static long FreeCapital(OwnBank b) => CapitalNow(b) - PayAhead(b);
 
         /// <summary>A share of the profit for the owner's pay, on its step and within its bounds.</summary>
         public static int PayShareStep(int share)
