@@ -407,7 +407,15 @@ namespace RealLifeOverhaul.Ui
             UiRole[] tints = { UiRole.Chart1, UiRole.Chart2, UiRole.Chart3, UiRole.Chart4, UiRole.Chart5, UiRole.Chart6, UiRole.Chart7, UiRole.CatFood, UiRole.CatRetail,
                 UiRole.CatOffice, UiRole.CatIndustry, UiRole.CatTech, UiRole.CatServices };
             const float cellH = UiTokens.S16 + UiTokens.S5;
-            float cell = UiDraw.SnapDown((w - UiTokens.S5 * 2f) / 12f);
+            int count = 0;
+            for (int i = 1; i < (int)UiIcon.Count; i++)
+            {
+                count += (UiIcon)i >= UiIcon.Arrows && (UiIcon)i <= UiIcon.PadR1 ? 0 : 1;
+            }
+            // As many across as every icon needs to stand in the rows the page has: the sheet shows the whole family at once.
+            int rows = Math.Max(1, (int)((h - UiTokens.S5 * 2f) / cellH));
+            int across = Math.Max(12, (count + rows - 1) / rows);
+            float cell = UiDraw.SnapDown((w - UiTokens.S5 * 2f) / across);
             int p = Panel(s, at, x, y, w, null, out float top);
             UiAt inside = at.In(p);
             int n = 0;
@@ -418,7 +426,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;   // the keys' and the pad's glyphs belong to the prompts, not the family
                 }
-                float cx = x + UiTokens.S5 + (n % 12) * cell, cy = top + (n / 12) * cellH;
+                float cx = x + UiTokens.S5 + (n % across) * cell, cy = top + (n / across) * cellH;
                 if (cy + cellH > y + h)
                 {
                     break;
@@ -432,7 +440,7 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Text(s, inside, cx, cy + tile + UiTokens.S1, cell, UiStyle.Small, UiRole.Text2, Words(icon.ToString()), UiFlags.Centre | UiFlags.Truncate);
                 n++;
             }
-            float bottom = top + ((n + 11) / 12) * cellH + UiTokens.S2;
+            float bottom = top + ((n + across - 1) / across) * cellH + UiTokens.S2;
             s.Items[p].H = UiDraw.Snap(bottom - y);
             return y + s.Items[p].H;
         }
