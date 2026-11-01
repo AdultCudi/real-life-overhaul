@@ -127,6 +127,17 @@ internal static partial class Program
         }
         Check(weak == null, "kit: every grade's figure reads 4.5:1 on the panel, a band and a row under the pointer" + (weak == null ? string.Empty : ": " + weak));
         Check(UiContrast(UiRole.Text, UiRole.RowSel, true) >= UiCheckRules.NormalContrast, "kit: the chosen row's words read 4.5:1 on its tone");
+        string weakChosen = null;
+        for (int g = 0; g <= 100; g += 10)
+        {
+            UiRole chosen = UiTokens.GradeOnChosen(UiTokens.Grade(g));
+            float c = UiContrast(chosen, UiRole.RowSel, true);
+            if (c < UiCheckRules.NormalContrast && weakChosen == null)
+            {
+                weakChosen = chosen + " at " + c.ToString("0.00") + ":1";
+            }
+        }
+        Check(weakChosen == null, "kit: every grade's chosen-row step reads 4.5:1 on the chosen row's tone" + (weakChosen == null ? string.Empty : ": " + weakChosen));
         var table = new UiDataTableModel
         {
             Columns = new[]
@@ -143,7 +154,7 @@ internal static partial class Program
         var scene = new UiScene();
         scene.Begin("grade on chosen", 1920f, 1080f, true);
         UiDataTable.Lay(scene, UiAt.Screen, table, 100f, 100f, 900f, 400f, UiDefaultKeys.Keyboard);
-        int chosenGraded = 0, otherGraded = 0;
+        int chosenGraded = 0, otherGraded = 0, chosenFigure = 0;
         for (int i = 0; i < scene.ItemCount; i++)
         {
             ref UiItem it = ref scene.Items[i];
@@ -153,10 +164,12 @@ internal static partial class Program
             }
             bool graded = it.Ink >= UiRole.Grade1 && it.Ink <= UiRole.Grade5;
             chosenGraded += graded && (it.Text == "12" || it.Text == "8") ? 1 : 0;
+            chosenFigure += it.Text == "8" && it.Ink == UiTokens.GradeOnChosen(UiTokens.Grade(8)) ? 1 : 0;
             otherGraded += graded && (it.Text == "24" || it.Text == "30") ? 1 : 0;
         }
-        Check(chosenGraded == 0 && otherGraded == 2, "kit: on the big table's chosen row a graded figure takes the row's words, elsewhere its grade (" + chosenGraded + " graded on the chosen row, "
-                                                     + otherGraded + " of 2 on the other)");
+        Check(chosenGraded == 0 && chosenFigure == 1 && otherGraded == 2,
+            "kit: on the big table's chosen row a meter's figure takes the row's words, a graded figure alone its grade's chosen-row step, elsewhere its grade ("
+            + chosenGraded + " in a plain grade on the chosen row, " + chosenFigure + " of 1 in its chosen step, " + otherGraded + " of 2 graded on the other)");
     }
 
     // The game's own brands written joined (its apps BizMan and EconoView, its billboard firm CityAds); any other joined word

@@ -447,8 +447,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     UiRole grade = UiTokens.Grade(Math.Max(0, value));
                     float fw = UiTextRules.Width("100", UiStyle.BodyStrong) + UiTokens.S1;
-                    // On the chosen row's cyan tone a low grade's red or orange falls under 4.5:1: the figure takes the row's
-                    // words' colour there and the meter keeps the grade.
+                    // On the chosen row's cyan tone a low grade's red or orange falls under 4.5:1: the figure beside its meter
+                    // takes the row's words' colour there, and the meter keeps the grade.
                     UiDraw.TextMiddle(s, at, cx + cw - fw, ry, rowH, fw, UiStyle.BodyStrong, sel ? UiRole.Text : grade, words, UiFlags.Right);
                     float bw = UiDraw.SnapDown(cw - fw - UiTokens.S2);
                     if (bw >= UiTokens.S8)
@@ -459,7 +459,9 @@ namespace RealLifeOverhaul.Ui
                 }
                 case UiCellKind.Figure:
                 {
-                    UiRole ink = sel ? UiRole.Text : col.Graded && value >= 0 ? UiTokens.Grade(value) : UiRole.Text2;   // on the chosen row, as a meter's figure
+                    // A graded figure alone is its column's only sign of good or bad, so on the chosen row it keeps its grade in
+                    // the step that reads on that tone.
+                    UiRole ink = col.Graded && value >= 0 ? (sel ? UiTokens.GradeOnChosen(UiTokens.Grade(value)) : UiTokens.Grade(value)) : sel ? UiRole.Text : UiRole.Text2;
                     UiDraw.TextMiddle(s, at, cx, ry, rowH, cw, col.Graded ? UiStyle.BodyStrong : UiStyle.Body, ink, words, UiFlags.Right | UiFlags.Truncate);
                     break;
                 }

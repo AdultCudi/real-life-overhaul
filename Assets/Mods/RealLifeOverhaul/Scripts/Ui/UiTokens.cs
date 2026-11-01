@@ -69,6 +69,9 @@ namespace RealLifeOverhaul.Ui
         Ramp3,
         Ramp4,
         Ramp5,
+        GradeChosen1, // a poor grade's figure on the chosen row's cyan tone: the red lighter, as Grade1 falls under 4.5:1 there
+        GradeChosen2,
+        GradeChosen5, // the excellent green a step lighter there, as Grade5 stands at the very edge
         Count
     }
 
@@ -363,6 +366,9 @@ namespace RealLifeOverhaul.Ui
             0xA291D9FF,   // Ramp3
             0x9B7EE1FF,   // Ramp4
             0x9769E4FF,   // Ramp5: high, the strongest violet
+            0xF8B5ABFF,   // GradeChosen1: the poor red on the chosen row, 4.9:1 on its tone
+            0xF7B686FF,   // GradeChosen2: the low orange on the chosen row, 4.8:1
+            0x82DA68FF,   // GradeChosen5: the excellent green on the chosen row, 4.9:1
         };
 
         /// <summary>A role's colour, as 0xRRGGBBAA. One look: the flag stays for the callers that still pass it.</summary>
@@ -373,6 +379,10 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>An attribute's grade colour for a value of 0 to 100, poor to excellent in five steps.</summary>
         public static UiRole Grade(int value) => value < 30 ? UiRole.Grade1 : value < 50 ? UiRole.Grade2 : value < 65 ? UiRole.Grade3 : value < 80 ? UiRole.Grade4 : UiRole.Grade5;
+
+        /// <summary>A grade's colour for a figure on the chosen row's tone, where it still says good or bad and reads 4.5:1.</summary>
+        public static UiRole GradeOnChosen(UiRole grade) => grade == UiRole.Grade1 ? UiRole.GradeChosen1 : grade == UiRole.Grade2 ? UiRole.GradeChosen2
+            : grade == UiRole.Grade5 ? UiRole.GradeChosen5 : grade;
 
         /// <summary>A step of the ramp for a figure from low (0) to high (4), as a map is coloured and its legend keyed.</summary>
         public static UiRole Ramp(int step) => (UiRole)((int)UiRole.Ramp1 + System.Math.Max(0, System.Math.Min(4, step)));
