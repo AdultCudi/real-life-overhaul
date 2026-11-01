@@ -86,10 +86,16 @@ namespace RealLifeOverhaul.Ui
                 };
             }
             m.ActionCount = m.Actions.Length;
+            bool picks = false;
+            for (int i = 0; i < choices.Count && !picks; i++)
+            {
+                picks = choices[i] != null;
+            }
             var prompts = new List<UiPrompt>(4)
             {
                 new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
-                new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_change", "Change") },
+                // Enter steps a choice where the page has one. On a page of lines and buttons it presses the button in focus.
+                new UiPrompt { Action = UiAction.Confirm, Label = picks ? t("reallife_ui_prompt_change", "Change") : t("reallife_ui_prompt_select", "Select") },
             };
             if (v.Primary != null)
             {

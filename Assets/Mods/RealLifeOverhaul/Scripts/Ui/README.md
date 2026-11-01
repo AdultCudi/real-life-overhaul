@@ -1,7 +1,7 @@
 # The RLO interface kit
 
 Every screen of the overhaul, and every game app the mod redraws, is drawn here in the City Ledger, the owner's choice.
-The rules are in [docs/standards/ui.md](../../../../../docs/standards/ui.md) (RLO-UI-001 to 015) and the feature in
+The rules are in [docs/standards/ui.md](../../../../../docs/standards/ui.md) (RLO-UI-001 to 016) and the feature in
 [docs/features/rlo-interface.md](../../../../../docs/features/rlo-interface.md).
 
 ## How to build a screen
@@ -14,9 +14,11 @@ The rules are in [docs/standards/ui.md](../../../../../docs/standards/ui.md) (RL
      anything with records and a detail.
    - **Dashboard** (`UiDashboard`): up to four figures with their change and line, a table of whole rows and a side
      panel. Used by the Economy app's city, district and population views.
-   - **Session steps** (`UiSessionSteps`): one card fitted to its content, with the steps, the question and the
-     choices on 1, 2 and 3. Used by desk sessions.
-   - **Form** (`UiForm`): settings before an action, fields in sections, the action at the foot.
+   - **Session steps** (`UiSessionSteps`): one card across the page, as tall as what it holds, with the steps, the
+     question and the choices on 1, 2 and 3 (side by side when they fit one row), and its summary as a panel at the
+     side. Used by desk sessions.
+   - **Form** (`UiForm`): settings before an action, or a page of lines and actions. What to do next stands in a band
+     across the page with the actions, and the sections run in two columns. Used by the tech firms' pages.
 3. **A runner**: a class implementing `IUiScreen` (and `IUiTyping` for a search) that owns the model and answers the
    presses. Register it in `UiScreens` with its template and every key it labels with.
 4. **Samples**: add the screen's sample to `RealLifeOverhaul.Build/UiPreview/UiSamples.cs`, so EconomyCheck lays it out
@@ -37,6 +39,8 @@ Before a screen is done, check each line in the previews (dark and light, 1080p 
       choices are on numbers, F is the main action and P the second.
 - [ ] **Alignment**: everything is on the 4 px grid and spacing comes from the tokens' steps, with no hand-picked gaps.
 - [ ] **No dead space**: frames fit what they hold, tables show whole rows and a short thread sits at the foot under its start line.
+- [ ] **The page uses its screen**: it starts under the masthead and runs across the width, a form of several sections
+      runs in two columns, a short table's rows breathe, and nothing floats in the middle (RLO-UI-016).
 - [ ] **Indicators** agree with their values: the arrow follows the sign, and the colour says good or bad for the player.
 - [ ] **Words**: every label fits in all eleven languages, empty states are in words, and nothing is under 15 px.
 - [ ] **Contrast**: AA in both looks.

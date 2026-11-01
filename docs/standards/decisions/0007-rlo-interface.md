@@ -24,7 +24,7 @@ Screens of the overhaul, and the game apps the mod redraws (Contacts first), are
 
 ## Consequences
 
-- One look across the overhaul, with rules a machine can hold (RLO-UI-001 to 015).
+- One look across the overhaul, with rules a machine can hold (RLO-UI-001 to 016).
 - The kit carries its own fonts (about 5 MB of bundle) and a renderer to maintain.
 - A redrawn app depends on the game's members by name (ContractCheck reports them after an update), and falls back
   to the game's screen when they move.
@@ -32,4 +32,4 @@ Screens of the overhaul, and the game apps the mod redraws (Contacts first), are
 
 ## Rules
 
-[RLO-UI-001 to 015](../ui.md), [RLO-ARC-013](../architecture.md#rlo-arc-013-the-games-own-interface-only).
+[RLO-UI-001 to 016](../ui.md), [RLO-ARC-013](../architecture.md#rlo-arc-013-the-games-own-interface-only).

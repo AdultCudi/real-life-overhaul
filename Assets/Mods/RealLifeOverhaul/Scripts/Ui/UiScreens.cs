@@ -94,7 +94,7 @@ namespace RealLifeOverhaul.Ui
             }),
             new UiScreenDef("studio", UiTemplate.Form, "StudioPageScreen", new[]
             {
-                "reallife_ui_page_empty", "reallife_ui_prompt_move", "reallife_ui_prompt_change", "reallife_ui_prompt_back"
+                "reallife_ui_page_empty", "reallife_ui_prompt_move", "reallife_ui_prompt_change", "reallife_ui_prompt_select", "reallife_ui_prompt_back"
             }),
             new UiScreenDef("session_panel", UiTemplate.Session, "ActivityScreen", new[]
             {

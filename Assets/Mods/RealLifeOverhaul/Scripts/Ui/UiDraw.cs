@@ -265,6 +265,22 @@ namespace RealLifeOverhaul.Ui
             return Snap(UiTokens.S4 + UiTextRules.LineHeight(UiStyle.SectionHeader));
         }
 
+        /// <summary>
+        /// A page's head under the masthead: its title and the line under it at the left of a width. Returns the height of
+        /// the head's row, which the controls at its right (a tab bar, the page's action) share.
+        /// </summary>
+        public static float PageHead(UiScene s, UiAt at, float x, float y, float w, string title, string line)
+        {
+            float th = Snap(UiTextRules.LineHeight(UiStyle.SectionTitle));
+            Text(s, at, x, y, w, UiStyle.SectionTitle, UiRole.Text, title, UiFlags.Label | UiFlags.Truncate);
+            if (string.IsNullOrEmpty(line))
+            {
+                return Snap(Math.Max(th, UiTokens.Control));
+            }
+            Text(s, at, x, y + th, w, UiStyle.Small, UiRole.Text2, line, UiFlags.Label | UiFlags.Truncate);
+            return Snap(Math.Max(th + UiTextRules.LineHeight(UiStyle.Small), UiTokens.Control));
+        }
+
         /// <summary>A panel's title in its header band; returns the band's height.</summary>
         public static float PanelTitle(UiScene s, UiAt at, float x, float y, float w, string title, string count)
         {

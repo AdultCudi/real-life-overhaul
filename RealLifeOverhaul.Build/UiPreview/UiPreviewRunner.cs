@@ -119,9 +119,20 @@ public static class UiPreviewRunner
         foreach (UiSamples.Sample sample in UiSamples.Overhaul(English))
         {
             UiSamples.Sample x = sample;
-            screens.Add(new Screen { Name = x.Name, AppName = x.App, Lay = (s, f, d, k) => x.Lay(s, f, d, k), Walk = new[] { Down, Down, Right, Down, Left, Up } });
+            screens.Add(new Screen { Name = x.Name, AppName = x.App, Lay = (s, f, d, k) => x.Lay(s, f, d, k), Walk = Moves(x.Walk) });
         }
         return screens;
+    }
+
+    // A sample's walk of the d-pad, written as letters (U, D, L, R).
+    private static Vector2Int[] Moves(string walk)
+    {
+        var moves = new Vector2Int[walk.Length];
+        for (int i = 0; i < walk.Length; i++)
+        {
+            moves[i] = walk[i] == 'U' ? Up : walk[i] == 'D' ? Down : walk[i] == 'L' ? Left : Right;
+        }
+        return moves;
     }
 
     private static void RenderShot(Shot shot, string outFolder)

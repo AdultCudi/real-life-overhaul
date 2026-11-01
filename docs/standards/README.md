@@ -14,7 +14,7 @@ This standard is the set of numbered rules that every change to Real Life Overha
 | [texts.md](texts.md) | Locales, keys, British English, What's new, the Guide | RLO-TXT-001 to 014 |
 | [comments.md](comments.md) | What a comment is for, summaries, lengths | RLO-DOC-001 to 011 |
 | [git-and-review.md](git-and-review.md) | Branches, commits, pull requests, review, done, versions | RLO-GIT-001 to 011 |
-| [ui.md](ui.md) | The RLO interface: one source for every look, the City Ledger, the grid, fit, focus, keys, dead space, flat surfaces | RLO-UI-001 to 015 |
+| [ui.md](ui.md) | The RLO interface: one source for every look, the City Ledger, the grid, fit, focus, keys, dead space, flat surfaces, the page on its screen | RLO-UI-001 to 016 |
 | [dlc-and-updates.md](dlc-and-updates.md) | New districts, DLC content and another city: the city check, the DLC rule, tables by district | RLO-DLC-001 to 006 |
 | [decisions/](decisions/README.md) | The architecture decision records behind the rules | ADR-0001 to 0007 |
 

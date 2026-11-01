@@ -16,6 +16,7 @@ internal static class UiSamples
         public string Name;
         public string App;
         public Action<UiScene, UiFrame, bool, IUiKeys> Lay;
+        public string Walk = "DDRDLU";   // the d-pad's presses the focus path shot draws: U, D, L, R
     }
 
     /// <summary>The overhaul's screens as their own runners draw them from sample view models.</summary>
@@ -25,8 +26,8 @@ internal static class UiSamples
         {
             new Sample { Name = "population", App = "Economy", Lay = (s, f, d, k) => UiDashboard.Lay(s, PopulationCity(t), f, d, k) },
             new Sample { Name = "flare_city", App = "Flare", Lay = (s, f, d, k) => UiDashboard.Lay(s, FlareCity(t), f, d, k) },
-            new Sample { Name = "studio", App = "Tech", Lay = (s, f, d, k) => UiForm.Lay(s, StudioFirm(t), f, d, k) },
-            new Sample { Name = "session_panel", App = "Desk", Lay = (s, f, d, k) => UiSessionSteps.Lay(s, DeskPanel(t), f, d, k) },
+            new Sample { Name = "studio", App = "Tech", Lay = (s, f, d, k) => UiForm.Lay(s, StudioFirm(t), f, d, k), Walk = "LRDL" },
+            new Sample { Name = "session_panel", App = "Desk", Lay = (s, f, d, k) => UiSessionSteps.Lay(s, DeskPanel(t), f, d, k), Walk = "RDLUL" },
         };
     }
 
@@ -82,26 +83,30 @@ internal static class UiSamples
         return m;
     }
 
-    /// <summary>A game studio's page as StudioPages makes it from StudioViews.Studio: what to do next, the studio's lines, its choices and actions.</summary>
+    /// <summary>
+    /// A game studio's page as StudioPages makes it from StudioViews.Studio, the page the kit's studio screen shows: what
+    /// to do next, the studio's own lines and the games market's, and its actions (the view has no choices).
+    /// </summary>
     public static UiFormModel StudioFirm(UiWords t)
     {
         var m = new UiFormModel
         {
             Title = "Pixel Harbour Games",
-            About = "A game studio of 12 people, Midtown (Making a game)",
             Fields = new[]
             {
-                new UiFieldModel { Kind = UiFieldKind.Note, Label = "Next: hold this week's playtest at your desk; the build is ready.", On = true },
-                new UiFieldModel { Kind = UiFieldKind.Note, Section = "In the works", Label = "Harbour Lights, a cosy farming game, is 64% made; launch in 41 days." },
-                new UiFieldModel { Kind = UiFieldKind.Note, Label = "Hype is high: 18,400 people follow it on Flare." },
-                new UiFieldModel { Kind = UiFieldKind.Choice, Section = "Marketing", Label = "Campaign", Value = "Streamers" },
-                new UiFieldModel { Kind = UiFieldKind.Note, Label = "More wishlists among young players; costs $4,200 a week." },
-                new UiFieldModel { Kind = UiFieldKind.Slider, Label = "Budget a week", Value = "$4,200", Share = 0.4f },
+                new UiFieldModel { Kind = UiFieldKind.Note, Label = "Next: start a game. Draft a concept, then pitch it at your desk at Pixel Harbour Games.", On = true },
+                new UiFieldModel { Kind = UiFieldKind.Note, Section = "Game studio", Label = "No engine of your own. Building one takes 42,000 work points, then cuts costs and lifts tech." },
+                new UiFieldModel { Kind = UiFieldKind.Note, Label = "Your team knows Simulation, Puzzle and Strategy." },
+                new UiFieldModel { Kind = UiFieldKind.Note, Label = "Support: 120 tickets a day from your players, 96 of them answered. Unanswered tickets cost the studio's name." },
+                new UiFieldModel { Kind = UiFieldKind.Note, Section = "The games market", Label = "Strategy is the hot genre until Day 61." },
+                new UiFieldModel { Kind = UiFieldKind.Note, Label = "Northlight: Ember Run, Action, score 82, 41,000 copies." },
+                new UiFieldModel { Kind = UiFieldKind.Note, Label = "Copperleaf: Tiny Towns, Simulation, score 74, 18,500 copies." },
+                new UiFieldModel { Kind = UiFieldKind.Note, Label = "Bright Mill: Deep Signal, Strategy, score 68, 9,200 copies." },
             },
             Actions = new[]
             {
-                new UiActionModel { Label = "Open roles", Kind = UiButtonKind.Secondary, Key = UiAction.Option, Command = UiForm.ActionCommand },
-                new UiActionModel { Label = "Hold the playtest", Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiForm.ActionCommand },
+                new UiActionModel { Label = "Build our own engine", Kind = UiButtonKind.Secondary, Key = UiAction.Option, Command = UiForm.ActionCommand },
+                new UiActionModel { Label = "Start a game", Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiForm.ActionCommand },
             },
         };
         m.FieldCount = m.Fields.Length;
@@ -109,8 +114,8 @@ internal static class UiSamples
         m.Prompts = new[]
         {
             new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
-            new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_change", "Change") },
-            new UiPrompt { Action = UiAction.Alt, Label = "Hold the playtest" },
+            new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_select", "Select") },
+            new UiPrompt { Action = UiAction.Alt, Label = "Start a game" },
             new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
         };
         m.PromptCount = m.Prompts.Length;

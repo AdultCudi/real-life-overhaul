@@ -41,6 +41,8 @@ Ui/                         game-free unless named: the offline checks and the p
   and the open contact at the right. The contact shows its messages under the line where they start, its details and
   the game's own buttons as actions. Call, an offer with buttons and a tax table hand over to the game's own view
   until the app closes.
+- **The overhaul's pages**: the population and Flare in the city as dashboards, a tech firm's page as a form, and a
+  desk session's steps as a card with its choices. Every page starts under a slim masthead and runs across the screen.
 - **The gallery**: every component on six pages, in both looks (Option turns the look).
 
 ## Save and Going Public

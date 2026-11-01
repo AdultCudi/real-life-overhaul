@@ -23,17 +23,20 @@ namespace RealLifeOverhaul.Ui
     }
 
     /// <summary>
-    /// The session steps template, for a desk session held at the owner's desk (Scripts/Sessions): one framed card at the
-    /// screen's middle with the session's name and what it is, the step progress, the step's question and its choices as
-    /// cards (each with the key that picks it and the trade-off it makes), a summary at the side and the step's actions at
-    /// the foot. The card is as tall as what it holds, so it never frames a hole. Commands: <see cref="ChoiceCommand"/>
-    /// (the choice's index), <see cref="ActionCommand"/> (the action's). Game-free. Cost: a layout a change.
+    /// The session steps template, for a desk session held at the owner's desk (Scripts/Sessions). The session is one
+    /// framed card across the page from under the masthead, with its name and what it is, the step progress, the step's
+    /// question, its choices as cards (each with the key that picks it and the trade-off it makes, side by side when they
+    /// all fit in one row, else one under another) and the step's actions at the foot. Its summary, when it has one, is a
+    /// framed panel at the right. Each frame is as tall as what it holds, so it never frames a hole. Commands:
+    /// <see cref="ChoiceCommand"/> (the choice's index), <see cref="ActionCommand"/> (the action's). Game-free.
+    /// Cost: a layout a change.
     /// </summary>
     public static class UiSessionSteps
     {
         public const int ChoiceCommand = 1, ActionCommand = 2;
-        public const float PanelWidth = 1240f;   // px: a session reads as one card, not a page
-        public const float SideWidth = 360f;     // px
+        public const float SideWidth = 380f;     // px: as wide as a dashboard's side panel
+        public const float MinChoice = 560f;     // px: the narrowest a choice stands beside another, its trade on two lines in every language
+        public const byte RegionMain = 1, RegionSide = 2;   // the d-pad's columns
 
         /// <summary>Lays a session's step out into a scene.</summary>
         public static void Lay(UiScene s, UiSessionModel m, UiFrame frame, bool dark, IUiKeys keys)
@@ -43,12 +46,12 @@ namespace RealLifeOverhaul.Ui
             UiAt screen = UiAt.Screen;
             int bg = UiDraw.Box(s, screen, 0f, 0f, frame.Width, frame.Height, UiRole.Bg, UiRole.None, 0f, UiFlags.Decor);   // the host's whole area
             UiAt at = screen.In(bg);
-            float pw = Math.Min(cw, PanelWidth);
-            float px = cx + UiDraw.SnapDown((cw - pw) / 2f);
-            int items = s.ItemCount, nodes = s.NodeCount, clips = s.ClipCount;
-            int panel = UiDraw.Box(s, at, px, cy, pw, ch, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
-            UiAt inside = at.In(panel);
-            float x = px + UiTokens.S8, w = pw - UiTokens.S8 * 2f, y = cy + UiTokens.S8;
+            bool side = m.SummaryCount > 0;   // a summary panel only where there is a summary: an empty frame reads as a hole
+            float pw = side ? cw - SideWidth - UiTokens.S4 : cw;
+            UiAt main = at.InRegion(RegionMain);
+            int panel = UiDraw.Box(s, main, cx, cy, pw, ch, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
+            UiAt inside = main.In(panel);
+            float x = cx + UiTokens.S8, w = pw - UiTokens.S8 * 2f, y = cy + UiTokens.S8;
             UiDraw.Text(s, inside, x, y, w, UiStyle.Hero, UiRole.Text, m.Title, UiFlags.Label | UiFlags.Truncate);
             y += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Hero)) + UiTokens.S2;
             if (!string.IsNullOrEmpty(m.About))
@@ -62,35 +65,27 @@ namespace RealLifeOverhaul.Ui
             {
                 y += UiDraw.Snap(UiDraw.Steps(s, inside, x, y, w, m.StepLabel, m.StepCount, m.Step)) + UiTokens.S6;
             }
-            bool side = m.SummaryCount > 0;   // a summary box only where there is a summary: an empty frame reads as a hole
-            float main = side ? w - SideWidth - UiTokens.S8 : w;
-            float qy = y;
-            UiDraw.Text(s, inside, x, qy, main, UiStyle.SectionTitle, UiRole.Text, m.Question, UiFlags.Label | UiFlags.Wrap, 2);
-            qy += UiDraw.Snap(UiTextRules.WrappedHeight(m.Question, UiStyle.SectionTitle, main, 2)) + UiTokens.S4;
-            for (int i = 0; i < m.ChoiceCount; i++)
+            if (!string.IsNullOrEmpty(m.Question))
             {
-                UiDraw.ChoiceCard(s, inside.Arriving(i), x, qy, main, ref m.Choices[i], keys, ChoiceCommand, i, out float h);
-                qy += h + UiTokens.S3;
+                UiDraw.Text(s, inside, x, y, w, UiStyle.SectionTitle, UiRole.Text, m.Question, UiFlags.Label | UiFlags.Wrap, 2);
+                y += UiDraw.Snap(UiTextRules.WrappedHeight(m.Question, UiStyle.SectionTitle, w, 2)) + UiTokens.S4;
             }
-            float summaryH = 0f;
+            y = Choices(s, inside, m, x, y, w, keys) - UiTokens.S3;
+            float ph = UiDraw.Snap(y + (m.ActionCount > 0 ? UiTokens.S8 + UiTokens.Control : 0f) + UiTokens.S8 - cy);
             if (side)
             {
-                float sx = x + main + UiTokens.S8;
-                int summary = UiDraw.Box(s, inside, sx, y, SideWidth, UiTokens.S16, UiRole.Field, UiRole.RowEdge, UiTokens.RadiusLarge);
-                UiAt inSummary = inside.In(summary);
-                float sy = y + UiTokens.S5, sw = SideWidth - UiTokens.S5 * 2f;
-                UiDraw.Text(s, inSummary, sx + UiTokens.S5, sy, sw, UiStyle.SectionHeader, UiRole.Muted, m.SummaryTitle, UiFlags.Label);
-                sy += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2;
-                for (int i = 0; i < m.SummaryCount; i++)
+                int summary = Summary(s, at.InRegion(RegionSide), m, cx + cw - SideWidth, cy, ch);
+                if (Math.Abs(s.Items[summary].H - ph) <= UiTokens.MostSlack - UiTokens.S8)
                 {
-                    sy += UiDraw.KeyValue(s, inSummary, sx + UiTokens.S5, sy, sw, m.Summary[i].Key, m.Summary[i].Value);
+                    // Nearly level: one foot reads tidier than a step, while the card's padding over its buttons and the step
+                    // together stay within the slack a frame may hold.
+                    ph = s.Items[summary].H = Math.Max(s.Items[summary].H, ph);
                 }
-                s.Items[summary].H = UiDraw.Snap(sy - y + UiTokens.S3);   // the frame fits its lines: the rule under the last and a little air
-                summaryH = s.Items[summary].H;
             }
-            float foot = Math.Max(qy - UiTokens.S3, y + summaryH);
-            float by = Math.Min(cy + ch - UiTokens.S8 - UiTokens.Control, foot + UiTokens.S8);
-            float bx = px + pw - UiTokens.S8;
+            s.Items[panel].H = ph;
+            // The actions stand on the card's floor, so a card made level with its summary keeps the air over its buttons.
+            float by = cy + ph - UiTokens.S8 - UiTokens.Control;
+            float bx = x + w;
             for (int i = m.ActionCount - 1; i >= 0; i--)
             {
                 ref UiActionModel a = ref m.Actions[i];
@@ -99,15 +94,52 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Button(s, inside, bx, by, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, ActionCommand, i, a.Disabled);
                 bx -= UiTokens.S3;
             }
-            float ph = UiDraw.Snap(by + UiTokens.Control + UiTokens.S8 - cy);
-            s.Items[panel].H = ph;
-            UiDraw.Lift(s, items, nodes, clips, UiDraw.SnapDown((ch - ph) / 2f));
             for (int i = 0; i < m.PromptCount; i++)
             {
                 s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
             }
             UiDraw.PromptBar(s, 0f, frame.BandY, frame.Width, frame.Band, keys);
             UiDraw.Chrome(s, frame);
+        }
+
+        // The choices from a y, side by side and level when they all fit one row at their least width, else one under
+        // another. Returns the y under the last, a row's gap included.
+        private static float Choices(UiScene s, UiAt at, UiSessionModel m, float x, float y, float w, IUiKeys keys)
+        {
+            int fit = Math.Max(1, (int)((w + UiTokens.S4) / (MinChoice + UiTokens.S4)));
+            int across = m.ChoiceCount <= fit ? Math.Max(1, m.ChoiceCount) : 1;
+            float cw = across > 1 ? UiDraw.SnapDown((w - UiTokens.S4 * (across - 1)) / across) : w;
+            float level = 0f;
+            for (int i = 0; across > 1 && i < m.ChoiceCount; i++)
+            {
+                level = Math.Max(level, UiDraw.ChoiceCardHeight(ref m.Choices[i], keys, cw));
+            }
+            for (int i = 0; i < m.ChoiceCount; i++)
+            {
+                float px = across > 1 ? x + i * (cw + UiTokens.S4) : x;
+                UiDraw.ChoiceCard(s, at.Arriving(i), px, y, cw, ref m.Choices[i], keys, ChoiceCommand, i, out float h, level);
+                if (across == 1)
+                {
+                    y += h + UiTokens.S3;
+                }
+            }
+            return across > 1 ? y + level + UiTokens.S3 : y;
+        }
+
+        // The summary as its own framed panel, as tall as its lines. Returns the frame.
+        private static int Summary(UiScene s, UiAt at, UiSessionModel m, float px, float py, float most)
+        {
+            int panel = UiDraw.Box(s, at, px, py, SideWidth, most, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
+            UiAt inside = at.In(panel);
+            float x = px + UiTokens.S5, w = SideWidth - UiTokens.S5 * 2f, y = py + UiTokens.S5;
+            UiDraw.Text(s, inside, x, y, w, UiStyle.SectionHeader, UiRole.Muted, m.SummaryTitle, UiFlags.Label);
+            y += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2;
+            for (int i = 0; i < m.SummaryCount; i++)
+            {
+                y += UiDraw.KeyValue(s, inside, x, y, w, m.Summary[i].Key, m.Summary[i].Value);
+            }
+            s.Items[panel].H = Math.Min(most, UiDraw.Snap(y - py + UiTokens.S5));
+            return panel;
         }
     }
 }

@@ -148,6 +148,7 @@ namespace RealLifeOverhaul.Ui
         public int RowCount;
         public int Selected = -1;
         public float Offset;
+        public float RowHeight;   // px a row takes, 0 for the dense TableRow. A page with room to spare lets its rows breathe (UiDraw.Breathe)
         public string EmptyTitle;
         public string EmptyBody;
     }

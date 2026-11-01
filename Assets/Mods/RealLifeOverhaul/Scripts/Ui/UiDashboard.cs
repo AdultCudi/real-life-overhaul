@@ -30,9 +30,10 @@ namespace RealLifeOverhaul.Ui
     /// and its tabs as bars over a row of framed figure panels (the number large, its change with an arrow that follows
     /// its sign and a colour that says whether it is good for the player, a sparkline under it), then the table that stays
     /// readable at the left and a side panel of key figures and shares at the right. Each frame fits what it holds: the
-    /// table's its whole rows (scrolling when they outnumber the room), the side's its lines, and the two share a foot
-    /// when they nearly do. Commands: <see cref="TabCommand"/> (the tab's index) and <see cref="RowCommand"/> (the row's).
-    /// Game-free. Cost: a layout a change.
+    /// table's its whole rows (scrolling when they outnumber the room, breathing into calmer rows when a short table
+    /// would stop well over the page's foot), the side's its lines, and the two share a foot when they nearly do.
+    /// Commands: <see cref="TabCommand"/> (the tab's index) and <see cref="RowCommand"/> (the row's). Game-free.
+    /// Cost: a layout a change.
     /// </summary>
     public static class UiDashboard
     {
@@ -49,12 +50,7 @@ namespace RealLifeOverhaul.Ui
             int bg = UiDraw.Box(s, screen, 0f, 0f, frame.Width, frame.Height, UiRole.Bg, UiRole.None, 0f, UiFlags.Decor);   // the host's whole area
             UiAt at = screen.In(bg);
             float y = cy;
-            float titleH = UiTextRules.LineHeight(UiStyle.AppTitle);
-            UiDraw.Text(s, at, cx, y, cw * 0.5f, UiStyle.SectionTitle, UiRole.Text, m.Title, UiFlags.Label | UiFlags.Truncate);
-            if (!string.IsNullOrEmpty(m.Subtitle))
-            {
-                UiDraw.Text(s, at, cx, y + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionTitle)), cw * 0.5f, UiStyle.Small, UiRole.Text2, m.Subtitle, UiFlags.Label | UiFlags.Truncate);
-            }
+            float headH = UiDraw.PageHead(s, at, cx, y, cw * 0.5f, m.Title, m.Subtitle);
             if (m.Tabs.Length > 0)
             {
                 float tabsW = TabsWidth(m.Tabs, keys);
@@ -65,7 +61,7 @@ namespace RealLifeOverhaul.Ui
                 float bw = UiDraw.ButtonWidth(m.Action.Kind, m.Action.Label, m.Action.Icon, m.Action.Key, keys);
                 UiDraw.Button(s, at, cx + cw - bw, y, bw, UiTokens.Control, m.Action.Kind, m.Action.Label, m.Action.Icon, m.Action.Key, keys, ActionCommand, 0, m.Action.Disabled);
             }
-            y += UiDraw.Snap(Math.Max(titleH, UiTokens.Control)) + UiTokens.S6;
+            y += headH + UiTokens.S6;
             int count = Math.Min(m.FigureCount, MostFigures);
             float fh = 0f;
             if (count > 0)
@@ -86,9 +82,15 @@ namespace RealLifeOverhaul.Ui
             // A table whose columns name it needs no title over it: the head row is the frame's first line then.
             bool titled = !string.IsNullOrEmpty(m.TableTitle);
             float tableTop = titled ? UiTokens.S5 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionTitle)) + UiTokens.S3 : UiTokens.S4;
-            float tableH = UiDraw.TableHeight(m.Table, bodyH - tableTop - UiTokens.S4);
-            float panelH = tableTop + tableH + UiTokens.S4;
+            float room = bodyH - tableTop - UiTokens.S4;
+            m.Table.RowHeight = 0f;
             float sideH = Math.Min(bodyH, SideHeight(m));
+            if (Math.Abs(tableTop + UiDraw.TableHeight(m.Table, room) + UiTokens.S4 - sideH) > UiTokens.MostSlack)
+            {
+                UiDraw.Breathe(m.Table, room);   // a table level with its side keeps that one foot, and one well short of the page grows into it
+            }
+            float tableH = UiDraw.TableHeight(m.Table, room);
+            float panelH = tableTop + tableH + UiTokens.S4;
             if (Math.Abs(panelH - sideH) <= UiTokens.MostSlack)
             {
                 panelH = sideH = Math.Max(panelH, sideH);   // nearly level: one foot reads tidier than a step of a few px

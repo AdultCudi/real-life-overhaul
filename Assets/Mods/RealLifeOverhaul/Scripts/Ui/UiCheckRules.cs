@@ -4,10 +4,11 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// The rules that keep every screen the same, checked on a laid-out scene (docs/standards/ui.md, RLO-UI-005 to 014):
+    /// The rules that keep every screen the same, checked on a laid-out scene (docs/standards/ui.md, RLO-UI-005 to 016):
     /// nothing overlaps its siblings, nothing spills out of its parent, every box sits on the 4 px grid, every label fits
     /// whole, every target is big enough and reached by the d-pad, every text and icon stands out from what is under it
-    /// by WCAG AA, every text is at least the smallest size, one primary action a layer, and a prompt bar on every screen.
+    /// by WCAG AA, every text is at least the smallest size, one primary action a layer, a prompt bar on every screen, no
+    /// frame holds dead space, and the page uses its screen.
     /// Each returns how many it found and says each through <paramref name="say"/>. Game-free: EconomyCheck runs them on
     /// every registered screen, at every frame size and in both themes and all eleven languages. Cost: offline only.
     /// </summary>
@@ -489,6 +490,156 @@ namespace RealLifeOverhaul.Ui
         }
 
         public const float MostDeadSpace = UiTokens.MostSlack;
+        public const float MostMargin = UiTokens.S16;   // px of nothing a page may leave at the left, top or right of its room: more and it floats
+        public const float LeastFill = 0.25f;           // the share of its room a page's frames and words cover at least
+
+        /// <summary>
+        /// A page that does not use its screen (RLO-UI-016), measured on the room under the masthead and over the band
+        /// (<see cref="UiFrame.Room"/>) by the screen's own layer, its bars left out: more than <see cref="MostMargin"/> of
+        /// nothing at the room's left, top or right (a card floating in the middle), or, at 16:9, the screen the game is
+        /// played on, frames and words covering less than <see cref="LeastFill"/> of it. A page anchored under the
+        /// masthead and across the width may end where its content ends: a short page is sized to what it holds.
+        /// </summary>
+        public static int Unfilled(UiScene s, UiFrame frame, Action<string> say)
+        {
+            frame.Room(out float rx, out float ry, out float rw, out float rh);
+            var boxes = new List<float>(64);
+            float left = float.MaxValue, top = float.MaxValue, right = float.MinValue;
+            for (int i = 0; i < s.ItemCount; i++)
+            {
+                ref UiItem it = ref s.Items[i];
+                // What a page shows is what stands on its ground: an item inside another counts through the outer one.
+                bool onGround = it.Parent < 0 || (s.Items[it.Parent].Flags & UiFlags.Decor) != 0;
+                if (!onGround || it.Layer != 0 || (it.Flags & (UiFlags.Decor | UiFlags.Prompt)) != 0 || (it.Kind == UiKind.Text && string.IsNullOrEmpty(it.Text)))
+                {
+                    continue;
+                }
+                float x0 = it.X, y0 = it.Y, x1 = it.X + it.W, y1 = it.Y + it.H;
+                if (it.Kind == UiKind.Text)
+                {
+                    // Words cover their ink, not the width they were given: a title's long box never hides a narrow page.
+                    float ink = Math.Min(it.W, UiTextRules.Width(it.Text, it.Style));
+                    x0 = (it.Flags & UiFlags.Right) != 0 ? x1 - ink : (it.Flags & UiFlags.Centre) != 0 ? it.X + (it.W - ink) / 2f : it.X;
+                    x1 = x0 + ink;
+                }
+                if (it.Clip >= 0)
+                {
+                    ref UiClip c = ref s.Clips[it.Clip];
+                    x0 = Math.Max(c.X, c.X + x0);
+                    x1 = Math.Min(c.X + c.W, c.X + x1);
+                    y0 = Math.Max(c.Y, c.Y + y0 - c.Offset);
+                    y1 = Math.Min(c.Y + c.H, c.Y + y1 - c.Offset);
+                }
+                x0 = Math.Max(x0, rx);
+                y0 = Math.Max(y0, ry);
+                x1 = Math.Min(x1, rx + rw);
+                y1 = Math.Min(y1, ry + rh);
+                if (x1 - x0 <= Tolerance || y1 - y0 <= Tolerance)
+                {
+                    continue;   // the masthead's words, the band's, or a row scrolled out of view
+                }
+                boxes.Add(x0);
+                boxes.Add(y0);
+                boxes.Add(x1);
+                boxes.Add(y1);
+                left = Math.Min(left, x0);
+                top = Math.Min(top, y0);
+                right = Math.Max(right, x1);
+            }
+            if (boxes.Count == 0)
+            {
+                say?.Invoke(s.Name + ": nothing stands in the room under the masthead");
+                return 1;
+            }
+            int found = Margin(s, left - rx, "at the left of the page", say) + Margin(s, top - ry, "over the page, under the masthead", say)
+                + Margin(s, rx + rw - right, "at the right of the page", say);
+            bool played = frame.Height <= UiFrame.ScreenHeight + Tolerance && frame.Width * 9f <= frame.Height * 16f + Tolerance;
+            float share = Covered(boxes) / (rw * rh);
+            if (played && share < LeastFill)
+            {
+                found++;
+                say?.Invoke(s.Name + ": its frames and words cover " + (int)(share * 100f) + "% of the room under the masthead, under " + (int)(LeastFill * 100f) + "%");
+            }
+            return found;
+        }
+
+        private static int Margin(UiScene s, float gap, string where, Action<string> say)
+        {
+            if (gap <= MostMargin + Tolerance)
+            {
+                return 0;
+            }
+            say?.Invoke(s.Name + ": " + (int)gap + " px of nothing " + where + " (a page starts under the masthead and runs across the width)");
+            return 1;
+        }
+
+        // The area the union of boxes (x0, y0, x1, y1 in fours) covers: a strip between each two edges across, the spans
+        // over it merged down its height.
+        private static float Covered(List<float> boxes)
+        {
+            int n = boxes.Count / 4;
+            var xs = new List<float>(n * 2);
+            for (int i = 0; i < n; i++)
+            {
+                xs.Add(boxes[i * 4]);
+                xs.Add(boxes[i * 4 + 2]);
+            }
+            xs.Sort();
+            var spans = new List<float>(n * 2);
+            float area = 0f;
+            for (int k = 0; k + 1 < xs.Count; k++)
+            {
+                float a = xs[k], b = xs[k + 1];
+                if (b - a <= 0f)
+                {
+                    continue;
+                }
+                spans.Clear();
+                for (int i = 0; i < n; i++)
+                {
+                    if (boxes[i * 4] <= a && boxes[i * 4 + 2] >= b)
+                    {
+                        spans.Add(boxes[i * 4 + 1]);
+                        spans.Add(boxes[i * 4 + 3]);
+                    }
+                }
+                area += (b - a) * Union(spans);
+            }
+            return area;
+        }
+
+        // The length the spans (from, to in pairs) cover together.
+        private static float Union(List<float> spans)
+        {
+            int n = spans.Count / 2;
+            if (n == 0)
+            {
+                return 0f;
+            }
+            var starts = new float[n];
+            var ends = new float[n];
+            for (int i = 0; i < n; i++)
+            {
+                starts[i] = spans[i * 2];
+                ends[i] = spans[i * 2 + 1];
+            }
+            Array.Sort(starts, ends);
+            float total = 0f, from = starts[0], to = ends[0];
+            for (int i = 1; i < n; i++)
+            {
+                if (starts[i] > to)
+                {
+                    total += to - from;
+                    from = starts[i];
+                    to = ends[i];
+                }
+                else
+                {
+                    to = Math.Max(to, ends[i]);
+                }
+            }
+            return total + to - from;
+        }
 
         private static bool ClipInside(UiScene s, short clip, ref UiItem panel)
         {

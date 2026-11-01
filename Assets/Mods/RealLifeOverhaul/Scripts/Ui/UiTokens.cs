@@ -179,6 +179,7 @@ namespace RealLifeOverhaul.Ui
         public const float MinTarget = 36f;     // px: the least a focus or pointer target may be either way (a chip): over WCAG 2.2 AA's 24
         public const float PairRow = 44f;       // px: a key and its value with the rule under them
         public const float TableRow = 44f;      // px: a table's row: dense as a management game's tables, still a full target
+        public const float TableRowMost = 64f;  // px: the tallest a row grows when a short table leaves room: it breathes rather than ending over a hole
         public const float MostSlack = 48f;     // px a frame may hold under its last line (two rows' gap and its padding): more reads as a hole
         public const float Row = 80f;           // px: a list row: a 48 avatar with 16 above and below
         public const float AvatarRow = 48f;     // px
@@ -192,7 +193,6 @@ namespace RealLifeOverhaul.Ui
         public const float KeyCap = 28f;        // px: a prompt's key cap
         public const float Segment = 8f;        // px: a stat bar segment's height
         public const float SegmentGap = 4f;     // px
-        public const float PromptBand = 76f;    // px: the bottom bar the prompts stand in (the game's own is 150 canvas units)
         public const float MinText = 15f;       // px: the smallest text anywhere, readable at play distance
 
         // ------------------------------------------------------------------------------------------------- type
