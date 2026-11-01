@@ -33,6 +33,7 @@ internal static partial class Program
         "F3", "F4", "F11", "Insert", "Delete", "Home", "End", "Minus", "Equals", "Backslash", "Slash", "Quote", "Semicolon", "Comma", "Period",
         "Alpha0", "Keypad0", "Keypad1", "Keypad5", "KeypadPlus", "KeypadMinus", "KeypadDivide", "KeypadMultiply", "CapsLock", "Numlock",
         "RightControl", "RightAlt", "RightShift", "G", "J", "K", "L", "U", "X", "Y", "Z", "BackQuote", "Mouse3", "Mouse4",
+        "B", "C", "H", "I", "M", "N", "O", "P", "R", "T", "Backspace", "PageUp", "PageDown", "F1", "F2", "F5", "F6", "F8", "F9",
     };
 
     private static void KeyClashes(GameFiles files, string mod)
@@ -87,7 +88,15 @@ internal static partial class Program
             walk = u.Path;
             ours.Remove(u);
         }
+        // The phone key (the kit phone's keys and pad): set aside too, then asked the same question as the walk key.
+        string phone = null;
+        foreach (KeyUse u in ours.Where(x => x.Who == "the mod: binding phone").ToList())
+        {
+            phone = u.Path;
+            ours.Remove(u);
+        }
         Check(walk != null, "keys: the walk key's default is read from the built mod (Core/Keys, the binding \"walk\")");
+        Check(phone != null, "keys: the phone key's default is read from the built mod (Core/Keys, the binding \"phone\")");
         int bindings = ours.Count(u => u.Who.StartsWith("the mod: binding ", StringComparison.Ordinal));
         Check(bindings >= 10, "keys: the mod's other bindings are read (" + bindings + ")");
         foreach (string modKey in new[] { "F10", "V", "G", "K", "Home" })
@@ -104,6 +113,8 @@ internal static partial class Program
         string Holder(string key) => game.Concat(ours).Where(u => KeyRules.Takes(u.Path, key)).Select(u => u.Who).FirstOrDefault() ?? KeyRules.TakenBy(key);
         string holder = Holder(walk);
         Check(holder == null, "keys: the walk key " + walk + " is nobody else's" + (holder != null ? ": " + holder + " has it" : string.Empty));
+        string phoneHolder = phone == null ? null : KeyRules.Takes(phone, walk) ? "the mod: binding walk" : Holder(phone);
+        Check(phone != null && phoneHolder == null, "keys: the phone key " + phone + " is nobody else's, the walk key's neither" + (phoneHolder != null ? ": " + phoneHolder + " has it" : string.Empty));
         Check(Holder(KeyRules.PathOf("F")) != null && Holder(KeyRules.PathOf("F10")) != null && Holder(KeyRules.PathOf("CapsLock")) != null
               && Holder(KeyRules.PathOf("RightShift")) != null && Holder(KeyRules.PathOf("V")) != null,
               "keys: the question finds the game's interact key, the mod's photo mode key, Caps Lock, Shift through \"shift\" and Going Public's V taken");
@@ -124,7 +135,7 @@ internal static partial class Program
                 taken.Add(candidate + " (" + who + ")");
             }
         }
-        Console.WriteLine("   walk key " + walk + "; " + game.Count + " uses of keys by the game, " + ours.Count + " by the mod, " + KeyRules.Taken.Length + " by the system and other mods.");
+        Console.WriteLine("   walk key " + walk + ", phone key " + phone + "; " + game.Count + " uses of keys by the game, " + ours.Count + " by the mod, " + KeyRules.Taken.Length + " by the system and other mods.");
         Console.WriteLine("   free of all of them: " + string.Join(", ", free) + ".");
         Console.WriteLine("   taken: " + string.Join("; ", taken) + ".");
         Check(free.Contains("F3"), "keys: F3 is among the free keys looked at");

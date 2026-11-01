@@ -13,15 +13,20 @@ namespace RealLifeOverhaul.GameUi
     /// <summary>
     /// Pages for the HUD phone's grid and the full menu's row of app buttons (PagerRules), which the mod's apps would
     /// overflow: the game's apps first, the mod's in one order, other mods' after, a More apps button on every page's last
-    /// tile; with the option App folders the mod's apps in folders and a dock (PhoneLayoutRules). What it does is written on
-    /// the grid (PageMark, RowAsBuilt) so any later pager carries on, and it steps aside for good for another mod paging the
-    /// same grid. Costs nothing a frame: it acts on the grid's events, at most one pass before the canvas is drawn.
+    /// tile; with the option App folders the mod's apps in folders and two kept first on the home screen
+    /// (PhoneLayoutRules). The More apps button is a tile of the grid itself, after the page's apps and the empty tiles that
+    /// fill a short page, so the grid's own layout puts it on the last tile of every page and every folder, wherever the
+    /// grid moves (the owner, 1 Nov 2026: "The next button must be at the bottom instead it is random"). What it does is
+    /// written on the grid (PageMark, RowAsBuilt) so any later pager carries on, and it steps aside for good for another
+    /// mod paging the same grid. Costs nothing a frame: it acts on the grid's events, at most one pass before the canvas is
+    /// drawn; a change of the full menu bar's width is laid out once, after it has held still.
     /// </summary>
     public sealed partial class PhoneGridPager : MonoBehaviour, IScrollHandler
     {
         private static readonly FeatureGuard FrameGuard = Guard.For(null, "PhoneGridPager", typeof(PhoneGridPager));   // the game's calls of it
 
         private const string MoreName = "RealLife MoreApps";
+        private const string GapName = "RealLife Page Gap";
         private const int RanksKept = 128;                               // before the record of names is started again
         private const string MoreTitleKey = "reallife_apps_more";       // "More apps", where the apps show their names
         private const string MorePageKey = "reallife_apps_page";        // "{page} / {pages}", under the name
@@ -63,8 +68,11 @@ namespace RealLifeOverhaul.GameUi
         private float _room = float.NaN;   // from where the game's row begins to the money's box (NaN: not measured)
         private bool _own;              // only the game's own apps: laid out as the game lays them out
         private bool _pending;          // a pass is asked for before the frame is drawn
+        private bool _settling;         // the bar's width is watched until it holds still
+        private const int SettleFrames = 3;   // frames the bar's width holds still before its tiles are worked out again
         private bool _checkDue;         // the menu has opened: one diagnostics line on where the row ends
-        private RectTransform _more;    // the "More apps" button, beside the grid under its parent
+        private RectTransform _more;    // the "More apps" button: a tile of the grid, the last of every page
+        private readonly List<Transform> _gaps = new List<Transform>(PagerRules.PhoneTiles);   // the empty tiles that fill a short page
         private TextLocalizationComponent _morePage;
         private global::UI.Elements.Badge _moreBadge;
         private int _badgeShown = -1;   // the number last put on the button's badge
@@ -76,22 +84,19 @@ namespace RealLifeOverhaul.GameUi
         private static readonly Dictionary<Type, bool> KnownScripts = new Dictionary<Type, bool>(8);   // true for the game's, Unity's and the mod's scripts, false for another mod's
 
         private readonly List<Transform> _items = new List<Transform>(24);   // what the pages hold, in order: buttons and folders' tiles
-        private readonly List<Transform> _dock = new List<Transform>(PhoneLayoutRules.DockMost);   // the HUD phone's dock row, on the home screen
         private readonly List<Transform> _sorted = new List<Transform>(40);  // every child in the order it is to stand (Order)
         private int[] _kind = new int[32];                                   // each of _apps: the game's, the mod's or another mod's
         private int[] _place = new int[32];                                  // ...where the layout puts it
         private int[] _badge = new int[32];                                  // ...the number on its badge
         private int[] _itemOf = new int[32];                                 // ...its place among _items, -1 if not there
-        private bool[] _docked = new bool[32];                               // ...in the dock row
         private int[] _view = new int[48];
-        private readonly int[] _dockAt = new int[PhoneLayoutRules.DockMost];
         private readonly int[] _members = new int[PhoneLayoutRules.FolderCount];   // each folder's apps on this phone
         private readonly int[] _sums = new int[PhoneLayoutRules.FolderCount];      // ...and their numbers added up
         private PhoneFolders _folders;   // the folders', Back and empty tiles: made when folders are first shown
         private bool _foldered;          // this pass lays the grid out in folders
         private int _open = -1;          // the folder whose page shows; -1 for the home screen
         private int _homePage;           // the home screen's page, to go back to from a folder
-        private int _inDock;             // the mod's apps the layout puts in the dock, at most its room
+        private int _inDock;             // the mod's apps the layout keeps first on the home screen, at most two
         private Action _onLayout;        // the layout's word that it changed, kept for taking off
         private PhoneFolderKeys _keys;   // the game's cancel key while a folder of the HUD phone's is open
         private bool _noFolders;         // the folders' tiles could not be made: plain pages for this grid
@@ -116,16 +121,15 @@ namespace RealLifeOverhaul.GameUi
         // The HUD phone's eight; the full menu's as many as fit (the game's own row until measured).
         private int Tiles => _strip ? (_tiles > 0 ? _tiles : PagerRules.StripTiles(_gameApps)) : PagerRules.PhoneTiles;
 
-        // The tiles of a page that hold the view's items (all but the Back tile and the dock row), and the More apps tile.
-        private int ItemTiles => _foldered ? PhoneLayoutRules.ItemTiles(_strip, Tiles, _open >= 0, _dock.Count > 0) : Tiles;
-        private int MoreTile => _foldered ? PhoneLayoutRules.MoreTile(_strip, Tiles, _open >= 0, _dock.Count > 0) : PagerRules.ButtonTile(Tiles);
+        // The tiles of a page that hold the view's items: all but a folder's Back tile.
+        private int ItemTiles => _foldered ? PhoneLayoutRules.ItemTiles(_strip, Tiles, _open >= 0) : Tiles;
 
         /// <summary>The folder whose page shows, -1 for the home screen.</summary>
         public int Folder => _open;
 
         public bool Foldered => _foldered;
 
-        /// <summary>The mod's apps on this phone that the layout puts in the dock.</summary>
+        /// <summary>The mod's apps on this phone that the layout keeps first on the home screen.</summary>
         public int InDock => _inDock;
 
         /// <summary>A folder's apps on this phone, as last laid out.</summary>
@@ -287,9 +291,10 @@ namespace RealLifeOverhaul.GameUi
                 _pending = false;
                 Canvas.willRenderCanvases -= _late;
             }
-            if (_more != null && _more.gameObject.activeSelf)
+            if (_settling)
             {
-                _more.gameObject.SetActive(false);   // it stands beside the grid, not in it
+                _settling = false;   // the grid's coroutines stop with it: a bar that changed width is measured when it shows again
+                _measuredFor = float.NaN;
             }
         }
 
@@ -301,9 +306,31 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The screen or the interface's scale changed: the page and its button may stand elsewhere.
-        private void OnRectTransformDimensionsChange()
+        // The full menu bar's width changed (the screen or the interface's scale): its tiles are worked out again once the
+        // width has held still, never a pass a frame while something tweens it. The HUD phone's grid needs nothing: its
+        // tiles, the More apps button among them, are its own layout's.
+        internal void BarChanged()
         {
+            if (!_strip || _settling || _aside || !_ready || !isActiveAndEnabled)
+            {
+                return;
+            }
+            _settling = true;
+            StartCoroutine(Guard.Routine(Settle()));
+        }
+
+        private System.Collections.IEnumerator Settle()
+        {
+            float last = float.NaN;
+            int still = 0;
+            while (still < SettleFrames)
+            {
+                yield return null;
+                float width = transform.parent is RectTransform bar ? bar.rect.width : 0f;
+                still = Mathf.Abs(width - last) <= PagerRules.WidthTolerance ? still + 1 : 0;
+                last = width;
+            }
+            _settling = false;
             Changed();
         }
 
@@ -537,10 +564,7 @@ namespace RealLifeOverhaul.GameUi
             }
             ShowAll();
             RestoreRow();
-            if (_more != null)
-            {
-                Destroy(_more.gameObject);
-            }
+            DropTiles();
             DropFolders();
         }
 
@@ -574,8 +598,10 @@ namespace RealLifeOverhaul.GameUi
             {
                 return said + "; another mod pages this grid: PASS (it shows and hides them)";
             }
-            bool ok = shown <= tiles && Pages == wanted && unmarked == 0;
-            return said + ", " + Pages + " page(s) for " + _items.Count + " item(s) (wanted " + wanted + "), " + unmarked + " hidden without a page mark: " + (ok ? "PASS" : "FAIL");
+            string more = MoreSays(out bool moreOk);
+            bool ok = shown <= tiles && Pages == wanted && unmarked == 0 && moreOk;
+            return said + ", " + Pages + " page(s) for " + _items.Count + " item(s) (wanted " + wanted + "), " + unmarked + " hidden without a page mark, " + more + ": "
+                   + (ok ? "PASS" : "FAIL");
         }
 
         /// <summary>"PASS" when every button is in exactly one place and each folder's tile stands while it has apps; else what is wrong.</summary>
@@ -593,12 +619,11 @@ namespace RealLifeOverhaul.GameUi
             }
             var seen = new int[count];
             var view = new int[count + PhoneLayoutRules.FolderCount];
-            var dock = new int[PhoneLayoutRules.DockMost];
             var members = new int[PhoneLayoutRules.FolderCount];
             int tiles = 0;
             for (int folder = -1; folder < PhoneLayoutRules.FolderCount; folder++)
             {
-                int n = PhoneLayoutRules.View(_kind, _place, count, folder, !_strip, view, dock, out int docked, members);
+                int n = PhoneLayoutRules.View(_kind, _place, count, folder, !_strip, view, members);
                 for (int j = 0; j < n; j++)
                 {
                     if (view[j] >= 0)
@@ -609,10 +634,6 @@ namespace RealLifeOverhaul.GameUi
                     {
                         tiles++;
                     }
-                }
-                for (int d = 0; d < docked && folder < 0; d++)
-                {
-                    seen[dock[d]]++;
                 }
             }
             int lost = 0, twice = 0, folders = 0, inFolders = 0;
@@ -627,40 +648,13 @@ namespace RealLifeOverhaul.GameUi
                 inFolders += members[f];
             }
             bool ok = lost == 0 && twice == 0 && tiles == folders;
-            return count + " buttons: " + inFolders + " in " + folders + " folder(s), " + _inDock + " in the dock, " + (count - inFolders - _inDock) + " on the home screen; "
+            return count + " buttons: " + inFolders + " in " + folders + " folder(s), " + _inDock + " kept first, " + (count - inFolders - _inDock) + " on the home screen; "
                    + (_open >= 0 ? "the folder " + PhoneLayoutRules.FolderIds[_open] + " open, " : string.Empty) + _items.Count + " item(s) on " + Pages + " page(s): "
                    + (ok ? "PASS" : "FAIL, " + lost + " lost, " + twice + " twice, " + tiles + " folder tile(s) for " + folders + " folder(s)");
         }
     }
 
-    /// <summary>The wheel over the More apps button turns the pages: the grid does not hear it there. Costs nothing a frame.</summary>
-    public sealed class MoreAppsWheel : MonoBehaviour, IScrollHandler
-    {
-        private static readonly FeatureGuard FrameGuard = Guard.For(null, "MoreAppsWheel", typeof(MoreAppsWheel));   // the game's calls of it
-
-        internal PhoneGridPager Pager;
-
-        public void OnScroll(PointerEventData eventData)
-        {
-            if (FrameGuard.Off)
-            {
-                return;
-            }
-            try
-            {
-                if (Pager != null)
-                {
-                    Pager.Wheel(eventData);
-                }
-            }
-            catch (Exception fault)
-            {
-                Guard.Fail(FrameGuard, fault);
-            }
-        }
-    }
-
-    /// <summary>On the full menu's top bar: a change of its width has the row's tiles worked out again. Costs nothing a frame.</summary>
+    /// <summary>On the full menu's top bar: a change of its width has the row's tiles worked out again once it holds still. Costs nothing a frame.</summary>
     public sealed class RowBarWatch : MonoBehaviour
     {
         internal PhoneGridPager Pager;
@@ -669,7 +663,7 @@ namespace RealLifeOverhaul.GameUi
         {
             if (Pager != null)
             {
-                Pager.Changed();
+                Pager.BarChanged();
             }
         }
     }

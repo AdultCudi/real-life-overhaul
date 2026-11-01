@@ -514,7 +514,7 @@ internal static partial class Program
     private static readonly int[] AppWindowCommands = { UiAppWindow.NavCommand, UiAppWindow.RowCommand, UiAppWindow.PersonCommand, UiAppWindow.ActionCommand,
         UiAppWindow.MoreCommand, UiAppWindow.AllCommand, UiAppWindow.NoteCommand };
     private static readonly int[] DecisionCommands = { UiDecision.ChoiceCommand, UiDecision.ButtonCommand };
-    private static readonly int[] PhoneCommands = { UiPhone.AppCommand, UiPhone.PageCommand };
+    private static readonly int[] PhoneCommands = { UiPhone.AppCommand, UiPhone.PageCommand, UiPhone.ControlCommand };
 
     // Every command a template answers: a target with another is a button nothing answers.
     private static int[] Commands(UiTemplate template)
