@@ -456,12 +456,18 @@ namespace RealLifeOverhaul.Ui
             };
             if (v.Candidate)
             {
-                p.Profile.FactLabels = new[] { t("myemployees_age", "Age"), t("reallife_ui_staff_asking", "Asking wage"), t("myemployees_schedule", "Schedule"), t("myemployees_expiresin", "Expires In") };
+                p.Profile.FactLabels = new[]
+                {
+                    t("myemployees_age", "Age"), t("reallife_ui_staff_asking", "Asking wage"), t("myemployees_schedule", "Schedule"), t("myemployees_expiresin", "Expires In")
+                };
                 p.Profile.FactValues = new[] { Whole(v.Age), v.Wage, v.Schedule, v.Expires };
             }
             else
             {
-                p.Profile.FactLabels = new[] { t("myemployees_age", "Age"), t("myemployees_hourly_wage", "Hourly Wage"), t("reallife_ui_staff_hired", "Hired"), t("reallife_ui_staff_week", "Hours a week") };
+                p.Profile.FactLabels = new[]
+                {
+                    t("myemployees_age", "Age"), t("myemployees_hourly_wage", "Hourly Wage"), t("reallife_ui_staff_hired", "Hired"), t("reallife_ui_staff_week", "Hours a week")
+                };
                 p.Profile.FactValues = new[] { Whole(v.Age), v.Wage, Fill(t("reallife_ui_staff_days_ago", "{days} days ago"), "days", Whole(v.DaysHired)), Whole(v.WeeklyHours) };
             }
             p.Actions = Actions(t, v);

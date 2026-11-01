@@ -32,6 +32,7 @@ internal static partial class UiSamples
     };
 
     private static readonly string[] Shops = { "Bloom Café", "Harbour Hardware", "Uptown Bakery", "Kessler Logistics", "Midtown Office" };
+    private const string LongShop = "Harbour Lights Bakery and Coffee House";
 
     private static readonly string[] Skills = { "ba:skill_customerservice", "ba:skill_cleaning", "ba:skill_securityguard", "ba:skill_deliverydriver", "ba:skill_programmer" };
     private static readonly string[] SkillWords = { "Customer Service", "Cleaning", "Security Guard", "Delivery Driver", "Programmer" };
@@ -205,8 +206,9 @@ internal static partial class UiSamples
         var p = new StaffPersonView
         {
             Candidate = candidate, Name = name, Role = t(Skills[candidate ? 4 : 0], SkillWords[candidate ? 4 : 0]), RoleIcon = StaffViews.SkillIcon(Skills[candidate ? 4 : 0]),
-            Business = candidate ? null : sick ? "Harbour Lights Bakery and Coffee House" : Shops[0], Satisfaction = candidate ? 50 : sick ? 41 : 64, Level = candidate ? 77 : 82, Age = candidate ? 34 : 29,
-            Wage = candidate ? "$31.40" : "$22.40", DaysHired = 214, WeeklyHours = 36, WorkedHours = 22, Assign = candidate ? t("common_unassigned", "Unassigned") : sick ? "Harbour Lights Bakery and Coffee House" : Shops[0],
+            Business = candidate ? null : sick ? LongShop : Shops[0], Satisfaction = candidate ? 50 : sick ? 41 : 64, Level = candidate ? 77 : 82,
+            Age = candidate ? 34 : 29, Wage = candidate ? "$31.40" : "$22.40", DaysHired = 214, WeeklyHours = 36, WorkedHours = 22,
+            Assign = candidate ? t("common_unassigned", "Unassigned") : sick ? LongShop : Shops[0],
             AssignOn = !training
         };
         if (candidate)
@@ -245,7 +247,8 @@ internal static partial class UiSamples
             ? new[] { new UiStaffSkill { Label = t(Skills[4], SkillWords[4]), Value = 77 }, new UiStaffSkill { Label = t(Skills[0], SkillWords[0]), Value = 41 } }
             : new[]
             {
-                new UiStaffSkill { Label = t(Skills[0], SkillWords[0]), Value = 82, Train = training ? null : train }, new UiStaffSkill { Label = t(Skills[1], SkillWords[1]), Value = 58, Train = training ? null : train },
+                new UiStaffSkill { Label = t(Skills[0], SkillWords[0]), Value = 82, Train = training ? null : train },
+                new UiStaffSkill { Label = t(Skills[1], SkillWords[1]), Value = 58, Train = training ? null : train },
                 new UiStaffSkill { Label = t(Skills[2], SkillWords[2]), Value = 34, Train = training ? null : train },
             };
         string met = t("reallife_ui_staff_met", "Met"), notMet = t("reallife_ui_staff_not_met", "Not met");
