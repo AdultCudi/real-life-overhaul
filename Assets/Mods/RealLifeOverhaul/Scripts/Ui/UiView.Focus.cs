@@ -287,6 +287,10 @@ namespace RealLifeOverhaul.Ui
                 case UiRole.None:
                     _face.Fill.color = Colour(UiRole.Hover);
                     break;
+                case UiRole.Field:
+                    // A field sits darker than the panel, where the cards' small step towards the words could not be seen.
+                    _face.Fill.color = Color.Lerp(Colour(_face.Role, _face.Alpha), Colour(UiRole.Text), 0.1f);
+                    break;
                 default:
                     // A face with a fill of its own (a button, a card) steps a little towards the words: a quiet change
                     // that never matches the selection's fill, where one fixed hover colour vanished on a field.

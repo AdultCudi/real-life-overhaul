@@ -13,7 +13,7 @@ namespace RealLifeOverhaul.Ui
             Features.Add("ui", "reallife_meta_title_ui")
                 .About("reallife_guide_ui_about").Help("reallife_guide_ui")
                 .Owns(Settings.UiInterfaceId, Settings.UiMotionId, Settings.UiPhoneId)
-                .Test("reallife_ui_test_gallery", "reallife_ui_test_contacts", "reallife_ui_test_population", "reallife_ui_test_flare", "reallife_ui_test_firm",
+                .Test("reallife_ui_test_gallery", "reallife_ui_test_parts", "reallife_ui_test_contacts", "reallife_ui_test_population", "reallife_ui_test_flare", "reallife_ui_test_firm",
                     "reallife_phone_test_second", "reallife_phone_test_kit_folder", "reallife_phone_test_classic")
                 .Cleanup(() => { ContactsKit.Remove("cleaned up"); PhoneKit.Remove("cleaned up"); }, 0);
         }

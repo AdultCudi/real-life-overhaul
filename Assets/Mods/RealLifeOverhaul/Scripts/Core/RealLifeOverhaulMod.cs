@@ -1028,6 +1028,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_phone_test_kit_folder", Ui.PhoneKit.TestFolder)
                 .AddButton("reallife_phone_test_classic", Ui.PhoneKit.TestClassic)
                 .AddButton("reallife_ui_test_gallery", () => Ui.UiDirector.Instance?.TestGallery())
+                .AddButton("reallife_ui_test_parts", () => Ui.UiDirector.Instance?.TestParts())
                 .AddButton("reallife_ui_test_contacts", () => Ui.UiDirector.Instance?.TestContacts())
                 .AddButton("reallife_ui_test_population", () => Ui.UiDirector.Instance?.TestPopulation())
                 .AddButton("reallife_ui_test_flare", () => Ui.UiDirector.Instance?.TestFlareCity())
