@@ -502,6 +502,9 @@ namespace RealLifeOverhaul.Population
                                  + " buildings, wanted " + PopulationCatalogue.HouseholdsLeast + " to " + PopulationCatalogue.HouseholdsMost + " and " + PopulationCatalogue.PeopleLeast
                                  + " to " + PopulationCatalogue.PeopleMost + (Settings.Uptown ? ": " : " with Uptown, which is off: ")
                                  + (fits || !Settings.Uptown ? "PASS" : "FAIL, the city's homes are measured off the owner's size"));
+                    GenerateRules.StartCheck(_state, out int unprovided, out int deeper);
+                    Logger?.Info("Population check (the households' money): " + unprovided + " household(s) with somebody at home and nobody bringing money in, " + deeper
+                                 + " in more debt after the first day's rent, wanted none of either: " + (unprovided == 0 && deeper == 0 ? "PASS" : "FAIL"));
                 }
             }
             UseFigures();

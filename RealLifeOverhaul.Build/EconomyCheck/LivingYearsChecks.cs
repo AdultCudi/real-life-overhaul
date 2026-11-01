@@ -416,8 +416,7 @@ internal static partial class Program
             SectorProductSim(ProductKind.Model, Segment.Enterprise, 4, 0, 1, 1, 1, 2, days, 15, 1, 1, null, year), label, print);
         LivingSector("consultancy", PaybackKind.Services, SectorServicesSim(FirmKind.Consultancy, 4, 1, days, 16, false, living, year),
             SectorServicesSim(FirmKind.Consultancy, 4, 1, days, 16, false, null, year), label, print);
-        LivingSector("cybersecurity", PaybackKind.Services, SectorServicesSim(FirmKind.Security, 4, 1, days, 17, false, living, year),
-            SectorServicesSim(FirmKind.Security, 4, 1, days, 17, false, null, year), label, print);
+        LivingSector("cybersecurity", PaybackKind.Services, SecurityMedian(days, living, year), SecurityMedian(days, null, year), label, print);
         LivingSector("design studio", PaybackKind.Services, SectorServicesSim(FirmKind.Design, 3, 1, days, 18, false, living, year),
             SectorServicesSim(FirmKind.Design, 3, 1, days, 18, false, null, year), label, print);
         // The studio's ten years on the living city's audience, beside the documented world's.
@@ -473,6 +472,20 @@ internal static partial class Program
         }
         rate = (int)(sum / Seeds);
         day /= Seeds;
+    }
+
+    // Cybersecurity over nine fixed seeds, the run of the median payback. Its income is incidents, drawn by the seed, so one seed's payback swings from
+    // 37 to 467 days on the same city (seeds 10 to 25, documented and living alike) and any change upstream flips a single seed across the band; the
+    // median holds the market's pace, as the other kinds' single runs already do.
+    private static SectorRun SecurityMedian(int days, Action<SectorFile, int> living, int year)
+    {
+        var runs = new List<SectorRun>(9);
+        for (int seed = 17; seed < 26; seed++)
+        {
+            runs.Add(SectorServicesSim(FirmKind.Security, 4, 1, days, seed, false, living, year));
+        }
+        runs.Sort((a, b) => (a.Payback < 0 ? int.MaxValue : a.Payback).CompareTo(b.Payback < 0 ? int.MaxValue : b.Payback));
+        return runs[runs.Count / 2];
     }
 
     // A kind's run on the living city beside the documented one: each payback in its kind's band, and its last year paying its way.

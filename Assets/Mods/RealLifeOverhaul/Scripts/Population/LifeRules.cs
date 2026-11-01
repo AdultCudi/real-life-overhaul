@@ -218,6 +218,7 @@ namespace RealLifeOverhaul.Population
             else
             {
                 pt.Status[p] = (byte)Status.Home;
+                GenerateRules.Provide(s, pt.Household[p], day);
             }
         }
 
@@ -286,6 +287,7 @@ namespace RealLifeOverhaul.Population
             if (adult)
             {
                 MakeHead(s, h);
+                GenerateRules.Provide(s, h, day);
                 return;
             }
             while (hh.First[h] >= 0)
@@ -465,6 +467,7 @@ namespace RealLifeOverhaul.Population
             else
             {
                 MakeHead(s, left);
+                GenerateRules.Provide(s, left, day);
             }
         }
 
@@ -497,6 +500,7 @@ namespace RealLifeOverhaul.Population
             hh.Savings[old] -= share;
             hh.Savings[h] = share;
             HousingRules.MoveInto(s, h, flat, building, day);
+            GenerateRules.Provide(s, h, day);
             ld.Formed++;
             if (hh.Size[old] == 0)
             {
@@ -505,6 +509,7 @@ namespace RealLifeOverhaul.Population
             else
             {
                 MakeHead(s, old);
+                GenerateRules.Provide(s, old, day);
             }
             return true;
         }

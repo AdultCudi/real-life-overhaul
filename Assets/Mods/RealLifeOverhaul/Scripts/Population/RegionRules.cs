@@ -61,7 +61,7 @@ namespace RealLifeOverhaul.Population
                 return true;
             }
             int rate = (HeadAge(s, h, day) < PopulationCatalogue.SettledFrom ? PopulationCatalogue.YoungLeave : PopulationCatalogue.SettledLeave)
-                       + (HasChild(s, h, day) ? PopulationCatalogue.FamilyLeave : 0);
+                       * (HasYoungChild(s, h, day) ? 2 : 1);
             if (youngest < 0 && PopDraw.Daily(s.Seed, PopDraw.Older, id, month + 5000, rate, 12))
             {
                 LeaveFreeing(s, ld, h, day);   // a job, family or a cheaper life elsewhere in the country: the young move most
@@ -122,12 +122,12 @@ namespace RealLifeOverhaul.Population
             }
         }
 
-        // True when a child under 18 lives in the household.
-        private static bool HasChild(PopulationState s, int h, int day)
+        // True when a child of six or under lives in the household.
+        private static bool HasYoungChild(PopulationState s, int h, int day)
         {
             for (int p = s.Households.First[h]; p >= 0; p = s.People.Next[p])
             {
-                if (s.Age(p, day) < PopulationCatalogue.AdultLeast)
+                if (s.Age(p, day) <= PopulationCatalogue.YoungChildMost)
                 {
                     return true;
                 }
