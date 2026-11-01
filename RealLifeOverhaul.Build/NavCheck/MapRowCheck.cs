@@ -69,6 +69,22 @@ internal static partial class Program
         MapRowTiming(scripts, places, links);
         MapRowNews(en, pt, zh);
         MapRowUnload(scripts, places);
+        MapRowLabels(places);
+    }
+
+    // A row's label is its own text from the moment the game makes it (a player's Player.log, 2 Nov 2026: twenty lines of
+    // "Localization for key 'rlo_map_police' not found on gameobject 'Label'"). CityMapFilters.CreateFilter localizes the
+    // label with the row's name unless it is handed a text, and the name is no text. The row's name and its leaving the
+    // game's tables (so the save never holds it) stay as they were.
+    private static void MapRowLabels(string places)
+    {
+        int made = Regex.Matches(places, @"create\.Invoke\(filters, new object\[\] \{ name, ").Count;
+        int handed = Regex.Matches(places, @"object languageData = TitleData\(parameters\[4\]\.ParameterType, (category|entry)\.TitleKey\);").Count;
+        string data = Body(places, "private static object TitleData(Type holder, string titleKey)");
+        Check(made == 2 && handed == 2 && !places.Contains("Activator.CreateInstance(parameters[4]") && data.Contains("new LanguageChangeEventDataHolder { Key = titleKey }"),
+            "map rows: every row the mod makes in the map's filters is handed its own text's key, never its name to look up (" + handed + " of " + made + " made so)");
+        Check(Regex.Matches(places, @"toggles\.Remove\(name\);\s*entries\.Remove\(name\);").Count == 2 && Regex.Matches(places, @"row\.name = name;").Count == 2,
+            "map rows: each row still leaves the game's tables, so the save never holds it, and keeps its name");
     }
 
     // The game's map filters are applied again (CityMapFilters.ApplyFilters) in one place of the whole mod, which skips
