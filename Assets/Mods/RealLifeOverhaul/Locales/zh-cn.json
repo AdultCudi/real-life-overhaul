@@ -28455,5 +28455,6 @@
   "reallife_ui_staff_see_all": "在列表中查看全部 {count} 人",
   "reallife_ui_staff_see_candidates": "查看候选人",
   "reallife_ui_staff_at_work": "工作中",
-  "reallife_ui_staff_off_shift": "不在班"
+  "reallife_ui_staff_off_shift": "不在班",
+  "reallife_ui_staff_app": "我的员工"
 }

@@ -71,7 +71,7 @@ namespace RealLifeOverhaul.Ui
 
             public string Name => "the My Employees app";
 
-            public string Title => UiText.T("smartphone_myemployees");
+            public string Title => UiText.T("reallife_ui_staff_app");
 
             public UiIcon Icon => PhoneLooks.Glyph(StaffViews.StaffApp);
 

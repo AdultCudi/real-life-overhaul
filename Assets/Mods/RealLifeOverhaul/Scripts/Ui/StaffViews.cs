@@ -169,7 +169,7 @@ namespace RealLifeOverhaul.Ui
         /// <summary>My Employees: the tabs, the squad's table or one person's page, an open list and the training card.</summary>
         public static void Staff(UiStaffModel m, UiWords t, StaffView v)
         {
-            m.Title = t("smartphone_myemployees", "MyEmployees");
+            m.Title = t("reallife_ui_staff_app", "My Employees");   // the game has only its joined internal name ("MyEmployees") for the app
             m.Icon = PhoneLooks.Glyph(StaffApp);   // the app's own glyph, as the phone and the status bar's row show it
             m.Tabs = new[]
             {

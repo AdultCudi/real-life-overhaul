@@ -22,7 +22,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_staff_all_skills", "reallife_ui_staff_all_demands", "reallife_ui_staff_any_status", "reallife_ui_staff_expires", "reallife_ui_staff_met",
                     "reallife_ui_staff_not_met", "reallife_ui_staff_at_work", "reallife_ui_staff_off_shift", "reallife_ui_staff_see_candidates", "myemployees_days_hired",
                     "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back", "reallife_co_mass_raise",
-                    "smartphone_myemployees", "myemployees_employees_tab", "myemployees_candidates_tab", "myemployees_candidates_hide_job_board", "common_cancel",
+                    "reallife_ui_staff_app", "myemployees_employees_tab", "myemployees_candidates_tab", "myemployees_candidates_hide_job_board", "common_cancel",
                     "common_confirm", "common_ok", "common_unassigned", "common_unassign", "common_select_option", "common_hours", "common_days", "common_hours_left", "myemployees_employee_name",
                     "myemployees_current_business", "myemployees_age", "myemployees_jobtype", "myemployees_hourly_wage", "myemployees_satisfaction", "myemployees_task",
                     "myemployees_schedule", "myemployees_recruitmentsource", "myemployees_expiresin", "myemployees_skills", "myemployees_wants_and_demands",

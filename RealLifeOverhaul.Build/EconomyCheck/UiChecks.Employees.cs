@@ -37,6 +37,8 @@ internal static partial class Program
         {
             _staffChecked = true;
             StaffChecks();
+            GradeOnChosenChecks();
+            WindowTitleChecks();
         }
     }
 
@@ -104,6 +106,114 @@ internal static partial class Program
         UiStaff.Lay(scene, ask, frame, true, UiDefaultKeys.Keyboard);
         Check(ask.Table.MassFieldW > 0f && ListUnder(scene, ask.Table.MassFieldX, ask.TableY + UiTokens.Control),
             "staff: a mass action's choice stands on the picking bar and its list opens under it");
+    }
+
+    // A graded figure reads 4.5:1 wherever a table puts it: every grade on the panel, its bands and a row under the pointer;
+    // on the chosen row's cyan tone (where a low grade's red cannot) the figure takes the row's words and the meter its grade.
+    private static void GradeOnChosenChecks()
+    {
+        string weak = null;
+        for (int g = 0; g <= 100; g += 10)
+        {
+            UiRole grade = UiTokens.Grade(g);
+            foreach (UiRole surface in new[] { UiRole.Panel, UiRole.Band, UiRole.Hover })
+            {
+                float c = UiContrast(grade, surface, true);
+                if (c < UiCheckRules.NormalContrast && weak == null)
+                {
+                    weak = grade + " on " + surface + " at " + c.ToString("0.00") + ":1";
+                }
+            }
+        }
+        Check(weak == null, "kit: every grade's figure reads 4.5:1 on the panel, a band and a row under the pointer" + (weak == null ? string.Empty : ": " + weak));
+        Check(UiContrast(UiRole.Text, UiRole.RowSel, true) >= UiCheckRules.NormalContrast, "kit: the chosen row's words read 4.5:1 on its tone");
+        var table = new UiDataTableModel
+        {
+            Columns = new[]
+            {
+                new UiDataColumn { Title = "Name", Kind = UiCellKind.Text }, new UiDataColumn { Title = "Skill", Kind = UiCellKind.Meter, Width = 144f },
+                new UiDataColumn { Title = "Grade", Kind = UiCellKind.Figure, Width = 64f, Graded = true },
+            },
+            Rows = new[]
+            {
+                new UiDataRow { Cells = new[] { "Low", "12", "8" }, Values = new[] { -1, 12, 8 } }, new UiDataRow { Cells = new[] { "Also low", "24", "30" }, Values = new[] { -1, 24, 30 } },
+            },
+            RowCount = 2, Selected = 0
+        };
+        var scene = new UiScene();
+        scene.Begin("grade on chosen", 1920f, 1080f, true);
+        UiDataTable.Lay(scene, UiAt.Screen, table, 100f, 100f, 900f, 400f, UiDefaultKeys.Keyboard);
+        int chosenGraded = 0, otherGraded = 0;
+        for (int i = 0; i < scene.ItemCount; i++)
+        {
+            ref UiItem it = ref scene.Items[i];
+            if (it.Kind != UiKind.Text || (it.Text != "12" && it.Text != "8" && it.Text != "24" && it.Text != "30"))
+            {
+                continue;
+            }
+            bool graded = it.Ink >= UiRole.Grade1 && it.Ink <= UiRole.Grade5;
+            chosenGraded += graded && (it.Text == "12" || it.Text == "8") ? 1 : 0;
+            otherGraded += graded && (it.Text == "24" || it.Text == "30") ? 1 : 0;
+        }
+        Check(chosenGraded == 0 && otherGraded == 2, "kit: on the big table's chosen row a graded figure takes the row's words, elsewhere its grade (" + chosenGraded + " graded on the chosen row, "
+                                                     + otherGraded + " of 2 on the other)");
+    }
+
+    // The game's own brands written joined (its apps BizMan and EconoView, its billboard firm CityAds); any other joined word
+    // in a title is an identifier that reached the screen ("MyEmployees").
+    private static readonly string[] JoinedNames = { "BizMan", "EconoView", "CityAds" };
+
+    // No window's title is a code name: every registered screen's every case, laid out in English, its title strip read.
+    private static void WindowTitleChecks()
+    {
+        var s = new UiScene();
+        string found = null;
+        int titles = 0;
+        foreach (UiScreenCase c in UiCases())
+        {
+            c.Lay(s, UiFrame.FullMenu(16f / 9f, c.Title), true, UiDefaultKeys.Keyboard, UiWords("en"));
+            for (int i = 0; i < s.ItemCount; i++)
+            {
+                ref UiItem it = ref s.Items[i];
+                if (it.Kind != UiKind.Text || it.Style != UiStyle.AppTitle || (it.Flags & UiFlags.Chrome) == 0 || string.IsNullOrEmpty(it.Text))
+                {
+                    continue;
+                }
+                titles++;
+                foreach (string word in it.Text.Split(' '))
+                {
+                    if (found == null && CamelWord(word))
+                    {
+                        found = "\"" + it.Text + "\" (" + c.Name + ")";
+                    }
+                }
+            }
+        }
+        Check(titles > 0 && found == null, "kit: no window's title is a joined code name (" + titles + " titles read)" + (found == null ? string.Empty : ": " + found));
+        Check(CamelWord("MyEmployees") && CamelWord("MarketInsider") && !CamelWord("BizMan") && !CamelWord("Employees") && !CamelWord("RLO"),
+            "kit: a joined code name is told from a word, an initialism and the game's own joined brand names");
+    }
+
+    // A word of a capital, small letters, then another capital inside it, as code names are joined; the game's brands aside.
+    private static bool CamelWord(string word)
+    {
+        if (string.IsNullOrEmpty(word) || word.Length < 3 || !char.IsUpper(word[0]) || System.Array.IndexOf(JoinedNames, word) >= 0)
+        {
+            return false;
+        }
+        bool lower = false;
+        for (int i = 1; i < word.Length; i++)
+        {
+            if (char.IsLower(word[i]))
+            {
+                lower = true;
+            }
+            else if (char.IsUpper(word[i]) && lower)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     // True when an open list's panel (on the overlay) starts at x, just under the field whose foot is at y.

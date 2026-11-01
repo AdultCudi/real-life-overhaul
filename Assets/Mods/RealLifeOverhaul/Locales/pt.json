@@ -28455,5 +28455,6 @@
   "reallife_ui_staff_see_all": "Ver todas as {count} na lista",
   "reallife_ui_staff_see_candidates": "Ver os candidatos",
   "reallife_ui_staff_at_work": "No trabalho",
-  "reallife_ui_staff_off_shift": "Fora do turno"
+  "reallife_ui_staff_off_shift": "Fora do turno",
+  "reallife_ui_staff_app": "Meus Funcionários"
 }

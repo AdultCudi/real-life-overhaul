@@ -352,7 +352,7 @@ namespace RealLifeOverhaul.Ui
             0x9FB1C4FF,   // CatIndustry: steel
             0xB48EF3FF,   // CatTech: violet
             0x3FC7B6FF,   // CatServices: teal
-            0xF28477FF,   // Grade1: poor, the bad red a step lighter, as a grade is written in its own colour
+            0xF39587FF,   // Grade1: poor, the bad red two steps lighter, so its figure reads 4.5:1 on a row under the pointer too
             0xF2914AFF,   // Grade2
             0xF2C14EFF,   // Grade3
             0xB4D45AFF,   // Grade4

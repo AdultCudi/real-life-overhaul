@@ -349,7 +349,7 @@ internal static partial class UiSamples
             { "ba:jobdemand_fulltime", "Temps plein" }, { "ba:jobdemand_freeweekends", "Pas de week-ends" }, { "ba:jobdemand_nomornings", "Pas de services le matin" },
             { "ba:jobdemand_coffeemachine", "Machine à café" }, { "ba:jobdemand_silverhealthinsurance", "Assurance santé Argent" },
             { "ba:jobdemand_cleanworkplace", "Environnement de travail propre" }, { "ba:jobdemand_seatedatofficechair", "Chaise de bureau" },
-            { "myemployees_days_hired", "Jours depuis l’embauche : <b>{daysHired}</b>" }, { "common_days", "{value} jours" }, { "smartphone_myemployees", "MyEmployees" },
+            { "myemployees_days_hired", "Jours depuis l’embauche : <b>{daysHired}</b>" }, { "common_days", "{value} jours" }, 
         };
         return (key, english) => fr.TryGetValue(key, out string words) ? words : t(key, english);
     }

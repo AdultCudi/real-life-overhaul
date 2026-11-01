@@ -447,7 +447,9 @@ namespace RealLifeOverhaul.Ui
                 {
                     UiRole grade = UiTokens.Grade(Math.Max(0, value));
                     float fw = UiTextRules.Width("100", UiStyle.BodyStrong) + UiTokens.S1;
-                    UiDraw.TextMiddle(s, at, cx + cw - fw, ry, rowH, fw, UiStyle.BodyStrong, grade, words, UiFlags.Right);
+                    // On the chosen row's cyan tone a low grade's red or orange falls under 4.5:1: the figure takes the row's
+                    // words' colour there and the meter keeps the grade.
+                    UiDraw.TextMiddle(s, at, cx + cw - fw, ry, rowH, fw, UiStyle.BodyStrong, sel ? UiRole.Text : grade, words, UiFlags.Right);
                     float bw = UiDraw.SnapDown(cw - fw - UiTokens.S2);
                     if (bw >= UiTokens.S8)
                     {
@@ -457,7 +459,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 case UiCellKind.Figure:
                 {
-                    UiRole ink = col.Graded && value >= 0 ? UiTokens.Grade(value) : sel ? UiRole.Text : UiRole.Text2;
+                    UiRole ink = sel ? UiRole.Text : col.Graded && value >= 0 ? UiTokens.Grade(value) : UiRole.Text2;   // on the chosen row, as a meter's figure
                     UiDraw.TextMiddle(s, at, cx, ry, rowH, cw, col.Graded ? UiStyle.BodyStrong : UiStyle.Body, ink, words, UiFlags.Right | UiFlags.Truncate);
                     break;
                 }
