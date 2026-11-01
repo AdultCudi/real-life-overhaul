@@ -28,11 +28,28 @@ namespace RealLifeOverhaul.Population
         // A spending kind's three anchor levels: half the middle, the middle, three times it (thousandths of the city's middle).
         public const int LevelLow = 500, LevelMid = 1000, LevelHigh = 3000;   // thousandths of the city's middle income: the catalogue's three rows of shares
 
-        /// <summary>The household's pay, benefits and pensions a day, cents (no returns): what its savings are measured in.</summary>
-        public static long GrossDaily(PopulationState s, int h)
+        /// <summary>
+        /// The household's usual income a day, cents: the pay of its people in work, between jobs or retired (the pay a pension is measured by). What its
+        /// savings and card debt are measured by when it comes, as the Survey of Consumer Finances groups families by their usual income: a household
+        /// between jobs keeps the money of one in work, one whose benefit has run out is not counted as having nothing, and a pensioner's savings are
+        /// those of the working life their pension came from.
+        /// </summary>
+        public static long UsualDaily(PopulationState s, int h)
         {
-            Income(s, h, s.Day, 0, out DayIncome inc);
-            return inc.Gross;
+            long usual = 0;
+            PersonTable pt = s.People;
+            for (int p = s.Households.First[h]; p >= 0; p = pt.Next[p])
+            {
+                switch ((Status)pt.Status[p])
+                {
+                    case Status.Worker:
+                    case Status.Unemployed:
+                    case Status.Retired:
+                        usual += LabourRules.DailyPay(s, p);
+                        break;
+                }
+            }
+            return usual;
         }
 
         /// <summary>A household's income on a day: pay, benefits, pensions and child benefit, returns on its savings at the bank rate's part (hundredths of a per cent), and its income tax.</summary>

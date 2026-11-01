@@ -28,15 +28,21 @@ namespace RealLifeOverhaul.Population
         Hours = 5
     }
 
-    /// <summary>Where a row or the primary action leads: a screen and the record it shows.</summary>
+    /// <summary>
+    /// Where a row or the primary action leads: a screen and the record it shows. A household's or a person's slot is used again once its record ends
+    /// (a death, a move away), so a target to one carries the record's id too and opens as gone when the slot now holds somebody else.
+    /// </summary>
     public struct ViewTarget
     {
         public ViewKind Kind;
         public int Index;            // the record's slot (district, building, household, person, business), -1 for none
+        public int Id;               // a household's or a person's id at the slot when the target was made; 0 where slots are not used again
 
         public bool Valid => Index >= 0 || Kind == ViewKind.City || Kind == ViewKind.Contributors || Kind == ViewKind.Demands;
 
         public static ViewTarget To(ViewKind kind, int index) => new ViewTarget { Kind = kind, Index = index };
+
+        public static ViewTarget To(ViewKind kind, int index, int id) => new ViewTarget { Kind = kind, Index = index, Id = id };
 
         public static readonly ViewTarget None = new ViewTarget { Kind = ViewKind.Person, Index = -1 };
     }
@@ -87,7 +93,8 @@ namespace RealLifeOverhaul.Population
         public readonly List<ViewFigure> Details = new List<ViewFigure>(8);
         public string Primary;       // the primary action's label key, or null for none
         public ViewTarget PrimaryTarget = ViewTarget.None;
-        public string Empty;         // the words for an empty list
+        public string Empty;         // the words for an empty list: the record's gone words when Gone, else what an empty list of a live one means
+        public bool Gone;            // the record the screen was opened for is not there (ended, or its slot holds another now)
     }
 
     /// <summary>
@@ -150,6 +157,7 @@ namespace RealLifeOverhaul.Population
             var v = new PopulationView { Kind = ViewKind.District, Index = d, Empty = "reallife_pop_empty_district" };
             if (d < 0 || d >= s.Districts.Count || d >= s.Figures.Length)
             {
+                v.Gone = true;
                 return v;
             }
             DistrictFigures f = s.Figures[d];
@@ -194,6 +202,7 @@ namespace RealLifeOverhaul.Population
             var v = new PopulationView { Kind = ViewKind.Building, Index = b, Empty = "reallife_pop_empty_building" };
             if (b < 0 || b >= s.Buildings.Count)
             {
+                v.Gone = true;
                 return v;
             }
             v.Title = AddressOf(s, b);
@@ -216,7 +225,7 @@ namespace RealLifeOverhaul.Population
                         v.Rows.Add(new ViewRow
                         {
                             NameSeed = NameSeed(s, head), Female = head >= 0 && s.People.Female[head] == 1, Subtitle = ClassKey(s.Households.Class[h]), Value = s.Households.Size[h],
-                            Format = ViewFormat.Count, Target = ViewTarget.To(ViewKind.Household, h)
+                            Format = ViewFormat.Count, Target = ViewTarget.To(ViewKind.Household, h, s.Households.Id[h])
                         });
                     }
                 }
@@ -234,11 +243,15 @@ namespace RealLifeOverhaul.Population
         /// A household: what it earned last month, paid in tax, spent and saved; its people; its rent and to whom, its savings and debt; and where it
         /// spent today (its part of each business's takings, worked out from the day's pools).
         /// </summary>
-        public static PopulationView Household(PopulationState s, PoolRules.DemandDay dd, int h)
+        public static PopulationView Household(PopulationState s, PoolRules.DemandDay dd, int h) => Household(s, dd, h, 0);
+
+        /// <summary>A household as <see cref="Household(PopulationState, PoolRules.DemandDay, int)"/>, gone unless its slot still holds the household of <paramref name="id"/> (0 takes any).</summary>
+        public static PopulationView Household(PopulationState s, PoolRules.DemandDay dd, int h, int id)
         {
             var v = new PopulationView { Kind = ViewKind.Household, Index = h, Empty = "reallife_pop_empty_household" };
-            if (!s.Households.Alive(h))
+            if (!HouseholdHere(s, h, id))
             {
+                v.Gone = true;
                 return v;
             }
             HouseholdTable hh = s.Households;
@@ -264,7 +277,7 @@ namespace RealLifeOverhaul.Population
                 v.Rows.Add(new ViewRow
                 {
                     NameSeed = NameSeed(s, p), Female = s.People.Female[p] == 1, Subtitle = StatusKey(s.People.Status[p]), Value = s.Age(p, s.Day), Format = ViewFormat.Years,
-                    Target = ViewTarget.To(ViewKind.Person, p)
+                    Target = ViewTarget.To(ViewKind.Person, p, s.People.Id[p])
                 });
             }
             v.Details.Add(ViewFigure.Of("reallife_pop_fig_rent_paid", month[Ledger.Rent] / 100, ViewFormat.Money));
@@ -281,12 +294,19 @@ namespace RealLifeOverhaul.Population
             return v;
         }
 
-        /// <summary>A person: their work, pay and hours, and their part of their employer's value added (by their share of its wage bill).</summary>
-        public static PopulationView Person(PopulationState s, int p)
+        /// <summary>
+        /// A person: their work, pay and hours, and their part of their employer's value added (by their share of its wage bill); the people they live with
+        /// as the list, and words that they live alone when nobody does.
+        /// </summary>
+        public static PopulationView Person(PopulationState s, int p) => Person(s, p, 0);
+
+        /// <summary>A person as <see cref="Person(PopulationState, int)"/>, gone unless their slot still holds the person of <paramref name="id"/> (0 takes any).</summary>
+        public static PopulationView Person(PopulationState s, int p, int id)
         {
             var v = new PopulationView { Kind = ViewKind.Person, Index = p, Empty = "reallife_pop_empty_person" };
-            if (!s.People.Alive(p))
+            if (!PersonHere(s, p, id))
             {
+                v.Gone = true;
                 return v;
             }
             PersonTable pt = s.People;
@@ -311,13 +331,66 @@ namespace RealLifeOverhaul.Population
                 }
             }
             int h = pt.Household[p];
-            if (v.Primary == null && h >= 0)
+            v.RowsHeader = "reallife_pop_rows_lives_with";
+            v.Empty = "reallife_pop_empty_alone";
+            if (h >= 0 && s.Households.Alive(h))
             {
-                v.Primary = "reallife_pop_act_household";
-                v.PrimaryTarget = ViewTarget.To(ViewKind.Household, h);
+                for (int q = s.Households.First[h]; q >= 0 && v.Rows.Count < RowsMost; q = pt.Next[q])
+                {
+                    if (q != p)
+                    {
+                        v.Rows.Add(new ViewRow
+                        {
+                            NameSeed = NameSeed(s, q), Female = pt.Female[q] == 1, Subtitle = StatusKey(pt.Status[q]), Value = s.Age(q, s.Day), Format = ViewFormat.Years,
+                            Target = ViewTarget.To(ViewKind.Person, q, pt.Id[q])
+                        });
+                    }
+                }
+                if (v.Primary == null)
+                {
+                    v.Primary = "reallife_pop_act_household";
+                    v.PrimaryTarget = ViewTarget.To(ViewKind.Household, h, s.Households.Id[h]);
+                }
             }
             return v;
         }
+
+        /// <summary>
+        /// The screen a target opens, worked out from the live records: a household or a person checked against the id the target was made with, so a
+        /// screen kept open (or stepped back to) never shows somebody else in a slot used again. Null for the demands' screens (PopDemandViews).
+        /// </summary>
+        public static PopulationView Open(PopulationState s, PoolRules.DemandDay dd, ViewTarget to)
+        {
+            switch (to.Kind)
+            {
+                case ViewKind.City: return City(s);
+                case ViewKind.District: return District(s, to.Index);
+                case ViewKind.Building: return Building(s, to.Index);
+                case ViewKind.Household: return dd != null ? Household(s, dd, to.Index, to.Id) : null;
+                case ViewKind.Person: return Person(s, to.Index, to.Id);
+                case ViewKind.Business: return dd != null ? Business(s, dd, to.Index) : null;
+                case ViewKind.Contributors: return dd != null ? Contributors(s, dd) : null;
+                default: return null;
+            }
+        }
+
+        /// <summary>True while a target leads to a record that is there: its slot alive and, for a household or a person, still theirs.</summary>
+        public static bool Resolves(PopulationState s, ViewTarget to)
+        {
+            switch (to.Kind)
+            {
+                case ViewKind.District: return to.Index >= 0 && to.Index < s.Districts.Count && to.Index < s.Figures.Length;
+                case ViewKind.Building: return to.Index >= 0 && to.Index < s.Buildings.Count;
+                case ViewKind.Household: return HouseholdHere(s, to.Index, to.Id);
+                case ViewKind.Person: return PersonHere(s, to.Index, to.Id);
+                case ViewKind.Business: return to.Index >= 0 && to.Index < s.Businesses.Count;
+                default: return to.Valid;
+            }
+        }
+
+        private static bool HouseholdHere(PopulationState s, int h, int id) => s.Households.Alive(h) && (id == 0 || s.Households.Id[h] == id);
+
+        private static bool PersonHere(PopulationState s, int p, int id) => s.People.Alive(p) && (id == 0 || s.People.Id[p] == id);
 
         /// <summary>
         /// A person's part of their employer's value added last month, cents: its output last month by their share of its pay now (their pay over all
@@ -356,6 +429,7 @@ namespace RealLifeOverhaul.Population
             BusinessTable bt = s.Businesses;
             if (b < 0 || b >= bt.Count)
             {
+                v.Gone = true;
                 return v;
             }
             v.Title = bt.Key[b];
@@ -389,7 +463,7 @@ namespace RealLifeOverhaul.Population
                 if (best >= 0)
                 {
                     v.Primary = "reallife_pop_act_staff";
-                    v.PrimaryTarget = ViewTarget.To(ViewKind.Person, best);
+                    v.PrimaryTarget = ViewTarget.To(ViewKind.Person, best, s.People.Id[best]);
                 }
             }
             return v;

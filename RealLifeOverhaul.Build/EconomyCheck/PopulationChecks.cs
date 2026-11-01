@@ -21,6 +21,7 @@ internal static partial class Program
         PopulationMeasure();
         PopulationGenerate();
         PopulationDay();
+        PopulationMoneyChecks();
         PopulationYears();
         PopulationCosts();
         PopulationSaveChecks();

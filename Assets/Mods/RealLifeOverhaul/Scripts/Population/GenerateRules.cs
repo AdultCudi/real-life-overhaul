@@ -38,9 +38,9 @@ namespace RealLifeOverhaul.Population
         }
 
         /// <summary>
-        /// True for a saved city whose homes an older measure counted (the betas' line, homes above shops too, 47% over the owner's size): it is
-        /// generated again from the buildings with its own seed, the same city on every machine, rather than cut down, which would orphan the jobs,
-        /// the player's staff and the follows tied to its households.
+        /// True for a saved city an older measure made (beta.2's line, homes above shops too, 47% over the owner's size; beta.3's, a fifth of its single
+        /// adults at home on nothing and savings by class alone, so households started broke): it is generated again from the buildings with its own
+        /// seed, the same city on every machine, rather than mended, which would orphan the jobs, the player's staff and the follows tied to its households.
         /// </summary>
         public static bool Outdated(PopulationState read)
         {
@@ -96,7 +96,7 @@ namespace RealLifeOverhaul.Population
         private static bool Flat(PopulationState s, int b, int unit)
         {
             int who = Who(s, b, unit);
-            if (!MeasureRules.House(s.Buildings[b], s.Districts[s.Buildings[b].District]) && PopDraw.Mille(s.Seed, PopDraw.Vacant, who, 0, PopulationCatalogue.TargetVacancy))
+            if (!MeasureRules.House(s.Buildings[b], s.Districts[s.Buildings[b].District]) && PopDraw.Mille(s.Seed, PopDraw.Vacant, who, 0, PopulationCatalogue.GenerateVacancy))
             {
                 return false;
             }
@@ -138,6 +138,7 @@ namespace RealLifeOverhaul.Population
             hh.Since[h] = mover ? s.Day : s.Day - PopDraw.Between(seed, PopDraw.Move, who, 0, 0, s.YearDays * 8);
             s.Occupant[s.FlatFirst[b] + unit] = h;
             People(s, h, who, cls, size, mover);
+            Provide(s, h, s.Day);
             hh.Tastes[h] = Tastes(seed, who, Age(s, hh.First[h]), (int)cls);
             return h;
         }
@@ -455,8 +456,8 @@ namespace RealLifeOverhaul.Population
         }
 
         /// <summary>
-        /// The household's money once its people's jobs are known: savings and debt in days of its pay, whether it owns its flat (with a
-        /// mortgage or not), its cars, and its rent.
+        /// The household's money once its people's jobs are known: savings and card debt by its usual income and the head's age (the Survey of Consumer
+        /// Finances), whether it owns its flat (with a mortgage or not), its cars, its rent, and its first month's rent and deposit in savings at least.
         /// </summary>
         public static void Finish(PopulationState s, int h)
         {
@@ -472,11 +473,10 @@ namespace RealLifeOverhaul.Population
                     s.People.Hours[p] = PopulationCatalogue.FullTimeHours;
                 }
             }
-            long daily = SpendRules.GrossDaily(s, h) / 100;   // whole money
-            var (least, most) = PopulationCatalogue.SavingsDays[cls];
-            hh.Savings[h] = (int)Math.Min(int.MaxValue / 4, daily * PopDraw.Between(seed, PopDraw.Savings, who, 0, least, most));
-            long debtDays = PopDraw.Between(seed, PopDraw.Debt, who, 1, 0, PopulationCatalogue.DebtDays[cls]);
-            hh.Debt[h] = PopDraw.Mille(seed, PopDraw.Debt, who, 0, 600) ? (int)Math.Min(int.MaxValue / 4, daily * debtDays) : 0;
+            long usual = SpendRules.UsualDaily(s, h);
+            int age = Age(s, hh.First[h]);
+            hh.Savings[h] = (int)Math.Min(int.MaxValue / 4, StartSavings(seed, who, usual, age));
+            hh.Debt[h] = (int)Math.Min(int.MaxValue / 4, StartCard(seed, who, usual, age));
             int b = hh.Building[h];
             bool villas = b >= 0 && s.Districts[s.Buildings[b].District].Villas;
             hh.Cars[h] = (byte)(PopDraw.Mille(seed, PopDraw.Car, who, 0, villas ? PopulationCatalogue.CarShareHamptons : PopulationCatalogue.CarShare[cls]) ? 1 : 0);
@@ -503,6 +503,162 @@ namespace RealLifeOverhaul.Population
                     hh.Rent[h] = (int)Math.Max(hh.Rent[h] * RegulatedLeast / 1000, bearable);
                     hh.Flags[h] |= HouseholdFlags.Regulated;
                 }
+            }
+            // A household that comes has its first month's rent and deposit at least, so a first rent puts nobody in debt (students living on a
+            // loan or their family's money among them, whose usual income is none).
+            hh.Savings[h] = (int)Math.Max(hh.Savings[h], Math.Min(int.MaxValue / 4, (long)hh.Rent[h] * PopulationCatalogue.SavingsRentDays / 100));
+        }
+
+        /// <summary>
+        /// Savings a household comes with, whole money: days of its usual income (cents a day) on the Survey of Consumer Finances' ladder by that income,
+        /// leaned by the head's age, times a draw of the spread (a quarter to four times, the ladder's the median).
+        /// </summary>
+        public static long StartSavings(int seed, int who, long usual, int age)
+        {
+            if (usual <= 0)
+            {
+                return 0;
+            }
+            long days1000 = (long)LadderDays(usual) * PopulationCatalogue.SavingsAgeLean[MoneyAge(age)];
+            int[] spread = PopulationCatalogue.SavingsSpread;
+            int factor = spread[PopDraw.Range(seed, PopDraw.Savings, who, 0, spread.Length)];
+            return usual * days1000 / 1000 * factor / 1000 / 100;
+        }
+
+        /// <summary>
+        /// Card debt a household comes with, whole money: by its usual income's group a share carries a balance (leaned by the head's age), of the group's
+        /// median days of income times the spread's draw; none for the others.
+        /// </summary>
+        public static long StartCard(int seed, int who, long usual, int age)
+        {
+            if (usual <= 0)
+            {
+                return 0;
+            }
+            int group = IncomeGroup(usual);
+            int share = PopulationCatalogue.CardShare[group] * PopulationCatalogue.CardAgeLean[MoneyAge(age)] / 1000;
+            if (!PopDraw.Mille(seed, PopDraw.Debt, who, 0, share))
+            {
+                return 0;
+            }
+            int[] spread = PopulationCatalogue.SavingsSpread;
+            int factor = spread[PopDraw.Range(seed, PopDraw.Debt, who, 1, spread.Length)];
+            return usual * PopulationCatalogue.CardDays[group] * factor / 1000 / 100;
+        }
+
+        /// <summary>The savings ladder's days at a usual income (cents a day): in a straight line between its points, its ends beyond them.</summary>
+        public static int LadderDays(long usual)
+        {
+            var ladder = PopulationCatalogue.SavingsLadder;
+            long at = usual * 1000 / PopulationCatalogue.UsualMiddle;
+            if (at <= ladder[0].Income)
+            {
+                return ladder[0].Days;
+            }
+            for (int i = 1; i < ladder.Length; i++)
+            {
+                if (at <= ladder[i].Income)
+                {
+                    var (x0, y0) = ladder[i - 1];
+                    var (x1, y1) = ladder[i];
+                    return (int)(y0 + (at - x0) * (y1 - y0) / (x1 - x0));
+                }
+            }
+            return ladder[ladder.Length - 1].Days;
+        }
+
+        /// <summary>The survey's income group of a usual income (0 under the 20th percentile to 5 the top tenth).</summary>
+        public static int IncomeGroup(long usual)
+        {
+            long at = usual * 1000 / PopulationCatalogue.UsualMiddle;
+            int[] starts = PopulationCatalogue.IncomeGroups;
+            int g = 0;
+            while (g < starts.Length && at >= starts[g])
+            {
+                g++;
+            }
+            return g;
+        }
+
+        /// <summary>The survey's age group of a head's age (0 under 35 to 5 from 75).</summary>
+        public static int MoneyAge(int age)
+        {
+            int[] starts = PopulationCatalogue.MoneyAges;
+            int g = 0;
+            while (g < starts.Length && age >= starts[g])
+            {
+                g++;
+            }
+            return g;
+        }
+
+        /// <summary>
+        /// A household with nobody in work, looking for work or drawing a pension: its adults at home of working age look for work (their field by their
+        /// schooling, the pay their skill would fetch). Staying home to care for a family, or living on savings, needs money coming in from somebody, so
+        /// nobody lives alone at home on nothing, as the generation's participation draw alone let a fifth of single adults do. Every way a household
+        /// is made or loses a member ends here. Students and children alone are left as they are.
+        /// </summary>
+        public static void Provide(PopulationState s, int h, int day)
+        {
+            if (h < 0 || !s.Households.Alive(h) || (s.Households.Flags[h] & HouseholdFlags.Players) != 0)
+            {
+                return;   // the player's household is the player's to run
+            }
+            PersonTable pt = s.People;
+            for (int p = s.Households.First[h]; p >= 0; p = pt.Next[p])
+            {
+                var status = (Status)pt.Status[p];
+                if (status == Status.Worker || status == Status.Unemployed || status == Status.Retired)
+                {
+                    return;
+                }
+            }
+            int cls = s.Households.Class[h];
+            for (int p = s.Households.First[h]; p >= 0; p = pt.Next[p])
+            {
+                int age = s.Age(p, day);
+                if (pt.Status[p] != (byte)Status.Home || age < PopulationCatalogue.AdultLeast || age >= PopulationCatalogue.RetireAge
+                    || (pt.Flags[p] & (PersonFlags.Linked | PersonFlags.Frozen)) != 0)
+                {
+                    continue;   // another system's person (a partner, a roommate) is that system's to move
+                }
+                pt.Status[p] = (byte)Status.Unemployed;
+                pt.Since[p] = day;
+                if (pt.Field[p] == (byte)Field.None)
+                {
+                    pt.Field[p] = (byte)DrawField(s.Seed, pt.Id[p], (Education)pt.Education[p]);
+                }
+                pt.Pay[p] = LabourRules.PayFor(s, pt.Field[p], pt.Skill[p], cls);
+                pt.Hours[p] = PopulationCatalogue.FullTimeHours;
+            }
+        }
+
+        /// <summary>
+        /// The households' start, counted once a city's first day is lived: those with an adult at home of working age and nobody in work, looking for
+        /// work or on a pension (<see cref="Provide"/> leaves none), and those the first day put deeper in debt (their first month's rent and deposit
+        /// in savings leaves none). Game-free. COST: one pass over the households and their people.
+        /// </summary>
+        public static void StartCheck(PopulationState s, out int unprovided, out int deeper)
+        {
+            unprovided = deeper = 0;
+            HouseholdTable hh = s.Households;
+            PersonTable pt = s.People;
+            for (int h = 0; h < hh.Count; h++)
+            {
+                if (!hh.Alive(h))
+                {
+                    continue;
+                }
+                bool earner = false, home = false;
+                for (int p = hh.First[h]; p >= 0; p = pt.Next[p])
+                {
+                    var status = (Status)pt.Status[p];
+                    earner |= status == Status.Worker || status == Status.Unemployed || status == Status.Retired;
+                    int age = s.Age(p, s.Day);
+                    home |= status == Status.Home && age >= PopulationCatalogue.AdultLeast && age < PopulationCatalogue.RetireAge;
+                }
+                unprovided += home && !earner ? 1 : 0;
+                deeper += hh.Month[h * Ledger.Lines + Ledger.DebtChange] > 0 ? 1 : 0;
             }
         }
 

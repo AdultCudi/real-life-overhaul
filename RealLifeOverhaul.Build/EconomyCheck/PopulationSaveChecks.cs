@@ -76,6 +76,15 @@ internal static partial class Program
             "population save: a line of this measure is kept; a beta's (version 3, homes above shops counted too) is generated again with its own seed, the same city a "
             + "new save of it has, in the owner's size (" + remade.Households.Live + " households)");
 
+        // A line of beta.3 (version 4, its city made before everyone at home had somebody bringing money in and savings and card debt followed the SCF):
+        // generated again too, as a save made on beta.3 started its households broke.
+        int measured = s.Measure;
+        s.Measure = 2;
+        PopulationState beta3 = PopulationStore.Decode(PopulationStore.Encode(s), out int beta3Version);
+        s.Measure = measured;
+        Check(beta3 != null && beta3Version == PopulationStore.Version && beta3.Measure == 2 && GenerateRules.Outdated(beta3) && PopulationCatalogue.MeasureVersion == 3,
+            "population save: a beta.3 line (measure 2, its households started broke) is generated again from its seed");
+
         // Bound to the city as it stands: the same city binds every household back to its flat; a building gone marks its households away.
         PopulationState again = PopulationStore.Decode(line, out _);
         PopulationState city = PopulationCity(out _);
