@@ -12,7 +12,9 @@ namespace RealLifeOverhaul.Population
         Household = 3,
         Person = 4,
         Business = 5,
-        Contributors = 6
+        Contributors = 6,
+        Demands = 7,         // what the mod's own businesses take from the people (PopDemandViews)
+        Demand = 8           // one business type's demand and where it comes from
     }
 
     /// <summary>How a figure is written (the renderer uses the game's own number and money formatting).</summary>
@@ -32,7 +34,7 @@ namespace RealLifeOverhaul.Population
         public ViewKind Kind;
         public int Index;            // the record's slot (district, building, household, person, business), -1 for none
 
-        public bool Valid => Index >= 0 || Kind == ViewKind.City || Kind == ViewKind.Contributors;
+        public bool Valid => Index >= 0 || Kind == ViewKind.City || Kind == ViewKind.Contributors || Kind == ViewKind.Demands;
 
         public static ViewTarget To(ViewKind kind, int index) => new ViewTarget { Kind = kind, Index = index };
 

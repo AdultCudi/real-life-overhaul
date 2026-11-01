@@ -139,6 +139,7 @@ namespace RealLifeOverhaul
                 ConstructionBridges.Qualified = TradesBridges.Qualified;
                 ConstructionBridges.Commission = (project, storeys, units, budget) => TradesBridges.Commission(project, storeys, units, (int)Math.Min(int.MaxValue, Math.Max(0L, budget)));
                 ConstructionBridges.DesignOf = DesignOf;
+                ConstructionBridges.People = DemandLinks.Build;   // the living population's buyers and tenders (Wiring/DemandLinks)
                 ConstructionBridges.RivalNews = MarketsBuildLinks.RivalNews;
                 ConstructionBridges.HedgePlan = MarketsBuildLinks.HedgePlan;
                 ConstructionBridges.Hedge = MarketsBuildLinks.Hedge;
@@ -195,6 +196,7 @@ namespace RealLifeOverhaul
 
             internal static void Disconnect()
             {
+                ConstructionBridges.People = null;
                 BuildModeLinks.Disconnect();
                 SiteBuilders.Reset();
                 DistrictBuildings.GroundGiven = null;

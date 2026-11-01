@@ -31,6 +31,15 @@ namespace RealLifeOverhaul.Economy
         /// <summary>True while Standing keeps the player's reputation, so their integrity is their own. Default: no.</summary>
         public static Func<bool> StandingOn;
 
+        /// <summary>
+        /// Thousandths of its first day's figure the city's people now bring a pool (OwnBankCatalogue's savers, then its segments), -1 with no living
+        /// population (the catalogue's figures stand). Default: none.
+        /// </summary>
+        public static Func<int, int> People;
+
+        /// <summary>What the residents round a branch's district bring its counter (Branch/BranchRules.BranchPeople), by the game's district id. Default: the catalogue's mix.</summary>
+        public static Func<string, BranchPeople> Branch;
+
         public static void Reset()
         {
             Integrity = null;
@@ -39,6 +48,8 @@ namespace RealLifeOverhaul.Economy
             Quotes = null;
             Moved = null;
             Qualified = null;
+            People = null;
+            Branch = null;
             StandingOn = null;
         }
     }
@@ -116,8 +127,26 @@ namespace RealLifeOverhaul.Economy
                 Rent = lever != null ? lever(Lever.Rent) : 0,
                 Courts = OwnBankBridges.Courts != null && OwnBankBridges.Courts(),
                 Scale = OwnBankDirector.Instance != null ? OwnBankDirector.Instance.ScaleNow() : 0,
-                Reach = OwnBankDirector.Instance != null ? OwnBankDirector.Instance.Reach() : 0
+                Reach = OwnBankDirector.Instance != null ? OwnBankDirector.Instance.Reach() : 0,
+                People = PeopleNow()
             };
+        }
+
+        private static readonly int[] PeopleKept = new int[OwnBankCatalogue.Savers + OwnBankCatalogue.Segments];
+
+        // The people's factors on the bank's pools, in one array kept for the session (main thread only); null with no living population.
+        private static int[] PeopleNow()
+        {
+            Func<int, int> people = OwnBankBridges.People;
+            if (people == null || people(0) < 0)
+            {
+                return null;
+            }
+            for (int i = 0; i < PeopleKept.Length; i++)
+            {
+                PeopleKept[i] = Math.Max(0, people(i));
+            }
+            return PeopleKept;
         }
 
         /// <summary>

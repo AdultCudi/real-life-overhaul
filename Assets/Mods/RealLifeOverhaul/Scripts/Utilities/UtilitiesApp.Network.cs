@@ -56,7 +56,7 @@ namespace RealLifeOverhaul.Utilities
         // a district's connections the company reaches once dug, or would if dug now (at scale, the whole district)
         private static int MarketShown(Network n, int d, int scale, bool built)
         {
-            return built ? BroadbandRules.MarketOf(n, d) : EndScaleRules.Mix(BroadbandCatalogue.Market[d], BroadbandRules.MarketAtScale(d), scale);
+            return built ? BroadbandRules.MarketOf(n, d) : (int)((long)EndScaleRules.Mix(BroadbandCatalogue.Market[d], BroadbandRules.MarketAtScale(d), scale) * BroadbandRules.PeopleOf(n, d) / 1000);
         }
 
         private void WriteCompany(InfoBox box, Network n, int open, int level, int scale, int today, int buy)

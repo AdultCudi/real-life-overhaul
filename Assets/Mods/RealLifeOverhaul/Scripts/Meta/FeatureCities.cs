@@ -123,6 +123,7 @@ namespace RealLifeOverhaul.Meta
             new Line("studio", CityScope.AnyCity, "the player's game studios and the rival studios' market"),
             new Line("firms", CityScope.AnyCity, "the player's tech firms and the shared markets, sized from whatever city the population measures"),
             new Line("population", CityScope.NewYork, "the city's people in New York's buildings, measured and kept by its districts"),
+            new Line("population_demand", CityScope.NewYork, "the mod's own businesses' customers from New York's people, by its districts"),
             new Line("faults", CityScope.NewYork, "faults kept in New York's streets and districts"),
             new Line("home_roommates", CityScope.AnyCity, "the player's home"),
             new Line("interiors", CityScope.AnyCity, "the player's interiors, by the game's own district data"),

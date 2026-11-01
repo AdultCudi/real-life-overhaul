@@ -162,7 +162,8 @@ namespace RealLifeOverhaul.Careers
             WorkFile w = _study.Work;
             int cycle = CareersBridges.CycleNow();
             bool agency = w.AgencyUntil >= day;
-            int wanted = ProRules.OpeningsWanted(cycle, agency);
+            int people = CareersBridges.Openings != null ? CareersBridges.Openings() : 0;
+            int wanted = ProRules.OpeningsWanted(cycle, agency, people);   // the city's employers' real gaps, where the living population runs
             int own = 0;
             for (int i = 0; i < w.Openings.Count; i++)
             {

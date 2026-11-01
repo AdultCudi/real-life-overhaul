@@ -305,6 +305,7 @@ namespace RealLifeOverhaul
             CivicBridges.Crimes = 0;
             CivicBridges.Accidents = 0;
 
+            _city.Refresh();   // the electorate as the city's adults are today
             Approve(day);
             Petition(day);
             Council(day);
@@ -350,6 +351,25 @@ namespace RealLifeOverhaul
         public int Electorate()
         {
             return _city.Electorate > 0 ? _city.Electorate : 50000;
+        }
+
+        /// <summary>
+        /// Whom the council's revenue is raised from, in voters' worth (OfficeRules.Revenue takes 0.6 a week of each): the floor space's electorate as before,
+        /// moved by the people's taxes against the anchor day's where the living population runs, so the revenue on that day is what it was and follows the taxes after.
+        /// </summary>
+        public int Payers()
+        {
+            int floor = _city.FloorElectorate > 0 ? _city.FloorElectorate : _city.Electorate > 0 ? _city.Electorate : 50000;
+            int taxes = 0;
+            try
+            {
+                taxes = CivicBridges.Taxes != null ? CivicBridges.Taxes() : 0;
+            }
+            catch (Exception e)
+            {
+                CivicDirector.Logger?.Error(e);
+            }
+            return taxes > 0 ? (int)Math.Min(int.MaxValue / 4, (long)floor * taxes / 1000) : floor;
         }
 
         /// <summary>The district the player is in (the game's own note of it), else the one whose polling place is nearest.</summary>

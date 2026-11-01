@@ -122,6 +122,12 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The same with the building's connection setting the bound (<see cref="Most"/>).</summary>
         public static int PerDay(int quality, bool inHouse, int lines, int need, int price, int promise, int stars, int ads, int campaign, int cycle, int season, int shops, int mbps)
         {
+            return PerDay(quality, inHouse, lines, need, price, promise, stars, ads, campaign, cycle, season, shops, mbps, 1000);
+        }
+
+        /// <summary>The same with the city's households' online spending of the shop's kind against the anchor day's (the living population), within the bound.</summary>
+        public static int PerDay(int quality, bool inHouse, int lines, int need, int price, int promise, int stars, int ads, int campaign, int cycle, int season, int shops, int mbps, int people)
+        {
             int q = OnlineCatalogue.Quality(quality);
             long v = OnlineCatalogue.OrdersADay[q] * 1000L;
             v = v * (inHouse ? OnlineCatalogue.AgencyOrders : 1000) / 1000;
@@ -134,6 +140,7 @@ namespace RealLifeOverhaul.Economy
             v = v * OnlineCatalogue.CycleFactor[OnlineCatalogue.Clamp(cycle, 0, 3)] / 1000;
             v = v * OnlineCatalogue.SeasonFactor[OnlineCatalogue.Clamp(season, 0, 3)] / 1000;
             v = v * Crowd(shops) / 1000;
+            v = v * Math.Max(0, people) / 1000;
             return (int)Math.Min(v, Most(quality, mbps) * 1000L);
         }
 
@@ -179,7 +186,8 @@ namespace RealLifeOverhaul.Economy
             site.Cycle = cycle;
             site.Season = season;
             site.Crowd = shops;
-            site.PerDay = shop.Offline || on == 0 ? 0 : PerDay(shop.Quality, shop.InHouse, on, site.Need, site.Price, shop.Promise, shop.Stars, site.Ads, campaign, cycle, season, shops, site.Mbps);
+            site.PerDay = shop.Offline || on == 0 ? 0 : PerDay(shop.Quality, shop.InHouse, on, site.Need, site.Price, shop.Promise, shop.Stars, site.Ads, campaign, cycle, season, shops, site.Mbps,
+                site.People > 0 ? site.People : 1000);
         }
 
         public static WebOrder NewOrder()

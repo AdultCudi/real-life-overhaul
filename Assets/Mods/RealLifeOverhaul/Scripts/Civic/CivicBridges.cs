@@ -106,6 +106,18 @@ namespace RealLifeOverhaul
         /// <summary>A moment of the campaign or the office the player may post about on social media: what (CivicOffice.Post*) and a name. Default: none.</summary>
         public static Action<int, string> CampaignPost;
 
+        /// <summary>A district's adult residents, by its id (the living population): its electorate; -1 for none, and the floor space's guess stands. Default: none.</summary>
+        public static Func<string, int> Adults;
+
+        /// <summary>
+        /// The council's taxes from the city's people against the anchor day's, thousandths (the living population); 0 for none, and the revenue is the
+        /// electorate's as before. Default: none.
+        /// </summary>
+        public static Func<int> Taxes;
+
+        /// <summary>Points of the mayor's approval from the residents' satisfaction against the anchor day's (the living population). Default: none.</summary>
+        public static Func<float> Residents;
+
         /// <summary>Tells Standing what the player did in politics (<see cref="StandingMoved"/>); a fault there is logged.</summary>
         internal static void Moved(int integrity, int press)
         {

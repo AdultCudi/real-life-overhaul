@@ -24,6 +24,7 @@ Each feature keeps its state in the save's `modData` under keys that start `real
 | `reallife:economy_brands_before_tests` | `Economy/Brands/BrandStore.cs` |
 | `reallife:economy_city` | `Economy/City/CityStore.cs` |
 | `reallife:population` | `Population/PopulationStore.cs` |
+| `reallife:population_demand` | `Population/Demand/PopDemandStore.cs` |
 | `reallife:economy_city_before_tests` | `Economy/City/CityStore.cs` |
 | `reallife:economy_city_eve` | `Economy/City/CityStore.cs` |
 | `reallife:economy_company` | `Economy/Company/CompanyStore.cs` |

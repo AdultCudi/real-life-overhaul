@@ -118,6 +118,7 @@ namespace RealLifeOverhaul.Hustles
         // The day's listings
         public const int GoodsADay = 9;             // goods the city's people put up each morning
         public const int CarsADay = 2;              // and cars
+        public const int ListingsPeopleMost = 3000; // thousandths: the most the city's sellers multiply a day's listings by (a bound for the arithmetic)
         public const int ListingConditionLeast = 12, ListingConditionMost = 88;   // percent, goods
         public const int OverstateChance = 250;     // an electronics seller who says it is better than it is
         public const int OverstateLeast = 8, OverstateMost = 22;                  // ...by this much

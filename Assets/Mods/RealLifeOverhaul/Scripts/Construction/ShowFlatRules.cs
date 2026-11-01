@@ -58,6 +58,12 @@ namespace RealLifeOverhaul.Construction
         /// </summary>
         public static int BuyerChance(int quality, int standard, int reputation, ViewingHost host)
         {
+            return BuyerChance(quality, standard, reputation, host, 1000);
+        }
+
+        /// <summary>The same with the city's buyers against the anchor day's (the living population).</summary>
+        public static int BuyerChance(int quality, int standard, int reputation, ViewingHost host, int buyers)
+        {
             long chance = BuildCatalogue.ShowBuyerBase + (long)(quality - standard) * BuildCatalogue.ShowBuyerPerPoint
                           + (long)(BuildCatalogue.Clamp(reputation, 0, 100) - 50) * BuildCatalogue.ShowBuyerRepPerPoint;
             if (host == ViewingHost.Player)
@@ -72,6 +78,7 @@ namespace RealLifeOverhaul.Construction
             {
                 chance = chance * BuildCatalogue.ShowAloneShare / 1000L;
             }
+            chance = chance * Math.Max(0, buyers) / 1000L;
             return (int)Math.Max(BuildCatalogue.ShowBuyerLeast, Math.Min(BuildCatalogue.ShowBuyerMost, chance));
         }
 

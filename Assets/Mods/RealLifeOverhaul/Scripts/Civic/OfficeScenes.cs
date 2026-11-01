@@ -577,7 +577,7 @@ namespace RealLifeOverhaul
             }
             else if (m.Kind == OfficeMotion.KindBudget)
             {
-                BudgetWeek week = OfficeRules.Week(_gov.Electorate(), _gov.State.Levers, m.Budget);
+                BudgetWeek week = OfficeRules.Week(_gov.Payers(), _gov.State.Levers, m.Budget);
                 _text.Append(Fill("reallife_civic_office_meeting_budget", "levels", CivicOffice.Levels(m.Budget), "revenue", CivicText.Money(Prices.At(week.Revenue)),
                     "spending", CivicText.Money(Prices.At(week.Spending)), "reserve", CivicText.Money(Prices.At((int)Mathf.Clamp(S.Reserve, int.MinValue / 2, int.MaxValue / 2)))));
             }

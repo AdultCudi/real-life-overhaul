@@ -13,6 +13,22 @@ namespace RealLifeOverhaul.Economy
         public int Tellers;                 // tellers on shift there now (customer service their main skill)
         public int Skill;                   // their average customer service skill (0 to 100)
         public bool Player;                 // the player is working its counter
+        public BranchPeople People;         // the residents round it (the living population); none for the catalogue's own mix
+    }
+
+    /// <summary>
+    /// What the residents round a branch bring its counter (Wiring from the living population: the leans of the branch's district against the city's), each a
+    /// thousand where the district is the city's average, so the city's branches together keep the catalogue's mix and each one leans by its own people. All
+    /// nought (the default) for the catalogue's own mix: no living population, or a district it has no figure for.
+    /// </summary>
+    public struct BranchPeople
+    {
+        public int Sums;          // thousandths: their income against the city's, which the sums paid in, taken out and borrowed follow
+        public int Saving;        // thousandths: what they put by against the city's: more paying in, less taking out
+        public int Borrowing;     // thousandths: their debt against the city's: more asking for loans
+        public int Poor, Fair, Good;   // thousandths: their borrowers in each credit band against the city's
+
+        public bool Known => Sums > 0;
     }
 
     /// <summary>One customer of an hour as the branch's floor shows them (Branch/BranchFloor).</summary>
@@ -183,44 +199,70 @@ namespace RealLifeOverhaul.Economy
         /// <summary>What a visit is for, by the shares of the kinds; in a run, those who came to pay in take their money out instead.</summary>
         public static int Kind(int draw, bool run)
         {
-            int at = 0;
-            for (int k = 0; k < BranchCatalogue.Kinds; k++)
-            {
-                at += BranchCatalogue.KindShare[k];
-                if (draw < at)
-                {
-                    return run && (k == BranchCatalogue.Open || k == BranchCatalogue.Deposit) ? BranchCatalogue.Withdraw : k;
-                }
-            }
-            return BranchCatalogue.Enquiry;
+            return Kind(draw, run, default);
+        }
+
+        /// <summary>
+        /// The same with the residents round the branch: paying in leans with what they put by and taking out against it, asking for a loan with their debt, the
+        /// visits' number unchanged; the catalogue's shares with none.
+        /// </summary>
+        public static int Kind(int draw, bool run, in BranchPeople p)
+        {
+            int saving = p.Known ? Lean(p.Saving) : 1000, borrowing = p.Known ? Lean(p.Borrowing) : 1000;
+            long open = BranchCatalogue.KindShare[BranchCatalogue.Open];
+            long deposit = (long)BranchCatalogue.KindShare[BranchCatalogue.Deposit] * saving / 1000;
+            long withdraw = (long)BranchCatalogue.KindShare[BranchCatalogue.Withdraw] * 1000 / saving;
+            long loan = (long)BranchCatalogue.KindShare[BranchCatalogue.Loan] * borrowing / 1000;
+            long total = open + deposit + withdraw + loan + BranchCatalogue.KindShare[BranchCatalogue.Enquiry];
+            long pick = (long)OwnBankRules.Clamp(draw, 0, 999) * total / 1000;
+            int k = pick < open ? BranchCatalogue.Open : pick < open + deposit ? BranchCatalogue.Deposit : pick < open + deposit + withdraw ? BranchCatalogue.Withdraw
+                    : pick < open + deposit + withdraw + loan ? BranchCatalogue.Loan : BranchCatalogue.Enquiry;
+            return run && (k == BranchCatalogue.Open || k == BranchCatalogue.Deposit) ? BranchCatalogue.Withdraw : k;
         }
 
         /// <summary>Who asks for a loan at the counter: a poorly, fairly or well rated person (OwnBankCatalogue.Poor, Fair, Good).</summary>
         public static int Asker(int draw)
         {
-            int sum = 0;
-            for (int i = 0; i < BranchCatalogue.AskBy.Length; i++)
+            return Asker(draw, default);
+        }
+
+        /// <summary>The same with the residents round the branch: each band's askers by the catalogue's share and how many of the district's borrowers are in it against the city.</summary>
+        public static int Asker(int draw, in BranchPeople p)
+        {
+            long poor = Ask(OwnBankCatalogue.Poor, p.Known ? p.Poor : 1000), fair = Ask(OwnBankCatalogue.Fair, p.Known ? p.Fair : 1000), good = Ask(OwnBankCatalogue.Good, p.Known ? p.Good : 1000);
+            long sum = poor + fair + good;
+            if (sum <= 0)
             {
-                sum += BranchCatalogue.AskBy[i];
+                return OwnBankCatalogue.Fair;
             }
-            int at = 0, pick = draw * sum / 1000;
-            for (int i = 0; i < BranchCatalogue.AskBy.Length; i++)
-            {
-                at += BranchCatalogue.AskBy[i];
-                if (pick < at)
-                {
-                    return i;   // the first three segments are the people's, in this order
-                }
-            }
-            return OwnBankCatalogue.Good;
+            long pick = (long)OwnBankRules.Clamp(draw, 0, 999) * sum / 1000;
+            return pick < poor ? OwnBankCatalogue.Poor : pick < poor + fair ? OwnBankCatalogue.Fair : OwnBankCatalogue.Good;   // the first three segments are the people's, in this order
+        }
+
+        private static long Ask(int band, int lean)
+        {
+            return (long)BranchCatalogue.AskBy[band] * Math.Max(0, lean) / 1000;
         }
 
         /// <summary>A visit's sum at today's prices: the usual for its kind, spread from <see cref="BranchCatalogue.SumLeast"/> to <see cref="BranchCatalogue.SumMost"/> of it.</summary>
         public static long Sum(int kind, int draw, int level)
         {
+            return Sum(kind, draw, level, default);
+        }
+
+        /// <summary>The same with the residents round the branch: what they pay in, take out and borrow follows their income against the city's.</summary>
+        public static long Sum(int kind, int draw, int level, in BranchPeople p)
+        {
             long usual = BranchCatalogue.KindCents[OwnBankRules.Clamp(kind, 0, BranchCatalogue.Kinds - 1)];
             int spread = BranchCatalogue.SumLeast + (BranchCatalogue.SumMost - BranchCatalogue.SumLeast) * OwnBankRules.Clamp(draw, 0, 999) / 999;
-            return OwnBankRules.At(usual * spread / 1000, level);
+            int income = p.Known ? Lean(p.Sums) : 1000;
+            return OwnBankRules.At(usual * spread / 1000 * income / 1000, level);
+        }
+
+        // A lean of the residents' kept within what a counter's mix can take.
+        private static int Lean(int lean)
+        {
+            return OwnBankRules.Clamp(lean, BranchCatalogue.PeopleLeast, BranchCatalogue.PeopleMost);
         }
 
         /// <summary>
@@ -237,6 +279,7 @@ namespace RealLifeOverhaul.Economy
             br.HourIndex = hourIndex;
             br.HourOpen = h.Open && b.Running;
             br.HourTellers = Math.Max(0, h.Tellers) + (h.Player ? 1 : 0);
+            br.HourPeople = h.People;
             if (!b.Running)
             {
                 br.Carry = 0;
@@ -250,9 +293,9 @@ namespace RealLifeOverhaul.Economy
             BankCaps caps = OwnBankRules.Caps(b, level, share);
             for (int i = 0; i < o.Served; i++)
             {
-                int kind = Kind(Draw(b.Seed, hourIndex, place, i, 0), b.Run);
-                int segment = kind == BranchCatalogue.Loan ? Asker(Draw(b.Seed, hourIndex, place, i, 1)) : OwnBankCatalogue.Fair;
-                long sum = Sum(kind, Draw(b.Seed, hourIndex, place, i, 2), level);
+                int kind = Kind(Draw(b.Seed, hourIndex, place, i, 0), b.Run, h.People);
+                int segment = kind == BranchCatalogue.Loan ? Asker(Draw(b.Seed, hourIndex, place, i, 1), h.People) : OwnBankCatalogue.Fair;
+                long sum = Sum(kind, Draw(b.Seed, hourIndex, place, i, 2), level, h.People);
                 VisitResult r = OwnBankRules.Visit(b, kind, segment, sum, level, caps, out long fee, out long moved);
                 o.Fees += fee;
                 switch (r)
@@ -290,6 +333,12 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static void Floor(int seed, int hourIndex, string place, int visitors, int served, bool run, System.Collections.Generic.List<FloorCustomer> into)
         {
+            Floor(seed, hourIndex, place, visitors, served, run, default, into);
+        }
+
+        /// <summary>The same with the residents round the branch that hour, so what the floor shows them come for is what the hour booked.</summary>
+        public static void Floor(int seed, int hourIndex, string place, int visitors, int served, bool run, in BranchPeople people, System.Collections.Generic.List<FloorCustomer> into)
+        {
             into.Clear();
             int shown = Math.Min(Math.Max(0, visitors), BranchCatalogue.ShownMost);
             if (shown == 0)
@@ -303,7 +352,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     Minute = Draw(seed, hourIndex, key, i, 3) * 55 / 1000,
                     Served = i < seen,
-                    Kind = Kind(Draw(seed, hourIndex, key, i, 0), run)
+                    Kind = Kind(Draw(seed, hourIndex, key, i, 0), run, people)
                 });
             }
             into.Sort((a, b) => a.Minute.CompareTo(b.Minute));

@@ -757,6 +757,15 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationViews.cs" Link="Mod\Population\PopulationViews.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationLinks.cs" Link="Mod\Population\PopulationLinks.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\CityPopulation.cs" Link="Mod\Population\CityPopulation.cs" />
+    <!-- What the people bring the mod's own businesses (PopDemandChecks.cs): the day's measure, the anchor, the factors, the leans, the save's line, the shared part and the screens. -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\Demand\PopDemandCatalogue.cs" Link="Mod\Population\Demand\PopDemandCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\Demand\PopDemandState.cs" Link="Mod\Population\Demand\PopDemandState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\Demand\PopDemandRules.cs" Link="Mod\Population\Demand\PopDemandRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\Demand\PopDemandJob.cs" Link="Mod\Population\Demand\PopDemandJob.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\Demand\PopDemandStore.cs" Link="Mod\Population\Demand\PopDemandStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\Demand\PopDemandShare.cs" Link="Mod\Population\Demand\PopDemandShare.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\Demand\PopDemandViews.cs" Link="Mod\Population\Demand\PopDemandViews.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\Demand\CityDemand.cs" Link="Mod\Population\Demand\CityDemand.cs" />
   </ItemGroup>
 
 </Project>

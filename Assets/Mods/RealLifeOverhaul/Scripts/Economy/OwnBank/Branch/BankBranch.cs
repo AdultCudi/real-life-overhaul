@@ -38,6 +38,7 @@ namespace RealLifeOverhaul.Economy
         public int HourIndex = int.MinValue;    // day x 24 + hour
         public int HourVisitors, HourServed, HourTellers;
         public bool HourOpen;
+        public BranchPeople HourPeople;         // the residents round it that hour (the floor shows what they came for)
 
         public BankBranch()
         {

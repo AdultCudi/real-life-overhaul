@@ -18,7 +18,7 @@ district-save	-	how the save keeps the mod's places: nothing a player sees
 districts	reallife_guide_districtview	the district view
 driving	reallife_guide_driving	driving
 economy-app	reallife_guide_economy_app	the Economy app
-population	reallife_guide_population	the city's population under the living economy's master option
+population	reallife_guide_population,reallife_guide_population_demand	the city's population under the living economy's master option
 economy-banks	reallife_guide_economy_banks	the Banks app
 economy-city	reallife_guide_economy_city	the city's economy
 economy-company	reallife_guide_economy_company	running a business
