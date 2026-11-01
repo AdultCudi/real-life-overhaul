@@ -106,16 +106,25 @@ namespace RealLifeOverhaul.Ui
         /// accent selection bar at its left. Returns the focus target.
         /// </summary>
         public static int NavItem(UiScene s, UiAt at, float x, float y, float w, string label, string count, float hue, bool selected, int command, int arg,
-            bool loudCount = false)
+            bool loudCount = false, UiIcon icon = UiIcon.None, UiRole tint = UiRole.Text2)
         {
             float h = UiTokens.Control;
-            int face = Box(s, at, x, y, w, h, UiRole.None, UiRole.None, UiTokens.RadiusLarge, selected ? UiFlags.Selected : UiFlags.None);   // no fill: one loud highlight a screen
+            int face = Box(s, at, x, y, w, h, selected ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusLarge, selected ? UiFlags.Selected : UiFlags.None);
             UiAt inside = at.In(face);
-            if (selected)
+            float lead = UiTokens.StatusDot;
+            if (icon != UiIcon.None)
             {
-                Box(s, inside, x, y + UiTokens.S3, UiTokens.SelectBar, h - UiTokens.S3 * 2f, UiRole.Accent, UiRole.None, UiTokens.SelectBar / 2f);
+                // A game's menu: the group's icon on its tile in its colour.
+                float tile = UiTokens.ControlSmall;
+                int t = Tile(s, inside, x + UiTokens.S3, y + (h - tile) / 2f, tile, tint, selected);
+                Icon(s, inside.In(t), x + UiTokens.S3 + (tile - UiTokens.Icon) / 2f, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, icon, selected ? UiRole.OnAccent : tint,
+                    UiFlags.Middle | UiFlags.Centre, true);
+                lead = tile - UiTokens.S1;
             }
-            HueDot(s, inside, x + UiTokens.S4, y + (h - UiTokens.StatusDot) / 2f, UiTokens.StatusDot, hue);
+            else
+            {
+                HueDot(s, inside, x + UiTokens.S4, y + (h - UiTokens.StatusDot) / 2f, UiTokens.StatusDot, hue);
+            }
             float cw = 0f;
             if (!string.IsNullOrEmpty(count))
             {
@@ -128,12 +137,12 @@ namespace RealLifeOverhaul.Ui
                 else
                 {
                     cw = UiTextRules.Width(count, UiStyle.Small) + UiTokens.S1;
-                    TextMiddle(s, inside, x + w - UiTokens.S4 - cw, y, h, cw, UiStyle.Small, selected ? UiRole.AccentText : UiRole.Muted, count, UiFlags.Right);
+                    TextMiddle(s, inside, x + w - UiTokens.S4 - cw, y, h, cw, UiStyle.Small, selected ? UiRole.Text : UiRole.Muted, count, UiFlags.Right);
                 }
             }
-            float tx = x + UiTokens.S4 + UiTokens.StatusDot + UiTokens.S3;
+            float tx = x + UiTokens.S4 + lead + UiTokens.S3;
             float lw = w - (tx - x) - cw - UiTokens.S6;
-            UiRole ink = selected ? UiRole.AccentText : UiRole.Text2;
+            UiRole ink = UiRole.Text;   // the chosen row's fill marks it: cyan words on the cyan read worst on the one row that matters
             if (UiTextRules.Width(label, UiStyle.Nav) <= lw)
             {
                 TextMiddle(s, inside, tx, y, h, lw, UiStyle.Nav, ink, label, UiFlags.Label | UiFlags.Truncate);
@@ -153,7 +162,7 @@ namespace RealLifeOverhaul.Ui
             float h = UiTokens.Control;
             int face = Box(s, at, x, y, w, h, UiRole.Field, UiRole.None, UiTokens.RadiusLarge);
             UiAt inside = at.In(face);
-            Icon(s, inside, x + UiTokens.S4, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Search, UiRole.Muted);
+            Icon(s, inside, x + UiTokens.S4, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Search, UiRole.Muted, UiFlags.Middle);
             float cw = string.IsNullOrEmpty(count) ? 0f : UiTextRules.Width(count, UiStyle.Small) + UiTokens.S1;
             if (cw > 0f)
             {
@@ -167,34 +176,34 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>
-        /// Tabs as bars: the previous tab's key, the tabs' names, the next tab's key; the shown tab's name in the accent over
-        /// a bar, the rest quieter, a rule under all. Each tab is a focus target (its command with its index). Returns the height.
+        /// Tabs: the previous tab's key, the tabs' names, the next tab's key; the shown tab filled cyan with dark words, as a
+        /// city builder marks the tool in hand, the rest quieter, a rule under all. Each tab is a focus target (its command
+        /// with its index). Returns the height.
         /// </summary>
         public static float Tabs(UiScene s, UiAt at, float x, float y, float w, string[] labels, int shown, IUiKeys keys, int command)
         {
             float h = UiTokens.Control;
-            Box(s, at, x, y + h - UiTokens.Hairline, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             float cx = x;
+            // A lone key cap means nothing to the mouse: it shows while the keys lead, and its room stays so nothing moves.
             if (keys != null)
             {
-                cx += KeyCap(s, at, cx, y + (h - UiTokens.KeyCap) / 2f - UiTokens.S1, UiAction.TabPrev, keys, UiRole.Track, UiRole.Text2) + UiTokens.S3;
-                s.Items[s.ItemCount - 1].Flags |= UiFlags.Middle;
+                cx += (s.Pointer ? KeyCapWidth(UiAction.TabPrev, keys) : KeyCap(s, at, cx, y + (h - UiTokens.KeyCap) / 2f - UiTokens.S1, UiAction.TabPrev, keys, UiRole.Track, UiRole.Text2))
+                      + UiTokens.S3;
+                if (!s.Pointer)
+                {
+                    s.Items[s.ItemCount - 1].Flags |= UiFlags.Middle;
+                }
             }
             for (int i = 0; i < labels.Length; i++)
             {
                 bool on = i == shown;
                 float tw = Snap(UiTextRules.Width(labels[i], UiStyle.Nav) + UiTokens.S4 * 2f);
-                int face = Box(s, at, cx, y, tw, h, UiRole.None, UiRole.None, UiTokens.RadiusSmall, on ? UiFlags.Selected : UiFlags.None);
-                TextMiddle(s, at.In(face), cx + UiTokens.S4, y - UiTokens.S1, h, tw - UiTokens.S4 * 2f + UiTokens.S1, UiStyle.Nav, on ? UiRole.AccentText : UiRole.Text2,
-                    labels[i], UiFlags.Label);
-                if (on)
-                {
-                    Box(s, at.In(face), cx + UiTokens.S2, y + h - UiTokens.TabBar, tw - UiTokens.S2 * 2f, UiTokens.TabBar, UiRole.Accent, UiRole.None, UiTokens.TabBar / 2f);
-                }
+                int face = Box(s, at, cx, y + UiTokens.S1, tw, h - UiTokens.S2, on ? UiRole.Accent : UiRole.None, UiRole.None, UiTokens.RadiusLarge, on ? UiFlags.Selected : UiFlags.None);
+                TextMiddle(s, at.In(face), cx + UiTokens.S4, y, h, tw - UiTokens.S4 * 2f + UiTokens.S1, UiStyle.Nav, on ? UiRole.OnAccent : UiRole.Text2, labels[i], UiFlags.Label);
                 Node(s, at, cx, y, tw, h, command, i, face);
                 cx += tw + UiTokens.S1;
             }
-            if (keys != null)
+            if (keys != null && !s.Pointer)
             {
                 KeyCap(s, at, cx + UiTokens.S2, y + (h - UiTokens.KeyCap) / 2f - UiTokens.S1, UiAction.TabNext, keys, UiRole.Track, UiRole.Text2);
                 s.Items[s.ItemCount - 1].Flags |= UiFlags.Middle;

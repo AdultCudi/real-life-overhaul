@@ -1,51 +1,84 @@
+using System;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// The one icon family, drawn in code: bold strokes (2.25 of 24 units) with round ends and joins on a 24-unit grid, a
-    /// few solid forms, each into a white 96-texel texture tinted where shown. A pad's lettered buttons (A, B, LB) are a
-    /// shape here and their letter in the kit's font (UiView). Each glyph is drawn the first time it is asked for, or
-    /// ahead behind a loading screen (<see cref="Warm"/>), and kept for the session. Cost: about 2 ms a glyph once; a
-    /// field read after.
+    /// The one icon family: Phosphor's icons (MIT), filled from the outlines the mod carries (UiIconRaster) into a white
+    /// 96-texel texture tinted where shown, a duotone's back a lighter tone of the same tint. A duotone also comes filled,
+    /// Phosphor's solid weight, for a toolbar's tile. The keyboard's arrows and the pad's buttons are no icon set's, so
+    /// they stay drawn in code, bold strokes on a 24-unit grid. A pad's lettered buttons (A, B, LB) are a shape here and
+    /// their letter in the kit's font (UiView). Each glyph is drawn the first time it is asked for, or ahead behind a
+    /// loading screen (<see cref="Warm"/>), and kept for the session. Cost: well under a millisecond a glyph once, a field
+    /// read after.
     /// </summary>
     public static class UiIcons
     {
-        private const int Size = 96;            // texels
-        private const float Unit = Size / 24f;  // texels in a grid unit
-        private const float Stroke = 2.25f;     // grid units: bold, as a game's icons read at a glance
+        private const int Size = 96;            // texels: 2 to a pixel at the 48 px of a tile and 4 at the 24 px of a row, both exact
+        private const float Unit = Size / 24f;  // texels in a grid unit of the glyphs drawn in code
+        private const float Stroke = 2.25f;     // grid units: bold, as Phosphor's bold weight reads
+        private const float MipBias = -0.5f;    // the finer of two mips, so a glyph is only ever shrunk, never a smaller one blown up
         private static readonly Sprite[] Made = new Sprite[(int)UiIcon.Count];
+        private static readonly Sprite[] MadeFilled = new Sprite[(int)UiIcon.Count];
         private static float[] _a;
 
-        /// <summary>A glyph's sprite, drawn on first use; null for None.</summary>
-        public static Sprite Get(UiIcon icon)
+        /// <summary>
+        /// The game's own picture for an icon where it has one (DIRECTION_CS2: the game's icons first), set by the game file;
+        /// null, or a null answer, draws the family's own. Never set offline, where the family stands in.
+        /// </summary>
+        public static Func<UiIcon, Sprite> Own;
+
+        /// <summary>
+        /// A glyph's sprite, drawn on first use. Filled asks for a duotone's solid variant, and an icon without one (the
+        /// bold chrome, the pad's glyphs) gives its main weight. Null for None.
+        /// </summary>
+        public static Sprite Get(UiIcon icon, bool filled = false)
         {
             if (icon == UiIcon.None || (int)icon >= Made.Length)
             {
                 return null;
             }
-            Sprite s = Made[(int)icon];
+            filled = filled && UiIconRaster.HasFilled(icon);
+            Sprite s = filled ? MadeFilled[(int)icon] : Made[(int)icon];
             if (s != null)
             {
                 return s;
             }
             _a = new float[Size * Size];
-            Draw(icon);
-            var px = new Color32[Size * Size];
-            for (int i = 0; i < px.Length; i++)
+            if (!UiIconRaster.Fill(icon, _a, Size, filled))
             {
-                px[i] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(Mathf.Clamp01(_a[i]) * 255f));
+                Draw(icon);
             }
-            var tex = new Texture2D(Size, Size, TextureFormat.RGBA32, false) { name = "UiIcon" + icon, wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+            var px = new Color32[Size * Size];
+            for (int y = 0; y < Size; y++)
+            {
+                int from = y * Size, to = (Size - 1 - y) * Size;   // texture rows run bottom up, the glyph's top down
+                for (int x = 0; x < Size; x++)
+                {
+                    px[to + x] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(Mathf.Clamp01(_a[from + x]) * 255f));
+                }
+            }
+            // Mips, as a row's 24 px shown straight from 96 texels skips three in four of them and breaks thin strokes up.
+            var tex = new Texture2D(Size, Size, TextureFormat.RGBA32, true)
+            {
+                name = "UiIcon" + icon + (filled ? "Filled" : ""), wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear, mipMapBias = MipBias
+            };
             tex.SetPixels32(px);
-            tex.Apply(false, true);
+            tex.Apply(true, true);
             s = Sprite.Create(tex, new Rect(0, 0, Size, Size), new Vector2(0.5f, 0.5f), 100f);
-            Made[(int)icon] = s;
+            if (filled)
+            {
+                MadeFilled[(int)icon] = s;
+            }
+            else
+            {
+                Made[(int)icon] = s;
+            }
             _a = null;
             return s;
         }
 
-        /// <summary>Draws the next glyph not yet drawn, for a warm-up spread a glyph at a time; false when all are drawn.</summary>
+        /// <summary>Draws the next glyph not yet drawn, filled variants too, for a warm-up spread a glyph at a time. False when all are drawn.</summary>
         public static bool Warm()
         {
             for (int i = 1; i < Made.Length; i++)
@@ -53,6 +86,11 @@ namespace RealLifeOverhaul.Ui
                 if (Made[i] == null)
                 {
                     Get((UiIcon)i);
+                    return true;
+                }
+                if (MadeFilled[i] == null && UiIconRaster.HasFilled((UiIcon)i))
+                {
+                    Get((UiIcon)i, true);
                     return true;
                 }
             }
@@ -80,73 +118,6 @@ namespace RealLifeOverhaul.Ui
         {
             switch (g)
             {
-                case UiIcon.Search: Ring(10.5f, 10.5f, 6.5f); Line(15.5f, 15.5f, 20.5f, 20.5f); break;
-                case UiIcon.Check: Poly(4.5f, 12.5f, 9.5f, 17.5f, 19.5f, 6.5f); break;
-                case UiIcon.Close: Line(6f, 6f, 18f, 18f); Line(18f, 6f, 6f, 18f); break;
-                case UiIcon.Back: Poly(15f, 5f, 8f, 12f, 15f, 19f); break;
-                case UiIcon.Next: Poly(9f, 5f, 16f, 12f, 9f, 19f); break;
-                case UiIcon.Up: Poly(5f, 15f, 12f, 8f, 19f, 15f); break;
-                case UiIcon.Down: Poly(5f, 9f, 12f, 16f, 19f, 9f); break;
-                case UiIcon.Phone:
-                    Poly(6.5f, 3.5f, 9.5f, 3.5f, 11f, 8f, 8.8f, 9.6f);
-                    Arc(17.5f, 6.5f, 11f, 90f, 180f);
-                    Poly(14.4f, 15.2f, 16f, 13f, 20.5f, 14.5f, 20.5f, 17.5f);
-                    Line(20.5f, 17.5f, 18f, 20.5f);
-                    Line(6.5f, 3.5f, 3.5f, 6f);
-                    break;
-                case UiIcon.Message: RoundRect(3.5f, 4.5f, 17f, 12.5f, 3f, false); Poly(8f, 17f, 7f, 20.5f, 12f, 17f); break;
-                case UiIcon.Send: Poly(3.5f, 11.5f, 20.5f, 3.5f, 13f, 20.5f, 10.5f, 13.5f, 3.5f, 11.5f); Line(10.5f, 13.5f, 20.5f, 3.5f); break;
-                case UiIcon.Pin: Ring(12f, 8.5f, 4.5f); Line(12f, 13f, 12f, 20.5f); break;
-                case UiIcon.Plus: Line(12f, 5f, 12f, 19f); Line(5f, 12f, 19f, 12f); break;
-                case UiIcon.Minus: Line(5f, 12f, 19f, 12f); break;
-                case UiIcon.Person: Ring(12f, 8f, 4f); Arc(12f, 21f, 7.5f, 180f, 360f); break;
-                case UiIcon.People: Ring(9f, 8.5f, 3.5f); Arc(9f, 20.5f, 6f, 180f, 360f); Arc(16.5f, 8.5f, 3f, 290f, 430f); Arc(16.5f, 20.5f, 5f, 270f, 360f); break;
-                case UiIcon.Briefcase: RoundRect(3.5f, 7.5f, 17f, 12.5f, 2.5f, false); Poly(9f, 7.5f, 9f, 4.5f, 15f, 4.5f, 15f, 7.5f); Line(3.5f, 13f, 20.5f, 13f); break;
-                case UiIcon.Building:
-                    RoundRect(5.5f, 3.5f, 13f, 17f, 1.5f, false);
-                    Dot(9.5f, 8f, 1.2f); Dot(14.5f, 8f, 1.2f); Dot(9.5f, 12.5f, 1.2f); Dot(14.5f, 12.5f, 1.2f);
-                    Line(12f, 16.5f, 12f, 20.5f);
-                    break;
-                case UiIcon.Coin: Ring(12f, 12f, 8.5f); Line(12f, 7f, 12f, 17f); Poly(14.5f, 9f, 10.5f, 9f, 9.5f, 11f, 14.5f, 13f, 13.5f, 15f, 9.5f, 15f); break;
-                case UiIcon.Truck: RoundRect(2.5f, 6.5f, 11.5f, 10f, 1.5f, false); Poly(14f, 9.5f, 18f, 9.5f, 21f, 13f, 21f, 16.5f, 14f, 16.5f); Ring(7f, 17.5f, 2f); Ring(17f, 17.5f, 2f); break;
-                case UiIcon.Sofa: Poly(5f, 11f, 5f, 7f, 19f, 7f, 19f, 11f); RoundRect(3f, 11f, 18f, 6f, 2f, false); Line(5f, 17f, 5f, 19.5f); Line(19f, 17f, 19f, 19.5f); break;
-                case UiIcon.Flag: Line(5.5f, 3.5f, 5.5f, 20.5f); Poly(5.5f, 4.5f, 18.5f, 4.5f, 15.5f, 9f, 18.5f, 13.5f, 5.5f, 13.5f); break;
-                case UiIcon.Star: Star(false); break;
-                case UiIcon.Bell: Arc(12f, 11f, 6f, 180f, 360f); Poly(6f, 11f, 6f, 15.5f, 4f, 17.5f, 20f, 17.5f, 18f, 15.5f, 18f, 11f); Line(10.5f, 20.5f, 13.5f, 20.5f); break;
-                case UiIcon.Clock: Ring(12f, 12f, 8.5f); Poly(12f, 7f, 12f, 12f, 15.5f, 14f); break;
-                case UiIcon.Calendar: RoundRect(3.5f, 5f, 17f, 15.5f, 2.5f, false); Line(3.5f, 10f, 20.5f, 10f); Line(8f, 3f, 8f, 7f); Line(16f, 3f, 16f, 7f); break;
-                case UiIcon.MapPin: Arc(12f, 10f, 6.5f, 150f, 390f); Poly(6.4f, 13.3f, 12f, 21f, 17.6f, 13.3f); Ring(12f, 10f, 2.2f); break;
-                case UiIcon.Info: Ring(12f, 12f, 8.5f); Line(12f, 11f, 12f, 16.5f); Dot(12f, 7.75f, 1.4f); break;
-                case UiIcon.Warning: Poly(12f, 3.5f, 21f, 19.5f, 3f, 19.5f, 12f, 3.5f); Line(12f, 9.5f, 12f, 13.5f); Dot(12f, 16.5f, 1.4f); break;
-                case UiIcon.Trash: Line(4f, 6.5f, 20f, 6.5f); Poly(9f, 6.5f, 9f, 3.5f, 15f, 3.5f, 15f, 6.5f); Poly(6f, 6.5f, 7f, 20.5f, 17f, 20.5f, 18f, 6.5f); break;
-                case UiIcon.Chart: Line(4f, 20f, 20f, 20f); Line(7f, 20f, 7f, 13f); Line(12f, 20f, 12f, 8f); Line(17f, 20f, 17f, 4.5f); break;
-                case UiIcon.Heart: Heart(); break;
-                case UiIcon.Home: Poly(3.5f, 11f, 12f, 3.5f, 20.5f, 11f); Poly(6f, 9f, 6f, 20f, 18f, 20f, 18f, 9f); Line(12f, 15f, 12f, 20f); break;
-                case UiIcon.Store:
-                    Poly(3.5f, 9f, 5f, 4f, 19f, 4f, 20.5f, 9f, 3.5f, 9f);
-                    Poly(5f, 9f, 5f, 20f, 19f, 20f, 19f, 9f);
-                    Poly(9.5f, 20f, 9.5f, 14f, 14.5f, 14f, 14.5f, 20f);
-                    break;
-                case UiIcon.Wrench: Arc(15.5f, 8.5f, 4.5f, 120f, 420f); Line(12.3f, 11.7f, 4.5f, 19.5f); break;
-                case UiIcon.Cap:
-                    Poly(2.5f, 9f, 12f, 4.5f, 21.5f, 9f, 12f, 13.5f, 2.5f, 9f);
-                    Poly(6.5f, 11f, 6.5f, 16f, 12f, 18.5f, 17.5f, 16f, 17.5f, 11f);
-                    Line(21.5f, 9f, 21.5f, 14.5f);
-                    break;
-                case UiIcon.Bank:
-                    Poly(3f, 9f, 12f, 3.5f, 21f, 9f, 3f, 9f);
-                    Line(6f, 11.5f, 6f, 17.5f);
-                    Line(10f, 11.5f, 10f, 17.5f);
-                    Line(14f, 11.5f, 14f, 17.5f);
-                    Line(18f, 11.5f, 18f, 17.5f);
-                    Line(3f, 20.5f, 21f, 20.5f);
-                    break;
-                case UiIcon.Gear: Gear(); break;
-                case UiIcon.Sun: Ring(12f, 12f, 4f); Rays(12f, 12f, 7f, 9.5f, 8); break;
-                case UiIcon.Moon: Arc(12f, 12f, 8.5f, 70f, 380f); Arc(16.5f, 8f, 6.5f, 110f, 340f); break;
-                case UiIcon.Spark: Sparkle(); break;
-                case UiIcon.TrendUp: Poly(3.5f, 17f, 9.5f, 11f, 13.5f, 15f, 20.5f, 7.5f); Poly(15f, 7.5f, 20.5f, 7.5f, 20.5f, 13f); break;
-                case UiIcon.TrendDown: Poly(3.5f, 7f, 9.5f, 13f, 13.5f, 9f, 20.5f, 16.5f); Poly(15f, 16.5f, 20.5f, 16.5f, 20.5f, 11f); break;
                 case UiIcon.Arrows: Tri(12f, 1.5f, 16.5f, 8f, 7.5f, 8f); Tri(12f, 22.5f, 7.5f, 16f, 16.5f, 16f); Tri(1.5f, 12f, 8f, 7.5f, 8f, 16.5f); Tri(22.5f, 12f, 16f, 16.5f, 16f, 7.5f); break;
                 case UiIcon.PadDpad:
                     RoundRect(9f, 3f, 6f, 18f, 1.5f, true);
@@ -158,49 +129,6 @@ namespace RealLifeOverhaul.Ui
                 case UiIcon.PadTriangle: Poly(12f, 5.5f, 18.5f, 17f, 5.5f, 17f, 12f, 5.5f); break;
                 default:
                     break;   // the lettered pad buttons: their shape is the key cap, their letter the font's
-            }
-        }
-
-        // ------------------------------------------------------------------------------------------------- forms
-
-        private static void Star(bool fill)
-        {
-            var pts = new float[22];
-            for (int i = 0; i <= 10; i++)
-            {
-                float r = i % 2 == 0 ? 8.5f : 3.8f;
-                float a = (-90f + i * 36f) * Mathf.Deg2Rad;
-                pts[i * 2] = 12f + Mathf.Cos(a) * r;
-                pts[i * 2 + 1] = 12.6f + Mathf.Sin(a) * r;
-            }
-            Poly(pts);
-        }
-
-        private static void Heart()
-        {
-            Arc(8.5f, 9f, 4.2f, 135f, 360f);
-            Arc(15.5f, 9f, 4.2f, 180f, 405f);
-            Poly(5.5f, 12f, 12f, 19.5f, 18.5f, 12f);
-        }
-
-        private static void Gear()
-        {
-            Ring(12f, 12f, 3f);
-            Ring(12f, 12f, 7f);
-            Rays(12f, 12f, 7.5f, 9.8f, 8);
-        }
-
-        private static void Sparkle()
-        {
-            Poly(12f, 3.5f, 13.6f, 10.4f, 20.5f, 12f, 13.6f, 13.6f, 12f, 20.5f, 10.4f, 13.6f, 3.5f, 12f, 10.4f, 10.4f, 12f, 3.5f);
-        }
-
-        private static void Rays(float cx, float cy, float r0, float r1, int count)
-        {
-            for (int i = 0; i < count; i++)
-            {
-                float a = i * Mathf.PI * 2f / count;
-                Line(cx + Mathf.Cos(a) * r0, cy + Mathf.Sin(a) * r0, cx + Mathf.Cos(a) * r1, cy + Mathf.Sin(a) * r1);
             }
         }
 
@@ -249,19 +177,6 @@ namespace RealLifeOverhaul.Ui
                 }
                 px = x;
                 py = y;
-            }
-        }
-
-        private static void Dot(float cx, float cy, float r)
-        {
-            float rr = r * Unit, x0 = cx * Unit, y0 = cy * Unit;
-            for (int y = Mathf.Max(0, (int)(y0 - rr - 2)); y <= Mathf.Min(Size - 1, (int)(y0 + rr + 2)); y++)
-            {
-                for (int x = Mathf.Max(0, (int)(x0 - rr - 2)); x <= Mathf.Min(Size - 1, (int)(x0 + rr + 2)); x++)
-                {
-                    float dx = x + 0.5f - x0, dy = y + 0.5f - y0;
-                    Cover(x, y, rr - Mathf.Sqrt(dx * dx + dy * dy));
-                }
             }
         }
 
@@ -326,11 +241,11 @@ namespace RealLifeOverhaul.Ui
             return len < 1e-4f ? 0f : (ex * (py - ay) - ey * (px - ax)) / len;
         }
 
-        // Texture rows run bottom up; the grid runs top down.
+        // The glyph's grid and the map both run top down, the way UiIconRaster fills it.
         private static void Cover(int x, int y, float inside)
         {
             float a = Mathf.Clamp01(inside + 0.5f);
-            int i = (Size - 1 - y) * Size + x;
+            int i = y * Size + x;
             if (a > _a[i])
             {
                 _a[i] = a;

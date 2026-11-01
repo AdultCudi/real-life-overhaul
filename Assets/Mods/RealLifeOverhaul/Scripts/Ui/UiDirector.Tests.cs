@@ -67,7 +67,7 @@ namespace RealLifeOverhaul.Ui
                     host.Hide();
                     host.gameObject.SetActive(false);
                     Destroy(host.gameObject);
-                });
+                }, UiIcon.People);
             }
             catch (Exception e)
             {
@@ -76,7 +76,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         // A canvas of its own over every other, scaled as the game's, with a host for one screen on it.
-        internal UiHost Overlay(IUiScreen screen, string title, Action<UiHost> closing)
+        internal UiHost Overlay(IUiScreen screen, string title, Action<UiHost> closing, UiIcon icon = UiIcon.None)
         {
             var go = new GameObject("RealLife Interface " + screen.Id, typeof(RectTransform));
             var canvas = go.AddComponent<Canvas>();
@@ -90,7 +90,7 @@ namespace RealLifeOverhaul.Ui
             var blocker = go.AddComponent<Image>();
             blocker.color = new Color(0f, 0f, 0f, 0f);   // takes the clicks the game's own screen under it would otherwise get
             var host = go.AddComponent<UiHost>();
-            host.Bind(screen, UiGame.Instance, UiGame.Instance, Dark, Motion, UiFrame.MastheadHeight, UiFrame.BandHeight, title);
+            host.Bind(screen, UiGame.Instance, UiGame.Instance, Dark, Motion, UiFrame.MastheadHeight, UiFrame.BandHeight, title, icon);
             host.View.Scale = UiTokens.CanvasPerPx;
             closing(host);
             host.Show();
@@ -113,7 +113,7 @@ namespace RealLifeOverhaul.Ui
                     return;
                 }
                 var screen = new FlareCityScreen();
-                Overlay(screen, UiText.T("reallife_ui_page_flare"), host => screen.Close = () => Destroy(host.gameObject));
+                Overlay(screen, UiText.T("reallife_ui_page_flare"), host => screen.Close = () => Destroy(host.gameObject), UiIcon.Fire);
             }
             catch (Exception e)
             {
@@ -142,7 +142,7 @@ namespace RealLifeOverhaul.Ui
                 Tech.TechDirector d = Tech.TechDirector.Instance;
                 string place = d != null && d.FirmPlaces.Count > 0 ? d.FirmPlaces[0].File.Place : null;
                 var screen = new StudioPageScreen(place);
-                Overlay(screen, UiText.T("reallife_ui_page_studio"), host => screen.Close = () => Destroy(host.gameObject));
+                Overlay(screen, UiText.T("reallife_ui_page_studio"), host => screen.Close = () => Destroy(host.gameObject), UiIcon.GameController);
             }
             catch (Exception e)
             {
@@ -201,7 +201,8 @@ namespace RealLifeOverhaul.Ui
                 _gallery.SetActive(false);
             };
             _galleryHost = _gallery.AddComponent<UiHost>();
-            _galleryHost.Bind(screen, UiGame.Instance, UiGame.Instance, Dark, Motion, UiFrame.MastheadHeight, UiFrame.BandHeight, UiText.T("reallife_ui_gallery_title"));
+            _galleryHost.Bind(screen, UiGame.Instance, UiGame.Instance, Dark, Motion, UiFrame.MastheadHeight, UiFrame.BandHeight, UiText.T("reallife_ui_gallery_title"),
+                UiIcon.Grid);
             _galleryHost.View.Scale = UiTokens.CanvasPerPx;
         }
     }

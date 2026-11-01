@@ -14,6 +14,8 @@ graphics card: it renders with graphics, so no -nographics. Exit code 0 = every 
 param(
     [string]$Out = (Join-Path $PSScriptRoot '..\..\..\not-in-repo\previews\ui'),
     [string]$Only = '',
+    [string]$Set = '',          # cs2: the prototype's six screens over the game's world (needs -Backdrops)
+    [string]$Backdrops = '',    # a folder of the game's own street pictures, local only, never committed
     [string]$Unity = 'C:\Program Files\Unity\Hub\Editor\2022.3.62f2\Editor\Unity.exe'
 )
 $ErrorActionPreference = 'Stop'
@@ -35,7 +37,7 @@ Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui') -Filte
     -not ($gameFiles | Where-Object { $name -like $_ })
 } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Copy-Item (Join-Path $PSScriptRoot 'PreviewStubs.cs') (Join-Path $preview 'Kit')
-Copy-Item (Join-Path $PSScriptRoot 'UiSamples.cs') (Join-Path $preview 'Kit')
+Get-ChildItem $PSScriptRoot -Filter 'UiSamples*.cs' | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Copy-Item (Join-Path $PSScriptRoot 'UiPreviewRunner.cs') (Join-Path $preview 'Editor')
 
 New-Item -ItemType Directory -Force $Out | Out-Null
@@ -44,6 +46,8 @@ $log = Join-Path $project 'Logs\preview.log'
 New-Item -ItemType Directory -Force (Split-Path $log) | Out-Null
 $arguments = @('-batchmode', '-quit', '-projectPath', "`"$project`"", '-executeMethod', 'UiPreviewRunner.Render', '-bundle', "`"$bundle`"", '-out', "`"$Out`"", '-logFile', "`"$log`"")
 if ($Only) { $arguments += @('-only', $Only) }
+if ($Set) { $arguments += @('-set', $Set) }
+if ($Backdrops) { $arguments += @('-backdrops', "`"$Backdrops`"") }
 $process = Start-Process -FilePath $Unity -ArgumentList $arguments -Wait -PassThru -NoNewWindow
 if (Test-Path $log) { Select-String -Path $log -Pattern '^\[UiPreview\]' | ForEach-Object { $_.Line } }
 if ($process.ExitCode -ne 0) {

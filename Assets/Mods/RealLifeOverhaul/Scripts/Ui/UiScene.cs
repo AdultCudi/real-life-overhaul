@@ -12,7 +12,9 @@ namespace RealLifeOverhaul.Ui
         Spark,        // a sparkline: Points the values
         KeyCap,       // a prompt's key: Text is the key's name, or Icon the button's glyph
         Busy,         // three dots that beat while a loading state shows
-        HueDot        // a small circle in a hue's own colour (Value is the hue): a group's dot
+        HueDot,       // a small circle in a hue's own colour (Value is the hue): a group's dot
+        Slice,        // a donut's slice, drawn from the top clockwise to Value of the turn: slices lay over each other, the last first
+        Portrait      // a person's painted face (UiPortraits): Text is the name it is picked by, Value the hue of its ground
     }
 
     /// <summary>What an item is, beyond its kind: how its words sit and what the checks may allow it.</summary>
@@ -34,7 +36,8 @@ namespace RealLifeOverhaul.Ui
         Share = 2048,      // placed by a share of its parent's width (a segment, a slider's knob): its left is not a grid step
         CountUp = 4096,    // a figure that ticks up from nothing as it arrives
         Prompt = 8192,     // part of the prompt bar, on the game's own bottom bar rather than a panel
-        Panel = 16384      // a screen's framed panel: the theme may mark its head (the Ledger's column rule), drawn by the view alone
+        Panel = 16384,     // a screen's framed panel
+        Chrome = 32768     // a window's title strip or the status bar: the screen's frame, not the page's own words
     }
 
     /// <summary>One thing drawn: its kind, its box in px and how it is painted, by role and style only.</summary>
@@ -126,6 +129,8 @@ namespace RealLifeOverhaul.Ui
         public bool Dark;
         public int FocusFirst = -1;      // the node focus starts on
         public bool FocusReset;          // a new page: focus goes to FocusFirst (the row Back came from), not to the old page's target of the same number
+        public bool Pointer;             // the mouse leads: buttons leave their key caps off, as the mouse presses by pointing
+        public bool Floats;              // the page floats over the world (a docked panel, a card, the phone), never meant to fill the screen
         public string Name;              // the screen's id, for the checks' messages
         public float PromptX, PromptY, PromptW, PromptH;   // where the prompt bar stands
 
@@ -139,6 +144,8 @@ namespace RealLifeOverhaul.Ui
             ItemCount = NodeCount = ClipCount = ListCount = PromptCount = 0;
             FocusFirst = -1;
             FocusReset = false;
+            Pointer = false;
+            Floats = false;
             PromptW = PromptH = 0f;
         }
 
@@ -161,7 +168,7 @@ namespace RealLifeOverhaul.Ui
                 Array.Resize(ref Nodes, Nodes.Length * 2);
             }
             Nodes[NodeCount] = node;
-            if (FocusFirst < 0 && !node.Disabled && node.Layer == 0)
+            if (FocusFirst < 0 && !node.Disabled && node.Layer == 0 && node.Command != UiDraw.CloseCommand)   // a pad's first press would close the window
             {
                 FocusFirst = NodeCount;
             }

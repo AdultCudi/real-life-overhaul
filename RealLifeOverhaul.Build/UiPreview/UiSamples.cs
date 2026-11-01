@@ -5,10 +5,10 @@ using RealLifeOverhaul.Ui;
 // contacts_source.html), for the offline previews and EconomyCheck's layout checks. Fixtures, never shipped: the mod's
 // screens build their models from the game's data and the locale keys. Words a screen labels with go through the given
 // text source, so the checks measure every language; the fixtures' names and messages stay as the wireframe has them.
-internal static class UiSamples
+internal static partial class UiSamples
 {
     /// <summary>The masthead's money, day and time in every preview and check: the game's own bar writes them so.</summary>
-    public const string Status = "$48,210     Tuesday (Day 12)     14:32";
+    public const string Status = "$48,210     Tuesday (Day 412)     14:32";
 
     /// <summary>A screen of the overhaul drawn from its own view model, with the app it stands in.</summary>
     public sealed class Sample
@@ -650,7 +650,7 @@ internal static class UiSamples
         {
             AppName = t("reallife_ui_contacts_app", "Contacts"),
             GroupsLabel = t("reallife_ui_contacts_groups", "Groups"),
-            PlayerName = "Richy Man",
+            PlayerName = "Alex Carter",
             PlayerHue = 40f,
             PlayerSummary = "13 contacts · 5 unread",
             ListTitle = t("reallife_ui_contacts_all", "All contacts"),
@@ -699,18 +699,19 @@ internal static class UiSamples
         m.Rows = new[]
         {
             Row("Luis Romero", "Van needs fuel before the afternoon run. Okay to use the company card?", "10:02", 1, 155f, true, false, false, t("reallife_ui_contacts_new", "New messages")),
-            Row("Uncle Fred", "Good. Once you’ve got keys, open your first shop. I’ll check in.", "09:02", 1, 40f, true, false, false, null),
-            Row("Anderson Recruitment Corp.", "Shall I send the shortlist over?", "08:52", 2, 320f, true, true, false, null),
-            Row("City Office", "Fine of $125 deducted from your bank account.", "07:40", 1, 300f, false, true, false, null),
-            Row("Maya Okafor", "Happy to cover Tuesday evenings instead.", "09:15", 0, 12f, true, false, true, t("reallife_ui_contacts_earlier", "Earlier")),
-            Row("NY AutoTow Service", "Stuck somewhere? One call and we’ll haul you out, any hour.", "Sun", 0, 230f, true, false, false, null),
-            Row("City Workforce Inc.", "Your HQ application is approved. Let us know which roles to fill.", "Thu", 0, 275f, true, false, false, null),
-            Row("CityAds", "Your billboard on 7th Ave ends Friday. Renew?", "Wed", 0, 350f, false, false, false, null),
+            Row("Uncle Fred", "Proud of you, kid. Dinner on Sunday? Your aunt is making lasagne.", "09:02", 1, 40f, true, false, false, null),
+            Row("Anderson Recruitment Corp.", "Shall I send the shortlist over?", "08:52", 2, 320f, true, false, false, null),
+            Row("City Office", "Fine of $125 deducted from your bank account.", "07:40", 1, 300f, false, false, false, null),
+            Row("Maya Okafor", "You: Let me look at the rota tonight.", "09:20", 0, 12f, true, false, true, t("reallife_ui_contacts_earlier", "Earlier")),
+            // Newest first on a Tuesday: yesterday, then each day back, weekday names only for the last six days.
             Row("McCain’s eMarketing", "Click-through on your last campaign was up 14%.", "Mon", 0, 200f, true, false, false, null),
             Row("Hana Sato", "Requesting a better desk chair. My back is filing a complaint.", "Mon", 0, 180f, false, false, false, null),
+            Row("NY AutoTow Service", "Stuck somewhere? One call and we’ll haul you out, any hour.", "Sun", 0, 230f, true, false, false, null),
             Row("Harbor Line Wholesale", "Container of coffee beans landed. Your Monday delivery is on track.", "Sat", 0, 75f, true, false, false, null),
             Row("Lumen & Oak Interiors", "The walnut counters you asked about are back in stock.", "Fri", 0, 50f, true, false, false, null),
+            Row("City Workforce Inc.", "Your HQ application is approved. Let us know which roles to fill.", "Thu", 0, 275f, true, false, false, null),
             Row("Vex Holdings", "Cute little café. Shame if the block got crowded.", "Thu", 0, 25f, false, false, false, null),
+            Row("CityAds", "Your billboard on 7th Ave ends Friday. Renew?", "Wed", 0, 350f, false, false, false, null),
         };
         m.RowCount = m.Rows.Length;
         m.Actions = new[]
@@ -723,7 +724,7 @@ internal static class UiSamples
         m.ActionCount = m.Actions.Length;
         m.Messages = new[]
         {
-            new UiMessageModel { From = UiFrom.Them, Text = "Morning! Café’s busy, the new grinder is great.", Time = "07:58" },
+            new UiMessageModel { From = UiFrom.Them, Text = "Morning. The café is busy today.", Time = "07:58" },
             new UiMessageModel { From = UiFrom.Them, Text = "Could I drop the Sunday shift? I’ve picked up a class on weekends.", Time = "09:14" },
             new UiMessageModel { From = UiFrom.Them, Text = "Happy to cover Tuesday evenings instead.", Time = "09:15" },
             new UiMessageModel { From = UiFrom.Me, Text = "Let me look at the rota tonight.", Time = "09:20" },
@@ -735,7 +736,7 @@ internal static class UiSamples
         {
             new UiServiceModel { Title = "Approve schedule change", Price = t("reallife_ui_price_free", "Free"), About = "Remove her Sunday shift." },
             new UiServiceModel { Title = "Pay a bonus", Price = "$200", About = "Raises satisfaction for a few weeks." },
-            new UiServiceModel { Title = "Negotiate salary", Price = t("reallife_ui_price_quote", "Quote"), About = "Currently $22/h. She’s asking for $24/h." },
+            new UiServiceModel { Title = "Negotiate salary", Price = "$24/h", About = "Currently $22/h. She’s asking for $24/h." },
         };
         m.ServiceCount = m.Services.Length;
         m.Stats = new[]

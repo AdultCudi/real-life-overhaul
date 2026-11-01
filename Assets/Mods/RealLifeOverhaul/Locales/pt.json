@@ -27964,7 +27964,7 @@
   "reallife_ui_gallery_satisfaction": "Satisfação",
   "reallife_ui_gallery_energy": "Energia",
   "reallife_ui_enabled": "Interface RLO",
-  "reallife_opt_tip_ui_interface": "Desenha os Contatos e as telas da reformulação no design do mod, o City Ledger. Desligado: as telas do próprio jogo. Escuro ou claro segue a opção de aparência do Flare.",
+  "reallife_opt_tip_ui_interface": "Desenha os Contatos e as telas da reformulação no design do mod: painéis cor de ardósia sobre a cidade, ícones coloridos e uma barra de status embaixo. Desligado: as telas do próprio jogo.",
   "reallife_ui_motion": "Movimento da interface",
   "reallife_opt_tip_ui_motion": "Como a interface RLO se move: completo, calmo (mais lento e curto) ou desligado.",
   "reallife_ui_motion_0": "Completo",
@@ -28117,5 +28117,6 @@
   "reallife_ui_when_days": "Há {days} dias",
   "reallife_ui_pop_gone_named": "{name} se mudou.",
   "reallife_studio_page_no_games_hire": "Nenhum jogo ainda. Contrate uma equipe primeiro e depois crie um conceito.",
-  "reallife_tech_mkt_page_ready": "Pronto para lançar"
+  "reallife_tech_mkt_page_ready": "Pronto para lançar",
+  "reallife_ui_gallery_page_icons": "Ícones"
 }

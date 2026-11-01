@@ -1,6 +1,7 @@
 # 0007: The RLO interface, the mod's own designed screens
 
 **Status:** Accepted. **Date:** 1 November 2026. Amends [0002](0002-game-ui-only.md) for the screens drawn on the kit.
+Its look is amended by [0008](0008-cs2-interface-look.md).
 
 ## Context
 
@@ -14,8 +15,8 @@ the owner chose the City Ledger from a study of three directions.
 
 Screens of the overhaul, and the game apps the mod redraws (Contacts first), are drawn on the mod's own interface kit:
 
-- The kit is `Scripts/Ui`, with its own fonts (Source Serif 4, Libre Franklin; SIL Open Font License) and its tokens,
-  components and templates.
+- The kit is `Scripts/Ui`, with its own font (Overpass, SIL Open Font License, since [0008](0008-cs2-interface-look.md))
+  and its tokens, components and templates.
 - It is laid out by game-free code and checked offline in every language, look and frame (`docs/standards/ui.md`).
 - It sits behind the switch "RLO interface", under Living population.
 - A redrawn game app keeps the game's object alive underneath and presses its buttons, so the game's logic stays the

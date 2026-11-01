@@ -63,7 +63,7 @@ namespace RealLifeOverhaul.Ui
             s.Begin("dashboard", frame.Width, frame.Height, dark);
             frame.Content(out float cx, out float cy, out float cw, out float ch);
             UiAt screen = UiAt.Screen;
-            int bg = UiDraw.Box(s, screen, 0f, 0f, frame.Width, frame.Height, UiRole.Bg, UiRole.None, 0f, UiFlags.Decor);   // the host's whole area
+            int bg = UiDraw.Window(s, frame, m.Shape == UiPageShape.Profile ? null : m.Title, keys);   // the app's window over the world, the place in its strip
             UiAt at = screen.In(bg);
             float y = cy + Lead(s, at, m, cx, cy, cw, keys);
             if (m.Shape != UiPageShape.Board)
@@ -109,7 +109,9 @@ namespace RealLifeOverhaul.Ui
             // Nearly level: one foot reads tidier than a step of a few px. Two tables level only by what their padding and the
             // step together keep within the slack a frame may hold.
             float level = m.More != null && m.More.Columns.Length > 0 ? UiTokens.MostSlack - UiTokens.S6 : UiTokens.MostSlack;
-            if (side && Math.Abs(leftH - sideH) <= level)
+            // The side grows to the table's foot only as far as its frame may hold nothing under its last line.
+            bool levels = leftH >= sideH ? leftH - sideH <= Math.Min(level, UiTokens.MostSlack - SideSlack(m, pairs, stats)) : sideH - leftH <= level;
+            if (side && levels)
             {
                 s.Items[foot].H += Math.Max(0f, sideH - leftH);
                 sideH = Math.Max(sideH, leftH);
@@ -275,12 +277,20 @@ namespace RealLifeOverhaul.Ui
 
         private const int NoteLines = 4;
 
+        // What the side holds under its last line as laid: its padding, and the part of a pair's row under its words when the
+        // pairs come last.
+        private static float SideSlack(UiDashboardModel m, int pairs, int stats)
+        {
+            bool pairsLast = pairs > 0 && (m.StatsFirst || stats == 0);
+            return UiTokens.S5 + (pairsLast ? (UiTokens.PairRow - UiTextRules.LineHeight(UiStyle.Body)) / 2f : 0f);
+        }
+
         // How many of the side's pairs and bars fit a height, the first block before the second, and the height they take
         // with the panel's padding: a block stops at its last whole line, so nothing spills from the frame.
         private static float SideFit(UiDashboardModel m, float most, out int pairs, out int stats)
         {
             float head = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader));
-            float bar = UiDraw.Snap(UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2 + UiTokens.Segment);
+            float bar = UiDraw.Snap(UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2 + UiTokens.S1);   // a stat bar's words over its thin track
             float h = UiTokens.S5;
             pairs = stats = 0;
             bool first = true;

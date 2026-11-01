@@ -257,6 +257,55 @@ namespace RealLifeOverhaul.Ui
             return save.Money.ToShortCurrencyFormat(abbreviated: true) + "     " + LocalizorManager.GetLocalization("timestamp_full", new { day = now.Day, time });
         }
 
+        /// <summary>
+        /// The status bar from the save: the time, the day and the money as the game's own bar writes them. The needs, the
+        /// season and the toolbar's apps wait for the HUD wave, which wires them to the game; their pills stay out till then.
+        /// </summary>
+        public static UiStatusModel Bar()
+        {
+            try
+            {
+                return BarNow();
+            }
+            catch (Exception e) when (Guard.Missing(e))
+            {
+                Guard.DoesWithout(e, "the money and the time in the RLO interface's status bar");
+                UiChrome.Bar = null;
+                return null;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static UiStatusModel BarNow()
+        {
+            GameInstance save = SaveGameManager.Current;
+            if (save == null)
+            {
+                return null;
+            }
+            Timestamp now = TimeHelper.Now();
+            string time = now.Hour.ToString("00", CultureInfo.InvariantCulture) + ":" + ((int)now.Minute).ToString("00", CultureInfo.InvariantCulture);
+            string day = LocalizorManager.GetLocalization("timestamp_full", new { day = now.Day, time = string.Empty }).Trim();
+            return new UiStatusModel { Time = time, Day = day, Money = save.Money.ToShortCurrencyFormat(abbreviated: true) };
+        }
+
+        /// <summary>The game's own pictures the kit uses in place of the family's, named for the look behind the loading screen.</summary>
+        public static readonly string[] OwnIconNames = { "Icon-Info", "Icon-Notifications", "Icon-ExclamationMark", "Icon-SetDestination", "Icon-Calendar" };
+
+        /// <summary>The game's own picture for an icon, where it has one and it has been found; null for the family's own.</summary>
+        public static UnityEngine.Sprite OwnIcon(UiIcon icon)
+        {
+            switch (icon)
+            {
+                case UiIcon.Info: return RealLifeOverhaul.GameUi.GameSprites.Get(OwnIconNames[0]);
+                case UiIcon.Bell: return RealLifeOverhaul.GameUi.GameSprites.Get(OwnIconNames[1]);
+                case UiIcon.Warning: return RealLifeOverhaul.GameUi.GameSprites.Get(OwnIconNames[2]);
+                case UiIcon.Locate: return RealLifeOverhaul.GameUi.GameSprites.Get(OwnIconNames[3]);
+                case UiIcon.Calendar: return RealLifeOverhaul.GameUi.GameSprites.Get(OwnIconNames[4]);
+                default: return null;
+            }
+        }
+
         // ------------------------------------------------------------------------------------------------- fonts
 
         /// <summary>The game's own font as the faces' last fallback, once it is known (behind a black screen); true when set.</summary>

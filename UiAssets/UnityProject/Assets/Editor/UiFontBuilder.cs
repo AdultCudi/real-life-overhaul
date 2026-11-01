@@ -11,9 +11,8 @@ using UnityEngine.TextCore.LowLevel;
 
 /// <summary>
 /// Turns the static fonts cut by UiAssets/scripts/fonts.py into the interface's TextMeshPro font assets and the bundle the
-/// mod ships (reallife_ui): one signed distance field atlas a weight, Sora's falling back to Manrope of the same weight for
-/// the Cyrillic and Greek Sora does not draw, each family's weights in each other's weight table, the faces' list and the
-/// two licences as text assets. Static atlases: the game never rasterises a glyph while it is played. Built with the
+/// mod ships (reallife_ui): one signed distance field atlas a weight of Overpass, its weights in each other's weight table,
+/// the faces' list and the licences of the font and of the icons as text assets. Static atlases: the game never rasterises a glyph while it is played. Built with the
 /// game's TextMeshPro (3.2.0-pre.10) so the assets read as the game's own. Run from the command line (see build.ps1):
 ///   Unity.exe -batchmode -quit -projectPath . -executeMethod UiFontBuilder.Prepare
 ///   Unity.exe -batchmode -quit -projectPath . -executeMethod UiFontBuilder.Build -fontsFolder path -outFolder path
@@ -30,12 +29,12 @@ public static class UiFontBuilder
     private const int Padding = 5;         // px of distance field around a glyph, a tenth of the em as TextMeshPro's own default
     private const int Version = 1;
 
-    // The City Ledger's faces: Source Serif 4's display cut for heads, its text cut for reading, Libre Franklin for the
-    // paper's labels and figures (UiAssets/scripts/fonts.py cuts them; UiTokens names them by family and weight).
-    private static readonly string[] Families = { "SerifDisplay", "SerifDisplay", "Serif", "Serif", "Franklin", "Franklin", "Franklin" };
-    private static readonly string[] Styles = { "SemiBold", "Bold", "Medium", "Bold", "SemiBold", "Bold", "ExtraBold" };
-    private static readonly int[] Weights = { 600, 700, 500, 700, 600, 700, 800 };
-    private static readonly string[] Licences = { "OFL-SourceSerif4", "OFL-LibreFranklin" };
+    // Overpass in the three weights the type scale names (UiAssets/scripts/fonts.py cuts them; UiTokens names them by
+    // family and weight). The icons are drawn in code from Phosphor's paths, so only their licence travels here.
+    private static readonly string[] Families = { "Overpass", "Overpass", "Overpass" };
+    private static readonly string[] Styles = { "Regular", "SemiBold", "Bold" };
+    private static readonly int[] Weights = { 400, 600, 700 };
+    private static readonly string[] Licences = { "OFL-Overpass", "LICENSE-Phosphor" };
     private static readonly Vector2Int[] AtlasSizes = { new Vector2Int(1024, 1024), new Vector2Int(2048, 1024), new Vector2Int(2048, 2048) };
 
     [Serializable]
@@ -180,8 +179,8 @@ public static class UiFontBuilder
         return null;
     }
 
-    // Sora's weights fall back to Manrope's of the same weight (Cyrillic, Greek); each family's weights stand in each
-    // other's weight table, so <b> and a text's weight pick the family's own cut, not a thickened copy.
+    // A family's weights stand in each other's weight table, so <b> and a text's weight pick the family's own cut, not a
+    // thickened copy.
     private static void Tie(Dictionary<string, TMP_FontAsset> made)
     {
         for (int f = 0; f < Families.Length; f++)
@@ -230,16 +229,15 @@ public static class UiFontBuilder
                 {
                     Fail(entry.asset + " is not static, or keeps its source font");
                 }
-                if (entry.family == "Sora" && (asset.fallbackFontAssetTable == null || asset.fallbackFontAssetTable.Count != 1))
-                {
-                    Fail(entry.asset + " does not fall back to Manrope");
-                }
                 entry.bytes = Profiler.GetRuntimeMemorySizeLong(asset.atlasTexture);
                 total += entry.bytes;
             }
-            if (bundle.LoadAsset<TextAsset>("OFL-SourceSerif4") == null || bundle.LoadAsset<TextAsset>("OFL-LibreFranklin") == null)
+            foreach (string licence in Licences)
             {
-                Fail("a licence is missing from the bundle");
+                if (bundle.LoadAsset<TextAsset>(licence) == null)
+                {
+                    Fail("the licence " + licence + " is missing from the bundle");
+                }
             }
             list.totalBytes = total;
             Directory.CreateDirectory(Path.GetDirectoryName(contents));

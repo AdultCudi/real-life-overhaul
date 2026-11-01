@@ -2,54 +2,15 @@ using System;
 
 namespace RealLifeOverhaul.Ui
 {
-    /// <summary>The kit's overlays: the prompt bar, a question, the call, and the toast.</summary>
+    /// <summary>The kit's overlays: the status bar's prompts, a question, the call, and the toast.</summary>
     public static partial class UiDraw
     {
         /// <summary>
-        /// The frame's own bars, flat: the masthead (the app, the place the page shows, the money and time, the rule) and
-        /// the band's hairline. Never a target. The place stands after the app's name in the masthead rather than as a
-        /// heading of its own, so no page repeats the masthead's words under it ("The city's people" twice), and it is left
-        /// out when it is the app's own name.
+        /// The templates' last call, kept: the window's strip already says where the page is (UiDraw.Window) and the status
+        /// bar says the money, the day and the time (UiDraw.StatusBar), so nothing is left to draw here.
         /// </summary>
         public static void Chrome(UiScene s, UiFrame frame, string place = null)
         {
-            if (frame.Top > 0f)
-            {
-                int bar = Box(s, UiAt.Screen, 0f, 0f, frame.Width, frame.Top, UiRole.Header, UiRole.None, 0f, UiFlags.Decor);
-                UiAt on = UiAt.Screen.In(bar);
-                Box(s, on, 0f, frame.Top - UiTokens.FrameRule, frame.Width, UiTokens.FrameRule, UiRole.Rule, UiRole.None, 0f, UiFlags.Decor);
-                frame.Content(out float cx, out float _, out float cw, out float _);
-                string status = UiChrome.Status != null ? UiChrome.Status() : null;
-                float sw = string.IsNullOrEmpty(status) ? 0f : UiTextRules.Width(status, UiStyle.Title) + UiTokens.S1;
-                float tw = cw - sw - UiTokens.S8;
-                float bandH = frame.Top - UiTokens.FrameRule;
-                string app = frame.Title ?? string.Empty;
-                if (Crumb(app, place))
-                {
-                    float aw = Math.Min(tw, Snap(UiTextRules.Width(app, UiStyle.AppTitle) + UiTokens.S1));   // widths on the grid, so the mark and the place stand on it
-                    TextMiddle(s, on, cx, 0f, bandH, aw, UiStyle.AppTitle, UiRole.Text, app, UiFlags.Truncate);
-                    float gw = Snap(UiTextRules.Width(CrumbMark, UiStyle.AppTitle) + UiTokens.S1);
-                    float gx = cx + aw + UiTokens.S3;
-                    float pw = cx + tw - (gx + gw + UiTokens.S3);
-                    if (pw > UiTokens.S16)
-                    {
-                        TextMiddle(s, on, gx, 0f, bandH, gw, UiStyle.AppTitle, UiRole.Muted, CrumbMark, UiFlags.None);
-                        TextMiddle(s, on, gx + gw + UiTokens.S3, 0f, bandH, pw, UiStyle.AppTitle, UiRole.Text2, place, UiFlags.Truncate);
-                    }
-                }
-                else
-                {
-                    TextMiddle(s, on, cx, 0f, bandH, tw, UiStyle.AppTitle, UiRole.Text, app, UiFlags.Truncate);
-                }
-                if (sw > 0f)
-                {
-                    TextMiddle(s, on, cx + cw - sw, 0f, frame.Top - UiTokens.FrameRule, sw, UiStyle.Title, UiRole.Text2, status, UiFlags.Right);
-                }
-            }
-            if (frame.Band > 0f)
-            {
-                Box(s, UiAt.Screen, 0f, frame.BandY, frame.Width, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
-            }
         }
 
         /// <summary>The mark between the app's name and the place in the masthead.</summary>
@@ -68,9 +29,8 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
 
         /// <summary>
-        /// The band of a frame. With the mouse leading, Move and Select go, since the mouse does those by pointing and
-        /// clicking. The shortcuts stay (a target's key, the tab keys, Back), as they work with the mouse in hand and are
-        /// quicker than travelling the cursor.
+        /// The status bar of a frame, with the screen's prompts in it while the keys lead (Back named by the button that
+        /// answers it). With the mouse leading no prompt shows, as the mouse does it all by pointing.
         /// </summary>
         public static void PromptBar(UiScene s, UiFrame frame, IUiKeys keys)
         {
@@ -82,19 +42,7 @@ namespace RealLifeOverhaul.Ui
                     s.Prompts[i].Label = owner;
                 }
             }
-            if (frame.Pointer)
-            {
-                int kept = 0;
-                for (int i = 0; i < s.PromptCount; i++)
-                {
-                    if (s.Prompts[i].Action != UiAction.Move && s.Prompts[i].Action != UiAction.Confirm)
-                    {
-                        s.Prompts[kept++] = s.Prompts[i];
-                    }
-                }
-                s.PromptCount = kept;
-            }
-            PromptBar(s, 0f, frame.BandY, frame.Width, frame.Band, keys);
+            StatusBar(s, frame, keys);
         }
 
         // The words of the button that answers Escape on the top layer (a form's Cancel, a question's Keep), or null.
@@ -256,7 +204,7 @@ namespace RealLifeOverhaul.Ui
             int face = Box(s, at, x, y, w, h, UiRole.Field, UiRole.RowSelEdge, UiTokens.RadiusLarge, UiFlags.Middle);
             UiAt inside = at.In(face);
             int d = Circle(s, inside, x + UiTokens.S2, y + (h - disc) / 2f, disc, disc, UiRole.Accent, UiFlags.Middle);
-            Icon(s, at.In(d), x + UiTokens.S2 + (disc - UiTokens.Icon) / 2f, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Check, UiRole.OnAccent, UiFlags.Middle);
+            Icon(s, at.In(d), x + UiTokens.S2 + (disc - UiTokens.Icon) / 2f, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Check, UiRole.OnAccent, UiFlags.Middle | UiFlags.Centre);
             float ty = y + (h - th - sh) / 2f;
             Text(s, inside, x + UiTokens.S2 + disc + UiTokens.S4, ty, tw, UiStyle.Title, UiRole.Text, title, UiFlags.Middle | UiFlags.Truncate);
             Text(s, inside, x + UiTokens.S2 + disc + UiTokens.S4, ty + th, tw, UiStyle.Small, UiRole.Text2, sub, UiFlags.Middle | UiFlags.Truncate);

@@ -589,7 +589,7 @@
         public static bool EconomyBranch = true;         // bank branches of the player's own bank (off: branches do nothing)
         public static bool EndScale = true;              // the end game at scale (off: every figure as before)
         public static bool LivingPopulation = true;      // the living economy overhaul's master switch, on in the beta (off: the game and the mod exactly as before it)
-        public static bool UiInterface = true;           // the RLO interface: the overhaul's screens and the apps it redraws, in the City Ledger (off: the game's own screens)
+        public static bool UiInterface = true;           // the RLO interface: the overhaul's screens and the apps it redraws, in its own look (off: the game's own screens)
         public static int UiMotion = 0;                  // the RLO interface's motion: 0 full, 1 calm (slower, half the distance), 2 off
         public static bool LivingDesks = true;           // ...hands-on management sessions at a firm's own office desk, and managers who take them (Desks)
         public static bool LivingStudio = true;          // ...the game studio rebuilt: genres, platforms, production at the desk, hype, reviews, sales from a real audience (Studio)

@@ -5,29 +5,23 @@ using UnityEngine;
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// The interface's fonts from the bundle beside the DLL (Bundles/reallife_ui, built by UiAssets/build.ps1): Sora and
-    /// Manrope, three weights each, as static distance-field atlases. Read once a session in the background, behind the
-    /// loading screen (<see cref="Begin"/>, <see cref="Step"/>); each atlas's copy in main memory is freed as it arrives,
-    /// so it costs its texture alone (8 MB for the six). Sora falls back to Manrope (built into the bundle), and both fall
-    /// back to the game's own font, given by the host, which carries the game's fallbacks for Chinese, Japanese and Korean.
+    /// The interface's fonts from the bundle beside the DLL (Bundles/reallife_ui, built by UiAssets/build.ps1): Overpass in
+    /// three weights, as static distance-field atlases. Read once a session in the background, behind the loading screen
+    /// (<see cref="Begin"/>, <see cref="Step"/>); each atlas's copy in main memory is freed as it arrives, so it costs its
+    /// texture alone. Every face falls back to the game's own font, given by the host, which carries the game's fallbacks
+    /// for Chinese, Japanese and Korean (and Greek, which Overpass does not draw).
     /// Without the bundle every style uses the game's font, so a missing file costs the look, never a screen.
     /// Cost: nothing a frame; a look in a six-slot table a text.
     /// </summary>
     public static class UiFonts
     {
         public const string BundlePath = "Bundles/reallife_ui";   // under the mod's folder, beside its other bundles
-        // The City Ledger's faces, as UiAssets/build.ps1 names them in the bundle, with the family and weight of each.
-        private static readonly string[] Names =
-        {
-            "SerifDisplay-SemiBold SDF", "SerifDisplay-Bold SDF", "Serif-Medium SDF", "Serif-Bold SDF", "Franklin-SemiBold SDF", "Franklin-Bold SDF", "Franklin-ExtraBold SDF"
-        };
-        private static readonly UiFamily[] Families =
-        {
-            UiFamily.SerifDisplay, UiFamily.SerifDisplay, UiFamily.Serif, UiFamily.Serif, UiFamily.Franklin, UiFamily.Franklin, UiFamily.Franklin
-        };
-        private static readonly int[] Weights = { 600, 700, 500, 700, 600, 700, 800 };
+        // The faces as UiAssets/build.ps1 names them in the bundle, with the family and weight of each.
+        private static readonly string[] Names = { "Overpass-Regular SDF", "Overpass-SemiBold SDF", "Overpass-Bold SDF" };
+        private static readonly UiFamily[] Families = { UiFamily.Overpass, UiFamily.Overpass, UiFamily.Overpass };
+        private static readonly int[] Weights = { 400, 600, 700 };
 
-        private static readonly TMP_FontAsset[] Assets = new TMP_FontAsset[7];
+        private static readonly TMP_FontAsset[] Assets = new TMP_FontAsset[3];
         private static AssetBundleCreateRequest _opening;
         private static AssetBundleRequest _reading;
         private static AssetBundle _bundle;
@@ -128,6 +122,28 @@ namespace RealLifeOverhaul.Ui
             {
                 AddFallback(Assets[i]);
             }
+        }
+
+        private static readonly System.Collections.Generic.Dictionary<TMP_FontAsset, Material> Heavier = new System.Collections.Generic.Dictionary<TMP_FontAsset, Material>();
+
+        /// <summary>
+        /// A face's material with its strokes thickened a little, for dark words on the cyan: dark on light draws thinner
+        /// than light on dark, so a primary button's label would read weaker than the secondary one beside it. One a face,
+        /// kept for the session. Null for no face.
+        /// </summary>
+        public static Material OnLight(TMP_FontAsset font)
+        {
+            if (font == null || font.material == null)
+            {
+                return null;
+            }
+            if (!Heavier.TryGetValue(font, out Material heavy) || heavy == null)
+            {
+                heavy = new Material(font.material) { name = font.material.name + " on light" };
+                heavy.SetFloat(ShaderUtilities.ID_FaceDilate, 0.16f);
+                Heavier[font] = heavy;
+            }
+            return heavy;
         }
 
         /// <summary>The face for a style: the bundle's cut of its family and weight, or the game's font while the bundle is not in.</summary>

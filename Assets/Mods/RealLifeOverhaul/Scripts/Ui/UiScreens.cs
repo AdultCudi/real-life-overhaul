@@ -7,7 +7,12 @@ namespace RealLifeOverhaul.Ui
         Dashboard,        // figures over time (the Economy app's views)
         Session,          // a desk session's steps and choices
         Form,             // settings and choices before an action
-        Gallery           // the kit's own gallery
+        Gallery,          // the kit's own gallery
+        InfoPanel,        // a person, a household, a business or a building, docked left with its icon tabs (DIRECTION_CS2, 4.1)
+        InfoView,         // the city coloured by one figure, its rows, donut and map legend at the left (4.2)
+        AppWindow,        // an app's window over the city: sections down a sidebar or across as tabs, a page of blocks (4.3, 4.4)
+        Decision,         // a moment's decision over the dimmed world: faces or an emblem, numbered choices (4.5)
+        Phone             // the phone's home: apps on tiles, what comes next, the pages' bar at its foot (4.7)
     }
 
     /// <summary>One registered screen: its id, its template, the class that runs it, and the words its labels use.</summary>
@@ -79,13 +84,14 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_contacts_search", "reallife_ui_contacts_new", "reallife_ui_contacts_earlier", "reallife_ui_contacts_on_shift",
                 "reallife_ui_contacts_quiet_title", "reallife_ui_contacts_quiet_body", "reallife_ui_price_quote", "reallife_flare_theme_2",
                 "reallife_ui_motion_1", "reallife_session_meeting_morale", "reallife_session_meeting_morale_trade", "reallife_session_meeting_push",
-                "reallife_session_meeting_push_trade", "reallife_ui_prompt_page", "reallife_ui_prompt_look", "reallife_ui_prompt_move",
+                "reallife_session_meeting_push_trade", "reallife_ui_prompt_page", "reallife_ui_prompt_move",
                 "reallife_ui_prompt_back", "phone_call_button", "phone_view_on_map_button", "contacts_delete_all_button", "contactcategoryname_rivals",
                 "common_address", "myemployees_hourlywage", "contacts_today_opening_hours", "bizman_headhunters_skill_level_title", "reallife_ui_gallery_cap_type",
                 "reallife_ui_gallery_cap_colours", "reallife_ui_gallery_cap_motion", "reallife_ui_gallery_cap_sizes", "reallife_ui_gallery_col_style",
                 "reallife_ui_gallery_col_face", "reallife_ui_gallery_col_size", "reallife_ui_gallery_col_weight", "reallife_ui_gallery_col_role",
                 "reallife_ui_gallery_col_dark", "reallife_ui_gallery_col_light", "reallife_ui_gallery_col_motion", "reallife_ui_gallery_col_full",
-                "reallife_ui_gallery_col_calm", "reallife_ui_gallery_col_token", "reallife_ui_gallery_col_px", "reallife_ui_gallery_col_kind"
+                "reallife_ui_gallery_col_calm", "reallife_ui_gallery_col_token", "reallife_ui_gallery_col_px", "reallife_ui_gallery_col_kind",
+                "reallife_ui_prompt_select", "reallife_ui_prompt_choose", "reallife_studio_page_age_days", "reallife_ui_gallery_page_icons"
             }),
             new UiScreenDef("population", UiTemplate.Dashboard, "PopulationScreen", new[]
             {
@@ -126,6 +132,14 @@ namespace RealLifeOverhaul.Ui
             {
                 "reallife_ui_page_desk", "reallife_ui_prompt_move", "reallife_ui_prompt_choose", "reallife_ui_prompt_back"
             }),
+            new UiScreenDef("template_info_panel", UiTemplate.InfoPanel, null, new[] { "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back" }),
+            new UiScreenDef("template_info_view", UiTemplate.InfoView, null, new[] { "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back" }),
+            new UiScreenDef("template_app_window", UiTemplate.AppWindow, null, new[]
+            {
+                "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back", "reallife_studio_page_age_days"
+            }),
+            new UiScreenDef("template_decision", UiTemplate.Decision, null, new[] { "reallife_ui_prompt_move", "reallife_ui_prompt_choose", "reallife_ui_prompt_back" }),
+            new UiScreenDef("template_phone", UiTemplate.Phone, null, new[] { "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back" }),
             new UiScreenDef("template_dashboard", UiTemplate.Dashboard, null, new[]
             {
                 "reallife_ui_prompt_move", "reallife_ui_prompt_page", "reallife_ui_prompt_select", "reallife_ui_prompt_back"

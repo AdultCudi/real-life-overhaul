@@ -112,13 +112,16 @@ namespace RealLifeOverhaul.Ui
             s.Begin("list-detail", frame.Width, frame.Height, dark);
             frame.Content(out float cx, out float cy, out float cw, out float ch);
             UiAt screen = UiAt.Screen;
-            int bg = UiDraw.Box(s, screen, 0f, 0f, frame.Width, frame.Height, UiRole.Bg, UiRole.None, 0f, UiFlags.Decor);   // the host's whole area
+            int bg = UiDraw.Window(s, frame, null, keys);   // the app's window over the world: the page is drawn inside it
             UiAt onBg = screen.In(bg);
-            Sidebar(s, onBg.InRegion(RegionGroups), m, cx, cy, SideWidth, ch, keys);
+            frame.Window(out float wx, out float wy, out float ww, out float wh);
+            UiDraw.Band(s, onBg, wx, wy + UiFrame.Strip, cx + SideWidth + UiTokens.S2 - wx, wh - UiFrame.Strip);   // the groups on the window's darker band, as a game's menu
+            Sidebar(s, onBg.InRegion(RegionGroups), m, wx + UiTokens.S2, cy, cx + SideWidth - wx - UiTokens.S2, ch, keys);   // one inset each side of the band, as the app window's sidebar
             float lx = cx + SideWidth + UiTokens.S4;
             List(s, onBg.InRegion(RegionList), m, lx, cy, ListWidth, ch);
             float dx = lx + ListWidth + UiTokens.S4;
             float dw = cx + cw - dx;
+            UiDraw.Box(s, onBg, dx - UiTokens.S2, wy + UiFrame.Strip, UiTokens.Hairline, wh - UiFrame.Strip, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             Detail(s, onBg.InRegion(RegionDetail), m, dx, cy, dw, ch, keys);
             for (int i = 0; i < m.PromptCount; i++)
             {
@@ -148,7 +151,7 @@ namespace RealLifeOverhaul.Ui
             float capW = keys != null ? UiDraw.KeyCapWidth(UiAction.TabPrev, keys) + UiTokens.S1 + UiDraw.KeyCapWidth(UiAction.TabNext, keys) : 0f;
             UiDraw.Text(s, at, x + UiTokens.S3, y + (UiTokens.KeyCap - UiTextRules.LineHeight(UiStyle.SectionHeader)) / 2f, w - capW - UiTokens.S6, UiStyle.SectionHeader,
                 UiRole.Muted, m.GroupsLabel, UiFlags.Label | UiFlags.Middle);
-            if (keys != null)
+            if (keys != null && !s.Pointer)   // lone caps mean nothing to the mouse; their room stays, so nothing moves
             {
                 float kx = x + w - UiTokens.S3 - capW;
                 kx += UiDraw.KeyCap(s, at, kx, y, UiAction.TabPrev, keys, UiRole.Track, UiRole.Text2) + UiTokens.S1;
@@ -159,7 +162,7 @@ namespace RealLifeOverhaul.Ui
             y += UiTokens.KeyCap + UiTokens.S3;
             // The foot first, so the groups know their room: the player, the note and the side actions above it.
             float foot = top + h - UiTokens.AvatarSmall;
-            UiDraw.PlayerCard(s, at, x + UiTokens.S2, foot, w - UiTokens.S2 * 2f, m.PlayerName, m.PlayerHue, m.PlayerSummary);
+            UiDraw.PlayerCard(s, at, x + UiTokens.S3, foot, w - UiTokens.S3 - UiTokens.S2, m.PlayerName, m.PlayerHue, m.PlayerSummary);   // on the groups' tiles' edge
             float by = foot - UiTokens.S6;
             if (!string.IsNullOrEmpty(m.SideNote))
             {
@@ -193,7 +196,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = first; i <= last; i++)
             {
                 ref UiNavModel g = ref m.Groups[i];
-                int node = UiDraw.NavItem(s, inClip.Arriving(i - first), 0f, i * itemH, w, g.Label, g.Count, g.Hue, g.Selected, Group, i, g.Loud);
+                int node = UiDraw.NavItem(s, inClip.Arriving(i - first), 0f, i * itemH, w, g.Label, g.Count, g.Hue, g.Selected, Group, i, g.Loud, g.Icon, g.Tint);
                 s.Nodes[node].List = list;
                 s.Nodes[node].Index = i;
             }
@@ -216,6 +219,7 @@ namespace RealLifeOverhaul.Ui
             float offset = Math.Max(0f, Math.Min(m.RowsOffset, contentH - vh));
             short clip = s.AddClip(x, y, w, vh, offset);
             s.Clips[clip].ContentHeight = contentH;
+            UiDraw.ScrollThumb(s, at, x + w + UiTokens.S1 / 2f, y, vh, offset, contentH);   // in the gap before the divider, so a cut last row reads as more below
             if (m.RowCount == 0)
             {
                 s.AddList(0, 0, 0, clip, -1);
@@ -261,7 +265,8 @@ namespace RealLifeOverhaul.Ui
 
         private static void Detail(UiScene s, UiAt at, UiListDetailModel m, float x, float y, float w, float h, IUiKeys keys)
         {
-            int panel = UiDraw.Box(s, at, x, y, w, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
+            // The detail stands on the window itself: a panel in a panel would be a box in a box.
+            int panel = UiDraw.Box(s, at, x, y, w, h, UiRole.None, UiRole.None, 0f, UiFlags.None);
             UiAt inside = at.In(panel);
             if (!m.HasDetail)
             {
@@ -424,7 +429,7 @@ namespace RealLifeOverhaul.Ui
 
         private static float BlockTitle(UiScene s, UiAt at, float x, float y, float w, string title)
         {
-            UiDraw.Text(s, at, x, y, w, UiStyle.SectionHeader, UiRole.Muted, title, UiFlags.Label);
+            UiDraw.Text(s, at, x, y, w, UiStyle.SectionHeader, UiRole.Text, title, UiFlags.Label);
             return UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3;
         }
 
@@ -446,7 +451,7 @@ namespace RealLifeOverhaul.Ui
             if (m.StatCount > 0)
             {
                 h += blockTitle + UiTokens.S2;
-                h += m.StatCount * (UiDraw.Snap(UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2 + UiTokens.Segment) + UiTokens.S4);
+                h += m.StatCount * (UiDraw.Snap(UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2 + UiTokens.S1) + UiTokens.S4);
             }
             if (m.DetailCount > 0)
             {

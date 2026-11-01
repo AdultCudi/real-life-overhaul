@@ -3,8 +3,8 @@ using System;
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// The gallery as a screen: every component of the kit on six pages, the tab keys turning the pages and Option turning
-    /// the look between dark and light for the gallery alone, so the owner judges the kit in both themes from Options,
+    /// The gallery as a screen: every component of the kit on its pages, the icon style sheet last, the tab keys turning the
+    /// pages, so the owner judges the kit from Options,
     /// Tests. Its samples are words of the locale (UiText) and figures in the game's own money; nothing it shows does
     /// anything but show. Game-free (the words and the money's form come in from the director). Cost: a layout a press.
     /// </summary>
@@ -13,7 +13,6 @@ namespace RealLifeOverhaul.Ui
         private readonly UiWords _words;
         private readonly Func<float, string> _money;
         private int _page;
-        private bool? _look;   // the look the gallery shows, once Option has turned it; the setting's until then
         private bool _dirty = true;
 
         /// <summary>Back closes the gallery (it stands over whatever showed when the test opened it).</summary>
@@ -31,7 +30,7 @@ namespace RealLifeOverhaul.Ui
 
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
-            UiGallery.Lay(s, Model(_words, _page, _money), frame, _look ?? dark, keys);
+            UiGallery.Lay(s, Model(_words, _page, _money), frame, dark, keys);
             _dirty = false;
         }
 
@@ -68,16 +67,7 @@ namespace RealLifeOverhaul.Ui
             _dirty = true;
         }
 
-        public bool Act(UiAction action)
-        {
-            if (action != UiAction.Option)
-            {
-                return false;
-            }
-            _look = !(_look ?? true);
-            _dirty = true;
-            return true;
-        }
+        public bool Act(UiAction action) => false;   // one look: no key turns it
 
         public void Reveal(int list, int index)
         {
@@ -98,6 +88,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     t("reallife_ui_gallery_page_controls", "Controls"), t("reallife_ui_gallery_page_lists", "Lists"), t("reallife_ui_gallery_page_figures", "Figures"),
                     t("reallife_ui_gallery_page_messages", "Messages"), t("reallife_ui_gallery_page_question", "Question"), t("reallife_ui_gallery_page_call", "Call"),
+                    t("reallife_ui_gallery_page_icons", "Icons"),
                 },
                 Page = Math.Max(0, Math.Min(UiGallery.PageCount - 1, page)),
                 Captions = new[]
@@ -254,7 +245,6 @@ namespace RealLifeOverhaul.Ui
             {
                 new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
                 new UiPrompt { Action = UiAction.TabPrev, Label = t("reallife_ui_prompt_page", "Page") },
-                new UiPrompt { Action = UiAction.Option, Label = t("reallife_ui_prompt_look", "Light or dark") },
                 new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
             };
             m.PromptCount = m.Prompts.Length;

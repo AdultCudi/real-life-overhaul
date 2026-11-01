@@ -72,13 +72,13 @@ internal static partial class Program
             for (int n = 0; n < scene.NodeCount; n++)
             {
                 ref UiNode node = ref scene.Nodes[n];
-                bool leads = node.Command == UiDashboard.RowCommand ? node.Arg >= 0 && node.Arg < v.Rows.Count && v.Rows[node.Arg].Target.Valid
-                    : node.Command == UiDashboard.ActionCommand && v.PrimaryTarget.Valid;
+                bool leads = node.Command == UiDraw.CloseCommand || (node.Command == UiDashboard.RowCommand ? node.Arg >= 0 && node.Arg < v.Rows.Count && v.Rows[node.Arg].Target.Valid
+                    : node.Command == UiDashboard.ActionCommand && v.PrimaryTarget.Valid);   // the window's close is the host's Back
                 dead += leads ? 0 : 1;
             }
         }
         Check(keys == 0, "ui pages: no population page shows a record's key, each place by its name or its address (" + said + ")");
-        Check(repeats == 0, "ui pages: no population page repeats the masthead under it (" + said + ")");
+        Check(repeats == 0, "ui pages: no population page repeats its window's title under it (" + said + ")");
         Check(unknown == 0 && dead == 0, "ui pages: every target of a population page opens something, a row its record and the action its page (" + dead + " that do nothing)");
         Check(layout == 0, "ui pages: every population page from the offline city keeps the layout rules (" + layoutSaid + ")");
         UiDashboardModel wm = PopulationPages.Model(who, en, money, nameOf, null);
@@ -197,7 +197,7 @@ internal static partial class Program
         string said = "none";
         int broken = UiCheckRules.Overlaps(scene, l => said = l) + UiCheckRules.Spills(scene, l => said = l) + UiCheckRules.Unfit(scene, l => said = l) + UiCheckRules.EmptyPanels(scene, l => said = l)
                      + UiCheckRules.NoPrompts(scene, l => said = l) + UiCheckRules.TypeLevels(scene, l => said = l);
-        Check(scene.NodeCount == 0 && broken == 0 && sample.Title == UiWords("en")("reallife_ui_sample_firm", "A sample studio"),
+        Check(scene.NodeCount == 1 && scene.Nodes[0].Command == UiDraw.CloseCommand && broken == 0 && sample.Title == UiWords("en")("reallife_ui_sample_firm", "A sample studio"),
             "ui pages: on a save with no tech firm the firm's test opens a sample studio named as one, with nothing on it to press (" + said + ")");
     }
 
@@ -210,7 +210,7 @@ internal static partial class Program
         int none = 0;
         for (int n = 0; n < scene.NodeCount; n++)
         {
-            none += ContactsRoutes.Route(scene.Nodes[n].Command, scene.Nodes[n].Arg) == ContactsRoute.None ? 1 : 0;
+            none += scene.Nodes[n].Command != UiDraw.CloseCommand && ContactsRoutes.Route(scene.Nodes[n].Command, scene.Nodes[n].Arg) == ContactsRoute.None ? 1 : 0;   // the close is the host's Back
         }
         int map = scene.FindNode(UiListDetail.Action, ContactsRoutes.MapArg), call = scene.FindNode(UiListDetail.Action, ContactsRoutes.CallArg);
         Check(none == 0 && map >= 0 && call >= 0 && scene.Nodes[call].Key == UiAction.Alt && scene.Nodes[map].Key == UiAction.Option,

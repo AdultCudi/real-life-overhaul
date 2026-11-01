@@ -3,68 +3,32 @@
     "samplingSize": 48,
     "faces": [
         {
-            "asset": "SerifDisplay-SemiBold SDF",
-            "family": "SerifDisplay",
+            "asset": "Overpass-Regular SDF",
+            "family": "Overpass",
+            "weight": 400,
+            "characters": 816,
+            "atlasWidth": 2048,
+            "atlasHeight": 1024,
+            "bytes": 2097832
+        },
+        {
+            "asset": "Overpass-SemiBold SDF",
+            "family": "Overpass",
             "weight": 600,
-            "characters": 681,
+            "characters": 816,
             "atlasWidth": 2048,
             "atlasHeight": 1024,
             "bytes": 2097832
         },
         {
-            "asset": "SerifDisplay-Bold SDF",
-            "family": "SerifDisplay",
+            "asset": "Overpass-Bold SDF",
+            "family": "Overpass",
             "weight": 700,
-            "characters": 681,
-            "atlasWidth": 2048,
-            "atlasHeight": 1024,
-            "bytes": 2097832
-        },
-        {
-            "asset": "Serif-Medium SDF",
-            "family": "Serif",
-            "weight": 500,
-            "characters": 681,
-            "atlasWidth": 2048,
-            "atlasHeight": 1024,
-            "bytes": 2097832
-        },
-        {
-            "asset": "Serif-Bold SDF",
-            "family": "Serif",
-            "weight": 700,
-            "characters": 681,
-            "atlasWidth": 2048,
-            "atlasHeight": 1024,
-            "bytes": 2097832
-        },
-        {
-            "asset": "Franklin-SemiBold SDF",
-            "family": "Franklin",
-            "weight": 600,
-            "characters": 690,
-            "atlasWidth": 2048,
-            "atlasHeight": 1024,
-            "bytes": 2097832
-        },
-        {
-            "asset": "Franklin-Bold SDF",
-            "family": "Franklin",
-            "weight": 700,
-            "characters": 690,
-            "atlasWidth": 2048,
-            "atlasHeight": 1024,
-            "bytes": 2097832
-        },
-        {
-            "asset": "Franklin-ExtraBold SDF",
-            "family": "Franklin",
-            "weight": 800,
-            "characters": 690,
+            "characters": 816,
             "atlasWidth": 2048,
             "atlasHeight": 1024,
             "bytes": 2097832
         }
     ],
-    "totalBytes": 14684824
+    "totalBytes": 6293496
 }

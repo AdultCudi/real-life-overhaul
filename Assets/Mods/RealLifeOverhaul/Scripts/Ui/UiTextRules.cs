@@ -160,6 +160,37 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Whether a text fits one line of a width in a style (a label that may not be cut).</summary>
         public static bool Fits(string text, UiStyle style, float width) => Width(text, style) <= width + 0.01f;
 
+        /// <summary>
+        /// Player words cut to one line of a width with an ellipsis: after the last whole word when that keeps most of the
+        /// room, else between letters (as in a script without spaces), never with a space or a stop before the ellipsis.
+        /// Cost: a width a letter, once a layout.
+        /// </summary>
+        public static string Cut(string text, UiStyle style, float width)
+        {
+            if (string.IsNullOrEmpty(text) || Fits(text, style, width))
+            {
+                return text;
+            }
+            const string dots = "…";
+            float room = width - Width(dots, style);
+            int fit = 0;
+            while (fit < text.Length && Width(text, 0, fit + 1, style) <= room)
+            {
+                fit++;
+            }
+            int end = fit;
+            int space = fit < text.Length ? text.LastIndexOf(' ', fit) : -1;
+            if (space > 0 && space >= fit * 0.6f)
+            {
+                end = space;   // a one letter stub of the next word reads as a fault
+            }
+            while (end > 0 && (text[end - 1] == ' ' || text[end - 1] == ',' || text[end - 1] == '.' || text[end - 1] == ':'))
+            {
+                end--;
+            }
+            return text.Substring(0, end) + dots;
+        }
+
         /// <summary>A character square as an ideograph: CJK, kana, Hangul and full-width forms.</summary>
         public static bool Wide(char c)
         {
