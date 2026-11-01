@@ -97,7 +97,8 @@ Use these, and never draw a part of your own. All are in `UiDraw.Chrome.cs` unle
   (a thin bar in a tone), `GradeBar` (an attribute graded red to green; a block of them shares one label column from
   `LabelColumn`, so their tracks start at one edge), `StatBar` (the same thin graded bar under its label), `Stars` (a
   rating by halves, gold and grey) and the spark line (`UiSpark`).
-- **Colours for data**: `UiTokens.Chart(i)` for a slice, `UiTokens.Grade(value)` for a graded figure, and the Cat roles
+- **Colours for data**: `UiTokens.Chart(i)` for a slice, `UiTokens.Grade(value)` for a graded figure, `UiTokens.Ramp(step)`
+  for a map coloured by a figure and its legend (an ordered ramp, never the chart's hues), and the Cat roles
   (`CatFood`, `CatRetail`, `CatOffice`, `CatIndustry`, `CatTech`, `CatServices`) for a business family's icons and
   slices, never for a large fill.
 - **The game's own icons**: `UiIcons.Own` lets the game's picture stand in for an icon where the game has one. In the

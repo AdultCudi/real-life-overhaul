@@ -44,8 +44,9 @@ Why: one change of the tokens changes every screen, and nothing drifts. Checked 
   beside it: a tab or a tile filled cyan with dark words, a row at a fifth of the cyan.
 - Green, amber and red for good, a warning and bad. Each icon has one colour, the same everywhere (`UiIconTints`), on
   a neutral slate tile. A business family's colour goes on its icons and its chart slices, never on a large fill.
-- A chart takes the eight chart hues in order (`UiTokens.Chart`), and a graded figure or an attribute bar takes the five
-  grades from red to green (`UiTokens.Grade`).
+- A chart takes the eight chart hues in order (`UiTokens.Chart`), a graded figure or an attribute bar takes the five
+  grades from red to green (`UiTokens.Grade`), and a map coloured by a figure takes the five steps of the ramp
+  (`UiTokens.Ramp`), whose lightness rises with the figure.
 - Corners of 4 px (2 px on small parts), hairlines only under a title strip and between sections, and no pure white
   anywhere.
 - At most three sizes of type on a screen, the frame's own words aside.
