@@ -105,7 +105,7 @@ namespace RealLifeOverhaul.Ui
                     Stretch(tr);
                     s.Letters = tr.gameObject.AddComponent<TextMeshProUGUI>();
                     Plain(s.Letters);
-                    s.Letters.alignment = TextAlignmentOptions.Center;
+                    s.Letters.alignment = TextAlignmentOptions.Capline;   // initials sit by their capitals, as every centred line does
                     s.Graphics = new Graphic[] { s.Circle, s.Letters };
                     return s;
                 }
@@ -135,7 +135,7 @@ namespace RealLifeOverhaul.Ui
                     Stretch(lr);
                     s.Label = lr.gameObject.AddComponent<TextMeshProUGUI>();
                     Plain(s.Label);
-                    s.Label.alignment = TextAlignmentOptions.Center;
+                    s.Label.alignment = TextAlignmentOptions.Capline;
                     s.Graphics = new Graphic[] { s.Face, s.Edge, s.Glyph, s.Label };
                     return s;
                 }
@@ -261,6 +261,21 @@ namespace RealLifeOverhaul.Ui
                     face.color = new Color(1f, 1f, 1f, it.Alpha);
                     break;
                 }
+                case UiKind.Picture:
+                {
+                    // The layout gave the box the picture's own shape, so it fills it unstretched; one the game cannot find shows nothing.
+                    Place(slot.Rect, it.X, it.Y, it.W, it.H);
+                    Image picture = ((ImageSlot)slot).Image;
+                    Sprite sprite = UiPictures.Find != null ? UiPictures.Find(it.Text) : null;
+                    if (picture.sprite != sprite)
+                    {
+                        picture.sprite = sprite;
+                    }
+                    picture.type = Image.Type.Simple;
+                    picture.preserveAspect = true;
+                    picture.color = new Color(1f, 1f, 1f, sprite != null ? it.Alpha : 0f);
+                    break;
+                }
                 case UiKind.Slice:
                 {
                     Place(slot.Rect, it.X, it.Y, it.W, it.H);
@@ -367,8 +382,7 @@ namespace RealLifeOverhaul.Ui
                 t.fontStyle = style;
             }
             bool wrap = (it.Flags & UiFlags.Wrap) != 0;
-            TextAlignmentOptions align = (it.Flags & UiFlags.Right) != 0 ? TextAlignmentOptions.TopRight
-                : (it.Flags & UiFlags.Centre) != 0 && TextCentred(ref it) ? TextAlignmentOptions.Top : TextAlignmentOptions.TopLeft;
+            TextAlignmentOptions align = Align(ref it, wrap);
             if (t.alignment != align)
             {
                 t.alignment = align;
@@ -383,6 +397,20 @@ namespace RealLifeOverhaul.Ui
         // wrapped one, which once sat at the left of its box and ran on past it. A box cut to its words (a button's label)
         // was placed by centring already.
         private static bool TextCentred(ref UiItem it) => (it.Flags & UiFlags.Wrap) != 0 || it.W > UiTextRules.Width(it.Text, it.Style) + UiTokens.S2;
+
+        // A line centred on a box (UiFlags.Middle) sits by its capitals, not by its line box: the line box holds the
+        // descenders and the leading, so words centred by it stood up to 2.7 px high in a button, a chip or a pill. The
+        // Capline alignment centres the face's cap height on the box's middle, which is where the layout centred the line.
+        // A wrapped block keeps its top, as its lines are laid from it.
+        private static TextAlignmentOptions Align(ref UiItem it, bool wrap)
+        {
+            bool right = (it.Flags & UiFlags.Right) != 0, centre = !right && (it.Flags & UiFlags.Centre) != 0 && TextCentred(ref it);
+            if ((it.Flags & UiFlags.Middle) != 0 && !wrap)
+            {
+                return right ? TextAlignmentOptions.CaplineRight : centre ? TextAlignmentOptions.Capline : TextAlignmentOptions.CaplineLeft;
+            }
+            return right ? TextAlignmentOptions.TopRight : centre ? TextAlignmentOptions.Top : TextAlignmentOptions.TopLeft;
+        }
 
         private void BindKeyCap(KeyCapSlot k, ref UiItem it)
         {
@@ -416,7 +444,7 @@ namespace RealLifeOverhaul.Ui
                 k.Label.fontSize = (letter != null ? it.H * PadLetterShare : type.Size) * Scale;
                 k.Label.fontStyle = FontStyles.UpperCase;
                 k.Label.textWrappingMode = TextWrappingModes.NoWrap;
-                k.Label.alignment = TextAlignmentOptions.Midline;
+                k.Label.alignment = TextAlignmentOptions.Capline;   // a key's name by its capitals, not its line's middle
                 k.Label.color = Colour(it.Ink, 1f);
                 SetText(k.Label, words);
             }

@@ -290,6 +290,10 @@ namespace RealLifeOverhaul.Ui
         private void Move(int dx, int dy, float now)
         {
             int from = _view.Focus;
+            if (dx != 0 && Stepped(from, dx))
+            {
+                return;
+            }
             int next = UiFocusRules.Next(_scene, from, dx, dy);
             if (next == UiFocusRules.ScrollAsked && from >= 0)
             {
@@ -430,6 +434,7 @@ namespace RealLifeOverhaul.Ui
             if (!_typing && node >= 0 && node < _scene.NodeCount && _scene.Nodes[node].Layer == UiFocusRules.TopLayer(_scene) && _mode.Entered(node))
             {
                 _view.SetHover(node);
+                Pointed(_scene.Nodes[node].Command, _scene.Nodes[node].Arg);
             }
         }
 
@@ -438,6 +443,36 @@ namespace RealLifeOverhaul.Ui
             if (_mode.Exited(node))
             {
                 _view.SetHover(-1);
+                Pointed(-1, -1);
+            }
+        }
+
+        // A slider, a choice or an amount with focus takes Left and Right as its step (IUiStepping), so the d-pad stays in its column.
+        private bool Stepped(int node, int dx)
+        {
+            if (!(_screen is IUiStepping stepping) || node < 0 || node >= _scene.NodeCount || _scene.Nodes[node].Disabled || !stepping.Steps(_scene.Nodes[node].Command))
+            {
+                return false;
+            }
+            stepping.Step(_scene.Nodes[node].Command, _scene.Nodes[node].Arg, dx);
+            _sound?.Play(UiCue.Move);
+            if (_screen.Dirty)
+            {
+                Layout();
+            }
+            return true;
+        }
+
+        // The screen hears what the mouse rests on (IUiPointing), for a reading the keys' focus would show.
+        private void Pointed(int command, int arg)
+        {
+            if (_screen is IUiPointing pointing)
+            {
+                pointing.Pointed(command, arg);
+                if (_screen.Dirty)
+                {
+                    Layout();
+                }
             }
         }
 

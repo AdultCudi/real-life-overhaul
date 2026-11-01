@@ -1022,6 +1022,7 @@ namespace RealLifeOverhaul
                 .AddDropdown(Settings.UiMotionId, "reallife_ui_motion", new[] { "reallife_ui_motion_0", "reallife_ui_motion_1", "reallife_ui_motion_2" }, Settings.UiMotion,
                     v => Settings.UiMotion = v)
                 .AddButton("reallife_ui_test_gallery", () => Ui.UiDirector.Instance?.TestGallery())
+                .AddButton("reallife_ui_test_parts", () => Ui.UiDirector.Instance?.TestParts())
                 .AddButton("reallife_ui_test_contacts", () => Ui.UiDirector.Instance?.TestContacts())
                 .AddButton("reallife_ui_test_population", () => Ui.UiDirector.Instance?.TestPopulation())
                 .AddButton("reallife_ui_test_flare", () => Ui.UiDirector.Instance?.TestFlareCity())
