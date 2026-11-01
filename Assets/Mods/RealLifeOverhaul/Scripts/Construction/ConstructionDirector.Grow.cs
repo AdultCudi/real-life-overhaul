@@ -261,7 +261,8 @@ namespace RealLifeOverhaul.Construction
                     {
                         try
                         {
-                            ConstructionBridges.GrowthStarted(district, (int)g.Use, GrowArea(g));   // the living population counts the year's homes and offices started, its pull closed once enough are
+                            // the living population counts the year's homes and offices started, its pull closed once enough are
+                            ConstructionBridges.GrowthStarted(district, (int)g.Use, GrowArea(g));
                         }
                         catch (Exception e)
                         {
