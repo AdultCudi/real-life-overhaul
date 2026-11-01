@@ -55,6 +55,8 @@ namespace RealLifeOverhaul.Ui
         private int _heldX, _heldY;
         private float _nextRepeat;
         private UiInputState _state;
+        private bool _dragging;      // a target is held by the pointer (IUiDragging)
+        private Vector2 _dragAt;     // where, in px of the layout
         private TMP_InputField _field;
         private UnityEngine.Events.UnityAction<string> _onTyped, _onTypingEnded;
 
@@ -93,6 +95,7 @@ namespace RealLifeOverhaul.Ui
                 _view.PointerExited = Guard.Wrap<int>(PointerExited);
                 _view.PointerPressed = Guard.Wrap<int>(PointerPressed);
                 _view.Wheeled = Guard.Wrap<int, float>(Wheeled);
+                _view.PointerDragged = Guard.Wrap<int, UiDragPoint>(PointerDragged);
             }
             _laidSize = Vector2.zero;
         }
@@ -114,10 +117,11 @@ namespace RealLifeOverhaul.Ui
             _view.SetFocus(UiFocusRules.First(_scene), false, Time.unscaledTime);
         }
 
-        /// <summary>The screen is hidden: typing ends, motion stops where it ends, the host sleeps.</summary>
+        /// <summary>The screen is hidden: typing ends, a drag held is let go of, motion stops where it ends, the host sleeps.</summary>
         public void Hide()
         {
             EndTyping();
+            EndDrag(true);
             _view?.Still();
             enabled = false;
         }
@@ -175,6 +179,15 @@ namespace RealLifeOverhaul.Ui
                 }
                 return;
             }
+            if (_dragging && _screen is IUiDragging held)
+            {
+                // Every frame while it is held, so a board scrolls when the pointer rests at its edge.
+                held.DragMove(_dragAt.x, _dragAt.y);
+                if (_screen.Dirty)
+                {
+                    Layout();
+                }
+            }
             Navigate(now);
             if (_view.Moving)
             {
@@ -203,13 +216,27 @@ namespace RealLifeOverhaul.Ui
                 LeadChanged();   // the press only shows where the focus is: nobody acts on a target they could not see
                 return;
             }
-            if (step)
+            if (step && !Steered(dx != 0 ? dx : 0, dx != 0 ? 0 : dy))
             {
                 Move(dx != 0 ? dx : 0, dx != 0 ? 0 : dy, now);
+            }
+            if (_state.Page != 0 && _screen is IUiPaging paging)
+            {
+                paging.Page(_state.Page);
+                if (_screen.Dirty)
+                {
+                    Layout();
+                }
             }
             if (_state.Confirm)
             {
                 PressNode(_view.Focus, now);
+            }
+            if (_state.Back && _dragging)
+            {
+                _input.TakeBack();
+                EndDrag(true);   // Back lets go of a drag, and what it moved goes back
+                return;
             }
             if (_state.Back)
             {
@@ -456,6 +483,69 @@ namespace RealLifeOverhaul.Ui
                 }
                 FocusNode(node, Time.unscaledTime, false);
                 PressNode(node, Time.unscaledTime);
+            }
+        }
+
+        // A step the screen takes for what it holds chosen (a board's shift), the focus staying where it is.
+        private bool Steered(int dx, int dy)
+        {
+            if (!(_screen is IUiSteering steering) || !steering.Steer(dx, dy, _state.Shift))
+            {
+                return false;
+            }
+            _sound?.Play(UiCue.Move);
+            if (_screen.Dirty)
+            {
+                Layout();
+            }
+            return true;
+        }
+
+        // The pointer went down on a target or drags from it: a screen that takes hold of its targets hears where.
+        private void PointerDragged(int node, UiDragPoint at)
+        {
+            var px = new Vector2(at.X, at.Y);
+            if (!(_screen is IUiDragging dragging) || node < 0 || node >= _scene.NodeCount)
+            {
+                return;
+            }
+            ref UiNode n = ref _scene.Nodes[node];
+            switch (at.Phase)
+            {
+                case UiDrag.Down:
+                    dragging.PointerDown(n.Command, n.Arg, px.x, px.y);
+                    break;
+                case UiDrag.Begin:
+                    _dragging = dragging.DragBegin(n.Command, n.Arg, px.x, px.y);
+                    _dragAt = px;
+                    break;
+                case UiDrag.Move:
+                    if (_dragging)
+                    {
+                        _dragAt = px;
+                        dragging.DragMove(px.x, px.y);
+                    }
+                    break;
+                default:
+                    EndDrag(false);
+                    break;
+            }
+            if (_screen.Dirty)
+            {
+                Layout();
+            }
+        }
+
+        private void EndDrag(bool cancelled)
+        {
+            if (!_dragging)
+            {
+                return;
+            }
+            _dragging = false;
+            if (_screen is IUiDragging dragging)
+            {
+                dragging.DragEnd(cancelled);
             }
         }
 
