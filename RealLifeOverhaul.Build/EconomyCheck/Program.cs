@@ -592,6 +592,7 @@ internal static partial class Program
         Hiring();
         Buyout();       // buying out a notice: the price, who can be bought out, the rival's seeded once-only choice, the sources and texts (BuyoutChecks.cs)
         Tech();
+        ListSector();   // a listed company's sector from what it earns now: the mix, the review, the load, the save (ListSectorChecks.cs)
         OwnDesk();      // working at a desk of one's own tech firm: the minutes by the day, the crew's points, the professions, the save, the sources and texts (OwnDeskChecks.cs)
         DeskSeat();     // every seat at a desk or station is one pair: held or given back at once, begun before it holds, stood up on every end; the test and texts (DeskSeatChecks.cs)
         Careers();

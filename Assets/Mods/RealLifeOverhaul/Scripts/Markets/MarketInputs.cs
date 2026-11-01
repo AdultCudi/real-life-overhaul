@@ -20,6 +20,12 @@ namespace RealLifeOverhaul.Markets
             "eventplanning", "hospital", "clinic", "interiorinstallation", "truckgarage", "bank", "construction"
         };
 
+        // The tech sector's own business types (Tech/Firms/TechTypes), furnished as the web development agency: software
+        // companies on the market, so a tech firm counts towards its owner's company's sector and competes as one.
+        private static readonly string[] TechTypes = { "reallife:businesstype_softwarestudio", "reallife:businesstype_gamestudio", "reallife:businesstype_itconsultancy",
+            "reallife:businesstype_cybersecurity", "reallife:businesstype_ailab" };
+        private static readonly int TechTrade = Array.IndexOf(Trades, "webdevelopment");
+
         /// <summary>The trade of one of the game's business types, by its id; -1 for one no listed company is in.</summary>
         public static int TradeOf(string businessType)
         {
@@ -34,7 +40,7 @@ namespace RealLifeOverhaul.Markets
                     return i;
                 }
             }
-            return -1;
+            return Array.IndexOf(TechTypes, businessType) >= 0 ? TechTrade : -1;
         }
 
         public const double PlayerShareTaken = 0.5;      // of the player's takings in a trade, what is taken from the listed companies in it
