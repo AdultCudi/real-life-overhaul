@@ -610,6 +610,7 @@ namespace RealLifeOverhaul.Population
         public int YearDays = 60;      // the save's year in days
         public int MonthNumber;        // the running month's number, from 0
         public int Generated;          // the day it was generated
+        public int Measure = PopulationCatalogue.MeasureVersion;   // the measure its homes were counted by (0: a line from before the measure was written)
         public int NextHousehold = 1, NextPerson = 1;
         public int Births, Deaths;     // in the running month, the city's
         public int BirthsLast, DeathsLast;

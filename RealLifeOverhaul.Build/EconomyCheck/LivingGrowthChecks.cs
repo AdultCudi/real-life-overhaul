@@ -5,19 +5,19 @@ using System.Globalization;
 using RealLifeOverhaul;
 using RealLifeOverhaul.Population;
 
-// The city that grows, offline: the mod's two districts north of Manhattan (Uptown and Cedar Heights) put beside Build 3682's city with no building of
-// their own on the first day, so the documented city stands as it was, and their land standing in for what the construction game measures in the
-// game (its free land and the building code's room over what stands, PopulationBridges.LandHomes). The city's developers are stood in for by the
+// The city that grows, offline: the city as the game lists it at a load (Build 3682's and the mod's two districts north of Manhattan, Uptown and
+// Cedar Heights, standing from the first day), their land standing in for what the construction game measures in the game (its free land and the
+// building code's room over what stands, PopulationBridges.LandHomes). The city's developers are stood in for by the
 // construction game's own pace (Construction/GrowRules: at most four sites under way in a district, two days between starts, a building's keys about
 // a month after its land): a site starts while the population's homes pull for its district is open, and its building joins the city's table on
 // the day it stands (PopulationSim.Rebuild), as the director binds the game's finished buildings at the month's turn. The rules' own checks, each
 // made to fail once while written, follow: the pressure, the homes wanted, the land, the pull, the firms, the turnover, the save and the share.
 internal static partial class Program
 {
-    // The mod's land offline, in flats: Uptown and Cedar Heights hold about 7,000 flats on the first day of a game (POPULATION.md section 2); the
-    // building code's twelve storeys over the half of it most of their buildings stand at, and their 65 free spaces (plans/growables.md), leave room
-    // for about as many again. This stands in for what the game measures itself (the construction game's free columns at their usual floor and each
-    // standing home's room under the code, PopulationBridges.LandHomes).
+    // The mod's land offline, in flats: Uptown and Cedar Heights hold some 7,500 flats in their 222 home buildings on the first day of a game
+    // (POPULATION.md section 16); the building code's twelve storeys over the half of it most of their buildings stand at, and their 65 free spaces
+    // (plans/growables.md), leave room for about as many again. This stands in for what the game measures itself (the construction game's free
+    // columns at their usual floor and each standing home's room under the code, PopulationBridges.LandHomes).
     private static readonly string[] BandIds = { "reallife_neighborhood_uptown", "reallife_neighborhood_cedarheights" };
     private static readonly int[] BandLand = { 4000, 4600 };
     private const int BandSiteSqm = 2400;     // m2 of a grown home building's floor: a site of one or two spaces at Uptown's storeys
@@ -33,12 +33,10 @@ internal static partial class Program
         public int[] Band = new int[BandIds.Length];   // the districts' places in the city's table
     }
 
-    // Build 3682's city with the mod's two districts beside it, empty, generated whole in a calendar of so many days a year; their land measured.
+    // The city as the game lists it, generated whole in a calendar of so many days a year; the mod's two districts' land measured.
     private static PopulationSim LivingBandMade(int seed, int yearDays, out PopulationState s, out BandBuilder builder)
     {
         s = PopulationCity(out List<BusinessSeed> seeds);
-        s.Districts.Add(new PopDistrict { Id = BandIds[0], Working = 5, Middle = 76, Upper = 19, RealEstate = 1500, DemandWeight = 450, X = 300f, Z = 900f });
-        s.Districts.Add(new PopDistrict { Id = BandIds[1], Working = 40, Middle = 50, Upper = 10, RealEstate = 950, DemandWeight = 300, X = -400f, Z = 900f });
         var sim = new PopulationSim();
         sim.BeginGenerate(s, seed, 1, yearDays, seeds);
         sim.RunAll();

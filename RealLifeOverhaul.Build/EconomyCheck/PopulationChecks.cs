@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using RealLifeOverhaul;
 using RealLifeOverhaul.Population;
+using RealLifeOverhaul.Uptown;
 using PopLedger = RealLifeOverhaul.Population.Ledger;
 
 // The city's population (plans/tech-overhaul/POPULATION.md; the owner, 1 Nov 2026: "if we can make it more realistic that would be great"),
@@ -29,6 +30,8 @@ internal static partial class Program
     }
 
     // ---------------------------------------------------------------- the city as the checks know it (EconomyCheck/PopulationCity.txt)
+
+    private const int CityJobs = 110579;   // the jobs of the city the game lists: Build 3682's 72,663 and the band's 37,916, most in its offices
 
     private static string PopulationFile => System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\PopulationCity.txt"));
 
@@ -75,7 +78,12 @@ internal static partial class Program
         "ba:businesstype_eventplanningagency", "ba:businesstype_webdevelopmentagency"
     };
 
-    /// <summary>Build 3682's city as a population's table, and the city's AI businesses as the game places them (a shop in nine of ten shop buildings, a kind by its address).</summary>
+    /// <summary>
+    /// The city as the game lists it at a load (Player.log of 0.64.0-beta.2: "generated from its 1426 buildings") as a population's table: Build 3682's
+    /// 885 buildings, then Uptown's and Cedar Heights' 541 as the band's load declares them (each lot's street, structure and traffic from the plan, its
+    /// floor the game's building its design copies), and the city's AI businesses as the game places them (a shop in nine of ten shop buildings, a kind
+    /// by its address; the band's special places their own).
+    /// </summary>
     private static PopulationState PopulationCity(out List<BusinessSeed> seeds)
     {
         var s = new PopulationState();
@@ -100,6 +108,7 @@ internal static partial class Program
             };
             s.Districts.Add(d);
         }
+        var unitOf = new Dictionary<string, int>(StringComparer.Ordinal);   // the game's unit of each size, as its own buildings give it
         foreach (string line in lines)
         {
             if (!line.StartsWith("B|", StringComparison.Ordinal))
@@ -110,50 +119,118 @@ internal static partial class Program
             int district = s.DistrictOf(f[3]);
             string special = f[10] == "-" ? null : f[10];
             string size = f[5];
+            unitOf[size] = int.Parse(f[7]);
             var b = new CityBuilding
             {
                 Street = f[1], Number = int.Parse(f[2]), District = district, Use = MeasureRules.UseOf(f[4], special), UnitSqm = int.Parse(f[7]), TotalSqm = int.Parse(f[8]),
                 Traffic = int.Parse(f[9]), Special = special, Villa = f[4] == "ba:buildingtype_residential" && size.StartsWith("ba:buildingsize_t", StringComparison.Ordinal),
                 X = s.Districts[district].X, Z = s.Districts[district].Z
             };
-            s.Buildings.Add(b);
-            int pull = RoomOf(f[4], size, int.Parse(f[6]));
-            if (b.Use == Use.Shop || b.Use == Use.Cinema || b.Use == Use.Theatre)
-            {
-                s.Districts[district].Pull += pull * s.Districts[district].DemandWeight / 1000;
-            }
-            uint h = PopDraw.Hash(17, 1, b.Number, b.Street.Length * 131 + b.Street[b.Street.Length - 1]);
-            string type = null;
-            switch (b.Use)
-            {
-                case Use.Shop:
-                    type = h % 10 == 0 ? null : CheckShopTypes[h / 10 % (uint)CheckShopTypes.Length];
-                    break;
-                case Use.Office:
-                    type = h % 3 == 0 ? null : CheckOfficeTypes[h / 3 % (uint)CheckOfficeTypes.Length];
-                    break;
-                case Use.Cinema:
-                    type = "ba:businesstype_cinema";
-                    break;
-                case Use.Theatre:
-                    type = "ba:businesstype_theater";
-                    break;
-                case Use.Special:
-                    type = special;
-                    break;
-            }
-            if (type != null)
-            {
-                seeds.Add(new BusinessSeed
-                {
-                    Street = b.Street, Number = b.Number, Type = type, Owner = RealLifeOverhaul.Population.Owner.City, Room = pull, Hours = 12, Price = 1000, Quality = 50, Content = 50, Staff = -1,
-                    Promotion = 500 + 750 * b.Traffic / 100
-                });
-            }
+            CitySeed(s, seeds, b, RoomOf(f[4], size, int.Parse(f[6])));
         }
+        BandCity(s, seeds, lines, unitOf);
         CityTable.Sort(s.Buildings);
         s.IndexBuildings();
         return s;
+    }
+
+    // A building into the table, its customers' room into its district's pull, and its business as the game would place one.
+    private static void CitySeed(PopulationState s, List<BusinessSeed> seeds, CityBuilding b, int pull)
+    {
+        s.Buildings.Add(b);
+        if (b.Use == Use.Shop || b.Use == Use.Cinema || b.Use == Use.Theatre)
+        {
+            s.Districts[b.District].Pull += pull * s.Districts[b.District].DemandWeight / 1000;
+        }
+        uint h = PopDraw.Hash(17, 1, b.Number, b.Street.Length * 131 + b.Street[b.Street.Length - 1]);
+        string type = null;
+        switch (b.Use)
+        {
+            case Use.Shop:
+                type = h % 10 == 0 ? null : CheckShopTypes[h / 10 % (uint)CheckShopTypes.Length];
+                break;
+            case Use.Office:
+                type = h % 3 == 0 ? null : CheckOfficeTypes[h / 3 % (uint)CheckOfficeTypes.Length];
+                break;
+            case Use.Cinema:
+                type = "ba:businesstype_cinema";
+                break;
+            case Use.Theatre:
+                type = "ba:businesstype_theater";
+                break;
+            case Use.Special:
+                type = b.Special;
+                break;
+        }
+        if (type != null)
+        {
+            seeds.Add(new BusinessSeed
+            {
+                Street = b.Street, Number = b.Number, Type = type, Owner = RealLifeOverhaul.Population.Owner.City, Room = pull, Hours = 12, Price = 1000, Quality = 50, Content = 50, Staff = -1,
+                Promotion = 500 + 750 * b.Traffic / 100
+            });
+        }
+    }
+
+    // Uptown and Cedar Heights as the load lists them: the districts from their figures (DistrictSplit), each U row's lot from the plan, its structure
+    // the one the load picks, its floor the row's (the game's building its look copies) where the look is of its size.
+    private static void BandCity(PopulationState s, List<BusinessSeed> seeds, string[] lines, Dictionary<string, int> unitOf)
+    {
+        List<BuildingsLot> plan = UptownRealPlan();
+        var byId = new Dictionary<string, BuildingsLot>(StringComparer.Ordinal);
+        float[] sumX = new float[DistrictSplit.Count], sumZ = new float[DistrictSplit.Count];
+        int[] lots = new int[DistrictSplit.Count];
+        foreach (BuildingsLot lot in plan)
+        {
+            byId[lot.Id] = lot;
+            int k = DistrictSplit.OfColumn(lot.Block % 100);
+            sumX[k] += lot.X;
+            sumZ[k] += lot.Z;
+            lots[k]++;
+        }
+        int first = s.Districts.Count;
+        for (int k = 0; k < DistrictSplit.Count; k++)
+        {
+            RealLifeOverhaul.Uptown.DistrictFigures f = DistrictSplit.Figures(k);
+            s.Districts.Add(new PopDistrict
+            {
+                Id = DistrictSplit.Ids[k], Working = f.Working, Middle = f.Middle, Upper = f.Upper, RealEstate = (int)Math.Round(f.RealEstate * 1000.0),
+                DemandWeight = (int)Math.Round(f.Demand * 1000.0), X = sumX[k] / Math.Max(1, lots[k]), Z = sumZ[k] / Math.Max(1, lots[k])
+            });
+        }
+        HashSet<string> leased = UptownIds(plan, BuildingsRules.Leased(plan, new List<int>()));
+        float nearest = BuildingsRules.Nearest(plan, 0f, 1f);
+        foreach (string line in lines)
+        {
+            if (!line.StartsWith("U|", StringComparison.Ordinal))
+            {
+                continue;
+            }
+            string[] f = line.Split('|');
+            if (!byId.TryGetValue(f[1], out BuildingsLot lot))
+            {
+                continue;
+            }
+            string size = f[2], special = f[4] == "-" ? null : f[4];
+            BuildingsStructure made = special != null ? new BuildingsStructure { Size = size, Version = 1, Type = "ba:buildingtype_special" } : BandStructure(lot, leased.Contains(lot.Id));
+            // a look of another size keeps the record's floor its own size's one unit (FrontageRules.Wear), as the load made it
+            int floor = made.Size == size ? int.Parse(f[3]) : unitOf.TryGetValue(made.Size, out int own) ? own : 0;
+            var b = new CityBuilding
+            {
+                Street = lot.Street, Number = lot.Number, District = first + DistrictSplit.OfColumn(lot.Block % 100), Use = MeasureRules.UseOf(made.Type, special),
+                UnitSqm = unitOf.TryGetValue(made.Size, out int unit) ? unit : 0, TotalSqm = floor, Traffic = BuildingsRules.Traffic(lot, nearest, 0f, 1f), Special = special,
+                X = lot.X, Z = lot.Z
+            };
+            CitySeed(s, seeds, b, RoomOf(made.Type, made.Size, made.Version));
+        }
+    }
+
+    // The structure a band lot stands as: the load's pick of its plan's structures (LifeGame.Structures; a leased office's PickOffice, else PickStructure).
+    private static BuildingsStructure BandStructure(BuildingsLot lot, bool lease)
+    {
+        List<BuildingsStructure> options = UptownOptions(lot);
+        int pick = lease ? BuildingsRules.PickOffice(lot.Id, options) : BuildingsRules.PickStructure(lot.Id, options);
+        return pick >= 0 ? options[pick] : new BuildingsStructure { Size = lot.Sizes != null && lot.Sizes.Count > 0 ? lot.Sizes[0] : string.Empty, Version = 1, Type = string.Empty };
     }
 
     // A city generated whole from a seed in a calendar of so many days a year (the game's default unless asked), its first day lived.
@@ -171,7 +248,15 @@ internal static partial class Program
     private static void PopulationMeasure()
     {
         PopulationState s = PopulationCity(out List<BusinessSeed> seeds);
-        Check(s.Buildings.Count == 885 && s.Districts.Count == 7, "population measure: Build 3682's 885 buildings in seven districts read (" + s.Buildings.Count + ", " + s.Districts.Count + ")");
+        int uptown = s.DistrictOf(DistrictSplit.UptownId), cedar = s.DistrictOf(DistrictSplit.CedarId);
+        int band = 0;
+        foreach (CityBuilding b in s.Buildings)
+        {
+            band += b.District == uptown || b.District == cedar ? 1 : 0;
+        }
+        Check(s.Buildings.Count == 1426 && band == 541 && s.Districts.Count == 9,
+            "population measure: the city the game lists at a load read, Build 3682's 885 buildings and Uptown's and Cedar Heights' 541 in nine districts, as the beta's log has it ("
+            + s.Buildings.Count + ", " + band + " of the band's, " + s.Districts.Count + ")");
         var city = new DistrictMeasure();
         DistrictMeasure[] rows = MeasureRules.Measure(s.Buildings, s.Districts, city);
         long average = city.FlatSqm / Math.Max(1, city.Flats - city.Villas);
@@ -180,20 +265,30 @@ internal static partial class Program
             for (int d = 0; d < rows.Length; d++)
             {
                 DistrictMeasure r = rows[d];
-                Console.WriteLine("  " + s.Districts[d].Id.Replace("ba:neighborhood_", string.Empty) + ": " + r.HomeBuildings + " home buildings, " + r.Flats + " flats (" + r.FlatsAboveShops
-                                  + " above shops, " + r.FlatSqm / Math.Max(1, r.Flats) + " m2 on average), " + r.Jobs + " jobs (offices " + r.OfficeJobs + ", shops " + r.ShopJobs + ", warehouses "
+                Console.WriteLine("  " + s.Districts[d].Id.Replace("ba:neighborhood_", string.Empty) + ": " + r.HomeBuildings + " home buildings, " + r.Flats + " flats ("
+                                  + r.FlatSqm / Math.Max(1, r.Flats) + " m2 on average), " + r.Jobs + " jobs (offices " + r.OfficeJobs + ", shops " + r.ShopJobs + ", warehouses "
                                   + r.WarehouseJobs + ", venues " + r.VenueJobs + ", special " + r.SpecialJobs + ", building staff " + r.BuildingJobs + ")");
             }
-            Console.WriteLine("  city: " + city.Flats + " flats (" + city.Villas + " houses, " + city.FlatsAboveShops + " above shops, " + average + " m2 net on average), " + city.Jobs + " jobs");
+            Console.WriteLine("  city: " + city.Flats + " flats (" + city.Villas + " houses, " + average + " m2 net on average), " + city.Jobs + " jobs");
         }
+        Check(rows[uptown].HomeBuildings == 106 && rows[cedar].HomeBuildings == 116,
+            "population measure: Uptown's 106 and Cedar Heights' 116 home buildings, as the load's mix pass counts them (" + rows[uptown].HomeBuildings + ", " + rows[cedar].HomeBuildings + ")");
         Check(city.Villas == 28 && rows[s.DistrictOf("ba:neighborhood_thehamptons")].Flats == 28, "population measure: the Hamptons' 28 houses are a household each (" + city.Villas + ")");
-        Check(city.Flats >= 19500 && city.Flats <= 22500 && average >= 64 && average <= 76,
-            "population measure: the base city has flats of about 70 m2 net, enough for the owner's 18,000 to 22,000 households (" + city.Flats + " flats, " + average + " m2)");
-        Check(city.FlatsAboveShops > city.Flats / 5 && city.FlatsAboveShops < city.Flats / 2, "population measure: a share of the floors above shops is homes, as on New York's streets (" + city.FlatsAboveShops + ")");
+        Check(city.Flats >= 19900 && city.Flats <= 21500 && average >= 64 && average <= 76,
+            "population measure: the city has flats of about 70 m2 net, enough for the owner's 18,000 to 22,000 households and near 19,400 of them (" + city.Flats + " flats, " + average + " m2)");
+        int inShops = 0, bandFlats = rows[uptown].Flats + rows[cedar].Flats;
+        foreach (CityBuilding b in s.Buildings)
+        {
+            inShops += b.Use == Use.Homes ? 0 : MeasureRules.Flats(b, s.Districts[b.District]);
+        }
+        Check(inShops == 0 && bandFlats * 3 > city.Flats && bandFlats * 2 < city.Flats,
+            "population measure: the homes are the residential buildings alone, a third of them Uptown's and Cedar Heights' standing from the first day ("
+            + inShops + " in other buildings, " + bandFlats + " of " + city.Flats + " in the band)");
         int garment = s.DistrictOf("ba:neighborhood_garmentdistrict"), murray = s.DistrictOf("ba:neighborhood_murrayhill");
         Check(rows[garment].FlatSqm / Math.Max(1, rows[garment].Flats) < rows[murray].FlatSqm / Math.Max(1, rows[murray].Flats),
             "population measure: the Garment District's flats are smaller than Murray Hill's");
-        Check(city.Jobs == 72663, "population measure: the base city's jobs are the measure's as before, the homes changing none of them (" + city.Jobs + ")");
+        Check(city.Jobs - rows[uptown].Jobs - rows[cedar].Jobs == 72663 && city.Jobs == CityJobs,
+            "population measure: Build 3682's jobs are the measure's as before (72,663), Uptown's and Cedar Heights' offices with them (" + city.Jobs + ")");
         Check(city.OfficeJobs > city.ShopJobs * 4 && city.OfficeJobs >= 50000, "population measure: offices hold most jobs, a desk for every 16 m2 of their net floor (" + city.OfficeJobs + " against " + city.ShopJobs + " in shops)");
         int midtown = s.DistrictOf("ba:neighborhood_midtown"), industry = s.DistrictOf("ba:neighborhood_industrycity");
         Check(rows[midtown].Jobs > rows[industry].Jobs * 2 && rows[industry].WarehouseJobs > rows[midtown].WarehouseJobs, "population measure: Midtown is the office district, Industry City the warehouses' (" + rows[midtown].Jobs + ", " + rows[industry].WarehouseJobs + ")");
@@ -203,11 +298,11 @@ internal static partial class Program
         var shop = new CityBuilding { Use = Use.Shop, UnitSqm = 225, TotalSqm = 1900, Business = "ba:businesstype_fastfoodrestaurant" };
         var office = new CityBuilding { Use = Use.Office, UnitSqm = 285, TotalSqm = 4000 };
         PopDistrict hells = s.Districts[s.DistrictOf("ba:neighborhood_hellskitchen")], hamptons = s.Districts[s.DistrictOf("ba:neighborhood_thehamptons")];
-        var band = new PopDistrict { Id = "reallife_neighborhood_cedarheights", Working = 40, Middle = 50, Upper = 10 };
-        Check(MeasureRules.Flats(villa, hells) == 1 && MeasureRules.Flats(tower, hells) == 24 && MeasureRules.Flats(none, hells) == 9 && MeasureRules.Flats(shop, hells) == 16
-              && MeasureRules.Flats(office, hells) == 0 && MeasureRules.Flats(tower, hamptons) == 1 && MeasureRules.FlatNet(band) == 63 && MeasureRules.GameUnits(tower) == 16,
+        Check(MeasureRules.Flats(villa, hells) == 1 && MeasureRules.Flats(tower, hells) == 24 && MeasureRules.Flats(none, hells) == 9 && MeasureRules.Flats(shop, hells) == 0
+              && MeasureRules.Flats(office, hells) == 0 && MeasureRules.Flats(tower, hamptons) == 1 && MeasureRules.FlatNet(s.Districts[cedar]) == 63
+              && MeasureRules.FlatNet(s.Districts[uptown]) == 71 && MeasureRules.GameUnits(tower) == 16,
             "population measure: a villa one flat; 2,000 m2 in Hell's Kitchen the game's 96 m2 unit and 23 flats of 66 m2; a size with no unit 80 m2 and 66 m2 flats; "
-            + "a shop's floor above it four fifths homes there; an office none; a Hamptons home one house; Cedar Heights' flats by its classes (63 m2); the staff by the game's units");
+            + "a shop and an office none; a Hamptons home one house; Cedar Heights' and Uptown's flats by their classes (63 and 71 m2); the staff by the game's units");
         Check(MeasureRules.Jobs(shop) == 18 && MeasureRules.ShopJobs(225, null) == 8 && MeasureRules.ShopJobs(10, null) == PopulationCatalogue.ShopJobsLeast,
             "population measure: a shop's jobs by its sales floor and kind (fast food 12 m2 a job), the average shop's where the kind is not known, two at least");
         Check(MeasureRules.UseOf("ba:buildingtype_retail", "ba:businesstype_bank") == Use.Special && MeasureRules.UseOf("ba:buildingtype_theater", null) == Use.Theatre
@@ -264,8 +359,8 @@ internal static partial class Program
                               + unemployed * 1000 / Math.Max(1, labour) / 10.0 + "%), " + jobs + " jobs, " + s.Region.Commuting + " commuters; " + degree * 100 / Math.Max(1, adults25) + "% of adults 25+ with a degree; median "
                               + s.Median / 100 + " a day after tax");
         }
-        Check(households >= 18000 && households <= 22000, "population people: the base city's households in the owner's band of 18,000 to 22,000, its flats less the 5% kept free (" + households + ")");
-        Check(people >= 50000 && people <= 65000, "population people: the base city's people in the owner's band of 50,000 to 65,000 (" + people + ")");
+        Check(households >= PopulationCatalogue.HouseholdsLeast && households <= PopulationCatalogue.HouseholdsMost && Math.Abs(households - 19400) <= 800, "population people: the households of the city the game lists in the owner's band of 18,000 to 22,000, near 19,400, its flats less the 5% kept free (" + households + ")");
+        Check(people >= PopulationCatalogue.PeopleLeast && people <= PopulationCatalogue.PeopleMost && Math.Abs(people - 55800) <= 2500, "population people: its people in the owner's band of 50,000 to 65,000, near 55,800 (" + people + ")");
         Check(people * 100 / Math.Max(1, households) >= 260 && people * 100 / Math.Max(1, households) <= 300,
             "population people: about 2.8 people a household, the owner's city (" + people * 100 / Math.Max(1, households) / 100.0 + ")");
         Check(alone * 1000 / Math.Max(1, households) >= 150 && alone * 1000 / Math.Max(1, households) <= 300, "population people: a fifth to a quarter of households live alone (" + alone * 100 / Math.Max(1, households) + "%)");

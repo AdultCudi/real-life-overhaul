@@ -30,16 +30,17 @@ namespace RealLifeOverhaul.Tech
 
         // ---------------------------------------------------------------- the city a market is sized from
 
-        // The documented city while the population is not running (it is generating, or a city it does not know): the base city
-        // as the population measures it (POPULATION.md section 14: 50 to 65 thousand people), its firms as SectorRules.FirmsOf
-        // counts them from that city's employers on its first day (EconomyCheck's living years hold the two equal), so a market is
-        // the same size whether the population runs or not and the money scale's bands hold on both. The office floors hold some
-        // 54 thousand jobs: about ten firms of thousands, a hundred and fifty of hundreds and a thousand small, with the shops and
-        // the services.
+        // The documented city while the population is not running (it is generating, or a city it does not know): the city the game
+        // lists at a load as the population measures it (Build 3682's and Uptown's and Cedar Heights' buildings, POPULATION.md sections
+        // 14 and 16: 50 to 65 thousand people), its firms as SectorRules.FirmsOf counts them from that city's employers on its first
+        // day (EconomyCheck's living years hold the two equal), so a market is the same size whether the population runs or not and
+        // the money scale's bands hold on both. The office floors hold some 88 thousand jobs, a third of them in the band's towers:
+        // some eighteen firms of thousands, two hundred and forty of hundreds and two and a half thousand small, with the shops and
+        // the services. Each market's figure a firm below is sized on these, so its whole is what the paybacks were set on.
         public const int ReferencePeople = 55600;
-        public const int ReferenceSmall = 1490;      // businesses under 50 people: the shops, venues and the small firms on the office floors
-        public const int ReferenceMid = 156;         // ...50 to 999 people
-        public const int ReferenceLarge = 12;        // ...1,000 and more: the large firms, the public bodies and the mod's own companies
+        public const int ReferenceSmall = 2415;      // businesses under 50 people: the shops, venues and the small firms on the office floors
+        public const int ReferenceMid = 239;         // ...50 to 999 people
+        public const int ReferenceLarge = 18;        // ...1,000 and more: the large firms, the public bodies and the mod's own companies
 
         // How the population's employers become firms by size (SectorRules.FirmsOf): an office building's other floors hold
         // many firms, which Manhattan's office market splits about so between small, mid-sized and large ones.
@@ -54,12 +55,12 @@ namespace RealLifeOverhaul.Tech
         /// <summary>
         /// How many buyers beyond the city each of the city's stands for, thousandths, by SectorBuyers: software is sold online,
         /// so a resident stands for some 60 people of the region and the internet who could use a consumer product, a business
-        /// for eight like it in the region, a large organisation for some thirty across the country. Sized so the city's markets
+        /// for five like it in the region, a large organisation for some twenty across the country. Sized so the city's markets
         /// on the first day (some 3.3 million people, 13 thousand businesses and 390 organisations), every product of a kind
         /// sharing one, hold a firm of a few people with one good product inside the software payback target (EconomyCheck's
         /// SectorChecks.Sims, on the living city and the documented one).
         /// </summary>
-        public static readonly int[] World = { 60000, 8080, 32500 };
+        public static readonly int[] World = { 60000, 5011, 21667 };
 
         public static readonly int[] WorldGrowth = { 50, 30, 20 };   // thousandths more buyers a year of the save at first, by SectorBuyers: people fastest...
         // ...towards these thousandths of the first day's at the most (ScaleRules.Grown): more of the world online and buying, then a market
@@ -161,10 +162,10 @@ namespace RealLifeOverhaul.Tech
         /// <summary>
         /// Projects a year each firm of the city puts out, thousandths, by its size (small, mid-sized, large): a firm's IT budget, spread over
         /// CalendarRules.MoneyYearDays whatever the save's year. Sized on the measured city's firms (ReferenceSmall and its kind) so the city's
-        /// IT work is what the services' paybacks are set on: about half a project a year a small business, two a mid-sized firm and fifteen
-        /// a large one (its 2,500 people on average, LargeFirmJobs).
+        /// IT work is what the services' paybacks are set on: about a third of a project a year a small business, one and a third a mid-sized
+        /// firm and ten a large one (its 2,500 people on average, LargeFirmJobs).
         /// </summary>
-        public const int ProjectsSmall = 503, ProjectsMid = 2051, ProjectsLarge = 15000;
+        public const int ProjectsSmall = 310, ProjectsMid = 1339, ProjectsLarge = 10000;
         public const int ServicesWorld = 1000;       // thousandths: IT work is bought near at hand, so the city's own firms are its market
         public const int RivalServiceReputation = 700;   // what the city's rival IT firms weigh as, each, in the market for contracts
         // thousandths: the weight of all the rival IT firms together against one of the player's: some twenty of them,
@@ -188,16 +189,16 @@ namespace RealLifeOverhaul.Tech
 
         // ---------------------------------------------------------------- data centres and the cloud
 
-        // Racks the city's firms rent, thousandths of a rack a firm by size: a large firm (2,500 people on average) almost four, a mid-sized one
-        // an eighth, a small one hardly any. Each size's racks together are sized on the measured city's firms (ReferenceSmall and its kind),
+        // Racks the city's firms rent, thousandths of a rack a firm by size: a large firm (2,500 people on average) two and a half, a mid-sized
+        // one a twelfth, a small one hardly any. Each size's racks together are sized on the measured city's firms (ReferenceSmall and its kind),
         // so the market for racks is the size the data centres' paybacks are set on.
-        public const int RacksLarge = 3750, RacksMid = 123, RacksSmall = 7;
+        public const int RacksLarge = 2500, RacksMid = 80, RacksSmall = 4;
         public const int ColoScale = 3000;           // thousandths: the region a data centre at the end game's scale lets to (ColoDemandScale over ColoDemand)
         // Compute the city's firms buy a day at the list price, thousandths of a unit a firm, and AI compute: with the rivals' hosting and
         // labs, about what the old fixed demand was in the documented city at an even price and name (EconomyCheck's SectorInfra), each
         // size's together sized on the measured city's firms as the racks are.
-        public const int CloudLarge = 100000, CloudMid = 6154, CloudSmall = 503;
-        public const int GpuLarge = 5000, GpuMid = 205, GpuSmall = 13;
+        public const int CloudLarge = 66667, CloudMid = 4017, CloudSmall = 310;
+        public const int GpuLarge = 3333, GpuMid = 134, GpuSmall = 8;
         public const int CloudScale = 40000;         // thousandths: what the end game's scale opens beyond the city (CloudDemandScale over CloudDemand)
         public const int GpuScale = 20000;           // ...of AI compute (GpuDemandScale over GpuDemand)
         public static readonly int[] HostingUnits = { 1, 20, 500 };   // thousandths of a unit of compute a customer of a rival's software takes a day, by Segment

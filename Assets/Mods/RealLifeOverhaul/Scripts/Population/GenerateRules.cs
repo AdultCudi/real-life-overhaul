@@ -29,11 +29,22 @@ namespace RealLifeOverhaul.Population
             s.Seed = seed;
             s.Day = day;
             s.Generated = day;
+            s.Measure = PopulationCatalogue.MeasureVersion;
             s.YearDays = Math.Max(8, yearDays);
             s.MonthNumber = MonthOf(day, s.YearDays);
             s.NextHousehold = 1;
             s.NextPerson = 1;
             CityTable.Lay(s);
+        }
+
+        /// <summary>
+        /// True for a saved city whose homes an older measure counted (the betas' line, homes above shops too, 47% over the owner's size): it is
+        /// generated again from the buildings with its own seed, the same city on every machine, rather than cut down, which would orphan the jobs,
+        /// the player's staff and the follows tied to its households.
+        /// </summary>
+        public static bool Outdated(PopulationState read)
+        {
+            return read != null && read.Measure != PopulationCatalogue.MeasureVersion;
         }
 
         /// <summary>The month's number of a day, from 0, by the save's year (a month is a twelfth of it, three days at least).</summary>

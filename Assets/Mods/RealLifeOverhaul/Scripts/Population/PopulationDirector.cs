@@ -204,6 +204,13 @@ namespace RealLifeOverhaul.Population
             PopulationState read = _read;
             _read = null;
             PopulationGame.ReadSeeds(_seeds, Staff());
+            int seed = CitySeed();
+            if (GenerateRules.Outdated(read))
+            {
+                _readWhy += ", a city of " + read.Households.Live + " households counted by measure " + read.Measure + " (now " + PopulationCatalogue.MeasureVersion + ")";
+                seed = read.Seed != 0 ? read.Seed : seed;
+                read = null;
+            }
             if (read != null)
             {
                 int away = CityTable.Rebind(read, new List<CityBuilding>(_buildings), new List<PopDistrict>(_districts));
@@ -216,7 +223,6 @@ namespace RealLifeOverhaul.Population
                              + read.Buildings.Count + " buildings" + (away > 0 ? "; " + away + " household(s) away, their building not standing at this load" : string.Empty) + ".");
                 return;
             }
-            int seed = CitySeed();
             var fresh = new PopulationState();
             fresh.Districts.AddRange(_districts);
             fresh.Buildings.AddRange(_buildings);
@@ -486,6 +492,17 @@ namespace RealLifeOverhaul.Population
                 Begin(_sim.State, true);
                 Logger?.Info("Living population: generated on day " + _sim.State.Day + ": " + _state.Households.Live + " households, " + _state.People.Live + " people, "
                              + _state.Businesses.Count + " businesses anchored at the game's own customers.");
+                if (Verbose)
+                {
+                    int households = _state.Households.Live, people = _state.People.Live;
+                    bool fits = households >= PopulationCatalogue.HouseholdsLeast && households <= PopulationCatalogue.HouseholdsMost
+                                && people >= PopulationCatalogue.PeopleLeast && people <= PopulationCatalogue.PeopleMost;
+                    // the owner's size is the city with Uptown and Cedar Heights; with Uptown off the city is the game's alone, a third smaller
+                    Logger?.Info("Population check (the city's size): " + households + " households and " + people + " people from " + _state.Buildings.Count
+                                 + " buildings, wanted " + PopulationCatalogue.HouseholdsLeast + " to " + PopulationCatalogue.HouseholdsMost + " and " + PopulationCatalogue.PeopleLeast
+                                 + " to " + PopulationCatalogue.PeopleMost + (Settings.Uptown ? ": " : " with Uptown, which is off: ")
+                                 + (fits || !Settings.Uptown ? "PASS" : "FAIL, the city's homes are measured off the owner's size"));
+                }
             }
             UseFigures();
             int asked = PopulationGame.RedrawMine();

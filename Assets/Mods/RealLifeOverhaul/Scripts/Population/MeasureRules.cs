@@ -36,8 +36,7 @@ namespace RealLifeOverhaul.Population
     public sealed class DistrictMeasure
     {
         public int Buildings, HomeBuildings, Flats, Villas;
-        public int FlatsAboveShops;               // of its flats, those above its shops
-        public long FlatSqm;                      // m2 of all its flats but its houses, net
+        public long FlatSqm;                     // m2 of all its flats but its houses, net
         public int Jobs, OfficeJobs, ShopJobs, WarehouseJobs, VenueJobs, SpecialJobs, BuildingJobs;
         public int OfficeSqm, ShopSqm, WarehouseSqm;
         public int Households, People, Workers;   // filled in once a city is generated
@@ -48,7 +47,6 @@ namespace RealLifeOverhaul.Population
             HomeBuildings += o.HomeBuildings;
             Flats += o.Flats;
             Villas += o.Villas;
-            FlatsAboveShops += o.FlatsAboveShops;
             FlatSqm += o.FlatSqm;
             Jobs += o.Jobs;
             OfficeJobs += o.OfficeJobs;
@@ -67,38 +65,34 @@ namespace RealLifeOverhaul.Population
     }
 
     /// <summary>
-    /// The city measured from its buildings (POPULATION.md section 2; the brief's first step; the owner's bigger city of 1 Nov 2026): flats of a real
-    /// size in each residential building (the game's own unit is its first flat, and the rest of its floor times <see cref="PopulationCatalogue.HomeNetShare"/>
-    /// is flats of its district's size; a Hamptons house is one) and in the floors above a shop (a share of them by district: most of New York's streets
-    /// of shops have homes above); and jobs in each building (offices a desk for every <see cref="PopulationCatalogue.DeskSqm"/> m2 of their net floor,
-    /// a shop by its sales floor and kind, warehouses by floor, venues by kind, the special services by their kind's density, a residential building's
-    /// own staff by the game's units). Game-free (EconomyCheck's PopulationChecks measures Build 3682's city with it); at a load the same rule reads
-    /// each building's floor from the game, so Uptown's and Cedar Heights' are measured then, their flats by their classes.
+    /// The city measured from its buildings (POPULATION.md sections 2 and 16; the owner's bigger city of 1 Nov 2026): flats of a real size in each
+    /// residential building (the game's own unit is its first flat, and the rest of its floor times <see cref="PopulationCatalogue.HomeNetShare"/> is
+    /// flats of its district's size; a Hamptons house is one); and jobs in each building (offices a desk for every <see cref="PopulationCatalogue.DeskSqm"/>
+    /// m2 of their net floor, a shop by its sales floor and kind, warehouses by floor, venues by kind, the special services by their kind's density, a
+    /// residential building's own staff by the game's units). Homes are the game's residential buildings alone: Uptown's and Cedar Heights' 222 stand
+    /// from the first day beside Build 3682's 363, and a share of the shops' upper floors counted as homes too had put the city at 28,500 households.
+    /// Game-free (EconomyCheck's PopulationChecks measures the city the game lists at a load, the band's 541 buildings with Build 3682's 885); at a
+    /// load the same rule reads each building's floor from the game.
     /// COST: nothing per frame; a few integer operations a building.
     /// </summary>
     public static class MeasureRules
     {
         /// <summary>
         /// The flats of a building in its district: a residential building's first is the game's own unit and the rest of its net floor is flats of the
-        /// district's size (a house, a Hamptons one, is the one); a shop's are the district's share of its floor above the shop; none in any other.
+        /// district's size (a house, a Hamptons one, is the one); none in any other.
         /// </summary>
         public static int Flats(in CityBuilding b, PopDistrict d)
         {
-            switch (b.Use)
+            if (b.Use != Use.Homes)
             {
-                case Use.Homes:
-                    if (House(b, d))
-                    {
-                        return 1;
-                    }
-                    long net = (long)Math.Max(0, b.TotalSqm) * PopulationCatalogue.HomeNetShare / 1000;
-                    return 1 + (int)Math.Max(0L, (net - GameUnitSqm(b)) / FlatNet(d));
-                case Use.Shop:
-                    long above = (long)Math.Max(0, b.TotalSqm - Math.Max(0, b.UnitSqm)) * HomesAboveShops(d) / 1000 * PopulationCatalogue.HomeNetShare / 1000;
-                    return (int)(above / FlatNet(d));
-                default:
-                    return 0;
+                return 0;
             }
+            if (House(b, d))
+            {
+                return 1;
+            }
+            long net = (long)Math.Max(0, b.TotalSqm) * PopulationCatalogue.HomeNetShare / 1000;
+            return 1 + (int)Math.Max(0L, (net - GameUnitSqm(b)) / FlatNet(d));
         }
 
         /// <summary>The m2 of the building's flats (its first flat, the game's own unit, has <see cref="GameUnitSqm"/>): a house's whole, else its district's.</summary>
@@ -136,13 +130,6 @@ namespace RealLifeOverhaul.Population
                 sqm = (d.Working * c[0] + d.Middle * c[1] + d.Upper * c[2]) / (d.Working + d.Middle + d.Upper);
             }
             return Math.Max(PopulationCatalogue.FlatSqmLeast, sqm > 0 ? sqm : PopulationCatalogue.ClassFlatSqm[1]);
-        }
-
-        /// <summary>The thousandths of a shop building's floor above its shop that is homes in a district.</summary>
-        public static int HomesAboveShops(PopDistrict d)
-        {
-            int i = HomesIndex(d);
-            return i >= 0 ? PopulationCatalogue.DistrictHomes[i].HomesAboveShops : PopulationCatalogue.HomesAboveShopsDefault;
         }
 
         private static int HomesIndex(PopDistrict d)
@@ -319,7 +306,6 @@ namespace RealLifeOverhaul.Population
                     case Use.Shop:
                         r.ShopJobs += jobs;
                         r.ShopSqm += Math.Max(0, b.UnitSqm > 0 ? b.UnitSqm : b.TotalSqm);
-                        r.FlatsAboveShops += flats;
                         break;
                     case Use.Warehouse:
                         r.WarehouseJobs += jobs;

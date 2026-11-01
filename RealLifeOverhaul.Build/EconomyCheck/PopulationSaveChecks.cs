@@ -42,7 +42,7 @@ internal static partial class Program
               && back.Links.Count == s.Links.Count && back.Books.IncomeTax == s.Books.IncomeTax && back.Median == s.Median && back.Districts.Count == s.Districts.Count,
             "population save: its businesses' anchors, employers, links, books and districts come back too");
         Check(line.Length < 2 * 1024 * 1024 && zipMs < 200 && decodeMs < 400,
-            "population save: the base city's line under 2 MB, written under 200 ms and read under 400 ms here (" + line.Length / 1024 + " KB, " + zipMs.ToString("F0", CultureInfo.InvariantCulture) + " and "
+            "population save: the city's line under 2 MB, written under 200 ms and read under 400 ms here (" + line.Length / 1024 + " KB, " + zipMs.ToString("F0", CultureInfo.InvariantCulture) + " and "
             + decodeMs.ToString("F0", CultureInfo.InvariantCulture) + " ms)");
         // A year of 365 days: months of thirty days make every ledger line bigger; a month closed and half the next lived, the line still under the budget.
         PopulationState year = PopulationCity(out List<BusinessSeed> yearSeeds);
@@ -65,6 +65,16 @@ internal static partial class Program
         Check(PopulationStore.Decode(null, out _) == null && PopulationStore.Decode("v=1~not base64", out _) == null && PopulationStore.Decode("v=1~" + Convert.ToBase64String(new byte[] { 1, 2, 3 }), out _) == null
               && PopulationStore.Decode(line.Substring(0, line.Length / 2), out _) == null && PopulationStore.Decode("x=1~", out _) == null,
             "population save: a save with no line, or a damaged one, reads as none (and the city is generated again), never a fault");
+        // A beta's line (version 3, its homes counted above shops too) reads, but is generated again from the buildings with its own seed: the same city
+        // a new save of that seed has, in the owner's size.
+        PopulationState beta = PopulationStore.Decode(PopulationStore.EncodeVersion(s, 3), out int betaVersion);
+        PopulationMade(beta != null ? beta.Seed : 0, out PopulationState remade, out _);
+        PopulationMade(555, out PopulationState fresh, out _);
+        Check(back != null && back.Measure == PopulationCatalogue.MeasureVersion && !GenerateRules.Outdated(back) && !GenerateRules.Outdated(null)
+              && beta != null && betaVersion == 3 && beta.Measure == 0 && GenerateRules.Outdated(beta) && Fingerprint(remade) == Fingerprint(fresh)
+              && remade.Households.Live >= PopulationCatalogue.HouseholdsLeast && remade.Households.Live <= PopulationCatalogue.HouseholdsMost,
+            "population save: a line of this measure is kept; a beta's (version 3, homes above shops counted too) is generated again with its own seed, the same city a "
+            + "new save of it has, in the owner's size (" + remade.Households.Live + " households)");
 
         // Bound to the city as it stands: the same city binds every household back to its flat; a building gone marks its households away.
         PopulationState again = PopulationStore.Decode(line, out _);

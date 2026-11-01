@@ -23,7 +23,7 @@ namespace RealLifeOverhaul.Population
     public static class PopulationStore
     {
         public const string Key = "reallife:population";
-        public const int Version = 3;   // 3: the city's growth (GrowthState) after the studio's start
+        public const int Version = 4;   // 3: the city's growth (GrowthState) after the studio's start; 4: the measure its homes were counted by
         private static readonly byte[] Magic = { (byte)'R', (byte)'L', (byte)'O', (byte)'P' };
 
         /// <summary>The line through the district save's zip, its pieces compressed on the workers; null when a piece failed (write it with <see cref="Encode"/>).</summary>
@@ -302,6 +302,10 @@ namespace RealLifeOverhaul.Population
             {
                 WriteGrowth(w, s.Growth);
             }
+            if (version >= 4)
+            {
+                w.Int(s.Measure);
+            }
             w.Flush();
         }
 
@@ -550,6 +554,7 @@ namespace RealLifeOverhaul.Population
             {
                 ReadGrowth(r, s.Growth);   // before it the growth starts empty: the firms at the start's level, the land measured at the first month
             }
+            s.Measure = version >= 4 ? r.Int() : 0;   // a line from before it counted homes above shops too (PopulationCatalogue.MeasureVersion)
             s.IndexRecords();
             GameRules.CountAll(s);
             GameRules.Start(s);

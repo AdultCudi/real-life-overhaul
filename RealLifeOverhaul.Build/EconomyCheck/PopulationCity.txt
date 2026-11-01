@@ -893,3 +893,547 @@ D|ba:neighborhood_hellskitchen|6|82|12|1.30|0.70|136|-24|446|516
 D|ba:neighborhood_midtown|0|6|94|2.20|0.90|-344|-24|136|516
 D|ba:neighborhood_lowermanhattan|77|19|4|0.55|0.15|-604|-554|-214|-24
 D|ba:neighborhood_murrayhill|65|11|24|0.90|0.40|-214|-554|136|-24
+# Uptown and Cedar Heights as the game lists them at a load (0.64.0-beta.2, Player.log of 1 Nov 2026: "Uptown: 541 building(s) declared", the made buildings one by one, the special places).
+# Each lot's street, number, district, traffic and structure come from the plan (UptownLots, LifeGame.Structures, BuildingsRules.PickStructure); the floor is the game's building its design copies (city_buildings.json).
+# U|lot|size as the load made it|total m2 (the design's building)|special business type or -|design
+U|uptown_1_00_0001|ba:buildingsize_k|33155|-|SM_Hell's KitchenBuilding04
+U|uptown_1_00_0002|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_1_00_0003|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_1_00_0004|ba:buildingsize_a|10381|-|SM_TimesSquare_Building 09
+U|uptown_1_00_0005|ba:buildingsize_a|2878|-|SM_FlatironAreaBuilding_02
+U|uptown_1_00_0006|ba:buildingsize_a|616|-|SM_Semi-Basement_V01 Variant
+U|uptown_1_01_0001|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_1_01_0002|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_1_01_0003|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_1_01_0004|ba:buildingsize_a|422|-|SM_Semi-Basement_V05 Variant 1
+U|uptown_1_01_0005|ba:buildingsize_a|616|-|SM_Semi-Basement_V01 Variant
+U|uptown_1_01_0006|ba:buildingsize_d|10891|-|MurrayHillBuildingSectionI_02
+U|uptown_1_01_0007|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_1_01_0008|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_1_01_0009|ba:buildingsize_a|2878|-|SM_FlatironAreaBuilding_02
+U|uptown_1_01_0010|ba:buildingsize_k|5453|-|SM_HarborArea_ThirdBlock_Building_4
+U|uptown_1_01_0011|ba:buildingsize_j|33055|-|SM_Hell's KitchenBuilding04
+U|uptown_1_01_0012|ba:buildingsize_b|1154|-|SM_ResidentialBuildings_V02 Variant 4
+U|uptown_1_02_0001|ba:buildingsize_b|2115|-|SM_MB Building 40
+U|uptown_1_02_0002|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_1_02_0003|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_1_02_0004|ba:buildingsize_a|616|-|SM_Semi-Basement_V01
+U|uptown_1_02_0005|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_1_02_0006|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_1_02_0007|ba:buildingsize_j|33055|-|SM_Hell's KitchenBuilding04
+U|uptown_1_02_0008|ba:buildingsize_b|1154|-|SM_ResidentialBuildings_V02 Variant
+U|uptown_1_02_0009|ba:buildingsize_d|10891|-|MurrayHillBuildingSectionI_02
+U|uptown_1_02_0010|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_1_02_0011|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_1_02_0012|ba:buildingsize_d|10891|-|MurrayHillBuildingSectionI_02
+U|uptown_1_03_0001|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_1_03_0002|ba:buildingsize_b|2115|-|SM_MB Building 40
+U|uptown_1_03_0003|ba:buildingsize_a|2887|-|SM_MB Building 39
+U|uptown_1_03_0004|ba:buildingsize_a|601|-|SM_Semi-Basement_V04
+U|uptown_1_03_0005|ba:buildingsize_d|10891|-|MurrayHillBuildingSectionI_02
+U|uptown_1_03_0006|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_1_03_0007|ba:buildingsize_a|10381|-|SM_TimesSquare_Building 09
+U|uptown_1_03_0008|ba:buildingsize_b|1154|-|SM_ResidentialBuildings_V02 Variant 4
+U|uptown_1_03_0009|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_1_03_0010|ba:buildingsize_k|23146|-|SM_Hell's KitchenBuilding15
+U|uptown_1_03_0011|ba:buildingsize_a|2878|-|SM_FlatironAreaBuilding_02
+U|uptown_1_03_0012|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_1_04_0001|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_1_04_0002|ba:buildingsize_r|26394|-|SM_BT_001
+U|uptown_1_04_0003|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_1_04_0009|ba:buildingsize_j|33055|-|SM_Hell's KitchenBuilding04
+U|uptown_1_04_0010|ba:buildingsize_b|1157|-|SM_ResidentialBuildings_V02 Variant 1
+U|uptown_1_04_0011|ba:buildingsize_a|11500|-|SM_TimesSquare_Building 11
+U|uptown_1_04_0012|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_1_04_0013|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_1_04_0014|ba:buildingsize_b|1154|-|SM_ResidentialBuildings_V02 Variant 3
+U|uptown_1_05_0001|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_1_05_0002|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_1_05_0003|ba:buildingsize_i|2249|-|SM_HarborArea_FirstBlock_Building_05
+U|uptown_1_05_0004|ba:buildingsize_a|422|-|SM_Semi-Basement_V05 Variant 3
+U|uptown_1_05_0005|ba:buildingsize_i|2875|-|SM_BW_037
+U|uptown_1_05_0006|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_1_05_0007|ba:buildingsize_c|6901|-|SM_Hell's KitchenBuilding06
+U|uptown_1_05_0008|ba:buildingsize_d|10891|-|MurrayHillBuildingSectionI_02
+U|uptown_1_05_0009|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_1_05_0010|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_1_05_0011|ba:buildingsize_b|1535|-|SM_1StStreet_CheapRezidential_3
+U|uptown_1_06_0001|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_1_06_0002|ba:buildingsize_k|23146|-|SM_Hell's KitchenBuilding15
+U|uptown_1_06_0003|ba:buildingsize_a|2878|-|SM_FlatironAreaBuilding_02
+U|uptown_1_06_0004|ba:buildingsize_j|33055|-|SM_Hell's KitchenBuilding04
+U|uptown_1_06_0005|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_1_06_0006|ba:buildingsize_i|2875|-|SM_BW_037
+U|uptown_1_06_0007|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_1_07_0001|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_1_07_0002|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_1_07_0003|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_1_07_0004|ba:buildingsize_h|1507|-|Factory4 (Warehouse)
+U|uptown_1_07_0005|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_1_07_0006|ba:buildingsize_c|5507|-|SM_Hell's KitchenBuilding26
+U|uptown_1_07_0007|ba:buildingsize_a|17771|-|SM_TimesSquare_Building 08
+U|uptown_1_08_0006|ba:buildingsize_b|1157|-|SM_ResidentialBuildings_V02 Variant 1
+U|uptown_1_08_0007|ba:buildingsize_b|5501|-|SM_Hell's KitchenBuilding19 Variant
+U|uptown_1_08_0008|ba:buildingsize_a|1325|-|SM_HarborArea_FirstBlock_Building_06
+U|uptown_1_08_0009|ba:buildingsize_b|1154|-|SM_ResidentialBuildings_V02 Variant 2
+U|uptown_1_09_0001|ba:buildingsize_b|2115|-|SM_MB Building 40
+U|uptown_1_09_0002|ba:buildingsize_k|33155|-|SM_Hell's KitchenBuilding04
+U|uptown_1_09_0003|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_1_09_0004|ba:buildingsize_c|6901|-|SM_Hell's KitchenBuilding06
+U|uptown_1_09_0005|ba:buildingsize_b|1154|-|SM_ResidentialBuildings_V02 Variant 4
+U|uptown_1_09_0006|ba:buildingsize_b|1535|-|SM_1StStreet_CheapRezidential_3
+U|uptown_1_09_0007|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_1_09_0008|ba:buildingsize_b|1154|-|SM_ResidentialBuildings_V02
+U|uptown_1_12_0001|ba:buildingsize_a|2878|-|SM_FlatironAreaBuilding_02
+U|uptown_1_12_0002|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_1_12_0003|ba:buildingsize_m|8002|-|SM_Map Border_FunctionalB_01
+U|uptown_1_12_0004|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_1_12_0005|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_1_12_0006|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_1_12_0007|ba:buildingsize_h|1332|-|prefab_HarborArea_SecondBlock_Building_7_01
+U|uptown_1_12_0008|ba:buildingsize_a|1325|-|SM_HarborArea_FirstBlock_Building_06
+U|uptown_1_14_0001|ba:buildingsize_b|1302|-|SM_HarborArea_SecondBlock_Building_2
+U|uptown_1_14_0002|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_1_14_0003|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_1_14_0005|ba:buildingsize_j|33055|-|SM_Hell's KitchenBuilding04
+U|uptown_1_14_0006|ba:buildingsize_b|1154|-|SM_ResidentialBuildings_V02 Variant
+U|uptown_1_14_0007|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_1_14_0008|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_1_14_0009|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_1_14_0010|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_1_14_0011|ba:buildingsize_b|525|-|SM_ResidentialBuildings_V03_03
+U|uptown_1_15_0001|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_1_15_0002|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_1_15_0003|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_1_15_0004|ba:buildingsize_a|422|-|SM_Semi-Basement_V05 Variant 1
+U|uptown_1_15_0010|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_1_15_0011|ba:buildingsize_a|2878|-|SM_FlatironAreaBuilding_02
+U|uptown_1_15_0012|ba:buildingsize_d|10891|-|MurrayHillBuildingSectionI_02
+U|uptown_1_15_0013|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_1_15_0014|ba:buildingsize_i|2875|-|SM_BW_037
+U|uptown_1_15_0015|ba:buildingsize_b|1154|-|SM_ResidentialBuildings_V02 Variant 3
+U|uptown_1_16_0001|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_1_16_0002|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_1_16_0003|ba:buildingsize_b|1302|-|SM_HarborArea_SecondBlock_Building_2
+U|uptown_1_16_0004|ba:buildingsize_d|10891|-|MurrayHillBuildingSectionI_02
+U|uptown_1_16_0005|ba:buildingsize_j|33055|-|SM_Hell's KitchenBuilding04
+U|uptown_1_16_0006|ba:buildingsize_n|4974|-|LowerManhattanResidential10
+U|uptown_1_16_0007|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_1_16_0008|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_1_16_0009|ba:buildingsize_a|10381|-|SM_TimesSquare_Building 09
+U|uptown_1_16_0010|ba:buildingsize_a|2887|-|SM_MB Building 34
+U|uptown_1_18_0001|ba:buildingsize_i|2249|-|SM_HarborArea_FirstBlock_Building_05
+U|uptown_1_18_0002|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_1_18_0003|ba:buildingsize_a|739|-|SM_Semi-Basement_V04_02
+U|uptown_1_18_0004|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_1_18_0005|ba:buildingsize_h|1332|-|prefab_HarborArea_SecondBlock_Building_7_01
+U|uptown_1_18_0006|ba:buildingsize_n|5530|-|LowerEastSideResidential01
+U|uptown_1_18_0007|ba:buildingsize_b|1154|-|SM_ResidentialBuildings_V02
+U|uptown_1_18_0008|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_1_18_0009|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_1_18_0010|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_1_18_0011|ba:buildingsize_f|5240|-|Residential09LM
+U|uptown_1_19_0001|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_1_19_0002|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_1_19_0003|ba:buildingsize_j|33055|-|SM_Hell's KitchenBuilding04
+U|uptown_1_19_0004|ba:buildingsize_i|2875|-|SM_BW_037
+U|uptown_1_19_0005|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_2_00_0001|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_2_00_0002|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_2_00_0003|ba:buildingsize_a|10381|-|SM_TimesSquare_Building 09
+U|uptown_2_00_0004|ba:buildingsize_h|2332|-|SM_HarborArea_SecondBlock_Building_13
+U|uptown_2_00_0005|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_2_01_0001|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_2_01_0002|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_2_01_0003|ba:buildingsize_a|454|-|SM_BR_010
+U|uptown_2_01_0004|ba:buildingsize_b|1302|-|SM_HarborArea_SecondBlock_Building_2
+U|uptown_2_01_0005|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_2_01_0006|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_2_01_0007|ba:buildingsize_b|2115|-|SM_MB Building 40
+U|uptown_2_01_0013|ba:buildingsize_k|23587|-|SM_Bellevue HospitalArea_Building 05
+U|uptown_2_03_0001|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_2_03_0002|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_2_03_0003|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_2_03_0004|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_2_03_0005|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_2_03_0006|ba:buildingsize_b|1302|-|SM_HarborArea_SecondBlock_Building_2
+U|uptown_2_03_0007|ba:buildingsize_a|739|-|SM_Semi-Basement_V03 Variant 1
+U|uptown_2_03_0008|ba:buildingsize_k|23587|-|SM_Bellevue HospitalArea_Building 05
+U|uptown_2_03_0009|ba:buildingsize_j|26911|-|SM_GrandCentralStationArea_Building 07 V2
+U|uptown_2_03_0010|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_2_04_0001|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_2_04_0002|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_2_04_0003|ba:buildingsize_a|2878|-|SM_FlatironAreaBuilding_02
+U|uptown_2_04_0004|ba:buildingsize_b|2115|-|SM_MB Building 40
+U|uptown_2_04_0005|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_2_04_0006|ba:buildingsize_m|8002|-|SM_Map Border_FunctionalB_01
+U|uptown_2_04_0007|ba:buildingsize_j|26911|-|SM_GrandCentralStationArea_Building 07 V2
+U|uptown_2_04_0008|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_2_04_0009|ba:buildingsize_c|3682|-|SM_MB Building 33
+U|uptown_2_04_0010|ba:buildingsize_b|1154|-|SM_ResidentialBuildings_V02 Variant
+U|uptown_2_05_0001|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_2_05_0002|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_2_05_0003|ba:buildingsize_b|2115|-|SM_MB Building 40
+U|uptown_2_05_0004|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_2_05_0005|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_2_05_0006|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_2_05_0007|ba:buildingsize_j|26911|-|SM_GrandCentralStationArea_Building 07 V2
+U|uptown_2_05_0008|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_2_05_0009|ba:buildingsize_k|23587|-|SM_Bellevue HospitalArea_Building 05
+U|uptown_2_06_0001|ba:buildingsize_k|6569|ba:businesstype_bank|SM_MurrayHill Section B_Building 08
+U|uptown_2_06_0002|ba:buildingsize_a|454|-|SM_BR_010
+U|uptown_2_06_0003|ba:buildingsize_i|2249|-|SM_HarborArea_FirstBlock_Building_05
+U|uptown_2_06_0004|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_2_06_0005|ba:buildingsize_a|422|-|SM_Semi-Basement_V05 Variant 3
+U|uptown_2_06_0011|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_2_06_0012|ba:buildingsize_j|26910|-|SM_GrandCentralStationArea_Building 07 Variant
+U|uptown_2_07_0001|ba:buildingsize_a|963|-|SM_BR_003
+U|uptown_2_07_0002|ba:buildingsize_r|26394|-|SM_BT_001
+U|uptown_2_07_0003|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_2_07_0004|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_2_07_0005|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_2_07_0006|ba:buildingsize_n|7794|-|SM_Hell's KitchenBuilding32
+U|uptown_2_07_0007|ba:buildingsize_i|2875|-|SM_BW_037
+U|uptown_2_07_0008|ba:buildingsize_b|5501|-|SM_Hell's KitchenBuilding19 Variant
+U|uptown_2_07_0009|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_2_08_0001|ba:buildingsize_c|5376|ba:businesstype_marketingagency|SM_MB Building 41
+U|uptown_2_08_0002|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_2_08_0003|ba:buildingsize_b|1302|-|SM_HarborArea_SecondBlock_Building_2
+U|uptown_2_08_0004|ba:buildingsize_a|2878|-|SM_FlatironAreaBuilding_02
+U|uptown_2_08_0005|ba:buildingsize_a|10381|-|SM_TimesSquare_Building 09
+U|uptown_2_08_0006|ba:buildingsize_a|10381|ba:businesstype_interiorinstallationfirm|SM_TimesSquare_Building 09
+U|uptown_2_08_0007|ba:buildingsize_b|1302|-|SM_HarborArea_SecondBlock_Building_2
+U|uptown_2_08_0008|ba:buildingsize_j|26911|-|SM_GrandCentralStationArea_Building 07 V2
+U|uptown_2_08_0009|ba:buildingsize_a|1325|-|SM_HarborArea_FirstBlock_Building_06
+U|uptown_2_08_0010|ba:buildingsize_k|23587|-|SM_Bellevue HospitalArea_Building 05
+U|uptown_2_09_0001|ba:buildingsize_m|8002|ba:businesstype_furniturestore|SM_Map Border_FunctionalB_01
+U|uptown_2_09_0002|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_2_09_0003|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_2_09_0004|ba:buildingsize_b|1302|-|SM_HarborArea_SecondBlock_Building_2
+U|uptown_2_09_0005|ba:buildingsize_c|5376|ba:businesstype_recruitmentagency|SM_MB Building 41
+U|uptown_2_09_0006|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_2_09_0007|ba:buildingsize_j|26911|-|SM_GrandCentralStationArea_Building 07 V2
+U|uptown_2_09_0008|ba:buildingsize_a|1325|-|SM_HarborArea_FirstBlock_Building_06
+U|uptown_2_09_0009|ba:buildingsize_k|23587|-|SM_Bellevue HospitalArea_Building 05
+U|uptown_2_10_0001|ba:buildingsize_h|1201|-|SM_HarborArea_ThirdBlock_Building_14
+U|uptown_2_10_0002|ba:buildingsize_i|3650|-|SM_BW_002
+U|uptown_2_10_0003|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_2_10_0004|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_2_10_0005|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_2_10_0006|ba:buildingsize_b|1302|-|SM_HarborArea_SecondBlock_Building_2
+U|uptown_2_10_0012|ba:buildingsize_c|3682|-|SM_MB Building 33
+U|uptown_2_10_0013|ba:buildingsize_b|525|-|SM_ResidentialBuildings_V03_03
+U|uptown_2_11_0001|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_2_11_0002|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_2_11_0003|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_2_11_0004|ba:buildingsize_n|5530|-|LowerEastSideResidential01
+U|uptown_2_11_0005|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_2_11_0006|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_2_11_0007|ba:buildingsize_k|23587|-|SM_Bellevue HospitalArea_Building 05
+U|uptown_2_11_0008|ba:buildingsize_j|26911|-|SM_GrandCentralStationArea_Building 07 V2
+U|uptown_2_11_0009|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_2_12_0001|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_2_12_0002|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_2_12_0003|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_2_12_0004|ba:buildingsize_b|1302|-|SM_HarborArea_SecondBlock_Building_2
+U|uptown_2_12_0005|ba:buildingsize_r|26394|-|SM_BT_001
+U|uptown_2_12_0006|ba:buildingsize_c|5376|ba:businesstype_appliancestore|SM_MB Building 41
+U|uptown_2_12_0007|ba:buildingsize_h|1507|-|Factory4 (Warehouse)
+U|uptown_2_12_0008|ba:buildingsize_k|23587|-|SM_Bellevue HospitalArea_Building 05
+U|uptown_2_13_0001|ba:buildingsize_a|2878|-|SM_FlatironAreaBuilding_02
+U|uptown_2_13_0002|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_2_13_0003|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_2_13_0004|ba:buildingsize_n|5530|-|LowerEastSideResidential01
+U|uptown_2_13_0005|ba:buildingsize_m|8002|ba:businesstype_cardealership|SM_Map Border_FunctionalB_01
+U|uptown_2_13_0006|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_2_13_0007|ba:buildingsize_a|739|-|SM_Semi-Basement_V03
+U|uptown_2_13_0013|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_2_13_0014|ba:buildingsize_j|26911|-|SM_GrandCentralStationArea_Building 07 V2
+U|uptown_2_14_0001|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_2_14_0002|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_2_14_0003|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_2_14_0004|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_2_14_0005|ba:buildingsize_i|2249|-|SM_HarborArea_FirstBlock_Building_05
+U|uptown_2_14_0006|ba:buildingsize_b|1302|-|SM_HarborArea_SecondBlock_Building_2
+U|uptown_2_14_0007|ba:buildingsize_a|739|-|SM_Semi-Basement_V03 Variant 1
+U|uptown_2_14_0008|ba:buildingsize_c|3682|-|SM_MB Building 33
+U|uptown_2_14_0009|ba:buildingsize_b|1154|-|SM_ResidentialBuildings_V02 Variant 2
+U|uptown_2_14_0010|ba:buildingsize_i|2249|-|SM_HarborArea_FirstBlock_Building_05
+U|uptown_2_14_0011|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_2_15_0001|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_2_15_0002|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_2_15_0003|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_2_15_0004|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_2_15_0005|ba:buildingsize_a|2878|-|SM_FlatironAreaBuilding_02
+U|uptown_2_15_0006|ba:buildingsize_b|2115|-|SM_MB Building 40
+U|uptown_2_15_0007|ba:buildingsize_k|23587|-|SM_Bellevue HospitalArea_Building 05
+U|uptown_2_15_0008|ba:buildingsize_j|26911|-|SM_GrandCentralStationArea_Building 07 V2
+U|uptown_2_15_0009|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_2_16_0001|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_2_16_0002|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_2_16_0003|ba:buildingsize_a|601|-|SM_Semi-Basement_V04 Variant 1
+U|uptown_2_16_0004|ba:buildingsize_a|10381|-|SM_TimesSquare_Building 09
+U|uptown_2_16_0005|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_2_16_0006|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_2_16_0007|ba:buildingsize_a|739|-|SM_Semi-Basement_V04_02
+U|uptown_2_16_0008|ba:buildingsize_j|26911|-|SM_GrandCentralStationArea_Building 07 V2
+U|uptown_2_16_0009|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_2_16_0010|ba:buildingsize_j|26911|-|SM_GrandCentralStationArea_Building 07 V2
+U|uptown_2_16_0011|ba:buildingsize_a|1325|-|SM_HarborArea_FirstBlock_Building_06
+U|uptown_2_17_0001|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_2_17_0002|ba:buildingsize_n|5530|-|LowerEastSideResidential01
+U|uptown_2_17_0003|ba:buildingsize_b|1302|-|SM_HarborArea_SecondBlock_Building_2
+U|uptown_2_17_0004|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_2_17_0005|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_2_17_0006|ba:buildingsize_a|2878|-|SM_FlatironAreaBuilding_02
+U|uptown_2_17_0012|ba:buildingsize_i|2249|-|SM_HarborArea_FirstBlock_Building_05
+U|uptown_2_17_0013|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_2_18_0001|ba:buildingsize_m|8002|-|SM_Map Border_FunctionalB_01
+U|uptown_2_18_0002|ba:buildingsize_a|10381|-|SM_TimesSquare_Building 09
+U|uptown_2_18_0003|ba:buildingsize_a|616|-|SM_Semi-Basement_V01
+U|uptown_2_18_0004|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_2_18_0005|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_2_18_0006|ba:buildingsize_b|1302|-|SM_HarborArea_SecondBlock_Building_2
+U|uptown_2_18_0007|ba:buildingsize_a|2878|-|SM_FlatironAreaBuilding_02
+U|uptown_2_18_0008|ba:buildingsize_c|3682|-|SM_FlatironAreaBuilding_06
+U|uptown_2_18_0009|ba:buildingsize_b|1157|-|SM_ResidentialBuildings_V02 Variant 1
+U|uptown_2_18_0010|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_2_18_0011|ba:buildingsize_j|26911|-|SM_GrandCentralStationArea_Building 07 V2
+U|uptown_2_19_0001|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_2_19_0002|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_2_19_0003|ba:buildingsize_i|3650|-|SM_BW_002
+U|uptown_2_19_0004|ba:buildingsize_j|33055|-|SM_Hell's KitchenBuilding04
+U|uptown_2_19_0005|ba:buildingsize_a|422|-|SM_Semi-Basement_V05 Variant 4
+U|uptown_3_00_0001|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_3_00_0002|ba:buildingsize_k|23146|-|SM_Hell's KitchenBuilding15
+U|uptown_3_00_0003|ba:buildingsize_a|2878|-|SM_FlatironAreaBuilding_02
+U|uptown_3_00_0004|ba:buildingsize_j|33055|-|SM_Hell's KitchenBuilding04
+U|uptown_3_00_0005|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_3_00_0006|ba:buildingsize_a|601|-|SM_Semi-Basement_V04 Variant
+U|uptown_3_01_0001|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_3_01_0002|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_3_01_0003|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_3_01_0004|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_3_01_0005|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_3_01_0006|ba:buildingsize_i|2249|-|SM_HarborArea_FirstBlock_Building_05
+U|uptown_3_01_0007|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_3_01_0008|ba:buildingsize_j|26910|-|SM_GrandCentralStationArea_Building 07 Variant
+U|uptown_3_01_0009|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_3_02_0001|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_3_02_0002|ba:buildingsize_n|7794|-|SM_Hell's KitchenBuilding32
+U|uptown_3_02_0003|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_3_02_0004|ba:buildingsize_a|10381|-|SM_TimesSquare_Building 09
+U|uptown_3_02_0005|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_3_02_0006|ba:buildingsize_a|422|-|SM_Semi-Basement_V05 Variant 5
+U|uptown_3_02_0007|ba:buildingsize_j|26911|-|SM_GrandCentralStationArea_Building 07 V2
+U|uptown_3_02_0008|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_3_02_0009|ba:buildingsize_j|26911|-|SM_GrandCentralStationArea_Building 07 V2
+U|uptown_3_02_0010|ba:buildingsize_a|1325|-|SM_HarborArea_FirstBlock_Building_06
+U|uptown_3_03_0001|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_3_03_0002|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_3_03_0003|ba:buildingsize_b|1302|-|SM_HarborArea_SecondBlock_Building_2
+U|uptown_3_03_0004|ba:buildingsize_i|2249|-|SM_HarborArea_FirstBlock_Building_05
+U|uptown_3_03_0005|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_3_03_0006|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_3_03_0007|ba:buildingsize_a|422|-|SM_Semi-Basement_V05 Variant 1
+U|uptown_3_03_0013|ba:buildingsize_k|23587|-|SM_Bellevue HospitalArea_Building 05
+U|uptown_3_04_0001|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_3_04_0002|ba:buildingsize_a|10381|-|SM_TimesSquare_Building 09
+U|uptown_3_04_0003|ba:buildingsize_a|616|-|SM_Semi-Basement_V01
+U|uptown_3_04_0004|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_3_04_0005|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_3_04_0006|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_3_04_0007|ba:buildingsize_a|2887|-|SM_MB Building 34
+U|uptown_3_04_0008|ba:buildingsize_i|2249|-|SM_HarborArea_FirstBlock_Building_05
+U|uptown_3_04_0009|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_3_04_0010|ba:buildingsize_c|3682|-|SM_FlatironAreaBuilding_06
+U|uptown_3_04_0011|ba:buildingsize_b|1154|-|SM_ResidentialBuildings_V02
+U|uptown_3_05_0001|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_3_05_0002|ba:buildingsize_b|2115|-|SM_MB Building 40
+U|uptown_3_05_0003|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_3_05_0004|ba:buildingsize_n|5530|-|LowerEastSideResidential01
+U|uptown_3_05_0005|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_3_05_0006|ba:buildingsize_a|454|-|SM_BR_010
+U|uptown_3_05_0007|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_3_05_0008|ba:buildingsize_k|23587|-|SM_Bellevue HospitalArea_Building 05
+U|uptown_3_05_0009|ba:buildingsize_k|23587|-|SM_Bellevue HospitalArea_Building 05
+U|uptown_3_06_0001|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_3_06_0002|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_3_06_0003|ba:buildingsize_b|2115|-|SM_MB Building 40
+U|uptown_3_06_0004|ba:buildingsize_b|1302|-|SM_HarborArea_SecondBlock_Building_2
+U|uptown_3_06_0005|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_3_06_0006|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_3_06_0007|ba:buildingsize_a|422|-|SM_Semi-Basement_V05 Variant 1
+U|uptown_3_06_0013|ba:buildingsize_j|26911|-|SM_GrandCentralStationArea_Building 07 V2
+U|uptown_3_06_0014|ba:buildingsize_a|1325|-|SM_HarborArea_FirstBlock_Building_06
+U|uptown_3_07_0001|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_3_07_0002|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_3_07_0003|ba:buildingsize_b|1302|-|SM_HarborArea_SecondBlock_Building_2
+U|uptown_3_07_0004|ba:buildingsize_a|616|-|SM_Semi-Basement_V01
+U|uptown_3_07_0005|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_3_07_0006|ba:buildingsize_c|5376|ba:businesstype_clinic|SM_MB Building 41
+U|uptown_3_07_0007|ba:buildingsize_b|1302|-|SM_HarborArea_SecondBlock_Building_2
+U|uptown_3_07_0008|ba:buildingsize_j|26911|-|SM_GrandCentralStationArea_Building 07 V2
+U|uptown_3_07_0009|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_3_07_0010|ba:buildingsize_j|26910|-|SM_GrandCentralStationArea_Building 07 Variant
+U|uptown_3_07_0011|ba:buildingsize_a|1325|-|SM_HarborArea_FirstBlock_Building_06
+U|uptown_3_08_0001|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_3_08_0002|ba:buildingsize_a|10381|-|SM_TimesSquare_Building 09
+U|uptown_3_08_0003|ba:buildingsize_a|739|-|SM_Semi-Basement_V04_02
+U|uptown_3_08_0004|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_3_08_0005|ba:buildingsize_n|5530|-|LowerEastSideResidential01
+U|uptown_3_08_0006|ba:buildingsize_b|1302|-|SM_HarborArea_SecondBlock_Building_2
+U|uptown_3_08_0007|ba:buildingsize_j|26910|-|SM_GrandCentralStationArea_Building 07 Variant
+U|uptown_3_08_0008|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_3_08_0009|ba:buildingsize_j|26911|-|SM_GrandCentralStationArea_Building 07 V2
+U|uptown_3_08_0010|ba:buildingsize_a|1325|-|SM_HarborArea_FirstBlock_Building_06
+U|uptown_3_10_0001|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_3_10_0002|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_3_10_0003|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_3_10_0004|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_3_10_0005|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_3_10_0006|ba:buildingsize_c|5376|ba:businesstype_supermarket|SM_MB Building 41
+U|uptown_3_10_0007|ba:buildingsize_c|3682|ba:businesstype_officesupplystore|SM_MB Building 33
+U|uptown_3_10_0008|ba:buildingsize_b|525|-|SM_ResidentialBuildings_V03_03
+U|uptown_3_10_0009|ba:buildingsize_k|23587|-|SM_Bellevue HospitalArea_Building 05
+U|uptown_3_11_0001|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_3_11_0002|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_3_11_0003|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_3_11_0004|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_3_11_0005|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_3_11_0006|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_3_11_0012|ba:buildingsize_i|2875|-|SM_BW_037
+U|uptown_3_12_0001|ba:buildingsize_i|2249|-|SM_HarborArea_FirstBlock_Building_05
+U|uptown_3_12_0002|ba:buildingsize_b|2115|-|SM_MB Building 40
+U|uptown_3_12_0003|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_3_12_0004|ba:buildingsize_a|616|-|SM_Semi-Basement_V01
+U|uptown_3_12_0005|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_3_12_0006|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_3_12_0007|ba:buildingsize_n|7794|-|SM_Hell's KitchenBuilding32
+U|uptown_3_12_0008|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_3_12_0009|ba:buildingsize_j|26911|-|SM_GrandCentralStationArea_Building 07 V2
+U|uptown_3_12_0010|ba:buildingsize_k|23587|-|SM_Bellevue HospitalArea_Building 05
+U|uptown_3_13_0001|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_3_13_0002|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_3_13_0003|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_3_13_0004|ba:buildingsize_a|601|-|SM_Semi-Basement_V04 Variant
+U|uptown_3_13_0005|ba:buildingsize_a|2878|-|SM_FlatironAreaBuilding_02
+U|uptown_3_13_0006|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_3_13_0007|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_3_13_0008|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_3_13_0009|ba:buildingsize_j|26911|-|SM_GrandCentralStationArea_Building 07 V2
+U|uptown_3_13_0010|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_3_13_0011|ba:buildingsize_j|26911|-|SM_GrandCentralStationArea_Building 07 V2
+U|uptown_3_14_0001|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_3_14_0002|ba:buildingsize_i|6813|ba:businesstype_importexport|SM_MurrayHill Section H_Building 01
+U|uptown_3_14_0003|ba:buildingsize_a|422|-|SM_Semi-Basement_V05 Variant
+U|uptown_3_14_0004|ba:buildingsize_b|2115|-|SM_MB Building 40
+U|uptown_3_14_0005|ba:buildingsize_r|26394|-|SM_BT_001
+U|uptown_3_14_0006|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_3_14_0007|ba:buildingsize_j|26911|-|SM_GrandCentralStationArea_Building 07 V2
+U|uptown_3_14_0008|ba:buildingsize_a|1325|-|SM_HarborArea_FirstBlock_Building_06
+U|uptown_3_14_0009|ba:buildingsize_c|3682|-|SM_FlatironAreaBuilding_06
+U|uptown_3_14_0010|ba:buildingsize_b|1154|-|SM_ResidentialBuildings_V02 Variant 4
+U|uptown_3_15_0001|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_3_15_0002|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_3_15_0003|ba:buildingsize_n|5530|-|LowerEastSideResidential01
+U|uptown_3_15_0004|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_3_15_0005|ba:buildingsize_m|8002|-|SM_Map Border_FunctionalB_01
+U|uptown_3_15_0011|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_3_15_0012|ba:buildingsize_i|2249|-|SM_HarborArea_FirstBlock_Building_05
+U|uptown_3_16_0001|ba:buildingsize_b|1302|-|SM_HarborArea_SecondBlock_Building_2
+U|uptown_3_16_0002|ba:buildingsize_r|26394|-|SM_BT_001
+U|uptown_3_16_0003|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_3_16_0004|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_3_16_0005|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_3_16_0006|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_3_16_0007|ba:buildingsize_b|2242|-|SM_HarborArea_FirstBlock_Building_02
+U|uptown_3_16_0008|ba:buildingsize_a|1325|-|SM_HarborArea_FirstBlock_Building_06
+U|uptown_3_16_0009|ba:buildingsize_b|1154|-|SM_ResidentialBuildings_V02 Variant 2
+U|uptown_3_16_0010|ba:buildingsize_k|9939|-|SM_GrandCentralStationArea_Building 12 Variant
+U|uptown_3_17_0001|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_3_17_0002|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_3_17_0003|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_3_17_0004|ba:buildingsize_a|739|-|SM_Semi-Basement_V03 Variant
+U|uptown_3_17_0005|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_3_17_0006|ba:buildingsize_a|2878|-|SM_FlatironAreaBuilding_02
+U|uptown_3_17_0007|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_3_17_0008|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_3_17_0009|ba:buildingsize_k|23587|-|SM_Bellevue HospitalArea_Building 05
+U|uptown_3_17_0010|ba:buildingsize_k|23587|-|SM_Bellevue HospitalArea_Building 05
+U|uptown_3_18_0001|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_3_18_0002|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_3_18_0003|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_3_18_0004|ba:buildingsize_b|2115|-|SM_MB Building 40
+U|uptown_3_18_0005|ba:buildingsize_a|10381|-|SM_TimesSquare_Building 09
+U|uptown_3_18_0006|ba:buildingsize_n|5530|-|LowerEastSideResidential01
+U|uptown_3_18_0007|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_3_18_0013|ba:buildingsize_h|1507|-|Factory4 (Warehouse)
+U|uptown_3_19_0001|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_3_19_0002|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_3_19_0003|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_3_19_0004|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_3_19_0005|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_3_19_0006|ba:buildingsize_a|2878|-|SM_FlatironAreaBuilding_02
+U|uptown_4_01_0001|ba:buildingsize_i|2249|-|SM_HarborArea_FirstBlock_Building_05
+U|uptown_4_01_0002|ba:buildingsize_n|7794|-|SM_Hell's KitchenBuilding32
+U|uptown_4_01_0003|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_4_02_0001|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_4_02_0002|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_4_02_0003|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_4_02_0004|ba:buildingsize_a|616|-|SM_Semi-Basement_V01 Variant
+U|uptown_4_03_0001|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_4_03_0002|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_4_03_0003|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_4_04_0001|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_4_04_0002|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_4_04_0003|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_4_05_0001|ba:buildingsize_a|454|-|SM_BR_010
+U|uptown_4_05_0002|ba:buildingsize_m|8002|-|SM_Map Border_FunctionalB_01
+U|uptown_4_05_0003|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_4_05_0004|ba:buildingsize_a|616|-|SM_Semi-Basement_V01 Variant 1
+U|uptown_4_06_0001|ba:buildingsize_a|10381|-|SM_TimesSquare_Building 09
+U|uptown_4_06_0002|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_4_06_0003|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_4_07_0001|ba:buildingsize_k|6569|-|SM_MurrayHill Section B_Building 08
+U|uptown_4_07_0002|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_4_07_0003|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_4_07_0004|ba:buildingsize_a|616|-|SM_Semi-Basement_V01 Variant 4
+U|uptown_4_08_0001|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_4_08_0002|ba:buildingsize_b|2115|-|SM_MB Building 40
+U|uptown_4_08_0003|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_4_09_0001|ba:buildingsize_n|5530|-|LowerEastSideResidential01
+U|uptown_4_09_0002|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_4_09_0003|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_4_09_0004|ba:buildingsize_a|2878|-|SM_FlatironAreaBuilding_02
+U|uptown_4_10_0001|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_4_10_0002|ba:buildingsize_m|8002|-|SM_Map Border_FunctionalB_01
+U|uptown_4_11_0001|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_4_11_0002|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_4_11_0003|ba:buildingsize_a|10381|-|SM_TimesSquare_Building 09
+U|uptown_4_11_0004|ba:buildingsize_a|739|-|SM_Semi-Basement_V03
+U|uptown_4_12_0001|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_4_12_0002|ba:buildingsize_a|10381|-|SM_TimesSquare_Building 09
+U|uptown_4_12_0003|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_4_12_0004|ba:buildingsize_a|739|-|SM_Semi-Basement_V03
+U|uptown_4_13_0001|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_4_13_0002|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_4_13_0003|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_4_13_0004|ba:buildingsize_a|2474|-|SM_FlatironAreaBuilding_02_Variation
+U|uptown_4_14_0001|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_4_14_0002|ba:buildingsize_i|2249|-|SM_HarborArea_FirstBlock_Building_05
+U|uptown_4_14_0003|ba:buildingsize_a|422|-|SM_Semi-Basement_V05 Variant
+U|uptown_4_15_0001|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_4_15_0002|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_4_15_0003|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_4_16_0001|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_4_16_0002|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_4_16_0003|ba:buildingsize_b|1842|-|SM_HarborArea_FirstBlock_Building_8
+U|uptown_4_17_0001|ba:buildingsize_c|5376|-|SM_MB Building 41
+U|uptown_4_17_0002|ba:buildingsize_a|454|-|SM_BR_010
+U|uptown_4_17_0003|ba:buildingsize_m|8002|-|SM_Map Border_FunctionalB_01
+U|uptown_4_18_0001|ba:buildingsize_i|6813|-|SM_MurrayHill Section H_Building 01
+U|uptown_4_18_0002|ba:buildingsize_b|2878|-|SM_MB Building 46
+U|uptown_4_18_0003|ba:buildingsize_f|5647|-|SM_Hell's KitchenBuilding30
+U|uptown_place_fuel|ba:buildingsize_a|454|ba:businesstype_gasstation|GasStationBuilding
+U|uptown_place_wholesale|ba:buildingsize_e|4159|ba:businesstype_wholesalestore|DriveInMurrayHill
