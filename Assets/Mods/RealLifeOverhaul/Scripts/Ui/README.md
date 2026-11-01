@@ -99,7 +99,10 @@ Use these, and never draw a part of your own. All are in `UiDraw.Chrome.cs` unle
   or the warning's own glyph. Only a trend arrow takes good or bad's colour. A portrait's ring is the person's mood.
 - **Rows and links** (`InfoRow`, `SectionRow`, `Band`): compact rows, the label in grey-blue at the left and the value
   in soft white at the right, or a cyan link with its magnifier that opens the thing or moves the camera. A section
-  stands on a darker band under its label in capitals.
+  stands on a darker band under its label in capitals. Every link's mark stands `LinkGap` (a grid step) from its words
+  as drawn, cut to their room first (`UiDraw.Links.cs`: `LinkValue`, `LinkRow`); a row that is a link is a pair row
+  high among an info panel's rows and a control high under a block of a window, and a person among those rows is
+  `PersonRow`, two pair rows with the face's left edge on the labels. A list of people or threads keeps `ListRow`.
 - **Pills and chips** (`Pill`, `Chip`): a status pill with its icon, and inZOI's soft chip with a dot in its tone.
 - **Portraits** (`Portrait`): a round face painted from the person's name (`UiPortraits`, kept by
   `UiSprites.Portrait`, 160 at most), with a status ring in a tone. No portrait art ships.
@@ -158,6 +161,48 @@ Use these, and never draw a part of your own. All are in `UiDraw.Chrome.cs` unle
   game `UiGame.OwnIcon` sets it, for info, notifications, warning, set destination and calendar today. To map another,
   add it to `UiGame.OwnIconNames` and `OwnIcon`. Offline the Phosphor icon draws, so the checks and the previews see
   the kit's own.
+
+## The page shapes
+
+A page that is not "figures and a table" takes the shape its job has. Each is a block of the app window's page: Shell
+draws the window and the app's sections, the shape fills the room it gives (`Lay(s, at, model, x, y, w, h, keys)`).
+Their samples stand in `UiSamples.Grids.cs`, each in the app it is made for, with previews in
+not-in-repo/previews/ui/kitgrids.
+
+- **Diary** (`UiDiary`): a month as a diary page, seven columns in the game's order, a day's things as short lines
+  behind their kinds' glyphs and "+n more", today on the cyan, the chosen day's money and things beside it as rows that
+  lead where each is dealt with; Q and E turn the month. For the Calendar and a campus term. Not for a list of dates
+  with nothing to see across a week: use a table.
+- **Board** (`UiBoard`, `UiBoardRules`): a week's or a day's shifts on an hour ruler, lanes led by a face or a tile,
+  bars with the lane's colour at their edge, the closed hours darker, the now line. It only draws and reports: a
+  screen implementing `IUiDragging` takes the pointer's drags (`UiBoardRules.Drag`, `Paint`, `EdgeScroll`) and
+  `IUiSteering` the keys' steps (`Nudge`; Shift or a shoulder resizes), and sends each edit to the game's schedule or
+  the mod's rota. For BizMan's schedule, the Company rota, the Planner's week. Not for a timeline that cannot be edited
+  by the hour: a track or a table.
+- **Reader** (`UiReader`, `UiReaderRules`): a long document at a reading measure with its bold names in the strong cut,
+  notes, pictures and links, its sections numbered down the sidebar's place (`LayWithContents`), the page's picture,
+  facts and pages it leads to beside it; the wheel, Page Up and Down (`IUiPaging`) and the d-pad's steps through its
+  anchors scroll it. `UiReaderRules.Parse` reads the Guide's "# " and "- " and a help page's markdown. For the Guide,
+  the Newsstand's articles and the game's help. Not for a few lines: a note or an empty state says them.
+- **Settings list** (`UiSettingsList`): every section of a settings page as bands of rows, a name, its sentence and
+  its control, a main switch greying its section, a search marking its letters, the nearest preset and the way back
+  and forward, the groups down the sidebar's place (`LayWithGroups`, a long group name on two lines). Hundreds of rows
+  at a screenful's cost. For the mod's settings and the game's Options in the city. Not for a form before an action:
+  that is a decision card or a short page of rows.
+- **Conversation** (`UiConversation`): who is talking, the thread at its foot under its start line, a form slot, the
+  choices numbered with their consequences (the game's dialog buttons) or the composer; in a window, or docked over
+  the world at the right third (`LayDocked`) for talk face to face. For Contacts, Flare's messages and the game's and
+  the mod's dialogs. Not for one question with no one behind it: the decision card.
+- **Message list** (`UiMessageList`): threads under their bands with a face or a tile, the last words, the time, an
+  unread badge and presence, and the search. Beside a conversation in Contacts and Flare.
+- **Feed** (`UiFeed`): posts at a reading width beside the chosen account or tag as a short profile, never empty. For
+  Flare.
+- **Edition** (`UiEdition`): the lead story as a hero beside the markets' rows, the stories in balanced columns under
+  their sections' bands, each whole in one column, and the notices. For the City Ledger and the Newsstand.
+
+The settings list's controls are drawn by stand-ins in `UiSettingsList` (`ControlSwitch`, `ControlSlider`,
+`ControlChoice`, `ControlText`, `ControlKey`, `ControlStepper`) with the parameter lists of the kit's own controls, which
+take their places.
 
 ## Previews
 

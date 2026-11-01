@@ -93,6 +93,12 @@ namespace RealLifeOverhaul.Ui
                     break;
                 }
             }
+            if (keyboard != null)
+            {
+                // Page Up and Down and Shift are no bindings of the game's: a long read's page and a resize are the same on every keyboard.
+                state.Page = keyboard.pageUpKey.wasPressedThisFrame ? -1 : keyboard.pageDownKey.wasPressedThisFrame ? 1 : 0;
+                state.Shift = keyboard.shiftKey.isPressed;
+            }
             state.Pointed = mouse != null && (mouse.leftButton.wasPressedThisFrame || mouse.delta.ReadValue().sqrMagnitude > 4f);
             if ((keyboard != null && keyboard.anyKey.wasPressedThisFrame) || state.Pointed)
             {

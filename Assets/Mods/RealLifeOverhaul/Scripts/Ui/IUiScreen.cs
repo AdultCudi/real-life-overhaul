@@ -44,6 +44,8 @@ namespace RealLifeOverhaul.Ui
     public struct UiInputState
     {
         public int MoveX, MoveY;   // -1, 0 or 1: held directions; the host repeats them as a game does
+        public int Page;           // -1 Page Up, 1 Page Down, 0 neither: a long read turns a page (IUiPaging)
+        public bool Shift;         // the keyboard's Shift held: a chosen thing's step resizes it rather than moves it (IUiSteering)
         public bool Confirm, Back, TabPrev, TabNext, Alt, Option;
         public int Pick;           // the number key pressed, 1 to 9, or 0
         public UiPad Pad;          // the pad last used, None while the keyboard or mouse was

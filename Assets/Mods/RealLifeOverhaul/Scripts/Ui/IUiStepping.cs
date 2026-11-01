@@ -15,16 +15,13 @@ namespace RealLifeOverhaul.Ui
     }
 
     /// <summary>
-    /// A screen that reads what the mouse rests on (a chart's point in its card), as the keys' focus reads it, and where the
-    /// pointer drags across a target (a slider's knob). The hover itself stays the host's still fill: this only tells the
-    /// screen, so it can lay the reading out or move the value.
+    /// A screen that reads what the mouse rests on (a chart's point in its card), as the keys' focus reads it. The hover
+    /// itself stays the host's still fill: this only tells the screen, so it can lay the reading out. (A slider's knob
+    /// follows the pointer through IUiDragging.)
     /// </summary>
     public interface IUiPointing
     {
         /// <summary>The mouse rests on a target (its command and argument), or has left it (command -1).</summary>
         void Pointed(int command, int arg);
-
-        /// <summary>The pointer went down on a target or drags across it, at a share of its face from its left (0) to its right (1).</summary>
-        void Dragged(int command, int arg, float share);
     }
 }

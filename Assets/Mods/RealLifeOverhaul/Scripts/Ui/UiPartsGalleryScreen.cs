@@ -58,7 +58,7 @@ namespace RealLifeOverhaul.Ui
     /// has the word), its sums the game's money; nothing it shows changes the game. Game-free (the words and the money's
     /// form come in from the director). Cost: a layout a press.
     /// </summary>
-    public sealed partial class UiPartsGalleryScreen : IUiScreen, IUiStepping, IUiPointing
+    public sealed partial class UiPartsGalleryScreen : IUiScreen, IUiStepping, IUiPointing, IUiDragging
     {
         private readonly UiWords _words;
         private readonly Func<float, string> _money;
@@ -217,14 +217,49 @@ namespace RealLifeOverhaul.Ui
             _dirty |= st.Selected != before;
         }
 
-        public void Dragged(int command, int arg, float share)
+        // The pointer on a slider: its knob goes where the pointer is, on the press and through the drag, as the game's Slider is dragged.
+        public void PointerDown(int command, int arg, float x, float y)
         {
-            if (command != UiPartsGallery.Slider || _model == null)
+            if (command == UiPartsGallery.Slider)
+            {
+                Dragged(arg, x);
+            }
+        }
+
+        public bool DragBegin(int command, int arg, float x, float y)
+        {
+            _dragging = command == UiPartsGallery.Slider ? arg : -1;
+            if (_dragging >= 0)
+            {
+                Dragged(arg, x);
+            }
+            return _dragging >= 0;
+        }
+
+        public void DragMove(float x, float y)
+        {
+            if (_dragging >= 0)
+            {
+                Dragged(_dragging, x);
+            }
+        }
+
+        public void DragEnd(bool cancelled)
+        {
+            _dragging = -1;
+        }
+
+        private int _dragging = -1;
+
+        private void Dragged(int arg, float x)
+        {
+            if (_model == null || _model.ControlWidth <= 0f)
             {
                 return;
             }
             UiPartsState st = _state;
-            float at = UiDraw.SliderShare(_model.ControlWidth, arg == UiPartsGallery.Arg(false, 1, 0) ? Words(st.Ads) : st.Staff.ToString(Inv), share);
+            float share = (x - _model.ControlLeft) / _model.ControlWidth;
+            float at = UiDraw.SliderShare(_model.ControlWidth, arg == UiPartsGallery.Arg(false, 1, 0) ? Words(st.Ads) : st.Staff.ToString(Inv), share < 0f ? 0f : share > 1f ? 1f : share);
             if (arg == UiPartsGallery.Arg(false, 1, 0))
             {
                 st.Ads = (int)Math.Round(at * AdsMost / 50f) * 50;

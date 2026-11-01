@@ -70,6 +70,7 @@ namespace RealLifeOverhaul.Ui
         public int TableList = -1;
         public int StatementList = -1;
         public float ControlWidth = 320f;   // the controls page's control column, so a pointer's place on a slider maps to its value
+        public float ControlLeft;           // its left edge in the left column, where the sliders stand
     }
 
     /// <summary>
@@ -154,6 +155,10 @@ namespace RealLifeOverhaul.Ui
         {
             float cw = UiDraw.SnapDown(Math.Min(MostControl, w * 0.5f));
             m.ControlWidth = cw;
+            if (!right)
+            {
+                m.ControlLeft = x + w - cw;
+            }
             float ty = y;
             for (int sec = 0; sec < sections.Length; sec++)
             {
