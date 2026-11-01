@@ -70,6 +70,10 @@ namespace RealLifeOverhaul.Ui
         public string EmptyBody;
         public UiIcon EmptyIcon = UiIcon.People;   // what would fill it, over its words
         public string EmptyAction;                  // the button that fills it again ("Clear search"), or null
+        public string MassFieldTitle;               // while a mass action asks one thing more (the business to assign to): what it asks
+        public string MassField;                    // that answer's value as a choice field; null while no mass action asks
+        public UiActionModel[] MassFieldActions = new UiActionModel[0];   // its way back and its confirm, the confirm last
+        public float MassFieldX, MassFieldW;        // written back: where the field stood, so the page opens its list under it
     }
 
     /// <summary>
@@ -81,13 +85,14 @@ namespace RealLifeOverhaul.Ui
     /// fifth; and the totals at the foot. An empty table keeps its head and says in its room what would fill it. Figures
     /// stand tabular at the right. The screen sorts and filters; the block draws what it is given. Commands from
     /// <see cref="First"/>: <see cref="Head"/>, <see cref="Filter"/>, <see cref="Search"/>, <see cref="Row"/>,
-    /// <see cref="Pick"/>, <see cref="Mass"/> and <see cref="Done"/> added to it. Game-free. Cost: a layout a change, the
-    /// rows in view only.
+    /// <see cref="Pick"/>, <see cref="Mass"/> and <see cref="Done"/> added to it, and while a mass action asks one thing
+    /// more (the game's panel of choices: the business to assign to), <see cref="MassChoice"/> and <see cref="MassAnswer"/>.
+    /// Game-free. Cost: a layout a change, the rows in view only.
     /// </summary>
     public static class UiDataTable
     {
         public const int First = 110;
-        public const int Head = 0, Filter = 1, Search = 2, Row = 3, Pick = 4, Mass = 5, Done = 6, Clear = 7;
+        public const int Head = 0, Filter = 1, Search = 2, Row = 3, Pick = 4, Mass = 5, Done = 6, Clear = 7, MassChoice = 8, MassAnswer = 9;
         private const float PersonRow = 48f;     // px: a row with a face and two lines
         private const float PlainRow = 40f;      // px: a row of one line, as the app window's table
         private const float PickBox = 20f;       // px: a row's pick box while picking
@@ -109,7 +114,10 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>The height a table's own parts take besides its rows: the tool row, the head and the foot.</summary>
-        public static float Chrome(UiDataTableModel m) => UiTokens.Control + UiTokens.S3 + UiTokens.Control + UiTokens.S1 + (m.Totals != null ? Foot : 0f);
+        public static float Chrome(UiDataTableModel m) => (HasTools(m) ? UiTokens.Control + UiTokens.S3 : 0f) + UiTokens.Control + UiTokens.S1 + (m.Totals != null ? Foot : 0f);
+
+        // A table read only (no filter, no search, nothing to pick) has no tool row: its head stands where the row would be.
+        private static bool HasTools(UiDataTableModel m) => m.Picking || m.Filters.Length > 0 || !string.IsNullOrEmpty(m.SearchPlaceholder) || !string.IsNullOrEmpty(m.PickWords);
 
         // A person column's head stands over the names, as its rows' words start after the face.
         private static float FaceLead(UiCellKind kind) => kind == UiCellKind.Person ? UiTokens.S1 + UiTokens.AvatarSmall + UiTokens.S3 : 0f;
@@ -177,6 +185,10 @@ namespace RealLifeOverhaul.Ui
         // picking, how many are picked, the mass actions and Done. One row either way, so nothing under it moves.
         private static float Tools(UiScene s, UiAt at, UiDataTableModel m, float x, float y, float w, IUiKeys keys, int command)
         {
+            if (!HasTools(m))
+            {
+                return y;
+            }
             float h = UiTokens.Control;
             if (m.Picking)
             {
@@ -194,6 +206,11 @@ namespace RealLifeOverhaul.Ui
                     float dw = UiDraw.ButtonWidth(UiButtonKind.Secondary, m.DoneWords, UiIcon.None, UiAction.Count, keys);
                     UiDraw.Button(s, at, lx, y, dw, h, UiButtonKind.Secondary, m.DoneWords, UiIcon.None, UiAction.Count, keys, command + Done, 0);
                     lx += dw + UiTokens.S6;
+                }
+                if (m.MassField != null)
+                {
+                    MassAsks(s, at, m, lx, x + w, y, keys, command);
+                    return y + h + UiTokens.S3;
                 }
                 float right = x + w;
                 for (int i = m.Mass.Length - 1; i >= 0; i--)
@@ -236,6 +253,45 @@ namespace RealLifeOverhaul.Ui
             }
             return y + h + UiTokens.S3;
         }
+
+        // A mass action that asks one thing more before its question (the game's panel of choices): what it asks, the choice
+        // and its answers on the same tool row, the confirm last, so nothing under the row moves while it asks.
+        private static void MassAsks(UiScene s, UiAt at, UiDataTableModel m, float left, float right, float y, IUiKeys keys, int command)
+        {
+            float h = UiTokens.Control;
+            for (int i = m.MassFieldActions.Length - 1; i >= 0; i--)
+            {
+                ref UiActionModel a = ref m.MassFieldActions[i];
+                float bw = UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, a.Key, keys);
+                right -= bw;
+                UiDraw.Button(s, at, right, y, bw, h, a.Kind, a.Label, a.Icon, a.Key, keys, command + MassAnswer, i, a.Disabled);
+                right -= UiTokens.S3;
+            }
+            float fw = UiDraw.SnapDown(Math.Max(LeastFilter, Math.Min(MostSearch, right - UiTokens.S3 - left - LeastFilter)));
+            float fx = right - UiTokens.S3 - fw;
+            m.MassFieldX = fx;
+            m.MassFieldW = fw;
+            if (!string.IsNullOrEmpty(m.MassFieldTitle) && fx - UiTokens.S4 - left >= UiTokens.S16)
+            {
+                // A long translation of what it asks takes a second line in the row rather than being cut.
+                float tw = fx - UiTokens.S4 - left, th = UiTextRules.WrappedHeight(m.MassFieldTitle, UiStyle.Body, tw, 2);
+                UiDraw.Text(s, at, left, y + (h - th) / 2f, tw, UiStyle.Body, UiRole.Text2, m.MassFieldTitle, UiFlags.Label | UiFlags.Wrap | UiFlags.Middle | UiFlags.Right, 2);
+            }
+            UiDraw.Choice(s, at, fx, y, fw, m.MassField, command + MassChoice, 0, false);
+        }
+
+        /// <summary>The left edge of a filter's choice on the tool row, so the page opens that filter's list under it.</summary>
+        public static float FilterLeft(UiDataTableModel m, int index, float x)
+        {
+            for (int i = 0; i < index && i < m.Filters.Length; i++)
+            {
+                x += FilterWidth(m.Filters[i]) + UiTokens.S2;
+            }
+            return x;
+        }
+
+        /// <summary>A filter's width on the tool row for the value it shows.</summary>
+        public static float FilterWidthOf(string value) => FilterWidth(value);
 
         private static float FilterWidth(string value) =>
             Math.Max(LeastFilter, Math.Min(MostFilter, UiDraw.Snap(UiTokens.S4 + UiTextRules.Width(value, UiStyle.Body) + UiTokens.S1 + UiTokens.S2 + UiTokens.Icon + UiTokens.S3)));
@@ -391,7 +447,9 @@ namespace RealLifeOverhaul.Ui
                 {
                     UiRole grade = UiTokens.Grade(Math.Max(0, value));
                     float fw = UiTextRules.Width("100", UiStyle.BodyStrong) + UiTokens.S1;
-                    UiDraw.TextMiddle(s, at, cx + cw - fw, ry, rowH, fw, UiStyle.BodyStrong, grade, words, UiFlags.Right);
+                    // On the chosen row's cyan tone a low grade's red or orange falls under 4.5:1: the figure beside its meter
+                    // takes the row's words' colour there, and the meter keeps the grade.
+                    UiDraw.TextMiddle(s, at, cx + cw - fw, ry, rowH, fw, UiStyle.BodyStrong, sel ? UiRole.Text : grade, words, UiFlags.Right);
                     float bw = UiDraw.SnapDown(cw - fw - UiTokens.S2);
                     if (bw >= UiTokens.S8)
                     {
@@ -401,7 +459,9 @@ namespace RealLifeOverhaul.Ui
                 }
                 case UiCellKind.Figure:
                 {
-                    UiRole ink = col.Graded && value >= 0 ? UiTokens.Grade(value) : sel ? UiRole.Text : UiRole.Text2;
+                    // A graded figure alone is its column's only sign of good or bad, so on the chosen row it keeps its grade in
+                    // the step that reads on that tone.
+                    UiRole ink = col.Graded && value >= 0 ? (sel ? UiTokens.GradeOnChosen(UiTokens.Grade(value)) : UiTokens.Grade(value)) : sel ? UiRole.Text : UiRole.Text2;
                     UiDraw.TextMiddle(s, at, cx, ry, rowH, cw, col.Graded ? UiStyle.BodyStrong : UiStyle.Body, ink, words, UiFlags.Right | UiFlags.Truncate);
                     break;
                 }

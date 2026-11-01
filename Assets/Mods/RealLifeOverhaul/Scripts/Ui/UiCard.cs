@@ -8,6 +8,9 @@ namespace RealLifeOverhaul.Ui
         public UiIcon Icon = UiIcon.Info;            // the emblem: the warning for a negative box, info otherwise
         public string Title;                         // the header, in capitals
         public string Body;
+        public string Face;                          // the person it is about: their face in its ring takes the emblem's place; null for none
+        public float FaceHue;
+        public UiRole FaceRing = UiRole.None;
         public string Check;                         // a line to tick ("Do not show this again"); null for none
         public bool Checked;
         public bool HasField;                        // a text box: one field of words
@@ -71,9 +74,17 @@ namespace RealLifeOverhaul.Ui
             int card = UiDraw.Box(s, root, x, y, Width, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt at = root.In(card);
             float ex = x + UiTokens.S6, ey = y + UiTokens.S6;
-            int tile = UiDraw.Tile(s, at, ex, ey, Emblem, UiIconTints.Of(m.Icon), false);
-            float g = UiDraw.Snap(Emblem * 0.57f);
-            UiDraw.Icon(s, at.In(tile), ex + (Emblem - g) / 2f, ey + (Emblem - g) / 2f, g, m.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
+            if (!string.IsNullOrEmpty(m.Face))
+            {
+                // A moment about one person shows their face, as the decision card does; the emblem is for a moment about no one.
+                UiDraw.Portrait(s, at, ex + UiTokens.S1, ey + UiTokens.S1, Emblem - UiTokens.S2, m.Face, m.FaceHue, m.FaceRing);
+            }
+            else
+            {
+                int tile = UiDraw.Tile(s, at, ex, ey, Emblem, UiIconTints.Of(m.Icon), false);
+                float g = UiDraw.Snap(Emblem * 0.57f);
+                UiDraw.Icon(s, at.In(tile), ex + (Emblem - g) / 2f, ey + (Emblem - g) / 2f, g, m.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
+            }
             float cx = ex + Emblem + UiTokens.S5, cy = y + UiTokens.S6;
             float titleH = TitleHeight(m, inner);
             bool body = !string.IsNullOrEmpty(m.Body);
