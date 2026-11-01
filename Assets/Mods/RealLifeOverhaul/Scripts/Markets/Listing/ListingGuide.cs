@@ -17,7 +17,8 @@ namespace RealLifeOverhaul.Markets
                 .Group("reallife_mkt_header")
                 .About("reallife_guide_markets_listing_about").Help("reallife_guide_markets_listing")
                 .Owns(Settings.MarketsListingId)
-                .Test("reallife_lst_test_list", "reallife_lst_test_results", "reallife_lst_test_meeting", "reallife_lst_test_activist", "reallife_lst_test_bid", "reallife_lst_test_off")
+                .Test("reallife_lst_test_list", "reallife_lst_test_results", "reallife_lst_test_meeting", "reallife_lst_test_activist", "reallife_lst_test_bid", "reallife_lst_test_off",
+                    "reallife_lst_test_sector")
                 .Fact("lst_years", () => Whole(ListingCatalogue.BooksYears))
                 .Fact("lst_quarters", () => Whole(ListingCatalogue.QuartersLeast))
                 .Fact("lst_turnover", () => Guide.Money(Prices.At((float)ListingCatalogue.TurnoverLeastAtStart)))

@@ -537,8 +537,8 @@ internal static partial class Program
             "the owner's pay: a share of a day's profit, rounded down to the cent, and nothing on a day without one");
         p.PayMode = BankTiers.PayFixedMode;
         p.PayFixed = 500000;
-        Check(OwnBankRules.OwnerPay(p, 800000, c.Level) == 500000 && OwnBankRules.OwnerPay(p, 300000, c.Level) == 300000 && OwnBankRules.OwnerPay(p, -1, c.Level) == 0,
-            "the owner's pay: a fixed sum a day, never more than the day's profit");
+        Check(OwnBankRules.OwnerPay(p, 800000, c.Level) == 500000 && OwnBankRules.OwnerPay(p, 300000, c.Level) == 500000 && OwnBankRules.OwnerPay(p, -1, c.Level) == 500000,
+            "the owner's pay: a fixed sum a day, whatever the day's profit, while the bank can spare it (BankPayFixChecks.cs)");
         p.Stage = Regulator.Breach;
         long breach = OwnBankRules.OwnerPay(p, 800000, c.Level);
         p.Stage = Regulator.Clear;

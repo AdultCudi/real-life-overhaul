@@ -53,7 +53,7 @@ namespace RealLifeOverhaul.Economy
         public BuildingRegistration Base;    // the building they are assigned to; null if none
         public int X, Z;                     // its door
         public int Skill, Mood;              // 0 to 100 each
-        public int Wage;                     // hundredths an hour
+        public int Wage;                     // hundredths an hour, as paid: the city's prices and any agreed raise (Core/PaidWage)
         public int WeekHours;                // the hours a week the game has them down for
         public int TodayFrom = -1, TodayTo;  // their cleaning shifts today, first to last minute; -1: none
         public bool Present;                 // not off sick today (or replaced)
@@ -421,7 +421,7 @@ namespace RealLifeOverhaul.Economy
             m.Name = e.characterData.name ?? "?";
             m.Skill = Mathf.RoundToInt(Mathf.Clamp(e.GetSkillValue(ServicesCatalogue.CleaningSkill), 0f, 100f));
             m.Mood = Mathf.RoundToInt(Mathf.Clamp(e.satisfaction, 0f, 100f));
-            m.Wage = Mathf.RoundToInt(e.hourlyWage * 100f);
+            m.Wage = PaidWage.Now(e.hourlyWage, e.id);
             m.WeekHours = Mathf.Max(0, e.assignedWeeklyHours);
             m.Present = e.IsEmployeeAvailable();
             m.Base = e.IsAssignedToAnyBusiness() ? BuildingHelper.GetBuildingRegistration(e.assignedAddress) : null;

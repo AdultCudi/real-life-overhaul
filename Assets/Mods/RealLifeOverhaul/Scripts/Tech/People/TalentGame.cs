@@ -114,6 +114,9 @@ namespace RealLifeOverhaul.Tech
 
         public static int WageCents(EmployeeInstance e) => Mathf.RoundToInt(e.hourlyWage * 100f);
 
+        /// <summary>What the player is charged an hour for somebody on the game's payroll, cents: the city's prices and any raise (Core/PaidWage).</summary>
+        public static int PaidCents(EmployeeInstance e) => PaidWage.Now(e.hourlyWage, e.id);
+
         public static BuildingRegistration Business(EmployeeInstance e)
         {
             try

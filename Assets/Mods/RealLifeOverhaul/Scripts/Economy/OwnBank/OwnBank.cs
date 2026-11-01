@@ -99,8 +99,20 @@ namespace RealLifeOverhaul.Economy
         public int TierTold = BankTiers.Unknown;   // the level the player was last told the bank is ready to move up to
         public int PayMode;                     // BankTiers.PayShareMode or PayFixedMode
         public int PayShare;                    // thousandths of each day's profit paid to the owner
-        public long PayFixed;                   // cents a day paid to the owner, never more than the day's profit
+        public long PayFixed;                   // cents a day paid to the owner whatever the day made, while the bank can spare it
         public long PaidMonth, PaidLast, PaidAll;   // what the owner was paid this month, last month and in all
+        public long PayWanted, PayGiven;        // the last day run: the pay asked for and what was paid
+        public int PayHeld;                     // why less was paid that day: a BankTiers PayHeld value
+
+        // Its automatic dividends (Economy/OwnBank/Dividends).
+        public int DivEvery;                    // BankDividends: Off, Weekly, Monthly or Yearly
+        public int DivShare;                    // thousandths of the profit kept over the time paid out
+        public int DivFrom;                     // the first day of the time being added up
+        public long DivKept;                    // the profit kept since then, after the owner's pay (a loss takes it down)
+        public int DivDay;                      // the day the last one fell due; 0: none yet
+        public long DivWanted, DivPaid;         // the last one: asked for and paid
+        public int DivWhy;                      // why it was less: a BankDividends value
+        public long DivAll;                     // paid out in all
 
         public BankBranch Branch(string place)
         {
@@ -230,7 +242,7 @@ namespace RealLifeOverhaul.Economy
 
     /// <summary>
     /// What a day did, in cents, as booked at the headquarters and told to the player. Its profit is kept in the bank's
-    /// capital, but for the owner's pay (<see cref="Pay"/>), which is taken out of it.
+    /// capital, and the owner's pay (<see cref="Pay"/>) is taken out of it.
     /// </summary>
     public sealed class BankDay
     {
@@ -238,7 +250,9 @@ namespace RealLifeOverhaul.Economy
         public long Savers, Staff, Lost, Court, FundLost, Fees, Fine;  // out
         public long Systems;                    // out, at the end game's scale: its systems, compliance and deposit insurance
         public long Counter;                    // in: what the branches' counters charged their customers (OwnBankRules.Visit)
-        public long Pay;                        // the owner's pay out of the day's profit (OwnBankRules.OwnerPay): neither takings nor a cost
+        public long Pay;                        // the owner's pay out of the capital (OwnBankRules.OwnerPay): neither takings nor a cost
+        public long PaidOut;                    // an automatic dividend out of the capital (OwnBankRules.Dividends): neither takings nor a cost
+        public bool DividendDue;                // an automatic dividend fell due today, paid or not
         public long Withdrawn, Deposited, Lent, Repaid, Defaulted, Cured, WrittenOff;
         public long Bought, Sold, FireSold;
         public bool RunStarted, RunEnded, Breached, Cured2, Fined, Watched, Closed;
@@ -253,7 +267,8 @@ namespace RealLifeOverhaul.Economy
         {
             Interest = Reserve = Dividends = Recovered = Gains = 0;
             Savers = Staff = Lost = Court = FundLost = Fees = Fine = Systems = 0;
-            Counter = Pay = 0;
+            Counter = Pay = PaidOut = 0;
+            DividendDue = false;
             Withdrawn = Deposited = Lent = Repaid = Defaulted = Cured = WrittenOff = 0;
             Bought = Sold = FireSold = 0;
             RunStarted = RunEnded = Breached = Cured2 = Fined = Watched = Closed = false;

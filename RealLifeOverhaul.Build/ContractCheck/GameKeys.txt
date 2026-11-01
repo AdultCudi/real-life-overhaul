@@ -275,6 +275,7 @@ common_close
 common_closed
 common_confirm
 common_friday
+common_hourly_wage
 common_monday
 common_neighborhoods
 common_no_option_selected

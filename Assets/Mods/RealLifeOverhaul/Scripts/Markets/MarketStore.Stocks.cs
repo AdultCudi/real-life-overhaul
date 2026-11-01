@@ -101,7 +101,7 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // A player's company: its founder, name, ticker, sector and usual debt, then its own figures, then its founder's deals.
+        // A player's company: its founder, name, ticker, sector and usual debt, then its own figures, its founder's deals, its trade and its takings by trade.
         private static void Own(StringBuilder t, Stock k)
         {
             OwnListing o = k.Own;
@@ -123,6 +123,8 @@ namespace RealLifeOverhaul.Markets
                 t.Append(i > 0 ? ":" : string.Empty).Append(d.Day.ToString(Inv)).Append(',').Append(d.Shares.ToString(Inv)).Append(',').Append(d.Cents.ToString(Inv));
             }
             t.Append('|').Append(Clean(k.Def.Trade));
+            t.Append('|');
+            ListingSector.Write(t, o);   // the business it is in now; an older version reads the record without it
         }
 
         private static string R(double value)
@@ -165,6 +167,7 @@ namespace RealLifeOverhaul.Markets
             {
                 o.ActBp = 0;
             }
+            ListingSector.Read(S(c, 67), o);
             return o;
         }
 
