@@ -47,6 +47,14 @@ namespace RealLifeOverhaul.Economy
         public const int PayShareMost = 1000;             // thousandths: all of the day's profit
         public const long PayFixedMostCents = 100000000000L;   // the most a fixed pay may be set to: $1,000,000,000 a day
 
+        // Why a day's pay came to less than asked (OwnBankRules.OwnerPay). Saved as a number: never renumber.
+        public const int PayHeldNone = 0;
+        public const int PayHeldBreach = 1;      // the regulator's breach: nothing is paid out
+        public const int PayHeldRun = 2;         // a run: nothing is paid out
+        public const int PayHeldReserves = 3;    // its cash over the reserve kept against its savings was short
+        public const int PayHeldCapital = 4;     // its capital over its level's least and its lending line was short
+        public const int PayHeldMost = PayHeldCapital;
+
         // The aims EconomyCheck holds the table to.
         public const int PaybackMonthsMost = 12;          // game months a community bank takes at most to pay its licence back from its profit
     }

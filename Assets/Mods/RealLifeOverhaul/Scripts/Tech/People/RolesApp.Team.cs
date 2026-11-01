@@ -141,7 +141,10 @@ namespace RealLifeOverhaul.Tech
             box.Line(TechText.Fill("reallife_roles_file_background", "years", TechText.Years(p.YearsDays + (day - p.Joined) * 365 / System.Math.Max(60, year)), "school", TechText.School(p.School),
                 "certs", TechText.Certs(p)));
             box.Line(TechText.Fill("reallife_roles_file_feel", "morale", TechText.Mille(p.Morale), "burnout", TechText.Mille(p.Burnout), "work", TechText.Work(p.Work)));
-            box.Line(TechText.Fill("reallife_roles_file_pay", "paid", TechText.Rate(p.GameWage), "going", TechText.Rate(p.Going)));
+            // The game's payroll is charged at the city's prices, so both figures are named at them; the mod's own payroll is charged as written.
+            int paid = person.Game != null ? TalentGame.PaidCents(person.Game) : p.GameWage;
+            int going = person.Game != null ? PaidWage.Cents(p.Going, Prices.Level, 0) : p.Going;
+            box.Line(TechText.Fill("reallife_roles_file_pay", "paid", TechText.Rate(paid), "going", TechText.Rate(going)));
             box.Line(p.Rating > 0
                 ? TechText.Fill("reallife_roles_file_review", "rating", p.Rating.ToString(), "day", p.ReviewDay.ToString())
                 : TechText.T("reallife_roles_file_review_none", "day", p.ReviewDay.ToString()));

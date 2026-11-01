@@ -144,6 +144,7 @@ namespace RealLifeOverhaul.Ledger
             K("_mkt_news_own_meeting_revolt", LedgerSection.Markets, 80, "own_revolt"),
             K("_mkt_news_own_meeting", LedgerSection.Markets, 35),
             K("_mkt_news_own_audit", LedgerSection.Markets, 75, "own_audit"),
+            K("_mkt_news_own_sector", LedgerSection.Markets, 50, "own_sector"),
             K("_mkt_news_own_activist", LedgerSection.Markets, 70, "own_activist"),
             K("_mkt_news_own_private", LedgerSection.Markets, 65, "own_private"),
             K("_mkt_news_own_pulled", LedgerSection.Markets, 60, "own_pulled"),

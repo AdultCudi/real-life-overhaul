@@ -203,6 +203,10 @@ namespace RealLifeOverhaul.Markets
                 case MarketNewsKind.OwnAudit:
                     data = new[] { "name", name, "found", ListingText.Findings(n.A) };
                     return "reallife_mkt_news_own_audit";
+                case MarketNewsKind.OwnSector:
+                    data = new[] { "name", name, "from", Sector((MarketSector)Math.Max(0, Math.Min((int)MarketSector.Count - 1, n.A))),
+                        "to", Sector((MarketSector)Math.Max(0, Math.Min((int)MarketSector.Count - 1, n.B))) };
+                    return "reallife_mkt_news_own_sector";
                 case MarketNewsKind.Builder:
                     data = new[] { "name", name, "change", Percent(Math.Abs(n.B)) };   // the sentence carries the way it went
                     return BuilderKey((BuilderNewsKind)n.A, n.C);

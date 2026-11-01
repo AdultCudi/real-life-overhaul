@@ -10,7 +10,8 @@ namespace RealLifeOverhaul.Economy
     ///   s  state|name|seed|founded|end day|end cents|why|last day|capital|reserves|strategy|fund limit|rebalance|scare|
     ///      run|run from|stage|deadline|strikes|fined|month from|month|month income|month costs|last income|last costs|
     ///      month lost|last lost|lost in all|recovered in all|history count|test|closures|watch told|stood still|
-    ///      level|its record's day|level told|pay mode|pay share|fixed pay|paid this month|paid last month|paid in all
+    ///      level|its record's day|level told|pay mode|pay share|fixed pay|paid this month|paid last month|paid in all|
+    ///      the last day's pay asked for|paid|why less
     ///   d  each kind of saver: deposits|points over the rivals
     ///   l  each kind of borrower: loans|arrears|recovering|its days|points over the rivals|lending
     ///   f  the fund's holdings: stock|ticker|name|shares|cost|last price|dividend
@@ -37,7 +38,7 @@ namespace RealLifeOverhaul.Economy
                 (int)b.State, 0, b.Seed, b.FoundedDay, b.EndDay, b.EndCents, (int)b.Why, b.LastDay, b.Capital, b.Reserves, b.Strategy, b.FundLimit, b.Rebalance ? 1 : 0, b.Scare,
                 b.Run ? 1 : 0, b.RunFrom, (int)b.Stage, b.Deadline, b.Strikes, b.FinedCents, b.MonthFrom, b.Month, b.MonthIncome, b.MonthCosts, b.LastIncome, b.LastCosts,
                 b.MonthLost, b.LastLost, b.LostAll, b.RecoveredAll, b.HistoryCount, b.Test ? 1 : 0, b.Closures, b.WatchTold, b.Still ? 1 : 0,
-                b.Tier, b.TierFrom, b.TierTold, b.PayMode, b.PayShare, b.PayFixed, b.PaidMonth, b.PaidLast, b.PaidAll
+                b.Tier, b.TierFrom, b.TierTold, b.PayMode, b.PayShare, b.PayFixed, b.PaidMonth, b.PaidLast, b.PaidAll, b.PayWanted, b.PayGiven, b.PayHeld
             };
             for (int f = 0; f < head.Length; f++)
             {
@@ -272,6 +273,9 @@ namespace RealLifeOverhaul.Economy
             b.PaidMonth = Math.Max(0, L(c, TierAt + 6));
             b.PaidLast = Math.Max(0, L(c, TierAt + 7));
             b.PaidAll = Math.Max(0, L(c, TierAt + 8));
+            b.PayWanted = Math.Max(0, L(c, TierAt + 9));   // a line written before them: no day's pay to tell of yet
+            b.PayGiven = Math.Max(0, Math.Min(b.PayWanted, L(c, TierAt + 10)));
+            b.PayHeld = Clamp(I(c, TierAt + 11), BankTiers.PayHeldNone, BankTiers.PayHeldMost);
         }
 
         private static void WriteBranch(StringBuilder t, BankBranch br)
