@@ -21,7 +21,7 @@ internal static partial class UiSamples
     /// <summary>The status bar on a Tuesday afternoon: the time and speed, the season, the place, the money and the player's needs.</summary>
     public static UiStatusModel Bar(int app) => new UiStatusModel
     {
-        Time = "14:32", Day = "Tue, Day 12", Speed = 2, Season = "Autumn", Weather = UiIcon.CloudSun, Temperature = "14\u00b0C", Place = "Midtown", Money = "$48,210", MoneyTrend = 1, Energy = 72,
+        Time = "14:32", Day = "Tue, Day 412", Speed = 2, Season = "Autumn", Weather = UiIcon.CloudSun, Temperature = "14\u00b0C", Place = "Midtown", Money = "$48,210", MoneyTrend = 1, Energy = 72,
         Hunger = 48, Happiness = 64, Alerts = 3, Apps = Apps, AppTints = AppTints, App = app
     };
 
@@ -120,7 +120,7 @@ internal static partial class UiSamples
             Hero = new UiHeroModel
             {
                 Icon = UiIcon.GenreSimulation, Kicker = "In development", Title = "Cinder Valley", Line = "Simulation, 64% made, three of five milestones met", Progress = 64,
-                Note = "Playtest in 6 days",
+                Note = "Playtest tomorrow",
             },
             Figures = new[]
             {
@@ -154,8 +154,8 @@ internal static partial class UiSamples
             MoreGrade = 2,
             MoreRows = new[]
             {
-                Rival(UiIcon.GenreAction, UiRole.Chart6, "Iron Tide", "Pixel Harbour Games", 82, "41,000"),
                 Rival(UiIcon.GenreStrategy, UiRole.Chart5, "Crown and Ledger", "Saltmarsh Studios", 84, "57,200"),
+                Rival(UiIcon.GenreAction, UiRole.Chart6, "Iron Tide", "Pixel Harbour Games", 82, "41,000"),
                 Rival(UiIcon.GenreRpg, UiRole.Chart7, "Ashen Road", "Hollowpine Interactive", 79, "33,600"),
                 Rival(UiIcon.GenreSimulation, UiRole.Chart3, "Harbour Days", "Tidewater Interactive", 76, "28,900"),
                 Rival(UiIcon.GenrePuzzle, UiRole.Chart4, "Lantern Puzzles", "Copperkettle Games", 71, "12,300"),

@@ -8,7 +8,7 @@ using RealLifeOverhaul.Ui;
 internal static partial class UiSamples
 {
     /// <summary>The masthead's money, day and time in every preview and check: the game's own bar writes them so.</summary>
-    public const string Status = "$48,210     Tuesday (Day 12)     14:32";
+    public const string Status = "$48,210     Tuesday (Day 412)     14:32";
 
     /// <summary>A screen of the overhaul drawn from its own view model, with the app it stands in.</summary>
     public sealed class Sample
@@ -699,7 +699,7 @@ internal static partial class UiSamples
         m.Rows = new[]
         {
             Row("Luis Romero", "Van needs fuel before the afternoon run. Okay to use the company card?", "10:02", 1, 155f, true, false, false, t("reallife_ui_contacts_new", "New messages")),
-            Row("Uncle Fred", "Good. Once you’ve got keys, open your first shop. I’ll check in.", "09:02", 1, 40f, true, false, false, null),
+            Row("Uncle Fred", "Proud of you, kid. Dinner on Sunday? Your aunt is making lasagne.", "09:02", 1, 40f, true, false, false, null),
             Row("Anderson Recruitment Corp.", "Shall I send the shortlist over?", "08:52", 2, 320f, true, false, false, null),
             Row("City Office", "Fine of $125 deducted from your bank account.", "07:40", 1, 300f, false, false, false, null),
             Row("Maya Okafor", "You: Let me look at the rota tonight.", "09:20", 0, 12f, true, false, true, t("reallife_ui_contacts_earlier", "Earlier")),
