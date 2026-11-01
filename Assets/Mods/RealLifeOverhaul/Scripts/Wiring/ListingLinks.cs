@@ -88,6 +88,7 @@ namespace RealLifeOverhaul
             private static readonly List<BuildingRegistration> Businesses = new List<BuildingRegistration>(16);
             private static readonly List<int> FirstDays = new List<int>(16);
             private static readonly List<string> Keys = new List<string>(16);
+            private static readonly List<int> KeyTrades = new List<int>(16);
 
             // The causes of a reputation move that came from what the press made of the player.
             private static readonly FameCause[] PressCauses = { FameCause.Press, FameCause.Reported, FameCause.Interview, FameCause.Show, FameCause.Magazine };
@@ -99,7 +100,7 @@ namespace RealLifeOverhaul
                 MarketBridges.Businesses = Places;
                 MarketBridges.HandOver = HandOver;
                 MarketBridges.Name = Name;
-                MarketBridges.Trade = Trade;
+                MarketBridges.TradeTakings = TradeTakings;
                 CompanyBridges.ListingLine = Line;
                 CompanyBridges.OpenListing = () => MarketDirector.Instance?.OpenListing();
                 ServicesBridges.Sold = (place, price) => MarketDirector.Instance?.BusinessSold(price);
@@ -113,7 +114,7 @@ namespace RealLifeOverhaul
                 MarketBridges.Businesses = null;
                 MarketBridges.HandOver = null;
                 MarketBridges.Name = null;
-                MarketBridges.Trade = null;
+                MarketBridges.TradeTakings = null;
                 CompanyBridges.ListingLine = null;
                 CompanyBridges.OpenListing = null;
                 ServicesBridges.Sold = null;
@@ -407,17 +408,68 @@ namespace RealLifeOverhaul
                 }
             }
 
-            private static int Trade()
+            // Every business of the player's counts by its trade, so the sector follows what the company earns in now and not
+            // its first or its largest shop; a construction company's works are not in its office's statement.
+            private static void TradeTakings(int from, int to, long[] into)
             {
                 try
                 {
-                    BuildingRegistration r = Largest();
-                    return r != null ? MarketInputs.TradeOf(r.businessTypeName) : -1;
+                    Array.Clear(into, 0, into.Length);
+                    GameInstance save = SaveGameManager.Current;
+                    if (save == null || save.financialSummaries == null || to <= from)
+                    {
+                        return;
+                    }
+                    Books.Businesses(Businesses);
+                    Keys.Clear();
+                    KeyTrades.Clear();
+                    for (int i = 0; i < Businesses.Count; i++)
+                    {
+                        BuildingRegistration r = Businesses[i];
+                        int trade = r != null && r.Address != null ? MarketInputs.TradeOf(r.businessTypeName) : -1;
+                        if (trade >= 0 && trade < into.Length)
+                        {
+                            Keys.Add(Books.Key(r.Address));
+                            KeyTrades.Add(trade);
+                        }
+                    }
+                    List<FinancialSummary> all = save.financialSummaries;
+                    for (int i = all.Count - 1; i >= 0 && Keys.Count > 0; i--)
+                    {
+                        FinancialSummary day = all[i];
+                        if (day == null || day.businessIncomeStatements == null)
+                        {
+                            continue;
+                        }
+                        if (day.dayNumber < from - 7)
+                        {
+                            break;   // the statements are in order of days: none older is wanted
+                        }
+                        if (day.dayNumber < from || day.dayNumber >= to)
+                        {
+                            continue;
+                        }
+                        for (int k = 0; k < day.businessIncomeStatements.Count; k++)
+                        {
+                            FinancialSummary.BusinessIncomeStatement s = day.businessIncomeStatements[k];
+                            int at = s != null && s.Address != null ? Keys.IndexOf(Books.Key(s.Address)) : -1;
+                            if (at >= 0)
+                            {
+                                into[KeyTrades[at]] += (long)Math.Round(Math.Max(0f, s.TotalSales));
+                            }
+                        }
+                    }
+                    double works = 0.0, profit = 0.0;
+                    MarketsBuildLinks.ConstructionBooks(Businesses, from, to, ref works, ref profit);
+                    int building = MarketInputs.TradeOf(Construction.ConstructionType.TypeName);
+                    if (building >= 0 && building < into.Length)
+                    {
+                        into[building] += (long)Math.Round(Math.Max(0.0, works));
+                    }
                 }
                 catch (Exception e)
                 {
-                    Fault("ListingLinks.Trade", e);
-                    return -1;
+                    Fault("ListingLinks.TradeTakings", e);
                 }
             }
         }

@@ -336,6 +336,7 @@ namespace RealLifeOverhaul.Markets
                 MarketText.Large(o.Founder * (k.Last / 100.0))));
             box.Line(MarketText.Fill("reallife_lst_box_reserve", "each", MarketText.Price((int)Math.Round(o.Rps * 100.0)), "amount",
                 MarketText.Large(Math.Max(0.0, o.Rps) * o.Others(k))));
+            box.Line(SectorLine(s, k));
             if (o.Board)
             {
                 int at = Array.IndexOf(ListingCatalogue.PaySteps, o.PayBp);
@@ -387,6 +388,25 @@ namespace RealLifeOverhaul.Markets
             {
                 WriteResults(k);
             }
+        }
+
+        private static readonly int[] TopSectors = new int[3], TopBps = new int[3];   // SectorLine's scratch
+
+        // The sector it is listed in, what it earns in lately and when the sector is next reviewed.
+        private static string SectorLine(MarketState s, Stock k)
+        {
+            string sector = MarketText.Sector(k.Sector), day = ListingSector.NextReview(s.Day, s.YearDays).ToString();
+            int n = ListingSector.Top(k.Own, TopSectors, TopBps);
+            if (n == 0)
+            {
+                return MarketText.Fill("reallife_lst_box_sector_plain", "sector", sector, "day", day);
+            }
+            var mix = new System.Text.StringBuilder(64);
+            for (int i = 0; i < n; i++)
+            {
+                mix.Append(i > 0 ? ", " : string.Empty).Append(MarketText.Sector((MarketSector)TopSectors[i])).Append(' ').Append(MarketText.Percent(TopBps[i]));
+            }
+            return MarketText.Fill("reallife_lst_box_sector", "sector", sector, "mix", mix.ToString(), "day", day);
         }
 
         // What is coming: the dividend proposed, the results, the closed time, the lock-up, the yearly meeting.

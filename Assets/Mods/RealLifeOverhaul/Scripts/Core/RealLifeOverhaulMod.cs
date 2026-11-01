@@ -971,6 +971,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_lst_test_activist", () => Markets.MarketDirector.Instance?.TestOwnActivist())
                 .AddButton("reallife_lst_test_bid", () => Markets.MarketDirector.Instance?.TestOwnBid())
                 .AddButton("reallife_lst_test_off", () => Markets.MarketDirector.Instance?.TestOwnOff())
+                .AddButton("reallife_lst_test_sector", () => Markets.MarketDirector.Instance?.TestSector())
                 .AddHeader("reallife_co_header")
                 .AddToggle(Settings.EconomyCompanyId, "reallife_co_enabled", Settings.EconomyCompany,
                     v => Settings.EconomyCompany = v)

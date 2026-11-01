@@ -22429,7 +22429,7 @@
   "reallife_hire_test_orphan_fail": "Test failed: a walk of the city's businesses tripped on a record with no building. The log says which.",
   "reallife_hire_test_orphan_off": "Load a save first. This test does not run in a Going Public session.",
   "reallife_changes_next_title": "Next version",
-  "reallife_changes_next": "Nothing yet.",
+  "reallife_changes_next": "Fixed: your own company on the stock market kept the sector of your first business for good, even after you sold it, and its share price followed that sector. The sector now follows what the company earns in: its takings over about a quarter, reviewed at the start of each quarter, with a notice and a City Ledger line when it moves. A company already listed is set by its last quarter's takings when you load. A tech firm counts as software. The company's page shows the sector, its takings by sector and the next review.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Fixed: when every building that could hold the utilities office is yours, power and water accounts are applied for and reconnected in the Utilities app, by phone, at the same prices, and the notices say so; once a building is free the office opens again and the app says where. Fixed: after withdrawing an application and applying to the same post again, the Career app opened the withdrawn one and the interview could not be reached. Each application now has its own row, and the interview, offer and withdrawal go to the live one. Fixed: a save holding a business record whose building the city does not have (another mod can leave one behind) no longer switches the tech sector off at every load. The mod now leaves such a record out wherever it reads the city's businesses, names its address once in the log and changes nothing of it.",
   "reallife_co_mass_raise": "Give a raise",
@@ -26694,5 +26694,15 @@
   "reallife_phone_test_pages_fail": "Phone pages: the phone shows more than a page, or its page count changed. The details are in Player.log.",
   "reallife_phone_test_pages_busy": "The mod's apps are still going on the phone. Try again in a moment.",
   "reallife_changes_063_4_title": "0.63.4",
-  "reallife_changes_063_4": "Fixed: since 0.62.0 the phone could grow as tall as the screen, with every app showing at once and no pages. The mod's apps were put on the phone hidden and switched on later, which another mod that pages the phone never noticed. They now join the phone together once they are all ready, already shown, so the pages work again."
+  "reallife_changes_063_4": "Fixed: since 0.62.0 the phone could grow as tall as the screen, with every app showing at once and no pages. The mod's apps were put on the phone hidden and switched on later, which another mod that pages the phone never noticed. They now join the phone together once they are all ready, already shown, so the pages work again.",
+  "reallife_mkt_news_own_sector": "{name} is now listed under {to}, no longer {from}: most of its takings come from there now.",
+  "reallife_ledger_head_own_sector": "{name} moves to {to}",
+  "reallife_lst_note_sector": "Your company is now listed under {to}, no longer {from}, as most of its takings come from there. Its share price follows that sector from now on.",
+  "reallife_lst_box_sector": "Sector: {sector}. Takings lately: {mix}. The sector follows what the company earns in and is reviewed at the start of each quarter, next on day {day}.",
+  "reallife_lst_box_sector_plain": "Sector: {sector}. It follows what the company earns in and is reviewed at the start of each quarter, next on day {day}.",
+  "reallife_lst_test_sector": "Check my company's sector",
+  "reallife_lst_test_sector_session": "Test not started: in a Going Public session the sector moves only at its review, on every machine alike. Try it in a game of your own.",
+  "reallife_lst_test_sector_book": "Test not started: the prospectus is out, so the sector stays as it says until your company trades.",
+  "reallife_lst_test_sector_none": "Test not started: your businesses took no money in the last quarter, so there is nothing to set the sector by.",
+  "reallife_lst_test_sector_done": "Sector check: from {from} to {to}, by the last quarter's takings. The log says how."
 }
