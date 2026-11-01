@@ -1,6 +1,4 @@
-0.63.7
+0.63.8
 
 Fixed
-- The plate could still leave the table before your character had finished eating. It now stays until the eating animation has ended, at any game speed, and an autosave or a click on a button such as the game speed no longer ends the meal early.
-- Your own bank's lines in Finance and in the game's transactions named your headquarters, not the name you gave the bank. They now carry the bank's name.
-- A fixed pay from your own bank was cut back on busy days, as the bank had lent the cash out first, so it moved like a share of the profit. The bank now holds your fixed pay back before it lends and pays it in full every day it can spare it, and the pay's page says what held any of it back.
+- With Hotelier & Restaurateur or another mod that puts its own app on the phone, the phone could grow off the top of the screen with every app showing and no pages. That app showing itself again was taken for another mod paging the phone, so the pages were left to it. Such an app now joins the pages, and if another mod does page the phone, the phone is kept within the screen.
