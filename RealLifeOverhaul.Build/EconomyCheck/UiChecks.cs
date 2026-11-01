@@ -32,6 +32,7 @@ internal static partial class Program
         UiScreenChecks();
         UiRulesFailOnce();
         UiSourceChecks();
+        UiBindChecks();
         UiTextKeys();
         UiTimings();
         Console.WriteLine("  Interface kit: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
@@ -666,6 +667,64 @@ internal static partial class Program
             }
         }
         Check(named.SetEquals(runners), "ui sources: every class running a kit screen is in UiScreens, and every runner UiScreens names exists (found " + string.Join(", ", runners) + ")");
+    }
+
+    // ---------------------------------------------------------------- binding over the game's screens
+
+    // Beta 2: the Contacts kit looked for its canvas the plain way while the game's full menu was switched off, found
+    // nothing at every load and gave up for the session. Every search of the scene in the kit says whether it takes
+    // switched off objects, the canvases are walked as the engine nests them, and a screen not built yet is looked at again.
+    private static void UiBindChecks()
+    {
+        Check(UiBindRules.BlindSearch("Canvas menu = app.GetComponentInParent<Canvas>();") != null, "ui binding: a search for the canvas that skips switched off objects is found (the beta 2 fault)");
+        Check(UiBindRules.BlindSearch("rect.SetParent(menu.rootCanvas.transform, false);") != null, "ui binding: the canvas's own root, kept up only while it is on, is found");
+        Check(UiBindRules.BlindSearch("var c = go.GetComponentInChildren(typeof(Image));") != null && UiBindRules.BlindSearch("var u = Object.FindObjectOfType<UIs>();") != null,
+            "ui binding: a search by type and a search of the whole scene that skip switched off objects are found");
+        Check(UiBindRules.BlindSearch("Canvas[] above = app.GetComponentsInParent<Canvas>(true);") == null && UiBindRules.BlindSearch("var t = go.GetComponentsInChildren<TMP_Text>(false);") == null
+              && UiBindRules.BlindSearch("// app.GetComponentInParent<Canvas>() skips what is off") == null && UiBindRules.BlindSearch(string.Empty) == null,
+            "ui binding: a search that says what it takes, and a comment, are not taken for blind ones");
+        // A stand-in for the full menu as the game nests it, nearest canvas first: the app's own canvases inherit their order.
+        Check(UiBindRules.Root(3) == 2 && UiBindRules.Sorter(new[] { false, false, false }, 3) == 2, "ui binding: under nested canvases that inherit, the root sets the order and takes the kit");
+        Check(UiBindRules.Sorter(new[] { false, true, false }, 3) == 1, "ui binding: the nearest canvas that sorts on its own sets the order");
+        Check(UiBindRules.Root(0) == -1 && UiBindRules.Sorter(new bool[0], 0) == -1, "ui binding: no canvas above gives none, not a wrong one");
+        Check(UiBindRules.Wait(1) == UiBindRules.FirstWait && UiBindRules.Wait(2) == UiBindRules.FirstWait * 2f && UiBindRules.Wait(30) == UiBindRules.LongestWait
+              && !UiBindRules.Stops(UiBindRules.MostTries - 1) && UiBindRules.Stops(UiBindRules.MostTries),
+            "ui binding: a screen not built yet is looked at again, later each time, a few times a city");
+        float spent = 0f;
+        for (int i = 1; i < UiBindRules.MostTries; i++)
+        {
+            spent += UiBindRules.Wait(i);
+        }
+        Check(spent >= 120f && spent <= 600f, "ui binding: the looks again span " + spent.ToString("0", System.Globalization.CultureInfo.InvariantCulture)
+            + " s of a city, long enough for a slow phone and short enough to stop");
+
+        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui"));
+        string blind = "none";
+        int files = 0;
+        foreach (string path in Directory.GetFiles(folder, "*.cs", SearchOption.AllDirectories))
+        {
+            if (System.IO.Path.GetFileName(path) == "UiBindRules.cs")
+            {
+                continue;   // the rule's own pattern
+            }
+            files++;
+            string[] lines = File.ReadAllLines(path);
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string found = UiBindRules.BlindSearch(lines[i]);
+                if (found != null)
+                {
+                    blind = System.IO.Path.GetFileName(path) + ":" + (i + 1) + ": " + found;
+                }
+            }
+        }
+        Check(files >= 40 && blind == "none", "ui binding: every search of the scene in the kit says whether it takes switched off objects (" + blind + ")");
+        string kit = File.ReadAllText(System.IO.Path.Combine(folder, "Contacts", "ContactsKit.cs"));
+        string director = File.ReadAllText(System.IO.Path.Combine(folder, "UiDirector.cs"));
+        Check(kit.Contains("GetComponentsInParent<Canvas>(true)") && kit.Contains("UiBindRules.Stops(") && kit.Contains("UiBindRules.Wait(") && director.Contains("ContactsKit.Rearm()"),
+            "ui binding: the Contacts kit binds over the switched off menu, looks again when the app is not built yet and is looked at afresh each city");
+        Check(director.Contains("\"UI: the RLO interface is on; \"") && director.Contains("UiFonts.BundleFile") && director.Contains("ContactsKit.State"),
+            "ui binding: the director says once a city that the interface is on, how its fonts came in and which screens it drew over");
     }
 
     // ---------------------------------------------------------------- texts
