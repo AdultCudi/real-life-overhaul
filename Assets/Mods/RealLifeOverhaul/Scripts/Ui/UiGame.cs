@@ -323,6 +323,7 @@ namespace RealLifeOverhaul.Ui
             m.Apps = new UiIcon[count];
             m.AppTints = new UiRole[count];
             m.AppBadges = new int[count];
+            m.AppPictures = new int[count];
             string open = ShellApps.Open();
             int at = 0;
             for (int i = 0; i < UiShellApps.Items.Count; i++)
@@ -336,6 +337,7 @@ namespace RealLifeOverhaul.Ui
                 m.Apps[at] = a.Icon;
                 m.AppTints[at] = a.Tint;
                 m.AppBadges[at] = a.Badge;
+                m.AppPictures[at] = a.Picture;
                 if (a.Id == open)
                 {
                     m.App = at;

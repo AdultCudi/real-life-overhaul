@@ -155,6 +155,7 @@ internal static partial class Program
             UiIconChecks();   // (the icons: Phosphor's outlines, both variants, filled as their winding says, pinned and regenerated: UiIconChecks.cs)
             HudKitChecks();   // (the HUD's pieces and host: the zoom, the world prompt clamped, the pills, the activity, the money, no key taken, the cost: UiHudChecks.cs)
             UiGrids();        // (the app window's page shapes and the kit's links: UiGridChecks.cs)
+            PhoneKitChecks();   // (the kit phone: its pages, nav bar, height, colours, sources: UiChecks.Phone.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -688,6 +689,7 @@ internal static partial class Program
         UiIconChecks(); // the icons: Phosphor's outlines, both variants, filled as their winding says, pinned and regenerated (UiIconChecks.cs)
         HudKitChecks(); // the HUD's pieces and host: the UI zoom, the world prompt inside the screen at every frame, every pill whole in every language, the activity's states, the money's changes, no key taken, the cost (UiHudChecks.cs)
         UiGrids();      // the app window's page shapes (diary, board, reader, settings list, conversation, message list, feed, edition) and the kit's links (UiGridChecks.cs)
+        PhoneKitChecks();   // the kit phone: every app on one page, the nav bar still, its own height, the apps' colours, the sources (UiChecks.Phone.cs)
         Studio();       // the game studio: the plan, building, the sessions, hype and reviews, the bands and no cap, ten years, the models, after launch, bonuses, rivals, old saves, the save, the screens, the texts (StudioChecks.cs)
         SectorChecks(); // the other tech firms: the shared markets from the city, the curves for the old clamps, rivals by the same rules, IT work, data centres and the cloud, the desk sessions, old saves, the save and the shared part, the screens, ten years, the costs (SectorChecks.cs)
         BugReports();   // "Report a bug": report.txt, the user folder taken out, a log's tail, the mod's lines, nothing sent (BugReportChecks.cs)

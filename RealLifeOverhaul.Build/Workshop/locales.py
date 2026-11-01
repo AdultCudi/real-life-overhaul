@@ -61,6 +61,8 @@ SAME_WORDS = 4                                     # a Latin-script translation 
 NOTICE_MOST = 240                                  # characters: a toast holds about 240 (Workshop/STYLE.md, NoticeCheck)
 # Texts that may stay as the English in any translation: placeholders alone, version numbers, and invented names kept in Latin letters.
 ENGLISH_OK = {
+    # 2 Nov 2026, the RLO interface's EconoView switch: the app's name, which the game keeps in Latin letters in every language
+    'reallife_ui_screen_econoview',
     # 1 Nov 2026, the gallery of the RLO interface: its sample people, a typed name and a street are names
     'reallife_ui_gallery_person_1', 'reallife_ui_gallery_person_2', 'reallife_ui_gallery_person_3', 'reallife_ui_gallery_person_4', 'reallife_ui_gallery_person_5',
     'reallife_ui_gallery_person_6', 'reallife_ui_gallery_person_7', 'reallife_ui_gallery_query', 'reallife_ui_gallery_address',

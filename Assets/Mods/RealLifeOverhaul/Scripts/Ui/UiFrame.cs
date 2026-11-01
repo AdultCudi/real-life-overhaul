@@ -129,6 +129,7 @@ namespace RealLifeOverhaul.Ui
         public UiRole[] AppTints;     // each one's category colour
         public int App = -1;          // the app that is open, filled cyan
         public int[] AppBadges;       // each one's news, as its own button counts it; null for none
+        public int[] AppPictures;     // another mod's own picture for its tile (UiDraw.PictureKey); null or 0 for the glyph
         public bool AllApps;          // the All apps tile ends the row
         public bool AllAppsOpen;      // the All apps panel is up: its tile filled cyan
         public int AllAppsBadge;      // news of apps the row never lists (another mod's), on the All apps tile

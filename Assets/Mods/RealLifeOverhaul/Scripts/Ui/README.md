@@ -41,9 +41,13 @@ mixed with a few other games: the owner's choice of 1 November 2026. The rules a
      emblem for a decision about no one), the title in capitals, what is happening, numbered choices each with its
      consequences in coloured lines, and one or two buttons. A consequence's arrow follows the change (`Change`) and
      its colour says good or bad (`Tone`), so burnout easing is a green arrow down.
-   - **Phone** (`UiPhone`, `UiPhoneModel`): the phone's home in the kit's tokens: a close at its head for the mouse,
-     apps in their icons' colours on slate tiles, an "Up next" list and the page controls fixed in a bar at its foot,
-     the arrow with no page that way dimmed.
+   - **Phone** (`UiPhone`, `UiPhoneModel`, run by `Phone/PhoneScreen` over the game's phone by `Phone/PhoneKit`): the
+     phone drawn as a phone: a body with a thin rim, its status line, its name with a fold-down chevron (a folder's name
+     with a way back), apps on rounded tiles with their names in their glyphs' colours (`PhoneLooks`: one glyph and one
+     colour an app, on every screen), folders as tiles of their first apps' glyphs, another mod's own picture
+     (`UiPictures`, `UiDraw.Picture`), "Up next", the game's radio and private driver, and the nav bar with the page
+     arrows and dots fixed at the screen's foot. Every app the phone lists is `Phone/PhoneItems`, which the status bar's
+     app row and All apps read too.
 
    The four older shapes draw inside the app window and stay until their screens are converted. Start no new screen on
    them:

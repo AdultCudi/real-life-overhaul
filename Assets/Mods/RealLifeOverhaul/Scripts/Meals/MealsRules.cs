@@ -42,7 +42,9 @@ namespace RealLifeOverhaul.Meals
         public const float SeatedAtLeast = 8f;      // the hunger bar's rise (of 100) that is a meal worth sitting down to
         public const float LeastSeconds = 8f;       // s: the shortest meal watched at the table
         public const float MostSeconds = 15f;       // s: the longest
-        public const float WindDownMost = 1.5f;     // s: the most the plate waits for the eating animation to end after the meal's time, then it goes anyway
+        public const float WindDownLeast = 1.5f;    // s: the plate's wait for the eating to end when its length is not known (the mod's clip fades in 0.25)
+        public const float WindDownSpare = 1f;      // s: on top of a round of the game's eating, for its transition out
+        public const float WindDownMost = 10f;      // s: the longest the plate ever waits after the meal's time, then it goes anyway
         public const float SecondsPerFill = 0.125f; // s of eating per point the meal fills, on top of the shortest
         public const float WaitMost = 5f;           // s: the game's own bite and its panel are waited for at most this long
         public const float WalkMost = 20f;          // s: a walk to the seat that has not arrived by then is given up
@@ -145,6 +147,17 @@ namespace RealLifeOverhaul.Meals
         {
             float seconds = LeastSeconds + (fill > 0f ? fill : 0f) * SecondsPerFill;
             return seconds > MostSeconds ? MostSeconds : seconds;
+        }
+
+        /// <summary>
+        /// Seconds the plate may wait, after the meal's time, for the eating animation to end: a whole round of the game's eating
+        /// (its way out may wait for the round's end) and its transition, within the least and the most. The caller reads the
+        /// round's length off the animator and measures on the animator's own clock, so a faster game speed shortens both alike.
+        /// </summary>
+        public static float WindDownSeconds(float round)
+        {
+            float seconds = (round > 0f ? round : 0f) + WindDownSpare;
+            return seconds < WindDownLeast ? WindDownLeast : seconds > WindDownMost ? WindDownMost : seconds;
         }
 
         /// <summary>True when a surface this high above the seat's floor is a table top to put a plate on.</summary>

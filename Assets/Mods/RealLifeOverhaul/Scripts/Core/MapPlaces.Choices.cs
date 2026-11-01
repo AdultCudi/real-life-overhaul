@@ -214,7 +214,7 @@ namespace RealLifeOverhaul
                         ChoiceRow entry = choice.Rows[i];
                         int index = i;
                         string name = Pref + choice.Id + "_" + entry.Id;
-                        object languageData = Activator.CreateInstance(parameters[4].ParameterType);
+                        object languageData = TitleData(parameters[4].ParameterType, entry.TitleKey);
                         Func<Vector3?> focus = Guard.Asked(entry.Focus, null);
                         var row = create.Invoke(filters, new object[] { name, entry.Icon, data, line, languageData, null, focus }) as CityMapFilter;
                         if (row == null || row.Toggle == null)

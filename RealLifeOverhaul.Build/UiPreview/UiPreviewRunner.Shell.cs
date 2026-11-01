@@ -31,6 +31,14 @@ public static partial class UiPreviewRunner
                 Backdrop = fo == UiShellApps.Other ? "11.jpg" : "13.jpg", Bar = () => UiSamples.ShellBar(UiSamples.RowContacts, true),
                 HoverCommand = UiAllApps.RowCommand, HoverArg = 1, Walk = new[] { Right, Down, Down, Left, Down, Up } });
         }
+        // No other mod on the phone: Other mods says so.
+        screens.Add(new Screen { Name = "shell_all_apps_none", AppName = "Contacts", Icon = UiIcon.AddressBook,
+            Lay = (s, f, d, k) =>
+            {
+                UiListDetail.Lay(s, UiSamples.ContactsWindow(English), Held(f), d, k);
+                UiAllApps.LayOver(s, UiSamples.AllApps(English, UiShellApps.Other, false), f, k);
+            },
+            Backdrop = "11.jpg", Bar = () => UiSamples.ShellBar(UiSamples.RowContacts, true), Walk = new[] { Right, Down } });
         // Over the street the boxes come while walking: the bar is the HUD's, without the full menu's app row.
         screens.Add(new Screen { Name = "shell_question", AppName = "Question", Lay = (s, f, d, k) => UiCard.Lay(s, UiSamples.Question(English, false, false), f, d, k),
             Backdrop = "02.jpg", HoverCommand = UiCard.ButtonCommand, HoverArg = 0, Walk = new[] { Left, Right }, Bar = UiSamples.WalkingBar });

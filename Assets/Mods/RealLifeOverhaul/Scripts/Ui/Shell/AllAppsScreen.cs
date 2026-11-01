@@ -162,7 +162,8 @@ namespace RealLifeOverhaul.Ui
                 UiShellApp a = _rows[i];
                 _m.Rows[i] = new UiAllAppsRow
                 {
-                    Icon = a.Icon, Tint = a.Tint, Title = a.Title, Badge = a.Badge, Open = a.Id == _open, Status = UiShellApps.Status != null ? UiShellApps.Status(a.Id, a.Badge) : null
+                    Icon = a.Icon, Tint = a.Tint, Title = a.Title, Badge = a.Badge, Open = a.Id == _open, Status = UiShellApps.Status != null ? UiShellApps.Status(a.Id, a.Badge) : null,
+                    Picture = a.Picture
                 };
             }
             _m.RowCount = _rows.Count;

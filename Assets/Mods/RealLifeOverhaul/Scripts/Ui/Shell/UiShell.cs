@@ -48,7 +48,7 @@ namespace RealLifeOverhaul.Ui
             _changed = Guard.Wrap(Apply);
             UiGameHost.FacesChanged = _changed;
             UiGameHost.Chrome = Press;
-            UiShellApps.Source = ShellApps.FromRow;
+            UiShellApps.Source = ShellApps.FromPhone;
             UiShellApps.Status = Line;
         }
 
