@@ -192,7 +192,11 @@ namespace RealLifeOverhaul.Ui
             float top = y;
             if (m.EmptyOnly)
             {
-                UiDraw.EmptyState(s, at, x, y, w, h, m.EmptyIcon, m.EmptyTitle, m.EmptyBody, m.EmptyAction, EmptyCommand, keys);
+                int button = UiDraw.EmptyState(s, at, x, y, w, h, m.EmptyIcon, m.EmptyTitle, m.EmptyBody, m.EmptyAction, EmptyCommand, keys);
+                if (button >= 0)
+                {
+                    s.Nodes[button].Left = s.Nodes[button].Right = button;   // the one way out stands alone: only Up and Down leave it
+                }
                 return;
             }
             if (!string.IsNullOrEmpty(m.Next) || m.LeadActions.Length > 0)
@@ -221,12 +225,18 @@ namespace RealLifeOverhaul.Ui
             {
                 int first = s.NodeCount;
                 Preview(s, at, m.Preview, x + w - pw, y, pw, top + h - y, keys);
-                // Right from the preview goes nowhere (the window's close is not the way on), Left goes back to the row it shows.
+                // The preview is a column of its own: Up and Down walk its targets and stop at its ends, Right goes nowhere (the
+                // window's close is not the way on), and Left goes back to the row it shows.
                 int row = m.Table.Selected >= 0 ? s.FindNode(UiDataTable.First + UiDataTable.Row, m.Table.Selected) : -1;
                 for (int i = first; i < s.NodeCount; i++)
                 {
                     s.Nodes[i].Right = i;
                     s.Nodes[i].Left = row;
+                    s.Nodes[i].Down = i + 1 < s.NodeCount ? i + 1 : i;
+                    if (i > first)
+                    {
+                        s.Nodes[i].Up = i - 1;
+                    }
                 }
             }
         }
@@ -362,11 +372,52 @@ namespace RealLifeOverhaul.Ui
                 s.Nodes[i].Right = i;
             }
             float ry = Demands(s, at, p, x + lw + gap, y, rw, bottom - y);
-            float py = Math.Max(ly, ry);
-            if (p.People.Length > 0 && bottom - py >= PeopleLeast)
+            int main = MainAction(s);
+            if (p.People.Length == 0)
             {
-                PeopleGrid(s, at, p, x, py, lw, rw, gap, bottom);
+                return;
             }
+            // The people stand under the column that ends first when the two differ by more than a hole, else across both.
+            int people = s.NodeCount;
+            if (ry - ly > UiTokens.S12 && bottom - ly >= PeopleLeast)
+            {
+                UiAppWindow.People(s, at, p.PeopleTitle, p.PeopleCount, p.People, p.PeopleMore, null, UiRole.None, null, x, ly, lw, bottom - ly);
+                for (int i = people; i < s.NodeCount; i++)
+                {
+                    s.Nodes[i].Right = i;   // nothing at the right takes a press
+                }
+            }
+            else if (ly - ry > UiTokens.S12 && bottom - ry >= PeopleLeast)
+            {
+                UiAppWindow.People(s, at, p.PeopleTitle, p.PeopleCount, p.People, p.PeopleMore, null, UiRole.None, null, x + lw + gap, ry, rw, bottom - ry);
+                for (int i = people; i < s.NodeCount; i++)
+                {
+                    s.Nodes[i].Right = i;
+                }
+                if (people < s.NodeCount && main >= 0)
+                {
+                    s.Nodes[people].Up = main;   // Up from the right column's first goes to the head's main action over it
+                }
+            }
+            else if (bottom - Math.Max(ly, ry) >= PeopleLeast)
+            {
+                PeopleGrid(s, at, p, x, Math.Max(ly, ry), lw, rw, gap, bottom, main);
+            }
+        }
+
+        // The head's main action (the last of its buttons, on F): where Up leads from the right side of the page.
+        private static int MainAction(UiScene s)
+        {
+            int found = -1, most = -1;
+            for (int i = 0; i < s.NodeCount; i++)
+            {
+                if (s.Nodes[i].Command == UiAppWindow.ActionCommand && s.Nodes[i].Arg > most)
+                {
+                    most = s.Nodes[i].Arg;
+                    found = i;
+                }
+            }
+            return found;
         }
 
         // The one label column the skills, the satisfaction and the choice of business share.
@@ -453,7 +504,7 @@ namespace RealLifeOverhaul.Ui
 
         // The people beside them across the page in the page's two columns, each their face,
         // name, role and two graded bars as the window's people are drawn, as many as fit, then the way to all of them.
-        private static void PeopleGrid(UiScene s, UiAt at, UiStaffPerson p, float x, float y, float colW, float rightW, float gap, float bottom)
+        private static void PeopleGrid(UiScene s, UiAt at, UiStaffPerson p, float x, float y, float colW, float rightW, float gap, float bottom, int main)
         {
             float w = colW + gap + rightW;
             float cw = UiTextRules.Width(p.PeopleCount ?? string.Empty, UiStyle.Small) + UiTokens.S1;
@@ -481,6 +532,10 @@ namespace RealLifeOverhaul.Ui
                     for (int n = before; n < s.NodeCount; n++)
                     {
                         s.Nodes[n].Right = n;   // the right column's people: nothing lies further right
+                        if (i == 1 && main >= 0)
+                        {
+                            s.Nodes[n].Up = main;   // and Up from its first goes to the head's main action over it, never across the page
+                        }
                     }
                 }
             }

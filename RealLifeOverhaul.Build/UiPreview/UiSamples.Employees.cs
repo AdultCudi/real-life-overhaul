@@ -69,7 +69,7 @@ internal static partial class UiSamples
                 v.Preview = new StaffPreviewView
                 {
                     Name = v.Employees[0].Name, Role = v.Employees[0].Role, RoleIcon = StaffViews.SkillIcon(Skills[0]), Business = v.Employees[0].Business,
-                    Status = v.Employees[0].Task, StatusTone = v.Employees[0].TaskTone, Skill = v.Employees[0].Skill, Satisfaction = v.Employees[0].Satisfaction, Age = 29,
+                    Status = t("reallife_ui_staff_at_work", "At work"), StatusTone = UiRole.Ok, Skill = v.Employees[0].Skill, Satisfaction = v.Employees[0].Satisfaction, Age = 29,
                     Hours = 36, Wage = v.Employees[0].Wage, Demands = 7, DemandsMet = 4, DemandRows = PersonSample(t, v.Employees[0].Name, false, false, false).Demands
                 };
                 break;
@@ -81,7 +81,7 @@ internal static partial class UiSamples
                 Candidates(t, v, 6);
                 v.Filters = new[] { t("reallife_ui_staff_all_skills", "All skills"), t("reallife_ui_staff_all_demands", "All demands") };
                 v.HideJobBoard = true;
-                v.SortColumn = 1;
+                v.SortColumn = 3;
                 v.SortDown = true;
                 break;
             case "picking_5":
@@ -150,7 +150,8 @@ internal static partial class UiSamples
         v.Selected = 1;   // the cursor on the second row, its person in the preview beside the table
         v.Preview = new StaffPreviewView
         {
-            Name = top.Name, Role = top.Role, RoleIcon = StaffViews.SkillIcon(Skills[2]), Business = top.Business, Status = top.Task, StatusTone = top.TaskTone, Skill = top.Skill,
+            Name = top.Name, Role = top.Role, RoleIcon = StaffViews.SkillIcon(Skills[2]), Business = top.Business,
+            Status = t("reallife_ui_staff_at_work", "At work"), StatusTone = UiRole.Ok, Skill = top.Skill,
             Satisfaction = top.Satisfaction, Age = 31, Hours = 28, Wage = top.Wage, Demands = 7, DemandsMet = 4,
             DemandRows = PersonSample(t, top.Name, false, false, false).Demands
         };
@@ -232,16 +233,14 @@ internal static partial class UiSamples
         else
         {
             p.Task = training ? t("myemployees_task_training", "Training") : sick ? t("myemployees_task_absent", "Sick") : Tasks[0];
-            p.Status = p.Task;
-            p.StatusTone = training ? UiRole.Accent : sick ? UiRole.Warn : UiRole.Muted;
+            p.Status = training ? p.Task : sick ? p.Task : t("reallife_ui_staff_at_work", "At work");
+            p.StatusTone = training ? UiRole.Accent : sick ? UiRole.Warn : UiRole.Ok;
             p.Positive = t("myemployees_manage_schedule", "Manage schedule");
             p.Negative = t("myemployees_fire", "Fire employee");
             p.Bonus = t("myemployees_configure_pay_bonus", "Pay Bonus ({bonusAmount})").Replace("{bonusAmount}", "$1.2K");
             p.BonusOn = !sick;
             p.Cooldown = sick ? t("myemployees_pay_bonus_cooldown", "Cooldown: {days} days").Replace("{days}", "12") : null;
             p.HrManager = sick ? null : "Dana Whitfield";
-            p.Sick = sick;
-            p.SickWords = sick ? t("myemployees_called_in_sick", "{employeeName} called in sick today").Replace("{employeeName}", name) : null;
             if (training)
             {
                 p.Training = t(Skills[0], SkillWords[0]);
@@ -259,7 +258,7 @@ internal static partial class UiSamples
                 new UiStaffSkill { Label = t(Skills[2], SkillWords[2]), Value = 34, Train = training ? null : train },
             };
         string met = t("reallife_ui_staff_met", "Met"), notMet = t("reallife_ui_staff_not_met", "Not met");
-        string hours = candidate ? null : StaffViews.Fill(t("reallife_ui_staff_week_hours", "{worked} of {scheduled} hours"), "worked", "22", "scheduled", "36");
+        string hours = null;   // the hours worked stand once, in the work's rows
         p.Demands = new[]
         {
             Demand(t, UiIcon.Clock, "ba:jobdemand_fulltime", "Full-time", hours, 2, candidate ? -1 : 1, met, notMet),
@@ -308,14 +307,14 @@ internal static partial class UiSamples
             rows[i] = new RivalRow
             {
                 Name = Firsts[(i + 4) % Firsts.Length] + " " + Lasts[(i * 3 + 11) % Lasts.Length], Skill = t(Skills[kind], SkillWords[kind]), Level = 92 - i * 7,
-                Hours = 24 + (i * 6) % 20, Talking = i == 4, Poached = i == 5, SkillKey = Skills[kind]
+                Hours = 24 + (i * 6) % 20, Talking = i == 4, Poached = i == 5, SkillKey = Skills[kind], Age = 23 + (i * 7) % 30,
+                Wage = Money(15.5f + (92 - i * 7) * 0.12f)
             };
         }
         var m = new UiStaffModel();
         // The cursor on the third, as the keys' shot rings it; the game's offer for them beside the table.
         var offer = new RivalChosenView
         {
-            Age = 33, Wage = "$26.40",
             Demands = new[]
             {
                 Demand(t, UiIcon.Clock, "ba:jobdemand_fulltime", "Full-time", null, 2, -1, null, null),

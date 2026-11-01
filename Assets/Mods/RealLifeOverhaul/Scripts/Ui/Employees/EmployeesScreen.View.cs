@@ -30,7 +30,7 @@ namespace RealLifeOverhaul.Ui
 
         // The game's header of each column, which sorts its table (BaTable: a header's name is the model's field); null: none.
         private static readonly string[] EmployeeHeaders = { "EmployeeName", "CurrentBusinessName", "PrimarySkill", "HourlyWage", "Satisfaction", "Task" };
-        private static readonly string[] CandidateHeaders = { "EmployeeName", "PrimarySkill", "Schedule", null, "HourlyWage", "ExpiresIn" };
+        private static readonly string[] CandidateHeaders = { "EmployeeName", "Schedule", null, "PrimarySkill", "HourlyWage", "ExpiresIn" };
 
         private const string TrainingTask = "myemployees_task_training";   // the game's task words while they train (EmployeeInstance.GetCurrentTask)
         private const string AbsentTask = "myemployees_task_absent";
@@ -569,9 +569,8 @@ namespace RealLifeOverhaul.Ui
                 p.DemandRows = DemandsOf(e, true, p.DemandRows);
                 return p;
             }
-            string task = e.GetCurrentTask();
-            p.Status = TaskWords(task);
-            p.StatusTone = TaskTone(task, e.isAbsent);
+            p.Status = Presence(e, out UiRole tone);
+            p.StatusTone = tone;
             p.DemandRows = DemandsOf(e, false, p.DemandRows);
             p.Demands = p.DemandRows.Length;
             p.DemandsMet = 0;
@@ -617,7 +616,6 @@ namespace RealLifeOverhaul.Ui
                 p.StatusTone = p.Soon ? UiRole.Warn : UiRole.Muted;
                 p.Bonus = null;
                 p.Cooldown = null;
-                p.Sick = false;
                 p.HrManager = null;
             }
             else
@@ -627,14 +625,12 @@ namespace RealLifeOverhaul.Ui
                 p.WeeklyHours = e.assignedWeeklyHours;
                 p.WorkedHours = e.workedHoursThisWeek;
                 p.Task = TaskWords(task);
-                p.Status = p.Task;
-                p.StatusTone = TaskTone(task, e.isAbsent);
+                p.Status = Presence(e, out UiRole tone);
+                p.StatusTone = tone;
                 p.Bonus = Shown(_bonus) ? UiWidgets.Label(_bonus) : null;
                 p.BonusOn = UiWidgets.Shows(_bonus);
                 var cooldown = GameContract.StaffCooldown.Field?.GetValue(_app) as TextLocalizationComponent;
                 p.Cooldown = cooldown != null && cooldown.gameObject.activeSelf ? UiWidgets.Text(cooldown.TextContainer) : null;
-                p.Sick = e.isAbsent;
-                p.SickWords = e.isAbsent ? "myemployees_called_in_sick".Localize(new { employeeName = p.Name }).ToString() : null;
                 HrManagerPlan plan = string.IsNullOrEmpty(e.assignedHrManagerPlanId) ? null : HrManagerHelper.GetPlanFromId(e.assignedHrManagerPlanId);
                 p.HrManager = plan != null && plan.HrManagerInstance != null && plan.HrManagerInstance.characterData != null ? plan.HrManagerInstance.characterData.name : null;
             }
@@ -750,19 +746,9 @@ namespace RealLifeOverhaul.Ui
                 string key = demands[i];
                 JobDemand d = JobDemandHelper.GetByName(key);
                 bool fulfilled = !candidate && d != null && d.Fulfilled(e, null);
-                string note = null;
-                if (!candidate && d is HoursWorkingPerWeek)
-                {
-                    note = StaffViews.Fill(UiText.T("reallife_ui_staff_week_hours"), "worked", UiText.Whole(e.workedHoursThisWeek), "scheduled", UiText.Whole(e.assignedWeeklyHours));
-                }
-                else if (!candidate && d is DaysWorkingPerWeek)
-                {
-                    note = StaffViews.Fill(UiText.T("reallife_ui_staff_week_days"), "worked", UiText.Whole(e.workedDays), "scheduled",
-                        UiText.Whole(e.assignedWeeklyDays != null ? e.assignedWeeklyDays.Count : 0));
-                }
                 rows[i] = new UiStaffDemand
                 {
-                    Icon = DemandIcon(key), Name = key.GetLocalization(), Note = note,
+                    Icon = DemandIcon(key), Name = key.GetLocalization(), Note = null,   // the hours worked stand once, in the work's rows
                     Priority = d != null ? d.PriorityLocalizeKey.GetLocalization() : null, PriorityTone = d != null ? PriorityTone(d.priority) : UiRole.Muted,
                     Met = candidate || d == null ? -1 : fulfilled ? 1 : 0, MetWords = fulfilled ? met : notMet
                 };
@@ -827,6 +813,35 @@ namespace RealLifeOverhaul.Ui
         // A candidate's time left as the game's own box writes it: hours under a day, else whole days.
         private static string Expires(int hours) => hours < 24 ? "common_hours".Localize(new { hours }).ToString()
             : "common_days".Localize(new { value = Mathf.RoundToInt(hours / 24f) }).ToString();
+
+        // Where they are now, for the chip by their name: training, sick, unassigned, without a task, at work on a shift now
+        // (the game's own IsWorking), or off shift. The task's station stands in its own row.
+        private static string Presence(EmployeeInstance e, out UiRole tone)
+        {
+            if (e.IsTraining)
+            {
+                tone = UiRole.Accent;
+                return UiText.T(TrainingTask);
+            }
+            if (e.isAbsent)
+            {
+                tone = UiRole.Warn;
+                return UiText.T(AbsentTask);
+            }
+            if (!e.IsAssignedToAnyBusiness())
+            {
+                tone = UiRole.Danger;
+                return UiText.T("common_unassigned");
+            }
+            if (e.GetCurrentTask() == null)
+            {
+                tone = UiRole.Danger;
+                return UiText.T("myemployees_no_task");
+            }
+            bool working = e.IsWorking();
+            tone = working ? UiRole.Ok : UiRole.Muted;
+            return UiText.T(working ? "reallife_ui_staff_at_work" : "reallife_ui_staff_off_shift");
+        }
 
         private static string TaskWords(string task) => (task ?? "myemployees_no_task").GetLocalization();
 

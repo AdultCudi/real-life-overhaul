@@ -41,13 +41,13 @@ namespace RealLifeOverhaul.Ui
         public bool Talking;         // talks with them are under way
         public bool Poached;         // they once worked for the player
         public string SkillKey;      // the game's name for their skill, for its glyph
+        public int Age;
+        public string Wage;          // what they would ask an hour, at the city's prices
     }
 
     /// <summary>The chosen one of a rival's staff, as the game would offer them: what the row has no room for.</summary>
     public sealed class RivalChosenView
     {
-        public int Age;
-        public string Wage;          // what they would be paid an hour, at the city's prices
         public UiStaffDemand[] Demands = new UiStaffDemand[0];
     }
 
@@ -111,8 +111,6 @@ namespace RealLifeOverhaul.Ui
         public string Cooldown;                    // the bonus's cooldown in the game's words; null when it is ready
         public string Assign;                      // the business chosen in the game's choice
         public bool AssignOn = true;               // false while they train, as the game hides its choice then
-        public bool Sick;
-        public string SickWords;                   // the game's sentence for it
         public string Training, TrainingLeft;      // the skill being trained and the hours left, in the game's words; null for none
         public bool TrainingCard;                  // the card over the page that says so, until it is put away
         public UiStaffSkill[] Skills = new UiStaffSkill[0];
@@ -301,9 +299,9 @@ namespace RealLifeOverhaul.Ui
         public static UiDataColumn[] CandidateColumns(UiWords t) => new[]
         {
             new UiDataColumn { Title = t("myemployees_employee_name", "Employee Name"), Kind = UiCellKind.Person, Sortable = true },
-            new UiDataColumn { Title = t("myemployees_jobtype", "Skill"), Kind = UiCellKind.Meter, Width = 144f, Sortable = true },
             new UiDataColumn { Title = t("myemployees_schedule", "Schedule"), Kind = UiCellKind.Text, Width = 160f, Sortable = true },
             new UiDataColumn { Title = t("myemployees_recruitmentsource", "Recruitment Source"), Kind = UiCellKind.Text },
+            new UiDataColumn { Title = t("myemployees_jobtype", "Skill"), Kind = UiCellKind.Meter, Width = 144f, Sortable = true },
             new UiDataColumn { Title = t("reallife_ui_staff_asking", "Asking wage"), Kind = UiCellKind.Money, Width = 112f, Sortable = true },
             new UiDataColumn { Title = t("myemployees_expiresin", "Expires In"), Kind = UiCellKind.Chip, Width = 120f, Sortable = true },
         };
@@ -318,8 +316,8 @@ namespace RealLifeOverhaul.Ui
 
         private static UiDataRow Row(UiWords t, ref CandidateRow r) => new UiDataRow
         {
-            Cells = new[] { r.Name, Whole(r.Skill), r.Schedule, r.Source, r.Wage, r.Expires },
-            Values = new[] { -1, r.Skill, -1, -1, -1, -1 },
+            Cells = new[] { r.Name, r.Schedule, r.Source, Whole(r.Skill), r.Wage, r.Expires },
+            Values = new[] { -1, -1, -1, r.Skill, -1, -1 },
             Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, r.Soon ? UiRole.Warn : UiRole.Muted },
             Sub = r.Role, Hue = UiColour.HueOf(r.Name), Ring = UiRole.None, Picked = r.Picked
         };
@@ -517,20 +515,24 @@ namespace RealLifeOverhaul.Ui
                 p.WorkTitle = t("reallife_ui_staff_work", "Work");
                 p.SatisfactionLabel = t("myemployees_satisfaction", "Satisfaction");
                 p.Satisfaction = Math.Max(0, Math.Min(100, v.Satisfaction));
-                int rows = string.IsNullOrEmpty(v.HrManager) ? 3 : 4;
-                p.RowLabels = new string[rows];
-                p.RowValues = new string[rows];
-                p.RowLabels[0] = t("myemployees_task", "Task");
-                p.RowValues[0] = v.Task;
-                p.RowLabels[1] = t("reallife_ui_staff_this_week", "This week");
-                p.RowValues[1] = Fill(t("reallife_ui_staff_week_hours", "{worked} of {scheduled} hours"), "worked", Whole(v.WorkedHours), "scheduled", Whole(v.WeeklyHours));
-                p.RowLabels[2] = t("myemployees_configure_pay_bonus_tooltip_title", "Bonus");
-                p.RowValues[2] = !string.IsNullOrEmpty(v.Cooldown) ? v.Cooldown : t("reallife_ui_staff_bonus_ready", "Ready to pay");
-                if (rows > 3)
+                var labels = new System.Collections.Generic.List<string>(4);
+                var values = new System.Collections.Generic.List<string>(4);
+                if (!string.IsNullOrEmpty(v.Task) && v.Task != v.Status)
                 {
-                    p.RowLabels[3] = t("myemployees_hrmanager", "HR Manager");
-                    p.RowValues[3] = v.HrManager;
+                    labels.Add(t("myemployees_task", "Task"));
+                    values.Add(v.Task);
                 }
+                labels.Add(t("reallife_ui_staff_this_week", "This week"));
+                values.Add(Fill(t("reallife_ui_staff_week_hours", "{worked} of {scheduled} hours"), "worked", Whole(v.WorkedHours), "scheduled", Whole(v.WeeklyHours)));
+                labels.Add(t("myemployees_configure_pay_bonus_tooltip_title", "Bonus"));
+                values.Add(!string.IsNullOrEmpty(v.Cooldown) ? v.Cooldown : t("reallife_ui_staff_bonus_ready", "Ready to pay"));
+                if (!string.IsNullOrEmpty(v.HrManager))
+                {
+                    labels.Add(t("myemployees_hrmanager", "HR Manager"));
+                    values.Add(v.HrManager);
+                }
+                p.RowLabels = labels.ToArray();
+                p.RowValues = values.ToArray();
             }
             Mates(t, v, p);
             if (!string.IsNullOrEmpty(v.Training))
@@ -538,11 +540,7 @@ namespace RealLifeOverhaul.Ui
                 p.Note = Fill(t("reallife_ui_staff_training", "Training {skill}: {left}."), "skill", v.Training, "left", v.TrainingLeft ?? string.Empty);
                 p.NoteTone = UiRole.None;
             }
-            else if (v.Sick && !string.IsNullOrEmpty(v.SickWords))
-            {
-                p.Note = v.SickWords;
-                p.NoteTone = UiRole.Warn;
-            }
+
             return p;
         }
 
@@ -639,9 +637,6 @@ namespace RealLifeOverhaul.Ui
             m.Preview = !any ? null : new UiStaffPreview
             {
                 Name = c.Name, Hue = UiColour.HueOf(c.Name ?? string.Empty), Role = c.Skill, RoleIcon = SkillIcon(c.SkillKey),
-                RowLabels = new[] { t("myemployees_age", "Age"), t("reallife_ui_staff_asking", "Asking wage"), t("reallife_ui_staff_week", "Hours a week") },
-                RowValues = new[] { Whole(o.Age), o.Wage, Whole(c.Hours) },
-                BarLabels = new[] { t("myemployees_jobtype", "Skill") }, BarValues = new[] { c.Level },
                 Status = c.Talking ? t("reallife_ui_staff_rival_talks", "In talks") : c.Poached ? t("reallife_ui_staff_rival_former", "Former staff") : null,
                 StatusTone = c.Talking ? UiRole.Accent : UiRole.Warn,
                 DemandsTitle = t("myemployees_wants_and_demands", "Wants & Demands"), Demands = o.Demands ?? new UiStaffDemand[0],
@@ -654,7 +649,9 @@ namespace RealLifeOverhaul.Ui
             table.Columns = new[]
             {
                 new UiDataColumn { Title = t("myemployees_employee_name", "Employee Name"), Kind = UiCellKind.Person },
+                new UiDataColumn { Title = t("myemployees_age", "Age"), Kind = UiCellKind.Figure, Width = 64f },
                 new UiDataColumn { Title = t("myemployees_jobtype", "Skill"), Kind = UiCellKind.Meter, Width = 200f },
+                new UiDataColumn { Title = t("reallife_ui_staff_asking", "Asking wage"), Kind = UiCellKind.Money, Width = 128f },
                 new UiDataColumn { Title = t("reallife_ui_staff_week", "Hours a week"), Kind = UiCellKind.Figure, Width = 128f },
                 new UiDataColumn { Title = t("bizman_status", "Status"), Kind = UiCellKind.Chip, Width = 160f },
             };
@@ -665,8 +662,8 @@ namespace RealLifeOverhaul.Ui
                 string state = r.Talking ? t("reallife_ui_staff_rival_talks", "In talks") : r.Poached ? t("reallife_ui_staff_rival_former", "Former staff") : null;
                 table.Rows[i] = new UiDataRow
                 {
-                    Cells = new[] { r.Name, Whole(r.Level), Whole(r.Hours), state }, Values = new[] { -1, r.Level, -1, -1 },
-                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, r.Talking ? UiRole.Accent : UiRole.Warn }, Sub = r.Skill,
+                    Cells = new[] { r.Name, Whole(r.Age), Whole(r.Level), r.Wage, Whole(r.Hours), state }, Values = new[] { -1, -1, r.Level, -1, -1, -1 },
+                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, r.Talking ? UiRole.Accent : UiRole.Warn }, Sub = r.Skill,
                     Hue = UiColour.HueOf(r.Name ?? string.Empty), Ring = UiRole.None
                 };
             }

@@ -28453,6 +28453,7 @@
   "reallife_ui_staff_mates": "Also at {business}",
   "reallife_ui_staff_people": "{count} people",
   "reallife_ui_staff_see_all": "See all {count} in the list",
-  "reallife_ui_staff_week_days": "{worked} of {scheduled} days",
-  "reallife_ui_staff_see_candidates": "See the candidates"
+  "reallife_ui_staff_see_candidates": "See the candidates",
+  "reallife_ui_staff_at_work": "At work",
+  "reallife_ui_staff_off_shift": "Off shift"
 }

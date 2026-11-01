@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Buildings.BuildingTypes.Shared;
+using EnhancedUI.EnhancedScroller;
 using Entities;
 using Extensions;
-using EnhancedUI.EnhancedScroller;
 using Localizor.LanguageChangeEvent;
 using UI.Smartphone.Apps.BizMan;
 using UnityEngine;
@@ -32,6 +32,7 @@ namespace RealLifeOverhaul.Ui
         private long _seen;
         private string _offerOf;           // whose offer is held: the game makes it afresh from their record, once a choice
         private RivalChosenView _offer;
+        private readonly Dictionary<string, Ask> _asks = new Dictionary<string, Ask>(16);   // each listed person's age and ask, made once a window
 
         public RivalStaffScreen(RivalEmployeesUi ui)
         {
@@ -154,14 +155,42 @@ namespace RealLifeOverhaul.Ui
                     Level = row != null ? Mathf.RoundToInt(row.PrimarySkill.Item2) : 0, Hours = e != null ? e.GetExpectedHoursPerWeek() : 0,
                     Talking = e != null && e.HasActiveSalaryNegotiation, Poached = e != null && e.isPoached, SkillKey = e != null ? e.primarySkillName : null
                 };
+                Offered(e, ref rows[i]);
             }
             RivalChosenView offer = data.Count > 0 ? Offer(data[_chosen]) : null;
             StaffViews.Rival(_m, UiText.Words, string.IsNullOrEmpty(titled) ? UiText.T("smartphone_rivals") : titled, rows, _chosen, offer);
         }
 
+        // A row's age and the wage they would ask at the city's prices, from the person the game would offer, made once each.
+        private void Offered(AiBusinessEmployeeData data, ref RivalRow row)
+        {
+            if (data == null)
+            {
+                return;
+            }
+            if (!_asks.TryGetValue(data.id, out Ask ask))
+            {
+                EmployeeInstance e = data.GetEmployeeInstance();
+                ask = new Ask
+                {
+                    Age = e != null && e.characterData != null ? TimeHelper.GetYearsByDays(e.characterData.ageInDays) : 0,
+                    Wage = e != null ? PaidWage.NowMoney(e.hourlyWage, e.id).ToCurrencyFormat() : null
+                };
+                _asks[data.id] = ask;
+            }
+            row.Age = ask.Age;
+            row.Wage = ask.Wage;
+        }
+
+        private struct Ask
+        {
+            public int Age;
+            public string Wage;
+        }
+
         // The chosen one as the game would offer them: the game makes the person it negotiates with from its own record
         // (AiBusinessEmployeeData.GetEmployeeInstance, seeded by their id, so the same each time), read once a choice, never
-        // kept or added anywhere. The wage is what they would be paid at the city's prices (Core/PaidWage).
+        // added anywhere: their wants and demands, as a candidate's.
         private RivalChosenView Offer(RivalEmployeeModel row)
         {
             AiBusinessEmployeeData data = row != null ? row.EmployeeData : null;
@@ -178,8 +207,6 @@ namespace RealLifeOverhaul.Ui
             _offer = new RivalChosenView();
             if (e != null)
             {
-                _offer.Age = e.characterData != null ? TimeHelper.GetYearsByDays(e.characterData.ageInDays) : 0;
-                _offer.Wage = PaidWage.NowMoney(e.hourlyWage, e.id).ToCurrencyFormat();
                 _offer.Demands = EmployeesScreen.DemandsOf(e, true, null);
             }
             return _offer;

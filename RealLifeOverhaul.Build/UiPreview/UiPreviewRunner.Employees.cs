@@ -43,8 +43,8 @@ public static partial class UiPreviewRunner
             }
             else
             {
-                screen.HoverCommand = UiDataTable.First + UiDataTable.Row;
-                screen.HoverArg = st == "employees_1" ? 0 : 2;
+                screen.HoverCommand = st == "employees_1" ? UiStaff.PreviewCommand : UiDataTable.First + UiDataTable.Row;
+                screen.HoverArg = st == "employees_1" ? UiStaff.PreviewLink : 2;   // the lone row is the chosen one: the mouse rests on the link to its page
                 screen.FocusCommand = UiDataTable.First + UiDataTable.Row;
                 screen.FocusArg = st == "employees_1" ? 0 : 1;
                 screen.Walk = new[] { Down, Down, Down, Right, Right, Down, Down, Left };
