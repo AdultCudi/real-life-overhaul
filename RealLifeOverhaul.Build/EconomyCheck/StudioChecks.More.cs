@@ -18,15 +18,20 @@ internal static partial class Program
         public int Games, RatePpm;
     }
 
-    // A studio making games of a scope back to back for ten years with an ordinary team, by the studio's own rules: each
-    // budget spent over its making, each game's quality rolled about the team's and a little hype, released into its genre
-    // among the typical rivals and sold day by day; a game four market years old has stopped selling and is let go.
-    private static StudioTen TenYears(Scope scope, int seed)
+    // A studio making games of a scope back to back for the money scale's ten years (ScaleCatalogue.SimDays game days) with an
+    // ordinary team, by the studio's own rules, in a calendar of so many days a year: each budget spent over its making, each
+    // game's quality rolled about the team's and a little hype, released into its genre among the typical rivals and sold day by
+    // day; a game four years of sales old (by the game day) has stopped selling and is let go. The team is ordinary for its time:
+    // as the save's years raise the critics' bar, its craft keeps its standing with them (each game made at the quality that
+    // reviews as its roll would have against the first day's bar), as the game's people learn by the hour and are promoted by
+    // the save's years (TalentCatalogue.Scaled), so the scale is held whatever the year's length.
+    private static StudioTen TenYears(Scope scope, int seed, int year = StudioYear)
     {
         int dev = ScaleCatalogue.DevDays[(int)scope], mean = ScaleCatalogue.TeamQuality[(int)scope], days = ScaleCatalogue.SimDays;
         long budget = ScaleCatalogue.BudgetTypical[(int)scope];
         int games = days / dev;
-        StudioFile f = StudioFileFor(seed);
+        StudioFile f = StudioFileFor(seed, year);
+        int bar = StudioRules.Expect((int)Genre.Adventure, 0, false, year);
         var live = new List<GameDev>(games);
         var plat = new long[StudioCatalogue.GamePlatforms];
         long cash = 0, low = 0, spend = budget / dev;
@@ -39,7 +44,8 @@ internal static partial class Program
             if (d > 0 && d % dev == 0 && d / dev <= games)
             {
                 int n = d / dev - 1;
-                GameDev g = MadeGame(100 + n, Genre.Adventure, Platform.Pc, budget, ScaleRules.QualityRoll(seed, n, mean), TechRandom.Range(seed, n, 5, 0, 0, 300), d);
+                int quality = KeptStanding(ScaleRules.QualityRoll(seed, n, mean), bar, StudioRules.Expect((int)Genre.Adventure, d, false, year));
+                GameDev g = MadeGame(100 + n, Genre.Adventure, Platform.Pc, budget, quality, TechRandom.Range(seed, n, 5, 0, 0, 300), d);
                 if (scope == Scope.Big)
                 {
                     g.Platforms |= 1 << (int)Platform.Console;
@@ -50,7 +56,7 @@ internal static partial class Program
             for (int i = live.Count - 1; i >= 0; i--)
             {
                 GameDev g = live[i];
-                if (d - g.Launched > StudioCatalogue.MarketYear * 4)
+                if (d - g.Launched > CalendarRules.MoneyYearDays * 4)
                 {
                     live.RemoveAt(i);
                     continue;
@@ -63,33 +69,47 @@ internal static partial class Program
         return new StudioTen { Cash = cash, Capital = capital, Games = games, RatePpm = (int)(cash * 1000000L / capital / days) };
     }
 
+    // The quality that reviews against today's bar as a quality reviewed against the first day's (StudioRules.CriticsScore turned round).
+    private static int KeptStanding(int quality, int barThen, int barNow)
+    {
+        int score = StudioRules.CriticsScore(quality, barThen);
+        int kept = score >= StudioCatalogue.ReviewBase
+            ? barNow + ((score - StudioCatalogue.ReviewBase) * (100 - barNow) + (100 - StudioCatalogue.ReviewBase) / 2) / (100 - StudioCatalogue.ReviewBase)
+            : barNow + (score - StudioCatalogue.ReviewBase) * 1000 / StudioCatalogue.ReviewPerQuality;
+        return StudioRules.Clamp(kept, 0, 100);
+    }
+
     private static void StudioTenYears(bool print)
     {
         const int Seeds = 16;
         int bandLeast = 1000000 / EndScaleRules.PaybackDaysMost, bandMost = 1000000 / EndScaleRules.PaybackDaysLeast;
         var watch = System.Diagnostics.Stopwatch.StartNew();
-        for (int s = 0; s < (int)Scope.Count; s++)
+        foreach (int year in new[] { StudioYear, CalendarRules.YearDefault })
         {
-            var rates = new List<int>(Seeds);
-            long sum = 0, day = 0;
-            for (int seed = 1; seed <= Seeds; seed++)
+            for (int s = 0; s < (int)Scope.Count; s++)
             {
-                StudioTen r = TenYears((Scope)s, seed * 7919 + s);
-                rates.Add(r.RatePpm);
-                sum += r.RatePpm;
-                day += r.Cash / ScaleCatalogue.SimDays / 100;
+                var rates = new List<int>(Seeds);
+                long sum = 0, day = 0;
+                for (int seed = 1; seed <= Seeds; seed++)
+                {
+                    StudioTen r = TenYears((Scope)s, seed * 7919 + s, year);
+                    rates.Add(r.RatePpm);
+                    sum += r.RatePpm;
+                    day += r.Cash / ScaleCatalogue.SimDays / 100;
+                }
+                rates.Sort();
+                int mean = (int)(sum / Seeds), p10 = rates[Seeds / 10], p90 = rates[Seeds * 9 / 10];
+                int payback = mean > 0 ? 1000000 / mean : -1;
+                if (print)
+                {
+                    Console.WriteLine("  studio ten years " + (Scope)s + " (years of " + year + " days): mean " + mean + " ppm a day (payback " + payback + " days), p10 " + p10 + ", p90 " + p90
+                                      + ", profit a day $" + (day / Seeds).ToString("N0"));
+                }
+                Check(mean >= bandLeast && mean <= bandMost && ScaleRules.OnTarget(PaybackKind.GameStudio, payback),
+                    "studio: a " + (Scope)s + " studio's average day over ten years by the studio's own rules, in years of " + year + " days, returns " + mean + " millionths of its capital, a payback of "
+                    + payback + " days, inside the end game's aim of " + EndScaleRules.PaybackDaysLeast + " to " + EndScaleRules.PaybackDaysMost);
+                Check(p90 > p10 * 2, "studio: a " + (Scope)s + " studio's luck swings wide over ten years of " + year + " days a year (its tenth " + p10 + ", its ninetieth " + p90 + ")");
             }
-            rates.Sort();
-            int mean = (int)(sum / Seeds), p10 = rates[Seeds / 10], p90 = rates[Seeds * 9 / 10];
-            int payback = mean > 0 ? 1000000 / mean : -1;
-            if (print)
-            {
-                Console.WriteLine("  studio ten years " + (Scope)s + ": mean " + mean + " ppm a day (payback " + payback + " days), p10 " + p10 + ", p90 " + p90 + ", profit a day $" + (day / Seeds).ToString("N0"));
-            }
-            Check(mean >= bandLeast && mean <= bandMost && ScaleRules.OnTarget(PaybackKind.GameStudio, payback),
-                "studio: a " + (Scope)s + " studio's average day over ten years by the studio's own rules returns " + mean + " millionths of its capital, a payback of " + payback
-                + " days, inside the end game's aim of " + EndScaleRules.PaybackDaysLeast + " to " + EndScaleRules.PaybackDaysMost);
-            Check(p90 > p10 * 2, "studio: a " + (Scope)s + " studio's luck swings wide over ten years (its tenth " + p10 + ", its ninetieth " + p90 + ")");
         }
         StudioTen a = TenYears(Scope.Mid, 77), b = TenYears(Scope.Mid, 77);
         Check(a.Cash == b.Cash && a.Capital == b.Capital && a.Games == ScaleCatalogue.SimDays / ScaleCatalogue.DevDays[1], "studio: the same seed makes the same ten years on every machine");
@@ -103,7 +123,7 @@ internal static partial class Program
 
     private static long YearOf(GameDev g, StudioFile f, int day)
     {
-        return GameLife(g, f, day, StudioCatalogue.MarketYear, out _);
+        return GameLife(g, f, day, StudioYear, out _);
     }
 
     private static void StudioPiracyAndModels()
@@ -137,7 +157,7 @@ internal static partial class Program
         sub.Price = StudioRules.PriceShown((int)GameModel.Subscription, 2, 1, 0);
         long subYear = YearOf(sub, StudioFileFor(1), StudioDay);
         Check(sub.Subscribers > 0 && sub.Subscribers < sub.Sold && subYear > 0, "studio: a subscription keeps some of its buyers paying each month (" + sub.Subscribers + " of " + sub.Sold + ")");
-        GameSales servers = StudioRules.SellDay(sub, StudioFileFor(1), StudioDay + StudioCatalogue.MarketYear, 3000, plat, 1000, 1000);
+        GameSales servers = StudioRules.SellDay(sub, StudioFileFor(1), StudioDay + StudioYear, 3000, plat, 1000, 1000);
         GameDev offline = MadeGame(6, Genre.Adventure, Platform.Pc, ScaleCatalogue.BudgetTypical[1], 70, 0, StudioDay);
         YearOf(offline, StudioFileFor(1), StudioDay);
         Check(servers.Servers == ScaleRules.Servers(sub.Active) / 30 && servers.Servers > 0 && StudioRules.SellDay(offline, StudioFileFor(1), StudioDay + 400, 3000, plat, 1000, 1000).Servers == 0,
@@ -313,24 +333,24 @@ internal static partial class Program
 
     private static void StudioRivals()
     {
-        StudioFile a = RivalRun(11, StudioCatalogue.MarketYear * 3), b = RivalRun(11, StudioCatalogue.MarketYear * 3), c = RivalRun(12, StudioCatalogue.MarketYear * 3);
+        StudioFile a = RivalRun(11, StudioYear * 3), b = RivalRun(11, StudioYear * 3), c = RivalRun(12, StudioYear * 3);
         Check(StudioShare.Write(a) == StudioShare.Write(b) && StudioShare.Write(a) != StudioShare.Write(c), "studio: the rival studios' market is the same for the same seed on every machine, another for another");
         bool sane = a.Rivals.Count > 0 && a.Rivals.Count <= StudioCatalogue.RivalGamesKept;
         foreach (RivalGame r in a.Rivals)
         {
             sane &= r.Sold <= r.Units && r.Score >= 0 && r.Score <= 100 && r.Name.Length > 3 && r.Platforms != 0;
         }
-        StudioFile year = RivalRun(11, StudioCatalogue.MarketYear);
+        StudioFile year = RivalRun(11, StudioYear);
         Check(sane && year.NextRival - 1 >= StudioCatalogue.RivalNames.Length && year.NextRival - 1 <= StudioCatalogue.RivalNames.Length * 3,
             "studio: each rival studio releases a game or a few a market year (" + (year.NextRival - 1) + " in the first), each selling no more than its life");
-        StudioFile ten = RivalRun(13, StudioCatalogue.MarketYear * 10);
+        StudioFile ten = RivalRun(13, StudioYear * 10);
         Check(ten.Rivals.Count == StudioCatalogue.RivalGamesKept && ten.Rivals[0].Launched <= ten.Rivals[ten.Rivals.Count - 1].Launched, "studio: only the newest rival games are kept, in order");
         // a hit starts a trend
         StudioFile f = StudioFileFor(14);
         var released = new List<RivalGame>(4);
         RivalGame hit = null;
         int hitDay = 0;
-        for (int d = 1; d <= StudioCatalogue.MarketYear * 30 && hit == null; d++)
+        for (int d = 1; d <= StudioYear * 30 && hit == null; d++)
         {
             StudioRules.RivalDay(f, d, released);
             foreach (RivalGame r in released)

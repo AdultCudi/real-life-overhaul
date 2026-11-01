@@ -156,12 +156,12 @@ internal static partial class Program
         return s;
     }
 
-    // A city generated whole from a seed, its first day lived.
-    private static PopulationSim PopulationMade(int seed, out PopulationState s, out List<BusinessSeed> seeds)
+    // A city generated whole from a seed in a calendar of so many days a year (the game's default unless asked), its first day lived.
+    private static PopulationSim PopulationMade(int seed, out PopulationState s, out List<BusinessSeed> seeds, int yearDays = CalendarRules.YearDefault)
     {
         s = PopulationCity(out seeds);
         var sim = new PopulationSim();
-        sim.BeginGenerate(s, seed, 1, 60, seeds);
+        sim.BeginGenerate(s, seed, 1, yearDays, seeds);
         sim.RunAll();
         return sim;
     }

@@ -56,6 +56,7 @@ namespace RealLifeOverhaul.Tech
                 file = new StudioFile { Seed = new System.Random().Next(1, int.MaxValue), FirstDay = save.Day };
             }
             _studio = file;
+            _studio.YearDays = GameCalendar.DaysPerYear;
             _studioOn = true;
             int taken = CatchUpStudio(save.Day);
             SharedCity.Register(new SharedCityPart
@@ -209,6 +210,7 @@ namespace RealLifeOverhaul.Tech
         /// </summary>
         private void StudioMarketDay(int day)
         {
+            _studio.YearDays = GameCalendar.DaysPerYear;   // the market's years are the save's (the one clock); a guest's calendar is the session's
             CatchUpStudio(day);
             bool following = SharedCity.Follows(StudioShare.Part);
             if (!following)
@@ -544,7 +546,7 @@ namespace RealLifeOverhaul.Tech
                 Data("game", p.Name, "score", g.Score.ToString(Inv)), TabProducts, row);
             if (Verbose)
             {
-                Logger?.Info("Tech check (studio launch): " + p.Name + " at " + firm.File.Name + ", quality " + g.Quality + " against the bar " + StudioRules.Expect(g.Genre, day, g.Sequel > 0)
+                Logger?.Info("Tech check (studio launch): " + p.Name + " at " + firm.File.Name + ", quality " + g.Quality + " against the bar " + StudioRules.Expect(g.Genre, day, g.Sequel > 0, _studio.YearDays)
                              + ", hype " + g.Hype + ", bugs " + (g.Hidden + g.Found) + " of room " + StudioRules.BugRoom(g) + ": score " + g.Score + ", reach " + g.Reach
                              + ", window " + g.WindowUnits.ToString(Inv) + " copies: PASS");
             }

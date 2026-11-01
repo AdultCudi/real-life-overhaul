@@ -403,6 +403,7 @@ namespace RealLifeOverhaul.Tech
                 case ScopeCharge:
                     w.Points += more;
                     w.Value += w.Value * SectorCatalogue.ScopeMore / 1000;
+                    w.Due += Math.Max(0, w.Due - w.Start) * SectorCatalogue.ScopeMore / 1000;   // a change order agrees a date for the work it adds, or every one ran late by it
                     w.Satisfaction = Clamp(w.Satisfaction - 50, 0, 1000);
                     break;
                 case ScopeAbsorb:

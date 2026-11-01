@@ -158,6 +158,7 @@ namespace RealLifeOverhaul.Tech
         public readonly List<StudioEngine> Engines = new List<StudioEngine>(2);
         public readonly List<RivalGame> Rivals = new List<RivalGame>(StudioCatalogue.RivalGamesKept);
         public readonly Dictionary<string, int> SnubUntil = new Dictionary<string, int>(2);   // a studio whose hit paid no bonus, and the day rivals stop pulling at its people
+        public int YearDays = CalendarRules.YearDefault;   // the save's year in days, set from the calendar each day and never saved: the market's years are the save's (the one clock)
 
         public GameDev GameOf(int id)
         {

@@ -589,8 +589,11 @@ namespace RealLifeOverhaul.Tech
             return spend;
         }
 
-        /// <summary>Why a marketing beat cannot be done now (a key), or null: once only, too soon, not enough to show, or out of the expo's weeks.</summary>
-        public static string BeatWhy(GameDev g, int beat, int day, int yearPart)
+        /// <summary>
+        /// Why a marketing beat cannot be done now (a key), or null: once only, too soon, not enough to show, or out of the expo's weeks
+        /// (once a year of the save's <paramref name="year"/> days: the expo is the calendar's).
+        /// </summary>
+        public static string BeatWhy(GameDev g, int beat, int day, int yearPart, int year)
         {
             if (g == null || g.Launched >= 0 && !g.Early || g.Phase == (int)GamePhase.Ended)
             {
@@ -612,7 +615,7 @@ namespace RealLifeOverhaul.Tech
                     {
                         return "reallife_studio_beat_why_expo";
                     }
-                    return day - g.LastExpo < StudioCatalogue.MarketYear / 2 ? "reallife_studio_beat_why_once" : null;
+                    return day - g.LastExpo < Math.Max(1, year) / 2 ? "reallife_studio_beat_why_once" : null;
                 case BeatPreviews:
                     return done < StudioCatalogue.PreviewWork ? "reallife_studio_beat_why_early" : (g.Beats & PreviewsHeld) != 0 ? "reallife_studio_beat_why_once" : null;
                 case BeatDevlog:
@@ -679,10 +682,13 @@ namespace RealLifeOverhaul.Tech
                    && g.Done * 1000 >= g.Work * StudioCatalogue.EarlyFrom;
         }
 
-        /// <summary>Where the critics' bar stands for a genre on a day, points: it rises each market year to its most; a sequel's higher.</summary>
-        public static int Expect(int genre, int day, bool sequel)
+        /// <summary>
+        /// Where the critics' bar stands for a genre on a day, points: it rises each of the save's years of <paramref name="year"/> days
+        /// to its most, as the studio's people's careers count them; a sequel's higher.
+        /// </summary>
+        public static int Expect(int genre, int day, bool sequel, int year)
         {
-            long rise = (long)Math.Max(0, day) * StudioCatalogue.ExpectRise / StudioCatalogue.MarketYear / 1000;
+            long rise = (long)Math.Max(0, day) * StudioCatalogue.ExpectRise / Math.Max(CalendarRules.YearLeast, year) / 1000;
             int e = (int)Math.Min(StudioCatalogue.ExpectMost, StudioCatalogue.ExpectBase[Clamp(genre, 0, (int)Genre.Count - 1)] + rise);
             return e + (sequel ? StudioCatalogue.SequelExpect : 0);
         }
@@ -698,11 +704,9 @@ namespace RealLifeOverhaul.Tech
         /// The critics' score, 0 to 100: the game's quality against its genre's bar, its bugs, DRM, a backlash for hype it
         /// cannot carry, its setting's fit, the studio's reputation, and the critics' own spread, rolled from the save's seed.
         /// </summary>
-        public static int Review(GameDev g, int quality, int reputation, int day, int seed)
+        public static int Review(GameDev g, int quality, int reputation, int day, int seed, int year)
         {
-            int e = Expect(g.Genre, day, g.Sequel > 0);
-            long s = StudioCatalogue.ReviewBase * 1000L + (long)(quality - e) * StudioCatalogue.ReviewPerQuality;
-            int score = (int)(s / 1000);
+            int score = CriticsScore(quality, Expect(g.Genre, day, g.Sequel > 0, year));
             score -= BugPenalty(g);
             score -= g.Drm && !g.DrmRemoved ? StudioCatalogue.DrmReview : 0;
             score -= Backlash(g.Hype, quality);
@@ -710,6 +714,23 @@ namespace RealLifeOverhaul.Tech
             score += (Clamp(reputation, 0, 1000) - 500) / StudioCatalogue.ReputationReviewStep;
             score += TechRandom.Range(seed, g.Id, 73, 0, -StudioCatalogue.CriticsSpread, StudioCatalogue.CriticsSpread);
             return Clamp(score, 0, 100);
+        }
+
+        /// <summary>
+        /// A game's quality as the critics score it against its genre's bar, before its bugs, DRM, backlash, fit, name and spread:
+        /// at the bar <see cref="StudioCatalogue.ReviewBase"/>; under it a point and a fifth off for each point short
+        /// (<see cref="StudioCatalogue.ReviewPerQuality"/>), so a weak game is punished; over it the scale's room above the base shared
+        /// over the quality left above the bar, so a perfect game reviews 100 and one half way there three quarters. A stretch over
+        /// the bar as well had a game of 90 review 94 against the start's bar, and the money scale's sales climb steepest there:
+        /// sold on the score, a fine game earned two and a half times the scale's return for its quality.
+        /// </summary>
+        public static int CriticsScore(int quality, int bar)
+        {
+            int q = Clamp(quality, 0, 100), e = Clamp(bar, 1, 99);
+            long s = q >= e
+                ? StudioCatalogue.ReviewBase * 1000L + (long)(q - e) * (100 - StudioCatalogue.ReviewBase) * 1000 / (100 - e)
+                : StudioCatalogue.ReviewBase * 1000L + (long)(q - e) * StudioCatalogue.ReviewPerQuality;
+            return (int)(s / 1000);
         }
 
         // ---------------------------------------------------------------- shared

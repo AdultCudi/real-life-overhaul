@@ -144,7 +144,7 @@ namespace RealLifeOverhaul.Tech
         }
 
         /// <summary>
-        /// A year of sales at once for every game on sale at the player's studios: each lives its next market year as if it
+        /// A year of sales at once for every game on sale at the player's studios: each lives its next year of the save as if it
         /// had launched a year earlier (its days moved back first, so the windows and half-lives fall right), the year's
         /// takings booked today at each studio, and what it came to told.
         /// </summary>
@@ -156,7 +156,7 @@ namespace RealLifeOverhaul.Tech
                 {
                     return;
                 }
-                int day = Save.Day, year = StudioCatalogue.MarketYear, games = 0, level = Prices.Level;
+                int day = Save.Day, year = GameCalendar.DaysPerYear, games = 0, level = Prices.Level;
                 long copies = 0, kept = 0;
                 for (int i = 0; i < _studio.Games.Count; i++)
                 {

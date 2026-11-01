@@ -31,8 +31,8 @@ internal static partial class Program
         {
             int g = cell / GameRules.Platforms, p = cell % GameRules.Platforms;
             started &= s.GameStart[cell] > 0 && s.GameStart[cell] == s.GameCounts[cell];
-            long world = StudioBridges.World(g, p, day), audience = GameRules.Audience(s.GameCounts[cell], s.GameStart[cell], world);
-            worldly &= Math.Abs(audience - world) <= world / 1000 + 1 && Math.Abs(audience - StudioBridges.World(g, p, 0)) <= StudioBridges.World(g, p, 0) / 100;
+            long world = StudioBridges.World(g, p, day, s.YearDays), audience = GameRules.Audience(s.GameCounts[cell], s.GameStart[cell], world);
+            worldly &= Math.Abs(audience - world) <= world / 1000 + 1 && Math.Abs(audience - StudioBridges.World(g, p, 0, s.YearDays)) <= StudioBridges.World(g, p, 0, s.YearDays) / 100;
         }
         Check(started, "population games: every genre on every platform has residents, and the studio's start is the city's first day");
         Check(worldly, "population games: the audience of the first day is the documented world's for every genre and platform (within a thousandth, a hundredth of day 0's)");
@@ -68,7 +68,7 @@ internal static partial class Program
                 int cell = g * GameRules.Platforms + p;
                 cityTop = s.GameCounts[cell] > s.GameCounts[cityTop * GameRules.Platforms + p] ? g : cityTop;
                 tableTop = StudioCatalogue.GenreShare[p][g] > StudioCatalogue.GenreShare[p][tableTop] ? g : tableTop;
-                double factor = StudioBridges.World(g, p, 0) / (double)Math.Max(1, s.GameStart[cell]);
+                double factor = StudioBridges.World(g, p, 0, s.YearDays) / (double)Math.Max(1, s.GameStart[cell]);
                 least = Math.Min(least, factor);
                 most = Math.Max(most, factor);
             }
@@ -165,8 +165,8 @@ internal static partial class Program
             moved |= s.GameCounts[cell] != first[cell];
             kept &= s.GameStart[cell] == start[cell];
             int g = cell / GameRules.Platforms, p = cell % GameRules.Platforms;
-            long now = GameRules.Audience(s.GameCounts[cell], s.GameStart[cell], StudioBridges.World(g, p, s.Day));
-            grows &= now == s.GameCounts[cell] * StudioBridges.World(g, p, s.Day) / s.GameStart[cell];
+            long now = GameRules.Audience(s.GameCounts[cell], s.GameStart[cell], StudioBridges.World(g, p, s.Day, s.YearDays));
+            grows &= now == s.GameCounts[cell] * StudioBridges.World(g, p, s.Day, s.YearDays) / s.GameStart[cell];
         }
         Check(follows && moved && kept && grows, "population games: two years on the counts are the residents' as births, deaths and moves left them, the start is kept, and the audience is"
               + " the residents times the world's growth");

@@ -168,8 +168,9 @@ internal static partial class Program
         }
         if (args.Length == 1 && args[0] == "--living-years")
         {
-            LivingYears();   // (the living economy's features together over the markets' ten years, a report that checks nothing: LivingYearsChecks.cs)
-            return 0;
+            LivingYears();   // (the living economy's features together over 3,650 days at years of 60 and 365 days, every band asserted: LivingYearsChecks.cs; the full run holds a short version)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
         }
         if (args.Length == 1 && args[0] == "--managers")
         {

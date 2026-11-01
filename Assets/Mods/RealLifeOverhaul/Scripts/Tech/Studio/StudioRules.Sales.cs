@@ -78,7 +78,7 @@ namespace RealLifeOverhaul.Tech
         /// </summary>
         public static long AudienceOf(GameDev g, StudioFile f, int day, long[] byPlatform)
         {
-            int vis = Visibility(g.Budget), trend = Trend(f, g.Genre, day);
+            int vis = Visibility(g.Budget), trend = Trend(f, g.Genre, day), year = f != null ? f.YearDays : CalendarRules.YearDefault;
             long total = 0;
             for (int p = 0; p < StudioCatalogue.GamePlatforms; p++)
             {
@@ -87,7 +87,7 @@ namespace RealLifeOverhaul.Tech
                     byPlatform[p] = 0;
                     continue;
                 }
-                long people = StudioBridges.Audience(g.Genre, p, day, out long residents);
+                long people = StudioBridges.Audience(g.Genre, p, day, year, out long residents);
                 if (g.Localised)
                 {
                     people = residents + (people - residents) * (1000 + StudioCatalogue.LocaliseLift) / 1000;   // the world beyond the city reads it in its own language
@@ -99,18 +99,10 @@ namespace RealLifeOverhaul.Tech
             return total;
         }
 
-        /// <summary>A game's reach now: what it launched with, widened each month by word of mouth for a score above the mark, up to half again and the most.</summary>
-        public static int ReachNow(GameDev g, int day)
+        /// <summary>A game's reach now: what it launched with and what an award has added since, up to the most (its word of mouth is the money scale's tail, not a wider reach).</summary>
+        public static int ReachNow(GameDev g)
         {
-            long reach = g.Reach;
-            int score = ScoreNow(g);
-            if (g.Launched >= 0 && score > StudioCatalogue.WordOfMouthFrom)
-            {
-                long months = Math.Max(0, day - g.Launched) / 30;
-                long lift = Math.Min(StudioCatalogue.WordOfMouthMost, months * (score - StudioCatalogue.WordOfMouthFrom) * StudioCatalogue.WordOfMouthPerPoint);
-                reach = reach * (1000 + lift) / 1000;
-            }
-            return (int)Math.Max(0L, Math.Min(ScaleCatalogue.ReachMost, reach));
+            return Clamp(g.Reach, 0, ScaleCatalogue.ReachMost);
         }
 
         /// <summary>What a price does to a platform's buyers (ScaleRules.PriceAppeal) for a game sold by the copy; a free game or a subscription none.</summary>
@@ -139,7 +131,7 @@ namespace RealLifeOverhaul.Tech
             {
                 return 0;
             }
-            int score = ScoreNow(g), reach = ReachNow(g, day);
+            int score = ScoreNow(g), reach = ReachNow(g);
             int age = g.Launched >= 0 ? day - g.Launched : 0;
             int mine = AppealOf(score, 0);
             long others = Math.Max(0L, genreAppeal - AppealOf(score, age));
@@ -239,7 +231,7 @@ namespace RealLifeOverhaul.Tech
         {
             bool early = g.Early;
             g.Quality = Quality(g);
-            g.Score = Review(g, g.Quality, reputation, day, seed);
+            g.Score = Review(g, g.Quality, reputation, day, seed, f != null ? f.YearDays : CalendarRules.YearDefault);
             g.Phase = (int)GamePhase.Live;
             g.Early = false;
             if (!early)
@@ -609,7 +601,7 @@ namespace RealLifeOverhaul.Tech
         }
 
         /// <summary>
-        /// The year's award when the calendar's year turns: among the games launched in the market's last year with a score in
+        /// The year's award when the calendar's year turns: among the games launched in the calendar's last year with a score in
         /// the running and no award yet, the player's and the rivals', the best (the earlier launch on a tie). The year is
         /// marked either way; the first look only marks it. Returns the winner's id, -1 for none; <paramref name="rival"/> if a rival's.
         /// </summary>
@@ -633,7 +625,7 @@ namespace RealLifeOverhaul.Tech
                 GameDev g = f.Games[i];
                 if (g.Score > bestScore || g.Score == bestScore && g.Launched < bestDay)
                 {
-                    if (!g.Award && g.Launched >= 0 && day - g.Launched <= StudioCatalogue.MarketYear && g.Score >= StudioCatalogue.AwardScore)
+                    if (!g.Award && g.Launched >= 0 && day - g.Launched <= Math.Max(1, yearDays) && g.Score >= StudioCatalogue.AwardScore)
                     {
                         best = g.Id;
                         bestScore = g.Score;
@@ -645,7 +637,7 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; i < f.Rivals.Count; i++)
             {
                 RivalGame r = f.Rivals[i];
-                if (!r.Award && day - r.Launched <= StudioCatalogue.MarketYear && r.Score >= StudioCatalogue.AwardScore && (r.Score > bestScore || r.Score == bestScore && r.Launched < bestDay))
+                if (!r.Award && day - r.Launched <= Math.Max(1, yearDays) && r.Score >= StudioCatalogue.AwardScore && (r.Score > bestScore || r.Score == bestScore && r.Launched < bestDay))
                 {
                     best = r.Id;
                     bestScore = r.Score;

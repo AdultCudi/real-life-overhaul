@@ -76,7 +76,7 @@ namespace RealLifeOverhaul.Tech
                 platforms = genre == (int)Genre.Puzzle || genre == (int)Genre.Casual || genre == (int)Genre.Family ? 1 << (int)Platform.Mobile : 1 << (int)Platform.Pc;
             }
             int quality = ScaleRules.QualityRoll(f.Seed, id, StudioCatalogue.RivalQuality[scope]);
-            int score = (int)((StudioCatalogue.ReviewBase * 1000L + (long)(quality - Expect(genre, day, false)) * StudioCatalogue.ReviewPerQuality) / 1000);
+            int score = CriticsScore(quality, Expect(genre, day, false, f.YearDays));
             score = Clamp(score + TechRandom.Range(f.Seed, id, 88, 0, -StudioCatalogue.CriticsSpread, StudioCatalogue.CriticsSpread), 0, 100);
             var r = new RivalGame
             {
@@ -103,7 +103,7 @@ namespace RealLifeOverhaul.Tech
             {
                 if ((r.Platforms & (1 << p)) != 0)
                 {
-                    markets[p] = StudioBridges.World(r.Genre, p, day) * vis / 1000 * trend / 1000;
+                    markets[p] = StudioBridges.World(r.Genre, p, day, f != null ? f.YearDays : CalendarRules.YearDefault) * vis / 1000 * trend / 1000;
                     audience += markets[p];
                 }
             }

@@ -37,10 +37,12 @@ internal static partial class Program
         Console.WriteLine("  Tech firms' markets: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 
+    private const int SectorYear = 365;   // the sector checks' calendar: the game's longest year, on which the bands were set (the sims and the living years hold the game's default, 60, too)
+
     // A sector file over the documented city with the companies' products set up at their usual features, settled at their share.
-    private static SectorFile SectorFresh(int seed)
+    private static SectorFile SectorFresh(int seed, int year = SectorYear)
     {
-        var f = new SectorFile { Seed = seed, FirstDay = 0 };
+        var f = new SectorFile { Seed = seed, FirstDay = 0, YearDays = year };
         SectorRules.Companies(f, 0, SectorRules.StartFeatures(null));
         SectorRules.BeginDay(f, 1, 1);
         SectorRules.Attract(f);
@@ -119,10 +121,18 @@ internal static partial class Program
         Check(anchor == 50000 && SectorRules.Digital(2750000, 55000, anchor) == 1000 && SectorRules.Digital(3300000, 55000, anchor) == 1200 && SectorRules.Digital(100, 55000, anchor) == SectorCatalogue.DigitalLeast
               && SectorRules.Digital(1L << 40, 55000, anchor) == SectorCatalogue.DigitalMost && SectorRules.Digital(0, 55000, anchor) == 1000 && SectorRules.Digital(5, 0, anchor) == 1000,
             "sector city: the households' mood for digital spending is a person's against the first day's, within its bounds, and even with nothing to go by");
-        Check(SectorRules.WorldAt(0, 0) == SectorCatalogue.World[0] && SectorRules.WorldAt(0, SectorCatalogue.MarketYear) == SectorCatalogue.World[0] * (1000 + SectorCatalogue.WorldGrowth[0]) / 1000
-              && SectorRules.WorldAt(1, 180) > SectorRules.WorldAt(1, 0) && SectorRules.WorldAt(2, -5) == SectorCatalogue.World[2] && SectorRules.WorldAt(0, 365 * 10) > SectorRules.WorldAt(0, 365 * 9)
-              && SectorRules.WorldAt(0, 1 << 30) > 0,
-            "sector city: the world beyond the city grows by its rate each markets' year, within a year straight, never before the first day, and stays in range after centuries");
+        Check(SectorRules.WorldAt(0, 0, SectorYear) == SectorCatalogue.World[0] && SectorRules.WorldAt(0, SectorYear, SectorYear) == SectorCatalogue.World[0] * (1000 + SectorCatalogue.WorldGrowth[0]) / 1000
+              && SectorRules.WorldAt(1, 180, SectorYear) > SectorRules.WorldAt(1, 0, SectorYear) && SectorRules.WorldAt(2, -5, SectorYear) == SectorCatalogue.World[2]
+              && SectorRules.WorldAt(0, 365 * 10, SectorYear) > SectorRules.WorldAt(0, 365 * 9, SectorYear) && SectorRules.WorldAt(0, 1 << 30, SectorYear) > 0,
+            "sector city: the world beyond the city grows by its rate each of the save's years, within a year straight, never before the first day, and stays in range after centuries");
+        bool clock = true, filling = true;
+        for (int w = 0; w < (int)SectorBuyers.Count; w++)
+        {
+            long ten = SectorRules.WorldAt(w, 3650, 365), full = SectorRules.WorldAt(w, 365 * 400, 365);
+            clock &= SectorRules.WorldAt(w, 60, 60) == SectorRules.WorldAt(w, 365, 365) && SectorRules.WorldAt(w, 600, 60) == ten;
+            filling &= full > ten && full <= (long)SectorCatalogue.World[w] * SectorCatalogue.WorldCeiling[w] / 1000 && SectorRules.WorldAt(w, 3650 * 2, 365) - ten < ten - SectorCatalogue.World[w];
+        }
+        Check(clock && filling, "sector city: the one clock: a year or ten of the save grow the world alike at 60 days a year and at 365, slowing as it fills towards its ceiling and never past it");
         var f = new SectorFile();
         SectorBridges.Reset();
         Check(!SectorBridges.Read(f) && !f.City.Known && f.City.People == SectorCatalogue.ReferencePeople && f.City.Small == SectorCatalogue.ReferenceSmall,
@@ -148,29 +158,29 @@ internal static partial class Program
     private static void SectorMarketsSized(bool print)
     {
         var city = new SectorCityFigures();
-        long people = SectorRules.Buyers((int)SectorMarket.ConsumerSoftware, city, 0, 1), firms = SectorRules.Buyers((int)SectorMarket.BusinessSoftware, city, 0, 1),
-            companies = SectorRules.Buyers((int)SectorMarket.Licences, city, 0, 1);
-        Check(people > 1000000 && firms > 8000 && companies > 300 && companies < 1000 && SectorRules.Buyers((int)SectorMarket.Apps, city, 0, 1) == people
-              && SectorRules.Buyers((int)SectorMarket.BusinessAi, city, 0, 1) == firms && SectorRules.Buyers((int)SectorMarket.EnterpriseAi, city, 0, 1) == companies,
+        long people = SectorRules.Buyers((int)SectorMarket.ConsumerSoftware, city, 0, 1, SectorYear), firms = SectorRules.Buyers((int)SectorMarket.BusinessSoftware, city, 0, 1, SectorYear),
+            companies = SectorRules.Buyers((int)SectorMarket.Licences, city, 0, 1, SectorYear);
+        Check(people > 1000000 && firms > 8000 && companies > 300 && companies < 1000 && SectorRules.Buyers((int)SectorMarket.Apps, city, 0, 1, SectorYear) == people
+              && SectorRules.Buyers((int)SectorMarket.BusinessAi, city, 0, 1, SectorYear) == firms && SectorRules.Buyers((int)SectorMarket.EnterpriseAi, city, 0, 1, SectorYear) == companies,
             "sector markets: the documented city's markets are millions of people, thousands of businesses and hundreds of companies, each shared by every product of its kind ("
             + people + ", " + firms + ", " + companies + ")");
         var bigger = new SectorCityFigures();
         bigger.Set(city.People * 2, city.Small * 2, city.Mid * 2, city.Large * 2, 1000, true);
-        Check(SectorRules.Buyers(0, bigger, 0, 1) == people * 2 && SectorRules.Buyers(1, bigger, 0, 1) >= firms * 2 - 2 && SectorRules.Buyers(2, bigger, 0, 1) >= companies * 2 - 2,
+        Check(SectorRules.Buyers(0, bigger, 0, 1, SectorYear) == people * 2 && SectorRules.Buyers(1, bigger, 0, 1, SectorYear) >= firms * 2 - 2 && SectorRules.Buyers(2, bigger, 0, 1, SectorYear) >= companies * 2 - 2,
             "sector markets: a city twice as big is a market twice as big: no cap but the city and the world");
-        Check(SectorRules.Buyers(1, city, 0, 3) < SectorRules.Buyers(1, city, 0, 0) && SectorRules.Buyers(0, city, 0, 3) < SectorRules.Buyers(0, city, 0, 0),
+        Check(SectorRules.Buyers(1, city, 0, 3, SectorYear) < SectorRules.Buyers(1, city, 0, 0, SectorYear) && SectorRules.Buyers(0, city, 0, 3, SectorYear) < SectorRules.Buyers(0, city, 0, 0, SectorYear),
             "sector markets: a recession shrinks the markets and a boom grows them (people by the cycle while their spending is not read)");
         var mood = new SectorCityFigures();
         mood.Set(city.People, city.Small, city.Mid, city.Large, 1500, true);
-        Check(SectorRules.Buyers(0, mood, 0, 3) == people * 1500 / 1000 && SectorRules.Buyers(1, mood, 0, 1) == firms,
+        Check(SectorRules.Buyers(0, mood, 0, 3, SectorYear) == people * 1500 / 1000 && SectorRules.Buyers(1, mood, 0, 1, SectorYear) == firms,
             "sector markets: with the population running, people's market follows their digital spending, not the cycle; firms' follows the cycle");
-        Check(SectorRules.Buyers(0, city, 3650, 1) > people * 15 / 10 && SectorRules.AnchorNow(3000, 10, 10) == 3000 && Math.Abs(SectorRules.AnchorNow(3000, 10, 10 + SectorRules.AnchorDays / 2) - 2000) <= 5
+        Check(SectorRules.Buyers(0, city, 3650, 1, SectorYear) > people * 13 / 10 && SectorRules.Buyers(0, city, 3650, 1, SectorYear) < people * 2 && SectorRules.AnchorNow(3000, 10, 10) == 3000 && Math.Abs(SectorRules.AnchorNow(3000, 10, 10 + SectorRules.AnchorDays / 2) - 2000) <= 5
               && SectorRules.AnchorNow(3000, 10, 10 + SectorRules.AnchorDays) == 1000 && SectorRules.AnchorNow(800, 0, 0) == 1000,
-            "sector markets: the world grows over ten years; an older save's anchor fades straight to the city's own market over a year");
+            "sector markets: the world grows over ten years, filling towards its ceiling; an older save's anchor fades straight to the city's own market over a year");
         if (print)
         {
             Console.WriteLine("SECTOR MARKETS (documented city): consumers " + people.ToString("N0") + ", businesses " + firms.ToString("N0") + ", companies " + companies.ToString("N0")
-                              + "; after ten years consumers " + SectorRules.Buyers(0, city, 3650, 1).ToString("N0"));
+                              + "; after ten years consumers " + SectorRules.Buyers(0, city, 3650, 1, SectorYear).ToString("N0"));
         }
     }
 
@@ -490,6 +500,33 @@ internal static partial class Program
         Check(agency > ordinary * 3 / 2 && agency < 600 / 2 && web == agency,
             "sector work: a design studio or web agency wins its work among the city's fewer agencies, nearly twice an IT firm's offers, so its takings hold where the old rule had them ("
             + agency + " in 600 days against an IT firm's " + ordinary + ")");
+        // The council's tenders go to firms that take IT work; branding is priced as designers are paid.
+        int designTenders = 0, itTenders = 0;
+        foreach (FirmKind kind in new[] { FirmKind.Design, FirmKind.Consultancy })
+        {
+            var tf = new FirmsFile { Seed = 32 };
+            var ts = new SectorFile { Seed = 32 };
+            tf.Firms.Add(new Firm { Place = "t", Kind = (int)kind, Reputation = 500 });
+            var tnotes = new List<WorkNote>();
+            for (int d = 1; d <= 200; d++)
+            {
+                tnotes.Clear();
+                SectorRules.Offers(tf, ts, d, 1, new List<Crew> { new Crew { Selling = 8 } }, null, tnotes);
+                foreach (WorkNote n in tnotes)
+                {
+                    Contract w = tf.ContractOf(n.Contract);
+                    bool tender = n.Kind == FirmsRules.NoteTender && w != null && FirmsRules.Takes(kind, w.K);
+                    designTenders += kind == FirmKind.Design && n.Kind == FirmsRules.NoteTender ? 1 : 0;
+                    itTenders += kind == FirmKind.Consultancy && tender ? 1 : 0;
+                }
+                tf.Contracts.Clear();
+            }
+        }
+        Check(designTenders == 0 && itTenders >= 200 / FirmsCatalogue.TenderEvery - 1,
+            "sector work: the council tenders IT work only to firms that take it: a design studio alone none in 200 days, an IT consultancy one every " + FirmsCatalogue.TenderEvery + " days of work it can do (" + itTenders + ")");
+        Check(SectorRules.WorkValue(WorkKind.Branding, 100) == FirmsRules.ValueOf(WorkKind.Branding, 100, false) * TalentCatalogue.Role(SectorCatalogue.DesignRole).Pay / 1000
+              && TalentCatalogue.Role(SectorCatalogue.DesignRole).Key == "graphic_designer" && SectorRules.WorkValue(WorkKind.Website, 100) == FirmsRules.ValueOf(WorkKind.Website, 100, false),
+            "sector work: a branding project is priced as a graphic designer is paid against an engineer, a website at the build rate");
         var bySize = new long[3];
         SectorRules.Demand(city, 1, bySize);
         int largePlain = 0, largeFresh = 0;

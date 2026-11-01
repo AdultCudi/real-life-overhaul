@@ -11,16 +11,27 @@ namespace RealLifeOverhaul.Tech
 
         /// <summary>
         /// The projects the city's firms and the region its IT firms serve put out a day, thousandths of a project, by client
-        /// size (small, mid-sized, large): each firm's projects a year over the markets' year, times the region, times the
-        /// economy. The place of the old fixed chance of an offer a day.
+        /// size (small, mid-sized, large): each firm's projects a year, its budget spread over the money's year whatever the
+        /// save's (CalendarRules.MoneyYearDays), times the region, times the economy. The place of the old fixed chance of an
+        /// offer a day.
         /// </summary>
         public static void Demand(SectorCityFigures city, int cycle, long[] bySize)
         {
             int spend = FirmsRules.CycleSpend[Clamp(cycle, 0, 3)];
             long world = SectorCatalogue.ServicesWorld;
-            bySize[ClientSmall] = (long)city.Small * SectorCatalogue.ProjectsSmall * world / 1000 * spend / 1000 / SectorCatalogue.MarketYear;
-            bySize[ClientMid] = (long)city.Mid * SectorCatalogue.ProjectsMid * world / 1000 * spend / 1000 / SectorCatalogue.MarketYear;
-            bySize[ClientLarge] = (long)city.Large * SectorCatalogue.ProjectsLarge * world / 1000 * spend / 1000 / SectorCatalogue.MarketYear;
+            bySize[ClientSmall] = (long)city.Small * SectorCatalogue.ProjectsSmall * world / 1000 * spend / 1000 / CalendarRules.MoneyYearDays;
+            bySize[ClientMid] = (long)city.Mid * SectorCatalogue.ProjectsMid * world / 1000 * spend / 1000 / CalendarRules.MoneyYearDays;
+            bySize[ClientLarge] = (long)city.Large * SectorCatalogue.ProjectsLarge * world / 1000 * spend / 1000 / CalendarRules.MoneyYearDays;
+        }
+
+        /// <summary>
+        /// What a project of the city's of so many points is worth, cents: the firms' price of the work (FirmsRules.ValueOf), branding at the
+        /// fair price of a designer's day (SectorCatalogue.DesignRole's pay against the engineer's the build rate is set for).
+        /// </summary>
+        public static long WorkValue(WorkKind kind, int points)
+        {
+            long value = FirmsRules.ValueOf(kind, points, false);
+            return kind == WorkKind.Branding ? value * TalentCatalogue.Role(SectorCatalogue.DesignRole).Pay / 1000 : value;
         }
 
         /// <summary>A firm's pull in the market for IT work: its name and its sellers by the selling curve; a fresh portfolio piece draws large clients harder (see <see cref="ClientOf"/>).</summary>
@@ -109,7 +120,7 @@ namespace RealLifeOverhaul.Tech
         /// The day's offers under Living population (the place of FirmsRules.Offers): the city's projects shared among the
         /// player's firms that take work and the rival IT firms by their pull, each firm's share carried until a whole offer
         /// is earned (a known pace, never a daily draw); a client's size by the city's demand (a fresh portfolio draws larger
-        /// ones), its project's points by its size; some clients the player's own businesses; the council's tender as before.
+        /// ones), its project's points by its size; some clients the player's own businesses; the council's IT tender, to firms that take such work.
         /// Within the offers open at once and the contracts kept (raised, said in the app).
         /// </summary>
         public static void Offers(FirmsFile ff, SectorFile f, int day, int cycle, IList<Crew> crews, IList<KeyValuePair<string, string>> own, List<WorkNote> notes)
@@ -118,10 +129,10 @@ namespace RealLifeOverhaul.Tech
             Demand(f.City, cycle, bySize);
             long projects = bySize[ClientSmall] + bySize[ClientMid] + bySize[ClientLarge];
             Pulls(ff, crews, out long it, out long agencies);
-            bool taker = false;
+            int takes = 0;
             for (int i = 0; i < ff.Firms.Count; i++)
             {
-                taker |= FirmsCatalogue.TakesWork[Clamp(ff.Firms[i].Kind, 0, (int)FirmKind.Count - 1)] != 0;
+                takes |= FirmsCatalogue.TakesWork[Clamp(ff.Firms[i].Kind, 0, (int)FirmKind.Count - 1)];
             }
             int offered = 0;
             for (int i = 0; i < ff.Contracts.Count; i++)
@@ -165,15 +176,19 @@ namespace RealLifeOverhaul.Tech
                 w.Points = kind == WorkKind.Managed ? 0 : PointsFor(kind, client, TechRandom.Mille(ff.Seed, day, 76, i));
                 w.Value = kind == WorkKind.Managed
                     ? FirmsCatalogue.ManagedMonth * (client == ClientSmall ? SectorCatalogue.ClientSmallWork : client == ClientLarge ? SectorCatalogue.ClientLargeWork : 1000) / 1000
-                    : FirmsRules.ValueOf(kind, w.Points, false);
+                    : WorkValue(kind, w.Points);
                 ff.Contracts.Add(w);
                 offered++;
                 notes?.Add(new WorkNote { Contract = w.Id, Kind = FirmsRules.NoteOffered });
             }
-            if (taker && day - ff.LastTender >= FirmsCatalogue.TenderEvery && ff.Contracts.Count < SectorCatalogue.ContractsMost)
+            // The council tenders IT work, an integration or a managed service, to the player's firms that take it: one a web agency or
+            // a design studio alone could never bid on (the Tech app and the desk refuse it) would only crowd its list, and bid on would
+            // fail and cost it its name. With both taken the draw is the one it always was.
+            bool integration = (takes & (1 << (int)WorkKind.Integration)) != 0, managed = (takes & (1 << (int)WorkKind.Managed)) != 0;
+            if ((integration || managed) && day - ff.LastTender >= FirmsCatalogue.TenderEvery && ff.Contracts.Count < SectorCatalogue.ContractsMost)
             {
                 ff.LastTender = day;
-                WorkKind kind = TechRandom.Mille(ff.Seed, day, 77) < 500 ? WorkKind.Integration : WorkKind.Managed;
+                WorkKind kind = integration && (!managed || TechRandom.Mille(ff.Seed, day, 77) < 500) ? WorkKind.Integration : WorkKind.Managed;
                 var t = new Contract
                 {
                     Id = ff.Next(), Kind = (int)kind, Client = FirmsCatalogue.Council, Council = true, Stage = (int)WorkStage.Tender, End = day + FirmsCatalogue.TenderDays,

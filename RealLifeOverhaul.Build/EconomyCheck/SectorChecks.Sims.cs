@@ -14,9 +14,10 @@ using InfraCat = RealLifeOverhaul.Tech.InfraCatalogue;
 // day, and the same run on every machine. "sector" after --sector prints each run.
 internal static partial class Program
 {
-    private const long SectorWage = 30000;      // cents a day: a professional of the sims, a mid-level as the game pays them
+    private const long SectorWage = 30000;      // cents a day: a professional of the sims, a mid-level engineer as the game pays them
     private const long SectorRent = 50000;      // cents a day: a small office
     private const long SectorDeskCost = 300000;     // cents: a workstation, its chair and its share of the fit-out, once a person
+    private const int SecurityRole = 9, SellerRole = 21;   // TalentCatalogue's security analyst and account manager: the services' builders and sellers paid as the game pays them
 
     private struct SectorRun
     {
@@ -33,10 +34,10 @@ internal static partial class Program
     // product built to launch and on, its marketing and price as set, an AI model trained on rented compute at a level.
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]
     private static SectorRun SectorProductSim(ProductKind kind, Segment segment, int engineers, int designers, int support, int sellers, int sres, int marketing, int days, int seed,
-        int tier = 1, int train = 1, Action<SectorFile, int> cityDay = null)
+        int tier = 1, int train = 1, Action<SectorFile, int> cityDay = null, int year = SectorYear)
     {
         var ff = new FirmsFile { Seed = seed };
-        var f = new SectorFile { Seed = seed };
+        var f = new SectorFile { Seed = seed, YearDays = year };
         var firm = new Firm { Place = "p", Kind = (int)(kind == ProductKind.Model ? FirmKind.AiLab : FirmKind.Software), Reputation = 500 };
         ff.Firms.Add(firm);
         SectorRules.Companies(f, 0, SectorRules.StartFeatures(ff));
@@ -121,13 +122,16 @@ internal static partial class Program
         return run;
     }
 
-    // An IT firm of so many builders and sellers taking every offer it has people for, working its contracts by the firms' own
-    // rules, for so many days in the documented city.
+    // An IT firm of so many builders and sellers taking every offer it has people for and bidding at the fair price on every
+    // council tender of work it takes (as the Tech app and the desk let it), working its contracts by the firms' own rules with
+    // its desk sessions answered as a manager would (SectorRules.Desk: a project's scope creep at a consultancy, an agency's
+    // revision round, each with its sound choice), for so many days in the documented city.
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]
-    private static SectorRun SectorServicesSim(FirmKind kind, int builders, int sellers, int days, int seed, bool old = false, Action<SectorFile, int> cityDay = null)
+    private static SectorRun SectorServicesSim(FirmKind kind, int builders, int sellers, int days, int seed, bool old = false, Action<SectorFile, int> cityDay = null, int year = SectorYear,
+        bool sessions = true)
     {
         var ff = new FirmsFile { Seed = seed };
-        var f = new SectorFile { Seed = seed };
+        var f = new SectorFile { Seed = seed, YearDays = year };
         var firm = new Firm { Place = "c", Kind = (int)kind, Reputation = 500 };
         ff.Firms.Add(firm);
         int people = builders + sellers;
@@ -138,6 +142,8 @@ internal static partial class Program
         };
         var crews = new List<Crew> { c };
         var notes = new List<WorkNote>();
+        int builderRole = kind == FirmKind.Design ? SectorCatalogue.DesignRole : kind == FirmKind.Security ? SecurityRole : 0;
+        long wages = ((long)builders * TalentCatalogue.Role(builderRole).Pay + (long)sellers * TalentCatalogue.Role(SellerRole).Pay) * SectorWage / 1000;
         long cash = -people * SectorDeskCost, low = cash, lastYear = 0;
         var run = new SectorRun { Payback = -1, Conserved = true };
         for (int day = 1; day <= days; day++)
@@ -175,7 +181,7 @@ internal static partial class Program
                     }
                     load += FirmsRules.Need(w, day);
                 }
-                else if (w.Stage == (int)WorkStage.Tender)
+                else if (w.Stage == (int)WorkStage.Tender && FirmsRules.Takes(kind, w.K))
                 {
                     w.Bid = FirmsRules.BidAt(w, 1000);
                     w.Place = firm.Place;
@@ -192,12 +198,20 @@ internal static partial class Program
                 Contract w = ff.Contracts[i];
                 if (w.Stage == (int)WorkStage.Active)
                 {
+                    if (sessions && !old && kind == FirmKind.Consultancy && SectorRules.Creeps(w))
+                    {
+                        SectorRules.Scope(w, firm, SectorRules.PickScope(w));
+                    }
+                    else if (sessions && !old && SectorRules.Agency(firm) && SectorRules.WantsChanges(w))
+                    {
+                        SectorRules.Revision(w, firm, SectorRules.PickRevision(w));
+                    }
                     int give = FirmsRules.Give(w.K, FirmsRules.Need(w, day), ref engineering, ref design, ref web);
                     takings += FirmsRules.Work(w, firm, give, day, notes);
                 }
             }
             FirmsRules.Lapse(ff, day, notes);
-            long costs = people * (SectorWage + FirmsCatalogue.SoftwarePerSeat) + SectorRent;
+            long costs = wages + people * FirmsCatalogue.SoftwarePerSeat + SectorRent;
             cash += takings - costs;
             run.Takings += takings;
             low = Math.Min(low, cash);
@@ -219,10 +233,10 @@ internal static partial class Program
     // Data centres sold through the cloud at the end game's scale, as EndScaleChecks' CloudSim runs them, the city's racks and
     // compute from its firms and the rivals instead of the old fixed demand.
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]
-    private static SectorRun SectorCloudSim(int share, int racks, int gpu, int regions, int tier, bool hyper, int days)
+    private static SectorRun SectorCloudSim(int share, int racks, int gpu, int regions, int tier, bool hyper, int days, int year = SectorYear)
     {
         int at = EndScaleRules.Buying(share > 0);
-        SectorFile f = SectorFresh(23);
+        SectorFile f = SectorFresh(23, year);
         var infra = new InfraFile();
         long capex = 0;
         for (int i = 0; i < regions; i++)
@@ -317,88 +331,111 @@ internal static partial class Program
 
     private static void SectorSims(bool print)
     {
+        foreach (int year in new[] { SectorYear, CalendarRules.YearDefault })
+        {
+            SectorSimsAt(year, print);
+        }
+        SectorRun again = SectorProductSim(ProductKind.Saas, Segment.Business, 4, 1, 1, 1, 1, 2, 800, 11), same = SectorProductSim(ProductKind.Saas, Segment.Business, 4, 1, 1, 1, 1, 2, 800, 11);
+        Check(again.Cash == same.Cash && again.Customers == same.Customers, "sector ten years: the same seed runs the same on every machine");
+        SectorRun bigger = SectorProductSim(ProductKind.Saas, Segment.Business, 12, 3, 4, 3, 3, 4, 1200, 11), smaller = SectorProductSim(ProductKind.Saas, Segment.Business, 4, 1, 1, 1, 1, 2, 1200, 11);
+        Check(bigger.Customers > smaller.Customers && bigger.Features > smaller.Features,
+            "sector ten years: a bigger team builds more and wins more of the same market (" + smaller.Customers + " against " + bigger.Customers + ")");
+    }
+
+    // Each kind over the money scale's ten years (3,650 game days: a payback and a year's profit are money, by the game day) in a
+    // calendar of so many days a year, the documented city's markets growing by its years (the one clock): each in its band.
+    private static void SectorSimsAt(int year, bool print)
+    {
         const int Years = 3650;
         int[] least = ScaleCatalogue.PaybackLeast, most = ScaleCatalogue.PaybackMost;
+        string at = " (years of " + year + " days)";
         // software: a business service, a company service, an app for people, licences
-        SectorRun business = SectorProductSim(ProductKind.Saas, Segment.Business, 4, 1, 1, 1, 1, 2, Years, 11);
-        SectorRun enterprise = SectorProductSim(ProductKind.Saas, Segment.Enterprise, 5, 1, 2, 2, 1, 2, Years, 12);
-        SectorRun app = SectorProductSim(ProductKind.App, Segment.Consumer, 4, 1, 1, 0, 1, 3, Years, 13);
-        SectorRun licence = SectorProductSim(ProductKind.Licence, Segment.Enterprise, 4, 1, 1, 2, 0, 2, Years, 14);
-        SectorRun model = SectorProductSim(ProductKind.Model, Segment.Enterprise, 4, 0, 1, 1, 1, 2, Years, 15);
-        SectorRun consult = SectorServicesSim(FirmKind.Consultancy, 4, 1, Years, 16);
-        SectorRun security = SectorServicesSim(FirmKind.Security, 4, 1, Years, 17);
-        SectorRun design = SectorServicesSim(FirmKind.Design, 3, 1, Years, 18);
-        SectorRun cloud = SectorCloudSim(EndScaleRules.Full, 120, 10, 1, 2, false, Years), hyper = SectorCloudSim(EndScaleRules.Full, 400, 24, 3, 2, true, Years);
+        SectorRun business = SectorProductSim(ProductKind.Saas, Segment.Business, 4, 1, 1, 1, 1, 2, Years, 11, 1, 1, null, year);
+        SectorRun enterprise = SectorProductSim(ProductKind.Saas, Segment.Enterprise, 5, 1, 2, 2, 1, 2, Years, 12, 1, 1, null, year);
+        SectorRun app = SectorProductSim(ProductKind.App, Segment.Consumer, 4, 1, 1, 0, 1, 3, Years, 13, 1, 1, null, year);
+        SectorRun licence = SectorProductSim(ProductKind.Licence, Segment.Enterprise, 4, 1, 1, 2, 0, 2, Years, 14, 1, 1, null, year);
+        SectorRun model = SectorProductSim(ProductKind.Model, Segment.Enterprise, 4, 0, 1, 1, 1, 2, Years, 15, 1, 1, null, year);
+        SectorRun consult = SectorServicesSim(FirmKind.Consultancy, 4, 1, Years, 16, false, null, year);
+        SectorRun security = SectorServicesSim(FirmKind.Security, 4, 1, Years, 17, false, null, year);
+        SectorRun design = SectorServicesSim(FirmKind.Design, 3, 1, Years, 18, false, null, year);
+        SectorRun cloud = SectorCloudSim(EndScaleRules.Full, 120, 10, 1, 2, false, Years, year), hyper = SectorCloudSim(EndScaleRules.Full, 400, 24, 3, 2, true, Years, year);
         SectorRun[] software = { business, enterprise, app };
         string[] names = { "a business service", "a company service", "an app for people" };
         for (int i = 0; i < software.Length; i++)
         {
             SectorRun r = software[i];
             Check(r.Payback >= least[(int)PaybackKind.Software] && r.Payback <= most[(int)PaybackKind.Software],
-                "sector ten years: a software studio selling " + names[i] + " pays back in " + r.Payback + " days, inside the target of " + least[(int)PaybackKind.Software] + " to " + most[(int)PaybackKind.Software]);
-            Check(r.Conserved && r.Customers > 0 && r.Customers <= r.Buyers, "sector ten years: " + names[i] + ": every day the market's customers within its buyers (" + r.Customers + " of " + r.Buyers + ")");
+                "sector ten years" + at + ": a software studio selling " + names[i] + " pays back in " + r.Payback + " days, inside the target of " + least[(int)PaybackKind.Software] + " to "
+                + most[(int)PaybackKind.Software]);
+            Check(r.Conserved && r.Customers > 0 && r.Customers <= r.Buyers, "sector ten years" + at + ": " + names[i] + ": every day the market's customers within its buyers (" + r.Customers + " of " + r.Buyers + ")");
         }
         // A licence is sold outright for a large sum: its first deals pay back the few weeks it took to build, then its upkeep and
         // the companies the market adds carry it, a good shop's day or more and never a chain's.
         Check(licence.Payback > 0 && licence.Payback < least[(int)PaybackKind.Software] && licence.Day > ScaleCatalogue.ShopDayLeast && licence.Day < ScaleCatalogue.ChainDayMost
               && licence.Conserved && licence.Customers <= licence.Buyers,
-            "sector ten years: licences pay their build back with their first deals (" + licence.Payback + " days), then earn " + licence.Day + " a day on upkeep and new companies, a shop's day and never a chain's");
+            "sector ten years" + at + ": licences pay their build back with their first deals (" + licence.Payback + " days), then earn " + licence.Day + " a day on upkeep and new companies, a shop's day and never a chain's");
         Check(model.Payback >= least[(int)PaybackKind.AiLab] && model.Payback <= most[(int)PaybackKind.AiLab],
-            "sector ten years: an AI lab selling a model to companies on rented compute pays back in " + model.Payback + " days, inside the target of " + least[(int)PaybackKind.AiLab] + " to " + most[(int)PaybackKind.AiLab]);
-        // (the web agency and the design studio are the game's own businesses: their walk-in customers come from the population
-        // beside these contracts, so they are held by the population's checks and not banded here)
-        SectorRun[] services = { consult, security };
-        string[] snames = { "an IT consultancy", "a cybersecurity firm" };
+            "sector ten years" + at + ": an AI lab selling a model to companies on rented compute pays back in " + model.Payback + " days, inside the target of " + least[(int)PaybackKind.AiLab] + " to "
+            + most[(int)PaybackKind.AiLab]);
+        // The services on their contracts alone: the web agency's and the design studio's walk-in customers come from the
+        // population beside these, so their contracts must carry their own team and office at a fair price.
+        SectorRun[] services = { consult, security, design };
+        string[] snames = { "an IT consultancy", "a cybersecurity firm", "a design studio" };
         for (int i = 0; i < services.Length; i++)
         {
             Check(services[i].Payback >= least[(int)PaybackKind.Services] && services[i].Payback <= most[(int)PaybackKind.Services] && services[i].Day > 0,
-                "sector ten years: " + snames[i] + " on the city's IT work pays back in " + services[i].Payback + " days, inside the target of " + least[(int)PaybackKind.Services] + " to "
-                + most[(int)PaybackKind.Services] + ", earning " + services[i].Day + " a day");
+                "sector ten years" + at + ": " + snames[i] + " on the city's work at a fair price pays back in " + services[i].Payback + " days, inside the target of " + least[(int)PaybackKind.Services] + " to "
+                + most[(int)PaybackKind.Services] + ", earning " + services[i].Day + " a day in its last year");
         }
-        // The city's work held against the old offers: the same firm over the same ten years takes about what the old rule gave
-        // it (a design studio among the city's fewer agencies, so its takings hold), within a quarter either way.
-        FirmKind[] held = { FirmKind.Design, FirmKind.Consultancy, FirmKind.Security };
-        SectorRun[] now = { design, consult, security };
-        int[] heldSeeds = { 18, 16, 17 }, heldTeams = { 3, 4, 4 };
         string parity = string.Empty;
-        bool holds = true;
-        for (int i = 0; i < held.Length; i++)
+        if (year == SectorYear)
         {
-            SectorRun before = SectorServicesSim(held[i], heldTeams[i], 1, Years, heldSeeds[i], true);
-            long ratio = now[i].Takings * 1000 / Math.Max(1L, before.Takings);
-            holds &= ratio >= 750 && ratio <= 1250;
-            parity += (i > 0 ? ", " : string.Empty) + held[i] + " " + ratio;
+            // The city's work held against the old offers: the same firm over the same ten years takes about what the old rule gave
+            // it (a design studio among the city's fewer agencies, so its takings hold), within a quarter either way. Like for like:
+            // neither with the living economy's desk sessions, the design studio's work priced back at the old rule's build rate
+            // (SectorCatalogue.DesignRole), so it is the flow of work that is held. Neither rule reads the year: a firm's IT budget
+            // is money, by the game day.
+            FirmKind[] held = { FirmKind.Design, FirmKind.Consultancy, FirmKind.Security };
+            int[] heldSeeds = { 18, 16, 17 }, heldTeams = { 3, 4, 4 };
+            bool holds = true;
+            for (int i = 0; i < held.Length; i++)
+            {
+                SectorRun before = SectorServicesSim(held[i], heldTeams[i], 1, Years, heldSeeds[i], true);
+                SectorRun plain = SectorServicesSim(held[i], heldTeams[i], 1, Years, heldSeeds[i], false, null, year, false);
+                long takings = held[i] == FirmKind.Design ? plain.Takings * 1000 / TalentCatalogue.Role(SectorCatalogue.DesignRole).Pay : plain.Takings;
+                long ratio = takings * 1000 / Math.Max(1L, before.Takings);
+                holds &= ratio >= 750 && ratio <= 1250;
+                parity += (i > 0 ? ", " : string.Empty) + held[i] + " " + ratio;
+            }
+            Check(holds, "sector ten years: a design studio, an IT consultancy and a cybersecurity firm take within a quarter of what the old offers gave them over ten years, thousandths of it ("
+                         + parity + ")");
         }
-        Check(holds, "sector ten years: a design studio, an IT consultancy and a cybersecurity firm take within a quarter of what the old offers gave them over ten years, thousandths of it ("
-                     + parity + ")");
         Check(cloud.Payback >= EndScaleRules.PaybackDaysLeast && cloud.Payback <= EndScaleRules.PaybackDaysMost && hyper.Payback >= EndScaleRules.PaybackDaysLeast && hyper.Payback <= EndScaleRules.PaybackDaysMost,
-            "sector ten years: a cloud and a hyperscaler at the end game's scale, on the city's compute, pay back in " + cloud.Payback + " and " + hyper.Payback + " days, inside the end game's "
+            "sector ten years" + at + ": a cloud and a hyperscaler at the end game's scale, on the city's compute, pay back in " + cloud.Payback + " and " + hyper.Payback + " days, inside the end game's "
             + EndScaleRules.PaybackDaysLeast + " to " + EndScaleRules.PaybackDaysMost);
         long best = Math.Max(Math.Max(business.Day, enterprise.Day), Math.Max(app.Day, Math.Max(consult.Day, model.Day)));
         Check(business.Day > ScaleCatalogue.ShopDayLeast / 2 && best < ScaleCatalogue.ChainDayMost && best < hyper.Day,
-            "sector ten years: a firm of a few people with one product earns about a good shop's day or more, never a strong chain's or the end game's ventures' (best " + best + ", the hyperscaler's " + hyper.Day + ")");
-        SectorRun again = SectorProductSim(ProductKind.Saas, Segment.Business, 4, 1, 1, 1, 1, 2, 800, 11), same = SectorProductSim(ProductKind.Saas, Segment.Business, 4, 1, 1, 1, 1, 2, 800, 11);
-        Check(again.Cash == same.Cash && again.Customers == same.Customers, "sector ten years: the same seed runs the same on every machine");
-        SectorRun bigger = SectorProductSim(ProductKind.Saas, Segment.Business, 12, 3, 4, 3, 3, 4, 1200, 11), smaller = SectorProductSim(ProductKind.Saas, Segment.Business, 4, 1, 1, 1, 1, 2, 1200, 11);
-        Check(bigger.Customers > smaller.Customers && bigger.Features > smaller.Features,
-            "sector ten years: a bigger team builds more and wins more of the same market (" + smaller.Customers + " against " + bigger.Customers + ")");
+            "sector ten years" + at + ": a firm of a few people with one product earns about a good shop's day or more, never a strong chain's or the end game's ventures' (best " + best + ", the hyperscaler's "
+            + hyper.Day + ")");
         if (print)
         {
-            Console.WriteLine("SECTOR TEN YEARS (payback days, profit a day in the last year, customers of buyers, features against the market's most):");
+            Console.WriteLine("SECTOR TEN YEARS" + at.ToUpperInvariant() + " (payback days, profit a day in the last year, customers of buyers, features against the market's most):");
             for (int i = 0; i < software.Length; i++)
             {
                 SectorPrint(names[i], software[i]);
             }
             SectorPrint("licences", licence);
             SectorPrint("a model for companies", model);
-            SectorPrint("a design studio (contracts alone)", design);
             for (int i = 0; i < services.Length; i++)
             {
-                SectorPrint(snames[i], services[i]);
+                SectorPrint(snames[i] + " (contracts alone)", services[i]);
             }
             SectorPrint("a cloud at scale", cloud);
             SectorPrint("a hyperscaler at scale", hyper);
-            Console.WriteLine("  the work's takings over ten years against the old offers, thousandths: " + parity);
+            if (parity.Length > 0)
+            {
+                Console.WriteLine("  the work's takings over ten years against the old offers, thousandths: " + parity);
+            }
         }
     }
 

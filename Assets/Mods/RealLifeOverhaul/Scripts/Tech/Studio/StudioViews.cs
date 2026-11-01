@@ -173,6 +173,7 @@ namespace RealLifeOverhaul.Tech
             var v = new StudioScreen { Kind = ScreenConcept, TitleKey = P + "concept_title", TitlePairs = new[] { "studio", s.Name }, ChipKey = P + "chip_draft" };
             long budget = StudioRules.BudgetAt(d.Budget);
             int scope = StudioRules.ScopeOf(budget), genre = StudioRules.Clamp(d.Genre, 0, (int)Genre.Count - 1), platform = StudioRules.Clamp(d.Platform, 0, StudioCatalogue.GamePlatforms - 1);
+            int year = f != null ? f.YearDays : CalendarRules.YearDefault;
             ViewSection game = v.Section(P + "sec_concept");
             ViewChoice c = Choice(game, P + "label_genre", StudioAct.Genre, genre, false);
             for (int g = 0; g < (int)Genre.Count; g++)
@@ -192,7 +193,7 @@ namespace RealLifeOverhaul.Tech
             {
                 c.Options.Add(fmt.Text(PlatformKey(p)));
             }
-            long people = StudioBridges.Audience(genre, platform, day, out long residents);
+            long people = StudioBridges.Audience(genre, platform, day, year, out long residents);
             c.Trade = Words(platform == (int)Tech.Platform.Console ? P + "platform_trade_console" : platform == (int)Tech.Platform.Mobile ? P + "platform_trade_mobile" : P + "platform_trade_pc",
                 ViewTone.Plain, "people", fmt.Whole(people), "residents", fmt.Whole(residents), "genre", fmt.Text(GenreKey(genre)), "days", fmt.Whole(StudioCatalogue.CertificationDays));
             c = Choice(game, P + "label_model", StudioAct.Model, StudioRules.Clamp(d.Model, 0, (int)GameModel.Count - 1), false);
@@ -231,7 +232,7 @@ namespace RealLifeOverhaul.Tech
                     "usual", fmt.Money(StudioRules.PriceShown(d.Model, 2, scope, platform)));
             ViewSection outlook = v.Section(P + "sec_outlook");
             Line(outlook, P + "outlook_seen", ViewTone.Plain, "share", fmt.Mille(StudioRules.Visibility(budget)), "people", fmt.Whole(people * StudioRules.Visibility(budget) / 1000));
-            Line(outlook, P + "outlook_bar", ViewTone.Plain, "genre", fmt.Text(GenreKey(genre)), "expect", fmt.Whole(StudioRules.Expect(genre, day, d.Sequel > 0)));
+            Line(outlook, P + "outlook_bar", ViewTone.Plain, "genre", fmt.Text(GenreKey(genre)), "expect", fmt.Whole(StudioRules.Expect(genre, day, d.Sequel > 0, year)));
             int crowd = StudioRules.Crowd(f, genre, day, CrowdDays, null);
             Line(outlook, crowd > 0 ? P + "outlook_crowd" : P + "outlook_clear", crowd > 1 ? ViewTone.Warn : ViewTone.Plain, "count", fmt.Whole(crowd), "days", fmt.Whole(CrowdDays));
             if (f != null && f.TrendGenre >= 0 && day < f.TrendUntil)
@@ -456,7 +457,7 @@ namespace RealLifeOverhaul.Tech
             {
                 c.Options.Add(fmt.Text(P + "beat_" + b));
             }
-            string why = StudioRules.BeatWhy(g, pick, day, StudioRules.YearPart(day, yearDays));
+            string why = StudioRules.BeatWhy(g, pick, day, StudioRules.YearPart(day, yearDays), yearDays);
             long cost = StudioRules.BeatCost(g, pick);
             c.Trade = why != null ? Words(why, ViewTone.Warn) : Words(P + "beat_" + pick + "_trade", ViewTone.Plain, "cost", fmt.Money(cost));
             c.Go = new ViewAction { Key = P + "button_beat", Act = StudioAct.Beat, Arg = pick, Enabled = why == null, WhyKey = why };
@@ -498,7 +499,8 @@ namespace RealLifeOverhaul.Tech
             if (g.Score >= 0)
             {
                 ViewTone tone = g.Score >= StudioCatalogue.HitScore ? ViewTone.Good : g.Score <= StudioCatalogue.FlopScore ? ViewTone.Bad : ViewTone.Plain;
-                Line(s, g.Converted ? P + "sales_score_old" : P + "sales_score", tone, "score", fmt.Whole(g.Score), "expect", fmt.Whole(StudioRules.Expect(g.Genre, g.Launched, g.Sequel > 0)));
+                Line(s, g.Converted ? P + "sales_score_old" : P + "sales_score", tone, "score", fmt.Whole(g.Score), "expect",
+                    fmt.Whole(StudioRules.Expect(g.Genre, g.Launched, g.Sequel > 0, f != null ? f.YearDays : CalendarRules.YearDefault)));
             }
             else
             {

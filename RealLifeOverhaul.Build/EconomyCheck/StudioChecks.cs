@@ -46,6 +46,7 @@ internal static partial class Program
     // ---------------------------------------------------------------- helpers
 
     private const string StudioPlace = "Studio Street~1";
+    private const int StudioYear = 365;  // the studio checks' calendar: the game's longest year, on which the bands were set (the living years hold the game's default, 60, too)
     private const int StudioDay = 400;   // a day into the market's second year: the critics' bar has moved once
 
     // A budget's step on the concept's slider.
@@ -93,7 +94,7 @@ internal static partial class Program
         return net;
     }
 
-    private static StudioFile StudioFileFor(int seed) => new StudioFile { Seed = seed, FirstDay = 0 };
+    private static StudioFile StudioFileFor(int seed, int year = StudioYear) => new StudioFile { Seed = seed, FirstDay = 0, YearDays = year };
 
     private sealed class PlainWords : IStudioFormat
     {
@@ -186,10 +187,15 @@ internal static partial class Program
         Check(StudioRules.UsualPrice(0, (int)Platform.Pc) == 1500 && StudioRules.UsualPrice(2, (int)Platform.Console) == 6900 && StudioRules.UsualPrice(0, (int)Platform.Mobile) == 375
               && StudioRules.PriceShown((int)GameModel.FreeToPlay, 4, 1, 0) == 0 && StudioRules.PriceShown((int)GameModel.Subscription, 2, 2, 0) == 1500,
             "studio: the usual price by scope and platform (phones far cheaper), a free game's nothing, a subscription's month a quarter of a copy");
-        Check(StudioBridges.World((int)Genre.Puzzle, (int)Platform.Mobile, 0) == 2600000000L * 450 / 1000
-              && StudioBridges.World(0, 0, StudioCatalogue.MarketYear) == 1000000000L * 1030 / 1000 * 300 / 1000
-              && StudioBridges.World(0, 0, StudioCatalogue.MarketYear * 10) > StudioBridges.World(0, 0, StudioCatalogue.MarketYear * 9) && StudioBridges.World(-1, 0, 0) == 0,
-            "studio: the documented world: each platform's players by the genre's share, growing every market year with nothing stopping it");
+        Check(StudioBridges.World((int)Genre.Puzzle, (int)Platform.Mobile, 0, StudioYear) == 2600000000L * 450 / 1000
+              && StudioBridges.World(0, 0, StudioYear, StudioYear) == 1000000000L * 1030 / 1000 * 300 / 1000
+              && StudioBridges.World(0, 0, StudioYear * 10, StudioYear) > StudioBridges.World(0, 0, StudioYear * 9, StudioYear) && StudioBridges.World(-1, 0, 0, StudioYear) == 0,
+            "studio: the documented world: each platform's players by the genre's share, growing every year of the save");
+        long tenShort = StudioBridges.World(0, 2, 600, 60), tenLong = StudioBridges.World(0, 2, 3650, 365), filled = StudioBridges.World(0, 2, 365 * 400, 365);
+        Check(StudioBridges.World(0, 1, 60, 60) == StudioBridges.World(0, 1, 365, 365) && tenShort == tenLong && tenLong > StudioBridges.World(0, 2, 0, 365) * 12 / 10
+              && filled > tenLong && filled <= 2600000000L * StudioCatalogue.BaseCeiling[2] / 1000 * 120 / 1000,
+            "studio: the one clock: a year or ten of the save grow the platforms alike at 60 days a year and at 365 (" + tenShort.ToString("N0") + " phone players of action games after ten), filling towards "
+            + "their ceiling in a long game, never past it (" + filled.ToString("N0") + ")");
     }
 
     // ---------------------------------------------------------------- building
@@ -326,15 +332,15 @@ internal static partial class Program
         GameDev g = MadeGame(1, Genre.Action, Platform.Pc, ScaleCatalogue.BudgetTypical[1], 60, 0, 0);
         g.Phase = (int)GamePhase.Production;
         g.Done = g.Work / 2;
-        Check(StudioRules.BeatWhy(g, StudioRules.BeatAnnounce, 10, 100) == null && StudioRules.BeatWhy(g, StudioRules.BeatPreviews, 10, 100) == "reallife_studio_beat_why_early"
-              && StudioRules.BeatWhy(g, StudioRules.BeatExpo, 10, 100) == "reallife_studio_beat_why_expo" && StudioRules.BeatWhy(g, StudioRules.BeatExpo, 10, 500) == null
-              && StudioRules.BeatWhy(g, StudioRules.BeatDevlog, 10, 100) == "reallife_studio_beat_why_flare",
+        Check(StudioRules.BeatWhy(g, StudioRules.BeatAnnounce, 10, 100, StudioYear) == null && StudioRules.BeatWhy(g, StudioRules.BeatPreviews, 10, 100, StudioYear) == "reallife_studio_beat_why_early"
+              && StudioRules.BeatWhy(g, StudioRules.BeatExpo, 10, 100, StudioYear) == "reallife_studio_beat_why_expo" && StudioRules.BeatWhy(g, StudioRules.BeatExpo, 10, 500, StudioYear) == null
+              && StudioRules.BeatWhy(g, StudioRules.BeatDevlog, 10, 100, StudioYear) == "reallife_studio_beat_why_flare",
             "studio: an announcement any time, previews only with most of it built, the expo only in its weeks, a devlog only with Flare's bridge");
         int by = StudioRules.Beat(g, StudioRules.BeatAnnounce, 0, 10);
-        Check(by == StudioCatalogue.HypeAnnounce && StudioRules.BeatWhy(g, StudioRules.BeatAnnounce, 11, 100) == "reallife_studio_beat_why_once" && g.LastNews == 10,
+        Check(by == StudioCatalogue.HypeAnnounce && StudioRules.BeatWhy(g, StudioRules.BeatAnnounce, 11, 100, StudioYear) == "reallife_studio_beat_why_once" && g.LastNews == 10,
             "studio: an announcement adds hype once");
         StudioRules.Beat(g, StudioRules.BeatTrailer, 0, 12);
-        Check(StudioRules.BeatWhy(g, StudioRules.BeatTrailer, 20, 100) == "reallife_studio_beat_why_soon" && g.Spent == g.Budget + StudioCatalogue.TrailerCost[1],
+        Check(StudioRules.BeatWhy(g, StudioRules.BeatTrailer, 20, 100, StudioYear) == "reallife_studio_beat_why_soon" && g.Spent == g.Budget + StudioCatalogue.TrailerCost[1],
             "studio: a trailer costs its scope's price and another waits its gap");
         int hype = g.Hype;
         StudioRules.HypeDay(g, 12 + StudioCatalogue.HypeQuietDays);
@@ -346,21 +352,22 @@ internal static partial class Program
         long spend = StudioRules.HypeDay(g, 200);
         Check(spend == g.Budget * 300 / 1000 / StudioCatalogue.CampaignDays && g.LastNews == 200, "studio: a campaign spends its share of the budget over its days and keeps hype rising");
         // the review
-        int e0 = StudioRules.Expect((int)Genre.Rpg, 0, false), e5 = StudioRules.Expect((int)Genre.Rpg, StudioCatalogue.MarketYear * 5, false);
-        Check(e5 == e0 + 6 && StudioRules.Expect((int)Genre.Rpg, StudioCatalogue.MarketYear * 100, false) == StudioCatalogue.ExpectMost && StudioRules.Expect(0, 0, true) == StudioRules.Expect(0, 0, false) + 3,
-            "studio: the critics' bar rises by the market's years to its most, and asks more of a sequel");
+        int e0 = StudioRules.Expect((int)Genre.Rpg, 0, false, StudioYear), e5 = StudioRules.Expect((int)Genre.Rpg, StudioYear * 5, false, StudioYear);
+        Check(e5 == e0 + 6 && StudioRules.Expect((int)Genre.Rpg, 60 * 5, false, 60) == e5 && StudioRules.Expect((int)Genre.Rpg, StudioYear * 100, false, StudioYear) == StudioCatalogue.ExpectMost
+              && StudioRules.Expect(0, 0, true, StudioYear) == StudioRules.Expect(0, 0, false, StudioYear) + 3,
+            "studio: the critics' bar rises by the save's years (five of them alike at 60 days a year and at 365) to its most, and asks more of a sequel");
         GameDev r = MadeGame(2, Genre.Rpg, Platform.Pc, ScaleCatalogue.BudgetTypical[1], 70, 0, 0);
-        int s70 = StudioRules.Review(r, 70, 500, 0, 1);
+        int s70 = StudioRules.Review(r, 70, 500, 0, 1, StudioYear);
         r.Drm = true;
-        int drm = StudioRules.Review(r, 70, 500, 0, 1);
+        int drm = StudioRules.Review(r, 70, 500, 0, 1, StudioYear);
         r.Drm = false;
         r.Hype = 1000;
-        int backlash = StudioRules.Review(r, 70, 500, 0, 1);
+        int backlash = StudioRules.Review(r, 70, 500, 0, 1, StudioYear);
         Check(drm == s70 - StudioCatalogue.DrmReview && backlash == s70 - StudioRules.Backlash(1000, 70) && StudioRules.Backlash(1000, 70) == 7 && StudioRules.Backlash(600, 70) == 0,
             "studio: DRM costs its points; hype far above what the quality carries brings a backlash, none within it");
         r.Hype = 0;
-        Check(StudioRules.Review(r, 95, 500, 0, 1) > s70 && StudioRules.Review(r, 30, 500, 0, 1) < s70 && StudioRules.Review(r, 70, 900, 0, 1) > s70 && StudioRules.Review(r, 100, 1000, 0, 1) <= 100
-              && StudioRules.Review(r, 0, 0, 99999, 1) >= 0 && StudioRules.Review(r, 70, 500, 0, 1) == s70,
+        Check(StudioRules.Review(r, 95, 500, 0, 1, StudioYear) > s70 && StudioRules.Review(r, 30, 500, 0, 1, StudioYear) < s70 && StudioRules.Review(r, 70, 900, 0, 1, StudioYear) > s70 && StudioRules.Review(r, 100, 1000, 0, 1, StudioYear) <= 100
+              && StudioRules.Review(r, 0, 0, 99999, 1, StudioYear) >= 0 && StudioRules.Review(r, 70, 500, 0, 1, StudioYear) == s70,
             "studio: a better game and a better name review higher, always 0 to 100, the same score for the same game on every machine");
     }
 
@@ -375,7 +382,7 @@ internal static partial class Program
         {
             g.Platforms |= 1 << (int)Platform.Console;   // a big game goes out on consoles too: one platform's players are not enough for its budget
         }
-        long net = GameLife(g, StudioFileFor(3), StudioDay, StudioCatalogue.MarketYear * 3, out units);
+        long net = GameLife(g, StudioFileFor(3), StudioDay, StudioYear * 3, out units);
         return ScaleRules.Return(net, g.Budget);
     }
 
@@ -399,6 +406,16 @@ internal static partial class Program
             Check(ScaleRules.BandOf(average) == ReturnBand.Average || ScaleRules.BandOf(average) == ReturnBand.Good,
                 "studio: a " + (Scope)s + " game of its team's usual quality with a little hype earns its budget back and a little more (" + average + ")");
             Check(ScaleRules.BandOf(hit) >= ReturnBand.Hit, "studio: a " + (Scope)s + " game of quality 85 with hype is a hit (" + hit + ", " + hitUnits.ToString("N0") + " copies)");
+            // The top of the curve in the money scale's swing: against the scale's own return for its quality (ScaleRules.Typical, a
+            // game on one platform) a game of 80 at most half as much again and one of 90 at most twice (a big game sells on consoles
+            // too, where piracy is a quarter of the PC's and the price higher), a game of 90 on one platform a hit and no more, and a
+            // perfect game still a masterpiece with no cap but its audience.
+            int q80 = GameReturn((Scope)s, 80, 0, out _), q90 = GameReturn((Scope)s, 90, 0, out _), q100 = GameReturn((Scope)s, 100, 0, out _);
+            ScaleRules.Typical(ScaleCatalogue.BudgetTypical[s], 80, out _, out int scale80);
+            ScaleRules.Typical(ScaleCatalogue.BudgetTypical[s], 90, out _, out int scale90);
+            Check(q80 <= scale80 * 3 / 2 && q90 <= scale90 * 2 && ((Scope)s == Scope.Big || q90 <= ScaleCatalogue.HitMost) && q100 > ScaleCatalogue.HitMost && q80 >= ScaleCatalogue.HitLeast,
+                "studio: a " + (Scope)s + " game's top end keeps the money scale's swing: quality 80 returns " + q80 + " against the scale's " + scale80 + ", 90 returns " + q90 + " against " + scale90
+                + ", 100 a masterpiece at " + q100 + " thousandths of its budget");
         }
     }
 
@@ -415,11 +432,11 @@ internal static partial class Program
         var plat = new long[StudioCatalogue.GamePlatforms];
         StudioRules.Release(m, f, StudioDay, 800, f.Seed, 1000 + StudioCatalogue.TypicalRivalAppeal, plat, 0);
         long year1 = 0, year3 = 0;
-        for (int d = StudioDay; d < StudioDay + StudioCatalogue.MarketYear * 4; d++)
+        for (int d = StudioDay; d < StudioDay + StudioYear * 4; d++)
         {
             long units = StudioRules.SellDay(m, f, d, StudioRules.AppealOf(m.Score, d - m.Launched) + StudioCatalogue.TypicalRivalAppeal, plat, 1000, 1000).Units;
-            year1 += d < StudioDay + StudioCatalogue.MarketYear ? units : 0;
-            year3 += d >= StudioDay + StudioCatalogue.MarketYear * 3 ? units : 0;
+            year1 += d < StudioDay + StudioYear ? units : 0;
+            year3 += d >= StudioDay + StudioYear * 3 ? units : 0;
         }
         long reachable = plat[0] + plat[1];   // read now: the flop below fills the same array
         // a flop drops within weeks
@@ -444,8 +461,8 @@ internal static partial class Program
         // the audience grows: the same game made later sells more
         GameDev early = MadeGame(3, Genre.Rpg, Platform.Pc, ScaleCatalogue.BudgetTypical[1], 70, 0, 0), late = MadeGame(4, Genre.Rpg, Platform.Pc, ScaleCatalogue.BudgetTypical[1], 70, 0, 0);
         early.Reach = late.Reach = 150;
-        long lifeEarly = StudioRules.LifeUnits(early, f, 0, 3000, plat, out _), lifeLate = StudioRules.LifeUnits(late, f, StudioCatalogue.MarketYear * 10, 3000, plat, out _);
-        Check(lifeLate > lifeEarly * 13 / 10, "studio: the same game ten years on finds a larger audience (" + lifeEarly.ToString("N0") + " to " + lifeLate.ToString("N0") + "): no cap, the audience grows");
+        long lifeEarly = StudioRules.LifeUnits(early, f, 0, 3000, plat, out _), lifeLate = StudioRules.LifeUnits(late, f, StudioYear * 10, 3000, plat, out _);
+        Check(lifeLate > lifeEarly * 11 / 10, "studio: the same game ten years on finds a larger audience (" + lifeEarly.ToString("N0") + " to " + lifeLate.ToString("N0") + "): no cap, the audience grows");
         // one market a genre: strong rivals take sales, an empty genre gives more
         long crowded = StudioRules.LifeUnits(early, f, 0, 1000 + 8000, plat, out _), alone = StudioRules.LifeUnits(early, f, 0, 1000, plat, out _);
         Check(alone > lifeEarly && crowded < lifeEarly, "studio: one market a genre: alone it sells " + alone.ToString("N0") + ", among typical rivals " + lifeEarly.ToString("N0") + ", among strong ones "

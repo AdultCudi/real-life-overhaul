@@ -276,10 +276,14 @@ internal static partial class Program
         {
             least[i] = int.MaxValue;
         }
+        var living = new LivingRun { YearDays = s.YearDays, Demand = true };
+        LivingStart(living, sim, s);
         var clock = Stopwatch.StartNew();
         for (int n = 0; n < days; n++)
         {
+            int month = s.MonthNumber;
             DemandDay(sim, s, m, job, s.Day + 1);
+            LivingDay(living, sim, s, m, month, s.Day);
             _demandYears[n] = (int[])m.Factors.Clone();
             if (m.AnchorDay >= 0)
             {
@@ -319,6 +323,7 @@ internal static partial class Program
                          && m.Ask[d * 3] + m.Ask[d * 3 + 1] + m.Ask[d * 3 + 2] >= 997 && m.Ask[d * 3] + m.Ask[d * 3 + 1] + m.Ask[d * 3 + 2] <= 1000;
         }
         Check(districts, "population demand: after ten years every district's crime and leans are within bounds, and its borrowers' bands sum to the whole");
+        LivingShort(living);   // the living years on these same ten years: the bands, the documented city, the money on the living city, the one clock (LivingYearsChecks.cs)
     }
 
     // ---------------------------------------------------------------- the save's line

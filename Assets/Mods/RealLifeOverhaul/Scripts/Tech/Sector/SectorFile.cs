@@ -121,6 +121,7 @@ namespace RealLifeOverhaul.Tech
         // worked out each day, never saved
         public readonly SectorMarketDay[] Markets = NewMarkets();
         public long Hosting, Training;        // the compute the rivals' software customers and labs take a day: the cloud's market beyond the firms
+        public int YearDays = CalendarRules.YearDefault;   // the save's year in days, set from the calendar each day: the markets' years are the save's (the one clock)
 
         private static SectorMarketDay[] NewMarkets()
         {

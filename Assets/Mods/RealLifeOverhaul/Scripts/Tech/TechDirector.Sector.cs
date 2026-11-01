@@ -45,6 +45,7 @@ namespace RealLifeOverhaul.Tech
                 file = new SectorFile { Seed = new System.Random().Next(1, int.MaxValue), FirstDay = save.Day };
             }
             _sector = file;
+            _sector.YearDays = GameCalendar.DaysPerYear;
             _sectorOn = true;
             SharedCity.Register(new SharedCityPart
             {
@@ -112,6 +113,7 @@ namespace RealLifeOverhaul.Tech
         private void SectorDayBegin(int day, int cycle)
         {
             bool following = SharedCity.Follows(SectorShare.Part);
+            _sector.YearDays = GameCalendar.DaysPerYear;   // the markets grow by the save's years (the one clock); a guest's calendar is the session's
             if (!following)
             {
                 SectorBridges.Read(_sector);

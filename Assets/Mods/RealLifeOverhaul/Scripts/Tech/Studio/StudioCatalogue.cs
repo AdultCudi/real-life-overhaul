@@ -46,7 +46,10 @@ namespace RealLifeOverhaul.Tech
     /// </summary>
     public static class StudioCatalogue
     {
-        public const int MarketYear = 365;          // days of the games market's year: installed bases grow and expectations rise by it, whatever the calendar's length
+        // The games market's years are the save's (CalendarRules.MoneyYearDays's note on the one clock): installed bases grow, the critics'
+        // bar rises and the year's award is given by them, as the studio's people's careers count them (TalentCatalogue.Scaled); a game's
+        // own life (its window, its tail, the days it is looked after) is money, by the game day.
+        public const int PostLaunchDays = 730;      // days after its launch a game on sale is still looked after at the desk (patches, the fans' asks): two years of its sales by the game day
 
         // ---------------------------------------------------------------- genres
 
@@ -103,7 +106,11 @@ namespace RealLifeOverhaul.Tech
 
         public const int GamePlatforms = 3;         // a game is sold on PC, consoles and phones; Platform.Direct is not a games store
         public static readonly long[] InstalledBase = { 1000000000L, 650000000L, 2600000000L };   // people who play on each, in the city and the world, on the first day
-        public static readonly int[] BaseGrowth = { 30, 40, 50 };   // thousandths more each market year
+        public static readonly int[] BaseGrowth = { 30, 40, 50 };   // thousandths more each of the save's years at first...
+        // ...towards these thousandths of the first day's at the most (ScaleRules.Grown): the world's players fill out to some 1.3 billion on
+        // PCs, 900 million on consoles and 3.9 billion on phones (some 4.5 billion players in all, from about 3.4 billion now), so a long game
+        // in a short year keeps the studio's markets in proportion; ten of the save's years bring a fifth to a third more players
+        public static readonly int[] BaseCeiling = { 1300, 1400, 1500 };
 
         /// <summary>Of each platform's players, thousandths who like each genre, by platform then Genre.</summary>
         public static readonly int[][] GenreShare =
@@ -209,7 +216,7 @@ namespace RealLifeOverhaul.Tech
         // ---------------------------------------------------------------- reviews
 
         public const int ReviewBase = 50;           // a game of the bar's quality reviews at this
-        public const int ReviewPerQuality = 1200;   // thousandths of a review point for each point of quality over or under the bar: a team two spreads above the bar reviews near 90
+        public const int ReviewPerQuality = 1200;   // thousandths of a review point for each point of quality under the bar (over it the score shares out the room left: StudioRules.CriticsScore)
         public const int DrmReview = 3;             // points DRM costs a game's reviews
         public const int FitReviewStep = 25;        // a point of review for each this many thousandths of the setting's fit over or under a good fit
         public const int ReputationReviewStep = 100;   // a point for each this much of the studio's reputation over or under 500
@@ -227,9 +234,9 @@ namespace RealLifeOverhaul.Tech
         public const int WindowWeights = 465;       // the window's days weighed 30 down to 1, summed: front loaded
         public const int SeasonHoliday = 1150, SeasonSummer = 920;   // thousandths of the day's buyers at the year's end and in summer
         public const int HolidayFrom = 830, SummerFrom = 450, SummerTo = 600;   // thousandths of the calendar's year
-        public const int WordOfMouthFrom = 70;      // a score above this widens a game's reach by word of mouth...
-        public const int WordOfMouthPerPoint = 10;  // ...thousandths of its reach a month for each point above it...
-        public const int WordOfMouthMost = 250;     // ...up to a quarter more (the score's tail is the rest of a great game's long life)
+        // A great game's word of mouth is the money scale's tail (ScaleCatalogue.Tail: a whole life of up to five times its launch
+        // window): a reach that also widened by up to a quarter for a score past 70 counted it twice, and with the critics' stretch and
+        // the genre's share made a game of 80 earn 1.75 times the scale's return for its quality and one of 90 2.7 times.
         public static readonly int[] Piracy = { 200, 50, 120 };   // thousandths of would-be buyers who pirate a game sold for a price, by platform
         public const int DrmEarly = 300, DrmLater = 800, DrmDays = 90;   // what DRM leaves of piracy in its first days and after it is cracked
         public const int BugRefundsMost = 60;       // thousandths more refunds for a game left with its reported bugs

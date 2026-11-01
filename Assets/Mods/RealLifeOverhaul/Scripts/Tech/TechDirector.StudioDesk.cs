@@ -69,7 +69,7 @@ namespace RealLifeOverhaul.Tech
             return null;
         }
 
-        // The studio's game on sale that most needs looking after: the most bugs reported, else the newest out within a market year.
+        // The studio's game on sale that most needs looking after: the most bugs reported, else the newest out within its days of being looked after.
         private GameDev LiveGame(string place)
         {
             GameDev best = null;
@@ -77,7 +77,7 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; i < _studio.Games.Count; i++)
             {
                 GameDev g = _studio.Games[i];
-                if (g.Place != place || !g.Live || g.Building || day - g.Launched > StudioCatalogue.MarketYear * 2
+                if (g.Place != place || !g.Live || g.Building || day - g.Launched > StudioCatalogue.PostLaunchDays
                     || g.Reported == 0 && (g.Project != StudioRules.ProjectNone || g.Asks == 0) && !(g.Drm && !g.DrmRemoved))
                 {
                     continue;   // nothing to look after: no bugs reported, no request open while the team is free, no DRM to take off
@@ -322,7 +322,7 @@ namespace RealLifeOverhaul.Tech
         {
             Product p = g != null ? _firmsFile.ProductOf(g.Id) : null;
             FirmPlace firm = g != null ? FirmOf(g.Place) : null;
-            if (p == null || firm == null || StudioRules.BeatWhy(g, beat, day, StudioRules.YearPart(day, GameCalendar.DaysPerYear)) != null)
+            if (p == null || firm == null || StudioRules.BeatWhy(g, beat, day, StudioRules.YearPart(day, GameCalendar.DaysPerYear), GameCalendar.DaysPerYear) != null)
             {
                 return;
             }

@@ -107,10 +107,11 @@ internal static partial class Program
         Check(taken.Figure == 2 && offer.Stage == (int)WorkStage.Active && offer.Points > 300 && taken.Income == offer.Value * FirmsCatalogue.UpfrontShare / 1000,
             "sector desk: a pitch for an offer takes it; juniors take longer");
         // scope creep and revisions
-        var project = new Contract { Id = 902, Kind = (int)WorkKind.Integration, Stage = (int)WorkStage.Active, Points = 400, Done = 200, Value = 4400000, Satisfaction = 800 };
+        var project = new Contract { Id = 902, Kind = (int)WorkKind.Integration, Stage = (int)WorkStage.Active, Points = 400, Done = 200, Value = 4400000, Satisfaction = 800, Start = 10, Due = 55 };
         Check(SectorRules.Creeps(project) && SectorRules.PickScope(project) == SectorRules.ScopeCharge, "sector desk: a project half done invites scope creep; a manager charges a happy client");
         SectorRules.Scope(project, firm, SectorRules.ScopeCharge);
-        Check(project.Points == 480 && project.Value > 4400000 && project.Satisfaction == 750 && !SectorRules.Creeps(project), "sector desk: a change order adds the work and is paid for it, once");
+        Check(project.Points == 480 && project.Value > 4400000 && project.Due == 64 && project.Satisfaction == 750 && !SectorRules.Creeps(project),
+            "sector desk: a change order adds the work, is paid for it and agrees a date a fifth later for it, once");
         var design = new Contract { Id = 903, Kind = (int)WorkKind.Branding, Stage = (int)WorkStage.Active, Points = 100, Done = 60, Value = 1100000, Satisfaction = 700 };
         Check(SectorRules.WantsChanges(design) && SectorRules.PickRevision(design) == SectorRules.RevisionFree, "sector desk: a design past half wants changes; a manager gives an unhappy client one free round");
         SectorRules.Revision(design, firm, SectorRules.RevisionFree);

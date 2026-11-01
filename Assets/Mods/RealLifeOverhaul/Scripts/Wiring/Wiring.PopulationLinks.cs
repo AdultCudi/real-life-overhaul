@@ -57,7 +57,7 @@ namespace RealLifeOverhaul
 
             // The game studio's audience of a genre on a platform: the residents who like it there times the world's people over the residents at the
             // population's start (GameRules.Audience), so the studio's first day is the documented world's; -1 (the documented world) with no population.
-            private static long Audience(int genre, int platform, int day, out long residents)
+            private static long Audience(int genre, int platform, int day, int year, out long residents)
             {
                 residents = 0;
                 try
@@ -67,7 +67,7 @@ namespace RealLifeOverhaul
                         return -1;
                     }
                     residents = now;
-                    return GameRules.Audience(now, start, StudioBridges.World(genre, platform, day));
+                    return GameRules.Audience(now, start, StudioBridges.World(genre, platform, day, year));
                 }
                 catch (Exception e)
                 {

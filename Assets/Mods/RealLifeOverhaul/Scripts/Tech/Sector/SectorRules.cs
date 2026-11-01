@@ -129,19 +129,13 @@ namespace RealLifeOverhaul.Tech
 
         /// <summary>
         /// How many buyers beyond the city each of the city's stands for after so many days, thousandths: the world factor,
-        /// grown by its rate each market year (compounded by whole years, straight within one). Whole numbers, the same everywhere.
+        /// grown by its rate each of the save's years of <paramref name="year"/> days and filling towards its ceiling
+        /// (ScaleRules.Grown). Whole numbers, the same everywhere.
         /// </summary>
-        public static long WorldAt(int who, int days)
+        public static long WorldAt(int who, int days, int year)
         {
             int w = Clamp(who, 0, (int)SectorBuyers.Count - 1);
-            long world = SectorCatalogue.World[w];
-            int growth = SectorCatalogue.WorldGrowth[w], d = Math.Max(0, days);
-            int years = Math.Min(200, d / SectorCatalogue.MarketYear);
-            for (int y = 0; y < years; y++)
-            {
-                world = world * (1000 + growth) / 1000;
-            }
-            return world + world * growth / 1000 * (d % SectorCatalogue.MarketYear) / SectorCatalogue.MarketYear;
+            return ScaleRules.Grown(SectorCatalogue.World[w], SectorCatalogue.WorldGrowth[w], SectorCatalogue.WorldCeiling[w], days, year);
         }
 
         /// <summary>
@@ -159,15 +153,15 @@ namespace RealLifeOverhaul.Tech
         }
 
         /// <summary>
-        /// The buyers of a market after so many days of the sector: the city's people, or its small and mid-sized businesses,
-        /// or its large organisations, times the world they stand for, times what the economy does to them. No cap: the city
-        /// and the world are the market.
+        /// The buyers of a market after so many days of the sector in a calendar of <paramref name="year"/> days a year: the
+        /// city's people, or its small and mid-sized businesses, or its large organisations, times the world they stand for,
+        /// times what the economy does to them. No cap: the city and the world are the market.
         /// </summary>
-        public static long Buyers(int market, SectorCityFigures city, int days, int cycle)
+        public static long Buyers(int market, SectorCityFigures city, int days, int cycle, int year)
         {
             int who = BuyersOf(market);
             long here = who == (int)SectorBuyers.People ? city.People : who == (int)SectorBuyers.Businesses ? (long)city.Small + city.Mid : city.Large;
-            return Math.Max(0L, here * WorldAt(who, days) / 1000 * SpendOf(market, city, cycle) / 1000);
+            return Math.Max(0L, here * WorldAt(who, days, year) / 1000 * SpendOf(market, city, cycle) / 1000);
         }
 
         /// <summary>A market's anchor for an older save's customers today: what it was set at, fading straight to 1000 over <see cref="AnchorDays"/>.</summary>
@@ -274,7 +268,7 @@ namespace RealLifeOverhaul.Tech
                 md.Clear();
                 md.Who = BuyersOf(m);
                 md.Spend = SpendOf(m, f.City, cycle);
-                md.Buyers = Buyers(m, f.City, days, cycle) * AnchorNow(f.Anchor[m], f.AnchorDay, day) / 1000;
+                md.Buyers = Buyers(m, f.City, days, cycle, f.YearDays) * AnchorNow(f.Anchor[m], f.AnchorDay, day) / 1000;
             }
             for (int i = 0; i < f.Rivals.Count; i++)
             {

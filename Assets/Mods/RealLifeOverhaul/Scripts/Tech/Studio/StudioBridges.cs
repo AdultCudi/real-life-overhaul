@@ -15,8 +15,8 @@ namespace RealLifeOverhaul.Tech
     /// The population (<see cref="Population"/>): for a genre and a platform on a day, the people who own the platform and
     /// like the genre, the city's residents (by district and class in its own view) times the world factor that stands for
     /// the world beyond the city, and how many of them are residents. Until it is wired, <see cref="World"/> gives the
-    /// documented world: each platform's installed base growing by the market's year, times the share of its players who like
-    /// the genre, sized so that ScaleRules' bands hold for a typical game (StudioCatalogue.ReferenceMarket). The population
+    /// documented world: each platform's installed base growing by the save's years towards its ceiling, times the share of its
+    /// players who like the genre, sized so that ScaleRules' bands hold for a typical game (StudioCatalogue.ReferenceMarket). The population
     /// must keep that scale: its residents with a taste for a genre and a platform, times its world factor, should sum to the
     /// same order as <see cref="World"/> on the first day and grow with the city and the world after it.
     ///
@@ -26,8 +26,8 @@ namespace RealLifeOverhaul.Tech
     /// </summary>
     public static class StudioBridges
     {
-        /// <summary>The people who own a platform and like a genre on a day (residents times the world factor), and of them the city's residents.</summary>
-        public delegate long AudienceAsk(int genre, int platform, int day, out long residents);
+        /// <summary>The people who own a platform and like a genre on a day of a calendar of so many days a year (residents times the world factor), and of them the city's residents.</summary>
+        public delegate long AudienceAsk(int genre, int platform, int day, int year, out long residents);
 
         /// <summary>The population's audience. Default: none, so <see cref="World"/>.</summary>
         public static AudienceAsk Population;
@@ -45,15 +45,15 @@ namespace RealLifeOverhaul.Tech
 
         public static bool CanCrowdfund => Crowdfund != null;
 
-        /// <summary>The audience of a genre on a platform on a day: the population's, or the world's with none, or if it faults.</summary>
-        public static long Audience(int genre, int platform, int day, out long residents)
+        /// <summary>The audience of a genre on a platform on a day of a calendar of <paramref name="year"/> days a year: the population's, or the world's with none, or if it faults.</summary>
+        public static long Audience(int genre, int platform, int day, int year, out long residents)
         {
             residents = 0;
             try
             {
                 if (Population != null)
                 {
-                    long people = Population(genre, platform, day, out residents);
+                    long people = Population(genre, platform, day, year, out residents);
                     if (people >= 0)
                     {
                         residents = Math.Max(0L, Math.Min(residents, people));
@@ -66,28 +66,21 @@ namespace RealLifeOverhaul.Tech
                 // the population's fault: the documented world stands in, as with none
             }
             residents = 0;
-            return World(genre, platform, day);
+            return World(genre, platform, day, year);
         }
 
         /// <summary>
-        /// The documented world: the platform's installed base grown by its rate each market year (compounded by whole years,
-        /// straight within one), times the thousandths of its players who like the genre. Whole numbers, the same everywhere.
+        /// The documented world: the platform's installed base grown by its rate each of the save's years of <paramref name="year"/>
+        /// days, filling towards its ceiling (ScaleRules.Grown), times the thousandths of its players who like the genre. Whole
+        /// numbers, the same everywhere.
         /// </summary>
-        public static long World(int genre, int platform, int day)
+        public static long World(int genre, int platform, int day, int year)
         {
             if (genre < 0 || genre >= (int)Genre.Count || platform < 0 || platform >= StudioCatalogue.GamePlatforms)
             {
                 return 0;
             }
-            long people = StudioCatalogue.InstalledBase[platform];
-            int growth = StudioCatalogue.BaseGrowth[platform];
-            int d = Math.Max(0, day);
-            int years = Math.Min(200, d / StudioCatalogue.MarketYear);
-            for (int y = 0; y < years; y++)
-            {
-                people = people * (1000 + growth) / 1000;
-            }
-            people += people * growth / 1000 * (d % StudioCatalogue.MarketYear) / StudioCatalogue.MarketYear;
+            long people = ScaleRules.Grown(StudioCatalogue.InstalledBase[platform], StudioCatalogue.BaseGrowth[platform], StudioCatalogue.BaseCeiling[platform], day, year);
             return people * StudioCatalogue.GenreShare[platform][genre] / 1000;
         }
 
