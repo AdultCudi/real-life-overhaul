@@ -5,44 +5,47 @@ using RealLifeOverhaul.Flare;
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// A view of Flare in the city (FlareCityViews: an account, a business, its funnel, the offers, the trends) as the
-    /// kit's dashboard: its figures on top, its list as a table of whole rows, its details at the side, its one primary
-    /// action where tabs would be when it has no tabs. Residents' names come in from Flare's own name maker. Game-free.
-    /// Cost: a model a view, when a screen opens or moves.
+    /// A view of Flare in the city (FlareCityViews: an account, a business, its funnel, the offers, the trends) as a feed,
+    /// since Flare is a social app: its entries down a column with their faces (a post's business, a reviewer, a trend),
+    /// the account's figures and facts at the side, and the tabs heading it. A business's page puts its name after the
+    /// app's in the masthead and its own figures at the side. Only entries a press opens are targets. Residents' names come
+    /// in from Flare's own name maker. Game-free. Cost: a model a view, when a screen opens or moves.
     /// </summary>
     public static class FlareCityPages
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-        public static UiDashboardModel Model(FlareCityView v, UiWords t, Func<long, string> money, Func<int, bool, string> nameOf, string[] tabs, int tab)
+        /// <summary>
+        /// The feed of a view. <paramref name="account"/> is the account's own view, whose followers stand at the side of
+        /// the tabs that have no figures of their own (the trends, the offers), so no tab shows an empty side.
+        /// </summary>
+        public static UiDashboardModel Model(FlareCityView v, UiWords t, Func<long, string> money, Func<int, bool, string> nameOf, string[] tabs, int tab,
+            FlareCityView account = null, string here = null)
         {
+            bool tabbed = tabs != null && tabs.Length > 0;
             var m = new UiDashboardModel
             {
-                Title = v.TitleKey ? t(v.Title, v.Title) : v.Title ?? string.Empty,
-                Subtitle = string.IsNullOrEmpty(v.Subtitle) ? null : t(v.Subtitle, v.Subtitle),
+                Shape = UiPageShape.Feed,
+                Title = tabbed ? null : v.TitleKey ? t(v.Title, v.Title) : v.Title ?? string.Empty,   // a tab says where its page is: no title repeats it
+                Subtitle = tabbed || string.IsNullOrEmpty(v.Subtitle) ? null : t(v.Subtitle, v.Subtitle),
                 SideTitle = t("reallife_ui_page_details", "Details"),
                 Tabs = tabs ?? new string[0],
                 Tab = tab,
+                EntriesTitle = string.IsNullOrEmpty(v.RowsHeader) ? null : t(v.RowsHeader, v.RowsHeader),
             };
-            int count = Math.Min(UiDashboard.MostFigures, v.Hero.Count);
+            FlareCityView figures = v.Hero.Count == 0 && account != null ? account : v;
+            int count = Math.Min(UiDashboard.MostFigures, figures.Hero.Count);
             m.Figures = new UiFigureModel[count];
             for (int i = 0; i < count; i++)
             {
-                FlareViewFigure f = v.Hero[i];
-                m.Figures[i] = new UiFigureModel { Label = t(f.Label, f.Label), Value = Write(f.Value, f.Format, f.Text, t, money), Change = null };
+                FlareViewFigure f = figures.Hero[i];
+                m.Figures[i] = new UiFigureModel { Label = t(f.Label, f.Label), Value = Write(f.Value, f.Format, f.Text, t, money) };
             }
             m.FigureCount = count;
-            m.Table = new UiTableModel
-            {
-                Columns = new[]
-                {
-                    new UiColumn { Title = string.IsNullOrEmpty(v.RowsHeader) ? string.Empty : t(v.RowsHeader, v.RowsHeader) },
-                    new UiColumn { Title = string.Empty },
-                    new UiColumn { Title = string.Empty, Width = UiTokens.S16 * 3f, Right = true },
-                },
-                EmptyTitle = t(v.Empty ?? "reallife_ui_page_empty", "Nothing here yet"),
-            };
-            m.Table.Rows = new string[v.Rows.Count][];
+            m.Table = new UiTableModel { EmptyTitle = t(v.Empty ?? "reallife_ui_page_empty", "Nothing here yet") };
+            m.Entries = new UiRowModel[v.Rows.Count];
+            m.EntryLeads = new bool[v.Rows.Count];
+            bool leads = false;
             for (int i = 0; i < v.Rows.Count; i++)
             {
                 FlareViewRow r = v.Rows[i];
@@ -51,11 +54,32 @@ namespace RealLifeOverhaul.Ui
                 {
                     title = title.Replace("{what}", t(r.What, r.What)).Replace("{where}", r.Where != null ? t(r.Where, r.Where) : string.Empty);
                 }
+                title = UiPlaces.IsKey(title) ? UiPlaces.Words(title) : title;
                 string middle = !string.IsNullOrEmpty(r.Subtitle) ? t(r.Subtitle, r.Subtitle) : r.Second != 0 ? money(r.Second) : string.Empty;
-                m.Table.Rows[i] = new[] { title, middle, Write(r.Value, r.Format, null, t, money) };
+                string time = Write(r.Value, r.Format, null, t, money);
+                // A post's and a trend's figures said in words: a bare "+38" beside a name told the player nothing (the critic, 1 Nov).
+                if (v.Kind == FlareViewKind.Account)
+                {
+                    // What the post did in words (one that put people off says so, never "-12 came"), and when it went up.
+                    middle = (r.Value < 0
+                            ? t("reallife_ui_flare_did_bad", "{what} · seen by {seen} · kept {kept} away · {lost} lost").Replace("{kept}", (-r.Value).ToString("#,0", Inv))
+                                .Replace("{lost}", money(-r.Second))
+                            : t("reallife_ui_flare_did", "{what} · seen by {seen} · {came} came · {spent} spent").Replace("{came}", r.Value.ToString("#,0", Inv))
+                                .Replace("{spent}", money(r.Second)))
+                        .Replace("{what}", middle).Replace("{seen}", r.Seen.ToString("#,0", Inv));
+                    time = Ago(r.Day, v.Today, t);
+                }
+                else if (v.Kind == FlareViewKind.Trends)
+                {
+                    middle = t("reallife_ui_flare_trend_did", "{stage}: {moved} moved, {days} days left").Replace("{stage}", Capital(middle))
+                        .Replace("{moved}", r.Value.ToString("#,0", Inv)).Replace("{days}", r.Second.ToString("#,0", Inv));
+                    time = string.Empty;
+                }
+                m.Entries[i] = new UiRowModel { Name = title, Preview = middle, Time = time, Hue = UiColour.HueOf(title) };
+                m.EntryLeads[i] = !string.IsNullOrEmpty(r.Target);
+                leads |= m.EntryLeads[i];
             }
-            m.Table.RowCount = v.Rows.Count;
-            m.Table.Selected = v.Rows.Count > 0 ? 0 : -1;
+            m.EntryCount = m.Entries.Length;
             m.Side = new UiPairModel[v.Details.Count];
             for (int i = 0; i < v.Details.Count; i++)
             {
@@ -63,17 +87,19 @@ namespace RealLifeOverhaul.Ui
                 m.Side[i] = new UiPairModel { Key = t(f.Label, f.Label), Value = Write(f.Value, f.Format, f.Text, t, money) };
             }
             m.SideCount = m.Side.Length;
-            m.HasAction = !string.IsNullOrEmpty(v.Primary) && m.Tabs.Length == 0;
+            // Only an action that leads somewhere else stands on the page: an offer's accept and a business's ad are the
+            // phone's Flare, and a button that opens the page it stands on would do nothing.
+            m.HasAction = !string.IsNullOrEmpty(v.Primary) && !string.IsNullOrEmpty(v.PrimaryTarget) && v.PrimaryTarget != here && !tabbed;
             if (m.HasAction)
             {
                 m.Action = new UiActionModel { Label = t(v.Primary, v.Primary), Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiDashboard.ActionCommand };
             }
-            var prompts = new System.Collections.Generic.List<UiPrompt>(5)
+            var prompts = new System.Collections.Generic.List<UiPrompt>(5) { new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") } };
+            if (leads)
             {
-                new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
-                new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_select", "Select") },
-            };
-            if (m.Tabs.Length > 0)
+                prompts.Add(new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_select", "Select") });
+            }
+            if (tabbed)
             {
                 prompts.Add(new UiPrompt { Action = UiAction.TabPrev, Label = t("reallife_ui_prompt_page", "Page") });
             }
@@ -85,6 +111,20 @@ namespace RealLifeOverhaul.Ui
             m.Prompts = prompts.ToArray();
             m.PromptCount = m.Prompts.Length;
             return m;
+        }
+
+        private static string Capital(string words) => string.IsNullOrEmpty(words) ? string.Empty : char.ToUpper(words[0], CultureInfo.CurrentCulture) + words.Substring(1);
+
+        /// <summary>How long ago an entry went up, as a feed says it: today, yesterday or so many days; nothing when either day is unknown.</summary>
+        public static string Ago(int day, int today, UiWords t)
+        {
+            if (day < 0 || today < 0)
+            {
+                return string.Empty;
+            }
+            int days = Math.Max(0, today - day);
+            return days == 0 ? t("reallife_ui_when_today", "Today") : days == 1 ? t("reallife_ui_when_yesterday", "Yesterday")
+                : t("reallife_ui_when_days", "{days} days ago").Replace("{days}", days.ToString("#,0", Inv));
         }
 
         /// <summary>A figure in words: a count, money, a share as a signed per cent, a key's words, stars out of five, a signed count.</summary>

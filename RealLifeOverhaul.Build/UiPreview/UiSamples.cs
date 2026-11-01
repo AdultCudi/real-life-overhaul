@@ -24,10 +24,17 @@ internal static class UiSamples
     {
         return new System.Collections.Generic.List<Sample>
         {
-            new Sample { Name = "population", App = "Economy", Lay = (s, f, d, k) => UiDashboard.Lay(s, PopulationCity(t), f, d, k) },
-            new Sample { Name = "flare_city", App = "Flare", Lay = (s, f, d, k) => UiDashboard.Lay(s, FlareCity(t), f, d, k) },
-            new Sample { Name = "studio", App = "Tech", Lay = (s, f, d, k) => UiDashboard.Lay(s, StudioFirm(t), f, d, k), Walk = "LDDDDRDDLU" },
-            new Sample { Name = "tech_firm", App = "Tech", Lay = (s, f, d, k) => UiDashboard.Lay(s, TechFirm(t), f, d, k), Walk = "DDDDRDDLU" },
+            new Sample { Name = "population", App = "The city's people", Lay = (s, f, d, k) => UiDashboard.Lay(s, PopulationCity(t), f, d, k) },
+            new Sample { Name = "population_contributors", App = "The city's people", Lay = (s, f, d, k) => UiDashboard.Lay(s, PopulationContributors(t), f, d, k) },
+            new Sample { Name = "population_household", App = "The city's people", Lay = (s, f, d, k) => UiDashboard.Lay(s, PopulationHousehold(t), f, d, k), Walk = "RDDUL" },
+            new Sample { Name = "population_person", App = "The city's people", Lay = (s, f, d, k) => UiDashboard.Lay(s, PopulationPerson(t), f, d, k), Walk = "DU" },
+            new Sample { Name = "population_gone", App = "The city's people", Lay = (s, f, d, k) => UiDashboard.Lay(s, PopulationGone(t), f, d, k), Walk = "D" },
+            new Sample { Name = "flare_city", App = "Flare in the city", Lay = (s, f, d, k) => UiDashboard.Lay(s, FlareCity(t), f, d, k) },
+            new Sample { Name = "flare_trends", App = "Flare in the city", Lay = (s, f, d, k) => UiDashboard.Lay(s, FlareTrends(t), f, d, k), Walk = "RRL" },
+            new Sample { Name = "flare_business", App = "Flare in the city", Lay = (s, f, d, k) => UiDashboard.Lay(s, FlareBusiness(t), f, d, k), Walk = "DDU" },
+            new Sample { Name = "studio", App = "Your firm", Lay = (s, f, d, k) => UiDashboard.Lay(s, StudioFirm(t), f, d, k), Walk = "LDDDDRDDLU" },
+            new Sample { Name = "studio_empty", App = "Your firm", Lay = (s, f, d, k) => UiDashboard.Lay(s, StudioEmpty(t), f, d, k), Walk = "DLR" },
+            new Sample { Name = "tech_firm", App = "Your firm", Lay = (s, f, d, k) => UiDashboard.Lay(s, TechFirm(t), f, d, k), Walk = "DDDDRDDLU" },
             new Sample { Name = "session_panel", App = "Desk", Lay = (s, f, d, k) => UiSessionSteps.Lay(s, DeskPanel(t), f, d, k), Walk = "RDLUL" },
         };
     }
@@ -35,51 +42,262 @@ internal static class UiSamples
     /// <summary>Flare's account in the city as FlareCityPages makes it: the tabs, the followers' figures, the posts that carried, the details.</summary>
     public static UiDashboardModel FlareCity(UiWords t)
     {
+        // As FlareCityPages makes the account's tab: a feed of what the posts did, the followers at the side, the tabs heading it.
+        var m = FlareFeed(t, 0, "What your posts did", new[]
+        {
+            new[] { "Bloom Café", Did(t, "A post", "1,240", "38", "$412"), Ago(t, 0) },
+            new[] { "Bloom Café", Did(t, "An ad", "6,800", "112", "$1,630"), Ago(t, 1) },
+            new[] { "Copperline Books", Did(t, "A post", "410", "9", "$96"), Ago(t, 1) },
+            new[] { "Night Owl Bar", Did(t, "A post", "880", "21", "$240"), Ago(t, 3) },
+            new[] { "Pine Street Florist", Did(t, "A post", "190", "4", "$52"), Ago(t, 5) },
+        }, "Nothing measured yet. Post about one of your businesses and look again tomorrow.");
+        m.EntryLeads = new[] { true, true, true, true, true };
+        return m;
+    }
+
+    // What a post did, as FlareCityPages writes it.
+    private static string Did(UiWords t, string what, string seen, string came, string spent) =>
+        t("reallife_ui_flare_did", "{what} · seen by {seen} · {came} came · {spent} spent").Replace("{what}", what).Replace("{seen}", seen).Replace("{came}", came)
+            .Replace("{spent}", spent);
+
+    // How long ago a post went up, as FlareCityPages.Ago writes it (the preview has the kit alone, not the pages).
+    private static string Ago(UiWords t, int days) => days == 0 ? t("reallife_ui_when_today", "Today") : days == 1 ? t("reallife_ui_when_yesterday", "Yesterday")
+        : t("reallife_ui_when_days", "{days} days ago").Replace("{days}", days.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+    // How long a game or a product has been out, as the firms' pages write it.
+    private static string Out(UiWords t, int days) => t("reallife_studio_page_age_days", "Out {days} days").Replace("{days}", days.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+    /// <summary>Flare's trends tab with nothing trending yet: its long empty words wrapped in the feed, the account's followers at the side.</summary>
+    public static UiDashboardModel FlareTrends(UiWords t)
+    {
+        return FlareFeed(t, 1, null, new string[0][], "Nothing is trending among the residents yet. A viral post can start a trend, and so can the city's own talk.");
+    }
+
+    /// <summary>A business's page on Flare as the residents see it: its name after the app's in the masthead, its reviews down the feed, its figures at the side.</summary>
+    public static UiDashboardModel FlareBusiness(UiWords t)
+    {
         var m = new UiDashboardModel
         {
-            Title = "Bloom Cafe on Flare",
-            Subtitle = "Followers in the city, by the residents who follow",
-            Tabs = new[] { t("reallife_ui_flare_tab_account", "Account"), t("reallife_ui_flare_tab_trends", "Trends"), t("reallife_ui_flare_tab_offers", "Offers") },
+            Shape = UiPageShape.Feed,
+            Title = "Bloom Café",
+            Subtitle = "Your business, as the residents see it",
             SideTitle = t("reallife_ui_page_details", "Details"),
+            EntriesTitle = "Reviews by its customers",
             Figures = new[]
             {
                 new UiFigureModel { Label = "Followers", Value = "2,418" },
-                new UiFigureModel { Label = "This week", Value = "+164" },
-                new UiFigureModel { Label = "Reach", Value = "11,900" },
                 new UiFigureModel { Label = "Rating", Value = "4.3 / 5" },
+                new UiFigureModel { Label = "Pull", Value = "+6.2%" },
             },
             Side = new[]
             {
-                new UiPairModel { Key = "Visits from posts", Value = "312" },
-                new UiPairModel { Key = "Takings from posts", Value = "$4,860" },
-                new UiPairModel { Key = "Best district", Value = "Midtown" },
+                new UiPairModel { Key = "Heard of it", Value = "3,900" },
+                new UiPairModel { Key = "Came from Flare", Value = "+41" },
+                new UiPairModel { Key = "Spent from Flare", Value = "$612" },
+            },
+            Entries = new[]
+            {
+                new UiRowModel { Name = "Priya Raman", Preview = "Five stars. The new grinder shows.", Time = "5.0", Hue = 200f },
+                new UiRowModel { Name = "Marcus Hale", Preview = "Busy at nine, worth the wait.", Time = "4.0", Hue = 40f },
+                new UiRowModel { Name = "Elena Sokolova", Preview = "Oat milk is free now, nice touch.", Time = "4.5", Hue = 300f },
+            },
+            Table = new UiTableModel { EmptyTitle = "No reviews yet." },
+        };
+        m.FigureCount = m.Figures.Length;
+        m.SideCount = m.Side.Length;
+        m.EntryCount = m.Entries.Length;
+        m.EntryLeads = new[] { false, false, false };
+        m.Prompts = new[]
+        {
+            new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
+            new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
+        };
+        m.PromptCount = m.Prompts.Length;
+        return m;
+    }
+
+    // A Flare tab as a feed: the tabs heading it, its entries with their faces, the account's two figures at the side.
+    private static UiDashboardModel FlareFeed(UiWords t, int tab, string title, string[][] rows, string empty)
+    {
+        var m = new UiDashboardModel
+        {
+            Shape = UiPageShape.Feed,
+            Tabs = new[] { t("reallife_ui_flare_tab_account", "Account"), t("reallife_ui_flare_tab_trends", "Trends"), t("reallife_ui_flare_tab_offers", "Offers") },
+            Tab = tab,
+            SideTitle = t("reallife_ui_page_details", "Details"),
+            EntriesTitle = title,
+            Figures = new[]
+            {
+                new UiFigureModel { Label = "Followers in the city", Value = "34" },
+                new UiFigureModel { Label = "Followers beyond the city", Value = "4" },
+            },
+            Table = new UiTableModel { EmptyTitle = empty },
+        };
+        m.FigureCount = m.Figures.Length;
+        m.Entries = new UiRowModel[rows.Length];
+        for (int i = 0; i < rows.Length; i++)
+        {
+            m.Entries[i] = new UiRowModel { Name = rows[i][0], Preview = rows[i][1], Time = rows[i][2], Hue = UiColour.HueOf(rows[i][0]) };
+        }
+        m.EntryCount = rows.Length;
+        var prompts = new System.Collections.Generic.List<UiPrompt> { new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") } };
+        if (rows.Length > 0)
+        {
+            prompts.Add(new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_select", "Select") });
+        }
+        prompts.Add(new UiPrompt { Action = UiAction.TabPrev, Label = t("reallife_ui_prompt_page", "Page") });
+        prompts.Add(new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") });
+        m.Prompts = prompts.ToArray();
+        m.PromptCount = m.Prompts.Length;
+        return m;
+    }
+
+    /// <summary>Who contributes as PopulationPages makes it: places by their addresses and names, never a record's key, the player's three shares in the strip.</summary>
+    public static UiDashboardModel PopulationContributors(UiWords t)
+    {
+        var m = new UiDashboardModel
+        {
+            Title = "Who contributes",
+            SideTitle = t("reallife_ui_page_details", "Details"),
+            Figures = new[]
+            {
+                new UiFigureModel { Label = "People you employ", Value = "0%" },
+                new UiFigureModel { Label = "Spending at your businesses", Value = "0%" },
+                new UiFigureModel { Label = "Taxes from your businesses", Value = "0%" },
+            },
+            Side = new[]
+            {
+                new UiPairModel { Key = "District that spends most", Value = "Midtown" },
+                new UiPairModel { Key = "Spent", Value = "$1,158,079" },
+            },
+            HasAction = true,
+            Action = new UiActionModel { Label = "The district that spends most", Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiDashboard.ActionCommand },
+            Table = new UiTableModel
+            {
+                Columns = new[]
+                {
+                    new UiColumn { Title = "Employers paying most" }, new UiColumn { Title = string.Empty },
+                    new UiColumn { Title = string.Empty, Width = UiTokens.S16 * 2f + UiTokens.S8, Right = true },
+                },
+                Rows = new[]
+                {
+                    new[] { "70 Fifth Avenue", "The public sector", "$1,112,059" },
+                    new[] { "17 Seventh Street", "The firms in an office building", "$895,271" },
+                    new[] { "12 Broadway", "The firms in an office building", "$511,793" },
+                    new[] { "Bloom Café", "A business", "$433,549" },
+                    new[] { "6 Second Avenue", "A city service", "$410,923" },
+                    new[] { "13 Third Avenue", "The firms in an office building", "$379,776" },
+                    new[] { "1 First Avenue", "The firms in an office building", "$350,644" },
+                    new[] { "37 Fourth Avenue", "The firms in an office building", "$323,109" },
+                },
+                RowCount = 8, Selected = -1, EmptyTitle = "Nobody pays wages in the city yet.",
             },
         };
         m.FigureCount = m.Figures.Length;
         m.SideCount = m.Side.Length;
-        m.Table = new UiTableModel
+        return Prompted(m, t, true);
+    }
+
+    /// <summary>A household as PopulationPages makes it: a ledger of its last month and its home beside its people, named by its family.</summary>
+    public static UiDashboardModel PopulationHousehold(UiWords t)
+    {
+        var m = new UiDashboardModel
         {
-            Columns = new[] { new UiColumn { Title = "Posts that carried" }, new UiColumn { Title = string.Empty }, new UiColumn { Title = string.Empty, Width = UiTokens.S16 * 3f, Right = true } },
-            Rows = new[]
+            Shape = UiPageShape.Ledger,
+            Title = t("reallife_ui_pop_household", "The {surname} household").Replace("{surname}", "Stanley"),
+            Subtitle = "Middle class",
+            Ledger = new[]
             {
-                new[] { "Morning espresso, half price", "Monday", "1,240" },
-                new[] { "The new grinder is in", "Tuesday", "860" },
-                new[] { "Live music on Friday", "Wednesday", "790" },
-                new[] { "Oat milk now free", "Thursday", "530" },
-                new[] { "Closed for the parade", "Friday", "210" },
-                new[] { "Our first birthday", "Saturday", "1,870" },
+                new UiLedgerSection
+                {
+                    Title = t("reallife_ui_pop_last_month", "Last month"),
+                    Lines = new[]
+                    {
+                        new UiPairModel { Key = "Earned", Value = "$3,410" }, new UiPairModel { Key = "Paid in tax", Value = "$512" },
+                        new UiPairModel { Key = "Spent", Value = "$2,188" }, new UiPairModel { Key = "Saved", Value = "$710" },
+                    }
+                },
+                new UiLedgerSection
+                {
+                    Title = t("reallife_ui_pop_home", "Home and money"),
+                    Lines = new[]
+                    {
+                        new UiPairModel { Key = "Rent paid", Value = "$1,140" }, new UiPairModel { Key = "Rent goes to", Value = t("reallife_pop_landlord_city", "A city landlord") },
+                        new UiPairModel { Key = "Savings", Value = "$6,920" }, new UiPairModel { Key = "Debt", Value = "$0" },
+                    }
+                },
             },
-            RowCount = 6,
-            Selected = 0,
-            EmptyTitle = t("reallife_ui_page_empty", "Nothing here yet"),
+            EntriesTitle = "Its people",
+            Entries = new[]
+            {
+                new UiRowModel { Name = "John Stanley", Preview = "At work", Time = t("reallife_ui_pop_age", "Age {age}").Replace("{age}", "41"), Hue = 25f },
+                new UiRowModel { Name = "Rosa Stanley", Preview = "At home", Time = t("reallife_ui_pop_age", "Age {age}").Replace("{age}", "39"), Hue = 160f },
+                new UiRowModel { Name = "Leo Stanley", Preview = "At school", Time = t("reallife_ui_pop_age", "Age {age}").Replace("{age}", "12"), Hue = 260f },
+            },
+            HasAction = true,
+            Action = new UiActionModel { Label = "Where they spent most", Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiDashboard.ActionCommand },
+            Table = new UiTableModel { EmptyTitle = "This household has moved on." },
         };
-        m.Prompts = new[]
+        m.EntryCount = m.Entries.Length;
+        m.EntryLeads = new[] { true, true, true };
+        return Prompted(m, t, true);
+    }
+
+    /// <summary>A person as PopulationPages makes it: a profile, their face and state on a card, their figures and facts beside it.</summary>
+    public static UiDashboardModel PopulationPerson(UiWords t)
+    {
+        var m = new UiDashboardModel
         {
-            new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
-            new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_select", "Select") },
-            new UiPrompt { Action = UiAction.TabPrev, Label = t("reallife_ui_prompt_page", "Page") },
-            new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
+            Shape = UiPageShape.Profile,
+            Title = "Thomas Sanders",
+            Hue = 210f,
+            Subtitle = "Looking for work",
+            SideTitle = t("reallife_ui_page_details", "Details"),
+            Figures = new[] { new UiFigureModel { Label = "Age", Value = "27" } },
+            Side = new[] { new UiPairModel { Key = "Schooling", Value = "Postgraduate degree" }, new UiPairModel { Key = t("reallife_pop_fig_field", "Line of work"), Value = "Office work" } },
+            EntriesTitle = "Lives with",
+            Entries = new[] { new UiRowModel { Name = "Mary Sanders", Preview = "At work", Time = t("reallife_ui_pop_age", "Age {age}").Replace("{age}", "29"), Hue = 120f } },
+            HasAction = true,
+            Action = new UiActionModel { Label = "Their household", Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiDashboard.ActionCommand },
+            Table = new UiTableModel { EmptyTitle = "This person has moved on." },
         };
+        m.FigureCount = m.Figures.Length;
+        m.SideCount = m.Side.Length;
+        m.EntryCount = m.Entries.Length;
+        m.EntryLeads = new[] { true };
+        return Prompted(m, t, true);
+    }
+
+    /// <summary>A person who has moved on: no title over nothing, just the words for it.</summary>
+    public static UiDashboardModel PopulationGone(UiWords t)
+    {
+        var m = new UiDashboardModel
+        {
+            Table = new UiTableModel
+            {
+                EmptyTitle = t("reallife_ui_pop_gone_named", "{name} has moved on.").Replace("{name}", "Thomas Sanders"),
+                EmptyBody = t("reallife_ui_pop_gone_body", "People leave the city when they move away or pass on. Back takes you to where you were."),
+            }
+        };
+        m.Prompts = new[] { new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") } };
+        m.PromptCount = 1;
+        return m;
+    }
+
+    // A population page's prompt bar as PopulationPages writes it: Select only where a row opens something.
+    private static UiDashboardModel Prompted(UiDashboardModel m, UiWords t, bool select)
+    {
+        var prompts = new System.Collections.Generic.List<UiPrompt> { new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") } };
+        if (select)
+        {
+            prompts.Add(new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_select", "Select") });
+        }
+        if (m.HasAction)
+        {
+            prompts.Add(new UiPrompt { Action = UiAction.Alt, Label = m.Action.Label });
+        }
+        prompts.Add(new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") });
+        m.Prompts = prompts.ToArray();
         m.PromptCount = m.Prompts.Length;
         return m;
     }
@@ -112,9 +330,9 @@ internal static class UiSamples
                 "reallife_studio_page_no_games", "No game yet. Draft a concept, then pitch it at your desk.", new[]
                 {
                     new[] { "Cinder Valley", "Simulation", "", "", "", "64% made" },
-                    new[] { "Ember Isle", "Adventure", "78", "41,000", "$612,400", "96 days" },
-                    new[] { "Tiny Towns", "Simulation", "74", "28,500", "$341,900", "212 days" },
-                    new[] { "Deep Signal", "Strategy", "69", "12,600", "$128,300", "340 days" },
+                    new[] { "Ember Isle", "Adventure", "78", "41,000", "$612,400", Out(t, 96) },
+                    new[] { "Tiny Towns", "Simulation", "74", "28,500", "$341,900", Out(t, 212) },
+                    new[] { "Deep Signal", "Strategy", "69", "12,600", "$128,300", Out(t, 340) },
                     new[] { "Pocket Courts", "Sports", "58", "4,300", "$31,200", "Withdrawn" },
                 }),
             More = FirmTable(t, new[] { "reallife_studio_page_col_rival", "reallife_studio_page_col_studio", "reallife_studio_page_col_genre", "reallife_studio_page_col_score",
@@ -142,13 +360,14 @@ internal static class UiSamples
                 Group(t, "reallife_studio_page_group_product", "Product", 1, 61),
                 Group(t, "reallife_studio_page_group_support", "Support", 0, 0),
             },
+            StatsNote = t("reallife_studio_page_needed_how", "To fill a group, hire people in the Business app, then set their roles in Open Roles, on its Team tab."),
             SideTitle = t("reallife_studio_page_facts", "Sales and support"),
             Side = new[]
             {
                 new UiPairModel { Key = t("reallife_studio_page_tickets", "Tickets a day"), Value = "120, 0 answered" },
                 new UiPairModel { Key = t("reallife_studio_page_pirated", "Pirated copies"), Value = "9,800" },
                 new UiPairModel { Key = t("reallife_studio_page_drm", "DRM"), Value = "On in 1 of 3" },
-                new UiPairModel { Key = t("reallife_studio_page_asks", "Fan requests"), Value = "new levels, co-op play" },
+                new UiPairModel { Key = t("reallife_studio_page_asks", "Fan requests"), Value = "New levels, co-op play" },
                 new UiPairModel { Key = t("reallife_studio_page_engine", "Engine"), Value = "Under licence" },
                 new UiPairModel { Key = t("reallife_studio_page_trend", "Hot genre"), Value = "Strategy until Day 61" },
                 new UiPairModel { Key = t("reallife_studio_page_known", "Team knows"), Value = "Simulation, Adventure, Strategy" },
@@ -158,6 +377,64 @@ internal static class UiSamples
             Action = new UiActionModel { Label = "Start a game", Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiDashboard.ActionCommand },
         };
         return Counted(m, t, "Start a game");
+    }
+
+    /// <summary>
+    /// A new studio as the owner opened it in beta 3: nobody in it, no game, nothing taken. Its next step is to hire, each
+    /// needed group says how to fill it, its takings draw no flat line, and its facts say None in one case.
+    /// </summary>
+    public static UiDashboardModel StudioEmpty(UiWords t)
+    {
+        var m = new UiDashboardModel
+        {
+            Title = "Pioneer Game studio",
+            Subtitle = t("reallife_studio_next_hire", "Next: hire engineers and designers for {studio}, so it can start a game.")
+                .Replace("{studio}", "Pioneer Game studio"),
+            SubtitleInk = UiRole.WarnText,
+            StatsFirst = true,
+            Figures = new[]
+            {
+                new UiFigureModel { Label = t("reallife_studio_page_games_out", "Games out"), Value = "0" },
+                new UiFigureModel { Label = t("reallife_studio_page_copies", "Copies sold"), Value = "0" },
+                new UiFigureModel { Label = t("reallife_studio_page_takings", "Takings, 30 days"), Value = "$0", Span = 2, Trend = new float[24] },
+            },
+            Table = FirmTable(t, new[] { "reallife_studio_page_col_game", "reallife_studio_page_col_genre", "reallife_studio_page_col_score", "reallife_studio_page_col_copies",
+                "reallife_studio_page_col_kept", "reallife_studio_page_col_status" }, new[] { "Game", "Genre", "Score", "Copies", "Kept", "Status" }, 2,
+                "reallife_studio_page_no_games_hire", "No game yet. Hire a team first, then draft a concept.", new string[0][]),
+            More = FirmTable(t, new[] { "reallife_studio_page_col_rival", "reallife_studio_page_col_studio", "reallife_studio_page_col_genre", "reallife_studio_page_col_score",
+                "reallife_studio_page_col_copies" }, new[] { "Rival game", "Studio", "Genre", "Score", "Copies" }, 3, "reallife_studio_studio_rivals_none", "No rival game is out yet.",
+                new string[0][]),
+            StatsTitle = t("reallife_studio_page_team", "Team"),
+            Stats = new[]
+            {
+                Group(t, "reallife_studio_page_group_engineers", "Engineers", 0, 0),
+                Group(t, "reallife_studio_page_group_designers", "Designers", 0, 0),
+            },
+            StatsNote = t("reallife_studio_page_needed_how", "To fill a group, hire people in the Business app, then set their roles in Open Roles, on its Team tab."),
+            SideTitle = t("reallife_studio_page_facts", "Sales and support"),
+            Side = new[]
+            {
+                new UiPairModel { Key = t("reallife_studio_page_tickets", "Tickets a day"), Value = "None" },
+                new UiPairModel { Key = t("reallife_studio_page_pirated", "Pirated copies"), Value = "0" },
+                new UiPairModel { Key = t("reallife_studio_page_drm", "DRM"), Value = "Off" },
+                new UiPairModel { Key = t("reallife_studio_page_asks", "Fan requests"), Value = "None" },
+                new UiPairModel { Key = t("reallife_studio_page_engine", "Engine"), Value = "Under licence" },
+                new UiPairModel { Key = t("reallife_studio_page_trend", "Hot genre"), Value = "None" },
+                new UiPairModel { Key = t("reallife_studio_page_known", "Team knows"), Value = "None" },
+            },
+            Others = new[] { new UiActionModel { Label = "Build our own engine", Kind = UiButtonKind.Secondary, Key = UiAction.Option, Command = UiDashboard.OtherCommand } },
+        };
+        m.FigureCount = m.Figures.Length;
+        m.StatCount = m.Stats.Length;
+        m.SideCount = m.Side.Length;
+        m.OtherCount = m.Others.Length;
+        m.Prompts = new[]
+        {
+            new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
+            new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
+        };
+        m.PromptCount = m.Prompts.Length;
+        return m;
     }
 
     /// <summary>
@@ -186,9 +463,9 @@ internal static class UiSamples
             Table = FirmTable(t, new[] { "reallife_tech_mkt_page_col_product", "reallife_tech_mkt_page_col_kind", "reallife_tech_mkt_page_col_customers", "reallife_tech_mkt_page_col_takings",
                 "reallife_tech_mkt_page_col_status" }, new[] { "Product", "Kind", "Customers", "Takings", "Status" }, 2, "reallife_tech_mkt_page_no_products", "No product yet.", new[]
                 {
-                    new[] { "Ledgerly", "Subscription service", "12,400", "$412,000", "184 days" },
-                    new[] { "Pocket Ledger", "Phone app", "5,840", "$61,300", "96 days" },
-                    new[] { "Ledger Cloud", "Subscription service", "", "", "Being built" },
+                    new[] { "Ledgerly", "Subscription service", "12,400", "$412,000", Out(t, 184) },
+                    new[] { "Pocket Ledger", "Phone app", "5,840", "$61,300", Out(t, 96) },
+                    new[] { "Ledger Cloud", "Subscription service", "", "", t("reallife_tech_mkt_page_ready", "Ready to launch") },
                 }),
             More = FirmTable(t, new[] { "reallife_tech_mkt_page_col_rival", "reallife_tech_mkt_page_col_market", "reallife_tech_mkt_page_col_customers",
                 "reallife_tech_mkt_page_col_features" }, new[] { "Rival", "Market", "Customers", "Features" }, 2, "reallife_tech_mkt_page_no_rivals", "No rival sells in these markets yet.", new[]
@@ -216,6 +493,7 @@ internal static class UiSamples
                 Group(t, "reallife_studio_page_group_support", "Support", 2, 54),
                 Group(t, "reallife_studio_page_group_sales", "Sales", 1, 49),
             },
+            StatsNote = t("reallife_studio_page_needed_how", "To fill a group, hire people in the Business app, then set their roles in Open Roles, on its Team tab."),
             SideTitle = t("reallife_tech_mkt_page_facts", "Markets and support"),
             Side = new[]
             {
@@ -277,8 +555,8 @@ internal static class UiSamples
             Question = "What is this week's meeting for?",
             Choices = new[]
             {
-                new UiChoiceModel { Key = UiAction.Pick1, Name = "Lift morale", Trade = "Burnout eases for the people present; output this week is a little lower." },
-                new UiChoiceModel { Key = UiAction.Pick2, Name = "Push output", Trade = "More gets done this week; burnout builds each day they work." },
+                new UiChoiceModel { Key = UiAction.Pick1, Name = "Lift morale", Trade = "Burnout eases for the people present. Output this week is a little lower." },
+                new UiChoiceModel { Key = UiAction.Pick2, Name = "Push output", Trade = "More gets done this week. Burnout builds each day they work." },
             },
             Actions = new[]
             {
@@ -300,59 +578,65 @@ internal static class UiSamples
     /// <summary>The population's city view as PopulationPages makes it from PopulationViews.City: the residents' city at a glance.</summary>
     public static UiDashboardModel PopulationCity(UiWords t)
     {
+        // As PopulationPages draws the city's view: its title is the app's own, so the masthead says it once.
         var m = new UiDashboardModel
         {
-            Title = "The city",
-            Subtitle = "Day 47 · 8,230 households",
+            Title = t("reallife_pop_view_city", "The city's people"),
             SideTitle = t("reallife_ui_page_details", "Details"),
             Figures = new[]
             {
-                new UiFigureModel { Label = "People", Value = "16,040" },
-                new UiFigureModel { Label = "Households", Value = "8,230" },
-                new UiFigureModel { Label = "In work", Value = "93.6%" },
-                new UiFigureModel { Label = "Spent today", Value = "$1.42M" },
+                new UiFigureModel { Label = "People", Value = "56,666" },
+                new UiFigureModel { Label = "Households", Value = "19,578" },
+                new UiFigureModel { Label = "Out of work", Value = "5.4%" },
+                new UiFigureModel { Label = "Rent a day", Value = "$86" },
             },
             Side = new[]
             {
-                new UiPairModel { Key = "Working class", Value = "41%" },
-                new UiPairModel { Key = "Middle class", Value = "44%" },
-                new UiPairModel { Key = "Upper class", Value = "15%" },
-                new UiPairModel { Key = "Taxes today", Value = "$212,400" },
+                new UiPairModel { Key = "Births last month", Value = "41" },
+                new UiPairModel { Key = "Deaths last month", Value = "17" },
+                new UiPairModel { Key = "Households who came", Value = "212" },
+                new UiPairModel { Key = "Households who left", Value = "96" },
+                new UiPairModel { Key = "Jobs", Value = "109,605" },
+                new UiPairModel { Key = "Open jobs", Value = "2,735" },
+                new UiPairModel { Key = "Commuters", Value = "81,682" },
+                new UiPairModel { Key = "Taxes last month", Value = "$1,212,400" },
             },
             HasAction = true,
-            Action = new UiActionModel { Label = "Who contributes", Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiDashboard.ActionCommand },
+            Action = new UiActionModel { Label = "See who contributes", Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiDashboard.ActionCommand },
         };
         m.FigureCount = m.Figures.Length;
         m.SideCount = m.Side.Length;
         m.Table = new UiTableModel
         {
+            // Each district's own figures in columns, as PopulationViews.City now gives them, rather than one number a row.
             Columns = new[]
             {
                 new UiColumn { Title = "Districts" },
-                new UiColumn { Title = string.Empty },
-                new UiColumn { Title = string.Empty, Width = UiTokens.S16 * 3f, Right = true },
+                new UiColumn { Title = "People", Width = UiTokens.S16 * 2f + UiTokens.S8, Right = true },
+                new UiColumn { Title = "Households", Width = UiTokens.S16 * 2f + UiTokens.S8, Right = true },
+                new UiColumn { Title = "Out of work", Width = UiTokens.S16 * 2f + UiTokens.S8, Right = true },
+                new UiColumn { Title = "Rent a day", Width = UiTokens.S16 * 2f + UiTokens.S8, Right = true },
             },
             Rows = new[]
             {
-                new[] { "Midtown", "Upper and middle", "3,610" },
-                new[] { "Murray Hill", "Middle", "2,480" },
-                new[] { "Garment District", "Working", "1,950" },
-                new[] { "Hell's Kitchen", "Middle", "2,120" },
-                new[] { "Lower Manhattan", "Working", "1,890" },
-                new[] { "Industry City", "Working", "1,740" },
-                new[] { "The Hamptons", "Upper", "310" },
-                new[] { "Uptown", "Middle", "1,120" },
-                new[] { "Cedar Heights", "Working", "820" },
+                new[] { "Cedar Heights", "11,190", "3,870", "6.1%", "$74" },
+                new[] { "Uptown", "9,122", "3,140", "4.8%", "$91" },
+                new[] { "Midtown", "8,213", "2,960", "3.9%", "$118" },
+                new[] { "Hell's Kitchen", "8,148", "2,810", "5.2%", "$96" },
+                new[] { "Murray Hill", "5,859", "2,050", "4.4%", "$102" },
+                new[] { "Lower Manhattan", "5,855", "2,020", "5.7%", "$109" },
+                new[] { "Garment District", "4,574", "1,560", "7.3%", "$68" },
+                new[] { "Industry City", "3,601", "1,168", "8.9%", "$59" },
             },
-            RowCount = 9,
-            Selected = 0,
+            RowCount = 8,
+            Selected = -1,
             EmptyTitle = t("reallife_ui_page_empty", "Nothing here yet"),
         };
         m.Prompts = new[]
         {
             new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
             new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_select", "Select") },
-            new UiPrompt { Action = UiAction.Alt, Label = "Who contributes" },
+            new UiPrompt { Action = UiAction.Alt, Label = "See who contributes" },
             new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
         };
         m.PromptCount = m.Prompts.Length;
@@ -405,8 +689,10 @@ internal static class UiSamples
         m.GroupCount = m.Groups.Length;
         m.SideActions = new[]
         {
-            new UiActionModel { Label = t("contacts_mark_all_as_read_button", "Mark all as read"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Check, Key = UiAction.Count, Command = 0 },
-            new UiActionModel { Label = t("contacts_delete_all_button", "Delete all"), Kind = UiButtonKind.Destructive, Icon = UiIcon.Trash, Key = UiAction.Count, Command = 1 },
+            new UiActionModel { Label = t("contacts_mark_all_as_read_button", "Mark all as read"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Check, Key = UiAction.Count,
+                Command = UiListDetail.SideAction, Arg = ContactsRoutes.MarkReadArg },
+            new UiActionModel { Label = t("contacts_delete_all_button", "Delete all"), Kind = UiButtonKind.Destructive, Icon = UiIcon.Trash, Key = UiAction.Count,
+                Command = UiListDetail.SideAction, Arg = ContactsRoutes.DeleteAllArg },
         };
         m.SideActionCount = m.SideActions.Length;
         // The unread first, as the game lists them, then the rest: the two blocks the real screen draws.
@@ -429,8 +715,10 @@ internal static class UiSamples
         m.RowCount = m.Rows.Length;
         m.Actions = new[]
         {
-            new UiActionModel { Label = t("phone_view_on_map_button", "View on map"), Kind = UiButtonKind.Secondary, Icon = UiIcon.MapPin, Key = UiAction.Option, Command = 0 },
-            new UiActionModel { Label = t("phone_call_button", "Call"), Kind = UiButtonKind.Primary, Icon = UiIcon.Phone, Key = UiAction.Alt, Command = 1 },
+            new UiActionModel { Label = t("phone_view_on_map_button", "View on map"), Kind = UiButtonKind.Secondary, Icon = UiIcon.MapPin, Key = UiAction.Option,
+                Command = UiListDetail.Action, Arg = ContactsRoutes.MapArg },
+            new UiActionModel { Label = t("phone_call_button", "Call"), Kind = UiButtonKind.Primary, Icon = UiIcon.Phone, Key = UiAction.Alt,
+                Command = UiListDetail.Action, Arg = ContactsRoutes.CallArg },
         };
         m.ActionCount = m.Actions.Length;
         m.Messages = new[]
@@ -487,11 +775,8 @@ internal static class UiSamples
     {
         var m = new UiDashboardModel
         {
-            Title = t("reallife_ui_sample_city", "The city"),
-            Subtitle = "Day 47 · Autumn",
             Tabs = new[] { t("reallife_ui_gallery_tab_city", "City"), t("reallife_ui_gallery_tab_district", "District"), t("reallife_ui_gallery_tab_people", "People") },
             Figures = SampleFigures(t),
-            TableTitle = t("reallife_ui_sample_districts", "Districts"),
             Table = SampleTable(t),
             SideTitle = t("reallife_ui_sample_share", "Your share"),
             Side = new[]
@@ -530,7 +815,7 @@ internal static class UiSamples
         var m = new UiSessionModel
         {
             Title = "Weekly team meeting",
-            About = "Twenty minutes with the team at Pixel Harbour Games: lift their morale, or push this week's output.",
+            About = "Up to half an hour with the team at Pixel Harbour Games: lift their morale, push this week's output or hear them out.",
             StepLabel = t("reallife_ui_gallery_step", "Step 1 of 2"),
             StepCount = 2,
             Step = 0,
@@ -638,7 +923,7 @@ internal static class UiSamples
                 new[] { t("reallife_neighborhood_cedarheights", "Cedar Heights"), "4,570", "2,800", "$1,610" },
             },
             RowCount = 9,
-            Selected = 0,
+            Selected = -1,
             EmptyTitle = t("reallife_ui_sample_none", "Nothing here yet"),
             EmptyBody = t("reallife_ui_sample_none_body", "The city has no figures for this yet."),
         };

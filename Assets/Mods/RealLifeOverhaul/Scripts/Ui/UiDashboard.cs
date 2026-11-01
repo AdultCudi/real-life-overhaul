@@ -22,12 +22,20 @@ namespace RealLifeOverhaul.Ui
         public UiStatModel[] Stats = new UiStatModel[0];
         public int StatCount;
         public bool StatsFirst;               // the bars before the pairs in the side panel
+        public string StatsNote;              // a quiet line under the bars, saying how to fill what is needed, or null
         public UiActionModel Action;          // the page's one primary action, drawn where tabs would be
         public bool HasAction;
         public UiActionModel[] Others = new UiActionModel[0];   // the page's other actions, at the primary's left
         public int OtherCount;
         public UiPrompt[] Prompts = new UiPrompt[0];
         public int PromptCount;
+        public UiPageShape Shape;             // what the page is about: a place at a glance, a person, a household, a feed
+        public float Hue;                     // a profile's face, by its name's hue
+        public UiRowModel[] Entries = new UiRowModel[0];   // a feed's entries or a household's people, drawn as rows with faces
+        public int EntryCount;
+        public bool[] EntryLeads;             // the entries a press opens, or null for all
+        public string EntriesTitle;
+        public UiLedgerSection[] Ledger = new UiLedgerSection[0];   // a household's month and its home, as a ledger's sections
     }
 
     /// <summary>
@@ -42,7 +50,7 @@ namespace RealLifeOverhaul.Ui
     /// (the tab's index), <see cref="RowCommand"/> and <see cref="MoreCommand"/> (a row's), <see cref="ActionCommand"/> and
     /// <see cref="OtherCommand"/> (the primary, or another action's index). Game-free. Cost: a layout a change.
     /// </summary>
-    public static class UiDashboard
+    public static partial class UiDashboard
     {
         public const int TabCommand = 1, RowCommand = 2, ActionCommand = 3, OtherCommand = 4, MoreCommand = 5;
         public const float SideWidth = 380f;     // px
@@ -57,23 +65,23 @@ namespace RealLifeOverhaul.Ui
             UiAt screen = UiAt.Screen;
             int bg = UiDraw.Box(s, screen, 0f, 0f, frame.Width, frame.Height, UiRole.Bg, UiRole.None, 0f, UiFlags.Decor);   // the host's whole area
             UiAt at = screen.In(bg);
-            float y = cy;
-            float headW = cw * 0.5f;
-            if (m.Tabs.Length > 0)
+            float y = cy + Lead(s, at, m, cx, cy, cw, keys);
+            if (m.Shape != UiPageShape.Board)
             {
-                float tabsW = TabsWidth(m.Tabs, keys);
-                UiDraw.Tabs(s, at, cx + cw - tabsW, y, tabsW, m.Tabs, m.Tab, keys, TabCommand);
+                Shaped(s, at, m, cx, y, cw, UiDraw.SnapDown(cy + ch - y), keys);
+                for (int i = 0; i < m.PromptCount; i++)
+                {
+                    s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
+                }
+                UiDraw.PromptBar(s, frame, keys);
+                UiDraw.Chrome(s, frame, m.Shape == UiPageShape.Profile ? null : m.Title);   // a profile says its name on its own head
+                return;
             }
-            else if (m.HasAction || m.OtherCount > 0)
-            {
-                headW = cw - Actions(s, at, m, cx + cw, y, keys) - UiTokens.S8;
-            }
-            float headH = UiDraw.PageHead(s, at, cx, y, headW, m.Title, m.Subtitle, m.SubtitleInk);
-            y += headH + UiTokens.S6;
-            y = FigureRow(s, at, m, cx, y, cw);
+            y = FigureRow(s, at, m, cx, y, cw, keys);
             float bodyH = UiDraw.SnapDown(cy + ch - y);
-            float tw = cw - SideWidth - UiTokens.S4;
             float sideH = SideFit(m, bodyH, out int pairs, out int stats);
+            bool side = pairs > 0 || stats > 0;   // a side with nothing to say takes no room: an empty box is a hole
+            float tw = side ? cw - SideWidth - UiTokens.S4 : cw;
             int foot;
             float leftH;
             if (m.More != null && m.More.Columns.Length > 0)
@@ -87,13 +95,10 @@ namespace RealLifeOverhaul.Ui
                 float tableTop = titled ? UiTokens.S5 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionTitle)) + UiTokens.S3 : UiTokens.S4;
                 float room = bodyH - tableTop - UiTokens.S4;
                 m.Table.RowHeight = 0f;
-                if (Math.Abs(tableTop + UiDraw.TableHeight(m.Table, room) + UiTokens.S4 - sideH) > UiTokens.MostSlack)
-                {
-                    UiDraw.Breathe(m.Table, room);   // a table level with its side keeps that one foot, and one well short of the page grows into it
-                }
+                UiDraw.Breathe(m.Table, room);   // a short table takes the page's height in calmer rows rather than stopping over a hole
                 float tableH = UiDraw.TableHeight(m.Table, room);
                 leftH = tableTop + tableH + UiTokens.S4;
-                foot = UiDraw.Box(s, at, cx, y, tw, leftH, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
+                foot = UiDraw.Box(s, at, cx, y, tw, leftH, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
                 UiAt inTable = at.In(foot);
                 if (titled)
                 {
@@ -104,18 +109,49 @@ namespace RealLifeOverhaul.Ui
             // Nearly level: one foot reads tidier than a step of a few px. Two tables level only by what their padding and the
             // step together keep within the slack a frame may hold.
             float level = m.More != null && m.More.Columns.Length > 0 ? UiTokens.MostSlack - UiTokens.S6 : UiTokens.MostSlack;
-            if (Math.Abs(leftH - sideH) <= level)
+            if (side && Math.Abs(leftH - sideH) <= level)
             {
                 s.Items[foot].H += Math.Max(0f, sideH - leftH);
                 sideH = Math.Max(sideH, leftH);
             }
-            Side(s, at, m, cx + tw + UiTokens.S4, y, sideH, pairs, stats);
+            if (side)
+            {
+                Side(s, at, m, cx + tw + UiTokens.S4, y, sideH, pairs, stats);
+            }
             for (int i = 0; i < m.PromptCount; i++)
             {
                 s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
             }
-            UiDraw.PromptBar(s, 0f, frame.BandY, frame.Width, frame.Band, keys);
-            UiDraw.Chrome(s, frame);
+            UiDraw.PromptBar(s, frame, keys);
+            UiDraw.Chrome(s, frame, m.Title);
+        }
+
+        // The page's lead row: the tabs at its left (they say where the page is), or the line about the place (a person's
+        // class, a building's district), and the actions at its right. The place itself stands in the masthead after the
+        // app's name. Nothing at all when the page has none of these, and nothing for actions alone over a strip of
+        // figures: they stand at the strip's end then, as a button alone on a row reads as floating. Returns the height it
+        // takes with the step under it.
+        private static float Lead(UiScene s, UiAt at, UiDashboardModel m, float x, float y, float w, IUiKeys keys)
+        {
+            bool tabs = m.Tabs.Length > 0, actions = m.HasAction || m.OtherCount > 0, line = !string.IsNullOrEmpty(m.Subtitle) && m.Shape != UiPageShape.Profile;
+            if (!tabs && !line && (!actions || ActionsInStrip(m) || m.Shape == UiPageShape.Profile))
+            {
+                return 0f;
+            }
+            float left = w;
+            if (actions)
+            {
+                left = w - Actions(s, at, m, x + w, y, keys) - UiTokens.S8;
+            }
+            if (tabs)
+            {
+                UiDraw.Tabs(s, at, x, y, Math.Min(left, TabsWidth(m.Tabs, keys)), m.Tabs, m.Tab, keys, TabCommand);
+            }
+            else if (line)
+            {
+                UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, left, UiStyle.Body, m.SubtitleInk, m.Subtitle, UiFlags.Label | UiFlags.Truncate);
+            }
+            return UiTokens.Control + UiTokens.S4;
         }
 
         // The page's actions at the head's right, the primary at the far right and the others at its left. Returns their width.
@@ -139,8 +175,16 @@ namespace RealLifeOverhaul.Ui
             return right - bx - UiTokens.S3;
         }
 
-        // The figures' row: each in its places of the row's four, the last one flush with the right. Returns the y under it.
-        private static float FigureRow(UiScene s, UiAt at, UiDashboardModel m, float x, float y, float w)
+        // A Board page's actions stand at the end of its figures' strip when nothing else heads the page.
+        private static bool ActionsInStrip(UiDashboardModel m)
+        {
+            return m.Shape == UiPageShape.Board && Math.Min(m.FigureCount, MostFigures) > 0 && m.Tabs.Length == 0 && string.IsNullOrEmpty(m.Subtitle);
+        }
+
+        // The figures as one strip, the markets paper's: each figure in its places of the strip's four, a thin rule between
+        // them, rather than a row of boxed cards alike, and the page's actions at its end when they have no row of their
+        // own. Returns the y under it.
+        private static float FigureRow(UiScene s, UiAt at, UiDashboardModel m, float x, float y, float w, IUiKeys keys)
         {
             int count = Math.Min(m.FigureCount, MostFigures), places = 0;
             for (int i = 0; i < count; i++)
@@ -151,15 +195,26 @@ namespace RealLifeOverhaul.Ui
             {
                 return y;
             }
-            float slot = UiDraw.SnapDown((w - UiTokens.S4 * (places - 1)) / places);
-            float fh = FigureHeight(m), fx = x;
+            float fh = FigureHeight(m);
+            int strip = UiDraw.Box(s, at, x, y, w, fh, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
+            UiAt inStrip = at.In(strip);
+            float figuresW = w;
+            if ((m.HasAction || m.OtherCount > 0) && ActionsInStrip(m))
+            {
+                float by = y + UiDraw.SnapDown((fh - UiTokens.Control) / 2f);
+                figuresW = w - Actions(s, inStrip, m, x + w - UiTokens.S5, by, keys) - UiTokens.S5 - UiTokens.S8;
+            }
+            float slot = UiDraw.SnapDown((figuresW - UiTokens.S4 * (places - 1)) / places);
+            float fx = x;
             for (int i = 0; i < count; i++)
             {
                 int span = Span(ref m.Figures[i]);
-                float fw = i == count - 1 ? x + w - fx : span * slot + (span - 1) * UiTokens.S4;
-                int panel = UiDraw.Box(s, at, fx, y, fw, fh, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
-                UiAt inside = at.In(panel).Arriving(i);
-                UiDraw.Figure(s, inside, fx + UiTokens.S5, y + UiTokens.S5, fw - UiTokens.S5 * 2f, ref m.Figures[i], true, span > 1);
+                float fw = i == count - 1 ? x + figuresW - fx : span * slot + (span - 1) * UiTokens.S4;
+                if (i > 0)
+                {
+                    UiDraw.Box(s, inStrip, fx - UiTokens.S2 - UiTokens.Hairline, y + UiTokens.S5, UiTokens.Hairline, fh - UiTokens.S5 * 2f, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
+                }
+                UiDraw.Figure(s, inStrip.Arriving(i), fx + UiTokens.S5, y + UiTokens.S5, fw - UiTokens.S5 * 2f, ref m.Figures[i], true, span > 1);
                 fx += fw + UiTokens.S4;
             }
             return y + fh + UiTokens.S4;
@@ -175,12 +230,12 @@ namespace RealLifeOverhaul.Ui
             float least = top + UiTokens.ControlSmall + MoreLeast * UiTokens.TableRow + UiTokens.S4;
             float firstH = UiDraw.TableHeight(m.Table, most - UiTokens.S4 - least - top - UiTokens.S4);
             float upper = top + firstH + UiTokens.S4;
-            int first = UiDraw.Box(s, at, x, y, w, upper, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
+            int first = UiDraw.Box(s, at, x, y, w, upper, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiDraw.Table(s, at.In(first), x + UiTokens.S2, y + top, w - UiTokens.S4, firstH, m.Table, RowCommand);
             float y2 = y + upper + UiTokens.S4;
             float secondH = UiDraw.TableHeight(m.More, most - upper - UiTokens.S4 - top - UiTokens.S4);
             float lower = top + secondH + UiTokens.S4;
-            foot = UiDraw.Box(s, at, x, y2, w, lower, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
+            foot = UiDraw.Box(s, at, x, y2, w, lower, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiDraw.Table(s, at.In(foot), x + UiTokens.S2, y2 + top, w - UiTokens.S4, secondH, m.More, MoreCommand);
             height = upper + UiTokens.S4 + lower;
         }
@@ -188,7 +243,7 @@ namespace RealLifeOverhaul.Ui
         // The side panel with the pairs and bars that fit, in the model's order.
         private static void Side(UiScene s, UiAt at, UiDashboardModel m, float sx, float y, float sideH, int pairs, int stats)
         {
-            int side = UiDraw.Box(s, at, sx, y, SideWidth, sideH, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
+            int side = UiDraw.Box(s, at, sx, y, SideWidth, sideH, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt inSide = at.In(side);
             float iy = y + UiTokens.S5, iw = SideWidth - UiTokens.S5 * 2f;
             bool first = true;
@@ -209,8 +264,16 @@ namespace RealLifeOverhaul.Ui
                     iy += bars ? UiDraw.Snap(UiDraw.StatBar(s, inSide.Arriving(i), sx + UiTokens.S5, iy, iw, ref m.Stats[i])) + (i < n - 1 ? UiTokens.S4 : 0f)
                         : UiDraw.KeyValue(s, inSide, sx + UiTokens.S5, iy, iw, m.Side[i].Key, m.Side[i].Value);
                 }
+                if (bars && n == m.StatCount && !string.IsNullOrEmpty(m.StatsNote))
+                {
+                    iy += UiTokens.S3;
+                    UiDraw.Text(s, inSide, sx + UiTokens.S5, iy, iw, UiStyle.Small, UiRole.Text2, m.StatsNote, UiFlags.Label | UiFlags.Wrap, NoteLines);
+                    iy += UiDraw.Snap(UiTextRules.WrappedHeight(m.StatsNote, UiStyle.Small, iw, NoteLines));
+                }
             }
         }
+
+        private const int NoteLines = 4;
 
         // How many of the side's pairs and bars fit a height, the first block before the second, and the height they take
         // with the panel's padding: a block stops at its last whole line, so nothing spills from the frame.
@@ -241,6 +304,10 @@ namespace RealLifeOverhaul.Ui
                     break;
                 }
                 h = start + fit * each - trail;
+                if (bars && fit == n && !string.IsNullOrEmpty(m.StatsNote))
+                {
+                    h += UiTokens.S3 + UiDraw.Snap(UiTextRules.WrappedHeight(m.StatsNote, UiStyle.Small, SideWidth - UiTokens.S5 * 2f, NoteLines));
+                }
                 if (bars)
                 {
                     stats = fit;
@@ -254,7 +321,9 @@ namespace RealLifeOverhaul.Ui
             return h + UiTokens.S5;
         }
 
-        private static int Span(ref UiFigureModel figure) => figure.Span > 1 ? figure.Span : 1;
+        // A figure spans its places only to draw its line beside its number. One with no line to draw (a new firm's days, all
+        // at nothing) takes one place, so the strip's figures share its width rather than end on a blank.
+        private static int Span(ref UiFigureModel figure) => figure.Span > 1 && UiDraw.Drawn(figure.Trend) ? figure.Span : 1;
 
         // The row's height: a change's line when any figure has one, and a sparkline's when one stands under its number.
         private static float FigureHeight(UiDashboardModel m)
@@ -262,7 +331,7 @@ namespace RealLifeOverhaul.Ui
             bool trend = false, change = false;
             for (int i = 0; i < m.FigureCount && i < MostFigures; i++)
             {
-                trend |= m.Figures[i].Trend != null && m.Figures[i].Trend.Length > 1 && Span(ref m.Figures[i]) == 1;
+                trend |= UiDraw.Drawn(m.Figures[i].Trend) && Span(ref m.Figures[i]) == 1;
                 change |= !string.IsNullOrEmpty(m.Figures[i].Change);
             }
             float h = UiTokens.S5 * 2f + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display));

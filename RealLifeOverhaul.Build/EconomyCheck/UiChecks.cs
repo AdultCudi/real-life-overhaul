@@ -29,7 +29,9 @@ internal static partial class Program
         UiTextChecks();
         UiMotionChecks();
         UiFocusChecks();
+        UiInputModeChecks();
         UiScreenChecks();
+        UiPageChecks();
         UiRulesFailOnce();
         UiSourceChecks();
         UiBindChecks();
@@ -49,9 +51,25 @@ internal static partial class Program
             all &= UiTokens.Colour((UiRole)r, true) != 0 && UiTokens.Colour((UiRole)r, false) != 0;
         }
         Check(all, "ui tokens: no role is left without a colour in either theme");
-        Check(UiTokens.Colour(UiRole.Bg, true) == 0x12110EFF && UiTokens.Colour(UiRole.Text, true) == 0xF1EBDDFF && UiTokens.Colour(UiRole.Accent, true) == 0xF2A58AFF
-              && UiTokens.Colour(UiRole.Bg, false) == 0xFFF1E5FF && UiTokens.Colour(UiRole.Text, false) == 0x1A1712FF && UiTokens.Colour(UiRole.Accent, false) == 0x990F3DFF,
-            "ui tokens: the City Ledger the owner chose (1 Nov): ink-black with paper-white words and the markets paper's salmon; the salmon paper with its ink and claret");
+        Check(UiTokens.Colour(UiRole.Bg, true) == 0x12110EFF && UiTokens.Colour(UiRole.Text, true) == 0xDAD2C3FF && UiTokens.Colour(UiRole.Accent, true) == 0xE39A81FF
+              && UiTokens.Colour(UiRole.Bg, false) == 0xDED1C0FF && UiTokens.Colour(UiRole.Text, false) == 0x221D17FF && UiTokens.Colour(UiRole.Accent, false) == 0x8E1E3FFF,
+            "ui tokens: the City Ledger retuned for low glare (the owner, 1 Nov): soft warm words on ink-black with a quieter salmon, a dim warm paper with its ink and claret");
+        // The owner (1 Nov): nothing that hits the eyes. No near-white words or rules in dark, no bright paper in light, and the
+        // masthead's and the panels' rules a dim line rather than a cream one.
+        float textL = UiLightness(UiTokens.Colour(UiRole.Text, true)), avatarInk = UiTokens.AvatarDarkInkL * 100f;
+        Check(textL <= 86f && avatarInk <= 88f, "ui tokens: no near-white in dark: the words at L* " + textL.ToString("0") + ", an avatar's initials at " + avatarInk.ToString("0") + " (at most 86 and 88)");
+        float brightest = 0f;
+        foreach (UiRole r in new[] { UiRole.Bg, UiRole.Panel, UiRole.Header, UiRole.Row, UiRole.Field, UiRole.Bubble, UiRole.PromptCap, UiRole.OnAccent })
+        {
+            brightest = Math.Max(brightest, UiLightness(UiTokens.Colour(r, false)));
+        }
+        Check(brightest <= 91f && UiTokens.AvatarLightL <= 0.82f, "ui tokens: no bright paper in light: its brightest surface at L* " + brightest.ToString("0") + " (at most 91), an avatar's circle at " + UiTokens.AvatarLightL.ToString("0.00"));
+        foreach (bool dark in new[] { true, false })
+        {
+            UiColour panelColour = UiColour.Of(UiRole.Panel, dark).Over(UiColour.Of(UiRole.Bg, dark));
+            float rule = UiColour.Contrast(UiColour.Of(UiRole.Rule, dark).Over(panelColour), panelColour);
+            Check(rule > 1.2f && rule < 2.5f, "ui tokens (" + (dark ? "dark" : "light") + "): a panel's rule is a dim line, seen but never glaring (" + rule.ToString("0.00") + ":1 on the panel)");
+        }
         Check(UiTokens.RadiusPanel == 0f && UiTokens.RadiusLarge <= 2f && UiTokens.FrameRule >= 2f, "ui tokens: print is square, a framed panel wears its column rule");
         float mast = UiFrame.MastheadHeight;
         Check(mast % UiTokens.Grid == 0f && mast >= UiTextRules.LineHeight(UiStyle.AppTitle) + UiTokens.FrameRule
@@ -131,6 +149,15 @@ internal static partial class Program
         }
         Check(calm && UiTokens.Distance(UiMotionSetting.Calm) < UiTokens.Distance(UiMotionSetting.Full) && UiTokens.Distance(UiMotionSetting.Off) == 0f,
             "ui tokens: Calm is slower and moves half as far, Off moves nothing");
+    }
+
+    // CIE L* of a token's colour over black, the glare a surface or a word throws.
+    private static float UiLightness(uint rgba)
+    {
+        UiColour c = UiColour.FromRgba(rgba);
+        Func<float, double> lin = v => v <= 0.04045f ? v / 12.92 : Math.Pow((v + 0.055) / 1.055, 2.4);
+        double y = 0.2126 * lin(c.R) + 0.7152 * lin(c.G) + 0.0722 * lin(c.B);
+        return (float)(y > 0.008856 ? 116.0 * Math.Pow(y, 1.0 / 3.0) - 16.0 : 903.3 * y);
     }
 
     private static float UiContrast(UiRole ink, UiRole surface, bool dark)
@@ -271,6 +298,58 @@ internal static partial class Program
         Check(search >= 0, "ui focus: a target outside the list is a target of its own");
     }
 
+    // The input mode (UiFocusMode, UiHost): beta 3's ring followed the mouse onto every row it crossed. With the mouse
+    // there is no ring and a hover moves nothing; the first key or pad press only shows where the focus is; moving the
+    // mouse hides it again; and the band names Move and Select only for the keys.
+    private static void UiInputModeChecks()
+    {
+        var mode = new UiFocusMode(UiLead.Keys);
+        mode.Start(false);
+        Check(mode.Lead == UiLead.Pointer && !mode.Ring, "ui input: a screen opened with the mouse shows no focus ring");
+        int focus = 2;
+        bool hovered = mode.Entered(5);
+        Check(hovered && mode.Hover == 5 && !mode.Ring && mode.Lifted(focus) == 5, "ui input: a hover lifts the target under the mouse and shows no ring");
+        Check(mode.Exited(5) && mode.Hover == -1 && mode.Lifted(focus) == -1, "ui input: the pointer leaving a target puts its fill back");
+        Check(mode.Woke() && mode.Ring && mode.Lifted(focus) == focus && mode.Hover == -1, "ui input: the first key or pad press brings the ring back where the focus is");
+        Check(!mode.Woke(), "ui input: the press that woke the ring is spent, the next one moves or presses");
+        Check(!mode.Entered(7) && mode.Hover == -1 && mode.Lifted(focus) == focus, "ui input: a list scrolled by the keys under a resting pointer makes no hover");
+        Check(mode.PointerMoved() && !mode.Ring && !mode.PointerMoved(), "ui input: moving the mouse hides the ring again, once");
+        mode.Start(true);
+        Check(mode.Ring, "ui input: a screen opened with a pad has its ring from the start");
+        // The host acts on the mode alone: a hover only lifts a face, the keys wake before they move, a click focuses silently.
+        string host = File.ReadAllText(System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiHost.cs")));
+        string entered = Between(host, "private void PointerEntered(int node)", "private void PointerExited(int node)");
+        Check(entered.Contains("_view.SetHover(node)") && !entered.Contains("FocusNode") && !entered.Contains("SetFocus") && !entered.Contains("Play("),
+            "ui input: the host's hover lifts the target and never moves the focus or plays the move sound");
+        string navigate = Between(host, "private void Navigate(float now)", "private void PressKeyed(");
+        int wake = navigate.IndexOf("_mode.Woke()", StringComparison.Ordinal), move = navigate.IndexOf("Move(dx", StringComparison.Ordinal);
+        Check(wake >= 0 && move > wake, "ui input: the host lets a key wake the ring before any move or press");
+        string focusNode = Between(host, "private void FocusNode(int node, float now, bool glide)", "private void PressNode(");
+        Check(focusNode.Contains("glide && _mode.Ring") && focusNode.Contains("if (_mode.Ring)"), "ui input: the ring glides and the move sounds only while the keys lead");
+        // The band follows the lead.
+        var s = new UiScene();
+        UiFrame keys = UiFrame.FullMenu(16f / 9f, "The city's people");
+        UiFrame pointer = keys;
+        pointer.Pointer = true;
+        UiDashboard.Lay(s, UiSamples.PopulationContributors(UiWords("en")), keys, true, UiDefaultKeys.Keyboard);
+        bool keysMove = Prompted(s, UiAction.Move) && Prompted(s, UiAction.Confirm) && Prompted(s, UiAction.Back);
+        UiDashboard.Lay(s, UiSamples.PopulationContributors(UiWords("en")), pointer, true, UiDefaultKeys.Keyboard);
+        Check(keysMove && !Prompted(s, UiAction.Move) && !Prompted(s, UiAction.Confirm) && Prompted(s, UiAction.Alt) && Prompted(s, UiAction.Back),
+            "ui input: with the mouse leading the band drops Move and Select, which the mouse does by pointing, and keeps the shortcuts and Back");
+    }
+
+    private static bool Prompted(UiScene s, UiAction action)
+    {
+        for (int i = 0; i < s.PromptCount; i++)
+        {
+            if (s.Prompts[i].Action == action)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static int FocusBox(UiScene s, UiAt at, float x, float y, int command)
     {
         int face = UiDraw.Box(s, at, x, y, 200f, 48f, UiRole.Field, UiRole.None, UiTokens.RadiusLarge);
@@ -285,7 +364,15 @@ internal static partial class Program
         public string Name;
         public Action<UiScene, UiFrame, bool, IUiKeys, UiWords> Lay;
         public string Title = "Contacts";   // the app's name in the masthead
+        public int[] Commands;              // every command its template answers: a target with another is a button nothing answers
     }
+
+    private static readonly int[] ListDetailCommands = { UiListDetail.Group, UiListDetail.SideAction, UiListDetail.Search, UiListDetail.Row, UiListDetail.Action,
+        UiListDetail.Service, UiListDetail.Reply, UiListDetail.Compose, UiListDetail.Send, UiListDetail.Answer, UiListDetail.CallOption, UiListDetail.CallEnd, UiListDetail.Classic };
+    private static readonly int[] DashboardCommands = { UiDashboard.TabCommand, UiDashboard.RowCommand, UiDashboard.ActionCommand, UiDashboard.OtherCommand, UiDashboard.MoreCommand };
+    private static readonly int[] SessionCommands = { UiSessionSteps.ChoiceCommand, UiSessionSteps.ActionCommand };
+    private static readonly int[] FormCommands = { UiForm.FieldCommand, UiForm.ActionCommand };
+    private static readonly int[] GalleryCommands = { UiGallery.PageCommand, UiGallery.Sample, UiGallery.Answer, UiGallery.CallOption, UiGallery.CallEnd };
 
     private static List<UiScreenCase> UiCases()
     {
@@ -298,18 +385,31 @@ internal static partial class Program
                 // The one screen draws the studio's page and the other tech firms' pages: both are checked.
                 cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = "Tech", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.StudioFirm(t), f, dark, k) });
                 cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (another firm)", Title = "Tech", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.TechFirm(t), f, dark, k) });
+                // Beta 3's empty studio: no staff, no game, thirty days of nothing taken. Every page has its zero state checked too.
+                cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (empty, new)", Title = "Your firm", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.StudioEmpty(t), f, dark, k) });
                 continue;
             }
-            if (def.Id == "flare_city" || def.Id == "session_panel")
+            if (def.Id == "flare_city")
             {
-                Action<UiScene, UiFrame, bool, IUiKeys, UiWords> lay = def.Id == "flare_city" ? (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.FlareCity(t), f, dark, k)
-                    : (Action<UiScene, UiFrame, bool, IUiKeys, UiWords>)((s, f, dark, k, t) => UiSessionSteps.Lay(s, UiSamples.DeskPanel(t), f, dark, k));
-                cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = def.Id == "flare_city" ? "Flare" : "Desk", Lay = lay });
+                // The feed's three faces: the account's posts, a tab with nothing yet (its long words wrapped in its panel), a business's page.
+                cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = "Flare in the city", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.FlareCity(t), f, dark, k) });
+                cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (trends, none yet)", Title = "Flare in the city", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.FlareTrends(t), f, dark, k) });
+                cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (a business)", Title = "Flare in the city", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.FlareBusiness(t), f, dark, k) });
+                continue;
+            }
+            if (def.Id == "session_panel")
+            {
+                cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = "Desk", Lay = (s, f, dark, k, t) => UiSessionSteps.Lay(s, UiSamples.DeskPanel(t), f, dark, k) });
                 continue;
             }
             if (def.Id == "population")
             {
-                cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = "Economy", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.PopulationCity(t), f, dark, k) });
+                // Each page shaped to its job: the city's districts, who contributes, a household's ledger, a person's profile, one who has moved on.
+                cases.Add(new UiScreenCase { Def = d, Name = d.Id, Title = "The city's people", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.PopulationCity(t), f, dark, k) });
+                cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (who contributes)", Title = "The city's people", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.PopulationContributors(t), f, dark, k) });
+                cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (a household)", Title = "The city's people", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.PopulationHousehold(t), f, dark, k) });
+                cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (a person)", Title = "The city's people", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.PopulationPerson(t), f, dark, k) });
+                cases.Add(new UiScreenCase { Def = d, Name = d.Id + " (moved on)", Title = "The city's people", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.PopulationGone(t), f, dark, k) });
                 continue;
             }
             switch (def.Template)
@@ -352,6 +452,8 @@ internal static partial class Program
         };
         foreach (UiScreenCase c in UiCases())
         {
+            c.Commands = c.Commands ?? (c.Def.Template == UiTemplate.ListDetail ? ListDetailCommands : c.Def.Template == UiTemplate.Dashboard ? DashboardCommands
+                : c.Def.Template == UiTemplate.Session ? SessionCommands : c.Def.Template == UiTemplate.Form ? FormCommands : GalleryCommands);
             if (c.Def.Runner != null)
             {
                 // A screen the game runs labels only with keys its entry names, so the texts check sees each one translated.
@@ -400,10 +502,27 @@ internal static partial class Program
                         Check(UiCheckRules.KeyClash(s, say) == 0, "ui screens: one key does one thing: " + where);
                         Check(UiFocusRules.Unreached(s, out string missed) == 0, "ui screens: the d-pad reaches every target: " + where + " (" + missed + ")");
                         Check(UiCheckRules.LowContrast(s, say) == 0, "ui screens: every text and icon stands out (dark): " + where);
+                        Check(UiCheckRules.RawKeys(s, say) == 0, "ui screens: no record's key on the screen, only words: " + where);
+                        Check(UiCheckRules.Repeats(s, frame, say) == 0, "ui screens: no page repeats the masthead under it: " + where);
+                        Check(UiCheckRules.Stacked(s, say) == 0, "ui screens: no label stands over another saying the same thing: " + where);
+                        Check(UiCheckRules.EmptyPanels(s, say) == 0, "ui screens: no panel stands empty: " + where);
+                        Check(UiCheckRules.Floating(s, say) == 0, "ui screens: an overlay's words stand on a card of their own: " + where);
+                        Check(UiCheckRules.Strays(s, say) == 0, "ui screens: no mark lies over a panel it does not belong to: " + where);
+                        Check(UiCheckRules.TypeLevels(s, say) == 0, "ui screens: three sizes of type at most: " + where);
+                        Check(UiCheckRules.UnknownCommands(s, c.Commands, say) == 0, "ui screens: every target runs a command its template answers: " + where);
                         if (lang == "en")
                         {
                             c.Lay(s, frame, false, keys, t);
                             Check(UiCheckRules.LowContrast(s, say) == 0, "ui screens: every text and icon stands out (light): " + where);
+                            if (keys == UiDefaultKeys.Keyboard)
+                            {
+                                // As the mouse sees it: the band without Move and Select still says how to go back, and nothing else moves.
+                                UiFrame pointer = frame;
+                                pointer.Pointer = true;
+                                c.Lay(s, pointer, true, keys, t);
+                                Check(UiCheckRules.NoPrompts(s, say) == 0 && !Prompted(s, UiAction.Move) && !Prompted(s, UiAction.Confirm) && UiCheckRules.Overlaps(s, say) == 0,
+                                    "ui screens: with the mouse leading, the band keeps Back and leaves out what the mouse does itself: " + where);
+                            }
                         }
                     }
                 }
@@ -581,6 +700,37 @@ internal static partial class Program
             UiDraw.ChoiceCard(picks, UiAt.Screen, 0f, i * 120f, 400f, ref c, UiDefaultKeys.Keyboard, 1, i, out float _);
         }
         Check(UiCheckRules.KeyClash(picks, null) == 0 && UiFocusRules.Keyed(picks, UiAction.Pick2) == 1, "ui rules: choices on 1, 2 and 3 pass, and 2 presses the second");
+        // Beta 3's faults, each found on a broken scene: a raw key in a table, the masthead's words again under it, a
+        // caption over a label that says the same, an empty side box, a call's words straight on the page, five sizes of type.
+        var beta = new UiScene();
+        beta.Begin("beta 3", played.Width, played.Height, true);
+        int sheet = UiDraw.Box(beta, UiAt.Screen, 24f, 100f, 800f, 400f, UiRole.Panel, UiRole.None, 0f, UiFlags.Panel);
+        UiDraw.Text(beta, UiAt.Screen.In(sheet), 44f, 120f, 400f, UiStyle.Title, UiRole.Text, "ba:street_fifthavenue|70", UiFlags.Truncate);
+        Check(UiCheckRules.RawKeys(beta, null) == 1, "ui rules: a record's key on the screen is found");
+        UiDraw.Text(beta, UiAt.Screen.In(sheet), 44f, 160f, 400f, UiStyle.Title, UiRole.Text, "Tech", UiFlags.Label);
+        Check(UiCheckRules.Repeats(beta, played, null) == 1, "ui rules: the masthead's words said again under it are found");
+        UiDraw.Text(beta, UiAt.Screen.In(sheet), 44f, 200f, 300f, UiStyle.SectionHeader, UiRole.Muted, "Figure", UiFlags.Label);
+        UiDraw.Text(beta, UiAt.Screen.In(sheet), 44f, 224f, 300f, UiStyle.SectionHeader, UiRole.Muted, "People", UiFlags.Label);
+        Check(UiCheckRules.Stacked(beta, null) == 1, "ui rules: a caption over another label is found");
+        UiDraw.Box(beta, UiAt.Screen, 840f, 100f, 380f, 40f, UiRole.Panel, UiRole.None, 0f, UiFlags.Panel);
+        Check(UiCheckRules.EmptyPanels(beta, null) == 1, "ui rules: an empty side box is found");
+        UiDraw.Text(beta, new UiAt { Parent = -1, Clip = -1, Layer = 1, Order = -1 }, 900f, 300f, 300f, UiStyle.Hero, UiRole.Text, "Maya Okafor", UiFlags.None);
+        Check(UiCheckRules.Floating(beta, null) == 1, "ui rules: a call's words straight over the page are found");
+        UiDraw.Text(beta, UiAt.Screen.In(sheet), 44f, 260f, 300f, UiStyle.Number, UiRole.Text, "12", UiFlags.None);
+        Check(UiCheckRules.TypeLevels(beta, null) == 1, "ui rules: more than three sizes of type are found");
+        UiDraw.Node(beta, UiAt.Screen, 24f, 600f, 200f, 48f, 0, 0, -1);
+        Check(UiCheckRules.UnknownCommands(beta, DashboardCommands, null) == 1, "ui rules: a button whose command its template answers nowhere is found (beta 3's Call read as a group)");
+        var games = new UiScene();
+        games.Begin("strays", played.Width, played.Height, true);
+        int table = UiDraw.Box(games, UiAt.Screen, 24f, 300f, 1000f, 300f, UiRole.Panel, UiRole.None, 0f, UiFlags.Panel);
+        int team = UiDraw.Box(games, UiAt.Screen, 1040f, 300f, 380f, 300f, UiRole.Panel, UiRole.None, 0f, UiFlags.Panel);
+        UiDraw.Text(games, UiAt.Screen.In(table), 44f, 320f, 400f, UiStyle.Body, UiRole.Text, "No game yet.", UiFlags.None);
+        UiDraw.Text(games, UiAt.Screen.In(team), 1060f, 320f, 300f, UiStyle.Small, UiRole.Text2, "Designers (0)", UiFlags.None);
+        Check(UiCheckRules.Strays(games, null) == 0, "ui rules: marks inside their own panels pass");
+        UiDraw.Text(games, UiAt.Screen, 576f, 380f, 300f, UiStyle.Small, UiRole.Text2, "Engineers (0)", UiFlags.None);
+        Check(UiCheckRules.Strays(games, null) == 1, "ui rules: beta 3's team row lying over the games table is found");
+        UiDraw.Spark(games, UiAt.Screen.In(table), 900f, 340f, 400f, 40f, new[] { 0f, 1f }, UiRole.Accent);
+        Check(UiCheckRules.Spills(games, null) > 0, "ui rules: a sparkline running out of its panel into the next is found");
     }
 
     // ---------------------------------------------------------------- sources

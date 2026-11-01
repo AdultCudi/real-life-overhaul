@@ -52,6 +52,8 @@ namespace RealLifeOverhaul.Flare
         public int Post = -1;        // ...or a post's number
         public string What;          // a trend: the locale key of what trends (a kind of goods, a genre), written into the title's words
         public string Where;         // ...and its district by the game's id, or null for the whole city
+        public int Day = -1;         // the day it went up (a post's, an ad's), or -1
+        public int Seen;             // residents who saw it
     }
 
     /// <summary>
@@ -72,6 +74,7 @@ namespace RealLifeOverhaul.Flare
         public string Primary;       // the primary action's label key, or null
         public string PrimaryTarget; // its business's place, or null
         public string Empty;         // the words for an empty list
+        public int Today = -1;       // the day it was worked out, so its entries can say how long ago they went up, or -1 when unknown
     }
 
     /// <summary>
@@ -85,7 +88,7 @@ namespace RealLifeOverhaul.Flare
         public const int RowsMost = 6;   // rows a list shows: a screen keeps to a few things
         private const string K = "reallife" + "_flare_city_";   // the words' keys (split, so the locale check does not take a prefix for a key)
 
-        /// <summary>The account in the city: followers here and beyond, and what the newest posts and ads did.</summary>
+        /// <summary>The account in the city: followers here and beyond, and what the newest posts and ads did, each with the day it went up and who saw it.</summary>
         public static FlareCityView Account(FlareCityState c, int followers, Func<string, string> nameOf)
         {
             var v = new FlareCityView { Kind = FlareViewKind.Account, Title = K + "title_account", TitleKey = true };
@@ -104,7 +107,7 @@ namespace RealLifeOverhaul.Flare
                 {
                     Title = f.Place != null && nameOf != null ? nameOf(f.Place) : K + (f.Kind == FunnelKind.Ad ? "row_ad" : "row_post"), TitleKey = f.Place == null || nameOf == null,
                     Subtitle = K + (f.Kind == FunnelKind.Ad ? "row_ad" : "row_post"), Value = f.Came, Format = FlareViewFormat.Signed, Second = f.Spent / 100, Target = f.Place,
-                    Post = f.Post
+                    Post = f.Post, Day = f.Day, Seen = f.Seen
                 });
             }
             v.Empty = K + "empty_funnel";

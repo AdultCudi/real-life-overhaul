@@ -63,7 +63,13 @@ namespace RealLifeOverhaul.Ui
             UiAt screen = UiAt.Screen;
             int bg = UiDraw.Box(s, screen, 0f, 0f, frame.Width, frame.Height, UiRole.Bg, UiRole.None, 0f, UiFlags.Decor);   // the host's whole area
             UiAt at = screen.In(bg);
-            float y = cy + UiDraw.PageHead(s, at, cx, cy, cw, m.Title, m.About) + UiTokens.S6;
+            // The form's title stands in the masthead after the app's name, so the page opens on what it is about.
+            float y = cy;
+            if (!string.IsNullOrEmpty(m.About))
+            {
+                UiDraw.Text(s, at, cx, y, cw, UiStyle.Body, UiRole.Text2, m.About, UiFlags.Label | UiFlags.Wrap, 2);
+                y += UiDraw.Snap(UiTextRules.WrappedHeight(m.About, UiStyle.Body, cw, 2)) + UiTokens.S6;
+            }
             int lead = Lead(m);
             if (lead > 0 || (m.FieldCount == 0 && m.ActionCount > 0))
             {
@@ -101,8 +107,8 @@ namespace RealLifeOverhaul.Ui
             {
                 s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
             }
-            UiDraw.PromptBar(s, 0f, frame.BandY, frame.Width, frame.Band, keys);
-            UiDraw.Chrome(s, frame);
+            UiDraw.PromptBar(s, frame, keys);
+            UiDraw.Chrome(s, frame, m.Title);
         }
 
         // How many lines open the form before its first section (what to do next), or 0 when a choice comes first or a
@@ -133,7 +139,7 @@ namespace RealLifeOverhaul.Ui
                 linesH += UiTextRules.WrappedHeight(m.Fields[i].Label, UiStyle.Body, tw, 2) + (i > 0 ? UiTokens.S2 : 0f);
             }
             float h = UiDraw.Snap(UiTokens.S5 * 2f + Math.Max(linesH, m.ActionCount > 0 ? UiTokens.Control : 0f));
-            int band = UiDraw.Box(s, at, x, y, w, h, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
+            int band = UiDraw.Box(s, at, x, y, w, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt inside = at.In(band);
             float ty = y + (h - linesH) / 2f;
             for (int i = 0; i < lead; i++)
@@ -186,7 +192,7 @@ namespace RealLifeOverhaul.Ui
         // its foot for the actions when it holds them. Returns the column's frame.
         private static int Column(UiScene s, UiAt at, UiFormModel m, int from, int to, float px, float py, float pw, float most, float footH, float offset)
         {
-            int panel = UiDraw.Box(s, at, px, py, pw, most, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
+            int panel = UiDraw.Box(s, at, px, py, pw, most, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             float x = px + UiTokens.S5, w = pw - UiTokens.S5 * 2f;
             // A section's header brings its own step of air, so only a column that opens on a line takes the panel's padding.
             float top = from < to && m.Fields[from].Section != null ? UiTokens.S1 : UiTokens.S5;

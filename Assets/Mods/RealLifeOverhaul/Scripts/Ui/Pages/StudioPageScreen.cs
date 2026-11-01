@@ -13,7 +13,8 @@ namespace RealLifeOverhaul.Ui
     {
         private readonly List<ViewAction> _others = new List<ViewAction>(StudioPages.MostOthers);
         private readonly UiStudioWords _words = new UiStudioWords();
-        private readonly string _place;
+        private readonly UiDashboardScroll _scroll = new UiDashboardScroll();
+        private readonly string _place;   // the firm's place, or null for the labelled sample studio
         private ViewAction _primary;
         private bool _dirty = true;
 
@@ -30,9 +31,15 @@ namespace RealLifeOverhaul.Ui
 
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
-            FirmPage page = Page();
+            FirmPage page = _place != null ? Page() : null;
             UiDashboardModel m;
-            if (page != null)
+            if (_place == null)
+            {
+                _primary = null;
+                _others.Clear();
+                m = StudioPages.Sample(UiText.Words);
+            }
+            else if (page != null)
             {
                 m = StudioPages.Page(page, UiText.Words, _others, out _primary);
             }
@@ -41,11 +48,13 @@ namespace RealLifeOverhaul.Ui
                 _primary = null;
                 _others.Clear();
                 string empty = UiText.T("reallife_ui_page_empty");
-                m = new UiDashboardModel { Title = empty, Table = new UiTableModel { EmptyTitle = empty } };
+                m = new UiDashboardModel { Table = new UiTableModel { EmptyTitle = empty } };
                 m.Prompts = new[] { new UiPrompt { Action = UiAction.Back, Label = UiText.T("reallife_ui_prompt_back") } };
                 m.PromptCount = 1;
             }
+            _scroll.Apply(m);
             UiDashboard.Lay(s, m, frame, dark, keys);
+            _scroll.Keep(m);
             _dirty = false;
         }
 
@@ -73,10 +82,14 @@ namespace RealLifeOverhaul.Ui
 
         public void Reveal(int list, int index)
         {
+            _scroll.Reveal(list, index);
+            _dirty = true;
         }
 
         public void Wheel(int clip, float notches)
         {
+            _scroll.Wheel(clip, notches);
+            _dirty = true;
         }
 
         private FirmPage Page()

@@ -125,6 +125,7 @@ namespace RealLifeOverhaul.Ui
         public float Width, Height;
         public bool Dark;
         public int FocusFirst = -1;      // the node focus starts on
+        public bool FocusReset;          // a new page: focus goes to FocusFirst (the row Back came from), not to the old page's target of the same number
         public string Name;              // the screen's id, for the checks' messages
         public float PromptX, PromptY, PromptW, PromptH;   // where the prompt bar stands
 
@@ -137,6 +138,7 @@ namespace RealLifeOverhaul.Ui
             Dark = dark;
             ItemCount = NodeCount = ClipCount = ListCount = PromptCount = 0;
             FocusFirst = -1;
+            FocusReset = false;
             PromptW = PromptH = 0f;
         }
 

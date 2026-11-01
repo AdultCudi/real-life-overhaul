@@ -7,15 +7,28 @@ namespace RealLifeOverhaul.Ui
     /// <summary>
     /// The population's views as a screen of the kit: the city first, then wherever a row or the primary action leads
     /// (a district, a building, a household, a person, a business, who contributes), Back stepping back the way it came
-    /// and closing at the city. Each view is worked out from the live population when it opens (PopulationViews).
-    /// Cost: a view and a layout a move; nothing per frame.
+    /// and closing at the city. Back puts the focus on the row it left from, so Enter and Back always meet at one place.
+    /// Each view is worked out from the live population when it opens (PopulationViews). Cost: a view and a layout a move,
+    /// nothing per frame.
     /// </summary>
     public sealed class PopulationScreen : IUiScreen
     {
-        private readonly Stack<ViewTarget> _way = new Stack<ViewTarget>();
+        private readonly Stack<Step> _way = new Stack<Step>();
+        private readonly UiDashboardScroll _scroll = new UiDashboardScroll();
         private ViewTarget _at = ViewTarget.To(ViewKind.City, 0);
         private PopulationView _view;
+        private UiDashboardModel _shown;     // the page on the screen, whose rows name what they open
+        private string _name;                // what the row that opened this page called it, or null
         private bool _dirty = true;
+        private bool _fresh = true;          // a page just opened: focus goes where it should start, not to the last page's target
+        private int _focusCommand = -1, _focusArg;
+
+        private struct Step
+        {
+            public ViewTarget At;
+            public int Command, Arg;         // what was pressed to leave it: Back focuses it again
+            public string Name;
+        }
 
         /// <summary>Back at the city closes the screen.</summary>
         public Action Close;
@@ -27,9 +40,24 @@ namespace RealLifeOverhaul.Ui
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
             _view = Build(_at) ?? Build(ViewTarget.To(ViewKind.City, 0));
-            UiDashboardModel m = _view != null ? PopulationPages.Model(_view, UiText.Words, PopulationText.Money,
-                PopulationGame.NameOf) : new UiDashboardModel { Title = UiText.T("reallife_ui_page_empty") };
+            UiDashboardModel m = _view != null ? PopulationPages.Model(_view, UiText.Words, PopulationText.Money, PopulationGame.NameOf, UiText.Place, _name)
+                : new UiDashboardModel { Table = new UiTableModel { EmptyTitle = UiText.T("reallife_ui_page_empty") } };
+            _shown = m;
+            if (_view == null)
+            {
+                m.Prompts = new[] { new UiPrompt { Action = UiAction.Back, Label = UiText.T("reallife_ui_prompt_back") } };
+                m.PromptCount = 1;
+            }
+            _scroll.Apply(m);
             UiDashboard.Lay(s, m, frame, dark, keys);
+            _scroll.Keep(m);
+            if (_fresh)
+            {
+                int back = _focusCommand >= 0 ? s.FindNode(_focusCommand, _focusArg) : -1;
+                s.FocusFirst = back >= 0 ? back : s.FocusFirst;
+                s.FocusReset = true;
+                _fresh = false;
+            }
             _dirty = false;
         }
 
@@ -45,10 +73,26 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
-            _way.Push(_at);
+            _way.Push(new Step { At = _at, Command = command, Arg = arg, Name = _name });
             _at = to;
-            _dirty = true;
+            _name = command == UiDashboard.RowCommand ? RowName(arg) : null;
+            Opened(-1, 0);
             return true;
+        }
+
+        // What the page on the screen calls a row: a person's or a household's entry, or a table row's first cell.
+        private string RowName(int row)
+        {
+            if (_shown == null || row < 0)
+            {
+                return null;
+            }
+            if (row < _shown.EntryCount)
+            {
+                return _shown.Entries[row].Name;
+            }
+            string[] cells = row < _shown.Table.Rows.Length ? _shown.Table.Rows[row] : null;
+            return cells != null && cells.Length > 0 ? cells[0] : null;
         }
 
         public void Focused(int command, int arg)
@@ -59,8 +103,10 @@ namespace RealLifeOverhaul.Ui
         {
             if (_way.Count > 0)
             {
-                _at = _way.Pop();
-                _dirty = true;
+                Step step = _way.Pop();
+                _at = step.At;
+                _name = step.Name;
+                Opened(step.Command, step.Arg);
                 return true;
             }
             Close?.Invoke();
@@ -75,10 +121,23 @@ namespace RealLifeOverhaul.Ui
 
         public void Reveal(int list, int index)
         {
+            _scroll.Reveal(list, index);
+            _dirty = true;
         }
 
         public void Wheel(int clip, float notches)
         {
+            _scroll.Wheel(clip, notches);
+            _dirty = true;
+        }
+
+        private void Opened(int focusCommand, int focusArg)
+        {
+            _scroll.Reset();
+            _fresh = true;
+            _focusCommand = focusCommand;
+            _focusArg = focusArg;
+            _dirty = true;
         }
 
         // The demand the population's director shows (null while it is settling or not running).
@@ -88,6 +147,8 @@ namespace RealLifeOverhaul.Ui
             return m != null && m.AnchorDay >= 0 ? m : null;
         }
 
+        // A household or a person opens through PopulationViews.Open, which checks the slot still holds the one the row
+        // was made for, so a slot used again after a death or a move opens as gone, never as somebody else.
         private static PopulationView Build(ViewTarget to)
         {
             PopulationState s = CityPopulation.Live;
@@ -97,15 +158,9 @@ namespace RealLifeOverhaul.Ui
             }
             switch (to.Kind)
             {
-                case ViewKind.District: return PopulationViews.District(s, to.Index);
-                case ViewKind.Building: return PopulationViews.Building(s, to.Index);
-                case ViewKind.Household: return CityPopulation.Pools != null ? PopulationViews.Household(s, CityPopulation.Pools, to.Index) : null;
-                case ViewKind.Person: return PopulationViews.Person(s, to.Index);
-                case ViewKind.Business: return CityPopulation.Pools != null ? PopulationViews.Business(s, CityPopulation.Pools, to.Index) : null;
-                case ViewKind.Contributors: return CityPopulation.Pools != null ? PopulationViews.Contributors(s, CityPopulation.Pools) : null;
                 case ViewKind.Demands: return Demand() != null ? PopDemandViews.Demands(Demand()) : null;
                 case ViewKind.Demand: return Demand() != null ? PopDemandViews.Demand(Demand(), to.Index) : null;
-                default: return PopulationViews.City(s);
+                default: return PopulationViews.Open(s, CityPopulation.Pools, to);
             }
         }
     }

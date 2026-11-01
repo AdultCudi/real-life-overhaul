@@ -347,7 +347,8 @@ namespace RealLifeOverhaul.Ui
             for (int p = 0; p < s.ItemCount; p++)
             {
                 ref UiItem frame = ref s.Items[p];
-                if (frame.Kind != UiKind.Box || (frame.Edge != UiRole.PanelEdge && frame.Edge != UiRole.RowEdge) || frame.Clip >= 0)
+                bool framed = (frame.Flags & UiFlags.Panel) != 0 || frame.Edge == UiRole.PanelEdge || frame.Edge == UiRole.RowEdge;   // a panel is one by its flag now that panels wear no edge
+                if (frame.Kind != UiKind.Box || !framed || frame.Clip >= 0)
                 {
                     continue;
                 }
@@ -645,6 +646,237 @@ namespace RealLifeOverhaul.Ui
         {
             ref UiClip c = ref s.Clips[clip];
             return c.X >= panel.X - Tolerance && c.X + c.W <= panel.X + panel.W + Tolerance && c.Y >= panel.Y - Tolerance && c.Y + c.H <= panel.Y + panel.H + Tolerance;
+        }
+
+        /// <summary>Texts that are a record's key rather than words (UiPlaces.IsKey), as "ba:street_fifthavenue|70" stood in beta 3's table.</summary>
+        public static int RawKeys(UiScene s, Action<string> say)
+        {
+            int found = 0;
+            for (int i = 0; i < s.ItemCount; i++)
+            {
+                ref UiItem it = ref s.Items[i];
+                if (it.Kind == UiKind.Text && UiPlaces.IsKey(it.Text))
+                {
+                    found++;
+                    say?.Invoke(s.Name + ": \"" + Cut(it.Text) + "\" is a record's key on the screen, not words");
+                }
+            }
+            return found;
+        }
+
+        /// <summary>A page that says the masthead's words again under it ("The city's people" twice in beta 3).</summary>
+        public static int Repeats(UiScene s, UiFrame frame, Action<string> say)
+        {
+            if (string.IsNullOrEmpty(frame.Title))
+            {
+                return 0;
+            }
+            int found = 0;
+            string app = frame.Title.Trim();
+            for (int i = 0; i < s.ItemCount; i++)
+            {
+                ref UiItem it = ref s.Items[i];
+                if (it.Kind == UiKind.Text && it.Y >= frame.Top - Tolerance && (it.Flags & UiFlags.Prompt) == 0 && it.Text != null
+                    && string.Equals(it.Text.Trim(), app, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    found++;
+                    say?.Invoke(s.Name + ": \"" + Cut(it.Text) + "\" repeats the masthead under it");
+                }
+            }
+            return found;
+        }
+
+        /// <summary>
+        /// Two labels stacked at one left edge, the upper alone on its line ("FIGURE" over "PEOPLE", "MOTION" over the
+        /// column "MOTION" in beta 3): one label says what a panel holds. A table's head row is many labels on a line, not a stack.
+        /// </summary>
+        public static int Stacked(UiScene s, Action<string> say)
+        {
+            int found = 0;
+            for (int i = 0; i < s.ItemCount; i++)
+            {
+                ref UiItem a = ref s.Items[i];
+                if (a.Kind != UiKind.Text || a.Style != UiStyle.SectionHeader || string.IsNullOrEmpty(a.Text) || Beside(s, i))
+                {
+                    continue;
+                }
+                for (int j = 0; j < s.ItemCount; j++)
+                {
+                    ref UiItem b = ref s.Items[j];
+                    float gap = b.Y - (a.Y + a.H);
+                    if (j != i && b.Kind == UiKind.Text && b.Style == UiStyle.SectionHeader && !string.IsNullOrEmpty(b.Text) && b.Layer == a.Layer && b.Clip == a.Clip
+                        && Math.Abs(b.X - a.X) <= UiTokens.S2 + Tolerance && gap >= -Tolerance && gap <= UiTokens.S6)
+                    {
+                        found++;
+                        say?.Invoke(s.Name + ": \"" + Cut(a.Text) + "\" stands over \"" + Cut(b.Text) + "\", two labels where one would do");
+                    }
+                }
+            }
+            return found;
+        }
+
+        // Whether a label shares its line with another label of its kind (a table's head row).
+        private static bool Beside(UiScene s, int i)
+        {
+            ref UiItem a = ref s.Items[i];
+            for (int j = 0; j < s.ItemCount; j++)
+            {
+                ref UiItem b = ref s.Items[j];
+                if (j != i && b.Kind == UiKind.Text && b.Style == UiStyle.SectionHeader && b.Layer == a.Layer && b.Clip == a.Clip && Math.Abs(b.Y - a.Y) <= Tolerance
+                    && !string.IsNullOrEmpty(b.Text))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>A panel with nothing in it, as the empty side box at the right of every Flare tab in beta 3: an empty box is a hole.</summary>
+        public static int EmptyPanels(UiScene s, Action<string> say)
+        {
+            int found = 0;
+            for (int p = 0; p < s.ItemCount; p++)
+            {
+                ref UiItem panel = ref s.Items[p];
+                if (panel.Kind != UiKind.Box || (panel.Flags & UiFlags.Panel) == 0)
+                {
+                    continue;
+                }
+                bool held = false;
+                for (int i = p + 1; i < s.ItemCount && !held; i++)
+                {
+                    ref UiItem it = ref s.Items[i];
+                    held = (it.Flags & UiFlags.Decor) == 0 && !(it.Kind == UiKind.Text && string.IsNullOrEmpty(it.Text)) && UiDraw.Inside(s, i, p);
+                }
+                for (int c = 0; c < s.ClipCount && !held; c++)
+                {
+                    held = s.Clips[c].ContentHeight > 0f && ClipInside(s, (short)c, ref panel);
+                }
+                if (!held)
+                {
+                    found++;
+                    say?.Invoke(s.Name + ": " + Describe(s, p) + " holds nothing");
+                }
+            }
+            return found;
+        }
+
+        /// <summary>
+        /// Words and faces of an overlay with no surface of their own under them, read through over the page (beta 3's call:
+        /// the caller's name across the page's Send button). An overlay stands on a card.
+        /// </summary>
+        public static int Floating(UiScene s, Action<string> say)
+        {
+            int found = 0;
+            for (int i = 0; i < s.ItemCount; i++)
+            {
+                ref UiItem it = ref s.Items[i];
+                if (it.Layer == 0 || (it.Kind != UiKind.Text && it.Kind != UiKind.Avatar) || (it.Kind == UiKind.Text && string.IsNullOrEmpty(it.Text)))
+                {
+                    continue;
+                }
+                bool card = false;
+                for (int p = it.Parent, guard = 0; p >= 0 && guard < 32 && !card; p = s.Items[p].Parent, guard++)
+                {
+                    card = s.Items[p].Kind == UiKind.Box && Surface(s.Items[p].Fill);
+                }
+                if (!card)
+                {
+                    found++;
+                    say?.Invoke(s.Name + ": \"" + Cut(it.Text) + "\" floats over the page on no card of its own");
+                }
+            }
+            return found;
+        }
+
+        private static bool Surface(UiRole fill)
+        {
+            return fill == UiRole.Panel || fill == UiRole.Field || fill == UiRole.Bubble || fill == UiRole.Row || fill == UiRole.Header || fill == UiRole.Accent
+                   || fill == UiRole.Danger || fill == UiRole.RowSel || fill == UiRole.Notice || fill == UiRole.Hover;
+        }
+
+        /// <summary>The bands type falls in: labels, text, titles, figures and display. A page keeps to three of them.</summary>
+        public static int TypeBand(UiStyle style)
+        {
+            float size = UiTokens.Type(style).Size;
+            return size < 16.75f ? 0 : size < 21.5f ? 1 : size < 26.5f ? 2 : size < 31.5f ? 3 : 4;
+        }
+
+        /// <summary>
+        /// More than three sizes of type on a screen (the owner, 1 Nov: no slop): its display size, its text size and its
+        /// label size are all a page needs. Sizes within a band (18 and 19, 15 and 16) read as one.
+        /// </summary>
+        public static int TypeLevels(UiScene s, Action<string> say)
+        {
+            int bands = 0;
+            for (int i = 0; i < s.ItemCount; i++)
+            {
+                ref UiItem it = ref s.Items[i];
+                if (it.Kind == UiKind.Text && !string.IsNullOrEmpty(it.Text))
+                {
+                    bands |= 1 << TypeBand(it.Style);
+                }
+            }
+            int used = 0;
+            for (int b = bands; b != 0; b >>= 1)
+            {
+                used += b & 1;
+            }
+            if (used <= 3)
+            {
+                return 0;
+            }
+            say?.Invoke(s.Name + ": " + used + " sizes of type where three would do (bands " + Convert.ToString(bands, 2) + ")");
+            return 1;
+        }
+
+        /// <summary>
+        /// Marks lying over a panel they do not belong to, as beta 3 drew the Team's first row inside the Games table: a mark
+        /// stands on its own panel or on the ground beside one, never over another's words.
+        /// </summary>
+        public static int Strays(UiScene s, Action<string> say)
+        {
+            int found = 0;
+            for (int i = 0; i < s.ItemCount; i++)
+            {
+                ref UiItem it = ref s.Items[i];
+                if ((it.Flags & (UiFlags.Decor | UiFlags.Prompt | UiFlags.Panel)) != 0 || it.Clip >= 0 || (it.Kind == UiKind.Text && string.IsNullOrEmpty(it.Text)))
+                {
+                    continue;
+                }
+                for (int p = 0; p < s.ItemCount; p++)
+                {
+                    ref UiItem panel = ref s.Items[p];
+                    if (p == i || (panel.Flags & UiFlags.Panel) == 0 || panel.Layer != it.Layer || panel.Clip >= 0 || UiDraw.Inside(s, i, p) || UiDraw.Inside(s, p, i))
+                    {
+                        continue;
+                    }
+                    float w = Math.Min(it.X + it.W, panel.X + panel.W) - Math.Max(it.X, panel.X);
+                    float h = Math.Min(it.Y + it.H, panel.Y + panel.H) - Math.Max(it.Y, panel.Y);
+                    if (w > Tolerance && h > Tolerance)
+                    {
+                        found++;
+                        say?.Invoke(s.Name + ": " + Describe(s, i) + " lies over " + Describe(s, p) + ", a panel it does not belong to");
+                        break;
+                    }
+                }
+            }
+            return found;
+        }
+
+        /// <summary>Targets whose command their template does not define: a button no press answers.</summary>
+        public static int UnknownCommands(UiScene s, int[] known, Action<string> say)
+        {
+            int found = 0;
+            for (int i = 0; i < s.NodeCount; i++)
+            {
+                if (Array.IndexOf(known, s.Nodes[i].Command) < 0)
+                {
+                    found++;
+                    say?.Invoke(s.Name + ": target " + i + " runs command " + s.Nodes[i].Command + ", which its template answers nowhere");
+                }
+            }
+            return found;
         }
 
         /// <summary>A screen without its prompt bar, or one whose bar does not say how to go back.</summary>

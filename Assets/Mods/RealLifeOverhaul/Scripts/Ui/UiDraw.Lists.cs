@@ -6,14 +6,18 @@ namespace RealLifeOverhaul.Ui
     public static partial class UiDraw
     {
         /// <summary>
-        /// A list row: the avatar with its online dot, the name with its tick, the preview, the time and the unread badge;
-        /// selected, the row's fill and edge turn to the accent and the selection bar stands at its left. Returns the focus target.
+        /// A list row: the avatar with its online dot, the name with its tick, the preview, the time and the unread badge.
+        /// Selected, the row's fill turns to the accent's and the selection bar stands at its left. Returns the focus target,
+        /// or -1 for a row that is words only (<paramref name="target"/> false: a press on it would open nothing). A
+        /// <paramref name="plain"/> row has no fill of its own, for a list inside a panel, where a card in a card is clutter.
         /// </summary>
-        public static int ListRow(UiScene s, UiAt at, float x, float y, float w, ref UiRowModel row, int command, int arg, short list, int index)
+        public static int ListRow(UiScene s, UiAt at, float x, float y, float w, ref UiRowModel row, int command, int arg, short list, int index, bool target = true,
+            bool plain = false)
         {
             float h = UiTokens.Row;
             bool sel = row.Selected;
-            int face = Box(s, at, x, y, w, h, sel ? UiRole.RowSel : UiRole.Row, sel ? UiRole.RowSelEdge : UiRole.RowEdge, UiTokens.RadiusLarge,
+            UiRole ground = plain ? UiRole.Panel : UiRole.Row;
+            int face = Box(s, at, x, y, w, h, sel ? UiRole.RowSel : plain ? UiRole.None : UiRole.Row, UiRole.None, UiTokens.RadiusLarge,
                 sel ? UiFlags.Selected : UiFlags.None);
             UiAt inside = at.In(face);
             if (sel)
@@ -25,7 +29,7 @@ namespace RealLifeOverhaul.Ui
             if (row.Online)
             {
                 float ring = UiTokens.S4;
-                int r = Circle(s, at.In(avatar), ax + size - UiTokens.S3, ay + size - UiTokens.S3, ring, ring, sel ? UiRole.RowSel : UiRole.Row, UiFlags.Overflow);
+                int r = Circle(s, at.In(avatar), ax + size - UiTokens.S3, ay + size - UiTokens.S3, ring, ring, sel ? UiRole.RowSel : ground, UiFlags.Overflow);
                 Circle(s, at.In(r), ax + size - UiTokens.S3 + (ring - UiTokens.Dot) / 2f, ay + size - UiTokens.S3 + (ring - UiTokens.Dot) / 2f, UiTokens.Dot, UiTokens.Dot, UiRole.Ok,
                     UiFlags.Middle | UiFlags.Centre | UiFlags.Overflow);
             }
@@ -58,7 +62,7 @@ namespace RealLifeOverhaul.Ui
             }
             Text(s, inside, tx, top + nameH + UiTokens.S1, tw, row.Unread > 0 ? UiStyle.SmallStrong : UiStyle.Small, row.Unread > 0 ? UiRole.Text : UiRole.Muted, row.Preview,
                 UiFlags.Truncate | UiFlags.Middle);
-            return Node(s, at, x, y, w, h, command, arg, face, false, list, index);
+            return target ? Node(s, at, x, y, w, h, command, arg, face, false, list, index) : -1;
         }
 
         /// <summary>A key and its value on one line with a rule under them; returns the height.</summary>
@@ -67,9 +71,11 @@ namespace RealLifeOverhaul.Ui
             float h = UiTokens.PairRow;
             // The value is player data and may end in an ellipsis past half the row; the key is a label and takes the rest,
             // on two lines when one is too few ("Wymagania dotyczące grafiku").
-            float vw = Math.Min(UiTextRules.Width(value, UiStyle.Small) + UiTokens.S1, w * 0.55f);
-            float kw = w - vw - UiTokens.S3;
             float need = UiTextRules.Width(key, UiStyle.Small) + UiTokens.S1;
+            float room = Math.Max(w * 0.55f, w - need - UiTokens.S3);
+            UiStyle valueStyle = UiTextRules.Width(value, UiStyle.Body) + UiTokens.S1 <= room ? UiStyle.Body : UiStyle.Small;   // a long value shrinks a step rather than lose its end
+            float vw = Math.Min(UiTextRules.Width(value, valueStyle) + UiTokens.S1, room);
+            float kw = w - vw - UiTokens.S3;
             if (need <= kw)
             {
                 kw = need;
@@ -80,7 +86,8 @@ namespace RealLifeOverhaul.Ui
                 float kh = UiTextRules.WrappedHeight(key, UiStyle.Small, kw, 2);
                 Text(s, at, x, y + (h - kh) / 2f, kw, UiStyle.Small, UiRole.Muted, key, UiFlags.Label | UiFlags.Wrap | UiFlags.Middle, 2);
             }
-            TextMiddle(s, at, x + kw + UiTokens.S3, y, h, w - kw - UiTokens.S3, UiStyle.Small, UiRole.Text, value, UiFlags.Right | UiFlags.Truncate);
+            // The value in the serif, whose figures are all one width, so a column of them lines up.
+            TextMiddle(s, at, x + kw + UiTokens.S3, y, h, w - kw - UiTokens.S3, valueStyle, UiRole.Text, value, UiFlags.Right | UiFlags.Truncate);
             Box(s, at, x, y + h - UiTokens.Hairline, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             return h;
         }
@@ -94,8 +101,9 @@ namespace RealLifeOverhaul.Ui
             float titleH = UiTextRules.WrappedHeight(service.Title, UiStyle.Title, titleW, 2);
             float descH = string.IsNullOrEmpty(service.About) ? 0f : UiTextRules.WrappedHeight(service.About, UiStyle.Small, inner, 2);
             height = Snap(UiTokens.S4 * 2f + titleH + (descH > 0f ? UiTokens.S1 + descH : 0f));
-            int face = Box(s, at, x, y, w, height, UiRole.Field, UiRole.RowEdge, UiTokens.RadiusLarge, service.Disabled ? UiFlags.Disabled : UiFlags.None);
+            int face = Box(s, at, x, y, w, height, UiRole.None, UiRole.None, UiTokens.RadiusLarge, service.Disabled ? UiFlags.Disabled : UiFlags.None);   // a row in its panel, not a card in a card
             UiAt inside = at.In(face);
+            Box(s, inside, x + UiTokens.S4, y + height - UiTokens.Hairline, w - UiTokens.S4 * 2f, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             Text(s, inside, x + UiTokens.S4, y + UiTokens.S4, titleW, UiStyle.Title, UiRole.Text, service.Title, UiFlags.Wrap | UiFlags.Truncate, 2);
             float titleLine = UiTextRules.LineHeight(UiStyle.Title);
             Text(s, inside, x + w - UiTokens.S4 - pw, y + UiTokens.S4 + (titleLine - UiTextRules.LineHeight(UiStyle.SmallStrong)) / 2f, pw, UiStyle.SmallStrong,
@@ -123,9 +131,13 @@ namespace RealLifeOverhaul.Ui
             float nameH = UiTextRules.LineHeight(UiStyle.Title);
             float tradeH = UiTextRules.WrappedHeight(choice.Trade, UiStyle.Small, tw, 2);
             height = Math.Max(least, ChoiceCardHeight(ref choice, keys, w));
-            int face = Box(s, at, x, y, w, height, sel ? UiRole.RowSel : UiRole.Field, sel ? UiRole.RowSelEdge : UiRole.RowEdge, UiTokens.RadiusLarge,
+            int face = Box(s, at, x, y, w, height, sel ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusLarge,
                 (sel ? UiFlags.Selected : UiFlags.None) | (choice.Disabled ? UiFlags.Disabled : UiFlags.None));
             UiAt inside = at.In(face);
+            if (!sel)
+            {
+                Box(s, inside, x + UiTokens.S5, y + height - UiTokens.Hairline, w - UiTokens.S5 * 2f, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
+            }
             if (sel)
             {
                 Box(s, inside, x, y + UiTokens.S4, UiTokens.SelectBar, height - UiTokens.S4 * 2f, UiRole.Accent, UiRole.None, UiTokens.SelectBar / 2f);
@@ -156,7 +168,7 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>
         /// The height a table takes in at most a height: its head and the rows that fit whole (all of them when they do), or
-        /// room for its empty state; so its frame fits its rows and never shows a sliver of one.
+        /// room for its empty state, so its frame fits its rows and never shows a sliver of one.
         /// </summary>
         public static float TableHeight(UiTableModel table, float most)
         {
@@ -164,7 +176,7 @@ namespace RealLifeOverhaul.Ui
             int rows = table.Rows != null ? table.RowCount : 0;
             if (rows == 0)
             {
-                return Math.Min(most, headH + UiTokens.S16 * 3f);
+                return Math.Min(most, UiTokens.S16 * 3f);   // an empty table shows its words alone, with no head row over nothing
             }
             int fit = Math.Max(1, (int)((most - headH) / rowH));
             return headH + Math.Min(rows, fit) * rowH;
@@ -186,13 +198,21 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>
         /// A table that stays readable: capitals over its columns, rows of a fixed height on alternate fills, figures to the
-        /// right, the selected row marked; its rows scroll in their frame and only those in view are laid out. Each row is a
-        /// focus target of one list. Give it <see cref="TableHeight"/>. Returns the list.
+        /// right in the serif's even figures so their places line up, the selected row marked. Its rows scroll in their frame
+        /// and only those in view are laid out. Each row a press opens is a focus target of one list, and a row that opens
+        /// nothing is not one. An empty table is its empty state alone. Give it <see cref="TableHeight"/>. Returns the list,
+        /// or -1 for an empty table.
         /// </summary>
         public static short Table(UiScene s, UiAt at, float x, float y, float w, float h, UiTableModel table, int command)
         {
             float headH = UiTokens.ControlSmall, rowH = RowOf(table);
             int cols = table.Columns.Length;
+            if (table.Rows == null || table.RowCount == 0)
+            {
+                Empty(s, at, x, y, w, h, table.EmptyTitle, table.EmptyBody);
+                table.Offset = 0f;
+                return -1;
+            }
             float fixedW = 0f, shares = 0f;
             for (int c = 0; c < cols; c++)
             {
@@ -210,8 +230,16 @@ namespace RealLifeOverhaul.Ui
             }
             Box(s, at, x, y + headH - UiTokens.Hairline, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             float viewH = SnapDown(h - headH);
-            int rows = table.Rows != null ? table.RowCount : 0;
-            float offset = Math.Max(0f, Math.Min(table.Offset, rows * rowH - viewH));
+            int rows = table.RowCount;
+            float offset = table.Offset;
+            if (table.Reveal >= 0 && table.Reveal < rows)
+            {
+                offset = Math.Min(offset, table.Reveal * rowH);
+                offset = Math.Max(offset, (table.Reveal + 1) * rowH - viewH);
+            }
+            offset = Math.Max(0f, Math.Min(offset, rows * rowH - viewH));
+            table.Offset = offset;
+            table.Reveal = -1;
             short clip = s.AddClip(x, y + headH, w, viewH, offset);
             int first = Math.Max(0, (int)(offset / rowH));
             int last = Math.Min(rows - 1, (int)((offset + viewH) / rowH));
@@ -222,9 +250,11 @@ namespace RealLifeOverhaul.Ui
             {
                 bool sel = r == table.Selected;
                 float ry = r * rowH;
-                int face = Box(s, inClip.Arriving(r - first), 0f, ry, w, rowH, sel ? UiRole.RowSel : r % 2 == 0 ? UiRole.Row : UiRole.None, UiRole.None, UiTokens.RadiusMedium,
+                // Rows parted by a hairline, as a printed table's, rather than striped: stripes read as clutter on a calm page.
+                int face = Box(s, inClip.Arriving(r - first), 0f, ry, w, rowH, sel ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusMedium,
                     sel ? UiFlags.Selected : UiFlags.None);
                 UiAt inside = inClip.Arriving(r - first).In(face);
+                Box(s, inside, UiTokens.S2, ry + rowH - UiTokens.Hairline, w - UiTokens.S4, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
                 if (sel)
                 {
                     Box(s, inside, 0f, ry + UiTokens.S3, UiTokens.SelectBar, rowH - UiTokens.S3 * 2f, UiRole.Accent, UiRole.None, UiTokens.SelectBar / 2f);
@@ -239,11 +269,10 @@ namespace RealLifeOverhaul.Ui
                         UiFlags.Truncate | (table.Columns[c].Right ? UiFlags.Right : UiFlags.None));
                     rx += cw + UiTokens.S4;
                 }
-                Node(s, inClip, 0f, ry, w, rowH, command, r, face, false, list, r);
-            }
-            if (rows == 0 && !string.IsNullOrEmpty(table.EmptyTitle))
-            {
-                Empty(s, at, x, y + headH, w, viewH, table.EmptyTitle, table.EmptyBody);
+                if (table.RowLeads(r))
+                {
+                    Node(s, inClip, 0f, ry, w, rowH, command, r, face, false, list, r);
+                }
             }
             return list;
         }

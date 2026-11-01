@@ -11,10 +11,12 @@ using UnityEngine.UI;
 /// <summary>
 /// Renders the kit offline, as the game will draw it: the mod's own Scripts/Ui files (copied in by preview.ps1) laying
 /// out each sample screen and drawing it with the real fonts from the built bundle over the game's whole full menu, its
-/// masthead and prompt band painted flat by the kit, at 1920 x 1080 and 1280 x 720, in the dark and the light look, one
-/// with the pad's focus path drawn over it. The canvas is the game's 3840 x 2160 in canvas units, so 720p is the same
-/// layout at two thirds, as the game's own scaler shows it. Run (see preview.ps1):
-///   Unity.exe -batchmode -quit -projectPath UiAssets/UnityProject -executeMethod UiPreviewRunner.Render -bundle path -out folder [-only prefix]
+/// masthead and prompt band painted flat by the kit, at 1920 x 1080 and 1280 x 720, in the dark and the light look, as a
+/// mouse player sees it (no focus ring, the band without Move and Select), with the mouse resting on a target (its quiet
+/// hover fill), with the keys leading (the ring and the whole band) and with the pad's focus path drawn over it. The
+/// canvas is the game's 3840 x 2160 in canvas units, so 720p is the same layout at two thirds, as the game's own scaler
+/// shows it. Run (see preview.ps1):
+///   Unity.exe -batchmode -quit -projectPath UiAssets/UnityProject -executeMethod UiPreviewRunner.Render -bundle path -out folder [-only prefix,prefix]
 /// </summary>
 public static class UiPreviewRunner
 {
@@ -29,6 +31,7 @@ public static class UiPreviewRunner
         public string AppName;    // the masthead names the app
         public LayOut Lay;
         public int FocusCommand = -1, FocusArg;
+        public int HoverCommand = -1, HoverArg;   // the target the mouse rests on in the hover shot, or the second target
         public Vector2Int[] Walk;
     }
 
@@ -39,6 +42,8 @@ public static class UiPreviewRunner
         public int Width, Height;
         public bool Dark;
         public bool Path;
+        public bool Keys;    // the keys lead: the ring shows and the band names every prompt
+        public bool Hover;   // the mouse rests on the screen's hover target
         public UiPad Pad;
     }
 
@@ -50,7 +55,7 @@ public static class UiPreviewRunner
         {
             string bundle = Argument("-bundle", Path.GetFullPath("../../Assets/Mods/RealLifeOverhaul/Bundles/reallife_ui"));
             string outFolder = Argument("-out", Path.GetFullPath("../../../not-in-repo/previews/ui"));
-            string only = Argument("-only", "");
+            string[] only = Argument("-only", "").Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
             Directory.CreateDirectory(outFolder);
             if (PlayerSettings.colorSpace != ColorSpace.Linear)
             {
@@ -72,7 +77,7 @@ public static class UiPreviewRunner
             var shots = new List<Shot>();
             foreach (Screen screen in Screens())
             {
-                if (only.Length > 0 && !screen.Name.StartsWith(only, StringComparison.Ordinal))
+                if (only.Length > 0 && Array.FindIndex(only, o => screen.Name.StartsWith(o, StringComparison.Ordinal)) < 0)
                 {
                     continue;
                 }
@@ -80,7 +85,10 @@ public static class UiPreviewRunner
                 shots.Add(new Shot { Screen = screen, Name = screen.Name + "_light_1080", Width = 1920, Height = 1080, Dark = false });
                 shots.Add(new Shot { Screen = screen, Name = screen.Name + "_dark_720", Width = 1280, Height = 720, Dark = true });
                 shots.Add(new Shot { Screen = screen, Name = screen.Name + "_light_720", Width = 1280, Height = 720, Dark = false });
-                shots.Add(new Shot { Screen = screen, Name = screen.Name + "_dark_1080_pad_focus_path", Width = 1920, Height = 1080, Dark = true, Path = true, Pad = UiPad.Xbox });
+                shots.Add(new Shot { Screen = screen, Name = screen.Name + "_dark_1080_mouse_hover", Width = 1920, Height = 1080, Dark = true, Hover = true });
+                shots.Add(new Shot { Screen = screen, Name = screen.Name + "_light_1080_mouse_hover", Width = 1920, Height = 1080, Dark = false, Hover = true });
+                shots.Add(new Shot { Screen = screen, Name = screen.Name + "_dark_1080_keys", Width = 1920, Height = 1080, Dark = true, Keys = true });
+                shots.Add(new Shot { Screen = screen, Name = screen.Name + "_dark_1080_pad_focus_path", Width = 1920, Height = 1080, Dark = true, Path = true, Keys = true, Pad = UiPad.Xbox });
             }
             foreach (Shot shot in shots)
             {
@@ -102,9 +110,9 @@ public static class UiPreviewRunner
         var screens = new List<Screen>
         {
             new Screen { Name = "contacts", AppName = "Contacts", Lay = (s, f, d, k) => UiListDetail.Lay(s, UiSamples.Contacts(English, false), f, d, k), FocusCommand = UiListDetail.Row, FocusArg = 4,
-                Walk = new[] { Up, Down, Down, Right, Up, Right, Down, Down, Left, Left, Left } },
+                HoverCommand = UiListDetail.Row, HoverArg = 1, Walk = new[] { Up, Down, Down, Right, Up, Right, Down, Down, Left, Left, Left } },
             new Screen { Name = "dashboard", AppName = "Economy", Lay = (s, f, d, k) => UiDashboard.Lay(s, UiSamples.Dashboard(English), f, d, k),
-                Walk = new[] { Down, Down, Down, Right, Down, Left, Up, Up } },
+                HoverCommand = UiDashboard.RowCommand, HoverArg = 2, Walk = new[] { Down, Down, Down, Right, Down, Left, Up, Up } },
             new Screen { Name = "session", AppName = "Desk", Lay = (s, f, d, k) => UiSessionSteps.Lay(s, UiSamples.Session(English), f, d, k),
                 Walk = new[] { Down, Down, Down, Right, Left, Up } },
             new Screen { Name = "form", AppName = "CityAds", Lay = (s, f, d, k) => UiForm.Lay(s, UiSamples.Form(English), f, d, k),
@@ -119,7 +127,7 @@ public static class UiPreviewRunner
         foreach (UiSamples.Sample sample in UiSamples.Overhaul(English))
         {
             UiSamples.Sample x = sample;
-            screens.Add(new Screen { Name = x.Name, AppName = x.App, Lay = (s, f, d, k) => x.Lay(s, f, d, k), Walk = Moves(x.Walk) });
+            screens.Add(new Screen { Name = x.Name, AppName = x.App, Lay = (s, f, d, k) => x.Lay(s, f, d, k), Walk = Moves(x.Walk), HoverCommand = UiDashboard.RowCommand, HoverArg = 1 });
         }
         return screens;
     }
@@ -167,12 +175,29 @@ public static class UiPreviewRunner
             var view = new UiView(host, "Screen") { Motion = UiMotionSetting.Off };
             var scene = new UiScene();
             UiFrame frame = UiFrame.FullMenu(canvasW / CanvasH, shot.Screen.AppName);
+            frame.Pointer = !shot.Keys;   // as UiHost lays a screen out while the mouse leads
             IUiKeys keys = shot.Pad == UiPad.None ? (IUiKeys)UiDefaultKeys.Keyboard : UiDefaultKeys.XboxPad;
             shot.Screen.Lay(scene, frame, shot.Dark, keys);
+            view.Ring = shot.Keys;
             view.Write(scene, false);
             int focus = shot.Screen.FocusCommand >= 0 ? scene.FindNode(shot.Screen.FocusCommand, shot.Screen.FocusArg) : UiFocusRules.First(scene);
             focus = focus >= 0 ? focus : UiFocusRules.First(scene);
             view.SetFocus(focus, false, 0f);
+            if (shot.Hover)
+            {
+                // As the host takes a hover: only on the top layer, so an open question or call leaves the page under it still.
+                int top = UiFocusRules.TopLayer(scene);
+                int hover = shot.Screen.HoverCommand >= 0 ? scene.FindNode(shot.Screen.HoverCommand, shot.Screen.HoverArg) : -1;
+                if (hover < 0 || scene.Nodes[hover].Layer != top)
+                {
+                    hover = -1;
+                    for (int n = 0; n < scene.NodeCount && hover < 0; n++)
+                    {
+                        hover = scene.Nodes[n].Layer == top && n != focus ? n : -1;
+                    }
+                }
+                view.SetHover(hover);
+            }
             if (shot.Path && focus >= 0)
             {
                 FocusPath(host, scene, focus, shot.Screen.Walk);

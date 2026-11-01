@@ -294,17 +294,41 @@ namespace RealLifeOverhaul.Ui
             return Snap(lh);
         }
 
-        /// <summary>An empty state in words, centred in a box: never a blank panel.</summary>
+        /// <summary>
+        /// An empty state in words, centred in the room it is given and wrapped to it, so it never runs past its panel's edge
+        /// (a sentence on one line once crossed into the side column). Never a blank panel.
+        /// </summary>
         public static void Empty(UiScene s, UiAt at, float x, float y, float w, float h, string title, string body)
         {
             at = at.In(Box(s, at, x, y, w, h, UiRole.None, UiRole.None, 0f));   // the room it is given is the state's own: no frame around it is a hole
-            float bw = Math.Min(w - UiTokens.S10 * 2f, UiTokens.S16 * 6f);
-            float th = UiTextRules.LineHeight(UiStyle.SectionTitle);
-            float bh = UiTextRules.WrappedHeight(body, UiStyle.Body, bw, 4);
-            float top = y + (h - th - UiTokens.S2 - bh) / 2f;
+            float bw = SnapDown(Math.Min(w - UiTokens.S8 * 2f, UiTokens.S16 * 10f));   // a line short enough to read in one go
+            bool titled = !string.IsNullOrEmpty(title);
+            UiStyle ts = TitleStyle(body);
+            float th = titled ? UiTextRules.WrappedHeight(title, ts, bw, 3) : 0f;
+            float bh = string.IsNullOrEmpty(body) ? 0f : UiTextRules.WrappedHeight(body, UiStyle.Body, bw, 4);
+            float block = th + (titled && bh > 0f ? UiTokens.S2 : 0f) + bh;
+            float top = y + Math.Max(0f, (h - block) / 2f);
             float bx = x + (w - bw) / 2f;
-            Text(s, at, bx, top, bw, UiStyle.SectionTitle, UiRole.Text2, title, UiFlags.Centre | UiFlags.Middle | UiFlags.Label);
-            Text(s, at, bx, top + th + UiTokens.S2, bw, UiStyle.Body, UiRole.Muted, body, UiFlags.Centre | UiFlags.Middle | UiFlags.Wrap | UiFlags.Label, 4);
+            if (titled)
+            {
+                Text(s, at, bx, top, bw, ts, UiRole.Text2, title, UiFlags.Centre | UiFlags.Middle | UiFlags.Wrap | UiFlags.Label, 3);
+            }
+            if (bh > 0f)
+            {
+                Text(s, at, bx, top + th + (titled ? UiTokens.S2 : 0f), bw, UiStyle.Body, UiRole.Muted, body, UiFlags.Centre | UiFlags.Middle | UiFlags.Wrap | UiFlags.Label, 4);
+            }
+        }
+
+        // A state's title in bold over its words, or a lone sentence in the text's own weight, as bold lines read heavy.
+        private static UiStyle TitleStyle(string body) => string.IsNullOrEmpty(body) ? UiStyle.Body : UiStyle.Title;
+
+        /// <summary>The height an empty state needs at a width, its title and words wrapped as <see cref="Empty"/> wraps them, with room around.</summary>
+        public static float EmptyHeight(float w, string title, string body)
+        {
+            float bw = SnapDown(Math.Min(w - UiTokens.S8 * 2f, UiTokens.S16 * 10f));
+            float th = string.IsNullOrEmpty(title) ? 0f : UiTextRules.WrappedHeight(title, TitleStyle(body), bw, 3);
+            float bh = string.IsNullOrEmpty(body) ? 0f : UiTextRules.WrappedHeight(body, UiStyle.Body, bw, 4);
+            return Snap(th + (th > 0f && bh > 0f ? UiTokens.S2 : 0f) + bh + UiTokens.S12 * 2f);
         }
 
         /// <summary>A loading state: three dots that beat while it shows, and what is loading.</summary>

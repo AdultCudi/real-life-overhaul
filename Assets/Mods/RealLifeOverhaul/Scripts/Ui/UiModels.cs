@@ -148,9 +148,15 @@ namespace RealLifeOverhaul.Ui
         public string[][] Rows = new string[0][];
         public int RowCount;
         public int Selected = -1;
-        public float Offset;
+        public float Offset;      // px scrolled. UiDraw.Table writes back the offset it took, so a screen keeps it for the next layout
+        public int Reveal = -1;   // a row the table scrolls into view as it is laid out, or -1
         public float RowHeight;   // px a row takes, 0 for the dense TableRow. A page with room to spare lets its rows breathe (UiDraw.Breathe)
+        public bool Inert;        // a table to read: no row is a target, so none looks pressable or answers a press with the error sound
+        public bool[] Leads;      // the rows a press opens, or null for all. A row that leads nowhere is no target
         public string EmptyTitle;
         public string EmptyBody;
+
+        /// <summary>Whether a row is a target: a press on it opens something.</summary>
+        public bool RowLeads(int row) => !Inert && (Leads == null || (row >= 0 && row < Leads.Length && Leads[row]));
     }
 }

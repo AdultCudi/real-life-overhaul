@@ -30,8 +30,8 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The Motion setting the view animates by.</summary>
         public UiMotionSetting Motion = UiMotionSetting.Full;
 
-        /// <summary>Told when the pointer enters a target (its node) and when it presses one; set by the host.</summary>
-        public System.Action<int> PointerEntered, PointerPressed;
+        /// <summary>Told when the pointer enters a target (its node), leaves it and presses it. Set by the host.</summary>
+        public System.Action<int> PointerEntered, PointerExited, PointerPressed;
 
         /// <summary>Told when the wheel turns over a scroll region (its clip, the notches).</summary>
         public System.Action<int, float> Wheeled;
@@ -59,6 +59,10 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
         public void Write(UiScene s, bool arriving)
         {
+            // A tween in flight holds the place its object had when it began. Its pooled object is bound to another item
+            // now, and a tween left running pulled that item to the old place (beta 3: the Team's first row inside the
+            // Games table, a figure's words in the next panel). Every tween lands before the objects are bound again.
+            UiTweens.Instance?.StopAll(_root);
             _scene = s;
             bool themeChanged = s.Dark != _dark;
             _dark = s.Dark;

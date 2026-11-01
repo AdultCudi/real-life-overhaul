@@ -49,7 +49,7 @@ namespace RealLifeOverhaul.Ui
             bool side = m.SummaryCount > 0;   // a summary panel only where there is a summary: an empty frame reads as a hole
             float pw = side ? cw - SideWidth - UiTokens.S4 : cw;
             UiAt main = at.InRegion(RegionMain);
-            int panel = UiDraw.Box(s, main, cx, cy, pw, ch, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
+            int panel = UiDraw.Box(s, main, cx, cy, pw, ch, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt inside = main.In(panel);
             float x = cx + UiTokens.S8, w = pw - UiTokens.S8 * 2f, y = cy + UiTokens.S8;
             UiDraw.Text(s, inside, x, y, w, UiStyle.Hero, UiRole.Text, m.Title, UiFlags.Label | UiFlags.Truncate);
@@ -98,7 +98,7 @@ namespace RealLifeOverhaul.Ui
             {
                 s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
             }
-            UiDraw.PromptBar(s, 0f, frame.BandY, frame.Width, frame.Band, keys);
+            UiDraw.PromptBar(s, frame, keys);
             UiDraw.Chrome(s, frame);
         }
 
@@ -129,7 +129,7 @@ namespace RealLifeOverhaul.Ui
         // The summary as its own framed panel, as tall as its lines. Returns the frame.
         private static int Summary(UiScene s, UiAt at, UiSessionModel m, float px, float py, float most)
         {
-            int panel = UiDraw.Box(s, at, px, py, SideWidth, most, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
+            int panel = UiDraw.Box(s, at, px, py, SideWidth, most, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt inside = at.In(panel);
             float x = px + UiTokens.S5, w = SideWidth - UiTokens.S5 * 2f, y = py + UiTokens.S5;
             UiDraw.Text(s, inside, x, y, w, UiStyle.SectionHeader, UiRole.Muted, m.SummaryTitle, UiFlags.Label);

@@ -93,7 +93,8 @@ namespace RealLifeOverhaul.Ui
                     break;
                 }
             }
-            if ((keyboard != null && keyboard.anyKey.wasPressedThisFrame) || (mouse != null && (mouse.leftButton.wasPressedThisFrame || mouse.delta.ReadValue().sqrMagnitude > 4f)))
+            state.Pointed = mouse != null && (mouse.leftButton.wasPressedThisFrame || mouse.delta.ReadValue().sqrMagnitude > 4f);
+            if ((keyboard != null && keyboard.anyKey.wasPressedThisFrame) || state.Pointed)
             {
                 _pad = UiPad.None;   // the keyboard or the mouse was used last: key caps again
             }
@@ -252,7 +253,8 @@ namespace RealLifeOverhaul.Ui
             }
             Timestamp now = TimeHelper.Now();
             string time = now.Hour.ToString("00", CultureInfo.InvariantCulture) + ":" + ((int)now.Minute).ToString("00", CultureInfo.InvariantCulture);
-            return save.Money.ToCurrencyFormat() + "     " + LocalizorManager.GetLocalization("timestamp_full", new { day = now.Day, time });
+            // The game's own top bar writes the money short ("$2.0B"), and no other figure on a page carries cents.
+            return save.Money.ToShortCurrencyFormat(abbreviated: true) + "     " + LocalizorManager.GetLocalization("timestamp_full", new { day = now.Day, time });
         }
 
         // ------------------------------------------------------------------------------------------------- fonts
