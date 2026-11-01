@@ -111,10 +111,6 @@ namespace RealLifeOverhaul.Ui
             float h = UiTokens.Control;
             int face = Box(s, at, x, y, w, h, selected ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusLarge, selected ? UiFlags.Selected : UiFlags.None);
             UiAt inside = at.In(face);
-            if (selected)
-            {
-                Box(s, inside, x, y + UiTokens.S3, UiTokens.SelectBar, h - UiTokens.S3 * 2f, UiRole.Accent, UiRole.None, UiTokens.SelectBar / 2f);
-            }
             float lead = UiTokens.StatusDot;
             if (icon != UiIcon.None)
             {
@@ -180,13 +176,13 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>
-        /// Tabs as bars: the previous tab's key, the tabs' names, the next tab's key; the shown tab's name in the accent over
-        /// a bar, the rest quieter, a rule under all. Each tab is a focus target (its command with its index). Returns the height.
+        /// Tabs: the previous tab's key, the tabs' names, the next tab's key; the shown tab filled cyan with dark words, as a
+        /// city builder marks the tool in hand, the rest quieter, a rule under all. Each tab is a focus target (its command
+        /// with its index). Returns the height.
         /// </summary>
         public static float Tabs(UiScene s, UiAt at, float x, float y, float w, string[] labels, int shown, IUiKeys keys, int command)
         {
             float h = UiTokens.Control;
-            Box(s, at, x, y + h - UiTokens.Hairline, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             float cx = x;
             if (keys != null)
             {
@@ -197,13 +193,8 @@ namespace RealLifeOverhaul.Ui
             {
                 bool on = i == shown;
                 float tw = Snap(UiTextRules.Width(labels[i], UiStyle.Nav) + UiTokens.S4 * 2f);
-                int face = Box(s, at, cx, y, tw, h, UiRole.None, UiRole.None, UiTokens.RadiusSmall, on ? UiFlags.Selected : UiFlags.None);
-                TextMiddle(s, at.In(face), cx + UiTokens.S4, y - UiTokens.S1, h, tw - UiTokens.S4 * 2f + UiTokens.S1, UiStyle.Nav, on ? UiRole.AccentText : UiRole.Text2,
-                    labels[i], UiFlags.Label);
-                if (on)
-                {
-                    Box(s, at.In(face), cx + UiTokens.S2, y + h - UiTokens.TabBar, tw - UiTokens.S2 * 2f, UiTokens.TabBar, UiRole.Accent, UiRole.None, UiTokens.TabBar / 2f);
-                }
+                int face = Box(s, at, cx, y + UiTokens.S1, tw, h - UiTokens.S2, on ? UiRole.Accent : UiRole.None, UiRole.None, UiTokens.RadiusLarge, on ? UiFlags.Selected : UiFlags.None);
+                TextMiddle(s, at.In(face), cx + UiTokens.S4, y, h, tw - UiTokens.S4 * 2f + UiTokens.S1, UiStyle.Nav, on ? UiRole.OnAccent : UiRole.Text2, labels[i], UiFlags.Label);
                 Node(s, at, cx, y, tw, h, command, i, face);
                 cx += tw + UiTokens.S1;
             }

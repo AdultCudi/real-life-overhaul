@@ -14,17 +14,11 @@ namespace RealLifeOverhaul.Ui
             Text(s, at, x, y, w - fw - UiTokens.S3, UiStyle.Small, UiRole.Text2, stat.Label, UiFlags.Label | UiFlags.Truncate);
             Text(s, at, x + w - fw, y, fw, UiStyle.SmallStrong, grade, stat.Figure, UiFlags.Right);
             float by = y + Snap(lh) + UiTokens.S2;
-            float seg = (w - UiTokens.SegmentGap * (UiModels.Segments - 1)) / UiModels.Segments;
-            int filled = UiModels.Filled(stat.Value);
-            float shade = UiModels.Shade(stat.Value);
-            for (int i = 0; i < UiModels.Segments; i++)
-            {
-                int b = Box(s, at, x + i * (seg + UiTokens.SegmentGap), by, seg, UiTokens.Segment, i < filled ? grade : UiRole.Track, UiRole.None,
-                    UiTokens.RadiusSmall - UiTokens.Hairline, UiFlags.Share);
-                s.Items[b].Alpha = i < filled ? shade : 1f;
-                s.Items[b].Order = (short)i;
-            }
-            return by - y + UiTokens.Segment;
+            // The grade bar's thin track and full colour, so an attribute reads the same on every screen.
+            int value = Math.Max(0, Math.Min(100, stat.Value));
+            int track = Box(s, at, x, by, w, UiTokens.S1, UiRole.Track, UiRole.None, UiTokens.S1 / 2f, UiFlags.Share);
+            Box(s, at.In(track), x, by, Math.Max(UiTokens.S1, w * value / 100f), UiTokens.S1, grade, UiRole.None, UiTokens.S1 / 2f, UiFlags.Share);
+            return by - y + UiTokens.S1;
         }
 
         /// <summary>

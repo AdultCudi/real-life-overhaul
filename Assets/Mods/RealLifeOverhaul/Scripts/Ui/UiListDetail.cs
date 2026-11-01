@@ -450,7 +450,7 @@ namespace RealLifeOverhaul.Ui
             if (m.StatCount > 0)
             {
                 h += blockTitle + UiTokens.S2;
-                h += m.StatCount * (UiDraw.Snap(UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2 + UiTokens.Segment) + UiTokens.S4);
+                h += m.StatCount * (UiDraw.Snap(UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2 + UiTokens.S1) + UiTokens.S4);
             }
             if (m.DetailCount > 0)
             {

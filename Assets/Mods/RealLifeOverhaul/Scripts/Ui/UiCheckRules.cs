@@ -279,9 +279,9 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i + 1 < s.ItemCount; i++)
             {
                 ref UiItem it = ref s.Items[i];
-                if (it.Kind != UiKind.Icon || (it.Icon != UiIcon.TrendUp && it.Icon != UiIcon.TrendDown))
+                if (it.Kind != UiKind.Icon || (it.Icon != UiIcon.TrendUp && it.Icon != UiIcon.TrendDown) || (it.Flags & UiFlags.Decor) != 0)
                 {
-                    continue;
+                    continue;   // a specimen on the style sheet is no indicator
                 }
                 bool up = it.Icon == UiIcon.TrendUp;
                 ref UiItem words = ref s.Items[i + 1];
@@ -948,13 +948,13 @@ namespace RealLifeOverhaul.Ui
             return false;
         }
 
-        /// <summary>The colour under an item: the screen's background, then each filled parent's colour laid over it, outermost first.</summary>
         /// <summary>
-        /// The world behind a translucent panel, as the checks take it: a sunlit pavement, the brightest the game's streets
+        /// The world behind a see-through surface, as the checks take it: a sunlit pavement, the brightest the game's streets
         /// run, so a word that reads over it reads over any of the city.
         /// </summary>
         public static readonly UiColour World = new UiColour(0.76f, 0.74f, 0.69f, 1f);
 
+        /// <summary>The colour under an item: the world, then each filled parent's colour laid over it, outermost first.</summary>
         public static UiColour Beneath(UiScene s, int item, bool dark)
         {
             if ((s.Items[item].Flags & UiFlags.Prompt) != 0)

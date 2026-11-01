@@ -20,10 +20,6 @@ namespace RealLifeOverhaul.Ui
             int face = Box(s, at, x, y, w, h, sel ? UiRole.RowSel : plain ? UiRole.None : UiRole.Row, UiRole.None, UiTokens.RadiusLarge,
                 sel ? UiFlags.Selected : UiFlags.None);
             UiAt inside = at.In(face);
-            if (sel)
-            {
-                Box(s, inside, x, y + UiTokens.S4, UiTokens.SelectBar, h - UiTokens.S4 * 2f, UiRole.Accent, UiRole.None, UiTokens.SelectBar / 2f);
-            }
             float ax = x + UiTokens.S3, ay = y + (h - UiTokens.AvatarRow) / 2f, size = UiTokens.AvatarRow;
             int avatar;
             if (row.Icon != UiIcon.None)
@@ -117,7 +113,7 @@ namespace RealLifeOverhaul.Ui
             Text(s, inside, x + UiTokens.S4, y + UiTokens.S4, titleW, UiStyle.Title, UiRole.Text, service.Title, UiFlags.Wrap | UiFlags.Truncate, 2);
             float titleLine = UiTextRules.LineHeight(UiStyle.Title);
             Text(s, inside, x + w - UiTokens.S4 - pw, y + UiTokens.S4 + (titleLine - UiTextRules.LineHeight(UiStyle.SmallStrong)) / 2f, pw, UiStyle.SmallStrong,
-                UiRole.AccentText, service.Price, UiFlags.Right | UiFlags.Middle);
+                UiRole.Text, service.Price, UiFlags.Right | UiFlags.Middle);   // a price is a figure, not a link: the cyan is for links
             if (descH > 0f)
             {
                 Text(s, inside, x + UiTokens.S4, y + UiTokens.S4 + titleH + UiTokens.S1, inner, UiStyle.Small, UiRole.Text2, service.About, UiFlags.Wrap | UiFlags.Truncate | UiFlags.Middle, 2);
@@ -147,10 +143,6 @@ namespace RealLifeOverhaul.Ui
             if (!sel)
             {
                 Box(s, inside, x + UiTokens.S5, y + height - UiTokens.Hairline, w - UiTokens.S5 * 2f, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
-            }
-            if (sel)
-            {
-                Box(s, inside, x, y + UiTokens.S4, UiTokens.SelectBar, height - UiTokens.S4 * 2f, UiRole.Accent, UiRole.None, UiTokens.SelectBar / 2f);
             }
             if (capW > 0f)
             {
@@ -265,10 +257,6 @@ namespace RealLifeOverhaul.Ui
                     sel ? UiFlags.Selected : UiFlags.None);
                 UiAt inside = inClip.Arriving(r - first).In(face);
                 Box(s, inside, UiTokens.S2, ry + rowH - UiTokens.Hairline, w - UiTokens.S4, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
-                if (sel)
-                {
-                    Box(s, inside, 0f, ry + UiTokens.S3, UiTokens.SelectBar, rowH - UiTokens.S3 * 2f, UiRole.Accent, UiRole.None, UiTokens.SelectBar / 2f);
-                }
                 float rx = UiTokens.S4;
                 string[] cells = table.Rows[r];
                 for (int c = 0; c < cols; c++)

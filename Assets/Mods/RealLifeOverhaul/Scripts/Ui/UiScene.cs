@@ -168,7 +168,7 @@ namespace RealLifeOverhaul.Ui
                 Array.Resize(ref Nodes, Nodes.Length * 2);
             }
             Nodes[NodeCount] = node;
-            if (FocusFirst < 0 && !node.Disabled && node.Layer == 0)
+            if (FocusFirst < 0 && !node.Disabled && node.Layer == 0 && node.Command != UiDraw.CloseCommand)   // a pad's first press would close the window
             {
                 FocusFirst = NodeCount;
             }

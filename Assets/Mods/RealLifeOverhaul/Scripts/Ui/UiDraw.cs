@@ -60,6 +60,10 @@ namespace RealLifeOverhaul.Ui
         /// <summary>One line of words, or a wrapped block with <see cref="UiFlags.Wrap"/> up to <paramref name="lines"/> lines; returns its index.</summary>
         public static int Text(UiScene s, UiAt at, float x, float y, float w, UiStyle style, UiRole ink, string text, UiFlags flags = UiFlags.None, int lines = 1)
         {
+            if ((flags & (UiFlags.Truncate | UiFlags.Label | UiFlags.Wrap)) == UiFlags.Truncate)
+            {
+                text = UiTextRules.Cut(text, style, w);   // a player's words end at a word; a label is never cut, so its checks still see it whole
+            }
             float h = (flags & UiFlags.Wrap) != 0 ? UiTextRules.WrappedHeight(text, style, w, lines) : UiTextRules.LineHeight(style);
             var item = new UiItem
             {
@@ -79,6 +83,10 @@ namespace RealLifeOverhaul.Ui
         /// <summary>A glyph of the icon family in a square box.</summary>
         public static int Icon(UiScene s, UiAt at, float x, float y, float size, UiIcon icon, UiRole tint, UiFlags flags = UiFlags.None, bool filled = false)
         {
+            if (tint == UiRole.None)
+            {
+                tint = UiIconTints.Of(icon);   // no colour given: the icon's own, the same on every screen and on the style sheet
+            }
             var item = new UiItem
             {
                 Kind = UiKind.Icon, Flags = flags, Fill = tint, Icon = icon, X = x, Y = y, W = size, H = size, Value = filled ? 1f : 0f,   // filled: the solid cut, for a tile
@@ -255,7 +263,7 @@ namespace RealLifeOverhaul.Ui
             float block = UiTextRules.LineHeight(UiStyle.Title) + UiTextRules.LineHeight(UiStyle.Small);
             float ty = y + (size - block) / 2f;
             Text(s, at, tx, ty, tw, UiStyle.Title, UiRole.Text, name, UiFlags.Truncate | UiFlags.Middle);
-            Text(s, at, tx, ty + UiTextRules.LineHeight(UiStyle.Title), tw, UiStyle.Small, UiRole.AccentText, summary, UiFlags.Truncate | UiFlags.Middle);
+            Text(s, at, tx, ty + UiTextRules.LineHeight(UiStyle.Title), tw, UiStyle.Small, UiRole.Text2, summary, UiFlags.Truncate | UiFlags.Middle);
         }
 
         /// <summary>Capitals over a block of rows; returns the height it takes with the space above it.</summary>

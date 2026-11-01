@@ -27964,7 +27964,7 @@
   "reallife_ui_gallery_satisfaction": "Satisfaction",
   "reallife_ui_gallery_energy": "Energy",
   "reallife_ui_enabled": "RLO interface",
-  "reallife_opt_tip_ui_interface": "Draws Contacts and the overhaul's screens in the mod's own design, the City Ledger. Off: the game's own screens. Dark or light follows Flare's look option.",
+  "reallife_opt_tip_ui_interface": "Draws Contacts and the overhaul's screens in the mod's own design: slate panels over the city, colour icons and a status bar along the bottom. Off: the game's own screens.",
   "reallife_ui_motion": "Interface motion",
   "reallife_opt_tip_ui_motion": "How the RLO interface moves: full, calm (slower and shorter) or off.",
   "reallife_ui_motion_0": "Full",

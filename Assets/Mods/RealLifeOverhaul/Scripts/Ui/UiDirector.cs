@@ -32,7 +32,10 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The RLO interface is drawn: the living economy's master option and the interface's own switch.</summary>
         public static bool On => Settings.LivingPopulation && Settings.UiInterface;
 
-        /// <summary>The look now: the Flare look option, which the RLO interface shares (dark, light, or the phone's clock).</summary>
+        /// <summary>
+        /// The Flare look option (dark, light, or the phone's clock). The RLO interface has one dark look now, so its screens
+        /// pass this on but no colour depends on it; Flare's own pages still follow it.
+        /// </summary>
         public static bool Dark()
         {
             int hour = SaveGameManager.Current != null ? SaveGameManager.Current.Hour : 12;

@@ -26,7 +26,7 @@ namespace RealLifeOverhaul.Ui
             s.Pointer = frame.Pointer;
             frame.Window(out float x, out float y, out float w, out float h);
             int panel = Box(s, UiAt.Screen, x, y, w, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel | UiFlags.Chrome);   // fixed in size, so its room is the page's to fill
-            TitleStrip(s, UiAt.Screen.In(panel), x, y, w, frame.Icon, string.IsNullOrEmpty(place) ? frame.Title : place, true);
+            TitleStrip(s, UiAt.Screen.In(panel), x, y, w, frame.Icon, string.IsNullOrEmpty(place) ? frame.Title : place, true, UiStyle.AppTitle);
             return panel;
         }
 
@@ -34,7 +34,7 @@ namespace RealLifeOverhaul.Ui
         /// A panel's title strip: its icon at the left, its title centred in cyan capitals, a close button at the right, a
         /// hairline under it. Returns the y under it.
         /// </summary>
-        public static float TitleStrip(UiScene s, UiAt at, float x, float y, float w, UiIcon icon, string title, bool close)
+        public static float TitleStrip(UiScene s, UiAt at, float x, float y, float w, UiIcon icon, string title, bool close, UiStyle style = UiStyle.SectionTitle)
         {
             const float h = UiFrame.Strip;
             int strip = Box(s, at, x, y, w, h, UiRole.Header, UiRole.None, -UiTokens.RadiusPanel, UiFlags.Decor | UiFlags.Chrome);   // its top corners the panel's, its foot square
@@ -46,12 +46,13 @@ namespace RealLifeOverhaul.Ui
             }
             if (!string.IsNullOrEmpty(title))
             {
-                TextMiddle(s, on, x + side, y, h, w - side * 2f, UiStyle.SectionTitle, UiRole.AccentText, title, UiFlags.Centre | UiFlags.Truncate | UiFlags.Chrome);
+                TextMiddle(s, on, x + side, y, h, w - side * 2f, style, UiRole.AccentText, title, UiFlags.Centre | UiFlags.Truncate | UiFlags.Chrome);
             }
             if (close)
             {
-                float b = UiTokens.ControlSmall;
-                IconButton(s, at, x + w - UiTokens.S1 - b, y + (h - b) / 2f, b, UiIcon.Close, UiRole.Text, CloseCommand, 0, false, UiAction.Count, false, true);
+                // The least target, inset so its focus ring stays inside the panel's corner.
+                float b = UiTokens.MinTarget;
+                IconButton(s, at, x + w - UiTokens.S2 - b, y + (h - b) / 2f, b, UiIcon.Close, UiRole.Text, CloseCommand, 0, false, UiAction.Count, false, true);
             }
             Box(s, at, x, y + h - UiTokens.Hairline, w, UiTokens.Hairline, UiRole.Rule, UiRole.None, 0f, UiFlags.Decor | UiFlags.Chrome);
             return y + h;
@@ -72,17 +73,14 @@ namespace RealLifeOverhaul.Ui
             return Node(s, at, x, y, size, size, command, arg, face, false, -1, 0, key);
         }
 
-        /// <summary>An icon's tile: a soft square or disc of its own colour at a fifth, or the cyan fill when it is the one chosen. Returns the tile.</summary>
-        public static int Tile(UiScene s, UiAt at, float x, float y, float size, UiRole tint, bool chosen, bool round = false)
-        {
-            int face = Box(s, at, x, y, size, size, chosen ? UiRole.Accent : tint, UiRole.None, round ? 0f : UiTokens.RadiusLarge,
+        /// <summary>
+        /// An icon's tile: a slate square or disc a step lighter than the panel, the icon in its own colour on it, as Cities:
+        /// Skylines II's tool buttons, or the cyan fill when it is the one chosen. The tint stays for the callers that pass it.
+        /// Returns the tile.
+        /// </summary>
+        public static int Tile(UiScene s, UiAt at, float x, float y, float size, UiRole tint, bool chosen, bool round = false) =>
+            Box(s, at, x, y, size, size, chosen ? UiRole.Accent : UiRole.Tile, UiRole.None, round ? 0f : UiTokens.RadiusLarge,
                 (round ? UiFlags.Circle : UiFlags.None) | (chosen ? UiFlags.Selected : UiFlags.None));
-            s.Items[face].Alpha = chosen ? 1f : TileShade;
-            return face;
-        }
-
-        /// <summary>How strong an icon's own colour is on its tile: soft, so the glyph in full colour stands on it.</summary>
-        public const float TileShade = 0.16f;
 
         /// <summary>
         /// The status bar along the foot of the screen, after Cities: Skylines II: a row of app buttons (the open one
@@ -129,7 +127,9 @@ namespace RealLifeOverhaul.Ui
             px += TimePill(s, on, px, py, m) + UiTokens.S2;
             if (!string.IsNullOrEmpty(m.Season))
             {
-                px += Pill(s, on, px, py, m.Weather, UiRole.Warn, m.Season, UiRole.Text) + UiTokens.S2;
+                // The weather's icon goes with its temperature, as a city builder's bar shows it, and the season stays words.
+                string weather = string.IsNullOrEmpty(m.Temperature) ? m.Season : m.Temperature + ", " + m.Season;
+                px += Pill(s, on, px, py, m.Weather, UiRole.Warn, weather, UiRole.Text) + UiTokens.S2;
             }
             if (!string.IsNullOrEmpty(m.Place))
             {
@@ -173,7 +173,8 @@ namespace RealLifeOverhaul.Ui
             float tw = UiTextRules.Width(m.Time, UiStyle.BodyStrong) + UiTokens.S1;
             float dw = string.IsNullOrEmpty(m.Day) ? 0f : UiTextRules.Width(m.Day, UiStyle.Body) + UiTokens.S1;
             const float chevron = 12f;
-            float w = Snap(UiTokens.S2 + UiTokens.Icon + UiTokens.S2 + tw + (dw > 0f ? UiTokens.S3 + dw : 0f) + UiTokens.S3 + chevron * 3f + UiTokens.S2);
+            bool speed = m.Speed > 0;   // the game file leaves it at 0 until the HUD wave reads the game's speed
+            float w = Snap(UiTokens.S2 + UiTokens.Icon + UiTokens.S2 + tw + (dw > 0f ? UiTokens.S3 + dw : 0f) + (speed ? UiTokens.S3 + chevron * 3f : 0f) + UiTokens.S2);
             int face = Box(s, at, x, y, w, PillH, UiRole.Pill, UiRole.None, UiTokens.RadiusLarge, UiFlags.Chrome);
             UiAt inside = at.In(face);
             float cx = x + UiTokens.S2;
@@ -187,7 +188,7 @@ namespace RealLifeOverhaul.Ui
                 cx += UiTokens.S3 + dw;
             }
             cx += UiTokens.S3;
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; speed && i < 3; i++)
             {
                 Icon(s, inside, cx + i * chevron, y + (PillH - chevron) / 2f, chevron, UiIcon.Next, i < m.Speed && !m.Paused ? UiRole.Accent : UiRole.Muted,
                     UiFlags.Middle | UiFlags.Share | UiFlags.Chrome);
@@ -405,13 +406,13 @@ namespace RealLifeOverhaul.Ui
         /// An attribute as a management game grades it: its name, a bar filled to its value and the value, both in the
         /// grade's colour from poor red to excellent green. Returns the height.
         /// </summary>
-        public static float GradeBar(UiScene s, UiAt at, float x, float y, float w, string label, int value)
+        public static float GradeBar(UiScene s, UiAt at, float x, float y, float w, string label, int value, float labelW = 0f)
         {
             float h = UiTokens.PairRow;
             UiRole grade = UiTokens.Grade(value);
             string figure = Math.Max(0, Math.Min(100, value)).ToString(System.Globalization.CultureInfo.InvariantCulture);
             float fw = UiTextRules.Width("100", UiStyle.BodyStrong) + UiTokens.S1;
-            float lw = Snap(Math.Min(w * 0.42f, UiTextRules.Width(label, UiStyle.Body) + UiTokens.S1));
+            float lw = labelW > 0f ? labelW : LabelColumn(w, label);
             TextMiddle(s, at, x, y, h, lw, UiStyle.Body, UiRole.Text2, label, UiFlags.Label | UiFlags.Truncate);
             float bx = x + lw + UiTokens.S3, bw = w - lw - UiTokens.S3 - fw - UiTokens.S2;
             int track = Box(s, at, bx, y + (h - UiTokens.S1) / 2f, bw, UiTokens.S1, UiRole.Track, UiRole.None, UiTokens.S1 / 2f, UiFlags.Middle | UiFlags.Share);
@@ -421,18 +422,33 @@ namespace RealLifeOverhaul.Ui
             return h;
         }
 
-        /// <summary>A rating in stars out of five, by halves, gold on the empty stars' track. Returns its width.</summary>
+        /// <summary>
+        /// The width of a grade bar's label column for its labels, so a block of bars starts its tracks at one edge and
+        /// draws equal values at equal lengths.
+        /// </summary>
+        public static float LabelColumn(float w, params string[] labels)
+        {
+            float most = 0f;
+            for (int i = 0; labels != null && i < labels.Length; i++)
+            {
+                most = Math.Max(most, UiTextRules.Width(labels[i] ?? string.Empty, UiStyle.Body) + UiTokens.S1);
+            }
+            return Snap(Math.Min(w * 0.42f, most));
+        }
+
+        /// <summary>A rating in stars out of five, by halves: gold for what it has, grey for the rest, as Football Manager rates. Returns its width.</summary>
         public static float Stars(UiScene s, UiAt at, float x, float y, float size, int halves)
         {
             for (int i = 0; i < 5; i++)
             {
                 int left = halves - i * 2;
-                UiIcon star = left >= 2 ? UiIcon.Star : left == 1 ? UiIcon.StarHalf : UiIcon.Star;
+                float sx = x + i * (size + UiTokens.Hairline * 2f);
+                // A half star is the grey star with the gold half laid on it, the grey one marked as decoration as the overlap is meant.
+                Icon(s, at, sx, y, size, UiIcon.Star, left >= 2 ? UiRole.Gold : UiRole.Muted, UiFlags.Middle | UiFlags.Share | (left == 1 ? UiFlags.Decor : UiFlags.None));
                 if (left == 1)
                 {
-                    Icon(s, at, x + i * (size + UiTokens.Hairline * 2f), y, size, UiIcon.Star, UiRole.Track, UiFlags.Middle | UiFlags.Share);
+                    Icon(s, at, sx, y, size, UiIcon.StarHalf, UiRole.Gold, UiFlags.Middle | UiFlags.Share);
                 }
-                Icon(s, at, x + i * (size + UiTokens.Hairline * 2f), y, size, star, left >= 1 ? UiRole.Gold : UiRole.Track, UiFlags.Middle | UiFlags.Share);
             }
             return 5f * size + 4f * UiTokens.Hairline * 2f;
         }

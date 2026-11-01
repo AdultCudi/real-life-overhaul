@@ -23,15 +23,15 @@ namespace RealLifeOverhaul.Ui
         private static float[] _a;
 
         /// <summary>
-        /// A glyph's sprite, drawn on first use. Filled asks for a duotone's solid variant, and an icon without one (the
-        /// bold chrome, the pad's glyphs) gives its main weight. Null for None.
-        /// </summary>
-        /// <summary>
         /// The game's own picture for an icon where it has one (DIRECTION_CS2: the game's icons first), set by the game file;
         /// null, or a null answer, draws the family's own. Never set offline, where the family stands in.
         /// </summary>
         public static Func<UiIcon, Sprite> Own;
 
+        /// <summary>
+        /// A glyph's sprite, drawn on first use. Filled asks for a duotone's solid variant, and an icon without one (the
+        /// bold chrome, the pad's glyphs) gives its main weight. Null for None.
+        /// </summary>
         public static Sprite Get(UiIcon icon, bool filled = false)
         {
             if (icon == UiIcon.None || (int)icon >= Made.Length)

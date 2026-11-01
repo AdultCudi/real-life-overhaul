@@ -290,7 +290,7 @@ namespace RealLifeOverhaul.Ui
         private static float SideFit(UiDashboardModel m, float most, out int pairs, out int stats)
         {
             float head = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader));
-            float bar = UiDraw.Snap(UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2 + UiTokens.Segment);
+            float bar = UiDraw.Snap(UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2 + UiTokens.S1);   // a stat bar's words over its thin track
             float h = UiTokens.S5;
             pairs = stats = 0;
             bool first = true;

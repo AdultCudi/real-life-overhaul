@@ -63,6 +63,7 @@ namespace RealLifeOverhaul.Ui
         Grade3,
         Grade4,
         Grade5,
+        Tile,         // an icon's tile: a slate a step lighter than the panel, the icon in its own colour on it
         Count
     }
 
@@ -293,7 +294,7 @@ namespace RealLifeOverhaul.Ui
         {
             0x00000000,   // None
             0x00000000,   // Bg: nothing, as the world behind is the ground
-            0x2B3A4AFA,   // Panel: slate at 98%: the game blends in linear light, where a street's crossings and neon read through a thinner panel
+            0x2B3A4AFF,   // Panel: slate, solid: the game blends in linear light, where a street's crossings and signs read through any thinner panel unblurred
             0xE6EDF31A,   // PanelEdge: a control's edge where it needs one, 10%
             0x223040EB,   // Header: a panel's title strip, 92%
             0x1A243055,   // Row: a list row, set a breath into the panel, so its quiet words keep their contrast
@@ -323,25 +324,25 @@ namespace RealLifeOverhaul.Ui
             0xE6EDF3FF,   // NoticeText
             0xE6EDF317,   // Line: a hairline, soft white at 9%
             0xE6EDF31F,   // Track: an empty segment
-            0x0B111899,   // Scrim: the world dimmed behind a decision, 60%
+            0x0B1118D1,   // Scrim: the world dimmed behind a decision; 82% in linear light leaves it at about 45% to the eye
             0x3DBBEBFF,   // Focus
             0xE6EDF3FF,   // PromptInk
             0x0E182299,   // PromptCap
             0xE6EDF317,   // Rule: as Line, under a title strip and between sections
             0x1E2A3799,   // Band: a section's band, 60% over the panel
-            0x1A2430F0,   // StatusBar: the bottom strip, 94%
+            0x1A2430FF,   // StatusBar: the bottom strip, solid for the same reason as a panel
             0x263445FF,   // Pill
             0xF5C451FF,   // Gold: a star rating
             0x56B4E9FF,   // Chart1: sky blue
             0xE69F2EFF,   // Chart2: orange
             0x2FBF8FFF,   // Chart3: bluish green
             0xF0E06AFF,   // Chart4: yellow
-            0x6D9EEFFF,   // Chart5: blue, lifted so it reads on a tile of its own colour
+            0x6D9EEFFF,   // Chart5: blue, lifted so it reads on a slate tile
             0xF07A3AFF,   // Chart6: vermilion
             0xD889BBFF,   // Chart7: reddish purple
             0x6B7785FF,   // Chart8: slate grey, the rest: darker than the purple beside it, so the two part under deuteranopia
             0xF29A3DFF,   // CatFood: orange
-            0xEC86BCFF,   // CatRetail: pink, light enough to read on a tile of its own colour
+            0xEC86BCFF,   // CatRetail: pink, light enough to read on a slate tile
             0x6FAAF3FF,   // CatOffice: blue
             0x9FB1C4FF,   // CatIndustry: steel
             0xB48EF3FF,   // CatTech: violet
@@ -351,6 +352,7 @@ namespace RealLifeOverhaul.Ui
             0xF2C14EFF,   // Grade3
             0xB4D45AFF,   // Grade4
             0x74D35AFF,   // Grade5: excellent
+            0x344457FF,   // Tile: neutral, as a warm colour faded on slate turns brown and olive
         };
 
         /// <summary>A role's colour, as 0xRRGGBBAA. One look: the flag stays for the callers that still pass it.</summary>

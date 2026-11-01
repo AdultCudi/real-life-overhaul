@@ -404,8 +404,6 @@ namespace RealLifeOverhaul.Ui
         // name under them, the colours turning through the chart's hues and the families'. Returns the y under it.
         private static float Icons(UiScene s, UiAt at, float x, float y, float w, float h)
         {
-            UiRole[] tints = { UiRole.Chart1, UiRole.Chart2, UiRole.Chart3, UiRole.Chart4, UiRole.Chart5, UiRole.Chart6, UiRole.Chart7, UiRole.CatFood, UiRole.CatRetail,
-                UiRole.CatOffice, UiRole.CatIndustry, UiRole.CatTech, UiRole.CatServices };
             const float cellH = UiTokens.S16 + UiTokens.S5;
             int count = 0;
             for (int i = 1; i < (int)UiIcon.Count; i++)
@@ -431,13 +429,14 @@ namespace RealLifeOverhaul.Ui
                 {
                     break;
                 }
-                UiRole tint = tints[n % tints.Length];
+                UiRole tint = UiIconTints.Of(icon);
                 float tile = UiTokens.IconTile, small = UiTokens.S6;
                 float lead = cx + UiDraw.SnapDown((cell - tile - UiTokens.S2 - small) / 2f);
                 int face = UiDraw.Tile(s, inside, lead, cy, tile, tint, false);
-                UiDraw.Icon(s, inside.In(face), lead + UiTokens.S2, cy + UiTokens.S2, tile - UiTokens.S4, icon, tint, UiFlags.Middle | UiFlags.Centre, true);
-                UiDraw.Icon(s, inside, lead + tile + UiTokens.S2, cy + (tile - small) / 2f, small, icon, tint, UiFlags.Middle);
-                UiDraw.Text(s, inside, cx, cy + tile + UiTokens.S1, cell, UiStyle.Small, UiRole.Text2, Words(icon.ToString()), UiFlags.Centre | UiFlags.Truncate);
+                UiDraw.Icon(s, inside.In(face), lead + UiTokens.S2, cy + UiTokens.S2, tile - UiTokens.S4, icon, tint, UiFlags.Middle | UiFlags.Centre | UiFlags.Decor, true);
+                UiDraw.Icon(s, inside, lead + tile + UiTokens.S2, cy + (tile - small) / 2f, small, icon, tint, UiFlags.Middle | UiFlags.Decor);
+                UiDraw.Text(s, inside, cx + UiTokens.S1, cy + tile + UiTokens.S1, cell - UiTokens.S2, UiStyle.Small, UiRole.Text2, Words(icon.ToString()),
+                    UiFlags.Centre | UiFlags.Wrap | UiFlags.Truncate, 2);   // two lines, so a long name never runs into its neighbour's
                 n++;
             }
             float bottom = top + ((n + across - 1) / across) * cellH + UiTokens.S2;
@@ -454,7 +453,14 @@ namespace RealLifeOverhaul.Ui
                 char c = name[i];
                 b.Append(i > 0 && char.IsUpper(c) ? " " + char.ToLowerInvariant(c) : c.ToString());
             }
-            return b.ToString();
+            // Short forms are said in capitals, so the sheet never reads as raw keys.
+            string[] words = b.ToString().Split(' ');
+            for (int i = 0; i < words.Length; i++)
+            {
+                string w = words[i].ToLowerInvariant();
+                words[i] = w == "rpg" || w == "id" || w == "cpu" ? w.ToUpperInvariant() : words[i];
+            }
+            return string.Join(" ", words);
         }
 
         private static string Face(UiFamily family) => "Overpass";

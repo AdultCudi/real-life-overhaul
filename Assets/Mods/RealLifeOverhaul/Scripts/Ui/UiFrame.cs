@@ -104,9 +104,10 @@ namespace RealLifeOverhaul.Ui
         public string Time;           // "14:32"
         public string Day;            // "Tue, Day 12"
         public bool Paused;
-        public int Speed = 1;         // 1 to 3, as the game's speed buttons
-        public string Season;         // "Autumn", with its weather icon
+        public int Speed;             // 1 to 3, as the game's speed buttons, or 0 while the game has not said
+        public string Season;         // "Autumn"
         public UiIcon Weather = UiIcon.CloudSun;
+        public string Temperature;    // beside the weather's icon, as the game writes it; null for the season alone
         public string Place;          // the district the player is in
         public string Money;          // "$48,210"
         public int MoneyTrend;        // +1 rising today, -1 falling, 0 still
