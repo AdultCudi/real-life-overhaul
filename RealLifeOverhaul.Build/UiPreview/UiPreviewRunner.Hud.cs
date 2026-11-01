@@ -19,9 +19,9 @@ public static partial class UiPreviewRunner
         screens.Add(Hud("hud_info_vehicle", "02.jpg", (s, f, d, k) => UiSamples.HudInfo(s, f, d, k, English, true), UiInfoPanel.FooterCommand, 1, "RDDDLLDRR"));
         screens.Add(Hud("hud_prompt", "02.jpg", (s, f, d, k) => UiSamples.HudPrompt(s, f, d, k, English, false), UiWorldPrompt.ActionCommand, 1, "DDD"));
         screens.Add(Hud("hud_prompt_hover", "05.jpg", (s, f, d, k) => UiSamples.HudPrompt(s, f, d, k, English, true), UiDraw.MoneyPillCommand, 0, "RR"));
-        screens.Add(Hud("hud_prompt_night", "11.jpg", (s, f, d, k) => UiSamples.HudPrompt(s, f, d, k, English, false), UiWorldPrompt.ActionCommand, 2, "DDD"));
-        screens.Add(Hud("hud_info_night", "11.jpg", (s, f, d, k) => UiSamples.HudInfo(s, f, d, k, English, true), UiInfoPanel.LinkCommand, 0 * 16 + 15, "RDDDLLDRR"));
-        screens.Add(Hud("hud_objectives_night", "11.jpg", (s, f, d, k) => UiSamples.HudObjectives(s, f, d, k, English, false), UiObjectives.LineCommand, 1, "DRDDRDDDDDDDD"));
+        screens.Add(Hud("hud_prompt_night", "11.jpg", (s, f, d, k) => UiSamples.HudPrompt(s, f, d, k, English, false, true), UiWorldPrompt.ActionCommand, 2, "DDD"));
+        screens.Add(Hud("hud_info_night", "11.jpg", (s, f, d, k) => UiSamples.HudInfo(s, f, d, k, English, true, true), UiInfoPanel.LinkCommand, 0 * 16 + 15, "RDDDLLDRR"));
+        screens.Add(Hud("hud_objectives_night", "11.jpg", (s, f, d, k) => UiSamples.HudObjectives(s, f, d, k, English, false, true), UiObjectives.LineCommand, 1, "DRDDRDDDDDDDD"));
         screens.Add(Hud("hud_side", "13.jpg", (s, f, d, k) => UiSamples.HudSide(s, f, d, k, English, false), UiSidePanel.ActionCommand, 4, "DDDDDRDLD"));
         screens.Add(Hud("hud_side_collapsed", "11.jpg", (s, f, d, k) => UiSamples.HudSide(s, f, d, k, English, true), UiSidePanel.FoldCommand, 1, "RDDDLD"));
         screens.Add(Hud("hud_objectives", "02.jpg", (s, f, d, k) => UiSamples.HudObjectives(s, f, d, k, English, false), UiObjectives.LocateCommand, 0, "DDDDDDDDDDDDDD"));

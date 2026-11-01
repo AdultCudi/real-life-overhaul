@@ -88,7 +88,7 @@ namespace RealLifeOverhaul.Ui
 
         private static float TextRoom(ref UiObjectiveLine line) =>
             Width - UiTokens.S4 * 2f - Tick - UiTokens.S3 - (string.IsNullOrEmpty(line.Progress) ? 0f : UiDraw.Snap(UiTextRules.Width(line.Progress, UiStyle.Small) + UiTokens.S1) + UiTokens.S3)
-            - (line.Locate ? UiTokens.MinTarget + UiTokens.S2 : 0f);
+            - (UiTokens.MinTarget + UiTokens.S2);   // the locate column, kept on every line so the figures end on one edge
 
         /// <summary>Lays the panel at its top left (px of the layout); returns the y under it.</summary>
         public static float Lay(UiScene s, UiAt at, UiObjectivesModel m, float x, float y)
@@ -99,8 +99,9 @@ namespace RealLifeOverhaul.Ui
             UiAt on = at.In(panel);
             UiDraw.TitleStrip(s, on, x, y, Width, UiIcon.Check, m.Title, false);
             float b = UiTokens.MinTarget + UiTokens.S2;
-            UiDraw.IconButton(s, on, x + Width - UiTokens.S2 - b, y + (UiFrame.Strip - b) / 2f, b, m.Collapsed ? UiIcon.Down : UiIcon.Up, UiRole.Text,
+            int fold = UiDraw.IconButton(s, on, x + Width - UiTokens.S2 - b, y + (UiFrame.Strip - b) / 2f, b, m.Collapsed ? UiIcon.Down : UiIcon.Up, UiRole.Text,
                 FoldCommand, 0, false, UiAction.Count, false, true);
+            s.Nodes[fold].Left = s.Nodes[fold].Right = fold;   // the panel's corner: sideways leads nowhere unless the HUD joins a panel beside it
             if (m.Collapsed)
             {
                 return y + h;
@@ -147,15 +148,14 @@ namespace RealLifeOverhaul.Ui
         private static float Line(UiScene s, UiAt at, ref UiObjectiveLine line, int arg, float x, float y, float w)
         {
             float h = LineHeight(ref line);
-            float right = x + w;
+            float right = x + w - UiTokens.MinTarget;
             int locate = -1;
             if (line.Locate)
             {
                 float b = UiTokens.MinTarget;
-                right -= b;
                 locate = UiDraw.IconButton(s, at, right, y + UiDraw.SnapDown((h - b) / 2f), b, UiIcon.Locate, UiRole.None, LocateCommand, arg, false, UiAction.Count, false, true);
-                right -= UiTokens.S2;
             }
+            right -= UiTokens.S2;
             if (!string.IsNullOrEmpty(line.Progress))
             {
                 float pw = UiDraw.Snap(UiTextRules.Width(line.Progress, UiStyle.Small) + UiTokens.S1);

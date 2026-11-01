@@ -99,7 +99,7 @@ internal static partial class UiSamples
                 Rows = new[]
                 {
                     new UiInfoRow { Label = "Takings today", Value = "$1,862", Ink = UiRole.OkText }, new UiInfoRow { Label = "Customers today", Value = "143" },
-                    new UiInfoRow { Label = "Open", Value = "07:00 to 22:00" },
+                    new UiInfoRow { Label = "Seats", Value = "24" },
                 }
             },
             new UiInfoSection
@@ -133,14 +133,14 @@ internal static partial class UiSamples
             },
             new UiInfoSection
             {
-                Label = "Costs", Value = "$214 a week", Rows = new[] { new UiInfoRow { Label = "Insurance", Value = "$96 a week" }, new UiInfoRow { Label = "Parking", Value = "Street, free" } }
+                Label = "Costs", Value = "$214 a week", Rows = new[] { new UiInfoRow { Label = "Fuel", Value = "$118 a week" }, new UiInfoRow { Label = "Insurance", Value = "$96 a week" }, new UiInfoRow { Label = "Parking", Value = "Street, free" } }
             },
         },
         Footer = new[] { UiIcon.Locate, UiIcon.Navigation }, FooterTints = new UiRole[0],
     };
 
     /// <summary>The HUD with a thing's info panel docked at the top left: a business, or a car.</summary>
-    public static void HudInfo(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool vehicle)
+    public static void HudInfo(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool vehicle, bool night = false)
     {
         var m = new UiHudModel
         {
@@ -152,7 +152,7 @@ internal static partial class UiSamples
             },
         };
         m.PromptCount = m.Prompts.Length;
-        Hud(s, f, dark, k, t, m, HudBar(t, false, false, false));
+        Hud(s, f, dark, k, t, m, HudBar(t, false, false, night));
     }
 
     // ------------------------------------------------------------------------------------------------- the world prompt
@@ -167,7 +167,7 @@ internal static partial class UiSamples
             new UiPromptAction { Label = "Go inside", Key = GameKey(k, "F", UiIcon.PadA), Main = true },
             new UiPromptAction { Label = "Look at the building", Key = GameKey(k, "P", UiIcon.PadY) },
             new UiPromptAction { Label = "Ring the doorbell", Key = GameKey(k, "O", UiIcon.PadX) },
-            new UiPromptAction { Label = "Rent this space", Key = GameKey(k, "Enter", UiIcon.PadB), Disabled = true, Reason = "Taken" },
+            new UiPromptAction { Label = "Rent this space", Key = GameKey(k, "Enter", UiIcon.PadRb), Disabled = true, Reason = "Taken" },
         },
     };
 
@@ -180,10 +180,10 @@ internal static partial class UiSamples
     private static UiGameKey GameKey(IUiKeys k, string name, UiIcon pad) => k != null && k.Pad != UiPad.None ? new UiGameKey { Glyph = pad } : new UiGameKey { Name = name };
 
     /// <summary>The HUD with a box at a café's door, its point right of centre on the street; or the hover form indoors.</summary>
-    public static void HudPrompt(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool hover)
+    public static void HudPrompt(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool hover, bool night = false)
     {
         var m = new UiHudModel { Prompt = hover ? HudItem(t) : HudDoor(t, k), PointX = f.Width * (hover ? 0.42f : 0.62f), PointY = f.Height * (hover ? 0.5f : 0.58f) };
-        Hud(s, f, dark, k, t, m, HudBar(t, false, false, false));
+        Hud(s, f, dark, k, t, m, HudBar(t, false, false, night));
     }
 
     // ------------------------------------------------------------------------------------------------- side panels and objectives
@@ -278,8 +278,8 @@ internal static partial class UiSamples
     }
 
     /// <summary>The HUD with the objectives open with every group, or with nothing to do yet.</summary>
-    public static void HudObjectives(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool empty) =>
-        Hud(s, f, dark, k, t, new UiHudModel { Objectives = HudGoals(t, false, empty) }, HudBar(t, false, false, false));
+    public static void HudObjectives(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool empty, bool night = false) =>
+        Hud(s, f, dark, k, t, new UiHudModel { Objectives = HudGoals(t, false, empty) }, HudBar(t, false, false, night));
 
     /// <summary>The HUD on a trade job: the timing gauge with its zone and marker, and a delivery's meter running late.</summary>
     public static void HudMeters(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t)
@@ -326,25 +326,25 @@ internal static partial class UiSamples
         m.Entries = locked
             ? new[]
             {
-                Station(UiIcon.Scales, "Public defender", "Busy this week", "Free"), Station(UiIcon.Scales, "Rhee and Partners", "Traffic cases", "$1,200"),
-                Station(UiIcon.Scales, "Carver Law", "Wins most hearings", "$3,400"), Closed(UiIcon.Scales, "Marlowe and Vance", "Partners of Carver Law", "Booked until Day 420"),
+                Lawyer("Dana Ruiz", 30f, "Public defender", "Free", null), Lawyer("Min-jun Rhee", 200f, "Traffic cases", "$1,200", null),
+                Lawyer("Grace Carver", 320f, "Wins most hearings", "$3,400", null), Lawyer("Owen Vance", 120f, "Partner at Carver Law", null, "Booked until Day 420"),
             }
             : new[]
             {
                 Line(1, "Union Square", "3 min"), Line(2, "Herald Square", "4 min"), Line(1, "Times Square", "7 min"), Shut(3, "Grand Central", "Closed for works until Day 414"),
-                Line(2, "Bleecker Street", "9 min"), Line(1, "Canal Street", "12 min"), Shut(3, "Brooklyn Bridge", "Closed at night"), Line(2, "Wall Street", "16 min"),
+                Line(2, "Bleecker Street", "9 min"), Line(1, "Canal Street", "12 min"), Shut(3, "Brooklyn Bridge", "Closed for repairs"), Line(2, "Wall Street", "16 min"),
                 Line(1, "South Ferry", "19 min"), Line(3, "Harlem 125th Street", "22 min"),
             };
         return m;
     }
 
-    private static UiPickEntry Station(UiIcon icon, string name, string detail, string figure) => new UiPickEntry { Icon = icon, Name = name, Detail = detail, Figure = figure };
-
-    private static UiPickEntry Closed(UiIcon icon, string name, string detail, string reason) => new UiPickEntry { Icon = icon, Name = name, Detail = detail, Disabled = true, Reason = reason };
-
     // A station by its line's number in the line's own colour, its ride's minutes as the figure that decides.
     private static UiPickEntry Line(int line, string name, string minutes) =>
-        new UiPickEntry { Icon = UiIcon.MapTrifold, Mark = line.ToString(System.Globalization.CultureInfo.InvariantCulture), MarkTone = UiTokens.Chart(line - 1), Name = name, Detail = "Line " + line, Figure = minutes };
+        new UiPickEntry { Icon = UiIcon.MapTrifold, Mark = line.ToString(System.Globalization.CultureInfo.InvariantCulture), MarkTone = UiTokens.Chart(line - 1), Name = name, Figure = minutes };
+
+    // A lawyer by their face, what they do and their fee, or why they cannot take the case.
+    private static UiPickEntry Lawyer(string name, float hue, string detail, string fee, string reason) =>
+        new UiPickEntry { Icon = UiIcon.Scales, Face = name, Hue = hue, Name = name, Detail = detail, Figure = fee, Disabled = reason != null, Reason = reason };
 
     private static UiPickEntry Shut(int line, string name, string reason)
     {
@@ -356,7 +356,7 @@ internal static partial class UiSamples
 
     /// <summary>The picker over the street with the HUD's bar.</summary>
     public static void HudPickerScene(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool locked, bool empty) =>
-        WithBar(Over(HudBar(t, false, false, locked)), () => UiPicker.Lay(s, HudPicker(t, locked, empty), f, dark, k));
+        WithBar(Over(HudBar(t, false, false, locked || empty)), () => UiPicker.Lay(s, HudPicker(t, locked, empty), f, dark, k));
 
     // ------------------------------------------------------------------------------------------------- the activity
 
@@ -369,7 +369,7 @@ internal static partial class UiSamples
             Lines = new[]
             {
                 new UiInfoRow { Label = "Pay an hour", Value = "$16", Ink = UiRole.OkText }, new UiInfoRow { Label = "Energy an hour", Value = "-6", Ink = UiRole.WarnText },
-                new UiInfoRow { Label = "Ends at", Value = "18:30" },
+                new UiInfoRow { Label = "Ends at", Value = "18:32" },
             },
             HasDuration = state == UiActivityState.NotStarted, DurationLabel = "Hours", DurationValue = "4 hours", DurationShare = 0.5f,
             HasProgress = state == UiActivityState.Running || state == UiActivityState.Started, Progress = new UiProgressModel { Share = 0.01f },
@@ -465,13 +465,12 @@ internal static partial class UiSamples
         Tools = new[]
         {
             new UiTool { Icon = UiIcon.Sofa, Name = "Furniture" }, new UiTool { Icon = UiIcon.PaintBrush, Name = "Walls" }, new UiTool { Icon = UiIcon.Grid, Name = "Floors" },
-            new UiTool { Icon = UiIcon.Lightbulb, Name = "Lights" }, new UiTool { Icon = UiIcon.Package, Name = "Storage" }, new UiTool { Icon = UiIcon.Trash, Name = "Sell" },
+            new UiTool { Icon = UiIcon.Trash, Name = "Sell" },
         },
         Tool = open ? 0 : -1, Choice = 1,
         Choices = new[]
         {
-            new UiToolChoice { Icon = UiIcon.Sofa, Name = "Two seat sofa", Figure = "$640" }, new UiToolChoice { Icon = UiIcon.Coffee, Name = "Espresso machine", Figure = "$1,450" },
-            new UiToolChoice { Icon = UiIcon.Lightbulb, Name = "Floor lamp", Figure = "$85" }, new UiToolChoice { Icon = UiIcon.Package, Name = "Wall shelf", Figure = "$120" },
+            new UiToolChoice { Icon = UiIcon.Camera, Name = "Security camera", Figure = "$340" }, new UiToolChoice { Icon = UiIcon.Coffee, Name = "Espresso machine", Figure = "$1,450" },
             new UiToolChoice { Icon = UiIcon.Image, Name = "Framed print", Figure = "$60" }, new UiToolChoice { Icon = UiIcon.Cpu, Name = "Office computer", Figure = "$980" },
             new UiToolChoice { Icon = UiIcon.MusicNotes, Name = "Ceiling speaker", Figure = "$210", Disabled = true, Reason = "Not sold here" },
             new UiToolChoice { Icon = UiIcon.GameController, Name = "Arcade cabinet", Figure = "$2,400" },

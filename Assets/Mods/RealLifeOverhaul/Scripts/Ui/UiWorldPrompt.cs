@@ -118,7 +118,7 @@ namespace RealLifeOverhaul.Ui
                 reason = UiDraw.TextMiddle(s, inside, x + w - UiTokens.S3 - rw, y, ActionRow, rw, UiStyle.SmallStrong, UiRole.WarnText, a.Reason, UiFlags.Right | UiFlags.Truncate);
             }
             int node = UiDraw.Node(s, at, x, y, w, ActionRow, ActionCommand, index, face, a.Disabled);
-            UiDraw.GameKey(s, inside, kx, y + (ActionRow - UiTokens.KeyCap) / 2f, a.Key, main);   // after the target: the game, not the row, answers it
+            UiDraw.GameKey(s, inside, kx, y + (ActionRow - UiTokens.KeyCap) / 2f, a.Key, main, a.Disabled);   // after the target: the game, not the row, answers it
             if (a.Disabled)
             {
                 UiDraw.Dim(s, drawn, node);

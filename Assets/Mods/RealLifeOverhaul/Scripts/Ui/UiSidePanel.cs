@@ -125,6 +125,7 @@ namespace RealLifeOverhaul.Ui
                 float spare = Math.Max(0f, iw - first - second - (actions > 1 ? UiTokens.S2 : 0f));
                 float bw = actions == 1 ? iw : UiDraw.SnapDown(first + spare / 2f);
                 float bx = ix;
+                int row = s.NodeCount;
                 for (int a = 0; a < actions; a++)
                 {
                     ref UiActionModel act = ref m.Actions[a];
@@ -133,6 +134,12 @@ namespace RealLifeOverhaul.Ui
                     UiDraw.Button(s, on, bx, cy, w, UiTokens.ControlSmall, act.Kind == UiButtonKind.Destructive ? UiButtonKind.Destructive : UiButtonKind.Secondary,
                         act.Label, UiIcon.None, UiAction.Count, keys, ActionCommand, index * 4 + a, act.Disabled);
                     bx += w + UiTokens.S2;
+                }
+                // The buttons are one row: Left and Right between them, its ends going nowhere sideways.
+                for (int n = row; n < s.NodeCount; n++)
+                {
+                    s.Nodes[n].Left = n > row ? n - 1 : n;
+                    s.Nodes[n].Right = n < s.NodeCount - 1 ? n + 1 : n;
                 }
             }
             return y + h;

@@ -164,7 +164,8 @@ namespace RealLifeOverhaul.Ui
             }
             int shown = s.FindNode(ViewCommand, m.View);
             s.Nodes[search].Left = shown;
-            int above = search;
+            s.Nodes[search].Right = search;
+            int above = search, lastLocate = -1;
             for (int i = 0; i < m.Filters.Length; i++)
             {
                 int filter = s.FindNode(FilterCommand, i), locate = s.FindNode(LocateCommand, i);
@@ -174,11 +175,17 @@ namespace RealLifeOverhaul.Ui
                 }
                 s.Nodes[above].Down = filter;
                 s.Nodes[filter].Up = above;
+                s.Nodes[filter].Right = locate >= 0 ? locate : filter;
                 if (locate >= 0)
                 {
-                    s.Nodes[filter].Right = locate;
                     s.Nodes[locate].Left = filter;
-                    s.Nodes[locate].Up = above;
+                    s.Nodes[locate].Right = locate;
+                    s.Nodes[locate].Up = lastLocate >= 0 ? lastLocate : search;
+                    if (lastLocate >= 0)
+                    {
+                        s.Nodes[lastLocate].Down = locate;
+                    }
+                    lastLocate = locate;
                 }
                 above = filter;
             }
@@ -187,6 +194,11 @@ namespace RealLifeOverhaul.Ui
             {
                 s.Nodes[above].Down = destination;
                 s.Nodes[destination].Up = above;
+                s.Nodes[destination].Left = s.Nodes[destination].Right = destination;
+                if (lastLocate >= 0)
+                {
+                    s.Nodes[lastLocate].Down = destination;
+                }
             }
         }
 

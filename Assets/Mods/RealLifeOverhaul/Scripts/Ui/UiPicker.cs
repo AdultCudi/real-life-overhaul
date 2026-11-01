@@ -12,6 +12,8 @@ namespace RealLifeOverhaul.Ui
         public bool Disabled;      // seen but not chosen: its reason says why
         public string Reason;      // "Closed until 06:00": a chip in place of its figure
         public bool Note;          // a line of the list that is no entry (the game's note rows): no tile, no target
+        public string Face;        // a person's name: their painted face in place of the tile (a lawyer, a desk's occupant); null for none
+        public float Hue;          // the face's ground
         public string Mark;        // a short code on the tile in place of the glyph (a subway line's "2"), as a bullet; null for the glyph
         public UiRole MarkTone;    // the bullet's colour, the line's own: a chart hue, with the code in the dark ink on it
     }
@@ -83,7 +85,7 @@ namespace RealLifeOverhaul.Ui
         {
             for (int i = 1; i < m.Entries.Length; i++)
             {
-                if (!m.Entries[i].Note && (m.Entries[i].Icon != m.Entries[0].Icon || m.Entries[i].Mark != m.Entries[0].Mark))
+                if (!m.Entries[i].Note && (m.Entries[i].Icon != m.Entries[0].Icon || m.Entries[i].Mark != m.Entries[0].Mark || m.Entries[i].Face != null))
                 {
                     return true;
                 }
@@ -169,7 +171,12 @@ namespace RealLifeOverhaul.Ui
             int face = UiDraw.Box(s, at, x, y, w, Row, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
             UiAt inside = at.In(face);
             float tx = x + UiTokens.S2, nx = x + UiTokens.S3;
-            if (tiles)
+            if (tiles && !string.IsNullOrEmpty(e.Face))
+            {
+                UiDraw.Portrait(s, inside, tx, y + (Row - tile) / 2f, tile, e.Face, e.Hue, UiRole.None);
+                nx = tx + tile + UiTokens.S3;
+            }
+            else if (tiles)
             {
                 int t = UiDraw.Tile(s, inside, tx, y + (Row - tile) / 2f, tile, UiRole.None, false);
                 if (!string.IsNullOrEmpty(e.Mark))

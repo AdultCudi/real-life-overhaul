@@ -45,7 +45,7 @@ namespace RealLifeOverhaul.Ui
         /// box prints "[F]". The game answers this key, not the kit, so the cap names no action of the kit's and is laid after
         /// its row's target, which therefore owns no key. Returns its width.
         /// </summary>
-        public static float GameKey(UiScene s, UiAt at, float x, float y, UiGameKey key, bool onAccent = false)
+        public static float GameKey(UiScene s, UiAt at, float x, float y, UiGameKey key, bool onAccent = false, bool dim = false)
         {
             if (!key.Shown)
             {
@@ -62,6 +62,12 @@ namespace RealLifeOverhaul.Ui
                 Flags = UiFlags.Middle
             };
             UiDraw.OnCyan(ref item, onAccent);
+            if (dim)
+            {
+                // Greyed with its row: the cap's ring and word in the quiet ink, as a target that takes no press reads.
+                item.Ink = item.Edge = UiRole.Muted;
+                item.Alpha = UiDraw.DimAlpha;
+            }
             s.Add(ref item);
             return w;
         }

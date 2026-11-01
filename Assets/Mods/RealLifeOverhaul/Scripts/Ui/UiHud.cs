@@ -80,6 +80,7 @@ namespace RealLifeOverhaul.Ui
             if (m.Side != null && m.Side.Length > 0)
             {
                 UiSidePanel.LayStack(s, UiAt.Screen, m.Side, m.Side.Length, frame.Width - UiTokens.S2, UiTokens.S4, keys);
+                Join(s);
             }
             if (m.Activity != null && UiActivity.Strip(m.Activity.State))
             {
@@ -96,6 +97,17 @@ namespace RealLifeOverhaul.Ui
             {
                 PromptPlace(m, frame, out float px, out float py);
                 UiWorldPrompt.Lay(s, UiAt.Screen, m.Prompt, px, py);
+            }
+        }
+
+        // The left column's corner and the side panels' first fold stand on one row across the top: Right and Left join them.
+        private static void Join(UiScene s)
+        {
+            int left = s.FindNode(UiObjectives.FoldCommand, 0), right = s.FindNode(UiSidePanel.FoldCommand, 0);
+            if (left >= 0 && right >= 0)
+            {
+                s.Nodes[left].Right = right;
+                s.Nodes[right].Left = left;
             }
         }
 
