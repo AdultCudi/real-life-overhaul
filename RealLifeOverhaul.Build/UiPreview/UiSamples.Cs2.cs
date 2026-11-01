@@ -58,7 +58,6 @@ internal static partial class UiSamples
                     Label = "Work", Value = "Bloom Café", Link = true,
                     Rows = new[] { new UiInfoRow { Label = "Hours a week", Value = "38" }, new UiInfoRow { Label = "Commute", Value = "22 min by subway" } }
                 },
-                new UiInfoSection { Label = "Destination", Value = "Bloom Café", Link = true },
             },
             Footer = new[] { UiIcon.Locate, UiIcon.Eye, UiIcon.Phone },
         };
@@ -88,7 +87,7 @@ internal static partial class UiSamples
                 new UiInfoRow { Label = "Moved away this month", Value = "278" },
             },
             ChartTitle = "Age groups", ChartLabels = new[] { "Children", "Young adults", "Adults", "Seniors" }, ChartValues = new[] { "18.4%", "21.9%", "41.2%", "18.5%" },
-            ChartShares = new[] { 18.4f, 21.9f, 41.2f, 18.5f }, LegendTitle = "Map legend", ScaleLabel = "Rent by block", ScaleLow = "Low", ScaleHigh = "High",
+            ChartShares = new[] { 18.4f, 21.9f, 41.2f, 18.5f }, LegendTitle = "Map legend", ScaleLabel = "Residents per block", ScaleLow = "Few", ScaleHigh = "Many",
         };
         m.Prompts = new[]
         {
@@ -181,7 +180,7 @@ internal static partial class UiSamples
                 Person("Diego Alvarez", UiIcon.Megaphone, UiRole.Chart6, "Marketing", 63, 59),
             },
             PeopleMore = "See all 12 in Team",
-            Note = "Support is needed: 120 tickets a day go unanswered. Hire people in the Business app, then give them roles in Open Roles.",
+            Note = "Support is needed: 120 tickets a day go unanswered. Hire people, then give them roles in Open Roles.", NoteAction = "Hire in the Business app",
         };
         m.Prompts = new[]
         {
@@ -218,7 +217,7 @@ internal static partial class UiSamples
             },
             Profile = new UiProfileModel
             {
-                Name = "Maya Okafor", Hue = UiColour.HueOf("Maya Okafor"), Ring = UiRole.Ok, Role = "Customer Service", RoleIcon = UiIcon.Headset,
+                Name = "Maya Okafor", Hue = UiColour.HueOf("Maya Okafor"), Ring = UiRole.Warn, Role = "Customer Service", RoleIcon = UiIcon.Headset,
                 Employer = "Bloom Caf\u00e9", EmployerIcon = UiIcon.Coffee, Status = "At work", StatusTone = UiRole.Ok,
                 FactLabels = new[] { "Age", "Hourly wage", "Hired", "Hours a week" }, FactValues = new[] { "29", "$22", "214 days ago", "32 of 40" },
                 RatingLabel = "Ability", Rating = 7,
@@ -241,16 +240,16 @@ internal static partial class UiSamples
             {
                 Shift("Monday", "08:00 to 16:00", "Front", "Worked", UiRole.Ok),
                 Shift("Tuesday", "08:00 to 16:00", "Front", "Late 12 min", UiRole.Warn),
-                Shift("Wednesday", "12:00 to 20:00", "Drive-in", "Worked", UiRole.Ok),
-                Shift("Thursday", "12:00 to 20:00", "Front", "Off sick", UiRole.Danger),
-                Shift("Friday", "08:00 to 16:00", "Front", "Up next", UiRole.Accent),
+                Shift("Wednesday", "12:00 to 20:00", "Drive-in", "Up next", UiRole.Accent),
+                Shift("Thursday", "12:00 to 20:00", "Front", "Booked", UiRole.Text2),
+                Shift("Friday", "08:00 to 16:00", "Front", "Booked", UiRole.Text2),
             },
             MoreTitle = "Reviews",
             MoreColumns = new[] { new UiColumn { Title = "Review" }, new UiColumn { Title = "Score", Width = 56f, Right = true }, new UiColumn { Title = "Outcome", Grow = true } },
             MoreGrade = 1,
             MoreRows = new[]
             {
-                Review(UiIcon.Coin, "After 180 days", 78, "Pay raised to $22 an hour"), Review(UiIcon.Clock, "After 90 days", 71, "Kept on, more hours"),
+                Review(UiIcon.Coin, "After 180 days", 78, "Pay raised to $22 an hour"), Review(UiIcon.Handshake, "After 90 days", 71, "Kept on, more hours"),
                 Review(UiIcon.Cap, "First month", 64, "Training done"),
             },
             PeopleTitle = "On her shifts", PeopleCount = "6 people",
@@ -263,7 +262,7 @@ internal static partial class UiSamples
                 Colleague("Ines Duarte", UiIcon.Coffee, UiRole.CatFood, "Barista", 69, 80),
                 Colleague("Sam Okoro", UiIcon.Package, UiRole.CatRetail, "Stock and tills", 47, 63),
             },
-            Note = "Maya asks for Sundays off. Answer her in Requests, or she loses heart.", NoteTone = UiRole.Warn,
+            Note = "Maya asks for Sundays off. Answer her soon, or she loses heart.", NoteTone = UiRole.Warn, NoteAction = "Open Requests",
         };
         m.Prompts = new[]
         {
@@ -368,7 +367,7 @@ internal static partial class UiSamples
     {
         var m = new UiPhoneModel
         {
-            Name = "BizPhone", Time = "14:32", Day = "Tuesday", Note = "Autumn, light clouds over Midtown", Page = 0, Pages = 2, NextTitle = "Up next",
+            Name = "BizPhone", Time = "14:32", Page = 0, Pages = 2, NextTitle = "Up next",
             Next = new[]
             {
                 new UiInfoRow { Label = "16:00", Value = "Weekly team meeting, Lantern Bay Games" }, new UiInfoRow { Label = "Thu", Value = "Rent due on 70 Fifth Avenue" },
