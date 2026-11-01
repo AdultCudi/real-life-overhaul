@@ -15,7 +15,8 @@ namespace RealLifeOverhaul.GameUi
     /// overflow: the game's apps first, the mod's in one order, other mods' after, a More apps button on every page's last
     /// tile; with the option App folders the mod's apps in folders and a dock (PhoneLayoutRules). What it does is written on
     /// the grid (PageMark, RowAsBuilt) so any later pager carries on, and it steps aside for good for another mod paging the
-    /// same grid. Costs nothing a frame: it acts on the grid's events, at most one pass before the canvas is drawn.
+    /// same grid (PagerAsideRules), keeping the phone within the screen after. Costs nothing a frame: it acts on the grid's
+    /// events, at most one pass before the canvas is drawn.
     /// </summary>
     public sealed partial class PhoneGridPager : MonoBehaviour, IScrollHandler
     {
@@ -149,6 +150,7 @@ namespace RealLifeOverhaul.GameUi
             pager._template = template;
             pager._ready = true;
             Hud = pager;
+            pager.ReadFrame();
             pager.HearBadges();
             pager.HearLayout();
             if (Holding == 0)
@@ -307,9 +309,17 @@ namespace RealLifeOverhaul.GameUi
             Changed();
         }
 
-        /// <summary>A button was shown or hidden by any hand (its PageMark): one pass before the canvas is drawn, however many changed.</summary>
+        /// <summary>
+        /// A button was shown or hidden by any hand (its PageMark), or the phone changed size: one pass before the canvas is
+        /// drawn, however many changed. Stood aside, the pass only keeps the phone within the screen.
+        /// </summary>
         internal void Changed()
         {
+            if (_aside && !_working)
+            {
+                FitLater();
+                return;
+            }
             if (_working || _aside || _pending || !_ready || !isActiveAndEnabled || Holding > 0)
             {
                 return;   // our own changes, the grid is not showing (looked at again when it is), or apps going on (laid out after the last)
@@ -490,6 +500,10 @@ namespace RealLifeOverhaul.GameUi
                     }
                     _page = Mathf.Clamp(_page, 0, Pages - 1);
                     Apply();
+                }
+                else
+                {
+                    Fit();
                 }
             }
             catch (Exception e)

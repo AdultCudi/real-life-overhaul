@@ -38,6 +38,7 @@ internal static partial class Program
         PagerTiming();
         Section("the phone's pages: the pager follows the rules, in " + scripts);
         PagerSources(scripts, locales);
+        PagerAside(scripts);
     }
 
     // The full menu's row on every screen the game allows: 4:3, 16:10 and 16:9 (its resolutions are at least 1280 by 720),
@@ -596,7 +597,7 @@ internal static partial class Program
             "the button's badge counts every badge up on the pages not showing, the game's own too, hears the game's word once and is written only when it changes");
         Check(Body(pager, "private bool MakeMore()")?.Contains("rect.anchorMin = row.anchorMin;") == true && Body(pager, "private void More()")?.Contains("SetSizeWithCurrentAnchors") == true,
             "the button is anchored as the row or grid is, so it moves with them");
-        Check(Body(pager, "private bool SomeoneElse()")?.Contains("GetName()") == false && pager.Contains("KnownScripts[type] = known;"), "each kind of script on the grid is looked at once");
+        Check(Body(pager, "private bool SomeoneElse()")?.Contains("GetName()") == false && pager.Contains("KnownScripts[type] = pager;"), "each kind of script on the grid is looked at once");
         string refresh = Body(pager, "public void Refresh()");
         Check(refresh != null && refresh.Contains("Pages = PagerRules.Pages(_items.Count, ItemTiles)") && Body(pager, "private int PageOf(int index)")?.Contains("PagerRules.PageOf(index, _items.Count, ItemTiles)") == true,
             "the HUD phone's pages and every item's page come from the rules (the view's items: every app without folders)");
