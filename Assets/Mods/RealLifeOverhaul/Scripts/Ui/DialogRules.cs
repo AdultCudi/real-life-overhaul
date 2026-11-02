@@ -127,6 +127,25 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
         public static SceneLook Look(bool talk, int bodyLines) => talk || bodyLines > BodyMost ? SceneLook.Talk : SceneLook.Decision;
 
+        /// <summary>
+        /// The name a dialog gives its speaker (the game's npcNameKey: the bank's Banker, the mod's Business desk, a person
+        /// the player knows by name), as the head shows it: its words where it is a key the game or the mod translates, the
+        /// name itself where it is one, and null for a record's id that is neither, so no id reaches the screen.
+        /// </summary>
+        public static string SpeakerName(string key, string translated)
+        {
+            if (!string.IsNullOrEmpty(translated) && translated.Trim().Length > 0)
+            {
+                return translated.Trim();
+            }
+            if (string.IsNullOrEmpty(key) || key.Trim().Length == 0 || key.StartsWith("ba:", StringComparison.Ordinal) || key.StartsWith("reallife", StringComparison.Ordinal)
+                || key.IndexOf('_') >= 0 || key.IndexOf(':') >= 0)
+            {
+                return null;
+            }
+            return key.Trim();
+        }
+
         private static string Blank(string text)
         {
             string t = text != null ? text.Trim() : null;

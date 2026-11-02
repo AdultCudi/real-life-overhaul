@@ -34,6 +34,8 @@ namespace RealLifeOverhaul.Ui
         private readonly List<Button> _buttons = new List<Button>(4);
         private readonly List<UiDecisionChoice> _made = new List<UiDecisionChoice>(4);
         private readonly List<UiMessageModel> _lines = new List<UiMessageModel>(32);
+        private readonly UiPrompt[] _prompts = new UiPrompt[3];
+        private static readonly UiFormField[] NoFields = new UiFormField[0];
         private readonly List<KeyValuePair<int, string>> _said = new List<KeyValuePair<int, string>>(32);   // a line's copy and the answer the player gave it here
         private Transform _content;
         private Button _leave;
@@ -395,18 +397,20 @@ namespace RealLifeOverhaul.Ui
             Prompts();
         }
 
-        // Who is talking: the latest line's speaker as the game heads it, the place or contact the talk is with under them.
+        // Who is talking: the latest line's speaker as the game heads it, else the name the conversation gives its speaker;
+        // under them where the talk is held (the contact it is with, the business the player stands in, or the street).
         private void Head(string speaker, int mood)
         {
             Contact c = _ui.contact;
             string with = c != null ? ContactName(c) : null;
-            string name = speaker ?? with;
+            string name = speaker ?? Speaker() ?? with;
+            string where = with ?? Place();
             _m.Name = name ?? UiText.T("reallife_ui_dialog_title");
             _m.Hue = UiColour.HueOf(_m.Name);
             _m.Ring = ContactsRules.MoodRing(mood);
-            _m.Role = with != null && with != name ? with : null;
+            _m.Role = where != null && where != _m.Name ? where : null;
             _m.Status = null;
-            _m.Title = name != null ? UiText.Fill("reallife_ui_dialog_talking", "name", name) : UiText.T("reallife_ui_dialog_title");
+            _m.Title = UiText.T("reallife_ui_dialog_title");
             _m.ThreadStart = null;
             _m.EmptyTitle = null;
             _m.EmptyBody = null;
@@ -460,7 +464,7 @@ namespace RealLifeOverhaul.Ui
         private void Form(CanvasGroup view, DialogEntry e)
         {
             _m.Form = UiFormKind.None;
-            _m.Fields = new UiFormField[0];
+            _m.Fields = NoFields;
             _m.FieldCount = 0;
             _m.Rows = _form.Rows;
             _m.RowCount = 0;
@@ -510,19 +514,22 @@ namespace RealLifeOverhaul.Ui
             });
         }
 
+        // Move and Choose while the line has something to choose; Leave as the game's own Esc presses it, while it shows.
+        // Between two lines the game shows no button, and the bar then promises nothing.
         private void Prompts()
         {
-            var prompts = new List<UiPrompt>(3)
+            int n = 0;
+            if (_made.Count > 0 || _formShown)
             {
-                new UiPrompt { Action = UiAction.Move, Label = UiText.T("reallife_ui_prompt_move") },
-                new UiPrompt { Action = UiAction.Confirm, Label = UiText.T("reallife_ui_prompt_choose") },
-            };
+                _prompts[n++] = new UiPrompt { Action = UiAction.Move, Label = UiText.T("reallife_ui_prompt_move") };
+                _prompts[n++] = new UiPrompt { Action = UiAction.Confirm, Label = UiText.T("reallife_ui_prompt_choose") };
+            }
             if (_leave != null && UiWidgets.Shows(_leave))
             {
-                prompts.Add(new UiPrompt { Action = UiAction.Back, Label = DialogRules.OneLine(UiWidgets.Label(_leave)) });
+                _prompts[n++] = new UiPrompt { Action = UiAction.Back, Label = DialogRules.OneLine(UiWidgets.Label(_leave)) };
             }
-            _m.Prompts = prompts.ToArray();
-            _m.PromptCount = _m.Prompts.Length;
+            _m.Prompts = _prompts;
+            _m.PromptCount = n;
         }
 
         private void Add(UiMessageModel line)
@@ -587,8 +594,30 @@ namespace RealLifeOverhaul.Ui
             return string.IsNullOrEmpty(words) ? null : words.Trim();
         }
 
-        private static string ContactName(Contact c) =>
-            Localizor.LocalizorManager.IsLocalizedKey(c.id) ? Localizor.LocalizorManager.GetLocalization(c.id) : c.id;
+        private static string ContactName(Contact c) => Named(c.id);
+
+        // The business the player stands in, or the street when the talk is with someone out in the city; null for neither.
+        private string Place()
+        {
+            if (BuildingManager.IsInsideBuilding)
+            {
+                BuildingManager building = InstanceBehavior<BuildingManager>.Instance;
+                string business = building != null && building.buildingRegistration != null ? building.buildingRegistration.BusinessName : null;
+                return string.IsNullOrEmpty(business) ? null : business;
+            }
+            return _ui.npcInDialog != null ? UiText.T("reallife_ui_dialog_in_street") : null;
+        }
+
+        // The name the conversation gives its speaker (a dialog's own, the game's or the mod's), read only when the lines change.
+        private string Speaker()
+        {
+            object dialog = _ui.dialog;
+            return dialog != null && GameContract.DialogSpeaker.Field != null ? Named(GameContract.DialogSpeaker.Field.GetValue(dialog) as string) : null;
+        }
+
+        // A key's words, a name as it is, and nothing for an id that is neither.
+        private static string Named(string key) =>
+            DialogRules.SpeakerName(key, !string.IsNullOrEmpty(key) && Localizor.LocalizorManager.IsLocalizedKey(key) ? Localizor.LocalizorManager.GetLocalization(key) : null);
 
         // The face the game puts by a line (a negotiation's): content, unsure, angry; -2 for none or another.
         private static int MoodOf(Transform entry)

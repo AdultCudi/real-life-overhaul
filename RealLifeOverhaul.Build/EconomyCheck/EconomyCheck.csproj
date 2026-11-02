@@ -690,8 +690,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiConversation.Fields.cs" Link="Mod\UiConversation.Fields.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFormRows.cs" Link="Mod\UiFormRows.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiMonologue.cs" Link="Mod\UiMonologue.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Dialog\DialogRules.cs" Link="Mod\DialogRules.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Dialog\SceneViews.cs" Link="Mod\SceneViews.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\DialogRules.cs" Link="Mod\DialogRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\SceneViews.cs" Link="Mod\SceneViews.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Ledger.cs" Link="Mod\UiDraw.Ledger.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Pages\PopulationPages.cs" Link="Mod\PopulationPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Pages\FlareCityPages.cs" Link="Mod\FlareCityPages.cs" />

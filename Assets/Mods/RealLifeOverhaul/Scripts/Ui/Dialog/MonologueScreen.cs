@@ -1,5 +1,6 @@
 using System.Collections;
 using TMPro;
+using UI;
 using UI.Monologues;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,8 +9,8 @@ namespace RealLifeOverhaul.Ui
 {
     /// <summary>
     /// The game's spoken line (Uncle Fred's lesson, a rival's word) as the kit's notice card at the top centre: the face
-    /// the game shows on its tile, the line, how many more the game holds after it, and the close, which presses the
-    /// game's own. The game keeps its queue, its sound and its timing: the card comes as the game's card comes, goes the
+    /// the game shows on its tile (Uncle Fred's named beside it), the line, how many more the game holds after it, and
+    /// the close, which presses the game's own. The game keeps its queue, its sound and its timing: the card comes as the game's card comes, goes the
     /// moment the line is over (the game's card slides away for two seconds more, unseen), and the next line follows as
     /// the game sends it. It takes no key. Cost: a look at a signature four times a second while a line shows.
     /// </summary>
@@ -24,6 +25,7 @@ namespace RealLifeOverhaul.Ui
         private float _next;
         private long _seen;
         private string _line;
+        private Sprite _fred;
 
         public MonologueScreen(MonologueUI ui, Transform card)
         {
@@ -116,12 +118,24 @@ namespace RealLifeOverhaul.Ui
             bool speaking = Speaking();
             _spoke |= speaking;
             Image face = Face();
-            _m.Name = null;   // the game names nobody on its card: the face says who it is
+            // Uncle Fred named by his face, which the tutorial holds; a rival's face alone, as the game's card shows it.
+            _m.Name = face != null && face.sprite != null && face.sprite == Fred() ? UiText.T("uncle_fred") : null;
             _m.Picture = face != null ? DialogKits.PictureOf(face.sprite) : null;
             _m.Hue = UiColour.HueOf(line ?? string.Empty);
             _m.Line = !_spoke || speaking ? line : null;   // said and sliding away: the card goes now, not two seconds later
             int waiting = Waiting();
             _m.More = waiting > 0 ? UiText.Fill("reallife_ui_monologue_more", "count", waiting.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null;
+        }
+
+        // Uncle Fred's face as the tutorial holds it, found once.
+        private Sprite Fred()
+        {
+            if (_fred == null && GameContract.FredFace.Field != null)
+            {
+                UIs uis = InstanceBehavior<UIs>.Instance;
+                _fred = uis != null && uis.tutorialUI != null ? GameContract.FredFace.Field.GetValue(uis.tutorialUI) as Sprite : null;
+            }
+            return _fred;
         }
 
         private TMP_Text Words()

@@ -123,7 +123,8 @@ namespace RealLifeOverhaul.Ui
             {
                 h += ChoiceHeight(ref m.Choices[i]) + UiTokens.S2;
             }
-            h += UiTokens.S4 + UiTokens.Control + UiTokens.S8;
+            // The buttons' row at the foot; a card without buttons (a moment the player may not leave) ends a padding under its last choice.
+            h += m.Buttons.Length > 0 ? UiTokens.S4 + UiTokens.Control + UiTokens.S8 : UiTokens.S8 - UiTokens.S2;
             return Math.Max(UiDraw.Snap(h), SideHeight(m) + UiTokens.S12 * 2f);
         }
 

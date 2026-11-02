@@ -32,6 +32,7 @@ namespace RealLifeOverhaul.Ui
         public string Name;
         public float Hue;
         public UiRole Ring = UiRole.Ok;                // the mood
+        public UiIcon Icon = UiIcon.None;              // nobody's face (a file, a firm): its picture on a tile in the face's place; None for the face
         public string Role;                            // "Customer Service, Bloom Cafe"
         public string Status;                          // a chip beside the role ("On shift"); null for none
         public UiRole StatusTone = UiRole.Ok;
@@ -150,7 +151,17 @@ namespace RealLifeOverhaul.Ui
         private static float Head(UiScene s, UiAt at, UiConversationModel m, float x, float y, float w)
         {
             float ring = UiTokens.S1;   // the mood's ring inside the head's square, so the face keeps to the grid
-            UiDraw.Portrait(s, at, x + ring, y + ring, Face - ring * 2f, m.Name, m.Hue, m.Ring);
+            if (m.Icon != UiIcon.None)
+            {
+                // Nobody's face (a file, a firm): its picture on a tile, as the call card and a contact's head show one.
+                float side = Face - ring * 2f, g = UiDraw.Snap(side * 0.5f);
+                int tile = UiDraw.Tile(s, at, x + ring, y + ring, side, UiRole.None, false);
+                UiDraw.Icon(s, at.In(tile), x + ring + (side - g) / 2f, y + ring + (side - g) / 2f, g, m.Icon, UiRole.Accent, UiFlags.Middle | UiFlags.Centre, true);
+            }
+            else
+            {
+                UiDraw.Portrait(s, at, x + ring, y + ring, Face - ring * 2f, m.Name, m.Hue, m.Ring);
+            }
             float tx = x + Face + UiTokens.S3, tw = x + w - tx;
             float nameH = UiTextRules.LineHeight(UiStyle.Title), roleH = UiTextRules.LineHeight(UiStyle.Small);
             float top = y + (Face - nameH - UiTokens.S1 - roleH) / 2f;

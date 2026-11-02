@@ -3,8 +3,9 @@ namespace RealLifeOverhaul
     /// <summary>
     /// The game contract's lines for the game's dialogue panel, its forms and the spoken lines drawn on the RLO interface
     /// (Scripts/Ui/Dialog): the panel the game shows and hides, the entry it shows now with the copy it made of it and the
-    /// form that copy asks for, the copies of the lines before it, the game's own drop-down, the amount steps of a
-    /// delivery's line, a slider's figure, and the spoken line's panel, picture, words and queue. Each part and its members
+    /// form that copy asks for, the copies of the lines before it, the name the conversation gives its speaker, the game's
+    /// own drop-down, the amount steps of a delivery's line, a slider's figure, the spoken line's panel, picture, words and
+    /// queue, and Uncle Fred's face for the interface's test of a spoken line. Each part and its members
     /// are in this file alone; a part file's fields are made in their own order and lean on nothing in another part file.
     /// </summary>
     public static partial class GameContract
@@ -20,6 +21,9 @@ namespace RealLifeOverhaul
         public static readonly GameMember DialogEntryView = Field(UiDialog, Game, "DialogController", "_currentEntryComponent", "CanvasGroup");
         public static readonly GameMember DialogEntryForm = Field(UiDialog, Game, "DialogController", "_currentInputTemplate", "Transform");
         public static readonly GameMember DialogTextTemplate = Field(UiDialog, Game, "DialogController", "textTemplate", "CanvasGroup");
+
+        // The name the conversation gives its speaker (the bank's Banker, a desk's clerk), where its lines name nobody.
+        public static readonly GameMember DialogSpeaker = Optional(Field(UiDialog, Game, "Dialogs.Dialog", "npcNameKey", "String"));
 
         // The game's own drop-down in a form: its options as it holds them (keys it localises, or words), the words it shows
         // for the chosen one, and the group it holds the drop-down by while it takes no press.
@@ -41,5 +45,8 @@ namespace RealLifeOverhaul
         public static readonly GameMember MonologuePicture = Field(UiDialog, Game, "UI.Monologues.MonologueUI", "monologueImage", "Image");
         public static readonly GameMember MonologueQueue = Optional(Field(UiDialog, Game, "UI.Monologues.MonologueUI", "_monologueQueue", null));
         public static readonly GameMember MonologueSpeaking = Optional(Field(UiDialog, Game, "UI.Monologues.MonologueUI", "_showMonologueCoroutine", "Coroutine"));
+
+        // Uncle Fred's face as the tutorial gives it to his lines, for the interface's test of a spoken line.
+        public static readonly GameMember FredFace = Optional(Field(UiDialog, Game, "UI.Tutorial.TutorialUI", "uncleFredSprite", "Sprite"));
     }
 }

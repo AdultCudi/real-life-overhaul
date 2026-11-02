@@ -199,29 +199,15 @@ namespace RealLifeOverhaul.Ui
             ScenePage page = List.Page;
             var words = new SceneWords
             {
-                Move = UiText.T("reallife_ui_prompt_move"), Choose = UiText.T("reallife_ui_prompt_choose"), Back = UiText.T("common_cancel")
+                Move = UiText.T("reallife_ui_prompt_move"), Choose = UiText.T("reallife_ui_prompt_choose"), Back = UiText.T("common_cancel"),
+                Menu = UiText.T("input_key_menu")
             };
             if (page.Stamp != _laidPage)
             {
                 _laidPage = page.Stamp;
                 _offset = -1f;   // a new page: the conversation shows its newest line
             }
-            _look = SceneViews.LookOf(page);
-            UiDecisionModel card = _look == SceneLook.Decision ? SceneViews.Decision(page, words) : null;
-            if (card != null && !SceneViews.CardFits(card, frame.BandY, keys))
-            {
-                _look = SceneLook.Talk;   // taller than the screen holds: the conversation, which scrolls
-            }
-            if (_look == SceneLook.Talk)
-            {
-                UiConversationModel talk = SceneViews.Talk(page, List.Thread, words, frame.Width);
-                talk.Offset = _offset;
-                UiConversation.LayDocked(s, talk, frame, dark, keys);
-            }
-            else
-            {
-                UiDecision.Lay(s, card, frame, dark, keys);
-            }
+            _look = SceneViews.Lay(s, page, List.Thread, words, _offset, frame, dark, keys);
             _stamp = page.Stamp;
             _heard = List.Thread.Count;
             _dirty = false;

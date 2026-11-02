@@ -187,7 +187,8 @@ namespace RealLifeOverhaul.Ui
             // A contact opens on a press only: the game marks its messages read as it opens, so the cursor passing never does.
             if (command == UiConversation.FormCommand)
             {
-                _typing = !CallFormShown || CallFormTyped(arg) ? arg : -1;   // a call's form types into its figures and words alone   // the field the next typing goes into: one target a field, pressed after it takes focus
+                // The field the next typing goes into: one target a field, pressed after it takes focus; on a call's form only its figures and words.
+                _typing = !CallFormShown || CallFormTyped(arg) ? arg : -1;
             }
             else if (command == UiMessageList.SearchCommand)
             {

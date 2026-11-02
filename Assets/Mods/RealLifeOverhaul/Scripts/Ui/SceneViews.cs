@@ -26,10 +26,13 @@ namespace RealLifeOverhaul.Ui
         public string Text;
     }
 
-    /// <summary>The words a scene's card takes from the game's and the mod's texts, so the views stay game-free.</summary>
+    /// <summary>
+    /// The words a scene's card takes from the game's and the mod's texts, so the views stay game-free: Back where the
+    /// player may leave (the window's cancel), Menu where they may not (the cancel key then opens the game's own menu).
+    /// </summary>
     public struct SceneWords
     {
-        public string Move, Choose, Back;
+        public string Move, Choose, Back, Menu;
     }
 
     /// <summary>
@@ -126,6 +129,31 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The card stands whole over the status bar, a gutter above and below it; one that cannot is a conversation.</summary>
         public static bool CardFits(UiDecisionModel card, float bandY, IUiKeys keys) => UiDecision.Height(card, CardWords, keys) <= bandY - UiTokens.S8 * 2f;
 
+        /// <summary>
+        /// The page laid in its look: the decision card for a moment that stands whole on the screen, else the conversation
+        /// docked at the right, scrolled to <paramref name="offset"/> (-1 for its newest line). Returns the look laid.
+        /// </summary>
+        public static SceneLook Lay(UiScene s, ScenePage page, List<SceneSaid> thread, SceneWords words, float offset, UiFrame frame, bool dark, IUiKeys keys)
+        {
+            SceneLook look = LookOf(page);
+            UiDecisionModel card = look == SceneLook.Decision ? Decision(page, words) : null;
+            if (card != null && !CardFits(card, frame.BandY, keys))
+            {
+                look = SceneLook.Talk;   // taller than the screen holds: the conversation, which scrolls
+            }
+            if (look == SceneLook.Talk)
+            {
+                UiConversationModel talk = Talk(page, thread, words, frame.Width);
+                talk.Offset = offset;
+                UiConversation.LayDocked(s, talk, frame, dark, keys);
+            }
+            else
+            {
+                UiDecision.Lay(s, card, frame, dark, keys);
+            }
+            return look;
+        }
+
         /// <summary>The page as the decision card.</summary>
         public static UiDecisionModel Decision(ScenePage page, SceneWords words)
         {
@@ -154,7 +182,8 @@ namespace RealLifeOverhaul.Ui
         public static UiConversationModel Talk(ScenePage page, List<SceneSaid> thread, SceneWords words, float frameWidth)
         {
             string said = SaidOf(page, out string progress);
-            string speaker = Speaker(page) ?? Clean(page.Title) ?? string.Empty;
+            string named = Speaker(page);
+            string speaker = named ?? Clean(page.Title) ?? string.Empty;
             var lines = new List<UiMessageModel>(thread.Count + 4);
             for (int i = 0; i < thread.Count; i++)
             {
@@ -170,6 +199,7 @@ namespace RealLifeOverhaul.Ui
                 Name = speaker,
                 Hue = UiColour.HueOf(speaker),
                 Ring = UiRole.None,
+                Icon = named == null ? page.Emblem : UiIcon.None,   // nobody speaks (a file): the moment's emblem in the face's place
                 Role = Clean(page.Role) ?? Clean(page.Kicker),
                 Status = Clean(progress),
                 StatusTone = UiRole.Accent,
@@ -238,7 +268,8 @@ namespace RealLifeOverhaul.Ui
             }
             var lines = new List<UiConsequence>(3);
             int start = 0;
-            for (int i = 0; i <= words.Length && lines.Count < MeaningMost; i++)
+            string rest = null;
+            for (int i = 0; i <= words.Length && rest == null; i++)
             {
                 if (i < words.Length && !Ends(words, i))
                 {
@@ -247,14 +278,18 @@ namespace RealLifeOverhaul.Ui
                 int end = i < words.Length ? i + 1 : i;
                 string sentence = words.Substring(start, end - start).Trim();
                 start = end;
-                Fit(sentence, width, lines);
+                string left = lines.Count < MeaningMost ? Fit(sentence, width, lines) : sentence;
+                if (left.Length > 0)
+                {
+                    rest = (left + " " + words.Substring(start)).Trim();
+                }
             }
-            if (start < words.Length && lines.Count == MeaningMost)
+            if (!string.IsNullOrEmpty(rest) && lines.Count > 0)
             {
                 // More than the row holds: the last line takes the rest, and the kit's ellipsis says there is more.
-                UiConsequence last = lines[MeaningMost - 1];
-                last.Text = last.Text + " " + words.Substring(start).Trim();
-                lines[MeaningMost - 1] = last;
+                UiConsequence last = lines[lines.Count - 1];
+                last.Text = last.Text + " " + rest;
+                lines[lines.Count - 1] = last;
             }
             return lines.ToArray();
         }
@@ -271,14 +306,15 @@ namespace RealLifeOverhaul.Ui
         }
 
         // A sentence onto lines that fit: whole if it fits, else broken where a space allows, else between characters.
-        private static void Fit(string sentence, float width, List<UiConsequence> lines)
+        // Returns what the lines left could not take, empty when it all went on.
+        private static string Fit(string sentence, float width, List<UiConsequence> lines)
         {
             while (sentence.Length > 0 && lines.Count < MeaningMost)
             {
                 if (UiTextRules.Fits(sentence, UiStyle.Small, width))
                 {
                     lines.Add(new UiConsequence { Text = sentence });
-                    return;
+                    return string.Empty;
                 }
                 int cut = 1;
                 for (int j = 1; j < sentence.Length; j++)
@@ -297,6 +333,7 @@ namespace RealLifeOverhaul.Ui
                 lines.Add(new UiConsequence { Text = sentence.Substring(0, cut).Trim() });
                 sentence = sentence.Substring(cut).Trim();
             }
+            return sentence;
         }
 
         // Who speaks: the owner's speaker, else the first note's.
@@ -354,19 +391,14 @@ namespace RealLifeOverhaul.Ui
             return choices;
         }
 
-        private static UiPrompt[] Prompts(ScenePage page, SceneWords words)
+        // A scene the player may not leave keeps the cancel key for the game, whose own menu it opens (the window leaves
+        // it so when locked): the bar says so, and only the answers go on.
+        private static UiPrompt[] Prompts(ScenePage page, SceneWords words) => new[]
         {
-            var prompts = new List<UiPrompt>(3)
-            {
-                new UiPrompt { Action = UiAction.Move, Label = words.Move },
-                new UiPrompt { Action = UiAction.Confirm, Label = words.Choose },
-            };
-            if (!page.Locked)
-            {
-                prompts.Add(new UiPrompt { Action = UiAction.Back, Label = words.Back });
-            }
-            return prompts.ToArray();
-        }
+            new UiPrompt { Action = UiAction.Move, Label = words.Move },
+            new UiPrompt { Action = UiAction.Confirm, Label = words.Choose },
+            new UiPrompt { Action = UiAction.Back, Label = page.Locked ? words.Menu : words.Back },
+        };
 
         // The line under the headline as the card's kicker: the owner told none, and it is one short line.
         private static bool Kicks(ScenePage page, string said) =>
