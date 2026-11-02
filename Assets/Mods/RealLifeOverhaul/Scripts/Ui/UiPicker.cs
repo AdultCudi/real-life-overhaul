@@ -36,6 +36,7 @@ namespace RealLifeOverhaul.Ui
         public bool Locked;                                // custody: no close and no Back, the player must pick
         public string EmptyTitle, EmptyBody;
         public UiIcon EmptyIcon = UiIcon.MapTrifold;      // what would fill the list, on the empty state's tile
+        public string EmptyAction;                         // the way out of an empty list as a button ("Call a taxi"), where the keys start; null for none
         public UiPrompt[] Prompts = new UiPrompt[0];
         public int PromptCount;
     }
@@ -50,7 +51,7 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class UiPicker
     {
-        public const int EntryCommand = 230, PageCommand = 231;
+        public const int EntryCommand = 230, PageCommand = 231, EmptyCommand = 232;   // the empty state's way out
         public const float Width = 600f;          // px: two columns of words beside a tile, as the game's lists
         private const float Row = UiTokens.Row;   // px: an entry, its tile with room round it
         private const float Foot = UiTokens.Control + UiTokens.S2;   // px: the pages' bar
@@ -78,7 +79,8 @@ namespace RealLifeOverhaul.Ui
 
         // The empty state's room: its glyph's tile and its words with a step of room round them, so nothing floats in a hole.
         private static float EmptyRoom(UiPickerModel m) =>
-            UiDraw.Snap(UiTokens.S12 + UiTokens.S4 + UiDraw.EmptyHeight(Width - UiTokens.S6 * 2f, m.EmptyTitle, m.EmptyBody) - UiTokens.S12 * 2f + UiTokens.S6 * 2f);
+            UiDraw.Snap(UiTokens.S12 + UiTokens.S4 + UiDraw.EmptyHeight(Width - UiTokens.S6 * 2f, m.EmptyTitle, m.EmptyBody) - UiTokens.S12 * 2f + UiTokens.S6 * 2f
+                        + (string.IsNullOrEmpty(m.EmptyAction) ? 0f : UiTokens.S5 + UiTokens.Control));
 
         // A tile says something only where the entries differ: a list of one kind of thing reads by its names.
         private static bool Differ(UiPickerModel m)
@@ -107,7 +109,7 @@ namespace RealLifeOverhaul.Ui
             s.Floats = true;
             float h = Height(m);
             float x = UiDraw.SnapDown((frame.Width - Width) / 2f), y = UiDraw.SnapDown(Math.Max(UiTokens.S8, (frame.BandY - h) / 2f));
-            Draw(s, UiAt.Screen, m, x, y);
+            Draw(s, UiAt.Screen, m, x, y, keys);
             for (int i = 0; i < m.PromptCount; i++)
             {
                 s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
@@ -116,7 +118,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>The panel alone at a place (its top left); returns its height.</summary>
-        public static float Draw(UiScene s, UiAt at, UiPickerModel m, float x, float y)
+        public static float Draw(UiScene s, UiAt at, UiPickerModel m, float x, float y, IUiKeys keys = null)
         {
             float h = Height(m);
             int panel = UiDraw.Box(s, at, x, y, Width, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
@@ -139,7 +141,9 @@ namespace RealLifeOverhaul.Ui
             int first = page * Math.Max(1, m.PerPage), shown = Shown(m);
             if (shown == 0)
             {
-                UiDraw.EmptyState(s, on, x + UiTokens.S6, cy, Width - UiTokens.S6 * 2f, EmptyRoom(m), m.EmptyIcon, m.EmptyTitle, m.EmptyBody);
+                // With a way out it is a button inside the picker, so the keys start there and never on the bar below.
+                UiDraw.EmptyState(s, on, x + UiTokens.S6, cy, Width - UiTokens.S6 * 2f, EmptyRoom(m), m.EmptyIcon, m.EmptyTitle, m.EmptyBody, m.EmptyAction, EmptyCommand,
+                    keys ?? UiDefaultKeys.Keyboard);
                 return h;
             }
             float ey = cy + UiTokens.S2;

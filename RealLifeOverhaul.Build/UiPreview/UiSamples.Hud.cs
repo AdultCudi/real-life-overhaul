@@ -321,7 +321,7 @@ internal static partial class UiSamples
             Context = locked
                 ? new[] { new UiInfoRow { Label = "Hearing", Value = "Tomorrow, 09:00" }, new UiInfoRow { Label = "Charge", Value = "Speeding, third time" } }
                 : new[] { new UiInfoRow { Label = "From", Value = "23rd Street station" }, new UiInfoRow { Label = "Fare", Value = "$2.75 a ride" } },
-            EmptyTitle = "No station is open", EmptyBody = "The subway runs from 05:00. Walk, take a taxi or wait for the first train.",
+            EmptyTitle = "No station is open", EmptyBody = "The subway runs from 05:00. Walk, take a taxi or wait for the first train.", EmptyAction = "Call a taxi",
             Prompts = new[]
             {
                 new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") }, new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_select", "Select") },

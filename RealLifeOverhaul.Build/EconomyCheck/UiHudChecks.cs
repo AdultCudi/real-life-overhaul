@@ -196,6 +196,9 @@ internal static partial class Program
                 wrong = state + ": the strip centred above the bar with " + (walking ? "the way out" : done ? "no buttons" : "the time machine and fast forward");
             }
         }
+        UiSamples.HudPickerScene(s, frame, true, UiDefaultKeys.XboxPad, UiWords("en"), false, true);
+        int first = UiFocusRules.First(s);
+        Check(first >= 0 && s.Nodes[first].Command == UiPicker.EmptyCommand, "hud: an empty picker starts the keys on its own way out, never on the bar below it");
         Check(wrong == null, "hud: the activity's every state: the card before it starts, then the strip centred above the bar with its own buttons" + (wrong == null ? "" : " (" + wrong + ")"));
     }
 

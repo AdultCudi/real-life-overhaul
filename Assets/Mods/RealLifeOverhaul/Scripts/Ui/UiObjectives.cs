@@ -177,7 +177,15 @@ namespace RealLifeOverhaul.Ui
             float tw = right - tx;
             int face = UiDraw.Box(s, at, tx - UiTokens.S1, y, tw + UiTokens.S1, h, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
             float lh = UiTextRules.WrappedHeight(line.Text, UiStyle.Body, tw, 2);
-            UiDraw.Text(s, at.In(face), tx, y + (h - lh) / 2f, tw, UiStyle.Body, line.Done ? UiRole.Text2 : UiRole.Text, line.Text, UiFlags.Wrap | UiFlags.Middle, 2);
+            if (lh <= UiTextRules.LineHeight(UiStyle.Body) + 0.5f)
+            {
+                // One line sits on the line its tick, figure and locate share, centred as the kit centres a row's words.
+                UiDraw.TextMiddle(s, at.In(face), tx, y, h, tw, UiStyle.Body, line.Done ? UiRole.Text2 : UiRole.Text, line.Text, UiFlags.Truncate);
+            }
+            else
+            {
+                UiDraw.Text(s, at.In(face), tx, y + (h - lh) / 2f, tw, UiStyle.Body, line.Done ? UiRole.Text2 : UiRole.Text, line.Text, UiFlags.Wrap | UiFlags.Middle, 2);
+            }
             int words = UiDraw.Node(s, at, tx - UiTokens.S1, y, tw + UiTokens.S1, h, LineCommand, arg, face);
             s.Nodes[words].Left = words;
             s.Nodes[words].Right = locate >= 0 ? locate : words;
