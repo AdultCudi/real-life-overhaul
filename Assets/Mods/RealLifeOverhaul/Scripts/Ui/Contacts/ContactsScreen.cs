@@ -190,7 +190,8 @@ namespace RealLifeOverhaul.Ui
         // Contacts view shows until the app closes, where the same thing is the game's, and Player.log says so once.
         private static bool Unrouted(string what, Contact open)
         {
-            UiDirector.Logger?.Info("Contacts (kit): " + what + " (" + Who(open) + ") could not be bound to a button or entry of the game's, so the game's own Contacts view shows until the app closes");
+            UiDirector.Logger?.Info("Contacts (kit): " + what + " (" + Who(open)
+                                    + ") could not be bound to a button or entry of the game's, so the game's own Contacts view shows until the app closes");
             ContactsKit.Classic();
             return true;
         }
