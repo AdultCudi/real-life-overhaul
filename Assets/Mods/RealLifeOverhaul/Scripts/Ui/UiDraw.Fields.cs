@@ -161,14 +161,15 @@ namespace RealLifeOverhaul.Ui
         /// targets of their own.
         /// </summary>
         public static int Stepper(UiScene s, UiAt at, float x, float y, float w, string figure, bool canLess, bool canMore, int lessCommand, int typeCommand,
-            int moreCommand, int arg, bool disabled)
+            int moreCommand, int arg, bool disabled, string placeholder = null)
         {
             float h = UiTokens.Control, by = y + (h - StepButton) / 2f;
             StepKey(s, at, x, by, UiIcon.Minus, lessCommand, arg, disabled || !canLess);
             float fx = x + StepButton + UiTokens.S2, fw = w - (StepButton + UiTokens.S2) * 2f;
             int field = Box(s, at, fx, y, fw, h, UiRole.Field, UiRole.None, UiTokens.RadiusLarge, disabled ? UiFlags.Disabled : UiFlags.None);
-            TextMiddle(s, at.In(field), fx + UiTokens.S2, y, h, fw - UiTokens.S4, UiStyle.BodyStrong, disabled ? UiRole.Muted : UiRole.Text, figure,
-                UiFlags.Centre | UiFlags.Truncate | (disabled ? UiFlags.Disabled : UiFlags.None));
+            bool hint = string.IsNullOrEmpty(figure) && !string.IsNullOrEmpty(placeholder);   // an empty field says what to type, as a text field's hint
+            TextMiddle(s, at.In(field), fx + UiTokens.S2, y, h, fw - UiTokens.S4, hint ? UiStyle.Body : UiStyle.BodyStrong, disabled || hint ? UiRole.Muted : UiRole.Text,
+                hint ? placeholder : figure, UiFlags.Centre | UiFlags.Truncate | (disabled ? UiFlags.Disabled : UiFlags.None));
             int node = Node(s, at, fx, y, fw, h, typeCommand, arg, field, disabled);
             StepKey(s, at, x + w - StepButton, by, UiIcon.Plus, moreCommand, arg, disabled || !canMore);
             return node;
