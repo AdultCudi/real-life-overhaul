@@ -120,7 +120,7 @@ namespace RealLifeOverhaul.Ui
     /// <see cref="RowCommand"/>, <see cref="PersonCommand"/>, <see cref="ActionCommand"/> and <see cref="MoreCommand"/>
     /// (an index each). Game-free. Cost: a layout a change.
     /// </summary>
-    public static class UiAppWindow
+    public static partial class UiAppWindow
     {
         public const int NavCommand = 1, RowCommand = 2, PersonCommand = 3, ActionCommand = 4, MoreCommand = 5, AllCommand = 6, NoteCommand = 7;
         public const float Sidebar = 232f;          // px
@@ -216,30 +216,45 @@ namespace RealLifeOverhaul.Ui
             shownNode = -1;
             UiDraw.Band(s, at, x, y, Sidebar, h);
             float ny = y + UiTokens.S3;
+            float ex = x + UiTokens.S2, ew = Sidebar - UiTokens.S4;
             for (int i = 0; i < nav.Length; i++)
             {
-                bool shown = i == selected;
-                float ex = x + UiTokens.S2, ew = Sidebar - UiTokens.S4;
-                int face = UiDraw.Box(s, at, ex, ny, ew, NavRow, shown ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusLarge, shown ? UiFlags.Selected : UiFlags.None);
-                UiAt inside = at.In(face);
-                float tile = UiTokens.ControlSmall;
-                int t = UiDraw.Tile(s, inside, ex + UiTokens.S3, ny + (NavRow - tile) / 2f, tile, nav[i].Tint, shown);   // the shown section's tile in the cyan, as a game marks the tool in hand
-                float g = UiTokens.Icon;
-                UiDraw.Icon(s, inside.In(t), ex + UiTokens.S3 + (tile - g) / 2f, ny + (NavRow - g) / 2f, g, nav[i].Icon, shown ? UiRole.OnAccent : nav[i].Tint,
-                    UiFlags.Middle | UiFlags.Centre, true);
-                float cw = string.IsNullOrEmpty(nav[i].Count) ? 0f : UiTextRules.Width(nav[i].Count, UiStyle.Small) + UiTokens.S1;
-                float lx = ex + UiTokens.S3 + tile + UiTokens.S3;
-                UiDraw.TextMiddle(s, inside, lx, ny, NavRow, ex + ew - UiTokens.S3 - cw - UiTokens.S2 - lx, UiStyle.Nav, UiRole.Text, nav[i].Label,
-                    UiFlags.Label | UiFlags.Truncate);
-                if (cw > 0f)
-                {
-                    UiRole countInk = shown ? UiRole.Text : UiRole.Muted;   // the quiet grey does not read on the chosen tone
-                    UiDraw.TextMiddle(s, inside, ex + ew - UiTokens.S3 - cw, ny, NavRow, cw, UiStyle.Small, countInk, nav[i].Count, UiFlags.Right);
-                }
-                int node = UiDraw.Node(s, at, ex, ny, ew, NavRow, NavCommand, i, face);
-                shownNode = shown ? node : shownNode;
+                int node = NavEntry(s, at, ref nav[i], i, i == selected, ex, ny, ew, -1, false);
+                shownNode = i == selected ? node : shownNode;
                 ny += NavRow + UiTokens.S1;
             }
+        }
+
+        // A section's entry: its icon in its colour on a tile, its name and its count; the shown one in the cyan at a fifth with
+        // its tile filled cyan. One look for the sidebar that stands still and the one that scrolls (UiAppWindow.Footed), whose
+        // names are the game's and may run to two lines (a category's "Importations / Marchandises").
+        private static int NavEntry(UiScene s, UiAt at, ref UiNavEntry e, int index, bool shown, float ex, float ny, float ew, short list, bool wrap)
+        {
+            int face = UiDraw.Box(s, at, ex, ny, ew, NavRow, shown ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusLarge, shown ? UiFlags.Selected : UiFlags.None);
+            UiAt inside = at.In(face);
+            float tile = UiTokens.ControlSmall;
+            int t = UiDraw.Tile(s, inside, ex + UiTokens.S3, ny + (NavRow - tile) / 2f, tile, e.Tint, shown);   // the shown section's tile in the cyan, as a game marks the tool in hand
+            float g = UiTokens.Icon;
+            UiDraw.Icon(s, inside.In(t), ex + UiTokens.S3 + (tile - g) / 2f, ny + (NavRow - g) / 2f, g, e.Icon, shown ? UiRole.OnAccent : e.Tint,
+                UiFlags.Middle | UiFlags.Centre, true);
+            float cw = string.IsNullOrEmpty(e.Count) ? 0f : UiTextRules.Width(e.Count, UiStyle.Small) + UiTokens.S1;
+            float lx = ex + UiTokens.S3 + tile + UiTokens.S3;
+            float lw = ex + ew - UiTokens.S3 - cw - UiTokens.S2 - lx;
+            if (wrap && UiTextRules.Width(e.Label ?? string.Empty, UiStyle.Nav) > lw)
+            {
+                float lh = UiTextRules.WrappedHeight(e.Label, UiStyle.Nav, lw, 2);
+                UiDraw.Text(s, inside, lx, ny + (NavRow - lh) / 2f, lw, UiStyle.Nav, UiRole.Text, e.Label, UiFlags.Label | UiFlags.Wrap | UiFlags.Middle, 2);
+            }
+            else
+            {
+                UiDraw.TextMiddle(s, inside, lx, ny, NavRow, lw, UiStyle.Nav, UiRole.Text, e.Label, UiFlags.Label | UiFlags.Truncate);
+            }
+            if (cw > 0f)
+            {
+                UiRole countInk = shown ? UiRole.Text : UiRole.Muted;   // the quiet grey does not read on the chosen tone
+                UiDraw.TextMiddle(s, inside, ex + ew - UiTokens.S3 - cw, ny, NavRow, cw, UiStyle.Small, countInk, e.Count, UiFlags.Right);
+            }
+            return UiDraw.Node(s, at, ex, ny, ew, NavRow, NavCommand, index, face, false, list, list < 0 ? 0 : index);
         }
 
         // The sections across the top on the band, each its icon in its colour on a tile, its name and its count; the shown

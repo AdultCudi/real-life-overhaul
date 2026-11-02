@@ -93,6 +93,10 @@ namespace RealLifeOverhaul.Ui
         /// <summary>A message's height in a thread of a width, before it is drawn (a thread lays out from the bottom).</summary>
         public static float BubbleHeight(ref UiMessageModel m, float w)
         {
+            if (m.Table != null)
+            {
+                return TableBubbleHeight(ref m, w);
+            }
             UiStyle style = m.From == UiFrom.System ? UiStyle.Small : UiStyle.Body;
             float most = (m.From == UiFrom.System ? 0.9f : 0.72f) * w - UiTokens.S4 * 2f;
             int lines = UiTextRules.Lines(m.Text, style, most, 12, out float _);
@@ -106,6 +110,10 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
         public static float Bubble(UiScene s, UiAt at, float x, float y, float w, ref UiMessageModel m)
         {
+            if (m.Table != null)
+            {
+                return TableBubble(s, at, x, y, w, ref m);
+            }
             bool sys = m.From == UiFrom.System, me = m.From == UiFrom.Me;
             UiStyle style = sys ? UiStyle.Small : UiStyle.Body;
             float most = (sys ? 0.9f : 0.72f) * w - UiTokens.S4 * 2f;

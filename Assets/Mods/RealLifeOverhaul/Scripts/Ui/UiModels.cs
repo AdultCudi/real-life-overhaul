@@ -111,6 +111,8 @@ namespace RealLifeOverhaul.Ui
         public string Text;
         public string Time;
         public bool HasChoices;  // the game's own message carries buttons or a form: the kit offers the classic view for it
+        public UiLedgerLine[] Table;   // a table the message carries (the tax office's notice): drawn in the bubble under its words; null for none
+        public string TableFoot;       // the words under the table ("Please pay by Day 410"); null for none
     }
 
     /// <summary>A group or a tab of a sidebar.</summary>
