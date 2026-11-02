@@ -757,6 +757,7 @@ internal static partial class Program
         TravelFixes();  // travel: the hotel room refused while the game was paused (TravelFixChecks.cs)
         ChessFixes();   // street chess: the whole setup clear of crossings in both placement paths (ChessFixChecks.cs)
         FrameFixes();   // the first car's and the street chess stutters: What's new in all eleven languages (FrameFixChecks.cs)
+        ContactsTalk();   // the Contacts thread keeps a call's conversation: the history's order, caps, save, the places that keep and read it, What's new in all eleven languages (ContactsTalkChecks.cs)
         LedgerFixes();  // the City Ledger: a kiosk copy never charged when the page cannot open, the subscription's lines (LedgerFixChecks.cs)
         FamilyWealth(); // the partner takes the player's money by how they lean (FamilyWealthChecks.cs)
         FamilyWish();   // the partner stops working or retrains once the player is rich (FamilyWishChecks.cs)

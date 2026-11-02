@@ -26,7 +26,8 @@ namespace RealLifeOverhaul.Ui
         private static readonly int[] Order = new int[3];
 
         // What changing would change the screen: the contacts, what is unread, the group, the one open and its messages, the
-        // header's buttons, the conversation the game runs (its line, its buttons, its form's figures) and the offers' buttons.
+        // header's buttons, the conversation the game runs (its line, its buttons, its form's figures), the offers' buttons and
+        // the talk history of the calls (a line kept moves its count).
         private long Signature()
         {
             List<Contact> all = SaveGameManager.Current != null ? SaveGameManager.Current.Contacts : null;
@@ -54,7 +55,27 @@ namespace RealLifeOverhaul.Ui
                 sig = sig * 31 + (_fields[i].Input != null ? _fields[i].Input.text.GetHashCode() : 0);
             }
             sig = sig * 31 + Offers(null);
+            sig = sig * 31 + TalkLogGame.Changes;
             return sig;
+        }
+
+        // Clear chat was pressed on this contact and the game has since emptied its texts (it asks first): the talk history of its
+        // calls goes with them, as the chat does. Nothing while the question is unanswered, or if the contact has changed.
+        private void ChatCleared(Contact open)
+        {
+            if (_clearing == null)
+            {
+                return;
+            }
+            if (_clearing != open)
+            {
+                _clearing = null;
+            }
+            else if (open.messagesQueue == null || open.messagesQueue.Count == 0)
+            {
+                TalkLogGame.Clear(open);
+                _clearing = null;
+            }
         }
 
         private void Build()
@@ -72,6 +93,7 @@ namespace RealLifeOverhaul.Ui
             _fields.Clear();
             _hangUp = null;
             Contact open = _app.selectedContact;
+            ChatCleared(open);
             Detail(open);
             Talk(open);
             Prompts();
@@ -130,6 +152,8 @@ namespace RealLifeOverhaul.Ui
                 Contact c = _rows[i];
                 Face(c);
                 TextMessage last = Last(c);
+                List<TalkLine> talk = TalkLogGame.Lines(c);
+                bool talked = talk != null && (last == null || talk[talk.Count - 1].Minute >= Minute(last));   // a call after the last text: its last line is the preview
                 bool unread = c.HasUnreadMessages;
                 string section = null;
                 if (i == 0 && unread)
@@ -141,12 +165,14 @@ namespace RealLifeOverhaul.Ui
                     section = UiText.T("reallife_ui_contacts_earlier");
                 }
                 sawRead |= !unread;
-                string preview = last != null ? Words(last) : Describe(c);
+                string preview = talked ? talk[talk.Count - 1].Text : last != null ? Words(last) : Describe(c);
+                bool mine = talked ? talk[talk.Count - 1].Mine : last != null && last.isFromPlayer;
                 rows[i] = new UiMessageRow
                 {
                     Name = Name(c), Hue = UiColour.HueOf(c.id), Icon = Person(c) ? UiIcon.None : ContactsRules.FirmIcon(BusinessType(c), (int)c.category),
-                    Preview = last != null && last.isFromPlayer ? UiText.Fill("reallife_ui_contacts_you", "text", preview) : preview,
-                    Time = last != null ? When(last) : string.Empty, Unread = c.NumberOfUnreadMessages, Selected = c == _app.selectedContact, Section = section
+                    Preview = mine ? UiText.Fill("reallife_ui_contacts_you", "text", preview) : preview,
+                    Time = talked ? When(talk[talk.Count - 1].Minute) : last != null ? When(last) : string.Empty,
+                    Unread = c.NumberOfUnreadMessages, Selected = c == _app.selectedContact, Section = section
                 };
             }
             UiMessageListModel list = _m.List;
@@ -393,7 +419,7 @@ namespace RealLifeOverhaul.Ui
                 _talk = null;
                 return;
             }
-            var list = new List<UiMessageModel>(Contact.MaxMessages + 4);
+            var list = new List<UiMessageModel>(Contact.MaxMessages + TalkLog.LinesKept + 4);
             Messages(c, list);
             object running = _app.contact != null ? _app.dialog : null;
             if (running != _talk)
@@ -416,21 +442,47 @@ namespace RealLifeOverhaul.Ui
             t.Messages = list.ToArray();
             t.MessageCount = list.Count;
             t.Offset = -1f;
-            // A queue the game has not shortened starts where the line starts; a full one has lost its oldest.
-            t.ThreadStart = list.Count < Contact.MaxMessages ? UiText.Fill("reallife_ui_contacts_start", "name", t.Name) : null;
+            // A queue the game has not shortened starts where the line starts; a full one has lost its oldest, and so has a full talk history.
+            int texts = c.messagesQueue != null ? c.messagesQueue.Count : 0;
+            t.ThreadStart = texts < Contact.MaxMessages && !TalkLogGame.Full(c) ? UiText.Fill("reallife_ui_contacts_start", "name", t.Name) : null;
         }
 
+        // The thread: the game's texts, and among them in the order they happened what was said in the calls (the talk history:
+        // the contact's lines and the player's replies and words), which the game keeps nowhere.
         private void Messages(Contact c, List<UiMessageModel> list)
         {
-            if (c.messagesQueue == null)
+            List<TalkLine> talk = TalkLogGame.Lines(c);
+            int said = 0;
+            if (c.messagesQueue != null)
             {
-                return;
+                Texts(c, list, talk, ref said);
             }
+            for (; talk != null && said < talk.Count; said++)
+            {
+                Said(list, talk[said]);
+            }
+            Sample(c, list);
+        }
+
+        private static void Said(List<UiMessageModel> list, TalkLine line)
+        {
+            list.Add(new UiMessageModel { From = line.Mine ? UiFrom.Me : UiFrom.Them, Time = When(line.Minute), Text = line.Text });
+        }
+
+        private static int Minute(TextMessage msg) => msg.timestamp != null ? (int)msg.timestamp.GetTotalMinutes() : 0;
+
+        private void Texts(Contact c, List<UiMessageModel> list, List<TalkLine> talk, ref int said)
+        {
             foreach (TextMessage msg in c.messagesQueue)
             {
                 if (msg == null)
                 {
                     continue;
+                }
+                int minute = Minute(msg);
+                for (; talk != null && said < talk.Count && TalkLogRules.Before(talk[said].Minute, minute); said++)
+                {
+                    Said(list, talk[said]);
                 }
                 var m = new UiMessageModel { From = msg.isFromPlayer ? UiFrom.Me : msg.isSpecialMessage ? UiFrom.System : UiFrom.Them, Time = When(msg) };
                 if (msg.messageKey == "ba:messagetype_taxes" || msg.messageKey == "ba:messagetype_contacts_taxes_repossession_message")
@@ -448,6 +500,11 @@ namespace RealLifeOverhaul.Ui
                     list.Add(new UiMessageModel { From = UiFrom.System, Text = offer });
                 }
             }
+        }
+
+        // The tax notice a test shows in a thread, until another contact is opened.
+        private static void Sample(Contact c, List<UiMessageModel> list)
+        {
             if (ContactsKit.Sample != null && ContactsKit.SampleFor == c)
             {
                 var sample = new UiMessageModel { From = UiFrom.Them, Time = When(ContactsKit.Sample) };
@@ -864,6 +921,18 @@ namespace RealLifeOverhaul.Ui
                 return UiText.Fill("reallife_ui_contacts_day", "day", UiText.Whole(msg.timestamp.Day));
             }
             return msg.timestamp.Hour.GetFormattedTime(msg.timestamp.Minute);
+        }
+
+        // The same for a line of the talk history, which keeps the game's minute since day 0.
+        private static string When(int minute)
+        {
+            int day = TalkLogRules.DayOf(minute);
+            int today = SaveGameManager.Current != null ? SaveGameManager.Current.Day : day;
+            if (day != today)
+            {
+                return UiText.Fill("reallife_ui_contacts_day", "day", UiText.Whole(day));
+            }
+            return TalkLogRules.HourOf(minute).GetFormattedTime(TalkLogRules.MinuteOf(minute));
         }
 
         // The game's time now, as it writes a message's: the line the conversation shows came this moment.
