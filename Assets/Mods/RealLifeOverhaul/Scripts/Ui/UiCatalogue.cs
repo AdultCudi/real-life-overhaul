@@ -83,6 +83,22 @@ namespace RealLifeOverhaul.Ui
             return firstList;
         }
 
+        /// <summary>
+        /// The grid alone, without the chosen card's detail: a catalogue panel's column beside a game's 3D preview, its
+        /// cards no narrower than <paramref name="least"/>. Returns the first column's list, as <see cref="Lay"/> does.
+        /// </summary>
+        public static short LayGrid(UiScene s, UiAt at, UiCatalogueModel m, float x, float y, float w, float h, float least, IUiKeys keys, out int columns, int command = First)
+        {
+            columns = Math.Max(1, (int)((w + UiTokens.S3) / (Math.Max(UiTokens.S16, least) + UiTokens.S3)));
+            if (m.CardCount == 0)
+            {
+                UiDraw.EmptyState(s, at, x, y, w, h, m.EmptyIcon, m.EmptyTitle, m.EmptyBody, null, -1, keys);
+                m.Offset = 0f;
+                return -1;
+            }
+            return Grid(s, at, m, x, y, w, h, columns, command);
+        }
+
         private static float CardWidth(float gw, int columns) => UiDraw.SnapDown((gw - UiTokens.S3 * (columns - 1)) / columns);
 
         private static float TileHeight(float cw) => UiDraw.SnapDown(cw * TileShare);
@@ -159,7 +175,9 @@ namespace RealLifeOverhaul.Ui
             {
                 float most = w - UiTokens.S4 * 2f;
                 float cw = Math.Min(UiDraw.SnapDown(most), UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(c.State, UiStyle.SmallStrong) + UiTokens.S1));
+                int over = s.ItemCount;
                 UiDraw.Chip(s, inside.In(tile), x + w - UiTokens.S3 - cw, y + UiTokens.S3, c.State, c.StateTone, cw);
+                Over(s, over);
             }
             float fy = y + th, fh = h - th;
             int foot = UiDraw.Box(s, inside, x, fy, w, fh, chosen ? UiRole.Accent : UiRole.None, UiRole.None, UiTokens.RadiusLarge, chosen ? UiFlags.Selected : UiFlags.None);
@@ -171,6 +189,15 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Text(s, onFoot, x + UiTokens.S3, fy + UiTokens.S3 + lh + UiTokens.S1, Fit(c.Figure, w - UiTokens.S3 * 2f), UiStyle.BodyStrong, price,
                 c.Figure, UiFlags.Truncate | UiFlags.Middle | (c.Disabled ? UiFlags.Disabled : UiFlags.None));
             UiDraw.Node(s, at, x, y, w, h, command + Card, i, face, false, list, row);   // a sold out card still opens its detail: only its actions are greyed
+        }
+
+        // A state's chip lies over the picture's corner on purpose, as the phone's badges lie over their tiles.
+        private static void Over(UiScene s, int from)
+        {
+            for (int k = from; k < s.ItemCount; k++)
+            {
+                s.Items[k].Flags |= UiFlags.Overflow;
+            }
         }
 
         // A lone figure's box is its own words, as it stands under a name rather than in a column of figures.
@@ -210,7 +237,9 @@ namespace RealLifeOverhaul.Ui
             Picture(s, at.In(tile), ref c, x, y, w, DetailTile, UiTokens.S16);
             if (!string.IsNullOrEmpty(c.State))
             {
+                int over = s.ItemCount;
                 UiDraw.Chip(s, at.In(tile), x + UiTokens.S3, y + UiTokens.S3, c.State, c.StateTone, w - UiTokens.S6);
+                Over(s, over);
             }
             float ty = y + DetailTile + UiTokens.S4;
             UiDraw.Text(s, at, x, ty, w, UiStyle.SectionHeader, UiRole.Text2, m.DetailKicker, UiFlags.Label | UiFlags.Truncate);

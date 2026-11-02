@@ -57,6 +57,14 @@ An app of the mod's goes onto the kit through `PhoneAppDef.Kit` (its `IUiScreen`
 frame then draws that screen over the app's panel whenever the interface and the screen's switch are on, the panel
 built and kept unseen under it; otherwise the panel shows as it always has.
 
+## A panel nothing may be added to
+
+Some of the game's panels are copied whole by another mod (Going Public copies the item panel for a passenger's view),
+so not a leaf of them may be given a group of the kit's. Such a panel goes onto the kit on a canvas of its own beside it
+(`UiOverCanvas.Make`), and `UiHeldGroup` holds the one fade group the game already gives the panel at nothing while the
+kit draws it, remembering what the game writes there and giving it back the moment the kit stops. The item panel
+(`Scripts/Ui/Buy/ItemPanelKit.cs`) is the example.
+
 ## Checked offline
 
 EconomyCheck (`UiHostChecks.cs`): no file outside `Scripts/Ui/Host` binds over the game or hides its pieces its own way,

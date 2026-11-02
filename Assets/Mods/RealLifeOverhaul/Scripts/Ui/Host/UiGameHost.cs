@@ -187,6 +187,16 @@ namespace RealLifeOverhaul.Ui
             UiGame input = _screen.Kind == UiGameKind.Box ? UiGame.OverBoxes : UiGame.Instance;
             _host.Bind(_screen.Make(found), input, input, UiDirector.Dark, UiDirector.Motion, UiFrame.MastheadHeight, UiFrame.BandHeight, _screen.Title, _screen.Icon);
             _host.PointerOnly = _screen.Kind == UiGameKind.Overlay;
+            if (_screen is IUiGameWay way)
+            {
+                // A panel of the game's over the world with keys of its own: the kit reads them, and takes them from the game when it answers the same.
+                _host.PointerOnly = !way.Keys;
+                _host.Exclusive = way.Exclusive;
+                if (way.Blocks && _root.GetComponent<Image>() == null)
+                {
+                    _root.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0f);
+                }
+            }
             _host.View.Scale = UiTokens.CanvasPerPx;
             _host.Failed = Fallback;
             if (_screen.Kind == UiGameKind.App)
