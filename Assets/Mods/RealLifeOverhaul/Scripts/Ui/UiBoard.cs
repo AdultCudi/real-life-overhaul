@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Ui
         public string Sub;       // a quiet line under it ("Cashier", "38 h this week"); null for none
         public UiIcon Icon;      // a workstation's icon on its tile; None for a person, who shows a face
         public float Hue;        // a person's face's hue
-        public UiRole Tint;      // the lane's colour: its icon and its shifts' bars
+        public UiRole Tint;      // the lane's colour: its icon and the dot before its shifts' names
         public string Warning;   // a lane that needs the player ("No one on Saturday"), said with the warning's glyph; null for none
     }
 
@@ -64,7 +64,7 @@ namespace RealLifeOverhaul.Ui
     /// <summary>
     /// A board of shifts, a block of an app window's page: the day's tabs with the day's actions beside them, an hour ruler
     /// across the top over the hours given, lanes (workstations, people, days) each led by its face or its icon's tile,
-    /// the hours outside the opening hours darker, shifts as flat bars in the lane's colour with the person's name, the
+    /// the hours outside the opening hours darker, shifts as flat slate bars with the lane's colour as a dot before the person's name, the
     /// gaps left open, the now line in cyan. The chosen shift is filled cyan with its hours on it while it moves. The
     /// board only draws and reports: a press (<see cref="ShiftCommand"/> a shift, <see cref="LaneCommand"/> a lane,
     /// <see cref="DayCommand"/> a tab, <see cref="ActionCommand"/> an action), and through <see cref="UiBoardRules"/> the
@@ -77,7 +77,7 @@ namespace RealLifeOverhaul.Ui
         public const int ShiftCommand = 30, LaneCommand = 31, DayCommand = 32, ActionCommand = 33;
         public const float LaneHead = 232f;          // px: a lane's face and name, as wide as the window's sidebar
         public const float LaneHeight = 56f;         // px: a lane, a face of 40 with a step above and below
-        private const float Stripe = 4f;             // px: a bar's edge in its lane's colour
+        private const float Dot = UiTokens.StatusDot;   // px: the lane's colour before a bar's name
         private const float BarInset = 8f;           // px: a bar from its lane's edges
         private const byte RegionTabs = 1, RegionLanes = 2;
 
@@ -268,7 +268,7 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Box(s, at, bx, y + UiTokens.S1, (hi - lo) * perHour / 60f, LaneHeight - UiTokens.S2, UiRole.Field, UiRole.None, 0f, UiFlags.Share | UiFlags.Decor);
         }
 
-        // A shift's bar: its lane's colour as a tone, the person's name on it, the warning's glyph when it needs the player;
+        // A shift's bar: its lane's colour as a dot, the person's name on it, the warning's glyph when it needs the player;
         // chosen, the cyan with dark words and its hours, with its ends' grips while it moves. Returns its target, or -1.
         private static int Bar(UiScene s, UiAt at, UiBoardModel m, int index, float y, float rx, float perHour)
         {
@@ -282,15 +282,17 @@ namespace RealLifeOverhaul.Ui
             float bx = rx + (lo - m.FirstHour * 60) * perHour / 60f, bw = (hi - lo) * perHour / 60f;
             float by = y + BarInset, bh = LaneHeight - BarInset * 2f;
             UiRole tint = m.Lanes[shift.Lane].Tint == UiRole.None ? UiRole.Chart1 : m.Lanes[shift.Lane].Tint;
-            // A neutral bar with its lane's colour as its leading edge: a warm colour washed over the slate turns brown.
+            // A neutral bar with its lane's colour as a dot before the name, as a status chip marks its state: a warm colour washed
+            // over the slate turns brown, and a coloured edge down the bar is the accent strip the kit does not draw.
             int face = UiDraw.Box(s, at, bx, by, bw, bh, chosen ? UiRole.Accent : UiRole.Tile, UiRole.None, UiTokens.RadiusMedium, UiFlags.Share | (chosen ? UiFlags.Selected : UiFlags.None));
             UiAt inside = at.In(face);
-            if (!chosen)
+            bool dotted = !chosen && bw >= UiTokens.S2 + Dot + UiTokens.S2 + UiTokens.S6;
+            if (dotted)
             {
-                UiDraw.Box(s, inside, bx, by, Stripe, bh, tint, UiRole.None, UiTokens.RadiusSmall, UiFlags.Share | UiFlags.Decor);
+                UiDraw.Circle(s, inside, bx + UiTokens.S2, by + (bh - Dot) / 2f, Dot, Dot, tint, UiFlags.Share | UiFlags.Middle | UiFlags.Decor);
             }
             UiRole ink = chosen ? UiRole.OnAccent : UiRole.Text;
-            float pad = UiTokens.S2 + Stripe, room = bw - pad - UiTokens.S2;
+            float pad = UiTokens.S2 + (dotted ? Dot + UiTokens.S2 : 0f), room = bw - pad - UiTokens.S2;
             if (shift.Warn && room > UiTokens.IconSmall + UiTokens.S6)
             {
                 UiDraw.Icon(s, inside, bx + bw - UiTokens.S2 - UiTokens.IconSmall, by + (bh - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Warning, chosen ? UiRole.OnAccent : UiRole.Warn,
