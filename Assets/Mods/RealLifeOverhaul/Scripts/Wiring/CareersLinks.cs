@@ -118,7 +118,7 @@ namespace RealLifeOverhaul
                         {
                             continue;
                         }
-                        into.Add(new BoardEmployer { Index = e, Name = JobText.T(employer.NameKey), Address = career.OfficeAddress(e) });
+                        into.Add(new BoardEmployer { Index = e, Name = JobText.T(employer.NameKey), Address = career.OfficeAddress(e), Place = career.OfficePlace(e) });
                     }
                 }
                 catch (Exception e)
