@@ -136,7 +136,8 @@ internal static partial class Program
         foreach (KeyValuePair<string, string> language in marks)
         {
             Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(folder, language.Key + ".json"));
-            if (words == null || !words.TryGetValue("reallife_changes_next", out string row) || !row.Contains(language.Value))
+            string row = words != null ? RowHolding(words, language.Value) : null;   // the next row before a release, the version's row after it
+            if (row == null || !row.Contains(language.Value))
             {
                 wrong.Add(language.Key);
                 continue;
@@ -155,5 +156,18 @@ internal static partial class Program
             }
         }
         Check(wrong.Count == 0, "overdraft: the notice, the bank's rows and What's new's two lines are written in every language" + (wrong.Count > 0 ? " (not in " + string.Join(", ", wrong) + ")" : string.Empty));
+    }
+
+    /// <summary>The What's new row that holds a line: the next row before a release, the version's own row after it (the version script moves the lines).</summary>
+    private static string RowHolding(Dictionary<string, string> words, string line)
+    {
+        foreach (KeyValuePair<string, string> row in words)
+        {
+            if (row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !row.Key.EndsWith("_title", StringComparison.Ordinal) && row.Value.Contains(line))
+            {
+                return row.Value;
+            }
+        }
+        return words.TryGetValue("reallife_changes_next", out string next) ? next : string.Empty;
     }
 }

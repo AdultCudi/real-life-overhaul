@@ -167,7 +167,7 @@ internal static partial class Program
         foreach (string code in new[] { "pl", "ko" })
         {
             Dictionary<string, string> own = LoadWords(IoPath.Combine(LocalesFolder(), code + ".json"));
-            marks &= own != null && own.TryGetValue("reallife_changes_next", out string row) && row.Contains(FixMarks[code]);   // a batch release may put a feature line before the fix marks
+            marks &= own != null && RowHolding(own, FixMarks[code]).Contains(FixMarks[code]);   // any row: a batch may put a feature line first, and the version step moves the row
         }
         Check(marks, "meeting place: Polish and Korean have the fix in their next row, with their fix marks");
     }
@@ -177,5 +177,18 @@ internal static partial class Program
         string path = IoPath.Combine(LocalesFolder(), code + ".json");
         Dictionary<string, string> words = LoadWords(path);
         return words != null && words.TryGetValue("reallife_guide_careers", out string page) && page.Contains(piece);
+    }
+
+    /// <summary>The What's new row that holds a line: the next row before a release, the version's own row after it (the version script moves the lines).</summary>
+    private static string RowHolding(Dictionary<string, string> words, string line)
+    {
+        foreach (KeyValuePair<string, string> row in words)
+        {
+            if (row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !row.Key.EndsWith("_title", StringComparison.Ordinal) && row.Value.Contains(line))
+            {
+                return row.Value;
+            }
+        }
+        return words.TryGetValue("reallife_changes_next", out string next) ? next : string.Empty;
     }
 }
