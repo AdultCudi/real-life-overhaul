@@ -296,6 +296,9 @@ with the mouse resting on a target and with the keys leading.
 - [ ] **Over the world**: the street never reads through a panel, and every word reads over the brightest street
       behind it.
 - [ ] **Flat**: no gradient, glow, blur, soft shadow or frost (RLO-UI-015).
+- [ ] **No spines**: no coloured strip down the edge of a card, row, notice, bar or quote. A state or category is an
+      icon, a dot or chip, coloured figures, a tinted tile or the lane head's colour. A cyan underline on the shown tab
+      is the one edge mark (EconomyCheck: `no spines`).
 - [ ] **One kit** (RLO-UI-018): the screen stands on a template, and anything new it needed went into the kit as a
       reusable piece.
 - [ ] **One primary action** to a layer, and nothing on screen that is not needed.
