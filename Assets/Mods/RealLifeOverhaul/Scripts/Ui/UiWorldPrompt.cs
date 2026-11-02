@@ -10,6 +10,7 @@ namespace RealLifeOverhaul.Ui
         public bool Main;          // the one the game's Interact does: on the cyan
         public bool Disabled;      // the game greys it (ButtonInfo.interactable): seen, but a press does nothing
         public string Reason;      // why it is greyed, at the row's right ("Taken"); null for none
+        public bool Hint;          // words that say how, not an action (the game's "Right click for options"): no key, no press
     }
 
     /// <summary>

@@ -34,6 +34,11 @@ namespace RealLifeOverhaul.Ui
         public int Page;                                   // the page shown, from 0
         public string PageWords = "{0} of {1}";            // the page counter, {0} this page and {1} the pages
         public bool Locked;                                // custody: no close and no Back, the player must pick
+        public string LockWords;                           // the strip's chip while locked ("In custody"); null for none
+        public string Said;                                // what the desk says (a list's lines under its title), wrapped under the strip; null for none
+        public string Speaker;                             // who says it: their face beside the words; null for none
+        public bool Numbered;                              // each entry led by its number on the page, which the number keys choose
+        public string FootNote;                            // a line at the panel's foot ("You cannot leave until this is settled"); null for none
         public string EmptyTitle, EmptyBody;
         public UiIcon EmptyIcon = UiIcon.MapTrifold;      // what would fill the list, on the empty state's tile
         public string EmptyAction;                         // the way out of an empty list as a button ("Call a taxi"), where the keys start; null for none
@@ -52,8 +57,12 @@ namespace RealLifeOverhaul.Ui
     public static class UiPicker
     {
         public const int EntryCommand = 230, PageCommand = 231, EmptyCommand = 232;   // the empty state's way out
-        public const float Width = 600f;          // px: two columns of words beside a tile, as the game's lists
+        public const float Width = 640f;          // px: two columns of words beside a tile, as the world's mockup sets the lists
+        private const float SaidFace = 48f;       // px: the speaker's face beside their words
+        private const int SaidLines = 4;          // what the desk says, at most, before it ends in an ellipsis
+        private const float Number = UiTokens.S4; // px: an entry's number's column
         private const float Row = UiTokens.Row;   // px: an entry, its tile with room round it
+        private const int NoteLines = 14;         // a note's words under its heading, at most, before they end in an ellipsis (a bill, a charge sheet)
         private const float Foot = UiTokens.Control + UiTokens.S2;   // px: the pages' bar
         private const byte ListRegion = 1, FootRegion = 2;
 
@@ -62,20 +71,30 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The panel's height for its model: the strip, the context, a page of entries and the pages' bar when there are several.</summary>
         public static float Height(UiPickerModel m)
         {
-            float h = UiFrame.Strip;
+            float h = UiFrame.Strip + SaidHeight(m);
             int context = Math.Min(UiPickerModel.MostContext, m.Context.Length);
             if (context > 0)
             {
                 h += UiTokens.S2 * 2f + context * UiTokens.PairRow;
             }
             int shown = Shown(m);
-            h += shown == 0 ? EmptyRoom(m) : UiTokens.S2 + shown * Row + UiTokens.S2;
+            h += shown == 0 ? EmptyRoom(m) : UiTokens.S2 + PageHeight(m) + UiTokens.S2;
             if (Pages(m) > 1)
+            {
+                h += Foot;
+            }
+            if (!string.IsNullOrEmpty(m.FootNote) && shown > 0)
             {
                 h += Foot;
             }
             return UiDraw.Snap(h);
         }
+
+        // What the desk says under the strip: the words wrapped beside the speaker's face, a step of room round them.
+        private static float SaidHeight(UiPickerModel m) => string.IsNullOrEmpty(m.Said) ? 0f
+            : UiDraw.Snap(Math.Max(string.IsNullOrEmpty(m.Speaker) ? 0f : SaidFace, UiTextRules.WrappedHeight(m.Said, UiStyle.Body, SaidWidth(m), SaidLines))) + UiTokens.S3 * 2f;
+
+        private static float SaidWidth(UiPickerModel m) => Width - UiTokens.S4 * 2f - (string.IsNullOrEmpty(m.Speaker) ? 0f : SaidFace + UiTokens.S3);
 
         // The empty state's room: its glyph's tile and its words with a step of room round them, so nothing floats in a hole.
         private static float EmptyRoom(UiPickerModel m) =>
@@ -92,6 +111,59 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             return false;
+        }
+
+        /// <summary>
+        /// An entry's height: a row for an entry, and for a note with words under its heading (a bill, a charge sheet, what
+        /// a desk's records say) as many lines as its words take, up to <see cref="NoteLines"/>.
+        /// </summary>
+        public static float EntryHeight(ref UiPickEntry e)
+        {
+            if (!e.Note || string.IsNullOrEmpty(e.Detail))
+            {
+                return Row;
+            }
+            float w = NoteWidth;
+            float h = UiTextRules.WrappedHeight(e.Detail, UiStyle.Small, w, NoteLines) + (string.IsNullOrEmpty(e.Name) ? 0f : UiTextRules.LineHeight(UiStyle.BodyStrong) + UiTokens.S1);
+            return Math.Max(Row, UiDraw.Snap(h + UiTokens.S2 * 2f));
+        }
+
+        // A note's words: the entry's width less the room its words keep from its edges.
+        private const float NoteWidth = Width - UiTokens.S2 * 2f - UiTokens.S4;
+
+        // The entries of the page shown, one under another.
+        private static float PageHeight(UiPickerModel m)
+        {
+            int first = Math.Max(0, Math.Min(m.Page, Pages(m) - 1)) * Math.Max(1, m.PerPage), shown = Shown(m);
+            float h = 0f;
+            for (int i = 0; i < shown; i++)
+            {
+                h += EntryHeight(ref m.Entries[first + i]);
+            }
+            return h;
+        }
+
+        /// <summary>The most a page shows (at most <paramref name="most"/>) so that every page of the entries stands in <paramref name="room"/> px.</summary>
+        public static int PerPageFor(UiPickerModel m, int most, float room)
+        {
+            for (int per = Math.Max(1, most); per > 1; per--)
+            {
+                bool fits = true;
+                for (int first = 0; first < m.Entries.Length && fits; first += per)
+                {
+                    float h = 0f;
+                    for (int i = first; i < Math.Min(m.Entries.Length, first + per); i++)
+                    {
+                        h += EntryHeight(ref m.Entries[i]);
+                    }
+                    fits = h <= room;
+                }
+                if (fits)
+                {
+                    return per;
+                }
+            }
+            return 1;
         }
 
         private static int Shown(UiPickerModel m)
@@ -123,7 +195,26 @@ namespace RealLifeOverhaul.Ui
             int panel = UiDraw.Box(s, at, x, y, Width, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt on = at.In(panel);
             float cy = UiDraw.TitleStrip(s, on, x, y, Width, m.Icon, m.Title, !m.Locked);
+            if (m.Locked && !string.IsNullOrEmpty(m.LockWords))
+            {
+                // Held: the strip says so at its right, where its close would stand.
+                float most = UiDraw.SnapDown(Width * 0.3f), ch = UiTokens.Badge + UiTokens.S1;
+                float cw = Math.Min(most, UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(m.LockWords, UiStyle.SmallStrong) + UiTokens.S1));
+                UiDraw.Chip(s, on, x + Width - UiTokens.S3 - cw, y + UiDraw.SnapDown((UiFrame.Strip - ch) / 2f), m.LockWords, UiRole.Warn, most);
+            }
             float ix = x + UiTokens.S4, iw = Width - UiTokens.S4 * 2f;
+            float said = SaidHeight(m);
+            if (said > 0f)
+            {
+                float sx = ix, sw = SaidWidth(m), wh = UiTextRules.WrappedHeight(m.Said, UiStyle.Body, sw, SaidLines);
+                if (!string.IsNullOrEmpty(m.Speaker))
+                {
+                    UiDraw.Avatar(s, on, ix, cy + UiTokens.S3, SaidFace, m.Speaker, UiColour.HueOf(m.Speaker));
+                    sx = ix + SaidFace + UiTokens.S3;
+                }
+                UiDraw.Text(s, on, sx, cy + (said - wh) / 2f, sw, UiStyle.Body, UiRole.Text2, m.Said, UiFlags.Wrap | UiFlags.Middle, SaidLines);
+                cy += said;
+            }
             int context = Math.Min(UiPickerModel.MostContext, m.Context.Length);
             if (context > 0)
             {
@@ -148,10 +239,18 @@ namespace RealLifeOverhaul.Ui
             float ey = cy + UiTokens.S2;
             UiAt list = on.InRegion(ListRegion);
             bool tiles = Differ(m);
+            int number = 0;
             for (int i = 0; i < shown; i++)
             {
-                Entry(s, list, ref m.Entries[first + i], first + i, x + UiTokens.S2, ey, Width - UiTokens.S2 * 2f, tiles);
-                ey += Row;
+                bool counted = m.Numbered && !m.Entries[first + i].Note;
+                Entry(s, list, ref m.Entries[first + i], first + i, x + UiTokens.S2, ey, Width - UiTokens.S2 * 2f, tiles, counted ? ++number : 0);
+                ey += EntryHeight(ref m.Entries[first + i]);
+            }
+            float foot = y + h;
+            if (!string.IsNullOrEmpty(m.FootNote))
+            {
+                foot -= Foot;
+                Note(s, on, m.FootNote, x, foot - (pages > 1 ? Foot : 0f));
             }
             if (pages > 1)
             {
@@ -160,10 +259,31 @@ namespace RealLifeOverhaul.Ui
             return h;
         }
 
+        // The line at the panel's foot over a hairline: why the player cannot leave, in the quiet ink by its glyph.
+        private static void Note(UiScene s, UiAt at, string words, float x, float y)
+        {
+            UiDraw.Box(s, at, x, y, Width, UiTokens.Hairline, UiRole.Rule, UiRole.None, 0f, UiFlags.Decor);
+            UiDraw.Icon(s, at, x + UiTokens.S4, y + (Foot - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Info, UiRole.Muted, UiFlags.Middle);
+            float tx = x + UiTokens.S4 + UiTokens.Icon + UiTokens.S2;
+            UiDraw.TextMiddle(s, at, tx, y, Foot, x + Width - UiTokens.S4 - tx, UiStyle.Small, UiRole.Text2, words, UiFlags.Truncate);
+        }
+
         // An entry: its glyph on a tile, its name over its line, its figure at the right, or the reason it is greyed as a chip.
-        private static void Entry(UiScene s, UiAt at, ref UiPickEntry e, int index, float x, float y, float w, bool tiles)
+        private static void Entry(UiScene s, UiAt at, ref UiPickEntry e, int index, float x, float y, float w, bool tiles, int number)
         {
             float tile = UiTokens.IconTile;
+            if (e.Note && !string.IsNullOrEmpty(e.Detail))
+            {
+                // A note with words under its heading: the heading, then every line of its words in the quiet ink.
+                float ly = y + UiTokens.S2, tw = NoteWidth;
+                if (!string.IsNullOrEmpty(e.Name))
+                {
+                    UiDraw.Text(s, at, x + UiTokens.S2, ly, tw, UiStyle.BodyStrong, UiRole.Text, e.Name, UiFlags.Truncate | UiFlags.Middle);
+                    ly += UiTextRules.LineHeight(UiStyle.BodyStrong) + UiTokens.S1;
+                }
+                UiDraw.Text(s, at, x + UiTokens.S2, ly, tw, UiStyle.Small, UiRole.Text2, e.Detail, UiFlags.Wrap | UiFlags.Middle, NoteLines);
+                return;
+            }
             if (e.Note)
             {
                 UiDraw.Text(s, at, x + UiTokens.S2, y + (Row - UiTextRules.WrappedHeight(e.Name, UiStyle.Body, w - UiTokens.S4, 2)) / 2f, w - UiTokens.S4, UiStyle.Body, UiRole.Text2, e.Name,
@@ -174,6 +294,14 @@ namespace RealLifeOverhaul.Ui
             int face = UiDraw.Box(s, at, x, y, w, Row, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
             UiAt inside = at.In(face);
             float tx = x + UiTokens.S2, nx = x + UiTokens.S3;
+            if (number > 0)
+            {
+                // Its number on the page in the cyan, which its number key chooses, before its tile.
+                UiDraw.TextMiddle(s, inside, tx, y, Row, Number, UiStyle.BodyStrong, UiRole.AccentText, number.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    UiFlags.Centre);
+                tx += Number + UiTokens.S2;
+                nx = tx + UiTokens.S1;
+            }
             if (tiles && !string.IsNullOrEmpty(e.Face))
             {
                 UiDraw.Portrait(s, inside, tx, y + (Row - tile) / 2f, tile, e.Face, e.Hue, UiRole.None);
@@ -222,7 +350,8 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDraw.Text(s, inside, nx, ny + nh + UiTokens.S1, nw, UiStyle.Small, UiRole.Text2, e.Detail, UiFlags.Truncate | UiFlags.Middle);
             }
-            int node = UiDraw.Node(s, at, x, y, w, Row, EntryCommand, index, face, e.Disabled);
+            UiAction key = number > 0 && number <= 9 ? (UiAction)((int)UiAction.Pick1 + number - 1) : UiAction.Count;
+            int node = UiDraw.Node(s, at, x, y, w, Row, EntryCommand, index, face, e.Disabled, -1, 0, key);
             if (e.Disabled)
             {
                 // Greyed as the game greys it, the reason's chip kept whole so it still reads.

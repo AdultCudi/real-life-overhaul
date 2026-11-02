@@ -25,6 +25,14 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>True while any such window is on screen: the mod's camera frees the mouse for it.</summary>
         public static bool AnyOpen => _open > 0;
 
+        /// <summary>
+        /// Who draws an open list in place of the game's window, when anyone does (the RLO interface's picker, Ui/World): told
+        /// at each opening, it says whether it takes the list; while it does, the window stays switched off and the face reads
+        /// the list through <see cref="Count"/> and <see cref="Read"/>, picks through <see cref="Pick"/> and closes through
+        /// <see cref="Close"/>, so every caller's rules stay its own. Null while the interface is off: the window as before.
+        /// </summary>
+        public static ITravelFace Face;
+
         private sealed class Row
         {
             public GameObject Object;
@@ -34,6 +42,9 @@ namespace RealLifeOverhaul.GameUi
             public string ButtonKey;
             public int Id;
             public bool Note;
+            public string Name;      // the words as the caller gave them, for a face that draws its own
+            public string Detail;
+            public bool Enabled;
         }
 
         private readonly List<Row> _rows = new List<Row>(48);
@@ -49,6 +60,55 @@ namespace RealLifeOverhaul.GameUi
         private Action<int> _onPick;
         private Action _onClosed;
         private int _used;
+        private string _titleWords, _infoWords;
+        private bool _faced;
+
+        /// <summary>Counts every change a face shows (a filling, its lines, a lock), so it lays out again only after one.</summary>
+        public int Version { get; private set; }
+
+        /// <summary>True while a face draws this list in place of the window.</summary>
+        public bool Faced => _faced;
+
+        /// <summary>The window's object name ("RealLifeOverhaul Station desk"), which says what the list is for.</summary>
+        public string Name => _root != null ? _root.name : null;
+
+        /// <summary>The headline and the lines under it, as the caller gave them (rich text and all).</summary>
+        public string TitleWords => _titleWords;
+        public string InfoWords => _infoWords;
+
+        /// <summary>The entries and notes of the filling now open.</summary>
+        public int Count => _used;
+
+        /// <summary>One entry or note of the filling: its id, its words, its button's locale key, whether it can be picked.</summary>
+        public void Read(int index, out int id, out string name, out string detail, out string buttonKey, out bool enabled, out bool note)
+        {
+            Row row = index >= 0 && index < _used ? _rows[index] : null;
+            id = row != null ? row.Id : 0;
+            name = row?.Name;
+            detail = row?.Detail;
+            buttonKey = row?.ButtonKey;
+            enabled = row != null && row.Enabled;
+            note = row == null || row.Note;
+        }
+
+        /// <summary>A face's press on an entry: what the window's own button for it does, refused as the greyed button refuses.</summary>
+        public bool Pick(int id)
+        {
+            for (int i = 0; i < _used; i++)
+            {
+                Row row = _rows[i];
+                if (row.Id == id && !row.Note)
+                {
+                    if (!row.Enabled)
+                    {
+                        return false;
+                    }
+                    Picked(row);
+                    return true;
+                }
+            }
+            return false;
+        }
 
         public bool IsOpen { get; private set; }
 
@@ -58,6 +118,10 @@ namespace RealLifeOverhaul.GameUi
             get { return _locked; }
             set
             {
+                if (_locked != value)
+                {
+                    Version++;
+                }
                 _locked = value;
                 if (_cancelButton != null && _cancelButton.activeSelf == value)
                 {
@@ -225,6 +289,8 @@ namespace RealLifeOverhaul.GameUi
         public void Begin(string title, string info)
         {
             _used = 0;
+            _titleWords = title;
+            Version++;
             UiClone.Words(_title, title);
             Info(info);
         }
@@ -232,6 +298,8 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>The lines under the headline, as final words.</summary>
         public void Info(string words)
         {
+            _infoWords = words;
+            Version++;
             UiClone.Words(_info, words);
         }
 
@@ -287,6 +355,10 @@ namespace RealLifeOverhaul.GameUi
             }
             _used++;
             row.Id = id;
+            row.Name = name;
+            row.Detail = detail;
+            row.Enabled = enabled && !note;
+            Version++;
             // An entry with no name is the detail alone, in the list's own lettering.
             UiClone.Words(row.Label, string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(detail) ? detail
                 : string.IsNullOrEmpty(detail) ? "<uppercase>" + name + "</uppercase>"
@@ -341,6 +413,11 @@ namespace RealLifeOverhaul.GameUi
             IsOpen = true;
             _open++;
             _root.transform.SetAsLastSibling();
+            _faced = TakeFace();
+            if (_faced)
+            {
+                return;   // the face draws it: the window stays off, so its keys and its looks are the face's alone
+            }
             _root.SetActive(true);
             _scroll.StopMovement();
             if (_scroll.content != null)
@@ -359,6 +436,7 @@ namespace RealLifeOverhaul.GameUi
             IsOpen = false;
             _open = Mathf.Max(0, _open - 1);
             Locked = false;
+            Unface();
             if (_root != null)
             {
                 _root.SetActive(false);
@@ -379,6 +457,7 @@ namespace RealLifeOverhaul.GameUi
                 IsOpen = false;
                 _open = Mathf.Max(0, _open - 1);
             }
+            Unface();
             _onPick = null;
             _onClosed = null;
             _rows.Clear();
@@ -387,6 +466,59 @@ namespace RealLifeOverhaul.GameUi
                 UnityEngine.Object.Destroy(_root);
             }
             _root = null;
+        }
+
+        // A face asked whether it takes the list; a fault in it leaves the list to the window.
+        private bool TakeFace()
+        {
+            ITravelFace face = Face;
+            if (face == null)
+            {
+                return false;
+            }
+            try
+            {
+                return face.Take(this);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                return false;
+            }
+        }
+
+        /// <summary>The face gives the list back (its switch went off): the face is told, and an open list's window shows as it would have.</summary>
+        public void Release()
+        {
+            if (!_faced)
+            {
+                return;
+            }
+            Unface();
+            if (IsOpen && _root != null)
+            {
+                _root.SetActive(true);
+                _scroll.StopMovement();
+                if (_scroll.content != null)
+                {
+                    _scroll.content.anchoredPosition = Vector2.zero;
+                }
+            }
+        }
+
+        // The face is told the list is gone, once.
+        private void Unface()
+        {
+            if (!_faced)
+            {
+                return;
+            }
+            _faced = false;
+            ITravelFace face = Face;
+            if (face != null)
+            {
+                UiClone.Safe(() => face.Gone(this));
+            }
         }
 
         private void Picked(Row row)
@@ -408,8 +540,20 @@ namespace RealLifeOverhaul.GameUi
                 IsOpen = false;
                 _open = Mathf.Max(0, _open - 1);
             }
+            Unface();
             _root = null;
         }
+    }
+
+    /// <summary>
+    /// What draws a <see cref="TravelList"/> in place of the game's window (the RLO interface's picker): it takes a list at
+    /// its opening or leaves it to the window, and is told when the list it took closes or goes.
+    /// </summary>
+    public interface ITravelFace
+    {
+        bool Take(TravelList list);
+
+        void Gone(TravelList list);
     }
 
     /// <summary>

@@ -9,6 +9,8 @@ namespace RealLifeOverhaul.Ui
         public string Value;
         public bool Link;          // the value opens the thing or moves the camera to it: cyan with its magnifier
         public UiRole Ink;         // the value's colour when it says a state (good, bad); None for the words' own
+        public bool Meter;         // a meter between the label and the value, filled to Fill in the accent (a building's customers against its room)
+        public float Fill;         // the meter's share, 0 to 1
     }
 
     /// <summary>A section of an info panel: its label in capitals with a value of its own, and its rows.</summary>
@@ -35,6 +37,11 @@ namespace RealLifeOverhaul.Ui
         public UiIcon StatusIcon = UiIcon.SmileyMeh;
         public UiRole StatusTone = UiRole.Warn;
         public string Facts;                       // a line of the facts that matter most ("Age 27, office work")
+        public string Lead;                        // the thing's own name over its facts and state in the head (a business under its address's strip); null for none
+        public string Mark;                        // initials on the head's tile in place of the glyph (a business's own); null for the glyph
+        public UiRole MarkTone = UiRole.Accent;    // the initials' tile: a chart hue, the initials in the dark ink on it
+        public string FooterLabel;                 // the footer's wide button before its icon buttons ("Open in BizMan"), argument -1; null for none
+        public bool FooterLabelOff;                // it is there but takes no press now
         public UiInfoSection[] Sections = new UiInfoSection[0];
         public UiIcon[] Footer = new UiIcon[0];    // locate, follow, call
         public UiRole[] FooterTints = new UiRole[0];
@@ -94,11 +101,19 @@ namespace RealLifeOverhaul.Ui
             {
                 cy = Section(s, at, ref m.Sections[i], i, px, cy, ix, iw);
             }
-            if (m.Footer.Length > 0)
+            if (m.Footer.Length > 0 || !string.IsNullOrEmpty(m.FooterLabel))
             {
                 UiDraw.Box(s, at, px, cy, Width, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
                 float bx = ix - UiTokens.S1;
                 int first = s.NodeCount;
+                if (!string.IsNullOrEmpty(m.FooterLabel))
+                {
+                    // The panel's one main action, as wide as the icons leave it, before them.
+                    float lw = UiDraw.SnapDown(iw - m.Footer.Length * (UiTokens.Control + UiTokens.S2));
+                    UiDraw.Button(s, at, ix, cy + UiTokens.S2, lw, UiTokens.Control, UiButtonKind.Primary, m.FooterLabel, UiIcon.None,
+                        UiAction.Count, UiDefaultKeys.Keyboard, FooterCommand, -1, m.FooterLabelOff);
+                    bx = ix + lw + UiTokens.S2 - UiTokens.S1;
+                }
                 for (int i = 0; i < m.Footer.Length; i++)
                 {
                     UiDraw.IconButton(s, at, bx, cy + UiTokens.S2, UiTokens.Control, m.Footer[i], i < m.FooterTints.Length ? m.FooterTints[i] : UiRole.None, FooterCommand, i);
@@ -131,7 +146,7 @@ namespace RealLifeOverhaul.Ui
             {
                 h += SectionHeight(ref m.Sections[i]) + UiTokens.S1;
             }
-            return UiDraw.Snap(h + (m.Footer.Length > 0 ? UiTokens.Control + UiTokens.S4 : UiTokens.S2));
+            return UiDraw.Snap(h + (m.Footer.Length > 0 || !string.IsNullOrEmpty(m.FooterLabel) ? UiTokens.Control + UiTokens.S4 : UiTokens.S2));
         }
 
         // The round tabs down the panel's left edge, the shown one filled cyan, as a game joins a person to their household.
@@ -152,7 +167,13 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        private static float HeadHeight(UiInfoModel m) => string.IsNullOrEmpty(m.Status) && string.IsNullOrEmpty(m.Name) ? 0f : Portrait + UiTokens.S4 * 2f;
+        private static float HeadHeight(UiInfoModel m) => string.IsNullOrEmpty(m.Status) && string.IsNullOrEmpty(m.Name) && string.IsNullOrEmpty(m.Lead) ? 0f
+            : UiDraw.Snap(Math.Max(Portrait, LeadBlock(m))) + UiTokens.S4 * 2f;
+
+        // The head's words with a lead name: the name, the facts, then the state, each a line.
+        private static float LeadBlock(UiInfoModel m) => string.IsNullOrEmpty(m.Lead) ? 0f
+            : UiTextRules.LineHeight(UiStyle.Hero) + (string.IsNullOrEmpty(m.Facts) ? 0f : UiTokens.S1 + UiTextRules.LineHeight(UiStyle.Body))
+              + (string.IsNullOrEmpty(m.Status) ? 0f : UiTokens.S1 + Math.Max(UiTokens.Icon, UiTextRules.LineHeight(UiStyle.BodyStrong)));
 
         // The person's round portrait in its status ring, their state with its face beside it and the facts that matter most.
         private static float Head(UiScene s, UiAt at, UiInfoModel m, float x, float y)
@@ -162,9 +183,16 @@ namespace RealLifeOverhaul.Ui
             {
                 return y;
             }
-            float fx = x + UiTokens.S4, fy = y + UiTokens.S4;
+            float fx = x + UiTokens.S4, fy = y + UiTokens.S4 + UiDraw.SnapDown((h - UiTokens.S4 * 2f - Portrait) / 2f);
             float tx = fx;
-            if (!string.IsNullOrEmpty(m.Name))
+            if (!string.IsNullOrEmpty(m.Mark))
+            {
+                // A business's own initials on its tile, as its sign reads, in the dark ink on its colour.
+                int tile = UiDraw.Box(s, at, fx, fy, Portrait, Portrait, m.MarkTone == UiRole.None ? UiRole.Accent : m.MarkTone, UiRole.None, UiTokens.RadiusLarge);
+                UiDraw.TextMiddle(s, at.In(tile), fx, fy, Portrait, Portrait, UiStyle.Hero, UiRole.OnAccent, m.Mark, UiFlags.Centre | UiFlags.Truncate);
+                tx = fx + Portrait + UiTokens.S4;
+            }
+            else if (!string.IsNullOrEmpty(m.Name))
             {
                 UiDraw.Portrait(s, at, fx, fy, Portrait, m.Name, m.Hue, m.Ring);
                 tx = fx + Portrait + UiTokens.S4;
@@ -177,6 +205,11 @@ namespace RealLifeOverhaul.Ui
                 tx = fx + Portrait + UiTokens.S4;
             }
             float tw = x + Width - UiTokens.S4 - tx;
+            if (!string.IsNullOrEmpty(m.Lead))
+            {
+                LeadWords(s, at, m, tx, y + (h - LeadBlock(m)) / 2f, tw);
+                return y + h;
+            }
             float lh = UiTextRules.LineHeight(UiStyle.BodyStrong), fh = UiTextRules.LineHeight(UiStyle.Body);
             bool facts = !string.IsNullOrEmpty(m.Facts);
             float block = Math.Max(UiTokens.Icon, lh) + (facts ? UiTokens.S1 + fh : 0f);
@@ -194,6 +227,29 @@ namespace RealLifeOverhaul.Ui
             return y + h;
         }
 
+        // The lead name in the head's large type, the facts in the quiet ink under it, then the state with its face in its tone.
+        private static void LeadWords(UiScene s, UiAt at, UiInfoModel m, float x, float y, float w)
+        {
+            UiDraw.Text(s, at, x, y, w, UiStyle.Hero, UiRole.Text, m.Lead, UiFlags.Truncate | UiFlags.Middle);
+            y += UiTextRules.LineHeight(UiStyle.Hero);
+            if (!string.IsNullOrEmpty(m.Facts))
+            {
+                UiDraw.Text(s, at, x, y + UiTokens.S1, w, UiStyle.Body, UiRole.Text2, m.Facts, UiFlags.Truncate | UiFlags.Middle);
+                y += UiTokens.S1 + UiTextRules.LineHeight(UiStyle.Body);
+            }
+            if (string.IsNullOrEmpty(m.Status))
+            {
+                return;
+            }
+            float sh = Math.Max(UiTokens.Icon, UiTextRules.LineHeight(UiStyle.BodyStrong)), sy = y + UiTokens.S1;
+            UiRole tone = m.StatusTone == UiRole.None ? UiRole.Text2 : m.StatusTone;
+            UiDraw.Icon(s, at, x, sy + (sh - UiTokens.Icon) / 2f, UiTokens.Icon, m.StatusIcon, tone, UiFlags.Middle);
+            UiDraw.TextMiddle(s, at, x + UiTokens.Icon + UiTokens.S2, sy, sh, w - UiTokens.Icon - UiTokens.S2, UiStyle.BodyStrong, Words(tone), m.Status, UiFlags.Truncate);
+        }
+
+        // A state's words in its tone's lighter shade, which reads on the slate; a quiet tone in the quiet ink.
+        private static UiRole Words(UiRole tone) => tone == UiRole.Ok ? UiRole.OkText : tone == UiRole.Danger ? UiRole.DangerText : tone == UiRole.Warn ? UiRole.WarnText : UiRole.Text2;
+
         private static float SectionHeight(ref UiInfoSection section) => UiTokens.S2 * 2f + UiTokens.PairRow * (1 + (section.Rows?.Length ?? 0));
 
         // A section on its darker band: its label in capitals with its own value, then its rows, a gap of the panel's tone under it.
@@ -206,9 +262,35 @@ namespace RealLifeOverhaul.Ui
             for (int r = 0; section.Rows != null && r < section.Rows.Length; r++)
             {
                 UiInfoRow row = section.Rows[r];
+                if (row.Meter)
+                {
+                    ry += MeterRow(s, at, ix, ry, iw, ref row);
+                    continue;
+                }
                 ry += UiDraw.InfoRow(s, at, ix, ry, iw, row.Label, row.Value, row.Link, LinkCommand, index * 16 + r, row.Ink == UiRole.None ? UiRole.Text : row.Ink);
             }
             return y + h + UiTokens.S1;
+        }
+
+        // A row with a meter: its label at the left, its figure at the right, the track between them filled to its share.
+        private static float MeterRow(UiScene s, UiAt at, float x, float y, float w, ref UiInfoRow row)
+        {
+            float h = UiTokens.PairRow, track = UiTokens.S2;
+            float lw = Math.Min(UiDraw.SnapDown(w * 0.45f), UiDraw.Snap(UiTextRules.Width(row.Label, UiStyle.Body) + UiTokens.S1));
+            float vw = Math.Min(UiDraw.SnapDown(w * 0.3f), UiDraw.Snap(UiTextRules.Width(row.Value, UiStyle.BodyStrong) + UiTokens.S1));
+            UiDraw.TextMiddle(s, at, x, y, h, lw, UiStyle.Body, UiRole.Text2, row.Label, UiFlags.Label | UiFlags.Truncate);
+            UiDraw.TextMiddle(s, at, x + w - vw, y, h, vw, UiStyle.BodyStrong, row.Ink == UiRole.None ? UiRole.Text : row.Ink, row.Value, UiFlags.Right | UiFlags.Truncate);
+            float tx = x + lw + UiTokens.S3, tw = w - lw - vw - UiTokens.S3 * 2f;
+            if (tw >= UiTokens.S8)
+            {
+                int bar = UiDraw.Box(s, at, tx, y + (h - track) / 2f, tw, track, UiRole.Track, UiRole.None, track / 2f, UiFlags.Circle | UiFlags.Middle);
+                float fill = Math.Max(0f, Math.Min(1f, row.Fill)) * tw;
+                if (fill >= 1f)
+                {
+                    UiDraw.Box(s, at.In(bar), tx, y + (h - track) / 2f, fill, track, UiRole.Accent, UiRole.None, track / 2f, UiFlags.Circle | UiFlags.Middle | UiFlags.Share);
+                }
+            }
+            return h;
         }
     }
 }
