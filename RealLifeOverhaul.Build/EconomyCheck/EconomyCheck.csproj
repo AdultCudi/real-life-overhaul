@@ -291,6 +291,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ManagerRules.cs" Link="Mod\ManagerRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ManagerState.cs" Link="Mod\ManagerState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ManagerStore.cs" Link="Mod\ManagerStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\PriceStrategy.cs" Link="Mod\PriceStrategy.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ManagerDirectoryRules.cs" Link="Mod\ManagerDirectoryRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ExecutiveHiring.cs" Link="Mod\ExecutiveHiring.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\PolicyRules.cs" Link="Mod\PolicyRules.cs" />
@@ -749,6 +750,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizManPages.cs" Link="Mod\BizManPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizManPages.Parts.cs" Link="Mod\BizManPages.Parts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizManPages.Lines.cs" Link="Mod\BizManPages.Lines.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizManPages.Ops.cs" Link="Mod\BizManPages.Ops.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizOpsModel.cs" Link="Mod\BizOpsModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizOpsRules.cs" Link="Mod\BizOpsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiUniforms.cs" Link="Mod\UiUniforms.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiStaff.cs" Link="Mod\UiStaff.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\StaffViews.cs" Link="Mod\StaffViews.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDataCells.cs" Link="Mod\UiDataCells.cs" />

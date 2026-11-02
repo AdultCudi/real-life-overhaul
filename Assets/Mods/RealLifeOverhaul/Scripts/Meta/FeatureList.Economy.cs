@@ -301,7 +301,7 @@ namespace RealLifeOverhaul.Meta
                 .Owns(Settings.EconomyCompanyId, Settings.EconomyCompanyStaffId, Settings.EconomyCompanyCoverId, Settings.EconomyCompanyMarketingId,
                     Settings.EconomyCompanyTaxId, Settings.EconomyCompanyHideId, Settings.EconomyCompanyLicencesId)
                 .Preset(Settings.EconomyCompanyLevelId, Economy.CompanyCatalogue.Relaxed, Economy.CompanyCatalogue.Realistic, Economy.CompanyCatalogue.Hardcore)
-                .Data(Economy.CompanyStore.Key, Economy.CompanyStore.TestKey)
+                .Data(Economy.CompanyStore.Key, Economy.CompanyStore.TestKey, Economy.PricePlanStore.Key)
                 .Cleanup(() => Economy.CompanyDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Economy.CompanyDirector.Instance?.Forget()));   // the director opens the feature afresh from the (now empty) save on its next second
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Extensions;
 using Localizor;
 using RealLifeOverhaul.GameUi;
@@ -381,6 +382,21 @@ namespace RealLifeOverhaul.Economy
                         i => CompanyText.Share(ManagerCatalogue.PriceLows[i]));
                     Limit(box, "reallife_mgr_limit_price_high", place, CompanyDirector.LimitPriceHigh, ManagerCatalogue.PriceHighs.Length, m.PriceHigh,
                         i => CompanyText.Share(ManagerCatalogue.PriceHighs[i]));
+                    // The place's strategy, the same one a pricing plan on BizMan's pricing page keeps.
+                    Limit(box, "reallife_ui_bizops_strategy_stance", place, CompanyDirector.LimitPriceStance, PriceStrategyRules.StanceKeys.Length, (int)m.Strategy.Stance,
+                        i => CompanyText.T(PriceStrategyRules.StanceKeys[i]));
+                    Limit(box, "reallife_ui_bizops_strategy_margin", place, CompanyDirector.LimitPriceMargin, PriceStrategyRules.Margins.Length,
+                        Math.Max(0, Array.IndexOf(PriceStrategyRules.Margins, m.Strategy.Margin)),
+                        i => PriceStrategyRules.Margins[i] == 0 ? CompanyText.T("reallife_ui_bizops_margin_none")
+                            : CompanyText.T("reallife_ui_bizops_percent", "count", PriceStrategyRules.Margins[i].ToString(CultureInfo.InvariantCulture)));
+                    Limit(box, "reallife_ui_bizops_strategy_ninety", place, CompanyDirector.LimitPriceNinety, 2, m.Strategy.Ninety ? 1 : 0,
+                        i => CompanyText.T(i == 1 ? "reallife_ui_bizops_on" : "reallife_ui_bizops_off"));
+                    Limit(box, "reallife_ui_bizops_strategy_cost", place, CompanyDirector.LimitPriceCost, 2, m.Strategy.OverCost ? 1 : 0,
+                        i => CompanyText.T(i == 1 ? "reallife_ui_bizops_on" : "reallife_ui_bizops_off"));
+                    Limit(box, "reallife_ui_bizops_strategy_step", place, CompanyDirector.LimitPriceStep, PriceStrategyRules.Steps.Length,
+                        Math.Max(0, Array.IndexOf(PriceStrategyRules.Steps, m.Strategy.Step)),
+                        i => PriceStrategyRules.Steps[i] == 0 ? CompanyText.T("reallife_ui_bizops_step_none")
+                            : CompanyText.T("reallife_ui_bizops_percent", "count", PriceStrategyRules.Steps[i].ToString(CultureInfo.InvariantCulture)));
                     break;
             }
         }

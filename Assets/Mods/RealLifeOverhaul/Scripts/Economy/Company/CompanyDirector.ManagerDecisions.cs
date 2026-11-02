@@ -371,6 +371,14 @@ namespace RealLifeOverhaul.Economy
                 bool slip = Slips(skill, review, day, mp.Place.Place, ManagerTask.Prices, name, out roll);
                 int fair = ManagerRules.Price(ManagerGame.Suggested(name, mp.District, skill, false), market, m.PriceLow, m.PriceHigh);
                 int price = slip ? ManagerRules.Price(ManagerGame.Suggested(name, mp.District, skill, true), market, m.PriceLow, m.PriceHigh) : fair;
+                if (m.Strategy.Prices)
+                {
+                    // The player's strategy for the place, by the rule a pricing plan's strategy on BizMan follows (PricePlans).
+                    int rival = m.Strategy.Stance != PriceStance.Manager && RivalLows(mp.District).TryGetValue(name, out int low) ? low : 0;
+                    int cost = WholesaleCents(name), top = CompanyCatalogue.Share(market, ManagerCatalogue.Step(ManagerCatalogue.PriceHighs, m.PriceHigh));
+                    fair = PriceStrategyRules.Price(m.Strategy, fair, rival, cost, top, now);
+                    price = slip ? PriceStrategyRules.Price(m.Strategy, price, rival, cost, top, now) : fair;
+                }
                 if (price > 0 && ManagerRules.Moves(now, price, ManagerCatalogue.PriceStep))
                 {
                     _changes.Add(new ItemChange { Item = name, Before = now, After = price });

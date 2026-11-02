@@ -133,6 +133,7 @@ namespace RealLifeOverhaul.Economy
                     }
                 }
                 ManagerHour(day, Save.Hour);   // after the company's own hour: a manager answers what the parts have asked
+                PricePlansHour(day, Save.Hour);   // after the game's hour, in which its pricing plans reprice
             }
             catch (Exception e)
             {
@@ -274,6 +275,7 @@ namespace RealLifeOverhaul.Economy
             RotaSave(save);
             ManagerSave(save);
             HierarchySave(save);
+            PricePlansSave(save);
             if (_beforeTests != null)
             {
                 save.modData[CompanyStore.TestKey] = _beforeTests;

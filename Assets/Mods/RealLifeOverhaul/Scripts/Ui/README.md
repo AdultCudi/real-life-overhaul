@@ -145,7 +145,9 @@ Use these, and never draw a part of your own. All are in `UiDraw.Chrome.cs` unle
   filters or acts on many rows; not for a few facts (`InfoRow`) or a short list on a page (`UiAppWindow.Table`). A row
   that says what it is leads with its glyph on a tile and a line under its name (`UiCellKind.Tile`: a business, a
   warehouse); a row with an amount to change carries a stepper (`UiCellKind.Stepper`: a price, a delivery's boxes), and
-  then its minus, figure and plus are its targets and the row itself is none; a Warn or Danger tone puts the warning's
+  then its minus, figure and plus are its targets and the row itself is none (with `OnChosen` the stepper stands on the
+  chosen row alone and the others show its figure, each row a target that chooses it: a long list of prices keeps a
+  screen's targets few); a Warn or Danger tone puts the warning's
   glyph before the stepper where its column leaves `MarkRoom` (a price above the market). A figure takes a text tone
   from its row's Tones (an empty stock in red). A row's own action stands at its right as an icon button
   (`UiCellKind.Action`: Set destination), right from the row and left back. A table with no filter, search or picking

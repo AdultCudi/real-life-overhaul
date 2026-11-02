@@ -23,6 +23,10 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
+            if (_m.Ops.Card != null && (command == UiCard.ButtonCommand || command == UiCard.CheckCommand))
+            {
+                return PressSchedule(b, command, arg);   // a question over the page takes its own buttons, whose numbers the sidebar's share
+            }
             switch (command)
             {
                 case BizManPages.Section: return Section(b, arg);
@@ -132,14 +136,15 @@ namespace RealLifeOverhaul.Ui
                     _fontOpen = false;
                     return Pick(Get<UI.Elements.Dropdown>(GameContract.LogoFont, Get<LogoCustomizer>(GameContract.SetLogo, b.bizManSettings)), arg);
                 case BizManPages.Uniforms:
-                    // The uniforms' editor stands over BizMan in the game's own view: the classic view until the app closes.
-                    BizManKit.Classic();
+                    // The uniforms' editor is a canvas of the game's over the full menu (on the kit too, UniformsKit): BizMan's own
+                    // view stands under it while it is open, and the kit comes back once it closes.
+                    BizManKit.StepAside(UniformsKit.Over());
                     return Click(Calling(Page(b, BizManRules.Settings), "OnConfigureUniformPresetsButtonClick"), "set up uniforms");
                 case BizManPages.Slider:
                     _sliderHeld = !_sliderHeld;
                     return true;
                 default:
-                    return false;
+                    return PressOps(b, command, arg);
             }
         }
 
@@ -160,7 +165,7 @@ namespace RealLifeOverhaul.Ui
                 return false;
             }
             string name = _tabs[index].name;
-            if (!BizManRules.Drawn(name))
+            if (!BizManRules.Drawn(name, Ops))
             {
                 _shown = name;
                 return true;

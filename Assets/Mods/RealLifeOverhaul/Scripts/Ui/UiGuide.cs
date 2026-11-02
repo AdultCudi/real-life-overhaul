@@ -22,6 +22,8 @@ namespace RealLifeOverhaul.Ui
                 .Test("reallife_ui_test_hud", "reallife_ui_test_hud_box")
                 .Test("reallife_ui_test_activity_work", "reallife_ui_test_activity_class", "reallife_ui_test_activity_chair", "reallife_ui_test_activity_skip",
                     "reallife_ui_test_activity_funeral")
+                .Test("reallife_ui_test_bizops_schedule", "reallife_ui_test_bizops_managers", "reallife_ui_test_bizops_factory", "reallife_ui_test_bizops_warehouse",
+                    "reallife_ui_test_bizops_switch", "reallife_ui_test_uniforms", "reallife_ui_test_uniforms_switch")
                 .Test("reallife_phone_test_second", "reallife_phone_test_kit_folder", "reallife_phone_test_classic")
                 .Test("reallife_ui_test_employees", "reallife_ui_test_employee_page", "reallife_ui_test_employees_switch")
                 .Test("reallife_ui_test_econoview", "reallife_ui_test_econoview_loans", "reallife_ui_test_econoview_switch")

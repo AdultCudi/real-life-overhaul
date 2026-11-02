@@ -65,6 +65,7 @@ namespace RealLifeOverhaul.Ui
         {
             Build();
             BizManPages.Lay(s, _m, frame, dark, keys);
+            Clips(s);
             _dirty = false;
         }
 
@@ -156,7 +157,8 @@ namespace RealLifeOverhaul.Ui
         // The field a press would type into: the last one the keys or the mouse came to.
         private void Aim(int command, int arg)
         {
-            if (command == BizManPages.Type || command == UiDataTable.First + UiDataTable.Search || command == BizManPages.Goods + UiDataTable.Type)
+            if (command == BizManPages.Type || command == UiDataTable.First + UiDataTable.Search || command == BizManPages.Goods + UiDataTable.Type || command == BizManPages.OpsType
+                || command == BizManPages.OpsSearch || command == BizManPages.People + UiDataTable.Search || command == BizManPages.Table + UiDataTable.Type)
             {
                 _typeCommand = command;
                 _typeArg = arg;
@@ -166,7 +168,7 @@ namespace RealLifeOverhaul.Ui
         public bool Back()
         {
             _dirty = true;
-            if (CloseLists())
+            if (CloseLists() || OpsBack() || CardBack() || (_m.Part == BizManPart.Schedule && ScheduleBack()))
             {
                 return true;
             }
@@ -203,6 +205,10 @@ namespace RealLifeOverhaul.Ui
             {
                 return Press(UiCatalogue.First + UiCatalogue.Action, 0);
             }
+            if (_m.Page == BizManPage.Business && (Pressing(_m.Ops.Actions, action, BizManPages.OpsAction, false) || Pressing(_m.Ops.PlanActions, action, BizManPages.OpsAction, false)))
+            {
+                return true;
+            }
             return false;
         }
 
@@ -234,6 +240,11 @@ namespace RealLifeOverhaul.Ui
                 _dirty = true;
                 return;
             }
+            if (OpsReveal(list, index))
+            {
+                _dirty = true;
+                return;
+            }
             UiDataTableModel table = _m.Page == BizManPage.Portfolio ? _m.Table : _m.Goods;
             if (table != null)
             {
@@ -249,6 +260,11 @@ namespace RealLifeOverhaul.Ui
         public void Wheel(int clip, float notches)
         {
             float by = -notches * UiTokens.S16;
+            if (OpsWheel(clip, by))
+            {
+                _dirty = true;
+                return;
+            }
             if (_m.Part == BizManPart.Interior && _m.Page == BizManPage.Business && (clip == _m.LinesClip || clip == _m.SecondClip))
             {
                 if (clip == _m.LinesClip)
@@ -278,11 +294,16 @@ namespace RealLifeOverhaul.Ui
 
         public int TypingCommand => _typeCommand;
 
-        public string TypingText => Field(_typeCommand, _typeArg) is TMP_InputField f ? f.text : null;
+        public string TypingText => OpsTyping(_typeCommand, out string ops) ? ops : Field(_typeCommand, _typeArg) is TMP_InputField f ? f.text : null;
 
 
         public void Typed(string text)
         {
+            if (OpsTyped(_typeCommand, _typeArg, text))
+            {
+                _dirty = true;
+                return;
+            }
             if (Field(_typeCommand, _typeArg) is TMP_InputField f)
             {
                 UiWidgets.Type(f, text, false);   // its change listeners run as typing into it would run them
@@ -297,13 +318,17 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- stepping
 
-        public bool Steps(int command) => command == BizManPages.Slider && _sliderHeld;
+        public bool Steps(int command) => (command == BizManPages.Slider && _sliderHeld) || (command == BizManPages.OpsSlider && _opsHeld >= 0);
 
         public void Step(int command, int arg, int step)
         {
             if (command == BizManPages.Slider)
             {
                 StepRent(step);
+            }
+            else if (command == BizManPages.OpsSlider && arg == _opsHeld)
+            {
+                StepSlider(arg, step);
             }
         }
 

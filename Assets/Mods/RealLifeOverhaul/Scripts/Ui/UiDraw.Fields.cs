@@ -15,7 +15,7 @@ namespace RealLifeOverhaul.Ui
         private const float TrackW = 44f;       // px: a switch's track, a game's toggle
         private const float TrackH = 24f;       // px
         private const float Knob = 16f;         // px: a switch's or a slider's round knob
-        private const float StepButton = 32f;   // px: a stepper's minus and plus
+        internal const float StepButton = 32f;  // px: a stepper's minus and plus (a table's figure stands where its field's does)
         private const int ListRows = 8;         // options an open choice shows before it scrolls
         private const float FigureShare = 0.22f; // of a slider's width, the least its figure takes
 
@@ -69,11 +69,12 @@ namespace RealLifeOverhaul.Ui
         /// <summary>
         /// An open choice's list on the overlay over its field: each option a row, the chosen one in the cyan at a fifth with
         /// its tick, eight rows in view and the rest scrolling inside, as the game's Dropdown opens. Each option is a row of
-        /// one list (its index the argument). Returns the list.
+        /// one list (its index the argument). It opens on the overlay's layer, or on the one given over a sheet that stands
+        /// there itself. Returns the list.
         /// </summary>
-        public static short ChoiceList(UiScene s, UiAt under, float x, float y, float w, string[] options, int count, int chosen, float offset, int command)
+        public static short ChoiceList(UiScene s, UiAt under, float x, float y, float w, string[] options, int count, int chosen, float offset, int command, byte layer = 1)
         {
-            var at = new UiAt { Parent = -1, Clip = -1, Layer = 1, Order = -1, Region = under.Region };
+            var at = new UiAt { Parent = -1, Clip = -1, Layer = layer, Order = -1, Region = under.Region };
             float rowH = UiTokens.ControlSmall, h = ChoiceListHeight(count);
             int card = Box(s, at, x, y, w, h, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
             float viewH = h - UiTokens.S1 * 2f;
@@ -83,7 +84,7 @@ namespace RealLifeOverhaul.Ui
             int first = (int)(offset / rowH), last = Math.Min(count - 1, (int)((offset + viewH - 0.5f) / rowH));
             short list = s.AddList(count, first, Math.Max(0, last - first + 1), clip, chosen);
             s.Clips[clip].ContentHeight = count * rowH;
-            var rows = new UiAt { Parent = -1, Clip = clip, Layer = 1, Order = -1, Region = under.Region };
+            var rows = new UiAt { Parent = -1, Clip = clip, Layer = layer, Order = -1, Region = under.Region };
             float rw = w - UiTokens.S2 - (count > ListRows ? UiTokens.S4 : 0f);   // a list that scrolls keeps its rows and their ring clear of the thumb
             for (int i = first; i <= last; i++)
             {

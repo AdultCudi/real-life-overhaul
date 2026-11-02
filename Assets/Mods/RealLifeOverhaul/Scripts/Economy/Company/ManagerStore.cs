@@ -42,7 +42,7 @@ namespace RealLifeOverhaul.Economy
                 ManagerFile m = s.Managers[i];
                 t.Append(n > 0 ? ";" : string.Empty);
                 Join(t, m.Role, m.From, m.Tasks, m.WageBand, m.StockDays, m.PriceLow, m.PriceHigh, m.Budget, m.Keep, m.Spent, m.Decided, m.Mistakes, m.Undone, m.Paid,
-                    m.LastDecided, m.LastMistakes, m.LastUndone, m.LastPaid, m.LastSpent, m.SnapDay, m.SnapHour, 0, 0, 0);
+                    m.LastDecided, m.LastMistakes, m.LastUndone, m.LastPaid, m.LastSpent, m.SnapDay, m.SnapHour, PriceStrategyRules.Pack(m.Strategy), 0, 0);
                 t.Append('|').Append(Clean(m.Place)).Append('|').Append(Clean(m.Id)).Append('|').Append(Clean(m.Base)).Append('|');
                 for (int k = 0; k < m.Snaps.Count && k < ManagerCatalogue.SnapsMost; k++)
                 {
@@ -163,6 +163,7 @@ namespace RealLifeOverhaul.Economy
                 LastSpent = Math.Max(0, I(c, 18)),
                 SnapDay = Math.Max(0, I(c, 19)),
                 SnapHour = CompanyCatalogue.Clamp(I(c, 20), 0, 23),
+                Strategy = PriceStrategyRules.Unpack(I(c, 21)),   // 0 in a line from before the strategy: the default
                 Place = c[ManagerFields],
                 Id = c[ManagerFields + 1],
                 Base = c.Length > ManagerFields + 2 ? c[ManagerFields + 2] : string.Empty

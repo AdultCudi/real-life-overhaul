@@ -37,6 +37,9 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The game's own view until the app closes: a page only it shows, another mod's part of it.</summary>
         public static void Classic() => Host.Classic();
 
+        /// <summary>The game's own view while something of the game's stands over the app (the uniforms' editor), the kit back once it is over.</summary>
+        public static void StepAside(System.Func<bool> over) => Host.StepAside(over);
+
         // The game's BizMan as the host needs it: under the full menu, its list and its business page's layout the leaves the kit hides.
         private sealed class BizManGameScreen : IUiGameScreen
         {
@@ -86,6 +89,12 @@ namespace RealLifeOverhaul.Ui
                 conceal.Add(app.business.transform.Find(Layout));
                 conceal.Add(app.GetComponent<Graphic>());
                 conceal.Add(app.business.GetComponent<Graphic>());
+                // The schedule's picker of people is the game's box outside the app; the kit draws its list beside the board.
+                UIs uis = InstanceBehavior<UIs>.Instance;
+                if (uis != null && uis.scheduleEmployeeSelection != null && GameContract.SchedPickBox.Field?.GetValue(uis.scheduleEmployeeSelection) is GameObject pick)
+                {
+                    conceal.Add(pick.transform);
+                }
             }
 
             public IUiScreen Make(Component found) => new BizManScreen((BizMan)found);
