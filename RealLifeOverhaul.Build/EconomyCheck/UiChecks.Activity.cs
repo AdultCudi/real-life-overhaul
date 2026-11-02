@@ -57,6 +57,7 @@ internal static partial class Program
         ActivityEveryActivity();
         ActivityKitSources();
         ActivityStripRules();
+        ActivityDeskSources();
         Console.WriteLine("  Activity kit: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 
@@ -115,6 +116,30 @@ internal static partial class Program
             "activity kit: the funeral's ways on are the game's own, taken once, its F, P and Escape left to the game");
         Check(day.Contains("InGameTimeOfDayPanel.Close()") && day.Contains("_tool.DecreaseTimeButton()") && day.Contains("_tool.IncreaseTimeButton()") && day.Contains("_slider.value ="),
             "activity kit: the time of day tool moves through its own slider and buttons");
+    }
+
+    // A working day at a desk: the hours to stay chosen on the panel's own slider before it starts (one to the rest of the
+    // day, the right end the whole rest), the day then ending early and settled as a part of it as Stop working would, the
+    // whole day only when the whole rest was worked; the card's facts read from the job's own file.
+    private static void ActivityDeskSources()
+    {
+        string desk = File.ReadAllText(System.IO.Path.Combine(ActivityModRoot, "Scripts", "Careers", "DeskWork.cs"));
+        string facts = File.ReadAllText(System.IO.Path.Combine(ActivityFolder, "ActivityFacts.cs"));
+        string day = File.ReadAllText(System.IO.Path.Combine(ActivityModRoot, "Scripts", "Careers", "CareersDirector.DeskDay.cs"));
+        Check(desk.Contains("return _state == PlayerActivityState.NotStarted && !_pressed && _canStart && MostHours >= 2;")
+              && desk.Contains("_length = _hours * 60;") && desk.Contains("sitting.SkipEnded(Math.Min(_done, _length), _done >= _whole);")
+              && desk.Contains("_hours = value >= MostHours ? 0 : Math.Max(1, value);") && day.Contains("internal int DeskPlan()") && !DeskPlanBody(day).Contains("ClockIn("),
+            "activity kit: a working day's hours are chosen on the game's own slider, end early as a part of the day, and looking at them begins nothing");
+        Check(facts.Contains("Prices.At(j.Pay)") && facts.Contains("j.Favour") && facts.Contains("CareersText.Hours(p)") && facts.Contains("desk.ChosenMinutes") && facts.Contains("desk.Done"),
+            "activity kit: a working day's card and strip read the job's own pay, week, standing and the minutes worked");
+    }
+
+    // DeskPlan's own body: from its name to the next member's summary.
+    private static string DeskPlanBody(string day)
+    {
+        int at = day.IndexOf("internal int DeskPlan()", StringComparison.Ordinal);
+        int end = at < 0 ? -1 : day.IndexOf("/// <summary>", at, StringComparison.Ordinal);
+        return at < 0 ? "ClockIn(" : end < 0 ? day.Substring(at) : day.Substring(at, end - at);
     }
 
     // The strip stands in one place over the bar whatever its state, and the card's slider reads its share where it was laid.

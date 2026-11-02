@@ -1,6 +1,9 @@
 using System;
+using System.Text;
 using BigAmbitions.InputSystem;
 using Helpers;
+using RealLifeOverhaul.Permadeath;
+using RealLifeOverhaul.Rivals;
 using UI;
 using UnityEngine;
 
@@ -25,6 +28,8 @@ namespace RealLifeOverhaul.Ui
         private int _count;
         private bool _gone;          // a way on was taken: no second press starts it again
         private bool _dirty = true;
+        private bool _told;          // the life's words made once, when the card is first laid
+        private string _story;
 
         /// <summary>The test's way to close it (Options, Tests); null in the game.</summary>
         public Action Close;
@@ -92,7 +97,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Portrait = name, SideName = name, SideLines = lines.ToArray(),
                 Kicker = string.IsNullOrEmpty(district) ? UiText.T("reallife_ui_funeral_kicker_plain") : UiText.Fill("reallife_ui_funeral_kicker", "place", district),
-                Title = UiText.T("reallife_ui_funeral_title"), Body = UiText.T("reallife_ui_funeral_body"), Choices = choices.ToArray(), Selected = 0,
+                Title = UiText.T("reallife_ui_funeral_title"), Body = Story() ?? UiText.T("reallife_ui_funeral_body"), Choices = choices.ToArray(), Selected = 0,
                 Note = UiText.T(hasBackup ? "reallife_ui_funeral_note" : "reallife_ui_funeral_note_two"), Buttons = buttons.ToArray(),
                 Prompts = new[]
                 {
@@ -101,6 +106,70 @@ namespace RealLifeOverhaul.Ui
                 },
                 PromptCount = 3,
             };
+        }
+
+        // The life in a few sentences, as the City Ledger's obituary words it (Permadeath's lines: how long they lived here,
+        // what they founded, who worked for them), and the strongest rival's last word; null when the game says nothing.
+        private string Story()
+        {
+            if (_told)
+            {
+                return _story;
+            }
+            _told = true;
+            try
+            {
+                var life = new LifeStory();
+                PermadeathGame.Fill(life);
+                if (life.Name.Length == 0)
+                {
+                    return null;
+                }
+                var text = new StringBuilder(256);
+                Say(text, PermadeathText.Fill("reallife_pd_obit_lived", life));
+                int founded = PermadeathStory.Founded(life);
+                Say(text, PermadeathText.Fill(founded <= 0 ? "reallife_pd_obit_no_business" : founded == 1 ? "reallife_pd_obit_founded_one" : "reallife_pd_obit_founded_many", life));
+                if (life.Employees > 0)
+                {
+                    Say(text, PermadeathText.Fill(life.Employees == 1 ? "reallife_pd_obit_staff_one" : "reallife_pd_obit_staff_many", life));
+                }
+                string rival = Rival();
+                if (rival != null)
+                {
+                    Say(text, UiText.Fill("reallife_ui_funeral_rival", "rival", rival));
+                }
+                _story = text.ToString();
+            }
+            catch (Exception e) when (Guard.Missing(e) || e is NullReferenceException)
+            {
+                _story = null;
+            }
+            return _story;
+        }
+
+        private static void Say(StringBuilder text, string sentence)
+        {
+            if (!string.IsNullOrEmpty(sentence))
+            {
+                text.Append(text.Length > 0 ? " " : string.Empty).Append(sentence);
+            }
+        }
+
+        // The richest rival tycoon still standing, by name; null with none come forward (or rivals off). Words only: the
+        // rival's side of the death is their flowers in the line, nothing in their play.
+        private static string Rival()
+        {
+            RivalFile file = RivalDirector.Instance != null ? RivalDirector.Instance.File : null;
+            Tycoon best = null;
+            for (int i = 0; file != null && i < file.Tycoons.Length; i++)
+            {
+                Tycoon t = file.Tycoons[i];
+                if (t != null && t.Active && (best == null || t.Worth > best.Worth))
+                {
+                    best = t;
+                }
+            }
+            return best != null ? best.Def.Name : null;
         }
 
         // The player's name as the game keeps it; their initials stand in the portrait's place.

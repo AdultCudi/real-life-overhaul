@@ -231,7 +231,11 @@ internal static partial class UiSamples
             Portrait = name, SideName = name,
             SideLines = new[] { t("reallife_ui_funeral_age", "Aged {age}").Replace("{age}", "41"), t("reallife_ui_funeral_days", "Day {day} in the city").Replace("{day}", "214") },
             Kicker = t("reallife_ui_funeral_kicker", "The end of a life, {place}").Replace("{place}", "Midtown"), Title = t("reallife_ui_funeral_title", "The funeral"),
-            Body = t("reallife_ui_funeral_body", "Your story in this city has come to an end. Choose how to go on."),
+            // The life as the obituary words it, the strongest rival's flowers last; names are the sample's own.
+            Body = t("reallife_pd_obit_lived", "{name} had lived in the city for {years}.").Replace("{name}", name).Replace("{years}", "3 years")
+                   + " " + t("reallife_pd_obit_founded_many", "{name} founded {founded} businesses.").Replace("{name}", name).Replace("{founded}", "4")
+                   + " " + t("reallife_pd_obit_staff_many", "{employees} people worked for {name}.").Replace("{employees}", "37").Replace("{name}", name)
+                   + " " + t("reallife_ui_funeral_rival", "{rival} sent flowers but did not stay.").Replace("{rival}", "Bald Luthor"),
             Choices = choices.ToArray(), Selected = 0, Note = backup ? t("reallife_ui_funeral_note", "Press 1, 2 or 3") : t("reallife_ui_funeral_note_two", "Press 1 or 2"),
             Buttons = buttons.ToArray(),
             Prompts = new[]

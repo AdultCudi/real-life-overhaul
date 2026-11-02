@@ -39,6 +39,8 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_funeral_age", "reallife_ui_funeral_days", "reallife_ui_funeral_backup", "reallife_ui_funeral_backup_line", "reallife_ui_funeral_menu",
                     "reallife_ui_funeral_menu_line", "reallife_ui_funeral_menu_short", "reallife_ui_funeral_quit", "reallife_ui_funeral_quit_line", "reallife_ui_funeral_note",
                     "reallife_ui_funeral_note_two", "reallife_ui_funeral_you", "reallife_ui_funeral_quit_short", "reallife_ui_funeral_rival",
+                    "reallife_pd_obit_lived", "reallife_pd_obit_no_business", "reallife_pd_obit_founded_one", "reallife_pd_obit_founded_many", "reallife_pd_obit_staff_one",
+                    "reallife_pd_obit_staff_many",
                 })).Switch(UiScreenSwitches.Hud),
                 new UiScreenDef("time_of_day", UiTemplate.Hud, "TimeOfDayScreen", ActivityWords(ActivityBarKeys, new[]
                 {

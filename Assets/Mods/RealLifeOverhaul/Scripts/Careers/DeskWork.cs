@@ -28,6 +28,11 @@ namespace RealLifeOverhaul.Careers
         private PlayerActivityState _state = PlayerActivityState.NotStarted;
         private PlayerActivityState _before = PlayerActivityState.NotStarted;
         private int _length, _done;
+        private int _whole;                                     // the minutes the day's sitting asked for: the whole rest of the day
+        private int _hours;                                     // the hours chosen to stay on the slider before it starts; 0: the whole rest
+        private bool _late;                                     // begun as overtime
+        private int _plan;                                      // the minutes a day begun now would run (CareersDirector.DeskPlan), looked at...
+        private float _planAt = -1f;                            // ...twice a second while the panel asks
         private bool _pressed;                                  // Start working or Work late pressed: on its way from the next frame
         private bool _seated;                                   // at a desk, on its chair (else on their feet at the station)...
         private Vector3 _stood;                                 // ...and where they stood before sitting, to stand up on
@@ -54,6 +59,31 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The fitted desk it is at (null for a station).</summary>
         public FitDesk Desk => _desk;
 
+        /// <summary>A working day (not overtime): before it starts, one that can start now; after, the one begun.</summary>
+        internal bool Day => _pressed ? !_late : _canStart;
+
+        /// <summary>Minutes worked so far, and the minutes it runs (the hours chosen, or the rest of the day).</summary>
+        internal int Done => _done;
+
+        internal int Length => _length;
+
+        /// <summary>The most whole hours a day begun now could run (its last hour may be a part): the slider's right end.</summary>
+        internal int MostHours => Math.Max(1, (Plan() + 59) / 60);
+
+        /// <summary>The minutes the day would run as the slider stands: the hours chosen, never past the end of the day.</summary>
+        internal int ChosenMinutes => _hours > 0 ? Math.Min(Plan(), _hours * 60) : Plan();
+
+        // The minutes a working day begun now would run; looked at twice a second, as the clock stands while the panel waits.
+        private int Plan()
+        {
+            if (_planAt < 0f || Time.unscaledTime - _planAt > 0.5f)
+            {
+                _planAt = Time.unscaledTime;
+                _plan = _director != null ? _director.DeskPlan() : 0;
+            }
+            return _plan;
+        }
+
         private void StartDay() => Begin(false);
 
         private void StartLate() => Begin(true);
@@ -78,6 +108,12 @@ namespace RealLifeOverhaul.Careers
             _pressed = true;
             _sitting = sitting;
             _length = Math.Max(1, sitting.SkipMinutes);
+            _whole = _length;
+            _late = late;
+            if (!late && _hours > 0 && _hours * 60 < _length)
+            {
+                _length = _hours * 60;   // the hours chosen: it ends early, settled as a part of the day as Stop working would
+            }
             _done = 0;
             _director.StartCoroutine(Guard.Routine(Walk()));
         }
@@ -306,7 +342,7 @@ namespace RealLifeOverhaul.Careers
                 sitting.CalledOff();   // pressed, but never at work: nothing counted, nothing said
                 return;
             }
-            sitting.SkipEnded(Math.Min(_done, _length), _done >= _length);
+            sitting.SkipEnded(Math.Min(_done, _length), _done >= _whole);   // whole only for the whole rest of the day, not the hours chosen
         }
 
         public LabelInfo GetHeadlineLabel()
@@ -413,18 +449,76 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        public bool HasSlider() => false;
+        // How long to stay, in hours, before a working day starts: from one hour to the rest of the day (the panel's slider with
+        // its keys and their repeat, or the kit's). Overtime keeps its own length.
+        public bool HasSlider()
+        {
+            if (FrameGuard.Off)
+            {
+                return false;
+            }
+            try
+            {
+                return _state == PlayerActivityState.NotStarted && !_pressed && _canStart && MostHours >= 2;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, false);
+            }
+        }
 
-        public int GetMinSliderValue() => 0;
+        public int GetMinSliderValue() => 1;
 
-        public int GetMaxSliderValue() => 0;
+        public int GetMaxSliderValue()
+        {
+            try
+            {
+                return MostHours;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, 1);
+            }
+        }
 
-        public float GetCurrentSliderValue() => 0f;
+        public float GetCurrentSliderValue()
+        {
+            try
+            {
+                return _hours > 0 ? Math.Min(_hours, MostHours) : MostHours;
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, 1f);
+            }
+        }
 
         public void OnSliderValueChanged(int value)
         {
+            try
+            {
+                _hours = value >= MostHours ? 0 : Math.Max(1, value);   // the right end is the whole rest of the day, its part hour too
+            }
+            catch (Exception fault)
+            {
+                Guard.Fail(FrameGuard, fault);
+            }
         }
 
-        public (string key, object arguments) GetSliderInfo() => (null, null);
+        public (string key, object arguments) GetSliderInfo()
+        {
+            if (FrameGuard.Off)
+            {
+                return (null, null);
+            }
+            try
+            {
+                return HasSlider() ? ("common_hours", (object)new { hours = (int)GetCurrentSliderValue() }) : (null, null);
+            }
+            catch (Exception fault)
+            {
+                return Guard.Failed(FrameGuard, fault, (string.Empty, (object)null));
+            }
+        }
     }
 }
