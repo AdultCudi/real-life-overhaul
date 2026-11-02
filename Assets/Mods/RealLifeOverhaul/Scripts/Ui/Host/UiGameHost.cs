@@ -44,6 +44,7 @@ namespace RealLifeOverhaul.Ui
         private UiGameWatch _watch;
         private int _order;
         private bool _classic, _held, _shown;
+        private bool _underMenu;      // a panel of the HUD put away under the game's pause menu, brought back as it closes
         private Func<bool> _back;     // while the game runs something in its own view: true once it is over and the kit may come back
         private bool _gaveUp, _stopped;
         private int _misses;
@@ -248,6 +249,7 @@ namespace RealLifeOverhaul.Ui
             _watch = null;
             _classic = false;
             _held = false;
+            _underMenu = false;
             _back = null;
             Shown(false);
             if (UiDirector.Logger != null && why != null && Meta.Dev.Verbose)
@@ -324,6 +326,7 @@ namespace RealLifeOverhaul.Ui
         {
             _classic = false;   // the classic view lasts until the screen closes, and the next opening is the kit's again
             _back = null;
+            _underMenu = false;
             if (_root == null)
             {
                 return;
@@ -353,6 +356,19 @@ namespace RealLifeOverhaul.Ui
             }
             if (_screen.Kind == UiGameKind.Panel)
             {
+                // The game's pause menu (and the options or blueprints opened from it) hides the HUD under it, the dialogue's
+                // panel with it, so the kit's panel leaves too and is back the moment the menu closes.
+                bool menu = global::UI.MiniMenu.MiniMenu.IsOpen || global::Scenes.MainMenu.Options.IsVisible || global::BlueprintsUI.BlueprintsPanel.IsOpen;
+                if (menu && _root.activeSelf)
+                {
+                    _host.Hide();
+                    _root.SetActive(false);
+                    _underMenu = true;
+                }
+                else if (!menu && _underMenu)
+                {
+                    Bring();
+                }
                 // A box over a panel of the HUD (the bank's question over its loan form) stands above the kit's canvas, and the
                 // phone opened beside a conversation takes the keys: the panel stays drawn and only its keys wait, so one key is
                 // never the box's (or the phone's) and the panel's at once.
@@ -383,6 +399,7 @@ namespace RealLifeOverhaul.Ui
         // Shows the kit over the game's screen, its leaves hidden, arriving.
         private void Bring()
         {
+            _underMenu = false;
             _conceal.Hide();
             Sort();
             if (_screen.Kind == UiGameKind.App)

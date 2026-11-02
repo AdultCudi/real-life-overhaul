@@ -304,6 +304,10 @@ internal static partial class Program
             "dialog: each of the three has its switch, and off gives the game's own panel back at once");
         Check(travel.Contains("!Owner.Locked && PlayerAction.Cancel.Pressed()") && desk.Contains("List.Locked = value") && scenes.Contains("if (List.Locked || !List.IsOpen)"),
             "scenes: a scene the player may not leave keeps the cancel key for the game's own menu, as the window always has, and the kit never closes it");
+        string host = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "Host", "UiGameHost.cs"));
+        Check(host.Contains("MiniMenu.IsOpen || global::Scenes.MainMenu.Options.IsVisible || global::BlueprintsUI.BlueprintsPanel.IsOpen") && host.Contains("_underMenu = true;")
+              && host.Contains("else if (!menu && _underMenu)"),
+            "dialog: the conversation and a scene go away under the game's pause menu (the game hides its HUD and its dialogue there) and are back as it closes");
         Check(screen.Contains("DialogRules.CasinoForm(form.name)") && call.Contains("DialogRules.CasinoForm(form.name)") && screen.Contains("Foreign()") && form.Contains("class DialogForm"),
             "dialog: the casino's forms and another mod's piece in the panel are answered in the game's own view");
         int owners = 0;
