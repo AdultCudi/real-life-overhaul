@@ -75,6 +75,20 @@ namespace RealLifeOverhaul
             return List(reg);
         }
 
+        /// <summary>
+        /// The promotion figure today's list of customers was drawn with, for the customers page to share them by: the figure
+        /// the mod or the game's day drew it with while nobody has drawn it since, otherwise the one that stands. A dictionary look-up.
+        /// </summary>
+        public static int DrawnWith(BuildingRegistration reg)
+        {
+            int figure;
+            if (reg != null && Queue.DrawnWith(reg, Print(List(reg)), out figure) && figure != NoFigure)
+            {
+                return figure;
+            }
+            return Figure(reg);
+        }
+
         /// <summary>True while a business waits for a redraw: what is to go on the new customers waits with it.</summary>
         public static bool Waits(BuildingRegistration reg)
         {
