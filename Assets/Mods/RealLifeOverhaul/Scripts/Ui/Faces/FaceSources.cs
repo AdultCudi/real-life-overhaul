@@ -6,6 +6,7 @@ using BigAmbitions.Rivals;
 using Character.Customization;
 using Entities;
 using Helpers;
+using RealLifeOverhaul.GameUi;
 using UI.Smartphone.Apps.Rivals;
 using UnityEngine;
 
@@ -173,8 +174,14 @@ namespace RealLifeOverhaul.Ui
                 }
                 // Exactly what RivalPortraitHelper.CreatePortrait asks, but kept here: the game's own call adds to its cache
                 // with a plain Add, which throws if the game draws the same rival it was just asked for.
-                PortraitGenerator.Create(_rival.gender, _rival.GetRivalAgeInYears(), _rival.id, Background(_rival.id), null, null, back);
+                PortraitGenerator.Create(_rival.gender, _rival.GetRivalAgeInYears(), _rival.id, Background(_rival.id), null, null, Guarded(back));
                 return true;
+            }
+
+            // The game calls the answer from its read-back, outside any call of the mod's: so it runs inside the guard.
+            private static Action<Sprite> Guarded(Action<Sprite> back)
+            {
+                return sprite => UiClone.Safe(() => back(sprite));
             }
 
             // The game's choice of backdrop for a rival (SelectedRivalUI.GetRivalBackgroundIndex): a number from the id.

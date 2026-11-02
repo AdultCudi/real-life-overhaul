@@ -68,6 +68,7 @@ internal static partial class Program
         ("Ui/UiSprites.cs", "return", "Fills[r] = s", "the interface's rounded shapes, edges, rings, glow and wash, drawn once a session for each radius"),
         ("Ui/UiSprites.cs", "_donut", "_donut = Sprite.Create", "a donut's ring, drawn once a session and filled into slices by Unity's radial fill"),
         ("Ui/UiSprites.cs", "s", "UnityEngine.Object.Destroy(gone.texture)", "a person's painted face, kept by their name, the oldest destroyed past 160"),
+        ("Ui/UiFaces.cs", "made", "Let(gone)", "a person's round copy of the game's picture of them, kept by the picture for the session, the oldest destroyed past 160"),
         ("Tech/Sites/SiteProps.cs", "made", "Tech/Sites/ServerRoomView.cs|UnityEngine.Object.Destroy(_setA)", "the server room's status lights, destroyed when the room's view ends"),
         ("Traffic/TrafficEffects.cs", "clip", "Object.Destroy(_wailClip)", "the sirens' two sounds, made once a session and destroyed in Dispose"),
     };
