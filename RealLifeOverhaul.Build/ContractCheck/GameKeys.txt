@@ -432,6 +432,7 @@ common_business_type
 common_businesses
 common_businessschool
 common_cancel
+common_casino
 common_close
 common_closed
 common_confirm
@@ -462,6 +463,7 @@ common_number_of_businesses
 common_ok
 common_open
 common_open_in_econoview
+common_personal_goals
 common_price
 common_product
 common_products
@@ -523,6 +525,11 @@ contacts_taxes_tax_rate
 contacts_taxes_taxable_income
 contacts_taxes_total_tax_due
 contacts_today_opening_hours
+contacts_today_opening_hours_closed
+contacts_today_opening_hours_open
+daily_summary
+daily_summary_businesses
+daily_summary_details
 dialog_accept_button
 dialog_candidate_salary_offer_hourly_wage
 dialog_candidate_salary_offer_input_hourly_wage
@@ -587,9 +594,17 @@ econoview_yesterday_date
 educationdoorcontroller_closed
 ferris_wheel
 filebrowser_delete
+food_delivery_job_title
 government
+hospital_respawn_notification
 hud_confirm_are_you_sure
+input_key_brakes
+input_key_handbrake
 input_key_menu
+input_key_openmap
+input_key_pause
+input_key_throttle
+interior_designer
 itemhelper_notification_you_are_to_stuffed_to_eat_this
 job_board
 job_demand_priority_high
@@ -614,6 +629,7 @@ marketinsider_demand
 marketinsider_import_price_index
 marketinsider_lowest_market_price
 marketinsider_providers
+menu_continue
 menu_save
 myemployees_age
 myemployees_assignbusiness
@@ -673,6 +689,7 @@ persona_education_not_started
 persona_personal_wealth
 persona_personalgoal_current_goals
 persona_personalgoal_steam_achievements
+personalgoal_achieved
 personalgoal_age
 personalgoal_bank_balance
 personalgoal_business_weekly_income
@@ -691,6 +708,8 @@ playeractivityui_fast_forward
 playeractivityui_time_remaining
 playeractivityui_timemachine
 playerhud_currentjob_day_off
+playerhud_currentjob_quit_job
+playerhud_skip_bridge_button
 poi_custom_location
 real_estate_estimated_value
 repeating_order
@@ -720,10 +739,16 @@ socialclass_working
 tax_import
 timestamp_full
 topbar_date_format
+total_profit
 tutorial_objectives
 tutorial_quest_establish_first_business_objective_1
 tutorial_quest_get_some_sleep_objective_4
+tutorial_quest_rent_your_apartment_objective_1
+tutorial_todotask_dirtyfloors
+tutorial_todotask_paytaxes
 uncle_fred
+workout_plan
+workout_plan_objective
 workpanel_business_is_currently_closed
 workpanel_business_opening_soon
 workpanel_business_shift_not_yet_started

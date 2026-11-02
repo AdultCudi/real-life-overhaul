@@ -301,7 +301,8 @@ namespace RealLifeOverhaul.Ui
             _screen.Dirty = true;
         }
 
-        private UiFrame Frame() => new UiFrame { Width = _laidSize.x / _scale, Height = _laidSize.y / _scale, Band = UiFrame.BandHeight, Pointer = true };
+        // The mouse leads, but while the game has control hints to show the keys lead the frame, so they stand as key chips (HudHints).
+        private UiFrame Frame() => new UiFrame { Width = _laidSize.x / _scale, Height = _laidSize.y / _scale, Band = UiFrame.BandHeight, Pointer = !HudHints.Chips };
 
         private void Layout()
         {
@@ -311,13 +312,13 @@ namespace RealLifeOverhaul.Ui
                 // The modal piece draws the bar with its prompts; the HUD's own pieces stay, its bar steps aside for the time.
                 _scene.Begin(_screen.Id, frame.Width, frame.Height, true);
                 _scene.Floats = true;
-                UiHud.Draw(_scene, _screen.Model, frame, UiGame.Instance.Keys, false);
+                UiHud.Draw(_scene, _screen.Model, frame, HudHints.Wrap(UiGame.Instance.Keys), false);
                 UiHud.OnBar(_scene, _screen.Model, frame);
                 _screen.Dirty = false;
             }
             else
             {
-                _screen.Lay(_scene, frame, true, UiGame.Instance.Keys);
+                _screen.Lay(_scene, frame, true, HudHints.Wrap(UiGame.Instance.Keys));
             }
             _view.Write(_scene, false);
             UiHud.LeftColumn(_screen.Model, out _leftX, out _leftY, out _leftW, out _leftH);

@@ -20,6 +20,25 @@ namespace RealLifeOverhaul.GameUi
         private static Vector2 _home;
         private static float _drop;
         private static bool _said;
+        private static Func<float> _room;
+
+        /// <summary>
+        /// While the RLO interface's HUD draws the top right (its side panels; the mod's own panels are unseen under them), the
+        /// lowest edge of what it draws there in screen pixels from the screen's foot, or NaN for nothing: it stands in for every
+        /// mark. Null gives the marks back.
+        /// </summary>
+        public static Func<float> Room
+        {
+            get => _room;
+            set
+            {
+                _room = value;
+                Changed(null, false);
+            }
+        }
+
+        /// <summary>What <see cref="Room"/> answers moved: the stack is placed again.</summary>
+        public static void Moved() => Changed(null, false);
 
         /// <summary>A panel came on, went off or moved: the stack is placed again.</summary>
         public static void Changed(NoticeRoomMark mark, bool on)
@@ -55,8 +74,15 @@ namespace RealLifeOverhaul.GameUi
                     Marks.RemoveAt(i);
                     continue;
                 }
-                ((RectTransform)mark.transform).GetWorldCorners(Corners);   // an overlay canvas: world is screen pixels
-                lowest = NoticeRoomRules.Lowest(lowest, Corners[0].y);
+                if (_room == null)
+                {
+                    ((RectTransform)mark.transform).GetWorldCorners(Corners);   // an overlay canvas: world is screen pixels
+                    lowest = NoticeRoomRules.Lowest(lowest, Corners[0].y);
+                }
+            }
+            if (_room != null)
+            {
+                lowest = _room();
             }
             stack.GetWorldCorners(Corners);
             float scale = stack.lossyScale.y;

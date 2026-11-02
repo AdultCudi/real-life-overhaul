@@ -75,6 +75,14 @@ namespace RealLifeOverhaul.Ui
         /// <summary>True while the kit phone shows.</summary>
         public static bool Showing => _root != null && _root.activeInHierarchy;
 
+        /// <summary>
+        /// Screen pixels from the screen's foot that the device keeps clear of while the HUD's bar stands there (HudLive sets
+        /// it as the bar shows and hides), so the two never overlap; 0 for the device's own place. Appended with the HUD's screens.
+        /// </summary>
+        public static float Lift;
+
+        private static readonly Vector3[] LiftCorners = new Vector3[4];
+
         /// <summary>The kit phone's screen while it stands, for the tests and the checks.</summary>
         internal static PhoneScreen Screen => _screen;
 
@@ -351,6 +359,15 @@ namespace RealLifeOverhaul.Ui
             if (rect.sizeDelta != want)
             {
                 rect.sizeDelta = want;
+            }
+            // Over the HUD's bar while it shows: the foot raised by as much as its own place falls short of the bar's top.
+            float scale = rect.lossyScale.y > 0f ? rect.lossyScale.y : 1f;
+            rect.GetWorldCorners(LiftCorners);   // an overlay canvas: world is screen pixels
+            float foot = LiftCorners[0].y - rect.anchoredPosition.y * scale;
+            var at = new Vector2(0f, Lift > 0f ? Math.Max(0f, Lift - foot) / scale : 0f);
+            if (rect.anchoredPosition != at)
+            {
+                rect.anchoredPosition = at;
             }
         }
 

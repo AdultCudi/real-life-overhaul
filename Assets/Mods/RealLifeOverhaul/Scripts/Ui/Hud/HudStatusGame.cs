@@ -52,9 +52,14 @@ namespace RealLifeOverhaul.Ui
                 Speed(m, uis);
                 m.DayWidest = Widest();
                 Needs(m);
-                Season(m);
+                Season(m, uis);
                 Sky(m);
+                Temperature(m);
                 Place(m, uis);
+                if (ForHud)
+                {
+                    HudTopGame.Fill(m);   // the top bar's small buttons, on the HUD's own bar alone (appended with the HUD's screens)
+                }
                 MoneyDay(m, uis);
                 m.Alerts = SaveGameManager.Current != null && SaveGameManager.Current.notifications != null ? SaveGameManager.Current.notifications.Count : 0;   // the notices the game's list keeps
             }
@@ -129,10 +134,15 @@ namespace RealLifeOverhaul.Ui
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void Season(UiStatusModel m)
+        private static void Season(UiStatusModel m, UIs uis)
         {
-            if (!Settings.Seasons || SaveGameManager.Current == null)
+            if (SaveGameManager.Current == null)
             {
+                return;
+            }
+            if (!Settings.Seasons)
+            {
+                m.Season = OtherSeason(uis);
                 return;
             }
             int season = SeasonRules.SeasonOf(SeasonGame.Today, GameCalendar.DaysPerYear);
@@ -141,8 +151,8 @@ namespace RealLifeOverhaul.Ui
 
         // The weather in a glyph and a word or two: the mod's snow, its reading of the game's rain (mist before and after a
         // shower, a storm in the heaviest; the game's rain alone while the weather's effects are off), then the day's spell
-        // of heat or cold, else the sun by day and a clear night. The game keeps no temperature, so the season and these
-        // words say it (m.Temperature stays null).
+        // of heat or cold, else the sun by day and a clear night. The game keeps no temperature: the HUD's own figure
+        // stands over these words (Temperature).
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void Sky(UiStatusModel m)
         {
@@ -184,6 +194,44 @@ namespace RealLifeOverhaul.Ui
                     : day ? "reallife_ui_hud_weather_sunny" : "reallife_ui_hud_weather_clear";
             }
             m.WeatherWords = UiText.T(key);
+        }
+
+        // Another mod's season (AlcwareSeasons writes its own under the game's date) while the mod's seasons are off: its
+        // words as it wrote them, mirrored, never worked out.
+        private static string OtherSeason(UIs uis)
+        {
+            Transform date = uis != null && uis.topBar != null && uis.topBar.dateLabel != null ? uis.topBar.dateLabel.transform : null;
+            Transform other = date != null ? date.Find(OtherSeasonName) : null;
+            TMP_Text words = other != null && other.gameObject.activeSelf ? other.GetComponentInChildren<TMP_Text>(false) : null;
+            return words != null ? UiWidgets.Text(words) : null;
+        }
+
+        private const string OtherSeasonName = "Alcware season indicator";
+
+        // The air's temperature over the season and the weather's words (Seasons/TemperatureRules: a figure for the eye from
+        // the calendar, the day's roll, the hour and the weather; neither the game nor the mod keeps one), in the game's units.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Temperature(UiStatusModel m)
+        {
+            GameInstance save = SaveGameManager.Current;
+            if (save == null)
+            {
+                return;
+            }
+            SeasonDirector seasons = SeasonDirector.Instance;
+            bool snowing = Settings.Seasons && seasons != null && seasons.Snowing;
+            int sky = (int)Weather.Sky;
+            if (sky == TemperatureRules.SkyDry && RainHelper.isRaining)
+            {
+                sky = TemperatureRules.SkyRain;   // the game's own rain while the mod's weather is off
+            }
+            int salt = SeasonBridges.Salt != null ? SeasonBridges.Salt() : 0;
+            int celsius = TemperatureRules.Celsius(SeasonGame.Today, GameCalendar.DaysPerYear, save.Hour + save.Minute / 60f, salt, sky, (int)Weather.Spell, snowing);
+            m.Temperature = TemperatureRules.Text(celsius, UnitHelper.useImperial);
+            if (!string.IsNullOrEmpty(m.Season) && !string.IsNullOrEmpty(m.WeatherWords))
+            {
+                m.Season = UiText.T("reallife_ui_hud_season_weather").Replace("{season}", m.Season).Replace("{weather}", m.WeatherWords);
+            }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

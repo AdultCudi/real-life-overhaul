@@ -23,6 +23,7 @@ internal static partial class Program
         HudSourceChecks();
         HudCostChecks();
         KitMarkChecks();
+        HudScreensChecks();   // the HUD's live pieces (UiChecks.HudScreens.cs)
         Console.WriteLine("  HUD kit: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 

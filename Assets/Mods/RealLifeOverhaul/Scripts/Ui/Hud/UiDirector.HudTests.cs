@@ -28,6 +28,11 @@ namespace RealLifeOverhaul.Ui
                 {
                     return;
                 }
+                if (HudLive.Live)
+                {
+                    Notifications.Show(NotificationType.Info, "reallife_ui_test_hud_live", null, 8f);   // the HUD stands over the city on its own (Ui/HudScreens)
+                    return;
+                }
                 if (_testBar)
                 {
                     _testBar = false;

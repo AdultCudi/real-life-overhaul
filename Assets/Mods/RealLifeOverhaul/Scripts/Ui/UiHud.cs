@@ -20,6 +20,13 @@ namespace RealLifeOverhaul.Ui
         public bool MoneyChange = true;                    // the bar's money change shows above it while it has one
         public UiPrompt[] Prompts = new UiPrompt[0];       // the game's control hints, as key chips over the bar's right end while the keys lead
         public int PromptCount;
+
+        // Appended with the HUD's screens (3 Nov 2026).
+        public UiHudNoticeModel[] Notices = new UiHudNoticeModel[0];   // notice cards at the top centre (UiHudNotice)
+        public int NoticeCount;
+        public UiHudPopupModel[] Popups = new UiHudPopupModel[0];      // the bar's small buttons' panels over it (UiHudPopup)
+        public int PopupCount;
+        public UiActivityModel ActivityClear;   // an activity strip another view draws (the activity panel's own): kept clear of, never drawn here
     }
 
     /// <summary>
@@ -95,10 +102,11 @@ namespace RealLifeOverhaul.Ui
             h = UiDraw.KeyChipHeight;
             x = frame.Width - Left - w;
             y = frame.BandY - UiTokens.S3 - h;
-            if (m != null && m.Activity != null && UiActivity.Strip(m.Activity.State))
+            UiActivityModel strip = m == null ? null : m.Activity ?? m.ActivityClear;
+            if (strip != null && UiActivity.Strip(strip.State))
             {
-                UiActivity.StripPlace(frame, m.Activity, out float ax, out float ay);
-                if (UiHudRules.Overlaps(x, y, w, h, ax, ay, UiActivity.StripWidth, UiActivity.Height(m.Activity)))
+                UiActivity.StripPlace(frame, strip, out float ax, out float ay);
+                if (UiHudRules.Overlaps(x, y, w, h, ax, ay, UiActivity.StripWidth, UiActivity.Height(strip)))
                 {
                     y = ay - UiTokens.S2 - h;
                 }
@@ -147,6 +155,14 @@ namespace RealLifeOverhaul.Ui
             {
                 UiActivity.StripPlace(frame, m.Activity, out float ax, out float ay);
                 UiActivity.DrawStrip(s, UiAt.Screen, m.Activity, ax, ay);
+            }
+            if (m.NoticeCount > 0)
+            {
+                UiHudNotice.LayStack(s, UiAt.Screen, m.Notices, m.NoticeCount, frame.Width, UiTokens.S4);
+            }
+            if (m.PopupCount > 0)
+            {
+                UiHudPopup.LayAll(s, UiAt.Screen, m.Popups, m.PopupCount, frame.Width, frame.BandY);
             }
             bool chips = Chips(s, m, frame, keys, out float cx, out float cy, out float cw, out float ch);
             if (m.MoneyChange && bar != null && !string.IsNullOrEmpty(bar.MoneyChange) && !string.IsNullOrEmpty(bar.Money))

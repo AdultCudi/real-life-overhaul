@@ -44,11 +44,19 @@ namespace RealLifeOverhaul
         private static bool _beside;
         private static bool _failed;
 
+        /// <summary>True while the RLO interface's HUD shows these needs in its status bar: the tab stays down meanwhile.</summary>
+        public static bool Held;
+
         /// <param name="note">A line beside the bars (an illness and how long it has to run), or null. Pass the same string object while nothing changes.</param>
         public static void Show(float hygiene, float stress, float home, bool hasHome, string note)
         {
             if (_failed)
             {
+                return;
+            }
+            if (Held)
+            {
+                Hide();
                 return;
             }
             try
