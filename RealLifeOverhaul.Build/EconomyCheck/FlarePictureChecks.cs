@@ -293,11 +293,11 @@ internal static partial class Program
               && FlareMethod(camera, "private static bool RenderOne(").Contains("_exposureHost.SetActive(false);"),
             "Flare city photos: the camera's history (the settled exposure) is held across only the frame between its renders and given back after the last or a stopped photo; the exposure's volume is out of the game's volumes between them");
         Check(FlareCityPhotoRules.FrameMs * 2 == FlareCityPhotoRules.SlowMs && FlareMethod(photos, "private IEnumerator PhotoTake").Contains("result.WorstFrameMs < FlareCityPhotoRules.FrameMs")
-              && FlareMethod(photos, "private IEnumerator PhotoTake").Contains("FlareCityPhotoRules.NextPace(_photoPace, result.RenderMs)"),
+              && FlareMethod(photos, "private IEnumerator PhotoTake").Contains("FlareCityPhotoRules.NextPace(_photoPace, result.RenderMs, "),
             "Flare city photos: the self-check holds each frame's render to half the photo's budget, and the pace still follows the photo's whole cost as before");
         string second = FlareMethod(photos, "private void PhotosSecond()");
         int paced = second.IndexOf("t < _photoNext", StringComparison.Ordinal), started = second.IndexOf("PhotoTake(", StringComparison.Ordinal);
-        Check(paced >= 0 && started > paced && second.Contains("_photoToday >= FlareCityPhotoRules.DayMost") && second.Contains("_photoBusy") && FlareMethod(photos, "private IEnumerator PhotoTake").Contains("FlareCityPhotoRules.NextPace(")
+        Check(paced >= 0 && started > paced && second.Contains("_photoToday >= FlareCityPhotoRules.DayLimit(") && second.Contains("_photoBusy") && FlareMethod(photos, "private IEnumerator PhotoTake").Contains("FlareCityPhotoRules.NextPace(")
               && FlareMethod(photos, "private IEnumerator PhotoTake").Contains("FlareCityCamera.Take("),
             "Flare city photos: a photo is taken only after its pace and under the day's most, one at a time, and the pace follows its measured cost");
         int takes = 0;

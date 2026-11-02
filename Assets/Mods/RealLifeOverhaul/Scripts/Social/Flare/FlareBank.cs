@@ -85,11 +85,12 @@ namespace RealLifeOverhaul.Flare
         public string District;                        // null for a post that names none; an event is the city's wherever it was
         public FlarePhotoLight Light;
         public bool Wet;
+        public bool WetStrict;                         // the post speaks of the weather: only a photo of that weather will do
         public int Day;                                // the post's day: an event's photo is of that day, any other at most FreshDays apart
 
-        public int Ways => Kind0 == FlarePhotoKind.None ? 0 : Kind1 == FlarePhotoKind.None ? 1 : Kind2 == FlarePhotoKind.None ? 2 : 3;
+        public readonly int Ways => Kind0 == FlarePhotoKind.None ? 0 : Kind1 == FlarePhotoKind.None ? 1 : Kind2 == FlarePhotoKind.None ? 2 : 3;
 
-        public void Way(int k, out FlarePhotoKind kind, out string place, out int niche)
+        public readonly void Way(int k, out FlarePhotoKind kind, out string place, out int niche)
         {
             kind = k == 0 ? Kind0 : k == 1 ? Kind1 : Kind2;
             place = k == 0 ? Place0 : k == 1 ? Place1 : Place2;

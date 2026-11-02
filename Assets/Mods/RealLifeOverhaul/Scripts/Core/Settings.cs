@@ -699,7 +699,7 @@
         public static int FlareFilter = 0;               // what other players type: 0 standard (Steam's filter, else the mod's list), 1 strict (both, and addresses starred)
         public static int FlareTheme = 0;                // Flare's look: 0 follows the phone (dark from 19:00 to 07:00), 1 light, 2 dark
         public static bool FlarePictures = true;         // every account shows its picture (off: the initials)
-        public static int FlareCityPhotos = 2;           // the city's posts with a photo: 0 none, 1 a few, 2 some (about three in ten), 3 many
+        public static int FlareCityPhotos = 2;           // the city's posts with a photo: 0 none, 1 a few, 2 some (about half of the posts that could show one), 3 many
         public static bool Standing = true;              // Standing: the city knows the player's wealth, name and reputation, and reacts
         public static bool StandingStreet = true;        // ...people in the street and customers in the player's shops know them
         public static bool StandingPress = true;         // ...reporters, the night show, magazines and the papers' pieces about the player
