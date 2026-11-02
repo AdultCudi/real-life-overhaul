@@ -302,6 +302,16 @@ namespace RealLifeOverhaul
             return percent != 0 || ambient != 0 || interior != 0 ? PromotionFor(own, percent, ambient, interior, baseMultiplier) : own;
         }
 
+        /// <summary>
+        /// True if the game has put its own figure back over one the mod wrote (it recomputes it when items change, shelves are
+        /// stocked or marketing is set): the figure that stands is not the one written, or is not the one it was, and the
+        /// mod had a part in it. Game-free so it is checked offline; the same test the keeping of the figures uses.
+        /// </summary>
+        public static bool Wiped(bool sameFigure, int standing, int wrote, int percent, int ambient, int interior)
+        {
+            return (!sameFigure || standing != wrote) && (percent != 0 || ambient != 0 || interior != 0);
+        }
+
         /// <summary>The same with the city's economy on top, each part kept to its own bounds.</summary>
         public static int PromotionFor(int own, int percent, int ambient, float baseMultiplier)
         {

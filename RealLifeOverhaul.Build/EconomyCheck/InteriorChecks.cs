@@ -33,6 +33,7 @@ internal static partial class Program
         InteriorSelling();
         InteriorOfficeClients();
         InteriorCustomerSplit();
+        InteriorReachesDraw();
         InteriorWork();
         InteriorSave();
         InteriorElsewhere();
@@ -450,6 +451,75 @@ internal static partial class Program
             }
         }
         Check(always, "interiors: the shares always add up to today's customers");
+
+        // The player's page (a street of 44, no marketing, an interior of +10%, 87 customers): the lines must add up to the total
+        // and the rest of the mod must be its own sum, never what is left over to balance the interior.
+        CustomerSplit put = InteriorRules.Split(87, 0, 0, b, 44, 44, 44, 10, 0);
+        Check(put.Interiors == 0 && put.Others == 0 && put.Game == 87 && SplitAdds(put),
+            "interiors: a figure the game put back (it carries none of the mod's parts) shows no interior part and no rest, not +10 against -10 (" + put.Interiors + ", " + put.Others + ")");
+        int wroteTen = BusinessCatalogue.Written(44, 0, 0, 10, b / 1000f);
+        CustomerSplit carried = InteriorRules.Split(96, 0, 0, b, 44, 44, wroteTen, 10, 0);
+        Check(carried.Interiors > 0 && carried.Others == 0 && carried.Game == 87 && SplitAdds(carried),
+            "interiors: a figure that carries the interior's 10% shows it and no rest of the mod (" + carried.Interiors + ", " + carried.Others + ")");
+        int wroteMix = BusinessCatalogue.Written(44, 0, -4, 10, b / 1000f);
+        CustomerSplit mixed = InteriorRules.Split(100, 0, 0, b, 44, 44, wroteMix, 10, -4);
+        Check(mixed.Interiors > 0 && mixed.Others < 0 && mixed.Interiors + mixed.Others > 0 && SplitAdds(mixed) && Math.Abs(mixed.Others * 10 + mixed.Interiors * 4) <= 7,
+            "interiors: the rest of the mod is its own size beside the interior's, not what is left (" + mixed.Interiors + ", " + mixed.Others + ")");
+        bool apart = true;
+        for (int own = 10; own <= 90; own += 20)
+        {
+            for (int interior = -12; interior <= 24; interior += 6)
+            {
+                for (int other = -25; other <= 15; other += 10)
+                {
+                    int w = BusinessCatalogue.Written(own, 0, other, interior, b / 1000f);
+                    CustomerSplit lost = InteriorRules.Split(120, 0, 0, b, own / 2, own, own, interior, other);   // the figure the game put back
+                    CustomerSplit stands = InteriorRules.Split(120, 0, 0, b, own / 2, own, w, interior, other);
+                    apart &= (interior + other == 0 || (lost.Interiors == 0 && lost.Others == 0)) && SplitAdds(lost) && SplitAdds(stands) && stands.Total == 120;
+                }
+            }
+        }
+        Check(apart, "interiors: a figure with none of the mod's parts in it never shows a part, whatever the parts are");
+    }
+
+    // The interior's bonus reaches the game's draw: the game draws customers by its base plus three quarters of the promotion figure
+    // (CustomerEntriesCalculator.GetPromotionMultiplier), the mod writes the figure that gives the interior's per cent more, and the
+    // game putting its own back over it is seen and put right (BusinessCatalogue.Wiped, the keeping of the figures).
+    private static void InteriorReachesDraw()
+    {
+        const float baseMultiplier = 0.25f;
+        bool reaches = true, near = true;
+        for (int own = 5; own <= 85; own += 10)
+        {
+            for (int percent = 4; percent <= 24; percent += 4)
+            {
+                int written = BusinessCatalogue.Written(own, 0, 0, percent, baseMultiplier);
+                float then = baseMultiplier + 0.75f * own / 100f, now = baseMultiplier + 0.75f * written / 100f;
+                reaches &= written > own && Math.Ceiling(40 * now) > Math.Ceiling(40 * then);
+                near &= written >= 100 || Math.Abs(now / then - 1f - percent / 100f) < 0.01f + 0.375f / 100f / then;   // within a step of the figure; at its top of 100 it cannot carry more
+            }
+        }
+        Check(reaches, "interiors: the figure written for an interior's gain draws more customers than the game's own figure, at every figure");
+        Check(near, "interiors: the figure written draws the interior's per cent more customers, to a step of the figure");
+        Check(BusinessCatalogue.Wiped(false, 44, 55, 0, 0, 10) && BusinessCatalogue.Wiped(true, 44, 55, 0, 0, 10) && !BusinessCatalogue.Wiped(true, 55, 55, 0, 0, 10)
+              && !BusinessCatalogue.Wiped(false, 44, 44, 0, 0, 0) && BusinessCatalogue.Wiped(true, 44, 55, 3, 0, 0) && BusinessCatalogue.Wiped(false, 44, 55, 0, -2, 0),
+            "interiors: a figure the game has put back over the mod's is seen, and one the mod had no part in is left to the game");
+        Dictionary<string, string>[] words = LanguageWords(out string[] codes);
+        if (!LanguagesRead("interiors figure", words, codes))
+        {
+            return;
+        }
+        var starts = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            { "en", "Fixed: the customers a shop's interior brings" }, { "pt", "Corrigido: os clientes que o interior de uma loja traz" }, { "zh-cn", "已修复：商店室内带来的顾客" },
+            { "de", "Behoben: Die Kunden, die die Innenausstattung" }, { "fr", "Corrigé : les clients qu'apporte l'intérieur" }, { "es", "Corregido: los clientes que trae el interior" },
+            { "ru", "Исправлено: клиенты, которых привлекает интерьер" }, { "nl", "Opgelost: de klanten die het interieur" }, { "tr", "Düzeltildi: bir dükkânın iç mekânının getirdiği" }
+        };
+        for (int l = 0; l < words.Length; l++)
+        {
+            string start = starts.TryGetValue(codes[l], out string s) ? s : "?";
+            Check(WhatsNewHas(words[l], start), "interiors figure: What's new has the interior's customers kept in some row in " + codes[l]);
+        }
     }
 
     // A bare shop in the richest district: the game's interior score 5, nothing placed (standard 70).

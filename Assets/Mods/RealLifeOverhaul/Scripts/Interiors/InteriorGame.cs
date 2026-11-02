@@ -440,7 +440,7 @@ namespace RealLifeOverhaul.Interiors
                     }
                     c.Traffic = InteriorRules.Clamp(promotion.trafficIndex, 0, 100);
                     c.Own = InteriorRules.Clamp(Mathf.RoundToInt(promotion.trafficIndex + promotion.marketing * strength), 0, 100);
-                    c.Written = InteriorRules.Clamp(promotion.total, 0, 100);
+                    c.Written = InteriorRules.Clamp(CustomerDraw.DrawnWith(reg), 0, 100);   // what the list was drawn with, not what the game has since put back
                     c.Marketing = c.Own - c.Traffic;
                 }
                 string place = BusinessGame.Place(reg);
