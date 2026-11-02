@@ -90,6 +90,8 @@ namespace RealLifeOverhaul.Ui
         private static int Level(UiScene s, int from, int page, int dx, bool across)
         {
             s.NodeBox(from, out float fx, out float fy, out float fw, out float fh);
+            Bounds(s, from, page, out float middle, out float top);
+            bool fromRight = fx + fw / 2f > middle, fromHead = fy < top + HeadBand;
             int best = -1, near = -1;
             float bestScore = float.MaxValue, nearScore = float.MaxValue;
             for (int i = page; i < s.NodeCount; i++)
@@ -103,10 +105,12 @@ namespace RealLifeOverhaul.Ui
                 float along = dx > 0 ? cx - (fx + fw) : fx - (cx + cw);
                 if (along >= UiTokens.S8 && Math.Min(fy + fh, cy + ch) - Math.Max(fy, cy) <= 0f)
                 {
-                    // Nothing level that way yet: the nearest across the gap (the other column's block that starts higher or
-                    // lower), so a column is never a dead end sideways.
+                    // Nothing level that way yet: the nearest in the other column (its block starts higher or lower), so a
+                    // column is never a dead end sideways; never one in its own column, and never up into the head.
+                    bool crosses = (cx + cw / 2f > middle) != fromRight;
+                    bool intoHead = !fromHead && cy < top + HeadBand;
                     float off = along + 2f * Math.Abs(cy + ch / 2f - (fy + fh / 2f));
-                    if (off < nearScore)
+                    if (crosses && !intoHead && off < nearScore)
                     {
                         nearScore = off;
                         near = i;
@@ -145,10 +149,11 @@ namespace RealLifeOverhaul.Ui
 
         private const float HeadBand = UiTokens.S16 * 1.5f;   // px: the page's top band, a firm's head or a title row with its tools
 
-        private static int Column(UiScene s, int from, int page, int dy)
+        // The page's middle (where its columns part) and its top.
+        private static void Bounds(UiScene s, int from, int page, out float middle, out float top)
         {
-            s.NodeBox(from, out float fx, out float fy, out float fw, out float fh);
-            float left = float.MaxValue, right = float.MinValue, top = float.MaxValue;   // the page's spread, when its edges are not given
+            float left = float.MaxValue, right = float.MinValue;   // the page's spread, when its edges are not given
+            top = float.MaxValue;
             for (int i = page; i < s.NodeCount; i++)
             {
                 if (s.Nodes[i].Layer == s.Nodes[from].Layer)
@@ -159,11 +164,25 @@ namespace RealLifeOverhaul.Ui
                     top = Math.Min(top, by);
                 }
             }
-            float middle = float.IsNaN(_left) || float.IsNaN(_right) ? (left + right) / 2f : (_left + _right) / 2f;
+            middle = float.IsNaN(_left) || float.IsNaN(_right) ? (left + right) / 2f : (_left + _right) / 2f;
+        }
+
+        private static int Column(UiScene s, int from, int page, int dy)
+        {
+            s.NodeBox(from, out float fx, out float fy, out float fw, out float fh);
+            Bounds(s, from, page, out float middle, out float top);
             bool rightSide = fx + fw / 2f > middle;
             bool head = fy < top + HeadBand;   // the page's head spans both columns: a step down from it may cross the middle
             int best = -1, near = -1;
             float bestScore = float.MaxValue, nearScore = float.MaxValue;
+            float nextRow = float.MaxValue;   // the nearest row that way among the targets sharing the width: the step takes it first
+            for (int i = page; i < s.NodeCount; i++)
+            {
+                if (Sharing(s, i, from, page, dy, fx, fy, fw, fh, out float along, out _))
+                {
+                    nextRow = Math.Min(nextRow, along);
+                }
+            }
             for (int i = page; i < s.NodeCount; i++)
             {
                 ref UiNode c = ref s.Nodes[i];
@@ -180,10 +199,9 @@ namespace RealLifeOverhaul.Ui
                 float across = Math.Abs(cx + cw / 2f - (fx + fw / 2f));
                 if (Math.Min(fx + fw, cx + cw) - Math.Max(fx, cx) > 0f)
                 {
-                    float score = along * 2f + across * 0.5f;   // the next row first: a row nearer down wins over one more under the target
-                    if (score < bestScore)
+                    if (along <= nextRow + UiTokens.S4 && across < bestScore)   // in the next row, the one most under the target
                     {
-                        bestScore = score;
+                        bestScore = across;
                         best = i;
                     }
                 }
@@ -194,6 +212,21 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             return best >= 0 ? best : near;
+        }
+
+        // A target sharing some of the target's width that way, and how far along it stands.
+        private static bool Sharing(UiScene s, int i, int from, int page, int dy, float fx, float fy, float fw, float fh, out float along, out float across)
+        {
+            along = across = 0f;
+            ref UiNode c = ref s.Nodes[i];
+            if (i == from || c.Disabled || c.Layer != s.Nodes[from].Layer || !Shown(s, i) || (c.List >= 0 && c.List == s.Nodes[from].List))
+            {
+                return false;
+            }
+            s.NodeBox(i, out float cx, out float cy, out float cw, out float ch);
+            along = dy > 0 ? cy - (fy + fh) : fy - (cy + ch);
+            across = Math.Abs(cx + cw / 2f - (fx + fw / 2f));
+            return along >= -UiTokens.S2 && Math.Min(fx + fw, cx + cw) - Math.Max(fx, cx) > 0f;
         }
 
         // A target is in view: outside a scroll region, or inside the part of one shown.
