@@ -125,20 +125,19 @@ internal static partial class Program
             "persona: the goals' tiers stand as three pips under the game's own sort of the current tier");
     }
 
-    // The league's rules: stars by place, a week's change and its grade, and the chosen rival's head.
+    // The league's rules: stars by place, a week's change and its colour from the player's side, and the chosen rival's head.
     private static void RivalsChecks()
     {
         Check(RivalsViews.Stars(0, 9, false) == 10 && RivalsViews.Stars(8, 9, false) == 1 && RivalsViews.Stars(3, 9, true) == 0 && RivalsViews.Stars(0, 1, false) == 10,
             "rivals: the league's top rates five stars, its foot a half, a defeated rival none");
         Check(float.IsNaN(RivalsViews.Change(100f, float.NaN)) && float.IsNaN(RivalsViews.Change(100f, 0f)) && System.Math.Abs(RivalsViews.Change(150f, 100f) - 0.5f) < 1e-4f
               && System.Math.Abs(RivalsViews.Change(-50f, -100f) - 0.5f) < 1e-4f, "rivals: a week's change is a share of where it stood, none without a week's history or from nothing");
-        Check(RivalsViews.ChangeGrade(float.NaN) == -1 && RivalsViews.ChangeGrade(0f) == 50 && RivalsViews.ChangeGrade(0.5f) == 100 && RivalsViews.ChangeGrade(-2f) == 0,
-            "rivals: a change grades flat in the middle, half again the best and half lost the poorest");
         UiWords en = UiWords("en");
         UiRivalsModel league = UiSamples.Rivals(en, "league");
         Check(league.Table.Selected == 1 && league.ProfileActions.Length == 1 && league.ProfileActions[0].Key == UiAction.Option && league.Profile.Ring == UiRole.None,
             "rivals: the chosen rival is the league's chosen row, Open in Contacts on P, and no mood ring on a rival's face");
-        Check(league.Table.Rows[0].Tones[2] == UiRole.Danger && league.Table.Rows[2].Tones[2] == UiRole.Ok && league.Table.Rows[0].Values[4] < 50,
+        Check(league.Table.Rows[0].Tones[4] == UiRole.Danger && league.Table.Rows[2].Tones[4] == UiRole.Ok && league.Table.Rows[0].Values[4] == 1
+              && league.Table.Columns[2].Kind == UiCellKind.Money && league.Table.Columns[4].Kind == UiCellKind.Trend,
             "rivals: good and bad are the player's: a rival's rise reads bad, the player's own good");
         UiRivalsModel businesses = UiSamples.Rivals(en, "businesses");
         Check(businesses.RowActions.Length == 2 && businesses.RowActions[1].Key == UiAction.Alt && businesses.RowLink != null && businesses.Table.Columns[0].Kind == UiCellKind.Tile,

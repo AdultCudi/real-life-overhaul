@@ -75,7 +75,6 @@ namespace RealLifeOverhaul.Ui
     {
         public const string App = "Rivals";
         public const int ColumnRank = 0, ColumnChange = 4;
-        private const float ChangeSpan = 0.5f;   // a week's change that grades as the best (or worst): half again, or half lost
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
@@ -166,21 +165,19 @@ namespace RealLifeOverhaul.Ui
         /// <summary>A week's change as a share of where it stood (NaN without a week's history, or from nothing).</summary>
         public static float Change(float now, float weekAgo) => float.IsNaN(weekAgo) || Math.Abs(weekAgo) < 1f ? float.NaN : (now - weekAgo) / Math.Abs(weekAgo);
 
-        /// <summary>A change graded 0 to 100: half lost the poorest, flat the middle, half again the best.</summary>
-        public static int ChangeGrade(float change) => float.IsNaN(change) ? -1 : (int)Math.Round(50f + 50f * Math.Max(-1f, Math.Min(1f, change / ChangeSpan)));
 
-        // The leaderboard: the rank (none for the defeated), a face with the name and district, the weekly income with its
-        // arrow, the businesses, and the week's change graded. Good and bad are the player's: their own rise is good, a
-        // rival's rise is bad for them, so a rival's arrow and grade read the other way.
+        // The leaderboard: the rank (none for the defeated), a face with the name and district, the weekly income and the
+        // businesses in plain figures, and the week's change with its arrow, the one coloured column. Good and bad are the
+        // player's: their own rise is good, a rival's rise is bad for them, so a rival's arrow reads the other way.
         private static void LeagueTable(UiDataTableModel table, UiWords t, RivalsView v, int chosen)
         {
             table.Columns = new[]
             {
                 new UiDataColumn { Title = "#", Kind = UiCellKind.Figure, Width = 40f },
                 new UiDataColumn { Title = t("common_name", "Name"), Kind = UiCellKind.Person },
-                new UiDataColumn { Title = t("common_weekly_income", "Weekly Income"), Kind = UiCellKind.Trend, Width = 152f },
+                new UiDataColumn { Title = t("common_weekly_income", "Weekly Income"), Kind = UiCellKind.Money, Width = 136f },
                 new UiDataColumn { Title = t("common_businesses", "Businesses"), Kind = UiCellKind.Figure, Width = 104f },
-                new UiDataColumn { Title = t("reallife_ui_rivals_week", "Week"), Kind = UiCellKind.Figure, Width = 80f, Graded = true },
+                new UiDataColumn { Title = t("reallife_ui_rivals_week", "Week"), Kind = UiCellKind.Trend, Width = 96f },
             };
             table.Rows = new UiDataRow[v.League.Length];
             int rank = 0;
@@ -189,7 +186,6 @@ namespace RealLifeOverhaul.Ui
                 ref RivalEntry e = ref v.League[i];
                 rank++;
                 float change = Change(e.WeeklyIncome, e.WeekAgo);
-                int grade = ChangeGrade(change);
                 table.Rows[i] = new UiDataRow
                 {
                     Cells = new[]
@@ -197,8 +193,8 @@ namespace RealLifeOverhaul.Ui
                         e.Defeated ? string.Empty : Whole(rank), e.Name, Money(v, e.WeeklyIncome), Whole(e.Businesses),
                         float.IsNaN(change) ? string.Empty : PersonaViews.Signed((int)Math.Round(change * 100f))
                     },
-                    Values = new[] { -1, -1, float.IsNaN(change) || Math.Abs(change) < 0.005f ? 0 : Math.Sign(change), -1, grade < 0 || e.You ? grade : 100 - grade },
-                    Tones = new[] { UiRole.None, UiRole.None, e.You ? UiRole.Ok : UiRole.Danger, UiRole.None, UiRole.None },
+                    Values = new[] { -1, -1, -1, -1, float.IsNaN(change) || Math.Abs(change) < 0.005f ? 0 : Math.Sign(change) },
+                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, e.You ? UiRole.Ok : UiRole.Danger },
                     Sub = e.Defeated ? t("reallife_ui_rivals_defeated", "Defeated") : e.You ? t("reallife_ui_rivals_you", "You") : e.District,
                     Hue = UiColour.HueOf(e.Name ?? string.Empty), Ring = UiRole.None
                 };
