@@ -646,6 +646,7 @@ internal static partial class Program
         CompanyFixes(); // running a business: a campaign's report, the day's books, cover, licences, a strike's overtime, a rival's offer, the strike's day (CompanyFixChecks.cs)
         RotaFixes();    // the staff rota planner: a choice kept, a job never stuck, raises in the stamp, a confirmed plan as confirmed, the goods, the ladder, the page (RotaFixChecks.cs)
         EconomyFixes2(); // the own bank, the city, the web shops, investors and the Finance app: days run while off, money paid short or twice, sums at the start's prices, state lost (EconomyFix2Checks.cs)
+        ShortCash();    // the overdraft pays whatever leaves the cash under nothing, the import payment is in the books, the bank's profit a day (OverdraftChecks.cs)
         BankingFixes(); // the player's banking: the student loan kept, an approval's interest once and on what is financed, a card paid early, a quest loan, loans priced again, the lender's fee (BankingFixChecks.cs)
         SocialFixes();  // the social life: a loan's few more days, a report placed indoors, a missed call's favour, one trainer a cast, an outing put forward kept (SocialFixChecks.cs)
         PeopleAge();    // the People page: each person's age, a year more at each birthday, in every language; the Guide names People as a contact (PeopleAgeChecks.cs)

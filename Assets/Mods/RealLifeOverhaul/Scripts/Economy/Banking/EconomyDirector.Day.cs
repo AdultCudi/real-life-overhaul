@@ -40,6 +40,7 @@ namespace RealLifeOverhaul.Economy
                         DeskDo("the overdraft", () => _desk.BeforeRun(day));   // the overdraft covers a day that is short
                     }
                 }
+                DeskDo("the overdraft", _deskHour);   // cash left under nothing by anything is covered by the end of the hour it happened in
                 DeskDo("the hour", () => _desk.Hour(day));
                 CreditLedger.Touch();
                 KeepTerms("the hour");
@@ -82,6 +83,7 @@ namespace RealLifeOverhaul.Economy
             {
                 using var settleSpot = HotSpots.Time(HotSettle);
                 Settle(Save.Day);
+                DeskDo("the overdraft", _deskHour);   // what the night's run left under nothing, and the one notice of what was drawn
             }
             catch (Exception e)
             {
@@ -199,12 +201,23 @@ namespace RealLifeOverhaul.Economy
                          + " loan(s) given back the rate each was made at, at the new multiplier, and its payment.");
         }
 
-        // A loan paid off in EconoView is read at once, so a debt arrangement it clears ends the moment it is paid.
+        // A loan paid off in EconoView is read at once, so a debt arrangement it clears ends the moment it is paid. A money change that leaves the cash
+        // under nothing (the game forces its rent, wages and fees past what is there) is covered by the overdraft at once. Cost: two string comparisons
+        // per game event, and one float comparison per money change.
         private void OnGameEvent(string gameEvent)
         {
             using var hotSpot = HotSpots.Time(HotOnGameEvent);
-            if (gameEvent != GameLoans.LoanPaidEvent || !_running || _broken || Save == null)
+            bool money = gameEvent == GameLoans.MoneyChangeEvent;
+            if ((!money && gameEvent != GameLoans.LoanPaidEvent) || !_running || _broken || Save == null)
             {
+                return;
+            }
+            if (money)
+            {
+                if (Save.Money < 0f)
+                {
+                    DeskDo("the overdraft", _deskShort);
+                }
                 return;
             }
             try
