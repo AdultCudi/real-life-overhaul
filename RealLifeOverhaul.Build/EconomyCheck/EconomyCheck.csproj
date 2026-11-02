@@ -715,6 +715,13 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPartRules.cs" Link="Mod\UiPartRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPartsGallery.cs" Link="Mod\UiPartsGallery.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPartsGalleryScreen.cs" Link="Mod\UiPartsGalleryScreen.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFirmHead.cs" Link="Mod\UiFirmHead.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPageFence.cs" Link="Mod\UiPageFence.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizManModel.cs" Link="Mod\BizManModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizManRules.cs" Link="Mod\BizManRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizManPages.cs" Link="Mod\BizManPages.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizManPages.Parts.cs" Link="Mod\BizManPages.Parts.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizManPages.Lines.cs" Link="Mod\BizManPages.Lines.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiStaff.cs" Link="Mod\UiStaff.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\StaffViews.cs" Link="Mod\StaffViews.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDataCells.cs" Link="Mod\UiDataCells.cs" />

@@ -3,10 +3,10 @@ using System;
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// The big table's cells that carry a picture beside their words (UiDataTable): a type's glyph on its tile with the
-    /// type's name, a figure with the arrow of where it is heading, and a short ladder of steps (a goal's three tiers) as
-    /// pips with the step's words. Each is a cell kind of its own (<see cref="UiCellKind.Tile"/>, <see cref="UiCellKind.Trend"/>,
-    /// <see cref="UiCellKind.Steps"/>), so a table of words alone gets its pictures where the rows differ. Game-free.
+    /// The big table's cells that carry a picture beside their words (UiDataTable): a figure with the arrow of where it is
+    /// heading, and a short ladder of steps (a goal's three tiers) as a bar with the step's words. Each is a cell kind of
+    /// its own (<see cref="UiCellKind.Trend"/>, <see cref="UiCellKind.Steps"/>), so a table of words alone gets its pictures
+    /// where the rows differ. Game-free.
     /// Cost: a few items a cell, laid out only for the rows in view.
     /// </summary>
     public static class UiDataCells
@@ -16,24 +16,6 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>The least a steps column takes for its bar and a short word beside it.</summary>
         public static float StepsWidth(int steps) => UiDraw.Snap(StepsBar(steps) + UiTokens.S3 + UiTokens.S16);
-
-        /// <summary>
-        /// A type's glyph on its slate tile in the glyph's colour (Values: the UiIcon; Tones: a colour of its own, or None
-        /// for the glyph's), then the type's name. A row whose glyph is None keeps the tile's room, so the names line up.
-        /// </summary>
-        public static void Tile(UiScene s, UiAt at, string words, int value, UiRole tint, float cx, float ry, float cw, float rowH, bool sel)
-        {
-            float tile = UiTokens.ControlSmall;
-            var icon = (UiIcon)Math.Max(0, Math.Min((int)UiIcon.Count - 1, value));
-            if (icon != UiIcon.None)
-            {
-                int t = UiDraw.Tile(s, at, cx, ry + (rowH - tile) / 2f, tile, tint, false);
-                float g = UiTokens.Icon;
-                UiDraw.Icon(s, at.In(t), cx + (tile - g) / 2f, ry + (rowH - g) / 2f, g, icon, tint, UiFlags.Middle | UiFlags.Centre, true);
-            }
-            float tx = cx + tile + UiTokens.S3;
-            UiDraw.TextMiddle(s, at, tx, ry, rowH, cx + cw - tx, UiStyle.Body, sel ? UiRole.Text : UiRole.Text2, words, UiFlags.Truncate);
-        }
 
         /// <summary>
         /// A figure at the right with the arrow of its direction before it (Values: 1 rising, -1 falling, 0 none), the arrow
