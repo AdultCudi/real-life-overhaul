@@ -43,6 +43,8 @@ Working for yourself: a client's freelance contract comes on the game's day (`Ca
 
 Six employers stand behind the help-wanted boards: each board's building is one employer's office (matched by the kind of service building, best fit first: `CareerCatalogue.Premises`; the boards are the same in every game, so the employers are too).
 
+The office is the board, not the building. A board stands on the pavement a step to one side of the door of a city building that keeps its own business (a furniture store, a supermarket), and that door leads only into the building, so every text that sends the player to the office names the board, the shop it stands outside (`JobBoards.Place`: the service's own name, else the game's name for its kind) and the address, and says to meet the boss outside (`CareerOfficeRules`, the `_board` twins of the texts; the destination marker is labelled the same way). Where an employer is met is decided in one place, `CareerDirector.WhereOf` over `CareerOfficeRules.Where`: the board while it stands (placed, below the count, its building still in the city: `JobBoards.Stands`), the building trades' works site or floor, or the phone. A performance review is held face to face at a standing board, else by phone (`ReviewKey`, `CanReview`), so it never waits on a place that is not there; EconomyCheck's MeetingPlaceChecks holds this.
+
 Walking up to a board that is an office, the key speaks to its boss, who stands by it (the careers' own cast of two: `JobCast` with a seeded look, so the same face every time; put out only when it cannot be seen from close by, shelved when the player is 100 m off).
 
 On a day the player is on the rota there, whoever is on the same shift waits on the other side of the board and waves when the player walks up.

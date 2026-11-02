@@ -39,6 +39,7 @@ namespace RealLifeOverhaul.Tech
             TalentGame.Logger = Logger;
             HiringGame.Logger = Logger;
             FirmsGame.Logger = Logger;
+            SeatGame.Logger = Logger;
             MovesGame.Logger = Logger;
             _onSave = OnSave;
             _onHour = Guard.Wrap(OnHour);

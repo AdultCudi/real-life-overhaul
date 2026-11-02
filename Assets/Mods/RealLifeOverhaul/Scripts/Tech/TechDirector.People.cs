@@ -60,6 +60,7 @@ namespace RealLifeOverhaul.Tech
             }
             _talent = file;
             _peopleOn = true;
+            SeatGame.Apply();   // the game's desks take the customer service, sales and support roles of the firms (SeatRules)
             _moveAsked.Clear();
             _movesBooked = MovesGame.Booked();
             FollowMoves();
@@ -85,6 +86,7 @@ namespace RealLifeOverhaul.Tech
                 WritePeople(Save.modData);
             }
             _peopleOn = false;
+            SeatGame.Remove();   // the game's desks are its own again
             _people.Clear();
             _ids.Clear();
             _fileOf.Clear();

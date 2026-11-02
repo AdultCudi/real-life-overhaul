@@ -35,9 +35,9 @@ namespace RealLifeOverhaul
             float best = BossGoes * BossGoes;
             for (int e = 0; e < _depot.Length; e++)
             {
-                if (_depot[e] < 0 || _depot[e] >= boards.Count)
+                if (_depot[e] < 0 || !boards.Stands(_depot[e]))
                 {
-                    continue;
+                    continue;   // no board, or one whose building is gone
                 }
                 float sqr = FlatSqr(boards.Front(_depot[e]) - player);
                 if (sqr < best)

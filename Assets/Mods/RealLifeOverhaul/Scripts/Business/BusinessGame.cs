@@ -422,6 +422,35 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>
+        /// Fills <paramref name="into"/> with the businesses whose figure the game has recomputed since the mod wrote it with
+        /// parts of its own (<see cref="BusinessCatalogue.Wiped"/>). COST: a pass over the businesses written, a few
+        /// comparisons each; called once a second.
+        /// </summary>
+        public static void Wiped(List<BuildingRegistration> into)
+        {
+            into.Clear();
+            Fresh();
+            foreach (KeyValuePair<BuildingRegistration, Wrote> pair in Written)
+            {
+                Wrote w = pair.Value;
+                Promotion now = pair.Key != null ? pair.Key.promotion : null;
+                if (now != null && w.Promotion != null && BusinessCatalogue.Wiped(ReferenceEquals(w.Promotion, now), now.total, w.Total, w.Percent, w.Ambient, w.Interior))
+                {
+                    into.Add(pair.Key);
+                }
+            }
+        }
+
+        /// <summary>Forgets what was written at a business that is no longer the player's, or whose figure the mod can no longer write.</summary>
+        public static void Forget(BuildingRegistration reg)
+        {
+            if (reg != null)
+            {
+                Written.Remove(reg);
+            }
+        }
+
         // A load drops what was kept of the last save's registrations.
         private static void Fresh()
         {

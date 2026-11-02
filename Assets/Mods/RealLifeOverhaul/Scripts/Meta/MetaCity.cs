@@ -88,6 +88,11 @@ namespace RealLifeOverhaul.Meta
             SaveTools.EnsureHook();
             GuideContact.Setup();
 
+            // The props load in the background: the welcome says if they failed, so it waits for them to be read.
+            while (generation == _generation && PropLibrary.Loading && Time.realtimeSinceStartup < giveUp)
+            {
+                yield return wait;
+            }
             if (!Welcome.Due)
             {
                 yield break;

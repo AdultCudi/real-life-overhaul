@@ -58,6 +58,8 @@ Everything is in `Scripts/Business`: `BusinessCatalogue` (every kind, every numb
 - *Footfall*: the game computes customers from `0.5 + 0.75 x promotion / 100`.
   The mod recomputes the game's own figure (`BusinessHelper.UpdatePromotion`), sets `promotion.total` to the value that gives the wanted percent (`BusinessCatalogue.PromotionFor`), and has the game redraw the customers still to come today (`CustomerEntriesHelper.UpdateCustomerEntriesForPlayerBusiness`, which the game itself calls when a business opens or closes).
   It is put back on top each game hour and redrawn after midnight.
+  The game also writes its own figure over the mod's whenever the items of a player's business change, a shelf is stocked or marketing is set, and no event follows all of them; so once a second the figures written are compared with the ones standing (`BusinessGame.Wiped`, `BusinessDirector.KeepFigures`), and a business whose figure was put back is written again with every part (the interior's, the city's, the rest) and its customers still to come are drawn again.
+  The Interior tab's customers page shares the list by the figure it was drawn with (`CustomerDraw.DrawnWith`) and gives each part its own size as far as that figure carries it (`InteriorRules.Split`); the rest of the mod is its own sum, never a remainder.
 
   The game recomputes the figure daily, on entering the building and when marketing changes, so a save loaded without the mod heals by itself the next day.
   The player sees it: the promotion figure on the business's page moves.
