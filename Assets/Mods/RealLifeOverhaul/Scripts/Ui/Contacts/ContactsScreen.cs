@@ -28,7 +28,8 @@ namespace RealLifeOverhaul.Ui
         private readonly UiContactsModel _m = new UiContactsModel();
         private readonly List<Contact> _rows = new List<Contact>(64);
         private readonly List<int> _groups = new List<int>(16);          // the categories shown, the game's then the mod's
-        private readonly List<Button> _services = new List<Button>(8);   // the aside's actions: the game's buttons, null for the game's own view
+        private readonly List<Button> _services = new List<Button>(8);   // the aside's actions: the game's buttons, null for the game's own view or Delete contact
+        private int _remove = -1;          // the aside's place of Delete contact; -1 where the game's list offers none for them
         private readonly List<Button> _choices = new List<Button>(4);    // the conversation's or the call's numbered choices
         private readonly List<Field> _fields = new List<Field>(2);       // the form's fields
         private readonly List<KeyValuePair<TMP_Text, Color>> _names = new List<KeyValuePair<TMP_Text, Color>>(2);   // the header's name labels as the game made them
@@ -116,8 +117,16 @@ namespace RealLifeOverhaul.Ui
         public bool Press(int command, int arg)
         {
             _dirty = true;
+            return Take(ContactsRoutes.Route(command, arg, _m.HeadActions), command, arg);
+        }
+
+        // One press by its route, to the game's action it stands for. A route the kit has no button of the game's for (a
+        // press that no route answers, or a button the game has since hidden or taken away) is answered in the game's own
+        // view instead of by nothing (Unrouted), with one line in Player.log.
+        private bool Take(ContactsRoute route, int command, int arg)
+        {
             Contact open = _app.selectedContact;
-            switch (ContactsRoutes.Route(command, arg))
+            switch (route)
             {
                 case ContactsRoute.Group:
                     if (arg < 0 || arg > _groups.Count)
@@ -130,20 +139,20 @@ namespace RealLifeOverhaul.Ui
                 case ContactsRoute.Row:
                     return arg >= 0 && arg < _rows.Count && Open(_rows[arg]);
                 case ContactsRoute.Map:
-                    return Done(Click(_map), "view on map " + Who(open) + ": handed to the game");
+                    return Handed(_map, "view on map", open, "handed to the game");
                 case ContactsRoute.Call:
                     return CallNow(open);
                 case ContactsRoute.Service:
                     return Service(arg, open);
                 case ContactsRoute.MarkRead:
-                    return Done(Click(ButtonOf(GameContract.ContactsMarkAll)), "mark all as read: handed to the game");
+                    return Handed(ButtonOf(GameContract.ContactsMarkAll), "mark all as read", open, "handed to the game");
                 case ContactsRoute.DeleteAll:
-                    return Done(Click(ButtonOf(GameContract.KitDeleteAll)), "delete all: handed to the game, which asks first");
+                    return Handed(ButtonOf(GameContract.KitDeleteAll), "delete all", open, "handed to the game, which asks first");
                 case ContactsRoute.Choice:
                 case ContactsRoute.Reply:
-                    return arg >= 0 && arg < _choices.Count && Done(Click(_choices[arg]), "a reply to " + Who(open) + ": the game's own button");
+                    return arg >= 0 && arg < _choices.Count && Handed(_choices[arg], "a reply", open, "the game's own button");
                 case ContactsRoute.HangUp:
-                    return Done(Click(_hangUp), "the call with " + Who(open) + " ended by the game's own button");
+                    return Handed(_hangUp, "hang up", open, "the game's own button");
                 case ContactsRoute.Clear:
                     _query = string.Empty;
                     _m.List.Offset = 0f;
@@ -152,15 +161,45 @@ namespace RealLifeOverhaul.Ui
                     return arg >= 0 && arg < _fields.Count && Click(_fields[arg].Less);
                 case ContactsRoute.More:
                     return arg >= 0 && arg < _fields.Count && Click(_fields[arg].More);
+                case ContactsRoute.Search:
+                case ContactsRoute.Field:
+                    return false;   // typing: the host types into the focused box
                 default:
-                    return false;
+                    return Unrouted("a press (command " + command + ", " + arg + ") that no route answers", open);
             }
+        }
+
+        // The game's own button pressed: its listener runs as a click would run it. A button the game holds (it greys one
+        // while it works) is left, with a line; one the game does not have or has hidden since the kit drew it is answered
+        // in the game's own view.
+        private bool Handed(Button b, string what, Contact open, string how)
+        {
+            if (b == null || !b.gameObject.activeSelf)
+            {
+                return Unrouted(what, open);
+            }
+            if (!b.interactable)
+            {
+                return Done(false, what + " " + Who(open));
+            }
+            b.onClick.Invoke();
+            return Done(true, what + " " + Who(open) + ": " + how);
+        }
+
+        // Something the kit drew or was pressed on cannot be bound to a button or entry of the game's: the game's own
+        // Contacts view shows until the app closes, where the same thing is the game's, and Player.log says so once.
+        private static bool Unrouted(string what, Contact open)
+        {
+            UiDirector.Logger?.Info("Contacts (kit): " + what + " (" + Who(open)
+                                    + ") could not be bound to a button or entry of the game's, so the game's own Contacts view shows until the app closes");
+            ContactsKit.Classic();
+            return true;
         }
 
         // One line a press in Player.log, so a report shows each button reaching the game (beta 3's Call left no trace).
         private static bool Done(bool done, string what)
         {
-            UiDirector.Logger?.Info("Contacts (kit): " + what + (done ? string.Empty : " was not shown by the game, so nothing was pressed"));
+            UiDirector.Logger?.Info("Contacts (kit): " + what + (done ? string.Empty : " was held by the game, so nothing was pressed"));
             return done;
         }
 
@@ -206,11 +245,12 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
+            // The key of a button the game shows: with none shown there is nothing to answer, and it is no reason to leave the kit.
             if (action == UiAction.Alt)
             {
-                return Press(UiAppWindow.ActionCommand, ContactsRoutes.CallArg);
+                return Shows(_call) && Press(UiAppWindow.ActionCommand, ContactsRoutes.PlaceOf(_m.HeadActions, ContactsRoutes.CallArg));
             }
-            return action == UiAction.Option && Press(UiAppWindow.ActionCommand, ContactsRoutes.MapArg);
+            return action == UiAction.Option && Shows(_map) && Press(UiAppWindow.ActionCommand, ContactsRoutes.PlaceOf(_m.HeadActions, ContactsRoutes.MapArg));
         }
 
         public void Reveal(int list, int index)
@@ -250,19 +290,40 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- the game's pieces
 
+        // A row of the list pressed: the game's own entry for the contact, so its messages are read as the game reads them. A
+        // contact the game's list did not take (it logs "Failed to load contact" and leaves the entry out) is opened the way
+        // its notification opens it. The game opens a contact in the same call (it sets the one chosen before its first
+        // pause), so a contact that is not the chosen one afterwards was not bound, and the game's own view answers instead.
         private bool Open(Contact c)
+        {
+            ContactModel entry = EntryOf(c);
+            if (entry != null)
+            {
+                _app.ContactButtonOnClick(entry);   // the game's own list: the group shown stays
+            }
+            else
+            {
+                _app.OpenAppWithContact(c);
+            }
+            if (_app.selectedContact != c)
+            {
+                return Unrouted("opening the contact from its row", c);
+            }
+            return Done(true, "open " + Who(c) + (entry != null ? ": the game's list entry" : ": no entry in the game's list, opened as its notification opens one"));
+        }
+
+        // The game's list entry of a contact, or null when the list now shown has none.
+        private ContactModel EntryOf(Contact c)
         {
             List<ContactModel> data = _app.contactScrollerController != null ? _app.contactScrollerController.data : null;
             for (int i = 0; data != null && i < data.Count; i++)
             {
                 if (data[i] != null && data[i].contact == c)
                 {
-                    _app.ContactButtonOnClick(data[i]);   // the game's own list: the group shown stays
-                    return true;
+                    return data[i];
                 }
             }
-            _app.OpenAppWithContact(c);
-            return true;
+            return null;
         }
 
         // The game's own Call: its call button's listener, which the game wires itself for every kind of contact (a business
@@ -270,9 +331,13 @@ namespace RealLifeOverhaul.Ui
         // call the game answers with a line ("closed now") stays in the thread, which shows that line.
         private bool CallNow(Contact open)
         {
-            if (!Shows(_call))
+            if (_call == null || !_call.gameObject.activeSelf)
             {
-                return Done(false, "call " + Who(open));
+                return Unrouted("call", open);
+            }
+            if (!_call.interactable)
+            {
+                return Done(false, "call " + Who(open));   // the game holds its call button while a call runs
             }
             _call.onClick.Invoke();
             bool talking = !_call.interactable;   // the game holds its call button while a call runs
@@ -286,13 +351,29 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
+            if (arg == _remove)
+            {
+                return Remove(open);
+            }
             Button b = _services[arg];
             if (b == null)
             {
                 ContactsKit.Classic();
                 return Done(true, "the game's own view for another mod's buttons by " + Who(open));
             }
-            return Done(Click(b), b.name + " for " + Who(open) + ": handed to the game");
+            return Handed(b, b.name, open, "handed to the game");
+        }
+
+        // The game's delete of one contact: what the trash on its row in the list calls, which asks in the game's own box
+        // first (and not at all with the key the game skips its boxes by).
+        private bool Remove(Contact open)
+        {
+            if (open == null || _remove < 0)
+            {
+                return Unrouted("delete contact", open);
+            }
+            _app.RemoveContact(open);
+            return Done(true, "delete contact " + Who(open) + ": handed to the game, which asks first");
         }
 
         private static bool Click(Button b)

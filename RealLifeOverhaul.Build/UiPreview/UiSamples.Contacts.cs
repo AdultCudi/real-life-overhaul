@@ -2,9 +2,9 @@ using System.Collections.Generic;
 using RealLifeOverhaul.Ui;
 
 /// <summary>
-/// Contacts on the kit, each state as the game would hand it over, all in one world of fourteen contacts: everyone with
+/// Contacts on the kit, each state as the game would hand it over, all in one world of eighteen contacts: everyone with
 /// new messages and an employee open; a recruitment agency with its candidates, a rival and the logistics alerts with
-/// their own actions; a candidate's offer to answer and the wage being negotiated; the tax office's notice; a search that
+/// their own actions; the four without an address, who have a Call and no View on map (a relative and a friend of the mod's, one of the game's services, a restaurant that delivers); a candidate's offer to answer and the wage being negotiated; the tax office's notice; a search that
 /// finds nobody; and a call as it starts, with its replies and with a long line; the offer again in French, the longest
 /// of the mod's languages (the game's words in French, the mod's new words in English until the next batch, as a French
 /// player sees them). A contact opened is read, as the game reads it. Plain English, as the owner reads the previews;
@@ -15,15 +15,20 @@ internal static partial class UiSamples
     /// <summary>Every state of Contacts, in the previews' order.</summary>
     public static readonly string[] ContactsStates =
     {
-        "all", "business", "rivals", "general", "offer", "wage", "tax", "empty", "call_start", "call_replies", "call_long", "offer_fr"
+        "all", "business", "rivals", "general", "offer", "wage", "tax", "empty", "call_start", "call_replies", "call_long", "offer_fr",
+        "relative", "friend", "service", "restaurant"
     };
+
+    // The four of the owner's report, who have no address and so no View on map: a relative and a friend of the mod, one of the game's
+    // services and a restaurant that delivers. Their row in everyone's list, by state.
+    private const int RelativeRow = 14, FriendRow = 15, ServiceRow = 16, RestaurantRow = 17;
 
     // The game's categories and the mod's groups this world's contacts stand in.
     private static readonly int[] SampleGroups = { 0, 1, 2, 3, 4, 5, 6, 101, 102 };
     private static readonly string[] SampleGroupWords = { "General", "Business", "Finance", "Furniture / Equipment", "Imports / Goods", "Employees", "Rivals", "Family", "Friends and people" };
 
     // Everyone, as the game lists them: the unread first, then the newest; each with the group it stands in.
-    private static readonly int[] EveryoneGroups = { 5, 101, 5, 1, 5, 0, 1, 5, 6, 4, 3, 2, 2, 102 };
+    private static readonly int[] EveryoneGroups = { 5, 101, 5, 1, 5, 0, 1, 5, 6, 4, 3, 2, 2, 102, 101, 102, 0, 0 };
 
     /// <summary>Contacts in a state.</summary>
     public static UiContactsModel ContactsSample(UiWords t, string state)
@@ -69,6 +74,22 @@ internal static partial class UiSamples
                 ContactsRows(m, new UiMessageRow[0], -1);
                 ContactsEmployee(m, w);   // the one open stays open while a search finds no one, as the game keeps it
                 m.HasDetail = true;
+                break;
+            case "relative":
+                ContactsRows(m, everyone, RelativeRow);
+                ContactsRelative(m, w);
+                break;
+            case "friend":
+                ContactsRows(m, everyone, FriendRow);
+                ContactsFriend(m, w);
+                break;
+            case "service":
+                ContactsRows(m, everyone, ServiceRow);
+                ContactsService(m, w);
+                break;
+            case "restaurant":
+                ContactsRows(m, everyone, RestaurantRow);
+                ContactsRestaurant(m, w);
                 break;
             default:
                 ContactsRows(m, everyone, 4);
@@ -152,6 +173,7 @@ internal static partial class UiSamples
         }
         m.List.Rows = rows;
         m.List.RowCount = rows.Length;
+        m.List.Reveal = selected >= 8 ? selected : -1;   // the last rows of the list are below the first screenful
         m.HasDetail = selected >= 0;
     }
 
@@ -196,6 +218,10 @@ internal static partial class UiSamples
             new UiMessageRow { Name = "Midtown Savings Bank", Icon = UiIcon.Bank, Preview = "Your loan's daily payment went through", Time = "Day 406" },
             new UiMessageRow { Name = "Internal Revenue Service", Icon = UiIcon.Bank, Preview = "Notice of outstanding tax payment", Time = "Day 400" },
             new UiMessageRow { Name = "Tom Becker", Hue = 210f, Preview = "Can do Tuesday evenings if Maya takes Sunday", Time = "Day 399" },
+            new UiMessageRow { Name = "Mom", Hue = 14f, Preview = "Dinner is at six on Sunday. Bring nothing but yourself", Time = "Day 398" },
+            new UiMessageRow { Name = "Alex", Hue = 160f, Preview = "Coffee this week? I owe you a proper catch up", Time = "Day 397" },
+            new UiMessageRow { Name = "Auto Tow Service", Icon = UiIcon.Truck, Preview = "We tow to your garage or the nearest lot, day and night", Time = "Day 380" },
+            new UiMessageRow { Name = "Speedy Bites", Icon = UiIcon.ForkKnife, Preview = "Hot food at your door. Pick a dish and we bring it", Time = "Day 380" },
         };
     }
 
@@ -220,6 +246,48 @@ internal static partial class UiSamples
             Name = name, ThreadStart = t("reallife_ui_contacts_start", "Start of your messages with {name}").Replace("{name}", name),
             EmptyTitle = t("reallife_ui_contacts_quiet_title", "Quiet line"), EmptyBody = t("reallife_ui_contacts_quiet_body", "No messages with them yet.")
         };
+    }
+
+    private static UiContactAction DeleteContact(UiWords t) => new UiContactAction { Label = t("reallife_ui_contacts_delete", "Delete contact"), Icon = UiIcon.Trash, Clears = true };
+
+    // Mom: a person of the mod's with no address, so Call alone, and no map. The game's list does not keep her, so she can be deleted.
+    private static void ContactsRelative(UiContactsModel m, UiWords t)
+    {
+        ContactsHead(m, t, "Mom", 14f, UiIcon.None, UiRole.None, t("contactcategoryname_101", "Family"), null, false, true);
+        m.Talk.Messages = new[]
+        {
+            new UiMessageModel { From = UiFrom.Them, Text = "Dinner is at six on Sunday. Bring nothing but yourself.", Time = "Day 398" },
+            new UiMessageModel { From = UiFrom.Me, Text = "I will be there.", Time = "Day 398" },
+        };
+        m.Talk.MessageCount = 2;
+        m.Actions = new[] { ClearChat(t), DeleteContact(t) };
+    }
+
+    // A friend of the mod's: the same, in the friends' group.
+    private static void ContactsFriend(UiContactsModel m, UiWords t)
+    {
+        ContactsHead(m, t, "Alex", 160f, UiIcon.None, UiRole.None, t("contactcategoryname_102", "Friends and people"), null, false, true);
+        m.Talk.Messages = new[] { new UiMessageModel { From = UiFrom.Them, Text = "Coffee this week? I owe you a proper catch up.", Time = "Day 397" } };
+        m.Talk.MessageCount = 1;
+        m.Actions = new[] { ClearChat(t), DeleteContact(t) };
+    }
+
+    // One of the game's services: no address, a call that asks what to tow and where.
+    private static void ContactsService(UiContactsModel m, UiWords t)
+    {
+        ContactsHead(m, t, "Auto Tow Service", 0f, UiIcon.Truck, UiRole.None, "Roadside service", null, false, true);
+        m.Talk.Messages = new[] { new UiMessageModel { From = UiFrom.Them, Text = "We tow to your garage or the nearest lot, day and night.", Time = "Day 380" } };
+        m.Talk.MessageCount = 1;
+        m.Actions = new[] { ClearChat(t) };
+    }
+
+    // A restaurant with delivery: no address in the game's contacts, a call that takes the order.
+    private static void ContactsRestaurant(UiContactsModel m, UiWords t)
+    {
+        ContactsHead(m, t, "Speedy Bites", 0f, UiIcon.ForkKnife, UiRole.None, "Food delivery", null, false, true);
+        m.Talk.Messages = new[] { new UiMessageModel { From = UiFrom.Them, Text = "Hot food at your door. Pick a dish and we bring it.", Time = "Day 380" } };
+        m.Talk.MessageCount = 1;
+        m.Actions = new[] { ClearChat(t) };
     }
 
     private static UiContactAction ClearChat(UiWords t) => new UiContactAction { Label = t("contacts_header_clear_chat_button", "Clear chat"), Icon = UiIcon.Trash, Clears = true };

@@ -30,6 +30,7 @@ internal static partial class Program
             _contactsChecked = true;
             ContactsRuleChecks();
             ContactsRouteChecks();
+            ContactsBoundChecks();
         }
     }
 
@@ -86,6 +87,70 @@ internal static partial class Program
             "contacts: a call stands as its card alone, its replies on the number keys and Hang up its way out, the window not reachable under it");
     }
 
+    // Every action a sample contact shows is bound to the game's own: the button drawn in a place of the head does what its
+    // key says (Call on F, View on map on P), whichever of the two the game shows, so Mom, a friend, the tow service and
+    // Speedy Bites, who have no address and so no map button, have a Call that calls. The window hands a press the button's
+    // place, so the route is read through the head's own list; read as the place alone, Call in place 0 was View on map and
+    // a press on it did nothing.
+    private static void ContactsBoundChecks()
+    {
+        UiWords en = UiWords("en");
+        var scene = new UiScene();
+        int unbound = 0, drawn = 0;
+        string missed = "none";
+        foreach (string state in UiSamples.ContactsStates)
+        {
+            UiContactsModel m = UiSamples.ContactsSample(en, state);
+            UiContacts.Lay(scene, m, UiFrame.FullMenu(16f / 9f, "Contacts"), true, UiDefaultKeys.Keyboard);
+            if (m.Call != null || !m.HasDetail)
+            {
+                continue;
+            }
+            int head = 0, aside = 0;
+            for (int n = 0; n < scene.NodeCount; n++)
+            {
+                ref UiNode node = ref scene.Nodes[n];
+                if (node.Command == UiAppWindow.ActionCommand)
+                {
+                    head++;
+                    UiAction key = node.Arg >= 0 && node.Arg < m.HeadActions.Length ? m.HeadActions[node.Arg].Key : UiAction.Count;
+                    ContactsRoute want = key == UiAction.Alt ? ContactsRoute.Call : key == UiAction.Option ? ContactsRoute.Map : ContactsRoute.None;
+                    if (want == ContactsRoute.None || ContactsRoutes.Route(node.Command, node.Arg, m.HeadActions) != want)
+                    {
+                        unbound++;
+                        missed = state + ": head button " + node.Arg;
+                    }
+                }
+                else if (node.Command == UiContacts.ActionCommand)
+                {
+                    aside++;
+                    if (node.Arg < 0 || node.Arg >= m.Actions.Length || ContactsRoutes.Route(node.Command, node.Arg, m.HeadActions) != ContactsRoute.Service)
+                    {
+                        unbound++;
+                        missed = state + ": aside action " + node.Arg;
+                    }
+                }
+            }
+            if (head != m.HeadActions.Length || aside != m.Actions.Length)
+            {
+                unbound++;
+                missed = state + ": " + head + " of " + m.HeadActions.Length + " head buttons and " + aside + " of " + m.Actions.Length + " aside actions drawn";
+            }
+            drawn += head + aside;
+        }
+        Check(unbound == 0 && drawn > 0, "ui contacts: every action a sample contact shows is bound to the game's own, the head's by what it does and the aside's by its place (" + unbound + " unbound, " + missed + ")");
+        bool noMap = true;
+        foreach (string state in new[] { "relative", "friend", "service", "restaurant" })
+        {
+            UiContactsModel m = UiSamples.ContactsSample(en, state);
+            UiContacts.Lay(scene, m, UiFrame.FullMenu(16f / 9f, "Contacts"), true, UiDefaultKeys.Keyboard);
+            int call = scene.FindNode(UiAppWindow.ActionCommand, 0);
+            noMap &= m.HasDetail && m.HeadActions.Length == 1 && call >= 0 && scene.FindNode(UiAppWindow.ActionCommand, 1) < 0
+                     && ContactsRoutes.Route(scene.Nodes[call].Command, scene.Nodes[call].Arg, m.HeadActions) == ContactsRoute.Call && scene.Nodes[call].Key == UiAction.Alt;
+        }
+        Check(noMap, "ui contacts: a relative, a friend, a game service and a restaurant, who have no address and so no map button, each have a Call in the first place of the head that routes to Call");
+    }
+
     // The Contacts kit's every button routed to the game's own action, the way beta 3's View on map and Call were not.
     private static void ContactsRouteChecks()
     {
@@ -95,25 +160,28 @@ internal static partial class Program
         string missed = "none";
         foreach (string state in UiSamples.ContactsStates)
         {
-            UiContacts.Lay(scene, UiSamples.ContactsSample(en, state), UiFrame.FullMenu(16f / 9f, "Contacts"), true, UiDefaultKeys.Keyboard);
+            UiContactsModel sample = UiSamples.ContactsSample(en, state);
+            UiContacts.Lay(scene, sample, UiFrame.FullMenu(16f / 9f, "Contacts"), true, UiDefaultKeys.Keyboard);
             for (int n = 0; n < scene.NodeCount; n++)
             {
                 ref UiNode node = ref scene.Nodes[n];
                 if (node.Command != UiDraw.CloseCommand && node.Command != UiDraw.AppRowCommand && node.Command != UiDraw.AllAppsCommand
-                    && ContactsRoutes.Route(node.Command, node.Arg) == ContactsRoute.None)
+                    && ContactsRoutes.Route(node.Command, node.Arg, sample.HeadActions) == ContactsRoute.None)
                 {
                     none++;
                     missed = state + ": " + node.Command + "/" + node.Arg;
                 }
             }
         }
-        UiContacts.Lay(scene, UiSamples.ContactsSample(en, "business"), UiFrame.FullMenu(16f / 9f, "Contacts"), true, UiDefaultKeys.Keyboard);
-        int map = scene.FindNode(UiAppWindow.ActionCommand, ContactsRoutes.MapArg), call = scene.FindNode(UiAppWindow.ActionCommand, ContactsRoutes.CallArg);
+        UiContactsModel business = UiSamples.ContactsSample(en, "business");
+        UiContacts.Lay(scene, business, UiFrame.FullMenu(16f / 9f, "Contacts"), true, UiDefaultKeys.Keyboard);
+        int map = scene.FindNode(UiAppWindow.ActionCommand, ContactsRoutes.PlaceOf(business.HeadActions, ContactsRoutes.MapArg));
+        int call = scene.FindNode(UiAppWindow.ActionCommand, ContactsRoutes.PlaceOf(business.HeadActions, ContactsRoutes.CallArg));
         Check(none == 0 && map >= 0 && call >= 0 && scene.Nodes[call].Key == UiAction.Alt && scene.Nodes[map].Key == UiAction.Option,
             "ui contacts: every target the Contacts screen draws has a route to the game, View on map on P and Call on F among them (" + none + " with none, " + missed + ")");
-        Check(ContactsRoutes.Route(UiAppWindow.NavCommand, 0) == ContactsRoute.Group && ContactsRoutes.Route(UiAppWindow.ActionCommand, ContactsRoutes.CallArg) == ContactsRoute.Call
-              && ContactsRoutes.Route(0, 0) == ContactsRoute.None && ContactsRoutes.Route(UiAppWindow.NavCommand, 1) != ContactsRoute.Call
-              && ContactsRoutes.Route(UiCallCard.ChoiceCommand, 0) == ContactsRoute.Reply && ContactsRoutes.Route(UiCallCard.ButtonCommand, 0) == ContactsRoute.HangUp,
+        Check(ContactsRoutes.Route(UiAppWindow.NavCommand, 0, null) == ContactsRoute.Group && ContactsRoutes.Route(UiAppWindow.ActionCommand, 1, business.HeadActions) == ContactsRoute.Call
+              && ContactsRoutes.Route(0, 0, null) == ContactsRoute.None && ContactsRoutes.Route(UiAppWindow.NavCommand, 1, null) != ContactsRoute.Call
+              && ContactsRoutes.Route(UiCallCard.ChoiceCommand, 0, null) == ContactsRoute.Reply && ContactsRoutes.Route(UiCallCard.ButtonCommand, 0, null) == ContactsRoute.HangUp,
             "ui contacts: Call is its own route, never the group list it was read as in beta 3, and a call's replies and Hang up are routes of their own");
         string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Contacts"));
         string screen = File.ReadAllText(System.IO.Path.Combine(folder, "ContactsScreen.cs")), read = File.ReadAllText(System.IO.Path.Combine(folder, "ContactsScreen.Read.cs"));
@@ -130,8 +198,16 @@ internal static partial class Program
             all &= r == ContactsRoute.None || r == ContactsRoute.Search || r == ContactsRoute.Field || routed.Contains(r.ToString());   // the search and a form's figure are the host's typing
         }
         string callNow = Between(screen, "private bool CallNow(Contact open)", "private bool Service(");
-        Check(all && press.Contains("Click(_map)") && press.Contains("Click(_hangUp)") && press.Contains("Click(_choices[arg])") && callNow.Contains("_call.onClick.Invoke()"),
+        string handed = Between(screen, "private bool Handed(", "private static bool Unrouted(");
+        Check(all && press.Contains("Handed(_map,") && press.Contains("Handed(_hangUp,") && press.Contains("Handed(_choices[arg],") && handed.Contains("b.onClick.Invoke()")
+              && callNow.Contains("_call.onClick.Invoke()"),
             "ui contacts: the screen acts on every route, View on map, a reply and Hang up through the game's own buttons and Call through the listener the game wires on its call button");
+        // A press that cannot be bound to the game's button or entry is answered in the game's own view, with a line, never by nothing.
+        string open = Between(screen, "private bool Open(Contact c)", "private ContactModel EntryOf(");
+        string unrouted = Between(screen, "private static bool Unrouted(", "// One line a press in Player.log");
+        Check(unrouted.Contains("ContactsKit.Classic()") && unrouted.Contains("UiDirector.Logger?.Info(\"Contacts (kit): \"") && press.Contains("default:") && press.Contains("Unrouted(")
+              && handed.Contains("Unrouted(what, open)") && callNow.Contains("Unrouted(\"call\", open)") && open.Contains("_app.selectedContact != c") && open.Contains("Unrouted("),
+            "ui contacts: a row, a button or a reply the kit cannot bind to the game's own gives the game's own Contacts view for that press, with one line in Player.log");
         Check(screen.Contains("\"Contacts (kit): \"") && read.Contains("ContactsKit.StepAside(") && kit.Contains("Host.StepAside(over)") && read.Contains("GameContract.TalkEntryView"),
             "ui contacts: each press says its line in Player.log, a call is read from the game's own line and buttons, and a form the kit does not draw yet is answered in the game's own view until that line is done");
     }

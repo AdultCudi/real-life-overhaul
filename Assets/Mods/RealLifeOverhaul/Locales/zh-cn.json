@@ -28724,5 +28724,6 @@
   "reallife_ui_test_offer_no": "今天不行",
   "reallife_ui_test_offer_yes_reply": "太好了，四点见。",
   "reallife_ui_test_offer_no_reply": "没关系，那就下次吧。",
-  "reallife_contract_part_ui_contacts_talk": "以 RLO 界面绘制的联系人应用的通话和提议"
+  "reallife_contract_part_ui_contacts_talk": "以 RLO 界面绘制的联系人应用的通话和提议",
+  "reallife_ui_contacts_delete": "删除联系人"
 }

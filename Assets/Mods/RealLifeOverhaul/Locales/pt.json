@@ -28724,5 +28724,6 @@
   "reallife_ui_test_offer_no": "Hoje não",
   "reallife_ui_test_offer_yes_reply": "Ótimo, te vejo às quatro.",
   "reallife_ui_test_offer_no_reply": "Sem problema, fica para outra vez.",
-  "reallife_contract_part_ui_contacts_talk": "as ligações e ofertas do app Contatos desenhadas na interface RLO"
+  "reallife_contract_part_ui_contacts_talk": "as ligações e ofertas do app Contatos desenhadas na interface RLO",
+  "reallife_ui_contacts_delete": "Excluir contato"
 }
