@@ -36,6 +36,7 @@ namespace RealLifeOverhaul.Ui
         public short Clip = -1;                     // set as it is laid out: the form's scroll region, or -1
         public short ListClip = -1;                 // ...the open list's
         public short List = -1;                     // ...and the rows that take a press as a list, while the form scrolls
+        public float ControlX, ControlW;            // ...and the controls' column, across the screen, so a drag on a slider knows its place
 
         /// <summary>The list closed, the slider let go, the form at its top: a new form.</summary>
         public void Reset()
@@ -190,6 +191,8 @@ namespace RealLifeOverhaul.Ui
             }
             float cw = ControlWidth(w);
             float cx = ox + UiTokens.S3 + iw - cw;   // the controls' left edge, one for every row
+            pick.ControlX = (scrolls ? x : 0f) + cx;
+            pick.ControlW = cw;
             float ry = 0f;
             int ordinal = 0;
             float openY = -1f;

@@ -1,0 +1,631 @@
+using System;
+using System.Collections.Generic;
+using Characters.EmojiSystem;
+using Entities;
+using TMPro;
+using UI.Dialog;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace RealLifeOverhaul.Ui
+{
+    /// <summary>
+    /// The game's dialogue panel as the kit's conversation docked at the right third of the screen over the live scene:
+    /// who is talking at its head, the lines said so far as a thread (theirs, and the answers the player gave on the kit),
+    /// the line now with its buttons as numbered choices on 1 to 9 (the confirm first, Leave last), and the form the line
+    /// asks for in the conversation's form slot, read from the game's own widgets (DialogForm) and pressed through them,
+    /// so the dialog reads its values back as it always has. A casino's game, and a form with nothing the kit can show,
+    /// are answered in the game's own panel, the kit back the moment that line is answered; another mod's piece in the
+    /// panel is offered as the game's own view until the panel closes. Cost: a look at a signature four times a second
+    /// while it shows; a read and a layout only when it changed.
+    /// </summary>
+    public sealed class DialogScreen : IUiScreen, IUiTyping, IUiStepping, IUiDragging
+    {
+        private const float Every = 0.25f;                     // seconds between looks at the game's panel
+        private const float FormShare = 0.45f;                 // of the room over the status bar, the most a form takes before it scrolls
+        private const string Entries = "Entries (Scroll View)";
+        private static readonly int[] Order = new int[3];
+
+        private readonly DialogUI _ui;
+        private readonly Transform _panel;
+        private readonly UiConversationModel _m = new UiConversationModel();
+        private readonly DialogForm _form = new DialogForm();
+        private readonly List<Button> _choices = new List<Button>(4);   // the numbered choices' buttons; null for the game's own view
+        private readonly List<Button> _buttons = new List<Button>(4);
+        private readonly List<UiDecisionChoice> _made = new List<UiDecisionChoice>(4);
+        private readonly List<UiMessageModel> _lines = new List<UiMessageModel>(32);
+        private readonly List<KeyValuePair<int, string>> _said = new List<KeyValuePair<int, string>>(32);   // a line's copy and the answer the player gave it here
+        private Transform _content;
+        private Button _leave;
+        private bool _dirty = true, _formShown;
+        private int _due;                  // the frame after a press, when the game's answer to it is read
+        private float _next;
+        private long _seen;
+        private int _typing = -1, _dragging = -1, _shownLines = -1;
+        private object _dialog;            // the conversation the game runs now, as last seen
+        private object _asideFor;          // the line the game's own panel answers now
+
+        public DialogScreen(DialogUI ui, Transform panel)
+        {
+            _ui = ui;
+            _panel = panel;
+        }
+
+        public string Id => DialogKits.DialogId;
+
+        public bool Dirty
+        {
+            get
+            {
+                if (_due > 0 && Time.frameCount >= _due)
+                {
+                    _due = 0;
+                    _dirty = true;
+                }
+                float now = Time.unscaledTime;
+                if (now >= _next)
+                {
+                    _next = now + Every;
+                    long sig = Signature();
+                    _dirty |= sig != _seen;
+                    _seen = sig;
+                }
+                return _dirty;
+            }
+        }
+
+        public int TypingCommand => _typing >= 0 ? UiFormRows.FieldCommand : -1;
+
+        public string TypingText => _form.Text(_typing);
+
+        public void Typed(string text)
+        {
+            if (_typing >= 0 && _form.Type(_typing, text ?? string.Empty))
+            {
+                Soon();
+            }
+        }
+
+        public bool Steps(int command) => command == UiFormRows.FieldCommand;
+
+        public void Step(int command, int arg, int step)
+        {
+            // A slider steps while the keys hold it, so the d-pad still crosses a form of sliders.
+            if (arg < 0 || arg >= _form.Count || (_form.Rows[arg].Kind == UiFormKind.Slider && _form.Pick.Held != arg))
+            {
+                return;
+            }
+            if (_form.Step(arg, step))
+            {
+                Soon();
+            }
+        }
+
+        public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
+        {
+            _form.Pick.Most = UiDraw.SnapDown((frame.BandY - UiTokens.S4 * 2f) * FormShare);
+            Build();
+            UiConversation.LayDocked(s, _m, frame, dark, keys);
+            _dirty = false;
+            _seen = Signature();
+            _next = Time.unscaledTime + Every;
+        }
+
+        public bool Press(int command, int arg)
+        {
+            if (command == UiConversation.ChoiceCommand)
+            {
+                return Choose(arg);
+            }
+            bool kit = command == UiFormRows.FieldCommand && arg >= 0 && arg < _form.Count
+                       && (_form.Rows[arg].Kind == UiFormKind.Choice || _form.Rows[arg].Kind == UiFormKind.Slider);
+            bool done = _form.Press(command, arg);
+            if (kit || command == UiFormRows.OptionCommand)
+            {
+                _dirty = true;   // the open list or the held slider is the kit's own: drawn this frame
+            }
+            if (!kit)
+            {
+                Soon();
+            }
+            return done;
+        }
+
+        public void Focused(int command, int arg)
+        {
+            _typing = command == UiFormRows.FieldCommand && _form.Typed(arg) ? arg : -1;   // the field the next typing goes into
+        }
+
+        public bool Back()
+        {
+            if (_form.Back())
+            {
+                _dirty = true;
+                return true;
+            }
+            // Leave, as the game's own Esc presses it (DialogUI.OnCancel): taken here, so it is pressed once.
+            if (_leave != null && UiWidgets.Shows(_leave))
+            {
+                return Answer(_leave, "Leave");
+            }
+            return false;
+        }
+
+        public void Tab(int step)
+        {
+        }
+
+        public bool Act(UiAction action) => false;
+
+        public void Reveal(int list, int index)
+        {
+            if (list >= 0 && list == _form.Pick.List)
+            {
+                _form.Pick.Reveal = index;
+                _dirty = true;
+            }
+        }
+
+        public void Wheel(int clip, float notches)
+        {
+            float by = -notches * UiTokens.S16;
+            UiFormPick pick = _form.Pick;
+            if (clip >= 0 && clip == pick.ListClip)
+            {
+                pick.ListOffset = Math.Max(0f, pick.ListOffset + by);
+            }
+            else if (clip >= 0 && clip == pick.Clip)
+            {
+                pick.Offset = Math.Max(0f, pick.Offset + by);
+            }
+            else
+            {
+                _m.Offset = Math.Max(0f, (_m.Offset < 0f ? 100000f : _m.Offset) + by);
+            }
+            _dirty = true;
+        }
+
+        public void PointerDown(int command, int arg, float x, float y)
+        {
+            if (command == UiFormRows.FieldCommand)
+            {
+                Slide(arg, x);
+            }
+        }
+
+        public bool DragBegin(int command, int arg, float x, float y)
+        {
+            _dragging = command == UiFormRows.FieldCommand && arg >= 0 && arg < _form.Count && _form.Rows[arg].Kind == UiFormKind.Slider ? arg : -1;
+            if (_dragging >= 0)
+            {
+                Slide(_dragging, x);
+            }
+            return _dragging >= 0;
+        }
+
+        public void DragMove(float x, float y)
+        {
+            if (_dragging >= 0)
+            {
+                Slide(_dragging, x);
+            }
+        }
+
+        public void DragEnd(bool cancelled)
+        {
+            _dragging = -1;
+        }
+
+        // ------------------------------------------------------------------------------------------------- presses
+
+        // The game reads the press's answer in its own frame (a list's lines rebuilt, the next line made): read it in the next.
+        private void Soon()
+        {
+            _due = Time.frameCount + 1;
+        }
+
+        private bool Choose(int arg)
+        {
+            if (arg < 0 || arg >= _choices.Count)
+            {
+                return false;
+            }
+            Button b = _choices[arg];
+            if (b == null)
+            {
+                Log("another mod's piece in the panel: the game's own view until it closes");
+                DialogKits.Classic();
+                return true;
+            }
+            return Answer(b, "a reply");
+        }
+
+        // A button of the line pressed as a click presses it; the player's answer kept for the thread (the form's values for a form).
+        private bool Answer(Button b, string what)
+        {
+            CanvasGroup view = View();
+            string words = _formShown && !ReferenceEquals(b, _leave) ? _form.Summary() : null;
+            words = words ?? UiWidgets.Label(b);
+            if (!UiWidgets.Press(b))
+            {
+                Log(what + " was not shown by the game, so nothing was pressed");
+                return false;
+            }
+            Log(what + ": the game's own button");
+            if (view != null && !string.IsNullOrEmpty(words))
+            {
+                _said.Add(new KeyValuePair<int, string>(view.GetInstanceID(), words));
+            }
+            Soon();
+            return true;
+        }
+
+        private void Slide(int row, float x)
+        {
+            UiFormPick pick = _form.Pick;
+            if (row < 0 || row >= _form.Count || _form.Rows[row].Kind != UiFormKind.Slider || pick.ControlW <= 0f)
+            {
+                return;
+            }
+            float face = Mathf.Clamp01((x - pick.ControlX) / pick.ControlW);
+            if (_form.Slide(row, UiDraw.SliderShare(pick.ControlW, _form.Rows[row].Value ?? string.Empty, face)))
+            {
+                Soon();
+            }
+        }
+
+        private static void Log(string what)
+        {
+            UiDirector.Logger?.Info("Dialog (kit): " + what);
+        }
+
+        // ------------------------------------------------------------------------------------------------- the reading
+
+        // What changing would change the screen: the conversation, its lines, the line now with its buttons and its form,
+        // and anything another mod put in the panel.
+        private long Signature()
+        {
+            if (_ui == null)
+            {
+                return 0L;
+            }
+            long sig = _ui.dialog != null ? _ui.dialog.GetHashCode() : 0;
+            Transform content = Content();
+            for (int i = 0; content != null && i < content.childCount; i++)
+            {
+                Transform c = content.GetChild(i);
+                sig = sig * 31L + (c.gameObject.activeSelf ? c.GetInstanceID() : 1);
+            }
+            CanvasGroup view = View();
+            if (view != null)
+            {
+                sig = sig * 31L + Hash(view.transform.Find("Message/MessageText")) + Hash(view.transform.Find("HeaderLabel")) * 7L;
+                Transform row = view.transform.Find("Buttons");
+                for (int i = 0; row != null && i < row.childCount; i++)
+                {
+                    Button b = row.GetChild(i).GetComponent<Button>();
+                    sig = sig * 31L + (b != null && b.gameObject.activeSelf ? (b.interactable ? 3 : 2) + Hash(b.transform) : 1);
+                }
+                DialogEntry e = Entry();
+                if (e != null && e.Template == DialogEntry.TemplateType.Input)
+                {
+                    sig = sig * 31L + DialogForm.Signature(FormNow());
+                }
+            }
+            return sig * 31L + Foreign();
+        }
+
+        private static long Hash(Transform t)
+        {
+            TMP_Text text = t != null ? t.GetComponentInChildren<TMP_Text>(false) : null;
+            return text != null && text.text != null ? text.text.GetHashCode() : 0;
+        }
+
+        private void Build()
+        {
+            _choices.Clear();
+            _buttons.Clear();
+            _made.Clear();
+            _lines.Clear();
+            _leave = null;
+            _formShown = false;
+            if (!ReferenceEquals(_dialog, _ui.dialog))
+            {
+                _dialog = _ui.dialog;
+                _said.Clear();
+                _form.Clear();
+                _shownLines = -1;
+                _asideFor = null;
+            }
+            CanvasGroup view = View();
+            DialogEntry e = Entry();
+            string speaker = null;
+            int mood = -2;
+            Transform content = Content();
+            for (int i = 0; content != null && i < content.childCount; i++)
+            {
+                Transform c = content.GetChild(i);
+                if (!c.gameObject.activeSelf)
+                {
+                    continue;   // the two templates the game copies each line from, and lines it took away
+                }
+                bool now = view != null && c == view.transform;
+                bool asks = c.Find("InputTemplates") != null;
+                if (!asks)
+                {
+                    string words = Words(c.Find("Message/MessageText"));
+                    if (!string.IsNullOrEmpty(words))
+                    {
+                        int m = MoodOf(c);
+                        Add(new UiMessageModel { From = UiFrom.Them, Text = words, Mood = DialogRules.MoodIcon(m) });
+                        mood = m;
+                    }
+                    speaker = Words(c.Find("HeaderLabel")) ?? speaker;
+                }
+                if (!now)
+                {
+                    string answer = Said(c);
+                    if (answer != null)
+                    {
+                        Add(new UiMessageModel { From = UiFrom.Me, Text = answer });
+                    }
+                }
+            }
+            Head(speaker, mood);
+            if (view != null)
+            {
+                Line(view, e);
+            }
+            int foreign = Foreign();
+            if (foreign > 0)
+            {
+                _choices.Add(null);
+                _made.Add(new UiDecisionChoice { Name = UiText.T("reallife_ui_contacts_game_view") });
+            }
+            _m.Messages = _lines.ToArray();
+            _m.MessageCount = _lines.Count;
+            if (_lines.Count != _shownLines)
+            {
+                _shownLines = _lines.Count;
+                _m.Offset = -1f;   // a new line: the thread shows its newest
+            }
+            _m.Choices = _made.ToArray();
+            _m.Chosen = -1;
+            _m.Typing = _made.Count == 0 && !_formShown;   // their next line is coming
+            Prompts();
+        }
+
+        // Who is talking: the latest line's speaker as the game heads it, the place or contact the talk is with under them.
+        private void Head(string speaker, int mood)
+        {
+            Contact c = _ui.contact;
+            string with = c != null ? ContactName(c) : null;
+            string name = speaker ?? with;
+            _m.Name = name ?? UiText.T("reallife_ui_dialog_title");
+            _m.Hue = UiColour.HueOf(_m.Name);
+            _m.Ring = ContactsRules.MoodRing(mood);
+            _m.Role = with != null && with != name ? with : null;
+            _m.Status = null;
+            _m.Title = name != null ? UiText.Fill("reallife_ui_dialog_talking", "name", name) : UiText.T("reallife_ui_dialog_title");
+            _m.ThreadStart = null;
+            _m.EmptyTitle = null;
+            _m.EmptyBody = null;
+            _m.Composer = false;
+        }
+
+        // The line now: its buttons as numbered choices (the confirm first, the second option, Leave last), and its form.
+        private void Line(CanvasGroup view, DialogEntry e)
+        {
+            Transform row = view.transform.Find("Buttons");
+            for (int i = 0; row != null && row.gameObject.activeSelf && i < row.childCount; i++)
+            {
+                Button b = row.GetChild(i).GetComponent<Button>();
+                if (b != null && b.gameObject.activeSelf)
+                {
+                    _buttons.Add(b);
+                }
+            }
+            bool hasCancel = e != null && e.OnCancel != null, hasSecond = e != null && e.OnSecondOption != null, hasConfirm = e != null && e.OnConfirm != null;
+            if (_buttons.Count != (hasCancel ? 1 : 0) + (hasSecond ? 1 : 0) + (hasConfirm ? 1 : 0))
+            {
+                hasCancel = hasSecond = hasConfirm = false;   // a row the game's line does not explain (another mod's button in it): each a reply, in its order
+            }
+            if (hasCancel || hasSecond || hasConfirm)
+            {
+                int n = ContactsRules.ChoiceOrder(hasCancel, hasSecond, hasConfirm, true, Order);
+                for (int i = 0; i < n; i++)
+                {
+                    Choice(_buttons[Order[i]]);
+                }
+                _leave = hasCancel ? _buttons[0] : null;
+            }
+            else
+            {
+                for (int i = 0; i < _buttons.Count; i++)
+                {
+                    Choice(_buttons[i]);
+                }
+            }
+            Form(view, e);
+        }
+
+        private void Choice(Button b)
+        {
+            _choices.Add(b);
+            _made.Add(new UiDecisionChoice { Name = DialogRules.OneLine(UiWidgets.Label(b)), Disabled = !b.interactable });
+        }
+
+        // The line's form in the slot, read from the game's own widgets; a casino's game, or a form with nothing the kit can
+        // show, answered in the game's own panel until the line is answered.
+        private void Form(CanvasGroup view, DialogEntry e)
+        {
+            _m.Form = UiFormKind.None;
+            _m.Fields = new UiFormField[0];
+            _m.FieldCount = 0;
+            _m.Rows = _form.Rows;
+            _m.RowCount = 0;
+            _m.Pick = _form.Pick;
+            if (e == null || e.Template != DialogEntry.TemplateType.Input)
+            {
+                _form.Clear();
+                _m.Rows = _form.Rows;
+                return;
+            }
+            Transform form = FormNow();
+            string question = Words(view.transform.Find("HeaderLabel"));
+            bool casino = _ui.dialog != null && DialogRules.Casino(_ui.dialog.GetType().Name);
+            if (form == null || casino || DialogRules.CasinoForm(form.name) || !_form.Read(form, question))
+            {
+                _form.Clear();
+                _m.Rows = _form.Rows;
+                Aside(e, form != null ? form.name : "none");
+                return;
+            }
+            _m.Rows = _form.Rows;
+            _m.RowCount = _form.Count;
+            _formShown = true;
+        }
+
+        // The game's own panel answers this line; the kit is back the moment it is answered or the talk ends.
+        private void Aside(DialogEntry e, string what)
+        {
+            if (ReferenceEquals(_asideFor, e))
+            {
+                return;
+            }
+            _asideFor = e;
+            Log("the line's form '" + what + "' is answered in the game's own panel");
+            DialogUI ui = _ui;
+            object dialog = ui.dialog;
+            float next = 0f;
+            DialogKits.StepAside(() =>
+            {
+                float now = Time.unscaledTime;
+                if (now < next)
+                {
+                    return false;
+                }
+                next = now + Every;
+                return ui == null || ui.dialog == null || !ReferenceEquals(ui.dialog, dialog) || !ReferenceEquals(GameContract.DialogEntryNow.Field.GetValue(ui), e);
+            });
+        }
+
+        private void Prompts()
+        {
+            var prompts = new List<UiPrompt>(3)
+            {
+                new UiPrompt { Action = UiAction.Move, Label = UiText.T("reallife_ui_prompt_move") },
+                new UiPrompt { Action = UiAction.Confirm, Label = UiText.T("reallife_ui_prompt_choose") },
+            };
+            if (_leave != null && UiWidgets.Shows(_leave))
+            {
+                prompts.Add(new UiPrompt { Action = UiAction.Back, Label = DialogRules.OneLine(UiWidgets.Label(_leave)) });
+            }
+            _m.Prompts = prompts.ToArray();
+            _m.PromptCount = _m.Prompts.Length;
+        }
+
+        private void Add(UiMessageModel line)
+        {
+            if (_lines.Count >= DialogRules.MostLines)
+            {
+                _lines.RemoveAt(0);   // the game keeps its last thirty lines; the thread keeps as many
+            }
+            _lines.Add(line);
+        }
+
+        private string Said(Transform entry)
+        {
+            CanvasGroup group = entry.GetComponent<CanvasGroup>();
+            int id = group != null ? group.GetInstanceID() : 0;
+            for (int i = _said.Count - 1; i >= 0; i--)
+            {
+                if (_said[i].Key == id)
+                {
+                    return _said[i].Value;
+                }
+            }
+            return null;
+        }
+
+        // Another mod's piece in the panel beside the game's lines: offered as the game's own view.
+        private int Foreign()
+        {
+            int n = 0;
+            for (int i = 0; _panel != null && i < _panel.childCount; i++)
+            {
+                Transform c = _panel.GetChild(i);
+                n += c.gameObject.activeSelf && c.name != Entries ? 1 : 0;
+            }
+            return n;
+        }
+
+        private Transform Content()
+        {
+            if (_content == null && GameContract.DialogTextTemplate.Field != null)
+            {
+                var template = GameContract.DialogTextTemplate.Field.GetValue(_ui) as CanvasGroup;
+                _content = template != null ? template.transform.parent : null;
+            }
+            return _content;
+        }
+
+        private CanvasGroup View() => GameContract.DialogEntryView.Field != null ? GameContract.DialogEntryView.Field.GetValue(_ui) as CanvasGroup : null;
+
+        private DialogEntry Entry() => GameContract.DialogEntryNow.Field != null ? GameContract.DialogEntryNow.Field.GetValue(_ui) as DialogEntry : null;
+
+        private Transform FormNow()
+        {
+            var form = GameContract.DialogEntryForm.Field != null ? GameContract.DialogEntryForm.Field.GetValue(_ui) as Transform : null;
+            return form != null && form.gameObject.activeInHierarchy ? form : null;
+        }
+
+        private static string Words(Transform t)
+        {
+            TMP_Text text = t != null && t.gameObject.activeInHierarchy ? t.GetComponent<TMP_Text>() : null;
+            string words = text != null ? ContactsRules.Plain(text.text) : null;
+            return string.IsNullOrEmpty(words) ? null : words.Trim();
+        }
+
+        private static string ContactName(Contact c) =>
+            Localizor.LocalizorManager.IsLocalizedKey(c.id) ? Localizor.LocalizorManager.GetLocalization(c.id) : c.id;
+
+        // The face the game puts by a line (a negotiation's): content, unsure, angry; -2 for none or another.
+        private static int MoodOf(Transform entry)
+        {
+            Transform face = entry.Find("Message/Mood/FacialExpression");
+            Image image = face != null && face.gameObject.activeInHierarchy ? face.GetComponent<Image>() : null;
+            if (image == null || image.sprite == null)
+            {
+                return -2;
+            }
+            try
+            {
+                return Faces(image.sprite);
+            }
+            catch (Exception ex) when (Guard.Missing(ex))
+            {
+                return -2;
+            }
+        }
+
+        private static int Faces(Sprite face)
+        {
+            if (Is(face, CharacterEmojiName.CommonGreenHappy))
+            {
+                return 1;
+            }
+            if (Is(face, CharacterEmojiName.CommonYellowNeutral))
+            {
+                return 0;
+            }
+            return Is(face, CharacterEmojiName.CommonRedAngry) ? -1 : -2;
+        }
+
+        private static bool Is(Sprite face, CharacterEmojiName name)
+        {
+            CharacterEmoji emoji = CharacterEmojiSystem.GetCharacterEmojiByName(name);
+            return emoji != null && emoji.icon == face;
+        }
+    }
+}

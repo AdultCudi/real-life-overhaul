@@ -177,9 +177,10 @@ namespace RealLifeOverhaul.Ui
             _group = _root.AddComponent<CanvasGroup>();
             Sort();
             _root.AddComponent<GraphicRaycaster>();
-            if (_screen.Kind != UiGameKind.Overlay)
+            if (_screen.Kind != UiGameKind.Overlay && _screen.Kind != UiGameKind.Panel)
             {
                 // Takes the clicks no target of the kit's takes: the game's pieces it hides under it stay pressable by alpha alone.
+                // A panel of the HUD takes none: the rest of the HUD (the phone's button, the money) stays the player's beside it.
                 var blocker = _root.AddComponent<Image>();
                 blocker.color = new Color(0f, 0f, 0f, 0f);
             }
@@ -348,6 +349,14 @@ namespace RealLifeOverhaul.Ui
             }
             if (_root == null || _classic)
             {
+                return;
+            }
+            if (_screen.Kind == UiGameKind.Panel)
+            {
+                // A box over a panel of the HUD (the bank's question over its loan form) stands above the kit's canvas, and the
+                // phone opened beside a conversation takes the keys: the panel stays drawn and only its keys wait, so one key is
+                // never the box's (or the phone's) and the panel's at once.
+                Hold(UiBoxes.Up || UiBoxes.Over || global::UI.Smartphone.FullMenu.IsOpen);
                 return;
             }
             if (_screen.Kind != UiGameKind.App)

@@ -12,7 +12,9 @@ saves and events stay the game's. Contacts is the worked example (`Scripts/Ui/Co
    - `Name`: what Player.log calls it ("the Contacts app").
    - `Title`, `Icon`: the window's strip.
    - `Kind`: `App` (an app of the full menu: fades with the menu, holds its keys under a box, the frame owns the menu's
-     chrome), `Box` (a box over everything: its keys are its own) or `Overlay` (over the world: takes no key).
+     chrome), `Box` (a box over everything: its keys are its own), `Overlay` (over the world: takes no key) or `Panel` (a
+     panel of the HUD over the world, the dialogue: its keys its own, held under a box or the phone; it takes no click
+     outside its own targets, so the rest of the HUD stays the player's).
    - `Find()`: the game's object, switched off or on, or null while the game has not built it. Never search the scene for
      it: read it from `UIs`, a field of the game's (through `GameContract`), or a child by its path.
    - `Check(found)`: why it is not built as this version expects, or null.
