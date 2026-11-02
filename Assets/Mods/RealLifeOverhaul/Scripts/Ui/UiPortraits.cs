@@ -123,11 +123,26 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        /// <summary>
+        /// A seed from a name for a person whose sex the mod records: the name's hash with the sex in its two low bits, so a
+        /// recorded woman is never painted a man because her name is one the list does not know.
+        /// </summary>
+        public static int SeedFor(string name, bool female)
+        {
+            return (Seed(name) & 0x7FFFFFFC) | (female ? 1 : 2);
+        }
+
         /// <summary>Paints the face for a seed into a buffer of size x size RGBA texels, rows from the bottom as a texture holds them.</summary>
         public static void Paint(int seed, int size, byte[] rgba, float hue)
         {
+            Paint(seed, size, rgba, hue, 0);
+        }
+
+        /// <summary>The same, for a person of a recorded age in years (0 for none known): from <see cref="UiFaceRules.GreyFrom"/> their hair is grey.</summary>
+        public static void Paint(int seed, int size, byte[] rgba, float hue, int age)
+        {
             var f = new Face();
-            Pick(seed, hue, ref f);
+            Pick(seed, hue, age, ref f);
             float k = size / 128f, inv = 128f / size, rim = 64f - 0.5f * inv;
             Load(f.Ground, out float r0, out float g0, out float b0);
             for (int py = 0; py < size; py++)
@@ -164,7 +179,7 @@ namespace RealLifeOverhaul.Ui
             public float Crown, Jaw, Smile, NeckW, Top, Slope, SlopeNorm, Wide, EyeH, Arch;
         }
 
-        private static void Pick(int seed, float hue, ref Face f)
+        private static void Pick(int seed, float hue, int age, ref Face f)
         {
             uint s = Math.Max(1u, ((uint)seed >> 2) * 2654435761u ^ 0x5BD1E995u);
             int look = seed & 3;
@@ -173,6 +188,7 @@ namespace RealLifeOverhaul.Ui
             f.Skin = Skins[skin];
             f.Ground = Ground(skin, hue);
             int hair = Odds(ref s, skin <= 2 ? LightHairOdds : skin == 3 ? TanHairOdds : DeepHairOdds);
+            hair = age >= UiFaceRules.GreyFrom ? 7 + (int)(s & 1u) : hair;   // grey or silver whatever the roll gave; the rolls after it are the same
             // Grey on a light disc would melt into it, and dark brown on the deepest skin reads as one shape with the face.
             hair = hair >= 7 && Contrast(Hairs[hair], f.Ground) < 1.25f ? 1 : hair;
             hair = skin >= 4 && hair < 7 && Contrast(Hairs[hair], Skins[skin]) < 1.45f ? 0 : hair;

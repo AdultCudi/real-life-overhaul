@@ -18,7 +18,26 @@ internal static partial class UiSamples
     };
 
     /// <summary>Every state of Rivals.</summary>
-    public static readonly string[] RivalsStates = { "league", "league_quiet", "businesses", "buildings", "league_empty", "league_fr", "businesses_fr" };
+    public static readonly string[] RivalsStates = { "league", "league_faces", "league_quiet", "businesses", "buildings", "league_empty", "league_fr", "businesses_fr" };
+
+    /// <summary>The rivals of the league sample the game has a picture of, in "league_faces" (the rest have none: painted from the sex and age the mod records).</summary>
+    public static readonly string[] GameFaces = { "Huang Guo", "Thierry Laurent Moreau", "Ingrid Schneider", "Jessica Johnson", "Maya Okafor" };
+
+    /// <summary>The names of the league sample whose game picture is told, as a screen reading the game tells it.</summary>
+    public static void TellFaces(string state)
+    {
+        if (state != "league_faces")
+        {
+            return;
+        }
+        foreach (string name in GameFaces)
+        {
+            UiFaceBook.KnowGame(name);
+        }
+        UiFaceBook.KnowTraits("Marcus Hale", false, 44);
+        UiFaceBook.KnowTraits("Priya Raman", true, 39);
+        UiFaceBook.KnowTraits("Viktor Hahn", false, 61);
+    }
 
     /// <summary>Every state of Market Insider.</summary>
     public static readonly string[] MarketStates = { "uptown_demands", "uptown_events", "uptown_quiet", "estate_for_sale", "filter_open", "uptown_fr", "estate_fr", "events_fr" };
@@ -166,6 +185,7 @@ internal static partial class UiSamples
     public static UiRivalsModel Rivals(UiWords t, string state)
     {
         UiWords w = state.EndsWith("_fr") ? PersonaFrench(t) : t;
+        TellFaces(state);
         RivalsView v = RivalsSample(w, state);
         var m = new UiRivalsModel();
         RivalsViews.Rivals(m, w, v);
@@ -197,13 +217,13 @@ internal static partial class UiSamples
             Rival("Felix Weber", 2400f, 3100f, 1, "Midtown", 48, false, false, false),
             Rival("Carmen Ortega", -4100f, 8700f, 0, null, 63, false, false, true),
         };
-        v.Chosen = state == "league_quiet" ? 3 : 1;
-        v.Contacts = state != "league_quiet";
+        v.Chosen = state == "league_quiet" ? 3 : state == "league_faces" ? 5 : 1;
+        v.Contacts = state != "league_quiet" && state != "league_faces";
         v.Filters = new[] { t("common_weekly_income", "Weekly Income"), t("common_businesses", "Businesses") };
         v.Filter = 0;
-        v.Chart = state == "league_quiet" ? new[] { 148100f, 152400f, 150900f, 158300f, 162700f, 166200f, 171900f }
+        v.Chart = state == "league_quiet" || state == "league_faces" ? new[] { 148100f, 152400f, 150900f, 158300f, 162700f, 166200f, 171900f }
             : new[] { 281300f, 276900f, 270400f, 268800f, 265100f, 263000f, 254800f };
-        if (state != "league_quiet")
+        if (state != "league_quiet" && state != "league_faces")
         {
             v.Threats = new[]
             {

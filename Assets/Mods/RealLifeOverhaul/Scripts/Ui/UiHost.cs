@@ -63,6 +63,7 @@ namespace RealLifeOverhaul.Ui
         private Vector2 _laidSize;
         private bool _laidDark, _arrive, _typing, _typeSoon, _held;
         private UiPad _laidPad;
+        private int _laidFaces;   // UiFaces.Version at the last layout: a game picture that arrived since lays the screen out again
         private int _heldX, _heldY;
         private float _nextRepeat;
         private UiInputState _state;
@@ -221,7 +222,7 @@ namespace RealLifeOverhaul.Ui
             _state = default(UiInputState);
             if (PointerOnly)
             {
-                if (_screen.Dirty || ((RectTransform)transform).rect.size != _laidSize)
+                if (_screen.Dirty || UiFaces.Version != _laidFaces || ((RectTransform)transform).rect.size != _laidSize)
                 {
                     Layout();
                 }
@@ -246,7 +247,7 @@ namespace RealLifeOverhaul.Ui
             }
             Vector2 size = ((RectTransform)transform).rect.size;
             bool dark = _dark != null && _dark();
-            if (_screen.Dirty || size != _laidSize || dark != _laidDark || (_state.Pad != _laidPad && !_typing))
+            if (_screen.Dirty || UiFaces.Version != _laidFaces || size != _laidSize || dark != _laidDark || (_state.Pad != _laidPad && !_typing))
             {
                 Layout();
             }
@@ -511,6 +512,7 @@ namespace RealLifeOverhaul.Ui
             _laidSize = size;
             _laidDark = dark;
             _laidPad = keys.Pad;
+            _laidFaces = UiFaces.Version;
             bool arrive = _arrive;
             _arrive = false;
             _view.Write(_scene, arrive);

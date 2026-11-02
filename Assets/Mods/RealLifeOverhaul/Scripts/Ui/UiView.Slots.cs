@@ -252,13 +252,13 @@ namespace RealLifeOverhaul.Ui
                 {
                     Place(slot.Rect, it.X, it.Y, it.W, it.H);
                     Image face = ((ImageSlot)slot).Image;
-                    Sprite painted = UiSprites.Portrait(it.Text, it.Value);
-                    if (face.sprite != painted)
+                    Sprite picture = UiFaces.Of(it.Text, it.Value, out bool plain);   // the one rule for a person's picture
+                    if (face.sprite != picture)
                     {
-                        face.sprite = painted;
+                        face.sprite = picture;
                     }
                     face.type = Image.Type.Simple;
-                    face.color = new Color(1f, 1f, 1f, it.Alpha);
+                    face.color = plain ? Colour(UiRole.Tile, it.Alpha) : new Color(1f, 1f, 1f, it.Alpha);   // a face still being made is a plain disc
                     break;
                 }
                 case UiKind.Picture:

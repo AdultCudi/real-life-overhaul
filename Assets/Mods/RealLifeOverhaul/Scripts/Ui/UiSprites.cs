@@ -104,10 +104,13 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        /// <summary>A person's painted face (UiPortraits), the same for the same name, on a disc of a hue; made once a face.</summary>
-        public static Sprite Portrait(string name, float hue)
+        /// <summary>
+        /// A painted face (UiPortraits) from a seed and a recorded age (0 for none), the same for the same ones, on a disc of a
+        /// hue; made once a face. A screen never asks here for a person: it asks <see cref="UiFaces.Of"/>, the one rule.
+        /// </summary>
+        internal static Sprite Painted(int seed, int age, float hue)
         {
-            int key = UiPortraits.Seed(name) ^ ((int)hue * 7919);
+            int key = (seed ^ ((int)hue * 7919)) * 31 + age;
             if (Faces.TryGetValue(key, out Sprite s) && s != null)
             {
                 return s;
@@ -124,7 +127,7 @@ namespace RealLifeOverhaul.Ui
             }
             const int size = 128;
             var rgba = new byte[size * size * 4];
-            UiPortraits.Paint(UiPortraits.Seed(name), size, rgba, hue);
+            UiPortraits.Paint(seed, size, rgba, hue, age);
             var tex = new Texture2D(size, size, TextureFormat.RGBA32, true) { name = "UiPortrait", wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Trilinear };
             tex.SetPixelData(rgba, 0);   // the top level only: Apply makes the smaller ones
             tex.Apply(true, true);   // mips for a face shown at 40 px, so it does not shimmer
