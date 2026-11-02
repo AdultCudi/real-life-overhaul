@@ -231,7 +231,7 @@ namespace RealLifeOverhaul.Uptown
             }
             if (!CompleteOne(made, f, "its stand"))
             {
-                LifeGame.SayIncomplete(1);   // a building handed over now that is not yet whole: Player.log names the items
+                StandIncomplete();   // a building handed over now that is not yet whole: the notice only when more are than the save last told; Player.log names the items
             }
             return true;
         }
