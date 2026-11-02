@@ -63,6 +63,8 @@ NOTICE_MOST = 240                                  # characters: a toast holds a
 ENGLISH_OK = {
     # 2 Nov 2026, the RLO interface's switch for the game's Persona app: the app's name, which the game keeps in Latin letters in Chinese too
     'reallife_ui_screen_persona',
+    # 2 Nov 2026, the RLO interface's EconoView switch: the app's name, which the game keeps in Latin letters in every language
+    'reallife_ui_screen_econoview',
     # 1 Nov 2026, the gallery of the RLO interface: its sample people, a typed name and a street are names
     'reallife_ui_gallery_person_1', 'reallife_ui_gallery_person_2', 'reallife_ui_gallery_person_3', 'reallife_ui_gallery_person_4', 'reallife_ui_gallery_person_5',
     'reallife_ui_gallery_person_6', 'reallife_ui_gallery_person_7', 'reallife_ui_gallery_query', 'reallife_ui_gallery_address',
