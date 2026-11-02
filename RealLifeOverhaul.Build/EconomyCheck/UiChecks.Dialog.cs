@@ -441,9 +441,9 @@ internal static partial class Program
         string court = File.ReadAllText(System.IO.Path.Combine(scripts, "Justice", "JusticeDirector.Court.cs")), tax = File.ReadAllText(System.IO.Path.Combine(scripts, "Economy", "Company", "CompanyDirector.Tax.cs"));
         Check(spoken.Contains("_skipLeft = Waiting();") && spoken.Contains("CloseLine();") && !spoken.Contains("InstantClose") && spokenKit.Contains("UiAction.Count, null, SkipCommand, 0"),
             "monologue: Skip closes this line and each one waiting by the game's own close as it comes, so every line's ending runs; neither button takes a key");
-        Check(choices.Contains("talk.ShowEntry(next);") && loanForm.Contains("LoanConfirm.Wrap(entry, this);") && loanForm.Contains("_loanForm.dailyInterest = f.Interest;")
+        Check(choices.Contains("talk.ShowEntry(Guard.Entry(next));") && loanForm.Contains("LoanConfirm.Wrap(entry, this);") && loanForm.Contains("_loanForm.dailyInterest = f.Interest;")
               && loanForm.Contains("return _own();"),
-            "dialog: an answer of the dialog's own leads on through the game's ShowEntry, and the term and a point agreed go into the game's form as its own confirm makes the loan");
+            "dialog: an answer of the dialog's own leads on through the game's ShowEntry, guarded as every page is, and the term and a point agreed go into the game's form as its own confirm makes the loan");
         Check(hearing.Contains("_fineFactor = JusticeLaw.TrialFineFactor;") && hearing.Contains("bool settle = Taxed && trial.Due > 0;") && court.Contains("TaxSettled")
               && tax.Contains("TaxRules.Audited(t, _state.Seed, _state.Age, day)"),
             "court: a conviction after a trial doubles the fine, the city settles a tax case only, and a settlement quietens the tax office's audits of the player's own businesses");
