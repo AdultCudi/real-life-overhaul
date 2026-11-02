@@ -6,6 +6,7 @@ using Entities;
 using Extensions;
 using Localizor;
 using Localizor.LanguageChangeEvent;
+using RealLifeOverhaul.GameUi;
 using UI.Notification;
 using UI.Smartphone.Apps.Contacts;
 using UnityEngine;
@@ -199,6 +200,7 @@ namespace RealLifeOverhaul.Economy
                     PhoneContacts.HangUp();
                 }
             };
+            entry.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", DebtPhone.Money(overdue));
             if (!s.PlanUsed)
             {
                 entry.SecondOptionTextOverride = "reallife_collect_plan";
@@ -282,6 +284,8 @@ namespace RealLifeOverhaul.Economy
                 CancelTextOverride = "reallife_lender_no",
                 OnCancel = PhoneContacts.HangUp
             };
+            entry.Gets(DialogButton.Confirm, "reallife_ui_dialog_cost_in", "amount", DebtPhone.Money(amount))
+                 .Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_owe", "amount", DebtPhone.Money(SharkRules.OwedOnDueDay(amount)), "days", ProductCatalogue.SharkDueDays.ToString());
             if (next != amount)
             {
                 entry.SecondOptionTextOverride = "reallife_lender_other";
@@ -320,6 +324,7 @@ namespace RealLifeOverhaul.Economy
             {
                 entry.ConfirmTextOverride = (pay >= debt.Owed ? "reallife_lender_pay_all" : "reallife_lender_pay_some").Localize(new { amount = DebtPhone.Money(pay) });
                 entry.OnConfirm = () => DebtPhone.Safe(() => Pay(pay));
+                entry.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", DebtPhone.Money(pay));
             }
             else
             {
@@ -360,7 +365,7 @@ namespace RealLifeOverhaul.Economy
                 OnConfirm = () => DebtPhone.Safe(Extend),
                 CancelTextOverride = "reallife_lender_no",
                 OnCancel = PhoneContacts.HangUp
-            };
+            }.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_owe_day", "amount", DebtPhone.Money(debt.Owed + fee), "day", SharkRules.ExtendedDay(debt, today).ToString());
         }
 
         private static DialogEntry Pay(int amount)

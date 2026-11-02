@@ -8,12 +8,13 @@ using UnityEngine;
 public static partial class UiPreviewRunner
 {
     // The game's conversations on the kit over the HUD's bar, as they come while walking: the dialogue panel docked at
-    // the right in each of its states (the bank's desk indoors, the Business desk, the street by day and by night, an
-    // insurer's office), the scenes over the courthouse, the studio, a door, an office; the same loan by phone on the call
-    // card over the night street, and a wage talk's mood in Contacts; Uncle Fred's lines at the top. The bank, the desk,
-    // the court and its tax case, the interview, the pitch, the call and Uncle Fred also in Brazilian Portuguese and in
-    // Chinese, and three in German, the longest of the mod's languages: each from the game's and the mod's own files,
-    // English where neither has the words.
+    // the right in each of its states (the bank's desk indoors, each game form a talk shows with what its confirm pays and
+    // costs, a hotel's desk, the Business desk, the street by day and by night, an insurer's office), the scenes over the
+    // courthouse, the studio, a door, an office; the same loan by phone on the call card over the night street, a tow by
+    // phone, and a wage talk's mood and offer in Contacts; Uncle Fred's lines at the top. The bank, a wholesale contract, a
+    // delivery, the desk, the court and its tax case, the interview, the pitch, the call and Uncle Fred also in Brazilian
+    // Portuguese and in Chinese, and four in German, the longest of the mod's languages: each from the game's and the
+    // mod's own files, English where neither has the words.
     static partial void AddDialog(List<Screen> screens)
     {
         foreach (string state in UiSamples.DialogStates)
@@ -28,11 +29,15 @@ public static partial class UiPreviewRunner
         {
             screens.Add(SpokenScreenOf(state, "en"));
         }
-        screens.Add(CallScreenOf(true, "en"));
-        screens.Add(CallScreenOf(false, "en"));
+        foreach (string call in UiSamples.CallStates)
+        {
+            screens.Add(CallScreenOf(call, "en"));
+        }
         foreach (string lang in new[] { "pt", "zh-cn" })
         {
             screens.Add(DialogScreenOf("bank_loan", lang));
+            screens.Add(DialogScreenOf("wholesale", lang));
+            screens.Add(DialogScreenOf("furniture", lang));
             screens.Add(DialogScreenOf("desk_full", lang));
             screens.Add(DialogScreenOf("street_said", lang));
             screens.Add(SceneScreenOf("court_plea", lang));
@@ -40,9 +45,11 @@ public static partial class UiPreviewRunner
             screens.Add(SceneScreenOf("interview_round", lang));
             screens.Add(SceneScreenOf("pitch_question", lang));
             screens.Add(SpokenScreenOf("fred_more", lang));
-            screens.Add(CallScreenOf(true, lang));
+            screens.Add(CallScreenOf("loan", lang));
+            screens.Add(CallScreenOf("mood", lang));
         }
         screens.Add(DialogScreenOf("bank_loan", "de"));
+        screens.Add(DialogScreenOf("furniture", "de"));
         screens.Add(DialogScreenOf("desk_full", "de"));
         screens.Add(SceneScreenOf("court_plea", "de"));
     }
@@ -51,8 +58,9 @@ public static partial class UiPreviewRunner
     private static Screen DialogScreenOf(string state, string lang)
     {
         UiWords t = DialogWords(lang);
-        string backdrop = state.StartsWith("street") ? (state == "street" ? "13.jpg" : "11.jpg") : state.StartsWith("desk") || state == "other_mod" || state == "haggle" ? "05.jpg"
-            : state.StartsWith("marketing") ? "00.jpg" : "03.jpg";
+        string backdrop = state.StartsWith("street") ? (state == "street" ? "13.jpg" : "11.jpg")
+            : state.StartsWith("desk") || state == "other_mod" || state == "haggle" || state == "installation" || state == "moving" || state == "hotel" ? "05.jpg"
+            : state.StartsWith("marketing") || state == "wholesale" || state.StartsWith("import") || state == "recruitment" ? "00.jpg" : "03.jpg";
         var screen = new Screen
         {
             Name = "dialog_" + state + Suffix(lang), AppName = "Dialogue", Icon = UiIcon.Message, Backdrop = backdrop, Bar = UiSamples.WalkingBar,
@@ -83,6 +91,33 @@ public static partial class UiPreviewRunner
                 break;
             case "other_mod":
                 screen.HoverArg = 2;   // the game's own view, for another mod's piece
+                break;
+            case "wholesale":
+            case "import":
+            case "import_unset":
+            case "installation":
+            case "moving":
+            case "insurance":
+            case "insurance_unset":
+            case "recruitment":
+                screen.FocusCommand = UiFormRows.FieldCommand;
+                screen.FocusArg = 1;   // the form's first choice, under its question
+                screen.HoverArg = 0;   // the confirm, what it pays and costs under it
+                screen.Walk = Moves("DDDU");
+                break;
+            case "furniture":
+                screen.FocusCommand = UiFormRows.FieldCommand;
+                screen.FocusArg = 5;   // the first line of goods
+                screen.HoverArg = 0;
+                screen.Walk = Moves("DDDDU");
+                break;
+            case "driver":
+                screen.FocusCommand = UiFormRows.FieldCommand;
+                screen.FocusArg = 0;   // the contract, the form's first row
+                screen.HoverArg = 0;
+                break;
+            case "hotel":
+                screen.HoverArg = 1;   // the deposit, what it costs now and later
                 break;
             case "between_lines":
                 screen.FocusCommand = -1;
@@ -124,17 +159,19 @@ public static partial class UiPreviewRunner
         };
     }
 
-    // The loan by phone on the call card over the night street, or a candidate's wage talk with their mood in Contacts.
-    private static Screen CallScreenOf(bool loan, string lang)
+    // The loan by phone on the call card over the night street, a tow by phone in the street by day, or a candidate's
+    // wage talk with their mood and what the offer pays in Contacts.
+    private static Screen CallScreenOf(string which, string lang)
     {
         UiWords t = DialogWords(lang);
+        bool card = which != "mood";
         return new Screen
         {
-            Name = (loan ? "dialog_phone_loan" : "dialog_phone_mood") + Suffix(lang), AppName = "Contacts", Icon = UiIcon.AddressBook, Backdrop = loan ? "11.jpg" : "13.jpg",
+            Name = "dialog_phone_" + which + Suffix(lang), AppName = "Contacts", Icon = UiIcon.AddressBook, Backdrop = which == "loan" ? "11.jpg" : "13.jpg",
             Bar = () => UiSamples.ShellBar(UiSamples.RowContacts, false),
-            Lay = (s, f, d, k) => UiContacts.Lay(s, loan ? UiSamples.LoanCall(t) : UiSamples.MoodCall(t), f, d, k),
-            FocusCommand = loan ? UiFormRows.FieldCommand : UiConversation.FormCommand, FocusArg = 0,
-            HoverCommand = loan ? UiCallCard.ChoiceCommand : UiConversation.ChoiceCommand, HoverArg = 0, Walk = Moves(loan ? "DDUU" : "DDDUR")
+            Lay = (s, f, d, k) => UiContacts.Lay(s, UiSamples.CallSample(t, which), f, d, k),
+            FocusCommand = card ? UiFormRows.FieldCommand : UiConversation.FormCommand, FocusArg = 0,
+            HoverCommand = card ? UiCallCard.ChoiceCommand : UiConversation.ChoiceCommand, HoverArg = 0, Walk = Moves(which == "loan" ? "DDUU" : which == "tow" ? "DU" : "DDDUR")
         };
     }
 

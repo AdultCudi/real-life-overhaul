@@ -15,13 +15,16 @@ namespace RealLifeOverhaul.Ui
 {
     /// <summary>
     /// The RLO interface's tests of the conversations (Options, Tests): a talk at one of the city's banks, its first answer
-    /// (a new loan) pressed on the kit once the menu has closed, so its loan form stands in the conversation; the mod's
+    /// (a new loan) pressed on the kit once the menu has closed, so its loan form stands in the conversation; a wholesale
+    /// store's manager and an importer's the same way, their first answer opening the delivery contract's form and the
+    /// partnership's (or their own words for why not: no business, no warehouse, no agent on a shift); the mod's
     /// Business desk face to face; a court hearing heard at once (a case with no evidence opened for it when none is
     /// open); a tax case heard at once, as an audit brings one, so the card shows what each plea costs and the city's
     /// settlement (a real case: the notice says so); two of Uncle Fred's lines, queued as the game queues them, in his own
     /// voice; and the conversations' switches flipped to the game's own and back. Each goes through the game's own methods or the features' own tests
-    /// and says in a notice why it cannot run when it cannot. The bank's desk is the bank's own: a loan taken there is
-    /// real, and the notice says so. The switch test changes the running values only.
+    /// and says in a notice why it cannot run when it cannot. The bank's, the store's and the importer's desks are their
+    /// own: a loan, a contract or a partnership taken there is real, and the notice says so. The switch test changes the
+    /// running values only.
     /// </summary>
     public sealed partial class UiDirector
     {
@@ -41,7 +44,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     return;
                 }
-                Contact bank = Bank();
+                Contact bank = Service(CallDialogType.BankDialog);
                 if (bank == null)
                 {
                     Notifications.Show(NotificationType.Warning, "reallife_ui_test_dialog_no_bank", null, 8f);
@@ -49,7 +52,39 @@ namespace RealLifeOverhaul.Ui
                 }
                 ui.ShowDialog(CallDialogType.BankDialog, NavigationBlocker.SpecialEmployeeDialog, bank);
                 Notifications.Show(NotificationType.Info, "reallife_ui_test_dialog_bank_real", null, 10f);
-                StartCoroutine(Guard.Routine(AskForLoan(ui)));
+                StartCoroutine(Guard.Routine(FirstAnswer(ui)));
+            }
+            catch (Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        /// <summary>Options, Tests: a wholesale store's manager, the delivery contract's form asked for on the kit.</summary>
+        public void TestDialogWholesale() => TalkAt(CallDialogType.WholesaleStoreManagerDialog, "reallife_ui_test_dialog_no_wholesale", "reallife_ui_test_dialog_wholesale_real");
+
+        /// <summary>Options, Tests: an importer's manager, the partnership's form asked for on the kit.</summary>
+        public void TestDialogImport() => TalkAt(CallDialogType.ImportManagerDialog, "reallife_ui_test_dialog_no_import", "reallife_ui_test_dialog_import_real");
+
+        // The first of the city's places of a kind, its own talk face to face, its first answer pressed on the kit once the menu has closed.
+        private void TalkAt(CallDialogType type, string none, string real)
+        {
+            try
+            {
+                DialogUI ui = TalkReady(DialogKits.DialogId);
+                if (ui == null)
+                {
+                    return;
+                }
+                Contact contact = Service(type);
+                if (contact == null)
+                {
+                    Notifications.Show(NotificationType.Warning, none, null, 8f);
+                    return;
+                }
+                ui.ShowDialog(type, NavigationBlocker.SpecialEmployeeDialog, contact);
+                Notifications.Show(NotificationType.Info, real, null, 10f);
+                StartCoroutine(Guard.Routine(FirstAnswer(ui)));
             }
             catch (Exception e)
             {
@@ -247,13 +282,14 @@ namespace RealLifeOverhaul.Ui
             return ui;
         }
 
-        // The first of the city's banks the game lists (not a branch on one of the mod's streets), as its clerk names its contact.
-        private static Contact Bank()
+        // The first of the city's places of a kind the game lists (a bank, a wholesale store, an importer; not one on the mod's
+        // streets), as its clerk names its contact.
+        private static Contact Service(CallDialogType type)
         {
             foreach (KeyValuePair<Address, Building> pair in BuildingHelper.SpecialServiceBuildings)
             {
                 Building building = pair.Value;
-                if (pair.Key == null || building == null || building.SpecialService == null || building.SpecialService.dialogType != CallDialogType.BankDialog
+                if (pair.Key == null || building == null || building.SpecialService == null || building.SpecialService.dialogType != type
                     || NewBuildings.MadeStreets.IsMine(pair.Key.streetName))
                 {
                     continue;
@@ -268,8 +304,9 @@ namespace RealLifeOverhaul.Ui
             return null;
         }
 
-        // Once the menu is closed and the kit draws the talk, its first answer (a new loan) pressed on the kit, as the player presses it.
-        private static IEnumerator AskForLoan(DialogUI ui)
+        // Once the menu is closed and the kit draws the talk, its first answer (a new loan, a contract, a partnership) pressed on
+        // the kit, as the player presses it.
+        private static IEnumerator FirstAnswer(DialogUI ui)
         {
             object talk = ui.dialog;
             while (ui != null && ui.isPanelOpen && ReferenceEquals(ui.dialog, talk) && MenuUp())
@@ -283,9 +320,9 @@ namespace RealLifeOverhaul.Ui
                 if (screen != null)
                 {
                     yield return new WaitForSecondsRealtime(AnswerSeen);
-                    if (ui.isPanelOpen && ReferenceEquals(ui.dialog, talk) && DialogKits.Showing)
+                    if (ui.isPanelOpen && ReferenceEquals(ui.dialog, talk) && DialogKits.Showing && screen.HasAnswer)
                     {
-                        screen.Press(UiConversation.ChoiceCommand, 0);
+                        screen.Press(UiConversation.ChoiceCommand, 0);   // a line with Leave alone (no business to supply) stays to be read
                     }
                     yield break;
                 }

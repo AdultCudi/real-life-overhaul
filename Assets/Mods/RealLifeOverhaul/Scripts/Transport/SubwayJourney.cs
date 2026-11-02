@@ -5,6 +5,7 @@ using BAModAPI;
 using Entities;
 using Helpers;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using UI.Notification;
 using UI.Smartphone.Apps.Contacts;
 using UnityEngine;
@@ -484,6 +485,7 @@ namespace RealLifeOverhaul
             if (!TransitState.HasPass)
             {
                 entry.ConfirmTextOverride = "reallife_transit_call_buy".Localize();
+                entry.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", TransitText.Money(TransitState.DayPass));
                 entry.OnConfirm = () => PhoneContacts.Closing(TransitState.BuyPass() ? "reallife_transit_call_bought" : "reallife_transit_call_no_money");
             }
             else

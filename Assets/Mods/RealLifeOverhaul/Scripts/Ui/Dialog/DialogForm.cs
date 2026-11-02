@@ -13,12 +13,15 @@ namespace RealLifeOverhaul.Ui
     /// form rows from the game's own widgets, as the game laid them out after its code and any mod's ran: a drop-down is a
     /// choice with its options, a figure's field with its steps an amount, a delivery's line its amount with the button
     /// that takes it away, a field alone words or a figure, a slider with the figure the game writes for it, a toggle a
-    /// switch (one of a group an option), a colour's button a swatch, two words in a row a figure read only, a lone line a
-    /// note, a heading over the group it opens, a list's line with its button an entry, a button alone an action, and the
-    /// game's splitters hairlines. Every press goes to that widget (the drop-down's own SelectOption, the field's text, the
-    /// slider's value, the toggle, the button's click), so the dialog reads its values back through GetInputTransform as
-    /// it always has. Game side. Cost: a walk of the form's pieces four times a second while it shows, allocating
-    /// nothing; a read only when that walk changed.
+    /// switch (one of a group an option), a colour's button a swatch, two words in a row a figure read only (one the game
+    /// has not written yet says so), a lone line a note, a heading over the group it opens, a list's line with its button
+    /// an entry, a button alone an action, and the game's splitters hairlines. A label the game hangs under another one to
+    /// stand beside a lone figure further down (a wholesale contract's fee) names that figure; words the game switched off
+    /// (a design's missing mods warning) are not shown. Every press goes to that widget (the drop-down's own SelectOption,
+    /// the field's text, the slider's value, the toggle, the button's click), so the dialog reads its values back through
+    /// GetInputTransform as it always has; what the line's confirm then pays and costs stands under it (DialogForm.Costs).
+    /// Game side. Cost: a walk of the form's pieces four times a second while it shows, allocating nothing; a read only
+    /// when that walk changed.
     /// </summary>
     internal sealed partial class DialogForm
     {
@@ -46,6 +49,7 @@ namespace RealLifeOverhaul.Ui
         private readonly List<UiFormRow> _rows = new List<UiFormRow>(16);
         private readonly List<Widget> _widgets = new List<Widget>(16);
         private Transform _form;
+        private string _carried;   // a label the game hung under another one, for the next lone figure
 
         public UiFormRow[] Rows = new UiFormRow[0];
         public int Count;
@@ -73,6 +77,7 @@ namespace RealLifeOverhaul.Ui
             }
             _rows.Clear();
             _widgets.Clear();
+            _carried = null;
             if (form == null)
             {
                 Publish();
@@ -86,6 +91,7 @@ namespace RealLifeOverhaul.Ui
             Walk(form, 0);
             Tidy();
             Loan(form, entry, talk, heading);
+            Costs(form, entry, talk, heading);
             bool any = _rows.Count > heading;
             Publish();
             if (Pick.Row >= Count || (Pick.Row >= 0 && Rows[Pick.Row].Kind != UiFormKind.Choice))
@@ -363,7 +369,11 @@ namespace RealLifeOverhaul.Ui
                         break;
                     case Piece.Text:
                     {
-                        string words = Words(c);
+                        string words = Words(c), inner = Inner(c);
+                        if (inner != null)
+                        {
+                            _carried = inner;
+                        }
                         if (string.IsNullOrEmpty(words) || Echo(c, lastControl))
                         {
                             break;
@@ -477,7 +487,11 @@ namespace RealLifeOverhaul.Ui
                 Add(new UiFormRow { Kind = UiFormKind.Note, Label = figure, Warn = DialogRules.Warning(b.name) }, default);
                 return true;
             }
-            Add(new UiFormRow { Kind = UiFormKind.Figure, Label = label, Value = figure, Strong = DialogRules.Total(group.name) }, default);
+            Add(new UiFormRow
+            {
+                Kind = UiFormKind.Figure, Label = label, Value = figure, Hint = string.IsNullOrEmpty(figure) ? UiText.T("reallife_ui_dialog_figure_unset") : null,
+                Strong = DialogRules.Total(group.name)
+            }, default);
             return true;
         }
 
@@ -531,13 +545,23 @@ namespace RealLifeOverhaul.Ui
             return label != null && label.label != null && label.label.transform == text;
         }
 
+        // A lone line: a note, or the figure a label carried from higher up names (a wholesale contract's fee).
         private void Note(ref string pending, string name)
         {
-            if (pending != null)
+            if (pending == null)
+            {
+                return;
+            }
+            if (_carried != null && !DialogRules.LongFigure(pending))
+            {
+                Add(new UiFormRow { Kind = UiFormKind.Figure, Label = ContactsRules.Label(_carried), Value = pending, Strong = DialogRules.Total(name) }, default);
+                _carried = null;
+            }
+            else
             {
                 Add(new UiFormRow { Kind = UiFormKind.Note, Label = pending, Warn = DialogRules.Warning(name) }, default);
-                pending = null;
             }
+            pending = null;
         }
 
         // A control's row, named by the label before it.
@@ -673,8 +697,13 @@ namespace RealLifeOverhaul.Ui
                 }
                 return c.GetComponentInChildren<TMP_Text>(false) == null ? Piece.Swatch : Piece.Button;
             }
-            if (c.GetComponent<TMP_Text>() != null && c.GetComponentInChildren<Selectable>(false) == null)
+            TMP_Text words = c.GetComponent<TMP_Text>();
+            if (words != null && c.GetComponentInChildren<Selectable>(false) == null)
             {
+                if (!words.enabled)
+                {
+                    return c.childCount > 0 ? Piece.Group : Piece.None;   // words the game switched off (a design's missing mods warning)
+                }
                 return Piece.Text;
             }
             if (DialogRules.Splitter(c.name))
@@ -692,6 +721,25 @@ namespace RealLifeOverhaul.Ui
         {
             TMP_Text text = t != null ? t.GetComponent<TMP_Text>() : null;
             return text != null ? ContactsRules.Plain(text.text) : null;
+        }
+
+        // A label the game hangs under another one, placed beside a lone figure further down; null for none.
+        private static string Inner(Transform text)
+        {
+            for (int i = 0; i < text.childCount; i++)
+            {
+                Transform c = text.GetChild(i);
+                TMP_Text t = c.gameObject.activeSelf ? c.GetComponent<TMP_Text>() : null;
+                if (t != null && t.enabled)
+                {
+                    string words = ContactsRules.Plain(t.text);
+                    if (!string.IsNullOrEmpty(words))
+                    {
+                        return words;
+                    }
+                }
+            }
+            return null;
         }
 
         private static string Placeholder(TMP_InputField input)
@@ -838,9 +886,9 @@ namespace RealLifeOverhaul.Ui
             widget = false;
             long h = 0L;
             var text = c.GetComponent<TMP_Text>();
-            if (text != null && text.text != null)
+            if (text != null)
             {
-                h = text.text.GetHashCode();
+                h = (text.text != null ? text.text.GetHashCode() : 0) * 2L + (text.enabled ? 1L : 0L);
             }
             var button = c.GetComponent<Button>();
             if (button != null)

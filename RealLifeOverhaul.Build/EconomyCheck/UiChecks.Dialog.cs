@@ -63,6 +63,7 @@ internal static partial class Program
             DialogSceneChecks();
             DialogCallChecks();
             DialogTalkLooks();
+            DialogFormLooks();
             DialogSourceChecks();
         }
     }
@@ -231,8 +232,8 @@ internal static partial class Program
         Check(fits && whole, "scenes: what each answer means is said whole, a sentence to a line, every line fitting its room, in en, pt, zh-cn and de (" + where + ")");
     }
 
-    // A call's form on the call card (the bank's loan by phone) and a line's mood in a thread (a candidate's wage), laid
-    // in every language, shape and input as the screen checks lay a screen, with the same rules.
+    // A call's form on the call card (the bank's loan by phone, a tow) and a line's mood in a thread (a candidate's wage),
+    // laid in every language, shape and input as the screen checks lay a screen, with the same rules.
     private static void DialogCallChecks()
     {
         var s = new UiScene();
@@ -249,22 +250,22 @@ internal static partial class Program
                     {
                         continue;
                     }
-                    foreach (bool loan in new[] { true, false })
+                    foreach (string call in UiSamples.CallStates)
                     {
                         UiFrame frame = UiFrame.FullMenu(aspect, "Contacts");
-                        UiContacts.Lay(s, loan ? UiSamples.LoanCall(t) : UiSamples.MoodCall(t), frame, true, keys);
+                        UiContacts.Lay(s, UiSamples.CallSample(t, call), frame, true, keys);
                         string line = null;
                         int found = DialogClean(s, frame, DialogCallCommands, l => line = line ?? l);
                         if (lang == "en" && keys == UiDefaultKeys.Keyboard)
                         {
                             frame.Pointer = true;
-                            UiContacts.Lay(s, loan ? UiSamples.LoanCall(t) : UiSamples.MoodCall(t), frame, true, keys);
+                            UiContacts.Lay(s, UiSamples.CallSample(t, call), frame, true, keys);
                             found += PromptsDrawn(s) + UiCheckRules.Overlaps(s, l => line = line ?? l) + UiCheckRules.NoPrompts(s, l => line = line ?? l);
                         }
                         if (found > 0)
                         {
                             broken += found;
-                            said = (loan ? "the loan by phone" : "the wage talk") + " in " + lang + " at " + aspect.ToString("0.00") + (keys.Pad != UiPad.None ? " with a pad" : string.Empty) + ": " + line;
+                            said = "the " + call + " call in " + lang + " at " + aspect.ToString("0.00") + (keys.Pad != UiPad.None ? " with a pad" : string.Empty) + ": " + line;
                         }
                     }
                 }
@@ -346,6 +347,104 @@ internal static partial class Program
             "scenes: with the kit off, the game's own list says an answer's costs and time on a line under its meaning");
     }
 
+    // The game's forms as the kit draws them: no row left blank in any of them, in any language; every form's confirm
+    // saying what it pays and costs or the choice it still needs; a wholesale contract's fee named and paid with each
+    // delivery; an importer's agent not chosen yet asked for in the game's own words; an insurer's skill not written yet
+    // said to be so; a delivery's goods each with its steps and its way out, and Add item; a tow's two places and its
+    // price; a wage offer with what it pays beside what the candidate asked.
+    private static void DialogFormLooks()
+    {
+        UiWords en = UiWords("en");
+        var s = new UiScene();
+        UiFrame frame = UiFrame.FullMenu(16f / 9f, "Dialogue");
+        string blank = "none";
+        foreach (string lang in new[] { "en", "pt", "zh-cn", "de" })
+        {
+            UiWords t = UiWords(lang);
+            foreach (string state in UiSamples.DialogStates)
+            {
+                UiConversationModel m = UiSamples.Dialog(t, state);
+                string found = DialogBlank(m.Rows, m.RowCount);
+                blank = found != null ? state + " in " + lang + ", " + found : blank;
+            }
+            foreach (string call in UiSamples.CallStates)
+            {
+                UiCallModel c = UiSamples.CallSample(t, call).Call;
+                string found = c != null ? DialogBlank(c.Rows, c.RowCount) : null;
+                blank = found != null ? "the " + call + " call in " + lang + ", " + found : blank;
+            }
+        }
+        Check(blank == "none", "dialog: no row of a game form is left blank: a choice shows its value or what it asks for, a figure its figure or that it is not set yet, every other row its words, in en, pt, zh-cn and de (" + blank + ")");
+
+        string unpriced = "none";
+        foreach (string state in UiSamples.DialogFormStates)
+        {
+            UiConversationModel m = UiSamples.Dialog(en, state);
+            UiConsequence[] lines = m.Choices.Length > 0 ? m.Choices[0].Lines : null;
+            unpriced = lines == null || lines.Length == 0 || string.IsNullOrEmpty(lines[0].Text) ? state : unpriced;
+        }
+        Check(unpriced == "none", "dialog: every game form's confirm says under it what it pays and costs, or the choice it still needs (" + unpriced + ")");
+
+        UiConversationModel wholesale = UiSamples.Dialog(en, "wholesale");
+        UiSamples.DialogDocked(s, frame, true, UiDefaultKeys.Keyboard, en, "wholesale");
+        UiConsequence[] accept = wholesale.Choices[0].Lines;
+        Check(accept.Length == 2 && DialogHas(accept, "Deliveries to Harbour Lights Bakery from day 415", 0) && accept[1].Tone < 0 && accept[1].Change < 0
+              && DialogDrawn(s, "$120 on each delivery, with the goods") && DialogDrawn(s, "Delivery fee") && DialogDrawn(s, "$120"),
+            "dialog: a wholesale contract names its fee as the game labels it, and Accept says the first delivery day and the fee paid with each delivery, its arrow down");
+
+        UiConversationModel unset = UiSamples.Dialog(en, "import_unset"), chosen = UiSamples.Dialog(en, "import");
+        Check(unset.Choices[0].Lines.Length == 1 && DialogHas(unset.Choices[0].Lines, "Select purchasing agent", 0) && unset.Rows[1].Value == null && unset.Rows[1].Hint == "Select purchasing agent"
+              && DialogHas(chosen.Choices[0].Lines, "20.5% off every import order", 1) && DialogHas(chosen.Choices[0].Lines, "Priya Nair buys for you from day 415", 0),
+            "dialog: a confirm whose choice is not made yet says so in the game's own words for it, in place of a cost; once made, the partnership's agent and discount");
+
+        UiSamples.DialogDocked(s, frame, true, UiDefaultKeys.Keyboard, en, "insurance_unset");
+        bool notSet = DialogDrawn(s, "Not set yet") && DialogDrawn(s, "Select HR Manager");
+        UiSamples.DialogDocked(s, frame, true, UiDefaultKeys.Keyboard, en, "insurance");
+        Check(notSet && DialogDrawn(s, "74%") && DialogDrawn(s, "The insurer names its price next"),
+            "dialog: an insurer's figure the game has not written yet says it is not set yet, and Accept says the insurer names its price next");
+
+        UiConversationModel goods = UiSamples.Dialog(en, "furniture");
+        int amounts = 0;
+        for (int i = 0; i < goods.RowCount; i++)
+        {
+            amounts += goods.Rows[i].Kind == UiFormKind.Amount && goods.Rows[i].Remove && goods.Rows[i].CanLess && goods.Rows[i].CanMore ? 1 : 0;
+        }
+        UiSamples.DialogDocked(s, frame, true, UiDefaultKeys.Keyboard, en, "furniture");
+        Check(amounts == 3 && DialogDrawn(s, "Add item") && DialogHas(goods.Choices[0].Lines, "$9,030, paid on delivery", -1) && s.FindNode(UiFormRows.RemoveCommand, 5) >= 0,
+            "dialog: a delivery's goods each stand with their steps and the button that takes them away, Add item under them, and Order says the total is paid on delivery");
+
+        UiFrame contacts = UiFrame.FullMenu(16f / 9f, "Contacts");
+        UiContacts.Lay(s, UiSamples.TowCall(en), contacts, true, UiDefaultKeys.Keyboard);
+        UiCallModel tow = UiSamples.TowCall(en).Call;
+        string towWhy = tow.RowCount != 2 || tow.Rows[0].Kind != UiFormKind.Radio || !tow.Rows[0].On || tow.Rows[1].On ? "its options" : !DialogDrawn(s, "$500 now") ? "its price under Accept"
+            : s.FindNode(UiFormRows.RowCommand, 1) < 0 ? "the second option's press" : "none";
+        Check(towWhy == "none", "dialog: a tow by phone offers the game's two places as options on the call card, each with its price, and Accept says what it costs now (" + towWhy + ")");
+
+        UiConversationModel wage = UiSamples.MoodCall(en).Talk;
+        Check(wage.Choices.Length > 0 && DialogHas(wage.Choices[0].Lines, "$18.50 an hour and $250 on signing, if they agree", -1) && DialogHas(wage.Choices[0].Lines, "They asked for $19.50 an hour and $400", 0),
+            "dialog: a wage offer typed in a Contacts thread says under Send Offer what it pays and on signing, beside what the candidate asked");
+    }
+
+    // The first row of a game form left blank: a choice with neither its value nor what it asks for, a figure with neither
+    // its figure nor that it is not set yet, a button with no words, any other row with no words; null for none.
+    private static string DialogBlank(UiFormRow[] rows, int count)
+    {
+        for (int i = 0; rows != null && i < count && i < rows.Length; i++)
+        {
+            UiFormRow r = rows[i];
+            bool blank = r.Kind == UiFormKind.Break ? false
+                : r.Kind == UiFormKind.Choice || r.Kind == UiFormKind.Figure ? string.IsNullOrEmpty(r.Label) || (string.IsNullOrEmpty(r.Value) && string.IsNullOrEmpty(r.Hint))
+                : r.Kind == UiFormKind.Action ? string.IsNullOrEmpty(r.Action)
+                : r.Kind == UiFormKind.Entry ? string.IsNullOrEmpty(r.Label) || string.IsNullOrEmpty(r.Action)
+                : string.IsNullOrEmpty(r.Label);
+            if (blank)
+            {
+                return "row " + i + " (" + r.Kind + ")";
+            }
+        }
+        return null;
+    }
+
     // Some item drawn says exactly these words.
     private static bool DialogDrawn(UiScene s, string words)
     {
@@ -418,6 +517,40 @@ internal static partial class Program
         }
         Check(owners == 6, "scenes: the six scene windows (the court, fame, office, interview, pitch and venture) tell the kit their moments (" + owners + " of 6)");
 
+        // What the game's forms and the mod's dialogs pay and cost, under their answers; the tests of a store's and an importer's talk.
+        string costs = File.ReadAllText(System.IO.Path.Combine(dialog, "DialogForm.Costs.cs"));
+        string thread = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "Contacts", "ContactsScreen.Read.cs"));
+        string[] forms =
+        {
+            "DeliveryContractSettings", "ImportPartnershipSettings", "DeliveryContractSettingsBase", "VehicleContractSettings", "MovingServiceContractSettings",
+            "InteriorInstallationFirmDesignSettings", "AutoTowServiceSettings", "RecruitmentSettings", "MarketingCampaignSettings", "PrivateDriverContractSettings",
+            "HealthInsurancePartnershipSettings", "SalaryOfferSettings", "PlayerOfferSettings", "BankInvestmentSettings"
+        };
+        int told = 0;
+        foreach (string f in forms)
+        {
+            told += costs.Contains("TryGetComponent(out " + f + " ") ? 1 : 0;
+        }
+        Check(told == forms.Length && thread.Contains("DialogForm.Offers(form, ") && form.Contains("Costs(form, entry, talk, heading);") && costs.Contains("private bool Unmade(DialogEntry entry, int heading, int most)"),
+            "dialog: each of the game's forms a talk shows says what its confirm pays and costs, or the choice it still needs, and a Contacts thread's wage and offer the same (" + told + " of " + forms.Length + ")");
+        string[] priced =
+        {
+            @"Economy\Banking\Debt\DebtPhone.cs", @"Home\DoctorVisit.cs", @"Phone\PhoneContacts.cs", @"Transport\CarPhone.cs", @"Transport\Taxi\TaxiPhone.cs", @"Travel\HotelDeskDialog.cs",
+            @"Travel\TravelAgentDialog.cs", @"Jobs\CareerDialog.cs", @"Licences\Driving\DrivingSchool.cs", @"Transport\SubwayJourney.cs", @"Social\PersonDialog.cs", @"Civic\CityHallDialog.cs",
+            @"Civic\OfficePhone.cs", @"Construction\BuilderDesk.cs", @"Construction\CarParkDesk.cs", @"Family\Courtship.cs", @"Family\PartnerCar.cs", @"Family\WeddingPlanner.cs"
+        };
+        int stated = 0;
+        foreach (string file in priced)
+        {
+            string text = File.ReadAllText(System.IO.Path.Combine(scripts, file));
+            stated += text.Contains(".Pays(DialogButton.") || text.Contains(".Gets(DialogButton.") ? 1 : 0;
+        }
+        Check(stated == priced.Length, "dialog: each of the mod's dialogs that asks for money or offers it says the sum under its answer, from the figure its words use (" + stated + " of " + priced.Length + ")");
+        string tests = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "UiDirector.DialogTests.cs"));
+        Check(tests.Contains("TalkAt(CallDialogType.WholesaleStoreManagerDialog, ") && tests.Contains("TalkAt(CallDialogType.ImportManagerDialog, ") && tests.Contains("screen.HasAnswer")
+              && tests.Contains("ui.ShowDialog(type, NavigationBlocker.SpecialEmployeeDialog, contact);"),
+            "dialog: Options, Tests opens a wholesale store's and an importer's own talk, its first answer pressed only where it has one besides Leave");
+
         // The tests and the switches' words, in the three languages the mod is written in.
         string[] keys =
         {
@@ -433,7 +566,17 @@ internal static partial class Program
             "reallife_justice_court_figure_campaign", "reallife_justice_court_figure_rigging", "reallife_justice_cost_days", "reallife_justice_cost_prison",
             "reallife_justice_cost_lost_prison", "reallife_justice_cost_custody", "reallife_justice_cost_lost_custody", "reallife_justice_odds_none", "reallife_justice_odds_all",
             "reallife_justice_odds_win", "reallife_justice_odds_appeal", "reallife_justice_verdict_settled", "reallife_justice_reason_trial_fine", "reallife_justice_toast_settled",
-            "reallife_justice_outcome_settled", "reallife_transaction_court_settlement", "reallife_co_tax_quiet", "reallife_co_tax_quiet_value"
+            "reallife_justice_outcome_settled", "reallife_transaction_court_settlement", "reallife_co_tax_quiet", "reallife_co_tax_quiet_value",
+            "reallife_ui_dialog_figure_unset", "reallife_ui_dialog_cost_unchosen", "reallife_ui_dialog_cost_supplied", "reallife_ui_dialog_cost_each_delivery",
+            "reallife_ui_dialog_cost_agent", "reallife_ui_dialog_cost_discount", "reallife_ui_dialog_cost_items", "reallife_ui_dialog_cost_no_goods", "reallife_ui_dialog_cost_on_delivery",
+            "reallife_ui_dialog_cost_now", "reallife_ui_dialog_cost_move", "reallife_ui_dialog_cost_on_the_day", "reallife_ui_dialog_cost_refit", "reallife_ui_dialog_cost_discontinued",
+            "reallife_ui_dialog_cost_candidates", "reallife_ui_dialog_cost_a_day", "reallife_ui_dialog_cost_no_campaign", "reallife_ui_dialog_cost_insurer_next",
+            "reallife_ui_dialog_cost_per_employee", "reallife_ui_dialog_cost_wage", "reallife_ui_dialog_cost_asked", "reallife_ui_dialog_cost_invest", "reallife_ui_dialog_cost_pay",
+            "reallife_ui_dialog_cost_in", "reallife_ui_dialog_cost_ask_in", "reallife_ui_dialog_cost_owe", "reallife_ui_dialog_cost_owe_day", "reallife_ui_dialog_cost_month",
+            "reallife_ui_dialog_cost_month_first", "reallife_ui_dialog_cost_get_in", "reallife_ui_dialog_cost_deposit", "reallife_ui_dialog_cost_hospital_bill",
+            "reallife_ui_dialog_cost_from_venue", "reallife_ui_dialog_cost_fund", "reallife_ui_dialog_cost_deposit_sign", "reallife_ui_dialog_cost_rest_on_day",
+            "reallife_ui_test_dialog_wholesale", "reallife_ui_test_dialog_import", "reallife_ui_test_dialog_no_wholesale", "reallife_ui_test_dialog_no_import",
+            "reallife_ui_test_dialog_wholesale_real", "reallife_ui_test_dialog_import_real",
         };
         Check(AllIn(keys, out string missing), "dialog: the switches', the contract's, the tests' and the talk's words in en, pt and zh-cn (" + missing + ")");
         string spokenKit = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "UiMonologue.cs")), choices = File.ReadAllText(System.IO.Path.Combine(dialog, "DialogChoices.cs"));

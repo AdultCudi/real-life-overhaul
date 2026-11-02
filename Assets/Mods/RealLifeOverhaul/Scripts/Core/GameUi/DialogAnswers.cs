@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Entities;
+using RealLifeOverhaul.Economy;
 
 namespace RealLifeOverhaul.GameUi
 {
@@ -87,6 +88,20 @@ namespace RealLifeOverhaul.GameUi
             }
             return entry;
         }
+
+        /// <summary>
+        /// A line in the mod's words under one of the line's buttons, <paramref name="key"/> filled with its pairs: a sum the
+        /// player hands over (against them, its arrow down). <see cref="Gets"/> is a sum they receive (for them, its arrow up),
+        /// <see cref="Says"/> what happens, neither. Each returns the line, so a dialog states its cost from the same figure
+        /// its words use.
+        /// </summary>
+        public static DialogEntry Pays(this DialogEntry entry, DialogButton button, string key, params string[] pairs) => entry.Cost(button, FinanceText.Fill(key, pairs), -1, -1);
+
+        /// <summary>A sum the player receives, under one of the line's buttons (for them, its arrow up). Returns the line.</summary>
+        public static DialogEntry Gets(this DialogEntry entry, DialogButton button, string key, params string[] pairs) => entry.Cost(button, FinanceText.Fill(key, pairs), 1, 1);
+
+        /// <summary>What an answer does, neither for nor against the player, under one of the line's buttons. Returns the line.</summary>
+        public static DialogEntry Says(this DialogEntry entry, DialogButton button, string key, params string[] pairs) => entry.Cost(button, FinanceText.Fill(key, pairs), 0);
 
         /// <summary>
         /// An answer past the game's three: its words, the line it leads to (the dialog's own, made when it is taken), whether

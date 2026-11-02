@@ -698,6 +698,7 @@ namespace RealLifeOverhaul.Ui
             }
             t.Fields = fields.ToArray();
             t.FieldCount = fields.Count;
+            DialogForm.Offers(form, GameContract.TalkEntry.Field != null ? GameContract.TalkEntry.Field.GetValue(_app) as DialogEntry : null);   // what it pays, under Send Offer
             return fields.Count > 0;
         }
 

@@ -4,6 +4,7 @@ using Dialogs;
 using Entities;
 using Extensions;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using UI.Smartphone.Apps.Contacts;
 
 namespace RealLifeOverhaul
@@ -191,7 +192,8 @@ namespace RealLifeOverhaul
                     return PhoneContacts.Closing("reallife_911_ambulance_sent");
                 },
                 OnCancel = PhoneContacts.HangUp
-            };
+            }.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_pay", "amount", ((float)LifeEvents.AmbulanceFee).ToCurrencyFormat())
+             .Says(DialogButton.Confirm, "reallife_ui_dialog_cost_hospital_bill");
         }
     }
 
@@ -212,7 +214,7 @@ namespace RealLifeOverhaul
                 ConfirmTextOverride = "reallife_doctor_pay".Localize(),
                 OnConfirm = Treat,
                 OnCancel = PhoneContacts.HangUp
-            }));
+            }.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_pay", "amount", ((float)LifeEvents.DoctorFee).ToCurrencyFormat())));
         }
 
         private static DialogEntry Treat()

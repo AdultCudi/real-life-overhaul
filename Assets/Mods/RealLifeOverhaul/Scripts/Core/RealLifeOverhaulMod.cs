@@ -1052,6 +1052,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_ui_test_contacts_tax", () => Ui.UiDirector.Instance?.TestContactsTax())
                 .AddButton("reallife_ui_test_contacts_wage", () => Ui.UiDirector.Instance?.TestContactsWage())
                 .AddButton("reallife_ui_test_dialog_bank", () => Ui.UiDirector.Instance?.TestDialogBank())
+                .AddButton("reallife_ui_test_dialog_wholesale", () => Ui.UiDirector.Instance?.TestDialogWholesale())
+                .AddButton("reallife_ui_test_dialog_import", () => Ui.UiDirector.Instance?.TestDialogImport())
                 .AddButton("reallife_ui_test_dialog_desk", () => Ui.UiDirector.Instance?.TestDialogDesk())
                 .AddButton("reallife_ui_test_dialog_court", () => Ui.UiDirector.Instance?.TestDialogCourt())
                 .AddButton("reallife_ui_test_dialog_tax_court", () => Ui.UiDirector.Instance?.TestDialogTaxCourt())

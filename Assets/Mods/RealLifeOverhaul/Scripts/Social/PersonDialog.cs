@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Dialogs;
 using Entities;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -242,6 +243,7 @@ namespace RealLifeOverhaul
                 case "repay":
                     entry.ConfirmTextOverride = "reallife_social_btn_repay".Localize(SocialLife.Data(_p, "amount", SocialLife.Money(_p.Debt)));
                     entry.OnConfirm = Repay;
+                    entry.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", SocialLife.Money(_p.Debt));
                     break;
                 case "askout":
                     entry.ConfirmTextOverride = "reallife_social_btn_askout".Localize();
@@ -258,6 +260,7 @@ namespace RealLifeOverhaul
                 case "borrow":
                     entry.ConfirmTextOverride = "reallife_social_btn_borrow".Localize(SocialLife.Data(_p, "amount", SocialLife.Money(BorrowAmount())));
                     entry.OnConfirm = Borrow;
+                    entry.Gets(DialogButton.Confirm, "reallife_ui_dialog_cost_ask_in", "amount", SocialLife.Money(BorrowAmount()));
                     break;
                 case "introduce":
                     entry.ConfirmTextOverride = "reallife_social_btn_introduce".Localize();
@@ -595,6 +598,7 @@ namespace RealLifeOverhaul
             SocialLife.Change(_p, 1f, SocialRules.BirthdayAffection, SocialRules.BirthdayTrust);
             DialogEntry entry = Line(SocialLines.Pick(SocialCatalogue.BirthdayThanks));
             entry.ConfirmTextOverride = "reallife_social_btn_gift".Localize(SocialLife.Data(_p, "amount", SocialLife.Money(GiftPrice)));
+            entry.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", SocialLife.Money(GiftPrice));
             entry.OnConfirm = () =>
             {
                 if (!SocialLife.Pay(GiftPrice, "reallife_transaction_social_gift"))

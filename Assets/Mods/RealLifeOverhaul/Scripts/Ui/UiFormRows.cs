@@ -8,7 +8,7 @@ namespace RealLifeOverhaul.Ui
         public UiFormKind Kind;
         public string Label;        // the words at its left; a heading's, a note's or an entry's own words
         public string Value;        // a choice's value, a figure, the words typed, a slider's figure, a switch's word
-        public string Hint;         // what an empty field asks for
+        public string Hint;         // what an empty field asks for; a figure's words while the game has not written it
         public string Action;       // an entry's or an action's button
         public bool On;             // a switch's or an option's state
         public bool CanLess, CanMore;
@@ -55,9 +55,10 @@ namespace RealLifeOverhaul.Ui
     /// A game's whole form in a conversation's or a call's form slot, laid as the dialog lays its input out: a choice (the
     /// game's Dropdown, its list opening under it), an amount with its steps and the button that takes its line away,
     /// words or a figure to type, a switch, a slider, one of a few options, colours to pick, a figure read only (a fee, a
-    /// total), a note, a heading over the fields it opens, a line of a list with its button (a contract to cancel), a
-    /// button alone (add an item) and the hairline the game draws between its parts. One band: the labels at the left and
-    /// the controls in one column at the right, so a form reads as a game's settings rows do; a form taller than its room
+    /// total; its hint, muted, while the game has not written it), a note, a heading over the fields it opens, a line of a
+    /// list with its button (a contract to cancel), a button alone (add an item) and the hairline the game draws between its
+    /// parts. One band: the labels at the left (words too long for one line on two) and the controls in one column at the
+    /// right, so a form reads as a game's settings rows do; a form taller than its room
     /// scrolls inside it, the rows the keys can reach kept whole. Commands: <see cref="FieldCommand"/> (a row's control, by
     /// its index), <see cref="LessCommand"/> and <see cref="MoreCommand"/> (an amount's steps), <see cref="RemoveCommand"/>
     /// (an amount's line taken away), <see cref="OptionCommand"/> (an option of the open list), <see cref="RowCommand"/> (an
@@ -72,7 +73,7 @@ namespace RealLifeOverhaul.Ui
         private const float Swatch = 24f;         // px: a colour's square
         private const float Ring = 16f;           // px: an option's ring
         private const float Dot = 8f;             // px: the chosen option's dot
-        private const int NoteLines = 4, EntryLines = 3;
+        private const int NoteLines = 4, EntryLines = 3, LabelLines = 2;
 
         /// <summary>A colour's argument: its row and its place in the row.</summary>
         public static int SwatchArg(int row, int swatch) => (row << 8) | (swatch & 0xff);
@@ -119,10 +120,32 @@ namespace RealLifeOverhaul.Ui
                     int lines = Math.Max(1, (n + across - 1) / across);
                     return Math.Max(UiTokens.Control, lines * (Swatch + UiTokens.S2) + UiTokens.S2);
                 }
+                case UiFormKind.Choice:
+                case UiFormKind.Amount:
+                case UiFormKind.Text:
+                case UiFormKind.Switch:
+                case UiFormKind.Slider:
+                    return Labelled(ref r, w);
                 default:
                     return UiTokens.Control;
             }
         }
+
+        // A control's row: one line of its words beside the control, or two when they do not fit on one (a delivery's goods
+        // with a long name, a language with long words), the row as tall as they need.
+        private static float Labelled(ref UiFormRow r, float w)
+        {
+            float lw = LabelWidth(w);
+            if (string.IsNullOrEmpty(r.Label) || UiTextRules.Fits(r.Label, UiStyle.Body, lw))
+            {
+                return UiTokens.Control;
+            }
+            return Math.Max(UiTokens.Control, UiDraw.Snap(UiTextRules.WrappedHeight(r.Label, UiStyle.Body, lw, LabelLines)) + UiTokens.S1 * 2f);
+        }
+
+        // The words' room beside the controls' column, at a band's width: the narrower room a scrolled form leaves (its
+        // thumb's lane), so a row is tall enough for its words whether the form scrolls or not.
+        private static float LabelWidth(float w) => Math.Max(0f, w - UiTokens.S3 * 3f - ControlWidth(w) - UiTokens.S4);
 
         /// <summary>The rows' height at the band's width, a step between each.</summary>
         public static float ContentHeight(UiFormRow[] rows, int count, float w)
@@ -213,7 +236,7 @@ namespace RealLifeOverhaul.Ui
                     }
                     if (i == pick.Row && r.Kind == UiFormKind.Choice)
                     {
-                        openY = (scrolls ? y + UiTokens.S3 - offset : 0f) + top;
+                        openY = (scrolls ? y + UiTokens.S3 - offset : 0f) + top + UiDraw.SnapDown((rh - UiTokens.Control) / 2f);   // under the field, in the middle of its row
                     }
                 }
                 ordinal += takes ? 1 : 0;
@@ -282,20 +305,31 @@ namespace RealLifeOverhaul.Ui
                 case UiFormKind.Slider:
                 {
                     float fx = label ? cx : x, fw = label ? cw : w;
-                    if (label)
+                    UiRole ink = r.Disabled ? UiRole.Muted : UiRole.Text;
+                    if (label && UiTextRules.Fits(r.Label, UiStyle.Body, labelW))
                     {
-                        UiDraw.TextMiddle(s, at, x, y, h, labelW, UiStyle.Body, r.Disabled ? UiRole.Muted : UiRole.Text, r.Label, UiFlags.Label | UiFlags.Truncate);
+                        UiDraw.TextMiddle(s, at, x, y, h, labelW, UiStyle.Body, ink, r.Label, UiFlags.Label | UiFlags.Truncate);
                     }
-                    int node = Control(s, at, ref r, i, fx, y, fw, pick);
+                    else if (label)
+                    {
+                        // Words too long for one line take two, in the middle of the row beside the control.
+                        float th = UiDraw.Snap(UiTextRules.WrappedHeight(r.Label, UiStyle.Body, labelW, LabelLines));
+                        UiDraw.Text(s, at, x, y + Math.Max(0f, UiDraw.SnapDown((h - th) / 2f)), labelW, UiStyle.Body, ink, r.Label, UiFlags.Label | UiFlags.Wrap | UiFlags.Truncate, LabelLines);
+                    }
+                    int node = Control(s, at, ref r, i, fx, y + Math.Max(0f, UiDraw.SnapDown((h - UiTokens.Control) / 2f)), fw, pick);
                     Listed(s, node, list, ordinal);
                     break;
                 }
                 case UiFormKind.Figure:
                 {
+                    // A figure the game has not written yet shows its hint, muted, in its place.
                     UiStyle style = r.Strong ? UiStyle.BodyStrong : UiStyle.Body;
-                    float vw = Math.Min(UiDraw.Snap(UiTextRules.Width(r.Value, UiStyle.BodyStrong) + UiTokens.S1), UiDraw.SnapDown(w * 0.6f));
+                    bool unset = string.IsNullOrEmpty(r.Value);
+                    string figure = (unset ? r.Hint : r.Value) ?? string.Empty;
+                    UiStyle figureStyle = unset ? UiStyle.Body : UiStyle.BodyStrong;
+                    float vw = Math.Min(UiDraw.Snap(UiTextRules.Width(figure, figureStyle) + UiTokens.S1), UiDraw.SnapDown(w * 0.6f));
                     UiDraw.TextMiddle(s, at, x, y, h, w - vw - UiTokens.S3, style, r.Strong ? UiRole.Text : UiRole.Text2, r.Label, UiFlags.Label | UiFlags.Truncate);
-                    UiDraw.TextMiddle(s, at, x + w - vw, y, h, vw, UiStyle.BodyStrong, UiRole.Text, r.Value, UiFlags.Right | UiFlags.Truncate);
+                    UiDraw.TextMiddle(s, at, x + w - vw, y, h, vw, figureStyle, unset ? UiRole.Muted : UiRole.Text, figure, UiFlags.Right | UiFlags.Truncate);
                     break;
                 }
                 case UiFormKind.Note:

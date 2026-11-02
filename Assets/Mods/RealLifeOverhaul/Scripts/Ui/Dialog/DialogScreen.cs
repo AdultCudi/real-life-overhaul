@@ -4,6 +4,7 @@ using Characters.EmojiSystem;
 using Entities;
 using RealLifeOverhaul.GameUi;
 using TMPro;
+using UI;
 using UI.Dialog;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,9 +17,10 @@ namespace RealLifeOverhaul.Ui
     /// the line now with its buttons as numbered choices on 1 to 9 (the confirm first, Leave last), and the form the line
     /// asks for in the conversation's form slot, read from the game's own widgets (DialogForm) and pressed through them,
     /// so the dialog reads its values back as it always has. A casino's game, and a form with nothing the kit can show,
-    /// are answered in the game's own panel, the kit back the moment that line is answered; another mod's piece in the
-    /// panel is offered as the game's own view until the panel closes. Cost: a look at a signature four times a second
-    /// while it shows; a read and a layout only when it changed.
+    /// are answered in the game's own panel, the kit back the moment that line is answered; a list of the game's own a
+    /// form's button opens (a delivery's goods) is answered there too, the kit back the moment it closes; another mod's
+    /// piece in the panel is offered as the game's own view until the panel closes. Cost: a look at a signature four times
+    /// a second while it shows; a read and a layout only when it changed.
     /// </summary>
     public sealed class DialogScreen : IUiScreen, IUiTyping, IUiStepping, IUiDragging
     {
@@ -89,6 +91,9 @@ namespace RealLifeOverhaul.Ui
 
         public int TypingCommand => _typing >= 0 ? UiFormRows.FieldCommand : -1;
 
+        /// <summary>The line shows an answer besides Leave (the interface's tests press the first one).</summary>
+        internal bool HasAnswer => _made.Count > (_leave != null ? 1 : 0);
+
         public string TypingText => _form.Text(_typing);
 
         public void Typed(string text)
@@ -136,6 +141,10 @@ namespace RealLifeOverhaul.Ui
             if (kit || command == UiFormRows.OptionCommand)
             {
                 _dirty = true;   // the open list or the held slider is the kit's own: drawn this frame
+            }
+            if (done && command == UiFormRows.RowCommand)
+            {
+                GameList();
             }
             if (!kit)
             {
@@ -581,6 +590,30 @@ namespace RealLifeOverhaul.Ui
                 }
                 next = now + Every;
                 return ui == null || ui.dialog == null || !ReferenceEquals(ui.dialog, dialog) || !ReferenceEquals(GameContract.DialogEntryNow.Field.GetValue(ui), e);
+            });
+        }
+
+        // The game's own list a form's button opened over the panel (a delivery's goods to add): it is seen and answered in the
+        // game's own view, and the kit is back the moment it closes.
+        private void GameList()
+        {
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            global::ItemsList list = uis != null ? uis.itemsList : null;
+            if (list == null || !list.gameObject.activeInHierarchy)
+            {
+                return;
+            }
+            Log("the game's own list over the form is answered in the game's own view");
+            float next = 0f;
+            DialogKits.StepAside(() =>
+            {
+                float now = Time.unscaledTime;
+                if (now < next)
+                {
+                    return false;
+                }
+                next = now + Every;
+                return list == null || !list.gameObject.activeInHierarchy;
             });
         }
 

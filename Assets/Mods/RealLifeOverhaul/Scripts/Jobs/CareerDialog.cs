@@ -5,6 +5,7 @@ using Dialogs;
 using Entities;
 using Extensions;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -527,7 +528,7 @@ namespace RealLifeOverhaul
                         : PhoneContacts.Closing("reallife_career_gig_none");
                 }),
                 OnCancel = PhoneContacts.HangUp
-            };
+            }.Gets(DialogButton.Confirm, "reallife_ui_dialog_cost_from_venue", "amount", ((float)career.GigFee).ToCurrencyFormat());
         }
 
         private static string ReferenceName(CareerReference reference)

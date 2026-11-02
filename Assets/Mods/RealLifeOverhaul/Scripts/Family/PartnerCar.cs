@@ -5,6 +5,7 @@ using Dialogs;
 using Entities;
 using Extensions;
 using Helpers;
+using RealLifeOverhaul.GameUi;
 using Streets;
 using UI.Notification;
 using UnityEngine;
@@ -155,7 +156,8 @@ namespace RealLifeOverhaul.Family
             }
             int price = Mathf.RoundToInt(t.price);
             Args a = new Args { Name = Partner.Name, Text = Model(type), Amount = FamilyText.Money(price) };
-            return FamilyTalk.Either(FamilyText.Say("reallife_family_car_buy_ask", a), "reallife_family_car_buy", () => Buy(type, price), "reallife_family_car_not_now", NotNow);
+            return FamilyTalk.Either(FamilyText.Say("reallife_family_car_buy_ask", a), "reallife_family_car_buy", () => Buy(type, price), "reallife_family_car_not_now", NotNow)
+                .Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", FamilyText.Money(price));
         }
 
         private static DialogEntry NotNow()

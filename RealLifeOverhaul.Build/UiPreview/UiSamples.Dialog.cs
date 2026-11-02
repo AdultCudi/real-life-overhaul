@@ -5,12 +5,17 @@ using RealLifeOverhaul.Ui;
 /// The game's conversations on the kit (Scripts/Ui/Dialog), each state as the dialogue panel would hand it over: Larry
 /// at Jensen Capital asking what he can do, and his loan form with its term, its rate, its payment and the sum to repay,
 /// what taking it pays and costs under Confirm and the bank's own answers past the game's three (a point off the rate,
-/// greyed with the reason, and a credit line instead); a marketing agency's campaign form, and its business list open; the
+/// greyed with the reason, and a credit line instead); a marketing agency's campaign form, and its business list open; a
+/// wholesale store's delivery contract, an importer's partnership with its agent chosen and before, a furniture delivery
+/// with its goods, an installation and a move booked, a health insurer's partnership chosen and before (its skill not set
+/// yet), a recruitment campaign and a private driver's contract, each with what its confirm pays and costs under it, and a
+/// hotel desk of the mod's own with the price under each answer; the
 /// mod's Business desk face to face with one matter, and after a long run of them; a passer-by in the street, before and
 /// after a few words; a health insurer's counter offer with their mood in a word by their face; another mod's piece in the
 /// panel offered as the game's own view; the longest names a talk can carry; and the second between two lines, when the
-/// game shows no button. The same loan by phone on the call card, the point off there to be had, and a candidate's wage
-/// talk in Contacts with their mood by their line. Uncle Fred's lines as the card at the top: one with how far it has been
+/// game shows no button. The same loan by phone on the call card, the point off there to be had, a tow asked for by phone
+/// with its two places and its price, and a candidate's wage talk in Contacts with their mood by their line and what the
+/// offer pays under Send Offer. Uncle Fred's lines as the card at the top: one with how far it has been
 /// said, one of two with Skip and Next, his longest with no sound of its own, and a rival's face alone. The mod's six scene
 /// windows as the kit draws them: the court's plea with who is present and what each answer costs, a tax case with the
 /// city's settlement, a long charge sheet, the Legal file, the night show's question, a door in a campaign, an interview's
@@ -22,8 +27,18 @@ internal static partial class UiSamples
     /// <summary>The dialogue panel's states, in the previews' order.</summary>
     public static readonly string[] DialogStates =
     {
-        "bank_start", "bank_loan", "marketing", "marketing_list", "desk", "desk_full", "street", "street_said", "haggle", "other_mod", "long_names", "between_lines"
+        "bank_start", "bank_loan", "marketing", "marketing_list", "wholesale", "import", "import_unset", "furniture", "installation", "moving", "insurance",
+        "insurance_unset", "recruitment", "driver", "hotel", "desk", "desk_full", "street", "street_said", "haggle", "other_mod", "long_names", "between_lines"
     };
+
+    /// <summary>The states a game form stands in, its confirm saying what it pays and costs.</summary>
+    public static readonly string[] DialogFormStates =
+    {
+        "bank_loan", "marketing", "wholesale", "import", "import_unset", "furniture", "installation", "moving", "insurance", "insurance_unset", "recruitment", "driver"
+    };
+
+    /// <summary>A call's states on the call card: the bank's loan, a candidate's wage talk in the thread, a tow.</summary>
+    public static readonly string[] CallStates = { "loan", "mood", "tow" };
 
     /// <summary>
     /// The states the screen checks lay out: all but the second between two lines, when the game's line has no button, so
@@ -43,6 +58,7 @@ internal static partial class UiSamples
 
     private const string Bank = "Jensen Capital";
     private const string Bakery = "Harbour Lights Bakery";
+    private const string Florist = "Bloom and Co";
 
     private static string Fill(string words, params string[] pairs)
     {
@@ -100,7 +116,7 @@ internal static partial class UiSamples
                     new UiFormRow { Kind = UiFormKind.Switch, Label = t("marketingtypename_jitterads", "Jitter Ads") },
                     new UiFormRow { Kind = UiFormKind.Switch, Label = t("marketingtypename_latergramads", "Latergram Ads") },
                     new UiFormRow { Kind = UiFormKind.Switch, Label = t("marketingtypename_voogleads", "Voogle Ads"), On = true },
-                    new UiFormRow { Kind = UiFormKind.Figure, Label = t("common_price_per_day", "Price per day"), Value = "$240" },
+                    new UiFormRow { Kind = UiFormKind.Figure, Label = t("common_price_per_day", "Price per day"), Value = "$240", Strong = true },
                 };
                 m.RowCount = m.Rows.Length;
                 if (state == "marketing_list")
@@ -111,7 +127,200 @@ internal static partial class UiSamples
                     m.Pick.Count = m.Pick.Options.Length;
                     m.Pick.Chosen = 0;
                 }
-                choices.Add(Choice(t("common_confirm", "Confirm")));
+                choices.Add(Priced(t("common_confirm", "Confirm"), Line(Fill(t("reallife_ui_dialog_cost_a_day", "{amount} a day while it runs"), "amount", "$240"), -1, -1)));
+                choices.Add(Choice(leave));
+                break;
+            }
+            case "wholesale":
+            {
+                // The fee's label is the one the game hangs under the business's, for the lone figure further down.
+                Head(m, t("dialog_wholesale_store_npc_name", "Store Manager"), "Bronx Provisions Wholesale");
+                lines.Add(Them(t("dialog_wholesale_store_start", "Hello! How can I help you?")));
+                lines.Add(Me(t("dialog_wholesale_start_contract", "Start contract")));
+                m.Rows = new[]
+                {
+                    FormHeading(t("dialog_wholesale_store_delivery_contract_header", "Delivery contract")),
+                    FormChoice(t("common_business", "Business"), Bakery),
+                    FormBreak(),
+                    FormFigure(t("dialog_delivery_fee", "Delivery fee"), "$120", false),
+                };
+                choices.Add(Priced(t("dialog_accept_button", "Accept"),
+                    Line(Fill(t("reallife_ui_dialog_cost_supplied", "Deliveries to {business} from day {day}"), "business", Bakery, "day", "415"), 0),
+                    Line(Fill(t("reallife_ui_dialog_cost_each_delivery", "{fee} on each delivery, with the goods"), "fee", "$120"), -1, -1)));
+                choices.Add(Choice(leave));
+                break;
+            }
+            case "import":
+            case "import_unset":
+            {
+                Head(m, t("dialog_import_npc_name", "Import Manager"), "Harbourside Freight");
+                lines.Add(Them(t("dialog_import_start", "Hello and welcome! How can I help you?")));
+                lines.Add(Me(t("dialog_import_create_new_partnership", "New partnership")));
+                string agent = t("dialog_import_purchasing_agent", "Purchasing Agent"), ask = t("dialog_import_select_purchasing_agent", "Select purchasing agent");
+                m.Rows = new[]
+                {
+                    FormHeading(t("dialog_import_partnership_header", "Import Partnership")),
+                    state == "import" ? FormChoice(agent, "Priya Nair") : FormUnchosen(agent, ask),
+                };
+                choices.Add(state == "import"
+                    ? Priced(t("dialog_accept_button", "Accept"), Line(Fill(t("reallife_ui_dialog_cost_agent", "{buyer} buys for you from day {day}"), "buyer", "Priya Nair", "day", "415"), 0),
+                        Line(Fill(t("reallife_ui_dialog_cost_discount", "{discount}% off every import order"), "discount", "20.5"), 1))
+                    : Priced(t("dialog_accept_button", "Accept"), Line(ask, 0)));   // the choice the confirm needs, in the game's own words for it
+                choices.Add(Choice(leave));
+                break;
+            }
+            case "furniture":
+            {
+                // The goods as the game lists them on the form, each with its steps and the button that takes it away.
+                Head(m, t("dialog_furniture_store_npc_name", "Store Manager"), "Fiorello Furniture");
+                lines.Add(Them(t("dialog_furniture_store_start", "Hi there, how may we help you?")));
+                lines.Add(Me(t("furniture_delivery_dialog_order", "Order")));
+                string slot = Fill(t("dialog_furniture_delivery_time_slot", "{day} (Day {number}) {hour}"), "day", t("common_tuesday", "Tuesday"), "number", "412", "hour", "10:00");
+                m.Rows = new[]
+                {
+                    FormHeading(t("dialog_furniture_delivery_header", "Furniture Delivery")),
+                    FormChoice(t("common_address", "Address"), Florist),
+                    FormBreak(),
+                    FormChoice(t("dialog_delivery_time", "Delivery time"), slot),
+                    FormBreak(),
+                    Goods(t, "ba:itemname_storageshelf", "Storage Shelf", "$980", "2"),
+                    FormBreak(),
+                    Goods(t, "ba:itemname_cashregister", "Cash Register", "$1,240", "4"),
+                    FormBreak(),
+                    Goods(t, "ba:itemname_ceilinglamppendant", "Ceiling Lamp (Pendant)", "$310", "6"),
+                    FormBreak(),
+                    new UiFormRow { Kind = UiFormKind.Action, Action = t("furniture_delivery_dialog_add_item", "Add item") },
+                    FormFigure(t("dialog_delivery_fee", "Delivery fee"), "$250", false),
+                    FormFigure(t("common_total_price", "Total price"), "$9,030", true),
+                };
+                choices.Add(Priced(t("furniture_delivery_dialog_order", "Order"), Line(Fill(t("reallife_ui_dialog_cost_items", "{count} items, {slot}"), "count", "12", "slot", slot), 0),
+                    Line(Fill(t("reallife_ui_dialog_cost_on_delivery", "{amount}, paid on delivery"), "amount", "$9,030"), -1, -1)));
+                choices.Add(Choice(leave));
+                break;
+            }
+            case "installation":
+            {
+                const string firm = "Hudson Interiors";
+                Head(m, t("dialog_interior_installation_firm_npc_name", "Interior Installation Firm Agent"), firm);
+                lines.Add(Them(Fill(t("dialog_interior_installation_firm_start", "Hi and welcome to {businessName}. How may I help you today?"), "businessName", firm)));
+                lines.Add(Me(t("dialog_more_help_new_order", "New Order")));
+                m.Rows = new[]
+                {
+                    FormHeading(t("dialog_interior_installation_firm_design_settings_header", "Design Settings")),
+                    FormChoice(t("common_address", "Address"), Florist),
+                    FormChoice(t("dialog_interior_installation_day", "Installation Day"), Fill(t("common_day_number", "Day {number}"), "number", "415")),
+                    FormChoice(t("dialog_interior_installation_design", "Design"), "Bloom and Co, third layout"),
+                    FormFigure(t("dialog_interior_installation_fee", "Installation Fee"), "$2,400", false),
+                    FormFigure(t("dialog_interior_installation_layout_price", "Layout Price"), "$21,640", false),
+                    FormFigure(t("common_total", "Total"), "$24,040", true),
+                };
+                choices.Add(Priced(t("common_confirm", "Confirm"), Line(Fill(t("reallife_ui_dialog_cost_refit", "{place} is refitted on day {day}"), "place", Florist, "day", "415"), 0),
+                    Line(t("reallife_ui_dialog_cost_discontinued", "Discontinued items are left out"), -1),
+                    Line(Fill(t("reallife_ui_dialog_cost_on_the_day", "{amount}, paid on that day"), "amount", "$24,040"), -1, -1)));
+                choices.Add(Choice(leave));
+                break;
+            }
+            case "moving":
+            {
+                const string to = "120 9th Avenue";
+                Head(m, t("dialog_moving_company_npc_name", "Moving Service Agent"), "Manhattan Movers");
+                lines.Add(Them(t("dialog_moving_service_start", "Hi and welcome to Manhattan Movers. How may I help you today?")));
+                lines.Add(Me(t("dialog_more_help_new_order", "New Order")));
+                m.Rows = new[]
+                {
+                    FormHeading(t("dialog_moving_service_settings_header", "Moving Settings")),
+                    FormChoice(t("dialog_moving_service_origin_address", "From"), Bakery),
+                    FormChoice(t("dialog_moving_service_destination_address", "Destination"), to),
+                    FormChoice(t("dialog_moving_service_day", "Moving Day"), Fill(t("common_day_number", "Day {number}"), "number", "414")),
+                    new UiFormRow { Kind = UiFormKind.Switch, Label = t("transfer_bizman_settings", "Transfer BizMan Settings"), On = true },
+                    FormFigure(t("dialog_moving_service_fee", "Moving Fee"), "$900", false),
+                    FormFigure(t("dialog_moving_service_fee_per_item", "Fee per item"), "$15", false),
+                    FormFigure(t("common_total", "Total"), "$1,845", true),
+                };
+                choices.Add(Priced(t("common_confirm", "Confirm"), Line(Fill(t("reallife_ui_dialog_cost_move", "{from} moves to {to} on day {day}"), "from", Bakery, "to", to, "day", "414"), 0),
+                    Line(Fill(t("reallife_ui_dialog_cost_on_the_day", "{amount}, paid on that day"), "amount", "$1,845"), -1, -1)));
+                choices.Add(Choice(leave));
+                break;
+            }
+            case "insurance":
+            case "insurance_unset":
+            {
+                // Before a manager is chosen the game has not written their skill: the row says so, never blank.
+                Head(m, t("dialog_health_insurance_manager_npc_name", "Health Insurance Manager"), "Empire Mutual Health");
+                lines.Add(Them(t("dialog_health_insurance_manager_start", "Hello. How can we help you?")));
+                lines.Add(Me(t("dialog_health_insurance_manager_new_partnership", "Start new partnership")));
+                string manager = t("dialog_health_insurance_partnership_hr_manager", "HR Manager"), plan = t("dialog_health_insurance_partnership_plan_type", "Plan Type");
+                string skill = t("dialog_health_insurance_partnership_employee_skill", "HR Manager skill"), ask = t("dialog_health_insurance_manager_select_hr_manager", "Select HR Manager");
+                bool chosen = state == "insurance";
+                m.Rows = new[]
+                {
+                    FormHeading(t("dialog_health_insurance_partnership_header", "Health Insurance Partnership")),
+                    chosen ? FormChoice(manager, "Mara Quinn") : FormUnchosen(manager, ask),
+                    chosen ? FormFigure(skill, "74%", false) : new UiFormRow { Kind = UiFormKind.Figure, Label = ContactsRules.Label(skill), Hint = t("reallife_ui_dialog_figure_unset", "Not set yet") },
+                    chosen ? FormChoice(plan, t("healthinsuranceplantype_silver", "Silver")) : FormUnchosen(plan, t("dialog_health_insurance_manager_select_plan_type", "Select Plan Type")),
+                };
+                choices.Add(Priced(t("dialog_accept_button", "Accept"), chosen ? Line(t("reallife_ui_dialog_cost_insurer_next", "The insurer names its price next"), 0) : Line(ask, 0)));
+                choices.Add(Choice(leave));
+                break;
+            }
+            case "recruitment":
+            {
+                const string agency = "Talent Row Recruitment";
+                Head(m, t("dialog_recruitment_agency_npc_name", "Recruitment Agent"), agency);
+                lines.Add(Them(Fill(t("dialog_recruitment_agency_start", "Hello and welcome to {businessName}. What type of employee are you looking to hire?"), "businessName", agency)));
+                lines.Add(Me(t("dialog_recruitment_agency_start_new_campaign", "New Campaign")));
+                m.Rows = new[]
+                {
+                    FormHeading(t("dialog_recruitment_agency_candidate_properties_header", "Candidate properties")),
+                    FormChoice(t("common_business", "Business"), Florist),
+                    FormChoice(t("dialog_recruitment_agency_primary_skills", "Primary Skill"), t("ba:skill_customerservice", "Customer Service")),
+                    FormBreak(),
+                    FormHeading(t("dialog_recruitment_agency_schedule_types", "Schedule Types")),
+                    new UiFormRow { Kind = UiFormKind.Switch, Label = t("ba:jobdemand_parttime", "Part-time"), On = true },
+                    new UiFormRow { Kind = UiFormKind.Switch, Label = t("ba:jobdemand_fulltime", "Full-time"), On = true },
+                    new UiFormRow { Kind = UiFormKind.Slider, Label = t("dialog_recruitment_agency_amount_of_candidates", "Amount of candidates"), Value = "5", Share = 4f / 9f },
+                    new UiFormRow { Kind = UiFormKind.Slider, Label = t("dialog_recruitment_agency_days_to_deliver", "Days to deliver"), Value = Fill(t("common_days", "{value} days"), "value", "4"), Share = 0.5f },
+                    FormBreak(),
+                    FormFigure(t("common_total_price", "Total price"), "$1,000", true),
+                };
+                choices.Add(Priced(t("common_confirm", "Confirm"), Line(Fill(t("reallife_ui_dialog_cost_candidates", "Up to {count} candidates within {days} days"), "count", "5", "days", "4"), 1),
+                    Line(Fill(t("reallife_ui_dialog_cost_now", "{amount} now"), "amount", "$1,000"), -1, -1)));
+                choices.Add(Choice(leave));
+                break;
+            }
+            case "driver":
+            {
+                // The contract's own words under its choice, the game's lone lines as notes, the price a day as the total.
+                const string service = "Metro Chauffeurs";
+                Head(m, t("dialog_private_driver_service_npc_name", "Private Driver Service Manager"), service);
+                lines.Add(Them(Fill(t("dialog_private_driver_start", "Hello and welcome to {businessName}! How can we help you today?"), "businessName", service)));
+                lines.Add(Me(t("dialog_private_driver_hire_driver", "Hire driver")));
+                m.Rows = new[]
+                {
+                    FormChoice(t("dialog_private_driver_select", "Select driver"), t("ba:private_driver_type_advanced", "Advanced Driver")),
+                    new UiFormRow { Kind = UiFormKind.Note, Label = t("ba:private_driver_type_advanced_description", "Can drive vehicles available at The Hamptons Axis/Manhattan Luxury Cars, and City Cars") },
+                    new UiFormRow { Kind = UiFormKind.Note, Label = Fill(t("dialog_private_driver_max_cars", "Max Cars: {number}"), "number", "2") },
+                    FormBreak(),
+                    FormFigure(t("dialog_private_driver_cost_per_day", "Cost per day"), "$420", true),
+                };
+                choices.Add(Priced(t("common_confirm", "Confirm"), Line(Fill(t("reallife_ui_dialog_cost_a_day", "{amount} a day while it runs"), "amount", "$420"), -1, -1)));
+                back = t("common_cancel", "Cancel");
+                choices.Add(Choice(back));
+                break;
+            }
+            case "hotel":
+            {
+                // A desk of the mod's own: what each answer pays under it, from the same figures its words use.
+                Head(m, t("reallife_travel_desk_name", "Reception"), "The Lexington Hotel");
+                lines.Add(Them(Fill(t("reallife_travel_desk_nights", "Nights: {nights}. That comes to {total}, about {night} a night. Checkout is at 11:00 on {day}."),
+                    "nights", "7", "total", "$1,260", "night", "$180", "day", t("common_tuesday", "Tuesday"))));
+                lines.Add(Me(Fill(t("reallife_travel_desk_book", "Book nights: {nights}"), "nights", "7")));
+                lines.Add(Them(Fill(t("reallife_travel_desk_pay",
+                        "You can pay the {total} now, or leave {deposit} as a deposit and settle the remaining {later} when you leave: that is five per cent more, and if you go early you only pay for the nights you used."),
+                    "total", "$1,260", "deposit", "$180", "later", "$1,134")));
+                choices.Add(Priced(t("reallife_travel_desk_pay_now", "Pay now"), Line(Fill(t("reallife_ui_dialog_cost_now", "{amount} now"), "amount", "$1,260"), -1, -1)));
+                choices.Add(Priced(t("reallife_travel_desk_pay_deposit", "Deposit"),
+                    Line(Fill(t("reallife_ui_dialog_cost_deposit", "{amount} now and {later} when you leave"), "amount", "$180", "later", "$1,134"), -1, -1)));
                 choices.Add(Choice(leave));
                 break;
             }
@@ -217,6 +426,7 @@ internal static partial class UiSamples
                 break;
             }
         }
+        m.RowCount = m.Rows != null ? m.Rows.Length : 0;
         m.Messages = lines.ToArray();
         m.MessageCount = lines.Count;
         m.Choices = choices.ToArray();
@@ -301,6 +511,30 @@ internal static partial class UiSamples
 
     private static UiDecisionChoice Choice(string words) => new UiDecisionChoice { Name = DialogRules.OneLine(words) };
 
+    // An answer with what it pays and costs under it, as the dialog or the form's confirm tells it (DialogAnswers).
+    private static UiDecisionChoice Priced(string words, params UiConsequence[] lines) => new UiDecisionChoice { Name = DialogRules.OneLine(words), Lines = lines };
+
+    // A line under an answer: for the player (+1), against them (-1) or neither, and which way their money goes.
+    private static UiConsequence Line(string text, int tone, int change = 0) => new UiConsequence { Text = text, Tone = tone, Change = change };
+
+    // A game form's rows as DialogForm reads them: its question, a choice made or still asking, a figure, a splitter.
+    private static UiFormRow FormHeading(string words) => new UiFormRow { Kind = UiFormKind.Heading, Label = words };
+
+    private static UiFormRow FormChoice(string label, string value) => new UiFormRow { Kind = UiFormKind.Choice, Label = ContactsRules.Label(label), Value = value };
+
+    private static UiFormRow FormUnchosen(string label, string ask) => new UiFormRow { Kind = UiFormKind.Choice, Label = ContactsRules.Label(label), Hint = ask };
+
+    private static UiFormRow FormFigure(string label, string value, bool total) => new UiFormRow { Kind = UiFormKind.Figure, Label = ContactsRules.Label(label), Value = value, Strong = total };
+
+    private static UiFormRow FormBreak() => new UiFormRow { Kind = UiFormKind.Break };
+
+    // A delivery's line of goods: its name and price as the game writes them, its amount with its steps and the button that takes it away.
+    private static UiFormRow Goods(UiWords t, string item, string english, string price, string amount) => new UiFormRow
+    {
+        Kind = UiFormKind.Amount, Label = DialogRules.OneLine(Fill(t("furniture_delivery_item", "{itemName} - {itemPrice}"), "itemName", t(item, english), "itemPrice", price)),
+        Value = amount, CanLess = true, CanMore = true, Remove = true
+    };
+
     // A matter as the desk tells it: its name and business, what happened, and when it must be decided.
     private static string Matter(UiWords t, string name, string text, string day) =>
         Fill(t("reallife_biz_desk_issue", "{name}: {business}\n{text}\nDecide by day {day}, {time} (today is day {today})."),
@@ -334,7 +568,42 @@ internal static partial class UiSamples
         return m;
     }
 
-    /// <summary>A candidate's wage talk in Contacts, their reply to the player's offer with the mood the game shows by it.</summary>
+    /// <summary>A call's state on the call card: the bank's loan, the wage talk, the tow.</summary>
+    public static UiContactsModel CallSample(UiWords t, string which) => which == "loan" ? LoanCall(t) : which == "tow" ? TowCall(t) : MoodCall(t);
+
+    /// <summary>
+    /// A tow asked for by phone: the tow company's two places as the game's options, each with its price in its words, the
+    /// repair shop chosen for a car that will not start, and what Accept costs under it. The form's line says nothing of
+    /// its own, so the card shows the form under the caller's name.
+    /// </summary>
+    public static UiContactsModel TowCall(UiWords t)
+    {
+        UiContactsModel m = ContactsSample(t, "call_replies");
+        m.Call = new UiCallModel
+        {
+            Name = "NY AutoTow", Icon = UiIcon.Truck, Role = t("contactcategoryname_general", "General"), Length = "0:21",
+            Rows = new[]
+            {
+                new UiFormRow { Kind = UiFormKind.Radio, Label = t("ba:towdestination_autorepairshop", "Transport to closest auto repair shop") + " ($500)", On = true },
+                new UiFormRow { Kind = UiFormKind.Radio, Label = t("ba:towdestination_gasstation", "Transport to closest gas station") + " ($350)" },
+            },
+            Choices = new[] { Priced(t("dialog_accept_button", "Accept"), Line(Fill(t("reallife_ui_dialog_cost_now", "{amount} now"), "amount", "$500"), -1, -1)) },
+            Buttons = new[] { new UiActionModel { Label = t("dialog_hang_up_button", "Hang up"), Kind = UiButtonKind.Destructive, Icon = UiIcon.Phone, Key = UiAction.Back } },
+            Prompts = new[]
+            {
+                new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") }, new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_choose", "Choose") },
+                new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
+            },
+            PromptCount = 3
+        };
+        m.Call.RowCount = m.Call.Rows.Length;
+        return m;
+    }
+
+    /// <summary>
+    /// A candidate's wage talk in Contacts, their reply to the player's offer with the mood the game shows by it, and what
+    /// the offer typed pays under Send Offer beside what they asked last.
+    /// </summary>
     public static UiContactsModel MoodCall(UiWords t)
     {
         UiContactsModel m = ContactsSample(t, "wage");
@@ -345,6 +614,14 @@ internal static partial class UiSamples
                 m.Talk.Messages[i].Mood = DialogRules.MoodIcon(0);   // unsure: the game's yellow face
                 break;
             }
+        }
+        if (m.Talk.Choices.Length > 0)
+        {
+            m.Talk.Choices[0].Lines = new[]
+            {
+                Line(Fill(t("reallife_ui_dialog_cost_wage", "{wage} an hour and {bonus} on signing, if they agree"), "wage", "$18.50", "bonus", "$250"), -1, -1),
+                Line(Fill(t("reallife_ui_dialog_cost_asked", "They asked for {wage} an hour and {bonus}"), "wage", "$19.50", "bonus", "$400"), 0)
+            };
         }
         return m;
     }

@@ -5,6 +5,7 @@ using Dialogs;
 using Entities;
 using Helpers;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -70,7 +71,7 @@ namespace RealLifeOverhaul
                     ConfirmTextOverride = "reallife_doctor_note_only".Localize(new { amount = JobText.Money(HomeBalance.SickNoteFee) }),
                     OnConfirm = () => Prescribe(false, true),
                     OnCancel = PhoneContacts.HangUp
-                }));
+                }.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", JobText.Money(HomeBalance.SickNoteFee))));
                 return;
             }
             string key = HomeHealth.Ill ? "reallife_doctor_diagnosis" : "reallife_doctor_diagnosis_hurt";
@@ -89,7 +90,8 @@ namespace RealLifeOverhaul
                 SecondOptionTextOverride = "reallife_doctor_prescription_note",
                 OnSecondOption = () => Prescribe(true, true),
                 OnCancel = PhoneContacts.HangUp
-            }));
+            }.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", JobText.Money(HomeBalance.PrescriptionFee))
+             .Pays(DialogButton.Second, "reallife_ui_dialog_cost_now", "amount", JobText.Money(HomeBalance.PrescriptionFee + HomeBalance.SickNoteFee))));
         }
 
         private static bool Hurt()
