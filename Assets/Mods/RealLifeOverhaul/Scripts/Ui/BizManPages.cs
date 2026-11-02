@@ -41,10 +41,13 @@ namespace RealLifeOverhaul.Ui
             UiChart.First + UiChart.Point, UiCatalogue.First + UiCatalogue.Card, UiCatalogue.First + UiCatalogue.Action
         };
 
+        [ThreadStatic] private static float _split;   // where a page's own layout splits its two columns this layout (a photo's page), or NaN for the middle
+
         /// <summary>Lays BizMan out: the window and its sidebar, then the portfolio or the place's page, then the keys' bar.</summary>
         public static void Lay(UiScene s, BizManModel m, UiFrame frame, bool dark, IUiKeys keys)
         {
             s.Begin("bizman", frame.Width, frame.Height, dark);
+            _split = float.NaN;
             // One section needs no sidebar: its page takes the window's width, and Back goes to the portfolio (or closes it).
             UiNavEntry[] nav = m.Nav.Length > 1 ? m.Nav : new UiNavEntry[0];
             UiAt at = UiAppWindow.Shell(s, frame, m.Title, UiIcon.Building, nav, m.NavSelected, false, keys, out float x, out float y, out float w, out float bottom);
@@ -57,7 +60,9 @@ namespace RealLifeOverhaul.Ui
             {
                 Business(s, at, m, x, y, w, bottom, keys);
             }
-            UiPageFence.Lay(s, page, x, x + w);
+            float split = float.IsNaN(_split) ? x + w / 2f : _split;
+            _split = float.NaN;
+            UiPageFence.Lay(s, page, split, split);
             for (int i = 0; i < m.PromptCount; i++)
             {
                 s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);

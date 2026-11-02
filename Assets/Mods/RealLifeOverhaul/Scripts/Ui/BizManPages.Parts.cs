@@ -58,6 +58,7 @@ namespace RealLifeOverhaul.Ui
             ly = Lead(s, at, m.Lead, x, ly, pw);
             Amount(s, at, m.Amount, x, ly, pw, keys);
             float fx = x + pw + UiTokens.S8, fw = x + w - fx;
+            _split = fx - UiTokens.S4;   // the pad's columns part where the photo's column ends
             float ry = Title(s, at, fx, y, fw, m.FactsTitle);
             ry = Facts(s, at, m.Facts, fx, ry, fw) + UiTokens.S6;
             if (m.More.Length > 0)

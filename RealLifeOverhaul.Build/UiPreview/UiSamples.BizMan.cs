@@ -172,7 +172,7 @@ internal static partial class UiSamples
                     t("common_setdestination", "Set destination") },
                 Values = new[] { (int)icon, 0, 0, Satisfied[i], -1, 0, (int)UiIcon.Locate },
                 Tones = new[] { UiIconTints.Of(icon), UiRole.None, UiRole.None, UiRole.None, UiRole.None, closed ? UiRole.Warn : i == 3 ? UiRole.Muted : UiRole.Ok, UiRole.None },
-                Sub = KindWords[i]
+                Sub = t(Kinds[i], KindWords[i])   // the game's own word for the kind, in the player's language
             };
         }
         table.RowCount = count;
@@ -262,7 +262,7 @@ internal static partial class UiSamples
         string name = owned ? Businesses[2] : longNames ? "Bloom Café and Bakery of the Upper West Side" : Businesses[0];
         string place = owned ? "301 West 42nd Street" : longNames ? "1250 Avenue of the Americas" : "12 West 44th Street";
         var m = new BizManModel { Title = t("smartphone_bizman", "BizMan"), Page = BizManPage.Business, Part = part };
-        m.Head = Head(t, name, KindWords[owned ? 2 : 0], Kinds[owned ? 2 : 0], place, true, longNames);
+        m.Head = Head(t, name, t(Kinds[owned ? 2 : 0], KindWords[owned ? 2 : 0]), Kinds[owned ? 2 : 0], place, true, longNames);
         m.Head.Chosen = owned ? 2 : 0;
         m.Head.Picture = owned ? null : "bizman:logo";
         m.Head.ListOpen = state == "store_switch_open";
@@ -510,7 +510,7 @@ internal static partial class UiSamples
         m.NameLabel = t("common_business_name", "Business name");
         m.NameText = unsaved ? "Bloom Café Express" : name;
         m.KindLabel = t("common_business_type", "Business type");
-        m.Kinds = new[] { "Coffee Shop", "Fast Food Restaurant", "Bakery" };
+        m.Kinds = new[] { t("ba:businesstype_coffeeshop", "Coffee Shop"), t("ba:businesstype_fastfoodrestaurant", "Fast Food Restaurant"), t("ba:businesstype_giftshop", "Gift Shop") };
         m.KindChosen = 0;
         m.Uniforms = t("bizman_set_up_uniforms", "Set up uniforms");
         m.LogoTitle = t("bizman_settings_sign_appearance_info", "Sign appearance");

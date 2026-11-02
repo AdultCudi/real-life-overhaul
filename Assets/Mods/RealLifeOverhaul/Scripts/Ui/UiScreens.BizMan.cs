@@ -56,7 +56,10 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_bizman_the_building", "reallife_ui_bizman_the_business", "reallife_ui_bizman_unsaved", "reallife_ui_prompt_back",
                     "reallife_ui_prompt_group", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "repeating_order", "smartphone_bizman",
                     "common_day_number", "common_setdestination", "reallife_ui_bizman_logo", "reallife_ui_bizman_nothing_ordered", "reallife_ui_bizman_runs_out",
-                    "reallife_ui_bizman_this_week", "reallife_ui_bizman_customers_total", "common_products",
+                    "reallife_ui_bizman_this_week",
+                    "ba:businesstype_bookstore", "ba:businesstype_clothingstore", "ba:businesstype_coffeeshop", "ba:businesstype_electronicsstore",
+                    "ba:businesstype_fastfoodrestaurant", "ba:businesstype_florist", "ba:businesstype_giftshop", "ba:businesstype_gym", "ba:businesstype_jewelrystore",
+                    "reallife_ui_bizman_customers_total", "common_products",
                     "reallife_interior_head_place", "reallife_interior_head_decor", "reallife_interior_head_condition", "reallife_interior_page_effects",
                     "reallife_interior_page_items", "reallife_interior_page_customers", "reallife_interior_page_rules", "reallife_interior_head_next", "reallife_set_link",
                     "reallife_interior_refresh_button", "reallife_interior_renovate_button", "reallife_guide_app"

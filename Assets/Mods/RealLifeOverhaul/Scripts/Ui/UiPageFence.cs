@@ -58,7 +58,7 @@ namespace RealLifeOverhaul.Ui
                         links[i * 4 + d] = dx != 0 && rules == close ? i : -2;
                         continue;
                     }
-                    int next = dx != 0 ? Level(s, i, page, dx)
+                    int next = dx != 0 ? Level(s, i, page, dx, dx > 0 || chosen < 0)
                         : node.List >= 0 && (rules == UiFocusRules.ScrollAsked || (rules >= page && Overlap(s, i, rules))) ? -2 : Column(s, i, page, dy);
                     if (next == -1 && dx < 0 && chosen >= 0)
                     {
@@ -86,7 +86,8 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The nearest page target sideways that stands level with a target (their heights overlap), or -1.
-        private static int Level(UiScene s, int from, int page, int dx)
+        // across: with nothing level, the nearest across the gap; never left where a sidebar's entry stands beside the page.
+        private static int Level(UiScene s, int from, int page, int dx, bool across)
         {
             s.NodeBox(from, out float fx, out float fy, out float fw, out float fh);
             int best = -1, near = -1;
@@ -131,7 +132,7 @@ namespace RealLifeOverhaul.Ui
                     best = i;
                 }
             }
-            return best >= 0 ? best : near;
+            return best >= 0 ? best : across ? near : -1;
         }
 
         // The nearest page target up or down that shares some of a target's width; failing that the nearest that way on
@@ -179,7 +180,7 @@ namespace RealLifeOverhaul.Ui
                 float across = Math.Abs(cx + cw / 2f - (fx + fw / 2f));
                 if (Math.Min(fx + fw, cx + cw) - Math.Max(fx, cx) > 0f)
                 {
-                    float score = along + across * 0.5f;
+                    float score = along * 2f + across * 0.5f;   // the next row first: a row nearer down wins over one more under the target
                     if (score < bestScore)
                     {
                         bestScore = score;
