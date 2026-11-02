@@ -59,6 +59,7 @@ namespace RealLifeOverhaul
                 BusinessDirector.Held = Offered;
                 CompanyBridges.Audit = Audit;
                 CompanyBridges.TaxCase = TaxCases.File;
+                Justice.Bridges.TaxSettled = TaxSettled;
                 CompanyBridges.Inspect = Inspect;
                 CompanyBridges.IssueFootfall = IssueFootfall;
                 PaidWage.Raise = RaiseOf;
@@ -76,6 +77,7 @@ namespace RealLifeOverhaul
             internal static void Disconnect()
             {
                 CompanyBridges.Reset();
+                Justice.Bridges.TaxSettled = null;
                 PaidWage.Raise = null;
                 BusinessDirector.Held = null;
                 FireLosses.Billed -= FireLoss;
@@ -85,6 +87,19 @@ namespace RealLifeOverhaul
                 BusinessGame.Ambient = CityEconomyDirector.FootfallOf;   // the city's economy's pairing takes it off next
                 News.Extra = _paperBefore;
                 _paperBefore = null;
+            }
+
+            // A tax case settled with the city: the company's inspector comes less often for a while.
+            private static void TaxSettled(int day)
+            {
+                try
+                {
+                    CompanyDirector.Instance?.TaxSettled(day);
+                }
+                catch (Exception e)
+                {
+                    Fault("CompanyLinks.TaxSettled", e);
+                }
             }
 
             // The raise the company agreed for somebody, for every page that names what they are paid (Core/PaidWage).

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Characters.EmojiSystem;
 using Entities;
+using RealLifeOverhaul.GameUi;
 using TMPro;
 using UI.Dialog;
 using UnityEngine;
@@ -30,13 +31,15 @@ namespace RealLifeOverhaul.Ui
         private readonly Transform _panel;
         private readonly UiConversationModel _m = new UiConversationModel();
         private readonly DialogForm _form = new DialogForm();
-        private readonly List<Button> _choices = new List<Button>(4);   // the numbered choices' buttons; null for the game's own view
+        private readonly List<Button> _choices = new List<Button>(4);   // the numbered choices' buttons; null for the game's own view or the dialog's own answer
+        private readonly List<DialogExtra> _extraOf = new List<DialogExtra>(4);   // by choice: the dialog's own answer past the game's three; null for a button
         private readonly List<Button> _buttons = new List<Button>(4);
         private readonly List<UiDecisionChoice> _made = new List<UiDecisionChoice>(4);
         private readonly List<UiMessageModel> _lines = new List<UiMessageModel>(32);
         private readonly UiPrompt[] _prompts = new UiPrompt[3];
         private static readonly UiFormField[] NoFields = new UiFormField[0];
         private readonly List<KeyValuePair<int, string>> _said = new List<KeyValuePair<int, string>>(32);   // a line's copy and the answer the player gave it here
+        private readonly List<AsideLine> _asides = new List<AsideLine>(8);   // answers taken on a line itself and what was said back, by the line's copy
         private Transform _content;
         private Button _leave;
         private bool _dirty = true, _formShown;
@@ -46,6 +49,14 @@ namespace RealLifeOverhaul.Ui
         private int _typing = -1, _dragging = -1, _shownLines = -1;
         private object _dialog;            // the conversation the game runs now, as last seen
         private object _asideFor;          // the line the game's own panel answers now
+
+        // An answer of the dialog's own taken on the line itself, or the words said back to it.
+        private struct AsideLine
+        {
+            public int Line;
+            public UiFrom From;
+            public string Text;
+        }
 
         public DialogScreen(DialogUI ui, Transform panel)
         {
@@ -232,6 +243,10 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
+            if (_extraOf[arg] != null)
+            {
+                return Extra(_extraOf[arg]);
+            }
             Button b = _choices[arg];
             if (b == null)
             {
@@ -259,6 +274,37 @@ namespace RealLifeOverhaul.Ui
                 _said.Add(new KeyValuePair<int, string>(view.GetInstanceID(), words));
             }
             Soon();
+            return true;
+        }
+
+        // An answer of the dialog's own past the game's three: done on the line (what is said back joins the thread), or the
+        // dialog's next line shown through the game's own ShowEntry, the answer kept for the thread as a button's is.
+        private bool Extra(DialogExtra extra)
+        {
+            CanvasGroup view = View();
+            int line = view != null ? view.GetInstanceID() : 0;
+            if (!DialogChoices.Take(extra, _ui, out bool moved, out string back))
+            {
+                Log("the dialog's own answer '" + extra.Name + "' could not be taken now");
+                return false;
+            }
+            if (moved)
+            {
+                if (view != null)
+                {
+                    _said.Add(new KeyValuePair<int, string>(line, DialogRules.OneLine(extra.Name)));
+                }
+                Log("the dialog's own answer '" + extra.Name + "': its next line, shown by the game");
+                Soon();
+                return true;
+            }
+            _asides.Add(new AsideLine { Line = line, From = UiFrom.Me, Text = DialogRules.OneLine(extra.Name) });
+            if (!string.IsNullOrEmpty(back))
+            {
+                _asides.Add(new AsideLine { Line = line, From = UiFrom.Them, Text = back });
+            }
+            Log("the dialog's own answer '" + extra.Name + "', answered on the line");
+            _dirty = true;
             return true;
         }
 
@@ -326,6 +372,7 @@ namespace RealLifeOverhaul.Ui
         private void Build()
         {
             _choices.Clear();
+            _extraOf.Clear();
             _buttons.Clear();
             _made.Clear();
             _lines.Clear();
@@ -335,6 +382,7 @@ namespace RealLifeOverhaul.Ui
             {
                 _dialog = _ui.dialog;
                 _said.Clear();
+                _asides.Clear();
                 _form.Clear();
                 _shownLines = -1;
                 _asideFor = null;
@@ -364,6 +412,7 @@ namespace RealLifeOverhaul.Ui
                     }
                     speaker = Words(c.Find("HeaderLabel")) ?? speaker;
                 }
+                Asides(c);
                 if (!now)
                 {
                     string answer = Said(c);
@@ -382,6 +431,7 @@ namespace RealLifeOverhaul.Ui
             if (foreign > 0)
             {
                 _choices.Add(null);
+                _extraOf.Add(null);
                 _made.Add(new UiDecisionChoice { Name = UiText.T("reallife_ui_contacts_game_view") });
             }
             _m.Messages = _lines.ToArray();
@@ -409,7 +459,9 @@ namespace RealLifeOverhaul.Ui
             _m.Hue = UiColour.HueOf(_m.Name);
             _m.Ring = ContactsRules.MoodRing(mood);
             _m.Role = where != null && where != _m.Name ? where : null;
-            _m.Status = null;
+            string word = DialogRules.MoodWord(mood);   // the mood in a word beside the face, in the ring's colour
+            _m.Status = word != null ? UiText.T(word) : null;
+            _m.StatusTone = _m.Ring;
             _m.Title = UiText.T("reallife_ui_dialog_title");
             _m.ThreadStart = null;
             _m.EmptyTitle = null;
@@ -417,9 +469,12 @@ namespace RealLifeOverhaul.Ui
             _m.Composer = false;
         }
 
-        // The line now: its buttons as numbered choices (the confirm first, the second option, Leave last), and its form.
+        // The line now: its form, then its buttons as numbered choices (the confirm first, the second option, the dialog's own
+        // answers past the game's three, Leave last), each with the lines the dialog told of it. The form is read first, as
+        // reading the bank's loan tells its line what taking it costs.
         private void Line(CanvasGroup view, DialogEntry e)
         {
+            Form(view, e);
             Transform row = view.transform.Find("Buttons");
             for (int i = 0; row != null && row.gameObject.activeSelf && i < row.childCount; i++)
             {
@@ -436,10 +491,25 @@ namespace RealLifeOverhaul.Ui
             }
             if (hasCancel || hasSecond || hasConfirm)
             {
-                int n = ContactsRules.ChoiceOrder(hasCancel, hasSecond, hasConfirm, true, Order);
-                for (int i = 0; i < n; i++)
+                DialogNotes notes = DialogAnswers.Of(e);
+                int n = ContactsRules.ChoiceOrder(hasCancel, hasSecond, hasConfirm, true, Order), k = 0;
+                if (hasConfirm && k < n)
                 {
-                    Choice(_buttons[Order[i]]);
+                    Choice(_buttons[Order[k++]], DialogChoices.Lines(notes, DialogButton.Confirm));
+                }
+                if (hasSecond && k < n)
+                {
+                    Choice(_buttons[Order[k++]], DialogChoices.Lines(notes, DialogButton.Second));
+                }
+                for (int i = 0; notes != null && i < notes.More.Count; i++)
+                {
+                    _choices.Add(null);
+                    _extraOf.Add(notes.More[i]);
+                    _made.Add(DialogChoices.Choice(notes.More[i]));
+                }
+                if (hasCancel && k < n)
+                {
+                    Choice(_buttons[Order[k++]], DialogChoices.Lines(notes, DialogButton.Cancel));
                 }
                 _leave = hasCancel ? _buttons[0] : null;
             }
@@ -447,16 +517,16 @@ namespace RealLifeOverhaul.Ui
             {
                 for (int i = 0; i < _buttons.Count; i++)
                 {
-                    Choice(_buttons[i]);
+                    Choice(_buttons[i], null);
                 }
             }
-            Form(view, e);
         }
 
-        private void Choice(Button b)
+        private void Choice(Button b, UiConsequence[] lines)
         {
             _choices.Add(b);
-            _made.Add(new UiDecisionChoice { Name = DialogRules.OneLine(UiWidgets.Label(b)), Disabled = !b.interactable });
+            _extraOf.Add(null);
+            _made.Add(new UiDecisionChoice { Name = DialogRules.OneLine(UiWidgets.Label(b)), Lines = lines, Disabled = !b.interactable });
         }
 
         // The line's form in the slot, read from the game's own widgets; a casino's game, or a form with nothing the kit can
@@ -478,7 +548,7 @@ namespace RealLifeOverhaul.Ui
             Transform form = FormNow();
             string question = Words(view.transform.Find("HeaderLabel"));
             bool casino = _ui.dialog != null && DialogRules.Casino(_ui.dialog.GetType().Name);
-            if (form == null || casino || DialogRules.CasinoForm(form.name) || !_form.Read(form, question))
+            if (form == null || casino || DialogRules.CasinoForm(form.name) || !_form.Read(form, question, e, _ui))
             {
                 _form.Clear();
                 _m.Rows = _form.Rows;
@@ -539,6 +609,24 @@ namespace RealLifeOverhaul.Ui
                 _lines.RemoveAt(0);   // the game keeps its last thirty lines; the thread keeps as many
             }
             _lines.Add(line);
+        }
+
+        // What was answered on a line itself and said back, after the line, in the order it was said.
+        private void Asides(Transform entry)
+        {
+            if (_asides.Count == 0)
+            {
+                return;
+            }
+            CanvasGroup group = entry.GetComponent<CanvasGroup>();
+            int id = group != null ? group.GetInstanceID() : 0;
+            for (int i = 0; i < _asides.Count; i++)
+            {
+                if (_asides[i].Line == id)
+                {
+                    Add(new UiMessageModel { From = _asides[i].From, Text = _asides[i].Text });
+                }
+            }
         }
 
         private string Said(Transform entry)

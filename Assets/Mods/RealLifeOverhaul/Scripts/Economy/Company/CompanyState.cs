@@ -164,6 +164,7 @@ namespace RealLifeOverhaul.Economy
         public int Owed;                // back-tax and fines found and not yet paid
         public int LastAudit;           // the day of the last audit; 0 for never
         public int CaseNumber;          // the court's number for an audit's case; 0 for none
+        public int QuietUntil;          // after a tax case settled with the city, audits come at half the chance until this day; 0 for none
 
         public bool ReturnWaiting => ReturnDue > 0;
     }

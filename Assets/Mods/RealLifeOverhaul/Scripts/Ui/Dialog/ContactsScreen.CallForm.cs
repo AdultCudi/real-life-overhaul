@@ -18,6 +18,8 @@ namespace RealLifeOverhaul.Ui
         private readonly DialogForm _callForm = new DialogForm();
         private int _callDue;            // the frame after a press on the form, when the game's answer to it is read
         private int _callDragging = -1;
+        private int _callBackFor;        // the line an answer of the dialog's own was taken on, and what was said back to it
+        private string _callBack;
 
         // The call card shows a form the kit draws.
         private bool CallFormShown => _m.Call != null && _callForm.Count > 0;
@@ -49,7 +51,7 @@ namespace RealLifeOverhaul.Ui
             }
             Transform form = GameContract.TalkForm.Field != null ? GameContract.TalkForm.Field.GetValue(_app) as Transform : null;
             bool casino = _app.dialog != null && DialogRules.Casino(_app.dialog.GetType().Name);
-            if (form == null || !form.gameObject.activeInHierarchy || casino || DialogRules.CasinoForm(form.name) || !_callForm.Read(form, null))
+            if (form == null || !form.gameObject.activeInHierarchy || casino || DialogRules.CasinoForm(form.name) || !_callForm.Read(form, null, e, _app))
             {
                 _callForm.Clear();
                 return false;
@@ -58,6 +60,37 @@ namespace RealLifeOverhaul.Ui
             call.RowCount = _callForm.Count;
             call.Pick = _callForm.Pick;
             return true;
+        }
+
+        // An answer of the dialog's own past the game's three, on a call: done on the line (what is said back stands as the
+        // call's line), or the dialog's next line shown by the game.
+        private bool CallExtra(GameUi.DialogExtra extra)
+        {
+            CanvasGroup view = EntryView();
+            if (!DialogChoices.Take(extra, _app, out bool moved, out string back))
+            {
+                UiDirector.Logger?.Info("Contacts (kit): the dialog's own answer '" + extra.Name + "' could not be taken now");
+                return false;
+            }
+            if (!moved && view != null)
+            {
+                _callBackFor = view.GetInstanceID();
+                _callBack = back;
+            }
+            _callDue = Time.frameCount + 1;
+            _dirty = true;
+            UiDirector.Logger?.Info("Contacts (kit): the dialog's own answer '" + extra.Name + "'" + (moved ? ": its next line, shown by the game" : ", answered on the call"));
+            return true;
+        }
+
+        // What was said back to an answer taken on the line now; null once the call has moved on.
+        private string CallSaidBack(CanvasGroup view)
+        {
+            if (_callBack != null && (view == null || view.GetInstanceID() != _callBackFor))
+            {
+                _callBack = null;
+            }
+            return _callBack;
         }
 
         /// <summary>The mood the game shows by the line now (a negotiation's), as its glyph; none where it shows none.</summary>

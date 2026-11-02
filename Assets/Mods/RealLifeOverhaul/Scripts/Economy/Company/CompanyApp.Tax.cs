@@ -59,7 +59,12 @@ namespace RealLifeOverhaul.Economy
                 }
                 if (Settings.EconomyCompanyHide)
                 {
-                    box.Row("reallife_co_tax_risk", CompanyText.Share(TaxRules.AuditChance(t.Risk, t.Accountant) / 10));
+                    box.Row("reallife_co_tax_risk", CompanyText.Share(TaxRules.AuditChance(t, _director.Today) / 10));
+                }
+                if (_director.Today < t.QuietUntil)
+                {
+                    // A tax case settled with the city: the inspector comes at half the chance until then.
+                    box.Row("reallife_co_tax_quiet", CompanyText.T("reallife_co_tax_quiet_value", "day", t.QuietUntil.ToString()));
                 }
                 box.Row("reallife_co_tax_quarter", CompanyText.T("reallife_co_tax_quarter_value", "quarter", t.Quarter.ToString(), "day",
                     (t.QuarterFrom + _director.QuarterDays).ToString()));
@@ -180,7 +185,7 @@ namespace RealLifeOverhaul.Economy
             }
             box.Section("reallife_ibox_sec_now");
             box.Row("reallife_co_hide_saved", CompanyText.Money(t.Saved));
-            box.Row("reallife_co_tax_risk", CompanyText.Share(TaxRules.AuditChance(t.Risk, t.Accountant) / 10), CellTone.Yellow);
+            box.Row("reallife_co_tax_risk", CompanyText.Share(TaxRules.AuditChance(t, _director.Today) / 10), CellTone.Yellow);
             box.Section("reallife_ibox_sec_risk");
             box.Note(CompanyText.T("reallife_co_hide_risk", "grow", (CompanyCatalogue.RiskPerPercent / 100f).ToString("0.##"),
                 "fall", (CompanyCatalogue.RiskDecay / 100f).ToString("0.##"), "most", CompanyText.Share(CompanyCatalogue.RiskMost / 10)));

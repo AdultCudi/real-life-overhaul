@@ -30,6 +30,7 @@ namespace RealLifeOverhaul.Ui
         private readonly List<int> _groups = new List<int>(16);          // the categories shown, the game's then the mod's
         private readonly List<Button> _services = new List<Button>(8);   // the aside's actions: the game's buttons, null for the game's own view
         private readonly List<Button> _choices = new List<Button>(4);    // the conversation's or the call's numbered choices
+        private readonly List<GameUi.DialogExtra> _extras = new List<GameUi.DialogExtra>(4);   // by choice: the dialog's own answer past the game's three; null for a button
         private readonly List<Field> _fields = new List<Field>(2);       // the form's fields
         private readonly List<KeyValuePair<TMP_Text, Color>> _names = new List<KeyValuePair<TMP_Text, Color>>(2);   // the header's name labels as the game made them
         private string _query = string.Empty;
@@ -159,6 +160,10 @@ namespace RealLifeOverhaul.Ui
                     return Done(Click(ButtonOf(GameContract.KitDeleteAll)), "delete all: handed to the game, which asks first");
                 case ContactsRoute.Choice:
                 case ContactsRoute.Reply:
+                    if (arg >= 0 && arg < _extras.Count && _extras[arg] != null)
+                    {
+                        return CallExtra(_extras[arg]);
+                    }
                     return arg >= 0 && arg < _choices.Count && Done(Click(_choices[arg]), "a reply to " + Who(open) + ": the game's own button");
                 case ContactsRoute.HangUp:
                     return Done(Click(_hangUp), "the call with " + Who(open) + " ended by the game's own button");

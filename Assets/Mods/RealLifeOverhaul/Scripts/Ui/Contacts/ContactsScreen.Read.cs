@@ -70,6 +70,7 @@ namespace RealLifeOverhaul.Ui
             _m.PickBody = UiText.T("reallife_ui_contacts_pick_body");
             _m.Call = null;
             _choices.Clear();
+            _extras.Clear();
             _fields.Clear();
             _hangUp = null;
             Contact open = _app.selectedContact;
@@ -513,6 +514,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Button b = found[offer ? Order[i] : i];
                 _choices.Add(b);
+                _extras.Add(null);
                 choices[i] = new UiDecisionChoice { Name = UiWidgets.Label(b) };
             }
             if (offer)
@@ -573,15 +575,16 @@ namespace RealLifeOverhaul.Ui
             };
             if (view != null)
             {
-                call.Line = Words(view.transform);
+                call.Line = CallSaidBack(view) ?? Words(view.transform);
                 call.Mood = LineMood();
+                bool drawn = CallForm(call);   // read first: the bank's loan tells its line what taking it costs
                 call.Choices = Choices(view.transform, false, out _hangUp);
                 if (_hangUp != null)
                 {
                     call.Buttons = new[] { new UiActionModel { Label = UiWidgets.Label(_hangUp), Kind = UiButtonKind.Destructive, Icon = UiIcon.Phone, Key = UiAction.Back } };
                 }
                 call.Waiting = call.Choices.Length == 0;
-                if (!CallForm(call))
+                if (!drawn)
                 {
                     StepAsideForForm();
                 }
@@ -626,10 +629,27 @@ namespace RealLifeOverhaul.Ui
             var choices = new List<UiDecisionChoice>(3);
             if (hasCancel || hasSecond || hasConfirm)
             {
-                int n = ContactsRules.ChoiceOrder(hasCancel, hasSecond, hasConfirm, cancelAsChoice, Order);
-                for (int i = 0; i < n; i++)
+                // The confirm, the second option, the dialog's own answers past the game's three, the cancel: each with the
+                // lines the dialog told of it (GameUi.DialogAnswers).
+                GameUi.DialogNotes notes = GameUi.DialogAnswers.Of(e);
+                int n = ContactsRules.ChoiceOrder(hasCancel, hasSecond, hasConfirm, cancelAsChoice, Order), k = 0;
+                if (hasConfirm && k < n)
                 {
-                    Add(choices, buttons[Order[i]]);
+                    Add(choices, buttons[Order[k++]], DialogChoices.Lines(notes, GameUi.DialogButton.Confirm));
+                }
+                if (hasSecond && k < n)
+                {
+                    Add(choices, buttons[Order[k++]], DialogChoices.Lines(notes, GameUi.DialogButton.Second));
+                }
+                for (int i = 0; notes != null && i < notes.More.Count; i++)
+                {
+                    _choices.Add(null);
+                    _extras.Add(notes.More[i]);
+                    choices.Add(DialogChoices.Choice(notes.More[i]));
+                }
+                if (hasCancel && cancelAsChoice && k < n)
+                {
+                    Add(choices, buttons[Order[k++]], DialogChoices.Lines(notes, GameUi.DialogButton.Cancel));
                 }
                 if (hasCancel && !cancelAsChoice && buttons[0].interactable)
                 {
@@ -640,16 +660,17 @@ namespace RealLifeOverhaul.Ui
             {
                 for (int i = 0; i < buttons.Count; i++)
                 {
-                    Add(choices, buttons[i]);
+                    Add(choices, buttons[i], null);
                 }
             }
             return choices.ToArray();
         }
 
-        private void Add(List<UiDecisionChoice> choices, Button b)
+        private void Add(List<UiDecisionChoice> choices, Button b, UiConsequence[] lines)
         {
             _choices.Add(b);
-            choices.Add(new UiDecisionChoice { Name = UiWidgets.Label(b), Disabled = !b.interactable });
+            _extras.Add(null);
+            choices.Add(new UiDecisionChoice { Name = UiWidgets.Label(b), Lines = lines, Disabled = !b.interactable });
         }
 
         // The salary offer's two fields or an offer's one, read from the game's own form: its figures and its steps. True when

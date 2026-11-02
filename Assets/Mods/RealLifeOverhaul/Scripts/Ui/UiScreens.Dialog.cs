@@ -24,13 +24,18 @@ namespace RealLifeOverhaul.Ui
                     "reallife_street_ask_day", "reallife_social_btn_else", "reallife_street_btn_goodbye", "reallife_street_day_good_2", "reallife_street_ask_area",
                     "reallife_street_ask_say", "dialog_recruitment_agency_npc_name", "dialog_recruitment_agency_already_has_campaign_new",
                     "dialog_recruitment_agency_manage_campaigns", "reallife_ui_contacts_game_view", "reallife_ui_prompt_move", "reallife_ui_prompt_choose",
-                    "dialog_bank_loan_amount_header", "dialog_bank_amount_to_loan", "bank_dialog_interest_daily_payment", "econoview_loans_daily_payment",
-                    "bank_dialog_total_daily_payment", "reallife_biz_desk_issue", "reallife_biz_undercut_start"
+                    "dialog_bank_loan_amount_header", "dialog_bank_amount_to_loan", "reallife_biz_desk_issue", "reallife_biz_undercut_start",
+                    "reallife_ui_dialog_loan_term", "reallife_ui_dialog_loan_term_years", "reallife_ui_dialog_loan_rate", "reallife_ui_dialog_loan_rate_value",
+                    "reallife_ui_dialog_loan_payment", "reallife_ui_dialog_loan_total", "reallife_ui_dialog_loan_cost_in", "reallife_ui_dialog_loan_cost_out",
+                    "reallife_ui_dialog_loan_lower", "reallife_ui_dialog_loan_lower_yes", "reallife_ui_dialog_loan_lower_rating", "reallife_ui_dialog_loan_line",
+                    "reallife_ui_dialog_loan_line_cost", "reallife_econ_kind_overdraft", "reallife_ui_dialog_mood_unsure", "dialog_health_insurance_manager_npc_name",
+                    "dialog_health_insurance_negotiation_start", "dialog_health_insurance_player_offer", "dialog_negotiation_acceptable_1",
+                    "dialog_negotiation_counter_offer", "dialog_accept_button", "dialog_negotiate_button", "dialog_decline_button"
                 }).Switch(UiScreenSwitches.Boxes),
                 new UiScreenDef("monologue", UiTemplate.Decision, "MonologueScreen", new[]
                 {
-                    "uncle_fred", "reallife_ui_monologue_more", "ba:messagetype_tutorial_quest_find_a_job_uncle_fred", "ba:messagetype_tutorial_quest_casino_uncle_fred",
-                    "ba:messagetype_tutorial_quest_get_some_food_uncle_fred"
+                    "uncle_fred", "reallife_ui_monologue_count", "reallife_ui_monologue_next", "reallife_ui_monologue_skip", "common_close",
+                    "ba:messagetype_tutorial_quest_find_a_job_uncle_fred", "ba:messagetype_tutorial_quest_casino_uncle_fred", "ba:messagetype_tutorial_quest_get_some_food_uncle_fred"
                 }).Switch(UiScreenSwitches.Boxes),
                 new UiScreenDef("scenes", UiTemplate.Decision, "SceneScreen", new[]
                 {
@@ -57,7 +62,12 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ven_meet_answer", "reallife_ven_meet_leave", "reallife_ven_meet_leave_detail", "reallife_ven_meet_result_yes", "reallife_ven_verdict_invest",
                     "reallife_ven_verdict_helped", "reallife_ven_meet_take_title", "reallife_ven_meet_take", "reallife_ven_meet_think", "reallife_ven_meet_think_detail",
                     "reallife_ven_meet_decline", "reallife_vc_meet_founders_open", "reallife_vc_topic_revenue", "reallife_vc_meet_title_founders", "reallife_vc_topic_team",
-                    "reallife_vc_topic_market", "reallife_vc_topic_burn", "reallife_vc_topic_terms", "reallife_vc_meet_leave", "reallife_ven_q_j01"
+                    "reallife_vc_topic_market", "reallife_vc_topic_burn", "reallife_vc_topic_terms", "reallife_vc_meet_leave", "reallife_ven_q_j01",
+                    "reallife_ui_scene_present", "reallife_justice_court_you", "reallife_justice_role_prosecutor", "reallife_justice_role_inspector",
+                    "reallife_justice_role_judge", "reallife_justice_role_counsel", "reallife_justice_role_defendant", "reallife_justice_cost_hours",
+                    "reallife_justice_cost_fine", "reallife_justice_cost_community", "reallife_justice_odds", "reallife_justice_cost_lost_fine",
+                    "reallife_justice_cost_lost_community", "reallife_justice_charge_tax_evasion", "reallife_justice_plea_settle",
+                    "reallife_justice_plea_settle_hint", "reallife_justice_settle_cost", "reallife_justice_settle_gain"
                 }).Switch(UiScreenSwitches.Boxes),
             });
         }

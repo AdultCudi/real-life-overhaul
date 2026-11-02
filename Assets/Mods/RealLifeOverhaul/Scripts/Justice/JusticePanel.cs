@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using RealLifeOverhaul.GameUi;
 using RealLifeOverhaul.Ui;
@@ -28,6 +29,13 @@ namespace RealLifeOverhaul
         Clerk
     }
 
+    /// <summary>A line under an answer: what it costs or brings, good for the player (+1) or a cost (-1).</summary>
+    public struct JusticeLine
+    {
+        public string Text;
+        public int Tone;
+    }
+
     /// <summary>One page of the justice system's screen: who is there, who speaks, the text and up to three answers.</summary>
     public sealed class JusticePage
     {
@@ -36,11 +44,15 @@ namespace RealLifeOverhaul
         public string Subtitle;
         public JusticeFace Left, Middle, Right;
         public string LeftName, MiddleName, RightName;
+        public string LeftRole, MiddleRole, RightRole;   // who each is where their place's word is not it; null for that word
+        public bool Defendant;                           // the player in the dock, among those present
         public int Speaker = -1;        // 0 left, 1 middle, 2 right; -1 nobody
         public string SpeakerName;
         public string Body;
         public readonly string[] Choices = new string[JusticePanel.MostChoices];
         public readonly string[] Hints = new string[JusticePanel.MostChoices];
+        public readonly string[] Times = new string[JusticePanel.MostChoices];   // the time an answer costs ("3 days"); null for none
+        public readonly List<JusticeLine>[] Lines = new List<JusticeLine>[JusticePanel.MostChoices];
         public int Count;
 
         public JusticePage Add(string choice, string hint = null)
@@ -50,6 +62,27 @@ namespace RealLifeOverhaul
                 Choices[Count] = choice;
                 Hints[Count] = hint;
                 Count++;
+            }
+            return this;
+        }
+
+        /// <summary>The time the answer added last costs, beside its name.</summary>
+        public JusticePage Takes(string time)
+        {
+            if (Count > 0 && !string.IsNullOrEmpty(time))
+            {
+                Times[Count - 1] = time;
+            }
+            return this;
+        }
+
+        /// <summary>A line under the answer added last: what it costs or brings, in its colour.</summary>
+        public JusticePage Line(string text, int tone)
+        {
+            if (Count > 0 && !string.IsNullOrEmpty(text))
+            {
+                List<JusticeLine> lines = Lines[Count - 1] ?? (Lines[Count - 1] = new List<JusticeLine>(3));
+                lines.Add(new JusticeLine { Text = text, Tone = tone });
             }
             return this;
         }
@@ -118,7 +151,14 @@ namespace RealLifeOverhaul
             AddName(page.MiddleName);
             AddName(page.RightName);
             list.Begin(page.Title ?? string.Empty, _info.ToString());
-            list.Moment(page.Subtitle, Emblem(page.Scene), Present(page.Left, page.LeftName), Present(page.Middle, page.MiddleName), Present(page.Right, page.RightName));
+            string you = page.Defendant ? JusticeText.T("reallife_justice_court_you") : null;
+            list.Moment(page.Subtitle, Emblem(page.Scene), Present(page.Left, page.LeftName), Present(page.Middle, page.MiddleName), Present(page.Right, page.RightName), you);
+            list.Roles(new[]
+                {
+                    Role(page.Left, page.LeftRole), Role(page.Middle, page.MiddleRole), Role(page.Right, page.RightRole),
+                    page.Defendant ? JusticeText.T("reallife_justice_role_defendant") : null
+                },
+                new[] { Ring(page.Left), Ring(page.Middle), Ring(page.Right), page.Defendant ? UiRole.Accent : UiRole.None });
             string body = page.Body ?? string.Empty;
             string speaker = page.SpeakerName ?? string.Empty;
             int lines = 1;
@@ -130,8 +170,10 @@ namespace RealLifeOverhaul
             for (int i = 0; i < _count; i++)
             {
                 string hint = page.Hints[i];
+                UiConsequence[] costs = Lines(page.Lines[i]);
+                string said = SceneViews.Joined(hint, costs, page.Times[i]);   // as the game's own list says it, with what it costs
                 list.Add(i, page.Choices[i] ?? string.Empty, hint, ButtonChoose, true,
-                    string.IsNullOrEmpty(hint) ? 0f : list.HeightFor(hint.Length, true));
+                    string.IsNullOrEmpty(said) ? 0f : list.HeightFor(said.Length, true), costs, page.Times[i]);
             }
             Stand(list);
             list.Open(_onPick, _onClosed);
@@ -153,6 +195,47 @@ namespace RealLifeOverhaul
 
         // One of those present on the page, by name; nobody where the place stands empty.
         private static string Present(JusticeFace face, string name) => face == JusticeFace.None ? null : name;
+
+        // Who one of those present is, under their name on the RLO interface's card: the page's word for them, or their place's.
+        private static string Role(JusticeFace face, string own)
+        {
+            if (face == JusticeFace.None)
+            {
+                return null;
+            }
+            if (!string.IsNullOrEmpty(own))
+            {
+                return own;
+            }
+            switch (face)
+            {
+                case JusticeFace.Judge: return JusticeText.T("reallife_justice_role_judge");
+                case JusticeFace.Prosecutor: return JusticeText.T("reallife_justice_role_prosecutor");
+                case JusticeFace.Counsel: return JusticeText.T("reallife_justice_role_counsel");
+                case JusticeFace.Officer: return JusticeText.T("reallife_justice_role_officer");
+                case JusticeFace.Inmate: return JusticeText.T("reallife_justice_role_inmate");
+                case JusticeFace.Visitor: return JusticeText.T("reallife_justice_role_visitor");
+                default: return JusticeText.T("reallife_justice_role_clerk");
+            }
+        }
+
+        // Whose side one of those present is on, as their ring: the case against the player, the court, the player's own lawyer.
+        private static UiRole Ring(JusticeFace face) =>
+            face == JusticeFace.Prosecutor ? UiRole.Danger : face == JusticeFace.Judge ? UiRole.Warn : face == JusticeFace.Counsel ? UiRole.Ok : UiRole.None;
+
+        private static UiConsequence[] Lines(List<JusticeLine> lines)
+        {
+            if (lines == null || lines.Count == 0)
+            {
+                return null;
+            }
+            var made = new UiConsequence[lines.Count];
+            for (int i = 0; i < made.Length; i++)
+            {
+                made[i] = new UiConsequence { Text = lines[i].Text, Tone = Math.Sign(lines[i].Tone) };
+            }
+            return made;
+        }
 
         private void AddName(string name)
         {

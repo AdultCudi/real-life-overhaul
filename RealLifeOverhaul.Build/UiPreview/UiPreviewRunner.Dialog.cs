@@ -8,11 +8,12 @@ using UnityEngine;
 public static partial class UiPreviewRunner
 {
     // The game's conversations on the kit over the HUD's bar, as they come while walking: the dialogue panel docked at
-    // the right in each of its states (the bank's desk indoors, the Business desk, the street by day and by night), the
-    // scenes over the courthouse, the studio, a door, an office; the same loan by phone on the call card over the night
-    // street, and a wage talk's mood in Contacts; Uncle Fred's lines at the top. The bank, the desk, the court, the
-    // interview, the pitch, the call and Uncle Fred also in Brazilian Portuguese and in Chinese, and three in German, the
-    // longest of the mod's languages: each from the game's and the mod's own files, English where neither has the words.
+    // the right in each of its states (the bank's desk indoors, the Business desk, the street by day and by night, an
+    // insurer's office), the scenes over the courthouse, the studio, a door, an office; the same loan by phone on the call
+    // card over the night street, and a wage talk's mood in Contacts; Uncle Fred's lines at the top. The bank, the desk,
+    // the court and its tax case, the interview, the pitch, the call and Uncle Fred also in Brazilian Portuguese and in
+    // Chinese, and three in German, the longest of the mod's languages: each from the game's and the mod's own files,
+    // English where neither has the words.
     static partial void AddDialog(List<Screen> screens)
     {
         foreach (string state in UiSamples.DialogStates)
@@ -35,6 +36,7 @@ public static partial class UiPreviewRunner
             screens.Add(DialogScreenOf("desk_full", lang));
             screens.Add(DialogScreenOf("street_said", lang));
             screens.Add(SceneScreenOf("court_plea", lang));
+            screens.Add(SceneScreenOf("court_tax", lang));
             screens.Add(SceneScreenOf("interview_round", lang));
             screens.Add(SceneScreenOf("pitch_question", lang));
             screens.Add(SpokenScreenOf("fred_more", lang));
@@ -49,7 +51,7 @@ public static partial class UiPreviewRunner
     private static Screen DialogScreenOf(string state, string lang)
     {
         UiWords t = DialogWords(lang);
-        string backdrop = state.StartsWith("street") ? (state == "street" ? "13.jpg" : "11.jpg") : state.StartsWith("desk") || state == "other_mod" ? "05.jpg"
+        string backdrop = state.StartsWith("street") ? (state == "street" ? "13.jpg" : "11.jpg") : state.StartsWith("desk") || state == "other_mod" || state == "haggle" ? "05.jpg"
             : state.StartsWith("marketing") ? "00.jpg" : "03.jpg";
         var screen = new Screen
         {

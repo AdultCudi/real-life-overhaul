@@ -17,6 +17,8 @@ namespace RealLifeOverhaul.Ui
         public string Detail;
         public string Said;   // what the player says by it, where that is not its name (a pitch's answer); null for its name
         public bool Enabled;
+        public UiConsequence[] Lines;   // what it costs or brings, in its colours, under its meaning; null for none
+        public string Note;             // the time it takes, beside its name; null for none
     }
 
     /// <summary>A line of a scene's conversation so far: what they said, or the answer the player gave.</summary>
@@ -33,6 +35,7 @@ namespace RealLifeOverhaul.Ui
     public struct SceneWords
     {
         public string Move, Choose, Back, Menu;
+        public string Present;   // under the faces of those present, told with their roles: "{count} present"
     }
 
     /// <summary>
@@ -48,6 +51,8 @@ namespace RealLifeOverhaul.Ui
         public string Kicker;                 // the place or the moment: "Case 114, day 3"
         public UiIcon Emblem = UiIcon.People; // the moment's emblem where no faces are given
         public string[] Faces;                // those present, as the owner names them
+        public string[] Roles;                // who each of them is, in the same order; null for none told
+        public UiRole[] Rings;                // with the roles, each one's ring: whose side they are on
         public string Speaker;                // who speaks a page of questions and answers
         public string Role;                   // under their name: who they are to the player
         public bool InfoSaid = true;          // the lines under the headline are said; false where they are the moment's caption (its kicker and faces)
@@ -65,6 +70,8 @@ namespace RealLifeOverhaul.Ui
             Kicker = null;
             Emblem = UiIcon.People;
             Faces = null;
+            Roles = null;
+            Rings = null;
             Speaker = null;
             Role = null;
             InfoSaid = true;
@@ -160,7 +167,8 @@ namespace RealLifeOverhaul.Ui
             string said = SaidOf(page, out string _);
             string speaker = Speaker(page);
             bool kicks = Kicks(page, said);
-            string[] faces = Faces(page, speaker);
+            string[] faces = Faces(page, speaker, out string[] roles, out UiRole[] rings);
+            int speaking = speaker != null ? System.Array.IndexOf(faces, speaker) : -1;
             var m = new UiDecisionModel
             {
                 Kicker = Clean(page.Kicker) ?? (kicks ? said : null),
@@ -168,7 +176,11 @@ namespace RealLifeOverhaul.Ui
                 Emblem = page.Emblem,
                 EmblemTint = UiRole.Accent,
                 Faces = faces,
-                EmblemLabel = speaker != null && System.Array.IndexOf(faces, speaker) >= 0 ? speaker : null,   // under the faces: who of them speaks
+                FaceRoles = roles,
+                FaceRings = rings,
+                Speaking = roles != null ? speaking : -1,
+                // Under the faces: how many are present where each is told with who they are, else who of them speaks.
+                EmblemLabel = roles != null ? Present(words, faces.Length) : speaking >= 0 ? speaker : null,
                 Body = Join(kicks ? null : said, Body(page)),
                 Choices = Choices(page, ChoiceLine(CardWords)),
                 Buttons = page.Locked
@@ -357,23 +369,83 @@ namespace RealLifeOverhaul.Ui
             return null;
         }
 
-        // Those present as the owner named them, else the one who speaks; none for a moment about no one in particular.
-        private static string[] Faces(ScenePage page, string speaker)
+        // Those present as the owner named them, else the one who speaks; none for a moment about no one in particular. Who
+        // each is and their ring come with them where the owner told any (null otherwise).
+        private static string[] Faces(ScenePage page, string speaker, out string[] roles, out UiRole[] rings)
         {
             var faces = new List<string>(4);
+            var who = new List<string>(4);
+            var ring = new List<UiRole>(4);
+            bool told = false;
             for (int i = 0; page.Faces != null && i < page.Faces.Length; i++)
             {
                 string name = Clean(page.Faces[i]);
                 if (name != null && !faces.Contains(name))
                 {
                     faces.Add(name);
+                    string role = page.Roles != null && i < page.Roles.Length ? Clean(page.Roles[i]) : null;
+                    told |= role != null;
+                    who.Add(role ?? string.Empty);
+                    ring.Add(page.Rings != null && i < page.Rings.Length ? page.Rings[i] : UiRole.None);
                 }
             }
             if (faces.Count == 0 && speaker != null)
             {
                 faces.Add(speaker);
             }
+            roles = told ? who.ToArray() : null;
+            rings = told ? ring.ToArray() : null;
             return faces.ToArray();
+        }
+
+        // "4 present", under the faces; none where the words are not given.
+        private static string Present(SceneWords words, int count) =>
+            string.IsNullOrEmpty(words.Present) ? null : words.Present.Replace("{count}", count.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+        /// <summary>
+        /// An answer's line in the game's own list, where the kit is off: its meaning as the owner wrote it, then what it
+        /// costs and the time it takes on a line of their own. The meaning alone where there is nothing more to say.
+        /// </summary>
+        public static string Joined(string detail, UiConsequence[] lines, string note)
+        {
+            string costs = null;
+            for (int i = 0; lines != null && i < lines.Length; i++)
+            {
+                string text = Clean(lines[i].Text);
+                if (text != null)
+                {
+                    costs = costs == null ? text : costs + " \u00b7 " + text;
+                }
+            }
+            string time = Clean(note);
+            if (time != null)
+            {
+                costs = costs == null ? time : costs + " \u00b7 " + time;
+            }
+            return costs == null ? detail : Clean(detail) == null ? costs : detail + "\n" + costs;
+        }
+
+        // The meaning's lines with what the owner told the answer costs after them.
+        private static UiConsequence[] With(UiConsequence[] meaning, UiConsequence[] lines)
+        {
+            if (lines == null || lines.Length == 0)
+            {
+                return meaning;
+            }
+            var all = new List<UiConsequence>((meaning?.Length ?? 0) + lines.Length);
+            if (meaning != null)
+            {
+                all.AddRange(meaning);
+            }
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string text = Clean(lines[i].Text);
+                if (text != null)
+                {
+                    all.Add(new UiConsequence { Text = text, Tone = lines[i].Tone, Change = lines[i].Change });
+                }
+            }
+            return all.ToArray();
         }
 
         private static UiDecisionChoice[] Choices(ScenePage page, float lineWidth)
@@ -386,7 +458,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     Key = i < 9 ? (UiAction)((int)UiAction.Pick1 + i) : UiAction.Count,
                     Name = Clean(e.Name) ?? string.Empty,
-                    Lines = Meaning(e.Detail, lineWidth),
+                    Lines = With(Meaning(e.Detail, lineWidth), e.Lines),
+                    Note = Clean(e.Note),
                     Disabled = !e.Enabled
                 };
             }

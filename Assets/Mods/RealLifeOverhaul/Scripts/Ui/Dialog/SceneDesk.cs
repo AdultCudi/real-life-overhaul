@@ -142,6 +142,17 @@ namespace RealLifeOverhaul.Ui
             List.Add(id, name, detail, buttonKey, enabled, height);
         }
 
+        /// <summary>
+        /// An answer with what it costs: its lines in their colours under its meaning on the kit's card and the time it takes
+        /// beside its name; the game's own list says them on a line under the meaning (<see cref="SceneViews.Joined"/>).
+        /// </summary>
+        public void Add(int id, string name, string detail, string buttonKey, bool enabled, float height, UiConsequence[] lines, string note)
+        {
+            Page.Entries.Add(new SceneEntry { Id = id, Name = name, Detail = detail, Enabled = enabled, Lines = lines, Note = note });
+            Page.Stamp++;
+            List.Add(id, name, SceneViews.Joined(detail, lines, note), buttonKey, enabled, height);
+        }
+
         /// <summary>An answer whose line under its name is what the player says by it (a pitch's "Answer 1" over its words): the thread says those words.</summary>
         public void AddAnswer(int id, string name, string words, string buttonKey, bool enabled, float height)
         {
@@ -171,6 +182,17 @@ namespace RealLifeOverhaul.Ui
             Page.Emblem = emblem;
             Page.Faces = faces;
             Page.InfoSaid = false;
+            Page.Stamp++;
+        }
+
+        /// <summary>
+        /// Who each of those present is (the moment's faces, in the same order) and their rings, whose side each is on; the
+        /// card then stands them one to a row with their names and roles. Told after <see cref="Moment"/>.
+        /// </summary>
+        public void Roles(string[] roles, UiRole[] rings)
+        {
+            Page.Roles = roles;
+            Page.Rings = rings;
             Page.Stamp++;
         }
 

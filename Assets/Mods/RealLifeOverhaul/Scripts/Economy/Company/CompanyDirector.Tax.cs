@@ -93,7 +93,7 @@ namespace RealLifeOverhaul.Economy
                              + (TaxRules.AuditChance(t.Risk, t.Accountant) / 100f).ToString("0.00", CultureInfo.InvariantCulture) + "%; saved since the last audit "
                              + t.Saved + ": PASS");
             }
-            if (Settings.EconomyCompanyHide && TaxRules.Audited(t, _state.Seed, _state.Age))
+            if (Settings.EconomyCompanyHide && TaxRules.Audited(t, _state.Seed, _state.Age, day))
             {
                 Audit(day);
             }
@@ -154,6 +154,20 @@ namespace RealLifeOverhaul.Economy
             Logger?.Info("Company: " + CompanyCatalogue.LateForAudit + " late returns running: business pressure's own tax audit "
                          + (started ? "has started at " + most.Name + "." : "was asked for and did not start (its own rules said no, or it is switched off).")
                          + " The count starts again.");
+        }
+
+        /// <summary>
+        /// A tax case the player settled with the city (Justice, through the wiring): the tax inspector comes to the
+        /// player's own businesses at half the chance for a year. Nobody else's businesses are touched.
+        /// </summary>
+        public void TaxSettled(int day)
+        {
+            if (_state == null || _state.Tax == null)
+            {
+                return;
+            }
+            TaxRules.Settled(_state.Tax, day, QuarterDays);
+            Logger?.Info("Company: a tax case settled with the city on day " + day + "; audits come at half the chance until day " + _state.Tax.QuietUntil + ".");
         }
 
         private void Audit(int day)

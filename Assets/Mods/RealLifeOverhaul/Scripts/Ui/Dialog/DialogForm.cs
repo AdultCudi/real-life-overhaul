@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Entities;
 using Localizor;
 using TMPro;
 using UnityEngine;
@@ -19,7 +20,7 @@ namespace RealLifeOverhaul.Ui
     /// it always has. Game side. Cost: a walk of the form's pieces four times a second while it shows, allocating
     /// nothing; a read only when that walk changed.
     /// </summary>
-    internal sealed class DialogForm
+    internal sealed partial class DialogForm
     {
         private enum Piece : byte
         {
@@ -36,6 +37,7 @@ namespace RealLifeOverhaul.Ui
             public Toggle Toggle;
             public bool EndsEdit;          // the game's amount selector: its figure counts once its edit ends, so each typed figure ends it
             public Button[] Swatches;
+            public int Kit;                // a row of the kit's own over the game's form (the loan's term): which; 0 for the game's widget
         }
 
         private static readonly List<Button> SwatchesFound = new List<Button>(16);
@@ -56,7 +58,13 @@ namespace RealLifeOverhaul.Ui
         /// Reads the form, its question (the entry's header) as the heading over it. A new form starts with no list open,
         /// nothing held and its top in view. Returns false when nothing in it is the kit's to draw.
         /// </summary>
-        public bool Read(Transform form, string question)
+        public bool Read(Transform form, string question) => Read(form, question, null, null);
+
+        /// <summary>
+        /// Reads the form of a line of a conversation the game runs: the bank's loan form takes its term, its figures and the
+        /// bank's answers past the game's three as well (DialogForm.Loan).
+        /// </summary>
+        public bool Read(Transform form, string question, DialogEntry entry, DialogController talk)
         {
             if (!ReferenceEquals(form, _form))
             {
@@ -77,6 +85,7 @@ namespace RealLifeOverhaul.Ui
             int heading = _rows.Count;
             Walk(form, 0);
             Tidy();
+            Loan(form, entry, talk, heading);
             bool any = _rows.Count > heading;
             Publish();
             if (Pick.Row >= Count || (Pick.Row >= 0 && Rows[Pick.Row].Kind != UiFormKind.Choice))
@@ -98,6 +107,7 @@ namespace RealLifeOverhaul.Ui
         public void Clear()
         {
             _form = null;
+            _loanForm = null;   // a line answered in the game's own panel takes the bank's own figures
             _rows.Clear();
             _widgets.Clear();
             Pick.Reset();
@@ -172,7 +182,7 @@ namespace RealLifeOverhaul.Ui
                     return UiWidgets.Slide(s, Mathf.Clamp(s.value + (step < 0 ? -by : by), s.minValue, s.maxValue));
                 }
                 default:
-                    return Choose(row, Index(w.Drop) + (step < 0 ? -1 : 1), false);
+                    return Choose(row, (w.Kit != 0 ? KitIndex(w.Kit) : Index(w.Drop)) + (step < 0 ? -1 : 1), false);
             }
         }
 
@@ -727,6 +737,11 @@ namespace RealLifeOverhaul.Ui
         // The open choice's options in the game's words, as its own list shows them.
         private void Options(int row)
         {
+            if (_widgets[row].Kit != 0)
+            {
+                KitOptions(_widgets[row].Kit);
+                return;
+            }
             var drop = _widgets[row].Drop;
             var options = drop != null && GameContract.DialogDropOptions.Field != null ? GameContract.DialogDropOptions.Field.GetValue(drop) as List<string> : null;
             bool localised = drop != null && GameContract.DialogDropLocalised.Field != null && GameContract.DialogDropLocalised.Field.GetValue(drop) is bool l && l;
@@ -750,6 +765,10 @@ namespace RealLifeOverhaul.Ui
             if (row < 0 || row >= Count || Rows[row].Kind != UiFormKind.Choice || Rows[row].Disabled)
             {
                 return false;
+            }
+            if (_widgets[row].Kit != 0)
+            {
+                return KitChoose(_widgets[row].Kit, option, exact);
             }
             var drop = _widgets[row].Drop;
             var options = drop != null && GameContract.DialogDropOptions.Field != null ? GameContract.DialogDropOptions.Field.GetValue(drop) as List<string> : null;

@@ -81,7 +81,8 @@ namespace RealLifeOverhaul.Economy
             t.Append("v=").Append(Version).Append("~h:");
             Join(t, f.StartDay, f.FirstCreditDay, f.OldOnTime, f.OldMissed, f.OldPart, f.TestOffset, f.LastScore, f.LastGrade, f.SettledDay,
                 f.UnseenMissed, f.UnseenGrade ? 1 : 0, f.LastMissedDay, f.LastMissedCount, f.LastMissedAmount, f.LastGradeDay, f.LastGradeWas,
-                f.LegalSeen.Convictions, f.LegalSeen.Judgments, f.LegalSeen.LateDays, f.LegalSeen.Outstanding, f.LegalSeen.RecentOffences, f.NextAccountId);
+                f.LegalSeen.Convictions, f.LegalSeen.Judgments, f.LegalSeen.LateDays, f.LegalSeen.Outstanding, f.LegalSeen.RecentOffences, f.NextAccountId,
+                f.RateAskedDay);
             t.Append("~d:");
             for (int i = 0; i < f.Days.Count; i++)
             {
@@ -207,6 +208,7 @@ namespace RealLifeOverhaul.Economy
                 f.LastGrade = -1;
             }
             f.NextAccountId = Math.Max(1, I(c, 21, 1));
+            f.RateAskedDay = Math.Max(0, I(c, 22));   // a save from before the loan talk has none: never asked
         }
 
         private static void ReadDays(CreditFile f, string body)

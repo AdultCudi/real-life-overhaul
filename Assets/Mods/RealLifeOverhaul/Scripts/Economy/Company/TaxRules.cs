@@ -191,6 +191,29 @@ namespace RealLifeOverhaul.Economy
             return chance > 0 && CityModel.Draw(seed, PurposeAudit, age, 10000) < chance;
         }
 
+        /// <summary>Quarters a tax case settled with the city keeps the inspector away: audits at half the chance.</summary>
+        public const int QuietQuarters = 4;
+
+        /// <summary>The chance of an audit on this day, ten-thousandths: halved while a settlement keeps the inspector away.</summary>
+        public static int AuditChance(TaxFile t, int day)
+        {
+            int chance = AuditChance(t.Risk, t.Accountant);
+            return day < t.QuietUntil ? chance / 2 : chance;
+        }
+
+        /// <summary>Whether the tax office audits on this day, a settlement's quiet time counted; the same answer for a seed and a day.</summary>
+        public static bool Audited(TaxFile t, int seed, int age, int day)
+        {
+            int chance = AuditChance(t, day);
+            return chance > 0 && CityModel.Draw(seed, PurposeAudit, age, 10000) < chance;
+        }
+
+        /// <summary>A tax case settled on this day: the inspector comes at half the chance for <see cref="QuietQuarters"/> quarters.</summary>
+        public static void Settled(TaxFile t, int day, int quarterDays)
+        {
+            t.QuietUntil = Math.Max(t.QuietUntil, day + QuietQuarters * Math.Max(1, quarterDays));
+        }
+
         public static int Fine(int backTax, int level)
         {
             return CompanyCatalogue.Share(Math.Max(0, backTax), CompanyCatalogue.FineShare[CompanyCatalogue.Level(level)]);

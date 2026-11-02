@@ -81,6 +81,10 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The glyph by a line for the mood the game shows there: content, unsure, angry; none for none.</summary>
         public static UiIcon MoodIcon(int mood) => mood > 0 ? UiIcon.SmileyHappy : mood == 0 ? UiIcon.SmileyMeh : mood == -1 ? UiIcon.SmileySad : UiIcon.None;
 
+        /// <summary>The key of the word for that mood beside the speaker's face (Friendly); null where the game shows none.</summary>
+        public static string MoodWord(int mood) =>
+            mood > 0 ? "reallife_ui_dialog_mood_friendly" : mood == 0 ? "reallife_ui_dialog_mood_unsure" : mood == -1 ? "reallife_ui_dialog_mood_upset" : null;
+
         /// <summary>A colour's picture key, made once a colour by the screen that shows it.</summary>
         public static string Swatch(byte r, byte g, byte b) =>
             SwatchKey + r.ToString("X2", CultureInfo.InvariantCulture) + g.ToString("X2", CultureInfo.InvariantCulture) + b.ToString("X2", CultureInfo.InvariantCulture);

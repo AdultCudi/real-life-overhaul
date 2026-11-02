@@ -200,7 +200,7 @@ namespace RealLifeOverhaul.Ui
             var words = new SceneWords
             {
                 Move = UiText.T("reallife_ui_prompt_move"), Choose = UiText.T("reallife_ui_prompt_choose"), Back = UiText.T("common_cancel"),
-                Menu = UiText.T("input_key_menu")
+                Menu = UiText.T("input_key_menu"), Present = UiText.T("reallife_ui_scene_present")
             };
             if (page.Stamp != _laidPage)
             {

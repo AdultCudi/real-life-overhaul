@@ -17,8 +17,9 @@ namespace RealLifeOverhaul.Ui
     /// The RLO interface's tests of the conversations (Options, Tests): a talk at one of the city's banks, its first answer
     /// (a new loan) pressed on the kit once the menu has closed, so its loan form stands in the conversation; the mod's
     /// Business desk face to face; a court hearing heard at once (a case with no evidence opened for it when none is
-    /// open); two of Uncle Fred's lines, queued as the game queues them, in his own voice; and the conversations'
-    /// switches flipped to the game's own and back. Each goes through the game's own methods or the features' own tests
+    /// open); a tax case heard at once, as an audit brings one, so the card shows what each plea costs and the city's
+    /// settlement (a real case: the notice says so); two of Uncle Fred's lines, queued as the game queues them, in his own
+    /// voice; and the conversations' switches flipped to the game's own and back. Each goes through the game's own methods or the features' own tests
     /// and says in a notice why it cannot run when it cannot. The bank's desk is the bank's own: a loan taken there is
     /// real, and the notice says so. The switch test changes the running values only.
     /// </summary>
@@ -26,6 +27,7 @@ namespace RealLifeOverhaul.Ui
     {
         private const float TalkShows = 5f;     // seconds of real time the kit has to draw the bank's talk once the menu is closed
         private const float AnswerSeen = 0.6f;  // seconds the bank's first line stands before its answer is pressed
+        private const int TaxKeptBack = 1800;   // the tax case's sum at the start's prices: an audit's find of a small business
 
         private static readonly string[] DialogIds = { DialogKits.DialogId, DialogKits.MonologueId, DialogKits.ScenesId };
 
@@ -99,6 +101,49 @@ namespace RealLifeOverhaul.Ui
                 {
                     justice.TestHearing();
                 }
+            }
+            catch (Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        /// <summary>
+        /// Options, Tests: a tax case filed as an audit files one and heard as soon as the menu is closed, its plea with what
+        /// each answer costs and the city's settlement. Only with no case of the player's open, so this one is heard. Real: what
+        /// is pleaded counts, as the notice says.
+        /// </summary>
+        public void TestDialogTaxCourt()
+        {
+            try
+            {
+                if (!Ready())
+                {
+                    return;
+                }
+                if (!UiScreenSwitches.On(DialogKits.ScenesId))
+                {
+                    Notifications.Show(NotificationType.Warning, "reallife_ui_test_dialog_off", null, 8f);
+                    return;
+                }
+                JusticeDirector justice = JusticeDirector.Instance;
+                if (justice == null || !Justice.Active)
+                {
+                    Notifications.Show(NotificationType.Warning, "reallife_ui_test_not_ready", null, 8f);
+                    return;
+                }
+                if (JusticeState.NextOpen != null)
+                {
+                    Notifications.Show(NotificationType.Warning, "reallife_ui_test_dialog_case_open", null, 8f);
+                    return;
+                }
+                if (TaxCases.File(Prices.At(TaxKeptBack)) <= 0 || JusticeState.NextOpen == null)
+                {
+                    Notifications.Show(NotificationType.Warning, "reallife_ui_test_not_ready", null, 8f);
+                    return;
+                }
+                Notifications.Show(NotificationType.Info, "reallife_ui_test_dialog_tax_real", null, 10f);
+                justice.TestHearing();
             }
             catch (Exception e)
             {

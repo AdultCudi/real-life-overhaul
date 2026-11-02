@@ -3,23 +3,26 @@ using RealLifeOverhaul.Ui;
 
 /// <summary>
 /// The game's conversations on the kit (Scripts/Ui/Dialog), each state as the dialogue panel would hand it over: Larry
-/// at Jensen Capital asking what he can do, and his loan form with the figures the game works out as the amount is typed;
-/// a marketing agent's campaign form, and its business list open; the mod's Business desk face to face with one matter,
-/// and after a long run of them; a passer-by in the street, before and after a few words; another mod's piece in the
+/// at Jensen Capital asking what he can do, and his loan form with its term, its rate, its payment and the sum to repay,
+/// what taking it pays and costs under Confirm and the bank's own answers past the game's three (a point off the rate,
+/// greyed with the reason, and a credit line instead); a marketing agency's campaign form, and its business list open; the
+/// mod's Business desk face to face with one matter, and after a long run of them; a passer-by in the street, before and
+/// after a few words; a health insurer's counter offer with their mood in a word by their face; another mod's piece in the
 /// panel offered as the game's own view; the longest names a talk can carry; and the second between two lines, when the
-/// game shows no button. The same loan by phone on the call card, and a candidate's wage talk in Contacts with their mood
-/// by their line. Uncle Fred's lines as the card at the top: one, one with one more to come, his longest, and a rival's
-/// face alone. The mod's six scene windows as the kit draws them: the court's plea and a long charge sheet, the Legal
-/// file, the night show's question, a door in a campaign, an interview's round and its end, an investor's question and
-/// their offer, a founders' pitch. Plain English as the owner reads the previews; the game's and the mod's words through
-/// their keys, so the checks lay out every state in every language.
+/// game shows no button. The same loan by phone on the call card, the point off there to be had, and a candidate's wage
+/// talk in Contacts with their mood by their line. Uncle Fred's lines as the card at the top: one with how far it has been
+/// said, one of two with Skip and Next, his longest with no sound of its own, and a rival's face alone. The mod's six scene
+/// windows as the kit draws them: the court's plea with who is present and what each answer costs, a tax case with the
+/// city's settlement, a long charge sheet, the Legal file, the night show's question, a door in a campaign, an interview's
+/// round and its end, an investor's question and their offer, a founders' pitch. Plain English as the owner reads the
+/// previews; the game's and the mod's words through their keys, so the checks lay out every state in every language.
 /// </summary>
 internal static partial class UiSamples
 {
     /// <summary>The dialogue panel's states, in the previews' order.</summary>
     public static readonly string[] DialogStates =
     {
-        "bank_start", "bank_loan", "marketing", "marketing_list", "desk", "desk_full", "street", "street_said", "other_mod", "long_names", "between_lines"
+        "bank_start", "bank_loan", "marketing", "marketing_list", "desk", "desk_full", "street", "street_said", "haggle", "other_mod", "long_names", "between_lines"
     };
 
     /// <summary>
@@ -34,7 +37,8 @@ internal static partial class UiSamples
     /// <summary>The scenes' pages, in the previews' order.</summary>
     public static readonly string[] SceneStates =
     {
-        "court_plea", "court_charges", "legal_file", "fame_show", "office_door", "interview_round", "interview_over", "pitch_question", "pitch_offer", "venture_pitch"
+        "court_plea", "court_tax", "court_charges", "legal_file", "fame_show", "office_door", "interview_round", "interview_over", "pitch_question", "pitch_offer",
+        "venture_pitch"
     };
 
     private const string Bank = "Jensen Capital";
@@ -76,7 +80,7 @@ internal static partial class UiSamples
                     lines.Add(Me(t("dialog_bank_new_loan", "New loan")));
                     m.Rows = LoanRows(t, true);
                     m.RowCount = m.Rows.Length;
-                    choices.Add(Choice(t("common_confirm", "Confirm")));
+                    choices.AddRange(LoanAnswers(t, false));
                 }
                 choices.Add(Choice(leave));
                 break;
@@ -163,6 +167,27 @@ internal static partial class UiSamples
                 choices.Add(Choice(back));
                 break;
             }
+            case "haggle":
+            {
+                // A health insurer's counter offer, the game's negotiation: their mood by their line, and in a word by their face.
+                Head(m, t("dialog_health_insurance_manager_npc_name", "Health Insurance Manager"), "Northside Health");
+                lines.Add(Them(t("dialog_health_insurance_negotiation_start", "Hello. Seems like you are not satisfied with the offer. What do you propose?")));
+                lines.Add(Me(Fill(t("dialog_health_insurance_player_offer", "I propose {amount} per day per employee."), "amount", "$6")));
+                UiMessageModel unsure = Them(t("dialog_negotiation_acceptable_1", "Oh, hmm, interesting."));
+                unsure.Mood = DialogRules.MoodIcon(0);
+                lines.Add(unsure);
+                UiMessageModel counter = Them(Fill(t("dialog_negotiation_counter_offer", "We would like to propose {counterOffer} instead."), "counterOffer", "$8"));
+                counter.Mood = DialogRules.MoodIcon(0);
+                lines.Add(counter);
+                m.Ring = ContactsRules.MoodRing(0);
+                m.Status = t(DialogRules.MoodWord(0), "Unsure");
+                m.StatusTone = m.Ring;
+                choices.Add(Choice(t("dialog_accept_button", "Accept")));
+                choices.Add(Choice(t("dialog_negotiate_button", "Negotiate")));
+                back = t("dialog_decline_button", "Decline");
+                choices.Add(Choice(back));
+                break;
+            }
             case "other_mod":
             {
                 Head(m, t("dialog_recruitment_agency_npc_name", "Recruitment Agent"), "Talent Bridge Recruitment");
@@ -211,19 +236,53 @@ internal static partial class UiSamples
         return m;
     }
 
-    /// <summary>The bank's loan form as the game lays it: the amount typed, and the three figures it works out from it.</summary>
+    /// <summary>
+    /// The bank's loan form as the kit lays it (DialogForm.Loan): the amount typed, the term chosen among the bank's own, a
+    /// shorter and a longer, and under it the rate a year, the payment a day and the sum to repay, as LoanTalkRules works
+    /// them out by the game's own formulas: $25,000 over the bank's two years of sixty days at 9% a year.
+    /// </summary>
     public static UiFormRow[] LoanRows(UiWords t, bool heading)
     {
-        var rows = new List<UiFormRow>(5);
+        var rows = new List<UiFormRow>(7);
         if (heading)
         {
             rows.Add(new UiFormRow { Kind = UiFormKind.Heading, Label = t("dialog_bank_loan_amount_header", "Loan amount") });   // the line's own question
         }
+        string term = Fill(t("reallife_ui_dialog_loan_term_years", "{years} years ({days} days)"), "years", "2", "days", "120");
         rows.Add(new UiFormRow { Kind = UiFormKind.Text, Label = t("dialog_bank_amount_to_loan", "Amount to loan"), Value = "25000" });
-        rows.Add(new UiFormRow { Kind = UiFormKind.Figure, Label = Fill(t("bank_dialog_interest_daily_payment", "Daily interest ({rate}%)"), "rate", "9"), Value = "$37" });
-        rows.Add(new UiFormRow { Kind = UiFormKind.Figure, Label = t("econoview_loans_daily_payment", "Daily payment"), Value = "$208" });
-        rows.Add(new UiFormRow { Kind = UiFormKind.Figure, Label = t("bank_dialog_total_daily_payment", "Total daily payment"), Value = "$245", Strong = true });
+        rows.Add(new UiFormRow { Kind = UiFormKind.Choice, Label = t("reallife_ui_dialog_loan_term", "Term"), Value = term });
+        rows.Add(new UiFormRow { Kind = UiFormKind.Break });
+        rows.Add(new UiFormRow { Kind = UiFormKind.Figure, Label = t("reallife_ui_dialog_loan_rate", "Interest rate"), Value = Fill(t("reallife_ui_dialog_loan_rate_value", "{rate}% a year"), "rate", "9") });
+        rows.Add(new UiFormRow { Kind = UiFormKind.Figure, Label = t("reallife_ui_dialog_loan_payment", "Payment a day"), Value = "$245" });
+        rows.Add(new UiFormRow { Kind = UiFormKind.Figure, Label = t("reallife_ui_dialog_loan_total", "Total to repay"), Value = "$29,477", Strong = true });
         return rows.ToArray();
+    }
+
+    /// <summary>
+    /// The loan line's answers before Leave: Confirm with what taking it pays and costs, then the bank's own: a point off
+    /// the rate (greyed with the rating it needs, or to be had), and a credit line in its place.
+    /// </summary>
+    public static UiDecisionChoice[] LoanAnswers(UiWords t, bool lower)
+    {
+        string rate = t("reallife_ui_dialog_loan_rate_value", "{rate}% a year");
+        UiConsequence point = lower
+            ? new UiConsequence { Text = Fill(t("reallife_ui_dialog_loan_lower_yes", "One point off, to {rate}"), "rate", Fill(rate, "rate", "8")), Tone = 1, Change = -1 }
+            : new UiConsequence { Text = Fill(t("reallife_ui_dialog_loan_lower_rating", "Needs a credit rating of {need}; yours is {score}"), "need", "700", "score", "684"), Tone = -1 };
+        string line = Fill(t("reallife_ui_dialog_loan_line_cost", "{thing} at {rate} a year on what you use"), "thing", t("reallife_econ_kind_overdraft", "Overdraft"), "rate", "12%");
+        return new[]
+        {
+            new UiDecisionChoice
+            {
+                Name = t("common_confirm", "Confirm"),
+                Lines = new[]
+                {
+                    new UiConsequence { Text = Fill(t("reallife_ui_dialog_loan_cost_in", "{amount} in your account today"), "amount", "$25,000"), Tone = 1, Change = 1 },
+                    new UiConsequence { Text = Fill(t("reallife_ui_dialog_loan_cost_out", "{payment} a day for {days} days"), "payment", "$245", "days", "121"), Tone = -1 }
+                }
+            },
+            new UiDecisionChoice { Name = t("reallife_ui_dialog_loan_lower", "Ask for a lower rate"), Disabled = !lower, Lines = new[] { point } },
+            new UiDecisionChoice { Name = t("reallife_ui_dialog_loan_line", "Ask about a credit line instead"), Lines = new[] { new UiConsequence { Text = line } } }
+        };
     }
 
     /// <summary>The panel laid as the screen lays it, docked at the right over the live scene.</summary>
@@ -262,7 +321,7 @@ internal static partial class UiSamples
             Name = "Midtown Savings Bank", Icon = UiIcon.Bank, Role = t("contactcategoryname_finance", "Finance"), Length = "1:12",
             Line = t("dialog_bank_loan_amount_header", "Loan amount"),   // the line's header: a form's line has no message of its own
             Rows = LoanRows(t, false),
-            Choices = new[] { Choice(t("common_confirm", "Confirm")) },
+            Choices = LoanAnswers(t, true),
             Buttons = new[] { new UiActionModel { Label = t("dialog_hang_up_button", "Hang up"), Kind = UiButtonKind.Destructive, Icon = UiIcon.Phone, Key = UiAction.Back } },
             Prompts = new[]
             {
@@ -301,27 +360,28 @@ internal static partial class UiSamples
             case "fred_more":
                 return new UiMonologueModel
                 {
-                    Name = fred, Hue = UiColour.HueOf(fred), More = Fill(t("reallife_ui_monologue_more", "{count} more"), "count", "1"),
+                    Name = fred, Hue = UiColour.HueOf(fred), More = Fill(t("reallife_ui_monologue_count", "{index} of {total}"), "index", "1", "total", "2"), Progress = 35,
+                    Next = t("reallife_ui_monologue_next", "Next"), Skip = t("reallife_ui_monologue_skip", "Skip"),
                     Line = t("ba:messagetype_tutorial_quest_find_a_job_uncle_fred",
                         "Rise and shine, kiddo! You survived your first night in New York City, congratulations! I’m sure it helped that I paid yesterday’s rent too. But from here on out, no more handouts! Today you need to find a job and start to earn your own money!")
                 };
             case "fred_long":
                 return new UiMonologueModel
                 {
-                    Name = fred, Hue = UiColour.HueOf(fred),
+                    Name = fred, Hue = UiColour.HueOf(fred), Next = t("common_close", "Close"),   // a line with no sound of its own: no bar
                     Line = t("ba:messagetype_tutorial_quest_casino_uncle_fred",
                         "Ah, much better. With any luck, your money will be earning some nice interest over time. And speaking of luck, this calls for a celebration! Why don't you head out to the Casino and see if you can make a quick buck...or lose a few. As long as your businesses are healthy, it’s all fun and games, right?")
                 };
             case "rival":
                 return new UiMonologueModel
                 {
-                    Picture = "sample:rival", Hue = 30f,
+                    Picture = "sample:rival", Hue = 30f, Progress = 80, Next = t("common_close", "Close"),
                     Line = "Nice little shop you have there. Enjoy it while it lasts, because my stores open on your street next week."
                 };
             default:
                 return new UiMonologueModel
                 {
-                    Name = fred, Hue = UiColour.HueOf(fred),
+                    Name = fred, Hue = UiColour.HueOf(fred), Progress = 60, Next = t("common_close", "Close"),
                     Line = t("ba:messagetype_tutorial_quest_get_some_food_uncle_fred",
                         "Very nice, you found the apartment! But it’s looking really empty in here. Let’s get you a few essentials to fill up the place. We’ll start with some food. You can't conquer the world on an empty stomach.")
                 };
@@ -333,7 +393,8 @@ internal static partial class UiSamples
     /// <summary>The words the scenes' screen takes from the game and the mod.</summary>
     public static SceneWords SceneWordsOf(UiWords t) => new SceneWords
     {
-        Move = t("reallife_ui_prompt_move", "Move"), Choose = t("reallife_ui_prompt_choose", "Choose"), Back = t("common_cancel", "Cancel"), Menu = t("input_key_menu", "Menu")
+        Move = t("reallife_ui_prompt_move", "Move"), Choose = t("reallife_ui_prompt_choose", "Choose"), Back = t("common_cancel", "Cancel"), Menu = t("input_key_menu", "Menu"),
+        Present = t("reallife_ui_scene_present", "{count} present")
     };
 
     /// <summary>A scene's page laid as SceneScreen lays it: the decision card for a moment, the conversation for questions and answers.</summary>
@@ -359,15 +420,22 @@ internal static partial class UiSamples
                 Moment(p, kicker, UiIcon.Scales, prosecutor, judge, "Whitmore & Vale");
                 if (state == "court_plea")
                 {
+                    Dock(p, t, prosecutor, judge, "Whitmore & Vale", t("reallife_justice_role_prosecutor", "For the prosecution"));
                     string aside = Fill(t("reallife_justice_court_aside", "Your side of the table, quietly: on {charge}, the case against you stands at about {percent} in 100 right now."),
                         "charge", t("reallife_justice_charge_reckless", "Dangerous driving"), "percent", "62");
                     p.Notes.Add(new SceneNote { Name = judge, Detail = t("reallife_justice_court_plea", "You have heard the charges. How do you plead?") + "\n\n" + aside });
                     Answer(p, 0, t("reallife_justice_plea_guilty", "Guilty"), t("reallife_justice_plea_guilty_hint", "No trial. Convicted on every charge that stands, with a quarter off the sentence."));
+                    Costs(p, Fill(t("reallife_justice_cost_hours", "{hours} hours"), "hours", "24"), Cost(Fill(t("reallife_justice_cost_fine", "A fine of {amount}"), "amount", "$1,200"), -1),
+                        Cost(Fill(t("reallife_justice_cost_community", "{hours} hours of community service"), "hours", "24"), -1));
                     Answer(p, 1, t("reallife_justice_plea_not_guilty", "Not guilty"),
                         Fill(t("reallife_justice_plea_not_guilty_hint", "A trial of {rounds} rounds. The case against you starts at {percent} in 100; your answers move it."), "rounds", "3", "percent", "62"));
+                    Costs(p, null, Cost(Fill(t("reallife_justice_odds", "About {count} in 10 chance to be cleared"), "count", "4"), 0),
+                        Cost(Fill(t("reallife_justice_cost_lost_fine", "If convicted, a fine of {amount}"), "amount", "$2,400"), -1),
+                        Cost(Fill(t("reallife_justice_cost_lost_community", "If convicted, {hours} hours of community service"), "hours", "32"), -1));
                     Answer(p, 2, t("reallife_justice_plea_deal", "Take the deal"),
                         Fill(t("reallife_justice_deal_reduced", "You plead guilty to {to} instead of {from}."), "to", t("reallife_justice_charge_evading", "Evading the police"),
                             "from", t("reallife_justice_charge_reckless", "Dangerous driving")) + " " + t("reallife_justice_deal_tail", "Sentence cut by 40%, and no prison."));
+                    Costs(p, null, Cost(Fill(t("reallife_justice_cost_fine", "A fine of {amount}"), "amount", "$720"), -1));
                 }
                 else
                 {
@@ -383,6 +451,29 @@ internal static partial class UiSamples
                     p.Notes.Add(new SceneNote { Name = prosecutor, Detail = sheet });
                     Answer(p, 0, t("reallife_justice_continue", "Continue"), null);
                 }
+                p.Locked = true;
+                break;
+            }
+            case "court_tax":
+            {
+                // A tax case's plea: the city's tax office against the player, and the city's settlement in place of a deal.
+                string judge = t("reallife_justice_judge_1", "Judge Whitlock"), inspector = t("reallife_justice_prosecutor_1", "Prosecutor Vance");
+                string kicker = Fill(t("reallife_justice_court_subtitle", "Case {number}, day {day}"), "number", "121", "day", "433");
+                p.Reset(t("reallife_justice_court_title", "Criminal Court"), kicker);
+                Moment(p, kicker, UiIcon.Scales, inspector, judge, "Whitmore & Vale");
+                Dock(p, t, inspector, judge, "Whitmore & Vale", t("reallife_justice_role_inspector", "For the city's tax office"));
+                string aside = Fill(t("reallife_justice_court_aside", "Your side of the table, quietly: on {charge}, the case against you stands at about {percent} in 100 right now."),
+                    "charge", t("reallife_justice_charge_tax_evasion", "Tax evasion"), "percent", "70");
+                p.Notes.Add(new SceneNote { Name = judge, Detail = t("reallife_justice_court_plea", "You have heard the charges. How do you plead?") + "\n\n" + aside });
+                Answer(p, 0, t("reallife_justice_plea_guilty", "Guilty"), t("reallife_justice_plea_guilty_hint", "No trial. Convicted on every charge that stands, with a quarter off the sentence."));
+                Costs(p, null, Cost(Fill(t("reallife_justice_cost_fine", "A fine of {amount}"), "amount", "$4,800"), -1));
+                Answer(p, 1, t("reallife_justice_plea_not_guilty", "Not guilty"),
+                    Fill(t("reallife_justice_plea_not_guilty_hint", "A trial of {rounds} rounds. The case against you starts at {percent} in 100; your answers move it."), "rounds", "3", "percent", "70"));
+                Costs(p, null, Cost(Fill(t("reallife_justice_odds", "About {count} in 10 chance to be cleared"), "count", "3"), 0),
+                    Cost(Fill(t("reallife_justice_cost_lost_fine", "If convicted, a fine of {amount}"), "amount", "$9,600"), -1));
+                Answer(p, 2, t("reallife_justice_plea_settle", "Settle with the city"), t("reallife_justice_plea_settle_hint", "No trial and no conviction. You pay the city what a lost trial would cost."));
+                Costs(p, null, Cost(Fill(t("reallife_justice_settle_cost", "{amount} to the city"), "amount", "$9,600"), -1),
+                    Cost(t("reallife_justice_settle_gain", "The charge is dropped; the inspector comes less often for a year"), 1));
                 p.Locked = true;
                 break;
             }
@@ -556,6 +647,26 @@ internal static partial class UiSamples
     }
 
     private static void Answer(ScenePage p, int id, string name, string detail) => p.Entries.Add(new SceneEntry { Id = id, Name = name, Detail = detail, Enabled = true });
+
+    // The answer added last: the time it takes beside its name and what it costs under its meaning (SceneList.Add, the hearing's).
+    private static void Costs(ScenePage p, string time, params UiConsequence[] lines)
+    {
+        SceneEntry e = p.Entries[p.Entries.Count - 1];
+        e.Note = time;
+        e.Lines = lines;
+        p.Entries[p.Entries.Count - 1] = e;
+    }
+
+    private static UiConsequence Cost(string text, int tone) => new UiConsequence { Text = text, Tone = tone };
+
+    // The court as JusticePanel tells it: the case against the player, the judge, the player's lawyer, and the player in
+    // the dock, each with who they are and their ring (SceneList.Roles).
+    private static void Dock(ScenePage p, UiWords t, string against, string judge, string counsel, string againstRole)
+    {
+        p.Faces = new[] { against, judge, counsel, t("reallife_justice_court_you", "You") };
+        p.Roles = new[] { againstRole, t("reallife_justice_role_judge", "Presiding"), t("reallife_justice_role_counsel", "Your lawyer"), t("reallife_justice_role_defendant", "The defendant") };
+        p.Rings = new[] { UiRole.Danger, UiRole.Warn, UiRole.Ok, UiRole.Accent };
+    }
 
     // An investor's question with its three answers and its topic, as the pitch keeps them in one text.
     private static string MoneyFor(UiWords t) =>

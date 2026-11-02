@@ -287,10 +287,14 @@ namespace RealLifeOverhaul
 
         public const float GuiltyPleaFactor = 0.75f;
         public const float DealFactor = 0.60f;
+        public const float TrialFineFactor = 2f * GuiltyPleaFactor;   // a conviction after a trial: twice the fine a guilty plea brings
 
-        /// <summary>The sentence for a set of convictions: <paramref name="factor"/> is 1 after a trial, less for a plea or a deal.</summary>
+        /// <summary>
+        /// The sentence for a set of convictions: <paramref name="factor"/> is 1 after a trial, less for a plea or a deal;
+        /// <paramref name="fineFactor"/> the fine's own where it is not the same (<see cref="TrialFineFactor"/>), -1 for the same.
+        /// </summary>
         public static JusticeSentence Sentence(IList<ChargeDef> convicted, float factor, float mitigation, int priors, bool onProbation,
-            int prisonCap, bool noPrison, float cash)
+            int prisonCap, bool noPrison, float cash, float fineFactor = -1f)
         {
             var sentence = new JusticeSentence();
             if (convicted == null || convicted.Count == 0)
@@ -300,6 +304,7 @@ namespace RealLifeOverhaul
             prisonCap = ClampCap(prisonCap);
             int priorsCounted = Math.Min(Math.Max(priors, 0), 3);
             float weight = factor * (1f - Clamp(mitigation, 0f, 0.3f));
+            float fineWeight = (fineFactor >= 0f ? fineFactor : factor) * (1f - Clamp(mitigation, 0f, 0.3f));
             ChargeClass worst = ChargeClass.Misdemeanour;
             int fines = 0, hours = 0, probation = 0, suspension = 0, jail = 0, prison = 0, felonies = 0;
             for (int i = 0; i < convicted.Count; i++)
@@ -342,7 +347,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            float fine = fines * weight * (1f + 0.25f * priorsCounted) * (onProbation ? 1.5f : 1f);
+            float fine = fines * fineWeight * (1f + 0.25f * priorsCounted) * (onProbation ? 1.5f : 1f);
             if (prison > 0 && noPrison)
             {
                 sentence.PrisonCommuted = true;
@@ -376,6 +381,15 @@ namespace RealLifeOverhaul
             }
             sentence.SuspensionDays = Math.Min(SuspensionCapDays, suspension + (suspension > 0 ? suspension * priorsCounted / 2 : 0));
             return sentence;
+        }
+
+        /// <summary>
+        /// A chance as the court card says it, in tenths ("about 4 in 10"): 0 for under one in ten, 10 for over nine. The
+        /// player's hearing and every claim, the player's own or an NPC's or a rival's, are said by this one rule.
+        /// </summary>
+        public static int InTen(float chance)
+        {
+            return chance > 0f ? (int)Math.Round(Clamp(chance, 0f, 1f) * 10f, MidpointRounding.AwayFromZero) : 0;   // none, and a chance not a number, is none
         }
 
         /// <summary>The chance an appeal succeeds, 0.05 to 0.60: better the thinner the evidence and the better the lawyer.</summary>

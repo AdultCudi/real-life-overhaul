@@ -22,7 +22,8 @@ namespace RealLifeOverhaul
         Convicted = 3,  // after a trial
         Guilty = 4,     // pleaded guilty
         Deal = 5,       // pleaded to a deal
-        Quashed = 6     // overturned on appeal
+        Quashed = 6,    // overturned on appeal
+        Settled = 7     // a tax case settled with the city: the charge dropped, no conviction
     }
 
     /// <summary>Who represents the player.</summary>
@@ -73,6 +74,7 @@ namespace RealLifeOverhaul
         public float LawyerQuality; // as at the hearing: the appeal is argued by the same counsel
         public int Postponed;       // times the date was moved because the player could not have come
         public int Damages;         // a getaway's damages the case took from the later bill: paid with a conviction, dropped otherwise
+        public int Amount;          // the sum the case is about (tax kept back, as the audit found it); 0 for none
 
         public bool Open => Stage != CaseStage.Closed;
 
