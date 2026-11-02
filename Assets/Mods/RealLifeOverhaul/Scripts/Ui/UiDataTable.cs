@@ -15,7 +15,9 @@ namespace RealLifeOverhaul.Ui
         Tile,         // what the row is, as an icon on a slate tile in its own colour (Values: the icon, Tones: its tint), the name and a line under it (Sub)
         Stepper,      // an amount to change on the row: minus, the typed figure and plus (Values: CanLess and CanMore, 0 while held), each a target of its own;
                       // a Warn or Danger tone puts the warning's glyph before it where the column has MarkRoom
-        Action        // a thing to do with the row, as an icon button at its right (Values: the icon, Tones: its tint; Cells: its words, unseen): set the destination
+        Action,       // a thing to do with the row, as an icon button at its right (Values: the icon, Tones: its tint; Cells: its words, unseen): set the destination
+        Trend,        // a figure at the right with its direction's arrow (Values: 1, -1 or 0; Tones: Danger where a rise is bad) (UiDataCells)
+        Steps         // a short ladder as a bar of segments (Values: the steps reached, the column's Steps: how many, the row's Share)
     }
 
     /// <summary>A column of a big table: what its cells are, how wide it stands and whether its head sorts it.</summary>
@@ -26,6 +28,7 @@ namespace RealLifeOverhaul.Ui
         public float Width;      // px on the grid, or 0 to share the room the fixed columns leave
         public bool Sortable;    // its head is a target that sorts by it
         public bool Graded;      // a figure in its grade's colour (Values), as a management game colours a skill
+        public int Steps;        // a steps column's ladder: how many pips
     }
 
     /// <summary>
@@ -41,6 +44,7 @@ namespace RealLifeOverhaul.Ui
         public float Hue;
         public UiRole Ring;      // their mood, as every portrait's ring says it
         public bool Picked;      // picked for a mass action
+        public float Share;      // a steps cell's way through the step after those reached, 0 to 1
     }
 
     /// <summary>
@@ -353,7 +357,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         private static bool RightAligned(UiCellKind kind) => kind == UiCellKind.Figure || kind == UiCellKind.Money || kind == UiCellKind.Date || kind == UiCellKind.Meter
-                                                              || kind == UiCellKind.Chip || kind == UiCellKind.Stepper;
+                                                              || kind == UiCellKind.Chip || kind == UiCellKind.Stepper || kind == UiCellKind.Trend;
 
         // The head: each title in capitals, a sortable one a target, the sorted one in the words' colour with its order's
         // arrow beside it. Figures' titles stand at the right, over their figures.
@@ -564,10 +568,21 @@ namespace RealLifeOverhaul.Ui
                     UiDraw.TextMiddle(s, at, cx, ry, rowH, cw, col.Graded ? UiStyle.BodyStrong : UiStyle.Body, ink, words, UiFlags.Right | UiFlags.Truncate);
                     break;
                 }
+                case UiCellKind.Trend:
+                    UiDataCells.Trend(s, at, words, value, row.Tones != null && c < row.Tones.Length ? row.Tones[c] : UiRole.None, cx, ry, cw, rowH, sel);
+                    break;
+                case UiCellKind.Steps:
+                    UiDataCells.Steps(s, at, words, value, row.Share, col.Steps, cx, ry, cw, rowH, sel);
+                    break;
                 case UiCellKind.Money:
                 case UiCellKind.Date:
-                    UiDraw.TextMiddle(s, at, cx, ry, rowH, cw, UiStyle.Body, sel || col.Kind == UiCellKind.Money ? UiRole.Text : UiRole.Text2, words, UiFlags.Right | UiFlags.Truncate);
+                {
+                    // A sum the game writes in its red (a loss) keeps that tone off the chosen row, where the red would not read.
+                    bool loss = col.Kind == UiCellKind.Money && !sel && row.Tones != null && c < row.Tones.Length && row.Tones[c] == UiRole.DangerText;
+                    UiRole ink = loss ? UiRole.DangerText : sel || col.Kind == UiCellKind.Money ? UiRole.Text : UiRole.Text2;
+                    UiDraw.TextMiddle(s, at, cx, ry, rowH, cw, UiStyle.Body, ink, words, UiFlags.Right | UiFlags.Truncate);
                     break;
+                }
                 default:
                     UiDraw.TextMiddle(s, at, cx, ry, rowH, cw, c == 0 ? UiStyle.Title : UiStyle.Body, c == 0 || sel ? UiRole.Text : UiRole.Text2, words, UiFlags.Truncate);
                     break;
