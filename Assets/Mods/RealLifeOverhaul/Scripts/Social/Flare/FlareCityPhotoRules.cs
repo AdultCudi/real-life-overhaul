@@ -20,13 +20,18 @@ namespace RealLifeOverhaul.Flare
         public const int DistrictFrontsMost = 10;     // business fronts of a district in all
         public const int EventMost = 3;               // photos of one day's street event
         public const int FreshDays = 28;              // game days a photo is used for: the city's look keeps that long (seasons, decorations)
-        public const int UsesMost = 3;                // posts one photo may carry
+        public const int UsesMost = 3;                // posts one photo may carry at a full bank (UsesAllowed: more while the bank is small)
         public const int RecentMost = 4;              // the last picks a photo may not follow: never twice in a row in the feed
         public const int LeadMinutes = 30;            // game minutes before a post goes up its photo is picked, in the weather then
-        public const int WindowMinutes = 180;         // ...and after: a post first seen later (a load) carries none
+        public const int WindowMinutes = 180;         // game minutes the weather now is the post's weather: an older post (a load) is taken as dry
+        public const int ReadyPhotos = 10;            // photos the bank holds before a post it has none for is settled as bare (until then it is tried again)
+        public const int CatchUpPhotos = 30;          // below this the bank is filling: photos come a little faster
+        public const int PenaltyDistrict = 1, PenaltyLight = 2, PenaltyWet = 2, PenaltyMost = 3;   // how far from a post's wish a photo may be, by what differs
         public const int DayMost = 24;                // bank photos taken in a game day at most, whatever the option
+        public const int DayMostFilling = 36;         // ...and while the bank is filling (CatchUpPhotos)
         public const int FrontRange = 250;            // metres from the player a business's front may be: the city's detail is there to be seen
         public const float PaceLeast = 20f;           // real seconds between two photos at least
+        public const float PaceFilling = 12f;         // ...while the bank is filling (CatchUpPhotos)
         public const float PaceMost = 160f;           // ...and at most, after slow ones
         public const double SlowMs = 20.0;            // milliseconds of the main thread a photo's renders may take before the next waits longer
         public const double FrameMs = 10.0;           // ...and one frame of them: the two renders go a frame each, half of SlowMs each
@@ -52,10 +57,11 @@ namespace RealLifeOverhaul.Flare
         /// <summary>The share of a post's kind that carries a photo at "some", thousandths; none for a kind with nothing to see.</summary>
         public static int KindShare(FlarePost p, int niche)
         {
-            if (p == null || p.ReplyTo >= 0 || p.Pending)
+            if (p == null || p.ReplyTo >= 0 || p.Pending || !string.IsNullOrEmpty(p.Pic) || !string.IsNullOrEmpty(p.NetPic))
             {
-                return 0;
+                return 0;   // a reply, and a post with its own picture (the player's photo, a session's)
             }
+            bool place = !string.IsNullOrEmpty(p.Place);
             switch (p.Author)
             {
                 case FlareAuthor.Citizen:
@@ -65,24 +71,56 @@ namespace RealLifeOverhaul.Flare
                     }
                     switch ((FlareTalk)(p.Arg / 10))
                     {
-                        case FlareTalk.Event: return 750;
+                        case FlareTalk.Event: return 900;
                         case FlareTalk.Food:
-                        case FlareTalk.Night: return 700;
-                        case FlareTalk.Weather: return 650;
-                        case FlareTalk.Sport: return 550;
+                        case FlareTalk.Night: return 850;
+                        case FlareTalk.Weather: return 800;
+                        case FlareTalk.Sport: return 800;
                         case FlareTalk.Everyday:
-                        case FlareTalk.Commute: return 350;
+                        case FlareTalk.Commute: return 650;
+                        case FlareTalk.Roadworks: return 450;
                         default: return 0;   // nothing a bank photo truly shows
                     }
-                case FlareAuthor.Business: return p.Source == FlareSource.BusinessPost ? 550 : 0;
+                case FlareAuthor.Business: return p.Source == FlareSource.BusinessPost ? 850 : 0;
                 case FlareAuthor.Influencer:
-                    if (p.Source != FlareSource.Niche && p.Source != FlareSource.Visit)
+                    switch (p.Source)
+                    {
+                        case FlareSource.Niche:
+                        case FlareSource.Visit:
+                        case FlareSource.Hired:
+                            return niche == (int)FlareNiche.Tech || niche == (int)FlareNiche.Business ? 500 : 850;
+                        case FlareSource.Rival: return 650;
+                        case FlareSource.CityNews: return 550;
+                        default: return 0;   // an election or an apology
+                    }
+                case FlareAuthor.Tycoon: return place ? 750 : 0;   // a rival's building, by the rules of the player's own
+                case FlareAuthor.Player:
+                    switch (p.Source)   // the player's own business posts: its front, else the street
+                    {
+                        case FlareSource.Opened:
+                        case FlareSource.RecordDay:
+                        case FlareSource.Interior:
+                        case FlareSource.Announce:
+                        case FlareSource.Sponsored:
+                            return place ? 850 : 0;
+                        default: return 0;
+                    }
+                case FlareAuthor.Friend:
+                    if (p.Source != FlareSource.Life)
                     {
                         return 0;
                     }
-                    return niche == (int)FlareNiche.Tech || niche == (int)FlareNiche.Business ? 0 : 650;
-                case FlareAuthor.Tycoon: return !string.IsNullOrEmpty(p.Place) ? 450 : 0;
-                default: return p.Source == FlareSource.Invite && !string.IsNullOrEmpty(p.Place) ? 500 : 0;
+                    switch ((FlareRules.LifeTopic)(p.Arg / 10))
+                    {
+                        case FlareRules.LifeTopic.Sport:
+                        case FlareRules.LifeTopic.Food: return 750;
+                        case FlareRules.LifeTopic.Night:
+                        case FlareRules.LifeTopic.Shops:
+                        case FlareRules.LifeTopic.District: return 650;
+                        case FlareRules.LifeTopic.Plain: return 500;
+                        default: return 350;   // work
+                    }
+                default: return p.Source == FlareSource.Invite && place ? 700 : 0;
             }
         }
 
@@ -100,10 +138,22 @@ namespace RealLifeOverhaul.Flare
             return share > 0 && FlareRules.Roll(FlareCommentRules.Seed(p, citySeed), 0, SaltPhoto) < share;
         }
 
-        /// <summary>Whether a post's photo is to be picked now: from <see cref="LeadMinutes"/> before it goes up to <see cref="WindowMinutes"/> after.</summary>
+        /// <summary>Whether a post's photo is to be picked now: from <see cref="LeadMinutes"/> before it goes up, however long after (a post first seen at a load too).</summary>
         public static bool Due(FlarePost p, long now)
         {
-            return p != null && now >= p.At - LeadMinutes && now <= p.At + WindowMinutes;
+            return p != null && now >= p.At - LeadMinutes;
+        }
+
+        /// <summary>How many posts one photo may carry: <see cref="UsesMost"/> at a full bank, more while the bank is small (every photo of a small bank is used more, never twice in a row).</summary>
+        public static int UsesAllowed(int photos)
+        {
+            return photos >= 60 ? UsesMost : photos >= 30 ? UsesMost + 1 : photos >= 15 ? UsesMost + 3 : UsesMost + 5;
+        }
+
+        /// <summary>How many of the last picks a photo may not follow: <see cref="RecentMost"/> at a fair bank, fewer for a small one (never fewer than two).</summary>
+        public static int RecentAllowed(int photos)
+        {
+            return photos >= 30 ? RecentMost : photos >= 12 ? RecentMost - 1 : RecentMost - 2;
         }
 
         /// <summary>What a post's photo must show, in order of preference; false for nothing to see.</summary>
@@ -126,10 +176,14 @@ namespace RealLifeOverhaul.Flare
                     {
                         case FlareTalk.Weather:
                             w.Wet = p.Topic != null && p.Topic.IndexOf("rain", StringComparison.Ordinal) >= 0;   // the post says what the weather is
+                            w.WetStrict = true;
                             w.Add(FlarePhotoKind.Street);
+                            w.Add(FlarePhotoKind.Park);
+                            w.Add(FlarePhotoKind.Landmark);
                             break;
                         case FlareTalk.Food:
                             w.Add(FlarePhotoKind.Front, place ? p.Place : null, (int)FlareNiche.Food);
+                            w.Add(FlarePhotoKind.Street);
                             break;
                         case FlareTalk.Night:
                             w.Add(FlarePhotoKind.Front, place ? p.Place : null, (int)FlareNiche.Nightlife);
@@ -140,11 +194,14 @@ namespace RealLifeOverhaul.Flare
                             break;
                         case FlareTalk.Sport:
                             w.Add(FlarePhotoKind.Park);
+                            w.Add(FlarePhotoKind.Street);
                             break;
                         case FlareTalk.Event:
                             w.Add(FlarePhotoKind.Event);
+                            w.Add(FlarePhotoKind.Street);
                             break;
                         case FlareTalk.Commute:
+                        case FlareTalk.Roadworks:
                             w.Add(FlarePhotoKind.Street);
                             break;
                         default:   // everyday
@@ -155,6 +212,7 @@ namespace RealLifeOverhaul.Flare
                     }
                     break;
                 case FlareAuthor.Business:
+                case FlareAuthor.Player:
                     if (place)
                     {
                         w.Add(FlarePhotoKind.Front, p.Place);
@@ -168,96 +226,176 @@ namespace RealLifeOverhaul.Flare
                     }
                     switch (niche)
                     {
-                        case (int)FlareNiche.Food: w.Add(FlarePhotoKind.Front, null, (int)FlareNiche.Food); break;
-                        case (int)FlareNiche.Nightlife: w.Add(FlarePhotoKind.Front, null, (int)FlareNiche.Nightlife); break;
-                        case (int)FlareNiche.Fashion: w.Add(FlarePhotoKind.Front, null, (int)FlareNiche.Fashion); break;
-                        case (int)FlareNiche.Fitness: w.Add(FlarePhotoKind.Park); break;
+                        case (int)FlareNiche.Food: w.Add(FlarePhotoKind.Front, null, (int)FlareNiche.Food); w.Add(FlarePhotoKind.Street); break;
+                        case (int)FlareNiche.Nightlife: w.Add(FlarePhotoKind.Front, null, (int)FlareNiche.Nightlife); w.Add(FlarePhotoKind.Street); break;
+                        case (int)FlareNiche.Fashion: w.Add(FlarePhotoKind.Front, null, (int)FlareNiche.Fashion); w.Add(FlarePhotoKind.Street); break;
+                        case (int)FlareNiche.Fitness: w.Add(FlarePhotoKind.Park); w.Add(FlarePhotoKind.Street); break;
                         default: w.Add(FlarePhotoKind.Street); w.Add(FlarePhotoKind.Landmark); break;
                     }
                     break;
-                default:   // a rival's building, an invitation's place: its own front or nothing
-                    w.Add(FlarePhotoKind.Front, p.Place);
+                case FlareAuthor.Friend:
+                    switch ((FlareRules.LifeTopic)(p.Arg / 10))
+                    {
+                        case FlareRules.LifeTopic.Sport: w.Add(FlarePhotoKind.Park); w.Add(FlarePhotoKind.Street); break;
+                        case FlareRules.LifeTopic.Food: w.Add(FlarePhotoKind.Front, null, (int)FlareNiche.Food); w.Add(FlarePhotoKind.Street); break;
+                        case FlareRules.LifeTopic.Night: w.Add(FlarePhotoKind.Front, null, (int)FlareNiche.Nightlife); w.Add(FlarePhotoKind.Street); break;
+                        case FlareRules.LifeTopic.Shops: w.Add(FlarePhotoKind.Front, null, (int)FlareNiche.Fashion); w.Add(FlarePhotoKind.Street); break;
+                        case FlareRules.LifeTopic.District: w.Add(FlarePhotoKind.Street); w.Add(FlarePhotoKind.Landmark); break;
+                        default: w.Add(FlarePhotoKind.Street); w.Add(FlarePhotoKind.Park); break;
+                    }
+                    break;
+                default:   // a rival's building, an invitation's place: its own front, else the street
+                    if (place)
+                    {
+                        w.Add(FlarePhotoKind.Front, p.Place);
+                    }
+                    w.Add(FlarePhotoKind.Street);
                     break;
             }
             return w.Ways > 0;
         }
 
-        /// <summary>True if a bank photo fits one way of a wish: kind, place, business kind, district, light, weather and age.</summary>
+        /// <summary>True if a bank photo fits one way of a wish exactly: kind, place, business kind, district, light, weather and age.</summary>
         public static bool Fits(FlareBankPhoto photo, FlarePhotoWish w, int way)
         {
+            return Penalty(photo, w, way) == 0;
+        }
+
+        /// <summary>
+        /// How far a bank photo is from one way of a wish: 0 for an exact fit, up to <see cref="PenaltyMost"/> for the nearest fit (another district of the
+        /// city, the dusk for the day or the night, the other weather unless the post speaks of it), -1 for no fit (the wrong kind, place, business kind or
+        /// event day, too old, day for night, or too far off).
+        /// </summary>
+        public static int Penalty(FlareBankPhoto photo, in FlarePhotoWish w, int way)
+        {
             w.Way(way, out FlarePhotoKind kind, out string place, out int niche);
-            if (photo == null || kind == FlarePhotoKind.None || photo.Kind != kind || photo.Light != w.Light || photo.Wet != w.Wet)
+            if (photo == null || kind == FlarePhotoKind.None || photo.Kind != kind)
             {
-                return false;
+                return -1;
+            }
+            int penalty = 0;
+            if (photo.Light != w.Light)
+            {
+                if (photo.Light != FlarePhotoLight.Dusk && w.Light != FlarePhotoLight.Dusk)
+                {
+                    return -1;   // never a day photo for a night post, nor a night one for the day
+                }
+                penalty += PenaltyLight;
+            }
+            if (photo.Wet != w.Wet)
+            {
+                if (w.WetStrict)
+                {
+                    return -1;   // a post about the rain, or about the sun
+                }
+                penalty += PenaltyWet;
             }
             if (kind == FlarePhotoKind.Event)
             {
-                return photo.Day == w.Day;   // the day's event, wherever in the city it was
+                return photo.Day == w.Day && penalty <= PenaltyMost ? penalty : -1;   // the day's event, wherever in the city it was
             }
-            if (Math.Abs(w.Day - photo.Day) > FreshDays)
+            if (Math.Abs(w.Day - photo.Day) > FreshDays || (place != null && !string.Equals(photo.Place, place, StringComparison.Ordinal)) || (niche >= 0 && photo.Niche != niche))
             {
-                return false;
+                return -1;
             }
-            if (place != null && !string.Equals(photo.Place, place, StringComparison.Ordinal))
+            if (!string.IsNullOrEmpty(w.District) && !string.Equals(photo.District, w.District, StringComparison.Ordinal))
             {
-                return false;
+                penalty += PenaltyDistrict;
             }
-            if (niche >= 0 && photo.Niche != niche)
-            {
-                return false;
-            }
-            return string.IsNullOrEmpty(w.District) || string.Equals(photo.District, w.District, StringComparison.Ordinal);
+            return penalty <= PenaltyMost ? penalty : -1;
         }
 
-        /// <summary>The bank's photo for a post, or null: among the first way's free photos, the one its seed rolls.</summary>
-        public static FlareBankPhoto Pick(FlareBank bank, FlarePhotoWish w, int seed)
+        /// <summary>The bank's photo for a post, or null: among the free photos the nearest to what the post shows, the one its seed rolls.</summary>
+        public static FlareBankPhoto Pick(FlareBank bank, in FlarePhotoWish w, int seed)
         {
-            if (bank == null)
+            if (bank == null || bank.Photos.Count == 0 || w.Ways == 0)
             {
                 return null;
             }
-            for (int way = 0; way < w.Ways; way++)
+            int uses = UsesAllowed(bank.Photos.Count);
+            Recents recent = Recent(bank, RecentAllowed(bank.Photos.Count));
+            int best = int.MaxValue, count = 0;
+            for (int i = 0; i < bank.Photos.Count; i++)
             {
-                int count = 0;
-                for (int i = 0; i < bank.Photos.Count; i++)
+                int rank = Rank(bank.Photos[i], w, uses, recent);
+                if (rank >= 0 && rank < best)
                 {
-                    count += Free(bank, bank.Photos[i], w, way) ? 1 : 0;
+                    best = rank;
+                    count = 1;
                 }
-                if (count == 0)
+                else if (rank == best)
                 {
-                    continue;
+                    count++;
                 }
-                int pick = FlareRules.Roll(seed, way, SaltPick) % count;
-                for (int i = 0; i < bank.Photos.Count; i++)
+            }
+            if (count == 0)
+            {
+                return null;
+            }
+            int pick = FlareRules.Roll(seed, best, SaltPick) % count;
+            for (int i = 0; i < bank.Photos.Count; i++)
+            {
+                if (Rank(bank.Photos[i], w, uses, recent) == best && pick-- == 0)
                 {
-                    if (Free(bank, bank.Photos[i], w, way) && pick-- == 0)
-                    {
-                        return bank.Photos[i];
-                    }
+                    return bank.Photos[i];
                 }
             }
             return null;
         }
 
-        private static bool Free(FlareBank bank, FlareBankPhoto photo, FlarePhotoWish w, int way)
+        // How wanted a free photo is: its nearest way's penalty and two for each way before it; -1 for a worn out or recent photo, or none that fits.
+        private static int Rank(FlareBankPhoto photo, in FlarePhotoWish w, int uses, in Recents recent)
         {
-            if (photo.Uses >= UsesMost || !Fits(photo, w, way))
+            if (photo.Uses >= uses || recent.Has(photo.Id))
             {
-                return false;
+                return -1;
             }
-            for (int i = bank.Picks.Count - 1, seen = 0; i >= 0 && seen < RecentMost; i--)
+            int rank = -1;
+            for (int way = 0; way < w.Ways; way++)
             {
-                if (bank.Picks[i].Photo < 0)
+                int penalty = Penalty(photo, w, way);
+                if (penalty >= 0 && (rank < 0 || penalty + 2 * way < rank))
                 {
-                    continue;
-                }
-                seen++;
-                if (bank.Picks[i].Photo == photo.Id)
-                {
-                    return false;
+                    rank = penalty + 2 * way;
                 }
             }
-            return true;
+            return rank;
+        }
+
+        // The last photos picked, newest first, up to four: a photo may not follow them.
+        private struct Recents
+        {
+            private int _a, _b, _c, _d, _n;
+
+            public void Add(int id)
+            {
+                switch (_n++)
+                {
+                    case 0: _a = id; break;
+                    case 1: _b = id; break;
+                    case 2: _c = id; break;
+                    default: _d = id; break;
+                }
+            }
+
+            public readonly bool Has(int id)
+            {
+                return (_n > 0 && _a == id) || (_n > 1 && _b == id) || (_n > 2 && _c == id) || (_n > 3 && _d == id);
+            }
+        }
+
+        private static Recents Recent(FlareBank bank, int most)
+        {
+            var r = new Recents();
+            for (int i = bank.Picks.Count - 1, seen = 0; i >= 0 && seen < Math.Min(most, RecentMost); i--)
+            {
+                if (bank.Picks[i].Photo >= 0)
+                {
+                    r.Add(bank.Picks[i].Photo);
+                    seen++;
+                }
+            }
+            return r;
         }
 
         /// <summary>A post's pick kept: the photo (its uses counted) or none (null). At <see cref="PicksMost"/> the oldest pick goes.</summary>
@@ -274,21 +412,35 @@ namespace RealLifeOverhaul.Flare
             bank.Picks.Add(new FlareBankPick { Post = post, Photo = photo != null ? photo.Id : -1 });
         }
 
-        /// <summary>The next post due a pick, wanted and not yet picked or in <paramref name="skip"/>, newest first; null for none.</summary>
-        public static FlarePost NextPick(FlareFile f, FlareBank bank, int citySeed, int option, long now, Func<FlarePost, int> nicheOf, HashSet<int> skip)
+        /// <summary>
+        /// Whether a post's pick is final: a photo is; none is once the post is up and the bank holds <see cref="ReadyPhotos"/> (a bank still filling leaves
+        /// the post to be tried again as it grows, so the first posts of a save do not stay bare).
+        /// </summary>
+        public static bool Settled(FlareBank bank, FlarePost p, FlareBankPhoto photo, long now)
         {
-            if (f == null || bank == null || option <= 0)
+            return photo != null || (now >= p.At && bank.Photos.Count >= ReadyPhotos);
+        }
+
+        /// <summary>
+        /// The next post due a pick, wanted and not yet picked, newest first from <paramref name="cursor"/> (start at <see cref="int.MaxValue"/>; each call
+        /// carries on below the last post it gave); null for none.
+        /// </summary>
+        public static FlarePost NextPick(FlareFile f, FlareBank bank, int citySeed, int option, long now, Func<FlarePost, int> nicheOf, ref int cursor)
+        {
+            if (f == null || bank == null || option <= 0 || bank.Photos.Count == 0)
             {
                 return null;
             }
-            for (int i = f.Posts.Count - 1; i >= 0; i--)
+            for (int i = Math.Min(cursor, f.Posts.Count) - 1; i >= 0; i--)
             {
                 FlarePost p = f.Posts[i];
-                if (Due(p, now) && (skip == null || !skip.Contains(p.Id)) && bank.PickOf(p.Id) == -2 && Wants(p, citySeed, option, nicheOf != null ? nicheOf(p) : -1))
+                if (Due(p, now) && Wants(p, citySeed, option, nicheOf != null ? nicheOf(p) : -1) && bank.PickOf(p.Id) == -2)
                 {
+                    cursor = i;
                     return p;
                 }
             }
+            cursor = 0;
             return null;
         }
 
@@ -490,14 +642,21 @@ namespace RealLifeOverhaul.Flare
             return n;
         }
 
-        /// <summary>The real seconds to wait after a photo whose renders took this long: the least after a quick one, doubled after a slow one.</summary>
-        public static float NextPace(float pace, double renderMs)
+        /// <summary>The photos a game day may take: <see cref="DayMost"/>, a few more while the bank is filling.</summary>
+        public static int DayLimit(int photos)
         {
+            return photos < CatchUpPhotos ? DayMostFilling : DayMost;
+        }
+
+        /// <summary>The real seconds to wait after a photo whose renders took this long: the least after a quick one (a little less while the bank fills), doubled after a slow one.</summary>
+        public static float NextPace(float pace, double renderMs, int photos = int.MaxValue)
+        {
+            float least = photos < CatchUpPhotos ? PaceFilling : PaceLeast;
             if (renderMs <= SlowMs)
             {
-                return PaceLeast;
+                return least;
             }
-            return Math.Min(PaceMost, Math.Max(PaceLeast, pace) * 2f);
+            return Math.Min(PaceMost, Math.Max(least, pace) * 2f);
         }
 
         public static bool InRange(float dx, float dz)
@@ -531,6 +690,7 @@ namespace RealLifeOverhaul.Flare
         /// <summary>The bank as its file's text: "v=1", "n=" the next number, a "p|..." line a photo and a "u|post|photo" line a pick.</summary>
         public static string Write(FlareBank bank)
         {
+            // A post that found no photo has no line: it is tried again at a load, when the bank has grown.
             var b = new StringBuilder(64 + bank.Photos.Count * 64 + bank.Picks.Count * 16);
             b.Append("v=").Append(Version).Append('\n').Append("n=").Append(bank.NextId).Append('\n');
             for (int i = 0; i < bank.Photos.Count; i++)
@@ -542,7 +702,10 @@ namespace RealLifeOverhaul.Flare
             }
             for (int i = 0; i < bank.Picks.Count; i++)
             {
-                b.Append("u|").Append(bank.Picks[i].Post).Append('|').Append(bank.Picks[i].Photo).Append('\n');
+                if (bank.Picks[i].Photo >= 0)   // a post that found no photo is tried again at the next load: the bank has grown since
+                {
+                    b.Append("u|").Append(bank.Picks[i].Post).Append('|').Append(bank.Picks[i].Photo).Append('\n');
+                }
             }
             return b.ToString();
         }
@@ -582,7 +745,7 @@ namespace RealLifeOverhaul.Flare
                     });
                     bank.NextId = Math.Max(bank.NextId, id + 1);
                 }
-                else if (f[0] == "u" && f.Length >= 3 && Int(f[1], out int post) && Int(f[2], out int photo))
+                else if (f[0] == "u" && f.Length >= 3 && Int(f[1], out int post) && Int(f[2], out int photo) && photo >= 0)   // an older file's "none" picks are let go: tried again
                 {
                     bank.Picks.Add(new FlareBankPick { Post = post, Photo = photo });
                 }
