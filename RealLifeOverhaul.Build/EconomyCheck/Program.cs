@@ -756,6 +756,7 @@ internal static partial class Program
         VehicleCosts(); // vehicle costs: a purse past an int took 2.1 billion as a life event's loss; money into an int, a car's costs on their worst input, the wrong charge paid back (VehicleCostChecks.cs)
         TravelFixes();  // travel: the hotel room refused while the game was paused (TravelFixChecks.cs)
         ChessFixes();   // street chess: the whole setup clear of crossings in both placement paths (ChessFixChecks.cs)
+        FrameFixes();   // the first car's and the street chess stutters: What's new in all eleven languages (FrameFixChecks.cs)
         LedgerFixes();  // the City Ledger: a kiosk copy never charged when the page cannot open, the subscription's lines (LedgerFixChecks.cs)
         FamilyWealth(); // the partner takes the player's money by how they lean (FamilyWealthChecks.cs)
         FamilyWish();   // the partner stops working or retrains once the player is rich (FamilyWishChecks.cs)

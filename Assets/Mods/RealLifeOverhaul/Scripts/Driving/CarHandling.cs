@@ -80,6 +80,7 @@ namespace RealLifeOverhaul
         private CarController _designCar;
         private NwhVehicle _designVehicle;
         private HandlingTuning _designTuning;
+        private bool _made;                             // the design is made and the mod's presets filled for it (Make): Finish puts it on
         private HandlingTuning _lineTuning;             // the sliders of the handling on the car, for its self-check line
 
         /// <summary>True while the handling is on a car.</summary>
@@ -159,30 +160,76 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The design made, put on the car it was begun for, the Garage's parts lifted first and laid back on top after. True
-        /// if it is on; false if the car cannot have it (said once) or is gone. Nothing if no design is under way.
+        /// The mod's own tyres and ground preset made ahead, once a city (CarTuning's Awake, behind the loading screen): made
+        /// the first time a car was got into, they were part of a frame of 4.20 ms (the owner's log of 2 Nov 2026).
         /// </summary>
-        public bool Finish()
+        public void Prepare()
+        {
+            if (_tyre == null)
+            {
+                _tyre = ScriptableObject.CreateInstance<FrictionPreset>();
+                _tyre.name = "RealLifeOverhaul tyres";
+            }
+            if (_road == null)
+            {
+                _road = ScriptableObject.CreateInstance<GroundDetectionPreset>();
+                _road.name = "RealLifeOverhaul road";
+            }
+        }
+
+        /// <summary>
+        /// The first of the two frames that put the design on (<see cref="Finish"/> is the second): whatever steps were left,
+        /// and the mod's own tyres, ground preset and steering curve filled for the car (<see cref="Build"/>), nothing of the
+        /// car's touched. True if Finish is to follow; false if the car cannot have it (said once) or is gone, the design
+        /// then dropped. Both in one frame were 4.20 ms the first time (the owner's log of 2 Nov 2026).
+        /// </summary>
+        public bool Make()
         {
             CarController car = _designCar;
             NwhVehicle vehicle = _designVehicle;
-            HandlingTuning tuning = _designTuning;
-            _designCar = null;
-            _designVehicle = null;
+            _made = false;
             while (vehicle != null && _design.Step())
             {
                 // whatever steps were left (none when the frames took them all): the design is never put on half made
             }
             string why = _design.Why;
+            if (car == null || vehicle == null || vehicle.vehicleRigidbody == null || why != null)
+            {
+                _designCar = null;
+                _designVehicle = null;
+                _design.Cancel();
+                if (car != null && vehicle != null && vehicle.vehicleRigidbody != null)
+                {
+                    Refused(_type, why);
+                }
+                return false;   // refused, or the car went while its design was under way
+            }
+            Build(vehicle);   // the mod's own presets and curve: a fault here changes nothing on the car
+            _made = true;
+            return true;
+        }
+
+        /// <summary>
+        /// The design made (<see cref="Make"/>, in the frame before; here if it was not), put on the car it was begun for,
+        /// the Garage's parts lifted first and laid back on top after. True if it is on; false if the car cannot have it
+        /// (said once) or is gone. Nothing if no design is under way.
+        /// </summary>
+        public bool Finish()
+        {
+            if (!_made && !Make())
+            {
+                return false;
+            }
+            _made = false;
+            CarController car = _designCar;
+            NwhVehicle vehicle = _designVehicle;
+            HandlingTuning tuning = _designTuning;
+            _designCar = null;
+            _designVehicle = null;
             _design.Cancel();
             if (car == null || vehicle == null || vehicle.vehicleRigidbody == null)
             {
-                return false;   // the car went while its design was under way
-            }
-            if (why != null)
-            {
-                Refused(_type, why);
-                return false;
+                return false;   // the car went after its design was made
             }
             Rigidbody body = vehicle.vehicleRigidbody;
             LiftParts(car);
@@ -191,7 +238,6 @@ namespace RealLifeOverhaul
             float gripUnder = 0f;
             try
             {
-                Build(vehicle);
                 Record(car, vehicle, body);
                 _vehicle = vehicle;
                 Refusal = null;
@@ -555,6 +601,7 @@ namespace RealLifeOverhaul
         public void Restore()
         {
             _design.Cancel();
+            _made = false;
             _designCar = null;
             _designVehicle = null;
             NwhVehicle vehicle = _vehicle;
