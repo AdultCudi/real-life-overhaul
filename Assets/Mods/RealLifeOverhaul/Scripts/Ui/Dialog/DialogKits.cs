@@ -24,7 +24,8 @@ namespace RealLifeOverhaul.Ui
 
         private static readonly UiGameHost Talk = new UiGameHost(new DialogGameScreen());
         private static readonly UiGameHost Spoken = new UiGameHost(new MonologueGameScreen());
-        private static readonly Dictionary<string, Sprite> Pictures = new Dictionary<string, Sprite>(16);
+        private static readonly Dictionary<string, Sprite> Pictures = new Dictionary<string, Sprite>(16);   // the game's own sprites, by the keys given them
+        private static readonly Dictionary<string, Sprite> Swatches = new Dictionary<string, Sprite>(16);   // the colours' squares made here, dropped with the city
         private static bool _picturesOn;
 
         /// <summary>Where the kit stands, for the interface's line at load.</summary>
@@ -61,12 +62,18 @@ namespace RealLifeOverhaul.Ui
             SceneKit.Install(UiScreenSwitches.On(ScenesId));
         }
 
-        /// <summary>A new city: a panel that never looked as expected in the last one is looked at again.</summary>
+        /// <summary>A new city: a panel that never looked as expected in the last one is looked at again, and the last city's pictures let go.</summary>
         public static void Rearm()
         {
             Talk.Rearm();
             Spoken.Rearm();
             SceneKit.Rearm();
+            foreach (Sprite made in Swatches.Values)
+            {
+                CodeAssets.DropSprite(made);
+            }
+            Swatches.Clear();
+            Pictures.Clear();   // the game's own: only forgotten
         }
 
         /// <summary>The game's panels as they were: the kit gone, their layouts seen and touchable again.</summary>
@@ -112,10 +119,10 @@ namespace RealLifeOverhaul.Ui
                 : before?.Invoke(key);
         }
 
-        // A colour's swatch is a square of that colour, made once a colour; a face is the game's own sprite.
+        // A colour's swatch is a square of that colour, made once a colour a city; a face is the game's own sprite.
         private static Sprite Picture(string key)
         {
-            if (Pictures.TryGetValue(key, out Sprite known))
+            if (Pictures.TryGetValue(key, out Sprite known) || Swatches.TryGetValue(key, out known))
             {
                 return known;
             }
@@ -133,7 +140,7 @@ namespace RealLifeOverhaul.Ui
             texture.Apply(false, true);
             Sprite made = Sprite.Create(texture, new Rect(0f, 0f, 4f, 4f), new Vector2(0.5f, 0.5f), 100f);
             made.name = key;
-            Pictures[key] = made;
+            Swatches[key] = made;
             return made;
         }
 

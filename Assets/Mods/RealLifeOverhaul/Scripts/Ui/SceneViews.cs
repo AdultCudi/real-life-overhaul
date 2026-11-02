@@ -171,7 +171,9 @@ namespace RealLifeOverhaul.Ui
                 EmblemLabel = speaker != null && System.Array.IndexOf(faces, speaker) >= 0 ? speaker : null,   // under the faces: who of them speaks
                 Body = Join(kicks ? null : said, Body(page)),
                 Choices = Choices(page, ChoiceLine(CardWords)),
-                Buttons = page.Locked ? new UiActionModel[0] : new[] { new UiActionModel { Label = words.Back, Kind = UiButtonKind.Secondary, Key = UiAction.Back, Command = UiDecision.ButtonCommand } },
+                Buttons = page.Locked
+                    ? new UiActionModel[0]
+                    : new[] { new UiActionModel { Label = words.Back, Kind = UiButtonKind.Secondary, Key = UiAction.Back, Command = UiDecision.ButtonCommand } },
             };
             m.Prompts = Prompts(page, words);
             m.PromptCount = m.Prompts.Length;

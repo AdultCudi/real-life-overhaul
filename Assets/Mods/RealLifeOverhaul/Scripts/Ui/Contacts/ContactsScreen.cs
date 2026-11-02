@@ -81,7 +81,9 @@ namespace RealLifeOverhaul.Ui
 
         public int TypingCommand => _typing >= 0 ? UiConversation.FormCommand : UiMessageList.SearchCommand;
 
-        public string TypingText => _typing >= 0 ? (CallFormShown ? _callForm.Text(_typing) : _typing < _fields.Count && _fields[_typing].Input != null ? _fields[_typing].Input.text : string.Empty) : _query;
+        public string TypingText => _typing < 0 ? _query
+            : CallFormShown ? _callForm.Text(_typing)
+            : _typing < _fields.Count && _fields[_typing].Input != null ? _fields[_typing].Input.text : string.Empty;
 
         public void Typed(string text)
         {

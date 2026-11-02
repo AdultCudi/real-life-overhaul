@@ -292,9 +292,9 @@ internal static partial class Program
         string scripts = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
         string dialog = System.IO.Path.Combine(scripts, "Ui", "Dialog");
         string screen = File.ReadAllText(System.IO.Path.Combine(dialog, "DialogScreen.cs")), form = File.ReadAllText(System.IO.Path.Combine(dialog, "DialogForm.cs"));
-        string kit = File.ReadAllText(System.IO.Path.Combine(dialog, "DialogKit.cs")), spoken = File.ReadAllText(System.IO.Path.Combine(dialog, "MonologueScreen.cs"));
+        string kit = File.ReadAllText(System.IO.Path.Combine(dialog, "DialogKits.cs")), spoken = File.ReadAllText(System.IO.Path.Combine(dialog, "MonologueScreen.cs"));
         string scenes = File.ReadAllText(System.IO.Path.Combine(dialog, "SceneKit.cs")), desk = File.ReadAllText(System.IO.Path.Combine(dialog, "SceneDesk.cs"));
-        string call = File.ReadAllText(System.IO.Path.Combine(dialog, "ContactsCallForm.cs"));
+        string call = File.ReadAllText(System.IO.Path.Combine(dialog, "ContactsScreen.CallForm.cs"));
         string travel = File.ReadAllText(System.IO.Path.Combine(scripts, "Core", "GameUi", "TravelList.cs"));
         Check(screen.Contains("UiWidgets.Press(b)") && screen.Contains("\"Dialog (kit): \"") && screen.Contains("DialogKits.Classic()") && spoken.Contains("_card.Find(\"Close\")")
               && spoken.Contains("UiWidgets.Press(") && scenes.Contains("List.Pick(") && scenes.Contains("List.Close()") && call.Contains("_callForm.Press("),

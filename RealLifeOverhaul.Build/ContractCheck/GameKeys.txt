@@ -215,6 +215,9 @@ ba:messagetype_dialog_moving_service_done
 ba:messagetype_dialog_moving_service_done_items_sold
 ba:messagetype_rivals_poach_employee_offer
 ba:messagetype_rivals_poach_employee_rival_surrender
+ba:messagetype_tutorial_quest_casino_uncle_fred
+ba:messagetype_tutorial_quest_find_a_job_uncle_fred
+ba:messagetype_tutorial_quest_get_some_food_uncle_fred
 ba:myemployees_candidateinfo_header
 ba:neighborhood_garmentdistrict
 ba:neighborhood_global
@@ -314,6 +317,8 @@ ba:vehicletype_umcdesert
 ba:vehicletype_umcdesertdeliveryjob
 ba:vehicletype_umcnunavut
 ba:vehicletype_vordpony
+bank_dialog_interest_daily_payment
+bank_dialog_total_daily_payment
 bizman_alerts
 bizman_avg_daily_income
 bizman_browse_store_inventory
@@ -427,6 +432,7 @@ common_available_for_rent
 common_back
 common_balance
 common_building_type
+common_business
 common_business_name
 common_business_type
 common_businesses
@@ -463,6 +469,7 @@ common_ok
 common_open
 common_open_in_econoview
 common_price
+common_price_per_day
 common_product
 common_products
 common_purchase
@@ -524,6 +531,12 @@ contacts_taxes_taxable_income
 contacts_taxes_total_tax_due
 contacts_today_opening_hours
 dialog_accept_button
+dialog_bank_amount_to_loan
+dialog_bank_larry
+dialog_bank_loan_amount_header
+dialog_bank_new_investment
+dialog_bank_new_loan
+dialog_bank_selector
 dialog_candidate_salary_offer_hourly_wage
 dialog_candidate_salary_offer_input_hourly_wage
 dialog_candidate_salary_offer_input_signing_bonus
@@ -531,9 +544,15 @@ dialog_decline_button
 dialog_hang_up_button
 dialog_health_insurance_negotiation_start
 dialog_health_insurance_plan_offer_price
+dialog_marketing_agency_campaign_settings_header
+dialog_marketing_agency_npc_name
+dialog_marketing_agency_start
+dialog_marketing_agency_start_new_campaign
 dialog_negotiate_button
 dialog_negotiation_negotiate_counter_offer
 dialog_player_offer_input
+dialog_recruitment_agency_already_has_campaign_new
+dialog_recruitment_agency_manage_campaigns
 dialog_recruitment_agency_npc_name
 dialog_send_offer_button
 econoview_back_taxes_due
@@ -589,7 +608,9 @@ ferris_wheel
 filebrowser_delete
 government
 hud_confirm_are_you_sure
+input_key_menu
 itemhelper_notification_you_are_to_stuffed_to_eat_this
+itempanelui_buttons_leave
 job_board
 job_demand_priority_high
 job_demand_priority_low
@@ -609,6 +630,10 @@ marketeventtype_hype
 marketeventtype_hype_description
 marketeventtype_productshortage
 marketeventtype_productshortage_description
+marketingtypename_friendbookads
+marketingtypename_jitterads
+marketingtypename_latergramads
+marketingtypename_voogleads
 marketinsider_demand
 marketinsider_import_price_index
 marketinsider_lowest_market_price
