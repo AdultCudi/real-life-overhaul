@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using RealLifeOverhaul.Ui;
+using UnityEngine;
 
 public static partial class UiPreviewRunner
 {
@@ -41,10 +42,17 @@ public static partial class UiPreviewRunner
             screens.Add(new Screen
             {
                 Name = "rivals_" + st, AppName = "Rivals", Icon = PhoneLooks.Glyph(RivalsViews.App), Backdrop = st.EndsWith("_fr") ? "11.jpg" : "13.jpg",
-                Bar = () => UiSamples.ShellBar(rivalsRow, false), Lay = (s, f, d, k) => UiRivals.Lay(s, UiSamples.Rivals(English, st), f, d, k),
+                Bar = () => UiSamples.ShellBar(rivalsRow, false), Lay = (s, f, d, k) =>
+                {
+                    if (st == "league_faces")
+                    {
+                        StandIns();
+                    }
+                    UiRivals.Lay(s, UiSamples.Rivals(English, st), f, d, k);
+                },
                 HoverCommand = st == "league_empty" ? UiAppWindow.NavCommand : league ? UiRivals.ChartTabCommand : UiRivals.RowLinkCommand,
                 HoverArg = st == "league_empty" ? 1 : league ? 1 : 0,
-                FocusCommand = st == "league_empty" ? UiAppWindow.NavCommand : UiDataTable.First + UiDataTable.Row, FocusArg = st == "league_empty" ? 0 : st == "league_quiet" ? 3 : league ? 1 : 2,
+                FocusCommand = st == "league_empty" ? UiAppWindow.NavCommand : UiDataTable.First + UiDataTable.Row, FocusArg = st == "league_empty" ? 0 : st == "league_quiet" ? 3 : st == "league_faces" ? 5 : league ? 1 : 2,
                 Walk = league ? new[] { Down, Down, Right, Down, Down, Left, Up } : new[] { Down, Down, Up, Up, Up, Right, Left }
             });
         }
@@ -81,6 +89,41 @@ public static partial class UiPreviewRunner
                 screen.Walk = new[] { Down, Down, Right, Down, Left, Left, Up };
             }
             screens.Add(screen);
+        }
+    }
+
+    // In the game a rival's picture is its own sprite; here a flat tone stands in for it, so the sample shows which faces the
+    // game has (a picture, however it looks) beside the painted ones (a face from the sex and age the mod records).
+    private sealed class StandIn : UiFaceSource
+    {
+        private readonly Sprite _sprite;
+
+        public StandIn(int tone)
+        {
+            var tex = new Texture2D(64, 64, TextureFormat.RGBA32, false);
+            var px = new Color32[64 * 64];
+            Color32 top = new Color32((byte)(88 + tone * 9), (byte)(104 + tone * 5), (byte)(128 - tone * 7), 255), foot = new Color32(58, 52, 48, 255);
+            for (int y = 0; y < 64; y++)
+            {
+                for (int x = 0; x < 64; x++)
+                {
+                    float dx = x - 32f, dy = y - 36f;
+                    px[y * 64 + x] = dx * dx + dy * dy < 15f * 15f ? new Color32(196, 150, 118, 255) : y < 20 ? foot : top;   // a head on a backdrop
+                }
+            }
+            tex.SetPixels32(px);
+            tex.Apply();
+            _sprite = Sprite.Create(tex, new Rect(0, 0, 64, 64), new Vector2(0.5f, 0.5f), 100f);
+        }
+
+        public override Sprite Get() => _sprite;
+    }
+
+    private static void StandIns()
+    {
+        for (int i = 0; i < UiSamples.GameFaces.Length; i++)
+        {
+            UiFaces.Source(UiSamples.GameFaces[i], new StandIn(i));
         }
     }
 }

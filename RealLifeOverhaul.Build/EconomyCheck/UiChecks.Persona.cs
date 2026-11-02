@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using RealLifeOverhaul.Ui;
 
 internal static partial class Program
@@ -56,7 +58,98 @@ internal static partial class Program
             RivalsChecks();
             MarketChecks();
             DataCellChecks();
+            FaceChecks();
         }
+    }
+
+
+    // "The picture of a person": the one rule (UiFaceRules), the painted face that follows the recorded traits, the two sample
+    // rivals (one the game has a picture of, one it has none of), and that every screen draws its people through the rule.
+    private static void FaceChecks()
+    {
+        var game = new UiFaceFacts { HasGame = true, GameReady = true };
+        var coming = new UiFaceFacts { HasGame = true };
+        var painted = new UiFaceFacts { HasTraits = true, Female = true, Age = 70 };
+        Check(UiFaceRules.From(game) == UiFaceFrom.Game && UiFaceRules.From(coming) == UiFaceFrom.Waiting && UiFaceRules.From(painted) == UiFaceFrom.Painted
+              && UiFaceRules.From(new UiFaceFacts { HasGame = true, HasTraits = true, GameReady = true }) == UiFaceFrom.Game,
+            "faces: a person the game has a picture of shows it (a plain disc while it comes, never a painted face); only a person it has none of is painted");
+        string name = "Aaron Quill";
+        Check((UiFaceRules.PaintSeed(name, painted) & 3) == 1 && (UiFaceRules.PaintSeed(name, new UiFaceFacts { HasTraits = true }) & 3) == 2
+              && UiFaceRules.PaintSeed(name, default(UiFaceFacts)) == UiPortraits.Seed(name) && UiFaceRules.PaintAge(painted) == 70 && UiFaceRules.PaintAge(default(UiFaceFacts)) == 0,
+            "faces: a painted face takes the sex the mod records, whatever the name suggests, and the name's own hash only for a person it records nothing of");
+        var plain = new byte[64 * 64 * 4];
+        var same = new byte[plain.Length];
+        var old = new byte[plain.Length];
+        bool greyer = false, unchanged = true;
+        for (int i = 0; i < 12; i++)
+        {
+            int seed = UiPortraits.SeedFor("Person " + i, i % 2 == 0);
+            UiPortraits.Paint(seed, 64, plain, 150f);
+            UiPortraits.Paint(seed, 64, same, 150f, 0);
+            UiPortraits.Paint(seed, 64, old, 150f, UiFaceRules.GreyFrom + 10);
+            unchanged &= SameFace(plain, same);
+            greyer |= !SameFace(plain, old);
+        }
+        Check(unchanged && greyer, "faces: an age the mod does not record changes nothing about a painted face, and an old person's hair is grey");
+        UiFaceBook.Clear();
+        UiFaceBook.KnowGame("Ana Cole");
+        int v = UiFaceBook.Version;
+        UiFaceBook.KnowGame("Ana Cole");
+        UiFaceBook.KnowTraits("Ana Cole", true, 41);
+        UiFaceBook.KnowTraits("Ana Cole", true, 0);
+        UiFaceBook.TryGet("Ana Cole", out UiFaceFacts known);
+        Check(UiFaceBook.Version == v + 1 && known.HasGame && known.HasTraits && known.Age == 41 && UiFaceBook.HasGame("Ana Cole") && !UiFaceBook.HasGame("Nobody Known"),
+            "faces: telling the book what it knows already changes nothing (a screen is not laid out again for it), and an age once told stays");
+        UiFaceBook.Clear();
+        UiSamples.Rivals(UiWords("en"), "league_faces");   // as a screen reading the game tells it
+        bool withPicture = true, without = true;
+        foreach (string rival in UiSamples.GameFaces)
+        {
+            UiFaceBook.TryGet(rival, out UiFaceFacts f);
+            withPicture &= UiFaceRules.From(f) != UiFaceFrom.Painted && UiFaceRules.From(new UiFaceFacts { HasGame = true, GameReady = true }) == UiFaceFrom.Game;
+        }
+        UiFaceBook.TryGet("Marcus Hale", out UiFaceFacts marcus);
+        UiFaceBook.TryGet("Priya Raman", out UiFaceFacts priya);
+        UiFaceBook.TryGet("Owen Pryce", out UiFaceFacts owen);
+        without = UiFaceRules.From(marcus) == UiFaceFrom.Painted && (UiFaceRules.PaintSeed("Marcus Hale", marcus) & 3) == 2 && (UiFaceRules.PaintSeed("Priya Raman", priya) & 3) == 1
+                  && UiFaceRules.From(owen) == UiFaceFrom.Painted && UiFaceRules.PaintAge(marcus) == 44;
+        Check(withPicture && without && UiSamples.RivalsStates.Length > 0 && Array.IndexOf(UiSamples.RivalsStates, "league_faces") >= 0,
+            "faces: the rivals sample has rivals the game has a picture of and rivals it has none of, painted from their recorded sex and age");
+        UiFaceBook.Clear();
+        string ui = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui"));
+        string slots = File.ReadAllText(System.IO.Path.Combine(ui, "UiView.Slots.cs")), rivals = File.ReadAllText(System.IO.Path.Combine(ui, "Rivals", "RivalsScreen.cs"));
+        string persona = File.ReadAllText(System.IO.Path.Combine(ui, "Persona", "PersonaScreen.cs")), host = File.ReadAllText(System.IO.Path.Combine(ui, "UiHost.cs"));
+        string portrait = Between(slots, "case UiKind.Portrait:", "case UiKind.Picture:");
+        Check(portrait.Contains("UiFaces.Of(it.Text, it.Value, out bool plain)") && !portrait.Contains("UiSprites.") && host.Contains("UiFaces.Version != _laidFaces"),
+            "faces: every portrait the view draws asks the one rule, and a screen shown is laid out again when a game picture arrives");
+        Check(rivals.Contains("FaceSources.Rival(d)") && persona.Contains("FaceSources.Player(_v.Name)") && !rivals.Contains("UiSprites.") && !persona.Contains("UiSprites."),
+            "faces: the Rivals and Persona screens give their people's pictures to the one rule (the rivals' own, the player's from the HUD), never a painted one");
+        int painters = 0;
+        foreach (string path in Directory.GetFiles(System.IO.Path.Combine(ui, ".."), "*.cs", SearchOption.AllDirectories))
+        {
+            if (!path.EndsWith("UiFaces.cs", StringComparison.Ordinal) && !path.EndsWith("UiSprites.cs", StringComparison.Ordinal))
+            {
+                string text = File.ReadAllText(path);
+                painters += text.Contains("UiSprites.Painted(") || text.Contains("UiSprites.Portrait(") ? 1 : 0;
+            }
+        }
+        string staff = File.ReadAllText(System.IO.Path.Combine(ui, "Employees", "EmployeesScreen.View.cs")), rivalStaff = File.ReadAllText(System.IO.Path.Combine(ui, "Employees", "RivalStaffScreen.cs"));
+        string contacts = File.ReadAllText(System.IO.Path.Combine(ui, "Contacts", "ContactsScreen.Read.cs")), pictures = File.ReadAllText(System.IO.Path.Combine(ui, "..", "Phone", "Contacts", "ContactPictures.cs"));
+        Check(painters == 0 && staff.Contains("FaceSources.Employee(") && rivalStaff.Contains("FaceSources.Employee(") && contacts.Contains("Face(c);") && contacts.Contains("FaceSources.Player(")
+              && pictures.Contains("Ui.UiFaces.Source(id,"),
+            "faces: no screen paints a face of its own; employees, a rival's staff, contacts and the mod's people (the cast, a partner, a roommate) are told to the one rule");
+    }
+
+    private static bool SameFace(byte[] a, byte[] b)
+    {
+        for (int i = 0; i < a.Length; i++)
+        {
+            if (a[i] != b[i])
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static readonly int[] PersonaCommands =

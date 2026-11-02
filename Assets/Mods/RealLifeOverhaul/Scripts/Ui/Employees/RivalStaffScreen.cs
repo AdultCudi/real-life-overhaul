@@ -171,6 +171,7 @@ namespace RealLifeOverhaul.Ui
             if (!_asks.TryGetValue(data.id, out Ask ask))
             {
                 EmployeeInstance e = data.GetEmployeeInstance();
+                FaceSources.Employee(row.Name, e);   // made from a name, a sex and an age: painted from those, since there is no look to draw
                 ask = new Ask
                 {
                     Age = e != null && e.characterData != null ? TimeHelper.GetYearsByDays(e.characterData.ageInDays) : 0,

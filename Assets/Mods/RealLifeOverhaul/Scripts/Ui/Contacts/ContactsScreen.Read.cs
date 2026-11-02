@@ -128,6 +128,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < _rows.Count; i++)
             {
                 Contact c = _rows[i];
+                Face(c);
                 TextMessage last = Last(c);
                 bool unread = c.HasUnreadMessages;
                 string section = null;
@@ -175,6 +176,7 @@ namespace RealLifeOverhaul.Ui
                     Arg = ContactsRoutes.DeleteAllArg, Disabled = !Shows(delete) },   // the game allows it only on one group, never on all
             };
             string player = PlayerName();
+            FaceSources.Player(player);
             _m.Foot.Player = player;
             _m.Foot.PlayerHue = UiColour.HueOf(player ?? string.Empty);
             _m.Foot.PlayerLine = UiText.Fill("reallife_ui_contacts_summary", "count", UiText.Whole(all.Count), "unread", UiText.Whole(unread));
@@ -194,6 +196,7 @@ namespace RealLifeOverhaul.Ui
             EmployeeInstance employee = c.IsEmployeeContact ? EmployeeOf(c.id, out candidate) : null;
             UiHeadModel h = _m.Head;
             h.Name = Name(c);
+            Face(c);
             h.Hue = UiColour.HueOf(c.id);
             h.Icon = Person(c) ? UiIcon.None : ContactsRules.FirmIcon(BusinessType(c), (int)c.category);
             h.Tint = UiRole.None;

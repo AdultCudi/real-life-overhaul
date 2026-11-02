@@ -164,6 +164,7 @@ namespace RealLifeOverhaul.Ui
             {
                 ViewRow r = v.Rows[i];
                 string name = Title(r.Title, r.TitleKey, r.NameSeed, r.Female, t, nameOf, place);
+                Traits(name, r.NameSeed, r.Female, r.Format, r.Value);
                 string figure = Write(ViewFigure.Of(null, r.Value, r.Format), t, money);
                 m.Entries[i] = new UiRowModel
                 {
@@ -181,6 +182,10 @@ namespace RealLifeOverhaul.Ui
         {
             m.Shape = UiPageShape.Profile;
             m.Hue = UiColour.HueOf(m.Title);
+            for (int i = 0; i < v.Hero.Count; i++)
+            {
+                Traits(m.Title, v.NameSeed, v.Female, v.Hero[i].Format, v.Hero[i].Value);   // their age, from the figure that says it
+            }
             m.Subtitle = string.IsNullOrEmpty(v.Subtitle) ? null : t(v.Subtitle, v.Subtitle);
             var figures = new System.Collections.Generic.List<UiFigureModel>(UiDashboard.MostFigures);
             for (int i = 0; i < v.Hero.Count && figures.Count < UiDashboard.MostFigures; i++)
@@ -215,6 +220,16 @@ namespace RealLifeOverhaul.Ui
                 m.Side[i] = new UiPairModel { Key = t(v.Details[i].Label, v.Details[i].Label), Value = Clean(Write(v.Details[i], t, money), place) };
             }
             m.SideCount = m.Side.Length;
+        }
+
+        // The sex, and the age where a figure says it, that the living population records for a person it named: their painted
+        // face follows them (UiFaceRules), not the name's hash. Told again with the same facts it changes nothing.
+        private static void Traits(string name, int nameSeed, bool female, ViewFormat format, long value)
+        {
+            if (nameSeed != 0 && !string.IsNullOrEmpty(name))
+            {
+                UiFaceBook.KnowTraits(name, female, format == ViewFormat.Years ? (int)Math.Min(value, 120L) : 0);
+            }
         }
 
         /// <summary>

@@ -321,6 +321,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
+                FaceSources.Rival(d);   // their face as the game has it: its own sprite or its portrait camera, never a painted one
                 bool you = string.IsNullOrEmpty(d.rivalId);
                 var war = GameContract.RivalsWarMark.Field?.GetValue(line) as Image;
                 List<Tuple<int, float>> history = you ? (save != null ? save.playerWeeklyIncomeHistory : null) : RivalsHelper.GetRivalState(d.rivalId)?.weeklyIncomeHistory;

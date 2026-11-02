@@ -146,6 +146,7 @@ namespace RealLifeOverhaul.Ui
                     }
                     bool on = picked != null && picked.Contains(c.employeeInstance);
                     pickedCount += on ? 1 : 0;
+                    FaceSources.Employee(c.employeeName, c.employeeInstance);   // their face from the game: drawn from their own look, never painted
                     rows[n++] = new CandidateRow
                     {
                         Name = c.employeeName, Role = c.primarySkillName.GetLocalization(), Skill = c.primarySkillPercentage, Wage = Wage(c.employeeInstance), Schedule = c.schedule,
@@ -177,6 +178,7 @@ namespace RealLifeOverhaul.Ui
                     pickedCount += on ? 1 : 0;
                     float paid = PaidMoney(e.employeeInstance);
                     wages += paid;
+                    FaceSources.Employee(e.employeeName, e.employeeInstance);
                     rows[n++] = new StaffRow
                     {
                         Name = e.employeeName, Role = e.primarySkillName.GetLocalization(), Business = e.currentBusinessName,
@@ -548,6 +550,7 @@ namespace RealLifeOverhaul.Ui
             string primary = e.GetPrimarySkill();
             p.Candidate = candidate;
             p.Name = e.characterData != null ? e.characterData.name : string.Empty;
+            FaceSources.Employee(p.Name, e);
             p.Role = string.IsNullOrEmpty(primary) ? null : primary.GetLocalization();
             p.RoleIcon = StaffViews.SkillIcon(primary);
             p.Business = BuildingHelper.GetBuildingRegistration(e.assignedAddress)?.BusinessName;
@@ -591,6 +594,7 @@ namespace RealLifeOverhaul.Ui
             string primary = e.GetPrimarySkill();
             p.Candidate = candidate;
             p.Name = e.characterData != null ? e.characterData.name : string.Empty;
+            FaceSources.Employee(p.Name, e);
             p.Role = string.IsNullOrEmpty(primary) ? null : primary.GetLocalization();
             p.RoleIcon = StaffViews.SkillIcon(primary);
             p.Business = BuildingHelper.GetBuildingRegistration(e.assignedAddress)?.BusinessName;
@@ -672,6 +676,7 @@ namespace RealLifeOverhaul.Ui
             {
                 EmployeeInstance m = _mates[i];
                 string skill = m.GetPrimarySkill();
+                FaceSources.Employee(m.characterData != null ? m.characterData.name : null, m);
                 p.Mates[i] = new StaffMate
                 {
                     Name = m.characterData != null ? m.characterData.name : string.Empty, Role = string.IsNullOrEmpty(skill) ? null : skill.GetLocalization(),

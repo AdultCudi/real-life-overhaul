@@ -112,8 +112,13 @@ Use these, and never draw a part of your own. All are in `UiDraw.Chrome.cs` unle
   high among an info panel's rows and a control high under a block of a window, and a person among those rows is
   `PersonRow`, two pair rows with the face's left edge on the labels. A list of people or threads keeps `ListRow`.
 - **Pills and chips** (`Pill`, `Chip`): a status pill with its icon, and inZOI's soft chip with a dot in its tone.
-- **Portraits** (`Portrait`): a round face painted from the person's name (`UiPortraits`, kept by
-  `UiSprites.Portrait`, 160 at most), with a status ring in a tone. No portrait art ships.
+- **Portraits** (`Portrait`): a round face with a status ring in a tone, drawn by one rule for the picture of a person
+  (`UiFaces.Of`, rules in `UiFaceRules`, game side in `Faces/`): the game's own picture of them (a sprite the game holds,
+  or the game's portrait camera drawing their character, kept as a round copy, 160 at most), a plain disc while that
+  comes, and only for a person the game has no picture of the painted face (`UiPortraits`, from the sex and age the mod
+  records, else the name). A screen that reads a game person tells it once (`FaceSources.Rival`, `Player`, `Employee`,
+  `Held`, or `UiFaceBook.KnowTraits` for a person the mod only records traits of); a screen never paints a face of its
+  own. No portrait art ships.
 - **Charts and meters**: `Donut` (slices in the chart hues) with its `Legend`, `Scale` (a map legend's steps), `Meter`
   (a thin bar in a tone), `GradeBar` (an attribute graded red to green; a block of them shares one label column from
   `LabelColumn`, so their tracks start at one edge), `StatBar` (the same thin graded bar under its label), `Stars` (a
