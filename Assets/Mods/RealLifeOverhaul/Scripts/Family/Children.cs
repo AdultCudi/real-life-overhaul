@@ -1,6 +1,7 @@
 using BigAmbitions.DayNightCycle;
 using Entities;
 using Helpers;
+using RealLifeOverhaul.GameUi;
 using UI.Notification;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -69,7 +70,8 @@ namespace RealLifeOverhaul.Family
             int pick = (index % 3 + 3) % 3;
             string key = pick == 0 ? "reallife_family_adopt_age_baby" : pick == 1 ? "reallife_family_adopt_age_toddler" : "reallife_family_adopt_age_child";
             return FamilyTalk.Either(FamilyText.Say(key, Args.Us.Cost(FamilyBalance.AdoptionFee)), "reallife_family_plan_choose", () => StartAdoption(pick),
-                "reallife_family_plan_other", () => AdoptAge(pick + 1));
+                "reallife_family_plan_other", () => AdoptAge(pick + 1))
+                .Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_pay", "amount", FamilyText.Money(FamilyBalance.AdoptionFee));   // the filing fee, paid at the office
         }
 
         private static DialogEntry StartPregnancy(int carrier)
@@ -502,7 +504,8 @@ namespace RealLifeOverhaul.Family
             c.Fund += FamilyBalance.FundStep;
             FamilyState.MoneyOut(FamilyBalance.FundStep, 3);
             return FamilyTalk.Either(FamilyText.Say("reallife_family_fund_added", Args.Us.Kid(c.Name).Cost(c.Fund)),
-                "reallife_family_fund_more", () => FundStep(child), "reallife_family_menu_back", () => FamilyPhone.FamilyMenu(0));
+                "reallife_family_fund_more", () => FundStep(child), "reallife_family_menu_back", () => FamilyPhone.FamilyMenu(0))
+                .Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", FamilyText.Money(FamilyBalance.FundStep));
         }
 
     }

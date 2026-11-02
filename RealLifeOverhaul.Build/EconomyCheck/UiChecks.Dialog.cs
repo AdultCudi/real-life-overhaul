@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using RealLifeOverhaul;
 using RealLifeOverhaul.Ui;
 
@@ -65,7 +67,72 @@ internal static partial class Program
             DialogTalkLooks();
             DialogFormLooks();
             DialogSourceChecks();
+            DialogTimings();
         }
+    }
+
+    // What a line costs to lay out again, as a new line, a press or the pointer over an answer asks for it: the heaviest
+    // form docked at the right (a delivery's goods, each with its steps) and a tow's call card in Contacts, each held to the
+    // 2 ms slice and the 16 KB the Contacts screen is held to.
+    private static void DialogTimings()
+    {
+        UiWords en = UiWords("en");
+        var s = new UiScene();
+        UiFrame frame = UiFrame.FullMenu(16f / 9f, "Dialogue");
+        UiConversationModel goods = UiSamples.Dialog(en, "furniture");
+        double ms = DialogLayoutTime(s, goods, frame, 200);
+        long bytes = DialogLayoutBytes(s, goods, frame);
+        Check(ms < 2.0, "ui timings: laying a conversation with a delivery's goods out takes " + ms.ToString("0.000") + " ms, under the 2 ms slice");
+        Check(bytes < 16384, "ui timings: laying the conversation out again allocates " + bytes + " bytes, under 16 KB");
+        Console.WriteLine("    ui: a conversation with a delivery's form " + ms.ToString("0.000") + " ms, " + bytes + " bytes, " + s.ItemCount + " items, " + s.NodeCount + " targets");
+
+        UiFrame contacts = UiFrame.FullMenu(16f / 9f, "Contacts");
+        UiContactsModel tow = UiSamples.TowCall(en);
+        double callMs = DialogCallTime(s, tow, contacts, 200);
+        long callBytes = DialogCallBytes(s, tow, contacts);
+        Check(callMs < 2.0, "ui timings: laying a call's form on the call card out takes " + callMs.ToString("0.000") + " ms, under the 2 ms slice");
+        Check(callBytes < 16384, "ui timings: laying the call out again allocates " + callBytes + " bytes, under 16 KB");
+        Console.WriteLine("    ui: a tow's call card in Contacts " + callMs.ToString("0.000") + " ms, " + callBytes + " bytes, " + s.ItemCount + " items, " + s.NodeCount + " targets");
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]
+    private static double DialogLayoutTime(UiScene s, UiConversationModel m, UiFrame frame, int times)
+    {
+        UiConversation.LayDocked(s, m, frame, true, UiDefaultKeys.Keyboard);
+        var watch = Stopwatch.StartNew();
+        for (int i = 0; i < times; i++)
+        {
+            UiConversation.LayDocked(s, m, frame, (i & 1) == 0, UiDefaultKeys.Keyboard);
+        }
+        return watch.Elapsed.TotalMilliseconds / times;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]
+    private static long DialogLayoutBytes(UiScene s, UiConversationModel m, UiFrame frame)
+    {
+        long start = GC.GetAllocatedBytesForCurrentThread();
+        UiConversation.LayDocked(s, m, frame, true, UiDefaultKeys.Keyboard);
+        return GC.GetAllocatedBytesForCurrentThread() - start;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]
+    private static double DialogCallTime(UiScene s, UiContactsModel m, UiFrame frame, int times)
+    {
+        UiContacts.Lay(s, m, frame, true, UiDefaultKeys.Keyboard);
+        var watch = Stopwatch.StartNew();
+        for (int i = 0; i < times; i++)
+        {
+            UiContacts.Lay(s, m, frame, (i & 1) == 0, UiDefaultKeys.Keyboard);
+        }
+        return watch.Elapsed.TotalMilliseconds / times;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]
+    private static long DialogCallBytes(UiScene s, UiContactsModel m, UiFrame frame)
+    {
+        long start = GC.GetAllocatedBytesForCurrentThread();
+        UiContacts.Lay(s, m, frame, true, UiDefaultKeys.Keyboard);
+        return GC.GetAllocatedBytesForCurrentThread() - start;
     }
 
     private static readonly int[] DialogCommands =
@@ -537,7 +604,8 @@ internal static partial class Program
         {
             @"Economy\Banking\Debt\DebtPhone.cs", @"Home\DoctorVisit.cs", @"Phone\PhoneContacts.cs", @"Transport\CarPhone.cs", @"Transport\Taxi\TaxiPhone.cs", @"Travel\HotelDeskDialog.cs",
             @"Travel\TravelAgentDialog.cs", @"Jobs\CareerDialog.cs", @"Licences\Driving\DrivingSchool.cs", @"Transport\SubwayJourney.cs", @"Social\PersonDialog.cs", @"Civic\CityHallDialog.cs",
-            @"Civic\OfficePhone.cs", @"Construction\BuilderDesk.cs", @"Construction\CarParkDesk.cs", @"Family\Courtship.cs", @"Family\PartnerCar.cs", @"Family\WeddingPlanner.cs"
+            @"Civic\OfficePhone.cs", @"Construction\BuilderDesk.cs", @"Construction\CarParkDesk.cs", @"Family\Courtship.cs", @"Family\PartnerCar.cs", @"Family\WeddingPlanner.cs",
+            @"Family\FamilyPhone.Choices.cs", @"Family\PartnerExpect.cs", @"Family\Children.cs"
         };
         int stated = 0;
         foreach (string file in priced)
@@ -546,6 +614,9 @@ internal static partial class Program
             stated += text.Contains(".Pays(DialogButton.") || text.Contains(".Gets(DialogButton.") ? 1 : 0;
         }
         Check(stated == priced.Length, "dialog: each of the mod's dialogs that asks for money or offers it says the sum under its answer, from the figure its words use (" + stated + " of " + priced.Length + ")");
+        string family = File.ReadAllText(System.IO.Path.Combine(scripts, "Family", "FamilyTalk.cs"));
+        Check(family.Contains("public Action<DialogEntry> Costs;") && family.Contains("choice.Costs?.Invoke(entry);"),
+            "dialog: a choice of the family's talk says under its answer what it costs, as the line it makes is shown");
         string tests = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "UiDirector.DialogTests.cs"));
         Check(tests.Contains("TalkAt(CallDialogType.WholesaleStoreManagerDialog, ") && tests.Contains("TalkAt(CallDialogType.ImportManagerDialog, ") && tests.Contains("screen.HasAnswer")
               && tests.Contains("ui.ShowDialog(type, NavigationBlocker.SpecialEmployeeDialog, contact);"),
