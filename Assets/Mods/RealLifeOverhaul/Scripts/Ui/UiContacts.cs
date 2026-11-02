@@ -98,6 +98,12 @@ namespace RealLifeOverhaul.Ui
                     s.Nodes[i].Down = i;
                 }
             }
+            // A head with no buttons leaves the title strip's close over the aside: Down from it goes into the actions under it.
+            int close = s.FindNode(UiDraw.CloseCommand, 0), first = s.FindNode(ActionCommand, 0);
+            if (m.HasDetail && m.HeadActions.Length == 0 && close >= 0 && first >= 0)
+            {
+                s.Nodes[close].Down = first;
+            }
             // The groups, the list, the talk and the aside each a column the d-pad crosses in one step.
             UiDraw.JoinColumns(s, wx, x - UiTokens.S5 + UiTokens.S1, rx - UiTokens.S3);
             UiDraw.JoinColumns(s, x, rx - UiTokens.S3, wx + ww);
