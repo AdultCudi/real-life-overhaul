@@ -79,8 +79,7 @@ namespace RealLifeOverhaul.Ui
 
         // The empty state's room: its glyph's tile and its words with a step of room round them, so nothing floats in a hole.
         private static float EmptyRoom(UiPickerModel m) =>
-            UiDraw.Snap(UiTokens.S12 + UiTokens.S4 + UiDraw.EmptyHeight(Width - UiTokens.S6 * 2f, m.EmptyTitle, m.EmptyBody) - UiTokens.S12 * 2f + UiTokens.S6 * 2f
-                        + (string.IsNullOrEmpty(m.EmptyAction) ? 0f : UiTokens.S5 + UiTokens.Control));
+            UiDraw.EmptyStateHeight(Width - UiTokens.S6 * 2f, m.EmptyTitle, m.EmptyBody, m.EmptyAction) + UiTokens.S6 * 2f;
 
         // A tile says something only where the entries differ: a list of one kind of thing reads by its names.
         private static bool Differ(UiPickerModel m)
@@ -171,7 +170,7 @@ namespace RealLifeOverhaul.Ui
                     UiFlags.Wrap | UiFlags.Middle, 2);
                 return;
             }
-            int drawn = s.ItemCount;
+            int drawn = s.ItemCount, markFrom = -1, markTo = -1;
             int face = UiDraw.Box(s, at, x, y, w, Row, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
             UiAt inside = at.In(face);
             float tx = x + UiTokens.S2, nx = x + UiTokens.S3;
@@ -187,8 +186,10 @@ namespace RealLifeOverhaul.Ui
                 {
                     // A line's bullet, as the subway signs it: its colour on a small disc, its code in the dark ink.
                     float d = UiTokens.ControlSmall, dy = y + (Row - d) / 2f;
+                    markFrom = s.ItemCount;
                     int disc = UiDraw.Circle(s, inside.In(t), tx + (tile - d) / 2f, dy, d, d, e.MarkTone == UiRole.None ? UiRole.Accent : e.MarkTone, UiFlags.Middle);
                     UiDraw.TextMiddle(s, inside.In(disc), tx + (tile - d) / 2f, dy, d, d, UiStyle.BodyStrong, UiRole.OnAccent, e.Mark, UiFlags.Centre | UiFlags.Truncate);
+                    markTo = s.ItemCount;
                 }
                 else
                 {
@@ -227,7 +228,8 @@ namespace RealLifeOverhaul.Ui
                 // Greyed as the game greys it, the reason's chip kept whole so it still reads.
                 for (int i = drawn; i < s.ItemCount; i++)
                 {
-                    if (s.Items[i].Kind != UiKind.Text || s.Items[i].Style != UiStyle.SmallStrong)
+                    bool mark = i >= markFrom && i < markTo;   // the line's bullet stays readable: which line is closed is the point
+                    if (!mark && (s.Items[i].Kind != UiKind.Text || s.Items[i].Style != UiStyle.SmallStrong))
                     {
                         s.Items[i].Alpha = UiDraw.DimAlpha;
                     }

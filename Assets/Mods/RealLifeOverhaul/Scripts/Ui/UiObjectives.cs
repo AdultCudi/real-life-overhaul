@@ -59,14 +59,13 @@ namespace RealLifeOverhaul.Ui
             }
             for (int g = 0; g < m.Groups.Length; g++)
             {
-                h += GroupHeight(ref m.Groups[g]) + UiTokens.S1;
+                h += GroupHeight(ref m.Groups[g]) + (g > 0 ? UiTokens.S1 : 0f);   // the last band runs to the panel's foot
             }
-            return UiDraw.Snap(h + UiTokens.S2);
+            return UiDraw.Snap(h);
         }
 
         // The empty state's room: its glyph's tile and its words with a step of room round them, so nothing floats in a hole.
-        private static float EmptyRoom(UiObjectivesModel m) =>
-            UiDraw.Snap(UiTokens.S12 + UiTokens.S4 + UiDraw.EmptyHeight(Width - UiTokens.S4 * 2f, m.EmptyTitle, m.EmptyBody) - UiTokens.S12 * 2f + UiTokens.S5 * 2f);
+        private static float EmptyRoom(UiObjectivesModel m) => UiDraw.EmptyStateHeight(Width - UiTokens.S4 * 2f, m.EmptyTitle, m.EmptyBody, null) + UiTokens.S5 * 2f;
 
         private static float GroupHeight(ref UiObjectiveGroup group)
         {
@@ -110,7 +109,7 @@ namespace RealLifeOverhaul.Ui
             float ix = x + UiTokens.S4, iw = Width - UiTokens.S4 * 2f;
             if (m.Groups.Length == 0)
             {
-                UiDraw.EmptyState(s, on, ix, cy, iw, EmptyRoom(m), m.EmptyIcon, m.EmptyTitle, m.EmptyBody);
+                UiDraw.EmptyState(s, on, ix, cy, iw, EmptyRoom(m), m.EmptyIcon, m.EmptyTitle, m.EmptyBody, null, -1, UiDefaultKeys.Keyboard);
                 return y + h;
             }
             for (int g = 0; g < m.Groups.Length; g++)

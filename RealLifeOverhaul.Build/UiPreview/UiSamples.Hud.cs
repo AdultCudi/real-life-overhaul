@@ -158,22 +158,38 @@ internal static partial class UiSamples
     // ------------------------------------------------------------------------------------------------- the world prompt
 
     /// <summary>The box at Bloom Café's door: the address and what is inside, four actions with the game's keys, one greyed.</summary>
-    public static UiWorldPromptModel HudDoor(UiWords t, IUiKeys k, bool night = false) => new UiWorldPromptModel
-    {
-        Title = "70 Fifth Avenue", Icon = UiIcon.Store,
-        Rows = new[]
+    public static UiWorldPromptModel HudDoor(UiWords t, IUiKeys k, bool night = false) => night
+        ? new UiWorldPromptModel
         {
-            new UiInfoRow { Label = "Bloom Café", Value = night ? "Closed, opens 07:00" : "Open until 22:00", Ink = night ? UiRole.WarnText : UiRole.OkText },
-            new UiInfoRow { Label = "Floors", Value = "Ground and 1st" },
-        },
-        Actions = new[]
+            Title = "70 Fifth Avenue", Icon = UiIcon.Store,
+            Rows = new[]
+            {
+                new UiInfoRow { Label = "Bloom Café", Value = "Closed, opens 07:00", Ink = UiRole.WarnText }, new UiInfoRow { Label = "Floors", Value = "Ground and 1st" },
+            },
+            Actions = new[]
+            {
+                new UiPromptAction { Label = "Go inside", Key = GameKey(k, "F", UiIcon.PadX), Disabled = true, Reason = "Closed" },
+                new UiPromptAction { Label = "Look at the building", Key = GameKey(k, "P", UiIcon.PadY), Main = true },
+                new UiPromptAction { Label = "Ring the doorbell", Key = GameKey(k, "O", UiIcon.PadRb) },
+            },
+        }
+        : new UiWorldPromptModel
         {
-            new UiPromptAction { Label = "Go inside", Key = GameKey(k, "F", UiIcon.PadX), Main = !night, Disabled = night, Reason = night ? "Closed" : null },
-            new UiPromptAction { Label = "Look at the building", Key = GameKey(k, "P", UiIcon.PadY) },
-            new UiPromptAction { Label = "Ring the doorbell", Key = GameKey(k, "O", UiIcon.PadRb) },
-            new UiPromptAction { Label = "Rent this space", Key = GameKey(k, "Enter", UiIcon.PadA), Disabled = true, Reason = "Taken" },
-        },
-    };
+            // The corner unit whose banner the street shows: for rent, its rent and size, and the way to take it.
+            Title = "72 Fifth Avenue", Icon = UiIcon.Store,
+            Rows = new[]
+            {
+                new UiInfoRow { Label = "Ground floor", Value = "For rent", Ink = UiRole.OkText }, new UiInfoRow { Label = "Rent a month", Value = "$9,800" },
+                new UiInfoRow { Label = "Size", Value = "140 m²" },
+            },
+            Actions = new[]
+            {
+                new UiPromptAction { Label = "Rent this space", Key = GameKey(k, "F", UiIcon.PadX), Main = true },
+                new UiPromptAction { Label = "Look at the building", Key = GameKey(k, "P", UiIcon.PadY) },
+                new UiPromptAction { Label = "Ring the doorbell", Key = GameKey(k, "O", UiIcon.PadRb) },
+                new UiPromptAction { Label = "Go inside", Key = GameKey(k, "Enter", UiIcon.PadA), Disabled = true, Reason = "Locked" },
+            },
+        };
 
     /// <summary>The hover form over an item on a shelf: its name and its price, no actions.</summary>
     public static UiWorldPromptModel HudItem(UiWords t) => new UiWorldPromptModel
@@ -190,7 +206,7 @@ internal static partial class UiSamples
         UiStatusModel bar = HudBar(t, false, false, night);
         if (!hover)
         {
-            bar.Place = "70 Fifth Avenue";   // at the door the box stands over, as the game's HUD names it
+            bar.Place = night ? "70 Fifth Avenue" : "72 Fifth Avenue";   // at the door the box stands over, as the game's HUD names it
             bar.District = "Midtown";
         }
         Hud(s, f, dark, k, t, m, bar);
