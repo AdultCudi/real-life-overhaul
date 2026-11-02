@@ -38,10 +38,18 @@ internal static partial class UiSamples
                 .Replace("{hours}", "2").Replace("{time}", "09:00").Replace("<br>", string.Empty)
             : t("common_open", "Open") + ", " + t("buildingresume_open_closing_in_hours", "Closing in {hours} hours ({time})")
                 .Replace("{hours}", "3").Replace("{time}", "22:00").Replace("<br>", string.Empty);
-        string buildingOwner = t("building_rival_owner_description", "Building owned by {rivalName}")
-            .Replace("{rivalName}", rent ? t("the_city_of_new_york", "The City of New York") : "Hudson Realty");
-        string businessOwner = rival ? t("business_rival_owner_description", "Business owned by {rivalName}").Replace("{rivalName}", "Viktor Hale")
+        string cityOwner = t("building_rival_owner_description", "Building owned by {rivalName}").Replace("{rivalName}", t("the_city_of_new_york", "The City of New York"));
+        string businessOwner = t("buildingresume_rented_by_you", "Rented by you");
+        string owner = t("reallife_ui_world_owner_one", "Owner");
+        UiInfoRow buildingOwner = rent ? new UiInfoRow { Label = cityOwner } : new UiInfoRow { Label = owner, Value = "Hudson Realty", Link = true };
+        string buildingState = rent ? t("reallife_ui_world_state_for_rent", "For rent") : rival ? t("reallife_ui_world_state_rival", "A rival's")
             : t("buildingresume_rented_by_you", "Rented by you");
+        string businessState = rival ? t("reallife_ui_world_state_rival", "A rival's") : t("reallife_ui_world_state_yours", "Yours");
+        UiInfoRow customers = new UiInfoRow
+        {
+            Label = t("reallife_ui_world_customers", "Customers an hour"), Meter = true, Fill = rival ? 0f : 31f / 48f,
+            Value = t("reallife_ui_world_customers_of", "{count} of {most}").Replace("{count}", rival ? "0" : "31").Replace("{most}", rival ? "64" : "48"),
+        };
         var m = new UiInfoModel
         {
             Title = rival ? "1250 Avenue of the Americas" : rent ? "72 Fifth Avenue" : "70 Fifth Avenue", Icon = UiIcon.Building,
@@ -49,11 +57,12 @@ internal static partial class UiSamples
             Tab = place == WorldPlace.Owners ? 2 : 0, Lead = name, Mark = name == null ? null : rival ? "LN" : "BC", MarkTone = UiTokens.Chart(rival ? 3 : 1),
             Facts = kind + ", " + district, Status = state, StatusIcon = UiIcon.Clock, StatusTone = rent ? UiRole.Ok : rival ? UiRole.Danger : UiRole.Ok,
             FooterLabel = t("buildingresume_open_in_bizman", "Open in BizMan"), FooterTints = new UiRole[0],
-            Footer = place == WorldPlace.Rented || place == WorldPlace.Owners ? new[] { UiIcon.Navigation, UiIcon.PaintBrush } : new[] { UiIcon.Navigation },
+            Footer = place == WorldPlace.Rented || place == WorldPlace.Owners ? new[] { UiIcon.Navigation, UiIcon.PaintBrush, UiIcon.Locate }
+                : new[] { UiIcon.Navigation, UiIcon.Locate },
         };
         var building = new[]
         {
-            new UiInfoRow { Label = buildingOwner }, new UiInfoRow { Label = t("reallife_ui_world_neighbourhood", "Neighbourhood"), Value = district },
+            buildingOwner, new UiInfoRow { Label = t("reallife_ui_world_neighbourhood", "Neighbourhood"), Value = district, Link = true },
             new UiInfoRow { Label = t("reallife_ui_world_area", "Floor area"), Value = rival ? "310 m²" : "140 m²" },
             new UiInfoRow { Label = t("reallife_ui_world_capacity", "Customer capacity"), Value = rival ? "64" : "48" },
         };
@@ -61,7 +70,7 @@ internal static partial class UiSamples
         {
             m.Sections = new[]
             {
-                new UiInfoSection { Label = t("reallife_ui_world_owner", "Owners"), Rows = new[] { new UiInfoRow { Label = buildingOwner }, new UiInfoRow { Label = businessOwner } } },
+                new UiInfoSection { Label = t("reallife_ui_world_owner", "Owners"), Rows = new[] { buildingOwner, new UiInfoRow { Label = businessOwner } } },
             };
             return m;
         }
@@ -71,7 +80,7 @@ internal static partial class UiSamples
             {
                 new UiInfoSection
                 {
-                    Label = t("reallife_ui_world_building", "Building"),
+                    Label = t("reallife_ui_world_building", "Building"), Value = buildingState,
                     Rows = new[]
                     {
                         building[0], building[1], building[2], building[3], new UiInfoRow { Label = t("reallife_ui_world_kind", "Kind"), Value = kind },
@@ -83,15 +92,22 @@ internal static partial class UiSamples
         }
         m.Sections = new[]
         {
-            new UiInfoSection { Label = t("reallife_ui_world_building", "Building"), Rows = building },
+            new UiInfoSection { Label = t("reallife_ui_world_building", "Building"), Value = buildingState, Rows = building },
             new UiInfoSection
             {
-                Label = t("reallife_ui_world_business", "Business"), Value = businessOwner,
-                Rows = new[]
-                {
-                    new UiInfoRow { Label = t("reallife_ui_world_kind", "Kind"), Value = kind }, new UiInfoRow { Label = t("reallife_ui_world_open", "Hours"), Value = state },
-                    new UiInfoRow { Label = t("reallife_ui_world_traffic", "Traffic index"), Value = rival ? "9" : "7" },
-                }
+                Label = t("reallife_ui_world_business", "Business"), Value = businessState,
+                Rows = rival
+                    ? new[]
+                    {
+                        new UiInfoRow { Label = t("reallife_ui_world_kind", "Kind"), Value = kind }, new UiInfoRow { Label = t("reallife_ui_world_open", "Hours"), Value = state },
+                        new UiInfoRow { Label = t("reallife_ui_world_traffic", "Traffic index"), Value = "9" }, customers,
+                        new UiInfoRow { Label = owner, Value = "Viktor Hale", Link = true },
+                    }
+                    : new[]
+                    {
+                        new UiInfoRow { Label = t("reallife_ui_world_kind", "Kind"), Value = kind }, new UiInfoRow { Label = t("reallife_ui_world_open", "Hours"), Value = state },
+                        new UiInfoRow { Label = t("reallife_ui_world_traffic", "Traffic index"), Value = "7" }, customers,
+                    },
             },
         };
         return m;
@@ -148,7 +164,8 @@ internal static partial class UiSamples
     /// <summary>The game's own box at a business's door at night: closed, so the way in is greyed.</summary>
     public static UiPromptCardModel WorldGameDoor(UiWords t, IUiKeys k) => new UiPromptCardModel
     {
-        Title = "Bloom Café", Sub = "70 Fifth Avenue", State = t("common_closed", "Closed"), StateTone = UiRole.DangerText, Icon = UiIcon.Building,
+        Title = "Bloom Café", Icon = UiIcon.Building,
+        Sub = t("reallife_ui_world_door_opens", "{kind}, opens at {time}").Replace("{kind}", t("ba:businesstype_coffeeshop", "Coffee Shop")).Replace("{time}", "07:00"),
         Actions = new[]
         {
             new UiPromptAction { Label = t("common_enter_building", "Enter building"), Key = GameKey(k, "F", UiIcon.PadX), Main = true, Disabled = true },
@@ -163,11 +180,23 @@ internal static partial class UiSamples
         Title = "Union Tower", Sub = t("reallife_floors_lift_here", "You are on floor {floor}, {place}").Replace("{floor}", "9").Replace("{place}", "Studio North"), Icon = UiIcon.Up,
         Actions = new[]
         {
-            new UiPromptAction { Label = Floor(t, 1, "Lobby"), Key = GameKey(k, "F", UiIcon.PadX), Main = true },
-            new UiPromptAction { Label = Floor(t, 4, "Delta Law"), Key = GameKey(k, "P", UiIcon.PadY) },
-            new UiPromptAction { Label = Floor(t, 14, "Your office"), Key = GameKey(k, "O", UiIcon.PadRb) },
+            new UiPromptAction { Label = t("reallife_floors_lift_up", "Go up to floor {floor}").Replace("{floor}", "11"), Key = GameKey(k, "F", UiIcon.PadX), Main = true },
+            new UiPromptAction { Label = Floor(t, 1, "Lobby"), Key = GameKey(k, "P", UiIcon.PadY) },
+            new UiPromptAction { Label = Floor(t, 4, "Delta Law"), Key = GameKey(k, "O", UiIcon.PadRb) },
         },
         ActionCount = 3,
+    };
+
+    /// <summary>A coffee cart's counter: a coffee to buy on the game's interact key, and a chat with the vendor on the next.</summary>
+    public static UiPromptCardModel WorldCart(UiWords t, IUiKeys k) => new UiPromptCardModel
+    {
+        Title = t("reallife_city_cart_coffee", "Coffee cart"), Icon = UiIcon.Store,
+        Actions = new[]
+        {
+            new UiPromptAction { Label = t("reallife_city_cart_buy", "Buy a coffee, {price}").Replace("{price}", "$4.00"), Key = GameKey(k, "F", UiIcon.PadX), Main = true },
+            new UiPromptAction { Label = t("reallife_city_cart_chat", "Have a chat"), Key = GameKey(k, "P", UiIcon.PadY) },
+        },
+        ActionCount = 2,
     };
 
     /// <summary>A bus stop served by two routes: each next bus on its own line, the way to board.</summary>
@@ -257,7 +286,16 @@ internal static partial class UiSamples
         {
             Title = "HOLDING CELL", Icon = UiIcon.ShieldCheck, EmptyIcon = UiIcon.ShieldCheck, Numbered = true, PerPage = 8, Locked = true,
             LockWords = t("reallife_ui_world_pick_custody", "In custody"), FootNote = t("reallife_ui_world_pick_custody_foot", "You cannot leave until this is settled"),
-            Said = "Release in 6 h 35 min\nMidtown North Precinct. Sentence: 12 hours. The clock runs in game time.",
+            Said = "Release in 5 h 25 min\nMidtown North Precinct. Sentence: 12 hours. The clock runs in game time.",
+            Context = new[]
+            {
+                new UiInfoRow
+                {
+                    Label = t("reallife_law_cell_held", "Held since"),
+                    Value = t("reallife_law_cell_held_today", "{time} today, {span}").Replace("{time}", "02:10")
+                        .Replace("{span}", t("reallife_law_cell_span", "{hours} h {minutes} min").Replace("{hours}", "6").Replace("{minutes}", "35")),
+                },
+            },
             PageWords = t("reallife_ui_world_pick_page", "{page} of {pages}").Replace("{page}", "{0}").Replace("{pages}", "{1}"),
             EmptyTitle = t("reallife_ui_world_pick_empty", "Nothing to choose"), EmptyBody = t("reallife_ui_world_pick_empty_body", "There is nothing here to choose right now."),
         };
@@ -269,9 +307,18 @@ internal static partial class UiSamples
                 Note = true, Name = "CHARGE SHEET",
                 Detail = "Driving through a red light on Fifth Avenue\nDriving without a licence\nFines and damages charged at your arrest: $1,260",
             },
-            new UiPickEntry { Icon = UiIcon.Clock, Name = "Sit it out", Detail = "Do nothing. The time runs on until you are released." },
-            new UiPickEntry { Icon = UiIcon.Key, Name = "Pay bail", Detail = "$5,000. You are released at once." },
+            new UiPickEntry
+            {
+                Icon = UiIcon.Clock, Name = "Sit it out", Detail = "Do nothing. The time runs on until you are released.",
+                Figure = t("reallife_law_cell_when_today", "Today, {time}").Replace("{time}", "14:10"),
+            },
+            new UiPickEntry { Icon = UiIcon.Key, Name = "Pay bail", Detail = "You are released at once.", Figure = "$5,000" },
             new UiPickEntry { Icon = UiIcon.Scales, Name = "Lawyer already called", Disabled = true },
+            new UiPickEntry
+            {
+                Icon = UiIcon.Heart, Name = t("reallife_law_cell_doctor", "See the duty doctor"), Detail = t("reallife_law_cell_doctor_detail", "Only if you are unwell."),
+                Figure = t("reallife_law_cell_doctor_free", "Free"), Reason = t("reallife_law_cell_doctor_fine", "You are fine"), Disabled = true,
+            },
         };
         return m;
     }
@@ -312,7 +359,11 @@ internal static partial class UiSamples
                     Value = t("reallife_ui_world_offer_span", "{from} to {to}").Replace("{from}", "07:00").Replace("{to}", "15:00"),
                 },
                 new UiOfferFact { Icon = UiIcon.Calendar, Label = t("reallife_ui_world_offer_days", "Days"), Value = worked },
-                new UiOfferFact { Icon = UiIcon.Coin, Label = t("joboffer_wage_per_hour", "Wage per hour"), Value = t("reallife_ui_world_offer_wage", "{wage} an hour").Replace("{wage}", "$18") },
+                new UiOfferFact
+                {
+                    Icon = UiIcon.Coin, Label = t("joboffer_wage_per_hour", "Wage per hour"), Value = t("reallife_ui_world_offer_wage", "{wage} an hour").Replace("{wage}", "$18"),
+                    Sub = t("reallife_ui_world_offer_week", "About {amount} a week").Replace("{amount}", "$720"),
+                },
             },
             BackLabel = t("reallife_ui_world_offer_not_now", "Not now"), BackKey = GameKey(k, "Esc", UiIcon.PadB),
             GoLabel = hired ? t("reallife_ui_world_offer_hired", "You work here") : t("joboffer_accept_job", "Accept job"), GoKey = GameKey(k, "F", UiIcon.PadX), GoOff = hired,

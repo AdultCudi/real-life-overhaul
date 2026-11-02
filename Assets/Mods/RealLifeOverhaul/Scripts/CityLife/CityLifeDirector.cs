@@ -2,7 +2,10 @@ using System;
 using System.Collections.Generic;
 using BAModAPI;
 using BigAmbitions.DayNightCycle;
+using Extensions;
 using Helpers;
+using Localizor;
+using RealLifeOverhaul.GameUi;
 using UI;
 using UI.Load;
 using UnityEngine;
@@ -71,6 +74,17 @@ namespace RealLifeOverhaul
         private CityProps _props;
         private CityEntry _retry;      // the site that last could not start for want of a look: tried again first
         private StallActivity _cart;   // the cart that is out, while the player stands at its counter; else null
+        private DoorPanel _counter;    // the cart's box at its counter: buy a coffee, have a chat with the vendor (made at first use)
+        private Action _onBuy, _onChat;
+        private Func<string> _counterWhat;
+        private object _priceArgs;     // the buy button's price, made again only when the price moves (the game's panel compares by reference)
+        private int _price = -1;
+
+        /// <summary>Street talk's way into a chat with somebody at work it does not offer by itself (the vendor behind a cart), set by the wiring; null: no chat.</summary>
+        public static Func<BaseHuman, bool> TalkTo;
+
+        /// <summary>True while street talk has the player in a chat (set by the wiring): the cart's box stands back meanwhile.</summary>
+        public static Func<bool> Talking;
         private float _nextTick;
         private float _nextSpawn;
         private float _nextWarm;
@@ -144,6 +158,73 @@ namespace RealLifeOverhaul
         }
 
         private static readonly int HotUpdate = HotSpots.Slot("CityLife: CityLifeDirector.Update");
+
+        // The cart's box while the player stands at its counter on foot: buy a coffee (a coffee cart's, while one can be bought)
+        // on the game's interact key, and a chat with the vendor (street talk's, while it is on) on the next. Gone away from the
+        // counter and during the chat. From the one-second look, and at once after a press; nothing a frame. The game's own panel
+        // takes the keys; its words are made once.
+        private void Counter()
+        {
+            StallActivity cart = _cart;
+            bool talking = Talking != null && Talking();
+            bool buy = cart != null && cart.PlayerAtCounter;
+            bool chat = cart != null && TalkTo != null && Settings.StreetTalk && cart.Vendor != null;
+            if (cart == null || !cart.AtCounter || talking || !buy && !chat)
+            {
+                _counter?.Hide(cart == null || !cart.AtCounter ? "away from the cart's counter" : talking ? "talking with the vendor" : "nothing to offer");
+                return;
+            }
+            if (_counter == null)
+            {
+                _counter = new DoorPanel(Logger, "City life check (cart counter)");
+                _onBuy = _counter.Press(Buy);
+                _onChat = _counter.Press(Chat);
+                _counterWhat = () => "at the counter of a " + (_cart != null && _cart.Sells ? "coffee" : "hot-dog") + " cart";
+            }
+            if (StallActivity.Price != _price)
+            {
+                _price = StallActivity.Price;
+                _priceArgs = new { price = ((float)_price).ToCurrencyFormat() };
+            }
+            WorldPanel panel = _counter.Panel;
+            panel.Lines((cart.Sells ? "reallife_city_cart_coffee" : "reallife_city_cart_hotdogs").GetLocalization(), null, null, WorldPanel.White());
+            int slot = 0;
+            if (cart.Sells)
+            {
+                panel.Button(slot++, "reallife_city_cart_buy", _priceArgs, _onBuy, buy, true);
+            }
+            if (chat)
+            {
+                panel.Button(slot, "reallife_city_cart_chat", _onChat, true, slot == 0);
+                slot++;
+            }
+            for (; slot < WorldPanel.Slots; slot++)
+            {
+                panel.Button(slot, null, null, false, false);
+            }
+            PlayerController player = PlayerHelper.PlayerController;
+            _counter.Show(cart.Counter, player != null ? player.transform.position : cart.Counter, 2.1f, _counterWhat);
+        }
+
+        private void Buy()
+        {
+            _cart?.Buy(Time.time);
+            Counter();   // the coffee's button greyed at once, until the next can be bought
+        }
+
+        // A chat with the vendor: street talk begins with them as with anybody posed by another's hand, nothing on their body
+        // changed; the cart's work goes on behind the counter.
+        private void Chat()
+        {
+            BaseHuman vendor = _cart != null ? _cart.Vendor : null;
+            bool began = vendor != null && TalkTo != null && TalkTo(vendor);
+            if (began)
+            {
+                _counter.Hide("talking with the vendor");
+            }
+            Logger?.Info("City life: a chat with the vendor at a " + (_cart != null && _cart.Sells ? "coffee" : "hot-dog") + " cart "
+                         + (began ? "begins." : "could not begin (street talk could not stop them)."));
+        }
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
@@ -171,10 +252,6 @@ namespace RealLifeOverhaul
             float now = Time.time;
             try
             {
-                if (_cart != null && Keys.Down(KeyAction.Interact))
-                {
-                    _cart.Buy(now);
-                }
                 if (_facing.Count > 0)
                 {
                     Turn(Time.deltaTime);
@@ -363,11 +440,12 @@ namespace RealLifeOverhaul
                         }
                     }
                 }
-                else if (activity is StallActivity cart && cart.PlayerAtCounter)
+                else if (activity is StallActivity cart && cart.AtCounter)
                 {
                     _cart = cart;
                 }
             }
+            Counter();
 
             if (now >= _nextSpawn)
             {
@@ -535,6 +613,7 @@ namespace RealLifeOverhaul
         public void EndAll()
         {
             _cart = null;
+            _counter?.Hide("the street is cleared");   // a fault too: the frame's own look stops with it
             _moments.Clear();
             _facing.Clear();
             for (int i = _running.Count - 1; i >= 0; i--)

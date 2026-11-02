@@ -1,11 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using AI.Customers.CustomerEntries;
+using BigAmbitions.Rivals;
+using Helpers;
 using Localizor;
 using Localizor.LanguageChangeEvent;
 using TMPro;
 using UI;
 using UI.InGameUI;
+using UI.Smartphone.Apps.Rivals;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -17,11 +21,15 @@ namespace RealLifeOverhaul.Ui
     /// and the game's own hints (left click to enter, right click for options). Once the building is picked (the game shows
     /// its buttons), it is the info panel docked at the top left, after Cities: Skylines II's building panel: icon tabs for
     /// the building, the business in it and its owner, its address as the strip's title, the business's initials, name and
-    /// state, the building's and the business's rows, and the game's buttons in its footer (BizMan or the taxi, set
-    /// destination, the sign, and any another mod put beside them, Voogle Route's own). In the HUD's left column when the
-    /// kit's HUD shows, so the objectives stand under it; on the world's canvas otherwise. Every word is read from the game's
-    /// own labels after the game and other mods wrote them; every press is the game's own button. Cost a frame while it
-    /// shows: a dozen reference comparisons and a move; nothing allocated.
+    /// state, the building's and the business's rows under their state words (Rented out, A rival's, For rent), and the
+    /// game's buttons in its footer (BizMan or the taxi, set destination, the sign, and any another mod put beside them,
+    /// Voogle Route's own) with the address's camera move after them. An owner who is one of the game's rivals is a link to
+    /// their page in the game's rivals app, the neighbourhood a link to the city map; a business's customers this hour stand
+    /// against the building's room on a meter. In the HUD's left column when the kit's HUD shows, so the objectives stand
+    /// under it; on the world's canvas otherwise. Every word is read from the game's own labels after the game and other mods
+    /// wrote them, or from its registration where the game's own box reads it; every press is the game's own button or call.
+    /// Cost a frame while it shows: a dozen reference comparisons, the hour and a move; nothing allocated. The game's customer count
+    /// is asked once a reading (a building picked or hovered, the hour turning).
     /// </summary>
     internal sealed class WorldBuilding
     {
@@ -48,6 +56,12 @@ namespace RealLifeOverhaul.Ui
         private bool _shown, _docked, _inHud, _off, _dirty = true;
         private int _seenKids = -1;
         private int _tab;
+        private int _readHour = -1;   // the game's hour the panel was read at: its customers are that hour's
+        private const int LinkOwner = 1, LinkBusinessOwner = 2, LinkMap = 3;
+        private readonly List<int> _linkAt = new List<int>(4), _linkKind = new List<int>(4);   // the panel's links: LinkCommand's argument, what it opens
+        private string _ownerRival, _businessRival;   // the game's rivals behind the owners' links, by id; null for none
+        private CityBuildingController _cbc;          // the building read, for the address's camera move
+        private int _locate = -1;                     // the footer's camera move: its button's index, -1 when there is none
         private Func<int, int, bool> _chain, _was;
         private Vector2 _at = new Vector2(float.NaN, float.NaN);
         private string _state = "not looked at yet";
@@ -104,9 +118,11 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             bool picked = _resume.options != null && _resume.options.gameObject.activeInHierarchy;
-            if (Changed() || picked != _docked || _dirty)
+            int hour = TimeHelper.CurrentHour;   // read again as the hour turns, which the game's own box is not
+            if (Changed() || picked != _docked || _dirty || hour != _readHour)
             {
                 _dirty = false;
+                _readHour = hour;
                 if (picked != _docked)
                 {
                     _tab = 0;
@@ -298,54 +314,208 @@ namespace RealLifeOverhaul.Ui
             _info.StatusIcon = UiIcon.Clock;
             _info.StatusTone = tone == UiRole.OkText ? UiRole.Ok : tone == UiRole.DangerText ? UiRole.Danger : tone == UiRole.WarnText ? UiRole.Warn : UiRole.None;
             // The building's rows, then the business's; an empty building's kind and traffic are the building's own.
-            var building = new List<UiInfoRow>(6);
-            Row(building, null, owner, true);   // "Building owned by Hudson Realty": the game's own sentence
-            Row(building, "reallife_ui_world_neighbourhood", place, false);
-            Row(building, "reallife_ui_world_area", area, false);
-            Row(building, "reallife_ui_world_capacity", capacity, false);
-            var trade = business_ ? new List<UiInfoRow>(3) : building;
-            Row(trade, "reallife_ui_world_kind", kind, false);
+            _cbc = _resume.CityBuildingController;
+            BuildingRegistration reg = _cbc != null ? _cbc.buildingRegistration : null;
+            _ownerRival = Rival(reg != null ? reg.buildingOwnerRivalId : null, owner);
+            _businessRival = reg != null && !reg.RentedByPlayer ? Rival(reg.businessOwnerRivalId, business) : null;
+            var building = new Rows();
+            Owner(building, owner, _ownerRival, LinkOwner);   // "Owner: Hudson Realty", or the game's own sentence ("Owned by you")
+            building.Add("reallife_ui_world_neighbourhood", place, LinkMap);
+            building.Add("reallife_ui_world_area", area, 0);
+            building.Add("reallife_ui_world_capacity", capacity, 0);
+            Rows trade = business_ ? new Rows() : building;
+            trade.Add("reallife_ui_world_kind", kind, 0);
             if (business_)
             {
-                Row(trade, "reallife_ui_world_open", state, false);
+                trade.Add("reallife_ui_world_open", state, 0);
             }
-            Row(trade, "reallife_ui_world_traffic", traffic, false);
+            trade.Add("reallife_ui_world_traffic", traffic, 0);
+            Customers(trade, reg);
+            if (business_ && _businessRival != null)
+            {
+                Owner(trade, business, _businessRival, LinkBusinessOwner);   // a rival's business: who runs it, a link to them
+            }
+            else if (business_ && !Plain(reg, business))
+            {
+                trade.Add(null, business, 0);   // the game's line said otherwise than its own words (another mod's): as it is
+            }
             // The tabs: the building with the business under it, the business alone, its owners.
             var sections = new List<UiInfoSection>(2);
+            _linkAt.Clear();
+            _linkKind.Clear();
             int tab = business_ ? _tab : (_tab == 1 ? 2 : 0);
             if (tab == 0)
             {
-                sections.Add(new UiInfoSection { Label = UiText.T("reallife_ui_world_building"), Rows = building.ToArray() });
+                Section(sections, UiText.T("reallife_ui_world_building"), BuildingState(reg), building);
             }
             if (business_ && tab < 2)
             {
-                sections.Add(new UiInfoSection { Label = UiText.T("reallife_ui_world_business"), Value = Short(business), Rows = trade.ToArray() });
+                Section(sections, UiText.T("reallife_ui_world_business"), BusinessState(reg), trade);
             }
             if (tab == 2)
             {
-                sections.Add(new UiInfoSection { Label = UiText.T("reallife_ui_world_owner"), Rows = OwnerRows(owner, business) });
+                var owners = new Rows();
+                Owner(owners, owner, _ownerRival, LinkOwner);
+                if (_businessRival != null)
+                {
+                    Owner(owners, business, _businessRival, LinkBusinessOwner);
+                }
+                else
+                {
+                    owners.Add(null, business, 0);
+                }
+                Section(sections, UiText.T("reallife_ui_world_owner"), null, owners);
             }
             _info.Sections = sections.ToArray();
             Footer();
         }
 
-        // The owners' own tab: who holds the building and who runs the business in it, as the game says each.
-        private static UiInfoRow[] OwnerRows(string owner, string business)
+        // A section's rows and what each row's link opens, gathered before the section's place in the panel is known.
+        private sealed class Rows
         {
-            var rows = new List<UiInfoRow>(2);
-            Row(rows, null, owner, true);
-            Row(rows, null, business, true);
-            return rows.ToArray();
+            public readonly List<UiInfoRow> List = new List<UiInfoRow>(6);
+            public readonly List<int> Links = new List<int>(6);
+
+            // A row when the game shows it; a line that is its own sentence (no key: "Owned by you") is the row's words alone.
+            public void Add(string key, string value, int link)
+            {
+                if (string.IsNullOrEmpty(value))
+                {
+                    return;
+                }
+                List.Add(key == null ? new UiInfoRow { Label = value } : new UiInfoRow { Label = UiText.T(key), Value = value, Link = link != 0 });
+                Links.Add(key == null ? 0 : link);
+            }
+
+            public void Add(UiInfoRow row)
+            {
+                List.Add(row);
+                Links.Add(0);
+            }
         }
 
-        // A row when the game shows it; a line that is its own sentence ("Owned by Hudson Realty") is the row's words alone.
-        private static void Row(List<UiInfoRow> rows, string key, string value, bool sentence)
+        private void Section(List<UiInfoSection> sections, string label, string value, Rows rows)
         {
-            if (string.IsNullOrEmpty(value))
+            int index = sections.Count;
+            for (int r = 0; r < rows.Links.Count; r++)
+            {
+                if (rows.Links[r] != 0)
+                {
+                    _linkAt.Add(index * 16 + r);
+                    _linkKind.Add(rows.Links[r]);
+                }
+            }
+            sections.Add(new UiInfoSection { Label = label, Value = value, Rows = rows.List.ToArray() });
+        }
+
+        // An owner's row: "Owner: Viktor Hale" as a link to the rival's page when the game's own line names that rival; the
+        // game's own sentence otherwise ("Owned by you", the city's, a government building's, another mod's words).
+        private static void Owner(Rows rows, string sentence, string rival, int link)
+        {
+            string name = rival != null ? rival.GetRivalName() : null;
+            if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(sentence))
+            {
+                rows.Add("reallife_ui_world_owner_one", name, link);
+                return;
+            }
+            rows.Add(null, sentence, 0);
+        }
+
+        // A rival's id when the game's line shows and names them and the game still knows them; else null.
+        private static string Rival(string id, string sentence)
+        {
+            if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(sentence) || RivalsHelper.GetRivalData(id) == null)
+            {
+                return null;
+            }
+            string name = id.GetRivalName();
+            return !string.IsNullOrEmpty(name) && sentence.IndexOf(name, StringComparison.Ordinal) >= 0 ? id : null;
+        }
+
+        // True when the game's business line is its own words for this business (the player's "Rented by you"), so its state
+        // word says it all.
+        private static bool Plain(BuildingRegistration reg, string business)
+        {
+            return string.IsNullOrEmpty(business) || reg != null && reg.RentedByPlayer && business == UiText.T("buildingresume_rented_by_you");
+        }
+
+        // The building's word over its rows: the player's own, rented by them, for rent, a rival's, or let to somebody's business.
+        private static string BuildingState(BuildingRegistration reg)
+        {
+            if (reg == null)
+            {
+                return null;
+            }
+            bool tenant = !string.IsNullOrEmpty(reg.BusinessName) && !reg.RentedByPlayer;   // somebody else's business in it
+            if (reg.BuildingOwnedByPlayer)
+            {
+                return UiText.T(tenant ? "reallife_ui_world_state_rented_out" : "buildingresume_owned_by_you");
+            }
+            if (reg.RentedByPlayer)
+            {
+                return UiText.T("buildingresume_rented_by_you");
+            }
+            if (reg.AvailableForRent)
+            {
+                return UiText.T("reallife_ui_world_state_for_rent");
+            }
+            if (!string.IsNullOrEmpty(reg.buildingOwnerRivalId))
+            {
+                return UiText.T("reallife_ui_world_state_rival");
+            }
+            return tenant ? UiText.T("reallife_ui_world_state_rented_out") : null;
+        }
+
+        // The business's word over its rows: the player's, or a rival's; nothing for a business of the city's own.
+        private static string BusinessState(BuildingRegistration reg)
+        {
+            if (reg == null || string.IsNullOrEmpty(reg.BusinessName))
+            {
+                return null;
+            }
+            if (reg.RentedByPlayer)
+            {
+                return UiText.T("reallife_ui_world_state_yours");
+            }
+            return !string.IsNullOrEmpty(reg.businessOwnerRivalId) ? UiText.T("reallife_ui_world_state_rival") : null;
+        }
+
+        // Customers this hour as the game counts them for the business (its calculator for the kind, at the hour and the day,
+        // none while it is shut), against the room the box gives the building: "36 of 48" on a meter. None for a building with
+        // no walk-in trade, or when the game cannot say.
+        private void Customers(Rows rows, BuildingRegistration reg)
+        {
+            if (reg == null || reg.AvailableForRent || string.IsNullOrEmpty(reg.BusinessName) || _cbc == null || _cbc.building == null)
             {
                 return;
             }
-            rows.Add(sentence ? new UiInfoRow { Label = value } : new UiInfoRow { Label = UiText.T(key), Value = value });
+            int most, now;
+            try
+            {
+                most = _cbc.building.GetCustomerCapacity;
+                if (most <= 0)
+                {
+                    return;
+                }
+                CustomerEntriesCalculator calculator = CustomerEntriesCalculatorFactory.GetCustomerEntriesCalculator(reg);
+                float initial = calculator.GetInitialCustomers();
+                if (initial <= 0f)
+                {
+                    return;
+                }
+                int hour = TimeHelper.CurrentHour;
+                now = BusinessHelper.IsBusinessOpen(reg, hour) ? Math.Max(0, calculator.GetCustomersByHour(hour, TimeHelper.GetDayOfWeek(), initial)) : 0;
+            }
+            catch (Exception)
+            {
+                return;   // a business the game's calculator does not count
+            }
+            now = Math.Min(now, most);   // never more in an hour than the room for them, as the game's insight says
+            rows.Add(new UiInfoRow
+            {
+                Label = UiText.T("reallife_ui_world_customers"), Meter = true, Fill = (float)now / most,
+                Value = UiText.T("reallife_ui_world_customers_of").Replace("{count}", now.ToString()).Replace("{most}", most.ToString()),
+            });
         }
 
         // The game's buttons in the footer, in its order: the taxi in taxi mode or BizMan as the wide one, then the rest as icons.
@@ -371,6 +541,14 @@ namespace RealLifeOverhaul.Ui
                     _footer.Add(b);
                     icons.Add(UiIcon.MapTrifold);
                 }
+            }
+            // The address's link: the camera to the building on the city map, as the game focuses one from its own lists.
+            _locate = -1;
+            if (_cbc != null && icons.Count < 6)
+            {
+                _locate = icons.Count;
+                _footer.Add(null);
+                icons.Add(UiIcon.Locate);
             }
             _info.Footer = icons.ToArray();
             _info.FooterTints = new UiRole[0];
@@ -555,13 +733,62 @@ namespace RealLifeOverhaul.Ui
                     _dirty = true;
                     return true;
                 case UiInfoPanel.FooterCommand:
-                    Button b = arg < 0 ? _main : arg < _footer.Count ? _footer[arg] : null;
-                    return b != null && UiWidgets.Press(b);
+                    bool locate = arg >= 0 && arg == _locate;   // the address's camera move, the one footer button that is not the game's
+                    Button b = locate ? null : arg < 0 ? _main : arg < _footer.Count ? _footer[arg] : null;
+                    return locate ? Locate() : b != null && UiWidgets.Press(b);
+                case UiInfoPanel.LinkCommand:
+                    int link = _linkAt.IndexOf(arg);
+                    return link >= 0 && Link(_linkKind[link]);
                 case UiDraw.CloseCommand:
                     _resume.Close();
                     return true;
             }
             return _was != null && _was(command, arg);
+        }
+
+        // An owner's link opens the rival's page in the game's rivals app, as its contacts app opens one (ContactsApp's rival
+        // button: the rival's leaderboard line, the app, the rival in it); the neighbourhood's opens the city map as the phone's
+        // map app does.
+        private bool Link(int kind)
+        {
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            if (uis == null || uis.smartphoneUI == null)
+            {
+                return false;
+            }
+            if (kind == LinkMap)
+            {
+                if (!CityMap.CanOpenMap())
+                {
+                    return false;
+                }
+                uis.smartphoneUI.OpenApp(AppName.VoogleMaps);
+                return true;
+            }
+            string id = kind == LinkOwner ? _ownerRival : kind == LinkBusinessOwner ? _businessRival : null;
+            RivalData rival = id != null ? RivalsHelper.GetRivalData(id) : null;
+            RivalLeaderboardData data = rival != null ? RivalLeaderboard.GetRivalLeaderboardData(rival) : null;
+            if (data == null)
+            {
+                return false;
+            }
+            uis.smartphoneUI.OpenApp("Rivals");
+            RivalsApp app = InstanceBehavior<RivalsApp>.Instance;
+            app?.ShowRival(data);
+            return app != null;
+        }
+
+        // The address's camera move: the city map opened on the building, as the game focuses one (CityMap.FocusOnBuilding).
+        private bool Locate()
+        {
+            CityManager city = InstanceBehavior<CityManager>.Instance;
+            CityBuildingController cbc = _cbc;
+            if (city == null || city.cityMap == null || cbc == null || !CityMap.CanOpenMap())
+            {
+                return false;
+            }
+            city.cityMap.FocusOnBuilding(cbc);
+            return true;
         }
 
         // ------------------------------------------------------------------------------------------------- words

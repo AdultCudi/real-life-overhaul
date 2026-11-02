@@ -75,11 +75,24 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < n; i++)
             {
                 _list.Read(i, out int id, out string name, out string detail, out string _, out bool enabled, out bool note);
+                _list.ReadMark(i, out string figure, out string reason);
                 _ids[i] = id;
                 _m.Entries[i] = new UiPickEntry
                 {
-                    Icon = _m.Icon, Name = Plain(name) ?? string.Empty, Detail = Plain(detail), Note = note, Disabled = !note && !enabled,
+                    Icon = custody && !note ? CustodyIcon(id) : _m.Icon, Name = Plain(name) ?? string.Empty, Detail = Plain(detail), Note = note,
+                    Disabled = !note && !enabled, Figure = Plain(figure), Reason = Plain(reason),
                 };
+            }
+            // The list's facts over its entries ("Held since"), as many as the panel shows.
+            int facts = Math.Min(UiPickerModel.MostContext, _list.FactCount);
+            if (_m.Context.Length != facts)
+            {
+                _m.Context = new UiInfoRow[facts];
+            }
+            for (int i = 0; i < facts; i++)
+            {
+                _list.ReadFact(i, out string label, out string value);
+                _m.Context[i] = new UiInfoRow { Label = Plain(label) ?? string.Empty, Value = Plain(value) };
             }
             _m.Prompts = new[]
             {
@@ -117,6 +130,9 @@ namespace RealLifeOverhaul.Ui
             Title = m.Title, Icon = m.Icon, Said = m.Said, Locked = m.Locked, LockWords = m.LockWords, FootNote = m.FootNote, Context = m.Context,
             Entries = new[] { new UiPickEntry { Name = string.Empty } }, PerPage = 1,
         };
+
+        // The cell's entries by what each does (Law/CustodyList: sit it out, bail, a lawyer, the duty doctor).
+        private UiIcon CustodyIcon(int id) => id == 0 ? UiIcon.Clock : id == 1 ? UiIcon.Key : id == 2 ? UiIcon.Scales : id == 3 ? UiIcon.Heart : _m.Icon;
 
         // The caller stood its window at the screen's right edge (custody beside the cell): the picker stands there too.
         private bool Docked => _list != null && _list.Window != null && _list.Window.anchorMin.x > 0.9f;

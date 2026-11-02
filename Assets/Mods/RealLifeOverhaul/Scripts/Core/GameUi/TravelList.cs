@@ -45,6 +45,8 @@ namespace RealLifeOverhaul.GameUi
             public string Name;      // the words as the caller gave them, for a face that draws its own
             public string Detail;
             public bool Enabled;
+            public string Figure;    // a face's: the figure at its right ("$500"), and why it is greyed ("You are fine"), see Mark
+            public string Reason;
         }
 
         private readonly List<Row> _rows = new List<Row>(48);
@@ -62,6 +64,7 @@ namespace RealLifeOverhaul.GameUi
         private int _used;
         private string _titleWords, _infoWords;
         private bool _faced;
+        private readonly List<string> _facts = new List<string>(4);   // the filling's facts: a label, its value, a label...
 
         /// <summary>Counts every change a face shows (a filling, its lines, a lock), so it lays out again only after one.</summary>
         public int Version { get; private set; }
@@ -89,6 +92,24 @@ namespace RealLifeOverhaul.GameUi
             buttonKey = row?.ButtonKey;
             enabled = row != null && row.Enabled;
             note = row == null || row.Note;
+        }
+
+        /// <summary>An entry's figure and the why of its greyed button (<see cref="Mark"/>); null for none.</summary>
+        public void ReadMark(int index, out string figure, out string reason)
+        {
+            Row row = index >= 0 && index < _used ? _rows[index] : null;
+            figure = row?.Figure;
+            reason = row?.Reason;
+        }
+
+        /// <summary>The filling's facts (<see cref="Fact"/>), each a label and its value.</summary>
+        public int FactCount => _facts.Count / 2;
+
+        public void ReadFact(int index, out string label, out string value)
+        {
+            bool there = index >= 0 && index < FactCount;
+            label = there ? _facts[index * 2] : null;
+            value = there ? _facts[index * 2 + 1] : null;
         }
 
         /// <summary>A face's press on an entry: what the window's own button for it does, refused as the greyed button refuses.</summary>
@@ -290,6 +311,7 @@ namespace RealLifeOverhaul.GameUi
         {
             _used = 0;
             _titleWords = title;
+            _facts.Clear();
             Version++;
             UiClone.Words(_title, title);
             Info(info);
@@ -319,6 +341,53 @@ namespace RealLifeOverhaul.GameUi
         public void AddNote(string name, string detail, float height)
         {
             Entry(0, name, detail, null, false, height, true);
+        }
+
+        /// <summary>
+        /// The entry last added: a figure for its right ("$500", "Today, 14:30") and, while its button is greyed, why ("You are
+        /// fine"). A face shows the figure at the entry's right and the why as a chip in its place; the window puts them before
+        /// the entry's smaller line. Null for none.
+        /// </summary>
+        public void Mark(string figure, string reason)
+        {
+            Row row = _used > 0 ? _rows[_used - 1] : null;
+            if (row == null || row.Note)
+            {
+                return;
+            }
+            row.Figure = figure;
+            row.Reason = reason;
+            Version++;
+            Words(row);
+        }
+
+        /// <summary>
+        /// A fact of the filling, a label and its value ("Held since", "02:10 today, 6 h 35 min"), which a face shows over the
+        /// entries; set again by its index while the list is up, the next index adding one. <see cref="Begin"/> clears them; the
+        /// window shows none (its lines under the headline say what the caller wants said there).
+        /// </summary>
+        public void Fact(int index, string label, string value)
+        {
+            int count = FactCount;
+            if (index < 0 || index > count)
+            {
+                return;
+            }
+            if (index == count)
+            {
+                _facts.Add(label);
+                _facts.Add(value);
+            }
+            else if (string.Equals(_facts[index * 2], label, StringComparison.Ordinal) && string.Equals(_facts[index * 2 + 1], value, StringComparison.Ordinal))
+            {
+                return;
+            }
+            else
+            {
+                _facts[index * 2] = label;
+                _facts[index * 2 + 1] = value;
+            }
+            Version++;
         }
 
         /// <summary>An entry's height for a detail line this long: a name line, then the detail's lines at this window's width.</summary>
@@ -357,12 +426,11 @@ namespace RealLifeOverhaul.GameUi
             row.Id = id;
             row.Name = name;
             row.Detail = detail;
+            row.Figure = null;
+            row.Reason = null;
             row.Enabled = enabled && !note;
             Version++;
-            // An entry with no name is the detail alone, in the list's own lettering.
-            UiClone.Words(row.Label, string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(detail) ? detail
-                : string.IsNullOrEmpty(detail) ? "<uppercase>" + name + "</uppercase>"
-                : "<uppercase>" + name + "</uppercase>\n<size=80%><color=#C9CED3>" + detail + "</color></size>");
+            Words(row);
             if (!note && !ReferenceEquals(row.ButtonKey, buttonKey))
             {
                 row.ButtonKey = buttonKey;
@@ -387,6 +455,21 @@ namespace RealLifeOverhaul.GameUi
             {
                 row.Object.SetActive(true);
             }
+        }
+
+        // An entry's words in the window: its name over its smaller line, with its figure (greyed with a why: the why) before that
+        // line. An entry with no name is the detail alone, in the list's own lettering.
+        private static void Words(Row row)
+        {
+            string name = row.Name, detail = row.Detail;
+            string lead = !row.Enabled && !string.IsNullOrEmpty(row.Reason) ? row.Reason : row.Figure;
+            if (!row.Note && !string.IsNullOrEmpty(lead))
+            {
+                detail = string.IsNullOrEmpty(detail) ? lead : lead + ". " + detail;
+            }
+            UiClone.Words(row.Label, string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(detail) ? detail
+                : string.IsNullOrEmpty(detail) ? "<uppercase>" + name + "</uppercase>"
+                : "<uppercase>" + name + "</uppercase>\n<size=80%><color=#C9CED3>" + detail + "</color></size>");
         }
 
         /// <summary>Shows what was filled in. A click calls <paramref name="onPick"/> with the entry's id; it stays open until <see cref="Close"/>.</summary>

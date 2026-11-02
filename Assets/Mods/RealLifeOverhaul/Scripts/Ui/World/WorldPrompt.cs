@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using BigAmbitions.InputSystem;
 using Extensions;
+using Helpers;
 using Localizor;
 using Localizor.LanguageChangeEvent;
 using TMPro;
@@ -34,6 +35,7 @@ namespace RealLifeOverhaul.Ui
         private static readonly FieldInfo Buttons = GameContract.WorldOverlayButtons.Field;
         private static readonly FieldInfo Template = GameContract.WorldOverlayTemplate.Field;
         private static readonly FieldInfo Current = GameContract.WorldOverlayCurrent.Field;
+        private static readonly FieldInfo DoorBuilding = GameContract.WorldDoorBuilding.Field;
         private static readonly FieldInfo Group = GameContract.WorldOverlayGroup.Field;
 
         private readonly UiScene _scene = new UiScene();
@@ -212,6 +214,7 @@ namespace RealLifeOverhaul.Ui
             object current = Current.GetValue(_overlay);
             ButtonInfo[] infos = (current as IOverlay)?.GetButtons() ?? new ButtonInfo[0];
             _model.Icon = WorldKits.IconFor(current, infos.Length > 0 && infos[0] != null ? infos[0].key : null);
+            Door(current);
             _found.Clear();
             Transform parent = _template.transform.parent;
             int made = 0;
@@ -247,6 +250,105 @@ namespace RealLifeOverhaul.Ui
             }
             _model.ActionCount = n;
         }
+
+        // A business's door: what it is and until when it is open ("Noodle house, open until 23:00") on the line under its name,
+        // where the game writes the address; the game's own open or closed word beside it is then said by that line. A home, a
+        // warehouse, an empty building and every other box keep the game's lines, as do words another mod wrote there.
+        private void Door(object current)
+        {
+            var cbc = current is BuildingEntranceOverlay && DoorBuilding != null ? DoorBuilding.GetValue(current) as CityBuildingController : null;
+            BuildingRegistration reg = cbc != null && cbc.building != null ? cbc.buildingRegistration : null;
+            string type = reg != null ? cbc.building.BuildingType : null;
+            if (reg == null || reg.AvailableForRent || string.IsNullOrEmpty(reg.BusinessName) || type == "ba:buildingtype_residential" || type == "ba:buildingtype_warehouse")
+            {
+                return;
+            }
+            string line = OpenLine(reg);
+            if (line == null || !GameAddress(cbc))
+            {
+                return;   // no hours to read, or another mod's words where the game writes the address: the game's lines stay
+            }
+            _model.Sub = line;
+            if (_model.State == UiText.T("common_open") || _model.State == UiText.T("common_closed"))
+            {
+                _model.State = null;
+            }
+        }
+
+        // "Noodle house, open until 23:00"; "..., open" through the night; "..., opens at 09:00" later today; "..., closed". By
+        // the business's opening hours as the game's building box reads them (BuildingResume.UpdateOpenStateLabel). Null when
+        // they cannot be read: the game's lines stay.
+        internal static string OpenLine(BuildingRegistration reg)
+        {
+            string kind = reg.businessTypeName.GetLocalization();
+            int hour = TimeHelper.CurrentHour;
+            try
+            {
+                ScheduleDay today = Day(reg, false);
+                if (BusinessHelper.IsBusinessOpen(reg))
+                {
+                    OpeningHourSlot slot = null;
+                    for (int i = 0; today != null && i < today.openingHourSlots.Count && slot == null; i++)
+                    {
+                        OpeningHourSlot s = today.openingHourSlots[i];
+                        slot = s.startingHour <= hour && s.endingHour > hour ? s : null;
+                    }
+                    ScheduleDay next = Day(reg, true);
+                    bool night = slot == null || slot.endingHour >= 23 && next != null && next.isOpen && Earliest(next) == 0;
+                    return night ? Line("reallife_ui_world_door_open", kind, null) : Line("reallife_ui_world_door_until", kind, slot.endingHour.GetFormattedTime());
+                }
+                int opens = -1;
+                for (int i = 0; !reg.temporarilyClosed && today != null && today.isOpen && i < today.openingHourSlots.Count; i++)
+                {
+                    int start = today.openingHourSlots[i].startingHour;
+                    opens = start > hour && (opens < 0 || start < opens) ? start : opens;
+                }
+                return opens >= 0 ? Line("reallife_ui_world_door_opens", kind, opens.GetFormattedTime()) : Line("reallife_ui_world_door_closed", kind, null);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        // True while the box's second line is the address as the game writes it there (BuildingEntranceOverlay.AddressLabel).
+        private bool GameAddress(CityBuildingController cbc)
+        {
+            try
+            {
+                return string.Equals(_model.Sub, WorldHost.Plain(Streets.AddressHelper.ToFormattedString(cbc.building.Address)), StringComparison.Ordinal);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private static ScheduleDay Day(BuildingRegistration reg, bool tomorrow)
+        {
+            var want = tomorrow ? TimeHelper.GetNextDayOfWeek() : TimeHelper.GetDayOfWeek();
+            for (int i = 0; reg.scheduleDays != null && i < reg.scheduleDays.Count; i++)
+            {
+                if (reg.scheduleDays[i] != null && reg.scheduleDays[i].day == want)
+                {
+                    return reg.scheduleDays[i];
+                }
+            }
+            return null;
+        }
+
+        private static int Earliest(ScheduleDay day)
+        {
+            int first = -1;
+            for (int i = 0; i < day.openingHourSlots.Count; i++)
+            {
+                int start = day.openingHourSlots[i].startingHour;
+                first = first < 0 || start < first ? start : first;
+            }
+            return first;
+        }
+
+        private static string Line(string key, string kind, string time) => UiText.T(key).Replace("{kind}", kind ?? string.Empty).Replace("{time}", time ?? string.Empty);
 
         // A button's words without the key the game writes after them (" [F]"), which the card shows on its cap.
         private static string Label(Button b, ButtonInfo info)

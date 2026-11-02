@@ -102,7 +102,11 @@ namespace RealLifeOverhaul.Ui
                 facts.Add(new UiOfferFact { Icon = UiIcon.Calendar, Label = UiText.T("reallife_ui_world_offer_days"), Value = days });
             }
             string wage = job != null ? job.hourlySalary.ToShortCurrencyFormat() : WorldHost.Plain(_offer.wagePerHourLabel.text);
-            facts.Add(new UiOfferFact { Icon = UiIcon.Coin, Label = UiText.T("joboffer_wage_per_hour"), Value = UiText.T("reallife_ui_world_offer_wage").Replace("{wage}", wage ?? string.Empty) });
+            facts.Add(new UiOfferFact
+            {
+                Icon = UiIcon.Coin, Label = UiText.T("joboffer_wage_per_hour"), Value = UiText.T("reallife_ui_world_offer_wage").Replace("{wage}", wage ?? string.Empty),
+                Sub = Week(job),
+            });
             _m.Facts = facts.ToArray();
             Employer(job);
             _m.BackLabel = UiText.T("reallife_ui_world_offer_not_now");
@@ -137,6 +141,27 @@ namespace RealLifeOverhaul.Ui
                 _m.Face = job.employerName;
                 _m.FaceLine = UiText.T("reallife_ui_world_offer_boss").Replace("{name}", job.employerName);
             }
+        }
+
+        // "About $1,520 a week": the wage for the hours of every shift of the week, as the job's schedule has them.
+        private static string Week(global::Job job)
+        {
+            if (job == null || job.scheduleDays == null || job.hourlySalary <= 0f)
+            {
+                return null;
+            }
+            int hours = 0;
+            for (int i = 0; i < job.scheduleDays.Count && i < 7; i++)
+            {
+                ScheduleDay day = job.scheduleDays[i];
+                for (int s = 0; day != null && day.isOpen && day.workShifts != null && s < day.workShifts.Count; s++)
+                {
+                    WorkShift shift = day.workShifts[s];
+                    int length = shift != null ? shift.endingHour - shift.startingHour : 0;
+                    hours += length < 0 ? length + 24 : length;   // a night shift ends the next day
+                }
+            }
+            return hours <= 0 ? null : UiText.T("reallife_ui_world_offer_week").Replace("{amount}", Mathf.Round(job.hourlySalary * hours).ToShortCurrencyFormat());
         }
 
         // The working days' hours ("09:00 to 17:00", the first day's when they differ) and the days as a run ("Monday to

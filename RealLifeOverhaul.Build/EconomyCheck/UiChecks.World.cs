@@ -22,12 +22,14 @@ internal static partial class Program
                     _worldCallersChecked = true;
                     WorldCallerChecks();
                     WorldRuleChecks();
+                    WorldFeatureChecks();
                 }
                 WorldBox(def, cases, "a tower's door, four floors on the game's four keys, one greyed",
                     (s, f, d, k, t) => UiSamples.WorldPromptScene(s, f, d, k, t, UiSamples.WorldDoor(t, k), 0.62f, 0.58f));
                 WorldBox(def, cases, "the game's own door at night, closed", (s, f, d, k, t) => UiSamples.WorldPromptScene(s, f, d, k, t, UiSamples.WorldGameDoor(t, k), 0.55f, 0.5f, true));
                 WorldBox(def, cases, "a lift on the ninth floor", (s, f, d, k, t) => UiSamples.WorldPromptScene(s, f, d, k, t, UiSamples.WorldLift(t, k), 0.4f, 0.45f));
                 WorldBox(def, cases, "a bus stop with two routes", (s, f, d, k, t) => UiSamples.WorldPromptScene(s, f, d, k, t, UiSamples.WorldBusStop(t, k), 0.7f, 0.62f));
+                WorldBox(def, cases, "a coffee cart's counter, a coffee and a chat", (s, f, d, k, t) => UiSamples.WorldPromptScene(s, f, d, k, t, UiSamples.WorldCart(t, k), 0.5f, 0.55f));
                 WorldBox(def, cases, "a door at the screen's right edge", (s, f, d, k, t) => UiSamples.WorldPromptScene(s, f, d, k, t, UiSamples.WorldDoor(t, k), 0.99f, 0.7f));
                 break;
             case UiWorld.BuildingId:
@@ -208,5 +210,57 @@ internal static partial class Program
             "world prompt: a stop with five routes keeps the card's width (" + w + " px) and stands inside its height, four lines and the rest in an ellipsis");
         var one = new UiPromptCardModel { Title = "Lift", Actions = new UiPromptAction[0] };
         Check(UiPromptCard.Width(one) == UiPromptCard.LeastWidth && UiPromptCard.Height(one) > 0f, "world prompt: a box with one short line keeps the card's least width");
+    }
+
+    // ---------------------------------------------------------------- the pieces on the world's screens and where they come from
+
+    private static void WorldFeatureChecks()
+    {
+        UiWords en = UiWords("en");
+        UiInfoModel mine = UiSamples.WorldBuilding(en, UiSamples.WorldPlace.Rented), rival = UiSamples.WorldBuilding(en, UiSamples.WorldPlace.Rival);
+        UiInfoModel rent = UiSamples.WorldBuilding(en, UiSamples.WorldPlace.ForRent);
+        int at = Array.FindIndex(mine.Sections[1].Rows, r => r.Meter);
+        UiInfoRow meter = at >= 0 ? mine.Sections[1].Rows[at] : default(UiInfoRow);
+        Check(at >= 0 && meter.Value == "31 of 48" && Math.Abs(meter.Fill - 31f / 48f) < 0.001f && rival.Sections[1].Rows.Any(r => r.Meter && r.Fill == 0f),
+            "world building: the business shows its customers this hour against the building's capacity as a meter (31 of 48), a closed one at none");
+        Check(mine.Sections[0].Value == "Rented by you" && mine.Sections[1].Value == "Yours" && rival.Sections[0].Value == "A rival's" && rival.Sections[1].Value == "A rival's"
+              && rent.Sections[0].Value == "For rent",
+            "world building: each section says whose it is in a word or two (Rented by you, Yours, A rival's, For rent)");
+        Check(mine.Sections[0].Rows[0].Link && mine.Sections[0].Rows[1].Link && rival.Sections[1].Rows.Last().Link && !rent.Sections[0].Rows[0].Link
+              && mine.Footer.Contains(UiIcon.Locate) && rent.Footer.Contains(UiIcon.Locate),
+            "world building: the owner and the neighbourhood are links, the city's own sentence is not, and the footer has the button that finds the building on the map");
+        UiPickerModel cell = UiSamples.WorldCustody(en);
+        UiPickEntry doctor = cell.Entries.Last();
+        Check(cell.Context != null && cell.Context.Length == 1 && cell.Context[0].Label == "Held since" && cell.Context[0].Value == "02:10 today, 6 h 35 min"
+              && cell.Entries[1].Figure == "Today, 14:10" && cell.Entries[2].Figure == "$5,000",
+            "world custody: the cell says since when the player is held and for how long, the wait when it ends, and bail what it costs");
+        Check(doctor.Disabled && doctor.Reason == "You are fine" && doctor.Figure == "Free" && doctor.Icon == UiIcon.Heart,
+            "world custody: the duty doctor is free and greyed with its reason while the player is well");
+        UiOfferModel offer = UiSamples.WorldOffer(en, UiDefaultKeys.Keyboard, false);
+        Check(offer.Facts.Last().Sub == "About $720 a week", "world offer: the wage says about what the week's shifts pay");
+        UiPromptCardModel lift = UiSamples.WorldLift(en, UiDefaultKeys.Keyboard);
+        Check(lift.Actions[0].Main && lift.Actions[0].Label == "Go up to floor 11", "world prompt: the lift's main button takes the player to their own floor");
+
+        // Where the pieces come from in the game, read in the sources: the door's line from the business's own hours, the
+        // cell's held-since and hearing from the hold, the doctor's treatment the phone doctor's, and the cart's box from the
+        // director's one-second look, never a frame.
+        string scripts = ModScripts();
+        string prompt = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "World", "WorldPrompt.cs"));
+        Check(prompt.Contains("BusinessHelper.IsBusinessOpen(reg)") && prompt.Contains("reg.scheduleDays") && prompt.Contains("Door(current);"),
+            "world prompt: a business's door line comes from its own opening hours, as the game's building box reads them");
+        Check(prompt.Contains("line == null || !GameAddress(cbc)") && prompt.Contains("AddressHelper.ToFormattedString(cbc.building.Address)"),
+            "world prompt: the door line takes the address's place only while it is the game's own address (another mod's words there stay)");
+        string buildingCode = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "World", "WorldBuilding.cs"));
+        Check(buildingCode.Contains("|| hour != _readHour)") && buildingCode.Contains("_readHour = hour;"),
+            "world building: the panel's customers are read again as the game's hour turns");
+        string cellCode = File.ReadAllText(System.IO.Path.Combine(scripts, "Law", "Custody.Cell.cs"));
+        Check(cellCode.Contains("_panel.Since(state.StartedAt);") && cellCode.Contains("When(state.ReleaseAt)") && cellCode.Contains("LifeEvents.Instance?.Cure(null);"),
+            "world custody: held since the hold's start, the hearing when the hold ends (the court sits), the doctor's cure the phone doctor's");
+        string city = File.ReadAllText(System.IO.Path.Combine(scripts, "CityLife", "CityLifeDirector.cs"));
+        int update = city.IndexOf("private void OnUpdate()", StringComparison.Ordinal);
+        int updateEnd = update >= 0 ? city.IndexOf("\n        }", update, StringComparison.Ordinal) : -1;
+        string frame = update >= 0 && updateEnd > update ? city.Substring(update, updateEnd - update) : null;
+        Check(frame != null && !frame.Contains("Counter()") && !frame.Contains("Keys.Down") && Regex.IsMatch(city, @"_cart = cart;\s*\}\s*\}\s*Counter\(\);"),
+            "world prompt: the cart's box is set from city life's one-second look, nothing a frame, and the game's own panel takes its keys");
     }
 }

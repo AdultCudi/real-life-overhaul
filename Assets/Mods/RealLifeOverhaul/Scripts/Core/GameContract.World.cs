@@ -18,5 +18,8 @@ namespace RealLifeOverhaul
         public static readonly GameMember WorldOverlayButtons = Field(UiWorldPrompt, Game, "UI.Overlays.OverlayUI", "buttonsGameObject", "GameObject");
         public static readonly GameMember WorldOverlayTemplate = Field(UiWorldPrompt, Game, "UI.Overlays.OverlayUI", "buttonTemplate", "Button");
         public static readonly GameMember WorldOverlayCurrent = Field(UiWorldPrompt, Game, "UI.Overlays.OverlayUI", "_currentOverlay", "IOverlay");
+
+        // The building whose door the box stands at (UI.Overlays.BuildingEntranceOverlay): its business's kind and hours on the line under its name.
+        public static readonly GameMember WorldDoorBuilding = Field(UiWorldPrompt, Game, "UI.Overlays.BuildingEntranceOverlay", "_currentCBC", "CityBuildingController");
     }
 }
