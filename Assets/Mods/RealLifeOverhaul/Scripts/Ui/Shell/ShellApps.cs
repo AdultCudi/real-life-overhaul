@@ -107,7 +107,7 @@ namespace RealLifeOverhaul.Ui
             Transform b = row != null ? row.Find(id) : null;
             if (b != null && b.GetComponent<Button>() is Button button && button.interactable)
             {
-                button.onClick.Invoke();
+                UiWidgets.Hand(button);
                 return true;
             }
             Hud(uis);
@@ -115,9 +115,12 @@ namespace RealLifeOverhaul.Ui
             {
                 if (FullMenu.IsOpen)
                 {
-                    uis.fullMenu.CloseFullMenu();   // the map opens over the city, as the game's own View on map leaves the menu
+                    using (HotSpots.Game())
+                    {
+                        uis.fullMenu.CloseFullMenu();   // the map opens over the city, as the game's own View on map leaves the menu
+                    }
                 }
-                phone.onClick.Invoke();
+                UiWidgets.Hand(phone);
                 return true;
             }
             return false;

@@ -189,9 +189,11 @@ namespace RealLifeOverhaul.Ui
             _host.PointerOnly = _screen.Kind == UiGameKind.Overlay;
             _host.View.Scale = UiTokens.CanvasPerPx;
             _host.Failed = Fallback;
+            _host.Measure(_screen.Name, _screen.Kind == UiGameKind.Overlay);   // the notices over the world are the HUD's
             if (_screen.Kind == UiGameKind.App)
             {
                 _host.Chrome = Chrome;
+                _host.Leaving = Closing;   // the menu closing: no layout for a screen on its way out
             }
             _root.SetActive(false);
             if (UiDirector.Logger != null && _misses > 0)
@@ -336,6 +338,7 @@ namespace RealLifeOverhaul.Ui
         // A frame while the game's screen shows: a call handed back, the menu's fade followed, a box over it.
         internal void Watch()
         {
+            using var cost = _host != null && _host.Cost != null ? _host.Cost.Time(UiWork.Frame) : default;
             if (_back != null && _back())
             {
                 _back = null;
@@ -424,6 +427,13 @@ namespace RealLifeOverhaul.Ui
             {
                 _group.alpha = menu.alpha;
             }
+            return Closing();
+        }
+
+        // True while the full menu is closing or closed: an app of it on the kit is on its way out.
+        private static bool Closing()
+        {
+            UIs uis = InstanceBehavior<UIs>.Instance;
             return uis != null && uis.fullMenu != null && !global::UI.Smartphone.FullMenu.IsOpen;
         }
 

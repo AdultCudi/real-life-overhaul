@@ -207,7 +207,10 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
-            uis.fullMenu.CloseFullMenu();
+            using (HotSpots.Game())
+            {
+                uis.fullMenu.CloseFullMenu();   // the game's own close, and all it sets off: the game's work
+            }
             return true;
         }
 

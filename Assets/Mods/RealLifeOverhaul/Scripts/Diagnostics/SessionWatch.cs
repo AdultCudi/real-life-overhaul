@@ -204,6 +204,7 @@ namespace RealLifeOverhaul
             HotSpots.HeapSource = _exact ? (Func<long>)GC.GetAllocatedBytesForCurrentThread : () => GC.GetTotalMemory(false);
             HotSpots.SampleEvery = _exact ? 1 : HotSpots.AllocEvery;
             HotSpots.Reset();
+            RealLifeOverhaul.Ui.UiCost.Reset();   // and the RLO interface's share of every frame starts again (Ui/Host/UiCost)
             HotSpots.On = true;   // the mod's own scripts are timed from now on (Core/HotSpots)
             BizPaceWatch.Arm(true);   // and what they add to BizMan's open, switch and tab change, step by step (BizPace)
             _collections = GC.CollectionCount(0);
@@ -555,6 +556,13 @@ namespace RealLifeOverhaul
                 {
                     _line.Append(')');
                 }
+            }
+            double handed = HotSpots.FrameGameMs(frame);
+            if (handed >= 0.05)
+            {
+                // A button of the game's the RLO interface pressed (View on map): what its listeners did is the game's own work.
+                _line.Append("; the game's own work the mod handed to it (a button of the game's pressed for the RLO interface): ")
+                    .Append(handed.ToString("F1", CultureInfo.InvariantCulture)).Append(" ms, the game's and not in the mod's figure");
             }
 
             // The collector.

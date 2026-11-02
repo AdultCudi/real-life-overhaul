@@ -227,7 +227,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     Place(slot.Rect, it.X, it.Y, it.W, it.H);
                     var a = (AvatarSlot)slot;
-                    a.Circle.pixelsPerUnitMultiplier = UiSprites.CircleScale(it.H * Scale);
+                    SliceScale(a.Circle, UiSprites.CircleScale(it.H * Scale));
                     a.Circle.color = ToColor(UiColour.AvatarFill(it.Value, _dark), it.Alpha);
                     a.Letters.font = UiFonts.For(UiStyle.Title);
                     a.Letters.fontSize = it.W * InitialsShare * Scale;
@@ -282,7 +282,11 @@ namespace RealLifeOverhaul.Ui
                     Image ring = ((SliceSlot)slot).Ring;
                     float start = it.Points != null && it.Points.Length > 1 ? it.Points[0] : 0f, end = it.Points != null && it.Points.Length > 1 ? it.Points[1] : it.Value;
                     ring.fillAmount = Mathf.Clamp01(end - start);
-                    ring.rectTransform.localEulerAngles = new Vector3(0f, 0f, -start * 360f);   // clockwise from the top, as the fill runs
+                    Quaternion turn = Quaternion.Euler(0f, 0f, -start * 360f);   // clockwise from the top, as the fill runs
+                    if (ring.rectTransform.localRotation != turn)
+                    {
+                        ring.rectTransform.localRotation = turn;   // (a turn written again moves the canvas's batches all the same)
+                    }
                     ring.color = Colour(it.Fill, it.Alpha);
                     break;
                 }
@@ -293,7 +297,7 @@ namespace RealLifeOverhaul.Ui
                     float d = it.H, gap = (it.W - d * 3f) / 2f;
                     for (int i = 0; i < b.Dots.Length; i++)
                     {
-                        b.Dots[i].pixelsPerUnitMultiplier = UiSprites.CircleScale(d * Scale);
+                        SliceScale(b.Dots[i], UiSprites.CircleScale(d * Scale));
                         Place((RectTransform)b.Dots[i].transform, i * (d + gap), 0f, d, d);
                         b.Dots[i].color = Colour(it.Fill, 1f);
                     }
@@ -313,8 +317,8 @@ namespace RealLifeOverhaul.Ui
                 b.Fill.sprite = fill;
             }
             float slice = circle ? UiSprites.CircleScale(Mathf.Min(it.W, it.H) * Scale) : 1f;
-            b.Fill.pixelsPerUnitMultiplier = slice;
-            b.Edge.pixelsPerUnitMultiplier = slice;
+            SliceScale(b.Fill, slice);
+            SliceScale(b.Edge, slice);
             b.Role = it.Fill;
             b.Alpha = it.Alpha;
             b.Fill.color = it.Kind == UiKind.HueDot ? ToColor(UiColour.HueDot(it.Value, _dark), it.Alpha)
@@ -419,8 +423,9 @@ namespace RealLifeOverhaul.Ui
             bool round = it.Icon >= UiIcon.PadA && it.Icon <= UiIcon.PadTriangle;
             Sprite face = round ? UiSprites.Circle : UiSprites.Fill(UiTokens.RadiusSmall);
             k.Face.sprite = face;
-            k.Face.pixelsPerUnitMultiplier = round ? UiSprites.CircleScale(it.H * Scale) : 1f;
-            k.Edge.pixelsPerUnitMultiplier = k.Face.pixelsPerUnitMultiplier;
+            float slice = round ? UiSprites.CircleScale(it.H * Scale) : 1f;
+            SliceScale(k.Face, slice);
+            SliceScale(k.Edge, slice);
             k.Face.color = Colour(it.Fill, it.Alpha);
             k.Edge.sprite = round ? UiSprites.CircleEdge : UiSprites.Edge(UiTokens.RadiusSmall);
             k.Edge.color = Colour(it.Edge, 0.55f);
@@ -432,8 +437,11 @@ namespace RealLifeOverhaul.Ui
                 k.Glyph.color = Colour(it.Ink, 1f);
                 float inset = UiTokens.S1 * Scale;
                 RectTransform gr = (RectTransform)k.Glyph.transform;
-                gr.offsetMin = new Vector2(inset, inset);
-                gr.offsetMax = new Vector2(-inset, -inset);
+                if (gr.offsetMin != new Vector2(inset, inset) || gr.offsetMax != new Vector2(-inset, -inset))
+                {
+                    gr.offsetMin = new Vector2(inset, inset);
+                    gr.offsetMax = new Vector2(-inset, -inset);
+                }
             }
             string words = letter ?? it.Text;
             Show(k.Label, !string.IsNullOrEmpty(words));
@@ -447,6 +455,19 @@ namespace RealLifeOverhaul.Ui
                 k.Label.alignment = TextAlignmentOptions.Capline;   // a key's name by its capitals, not its line's middle
                 k.Label.color = Colour(it.Ink, 1f);
                 SetText(k.Label, words);
+            }
+        }
+
+        /// <summary>
+        /// A sliced picture's scale set only when it changes: the engine's own setter marks the mesh to be built again on
+        /// every write, the same value or not, so writing it on each layout had every box of the screen built again.
+        /// </summary>
+        internal static void SliceScale(Image image, float scale)
+        {
+            float want = Mathf.Max(0.01f, scale);   // what the engine keeps of it
+            if (image.pixelsPerUnitMultiplier != want)
+            {
+                image.pixelsPerUnitMultiplier = want;
             }
         }
 
