@@ -671,6 +671,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Phone\PhoneItems.cs" Link="Mod\PhoneItems.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Phone\PhoneScreen.cs" Link="Mod\PhoneScreen.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPortraits.cs" Link="Mod\UiPortraits.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFaceRules.cs" Link="Mod\UiFaceRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFrame.cs" Link="Mod\UiFrame.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiListDetail.cs" Link="Mod\UiListDetail.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDashboard.cs" Link="Mod\UiDashboard.cs" />

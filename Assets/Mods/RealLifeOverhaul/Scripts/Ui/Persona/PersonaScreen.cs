@@ -206,6 +206,7 @@ namespace RealLifeOverhaul.Ui
         {
             _v.Tab = _tab;
             _v.Name = Words(GameContract.PersonaName, _info) ?? string.Empty;
+            FaceSources.Player(_v.Name);   // the HUD portrait of them, as the game draws it
             _v.Age = Whole(Words(GameContract.PersonaAge, _info));
             _v.Businesses = Whole(Words(GameContract.PersonaBusinesses, _info));
             _v.Employees = Whole(Words(GameContract.PersonaEmployees, _info));
