@@ -11,6 +11,7 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class UiDataCells
     {
+        private static readonly float FigureRoom = UiDraw.Snap(UiTextRules.Width("+100%", UiStyle.BodyStrong) + UiTokens.S1);   // px: a signed share's words, the arrow before them
         private const float Segment = 40f;   // px: a step's segment of the bar, so three and their words fit a compact column
 
         /// <summary>The least a steps column takes for its bar and a short word beside it.</summary>
@@ -35,8 +36,9 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>
-        /// A figure at the right with the arrow of its direction at the cell's left (Values: 1 rising, -1 falling, 0 none),
-        /// so a column of them keeps its arrows in one line. Arrow and figure share good or bad's colour for the player:
+        /// A figure at the right with the arrow of its direction before it (Values: 1 rising, -1 falling, 0 none), the arrow
+        /// a fixed step from the cell's right edge (a signed share's room), so a column of them keeps its arrows in one line
+        /// beside their own figures, under the column's head. Arrow and figure share good or bad's colour for the player:
         /// rising is good unless the cell's tone says otherwise (Tones: Danger where a rise is bad, as a rival's is). A figure
         /// with no direction stays the row's. On the chosen row's cyan both take the step of their colour that reads there.
         /// </summary>
@@ -51,7 +53,8 @@ namespace RealLifeOverhaul.Ui
                 // On the chosen row's cyan the bad red falls under 4.5:1: arrow and figure take the grade's step that reads there.
                 UiRole tone = sel ? UiTokens.GradeOnChosen(good ? UiRole.Grade5 : UiRole.Grade1) : good ? UiRole.Ok : UiRole.Danger;
                 ink = sel ? tone : good ? UiRole.OkText : UiRole.DangerText;
-                UiDraw.Icon(s, at, cx, ry + (rowH - g) / 2f, g, value > 0 ? UiIcon.TrendUp : UiIcon.TrendDown, tone, UiFlags.Middle);
+                float room = Math.Max(ww, FigureRoom);
+                UiDraw.Icon(s, at, Math.Max(cx, cx + cw - room - UiTokens.S2 - g), ry + (rowH - g) / 2f, g, value > 0 ? UiIcon.TrendUp : UiIcon.TrendDown, tone, UiFlags.Middle);
             }
             UiDraw.TextMiddle(s, at, cx + cw - ww, ry, rowH, ww, UiStyle.BodyStrong, ink, words, UiFlags.Right | UiFlags.Truncate);
         }
