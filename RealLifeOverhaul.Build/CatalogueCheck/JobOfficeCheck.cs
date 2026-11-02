@@ -9,24 +9,22 @@ namespace RealLifeOverhaul
 {
     /// <summary>
     /// Offline checks that the player is told where an employer's office is (Jobs/CareerOfficeRules and the sources that use it):
-    /// every text that sends the player to the office has a twin that names the address, used when the employer has a board
-    /// in this city, with the plain text kept for one that has none; "Show me the office" is offered only with a board; the
+    /// every text that sends the player to the office has a twin that names the address, used when the employer has a works site,
+    /// and one that names the board, the shop it stands outside and the address, used when the employer has a board that stands,
+    /// with the plain text kept for one that has none (a review for such an employer is held by phone); "Show me the office" is offered only with a board; the
     /// city map's Job offices row lists every placed board; the texts exist in en, pt and zh-cn and the notifications stay
     /// within 240 characters with a long address; and the What's new line is in some reallife_changes_ row.
     /// </summary>
     internal static class JobOfficeCheck
     {
         private const int MostLength = 240;   // characters in a notification (NoticeCheck)
-        private static readonly string[] Twins =
-        {
-            "reallife_career_review_due", "reallife_career_text_review_due", "reallife_career_note_review", "reallife_career_reminder",
-            "reallife_career_text_reminder", "reallife_career_at_depot"
-        };
+        private static readonly string[] Twins = { "reallife_career_reminder", "reallife_career_text_reminder", "reallife_career_at_depot" };   // plain, _at (works site) and _board
+        private static readonly string[] ReviewTwins = { "reallife_career_review_due", "reallife_career_text_review_due", "reallife_career_note_review" };   // plain (phone) and _board
+        private static readonly string[] PageTwins = { "reallife_career_office_page", "reallife_career_office_shown", "reallife_career_office_busy" };   // the office's pages: plain and _board
         private static readonly string[] Notices = { "reallife_career_review_due", "reallife_career_reminder" };   // (the toasts; the rest are texts and dialogue)
         private static readonly string[] Plain =
         {
-            "reallife_career_office_show", "reallife_career_office_page", "reallife_career_office_shown", "reallife_career_office_busy",
-            "reallife_career_office_none", "reallife_map_row_job_offices"
+            "reallife_career_office_show", "reallife_career_office_none", "reallife_map_row_job_offices", "reallife_career_office_mark"
         };
 
         public static void Run(Action<string> fail, string src)
@@ -41,9 +39,11 @@ namespace RealLifeOverhaul
 
             // ---- the rules
             const string address = "1234 Hudson Boulevard";
-            Check(CareerOfficeRules.Key("reallife_career_reminder", address) == "reallife_career_reminder_at", "an employer with a board gets the twin that names the address");
+            Check(CareerOfficeRules.Key("reallife_career_reminder", address) == "reallife_career_reminder_at", "an employer with a works site gets the twin that names the address");
             foreach (string none in new string[] { null, "", " ", "  \t" })
-                Check(CareerOfficeRules.Key("reallife_career_reminder", none) == "reallife_career_reminder", $"'{none ?? "null"}' (no board) keeps the phone wording");
+                Check(CareerOfficeRules.Key("reallife_career_reminder", none) == "reallife_career_reminder", $"'{none ?? "null"}' (no place) keeps the phone wording");
+            Check(CareerOfficeRules.Key("reallife_career_reminder", OfficeWhere.Board) == "reallife_career_reminder_board" && CareerOfficeRules.Key("reallife_career_reminder", OfficeWhere.Works) == "reallife_career_reminder_at"
+                  && CareerOfficeRules.Key("reallife_career_reminder", OfficeWhere.Phone) == "reallife_career_reminder", "the board, the works site and the phone each have their own wording");
             Check(!CareerOfficeRules.Has(null) && CareerOfficeRules.Has(address), "Has: null is no address, a street is one");
             Check(CareerOfficeRules.ShowMeOffered(0, 1) && CareerOfficeRules.ShowMeOffered(5, 6), "Show me is offered for a placed board, first and last");
             Check(!CareerOfficeRules.ShowMeOffered(-1, 6) && !CareerOfficeRules.ShowMeOffered(6, 6) && !CareerOfficeRules.ShowMeOffered(0, 0), "Show me is not offered with no board (-1, past the end, no boards at all)");
@@ -74,17 +74,30 @@ namespace RealLifeOverhaul
                     bool has = t.TryGetValue(key, out string plain), twin = t.TryGetValue(key + "_at", out string at);
                     Check(has && twin, $"{language.Key}: {key} and {key}_at are both there");
                     if (!has || !twin) continue;
-                    Check(at.Contains("{address}") && !plain.Contains("{address}"), $"{language.Key}: {key}_at names {{address}} and the plain text does not");
+                    Check(at.Contains("{address}") && !at.Contains("{place}") && !plain.Contains("{address}"), $"{language.Key}: {key}_at names {{address}} (a works site has no shop) and the plain text does not");
                     Check(Holes(plain).SetEquals(Holes(at).Where(h => h != "address")), $"{language.Key}: {key}_at has the same other placeholders as {key}");
                     Check(!at.Contains('!') && !at.Contains('—') && !at.Contains('–') && !at.Contains(" - "), $"{language.Key}: {key}_at has no exclamation mark or dash");
                 }
+                foreach (string key in Twins.Concat(ReviewTwins).Concat(PageTwins))
+                {
+                    bool has = t.TryGetValue(key, out string plain), twin = t.TryGetValue(key + "_board", out string board);
+                    Check(has && twin, $"{language.Key}: {key} and {key}_board are both there");
+                    if (!has || !twin) continue;
+                    bool page = PageTwins.Contains(key);   // (the office's own pages keep the address in their plain text: it serves a works site)
+                    Check(board.Contains("{address}") && board.Contains("{place}") && !plain.Contains("{place}") && (page || !plain.Contains("{address}")),
+                        $"{language.Key}: {key}_board names {{place}} and {{address}} and the plain text does not name {{place}}");
+                    Check(Holes(plain).Where(h => h != "address").ToHashSet().SetEquals(Holes(board).Where(h => h != "address" && h != "place")), $"{language.Key}: {key}_board has the same other placeholders as {key}");
+                    Check(!board.Contains('!') && !board.Contains('—') && !board.Contains('–') && !board.Contains(" - "), $"{language.Key}: {key}_board has no exclamation mark or dash");
+                }
+                foreach (string key in ReviewTwins)
+                    Check(!t.ContainsKey(key + "_at"), $"{language.Key}: {key}_at is gone (a review at a works site is held by phone)");
                 foreach (string key in Plain)
                     Check(t.TryGetValue(key, out string v) && v.Length > 0 && !v.Contains('!') && !v.Contains('—') && !v.Contains('–'), $"{language.Key}: {key} is there, with no exclamation mark or dash");
                 foreach (string key in Notices)
                 {
-                    if (!t.TryGetValue(key + "_at", out string at)) continue;
+                    if (!t.TryGetValue(key + "_board", out string at)) continue;
                     string filled = Regex.Replace(at, @"\{(\w+)\}", m => m.Groups[1].Value == "address" ? "1234 Hudson Boulevard North" : new string('x', longest));
-                    Check(language.Key != "en" || filled.Length <= MostLength, $"{key}_at is {filled.Length} characters with a long address, over {MostLength}");
+                    Check(language.Key != "en" || filled.Length <= MostLength, $"{key}_board is {filled.Length} characters with a long address, over {MostLength}");
                 }
             }
 
@@ -94,11 +107,13 @@ namespace RealLifeOverhaul
             string phone = File.ReadAllText(Path.Combine(jobs, "CareerDialog.cs"));
             string jobDirector = File.ReadAllText(Path.Combine(jobs, "JobDirector.Tests.cs"));
             string links = File.ReadAllText(Path.Combine(src, "Scripts", "World", "MapLinks.cs"));
-            foreach (string key in new[] { "reallife_career_review_due", "reallife_career_text_review_due", "reallife_career_reminder", "reallife_career_text_reminder" })
-                Check(Regex.IsMatch(director, "OfficeKey\\(\"" + key + "\""), $"{key} is raised through OfficeKey, which fills the address");
-            Check(Regex.IsMatch(jobDirector, "OfficeKey\\(\"reallife_career_review_due\""), "the options page's review test raises the notice through OfficeKey too");
+            foreach (string key in new[] { "reallife_career_reminder", "reallife_career_text_reminder" })
+                Check(Regex.IsMatch(director, "OfficeKey\\(\"" + key + "\""), $"{key} is raised through OfficeKey, which fills the address and the place");
+            foreach (string key in new[] { "reallife_career_review_due", "reallife_career_text_review_due" })
+                Check(Regex.IsMatch(director, "ReviewKey\\(\"" + key + "\""), $"{key} is raised through ReviewKey, which checks the board stands and fills the address and the place");
+            Check(Regex.IsMatch(jobDirector, "ReviewKey\\(\"reallife_career_review_due\""), "the options page's review test raises the notice through ReviewKey too");
             Check(director.Contains("CareerOfficeRules.Key(\"reallife_career_at_depot\"") && phone.Contains("address = career.OfficeAddress("), "the clock-on refusal names the address");
-            Check(phone.Contains("CareerOfficeRules.Key(\"reallife_career_note_review\""), "the Work contact's review note names the address");
+            Check(phone.Contains("ReviewText(career, \"reallife_career_note_review\")") && phone.Contains("career.ReviewKey("), "the Work contact's review note names the board, the shop and the address");
             Check(Regex.Matches(phone, "\"reallife_career_office_show\"").Count >= 3 && Regex.Matches(phone, "CareerOfficeRules\\.Has\\(").Count >= 4, "Show me the office is offered only behind CareerOfficeRules.Has (an address)");
             Check(director.Contains("_officeMark.Show(") && director.Contains("GuideMark"), "Show me puts the game's destination marker (GuideMark) on the board");
             int at0 = links.IndexOf("Id = \"job_offices\"", StringComparison.Ordinal);

@@ -24,6 +24,7 @@ namespace RealLifeOverhaul
 
         private static readonly List<Renderer> Found = new List<Renderer>(16);
 
+        private bool _outline;
         private int[] _layers;   // the outlined pieces' own layers, put back when nothing points at them
 
         public Kind What { get; private set; }
@@ -52,26 +53,44 @@ namespace RealLifeOverhaul
             pointer.simpleOverlayType = SimpleOverlayType.ClickToAction;
             pointer.customOverlayHeaderKey = what == Kind.Bus ? HeaderBus : HeaderStop;
             pointer.navMeshTargets = new[] { made.transform };
+            pointer._outline = outline;
+            pointer.TakePieces(parent);
+            made.SetActive(true);
+            return pointer;
+        }
+
+        /// <summary>
+        /// Takes the pieces to outline again from the stop's own object: a stop first made of plain shapes and then of the bundle's models
+        /// (BusStopDressing.Remodel) has new renderers. The box and the click do not depend on them. Once, when a stop is made again.
+        /// </summary>
+        public void Refresh()
+        {
+            if (_outline && transform.parent != null)
+            {
+                TakePieces(transform.parent);
+            }
+        }
+
+        private void TakePieces(Transform parent)
+        {
             Found.Clear();
-            if (outline)
+            if (_outline)
             {
                 parent.GetComponentsInChildren(true, Found);
                 Found.RemoveAll(renderer => renderer == null || renderer.GetComponent<TMP_Text>() != null);   // lettering is not outlined
             }
-            pointer.renderers = Found.ToArray();
-            pointer._layers = new int[Found.Count];
+            renderers = Found.ToArray();
+            _layers = new int[Found.Count];
             for (int i = 0; i < Found.Count; i++)
             {
-                pointer._layers[i] = Found[i].gameObject.layer;
+                _layers[i] = Found[i].gameObject.layer;
             }
             Found.Clear();
             GlobalReferences references = InstanceBehavior<GlobalReferences>.Instance;
-            if (pointer.renderers.Length > 0 && references != null)
+            if (renderers.Length > 0 && references != null)
             {
-                pointer.SetOutlineColor(references.colors.white);   // as the game outlines a place it makes clickable in code (TaxiDestinationController)
+                SetOutlineColor(references.colors.white);   // as the game outlines a place it makes clickable in code (TaxiDestinationController)
             }
-            made.SetActive(true);
-            return pointer;
         }
 
         // The game's Awake and Start set up objects the game places; neither is wanted here.

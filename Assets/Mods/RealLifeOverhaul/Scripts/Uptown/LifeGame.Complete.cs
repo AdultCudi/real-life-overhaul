@@ -51,6 +51,7 @@ namespace RealLifeOverhaul.Uptown
                 f.Type = record.BuildingType;
                 f.Size = record.BuildingSize;
                 f.TypeWords = !string.IsNullOrEmpty(record.BuildingType) && LocalizorManager.IsLocalizedKey(record.BuildingType);
+                f.LetByGame = CompleteRules.GameLets(record.BuildingType);   // a home or a warehouse the game's market lets out is not to let and has no business, and is whole
             }
             f.AtAddress = 0;
             for (int i = 0; save != null && save.BuildingRegistrations != null && i < save.BuildingRegistrations.Count; i++)

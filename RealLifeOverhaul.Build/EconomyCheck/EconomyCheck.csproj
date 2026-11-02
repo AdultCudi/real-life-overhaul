@@ -470,6 +470,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\FirmsRules.Contracts.cs" Link="Mod\FirmsRules.Contracts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\FirmsStore.cs" Link="Mod\FirmsStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\OwnDeskRules.cs" Link="Mod\OwnDeskRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\SeatRules.cs" Link="Mod\SeatRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\CompetitorRules.cs" Link="Mod\CompetitorRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\BizPace\BizPaceRules.cs" Link="Mod\BizPaceRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WorkSlice.cs" Link="Mod\WorkSlice.cs" />
@@ -552,6 +553,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBank.cs" Link="Mod\OwnBank.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankRules.cs" Link="Mod\OwnBankRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankRules.Day.cs" Link="Mod\OwnBankRules.Day.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankRules.Daily.cs" Link="Mod\OwnBankRules.Daily.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankFund.cs" Link="Mod\OwnBankFund.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalCatalogue.cs" Link="Mod\RivalCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalModel.cs" Link="Mod\RivalModel.cs" />
@@ -632,6 +634,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LifeStore.cs" Link="Mod\LifeStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LifeText.cs" Link="Mod\LifeText.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\CareerCatalogue.cs" Link="Mod\CareerCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\CareerOfficeRules.cs" Link="Mod\CareerOfficeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\BuildTrades\TradeCatalogue.cs" Link="Mod\TradeCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\BuildTrades\TradeRules.cs" Link="Mod\TradeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\BuildTrades\DesignRules.cs" Link="Mod\DesignRules.cs" />

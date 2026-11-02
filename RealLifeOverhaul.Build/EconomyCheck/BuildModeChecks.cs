@@ -20,6 +20,7 @@ internal static partial class Program
         BuildModeColourChecks();
         BuildModeDemandChecks();
         BuildModeCompleteChecks();
+        BuildModeWholeAfterLoadChecks();
         BuildModeStoreChecks();
         BuildModeSourceChecks();
         BuildModeTextChecks();
@@ -522,6 +523,83 @@ internal static partial class Program
             "whole buildings: the owner given is one of them, the same every time for the same address, none with no rival");
         string line = CompleteRules.Line("its stand", "2 Maple Street", whole, all);
         Check(line.StartsWith("Uptown check (a whole building, its stand, 2 Maple Street): address PASS") && line.EndsWith(": PASS") && line.Contains("occupants PASS"), "whole buildings: the line names every item");
+    }
+
+    // A player's report, 2 Nov 2026: "Every time when I log in I see more and more buildings" (a notice that new buildings north of Manhattan
+    // are not whole). The check did not know a home or a warehouse let out: the game's market (CompetitionHelper.SwapBuilding) and the district's
+    // own letting (a grown block's homes, a block given to its residents) write it not to let with no business, after the building stood whole.
+    private static void BuildModeWholeAfterLoadChecks()
+    {
+        CompleteFacts stood = BuildModeWhole();
+        stood.Type = stood.RecordType = "ba:buildingtype_residential";
+        stood.HasBusiness = false;
+        stood.BusinessName = null;
+        stood.ForRent = true;   // as the district settles a city's building at its stand: empty, to let
+        stood.LetByGame = CompleteRules.GameLets(stood.Type);
+        Check(CompleteRules.GameLets("ba:buildingtype_residential") && CompleteRules.GameLets("ba:buildingtype_warehouse") && !CompleteRules.GameLets("ba:buildingtype_retail")
+              && !CompleteRules.GameLets("ba:buildingtype_office") && !CompleteRules.GameLets(null), "whole after a load: the game's market lets out homes and warehouses, no other kind");
+        Check(CompleteRules.All(CompleteRules.Passed(stood)), "whole after a load: a home stood in play, empty and to let, is whole");
+        CompleteFacts let = stood;
+        let.ForRent = false;   // a day later the game's market, or the district's letting, has let it to residents
+        int letPassed = CompleteRules.Passed(let);
+        Check(CompleteRules.Tenanted(let) && CompleteRules.All(letPassed) && CompleteRules.FirstFailed(letPassed) == null,
+            "whole after a load: the same home let to residents (not to let, no business) is whole at the next load");
+        CompleteFacts warehouse = let;
+        warehouse.Type = warehouse.RecordType = "ba:buildingtype_warehouse";
+        warehouse.LetByGame = CompleteRules.GameLets(warehouse.Type);
+        Check(CompleteRules.All(CompleteRules.Passed(warehouse)), "whole after a load: a warehouse let to a tenant of the game's market is whole");
+        CompleteFacts rented = let;
+        rented.RentedByPlayer = true;
+        Check(!CompleteRules.Tenanted(rented), "whole after a load: a home the player rents is the player's to say, not a tenant's");
+        CompleteFacts office = let;
+        office.Type = office.RecordType = "ba:buildingtype_office";
+        office.LetByGame = CompleteRules.GameLets(office.Type);
+        int officePassed = CompleteRules.Passed(office);
+        Check(!CompleteRules.All(officePassed) && CompleteRules.FirstFailed(officePassed) == "market" && (officePassed & (1 << (int)CompleteItem.Listing)) == 0
+              && (officePassed & (1 << (int)CompleteItem.Occupants)) == 0, "whole after a load: an office not to let with no business is still not whole (market, listing, occupants)");
+        // The line names the building, its lot and what is missing.
+        string line = CompleteRules.Line("the load", "7 Maple Street", office, officePassed, "uptown_2_09_0004");
+        Check(line.Contains("(a whole building, the load, 7 Maple Street)") && line.Contains("lot uptown_2_09_0004") && line.Contains("; missing market: not to let, no business, not for sale and nobody renting it") && line.EndsWith(": FAIL")
+              && line.Contains("listing: ") && line.Contains("occupants: ") && !line.Contains("owner: "), "whole after a load: a failing line names the building, its lot and the step missing for each item");
+        string whole = CompleteRules.Line("the load", "7 Maple Street", let, letPassed, "uptown_2_09_0004");
+        Check(whole.EndsWith(": PASS") && !whole.Contains("missing") && CompleteRules.Missing(let, letPassed).Length == 0, "whole after a load: a passing line says nothing missing");
+        string[] items = { "address", "name", "type", "owner", "market", "card", "BizMan", "filter", "search", "listing", "door", "occupants", "entrances" };
+        bool named = true;
+        for (int bit = 0; bit < items.Length; bit++)
+        {
+            string said = CompleteRules.Missing(BuildModeWhole(), ((1 << (int)CompleteItem.Count) - 1) & ~(1 << bit));
+            named &= said.StartsWith(items[bit] + ": ") && said.Length > 12 && !said.Contains("; ");
+        }
+        Check(named, "whole after a load: each of the thirteen items names its own missing step");
+        // The notice: shown only for a count that grew past what the save last told, or once a load with diagnostics on; never for none.
+        Check(!CompleteRules.NoticeDue(0, 0, true, false) && !CompleteRules.NoticeDue(0, 5, true, false), "the notice of buildings not whole: none failed, none shown, diagnostics or not");
+        Check(CompleteRules.NoticeDue(1, 0, false, false) && CompleteRules.NoticeDue(4, 3, false, true) && !CompleteRules.NoticeDue(3, 3, false, false) && !CompleteRules.NoticeDue(2, 3, false, false),
+            "the notice of buildings not whole: shown when the count grew since last time, never for the same count or fewer");
+        Check(CompleteRules.NoticeDue(3, 3, true, false) && !CompleteRules.NoticeDue(3, 3, true, true), "the notice of buildings not whole: with diagnostics on, once a load for the same count");
+        // Saved and loaded: the count told is kept in the district's line, so a second load with the same count shows nothing.
+        var save = new LifeState();
+        save.Finished.Add(new FinishedBuilding { Lot = "uptown_2_09_0004", Size = "ba:buildingsize_c", Version = 1, Type = "ba:buildingtype_residential", Design = "", Settled = true });
+        int shown = 0;
+        foreach (int failed in new[] { 3, 3, 3, 4, 4, 2, 3 })   // each load's count, the line written and read between loads
+        {
+            if (CompleteRules.NoticeDue(failed, save.Told, false, false))
+            {
+                shown++;
+            }
+            save.Told = failed;
+            save = LifeStore.Read(LifeStore.Write(save), out _);
+        }
+        Check(shown == 3 && save.Told == 3 && save.Finished.Count == 1 && save.Finished[0].Settled, "the notice of buildings not whole: seven loads with 3, 3, 3, 4, 4, 2 and 3 show it three times (3, 4 and the 3 after fewer)");
+        LifeState older = LifeStore.Read("v=1^f:^g:2", out _);
+        LifeState odd = LifeStore.Read("v=1^f:^g:2^w:abc", out _);
+        Check(older != null && older.Told == 0 && odd != null && odd.Told == 0 && !LifeStore.Write(new LifeState()).Contains("^w:") && LifeStore.Write(new LifeState { Told = 2 }).Contains("^w:2"),
+            "the notice of buildings not whole: a line from before reads none told, a bad one none, none written for none");
+        string complete = ModSource(@"Uptown\LifeDirector.Complete.cs");
+        string stand = ModSource(@"Uptown\LifeDirector.Stand.cs");
+        Check(complete.Contains("CompleteRules.NoticeDue(failed, _state.Told, Meta.Dev.Verbose, _incompleteSaid)") && complete.Contains("Told(failed);") && stand.Contains("StandIncomplete();")
+              && !stand.Contains("LifeGame.SayIncomplete") && ModSource(@"Uptown\LifeDirector.cs").Contains("_incompleteSaid = false;")
+              && complete.Contains("CompleteRules.Line(when, made.Address, facts, passed, made.Spec.Id)"),
+            "whole after a load sources: the notice goes through one rule at a load and at a stand, once a load, and the line carries the lot");
     }
 
     private static void BuildModeStoreChecks()

@@ -231,6 +231,7 @@ namespace RealLifeOverhaul.Careers
         public int Index;        // for <see cref="CareersBridges.ShowBoard"/>
         public string Name;      // the employer's name
         public string Address;   // where its board stands, or null: this city has none for it and the phone is the only way
+        public string Place;     // the shop or service the board stands outside (its door is not the office), or null with no board
     }
 
     /// <summary>One rival's ad on the jobs board, as careers read it.</summary>

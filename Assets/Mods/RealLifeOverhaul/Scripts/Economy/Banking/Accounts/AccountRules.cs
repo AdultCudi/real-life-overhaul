@@ -181,6 +181,15 @@ namespace RealLifeOverhaul.Economy
             return paid;
         }
 
+        /// <summary>
+        /// The overdraft covers cash that has gone under nothing, however it got there (a charge the game forces, a bill the night's estimate missed):
+        /// up to what is free of its limit, to nothing and no further. Returns what it paid (the caller puts it in cash); nothing for cash at or over nothing.
+        /// </summary>
+        public static int CoverCash(CreditAccount overdraft, int cash)
+        {
+            return cash < 0 ? Cover(overdraft, -cash) : 0;
+        }
+
         /// <summary>Cash drawn on the card: the amount and its fee go on the balance. False if it does not fit the limit.</summary>
         public static bool Draw(CreditAccount card, int amount, out int fee)
         {

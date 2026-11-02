@@ -27,15 +27,6 @@ namespace RealLifeOverhaul.Tech
 
         public static readonly string[] All = { SoftwareStudio, GameStudio, Consultancy, Security, AiLab };
 
-        private static readonly string[][] Skills =
-        {
-            new[] { TalentCatalogue.Programmer, TalentCatalogue.GraphicDesigner, TalentCatalogue.CustomerService },
-            new[] { TalentCatalogue.Programmer, TalentCatalogue.GraphicDesigner, TalentCatalogue.CustomerService },
-            new[] { TalentCatalogue.Programmer, TalentCatalogue.CustomerService, TalentCatalogue.GraphicDesigner },
-            new[] { TalentCatalogue.Programmer, TalentCatalogue.CustomerService },
-            new[] { TalentCatalogue.Programmer, TalentCatalogue.CustomerService }
-        };
-
         private static readonly string[][] Aliases =
         {
             new[] { "Software", "SaaS", "Apps", "Startup" },
@@ -124,7 +115,7 @@ namespace RealLifeOverhaul.Tech
             t.cityMapFilterColor = new Color(0.25f, 0.55f, 0.85f, 1f);
             t.businessProducts = Array.Empty<BusinessProduct>();
             t.productSources = Array.Empty<string>();
-            t.employeePrimarySkills = Skills[kind];
+            t.employeePrimarySkills = SeatRules.PrimaryOf(kind);   // the skills a desk seats (SeatRules): every hire has a seat
             t.employeeDefaultAppearanceTags = Array.Empty<AppearanceTag>();
             t.customerType = (CustomerType)0;
             t.maxAmountPerProduct = 1f;

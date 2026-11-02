@@ -103,26 +103,76 @@ namespace RealLifeOverhaul
                 return employer >= 0 && employer < CareerCatalogue.All.Length && CareerCatalogue.All[employer].Premises.Length == 0
                        && CareerLinks.WorkplaceOf(CareerCatalogue.All[employer], PlayerPosition(), out place, out address);
             }
+            if (!boards.Stands(board))
+            {
+                place = default;   // its building is gone: nobody can be met there, so it is no office
+                address = null;
+                return false;
+            }
             place = boards.Front(board);
             address = boards.Address(board);
             return true;
         }
 
-        /// <summary>The address of the employer's office as the game writes it, or null if the employer has no board in this city.</summary>
+        /// <summary>
+        /// Where the employer's business is held now (<see cref="CareerOfficeRules.Where"/>): its board while that stands, the building
+        /// trades' works site or floor, or the phone. Asked when a message is raised or a page written, never per frame.
+        /// </summary>
+        public OfficeWhere WhereOf(int employer)
+        {
+            JobBoards boards = _director.HelpBoards;
+            int board = DepotOf(employer);
+            bool works = board < 0 && DepotPlace(employer, out _, out string address) && CareerOfficeRules.Has(address);
+            return CareerOfficeRules.Where(board, boards != null ? boards.Count : 0, boards != null && boards.Stands(board), works);
+        }
+
+        /// <summary>The address of the employer's office as the game writes it, or null if no board or works site stands for it in this city.</summary>
         public string OfficeAddress(int employer)
         {
             return DepotPlace(employer, out _, out string address) && CareerOfficeRules.Has(address) ? address : null;
         }
 
-        /// <summary>The key for a message sending the player to the office, with the address put in the data when there is a board.</summary>
+        /// <summary>The name of the shop or service the employer's board stands outside, or null when the employer is not at a board.</summary>
+        public string OfficePlace(int employer)
+        {
+            JobBoards boards = _director.HelpBoards;
+            return boards != null && WhereOf(employer) == OfficeWhere.Board ? boards.Place(DepotOf(employer)) : null;
+        }
+
+        /// <summary>The key for a message sending the player to the office, with the address (and a board's place) put in the data.</summary>
         public string OfficeKey(string key, int employer, Dictionary<string, string> data)
         {
-            string address = OfficeAddress(employer);
-            if (address != null && data != null)
+            return KeyAt(key, employer, WhereOf(employer), data);
+        }
+
+        /// <summary>
+        /// The key for a message about the performance review: the board's twin while the employer's board stands (the boss waits there,
+        /// on the pavement), else the plain text that sends the player to the phone. The place is checked here, when the message is set.
+        /// </summary>
+        public string ReviewKey(string key, int employer, Dictionary<string, string> data)
+        {
+            OfficeWhere where = CareerOfficeRules.ReviewWhere(WhereOf(employer));
+            if (Meta.Dev.Verbose)
             {
-                data[CareerOfficeRules.AddressField] = address;
+                string who = employer >= 0 && employer < CareerCatalogue.All.Length ? CareerCatalogue.All[employer].Id : "?";
+                string held = where == OfficeWhere.Board ? "at the board outside '" + OfficePlace(employer) + "', " + OfficeAddress(employer) + ", where the boss waits"
+                                                         : "by phone, no board stands for it";
+                _logger?.Info("Careers check (review place): " + who + "'s review is " + held + ": PASS.");
             }
-            return CareerOfficeRules.Key(key, address);
+            return KeyAt(key, employer, where, data);
+        }
+
+        private string KeyAt(string key, int employer, OfficeWhere where, Dictionary<string, string> data)
+        {
+            if (data != null && where != OfficeWhere.Phone)
+            {
+                data[CareerOfficeRules.AddressField] = OfficeAddress(employer) ?? string.Empty;
+                if (where == OfficeWhere.Board)
+                {
+                    data[CareerOfficeRules.PlaceField] = OfficePlace(employer) ?? string.Empty;
+                }
+            }
+            return CareerOfficeRules.Key(key, where);
         }
 
         /// <summary>"Show me the office": the game's destination marker on the board until the player is near or 15 minutes pass. False without a board or with the marker in use.</summary>
@@ -132,7 +182,9 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            string name = JobText.T(CareerCatalogue.All[employer].NameKey) + (CareerOfficeRules.Has(address) ? ", " + address : string.Empty);
+            string shop = OfficePlace(employer);   // (the board outside the shop is the office, not the shop)
+            string name = JobText.T(CareerCatalogue.All[employer].NameKey) + (shop != null ? ", " + JobText.T("reallife_career_office_mark", "place", shop) : string.Empty)
+                          + (CareerOfficeRules.Has(address) ? ", " + address : string.Empty);
             bool shown = _officeMark.Show(place + Vector3.up * 1.4f, name);
             if (shown)
             {
@@ -460,10 +512,10 @@ namespace RealLifeOverhaul
                 _director.Quit();   // a test: whatever was on ends first, on its own terms
             }
             int index = CareerCatalogue.IndexOf(employer.Id);
-            bool hasDepot = DepotPlace(index, out Vector3 depot, out string depotAddress);
+            bool hasDepot = DepotPlace(index, out Vector3 depot, out _);
             if (rank.Work != CareerWork.Gig && hasDepot && counts && FlatSqr(depot - PlayerPosition()) > DeskReach * DeskReach)
             {
-                reasonKey = CareerOfficeRules.Key("reallife_career_at_depot", depotAddress);
+                reasonKey = CareerOfficeRules.Key("reallife_career_at_depot", WhereOf(index));   // (the board outside its shop, or the works site)
                 return false;
             }
             int day = TimeHelper.CurrentDay;
@@ -556,8 +608,8 @@ namespace RealLifeOverhaul
                 {
                     Employer employer = CareerState.Employer;
                     var data = new Dictionary<string, string>(3) { { "boss", JobText.T(employer.BossKey) }, { "employer", JobText.T(employer.NameKey) } };
-                    Notifications.Show(NotificationType.Info, OfficeKey("reallife_career_review_due", CareerState.EmployerIndex, data), data, 12f);
-                    CareerPhone.Text(OfficeKey("reallife_career_text_review_due", CareerState.EmployerIndex, data), data);
+                    Notifications.Show(NotificationType.Info, ReviewKey("reallife_career_review_due", CareerState.EmployerIndex, data), data, 12f);
+                    CareerPhone.Text(ReviewKey("reallife_career_text_review_due", CareerState.EmployerIndex, data), data);
                 }
             }
             catch (Exception e)

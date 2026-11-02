@@ -189,6 +189,7 @@ namespace RealLifeOverhaul
             // The game clears its event hub on every load, so the hooks are kept attached.
             SaveHook.Keep(_onSave);
             CustomerDraw.Keep();
+            KeepFigures();
 
             bool turned = hour != _lastHour || day != _lastDay, newDay = day != _lastDay;
             _lastHour = hour;
@@ -231,6 +232,53 @@ namespace RealLifeOverhaul
                     CustomerDraw.Release();
                 }
             }
+        }
+
+        private readonly List<BuildingRegistration> _wiped = new List<BuildingRegistration>(8);
+
+        /// <summary>
+        /// The game puts its own promotion figure back over the mod's whenever a player's business's items change, its shelves
+        /// are stocked or its marketing is set (BuildingManager.OnItemChanged, ItemController and Producer, BizManMarketing), and
+        /// no event follows them all; so the interior's customers, the city's and the rest vanished from the draw until the next
+        /// morning. Once a second the figures the mod wrote are compared with the ones standing, and a business whose figure was
+        /// put back is written again, with every part, and its customers still to come drawn again (Core/CustomerDraw).
+        /// COST: a pass over the businesses written, a few comparisons each, once a second; a write only after the game's.
+        /// </summary>
+        private void KeepFigures()
+        {
+            BusinessGame.Wiped(_wiped);
+            if (_wiped.Count == 0)
+            {
+                return;
+            }
+            int kept = 0;
+            CustomerDraw.Hold("the game's figure put back");
+            try
+            {
+                for (int i = 0; i < _wiped.Count; i++)
+                {
+                    BuildingRegistration reg = _wiped[i];
+                    int own, written;
+                    if (BusinessGame.IsBusiness(reg) && Footfall(reg, true, false, out own, out written))
+                    {
+                        kept++;
+                    }
+                    else
+                    {
+                        BusinessGame.Forget(reg);   // not the player's now, or not a figure the mod can write: not looked at again
+                    }
+                }
+            }
+            finally
+            {
+                CustomerDraw.Release();
+            }
+            if (Meta.Dev.Verbose)
+            {
+                Logger?.Info("Business check (figures kept): " + _wiped.Count + " business(es) the game's own figure was put back over, " + kept + " written again with the mod's parts"
+                             + (kept == _wiped.Count ? ": PASS" : ", " + (_wiped.Count - kept) + " not the player's or not writable, left to the game: PASS"));
+            }
+            _wiped.Clear();
         }
 
         // Opens the businesses with no closure of the mod's left; one let go since only has the mod's switch cleared.

@@ -220,11 +220,11 @@ namespace RealLifeOverhaul.Interiors
         }
 
         /// <summary>
-        /// Today's customers by where they came from. The game draws them by its multiplier, a base plus three quarters of the
-        /// promotion figure in hundredths; the figure is the street's traffic and marketing (<paramref name="own"/>), written
-        /// again with this mod's parts on top (<paramref name="written"/>). The game's <paramref name="drawn"/> are shared by
-        /// those parts (a part may be negative), what the top of 100 cut shared by size; <paramref name="booked"/> and
-        /// <paramref name="otherMod"/> are added as they are. The shares add up to the total exactly.
+        /// Today's customers by where they came from: the game's <paramref name="drawn"/> are shared by the street's figure
+        /// (<paramref name="own"/>), marketing and the mod's two parts, each at its own size (<paramref name="interiorPercent"/>,
+        /// <paramref name="otherPercent"/>) as far as the figure written (<paramref name="written"/>) carries it. A figure that
+        /// carries none shows none, never a part made up to balance the other; two parts that cancel show both.
+        /// <paramref name="booked"/> and <paramref name="otherMod"/> are added as they are. The shares add up to the total exactly.
         /// </summary>
         public static CustomerSplit Split(int drawn, int booked, int otherMod, int baseMille, int traffic, int own, int written, int interiorPercent, int otherPercent)
         {
@@ -238,9 +238,14 @@ namespace RealLifeOverhaul.Interiors
             long all = baseTen + 75L * written;
             long change = all - ownM;
             long interiorRaw = ownM * interiorPercent / 100, otherRaw = ownM * otherPercent / 100;
-            long interior = interiorRaw + otherRaw != 0 && Math.Sign(interiorRaw + otherRaw) == Math.Sign(change)
-                ? change * interiorRaw / (interiorRaw + otherRaw) : interiorRaw;
-            long others = change - interior;
+            long together = interiorRaw + otherRaw;
+            long interior = interiorRaw, others = otherRaw;   // parts that cancel are in the figure whole
+            if (together != 0)
+            {
+                long carried = Math.Sign(together) == Math.Sign(change) ? Math.Min(Math.Abs(change), Math.Abs(together)) : 0;
+                interior = interiorRaw * carried / Math.Abs(together);
+                others = otherRaw * carried / Math.Abs(together);
+            }
             long marketing = ownM - game;
             if (all <= 0 || drawn == 0)
             {

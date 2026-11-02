@@ -10,12 +10,16 @@ namespace RealLifeOverhaul.Uptown
     /// play and again at every load, one "Uptown check (a whole building, ...)" line each in Player.log with every item PASS or
     /// FAIL (CompleteRules), and a notice when any fails. A city's building with no owner the game can name is given the rival
     /// the game's own generator would give it first (never in a Going Public session). COST: nothing per frame; a pass over
-    /// the save's registrations for each building checked, on a stand and once a load behind the loading screen.
+    /// the save's registrations for each building checked, on a stand and once a load behind the loading screen. The notice is
+    /// shown only when the count of buildings not whole grew past what the save last told (LifeState.Told), or once a load with
+    /// Developer diagnostics on (CompleteRules.NoticeDue); the line in Player.log, naming the building, its lot and what is
+    /// missing, is written whatever the notice does.
     /// </summary>
     public sealed partial class LifeDirector
     {
         private static readonly List<string> OwnerRivals = new List<string>(16);
-        private static bool _incompleteSaid;
+        private const string AtLoad = "the load";
+        private static bool _incompleteSaid;   // the notice has been shown in this load of the city
 
         /// <summary>One building standing on a lot checked now; false when it fails an item or does not stand. The test's and the bridge's way in.</summary>
         public static bool CompleteNow(string lotId, string when)
@@ -29,6 +33,7 @@ namespace RealLifeOverhaul.Uptown
             }
             return CompleteOne(made, f, when);
         }
+
 
         /// <summary>Every finished building standing now checked; returns how many failed an item.</summary>
         public static int CompleteAll(string when)
@@ -49,12 +54,37 @@ namespace RealLifeOverhaul.Uptown
             {
                 Logger?.Info("Uptown: " + checkedCount + " finished building(s) checked as whole buildings at " + when + ", " + failed + " with an item failed.");
             }
-            if (failed > 0 && !_incompleteSaid)
+            if (when == AtLoad)
             {
-                _incompleteSaid = true;   // once a session: Player.log names every item
-                LifeGame.SayIncomplete(failed);
+                Told(failed);   // the load's count is the one the save remembers; a test's is its own
             }
             return failed;
+        }
+
+        // The count of buildings not whole at a load or a stand, told to the player by the rule (CompleteRules.NoticeDue), and kept in the save.
+        private static void Told(int failed)
+        {
+            if (_state == null)
+            {
+                return;
+            }
+            bool due = CompleteRules.NoticeDue(failed, _state.Told, Meta.Dev.Verbose, _incompleteSaid);
+            if (_state.Told != failed)
+            {
+                _state.Told = failed;
+                WriteState();
+            }
+            if (due)
+            {
+                _incompleteSaid = true;
+                LifeGame.SayIncomplete(failed);
+            }
+        }
+
+        /// <summary>A building stood in play that is not whole: one more than the save last told, so the notice is due (<see cref="Told"/>).</summary>
+        private static void StandIncomplete()
+        {
+            Told(_state != null ? _state.Told + 1 : 1);
         }
 
         private static bool CompleteOne(MadeBuilding made, FinishedBuilding f, string when)
@@ -69,7 +99,7 @@ namespace RealLifeOverhaul.Uptown
                 }
                 CompleteFacts facts = LifeGame.CompleteFacts(made, f.Owner == FinishOwner.Player, f.Type, f.Size, planNumber);
                 int passed = CompleteRules.Passed(facts);
-                string line = CompleteRules.Line(when, made.Address, facts, passed);
+                string line = CompleteRules.Line(when, made.Address, facts, passed, made.Spec.Id);
                 if (CompleteRules.All(passed))
                 {
                     Logger?.Info(line);
