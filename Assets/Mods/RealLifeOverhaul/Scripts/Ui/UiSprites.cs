@@ -19,7 +19,7 @@ namespace RealLifeOverhaul.Ui
         private static readonly Dictionary<int, Sprite> Tops = new Dictionary<int, Sprite>(4);
         private static readonly Dictionary<int, Sprite> Edges = new Dictionary<int, Sprite>(8);
         private static readonly Dictionary<int, Sprite> Rings = new Dictionary<int, Sprite>(8);
-        private static Sprite _circle, _circleEdge, _donut;
+        private static Sprite _circle, _circleEdge, _donut, _ring;
         private static readonly Dictionary<int, Sprite> Faces = new Dictionary<int, Sprite>(32);
         private static readonly Queue<int> FaceOrder = new Queue<int>(32);
         private const int MostFaces = 160;   // faces kept at once, the oldest let go first: a long session's thousands of people never pile up
@@ -101,6 +101,38 @@ namespace RealLifeOverhaul.Ui
                 tex.Apply(true, true);
                 _donut = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), PixelsPerUnit);
                 return _donut;
+            }
+        }
+
+        /// <summary>
+        /// A thin ring, its stroke a fortieth of its width (4 px round a 340 px clock), filled radially as a donut's slice is:
+        /// the time skip veil's way to its goal. A slice with a radius above 0 is drawn on it (UiDraw.Ring).
+        /// </summary>
+        public static Sprite ThinRing
+        {
+            get
+            {
+                if (_ring != null)
+                {
+                    return _ring;
+                }
+                const int size = 512;
+                const float outer = size / 2f - 1f, inner = outer * 0.975f;
+                var px = new Color32[size * size];
+                for (int y = 0; y < size; y++)
+                {
+                    for (int x = 0; x < size; x++)
+                    {
+                        float dx = x + 0.5f - size / 2f, dy = y + 0.5f - size / 2f, d = Mathf.Sqrt(dx * dx + dy * dy);
+                        float a = Mathf.Clamp01(outer - d + 0.5f) * Mathf.Clamp01(d - inner + 0.5f);
+                        px[y * size + x] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(a * 255f));
+                    }
+                }
+                var tex = new Texture2D(size, size, TextureFormat.RGBA32, true) { name = "UiRing", wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Trilinear };
+                tex.SetPixels32(px);
+                tex.Apply(true, true);
+                _ring = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), PixelsPerUnit);
+                return _ring;
             }
         }
 

@@ -15,13 +15,16 @@ namespace RealLifeOverhaul.Ui
 
     /// <summary>
     /// The game's PlayerActivityUI as data: the headline, its lines (LabelInfo), its buttons (ButtonInfo), the progress bar
-    /// and its words, the duration slider, the clock, and the time machine and fast forward with the game's keys for them.
+    /// and its words, the duration slider, the clock, and the time machine and fast forward with the game's keys for them;
+    /// with what the mod knows of a working day where it has it (the place, the person there, the sums under the slider,
+    /// the hour and the pay so far).
     /// </summary>
     public sealed class UiActivityModel
     {
         public UiActivityState State;
         public string Headline;                            // "Work a shift at Bloom Café"
         public UiIcon Icon = UiIcon.Briefcase;
+        public UiRole IconTint = UiRole.Gold;
         public UiInfoRow[] Lines = new UiInfoRow[0];       // what it gives and costs, as the game's labels say
         public bool HasProgress;
         public UiProgressModel Progress;
@@ -29,6 +32,7 @@ namespace RealLifeOverhaul.Ui
         public string DurationLabel;                       // "Hours"
         public string DurationValue;                       // "4 hours"
         public float DurationShare;                        // 0 to 1 along the slider
+        public bool DurationHeld;                          // the keys hold it: Left and Right step it
         public string Clock;                               // the game's time now, "14:32"
         public string StateWords;                          // the strip's line: "On your way", "Waiting for the doors to open", "Done"
         public bool CanSkip;                               // the time machine (the game's Special key)
@@ -44,26 +48,52 @@ namespace RealLifeOverhaul.Ui
         public bool StartDisabled;                         // the game will not start it now (no energy): its line says why
         public UiPrompt[] Prompts = new UiPrompt[0];
         public int PromptCount;
+
+        // The card's words and side (the side card): a kicker over the title, a paragraph, the place and the person there.
+        public string Kicker;                              // "Working day, Monday"
+        public string Title;                               // the card's title; the headline when not set
+        public string Body;
+        public string Place;                               // "Pioneer Game Studio": the side's name, and the strip's line under the headline
+        public string[] PlaceLines = new string[0];        // its address
+        public string Person, PersonLine;                  // the person met there
+        public string DurationFrom, DurationTo;            // the slider's ends: "1 h", "8 h"
+        public string Finish, Sum;                         // under the slider: "You finish at 15:00", "$228 before tax"
+
+        // The buttons as the game gives them. Set by a host that reads the game: the card's own (its arg the index here,
+        // given back with ButtonCommand) and the strip's (CancelCommand with the index). Left empty, they follow from
+        // CanCancel, StartLabel and CanSkip as the samples set them.
+        public UiSideButton[] Buttons = new UiSideButton[0];
+        public UiSideButton[] StripButtons = new UiSideButton[0];
+        public bool Bar = true;                            // the card draws the status bar under it; false over the game's own HUD
+
+        // While it runs: the meter's words, "Hour 4 of 6" and "Earned $152"; the game's progress words when not set.
+        public string MeterLeft, MeterRight;
+
+        // Laid out: the card it was drawn as, for a press or a drag on the slider to read its share.
+        public UiSideCardModel Card;
     }
 
     /// <summary>
-    /// The activity panel in two faces. Before it starts, a compact decision card centred over the world (the glyph and the
-    /// headline in its strip, the lines on a band, the duration's slider between its two steps, Cancel and Start, Start on
-    /// the game's Interact as F). While it runs, a slim strip above the status bar at the centre, so the city stays in view:
-    /// the glyph on its tile, the headline over the state and the clock, the meter filling, and the time machine and fast
-    /// forward as buttons with the game's keys (the game reads them; the mouse presses them). Commands:
-    /// <see cref="ButtonCommand"/> (0 Cancel, 1 Start), <see cref="StepCommand"/> (-1 or 1), <see cref="SkipCommand"/>,
-    /// <see cref="FastCommand"/> and <see cref="CancelCommand"/>. Game-free. Cost: a layout a change; the strip's meter
-    /// moves with the game's progress, laid out again a few times a second at most by its host.
+    /// The activity panel in two faces. Before it starts, a side card centred over the dimmed world (UiSideCard: the
+    /// emblem and the place at its left, the headline in cyan capitals, the lines on a band, the duration's slider with
+    /// its ends and sums, Back at the left, the time machine and Start at the right on the game's keys). While it runs, a
+    /// strip above the status bar at the centre, so the city stays in view: the glyph on its tile, the headline in cyan
+    /// capitals over the place or the state, the meter with its words, the clock, and the time machine, fast forward and
+    /// the activity's own buttons with the game's keys (the game reads them; the mouse presses them). Commands:
+    /// <see cref="ButtonCommand"/> (a card button's index), <see cref="StepCommand"/> (the slider, arg 0),
+    /// <see cref="SkipCommand"/>, <see cref="FastCommand"/> and <see cref="CancelCommand"/> (a strip button's index).
+    /// Game-free. Cost: a layout a change; the strip's meter moves with the game's progress, laid out again a few times a
+    /// second at most by its host.
     /// </summary>
     public static class UiActivity
     {
         public const int ButtonCommand = 240, StepCommand = 241, SkipCommand = 242, FastCommand = 243, CancelCommand = 244;   // the duration's slider is StepCommand, arg 0
-        public const float CardWidth = 560f;      // px: compact, the world round it
-        public const float StripWidth = 720f;     // px: the strip, centred over the bar's apps
-        public const float StripHeight = 76f;     // px: a tile's row and the meter under it
-        public const float StripShort = 64f;      // px: a tile's row alone, while there is no meter (walking there, waiting)
-        private const byte CardBody = 1, CardButtons = 2;
+        public const float CardWidth = UiSideCard.Width;   // px: the side card's
+        public const float StripWidth = 1020f;    // px: the strip, centred over the bar's apps
+        public const float StripHeight = 72f;     // px: a tile's row with room round it, the meter's words over its bar
+        public const float StripShort = 72f;      // px: the same while there is no meter (walking there, waiting): the strip does not jump
+        private const float MeterWidth = 208f;    // px: the meter's column
+        private const float MeterLeast = 128f;    // px: the least it keeps before the headline gives way
 
         /// <summary>True for the states the strip shows; the card shows the rest.</summary>
         public static bool Strip(UiActivityState state) => state != UiActivityState.NotStarted;
@@ -71,96 +101,45 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The card as a screen of its own: centred over the dimmed world above the status bar, with the bar and its prompts.</summary>
         public static void LayCard(UiScene s, UiActivityModel m, UiFrame frame, bool dark, IUiKeys keys)
         {
-            s.Begin("activity", frame.Width, frame.Height, dark);
-            s.Pointer = frame.Pointer;
-            s.Floats = true;
-            UiDraw.Scrim(s, 0f, 0f, frame.Width, frame.BandY, 0);   // the world dimmed round the decision, as the decision card dims it
-            float h = CardHeight(m, keys);
-            float x = UiDraw.SnapDown((frame.Width - CardWidth) / 2f), y = UiDraw.SnapDown(Math.Max(UiTokens.S8, (frame.BandY - h) / 2f));
-            Card(s, UiAt.Screen, m, x, y, keys);
-            for (int i = 0; i < m.PromptCount; i++)
-            {
-                s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
-            }
-            UiDraw.PromptBar(s, frame, keys);
+            UiSideCardModel card = Card(m, keys);
+            m.Card = card;
+            UiSideCard.Lay(s, card, frame, dark, keys, "activity");
         }
 
-        public static float CardHeight(UiActivityModel m, IUiKeys keys)
-        {
-            float h = UiFrame.Strip;
-            if (m.Lines.Length > 0)
-            {
-                h += UiTokens.S2 * 2f + m.Lines.Length * UiTokens.PairRow;
-            }
-            if (m.HasDuration)
-            {
-                h += UiTokens.S4 + UiTokens.Control;
-            }
-            return UiDraw.Snap(h + UiTokens.S4 + UiTokens.Control + UiTokens.S4);
-        }
+        public static float CardHeight(UiActivityModel m, IUiKeys keys) => UiSideCard.Height(Card(m, keys), keys);
 
-        // The card: its strip, its lines, the duration between its steps, then Cancel and Start at its foot.
-        private static void Card(UiScene s, UiAt at, UiActivityModel m, float x, float y, IUiKeys keys)
+        /// <summary>The slider's share for a point across the screen, by the card laid last.</summary>
+        public static float SliderShare(UiActivityModel m, float x) => m != null && m.Card != null ? UiSideCard.TrackShare(m.Card, x) : 0f;
+
+        // The activity as a side card: its emblem and place at the left, its headline as the title, its lines as rows.
+        private static UiSideCardModel Card(UiActivityModel m, IUiKeys keys)
         {
-            float h = CardHeight(m, keys);
-            int panel = UiDraw.Box(s, at, x, y, CardWidth, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
-            UiAt on = at.In(panel);
-            float cy = UiDraw.TitleStrip(s, on, x, y, CardWidth, m.Icon, m.Headline, false);   // Cancel on Back is its way out: one target for it
-            float ix = x + UiTokens.S4, iw = CardWidth - UiTokens.S4 * 2f;
-            if (m.Lines.Length > 0)
+            var c = new UiSideCardModel
             {
-                float bh = UiTokens.S2 * 2f + m.Lines.Length * UiTokens.PairRow;
-                UiDraw.Band(s, on, x, cy, CardWidth, bh);
-                float ry = cy + UiTokens.S2;
-                for (int i = 0; i < m.Lines.Length; i++)
-                {
-                    ry += UiDraw.InfoRow(s, on, ix, ry, iw, m.Lines[i].Label, m.Lines[i].Value, false, -1, 0, m.Lines[i].Ink == UiRole.None ? UiRole.Text : m.Lines[i].Ink);
-                }
-                cy += bh;
-            }
-            if (m.HasDuration)
+                Emblem = m.Icon, EmblemTint = m.IconTint == UiRole.None ? UiRole.Gold : m.IconTint, SideName = m.Place, SideLines = m.PlaceLines ?? new string[0],
+                Person = m.Person, PersonLine = m.PersonLine, Kicker = m.Kicker, Title = string.IsNullOrEmpty(m.Title) ? m.Headline : m.Title, Body = m.Body,
+                Rows = m.Lines ?? new UiInfoRow[0], HasSlider = m.HasDuration, SliderLabel = m.DurationLabel, SliderValue = m.DurationValue, SliderShare = m.DurationShare,
+                SliderHeld = m.DurationHeld, SliderFrom = m.DurationFrom, SliderTo = m.DurationTo, SumLeft = m.Finish, SumRight = m.Sum, Prompts = m.Prompts,
+                PromptCount = m.PromptCount, Bar = m.Bar, ButtonCommand = ButtonCommand, SliderCommand = StepCommand,
+            };
+            if (m.Buttons != null && m.Buttons.Length > 0)
             {
-                cy += UiTokens.S4;
-                Duration(s, on.InRegion(CardBody), m, ix, cy, iw);
-                cy += UiTokens.Control;
+                c.Buttons = m.Buttons;
+                return c;
             }
-            cy += UiTokens.S4;
-            UiAt buttons = on.InRegion(CardButtons);
-            float bw = UiDraw.SnapDown((iw - UiTokens.S3) / 2f);
-            int cancel = -1;
+            // The samples' buttons: Cancel on Back at the left, Start on the game's Interact as F, the time machine on its key.
+            int n = (m.CanCancel ? 1 : 0) + 1 + (m.CanSkip ? 1 : 0), i = 0;
+            c.Buttons = new UiSideButton[n];
             if (m.CanCancel)
             {
-                cancel = UiDraw.Button(s, buttons, ix, cy, bw, UiTokens.Control, UiButtonKind.Secondary, m.CancelLabel, UiIcon.None, UiAction.Back, keys, ButtonCommand, 0);
+                c.Buttons[i++] = new UiSideButton { Label = m.CancelLabel, Kind = UiButtonKind.Secondary, Key = UiAction.Back, Left = true };
             }
-            int start = UiDraw.Button(s, buttons, ix + iw - bw, cy, bw, UiTokens.Control, UiButtonKind.Primary, m.StartLabel, UiIcon.Play, UiAction.Alt, keys, ButtonCommand, 1, m.StartDisabled);
-            Link(s, cancel, start);
-        }
-
-        // The card's d-pad: the slider over Cancel and Start; below them only the frame's app row.
-        private static void Link(UiScene s, int cancel, int start)
-        {
-            int slider = s.FindNode(StepCommand, 0);
-            if (slider >= 0)
+            c.Buttons[i++] = new UiSideButton { Label = m.StartLabel, Kind = UiButtonKind.Primary, Key = UiAction.Alt, Disabled = m.StartDisabled };
+            if (m.CanSkip)
             {
-                s.Nodes[slider].Down = cancel >= 0 ? cancel : start;
-                s.Nodes[slider].Up = slider;
+                c.Buttons[i] = new UiSideButton { Label = m.SkipLabel, Kind = UiButtonKind.Secondary, Key = UiAction.Count, GameKey = m.SkipKey };
             }
-            if (cancel >= 0)
-            {
-                s.Nodes[cancel].Right = start;
-                s.Nodes[start].Left = cancel;
-                s.Nodes[cancel].Up = slider >= 0 ? slider : cancel;
-            }
-            s.Nodes[start].Up = slider >= 0 ? slider : start;
-        }
-
-        // The duration: its words, then the kit's slider with its figure at the track's right (a press holds it, and Left and
-        // Right step it as the game's own slider steps by its keys).
-        private static void Duration(UiScene s, UiAt at, UiActivityModel m, float x, float y, float w)
-        {
-            float lw = UiDraw.Snap(Math.Min(w * 0.3f, UiTextRules.Width(m.DurationLabel, UiStyle.Body) + UiTokens.S1));
-            UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, lw, UiStyle.Body, UiRole.Text2, m.DurationLabel, UiFlags.Label | UiFlags.Truncate);
-            UiDraw.Slider(s, at, x + lw + UiTokens.S3, y, w - lw - UiTokens.S3, m.DurationValue, Math.Max(0f, Math.Min(1f, m.DurationShare)), StepCommand, 0, false);
+            return c;
         }
 
         /// <summary>The strip's place: centred over the status bar's apps, a grid step above the bar.</summary>
@@ -170,92 +149,125 @@ namespace RealLifeOverhaul.Ui
             y = frame.BandY - UiTokens.S3 - Height(m);
         }
 
-        /// <summary>The strip's height: with its meter while there is one, its tile's row alone while not.</summary>
+        /// <summary>The strip's height: one height in every state, so it never jumps as the state changes.</summary>
         public static float Height(UiActivityModel m) => Metered(m) ? StripHeight : StripShort;
 
         private static bool Metered(UiActivityModel m) => m.HasProgress || m.State == UiActivityState.Finished;
 
         /// <summary>
         /// The strip while it runs (and while the player walks to it, waits for it, or it has just finished): the glyph on its
-        /// tile, the headline over the state and the clock, the time machine and fast forward with the game's keys, or the way
-        /// out while walking, and the meter under them.
+        /// tile, the headline in capitals over the place or the state, the meter with its words, the clock, then the time
+        /// machine, fast forward and the activity's own buttons with the game's keys, or the way out while walking.
         /// </summary>
         public static void DrawStrip(UiScene s, UiAt at, UiActivityModel m, float x, float y)
         {
             float w = StripWidth, h = Height(m);
+            int firstNode = s.NodeCount;
             int panel = UiDraw.Box(s, at, x, y, w, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt on = at.In(panel);
-            float pad = UiTokens.S3, tile = UiTokens.IconTile;
-            float ty = y + pad;
+            float pad = UiTokens.S4, tile = UiTokens.IconTile;
+            float ty = y + (h - tile) / 2f;
             int t = UiDraw.Tile(s, on, x + pad, ty, tile, UiRole.None, false);
-            UiDraw.Icon(s, on.In(t), x + pad + (tile - UiTokens.Icon) / 2f, ty + (tile - UiTokens.Icon) / 2f, UiTokens.Icon, m.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
+            UiDraw.Icon(s, on.In(t), x + pad + (tile - UiTokens.Icon) / 2f, ty + (tile - UiTokens.Icon) / 2f, UiTokens.Icon, m.Icon, m.IconTint, UiFlags.Middle | UiFlags.Centre, true);
             float right = x + w - pad;
-            float bh = UiTokens.ControlSmall, by = ty + (tile - bh) / 2f;
-            if (m.State == UiActivityState.Moving || m.State == UiActivityState.Waiting)
+            float bh = UiTokens.ControlSmall, by = y + (h - bh) / 2f;
+            bool walking = m.State == UiActivityState.Moving || m.State == UiActivityState.Waiting;
+            bool done = m.State == UiActivityState.Finished;
+            // From the right: the activity's own buttons (its Stop), fast forward, then the time machine as the main one.
+            if (m.StripButtons != null && m.StripButtons.Length > 0)
             {
-                if (m.CanCancel)
+                for (int i = m.StripButtons.Length - 1; i >= 0; i--)
                 {
-                    right -= StripButton(s, on, right, by, m.CancelLabel, default(UiGameKey), false, CancelCommand) + UiTokens.S2;
+                    ref UiSideButton b = ref m.StripButtons[i];
+                    right -= StripButton(s, on, right, by, b.Label, b.GameKey, b.Kind == UiButtonKind.Primary, CancelCommand, i, b.Disabled) + UiTokens.S2;
                 }
             }
-            else if (m.State != UiActivityState.Finished)
+            else if (walking && m.CanCancel)
+            {
+                right -= StripButton(s, on, right, by, m.CancelLabel, default(UiGameKey), false, CancelCommand, 0, false) + UiTokens.S2;
+            }
+            if (!done && !walking)
             {
                 if (m.CanFast)
                 {
-                    right -= StripButton(s, on, right, by, m.FastLabel, m.FastKey, m.Fast, FastCommand) + UiTokens.S2;
+                    right -= StripButton(s, on, right, by, m.FastLabel, m.FastKey, m.Fast, FastCommand, 0, false) + UiTokens.S2;
                 }
                 if (m.CanSkip)
                 {
-                    right -= StripButton(s, on, right, by, m.SkipLabel, m.SkipKey, false, SkipCommand) + UiTokens.S2;
+                    right -= StripButton(s, on, right, by, m.SkipLabel, m.SkipKey, true, SkipCommand, 0, false) + UiTokens.S2;
                 }
             }
+            else if (walking && m.State == UiActivityState.Waiting && m.CanSkip && (m.StripButtons == null || m.StripButtons.Length == 0) && !m.CanCancel)
+            {
+                right -= StripButton(s, on, right, by, m.SkipLabel, m.SkipKey, true, SkipCommand, 0, false) + UiTokens.S2;
+            }
+            right -= UiTokens.S3;
+            if (!string.IsNullOrEmpty(m.Clock))
+            {
+                float cw = UiDraw.Snap(UiTextRules.Width(m.Clock, UiStyle.Number) + UiTokens.S1);
+                UiDraw.TextMiddle(s, on, right - cw, y, h, cw, UiStyle.Number, UiRole.Text, m.Clock, UiFlags.Right);
+                right -= cw + UiTokens.S5;
+            }
             float cx = x + pad + tile + UiTokens.S3;
-            float clockW = string.IsNullOrEmpty(m.Clock) ? 0f : UiTextRules.Width(m.Clock, UiStyle.BodyStrong) + UiTokens.S1;
-            float tw = right - UiTokens.S2 - cx;
-            float nh = UiTextRules.LineHeight(UiStyle.Title), sh = UiTextRules.LineHeight(UiStyle.Small);
-            float block = nh + UiTokens.S1 + sh, hy = ty + (tile - block) / 2f;
-            UiDraw.Text(s, on, cx, hy, tw, UiStyle.Title, UiRole.Text, m.Headline, UiFlags.Truncate | UiFlags.Middle);
-            float lineW = tw - (clockW > 0f ? clockW + UiTokens.S3 : 0f);
-            if (!string.IsNullOrEmpty(m.StateWords))
-            {
-                UiDraw.Text(s, on, cx, hy + nh + UiTokens.S1, lineW, UiStyle.Small, m.State == UiActivityState.Finished ? UiRole.OkText : UiRole.Text2, m.StateWords,
-                    UiFlags.Truncate | UiFlags.Middle);
-            }
-            if (clockW > 0f)
-            {
-                UiDraw.Text(s, on, cx + tw - clockW, hy + nh + UiTokens.S1 - (UiTextRules.LineHeight(UiStyle.BodyStrong) - sh) / 2f, clockW, UiStyle.BodyStrong, UiRole.Text, m.Clock,
-                    UiFlags.Right | UiFlags.Middle);
-            }
-            Row(s, CancelCommand, SkipCommand, FastCommand);
-            float my = y + h - pad - UiTokens.S2;
             if (Metered(m))
             {
-                var bar = new UiProgressModel { Share = m.State == UiActivityState.Finished ? 1f : m.Progress.Share, Tone = m.State == UiActivityState.Finished ? UiRole.Ok : m.Progress.Tone };
-                UiDraw.Progress(s, on, x + pad, my, w - pad * 2f, ref bar);
+                float mw = Math.Max(MeterLeast, Math.Min(MeterWidth, UiDraw.SnapDown((right - cx) / 2f)));
+                var bar = new UiProgressModel
+                {
+                    Label = !string.IsNullOrEmpty(m.MeterLeft) ? m.MeterLeft : m.Progress.Label, Value = !string.IsNullOrEmpty(m.MeterRight) ? m.MeterRight : m.Progress.Value,
+                    Share = done ? 1f : m.Progress.Share, Tone = done ? UiRole.Ok : m.Progress.Tone,
+                };
+                float mh = UiDraw.ProgressHeight(ref bar);
+                UiDraw.Progress(s, on, right - mw, y + UiDraw.SnapDown((h - mh) / 2f), mw, ref bar);
+                right -= mw + UiTokens.S5;
             }
+            // The headline in the cyan capitals over the place, or the state's words while it has no place or is not running.
+            float tw = Math.Max(UiTokens.S8, right - cx);
+            string under = done || walking || string.IsNullOrEmpty(m.Place) ? m.StateWords : m.Place;
+            float nh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionTitle)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
+            float block = string.IsNullOrEmpty(under) ? nh : nh + UiTokens.S1 + sh, hy = y + UiDraw.SnapDown((h - block) / 2f);
+            UiDraw.Text(s, on, cx, hy, tw, UiStyle.SectionTitle, UiRole.AccentText, string.IsNullOrEmpty(m.Kicker) ? m.Headline : m.Kicker, UiFlags.Truncate);
+            if (!string.IsNullOrEmpty(under))
+            {
+                UiDraw.Text(s, on, cx, hy + nh + UiTokens.S1, tw, UiStyle.Small, done ? UiRole.OkText : UiRole.Text2, under, UiFlags.Truncate);
+            }
+            Row(s, firstNode);
         }
 
         // The strip's buttons left to right as the d-pad's row, its ends going nowhere sideways (only Down leaves for the bar).
-        private static void Row(UiScene s, int a, int b, int c)
+        private static void Row(UiScene s, int firstNode)
         {
             int first = -1, last = -1;
-            foreach (int command in new[] { a, b, c })
+            float lastX = float.MinValue;
+            // Laid from the right: walk them by their place, left first.
+            for (int pass = firstNode; pass < s.NodeCount; pass++)
             {
-                int node = s.FindNode(command, 0);
-                if (node < 0)
+                int next = -1;
+                float nextX = float.MaxValue;
+                for (int n = firstNode; n < s.NodeCount; n++)
                 {
-                    continue;
+                    float nx = s.Nodes[n].X;
+                    if (nx > lastX && nx < nextX)
+                    {
+                        next = n;
+                        nextX = nx;
+                    }
+                }
+                if (next < 0)
+                {
+                    break;
                 }
                 if (last >= 0)
                 {
-                    s.Nodes[last].Right = node;
-                    s.Nodes[node].Left = last;
+                    s.Nodes[last].Right = next;
+                    s.Nodes[next].Left = last;
                 }
                 else
                 {
-                    first = node;
+                    first = next;
                 }
-                last = node;
+                last = next;
+                lastX = nextX;
             }
             if (first >= 0)
             {
@@ -264,20 +276,17 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // A button of the strip from its right edge: the game's key on its cap and its words; on the cyan while it is on.
-        private static float StripButton(UiScene s, UiAt at, float right, float y, string label, UiGameKey key, bool on, int command)
+        // A button of the strip from its right edge: the game's key on its cap and its words; on the cyan for the main one
+        // and while a toggle is on.
+        private static float StripButton(UiScene s, UiAt at, float right, float y, string label, UiGameKey key, bool on, int command, int arg, bool disabled)
         {
             float kw = UiDraw.GameKeyWidth(key);
-            float lw = UiTextRules.Width(label, UiStyle.Button) + UiTokens.S1;
-            float w = UiDraw.Snap(UiTokens.S3 + (kw > 0f ? kw + UiTokens.S2 : 0f) + lw + UiTokens.S3);
-            float x = right - w, h = UiTokens.ControlSmall;
-            int face = UiDraw.Box(s, at, x, y, w, h, on ? UiRole.Accent : UiRole.Field, UiRole.None, UiTokens.RadiusLarge, on ? UiFlags.Selected : UiFlags.None);
-            UiAt inside = at.In(face);
-            // The kit's button words (capitals, the button's style), with the game's key on its cap: the game reads that key.
-            float cx = x + UiTokens.S3 + (kw > 0f ? kw + UiTokens.S2 : 0f);
-            UiDraw.TextMiddle(s, inside, cx, y, h, lw, UiStyle.Button, on ? UiRole.OnAccent : UiRole.Text, label, UiFlags.Label);
-            UiDraw.Node(s, at, x, y, w, h, command, 0, face);
-            UiDraw.GameKey(s, inside, x + UiTokens.S3, y + (h - UiTokens.KeyCap) / 2f, key, on);   // after the target: the game, not the button, answers it
+            float w = UiDraw.Snap(UiTokens.S3 + (kw > 0f ? kw + UiTokens.S2 : 0f) + UiTextRules.Width(label, UiStyle.Button) + UiTokens.S1 + UiTokens.S3);
+            UiSideCard.GameButton(s, at, right - w, y, w, UiTokens.ControlSmall, on ? UiButtonKind.Primary : UiButtonKind.Secondary, label, key, command, arg, disabled);
+            if (on && command == FastCommand)
+            {
+                s.Items[s.Nodes[s.NodeCount - 1].Face].Flags |= UiFlags.Selected;   // a toggle that is on reads as chosen
+            }
             return w;
         }
     }

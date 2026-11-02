@@ -447,6 +447,7 @@ common_friday
 common_happiness
 common_hourly_wage
 common_hours
+common_hours_abbr
 common_hours_left
 common_hunger
 common_in_training
