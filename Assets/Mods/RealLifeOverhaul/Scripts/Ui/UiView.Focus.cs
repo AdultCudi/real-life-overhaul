@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Ui
     /// last target to the next in the focus time, the target's face lifted to the hover fill. While the pointer leads
     /// there is no ring: the target under the pointer gets that same still fill instead, so hovering never moves anything.
     /// A press tightens the ring for a moment. One highlight a list: while the ring stands on another row of a list, that
-    /// list's selected row keeps its accent bar and lets its fill go quiet, so the two never read as two selections.
+    /// list's selected row lets its fill go quiet, so the two never read as two selections.
     /// </summary>
     public sealed partial class UiView
     {

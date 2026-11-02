@@ -742,6 +742,7 @@ internal static partial class Program
                         Check(UiCheckRules.EmptyPanels(s, say) == 0, "ui screens: no panel stands empty: " + where);
                         Check(UiCheckRules.Floating(s, say) == 0, "ui screens: an overlay's words stand on a card of their own: " + where);
                         Check(UiCheckRules.Strays(s, say) == 0, "ui screens: no mark lies over a panel it does not belong to: " + where);
+                        Check(UiCheckRules.Spines(s, say) == 0, "ui screens: no coloured strip down the edge of a card, row, notice or bar (no spines): " + where);
                         Check(UiCheckRules.TypeLevels(s, say) == 0, "ui screens: three sizes of type at most: " + where);
                         Check(UiCheckRules.UnknownCommands(s, c.Commands, say) == 0, "ui screens: every target runs a command its template answers: " + where);
                         if (lang == "en" && keys == UiDefaultKeys.Keyboard)
@@ -892,6 +893,29 @@ internal static partial class Program
         hole.Items[frame].H = 400f;
         UiDraw.Button(hole, UiAt.Screen.In(frame), 20f, 320f, 200f, UiTokens.Control, UiButtonKind.Secondary, "Begin", UiIcon.None, UiAction.Count, null, 1, 0);
         Check(UiCheckRules.DeadSpace(hole, null) > 0, "ui rules: a frame with a hole between its lines is found");
+        // The owner (2 Nov): "I don't like this spine. Anywhere at all." A cyan strip down a row's edge, 4 px wide, is found; the
+        // underline of a chosen tab, a hairline between columns and a meter's fill in its track are not.
+        var spine = new UiScene();
+        spine.Begin("spine", 800f, 600f, true);
+        int shift = UiDraw.Box(spine, UiAt.Screen, 0f, 0f, 200f, 48f, UiRole.Tile, UiRole.None, UiTokens.RadiusMedium);
+        UiDraw.Box(spine, UiAt.Screen.In(shift), 0f, 0f, 4f, 48f, UiRole.Chart1, UiRole.None, UiTokens.RadiusSmall, UiFlags.Decor);
+        Check(UiCheckRules.Spines(spine, null) == 1, "ui rules: a coloured strip down the edge of a bar is found");
+        spine.Items[spine.ItemCount - 1].X = 196f;
+        Check(UiCheckRules.Spines(spine, null) == 1, "ui rules: the same strip down the right edge is found");
+        spine.Items[spine.ItemCount - 1].Fill = UiRole.Line;
+        Check(UiCheckRules.Spines(spine, null) == 0, "ui rules: a neutral hairline down an edge passes");
+        spine.Items[spine.ItemCount - 1].Fill = UiRole.Accent;
+        spine.Items[spine.ItemCount - 1].X = 0f;
+        spine.Items[spine.ItemCount - 1].W = 200f;
+        spine.Items[spine.ItemCount - 1].H = 4f;
+        spine.Items[spine.ItemCount - 1].Y = 44f;
+        Check(UiCheckRules.Spines(spine, null) == 0, "ui rules: the cyan underline of a chosen tab passes");
+        spine.Items[spine.ItemCount - 1].Y = 0f;
+        Check(UiCheckRules.Spines(spine, null) == 1, "ui rules: a coloured strip along the top of a bar is found");
+        spine.Items[spine.ItemCount - 1].Y = 22f;
+        spine.Items[spine.ItemCount - 1].H = 4f;
+        spine.Items[spine.ItemCount - 1].W = 80f;
+        Check(UiCheckRules.Spines(spine, null) == 0, "ui rules: a strip across the middle of a bar is not an edge");
         // The owner's review of the studio's page (1 Nov): a card floating in the middle of the screen, a third of the
         // width empty at either side and gaps over and under it. Anchored under the masthead and across the width it passes.
         UiFrame played = UiFrame.FullMenu(16f / 9f, "Tech");

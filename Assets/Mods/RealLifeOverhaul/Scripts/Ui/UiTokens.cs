@@ -199,7 +199,6 @@ namespace RealLifeOverhaul.Ui
         public const float Hairline = 1f;       // px: a panel's edge, a rule
         public const float FocusStroke = 3f;    // px: the focus ring, drawn outside its target
         public const float FocusGap = 3f;       // px: between a target and its focus ring
-        public const float SelectBar = 4f;      // px: the accent bar on the left of the selected row
         public const float TabBar = 4f;         // px: the bar under the shown tab
 
         // ------------------------------------------------------------------------------------------------- sizes

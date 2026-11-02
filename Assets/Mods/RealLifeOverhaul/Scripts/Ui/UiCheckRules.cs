@@ -869,6 +869,85 @@ namespace RealLifeOverhaul.Ui
             return found;
         }
 
+        /// <summary>The widest a coloured strip may be and still read as an accent bar down an edge (the owner, 2 Nov 2026).</summary>
+        public const float SpineWidth = 9f;
+
+        /// <summary>
+        /// Spines: a coloured box narrower than <see cref="SpineWidth"/> lying along an edge of the box it sits in (a card, a row, a
+        /// notice, a bar), the accent strip the owner turned down. Neutral roles (surfaces, hairlines, tracks, tiles) are not
+        /// coloured; a cyan underline along the bottom of a tab or tile is the approved mark and passes; a parent itself under
+        /// 12 px is a bar of its own (a meter's fill in its track), not a card.
+        /// </summary>
+        public static int Spines(UiScene s, Action<string> say)
+        {
+            const float MinParent = 12f;
+            int found = 0;
+            for (int i = 0; i < s.ItemCount; i++)
+            {
+                ref UiItem it = ref s.Items[i];
+                if (it.Kind != UiKind.Box || it.Parent < 0 || !Coloured(it.Fill))
+                {
+                    continue;
+                }
+                ref UiItem p = ref s.Items[it.Parent];
+                if (p.Kind != UiKind.Box || p.W < MinParent || p.H < MinParent)
+                {
+                    continue;
+                }
+                bool down = it.W < SpineWidth && it.H >= p.H * 0.5f && it.H > it.W;
+                bool across = it.H < SpineWidth && it.W >= p.W * 0.5f && it.W > it.H;
+                bool left = down && Math.Abs(it.X - p.X) <= Tolerance * 2f, right = down && Math.Abs(it.X + it.W - (p.X + p.W)) <= Tolerance * 2f;
+                bool top = across && Math.Abs(it.Y - p.Y) <= Tolerance * 2f, bottom = across && Math.Abs(it.Y + it.H - (p.Y + p.H)) <= Tolerance * 2f;
+                if (bottom && !top && (it.Fill == UiRole.Accent || it.Fill == UiRole.AccentText))
+                {
+                    continue;   // the underline of a chosen tab or tile
+                }
+                if (left || right || top || bottom)
+                {
+                    found++;
+                    say?.Invoke(s.Name + ": " + Describe(s, i) + " is a coloured strip down the " + (left ? "left" : right ? "right" : top ? "top" : "bottom") + " of " + Describe(s, it.Parent));
+                }
+            }
+            return found;
+        }
+
+        // Every role that is not a surface, a hairline, a track, a tile or plain ink counts as a colour.
+        private static bool Coloured(UiRole role)
+        {
+            switch (role)
+            {
+                case UiRole.None:
+                case UiRole.Bg:
+                case UiRole.Panel:
+                case UiRole.PanelEdge:
+                case UiRole.Header:
+                case UiRole.Row:
+                case UiRole.RowEdge:
+                case UiRole.Field:
+                case UiRole.Bubble:
+                case UiRole.Hover:
+                case UiRole.RowSel:
+                case UiRole.Text:
+                case UiRole.Text2:
+                case UiRole.Muted:
+                case UiRole.Line:
+                case UiRole.Track:
+                case UiRole.Scrim:
+                case UiRole.Focus:
+                case UiRole.PromptInk:
+                case UiRole.PromptCap:
+                case UiRole.Rule:
+                case UiRole.Band:
+                case UiRole.StatusBar:
+                case UiRole.Pill:
+                case UiRole.Tile:
+                case UiRole.OnAccent:
+                    return false;
+                default:
+                    return true;
+            }
+        }
+
         /// <summary>Targets whose command their template does not define: a button no press answers.</summary>
         public static int UnknownCommands(UiScene s, int[] known, Action<string> say)
         {
