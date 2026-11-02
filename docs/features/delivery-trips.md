@@ -6,7 +6,7 @@ Under the living economy's master option **Living population**, with **Delivery 
 
 ## Where the code is
 
-- Folder: [`Scripts/Economy/Logistics`](../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/Logistics/); the pages in `Scripts/Ui/BizMan/Ops/BizManScreen.Trips.cs` (with lines in `BizManScreen.Managers.cs` and `BizManScreen.Plant.cs`); the roads in `Scripts/Wiring/LogisticsLinks.cs`; the game's pieces in `Scripts/Core/GameContract.Logistics.cs`; the managers' smaller orders in `Scripts/Economy/Company/CompanyDirector.ManagerDecisions.cs`.
+- Folder: [`Scripts/Economy/Logistics`](../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/Logistics/); the pages in `Scripts/Ui/BizMan/Ops/BizManScreen.Trips.cs` (with lines in `BizManScreen.Managers.cs` and `BizManScreen.Plant.cs`); the roads in `Scripts/Wiring/Wiring.LogisticsLinks.cs`; the game's pieces in `Scripts/Core/GameContract.Logistics.cs`; the managers' smaller orders in `Scripts/Economy/Company/CompanyDirector.ManagerDecisions.cs`.
 - Options: "Delivery trips" (`living_trips`) and "Food spoilage" (`living_spoilage`), both under "Living population" (`living_population`), both on by default. Off, the game runs every route at once at 02:00 and nothing spoils, as before.
 
 ```
@@ -52,8 +52,8 @@ Economy/Logistics/              the first six are game-free and compiled by Econ
 
 ## Tests
 
-- Options > Tests > **Test delivery trips**: each route as its next departure would load it, nothing moved or paid, one line each with PASS or FAIL.
-- Options > Tests > **Test food spoilage**: a whole round of the places at once, each product's batches against what is held.
+- Options > Tests > **Load each route as its next run would, nothing moved**: each route as its next departure would load it, nothing moved or paid, one line each with PASS or FAIL.
+- Options > Tests > **Count the fresh batches at every place now**: a whole round of the places at once, each product's batches against what is held.
 - Self-check lines with Verbose on: `Trips check (the night's run)`, `Trips check (a departure ...)`, `Trips check (a stop ...)`.
 
 ## Known limits

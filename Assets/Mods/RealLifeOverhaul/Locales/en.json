@@ -28965,8 +28965,8 @@
   "reallife_ui_bizops_gaps_none": "No gap could be filled. The planner's people for those hours are busy then, or a demand of theirs would no longer hold.",
   "reallife_trips_enabled": "Delivery trips",
   "reallife_spoil_enabled": "Food spoilage",
-  "reallife_trips_test": "Test delivery trips",
-  "reallife_spoil_test": "Test food spoilage",
+  "reallife_trips_test": "Load each route as its next run would, nothing moved",
+  "reallife_spoil_test": "Count the fresh batches at every place now",
   "reallife_trips_test_done": "Delivery trips test: {count} routes read, {passed} passed. The log has a line for each.",
   "reallife_trips_test_off": "Delivery trips are off, or not running in this save.",
   "reallife_spoil_test_done": "Food spoilage test: {count} places hold {passed} products that spoil. The log has a line for each.",
@@ -29010,5 +29010,9 @@
   "reallife_spoil_note": "Stock past its shelf life was thrown out overnight: {count} pieces at {places} of your places, worth {amount}. Fridges and freezers keep fresh goods longer.",
   "reallife_trips_tomorrow": "tomorrow {time}",
   "reallife_trips_on_day": "day {day}, {time}",
-  "reallife_transaction_trips_fuel_label": "Delivery fuel"
+  "reallife_transaction_trips_fuel_label": "Delivery fuel",
+  "reallife_opt_sec_trips": "Delivery trips and spoilage",
+  "reallife_opt_tip_living_trips": "Logistics routes leave at the times you set, with the warehouse's vehicles and drivers, and deliver on arrival with fuel paid. Off, every route runs at once at 02:00.",
+  "reallife_opt_tip_living_spoilage": "Fresh food spoils by its kind, sooner on a shelf than in a fridge or a freezer, the oldest sold first. Off, nothing spoils.",
+  "reallife_contract_part_delivery_trips": "logistics routes run as delivery trips, and food spoilage"
 }

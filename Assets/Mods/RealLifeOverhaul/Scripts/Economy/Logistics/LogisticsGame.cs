@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using BigAmbitions.Items;
 using Buildings.Office.Headquarters;
 using Entities;
-using Streets;
 using Helpers;
+using Streets;
 using UnityEngine;
 using Vehicles.VehicleTypes;
 
@@ -44,7 +44,8 @@ namespace RealLifeOverhaul.Economy
         public static bool Ready => Save != null && Save.logisticsManagerPlans != null && Save.BuildingRegistrations != null;
 
         /// <summary>A place's key, as the company's files name it: its street (escaped) and number.</summary>
-        public static string Key(Address a) => a == null ? string.Empty : Uri.EscapeDataString(a.streetName ?? string.Empty) + "~" + a.streetNumber.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        public static string Key(Address a) => a == null ? string.Empty
+            : Uri.EscapeDataString(a.streetName ?? string.Empty) + "~" + a.streetNumber.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
         public static BuildingRegistration Reg(string key)
         {

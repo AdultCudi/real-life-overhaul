@@ -28965,8 +28965,8 @@
   "reallife_ui_bizops_gaps_none": "Nenhuma lacuna pôde ser preenchida. As pessoas do planejador estão ocupadas nesses horários, ou uma exigência delas deixaria de valer.",
   "reallife_trips_enabled": "Viagens de entrega",
   "reallife_spoil_enabled": "Deterioração de alimentos",
-  "reallife_trips_test": "Testar viagens",
-  "reallife_spoil_test": "Testar deterioração",
+  "reallife_trips_test": "Carregar cada rota como a próxima saída, sem mover nada",
+  "reallife_spoil_test": "Contar agora os lotes frescos em cada local",
   "reallife_trips_test_done": "Teste de viagens de entrega: {count} rotas verificadas, {passed} aprovadas. O registro tem uma linha para cada uma.",
   "reallife_trips_test_off": "As viagens de entrega estão desligadas ou não estão ativas neste jogo salvo.",
   "reallife_spoil_test_done": "Teste de deterioração de alimentos: {count} locais guardam {passed} produtos que estragam. O registro tem uma linha para cada um.",
@@ -29010,5 +29010,9 @@
   "reallife_spoil_note": "Estoque vencido foi jogado fora durante a noite: {count} peças em {places} dos seus locais, no valor de {amount}. Geladeiras e freezers mantêm os alimentos frescos por mais tempo.",
   "reallife_trips_tomorrow": "amanhã {time}",
   "reallife_trips_on_day": "dia {day}, {time}",
-  "reallife_transaction_trips_fuel_label": "Combustível de entrega"
+  "reallife_transaction_trips_fuel_label": "Combustível de entrega",
+  "reallife_opt_sec_trips": "Viagens de entrega e deterioração",
+  "reallife_opt_tip_living_trips": "As rotas de logística saem nos horários que você define, com os veículos e motoristas do armazém, e entregam na chegada, com o combustível pago. Desligado, todas saem às 02:00.",
+  "reallife_opt_tip_living_spoilage": "Alimentos frescos estragam conforme o tipo, mais cedo na prateleira do que na geladeira ou no freezer, e os mais antigos saem primeiro. Desligado, nada estraga.",
+  "reallife_contract_part_delivery_trips": "rotas de logística como viagens de entrega, e a deterioração de alimentos"
 }

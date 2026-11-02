@@ -70,7 +70,8 @@ namespace RealLifeOverhaul.Ui
             trips.RouteRuns(route.id, _routeRuns);
             InfoLine(UiText.T("reallife_trips_round"), _routeRuns.Count > 0 ? UiText.Fill("reallife_trips_minutes", "minutes", UiText.Whole(_routeRuns[0].Minutes)) : null);
             InfoLine(UiText.T("reallife_trips_moved"), week > 0 ? UiText.Whole(pieces) : null);
-            InfoLine(UiText.T("reallife_trips_costs"), week > 0 ? UiText.Fill("reallife_trips_costs_value", "fuel", (fuel / 100f).ToCurrencyFormat(), "wages", (wages / 100f).ToCurrencyFormat()) : null);
+            InfoLine(UiText.T("reallife_trips_costs"), week > 0
+                ? UiText.Fill("reallife_trips_costs_value", "fuel", (fuel / 100f).ToCurrencyFormat(), "wages", (wages / 100f).ToCurrencyFormat()) : null);
             _right = false;
             Vehicles(trips, from, route);
             NoteLine(_routeRuns.Count > 0 ? LastRun(_routeRuns[0]) : next >= 0 ? UiText.Fill("reallife_trips_none_yet", "time", When(next)) : null);

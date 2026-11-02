@@ -28965,8 +28965,8 @@
   "reallife_ui_bizops_gaps_none": "没有任何空缺能够填补。规划器中可用于这些时段的人员当时都有安排，或者其中某人的一项要求将不再成立。",
   "reallife_trips_enabled": "配送行程",
   "reallife_spoil_enabled": "食品变质",
-  "reallife_trips_test": "测试行程",
-  "reallife_spoil_test": "测试变质",
+  "reallife_trips_test": "按下一次出发装载每条路线，不移动任何货物",
+  "reallife_spoil_test": "立即清点每个场所的新鲜批次",
   "reallife_trips_test_done": "配送行程测试：已检查 {count} 条路线，{passed} 条通过。日志每条路线各有一行。",
   "reallife_trips_test_off": "配送行程已关闭，或未在此存档中运行。",
   "reallife_spoil_test_done": "食品变质测试：{count} 个地点存放着 {passed} 种会变质的商品。日志每个地点各有一行。",
@@ -29010,5 +29010,9 @@
   "reallife_spoil_note": "过期库存已于夜间丢弃：你的场所中有 {count} 件，分布在 {places} 个场所，价值 {amount}。冰箱和冷冻柜能让新鲜商品保存更久。",
   "reallife_trips_tomorrow": "明天 {time}",
   "reallife_trips_on_day": "第 {day} 天，{time}",
-  "reallife_transaction_trips_fuel_label": "配送燃油"
+  "reallife_transaction_trips_fuel_label": "配送燃油",
+  "reallife_opt_sec_trips": "配送行程与变质",
+  "reallife_opt_tip_living_trips": "物流路线按你设定的时间出发，使用仓库的车辆和司机，到达时送货并支付燃油。关闭时，所有路线在 02:00 一次送出。",
+  "reallife_opt_tip_living_spoilage": "新鲜食品按种类变质，放在货架上比放在冰箱或冷冻柜里坏得更快，最旧的先卖出。关闭时，什么都不会变质。",
+  "reallife_contract_part_delivery_trips": "以配送行程运行的物流路线，以及食品变质"
 }
