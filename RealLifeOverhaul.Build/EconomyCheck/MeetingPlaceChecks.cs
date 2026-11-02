@@ -167,7 +167,7 @@ internal static partial class Program
         foreach (string code in new[] { "pl", "ko" })
         {
             Dictionary<string, string> own = LoadWords(IoPath.Combine(LocalesFolder(), code + ".json"));
-            marks &= own != null && own.TryGetValue("reallife_changes_next", out string row) && row.StartsWith(FixMarks[code], StringComparison.Ordinal);
+            marks &= own != null && own.TryGetValue("reallife_changes_next", out string row) && row.Contains(FixMarks[code]);   // a batch release may put a feature line before the fix marks
         }
         Check(marks, "meeting place: Polish and Korean have the fix in their next row, with their fix marks");
     }
