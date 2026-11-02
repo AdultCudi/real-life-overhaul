@@ -67,7 +67,8 @@ namespace RealLifeOverhaul
         public static readonly GameMember RouteShowLabel = Optional(Field(BizOpsPart, Game, Biz + "LogisticsManagers.LogisticsManagerPlanUI", "showWarehouseLabel", "TextLocalizationComponent"));
         public static readonly GameMember RouteAddStop = Optional(Field(BizOpsPart, Game, Biz + "LogisticsManagers.LogisticsManagerPlanUI", "addDestinationButton", "Button"));
         public static readonly GameMember RouteMost = Optional(Field(BizOpsPart, Game, Biz + "LogisticsManagers.LogisticsManagerPlanUI", "destinationsAmountLabel", "TextLocalizationComponent"));
-        public static readonly GameMember RouteStops = Optional(Field(BizOpsPart, Game, Biz + "LogisticsManagers.LogisticsManagerPlanUI", "_destinationEntries", "List<LogisticsManagerDestinationUI>"));
+        public static readonly GameMember RouteStops = Optional(Field(BizOpsPart, Game, Biz + "LogisticsManagers.LogisticsManagerPlanUI", "_destinationEntries",
+            "List<LogisticsManagerDestinationUI>"));
         public static readonly GameMember StopTarget = Optional(Field(BizOpsPart, Game, Biz + "LogisticsManagers.LogisticsManagerDestinationUI", "businessTargetDropdown", "Dropdown"));
         public static readonly GameMember StopRemove = Optional(Field(BizOpsPart, Game, Biz + "LogisticsManagers.LogisticsManagerDestinationUI", "removeButton", "Button"));
         public static readonly GameMember StopName = Optional(Field(BizOpsPart, Game, Biz + "LogisticsManagers.LogisticsManagerDestinationUI", "nameText", "TextLocalizationComponent"));
@@ -139,7 +140,8 @@ namespace RealLifeOverhaul
         public static readonly GameMember FactoryMachineState = Optional(Field(BizOpsPart, Game, Biz + "Factory.BizManFactoryWorkstationTemplate", "isActiveSwapper", "IconSwapper"));
         public static readonly GameMember FactoryMachineOn = Optional(Field(BizOpsPart, Game, "UI.Components.IconSwapper", "_isOn", "Boolean"));
         public static readonly GameMember FactoryMachineWhy = Optional(Field(BizOpsPart, Game, Biz + "Factory.BizManFactoryWorkstationTemplate", "tooltip", "ListTooltip"));
-        public static readonly GameMember FactoryMachineItem = Optional(Field(BizOpsPart, Game, Biz + "Factory.BizManFactoryWorkstationTemplate", "_workstationInstance", "FactoryWorkstationInstance"));
+        public static readonly GameMember FactoryMachineItem = Optional(Field(BizOpsPart, Game, Biz + "Factory.BizManFactoryWorkstationTemplate", "_workstationInstance",
+            "FactoryWorkstationInstance"));
         public static readonly GameMember FactoryMakes = Optional(Field(BizOpsPart, Game, Biz + "Factory.BizManFactoryWorkstationTemplate", "createdItemName", "TextLocalizationComponent"));
         public static readonly GameMember FactoryUpTo = Optional(Field(BizOpsPart, Game, Biz + "Factory.BizManFactoryValidWorkstationPanel", "produceUpToToggle", "Toggle"));
         public static readonly GameMember FactoryAlways = Optional(Field(BizOpsPart, Game, Biz + "Factory.BizManFactoryValidWorkstationPanel", "produceContinuouslyToggle", "Toggle"));

@@ -40,15 +40,19 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                Host.Remove("its switch is off");
+                Remove("its switch is off");
             }
         }
 
         /// <summary>A new city: an editor that never looked as expected in the last one is looked at again.</summary>
         public static void Rearm() => Host.Rearm();
 
-        /// <summary>The game's editor as it was: the kit gone, its controls seen and touchable again.</summary>
-        public static void Remove(string why) => Host.Remove(why);
+        /// <summary>The game's editor as it was: the kit gone, its controls seen and touchable again, the palette's colours let go.</summary>
+        public static void Remove(string why)
+        {
+            Host.Remove(why);
+            UniformsScreen.DropSwatches();
+        }
 
         /// <summary>True while the game's editor is open.</summary>
         public static bool Open

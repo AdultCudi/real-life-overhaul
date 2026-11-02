@@ -8,22 +8,28 @@ using UnityEngine;
 
 public static partial class UiPreviewRunner
 {
-    // BizMan's operations and the uniform presets' editor, BizMan open in the status bar's app row: a store's schedule and
-    // a headquarters' managers over the day streets the full menu leaves (13 and 02), the factory over the factory, the
-    // warehouse over the warehouse. The last three are in Portuguese, the longest of the languages with every key of these
-    // pages, the game's words from its own file.
+    // BizMan's operations and the uniform presets' editor in every state their samples hold, BizMan open in the status
+    // bar's app row: a store's schedule and a headquarters' managers over the day streets the full menu leaves (13 and 02),
+    // the factory over the factory, the warehouse over the warehouse. The last three are in Portuguese, the longest of the
+    // languages with every key of these pages, the game's words from its own file.
     static partial void AddBizOps(List<Screen> screens)
     {
         Func<string, Sprite> before = UiPictures.Find;
         UiPictures.Find = key => key != null && key.StartsWith(OpsSwatch, StringComparison.Ordinal) ? OpsColour(key) : before?.Invoke(key);
         int n = 0;
-        foreach (string state in UiSamples.BizOpsPreviews)
+        foreach (string state in UiSamples.BizOpsStates)
         {
             string st = state;
             screens.Add(OpsScreen(++n, st, st, English));
         }
-        screens.Add(UniformsScreen(++n, "uniforms", "uniforms", English));
-        screens.Add(UniformsScreen(++n, "uniforms_colours", "uniforms_colours", English, UiUniforms.Colour, 1, UiUniforms.Colour, 5, "RRDLLU"));
+        foreach (string state in UiSamples.UniformStates)
+        {
+            string st = state;
+            int at = ++n;
+            screens.Add(st == "uniforms_colours"
+                ? UniformsScreen(at, st, st, English, UiUniforms.Colour, 1, UiUniforms.Colour, 5, "RRDLLU")
+                : UniformsScreen(at, st, st, English));
+        }
         screens.Add(OpsScreen(++n, "schedule_long", "schedule_long_portuguese", OpsPortuguese));
         screens.Add(OpsScreen(++n, "pricing", "pricing_portuguese", OpsPortuguese));
         screens.Add(UniformsScreen(++n, "uniforms_long", "uniforms_long_portuguese", OpsPortuguese));
@@ -66,9 +72,11 @@ public static partial class UiPreviewRunner
         return n % 2 == 0 ? "02.jpg" : "13.jpg";
     }
 
-    // Where the mouse rests and the keys stand in each state, and the pad's walk from there.
+    // Where the mouse rests and the keys stand in each state, and the pad's walk from there; a state not named here starts
+    // on the page's own first target, the mouse on the next.
     private static void OpsInput(Screen screen, string state)
     {
+        screen.Walk = Moves("DDDRRU");
         switch (state)
         {
             case "schedule_empty":

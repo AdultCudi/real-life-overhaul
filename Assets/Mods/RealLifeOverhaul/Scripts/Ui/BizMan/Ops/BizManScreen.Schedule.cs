@@ -31,7 +31,13 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public sealed partial class BizManScreen : IUiDragging, IUiSteering
     {
-        private static readonly int[] DayKeys = { 1, 2, 3, 4, 5, 6, 7 };   // the game's days in its order, Monday first
+        // The day line's short names, Monday first as the game lays its days.
+        private static readonly string[] DayWords =
+        {
+            "reallife_ui_bizops_day_1", "reallife_ui_bizops_day_2", "reallife_ui_bizops_day_3", "reallife_ui_bizops_day_4", "reallife_ui_bizops_day_5",
+            "reallife_ui_bizops_day_6", "reallife_ui_bizops_day_7"
+        };
+
         private readonly List<WorkShift> _shifts = new List<WorkShift>(64);   // the board's shifts, as the game holds them, by the board's index
         private readonly List<string> _lanes = new List<string>(32);          // the board's lanes, by the workstation's id
         private readonly List<bool> _feeLanes = new List<bool>(32);           // a cinema's screen or a theatre's stage: a daily fee, no hours to fill
@@ -65,7 +71,7 @@ namespace RealLifeOverhaul.Ui
             BizManSchedule sch = b.bizManSchedule;
             ScheduleScrollerController lanes = sch != null ? Get<ScheduleScrollerController>(GameContract.SchedLanes, sch) : null;
             List<ScheduleDayButton> days = sch != null ? Get<List<ScheduleDayButton>>(GameContract.SchedDayButtons, Get<ScheduleDaySelectionController>(GameContract.SchedDays, sch)) : null;
-            if (lanes == null || days == null || days.Count != DayKeys.Length || ScheduleHelper.CurrentScheduleDay == null || ScheduleHelper.WorkstationsById == null
+            if (lanes == null || days == null || days.Count != DayWords.Length || ScheduleHelper.CurrentScheduleDay == null || ScheduleHelper.WorkstationsById == null
                 || ScheduleHelper.Business != b)
             {
                 Handover(b);   // not as this version builds it, or not loaded yet: the game's own view
@@ -77,10 +83,10 @@ namespace RealLifeOverhaul.Ui
             o.Board = board;
             ScheduleDay day = ScheduleHelper.CurrentScheduleDay;
             bool hq = ScheduleHelper.IsHeadquarters;
-            board.Days = new string[DayKeys.Length];
-            for (int i = 0; i < DayKeys.Length; i++)
+            board.Days = new string[DayWords.Length];
+            for (int i = 0; i < DayWords.Length; i++)
             {
-                board.Days[i] = UiText.T("reallife_ui_bizops_day_" + DayKeys[i].ToString(System.Globalization.CultureInfo.InvariantCulture));
+                board.Days[i] = UiText.T(DayWords[i]);
                 board.Day = days[i].dayIndex == (int)day.day ? i : board.Day;
             }
             board.FirstHour = 0;
@@ -250,7 +256,8 @@ namespace RealLifeOverhaul.Ui
             Button clear = Calling(days, "OnClearScheduleClick");
             if (clear != null)
             {
-                _week.Add(new UiActionModel { Label = UiText.T("reallife_ui_bizops_clear_week"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Trash, Key = UiAction.Count, Disabled = !clear.interactable });
+                _week.Add(new UiActionModel { Label = UiText.T("reallife_ui_bizops_clear_week"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Trash, Key = UiAction.Count,
+                    Disabled = !clear.interactable });
                 _weekDo.Add(DoClearDay + 100);
             }
             board.Actions = _week.ToArray();
@@ -276,7 +283,8 @@ namespace RealLifeOverhaul.Ui
                 var words = new System.Text.StringBuilder(48);
                 for (int i = 0; i < runs; i++)
                 {
-                    words.Append(i > 0 ? ", " : string.Empty).Append(UiText.Fill("reallife_ui_bizops_hours", "from", _fromHours[i].GetFormattedTime(0f), "to", (_toHours[i] % 24).GetFormattedTime(0f)));
+                    words.Append(i > 0 ? ", " : string.Empty)
+                        .Append(UiText.Fill("reallife_ui_bizops_hours", "from", _fromHours[i].GetFormattedTime(0f), "to", (_toHours[i] % 24).GetFormattedTime(0f)));
                 }
                 o.HoursWords = words.ToString();
             }
@@ -382,7 +390,8 @@ namespace RealLifeOverhaul.Ui
             int hour = hourBox is int hh ? hh : -1;
             string station = !string.IsNullOrEmpty(lane) && ScheduleHelper.WorkstationsById.TryGetValue(lane, out ItemInstance it) && it != null
                 ? (string.IsNullOrEmpty(it.alias) ? UiText.T(it.itemName) : it.alias) : null;
-            o.PeopleTitle = station != null && hour >= 0 ? UiText.Fill("reallife_ui_bizops_pick_title", "station", station, "hour", hour.GetFormattedTime(0f)) : UiText.T("bizman_schedule_employee_header_no_workstation");
+            o.PeopleTitle = station != null && hour >= 0 ? UiText.Fill("reallife_ui_bizops_pick_title", "station", station, "hour", hour.GetFormattedTime(0f))
+                : UiText.T("bizman_schedule_employee_header_no_workstation");
             o.PeopleLine = UiText.T("reallife_ui_bizops_pick_line");
             PickRows(list, t);
             o.People = t;
@@ -405,13 +414,15 @@ namespace RealLifeOverhaul.Ui
             {
                 ScheduleEmployeeModel p = data[i];
                 bool demand = !string.IsNullOrEmpty(p.violatedDemandName), worn = p.overworkedDays != null && p.overworkedDays.Count > 0;
-                string fit = !p.isAvailable ? "reallife_ui_bizops_fit_busy" : demand ? "reallife_ui_bizops_fit_demand" : worn ? "reallife_ui_bizops_fit_tired" : p.perfectMatch ? "reallife_ui_bizops_fit_best" : "reallife_ui_bizops_fit_free";
+                string fit = !p.isAvailable ? "reallife_ui_bizops_fit_busy" : demand ? "reallife_ui_bizops_fit_demand" : worn ? "reallife_ui_bizops_fit_tired"
+                    : p.perfectMatch ? "reallife_ui_bizops_fit_best" : "reallife_ui_bizops_fit_free";
                 UiRole tone = !p.isAvailable ? UiRole.Muted : demand || worn ? UiRole.Warn : UiRole.Ok;
                 t.Rows[i] = new UiDataRow
                 {
                     Cells = new[] { p.employeeName, UiText.Whole(p.primarySkillPercentage) + "%", UiText.Fill("reallife_ui_bizops_hours_week", "hours", UiText.Whole(p.hoursAssigned)), UiText.T(fit) },
                     Values = new[] { 0, p.primarySkillPercentage, 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, tone },
-                    Sub = string.IsNullOrEmpty(p.primarySkillName) ? null : UiText.T(p.primarySkillName) + ", " + UiText.Fill("bizman_schedule_hourly_wage", "wage", PickWage(p).ToShortCurrencyFormat()),
+                    Sub = string.IsNullOrEmpty(p.primarySkillName) ? null
+                        : UiText.T(p.primarySkillName) + ", " + UiText.Fill("bizman_schedule_hourly_wage", "wage", PickWage(p).ToShortCurrencyFormat()),
                     Hue = UiColour.HueOf(p.employeeName ?? string.Empty), Ring = StaffViews.Mood((int)p.satisfaction)
                 };
             }
@@ -569,7 +580,8 @@ namespace RealLifeOverhaul.Ui
             sig = sig * 31 + (game != null && game.disabledLicensingFees != null ? game.disabledLicensingFees.Count : 0) + (_feeLane >= 0 ? Time.frameCount : 0);
             List<ScheduleDayButton> days = Get<List<ScheduleDayButton>>(GameContract.SchedDayButtons, Get<ScheduleDaySelectionController>(GameContract.SchedDays, b.bizManSchedule));
             ScheduleDayButton shown = days != null ? DayButton(days, day) : null;
-            sig = sig * 31 + Shows(Get<Button>(GameContract.SchedDayPaste, shown)) + Shows(Get<Button>(GameContract.SchedDayPasteAll, shown)) * 2 + Shows(Get<Button>(GameContract.SchedDayAuto, shown)) * 4;
+            sig = sig * 31 + Shows(Get<Button>(GameContract.SchedDayPaste, shown)) + Shows(Get<Button>(GameContract.SchedDayPasteAll, shown)) * 2
+                + Shows(Get<Button>(GameContract.SchedDayAuto, shown)) * 4;
             ScheduleEmployeeSelection pick = PickBox(out ScheduleEmployeeScrollerController list);
             if (pick != null && pick.IsOpen && list != null && list.data != null)
             {
@@ -794,7 +806,8 @@ namespace RealLifeOverhaul.Ui
         private bool Week(BizManSchedule sch, int what)
         {
             ScheduleDaySelectionController days = Get<ScheduleDaySelectionController>(GameContract.SchedDays, sch);
-            return what == DoAutoDay + 100 ? Click(Get<Button>(GameContract.SchedWeekAuto, days), "auto fill the week") : Click(Calling(days, "OnClearScheduleClick"), "clear the week (the game asks first)");
+            return what == DoAutoDay + 100 ? Click(Get<Button>(GameContract.SchedWeekAuto, days), "auto fill the week")
+                : Click(Calling(days, "OnClearScheduleClick"), "clear the week (the game asks first)");
         }
 
         private bool DayAction(List<ScheduleDayButton> days, int what)

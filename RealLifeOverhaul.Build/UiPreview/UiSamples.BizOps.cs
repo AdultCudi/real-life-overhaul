@@ -2,7 +2,7 @@ using System.Globalization;
 using RealLifeOverhaul.Ui;
 
 /// <summary>
-/// BizMan's operations on the kit in every state the brief asks for: a store's schedule as the board (a day with no
+/// BizMan's operations on the kit in each of their states: a store's schedule as the board (a day with no
 /// shifts yet, a full day whose shifts overlap across the stations, a shift being dragged, the picker open for an hour,
 /// the opening hours' sheet, no stations at all, a closed day, long names), a headquarters' managers (a pricing plan over forty
 /// products, no plans yet, a plan without a manager, a logistics route of three stops, an import contract, an HR plan
@@ -18,13 +18,6 @@ internal static partial class UiSamples
         "schedule_empty", "schedule_full", "schedule_drag", "schedule_picker", "schedule_hours", "schedule_none", "schedule_closed", "schedule_long", "pricing", "pricing_none",
         "pricing_unassigned", "logistics", "purchasing", "hr", "hr_assign", "headhunters", "headhunters_replace", "factory", "factory_missing", "factory_none",
         "warehouse_drivers", "warehouse_stock", "warehouse_empty"
-    };
-
-    /// <summary>The states the previews show: those the brief lists.</summary>
-    public static readonly string[] BizOpsPreviews =
-    {
-        "schedule_empty", "schedule_full", "schedule_drag", "schedule_picker", "schedule_hours", "pricing", "logistics", "hr", "headhunters", "factory", "warehouse_drivers",
-        "warehouse_stock"
     };
 
     public static readonly string[] UniformStates = { "uniforms", "uniforms_colours", "uniforms_new", "uniforms_long" };
@@ -511,7 +504,7 @@ internal static partial class UiSamples
         BizManModel m = OpsPlace(t, "headquarters", BizManPart.Managers, 4);
         BizOpsModel o = m.Ops;
         o.PlansEmpty = t("reallife_ui_bizops_imports_none", "No purchasing plans yet");
-        o.PlansEmptyBody = t("reallife_ui_bizops_imports_none_body", "Add a plan to have a purchasing agent keep your warehouses stocked from importers.");
+        o.PlansEmptyBody = t("reallife_ui_bizops_imports_none_body", "Add a plan to keep your warehouses stocked from importers.");
         OpsPlans(t, o, t("bizman_menu_purchasing_agents", "Purchasing Agents"), new[] { "Total Produce Trading", "Pacific Coffee Importers", "Atlas Paper Goods" },
             new[] { "Rosa Alvarez", "Rosa Alvarez", null }, 1, 2, UiIcon.Handshake);
         o.FormTitle = "Pacific Coffee Importers";

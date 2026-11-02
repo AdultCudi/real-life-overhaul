@@ -242,7 +242,8 @@ namespace RealLifeOverhaul.Ui
             Button suggest = Get<Button>(GameContract.PriceSuggest, goods);
             if (suggest != null && suggest.gameObject.activeInHierarchy)
             {
-                actions.Add(new UiActionModel { Label = UiText.T("bizman_pricingmanagers_apply_suggested_prices"), Kind = UiButtonKind.Primary, Icon = UiIcon.Check, Key = UiAction.Alt, Arg = DoSuggest, Disabled = !suggest.interactable });
+                actions.Add(new UiActionModel { Label = UiText.T("bizman_pricingmanagers_apply_suggested_prices"), Kind = UiButtonKind.Primary, Icon = UiIcon.Check,
+                    Key = UiAction.Alt, Arg = DoSuggest, Disabled = !suggest.interactable });
             }
             o.Actions = actions.ToArray();
             o.Table = PriceTable(goods, o.Table);   // under its head alone: its first column says Product
@@ -337,7 +338,8 @@ namespace RealLifeOverhaul.Ui
             }
             if (add != null && add.gameObject.activeInHierarchy)
             {
-                actions.Add(new UiActionModel { Label = UiText.T("bizman_logisticsmanagers_adddestination"), Kind = UiButtonKind.Primary, Icon = UiIcon.Plus, Key = UiAction.Alt, Arg = DoAddStop, Disabled = !add.interactable });
+                actions.Add(new UiActionModel { Label = UiText.T("bizman_logisticsmanagers_adddestination"), Kind = UiButtonKind.Primary, Icon = UiIcon.Plus,
+                    Key = UiAction.Alt, Arg = DoAddStop, Disabled = !add.interactable });
             }
             o.Actions = actions.ToArray();
             Stops(plan2, o);
@@ -407,7 +409,11 @@ namespace RealLifeOverhaul.Ui
                 InputField amount = g.Find("BusinessTarget/Amount") != null ? g.Find("BusinessTarget/Amount").GetComponent<InputField>() : null;
                 t.Rows[i] = new UiDataRow
                 {
-                    Cells = new[] { Loc(name) ?? string.Empty, WordsAt(g, "WarehouseStock") ?? "-", WordsAt(g, "RunsOutIn") ?? "-", amount != null && amount.tmpInputField != null ? amount.tmpInputField.text : "0" },
+                    Cells = new[]
+                    {
+                        Loc(name) ?? string.Empty, WordsAt(g, "WarehouseStock") ?? "-", WordsAt(g, "RunsOutIn") ?? "-",
+                        amount != null && amount.tmpInputField != null ? amount.tmpInputField.text : "0"
+                    },
                     Values = new[] { 0, 0, 0, UiDataTable.CanLess | UiDataTable.CanMore }
                 };
             }
@@ -486,8 +492,9 @@ namespace RealLifeOverhaul.Ui
             BuyTable(plan, o);   // under its head alone: its first column says Product
         }
 
-        // The agent's goods: each its target, its boxes, its price, the warehouse's stock and the warehouse it goes to, a row
-        // picked where the game's own mass toggle is on; the good chosen gets its target and warehouse as the form's rows.
+        // The purchasing plan's goods: each its target, its boxes, its price, the warehouse's stock and the warehouse it
+        // goes to, a row picked where the game's own mass toggle is on; the good chosen gets its target and warehouse
+        // as the form's rows.
         private void BuyTable(PurchasingAgentPlanUI plan, BizOpsModel o)
         {
             PurchasingAgentProductsScrollerController goods = plan.productsScrollerController;
@@ -511,7 +518,11 @@ namespace RealLifeOverhaul.Ui
                 PurchasingAgentProductModel p = goods.data[i];
                 t.Rows[i] = new UiDataRow
                 {
-                    Cells = new[] { p.ProductName, UiText.Whole(p.Target), p.Price.ToCurrencyFormat(), UiText.Whole(p.WarehouseStock), string.IsNullOrEmpty(p.AssignedWarehouse) ? UiText.T("common_unassigned") : p.AssignedWarehouse },
+                    Cells = new[]
+                    {
+                        p.ProductName, UiText.Whole(p.Target), p.Price.ToCurrencyFormat(), UiText.Whole(p.WarehouseStock),
+                        string.IsNullOrEmpty(p.AssignedWarehouse) ? UiText.T("common_unassigned") : p.AssignedWarehouse
+                    },
                     Values = new[] { 0, 0, 0, 0, 0 }, Picked = p.isSelected,
                     Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, string.IsNullOrEmpty(p.AssignedWarehouse) ? UiRole.WarnText : UiRole.None }
                 };
@@ -585,7 +596,8 @@ namespace RealLifeOverhaul.Ui
             Button b = Calling(root, method);
             if (b != null)
             {
-                into.Add(new UiActionModel { Label = UiText.T(key), Kind = kind, Icon = icon, Key = kind == UiButtonKind.Primary ? UiAction.Alt : UiAction.Count, Command = BizManPages.OpsAction, Arg = what, Disabled = !b.interactable });
+                into.Add(new UiActionModel { Label = UiText.T(key), Kind = kind, Icon = icon, Key = kind == UiButtonKind.Primary ? UiAction.Alt : UiAction.Count,
+                    Command = BizManPages.OpsAction, Arg = what, Disabled = !b.interactable });
             }
         }
 
@@ -875,7 +887,8 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
-            PricingManagerProductsScrollerController goods = Get<PricingManagerProductsScrollerController>(GameContract.PriceGoods, Get<PricingManagerPlanUI>(GameContract.PriceList, b.pricingManagersPlanList));
+            PricingManagerProductsScrollerController goods = Get<PricingManagerProductsScrollerController>(GameContract.PriceGoods,
+                Get<PricingManagerPlanUI>(GameContract.PriceList, b.pricingManagersPlanList));
             if (goods == null)
             {
                 return false;
@@ -913,7 +926,8 @@ namespace RealLifeOverhaul.Ui
         {
             if (_shown == BizManRules.PricingManagers)
             {
-                PricingManagerProductsScrollerController goods = Get<PricingManagerProductsScrollerController>(GameContract.PriceGoods, Get<PricingManagerPlanUI>(GameContract.PriceList, b.pricingManagersPlanList));
+                PricingManagerProductsScrollerController goods = Get<PricingManagerProductsScrollerController>(GameContract.PriceGoods,
+                    Get<PricingManagerPlanUI>(GameContract.PriceList, b.pricingManagersPlanList));
                 return Cell(goods, row) is PricingManagerProductCellView cell && Click(Get<Button>(more ? GameContract.PricePlus : GameContract.PriceMinus, cell), "a managed price stepped");
             }
             if (_shown == BizManRules.LogisticsManagers && row >= 0 && row < _goods.Count)
@@ -929,7 +943,8 @@ namespace RealLifeOverhaul.Ui
         {
             if (_shown == BizManRules.PricingManagers)
             {
-                PricingManagerProductsScrollerController goods = Get<PricingManagerProductsScrollerController>(GameContract.PriceGoods, Get<PricingManagerPlanUI>(GameContract.PriceList, b.pricingManagersPlanList));
+                PricingManagerProductsScrollerController goods = Get<PricingManagerProductsScrollerController>(GameContract.PriceGoods,
+                    Get<PricingManagerPlanUI>(GameContract.PriceList, b.pricingManagersPlanList));
                 InputField f = Cell(goods, row) is PricingManagerProductCellView cell ? Get<InputField>(GameContract.PriceInput, cell) : null;
                 return f != null ? f.tmpInputField : null;
             }

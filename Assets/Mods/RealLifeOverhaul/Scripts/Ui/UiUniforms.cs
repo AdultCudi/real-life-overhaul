@@ -207,7 +207,8 @@ namespace RealLifeOverhaul.Ui
             if (m.Preset < 0)
             {
                 UiDraw.EmptyState(s, at, x, y, w, bottom - y, UiIcon.PaintBrush, W(m, "reallife_ui_bizops_uniform_pick", "Choose a preset"),
-                    (m.PresetCount == 0 ? W(m, "reallife_ui_bizops_uniform_none_body", "Create a preset, dress it, then give it to a role in each business's settings.") : W(m, "reallife_ui_bizops_uniform_pick_body", "Pick a preset on the left to dress it.")), null, -1, keys);
+                    (m.PresetCount == 0 ? W(m, "reallife_ui_bizops_uniform_none_body", "Create a preset, dress it, then give it to a role in each business's settings.")
+                        : W(m, "reallife_ui_bizops_uniform_pick_body", "Pick a preset on the left to dress it.")), null, -1, keys);
                 return;
             }
             if (m.Parts.Length > 0)
@@ -245,7 +246,8 @@ namespace RealLifeOverhaul.Ui
             float bw = Math.Min(w, UiDraw.ButtonWidth(UiButtonKind.Primary, save, UiIcon.Check, UiAction.Alt, keys));
             if (m.CanSave)
             {
-                UiDraw.TextMiddle(s, at, x, fy, UiTokens.Control, w - bw - UiTokens.S3, UiStyle.Small, UiRole.WarnText, W(m, "reallife_ui_bizops_uniform_unsaved", "Unsaved changes"), UiFlags.Truncate);
+                UiDraw.TextMiddle(s, at, x, fy, UiTokens.Control, w - bw - UiTokens.S3, UiStyle.Small, UiRole.WarnText,
+                    W(m, "reallife_ui_bizops_uniform_unsaved", "Unsaved changes"), UiFlags.Truncate);
             }
             UiDraw.Button(s, at, x + w - bw, fy, bw, UiTokens.Control, UiButtonKind.Primary, save, UiIcon.Check, UiAction.Alt, keys, Save, 0, !m.CanSave);
         }
@@ -361,8 +363,15 @@ namespace RealLifeOverhaul.Ui
     /// <summary>The words of a uniform's parts, by the kind of piece the game's own menu links each part to. Game-free.</summary>
     public static class UniformWords
     {
-        // The kinds of piece a uniform is made of (the game's own AppearanceElementType names, in its customiser's order).
+        // The kinds of piece a uniform is made of (the game's own AppearanceElementType names, in its customiser's order),
+        // and the key of each one's words at the same place.
         public static readonly string[] Kinds = { "headaccessory", "torso", "torsoaccessory", "legs", "legsaccessory", "feet", "feetaccessory" };
+
+        private static readonly string[] Keys =
+        {
+            "reallife_ui_bizops_wear_headaccessory", "reallife_ui_bizops_wear_torso", "reallife_ui_bizops_wear_torsoaccessory", "reallife_ui_bizops_wear_legs",
+            "reallife_ui_bizops_wear_legsaccessory", "reallife_ui_bizops_wear_feet", "reallife_ui_bizops_wear_feetaccessory"
+        };
 
         /// <summary>The key of a part's words by its link ("Torso", "torsoAccessory"), or null for a kind the mod does not know.</summary>
         public static string KeyOf(string linkId)
@@ -375,7 +384,7 @@ namespace RealLifeOverhaul.Ui
             {
                 if (string.Equals(Kinds[i], linkId, StringComparison.OrdinalIgnoreCase))
                 {
-                    return "reallife_ui_bizops_wear_" + Kinds[i];
+                    return Keys[i];
                 }
             }
             return null;

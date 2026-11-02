@@ -25,7 +25,7 @@ namespace RealLifeOverhaul.Ui
         private const string SwatchKey = "uniform:rgb:";   // a colour the game tints a swatch with, as six hex digits
 
         private static readonly Dictionary<int, Sprite> Pictures = new Dictionary<int, Sprite>(64);
-        private static readonly Dictionary<uint, Sprite> Swatches = new Dictionary<uint, Sprite>(32);   // kept for the run: the game's palette is a few dozen colours
+        private static readonly Dictionary<uint, Sprite> Swatches = new Dictionary<uint, Sprite>(32);   // a few dozen colours, kept while the kit stands in
         private static readonly Vector3[] Corners = new Vector3[4];
         private static readonly UiWords Words = (key, english) => UiText.T(key);
         private static bool _picturesOn;
@@ -592,6 +592,20 @@ namespace RealLifeOverhaul.Ui
             int id = sprite.GetInstanceID();
             Pictures[id] = sprite;
             return PictureKey + id.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>The palette's colours let go with the kit: each destroyed with its texture, painted again at the next look.</summary>
+        internal static void DropSwatches()
+        {
+            if (Swatches.Count == 0)
+            {
+                return;
+            }
+            foreach (Sprite sprite in Swatches.Values)
+            {
+                CodeAssets.DropSprite(sprite);
+            }
+            Swatches.Clear();
         }
 
         // A colour as a picture of it, made once a colour.

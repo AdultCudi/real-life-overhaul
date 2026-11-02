@@ -143,7 +143,13 @@ namespace RealLifeOverhaul.Ui
                 Cells = new[] { name, makes ?? "-", who, output },
                 Values = new[] { (int)UiIcon.Factory, 0, 0, 0 },
                 Tones = new[] { running ? UiRole.None : UiRole.Warn, UiRole.None, UiRole.None, UiRole.None },
-                Subs = new[] { state, null, worker != null ? UiText.Fill("reallife_ui_bizops_skill_line", "skill", UiText.T("ba:skill_factoryworker"), "level", UiText.Whole(Mathf.FloorToInt(skill))) : null, null },
+                Subs = new[]
+                {
+                    state, null,
+                    worker != null ? UiText.Fill("reallife_ui_bizops_skill_line", "skill", UiText.T("ba:skill_factoryworker"), "level", UiText.Whole(Mathf.FloorToInt(skill)))
+                        : null,
+                    null
+                },
                 Hue = worker != null ? UiColour.HueOf(who) : 0f, Ring = worker != null ? StaffViews.Mood((int)worker.satisfaction) : UiRole.None
             };
         }
@@ -261,7 +267,8 @@ namespace RealLifeOverhaul.Ui
             Button sell = Get<Button>(GameContract.StockSell, page);
             if (sell != null && sell.gameObject.activeInHierarchy)
             {
-                actions.Add(new UiActionModel { Label = UiText.T("bizman_inventory_sell_all"), Kind = UiButtonKind.Destructive, Icon = UiIcon.Coin, Key = UiAction.Count, Arg = DoSellAll, Disabled = !sell.interactable });
+                actions.Add(new UiActionModel { Label = UiText.T("bizman_inventory_sell_all"), Kind = UiButtonKind.Destructive, Icon = UiIcon.Coin, Key = UiAction.Count,
+                    Arg = DoSellAll, Disabled = !sell.interactable });
             }
             o.Actions = actions.ToArray();
             WarehouseProductsScrollerController goods = page != null ? page.productsScrollerController : null;
