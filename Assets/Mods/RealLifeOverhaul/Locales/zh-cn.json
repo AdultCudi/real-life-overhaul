@@ -28465,8 +28465,6 @@
   "reallife_ui_persona_income_empty": "暂无收入",
   "reallife_ui_persona_income_empty_body": "你的生意开张后，最近几天的营业收入会显示在这里。",
   "reallife_ui_persona_progress": "进度",
-  "reallife_ui_persona_of": "{done}/{all}",
-  "reallife_ui_persona_moods": "心情",
   "reallife_ui_persona_modifiers": "影响你幸福感的因素",
   "reallife_ui_persona_change": "变化",
   "reallife_ui_persona_cause": "原因",
@@ -28596,5 +28594,9 @@
   "reallife_ui_econo_find_bank": "在联系人中查找银行",
   "reallife_ui_econo_fund_year": "{fund}，近一年",
   "reallife_ui_econo_statement_note": "你新开的每家企业、购置的每处房产和每笔贷款，都会在第二天夜里加入这份报表。",
-  "reallife_opt_sec_uiscreens_market": "RLO 界面：个人档案、对手与市场"
+  "reallife_opt_sec_uiscreens_market": "RLO 界面：个人档案、对手与市场",
+  "reallife_ui_persona_all_moods": "在“需求”中查看全部 {count} 项",
+  "reallife_ui_persona_next_goals": "进行中的目标",
+  "reallife_ui_persona_goals_done": "每个个人目标的三个等级都已达成。",
+  "reallife_ui_persona_all_goals": "在“目标”中查看全部 {count} 项"
 }

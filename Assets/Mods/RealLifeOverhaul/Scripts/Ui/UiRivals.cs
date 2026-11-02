@@ -75,24 +75,41 @@ namespace RealLifeOverhaul.Ui
             UiDraw.PromptBar(s, frame, keys);
         }
 
-        // The league at the left under its title; the chosen rival at the right: their head, the chart's filters as tabs and
-        // the chart filling the room their rivalry's lines leave under it.
+        // The league at the left under its title, the rivalry's lines under it; the chosen rival at the right: their head,
+        // the chart's filters as tabs beside Open in Contacts, and the chart filling the column, so both columns end level.
+        // An empty league is its empty words alone. The keys start on the chosen rival's row.
         private static void LeaguePage(UiScene s, UiAt at, UiRivalsModel m, float x, float y, float w, float h, IUiKeys keys)
         {
-            bool beside = m.Table.RowCount > 0;   // nobody to choose: the league's empty words take the page, no empty column beside them
-            float gap = UiTokens.S8, lw = beside ? UiDraw.SnapDown((w - gap) * LeagueShare) : w, rx = x + lw + gap, rw = x + w - rx;
-            float headH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader));
-            UiDraw.Text(s, at, x, y, lw, UiStyle.SectionHeader, UiRole.Text, m.LeagueTitle, UiFlags.Label | UiFlags.Truncate);
-            int firstLeague = s.NodeCount;
-            UiDataTable.Lay(s, at, m.Table, x, y + headH + UiTokens.S3, lw, y + h - (y + headH + UiTokens.S3), keys);
-            int lastLeague = s.NodeCount;
-            if (!beside)
+            if (m.Table.RowCount == 0)
             {
+                UiDraw.EmptyState(s, at, x, y, w, h, m.Table.EmptyIcon, m.Table.EmptyTitle, m.Table.EmptyBody);
                 return;
             }
+            float gap = UiTokens.S8, lw = UiDraw.SnapDown((w - gap) * LeagueShare), rx = x + lw + gap, rw = x + w - rx;
+            float headH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader));
+            float threatsH = m.Threats.Length > 0 ? UiTokens.S6 + headH + UiTokens.S3 + m.Threats.Length * ThreatRow : 0f;
+            UiDraw.Text(s, at, x, y, lw, UiStyle.SectionHeader, UiRole.Text, m.LeagueTitle, UiFlags.Label | UiFlags.Truncate);
+            int firstLeague = s.NodeCount;
+            float ty = y + headH + UiTokens.S3;
+            UiDataTable.Lay(s, at, m.Table, x, ty, lw, y + h - threatsH - ty, keys);
+            int lastLeague = s.NodeCount;
+            if (m.Threats.Length > 0)
+            {
+                float my = y + h - threatsH + UiTokens.S6;
+                UiDraw.Text(s, at, x, my, lw, UiStyle.SectionHeader, UiRole.Text, m.ThreatsTitle, UiFlags.Label | UiFlags.Truncate);
+                my += headH + UiTokens.S3;
+                for (int i = 0; i < m.Threats.Length; i++)
+                {
+                    Threat(s, at, ref m.Threats[i], x, my + i * ThreatRow, lw);
+                }
+            }
+            int chosen = m.Table.Selected >= 0 ? s.FindNode(UiDataTable.First + UiDataTable.Row, m.Table.Selected) : -1;
+            if (chosen >= 0)
+            {
+                s.FocusFirst = chosen;
+            }
             float ry = UiAppWindow.Profile(s, at, m.Profile, null, rx, y, rw, keys);
-            // The chart's filters at the left and the head's action at the right on one row, so the head's role line keeps
-            // its room in the narrow column.
+            int firstRight = s.NodeCount;
             float right = rx + rw;
             for (int i = m.ProfileActions.Length - 1; i >= 0; i--)
             {
@@ -110,27 +127,23 @@ namespace RealLifeOverhaul.Ui
                 }
                 ry += UiTokens.Control + UiTokens.S3;
             }
-            float threatsH = m.Threats.Length > 0 ? UiTokens.S6 + headH + UiTokens.S3 + m.Threats.Length * ThreatRow : 0f;
-            float chartH = UiDraw.SnapDown(y + h - ry - threatsH);
-            UiChart.Lay(s, at, m.Chart, rx, ry, rw, chartH);
-            if (m.Threats.Length > 0)
+            int firstPoint = s.NodeCount;
+            UiChart.Lay(s, at, m.Chart, rx, ry, rw, UiDraw.SnapDown(y + h - ry));
+            // The league is a column of its own: Right from a row goes over to the chosen rival's panel and Left comes back to
+            // the chosen row; the chart's days stay in the window rather than dropping to the status bar.
+            int back = chosen >= 0 ? chosen : firstLeague;
+            for (int i = firstLeague; i < lastLeague; i++)
             {
-                float ty = ry + chartH + UiTokens.S6;
-                UiDraw.Text(s, at, rx, ty, rw, UiStyle.SectionHeader, UiRole.Text, m.ThreatsTitle, UiFlags.Label | UiFlags.Truncate);
-                ty += headH + UiTokens.S3;
-                for (int i = 0; i < m.Threats.Length; i++)
-                {
-                    Threat(s, at, ref m.Threats[i], rx, ty + i * ThreatRow, rw);
-                }
-            }
-            // The league is a column of its own: Right from a row goes over to the chosen rival, and back with Left.
-            int firstRight = lastLeague;
-            for (int i = firstLeague; i < lastLeague && firstRight < s.NodeCount; i++)
-            {
-                if (s.Nodes[i].Command == UiDataTable.First + UiDataTable.Row)
+                if (s.Nodes[i].Command == UiDataTable.First + UiDataTable.Row && firstRight < s.NodeCount)
                 {
                     s.Nodes[i].Right = firstRight;
                 }
+            }
+            for (int i = firstPoint; i < s.NodeCount; i++)
+            {
+                s.Nodes[i].Down = i;
+                s.Nodes[i].Left = i > firstPoint ? i - 1 : back;
+                s.Nodes[i].Right = i + 1 < s.NodeCount ? i + 1 : i;
             }
         }
 

@@ -107,6 +107,19 @@ internal static partial class Program
               && PersonaViews.StateOf("persona_education_completed_percentage", false) == PersonaCourseState.Under && PersonaViews.StateOf("reallife_persona_edu_withdrawn", false)
               == PersonaCourseState.Stopped && PersonaViews.StateOf("persona_education_not_started", false) == PersonaCourseState.NotStarted
               && PersonaViews.StateOf("reallife_persona_edu_classes", true) == PersonaCourseState.Done, "persona: a course's state is read from its status words' key, its tick meaning done");
+        Check(System.Math.Abs(PersonaViews.Fraction("$186,420 / $1,000,000") - 0.18642f) < 1e-4f && System.Math.Abs(PersonaViews.Fraction("1.234 / 2.468") - 0.5f) < 1e-4f
+              && PersonaViews.Fraction(null) < 0f && PersonaViews.Fraction("Done") < 0f && PersonaViews.Fraction("7 / 5") == 1f,
+            "persona: a goal's way through its tier is read from the game's progress words, its separators passed over, none without them");
+        var mods = new[] { new PersonaModifier { Name = "a", Amount = 5 }, new PersonaModifier { Name = "b", Amount = -12 }, new PersonaModifier { Name = "c", Amount = 8 },
+            new PersonaModifier { Name = "d", Amount = 1 } };
+        UiPersonaLine[] top = PersonaViews.TopMoods(mods);
+        Check(top.Length == UiPersona.MostLines && top[0].Words == "b" && top[0].Sign == -1 && top[1].Words == "c", "persona: the overview shows the moods that move the happiness most, a fall as much as a lift");
+        var next = PersonaViews.NextGoals(en, new[] { new PersonaGoal { Title = "done", Tiers = 3, Progress = "5 / 5" }, new PersonaGoal { Title = "far", Tiers = 1, Progress = "1 / 10" },
+            new PersonaGoal { Title = "near", Tiers = 0, Progress = "9 / 10" } });
+        Check(next.Length == 2 && next[0].Words == "near" && PersonaViews.GoalIcon("BankBalanceGoal") == UiIcon.Bank && PersonaViews.GoalIcon("SomeNewGoal") == UiIcon.Trophy,
+            "persona: the goals on their way leave out those with every tier and put the nearest first, each with its kind's glyph");
+        UiPersonaModel fresh = UiSamples.Persona(en, "new_overview");
+        Check(fresh.Profile.FactValues.Length == 1 && fresh.WealthShares.Length == 1, "persona: a new character's head and donut show what there is, not rows of zeros");
         UiPersonaModel goals = UiSamples.Persona(en, "rich_goals");
         Check(goals.Table.SortColumn == 2 && goals.Table.Columns[2].Kind == UiCellKind.Steps && goals.Table.Columns[2].Steps == PersonaViews.GoalsTiers,
             "persona: the goals' tiers stand as three pips under the game's own sort of the current tier");
@@ -125,8 +138,10 @@ internal static partial class Program
         UiRivalsModel league = UiSamples.Rivals(en, "league");
         Check(league.Table.Selected == 1 && league.ProfileActions.Length == 1 && league.ProfileActions[0].Key == UiAction.Option && league.Profile.Ring == UiRole.None,
             "rivals: the chosen rival is the league's chosen row, Open in Contacts on P, and no mood ring on a rival's face");
+        Check(league.Table.Rows[0].Tones[2] == UiRole.Danger && league.Table.Rows[2].Tones[2] == UiRole.Ok && league.Table.Rows[0].Values[4] < 50,
+            "rivals: good and bad are the player's: a rival's rise reads bad, the player's own good");
         UiRivalsModel businesses = UiSamples.Rivals(en, "businesses");
-        Check(businesses.RowActions.Length == 2 && businesses.RowActions[1].Key == UiAction.Alt && businesses.RowLink != null && businesses.Table.Columns[1].Kind == UiCellKind.Tile,
+        Check(businesses.RowActions.Length == 2 && businesses.RowActions[1].Key == UiAction.Alt && businesses.RowLink != null && businesses.Table.Columns[0].Kind == UiCellKind.Tile,
             "rivals: a business's row offers its locate link, Open in BizMan and Set destination on F, its type on a tile");
         UiRivalsModel empty = UiSamples.Rivals(en, "league_empty");
         Check(empty.Table.RowCount == 0 && empty.ProfileActions.Length == 0 && empty.Profile.Rating == -1, "rivals: an empty league asks nothing of a rival and rates no one");
@@ -154,7 +169,7 @@ internal static partial class Program
             "market: events, business types and building types wear their glyphs, one the kit does not know a plain one");
         UiWords en = UiWords("en");
         UiMarketModel sale = UiSamples.Market(en, "estate_for_sale");
-        Check(sale.SwitchLabel != null && sale.SwitchOn && sale.Table.Columns[1].Kind == UiCellKind.Tile, "market: real estate has its for sale switch, on, and each type on its tile");
+        Check(sale.SwitchLabel != null && sale.SwitchOn && sale.Table.Columns[0].Kind == UiCellKind.Tile, "market: real estate has its for sale switch, on, and each type on its tile");
         UiMarketModel demands = UiSamples.Market(en, "uptown_demands");
         Check(demands.SwitchLabel == null && demands.Districts.Length == 9 && demands.Table.Columns[3].Graded && demands.TableTabs.Length == 3,
             "market: the demand has no switch, every district is listed, the import price graded, and the events are a tab of their own");

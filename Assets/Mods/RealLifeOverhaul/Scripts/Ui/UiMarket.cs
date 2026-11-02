@@ -22,6 +22,7 @@ namespace RealLifeOverhaul.Ui
         public string[] EstateValues = new string[0];
         public string MapLink;                     // the way to the district on the city map
         public string[] TableTabs = new string[0];
+        public UiIcon[] TableIcons = new UiIcon[0];
         public int TableTab;
         public string SwitchLabel;                 // for sale only, beside the tabs on the real estate's; null for none
         public bool SwitchOn;
@@ -114,7 +115,7 @@ namespace RealLifeOverhaul.Ui
         // estate's), then the big table or the dated events filling the room.
         private static void Market(UiScene s, UiAt at, UiMarketModel m, float x, float y, float w, float h)
         {
-            float tabsH = UiDraw.Tabs(s, at, x, y, w, m.TableTabs, m.TableTab, null, TableTabCommand);
+            float tabsH = UiDraw.IconTabs(s, at, x, y, m.TableIcons, m.TableTabs, m.TableTab, TableTabCommand);
             if (!string.IsNullOrEmpty(m.SwitchLabel))
             {
                 float sw = UiDraw.SnapDown(Math.Min(w / 2f, UiTextRules.Width(m.SwitchLabel, UiStyle.Body) + UiTokens.S16 * 2f));

@@ -93,8 +93,7 @@ namespace RealLifeOverhaul.Ui
                 case UiPersona.LinkCommand:
                     return Show(arg);
                 case UiDataTable.First + UiDataTable.Row:
-                    _selected = arg;
-                    return true;
+                    return false;   // the lists are read only: a row opens nothing in the game's app either
                 case UiDataTable.First + UiDataTable.Head:
                     return Sort(arg);
                 case UiChart.First + UiChart.Point:
@@ -365,7 +364,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     Title = title != null ? UiWidgets.Text(title.TextContainer) : null,
                     Progress = progress != null && progress.gameObject.activeSelf ? UiWidgets.Text(progress.TextContainer) : null,
-                    Tiers = tiers, Steam = g.HighestCompletedSteamTierIndex
+                    Tiers = tiers, Steam = g.HighestCompletedSteamTierIndex, Kind = g.DisplayGoal != null ? g.DisplayGoal.GetType().Name : null
                 });
             }
             _v.Goals = _goalRows.ToArray();

@@ -11,10 +11,10 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class UiDataCells
     {
-        private const float Pip = 12f;   // px: a step's pip, on the grid's half step so three and their words fit a compact column
+        private const float Segment = 40f;   // px: a step's segment of the bar, so three and their words fit a compact column
 
-        /// <summary>The least a steps column takes for its pips and a short word beside them.</summary>
-        public static float StepsWidth(int steps) => UiDraw.Snap(steps * Pip + (steps - 1) * UiTokens.S1 + UiTokens.S3 + UiTokens.S16);
+        /// <summary>The least a steps column takes for its bar and a short word beside it.</summary>
+        public static float StepsWidth(int steps) => UiDraw.Snap(StepsBar(steps) + UiTokens.S3 + UiTokens.S16);
 
         /// <summary>
         /// A type's glyph on its slate tile in the glyph's colour (Values: the UiIcon; Tones: a colour of its own, or None
@@ -35,40 +35,50 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>
-        /// A figure at the right with the arrow of its direction before it (Values: 1 rising, -1 falling, 0 none): the arrow
-        /// and its figure in one colour, good green up and bad red down, so the two never say different things; a figure
-        /// with no direction stays the row's. On the chosen row's cyan the arrow takes the step of its colour that reads there.
+        /// A figure at the right with the arrow of its direction at the cell's left (Values: 1 rising, -1 falling, 0 none),
+        /// so a column of them keeps its arrows in one line. Arrow and figure share good or bad's colour for the player:
+        /// rising is good unless the cell's tone says otherwise (Tones: Danger where a rise is bad, as a rival's is). A figure
+        /// with no direction stays the row's. On the chosen row's cyan both take the step of their colour that reads there.
         /// </summary>
-        public static void Trend(UiScene s, UiAt at, string words, int value, float cx, float ry, float cw, float rowH, bool sel)
+        public static void Trend(UiScene s, UiAt at, string words, int value, UiRole rise, float cx, float ry, float cw, float rowH, bool sel)
         {
             float g = UiTokens.IconSmall;
-            float ww = Math.Min(cw - (value != 0 ? g + UiTokens.S1 : 0f), UiDraw.Snap(UiTextRules.Width(words ?? string.Empty, UiStyle.BodyStrong) + UiTokens.S1));
+            float ww = Math.Min(cw - g - UiTokens.S2, UiDraw.Snap(UiTextRules.Width(words ?? string.Empty, UiStyle.BodyStrong) + UiTokens.S1));
             UiRole ink = sel ? UiRole.Text : UiRole.Text2;
             if (value != 0)
             {
+                bool good = (value > 0) == (rise != UiRole.Danger && rise != UiRole.DangerText);
                 // On the chosen row's cyan the bad red falls under 4.5:1: arrow and figure take the grade's step that reads there.
-                UiRole tone = sel ? UiTokens.GradeOnChosen(value > 0 ? UiRole.Grade5 : UiRole.Grade1) : value > 0 ? UiRole.Ok : UiRole.Danger;
-                ink = sel ? tone : value > 0 ? UiRole.OkText : UiRole.DangerText;
-                UiDraw.Icon(s, at, cx + cw - ww - UiTokens.S1 - g, ry + (rowH - g) / 2f, g, value > 0 ? UiIcon.TrendUp : UiIcon.TrendDown, tone, UiFlags.Middle);
+                UiRole tone = sel ? UiTokens.GradeOnChosen(good ? UiRole.Grade5 : UiRole.Grade1) : good ? UiRole.Ok : UiRole.Danger;
+                ink = sel ? tone : good ? UiRole.OkText : UiRole.DangerText;
+                UiDraw.Icon(s, at, cx, ry + (rowH - g) / 2f, g, value > 0 ? UiIcon.TrendUp : UiIcon.TrendDown, tone, UiFlags.Middle);
             }
             UiDraw.TextMiddle(s, at, cx + cw - ww, ry, rowH, ww, UiStyle.BodyStrong, ink, words, UiFlags.Right | UiFlags.Truncate);
         }
 
+        /// <summary>The bar a steps cell draws: its segments' width together, so the words after it line up down the column.</summary>
+        public static float StepsBar(int steps) => steps * Segment + (steps - 1) * UiTokens.S1;
+
         /// <summary>
-        /// A short ladder as pips (Values: the steps reached; the column's Steps: how many there are): those reached filled
-        /// gold, as a medal is, the next one ringed in the cyan, the rest on the track; the step's words after them.
+        /// A short ladder as a bar of segments, as a track of tiers (Values: the steps reached; the column's Steps: how many;
+        /// the row's Share: the way through the next): those reached filled gold, as a medal is, the next filled cyan as far
+        /// as it has got, the rest on the track; the words of the step reached after the bar.
         /// </summary>
-        public static void Steps(UiScene s, UiAt at, string words, int reached, int steps, float cx, float ry, float cw, float rowH, bool sel)
+        public static void Steps(UiScene s, UiAt at, string words, int reached, float share, int steps, float cx, float ry, float cw, float rowH, bool sel)
         {
             steps = Math.Max(1, steps);
-            float py = ry + (rowH - Pip) / 2f;
+            float h = UiTokens.S1, py = ry + (rowH - h) / 2f;
             for (int i = 0; i < steps; i++)
             {
-                float px = cx + i * (Pip + UiTokens.S1);
-                bool done = i < reached, next = i == reached;
-                UiDraw.Box(s, at, px, py, Pip, Pip, done ? UiRole.Gold : UiRole.Track, next ? UiRole.Accent : UiRole.None, Pip / 2f, UiFlags.Middle | UiFlags.Circle);
+                float px = cx + i * (Segment + UiTokens.S1);
+                int track = UiDraw.Box(s, at, px, py, Segment, h, i < reached ? UiRole.Gold : UiRole.Track, UiRole.None, h / 2f, UiFlags.Middle | UiFlags.Chrome);
+                float part = i == reached ? Math.Max(0f, Math.Min(1f, share)) : 0f;
+                if (part > 0f)
+                {
+                    UiDraw.Box(s, at.In(track), px, py, Math.Max(h, UiDraw.Snap(Segment * part)), h, UiRole.Accent, UiRole.None, h / 2f, UiFlags.Middle | UiFlags.Share | UiFlags.Chrome);
+                }
             }
-            float tx = cx + steps * Pip + (steps - 1) * UiTokens.S1 + UiTokens.S3;
+            float tx = cx + StepsBar(steps) + UiTokens.S3;
             if (tx < cx + cw)
             {
                 UiDraw.TextMiddle(s, at, tx, ry, rowH, cx + cw - tx, UiStyle.Body, sel ? UiRole.Text : UiRole.Text2, words, UiFlags.Truncate);

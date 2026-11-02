@@ -97,6 +97,7 @@ namespace RealLifeOverhaul.Ui
             m.EstateValues = v.EstateValues ?? new string[0];
             m.MapLink = t("phone_view_on_map_button", "View on map");
             m.TableTabs = new[] { t("common_market_demands", "Market Demands"), t("common_real_estate", "Real Estate"), t("common_events", "Events") };
+            m.TableIcons = new[] { UiIcon.ChartLineUp, UiIcon.Building, UiIcon.Newspaper };
             m.TableTab = v.Table == UiMarket.RealEstate || v.Table == UiMarket.Events ? v.Table : UiMarket.Demands;
             m.SwitchLabel = m.TableTab == UiMarket.RealEstate ? t("market_insider_show_only_for_sale", "Show only for sale") : null;
             m.SwitchOn = v.ForSaleOnly;
@@ -112,7 +113,7 @@ namespace RealLifeOverhaul.Ui
             UiDataTableModel table = m.Table;
             table.SortColumn = v.SortColumn;
             table.SortDown = v.SortDown;
-            table.Selected = v.Selected;
+            table.Selected = m.TableTab == UiMarket.RealEstate ? v.Selected : -1;   // a building opens; a demand is read only, so none stands chosen
             table.Offset = v.Offset;
             table.Reveal = v.Reveal;
             table.Filters = new[] { v.Filter ?? t(m.TableTab == UiMarket.RealEstate ? "reallife_ui_market_all_buildings" : "reallife_ui_market_all_types",
@@ -138,6 +139,11 @@ namespace RealLifeOverhaul.Ui
                 new UiPrompt { Action = UiAction.TabPrev, Label = t("reallife_ui_market_prompt_district", "District") },
                 new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
             };
+            if (v.OpenList >= 0)
+            {
+                // An open list has the keys: the districts' step is the layer's under it, so it is not offered.
+                m.Prompts = new[] { m.Prompts[0], m.Prompts[1], m.Prompts[3] };
+            }
         }
 
         // Each product: its name, its demand as a graded meter, the lowest price, the import price graded (a cheaper import
@@ -181,8 +187,8 @@ namespace RealLifeOverhaul.Ui
         {
             table.Columns = new[]
             {
-                new UiDataColumn { Title = t("common_address", "Address"), Kind = UiCellKind.Text, Sortable = true },
-                new UiDataColumn { Title = t("common_building_type", "Building Type"), Kind = UiCellKind.Tile, Width = 200f, Sortable = true },
+                new UiDataColumn { Title = t("common_address", "Address"), Kind = UiCellKind.Tile, Sortable = true },
+                new UiDataColumn { Title = t("common_building_type", "Building Type"), Kind = UiCellKind.Text, Width = 160f, Sortable = true },
                 new UiDataColumn { Title = t("bizman_building_total_size", "Total size"), Kind = UiCellKind.Figure, Width = 112f, Sortable = true },
                 new UiDataColumn { Title = t("real_estate_estimated_value", "Estimated value"), Kind = UiCellKind.Money, Width = 136f, Sortable = true },
                 new UiDataColumn { Title = t("common_price", "Price"), Kind = UiCellKind.Money, Width = 120f, Sortable = true },
@@ -195,7 +201,7 @@ namespace RealLifeOverhaul.Ui
                 table.Rows[i] = new UiDataRow
                 {
                     Cells = new[] { full.Cells[0], full.Cells[2], full.Cells[3], full.Cells[4], full.Cells[5] },
-                    Values = new[] { -1, full.Values[2], -1, -1, -1 },
+                    Values = new[] { full.Values[0], -1, -1, -1, -1 },
                     Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None }
                 };
             }
@@ -223,7 +229,7 @@ namespace RealLifeOverhaul.Ui
                 };
             }
             list.RowCount = list.Rows.Length;
-            list.Selected = v.EventSelected;
+            list.Selected = -1;   // read only: the cursor walks and scrolls the events, none stands chosen
             list.Offset = v.EventOffset;
             list.Reveal = v.EventReveal;
             list.EmptyIcon = UiIcon.Newspaper;

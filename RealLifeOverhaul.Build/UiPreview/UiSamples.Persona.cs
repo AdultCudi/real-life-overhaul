@@ -80,7 +80,7 @@ internal static partial class UiSamples
             new PersonaModifier { Name = "Argued with a neighbour", Amount = -4, Left = Fill(t("common_hours_left", "{hours} hours left"), "hours", "20") },
         };
         v.Courses = Courses(t, true);
-        v.Goals = Goals(true);
+        v.Goals = Goals(t, true);
         return v;
     }
 
@@ -88,7 +88,7 @@ internal static partial class UiSamples
     {
         Name = "Leo Hart", Age = 19, Businesses = 0, Employees = 0, Cash = 850f, Investments = 0f, Assets = 0f, Loans = 0f, WeeklyIncome = 0f,
         IncomeDays = new float[0], IncomeDayNumbers = new int[0], Money = ShortMoney, Energy = 94, Hunger = 61, Happiness = 55, Modifiers = new PersonaModifier[0], Courses = Courses(t, false),
-        Goals = Goals(false)
+        Goals = Goals(t, false)
     };
 
     private static PersonaCourse[] Courses(UiWords t, bool rich)
@@ -119,27 +119,36 @@ internal static partial class UiSamples
     private static PersonaCourse Course(string name, string status, PersonaCourseState state, string group, string key) =>
         new PersonaCourse { Name = name, Status = status, State = state, Group = group, GroupKey = key };
 
-    private static PersonaGoal[] Goals(bool rich)
+    // The game's goals as its entries word them: the goal of the tier under way (its target the progress's), or of the last.
+    private static PersonaGoal[] Goals(UiWords t, bool rich)
     {
         var goals = new List<PersonaGoal>
         {
-            Goal("Earn $1,000,000 in a single week", rich ? "$186,420 / $1,000,000" : "$0 / $10,000", rich ? 2 : 0, rich ? 1 : -1),
-            Goal("Own 10 businesses at once", rich ? "6 / 10" : "0 / 1", rich ? 2 : 0, rich ? 2 : -1),
-            Goal("Hire 100 employees", rich ? "41 / 100" : "0 / 5", rich ? 1 : 0, -1),
-            Goal("Buy a home in the Hamptons", null, rich ? 3 : 0, rich ? 2 : -1),
-            Goal("Reach a valuation of $50,000,000", rich ? "$4,366,800 / $50,000,000" : "$850 / $100,000", rich ? 1 : 0, rich ? 0 : -1),
-            Goal("Serve 5,000 customers in a day", rich ? "3,812 / 5,000" : "0 / 100", rich ? 2 : 0, -1),
-            Goal("Pay $1,000,000 in taxes", rich ? "$612,000 / $1,000,000" : "$0 / $10,000", rich ? 1 : 0, -1),
-            Goal("Win at the casino boat", null, rich ? 3 : 0, rich ? 2 : -1),
-            Goal("Own a boat", null, rich ? 1 : 0, -1),
-            Goal("Train an employee to the highest level", rich ? "4 / 5" : "0 / 1", rich ? 2 : 0, rich ? 1 : -1),
-            Goal("Take 50 taxi rides", rich ? "50 / 50" : "2 / 10", rich ? 3 : 0, -1),
-            Goal("Stock 10,000 items at once", rich ? "7,410 / 10,000" : "0 / 500", rich ? 2 : 0, -1),
+            Goal(t, "BankBalanceGoal", "personalgoal_bank_balance", "Reach a bank balance of {amount}", rich ? "$10,000,000" : "$100,000",
+                rich ? "$1,284,500 / $10,000,000" : "$850 / $100,000", rich ? 2 : 0, rich ? 1 : -1),
+            Goal(t, "BusinessWeeklyIncomeGoal", "personalgoal_business_weekly_income", "Reach a weekly income of {amount} for one business", rich ? "$100,000" : "$5,000",
+                rich ? "$52,600 / $100,000" : "$0 / $5,000", rich ? 2 : 0, rich ? 2 : -1),
+            Goal(t, "EmploymentGoal", "personalgoal_minemployees", "Employ at least {minimumEmployees} people", rich ? "100" : "5", rich ? "41 / 100" : "0 / 5", rich ? 1 : 0, -1, "minimumEmployees"),
+            Goal(t, "RealEstateGoal", "personalgoal_realestate", "Own at least {amount} buildings", "25", rich ? "3 / 25" : "0 / 1", rich ? 2 : 0, rich ? 0 : -1),
+            Goal(t, "TaxiRideGoal", "personalgoal_taxi_rides", "Complete {amount} taxi rides", "250", rich ? "250 / 250" : "2 / 10", rich ? 3 : 0, -1),
+            Goal(t, "TaxesPaidGoal", "personalgoal_taxes_paid", "Pay at least {amount} in taxes", rich ? "$1,000,000" : "$10,000", rich ? "$612,000 / $1,000,000" : "$0 / $10,000",
+                rich ? 1 : 0, -1),
+            Goal(t, "TotalDailyCustomerGoal", "personalgoal_dailycustomers", "Reach at least {amount} customers per day for one business", rich ? "1,000" : "100",
+                rich ? "812 / 1,000" : "0 / 100", rich ? 2 : 0, -1),
+            Goal(t, "ItemsInStockGoal", "personalgoal_items_in_stock", "Stockpile at least {amount} of any product", rich ? "10,000" : "500",
+                rich ? "7,410 / 10,000" : "0 / 500", rich ? 2 : 0, rich ? 1 : -1),
+            Goal(t, "CasinoWinGoal", "personalgoal_casinowin", "Win a total of {amount} at the casino", "$1,000,000", rich ? "$1,000,000 / $1,000,000" : "$0 / $10,000", rich ? 3 : 0,
+                rich ? 2 : -1),
+            Goal(t, "VehicleGoal", "personalgoal_owned_vehicles", "Own a total of {amount} vehicles", rich ? "10" : "2", rich ? "4 / 10" : "0 / 2", rich ? 1 : 0, -1),
+            Goal(t, "EmployeeMaxLevelGoal", "personalgoal_employee_max_skill", "Reach level {amount}% of any skill for one employee", "100", rich ? "92 / 100" : "38 / 75",
+                rich ? 2 : 0, -1),
+            Goal(t, "PlayerAgeGoal", "personalgoal_age", "Celebrate your {amount}th birthday", rich ? "40" : "25", rich ? "34 / 40" : "19 / 25", rich ? 2 : 0, -1),
         };
         return goals.ToArray();
     }
 
-    private static PersonaGoal Goal(string title, string progress, int tiers, int steam) => new PersonaGoal { Title = title, Progress = progress, Tiers = tiers, Steam = steam };
+    private static PersonaGoal Goal(UiWords t, string kind, string key, string english, string amount, string progress, int tiers, int steam, string slot = "amount") =>
+        new PersonaGoal { Kind = kind, Title = Fill(t(key, english), slot, amount), Progress = progress, Tiers = tiers, Steam = steam };
 
     // ------------------------------------------------------------------------------------------------------- Rivals
 
@@ -183,29 +192,31 @@ internal static partial class UiSamples
             v.Threats = new[]
             {
                 new UiRivalThreat { Icon = UiIcon.Tag, Title = Fill(t("rivals_defense_icons_price_reduction_title", "Price reduction - {days} day(s) left").Replace(" - ", ", "), "days", "3"),
-                    Body = "Thierry Laurent Moreau lowered their prices on your best selling products to steal your customers" },
+                    Body = Fill(t("rivals_defense_icons_price_reduction_description",
+                        "{rivalName} lowered their prices on your best selling products to steal your customers"), "rivalName", "Thierry Laurent Moreau") },
                 new UiRivalThreat { Icon = UiIcon.People, Title = Fill(t("rivals_defense_icons_hire_best_employees_title", "Hire best employees - {days} day(s) left")
                     .Replace(" - ", ", "), "days", "5"),
-                    Body = "Thierry Laurent Moreau is poaching your employees" },
+                    Body = Fill(t("rivals_defense_icons_hire_best_employees_description", "{rivalName} is poaching your employees"), "rivalName", "Thierry Laurent Moreau") },
             };
         }
         v.Tab = state.StartsWith("businesses") ? UiRivals.Businesses : state == "buildings" ? UiRivals.Buildings : UiRivals.League;
         v.Selected = 2;
         v.Businesses = new[]
         {
-            Business("Le Petit Bistro", "ba:businesstype_fastfoodrestaurant", "Fast Food Restaurant", 48200f, "112 Lexington Avenue"),
-            Business("Moreau Coffee House", "ba:businesstype_coffeeshop", "Coffee Shop", 31800f, "40 East 34th Street"),
-            Business("Maison Laurent", "ba:businesstype_clothingstore", "Clothing Store", 52600f, "75 Park Avenue"),
-            Business("Murray Hill Market", "ba:businesstype_supermarket", "Supermarket", 44100f, "210 Third Avenue"),
-            Business("TLM Jewellers", "ba:businesstype_jewelrystore", "Jewelry Store", 27900f, "18 Madison Avenue"),
-            Business("TLM Enterprise", "ba:businesstype_headquarters", "Headquarters", -6200f, "1 Park Avenue"),
-            Business("Fleurs de Paris", "ba:businesstype_florist", "Florist", 12300f, "56 Lexington Avenue"),
-            Business("Moreau Electronics", "ba:businesstype_electronicsstore", "Electronics Store", 38900f, "301 Second Avenue"),
-            Business("Rive Gauche Books", "ba:businesstype_bookstore", "Bookstore", 9400f, "88 East 30th Street"),
-            Business("TLM Logistics", "ba:businesstype_warehouse", "Warehouse", 0f, "12 Pier Road"),
-            Business("Chez Thierry", "ba:businesstype_fastfoodrestaurant", "Fast Food Restaurant", 41300f, "140 Lexington Avenue"),
+            Business("Le Petit Bistro", "ba:businesstype_fastfoodrestaurant", t("ba:businesstype_fastfoodrestaurant", "Fast Food Restaurant"), 48200f, "112 Lexington Avenue"),
+            Business("Moreau Coffee House", "ba:businesstype_coffeeshop", t("ba:businesstype_coffeeshop", "Coffee Shop"), 31800f, "40 East 34th Street"),
+            Business("Maison Laurent", "ba:businesstype_clothingstore", t("ba:businesstype_clothingstore", "Clothing Store"), 52600f, "75 Park Avenue"),
+            Business("Murray Hill Market", "ba:businesstype_supermarket", t("ba:businesstype_supermarket", "Supermarket"), 44100f, "210 Third Avenue"),
+            Business("TLM Jewellers", "ba:businesstype_jewelrystore", t("ba:businesstype_jewelrystore", "Jewelry Store"), 27900f, "18 Madison Avenue"),
+            Business("TLM Enterprise", "ba:businesstype_headquarters", t("ba:businesstype_headquarters", "Headquarters"), -6200f, "1 Park Avenue"),
+            Business("Fleurs de Paris", "ba:businesstype_florist", t("ba:businesstype_florist", "Florist"), 12300f, "56 Lexington Avenue"),
+            Business("Moreau Electronics", "ba:businesstype_electronicsstore", t("ba:businesstype_electronicsstore", "Electronics Store"), 38900f, "301 Second Avenue"),
+            Business("Rive Gauche Books", "ba:businesstype_bookstore", t("ba:businesstype_bookstore", "Bookstore"), 9400f, "88 East 30th Street"),
+            Business("TLM Logistics", "ba:businesstype_warehouse", t("ba:businesstype_warehouse", "Warehouse"), 0f, "12 Pier Road"),
+            Business("Chez Thierry", "ba:businesstype_fastfoodrestaurant", t("ba:businesstype_fastfoodrestaurant", "Fast Food Restaurant"), 41300f, "140 Lexington Avenue"),
         };
-        v.SortColumn = 2;
+        System.Array.Sort(v.Businesses, (a, b) => b.WeeklyIncome.CompareTo(a.WeeklyIncome));   // as the sorted head says: the most first
+        v.SortColumn = 3;
         v.SortDown = true;
         v.Buildings = new[]
         {
@@ -218,6 +229,8 @@ internal static partial class UiSamples
         if (state == "buildings")
         {
             v.SortColumn = 4;
+            v.SortDown = true;
+            System.Array.Sort(v.Buildings, (a, b) => b.Value.CompareTo(a.Value));
         }
         return v;
     }
@@ -262,11 +275,13 @@ internal static partial class UiSamples
         v.Working = 28;
         v.Middle = 49;
         v.Upper = 23;
-        string price = "Average {buildingType} price/m²";
+        string price = t("market_insider_average_building_price", "Average <lowercase>{buildingType}</lowercase> price/{unit}").Replace("{unit}", "m²");
         v.EstateLabels = new[]
         {
-            t("market_insider_total_buildings", "Total buildings"), price.Replace("{buildingType}", "retail"), price.Replace("{buildingType}", "office"),
-            price.Replace("{buildingType}", "warehouse"), price.Replace("{buildingType}", "residential"),
+            t("market_insider_total_buildings", "Total buildings"), MarketViews.Plain(price.Replace("{buildingType}", t("ba:buildingtype_retail", "Retail"))),
+            MarketViews.Plain(price.Replace("{buildingType}", t("ba:buildingtype_office", "Office"))),
+            MarketViews.Plain(price.Replace("{buildingType}", t("ba:buildingtype_warehouse", "Warehouse"))),
+            MarketViews.Plain(price.Replace("{buildingType}", t("ba:buildingtype_residential", "Residential"))),
         };
         v.EstateValues = new[] { "214", "$6,840", "$5,920", "$2,310", "$7,450" };
         v.Table = state.StartsWith("estate") ? UiMarket.RealEstate : state.Contains("events") || state == "uptown_quiet" ? UiMarket.Events : UiMarket.Demands;
@@ -275,18 +290,18 @@ internal static partial class UiSamples
         {
             v.Demands = new[]
             {
-                Demand("Coffee", 92, "$4.20", 0.8f, false, 3),
-                Demand("Burger", 84, "$8.50", 1.1f, false, 2),
-                Demand("Croissant", 77, "$3.10", 0.7f, false, 1),
-                Demand("Flowers", 71, null, 0.9f, false, 0),
-                Demand("Smartphone", 66, "$612.00", 1.3f, false, 4),
-                Demand("Haircut", 58, "$34.00", 0f, true, 2),
-                Demand("Classic Phone", 49, "$88.00", 1.0f, false, 1),
-                Demand("Bottle of Wine", 44, "$19.90", 0.6f, false, 2),
-                Demand("Notebook", 37, "$2.40", 0.5f, false, 1),
-                Demand("Sofa", 31, "$940.00", 1.2f, false, 0),
-                Demand("Gift Card", 22, "$25.00", 0.9f, false, 3),
-                Demand("Printer Paper", 14, "$6.30", 0.7f, false, 2),
+                Demand(t("ba:itemname_cupofcoffee", "Cup Of Coffee"), 92, "$4.20", 0.8f, false, 3),
+                Demand(t("ba:itemname_burger", "Burger"), 84, "$8.50", 1.1f, false, 2),
+                Demand(t("ba:itemname_croissant", "Croissant"), 77, "$3.10", 0.7f, false, 1),
+                Demand(t("ba:itemname_cheapflower", "Flower (Cheap)"), 71, null, 0.9f, false, 0),
+                Demand(t("ba:itemname_laptop", "Laptop"), 66, "$612.00", 1.3f, false, 4),
+                Demand(t("ba:itemname_hotdog", "Hotdog"), 58, "$3.40", 1.0f, false, 2),
+                Demand(t("ba:itemname_classicphone", "Classic Phone"), 49, "$88.00", 1.0f, false, 1),
+                Demand(t("ba:itemname_bottleofwine", "Bottle of Wine"), 44, "$19.90", 0.6f, false, 2),
+                Demand(t("ba:itemname_donut", "Donut"), 37, "$2.40", 0.5f, false, 1),
+                Demand(t("ba:itemname_sofaluxury", "Sofa (Luxury)"), 31, "$940.00", 1.2f, false, 0),
+                Demand(t("ba:itemname_cheapgift", "Gift (Cheap)"), 22, "$25.00", 0.9f, false, 3),
+                Demand(t("ba:itemname_paper", "Paper Ream"), 14, "$6.30", 0.7f, false, 2),
             };
             v.All = 38;
             v.SortColumn = 1;
@@ -309,6 +324,7 @@ internal static partial class UiSamples
                 places.Insert(1, Building("120 North Avenue", null, "ba:buildingtype_office", t("ba:buildingtype_office", "Office"), "1,120 m²", 6620000f, 0f));
                 places.Insert(4, Building("40 Linden Street", null, "ba:buildingtype_retail", t("ba:buildingtype_retail", "Retail"), "210 m²", 1440000f, 0f));
             }
+            places.Sort((a, b) => a.Price.CompareTo(b.Price));
             v.Places = places.ToArray();
             v.All = 214;
             v.SortColumn = 4;
@@ -324,18 +340,23 @@ internal static partial class UiSamples
         {
             v.Events = new[]
             {
-                Event("Hype", t("marketeventtype_hype", "Hype"), 412, "Citizens in Uptown are recently showing strong demand for Coffee."),
-                Event("BusinessOpened", t("marketeventtype_businessopened", "Business opened"), 410, "Huang Guo opened Golden Dragon Supermarket at 33 North Avenue."),
+                Event("Hype", t("marketeventtype_hype", "Hype"), 412, Hype(t, t("ba:itemname_cupofcoffee", "Cup Of Coffee"))),
+                Event("BusinessOpened", t("marketeventtype_businessopened", "Business opened"), 410,
+                    MarketViews.Plain(t("marketeventtype_businessopened_description", "{rivalName} opened <b>{businessName}</b> at {address}.").Replace("{rivalName}", "Huang Guo")
+                        .Replace("{businessName}", "Golden Dragon Supermarket").Replace("{address}", "33 North Avenue"))),
                 Event("ProductShortage", t("marketeventtype_productshortage", "Product shortage"), 407,
                     "Riverside Wholesale is currently experiencing a shortage of Croissant. Expected duration is 4 days."),
                 Event("BusinessClosed", t("marketeventtype_businessclosed", "Business closed"), 401, "Linden Florist at 61 Linden Street owned by Owen Pryce was shut down."),
-                Event("Hype", t("marketeventtype_hype", "Hype"), 396, "Citizens in Uptown are recently showing strong demand for Smartphone."),
+                Event("Hype", t("marketeventtype_hype", "Hype"), 396, Hype(t, t("ba:itemname_laptop", "Laptop"))),
             };
         }
         return v;
     }
 
     private static MarketDistrict District(string key, string name) => new MarketDistrict { Key = key, Name = name };
+
+    private static string Hype(UiWords t, string item) => MarketViews.Plain(t("marketeventtype_hype_description",
+        "Citizens in {neighbourhood} are recently showing strong demand for <b>{itemName}</b>.").Replace("{neighbourhood}", "Uptown").Replace("{itemName}", item));
 
     private static MarketDemand Demand(string product, int demand, string lowest, float import, bool service, int providers) =>
         new MarketDemand { Product = product, Demand = demand, Lowest = lowest, Import = import, Service = service, Providers = providers };
@@ -350,33 +371,61 @@ internal static partial class UiSamples
     {
         var fr = new Dictionary<string, string>
         {
-            { "persona_education", "Éducation" }, { "persona_characterinfo_networth", "Valeur nette totale : <b>{amount}</b>" },
-            { "common_weekly_income", "Revenu hebdomadaire" }, { "common_years_amount", "{years} ans" },
-            { "common_number_of_businesses", "{amount} entreprises" }, { "persona_personal_wealth", "Richesse personnelle" }, { "persona_cash", "Trésorerie" },
-            { "common_investments", "Investissements" }, { "persona_assets", "Actifs" }, { "econoview_loans", "Prêts" }, { "common_energy", "Énergie" },
-            { "common_hunger", "Faim" }, { "common_happiness", "Bonheur" }, { "common_day_number", "Jour {number}" },
-            { "common_businessschool", "École de commerce de Manhattan" }, { "bizman_status", "Statut" },
-            { "persona_personal_goals_header", "Objectifs personnels ({progress})" }, { "persona_personalgoal_current_goals", "Objectifs actuels" },
-            { "persona_education_completed", "Terminé" }, { "persona_education_not_started", "Pas encore commencé" },
-            { "persona_education_completed_percentage", "{percentageComplete}% terminé" }, { "smartphone_rivals", "Rivaux" },
-            { "rivals_leaderboard", "Classement" }, { "common_businesses", "Entreprises" }, { "rivals_real_estate_properties", "Biens immobiliers" },
-            { "rivals_overview", "Aperçu des rivaux" }, { "rivals_defense_icons_active_rivalry_title", "Rivalité active" }, { "common_name", "Nom" },
-            { "open_in_contacts", "Ouvrir dans Contacts" }, { "common_business_name", "Nom de l'entreprise" }, { "common_business_type", "Type d’entreprise" },
-            { "common_address", "Adresse" }, { "common_show_on_map", "Afficher sur la carte" }, { "common_setdestination", "Définir la destination" },
-            { "common_neighborhood", "Quartier" }, { "common_building_type", "Type de bâtiment" }, { "bizman_building_total_size", "Taille totale" },
-            { "real_estate_estimated_value", "Valeur estimée" }, { "common_price", "Prix" }, { "rivals_business_development", "Développement de l'entreprise" },
-            { "market_insider_citizen_data", "Données des citoyens" }, { "socialclass_working", "Classe ouvrière" }, { "socialclass_middle", "Classe moyenne" },
-            { "socialclass_upper", "Classe supérieure" }, { "market_insider_real_estate_data", "Données immobilières" },
-            { "phone_view_on_map_button", "Voir sur la carte" }, { "common_market_demands", "Demande du marché" }, { "common_real_estate", "Immobilier" },
-            { "market_insider_show_only_for_sale", "Afficher uniquement à la vente" }, { "common_search", "Rechercher" }, { "common_events", "Événements" },
-            { "common_product", "Produit" }, { "marketinsider_demand", "Demande" }, { "marketinsider_lowest_market_price", "Prix le plus bas du marché" },
-            { "marketinsider_import_price_index", "Indice des prix à l’importation" }, { "marketinsider_providers", "Fournisseurs" },
-            { "market_insider_total_buildings", "Nombre total de bâtiments" }, { "ba:neighborhood_thehamptons", "Les Hamptons" },
-            { "ba:buildingtype_retail", "Commerce" }, { "ba:buildingtype_office", "Bureaux" }, { "ba:buildingtype_warehouse", "Entrepôt" },
-            { "ba:buildingtype_residential", "Résidentiel" }, { "marketeventtype_hype", "Engouement" },
-            { "marketeventtype_businessopened", "Ouverture d’entreprise" }, { "marketeventtype_businessclosed", "Fermeture d’entreprise" },
-            { "marketeventtype_productshortage", "Pénurie de produit" }, { "common_days_left", "Plus que {days} jours" },
-            { "common_hours_left", "Plus que {hours} heures" }
+            { "common_days_left", "Plus que {days} jours" }, { "common_hours_left", "Plus que {hours} heures" }, { "persona_education_completed", "Terminé" },
+            { "persona_education_not_started", "Pas encore commencé" }, { "persona_education_completed_percentage", "{percentageComplete}% terminé" },
+            { "personalgoal_bank_balance", "Atteindre un solde bancaire de {amount}" },
+            { "personalgoal_business_weekly_income", "Atteindre un revenu hebdomadaire de {amount} pour une entreprise" },
+            { "personalgoal_minemployees", "Employer au moins {minimumEmployees} personnes" },
+            { "personalgoal_realestate", "Posséder au moins {amount} bâtiments" }, { "personalgoal_taxi_rides", "Effectuer {amount} trajets en taxi" },
+            { "personalgoal_taxes_paid", "Payer au moins {amount} d'impôts" },
+            { "personalgoal_dailycustomers", "Atteindre au moins {amount} clients par jour pour une entreprise" },
+            { "personalgoal_items_in_stock", "Stocker au moins {amount} unités de n'importe quel produit" },
+            { "personalgoal_casinowin", "Gagner un total de {amount} au casino" }, { "personalgoal_owned_vehicles", "Posséder un total de {amount} véhicules" },
+            { "personalgoal_employee_max_skill", "Atteindre le niveau {amount}% dans n'importe quelle compétence pour un employé" },
+            { "personalgoal_age", "Fêtez vos {amount} ans" }, { "common_weekly_income", "Revenu hebdomadaire" }, { "common_businesses", "Entreprises" },
+            { "rivals_defense_icons_price_reduction_title", "Réduction de prix - {days} jour(s) restant(s)" },
+            { "rivals_defense_icons_price_reduction_description", "{rivalName} a baissé ses prix sur vos produits les plus vendus pour vous voler vos clients" },
+            { "rivals_defense_icons_hire_best_employees_title", "Débauchage des meilleurs employés - {days} jour(s) restant(s)" },
+            { "rivals_defense_icons_hire_best_employees_description", "{rivalName} débauche vos employés" },
+            { "ba:businesstype_fastfoodrestaurant", "Restaurant fast-food" }, { "ba:businesstype_coffeeshop", "Café" },
+            { "ba:businesstype_clothingstore", "Magasin de vêtements" }, { "ba:businesstype_supermarket", "Supermarché" },
+            { "ba:businesstype_jewelrystore", "Bijouterie" }, { "ba:businesstype_headquarters", "Siège social" }, { "ba:businesstype_florist", "Fleuriste" },
+            { "ba:businesstype_electronicsstore", "Magasin d'électronique" }, { "ba:businesstype_bookstore", "Librairie" },
+            { "ba:businesstype_warehouse", "Entrepôt" }, { "ba:buildingtype_office", "Bureaux" }, { "ba:buildingtype_retail", "Commerce" },
+            { "ba:buildingtype_warehouse", "Entrepôt" }, { "ba:buildingtype_residential", "Résidentiel" },
+            { "ba:neighborhood_garmentdistrict", "Garment District" }, { "ba:neighborhood_hellskitchen", "Hell's Kitchen" },
+            { "ba:neighborhood_industrycity", "Industry City" }, { "ba:neighborhood_lowermanhattan", "Lower Manhattan" },
+            { "ba:neighborhood_midtown", "Midtown" }, { "ba:neighborhood_murrayhill", "Murray Hill" }, { "ba:neighborhood_thehamptons", "Les Hamptons" },
+            { "market_insider_average_building_price", "Prix moyen d'un(e) <lowercase>{buildingType}</lowercase>/{unit}" },
+            { "market_insider_total_buildings", "Nombre total de bâtiments" }, { "ba:itemname_cupofcoffee", "Tasse de café" },
+            { "ba:itemname_burger", "Burger" }, { "ba:itemname_croissant", "Croissant" }, { "ba:itemname_cheapflower", "Fleur (Bon marché)" },
+            { "ba:itemname_laptop", "Ordinateur portable" }, { "ba:itemname_hotdog", "Hot-dog" }, { "ba:itemname_classicphone", "Téléphone classique" },
+            { "ba:itemname_bottleofwine", "Bouteille de vin" }, { "ba:itemname_donut", "Donut" }, { "ba:itemname_sofaluxury", "Canapé (Luxe)" },
+            { "ba:itemname_cheapgift", "Cadeau (bon marché)" }, { "ba:itemname_paper", "Rame de papier" }, { "marketeventtype_hype", "Engouement" },
+            { "marketeventtype_businessopened", "Ouverture d’entreprise" },
+            { "marketeventtype_businessopened_description", "{rivalName} a ouvert <b>{businessName}</b> à {address}." },
+            { "marketeventtype_productshortage", "Pénurie de produit" }, { "marketeventtype_businessclosed", "Fermeture d’entreprise" },
+            { "marketeventtype_hype_description", "Les habitants de {neighbourhood} montrent récemment une forte demande pour <b>{itemName}</b>." },
+            { "smartphone_persona", "Persona" }, { "persona_education", "Éducation" }, { "common_years_amount", "{years} ans" },
+            { "persona_characterinfo_networth", "Valeur nette totale : <b>{amount}</b>" }, { "persona_characterinfo_businesses", "Nombre total d'entreprises" },
+            { "persona_characterinfo_employees", "Nombre total d’employés" }, { "persona_personal_wealth", "Richesse personnelle" },
+            { "persona_cash", "Trésorerie" }, { "common_investments", "Investissements" }, { "persona_assets", "Actifs" }, { "econoview_loans", "Prêts" },
+            { "common_energy", "Énergie" }, { "common_hunger", "Faim" }, { "common_happiness", "Bonheur" }, { "common_day_number", "Jour {number}" },
+            { "bizman_status", "Statut" }, { "common_businessschool", "École de commerce de Manhattan" },
+            { "persona_personalgoal_current_goals", "Objectifs actuels" }, { "persona_personalgoal_steam_achievements", "Steam" },
+            { "smartphone_rivals", "Rivaux" }, { "rivals_leaderboard", "Classement" }, { "rivals_real_estate_properties", "Biens immobiliers" },
+            { "rivals_overview", "Aperçu des rivaux" }, { "rivals_defense_icons_active_rivalry_title", "Rivalité active" },
+            { "open_in_contacts", "Ouvrir dans Contacts" }, { "common_name", "Nom" }, { "common_business_name", "Nom de l'entreprise" },
+            { "common_business_type", "Type d’entreprise" }, { "common_address", "Adresse" }, { "common_show_on_map", "Afficher sur la carte" },
+            { "common_setdestination", "Définir la destination" }, { "common_neighborhood", "Quartier" }, { "common_building_type", "Type de bâtiment" },
+            { "bizman_building_total_size", "Taille totale" }, { "real_estate_estimated_value", "Valeur estimée" }, { "common_price", "Prix" },
+            { "rivals_business_development", "Développement de l'entreprise" }, { "market_insider_citizen_data", "Données des citoyens" },
+            { "socialclass_working", "Classe ouvrière" }, { "socialclass_middle", "Classe moyenne" }, { "socialclass_upper", "Classe supérieure" },
+            { "market_insider_real_estate_data", "Données immobilières" }, { "phone_view_on_map_button", "Voir sur la carte" },
+            { "common_market_demands", "Demande du marché" }, { "common_real_estate", "Immobilier" }, { "common_events", "Événements" },
+            { "market_insider_show_only_for_sale", "Afficher uniquement à la vente" }, { "common_search", "Rechercher" }, { "common_product", "Produit" },
+            { "marketinsider_demand", "Demande" }, { "marketinsider_lowest_market_price", "Prix le plus bas du marché" },
+            { "marketinsider_import_price_index", "Indice des prix à l’importation" }, { "marketinsider_providers", "Fournisseurs" }
         };
         return (key, english) => fr.TryGetValue(key, out string words) ? words : t(key, english);
     }

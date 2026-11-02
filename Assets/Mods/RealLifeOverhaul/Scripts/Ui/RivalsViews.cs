@@ -93,7 +93,7 @@ namespace RealLifeOverhaul.Ui
                 Tab(UiIcon.Building, t("rivals_real_estate_properties", "Real Estate Properties"), chosen >= 0 ? Whole(v.Buildings.Length) : null),
             };
             m.LeagueTitle = t("rivals_overview", "Rivals Overview");
-            Head(m, t, v, chosen, who);
+            Head(m, t, v, chosen, who, m.Tab);
             m.ChartTabs = v.Filters ?? new string[0];
             m.ChartTab = v.Filter;
             Chart(m.Chart, t, v);
@@ -127,8 +127,9 @@ namespace RealLifeOverhaul.Ui
         private static UiNavEntry Tab(UiIcon icon, string label, string count) => new UiNavEntry { Icon = icon, Tint = UiIconTints.Of(icon), Label = label, Count = count };
 
         // The chosen one's head: their face, their age, the district they are busiest in behind its badge, a state chip
-        // (defeated, at war with the player, or the player themself), the weekly income and businesses, stars by their place.
-        private static void Head(UiRivalsModel m, UiWords t, RivalsView v, int chosen, RivalEntry who)
+        // (defeated, at war with the player, or the player themself) and stars by their place; beside their tables their
+        // weekly income too (in the league their row beside the head says it).
+        private static void Head(UiRivalsModel m, UiWords t, RivalsView v, int chosen, RivalEntry who, int tab)
         {
             UiProfileModel p = m.Profile;
             p.Name = chosen >= 0 ? who.Name : t("smartphone_rivals", "Rivals");
@@ -142,8 +143,9 @@ namespace RealLifeOverhaul.Ui
             p.Status = chosen < 0 ? null : who.Defeated ? t("reallife_ui_rivals_defeated", "Defeated") : who.You ? t("reallife_ui_rivals_you", "You")
                 : who.Rivalry ? t("rivals_defense_icons_active_rivalry_title", "Active Rivalry") : null;
             p.StatusTone = who.Defeated ? UiRole.Muted : who.You ? UiRole.Accent : UiRole.Danger;
-            p.FactLabels = new[] { t("common_weekly_income", "Weekly Income"), t("common_businesses", "Businesses") };
-            p.FactValues = chosen >= 0 ? new[] { Money(v, who.WeeklyIncome), Whole(who.Businesses) } : new[] { "", "" };
+            bool facts = chosen >= 0 && tab != UiRivals.League;
+            p.FactLabels = facts ? new[] { t("common_weekly_income", "Weekly Income") } : new string[0];
+            p.FactValues = facts ? new[] { Money(v, who.WeeklyIncome) } : new string[0];
             p.RatingLabel = t("reallife_ui_rivals_strength", "Strength");
             p.Rating = chosen >= 0 ? Stars(chosen, v.League.Length, who.Defeated) : -1;
             m.ProfileActions = v.Contacts && chosen >= 0
@@ -168,7 +170,8 @@ namespace RealLifeOverhaul.Ui
         public static int ChangeGrade(float change) => float.IsNaN(change) ? -1 : (int)Math.Round(50f + 50f * Math.Max(-1f, Math.Min(1f, change / ChangeSpan)));
 
         // The leaderboard: the rank (none for the defeated), a face with the name and district, the weekly income with its
-        // arrow, the businesses, and the week's change graded.
+        // arrow, the businesses, and the week's change graded. Good and bad are the player's: their own rise is good, a
+        // rival's rise is bad for them, so a rival's arrow and grade read the other way.
         private static void LeagueTable(UiDataTableModel table, UiWords t, RivalsView v, int chosen)
         {
             table.Columns = new[]
@@ -186,6 +189,7 @@ namespace RealLifeOverhaul.Ui
                 ref RivalEntry e = ref v.League[i];
                 rank++;
                 float change = Change(e.WeeklyIncome, e.WeekAgo);
+                int grade = ChangeGrade(change);
                 table.Rows[i] = new UiDataRow
                 {
                     Cells = new[]
@@ -193,7 +197,8 @@ namespace RealLifeOverhaul.Ui
                         e.Defeated ? string.Empty : Whole(rank), e.Name, Money(v, e.WeeklyIncome), Whole(e.Businesses),
                         float.IsNaN(change) ? string.Empty : PersonaViews.Signed((int)Math.Round(change * 100f))
                     },
-                    Values = new[] { -1, -1, float.IsNaN(change) || Math.Abs(change) < 0.005f ? 0 : Math.Sign(change), -1, ChangeGrade(change) },
+                    Values = new[] { -1, -1, float.IsNaN(change) || Math.Abs(change) < 0.005f ? 0 : Math.Sign(change), -1, grade < 0 || e.You ? grade : 100 - grade },
+                    Tones = new[] { UiRole.None, UiRole.None, e.You ? UiRole.Ok : UiRole.Danger, UiRole.None, UiRole.None },
                     Sub = e.Defeated ? t("reallife_ui_rivals_defeated", "Defeated") : e.You ? t("reallife_ui_rivals_you", "You") : e.District,
                     Hue = UiColour.HueOf(e.Name ?? string.Empty), Ring = UiRole.None
                 };
@@ -210,10 +215,10 @@ namespace RealLifeOverhaul.Ui
             UiDataTableModel table = m.Table;
             table.Columns = new[]
             {
-                new UiDataColumn { Title = t("common_business_name", "Business Name"), Kind = UiCellKind.Text, Sortable = true },
-                new UiDataColumn { Title = t("common_business_type", "Business Type"), Kind = UiCellKind.Tile, Width = 256f, Sortable = true },
+                new UiDataColumn { Title = t("common_business_name", "Business Name"), Kind = UiCellKind.Tile, Sortable = true },
+                new UiDataColumn { Title = t("common_business_type", "Business Type"), Kind = UiCellKind.Text, Width = 224f, Sortable = true },
+                new UiDataColumn { Title = t("common_address", "Address"), Kind = UiCellKind.Text, Width = 288f, Sortable = true },
                 new UiDataColumn { Title = t("common_weekly_income", "Weekly Income"), Kind = UiCellKind.Money, Width = 152f, Sortable = true },
-                new UiDataColumn { Title = t("common_address", "Address"), Kind = UiCellKind.Text, Width = 320f, Sortable = true },
             };
             table.SortColumn = v.SortColumn;
             table.SortDown = v.SortDown;
@@ -224,9 +229,9 @@ namespace RealLifeOverhaul.Ui
                 UiIcon glyph = MarketViews.BusinessIcon(b.TypeKey);
                 table.Rows[i] = new UiDataRow
                 {
-                    Cells = new[] { b.Name, b.Type, Money(v, b.WeeklyIncome), b.Address },
-                    Values = new[] { -1, (int)glyph, -1, -1 },
-                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None }
+                    Cells = new[] { b.Name, b.Type, b.Address, Money(v, b.WeeklyIncome) },
+                    Values = new[] { (int)glyph, -1, -1, -1 },
+                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, b.WeeklyIncome < 0f ? UiRole.DangerText : UiRole.None }   // a loss in the game's red
                 };
             }
             table.RowCount = table.Rows.Length;
@@ -252,9 +257,9 @@ namespace RealLifeOverhaul.Ui
             UiDataTableModel table = m.Table;
             table.Columns = new[]
             {
-                new UiDataColumn { Title = t("common_address", "Address"), Kind = UiCellKind.Text, Sortable = true },
+                new UiDataColumn { Title = t("common_address", "Address"), Kind = UiCellKind.Tile, Sortable = true },
                 new UiDataColumn { Title = t("common_neighborhood", "Neighborhood"), Kind = UiCellKind.Text, Width = 176f, Sortable = true },
-                new UiDataColumn { Title = t("common_building_type", "Building Type"), Kind = UiCellKind.Tile, Width = 200f, Sortable = true },
+                new UiDataColumn { Title = t("common_building_type", "Building Type"), Kind = UiCellKind.Text, Width = 160f, Sortable = true },
                 new UiDataColumn { Title = t("bizman_building_total_size", "Total size"), Kind = UiCellKind.Figure, Width = 120f, Sortable = true },
                 new UiDataColumn { Title = t("real_estate_estimated_value", "Estimated value"), Kind = UiCellKind.Money, Width = 152f, Sortable = true },
                 new UiDataColumn { Title = t("common_price", "Price"), Kind = UiCellKind.Money, Width = 120f, Sortable = true },
@@ -284,7 +289,7 @@ namespace RealLifeOverhaul.Ui
         public static UiDataRow Building(UiWords t, RivalsView v, ref RivalBuilding b) => new UiDataRow
         {
             Cells = new[] { b.Address, b.District, b.Type, b.Size, Money(v, b.Value), b.Price > 0f ? Money(v, b.Price) : t("reallife_ui_market_not_for_sale", "Not for sale") },
-            Values = new[] { -1, -1, (int)MarketViews.BuildingIcon(b.TypeKey), -1, -1, -1 },
+            Values = new[] { (int)MarketViews.BuildingIcon(b.TypeKey), -1, -1, -1, -1, -1 },
             Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None }
         };
 

@@ -11,12 +11,17 @@ namespace RealLifeOverhaul.Ui
             {
                 new UiScreenDef("persona", UiTemplate.AppWindow, "PersonaScreen", new[]
                 {
+                    "personalgoal_bank_balance", "personalgoal_business_weekly_income", "personalgoal_minemployees", "personalgoal_realestate",
+                    "personalgoal_taxi_rides", "personalgoal_taxes_paid", "personalgoal_dailycustomers", "personalgoal_items_in_stock", "personalgoal_casinowin",
+                    "personalgoal_owned_vehicles", "personalgoal_employee_max_skill", "personalgoal_age", "persona_characterinfo_businesses",
+                    "persona_characterinfo_employees", "reallife_ui_persona_all_moods", "reallife_ui_persona_next_goals", "reallife_ui_persona_goals_done",
+                    "reallife_ui_persona_all_goals",
                     "smartphone_persona", "reallife_ui_persona_overview", "reallife_ui_persona_needs", "persona_education", "reallife_ui_persona_goals",
                     "common_years_amount", "common_number_of_businesses", "reallife_ui_persona_staff", "persona_characterinfo_networth", "common_weekly_income",
                     "persona_personal_wealth", "persona_cash", "common_investments", "persona_assets", "econoview_loans", "reallife_ui_persona_wealth_empty",
                     "common_day_number", "reallife_ui_persona_income_empty", "reallife_ui_persona_income_empty_body", "common_energy", "common_hunger",
                     "common_happiness",
-                    "reallife_ui_persona_progress", "reallife_ui_persona_of", "reallife_ui_persona_moods", "reallife_ui_persona_modifiers", "reallife_ui_persona_change",
+                    "reallife_ui_persona_progress", "reallife_ui_persona_modifiers", "reallife_ui_persona_change",
                     "reallife_ui_persona_cause", "reallife_ui_persona_lasts", "reallife_ui_persona_net", "reallife_ui_persona_ongoing", "reallife_ui_persona_no_modifiers",
                     "reallife_ui_persona_no_modifiers_body", "common_days_left", "common_hours_left", "reallife_ui_persona_course",
                     "reallife_ui_persona_kind", "bizman_status", "common_businessschool", "persona_education_completed", "persona_education_not_started",
@@ -27,6 +32,10 @@ namespace RealLifeOverhaul.Ui
                 }).Switch(UiScreenSwitches.Market),
                 new UiScreenDef("rivals", UiTemplate.AppWindow, "RivalsScreen", new[]
                 {
+                    "rivals_defense_icons_price_reduction_description", "rivals_defense_icons_hire_best_employees_description",
+                    "ba:businesstype_fastfoodrestaurant", "ba:businesstype_coffeeshop", "ba:businesstype_clothingstore", "ba:businesstype_supermarket",
+                    "ba:businesstype_jewelrystore", "ba:businesstype_headquarters", "ba:businesstype_florist", "ba:businesstype_electronicsstore",
+                    "ba:businesstype_bookstore", "ba:businesstype_warehouse",
                     "smartphone_rivals", "rivals_leaderboard", "common_businesses", "rivals_real_estate_properties", "rivals_overview", "common_years_amount",
                     "reallife_ui_rivals_defeated", "reallife_ui_rivals_you", "rivals_defense_icons_active_rivalry_title", "common_weekly_income",
                     "reallife_ui_rivals_strength",
@@ -43,6 +52,10 @@ namespace RealLifeOverhaul.Ui
                 }).Switch(UiScreenSwitches.Market),
                 new UiScreenDef("market_insider", UiTemplate.AppWindow, "MarketScreen", new[]
                 {
+                    "market_insider_average_building_price", "ba:itemname_cupofcoffee", "ba:itemname_burger", "ba:itemname_croissant", "ba:itemname_cheapflower",
+                    "ba:itemname_laptop", "ba:itemname_hotdog", "ba:itemname_classicphone", "ba:itemname_bottleofwine", "ba:itemname_donut",
+                    "ba:itemname_sofaluxury", "ba:itemname_cheapgift", "ba:itemname_paper", "marketeventtype_hype_description",
+                    "marketeventtype_businessopened_description",
                     "reallife_ui_market_app", "market_insider_citizen_data", "socialclass_working", "socialclass_middle", "socialclass_upper",
                     "market_insider_real_estate_data", "market_insider_total_buildings", "phone_view_on_map_button", "common_market_demands", "common_real_estate",
                     "market_insider_show_only_for_sale", "reallife_ui_market_all_types", "reallife_ui_market_all_buildings", "reallife_ui_staff_chosen", "common_search",

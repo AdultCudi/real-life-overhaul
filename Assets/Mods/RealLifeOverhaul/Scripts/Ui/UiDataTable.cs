@@ -41,6 +41,7 @@ namespace RealLifeOverhaul.Ui
         public float Hue;
         public UiRole Ring;      // their mood, as every portrait's ring says it
         public bool Picked;      // picked for a mass action
+        public float Share;      // a steps cell's way through the step after those reached, 0 to 1
     }
 
     /// <summary>
@@ -474,15 +475,20 @@ namespace RealLifeOverhaul.Ui
                     UiDataCells.Tile(s, at, words, value, row.Tones != null && c < row.Tones.Length ? row.Tones[c] : UiRole.None, cx, ry, cw, rowH, sel);
                     break;
                 case UiCellKind.Trend:
-                    UiDataCells.Trend(s, at, words, value, cx, ry, cw, rowH, sel);
+                    UiDataCells.Trend(s, at, words, value, row.Tones != null && c < row.Tones.Length ? row.Tones[c] : UiRole.None, cx, ry, cw, rowH, sel);
                     break;
                 case UiCellKind.Steps:
-                    UiDataCells.Steps(s, at, words, value, col.Steps, cx, ry, cw, rowH, sel);
+                    UiDataCells.Steps(s, at, words, value, row.Share, col.Steps, cx, ry, cw, rowH, sel);
                     break;
                 case UiCellKind.Money:
                 case UiCellKind.Date:
-                    UiDraw.TextMiddle(s, at, cx, ry, rowH, cw, UiStyle.Body, sel || col.Kind == UiCellKind.Money ? UiRole.Text : UiRole.Text2, words, UiFlags.Right | UiFlags.Truncate);
+                {
+                    // A sum the game writes in its red (a loss) keeps that tone off the chosen row, where the red would not read.
+                    bool loss = col.Kind == UiCellKind.Money && !sel && row.Tones != null && c < row.Tones.Length && row.Tones[c] == UiRole.DangerText;
+                    UiRole ink = loss ? UiRole.DangerText : sel || col.Kind == UiCellKind.Money ? UiRole.Text : UiRole.Text2;
+                    UiDraw.TextMiddle(s, at, cx, ry, rowH, cw, UiStyle.Body, ink, words, UiFlags.Right | UiFlags.Truncate);
                     break;
+                }
                 default:
                     UiDraw.TextMiddle(s, at, cx, ry, rowH, cw, c == 0 ? UiStyle.Title : UiStyle.Body, c == 0 || sel ? UiRole.Text : UiRole.Text2, words, UiFlags.Truncate);
                     break;

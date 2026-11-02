@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 
 namespace RealLifeOverhaul.Ui
@@ -38,6 +39,7 @@ namespace RealLifeOverhaul.Ui
         public string Progress;      // the game's words, or null where the goal has none
         public int Tiers;            // the tiers reached, 0 to 3
         public int Steam;            // the highest tier reached on Steam, -1 for none
+        public string Kind;          // the game's kind of goal (its class: "BankBalanceGoal"), for its glyph
     }
 
     /// <summary>
@@ -95,7 +97,7 @@ namespace RealLifeOverhaul.Ui
             };
             m.Tab = Math.Max(0, Math.Min(m.Tabs.Length - 1, v.Tab));
             Head(m.Profile, t, v);
-            Overview(m, t, v, done, goalsDone);
+            Overview(m, t, v);
             m.Table = new UiDataTableModel();
             switch (m.Tab)
             {
@@ -109,7 +111,7 @@ namespace RealLifeOverhaul.Ui
                     GoalsTable(m, t, v, goalsDone);
                     break;
             }
-            m.Table.Selected = v.Selected;
+            m.Table.Selected = -1;   // the tabs' lists are read only: the cursor walks and scrolls them, nothing stands chosen
             m.Table.Offset = v.Offset;
             m.Table.Reveal = v.Reveal;
             m.Prompts = new[]
@@ -123,8 +125,8 @@ namespace RealLifeOverhaul.Ui
 
         private static UiNavEntry Tab(UiIcon icon, string label, string count) => new UiNavEntry { Icon = icon, Tint = UiIconTints.Of(icon), Label = label, Count = count };
 
-        // The head: the face in the ring of the player's happiness, the name, the age, the businesses behind their badge, the
-        // staff as a chip, and the worth and weekly income as the key facts.
+        // The head: the face in the ring of the player's happiness, the name and age, and the key facts: the worth, and the
+        // businesses and staff once there are any (a new character's head is not a row of zeros).
         private static void Head(UiProfileModel p, UiWords t, PersonaView v)
         {
             p.Name = v.Name;
@@ -133,13 +135,22 @@ namespace RealLifeOverhaul.Ui
             p.Role = StaffViews.Fill(t("common_years_amount", "{years} years"), "years", Whole(v.Age));
             p.RoleIcon = UiIcon.Person;
             p.RoleTint = UiRole.None;
-            p.Employer = StaffViews.Fill(t("common_number_of_businesses", "{amount} businesses"), "amount", Whole(v.Businesses));
-            p.EmployerIcon = UiIcon.Store;
-            p.Status = StaffViews.Fill(t("reallife_ui_persona_staff", "{count} on your staff"), "count", Whole(v.Employees));
-            p.StatusTone = v.Employees > 0 ? UiRole.Ok : UiRole.Muted;
-            // The worth is the head's one key fact: the weekly income has its own line on the overview, the parts their donut.
-            p.FactLabels = new[] { StaffViews.LabelOf(t("persona_characterinfo_networth", "Total net worth: <b>{amount}</b>"), "amount") };
-            p.FactValues = new[] { Money(v, Worth(v)) };
+            p.Employer = null;
+            p.Status = null;
+            var labels = new List<string>(3) { StaffViews.LabelOf(t("persona_characterinfo_networth", "Total net worth: <b>{amount}</b>"), "amount") };
+            var values = new List<string>(3) { Money(v, Worth(v)) };
+            if (v.Businesses > 0)
+            {
+                labels.Add(t("persona_characterinfo_businesses", "Total businesses"));
+                values.Add(Whole(v.Businesses));
+            }
+            if (v.Employees > 0)
+            {
+                labels.Add(t("persona_characterinfo_employees", "Total employees"));
+                values.Add(Whole(v.Employees));
+            }
+            p.FactLabels = labels.ToArray();
+            p.FactValues = values.ToArray();
             p.RatingLabel = null;
             p.Rating = -1;
         }
@@ -150,30 +161,165 @@ namespace RealLifeOverhaul.Ui
         /// <summary>A face's ring: the happiness on the scale every mood ring uses.</summary>
         public static UiRole Mood(int happiness) => UiTokens.Grade(Math.Max(0, Math.Min(100, happiness)));
 
-        // The overview: what is owned as slices (a debt is no slice: it stands under them), the weekly income's last days as a
-        // line, the needs graded, and a row each to the courses, the goals and what moves the happiness.
-        private static void Overview(UiPersonaModel m, UiWords t, PersonaView v, int done, int goalsDone)
+        // The overview: what is owned as slices, each part there only once there is some (a debt is no slice: it stands under
+        // them), the weekly income's last days as a line, the goals nearest their next tier, and what moves the happiness most.
+        private static void Overview(UiPersonaModel m, UiWords t, PersonaView v)
         {
             m.WealthTitle = t("persona_personal_wealth", "Personal wealth");
-            m.WealthLabels = new[] { t("persona_cash", "Cash"), t("common_investments", "Investments"), t("persona_assets", "Assets") };
-            m.WealthValues = new[] { Money(v, v.Cash), Money(v, v.Investments), Money(v, v.Assets) };
-            m.WealthShares = new[] { Math.Max(0f, v.Cash), Math.Max(0f, v.Investments), Math.Max(0f, v.Assets) };
+            var labels = new List<string>(3);
+            var values = new List<string>(3);
+            var shares = new List<float>(3);
+            Part(labels, values, shares, t("persona_cash", "Cash"), v.Cash, v);
+            Part(labels, values, shares, t("common_investments", "Investments"), v.Investments, v);
+            Part(labels, values, shares, t("persona_assets", "Assets"), v.Assets, v);
+            m.WealthLabels = labels.ToArray();
+            m.WealthValues = values.ToArray();
+            m.WealthShares = shares.ToArray();
             m.LoansLabel = t("econoview_loans", "Loans");
             m.LoansValue = v.Loans > 0f ? "-" + Money(v, v.Loans) : null;
             m.WealthEmpty = t("reallife_ui_persona_wealth_empty", "Nothing owned yet. Cash in hand, shares and the buildings you own make up your wealth.");
             Income(m.Income, t, v);
-            m.NeedsTitle = t("reallife_ui_persona_needs", "Needs");
             Needs(m, t, v);
-            m.LinksTitle = t("reallife_ui_persona_progress", "Progress");
-            m.Links = new[]
-            {
-                new UiPersonaLink { Label = t("persona_education", "Education"), Tab = UiPersona.Education,
-                    Value = StaffViews.Fill(t("reallife_ui_persona_of", "{done} of {all}"), "done", Whole(done), "all", Whole(v.Courses.Length)) },
-                new UiPersonaLink { Label = t("reallife_ui_persona_goals", "Goals"), Tab = UiPersona.Goals,
-                    Value = StaffViews.Fill(t("reallife_ui_persona_of", "{done} of {all}"), "done", Whole(goalsDone), "all", Whole(v.Goals.Length)) },
-                new UiPersonaLink { Label = t("reallife_ui_persona_moods", "Moods"), Tab = UiPersona.Needs, Value = Whole(v.Modifiers.Length) },
-            };
+            m.MoodsTitle = t("reallife_ui_persona_modifiers", "What moves your happiness");
+            m.MoodsEmpty = t("reallife_ui_persona_no_modifiers_body", "Food, rest, your home and what you do lift or lower it. Each shows here with how long it lasts.");
+            m.Moods = TopMoods(v.Modifiers);
+            m.MoodsMore = v.Modifiers.Length > m.Moods.Length
+                ? StaffViews.Fill(t("reallife_ui_persona_all_moods", "See all {count} in Needs"), "count", Whole(v.Modifiers.Length)) : null;
+            m.GoalsTitle = t("reallife_ui_persona_next_goals", "Goals on their way");
+            m.GoalsEmpty = t("reallife_ui_persona_goals_done", "Every personal goal has all three tiers.");
+            m.Goals = NextGoals(t, v.Goals);
+            m.GoalsMore = v.Goals.Length > m.Goals.Length
+                ? StaffViews.Fill(t("reallife_ui_persona_all_goals", "See all {count} in Goals"), "count", Whole(v.Goals.Length)) : null;
+            m.GoalSteps = GoalsTiers;
         }
+
+        private static void Part(List<string> labels, List<string> values, List<float> shares, string label, float amount, PersonaView v)
+        {
+            if (amount <= 0f)
+            {
+                return;
+            }
+            labels.Add(label);
+            values.Add(Money(v, amount));
+            shares.Add(amount);
+        }
+
+        /// <summary>What moves the happiness most, the largest share first, a few for the overview.</summary>
+        public static UiPersonaLine[] TopMoods(PersonaModifier[] mods)
+        {
+            var order = new List<int>(mods.Length);
+            for (int i = 0; i < mods.Length; i++)
+            {
+                order.Add(i);
+            }
+            order.Sort((a, b) => Math.Abs(mods[a].Amount) != Math.Abs(mods[b].Amount) ? Math.Abs(mods[b].Amount).CompareTo(Math.Abs(mods[a].Amount)) : a.CompareTo(b));
+            int n = Math.Min(UiPersona.MostLines, order.Count);
+            var lines = new UiPersonaLine[n];
+            for (int i = 0; i < n; i++)
+            {
+                PersonaModifier mod = mods[order[i]];
+                lines[i] = new UiPersonaLine { Words = mod.Name, Figure = Signed(mod.Amount), Sign = mod.Amount >= 0 ? 1 : -1 };
+            }
+            return lines;
+        }
+
+        /// <summary>The goals nearest their next tier (furthest through it first), those with every tier left out, a few for the overview.</summary>
+        public static UiPersonaLine[] NextGoals(UiWords t, PersonaGoal[] goals)
+        {
+            var order = new List<int>(goals.Length);
+            for (int i = 0; i < goals.Length; i++)
+            {
+                if (goals[i].Tiers < GoalsTiers)
+                {
+                    order.Add(i);
+                }
+            }
+            order.Sort((a, b) =>
+            {
+                float sa = Math.Max(0f, Fraction(goals[a].Progress)), sb = Math.Max(0f, Fraction(goals[b].Progress));
+                return sa != sb ? sb.CompareTo(sa) : a.CompareTo(b);
+            });
+            int n = Math.Min(UiPersona.MostLines, order.Count);
+            var lines = new UiPersonaLine[n];
+            for (int i = 0; i < n; i++)
+            {
+                PersonaGoal g = goals[order[i]];
+                lines[i] = new UiPersonaLine
+                {
+                    Icon = GoalIcon(g.Kind), Words = g.Title, Figure = TierWords(t, g.Tiers), Reached = g.Tiers, Share = Math.Max(0f, Fraction(g.Progress))
+                };
+            }
+            return lines;
+        }
+
+        /// <summary>
+        /// How far a goal is through its tier from the game's progress words ("186,420 / 1,000,000"): the figures before and
+        /// after the slash, their digits read whatever the language's separators; -1 where the words hold no such pair.
+        /// </summary>
+        public static float Fraction(string progress)
+        {
+            int slash = string.IsNullOrEmpty(progress) ? -1 : progress.IndexOf('/');
+            if (slash < 0)
+            {
+                return -1f;
+            }
+            double done = Digits(progress, 0, slash), all = Digits(progress, slash + 1, progress.Length);
+            return all > 0 && done >= 0 ? (float)Math.Max(0.0, Math.Min(1.0, done / all)) : -1f;
+        }
+
+        // The whole number in a stretch of words (a sum's or a count's digits), -1 with none: a separator between thousands
+        // is passed over, a decimal part dropped.
+        private static double Digits(string text, int from, int to)
+        {
+            double n = 0;
+            bool any = false;
+            for (int i = from; i < to; i++)
+            {
+                char c = text[i];
+                if (c >= '0' && c <= '9')
+                {
+                    n = n * 10 + (c - '0');
+                    any = true;
+                }
+                else if (any && (c == '.' || c == ',') && !(i + 3 < to && char.IsDigit(text[i + 1]) && char.IsDigit(text[i + 2]) && char.IsDigit(text[i + 3])
+                                                            && (i + 4 >= to || !char.IsDigit(text[i + 4]))))
+                {
+                    break;
+                }
+            }
+            return any ? n : -1;
+        }
+
+        /// <summary>A goal's glyph by the game's kind of goal; one the kit does not know the trophy.</summary>
+        public static UiIcon GoalIcon(string kind)
+        {
+            switch (kind)
+            {
+                case "BankBalanceGoal": return UiIcon.Bank;
+                case "BusinessWeeklyIncomeGoal": return UiIcon.ChartLineUp;
+                case "EmploymentGoal": return UiIcon.People;
+                case "EmployeeMaxLevelGoal": return UiIcon.IdBadge;
+                case "VehicleGoal": case "CarRepairGoal": case "GasPaidGoal": return UiIcon.Car;
+                case "TaxiRideGoal": return UiIcon.Navigation;
+                case "RealEstateGoal": case "BuildingSizeGoal": return UiIcon.Building;
+                case "BuildingRegistrationsGoal": return UiIcon.Store;
+                case "ApartmentValueGoal": return UiIcon.Home;
+                case "TaxesPaidGoal": case "ParkingTicketGoal": return UiIcon.Receipt;
+                case "CasinoWinGoal": case "CasinoBoatVisitGoal": return UiIcon.Star;
+                case "HospitalizationGoal": return UiIcon.Heartbeat;
+                case "PlayerAgeGoal": return UiIcon.Calendar;
+                case "UncleFredObjectivesGoal": return UiIcon.Lightbulb;
+                case "InteriorDesignerPaidGoal": return UiIcon.PaintBrush;
+                case "TotalDailyCustomerGoal": return UiIcon.ShoppingCart;
+                case "ItemsInStockGoal": return UiIcon.Package;
+                case "ValuationGoal": return UiIcon.ChartPie;
+                case "BoatGoal": return UiIcon.Globe;
+                default: return UiIcon.Trophy;
+            }
+        }
+
+        private static string TierWords(UiWords t, int reached) => reached <= 0 ? null : reached == 1 ? t("reallife_ui_persona_bronze", "Bronze")
+            : reached == 2 ? t("reallife_ui_persona_silver", "Silver") : t("reallife_ui_persona_gold", "Gold");
 
         private static void Needs(UiPersonaModel m, UiWords t, PersonaView v)
         {
@@ -207,7 +353,6 @@ namespace RealLifeOverhaul.Ui
         private static void Modifiers(UiPersonaModel m, UiWords t, PersonaView v)
         {
             m.ListTitle = t("reallife_ui_persona_modifiers", "What moves your happiness");
-            m.ListCount = null;
             UiDataTableModel table = m.Table;
             table.Columns = new[]
             {
@@ -245,7 +390,6 @@ namespace RealLifeOverhaul.Ui
         private static void Courses(UiPersonaModel m, UiWords t, PersonaView v, int done)
         {
             m.ListTitle = null;   // the tab names the list and counts what is done
-            m.ListCount = null;
             UiDataTableModel table = m.Table;
             table.Columns = new[]
             {
@@ -328,31 +472,40 @@ namespace RealLifeOverhaul.Ui
         private static void GoalsTable(UiPersonaModel m, UiWords t, PersonaView v, int goalsDone)
         {
             m.ListTitle = null;   // the tab names the goals and counts those done, as the game's header does
-            m.ListCount = null;
-            UiDataTableModel table = m.Table;
-            table.Columns = new[]
+            bool steam = false;
+            for (int i = 0; i < v.Goals.Length; i++)
             {
-                new UiDataColumn { Title = t("reallife_ui_persona_goal", "Goal"), Kind = UiCellKind.Text },
+                steam |= v.Goals[i].Steam >= 0 && v.Goals[i].Steam < GoalsTiers;
+            }
+            UiDataTableModel table = m.Table;
+            var columns = new List<UiDataColumn>
+            {
+                new UiDataColumn { Title = t("reallife_ui_persona_goal", "Goal"), Kind = UiCellKind.Tile },
                 new UiDataColumn { Title = t("reallife_ui_persona_progress", "Progress"), Kind = UiCellKind.Figure, Width = 200f },
                 new UiDataColumn { Title = t("persona_personalgoal_current_goals", "Current Goals"), Kind = UiCellKind.Steps, Steps = GoalsTiers,
-                    Width = UiDataCells.StepsWidth(GoalsTiers) + UiTokens.S16, Sortable = true },
-                new UiDataColumn { Title = t("persona_personalgoal_steam_achievements", "Steam"), Kind = UiCellKind.Chip, Width = 120f, Sortable = true },
+                    Width = UiDataCells.StepsWidth(GoalsTiers) + UiTokens.S8, Sortable = true },
             };
-            table.SortColumn = v.GoalSort == 1 ? 2 : v.GoalSort == 2 ? 3 : -1;
+            if (steam)
+            {
+                // Steam's medals only once one is won: a column with nothing in it is a head over nothing.
+                columns.Add(new UiDataColumn { Title = t("persona_personalgoal_steam_achievements", "Steam"), Kind = UiCellKind.Chip, Width = 120f, Sortable = true });
+            }
+            table.Columns = columns.ToArray();
+            table.SortColumn = v.GoalSort == 1 ? 2 : v.GoalSort == 2 && steam ? 3 : -1;
             table.SortDown = v.GoalSortDown;
-            string[] tiers = { t("reallife_ui_persona_bronze", "Bronze"), t("reallife_ui_persona_silver", "Silver"), t("reallife_ui_persona_gold", "Gold") };
             UiRole[] medals = { UiRole.Chart2, UiRole.Text2, UiRole.Gold };
             table.Rows = new UiDataRow[v.Goals.Length];
             for (int i = 0; i < v.Goals.Length; i++)
             {
                 ref PersonaGoal g = ref v.Goals[i];
                 int reached = Math.Max(0, Math.Min(GoalsTiers, g.Tiers));
-                bool steam = g.Steam >= 0 && g.Steam < GoalsTiers;
+                bool won = g.Steam >= 0 && g.Steam < GoalsTiers;
                 table.Rows[i] = new UiDataRow
                 {
-                    Cells = new[] { g.Title, g.Progress, reached > 0 ? tiers[reached - 1] : null, steam ? tiers[g.Steam] : null },
-                    Values = new[] { -1, -1, reached, -1 },
-                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, steam ? medals[g.Steam] : UiRole.None }
+                    Cells = steam ? new[] { g.Title, g.Progress, TierWords(t, reached), won ? TierWords(t, g.Steam + 1) : null } : new[] { g.Title, g.Progress, TierWords(t, reached) },
+                    Values = steam ? new[] { (int)GoalIcon(g.Kind), -1, reached, -1 } : new[] { (int)GoalIcon(g.Kind), -1, reached },
+                    Tones = steam ? new[] { UiRole.None, UiRole.None, UiRole.None, won ? medals[g.Steam] : UiRole.None } : null,
+                    Share = reached < GoalsTiers ? Math.Max(0f, Fraction(g.Progress)) : 0f
                 };
             }
             table.RowCount = table.Rows.Length;

@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Ui
         private const float Every = 0.25f;                  // seconds between looks at the game's app
         private const int Week = 7;                          // days back a line's week is read from
         private const string MoneyFilter = "weeklyincome";   // the game's filter of its chart that is in money
-        private static readonly string[] BusinessHeads = { "BusinessName", "BusinessType", "WeeklyIncome", "Address" };   // the game's headers, in the kit's columns' order
+        private static readonly string[] BusinessHeads = { "BusinessName", "BusinessType", "Address", "WeeklyIncome" };   // the game's headers, in the kit's columns' order
         private static readonly string[] BuildingHeads = { "Address", "Neighborhood", "BuildingType", "TotalSize", "EstimatedValue", "Price" };
 
         private readonly RivalsApp _app;

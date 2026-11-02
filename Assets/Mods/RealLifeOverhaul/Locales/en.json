@@ -28465,8 +28465,6 @@
   "reallife_ui_persona_income_empty": "No income yet",
   "reallife_ui_persona_income_empty_body": "Your businesses' takings over the last days show here once they open.",
   "reallife_ui_persona_progress": "Progress",
-  "reallife_ui_persona_of": "{done} of {all}",
-  "reallife_ui_persona_moods": "Moods",
   "reallife_ui_persona_modifiers": "What moves your happiness",
   "reallife_ui_persona_change": "Change",
   "reallife_ui_persona_cause": "Cause",
@@ -28596,5 +28594,9 @@
   "reallife_ui_econo_find_bank": "Find a bank in Contacts",
   "reallife_ui_econo_fund_year": "{fund}, the last year",
   "reallife_ui_econo_statement_note": "Each business, property and loan you take on joins this statement the night after.",
-  "reallife_opt_sec_uiscreens_market": "RLO interface: you, rivals, market"
+  "reallife_opt_sec_uiscreens_market": "RLO interface: you, rivals, market",
+  "reallife_ui_persona_all_moods": "See all {count} in Needs",
+  "reallife_ui_persona_next_goals": "Goals on their way",
+  "reallife_ui_persona_goals_done": "Every personal goal has all three tiers.",
+  "reallife_ui_persona_all_goals": "See all {count} in Goals"
 }

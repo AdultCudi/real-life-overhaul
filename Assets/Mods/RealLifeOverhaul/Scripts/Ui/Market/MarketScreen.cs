@@ -126,8 +126,7 @@ namespace RealLifeOverhaul.Ui
                     return toggle != null && Done(UiWidgets.Set(toggle, !toggle.isOn), "show only the buildings for sale: handed to the game");
                 }
                 case UiMarket.EventCommand:
-                    _event = arg;
-                    return true;
+                    return false;   // the events are read only, as the game's list is
                 case UiMarket.OptionCommand:
                     return Option(arg);
                 case UiDataTable.First + UiDataTable.Row:
@@ -262,7 +261,7 @@ namespace RealLifeOverhaul.Ui
             _selected = row;
             if (!Estate())
             {
-                return true;
+                return false;   // a demand is read only, as the game's row is
             }
             RealEstateScrollerController table = _app.realEstateScrollerController;
             EnhancedScroller scroller = table != null ? table.scroller : null;

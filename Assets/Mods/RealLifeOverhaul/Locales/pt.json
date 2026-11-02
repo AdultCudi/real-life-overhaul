@@ -28465,8 +28465,6 @@
   "reallife_ui_persona_income_empty": "Ainda sem renda",
   "reallife_ui_persona_income_empty_body": "A receita dos seus negócios nos últimos dias aparece aqui assim que eles abrirem.",
   "reallife_ui_persona_progress": "Progresso",
-  "reallife_ui_persona_of": "{done} de {all}",
-  "reallife_ui_persona_moods": "Ânimos",
   "reallife_ui_persona_modifiers": "O que mexe com a sua felicidade",
   "reallife_ui_persona_change": "Variação",
   "reallife_ui_persona_cause": "Causa",
@@ -28596,5 +28594,9 @@
   "reallife_ui_econo_find_bank": "Encontrar um banco nos Contatos",
   "reallife_ui_econo_fund_year": "{fund}, o último ano",
   "reallife_ui_econo_statement_note": "Cada empresa, imóvel e empréstimo que você assumir entra nesta demonstração na noite seguinte.",
-  "reallife_opt_sec_uiscreens_market": "Interface RLO: você, rivais, mercado"
+  "reallife_opt_sec_uiscreens_market": "Interface RLO: você, rivais, mercado",
+  "reallife_ui_persona_all_moods": "Ver todos os {count} em Necessidades",
+  "reallife_ui_persona_next_goals": "Metas a caminho",
+  "reallife_ui_persona_goals_done": "Todas as metas pessoais têm os três níveis.",
+  "reallife_ui_persona_all_goals": "Ver todas as {count} em Metas"
 }
