@@ -287,7 +287,7 @@ namespace RealLifeOverhaul.Ui
             o.Tabs = new string[0];
             o.Tab = 0;
             o.Plans = new BizManItem[0];
-            o.PlansTitle = o.PlansEmpty = o.PlansEmptyBody = o.FormTitle = o.FormLead = o.FormEmpty = o.FormEmptyBody = o.TableTitle = o.StopsTitle = null;
+            o.PlansTitle = o.PlansEmpty = o.PlansEmptyBody = o.FormTitle = o.FormLead = o.FormEmpty = o.FormEmptyBody = o.TableTitle = o.TableLead = o.StopsTitle = null;
             o.PlanActions = new UiActionModel[0];
             o.Rows = new BizOpsRow[0];
             o.Stops = new BizOpsStop[0];
@@ -305,6 +305,7 @@ namespace RealLifeOverhaul.Ui
             {
                 _chosen = null;
                 _renaming = null;
+                _hoursOpen = false;
             }
         }
 

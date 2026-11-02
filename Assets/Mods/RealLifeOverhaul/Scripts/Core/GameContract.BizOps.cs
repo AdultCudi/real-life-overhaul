@@ -9,7 +9,7 @@ namespace RealLifeOverhaul
     /// </summary>
     public static partial class GameContract
     {
-        public static readonly GamePart BizOpsPart = ContractBook.Part("bizops_kit", "ui", "BizMan's schedule, managers, factory and warehouse drawn on the RLO interface");
+        public static readonly GamePart BizOpsPart = ContractBook.Part("bizops_kit", "ui", "BizMan's schedule, managers, factory, warehouse and uniforms drawn on the RLO interface");
 
         private const string Sched = "UI.Smartphone.Apps.BizMan.Schedule.";
 

@@ -39,7 +39,8 @@ namespace RealLifeOverhaul.Ui
         private Button _planAdd;
         private NoManagerAssignedPopUp _noManager;
         private int _stop;                          // the stop whose goods show
-        private int _good = -1;                     // the purchasing agent's good chosen
+        private int _good = -1;                     // the good chosen: a purchasing agent's detail, a managed price or a stop's target being stepped
+        private string _goodOf;                     // the kind of manager it was chosen on
 
         // What each of a managers' page's actions does.
         private const int DoAddPlan = 60, DoPlanUp = 61, DoPlanDown = 62, DoDeletePlan = 63, DoSuggest = 64, DoShowFrom = 65, DoAddStop = 66, DoBuyEnd = 67,
@@ -50,6 +51,11 @@ namespace RealLifeOverhaul.Ui
         private void Managers(BizManBusiness b)
         {
             _m.Part = BizManPart.Managers;
+            if (!string.Equals(_goodOf, _shown, StringComparison.Ordinal))
+            {
+                _goodOf = _shown;   // a pricing manager's product is not a route's good: another kind starts with none chosen
+                _good = -1;
+            }
             RowsBegin();
             _plans.Clear();
             _planOrder = null;
@@ -170,19 +176,27 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The plans' actions: Add plan as the game's own button, and the chosen one moved up or down its list as a drag of
-        // the game's own list moves it; Delete plan where the game's question offers it.
+        // the game's own list moves it; Delete plan where the game's question offers it. Add plan is the page's main action
+        // only while the chosen plan's form has none of its own: a page has one.
         private void PlanActions(BizOpsModel o)
         {
+            bool formMain = false;
+            for (int i = 0; i < o.Actions.Length; i++)
+            {
+                formMain |= o.Actions[i].Kind == UiButtonKind.Primary;
+            }
             var actions = new List<UiActionModel>(4);
             int chosen = ChosenPlan();
             if (chosen >= 0 && _plans.Count > 1)
             {
-                actions.Add(new UiActionModel { Label = UiText.T("reallife_ui_bizops_down"), Kind = UiButtonKind.Quiet, Icon = UiIcon.Down, Key = UiAction.Count, Arg = DoPlanDown, Disabled = chosen >= _plans.Count - 1 });
-                actions.Add(new UiActionModel { Label = UiText.T("reallife_ui_bizops_up"), Kind = UiButtonKind.Quiet, Icon = UiIcon.Up, Key = UiAction.Count, Arg = DoPlanUp, Disabled = chosen == 0 });
+                // Square arrows beside Add plan: their glyphs say what they do, so the plans' narrow foot holds one line.
+                actions.Add(new UiActionModel { Kind = UiButtonKind.Quiet, Icon = UiIcon.Down, Key = UiAction.Count, Arg = DoPlanDown, Disabled = chosen >= _plans.Count - 1 });
+                actions.Add(new UiActionModel { Kind = UiButtonKind.Quiet, Icon = UiIcon.Up, Key = UiAction.Count, Arg = DoPlanUp, Disabled = chosen == 0 });
             }
             if (_planAdd != null && _planAdd.gameObject.activeInHierarchy)
             {
-                actions.Add(new UiActionModel { Label = UiText.T("bizman_add_plan"), Kind = UiButtonKind.Primary, Icon = UiIcon.Plus, Key = UiAction.Option, Arg = DoAddPlan, Disabled = !_planAdd.interactable });
+                actions.Add(new UiActionModel { Label = UiText.T("bizman_add_plan"), Kind = formMain ? UiButtonKind.Secondary : UiButtonKind.Primary, Icon = UiIcon.Plus,
+                    Key = formMain ? UiAction.Count : UiAction.Alt, Arg = DoAddPlan, Disabled = !_planAdd.interactable });
             }
             o.PlanActions = actions.ToArray();
             if (_noManager != null && _noManager.gameObject.activeInHierarchy)
@@ -231,8 +245,7 @@ namespace RealLifeOverhaul.Ui
                 actions.Add(new UiActionModel { Label = UiText.T("bizman_pricingmanagers_apply_suggested_prices"), Kind = UiButtonKind.Primary, Icon = UiIcon.Check, Key = UiAction.Alt, Arg = DoSuggest, Disabled = !suggest.interactable });
             }
             o.Actions = actions.ToArray();
-            o.TableTitle = UiText.T("common_products");
-            o.Table = PriceTable(goods, o.Table);
+            o.Table = PriceTable(goods, o.Table);   // under its head alone: its first column says Product
         }
 
         private UiDataTableModel PriceTable(PricingManagerProductsScrollerController goods, UiDataTableModel old)
@@ -245,12 +258,14 @@ namespace RealLifeOverhaul.Ui
                     new UiDataColumn { Title = UiText.T("bizman_pricingmanagers_header_current_price"), Kind = UiCellKind.Money, Width = 128f, Sortable = true },
                     new UiDataColumn { Title = UiText.T("bizman_pricingmanagers_header_suggested_price"), Kind = UiCellKind.Money, Width = 176f, Sortable = true },
                     new UiDataColumn { Title = UiText.T("bizman_pricingmanagers_header_rivals_prices"), Kind = UiCellKind.Money, Width = 128f, Sortable = true },
-                    new UiDataColumn { Title = UiText.T("bizman_pricingmanagers_header_new_price"), Kind = UiCellKind.Stepper, Width = UiDataTable.StepperWidth },
+                    new UiDataColumn { Title = UiText.T("bizman_pricingmanagers_header_new_price"), Kind = UiCellKind.Stepper, Width = UiDataTable.StepperWidth, OnChosen = true },
                 },
                 EmptyIcon = UiIcon.Tag, EmptyTitle = UiText.T("bizman_pricingmanagers_no_products"), Offset = old != null ? old.Offset : 0f, Reveal = old != null ? old.Reveal : -1,
                 SortColumn = _sortColumn, SortDown = goods != null && !goods.orderByAsc
             };
             int n = goods != null && goods.data != null ? goods.data.Count : 0;
+            _good = n == 0 ? -1 : Mathf.Clamp(_good, -1, n - 1);
+            t.Selected = _good;   // the product whose price is being set: its stepper on its row, the others' prices as figures
             t.Rows = new UiDataRow[n];
             for (int i = 0; i < n; i++)
             {
@@ -372,7 +387,7 @@ namespace RealLifeOverhaul.Ui
             }
             _goods.Clear();
             GoodsOf(_stops[_stop], _goods);
-            o.TableTitle = o.Stops[_stop].Name;
+            o.TableLead = UiText.Fill("reallife_ui_bizops_stop_goods", "place", o.Stops[_stop].Name);
             var t = new UiDataTableModel
             {
                 Columns = new[]
@@ -380,7 +395,7 @@ namespace RealLifeOverhaul.Ui
                     new UiDataColumn { Title = UiText.T("common_product"), Kind = UiCellKind.Text },
                     new UiDataColumn { Title = UiText.T("bizman_logisticsmanagers_warehouse_stock"), Kind = UiCellKind.Figure, Width = 152f },
                     new UiDataColumn { Title = UiText.T("bizman_logisticsmanagers_runs_out_in"), Kind = UiCellKind.Text, Width = 136f },
-                    new UiDataColumn { Title = UiText.T("bizman_logisticsmanagers_min_stock_amount"), Kind = UiCellKind.Stepper, Width = UiDataTable.StepperWidth },
+                    new UiDataColumn { Title = UiText.T("bizman_logisticsmanagers_min_stock_amount"), Kind = UiCellKind.Stepper, Width = UiDataTable.StepperWidth, OnChosen = true },
                 },
                 EmptyIcon = UiIcon.Package, EmptyTitle = UiText.T("bizman_logisticsmanagers_no_products"), Offset = o.Table != null ? o.Table.Offset : 0f
             };
@@ -397,6 +412,8 @@ namespace RealLifeOverhaul.Ui
                 };
             }
             t.RowCount = _goods.Count;
+            _good = _goods.Count == 0 ? -1 : Mathf.Clamp(_good, -1, _goods.Count - 1);
+            t.Selected = _good;   // the good whose target is being set: its stepper on its row
             o.Table = t;
         }
 
@@ -466,8 +483,7 @@ namespace RealLifeOverhaul.Ui
                 actions[i] = a;
             }
             o.Actions = actions.ToArray();
-            o.TableTitle = UiText.T("common_products");
-            BuyTable(plan, o);
+            BuyTable(plan, o);   // under its head alone: its first column says Product
         }
 
         // The agent's goods: each its target, its boxes, its price, the warehouse's stock and the warehouse it goes to, a row
@@ -680,7 +696,7 @@ namespace RealLifeOverhaul.Ui
             {
                 _right = true;
                 Heading(UiText.T("bizman_headhunters_deal_breakers_title"));
-                InfoLine(UiText.T("reallife_ui_bizops_hunt_points"), Loc(Get<TextLocalizationComponent>(GameContract.HuntPoints, tab)));
+                NoteLine(Loc(Get<TextLocalizationComponent>(GameContract.HuntPoints, tab)));   // the game's own line says what it counts ("Points used: 3")
                 breakers.GetComponentsInChildren(false, _breakers);
                 for (int i = 0; i < _breakers.Count; i++)
                 {
@@ -706,10 +722,10 @@ namespace RealLifeOverhaul.Ui
                 NoteLine(UiText.T("bizman_headhunters_automatic_replacement_not_enough_skill_description"));
             }
             SwitchLine(Get<Toggle>(GameContract.HuntResign, tab), UiText.T("reallife_ui_bizops_hunt_resign"));
-            InfoLine(UiText.T("reallife_ui_bizops_hunt_fee"), Loc(Get<TextLocalizationComponent>(GameContract.HuntResignFee, tab)));
+            NoteLine(Loc(Get<TextLocalizationComponent>(GameContract.HuntResignFee, tab)));   // "Replacement Fee: $2.5K", the game's own line
             _right = true;
             SwitchLine(Get<Toggle>(GameContract.HuntRetire, tab), UiText.T("reallife_ui_bizops_hunt_retire"));
-            InfoLine(UiText.T("reallife_ui_bizops_hunt_fee"), Loc(Get<TextLocalizationComponent>(GameContract.HuntRetireFee, tab)));
+            NoteLine(Loc(Get<TextLocalizationComponent>(GameContract.HuntRetireFee, tab)));
             _right = false;
             HeadhunterEmployeesScrollerController staff = Get<HeadhunterEmployeesScrollerController>(GameContract.HuntStaff, tab);
             var t = new UiDataTableModel
@@ -747,8 +763,10 @@ namespace RealLifeOverhaul.Ui
                 case BizManPages.OpsPlan: return SelectPlan(b, arg);
                 case BizManPages.OpsTab: return ManagersTab(b, arg);
                 case BizManPages.OpsAction: return ManagersAction(b, arg);
+                case BizManPages.OpsFirstPlan: return ManagersAction(b, DoAddPlan);
                 case BizManPages.OpsStop:
                     _stop = arg;
+                    _good = -1;
                     return true;
                 case BizManPages.OpsStopChoice:
                     _m.Ops.ListOpen = _m.Ops.ListOpen == BizManPages.OpsStopList + arg ? -1 : BizManPages.OpsStopList + arg;
@@ -873,6 +891,11 @@ namespace RealLifeOverhaul.Ui
             if (_shown == BizManRules.PurchasingAgents)
             {
                 _good = _good == row ? -1 : row;
+                return true;
+            }
+            if (_shown == BizManRules.PricingManagers || _shown == BizManRules.LogisticsManagers)
+            {
+                _good = row;   // its stepper comes to its row; the focus stays on the row, the stepper a step right
                 return true;
             }
             HrManagerPlanUI plan = b.hrHrManagerPlanUI;

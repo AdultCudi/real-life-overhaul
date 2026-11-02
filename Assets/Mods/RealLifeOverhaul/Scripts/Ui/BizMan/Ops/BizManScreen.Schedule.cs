@@ -22,12 +22,12 @@ namespace RealLifeOverhaul.Ui
 {
     /// <summary>
     /// The schedule of a place as a board, read from the game's own schedule after it loaded the day: the day buttons as tabs
-    /// with their open switch and their actions, the hour toggles as the ruler, the lanes as the game's (filtered) list of
-    /// workstations, their shifts from the game's own cache, the people beside it from the game's list of the place's staff,
-    /// and while an hour is being filled, the game's own picker in its order with its search, sort and filters. Every edit
-    /// is the game's: a day's buttons and toggles are pressed, a new shift is the game's picker for that hour, a moved or
-    /// stretched shift goes through ScheduleHelper with the hours its own drag would give. Cost: a look at a few counts four
-    /// times a second; a layout only when they change.
+    /// with their open switch and their actions, the hour toggles as the opening hours' sheet (and the ruler's figures), the
+    /// lanes as the game's (filtered) list of workstations, their shifts from the game's own cache, and while an hour is
+    /// being filled, the game's own picker as a sheet in its order with its search, sort and filters. Every edit is the
+    /// game's: a day's buttons and toggles are pressed, a new shift is the game's picker for that hour, a moved or stretched
+    /// shift goes through ScheduleHelper with the hours its own drag would give. Cost: a look at a few counts four times a
+    /// second; a layout only when they change.
     /// </summary>
     public sealed partial class BizManScreen : IUiDragging, IUiSteering
     {
@@ -50,6 +50,7 @@ namespace RealLifeOverhaul.Ui
         private float _downX = -1f;                 // where the pointer last went down on a lane, so its click says which hour
         private int _downLane = -1;
         private string _renaming;                   // the workstation whose name is being typed
+        private bool _hoursOpen;                    // the opening hours' sheet is open
 
         // What each of the day line's actions does.
         private const int DoCopyDay = 40, DoPasteDay = 41, DoPasteAll = 42, DoAutoDay = 43, DoClearDay = 44, DoRemoveShift = 45, DoManageShift = 46, DoShiftDone = 47,
@@ -90,7 +91,6 @@ namespace RealLifeOverhaul.Ui
                 board.Hours[h] = h % 2 == 0 ? h.GetFormattedTime(0f, true) : string.Empty;   // every other hour named: a day of 24 at a page's width
             }
             board.OpenHours = (bool[])ScheduleHelper.OpeningHoursState?.Clone() ?? new bool[BizOpsRules.Hours];
-            board.HoursPress = !hq;
             board.Faces = true;
             board.Step = 60;
             board.Shortest = 60;
@@ -107,7 +107,8 @@ namespace RealLifeOverhaul.Ui
             }
             WeekActions(sch, board);
             DayLine(b, days, day, hq);
-            People(b);
+            Hours(sch, hq);
+            People();
             Filler(sch);
         }
 
@@ -210,7 +211,8 @@ namespace RealLifeOverhaul.Ui
             }
             if (w.attachedItems != null && w.attachedItems.Count > 0)
             {
-                return UiText.T(w.attachedItems[0]) + (w.attachedItems.Count > 1 ? UiText.Fill("reallife_ui_bizops_and_more", "count", UiText.Whole(w.attachedItems.Count - 1)) : string.Empty);
+                string first = UiText.T(w.attachedItems[0]);
+                return w.attachedItems.Count > 1 ? UiText.Fill("reallife_ui_bizops_and_more", "first", first, "count", UiText.Whole(w.attachedItems.Count - 1)) : first;
             }
             return item != null && item.alias != null && item.alias.Length > 0 ? UiText.T(item.itemName) : null;   // a renamed station says what it is
         }
@@ -290,7 +292,7 @@ namespace RealLifeOverhaul.Ui
             }
             else if (_chosen != null)
             {
-                _actions.Add(Do(DoManageShift, UiText.T("bizman_schedule_manage_employee_tooltip"), UiButtonKind.Secondary, UiIcon.Person, UiAction.Option));
+                _actions.Add(Do(DoManageShift, UiText.T("bizman_schedule_manage_employee_tooltip"), UiButtonKind.Secondary, UiIcon.Person, UiAction.Count));   // Option is the head's EconoView
                 _actions.Add(Do(DoRemoveShift, UiText.T("reallife_ui_bizops_remove_shift"), UiButtonKind.Destructive, UiIcon.Trash, UiAction.Count));
                 _actions.Add(Do(DoShiftDone, UiText.T("reallife_ui_bizops_done"), UiButtonKind.Primary, UiIcon.Check, UiAction.Alt));
             }
@@ -309,6 +311,31 @@ namespace RealLifeOverhaul.Ui
             }
             _m.Actions = _actions.ToArray();
         }
+
+        // The opening hours' sheet: the game's own hour toggles, one an hour, open on a day that opens; a headquarters keeps
+        // the game's working hours, so its hours are words only.
+        private void Hours(BizManSchedule sch, bool hq)
+        {
+            BizOpsModel o = _m.Ops;
+            List<ScheduleHourToggle> toggles = HourToggles(sch);
+            o.HoursPress = !hq && o.DayOpen && toggles != null && toggles.Count >= BizOpsRules.Hours;
+            _hoursOpen &= o.HoursPress;
+            o.HoursOpen = _hoursOpen;
+            o.HoursTitle = UiText.T("bizman_schedule_opening_hours");
+            o.HoursLine = UiText.T("reallife_ui_bizops_hours_line");
+            o.DoneWords = UiText.T("reallife_ui_bizops_done");
+            if (o.HourWords.Length != BizOpsRules.Hours)
+            {
+                o.HourWords = new string[BizOpsRules.Hours];
+            }
+            for (int h = 0; h < BizOpsRules.Hours; h++)
+            {
+                o.HourWords[h] = h.GetFormattedTime(0f, true);
+            }
+        }
+
+        private static List<ScheduleHourToggle> HourToggles(BizManSchedule sch) =>
+            Get<List<ScheduleHourToggle>>(GameContract.SchedHours, Get<ScheduleHourToggleGroup>(GameContract.SchedHourGroup, Get<ScheduleHeaderController>(GameContract.SchedHeader, sch)));
 
         // The game's day buttons are icons with a tip: the kit's button says it in words.
         private void Reword(int what, string key)
@@ -336,65 +363,30 @@ namespace RealLifeOverhaul.Ui
             return null;
         }
 
-        // The people beside the board: while an hour is being filled, the game's picker as it sorted and filtered it; else the
-        // place's staff as the game lists them, with their hours this week.
-        private void People(BizManBusiness b)
+        // While an hour is being filled, the game's picker as it sorted and filtered it, as a sheet over the board.
+        private void People()
         {
             BizOpsModel o = _m.Ops;
             ScheduleEmployeeSelection pick = PickBox(out ScheduleEmployeeScrollerController list);
             UiDataTableModel old = o.People;
-            var t = new UiDataTableModel { Offset = old != null ? old.Offset : 0f, Reveal = old != null ? old.Reveal : -1, EmptyIcon = UiIcon.People };
             o.Picking = pick != null && pick.IsOpen && list != null;
-            if (o.Picking)
+            if (!o.Picking)
             {
-                string lane = Get<string>(GameContract.SchedPickLane, pick);
-                object hourBox = GameContract.SchedPickHour.Field != null ? GameContract.SchedPickHour.Field.GetValue(pick) : null;
-                int hour = hourBox is int hh ? hh : -1;
-                string station = !string.IsNullOrEmpty(lane) && ScheduleHelper.WorkstationsById.TryGetValue(lane, out ItemInstance it) && it != null
-                    ? (string.IsNullOrEmpty(it.alias) ? UiText.T(it.itemName) : it.alias) : null;
-                o.PeopleTitle = station != null && hour >= 0 ? UiText.Fill("reallife_ui_bizops_pick_title", "station", station, "hour", hour.GetFormattedTime(0f)) : UiText.T("bizman_schedule_employee_header_no_workstation");
-                o.PeopleLine = UiText.T("reallife_ui_bizops_pick_line");
-                PickRows(list, t);
+                o.People = null;
+                o.PeopleTitle = o.PeopleLine = null;
+                return;
             }
-            else
-            {
-                o.PeopleTitle = UiText.T("reallife_ui_bizops_people");
-                o.PeopleLine = UiText.T(ScheduleHelper.CurrentScheduleDay.isOpen ? "reallife_ui_bizops_people_line" : "bizman_schedule_cant_assign_on_closed_days");
-                StaffRows(t);
-            }
+            var t = new UiDataTableModel { Offset = old != null ? old.Offset : 0f, Reveal = old != null ? old.Reveal : -1, EmptyIcon = UiIcon.People };
+            string lane = Get<string>(GameContract.SchedPickLane, pick);
+            object hourBox = GameContract.SchedPickHour.Field != null ? GameContract.SchedPickHour.Field.GetValue(pick) : null;
+            int hour = hourBox is int hh ? hh : -1;
+            string station = !string.IsNullOrEmpty(lane) && ScheduleHelper.WorkstationsById.TryGetValue(lane, out ItemInstance it) && it != null
+                ? (string.IsNullOrEmpty(it.alias) ? UiText.T(it.itemName) : it.alias) : null;
+            o.PeopleTitle = station != null && hour >= 0 ? UiText.Fill("reallife_ui_bizops_pick_title", "station", station, "hour", hour.GetFormattedTime(0f)) : UiText.T("bizman_schedule_employee_header_no_workstation");
+            o.PeopleLine = UiText.T("reallife_ui_bizops_pick_line");
+            PickRows(list, t);
             o.People = t;
         }
-
-        // The place's staff as the game's schedule lists them: their face in their mood, their main skill graded, their hours this week, their pay.
-        private static void StaffRows(UiDataTableModel t)
-        {
-            t.Columns = new[]
-            {
-                new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_person"), Kind = UiCellKind.Person },
-                new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_skill"), Kind = UiCellKind.Figure, Width = 64f, Graded = true },
-                new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_week"), Kind = UiCellKind.Figure, Width = 72f },
-                new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_wage"), Kind = UiCellKind.Money, Width = 88f },
-            };
-            List<EmployeeInstance> staff = ScheduleHelper.Employees;
-            int n = staff != null ? staff.Count : 0;
-            t.Rows = new UiDataRow[n];
-            for (int i = 0; i < n; i++)
-            {
-                EmployeeInstance e = staff[i];
-                string skill = e.GetPrimarySkill();
-                int level = string.IsNullOrEmpty(skill) ? 0 : Mathf.FloorToInt(e.GetSkillValue(skill));
-                string name = e.characterData != null ? e.characterData.name : string.Empty;
-                t.Rows[i] = new UiDataRow
-                {
-                    Cells = new[] { name, UiText.Whole(level) + "%", UiText.Fill("reallife_ui_bizops_hours_week", "hours", UiText.Whole(e.assignedWeeklyHours)), Wage(e) },
-                    Values = new[] { 0, level, 0, 0 }, Sub = string.IsNullOrEmpty(skill) ? null : UiText.T(skill), Hue = UiColour.HueOf(name), Ring = StaffViews.Mood((int)e.satisfaction)
-                };
-            }
-            t.RowCount = n;
-            t.EmptyTitle = UiText.T("bizman_schedule_employee_no_employees");
-        }
-
-        private static string Wage(EmployeeInstance e) => UiText.Fill("bizman_schedule_hourly_wage", "wage", PaidWage.NowMoney(e.hourlyWage, e.id).ToShortCurrencyFormat());
 
         // The game's picker: its rows in its order (best fits first, its sort and filters applied), its search, its demand filter, its sorts as the heads.
         private void PickRows(ScheduleEmployeeScrollerController list, UiDataTableModel t)
@@ -560,7 +552,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return 0;
             }
-            long sig = (int)day.day * 7 + (day.isOpen ? 1 : 0) + (_renaming != null ? 1000 : 0) + (_chosen != null ? _chosen.GetHashCode() : 0);
+            long sig = (int)day.day * 7 + (day.isOpen ? 1 : 0) + (_renaming != null ? 1000 : 0) + (_hoursOpen ? 2000 : 0) + (_chosen != null ? _chosen.GetHashCode() : 0);
             for (int i = 0; i < day.workShifts.Count; i++)
             {
                 WorkShift s = day.workShifts[i];
@@ -617,8 +609,15 @@ namespace RealLifeOverhaul.Ui
                 case UiBoard.DayCommand:
                     _chosen = null;
                     _renaming = null;
+                    _hoursOpen = false;
                     return arg >= 0 && arg < days.Count && Click(Get<Button>(GameContract.SchedDaySelect, days[arg]), "the schedule's day " + (arg + 1));
-                case UiBoard.RulerCommand: return ToggleHour(sch, arg);
+                case BizManPages.OpsHours:
+                    _hoursOpen = !_hoursOpen && _m.Ops.HoursPress;
+                    _chosen = null;
+                    _renaming = null;
+                    return true;
+                case BizManPages.OpsHour: return _hoursOpen && ToggleHour(sch, arg);
+                case BizManPages.OpsSheetDone: return SheetDone();
                 case BizManPages.OpsDayOpen:
                 {
                     Toggle open = Get<Toggle>(GameContract.SchedDayOpen, DayButton(days, ScheduleHelper.CurrentScheduleDay));
@@ -647,11 +646,10 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // An hour of the ruler opened or closed by the game's own hour toggle, as a press on it does (Shift held stretches it as the game's does).
+        // An hour of the opening hours' sheet opened or closed by the game's own hour toggle, as a click on it does.
         private static bool ToggleHour(BizManSchedule sch, int hour)
         {
-            List<ScheduleHourToggle> hours = Get<List<ScheduleHourToggle>>(GameContract.SchedHours, Get<ScheduleHourToggleGroup>(GameContract.SchedHourGroup,
-                Get<ScheduleHeaderController>(GameContract.SchedHeader, sch)));
+            List<ScheduleHourToggle> hours = HourToggles(sch);
             if (hours == null || hour < 0 || hour >= hours.Count || hours[hour] == null)
             {
                 return false;
@@ -1192,16 +1190,33 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // Back on the schedule: the name typed is done, the picker closes as the game's own Escape closes it, a chosen shift
-        // is let go; false when nothing of the schedule was open.
+        // Back on the schedule: the hours' sheet closes, the name typed is done, the picker closes as the game's own Escape
+        // closes it, a chosen shift is let go; false when nothing of the schedule was open.
         private bool ScheduleBack()
         {
-            if (_renaming != null || _chosen != null)
+            if (_hoursOpen || _renaming != null || _chosen != null)
             {
+                _hoursOpen = false;
                 _renaming = null;
                 _chosen = null;
                 return true;
             }
+            return HidePicker();
+        }
+
+        // A sheet's Done or Cancel: the hours' sheet closed, or the game's picker as its own close does.
+        private bool SheetDone()
+        {
+            if (_hoursOpen)
+            {
+                _hoursOpen = false;
+                return true;
+            }
+            return HidePicker();
+        }
+
+        private static bool HidePicker()
+        {
             ScheduleEmployeeSelection pick = PickBox(out _);
             if (pick != null && pick.IsOpen)
             {

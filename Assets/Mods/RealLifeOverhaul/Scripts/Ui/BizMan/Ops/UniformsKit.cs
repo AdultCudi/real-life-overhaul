@@ -150,6 +150,9 @@ namespace RealLifeOverhaul.Ui
             return t != null ? t.GetComponent<UnityEngine.UI.Button>() : null;
         }
 
+        /// <summary>The kit's own root over the editor's canvas, where its px are measured, or null before the bind.</summary>
+        internal static RectTransform Root => Host.Root;
+
         /// <summary>The customiser's preview of the figure, which the kit leaves where the game draws it.</summary>
         internal static RectTransform PreviewOf(UniformCustomizer u) => u != null ? u.transform.Find(Preview) as RectTransform : null;
     }

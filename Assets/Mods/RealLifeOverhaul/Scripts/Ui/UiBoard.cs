@@ -59,7 +59,6 @@ namespace RealLifeOverhaul.Ui
         public float Offset;                           // px the lanes have scrolled; Lay writes back what it took
         public string EmptyTitle, EmptyBody;           // no lanes yet: what fills the board and how
         public bool[] OpenHours;                       // the opening hours by the hour of the day (0 to 23), for a day of several openings; null: OpenFrom to OpenTo
-        public bool HoursPress;                        // each hour of the ruler is a target that opens or closes it (RulerCommand)
         public bool Faces;                             // a bar leads with the person's face where it has the room
 
         // Written by Lay: where the lanes stand, so a pointer's place reads as a lane and a time.
@@ -79,7 +78,7 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class UiBoard
     {
-        public const int ShiftCommand = 30, LaneCommand = 31, DayCommand = 32, ActionCommand = 33, RulerCommand = 34;
+        public const int ShiftCommand = 30, LaneCommand = 31, DayCommand = 32, ActionCommand = 33;
         public const float LaneHead = 232f;          // px: a lane's face and name, as wide as the window's sidebar
         public const float LaneHeight = 56f;         // px: a lane, a face of 40 with a step above and below
         private const float Stripe = 4f;             // px: a bar's edge in its lane's colour
@@ -153,28 +152,10 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < hours && i < m.Hours.Length; i++)
             {
                 float hx = m.RulerX + i * perHour;
-                int hour = m.FirstHour + i;
-                bool open = Open(m, hour);
-                UiAt on = at;
-                int face = -1;
-                if (m.HoursPress)
-                {
-                    // An hour that opens or closes as the game's own hour toggles do: a still face for the hover, the open
-                    // hours marked by a strip under their words.
-                    face = UiDraw.Box(s, at, hx, y, perHour, UiTokens.PairRow, UiRole.None, UiRole.None, UiTokens.RadiusSmall);
-                    on = at.In(face);
-                }
-                UiDraw.Text(s, on, hx + UiTokens.S1, y + (UiTokens.PairRow - UiTextRules.LineHeight(UiStyle.Small)) / 2f, perHour - UiTokens.S1, UiStyle.Small,
-                    open || m.OpenHours == null ? UiRole.Text2 : UiRole.Muted, m.Hours[i], UiFlags.Truncate | UiFlags.Share | UiFlags.Middle);
-                if (m.OpenHours != null && open)
-                {
-                    UiDraw.Box(s, on, hx + UiTokens.Hairline, y + UiTokens.PairRow - UiTokens.Hairline * 2f, perHour - UiTokens.Hairline * 2f, UiTokens.Hairline * 2f, UiRole.Ok,
-                        UiRole.None, 0f, UiFlags.Decor | UiFlags.Share);
-                }
-                if (face >= 0)
-                {
-                    UiDraw.Node(s, at, hx, y, perHour, UiTokens.PairRow, RulerCommand, hour, face);
-                }
+                // A day of several openings: its open hours' figures green and its closed ones muted, as its lanes shade them.
+                UiRole ink = m.OpenHours == null ? UiRole.Muted : Open(m, m.FirstHour + i) ? UiRole.OkText : UiRole.Muted;
+                UiDraw.Text(s, at, hx + UiTokens.S1, y + (UiTokens.PairRow - UiTextRules.LineHeight(UiStyle.Small)) / 2f, perHour - UiTokens.S1, UiStyle.Small,
+                    ink, m.Hours[i], UiFlags.Truncate | UiFlags.Share | UiFlags.Middle);
             }
         }
 

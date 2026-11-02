@@ -38,20 +38,19 @@ namespace RealLifeOverhaul.Ui
         public int Arg;             // what the screen presses for it
     }
 
-    /// <summary>A stop of a logistics route: the place goods go to, its goods' count, and whether its goods are open beneath it.</summary>
+    /// <summary>A stop of a logistics route: the place goods go to, its goods' count, and whether it is the one whose goods the table shows.</summary>
     public struct BizOpsStop
     {
         public string Name;         // the place, or "Choose a business"
         public string Line;         // "6 goods", or what is wrong
-        public bool Open;
+        public bool Open;           // the stop chosen: its goods are the table under the route
         public bool Warn;           // past the route's limit
         public bool Removable;
-        public string[] Goods;      // the goods it takes, when open
-        public string[] Amounts;
     }
 
     /// <summary>
-    /// The operations of a place in BizMan, as plain data: the schedule as a board of shifts with the people beside it, a
+    /// The operations of a place in BizMan, as plain data: the schedule as a board of shifts with its sheets (the opening
+    /// hours, the people for an hour), a
     /// manager kind as its plans and the chosen one's form and goods, a factory's machines and the chosen one's recipe, a
     /// warehouse's drivers and its stock. The game's side fills it from the game's own widgets after the game and other mods
     /// ran; the samples fill it offline. No colour but a role, no position. Game-free.
@@ -64,11 +63,17 @@ namespace RealLifeOverhaul.Ui
         public bool DayOpen;
         public bool DayOpenDisabled;                    // a headquarters keeps the game's own days
         public string HoursWords;                       // the day's opening hours in the game's form, or that it is closed
+        public bool HoursPress;                         // the hours are a button that opens their sheet (a headquarters keeps the game's own)
+        public bool HoursOpen;                          // the opening hours' sheet is open over the board
+        public string HoursTitle;                       // the sheet's title, the game's "Opening hours"
+        public string HoursLine;                        // what a press on an hour does
+        public string[] HourWords = new string[0];      // each hour's figure, midnight first; open or not is the board's OpenHours
+        public string DoneWords;                        // a sheet's Done
         public string LaneSearch;                       // the lanes' search as typed
         public string LaneSearchHint;
-        public string PeopleTitle;                      // "Staff" or "Who works at Register 1 from 10:00"
+        public string PeopleTitle;                      // "Register 1 at 10:00": the hour the picker fills
         public string PeopleLine;                       // what a press does, or why the list is empty
-        public bool Picking;                            // the game's picker is open for an hour of a lane
+        public bool Picking;                            // the game's picker is open for an hour of a lane: its sheet over the board
         public UiDataTableModel People;
         public string Progress;                         // the auto fill at work, or null
         public int ProgressShare;                       // 0 to 100
@@ -86,6 +91,7 @@ namespace RealLifeOverhaul.Ui
         public string FormEmpty, FormEmptyBody;         // no plan chosen yet: what the right side will hold and how
         public BizOpsRow[] Rows = new BizOpsRow[0];
         public string TableTitle;
+        public string TableLead;                        // a sentence over the table where a title would repeat its head (whose goods a route's stop takes)
         public UiDataTableModel Table;
         public string StopsTitle;
         public BizOpsStop[] Stops = new BizOpsStop[0];

@@ -22,9 +22,12 @@ namespace RealLifeOverhaul.Ui
         private const float Every = 0.25f;       // seconds between looks at the game's editor
         private const int NameLimit = 25;        // the game's own name field's limit, should it hold none
         private const string PictureKey = "uniform:";
+        private const string SwatchKey = "uniform:rgb:";   // a colour the game tints a swatch with, as six hex digits
 
         private static readonly Dictionary<int, Sprite> Pictures = new Dictionary<int, Sprite>(64);
+        private static readonly Dictionary<uint, Sprite> Swatches = new Dictionary<uint, Sprite>(32);   // kept for the run: the game's palette is a few dozen colours
         private static readonly Vector3[] Corners = new Vector3[4];
+        private static readonly UiWords Words = (key, english) => UiText.T(key);
         private static bool _picturesOn;
 
         private readonly EmployeePresetCustomizer _editor;
@@ -35,6 +38,7 @@ namespace RealLifeOverhaul.Ui
         private readonly List<Button> _pieces = new List<Button>(64);
         private readonly List<Button> _colours = new List<Button>(16);
         private bool _dirty = true, _turning;
+        private bool _coloursOpen;   // the worn piece's colours open as their palette over the catalogue
         private float _next;
         private long _seen;
 
@@ -81,10 +85,13 @@ namespace RealLifeOverhaul.Ui
             Pictures.Clear();
             UniformCustomizer u = Get<UniformCustomizer>(GameContract.UniformEditor, _editor);
             _m.Title = UiText.T("myemployees_configure_uniform_presets");
+            _m.Words = Words;
             Presets();
             bool shown = u != null && u.gameObject.activeInHierarchy && _m.Preset >= 0;
             Parts(shown ? u : null);
             Pieces(shown ? u : null);
+            _coloursOpen &= _m.ColourCount > 1;   // a piece of one colour, or none worn, has no palette to keep open
+            _m.ColoursOpen = _coloursOpen;
             Stage(shown ? u : null);
             Button save = Get<Button>(GameContract.UniformSave, u);
             _m.CanSave = shown && save != null && save.interactable && save.gameObject.activeInHierarchy;
@@ -213,9 +220,13 @@ namespace RealLifeOverhaul.Ui
                 Transform p = t.Find(picture);
                 Image image = p != null ? p.GetComponent<Image>() : t.GetComponent<Image>();
                 Transform sel = t.Find("Selected"), sport = t.Find("SportsIcon");
+                // A colour's swatch is the template's own sprite tinted (AppearanceColorPicker.SetList): its picture is the colour.
+                Color32 tint = image != null ? (Color32)image.color : new Color32(255, 255, 255, 255);
+                bool tinted = tint.r != 255 || tint.g != 255 || tint.b != 255;
                 cards[i] = new UiUniformPiece
                 {
-                    Picture = Pic(image != null ? image.sprite : null), Chosen = sel != null && sel.gameObject.activeSelf, Sport = sport != null && sport.gameObject.activeSelf
+                    Picture = tinted ? Swatch(tint) : Pic(image != null ? image.sprite : null), Chosen = sel != null && sel.gameObject.activeSelf,
+                    Sport = sport != null && sport.gameObject.activeSelf
                 };
             }
             return cards;
@@ -226,8 +237,7 @@ namespace RealLifeOverhaul.Ui
         {
             _m.StageW = 0f;
             RectTransform preview = UniformsKit.PreviewOf(u);
-            Canvas canvas = _editor.GetComponentInParent<Canvas>();
-            RectTransform root = canvas != null && canvas.rootCanvas != null ? canvas.rootCanvas.transform as RectTransform : null;
+            RectTransform root = UniformsKit.Root;   // the host's own root, stretched over the editor's canvas
             if (preview == null || root == null || !preview.gameObject.activeInHierarchy)
             {
                 return;
@@ -280,7 +290,13 @@ namespace RealLifeOverhaul.Ui
                 case UiUniforms.Piece:
                     return arg >= 0 && arg < _pieces.Count && Click(_pieces[arg], "wear a piece");
                 case UiUniforms.Colour:
-                    return arg >= 0 && arg < _colours.Count && Click(_colours[arg], "a colour");
+                    return arg >= 0 && arg < _colours.Count && Click(_colours[arg], "a colour");   // the palette stays open to try the next
+                case UiUniforms.Colours:
+                    _coloursOpen = !_coloursOpen && _m.ColourCount > 1;
+                    return true;
+                case UiUniforms.ColoursDone:
+                    _coloursOpen = false;
+                    return true;
                 case UiUniforms.Sex:
                 {
                     Transform t = Get<Transform>(arg == 1 ? GameContract.UniformFemale : GameContract.UniformMale, u);
@@ -310,6 +326,12 @@ namespace RealLifeOverhaul.Ui
         // Back closes the editor through its own close button, which asks first when a change is unsaved.
         public bool Back()
         {
+            if (_coloursOpen)
+            {
+                _coloursOpen = false;   // the palette first, then the editor
+                _dirty = true;
+                return true;
+            }
             Turn(false);
             _dirty = true;
             return Click(UniformsKit.CloseButton(_editor), "close the uniforms' editor (the game asks first if a change is unsaved)");
@@ -572,8 +594,34 @@ namespace RealLifeOverhaul.Ui
             return PictureKey + id.ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
 
+        // A colour as a picture of it, made once a colour.
+        private static string Swatch(Color32 c)
+        {
+            uint rgb = (uint)(c.r << 16 | c.g << 8 | c.b);
+            if (!Swatches.ContainsKey(rgb))
+            {
+                var tex = new Texture2D(4, 4, TextureFormat.RGBA32, false) { hideFlags = HideFlags.HideAndDontSave, filterMode = FilterMode.Point };
+                var pixels = new Color32[16];
+                for (int i = 0; i < pixels.Length; i++)
+                {
+                    pixels[i] = new Color32(c.r, c.g, c.b, 255);
+                }
+                tex.SetPixels32(pixels);
+                tex.Apply(false, true);
+                Sprite sprite = Sprite.Create(tex, new Rect(0f, 0f, 4f, 4f), new Vector2(0.5f, 0.5f));
+                sprite.hideFlags = HideFlags.HideAndDontSave;
+                Swatches[rgb] = sprite;
+            }
+            return SwatchKey + rgb.ToString("x6", System.Globalization.CultureInfo.InvariantCulture);
+        }
+
         private static Sprite Picture(string key)
         {
+            if (key.StartsWith(SwatchKey, StringComparison.Ordinal))
+            {
+                return uint.TryParse(key.Substring(SwatchKey.Length), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out uint rgb)
+                       && Swatches.TryGetValue(rgb, out Sprite swatch) ? swatch : null;
+            }
             return int.TryParse(key.Substring(PictureKey.Length), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out int id)
                    && Pictures.TryGetValue(id, out Sprite sprite) ? sprite : null;
         }

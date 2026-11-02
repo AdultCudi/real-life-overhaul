@@ -37,7 +37,7 @@ internal static partial class Program
               && BizManRules.Drawn("Marketing", false) && BizManRules.Drawn("Settings", false) && BizManRules.Drawn("RealEstate", false) && BizManRules.Drawn(BizManRules.Interiors, false),
             "bizman: the kit draws the presentation, insight, prices, deliveries, marketing, settings, real estate and the mod's Interior tab");
         Check(BizManRules.Drawn("Schedule", true) && BizManRules.Drawn("PricingManagers", true) && BizManRules.Drawn("LogisticsManagers", true) && BizManRules.Drawn("PurchasingAgents", true)
-              && BizManRules.Drawn("HrManagers", true) && BizManRules.Drawn("Headhunters", true) && BizManRules.Drawn("Factory", true) && BizManRules.Drawn("Drivers", true)
+              && BizManRules.Drawn(BizManRules.HrManagers, true) && BizManRules.Drawn("Headhunters", true) && BizManRules.Drawn("Factory", true) && BizManRules.Drawn("Drivers", true)
               && BizManRules.Drawn("Inventory", true) && !BizManRules.Drawn("BizSuite_Tab", true),
             "bizman: the schedule, the managers, the factory and the warehouse's tabs are drawn while their switch is on; another mod's opens the game's own view");
         Check(!BizManRules.Drawn("Schedule", false) && !BizManRules.Drawn("PricingManagers", false) && !BizManRules.Drawn("Headhunters", false) && !BizManRules.Drawn("Factory", false)

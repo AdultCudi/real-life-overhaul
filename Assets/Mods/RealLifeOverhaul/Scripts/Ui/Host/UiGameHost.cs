@@ -68,6 +68,12 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The kit screen it runs, or null before the bind.</summary>
         public IUiScreen Screen => _host != null ? _host.Screen : null;
 
+        /// <summary>
+        /// The kit's own root over the game's canvas, or null before the bind: its rect is the kit's px times
+        /// UiTokens.CanvasPerPx, for a screen that places itself around a piece the game draws (the uniforms' preview).
+        /// </summary>
+        public RectTransform Root => _root != null ? (RectTransform)_root.transform : null;
+
         /// <summary>The screen's id in UiScreens.</summary>
         public string Id => _screen.Id;
 
