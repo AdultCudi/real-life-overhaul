@@ -106,6 +106,16 @@ namespace RealLifeOverhaul.Ui
                 }
                 s.Nodes[first].Left = first;   // the footer is a row: its ends go nowhere sideways, not across the panel
                 s.Nodes[s.NodeCount - 1].Right = s.NodeCount - 1;
+                // Down from the close goes into the panel, to its first link or its footer, never across to the tabs' strip.
+                int close = s.FindNode(UiDraw.CloseCommand, 0), link = -1;
+                for (int n = 0; n < s.NodeCount && link < 0; n++)
+                {
+                    link = s.Nodes[n].Command == LinkCommand ? n : -1;
+                }
+                if (close >= 0)
+                {
+                    s.Nodes[close].Down = link >= 0 ? link : first;
+                }
             }
             return y + h;
         }

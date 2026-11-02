@@ -158,13 +158,17 @@ internal static partial class UiSamples
     // ------------------------------------------------------------------------------------------------- the world prompt
 
     /// <summary>The box at Bloom Café's door: the address and what is inside, four actions with the game's keys, one greyed.</summary>
-    public static UiWorldPromptModel HudDoor(UiWords t, IUiKeys k) => new UiWorldPromptModel
+    public static UiWorldPromptModel HudDoor(UiWords t, IUiKeys k, bool night = false) => new UiWorldPromptModel
     {
         Title = "70 Fifth Avenue", Icon = UiIcon.Store,
-        Rows = new[] { new UiInfoRow { Label = "Bloom Café", Value = "Open until 22:00", Ink = UiRole.OkText }, new UiInfoRow { Label = "Floors", Value = "Ground and 1st" } },
+        Rows = new[]
+        {
+            new UiInfoRow { Label = "Bloom Café", Value = night ? "Closed, opens 07:00" : "Open until 22:00", Ink = night ? UiRole.WarnText : UiRole.OkText },
+            new UiInfoRow { Label = "Floors", Value = "Ground and 1st" },
+        },
         Actions = new[]
         {
-            new UiPromptAction { Label = "Go inside", Key = GameKey(k, "F", UiIcon.PadX), Main = true },
+            new UiPromptAction { Label = "Go inside", Key = GameKey(k, "F", UiIcon.PadX), Main = !night, Disabled = night, Reason = night ? "Closed" : null },
             new UiPromptAction { Label = "Look at the building", Key = GameKey(k, "P", UiIcon.PadY) },
             new UiPromptAction { Label = "Ring the doorbell", Key = GameKey(k, "O", UiIcon.PadRb) },
             new UiPromptAction { Label = "Rent this space", Key = GameKey(k, "Enter", UiIcon.PadA), Disabled = true, Reason = "Taken" },
@@ -182,8 +186,14 @@ internal static partial class UiSamples
     /// <summary>The HUD with a box at a café's door, its point right of centre on the street; or the hover form indoors.</summary>
     public static void HudPrompt(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool hover, bool night = false)
     {
-        var m = new UiHudModel { Prompt = hover ? HudItem(t) : HudDoor(t, k), PointX = f.Width * (hover ? 0.42f : 0.62f), PointY = f.Height * (hover ? 0.5f : 0.58f) };
-        Hud(s, f, dark, k, t, m, HudBar(t, false, false, night));
+        var m = new UiHudModel { Prompt = hover ? HudItem(t) : HudDoor(t, k, night), PointX = f.Width * (hover ? 0.42f : 0.62f), PointY = f.Height * (hover ? 0.5f : 0.58f) };
+        UiStatusModel bar = HudBar(t, false, false, night);
+        if (!hover)
+        {
+            bar.Place = "70 Fifth Avenue";   // at the door the box stands over, as the game's HUD names it
+            bar.District = "Midtown";
+        }
+        Hud(s, f, dark, k, t, m, bar);
     }
 
     // ------------------------------------------------------------------------------------------------- side panels and objectives
@@ -207,7 +217,7 @@ internal static partial class UiSamples
         Title = "Current job", Icon = UiIcon.Handshake, Collapsed = collapsed,
         Rows = new[]
         {
-            new UiInfoRow { Label = "Address", Value = "70 Fifth Avenue", Link = true }, new UiInfoRow { Label = "Tomorrow", Value = "Day off" },
+            new UiInfoRow { Label = "Address", Value = "70 Fifth Avenue" }, new UiInfoRow { Label = "Tomorrow", Value = "Day off" },   // where you stand: no link to it
             new UiInfoRow { Label = "Hours a week", Value = "30" },
         },
         Actions = new[] { new UiActionModel { Label = "Quit", Kind = UiButtonKind.Destructive } },   // at work there: no way to set to where you stand
