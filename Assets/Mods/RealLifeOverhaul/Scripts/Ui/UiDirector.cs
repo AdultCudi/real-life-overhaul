@@ -10,8 +10,8 @@ namespace RealLifeOverhaul.Ui
     /// <summary>
     /// The RLO interface in the game: its fonts read behind the loading screen, its one pool of tweens, the game's own
     /// font as the last fallback, and once a second the screens it draws over the game's, each while the interface and its
-    /// own switch are on: the Contacts app (ContactsKit), EconoView (EconoViewKit), My Employees and a rival's staff (EmployeesKit), the full menu's
-    /// frame and the mod apps' faces (UiShell, with
+    /// own switch are on: the Contacts app (ContactsKit), EconoView (EconoViewKit), My Employees and a rival's staff (EmployeesKit), Persona,
+    /// Rivals and Market Insider (PersonaKit, RivalsKit, MarketKit), the full menu's frame and the mod apps' faces (UiShell, with
     /// the overhaul's pages, ShellPages), the boxes (ShellBoxes, ShellModBox) and the notices (ShellNotices); the game's own
     /// screen the moment a switch is off or anything fails. A switch flipped mid screen gives the old face back at once.
     /// Once a city it says in Player.log whether it is on, whether its fonts came in and which screens it drew over. The
@@ -79,9 +79,13 @@ namespace RealLifeOverhaul.Ui
         internal static void RemoveAll(string why)
         {
             ContactsKit.Remove(why);
+            BizManKit.Remove(why);
             EconoViewKit.Remove(why);
             PhoneKit.Remove(why);
             EmployeesKit.Remove(why);
+            PersonaKit.Remove(why);
+            RivalsKit.Remove(why);
+            MarketKit.Remove(why);
             UiShell.Remove(why);
             ShellPages.Remove(why);
             ShellBoxes.Remove(why);
@@ -131,9 +135,13 @@ namespace RealLifeOverhaul.Ui
             {
                 RemoveAll("no city");
                 ContactsKit.Rearm();
+                BizManKit.Rearm();
                 EconoViewKit.Rearm();
                 PhoneKit.Rearm();
                 EmployeesKit.Rearm();
+                PersonaKit.Rearm();
+                RivalsKit.Rearm();
+                MarketKit.Rearm();
                 UiShell.Rearm();
                 ShellPages.Rearm();
                 ShellBoxes.Rearm();
@@ -160,8 +168,19 @@ namespace RealLifeOverhaul.Ui
             {
                 ContactsKit.Remove("its switch is off");
             }
+            if (UiScreenSwitches.On("bizman"))
+            {
+                BizManKit.Install();
+            }
+            else
+            {
+                BizManKit.Remove("its switch is off");
+            }
             EconoViewKit.Install();
             EmployeesKit.Install();
+            PersonaKit.Install();
+            RivalsKit.Install();
+            MarketKit.Install();
             ShellPages.Install();
             UiShell.Tick();
             ShellBoxes.Install();
@@ -187,8 +206,9 @@ namespace RealLifeOverhaul.Ui
             string fonts = UiFonts.Own ? "fonts: the bundle's own (" + UiFonts.Faces + " faces)"
                 : UiFonts.Faces > 0 ? "fonts: " + UiFonts.Faces + " of " + UiFonts.FacesWanted + " faces from " + UiFonts.BundleFile + ", the game's font for the rest"
                 : "fonts: not loaded from " + (UiFonts.BundleFile ?? "(no path)") + ", the game's font stands in";
-            return "UI: the RLO interface is on; " + fonts + "; screens: Contacts (" + ContactsKit.State + "), " + EconoViewKit.State + ", the phone (" + PhoneKit.State + "), "
-                   + EmployeesKit.State + ", "
+            return "UI: the RLO interface is on; " + fonts + "; screens: Contacts (" + ContactsKit.State + "), BizMan (" + BizManKit.State + "), "
+                   + EconoViewKit.State + ", the phone (" + PhoneKit.State + "), " + EmployeesKit.State + ", " + PersonaKit.State + ", " + RivalsKit.State + ", "
+                   + MarketKit.State + ", "
                    + ShellBoxes.States() + ", " + ShellNotices.States()
                    + ", pages (" + ShellPages.States() + "), desk sessions (" + (Settings.LivingDesks ? "over the game's panel as each opens" : "off")
                    + "); the full menu's frame while an app on the kit shows; from Options, Tests: the gallery and each screen.";

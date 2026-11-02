@@ -28,6 +28,7 @@ namespace RealLifeOverhaul.Ui
         public float Offset;                           // px scrolled; Lay writes back what it took
         public int Reveal = -1;
         public string EmptyTitle, EmptyBody;
+        public string EmptyAction;                     // the button that fills an empty list ("Clear search", answering ClearCommand); null for none
     }
 
     /// <summary>
@@ -35,12 +36,12 @@ namespace RealLifeOverhaul.Ui
     /// ("New messages", "Earlier"), each a face in its presence dot (or a business's icon on its tile), the name, the last
     /// words cut at a whole word, the time and an unread badge, the chosen one in the cyan's tone. The rows scroll in their
     /// frame, only those in view laid out, as the list and detail's list did. For Contacts (moving off UiListDetail) and
-    /// Flare's messages. Commands: <see cref="RowCommand"/> (a row) and <see cref="SearchCommand"/>. Game-free.
+    /// Flare's messages. Commands: <see cref="RowCommand"/> (a row), <see cref="SearchCommand"/> and <see cref="ClearCommand"/> (an empty search's way out). Game-free.
     /// Cost: a layout a change.
     /// </summary>
     public static class UiMessageList
     {
-        public const int RowCommand = 70, SearchCommand = 71;
+        public const int RowCommand = 70, SearchCommand = 71, ClearCommand = 72;
         public const float RowGap = UiTokens.S2;     // px between two rows
 
         private static float BandHeight => UiDraw.Snap(UiTokens.S4 + UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2;
@@ -80,7 +81,14 @@ namespace RealLifeOverhaul.Ui
             if (m.RowCount == 0)
             {
                 s.AddList(0, 0, 0, clip, -1);
-                UiDraw.Empty(s, at, x, top, w, vh, m.EmptyTitle, m.EmptyBody);
+                if (string.IsNullOrEmpty(m.EmptyAction))
+                {
+                    UiDraw.Empty(s, at, x, top, w, vh, m.EmptyTitle, m.EmptyBody);
+                }
+                else
+                {
+                    UiDraw.EmptyState(s, at, x, top, w, vh, UiIcon.Search, m.EmptyTitle, m.EmptyBody, m.EmptyAction, ClearCommand, null);
+                }
                 return;
             }
             int selected = -1, first = -1, shown = 0;

@@ -17,7 +17,9 @@ and a status bar runs along the bottom. The mouse leads, and the keyboard and a 
   look, so Flare's look option (`flare_theme`) no longer changes it. With either switch off, every screen is the game's
   own.
 - Tests: "Open the interface gallery", "Open Contacts on the RLO interface", "Open the city's people on the RLO
-  interface", "Open Flare in the city on the RLO interface" and "Open your first tech firm on the RLO interface".
+  interface", "Open Flare in the city on the RLO interface" and "Open your first tech firm on the RLO interface";
+  "Open BizMan on the RLO interface", "BizMan for a business you do not own", "BizMan for a building to rent" and
+  "Switch BizMan back to the game's own".
 
 ```
 Ui/                         game-free unless named: the offline checks and the previews draw exactly what ships
@@ -52,6 +54,12 @@ Ui/                         game-free unless named: the offline checks and the p
                               pages over the game's own panel (SessionKit)
   Contacts/ContactsKit,       the game's Contacts app under the kit: hidden, read, its buttons pressed, given back on
   Contacts/ContactsScreen     a fault, for a call, an offer or the game's question box
+  BizManModel, BizManPages,   BizMan's model and its pages on the app window (game-free), the tab and glyph rules
+  BizManRules, UiFirmHead     checked offline, and the firm's head (a block of the kit)
+  BizMan/BizManKit,           the game's BizMan under the kit: its list and its business page read, its buttons
+  BizMan/BizManScreen(.*)     pressed, a page only the game's view shows handed over to it until the app closes
+  UiPageFence                 the d-pad kept on a page of many blocks (a block of the kit)
+  Interiors/InteriorLines     the Interior tab's lines, written into the game's boxes or the kit's page alike
 ```
 
 ## What the player sees
@@ -65,6 +73,18 @@ Ui/                         game-free unless named: the offline checks and the p
   with a face or an icon on each row in the middle, and the open contact at the right. The contact shows its messages
   under the line where they start, its details and the game's own buttons as actions. Call, an offer with buttons and
   a tax table hand over to the game's own view until the app closes.
+- **BizMan**: a manager's office. The portfolio's kinds of place (businesses, homes, warehouses, headquarters) stand
+  down the sidebar with their counts; the page holds how many are open now, how satisfied their customers are and which
+  earns the most on one line, then the businesses as the big table with a Set destination on each row, sorted and
+  filtered by the game's own heads and filters. A place opens with its
+  head (its logo, its name with the list of the others, its kind, its address as a link that sets the destination, its
+  security, what it still needs, its open switch and EconoView), then the shown tab as its job needs it: the building
+  as its photo beside its facts with the offers under them; insight as the period's customers over their chart beside
+  the capacity and satisfaction, promotion under the chart; prices and deliveries as tables with each price or amount to
+  step, a price marked where the game marks it; the mod's Interior tab as its scores beside its four pages;
+  marketing as campaigns with their switches beside the agencies to call; settings and real estate as two columns of
+  rows and controls; starting a business as a catalogue of the kinds. The schedule, the managers, the factory, the
+  warehouse's pages and another mod's tab open in the game's own view from their entries, until the app closes.
 - **The overhaul's pages**: the population and Flare in the city as dashboards, and a desk session's steps as a card
   with its choices. A tech firm's whole page is a dashboard too. A studio's shows its games out, copies and last 30
   days' takings with their line, its games and the games market's newest, its team by group with the groups it lacks,

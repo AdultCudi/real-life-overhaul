@@ -219,15 +219,18 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>
         /// A donut of shares, slice by slice from the top clockwise in the chart hues, the largest cumulative first so each
-        /// later slice lays over the rest of the turn. Shares need not sum to one: they are taken as parts of their sum.
+        /// later slice lays over the rest of the turn. Shares need not sum to one: they are taken as parts of their sum, with
+        /// <paramref name="rest"/> (what the legend does not name, such as the goods past a list's best sellers) as the
+        /// track's own grey after the last slice.
         /// </summary>
-        public static void Donut(UiScene s, UiAt at, float x, float y, float size, float[] shares, int count)
+        public static void Donut(UiScene s, UiAt at, float x, float y, float size, float[] shares, int count, float rest = 0f)
         {
-            float sum = 0f;
+            float sum = Math.Max(0f, rest);
             for (int i = 0; i < count; i++)
             {
                 sum += Math.Max(0f, shares[i]);
             }
+
             if (sum <= 0f)
             {
                 Box(s, at, x, y, size, size, UiRole.Track, UiRole.None, 0f, UiFlags.Circle);
@@ -240,11 +243,22 @@ namespace RealLifeOverhaul.Ui
             {
                 float start = run;
                 run += Math.Max(0f, shares[i]) / sum;
-                float end = i == count - 1 ? 1f : run;
+                float end = i == count - 1 && rest <= 0f ? 1f : run;
                 float gap = count > 1 && end - start > SliceGap * 3f ? SliceGap : 0f;
                 var item = new UiItem
                 {
                     Kind = UiKind.Slice, Fill = UiTokens.Chart(i), X = x, Y = y, W = size, H = size, Value = end - start, Points = new[] { start + gap / 2f, end - gap / 2f },
+                    Clip = at.Clip, Node = -1, Layer = at.Layer, Order = at.Order, Parent = at.Parent, Alpha = 1f, Flags = UiFlags.Circle
+                };
+                s.Add(ref item);
+            }
+            if (rest > 0f && run < 1f)
+            {
+                // The rest of the turn as its own arc in the track's grey, the hole left the panel's as every slice leaves it.
+                float gap = 1f - run > SliceGap * 3f ? SliceGap : 0f;
+                var item = new UiItem
+                {
+                    Kind = UiKind.Slice, Fill = UiRole.Track, X = x, Y = y, W = size, H = size, Value = 1f - run, Points = new[] { run + gap / 2f, 1f - gap / 2f },
                     Clip = at.Clip, Node = -1, Layer = at.Layer, Order = at.Order, Parent = at.Parent, Alpha = 1f, Flags = UiFlags.Circle
                 };
                 s.Add(ref item);

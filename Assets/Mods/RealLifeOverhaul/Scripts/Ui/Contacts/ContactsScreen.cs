@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using Entities;
-using Localizor;
 using TMPro;
 using UI.Smartphone.Apps.Contacts;
 using UnityEngine;
@@ -11,33 +9,51 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// Contacts as a screen of the kit, mirrored from the game's own app: its categories as groups, its contacts (the
-    /// unread first, then the newest), the open contact's messages, its header's details and its buttons. Every press
-    /// goes to the game: a contact opens through the game's own list (so its messages are read as the game reads them),
-    /// Call and the offers' buttons hand over to the game's own view, the other buttons are the game's pressed. Words
-    /// are the game's keys and the mod's (registered in UiScreens). Cost: a look at a few counts four times a second
-    /// while it shows; a layout only when they change.
+    /// Contacts as a screen of the kit, mirrored from the game's own app (ContactsScreen.Read.cs reads it): its categories
+    /// and the mod's groups as the window's sections, its contacts as a message list (the unread first, then the newest),
+    /// the open contact's head, conversation, actions, profile and details, and a conversation the game runs on the app:
+    /// an offer's negotiation in the thread with its form, a call as the call card over the dimmed world. Every press goes
+    /// to the game: a contact opens through the game's own list (so its messages are read as the game reads them), View on
+    /// map and Call are the game's buttons, an offer's reply is the game's own button in the thread, a line's reply and
+    /// Hang up are the game's buttons under the line, a figure is typed into the game's field and stepped by its buttons,
+    /// and the header's buttons are the game's pressed. Words are the game's keys and the mod's (registered in UiScreens).
+    /// Cost: a look at a few counts four times a second while it shows; a layout only when they change (and once a second
+    /// while a call's length shows).
     /// </summary>
-    public sealed class ContactsScreen : IUiScreen, IUiTyping
+    public sealed partial class ContactsScreen : IUiScreen, IUiTyping, IUiStepping
     {
         private const float Every = 0.25f;   // seconds between looks at the game's contacts
 
-        private static readonly ContactCategoryName[] Categories = (ContactCategoryName[])Enum.GetValues(typeof(ContactCategoryName));
-
         private readonly ContactsApp _app;
-        private readonly UiListDetailModel _m = new UiListDetailModel();
+        private readonly UiContactsModel _m = new UiContactsModel();
         private readonly List<Contact> _rows = new List<Contact>(64);
-        private readonly List<ContactCategoryName> _groups = new List<ContactCategoryName>(8);
-        private readonly List<Button> _services = new List<Button>(8);
+        private readonly List<int> _groups = new List<int>(16);          // the categories shown, the game's then the mod's
+        private readonly List<Button> _services = new List<Button>(8);   // the aside's actions: the game's buttons, null for the game's own view
+        private readonly List<Button> _choices = new List<Button>(4);    // the conversation's or the call's numbered choices
+        private readonly List<Field> _fields = new List<Field>(2);       // the form's fields
+        private readonly List<KeyValuePair<TMP_Text, Color>> _names = new List<KeyValuePair<TMP_Text, Color>>(2);   // the header's name labels as the game made them
         private string _query = string.Empty;
         private bool _dirty = true;
         private float _next;
         private long _seen;
-        private Button _call, _map;
+        private int _typing = -1;          // the form's field the next typing goes into; -1 the search
+        private int _second = -1;          // the call's length in whole seconds as last laid out
+        private object _talk;              // the conversation the game runs now, as last seen
+        private float _talkSince;          // when it began, real time
+        private Button _call, _map, _hangUp;
+
+        // A field of the form: the game's own figure field and its two steps.
+        private struct Field
+        {
+            public TMP_InputField Input;
+            public Button Less, More;
+        }
 
         public ContactsScreen(ContactsApp app)
         {
             _app = app;
+            AddHome(GameContract.KitContactInfo);
+            AddHome(GameContract.KitEmployeeInfo);
         }
 
         public string Id => "contacts";
@@ -46,32 +62,54 @@ namespace RealLifeOverhaul.Ui
         {
             get
             {
-                if (Time.unscaledTime >= _next)
+                float now = Time.unscaledTime;
+                if (now >= _next)
                 {
-                    _next = Time.unscaledTime + Every;
-                    long now = Signature();
-                    _dirty |= now != _seen;
-                    _seen = now;
+                    _next = now + Every;
+                    long sig = Signature();
+                    _dirty |= sig != _seen;
+                    _seen = sig;
+                }
+                if (_talk != null && !_dirty && _m.Call != null && (int)(now - _talkSince) != _second)
+                {
+                    _dirty = true;   // the call's length ticks on
                 }
                 return _dirty;
             }
         }
 
-        public int TypingCommand => UiListDetail.Search;
+        public int TypingCommand => _typing >= 0 ? UiConversation.FormCommand : UiMessageList.SearchCommand;
 
-        public string TypingText => _query;
+        public string TypingText => _typing >= 0 ? (_typing < _fields.Count && _fields[_typing].Input != null ? _fields[_typing].Input.text : string.Empty) : _query;
 
         public void Typed(string text)
         {
+            if (_typing >= 0)
+            {
+                if (_typing < _fields.Count)
+                {
+                    UiWidgets.Type(_fields[_typing].Input, text ?? string.Empty, false);   // the game's own field, read back by its conversation on Send
+                }
+                _dirty = true;
+                return;
+            }
             _query = text ?? string.Empty;
-            _m.RowsOffset = 0f;
+            _m.List.Offset = 0f;
             _dirty = true;
+        }
+
+        public bool Steps(int command) => command == UiConversation.FormCommand;
+
+        public void Step(int command, int arg, int step)
+        {
+            Press(step < 0 ? UiConversation.FormLess : UiConversation.FormMore, arg);
         }
 
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
             Build();
-            UiListDetail.Lay(s, _m, frame, dark, keys);
+            UiContacts.Lay(s, _m, frame, dark, keys);
+            _second = _talk != null ? (int)(Time.unscaledTime - _talkSince) : -1;
             _dirty = false;
         }
 
@@ -86,8 +124,8 @@ namespace RealLifeOverhaul.Ui
                     {
                         return false;
                     }
-                    _app.LoadContactsList(arg == 0 ? (ContactCategoryName?)null : _groups[arg - 1]);
-                    _m.RowsOffset = 0f;
+                    _app.LoadContactsList(arg == 0 ? (ContactCategoryName?)null : (ContactCategoryName)_groups[arg - 1]);
+                    _m.List.Offset = 0f;
                     return true;
                 case ContactsRoute.Row:
                     return arg >= 0 && arg < _rows.Count && Open(_rows[arg]);
@@ -96,16 +134,24 @@ namespace RealLifeOverhaul.Ui
                 case ContactsRoute.Call:
                     return CallNow(open);
                 case ContactsRoute.Service:
-                    return arg >= 0 && arg < _services.Count && Done(Click(_services[arg]), _services[arg].name + " for " + Who(open) + ": handed to the game");
+                    return Service(arg, open);
                 case ContactsRoute.MarkRead:
-                    _app.MarkAllAsRead();
-                    return Done(true, "mark all as read: handed to the game");
+                    return Done(Click(ButtonOf(GameContract.ContactsMarkAll)), "mark all as read: handed to the game");
                 case ContactsRoute.DeleteAll:
-                    _app.DeleteAll();   // the game asks first, in its own box
-                    return Done(true, "delete all: handed to the game, which asks first");
-                case ContactsRoute.Classic:
-                    ContactsKit.Classic();
-                    return Done(true, "the game's own view for " + Who(open));
+                    return Done(Click(ButtonOf(GameContract.KitDeleteAll)), "delete all: handed to the game, which asks first");
+                case ContactsRoute.Choice:
+                case ContactsRoute.Reply:
+                    return arg >= 0 && arg < _choices.Count && Done(Click(_choices[arg]), "a reply to " + Who(open) + ": the game's own button");
+                case ContactsRoute.HangUp:
+                    return Done(Click(_hangUp), "the call with " + Who(open) + " ended by the game's own button");
+                case ContactsRoute.Clear:
+                    _query = string.Empty;
+                    _m.List.Offset = 0f;
+                    return true;
+                case ContactsRoute.Less:
+                    return arg >= 0 && arg < _fields.Count && Click(_fields[arg].Less);
+                case ContactsRoute.More:
+                    return arg >= 0 && arg < _fields.Count && Click(_fields[arg].More);
                 default:
                     return false;
             }
@@ -123,36 +169,59 @@ namespace RealLifeOverhaul.Ui
         public void Focused(int command, int arg)
         {
             // A contact opens on a press only: the game marks its messages read as it opens, so the cursor passing never does.
+            if (command == UiConversation.FormCommand)
+            {
+                _typing = arg;   // the field the next typing goes into: one target a field, pressed after it takes focus
+            }
+            else if (command == UiMessageList.SearchCommand)
+            {
+                _typing = -1;
+            }
         }
 
-        public bool Back() => false;
+        public bool Back()
+        {
+            if (_m.Call != null && Shows(_hangUp))
+            {
+                return Press(UiCallCard.ButtonCommand, 0);   // Back on a call is its way out, as the game's Esc ends it
+            }
+            return false;
+        }
 
         public void Tab(int step)
         {
-            int at = ContactCategorySelection.SelectedCategory.HasValue ? _groups.IndexOf(ContactCategorySelection.SelectedCategory.Value) + 1 : 0;
+            if (_m.Call != null)
+            {
+                return;
+            }
+            int at = ContactCategorySelection.SelectedCategory.HasValue ? _groups.IndexOf((int)ContactCategorySelection.SelectedCategory.Value) + 1 : 0;
             int count = _groups.Count + 1;
             int next = ((at + step) % count + count) % count;
-            Press(UiListDetail.Group, next);
+            Press(UiAppWindow.NavCommand, next);
         }
 
         public bool Act(UiAction action)
         {
+            if (_m.Call != null)
+            {
+                return false;
+            }
             if (action == UiAction.Alt)
             {
-                return Press(UiListDetail.Action, ContactsRoutes.CallArg);
+                return Press(UiAppWindow.ActionCommand, ContactsRoutes.CallArg);
             }
-            return action == UiAction.Option && Press(UiListDetail.Action, ContactsRoutes.MapArg);
+            return action == UiAction.Option && Press(UiAppWindow.ActionCommand, ContactsRoutes.MapArg);
         }
 
         public void Reveal(int list, int index)
         {
-            if (list == 0)
+            if (list == _m.GroupsList)
             {
-                _m.GroupsOffset = Math.Max(0f, (index - 2) * (UiTokens.Control + UiTokens.S1));
+                _m.GroupsOffset = Math.Max(0f, (index - 2) * (UiTokens.Control + UiTokens.S3));
             }
             else
             {
-                _m.RowsOffset = Math.Max(0f, (index - 2) * (UiTokens.Row + UiListDetail.RowGap));
+                _m.List.Reveal = index;
             }
             _dirty = true;
         }
@@ -160,248 +229,23 @@ namespace RealLifeOverhaul.Ui
         public void Wheel(int clip, float notches)
         {
             float by = -notches * UiTokens.S16;
-            switch (clip)
+            if (clip == _m.GroupsClip)
             {
-                case 0: _m.GroupsOffset = Math.Max(0f, _m.GroupsOffset + by); break;
-                case 1: _m.RowsOffset = Math.Max(0f, _m.RowsOffset + by); break;
-                case 2: _m.ThreadOffset = Math.Max(0f, (_m.ThreadOffset < 0f ? 100000f : _m.ThreadOffset) + by); break;
-                default: _m.SideOffset = Math.Max(0f, _m.SideOffset + by); break;
+                _m.GroupsOffset = Math.Max(0f, _m.GroupsOffset + by);
+            }
+            else if (clip == _m.ListClip)
+            {
+                _m.List.Offset = Math.Max(0f, _m.List.Offset + by);
+            }
+            else if (clip == _m.TalkClip)
+            {
+                _m.Talk.Offset = Math.Max(0f, (_m.Talk.Offset < 0f ? 100000f : _m.Talk.Offset) + by);
+            }
+            else if (clip == _m.AsideClip)
+            {
+                _m.AsideOffset = Math.Max(0f, _m.AsideOffset + by);
             }
             _dirty = true;
-        }
-
-        // ------------------------------------------------------------------------------------------------- the game's state
-
-        // What changing would change the screen: the contacts, what is unread, the group, the one open and its messages.
-        private long Signature()
-        {
-            List<Contact> all = SaveGameManager.Current != null ? SaveGameManager.Current.Contacts : null;
-            if (all == null)
-            {
-                return 0;
-            }
-            long sig = all.Count;
-            for (int i = 0; i < all.Count; i++)
-            {
-                Contact c = all[i];
-                sig = sig * 31 + (c != null && c.messagesQueue != null ? c.messagesQueue.Count * 7 + c.NumberOfUnreadMessages : 0);
-            }
-            Contact open = _app.selectedContact;
-            sig = sig * 31 + (open != null ? open.GetHashCode() : 0);
-            sig = sig * 31 + (ContactCategorySelection.SelectedCategory.HasValue ? (int)ContactCategorySelection.SelectedCategory.Value + 1 : 0);
-            return sig;
-        }
-
-        private void Build()
-        {
-            List<Contact> all = SaveGameManager.Current != null ? SaveGameManager.Current.Contacts : new List<Contact>();
-            ContactCategoryName? shown = ContactCategorySelection.SelectedCategory;
-            _m.AppName = UiText.T("reallife_ui_contacts_app");
-            _m.GroupsLabel = UiText.T("reallife_ui_contacts_groups");
-            Groups(all, shown);
-            Rows(all, shown);
-            int unread = 0;
-            for (int i = 0; i < all.Count; i++)
-            {
-                unread += all[i] != null ? all[i].NumberOfUnreadMessages : 0;
-            }
-            _m.SideActions = new[]
-            {
-                new UiActionModel { Label = UiText.T("contacts_mark_all_as_read_button"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Check, Key = UiAction.Count,
-                    Command = UiListDetail.SideAction, Arg = 0, Disabled = unread == 0 },
-                new UiActionModel { Label = UiText.T("contacts_delete_all_button"), Kind = UiButtonKind.Destructive, Icon = UiIcon.Trash, Key = UiAction.Count,
-                    Command = UiListDetail.SideAction, Arg = 1, Disabled = !shown.HasValue },
-            };
-            _m.SideActionCount = 2;
-            _m.PlayerName = PlayerName();
-            _m.PlayerHue = UiColour.HueOf(_m.PlayerName);
-            _m.PlayerSummary = UiText.Fill("reallife_ui_contacts_summary", "count", UiText.Whole(all.Count), "unread", UiText.Whole(unread));
-            _m.ListTitle = shown.HasValue ? UiText.T(CategoryKey(shown.Value)) : UiText.T("reallife_ui_contacts_all");
-            _m.ListCount = UiText.Whole(_m.RowCount);
-            _m.SearchPlaceholder = UiText.T("reallife_ui_contacts_search");
-            _m.Query = _query.Length > 0 ? _query : null;
-            _m.SearchCount = UiText.Whole(_m.RowCount);
-            _m.ListEmptyTitle = UiText.T("reallife_ui_contacts_none_title");
-            _m.ListEmptyBody = UiText.T("reallife_ui_contacts_none_body");
-            _m.NoDetailTitle = UiText.T("reallife_ui_contacts_pick_title");
-            _m.NoDetailBody = UiText.T("reallife_ui_contacts_pick_body");
-            _m.ThreadEmptyTitle = UiText.T("reallife_ui_contacts_quiet_title");
-            _m.ThreadEmptyBody = UiText.T("reallife_ui_contacts_quiet_body");
-            _m.ClassicLabel = UiText.T("reallife_ui_contacts_classic");
-            _m.ServicesTitle = UiText.T("reallife_ui_contacts_requests");
-            _m.StatsTitle = UiText.T("reallife_ui_contacts_profile");
-            _m.DetailsTitle = UiText.T("reallife_ui_contacts_details");
-            _m.Composer = false;
-            _m.NoReply = null;
-            Detail(_app.selectedContact);
-            var prompts = new List<UiPrompt>(5)
-            {
-                new UiPrompt { Action = UiAction.Move, Label = UiText.T("reallife_ui_prompt_move") },
-                new UiPrompt { Action = UiAction.Confirm, Label = UiText.T("reallife_ui_prompt_select") },
-                new UiPrompt { Action = UiAction.TabPrev, Label = UiText.T("reallife_ui_prompt_group") },
-            };
-            if (Shows(_call))
-            {
-                prompts.Add(new UiPrompt { Action = UiAction.Alt, Label = UiText.T("phone_call_button") });
-            }
-            prompts.Add(new UiPrompt { Action = UiAction.Back, Label = UiText.T("reallife_ui_prompt_back") });
-            _m.Prompts = prompts.ToArray();
-            _m.PromptCount = _m.Prompts.Length;
-        }
-
-        private void Groups(List<Contact> all, ContactCategoryName? shown)
-        {
-            _groups.Clear();
-            var nav = new List<UiNavModel>(Categories.Length + 1);
-            int allUnread = 0;
-            for (int i = 0; i < all.Count; i++)
-            {
-                allUnread += all[i] != null ? all[i].NumberOfUnreadMessages : 0;
-            }
-            nav.Add(new UiNavModel { Label = UiText.T("reallife_ui_contacts_all"), Count = UiText.Whole(allUnread > 0 ? allUnread : all.Count), Hue = 12f,
-                Selected = !shown.HasValue, Loud = allUnread > 0 });
-            foreach (ContactCategoryName c in Categories)
-            {
-                int count = 0, unread = 0;
-                for (int i = 0; i < all.Count; i++)
-                {
-                    if (all[i] != null && all[i].category == c)
-                    {
-                        count++;
-                        unread += all[i].NumberOfUnreadMessages;
-                    }
-                }
-                if (count == 0)
-                {
-                    continue;
-                }
-                _groups.Add(c);
-                nav.Add(new UiNavModel { Label = UiText.T(CategoryKey(c)), Count = UiText.Whole(unread > 0 ? unread : count), Hue = UiColour.HueOf(c.ToString()),
-                    Selected = shown.HasValue && shown.Value == c, Loud = unread > 0 });
-            }
-            _m.Groups = nav.ToArray();
-            _m.GroupCount = _m.Groups.Length;
-        }
-
-        private void Rows(List<Contact> all, ContactCategoryName? shown)
-        {
-            _rows.Clear();
-            for (int i = 0; i < all.Count; i++)
-            {
-                Contact c = all[i];
-                if (c == null || (shown.HasValue && c.category != shown.Value) || (_query.Length > 0 && Name(c).IndexOf(_query, StringComparison.CurrentCultureIgnoreCase) < 0))
-                {
-                    continue;
-                }
-                _rows.Add(c);
-            }
-            // The unread first, then the newest, as a phone's messages list them.
-            _rows.Sort((a, b) => a.HasUnreadMessages != b.HasUnreadMessages ? (a.HasUnreadMessages ? -1 : 1) : b.lastTimeUpdated.CompareTo(a.lastTimeUpdated));
-            var rows = new UiRowModel[_rows.Count];
-            bool sawRead = false;
-            for (int i = 0; i < _rows.Count; i++)
-            {
-                Contact c = _rows[i];
-                TextMessage last = Last(c);
-                bool unread = c.HasUnreadMessages;
-                string section = null;
-                if (i == 0 && unread)
-                {
-                    section = UiText.T("reallife_ui_contacts_new");
-                }
-                else if (!unread && !sawRead && i > 0)
-                {
-                    section = UiText.T("reallife_ui_contacts_earlier");
-                }
-                sawRead |= !unread;
-                rows[i] = new UiRowModel
-                {
-                    Name = Name(c), Preview = last != null ? Words(last) : UiText.T(c.description ?? string.Empty), Time = last != null ? When(last) : string.Empty,
-                    Unread = c.NumberOfUnreadMessages, Hue = UiColour.HueOf(c.id), Selected = c == _app.selectedContact, Section = section
-                };
-            }
-            _m.Rows = rows;
-            _m.RowCount = rows.Length;
-        }
-
-        private void Detail(Contact c)
-        {
-            _services.Clear();
-            _m.HasDetail = c != null;
-            if (c == null)
-            {
-                return;
-            }
-            _m.Name = Name(c);
-            _m.Hue = UiColour.HueOf(c.id);
-            _m.Role = Describe(c);
-            _m.Status = null;
-            _call = Button(GameContract.KitCall);
-            _map = Button(GameContract.KitMap);
-            var actions = new List<UiActionModel>(2);
-            if (Shows(_map))
-            {
-                actions.Add(new UiActionModel { Label = UiText.T("phone_view_on_map_button"), Kind = UiButtonKind.Secondary, Icon = UiIcon.MapPin, Key = UiAction.Option,
-                    Command = UiListDetail.Action, Arg = ContactsRoutes.MapArg });
-            }
-            if (Shows(_call))
-            {
-                actions.Add(new UiActionModel { Label = UiText.T("phone_call_button"), Kind = UiButtonKind.Primary, Icon = UiIcon.Phone, Key = UiAction.Alt,
-                    Command = UiListDetail.Action, Arg = ContactsRoutes.CallArg });
-            }
-            _m.Actions = actions.ToArray();
-            _m.ActionCount = _m.Actions.Length;
-            Messages(c);
-            var services = new List<UiServiceModel>(8);
-            Service(services, GameContract.KitEmployee, "contacts_manage_employee_button");
-            Service(services, GameContract.KitSchedule, "myemployees_manage_schedule");
-            Service(services, GameContract.KitDelivery, "contacts_manage_delivery_button");
-            Service(services, GameContract.KitCandidates, "contacts_candidates_button");
-            Service(services, GameContract.KitRival, "contacts_rival_button");
-            Service(services, GameContract.KitTaxes, "contacts_tax_button");
-            Service(services, GameContract.KitClearChat, "contacts_header_clear_chat_button");
-            _m.Services = services.ToArray();
-            _m.ServiceCount = _m.Services.Length;
-            var details = new List<UiPairModel>(5);
-            Pair(details, GameContract.KitHours, "contacts_today_opening_hours");
-            Pair(details, GameContract.KitAddress, "common_address");
-            Pair(details, GameContract.KitDemands, "contacts_schedule_demands");
-            Pair(details, GameContract.KitWage, "myemployees_hourlywage");
-            _m.Details = details.ToArray();
-            _m.DetailCount = _m.Details.Length;
-            string skill = Value(GameContract.KitSkill);
-            int level = 0;
-            bool hasSkill = skill != null && int.TryParse(skill.Trim().TrimEnd('%'), NumberStyles.Integer, CultureInfo.InvariantCulture, out level);
-            _m.Stats = hasSkill ? new[] { new UiStatModel { Label = UiText.T("bizman_headhunters_skill_level_title"), Figure = skill.Trim(), Value = level } } : new UiStatModel[0];
-            _m.StatCount = _m.Stats.Length;
-        }
-
-        private void Messages(Contact c)
-        {
-            var list = new List<UiMessageModel>(Contact.MaxMessages);
-            TextMessage newest = Last(c);
-            if (c.messagesQueue != null)
-            {
-                foreach (TextMessage msg in c.messagesQueue)
-                {
-                    if (msg == null)
-                    {
-                        continue;
-                    }
-                    bool taxes = msg.messageKey == "ba:messagetype_taxes" || msg.messageKey == "ba:messagetype_contacts_taxes_repossession_message";
-                    bool buttons = msg.additionalData != null && msg.additionalData.contextButtonData != null && msg.additionalData.contextButtonData.Count > 0 && msg == newest;
-                    list.Add(new UiMessageModel
-                    {
-                        From = msg.isFromPlayer ? UiFrom.Me : msg.isSpecialMessage ? UiFrom.System : UiFrom.Them,
-                        Text = Words(msg), Time = When(msg), HasChoices = taxes || buttons || msg.contextAction != null
-                    });
-                }
-            }
-            _m.Messages = list.ToArray();
-            _m.MessageCount = _m.Messages.Length;
-            _m.ThreadOffset = -1f;
-            // A queue the game has not shortened starts where the line starts; a full one has lost its oldest.
-            _m.ThreadStart = list.Count < Contact.MaxMessages ? UiText.Fill("reallife_ui_contacts_start", "name", _m.Name) : null;
         }
 
         // ------------------------------------------------------------------------------------------------- the game's pieces
@@ -422,8 +266,8 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The game's own Call: its call button's listener, which the game wires itself for every kind of contact (a business
-        // by its opening hours, a person, an employee). A call that starts runs in the game's own view, so the kit steps
-        // aside until it ends; a call the game answers with a line ("closed now") stays on the kit, which shows that line.
+        // by its opening hours, a person, an employee). A call that starts is drawn as the call card from its first line; a
+        // call the game answers with a line ("closed now") stays in the thread, which shows that line.
         private bool CallNow(Contact open)
         {
             if (!Shows(_call))
@@ -432,11 +276,23 @@ namespace RealLifeOverhaul.Ui
             }
             _call.onClick.Invoke();
             bool talking = !_call.interactable;   // the game holds its call button while a call runs
-            if (talking)
+            return Done(true, "call " + Who(open) + (talking ? ": the game's call, drawn as the call card" : ": the game answered in the thread"));
+        }
+
+        // An action beside the conversation: the game's own button, or the game's own view for what another mod added there.
+        private bool Service(int arg, Contact open)
+        {
+            if (arg < 0 || arg >= _services.Count)
             {
-                ContactsKit.Call(_call);
+                return false;
             }
-            return Done(true, "call " + Who(open) + (talking ? ": handed to the game" : ": the game answered in the thread"));
+            Button b = _services[arg];
+            if (b == null)
+            {
+                ContactsKit.Classic();
+                return Done(true, "the game's own view for another mod's buttons by " + Who(open));
+            }
+            return Done(Click(b), b.name + " for " + Who(open) + ": handed to the game");
         }
 
         private static bool Click(Button b)
@@ -451,119 +307,30 @@ namespace RealLifeOverhaul.Ui
 
         private static bool Shows(Button b) => b != null && b.gameObject.activeSelf && b.interactable;
 
-        private Button Button(GameMember member)
+        private Button ButtonOf(GameMember member)
         {
             object v = member.Field != null ? member.Field.GetValue(_app) : null;
             return v as Button ?? (v is GameObject go ? go.GetComponent<Button>() : null);
         }
 
-        private void Service(List<UiServiceModel> into, GameMember member, string key)
+        private GameObject ObjectOf(GameMember member) => member.Field != null ? member.Field.GetValue(_app) as GameObject : null;
+
+        // The header's name labels as the game made them, before any conversation was set up on them (the kit is made as the
+        // city's phone is built, before the app is first opened): Going Public tints the name of a contact another player
+        // relays, and a tint the kit sees later is that, shown as a chip on the head, never as a recoloured name.
+        private void AddHome(GameMember member)
         {
-            Button b = Button(member);
-            if (!Shows(b))
+            GameObject info = ObjectOf(member);
+            if (info == null)
             {
                 return;
             }
-            _services.Add(b);
-            into.Add(new UiServiceModel { Title = UiText.T(key), Price = string.Empty });
-        }
-
-        private void Pair(List<UiPairModel> into, GameMember member, string key)
-        {
-            string v = Value(member);
-            if (!string.IsNullOrEmpty(v))
+            foreach (TMP_Text t in info.GetComponentsInChildren<TMP_Text>(true))
             {
-                into.Add(new UiPairModel { Key = UiText.T(key), Value = v });
-            }
-        }
-
-        // The words the game's header shows in one of its pieces: the last text in it, its value under its label.
-        private string Value(GameMember member)
-        {
-            var go = member.Field != null ? member.Field.GetValue(_app) as GameObject : null;
-            if (go == null || !go.activeInHierarchy)
-            {
-                return null;
-            }
-            TMP_Text[] texts = go.GetComponentsInChildren<TMP_Text>(false);
-            return texts.Length > 0 ? texts[texts.Length - 1].text : null;
-        }
-
-        private static string Name(Contact c) => LocalizorManager.IsLocalizedKey(c.id) ? LocalizorManager.GetLocalization(c.id) : c.id;
-
-        private static string Describe(Contact c)
-        {
-            string d = c.description;
-            return string.IsNullOrEmpty(d) ? null : LocalizorManager.IsLocalizedKey(d) ? LocalizorManager.GetLocalization(d) : d;
-        }
-
-        private static string Words(TextMessage msg)
-        {
-            string text = LocalizorManager.GetLocalization(msg.messageKey, (object)msg.messageData);
-            return StripTags(text);
-        }
-
-        // The game's rich text (bold, colours) as plain words: the kit sets its own type.
-        private static string StripTags(string text)
-        {
-            if (string.IsNullOrEmpty(text) || text.IndexOf('<') < 0)
-            {
-                return text;
-            }
-            var sb = new System.Text.StringBuilder(text.Length);
-            bool tag = false;
-            foreach (char ch in text)
-            {
-                if (ch == '<')
+                if (t != null && (t.gameObject.name == "ContactName" || (t.transform.parent != null && t.transform.parent.name == "ContactName")))
                 {
-                    tag = true;
+                    _names.Add(new KeyValuePair<TMP_Text, Color>(t, t.color));
                 }
-                else if (ch == '>')
-                {
-                    tag = false;
-                }
-                else if (!tag)
-                {
-                    sb.Append(ch);
-                }
-            }
-            return sb.ToString();
-        }
-
-        private static string When(TextMessage msg)
-        {
-            int today = SaveGameManager.Current != null ? SaveGameManager.Current.Day : msg.timestamp.Day;
-            if (msg.timestamp.Day != today)
-            {
-                return UiText.Fill("reallife_ui_contacts_day", "day", UiText.Whole(msg.timestamp.Day));
-            }
-            return msg.timestamp.Hour.ToString("00", CultureInfo.InvariantCulture) + ":" + ((int)msg.timestamp.Minute).ToString("00", CultureInfo.InvariantCulture);
-        }
-
-        private static TextMessage Last(Contact c)
-        {
-            TextMessage last = null;
-            if (c.messagesQueue != null)
-            {
-                foreach (TextMessage m in c.messagesQueue)
-                {
-                    last = m ?? last;
-                }
-            }
-            return last;
-        }
-
-        private static string CategoryKey(ContactCategoryName c) => "contactcategoryname_" + c.ToString().ToLowerInvariant();
-
-        private static string PlayerName()
-        {
-            try
-            {
-                return CivicText.PlayerName();
-            }
-            catch (Exception e) when (Guard.Missing(e))
-            {
-                return string.Empty;
             }
         }
     }

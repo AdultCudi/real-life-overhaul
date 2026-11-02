@@ -18,10 +18,14 @@ namespace RealLifeOverhaul.Ui
                 .Test("reallife_ui_test_gallery", "reallife_ui_test_parts", "reallife_ui_test_contacts", "reallife_ui_test_population", "reallife_ui_test_flare", "reallife_ui_test_firm")
                 .Test("reallife_ui_test_all_apps", "reallife_ui_test_question", "reallife_ui_test_question_negative", "reallife_ui_test_acknowledge",
                     "reallife_ui_test_text_box", "reallife_ui_test_mod_box", "reallife_ui_test_notices", "reallife_ui_test_contacts_switch")
+                .Test("reallife_ui_test_bizman", "reallife_ui_test_bizman_rival", "reallife_ui_test_bizman_rent", "reallife_ui_test_bizman_switch")
                 .Test("reallife_ui_test_hud", "reallife_ui_test_hud_box")
                 .Test("reallife_phone_test_second", "reallife_phone_test_kit_folder", "reallife_phone_test_classic")
                 .Test("reallife_ui_test_employees", "reallife_ui_test_employee_page", "reallife_ui_test_employees_switch")
                 .Test("reallife_ui_test_econoview", "reallife_ui_test_econoview_loans", "reallife_ui_test_econoview_switch")
+                .Test("reallife_ui_test_persona", "reallife_ui_test_rivals", "reallife_ui_test_market", "reallife_ui_test_persona_switch", "reallife_ui_test_rivals_switch",
+                    "reallife_ui_test_market_switch")
+                .Test("reallife_ui_test_contacts_call", "reallife_ui_test_contacts_offer", "reallife_ui_test_contacts_tax", "reallife_ui_test_contacts_wage")
                 .Cleanup(() => UiDirector.RemoveAll("cleaned up"), 0);
         }
     }

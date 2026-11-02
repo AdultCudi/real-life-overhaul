@@ -696,6 +696,13 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFocusMode.cs" Link="Mod\UiFocusMode.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPlaces.cs" Link="Mod\UiPlaces.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\ContactsRoutes.cs" Link="Mod\ContactsRoutes.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\ContactsRules.cs" Link="Mod\ContactsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiContacts.cs" Link="Mod\UiContacts.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCallCard.cs" Link="Mod\UiCallCard.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiAppWindow.Footed.cs" Link="Mod\UiAppWindow.Footed.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiAppWindow.Head.cs" Link="Mod\UiAppWindow.Head.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiConversation.Fields.cs" Link="Mod\UiConversation.Fields.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Ledger.cs" Link="Mod\UiDraw.Ledger.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Pages\PopulationPages.cs" Link="Mod\PopulationPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Pages\FlareCityPages.cs" Link="Mod\FlareCityPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Pages\StudioPages.cs" Link="Mod\StudioPages.cs" />
@@ -729,8 +736,24 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPartRules.cs" Link="Mod\UiPartRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPartsGallery.cs" Link="Mod\UiPartsGallery.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPartsGalleryScreen.cs" Link="Mod\UiPartsGalleryScreen.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFirmHead.cs" Link="Mod\UiFirmHead.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPageFence.cs" Link="Mod\UiPageFence.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizManModel.cs" Link="Mod\BizManModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizManRules.cs" Link="Mod\BizManRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizManPages.cs" Link="Mod\BizManPages.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizManPages.Parts.cs" Link="Mod\BizManPages.Parts.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizManPages.Lines.cs" Link="Mod\BizManPages.Lines.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiStaff.cs" Link="Mod\UiStaff.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\StaffViews.cs" Link="Mod\StaffViews.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDataCells.cs" Link="Mod\UiDataCells.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.IconTabs.cs" Link="Mod\UiDraw.IconTabs.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiEventList.cs" Link="Mod\UiEventList.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPersona.cs" Link="Mod\UiPersona.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\PersonaViews.cs" Link="Mod\PersonaViews.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiRivals.cs" Link="Mod\UiRivals.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\RivalsViews.cs" Link="Mod\RivalsViews.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiMarket.cs" Link="Mod\UiMarket.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\MarketViews.cs" Link="Mod\MarketViews.cs" />
     <Compile Include="..\UiPreview\UiSamples*.cs" Link="Shared\%(Filename)%(Extension)" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\BugReportRules.cs" Link="Mod\BugReportRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\BetaRules.cs" Link="Mod\BetaRules.cs" />

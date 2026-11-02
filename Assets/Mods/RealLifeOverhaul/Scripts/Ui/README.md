@@ -137,7 +137,22 @@ Use these, and never draw a part of your own. All are in `UiDraw.Chrome.cs` unle
   the order's arrow, a tool row of filter choices and a search (or, while picking, how many are picked, Done and the mass
   actions, the main one last), only the rows in view laid out, the row the detail shows in the cyan fifth, totals at the
   foot, and an empty sentence in its room. A long translated head takes two lines. Use it where the player sorts,
-  filters or acts on many rows; not for a few facts (`InfoRow`) or a short list on a page (`UiAppWindow.Table`).
+  filters or acts on many rows; not for a few facts (`InfoRow`) or a short list on a page (`UiAppWindow.Table`). A row
+  that says what it is leads with its glyph on a tile and a line under its name (`UiCellKind.Tile`: a business, a
+  warehouse); a row with an amount to change carries a stepper (`UiCellKind.Stepper`: a price, a delivery's boxes), and
+  then its minus, figure and plus are its targets and the row itself is none; a Warn or Danger tone puts the warning's
+  glyph before the stepper where its column leaves `MarkRoom` (a price above the market). A figure takes a text tone
+  from its row's Tones (an empty stock in red). A row's own action stands at its right as an icon button
+  (`UiCellKind.Action`: Set destination), right from the row and left back. A table with no filter, search or picking
+  starts at its head.
+- **A page of many blocks on the pad** (`UiPageFence.Lay`): keeps the d-pad on an app window's page and to its rows and
+  columns; the page's left edge goes to the sidebar's chosen entry, a window with no sidebar reaches its close up from
+  the page's top. Lay it after the page, before the prompts.
+- **A firm's head** (`UiFirmHead`, `UiFirmHeadModel`): the profile's place for a business, its logo on the large tile
+  where a face stands (or its kind's glyph), its name in the figures' size with a chevron when it switches to another
+  firm (the list opens under it as a choice's does), its kind and its place as a cyan link, its state as chips and what
+  it still needs as a link that opens its check lines, and at the right its open switch and its actions. BizMan's
+  place page opens with it.
 - **Charts** (`UiChart`, `UiChartModel`): a line over time (one to four series, the last value named at each line's
   end), bars by category (each its category's colour and value, every category named) and a market's candles over their
   volume, on a band with a round-stepped value axis and hairline rules. Each point is a target read in a slate card by
@@ -200,9 +215,22 @@ not-in-repo/previews/ui/kitgrids.
 - **Conversation** (`UiConversation`): who is talking, the thread at its foot under its start line, a form slot, the
   choices numbered with their consequences (the game's dialog buttons) or the composer; in a window, or docked over
   the world at the right third (`LayDocked`) for talk face to face. For Contacts, Flare's messages and the game's and
-  the mod's dialogs. Not for one question with no one behind it: the decision card.
+  the mod's dialogs. Not for one question with no one behind it: the decision card. `Body` lays it without its head,
+  under a page's own head (Contacts); a short thread with nothing under it starts under the head. A form of several
+  fields (`UiFormField`, `Fields`: a wage and a signing bonus) stands in the form slot as one band. A message may carry
+  a ledger (`UiDraw.Ledger`, `UiLedgerLine`: headings, items, subtotals and the total due) drawn in its bubble, as the
+  tax office's notice.
 - **Message list** (`UiMessageList`): threads under their bands with a face or a tile, the last words, the time, an
   unread badge and presence, and the search. Beside a conversation in Contacts and Flare.
+- **Call card** (`UiCallCard`, `UiCallModel`): a phone call as the decision card draws a moment: the caller's face in
+  the ring of their mood (or a firm's tile) with the call's length under it, what they do and their name, their line,
+  the replies numbered on their keys and the way out as the danger button. For Contacts' calls and the game's calls in
+  its dialogue panel.
+- **A sidebar with a foot** (`UiAppWindow.ShellFooted`, `UiSideFoot`): the shell's sidebar whose sections scroll above
+  a foot of actions on all of them and the player's card, for an app of many sections (Contacts' groups); a long name
+  takes two lines.
+- **A contact's head** (`UiAppWindow.Head`, `UiHeadModel`): a person's face in the ring of their mood or a firm's tile,
+  the name, what they do and for whom, a state's chip and whose they are, the actions at the right.
 - **Feed** (`UiFeed`): posts at a reading width beside the chosen account or tag as a short profile, never empty. For
   Flare.
 - **Edition** (`UiEdition`): the lead story as a hero beside the markets' rows, the stories in balanced columns under
