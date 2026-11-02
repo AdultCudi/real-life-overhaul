@@ -1745,6 +1745,7 @@ namespace RealLifeOverhaul
             _running = null;
             Guard.Step("the options page in the city", () => Meta.MetaCity.End());
             Guard.Step("the wiring", () => Wiring.Disconnect());
+            Guard.Step("Uptown's pedestrians' zones", () => Uptown.GroundDirector.Unloading("the city is unloading"));   // their people back to the game's pools while the pools stand
             Guard.Step("the guide marks", () => GameUi.GuideMark.HideAll("the city is unloading"));   // while the game's destination guider is still there
             Guard.Step("the culling check", SceneryCulling.WatchUnload);   // the game's culling lists counted once the menu's scene is in, the city's still there
             if (_root != null)

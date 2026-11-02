@@ -74,10 +74,31 @@ namespace RealLifeOverhaul.Uptown
                 ParksGame.Forget();     // ... and the parks' pieces, their paving's meshes with them
             }
             UptownLots.Laid(false, stays ? "the save tools stopped the mod" : "the city is going");
+            if (PeopleGame.PoolsGone > 0)
+            {
+                Logger?.Info("Uptown: " + PeopleGame.PoolsGone + " pedestrians' zone(s) were taken away after the game had dropped its pools (their people went with the scene).");
+                PeopleGame.PoolsGone = 0;
+            }
             if (Instance == this)
             {
                 Instance = null;
             }
+        }
+
+        /// <summary>
+        /// The city is unloading (the mod's OnUnloadAsync, before its root is destroyed and before the game's PoolingManager
+        /// drops the pools): the pedestrians' zones give their people back to the game's pools while the pools stand, and
+        /// the parking goes with them. Not when the save tools keep the district standing. Once, on the event; no per-frame cost.
+        /// </summary>
+        public static void Unloading(string why)
+        {
+            if (Meta.SaveTools.Dormant || GroundGame.PeopleZones == 0)
+            {
+                return;
+            }
+            int zones = GroundGame.PeopleZones;
+            GroundGame.Unpopulate();
+            Logger?.Info("Uptown: stopped (" + why + "); " + zones + " pedestrians' zone(s) cleared while the game's pools stood, the parking taken away.");
         }
 
         private static readonly int HotUpdate = HotSpots.Slot("Uptown: GroundDirector.Update");

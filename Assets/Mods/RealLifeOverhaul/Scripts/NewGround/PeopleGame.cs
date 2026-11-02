@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using Extensions.Pooling;
 using UnityEngine;
 
 namespace RealLifeOverhaul.NewGround
@@ -71,9 +73,42 @@ namespace RealLifeOverhaul.NewGround
         }
 
         /// <summary>
+        /// Zones taken away after the game had dropped its pools (the game's PoolingManager disposes them in its OnDestroy as
+        /// the city goes, and a zone's people were then not given back: there is nothing to give them to). For the unload line.
+        /// </summary>
+        public static int PoolsGone;
+
+        /// <summary>
+        /// Whether the game's pools a zone gives its people back to still stand. The game's PoolingManager drops its dictionary
+        /// of pools when the city goes (Pool.GetPoolHandler then throws KeyNotFoundException: the quit of 2 Nov 2026 logged
+        /// 'CasualStationaryAiPool'). Asked once per zone taken away, never per frame.
+        /// </summary>
+        private static bool PoolsStand(StationaryAiSpawner zone)
+        {
+            return PoolStands(zone.pedestrianPool) && PoolStands(zone.streetPerformerPool) && PoolStands(zone.homelessPool);
+        }
+
+        private static bool PoolStands(ScriptableObject pool)
+        {
+            if (pool == null)
+            {
+                return true;   // none asked for: the game's clear does not reach for it
+            }
+            try
+            {
+                return PoolingManager.GetPool(pool.name) != null;
+            }
+            catch (KeyNotFoundException)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Takes a zone of the mod's away: its people go back to the game's pools, the game's lists forget it (its culling
         /// list through SceneryTrees.Destroy, which asks for no rebuild of the culling group; the game's own unregistering
-        /// did, and while a city unloads that rebuild met the destroyed lamp posts of Uptown's art). Safe on null.
+        /// did, and while a city unloads that rebuild met the destroyed lamp posts of Uptown's art). Safe on null. When the
+        /// game has already dropped its pools there is nothing to give people back to: the zone is only removed and destroyed.
         /// </summary>
         public static void Unzone(ref StationaryAiSpawner zone)
         {
@@ -81,7 +116,14 @@ namespace RealLifeOverhaul.NewGround
             {
                 return;
             }
-            zone.ClearPedestrians();
+            if (PoolsStand(zone))
+            {
+                zone.ClearPedestrians();
+            }
+            else
+            {
+                PoolsGone++;
+            }
             StationaryAiSpawner.AllPedestrianSpawners.Remove(zone);
             SceneryTrees.Destroy(zone.gameObject);
             zone = null;
