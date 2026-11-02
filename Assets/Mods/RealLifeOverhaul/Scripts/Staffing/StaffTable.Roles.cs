@@ -110,6 +110,7 @@ namespace RealLifeOverhaul.Staffing
                     N("skill_least", TalentCatalogue.LevelSkillLeast[r.LeastLevel]), N("skill_most", TalentCatalogue.LevelSkillMost[r.MostLevel]), P("pay", r.Pay),
                     r.InGame ? Wd("game", SkillWord(r.GameSkill)) : Wd("game", SkAny)),
                 Note(r.Remote ? "reallife_staff_t_remote" : "reallife_staff_t_onsite"),
+                Note(SeatRules.Needs(r) == Workstation.Desk ? "reallife_staff_t_seat_desk" : "reallife_staff_t_seat_payroll"),
                 Note("reallife_staff_t_output", N("junior", StaffEffects.Points(r.Id, TalentCatalogue.Junior, StaffEffects.MidSkill(TalentCatalogue.Junior))),
                     N("mid", StaffEffects.Points(r.Id, TalentCatalogue.Mid, StaffEffects.MidSkill(TalentCatalogue.Mid))),
                     N("senior", StaffEffects.Points(r.Id, TalentCatalogue.Senior, StaffEffects.MidSkill(TalentCatalogue.Senior))),

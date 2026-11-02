@@ -128,6 +128,7 @@ namespace RealLifeOverhaul.Tech
             int cost = Prices.At(HiringRules.AdCost(days, _adBoost));
             box.Line(TechText.Fill("reallife_hire_new_cost", "cost", TechText.Money(cost), "least", TechText.Rate(least), "most", TechText.Rate(most),
                 "skill", skill > 0 ? TechText.Percent(skill) : TechText.T("reallife_talent_none")));
+            box.Line(TechText.T(SeatRules.Needs(r) == Workstation.Desk ? "reallife_hire_seat_desk" : "reallife_hire_seat_payroll"));   // which workstation the role sits at
             bool seats = HiringRules.Seats(TalentGame.Shifts(_places[_adPlace]), r);
             if (!seats)
             {
@@ -535,6 +536,7 @@ namespace RealLifeOverhaul.Tech
             int fee, retainer;
             _director.SearchQuote(r.Id, _searchLevel, out fee, out retainer);
             box.Line(TechText.Fill("reallife_hire_new_search_cost", "fee", TechText.Cents(fee), "retainer", TechText.Cents(retainer), "count", HiringCatalogue.SearchCandidates.ToString()));
+            box.Line(TechText.T(SeatRules.Needs(r) == Workstation.Desk ? "reallife_hire_seat_desk" : "reallife_hire_seat_payroll"));   // which workstation the role sits at
             bool seats = HiringRules.Seats(TalentGame.Shifts(_places[_adPlace]), r);
             if (!seats)
             {
