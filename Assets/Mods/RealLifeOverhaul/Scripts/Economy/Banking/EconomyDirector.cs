@@ -72,7 +72,7 @@ namespace RealLifeOverhaul.Economy
         private object _toldDialogue;  // the bank dialogue already told why nobody lends
         private Action _onSave, _onHour, _onDay, _hourSeen, _daySeen;
         private Action<string> _onGameEvent, _gameEventSeen;
-        private Action _deskSlow, _deskKeep, _deskSave, _deskRefused;   // kept, so that calling the desk each second allocates nothing
+        private Action _deskSlow, _deskKeep, _deskSave, _deskRefused, _deskShort, _deskHour;   // kept, so that calling the desk each second, or at each money change, allocates nothing
         private Action<CreditGrade, CreditGrade> _onGrade;
         private Action<CreditEvent, int, int> _onPosted;
 
@@ -130,6 +130,8 @@ namespace RealLifeOverhaul.Economy
             _deskKeep = _desk.KeepHolds;
             _deskSave = _desk.BeforeSave;
             _deskRefused = _desk.Refused;
+            _deskShort = _desk.CoverShort;
+            _deskHour = _desk.CoverHour;
             _onSave = OnSave;
             _onHour = Guard.Wrap(Ticks, OnHour);
             _onDay = Guard.Wrap(Ticks, OnDay);
