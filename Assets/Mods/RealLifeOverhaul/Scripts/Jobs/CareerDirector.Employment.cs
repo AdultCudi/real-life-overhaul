@@ -126,10 +126,13 @@ namespace RealLifeOverhaul
             _logger?.Info("Careers: dismissed by " + employer.Id + " (" + key + ").");
         }
 
-        /// <summary>Whether the review can be held here: face to face at the office, or by phone for an employer with no office in this city.</summary>
+        /// <summary>
+        /// Whether the review can be held here: face to face at the employer's board while that stands (the boss waits on the pavement
+        /// beside it), or by phone for an employer with no board standing in this city, whatever the reason.
+        /// </summary>
         public bool CanReview(bool inPerson)
         {
-            return CareerState.Employed && CareerState.ReviewDue && (inPerson || DepotOf(CareerState.EmployerIndex) < 0);
+            return CareerState.Employed && CareerState.ReviewDue && CareerOfficeRules.CanReview(WhereOf(CareerState.EmployerIndex), inPerson);
         }
 
         /// <summary>Holds the review. The numbers read out are the ones the outcome was decided from.</summary>

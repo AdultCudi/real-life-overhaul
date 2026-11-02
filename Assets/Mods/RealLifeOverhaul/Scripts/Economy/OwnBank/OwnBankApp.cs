@@ -341,6 +341,7 @@ namespace RealLifeOverhaul.Economy
                 box.Row("reallife_ob_box_last", OwnBankText.Fill("reallife_ob_box_last_value", "income", OwnBankText.Money(b.LastIncome), "costs", OwnBankText.Money(b.LastCosts),
                     "profit", OwnBankText.Signed(b.LastIncome - b.LastCosts)));
             }
+            WriteDaily(box, b);
             long yearProfit = OwnBankRules.YearProfit(b);
             box.Row("reallife_ob_box_year", OwnBankText.Signed(yearProfit), yearProfit < 0 ? CellTone.Red : yearProfit > 0 ? CellTone.Green : CellTone.Plain);
             long value = OwnBankRules.SaleValue(b), most = OwnBankRules.MostOut(b, level);
@@ -375,6 +376,20 @@ namespace RealLifeOverhaul.Economy
                     () => _director.Sell(value, out string why) ? null : why));
             }
             Meta.Guide.Point(box, GuideTitle);
+        }
+
+        // The profit a day: a month's figure is a whole month of it, so what it came to a day is told beside it (this month so far, and last month).
+        private static void WriteDaily(InfoBox box, OwnBank b)
+        {
+            bool now = OwnBankRules.DaysRun(b) > 0, last = b.HistoryCount > 0;
+            if (!now && !last)
+            {
+                return;
+            }
+            string today = OwnBankText.Signed(OwnBankRules.ProfitPerDayNow(b));
+            box.Row("reallife_ob_box_perday", last
+                ? OwnBankText.Fill("reallife_ob_box_perday_value", "now", today, "last", OwnBankText.Signed(OwnBankRules.ProfitPerDayLast(b, GameCalendar.MonthDays)))
+                : OwnBankText.Fill("reallife_ob_box_perday_now", "now", today));
         }
 
         private void Info(string id, string key, long cents, string note, CellTone tone)

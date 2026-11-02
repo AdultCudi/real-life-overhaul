@@ -377,26 +377,19 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The first hour of a new day, before the game's run: if cash is short of what leaves tonight, the overdraft pays the shortfall.</summary>
         public void BeforeRun(int day)
         {
-            if (_file == null)
-            {
-                return;
-            }
-            CreditAccount overdraft = _file.Account(ProductKind.Overdraft);
-            CreditRefusal refusal;
-            if (overdraft == null || overdraft.Frozen || overdraft.Free <= 0 || !Settings.EconomyProducts || !CreditLedger.CanBorrow(out refusal))
+            CreditAccount overdraft = OverdraftToDraw();
+            if (overdraft == null)
             {
                 return;
             }
             Obligations due = Books.Tomorrow(_file, day - 1);   // the game has moved its day on already: tonight's run is yesterday's "tomorrow"
             int cash = _wallet.Cash;
             int shortfall = WholeMoney.Round(Math.Ceiling((double)due.Total) - cash);
-            int paid = AccountRules.Cover(overdraft, shortfall);
+            int paid = Draw(overdraft, shortfall);
             if (paid <= 0)
             {
                 return;
             }
-            _wallet.Give(paid, Money.Cover, Name(overdraft));
-            CreditLedger.Touch();
             Note(NotificationType.Info, "reallife_econ_note_cover", Data("amount", FinanceText.Money(paid), "owed", FinanceText.Money(overdraft.Owed), "limit", FinanceText.Money(overdraft.Agreed)));
             if (Verbose)
             {

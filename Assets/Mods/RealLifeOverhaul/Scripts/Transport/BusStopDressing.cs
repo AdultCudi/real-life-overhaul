@@ -60,7 +60,17 @@ namespace RealLifeOverhaul
         private readonly NavMeshObstacle[] _blocks = new NavMeshObstacle[5];   // pole, back, end panel, screen, bench
         private CullEntry _cull;                    // not drawn beyond the far band while it stands (Performance/ModCulling)
         private readonly byte[] _taken = new byte[Seats];                      // 0 free, 1 the player, 2 somebody waiting
-        private bool _modelled;
+        private TransitPointer _polePointer;
+        private TransitPointer _benchPointer;
+        private static bool _said;      // the one line that names a piece drawn plain (see Say)
+
+        public static IModLogger Logger;
+
+        /// <summary>How the sign is drawn: the bundle's model, plain shapes, or bare (the game has no lit shader to draw with).</summary>
+        public BusStopLookRules.Look SignLook { get; private set; }
+
+        /// <summary>How the shelter is drawn.</summary>
+        public BusStopLookRules.Look ShelterLook { get; private set; }
         private bool _solid;       // the boxes cut the navigation mesh, only while the player is on foot near the stop
         private bool _checkDue;
         private float _checkAt;
@@ -146,6 +156,7 @@ namespace RealLifeOverhaul
         {
             using var piece = SessionWatch.Piece("transit: a bus stop being put out");
             _root.SetActive(false);   // moved while off, so the mesh is cut once, in the right place
+            Remodel();
             Stop = stop;
             _radius = Mathf.Clamp(walkerRadius, 0.15f, 0.6f);
             for (int i = 0; i < Seats; i++)
@@ -490,7 +501,7 @@ namespace RealLifeOverhaul
             bool pole = !OnMesh(_sign.position);
             if (!_shelter.gameObject.activeSelf)
             {
-                logger.Info("Transit check (stop dressed): " + name + ": the pole" + (_modelled ? " (modelled)" : " (plain shapes)") + ", no shelter ("
+                logger.Info("Transit check (stop dressed): " + name + ": the pole" + SignWords() + ", no shelter ("
                             + (_walkNote ?? "none wanted") + "); " + BayFound() + "; walker radius " + _radius.ToString("F2", CultureInfo.InvariantCulture)
                             + " m; cut out of the mesh: pole " + YesNo(pole) + ": " + (pole ? "PASS" : "FAIL (the pole can be walked through)") + ".");
                 return;
@@ -511,7 +522,7 @@ namespace RealLifeOverhaul
             bool past = NavMesh.SamplePosition(from, out NavMeshHit a, 0.4f, NavMesh.AllAreas) && NavMesh.SamplePosition(to, out NavMeshHit b, 0.4f, NavMesh.AllAreas)
                         && !NavMesh.Raycast(a.position, b.position, out _, NavMesh.AllAreas);
             bool pass = pole && back && end && screen && bench && seats == Seats && inside && past;
-            logger.Info("Transit check (stop dressed): " + name + ": the pole and the shelter" + (_modelled ? " (modelled)" : " (plain shapes)") + ", bench seat "
+            logger.Info("Transit check (stop dressed): " + name + ": the pole and the shelter" + SignWords() + ", bench seat "
                          + BenchSeat.ToString("F2", CultureInfo.InvariantCulture)
                          + " m up; " + BayFound() + "; walker radius " + _radius.ToString("F2", CultureInfo.InvariantCulture) + " m; cut out of the mesh: pole " + YesNo(pole) + ", back "
                          + YesNo(back) + ", end panel " + YesNo(end)
@@ -580,14 +591,89 @@ namespace RealLifeOverhaul
             }
         }
 
-        private void BuildSign()
+        /// <summary>Remembers the stop's two pointers, to hand them the new pieces if the stop is made again as modelled.</summary>
+        public void Pointers(TransitPointer pole, TransitPointer bench)
         {
-            if (!Shapes.Available)
+            _polePointer = pole;
+            _benchPointer = bench;
+        }
+
+        // The props load in the background: a stop built before the bundle came in is plain shapes. Once the bundle has the piece the stop is
+        // made again as modelled (one time a stop is put out, never per frame), and its pointers take the new pieces; the click was never lost.
+        private void Remodel()
+        {
+            bool sign = BusStopLookRules.Remodel(SignLook, PropLibrary.Ready, PropLibrary.Has("bus_stop_sign"));
+            bool shelter = BusStopLookRules.Remodel(ShelterLook, PropLibrary.Ready, PropLibrary.Has("bus_shelter"));
+            if (sign && Shapes.Available && PropLibrary.TryGet("bus_stop_sign", out Mesh signMesh, out Material signPaint) && signMesh != null && signPaint != null)
+            {
+                DropPieces(_sign);
+                SignLook = BusStopLookRules.Look.Model;
+                Shapes.Piece("bus_stop_sign", _sign, signMesh, signPaint, Vector3.zero, Vector3.one);
+                if (_polePointer != null)
+                {
+                    _polePointer.Refresh();
+                }
+            }
+            if (shelter && Shapes.Available && PropLibrary.TryGet("bus_shelter", out Mesh shelterMesh, out Material shelterPaint) && shelterMesh != null && shelterPaint != null)
+            {
+                DropPieces(_shelter);
+                ShelterLook = BusStopLookRules.Look.Model;
+                Shapes.Piece("bus_shelter", _shelter, shelterMesh, shelterPaint, Vector3.zero, Vector3.one);
+                if (_benchPointer != null)
+                {
+                    _benchPointer.Refresh();
+                }
+            }
+        }
+
+        // The drawn pieces of a part, not its lettering, its pointer or its boxes.
+        private static void DropPieces(Transform part)
+        {
+            for (int i = part.childCount - 1; i >= 0; i--)
+            {
+                Transform child = part.GetChild(i);
+                if (child.GetComponent<MeshFilter>() != null && child.GetComponent<TMP_Text>() == null)
+                {
+                    child.gameObject.SetActive(false);   // the engine ends it at the frame's end; off at once so nothing of it is outlined or drawn
+                    Object.Destroy(child.gameObject);
+                }
+            }
+        }
+
+        private string SignWords()
+        {
+            return SignLook == BusStopLookRules.Look.Model ? " (modelled)" : SignLook == BusStopLookRules.Look.Plain ? " (plain shapes)" : " (bare, nothing could be drawn)";
+        }
+
+        // One line, once a session, that names the piece drawn plain and why, for a player's log (not only with diagnostics on).
+        private void Say(string piece, BusStopLookRules.Look look)
+        {
+            if (look == BusStopLookRules.Look.Model || _said || Logger == null)
             {
                 return;
             }
-            _modelled = Shapes.Prop("bus_stop_sign", _sign);
-            if (!_modelled)
+            string why = PropLibrary.Why(piece);
+            if (why == null)
+            {
+                return;   // not read yet: the stop is made again as modelled when it is
+            }
+            _said = true;
+            Logger.Warn(PropFitRules.Line("bus stop piece '" + piece + "'", "RealLifeOverhaul Props",
+                                          look == BusStopLookRules.Look.Bare ? "the game has no lit shader to draw plain shapes with, the stop is drawn bare but can still be clicked" : why,
+                                          !PropLibrary.Ready));
+        }
+
+        private void BuildSign()
+        {
+            bool shapes = Shapes.Available;
+            bool modelled = shapes && Shapes.Prop("bus_stop_sign", _sign);
+            SignLook = BusStopLookRules.Of(modelled, shapes);
+            Say("bus_stop_sign", SignLook);
+            if (!shapes)
+            {
+                return;
+            }
+            if (!modelled)
             {
                 Material steel = Shapes.Paint(new Color(0.42f, 0.44f, 0.46f));
                 Material blue = Shapes.Paint(new Color(0.08f, 0.27f, 0.58f), 0.35f);
@@ -637,7 +723,11 @@ namespace RealLifeOverhaul
         // Local axes: Z along the kerb, X away from the road. Open to the road; the back is at +X.
         private void BuildShelter()
         {
-            if (!Shapes.Available || Shapes.Prop("bus_shelter", _shelter))
+            bool shapes = Shapes.Available;
+            bool modelled = shapes && Shapes.Prop("bus_shelter", _shelter);
+            ShelterLook = BusStopLookRules.Of(modelled, shapes);
+            Say("bus_shelter", ShelterLook);
+            if (!shapes || modelled)
             {
                 return;
             }

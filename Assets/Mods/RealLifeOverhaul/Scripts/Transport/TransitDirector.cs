@@ -166,6 +166,7 @@ namespace RealLifeOverhaul
             BusZones.Logger = Logger;
             TransitBus.Logger = Logger;
             RoadPaint.Logger = Logger;
+            BusStopDressing.Logger = Logger;
             TransitMap.Reset();
             TransitState.Reset();
             ScenePrewarm.AddLate("transit: the bus routes laid between the subway stations", TransitMap.Prewarm);

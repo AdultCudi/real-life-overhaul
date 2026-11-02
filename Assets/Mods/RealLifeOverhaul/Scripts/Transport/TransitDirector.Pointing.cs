@@ -22,10 +22,13 @@ namespace RealLifeOverhaul
                 {
                     continue;
                 }
-                _pointed[i] = true;
-                TransitPointer.Make(dressing.Sign, TransitPointer.Kind.Stop, dressing, new Vector3(0.25f, 1.45f, 0f), new Vector3(0.7f, 2.9f, 0.35f), true);
-                TransitPointer.Make(dressing.Shelter, TransitPointer.Kind.Bench, dressing, new Vector3(0f, 1.25f, 0f),
+                // However the stop is drawn (the bundle's model, plain shapes, or nothing the game's shader can draw) its pointers are boxes of their
+                // own; one the game could not take yet (no interactive layer) is tried again, not given up for good.
+                TransitPointer pole = TransitPointer.Make(dressing.Sign, TransitPointer.Kind.Stop, dressing, new Vector3(0.25f, 1.45f, 0f), new Vector3(0.7f, 2.9f, 0.35f), true);
+                TransitPointer bench = TransitPointer.Make(dressing.Shelter, TransitPointer.Kind.Bench, dressing, new Vector3(0f, 1.25f, 0f),
                     new Vector3(BusStopDressing.ShelterDepth, 2.5f, BusStopDressing.ShelterLength), true);
+                _pointed[i] = BusStopLookRules.Clickable(dressing.SignLook, pole != null) && BusStopLookRules.Clickable(dressing.ShelterLook, bench != null);
+                dressing.Pointers(pole, bench);
             }
             BusPointer(_served != null && _bus.State == TransitBus.Phase.Standing && _bus.Vehicle != null);
         }

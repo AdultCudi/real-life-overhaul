@@ -164,6 +164,18 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>The figure the business's list was last drawn with, if nobody has drawn it since.</summary>
+        public bool DrawnWith(T key, DrawPrint now, out int figure)
+        {
+            if (key != null && _drawn.TryGetValue(key, out Drawn d) && d.Print.Same(now))
+            {
+                figure = d.Figure;
+                return true;
+            }
+            figure = 0;
+            return false;
+        }
+
         /// <summary>True if the list was last drawn with this figure and nobody drew it since.</summary>
         public bool Stands(T key, int figure, DrawPrint now)
         {

@@ -110,6 +110,7 @@ namespace RealLifeOverhaul
             public Material Lit;
             public Material Glow;
             public bool Settled;               // read, failed or not installed: nothing more will come from it
+            public string Unfit;               // why its props cannot be drawn with its atlas (PropFitRules.Problem); null if they can
             public ItemFile[] Pending;
             public Dictionary<string, Mesh> Meshes;
         }
@@ -139,6 +140,15 @@ namespace RealLifeOverhaul
 
         /// <summary>True once the bundles have loaded (a later one missing or unreadable counts as done); false while loading or if the first failed.</summary>
         public static bool Ready => _state == State.Ready;
+
+        /// <summary>True while the bundles are still being read in the background.</summary>
+        public static bool Loading => _state == State.Loading;
+
+        /// <summary>
+        /// Why some or all of the modelled props are not there, in a sentence, or null if all are: the first bundle failed, a later one is
+        /// missing, or the material its props are drawn with could not be made. The welcome notice and the self-check lines read it.
+        /// </summary>
+        public static string Trouble { get; private set; }
 
         /// <summary>True once the load has ended either way: what is built from the bundles now is what it will be.</summary>
         public static bool Settled => _state == State.Ready || _state == State.Failed;
@@ -213,10 +223,32 @@ namespace RealLifeOverhaul
             material = Material(prop.Glows, prop.From);
             if (material == null)
             {
+                if (prop.From.Unfit != null && MissingLogged.Add(id))
+                {
+                    Logger?.Warn(PropFitRules.Line(id + " of " + prop.From.Name, prop.Glows ? "RealLifeOverhaul Props (glow)" : "RealLifeOverhaul Props", prop.From.Unfit, false));
+                }
                 return false;
             }
             mesh = prop.Mesh;
             return true;
+        }
+
+        /// <summary>Why this prop is not drawn as modelled right now (for a self-check line), or null if it is, or is only not asked for yet.</summary>
+        public static string Why(string id)
+        {
+            switch (_state)
+            {
+                case State.Failed:
+                    return Trouble ?? "the props bundle failed";
+                case State.Ready:
+                    if (!Props.TryGetValue(id ?? string.Empty, out Prop prop))
+                    {
+                        return "'" + id + "' is not in the bundles (a copy of the mod older than this piece)";
+                    }
+                    return prop.From.Unfit;
+                default:
+                    return null;   // not read yet: the dressing is made again when it is (BusStopLookRules.Remodel)
+            }
         }
 
         /// <summary>
@@ -309,7 +341,7 @@ namespace RealLifeOverhaul
         private static Material Material(bool glows, Bundle from)
         {
             Material made = glows ? from.Glow : from.Lit;
-            if (made != null || _shaderMissing)
+            if (made != null || _shaderMissing || from.Unfit != null)
             {
                 return made;
             }
@@ -317,7 +349,18 @@ namespace RealLifeOverhaul
             if (shader == null)
             {
                 _shaderMissing = true;
-                Logger?.Warn("Props: the game's lit shader was not found; plain shapes are used.");
+                Trouble = Trouble ?? PropFitRules.Problem(0, 0, false, false, false);
+                Logger?.Warn("Props: the game's lit shader was not found; plain shapes are used. " + PropFitRules.Cause(false) + ".");
+                return null;
+            }
+            string unfit = PropFitRules.Problem(from.Base != null ? from.Base.width : 0, from.Base != null ? from.Base.height : 0, true, shader.isSupported,
+                                                 shader.FindPropertyIndex("_BaseColorMap") >= 0);
+            if (unfit != null)
+            {
+                // Drawn anyway it would be a white shape: the plain shapes, in their own colours, are better.
+                from.Unfit = unfit;
+                Trouble = Trouble ?? "the props of " + from.Name + " cannot be drawn: " + unfit;
+                Logger?.Warn(PropFitRules.Line(from.Name, glows ? "RealLifeOverhaul Props (glow)" : "RealLifeOverhaul Props", unfit, false));
                 return null;
             }
             string name = (glows ? "RealLifeOverhaul Props (glow)" : "RealLifeOverhaul Props") + (from.Index > 0 ? " " + from.Name : string.Empty);
@@ -442,7 +485,8 @@ namespace RealLifeOverhaul
 
         private static void Later(int index, string problem)
         {
-            Logger?.Warn("Props: " + BundlePaths[index] + " " + problem + "; the props in it are left out and their plain shapes are used.");
+            Logger?.Warn("Props: " + BundlePaths[index] + " " + problem + "; the props in it are left out and their plain shapes are used. " + PropFitRules.Cause(true) + ".");
+            Trouble = Trouble ?? "the props in " + BundlePaths[index] + " " + problem;
             _bundles[index].Settled = true;
             TryReady();
         }
@@ -732,7 +776,8 @@ namespace RealLifeOverhaul
         private static void Fail(string problem, Exception error = null)
         {
             _state = State.Failed;
-            Logger?.Warn("Props: switched off, " + problem + ". Plain shapes are used instead.");
+            Trouble = problem;
+            Logger?.Warn("Props: switched off, " + problem + ". Plain shapes are used instead. " + PropFitRules.Cause(true) + ".");
             if (error != null)
             {
                 Logger?.Error(error);
