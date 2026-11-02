@@ -421,10 +421,16 @@ namespace RealLifeOverhaul.Ui
             }
             int every = Math.Max(1, (int)Math.Ceiling((most + UiTokens.S3) / Math.Max(1f, slot)));
             float lw = Math.Min(most + UiTokens.S1, slot * every - UiTokens.S1);
+            float kept = float.MinValue;   // the right edge of the last label drawn
             for (int i = 0; i < n; i += every)
             {
                 float lx = Math.Max(px, Math.Min(px + slot * n - lw, px + slot * (i + 0.5f) - lw / 2f));   // the ends stay over the plot, clear of the value axis
+                if (lx < kept + UiTokens.S2)
+                {
+                    continue;   // held in at an end it would crowd its neighbour: it goes, the neighbour keeps its place under its point
+                }
                 UiDraw.Text(s, at, lx, y, lw, UiStyle.Small, UiRole.Muted, m.Points[i], UiFlags.Centre | UiFlags.Truncate | UiFlags.Middle);
+                kept = lx + lw;
             }
         }
 

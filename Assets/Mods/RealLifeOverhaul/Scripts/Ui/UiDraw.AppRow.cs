@@ -21,8 +21,8 @@ namespace RealLifeOverhaul.Ui
         private const int RowMost = 10;                            // tiles before All apps: the phone's first page is eight, with room for a long one
 
         /// <summary>
-        /// News waiting on a tile (an app, a folder): a small soft white dot at its top right corner, clear of the glyph, set
-        /// in a ring of what stands round the tile so it reads on a slate tile and on the chosen cyan alike. One mark for
+        /// News waiting on a tile (an app, a folder): a small cyan dot at its top right corner, clear of the glyph, set in a
+        /// ring of what stands round the tile so it reads on a slate tile and beside the chosen cyan alike. One mark for
         /// news on every tile; a list row counts it in a badge.
         /// </summary>
         public static void NewsDot(UiScene s, UiAt on, float right, float top, UiRole ring, UiFlags flags = UiFlags.None)
@@ -30,7 +30,8 @@ namespace RealLifeOverhaul.Ui
             const float outer = UiTokens.S4, inner = UiTokens.S2;   // 16 px with its ring, 8 px the dot
             float x = right - outer / 2f, y = top - outer / 2f;   // centred on the corner: past the glyph's box but for a hair
             int r = Circle(s, on, x, y, outer, outer, ring, UiFlags.Overflow | flags);
-            Circle(s, on.In(r), x + (outer - inner) / 2f, y + (outer - inner) / 2f, inner, inner, UiRole.Text, UiFlags.Overflow | flags);
+            // The accent's cyan, never a near white: nothing on the bar glares (the owner, 1 Nov), and it reads 3:1 on slate and the bar.
+            Circle(s, on.In(r), x + (outer - inner) / 2f, y + (outer - inner) / 2f, inner, inner, UiRole.Accent, UiFlags.Overflow | flags);
         }
 
         /// <summary>True for a command of the frame's (the app row, All apps), which the host hands to its Chrome.</summary>

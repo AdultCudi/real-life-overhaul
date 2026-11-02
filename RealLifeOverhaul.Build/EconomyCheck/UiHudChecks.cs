@@ -21,6 +21,7 @@ internal static partial class Program
         HudMoneyChecks();
         HudSourceChecks();
         HudCostChecks();
+        KitMarkChecks();
         Console.WriteLine("  HUD kit: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 
@@ -273,6 +274,86 @@ internal static partial class Program
               && over.Contains("overrideSorting = true") && over.Contains("UiHostRules.Above("),
             "hud: the host nests in the game's HUD canvas (its scaler and UI zoom) through the host's library, walking switched off canvases too, sorted just above the HUD");
         Check(host.Contains("!UiScreenSwitches.On(\"hud\")") && host.Contains("!UiDirector.On"), "hud: the interface's switch or the HUD's own turned off takes the HUD away at once");
+    }
+
+    // Two kit fixes the HUD's bar and a chart needed (the econoview review): nothing on the status bar glares near white, its
+    // news dots included; and a chart's axis never holds its end label in so far that it crowds its neighbour.
+    private static void KitMarkChecks()
+    {
+        var s = new UiScene();
+        UiFrame frame = UiFrame.FullMenu(16f / 9f);
+        UiStatusModel bar = UiSamples.HudBar(UiWords("en"), false, false, false);
+        Func<UiStatusModel> was = UiChrome.Bar;
+        UiChrome.Bar = () => bar;
+        string glare = null;
+        int marks = 0;
+        try
+        {
+            s.Begin("bar", frame.Width, frame.Height, true);
+            UiDraw.StatusBar(s, frame, UiDefaultKeys.Keyboard);
+            for (int i = 0; i < s.ItemCount; i++)
+            {
+                ref UiItem it = ref s.Items[i];
+                if (it.Kind != UiKind.Box || it.Y < frame.BandY - 0.5f || it.Fill == UiRole.None)
+                {
+                    continue;
+                }
+                marks += (it.Flags & UiFlags.Overflow) != 0 ? 1 : 0;
+                if (UiLightness(OverPill(UiTokens.Colour(it.Fill))) > 85f && glare == null)
+                {
+                    glare = it.Fill + " at " + it.X.ToString("0") + "," + it.Y.ToString("0");
+                }
+            }
+        }
+        finally
+        {
+            UiChrome.Bar = was;
+        }
+        Check(glare == null && marks > 0, "kit: no mark on the status bar is near white, its news dots in the cyan (" + (glare ?? marks / 2 + " dots") + ")");
+        string crowded = null;
+        string[] words = { "Mar", "Day 412", "Week 12, Tuesday", "Day 410 morning" };
+        for (int n = 3; n <= 14 && crowded == null; n++)
+        {
+            foreach (string word in words)
+            {
+                var points = new string[n];
+                var values = new float[n];
+                for (int i = 0; i < n; i++)
+                {
+                    points[i] = word;
+                    values[i] = (i * 7) % 5;
+                }
+                var chart = new UiChartModel { Kind = UiChartKind.Line, Title = "Cash", Points = points, Series = new[] { new UiSeries { Label = "Cash", Values = values } }, Format = v => v.ToString("0") };
+                for (float width = 300f; width <= 1200f && crowded == null; width += 20f)
+                {
+                    s.Begin("chart", 1920f, 1080f, true);
+                    UiChart.Lay(s, UiAt.Screen, chart, 0f, 0f, width, 240f);
+                    float lastRight = float.MinValue;
+                    for (int i = 0; i < s.ItemCount; i++)
+                    {
+                        ref UiItem it = ref s.Items[i];
+                        if (it.Kind == UiKind.Text && it.Ink == UiRole.Muted && it.Style == UiStyle.Small && (it.Flags & UiFlags.Centre) != 0)   // an axis label, cut or whole
+                        {
+                            if (it.X < lastRight + UiTokens.S2)   // a grid step of air between two labels at least
+                            {
+                                crowded = n + " points of \"" + word + "\" at " + width + " px: a label starts at " + it.X.ToString("0") + " against its neighbour's end " + lastRight.ToString("0");
+                            }
+                            lastRight = it.X + it.W;
+                        }
+                    }
+                }
+            }
+        }
+        Check(crowded == null, "kit: a chart's axis labels never crowd one another; a label held in at an end that would is dropped (" + (crowded ?? "none crowded") + ")");
+    }
+
+    // A colour as it shows on a pill of the bar: a see-through role (a meter's track) laid over the pill's slate.
+    private static uint OverPill(uint rgba)
+    {
+        uint pill = UiTokens.Colour(UiRole.Pill);
+        float a = (rgba & 0xFF) / 255f;
+        uint Mix(int shift) => (uint)Math.Round(((rgba >> shift) & 0xFF) * a + ((pill >> shift) & 0xFF) * (1f - a));
+        return (Mix(24) << 24) | (Mix(16) << 16) | (Mix(8) << 8) | 0xFF;
     }
 
     // What a frame of the HUD costs in its game-free parts, measured: placing a world prompt, the money's change, and the
