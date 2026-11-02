@@ -14,15 +14,19 @@ internal static partial class UiSamples
 {
     // ------------------------------------------------------------------------------------------------- the status bar
 
-    /// <summary>The status bar on the HUD: walking at speed, paused, fast-forwarding, or at night with low needs and money going out.</summary>
-    public static UiStatusModel HudBar(UiWords t, bool paused, bool fast, bool night)
+    /// <summary>
+    /// The status bar on the HUD: walking at speed, paused, fast-forwarding, at night in the rain with low needs and money
+    /// going out, or with the clock held by a scene (<paramref name="locked"/>). The game keeps no temperature, so none.
+    /// </summary>
+    public static UiStatusModel HudBar(UiWords t, bool paused, bool fast, bool night, bool locked = false)
     {
         var m = new UiStatusModel
         {
-            Time = night ? "22:47" : "14:32", Day = night ? "Friday (Day 415)" : "Tuesday (Day 412)", DayWidest = night ? "Wednesday (Day 420)" : "Wednesday (Day 413)", Paused = paused, Speed = fast ? 3 : 1, PausedWords = t("reallife_ui_hud_paused", "Paused"),
-            Season = t("reallife_season_name_autumn", "Autumn"), Weather = night ? UiIcon.CloudRain : UiIcon.CloudSun, Temperature = night ? "9°C" : "14°C",
+            Time = night ? "22:47" : "14:32", Day = night ? "Friday (Day 415)" : "Tuesday (Day 412)", DayWidest = night ? "Wednesday (Day 420)" : "Wednesday (Day 413)", Paused = paused, Speed = fast ? 3 : 1,
+            TimeLocked = locked, Season = t("reallife_season_name_autumn", "Autumn"), Weather = night ? UiIcon.CloudRain : UiIcon.Sun,
+            WeatherWords = night ? t("reallife_ui_hud_weather_rain", "Rain") : t("reallife_ui_hud_weather_sunny", "Sunny"),
             Place = night ? "1250 Avenue of the Americas" : "70 Fifth Avenue", District = night ? "Lower Manhattan" : "Midtown", Money = night ? "$2,415" : "$48,210",
-            MoneyTrend = night ? -1 : 1, MoneyChange = night ? "-$385" : "+$1,240", MoneyChangeRises = !night,
+            MoneyDay = night ? "-$1,120" : "$3,860", MoneyTrend = night ? -1 : 1, MoneyChange = night ? "-$385" : "+$1,240", MoneyChangeRises = !night,
             Energy = night ? 18 : 72, Hunger = night ? 12 : 48, Happiness = night ? 24 : 64, Hygiene = night ? 22 : 81, Stress = night ? 86 : 34, HomeNeed = night ? 30 : 70,
             Alerts = night ? 12 : 3, PillsPress = true,
         };
@@ -80,9 +84,9 @@ internal static partial class UiSamples
         WithBar(bar, () => UiHud.Lay(s, m, f, dark, k));
     }
 
-    /// <summary>The bar alone over the street: walking at speed, paused, fast-forwarding, or at night.</summary>
-    public static void HudBarScene(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool paused, bool fast, bool night) =>
-        Hud(s, f, dark, k, t, new UiHudModel(), HudBar(t, paused, fast, night));
+    /// <summary>The bar alone over the street: walking at speed, paused, fast-forwarding, at night, or with the clock held.</summary>
+    public static void HudBarScene(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool paused, bool fast, bool night, bool locked = false) =>
+        Hud(s, f, dark, k, t, new UiHudModel(), HudBar(t, paused, fast, night, locked));
 
     // ------------------------------------------------------------------------------------------------- info panels
 

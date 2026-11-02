@@ -220,6 +220,9 @@ namespace RealLifeOverhaul
         public static readonly GameMember HudRain = StaticField(HudKit, Sky, "BigAmbitions.DayNightCycle.RainHelper", "isRaining", "Boolean");
         public static readonly GameMember HudCamera = StaticMethod(HudKit, Game, "GameManager", "GetMainCamera", "Camera");
         public static readonly GameMember HudNotices = Method(HudKit, Game, "UI.Notification.NotificationsListUI", "Toggle", "Void", "Boolean");
+        public static readonly GameMember HudMenu = Method(HudKit, Game, "UI.Topbar.Topbar", "OpenMiniMenu", "Void");
+        public static readonly GameMember HudMiniMenu = Field(HudKit, Game, "UI.UIs", "miniMenuUI", "MiniMenu");
+        public static readonly GameMember HudMoneyDay = Field(HudKit, Game, "UI.Topbar.Topbar", "moneyChange", "TextMeshProUGUI");
 
         // Events/Weather
         public static readonly GameMember RainIntensity = StaticField(Thunder, Sky, "BigAmbitions.DayNightCycle.RainHelper", "NextRainMaxIntensity", "Single");

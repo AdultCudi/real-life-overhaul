@@ -8,7 +8,7 @@ internal static partial class Program
         UiInfoPanel.TabCommand, UiInfoPanel.LinkCommand, UiInfoPanel.FooterCommand, UiWorldPrompt.ActionCommand, UiSidePanel.FoldCommand, UiSidePanel.LinkCommand,
         UiSidePanel.ActionCommand, UiObjectives.FoldCommand, UiObjectives.GroupCommand, UiObjectives.LineCommand, UiObjectives.LocateCommand, UiActivity.SkipCommand,
         UiActivity.FastCommand, UiActivity.CancelCommand, UiToolRow.ToolCommand, UiToolRow.ChoiceCommand, UiDraw.TimePillCommand, UiDraw.MoneyPillCommand, UiDraw.NeedsPillCommand,
-        UiDraw.AlertsPillCommand
+        UiDraw.AlertsPillCommand, UiDraw.SettingsPillCommand
     };
     private static readonly int[] PickerCommands = { UiPicker.EntryCommand, UiPicker.PageCommand, UiPicker.EmptyCommand };
     private static readonly int[] ActivityCardCommands = { UiActivity.ButtonCommand, UiActivity.StepCommand };
@@ -25,6 +25,7 @@ internal static partial class Program
                 Hud(def, cases, "the bar paused", (s, f, d, k, t) => UiSamples.HudBarScene(s, f, d, k, t, true, false, false));
                 Hud(def, cases, "the bar fast-forwarding", (s, f, d, k, t) => UiSamples.HudBarScene(s, f, d, k, t, false, true, false));
                 Hud(def, cases, "the bar at night, needs low", (s, f, d, k, t) => UiSamples.HudBarScene(s, f, d, k, t, false, false, true));
+                Hud(def, cases, "the bar with the clock held", (s, f, d, k, t) => UiSamples.HudBarScene(s, f, d, k, t, false, false, false, true));
                 Hud(def, cases, "a business's info panel", (s, f, d, k, t) => UiSamples.HudInfo(s, f, d, k, t, false));
                 Hud(def, cases, "a car's info panel", (s, f, d, k, t) => UiSamples.HudInfo(s, f, d, k, t, true));
                 Hud(def, cases, "a box at a door", (s, f, d, k, t) => UiSamples.HudPrompt(s, f, d, k, t, false));

@@ -89,7 +89,7 @@ namespace RealLifeOverhaul.Ui
             UiDraw.JoinPills(s, first, s.NodeCount - 1);   // the bar's pills either side, one row for the d-pad
             if (m.Tool >= 0 && m.Tool < count && m.Choices.Length > 0)
             {
-                Panel(s, at.InRegion(PanelRegion), m, frame, x0 + m.Tool * (tile + Gap) + tile / 2f);
+                Panel(s, at.InRegion(PanelRegion), m, frame);
             }
         }
 
@@ -102,12 +102,29 @@ namespace RealLifeOverhaul.Ui
             h = UiFrame.Strip + UiTokens.S3 + rows * CardH + (rows - 1) * UiTokens.S2 + UiTokens.S3;
         }
 
-        // The panel rising from the tool in hand: centred over it as far as the screen lets it, its choices in rows.
-        private static void Panel(UiScene s, UiAt at, UiToolRowModel m, UiFrame frame, float over)
+        /// <summary>
+        /// The rising panel's box as <see cref="Draw"/> stands it, centred over the tool in hand as far as the screen lets it;
+        /// false while no tool is in hand. What the HUD's key chips keep clear of.
+        /// </summary>
+        public static bool PanelBox(UiToolRowModel m, UiFrame frame, out float x, out float y, out float w, out float h)
         {
-            PanelSize(m, out float w, out float h);
-            float x = UiDraw.SnapDown(Math.Max(UiTokens.S4, Math.Min(over - w / 2f, frame.Width - UiTokens.S4 - w)));
-            float y = frame.BandY - UiTokens.S3 - h;
+            x = y = w = h = 0f;
+            int count = m != null ? m.Tools.Length : 0;
+            if (count == 0 || m.Tool < 0 || m.Tool >= count || m.Choices.Length == 0)
+            {
+                return false;
+            }
+            float x0 = UiDraw.SnapDown((frame.Width - Width(m)) / 2f), over = x0 + m.Tool * (UiDraw.BarTile + Gap) + UiDraw.BarTile / 2f;
+            PanelSize(m, out w, out h);
+            x = UiDraw.SnapDown(Math.Max(UiTokens.S4, Math.Min(over - w / 2f, frame.Width - UiTokens.S4 - w)));
+            y = frame.BandY - UiTokens.S3 - h;
+            return true;
+        }
+
+        // The panel rising from the tool in hand: centred over it as far as the screen lets it, its choices in rows.
+        private static void Panel(UiScene s, UiAt at, UiToolRowModel m, UiFrame frame)
+        {
+            PanelBox(m, frame, out float x, out float y, out float w, out float h);
             int panel = UiDraw.Box(s, at, x, y, w, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt on = at.In(panel);
             UiTool tool = m.Tools[m.Tool];

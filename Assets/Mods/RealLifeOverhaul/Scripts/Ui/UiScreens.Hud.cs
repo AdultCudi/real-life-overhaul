@@ -13,7 +13,9 @@ namespace RealLifeOverhaul.Ui
             {
                 new UiScreenDef("hud", UiTemplate.Hud, "HudScreen", new[]
                 {
-                    "reallife_ui_prompt_move", "reallife_ui_prompt_select", "input_key_menu", "reallife_ui_hud_paused", "reallife_season_name_autumn", "tutorial_objectives", "common_setdestination",
+                    "reallife_ui_prompt_move", "reallife_ui_prompt_select", "input_key_menu", "reallife_season_name_autumn", "reallife_ui_hud_weather_sunny", "reallife_ui_hud_weather_clear",
+                    "reallife_ui_hud_weather_rain", "reallife_ui_hud_weather_mist", "reallife_ui_hud_weather_storm", "reallife_ui_hud_weather_snow", "reallife_ui_hud_weather_heat",
+                    "reallife_ui_hud_weather_cold", "reallife_ui_hud_weather_ice", "tutorial_objectives", "common_setdestination",
                     "playeractivityui_timemachine", "playeractivityui_fast_forward", "common_cancel", "common_close", "reallife_ui_shell_all_apps"
                 }).Switch(UiScreenSwitches.Hud),
                 new UiScreenDef("hud_picker", UiTemplate.Hud, null, new[] { "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back", "input_key_menu" }),

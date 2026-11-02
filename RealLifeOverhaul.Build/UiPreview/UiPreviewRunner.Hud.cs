@@ -9,7 +9,8 @@ using UnityEngine;
 public static partial class UiPreviewRunner
 {
     // The HUD's pieces over the running game, each over the street it would stand on, and the box, a panel and the objectives
-    // again over the night street: the bar by day, paused, fast-forwarding and at night with low needs; an info panel for a
+    // again over the night street: the bar by day, paused, fast-forwarding, at night with low needs and with the clock held
+    // by a scene; an info panel for a
     // business and a car; a box at a door and the hover form indoors; side panels at work and everything folded at night;
     // the objectives; a trade's timing; the subway picker, in custody and with nothing open; the activity before it starts
     // and in each of its other states indoors; the time skip veil, and in custody with no Cancel; the map's side panel over
@@ -17,10 +18,11 @@ public static partial class UiPreviewRunner
     // with none.
     static partial void AddHud(List<Screen> screens)
     {
-        screens.Add(Hud("hud_bar", "13.jpg", (s, f, d, k) => UiSamples.HudBarScene(s, f, d, k, English, false, false, false), UiDraw.MoneyPillCommand, 0, "DRRRRLLL"));
-        screens.Add(Hud("hud_bar_paused", "02.jpg", (s, f, d, k) => UiSamples.HudBarScene(s, f, d, k, English, true, false, false), UiDraw.TimePillCommand, 0, "DRRR"));
-        screens.Add(Hud("hud_bar_fast", "02.jpg", (s, f, d, k) => UiSamples.HudBarScene(s, f, d, k, English, false, true, false), UiDraw.NeedsPillCommand, 0, "DRRR"));
-        screens.Add(Hud("hud_bar_night", "11.jpg", (s, f, d, k) => UiSamples.HudBarScene(s, f, d, k, English, false, false, true), UiDraw.AlertsPillCommand, 0, "DRRRR"));
+        screens.Add(Hud("hud_bar", "13.jpg", (s, f, d, k) => UiSamples.HudBarScene(s, f, d, k, English, false, false, false), UiDraw.SettingsPillCommand, 0, "LLRRRRRRRRRRRRRRR"));
+        screens.Add(Hud("hud_bar_paused", "02.jpg", (s, f, d, k) => UiSamples.HudBarScene(s, f, d, k, English, true, false, false), UiDraw.TimePillCommand, 1, "LLR"));
+        screens.Add(Hud("hud_bar_fast", "02.jpg", (s, f, d, k) => UiSamples.HudBarScene(s, f, d, k, English, false, true, false), UiDraw.NeedsPillCommand, 0, "LRRRRRRRRRRR"));
+        screens.Add(Hud("hud_bar_night", "11.jpg", (s, f, d, k) => UiSamples.HudBarScene(s, f, d, k, English, false, false, true), UiDraw.AlertsPillCommand, 0, "RRRRRRRRRRRR"));
+        screens.Add(Hud("hud_bar_locked", "13.jpg", (s, f, d, k) => UiSamples.HudBarScene(s, f, d, k, English, false, false, false, true), UiDraw.MoneyPillCommand, 0, "LLRRRRRRRRRRRRRR"));
         screens.Add(Hud("hud_info_building", "13.jpg", (s, f, d, k) => UiSamples.HudInfo(s, f, d, k, English, false), UiInfoPanel.LinkCommand, 1 * 16 + 0, "RDDDDLLDRR"));
         screens.Add(Hud("hud_info_vehicle", "02.jpg", (s, f, d, k) => UiSamples.HudInfo(s, f, d, k, English, true), UiInfoPanel.FooterCommand, 1, "RDDDLLDRR"));
         screens.Add(Hud("hud_prompt", "02.jpg", (s, f, d, k) => UiSamples.HudPrompt(s, f, d, k, English, false), UiWorldPrompt.ActionCommand, 1, "DDD"));

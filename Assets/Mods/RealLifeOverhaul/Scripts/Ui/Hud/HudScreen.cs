@@ -7,10 +7,10 @@ namespace RealLifeOverhaul.Ui
     /// The HUD over the running game as a screen of the kit (UiHud): its model's pieces at the screen's edges and the status
     /// bar with its pills, laid out by the HUD host (HudHost) whenever the model or what the pills show changes. It takes no
     /// key: the mouse presses. Its pills press the game's own methods, as the game's top bar does (the pause button,
-    /// Topbar.ClickMoney, Topbar.ClickPersona); the app row presses each app's own button as the full menu's row does
-    /// (ShellApps.Press), All apps stands the frame's All apps over the city (<see cref="AllApps"/>), the bell opens the
-    /// game's own notice list (NotificationsListUI.Toggle), and a piece's own commands to whoever put it up (<see cref="PiecePressed"/>).
-    /// Cost: a layout a change; nothing a frame.
+    /// Topbar.ClickMoney, Topbar.ClickPersona, Topbar.OpenMiniMenu behind the gear); the app row presses each app's own
+    /// button as the full menu's row does (ShellApps.Press), All apps stands the frame's All apps over the city
+    /// (<see cref="AllApps"/>), the bell opens the game's own notice list (NotificationsListUI.Toggle), and a piece's own
+    /// commands go to whoever put it up (<see cref="PiecePressed"/>). Cost: a layout a change; nothing a frame.
     /// </summary>
     public sealed class HudScreen : IUiScreen
     {
@@ -38,14 +38,11 @@ namespace RealLifeOverhaul.Ui
             HudStatusGame.ForHud = true;   // its pills are targets here, and only here
             try
             {
-                UiHud.Draw(s, Model, frame, keys, false);
-                for (int i = 0; i < Model.PromptCount; i++)
-                {
-                    s.AddPrompt(Model.Prompts[i].Action, Model.Prompts[i].Label);
-                }
-                UiDraw.PromptBar(s, frame, keys);
-                UiHud.OnBar(s, Model, frame);
-                LastBar = UiChrome.Bar != null ? UiChrome.Bar() : null;
+                UiStatusModel bar = UiChrome.Bar != null ? UiChrome.Bar() : null;
+                UiHud.AddPrompts(s, Model, bar, keys);   // first, so the pieces keep clear of their chips
+                UiHud.Draw(s, Model, frame, keys, false, bar);
+                UiHud.Bar(s, Model, frame, keys);
+                LastBar = bar;
             }
             finally
             {
@@ -59,13 +56,15 @@ namespace RealLifeOverhaul.Ui
             switch (command)
             {
                 case UiDraw.TimePillCommand:
-                    return Pause();
+                    return Pause(arg == 0);
                 case UiDraw.MoneyPillCommand:
                     return TopBar(true);
                 case UiDraw.NeedsPillCommand:
                     return TopBar(false);
                 case UiDraw.AlertsPillCommand:
                     return Notices();
+                case UiDraw.SettingsPillCommand:
+                    return Menu();
             }
             if (command == UiDraw.AppRowCommand)
             {
@@ -92,15 +91,32 @@ namespace RealLifeOverhaul.Ui
             return false;
         }
 
-        // The game's pause button: its own method, which keeps its rules (a time lock while a scene runs, Going Public's shared clock).
-        private static bool Pause()
+        // The time's pause or play square: the game's own pause button's method, which keeps its rules (a time lock while a
+        // scene runs, Going Public's shared clock), pressed only when the game is not already so.
+        private static bool Pause(bool pause)
         {
             UIs uis = InstanceBehavior<UIs>.Instance;
             if (uis == null || uis.gameSpeed == null || uis.gameSpeed.isTimeControlDisabled)
             {
                 return false;
             }
-            uis.gameSpeed.TogglePause();
+            if (uis.gameSpeed.Paused != pause)
+            {
+                uis.gameSpeed.TogglePause();
+            }
+            return true;
+        }
+
+        // The gear opens what the game's own top right button opens: its menu (Topbar.OpenMiniMenu, which keeps its rules,
+        // refusing while a purchase or the full menu is up).
+        private static bool Menu()
+        {
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            if (uis == null || uis.topBar == null || uis.miniMenuUI == null)
+            {
+                return false;
+            }
+            uis.topBar.OpenMiniMenu();
             return true;
         }
 

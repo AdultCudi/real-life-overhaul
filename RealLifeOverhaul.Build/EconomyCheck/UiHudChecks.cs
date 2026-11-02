@@ -6,9 +6,9 @@ using RealLifeOverhaul.Ui;
 
 // The HUD's pieces and host (Scripts/Ui/UiHud*.cs, UiDraw.HudBar.cs, Scripts/Ui/Hud): the px scale under the game's UI
 // zoom, the world prompt inside the screen above the bar at every frame of a camera's sweep, every pill whole on the bar's
-// one centre line with the app row in every language at 1080, 1440, the zoom's 80% and 120% and the narrowest, the
-// activity in each of its states, the money's changes merged per minute as the game merges them, no key taken while a
-// piece is not focused, and what a frame costs.
+// one centre line with the app row in every language at 1080, 1440, the zoom's 80% and 120% and the narrowest, the keys'
+// hints as chips over the bar's right end clear of every other piece, the activity in each of its states, the money's
+// changes merged per minute as the game merges them, no key taken while a piece is not focused, and what a frame costs.
 internal static partial class Program
 {
     private static void HudKitChecks()
@@ -112,15 +112,19 @@ internal static partial class Program
                         {
                             crossed = at;
                         }
-                        if ((p.Time == 0f || !p.Day || p.Money == 0f || p.Needs == 0f || p.Alerts == 0f || Math.Abs(p.MoneyX + p.Money - (width - UiTokens.S4)) > 0.01f) && lost == null)
+                        if ((p.Time == 0f || !p.Day || p.Money == 0f || p.Needs == 0f || p.Settings == 0f || (width >= 1600f && p.Alerts == 0f)
+                             || Math.Abs(p.MoneyX + p.Money + UiTokens.S2 + p.Settings - (width - UiTokens.S4)) > 0.01f) && lost == null)
                         {
                             lost = at;
                         }
-                        if (width == 1920f && !night && (p.Apps < bar.Apps.Length || p.Weather == 0f || p.Place == 0f || p.Meter < 28f) && given == null)
+                        if (width == 1920f && !night && (p.Apps < bar.Apps.Length || p.Weather == 0f || !p.Words || p.Place == 0f || !p.District || p.Meter < 36f || p.Alerts == 0f || !p.MoneyDay)
+                            && given == null)
                         {
-                            given = at + " (" + p.Apps + " apps" + (p.Weather == 0f ? ", no weather" : "") + (p.Place == 0f ? ", no place" : "") + (p.Meter < 28f ? ", short meters" : "") + ")";
+                            given = at + " (" + p.Apps + " apps" + (p.Weather == 0f ? ", no weather" : !p.Words ? ", no weather words" : "") + (p.Place == 0f ? ", no place" : !p.District ? ", no district" : "")
+                                    + (p.Meter < 36f ? ", short meters" : "") + (p.Alerts == 0f ? ", no bell" : "") + (!p.MoneyDay ? ", no money's day" : "") + ")";
                         }
-                        if (((p.Place == 0f && p.District) || (!p.Day && (p.Place > 0f || p.Weather > 0f)) || (p.Weather == 0f && p.Temperature)) && order == null)
+                        if (((p.Place == 0f && p.District) || (!p.Day && (p.Place > 0f || p.Weather > 0f)) || (p.Weather == 0f && p.Words) || (!p.MoneyDay && (p.Needs > 0f || p.Alerts > 0f)))
+                            && order == null)
                         {
                             order = at;
                         }
@@ -130,9 +134,12 @@ internal static partial class Program
             }
         }
         Check(crossed == null, "hud: the left and the right pills keep a gap from the app row, whatever the language, the width or the state" + (crossed == null ? "" : " (" + crossed + ")"));
-        Check(lost == null, "hud: the time with its day, the needs, the alerts and the money at the strip's corner stay at every width down to the narrowest" + (lost == null ? "" : " (" + lost + ")"));
-        Check(given == null, "hud: at 1080 by day the bar keeps every app, the weather, the place and the needs' full meters (the widest left group " + widest + " px)" + (given == null ? "" : " (" + given + ")"));
-        Check(order == null, "hud: on a narrower strip the district goes before the place, the temperature before the weather, and the day's words last" + (order == null ? "" : " (" + order + ")"));
+        Check(lost == null, "hud: the time with its day, the needs, the money and the gear at the strip's corner stay at every width down to the narrowest, the bell down to the UI zoom's 120%"
+                            + (lost == null ? "" : " (" + lost + ")"));
+        Check(given == null, "hud: at 1080 by day the bar keeps every app and every pill whole, each with its second line, and the needs' full meters (the widest left group " + widest + " px)"
+                             + (given == null ? "" : " (" + given + ")"));
+        Check(order == null, "hud: on a narrower strip the district goes before the place, the weather's words before the weather, the day last, and the money's day only after the needs and the bell"
+                             + (order == null ? "" : " (" + order + ")"));
         // At the narrowest the row hands its apps to All apps, down to four, before the needs give way.
         UiStatusModel full = UiSamples.HudBar(UiWords("en"), false, false, false);
         UiPillPlan narrow = UiDraw.PlanPills(full, UiHudRules.LeastWidth), wide = UiDraw.PlanPills(full, 1920f);
@@ -144,7 +151,7 @@ internal static partial class Program
             "hud: the needs' pill holds a cell for each need it is given, the game's three alone or with the mod's three");
         var empty = new UiStatusModel();
         UiPillPlan none = UiDraw.PlanPills(empty, 1920f);
-        Check(none.Time == 0f && none.Weather == 0f && none.Place == 0f && none.Money == 0f && none.Needs == 0f && none.Alerts == 0f && none.RowW == 0f,
+        Check(none.Time == 0f && none.Weather == 0f && none.Place == 0f && none.Money == 0f && none.Needs == 0f && none.Alerts == 0f && none.Settings == 0f && none.RowW == 0f,
             "hud: a field left empty leaves its pill out, and a bar with no apps has no row");
         // The pills are targets only on the HUD's own bar, so no window's page ever meets their commands.
         var s = new UiScene();
@@ -168,13 +175,140 @@ internal static partial class Program
             {
                 elsewhere += UiDraw.IsPill(s.Nodes[i].Command) ? 1 : 0;
             }
-            Check(pills == 4 && elsewhere == 0, "hud: the time, the money, the needs and the alerts are targets on the HUD's bar (" + pills + ") and pictures on every other bar (" + elsewhere + ")");
+            Check(pills == 6 && elsewhere == 0,
+                "hud: the pause and the play, the needs, the bell, the money and the gear are targets on the HUD's bar (" + pills + ") and pictures on every other bar (" + elsewhere + ")");
         }
         finally
         {
             UiChrome.Bar = was;
         }
         HudBarLineChecks();
+        HudSquareChecks();
+        HudChipChecks();
+    }
+
+    // The time's squares as the game's speed buttons (the bar the owner approved, 2 Nov): the one in force on the cyan,
+    // the pause and the play pressable and the fast forward only shown, all three dim and inert while the game holds the
+    // clock; and the gear's own command at the strip's corner.
+    private static void HudSquareChecks()
+    {
+        string wrong = null;
+        Func<UiStatusModel> was = UiChrome.Bar;
+        try
+        {
+            foreach (int state in new[] { 0, 1, 2, 3 })   // walking, paused, fast-forwarding, the clock held
+            {
+                UiStatusModel bar = UiSamples.HudBar(UiWords("en"), state == 1, state == 2, false, state == 3);
+                UiChrome.Bar = () => bar;
+                var s = new UiScene();
+                UiFrame frame = UiFrame.FullMenu(16f / 9f);
+                s.Begin("bar", frame.Width, frame.Height, true);
+                UiDraw.StatusBar(s, frame, UiDefaultKeys.Keyboard);
+                int lit = -1, squares = 0, dim = 0;
+                for (int i = 0; i < s.ItemCount; i++)
+                {
+                    ref UiItem it = ref s.Items[i];
+                    if (it.Kind != UiKind.Icon || (it.Icon != UiIcon.Pause && it.Icon != UiIcon.Play && it.Icon != UiIcon.FastForward))
+                    {
+                        continue;
+                    }
+                    squares++;
+                    dim += (it.Flags & UiFlags.Disabled) != 0 ? 1 : 0;
+                    if (s.Items[it.Parent].Fill == UiRole.Accent)
+                    {
+                        lit = it.Icon == UiIcon.Pause ? 0 : it.Icon == UiIcon.Play ? 1 : 2;
+                    }
+                }
+                int pause = s.FindNode(UiDraw.TimePillCommand, 0), play = s.FindNode(UiDraw.TimePillCommand, 1), gear = s.FindNode(UiDraw.SettingsPillCommand, 0);
+                bool locked = state == 3;
+                bool right = squares == 3 && lit == (state == 1 ? 0 : state == 2 ? 2 : 1) && pause >= 0 && play >= 0 && gear >= 0
+                             && s.Nodes[pause].Disabled == locked && s.Nodes[play].Disabled == locked && dim == (locked ? 3 : state == 2 ? 0 : 1)
+                             && s.Nodes[gear].X > s.Nodes[s.FindNode(UiDraw.MoneyPillCommand, 0)].X;
+                if (!right && wrong == null)
+                {
+                    wrong = "state " + state + ": " + squares + " squares, the lit one " + lit + ", " + dim + " dim, pause " + pause + ", play " + play + ", gear " + gear;
+                }
+            }
+        }
+        finally
+        {
+            UiChrome.Bar = was;
+        }
+        Check(wrong == null, "hud: the time's squares light the game's pause, play or fast forward in force, only the pause and the play press, the held clock dims all three, and the gear ends the strip"
+                             + (wrong == null ? "" : " (" + wrong + ")"));
+    }
+
+    // The game's control hints on the HUD as key chips (the bar the owner approved, 2 Nov: small key chips at the bottom
+    // right, never a second strip): with the keys they stand over the bar's right end a step above it, inside the screen
+    // and over nothing else of the HUD's (the money's change, the activity's strip, a tool's panel, the world prompt); the
+    // bar itself then holds no prompt; with the mouse there are none.
+    private static void HudChipChecks()
+    {
+        var frames = new[]
+        {
+            UiFrame.FullMenu(16f / 9f), new UiFrame { Width = 1920f / 0.8f, Height = 1080f / 0.8f, Band = UiFrame.BandHeight },
+            new UiFrame { Width = 1920f / 1.2f, Height = 1080f / 1.2f, Band = UiFrame.BandHeight }, UiFrame.FullMenu(21f / 9f),
+            new UiFrame { Width = UiHudRules.LeastWidth, Height = 720f, Band = UiFrame.BandHeight },
+        };
+        var scenes = new Action<UiScene, UiFrame, IUiKeys, UiWords>[]
+        {
+            (s, f, k, t) => UiSamples.HudBarScene(s, f, true, k, t, false, false, false), (s, f, k, t) => UiSamples.HudActivityScene(s, f, true, k, t, UiActivityState.Running),
+            (s, f, k, t) => UiSamples.HudTools(s, f, true, k, t, true), (s, f, k, t) => UiSamples.HudPrompt(s, f, true, k, t, false),
+        };
+        string wrong = null;
+        int laid = 0, chips = 0;
+        foreach (string lang in ModLanguages.All)
+        {
+            UiWords t = UiWords(lang);
+            foreach (UiFrame f in frames)
+            {
+                foreach (int input in new[] { 0, 1, 2 })   // the mouse, the keyboard, a pad
+                {
+                    for (int n = 0; n < scenes.Length; n++)
+                    {
+                        UiFrame frame = f;
+                        frame.Pointer = input == 0;
+                        var s = new UiScene();
+                        scenes[n](s, frame, input == 2 ? UiDefaultKeys.XboxPad : UiDefaultKeys.Keyboard, t);
+                        laid++;
+                        string at = lang + " " + frame.Width.ToString("0") + (input == 0 ? " mouse" : input == 1 ? " keys" : " pad") + " scene " + n;
+                        int found = 0;
+                        for (int i = 0; i < s.ItemCount && wrong == null; i++)
+                        {
+                            ref UiItem it = ref s.Items[i];
+                            if ((it.Flags & UiFlags.Prompt) == 0 || it.Parent >= 0)
+                            {
+                                continue;   // a chip's face; its cap and its words stand inside it
+                            }
+                            found++;
+                            if (it.X < UiTokens.S4 - 0.5f || it.X + it.W > frame.Width - UiTokens.S4 + 0.5f || it.Y + it.H > frame.BandY - UiTokens.S3 + 0.5f || it.Y < 0f)
+                            {
+                                wrong = at + ": a chip at " + it.X.ToString("0") + "," + it.Y.ToString("0") + " stands outside the screen's room over the bar";
+                            }
+                            for (int j = 0; j < s.ItemCount && wrong == null; j++)
+                            {
+                                ref UiItem o = ref s.Items[j];
+                                if (j == i || o.Parent >= 0 || o.Kind != UiKind.Box || (o.Flags & (UiFlags.Prompt | UiFlags.Decor)) != 0)
+                                {
+                                    continue;
+                                }
+                                if (UiHudRules.Overlaps(it.X, it.Y, it.W, it.H, o.X + 0.5f, o.Y + 0.5f, o.W - 1f, o.H - 1f))
+                                {
+                                    wrong = at + ": a chip stands over the piece at " + o.X.ToString("0") + "," + o.Y.ToString("0") + " (" + o.Fill + ")";
+                                }
+                            }
+                        }
+                        chips += found;
+                        if (wrong == null && (input == 0) != (found == 0))
+                        {
+                            wrong = at + ": " + found + " chips " + (input == 0 ? "with the mouse leading" : "with the keys leading");
+                        }
+                    }
+                }
+            }
+        }
+        Check(wrong == null && chips > 0, "hud: the keys' hints stand as chips over the bar's right end, inside the screen and clear of every other piece, and none with the mouse ("
+                                          + laid + " layouts, " + chips + " chips)" + (wrong == null ? "" : " (" + wrong + ")"));
     }
 
     // The strip's one line (the owner, 2 Nov: "the alignment is kinda off", "Day 2," cut): every pill, app tile and prompt
@@ -238,7 +372,8 @@ internal static partial class Program
                                     cut = at + ": \"" + it.Text + "\" is " + UiTextRules.Width(it.Text, it.Style).ToString("0.#") + " px in " + it.W.ToString("0.#");
                                 }
                                 int pill = Pill(s, i, strip);
-                                if (pill >= 0 && pill != i && (it.X < s.Items[pill].X - 0.5f || it.X + it.W > s.Items[pill].X + s.Items[pill].W + 0.5f) && cut == null)
+                                if (pill >= 0 && pill != i && (it.Flags & UiFlags.Overflow) == 0 && (it.X < s.Items[pill].X - 0.5f || it.X + it.W > s.Items[pill].X + s.Items[pill].W + 0.5f)
+                                    && cut == null)
                                 {
                                     cut = at + ": " + (it.Kind == UiKind.Text ? "\"" + it.Text + "\"" : it.Kind.ToString()) + " crosses its pill's edge";
                                 }
@@ -456,7 +591,7 @@ internal static partial class Program
         {
             UiChrome.Bar = was;
         }
-        Check(glare == null && marks > 0, "kit: no mark on the status bar is near white, its news dots in the cyan (" + (glare ?? marks / 2 + " dots") + ")");
+        Check(glare == null && marks > 0, "kit: no mark on the status bar is near white, the counts' dots on its tiles included (" + (glare ?? marks / 2 + " dots") + ")");
         string crowded = null;
         string[] words = { "Mar", "Day 412", "Week 12, Tuesday", "Day 410 morning" };
         for (int n = 3; n <= 14 && crowded == null; n++)

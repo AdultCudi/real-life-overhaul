@@ -4,10 +4,10 @@ namespace RealLifeOverhaul.Ui
 {
     /// <summary>
     /// The status bar's app row, the way between apps while the full menu shows: the phone's first home page in the
-    /// player's order as glyph tiles (the open app filled cyan, a badge on a tile whose app has news), then the All apps
-    /// tile, carrying the badges of the apps not in the row. Its targets belong to the frame, not the page (UiHost hands
-    /// them to its Chrome, as it does the window's close), so their commands sit in a range no screen uses. Game-free.
-    /// Cost: a few boxes a layout.
+    /// player's order as glyph tiles (the open app's tile in the chosen row's tone, its news counted on a tile's corner),
+    /// then the All apps tile, counting the news of the apps not in the row. Its targets belong to the frame, not the page
+    /// (UiHost hands them to its Chrome, as it does the window's close), so their commands sit in a range no screen uses.
+    /// Game-free. Cost: a few boxes a layout.
     /// </summary>
     public static partial class UiDraw
     {
@@ -43,11 +43,11 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
         public static int AppsShown(UiStatusModel m, float width) => PlanPills(m, width).Apps;
 
-        /// <summary>px: an app's tile on the status bar, big as a game's dock, its glyph <see cref="BarGlyph"/> on it.</summary>
-        public const float BarTile = 64f;
+        /// <summary>px: an app's tile on the status bar, big as a game's dock and as tall as the pills, its glyph <see cref="BarGlyph"/> on it.</summary>
+        public const float BarTile = UiFrame.Toolbar;
 
         /// <summary>px: a glyph on a tile of the status bar, an app's or a build tool's, chunky as a game's.</summary>
-        public const float BarGlyph = 40f;
+        public const float BarGlyph = 36f;
 
         private const int RowLeast = 4;       // apps the row keeps however narrow the strip; the rest wait under All apps
         private const byte RowRegion = 240;   // the d-pad's column of its own: Left and Right walk the row, Up leaves it
@@ -102,12 +102,13 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // One tile: the glyph in its colour on slate (dark on the cyan when chosen), a dot of news on its corner, clear of
-        // the glyph (the count is on All apps and on the app's own page). Centred on the strip's line, not on a grid step.
+        // One tile, in the pills' slate: the glyph in its colour, the open app's tile in the chosen row's tone (its glyph keeps
+        // its colour there), its news counted on a dot at its top right corner, standing over the corner onto the bar.
+        // Centred on the strip's line, not on a grid step.
         private static void AppTile(UiScene s, UiAt on, float x, float y, float tile, UiIcon icon, UiRole tint, bool chosen, int badge, int command, int arg, int picture = 0)
         {
-            int face = Tile(s, on, x, y, tile, tint, chosen);
-            s.Items[face].Flags |= UiFlags.Chrome | UiFlags.Middle;
+            int face = Box(s, on, x, y, tile, tile, chosen ? UiRole.RowSel : UiRole.Pill, UiRole.None, UiTokens.RadiusLarge,
+                UiFlags.Chrome | UiFlags.Middle | (chosen ? UiFlags.Selected : UiFlags.None));
             float g = BarGlyph;
             if (picture > 0)
             {
@@ -116,11 +117,11 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                Icon(s, on.In(face), x + (tile - g) / 2f, y + (tile - g) / 2f, g, icon, chosen ? UiRole.OnAccent : tint, UiFlags.Middle | UiFlags.Chrome, true);
+                Icon(s, on.In(face), x + (tile - g) / 2f, y + (tile - g) / 2f, g, icon, tint, UiFlags.Middle | UiFlags.Chrome, true);
             }
             if (badge > 0)
             {
-                NewsDot(s, on.In(face), x + tile, y, UiRole.StatusBar, UiFlags.Chrome);
+                CountDot(s, on.In(face), x + tile + UiTokens.S1, y - UiTokens.S1, badge, UiRole.StatusBar);   // UiDraw.HudBar.cs
             }
             if (command >= 0)
             {
