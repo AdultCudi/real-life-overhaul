@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BigAmbitions.DayNightCycle;
 using BigAmbitions.Items;
+using Buildings.Retail.Businesses.CinemaTheater;
 using Entities;
 using Entities.Employee.JobDemands;
 using Entities.Employee.JobDemands.Requirements;
@@ -33,6 +34,8 @@ namespace RealLifeOverhaul.Ui
         private static readonly int[] DayKeys = { 1, 2, 3, 4, 5, 6, 7 };   // the game's days in its order, Monday first
         private readonly List<WorkShift> _shifts = new List<WorkShift>(64);   // the board's shifts, as the game holds them, by the board's index
         private readonly List<string> _lanes = new List<string>(32);          // the board's lanes, by the workstation's id
+        private readonly List<bool> _feeLanes = new List<bool>(32);           // a cinema's screen or a theatre's stage: a daily fee, no hours to fill
+        private int _feeLane = -1;                  // a screen whose fee switch waits for the game to lay its row
         private readonly List<UiActionModel> _week = new List<UiActionModel>(2);
         private readonly List<int> _weekDo = new List<int>(2);
         private readonly int[] _fromHours = new int[12], _toHours = new int[12];
@@ -96,6 +99,12 @@ namespace RealLifeOverhaul.Ui
             board.EmptyTitle = UiText.T("reallife_ui_bizops_lanes_none");
             board.EmptyBody = UiText.T("reallife_ui_bizops_lanes_none_body");
             Lanes(b, lanes, board);
+            if (_feeLane >= 0)
+            {
+                int lane = _feeLane;
+                _feeLane = -1;
+                ToggleFee(lanes, lane, false);
+            }
             WeekActions(sch, board);
             DayLine(b, days, day, hq);
             People(b);
@@ -106,6 +115,7 @@ namespace RealLifeOverhaul.Ui
         private void Lanes(BizManBusiness b, ScheduleScrollerController lanes, UiBoardModel board)
         {
             _lanes.Clear();
+            _feeLanes.Clear();
             _shifts.Clear();
             List<ScheduleWorkstationModel> data = lanes.data;
             int n = data != null ? data.Count : 0;
@@ -117,8 +127,10 @@ namespace RealLifeOverhaul.Ui
                 ScheduleWorkstationModel w = data[i];
                 _lanes.Add(w.workstationId ?? string.Empty);
                 ScheduleHelper.WorkstationsById.TryGetValue(w.workstationId ?? string.Empty, out ItemInstance item);
+                bool fee = item == null || item.itemName == CinemaScreen;   // as the game's row tells a screen or the stage, whose hours it hides
+                _feeLanes.Add(fee);
                 UiIcon glyph = LaneGlyph(w, item, kind);
-                board.Lanes[i] = new UiBoardLane { Name = w.workstationName, Sub = LaneSub(w, item), Icon = glyph, Tint = UiIconTints.Of(glyph) };
+                board.Lanes[i] = new UiBoardLane { Name = w.workstationName, Sub = fee ? FeeLine(b, w, item) : LaneSub(w, item), Icon = glyph, Tint = UiIconTints.Of(glyph) };
                 if (string.IsNullOrEmpty(w.workstationId))
                 {
                     continue;   // a theatre's stage has no hours of its own
@@ -168,11 +180,21 @@ namespace RealLifeOverhaul.Ui
             {
                 return UiIcon.Factory;
             }
-            if (item != null && item.itemName == "ba:itemname_screencinema")
+            if (item != null && item.itemName == CinemaScreen)
             {
                 return UiIcon.Image;
             }
             return ScheduleHelper.IsHeadquarters ? UiIcon.Briefcase : kind;
+        }
+
+        private const string CinemaScreen = "ba:itemname_screencinema";
+
+        // A screen's or the stage's quiet line: its daily licensing fee on the day shown, on or off, as the game's row says it.
+        private static string FeeLine(BizManBusiness b, ScheduleWorkstationModel w, ItemInstance item)
+        {
+            bool on = ScheduleHelper.IsLicensingFeeActive(b.buildingRegistration.Address, w.workstationId ?? string.Empty, ScheduleHelper.CurrentScheduleDay.day);
+            float fee = item == null ? CinemaTheaterHelper.TheaterStageLicensingFee : CinemaTheaterHelper.CinemaScreenLicensingFee;
+            return UiText.Fill("reallife_ui_bizops_fee", "state", UiText.T(on ? "stage_with_licensing_fee_enabled" : "stage_with_licensing_fee_disabled"), "amount", fee.ToShortCurrencyFormat());
         }
 
         // A lane's quiet line: the customers it serves an hour, what stands attached to it, or that it cleans.
@@ -551,6 +573,8 @@ namespace RealLifeOverhaul.Ui
             }
             ScheduleScrollerController lanes = Get<ScheduleScrollerController>(GameContract.SchedLanes, b.bizManSchedule);
             sig = sig * 31 + (lanes != null && lanes.data != null ? lanes.data.Count : -1);
+            GameInstance game = SaveGameManager.Current;
+            sig = sig * 31 + (game != null && game.disabledLicensingFees != null ? game.disabledLicensingFees.Count : 0) + (_feeLane >= 0 ? Time.frameCount : 0);
             List<ScheduleDayButton> days = Get<List<ScheduleDayButton>>(GameContract.SchedDayButtons, Get<ScheduleDaySelectionController>(GameContract.SchedDays, b.bizManSchedule));
             ScheduleDayButton shown = days != null ? DayButton(days, day) : null;
             sig = sig * 31 + Shows(Get<Button>(GameContract.SchedDayPaste, shown)) + Shows(Get<Button>(GameContract.SchedDayPasteAll, shown)) * 2 + Shows(Get<Button>(GameContract.SchedDayAuto, shown)) * 4;
@@ -665,6 +689,11 @@ namespace RealLifeOverhaul.Ui
                 return true;
             }
             _renaming = null;
+            if (lane < _feeLanes.Count && _feeLanes[lane])
+            {
+                BizManSchedule sch = _app.business != null ? _app.business.bizManSchedule : null;
+                return sch != null && ToggleFee(Get<ScheduleScrollerController>(GameContract.SchedLanes, sch), lane, true);
+            }
             if (string.IsNullOrEmpty(id))
             {
                 return false;
@@ -716,6 +745,38 @@ namespace RealLifeOverhaul.Ui
         }
 
         private readonly List<ScheduleCellView> _cells = new List<ScheduleCellView>(16);
+
+        // A screen's licensing fee switched by the game's own toggle on its row, which asks before it turns one on and pays
+        // today's at once. A row the game has not laid (its list is virtual) is brought into its unseen list, and the switch
+        // waits for it to be laid at the next look. A toggle the game does not show or holds (a closed day, Going Public's
+        // lock on another's shop) is not pressed.
+        private bool ToggleFee(ScheduleScrollerController lanes, int lane, bool mayWait)
+        {
+            if (lanes == null || lanes.scroller == null || lane < 0 || lane >= lanes.data.Count)
+            {
+                return false;
+            }
+            var cell = lanes.scroller.GetCellViewAtDataIndex(lane) as ScheduleCellView;
+            if (cell == null)
+            {
+                if (mayWait)
+                {
+                    lanes.scroller.JumpToDataIndex(lane);
+                    _feeLane = lane;
+                    return true;
+                }
+                UiDirector.Logger?.Info("BizMan (kit): a screen's licensing fee was not switched: the game did not lay its row");
+                return false;
+            }
+            Toggle t = Get<Toggle>(GameContract.SchedLaneFee, cell);
+            if (t == null || !t.gameObject.activeInHierarchy || !t.interactable)
+            {
+                return false;
+            }
+            bool done = UiWidgets.Set(t, !t.isOn);
+            UiDirector.Logger?.Info("BizMan (kit): a screen's licensing fee handed to the game's own toggle" + (done ? string.Empty : " was refused by the game"));
+            return done;
+        }
 
         private static bool[] Taken(string lane)
         {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Entities;
 using Extensions;
 using Helpers;
 using Localizor.LanguageChangeEvent;
@@ -79,21 +80,18 @@ namespace RealLifeOverhaul.Ui
                 Columns = new[]
                 {
                     new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_machine"), Kind = UiCellKind.Tile },
-                    new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_makes"), Kind = UiCellKind.Text, Width = 200f },
+                    new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_makes"), Kind = UiCellKind.Text, Width = 152f },
+                    new UiDataColumn { Title = UiText.T("reallife_ui_bizops_worker"), Kind = UiCellKind.Person, Width = 208f },
+                    new UiDataColumn { Title = UiText.T("reallife_ui_bizops_output"), Kind = UiCellKind.Text, Width = 136f },
                 },
                 EmptyIcon = UiIcon.Factory, EmptyTitle = UiText.T("reallife_ui_bizops_machines_none"), Offset = o.Table != null ? o.Table.Offset : 0f
             };
             t.Rows = new UiDataRow[_machines.Count];
+            BuildingRegistration reg = b.buildingRegistration;
             for (int i = 0; i < _machines.Count; i++)
             {
-                BizManFactoryWorkstationTemplate m = _machines[i];
-                string name = Words(Get<TMP_Text>(GameContract.FactoryMachineName, m)) ?? UiText.T("bizman_factory_production_machines");
-                t.Rows[i] = new UiDataRow
-                {
-                    Cells = new[] { name, Loc(Get<TextLocalizationComponent>(GameContract.FactoryMakes, m)) ?? "-" },
-                    Values = new[] { (int)UiIcon.Factory, 0 }, Tones = new[] { UiRole.None, UiRole.None }, Sub = o.Tabs[o.Tab]
-                };
-                t.Selected = list.activeWorkstationTemplate == m ? i : t.Selected;
+                t.Rows[i] = MachineRow(_machines[i], reg);
+                t.Selected = list.activeWorkstationTemplate == _machines[i] ? i : t.Selected;
             }
             t.RowCount = _machines.Count;
             o.Table = t;
@@ -118,6 +116,36 @@ namespace RealLifeOverhaul.Ui
                 NoteLine(UiText.T("reallife_ui_bizops_machine_choose_body"));
             }
             RowsEnd();
+        }
+
+        // A machine as the game's own row shows it (its name, what it makes, running or why not) with who works it this hour
+        // and what they make of it an hour, both by the game's own sums (the same its machine panel shows for the one chosen).
+        private static UiDataRow MachineRow(BizManFactoryWorkstationTemplate m, BuildingRegistration reg)
+        {
+            string name = Words(Get<TMP_Text>(GameContract.FactoryMachineName, m)) ?? UiText.T("bizman_factory_production_machines");
+            string makes = Loc(Get<TextLocalizationComponent>(GameContract.FactoryMakes, m));
+            object on = GameContract.FactoryMachineOn.Field != null ? GameContract.FactoryMachineOn.Field.GetValue(Get<UI.Components.IconSwapper>(GameContract.FactoryMachineState, m)) : null;
+            bool running = !(on is bool b) || b;
+            Tooltip.ListTooltip why = Get<Tooltip.ListTooltip>(GameContract.FactoryMachineWhy, m);
+            string state = running ? UiText.T("bizman_factory_running") : why != null && why.list != null && why.list.Count > 0 ? why.list[0] : UiText.T("bizman_factory_not_running");
+            var item = Get<FactoryWorkstationInstance>(GameContract.FactoryMachineItem, m);
+            EmployeeInstance worker = item != null && reg != null ? EmployeeHelper.GetEmployeeAtStationAndHour(reg, item.id) : null;
+            string who = worker != null && worker.characterData != null ? worker.characterData.name : UiText.T("bizman_factory_no_employee_assigned");
+            float skill = worker != null ? worker.GetSkillValue("ba:skill_factoryworker") : 0f;
+            string output = "-";
+            if (worker != null && item != null && item.SelectedRecipe != null && !string.IsNullOrEmpty(item.SelectedRecipe.output.item))
+            {
+                int made = item.SelectedRecipe.GetScaledOutputAmount(skill);
+                output = UiText.Fill("common_per_hour", "textValue", UiText.Whole(made) + "x " + UiText.T(item.SelectedRecipe.output.item));
+            }
+            return new UiDataRow
+            {
+                Cells = new[] { name, makes ?? "-", who, output },
+                Values = new[] { (int)UiIcon.Factory, 0, 0, 0 },
+                Tones = new[] { running ? UiRole.None : UiRole.Warn, UiRole.None, UiRole.None, UiRole.None },
+                Subs = new[] { state, null, worker != null ? UiText.Fill("reallife_ui_bizops_skill_line", "skill", UiText.T("ba:skill_factoryworker"), "level", UiText.Whole(Mathf.FloorToInt(skill))) : null, null },
+                Hue = worker != null ? UiColour.HueOf(who) : 0f, Ring = worker != null ? StaffViews.Mood((int)worker.satisfaction) : UiRole.None
+            };
         }
 
         // The chosen machine's own panel: its name, its recipe, how much to make (up to an amount, or without end), who
@@ -318,7 +346,7 @@ namespace RealLifeOverhaul.Ui
                     BizManFactoryMachineList list = factory != null ? factory.machineList : null;
                     sig = sig * 31 + (list != null && list.activeWorkstationTemplate != null ? list.activeWorkstationTemplate.GetInstanceID() : 0);
                     sig = sig * 31 + (list != null && list.activeWorkstationGroupTemplate != null ? list.activeWorkstationGroupTemplate.GetInstanceID() : 0);
-                    sig = sig * 31 + _groups.Count * 7 + _machines.Count + _ingredients.Count * 131;
+                    sig = sig * 31 + _groups.Count * 7 + _machines.Count + _ingredients.Count * 131 + TimeHelper.CurrentHour * 7919;   // who works each machine, by the hour
                     for (int i = 0; i < _ingredients.Count; i++)
                     {
                         sig = sig * 31 + Hash(WordsAt(_ingredients[i], "StockValue"));

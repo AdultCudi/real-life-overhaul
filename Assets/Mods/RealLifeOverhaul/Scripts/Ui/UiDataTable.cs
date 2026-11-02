@@ -41,6 +41,7 @@ namespace RealLifeOverhaul.Ui
         public int[] Values;
         public UiRole[] Tones;
         public string Sub;       // a person cell's second line: their role
+        public string[] Subs;    // a cell's own second line where a row holds a tile and a person (a machine and who works it); null: Sub
         public float Hue;
         public UiRole Ring;      // their mood, as every portrait's ring says it
         public bool Picked;      // picked for a mass action
@@ -485,6 +486,7 @@ namespace RealLifeOverhaul.Ui
             ref UiDataColumn col = ref m.Columns[c];
             string words = row.Cells != null && c < row.Cells.Length ? row.Cells[c] : null;
             int value = row.Values != null && c < row.Values.Length ? row.Values[c] : -1;
+            string line = row.Subs != null && c < row.Subs.Length && row.Subs[c] != null ? row.Subs[c] : row.Sub;
             switch (col.Kind)
             {
                 case UiCellKind.Person:
@@ -495,7 +497,7 @@ namespace RealLifeOverhaul.Ui
                     float lh = UiTextRules.LineHeight(UiStyle.Title), sh = UiTextRules.LineHeight(UiStyle.Small);
                     float top = ry + (rowH - lh - sh) / 2f;
                     UiDraw.Text(s, at, tx, top, tw, UiStyle.Title, UiRole.Text, words, UiFlags.Truncate | UiFlags.Middle);
-                    UiDraw.Text(s, at, tx, top + lh, tw, UiStyle.Small, sel ? UiRole.Text : UiRole.Text2, row.Sub, UiFlags.Truncate | UiFlags.Middle);
+                    UiDraw.Text(s, at, tx, top + lh, tw, UiStyle.Small, sel ? UiRole.Text : UiRole.Text2, line, UiFlags.Truncate | UiFlags.Middle);
                     break;
                 }
                 case UiCellKind.Tile:
@@ -510,12 +512,12 @@ namespace RealLifeOverhaul.Ui
                     }
                     float tx = cx + tile + UiTokens.S3, tw = cw - (tx - cx);
                     float lh = UiTextRules.LineHeight(UiStyle.Title), sh = UiTextRules.LineHeight(UiStyle.Small);
-                    bool sub = !string.IsNullOrEmpty(row.Sub);
+                    bool sub = !string.IsNullOrEmpty(line);
                     float top = ry + (rowH - lh - (sub ? sh : 0f)) / 2f;
                     UiDraw.Text(s, at, tx, top, tw, UiStyle.Title, UiRole.Text, words, UiFlags.Truncate | UiFlags.Middle);
                     if (sub)
                     {
-                        UiDraw.Text(s, at, tx, top + lh, tw, UiStyle.Small, sel ? UiRole.Text : UiRole.Text2, row.Sub, UiFlags.Truncate | UiFlags.Middle);
+                        UiDraw.Text(s, at, tx, top + lh, tw, UiStyle.Small, sel ? UiRole.Text : UiRole.Text2, line, UiFlags.Truncate | UiFlags.Middle);
                     }
                     break;
                 }

@@ -27,6 +27,7 @@ namespace RealLifeOverhaul
         public static readonly GameMember SchedDayAuto = Optional(Field(BizOpsPart, Game, Sched + "ScheduleDayButton", "autoScheduleButton", "Button"));
         public static readonly GameMember SchedDayClear = Optional(Field(BizOpsPart, Game, Sched + "ScheduleDayButton", "clearScheduleButton", "Button"));
         public static readonly GameMember SchedWeekAuto = Optional(Field(BizOpsPart, Game, Sched + "ScheduleDaySelectionController", "autoScheduleButton", "Button"));
+        public static readonly GameMember SchedLaneFee = Optional(Field(BizOpsPart, Game, Sched + "ScheduleCellView", "toggle", "Toggle"));
         public static readonly GameMember SchedLaneName = Optional(Field(BizOpsPart, Game, Sched + "ScheduleCellView", "workstationNameInputField", "TMP_InputField"));
         public static readonly GameMember SchedSearch = Optional(Field(BizOpsPart, Game, Sched + "ScheduleHeaderController", "searchField", "TMP_InputField"));
         public static readonly GameMember SchedHourGroup = Optional(Field(BizOpsPart, Game, Sched + "ScheduleHeaderController", "hourToggleGroup", "ScheduleHourToggleGroup"));
@@ -135,6 +136,10 @@ namespace RealLifeOverhaul
         public static readonly GameMember FactoryKind = Optional(Field(BizOpsPart, Game, Biz + "Factory.BizManFactoryWorkstationGroupTemplate", "workstationGroupName", "TextLocalizationComponent"));
         public static readonly GameMember FactoryActive = Optional(Field(BizOpsPart, Game, Biz + "Factory.BizManFactoryWorkstationGroupTemplate", "activeWorkstationsText", "TMP_Text"));
         public static readonly GameMember FactoryMachineName = Optional(Field(BizOpsPart, Game, Biz + "Factory.BizManFactoryWorkstationTemplate", "workstationName", "TMP_Text"));
+        public static readonly GameMember FactoryMachineState = Optional(Field(BizOpsPart, Game, Biz + "Factory.BizManFactoryWorkstationTemplate", "isActiveSwapper", "IconSwapper"));
+        public static readonly GameMember FactoryMachineOn = Optional(Field(BizOpsPart, Game, "UI.Components.IconSwapper", "_isOn", "Boolean"));
+        public static readonly GameMember FactoryMachineWhy = Optional(Field(BizOpsPart, Game, Biz + "Factory.BizManFactoryWorkstationTemplate", "tooltip", "ListTooltip"));
+        public static readonly GameMember FactoryMachineItem = Optional(Field(BizOpsPart, Game, Biz + "Factory.BizManFactoryWorkstationTemplate", "_workstationInstance", "FactoryWorkstationInstance"));
         public static readonly GameMember FactoryMakes = Optional(Field(BizOpsPart, Game, Biz + "Factory.BizManFactoryWorkstationTemplate", "createdItemName", "TextLocalizationComponent"));
         public static readonly GameMember FactoryUpTo = Optional(Field(BizOpsPart, Game, Biz + "Factory.BizManFactoryValidWorkstationPanel", "produceUpToToggle", "Toggle"));
         public static readonly GameMember FactoryAlways = Optional(Field(BizOpsPart, Game, Biz + "Factory.BizManFactoryValidWorkstationPanel", "produceContinuouslyToggle", "Toggle"));
@@ -151,5 +156,22 @@ namespace RealLifeOverhaul
         public static readonly GameMember DriverChoice = Optional(Field(BizOpsPart, Game, Biz + "Warehouse.DriverStation", "driverDropdown", "Dropdown"));
         public static readonly GameMember StockBoxes = Optional(Field(BizOpsPart, Game, Biz + "Warehouse.Inventory", "boxesLabel", "TextLocalizationComponent"));
         public static readonly GameMember StockSell = Optional(Field(BizOpsPart, Game, Biz + "Warehouse.Inventory", "sellAllButton", "Button"));
+
+        // The uniforms' editor (UIs.employeePresetCustomizer) with its uniform customiser and their pickers
+        private const string Custom = "Character.Customization.";
+        public static readonly GameMember UniformTemplate = Optional(Field(BizOpsPart, Game, "UI.EmployeePresetCustomizer", "presetButtonTemplate", "Transform"));
+        public static readonly GameMember UniformNew = Optional(Field(BizOpsPart, Game, "UI.EmployeePresetCustomizer", "newPresetButton", "Transform"));
+        public static readonly GameMember UniformEditor = Optional(Field(BizOpsPart, Game, "UI.EmployeePresetCustomizer", "uniformCustomizer", "UniformCustomizer"));
+        public static readonly GameMember UniformSave = Optional(Field(BizOpsPart, Game, "UniformCustomizer", "saveChangesToSelectedPresetButton", "Button"));
+        public static readonly GameMember UniformMale = Optional(Field(BizOpsPart, Game, "UniformCustomizer", "maleButton", "Transform"));
+        public static readonly GameMember UniformFemale = Optional(Field(BizOpsPart, Game, "UniformCustomizer", "femaleButton", "Transform"));
+        public static readonly GameMember UniformPicker = Optional(Field(BizOpsPart, Game, Custom + "CharacterCustomizer", "elementPicker", "ElementPicker"));
+        public static readonly GameMember UniformMenu = Optional(Field(BizOpsPart, Game, Custom + "CharacterCustomizer", "menu", "MenuVertical"));
+        public static readonly GameMember UniformPieces = Optional(Field(BizOpsPart, Game, Custom + "ElementPicker", "entryTemplate", "Transform"));
+        public static readonly GameMember UniformColours = Optional(Field(BizOpsPart, Game, Custom + "AppearanceColorPicker", "entryTemplate", "Transform"));
+        public static readonly GameMember UniformKinds = Optional(Field(BizOpsPart, Game, "MenuVertical", "subMenu", "MenuVerticalSubMenu"));
+        public static readonly GameMember UniformTabPress = Optional(Field(BizOpsPart, Game, "UI.Components.MenuVerticalCategorized.CategoryButton", "button", "Button"));
+        public static readonly GameMember UniformKindPress = Optional(Field(BizOpsPart, Game, "UI.Components.MenuVerticalCategorized.SubCategoryButton", "button", "Button"));
+        public static readonly GameMember UniformTabOn = Optional(Field(BizOpsPart, Game, "UI.Components.MenuVerticalCategorized.SelectableButton", "selectedOutline", "GameObject"));
     }
 }

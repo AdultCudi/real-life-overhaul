@@ -84,6 +84,7 @@ namespace RealLifeOverhaul.Ui
             PhoneKit.Remove(why);
             EmployeesKit.Remove(why);
             PersonaKit.Remove(why);
+            UniformsKit.Remove(why);
             RivalsKit.Remove(why);
             MarketKit.Remove(why);
             UiShell.Remove(why);
@@ -140,6 +141,7 @@ namespace RealLifeOverhaul.Ui
                 PhoneKit.Rearm();
                 EmployeesKit.Rearm();
                 PersonaKit.Rearm();
+                UniformsKit.Rearm();
                 RivalsKit.Rearm();
                 MarketKit.Rearm();
                 UiShell.Rearm();
@@ -179,6 +181,7 @@ namespace RealLifeOverhaul.Ui
             EconoViewKit.Install();
             EmployeesKit.Install();
             PersonaKit.Install();
+            UniformsKit.Install();
             RivalsKit.Install();
             MarketKit.Install();
             ShellPages.Install();
@@ -207,7 +210,7 @@ namespace RealLifeOverhaul.Ui
                 : UiFonts.Faces > 0 ? "fonts: " + UiFonts.Faces + " of " + UiFonts.FacesWanted + " faces from " + UiFonts.BundleFile + ", the game's font for the rest"
                 : "fonts: not loaded from " + (UiFonts.BundleFile ?? "(no path)") + ", the game's font stands in";
             return "UI: the RLO interface is on; " + fonts + "; screens: Contacts (" + ContactsKit.State + "), BizMan (" + BizManKit.State + "), "
-                   + EconoViewKit.State + ", the phone (" + PhoneKit.State + "), " + EmployeesKit.State + ", " + PersonaKit.State + ", " + RivalsKit.State + ", "
+                   + EconoViewKit.State + ", the phone (" + PhoneKit.State + "), " + EmployeesKit.State + ", " + PersonaKit.State + ", " + UniformsKit.State + ", " + RivalsKit.State + ", "
                    + MarketKit.State + ", "
                    + ShellBoxes.States() + ", " + ShellNotices.States()
                    + ", pages (" + ShellPages.States() + "), desk sessions (" + (Settings.LivingDesks ? "over the game's panel as each opens" : "off")

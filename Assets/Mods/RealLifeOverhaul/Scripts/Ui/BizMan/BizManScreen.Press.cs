@@ -136,8 +136,9 @@ namespace RealLifeOverhaul.Ui
                     _fontOpen = false;
                     return Pick(Get<UI.Elements.Dropdown>(GameContract.LogoFont, Get<LogoCustomizer>(GameContract.SetLogo, b.bizManSettings)), arg);
                 case BizManPages.Uniforms:
-                    // The uniforms' editor stands over BizMan in the game's own view: the classic view until the app closes.
-                    BizManKit.Classic();
+                    // The uniforms' editor is a canvas of the game's over the full menu (on the kit too, UniformsKit): BizMan's own
+                    // view stands under it while it is open, and the kit comes back once it closes.
+                    BizManKit.StepAside(UniformsKit.Over());
                     return Click(Calling(Page(b, BizManRules.Settings), "OnConfigureUniformPresetsButtonClick"), "set up uniforms");
                 case BizManPages.Slider:
                     _sliderHeld = !_sliderHeld;
