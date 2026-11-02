@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BigAmbitions.Characters.Appearance;
 using Character.Customization;
@@ -10,7 +11,7 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>A character screen as the kit's catalogue panel: tabs down its edge, the pieces as tiles, the colours, the buttons.</summary>
-    internal sealed class WardrobeScreen : IUiScreen, IUiStepping
+    internal sealed class WardrobeScreen : IUiScreen, IUiStepping, IUiTyping
     {
         private const float Every = 0.25f;
         private const string ModBand = "RealLifeOverhaul band";   // GridLooks' bands on the mod's tiles: the name, then the corner
@@ -28,6 +29,17 @@ namespace RealLifeOverhaul.Ui
         private string _seen;
         private float _next;
         private bool _dirty = true;
+        private const int All = 0, Owned = 1, Mod = 2;                // the grid's filters
+        private readonly List<int> _shown = new List<int>(64);        // the pieces the filter and the search let through, in the game's order
+        private UiCatalogueCard[] _all = new UiCatalogueCard[0];     // every piece's card, and whether it is owned or the mod's
+        private bool[] _owned = new bool[0], _mod = new bool[0];
+        private readonly int[] _filterOf = new int[3];                // the filter each pill stands for
+        private int _filterKind, _filterSig = -1;
+        private string _search = string.Empty;
+        private readonly List<string> _basketNames = new List<string>(4);
+        private readonly List<int> _basketPrices = new List<int>(4);
+        private int _basketStamp = int.MinValue;
+        private int _resetAt = -1;                                    // the clothes' Reset among the actions (the kit's own button), or -1
 
         public WardrobeScreen(WardrobeKind kind, CharacterCustomizer ui)
         {
@@ -91,7 +103,18 @@ namespace RealLifeOverhaul.Ui
                     return buttons != null && arg >= 0 && arg < buttons.Length && Again(UiWidgets.Press(buttons[arg].GetComponentInChildren<Button>(false)));
                 }
                 case UiWardrobe.GridCommand + UiCatalogue.Card:
-                    return arg >= 0 && arg < _pieces.Count && Again(UiWidgets.Press(_pieces[arg].GetComponent<Button>()));
+                {
+                    int piece = arg >= 0 && arg < _shown.Count ? _shown[arg] : -1;
+                    return piece >= 0 && piece < _pieces.Count && Again(UiWidgets.Press(_pieces[piece].GetComponent<Button>()));
+                }
+                case UiWardrobe.FilterCommand:
+                    if (arg < 0 || arg >= _m.FilterCount)
+                    {
+                        return false;
+                    }
+                    _filterKind = _filterOf[arg];
+                    _m.Grid.Offset = 0f;
+                    return Again(true);
                 case UiWardrobe.SwatchCommand:
                     return arg >= 0 && arg < _colours.Count && Again(UiWidgets.Press(_colours[arg].GetComponent<Button>()));
                 case UiWardrobe.SliderCommand:
@@ -103,6 +126,15 @@ namespace RealLifeOverhaul.Ui
                     _dirty = true;
                     return true;
                 case UiWardrobe.ActionCommand:
+                    if (arg >= 0 && arg == _resetAt)
+                    {
+                        bool reset = Leisure.ClothesScreen.Reset();
+                        if (reset && _ui is ChangeCharacterClothesUI shown)
+                        {
+                            shown.Show(BuyKits.Value(GameContract.LookShown, _ui, AppearanceElementType.Torso));   // its grid marks what is worn again
+                        }
+                        return Again(reset);
+                    }
                     return arg >= 0 && arg < _buttons.Count && Again(UiWidgets.Press(_buttons[arg]));
             }
             return false;
@@ -147,11 +179,16 @@ namespace RealLifeOverhaul.Ui
 
         public bool Act(UiAction action)
         {
+            if (action == UiAction.Option && _resetAt >= 0)
+            {
+                return !_actions[_resetAt].Disabled && Press(UiWardrobe.ActionCommand, _resetAt);
+            }
             if (action != UiAction.Alt || _actions.Count == 0)
             {
                 return false;
             }
-            return Press(UiWardrobe.ActionCommand, _actions.Count - 1);   // the main one is the last
+            int main = _actions.Count - 1;   // the main one is the last
+            return main != _resetAt && Press(UiWardrobe.ActionCommand, main);
         }
 
         public void Reveal(int list, int index)
@@ -164,6 +201,18 @@ namespace RealLifeOverhaul.Ui
         {
             _m.Grid.Offset = Mathf.Max(0f, _m.Grid.Offset - notches * UiTokens.S12);
             _dirty = true;
+        }
+
+        // The search over the clothes' grid: by a piece's name, any case.
+        public int TypingCommand => UiWardrobe.SearchCommand;
+
+        public string TypingText => _search;
+
+        public void Typed(string text)
+        {
+            _search = text ?? string.Empty;
+            _m.Grid.Offset = 0f;
+            Again(true);
         }
 
         public bool Steps(int command) => command == UiWardrobe.SliderCommand && _m.Held >= 0;
@@ -200,6 +249,7 @@ namespace RealLifeOverhaul.Ui
             ReadColours();
             ReadSliders();
             ReadActions();
+            ReadBasket();
             string kind = _m.Tab >= 0 && _m.Tab < _m.Tabs.Length ? _m.Tabs[_m.Tab].Label : null;
             _m.Title = _kind == WardrobeKind.Clothes && kind != null ? TitleOf(_kind) + ", " + kind : TitleOf(_kind);
             _sb.Append(_m.Title);
@@ -285,12 +335,13 @@ namespace RealLifeOverhaul.Ui
             {
                 _pieces.Clear();
             }
-            UiCatalogueModel g = _m.Grid;
-            if (g.Cards.Length < _pieces.Count)
+            if (_all.Length < _pieces.Count)
             {
-                g.Cards = new UiCatalogueCard[_pieces.Count];
+                _all = new UiCatalogueCard[_pieces.Count];
+                _owned = new bool[_pieces.Count];
+                _mod = new bool[_pieces.Count];
             }
-            g.Chosen = -1;
+            int chosenAt = -1, ownedCount = 0, modCount = 0;
             _m.ChosenName = null;
             _m.ChosenDetail = null;
             string owned = UiText.T("reallife_clothes_screen_owned");
@@ -311,22 +362,125 @@ namespace RealLifeOverhaul.Ui
                 }
                 string name = _bands.Count > 0 ? BuyKits.Words(_bands[0]) : null, corner = _bands.Count > 1 ? BuyKits.Words(_bands[1]) : null;
                 bool price = corner != null && corner.Length > 0 && !char.IsLetter(corner[0]);
-                g.Cards[i] = new UiCatalogueCard
+                _all[i] = new UiCatalogueCard
                 {
                     Picture = BuyPictures.Of(sprite), Aspect = BuyPictures.Aspect(sprite), Icon = UiIcon.Tag, Name = name,
                     Figure = price ? corner : null, State = price ? null : corner, StateTone = corner == owned ? UiRole.Ok : UiRole.Accent
                 };
+                _owned[i] = corner != null && corner == owned;
+                _mod[i] = _bands.Count > 0;
+                ownedCount += _owned[i] ? 1 : 0;
+                modCount += _mod[i] ? 1 : 0;
                 Transform chosen = p.Find("Selected");
                 if (chosen != null && chosen.gameObject.activeSelf)
                 {
-                    g.Chosen = i;
+                    chosenAt = i;
                     _m.ChosenName = name;
                     _m.ChosenDetail = price ? corner : null;
                 }
-                _sb.Append(g.Cards[i].Picture).Append(name).Append(corner).Append(';');
+                _sb.Append(_all[i].Picture).Append(name).Append(corner).Append(';');
             }
-            g.CardCount = _pieces.Count;
-            _sb.Append(g.Chosen).Append('|');
+            Filter(_pieces.Count, ownedCount, modCount, chosenAt);
+            _sb.Append(chosenAt).Append('|').Append(_filterKind).Append(_search).Append('|');
+        }
+
+        // The pills over the grid with their counts, where they tell pieces apart (Owned in the shop, the mod's own beside the
+        // game's in the wardrobe), and the clothes' search by name: the grid shows what both let through, in the game's order.
+        private void Filter(int n, int owned, int mod, int chosen)
+        {
+            int pills = 0;
+            _filterOf[pills++] = All;
+            if (owned > 0 && owned < n)
+            {
+                _filterOf[pills++] = Owned;
+            }
+            if (mod > 0 && mod < n)
+            {
+                _filterOf[pills++] = Mod;
+            }
+            pills = pills > 1 ? pills : 0;   // All alone tells nothing apart
+            int at = -1;
+            for (int i = 0; i < pills; i++)
+            {
+                at = _filterOf[i] == _filterKind ? i : at;
+            }
+            if (at < 0)
+            {
+                _filterKind = All;
+                at = pills > 0 ? 0 : -1;
+            }
+            int sig = (n * 1000 + owned) * 1000 + mod;
+            if (sig != _filterSig || _m.Filters.Length < pills)
+            {
+                _filterSig = sig;
+                _m.Filters = new string[pills];
+                for (int i = 0; i < pills; i++)
+                {
+                    int k = _filterOf[i];
+                    _m.Filters[i] = UiText.T(k == Owned ? "reallife_ui_buy_filter_owned" : k == Mod ? "reallife_ui_buy_filter_rlo" : "reallife_ui_buy_filter_all")
+                        .Replace("{count}", (k == Owned ? owned : k == Mod ? mod : n).ToString(CultureInfo.InvariantCulture));
+                }
+            }
+            _m.FilterCount = pills;
+            _m.Filter = at;
+            _m.Searching = _kind == WardrobeKind.Clothes && n > 0;
+            _m.Search = _search;
+            _m.SearchHint = UiText.T("reallife_ui_buy_find");
+            string q = _m.Searching ? _search.Trim() : string.Empty;
+            _shown.Clear();
+            for (int i = 0; i < n; i++)
+            {
+                bool through = (_filterKind != Owned || _owned[i]) && (_filterKind != Mod || _mod[i]);
+                if (through && (q.Length == 0 || (_all[i].Name != null && _all[i].Name.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0)))
+                {
+                    _shown.Add(i);
+                }
+            }
+            UiCatalogueModel g = _m.Grid;
+            if (g.Cards.Length < _shown.Count)
+            {
+                g.Cards = new UiCatalogueCard[_shown.Count];
+            }
+            g.Chosen = -1;
+            for (int i = 0; i < _shown.Count; i++)
+            {
+                g.Cards[i] = _all[_shown[i]];
+                g.Chosen = _shown[i] == chosen ? i : g.Chosen;
+            }
+            g.CardCount = _shown.Count;
+        }
+
+        // What the shop's basket holds (the mod's clothes shop: each piece on and not owned, with its price), made again only
+        // when the shop prices what is worn again. None outside the shop.
+        private void ReadBasket()
+        {
+            int stamp = _kind == WardrobeKind.Clothes && Leisure.ClothesScreen.Shopping ? Leisure.ClothesScreen.BasketStamp : -1;
+            if (stamp != _basketStamp)
+            {
+                _basketStamp = stamp;
+                FillBasket(stamp >= 0);
+            }
+            _sb.Append(_m.BasketTotal).Append('|');
+        }
+
+        private void FillBasket(bool shop)
+        {
+            _m.BasketTotal = null;
+            if (!shop || !Leisure.ClothesScreen.Basket(_basketNames, _basketPrices) || _basketNames.Count == 0)
+            {
+                _m.Basket = System.Array.Empty<UiInfoRow>();
+                return;
+            }
+            int total = 0;
+            _m.Basket = new UiInfoRow[_basketNames.Count];
+            for (int i = 0; i < _basketNames.Count; i++)
+            {
+                _m.Basket[i] = new UiInfoRow { Label = _basketNames[i], Value = UiText.Money(_basketPrices[i]) };
+                total += _basketPrices[i];
+            }
+            _m.BasketLabel = UiText.T("reallife_ui_buy_basket");
+            _m.BasketTotalLabel = UiText.T("reallife_ui_buy_to_pay");
+            _m.BasketTotal = UiText.Money(total);
         }
 
         // The colours of the piece shown, as the game tints its cells (or the game's own picture of a pattern).
@@ -414,9 +568,11 @@ namespace RealLifeOverhaul.Ui
         {
             _buttons.Clear();
             _actions.Clear();
+            _resetAt = -1;
             switch (_kind)
             {
                 case WardrobeKind.Clothes:
+                    AddReset();
                     Add(BuyKits.Get<Button>(GameContract.LookSave, _ui), null, UiButtonKind.Primary, UiAction.Alt);
                     break;
                 case WardrobeKind.Hair:
@@ -437,6 +593,22 @@ namespace RealLifeOverhaul.Ui
             {
                 _sb.Append(_actions[i].Label).Append(_actions[i].Disabled ? '-' : '+');
             }
+        }
+
+        // The clothes' Reset, the kit's own button (the game's screen has none): everything tried taken off again.
+        private void AddReset()
+        {
+            if (!Leisure.ClothesScreen.Ready)
+            {
+                return;   // the mod's clothes are off: the game's screen as it is
+            }
+            _resetAt = _actions.Count;
+            _buttons.Add(null);
+            _actions.Add(new UiActionModel
+            {
+                Label = UiText.T("reallife_ui_buy_reset"), Kind = UiButtonKind.Secondary, Key = UiAction.Option, Command = UiWardrobe.ActionCommand, Arg = _resetAt,
+                Disabled = !Leisure.ClothesScreen.CanReset
+            });
         }
 
         private void Add(Button b, Component label, UiButtonKind kind, UiAction key, string fallback = null)

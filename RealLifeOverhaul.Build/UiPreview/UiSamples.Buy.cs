@@ -77,7 +77,8 @@ internal static partial class UiSamples
         m.PageWords = t("reallife_ui_buy_page", "Page {page} of {pages}");
         m.Head = state == "taxes" || state == "ticket" ? null : new UiCheckoutHead
         {
-            Mark = UiIcon.Store, Name = "NY Distro Inc", Address = "37 1st Street, Garment District"
+            Mark = UiIcon.Store, Name = "NY Distro Inc", Address = "37 1st Street, Garment District",
+            DeliveredLabel = state == "queue" ? null : t("reallife_ui_buy_delivered_to", "Delivered to"), DeliveredTo = state == "queue" ? null : "Hand Truck"
         };
         switch (state)
         {
@@ -96,6 +97,8 @@ internal static partial class UiSamples
                 m.Order = null;
                 m.Total = null;
                 m.Queue = t("purchaseui_waiting_in_queue", "Waiting in queue...");
+                m.QueueDetail = t("reallife_ui_buy_queue_place", "Place {place} of {count}, {ahead} ahead of you").Replace("{place}", "3").Replace("{count}", "4")
+                    .Replace("{ahead}", "2");
                 m.Title = t("common_purchase", "Purchase");
                 m.CancelEnabled = false;
                 break;
@@ -122,12 +125,20 @@ internal static partial class UiSamples
         {
             Title = t("common_vehicle", "Vehicle"), Icon = boat ? UiIcon.Globe : UiIcon.Car, Name = boat ? "Marlin 28" : "Bimmer Box Truck", Price = boat ? "$84,000" : "$38,500",
             SpecsLabel = t("purchasecar_specs", "Specs"),
-            Specs = new[]
+            Specs = boat ? new[]
             {
-                new UiInfoRow { Label = t("common_cargo_capacity", "Cargo Capacity"), Value = boat ? "0" : "8" },
-                new UiInfoRow { Label = t("vehicle_tank_capacity", "Tank Capacity"), Value = boat ? "300" : "120" },
+                new UiInfoRow { Label = t("common_cargo_capacity", "Cargo Capacity"), Value = "0" },
+                new UiInfoRow { Label = t("vehicle_tank_capacity", "Tank Capacity"), Value = "300" },
                 new UiInfoRow { Label = t("vehicle_auto_park_support", "Auto Park Support"), Value = t("common_yes", "Yes") },
-                new UiInfoRow { Label = t("vehicle_max_speed", "Max Speed"), Value = boat ? "60" : "110" }
+                new UiInfoRow { Label = t("vehicle_max_speed", "Max Speed"), Value = "60" }
+            } : new[]
+            {
+                new UiInfoRow { Label = t("common_cargo_capacity", "Cargo Capacity"), Value = "8" },
+                new UiInfoRow { Label = t("vehicle_tank_capacity", "Tank Capacity"), Value = "120" },
+                new UiInfoRow { Label = t("vehicle_auto_park_support", "Auto Park Support"), Value = t("common_yes", "Yes") },
+                new UiInfoRow { Label = t("vehicle_max_speed", "Max Speed"), Value = "118 km/h" },
+                new UiInfoRow { Label = t("reallife_tuning_fig_to100", "0 to 100 km/h"), Value = t("reallife_ui_buy_seconds", "{seconds} s").Replace("{seconds}", "14.6") },
+                new UiInfoRow { Label = t("reallife_ui_buy_insurance", "Insurance"), Value = t("reallife_ui_buy_a_month", "{price} a month").Replace("{price}", "$230") }
             },
             ColourLabel = t("reallife_ui_buy_colour", "Colour"),
             Swatches = new[]
@@ -141,6 +152,11 @@ internal static partial class UiSamples
             Cancel = t("common_cancel", "Cancel"), CancelEnabled = true, BuyEnabled = true, Prompts = Prompts(t), PromptCount = 3
         };
         m.Buy = (delivery ? t("furniture_delivery_dialog_order", "Order") : t("common_purchase", "Purchase"));
+        if (!boat)
+        {
+            m.Facts = t("reallife_ui_buy_carkind_7", "Truck");
+            m.Lot = t("reallife_ui_buy_lot", "{place} of {count} on the lot").Replace("{place}", "3").Replace("{count}", "12");
+        }
         return m;
     }
 
@@ -160,7 +176,7 @@ internal static partial class UiSamples
             {
                 bool foreign = state == "vehicle_foreign";
                 m.Name = foreign ? "Stallion GT" : "Bimmer Box Truck";
-                m.Status = "57 km/h, 5th Avenue";
+                m.Status = "5th Avenue, Midtown";
                 m.Picture = foreign ? "buy:bluesport" : "buy:boxtruck";
                 m.Aspect = foreign ? 1.3f : 1.94f;
                 m.Owner = foreign ? t("reallife_ui_buy_not_yours", "Not yours") : t("reallife_ui_buy_yours", "Yours");
@@ -169,8 +185,17 @@ internal static partial class UiSamples
                 m.Readings = new[]
                 {
                     new UiReading { Icon = UiIcon.Drop, Label = t("itempanelui_vehicle_fuel", "Fuel"), Share = 0.64f, Value = "64%" },
+                    new UiReading
+                    {
+                        Icon = UiIcon.Navigation, Label = t("reallife_ui_buy_range", "Range"), Share = 0.64f,
+                        Value = t("reallife_ui_buy_range_value", "About {distance} {unit}").Replace("{distance}", "310").Replace("{unit}", "km")
+                    },
                     new UiReading { Icon = UiIcon.Wrench, Label = t("itempanelui_maintenance_condition", "Condition"), Share = 0.42f, Tone = UiRole.Warn, Value = "42%" },
-                    new UiReading { Icon = UiIcon.FastForward, Label = t("reallife_ui_buy_speed", "Speed"), Share = -1f, Value = "57 km/h" }
+                    new UiReading
+                    {
+                        Icon = UiIcon.FastForward, Label = t("reallife_ui_buy_speed", "Speed"), Share = 0.64f,
+                        Value = t("reallife_ui_buy_speed_of", "{speed} of {limit} {unit}").Replace("{speed}", "32").Replace("{limit}", "50").Replace("{unit}", "km/h")
+                    }
                 };
                 m.Facts = new[]
                 {
@@ -183,9 +208,9 @@ internal static partial class UiSamples
                     m.CargoSlots = 8;
                     m.Cargo = new[]
                     {
-                        new UiCatalogueCard { Picture = "buy:cupcake", Aspect = 2.15f, Figure = "\u00D73" }, new UiCatalogueCard { Picture = "buy:croissant", Aspect = 2.6f, Figure = "\u00D72" },
-                        new UiCatalogueCard { Picture = "buy:icecream", Aspect = 1.6f, Figure = "\u00D71" }, new UiCatalogueCard { Picture = "buy:popcorn", Aspect = 1f, Figure = "\u00D71" },
-                        new UiCatalogueCard { Picture = "buy:cheese", Aspect = 1.25f, Figure = "\u00D71" }, new UiCatalogueCard { Picture = "buy:boxes", Aspect = 1f, Figure = "\u00D72" }
+                        new UiCatalogueCard { Picture = "buy:cupcake", Aspect = 2.15f, Figure = "x3" }, new UiCatalogueCard { Picture = "buy:croissant", Aspect = 2.6f, Figure = "x2" },
+                        new UiCatalogueCard { Picture = "buy:icecream", Aspect = 1.6f, Figure = "x1" }, new UiCatalogueCard { Picture = "buy:popcorn", Aspect = 1f, Figure = "x1" },
+                        new UiCatalogueCard { Picture = "buy:cheese", Aspect = 1.25f, Figure = "x1" }, new UiCatalogueCard { Picture = "buy:boxes", Aspect = 1f, Figure = "x2" }
                     };
                 }
                 var actions = new List<UiItemAction>
@@ -211,8 +236,8 @@ internal static partial class UiSamples
                 m.CargoSlots = 4;
                 m.Cargo = new[]
                 {
-                    new UiCatalogueCard { Picture = "buy:boxes", Aspect = 1f, Figure = "\u00D72" }, new UiCatalogueCard { Picture = "buy:cupcake", Aspect = 2.15f, Figure = "\u00D71" },
-                    new UiCatalogueCard { Picture = "buy:popcorn", Aspect = 1f, Figure = "\u00D71" }
+                    new UiCatalogueCard { Picture = "buy:boxes", Aspect = 1f, Figure = "x2" }, new UiCatalogueCard { Picture = "buy:cupcake", Aspect = 2.15f, Figure = "x1" },
+                    new UiCatalogueCard { Picture = "buy:popcorn", Aspect = 1f, Figure = "x1" }
                 };
                 m.Actions = new[]
                 {
@@ -285,18 +310,37 @@ internal static partial class UiSamples
                 {
                     Picture = GoodsPictures[i], Aspect = GoodsAspects[i], Name = Goods[i],
                     Figure = t("reallife_ui_buy_count", "x{count}").Replace("{count}", (GoodsPieces[i] * (i == 0 ? 3 : 1)).ToString("N0", System.Globalization.CultureInfo.InvariantCulture)),
-                    State = owed ? t("reallife_ui_buy_unpaid", "Unpaid") : null, StateTone = UiRole.Warn
+                    State = owed ? t("reallife_ui_buy_unpaid", "Unpaid") : i == 2 ? t("reallife_ui_buy_keeps_tile", "Keeps {days} days").Replace("{days}", "3") : null,
+                    StateTone = UiRole.Warn
                 };
             }
             m.Catalogue.CardCount = n;
             m.Catalogue.Chosen = unpaid ? 2 : 0;
             m.Catalogue.DetailKicker = t("reallife_ui_buy_in_cargo", "In the cargo");
+            m.Catalogue.DetailLabels = unpaid
+                ? new[] { t("reallife_ui_buy_packs", "Packs"), t("reallife_ui_buy_pieces", "Pieces"), t("reallife_ui_buy_to_pay", "To pay") }
+                : new[]
+                {
+                    t("reallife_ui_buy_packs", "Packs"), t("reallife_ui_buy_pieces", "Pieces"), t("reallife_ui_buy_paid", "Paid"), t("reallife_ui_buy_sells_for", "Sells for"),
+                    t("reallife_ui_buy_keeps", "Keeps"), t("reallife_ui_buy_keeps_cold", "In cold storage"), t("reallife_ui_buy_worth_now", "Worth now")
+                };
+            m.Catalogue.DetailValues = unpaid
+                ? new[] { "1", "500", "$1,055" }
+                : new[]
+                {
+                    "3", "4,500", "$3,009", t("reallife_ui_buy_each", "{price} a pack").Replace("{price}", "$802"),
+                    t("reallife_ui_buy_days", "{days} days").Replace("{days}", "4"), t("reallife_ui_buy_days", "{days} days").Replace("{days}", "7"), "$2,407"
+                };
             m.Catalogue.Actions = unpaid
                 ? new[] { new UiActionModel { Label = t("itempanelui_buttons_discard", "Discard"), Kind = UiButtonKind.Destructive, Icon = UiIcon.Trash, Key = UiAction.Count, Command = 0 } }
                 : new[]
                 {
                     new UiActionModel { Label = t("action_take", "Take"), Kind = UiButtonKind.Secondary, Key = UiAction.Count, Command = 0 },
-                    new UiActionModel { Label = t("itempanelui_sell", "Sell"), Kind = UiButtonKind.Primary, Icon = UiIcon.Coin, Key = UiAction.Alt, Command = 1 }
+                    new UiActionModel
+                    {
+                        Label = t("reallife_ui_buy_sell_for", "Sell for {price}").Replace("{price}", "$2,407"), Kind = UiButtonKind.Primary, Icon = UiIcon.Coin,
+                        Key = UiAction.Alt, Command = 1
+                    }
                 };
         }
         else
@@ -410,8 +454,22 @@ internal static partial class UiSamples
         m.Swatch = 0;
         m.Actions = new[]
         {
+            new UiActionModel { Label = t("reallife_ui_buy_reset", "Reset"), Kind = UiButtonKind.Secondary, Key = UiAction.Option },
             new UiActionModel { Label = t("change_character_clothes_save_button", "Save clothes") + (shop ? " " + Money(140) : ""), Kind = UiButtonKind.Primary, Key = UiAction.Alt }
         };
+        string all = t("reallife_ui_buy_filter_all", "All {count}").Replace("{count}", "12"), mods = t("reallife_ui_buy_filter_rlo", "RLO {count}").Replace("{count}", "7");
+        m.Filters = shop ? new[] { all, t("reallife_ui_buy_filter_owned", "Owned {count}").Replace("{count}", "2"), mods } : new[] { all, mods };
+        m.FilterCount = m.Filters.Length;
+        m.Filter = 0;
+        m.Searching = true;
+        m.SearchHint = t("reallife_ui_buy_find", "Find a piece");
+        if (shop)
+        {
+            m.BasketLabel = t("reallife_ui_buy_basket", "In your basket");
+            m.Basket = new[] { new UiInfoRow { Label = "Navy blazer", Value = Money(140) } };
+            m.BasketTotalLabel = t("reallife_ui_buy_to_pay", "To pay");
+            m.BasketTotal = Money(140);
+        }
         return m;
     }
 

@@ -104,7 +104,16 @@ namespace RealLifeOverhaul
         /// </summary>
         public static float PremiumOf(VehicleInstance car, CarRecord record)
         {
-            return Mathf.Round(CarRules.PremiumOf(car.VehicleType.price, record.Claims, GarageBridges.InsuranceOf(car.id)));
+            return PremiumOf(car.VehicleType.price, record.Claims, GarageBridges.InsuranceOf(car.id));
+        }
+
+        /// <summary>
+        /// The premium by a car's list price, its claims and the custom shop's share, rounded as it is charged: the one place it
+        /// is worked out. A car on sale asks it new, stock and with no claims (the vehicle purchase's month of insurance).
+        /// </summary>
+        public static float PremiumOf(float price, int claims, float tuning)
+        {
+            return Mathf.Round(CarRules.PremiumOf(price, claims, tuning));
         }
 
         /// <summary>

@@ -1,10 +1,15 @@
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
+using Controllers;
+using Localizor;
 using TMPro;
 using UI;
 using UI.PurchaseVehicle;
 using UnityEngine;
 using UnityEngine.UI;
+using Vehicles.VehicleTypes;
 
 namespace RealLifeOverhaul.Ui
 {
@@ -15,6 +20,21 @@ namespace RealLifeOverhaul.Ui
         private readonly PurchaseVehicleUI _ui;
         private readonly UiVehicleBuyModel _m = new UiVehicleBuyModel();
         private readonly List<Transform> _specs = new List<Transform>(8), _colours = new List<Transform>(16);
+        private readonly List<UiInfoRow> _rows = new List<UiInfoRow>(8);
+        private readonly List<ShowcaseVehicleController> _lot = new List<ShowcaseVehicleController>(16);
+        private static readonly Comparison<ShowcaseVehicleController> Cheapest = (a, b) =>
+        {
+            int c = a.GetPurchasePrice().CompareTo(b.GetPurchasePrice());
+            return c != 0 ? c : string.CompareOrdinal(a.vehicleName, b.vehicleName);
+        };
+        private static readonly string[] KindKeys =
+        {
+            "reallife_ui_buy_carkind_1", "reallife_ui_buy_carkind_2", "reallife_ui_buy_carkind_3", "reallife_ui_buy_carkind_4", "reallife_ui_buy_carkind_5",
+            "reallife_ui_buy_carkind_6", "reallife_ui_buy_carkind_7"
+        };
+        private IPurchasableAsset _of;            // the vehicle the mod's figures and the lot were read for
+        private string _kind, _top, _to100, _insurance, _topWords, _lotWords;
+        private int _lotAt = -1;
         private readonly StringBuilder _sb = new StringBuilder(256);
         private string _seen;
         private float _next;
@@ -89,6 +109,8 @@ namespace RealLifeOverhaul.Ui
                     return Again(UiWidgets.Press(BuyKits.Get<Button>(GameContract.CarBuy, _ui)));
                 case UiVehicleBuy.CancelCommand:
                     return Again(UiWidgets.Press(BuyKits.Get<Button>(GameContract.CarCancel, _ui)));
+                case UiVehicleBuy.LotCommand:
+                    return Walk(arg);
             }
             return false;
         }
@@ -99,9 +121,7 @@ namespace RealLifeOverhaul.Ui
 
         public bool Back() => Again(UiWidgets.Press(BuyKits.Get<Button>(GameContract.CarCancel, _ui)));
 
-        public void Tab(int step)
-        {
-        }
+        public void Tab(int step) => Walk(step);
 
         public bool Act(UiAction action) => action == UiAction.Alt && Again(UiWidgets.Press(BuyKits.Get<Button>(GameContract.CarBuy, _ui)));
 
@@ -130,16 +150,41 @@ namespace RealLifeOverhaul.Ui
             _m.Name = BuyKits.Words(BuyKits.Get<Component>(GameContract.CarName, _ui));
             _m.Price = UiWidgets.Text(BuyKits.Get<TMP_Text>(GameContract.CarPrice, _ui));
             _sb.Append(_m.Name).Append('|').Append(_m.Price).Append('|');
-            BuyKits.Copies(BuyKits.Get<Transform>(GameContract.CarSpecTemplate, _ui), _specs);
-            if (_m.Specs.Length != _specs.Count)
+            IPurchasableAsset asset = BuyKits.Get<IPurchasableAsset>(GameContract.CarAsset, _ui);
+            if (!ReferenceEquals(asset, _of))
             {
-                _m.Specs = new UiInfoRow[_specs.Count];
+                _of = asset;
+                Figures(asset as ShowcaseVehicleController);
+                ReadLot(asset as ShowcaseVehicleController);
             }
+            _m.Facts = _kind;
+            _m.Lot = _lotWords;
+            BuyKits.Copies(BuyKits.Get<Transform>(GameContract.CarSpecTemplate, _ui), _specs);
+            _rows.Clear();
             for (int i = 0; i < _specs.Count; i++)
             {
-                _m.Specs[i] = new UiInfoRow { Label = BuyKits.WordsAt(_specs[i], "Label"), Value = BuyKits.WordsAt(_specs[i], "Value") };
-                _sb.Append(_m.Specs[i].Label).Append('=').Append(_m.Specs[i].Value).Append(';');
+                string label = BuyKits.WordsAt(_specs[i], "Label");
+                bool top = _top != null && label != null && label == _topWords;   // the game's tier, the mod's top speed in its place
+                _rows.Add(new UiInfoRow { Label = label, Value = top ? _top : BuyKits.WordsAt(_specs[i], "Value") });
+                if (top && _to100 != null)
+                {
+                    _rows.Add(new UiInfoRow { Label = UiText.T("reallife_tuning_fig_to100"), Value = _to100 });
+                }
             }
+            if (_insurance != null && _specs.Count > 0)
+            {
+                _rows.Add(new UiInfoRow { Label = UiText.T("reallife_ui_buy_insurance"), Value = _insurance });
+            }
+            if (_m.Specs.Length != _rows.Count)
+            {
+                _m.Specs = new UiInfoRow[_rows.Count];
+            }
+            _rows.CopyTo(_m.Specs);
+            for (int i = 0; i < _rows.Count; i++)
+            {
+                _sb.Append(_rows[i].Label).Append('=').Append(_rows[i].Value).Append(';');
+            }
+            _sb.Append(_m.Facts).Append('|').Append(_m.Lot).Append('|');
             BuyKits.Copies(BuyKits.Get<Transform>(GameContract.CarColourTemplate, _ui), _colours);
             if (_m.Swatches.Length != _colours.Count)
             {
@@ -175,6 +220,83 @@ namespace RealLifeOverhaul.Ui
             _m.CancelEnabled = cancel != null && cancel.interactable;
             _sb.Append(_m.Buy).Append(_m.BuyEnabled).Append(_m.Cancel).Append(_m.CancelEnabled);
             return _sb.ToString();
+        }
+
+        // The mod's figures for the car on sale, once a car: its kind (Driving/CarCatalogue, as the dealers and the mod's NPC
+        // buyers read it), the top speed and 0 to 100 km/h the mod's tuning gives a new one of its kind (Driving/CarTuning,
+        // before any custom shop's parts) and a month of the mod's insurance at its list price (Transport/CarPhone). None for
+        // a boat or what the mod leaves as the game made it; each with its option off.
+        private void Figures(ShowcaseVehicleController car)
+        {
+            _kind = _top = _to100 = _insurance = null;
+            VehicleType t = car != null && !string.IsNullOrEmpty(car.vehicleName) ? VehicleTypeHelper.GetVehicleType(car.vehicleName) : null;
+            if (t == null)
+            {
+                return;
+            }
+            if (Settings.CarOwnership && t.IsMotorVehicle)
+            {
+                _insurance = UiText.T("reallife_ui_buy_a_month").Replace("{price}", UiText.Money(CarPhone.PremiumOf(t.price, 0, 0f)));
+            }
+            CarSpec spec = CarCatalogue.For(t.vehicleTypeName, new CarTraits(t.IsMotorVehicle, t.spawnInPlayerObject, t.maxSpeed, t.maxCargoCapacity, t.isLuxuryCar, 1200f));
+            int kind = (int)spec.Kind;
+            if (kind < 1 || kind > KindKeys.Length)
+            {
+                return;
+            }
+            _kind = UiText.T(KindKeys[kind - 1]);
+            if (!Settings.CarTuning)
+            {
+                return;
+            }
+            CarTuning.Targets(spec, out float seconds, out float topKmh);
+            bool imperial = PlayerPrefSettings.useImperial;
+            _top = Mathf.RoundToInt(imperial ? topKmh * BuyKits.MilesPerKm : topKmh).ToString(CultureInfo.InvariantCulture) + (imperial ? " mph" : " km/h");
+            _to100 = UiText.T("reallife_ui_buy_seconds").Replace("{seconds}", seconds.ToString("0.0", CultureInfo.InvariantCulture));
+            _topWords = "vehicle_max_speed".GetLocalization();   // the game's row for its own tier, as its label reads
+        }
+
+        // The cars the player can buy where this one stands (the showcase cars the game offers for purchase), cheapest first,
+        // and this one's place among them; no lot for a boat or a car alone.
+        private void ReadLot(ShowcaseVehicleController car)
+        {
+            _lot.Clear();
+            _lotAt = -1;
+            _lotWords = null;
+            List<ItemController> items = car != null && InstanceBehavior<BuildingManager>.IsInitialized ? InstanceBehavior<BuildingManager>.Instance.allItemControllers : null;
+            for (int i = 0; items != null && i < items.Count; i++)
+            {
+                if (items[i] is ShowcaseVehicleController other && other != null && other.playerItemPurchaserSettings != null && other.playerItemPurchaserSettings.enabled
+                    && !string.IsNullOrEmpty(other.vehicleName) && VehicleTypeHelper.GetVehicleType(other.vehicleName) != null)
+                {
+                    _lot.Add(other);
+                }
+            }
+            _lot.Sort(Cheapest);
+            _lotAt = _lot.IndexOf(car);
+            if (_lot.Count > 1 && _lotAt >= 0)
+            {
+                _lotWords = UiText.T("reallife_ui_buy_lot").Replace("{place}", (_lotAt + 1).ToString(CultureInfo.InvariantCulture))
+                    .Replace("{count}", _lot.Count.ToString(CultureInfo.InvariantCulture));
+            }
+        }
+
+        // The next car on the lot either way, as a click on it does: this panel closes (the game puts back a colour not
+        // bought), the player walks to that car and its purchase opens. Not while the game's showcase animation runs.
+        private bool Walk(int step)
+        {
+            if (_lotWords == null || step == 0 || PurchaseVehicleUI.IsShowcaseAnimationRunning)
+            {
+                return false;
+            }
+            ShowcaseVehicleController next = _lot[((_lotAt + (step > 0 ? 1 : -1)) % _lot.Count + _lot.Count) % _lot.Count];
+            if (next == null)
+            {
+                return false;
+            }
+            _ui.Close();
+            next.MoveTowardsEntity(next.ShowPurchaseUi);
+            return true;
         }
     }
 }

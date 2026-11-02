@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BigAmbitions.Items;
+using Extensions;
 using TMPro;
 using UI;
 using UI.MergeCargo;
@@ -23,6 +25,11 @@ namespace RealLifeOverhaul.Ui
         private string _seen;
         private float _next;
         private bool _dirty = true;
+        private CargoItem _detailOf;   // the stack the detail was made for, and its packs then
+        private int _detailPacks;
+        private string _sell;          // "Sell for $2,407": the chosen stack's own Sell, or null for the game's word
+        private const int Quick = 3;   // days: goods that keep no longer out of the cold say so on their tile
+        private readonly string[] _quickWords = new string[Quick + 1];
 
         public CargoScreen(ManageCargoUi ui)
         {
@@ -164,12 +171,14 @@ namespace RealLifeOverhaul.Ui
                 TMP_Text pieces = BuyKits.Get<TMP_Text>(GameContract.SlotPieces, stack), count = BuyKits.Get<TMP_Text>(GameContract.SlotCount, stack);
                 TMP_Text price = BuyKits.Get<TMP_Text>(GameContract.SlotPrice, stack);
                 bool owed = price != null && price.gameObject.activeSelf;
+                int keeps = !owed && items != null && items.Count == _stacks.Count ? SpoilRead.Keeps(GoodsOf(items[i] as CargoItem), false) : -1;
                 string figure = pieces != null && pieces.gameObject.activeSelf ? UiWidgets.Text(pieces) : count != null && count.gameObject.activeSelf ? UiWidgets.Text(count) : null;
                 c.Cards[i] = new UiCatalogueCard
                 {
                     Picture = BuyPictures.Item(_stacks[i].name), Aspect = 1f, Icon = UiIcon.Package, Name = BuyKits.Words(BuyKits.Get<Component>(GameContract.SlotName, stack)),
                     Figure = figure != null ? UiText.T("reallife_ui_buy_count").Replace("{count}", figure) : null,
-                    State = owed ? UiText.T("reallife_ui_buy_unpaid") + " " + UiWidgets.Text(price) : null, StateTone = UiRole.Warn
+                    State = owed ? UiText.T("reallife_ui_buy_unpaid") + " " + UiWidgets.Text(price) : keeps > 0 && keeps <= Quick ? QuickWords(keeps) : null,
+                    StateTone = UiRole.Warn
                 };
                 _sb.Append(c.Cards[i].Name).Append(c.Cards[i].Figure).Append(c.Cards[i].State).Append(';');
             }
@@ -182,6 +191,7 @@ namespace RealLifeOverhaul.Ui
             {
                 c.Chosen = 0;
             }
+            Detail(items != null && items.Count == _stacks.Count && c.Chosen >= 0 ? items[c.Chosen] as CargoItem : null);
             ReadActions(c.Chosen >= 0 ? _stacks[c.Chosen].GetComponent<CargoItemUi>() : null);
             Button all = BuyKits.Get<Button>(GameContract.CargoSellAll, _ui);
             _m.SellAll = all != null ? BuyKits.Words(all) ?? UiText.T("bizman_inventory_sell_all") : null;
@@ -189,6 +199,86 @@ namespace RealLifeOverhaul.Ui
             _m.SellAllEnabled = all != null && all.interactable;
             _sb.Append(c.Chosen).Append('|').Append(_m.SellAllShown).Append(_m.SellAllEnabled);
             return _sb.ToString();
+        }
+
+        // The chosen stack's figures as the game reckons them: its packs and pieces, what was paid for them (or is owed),
+        // what a pack sells for and the whole stack now (ItemHelper.GetSellingPrice, the game's selling share, as the stack's
+        // own Sell asks it). Made again only when the stack or its packs change.
+        private void Detail(CargoItem item)
+        {
+            int packs = item != null && item.cargoInstances != null ? item.cargoInstances.Count : 0;
+            if (ReferenceEquals(item, _detailOf) && packs == _detailPacks)
+            {
+                return;
+            }
+            _detailOf = item;
+            _detailPacks = packs;
+            _sell = null;
+            UiCatalogueModel c = _m.Catalogue;
+            if (packs == 0)
+            {
+                c.DetailLabels = System.Array.Empty<string>();
+                c.DetailValues = System.Array.Empty<string>();
+                return;
+            }
+            int pieces = 0;
+            float paid = 0f;
+            for (int i = 0; i < packs; i++)
+            {
+                pieces += item.cargoInstances[i].amount;
+                paid += item.cargoInstances[i].GetWorth();
+            }
+            bool sells = item.IsSellable;
+            float each = sells ? item.cargoInstances[0].GetSellingPrice() : 0f;
+            string goods = GoodsOf(item);
+            int keeps = SpoilRead.Keeps(goods, false), cold = keeps > 0 ? SpoilRead.Keeps(goods, true) : -1;
+            int n = 3 + (sells ? 2 : 0) + (keeps > 0 ? 1 : 0) + (cold > keeps ? 1 : 0), at = 3;
+            c.DetailLabels = new string[n];
+            c.DetailValues = new string[n];
+            c.DetailLabels[0] = UiText.T("reallife_ui_buy_packs");
+            c.DetailValues[0] = packs.ToString("N0", CultureInfo.InvariantCulture);
+            c.DetailLabels[1] = UiText.T("reallife_ui_buy_pieces");
+            c.DetailValues[1] = pieces.ToString("N0", CultureInfo.InvariantCulture);
+            c.DetailLabels[2] = UiText.T(item.paid ? "reallife_ui_buy_paid" : "reallife_ui_buy_to_pay");
+            c.DetailValues[2] = paid.ToShortCurrencyFormat();
+            if (sells)
+            {
+                c.DetailLabels[at] = UiText.T("reallife_ui_buy_sells_for");
+                c.DetailValues[at++] = UiText.T("reallife_ui_buy_each").Replace("{price}", each.ToShortCurrencyFormat());
+            }
+            if (keeps > 0)
+            {
+                c.DetailLabels[at] = UiText.T("reallife_ui_buy_keeps");   // from the day it is stocked: goods on the road do not age
+                c.DetailValues[at++] = Days(keeps);
+            }
+            if (cold > keeps)
+            {
+                c.DetailLabels[at] = UiText.T("reallife_ui_buy_keeps_cold");
+                c.DetailValues[at++] = Days(cold);
+            }
+            if (sells)
+            {
+                string all = (each * packs).ToShortCurrencyFormat();
+                c.DetailLabels[at] = UiText.T("reallife_ui_buy_worth_now");
+                c.DetailValues[at] = all;
+                _sell = UiText.T("reallife_ui_buy_sell_for").Replace("{price}", all);
+            }
+        }
+
+        // The product a stack holds, by the name the game keys it with; null for none.
+        private static string GoodsOf(CargoItem item) =>
+            item != null && item.cargoInstances != null && item.cargoInstances.Count > 0 && item.cargoInstances[0] != null ? item.cargoInstances[0].itemName : null;
+
+        private static string Days(int days) => UiText.T("reallife_ui_buy_days").Replace("{days}", days.ToString(CultureInfo.InvariantCulture));
+
+        // "Keeps 3 days" on a tile, made once a screen for each short life.
+        private string QuickWords(int days)
+        {
+            if (_quickWords[days] == null)
+            {
+                _quickWords[days] = UiText.T("reallife_ui_buy_keeps_tile").Replace("{days}", days.ToString(CultureInfo.InvariantCulture));
+            }
+            return _quickWords[days];
         }
 
         // The chosen stack's own buttons as the detail's actions: its action (Take, Place, Read), Discard, then Sell as the main.
@@ -201,7 +291,7 @@ namespace RealLifeOverhaul.Ui
                 Button act = BuyKits.Get<Button>(GameContract.SlotAction, stack);
                 Add(act, BuyKits.Words(BuyKits.Get<Component>(GameContract.SlotActionLabel, stack)), UiButtonKind.Secondary, UiIcon.None, UiAction.Count);
                 Add(BuyKits.Get<Button>(GameContract.SlotDiscard, stack), UiText.T("itempanelui_buttons_discard"), UiButtonKind.Destructive, UiIcon.Trash, UiAction.Count);
-                Add(BuyKits.Get<Button>(GameContract.SlotSell, stack), UiText.T("itempanelui_sell"), UiButtonKind.Primary, UiIcon.Coin, UiAction.Alt);
+                Add(BuyKits.Get<Button>(GameContract.SlotSell, stack), _sell ?? UiText.T("itempanelui_sell"), UiButtonKind.Primary, UiIcon.Coin, UiAction.Alt);
             }
             if (_m.Catalogue.Actions.Length != _actions.Count)
             {

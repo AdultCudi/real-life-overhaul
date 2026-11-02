@@ -1,9 +1,15 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BigAmbitions.Items;
+using EmployeeStations;
 using Extensions;
+using Helpers;
+using Localizor;
+using Streets;
 using TMPro;
 using UI;
+using UI.ItemPanel;
 using UI.Purchase;
 using UnityEngine;
 using UnityEngine.UI;
@@ -24,6 +30,12 @@ namespace RealLifeOverhaul.Ui
         private float _next;
         private bool _dirty = true;
         private int _taxRow;
+        private readonly UiCheckoutHead _head = new UiCheckoutHead();
+        private BuildingRegistration _headOf;   // the registration the head was made for, and what took the goods then
+        private string _carrier;
+        private string _queueWords;             // the line's words, made again only when a figure changes
+        private int _queuePlace = -2, _queueCount = -1;
+        private bool _queueServed;
 
         public CheckoutScreen(PurchaseUI ui)
         {
@@ -267,14 +279,17 @@ namespace RealLifeOverhaul.Ui
                 };
                 _sb.Append(_m.Taxes[i].Owed).Append(';').Append(_m.Taxes[i].Amount).Append('|');
             }
+            ReadHead();
             _m.Total = _ui.totalPrice != null && _ui.totalPrice.activeSelf ? UiWidgets.Text(_ui.totalPriceValue) : null;
             _m.Queue = _ui.inQueueLabel != null && _ui.inQueueLabel.gameObject.activeSelf ? UiWidgets.Text(_ui.inQueueLabel) : null;
+            _m.QueueDetail = _m.Queue != null ? QueueWords() : null;
             _m.Paused = _m.Queue == null ? UiText.T("reallife_ui_buy_paused") : null;   // the game holds time while the register is open
             _m.Order = _ui.orderButton.gameObject.activeSelf ? BuyKits.Words(_ui.orderButton) : null;
             _m.OrderEnabled = _ui.orderButton.interactable;
             _m.Cancel = _ui.cancelButton.gameObject.activeSelf ? BuyKits.Words(_ui.cancelButton) : null;
             _m.CancelEnabled = _ui.cancelButton.interactable;
-            _sb.Append(_m.Total).Append('|').Append(_m.Queue).Append('|').Append(_m.Order).Append(_m.OrderEnabled).Append('|').Append(_m.Cancel).Append(_m.CancelEnabled);
+            _sb.Append(_m.Total).Append('|').Append(_m.Queue).Append('|').Append(_m.QueueDetail).Append('|');
+            _sb.Append(_m.Order).Append(_m.OrderEnabled).Append('|').Append(_m.Cancel).Append(_m.CancelEnabled);
             if (_m.Page > 0 && _m.Page >= UiCheckout.Pages(_m))
             {
                 _m.Page = 0;
@@ -284,6 +299,79 @@ namespace RealLifeOverhaul.Ui
                 typing.DeactivateInputField();   // the game focuses its field as it opens: the kit's own field types, so no key lands twice
             }
             return _sb.ToString();
+        }
+
+        // The shop the register stands in as the game registers it (its name, its address with the district) and, for goods,
+        // what takes them: the vehicle in use (a hand truck is one) or what the player carries, by the name the item panel
+        // gives it. None for the tax office's payment or outside a building. Made again only when either changes.
+        private void ReadHead()
+        {
+            BuildingManager bm = BuildingManager.IsInsideBuilding ? InstanceBehavior<BuildingManager>.Instance : null;
+            BuildingRegistration reg = bm != null && _m.Taxes.Length == 0 ? bm.buildingRegistration : null;
+            if (reg == null)
+            {
+                _m.Head = null;
+                _headOf = null;
+                return;
+            }
+            string carrier = _lines.Count > 0 ? Carrier() : null;
+            if (!ReferenceEquals(reg, _headOf) || carrier != _carrier)
+            {
+                _headOf = reg;
+                _carrier = carrier;
+                string name = reg.GetDisplayName(), address = reg.Address != null ? reg.Address.ToFormattedString() : null;
+                string district = bm.building != null && !string.IsNullOrEmpty(bm.building.Neighbourhood) ? bm.building.Neighbourhood.GetLocalization() : null;
+                address = address == name ? district : string.IsNullOrEmpty(district) ? address : address + ", " + district;
+                _head.Mark = UiIcon.Store;
+                _head.Name = name;
+                _head.Address = address;
+                _head.DeliveredLabel = carrier != null ? UiText.T("reallife_ui_buy_delivered_to") : null;
+                _head.DeliveredTo = carrier;
+            }
+            _m.Head = _head;
+            _sb.Append(_head.Name).Append('|').Append(_head.Address).Append('|').Append(_head.DeliveredTo).Append('|');
+        }
+
+        // What takes the goods, by the words of the item panel (the checkout fades that panel while open; its words stay):
+        // null when the player neither uses a vehicle nor carries anything.
+        private static string Carrier()
+        {
+            if (!PlayerHelper.IsUsingVehicle && !PlayerHelper.IsHoldingItem)
+            {
+                return null;
+            }
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            ItemPanelUI panel = uis != null && uis.playerHUD != null ? uis.playerHUD.itemPanelUI : null;
+            TMP_Text label = panel != null && panel.itemNameLabel != null ? panel.itemNameLabel.GetComponent<TMP_Text>() : null;
+            string words = UiWidgets.Text(label);
+            return string.IsNullOrEmpty(words) ? null : words;
+        }
+
+        // The player's place in the register's line, as the game queues them (the register gives the player a Customer and
+        // joins its line, the first in it the one being served): being served, next, or the place and how many are ahead.
+        // The line holds the game's own customers too, so they count as they stand. Null when the player is in no line.
+        private string QueueWords()
+        {
+            GameManager gm = InstanceBehavior<GameManager>.Instance;
+            Customer me = gm != null && gm.playerController != null ? gm.playerController.GetComponent<Customer>() : null;
+            WaitingLine line = me != null && me.isPlayer ? me.assignedWaitingLine : null;
+            List<Customer> customers = line != null && line.data != null ? line.data.customers : null;
+            bool served = customers != null && me.state == CustomerState.BeingServed;
+            int place = customers != null ? customers.IndexOf(me) : -1, count = customers != null ? customers.Count : 0;
+            if (!served && place < 0)
+            {
+                return null;
+            }
+            if (served != _queueServed || place != _queuePlace || count != _queueCount || _queueWords == null)
+            {
+                _queueServed = served;
+                _queuePlace = place;
+                _queueCount = count;
+                _queueWords = served ? UiText.T("reallife_ui_buy_queue_served") : place == 0 ? UiText.T("reallife_ui_buy_queue_next")
+                    : UiText.T("reallife_ui_buy_queue_place").Replace("{place}", (place + 1).ToString(CultureInfo.InvariantCulture))
+                        .Replace("{count}", count.ToString(CultureInfo.InvariantCulture)).Replace("{ahead}", place.ToString(CultureInfo.InvariantCulture));
+            }
+            return _queueWords;
         }
 
         // Keeps the last of a list: what the game made for this opening.

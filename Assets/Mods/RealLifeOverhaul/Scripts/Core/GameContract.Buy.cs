@@ -41,6 +41,20 @@ namespace RealLifeOverhaul
         public static readonly GameMember TaxField = Field(UiCheckout, Game, "UI.Components.InputField", "tmpInputField", "TMP_InputField");
         public static readonly GameMember TaxSetText = Method(UiCheckout, Game, "UI.Components.InputField", "SetText", "Void", "String", "Boolean");
 
+        // The checkout's head and the player's place in the line: the building the register stands in, its name and district,
+        // what takes the goods, and the waiting line the game puts the player in as a customer.
+        public static readonly GameMember BuyBuilding = Field(UiCheckout, Game, "BuildingManager", "buildingRegistration", "BuildingRegistration");
+        public static readonly GameMember BuyHouse = Field(UiCheckout, Game, "BuildingManager", "building", "Building");
+        public static readonly GameMember BuyShopName = Method(UiCheckout, Game, "BuildingRegistration", "GetDisplayName", "String");
+        public static readonly GameMember BuyDistrict = Field(UiCheckout, Game, "Buildings.Building", "Neighbourhood", "String");
+        public static readonly GameMember BuyByVehicle = Prop(UiCheckout, Game, "Helpers.PlayerHelper", "IsUsingVehicle", "Boolean", true);
+        public static readonly GameMember BuyInHands = Prop(UiCheckout, Game, "Helpers.PlayerHelper", "IsHoldingItem", "Boolean", true);
+        public static readonly GameMember BuyInLine = Field(UiCheckout, Game, "Customer", "assignedWaitingLine", "WaitingLine");
+        public static readonly GameMember BuyLineState = Field(UiCheckout, Game, "Customer", "state", "CustomerState");
+        public static readonly GameMember BuyLinePlayer = Field(UiCheckout, Game, "Customer", "isPlayer", "Boolean");
+        public static readonly GameMember BuyLine = Field(UiCheckout, Game, "EmployeeStations.WaitingLine", "data", "WaitingLineData");
+        public static readonly GameMember BuyLineCustomers = Field(UiCheckout, Game, "EmployeeStations.WaitingLineData", "customers", "List<Customer>");
+
         // The vehicle purchase (PurchaseVehicleUI): its panel, the vehicle's name and price, its specs and colour cells, the delivery and buttons.
         public static readonly GameMember CarHud = Field(UiVehicleBuy, Game, "UI.PlayerHUD.PlayerHUD", "purchaseVehicleUI", "PurchaseVehicleUI");
         public static readonly GameMember CarPanel = Field(UiVehicleBuy, Game, "UI.PurchaseVehicle.PurchaseVehicleUI", "panel", "GameObject");
@@ -58,6 +72,18 @@ namespace RealLifeOverhaul
         public static readonly GameMember CarNextWarehouse = Method(UiVehicleBuy, Game, "UI.Elements.Dropdown", "SelectNextOption", "Void");
         public static readonly GameMember CarChosenWarehouse = Prop(UiVehicleBuy, Game, "UI.Elements.Dropdown", "SelectedOptionIndex", "Int32", false);
         public static readonly GameMember CarNoWarehouse = Field(UiVehicleBuy, Game, "UI.Elements.Dropdown", "onMiddleBoxClicked", "UnityEvent");
+
+        // The car on sale and the lot it stands on: the purchase's asset, the building's showcase cars, a car's own purchase
+        // and the walk to it, as a click on the car does.
+        public static readonly GameMember CarAsset = Field(UiVehicleBuy, Game, "UI.PurchaseVehicle.PurchaseVehicleUI", "_purchasableAsset", "IPurchasableAsset");
+        public static readonly GameMember CarClose = Method(UiVehicleBuy, Game, "UI.PurchaseVehicle.PurchaseVehicleUI", "Close", "Void");
+        public static readonly GameMember CarAnimating = Prop(UiVehicleBuy, Game, "UI.PurchaseVehicle.PurchaseVehicleUI", "IsShowcaseAnimationRunning", "Boolean", true);
+        public static readonly GameMember LotItems = Prop(UiVehicleBuy, Game, "BuildingManager", "allItemControllers", "List<ItemController>", false);
+        public static readonly GameMember LotOnSale = Field(UiVehicleBuy, Game, "ItemController", "playerItemPurchaserSettings", "PlayerItemPurchaserSettings");
+        public static readonly GameMember LotName = Field(UiVehicleBuy, Game, "Controllers.ShowcaseVehicleController", "vehicleName", "String");
+        public static readonly GameMember LotOpen = Method(UiVehicleBuy, Game, "Controllers.ShowcaseVehicleController", "ShowPurchaseUi", "Void");
+        public static readonly GameMember LotWalk = Method(UiVehicleBuy, Game, "EntityController", "MoveTowardsEntity", "Void", "UnityAction");
+        public static readonly GameMember LotType = StaticMethod(UiVehicleBuy, Game, "Vehicles.VehicleTypes.VehicleTypeHelper", "GetVehicleType", "VehicleType", "String");
 
         // The item panel (ItemPanelUI): its own fade group (the one thing the kit writes), the thing, its readings, cargo and buttons.
         public static readonly GameMember PanelHud = Field(UiItemPanel, Game, "UI.PlayerHUD.PlayerHUD", "itemPanelUI", "ItemPanelUI");
@@ -93,6 +119,19 @@ namespace RealLifeOverhaul
         public static readonly GameMember CarType = Field(UiItemPanel, Game, "VehicleController", "vehicleType", "VehicleType");
         public static readonly GameMember CarCargo = Field(UiItemPanel, Game, "VehicleController", "vehicleInstance", "VehicleInstance");
 
+        // The item panel's range and street: the car's fuel module and engine as the game reckons a distance's fuel, the game's
+        // fuel switch, and the HUD's nearest address and district.
+        public static readonly GameMember CarFuel = Field(UiItemPanel, Game, "CarController", "fuelModule", "FuelModule");
+        public static readonly GameMember CarPhysics = Field(UiItemPanel, Game, "CarController", "vehicleController", "VehicleController");
+        public static readonly GameMember FuelAmount = Field(UiItemPanel, Plugins, "NWH.VehiclePhysics2.Modules.Fuel.FuelModule", "amount", "Single");
+        public static readonly GameMember FuelEfficiency = Field(UiItemPanel, Plugins, "NWH.VehiclePhysics2.Modules.Fuel.FuelModule", "efficiency", "Single");
+        public static readonly GameMember FuelIdle = Field(UiItemPanel, Plugins, "NWH.VehiclePhysics2.Modules.Fuel.FuelModule", "idleConsumption", "Single");
+        public static readonly GameMember FuelThirst = Field(UiItemPanel, Plugins, "NWH.VehiclePhysics2.Modules.Fuel.FuelModule", "consumptionMultiplier", "Single");
+        public static readonly GameMember EnginePower = Field(UiItemPanel, Plugins, "NWH.VehiclePhysics2.Powertrain.EngineComponent", "maxPower", "Single");
+        public static readonly GameMember FuelOff = Field(UiItemPanel, Game, "GameVariables", "disableVehicleFuel", "Boolean");
+        public static readonly GameMember PanelStreet = Field(UiItemPanel, Game, "UI.PlayerHUD.PlayerHUD", "nearestBuildingText", "TextLocalizationComponent");
+        public static readonly GameMember PanelDistrict = Field(UiItemPanel, Game, "UI.PlayerHUD.PlayerHUD", "currentNeighborhoodText", "TMP_Text");
+
         // A stack of cargo (CargoItemUi, in the item panel's slots and in manage cargo, as the game and Going Public set it up).
         public static readonly GameMember SlotName = Field(new[] { UiItemPanel, UiManageCargo }, Game, "UI.PlayerHUD.CargoItemUi", "nameLabel", "TextLocalizationComponent");
         public static readonly GameMember SlotPieces = Field(new[] { UiItemPanel, UiManageCargo }, Game, "UI.PlayerHUD.CargoItemUi", "amountLabel", "TMP_Text");
@@ -113,6 +152,8 @@ namespace RealLifeOverhaul
         public static readonly GameMember CargoItems = Field(UiManageCargo, Game, "UI.MergeCargo.ManageCargoUi", "_cargoItems", "List<CargoItem>");
         public static readonly GameMember CargoHolder = Field(UiManageCargo, Game, "UI.MergeCargo.ManageCargoUi", "currentCargoHolder", "ICargoHolder");
         public static readonly GameMember CargoClose = Method(UiManageCargo, Game, "UI.MergeCargo.ManageCargoUi", "Close", "Void");
+        public static readonly GameMember CargoWorth = StaticMethod(UiManageCargo, Game, "ItemHelper", "GetWorth", "Single", "CargoInstance");
+        public static readonly GameMember CargoSellsFor = StaticMethod(UiManageCargo, Game, "ItemHelper", "GetSellingPrice", "Single", "CargoInstance");
 
         // The character screens: the menu of categories, the pieces and colours, the body's sliders, each screen's buttons.
         public static readonly GameMember LookClothes = Field(UiWardrobe, Game, "UI.UIs", "changeCharacterClothesUI", "ChangeCharacterClothesUI");
@@ -122,6 +163,7 @@ namespace RealLifeOverhaul
         public static readonly GameMember LookPicker = Field(UiWardrobe, Game, "Character.Customization.CharacterCustomizer", "elementPicker", "ElementPicker");
         public static readonly GameMember LookColours = Field(UiWardrobe, Game, "Character.Customization.CharacterCustomizer", "appearanceColorPicker", "AppearanceColorPicker");
         public static readonly GameMember LookShown = Field(UiWardrobe, Game, "Character.Customization.CharacterCustomizer", "currentElementType", "AppearanceElementType");
+        public static readonly GameMember LookShowKind = Method(UiWardrobe, Game, "Character.Customization.CharacterCustomizer", "Show", "Void", "AppearanceElementType");
         public static readonly GameMember LookCategories = Field(UiWardrobe, Game, "MenuVertical", "categories", "MenuVertical.Category[]");
         public static readonly GameMember LookCategory = Field(UiWardrobe, Game, "MenuVertical", "_selectedCategoryId", "Int32");
         public static readonly GameMember LookSubMenu = Field(UiWardrobe, Game, "MenuVertical", "subMenu", "MenuVerticalSubMenu");

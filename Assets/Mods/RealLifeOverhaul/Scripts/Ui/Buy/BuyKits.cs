@@ -22,6 +22,10 @@ namespace RealLifeOverhaul.Ui
         public const string CheckoutId = "checkout", VehicleId = "vehicle_purchase", ItemPanelId = "item_panel", CargoId = "manage_cargo",
             WardrobeId = "wardrobe";
 
+        // The item panel's readings: the game's own fuel over a distance (what a skipped bridge burns, five and a half times
+        // the idle use at the car's top speed), a mile in kilometres, and how near a lane the car must be for its limit to hold.
+        internal const float SkipFuelFactor = 5.5f, MilesPerKm = 0.621371f, OnTheRoad = 8f;
+
         private static readonly UiGameHost Checkout = new UiGameHost(new CheckoutGame());
         private static readonly UiGameHost Vehicle = new UiGameHost(new VehicleBuyGame());
         private static readonly UiGameHost Cargo = new UiGameHost(new CargoGame());
@@ -151,6 +155,21 @@ namespace RealLifeOverhaul.Ui
             }
             int at = words.LastIndexOf(" [", StringComparison.Ordinal);
             return at > 0 ? words.Substring(0, at) : words;
+        }
+
+        /// <summary>The street of an address as the game writes it ("12 Main Street" gives "Main Street"); the words themselves without a number.</summary>
+        internal static string StreetOf(string address)
+        {
+            if (string.IsNullOrEmpty(address))
+            {
+                return null;
+            }
+            int i = 0;
+            while (i < address.Length && char.IsDigit(address[i]))
+            {
+                i++;
+            }
+            return i > 0 && i + 1 < address.Length && address[i] == ' ' ? address.Substring(i + 1) : address;
         }
 
         /// <summary>The copies the game made of a template, in order, shown: the template's own parent's children but the template.</summary>

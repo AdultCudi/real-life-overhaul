@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using BigAmbitions.InputSystem;
 using BigAmbitions.Items;
+using NWH.VehiclePhysics2.Modules.Fuel;
 using TMPro;
 using UI;
 using UI.ItemPanel;
@@ -255,6 +257,9 @@ namespace RealLifeOverhaul.Ui
         private readonly List<Transform> _parents = new List<Transform>(4);
         private readonly StringBuilder _sb = new StringBuilder(256);
         private UiCatalogueCard[] _cargo = new UiCatalogueCard[0];
+        private string _status, _streetOf, _districtOf;   // the street and district the HUD shows, and the words they came from
+        private string _range, _speed, _speedUnit;         // the range's and the speed's words, made again only when a figure changes
+        private int _rangeShown = -1, _speedShown = int.MinValue, _limitShown = int.MinValue;
         private string _seen;
         private float _next;
         private bool _dirty = true;
@@ -336,6 +341,88 @@ namespace RealLifeOverhaul.Ui
             return done;
         }
 
+        // The street and district of the nearest address as the HUD shows them ("12 Main Street" in "Midtown" gives "Main
+        // Street, Midtown"), made again only when the HUD's words change.
+        private string Status()
+        {
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            PlayerHUD hud = uis != null ? uis.playerHUD : null;
+            TMP_Text near = hud != null && hud.nearestBuildingText != null ? hud.nearestBuildingText.GetComponent<TMP_Text>() : null;
+            TMP_Text district = hud != null ? hud.currentNeighborhoodText : null;
+            string street = near != null ? near.text : null, place = district != null ? district.text : null;
+            if (!ReferenceEquals(street, _streetOf) || !ReferenceEquals(place, _districtOf))
+            {
+                _streetOf = street;
+                _districtOf = place;
+                string s = BuyKits.StreetOf(UiWidgets.Text(near)), d = UiWidgets.Text(district);
+                _status = string.IsNullOrEmpty(s) ? (string.IsNullOrEmpty(d) ? null : d) : string.IsNullOrEmpty(d) ? s : s + ", " + d;
+            }
+            return _status;
+        }
+
+        // How far the tank still goes by the game's own reckoning of a car's fuel over a distance (what a skipped bridge
+        // burns: the engine's most use an hour as the fuel module reckons it, at five and a half times idle, at the car's top
+        // speed, with the mod's thirst for its kind), and the tank's share for the meter; null when the car burns no fuel or
+        // the game's fuel is off. In miles with the game's imperial units.
+        private string Range(VehicleController car, out float share)
+        {
+            share = -1f;
+            var driven = car as CarController;
+            FuelModule fuel = driven != null ? driven.fuelModule : null;
+            NWH.VehiclePhysics2.VehicleController body = driven != null ? driven.vehicleController : null;
+            GameInstance save = SaveGameManager.Current;
+            if (fuel == null || !fuel.useFuel || body == null || body.powertrain == null || body.powertrain.engine == null || car.vehicleType == null
+                || car.vehicleType.maxSpeed <= 0 || (save != null && save.gameVariables != null && save.gameVariables.disableVehicleFuel))
+            {
+                return null;
+            }
+            float perHour = body.powertrain.engine.maxPower / 10f * Mathf.Clamp01(1f - fuel.efficiency);
+            float perKm = perHour * fuel.idleConsumption * BuyKits.SkipFuelFactor * fuel.consumptionMultiplier / car.vehicleType.maxSpeed;
+            if (!(perKm > 0f) || !(fuel.amount >= 0f))
+            {
+                return null;
+            }
+            share = fuel.capacity > 0f ? Mathf.Clamp01(fuel.amount / fuel.capacity) : -1f;
+            bool imperial = PlayerPrefSettings.useImperial;
+            int far = Mathf.FloorToInt(fuel.amount / perKm * (imperial ? BuyKits.MilesPerKm : 1f));
+            int key = far * 2 + (imperial ? 1 : 0);
+            if (key != _rangeShown || _range == null)
+            {
+                _rangeShown = key;
+                _range = UiText.T("reallife_ui_buy_range_value").Replace("{distance}", far.ToString("N0", CultureInfo.InvariantCulture))
+                    .Replace("{unit}", imperial ? "mi" : "km");
+            }
+            return _range;
+        }
+
+        // The mod's speed as its row in the game's panel shows it and, on a road the traffic knows, against that road's limit
+        // as the police read it (Crime/RoadMap: "32 of 50 km/h", the meter the share of the limit, amber above it); the row's
+        // own words off the roads or with the map not there.
+        private UiReading Speed(VehicleController car, string shown)
+        {
+            var reading = new UiReading { Icon = UiIcon.FastForward, Label = UiText.T("reallife_ui_buy_speed"), Share = -1f, Value = shown };
+            int speed = SpeedReading.Shown;
+            string unit = SpeedReading.ShownUnit;
+            if (speed == int.MinValue || unit == null || car == null || !TrafficTools.Street || !RoadMap.Ensure()
+                || !RoadMap.NearestLane(car.transform.position, out float distance, out _, out float limitKmh) || distance > BuyKits.OnTheRoad || !(limitKmh > 0f))
+            {
+                return reading;
+            }
+            int limit = Mathf.RoundToInt(unit == "mph" ? limitKmh * BuyKits.MilesPerKm : limitKmh);
+            if (speed != _speedShown || limit != _limitShown || !ReferenceEquals(unit, _speedUnit) || _speed == null)
+            {
+                _speedShown = speed;
+                _limitShown = limit;
+                _speedUnit = unit;
+                _speed = UiText.T("reallife_ui_buy_speed_of").Replace("{speed}", speed.ToString(CultureInfo.InvariantCulture))
+                    .Replace("{limit}", limit.ToString(CultureInfo.InvariantCulture)).Replace("{unit}", unit);
+            }
+            reading.Value = _speed;
+            reading.Share = limit > 0 ? Mathf.Clamp01(speed / (float)limit) : -1f;
+            reading.Tone = speed > limit ? UiRole.Warn : UiRole.None;
+            return reading;
+        }
+
         // The panel as the game filled it. Returns what the screen shows, to see a change by.
         private string Read()
         {
@@ -348,10 +435,11 @@ namespace RealLifeOverhaul.Ui
             _m.Icon = game ? UiIcon.GameController : car != null ? UiIcon.Car : UiIcon.Package;
             _m.Glyph = _m.Icon;
             _m.Name = BuyKits.Words(_ui.itemNameLabel);
+            _m.Status = car != null ? Status() : null;
             string type = car != null && car.vehicleType != null ? car.vehicleType.vehicleTypeName : item != null ? item.itemName : null;
             _m.Picture = game ? null : BuyPictures.Item(type);
             _m.Aspect = 1f;
-            _sb.Append(_m.Title).Append('|').Append(_m.Name).Append('|').Append(_m.Picture).Append('|');
+            _sb.Append(_m.Title).Append('|').Append(_m.Name).Append('|').Append(_m.Status).Append('|').Append(_m.Picture).Append('|');
             ReadVehicle(car);
             ReadMeta();
             ReadCargo(car, item);
@@ -388,6 +476,12 @@ namespace RealLifeOverhaul.Ui
                             Icon = row == fuel ? UiIcon.Drop : UiIcon.Wrench, Label = UiText.T(row == fuel ? "itempanelui_vehicle_fuel" : "itempanelui_maintenance_condition"),
                             Share = share, Tone = BuyKits.Tone(share), Value = value
                         });
+                        float left = -1f;
+                        string range = row == fuel ? Range(car, out left) : null;
+                        if (range != null)
+                        {
+                            _readings.Add(new UiReading { Icon = UiIcon.Navigation, Label = UiText.T("reallife_ui_buy_range"), Share = left, Tone = BuyKits.Tone(left), Value = range });
+                        }
                     }
                     else if (row == parking)
                     {
@@ -395,7 +489,7 @@ namespace RealLifeOverhaul.Ui
                     }
                     else if (row.name.StartsWith(SpeedRow, StringComparison.Ordinal))
                     {
-                        _readings.Add(new UiReading { Icon = UiIcon.FastForward, Label = UiText.T("reallife_ui_buy_speed"), Share = -1f, Value = BuyKits.WordsAt(row.transform, "Value") });
+                        _readings.Add(Speed(car, BuyKits.WordsAt(row.transform, "Value")));
                     }
                     else if (BuyKits.AllWords(row.transform, _words) > 0)
                     {
