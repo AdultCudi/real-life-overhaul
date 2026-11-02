@@ -135,6 +135,11 @@ namespace RealLifeOverhaul.Ui
                     sys ? UiFlags.Centre | UiFlags.Middle : me ? UiFlags.Right | UiFlags.Middle : UiFlags.Middle);
                 s.Items[t].Alpha = 1f;
             }
+            if (m.Mood != UiIcon.None && !sys && !me)
+            {
+                // Their mood as the game shows it by the line: its own glyph at the bubble's foot, beside it, never inside the words.
+                Icon(s, at, bx + bw + UiTokens.S2, y + bh - UiTokens.Icon - UiTokens.S2, UiTokens.Icon, m.Mood, UiRole.None, UiFlags.None, true);
+            }
             return bh;
         }
 

@@ -688,6 +688,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiAppWindow.Footed.cs" Link="Mod\UiAppWindow.Footed.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiAppWindow.Head.cs" Link="Mod\UiAppWindow.Head.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiConversation.Fields.cs" Link="Mod\UiConversation.Fields.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFormRows.cs" Link="Mod\UiFormRows.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiMonologue.cs" Link="Mod\UiMonologue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Ledger.cs" Link="Mod\UiDraw.Ledger.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Pages\PopulationPages.cs" Link="Mod\PopulationPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Pages\FlareCityPages.cs" Link="Mod\FlareCityPages.cs" />

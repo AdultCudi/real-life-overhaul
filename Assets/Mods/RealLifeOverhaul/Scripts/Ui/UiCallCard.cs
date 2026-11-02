@@ -13,10 +13,14 @@ namespace RealLifeOverhaul.Ui
         public string Role;                         // over the name: "Customer Service, Bloom Cafe"
         public string Length;                       // the call's length, "1:24"
         public string Line;                         // what they say now
+        public UiIcon Mood = UiIcon.None;           // the mood the game shows by the line, as a small glyph before it; None where it shows none
         public bool Waiting;                        // their next line is coming: the typing dots under this one
         public UiDecisionChoice[] Choices = new UiDecisionChoice[0];
         public int Selected = -1;
         public UiActionModel[] Buttons = new UiActionModel[0];   // the game's way out of the line (Hang up, Decline), the danger kind
+        public UiFormRow[] Rows = new UiFormRow[0];               // a form the line asks for (a campaign, a delivery), under the line (UiFormRows)
+        public int RowCount;
+        public UiFormPick Pick = new UiFormPick();
         public UiPrompt[] Prompts = new UiPrompt[0];
         public int PromptCount;
     }
@@ -61,8 +65,13 @@ namespace RealLifeOverhaul.Ui
             cy += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.AppTitle)) + UiTokens.S4;
             if (!string.IsNullOrEmpty(m.Line))
             {
-                float lh = UiTextRules.WrappedHeight(m.Line, UiStyle.Body, inner, 8);
-                UiDraw.Text(s, at, cx, cy, inner, UiStyle.Body, UiRole.Text, m.Line, UiFlags.Label | UiFlags.Wrap | UiFlags.Middle, 8);
+                float lead = MoodLead(m);
+                float lh = UiTextRules.WrappedHeight(m.Line, UiStyle.Body, inner - lead, 8);
+                if (lead > 0f)
+                {
+                    UiDraw.Icon(s, at, cx, cy + (UiTextRules.LineHeight(UiStyle.Body) - UiTokens.Icon) / 2f, UiTokens.Icon, m.Mood, UiRole.None, UiFlags.Middle, true);
+                }
+                UiDraw.Text(s, at, cx + lead, cy, inner - lead, UiStyle.Body, UiRole.Text, m.Line, UiFlags.Label | UiFlags.Wrap | UiFlags.Middle, 8);
                 cy += UiDraw.Snap(lh) + UiTokens.S5;
             }
             if (m.Waiting)
@@ -75,6 +84,12 @@ namespace RealLifeOverhaul.Ui
                 };
                 s.Add(ref dots);
                 cy += Dots + UiTokens.S5;
+            }
+            if (m.RowCount > 0)
+            {
+                float fh = UiFormRows.Height(m.Rows, m.RowCount, inner, m.Pick);
+                UiFormRows.Lay(s, at, m.Rows, m.RowCount, m.Pick, cx, cy, inner);
+                cy += fh + UiTokens.S5;
             }
             for (int i = 0; i < m.Choices.Length; i++)
             {
@@ -141,9 +156,10 @@ namespace RealLifeOverhaul.Ui
             h += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.AppTitle)) + UiTokens.S4;
             if (!string.IsNullOrEmpty(m.Line))
             {
-                h += UiDraw.Snap(UiTextRules.WrappedHeight(m.Line, UiStyle.Body, inner, 8)) + UiTokens.S5;
+                h += UiDraw.Snap(UiTextRules.WrappedHeight(m.Line, UiStyle.Body, inner - MoodLead(m), 8)) + UiTokens.S5;
             }
             h += m.Waiting ? Dots + UiTokens.S5 : 0f;
+            h += m.RowCount > 0 ? UiFormRows.Height(m.Rows, m.RowCount, inner, m.Pick) + UiTokens.S5 : 0f;
             for (int i = 0; i < m.Choices.Length; i++)
             {
                 h += UiConversation.ChoiceHeight(ref m.Choices[i]) + UiTokens.S2;
@@ -151,6 +167,9 @@ namespace RealLifeOverhaul.Ui
             h += (m.Buttons.Length > 0 ? UiTokens.S4 + UiTokens.Control : 0f) + UiTokens.S8;
             return Math.Max(UiDraw.Snap(h), SideHeight(m) + UiTokens.S12 * 2f);
         }
+
+        // The room the mood's glyph takes before the line, when the game shows one.
+        private static float MoodLead(UiCallModel m) => m.Mood != UiIcon.None ? UiTokens.Icon + UiTokens.S2 : 0f;
 
         private static float SideHeight(UiCallModel m) =>
             Face + UiTokens.S2 + (string.IsNullOrEmpty(m.Length) ? 0f : UiTokens.S5 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)));
