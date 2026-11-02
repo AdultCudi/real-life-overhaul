@@ -86,6 +86,12 @@ namespace RealLifeOverhaul.Ui
                 conceal.Add(app.business.transform.Find(Layout));
                 conceal.Add(app.GetComponent<Graphic>());
                 conceal.Add(app.business.GetComponent<Graphic>());
+                // The schedule's picker of people is the game's box outside the app; the kit draws its list beside the board.
+                UIs uis = InstanceBehavior<UIs>.Instance;
+                if (uis != null && uis.scheduleEmployeeSelection != null && GameContract.SchedPickBox.Field?.GetValue(uis.scheduleEmployeeSelection) is GameObject pick)
+                {
+                    conceal.Add(pick.transform);
+                }
             }
 
             public IUiScreen Make(Component found) => new BizManScreen((BizMan)found);

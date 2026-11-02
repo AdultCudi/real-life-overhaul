@@ -55,27 +55,32 @@ namespace RealLifeOverhaul.Ui
                 if (fresh)
                 {
                     CloseLists();
-                    if (_openedByKit && !BizManRules.Drawn(gameTab) && PressTab(b, BizManRules.Presentation))
+                    if (_openedByKit && !BizManRules.Drawn(gameTab, Ops) && PressTab(b, BizManRules.Presentation))
                     {
                         _shown = _gameTab = BizManRules.Presentation;   // a row of the portfolio opens the place's building, not a page the kit hands over
                     }
                 }
                 _openedByKit = false;
             }
-            if (BizManRules.Drawn(_shown) && _shown != _gameTab)
+            if (BizManRules.Drawn(_shown, Ops) && _shown != _gameTab)
             {
                 _shown = _gameTab;   // a drawn page is always the one the game shows: the kit never shows one page over another
             }
             Nav(b);
             Head(b);
             ClearPart();
-            if (!BizManRules.Drawn(_shown))
+            if (!BizManRules.Drawn(_shown, Ops))
             {
                 Handover(b);
                 return;
             }
-            switch (BizManRules.PartOf(_shown))
+            switch (BizManRules.PartOf(_shown, Ops))
             {
+                case BizManPart.Schedule: Schedule(b); break;
+                case BizManPart.Managers: Managers(b); break;
+                case BizManPart.Factory: Factory(b); break;
+                case BizManPart.Drivers: Fleet(b); break;
+                case BizManPart.Stock: Stock(b); break;
                 case BizManPart.Insight: Insight(b); break;
                 case BizManPart.Pricing: Pricing(b); break;
                 case BizManPart.Deliveries: Deliveries(b); break;
@@ -338,8 +343,13 @@ namespace RealLifeOverhaul.Ui
             sig = sig * 31 + (names != null ? names.SelectedOptionIndex : -1);
             sig = sig * 31 + (closed != null ? (closed.isOn ? 1 : 0) + (closed.interactable ? 2 : 0) : 3);
             sig = sig * 31 + EntryCount(need) * 7 + EntryCount(alert);
+            sig = sig * 31 + _m.Ops.ListOpen + _opsHeld * 7 + (Ops ? 1 : 0);
             switch (_shown)
             {
+                case BizManRules.Schedule: return sig * 31 + ScheduleSignature(b);
+                case BizManRules.PricingManagers: case BizManRules.LogisticsManagers: case BizManRules.PurchasingAgents: case BizManRules.HrManagers: case BizManRules.Headhunters:
+                    return sig * 31 + ManagersSignature(b);
+                case BizManRules.Factory: case BizManRules.Drivers: case BizManRules.Inventory: return sig * 31 + PlantSignature(b);
                 case BizManRules.Presentation: return sig * 31 + PresentationSignature(b);
                 case BizManRules.Interiors: return sig * 31 + InteriorSignature();
                 case BizManRules.Insight:
@@ -464,6 +474,7 @@ namespace RealLifeOverhaul.Ui
             _m.KindOpen = _m.FontOpen = false;
             _m.Uniforms = _m.LogoTitle = _m.NameLabel = _m.NameText = _m.NamePlaceholder = null;
             _m.SliderFigure = null;
+            ClearOps();
         }
 
         private static UiActionModel Do(int what, string label, UiButtonKind kind, UiIcon icon, UiAction key, bool disabled = false) =>

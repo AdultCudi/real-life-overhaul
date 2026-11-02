@@ -22,7 +22,12 @@ namespace RealLifeOverhaul.Ui
         Settings,       // the name, the kind, the logo, the uniforms, shutting down
         Estate,         // the building owned: its rent, the unit of its own, selling it
         Interior,       // the mod's own Interior tab: the scores beside the page chosen of what the interior does
-        Classic         // a page only the game's own view shows, opened from its entry
+        Classic,        // a page only the game's own view shows, opened from its entry
+        Schedule,       // the shifts of a day as a board, the people beside it
+        Managers,       // a headquarters' managers of one kind: their plans, the chosen one's form and goods
+        Factory,        // a factory's machines and the chosen one's recipe
+        Drivers,        // a warehouse's vehicle slots and who drives each
+        Stock           // a warehouse's goods
     }
 
     /// <summary>A line of a page written as text (the Interior tab's): a title, a heading, a line in its tone or a quieter note.</summary>
@@ -213,6 +218,9 @@ namespace RealLifeOverhaul.Ui
         public string SliderFigure;
         public float SliderShare;
         public bool SliderHeld;
+
+        // The operations: the schedule, the managers, the factory, the warehouse
+        public BizOpsModel Ops = new BizOpsModel();
 
         // Classic
         public UiIcon ClassicIcon;

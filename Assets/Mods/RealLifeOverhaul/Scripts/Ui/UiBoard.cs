@@ -20,6 +20,8 @@ namespace RealLifeOverhaul.Ui
         public int Start, End;   // minutes since midnight
         public string Name;      // the person's name, written on the bar
         public bool Warn;        // overworked, or missing the skill: the warning's glyph on the bar
+        public float Hue;        // the person's face's hue, where the board shows faces on its bars
+        public UiRole Ring;      // their mood, as every portrait's ring says it
     }
 
     /// <summary>How a drag takes hold of a shift: its start edge, its end edge or its body.</summary>
@@ -56,6 +58,9 @@ namespace RealLifeOverhaul.Ui
         public int Now = -1;                           // minutes since midnight of the now line, or -1 on another day
         public float Offset;                           // px the lanes have scrolled; Lay writes back what it took
         public string EmptyTitle, EmptyBody;           // no lanes yet: what fills the board and how
+        public bool[] OpenHours;                       // the opening hours by the hour of the day (0 to 23), for a day of several openings; null: OpenFrom to OpenTo
+        public bool HoursPress;                        // each hour of the ruler is a target that opens or closes it (RulerCommand)
+        public bool Faces;                             // a bar leads with the person's face where it has the room
 
         // Written by Lay: where the lanes stand, so a pointer's place reads as a lane and a time.
         public float RulerX, RulerW, LanesTop, LanesHeight, LaneHeight;
@@ -74,7 +79,7 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class UiBoard
     {
-        public const int ShiftCommand = 30, LaneCommand = 31, DayCommand = 32, ActionCommand = 33;
+        public const int ShiftCommand = 30, LaneCommand = 31, DayCommand = 32, ActionCommand = 33, RulerCommand = 34;
         public const float LaneHead = 232f;          // px: a lane's face and name, as wide as the window's sidebar
         public const float LaneHeight = 56f;         // px: a lane, a face of 40 with a step above and below
         private const float Stripe = 4f;             // px: a bar's edge in its lane's colour
@@ -148,9 +153,39 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < hours && i < m.Hours.Length; i++)
             {
                 float hx = m.RulerX + i * perHour;
-                UiDraw.Text(s, at, hx + UiTokens.S1, y + (UiTokens.PairRow - UiTextRules.LineHeight(UiStyle.Small)) / 2f, perHour - UiTokens.S1, UiStyle.Small, UiRole.Muted, m.Hours[i],
-                    UiFlags.Truncate | UiFlags.Share | UiFlags.Middle);
+                int hour = m.FirstHour + i;
+                bool open = Open(m, hour);
+                UiAt on = at;
+                int face = -1;
+                if (m.HoursPress)
+                {
+                    // An hour that opens or closes as the game's own hour toggles do: a still face for the hover, the open
+                    // hours marked by a strip under their words.
+                    face = UiDraw.Box(s, at, hx, y, perHour, UiTokens.PairRow, UiRole.None, UiRole.None, UiTokens.RadiusSmall);
+                    on = at.In(face);
+                }
+                UiDraw.Text(s, on, hx + UiTokens.S1, y + (UiTokens.PairRow - UiTextRules.LineHeight(UiStyle.Small)) / 2f, perHour - UiTokens.S1, UiStyle.Small,
+                    open || m.OpenHours == null ? UiRole.Text2 : UiRole.Muted, m.Hours[i], UiFlags.Truncate | UiFlags.Share | UiFlags.Middle);
+                if (m.OpenHours != null && open)
+                {
+                    UiDraw.Box(s, on, hx + UiTokens.Hairline, y + UiTokens.PairRow - UiTokens.Hairline * 2f, perHour - UiTokens.Hairline * 2f, UiTokens.Hairline * 2f, UiRole.Ok,
+                        UiRole.None, 0f, UiFlags.Decor | UiFlags.Share);
+                }
+                if (face >= 0)
+                {
+                    UiDraw.Node(s, at, hx, y, perHour, UiTokens.PairRow, RulerCommand, hour, face);
+                }
             }
+        }
+
+        // Whether an hour is open: by the hour where the day has several openings, else inside OpenFrom to OpenTo.
+        private static bool Open(UiBoardModel m, int hour)
+        {
+            if (m.OpenHours != null)
+            {
+                return hour >= 0 && hour < m.OpenHours.Length && m.OpenHours[hour];
+            }
+            return m.OpenFrom < 0 || (hour * 60 >= m.OpenFrom && hour * 60 < m.OpenTo);
         }
 
         // The lanes in their frame: the hours' lines, then a lane each, its face and name, its closed hours darker and its shifts.
@@ -217,7 +252,24 @@ namespace RealLifeOverhaul.Ui
                 }
                 UiDraw.Text(s, inside, sx, top + nameH + UiTokens.S1, tx + tw - sx, UiStyle.Small, warns ? UiRole.WarnText : UiRole.Text2, sub, UiFlags.Truncate | UiFlags.Middle);
             }
-            if (m.OpenFrom >= 0 && m.OpenTo > m.OpenFrom)
+            if (m.OpenHours != null)
+            {
+                // Each run of closed hours darker, as the game's schedule shades the hours a shop is shut.
+                for (int h = m.FirstHour; h < m.LastHour; h++)
+                {
+                    if (Open(m, h) || (h > m.FirstHour && !Open(m, h - 1)))
+                    {
+                        continue;
+                    }
+                    int e = h;
+                    while (e < m.LastHour && !Open(m, e))
+                    {
+                        e++;
+                    }
+                    Closed(s, inside, m, y, rx, h * 60, e * 60, perHour);
+                }
+            }
+            else if (m.OpenFrom >= 0 && m.OpenTo > m.OpenFrom)
             {
                 Closed(s, inside, m, y, rx, m.FirstHour * 60, m.OpenFrom, perHour);
                 Closed(s, inside, m, y, rx, m.OpenTo, m.LastHour * 60, perHour);
@@ -291,6 +343,13 @@ namespace RealLifeOverhaul.Ui
             }
             UiRole ink = chosen ? UiRole.OnAccent : UiRole.Text;
             float pad = UiTokens.S2 + Stripe, room = bw - pad - UiTokens.S2;
+            float head = UiTokens.IconSmall + UiTokens.S2;   // a face on a bar: the size of the words' line, its ring the person's mood
+            if (m.Faces && room >= head + UiTokens.S16)
+            {
+                UiDraw.Portrait(s, inside, bx + pad, by + (bh - head) / 2f, head, shift.Name, shift.Hue, shift.Ring);
+                pad += head + UiTokens.S2;
+                room -= head + UiTokens.S2;
+            }
             if (shift.Warn && room > UiTokens.IconSmall + UiTokens.S6)
             {
                 UiDraw.Icon(s, inside, bx + bw - UiTokens.S2 - UiTokens.IconSmall, by + (bh - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Warning, chosen ? UiRole.OnAccent : UiRole.Warn,

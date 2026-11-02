@@ -127,7 +127,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
-                if (BizManRules.Drawn(name))
+                if (BizManRules.Drawn(name, Ops))
                 {
                     return false;
                 }

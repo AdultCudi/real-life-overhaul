@@ -38,7 +38,13 @@ namespace RealLifeOverhaul.Ui
             UiDataTable.First + UiDataTable.Head, UiDataTable.First + UiDataTable.Filter, UiDataTable.First + UiDataTable.Search, UiDataTable.First + UiDataTable.Row,
             UiDataTable.First + UiDataTable.Clear, UiDataTable.First + UiDataTable.Act,
             Goods + UiDataTable.Head, Goods + UiDataTable.Less, Goods + UiDataTable.Type, Goods + UiDataTable.More, Goods + UiDataTable.Row,
-            UiChart.First + UiChart.Point, UiCatalogue.First + UiCatalogue.Card, UiCatalogue.First + UiCatalogue.Action
+            UiChart.First + UiChart.Point, UiCatalogue.First + UiCatalogue.Card, UiCatalogue.First + UiCatalogue.Action,
+            OpsRow, OpsChoice, OpsOption, OpsLess, OpsType, OpsMore, OpsSlider, OpsPlan, OpsAction, OpsTab, OpsStop, OpsStopRemove, OpsStopChoice, OpsDayOpen, OpsSearch,
+            OpsCancelFill, UiBoard.ShiftCommand, UiBoard.LaneCommand, UiBoard.DayCommand, UiBoard.ActionCommand, UiBoard.RulerCommand, UiCard.ButtonCommand, UiCard.CheckCommand,
+            People + UiDataTable.Head, People + UiDataTable.Filter, People + UiDataTable.Search, People + UiDataTable.Row, People + UiDataTable.Clear,
+            Table + UiDataTable.Head, Table + UiDataTable.Filter, Table + UiDataTable.Search, Table + UiDataTable.Row, Table + UiDataTable.Clear,
+            Table + UiDataTable.Pick, Table + UiDataTable.Mass, Table + UiDataTable.Done, Table + UiDataTable.Less, Table + UiDataTable.Type, Table + UiDataTable.More,
+            Table + UiDataTable.Act
         };
 
         [ThreadStatic] private static float _split;   // where a page's own layout splits its two columns this layout (a photo's page), or NaN for the middle
@@ -68,6 +74,10 @@ namespace RealLifeOverhaul.Ui
                 s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
             }
             UiDraw.PromptBar(s, frame, keys);
+            if (m.Page == BizManPage.Business && m.Ops.Card != null)
+            {
+                UiCard.LayOver(s, m.Ops.Card, frame, keys);   // a question the game asks inside the page stands over it as its own boxes do
+            }
         }
 
         /// <summary>The page dimmed under a list or a card opened over it, so what it covers reads as behind it.</summary>
@@ -166,6 +176,11 @@ namespace RealLifeOverhaul.Ui
                 case BizManPart.Estate: EstatePage(s, at, m, x, under, w, bottom, keys); break;
                 case BizManPart.Classic: ClassicPage(s, at, m, x, under, w, bottom, keys); break;
                 case BizManPart.Interior: InteriorPage(s, at, m, x, under, w, bottom, keys); break;
+                case BizManPart.Schedule: SchedulePage(s, at, m, x, under, w, bottom, keys); break;
+                case BizManPart.Managers: ManagersPage(s, at, m, x, under, w, bottom, keys); break;
+                case BizManPart.Factory: FactoryPage(s, at, m, x, under, w, bottom, keys); break;
+                case BizManPart.Drivers: DriversPage(s, at, m, x, under, w, bottom, keys); break;
+                case BizManPart.Stock: StockPage(s, at, m, x, under, w, bottom, keys); break;
                 default: BuildingPage(s, at, m, x, under, w, bottom, keys); break;
             }
             if (m.Head != null)

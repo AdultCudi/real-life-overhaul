@@ -4,7 +4,7 @@ namespace RealLifeOverhaul.Ui
 {
     /// <summary>
     /// BizMan's rules on the kit, game-free and checked offline: which of the game's tabs the kit draws and which open the
-    /// game's own view until their pages are drawn, each tab's and each kind of business's glyph (one glyph a role, its
+    /// game's own view (another mod's, the operations while their switch is off), each tab's and each kind of business's glyph (one glyph a role, its
     /// colour its own), which children of the game's tab bar are the game's (any other is another mod's), and the step an
     /// amount takes on a stepper. Cost: a few comparisons, at a layout or a press only.
     /// </summary>
@@ -26,11 +26,21 @@ namespace RealLifeOverhaul.Ui
             PurchasingAgents, HrManagers, Headhunters
         };
 
-        /// <summary>The part the kit draws for a game's tab, or Classic for a tab only the game's own view shows yet.</summary>
-        public static BizManPart PartOf(string tab)
+        /// <summary>
+        /// The part the kit draws for a game's tab, or Classic for a tab only the game's own view shows. The operations (the
+        /// schedule, the managers, the factory, the warehouse's tabs) are drawn while their own switch in Mod settings is on
+        /// (ops), so a player who meets a broken one hands those tabs alone back to the game while the rest stays on the kit.
+        /// </summary>
+        public static BizManPart PartOf(string tab, bool ops)
         {
             switch (tab)
             {
+                case Schedule: return ops ? BizManPart.Schedule : BizManPart.Classic;
+                case PricingManagers: case LogisticsManagers: case PurchasingAgents: case HrManagers: case Headhunters:
+                    return ops ? BizManPart.Managers : BizManPart.Classic;
+                case Factory: return ops ? BizManPart.Factory : BizManPart.Classic;
+                case Drivers: return ops ? BizManPart.Drivers : BizManPart.Classic;
+                case Inventory: return ops ? BizManPart.Stock : BizManPart.Classic;
                 case Presentation: return BizManPart.Building;
                 case Insight: return BizManPart.Insight;
                 case Pricing: return BizManPart.Pricing;
@@ -43,8 +53,8 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        /// <summary>True for a tab the kit draws; false for one whose page the game's own view shows (its schedule, its managers, another mod's).</summary>
-        public static bool Drawn(string tab) => PartOf(tab) != BizManPart.Classic;
+        /// <summary>True for a tab the kit draws; false for one whose page the game's own view shows (another mod's, or the operations with their switch off).</summary>
+        public static bool Drawn(string tab, bool ops) => PartOf(tab, ops) != BizManPart.Classic;
 
         /// <summary>A tab's glyph, one a role; another mod's tab wears the glyph of the phone's other mods.</summary>
         public static UiIcon TabIcon(string tab)

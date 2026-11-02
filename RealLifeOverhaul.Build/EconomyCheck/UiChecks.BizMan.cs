@@ -31,13 +31,18 @@ internal static partial class Program
 
     private static void BizManRuleChecks()
     {
-        // The kit draws the everyday tabs and the mod's own Interior tab; the schedule, the managers, the factory, the warehouse's and another mod's open the game's own view.
-        Check(BizManRules.Drawn("Presentation") && BizManRules.Drawn("Insight") && BizManRules.Drawn("InventoryPricing") && BizManRules.Drawn("Deliveries")
-              && BizManRules.Drawn("Marketing") && BizManRules.Drawn("Settings") && BizManRules.Drawn("RealEstate") && BizManRules.Drawn(BizManRules.Interiors),
+        // The kit draws the everyday tabs and the mod's own Interior tab, and the operations while their own switch is on;
+        // another mod's tab, and the operations with their switch off, open the game's own view.
+        Check(BizManRules.Drawn("Presentation", false) && BizManRules.Drawn("Insight", false) && BizManRules.Drawn("InventoryPricing", false) && BizManRules.Drawn("Deliveries", false)
+              && BizManRules.Drawn("Marketing", false) && BizManRules.Drawn("Settings", false) && BizManRules.Drawn("RealEstate", false) && BizManRules.Drawn(BizManRules.Interiors, false),
             "bizman: the kit draws the presentation, insight, prices, deliveries, marketing, settings, real estate and the mod's Interior tab");
-        Check(!BizManRules.Drawn("Schedule") && !BizManRules.Drawn("PricingManagers") && !BizManRules.Drawn("Factory") && !BizManRules.Drawn("Drivers")
-              && !BizManRules.Drawn("Inventory") && !BizManRules.Drawn("BizSuite_Tab"),
-            "bizman: the schedule, the managers, the factory, the warehouse's tabs and other mods' open the game's own view, with a handover");
+        Check(BizManRules.Drawn("Schedule", true) && BizManRules.Drawn("PricingManagers", true) && BizManRules.Drawn("LogisticsManagers", true) && BizManRules.Drawn("PurchasingAgents", true)
+              && BizManRules.Drawn("HrManagers", true) && BizManRules.Drawn("Headhunters", true) && BizManRules.Drawn("Factory", true) && BizManRules.Drawn("Drivers", true)
+              && BizManRules.Drawn("Inventory", true) && !BizManRules.Drawn("BizSuite_Tab", true),
+            "bizman: the schedule, the managers, the factory and the warehouse's tabs are drawn while their switch is on; another mod's opens the game's own view");
+        Check(!BizManRules.Drawn("Schedule", false) && !BizManRules.Drawn("PricingManagers", false) && !BizManRules.Drawn("Headhunters", false) && !BizManRules.Drawn("Factory", false)
+              && !BizManRules.Drawn("Drivers", false) && !BizManRules.Drawn("Inventory", false) && BizManRules.PartOf("Schedule", false) == BizManPart.Classic,
+            "bizman: with the operations' switch off, the schedule, the managers, the factory and the warehouse's tabs open the game's own view, with a handover");
         // Another mod's child of the tab bar is told from the game's and the mod's own.
         Check(UiHostRules.Own("Insight", BizManRules.GameTabs) && UiHostRules.Own(BizManRules.Interiors, BizManRules.GameTabs)
               && !UiHostRules.Own("EmpireMotorsManagementButton", BizManRules.GameTabs) && !UiHostRules.Own("MeaningfulAmbience", BizManRules.GameTabs),

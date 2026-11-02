@@ -23,6 +23,10 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
+            if (_m.Ops.Card != null && (command == UiCard.ButtonCommand || command == UiCard.CheckCommand))
+            {
+                return PressSchedule(b, command, arg);   // a question over the page takes its own buttons, whose numbers the sidebar's share
+            }
             switch (command)
             {
                 case BizManPages.Section: return Section(b, arg);
@@ -139,7 +143,7 @@ namespace RealLifeOverhaul.Ui
                     _sliderHeld = !_sliderHeld;
                     return true;
                 default:
-                    return false;
+                    return PressOps(b, command, arg);
             }
         }
 
@@ -160,7 +164,7 @@ namespace RealLifeOverhaul.Ui
                 return false;
             }
             string name = _tabs[index].name;
-            if (!BizManRules.Drawn(name))
+            if (!BizManRules.Drawn(name, Ops))
             {
                 _shown = name;
                 return true;
