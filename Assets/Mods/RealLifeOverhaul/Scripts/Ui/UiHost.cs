@@ -139,6 +139,20 @@ namespace RealLifeOverhaul.Ui
             _typeSoon = _screen is IUiTypingSubmit;   // a box for words takes the keys as it opens, once the game has filled it (next frame)
         }
 
+        /// <summary>
+        /// The keys have gone back to the game (a screen that holds them only while asked, as the phone does): the ring goes
+        /// and the mouse leads again, nothing else moves.
+        /// </summary>
+        public void PointerLeads()
+        {
+            if (_screen == null || _view == null)
+            {
+                return;
+            }
+            _mode.Start(false);
+            LeadChanged();
+        }
+
         /// <summary>The screen is hidden: typing ends, a drag held is let go of, motion stops where it ends, the host sleeps.</summary>
         public void Hide()
         {

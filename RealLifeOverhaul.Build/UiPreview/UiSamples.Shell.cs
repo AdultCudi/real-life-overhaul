@@ -1,37 +1,87 @@
+using System.Collections.Generic;
+using RealLifeOverhaul.GameUi;
 using RealLifeOverhaul.Ui;
 
 /// <summary>
 /// The full menu's frame and the boxes and notices every screen uses (Scripts/Ui/Shell), with real-looking words: the
-/// status bar's app row with an app open and news on a tile, All apps on each folder (other mods' apps among them, an
-/// empty folder), the question box plain and negative and with a long body, the acknowledgement, the text box empty and
+/// status bar's app row with an app open and news on a tile, All apps on each folder (other mods' apps with their own
+/// pictures, and none of them), the question box plain and negative and with a long body, the acknowledgement, the text box empty and
 /// typed in, the mod's own message, the notice cards (every kind, three at once, a long one) and the notice list, full
 /// and empty. Each word through its key, so every language is laid out.
 /// </summary>
 internal static partial class UiSamples
 {
-    /// <summary>The phone's first home page in the app row, then All apps: the old dock's two, then the game's own.</summary>
-    public static readonly string[] RowIds = { "RealLifePlanner", "RealLifeFlare", "Persona", "Contacts", "MyEmployees", "BizMan", "EconoView", "VoogleMaps" };
+    private static string[] _rowIds;
 
-    public const int RowContacts = 3, RowBizMan = 5;
+    /// <summary>The app row's apps: the phone's first home page in its own order (the sample phone's, as the frame fills it).</summary>
+    public static string[] RowIds
+    {
+        get
+        {
+            if (_rowIds == null)
+            {
+                var row = new List<string>();
+                foreach (UiShellApp a in ShellApps((key, english) => english, true))
+                {
+                    if (a.InRow)
+                    {
+                        row.Add(a.Id);
+                    }
+                }
+                _rowIds = row.ToArray();
+            }
+            return _rowIds;
+        }
+    }
 
-    /// <summary>The status bar with the frame's app row: the open app filled, news on Contacts and the Planner, the rest's on All apps.</summary>
+    public static int RowContacts => System.Array.IndexOf(RowIds, "Contacts");
+
+    public static int RowBizMan => System.Array.IndexOf(RowIds, "BizMan");
+
+    /// <summary>
+    /// The frame's apps as the game side fills them while the kit phone stands: the sample phone's own model through
+    /// UiShellApps.FromPhone (its order, glyphs, colours, news and other mods' pictures), then the overhaul's pages.
+    /// </summary>
+    public static List<UiShellApp> ShellApps(UiWords t, bool others)
+    {
+        var into = new List<UiShellApp>(64);
+        UiShellApps.FromPhone(PhoneApps(t, others), into, PagerRules.PhoneTiles);   // the apps' titles are their buttons' words: data, as on the phone
+        Page(into, UiShellApps.ShellPeople, t("reallife_ui_page_population", "The city's people"));
+        Page(into, UiShellApps.ShellFlare, t("reallife_ui_page_flare", "Flare in the city"));
+        Page(into, UiShellApps.ShellFirm, t("reallife_ui_page_studio", "Your firm"));
+        return into;
+    }
+
+    private static void Page(List<UiShellApp> into, string id, string title)
+    {
+        UiIcon icon = UiShellApps.IconOf(id, UiShellKind.Page);
+        into.Add(new UiShellApp { Id = id, Title = title, Icon = icon, Tint = UiIconTints.Of(icon), Kind = UiShellKind.Page, Folder = UiShellApps.FolderOf(id, UiShellKind.Page, -1) });
+    }
+
+    /// <summary>The status bar with the frame's app row, as UiGame fills it: the open app filled, the rest's news on All apps.</summary>
     public static UiStatusModel ShellBar(int open, bool appsOpen)
     {
         UiStatusModel m = Bar(-1);
-        m.Apps = new UiIcon[RowIds.Length];
-        m.AppTints = new UiRole[RowIds.Length];
-        m.AppBadges = new int[RowIds.Length];
-        for (int i = 0; i < RowIds.Length; i++)
+        List<UiShellApp> apps = ShellApps((key, english) => english, true);
+        var row = apps.FindAll(a => a.InRow);
+        m.Apps = new UiIcon[row.Count];
+        m.AppTints = new UiRole[row.Count];
+        m.AppBadges = new int[row.Count];
+        m.AppPictures = new int[row.Count];
+        for (int i = 0; i < row.Count; i++)
         {
-            m.Apps[i] = UiShellApps.IconOf(RowIds[i], UiShellKind.Game);
-            m.AppTints[i] = UiIconTints.Of(m.Apps[i]);
+            m.Apps[i] = row[i].Icon;
+            m.AppTints[i] = row[i].Tint;
+            m.AppBadges[i] = row[i].Badge;
+            m.AppPictures[i] = row[i].Picture;
         }
-        m.AppBadges[0] = 1;
-        m.AppBadges[RowContacts] = 3;
+        foreach (UiShellApp a in apps)
+        {
+            m.AllAppsBadge += a.InRow ? 0 : a.Badge;
+        }
         m.App = open;
         m.AllApps = true;
         m.AllAppsOpen = appsOpen;
-        m.AllAppsBadge = 2;
         m.AppsPress = true;
         m.AllAppsLabel = "All apps";
         return m;
@@ -46,86 +96,33 @@ internal static partial class UiSamples
         return m;
     }
 
-    private struct ShellRow
-    {
-        public string Id, Key, English;
-        public UiShellKind Kind;
-        public int Badge;
-        public string Status;
-    }
-
-    private static readonly ShellRow[][] Folders =
-    {
-        new[]
-        {
-            new ShellRow { Id = "EconoView", Key = "smartphone_econoview", English = "EconoView" },
-            new ShellRow { Id = "RealLifeFinance", Key = "reallife_econ_app", English = "Finance" },
-            new ShellRow { Id = "RealLifeBanks", Key = "reallife_banks_app", English = "Banks" },
-            new ShellRow { Id = "RealLifeStocks", Key = "reallife_mkt_app", English = "Stocks" },
-            new ShellRow { Id = "RealLifeEconomy", Key = "reallife_econapp_app", English = "Economy" },
-        },
-        new[]
-        {
-            new ShellRow { Id = "RealLifePlanner", Key = "reallife_planner_app", English = "Planner", Badge = 1 },
-            new ShellRow { Id = "RealLifeCareer", Key = "reallife_career_app", English = "Career" },
-            new ShellRow { Id = "RealLifeCampus", Key = "reallife_campus_app", English = "Campus" },
-            new ShellRow { Id = "RealLifeOpenRoles", Key = "reallife_roles_app", English = "Open Roles" },
-        },
-        new[]
-        {
-            new ShellRow { Id = "Persona", Key = "smartphone_persona", English = "Persona" },
-            new ShellRow { Id = "Contacts", Key = "smartphone_contacts", English = "Contacts", Badge = 3, Status = "reallife_ui_shell_status_unread" },
-            new ShellRow { Id = "VoogleMaps", Key = "smartphone_vooglemaps", English = "Voogle Maps" },
-            new ShellRow { Id = "RealLifeFlare", Key = "reallife_flare_app", English = "Flare" },
-            new ShellRow { Id = "RealLifeCalendar", Key = "reallife_calendar_app", English = "Calendar" },
-            new ShellRow { Id = UiShellApps.ShellPeople, Key = "reallife_ui_page_population", English = "The city's people", Kind = UiShellKind.Page },
-            new ShellRow { Id = UiShellApps.ShellFlare, Key = "reallife_ui_page_flare", English = "Flare in the city", Kind = UiShellKind.Page },
-        },
-        new[]
-        {
-            new ShellRow { Id = "MyEmployees", Key = "smartphone_myemployees", English = "MyEmployees" },
-            new ShellRow { Id = "BizMan", Key = "smartphone_bizman", English = "BizMan" },
-            new ShellRow { Id = "MarketInsider", Key = "smartphone_marketinsider", English = "MarketInsider" },
-            new ShellRow { Id = "Rivals", Key = "smartphone_rivals", English = "Rivals" },
-            new ShellRow { Id = "RealLifeCompany", Key = "reallife_co_app", English = "Company" },
-            new ShellRow { Id = UiShellApps.ShellFirm, Key = "reallife_ui_page_studio", English = "Your firm", Kind = UiShellKind.Page },
-        },
-        new ShellRow[0],
-        new[]
-        {
-            new ShellRow { Id = "BAMP_Chat", English = "Chat", Kind = UiShellKind.Other, Badge = 2 },
-            new ShellRow { Id = "EmpireBank", English = "Empire Bank", Kind = UiShellKind.Other },
-            new ShellRow { Id = "SmartRestock", English = "Smart Restock", Kind = UiShellKind.Other },
-        },
-    };
-
-    /// <summary>All apps on a folder (0 Money .. 4 Settings, 5 Other mods), Contacts open.</summary>
-    public static UiAllAppsModel AllApps(UiWords t, int folder)
+    /// <summary>All apps on a folder (0 Money .. 4 Settings, 5 Other mods), Contacts open; without other mods, Other mods stands empty.</summary>
+    public static UiAllAppsModel AllApps(UiWords t, int folder, bool others = true)
     {
         var m = new UiAllAppsModel { Title = t("reallife_ui_shell_all_apps", "All apps"), Tab = folder, Tabs = new UiAllAppsTab[UiShellApps.Folders] };
+        List<UiShellApp> apps = ShellApps(t, others);
         for (int f = 0; f < UiShellApps.Folders; f++)
         {
             int badge = 0;
-            foreach (ShellRow r in Folders[f])
+            foreach (UiShellApp a in apps)
             {
-                badge += r.Badge;
+                badge += a.Folder == f ? a.Badge : 0;
             }
             UiIcon icon = UiShellApps.FolderIcon(f);
             m.Tabs[f] = new UiAllAppsTab { Icon = icon, Tint = UiIconTints.Of(icon), Label = FolderName(t, f), Badge = badge };
         }
-        ShellRow[] rows = Folders[folder];
-        m.Rows = new UiAllAppsRow[rows.Length];
-        for (int i = 0; i < rows.Length; i++)
+        List<UiShellApp> rows = apps.FindAll(a => a.Folder == folder);
+        m.Rows = new UiAllAppsRow[rows.Count];
+        for (int i = 0; i < rows.Count; i++)
         {
-            ShellRow r = rows[i];
-            UiIcon icon = UiShellApps.IconOf(r.Id, r.Kind);
+            UiShellApp a = rows[i];
             m.Rows[i] = new UiAllAppsRow
             {
-                Icon = icon, Tint = UiIconTints.Of(icon), Title = r.Key != null ? t(r.Key, r.English) : r.English, Badge = r.Badge, Open = r.Id == "Contacts",
-                Status = r.Status != null ? t(r.Status, "{count} unread").Replace("{count}", "3") : null
+                Icon = a.Icon, Tint = a.Tint, Title = a.Title, Badge = a.Badge, Open = a.Id == "Contacts", Picture = a.Picture,
+                Status = a.Id == "Contacts" ? t("reallife_ui_shell_status_unread", "{count} unread").Replace("{count}", a.Badge.ToString()) : null
             };
         }
-        m.RowCount = rows.Length;
+        m.RowCount = rows.Count;
         m.Empty = folder == UiShellApps.Other ? t("reallife_ui_shell_none_other", "No other mod has put an app on the phone. Apps of other mods show here.") : t("reallife_ui_shell_none", "No apps in this folder yet. Apps you put in it on the phone show here.");
         m.Prompts = new[]
         {

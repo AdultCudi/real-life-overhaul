@@ -113,7 +113,7 @@ internal static partial class UiSamples
                 t("reallife_ui_bizman_sum_best", "Earns the most: {name}").Replace("{name}", longNames ? LongNames[8] : Businesses[8])
             };
         }
-        m.Table = group == 2 ? Warehouses(t) : Shops(t, count, longNames);
+        m.Table = group == 2 ? Warehouses(t) : ShopTable(t, count, longNames);
         if (openFilter >= 0)
         {
             m.FilterOpen = openFilter;
@@ -128,7 +128,7 @@ internal static partial class UiSamples
         return m;
     }
 
-    private static UiDataTableModel Shops(UiWords t, int count, bool longNames)
+    private static UiDataTableModel ShopTable(UiWords t, int count, bool longNames)
     {
         var table = new UiDataTableModel
         {
@@ -438,7 +438,7 @@ internal static partial class UiSamples
             new BizManFact { Label = t("bizman_purchasingagents_next_delivery", "Next delivery"), Value = "Day 413 at 08:00" },
             new BizManFact { Label = t("common_total", "Total"), Value = "$976.00" },
         };
-        m.Lead = "Changes are possible until day 413 at 00:00 (1 day left)";
+        m.Lead = "Changes are possible until day 413 at 00:00 (10 hours left)";
         m.HasRepeat = true;
         m.Repeat = true;
         m.RepeatWords = t("repeating_order", "Repeating order");

@@ -666,6 +666,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiReaderRules.cs" Link="Mod\UiReaderRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDecision.cs" Link="Mod\UiDecision.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPhone.cs" Link="Mod\UiPhone.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Picture.cs" Link="Mod\UiDraw.Picture.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\PhoneLooks.cs" Link="Mod\PhoneLooks.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Phone\PhoneItems.cs" Link="Mod\PhoneItems.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Phone\PhoneScreen.cs" Link="Mod\PhoneScreen.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPortraits.cs" Link="Mod\UiPortraits.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFrame.cs" Link="Mod\UiFrame.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiListDetail.cs" Link="Mod\UiListDetail.cs" />
@@ -703,6 +707,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiChart.cs" Link="Mod\UiChart.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCatalogue.cs" Link="Mod\UiCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiStatement.cs" Link="Mod\UiStatement.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPickList.cs" Link="Mod\UiPickList.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiEcono.cs" Link="Mod\UiEcono.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\EconoViews.cs" Link="Mod\EconoViews.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiTrack.cs" Link="Mod\UiTrack.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\IUiStepping.cs" Link="Mod\IUiStepping.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPartRules.cs" Link="Mod\UiPartRules.cs" />
@@ -715,6 +722,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizManPages.cs" Link="Mod\BizManPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizManPages.Parts.cs" Link="Mod\BizManPages.Parts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizManPages.Lines.cs" Link="Mod\BizManPages.Lines.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiStaff.cs" Link="Mod\UiStaff.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\StaffViews.cs" Link="Mod\StaffViews.cs" />
     <Compile Include="..\UiPreview\UiSamples*.cs" Link="Shared\%(Filename)%(Extension)" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\BugReportRules.cs" Link="Mod\BugReportRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\BetaRules.cs" Link="Mod\BetaRules.cs" />

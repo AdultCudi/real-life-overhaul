@@ -74,7 +74,8 @@ namespace RealLifeOverhaul.Ui
             {
                 UiRole tint = m.AppTints != null && i < m.AppTints.Length ? m.AppTints[i] : UiRole.Text2;
                 int badge = m.AppBadges != null && i < m.AppBadges.Length ? m.AppBadges[i] : 0;
-                AppTile(s, row, ax, ay, tile, m.Apps[i], tint, i == m.App, badge, m.AppsPress ? AppRowCommand : -1, i);
+                int picture = m.AppPictures != null && i < m.AppPictures.Length ? m.AppPictures[i] : 0;
+                AppTile(s, row, ax, ay, tile, m.Apps[i], tint, i == m.App, badge, m.AppsPress ? AppRowCommand : -1, i, picture);
                 ax += tile + TileGap;
             }
             if (m.AllApps)
@@ -99,12 +100,20 @@ namespace RealLifeOverhaul.Ui
 
         // One tile: the glyph in its colour on slate (dark on the cyan when chosen), a dot of news on its corner, clear of
         // the glyph (the count is on All apps and on the app's own page).
-        private static void AppTile(UiScene s, UiAt on, float x, float y, float tile, UiIcon icon, UiRole tint, bool chosen, int badge, int command, int arg)
+        private static void AppTile(UiScene s, UiAt on, float x, float y, float tile, UiIcon icon, UiRole tint, bool chosen, int badge, int command, int arg, int picture = 0)
         {
             int face = Tile(s, on, x, y, tile, tint, chosen);
             s.Items[face].Flags |= UiFlags.Chrome;
             float g = UiTokens.S8;   // 32 px: a tool's glyph, chunky as a game's, on the grid in its 40 px tile
-            Icon(s, on.In(face), x + (tile - g) / 2f, y + (tile - g) / 2f, g, icon, chosen ? UiRole.OnAccent : tint, UiFlags.Middle | UiFlags.Chrome, true);
+            if (picture > 0)
+            {
+                Picture(s, on.In(face), x + (tile - g) / 2f, y + (tile - g) / 2f, g, picture);   // another mod's app: its own picture, as on the phone
+                s.Items[s.ItemCount - 1].Flags |= UiFlags.Chrome;
+            }
+            else
+            {
+                Icon(s, on.In(face), x + (tile - g) / 2f, y + (tile - g) / 2f, g, icon, chosen ? UiRole.OnAccent : tint, UiFlags.Middle | UiFlags.Chrome, true);
+            }
             if (badge > 0)
             {
                 NewsDot(s, on.In(face), x + tile, y, UiRole.StatusBar, UiFlags.Chrome);

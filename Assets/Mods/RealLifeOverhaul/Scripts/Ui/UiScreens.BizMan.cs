@@ -60,7 +60,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_interior_head_place", "reallife_interior_head_decor", "reallife_interior_head_condition", "reallife_interior_page_effects",
                     "reallife_interior_page_items", "reallife_interior_page_customers", "reallife_interior_page_rules", "reallife_interior_head_next", "reallife_set_link",
                     "reallife_interior_refresh_button", "reallife_interior_renovate_button", "reallife_guide_app"
-                }).Switch(UiScreenSwitches.Apps),
+                }).Switch(UiScreenSwitches.Business),
             });
         }
     }

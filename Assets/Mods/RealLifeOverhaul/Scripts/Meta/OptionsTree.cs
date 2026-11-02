@@ -458,7 +458,7 @@ namespace RealLifeOverhaul.Meta
             G("controls",
                 S("keys").For("keys").Buttons("reallife_keys_reset", "reallife_keys_camera_toggle", "reallife_keys_interact", "reallife_keys_interact_alt",
                     "reallife_keys_free_cursor", "reallife_keys_look_behind", "reallife_keys_gentle_throttle", "reallife_keys_photo_mode",
-                    "reallife_keys_walk")
+                    "reallife_keys_walk", "reallife_keys_phone")
                     .Also("key bindings shortcuts hotkeys rebind keyboard"),
                 S("mouse").Guide("camera").Opt("camera_mouselook", "camera_enabled").Opt("camera_sensitivity", "camera_mouselook").Opts("enter_with_key")
                     .Also("input look cursor"),
