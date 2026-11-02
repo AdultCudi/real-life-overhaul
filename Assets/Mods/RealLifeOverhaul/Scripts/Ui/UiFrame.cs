@@ -25,8 +25,8 @@ namespace RealLifeOverhaul.Ui
         public const float WindowShareX = 0.86f, WindowShareY = 0.84f;   // a window's share of the screen: the world shows round it
         public const float MostWindow = 2240f;     // px: the widest a window runs; an ultrawide centres it with more world round it
         public const float Strip = 40f;            // px: a panel's or a window's title strip
-        public const float Toolbar = 56f;          // px: the status bar's row of app buttons on their tiles
-        public const float StatusRow = 44f;        // px: its row of pills
+        public const float Toolbar = 60f;          // px: the status bar's app tiles and pills, one height on its one centre line (UiDraw.StatusBar)
+        public const float StatusRow = 28f;        // px: the room the strip keeps round them, half above and half below
 
         public float Width;     // px: the area's width
         public float Height;    // px: the area's whole height, the status bar included
@@ -41,7 +41,7 @@ namespace RealLifeOverhaul.Ui
         /// <summary>No masthead: the status bar at the foot says the money, the day and the time.</summary>
         public static float MastheadHeight => 0f;
 
-        /// <summary>The status bar's height: its row of apps and its row of pills.</summary>
+        /// <summary>The status bar's height: one strip, the app tiles and the pills on its centre line with even room round them.</summary>
         public static float BandHeight => Toolbar + StatusRow;
 
         /// <summary>The frame of an app's window on a screen of an aspect (16:9 is 1920 x 1080).</summary>
@@ -103,29 +103,41 @@ namespace RealLifeOverhaul.Ui
     public sealed class UiStatusModel
     {
         public string Time;           // "14:32"
-        public string Day;            // "Tue, Day 12"
+        public string Day;            // "Tuesday (Day 12)", as the game's top bar writes it
+        public string DayWidest;      // the widest day of the week written the same way: the time pill keeps its width all week
         public bool Paused;
-        public int Speed;             // 1 to 3, as the game's speed buttons, or 0 while the game has not said
+        public int Speed;             // 1 the game's own pace, 3 an activity's fast forward, or 0 while the game has not said
+        public bool TimeLocked;       // the game holds the clock (a scene, Going Public's shared one): its pause and play are dim and press nothing
         public string Season;         // "Autumn"
         public UiIcon Weather = UiIcon.CloudSun;
         public string Temperature;    // beside the weather's icon, as the game writes it; null for the season alone
-        public string Place;          // the district the player is in
+        public string WeatherWords;   // the weather in a word or two under the season ("Sunny", "Rain", "Heat wave"); null for none
+        public string Place;          // the nearest building's address, or the district the player is in
+        public string District;       // the district under the place, when Place is the nearest building's address
         public string Money;          // "$48,210"
-        public int MoneyTrend;        // +1 rising today, -1 falling, 0 still
+        public string MoneyDay;       // the game's figure under its money, yesterday's result as its top bar writes it ("$3,860"); null for none
+        public int MoneyTrend;        // that figure's way: +1 a gain (green, an arrow up), -1 a loss (red, an arrow down), 0 none
+        public string MoneyChange;    // the last change, merged per minute as the game merges it ("+$1,240"), rising from the money and fading; null for none
+        public bool MoneyChangeRises; // the change adds to the money: green and an arrow up
         public int Energy = -1;       // 0 to 100, or -1 to leave the meter out
         public int Hunger = -1;
         public int Happiness = -1;
+        public int Hygiene = -1;      // RLO's needs beside the game's three (Home/HomeNeedsBar): 0 to 100, or -1 to leave each out
+        public int Stress = -1;       // the more the worse: its meter fills as it rises
+        public int HomeNeed = -1;
         public int Alerts;            // notifications waiting
+        public bool PillsPress;       // the time, the needs, the alerts, the money and the settings are targets: only the HUD answers them (UiDraw.HudBar)
         public UiIcon[] Apps;         // the toolbar's app buttons, in order
         public UiRole[] AppTints;     // each one's category colour
-        public int App = -1;          // the app that is open, filled cyan
+        public int App = -1;          // the app that is open, its tile in the chosen tone
         public int[] AppBadges;       // each one's news, as its own button counts it; null for none
         public int[] AppPictures;     // another mod's own picture for its tile (UiDraw.PictureKey); null or 0 for the glyph
         public bool AllApps;          // the All apps tile ends the row
-        public bool AllAppsOpen;      // the All apps panel is up: its tile filled cyan
+        public bool AllAppsOpen;      // the All apps panel is up: its tile in the chosen tone
         public int AllAppsBadge;      // news of apps the row never lists (another mod's), on the All apps tile
         public bool AppsPress;        // the tiles are targets: true where the frame answers them (the full menu)
         public string AllAppsLabel;   // the prompt's words for the pad's View, which opens All apps from anywhere
+        public float Middle;          // px the strip's middle keeps clear for a row drawn over the bar in the apps' place (UiToolRow.Width)
     }
 
     /// <summary>The status bar's source; the game file sets it. Status is the older one line, kept for the game file's log.</summary>

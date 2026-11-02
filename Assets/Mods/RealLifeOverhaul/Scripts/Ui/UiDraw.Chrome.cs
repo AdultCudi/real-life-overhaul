@@ -14,8 +14,8 @@ namespace RealLifeOverhaul.Ui
         /// <summary>A window's close button: the host takes it as Back.</summary>
         public const int CloseCommand = 9000;
 
-        private const float PillH = 32f;     // px: a status pill, in the status bar's 44 px row
-        private const float TileGap = 8f;    // px: between the toolbar's app buttons
+        private const float PillH = 32f;     // px: a status pill (Pill)
+        private const float TileGap = 8f;    // px: between the status bar's app tiles
 
         /// <summary>
         /// px between a link's words and its mark's box, measured from the words as drawn (cut to their room first), a step
@@ -92,137 +92,78 @@ namespace RealLifeOverhaul.Ui
                 (round ? UiFlags.Circle : UiFlags.None) | (chosen ? UiFlags.Selected : UiFlags.None));
 
         /// <summary>
-        /// The status bar along the foot of the screen, after Cities: Skylines II: a row of app buttons (the open one
-        /// filled cyan) with the keys' prompts at its right while the keys lead, and a row of pills under it: the time and
-        /// the game's speed, the season, the place, the money, the player's needs and the alerts. With the mouse leading no
-        /// prompt shows: the mouse does it by pointing, as the game's own bar works.
+        /// The status bar along the foot of the screen, after Cities: Skylines II's bottom bar: one slate strip with one centre
+        /// line and even room above and below it. In its middle the app row, big tiles in the player's order (the open one in
+        /// the chosen tone, its news counted on a tile's corner, All apps last); at its left and right the pills (UiDraw.HudBar:
+        /// the time with the game's speed, the weather, the place; the needs, the alerts, the money and the settings at the
+        /// corner). While the keys lead their prompts stand between the row and the right pills; with the mouse leading no
+        /// prompt shows, as the mouse does it by pointing, as the game's own bar works.
         /// </summary>
-        public static void StatusBar(UiScene s, UiFrame frame, IUiKeys keys)
+        public static void StatusBar(UiScene s, UiFrame frame, IUiKeys keys) => StatusBar(s, frame, keys, true);
+
+        /// <summary>
+        /// The status bar, its prompts in it (<paramref name="prompts"/>) or left to the caller, as the HUD sets the game's
+        /// control hints in key chips over the bar's right end (UiDraw.KeyChips).
+        /// </summary>
+        public static void StatusBar(UiScene s, UiFrame frame, IUiKeys keys, bool prompts)
         {
             UiStatusModel m = UiChrome.Bar != null ? UiChrome.Bar() : null;
-            float y = frame.BandY, w = frame.Width;
+            float y = frame.BandY, w = frame.Width, mid = BarMiddle(frame);
             int bar = Box(s, UiAt.Screen, 0f, y, w, frame.Band, UiRole.StatusBar, UiRole.None, 0f, UiFlags.Decor | UiFlags.Chrome);
             UiAt on = UiAt.Screen.In(bar);
             Box(s, on, 0f, y, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor | UiFlags.Chrome);
-            if (m != null)
+            if (AllAppsPrompt(m, keys) && !Prompted(s, UiAction.View))
             {
-                AppRow(s, on, y, w, m, keys);   // UiDraw.AppRow.cs
+                s.AddPrompt(UiAction.View, m.AllAppsLabel);   // the pad's View opens All apps from anywhere: said while a pad leads
             }
+            float room = frame.Pointer || !prompts ? 0f : PromptsWidth(s, keys);
+            UiPillPlan p = PlanPills(m, w, room);
             s.PromptX = 0f;
             s.PromptY = y;
             s.PromptW = w;
-            s.PromptH = UiFrame.Toolbar;   // the bar is there for the prompts either way: they show while the keys lead
-            if (!frame.Pointer)
+            s.PromptH = frame.Band;   // the bar is there for the prompts either way: they show while the keys lead
+            int row = s.NodeCount;
+            if (m != null)
             {
-                Prompts(s, 0f, y, w - UiTokens.S5, UiFrame.Toolbar, keys);
+                AppRow(s, on, mid, ref p, m);   // UiDraw.AppRow.cs
             }
-            if (m == null)
+            int rowEnd = s.NodeCount;
+            if (!frame.Pointer && prompts)
             {
-                return;
+                Prompts(s, p.PromptX, y, p.PromptX + room, frame.Band, keys);
             }
-            float py = y + UiFrame.Toolbar + (UiFrame.StatusRow - PillH) / 2f;
-            float px = UiTokens.S4;
-            px += TimePill(s, on, px, py, m) + UiTokens.S2;
-            if (!string.IsNullOrEmpty(m.Season))
+            if (m != null)
             {
-                // The weather's icon goes with its temperature, as a city builder's bar shows it, and the season stays words.
-                string weather = string.IsNullOrEmpty(m.Temperature) ? m.Season : m.Temperature + ", " + m.Season;
-                px += Pill(s, on, px, py, m.Weather, UiRole.None, weather, UiRole.Text) + UiTokens.S2;
-            }
-            if (!string.IsNullOrEmpty(m.Place))
-            {
-                Pill(s, on, px, py, UiIcon.MapPin, UiRole.None, m.Place, UiRole.Text);
-            }
-            float right = w - UiTokens.S4;
-            if (m.Alerts > 0)
-            {
-                string n = m.Alerts.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                right -= PillWidth(UiIcon.Bell, n);
-                Pill(s, on, right, py, UiIcon.Bell, UiRole.Warn, n, UiRole.Text);
-                right -= UiTokens.S2;
-            }
-            right -= Needs(s, on, right, py, m) + UiTokens.S2;
-            if (!string.IsNullOrEmpty(m.Money))
-            {
-                float mw = Snap(UiTokens.S2 + UiTokens.Icon + UiTokens.S2 + UiTextRules.Width(m.Money, UiStyle.Number) + UiTokens.S1 + UiTokens.S3
-                                + (m.MoneyTrend != 0 ? UiTokens.IconSmall + UiTokens.S1 : 0f));
-                int face = Box(s, on, right - mw, py, mw, PillH, UiRole.Pill, UiRole.None, UiTokens.RadiusLarge, UiFlags.Chrome);
-                UiAt inside = on.In(face);
-                float cx = right - mw + UiTokens.S2;
-                Icon(s, inside, cx, py + (PillH - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Wallet, UiRole.None, UiFlags.Middle | UiFlags.Chrome);
-                cx += UiTokens.Icon + UiTokens.S2;
-                float tw = UiTextRules.Width(m.Money, UiStyle.Number) + UiTokens.S1;
-                TextMiddle(s, inside, cx, py, PillH, tw, UiStyle.Number, UiRole.Text, m.Money, UiFlags.Chrome);   // the money in the bar's largest words, as the game keeps it in view
-                if (m.MoneyTrend != 0)
-                {
-                    Icon(s, inside, cx + tw, py + (PillH - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, m.MoneyTrend > 0 ? UiIcon.TrendUp : UiIcon.TrendDown,
-                        m.MoneyTrend > 0 ? UiRole.Ok : UiRole.Danger, UiFlags.Middle | UiFlags.Chrome);
-                }
+                HudPills(s, on, mid, w, ref p, m);   // UiDraw.HudBar.cs
+                JoinPills(s, row, rowEnd - 1);       // one row for the d-pad where the pills are targets
             }
         }
 
-        // The time pill: the play or pause mark, the time, the day and the game's speed as filled chevrons.
-        private static float TimePill(UiScene s, UiAt at, float x, float y, UiStatusModel m)
+        /// <summary>True where the bar says All apps on the pad's View: a pad leads and the row ends with the tile that opens it.</summary>
+        public static bool AllAppsPrompt(UiStatusModel m, IUiKeys keys) =>
+            m != null && m.AllApps && m.AppsPress && keys != null && keys.Pad != UiPad.None && !string.IsNullOrEmpty(m.AllAppsLabel);
+
+        private static bool Prompted(UiScene s, UiAction action)
         {
-            if (string.IsNullOrEmpty(m.Time))
+            for (int i = 0; i < s.PromptCount; i++)
             {
-                return 0f;
+                if (s.Prompts[i].Action == action)
+                {
+                    return true;
+                }
             }
-            float tw = UiTextRules.Width(m.Time, UiStyle.BodyStrong) + UiTokens.S1;
-            float dw = string.IsNullOrEmpty(m.Day) ? 0f : UiTextRules.Width(m.Day, UiStyle.Body) + UiTokens.S1;
-            const float chevron = 12f;
-            bool speed = m.Speed > 0;   // the game file leaves it at 0 until the HUD wave reads the game's speed
-            float w = Snap(UiTokens.S2 + UiTokens.Icon + UiTokens.S2 + tw + (dw > 0f ? UiTokens.S3 + dw : 0f) + (speed ? UiTokens.S3 + chevron * 3f : 0f) + UiTokens.S2);
-            int face = Box(s, at, x, y, w, PillH, UiRole.Pill, UiRole.None, UiTokens.RadiusLarge, UiFlags.Chrome);
-            UiAt inside = at.In(face);
-            float cx = x + UiTokens.S2;
-            Icon(s, inside, cx, y + (PillH - UiTokens.Icon) / 2f, UiTokens.Icon, m.Paused ? UiIcon.Pause : UiIcon.Play, UiRole.None, UiFlags.Middle | UiFlags.Chrome);
-            cx += UiTokens.Icon + UiTokens.S2;
-            TextMiddle(s, inside, cx, y, PillH, tw, UiStyle.BodyStrong, UiRole.Text, m.Time, UiFlags.Chrome);
-            cx += tw;
-            if (dw > 0f)
-            {
-                TextMiddle(s, inside, cx + UiTokens.S3, y, PillH, dw, UiStyle.Body, UiRole.Text2, m.Day, UiFlags.Chrome);
-                cx += UiTokens.S3 + dw;
-            }
-            cx += UiTokens.S3;
-            for (int i = 0; speed && i < 3; i++)
-            {
-                Icon(s, inside, cx + i * chevron, y + (PillH - chevron) / 2f, chevron, UiIcon.Next, i < m.Speed && !m.Paused ? UiRole.Accent : UiRole.Muted,
-                    UiFlags.Middle | UiFlags.Share | UiFlags.Chrome);
-            }
-            return w;
+            return false;
         }
 
-        // The player's needs as three short meters in one pill, each behind its icon, coloured by how full it is.
-        private static float Needs(UiScene s, UiAt at, float right, float y, UiStatusModel m)
+        // The keys' prompts' width as Prompts lays them: each key's cap and its words, a gap between.
+        private static float PromptsWidth(UiScene s, IUiKeys keys)
         {
-            int count = (m.Energy >= 0 ? 1 : 0) + (m.Hunger >= 0 ? 1 : 0) + (m.Happiness >= 0 ? 1 : 0);
-            if (count == 0)
+            float w = 0f;
+            for (int i = 0; i < s.PromptCount; i++)
             {
-                return 0f;
+                w += PromptWidth(ref s.Prompts[i], keys) + (i > 0 ? UiTokens.S6 : 0f);
             }
-            const float meter = 48f;
-            float each = UiTokens.Icon + UiTokens.S1 + meter;
-            float w = Snap(UiTokens.S2 * 2f + count * each + (count - 1) * UiTokens.S3);
-            int face = Box(s, at, right - w, y, w, PillH, UiRole.Pill, UiRole.None, UiTokens.RadiusLarge, UiFlags.Chrome);
-            UiAt inside = at.In(face);
-            float cx = right - w + UiTokens.S2;
-            int[] values = { m.Energy, m.Hunger, m.Happiness };
-            UiIcon[] icons = { UiIcon.Lightning, UiIcon.ForkKnife, m.Happiness >= 60 ? UiIcon.SmileyHappy : m.Happiness >= 30 ? UiIcon.SmileyMeh : UiIcon.SmileySad };
-            for (int i = 0; i < values.Length; i++)
-            {
-                if (values[i] < 0)
-                {
-                    continue;
-                }
-                UiRole tone = values[i] >= 60 ? UiRole.Ok : values[i] >= 30 ? UiRole.Warn : UiRole.Danger;
-                // The icon keeps its own colour and the meter says how full: a state is told by its bar, never by recolouring a glyph.
-                Icon(s, inside, cx, y + (PillH - UiTokens.Icon) / 2f, UiTokens.Icon, icons[i], UiRole.None, UiFlags.Middle | UiFlags.Chrome);
-                Meter(s, inside, cx + UiTokens.Icon + UiTokens.S1, y + (PillH - UiTokens.S1) / 2f, meter, UiTokens.S1, values[i], tone);
-                cx += each + UiTokens.S3;
-            }
-            return w;
+            return Snap(w);
         }
 
         /// <summary>A status pill: an icon in its tint and its words. Returns its width.</summary>

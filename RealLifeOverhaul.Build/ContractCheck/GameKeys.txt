@@ -589,6 +589,7 @@ ferris_wheel
 filebrowser_delete
 government
 hud_confirm_are_you_sure
+input_key_menu
 itemhelper_notification_you_are_to_stuffed_to_eat_this
 job_board
 job_demand_priority_high
@@ -686,7 +687,9 @@ personalgoal_taxes_paid
 personalgoal_taxi_rides
 phone_call_button
 phone_view_on_map_button
+playeractivityui_fast_forward
 playeractivityui_time_remaining
+playeractivityui_timemachine
 playerhud_currentjob_day_off
 poi_custom_location
 real_estate_estimated_value
@@ -717,6 +720,7 @@ socialclass_working
 tax_import
 timestamp_full
 topbar_date_format
+tutorial_objectives
 tutorial_quest_establish_first_business_objective_1
 tutorial_quest_get_some_sleep_objective_4
 uncle_fred

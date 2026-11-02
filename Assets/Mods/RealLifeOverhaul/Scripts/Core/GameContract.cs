@@ -72,6 +72,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart LampsOut = ContractBook.Part("street_lamps_out", "faults", "street lights gone dark among the city's faults");
         public static readonly GamePart FarDistricts = ContractBook.Part("far_districts", "performance", "the far districts trial of the performance benchmark");
         public static readonly GamePart UiProbe = ContractBook.Part("ui_probe", "diagnostics", "the interface part of the performance probe");
+        public static readonly GamePart HudKit = ContractBook.Part("hud_kit", "ui", "the RLO interface's status bar and the pieces over the running game");
         public static readonly GamePart BodyFade = ContractBook.Part("body_fade", "ragdoll", "showing a body the game faded beside a car");
         public static readonly GamePart BusStops = ContractBook.Part("bus_stops", "transport", "bus stops kept clear of parked cars");
         public static readonly GamePart SchoolDeskPart = ContractBook.Part("school_desk", "careers_study", "attending a class at a desk of the school");
@@ -206,6 +207,22 @@ namespace RealLifeOverhaul
 
         // Core/ModState, Family, Travel, Meta/SaveTools: the game's register of mood types, the mod's own added to it
         public static readonly GameMember HappinessRegistry = StaticField(Moods, Game, "Helpers.HappinessHelper", "Modifiers", "Dictionary<String,HappinessModifier>");
+        // The status bar's pills as the HUD mirrors them, and the game's own methods its pills press (Ui/Hud: HudStatusGame, HudScreen, HudHost).
+        public static readonly GameMember HudPaused = Prop(HudKit, Game, "GameSpeedController", "Paused", "Boolean", false);
+        public static readonly GameMember HudFast = Field(HudKit, Game, "GameSpeedController", "isFastForwarding", "Boolean");
+        public static readonly GameMember HudPause = Method(HudKit, Game, "GameSpeedController", "TogglePause", "Void");
+        public static readonly GameMember HudTimeLock = Field(HudKit, Game, "GameSpeedController", "isTimeControlDisabled", "Boolean");
+        public static readonly GameMember HudMoney = Method(HudKit, Game, "UI.Topbar.Topbar", "ClickMoney", "Void");
+        public static readonly GameMember HudPersona = Method(HudKit, Game, "UI.Topbar.Topbar", "ClickPersona", "Void");
+        public static readonly GameMember HudNearest = Field(HudKit, Game, "UI.PlayerHUD.PlayerHUD", "nearestBuildingText", "TextLocalizationComponent");
+        public static readonly GameMember HudDistrict = Field(HudKit, Game, "UI.PlayerHUD.PlayerHUD", "currentNeighborhoodText", "TMP_Text");
+        public static readonly GameMember HudHappiness = Prop(HudKit, Game, "Helpers.HappinessHelper", "Happiness", "Single", true);
+        public static readonly GameMember HudRain = StaticField(HudKit, Sky, "BigAmbitions.DayNightCycle.RainHelper", "isRaining", "Boolean");
+        public static readonly GameMember HudCamera = StaticMethod(HudKit, Game, "GameManager", "GetMainCamera", "Camera");
+        public static readonly GameMember HudNotices = Method(HudKit, Game, "UI.Notification.NotificationsListUI", "Toggle", "Void", "Boolean");
+        public static readonly GameMember HudMenu = Method(HudKit, Game, "UI.Topbar.Topbar", "OpenMiniMenu", "Void");
+        public static readonly GameMember HudMiniMenu = Field(HudKit, Game, "UI.UIs", "miniMenuUI", "MiniMenu");
+        public static readonly GameMember HudMoneyDay = Field(HudKit, Game, "UI.Topbar.Topbar", "moneyChange", "TextMeshProUGUI");
 
         // Events/Weather
         public static readonly GameMember RainIntensity = StaticField(Thunder, Sky, "BigAmbitions.DayNightCycle.RainHelper", "NextRainMaxIntensity", "Single");

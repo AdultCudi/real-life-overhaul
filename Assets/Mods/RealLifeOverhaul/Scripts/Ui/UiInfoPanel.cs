@@ -64,7 +64,20 @@ namespace RealLifeOverhaul.Ui
             s.Begin("info panel", frame.Width, frame.Height, dark);
             s.Pointer = frame.Pointer;
             s.Floats = true;
-            float x = UiTokens.S2, y = UiTokens.S4;
+            Draw(s, m, UiTokens.S2, UiTokens.S4);
+            for (int i = 0; i < m.PromptCount; i++)
+            {
+                s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
+            }
+            UiDraw.PromptBar(s, frame, keys);
+        }
+
+        /// <summary>
+        /// The tabs and the panel alone at a top left (px of the layout), for a screen that stands it among other pieces (the
+        /// HUD's left column over the running game). Returns the y under the panel.
+        /// </summary>
+        public static float Draw(UiScene s, UiInfoModel m, float x, float y)
+        {
             float px = x;
             if (m.Tabs.Length > 0)
             {
@@ -85,18 +98,30 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDraw.Box(s, at, px, cy, Width, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
                 float bx = ix - UiTokens.S1;
+                int first = s.NodeCount;
                 for (int i = 0; i < m.Footer.Length; i++)
                 {
                     UiDraw.IconButton(s, at, bx, cy + UiTokens.S2, UiTokens.Control, m.Footer[i], i < m.FooterTints.Length ? m.FooterTints[i] : UiRole.None, FooterCommand, i);
                     bx += UiTokens.Control + UiTokens.S2;
                 }
+                s.Nodes[first].Left = first;   // the footer is a row: its ends go nowhere sideways, not across the panel
+                s.Nodes[s.NodeCount - 1].Right = s.NodeCount - 1;
+                // Down from the close goes into the panel, to its first link or its footer, never across to the tabs' strip.
+                int close = s.FindNode(UiDraw.CloseCommand, 0), link = -1;
+                for (int n = 0; n < s.NodeCount && link < 0; n++)
+                {
+                    link = s.Nodes[n].Command == LinkCommand ? n : -1;
+                }
+                if (close >= 0)
+                {
+                    s.Nodes[close].Down = link >= 0 ? link : first;
+                }
             }
-            for (int i = 0; i < m.PromptCount; i++)
-            {
-                s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
-            }
-            UiDraw.PromptBar(s, frame, keys);
+            return y + h;
         }
+
+        /// <summary>The width the panel takes with its tabs' strip beside it.</summary>
+        public static float OuterWidth(UiInfoModel m) => (m.Tabs.Length > 0 ? TabStrip + UiTokens.S2 : 0f) + Width;
 
         /// <summary>The panel's height: its strip, its head, its sections and its footer.</summary>
         public static float Height(UiInfoModel m)
@@ -142,6 +167,13 @@ namespace RealLifeOverhaul.Ui
             if (!string.IsNullOrEmpty(m.Name))
             {
                 UiDraw.Portrait(s, at, fx, fy, Portrait, m.Name, m.Hue, m.Ring);
+                tx = fx + Portrait + UiTokens.S4;
+            }
+            else if (m.Icon != UiIcon.None)
+            {
+                // A place has no face: its glyph on a tile of the portrait's size, as the model has always said.
+                int tile = UiDraw.Tile(s, at, fx, fy, Portrait, UiRole.None, false);
+                UiDraw.Icon(s, at.In(tile), fx + (Portrait - UiTokens.S8) / 2f, fy + (Portrait - UiTokens.S8) / 2f, UiTokens.S8, m.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
                 tx = fx + Portrait + UiTokens.S4;
             }
             float tw = x + Width - UiTokens.S4 - tx;
