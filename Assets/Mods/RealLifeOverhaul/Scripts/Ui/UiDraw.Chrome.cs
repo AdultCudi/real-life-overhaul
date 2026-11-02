@@ -14,8 +14,8 @@ namespace RealLifeOverhaul.Ui
         /// <summary>A window's close button: the host takes it as Back.</summary>
         public const int CloseCommand = 9000;
 
-        private const float PillH = 32f;     // px: a status pill, in the status bar's 44 px row
-        private const float TileGap = 8f;    // px: between the toolbar's app buttons
+        private const float PillH = 40f;     // px: a status pill, on the status bar's centre line beside the app row
+        private const float TileGap = 8f;    // px: between the status bar's app tiles
 
         /// <summary>
         /// px between a link's words and its mark's box, measured from the words as drawn (cut to their room first), a step
@@ -92,34 +92,56 @@ namespace RealLifeOverhaul.Ui
                 (round ? UiFlags.Circle : UiFlags.None) | (chosen ? UiFlags.Selected : UiFlags.None));
 
         /// <summary>
-        /// The status bar along the foot of the screen, after Cities: Skylines II: a row of app buttons (the open one
-        /// filled cyan) with the keys' prompts at its right while the keys lead, and a row of pills under it: the time and
-        /// the game's speed, the season, the place, the money, the player's needs and the alerts. With the mouse leading no
-        /// prompt shows: the mouse does it by pointing, as the game's own bar works.
+        /// The status bar along the foot of the screen, after Cities: Skylines II's bottom bar: one slate strip with one centre
+        /// line and even room above and below it. In its middle the app row, big tiles in the player's order (the open one
+        /// filled cyan, a dot of news on a tile's corner, All apps last); at its left and right the pills (UiDraw.HudBar: the
+        /// time and the day, the weather, the place; the needs, the alerts and the money at the corner). While the keys lead
+        /// their prompts stand between the row and the right pills; with the mouse leading no prompt shows, as the mouse does
+        /// it by pointing, as the game's own bar works.
         /// </summary>
         public static void StatusBar(UiScene s, UiFrame frame, IUiKeys keys)
         {
             UiStatusModel m = UiChrome.Bar != null ? UiChrome.Bar() : null;
-            float y = frame.BandY, w = frame.Width;
+            float y = frame.BandY, w = frame.Width, mid = BarMiddle(frame);
             int bar = Box(s, UiAt.Screen, 0f, y, w, frame.Band, UiRole.StatusBar, UiRole.None, 0f, UiFlags.Decor | UiFlags.Chrome);
             UiAt on = UiAt.Screen.In(bar);
             Box(s, on, 0f, y, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor | UiFlags.Chrome);
-            if (m != null)
+            if (m != null && m.AllApps && m.AppsPress && keys != null && keys.Pad != UiPad.None && !string.IsNullOrEmpty(m.AllAppsLabel))
             {
-                AppRow(s, on, y, w, m, keys);   // UiDraw.AppRow.cs
+                s.AddPrompt(UiAction.View, m.AllAppsLabel);   // the pad's View opens All apps from anywhere: said while a pad leads
             }
+            float prompts = frame.Pointer ? 0f : PromptsWidth(s, keys);
+            UiPillPlan p = PlanPills(m, w, prompts);
             s.PromptX = 0f;
             s.PromptY = y;
             s.PromptW = w;
-            s.PromptH = UiFrame.Toolbar;   // the bar is there for the prompts either way: they show while the keys lead
+            s.PromptH = frame.Band;   // the bar is there for the prompts either way: they show while the keys lead
+            int row = s.NodeCount;
+            if (m != null)
+            {
+                AppRow(s, on, mid, ref p, m);   // UiDraw.AppRow.cs
+            }
+            int rowEnd = s.NodeCount;
             if (!frame.Pointer)
             {
-                Prompts(s, 0f, y, w - UiTokens.S5, UiFrame.Toolbar, keys);
+                Prompts(s, p.PromptX, y, p.PromptX + prompts, frame.Band, keys);
             }
             if (m != null)
             {
-                HudPills(s, on, y, w, m);   // UiDraw.HudBar.cs
+                HudPills(s, on, mid, w, ref p, m);   // UiDraw.HudBar.cs
+                JoinPills(s, row, rowEnd - 1);       // one row for the d-pad where the pills are targets
             }
+        }
+
+        // The keys' prompts' width as Prompts lays them: each key's cap and its words, a gap between.
+        private static float PromptsWidth(UiScene s, IUiKeys keys)
+        {
+            float w = 0f;
+            for (int i = 0; i < s.PromptCount; i++)
+            {
+                w += PromptWidth(ref s.Prompts[i], keys) + (i > 0 ? UiTokens.S6 : 0f);
+            }
+            return Snap(w);
         }
 
         /// <summary>A status pill: an icon in its tint and its words. Returns its width.</summary>

@@ -7,7 +7,7 @@ namespace RealLifeOverhaul.Ui
     {
         public string Title;            // "Skipping time"
         public string Clock;            // "03:40", as the game's time machine counts it
-        public string Day;              // "Wed, Day 413"
+        public string Day;              // "Wednesday (Day 413)", as the game's top bar writes it
         public string Goal;             // "Until 07:00, when your shift starts"
         public float Share;             // 0 to 1 of the way to the goal
         public bool CanCancel = true;   // the game's own time machine may run without a way out

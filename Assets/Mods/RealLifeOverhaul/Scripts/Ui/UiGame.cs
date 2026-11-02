@@ -302,7 +302,8 @@ namespace RealLifeOverhaul.Ui
             }
             Timestamp now = TimeHelper.Now();
             string time = now.Hour.ToString("00", CultureInfo.InvariantCulture) + ":" + ((int)now.Minute).ToString("00", CultureInfo.InvariantCulture);
-            string day = LocalizorManager.GetLocalization("timestamp_full", new { day = now.Day, time = string.Empty }).Trim();
+            // The day as the game's top bar writes it ("Monday (Day 12)"): the timestamp's words with no time left a comma behind.
+            string day = RealLifeOverhaul.Planner.PlannerText.Date(now.Day);
             var m = new UiStatusModel { Time = time, Day = day, Money = save.Money.ToShortCurrencyFormat(abbreviated: true) };
             if (UiShell.Taken || HudStatusGame.Shows)   // the app row in the full menu, and on the HUD's bar while walking (the owner, item 11)
             {

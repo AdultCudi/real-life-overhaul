@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Ui
     }
 
     /// <summary>
-    /// The small parts the HUD's pieces share (w0-hudkit): the game's own key on a cap (the HUD never owns a key: the game
+    /// The small parts the HUD's pieces share: the game's own key on a cap (the HUD never owns a key: the game
     /// reads its keys and the kit shows which), a meter with its words and figure, and a timing gauge with its zone and
     /// marker. Game-free. Cost: a few boxes each.
     /// </summary>

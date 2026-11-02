@@ -4,10 +4,11 @@ using System.IO;
 using RealLifeOverhaul;
 using RealLifeOverhaul.Ui;
 
-// The HUD's pieces and host (w0-hudkit; Scripts/Ui/UiHud*.cs, UiDraw.HudBar.cs, Scripts/Ui/Hud): the px scale under the
-// game's UI zoom, the world prompt inside the screen above the bar at every frame of a camera's sweep, every pill whole on
-// the bar in every language at 1080, 720 and the narrowest zoom, the activity in each of its states, the money's changes
-// merged per minute as the game merges them, no key taken while a piece is not focused, and what a frame costs.
+// The HUD's pieces and host (Scripts/Ui/UiHud*.cs, UiDraw.HudBar.cs, Scripts/Ui/Hud): the px scale under the game's UI
+// zoom, the world prompt inside the screen above the bar at every frame of a camera's sweep, every pill whole on the bar's
+// one centre line with the app row in every language at 1080, 1440, the zoom's 80% and 120% and the narrowest, the
+// activity in each of its states, the money's changes merged per minute as the game merges them, no key taken while a
+// piece is not focused, and what a frame costs.
 internal static partial class Program
 {
     private static void HudKitChecks()
@@ -83,12 +84,16 @@ internal static partial class Program
         Check(mx == 960f && my == 540f && bx == 0f && by == 1080f, "hud: a camera's pixel (from the bottom left) becomes a px of the layout (from the top left) at any resolution");
     }
 
-    // Every pill that stays is whole and none crosses another, in every language, on the bar at 1080 and 720 (one layout, the
-    // canvas scales) and at the narrowest the UI zoom leaves it; the least needed go first.
+    // The strip's widths: 1080 (and 1440, which lays out the same), the game's UI zoom at 80% and 120%, an ultrawide, and the
+    // narrowest the HUD lays out (a zoom of 150% and over).
+    private static readonly float[] BarWidths = { 1920f, 1920f / 0.8f, 1920f / 1.2f, 2520f, UiHudRules.LeastWidth };
+
+    // Every pill that stays is whole and none reaches the app row, in every language, paused or not, by day and at night, at
+    // every width the strip takes; what gives way goes in its order, and at 1080 the bar keeps its apps and every pill.
     private static void HudPillChecks()
     {
-        string longest = null, cut = null, crossed = null;
-        float most = 0f;
+        string crossed = null, lost = null, given = null, order = null;
+        int widest = 0;
         foreach (string lang in ModLanguages.All)
         {
             UiWords t = UiWords(lang);
@@ -97,43 +102,50 @@ internal static partial class Program
                 foreach (bool paused in new[] { false, true })
                 {
                     UiStatusModel bar = UiSamples.HudBar(t, paused, false, night);
-                    foreach (float width in new[] { 1920f, 2520f, UiHudRules.LeastWidth })
+                    foreach (float width in BarWidths)
                     {
                         UiPillPlan p = UiDraw.PlanPills(bar, width);
+                        string at = lang + " at " + width.ToString("0") + (paused ? " paused" : "") + (night ? " at night" : "");
                         float left = UiTokens.S4 + p.Time + (p.Weather > 0f ? UiTokens.S2 + p.Weather : 0f) + (p.Place > 0f ? UiTokens.S2 + p.Place : 0f);
-                        if (left + UiTokens.S8 > p.MoneyX + 0.01f && crossed == null)
+                        float right = p.MoneyX - (p.Alerts > 0f ? p.Alerts + UiTokens.S2 : 0f) - (p.Needs > 0f ? p.Needs + UiTokens.S2 : 0f);
+                        if ((left + UiTokens.S6 > p.RowX + 0.01f || p.RowX + p.RowW + UiTokens.S6 > right + 0.01f) && crossed == null)
                         {
-                            crossed = lang + " at " + width + (paused ? " paused" : "") + (night ? " at night" : "");
+                            crossed = at;
                         }
-                        if ((p.Time == 0f || p.Money == 0f || p.Needs == 0f || p.Weather == 0f || p.Alerts == 0f) && cut == null)
+                        if ((p.Time == 0f || !p.Day || p.Money == 0f || p.Needs == 0f || p.Alerts == 0f || Math.Abs(p.MoneyX + p.Money - (width - UiTokens.S4)) > 0.01f) && lost == null)
                         {
-                            cut = lang + " at " + width;
+                            lost = at;
                         }
-                        if (width == 1920f && (!p.Day || !p.Temperature || p.Place == 0f) && cut == null)
+                        if (width == 1920f && !night && (p.Apps < bar.Apps.Length || p.Weather == 0f || p.Place == 0f || p.Meter < 28f) && given == null)
                         {
-                            cut = lang + " at 1920 gave up the " + (!p.Day ? "day" : !p.Temperature ? "temperature" : "place");
+                            given = at + " (" + p.Apps + " apps" + (p.Weather == 0f ? ", no weather" : "") + (p.Place == 0f ? ", no place" : "") + (p.Meter < 28f ? ", short meters" : "") + ")";
                         }
-                        if (width == 1920f && left > most)
+                        if (((p.Place == 0f && p.District) || (!p.Day && (p.Place > 0f || p.Weather > 0f)) || (p.Weather == 0f && p.Temperature)) && order == null)
                         {
-                            most = left;
-                            longest = lang;
+                            order = at;
                         }
+                        widest = width == 1920f ? Math.Max(widest, (int)left) : widest;
                     }
                 }
             }
         }
-        Check(crossed == null, "hud: the left pills never reach the money, whatever the language, the width or the state" + (crossed == null ? "" : " (" + crossed + ")"));
-        Check(cut == null, "hud: the time, the weather, the money, the needs and the alerts always stay, and at 1080 nothing is given up" + (cut == null ? "" : " (" + cut + ")"));
-        Check(longest != null, "hud: the widest left group at 1080 is " + (longest ?? "?") + "'s, " + most.ToString("0") + " px");
+        Check(crossed == null, "hud: the left and the right pills keep a gap from the app row, whatever the language, the width or the state" + (crossed == null ? "" : " (" + crossed + ")"));
+        Check(lost == null, "hud: the time with its day, the needs, the alerts and the money at the strip's corner stay at every width down to the narrowest" + (lost == null ? "" : " (" + lost + ")"));
+        Check(given == null, "hud: at 1080 by day the bar keeps every app, the weather, the place and the needs' full meters (the widest left group " + widest + " px)" + (given == null ? "" : " (" + given + ")"));
+        Check(order == null, "hud: on a narrower strip the district goes before the place, the temperature before the weather, and the day's words last" + (order == null ? "" : " (" + order + ")"));
+        // At the narrowest the row hands its apps to All apps, down to four, before the needs give way.
         UiStatusModel full = UiSamples.HudBar(UiWords("en"), false, false, false);
         UiPillPlan narrow = UiDraw.PlanPills(full, UiHudRules.LeastWidth), wide = UiDraw.PlanPills(full, 1920f);
-        Check(wide.District && narrow.Meter <= wide.Meter && (!narrow.District || narrow.Place == wide.Place),
-            "hud: on the narrowest bar the district goes before the place, and the meters shorten before the day's words go");
+        Check(narrow.Apps >= 4 && narrow.Apps < wide.Apps && narrow.Needs > 0f && narrow.Meter <= wide.Meter,
+            "hud: on the narrowest strip the row keeps " + narrow.Apps + " of " + wide.Apps + " apps, the rest under All apps, so the needs stay");
         full.Hygiene = full.Stress = full.HomeNeed = -1;
-        Check(UiDraw.PlanPills(full, 1920f).Meter > wide.Meter, "hud: with only the game's three needs each meter is longer");
+        UiPillPlan three = UiDraw.PlanPills(full, 1920f);
+        Check(three.Needs == UiTokens.S3 * 2f + 3f * three.Meter + 2f * UiTokens.S2 && wide.Needs == UiTokens.S3 * 2f + 6f * wide.Meter + 5f * UiTokens.S2,
+            "hud: the needs' pill holds a cell for each need it is given, the game's three alone or with the mod's three");
         var empty = new UiStatusModel();
         UiPillPlan none = UiDraw.PlanPills(empty, 1920f);
-        Check(none.Time == 0f && none.Weather == 0f && none.Place == 0f && none.Money == 0f && none.Needs == 0f && none.Alerts == 0f, "hud: a field left empty leaves its pill out");
+        Check(none.Time == 0f && none.Weather == 0f && none.Place == 0f && none.Money == 0f && none.Needs == 0f && none.Alerts == 0f && none.RowW == 0f,
+            "hud: a field left empty leaves its pill out, and a bar with no apps has no row");
         // The pills are targets only on the HUD's own bar, so no window's page ever meets their commands.
         var s = new UiScene();
         UiStatusModel shown = UiSamples.HudBar(UiWords("en"), false, false, false);
@@ -162,6 +174,138 @@ internal static partial class Program
         {
             UiChrome.Bar = was;
         }
+        HudBarLineChecks();
+    }
+
+    // The strip's one line (the owner, 2 Nov: "the alignment is kinda off", "Day 2," cut): every pill, app tile and prompt
+    // centred on the bar's centre line within a px, no pill's words wider than their room or crossing its edge, nothing on
+    // the strip over anything else, laid out whole by UiDraw.StatusBar at 1920 x 1080 (2560 x 1440 lays out the same), the UI
+    // zoom's 80% and 120%, an ultrawide and the narrowest, with the mouse and with the keys' prompts, in every language.
+    private static void HudBarLineChecks()
+    {
+        var frames = new[]
+        {
+            UiFrame.FullMenu(16f / 9f), new UiFrame { Width = 1920f / 0.8f, Height = 1080f / 0.8f, Band = UiFrame.BandHeight },
+            new UiFrame { Width = 1920f / 1.2f, Height = 1080f / 1.2f, Band = UiFrame.BandHeight }, UiFrame.FullMenu(21f / 9f),
+            new UiFrame { Width = UiHudRules.LeastWidth, Height = 720f, Band = UiFrame.BandHeight },
+        };
+        string off = null, cut = null, over = null;
+        int bars = 0, pieces = 0;
+        Func<UiStatusModel> was = UiChrome.Bar;
+        try
+        {
+            foreach (string lang in ModLanguages.All)
+            {
+                UiWords t = UiWords(lang);
+                foreach (bool night in new[] { false, true })
+                {
+                    foreach (int input in new[] { 0, 1, 2 })   // the mouse, the keyboard's prompts, a pad's (All apps on View)
+                    {
+                        UiStatusModel bar = UiSamples.HudBar(t, night, false, night);
+                        UiChrome.Bar = () => bar;
+                        foreach (UiFrame f in frames)
+                        {
+                            UiFrame frame = f;
+                            frame.Pointer = input == 0;
+                            var s = new UiScene();
+                            s.Begin("bar", frame.Width, frame.Height, true);
+                            s.AddPrompt(UiAction.Move, t("reallife_ui_prompt_move", "Move"));
+                            s.AddPrompt(UiAction.Back, t("input_key_menu", "Menu"));
+                            UiDraw.StatusBar(s, frame, input == 2 ? UiDefaultKeys.XboxPad : UiDefaultKeys.Keyboard);
+                            bars++;
+                            string at = lang + " " + frame.Width.ToString("0") + " x " + frame.Height.ToString("0") + (input == 0 ? " mouse" : input == 1 ? " keys" : " pad") + (night ? " night" : "");
+                            float mid = UiDraw.BarMiddle(frame);
+                            int strip = -1;
+                            for (int i = 0; i < s.ItemCount && strip < 0; i++)
+                            {
+                                strip = s.Items[i].Fill == UiRole.StatusBar ? i : -1;
+                            }
+                            for (int i = 0; i < s.ItemCount; i++)
+                            {
+                                ref UiItem it = ref s.Items[i];
+                                bool piece = it.Parent == strip && it.Kind == UiKind.Box && it.Fill != UiRole.Line;   // a pill or a tile
+                                bool prompt = (it.Flags & UiFlags.Prompt) != 0 && (it.Kind == UiKind.KeyCap || it.Kind == UiKind.Text);
+                                if (piece || prompt)
+                                {
+                                    pieces++;
+                                    if (Math.Abs(it.Y + it.H / 2f - mid) > 1f && off == null)
+                                    {
+                                        off = at + ": " + (prompt ? "a prompt" : it.Fill == UiRole.Pill ? "a pill" : "a tile") + " centred at " + (it.Y + it.H / 2f).ToString("0.#") + ", the line at " + mid.ToString("0.#");
+                                    }
+                                }
+                                if (it.Kind == UiKind.Text && !string.IsNullOrEmpty(it.Text) && UiTextRules.Width(it.Text, it.Style) > it.W + 0.5f && cut == null)
+                                {
+                                    cut = at + ": \"" + it.Text + "\" is " + UiTextRules.Width(it.Text, it.Style).ToString("0.#") + " px in " + it.W.ToString("0.#");
+                                }
+                                int pill = Pill(s, i, strip);
+                                if (pill >= 0 && pill != i && (it.X < s.Items[pill].X - 0.5f || it.X + it.W > s.Items[pill].X + s.Items[pill].W + 0.5f) && cut == null)
+                                {
+                                    cut = at + ": " + (it.Kind == UiKind.Text ? "\"" + it.Text + "\"" : it.Kind.ToString()) + " crosses its pill's edge";
+                                }
+                            }
+                            over = over ?? Crossing(s, strip, at);
+                        }
+                    }
+                }
+            }
+        }
+        finally
+        {
+            UiChrome.Bar = was;
+        }
+        Check(off == null && pieces > 0, "hud: the pills, the app tiles and the prompts share the strip's one centre line within 1 px (" + bars + " bars, " + pieces + " pieces)" + (off == null ? "" : " (" + off + ")"));
+        Check(cut == null, "hud: no pill's words are wider than their room or cross the pill's edge, at 1080, 1440 and the UI zoom's 80% and 120%" + (cut == null ? "" : " (" + cut + ")"));
+        Check(over == null, "hud: nothing on the strip stands over anything else: the pills, the tiles and the prompts each keep their own room" + (over == null ? "" : " (" + over + ")"));
+    }
+
+    // The pill an item is drawn in (the strip's child with the pill's fill it descends from), or -1.
+    private static int Pill(UiScene s, int item, int strip)
+    {
+        int a = item;
+        for (int guard = 0; a >= 0 && guard < 16; guard++)
+        {
+            if (s.Items[a].Parent == strip)
+            {
+                return s.Items[a].Fill == UiRole.Pill ? a : -1;
+            }
+            a = s.Items[a].Parent;
+        }
+        return -1;
+    }
+
+    // The first two of the strip's pieces (its pills and tiles, each prompt's cap with its words) that overlap, or null.
+    private static string Crossing(UiScene s, int strip, string at)
+    {
+        var boxes = new System.Collections.Generic.List<float[]>();
+        float px = -1f, pr = -1f;
+        for (int i = 0; i < s.ItemCount; i++)
+        {
+            ref UiItem it = ref s.Items[i];
+            if (it.Parent == strip && it.Kind == UiKind.Box && it.Fill != UiRole.Line)
+            {
+                boxes.Add(new[] { it.X, it.X + it.W });
+            }
+            else if ((it.Flags & UiFlags.Prompt) != 0)
+            {
+                px = px < 0f ? it.X : Math.Min(px, it.X);
+                pr = Math.Max(pr, it.X + it.W);
+            }
+        }
+        if (pr > px && px >= 0f)
+        {
+            boxes.Add(new[] { px, pr });   // the prompts as one run: their caps and words sit together
+        }
+        for (int a = 0; a < boxes.Count; a++)
+        {
+            for (int b = a + 1; b < boxes.Count; b++)
+            {
+                if (boxes[a][0] < boxes[b][1] - 0.5f && boxes[b][0] < boxes[a][1] - 0.5f)
+                {
+                    return at + ": " + boxes[a][0].ToString("0") + " to " + boxes[a][1].ToString("0") + " and " + boxes[b][0].ToString("0") + " to " + boxes[b][1].ToString("0");
+                }
+            }
+        }
+        return null;
     }
 
     // The activity in each of its states: the card before it starts, the strip above the bar after, its buttons as the state has them.

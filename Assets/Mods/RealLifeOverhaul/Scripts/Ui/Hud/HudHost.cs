@@ -21,7 +21,7 @@ namespace RealLifeOverhaul.Ui
     }
 
     /// <summary>
-    /// The HUD host (w0-hudkit): the kit's pieces over the running game, on a canvas of its own nested in the game's HUD
+    /// The HUD host: the kit's pieces over the running game, on a canvas of its own nested in the game's HUD
     /// canvas (UiOverCanvas), so the game's scaler (3840 x 2160, its UI zoom) scales it as it scales the game's own HUD, and
     /// sorted just above the HUD and below the game's question boxes, notices and other mods' canvases. Three kinds of piece:
     /// - the HUD itself (HudScreen: the status bar and the pieces docked at the edges), one view laid out only when its

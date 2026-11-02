@@ -19,7 +19,7 @@ internal static partial class UiSamples
     {
         var m = new UiStatusModel
         {
-            Time = night ? "22:47" : "14:32", Day = night ? "Fri, Day 415" : "Tue, Day 412", DayWidest = "Wed, Day 888", Paused = paused, Speed = fast ? 3 : 1, PausedWords = t("reallife_ui_hud_paused", "Paused"),
+            Time = night ? "22:47" : "14:32", Day = night ? "Friday (Day 415)" : "Tuesday (Day 412)", DayWidest = night ? "Wednesday (Day 420)" : "Wednesday (Day 413)", Paused = paused, Speed = fast ? 3 : 1, PausedWords = t("reallife_ui_hud_paused", "Paused"),
             Season = t("reallife_season_name_autumn", "Autumn"), Weather = night ? UiIcon.CloudRain : UiIcon.CloudSun, Temperature = night ? "9°C" : "14°C",
             Place = night ? "1250 Avenue of the Americas" : "70 Fifth Avenue", District = night ? "Lower Manhattan" : "Midtown", Money = night ? "$2,415" : "$48,210",
             MoneyTrend = night ? -1 : 1, MoneyChange = night ? "-$385" : "+$1,240", MoneyChangeRises = !night,
@@ -399,8 +399,8 @@ internal static partial class UiSamples
             },
             HasDuration = state == UiActivityState.NotStarted, DurationLabel = "Hours", DurationValue = "4 hours", DurationShare = 0.5f,
             HasProgress = state == UiActivityState.Running || state == UiActivityState.Started, Progress = new UiProgressModel { Share = 0.01f },
-            Clock = state == UiActivityState.Finished ? "18:32" : state == UiActivityState.Running || state == UiActivityState.Started ? "14:34" : "14:32",
-            StateWords = state == UiActivityState.Moving ? "On your way, 2 min" : state == UiActivityState.Waiting ? "Waiting for the doors to open at 12:00"
+            Clock = state == UiActivityState.Finished ? "18:32" : state == UiActivityState.Running || state == UiActivityState.Started ? "14:34" : state == UiActivityState.Waiting ? "14:20" : "14:32",
+            StateWords = state == UiActivityState.Moving ? "On your way, 2 min" : state == UiActivityState.Waiting ? "Waiting for the doors to open, 12 min"
                 : state == UiActivityState.Finished ? "Done: $64 earned" : "3 hours, 58 minutes remaining",
             CanSkip = true, SkipLabel = t("playeractivityui_timemachine", "Skip time"), SkipKey = GameKey(k, "O", UiIcon.PadRb),
             CanFast = true, Fast = state == UiActivityState.Running, FastLabel = t("playeractivityui_fast_forward", "Fast forward"), FastKey = GameKey(k, "P", UiIcon.PadY),
@@ -433,19 +433,19 @@ internal static partial class UiSamples
     /// <summary>Sleeping until the shift: the clock running on, the goal, Cancel.</summary>
     public static UiTimeSkipModel HudSkip(UiWords t, bool locked) => new UiTimeSkipModel
     {
-        Title = t("playeractivityui_timemachine", "Skip time"), Clock = "03:40", Day = "Wed, Day 413", Goal = "Until 07:00, when your shift starts", Share = 0.58f, CanCancel = !locked,
+        Title = t("playeractivityui_timemachine", "Skip time"), Clock = "03:40", Day = "Wednesday (Day 413)", Goal = "Until 07:00, when your shift starts", Share = 0.58f, CanCancel = !locked,
         CancelLabel = t("common_cancel", "Cancel"),
         Prompts = new[] { new UiPrompt { Action = UiAction.Back, Label = t("common_cancel", "Cancel") } }, PromptCount = 1,
     };
 
-    public static void HudSkipScene(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t) =>
-        WithBar(Skipping(HudBar(t, false, true, true)), () => UiTimeSkip.Lay(s, HudSkip(t, false), f, dark, k));
+    public static void HudSkipScene(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool locked = false) =>
+        WithBar(Skipping(HudBar(t, false, true, true)), () => UiTimeSkip.Lay(s, HudSkip(t, locked), f, dark, k));
 
     // The bar under the veil reads the clock the veil counts.
     private static UiStatusModel Skipping(UiStatusModel bar)
     {
         bar.Time = "03:40";
-        bar.Day = "Wed, Day 413";
+        bar.Day = "Wednesday (Day 413)";
         return Over(bar);
     }
 
@@ -515,6 +515,7 @@ internal static partial class UiSamples
             },
         };
         m.PromptCount = m.Prompts.Length;
+        bar.Middle = UiToolRow.Width(m.Tools);   // the pills keep clear of the row standing in the apps' place
         Hud(s, f, dark, k, t, m, bar);
     }
 }

@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.Ui
         public float PointX, PointY;                       // where its point lands, px of the layout
         public bool PointAhead = true;                     // the point is in front of the camera
         public bool MoneyChange = true;                    // the bar's money change shows above it while it has one
-        public UiPrompt[] Prompts = new UiPrompt[0];       // the game's control hints, at the right of the app row while the keys lead
+        public UiPrompt[] Prompts = new UiPrompt[0];       // the game's control hints, between the app row and the right pills while the keys lead
         public int PromptCount;
     }
 

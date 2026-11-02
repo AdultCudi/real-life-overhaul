@@ -37,41 +37,48 @@ namespace RealLifeOverhaul.Ui
         /// <summary>True for a command of the frame's (the app row, All apps), which the host hands to its Chrome.</summary>
         public static bool IsChrome(int command) => command >= ChromeFirst && command <= ChromeLast;
 
-        /// <summary>How many of the model's apps the row shows: those that fit beside the keys' prompts, at most ten.</summary>
-        public static int AppsShown(UiStatusModel m, float width)
-        {
-            if (m == null || m.Apps == null)
-            {
-                return 0;
-            }
-            float tile = UiTokens.IconTile + TileGap;
-            int room = (int)((width - UiTokens.S16 * 2f - PromptRoom * 2f) / tile) - (m.AllApps ? 1 : 0);
-            int most = m.AllApps ? RowMost : m.Apps.Length;   // a row that ends with All apps is the phone's first page; one without shows what it is given
-            return Math.Max(0, Math.Min(Math.Min(m.Apps.Length, most), room));
-        }
+        /// <summary>
+        /// How many of the model's apps the row shows: every one it is given (the phone's first page, at most ten before All
+        /// apps), fewer only while the pills would not stand whole beside them on the strip (<see cref="PlanPills"/>).
+        /// </summary>
+        public static int AppsShown(UiStatusModel m, float width) => PlanPills(m, width).Apps;
 
-        // px the keys' prompts may take at the bar's right while the keys lead; the row stays centred clear of them on both sides.
-        private const float PromptRoom = 520f;
+        /// <summary>px: an app's tile on the status bar, big as a game's dock, its glyph <see cref="BarGlyph"/> on it.</summary>
+        public const float BarTile = 64f;
 
+        /// <summary>px: a glyph on a tile of the status bar, an app's or a build tool's, chunky as a game's.</summary>
+        public const float BarGlyph = 40f;
+
+        private const int RowLeast = 4;       // apps the row keeps however narrow the strip; the rest wait under All apps
         private const byte RowRegion = 240;   // the d-pad's column of its own: Left and Right walk the row, Up leaves it
 
-        // The row, centred in the bar's upper row. Pressable only where the frame answers it (the full menu); elsewhere a
-        // tile is a picture of where the player is. Its tiles are linked left and right, the All apps tile last, so the
-        // d-pad walks the whole row and never jumps up into the page on its way.
-        private static void AppRow(UiScene s, UiAt on, float y, float w, UiStatusModel m, IUiKeys keys)
+        /// <summary>The status bar's centre line, which the row, the pills and the prompts all stand on.</summary>
+        public static float BarMiddle(UiFrame frame) => frame.BandY + frame.Band / 2f;
+
+        // The apps the row would show with room enough: a row that ends with All apps is the phone's first page; one without
+        // shows what it is given.
+        private static int RowApps(UiStatusModel m) => m == null || m.Apps == null ? 0 : m.AllApps ? Math.Min(m.Apps.Length, RowMost) : m.Apps.Length;
+
+        // The row's width with a number of its apps, All apps after them.
+        private static float RowWidth(UiStatusModel m, int apps)
         {
-            int shown = AppsShown(m, w);
-            if (shown == 0 && !m.AllApps)
+            int tiles = apps + (m != null && m.AllApps ? 1 : 0);
+            return tiles == 0 ? 0f : tiles * BarTile + (tiles - 1) * TileGap;
+        }
+
+        // The row, centred on the strip and on its centre line. Pressable only where the frame answers it (the full menu and the
+        // HUD); elsewhere a tile is a picture of where the player is. Its tiles are linked left and right, the All apps tile
+        // last, so the d-pad walks the whole row and never jumps up into the page on its way.
+        private static void AppRow(UiScene s, UiAt on, float mid, ref UiPillPlan p, UiStatusModel m)
+        {
+            if (p.RowW <= 0f)
             {
                 return;
             }
             UiAt row = on.InRegion(RowRegion);
-            float tile = UiTokens.IconTile;
-            int count = shown + (m.AllApps ? 1 : 0);
-            float total = count * tile + (count - 1) * TileGap;
-            float ax = SnapDown((w - total) / 2f), ay = y + (UiFrame.Toolbar - tile) / 2f;
+            float tile = BarTile, ax = p.RowX, ay = mid - tile / 2f;
             int first = s.NodeCount;
-            for (int i = 0; i < shown; i++)
+            for (int i = 0; i < p.Apps; i++)
             {
                 UiRole tint = m.AppTints != null && i < m.AppTints.Length ? m.AppTints[i] : UiRole.Text2;
                 int badge = m.AppBadges != null && i < m.AppBadges.Length ? m.AppBadges[i] : 0;
@@ -82,15 +89,11 @@ namespace RealLifeOverhaul.Ui
             if (m.AllApps)
             {
                 int rest = m.AllAppsBadge;
-                for (int i = shown; m.AppBadges != null && i < m.AppBadges.Length && i < m.Apps.Length; i++)
+                for (int i = p.Apps; m.AppBadges != null && i < m.AppBadges.Length && i < m.Apps.Length; i++)
                 {
                     rest += m.AppBadges[i];   // the apps the row leaves out tell their news on All apps
                 }
                 AppTile(s, row, ax, ay, tile, UiIcon.Grid, UiIconTints.Of(UiIcon.Grid), m.AllAppsOpen, rest, m.AppsPress ? AllAppsCommand : -1, 0);
-                if (m.AppsPress && keys != null && keys.Pad != UiPad.None && !string.IsNullOrEmpty(m.AllAppsLabel))
-                {
-                    s.AddPrompt(UiAction.View, m.AllAppsLabel);   // the pad's View opens it from anywhere: said while a pad leads
-                }
             }
             for (int n = first; n < s.NodeCount; n++)
             {
@@ -100,12 +103,12 @@ namespace RealLifeOverhaul.Ui
         }
 
         // One tile: the glyph in its colour on slate (dark on the cyan when chosen), a dot of news on its corner, clear of
-        // the glyph (the count is on All apps and on the app's own page).
+        // the glyph (the count is on All apps and on the app's own page). Centred on the strip's line, not on a grid step.
         private static void AppTile(UiScene s, UiAt on, float x, float y, float tile, UiIcon icon, UiRole tint, bool chosen, int badge, int command, int arg, int picture = 0)
         {
             int face = Tile(s, on, x, y, tile, tint, chosen);
-            s.Items[face].Flags |= UiFlags.Chrome;
-            float g = UiTokens.S8;   // 32 px: a tool's glyph, chunky as a game's, on the grid in its 40 px tile
+            s.Items[face].Flags |= UiFlags.Chrome | UiFlags.Middle;
+            float g = BarGlyph;
             if (picture > 0)
             {
                 Picture(s, on.In(face), x + (tile - g) / 2f, y + (tile - g) / 2f, g, picture);   // another mod's app: its own picture, as on the phone

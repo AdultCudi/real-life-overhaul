@@ -2,7 +2,6 @@ using System;
 using System.Runtime.CompilerServices;
 using BigAmbitions.DayNightCycle;
 using Helpers;
-using Localizor;
 using RealLifeOverhaul.Seasons;
 using TMPro;
 using UI;
@@ -63,8 +62,8 @@ namespace RealLifeOverhaul.Ui
             return m;
         }
 
-        // The widest of the coming week's days in the game's own words (UiGame.Bar writes the day so), worked out once a day,
-        // so the time pill keeps one width all week.
+        // The widest of the coming week's days in the game's own words, as its top bar writes them (UiGame.Bar writes the day
+        // so), worked out once a day, so the time pill keeps one width all week.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static string Widest()
         {
@@ -80,7 +79,7 @@ namespace RealLifeOverhaul.Ui
                 float most = -1f;
                 for (int d = save.Day; d < save.Day + 7; d++)
                 {
-                    string words = LocalizorManager.GetLocalization("timestamp_full", new { day = d, time = string.Empty }).Trim();
+                    string words = RealLifeOverhaul.Planner.PlannerText.Date(d);
                     float w = UiTextRules.Width(words, UiStyle.Body);
                     if (w > most)
                     {

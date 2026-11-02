@@ -4,7 +4,7 @@ namespace RealLifeOverhaul.Ui
 {
     public static partial class UiScreens
     {
-        // The HUD's pieces over the running game (w0-hudkit): the HUD itself, run in the game by HudScreen on the HUD host,
+        // The HUD's pieces over the running game: the HUD itself, run in the game by HudScreen on the HUD host,
         // and the pieces that stand over it as screens of their own (the picker, the activity's card, the time skip veil,
         // the city map's side panel), samples the waves build on until wave 2 and the map wave run them.
         static partial void AddHud(List<UiScreenDef> screens)

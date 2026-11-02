@@ -33,10 +33,10 @@ namespace RealLifeOverhaul.Ui
     /// <summary>
     /// The tool row, as Cities: Skylines II's build toolbar: the status bar's app row given over to a row of tool tiles (the
     /// one in hand filled cyan), and above the bar a panel rising from that tool for its choices, each a glyph on its tile
-    /// with its name and its figure under it, the one in hand on the cyan. For the interior designer (w5-designer) and Build
-    /// mode (w4-construction): their model provider leaves the bar's apps out while the row stands. Commands:
-    /// <see cref="ToolCommand"/> (a tool's index) and <see cref="ChoiceCommand"/> (a choice's index). Game-free. Cost: a
-    /// layout a change.
+    /// with its name and its figure under it, the one in hand on the cyan. For the interior designer and Build mode: their
+    /// model provider leaves the bar's apps out while the row stands and keeps its width clear (UiStatusModel.Middle).
+    /// Commands: <see cref="ToolCommand"/> (a tool's index) and <see cref="ChoiceCommand"/> (a choice's index). Game-free.
+    /// Cost: a layout a change.
     /// </summary>
     public static class UiToolRow
     {
@@ -48,25 +48,32 @@ namespace RealLifeOverhaul.Ui
         private const float CardTile = 48f;                 // px: a choice's tile
         private const byte RowRegion = 242, PanelRegion = 243;
 
-        /// <summary>Lays the row in the bar's upper row and, with a tool in hand, its panel above the bar: after the bar, which it stands on.</summary>
+        /// <summary>The row's width on the bar, which the bar's pills keep clear of (UiStatusModel.Middle).</summary>
+        public static float Width(UiToolRowModel m)
+        {
+            int count = m != null ? m.Tools.Length : 0;
+            return count == 0 ? 0f : count * UiDraw.BarTile + (count - 1) * Gap;
+        }
+
+        /// <summary>Lays the row on the bar's centre line in the apps' place and, with a tool in hand, its panel above the bar: after the bar, which it stands on.</summary>
         public static void Draw(UiScene s, UiAt at, UiToolRowModel m, UiFrame frame)
         {
-            float tile = UiTokens.IconTile;
+            float tile = UiDraw.BarTile;
             int count = m.Tools.Length;
             if (count == 0)
             {
                 return;
             }
-            float total = count * tile + (count - 1) * Gap;
-            float x0 = UiDraw.SnapDown((frame.Width - total) / 2f), ty = frame.BandY + (UiFrame.Toolbar - tile) / 2f;
+            float total = Width(m);
+            float x0 = UiDraw.SnapDown((frame.Width - total) / 2f), ty = UiDraw.BarMiddle(frame) - tile / 2f;
             UiAt row = at.InRegion(RowRegion);
             int first = s.NodeCount;
             for (int i = 0; i < count; i++)
             {
                 float tx = x0 + i * (tile + Gap);
                 int face = UiDraw.Tile(s, row, tx, ty, tile, UiRole.None, i == m.Tool);
-                s.Items[face].Flags |= UiFlags.Chrome;
-                float g = UiTokens.S8;   // a tool's glyph, chunky as a game's, on the grid in its 40 px tile
+                s.Items[face].Flags |= UiFlags.Chrome | UiFlags.Middle;   // centred on the bar's line, as the app tiles
+                float g = UiDraw.BarGlyph;
                 UiDraw.Icon(s, row.In(face), tx + (tile - g) / 2f, ty + (tile - g) / 2f, g, m.Tools[i].Icon, i == m.Tool ? UiRole.OnAccent : UiRole.None, UiFlags.Middle | UiFlags.Chrome, true);
                 int node = UiDraw.Node(s, row, tx, ty, tile, tile, ToolCommand, i, face);
                 if (i == m.Tool || (m.Tool < 0 && i == 0))
@@ -79,6 +86,7 @@ namespace RealLifeOverhaul.Ui
                 s.Nodes[n].Left = n > first ? n - 1 : -1;
                 s.Nodes[n].Right = n < s.NodeCount - 1 ? n + 1 : -1;
             }
+            UiDraw.JoinPills(s, first, s.NodeCount - 1);   // the bar's pills either side, one row for the d-pad
             if (m.Tool >= 0 && m.Tool < count && m.Choices.Length > 0)
             {
                 Panel(s, at.InRegion(PanelRegion), m, frame, x0 + m.Tool * (tile + Gap) + tile / 2f);
