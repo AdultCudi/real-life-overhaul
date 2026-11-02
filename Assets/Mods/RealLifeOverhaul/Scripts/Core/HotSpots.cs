@@ -13,7 +13,12 @@ namespace RealLifeOverhaul
     /// A scope inside another counts under both names, once in the total. The frame before is kept whole
     /// (<see cref="FrameMs"/>); the reader adds frames of play into a stretch (<see cref="Keep"/>) read once a minute.
     /// One frame in <see cref="SampleEvery"/> also samples the managed heap round each scope (every frame where the
-    /// runtime counts each thread's allocations). Game-free (the frame count and heap are handed in), checked by NavCheck.
+    /// runtime counts each thread's allocations). The game's own work the mod calls (a button of the game's pressed for
+    /// the RLO interface, so every listener runs as a click would run it) is opened with <see cref="Game"/>: while it is
+    /// the innermost scope the clock and the heap's growth are the game's, kept out of every scope round it and out of
+    /// the frame's total and counted apart (<see cref="FrameGameMs"/>, <see cref="GameMs"/>); a scope of the mod's that
+    /// the game runs inside it (a handler of its events) is the mod's again. Game-free (the frame count and heap are
+    /// handed in), checked by NavCheck.
     /// COST: one flag test a scope while the record is off, as the mod ships; while on, about five microseconds a frame;
     /// nothing allocated after the arrays.
     /// </summary>
@@ -47,7 +52,19 @@ namespace RealLifeOverhaul
         private static long _nowTotal, _nowBytesTotal;
         private static int _frame = int.MinValue;
         private static bool _sampling;
-        private static int _depth;
+        private static int _depth;      // scopes open, the mod's and the game's
+        private static int _modDepth;   // of them the mod's: one that closes with none of the mod's round it adds to the total
+
+        // The game's own work (Game): which open scopes are the game's, and its clock since the record began.
+        private const int Deep = 64;    // scopes inside each other the carve follows; a game scope deeper is not carved
+        private static readonly bool[] GameAt = new bool[Deep];
+        private static bool _inGame;    // the innermost open scope is the game's: the clock is the game's
+        private static long _gameTicks, _gameBytes;   // the game's own work handed to it, in all (they only grow)
+        private static long _insideGameTicks;         // the mod's own scopes the game ran inside that work, in all
+        private static long _gameSince, _gameHeapSince;   // where the game's present stretch of the clock and of the heap began
+        private static long _frameGameAt;   // _gameTicks as the frame began
+        private static long _lastGame;      // the frame before: the game's own work in it
+        private static long _sumGame, _worstGame;   // the stretch's
 
         // The frame before it, complete.
         private static readonly long[] Last = new long[Most];
@@ -132,19 +149,41 @@ namespace RealLifeOverhaul
             private readonly int _slot;
             private readonly long _began;
             private readonly long _heap;
+            private readonly long _gameAt, _gameBytesAt;
 
-            internal Scope(int slot, long began, long heap)
+            internal Scope(int slot, long began, long heap, long gameAt, long gameBytesAt)
             {
                 _slot = slot;
                 _began = began;
                 _heap = heap;
+                _gameAt = gameAt;
+                _gameBytesAt = gameBytesAt;
             }
 
             public void Dispose()
             {
                 if (_began != 0L)
                 {
-                    End(_slot, _began, _heap);
+                    End(_slot, _began, _heap, _gameAt, _gameBytesAt);
+                }
+            }
+        }
+
+        /// <summary>What <see cref="Game"/> returns, closed at the end of its using block.</summary>
+        public readonly struct GameScope : IDisposable
+        {
+            private readonly long _began;
+
+            internal GameScope(long began)
+            {
+                _began = began;
+            }
+
+            public void Dispose()
+            {
+                if (_began != 0L)
+                {
+                    EndGame();
                 }
             }
         }
@@ -161,45 +200,139 @@ namespace RealLifeOverhaul
             {
                 Roll(frame);
             }
-            _depth++;
             long heap = _sampling && HeapSource != null ? HeapSource() : -1L;
             long began = Stopwatch.GetTimestamp();
-            return new Scope(slot, began == 0L ? 1L : began, heap);
+            if (_inGame)
+            {
+                GameStretchEnds(began, heap);   // the game runs a handler of the mod's: the clock is the mod's again
+            }
+            Push(false);
+            _modDepth++;
+            return new Scope(slot, began == 0L ? 1L : began, heap, _gameTicks, _gameBytes);
         }
 
-        private static void End(int slot, long began, long heap)
+        /// <summary>
+        /// Opens a scope round the game's own work the mod calls: a button, a toggle or a field of the game's pressed for
+        /// the RLO interface, every listener of the game's (and other mods') running as a click would run it. Its time and
+        /// the heap's growth in it are the game's, out of the mod's scopes round it and the frame's total, less the mod's
+        /// own scopes the game runs inside it. While nothing is measured, an empty value that does nothing.
+        /// </summary>
+        public static GameScope Game()
         {
-            long spent = Stopwatch.GetTimestamp() - began;
+            if (!On || _depth >= Deep)
+            {
+                return default;
+            }
+            int frame = FrameSource != null ? FrameSource() : 0;
+            if (frame != _frame)
+            {
+                Roll(frame);
+            }
+            long heap = _sampling && HeapSource != null ? HeapSource() : -1L;
+            long began = Stopwatch.GetTimestamp();
+            if (!_inGame)
+            {
+                _gameSince = began;
+                _gameHeapSince = heap;
+            }
+            Push(true);
+            return new GameScope(began == 0L ? 1L : began);
+        }
+
+        private static void Push(bool game)
+        {
+            if (_depth < Deep)
+            {
+                GameAt[_depth] = game;
+            }
+            _depth++;
+            _inGame = game && _depth <= Deep;
+        }
+
+        // The scope that closed was the innermost: the one round it decides whose the clock is now.
+        private static void Pop(long now, long heap)
+        {
+            if (_depth > 0)
+            {
+                _depth--;
+            }
+            _inGame = _depth > 0 && _depth <= Deep && GameAt[_depth - 1];
+            if (_inGame)
+            {
+                _gameSince = now;
+                _gameHeapSince = heap;
+            }
+        }
+
+        private static void GameStretchEnds(long now, long heap)
+        {
+            _gameTicks += Math.Max(0L, now - _gameSince);
+            if (heap >= 0L && _gameHeapSince >= 0L && heap > _gameHeapSince)
+            {
+                _gameBytes += heap - _gameHeapSince;
+            }
+        }
+
+        private static void End(int slot, long began, long heap, long gameAt, long gameBytesAt)
+        {
+            long ended = Stopwatch.GetTimestamp();
+            long spent = ended - began - (_gameTicks - gameAt);   // less the game's own work it handed on
             if (spent < 1L)
             {
                 spent = 1L;   // 0 means it did not run in the frame
             }
-            if (_depth > 0)
+            long heapNow = heap >= 0L && HeapSource != null ? HeapSource() : -1L;
+            if (_modDepth > 0)
             {
-                _depth--;
+                _modDepth--;
+            }
+            Pop(ended, heapNow);
+            if (_inGame)
+            {
+                _insideGameTicks += spent;   // a scope of the mod's the game ran while it worked for the mod
             }
             if (Now[slot] == 0L)
             {
                 NowTouched[_nowCount++] = slot;   // each slot once a frame: the list cannot overrun
             }
             Now[slot] += spent;
-            if (_depth == 0)
+            if (_modDepth == 0)
             {
                 _nowTotal += spent;
             }
-            if (heap >= 0L && HeapSource != null)
+            if (heapNow >= 0L)
             {
-                long grown = HeapSource() - heap;
+                long grown = heapNow - heap - (_gameBytes - gameBytesAt);
                 if (grown > 0L)
                 {
                     NowBytes[slot] += grown;
-                    if (_depth == 0)
+                    if (_modDepth == 0)
                     {
                         _nowBytesTotal += grown;
                     }
                 }
             }
         }
+
+        private static void EndGame()
+        {
+            long heap = _sampling && HeapSource != null ? HeapSource() : -1L;
+            long ended = Stopwatch.GetTimestamp();
+            if (_inGame)
+            {
+                GameStretchEnds(ended, heap);
+            }
+            Pop(ended, heap);
+        }
+
+        /// <summary>The game's own work the mod has handed to it since the record began, in Stopwatch ticks: it only grows.</summary>
+        public static long GameTicks => _gameTicks;
+
+        /// <summary>
+        /// The mod's own scopes the game ran inside that work (its handlers of the game's events), since the record began,
+        /// in Stopwatch ticks: the mod's, in its figures, but not the work of the scope that handed over. It only grows.
+        /// </summary>
+        public static long InsideGameTicks => _insideGameTicks;
 
         private static void Roll(int frame)
         {
@@ -221,11 +354,14 @@ namespace RealLifeOverhaul
             _lastCount = _nowCount;
             _lastTotal = _nowTotal;
             _lastBytesTotal = _nowBytesTotal;
+            _lastGame = _gameTicks - _frameGameAt;
+            _frameGameAt = _gameTicks;
             _lastFrame = _frame;
             _lastSampled = _sampling;
             _nowCount = 0;
             _nowTotal = _nowBytesTotal = 0L;
-            _depth = 0;
+            _depth = _modDepth = 0;
+            _inGame = false;
             _frame = frame;
             _sampling = SampleEvery <= 1 || frame % SampleEvery == 0;
         }
@@ -264,6 +400,11 @@ namespace RealLifeOverhaul
                 }
             }
             _sumTotal += _lastTotal;
+            _sumGame += _lastGame;
+            if (_lastGame > _worstGame)
+            {
+                _worstGame = _lastGame;
+            }
             if (_lastTotal > _worstTotal)
             {
                 _worstTotal = _lastTotal;
@@ -280,6 +421,13 @@ namespace RealLifeOverhaul
 
         /// <summary>Milliseconds the mod's scopes took in a frame (after <see cref="Settle"/>); 0 if none ran in it.</summary>
         public static double FrameMs(int frame) => frame == _lastFrame ? Ms(_lastTotal) : 0.0;
+
+        /// <summary>Milliseconds of the game's own work the mod handed to it in a frame (<see cref="Game"/>), not in <see cref="FrameMs"/>.</summary>
+        public static double FrameGameMs(int frame) => frame == _lastFrame ? Ms(_lastGame) : 0.0;
+
+        /// <summary>The game's own work the mod handed to it over the stretch: milliseconds in all, and the most in one frame.</summary>
+        public static double GameMs => Ms(_sumGame);
+        public static double GameWorstMs => Ms(_worstGame);
 
         /// <summary>The slot with the most of a frame's time after <paramref name="skip"/> larger ones; false when there is none.</summary>
         public static bool FrameTop(int frame, int skip, out int slot, out double ms)
@@ -398,6 +546,7 @@ namespace RealLifeOverhaul
             Array.Clear(Worst, 0, Most);
             Array.Clear(Bytes, 0, Most);
             _sumTotal = _worstTotal = _bytesTotal = 0L;
+            _sumGame = _worstGame = 0L;
             _worstSlot = -1;
             _worstSlotTicks = 0L;
             _frames = _sampled = 0;
@@ -414,7 +563,10 @@ namespace RealLifeOverhaul
             _nowCount = _lastCount = 0;
             _nowTotal = _nowBytesTotal = _lastTotal = _lastBytesTotal = 0L;
             _frame = _lastFrame = int.MinValue;
-            _depth = 0;
+            _depth = _modDepth = 0;
+            _inGame = false;
+            _frameGameAt = _gameTicks;
+            _lastGame = 0L;
             _sampling = _lastSampled = false;
         }
     }

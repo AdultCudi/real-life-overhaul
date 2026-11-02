@@ -222,6 +222,7 @@ namespace RealLifeOverhaul
                 }
             }
             BizPaceWatch.MinuteLine(_line);   // BizMan's opens, switches and tab changes of the minute: what the mod added, the slowest handler named
+            RealLifeOverhaul.Ui.UiCost.MinuteLine(_line, seconds);   // the RLO interface's share of every frame, paused ones in (Ui/Host/UiCost)
             HotSpots.ClearStretch();
         }
         // Every object under a root of the mod's ("RealLifeOverhaul ...") in every loaded scene, by holder and by kind; the

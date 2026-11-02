@@ -126,6 +126,7 @@ namespace RealLifeOverhaul.Ui
 
         private void Slow()
         {
+            using var cost = UiCost.Kit.Time(UiWork.Frame);   // the interface's share of the frame (Host/UiCost)
             if (!_fallbackSet)
             {
                 _fallbackSet = UiGame.FallbackFont();

@@ -68,6 +68,10 @@ namespace RealLifeOverhaul.Ui
         private static int _minute = -1, _day = -1;
         private static string _songSeen, _titleSeen;
         private static bool _radioSeen, _driverSeen;
+        private static int _shapeSeen;      // the phone's objects (by their ids) when their names were last read
+        private static bool _namedSeen;     // and whether another mod's screen was among them
+        private static readonly int HotShown = HotSpots.Slot("Ui: PhoneKit.Shown");     // run by the game's own showing of its phone
+        private static readonly int HotHidden = HotSpots.Slot("Ui: PhoneKit.Hidden");
 
         /// <summary>Where the kit phone stands, for the interface's line at load.</summary>
         public static string State => _root != null ? "drawn over the game's phone" : _state;
@@ -130,6 +134,7 @@ namespace RealLifeOverhaul.Ui
             _grid = pager.transform;
             _gridSeen = 0;
             _scaler = RootCanvas(_container);
+            _shapeSeen = 0;
             _collapse = (GameContract.PhoneCollapse.Field?.GetValue(window) as GameObject)?.GetComponent<Button>();
             _driver = GameContract.PhoneDriver.Field?.GetValue(phone) as Button;
             _driverLabel = _driver != null ? _driver.GetComponentInChildren<TMP_Text>(true) : null;
@@ -167,6 +172,7 @@ namespace RealLifeOverhaul.Ui
             _screen = new PhoneScreen(PhoneItemsGame.Items, Actions, UiText.Words) { Docked = true };
             _host = _root.AddComponent<UiHost>();
             _host.Bind(_screen, Gate, UiGame.Instance, UiDirector.Dark, UiDirector.Motion, 0f, 0f, null, UiIcon.None);
+            _host.Measure("the phone", true);   // a piece of the HUD: its cost is in the minute's line
             _host.View.Scale = UiTokens.CanvasPerPx;
             _host.Failed = Fallback;
             _onCollapse = Guard.Listener<bool>(Collapsed);
@@ -201,8 +207,37 @@ namespace RealLifeOverhaul.Ui
         // Another pager of the phone, or another mod's screen drawn on it: theirs, and the classic phone with them.
         private static bool Taken(PhoneGridPager pager, Transform phone, out string why)
         {
-            why = pager.SteppedAside ? "another mod pages the phone's apps" : Named(phone, OtherScreen, 0) ? "another mod draws a screen of its own on the phone" : null;
+            why = pager.SteppedAside ? "another mod pages the phone's apps" : NamedSoon(phone) ? "another mod draws a screen of its own on the phone" : null;
             return why != null;
+        }
+
+        // Another mod's screen among the phone's objects, asked once a second: the names (each read of one makes a new
+        // string) are read only when the objects under the phone are not the ones of the last look, so the look allocates
+        // nothing while the phone stays as it is.
+        private static bool NamedSoon(Transform phone)
+        {
+            int shape = Shape(phone, 0, 17);
+            if (shape != _shapeSeen || _shapeSeen == 0)
+            {
+                _shapeSeen = shape == 0 ? 1 : shape;
+                _namedSeen = Named(phone, OtherScreen, 0);
+            }
+            return _namedSeen;
+        }
+
+        // The ids of the objects the name walk goes through, in its order and to its depth, folded into one number.
+        private static int Shape(Transform under, int depth, int hash)
+        {
+            for (int i = 0; i < under.childCount; i++)
+            {
+                Transform child = under.GetChild(i);
+                hash = unchecked(hash * 31 + child.GetInstanceID());
+                if (depth < 6)
+                {
+                    hash = Shape(child, depth + 1, hash);
+                }
+            }
+            return hash;
         }
 
         // A child of that name's beginning anywhere under the phone, without a list made for the search.
@@ -286,6 +321,7 @@ namespace RealLifeOverhaul.Ui
             _container = null;
             _grid = null;
             _gridSeen = 0;
+            _shapeSeen = 0;
             _scaler = null;
             _onCollapse = null;
             _pressItem = -1;
@@ -311,10 +347,12 @@ namespace RealLifeOverhaul.Ui
 
         internal static void Shown()
         {
+            using var hotSpot = HotSpots.Time(HotShown);
             if (_root == null)
             {
                 return;
             }
+            using var cost = _host != null && _host.Cost != null ? _host.Cost.Time(UiWork.Frame) : default;
             try
             {
                 Conceal();
@@ -334,6 +372,7 @@ namespace RealLifeOverhaul.Ui
 
         internal static void Hidden()
         {
+            using var hotSpot = HotSpots.Time(HotHidden);
             Leave();
             _pressItem = -1;
             _host?.Hide();
@@ -427,6 +466,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
+            using var cost = _host != null && _host.Cost != null ? _host.Cost.Time(UiWork.Frame) : default;
             if (_pressItem >= 0 && now >= _pressAt)
             {
                 int item = _pressItem;
@@ -686,7 +726,7 @@ namespace RealLifeOverhaul.Ui
             {
                 if (_collapse != null && _collapse.interactable)
                 {
-                    _collapse.onClick.Invoke();
+                    UiWidgets.Hand(_collapse);
                 }
             }
 
@@ -694,7 +734,7 @@ namespace RealLifeOverhaul.Ui
             {
                 if (_skip != null && _skip.interactable)
                 {
-                    _skip.onClick.Invoke();
+                    UiWidgets.Hand(_skip);
                 }
             }
 
@@ -702,6 +742,7 @@ namespace RealLifeOverhaul.Ui
             {
                 if (_volume != null)
                 {
+                    using var handed = HotSpots.Game();
                     _volume.value = Mathf.Clamp(_volume.value + step * VolumeStep * (_volume.maxValue - _volume.minValue), _volume.minValue, _volume.maxValue);   // its own listener keeps it
                 }
             }
@@ -710,7 +751,7 @@ namespace RealLifeOverhaul.Ui
             {
                 if (_driver != null && _driver.interactable)
                 {
-                    _driver.onClick.Invoke();
+                    UiWidgets.Hand(_driver);
                 }
             }
 

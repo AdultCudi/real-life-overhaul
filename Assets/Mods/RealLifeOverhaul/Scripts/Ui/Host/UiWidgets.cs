@@ -10,7 +10,9 @@ namespace RealLifeOverhaul.Ui
     /// The game's own widgets, read and pressed through themselves, so a kit screen never works out the game's data and
     /// every listener runs as a click would run it (the game's, other mods' patches, Going Public's). The vanilla object is
     /// the truth for what shows (activeSelf), what can be pressed (interactable), its words and its tint. The host plays
-    /// the click itself when a press answers true. Cost: what each call does, only when a screen asks; nothing a frame.
+    /// the click itself when a press answers true. What the listeners do is the game's own work, run inside a HotSpots.Game
+    /// scope, so the session record keeps it out of the mod's figures. Cost: what each call does, only when a screen asks;
+    /// nothing a frame.
     /// </summary>
     public static class UiWidgets
     {
@@ -75,8 +77,20 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
-            b.onClick.Invoke();
+            Hand(b);
             return true;
+        }
+
+        /// <summary>
+        /// A button of the game's pressed as a click presses it, by a caller that has checked it may be pressed: its listeners
+        /// (the game's, other mods', Going Public's) run as the game's own work (HotSpots.Game), not the mod's.
+        /// </summary>
+        public static void Hand(Button b)
+        {
+            using (HotSpots.Game())
+            {
+                b.onClick.Invoke();
+            }
         }
 
         /// <summary>A toggle set through itself, so its listeners hear it; false when it cannot be changed now.</summary>
@@ -86,7 +100,10 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
-            t.isOn = on;
+            using (HotSpots.Game())
+            {
+                t.isOn = on;
+            }
             return true;
         }
 
@@ -97,7 +114,10 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
-            d.value = option;
+            using (HotSpots.Game())
+            {
+                d.value = option;
+            }
             return true;
         }
 
@@ -108,11 +128,14 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
-            f.text = text ?? string.Empty;
-            if (submit)
+            using (HotSpots.Game())
             {
-                f.onSubmit?.Invoke(f.text);
-                f.onEndEdit?.Invoke(f.text);
+                f.text = text ?? string.Empty;
+                if (submit)
+                {
+                    f.onSubmit?.Invoke(f.text);
+                    f.onEndEdit?.Invoke(f.text);
+                }
             }
             return true;
         }
@@ -124,7 +147,10 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
-            s.value = value;
+            using (HotSpots.Game())
+            {
+                s.value = value;
+            }
             return true;
         }
 

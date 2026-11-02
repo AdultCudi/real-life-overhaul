@@ -37,13 +37,16 @@ namespace RealLifeOverhaul.Ui
     /// while words are typed. The mouse and the keys each lead in turn (UiFocusMode): the ring is the keys' alone, so a
     /// hover never moves the focus or makes a sound. Runs before the game's own Update (as the mod's other Escape-takers
     /// do), so Back a screen takes is not also the game's. Cost a frame: nothing while its screen is hidden, and while it
-    /// shows a few input reads and comparisons, a layout only on a change.
+    /// shows a few input reads and comparisons, a layout only on a change. What its screen costs while it shows is counted
+    /// by name for the session record (UiCost, Developer diagnostics on), with one Verbose line as it closes.
     /// </summary>
     [DefaultExecutionOrder(-31000)]
     public sealed class UiHost : MonoBehaviour
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("ui", "UiHost", typeof(UiHost));   // its Update (Core/Guard)
         private static readonly int HotUpdate = HotSpots.Slot("Ui: UiHost.Update");
+        private static readonly int HotShow = HotSpots.Slot("Ui: UiHost.Show");   // also run by the game's own enabling of a screen
+        private static readonly int HotHide = HotSpots.Slot("Ui: UiHost.Hide");
 
         private const float RepeatDelay = 0.35f;   // seconds a direction is held before it repeats
         private const float RepeatEvery = 0.08f;   // seconds between repeats
@@ -70,6 +73,7 @@ namespace RealLifeOverhaul.Ui
         private Vector2 _dragAt;     // where, in px of the layout
         private TMP_InputField _field;
         private UnityEngine.Events.UnityAction<string> _onTyped, _onTypingEnded, _onSubmit;
+        private UiCost _cost;
 
         /// <summary>The screen stands over a panel of the game's that answers the same keys: the host takes them from the game each frame.</summary>
         public bool Exclusive;
@@ -79,6 +83,15 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>Told once when the host stops after a fault, so its owner gives the game's own screen back.</summary>
         public Action<Exception> Failed;
+
+        /// <summary>
+        /// True while the screen is on its way out (the full menu closing, as View on map closes it on its way to the map):
+        /// nothing is laid out or read for a screen leaving, and its owner hides it. Null for a screen that never leaves so.
+        /// </summary>
+        public Func<bool> Leaving;
+
+        /// <summary>What the screen costs while it shows, by name (UiCost); named by its owner through <see cref="Measure"/>.</summary>
+        public UiCost Cost => _cost;
 
         /// <summary>
         /// The frame's answer to what is not the screen's: the status bar's app row and All apps (UiDraw.AppRowCommand and
@@ -119,15 +132,43 @@ namespace RealLifeOverhaul.Ui
                 _view.PointerDragged = Guard.Wrap<int, UiDragPoint>(PointerDragged);
             }
             _laidSize = Vector2.zero;
+            if (_cost == null)
+            {
+                string type = screen != null ? screen.GetType().Name : null;
+                Measure(type != null && type.Length > 6 && type.EndsWith("Screen", StringComparison.Ordinal) ? type.Substring(0, type.Length - 6) : type, false);
+            }
+        }
+
+        /// <summary>The name the screen's cost goes by in the session record, and whether it is a piece of the HUD (no line of its own).</summary>
+        public void Measure(string name, bool hud)
+        {
+            bool showing = _cost != null && _cost.Showing;
+            _cost?.Hidden(Time.unscaledTime);
+            _cost = new UiCost(name, hud);
+            if (showing)
+            {
+                _cost.Shown(Time.unscaledTime);
+            }
+        }
+
+        private UiCost.Scope Measured(UiWork work) => _cost != null ? _cost.Time(work) : default;
+
+        // Destroyed with its city or its owner: a screen that still showed stops counting as one.
+        private void OnDestroy()
+        {
+            _cost?.Hidden(Time.unscaledTime);
         }
 
         /// <summary>The screen is shown: laid out fresh, arriving, focus on its first target; the host runs while it shows.</summary>
         public void Show()
         {
+            using var hotSpot = HotSpots.Time(HotShow);
             if (_screen == null)
             {
                 return;
             }
+            _cost?.Shown(Time.unscaledTime);
+            using var cost = Measured(UiWork.Open);
             _arrive = true;
             _laidSize = Vector2.zero;
             enabled = true;
@@ -156,11 +197,21 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The screen is hidden: typing ends, a drag held is let go of, motion stops where it ends, the host sleeps.</summary>
         public void Hide()
         {
+            using var hotSpot = HotSpots.Time(HotHide);
             EndTyping();
             EndDrag(true);
             _view?.Still();
             enabled = false;
+            string line = _cost?.Hidden(Time.unscaledTime);
+            if (line != null && Meta.Dev.Verbose)
+            {
+                UiDirector.Logger?.Info(line);
+            }
         }
+
+        // The screen was handed away by what it just did (the game closed it, or the full menu is closing on the way to the
+        // map): a layout now would be drawn for nobody, and its owner hides it.
+        private bool Gone() => !isActiveAndEnabled || (Leaving != null && Leaving());
 
         /// <summary>What the frame draws round the screen changed (the status bar's app row): it is laid out again next frame.</summary>
         public void Again()
@@ -194,6 +245,7 @@ namespace RealLifeOverhaul.Ui
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            using var cost = Measured(UiWork.Frame);
             if (FrameGuard.Off)
             {
                 enabled = false;   // its feature was switched off after its faults (Core/Guard)
@@ -216,6 +268,10 @@ namespace RealLifeOverhaul.Ui
             {
                 enabled = false;
                 return;
+            }
+            if (Leaving != null && Leaving())
+            {
+                return;   // on its way out: nothing laid out or read, and its owner hides it this frame
             }
             float now = Time.unscaledTime;
             _state = default(UiInputState);
@@ -453,6 +509,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
+            using var cost = Measured(UiWork.Press);
             ref UiNode n = ref _scene.Nodes[node];
             if (n.Disabled)
             {
@@ -472,7 +529,7 @@ namespace RealLifeOverhaul.Ui
                 // top level the frame closes the full menu, as the game's own close does.
                 bool back = _screen.Back() || (Chrome != null && Chrome(n.Command, n.Arg));
                 _sound?.Play(back ? UiCue.Back : UiCue.Error);
-                if (_screen.Dirty)
+                if (_screen.Dirty && !Gone())
                 {
                     Layout();
                 }
@@ -485,15 +542,16 @@ namespace RealLifeOverhaul.Ui
             }
             bool done = _screen.Press(n.Command, n.Arg);
             _sound?.Play(done ? UiCue.Confirm : UiCue.Error);
-            if (_screen.Dirty)
+            if (_screen.Dirty && !Gone())
             {
-                Layout();
+                Layout();   // a press that handed the screen away (View on map) leaves it dirty: it is laid out fresh as it shows again
             }
         }
 
         // Lays the screen out and draws it; focus stays on the same target (by its command and argument) where it still is.
         private void Layout()
         {
+            using var cost = Measured(UiWork.Layout);
             var rect = (RectTransform)transform;
             Vector2 size = rect.rect.size;
             float scale = _view.Scale;
@@ -550,6 +608,7 @@ namespace RealLifeOverhaul.Ui
         // A hover only lifts the target's face: the focus stays where the keys or a click left it, and nothing sounds.
         private void PointerEntered(int node)
         {
+            using var cost = Measured(UiWork.Pointer);
             if (!_typing && node >= 0 && node < _scene.NodeCount && _scene.Nodes[node].Layer == UiFocusRules.TopLayer(_scene) && _mode.Entered(node))
             {
                 _view.SetHover(node);
@@ -559,6 +618,7 @@ namespace RealLifeOverhaul.Ui
 
         private void PointerExited(int node)
         {
+            using var cost = Measured(UiWork.Pointer);
             if (_mode.Exited(node))
             {
                 _view.SetHover(-1);
@@ -598,6 +658,7 @@ namespace RealLifeOverhaul.Ui
         // A click is the mouse leading: the focus goes to what was clicked without a ring, so the keys pick up from there.
         private void PointerPressed(int node)
         {
+            using var cost = Measured(UiWork.Press);
             if (_typing)
             {
                 EndTyping();
@@ -631,6 +692,7 @@ namespace RealLifeOverhaul.Ui
         // The pointer went down on a target or drags from it: a screen that takes hold of its targets hears where.
         private void PointerDragged(int node, UiDragPoint at)
         {
+            using var cost = Measured(UiWork.Pointer);
             var px = new Vector2(at.X, at.Y);
             if (!(_screen is IUiDragging dragging) || node < 0 || node >= _scene.NodeCount)
             {
@@ -678,6 +740,7 @@ namespace RealLifeOverhaul.Ui
 
         private void Wheeled(int clip, float notches)
         {
+            using var cost = Measured(UiWork.Pointer);
             if (notches != 0f)
             {
                 _screen.Wheel(clip, notches);

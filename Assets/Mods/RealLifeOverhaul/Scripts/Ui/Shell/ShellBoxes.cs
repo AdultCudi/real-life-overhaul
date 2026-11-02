@@ -464,7 +464,7 @@ namespace RealLifeOverhaul.Ui
                 Button confirm = GameContract.TypeConfirm.Field?.GetValue(_box) as Button;
                 if (UiWidgets.Shows(confirm))
                 {
-                    confirm.onClick.Invoke();
+                    UiWidgets.Hand(confirm);
                 }
             }
 

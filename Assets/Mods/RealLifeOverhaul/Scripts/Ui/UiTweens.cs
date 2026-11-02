@@ -143,6 +143,7 @@ namespace RealLifeOverhaul.Ui
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            using var cost = UiCost.Kit.Time(UiWork.Frame);   // the interface's share of the frame (Host/UiCost)
             if (FrameGuard.Off)
             {
                 enabled = false;   // its feature was switched off after its faults (Core/Guard)

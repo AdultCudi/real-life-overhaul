@@ -27,6 +27,7 @@ internal static partial class Program
         MarksAfterLongFrame();
         Counts();
         HotSpotChecks();
+        UiCostRuns();   // what a screen of the RLO interface costs while it shows (UiCostCheck.cs)
         Prewarms();
     }
 

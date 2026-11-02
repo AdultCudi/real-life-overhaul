@@ -141,7 +141,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
-            button.onClick.Invoke();
+            UiWidgets.Hand(button);   // the app's opening is the game's own work, and the kit's screen it shows is counted as its own
             return true;
         }
 
