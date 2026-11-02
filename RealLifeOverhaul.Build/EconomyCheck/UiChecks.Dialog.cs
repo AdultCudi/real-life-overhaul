@@ -605,7 +605,9 @@ internal static partial class Program
             @"Economy\Banking\Debt\DebtPhone.cs", @"Home\DoctorVisit.cs", @"Phone\PhoneContacts.cs", @"Transport\CarPhone.cs", @"Transport\Taxi\TaxiPhone.cs", @"Travel\HotelDeskDialog.cs",
             @"Travel\TravelAgentDialog.cs", @"Jobs\CareerDialog.cs", @"Licences\Driving\DrivingSchool.cs", @"Transport\SubwayJourney.cs", @"Social\PersonDialog.cs", @"Civic\CityHallDialog.cs",
             @"Civic\OfficePhone.cs", @"Construction\BuilderDesk.cs", @"Construction\CarParkDesk.cs", @"Family\Courtship.cs", @"Family\PartnerCar.cs", @"Family\WeddingPlanner.cs",
-            @"Family\FamilyPhone.Choices.cs", @"Family\PartnerExpect.cs", @"Family\Children.cs"
+            @"Family\FamilyPhone.Choices.cs", @"Family\PartnerExpect.cs", @"Family\Children.cs", @"Construction\PlanningCall.cs", @"Jobs\JobPhone.cs",
+            @"BuildTrades\SiteWork.cs", @"Home\Household\HouseholdPhone.cs", @"Home\Roommates\RoommatePhone.cs", @"Home\Roommates\RoommateTalk.cs", @"Ledger\LedgerDesk.cs",
+            @"Social\SceneDialog.cs", @"Justice\LegalCounsel.cs", @"Business\BusinessDesk.cs"
         };
         int stated = 0;
         foreach (string file in priced)
@@ -647,7 +649,9 @@ internal static partial class Program
             "reallife_ui_dialog_cost_month_first", "reallife_ui_dialog_cost_get_in", "reallife_ui_dialog_cost_deposit", "reallife_ui_dialog_cost_hospital_bill",
             "reallife_ui_dialog_cost_from_venue", "reallife_ui_dialog_cost_fund", "reallife_ui_dialog_cost_deposit_sign", "reallife_ui_dialog_cost_rest_on_day",
             "reallife_ui_test_dialog_wholesale", "reallife_ui_test_dialog_import", "reallife_ui_test_dialog_no_wholesale", "reallife_ui_test_dialog_no_import",
-            "reallife_ui_test_dialog_wholesale_real", "reallife_ui_test_dialog_import_real",
+            "reallife_ui_test_dialog_wholesale_real", "reallife_ui_test_dialog_import_real", "reallife_ui_dialog_cost_week", "reallife_ui_dialog_cost_week_first",
+            "reallife_ui_dialog_cost_visit", "reallife_ui_dialog_cost_callout", "reallife_ui_dialog_cost_shift", "reallife_ui_dialog_cost_lend",
+            "reallife_ui_dialog_cost_shift_distance",
         };
         Check(AllIn(keys, out string missing), "dialog: the switches', the contract's, the tests' and the talk's words in en, pt and zh-cn (" + missing + ")");
         string spokenKit = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "UiMonologue.cs")), choices = File.ReadAllText(System.IO.Path.Combine(dialog, "DialogChoices.cs"));

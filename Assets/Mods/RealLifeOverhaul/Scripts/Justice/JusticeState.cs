@@ -405,8 +405,11 @@ namespace RealLifeOverhaul
                 return;
             }
             planDays = Math.Max(1, planDays);
-            Debts.Add(new JusticeDebt { Kind = kind, Left = amount, PerDay = Math.Max(10, (amount + planDays - 1) / planDays), CaseNumber = caseNumber });
+            Debts.Add(new JusticeDebt { Kind = kind, Left = amount, PerDay = PlanPerDay(amount, planDays), CaseNumber = caseNumber });
         }
+
+        /// <summary>What a plan of <paramref name="planDays"/> days takes each day of <paramref name="amount"/>: never under 10.</summary>
+        public static int PlanPerDay(int amount, int planDays) => Math.Max(10, (amount + Math.Max(1, planDays) - 1) / Math.Max(1, planDays));
 
         /// <summary>Strikes off what is still owed of one kind on one case. Returns how much that was.</summary>
         public static int CancelDebts(int caseNumber, int kind)

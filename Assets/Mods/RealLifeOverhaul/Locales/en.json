@@ -28839,5 +28839,12 @@
   "reallife_ui_test_dialog_no_wholesale": "There is no wholesale store in this city to talk to.",
   "reallife_ui_test_dialog_no_import": "There is no importer in this city to talk to.",
   "reallife_ui_test_dialog_wholesale_real": "This is the store's own manager: a contract you start here is real. Leave closes it.",
-  "reallife_ui_test_dialog_import_real": "This is the importer's own manager: a partnership you start here is real. Leave closes it."
+  "reallife_ui_test_dialog_import_real": "This is the importer's own manager: a partnership you start here is real. Leave closes it.",
+  "reallife_ui_dialog_cost_week": "{amount} a week",
+  "reallife_ui_dialog_cost_week_first": "{amount} now, then {amount} a week",
+  "reallife_ui_dialog_cost_visit": "{amount} a visit, paid as it begins",
+  "reallife_ui_dialog_cost_callout": "{amount} a call-out, with the work on top",
+  "reallife_ui_dialog_cost_shift": "About {amount} for the shift",
+  "reallife_ui_dialog_cost_lend": "{amount} lent until {day}",
+  "reallife_ui_dialog_cost_shift_distance": "About {amount} for the shift, with the distance on top"
 }

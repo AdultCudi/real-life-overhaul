@@ -5,6 +5,8 @@ namespace RealLifeOverhaul
     /// <summary>Business issues: the choices each kind offers, bribes included.</summary>
     internal static partial class BusinessIssues
     {
+        private const string PaidNow = "reallife_ui_dialog_cost_now";   // a sum the choice takes as it is made
+
         /// <summary>The choices an open issue offers right now. Returns how many; none means it only has to be waited out.</summary>
         public static int Options(BusinessIssue issue, BuildingRegistration reg, IssueOption[] into)
         {
@@ -30,7 +32,7 @@ namespace RealLifeOverhaul
                     break;
 
                 case BusinessCatalogue.Racket:
-                    into[n++] = new IssueOption { Label = "reallife_biz_racket_do_pay", Text = "reallife_biz_racket_pay", Amount = issue.A, Blocked = BusinessGame.Cash < issue.A };
+                    into[n++] = new IssueOption { Label = "reallife_biz_racket_do_pay", Text = "reallife_biz_racket_pay", Amount = issue.A, Line = PaidNow, Blocked = BusinessGame.Cash < issue.A };
                     into[n++] = new IssueOption { Label = "reallife_biz_racket_do_refuse", Text = "reallife_biz_racket_refuse" };
                     into[n++] = new IssueOption { Label = "reallife_biz_racket_do_police", Text = "reallife_biz_racket_police" };
                     into[n++] = new IssueOption { Label = "reallife_biz_racket_do_security", Text = "reallife_biz_racket_security" };
@@ -53,13 +55,13 @@ namespace RealLifeOverhaul
                     break;
 
                 case BusinessCatalogue.Licence:
-                    into[n++] = new IssueOption { Label = "reallife_biz_licence_do_pay", Text = "reallife_biz_licence_pay", Amount = issue.A, Blocked = BusinessGame.Cash < issue.A };
+                    into[n++] = new IssueOption { Label = "reallife_biz_licence_do_pay", Text = "reallife_biz_licence_pay", Amount = issue.A, Line = PaidNow, Blocked = BusinessGame.Cash < issue.A };
                     n = Bribe(into, n, issue, reg);
                     break;
 
                 case BusinessCatalogue.Strike:
                     into[n++] = new IssueOption { Label = "reallife_biz_strike_do_raise", Text = "reallife_biz_strike_raise" };
-                    into[n++] = new IssueOption { Label = "reallife_biz_strike_do_bonus", Text = "reallife_biz_strike_bonus", Amount = issue.B, Blocked = BusinessGame.Cash < issue.B };
+                    into[n++] = new IssueOption { Label = "reallife_biz_strike_do_bonus", Text = "reallife_biz_strike_bonus", Amount = issue.B, Line = PaidNow, Blocked = BusinessGame.Cash < issue.B };
                     into[n++] = new IssueOption { Label = "reallife_biz_strike_do_refuse", Text = "reallife_biz_strike_refuse" };
                     break;
 
@@ -72,21 +74,21 @@ namespace RealLifeOverhaul
                 case BusinessCatalogue.Argument:
                     into[n++] = new IssueOption { Label = "reallife_biz_argument_do_first", Text = "reallife_biz_argument_first" };
                     into[n++] = new IssueOption { Label = "reallife_biz_argument_do_second", Text = "reallife_biz_argument_second" };
-                    into[n++] = new IssueOption { Label = "reallife_biz_argument_do_lunch", Text = "reallife_biz_argument_lunch", Amount = issue.A, Blocked = BusinessGame.Cash < issue.A };
+                    into[n++] = new IssueOption { Label = "reallife_biz_argument_do_lunch", Text = "reallife_biz_argument_lunch", Amount = issue.A, Line = PaidNow, Blocked = BusinessGame.Cash < issue.A };
                     break;
 
                 case BusinessCatalogue.SupplierLate:
-                    into[n++] = new IssueOption { Label = "reallife_biz_supplierlate_do_express", Text = "reallife_biz_supplierlate_express", Amount = issue.A, Blocked = BusinessGame.Cash < issue.A };
+                    into[n++] = new IssueOption { Label = "reallife_biz_supplierlate_do_express", Text = "reallife_biz_supplierlate_express", Amount = issue.A, Line = PaidNow, Blocked = BusinessGame.Cash < issue.A };
                     into[n++] = new IssueOption { Label = "reallife_biz_supplierlate_do_wait", Text = "reallife_biz_supplierlate_wait" };
                     break;
 
                 case BusinessCatalogue.SupplierPrice:
-                    into[n++] = new IssueOption { Label = "reallife_biz_supplierprice_do_pay", Text = "reallife_biz_supplierprice_pay", Amount = issue.A, Blocked = BusinessGame.Cash < issue.A };
+                    into[n++] = new IssueOption { Label = "reallife_biz_supplierprice_do_pay", Text = "reallife_biz_supplierprice_pay", Amount = issue.A, Line = PaidNow, Blocked = BusinessGame.Cash < issue.A };
                     into[n++] = new IssueOption { Label = "reallife_biz_supplierprice_do_haggle", Text = "reallife_biz_supplierprice_haggle", Amount = issue.A };
                     into[n++] = new IssueOption
                     {
                         Label = "reallife_biz_supplierprice_do_switch", Text = "reallife_biz_supplierprice_switch", Amount = Mathf.Max(1, issue.A / 3),
-                        Blocked = BusinessGame.Cash < issue.A / 3
+                        Line = PaidNow, Blocked = BusinessGame.Cash < issue.A / 3
                     };
                     break;
 
@@ -100,14 +102,14 @@ namespace RealLifeOverhaul
                     break;
 
                 case BusinessCatalogue.Audit:
-                    into[n++] = new IssueOption { Label = "reallife_biz_audit_do_accountant", Text = "reallife_biz_audit_accountant", Amount = issue.A, Blocked = BusinessGame.Cash < issue.A };
+                    into[n++] = new IssueOption { Label = "reallife_biz_audit_do_accountant", Text = "reallife_biz_audit_accountant", Amount = issue.A, Line = PaidNow, Blocked = BusinessGame.Cash < issue.A };
                     into[n++] = new IssueOption { Label = "reallife_biz_audit_do_alone", Text = "reallife_biz_audit_alone", Amount = issue.B };
                     break;
 
                 case BusinessCatalogue.BulkOrder:
                     if (issue.Stage == 0)
                     {
-                        into[n++] = new IssueOption { Label = "reallife_biz_bulkorder_do_accept", Text = "reallife_biz_bulkorder_accept", Amount = issue.A };
+                        into[n++] = new IssueOption { Label = "reallife_biz_bulkorder_do_accept", Text = "reallife_biz_bulkorder_accept", Amount = issue.A, Line = "reallife_ui_dialog_cost_on_the_day", Gets = true };
                         into[n++] = new IssueOption { Label = "reallife_biz_do_decline", Text = "reallife_biz_bulkorder_decline" };
                     }
                     break;
@@ -118,7 +120,7 @@ namespace RealLifeOverhaul
                     break;
 
                 case BusinessCatalogue.Award:
-                    into[n++] = new IssueOption { Label = "reallife_biz_award_do_accept", Text = "reallife_biz_award_accept", Amount = issue.A };
+                    into[n++] = new IssueOption { Label = "reallife_biz_award_do_accept", Text = "reallife_biz_award_accept", Amount = issue.A, Line = "reallife_ui_dialog_cost_in", Gets = true };
                     break;
             }
             return n;
@@ -146,7 +148,7 @@ namespace RealLifeOverhaul
                 into[n++] = new IssueOption
                 {
                     Label = "reallife_biz_bribe_do_pay", Text = issue.Kind == BusinessCatalogue.Licence ? "reallife_biz_bribe_licence" : "reallife_biz_bribe_inspection", Amount = ask,
-                    Blocked = BusinessGame.Cash < ask
+                    Line = PaidNow, Blocked = BusinessGame.Cash < ask
                 };
             }
             return n;
@@ -181,7 +183,7 @@ namespace RealLifeOverhaul
         {
             int amount = Mathf.Clamp(Mathf.RoundToInt(BusinessGame.DailyRevenue(reg) * share), floor, ceiling);
             // chosen, so the catalogue's price with no cash cap: it only has to be affordable
-            into[n] = new IssueOption { Label = label, Text = text, Amount = amount, Blocked = BusinessGame.Cash < amount };
+            into[n] = new IssueOption { Label = label, Text = text, Amount = amount, Line = PaidNow, Blocked = BusinessGame.Cash < amount };
             return n + 1;
         }
     }

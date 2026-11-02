@@ -28839,5 +28839,12 @@
   "reallife_ui_test_dialog_no_wholesale": "这座城市没有可以洽谈的批发店。",
   "reallife_ui_test_dialog_no_import": "这座城市没有可以洽谈的进口商。",
   "reallife_ui_test_dialog_wholesale_real": "这是该店自己的经理：你在这里发起的合同是真实的。离开即结束。",
-  "reallife_ui_test_dialog_import_real": "这是进口商自己的经理：你在这里发起的合作是真实的。离开即结束。"
+  "reallife_ui_test_dialog_import_real": "这是进口商自己的经理：你在这里发起的合作是真实的。离开即结束。",
+  "reallife_ui_dialog_cost_week": "每周{amount}",
+  "reallife_ui_dialog_cost_week_first": "现付{amount}，之后每周{amount}",
+  "reallife_ui_dialog_cost_visit": "每次上门{amount}，开始时支付",
+  "reallife_ui_dialog_cost_callout": "每次上门费{amount}，维修费另计",
+  "reallife_ui_dialog_cost_shift": "整个班次约{amount}",
+  "reallife_ui_dialog_cost_lend": "借出{amount}，到{day}为止",
+  "reallife_ui_dialog_cost_shift_distance": "整个班次约{amount}，另加里程费"
 }

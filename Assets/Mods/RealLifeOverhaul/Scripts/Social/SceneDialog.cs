@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Dialogs;
 using Entities;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul
 {
@@ -162,6 +163,8 @@ namespace RealLifeOverhaul
             data["half"] = SocialLife.Money(_talk.Cost);
             DialogEntry entry = Say(_talk.TheyOffer ? "reallife_social_pay_ask_offer" : "reallife_social_pay_ask", data);
             entry.ConfirmTextOverride = "reallife_social_btn_treat".Localize();
+            entry.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_pay", "amount", SocialLife.Money(_talk.Cost * 2))
+                 .Pays(DialogButton.Second, "reallife_ui_dialog_cost_pay", "amount", SocialLife.Money(_talk.Cost));
             entry.OnConfirm = () =>
             {
                 _talk.Pay = SceneTalk.Treat;

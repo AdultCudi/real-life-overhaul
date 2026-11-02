@@ -28839,5 +28839,12 @@
   "reallife_ui_test_dialog_no_wholesale": "Não há nenhuma loja de atacado nesta cidade para conversar.",
   "reallife_ui_test_dialog_no_import": "Não há nenhum importador nesta cidade para conversar.",
   "reallife_ui_test_dialog_wholesale_real": "Este é o gerente da própria loja: um contrato iniciado aqui é real. Sair o encerra.",
-  "reallife_ui_test_dialog_import_real": "Este é o gerente do próprio importador: uma parceria iniciada aqui é real. Sair a encerra."
+  "reallife_ui_test_dialog_import_real": "Este é o gerente do próprio importador: uma parceria iniciada aqui é real. Sair a encerra.",
+  "reallife_ui_dialog_cost_week": "{amount} por semana",
+  "reallife_ui_dialog_cost_week_first": "{amount} agora, depois {amount} por semana",
+  "reallife_ui_dialog_cost_visit": "{amount} por visita, pago quando ela começa",
+  "reallife_ui_dialog_cost_callout": "{amount} por chamada, com o serviço à parte",
+  "reallife_ui_dialog_cost_shift": "Cerca de {amount} pelo turno",
+  "reallife_ui_dialog_cost_lend": "{amount} emprestados até {day}",
+  "reallife_ui_dialog_cost_shift_distance": "Cerca de {amount} pelo turno, mais o valor por quilômetro"
 }
