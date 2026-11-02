@@ -118,7 +118,10 @@ namespace RealLifeOverhaul.Ui
                 reason = UiDraw.TextMiddle(s, inside, x + w - UiTokens.S3 - rw, y, ActionRow, rw, UiStyle.SmallStrong, UiRole.WarnText, a.Reason, UiFlags.Right | UiFlags.Truncate);
             }
             int node = UiDraw.Node(s, at, x, y, w, ActionRow, ActionCommand, index, face, a.Disabled);
-            UiDraw.GameKey(s, inside, kx, y + (ActionRow - UiTokens.KeyCap) / 2f, a.Key, main, a.Disabled);   // after the target: the game, not the row, answers it
+            // Each cap centred in the caps' column, so a wide key (Enter) leaves the narrow ones balanced, not ragged. After the
+            // target: the game, not the row, answers it.
+            float kw = UiDraw.GameKeyWidth(a.Key);
+            UiDraw.GameKey(s, inside, kx + UiDraw.SnapDown((caps - kw) / 2f), y + (ActionRow - UiTokens.KeyCap) / 2f, a.Key, main, a.Disabled);
             if (a.Disabled)
             {
                 UiDraw.Dim(s, drawn, node);

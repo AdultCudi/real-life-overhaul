@@ -462,7 +462,7 @@ internal static partial class UiSamples
             new UiMapFilter { Icon = UiIcon.Store, Name = "Your businesses", On = true, Locate = true },
             new UiMapFilter { Icon = UiIcon.Key, Name = "Homes for rent", On = false, Locate = true },
             new UiMapFilter { Icon = UiIcon.ShoppingCart, Name = "Wholesale stores", On = true, Locate = true },
-            new UiMapFilter { Icon = UiIcon.Car, Name = "Car dealers", On = false, Locate = false },
+            new UiMapFilter { Icon = UiIcon.Car, Name = "Car dealers", On = false, Locate = true },
             new UiMapFilter { Icon = UiIcon.Bank, Name = "Banks", On = false, Locate = true },
         },
         LegendTitle = "Map legend", ScaleLabel = "Rent by block, a month", ScaleLow = "$2,000", ScaleHigh = "$40,000",
