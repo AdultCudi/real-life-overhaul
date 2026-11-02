@@ -6,12 +6,16 @@ namespace RealLifeOverhaul.Ui
     public enum UiCellKind : byte
     {
         Text = 0,     // words at the left
-        Figure,       // a count, tabular and at the right; graded by Values when the column is graded
+        Figure,       // a count, tabular and at the right; graded by Values when the column is graded, or in a Tones text tone (OkText, WarnText, DangerText)
         Money,        // the game's own money words, at the right
         Date,         // the game's own date words, at the right
         Chip,         // a soft status chip in its tone (Tones)
         Meter,        // a thin bar filled to Values, graded red to green, its figure beside it
-        Person        // a face in its mood ring, the name and the role under it (Subs)
+        Person,       // a face in its mood ring, the name and the role under it (Subs)
+        Tile,         // what the row is, as an icon on a slate tile in its own colour (Values: the icon, Tones: its tint), the name and a line under it (Sub)
+        Stepper,      // an amount to change on the row: minus, the typed figure and plus (Values: CanLess and CanMore, 0 while held), each a target of its own;
+                      // a Warn or Danger tone puts the warning's glyph before it where the column has MarkRoom
+        Action        // a thing to do with the row, as an icon button at its right (Values: the icon, Tones: its tint; Cells: its words, unseen): set the destination
     }
 
     /// <summary>A column of a big table: what its cells are, how wide it stands and whether its head sorts it.</summary>
@@ -93,6 +97,12 @@ namespace RealLifeOverhaul.Ui
     {
         public const int First = 110;
         public const int Head = 0, Filter = 1, Search = 2, Row = 3, Pick = 4, Mass = 5, Done = 6, Clear = 7, MassChoice = 8, MassAnswer = 9;
+        // A stepper cell's and a row action's commands stand past the other blocks' ranges (from 170), so a table's never
+        // meets a chart's or a catalogue's on one page.
+        public const int Less = 60, Type = 61, More = 62, Act = 63;
+        public const int CanLess = 1, CanMore = 2;   // a stepper cell's Values: which way it may step now
+        public const float StepperWidth = 176f;  // px: a stepper cell's widest, room for a price between its buttons
+        public const float MarkRoom = 40f;       // px: and the room before it for its warning's glyph, when its column gives it
         private const float PersonRow = 48f;     // px: a row with a face and two lines
         private const float PlainRow = 40f;      // px: a row of one line, as the app window's table
         private const float PickBox = 20f;       // px: a row's pick box while picking
@@ -103,9 +113,13 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The height a row takes in this table: taller when a column holds people.</summary>
         public static float RowHeight(UiDataTableModel m)
         {
+            if (Steps(m))
+            {
+                return UiTokens.Control + UiTokens.S2;   // a stepper's field is a control's height: the rows keep a gap between the fields
+            }
             for (int c = 0; c < m.Columns.Length; c++)
             {
-                if (m.Columns[c].Kind == UiCellKind.Person)
+                if (m.Columns[c].Kind == UiCellKind.Person || m.Columns[c].Kind == UiCellKind.Tile)
                 {
                     return PersonRow;
                 }
@@ -113,14 +127,28 @@ namespace RealLifeOverhaul.Ui
             return PlainRow;
         }
 
+        /// <summary>True when a row holds amounts to change: its steppers are its targets, so the row itself is none.</summary>
+        public static bool Steps(UiDataTableModel m)
+        {
+            for (int c = 0; c < m.Columns.Length; c++)
+            {
+                if (m.Columns[c].Kind == UiCellKind.Stepper)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         /// <summary>The height a table's own parts take besides its rows: the tool row, the head and the foot.</summary>
         public static float Chrome(UiDataTableModel m) => (HasTools(m) ? UiTokens.Control + UiTokens.S3 : 0f) + UiTokens.Control + UiTokens.S1 + (m.Totals != null ? Foot : 0f);
 
-        // A table read only (no filter, no search, nothing to pick) has no tool row: its head stands where the row would be.
-        private static bool HasTools(UiDataTableModel m) => m.Picking || m.Filters.Length > 0 || !string.IsNullOrEmpty(m.SearchPlaceholder) || !string.IsNullOrEmpty(m.PickWords);
+        /// <summary>True when the table has a tool row to show: a filter, a search, picking or the button that starts it. A table of none starts at its head.</summary>
+        public static bool HasTools(UiDataTableModel m) => m.Picking || m.Filters.Length > 0 || !string.IsNullOrEmpty(m.SearchPlaceholder) || !string.IsNullOrEmpty(m.PickWords);
 
-        // A person column's head stands over the names, as its rows' words start after the face.
-        private static float FaceLead(UiCellKind kind) => kind == UiCellKind.Person ? UiTokens.S1 + UiTokens.AvatarSmall + UiTokens.S3 : 0f;
+        // A person's or a tile's column head stands over the names, as its rows' words start after the face or the tile.
+        private static float FaceLead(UiCellKind kind) => kind == UiCellKind.Person ? UiTokens.S1 + UiTokens.AvatarSmall + UiTokens.S3
+            : kind == UiCellKind.Tile ? UiTokens.ControlSmall + UiTokens.S3 : 0f;
 
         // The face's lead under a head, or none where a long translation needs the whole column to fit on two lines.
         private static float HeadLead(UiDataColumn col, float room)
@@ -151,7 +179,7 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
         public static short Lay(UiScene s, UiAt at, UiDataTableModel m, float x, float y, float w, float h, IUiKeys keys, int command = First)
         {
-            float ty = Tools(s, at, m, x, y, w, keys, command);
+            float ty = HasTools(m) ? Tools(s, at, m, x, y, w, keys, command) : y;
             float rowH = RowHeight(m);
             // A table that can pick keeps its pick boxes' room either way, so its columns stand still when picking starts.
             float lead = !string.IsNullOrEmpty(m.PickWords) ? PickBox + UiTokens.S3 : 0f;
@@ -325,7 +353,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         private static bool RightAligned(UiCellKind kind) => kind == UiCellKind.Figure || kind == UiCellKind.Money || kind == UiCellKind.Date || kind == UiCellKind.Meter
-                                                              || kind == UiCellKind.Chip;
+                                                              || kind == UiCellKind.Chip || kind == UiCellKind.Stepper;
 
         // The head: each title in capitals, a sortable one a target, the sorted one in the words' colour with its order's
         // arrow beside it. Figures' titles stand at the right, over their figures.
@@ -385,6 +413,7 @@ namespace RealLifeOverhaul.Ui
             short list = s.AddList(rows, first, Math.Max(0, last - first + 1), clip, m.Selected);
             s.Clips[clip].ContentHeight = rows * rowH;
             var inClip = new UiAt { Parent = -1, Clip = clip, Layer = at.Layer, Order = -1, Region = at.Region };
+            bool steps = Steps(m);
             for (int r = first; r <= last; r++)
             {
                 ref UiDataRow row = ref m.Rows[r];
@@ -403,18 +432,51 @@ namespace RealLifeOverhaul.Ui
                         UiDraw.Icon(s, inside.In(box), px + UiTokens.S1 / 2f, py + UiTokens.S1 / 2f, PickBox - UiTokens.S1, UiIcon.Check, UiRole.OnAccent, UiFlags.Middle | UiFlags.Centre);
                     }
                 }
+                int stop = -1;
                 for (int c = 0; c < m.Columns.Length; c++)
                 {
-                    Cell(s, inside, m, ref row, c, cx[c] - x, ry, cw[c], rowH, sel);
+                    int node = Cell(s, inside, m, ref row, c, cx[c] - x, ry, cw[c], rowH, sel, command, r);
+                    stop = stop < 0 ? node : stop;
                 }
-                UiDraw.Node(s, inClip, 0f, ry, w, rowH, command + Row, r, face, false, list, r);
+                if (!steps)
+                {
+                    UiDraw.Node(s, inClip, 0f, ry, w, rowH, command + Row, r, face, false, list, r);
+                }
+                else if (stop >= 0)
+                {
+                    // A row of amounts is stepped through by its typed figure, so up and down walk the list and scroll it.
+                    s.Nodes[stop].List = list;
+                    s.Nodes[stop].Index = r;
+                }
+                for (int c = 0; c < m.Columns.Length; c++)
+                {
+                    if (m.Columns[c].Kind == UiCellKind.Action)
+                    {
+                        // Laid after the row's own target, so the button over it takes its press.
+                        ActButton(s, inside, ref row, c, cx[c] - x, ry, cw[c], rowH, command, r);
+                    }
+                }
             }
             UiDraw.ScrollThumb(s, at, x + w - UiTokens.S1, y, viewH, offset, rows * rowH);
             return list;
         }
 
-        // A cell by its column's kind, its box from cx to cx + cw in the row.
-        private static void Cell(UiScene s, UiAt at, UiDataTableModel m, ref UiDataRow row, int c, float cx, float ry, float cw, float rowH, bool sel)
+        // A row's action at the right of its cell: its icon on a slate tile in its colour, a target of its own.
+        private static void ActButton(UiScene s, UiAt at, ref UiDataRow row, int c, float cx, float ry, float cw, float rowH, int command, int r)
+        {
+            int value = row.Values != null && c < row.Values.Length ? row.Values[c] : 0;
+            if (value <= 0)
+            {
+                return;
+            }
+            UiRole tint = row.Tones != null && c < row.Tones.Length ? row.Tones[c] : UiRole.None;
+            float size = UiTokens.ControlSmall;
+            UiDraw.IconButton(s, at, cx + cw - size, ry + (rowH - size) / 2f, size, (UiIcon)value, tint, command + Act, r);
+        }
+
+        // A cell by its column's kind, its box from cx to cx + cw in the row. Returns a stepper's typed figure, the target that
+        // stands for its row, or -1.
+        private static int Cell(UiScene s, UiAt at, UiDataTableModel m, ref UiDataRow row, int c, float cx, float ry, float cw, float rowH, bool sel, int command, int r)
         {
             ref UiDataColumn col = ref m.Columns[c];
             string words = row.Cells != null && c < row.Cells.Length ? row.Cells[c] : null;
@@ -432,6 +494,41 @@ namespace RealLifeOverhaul.Ui
                     UiDraw.Text(s, at, tx, top + lh, tw, UiStyle.Small, sel ? UiRole.Text : UiRole.Text2, row.Sub, UiFlags.Truncate | UiFlags.Middle);
                     break;
                 }
+                case UiCellKind.Tile:
+                {
+                    float tile = UiTokens.ControlSmall;
+                    UiRole tint = row.Tones != null && c < row.Tones.Length ? row.Tones[c] : UiRole.None;
+                    if (value > 0)
+                    {
+                        int t = UiDraw.Tile(s, at, cx, ry + (rowH - tile) / 2f, tile, tint, false);
+                        float g = UiTokens.Icon;
+                        UiDraw.Icon(s, at.In(t), cx + (tile - g) / 2f, ry + (rowH - g) / 2f, g, (UiIcon)value, tint, UiFlags.Middle | UiFlags.Centre, true);
+                    }
+                    float tx = cx + tile + UiTokens.S3, tw = cw - (tx - cx);
+                    float lh = UiTextRules.LineHeight(UiStyle.Title), sh = UiTextRules.LineHeight(UiStyle.Small);
+                    bool sub = !string.IsNullOrEmpty(row.Sub);
+                    float top = ry + (rowH - lh - (sub ? sh : 0f)) / 2f;
+                    UiDraw.Text(s, at, tx, top, tw, UiStyle.Title, UiRole.Text, words, UiFlags.Truncate | UiFlags.Middle);
+                    if (sub)
+                    {
+                        UiDraw.Text(s, at, tx, top + lh, tw, UiStyle.Small, sel ? UiRole.Text : UiRole.Text2, row.Sub, UiFlags.Truncate | UiFlags.Middle);
+                    }
+                    break;
+                }
+                case UiCellKind.Stepper:
+                {
+                    float sw = Math.Min(cw, StepperWidth);
+                    UiRole mark = row.Tones != null && c < row.Tones.Length ? row.Tones[c] : UiRole.None;
+                    if ((mark == UiRole.Warn || mark == UiRole.Danger) && cw - sw >= MarkRoom)
+                    {
+                        // What the owner marks about the amount (a price above the market) as the warning's glyph before it.
+                        UiDraw.Icon(s, at, cx + cw - sw - UiTokens.S1 - UiTokens.Icon, ry + (rowH - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Warning, mark, UiFlags.Middle, true);
+                    }
+                    return UiDraw.Stepper(s, at, cx + cw - sw, ry + (rowH - UiTokens.Control) / 2f, sw, words, (value & CanLess) != 0, (value & CanMore) != 0,
+                        command + Less, command + Type, command + More, r, value <= 0);
+                }
+                case UiCellKind.Action:
+                    break;   // laid after the row's own target (Act)
                 case UiCellKind.Chip:
                 {
                     if (string.IsNullOrEmpty(words))
@@ -459,9 +556,11 @@ namespace RealLifeOverhaul.Ui
                 }
                 case UiCellKind.Figure:
                 {
-                    // A graded figure alone is its column's only sign of good or bad, so on the chosen row it keeps its grade in
-                    // the step that reads on that tone.
-                    UiRole ink = col.Graded && value >= 0 ? (sel ? UiTokens.GradeOnChosen(UiTokens.Grade(value)) : UiTokens.Grade(value)) : sel ? UiRole.Text : UiRole.Text2;
+                    // A figure the row tones says its own good or bad; a graded figure alone is its column's only sign of good or
+                    // bad, so on the chosen row it keeps its grade in the step that reads on that tone.
+                    UiRole told = row.Tones != null && c < row.Tones.Length ? row.Tones[c] : UiRole.None;
+                    bool toned = told == UiRole.OkText || told == UiRole.WarnText || told == UiRole.DangerText;
+                    UiRole ink = toned ? told : col.Graded && value >= 0 ? (sel ? UiTokens.GradeOnChosen(UiTokens.Grade(value)) : UiTokens.Grade(value)) : sel ? UiRole.Text : UiRole.Text2;
                     UiDraw.TextMiddle(s, at, cx, ry, rowH, cw, col.Graded ? UiStyle.BodyStrong : UiStyle.Body, ink, words, UiFlags.Right | UiFlags.Truncate);
                     break;
                 }
@@ -473,6 +572,7 @@ namespace RealLifeOverhaul.Ui
                     UiDraw.TextMiddle(s, at, cx, ry, rowH, cw, c == 0 ? UiStyle.Title : UiStyle.Body, c == 0 || sel ? UiRole.Text : UiRole.Text2, words, UiFlags.Truncate);
                     break;
             }
+            return -1;
         }
 
         // The totals at the foot under a rule: the label in the first column's place, each figure under its column.
