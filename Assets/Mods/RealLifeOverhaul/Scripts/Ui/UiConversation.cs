@@ -37,6 +37,8 @@ namespace RealLifeOverhaul.Ui
         public string FormLabel;                       // "Your offer"
         public string FormValue;                       // the figure, the choice, the words typed
         public string FormHint;                        // a quiet line under it ("The bank lends up to $40,000"); null for none
+        public UiFormField[] Fields = new UiFormField[0];   // a form of several fields (a wage and a signing bonus) in place of the one above
+        public int FieldCount;
         public bool FormOn;                            // a switch
         public bool FormCanLess = true, FormCanMore = true;
         public bool Composer;                          // the line takes the player's own words (the mod's texts): the composer at the foot
@@ -60,7 +62,7 @@ namespace RealLifeOverhaul.Ui
     /// <see cref="ComposeCommand"/> and <see cref="SendCommand"/> (the composer).
     /// Game-free. Cost: a layout a change; only the messages in view are laid out.
     /// </summary>
-    public static class UiConversation
+    public static partial class UiConversation
     {
         public const int ChoiceCommand = 60, FormCommand = 61, FormLess = 62, FormMore = 63, ComposeCommand = 64, SendCommand = 65;
         public const float DockShare = 1f / 3f;      // of the screen's width, the docked panel at its right
@@ -73,6 +75,16 @@ namespace RealLifeOverhaul.Ui
         public static void Lay(UiScene s, UiAt at, UiConversationModel m, float x, float y, float w, float h, IUiKeys keys)
         {
             float top = Head(s, at, m, x, y, w);
+            Body(s, at, m, x, top, w, y + h - top, keys);
+        }
+
+        /// <summary>
+        /// The conversation without its head, for a page that names who is talking in a head of its own (Contacts, whose
+        /// head carries the call and the map): the thread, the form slot and the choices.
+        /// </summary>
+        public static void Body(UiScene s, UiAt at, UiConversationModel m, float x, float y, float w, float h, IUiKeys keys)
+        {
+            float top = y;
             float foot = y + h;
             float composerH = m.Composer ? UiTokens.Control + UiTokens.S2 : 0f;
             if (composerH > 0f)
@@ -166,7 +178,9 @@ namespace RealLifeOverhaul.Ui
             s.Clips[clip].Fills = true;   // a short thread's room is its own: it sits at the foot by the choices
             UiDraw.ScrollThumb(s, at, x + w + UiTokens.S1, y, vh, offset, contentH);
             var inClip = new UiAt { Parent = -1, Clip = clip, Layer = at.Layer, Order = -1, Region = at.Region };
-            float my = UiDraw.SnapDown(Math.Max(0f, vh - contentH));
+            // A short thread sits at its foot by what answers it; with nothing under it, it starts under the head, so no hole stands over it.
+            bool answered = m.Choices.Length > 0 || m.Composer || FormHeight(m) > 0f;
+            float my = answered ? UiDraw.SnapDown(Math.Max(0f, vh - contentH)) : 0f;
             if (startH > 0f)
             {
                 if (my + startH > offset && my < offset + vh)
@@ -288,6 +302,10 @@ namespace RealLifeOverhaul.Ui
 
         private static float FormHeight(UiConversationModel m)
         {
+            if (m.FieldCount > 0)
+            {
+                return FieldsHeight(m);
+            }
             if (m.Form == UiFormKind.None)
             {
                 return 0f;
@@ -298,6 +316,11 @@ namespace RealLifeOverhaul.Ui
         // The form slot on a band: its label at the left, its control at the right, a quiet hint under them.
         private static void Form(UiScene s, UiAt at, UiConversationModel m, float x, float y, float w)
         {
+            if (m.FieldCount > 0)
+            {
+                Fields(s, at, m, x, y, w);
+                return;
+            }
             float h = FormHeight(m);
             UiDraw.Band(s, at, x, y, w, h);
             float cw = Math.Min(FormControl, UiDraw.SnapDown(w / 2f)), cx = x + w - UiTokens.S3 - cw, cy = y + UiTokens.S3;

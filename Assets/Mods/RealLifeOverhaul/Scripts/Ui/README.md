@@ -215,9 +215,22 @@ not-in-repo/previews/ui/kitgrids.
 - **Conversation** (`UiConversation`): who is talking, the thread at its foot under its start line, a form slot, the
   choices numbered with their consequences (the game's dialog buttons) or the composer; in a window, or docked over
   the world at the right third (`LayDocked`) for talk face to face. For Contacts, Flare's messages and the game's and
-  the mod's dialogs. Not for one question with no one behind it: the decision card.
+  the mod's dialogs. Not for one question with no one behind it: the decision card. `Body` lays it without its head,
+  under a page's own head (Contacts); a short thread with nothing under it starts under the head. A form of several
+  fields (`UiFormField`, `Fields`: a wage and a signing bonus) stands in the form slot as one band. A message may carry
+  a ledger (`UiDraw.Ledger`, `UiLedgerLine`: headings, items, subtotals and the total due) drawn in its bubble, as the
+  tax office's notice.
 - **Message list** (`UiMessageList`): threads under their bands with a face or a tile, the last words, the time, an
   unread badge and presence, and the search. Beside a conversation in Contacts and Flare.
+- **Call card** (`UiCallCard`, `UiCallModel`): a phone call as the decision card draws a moment: the caller's face in
+  the ring of their mood (or a firm's tile) with the call's length under it, what they do and their name, their line,
+  the replies numbered on their keys and the way out as the danger button. For Contacts' calls and the game's calls in
+  its dialogue panel.
+- **A sidebar with a foot** (`UiAppWindow.ShellFooted`, `UiSideFoot`): the shell's sidebar whose sections scroll above
+  a foot of actions on all of them and the player's card, for an app of many sections (Contacts' groups); a long name
+  takes two lines.
+- **A contact's head** (`UiAppWindow.Head`, `UiHeadModel`): a person's face in the ring of their mood or a firm's tile,
+  the name, what they do and for whom, a state's chip and whose they are, the actions at the right.
 - **Feed** (`UiFeed`): posts at a reading width beside the chosen account or tag as a short profile, never empty. For
   Flare.
 - **Edition** (`UiEdition`): the lead story as a hero beside the markets' rows, the stories in balanced columns under

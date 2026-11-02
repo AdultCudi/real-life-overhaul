@@ -24,6 +24,7 @@ namespace RealLifeOverhaul.Ui
                 .Test("reallife_ui_test_econoview", "reallife_ui_test_econoview_loans", "reallife_ui_test_econoview_switch")
                 .Test("reallife_ui_test_persona", "reallife_ui_test_rivals", "reallife_ui_test_market", "reallife_ui_test_persona_switch", "reallife_ui_test_rivals_switch",
                     "reallife_ui_test_market_switch")
+                .Test("reallife_ui_test_contacts_call", "reallife_ui_test_contacts_offer", "reallife_ui_test_contacts_tax", "reallife_ui_test_contacts_wage")
                 .Cleanup(() => UiDirector.RemoveAll("cleaned up"), 0);
         }
     }

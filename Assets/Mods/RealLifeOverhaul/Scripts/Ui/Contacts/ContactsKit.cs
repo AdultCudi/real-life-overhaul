@@ -1,7 +1,8 @@
+using System;
+using Entities;
 using UI;
 using UI.Smartphone.Apps.Contacts;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Ui
 {
@@ -9,8 +10,9 @@ namespace RealLifeOverhaul.Ui
     /// The game's Contacts app drawn on the RLO interface, through the host every game screen uses (UiGameHost): the
     /// game's app stays alive under the kit with only its layout ("Layout 30-70") unseen and untouchable, given back
     /// exactly as found; the kit's screen (ContactsScreen) reads the game's contacts and messages and presses the game's
-    /// own buttons, so every rule of the game stays the game's. A call runs in the game's own view, the kit coming back the
-    /// moment the game frees its call button; a message only the game can answer opens the classic view until the app
+    /// own buttons, so every rule of the game stays the game's. A call is drawn as the call card, an offer's negotiation in
+    /// the thread with its form; a call's form the kit does not draw yet is answered in the game's own view, the kit back
+    /// the moment that line is answered, and another mod's buttons in the header open the classic view until the app
     /// closes. Its switch in Mod settings ("ui_screen_contacts") gives the game's own app back alone. Cost: what the host
     /// costs: nothing while the app is closed; while it shows, the input reads and one box test a frame.
     /// </summary>
@@ -36,11 +38,18 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The game's app as it was: the kit gone, the layout seen and touchable again.</summary>
         public static void Remove(string why) => Host.Remove(why);
 
-        /// <summary>The game's own view until the app closes: an offer with its buttons, a table only it can show.</summary>
+        /// <summary>The game's own view until the app closes: another mod's buttons in the header, which only the game's view shows.</summary>
         public static void Classic() => Host.Classic();
 
-        /// <summary>A call the game runs in its own view: the kit steps aside and comes back when the game frees its call button.</summary>
-        public static void Call(Button call) => Host.StepAside(() => call == null || call.interactable);
+        /// <summary>
+        /// The tax table's test: a notice drawn in this contact's thread from the tax figures of the period so far, kept in
+        /// memory only (never in the contact's messages or the save), until another contact is opened.
+        /// </summary>
+        public static TextMessage Sample;
+        public static Contact SampleFor;
+
+        /// <summary>A line the game must answer in its own view (a call's form the kit does not draw yet): the kit steps aside until <paramref name="over"/>.</summary>
+        public static void StepAside(Func<bool> over) => Host.StepAside(over);
 
         // The game's Contacts app as the host needs it: under the full menu, its layout the one leaf the kit hides.
         private sealed class ContactsGameScreen : IUiGameScreen

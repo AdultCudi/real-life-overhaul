@@ -669,7 +669,7 @@ internal static partial class Program
     // The prototype's other screens are the new templates' own samples, laid out with their entries above.
     private static IEnumerable<UiScreenCase> PrototypeCases()
     {
-        UiScreenDef contacts = Array.Find(UiScreens.All, d => d.Template == UiTemplate.ListDetail);
+        UiScreenDef contacts = Array.Find(UiScreens.All, d => d.Template == UiTemplate.ListDetail) ?? new UiScreenDef("cs2_contacts", UiTemplate.ListDetail, null, new string[0]);   // Contacts stands on the app window now: the prototype's own sample
         yield return new UiScreenCase { Def = contacts, Name = "cs2 contacts app window", Title = "Contacts", Commands = ListDetailCommands,
             Lay = (s, f, dark, k, t) => UiListDetail.Lay(s, UiSamples.ContactsWindow(t), f, dark, k) };
     }

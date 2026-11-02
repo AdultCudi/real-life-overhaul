@@ -21,7 +21,6 @@ internal static partial class Program
         UiPopulationPageChecks();
         UiFlarePageChecks();
         UiStudioPageChecks();
-        UiContactsRouteChecks();
     }
 
     private static void UiPlaceChecks()
@@ -199,43 +198,5 @@ internal static partial class Program
                      + UiCheckRules.NoPrompts(scene, l => said = l) + UiCheckRules.TypeLevels(scene, l => said = l);
         Check(scene.NodeCount == 1 && scene.Nodes[0].Command == UiDraw.CloseCommand && broken == 0 && sample.Title == UiWords("en")("reallife_ui_sample_firm", "A sample studio"),
             "ui pages: on a save with no tech firm the firm's test opens a sample studio named as one, with nothing on it to press (" + said + ")");
-    }
-
-    // The Contacts kit's every button routed to the game's own action, the way beta 3's View on map and Call were not.
-    private static void UiContactsRouteChecks()
-    {
-        UiWords en = UiWords("en");
-        var scene = new UiScene();
-        UiListDetail.Lay(scene, UiSamples.Contacts(en, false), UiFrame.FullMenu(16f / 9f, "Contacts"), true, UiDefaultKeys.Keyboard);
-        int none = 0;
-        for (int n = 0; n < scene.NodeCount; n++)
-        {
-            none += scene.Nodes[n].Command != UiDraw.CloseCommand && ContactsRoutes.Route(scene.Nodes[n].Command, scene.Nodes[n].Arg) == ContactsRoute.None ? 1 : 0;   // the close is the host's Back
-        }
-        int map = scene.FindNode(UiListDetail.Action, ContactsRoutes.MapArg), call = scene.FindNode(UiListDetail.Action, ContactsRoutes.CallArg);
-        Check(none == 0 && map >= 0 && call >= 0 && scene.Nodes[call].Key == UiAction.Alt && scene.Nodes[map].Key == UiAction.Option,
-            "ui contacts: every target the Contacts screen draws has a route to the game, View on map on P and Call on F among them (" + none + " with none)");
-        Check(ContactsRoutes.Route(UiListDetail.Group, 0) == ContactsRoute.Group && ContactsRoutes.Route(UiListDetail.Action, ContactsRoutes.CallArg) == ContactsRoute.Call
-              && ContactsRoutes.Route(0, 0) == ContactsRoute.None && ContactsRoutes.Route(1, 0) != ContactsRoute.Call,
-            "ui contacts: Call is its own route, never the group list it was read as in beta 3");
-        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Contacts"));
-        string screen = File.ReadAllText(System.IO.Path.Combine(folder, "ContactsScreen.cs")), kit = File.ReadAllText(System.IO.Path.Combine(folder, "ContactsKit.cs"))
-            + File.ReadAllText(System.IO.Path.Combine(folder, "..", "Host", "UiGameHost.cs"));
-        string press = Between(screen, "public bool Press(int command, int arg)", "private static bool Done(");
-        var routed = new HashSet<string>(StringComparer.Ordinal);
-        foreach (Match match in Regex.Matches(press, @"case ContactsRoute\.(\w+):"))
-        {
-            routed.Add(match.Groups[1].Value);
-        }
-        bool all = true;
-        foreach (ContactsRoute r in Enum.GetValues(typeof(ContactsRoute)))
-        {
-            all &= r == ContactsRoute.None || r == ContactsRoute.Search || routed.Contains(r.ToString());   // the search is the host's typing
-        }
-        string callNow = Between(screen, "private bool CallNow(Contact open)", "private static bool Click(");
-        Check(all && press.Contains("Click(_map)") && callNow.Contains("_call.onClick.Invoke()") && callNow.Contains("ContactsKit.Call(_call)"),
-            "ui contacts: the screen acts on every route, View on map through the game's own button and Call through the listener the game wires on its call button");
-        Check(screen.Contains("\"Contacts (kit): \"") && kit.Contains("call.interactable") && kit.Contains("_back()") && kit.Contains("menu.alpha"),
-            "ui contacts: each press says its line in Player.log, a call hands the kit back when the game frees its call button, and the kit fades with the full menu");
     }
 }
