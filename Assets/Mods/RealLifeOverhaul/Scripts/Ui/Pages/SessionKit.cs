@@ -21,6 +21,9 @@ namespace RealLifeOverhaul.Ui
         private static UiHost _host;
         private static object _for;
 
+        /// <summary>True while the kit's session pages stand over the game's activity panel (the activity panel's kit then draws nothing).</summary>
+        public static bool Up => _root != null;
+
         /// <summary>Over a desk session's panel as it opens (the RLO interface on, no Going Public session).</summary>
         public static void Show(IPlayerActivity panel)
         {

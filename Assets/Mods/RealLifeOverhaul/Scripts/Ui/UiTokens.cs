@@ -100,6 +100,7 @@ namespace RealLifeOverhaul.Ui
         Badge,            // a count in a badge
         Number,           // a figure in a stat block
         KeyCap,           // the key's name inside a key cap
+        Clock,            // the time skip veil's clock: the one figure on a screen that is nothing else
         Count
     }
 
@@ -248,6 +249,7 @@ namespace RealLifeOverhaul.Ui
             new UiType(UiFamily.Overpass, 700, 13f, 0f, 1.0f),                          // Badge
             new UiType(UiFamily.Overpass, 700, 18f, 0f, 1.0f),                          // Number: a figure in a strip or a pill
             new UiType(UiFamily.Overpass, 700, 13f, 0f, 1.0f, UiCase.Upper),            // KeyCap
+            new UiType(UiFamily.Overpass, 700, 64f, 0f, 1.0f),                          // Clock: the time skip veil's clock inside its ring
         };
 
         /// <summary>A style's face and size. An index into a fixed table.</summary>

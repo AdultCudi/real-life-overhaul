@@ -280,6 +280,11 @@ namespace RealLifeOverhaul.Ui
                 {
                     Place(slot.Rect, it.X, it.Y, it.W, it.H);
                     Image ring = ((SliceSlot)slot).Ring;
+                    Sprite shape = it.Radius > 0f ? UiSprites.ThinRing : UiSprites.Donut;   // a thin ring (the time skip veil's) or a donut's
+                    if (ring.sprite != shape)
+                    {
+                        ring.sprite = shape;
+                    }
                     float start = it.Points != null && it.Points.Length > 1 ? it.Points[0] : 0f, end = it.Points != null && it.Points.Length > 1 ? it.Points[1] : it.Value;
                     ring.fillAmount = Mathf.Clamp01(end - start);
                     Quaternion turn = Quaternion.Euler(0f, 0f, -start * 360f);   // clockwise from the top, as the fill runs

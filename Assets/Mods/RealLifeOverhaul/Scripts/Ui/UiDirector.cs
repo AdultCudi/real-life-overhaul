@@ -90,6 +90,7 @@ namespace RealLifeOverhaul.Ui
             ShellPages.Remove(why);
             ShellBoxes.Remove(why);
             ShellNotices.Remove(why);
+            ActivityKit.Remove(why);
         }
 
         private void OnDestroy()
@@ -147,6 +148,7 @@ namespace RealLifeOverhaul.Ui
                 ShellPages.Rearm();
                 ShellBoxes.Rearm();
                 ShellNotices.Rearm();
+                ActivityKit.Rearm();
                 _said = 0;
                 _waited = 0;
                 return;
@@ -186,6 +188,7 @@ namespace RealLifeOverhaul.Ui
             UiShell.Tick();
             ShellBoxes.Install();
             ShellNotices.Install();
+            ActivityKit.Install();
             if (UiScreenSwitches.On("phone"))
             {
                 PhoneKit.Install();
@@ -210,7 +213,7 @@ namespace RealLifeOverhaul.Ui
             return "UI: the RLO interface is on; " + fonts + "; screens: Contacts (" + ContactsKit.State + "), BizMan (" + BizManKit.State + "), "
                    + EconoViewKit.State + ", the phone (" + PhoneKit.State + "), " + EmployeesKit.State + ", " + PersonaKit.State + ", " + RivalsKit.State + ", "
                    + MarketKit.State + ", "
-                   + ShellBoxes.States() + ", " + ShellNotices.States()
+                   + ShellBoxes.States() + ", " + ShellNotices.States() + ", " + ActivityKit.States()
                    + ", pages (" + ShellPages.States() + "), desk sessions (" + (Settings.LivingDesks ? "over the game's panel as each opens" : "off")
                    + "); the full menu's frame while an app on the kit shows; from Options, Tests: the gallery and each screen.";
         }
