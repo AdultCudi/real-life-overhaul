@@ -55,14 +55,12 @@ namespace RealLifeOverhaul.Interiors
             _right.Clear();
             if (s == null)
             {
-                _left.Title(BusinessGame.Name(reg));
-                _left.Line("reallife_interior_none".GetLocalization());
-                Meta.Guide.Point(_left, GuideTitle);
+                WriteNone(new BoxLines(_left), reg);
                 _left.Done();
                 _right.Done();
                 return;
             }
-            WriteScores(s);
+            WriteScores(new BoxLines(_left), s);
             _left.Done();
             WriteRight(s, reg);
             _wroteReg = reg;
@@ -95,15 +93,10 @@ namespace RealLifeOverhaul.Interiors
                     WriteRight(now, reg);
                 }
             });
-            switch (InteriorRules.Clamp(_shown, 0, Pages - 1))
-            {
-                case 1: WriteItems(s); break;
-                case 2: WriteCustomers(s, reg); break;
-                case 3: WriteRules(reg); break;
-                default: WriteEffects(s, reg); break;
-            }
-            Meta.SettingsApp.Link(_right, "interiors");
-            Meta.Guide.Point(_right, GuideTitle);
+            var right = new BoxLines(_right);
+            WritePage(right, s, reg, _shown);
+            right.Settings("interiors");
+            right.Guide(GuideTitle);
             _right.Done();
             _wrotePage = _shown;
             if (_rightScroll != null)
@@ -112,10 +105,53 @@ namespace RealLifeOverhaul.Interiors
             }
         }
 
-        // Every placed item that counts, by category, and each category's total against its share.
-        private static void WriteItems(InteriorShop s)
+        /// <summary>The page shown in the right column, kept for the session; the RLO interface's tabs set it as the game's own selector does.</summary>
+        public static int Shown
         {
-            InfoBox b = _right;
+            get => InteriorRules.Clamp(_shown, 0, Pages - 1);
+            set => _shown = InteriorRules.Clamp(value, 0, Pages - 1);
+        }
+
+        /// <summary>
+        /// The tab for a business written as lines for the RLO interface: the scores into the left, the page shown into the right, each line what the game's own
+        /// boxes would hold. Written when the interface asks (a business opened, an hour gone, a page chosen), not a frame.
+        /// </summary>
+        public static void Lines(BuildingRegistration reg, IInteriorLines left, IInteriorLines right)
+        {
+            InteriorShop s = reg != null ? InteriorDirector.At(reg) : null;
+            if (s == null)
+            {
+                WriteNone(left, reg);
+                return;
+            }
+            WriteScores(left, s);
+            WritePage(right, s, reg, Shown);
+            right.Settings("interiors");
+            right.Guide(GuideTitle);
+        }
+
+        // A business the interiors do not follow: its name and why.
+        private static void WriteNone(IInteriorLines b, BuildingRegistration reg)
+        {
+            b.Title(reg != null ? BusinessGame.Name(reg) : string.Empty);
+            b.Line("reallife_interior_none".GetLocalization());
+            b.Guide(GuideTitle);
+        }
+
+        private static void WritePage(IInteriorLines b, InteriorShop s, BuildingRegistration reg, int page)
+        {
+            switch (InteriorRules.Clamp(page, 0, Pages - 1))
+            {
+                case 1: WriteItems(b, s); break;
+                case 2: WriteCustomers(b, s, reg); break;
+                case 3: WriteRules(b, reg); break;
+                default: WriteEffects(b, s, reg); break;
+            }
+        }
+
+        // Every placed item that counts, by category, and each category's total against its share.
+        private static void WriteItems(IInteriorLines b, InteriorShop s)
+        {
             b.Title(InteriorText.Page(1));
             if (s.Placed.Count == 0)
             {
@@ -149,9 +185,8 @@ namespace RealLifeOverhaul.Interiors
                 "target", InteriorText.Tenths(s.Target)));
         }
 
-        private static void WriteCustomers(InteriorShop s, BuildingRegistration reg)
+        private static void WriteCustomers(IInteriorLines b, InteriorShop s, BuildingRegistration reg)
         {
-            InfoBox b = _right;
             b.Title(InteriorText.Page(2));
             InteriorDirector d = InteriorDirector.Instance;
             CustomerCount c;
@@ -181,9 +216,8 @@ namespace RealLifeOverhaul.Interiors
             b.Note(InteriorText.T("reallife_interior_cust_note", "traffic", InteriorText.N(c.Traffic), "marketing", InteriorText.N(c.Marketing), "figure", InteriorText.N(c.Written)));
         }
 
-        private static void WriteRules(BuildingRegistration reg)
+        private static void WriteRules(IInteriorLines b, BuildingRegistration reg)
         {
-            InfoBox b = _right;
             b.Title(InteriorText.Page(3));
             InteriorGame.Rules(reg, GameRules);
             int demands = 0, needs = 0;
@@ -217,7 +251,7 @@ namespace RealLifeOverhaul.Interiors
             GameRules.Clear();
         }
 
-        private static void Rule(InfoBox b, GameRule rule)
+        private static void Rule(IInteriorLines b, GameRule rule)
         {
             string state = (rule.Met ? "reallife_interior_rules_met" : "reallife_interior_rules_missing").GetLocalization();
             if (rule.Demand)
@@ -244,9 +278,8 @@ namespace RealLifeOverhaul.Interiors
             }
         }
 
-        private static void WriteScores(InteriorShop s)
+        private static void WriteScores(IInteriorLines b, InteriorShop s)
         {
-            InfoBox b = _left;
             b.Title(s.Name);
             if (!OtherMods.MeaningfulInteriors.Loaded && s.Fitting && s.Kind == InteriorKind.Shop && InteriorDirector.StandardOn)
             {
@@ -276,11 +309,11 @@ namespace RealLifeOverhaul.Interiors
             b.Headline("reallife_interior_head_condition");
             b.Line(InteriorText.T(InteriorDirector.Parts.WearScale > 0 ? "reallife_interior_line_wear" : "reallife_interior_line_wear_off", "wear", InteriorText.N(s.Wear / 10)));
             b.Line(InteriorText.T("reallife_interior_line_clean", "clean", InteriorText.N(s.Clean)));
-            Meta.Guide.Point(b, GuideTitle);
+            b.Guide(GuideTitle);
         }
 
         // What the interior does to a shop's customers and takings today, each figure with its reason.
-        private static void WriteNow(InfoBox b, InteriorShop s)
+        private static void WriteNow(IInteriorLines b, InteriorShop s)
         {
             InteriorParts parts = InteriorDirector.Parts;
             string district = Districts.DistrictGame.Name(s.District);
@@ -327,9 +360,8 @@ namespace RealLifeOverhaul.Interiors
             b.Line(InteriorText.T("reallife_interior_now_total", "customers", InteriorText.Signed(s.Footfall), "takings", InteriorText.SignedMille(InteriorRules.Takings(s.Footfall, s.Basket))));
         }
 
-        private static void WriteEffects(InteriorShop s, BuildingRegistration reg)
+        private static void WriteEffects(IInteriorLines b, InteriorShop s, BuildingRegistration reg)
         {
-            InfoBox b = _right;
             b.Title(InteriorText.Page(0));
             if (s.Stop != SaleStop.None)
             {
@@ -404,8 +436,7 @@ namespace RealLifeOverhaul.Interiors
                 }
                 if (s.Wear >= InteriorRules.RefreshFrom)
                 {
-                    Transform row = b.ButtonRow();
-                    InfoBox.Button(row, InfoBox.Positive, "reallife_interior_refresh_button", () =>
+                    b.Button(InfoBox.Positive, "reallife_interior_refresh_button", () =>
                     {
                         InteriorDirector d = InteriorDirector.Instance;
                         if (d != null && d.Refresh(reg))
@@ -430,7 +461,7 @@ namespace RealLifeOverhaul.Interiors
                 }
                 else
                 {
-                    InfoBox.Button(b.ButtonRow(), InfoBox.Negative, "reallife_interior_renovate_button", () => renovate(reg));
+                    b.Button(InfoBox.Negative, "reallife_interior_renovate_button", () => renovate(reg));
                     b.Note("reallife_interior_renovate_note".GetLocalization());
                 }
             }
