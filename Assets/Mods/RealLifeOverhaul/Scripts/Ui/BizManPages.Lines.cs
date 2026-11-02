@@ -75,6 +75,7 @@ namespace RealLifeOverhaul.Ui
             }
             reveal = -1;
             offset = Math.Max(0f, Math.Min(offset, most));
+            float labelW = rows ? Labels(lines, tw) : 0f;   // the bars' labels in one column, so every bar starts at one edge
             clip = s.AddClip(x, y, tw, vh, offset);
             s.Clips[clip].ContentHeight = total;
             list = s.AddList(heading, 0, heading, clip, -1);
@@ -108,7 +109,7 @@ namespace RealLifeOverhaul.Ui
                         shape = rows ? shape : 0;
                         if (shape == 2)
                         {
-                            UiDraw.GradeBar(s, inClip, 0f, top, tw, label, score);
+                            UiDraw.GradeBar(s, inClip, 0f, top, tw, label, score, labelW);
                         }
                         else if (shape == 1)
                         {
@@ -128,6 +129,26 @@ namespace RealLifeOverhaul.Ui
         }
 
         private static bool Stop(BizManLineKind kind) => kind == BizManLineKind.Title || kind == BizManLineKind.Heading;
+
+        // The label column the column's graded bars share.
+        private static float Labels(BizManLine[] lines, float w)
+        {
+            int n = 0;
+            for (int i = 0; i < lines.Length; i++)
+            {
+                n += lines[i].Kind == BizManLineKind.Line && Shape(lines[i].Words, out _, out _, out _) == 2 ? 1 : 0;
+            }
+            var labels = new string[n];
+            n = 0;
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (lines[i].Kind == BizManLineKind.Line && Shape(lines[i].Words, out string label, out _, out _) == 2)
+                {
+                    labels[n++] = label;
+                }
+            }
+            return n > 0 ? UiDraw.LabelColumn(w, labels) : 0f;
+        }
 
         // A line's shape: 1 a short label and its figure (a row), 2 a score out of 100 (a graded bar), 0 a sentence.
         private static int Shape(string words, out string label, out string value, out int score)

@@ -22,7 +22,7 @@ public static partial class UiPreviewRunner
             {
                 Name = "bizman_" + (i + 1).ToString("00") + "_" + state, AppName = "BizMan", Icon = UiIcon.Building, Backdrop = BizManBackdrop(state, i),
                 Bar = () => UiSamples.ShellBar(UiSamples.RowBizMan, false),
-                Lay = (s, f, d, k) => BizManPages.Lay(s, UiSamples.BizMan(state.EndsWith("_german", StringComparison.Ordinal) ? German : (UiWords)English, state), f, d, k)
+                Lay = (s, f, d, k) => BizManPages.Lay(s, UiSamples.BizMan(state.EndsWith("_german", StringComparison.Ordinal) ? BizGerman : (UiWords)English, state), f, d, k)
             };
             BizManInput(screen, state);
             screens.Add(screen);
@@ -152,7 +152,7 @@ public static partial class UiPreviewRunner
                 screen.HoverArg = BizManPages.DoTakeover;
                 screen.FocusCommand = UiFirmHead.First + UiFirmHead.Place;
                 screen.FocusArg = 0;
-                screen.Walk = Moves("DRDDDRDD");
+                screen.Walk = Moves("DRDRDLLD");
                 break;
             case "store_building": case "store_long": case "warehouse": case "factory": case "headquarters":
                 screen.HoverCommand = UiFirmHead.First + UiFirmHead.Action;
@@ -187,7 +187,7 @@ public static partial class UiPreviewRunner
         }
         if (key == "bizman:logo")
         {
-            return BizPictures[key] = Logo();
+            return BizPictures[key] = BizLogo();
         }
         string file = key == "bizman:villa" ? "12.jpg" : key == "bizman:warehouse" ? "10.jpg" : key == "bizman:factory" ? "09.jpg" : "02.jpg";
         string path = Path.Combine(_backdrops, file);
@@ -203,12 +203,12 @@ public static partial class UiPreviewRunner
         return sprite;
     }
 
-    private const string GameShapes = @"G:\Steam\steamapps\common\Big Ambitions\Big Ambitions_Data\StreamingAssets\LogoShapes";
+    private const string BizGameShapes = @"G:\Steam\steamapps\common\Big Ambitions\Big Ambitions_Data\StreamingAssets\LogoShapes";
 
     // The café's logo as the game draws its own: one of the game's logo shapes for a coffee shop, from the game's files.
-    private static Sprite Logo()
+    private static Sprite BizLogo()
     {
-        string path = Path.Combine(GameShapes, "coffee1.png");
+        string path = Path.Combine(BizGameShapes, "coffee1.png");
         if (!File.Exists(path))
         {
             return null;
@@ -218,22 +218,22 @@ public static partial class UiPreviewRunner
         return Sprite.Create(tex, new Rect(0f, 0f, tex.width, tex.height), new Vector2(0.5f, 0.5f));
     }
 
-    private const string GameLocales = @"G:\Steam\steamapps\common\Big Ambitions\Big Ambitions_Data\StreamingAssets\locale";
-    private static Dictionary<string, string> _german;
+    private const string BizGameLocales = @"G:\Steam\steamapps\common\Big Ambitions\Big Ambitions_Data\StreamingAssets\locale";
+    private static Dictionary<string, string> _bizGerman;
 
     // A text in German: the mod's own from its locale, the game's from the game's, English where neither has it.
-    private static string German(string key, string english)
+    private static string BizGerman(string key, string english)
     {
-        if (_german == null)
+        if (_bizGerman == null)
         {
-            _german = new Dictionary<string, string>();
-            ReadGerman(Path.Combine(GameLocales, "de.json"));
-            ReadGerman(Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", "..", "Assets", "Mods", "RealLifeOverhaul", "Locales", "de.json")));
+            _bizGerman = new Dictionary<string, string>();
+            ReadBizGerman(Path.Combine(BizGameLocales, "de.json"));
+            ReadBizGerman(Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", "..", "Assets", "Mods", "RealLifeOverhaul", "Locales", "de.json")));
         }
-        return key != null && _german.TryGetValue(key, out string words) ? words : english;
+        return key != null && _bizGerman.TryGetValue(key, out string words) ? words : english;
     }
 
-    private static void ReadGerman(string path)
+    private static void ReadBizGerman(string path)
     {
         if (!File.Exists(path))
         {
@@ -241,7 +241,7 @@ public static partial class UiPreviewRunner
         }
         foreach (Match pair in Regex.Matches(File.ReadAllText(path, Encoding.UTF8), "\"([^\"\\\\]+)\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\""))
         {
-            _german[pair.Groups[1].Value] = Regex.Unescape(pair.Groups[2].Value);
+            _bizGerman[pair.Groups[1].Value] = Regex.Unescape(pair.Groups[2].Value);
         }
     }
 }

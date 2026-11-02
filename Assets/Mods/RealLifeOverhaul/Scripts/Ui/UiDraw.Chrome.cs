@@ -333,10 +333,7 @@ namespace RealLifeOverhaul.Ui
             {
                 sum += Math.Max(0f, shares[i]);
             }
-            if (rest > 0f && sum > 0f)
-            {
-                Box(s, at, x, y, size, size, UiRole.Track, UiRole.None, 0f, UiFlags.Circle);   // the rest of the turn, under the named slices
-            }
+
             if (sum <= 0f)
             {
                 Box(s, at, x, y, size, size, UiRole.Track, UiRole.None, 0f, UiFlags.Circle);
@@ -354,6 +351,17 @@ namespace RealLifeOverhaul.Ui
                 var item = new UiItem
                 {
                     Kind = UiKind.Slice, Fill = UiTokens.Chart(i), X = x, Y = y, W = size, H = size, Value = end - start, Points = new[] { start + gap / 2f, end - gap / 2f },
+                    Clip = at.Clip, Node = -1, Layer = at.Layer, Order = at.Order, Parent = at.Parent, Alpha = 1f, Flags = UiFlags.Circle
+                };
+                s.Add(ref item);
+            }
+            if (rest > 0f && run < 1f)
+            {
+                // The rest of the turn as its own arc in the track's grey, the hole left the panel's as every slice leaves it.
+                float gap = 1f - run > SliceGap * 3f ? SliceGap : 0f;
+                var item = new UiItem
+                {
+                    Kind = UiKind.Slice, Fill = UiRole.Track, X = x, Y = y, W = size, H = size, Value = 1f - run, Points = new[] { run + gap / 2f, 1f - gap / 2f },
                     Clip = at.Clip, Node = -1, Layer = at.Layer, Order = at.Order, Parent = at.Parent, Alpha = 1f, Flags = UiFlags.Circle
                 };
                 s.Add(ref item);

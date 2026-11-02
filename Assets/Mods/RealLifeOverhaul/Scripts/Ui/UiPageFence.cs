@@ -89,8 +89,8 @@ namespace RealLifeOverhaul.Ui
         private static int Level(UiScene s, int from, int page, int dx)
         {
             s.NodeBox(from, out float fx, out float fy, out float fw, out float fh);
-            int best = -1;
-            float bestScore = float.MaxValue;
+            int best = -1, near = -1;
+            float bestScore = float.MaxValue, nearScore = float.MaxValue;
             for (int i = page; i < s.NodeCount; i++)
             {
                 ref UiNode c = ref s.Nodes[i];
@@ -100,6 +100,18 @@ namespace RealLifeOverhaul.Ui
                 }
                 s.NodeBox(i, out float cx, out float cy, out float cw, out float ch);
                 float along = dx > 0 ? cx - (fx + fw) : fx - (cx + cw);
+                if (along >= UiTokens.S8 && Math.Min(fy + fh, cy + ch) - Math.Max(fy, cy) <= 0f)
+                {
+                    // Nothing level that way yet: the nearest across the gap (the other column's block that starts higher or
+                    // lower), so a column is never a dead end sideways.
+                    float off = along + 2f * Math.Abs(cy + ch / 2f - (fy + fh / 2f));
+                    if (off < nearScore)
+                    {
+                        nearScore = off;
+                        near = i;
+                    }
+                    continue;
+                }
                 if (dx > 0 && Within(cx, cy, cw, ch, fx, fy, fw, fh) && cx > fx + fw / 2f)
                 {
                     along = 0f;   // a button over a row's right end, its row's own action: right from the row reaches it
@@ -119,7 +131,7 @@ namespace RealLifeOverhaul.Ui
                     best = i;
                 }
             }
-            return best;
+            return best >= 0 ? best : near;
         }
 
         // The nearest page target up or down that shares some of a target's width; failing that the nearest that way on
