@@ -29,7 +29,7 @@ public static partial class UiPreviewRunner
                 screen.HoverArg = 3;
                 screen.FocusCommand = UiDataTable.First + UiDataTable.Row;
                 screen.FocusArg = 1;
-                screen.Walk = st.Contains("goals") ? new[] { Up, Right, Down, Down, Down } : new[] { Down, Down, Down, Up, Up, Up, Up };
+                screen.Walk = st.Contains("goals") ? new[] { Up, Up, Right, Right, Down, Down } : new[] { Down, Down, Down, Up, Up, Up, Up };
             }
             screens.Add(screen);
         }
@@ -44,7 +44,7 @@ public static partial class UiPreviewRunner
                 Bar = () => UiSamples.ShellBar(rivalsRow, false), Lay = (s, f, d, k) => UiRivals.Lay(s, UiSamples.Rivals(English, st), f, d, k),
                 HoverCommand = st == "league_empty" ? UiAppWindow.NavCommand : league ? UiRivals.ChartTabCommand : UiRivals.RowLinkCommand,
                 HoverArg = st == "league_empty" ? 1 : league ? 1 : 0,
-                FocusCommand = st == "league_empty" ? UiAppWindow.NavCommand : UiDataTable.First + UiDataTable.Row, FocusArg = st == "league_empty" ? 0 : league ? 1 : 2,
+                FocusCommand = st == "league_empty" ? UiAppWindow.NavCommand : UiDataTable.First + UiDataTable.Row, FocusArg = st == "league_empty" ? 0 : st == "league_quiet" ? 3 : league ? 1 : 2,
                 Walk = league ? new[] { Down, Down, Right, Down, Down, Left, Up } : new[] { Down, Down, Up, Up, Up, Right, Left }
             });
         }

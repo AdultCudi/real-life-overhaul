@@ -65,7 +65,7 @@ namespace RealLifeOverhaul.Ui
         public const int Overview = 0, Needs = 1, Education = 2, Goals = 3;
         public const int LinkCommand = 210;
         public const int MostLines = 3;           // the overview's lines a block: the few that matter most, the rest on their tab
-        private const float DonutMost = 240f;     // px: the wealth's donut at its largest
+        private const float DonutMost = 320f;     // px: the wealth's donut at its largest, so it fills its band
         private const float LegendMost = 360f;    // px: the legend's width, so each part's value stays by its name
         private const float NeedCard = 72f;       // px: a need's card, its tile and its two lines
         private const float LegendRow = 20f;      // px: a legend's row, as UiDraw.Legend draws it
@@ -150,7 +150,9 @@ namespace RealLifeOverhaul.Ui
             int n = Math.Min(MostLines, lines.Length);
             if (n == 0)
             {
-                UiDraw.Text(s, on, ix, top, iw, UiStyle.Small, UiRole.Text2, empty, UiFlags.Label | UiFlags.Wrap, 3);
+                // Nothing to list: its words in the middle of the block's room, as the chart beside it says its own.
+                float eh = UiDraw.Snap(UiTextRules.WrappedHeight(empty, UiStyle.Small, iw, 3));
+                UiDraw.Text(s, on, ix, top + UiDraw.SnapDown((y + h - UiTokens.S4 - top - eh) / 2f), iw, UiStyle.Small, UiRole.Text2, empty, UiFlags.Label | UiFlags.Wrap | UiFlags.Centre, 3);
                 return -1;
             }
             for (int i = 0; i < n; i++)
@@ -275,7 +277,29 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.EmptyState(s, at, x, y, w, h, m.Table.EmptyIcon, m.Table.EmptyTitle, m.Table.EmptyBody);
                 return;
             }
+            int first = s.NodeCount;
             UiDataTable.Lay(s, at, m.Table, x, y, w, h, keys);
+            // A sortable head is the game's own sort: Up from the first row reaches it, and Down from it comes back.
+            int head = -1, row = -1;
+            for (int i = first; i < s.NodeCount; i++)
+            {
+                head = head < 0 && s.Nodes[i].Command == UiDataTable.First + UiDataTable.Head ? i : head;
+                row = row < 0 && s.Nodes[i].Command == UiDataTable.First + UiDataTable.Row ? i : row;
+            }
+            if (head >= 0 && row >= 0)
+            {
+                s.Nodes[row].Up = head;
+                int last = head;
+                for (int i = first; i < s.NodeCount; i++)
+                {
+                    if (s.Nodes[i].Command == UiDataTable.First + UiDataTable.Head)
+                    {
+                        s.Nodes[i].Down = row;
+                        last = i;
+                    }
+                }
+                s.Nodes[last].Right = last;   // the last head is the row's end: the window's close is not the way on
+            }
         }
     }
 }

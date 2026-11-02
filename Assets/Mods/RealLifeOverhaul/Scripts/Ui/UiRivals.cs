@@ -91,11 +91,13 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Text(s, at, x, y, lw, UiStyle.SectionHeader, UiRole.Text, m.LeagueTitle, UiFlags.Label | UiFlags.Truncate);
             int firstLeague = s.NodeCount;
             float ty = y + headH + UiTokens.S3;
-            UiDataTable.Lay(s, at, m.Table, x, ty, lw, y + h - threatsH - ty, keys);
+            // The league as tall as its rows (scrolling when they pass its room), the rivalry's lines right under it.
+            float tableH = Math.Min(y + h - threatsH - ty, UiDataTable.Chrome(m.Table) + m.Table.RowCount * UiDataTable.RowHeight(m.Table));
+            UiDataTable.Lay(s, at, m.Table, x, ty, lw, tableH, keys);
             int lastLeague = s.NodeCount;
             if (m.Threats.Length > 0)
             {
-                float my = y + h - threatsH + UiTokens.S6;
+                float my = ty + tableH + UiTokens.S6;
                 UiDraw.Text(s, at, x, my, lw, UiStyle.SectionHeader, UiRole.Text, m.ThreatsTitle, UiFlags.Label | UiFlags.Truncate);
                 my += headH + UiTokens.S3;
                 for (int i = 0; i < m.Threats.Length; i++)

@@ -168,8 +168,8 @@ namespace RealLifeOverhaul.Ui
         // A goals' head is the game's own sort button over its list: its toggle cycles the order, which the kit reads back.
         private bool Sort(int column)
         {
-            Button b = _tab != UiPersona.Goals ? null : column == 2 ? _sortCurrent : column == 3 ? _sortSteam : null;
-            return Done(b != null && UiWidgets.Press(b), "sort the goals by " + (column == 2 ? "their tier" : "Steam's tier") + ": handed to the game");
+            Button b = _tab != UiPersona.Goals ? null : column == 1 ? _sortCurrent : column == 3 ? _sortSteam : null;
+            return Done(b != null && UiWidgets.Press(b), "sort the goals by " + (column == 1 ? "their tier" : "Steam's tier") + ": handed to the game");
         }
 
         // ------------------------------------------------------------------------------------------------- the game's state

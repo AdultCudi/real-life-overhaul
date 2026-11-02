@@ -121,7 +121,7 @@ internal static partial class Program
         UiPersonaModel fresh = UiSamples.Persona(en, "new_overview");
         Check(fresh.Profile.FactValues.Length == 1 && fresh.WealthShares.Length == 1, "persona: a new character's head and donut show what there is, not rows of zeros");
         UiPersonaModel goals = UiSamples.Persona(en, "rich_goals");
-        Check(goals.Table.SortColumn == 2 && goals.Table.Columns[2].Kind == UiCellKind.Steps && goals.Table.Columns[2].Steps == PersonaViews.GoalsTiers,
+        Check(goals.Table.SortColumn == 1 && goals.Table.Columns[1].Kind == UiCellKind.Steps && goals.Table.Columns[1].Steps == PersonaViews.GoalsTiers,
             "persona: the goals' tiers stand as three pips under the game's own sort of the current tier");
     }
 

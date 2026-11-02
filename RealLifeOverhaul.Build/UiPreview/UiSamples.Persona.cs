@@ -144,11 +144,21 @@ internal static partial class UiSamples
                 rich ? 2 : 0, -1),
             Goal(t, "PlayerAgeGoal", "personalgoal_age", "Celebrate your {amount}th birthday", rich ? "40" : "25", rich ? "34 / 40" : "19 / 25", rich ? 2 : 0, -1),
         };
-        return goals.ToArray();
+        // As the game's own sort of the current tier shows them: the most tiers first, the game's order kept among equals.
+        var sorted = new List<PersonaGoal>(goals.Count);
+        for (int tier = 3; tier >= 0; tier--)
+        {
+            sorted.AddRange(goals.FindAll(g => g.Tiers == tier));
+        }
+        return sorted.ToArray();
     }
 
-    private static PersonaGoal Goal(UiWords t, string kind, string key, string english, string amount, string progress, int tiers, int steam, string slot = "amount") =>
-        new PersonaGoal { Kind = kind, Title = Fill(t(key, english), slot, amount), Progress = progress, Tiers = tiers, Steam = steam };
+    private static PersonaGoal Goal(UiWords t, string kind, string key, string english, string amount, string progress, int tiers, int steam, string slot = "amount")
+    {
+        int slash = progress != null ? progress.IndexOf('/') : -1;
+        string target = slash >= 0 ? progress.Substring(slash + 1).Trim() : amount;   // the tier under way's target, as the game's entry names it
+        return new PersonaGoal { Kind = kind, Title = Fill(t(key, english), slot, target), Progress = progress, Tiers = tiers, Steam = steam };
+    }
 
     // ------------------------------------------------------------------------------------------------------- Rivals
 
@@ -179,6 +189,12 @@ internal static partial class UiSamples
             Rival("Marcus Hale", 64200f, 59800f, 4, "Lower Manhattan", 44, false, false, false),
             Rival("Priya Raman", 41800f, float.NaN, 3, "Industry City", 39, false, false, false),
             Rival("Owen Pryce", 22600f, 30100f, 2, "Midtown", 51, false, false, false),
+            Rival("Lena Kowalski", 19800f, 18200f, 2, "Garment District", 36, false, false, false),
+            Rival("Daniel Osei", 15400f, 16900f, 2, "Hell's Kitchen", 42, false, false, false),
+            Rival("Sofia Castillo", 12700f, 9900f, 1, "Murray Hill", 29, false, false, false),
+            Rival("Viktor Hahn", 9100f, 10400f, 1, "Industry City", 57, false, false, false),
+            Rival("Amara Diallo", 6300f, 5800f, 1, "Lower Manhattan", 33, false, false, false),
+            Rival("Felix Weber", 2400f, 3100f, 1, "Midtown", 48, false, false, false),
             Rival("Carmen Ortega", -4100f, 8700f, 0, null, 63, false, false, true),
         };
         v.Chosen = state == "league_quiet" ? 3 : 1;
@@ -345,8 +361,11 @@ internal static partial class UiSamples
                     MarketViews.Plain(t("marketeventtype_businessopened_description", "{rivalName} opened <b>{businessName}</b> at {address}.").Replace("{rivalName}", "Huang Guo")
                         .Replace("{businessName}", "Golden Dragon Supermarket").Replace("{address}", "33 North Avenue"))),
                 Event("ProductShortage", t("marketeventtype_productshortage", "Product shortage"), 407,
-                    "Riverside Wholesale is currently experiencing a shortage of Croissant. Expected duration is 4 days."),
-                Event("BusinessClosed", t("marketeventtype_businessclosed", "Business closed"), 401, "Linden Florist at 61 Linden Street owned by Owen Pryce was shut down."),
+                    MarketViews.Plain(t("marketeventtype_productshortage_description", "{source} is currently experiencing a shortage of {product}. Expected duration is {durationInDays} days.")
+                        .Replace("{source}", "Riverside Wholesale").Replace("{product}", t("ba:itemname_croissant", "Croissant")).Replace("{durationInDays}", "4"))),
+                Event("BusinessClosed", t("marketeventtype_businessclosed", "Business closed"), 401,
+                    MarketViews.Plain(t("marketeventtype_businessclosed_description", "<b>{businessName}</b> at {address} owned by {rivalName} was shut down.")
+                        .Replace("{businessName}", "Linden Florist").Replace("{address}", "61 Linden Street").Replace("{rivalName}", "Owen Pryce"))),
                 Event("Hype", t("marketeventtype_hype", "Hype"), 396, Hype(t, t("ba:itemname_laptop", "Laptop"))),
             };
         }
@@ -404,7 +423,10 @@ internal static partial class UiSamples
             { "ba:itemname_cheapgift", "Cadeau (bon marché)" }, { "ba:itemname_paper", "Rame de papier" }, { "marketeventtype_hype", "Engouement" },
             { "marketeventtype_businessopened", "Ouverture d’entreprise" },
             { "marketeventtype_businessopened_description", "{rivalName} a ouvert <b>{businessName}</b> à {address}." },
-            { "marketeventtype_productshortage", "Pénurie de produit" }, { "marketeventtype_businessclosed", "Fermeture d’entreprise" },
+            { "marketeventtype_productshortage", "Pénurie de produit" },
+            { "marketeventtype_productshortage_description", "{source} connaît actuellement une pénurie de {product}. La durée prévue est de {durationInDays} jours." },
+            { "marketeventtype_businessclosed", "Fermeture d’entreprise" },
+            { "marketeventtype_businessclosed_description", "<b>{businessName}</b> à {address}, appartenant à {rivalName}, a été fermé." },
             { "marketeventtype_hype_description", "Les habitants de {neighbourhood} montrent récemment une forte demande pour <b>{itemName}</b>." },
             { "smartphone_persona", "Persona" }, { "persona_education", "Éducation" }, { "common_years_amount", "{years} ans" },
             { "persona_characterinfo_networth", "Valeur nette totale : <b>{amount}</b>" }, { "persona_characterinfo_businesses", "Nombre total d'entreprises" },

@@ -394,7 +394,7 @@ namespace RealLifeOverhaul.Ui
             table.Columns = new[]
             {
                 new UiDataColumn { Title = t("reallife_ui_persona_course", "Course"), Kind = UiCellKind.Tile },
-                new UiDataColumn { Title = t("reallife_ui_persona_kind", "Kind"), Kind = UiCellKind.Text, Width = 288f },
+                new UiDataColumn { Title = t("reallife_ui_persona_kind", "Kind"), Kind = UiCellKind.Text },
                 new UiDataColumn { Title = t("bizman_status", "Status"), Kind = UiCellKind.Chip, Width = 224f },
             };
             string school = t("common_businessschool", "Manhattan Business School");
@@ -481,9 +481,9 @@ namespace RealLifeOverhaul.Ui
             var columns = new List<UiDataColumn>
             {
                 new UiDataColumn { Title = t("reallife_ui_persona_goal", "Goal"), Kind = UiCellKind.Tile },
-                new UiDataColumn { Title = t("reallife_ui_persona_progress", "Progress"), Kind = UiCellKind.Figure, Width = 200f },
                 new UiDataColumn { Title = t("persona_personalgoal_current_goals", "Current Goals"), Kind = UiCellKind.Steps, Steps = GoalsTiers,
                     Width = UiDataCells.StepsWidth(GoalsTiers) + UiTokens.S8, Sortable = true },
+                new UiDataColumn { Title = t("reallife_ui_persona_progress", "Progress"), Kind = UiCellKind.Figure, Width = 200f },
             };
             if (steam)
             {
@@ -491,7 +491,7 @@ namespace RealLifeOverhaul.Ui
                 columns.Add(new UiDataColumn { Title = t("persona_personalgoal_steam_achievements", "Steam"), Kind = UiCellKind.Chip, Width = 120f, Sortable = true });
             }
             table.Columns = columns.ToArray();
-            table.SortColumn = v.GoalSort == 1 ? 2 : v.GoalSort == 2 && steam ? 3 : -1;
+            table.SortColumn = v.GoalSort == 1 ? 1 : v.GoalSort == 2 && steam ? 3 : -1;
             table.SortDown = v.GoalSortDown;
             UiRole[] medals = { UiRole.Chart2, UiRole.Text2, UiRole.Gold };
             table.Rows = new UiDataRow[v.Goals.Length];
@@ -502,8 +502,8 @@ namespace RealLifeOverhaul.Ui
                 bool won = g.Steam >= 0 && g.Steam < GoalsTiers;
                 table.Rows[i] = new UiDataRow
                 {
-                    Cells = steam ? new[] { g.Title, g.Progress, TierWords(t, reached), won ? TierWords(t, g.Steam + 1) : null } : new[] { g.Title, g.Progress, TierWords(t, reached) },
-                    Values = steam ? new[] { (int)GoalIcon(g.Kind), -1, reached, -1 } : new[] { (int)GoalIcon(g.Kind), -1, reached },
+                    Cells = steam ? new[] { g.Title, TierWords(t, reached), g.Progress, won ? TierWords(t, g.Steam + 1) : null } : new[] { g.Title, TierWords(t, reached), g.Progress },
+                    Values = steam ? new[] { (int)GoalIcon(g.Kind), reached, -1, -1 } : new[] { (int)GoalIcon(g.Kind), reached, -1 },
                     Tones = steam ? new[] { UiRole.None, UiRole.None, UiRole.None, won ? medals[g.Steam] : UiRole.None } : null,
                     Share = reached < GoalsTiers ? Math.Max(0f, Fraction(g.Progress)) : 0f
                 };
