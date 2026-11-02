@@ -34,7 +34,7 @@ namespace RealLifeOverhaul.Careers
                     box.Line(CareersText.Fill("reallife_career_boards_phone", "employer", board.Name), CellTone.Plain);
                     continue;
                 }
-                box.Line(CareersText.Fill("reallife_career_boards_at", "employer", board.Name, "address", board.Address), CellTone.Plain);
+                box.Line(CareersText.Fill("reallife_career_boards_at", "employer", board.Name, "address", board.Address, "place", board.Place ?? string.Empty), CellTone.Plain);
                 MapButton(box.ButtonRow(), () => _director.ShowBoard(board));
             }
         }

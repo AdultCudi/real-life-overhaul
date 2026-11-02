@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using BAModAPI;
+using Buildings;
+using Helpers;
+using Localizor;
 using Streets;
 using UnityEngine;
 
@@ -29,6 +32,7 @@ namespace RealLifeOverhaul
         private readonly List<string> _kindOf = new List<string>(Most);        // the kind of service building each board stands at
         private readonly List<Vector3> _outward = new List<Vector3>(Most);     // the way each board faces: away from its wall
         private readonly List<string> _names = new List<string>(Most);
+        private readonly List<string> _places = new List<string>(Most);        // the name of the shop or service each board stands outside
         private readonly List<CityBuildingController> _buildings = new List<CityBuildingController>(Most);   // the building each board stands at
         private int _next;                   // the next building to look at
         private bool _searched;
@@ -61,8 +65,17 @@ namespace RealLifeOverhaul
         /// <summary>The address of the building a board stands at, as the game writes it.</summary>
         public string Address(int board) => _names[board];
 
+        /// <summary>The name of the shop or service a board stands outside, as the player reads it over the door (never empty).</summary>
+        public string Place(int board) => _places[board];
+
         /// <summary>The building a board stands at (it lights up on the city map while its row is ticked).</summary>
         public CityBuildingController Building(int board) => _buildings[board];
+
+        /// <summary>
+        /// True while a board can be met: it is placed, its building is still in the city and the pavement in front of it was found
+        /// clear when it was put up. A review or a shift is only ever sent to a board for which this holds (CareerDirector.WhereOf).
+        /// </summary>
+        public bool Stands(int board) => board >= 0 && board < _boards.Count && board < _buildings.Count && _buildings[board] != null;
 
         /// <summary>The board the player stands in front of, or -1.</summary>
         public int Near { get; private set; } = -1;
@@ -127,6 +140,7 @@ namespace RealLifeOverhaul
             _fronts.Clear();
             _kindOf.Clear();
             _names.Clear();
+            _places.Clear();
             _buildings.Clear();
             _outward.Clear();
             InReach = false;
@@ -173,6 +187,17 @@ namespace RealLifeOverhaul
             }
         }
 
+        // What is over the door: the service's own name (a furniture store's brand), else the game's name for its kind of business.
+        private static string PlaceName(SpecialService service, string kind)
+        {
+            string name = service != null ? service.businessName : null;
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                name = kind;
+            }
+            return LocalizorManager.IsLocalizedKey(name) ? name.GetLocalization() : name;
+        }
+
         // Against the wall a step to one side of the door, facing the pavement, where nothing else stands.
         private bool Place(CityBuildingController building, string kind)
         {
@@ -203,6 +228,7 @@ namespace RealLifeOverhaul
                 _fronts.Add(stand + outward * 0.5f);
                 _kindOf.Add(kind);
                 _names.Add(building.building.Address.ToFormattedString());
+                _places.Add(PlaceName(building.building.SpecialService, kind));
                 _buildings.Add(building);
                 _outward.Add(outward);
                 return true;

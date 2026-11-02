@@ -666,6 +666,7 @@ internal static partial class Program
         BizManLink();   // the Company app's Open in BizMan: on every business's page, the game's BizMan.Open for the player's own business, the notice, the texts (BizManLinkChecks.cs)
         MarketFixes();  // the stock market: a guest's trade lines culture-free, the index steady as companies join over the cap, the tape swapped safely, the chart's guard (MarketFixChecks.cs)
         CareersFixes(); // education and careers: stood down once the guard has switched it off, no sitting on a disabled host, a lost course never read back (CareersFixChecks.cs)
+        MeetingPlaces(); // a review is held where the player can go: a board that stands, named with the shop it is outside and the way in, else the phone (MeetingPlaceChecks.cs)
         DriveMap();     // the driving test that cannot start (examiner never aboard, time stopped, a car that will not go) and the employers found on the map and in the Career app (DriveMapChecks.cs)
         InterviewPlaces(); // an interview where it is held: in at the door behind the black screen and out again, at the home's computer, every end (InterviewPlaceChecks.cs)
         HomeworkCounts(); // homework counts across sittings: minutes carried, finished over two, saved and loaded, the early-stop notice and hint (HomeworkCountChecks.cs)
