@@ -7,9 +7,11 @@ namespace RealLifeOverhaul.Leisure
 {
     /// <summary>
     /// The chess player on the pavement: the mod's table, an opponent and maybe an onlooker from the living city's
-    /// pool, put out of view by day in the dry, and never while the living city has its own chess table out. The table,
-    /// the opponent and the onlooker go out a frame each (<see cref="Step"/>): all three in one frame were 3.2 ms (the
-    /// own-spikes scan of 28 Oct 2026). Cost: one flag a frame while nothing is pending, a look once a second outdoors.
+    /// pool, put out of view by day in the dry, and never while the living city has its own chess table out. The table
+    /// goes out in one frame, and each person in two after it (<see cref="Step"/>): taken from the pool, then set to their
+    /// clip. All three in one frame were 3.2 ms (the own-spikes scan of 28 Oct 2026); a person taken and seated in one
+    /// frame was 4.84 ms the first time (the owner's log of 2 Nov 2026, with the set-up's first compile, now done behind
+    /// the loading screen, Core/MomentWarm). Cost: one flag a frame while nothing is pending, a look once a second outdoors.
     /// </summary>
     public sealed class ChessCorner
     {
@@ -19,18 +21,37 @@ namespace RealLifeOverhaul.Leisure
         private const string CheerClip = "cheer_once";
         private const float WatcherOut = 1.3f;     // metres to the side of the table, off its long axis
 
+        // What goes out in the next frame, a frame each after the table's.
+        private enum SetUp
+        {
+            None,
+            OpponentTaken,    // the opponent from the pool, on the far stool facing the board
+            OpponentSeated,   // their clip, and the set-up's lines
+            OnlookerTaken,    // an onlooker from the pool at one side, if the pool can spare a third
+            OnlookerWatching  // their clip
+        }
+
+        // The parts of the set-up by SetUp, for its self-check line.
+        private static readonly string[] Parts =
+        {
+            "nothing", "the opponent taken from the pool", "the opponent seated at the board", "an onlooker taken from the pool", "the onlooker set watching"
+        };
+
         private CityPerson _opponent;
         private CityPerson _watcher;
+        private CityPerson _coming;                // taken from the pool in the frame before, not yet at their clip
         private Transform _table;
         private float _nextTry;
         private float _cheerEnds;                  // while the onlooker cheers, when it ends; 0 otherwise
         private bool _turnLogged;                  // the opponent found turned off the board has been written to the log, once a table
-        private int _pending;                      // what goes out in the next frame: 1 the opponent, 2 the onlooker; 0 nothing
+        private SetUp _pending;                    // what goes out in the next frame
         private Vector3 _theirs, _along;           // the opponent's stool and the table's long axis, for the frames after the table
         private Vector3 _setFrom;                  // where the player stood when the table was found, for the log line
+        private readonly SpreadWatch _spread = new SpreadWatch();   // the set-up's frames in play, for its self-check line
+        private int _unseen;                       // frames of the set-up behind a pause or a screen, where a long frame is not seen
 
-        /// <summary>True while the opponent or the onlooker is still to go out, a frame after the table.</summary>
-        public bool Pending => _pending != 0;
+        /// <summary>True while the opponent or the onlooker is still to go out, in the frames after the table.</summary>
+        public bool Pending => _pending != SetUp.None;
 
         public bool Out => _table != null;
         public Vector3 Table { get; private set; }
@@ -154,19 +175,23 @@ namespace RealLifeOverhaul.Leisure
             _table = prop;
             _opponent = null;
             _watcher = null;
+            _coming = null;
             _turnLogged = false;
             Table = table;
             Stool = mine;
             _theirs = theirs;
             _along = along;
             _setFrom = player;
-            _pending = 1;   // the opponent in the next frame, the onlooker in the one after (Step)
+            _spread.Begin();
+            _unseen = 0;
+            _pending = SetUp.OpponentTaken;   // the opponent in the next two frames, the onlooker in the two after (Step)
             return true;
         }
 
         /// <summary>
-        /// Each frame while <see cref="Pending"/>: the opponent seated a frame after the table, the onlooker a frame after
-        /// that, as PutOut did all at once. An opponent who cannot be had takes the table in, as PutOut refused before.
+        /// Each frame while <see cref="Pending"/>, one part a frame after the table: the opponent taken from the pool, then
+        /// seated; an onlooker taken, then set watching; as PutOut did all at once. An opponent who cannot be had takes the
+        /// table in, as PutOut refused before. Taking a person wakes their agent and animator; their clip builds its graph.
         /// </summary>
         public void Step()
         {
@@ -177,47 +202,103 @@ namespace RealLifeOverhaul.Leisure
                 return;
             }
             long began = System.Diagnostics.Stopwatch.GetTimestamp();
+            bool unseen = Looks.Hidden;   // a pause, the loading screen, the black screen: a long frame is not seen as one
+            SetUp part = _pending;
             Vector3 table = Table;
-            if (_pending == 1)
+            CityPerson person;
+            switch (part)
             {
-                CityPerson person = city.People.Take(CityLook.Civilian, _theirs, table);
-                if (person == null || !person.Work("chess_sit", city.Props, 0f))
-                {
-                    if (person != null)
+                case SetUp.OpponentTaken:
+                    person = city.People.Take(CityLook.Civilian, _theirs, table);
+                    if (person == null)
+                    {
+                        NoOpponent(table, part, began, unseen);
+                        return;
+                    }
+                    // Facing the board's centre from their stool and kept so (CityPerson.AtTable) from now, before their
+                    // clip: the table's obstacle never pushes a person whose own avoidance is off.
+                    person.AtTable(table);
+                    _coming = person;
+                    _pending = SetUp.OpponentSeated;
+                    break;
+                case SetUp.OpponentSeated:
+                    person = _coming;
+                    _coming = null;
+                    if (person == null || person.Lost || !person.Work("chess_sit", city.Props, 0f))
+                    {
+                        if (person != null)
+                        {
+                            city.People.Release(person);
+                        }
+                        NoOpponent(table, part, began, unseen);
+                        return;
+                    }
+                    _opponent = person;
+                    _pending = SetUp.OnlookerTaken;
+                    LeisureDirector.Logger?.Info("Leisure: a chess player set up at " + table.ToString("F0") + ", " + Mathf.RoundToInt(Mathf.Sqrt(CitySpots.Flat(table - _setFrom)))
+                                                 + " m away.");
+                    float off = person.KeepAtTable(false);
+                    LeisureDirector.Logger?.Info("Chess check (facing): the opponent on the far stool faces the board's centre " + off.ToString("F0") + " degrees off (wanted "
+                                                 + TableSeat.FacedWithin.ToString("F0") + " or less): " + (TableSeat.Faces(off) ? "PASS" : "FAIL") + ".");
+                    break;
+                case SetUp.OnlookerTaken:
+                    _coming = Watch(city, table, _along);
+                    _pending = _coming != null ? SetUp.OnlookerWatching : SetUp.None;
+                    break;
+                case SetUp.OnlookerWatching:
+                    person = _coming;
+                    _coming = null;
+                    if (person != null && (person.Lost || !person.Work(WatchClip, city.Props, 0f, ClipEnd.Return, true, Random.value * 2f)))
                     {
                         city.People.Release(person);
+                        person = null;
                     }
-                    LeisureDirector.Logger?.Info("Leisure: the chess table at " + table.ToString("F0") + " is taken in: the living city could not spare an opponent.");
-                    TakeIn();
+                    _watcher = person;
+                    _pending = SetUp.None;
+                    break;
+                default:
+                    _pending = SetUp.None;
                     return;
-                }
-                person.AtTable(table);   // facing the board's centre from their stool, and kept so (CityPerson.AtTable)
-                _opponent = person;
-                _pending = 2;
-                LeisureDirector.Logger?.Info("Leisure: a chess player set up at " + table.ToString("F0") + ", " + Mathf.RoundToInt(Mathf.Sqrt(CitySpots.Flat(table - _setFrom)))
-                                             + " m away.");
-                float off = person.KeepAtTable(false);
-                LeisureDirector.Logger?.Info("Chess check (facing): the opponent on the far stool faces the board's centre " + off.ToString("F0") + " degrees off (wanted "
-                                             + TableSeat.FacedWithin.ToString("F0") + " or less): " + (TableSeat.Faces(off) ? "PASS" : "FAIL") + ".");
-                Said(began, "the opponent");
-                return;
             }
-            Watch(city, table, _along);
-            _pending = 0;
-            Said(began, "the onlooker");
+            Count(part, began, unseen);
+            if (_pending == SetUp.None)
+            {
+                Say(null);
+            }
         }
 
-        // The self-check of a frame of the setting up, against SpreadWatch's budget for the mod's spread work.
-        private static void Said(long began, string what)
+        // No opponent to be had: the table taken in, as PutOut refused before, the set-up's line said first.
+        private void NoOpponent(Vector3 table, SetUp part, long began, bool unseen)
+        {
+            LeisureDirector.Logger?.Info("Leisure: the chess table at " + table.ToString("F0") + " is taken in: the living city could not spare an opponent.");
+            Count(part, began, unseen);
+            Say("the table taken in, no opponent to be had");
+            TakeIn();
+        }
+
+        // A frame of the set-up: one part, counted against SpreadWatch's 2 ms unless the frame is not seen.
+        private void Count(SetUp part, long began, bool unseen)
+        {
+            if (unseen)
+            {
+                _unseen++;
+                return;
+            }
+            _spread.Item((int)part, began);
+            _spread.Frame(began);
+        }
+
+        // With Developer diagnostics on, once the set-up is over: its frames in play and the slowest against 2 ms (each frame
+        // one part: a part over 2 ms alone in its frame fails, as every part here is one already cut).
+        private void Say(string ended)
         {
             if (!Meta.Dev.Verbose)
             {
                 return;
             }
-            double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
-            LeisureDirector.Logger?.Info("Chess check (set up a frame a piece): " + what + " in a frame of its own, " + ms.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
-                                         + " ms (wanted under " + SpreadWatch.WantedMs.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + " ms): "
-                                         + SpreadWatch.Verdict(ms));
+            LeisureDirector.Logger?.Info("Chess check (set up a frame a piece): the opponent taken from the pool and seated, an onlooker taken and set watching, a frame each"
+                                         + (ended != null ? " (" + ended + ")" : string.Empty) + ": " + _spread.Said(Parts) + "; " + _unseen
+                                         + " frame(s) behind a pause or a screen, not seen and not counted: " + _spread.Verdict(false) + ".");
         }
 
         // Once a second while the table is out, a game on or not: the opponent faces the board's centre, turned back to it if
@@ -239,14 +320,15 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        // An onlooker at one side of the table, if the pool can spare a third and the pavement there is clear.
-        private void Watch(CityLifeDirector city, Vector3 table, Vector3 along)
+        // An onlooker taken at one side of the table, facing it, if the pool can spare a third and the pavement there is
+        // clear; their clip goes on in the next frame (Step). Null if none.
+        private CityPerson Watch(CityLifeDirector city, Vector3 table, Vector3 along)
         {
             _watcher = null;
             _cheerEnds = 0f;
             if (city.People.Free < 3 || !ClipLibrary.Has(WatchClip) || !ClipLibrary.Has(CheerClip))
             {
-                return;
+                return null;
             }
             Vector3 across = Vector3.Cross(Vector3.up, along);
             for (int side = -1; side <= 1; side += 2)
@@ -256,15 +338,9 @@ namespace RealLifeOverhaul.Leisure
                 {
                     continue;
                 }
-                CityPerson person = city.People.Take(CityLook.Civilian, spot, table);
-                if (person != null && !person.Work(WatchClip, city.Props, 0f, ClipEnd.Return, true, Random.value * 2f))
-                {
-                    city.People.Release(person);
-                    person = null;
-                }
-                _watcher = person;
-                return;
+                return city.People.Take(CityLook.Civilian, spot, table);
             }
+            return null;
         }
 
         public void TakeIn()
@@ -282,6 +358,10 @@ namespace RealLifeOverhaul.Leisure
                     {
                         city.People.Release(_watcher);
                     }
+                    if (_coming != null)
+                    {
+                        city.People.Release(_coming);   // taken in the frame before, not yet at their clip
+                    }
                     if (_table != null)
                     {
                         city.Props.Return(_table);
@@ -294,9 +374,10 @@ namespace RealLifeOverhaul.Leisure
             }
             _opponent = null;
             _watcher = null;
+            _coming = null;
             _cheerEnds = 0f;
             _table = null;
-            _pending = 0;
+            _pending = SetUp.None;
         }
     }
 

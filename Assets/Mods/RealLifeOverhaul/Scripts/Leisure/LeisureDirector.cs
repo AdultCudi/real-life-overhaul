@@ -97,6 +97,9 @@ namespace RealLifeOverhaul.Leisure
             _context.Props = _props;
             LeisureVenues.Reset();
             ScenePrewarm.Add("leisure: the city's landmarks being found (six searches of the whole scene)", LeisureVenues.PrewarmLandmarks);
+            // The street chess player's set-up compiled behind the loading screen: its first run paid Mono's compiler in the
+            // frame the opponent was seated (4.84 ms with the rest of that frame, the owner's log of 2 Nov 2026).
+            MomentWarm.Add("the street chess player set up", typeof(ChessCorner), typeof(CityPerson), typeof(CityPeople), typeof(TableSeat));
         }
 
         private void OnDestroy()
@@ -163,7 +166,7 @@ namespace RealLifeOverhaul.Leisure
                 }
                 else if (_corner.Pending)
                 {
-                    _corner.Step();   // the chess table's opponent and onlooker, a frame each after the table
+                    _corner.Step();   // the chess table's opponent and onlooker, each taken and then set to their clip, a frame each after the table
                 }
                 if (_activity == null || Time.timeScale <= 0f || PhotoMode.Active)
                 {

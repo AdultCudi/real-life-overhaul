@@ -74,6 +74,7 @@ internal static partial class Program
         TestRoutes();   // the driving school's route: planned round lanes an accident has closed, and what the player is told (TestRouteCheck.cs)
         LoadPace();
         DayWarms();      // the mod's code for the game's midnight compiled ahead: what the walk takes in, sliced as whole, the budget (DayWarmCheck.cs)
+        MomentWarms();   // the code of moments of play compiled behind the loading screen, and the frames those moments were cut into (MomentWarmCheck.cs)
         AppsSources();   // the phone apps: panels built when first opened, the box's parts kept, tables written as they scroll (AppsCheck.cs)
         PhoneInstalls(); // the phone apps go on one a frame in their order, the phones' names read once, the pages laid out once (PhoneInstallCheck.cs)
         Cordons();       // who is inside a cordon's tape and where they are put outside it, and every cordon running that rule (CordonCheck.cs)
