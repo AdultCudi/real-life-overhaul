@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using RealLifeOverhaul.GameUi;
+using RealLifeOverhaul.Ui;
 using UI;
 using UnityEngine;
 
@@ -54,7 +55,10 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>The justice system's one screen, a copy of the game's station list. A page is written when shown; nothing runs per frame.</summary>
+    /// <summary>
+    /// The justice system's one screen, a copy of the game's station list (on the RLO interface the decision card: those
+    /// present, who speaks, the answers numbered with what each means). A page is written when shown; nothing runs per frame.
+    /// </summary>
     public sealed class JusticePanel
     {
         public const int MostChoices = 3;
@@ -64,7 +68,7 @@ namespace RealLifeOverhaul
 
         private static JusticePanel _instance;
 
-        private readonly DeskList _window = new DeskList("RealLifeOverhaul Justice", 1250f, 150f);
+        private readonly SceneDesk _window = new SceneDesk("RealLifeOverhaul Justice", 1250f, 150f);
         private readonly StringBuilder _info = new StringBuilder(160);
         private readonly Action<int> _onPick;
         private readonly Action _onClosed;
@@ -92,7 +96,7 @@ namespace RealLifeOverhaul
 
         public void Show(JusticePage page, Action<int> answer)
         {
-            TravelList list = _window.Take(this);
+            SceneList list = _window.Take(this);
             if (list == null)
             {
                 _open = false;
@@ -114,6 +118,7 @@ namespace RealLifeOverhaul
             AddName(page.MiddleName);
             AddName(page.RightName);
             list.Begin(page.Title ?? string.Empty, _info.ToString());
+            list.Moment(page.Subtitle, Emblem(page.Scene), Present(page.Left, page.LeftName), Present(page.Middle, page.MiddleName), Present(page.Right, page.RightName));
             string body = page.Body ?? string.Empty;
             string speaker = page.SpeakerName ?? string.Empty;
             int lines = 1;
@@ -143,6 +148,12 @@ namespace RealLifeOverhaul
             }
         }
 
+        // The page's place as the kit's card shows it: the court's scales, the cell's key, the Legal file's case.
+        private static UiIcon Emblem(JusticeScene scene) => scene == JusticeScene.Court ? UiIcon.Scales : scene == JusticeScene.Cell ? UiIcon.Key : UiIcon.Briefcase;
+
+        // One of those present on the page, by name; nobody where the place stands empty.
+        private static string Present(JusticeFace face, string name) => face == JusticeFace.None ? null : name;
+
         private void AddName(string name)
         {
             if (!string.IsNullOrEmpty(name))
@@ -152,7 +163,7 @@ namespace RealLifeOverhaul
         }
 
         // While the screen is faded the game's black cover, on a canvas of its own, would hide the list: it stands on that canvas.
-        private void Stand(TravelList list)
+        private void Stand(SceneList list)
         {
             bool cover = UiFader.isFading;
             if (cover == _onCover && !cover)

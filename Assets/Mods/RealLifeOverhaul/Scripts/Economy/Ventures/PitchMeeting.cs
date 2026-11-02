@@ -1,6 +1,7 @@
 using System;
 using Helpers;
 using RealLifeOverhaul.GameUi;
+using RealLifeOverhaul.Ui;
 using UI;
 using UI.Notification;
 using UI.Smartphone;
@@ -8,7 +9,10 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Economy.Ventures
 {
-    /// <summary>A meeting with an investor in the game's own list window, locked until it is over. It runs only on clicks: no frame cost.</summary>
+    /// <summary>
+    /// A meeting with an investor in the game's own list window (on the RLO interface the conversation, and the decision
+    /// card for the investor's answer), locked until it is over. It runs only on clicks: no frame cost.
+    /// </summary>
     internal sealed class PitchMeeting
     {
         private const NavigationBlocker Blocker = (NavigationBlocker)7303;   // our own value, so nobody else's is ever lifted
@@ -19,7 +23,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         private const string ButtonDo = "reallife_ven_meet_do";
 
         private readonly VenturesDirector _director;
-        private readonly DeskList _window = new DeskList("RealLifeOverhaul Ventures", 1250f, 150f);
+        private readonly SceneDesk _window = new SceneDesk("RealLifeOverhaul Ventures", 1250f, 150f);
         private readonly long[] _values = new long[3];
         private readonly int[] _order = new int[3];
         private readonly Action<int> _onPick;
@@ -77,7 +81,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         // The question the meeting is at, its answers in this meeting's order. False if the game's window cannot be made.
         private bool Show()
         {
-            TravelList list = _window.Take(this);
+            SceneList list = _window.Take(this);
             VenturesFile file = _director.File;
             if (list == null || file == null)
             {
@@ -88,13 +92,14 @@ namespace RealLifeOverhaul.Economy.Ventures
             string question = parts[0].Replace("{business}", _state.Business);
             string progress = FinanceText.T("reallife_ven_meet_progress", "number", (_state.Index + 1).ToString(), "of", _state.Questions.Count.ToString());
             list.Begin(FinanceText.T("reallife_ven_meet_title", "name", _investor.Name), question + "\n<size=80%>" + progress + "</size>");
+            list.Talk(_investor.Name, null);
             _count = q.Kind == QuestionKind.Fact ? Pitch.Options(q.Fact, _state.Facts, _values) : q.Answers.Length;
             Pitch.Order(file.Seed, _state.Number, _state.Index, _count, _order);
             for (int i = 0; i < _count; i++)
             {
                 int option = _order[i];
                 string words = q.Kind == QuestionKind.Fact ? Figure(q.Fact, _values[option]) : option + 1 < parts.Length ? parts[option + 1] : string.Empty;
-                list.Add(i, FinanceText.T("reallife_ven_meet_answer", "number", (i + 1).ToString()), words, ButtonSay, true, list.HeightFor(words.Length, true));
+                list.AddAnswer(i, FinanceText.T("reallife_ven_meet_answer", "number", (i + 1).ToString()), words, ButtonSay, true, list.HeightFor(words.Length, true));
             }
             string leave = FinanceText.T("reallife_ven_meet_leave_detail", "name", _investor.Name, "day", _investor.OpenDay.ToString());
             list.Add(Leave, FinanceText.T("reallife_ven_meet_leave"), leave, ButtonDo, true, list.HeightFor(leave.Length, true));
@@ -102,7 +107,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             return true;
         }
 
-        private void Open(TravelList list)
+        private void Open(SceneList list)
         {
             list.Open(_onPick, _onClosed);
             list.ScrollToTop();
@@ -207,7 +212,7 @@ namespace RealLifeOverhaul.Economy.Ventures
 
         private void ShowCaught(Question q)
         {
-            TravelList list = _window.Take(this);
+            SceneList list = _window.Take(this);
             if (list == null)
             {
                 End();
@@ -217,6 +222,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             string body = FinanceText.T("reallife_ven_meet_caught_body", "name", _investor.Name, "topic", parts[parts.Length - 1], "days", VenturesCatalogue.CaughtCloseDays.ToString())
                           .Replace("{day}", _investor.ClosedUntil.ToString());
             list.Begin(FinanceText.T("reallife_ven_meet_title", "name", _investor.Name), FinanceText.T("reallife_ven_meet_caught"));
+            list.Moment(FinanceText.T("reallife_ven_meet_caught"), UiIcon.PiggyBank, _investor.Name);
             list.AddNote(_investor.Name, body, list.HeightFor((int)(body.Length * 1.3f), false));
             list.Add(Decline, FinanceText.T("reallife_ven_meet_close"), string.Empty, ButtonDo, true);
             _result = true;
@@ -227,7 +233,7 @@ namespace RealLifeOverhaul.Economy.Ventures
 
         private void ShowDecision(VenturesFile file, int day)
         {
-            TravelList list = _window.Take(this);
+            SceneList list = _window.Take(this);
             if (list == null)
             {
                 End();
@@ -272,6 +278,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             string body = verdict + why;
             list.Begin(FinanceText.T("reallife_ven_meet_title", "name", _investor.Name),
                 FinanceText.T(d.Verdict == Verdict.Invest ? "reallife_ven_meet_result_yes" : "reallife_ven_meet_result_no"));
+            list.Moment(FinanceText.T(d.Verdict == Verdict.Invest ? "reallife_ven_meet_result_yes" : "reallife_ven_meet_result_no"), UiIcon.PiggyBank, _investor.Name);
             list.AddNote(_investor.Name, body, list.HeightFor((int)(body.Length * 1.3f), false));
             _offerId = 0;
             if (d.Verdict == Verdict.Invest)

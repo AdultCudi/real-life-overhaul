@@ -34,7 +34,7 @@ namespace RealLifeOverhaul.Ui
             public Button Less, More, Remove, Press;
             public Slider Slide;
             public Toggle Toggle;
-            public bool EndsEdit;          // a delivery's line: its figure counts once its edit ends, so each typed figure ends it
+            public bool EndsEdit;          // the game's amount selector: its figure counts once its edit ends, so each typed figure ends it
             public Button[] Swatches;
         }
 
@@ -126,7 +126,11 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The words in a typed row's field as the game holds them.</summary>
         public string Text(int row) => row >= 0 && row < Count && _widgets[row].Input != null ? _widgets[row].Input.text : string.Empty;
 
-        /// <summary>Words typed into a row's field, through the field (its listeners reformat and the form's figures follow).</summary>
+        /// <summary>
+        /// Words typed into a row's field, through the field (its listeners reformat and the form's figures follow). An
+        /// amount's figure counts once its edit ends (the game's AmountSelector takes it then), so each typed figure ends it;
+        /// never its submit, which the game binds to the line's confirm on a form of one field (KeyboardInputHelper).
+        /// </summary>
         public bool Type(int row, string text)
         {
             if (!Typed(row))
@@ -134,7 +138,15 @@ namespace RealLifeOverhaul.Ui
                 return false;
             }
             Widget w = _widgets[row];
-            return UiWidgets.Type(w.Input, text, w.EndsEdit);
+            if (!UiWidgets.Type(w.Input, text, false))
+            {
+                return false;
+            }
+            if (w.EndsEdit)
+            {
+                w.Input.onEndEdit?.Invoke(w.Input.text);
+            }
+            return true;
         }
 
         /// <summary>A step left or right on a row: an amount's minus or plus, a slider's step, the choice before or after.</summary>

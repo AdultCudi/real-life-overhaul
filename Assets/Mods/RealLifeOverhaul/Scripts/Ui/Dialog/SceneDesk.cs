@@ -65,7 +65,8 @@ namespace RealLifeOverhaul.Ui
     /// A scene's list window as its owner fills it, every call passed on to the <see cref="TravelList"/> as before and the
     /// page kept beside it (<see cref="ScenePage"/>): the kit draws that page and answers through the same pick the
     /// window's buttons call, so the scene's rules stay its owner's. The owner may say more of the moment than the window
-    /// shows (<see cref="Scene"/>): its look, its place, those present. Costs nothing a frame.
+    /// shows: a moment's place and those present (<see cref="Moment"/>), or who asks the questions (<see cref="Talk"/>).
+    /// Costs nothing a frame.
     /// </summary>
     public sealed class SceneList
     {
@@ -78,7 +79,6 @@ namespace RealLifeOverhaul.Ui
         private readonly Action _closed;
         private Action<int> _onPick;
         private Action _onClosed;
-        private int _heardFor = -1;        // the page whose lines are in the thread already
 
         internal SceneList(string name, TravelList list)
         {
@@ -111,14 +111,10 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        /// <summary>Starts a filling: the headline and the lines under it. The moment is told again for each page (<see cref="Scene"/>).</summary>
+        /// <summary>Starts a filling: the headline and the lines under it. The moment is told again for each page.</summary>
         public void Begin(string title, string info)
         {
             Page.Reset(title, info);
-            Page.Look = SceneLook.Decision;
-            Page.Kicker = null;
-            Page.Emblem = UiIcon.People;
-            Page.Faces = null;
             List.Begin(title, info);
         }
 
@@ -146,6 +142,14 @@ namespace RealLifeOverhaul.Ui
             List.Add(id, name, detail, buttonKey, enabled, height);
         }
 
+        /// <summary>An answer whose line under its name is what the player says by it (a pitch's "Answer 1" over its words): the thread says those words.</summary>
+        public void AddAnswer(int id, string name, string words, string buttonKey, bool enabled, float height)
+        {
+            Page.Entries.Add(new SceneEntry { Id = id, Name = name, Detail = words, Said = words, Enabled = enabled });
+            Page.Stamp++;
+            List.Add(id, name, words, buttonKey, enabled, height);
+        }
+
         /// <summary>What someone says before the answers.</summary>
         public void AddNote(string name, string detail, float height)
         {
@@ -157,15 +161,29 @@ namespace RealLifeOverhaul.Ui
         public float HeightFor(int characters, bool button) => List.HeightFor(characters, button);
 
         /// <summary>
-        /// The moment as the kit tells it: questions and answers in the conversation or a moment on the card, the place,
-        /// the emblem where no faces are given, and those present. Told after <see cref="Begin"/>, for that page.
+        /// The page is a moment, on the decision card: its place or time (the lines under the headline, which then are its
+        /// caption and not said again), the emblem where no faces are given, and those present. Told after <see cref="Begin"/>.
         /// </summary>
-        public void Scene(SceneLook look, string kicker, UiIcon emblem, params string[] faces)
+        public void Moment(string kicker, UiIcon emblem, params string[] faces)
         {
-            Page.Look = look;
+            Page.Look = SceneLook.Decision;
             Page.Kicker = string.IsNullOrEmpty(kicker) ? null : kicker;
             Page.Emblem = emblem;
             Page.Faces = faces;
+            Page.InfoSaid = false;
+            Page.Stamp++;
+        }
+
+        /// <summary>
+        /// The page is questions and answers, in the conversation: who asks or answers (the lines under the headline are
+        /// what they say, the progress small under them in a chip) and who they are to the player. Told after <see cref="Begin"/>.
+        /// </summary>
+        public void Talk(string speaker, string role)
+        {
+            Page.Look = SceneLook.Talk;
+            Page.Speaker = string.IsNullOrEmpty(speaker) ? null : speaker;
+            Page.Role = string.IsNullOrEmpty(role) ? null : role;
+            Page.InfoSaid = true;
             Page.Stamp++;
         }
 
@@ -197,7 +215,7 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The kit's press on an answer: what a click on its button does, through the same pick.</summary>
         internal bool Pick(int id)
         {
-            if (!List.IsOpen || _onPick == null || !Has(id))
+            if (!List.IsOpen || _onPick == null || !Offered(id))
             {
                 return false;
             }
@@ -205,7 +223,7 @@ namespace RealLifeOverhaul.Ui
             return true;
         }
 
-        private bool Has(int id)
+        private bool Offered(int id)
         {
             for (int i = 0; i < Page.Entries.Count; i++)
             {
@@ -217,35 +235,38 @@ namespace RealLifeOverhaul.Ui
             return false;
         }
 
-        // An answer given, by the window's button or the kit's: the page's lines and the answer join the thread, then the owner hears it.
+        // An answer given, by the window's button or the kit's. Its owner hears it; where the owner went on to another page,
+        // what this one said and the answer join the thread (an answer the owner let pass, too soon after the page came, does not).
         private void Picked(int id)
         {
-            if (_heardFor != Page.Stamp)
-            {
-                _heardFor = Page.Stamp;
-                var lines = new List<UiMessageModel>(4);
-                SceneViews.Said(lines, Page, SceneViews.SaidOf(Page, out string _));
-                for (int i = 0; i < lines.Count; i++)
-                {
-                    Thread.Add(new SceneSaid { From = UiFrom.Them, Text = lines[i].Text });
-                }
-                string answer = SceneViews.Answer(Page, id);
-                if (answer != null)
-                {
-                    Thread.Add(new SceneSaid { From = UiFrom.Me, Text = answer });
-                }
-                while (Thread.Count > DialogRules.MostLines)
-                {
-                    Thread.RemoveAt(0);
-                }
-            }
+            int stamp = Page.Stamp;
+            var heard = new List<UiMessageModel>(4);
+            SceneViews.Said(heard, Page, SceneViews.SaidOf(Page, out string _));
+            string answer = SceneViews.Answer(Page, id);
             _onPick?.Invoke(id);
+            if (Page.Stamp == stamp || !List.IsOpen)
+            {
+                return;
+            }
+            for (int i = 0; i < heard.Count; i++)
+            {
+                Thread.Add(new SceneSaid { From = UiFrom.Them, Text = heard[i].Text });
+            }
+            if (answer != null)
+            {
+                Thread.Add(new SceneSaid { From = UiFrom.Me, Text = answer });
+            }
+            while (Thread.Count > DialogRules.MostLines)
+            {
+                Thread.RemoveAt(0);
+            }
         }
 
         private void Closed()
         {
             Thread.Clear();
-            _heardFor = -1;
+            Page.Locked = false;   // the window's closing clears its lock
+            Page.Stamp++;
             Action closed = _onClosed;
             _onPick = null;
             _onClosed = null;

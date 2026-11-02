@@ -207,15 +207,20 @@ namespace RealLifeOverhaul.Ui
                 _offset = -1f;   // a new page: the conversation shows its newest line
             }
             _look = SceneViews.LookOf(page);
+            UiDecisionModel card = _look == SceneLook.Decision ? SceneViews.Decision(page, words) : null;
+            if (card != null && !SceneViews.CardFits(card, frame.BandY, keys))
+            {
+                _look = SceneLook.Talk;   // taller than the screen holds: the conversation, which scrolls
+            }
             if (_look == SceneLook.Talk)
             {
-                UiConversationModel talk = SceneViews.Talk(page, List.Thread, words);
+                UiConversationModel talk = SceneViews.Talk(page, List.Thread, words, frame.Width);
                 talk.Offset = _offset;
                 UiConversation.LayDocked(s, talk, frame, dark, keys);
             }
             else
             {
-                UiDecision.Lay(s, SceneViews.Decision(page, words), frame, dark, keys);
+                UiDecision.Lay(s, card, frame, dark, keys);
             }
             _stamp = page.Stamp;
             _heard = List.Thread.Count;

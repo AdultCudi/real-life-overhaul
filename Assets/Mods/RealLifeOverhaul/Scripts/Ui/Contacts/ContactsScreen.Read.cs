@@ -54,6 +54,7 @@ namespace RealLifeOverhaul.Ui
                 sig = sig * 31 + (_fields[i].Input != null ? _fields[i].Input.text.GetHashCode() : 0);
             }
             sig = sig * 31 + Offers(null);
+            sig = sig * 31 + CallFormSignature();
             return sig;
         }
 
@@ -552,7 +553,7 @@ namespace RealLifeOverhaul.Ui
             string line = Words(view.transform);
             if (!string.IsNullOrEmpty(line))
             {
-                list.Add(new UiMessageModel { From = UiFrom.Them, Text = line, Time = Now() });
+                list.Add(new UiMessageModel { From = UiFrom.Them, Text = line, Time = Now(), Mood = LineMood() });
             }
             _m.Head.Ring = Mood(_m.Head.Ring);   // the mood the game shows by their line, in the ring of their face
             bool form = Forms(t);
@@ -573,13 +574,17 @@ namespace RealLifeOverhaul.Ui
             if (view != null)
             {
                 call.Line = Words(view.transform);
+                call.Mood = LineMood();
                 call.Choices = Choices(view.transform, false, out _hangUp);
                 if (_hangUp != null)
                 {
                     call.Buttons = new[] { new UiActionModel { Label = UiWidgets.Label(_hangUp), Kind = UiButtonKind.Destructive, Icon = UiIcon.Phone, Key = UiAction.Back } };
                 }
                 call.Waiting = call.Choices.Length == 0;
-                StepAsideForForm();
+                if (!CallForm(call))
+                {
+                    StepAsideForForm();
+                }
             }
             else
             {
@@ -693,8 +698,8 @@ namespace RealLifeOverhaul.Ui
             });
         }
 
-        // A form the kit does not draw yet in a call (a bank's loan, an agency's campaign): the game's own view answers it,
-        // and the kit is back the moment that line is answered or the call ends.
+        // A form the kit cannot draw in a call (a casino's game, nothing it knows): the game's own view answers it, and the kit
+        // is back the moment that line is answered or the call ends.
         private void StepAsideForForm()
         {
             DialogEntry e = GameContract.TalkEntry.Field != null ? GameContract.TalkEntry.Field.GetValue(_app) as DialogEntry : null;
