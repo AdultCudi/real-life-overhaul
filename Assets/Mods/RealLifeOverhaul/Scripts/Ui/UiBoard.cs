@@ -60,6 +60,10 @@ namespace RealLifeOverhaul.Ui
         public string EmptyTitle, EmptyBody;           // no lanes yet: what fills the board and how
         public bool[] OpenHours;                       // the opening hours by the hour of the day (0 to 23), for a day of several openings; null: OpenFrom to OpenTo
         public bool Faces;                             // a bar leads with the person's face where it has the room
+        public string CoverTitle, CoverLine;           // the coverage strip under the lanes ("Staff / needed", "Bars: customers"); null: no strip
+        public string[] Cover;                         // each hour of the day's figure, 0 to 23 ("5/6"), or null where nothing is needed or placed
+        public bool[] Short;                           // fewer placed than needed at that hour: its figure in the danger's colour
+        public float[] Bars;                           // the customers each hour against the day's busiest, 0 to 1; null for no bars
 
         // Written by Lay: where the lanes stand, so a pointer's place reads as a lane and a time.
         public float RulerX, RulerW, LanesTop, LanesHeight, LaneHeight;
@@ -83,6 +87,7 @@ namespace RealLifeOverhaul.Ui
         public const float LaneHeight = 56f;         // px: a lane, a face of 40 with a step above and below
         private const float Stripe = 4f;             // px: a bar's edge in its lane's colour
         private const float BarInset = 8f;           // px: a bar from its lane's edges
+        private const float CoverBars = 32f;         // px: the customers' bars under the lanes at their tallest
         private const byte RegionTabs = 1, RegionLanes = 2;
 
         [ThreadStatic] private static int _section;
@@ -114,7 +119,8 @@ namespace RealLifeOverhaul.Ui
             float perHour = m.RulerW / hours;
             Ruler(s, at, m, top, perHour);
             float lanesTop = top + UiTokens.PairRow + UiTokens.S1;
-            float vh = Math.Max(1, (int)((y + h - lanesTop) / LaneHeight)) * LaneHeight;   // whole lanes: a lane cut through its face reads as a fault
+            float strip = m.CoverTitle != null ? UiTokens.S2 + CoverBars + UiTokens.S1 + UiTokens.PairRow : 0f;
+            float vh = Math.Max(1, (int)((y + h - lanesTop - strip) / LaneHeight)) * LaneHeight;   // whole lanes: a lane cut through its face reads as a fault
             m.LanesTop = lanesTop;
             m.LanesHeight = vh;
             Lanes(s, at.InRegion(RegionLanes), m, x, lanesTop, w, vh, perHour);
@@ -123,6 +129,41 @@ namespace RealLifeOverhaul.Ui
                 // The now line over the lanes, from the ruler down, as a game's timeline marks the hour in play.
                 float nx = m.RulerX + (m.Now - m.FirstHour * 60) * perHour / 60f;
                 UiDraw.Box(s, at, nx - UiTokens.Hairline, lanesTop, UiTokens.Hairline * 2f, vh, UiRole.Accent, UiRole.None, 0f, UiFlags.Decor | UiFlags.Share);
+            }
+            if (strip > 0f)
+            {
+                Cover(s, at, m, x, lanesTop + vh + UiTokens.S2, perHour);
+            }
+        }
+
+        // Under the lanes, at each hour's place on the ruler: a bar of the hour's customers against the day's busiest, and the
+        // staff placed over the staff needed, a short hour in the danger's colour. Its head in the lanes' column says what it is.
+        private static void Cover(UiScene s, UiAt at, UiBoardModel m, float x, float y, float perHour)
+        {
+            UiDraw.Text(s, at, x, y, LaneHead - UiTokens.S4, UiStyle.SmallStrong, UiRole.Text2, m.CoverTitle, UiFlags.Truncate);
+            if (!string.IsNullOrEmpty(m.CoverLine))
+            {
+                UiDraw.Text(s, at, x, y + UiTokens.PairRow, LaneHead - UiTokens.S4, UiStyle.Small, UiRole.Muted, m.CoverLine, UiFlags.Truncate);
+            }
+            int hours = Math.Max(1, m.LastHour - m.FirstHour);
+            float bw = Math.Max(UiTokens.S1, perHour - UiTokens.S2 * 2f);
+            for (int i = 0; i < hours; i++)
+            {
+                int hour = m.FirstHour + i;
+                float hx = m.RulerX + i * perHour;
+                float share = m.Bars != null && hour >= 0 && hour < m.Bars.Length ? Math.Max(0f, Math.Min(1f, m.Bars[hour])) : 0f;
+                if (share > 0f)
+                {
+                    float bh = Math.Max(UiTokens.Hairline * 2f, UiDraw.Snap(CoverBars * share));
+                    UiDraw.Box(s, at, hx + (perHour - bw) / 2f, y + CoverBars - bh, bw, bh, UiRole.Line, UiRole.None, 0f, UiFlags.Decor | UiFlags.Share);
+                }
+                string figure = m.Cover != null && hour >= 0 && hour < m.Cover.Length ? m.Cover[hour] : null;
+                if (!string.IsNullOrEmpty(figure))
+                {
+                    bool shortHour = m.Short != null && hour < m.Short.Length && m.Short[hour];
+                    UiDraw.Text(s, at, hx, y + CoverBars + UiTokens.S1, perHour, UiStyle.Small, shortHour ? UiRole.DangerText : UiRole.Text2, figure,
+                        UiFlags.Truncate | UiFlags.Centre | UiFlags.Share);
+                }
             }
         }
 

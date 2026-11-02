@@ -103,6 +103,22 @@ namespace RealLifeOverhaul.Ui
         public int OptionChosen = -1;
         public float OptionOffset;
 
+        // A table's filter over it: each choice with its count ("All 40"), and the one shown
+        public string[] Filters = new string[0];
+        public int Filter;
+        public string Status;                           // what an action of the page just did ("Sent 1,240 pieces to 3 stops"), or null
+
+        // A line under a page's big table: its label, a meter of how full (0 to 100; -1 for none), its words, a figure at the right
+        public string FootLabel, FootWords, FootRight;
+        public int FootShare = -1;
+
+        // The schedule's facts in a line over the board (on shift now, wages, hours covered, the week planned) and its problems
+        public string[] FactLabels = new string[0];
+        public string[] FactValues = new string[0];
+        public bool[] FactWarn = new bool[0];
+        public string[] Problems = new string[0];       // double bookings and short hours, two at the most; the last may say how many more
+        public UiActionModel[] FactActions = new UiActionModel[0];   // at the right of the facts: what mends the day's problems (Fill the gaps)
+
         public UiCardModel Card;                        // a question the game asks inside the page (the auto fill's speed), drawn over it, or null
     }
 }

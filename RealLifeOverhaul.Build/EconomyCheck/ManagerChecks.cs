@@ -23,6 +23,7 @@ internal static partial class Program
         ManagerDirectory();   // the Managers tab's directory and the bugs found behind it (ManagerDirectoryChecks.cs)
         ManagerSave();
         ManagerWords();
+        PriceStrategies();   // the pricing strategy a place's manager and a pricing plan follow, and its save lines (PriceStrategyChecks.cs)
     }
 
     private static void ManagerKinds()

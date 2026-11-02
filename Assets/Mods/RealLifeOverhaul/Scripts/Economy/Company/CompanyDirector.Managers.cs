@@ -29,6 +29,7 @@ namespace RealLifeOverhaul.Economy
     {
         public const int TabManagers = 6;
         public const int LimitWage = 0, LimitStock = 1, LimitPriceLow = 2, LimitPriceHigh = 3, LimitBudget = 4, LimitKeep = 5;
+        public const int LimitPriceStance = 6, LimitPriceMargin = 7, LimitPriceNinety = 8, LimitPriceCost = 9, LimitPriceStep = 10;   // the place's price strategy
 
         private ManagerState _mgr;
         private bool _mgrBroken;
@@ -646,6 +647,11 @@ namespace RealLifeOverhaul.Economy
                 case LimitPriceHigh: m.PriceHigh = CompanyCatalogue.Clamp(step, 0, ManagerCatalogue.PriceHighs.Length - 1); break;
                 case LimitBudget: m.Budget = CompanyCatalogue.Clamp(step, 0, ManagerCatalogue.Budgets.Length - 1); break;
                 case LimitKeep: m.Keep = CompanyCatalogue.Clamp(step, 0, ManagerCatalogue.KeepMost); break;
+                case LimitPriceStance: m.Strategy.Stance = (PriceStance)CompanyCatalogue.Clamp(step, 0, (int)PriceStance.Premium); break;
+                case LimitPriceMargin: m.Strategy.Margin = PriceStrategyRules.Margins[CompanyCatalogue.Clamp(step, 0, PriceStrategyRules.Margins.Length - 1)]; break;
+                case LimitPriceNinety: m.Strategy.Ninety = step > 0; break;
+                case LimitPriceCost: m.Strategy.OverCost = step > 0; break;
+                case LimitPriceStep: m.Strategy.Step = PriceStrategyRules.Steps[CompanyCatalogue.Clamp(step, 0, PriceStrategyRules.Steps.Length - 1)]; break;
             }
             if (limit == LimitWage || limit == LimitBudget)
             {

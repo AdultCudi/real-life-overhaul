@@ -104,6 +104,37 @@ internal static partial class Program
         Check(worded && UniformWords.KeyOf("Torso") == "reallife_ui_bizops_wear_torso" && UniformWords.KeyOf("feetAccessory") == "reallife_ui_bizops_wear_feetaccessory"
               && UniformWords.KeyOf("hair") == null && UniformWords.KeyOf(null) == null && en.ContainsKey("reallife_ui_bizops_wear_other"),
             "bizops: every part of a uniform the game's menu links to has its words, and a part the mod does not know its number");
+        // Pieces a day from the game's week of seven, in tenths, and how they read: one decimal under ten, whole from there.
+        Check(BizOpsRules.TenthsADay(0) == 0 && BizOpsRules.TenthsADay(-3) == 0 && BizOpsRules.TenthsADay(7) == 10 && BizOpsRules.TenthsADay(10) == 14
+              && BizOpsRules.Tenths(0) == "0" && BizOpsRules.Tenths(24) == "2.4" && BizOpsRules.Tenths(30) == "3" && BizOpsRules.Tenths(99) == "9.9"
+              && BizOpsRules.Tenths(100) == "10" && BizOpsRules.Tenths(124) == "12" && BizOpsRules.Tenths(125) == "13" && BizOpsRules.PerDay(10) == "1.4"
+              && BizOpsRules.PerDay(1000) == "143",
+            "bizops: a week's count reads as pieces a day, one decimal under ten and whole from there, in figures that never follow the machine's culture");
+        // How long a stock lasts in tints, by the game's days until empty; a machine's pace from its rate an hour.
+        Check(BizOpsRules.LastsTone(-1) == UiRole.DangerText && BizOpsRules.LastsTone(2) == UiRole.DangerText && BizOpsRules.LastsTone(3) == UiRole.WarnText
+              && BizOpsRules.LastsTone(4) == UiRole.WarnText && BizOpsRules.LastsTone(5) == UiRole.None && BizOpsRules.LastsTone(int.MaxValue) == UiRole.None
+              && BizOpsRules.TenthsEach(36) == 1000 && BizOpsRules.TenthsEach(3600) == 10 && BizOpsRules.TenthsEach(0) == 0,
+            "bizops: a stock gone or lasting under three days reads in the danger's colour, under five the warning's; a pace is the hour over the rate");
+        // A person's free hours around the hour being filled, by their shifts that day; the hours their demand leaves them.
+        int[] own = { 6, 16 }, ownEnd = { 10, 20 };
+        bool noon = BizOpsRules.FreeWindow(own, ownEnd, 2, 12, out int f1, out int t1), held = BizOpsRules.FreeWindow(own, ownEnd, 2, 8, out int _, out int _);
+        bool late = BizOpsRules.FreeWindow(own, ownEnd, 2, 21, out int f2, out int t2), clear = BizOpsRules.FreeWindow(own, ownEnd, 0, 3, out int f3, out int t3);
+        Check(noon && f1 == 10 && t1 == 16 && !held && late && f2 == 20 && t2 == BizOpsRules.Hours && clear && f3 == 0 && t3 == BizOpsRules.Hours
+              && BizOpsRules.HoursLeft(40, 32) == 8 && BizOpsRules.HoursLeft(40, 46) == 0 && BizOpsRules.HoursLeft(0, 10) == -1,
+            "bizops: a person is free from their last shift's end to their next one's start, held where a shift covers the hour; the hours left never under none");
+    }
+
+    // An item of the scene whose words are these (the kit lays words whole; the text cuts a long one when it is drawn).
+    private static bool OpsSays(UiScene s, string words)
+    {
+        for (int i = 0; words != null && i < s.ItemCount; i++)
+        {
+            if (s.Items[i].Kind == UiKind.Text && s.Items[i].Text == words)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void BizOpsLayoutChecks()
@@ -119,6 +150,23 @@ internal static partial class Program
               && s.FindNode(BizManPages.People + UiDataTable.Row, 0) < 0 && lane0 >= 0 && shift0 >= 0 && shift1 >= 0 && s.Nodes[lane0].Right == shift0
               && s.Nodes[shift0].Right == shift1 && s.Nodes[shift1].Left == shift0,
             "bizops: the full day shows every shift and lane at the page's width, its hours a button, and the keys walk a lane along its shifts past the page's own rows");
+        // The day's facts over the board with Fill the gaps at their right, its problems, and the planner's strip under the lanes.
+        Check(OpsSays(s, t("reallife_ui_bizops_on_shift_now", "On shift now")) && OpsSays(s, t("reallife_ui_bizops_week_planned", "Week planned"))
+              && full.Ops.Problems.Length == 2 && OpsSays(s, full.Ops.Problems[0]) && OpsSays(s, full.Ops.Problems[1]) && OpsSays(s, full.Ops.Board.CoverTitle)
+              && OpsSays(s, full.Ops.Board.Cover[17]) && full.Ops.Board.Short[17] && !full.Ops.Board.Short[12] && OpsSays(s, t("reallife_ui_bizops_fill_gaps", "Fill the gaps")),
+            "bizops: the full day shows its facts and both its problems over the board, each hour's staff against the planner's need under it, and Fill the gaps");
+        Check(s.FindNode(BizManPages.OpsSearch, 0) < 0 && full.Ops.FactActions.Length == 1 && Array.FindIndex(full.Actions, a => a.Label == full.Ops.FactActions[0].Label) < 0,
+            "bizops: a place of five stations shows no lanes' search, and Fill the gaps stands with the day's facts, not among the game's own day buttons");
+        s = new UiScene();
+        BizManModel empty = UiSamples.BizOps(t, "schedule_empty");
+        BizManPages.Lay(s, empty, UiFrame.FullMenu(21f / 9f, "BizMan"), true, UiDefaultKeys.Keyboard);   // at 16:9 the game's five day buttons leave it no room
+        Check(empty.Ops.Board.Lanes.Length >= BizOpsRules.LaneSearchFrom && s.FindNode(BizManPages.OpsSearch, 0) >= 0 && s.FindNode(BizManPages.OpsHours, 0) >= 0,
+            "bizops: on a wide screen a place of more stations than the board holds shows the lanes' search beside the day's hours");
+        s = new UiScene();
+        BizManModel none = UiSamples.BizOps(t, "schedule_none");
+        BizManPages.Lay(s, none, frame, true, UiDefaultKeys.Keyboard);
+        Check(none.Ops.Board.CoverTitle == null && none.Ops.Problems.Length == 0 && !OpsSays(s, t("reallife_ui_bizops_week_planned", "Week planned")),
+            "bizops: a place with no stations has no planner's strip and no week planned, as the planner keeps no rota for it");
         s = new UiScene();
         BizManPages.Lay(s, UiSamples.BizOps(t, "schedule_hours"), frame, true, UiDefaultKeys.Keyboard);
         int hour0 = s.FindNode(BizManPages.OpsHour, 0), hour23 = s.FindNode(BizManPages.OpsHour, 23), done = s.FindNode(BizManPages.OpsSheetDone, 0);
@@ -139,11 +187,52 @@ internal static partial class Program
               && s.FindNode(BizManPages.Table + UiDataTable.Type, 1) >= 0 && s.FindNode(BizManPages.Table + UiDataTable.More, 1) >= 0
               && s.FindNode(BizManPages.Table + UiDataTable.Type, 0) < 0 && s.FindNode(BizManPages.Table + UiDataTable.More, 0) < 0 && s.FindNode(BizManPages.OpsPlan, 3) >= 0,
             "bizops: a pricing plan's forty products are listed beside the plans, the chosen one's new price stepped on its row");
+        // Its facts, its strategy's own rows in the form's right column, its filter over the table and Reset to yesterday.
+        int stanceRow = Array.FindIndex(pricing.Ops.Rows, r => r.Kind == BizOpsRowKind.Choice && r.Right);
+        int marginRow = stanceRow < 0 ? -1 : Array.FindIndex(pricing.Ops.Rows, stanceRow + 1, r => r.Kind == BizOpsRowKind.Choice && r.Right);
+        int stepRow = Array.FindLastIndex(pricing.Ops.Rows, r => r.Kind == BizOpsRowKind.Choice && r.Right);
+        int followRow = Array.FindIndex(pricing.Ops.Rows, r => r.Kind == BizOpsRowKind.Switch && r.Right);
+        Check(stanceRow > 0 && marginRow > stanceRow && stepRow > marginRow && followRow > 0 && s.FindNode(BizManPages.OpsChoice, stanceRow) >= 0
+              && s.FindNode(BizManPages.OpsChoice, marginRow) >= 0 && s.FindNode(BizManPages.OpsChoice, stepRow) >= 0 && s.FindNode(BizManPages.OpsRow, followRow) >= 0
+              && s.FindNode(BizManPages.OpsFilter, 2) >= 0 && pricing.Ops.Table.Columns.Length == 7 && pricing.Ops.Table.Columns[4].Kind == UiCellKind.Stepper
+              && OpsSays(s, t("reallife_ui_bizops_average_margin", "Average margin")) && OpsSays(s, t("reallife_ui_bizops_reset_prices", "Reset to yesterday")),
+            "bizops: a pricing plan shows its facts, its strategy as switches and choices, its table's three filters and seven columns with the price stepped in "
+            + "its own, and Reset to yesterday");
         s = new UiScene();
         BizManPages.Lay(s, UiSamples.BizOps(t, "logistics"), frame, true, UiDefaultKeys.Keyboard);
+        int good = s.FindNode(BizManPages.Table + UiDataTable.Row, 1), less = s.FindNode(BizManPages.Table + UiDataTable.Less, 1);
+        int typed = s.FindNode(BizManPages.Table + UiDataTable.Type, 1), more = s.FindNode(BizManPages.Table + UiDataTable.More, 1);
+        Check(good >= 0 && less >= 0 && typed >= 0 && more >= 0 && s.Nodes[good].Right == less && s.Nodes[less].Right == typed && s.Nodes[typed].Right == more
+              && s.Nodes[more].Left == typed && s.Nodes[typed].Left == less && s.Nodes[less].Left == good,
+            "bizops: the keys go right from the chosen good along its minus, its figure and its plus, and back the same way");
         Check(s.FindNode(BizManPages.OpsStop, 2) >= 0 && s.FindNode(BizManPages.OpsStopChoice, 0) >= 0 && s.FindNode(BizManPages.OpsStopChoice, 2) < 0
-              && s.FindNode(BizManPages.Table + UiDataTable.Row, 2) >= 0 && s.FindNode(BizManPages.Table + UiDataTable.Type, 1) >= 0,
-            "bizops: a route shows its three stops and the chosen stop's goods under them, the chosen good's amount stepped on its row");
+              && s.FindNode(BizManPages.Table + UiDataTable.Row, 2) >= 0 && s.FindNode(BizManPages.Table + UiDataTable.Type, 1) >= 0
+              && OpsSays(s, t("reallife_ui_bizops_send_now", "Send now")) && OpsSays(s, t("reallife_ui_bizops_last_run", "Last delivery")),
+            "bizops: a route shows its three stops and the chosen stop's goods under them, the chosen good's amount stepped on its row, its runs and Send now");
+        s = new UiScene();
+        BizManModel sent = UiSamples.BizOps(t, "logistics_sent");
+        BizManPages.Lay(s, sent, frame, true, UiDefaultKeys.Keyboard);
+        Check(sent.Ops.Status != null && OpsSays(s, sent.Ops.Status) && !OpsSays(s, sent.Ops.TableLead),
+            "bizops: just after Send now the route says what it sent where the stop's goods are named, until the page changes");
+        s = new UiScene();
+        BizManModel factory = UiSamples.BizOps(t, "factory");
+        BizManPages.Lay(s, factory, frame, true, UiDefaultKeys.Keyboard);
+        Check(s.FindNode(BizManPages.OpsFilter, 0) >= 0 && s.FindNode(BizManPages.OpsFilter, 2) >= 0 && OpsSays(s, factory.Ops.TableLead)
+              && OpsSays(s, t("reallife_ui_bizops_held_now", "Held now")) && OpsSays(s, t("reallife_ui_bizops_pace", "Pace")),
+            "bizops: a factory's machines filter by their states under their total output, the chosen one's held stock and pace beside its recipe");
+        s = new UiScene();
+        BizManModel drivers = UiSamples.BizOps(t, "warehouse_drivers");
+        BizManPages.Lay(s, drivers, frame, true, UiDefaultKeys.Keyboard);
+        int lastChoice = Array.FindLastIndex(drivers.Ops.Rows, r => r.Kind == BizOpsRowKind.Choice);
+        Check(lastChoice > 0 && s.FindNode(BizManPages.OpsChoice, lastChoice) >= 0 && OpsSays(s, t("reallife_ui_bizops_away", "Away"))
+              && OpsSays(s, t("reallife_ui_bizops_load", "Load")),
+            "bizops: every vehicle slot shows its bay, its load and its driver's choice, the last slot's too");
+        s = new UiScene();
+        BizManModel stock = UiSamples.BizOps(t, "warehouse_stock");
+        BizManPages.Lay(s, stock, frame, true, UiDefaultKeys.Keyboard);
+        Check(stock.Ops.Table.Columns.Length == 8 && OpsSays(s, stock.Ops.FootLabel) && OpsSays(s, stock.Ops.FootRight) && OpsSays(s, stock.Ops.FootWords)
+              && s.FindNode(BizManPages.Table + UiDataTable.Row, 0) >= 0,
+            "bizops: the stock lists a day's in and out, how long each lasts and what it cost, the shelf space and the stock's worth under it");
         s = new UiScene();
         BizManPages.Lay(s, UiSamples.BizOps(t, "pricing_none"), frame, true, UiDefaultKeys.Keyboard);
         Check(s.FindNode(BizManPages.OpsFirstPlan, 0) >= 0 && s.FindNode(BizManPages.OpsAction, 0) < 0,

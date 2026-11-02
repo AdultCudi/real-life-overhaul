@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 
 namespace RealLifeOverhaul.Ui
 {
@@ -8,11 +9,82 @@ namespace RealLifeOverhaul.Ui
     /// shift's end may be pulled before it meets another (WorkShiftHelper.CalculateHandleRange), the day's opening hours by
     /// the hour from its slots, the hour a lane offers for a new shift (where the game shows its add mark), and the words of
     /// the opening hours. Every sum is the game's, copied whole, so the kit's drag and the game's agree to the hour; the edit
-    /// itself always goes through the game's ScheduleHelper. Cost: a few sums a call, at a press or a layout only.
+    /// itself always goes through the game's ScheduleHelper. Also the figures the pages show beside the game's own: pieces a
+    /// day from the game's week, how long a stock lasts in tints, how often a machine makes one, a free window and the hours
+    /// a person has left. Cost: a few sums a call, at a press or a layout only.
     /// </summary>
     public static class BizOpsRules
     {
         public const int Hours = 24;   // the game's schedule runs a day of 24 hours
+        public const int LastsShort = 3, LastsLow = 5;   // days of stock: under the first in the danger's colour, under the second the warning's
+        public const int LaneSearchFrom = 8;   // stations from which the lanes' search shows with nothing typed in it: more than a board holds at 1080
+
+        /// <summary>Tenths of a piece a day from a count over the game's week of seven days, rounded half up; 0 for none.</summary>
+        public static int TenthsADay(int week) => week <= 0 ? 0 : (int)((week * 20L + 7) / 14);
+
+        /// <summary>A figure in tenths as the pages show it: one decimal under ten ("2.4", "3"), whole from there ("12").</summary>
+        public static string Tenths(int tenths)
+        {
+            if (tenths <= 0)
+            {
+                return "0";
+            }
+            if (tenths >= 100)
+            {
+                return ((tenths + 5) / 10).ToString(CultureInfo.InvariantCulture);
+            }
+            return (tenths / 10).ToString(CultureInfo.InvariantCulture) + (tenths % 10 != 0 ? "." + (tenths % 10).ToString(CultureInfo.InvariantCulture) : string.Empty);
+        }
+
+        /// <summary>A count over the game's week as pieces a day, in figures (see <see cref="Tenths"/>).</summary>
+        public static string PerDay(int week) => Tenths(TenthsADay(week));
+
+        /// <summary>
+        /// The tint of how long a stock lasts, by the game's days until empty (-1 for none left, int.MaxValue for never): none
+        /// left or under three days in the danger's colour, under five the warning's, else none.
+        /// </summary>
+        public static UiRole LastsTone(int days)
+        {
+            if (days == int.MaxValue)
+            {
+                return UiRole.None;
+            }
+            return days < LastsShort ? UiRole.DangerText : days < LastsLow ? UiRole.WarnText : UiRole.None;
+        }
+
+        /// <summary>Tenths of a second (of the game's clock) a machine takes for one piece at so many an hour, rounded; 0 for none.</summary>
+        public static int TenthsEach(int perHour) => perHour <= 0 ? 0 : (36000 + perHour / 2) / perHour;
+
+        /// <summary>
+        /// The hours a person is free around an hour of a day, by the hours of their shifts that day (the others' ends not
+        /// counted): from the end of the last shift before it, or midnight, to the start of the next, or the day's end.
+        /// False where a shift holds the hour itself.
+        /// </summary>
+        public static bool FreeWindow(int[] starts, int[] ends, int count, int hour, out int from, out int to)
+        {
+            from = 0;
+            to = Hours;
+            for (int i = 0; i < count; i++)
+            {
+                if (hour >= starts[i] && hour < ends[i])
+                {
+                    from = to = hour;
+                    return false;
+                }
+                if (ends[i] <= hour)
+                {
+                    from = Math.Max(from, ends[i]);
+                }
+                else if (starts[i] > hour)
+                {
+                    to = Math.Min(to, starts[i]);
+                }
+            }
+            return true;
+        }
+
+        /// <summary>The hours a person may still work this week under the most their demand allows; -1 where it sets no most.</summary>
+        public static int HoursLeft(int most, int assigned) => most <= 0 ? -1 : Math.Max(0, most - assigned);
 
         /// <summary>
         /// A shift moved to new hours on a lane, moved off the shifts it would overlap there and the person's own shifts, as

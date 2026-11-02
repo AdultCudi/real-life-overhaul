@@ -22,6 +22,7 @@ namespace RealLifeOverhaul.Ui
         {
             public Component Main;
             public Button Less, More;
+            public int Mod;   // a row the mod answers itself (a pricing plan's strategy): its code; 0 for one of the game's widgets
         }
 
         // The operations' own switch in Mod settings (UiScreens.BizOps): off, their tabs open the game's own view.
@@ -74,6 +75,39 @@ namespace RealLifeOverhaul.Ui
             _widgets.Add(new OpsWidget { Main = main, Less = less, More = more });
             return _widgets.Count - 1;
         }
+
+        // A row the mod answers itself, in place of one of the game's widgets: a switch or a choice of words.
+        private int ModWidget(int code)
+        {
+            _widgets.Add(new OpsWidget { Mod = code });
+            return _widgets.Count - 1;
+        }
+
+        private void ModSwitch(int code, string label, bool on, bool disabled)
+        {
+            _rows.Add(new BizOpsRow
+            {
+                Kind = BizOpsRowKind.Switch, Label = label, Value = UiText.T(on ? "reallife_ui_bizops_on" : "reallife_ui_bizops_off"), On = on, Disabled = disabled,
+                Arg = ModWidget(code), Right = _right
+            });
+        }
+
+        private void ModChoice(int code, string label, string[] options, int chosen, bool disabled)
+        {
+            int arg = ModWidget(code);
+            _rows.Add(new BizOpsRow
+            {
+                Kind = BizOpsRowKind.Choice, Label = label, Value = chosen >= 0 && chosen < options.Length ? options[chosen] : string.Empty, Disabled = disabled || options.Length == 0,
+                Arg = arg, Right = _right
+            });
+            if (_m.Ops.ListOpen == arg)
+            {
+                _m.Ops.Options = options;
+                _m.Ops.OptionChosen = chosen;
+            }
+        }
+
+        private int ModOf(int arg) => arg >= 0 && arg < _widgets.Count ? _widgets[arg].Mod : 0;
 
         private void Heading(string words)
         {
@@ -218,6 +252,10 @@ namespace RealLifeOverhaul.Ui
             {
                 case BizManPages.OpsRow:
                 {
+                    if (ModOf(arg) != 0)
+                    {
+                        return ModPress(ModOf(arg), ModToggle);
+                    }
                     Component c = WidgetAt(arg);
                     if (c is Toggle t)
                     {
@@ -235,6 +273,10 @@ namespace RealLifeOverhaul.Ui
                 {
                     int list = o.ListOpen;
                     o.ListOpen = -1;
+                    if (list >= 0 && list < BizManPages.OpsStopList && ModOf(list) != 0)
+                    {
+                        return arg >= 0 && ModPress(ModOf(list), ModOption + arg);
+                    }
                     UI.Elements.Dropdown d = list >= BizManPages.OpsStopList && list < BizManPages.OpsPeopleList ? StopChoice(list - BizManPages.OpsStopList) : WidgetAt(list) as UI.Elements.Dropdown;
                     return Pick(d, arg);
                 }
@@ -246,7 +288,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     bool more = command == BizManPages.OpsMore;
                     OpsWidget w = arg >= 0 && arg < _widgets.Count ? _widgets[arg] : default;
-                    return Click(more ? w.More : w.Less, "an amount stepped");
+                    return w.Mod == 0 && Click(more ? w.More : w.Less, "an amount stepped");   // the mod's own rows step nothing
                 }
                 case BizManPages.OpsType:
                     return true;
@@ -320,6 +362,14 @@ namespace RealLifeOverhaul.Ui
             o.OptionChosen = -1;
             o.Card = null;
             o.Progress = null;
+            o.Filters = new string[0];
+            o.Filter = 0;
+            o.Status = null;
+            o.FootLabel = o.FootWords = o.FootRight = null;
+            o.FootShare = -1;
+            o.FactLabels = o.FactValues = o.Problems = new string[0];
+            o.FactWarn = new bool[0];
+            o.FactActions = new UiActionModel[0];
             if (o.Table != null && _tableFor != _shown)
             {
                 o.Table = null;

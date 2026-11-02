@@ -36,6 +36,7 @@ namespace RealLifeOverhaul.Economy
         public int Decided, Mistakes, Undone, Paid;     // this month: decisions, mistakes among them, undone by the player, allowance
         public int LastDecided, LastMistakes, LastUndone, LastPaid, LastSpent;   // the month before
         public int SnapDay, SnapHour;           // when the stock was last looked at; 0 for never
+        public PriceStrategy Strategy;          // how the place's prices stand: the rule a pricing plan's strategy on BizMan follows
         public readonly List<StockSnap> Snaps = new List<StockSnap>(8);
         public readonly List<string> Held = new List<string>(2);   // products the player has taken back from the manager
 

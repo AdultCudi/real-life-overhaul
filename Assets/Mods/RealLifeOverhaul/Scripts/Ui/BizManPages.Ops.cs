@@ -19,7 +19,8 @@ namespace RealLifeOverhaul.Ui
             OpsFirstPlan = 516,   // a kind with no plans: its empty page's own button, the plans' last action (Add plan)
             OpsHours = 517,       // the day's opening hours: their sheet opened or closed
             OpsHour = 518,        // an hour of that sheet, opened or closed by the game's own toggle (its argument the hour)
-            OpsSheetDone = 519;   // a sheet's Done or Cancel: the hours' sheet closed, or the game's picker
+            OpsSheetDone = 519,   // a sheet's Done or Cancel: the hours' sheet closed, or the game's picker
+            OpsFilter = 520;      // a table's filter chosen, its argument the choice
         public const int People = 600;                // the picker's table, its commands from here as UiDataTable's from its First
         public const int Table = 700;                 // a page's big table (a plan's goods, the machines, the stock)
         public const int OpsStopList = 1000;          // ListOpen for a stop's business choice: from here
@@ -45,7 +46,7 @@ namespace RealLifeOverhaul.Ui
             BizOpsModel o = m.Ops;
             _headChain = true;
             DayLine(s, at, m, x, y, w, keys);
-            float top = y + UiTokens.Control + UiTokens.S5;
+            float top = Facts(s, at, o, x, y + UiTokens.Control + UiTokens.S5, w, keys);
             if (o.Board != null)
             {
                 int first = s.NodeCount;
@@ -64,6 +65,44 @@ namespace RealLifeOverhaul.Ui
                 float sw = PickWidth(o.People, UiDraw.SnapDown(w * 0.55f));
                 PickSheet(s, at, o, x + w - sw, y, sw, bottom, keys);
             }
+        }
+
+        // The day's facts on a line under the day's line, each its quiet label and its figure (one that needs the player in
+        // the warning's colour), what mends the day's problems at its right (a control's height then), and under them the
+        // day's problems, each with the warning's glyph. Returns the y under them.
+        private static float Facts(UiScene s, UiAt at, BizOpsModel o, float x, float y, float w, IUiKeys keys)
+        {
+            if (o.FactLabels.Length == 0 && o.Problems.Length == 0 && o.FactActions.Length == 0)
+            {
+                return y;
+            }
+            bool acts = o.FactActions.Length > 0;
+            float rowH = acts ? UiTokens.Control : UiTokens.PairRow;
+            float right = acts ? Buttons(s, at, o.FactActions, x + w, y, keys, OpsAction) - UiTokens.S5 : x + w;
+            float fx = x;
+            for (int i = 0; i < o.FactLabels.Length && i < o.FactValues.Length; i++)
+            {
+                float lw = UiDraw.Snap(UiTextRules.Width(o.FactLabels[i], UiStyle.Small) + UiTokens.S1);
+                float vw = UiDraw.Snap(UiTextRules.Width(o.FactValues[i], UiStyle.SmallStrong) + UiTokens.S1);
+                if (fx + lw + UiTokens.S2 + vw > right)
+                {
+                    break;   // a narrow page keeps the facts that fit, the first ones
+                }
+                bool warn = i < o.FactWarn.Length && o.FactWarn[i];
+                UiDraw.TextMiddle(s, at, fx, y, rowH, lw, UiStyle.Small, UiRole.Muted, o.FactLabels[i], UiFlags.Truncate);
+                UiDraw.TextMiddle(s, at, fx + lw + UiTokens.S2, y, rowH, vw, UiStyle.SmallStrong, warn ? UiRole.WarnText : UiRole.Text, o.FactValues[i],
+                    UiFlags.Truncate);
+                fx += lw + UiTokens.S2 + vw + UiTokens.S8;
+            }
+            y += o.FactLabels.Length > 0 || acts ? rowH : 0f;
+            for (int i = 0; i < o.Problems.Length && i < 2; i++)
+            {
+                UiDraw.Icon(s, at, x, y + (UiTokens.PairRow - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Warning, UiRole.Warn, UiFlags.Middle);
+                UiDraw.TextMiddle(s, at, x + UiTokens.IconSmall + UiTokens.S2, y, UiTokens.PairRow, w - UiTokens.IconSmall - UiTokens.S2, UiStyle.Small, UiRole.WarnText,
+                    o.Problems[i], UiFlags.Truncate);
+                y += UiTokens.PairRow;
+            }
+            return y + UiTokens.S3;
         }
 
         // The day's switch with its words and its opening hours at the left (a button that opens their sheet), the lanes'
@@ -295,20 +334,26 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
-                if (_kept == null || _kept.Length < (_keptCount + 1) * 3)
-                {
-                    var grown = new int[Math.Max(96, (_keptCount + 1) * 6)];
-                    if (_kept != null)
-                    {
-                        Array.Copy(_kept, grown, _keptCount * 3);
-                    }
-                    _kept = grown;
-                }
-                _kept[_keptCount * 3] = i;
-                _kept[_keptCount * 3 + 1] = n.Left;
-                _kept[_keptCount * 3 + 2] = n.Right;
-                _keptCount++;
+                Kept(i, n.Left, n.Right);
             }
+        }
+
+        // A target's own sideways links to put back after the page fence; -1 leaves that way the fence's.
+        private static void Kept(int node, int left, int right)
+        {
+            if (_kept == null || _kept.Length < (_keptCount + 1) * 3)
+            {
+                var grown = new int[Math.Max(96, (_keptCount + 1) * 6)];
+                if (_kept != null)
+                {
+                    Array.Copy(_kept, grown, _keptCount * 3);
+                }
+                _kept = grown;
+            }
+            _kept[_keptCount * 3] = node;
+            _kept[_keptCount * 3 + 1] = left;
+            _kept[_keptCount * 3 + 2] = right;
+            _keptCount++;
         }
 
         // The board's links put back over the fence's, where the board set them; on the schedule, the firm's head steps down
@@ -342,8 +387,9 @@ namespace RealLifeOverhaul.Ui
         // ------------------------------------------------------------------------------------------------- a manager kind
 
         // The kind's tabs across the top where it has them, its plans down the left with their actions at the foot, and the
-        // chosen plan at the right: its title and what it covers, its form in two columns, its actions, then its goods or its
-        // route's stops in the room left. No plans yet: what a plan does across the page, with the way to add the first.
+        // chosen plan at the right: its title (its actions beside it where they fit) and what it covers, its form in two
+        // columns, its actions under it where they did not fit, then its goods or its route's stops in the room left. No
+        // plans yet: what a plan does across the page, with the way to add the first.
         private static void ManagersPage(UiScene s, UiAt at, BizManModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
             BizOpsModel o = m.Ops;
@@ -361,8 +407,10 @@ namespace RealLifeOverhaul.Ui
             }
             float rx = x + PlansW + UiTokens.S8, rw = x + w - rx;
             _split = rx - UiTokens.S4;
-            PlanList(s, at, o, x, y, PlansW, bottom, keys);
-            if (o.Rows.Length == 0 && o.Table == null && o.Stops.Length == 0)
+            bool form = o.Rows.Length > 0 || o.Table != null || o.Stops.Length > 0;
+            bool onTitle = form && ActionsOnTitle(o, rw, keys);   // both columns' titles then stand level on a control's row
+            PlanList(s, at, o, x, y, PlansW, bottom, onTitle, keys);
+            if (!form)
             {
                 if (o.Plans.Length > 0 && !string.IsNullOrEmpty(o.FormEmpty))
                 {
@@ -370,7 +418,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 return;
             }
-            Form(s, at, o, rx, y, rw, bottom, keys);
+            Form(s, at, o, rx, y, rw, bottom, onTitle, keys);
             OpenList(s, at, m, x, y, w, bottom);
         }
 
@@ -386,10 +434,10 @@ namespace RealLifeOverhaul.Ui
 
         // The plans as rows under their title, the chosen one in the cyan fifth, a plan without a manager marked; the actions
         // (add one, move the chosen one up or down) at the foot. No plans: what one is and the way to add one.
-        private static void PlanList(UiScene s, UiAt at, BizOpsModel o, float x, float y, float w, float bottom, IUiKeys keys)
+        private static void PlanList(UiScene s, UiAt at, BizOpsModel o, float x, float y, float w, float bottom, bool onRow, IUiKeys keys)
         {
             float actionsH = o.PlanActions.Length > 0 ? UiTokens.Control + UiTokens.S4 : 0f;
-            Items(s, at, o.PlansTitle, o.Plans, x, y, w, bottom - actionsH, OpsPlan, -1, false, keys);
+            Items(s, at, o.PlansTitle, o.Plans, x, y, w, bottom - actionsH, OpsPlan, -1, onRow, keys);
             if (actionsH > 0f)
             {
                 PlanActions(s, at, o.PlanActions, x, bottom - UiTokens.Control, w, keys);
@@ -428,13 +476,24 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // The chosen plan or machine: its title, its lead, its rows in two columns, its actions, then its stops or its table.
-        private static void Form(UiScene s, UiAt at, BizOpsModel o, float x, float y, float w, float bottom, IUiKeys keys)
+        // The chosen plan or machine: its title with its actions at the right where they fit, its lead, its rows in two
+        // columns, its actions under them where they did not, then its stops or its table.
+        private static void Form(UiScene s, UiAt at, BizOpsModel o, float x, float y, float w, float bottom, bool onTitle, IUiKeys keys)
         {
-            float fy = Title(s, at, x, y, w, o.FormTitle);
+            float fy;
+            if (onTitle)
+            {
+                float acts = ActionsWidth(o.Actions, keys);
+                Buttons(s, at, o.Actions, x + w, y, keys, OpsAction);
+                fy = RowTitle(s, at, x, y, w - acts - UiTokens.S6, o.FormTitle);
+            }
+            else
+            {
+                fy = Title(s, at, x, y, w, o.FormTitle);
+            }
             fy = Lead(s, at, o.FormLead, x, fy, w);
             fy = Rows(s, at, o.Rows, x, fy, w, keys);
-            if (o.Actions.Length > 0)
+            if (!onTitle && o.Actions.Length > 0)
             {
                 fy += UiTokens.S2;
                 Buttons(s, at, o.Actions, x + w, fy, keys, OpsAction);
@@ -447,9 +506,115 @@ namespace RealLifeOverhaul.Ui
             if (o.Table != null && bottom - fy > UiTokens.S16)
             {
                 fy = Title(s, at, x, fy, w, o.TableTitle);
-                fy = Lead(s, at, o.TableLead, x, fy, w);
+                fy = Lead(s, at, o.Status ?? o.TableLead, x, fy, w);
+                fy = Filter(s, at, o, x, fy, w);
+                int first = s.NodeCount;
                 UiDataTable.Lay(s, at, o.Table, x, fy, w, bottom - fy, keys, Table);
+                KeepStepper(s, first, Table);
             }
+        }
+
+        // The chosen row's stepper as the table means it: right from the row along its minus, its figure and its plus, and
+        // left back the same way, kept over the page fence's. The fence's search for the nearest target that way misses the
+        // minus where the stepper stands across the row's middle (a column of amounts with others after it). A step at its
+        // end takes no keys, so the way passes it; a table whose every row holds its own stepper keeps the fence's.
+        private static void KeepStepper(UiScene s, int first, int command)
+        {
+            int less = -1, type = -1, more = -1, count = 0;
+            for (int i = first; i < s.NodeCount; i++)
+            {
+                int c = s.Nodes[i].Command;
+                count += c == command + UiDataTable.Type ? 1 : 0;
+                less = c == command + UiDataTable.Less ? i : less;
+                type = c == command + UiDataTable.Type ? i : type;
+                more = c == command + UiDataTable.More ? i : more;
+            }
+            int row = -1;
+            for (int i = first; count == 1 && i < s.NodeCount && row < 0; i++)
+            {
+                row = s.Nodes[i].Command == command + UiDataTable.Row && s.Nodes[i].Arg == s.Nodes[type].Arg ? i : -1;
+            }
+            if (row >= 0)
+            {
+                Along(s, Along(s, Along(s, row, less), type), more);
+            }
+        }
+
+        // A step of a kept way, to the next target if it takes the keys; returns where the way stands after it.
+        private static int Along(UiScene s, int from, int to)
+        {
+            if (to < 0 || s.Nodes[to].Disabled)
+            {
+                return from;
+            }
+            Kept(from, -1, to);
+            Kept(to, from, -1);
+            return to;
+        }
+
+        // Whether the form's actions stand on its title's row, at the right: where they fit beside the whole title, so the
+        // stop's goods or the plan's products keep the room a row of their own would take.
+        private static bool ActionsOnTitle(BizOpsModel o, float w, IUiKeys keys)
+        {
+            float acts = ActionsWidth(o.Actions, keys);
+            return acts > 0f && !string.IsNullOrEmpty(o.FormTitle)
+                && UiDraw.Snap(UiTextRules.Width(o.FormTitle, UiStyle.SectionHeader) + UiTokens.S1) + UiTokens.S6 + acts <= w;
+        }
+
+        // The width a row of actions takes, its gaps between them.
+        private static float ActionsWidth(UiActionModel[] actions, IUiKeys keys)
+        {
+            float sum = 0f;
+            for (int i = 0; actions != null && i < actions.Length; i++)
+            {
+                ref UiActionModel a = ref actions[i];
+                sum += UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, a.Key, keys) + (i > 0 ? UiTokens.S3 : 0f);
+            }
+            return sum;
+        }
+
+        // A table's filter as tabs over it, each its words and its count. Returns the y under them.
+        private static float Filter(UiScene s, UiAt at, BizOpsModel o, float x, float y, float w)
+        {
+            if (o.Filters.Length < 2)
+            {
+                return y;
+            }
+            UiDraw.Tabs(s, at, x, y, Math.Min(w, TabsWidth(o.Filters)), o.Filters, o.Filter, null, OpsFilter);
+            return y + UiTokens.Control + UiTokens.S3;
+        }
+
+        // A line under a big table: its label, a meter of how full, its words, and a figure at the right.
+        private static float Foot(UiScene s, UiAt at, BizOpsModel o, float x, float bottom, float w)
+        {
+            if (string.IsNullOrEmpty(o.FootLabel) && string.IsNullOrEmpty(o.FootRight))
+            {
+                return bottom;
+            }
+            float y = bottom - UiTokens.PairRow;
+            float fx = x;
+            if (!string.IsNullOrEmpty(o.FootLabel))
+            {
+                float lw = UiDraw.Snap(UiTextRules.Width(o.FootLabel, UiStyle.Small) + UiTokens.S1);
+                UiDraw.TextMiddle(s, at, fx, y, UiTokens.PairRow, lw, UiStyle.Small, UiRole.Text2, o.FootLabel, UiFlags.Truncate);
+                fx += lw + UiTokens.S3;
+            }
+            if (o.FootShare >= 0)
+            {
+                float mw = UiTokens.S16 * 4f;
+                UiDraw.Meter(s, at, fx, y + (UiTokens.PairRow - UiTokens.S1) / 2f, mw, UiTokens.S1, Math.Min(100, o.FootShare), o.FootShare >= 90 ? UiRole.Warn : UiRole.Accent);
+                fx += mw + UiTokens.S3;
+            }
+            float rw = string.IsNullOrEmpty(o.FootRight) ? 0f : UiDraw.Snap(UiTextRules.Width(o.FootRight, UiStyle.SmallStrong) + UiTokens.S1);
+            if (rw > 0f)
+            {
+                UiDraw.TextMiddle(s, at, x + w - rw, y, UiTokens.PairRow, rw, UiStyle.SmallStrong, UiRole.Text, o.FootRight, UiFlags.Truncate);
+            }
+            if (!string.IsNullOrEmpty(o.FootWords))
+            {
+                UiDraw.TextMiddle(s, at, fx, y, UiTokens.PairRow, Math.Max(0f, x + w - rw - UiTokens.S6 - fx), UiStyle.Small, UiRole.Text2, o.FootWords, UiFlags.Truncate);
+            }
+            return y - UiTokens.S3;
         }
 
         /// <summary>
@@ -660,6 +825,8 @@ namespace RealLifeOverhaul.Ui
             float half = Half(w), rx = x + half + UiTokens.S8;
             _split = rx - UiTokens.S4;
             float ty = Title(s, at, x, y, half, o.TableTitle);
+            ty = Lead(s, at, o.TableLead, x, ty, half);
+            ty = Filter(s, at, o, x, ty, half);
             UiDataTable.Lay(s, at, o.Table, x, ty, half, bottom - ty, keys, Table);
             float fy = Title(s, at, rx, y, half, o.FormTitle);
             fy = Lead(s, at, o.FormLead, rx, fy, half);
@@ -700,9 +867,10 @@ namespace RealLifeOverhaul.Ui
                     UiFlags.Truncate);
             }
             float ty = y + UiTokens.Control + UiTokens.S5;
+            float foot = Foot(s, at, o, x, bottom, w);
             if (o.Table != null)
             {
-                UiDataTable.Lay(s, at, o.Table, x, ty, w, bottom - ty, keys, Table);
+                UiDataTable.Lay(s, at, o.Table, x, ty, w, foot - ty, keys, Table);
             }
         }
     }

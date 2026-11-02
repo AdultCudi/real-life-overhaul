@@ -40,7 +40,7 @@ namespace RealLifeOverhaul.Ui
             Goods + UiDataTable.Head, Goods + UiDataTable.Less, Goods + UiDataTable.Type, Goods + UiDataTable.More, Goods + UiDataTable.Row,
             UiChart.First + UiChart.Point, UiCatalogue.First + UiCatalogue.Card, UiCatalogue.First + UiCatalogue.Action,
             OpsRow, OpsChoice, OpsOption, OpsLess, OpsType, OpsMore, OpsSlider, OpsPlan, OpsAction, OpsTab, OpsStop, OpsStopRemove, OpsStopChoice, OpsDayOpen, OpsSearch,
-            OpsCancelFill, OpsFirstPlan, OpsHours, OpsHour, OpsSheetDone, UiBoard.ShiftCommand, UiBoard.LaneCommand, UiBoard.DayCommand, UiBoard.ActionCommand,
+            OpsCancelFill, OpsFirstPlan, OpsHours, OpsHour, OpsSheetDone, OpsFilter, UiBoard.ShiftCommand, UiBoard.LaneCommand, UiBoard.DayCommand, UiBoard.ActionCommand,
             UiCard.ButtonCommand, UiCard.CheckCommand,
             People + UiDataTable.Head, People + UiDataTable.Filter, People + UiDataTable.Search, People + UiDataTable.Row, People + UiDataTable.Clear,
             Table + UiDataTable.Head, Table + UiDataTable.Filter, Table + UiDataTable.Search, Table + UiDataTable.Row, Table + UiDataTable.Clear,
