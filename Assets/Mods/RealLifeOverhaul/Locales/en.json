@@ -28595,5 +28595,6 @@
   "reallife_contract_part_ui_econoview": "the game's EconoView drawn on the RLO interface",
   "reallife_ui_econo_find_bank": "Find a bank in Contacts",
   "reallife_ui_econo_fund_year": "{fund}, the last year",
-  "reallife_ui_econo_statement_note": "Each business, property and loan you take on joins this statement the night after."
+  "reallife_ui_econo_statement_note": "Each business, property and loan you take on joins this statement the night after.",
+  "reallife_opt_sec_uiscreens_market": "RLO interface: you, rivals, market"
 }

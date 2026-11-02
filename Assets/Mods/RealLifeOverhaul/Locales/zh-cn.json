@@ -28595,5 +28595,6 @@
   "reallife_contract_part_ui_econoview": "以 RLO 界面绘制的游戏 EconoView",
   "reallife_ui_econo_find_bank": "在联系人中查找银行",
   "reallife_ui_econo_fund_year": "{fund}，近一年",
-  "reallife_ui_econo_statement_note": "你新开的每家企业、购置的每处房产和每笔贷款，都会在第二天夜里加入这份报表。"
+  "reallife_ui_econo_statement_note": "你新开的每家企业、购置的每处房产和每笔贷款，都会在第二天夜里加入这份报表。",
+  "reallife_opt_sec_uiscreens_market": "RLO 界面：个人档案、对手与市场"
 }

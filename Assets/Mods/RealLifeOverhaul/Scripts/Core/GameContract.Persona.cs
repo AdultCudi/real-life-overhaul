@@ -59,7 +59,9 @@ namespace RealLifeOverhaul
         public static readonly GameMember MarketDemandRefresh = Method(UiMarket, Game, "UI.Smartphone.Apps.MarketInsider.MarketDemandScrollerController", "RefreshFilterAndSort", "Void");
         public static readonly GameMember MarketEstateRefresh = Method(UiMarket, Game, "UI.Smartphone.Apps.MarketInsider.RealEstateScrollerController", "RefreshFilterAndSort", "Void");
         public static readonly GameMember MarketOpenBuilding = Field(UiMarket, Game, "UI.Smartphone.Apps.MarketInsider.RealEstateCellView", "button", "Button");
-        public static readonly GameMember MarketDemandAll = Field(UiMarket, Game, "UI.Smartphone.Apps.MarketInsider.MarketDemandScrollerController", "_allModels", "List<MarketDemandCellView.DemandModel>");
-        public static readonly GameMember MarketEstateAll = Field(UiMarket, Game, "UI.Smartphone.Apps.MarketInsider.RealEstateScrollerController", "_allModels", "List<RealEstateCellView.RealEstateModel>");
+        public static readonly GameMember MarketDemandAll = Field(UiMarket, Game, "UI.Smartphone.Apps.MarketInsider.MarketDemandScrollerController", "_allModels",
+            "List<MarketDemandCellView.DemandModel>");
+        public static readonly GameMember MarketEstateAll = Field(UiMarket, Game, "UI.Smartphone.Apps.MarketInsider.RealEstateScrollerController", "_allModels",
+            "List<RealEstateCellView.RealEstateModel>");
     }
 }

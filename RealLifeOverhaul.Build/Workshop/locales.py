@@ -61,7 +61,7 @@ SAME_WORDS = 4                                     # a Latin-script translation 
 NOTICE_MOST = 240                                  # characters: a toast holds about 240 (Workshop/STYLE.md, NoticeCheck)
 # Texts that may stay as the English in any translation: placeholders alone, version numbers, and invented names kept in Latin letters.
 ENGLISH_OK = {
-    # 2 Nov 2026, the RLO interface's switch for the game's Persona app: the app's name, which the game keeps in Latin letters in Chinese too
+    # 2 Nov 2026, the RLO interface switch for the Persona app of the game: the name of the app, which the game keeps in Latin letters in Chinese too
     'reallife_ui_screen_persona',
     # 2 Nov 2026, the RLO interface's EconoView switch: the app's name, which the game keeps in Latin letters in every language
     'reallife_ui_screen_econoview',

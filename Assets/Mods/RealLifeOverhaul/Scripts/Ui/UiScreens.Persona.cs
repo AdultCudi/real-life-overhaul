@@ -24,7 +24,7 @@ namespace RealLifeOverhaul.Ui
                     "persona_personalgoal_current_goals", "persona_personalgoal_steam_achievements", "reallife_ui_persona_bronze",
                     "reallife_ui_persona_silver", "reallife_ui_persona_gold", "reallife_ui_persona_no_goals", "reallife_ui_persona_no_goals_body",
                     "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_staff_prompt_tab", "reallife_ui_prompt_back"
-                }).Switch(UiScreenSwitches.Apps),
+                }).Switch(UiScreenSwitches.Market),
                 new UiScreenDef("rivals", UiTemplate.AppWindow, "RivalsScreen", new[]
                 {
                     "smartphone_rivals", "rivals_leaderboard", "common_businesses", "rivals_real_estate_properties", "rivals_overview", "common_years_amount",
@@ -40,7 +40,7 @@ namespace RealLifeOverhaul.Ui
                     "rivals_defense_icons_hire_best_employees_title", "rivals_defense_icons_price_reduction_title", "rivals_defense_icons_product_shortage_title",
                     "rivals_defense_icons_low_demand_title", "ba:buildingtype_retail", "ba:buildingtype_office", "ba:buildingtype_warehouse",
                     "ba:buildingtype_residential", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_staff_prompt_tab", "reallife_ui_prompt_back"
-                }).Switch(UiScreenSwitches.Apps),
+                }).Switch(UiScreenSwitches.Market),
                 new UiScreenDef("market_insider", UiTemplate.AppWindow, "MarketScreen", new[]
                 {
                     "reallife_ui_market_app", "market_insider_citizen_data", "socialclass_working", "socialclass_middle", "socialclass_upper",
@@ -58,7 +58,7 @@ namespace RealLifeOverhaul.Ui
                     "marketeventtype_hype", "marketeventtype_businessopened", "marketeventtype_productshortage", "marketeventtype_businessclosed",
                     "ba:buildingtype_retail", "ba:buildingtype_office", "ba:buildingtype_warehouse", "ba:buildingtype_residential",
                     "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back"
-                }).Switch(UiScreenSwitches.Apps),
+                }).Switch(UiScreenSwitches.Market),
             });
         }
     }
