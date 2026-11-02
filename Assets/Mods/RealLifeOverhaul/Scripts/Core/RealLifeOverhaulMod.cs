@@ -1090,6 +1090,12 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_tech_mkt_test_centres", () => Tech.TechDirector.Instance?.TestSectorDesks(-1))
                 .AddButton("reallife_tech_mkt_test_markets", () => Tech.TechDirector.Instance?.TestSectorMarkets())
                 .AddButton("reallife_tech_mkt_test_year", () => Tech.TechDirector.Instance?.TestSectorYear())
+                .AddToggle(Settings.LivingTripsId, "reallife_trips_enabled", Settings.LivingTrips,
+                    v => Settings.LivingTrips = v)
+                .AddButton("reallife_trips_test", () => Economy.LogisticsDirector.Instance?.TestTrips())
+                .AddToggle(Settings.LivingSpoilageId, "reallife_spoil_enabled", Settings.LivingSpoilage,
+                    v => Settings.LivingSpoilage = v)
+                .AddButton("reallife_spoil_test", () => Economy.LogisticsDirector.Instance?.TestSpoilage())
                 .Guarded(o => Population.PopulationOptions.AddPopulation(o))   // the population's tests (Scripts/Population)
                 .AddDropdown(Settings.EconomyCompanyLevelId, "reallife_co_level",
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCompanyLevel,
@@ -1675,6 +1681,8 @@ namespace RealLifeOverhaul
             Guard.Step("Economy.ServicesApp", () => Economy.ServicesApp.Logger = context.Logger);
             Guard.Step("Economy.ServicesDirector", () => Guard.Add<Economy.ServicesDirector>(_root));
             Guard.Step("Economy.CompanyDirector", () => Guard.Add<Economy.CompanyDirector>(_root));
+            Guard.Step("Economy.LogisticsDirector", () => Economy.LogisticsDirector.Logger = context.Logger);
+            Guard.Step("Economy.LogisticsDirector", () => Guard.Add<Economy.LogisticsDirector>(_root));   // after the company: its second follows the company's
             Guard.Step("Tech.TechDirector", () => Guard.Add<Tech.TechDirector>(_root));   // after the company, so that its day follows the company's
             Guard.Step("Careers.CareersDirector", () => Guard.Add<Careers.CareersDirector>(_root));   // after the tech sector, whose roles it reads
             Guard.Step("Sessions.SessionDirector", () => Sessions.SessionDirector.Logger = context.Logger);

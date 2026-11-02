@@ -23,7 +23,7 @@ namespace RealLifeOverhaul
             { "GarageDirector", "garage" }, { "JusticeDirector", "justice" }, { "LicenceDirector", "licences" }, { "SocialDirector", "social" },
             { "TravelDirector", "travel" }, { "TransitDirector", "transport" }, { "CarOwnership", "transport" }, { "TaxiDirector", "taxi" },
             { "LifeEvents", "life" }, { "MarketDirector", "markets" }, { "LedgerDirector", "ledger" }, { "CareersDirector", "careers_study" },
-            { "TechSites", "tech_sites" },
+            { "TechSites", "tech_sites" }, { "LogisticsDirector", "trips" },
         };
 
         // The rest by namespace: RealLifeOverhaul.X.

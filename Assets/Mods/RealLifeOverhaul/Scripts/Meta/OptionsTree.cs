@@ -405,6 +405,8 @@ namespace RealLifeOverhaul.Meta
                 S("firms").For("firms").Opt("living_firms", "living_population")
                     .Also("software studio consultancy cybersecurity security ai lab model web agency design studio data centre cloud market share rivals "
                         + "startups sprint outage tender pitch incident training benchmark capacity power failover portfolio"),
+                S("trips").For("trips").Opt("living_trips", "living_population").Opt("living_spoilage", "living_population")
+                    .Also("logistics route routes delivery deliveries trip trips van truck vehicle driver fuel departure warehouse spoil spoilage spoiled shelf life fresh fridge freezer food"),
                 S("endscale").For("economy_endscale").Opts("economy_endscale")
                     .Also("end game late scale billions hyperscaler cloud data centre racks broadband network fibre bank maintenance upkeep crews staff payback"),
                 S("brands").For("economy_brands").Need("economy").Opts("economy_brands").Also("chain franchise"),

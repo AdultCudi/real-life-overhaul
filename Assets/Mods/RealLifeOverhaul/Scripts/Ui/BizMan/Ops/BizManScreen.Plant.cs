@@ -235,6 +235,7 @@ namespace RealLifeOverhaul.Ui
                     have >= item.produceUpToValue ? UiRole.WarnText : UiRole.None);
             }
             SwitchLine(Get<Toggle>(GameContract.FactoryAlways, panel), UiText.T("bizman_factory_produce_continuously"));
+            SpoiledShare(reg);   // food spoilage: the factory's goods that spoiled over the week
             TextLine(name, UiText.T("bizman_schedule_rename_workstation"), UiText.T("bizman_factory_workstation_name_placeholder"), false);
             _right = true;
             Heading(UiText.T("bizman_factory_production_flow_title"));
@@ -353,11 +354,12 @@ namespace RealLifeOverhaul.Ui
                 InfoLine(UiText.T("bizman_drivers_vehicle"), vehicle);
                 VehicleSlot slot = slots != null ? slots[i] : null;
                 VehicleInstance v = slot != null && !On(none) && !string.IsNullOrEmpty(slot.vehicleInstanceId) ? Vehicle(slot.vehicleInstanceId) : null;
-                // The game's vehicles never leave for a delivery (its logistics move goods at once): a slot's vehicle is parked at
+                // A slot's vehicle on a delivery trip (Economy/LogisticsDirector) is on route until it is back; otherwise it is parked at
                 // the warehouse, or away where the player last left it (its own street data); a slot without one is empty.
                 bool home = v != null && warehouse != null && warehouse.Address != null && v.IsAtAddress(warehouse.Address);
-                InfoLine(UiText.T("reallife_ui_bizops_bay"), UiText.T(v == null ? "reallife_ui_bizops_empty" : home ? "reallife_ui_bizops_parked" : "reallife_ui_bizops_away"),
-                    home ? UiRole.OkText : UiRole.None);
+                string trip = v != null && warehouse != null ? SlotTrip(warehouse, i) : null;
+                InfoLine(UiText.T("reallife_ui_bizops_bay"), trip ?? UiText.T(v == null ? "reallife_ui_bizops_empty" : home ? "reallife_ui_bizops_parked" : "reallife_ui_bizops_away"),
+                    trip != null || home ? UiRole.OkText : UiRole.None);
                 if (v != null && v.VehicleType != null && v.VehicleType.maxCargoCapacity > 0)
                 {
                     int boxes = v.cargoInstances != null ? v.cargoInstances.Count : 0;
@@ -411,6 +413,7 @@ namespace RealLifeOverhaul.Ui
                     new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_in_day"), Kind = UiCellKind.Figure, Width = 104f },
                     new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_out_day"), Kind = UiCellKind.Figure, Width = 104f },
                     new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_lasts"), Kind = UiCellKind.Text, Width = 136f },
+                    new UiDataColumn { Title = UiText.T("reallife_spoil_col"), Kind = UiCellKind.Text, Width = 112f },
                     new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_cost_each"), Kind = UiCellKind.Money, Width = 112f },
                     new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_value"), Kind = UiCellKind.Money, Width = 120f },
                 },
@@ -439,21 +442,27 @@ namespace RealLifeOverhaul.Ui
                 int pieces = item != null && _cargoPieces.TryGetValue(item, out int c) ? c : 0;
                 float paid = item != null && _cargoPaid.TryGetValue(item, out float v) ? v : 0f;
                 worth += paid;
+                string spoils = SpoilsWords(warehouse, item, out UiRole spoilTone);
                 t.Rows[i] = new UiDataRow
                 {
                     Cells = new[] { p.ProductName, UiText.Whole(p.Stock), UiText.Whole(p.CargoAmount), BizOpsRules.PerDay(p.Deliveries), BizOpsRules.PerDay(p.Consumption), days,
-                        pieces > 0 && paid > 0f ? (paid / pieces).ToCurrencyFormat() : "-", paid > 0f ? paid.ToCurrencyFormat() : "-" },
-                    Values = new[] { 0, 0, 0, 0, 0, 0, 0, 0 },
+                        spoils, pieces > 0 && paid > 0f ? (paid / pieces).ToCurrencyFormat() : "-", paid > 0f ? paid.ToCurrencyFormat() : "-" },
+                    Values = new[] { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
                     Tones = new[] { UiRole.None, p.Stock == 0 ? UiRole.DangerText : UiRole.None, UiRole.None, UiRole.None, UiRole.None, BizOpsRules.LastsTone(p.DaysUntilEmpty),
-                        UiRole.None, UiRole.None }
+                        spoilTone, UiRole.None, UiRole.None }
                 };
             }
             t.RowCount = n;
+            if (!SpoilShown)
+            {
+                DropColumn(t, SpoilColumn);   // spoilage off: the table as before it
+            }
             o.Table = t;
             o.FootLabel = room > 0 ? UiText.T("reallife_ui_bizops_shelf_space") : null;
             o.FootShare = room > 0 ? Math.Min(100, used * 100 / room) : -1;
             o.FootWords = room > 0 ? UiText.Fill("reallife_ui_bizops_of_boxes", "count", UiText.Whole(used), "most", UiText.Whole(room)) : null;
             o.FootRight = worth > 0f ? UiText.Fill("reallife_ui_bizops_stock_worth", "amount", worth.ToCurrencyFormat()) : null;
+            o.Status = SpoiledToday(warehouse);   // food spoilage: what was thrown out today
             RowsEnd();
         }
 
@@ -578,7 +587,7 @@ namespace RealLifeOverhaul.Ui
                     return sig;
                 }
                 case BizManRules.Drivers:
-                    return sig * 31 + _slots.Count + TimeHelper.CurrentHour * 7919;   // a vehicle's load, looked at by the hour
+                    return (sig * 31 + _slots.Count + TimeHelper.CurrentHour * 7919) * 31 + TripsSignature();   // a vehicle's load by the hour; a trip leaving or back
                 default:
                 {
                     Inventory page = PageOf<Inventory>(b, BizManRules.Inventory);
@@ -587,7 +596,7 @@ namespace RealLifeOverhaul.Ui
                     {
                         sig = sig * 31 + goods.data[i].Stock * 7 + goods.data[i].Balance;
                     }
-                    return sig * 31 + Hash(Loc(Get<TextLocalizationComponent>(GameContract.StockBoxes, page)));
+                    return (sig * 31 + Hash(Loc(Get<TextLocalizationComponent>(GameContract.StockBoxes, page)))) * 31 + TripsSignature();
                 }
             }
         }

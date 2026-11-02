@@ -15,6 +15,7 @@ desk-sessions	reallife_guide_living	desk sessions and the living economy's maste
 game-studio	reallife_guide_studio	the game studio rebuilt
 flare-city	reallife_guide_flare_city	Flare connected to the city's residents
 tech-firms	reallife_guide_firms	the other tech firms rebuilt: shared markets, rivals and desk sessions
+delivery-trips	reallife_guide_trips	logistics routes as delivery trips, and food spoilage
 district-save	-	how the save keeps the mod's places: nothing a player sees
 districts	reallife_guide_districtview	the district view
 driving	reallife_guide_driving	driving
