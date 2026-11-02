@@ -146,6 +146,7 @@ namespace RealLifeOverhaul.Ui
         Train,         // the subway
         ListChecks,    // the objectives
         ClipboardText, // the game's to-dos
+        Ring,          // an open ring: a line still to do, beside the done tick
         Count
     }
 

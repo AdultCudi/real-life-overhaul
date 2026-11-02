@@ -168,9 +168,8 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                // An open ring: the line waits. A box's edge, so the tick and the ring are one size.
-                UiDraw.Box(s, at, x + UiTokens.Hairline * 2f, ty + UiTokens.Hairline * 2f, Tick - UiTokens.S1, Tick - UiTokens.S1, UiRole.None, UiRole.Text2, (Tick - UiTokens.S1) / 2f,
-                    UiFlags.Circle | UiFlags.Middle | UiFlags.Share);
+                // An open ring from the icon set: the line waits, drawn as cleanly as the tick beside it at every size.
+                UiDraw.Icon(s, at, x, ty, Tick, UiIcon.Ring, UiRole.None, UiFlags.Middle);
             }
             float tx = x + Tick + UiTokens.S3;
             float tw = right - tx;

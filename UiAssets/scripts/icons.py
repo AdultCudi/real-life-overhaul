@@ -163,6 +163,7 @@ ICONS = [
     ("Train", "train", "duotone", "a29072c2bb72e15f7f05327e298cdedacddbcf7dc2b20d9ab11234deae4dd1fc"),
     ("ListChecks", "list-checks", "duotone", "aa71967b96fc44f2e40fabf3b297e333925c994cc22a2da2177980b7eea5a55e"),
     ("ClipboardText", "clipboard-text", "duotone", "d1e13568193ac0b89bef7b92cf351d9253f850480ccc1a52faf9061114bc8aac"),
+    ("Ring", "circle", "bold", "98864523b27ed74ae7792549a77adfe7ed459238385bbb50fe77c9f92c16bb7f"),
 ]
 
 # Phosphor's fill weight of every duotone icon, its second variant: the chunky solid glyph a toolbar's tile asks for
