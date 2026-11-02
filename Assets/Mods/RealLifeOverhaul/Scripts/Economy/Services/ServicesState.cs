@@ -89,7 +89,29 @@ namespace RealLifeOverhaul.Economy
         public int ClauseDays;                   // days the seller stays out of that trade in the district; 0: no clause
         public int Deadline;                     // the last day the offer stands
         public bool Countered;
-        public int Face;                         // which of the buyer kind's names
+        public int Face;                         // which of the buyer kind's names, for an offer made before named buyers
+        public string Who = string.Empty;        // the buyer: a rival's id of the game's, an employee's id, a listed company's id, an investor's name; empty before named buyers
+        public string WhoName = string.Empty;    // their name when the offer was made
+        public int WhoCount;                     // a rival's businesses, a company's id, the staff's number; 0 for an investor
+
+        /// <summary>True for an offer from somebody by name; one made before named buyers has only its kind.</summary>
+        public bool Named => WhoName.Length > 0;
+    }
+
+    /// <summary>A business of a rival of the game's put up for sale: the player may buy it first, then another rival takes it.</summary>
+    public sealed class RivalSale
+    {
+        public int Id;
+        public string Place = string.Empty;      // its building, as a place is written
+        public string Business = string.Empty;   // its name
+        public string Seller = string.Empty;     // the rival's id of the game's
+        public string SellerName = string.Empty;
+        public string Buyer = string.Empty;      // the rival who takes it if the player does not; empty: the seller keeps it
+        public string BuyerName = string.Empty;
+        public int Price;
+        public int Weekly;                       // its takings a week when put up
+        public int Day;                          // the day it was put up
+        public int Deadline;                     // the last day the player may buy it
     }
 
     /// <summary>Money a buyer still owes for a business, in weekly parts.</summary>
@@ -142,6 +164,46 @@ namespace RealLifeOverhaul.Economy
         public readonly List<SaleDue> Dues = new List<SaleDue>(4);
         public readonly List<SaleClause> Clauses = new List<SaleClause>(4);
         public readonly List<SaleRecord> Records = new List<SaleRecord>(ServicesCatalogue.RecordsKept);
+        public readonly List<RivalSale> RivalSales = new List<RivalSale>(ServicesCatalogue.RivalSalesMost);
+        public int RivalSaleDay;                 // the day the last rival's sale was put up
+
+        public RivalSale RivalSale(int id)
+        {
+            for (int i = 0; i < RivalSales.Count; i++)
+            {
+                if (RivalSales[i].Id == id)
+                {
+                    return RivalSales[i];
+                }
+            }
+            return null;
+        }
+
+        /// <summary>True if a rival's business at this place is up for sale now.</summary>
+        public bool RivalSelling(string place)
+        {
+            for (int i = 0; i < RivalSales.Count; i++)
+            {
+                if (string.Equals(RivalSales[i].Place, place, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>True if this buyer already has an offer standing for the business at this place.</summary>
+        public bool Offering(string place, string who)
+        {
+            for (int i = 0; !string.IsNullOrEmpty(who) && i < SaleOffers.Count; i++)
+            {
+                if (string.Equals(SaleOffers[i].Place, place, StringComparison.Ordinal) && string.Equals(SaleOffers[i].Who, who, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         public CleaningClient Client(string place)
         {

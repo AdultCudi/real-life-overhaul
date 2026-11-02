@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using RealLifeOverhaul.Economy.Ventures;
 
 namespace RealLifeOverhaul.Economy
@@ -15,6 +16,14 @@ namespace RealLifeOverhaul.Economy
         public int Deposit;              // the deposit the landlord holds
         public int Investors;            // what buying its investors out costs today
         public int Loans;                // what is owed on business loans secured on it
+
+        // Its quality, read from the game; with Quality false none of it counts (a value worked out without it).
+        public bool Quality;
+        public int Interior;             // the game's interior score, 0 to 100 (InteriorScoreCalculator); -1 unknown
+        public int InteriorWant;         // the least its district's customers want (NeighborhoodData.minimumInteriorScore)
+        public int Rating;               // the customers' satisfaction, 0 to 100 (Satisfaction.overall); -1 unknown
+        public int Skill;                // the staff's mean main skill, 0 to 100
+        public int Staff;                // how many work there
     }
 
     /// <summary>A business's value, line by line as the page shows it.</summary>
@@ -22,7 +31,9 @@ namespace RealLifeOverhaul.Economy
     {
         public int Base;                 // so many days of its recent profit: the investors' valuation
         public int TypePct, DistrictPct, ClimatePct, HistoryPct;
-        public int Goodwill;             // the base by those four
+        public int QualityPct;           // its interior, its customers' satisfaction and its staff's skill together (100 without them)
+        public int InteriorPts, RatingPts, SkillPts;   // each one's part of that, in points
+        public int Goodwill;             // the base by those five
         public int Fixtures;
         public int Value;                // goodwill and fixtures
         public int Investors, Loans;     // paid out of the proceeds first
@@ -48,9 +59,10 @@ namespace RealLifeOverhaul.Economy
     /// Selling a business, game-free and deterministic: every drawn figure comes from the save's seed. The asking price
     /// sets how often offers come and how many; an offer follows it part of the way, never above it or that buyer's ceiling.
     /// </summary>
-    public static class SaleRules
+    public static partial class SaleRules
     {
         private const int PurposeKind = 21, PurposeJitter = 22, PurposeCeiling = 23, PurposeDays = 24, PurposeWalk = 25, PurposeNone = 26, PurposeFace = 27, PurposeParts = 28;
+        private const int PurposeWho = 29, PurposeRivalSale = 30, PurposeHolding = 31, PurposeRivalBuyer = 32;
 
         public static int ClimatePct(int phase)
         {
@@ -76,8 +88,9 @@ namespace RealLifeOverhaul.Economy
                 Loans = Math.Max(0, i.Loans),
                 Deposit = Math.Max(0, i.Deposit)
             };
+            b.QualityPct = QualityPct(i, out b.InteriorPts, out b.RatingPts, out b.SkillPts);
             long goodwill = b.Base;
-            goodwill = goodwill * b.TypePct / 100 * b.DistrictPct / 100 * b.ClimatePct / 100 * b.HistoryPct / 100;
+            goodwill = goodwill * b.TypePct / 100 * b.DistrictPct / 100 * b.ClimatePct / 100 * b.HistoryPct / 100 * b.QualityPct / 100;
             b.Goodwill = ServicesCatalogue.Round10(goodwill);
             b.Value = (int)Math.Min(int.MaxValue / 4, (long)b.Goodwill + b.Fixtures);
             b.Net = b.Value - b.Investors - b.Loans;
@@ -118,8 +131,16 @@ namespace RealLifeOverhaul.Economy
 
         public static bool Expired(SaleListing l, int day) => day - l.ListedDay > ServicesCatalogue.ListingDays;
 
-        /// <summary>The listing's next offer; null if this turn brings none, and the turn is used up either way.</summary>
-        public static SaleOffer Offer(ServicesState s, SaleListing l, int day)
+        /// <summary>The listing's next offer from a kind of buyer only (no names); null if this turn brings none, and the turn is used up either way.</summary>
+        public static SaleOffer Offer(ServicesState s, SaleListing l, int day) => Offer(s, l, day, null);
+
+        /// <summary>
+        /// The listing's next offer; null if this turn brings none, and the turn is used up either way. With <paramref name="bidders"/>
+        /// it comes from one of them by name: the turn's kind of buyer, or the next kind that has somebody, never a buyer who
+        /// already has an offer standing for it. A rival bids only if it can put up <see cref="ServicesCatalogue.RivalLeastPct"/>
+        /// of the value, and never more than it can put up.
+        /// </summary>
+        public static SaleOffer Offer(ServicesState s, SaleListing l, int day, IList<SaleBidder> bidders)
         {
             int n = l.OffersMade, place = ServicesCatalogue.Number(l.Place);
             int asked = ServicesCatalogue.AskingPct[l.Step];
@@ -134,14 +155,35 @@ namespace RealLifeOverhaul.Economy
                 return null;
             }
             int kind = (ServicesCatalogue.Roll(s.Seed, place, l.ListedDay, PurposeKind, (int)BuyerKind.Count) + n) % (int)BuyerKind.Count;
+            SaleBidder who = default(SaleBidder);
+            if (bidders != null)
+            {
+                int found = -1;
+                for (int t = 0; t < (int)BuyerKind.Count && found < 0; t++)
+                {
+                    found = PickBidder(s, l, bidders, (kind + t) % (int)BuyerKind.Count, n);
+                }
+                if (found < 0)
+                {
+                    return null;   // nobody at all: the turn is used
+                }
+                who = bidders[found];
+                kind = who.Kind;
+            }
             int pull = (asked - 100) * ServicesCatalogue.AskingPullPct / 100;
             int jitter = ServicesCatalogue.Roll(s.Seed, place, n, PurposeJitter, 2 * ServicesCatalogue.JitterPct + 1) - ServicesCatalogue.JitterPct;
             int price = Math.Min(l.Asking, ServicesCatalogue.Round10(ServicesCatalogue.Pct(l.Value, ServicesCatalogue.BuyerPct[kind] + pull + jitter)));
+            int own = ServicesCatalogue.Roll(s.Seed, place, n, PurposeCeiling, ServicesCatalogue.CeilingSpreadPct + 1);
+            int ceiling = ServicesCatalogue.Round10(ServicesCatalogue.Pct(l.Value, ServicesCatalogue.BuyerCeilingPct[kind] + pull + own));
+            if (who.Purse > 0)
+            {
+                price = Math.Min(price, ServicesCatalogue.Round10(who.Purse));   // never more than the buyer can put up
+                ceiling = Math.Min(ceiling, ServicesCatalogue.Round10(who.Purse));
+            }
             if (price <= 0)
             {
                 return null;
             }
-            int own = ServicesCatalogue.Roll(s.Seed, place, n, PurposeCeiling, ServicesCatalogue.CeilingSpreadPct + 1);
             int parts = ServicesCatalogue.BuyerInstalments[kind];
             if (kind == (int)BuyerKind.Chain && ServicesCatalogue.Roll(s.Seed, place, n, PurposeParts, 2) == 0)
             {
@@ -149,11 +191,11 @@ namespace RealLifeOverhaul.Economy
             }
             var offer = new SaleOffer
             {
-                Id = s.NextId++, Place = l.Place, Buyer = kind, Price = price,
-                Ceiling = Math.Max(price, ServicesCatalogue.Round10(ServicesCatalogue.Pct(l.Value, ServicesCatalogue.BuyerCeilingPct[kind] + pull + own))),
+                Id = s.NextId++, Place = l.Place, Buyer = kind, Price = price, Ceiling = Math.Max(price, ceiling),
                 KeepsStaff = ServicesCatalogue.BuyerKeepsStaff[kind], Parts = parts, ClauseDays = ServicesCatalogue.BuyerClauseDays[kind],
                 Deadline = day + ServicesCatalogue.OfferDaysLeast + ServicesCatalogue.Roll(s.Seed, place, n, PurposeDays, ServicesCatalogue.OfferDaysMost - ServicesCatalogue.OfferDaysLeast + 1),
-                Face = ServicesCatalogue.Roll(s.Seed, place, n, PurposeFace, 3)
+                Face = ServicesCatalogue.Roll(s.Seed, place, n, PurposeFace, 3),
+                Who = ServicesStore.Clean(who.Id), WhoName = ServicesStore.Clean(who.Name), WhoCount = Math.Max(0, who.Count)
             };
             s.SaleOffers.Add(offer);
             return offer;

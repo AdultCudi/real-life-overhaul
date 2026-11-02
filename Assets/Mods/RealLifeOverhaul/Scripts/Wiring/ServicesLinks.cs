@@ -11,7 +11,7 @@ namespace RealLifeOverhaul
     {
         /// <summary>
         /// The cleaning service and selling a business (ServicesBridges) with Ventures (investors bought out through its
-        /// own buy-out), the credit side (business loans paid off exactly as the game's EconoView does it), running a
+        /// own buy-out, and its investors as buyers by name), the credit side (business loans paid off exactly as the game's EconoView does it), running a
         /// business and the Planner. Called when a business's value is shown and when a sale completes.
         /// </summary>
         public static class ServicesLinks
@@ -78,6 +78,7 @@ namespace RealLifeOverhaul
                 ServicesBridges.LoansOwed = LoansOwed;
                 ServicesBridges.SettleLoans = SettleLoans;
                 ServicesBridges.BusinessGone = BusinessGone;
+                ServicesBridges.Investors = InvestorNames;
                 CompanyBridges.OtherIncome = BusinessSales.GainsBetween;   // a sale's gain goes into the quarter's return
                 CompanyBridges.Cleaned = CleaningService.Covers;            // the staff rota planner asks for no cleaning shift where the service cleans
                 PlannerDirector.Instance?.AddSource(Source);
@@ -228,6 +229,28 @@ namespace RealLifeOverhaul
                 finally
                 {
                     Loans.Clear();   // no loan of the game's kept past the payment, a fault or not
+                }
+            }
+
+            // The save's investors (Ventures' cast), by name: the people and firms who could buy a business of the player's.
+            private static void InvestorNames(List<string> into)
+            {
+                try
+                {
+                    VenturesDirector ventures = VenturesDirector.Instance;
+                    VenturesFile file = ventures != null && ventures.Running ? ventures.File : null;
+                    for (int i = 0; file != null && i < file.Investors.Count; i++)
+                    {
+                        if (file.Investors[i] != null)
+                        {
+                            into.Add(file.Investors[i].Name);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("ServicesLinks.InvestorNames", e);
+                    into.Clear();
                 }
             }
 

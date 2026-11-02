@@ -87,6 +87,38 @@ namespace RealLifeOverhaul.Economy
         public const int RecordsKept = 24;
         public const int ListingsMost = 16;
 
+        // What a buyer pays for besides the books: the goodwill is taken by its quality, within bounds.
+        public const int QualityLeastPct = 85;       // of the goodwill, at the worst
+        public const int QualityMostPct = 120;       // of the goodwill, at the best
+        public const int InteriorShortPct = 10;      // points off under the district's least interior score: its customers' wish for a fine interior is unmet (the game's InteriorDesignCustomerDemand)
+        public const int InteriorTopPct = 5;         // points on at a full score, in proportion above the district's least
+        public const int RatingSwingPct = 20;        // of customer satisfaction's distance from 50, in points (the game's own customers follow it: (overall - 50) / 100 + 1)
+        public const int SkillSwingPct = 10;         // of the staff's mean skill's distance from 50, in points
+        public const int RatingGood = 80;            // customer satisfaction a buyer counts as good
+        public const int SkillGood = 70;             // the staff's mean skill a buyer counts as good
+        public const int RaiseStep = 10;             // points a "what would raise it" line asks for: satisfaction, skill
+
+        // Rivals of the game's as buyers.
+        public const int RivalPurseWeeks = 26;       // a rival can put up half a year of its weekly takings (the game's RivalData.WeeklyIncome)
+        public const int RivalLeastPct = 85;         // of the value: a rival who cannot put up this much does not bid
+
+        // Rivals selling their own businesses.
+        public const int RivalSaleGapDays = 10;      // days at least between two rivals' sales
+        public const int RivalSaleChancePct = 40;    // the chance on a day past the gap that a rival puts one up
+        public const int RivalSaleOpenDays = 5;      // days the player may buy it first
+        public const int RivalSaleAskPct = 95;       // of the game's own takeover price (BizMan's): a seller asks a little under it
+        public const int RivalSalesMost = 2;         // rivals' businesses for sale at once
+        public const int RivalSaleWeakest = 3;       // a rival sells one of the city's weakest few of the rivals' businesses
+        public const int RivalSaleKeep = 2;          // a rival with fewer businesses than this sells none: never its last
+
+        /// <summary>A chain's listed company by Ventures' sector, where none is in the business's own trade: retail, food, office, leisure, industry.</summary>
+        public static readonly RealLifeOverhaul.Markets.MarketSector[] ChainSectors =
+        {
+            RealLifeOverhaul.Markets.MarketSector.Stores, RealLifeOverhaul.Markets.MarketSector.Restaurants,
+            RealLifeOverhaul.Markets.MarketSector.Services, RealLifeOverhaul.Markets.MarketSector.Leisure,
+            RealLifeOverhaul.Markets.MarketSector.Industry
+        };
+
         public static int Clamp(int value, int least, int most) => value < least ? least : value > most ? most : value;
 
         /// <summary>amount x percent / 100, rounded to the nearest whole, without running over.</summary>

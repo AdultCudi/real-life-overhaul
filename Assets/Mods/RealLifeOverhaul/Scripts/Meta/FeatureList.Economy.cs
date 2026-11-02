@@ -416,7 +416,7 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_economy_sale_about").Help("reallife_guide_economy_sale")
                 .Owns(Settings.EconomySaleId)
                 .StandsAside(GoingPublic.OwnershipSentence, Settings.EconomySaleId)   // who rents what is the host's record in a session
-                .Test("reallife_svc_test_offer", "reallife_svc_test_sale_paper", "reallife_svc_test_part"));
+                .Test("reallife_svc_test_offer", "reallife_svc_test_sale_paper", "reallife_svc_test_part", "reallife_svc_test_rival_offer", "reallife_svc_test_rival_sale"));
             Features.Add("office_space", "reallife_meta_title_office_space")
                 .About("reallife_guide_office_space_about").Help("reallife_guide_office_space")
                 .Fact("offices_district", () => Guide.Number(Offices.ConversionRules.DistrictFloor))

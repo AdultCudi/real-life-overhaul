@@ -32,6 +32,9 @@ namespace RealLifeOverhaul.Economy
         /// <summary>A business sold, by its place, and its whole price, for the player's listed company (Markets/Listing). Default: nobody.</summary>
         public static Action<string, int> Sold;
 
+        /// <summary>The save's investors by name (Ventures' own), for a buyer of a business. Default: none, and the catalogue's investment firms buy.</summary>
+        public static Action<List<string>> Investors;
+
         public static void Reset()
         {
             InvestorsOwed = null;
@@ -40,6 +43,7 @@ namespace RealLifeOverhaul.Economy
             SettleLoans = null;
             BusinessGone = null;
             Sold = null;
+            Investors = null;
         }
     }
 

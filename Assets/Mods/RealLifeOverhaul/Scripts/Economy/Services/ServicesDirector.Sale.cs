@@ -20,6 +20,8 @@ namespace RealLifeOverhaul.Economy
         };
 
         private readonly List<BuildingRegistration> _regs = new List<BuildingRegistration>(16);
+        private readonly List<SaleBidder> _bidders = new List<SaleBidder>(48);
+        private readonly List<string> _investors = new List<string>(16);
 
         /// <summary>What a business is worth now, line by line.</summary>
         public SaleBreakdown Value(BuildingRegistration reg) => SaleRules.Value(ServicesGame.Inputs(reg));
@@ -129,14 +131,45 @@ namespace RealLifeOverhaul.Economy
             });
         }
 
-        /// <summary>An offer is accepted: the game's own question is asked, and the sale completes on its answer.</summary>
+        /// <summary>An offer is accepted: the game's own question is asked, and the sale completes on its answer. A rival who can no longer buy withdraws.</summary>
         public void Accept(int offerId)
         {
             SaleOffer o = Ready(false) ? _state.SaleOffer(offerId) : null;
-            if (o != null)
+            if (o == null)
             {
-                Ask(o.Place, o.Price, o.Parts, o.KeepsStaff, o.ClauseDays, o.Buyer, ServicesText.Buyer(o));
+                return;
             }
+            string rival = RivalOf(o);
+            if (rival != null && !RivalStill(o, rival))
+            {
+                return;
+            }
+            Ask(o.Place, o.Price, o.Parts, o.KeepsStaff, o.ClauseDays, o.Buyer, ServicesText.Buyer(o), rival);
+        }
+
+        // The rival of the game's behind an offer, by its id; null for any other buyer, or an offer made before named buyers.
+        private static string RivalOf(SaleOffer o) => o != null && o.Buyer == (int)BuyerKind.Rival && o.Named && o.Who.Length > 0 ? o.Who : null;
+
+        // Whether the rival behind an offer can still buy; if not, the offer is withdrawn with a notice.
+        private bool RivalStill(SaleOffer o, string rival)
+        {
+            bool still = false;
+            SaleGuard("a rival's offer", () =>
+            {
+                BuildingRegistration reg = ServicesGame.Find(o.Place);
+                still = reg == null || !ServicesGame.IsSellable(reg) || ServicesGame.RivalStillBuys(reg, rival);   // a business no longer the player's is refused further on
+                if (!still)
+                {
+                    SaleListing l = _state.Listing(o.Place);
+                    _state.SaleOffers.Remove(o);
+                    Logger?.Info("Selling a business: " + o.WhoName + " (a rival of the game's) can no longer buy '" + (l != null ? l.Name : o.Place)
+                                 + "': beaten, or none of the game's businesses for that building is theirs to run. The offer is withdrawn.");
+                    Notifications.Show(NotificationType.Warning, "reallife_svc_refuse_rival_gone",
+                        new Dictionary<string, string>(2) { { "buyer", ServicesText.Buyer(o) }, { "business", l != null ? l.Name : "?" } }, 10f);
+                    Changed();
+                }
+            });
+            return still;
         }
 
         /// <summary>A quick sale: seven tenths of the value, at once, to a dealer in businesses who keeps nobody and asks for no clause.</summary>
@@ -147,11 +180,11 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             BuildingRegistration reg = ServicesGame.Find(place);
-            Ask(place, SaleRules.Quick(ServicesGame.IsSellable(reg) ? Value(reg).Value : 0), 0, false, 0, (int)BuyerKind.Investor, ServicesText.T("reallife_svc_buyer_quick"));
+            Ask(place, SaleRules.Quick(ServicesGame.IsSellable(reg) ? Value(reg).Value : 0), 0, false, 0, (int)BuyerKind.Investor, ServicesText.T("reallife_svc_buyer_quick"), null);
         }
 
         // The game's question before the step that cannot be undone. Everything is checked again on its answer.
-        private void Ask(string place, int price, int parts, bool keepsStaff, int clauseDays, int buyer, string buyerName)
+        private void Ask(string place, int price, int parts, bool keepsStaff, int clauseDays, int buyer, string buyerName, string rival)
         {
             SaleGuard("asking before a sale", () =>
             {
@@ -181,7 +214,7 @@ namespace RealLifeOverhaul.Economy
                     : ServicesText.T("reallife_svc_confirm_paid_once");
                 string body = ServicesText.Fill("reallife_svc_confirm_sell_body", "business", name, "buyer", buyerName, "price", ServicesText.Money(price), "paid", paid, "terms", terms);
                 GameConfirm.Show("reallife_svc_confirm_sell_title".Localize(new { business = name }), "reallife_svc_confirm_sell_text".Localize(new { text = body }),
-                    () => SaleGuard("completing a sale", () => Sell(place, price, parts, keepsStaff, clauseDays, buyer, buyerName)), null, null, null, false, true);
+                    () => SaleGuard("completing a sale", () => Sell(place, price, parts, keepsStaff, clauseDays, buyer, buyerName, rival)), null, null, null, false, true);
             });
         }
 
@@ -212,7 +245,7 @@ namespace RealLifeOverhaul.Economy
         }
 
         // The sale itself, once the game's question was answered with yes.
-        private void Sell(string place, int price, int parts, bool keepsStaff, int clauseDays, int buyer, string buyerName)
+        private void Sell(string place, int price, int parts, bool keepsStaff, int clauseDays, int buyer, string buyerName, string rival)
         {
             if (!Ready(false))
             {
@@ -244,7 +277,7 @@ namespace RealLifeOverhaul.Economy
                 Logger?.Warn("Selling a business: a business loan secured on '" + name + "' could not be paid off; it stays owed, and the credit side will find it unsecured.");
             }
 
-            SaleAfter after = ServicesGame.Complete(reg, keepsStaff, out int deposit, out string log);
+            SaleAfter after = ServicesGame.Complete(reg, keepsStaff, rival, out int deposit, out string log);
 
             _state.Unlist(place);
             CleaningClient client = _state.Client(place);
@@ -320,7 +353,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     Logger?.Warn("Selling a business: a business loan secured on '" + name + "' could not be paid off in the takeover; it stays owed, and the credit side will find it unsecured.");
                 }
-                ServicesGame.Complete(reg, true, out int deposit, out string log);
+                ServicesGame.Complete(reg, true, null, out int deposit, out string log);
                 _state.Unlist(place);
                 CleaningClient client = _state.Client(place);
                 if (client != null && !client.Outside)
@@ -370,6 +403,7 @@ namespace RealLifeOverhaul.Economy
                 }
             }
             int lapsed = SaleRules.ExpireOffers(_state, day);
+            RivalSalesDay(day);
             for (int i = 0; i < _state.Listings.Count; i++)
             {
                 SaleListing l = _state.Listings[i];
@@ -449,16 +483,28 @@ namespace RealLifeOverhaul.Economy
             SaleBreakdown b = Value(reg);
             l.Value = b.Value;
             l.Asking = SaleRules.Asking(l.Value, l.Step);
-            SaleOffer offer = SaleRules.Offer(_state, l, day);
+            _investors.Clear();
+            ServicesBridges.Investors?.Invoke(_investors);
+            ServicesGame.Bidders(reg, _investors, _bidders);
+            int rivals = 0;
+            for (int i = 0; i < _bidders.Count; i++)
+            {
+                rivals += _bidders[i].Kind == (int)BuyerKind.Rival ? 1 : 0;
+            }
+            SaleOffer offer = SaleRules.Offer(_state, l, day, _bidders);
+            int seen = _bidders.Count;
+            _bidders.Clear();
+            _investors.Clear();
             if (Verbose)
             {
                 Logger?.Info("Services check (an offer, " + l.Name + ", day " + day + "): value " + l.Value + ", asking " + l.Asking + " (" + ServicesCatalogue.AskingPct[l.Step] + "%), turn "
                              + l.OffersMade + " of " + ServicesCatalogue.AskingOffersMost[l.Step] + ": "
                              + (offer != null
-                                 ? ((BuyerKind)offer.Buyer) + " offers " + offer.Price + (offer.Parts > 1 ? " in " + offer.Parts + " parts" : " at once") + ", "
+                                 ? ((BuyerKind)offer.Buyer) + " '" + offer.WhoName + "' (of " + seen + " who could buy, " + rivals + " of them rivals of the game's) offers " + offer.Price
+                                   + (offer.Parts > 1 ? " in " + offer.Parts + " parts" : " at once") + ", "
                                    + (offer.KeepsStaff ? "keeps" : "does not keep") + " the staff, clause " + offer.ClauseDays + " day(s), until day " + offer.Deadline
                                    + "; never above the asking price: " + (offer.Price <= l.Asking ? "PASS" : "FAIL")
-                                 : "nobody comes this time; the next turn is on day " + l.NextOfferDay + ": PASS"));
+                                 : "nobody comes this time (" + seen + " could buy); the next turn is on day " + l.NextOfferDay + ": PASS"));
             }
             if (offer != null)
             {

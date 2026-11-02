@@ -60,6 +60,7 @@ namespace RealLifeOverhaul.Economy
             i.Deposit = Mathf.Max(0, Mathf.FloorToInt(reg.lastDeposit));
             i.Investors = ServicesBridges.InvestorsOwed != null ? Mathf.Max(0, ServicesBridges.InvestorsOwed(reg)) : 0;
             i.Loans = ServicesBridges.LoansOwed != null ? Mathf.Max(0, ServicesBridges.LoansOwed(reg.Address)) : 0;
+            Quality(reg, ref i);
             return i;
         }
 
@@ -154,8 +155,12 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The day the player took a business on (BuildingRegistration.creationDay).</summary>
         public static int Created(BuildingRegistration reg) => reg != null ? reg.creationDay : -1;
 
-        /// <summary>Ends the player's hold on a business and its building; the caller moves the sale's money. 'log' is a line for Player.log.</summary>
-        public static SaleAfter Complete(BuildingRegistration reg, bool keepsStaff, out int deposit, out string log)
+        /// <summary>
+        /// Ends the player's hold on a business and its building; the caller moves the sale's money. 'log' is a line for
+        /// Player.log. A rival of the game's who bought it (<paramref name="rival"/>, its id; null for any other buyer) opens
+        /// it as its own business there.
+        /// </summary>
+        public static SaleAfter Complete(BuildingRegistration reg, bool keepsStaff, string rival, out int deposit, out string log)
         {
             Address address = reg.Address;
             Building building = GameRegistrations.BuildingOf(reg);
@@ -230,11 +235,14 @@ namespace RealLifeOverhaul.Economy
 
             SaleAfter after = owned ? SaleAfter.Owned : SaleAfter.ToRent;
             string opened = null;
+            bool bought = false;
             if (!owned && building != null)
             {
                 try
                 {
-                    opened = Reopen(reg, building, type);
+                    opened = ReopenFor(reg, building, type, rival);
+                    bought = opened != null;
+                    opened = opened ?? Reopen(reg, building, type);
                     after = opened != null ? SaleAfter.Rival : SaleAfter.ToRent;
                 }
                 catch (Exception e)
@@ -267,7 +275,8 @@ namespace RealLifeOverhaul.Economy
                   + (keepsStaff ? staffGone + " left with the business (paid for today, then off the payroll)" : "all unassigned and still employed")
                   + "; the game's own shut-down run; " + items + " item(s) of stock and furniture taken out of the building; deposit " + deposit
                   + " back under the game's own transaction; the building "
-                  + (after == SaleAfter.Rival ? "is now '" + opened + "', a business of the game's own"
+                  + (after == SaleAfter.Rival ? "is now '" + opened + "', " + (bought ? "the business of the rival who bought it" : "a business of the game's own")
+                      + (!string.IsNullOrEmpty(rival) && !bought ? " (the rival who bid could no longer run it there)" : string.Empty)
                       : after == SaleAfter.Owned ? "stays the player's property, with no business in it" : "is free to rent");
             return after;
         }

@@ -1225,6 +1225,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_svc_test_offer", () => Economy.ServicesDirector.Instance?.TestSaleOffer())
                 .AddButton("reallife_svc_test_sale_paper", () => Economy.ServicesDirector.Instance?.TestSalePaper())
                 .AddButton("reallife_svc_test_part", () => Economy.ServicesDirector.Instance?.TestPart())
+                .AddButton("reallife_svc_test_rival_offer", () => Economy.ServicesDirector.Instance?.TestRivalOffer())
+                .AddButton("reallife_svc_test_rival_sale", () => Economy.ServicesDirector.Instance?.TestRivalSale())
                 .AddHeader("reallife_brand_header")
                 .AddToggle(Settings.EconomyBrandsId, "reallife_brand_enabled", Settings.EconomyBrands,
                     v => Settings.EconomyBrands = v)
