@@ -278,6 +278,14 @@ namespace RealLifeOverhaul.Economy
                     int most = ManagerGame.Most(line);
                     int fair = ManagerRules.Order(use, now, toDelivery, floor, most, 0);
                     int amount = ManagerRules.Order(use, now, toDelivery, floor, most, ManagerRules.Slip(skill, roll, slip));
+                    int keeps = ShelfLife(name);
+                    if (keeps > 0)
+                    {
+                        // Goods that keep a week or less: no more than sells before they spoil, so the order is smaller (Economy/Logistics).
+                        int cap = SpoilRules.OrderCap(use, keeps);
+                        fair = Math.Min(fair, cap);
+                        amount = Math.Min(amount, cap);
+                    }
                     if (_changes.Count < ManagerCatalogue.ItemsInDecision && ManagerRules.Moves(line.amount, amount, ManagerCatalogue.StockStep))
                     {
                         _changes.Add(new ItemChange { Item = name, Before = line.amount, After = amount });
@@ -929,5 +937,9 @@ namespace RealLifeOverhaul.Economy
                 }
             }
         }
+
+        // Days a product keeps out of cold storage while food spoilage is on; 0 when it never spoils or spoilage is off.
+        private static int ShelfLife(string item) =>
+            Settings.Economy && Settings.LivingPopulation && Settings.LivingSpoilage ? SpoilRules.Life(item, false, false) : 0;
     }
 }

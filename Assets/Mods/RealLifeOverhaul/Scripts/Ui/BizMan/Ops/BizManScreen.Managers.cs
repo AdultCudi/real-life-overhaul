@@ -555,6 +555,10 @@ namespace RealLifeOverhaul.Ui
         // A press of one of the strategy's rows: the plan's strategy changed by it, and kept (and applied) by the company.
         private bool ModPress(int code, int what)
         {
+            if (_shown == BizManRules.LogisticsManagers)
+            {
+                return TripPress(code, what);
+            }
             PricingManagerPlan plan = _shown == BizManRules.PricingManagers ? ChosenPricePlan() : null;
             Company director = Company.Instance;
             if (plan == null || director == null || !director.PricePlansOn || !Company.PlanMine(plan))
@@ -663,7 +667,14 @@ namespace RealLifeOverhaul.Ui
             _right = false;
             o.FormLead = Loc(Get<TextLocalizationComponent>(GameContract.RouteMost, plan2));
             LogisticsManagerPlan route = ChosenRoute();
-            RouteLog(route);
+            if (TripsShown)
+            {
+                TripLines(route);   // the route runs as delivery trips: its departures, vehicles and figures in place of the game's one run
+            }
+            else
+            {
+                RouteLog(route);
+            }
             var actions = new List<UiActionModel>(3);
             if (route != null)
             {
@@ -772,6 +783,10 @@ namespace RealLifeOverhaul.Ui
             if (!CanSend(route))
             {
                 return false;
+            }
+            if (TripsShown)
+            {
+                return SendTrips(route);
             }
             string id = route.id;
             GameConfirm.Show("reallife_ui_bizops_send_title", "reallife_ui_bizops_send_body", () => Sent(id), null, "reallife_ui_bizops_send_now", null, true, false);
@@ -1551,6 +1566,7 @@ namespace RealLifeOverhaul.Ui
                     // A shop's stock and its opening move with the clock, looked at a quarter of an hour at a time; a run of the game's.
                     sig = sig * 31 + _stops.Count + _goods.Count * 7 + TimeHelper.CurrentHour * 4 + (int)TimeHelper.CurrentMinute / 15;
                     sig = sig * 3 + (LogisticsManagerHelper.WarehouseDeliveriesWork.HasPendingWork || LogisticsManagerHelper.FactoryDeliveriesWork.HasPendingWork ? 1 : 0);
+                    sig = sig * 31 + TripsSignature();
                     for (int i = 0; i < _goods.Count; i++)
                     {
                         sig = sig * 31 + Hash(WordsAt(_goods[i], "BusinessTarget/Amount/Text Area/Text"));

@@ -546,6 +546,7 @@ internal static partial class Program
         MomCall();   // the family dinner call: the ring answered from its notice and the phone, the dinner offered by Mom's call and Family, one table of dates (MomCallChecks.cs)
         Estate();
         Online();
+        Logistics();   // delivery trips and food spoilage: departures, timeline, loads, fuel, wages, the rivals' books, batches, shelf life and both saves (LogisticsChecks.cs)
         Services();
         Brands();
         Tables();
