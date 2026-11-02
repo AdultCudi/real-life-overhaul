@@ -35,6 +35,11 @@ namespace RealLifeOverhaul.Ui
 
         private void Factory(BizManBusiness b)
         {
+            if (Lacks(FactoryCore))
+            {
+                Handover(b);
+                return;
+            }
             _m.Part = BizManPart.Factory;
             RowsBegin();
             BizOpsModel o = _m.Ops;
@@ -222,6 +227,11 @@ namespace RealLifeOverhaul.Ui
         // Each vehicle slot as the game's own driver station shows it: its number and vehicle, and who drives it as its own drop-down.
         private void Fleet(BizManBusiness b)
         {
+            if (Lacks(FleetCore))
+            {
+                Handover(b);
+                return;
+            }
             _m.Part = BizManPart.Drivers;
             RowsBegin();
             BizOpsModel o = _m.Ops;
@@ -258,6 +268,11 @@ namespace RealLifeOverhaul.Ui
         // The stock as the game's own table lists it, how full the warehouse is over it, and its Sell all (its question first).
         private void Stock(BizManBusiness b)
         {
+            if (Lacks(StockCore))
+            {
+                Handover(b);
+                return;
+            }
             _m.Part = BizManPart.Stock;
             RowsBegin();
             BizOpsModel o = _m.Ops;

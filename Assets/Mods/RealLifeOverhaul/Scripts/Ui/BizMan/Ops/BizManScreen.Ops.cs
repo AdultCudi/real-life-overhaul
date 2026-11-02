@@ -29,6 +29,30 @@ namespace RealLifeOverhaul.Ui
 
         public const string BizOpsId = "bizops";
 
+        // What each page cannot be drawn without (its plans and its plan, its machines, its drivers, its stock): one an
+        // update took away hands that tab to the game's own view, as its contract line said in Player.log at the start,
+        // rather than a page that says there is nothing.
+        private static readonly GameMember[] PricingCore = { GameContract.PriceList, GameContract.PriceOrder, GameContract.PriceGoods };
+        private static readonly GameMember[] RoutesCore = { GameContract.RouteOrder, GameContract.RouteStops, GameContract.RouteFrom };
+        private static readonly GameMember[] BuyingCore = { GameContract.BuyOrder };
+        private static readonly GameMember[] HrCore = { GameContract.HrOrder, GameContract.HrStaff };
+        private static readonly GameMember[] HuntCore = { GameContract.HuntPlan, GameContract.HuntOrder };
+        private static readonly GameMember[] FactoryCore = { GameContract.FactoryMachineName, GameContract.FactoryMachineItem, GameContract.FactoryRecipe };
+        private static readonly GameMember[] FleetCore = { GameContract.DriverChoice };
+        private static readonly GameMember[] StockCore = { GameContract.StockBoxes, GameContract.StockSell };
+
+        private static bool Lacks(GameMember[] core)
+        {
+            for (int i = 0; i < core.Length; i++)
+            {
+                if (core[i].Field == null)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private readonly List<OpsWidget> _widgets = new List<OpsWidget>(32);
         private readonly List<BizOpsRow> _rows = new List<BizOpsRow>(32);
         private int _opsHeld = -1;                  // the slider row held to take Left and Right

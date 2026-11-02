@@ -4,8 +4,10 @@ namespace RealLifeOverhaul
     /// The game contract's lines for BizMan's operations on the RLO interface (Scripts/Ui/BizMan/Ops): the schedule's day
     /// buttons, hour toggles, picker and auto fill, the managers' plan lists and plan pages, the factory's machines and
     /// recipe, the warehouse's drivers and stock, and the uniforms' editor, each read after the game (and other mods) filled
-    /// them and pressed as a click presses them. Every line is optional: a line an update takes away hands that tab back to
-    /// the game's own view, with one line in Player.log. Self-contained: leans on nothing in another part file.
+    /// them and pressed as a click presses them. Every line is optional, each a line in Player.log when an update takes it
+    /// away: one a page stands on (the schedule's lanes and days, a manager's plans and plan, the machines, the drivers,
+    /// the stock, the editor's parts) hands that tab or the editor back to the game's own view; any other takes away only
+    /// its own piece, an action or a row. Self-contained: leans on nothing in another part file.
     /// </summary>
     public static partial class GameContract
     {

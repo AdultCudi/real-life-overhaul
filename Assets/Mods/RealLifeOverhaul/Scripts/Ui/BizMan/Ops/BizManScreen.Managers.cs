@@ -50,6 +50,11 @@ namespace RealLifeOverhaul.Ui
 
         private void Managers(BizManBusiness b)
         {
+            if (Lacks(CoreOf(_shown)))
+            {
+                Handover(b);
+                return;
+            }
             _m.Part = BizManPart.Managers;
             if (!string.Equals(_goodOf, _shown, StringComparison.Ordinal))
             {
@@ -74,6 +79,18 @@ namespace RealLifeOverhaul.Ui
             }
             PlanActions(o);
             RowsEnd();
+        }
+
+        private static GameMember[] CoreOf(string tab)
+        {
+            switch (tab)
+            {
+                case BizManRules.PricingManagers: return PricingCore;
+                case BizManRules.LogisticsManagers: return RoutesCore;
+                case BizManRules.PurchasingAgents: return BuyingCore;
+                case BizManRules.HrManagers: return HrCore;
+                default: return HuntCore;
+            }
         }
 
         // The plans: the game's reorderable list's own entries, each read by what the game wrote into it.
