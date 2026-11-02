@@ -101,6 +101,10 @@ namespace RealLifeOverhaul.Ledger
             _payWeek = PayWeek;
             ShareRegister();
             StartCoroutine(Guard.Routine(Tick()));
+            // The paper's first load after the save compiled behind the loading screen: its first run paid Mono's compiler in
+            // its frame of the start line, the screen clear (11.4 ms of a frame of 99 ms, the owner's log of 2 Nov 2026).
+            MomentWarm.Add("the City Ledger's first load after the save", typeof(LedgerDirector), typeof(LedgerStore), typeof(LedgerState), typeof(LedgerKiosks),
+                typeof(LedgerHome));
         }
 
         private void OnDestroy()

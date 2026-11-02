@@ -31,6 +31,14 @@ internal static partial class Program
             "the whole search for a car's power (24 drives of the model) is for the offline checks, never a frame of play"),
         ("Driving/CarHandling.cs", null, new[] { "_design.Begin(", "_design.Step()" }, new[] { "HandlingModel.Design(" },
             "the whole design of the handling is for the offline checks, never a frame of play"),
+        ("Driving/CarHandling.cs", "Make", new[] { "Build(vehicle);" }, new[] { "LiftParts(", "PutOn(", "AddAndOnboardNewComponent(" },
+            "the design made and the mod's own tyres and curves filled in a frame of their own, nothing of the car's touched: with the handling put on it was 4.20 ms"),
+        ("Driving/CarHandling.cs", "Finish", new[] { "Make()" }, new[] { "Build(" },
+            "the frame that puts the handling on finds it made, never builds it again"),
+        ("Driving/CarTuning.cs", "OnUpdate", new[] { "_spread.Item((int)Sums.PutBack, began);" }, new string[0],
+            "the last car's numbers are taken off in a frame of their own, before the next car's sums: with the first of them it was a frame of 2.19 ms"),
+        ("Driving/CarTuning.cs", "Carry", new[] { "_handling.Make()", "_handling.Finish()" }, new string[0],
+            "the handling made and the handling put on are a frame apart"),
         ("Core/GameUi/PhoneApps.cs", "Pump", new[] { "WorkSlice.Of(InstallQueue<PhoneApp>.SliceMs", "Waiting.Next(ref slice" }, new[] { "WorkSlice.Whole" },
             "the mod's apps go on the phone one a frame, never all of them in the frame it can first take them (77 ms in the beta 6 log)"),
         ("Core/GameUi/PhoneApps.cs", "Install", new[] { "app.Queue(menu)", "OnPhone(phone, menu, def.Id)" }, new[] { "Put()", "GetComponentsInChildren", "Instantiate(" },
@@ -118,10 +126,10 @@ internal static partial class Program
             "the hotel doorman is made behind the loading screen, not as a hotel's door first comes near"),
         ("People/ActorPool.cs", "Prewarm", new[] { "PropLibrary.Ready", "MakeUniformed()" }, new string[0],
             "the street pool's officers and paramedics are made behind the loading screen when their kit is read, not a look every five seconds in play"),
-        ("Leisure/Activities/ChessGame.cs", "PutOut", new[] { "_pending = 1;" }, new[] { "People.Take(", "Watch(city" },
-            "the chess table, its opponent and its onlooker go out a frame each: all three in one frame were 3.2 ms"),
-        ("Leisure/Activities/ChessGame.cs", "Step", new[] { "People.Take(", "Watch(city", "_pending = 2;" }, new string[0],
-            "the opponent a frame after the table, the onlooker a frame after that")
+        ("Leisure/Activities/ChessGame.cs", "PutOut", new[] { "_pending = SetUp.OpponentTaken;" }, new[] { "People.Take(", "Watch(city", ".Work(" },
+            "the chess table goes out alone, its opponent and its onlooker in the frames after it: all three in one frame were 3.2 ms"),
+        ("Leisure/Activities/ChessGame.cs", "Step", new[] { "People.Take(", "Watch(city", "_pending = SetUp.OpponentSeated;", "_pending = SetUp.OnlookerTaken;", "SetUp.OnlookerWatching : SetUp.None" }, new string[0],
+            "the opponent taken, then seated, the onlooker taken, then set watching, a frame each: an opponent taken and seated in one frame was 4.84 ms")
     };
 
     private static void SpreadChecks()

@@ -19,8 +19,9 @@ namespace RealLifeOverhaul
     /// from then on. The sums for a car (the handling's design, then the search for its power) are spread over the frames
     /// after the player gets in or an option changes, a slice of <see cref="SliceMs"/> ms a frame and a step more at most,
     /// the car driving as the game made it meanwhile (some 15 frames): done whole they were a frame of 15 ms (the owner's
-    /// log of 28 Oct 2026, beta 6). Per frame: one reference and two numbers compared; while a car's sums are under way,
-    /// that slice.
+    /// log of 28 Oct 2026, beta 6). The last car's numbers are taken off in a frame of their own before them, and the code
+    /// of all of it is compiled behind the loading screen (Core/MomentWarm). Per frame: one reference and two numbers
+    /// compared; while a car's sums are under way, that slice.
     /// </summary>
     public class CarTuning : MonoBehaviour
     {
@@ -37,6 +38,7 @@ namespace RealLifeOverhaul
             None,
             HandlingBegin,   // the checks and the car read for the handling
             Handling,        // a step of its design
+            HandlingMade,    // the design made and the mod's own tyres and curves filled for it, nothing of the car's touched (a frame of its own)
             HandlingOn,      // the design put on the car (a frame of its own)
             HandlingSaid,    // its self-check line, with Developer diagnostics on (a frame of its own)
             TuningBegin,     // the checks and the car read for its power
@@ -44,7 +46,8 @@ namespace RealLifeOverhaul
             Shift,           // the custom shop's quicker gear change driven again
             TuningOn,        // the power, gearing and drag put on the car, and its line (a frame of its own)
             Ease,            // the eased pedals on
-            Said             // with Developer diagnostics on, the self-check line of the spread (a frame of its own)
+            Said,            // with Developer diagnostics on, the self-check line of the spread (a frame of its own)
+            PutBack          // not a step: the line's name for the frame that took the last car's numbers off, before the first step
         }
 
         public static IModLogger Logger;
@@ -118,6 +121,14 @@ namespace RealLifeOverhaul
             _drag = gameObject.AddComponent<CarDrag>();
             _drag.enabled = false;
             _easePedal = Guard.Listener(EasePedal);   // each physics step of the vehicle's input: a fault never reaches the vehicle's own
+            // Behind the loading screen: the handling's own presets made, and the code of a car's sums compiled, so the first
+            // car of a session costs what the next does (its handling went on in 4.20 ms against under 0.74, its sums 20.7 ms
+            // against 7.5: the owner's log of 2 Nov 2026).
+            _handling.Prepare();
+            MomentWarm.Add("a car got into, or its options changed", typeof(CarTuning), typeof(CarHandling), typeof(HandlingDesign), typeof(HandlingModel),
+                typeof(HandlingRules), typeof(CarSolve), typeof(CarModel), typeof(CarDrag), typeof(Wiring.DrivingLinks),
+                typeof(NWH.VehiclePhysics2.Modules.ABS.ABSModuleWrapper), typeof(NWH.VehiclePhysics2.Modules.ABS.ABSModule),
+                typeof(NWH.Common.Vehicles.FrictionPreset), typeof(NWH.VehiclePhysics2.GroundDetection.GroundDetectionPreset));
         }
 
         private static readonly int HotUpdate = HotSpots.Slot("Driving: CarTuning.Update");
@@ -155,11 +166,12 @@ namespace RealLifeOverhaul
             }
 
             long began = System.Diagnostics.Stopwatch.GetTimestamp();
-            WorkSlice slice = WorkSlice.Of(SliceMs, 1);   // what puts the last car back counts in the first slice
+            WorkSlice slice = WorkSlice.Of(SliceMs, 1);
             try
             {
                 if (!same)
                 {
+                    bool held = _tuned != null || _pedalOn != null || _handling.On;   // something of the mod's is on a car: taking it off is a frame's work
                     Restore();
                     _seen = vehicle;
                     _options = options;
@@ -169,6 +181,14 @@ namespace RealLifeOverhaul
                         return;
                     }
                     Begin(car, vehicle, options, handled);
+                    if (held)
+                    {
+                        // The last car's numbers taken off are the first frame of the line, the next car's sums from the next
+                        // frame: with the first of them it was a frame of 2.19 ms (the owner's log of 2 Nov 2026).
+                        _spread.Item((int)Sums.PutBack, began);
+                        _spread.Frame(began);
+                        return;
+                    }
                 }
                 Carry(ref slice, began);
             }
@@ -215,10 +235,13 @@ namespace RealLifeOverhaul
                         _sums = _handling.Begin(_sumsCar, _sumsVehicle, _sumsLevel, _sumsTuning) ? Sums.Handling : AfterHandling();
                         break;
                     case Sums.Handling:
-                        _sums = _handling.Step() ? Sums.Handling : Sums.HandlingOn;
+                        _sums = _handling.Step() ? Sums.Handling : Sums.HandlingMade;
+                        break;
+                    case Sums.HandlingMade:
+                        _sums = _handling.Make() ? Sums.HandlingOn : AfterHandling();
+                        _designSteps = _handling.DesignSteps;
                         break;
                     case Sums.HandlingOn:
-                        _designSteps = _handling.DesignSteps;
                         _sums = _handling.Finish() && Meta.Dev.Verbose ? Sums.HandlingSaid : AfterHandling();
                         break;
                     case Sums.HandlingSaid:
@@ -271,7 +294,8 @@ namespace RealLifeOverhaul
         // takes a slice of its own.
         private static bool Heavy(Sums item)
         {
-            return item == Sums.HandlingBegin || item == Sums.HandlingOn || item == Sums.HandlingSaid || item == Sums.TuningBegin || item == Sums.TuningOn || item == Sums.Said;
+            return item == Sums.HandlingBegin || item == Sums.HandlingMade || item == Sums.HandlingOn || item == Sums.HandlingSaid || item == Sums.TuningBegin
+                   || item == Sums.TuningOn || item == Sums.Said;
         }
 
         // With Developer diagnostics on, once a car's sums are done: their steps and frames, and the slowest frame against 2 ms.
@@ -288,9 +312,9 @@ namespace RealLifeOverhaul
         // What each item is, by its Sums, for the line.
         private static readonly string[] ItemNames =
         {
-            "nothing", "the car read for the handling", "a step of the handling's design", "the handling put on the car", "the handling's self-check line",
-            "the car read for its power", "a step of the search for its power", "the quicker gear change driven again", "the power, gearing and drag put on the car",
-            "the eased pedals put on", "the self-check line"
+            "nothing", "the car read for the handling", "a step of the handling's design", "the handling's own tyres and curves made", "the handling put on the car",
+            "the handling's self-check line", "the car read for its power", "a step of the search for its power", "the quicker gear change driven again",
+            "the power, gearing and drag put on the car", "the eased pedals put on", "the self-check line", "the last car's numbers taken off"
         };
 
         private void OnDestroy()

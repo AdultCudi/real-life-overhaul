@@ -13,8 +13,9 @@ namespace RealLifeOverhaul
     /// From roots (the handlers on an event), each of the mod's methods is read for what it calls, makes or takes a delegate
     /// of, and the runtime is asked for its code (RuntimeMethodHandle.GetFunctionPointer compiles a method under Mono and
     /// runs nothing). The game's and the framework's methods met on the way are compiled but not read further. Nothing the
-    /// code does changes, only when it is compiled. Game-free (only the runtime's reflection), checked by NavCheck.
-    /// COST: what a slice is given, a method at a time (Core/WorkSlice); the methods seen are kept (some hundreds of
+    /// code does changes, only when it is compiled. Game-free (only the runtime's reflection), checked by NavCheck. The
+    /// same walk from whole types (<see cref="RootAll"/>) compiles the code of a few moments of play behind the loading
+    /// screen (Core/MomentWarm). COST: what a slice is given, a method at a time (Core/WorkSlice); the methods seen are kept (some hundreds of
     /// kilobytes) so a method is never taken twice. Nothing while it is not asked to run.
     /// </summary>
     public sealed class CodeWarm
@@ -136,6 +137,36 @@ namespace RealLifeOverhaul
             {
                 RootAll(nested[i]);
             }
+        }
+
+        /// <summary>
+        /// Every method and constructor <paramref name="type"/> declares, its property and event accessors with them, as
+        /// roots: not its static constructor (the runtime runs it once, when it must), not its base type's, not its nested
+        /// types' (its own code reaches those it uses). For the code of a moment whose callers are the game's (a frame, an
+        /// engine's callback). How many were taken in that had not been met before. Read once, never per frame.
+        /// </summary>
+        public int RootDeclared(Type type)
+        {
+            if (type == null)
+            {
+                return 0;
+            }
+            const BindingFlags declared = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+            int before = _queue.Count;
+            MethodInfo[] methods = type.GetMethods(declared);
+            for (int i = 0; i < methods.Length; i++)
+            {
+                Take(methods[i], 0);
+            }
+            ConstructorInfo[] makers = type.GetConstructors(declared);
+            for (int i = 0; i < makers.Length; i++)
+            {
+                if (!makers[i].IsStatic)
+                {
+                    Take(makers[i], 0);
+                }
+            }
+            return _queue.Count - before;
         }
 
         /// <summary>

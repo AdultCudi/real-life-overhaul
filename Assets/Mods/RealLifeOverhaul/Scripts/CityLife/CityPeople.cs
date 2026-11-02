@@ -135,6 +135,10 @@ namespace RealLifeOverhaul
             }
             try
             {
+                // There first, then awake: woken where the shelf left them (made under the city, off the navigation mesh),
+                // their agent made the engine log a warning the first time each was taken, in the frame they went out (the
+                // owner's log of 2 Nov 2026). Place warps them to the spot all the same.
+                person.Character.transform.position = spot;
                 person.Character.gameObject.SetActive(true);
                 person.Reset(_props);   // whoever had them last, the casualty system perhaps, left them as they were
                 if (!thrifty && (person.Look != look || (person.Stale && fresh)))
