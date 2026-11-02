@@ -11,7 +11,10 @@ namespace RealLifeOverhaul.Ui
         Date,         // the game's own date words, at the right
         Chip,         // a soft status chip in its tone (Tones)
         Meter,        // a thin bar filled to Values, graded red to green, its figure beside it
-        Person        // a face in its mood ring, the name and the role under it (Subs)
+        Person,       // a face in its mood ring, the name and the role under it (Subs)
+        Tile,         // a type's glyph on its tile (Values: the UiIcon, Tones: its colour or None) and the type's name (UiDataCells)
+        Trend,        // a figure at the right with its direction's arrow (Values: 1, -1 or 0)
+        Steps         // a short ladder as pips (Values: the steps reached, the column's Steps: how many) and the step's words
     }
 
     /// <summary>A column of a big table: what its cells are, how wide it stands and whether its head sorts it.</summary>
@@ -22,6 +25,7 @@ namespace RealLifeOverhaul.Ui
         public float Width;      // px on the grid, or 0 to share the room the fixed columns leave
         public bool Sortable;    // its head is a target that sorts by it
         public bool Graded;      // a figure in its grade's colour (Values), as a management game colours a skill
+        public int Steps;        // a steps column's ladder: how many pips
     }
 
     /// <summary>
@@ -120,7 +124,8 @@ namespace RealLifeOverhaul.Ui
         private static bool HasTools(UiDataTableModel m) => m.Picking || m.Filters.Length > 0 || !string.IsNullOrEmpty(m.SearchPlaceholder) || !string.IsNullOrEmpty(m.PickWords);
 
         // A person column's head stands over the names, as its rows' words start after the face.
-        private static float FaceLead(UiCellKind kind) => kind == UiCellKind.Person ? UiTokens.S1 + UiTokens.AvatarSmall + UiTokens.S3 : 0f;
+        private static float FaceLead(UiCellKind kind) => kind == UiCellKind.Person ? UiTokens.S1 + UiTokens.AvatarSmall + UiTokens.S3
+            : kind == UiCellKind.Tile ? UiTokens.ControlSmall + UiTokens.S3 : 0f;
 
         // The face's lead under a head, or none where a long translation needs the whole column to fit on two lines.
         private static float HeadLead(UiDataColumn col, float room)
@@ -325,7 +330,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         private static bool RightAligned(UiCellKind kind) => kind == UiCellKind.Figure || kind == UiCellKind.Money || kind == UiCellKind.Date || kind == UiCellKind.Meter
-                                                              || kind == UiCellKind.Chip;
+                                                              || kind == UiCellKind.Chip || kind == UiCellKind.Trend;
 
         // The head: each title in capitals, a sortable one a target, the sorted one in the words' colour with its order's
         // arrow beside it. Figures' titles stand at the right, over their figures.
@@ -465,6 +470,15 @@ namespace RealLifeOverhaul.Ui
                     UiDraw.TextMiddle(s, at, cx, ry, rowH, cw, col.Graded ? UiStyle.BodyStrong : UiStyle.Body, ink, words, UiFlags.Right | UiFlags.Truncate);
                     break;
                 }
+                case UiCellKind.Tile:
+                    UiDataCells.Tile(s, at, words, value, row.Tones != null && c < row.Tones.Length ? row.Tones[c] : UiRole.None, cx, ry, cw, rowH, sel);
+                    break;
+                case UiCellKind.Trend:
+                    UiDataCells.Trend(s, at, words, value, cx, ry, cw, rowH, sel);
+                    break;
+                case UiCellKind.Steps:
+                    UiDataCells.Steps(s, at, words, value, col.Steps, cx, ry, cw, rowH, sel);
+                    break;
                 case UiCellKind.Money:
                 case UiCellKind.Date:
                     UiDraw.TextMiddle(s, at, cx, ry, rowH, cw, UiStyle.Body, sel || col.Kind == UiCellKind.Money ? UiRole.Text : UiRole.Text2, words, UiFlags.Right | UiFlags.Truncate);
