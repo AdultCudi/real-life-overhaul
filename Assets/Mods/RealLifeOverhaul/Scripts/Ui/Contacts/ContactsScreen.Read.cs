@@ -185,6 +185,7 @@ namespace RealLifeOverhaul.Ui
         private void Detail(Contact c)
         {
             _services.Clear();
+            _remove = -1;
             _m.HasDetail = c != null;
             if (c == null)
             {
@@ -248,6 +249,16 @@ namespace RealLifeOverhaul.Ui
             {
                 _services.Add(clear);
                 acts.Add(new UiContactAction { Label = UiText.T("contacts_header_clear_chat_button"), Icon = UiIcon.Trash, Clears = true });
+            }
+            // The trash on the contact's row in the game's list: there for every contact the game does not keep (Mom and the
+            // friends of the mod are not kept), never for another player's relayed contact.
+            _remove = -1;
+            ContactModel entry = EntryOf(c);
+            if (entry != null && !entry.isPermanent && !Relayed())
+            {
+                _remove = _services.Count;
+                _services.Add(null);
+                acts.Add(new UiContactAction { Label = UiText.T("reallife_ui_contacts_delete"), Icon = UiIcon.Trash, Clears = true });
             }
             _m.ActionsTitle = UiText.T("reallife_ui_contacts_requests");
             _m.Actions = acts.ToArray();

@@ -28702,5 +28702,6 @@
   "reallife_ui_test_offer_no": "Not today",
   "reallife_ui_test_offer_yes_reply": "Great, see you at four.",
   "reallife_ui_test_offer_no_reply": "No problem, another time then.",
-  "reallife_contract_part_ui_contacts_talk": "the Contacts app's calls and offers drawn on the RLO interface"
+  "reallife_contract_part_ui_contacts_talk": "the Contacts app's calls and offers drawn on the RLO interface",
+  "reallife_ui_contacts_delete": "Delete contact"
 }
