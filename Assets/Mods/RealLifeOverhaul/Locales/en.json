@@ -22429,7 +22429,7 @@
   "reallife_hire_test_orphan_fail": "Test failed: a walk of the city's businesses tripped on a record with no building. The log says which.",
   "reallife_hire_test_orphan_off": "Load a save first. This test does not run in a Going Public session.",
   "reallife_changes_next_title": "Next version",
-  "reallife_changes_next": "Your bank's page now shows its profit a day, this month so far and last month, beside the month's own figures. Fixed: your cash could go under nothing while your overdraft stayed unused, because it only covered the bills due at midnight, worked out beforehand. It now pays as soon as anything leaves your cash under nothing, up to its limit, and looks again every game hour.",
+  "reallife_changes_next": "Your bank's page now shows its profit a day, this month so far and last month, beside the month's own figures. Fixed: your cash could go under nothing while your overdraft stayed unused, because it only covered the bills due at midnight, worked out beforehand. It now pays as soon as anything leaves your cash under nothing, up to its limit, and looks again every game hour. Fixed: bus stops could show as a blank white shape when the mod's props had not loaded, or loaded after the stop was built. A stop is now made again with its model once the props are in, plain coloured shapes stand in when a prop cannot be drawn, a stop can always be clicked, and Player.log and a notice name the cause.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Fixed: when every building that could hold the utilities office is yours, power and water accounts are applied for and reconnected in the Utilities app, by phone, at the same prices, and the notices say so; once a building is free the office opens again and the app says where. Fixed: after withdrawing an application and applying to the same post again, the Career app opened the withdrawn one and the interview could not be reached. Each application now has its own row, and the interview, offer and withdrawal go to the live one. Fixed: a save holding a business record whose building the city does not have (another mod can leave one behind) no longer switches the tech sector off at every load. The mod now leaves such a record out wherever it reads the city's businesses, names its address once in the log and changes nothing of it.",
   "reallife_co_mass_raise": "Give a raise",
@@ -26726,5 +26726,6 @@
   "reallife_econ_note_cover_short": "Your cash went under nothing, so the overdraft paid {amount} into it. Drawn: {owed} of {limit}.",
   "reallife_ob_box_perday": "Profit a day:",
   "reallife_ob_box_perday_value": "this month so far {now}, last month {last}",
-  "reallife_ob_box_perday_now": "this month so far {now}"
+  "reallife_ob_box_perday_now": "this month so far {now}",
+  "reallife_props_note_failed": "Some of Real Life Overhaul's models did not load, so bus stops and other props may look plain. Verify the Workshop files in Steam, check that no copy sits in ModsLocal, and send Player.log."
 }

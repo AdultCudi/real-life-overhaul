@@ -22429,7 +22429,7 @@
   "reallife_hire_test_orphan_fail": "Teste falhou: uma leitura dos negócios da cidade tropeçou num registro sem prédio. O log diz qual.",
   "reallife_hire_test_orphan_off": "Carregue um save primeiro. Este teste não roda numa sessão do Going Public.",
   "reallife_changes_next_title": "Próxima versão",
-  "reallife_changes_next": "A página do seu banco agora mostra o lucro por dia, deste mês até agora e do mês passado, ao lado dos números do mês. Corrigido: seu dinheiro podia ficar negativo sem que o cheque especial fosse usado, porque ele só cobria as contas do meio da noite, calculadas antes. Agora ele paga assim que qualquer coisa deixa seu dinheiro negativo, até o limite, e confere de novo a cada hora do jogo.",
+  "reallife_changes_next": "A página do seu banco agora mostra o lucro por dia, deste mês até agora e do mês passado, ao lado dos números do mês. Corrigido: seu dinheiro podia ficar negativo sem que o cheque especial fosse usado, porque ele só cobria as contas do meio da noite, calculadas antes. Agora ele paga assim que qualquer coisa deixa seu dinheiro negativo, até o limite, e confere de novo a cada hora do jogo. Corrigido: os pontos de ônibus podiam aparecer como uma forma branca em branco quando os objetos do mod não tinham carregado, ou carregavam depois de o ponto ser montado. Agora o ponto é refeito com o seu modelo assim que os objetos entram, formas simples coloridas o substituem quando um objeto não pode ser desenhado, o ponto sempre pode ser clicado, e o Player.log e um aviso dizem a causa.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Corrigido: quando todos os prédios que poderiam abrigar o escritório de serviços públicos são seus, as contas de luz e água são pedidas e religadas no app Contas, por telefone, pelos mesmos preços, e os avisos dizem isso; quando um prédio fica livre o escritório volta a abrir e o app diz onde. Corrigido: depois de retirar uma candidatura e se candidatar de novo à mesma vaga, o app Carreira abria a retirada e não dava para chegar à entrevista. Cada candidatura agora tem sua própria linha, e a entrevista, a oferta e a retirada vão para a ativa. Corrigido: um save com um registro de negócio cujo prédio a cidade não tem (outro mod pode deixar um para trás) não desliga mais o setor de tecnologia a cada carregamento. O mod agora deixa esse registro de fora sempre que lê os negócios da cidade, cita o endereço dele uma vez no log e não muda nada nele.",
   "reallife_co_mass_raise": "Dar aumento",
@@ -26726,5 +26726,6 @@
   "reallife_econ_note_cover_short": "Seu dinheiro ficou negativo, então o cheque especial colocou {amount} nele. Em uso: {owed} de {limit}.",
   "reallife_ob_box_perday": "Lucro por dia:",
   "reallife_ob_box_perday_value": "este mês até agora {now}, mês passado {last}",
-  "reallife_ob_box_perday_now": "este mês até agora {now}"
+  "reallife_ob_box_perday_now": "este mês até agora {now}",
+  "reallife_props_note_failed": "Alguns modelos do Real Life Overhaul não carregaram, então pontos de ônibus e outros objetos podem aparecer lisos. Verifique os arquivos do Workshop no Steam, veja se não há uma cópia em ModsLocal e envie o Player.log."
 }
