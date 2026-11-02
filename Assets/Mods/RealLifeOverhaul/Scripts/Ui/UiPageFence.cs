@@ -9,7 +9,8 @@ namespace RealLifeOverhaul.Ui
     /// nearest sharing its width, or failing that the nearest below or above on the page, a list stepping its own rows. A
     /// move with nowhere to go stops where it is: never onto the window's close (it is Back, so a pad's press there would
     /// shut the app) while a sidebar leads there, and never up or down into the sidebar. A window with no sidebar reaches
-    /// its close up from the page's top, its only way there. The sidebar's own moves never reach the close sideways.
+    /// its close up from the page's top, its only way there. The sidebar's own moves never reach the close sideways, and
+    /// its up and down never leave it for the page.
     /// Game-free. Cost: a pass over the targets at a layout.
     /// </summary>
     public static class UiPageFence
@@ -55,7 +56,9 @@ namespace RealLifeOverhaul.Ui
                     int rules = UiFocusRules.Next(s, i, dx, dy);
                     if (!inPage)
                     {
-                        links[i * 4 + d] = dx != 0 && rules == close ? i : -2;
+                        // The sidebar is its own column: sideways never to the close, up and down never into the page (Right
+                        // enters it); up from its first entry still reaches the close above it.
+                        links[i * 4 + d] = (dx != 0 && rules == close) || (dy != 0 && rules >= page) ? i : -2;
                         continue;
                     }
                     int next = dx != 0 ? Level(s, i, page, dx, dx > 0 || chosen < 0)
