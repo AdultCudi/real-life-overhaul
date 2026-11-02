@@ -109,6 +109,36 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
+        /// Every method and constructor of one of the mod's types, and of the types nested in it (its closures and coroutines
+        /// too), each a root: the whole of a job's own code, its rare paths with it (a first hold line, a self-check's first
+        /// line), not only what one entry reaches on the day it is read. A type of another module, and a type's static
+        /// constructor (run by the runtime once, never asked for here), are left alone. Read once, when the walk is set up.
+        /// </summary>
+        public void RootAll(Type type)
+        {
+            if (type == null || type.Module != _own)
+            {
+                return;
+            }
+            const BindingFlags declared = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+            MethodInfo[] methods = type.GetMethods(declared | BindingFlags.Static);
+            for (int i = 0; i < methods.Length; i++)
+            {
+                Take(methods[i], 0);
+            }
+            ConstructorInfo[] made = type.GetConstructors(declared);
+            for (int i = 0; i < made.Length; i++)
+            {
+                Take(made[i], 0);
+            }
+            Type[] nested = type.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic);
+            for (int i = 0; i < nested.Length; i++)
+            {
+                RootAll(nested[i]);
+            }
+        }
+
+        /// <summary>
         /// Reads and compiles methods while the slice allows, a method an item; a long method (by its IL) only as the first
         /// of a slice. True once all is done.
         /// </summary>

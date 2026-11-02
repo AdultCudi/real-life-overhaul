@@ -121,6 +121,9 @@ namespace RealLifeOverhaul
             _brakes = gameObject.AddComponent<SolidBrakes>();
             ScenePrewarm.Add("streets: the road map and the city's marked crossings being listed for the traffic", Prewarm);
             ScenePrewarm.Add("traffic: the stand-ins for people in the road being made", PrewarmStandIns);
+            // The look's code compiled behind the loading screen (Core/LoadWarm): compiled in the first look it was 6.9 ms (2 Nov 2026).
+            LoadWarm.Add("traffic: the look for people in the road compiled",
+                new[] { typeof(SolidStreets), typeof(SolidGame), typeof(SolidRules), typeof(SolidBrakes) });
         }
 
         private void OnDestroy()

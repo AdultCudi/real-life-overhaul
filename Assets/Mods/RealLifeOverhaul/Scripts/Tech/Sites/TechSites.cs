@@ -26,7 +26,8 @@ namespace RealLifeOverhaul.Tech
         private bool _censusDone;        // the city's office buildings counted in the log, once a city load
         private float _censusAt;         // real time the count is made by at the latest
         private double _pickMs = -1.0;   // ms the towers' first pick of the load took (the self-check line beside the count)
-        private const double LoadPassMs = 6.0;   // ms each of the load's two whole-city passes (the towers' pick, the count) may take, each in a tick of its own
+        private const double LoadPassMs = 6.0;   // ms the load's whole-city pick of the towers may take, in a tick of its own (the count goes a slice a frame)
+        private const double CensusSliceMs = 1.0;   // ms of the office count a frame, one building more at most (each is timed: the clock is read anyway)
         private Frontages _fronts;
         private ServerRoomView _room;
         private LobbyView _lobby;
@@ -61,6 +62,9 @@ namespace RealLifeOverhaul.Tech
             _onExit = Guard.Wrap<Address>(_ => Soon());
             StartCoroutine(Guard.Routine(Tick()));
             StartCoroutine(Guard.Routine(Lights()));
+            // The office count's code compiled behind the loading screen (Core/LoadWarm): it was part of the count's 8.5 ms (2 Nov 2026).
+            LoadWarm.Add("tech sites: the office count compiled", new[] { typeof(OfficeCensus), typeof(OfficeCount), typeof(OfficeTally) },
+                typeof(TechSites), nameof(Count), nameof(Census));
         }
 
         private void OnDestroy()
@@ -417,23 +421,58 @@ namespace RealLifeOverhaul.Tech
                 return;
             }
             _censusDone = true;
+            StartCoroutine(Guard.Routine(Count()));
+        }
+
+        // The count a slice a frame from the tick after the towers' pick, each of its lines in a frame of its own (OfficeCensus).
+        private IEnumerator Count()
+        {
+            var census = new OfficeCensus();
+            var watch = new SpreadWatch();
+            bool begun;
             try
             {
-                long began = System.Diagnostics.Stopwatch.GetTimestamp();
-                OfficeCensus.Log(Logger);
-                double census = (System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
-                if (Meta.Dev.Verbose)
-                {
-                    bool pass = census < LoadPassMs && _pickMs < LoadPassMs;
-                    string pick = _pickMs >= 0.0 ? FormattableString.Invariant($"{_pickMs:F1} ms") : "no time (the headquarters are off)";
-                    Logger?.Info("Tech sites check (the load's passes a tick apart): the towers picked in " + pick + ", "
-                                 + FormattableString.Invariant($"the office buildings counted in {census:F1} ms in a later tick (wanted: under {LoadPassMs:F0} ms each, never both in one frame): ")
-                                 + (pass ? "PASS" : "FAIL") + ".");
-                }
+                begun = census.Begin();
             }
             catch (Exception e)
             {
                 Logger?.Error(e);
+                yield break;
+            }
+            if (!begun)
+            {
+                yield break;
+            }
+            watch.Begin();
+            bool done = false;
+            while (!done)
+            {
+                long began = System.Diagnostics.Stopwatch.GetTimestamp();
+                try
+                {
+                    WorkSlice slice = WorkSlice.Of(CensusSliceMs, 1);
+                    done = census.Step(ref slice, watch, Logger);
+                }
+                catch (Exception e)
+                {
+                    Logger?.Error(e);
+                    yield break;
+                }
+                watch.Frame(began);
+                if (!done)
+                {
+                    yield return null;
+                }
+            }
+            if (Meta.Dev.Verbose)
+            {
+                bool pick = _pickMs < LoadPassMs;
+                string verdict = watch.Verdict(false);
+                string picked = _pickMs >= 0.0 ? FormattableString.Invariant($"{_pickMs:F1} ms") : "no time (the headquarters are off)";
+                Logger?.Info("Tech sites check (the load's passes a tick apart): the towers picked in " + picked
+                             + FormattableString.Invariant($" (wanted: under {LoadPassMs:F0} ms, a tick of its own); ")
+                             + "the office buildings counted from a later tick, a slice a frame and a line a frame: "
+                             + watch.Said("a building") + ": " + (!pick ? "FAIL, the pick took " + picked : verdict) + ".");
             }
         }
 
