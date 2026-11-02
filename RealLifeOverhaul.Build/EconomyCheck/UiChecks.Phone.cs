@@ -501,9 +501,11 @@ internal static partial class Program
         Check(PhoneBody(kit, "public static void Remove(")?.Contains("Buttons.Clear();") == true && PhoneBody(kit, "internal static void Shown()")?.Contains("Buttons.Hide();") == true
               && PhoneBody(kit, "internal static void Frame(")?.Contains("Conceal();") == true,
             "phone sources: a button added while the phone shows hides at once, and every one is given back exactly as found");
-        Check(PhoneBody(items, "internal static bool Press(int index)")?.Contains("button.onClick.Invoke();") == true && kit.Contains("_collapse.onClick.Invoke();")
-              && kit.Contains("_skip.onClick.Invoke();") && kit.Contains("_driver.onClick.Invoke();"),
-            "phone sources: every press goes to the game's own button, so its handlers and other mods' run as a click would");
+        string hand = PhoneBody(PhoneRead("Host/UiWidgets.cs"), "public static void Hand(Button b)") ?? string.Empty;
+        Check(PhoneBody(items, "internal static bool Press(int index)")?.Contains("UiWidgets.Hand(button);") == true && kit.Contains("UiWidgets.Hand(_collapse);")
+              && kit.Contains("UiWidgets.Hand(_skip);") && kit.Contains("UiWidgets.Hand(_driver);")
+              && hand.Contains("b.onClick.Invoke();") && hand.Contains("HotSpots.Game()"),
+            "phone sources: every press goes to the game's own button, so its handlers and other mods' run as a click would (through UiWidgets.Hand, the game's own work)");
         Check(kit.Contains("rect.SetParent(_container, false);") && kit.Contains("window.onStateChange.AddListener(_onCollapse);")
               && kit.Contains("_window.onStateChange.RemoveListener(_onCollapse);"),
             "phone sources: the kit stands inside the game's phone container (it folds and hides with it), and hears the fold once and lets it go");

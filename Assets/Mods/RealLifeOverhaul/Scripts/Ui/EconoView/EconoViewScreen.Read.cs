@@ -772,7 +772,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
-            b.onClick.Invoke();   // the row's own button: the game shows or hides the rows under it
+            UiWidgets.Hand(b);   // the row's own button: the game shows or hides the rows under it, as its own work
             return true;
         }
 

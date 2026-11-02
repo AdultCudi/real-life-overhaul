@@ -81,7 +81,11 @@ namespace RealLifeOverhaul.Ui
             _scene = s;
             bool themeChanged = s.Dark != _dark;
             _dark = s.Dark;
-            _root.sizeDelta = new Vector2(s.Width * Scale, s.Height * Scale);
+            var rootSize = new Vector2(s.Width * Scale, s.Height * Scale);
+            if (_root.sizeDelta != rootSize)
+            {
+                _root.sizeDelta = rootSize;
+            }
             for (int i = 0; i < Layers; i++)
             {
                 _layers[i].Begin();
@@ -128,8 +132,16 @@ namespace RealLifeOverhaul.Ui
                 {
                     ref UiClip uc = ref s.Clips[i];
                     Place(c.Viewport, uc.X, uc.Y, uc.W, uc.H);
-                    c.Content.Rect.anchoredPosition = new Vector2(0f, uc.Offset * Scale);
-                    c.Content.Rect.sizeDelta = new Vector2(uc.W * Scale, Mathf.Max(uc.H, uc.ContentHeight) * Scale);
+                    var moved = new Vector2(0f, uc.Offset * Scale);
+                    var room = new Vector2(uc.W * Scale, Mathf.Max(uc.H, uc.ContentHeight) * Scale);
+                    if (c.Content.Rect.anchoredPosition != moved)
+                    {
+                        c.Content.Rect.anchoredPosition = moved;
+                    }
+                    if (c.Content.Rect.sizeDelta != room)
+                    {
+                        c.Content.Rect.sizeDelta = room;
+                    }
                 }
             }
             for (int i = 0; i < Layers; i++)

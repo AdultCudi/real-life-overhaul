@@ -22,6 +22,7 @@ internal static partial class Program
         HotFrames();
         HotStretch();
         HotHeap();
+        HotGame();
         HotCost();
         DoorFadeChecks();
         HotSpots.On = false;
@@ -331,6 +332,109 @@ internal static partial class Program
         }
         Check(HotSpots.Sampled == 15 && HotSpots.SampledBytes == 1500, "hot spots: counted exactly, every frame is a sample (" + HotSpots.Sampled + ", " + HotSpots.SampledBytes + ")");
         HotSpots.SampleEvery = HotSpots.AllocEvery;
+    }
+
+    // The game's own work the mod hands to it (HotSpots.Game: a button of the game's pressed for the RLO interface): out of
+    // the scope round it and the frame's total, counted apart, and a handler of the mod's the game runs inside it the mod's.
+    private static void HotGame()
+    {
+        HotUse();
+        int press = HotSpots.Slot("Check: Host.Press");
+        int handler = HotSpots.Slot("Check: Map.OnToggle");
+        long gameBefore = HotSpots.GameTicks;
+        _hotFrame = 200;
+        HotSpots.Settle(200);
+        using (HotSpots.Time(press))
+        {
+            Spin(1.0);   // the screen's own press
+            using (HotSpots.Game())
+            {
+                Spin(6.0);   // the game's map opening...
+                using (HotSpots.Time(handler))
+                {
+                    Spin(1.0);   // ...with a handler of the mod's on its event inside it
+                }
+                Spin(2.0);
+                using (HotSpots.Game())
+                {
+                    Spin(1.0);   // (a hand-off inside a hand-off: one stretch of the game's)
+                }
+            }
+            Spin(0.5);
+        }
+        _hotFrame = 201;
+        HotSpots.Settle(201);
+        HotSpots.FrameTop(200, 0, out int top, out double pressMs);
+        HotSpots.FrameTop(200, 1, out int next, out double handlerMs);
+        double total = HotSpots.FrameMs(200);
+        double game = HotSpots.FrameGameMs(200);
+        double handed = (HotSpots.GameTicks - gameBefore) * 1000.0 / Stopwatch.Frequency;
+        Check(top == press && next == handler, "hot spots: the press first, then the mod's handler the game ran (" + HotSpots.Name(top) + ", " + HotSpots.Name(next) + ")");
+        Check(pressMs >= 2.5 && pressMs < 6.0, "hot spots: the press is its own work and the mod's handler inside the game's, not the game's (" + pressMs.ToString("F2") + " ms, wanted about 2.5)");
+        Check(handlerMs >= 1.0 && handlerMs < 3.0, "hot spots: the mod's handler the game ran is the mod's (" + handlerMs.ToString("F2") + " ms)");
+        Check(Math.Abs(total - pressMs) < 1e-6, "hot spots: the frame's total is the mod's alone (" + total.ToString("F2") + " ms)");
+        Check(game >= 9.0 && game < 15.0 && Math.Abs(handed - game) < 0.01, "hot spots: the game's own work is counted apart (" + game.ToString("F2") + " ms, wanted about 9)");
+
+        // The heap: what grew while the game worked is the game's, what grew in the mod's handler inside it the mod's.
+        HotUse();
+        HotSpots.SampleEvery = 1;
+        HotSpots.Reset();
+        _hotFrame = 300;
+        HotSpots.Settle(300);
+        using (HotSpots.Time(press))
+        {
+            _hotHeap += 1000;
+            using (HotSpots.Game())
+            {
+                _hotHeap += 50000;
+                using (HotSpots.Time(handler))
+                {
+                    _hotHeap += 300;
+                }
+                _hotHeap += 70000;
+            }
+        }
+        _hotFrame = 301;
+        HotSpots.Settle(301);
+        HotSpots.FrameTopBytes(300, 0, out int grewMost, out long grewBytes);
+        long frameBytes = HotSpots.FrameBytes(300, out bool sampled);
+        Check(sampled && grewMost == press && grewBytes == 1300 && frameBytes == 1300, "hot spots: the heap's growth under the game's own work is not the mod's (" + grewBytes + " and " + frameBytes + " bytes, wanted 1300)");
+        HotSpots.SampleEvery = HotSpots.AllocEvery;
+
+        // The minute: the game's own work summed apart; off, a hand-off is an empty value.
+        HotUse();
+        for (int f = 400; f < 404; f++)
+        {
+            _hotFrame = f;
+            HotSpots.Settle(f);
+            if (f > 400)
+            {
+                HotSpots.Keep(f - 1);
+            }
+            using (HotSpots.Time(press))
+            {
+                using (HotSpots.Game())
+                {
+                    Spin(f == 401 ? 3.0 : 0.5);
+                }
+            }
+        }
+        _hotFrame = 404;
+        HotSpots.Settle(404);
+        HotSpots.Keep(403);
+        Check(HotSpots.GameMs >= 4.4 && HotSpots.GameWorstMs >= 3.0 && HotSpots.GameWorstMs < HotSpots.GameMs && HotSpots.TotalMs < 1.0,
+            "hot spots: the minute's game work in all and at most in a frame, none of it the mod's (" + HotSpots.GameMs.ToString("F2") + ", " + HotSpots.GameWorstMs.ToString("F2") + ", the mod's "
+            + HotSpots.TotalMs.ToString("F2") + " ms)");
+        HotSpots.ClearStretch();
+        Check(HotSpots.GameMs == 0.0 && HotSpots.GameWorstMs == 0.0, "hot spots: a new minute's game work starts from nothing");
+        HotSpots.On = false;
+        long off = HotSpots.GameTicks;
+        using (HotSpots.Game())
+        {
+            Spin(0.3);
+        }
+        Check(HotSpots.GameTicks == off, "hot spots: off, a hand-off to the game measures nothing");
+        HotSpots.On = true;
     }
 
     // On: what a scope costs, and that it allocates nothing.

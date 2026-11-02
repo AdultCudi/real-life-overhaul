@@ -122,6 +122,7 @@ all, the most under Transport: TransitDirector.Update (6 KB a second), ...; on f
 | the mod's own scripts | `Core/HotSpots`: every Update, LateUpdate and FixedUpdate of the mod's and its handlers of the game's events (a new hour or day, a door, the city map, a character's change of look), each named "Feature: Class.Method"; their time a frame on average and in the worst frame, and the three that took the most | well under a millisecond a frame on average. A name whose worst is tens of milliseconds is a stutter of the mod's, and the name says where |
 | BizMan: opens, switches and tab changes | `BizPace/BizPaceWatch`: BizMan's business view switched on (an open), another business picked in it (a switch) or another tab (a tab change), each counted with what the mod's handlers added, the worst, the owner's budget (2 ms to an open, 1 ms to the others) and the slowest handler; absent when BizMan was not used in the minute. Each episode is a line of its own, "BizMan check (open at ...)" | the worst under its budget. A name here is the handler to look at; Options > Tests > Check BizMan's speed walks every business and tab and says PASS or FAIL |
 | the heap grew under them | what the mod's own scripts allocated: counted exactly in every frame where the runtime counts each thread's allocations (`GC.GetAllocatedBytesForCurrentThread`, found out when the record starts), else read from the heap's size one frame in eight; beside it what the heap grew by in all | the mod's share of "grown by". The three names under which it grew the most are where to look first |
+| the RLO interface | `Ui/Host/UiCost`: every screen of the RLO interface timed by its name (its host's frame, its open, its layouts and its presses), the phone and the notices among them, and the kit's own upkeep, each counted once however they sit inside each other; its time a frame over all the minute's frames, the paused ones in (the full menu pauses the game, and the mod's own scripts above leave paused frames out), in the frames with none of its screens showing and in those with one showing; its most in a frame and whose; what the heap grew by under it; and the game's own work its presses handed to the game, apart | with none of its screens showing, under 0.1 ms a frame (PASS); with one showing, under 0.5 ms. The game's own work (the city map opening behind View on map, the full menu closing) is the game's and in neither figure |
 
 A second line a minute says what grew since the first minute of the record, so that a leak names itself (`Diagnostics/ObjectKinds`):
 
@@ -260,6 +261,20 @@ average in the 120 after it, 10.6 ms in the minute before; the mod's own scripts
 A FAIL names the part still holding something and what it holds, or says the player's camera is not as before the map (its layers, far plane or draw distances). A map opened again before the last one's camera was back down is set against the camera before the first opening (the game stops its shutting coroutine, so the draw distances are still the ones set for the way down). The parts and their looks are listed in StandardCheck/MapChecks.cs; the looks are in `Core/MapParts`.
 
 As a city's part of the mod unloads, one more check is written once the menu's scene comes in (RLO-PERF-023): `Culling check (unload): 0 dead cullables in the game's culling lists (N listed) ...: PASS`. A dead entry there is a lamp, tree, bench, sign or people's zone the mod destroyed and left in the game's culling lists, which makes the game throw every frame the moment it builds its culling group again.
+
+### The RLO interface
+
+With the record on, each screen of the RLO interface writes one line as it closes (`Ui/Host/UiCost`, RLO-PERF-025). The figures are the kit's own work; the game's own work a press hands to the game, and the mod's other scripts the game runs inside it, are given apart:
+
+```
+UI check (Contacts, open S s, N frames): the kit's own work X ms a frame on average and X ms at most in a frame; its open
+X ms; N layouts, X ms at most; N presses, the kit's own X ms at most (in one of them at most X ms of the mod's other scripts
+the game ran, named in the session record, and X ms of the game's own work the press handed to it, X ms in all, which is
+the game's and not in the mod's figures); the heap grew under it by about X KB a second (one frame in 8 sampled); wanted
+under 0.5 ms a frame and under 8 ms for its open and each press: PASS.
+```
+
+`OVER` names the budget that did not hold: the open or a press at 8 ms or more of the kit's own work, or 0.5 ms a frame or more on average. The phone and the notices are pieces of the HUD and write no line of their own; their share is in the minute's line (the row "the RLO interface" above). A long frame's line adds "the game's own work the mod handed to it" when a press of the interface handed the game its own work in that frame, so a frame of the game's (its map opening the first time in a session) is not read as the mod's.
 
 What the lines cannot say: which of the game's scripts, or another mod's, a long frame was spent in; how long the mod's own coroutines took (they run under "coroutines and timers" and are not timed one by one); what the graphics card spent its time on (which pass, which shader); and anything about the card at all on a build without the engine's frame timing.
 

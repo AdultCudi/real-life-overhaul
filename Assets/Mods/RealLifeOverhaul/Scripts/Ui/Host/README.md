@@ -21,8 +21,10 @@ saves and events stay the game's. Contacts is the worked example (`Scripts/Ui/Co
      `conceal.Shared`): other mods fill them. Never switch anything off.
    - `Make(found)`: the kit screen (`IUiScreen`) that mirrors it.
 2. **Mirror, never compute.** In the screen, read the game's widgets through `UiWidgets` (`Shows`, `There`, `Label`,
-   `Text`, `Tint`, `On`, `Options`, `Field`) and press them through it (`Press`, `Set`, `Pick`, `Type`, `Slide`, or
-   `Calling(root, "MethodName")` for a button the game wired in the Inspector). Going Public hides tabs, disables buttons
+   `Text`, `Tint`, `On`, `Options`, `Field`) and press them through it (`Press`, `Set`, `Pick`, `Type`, `Slide`, `Hand`
+   for a button already checked, or `Calling(root, "MethodName")` for a button the game wired in the Inspector), never
+   `onClick.Invoke()` itself: what the game's listeners do (View on map opens the city map) is then the game's own work
+   in the session record, not the mod's (RLO-PERF-025). Going Public hides tabs, disables buttons
    and tints cells: what the vanilla object says is the truth. Look at a signature of the game's state a few times a
    second (`Every = 0.25f`), never every frame, and lay out only when it changed. A mod's addition inside the screen is
    offered as an entry that calls `host.Classic()`: the game's own view until the screen closes.
@@ -49,6 +51,9 @@ saves and events stay the game's. Contacts is the worked example (`Scripts/Ui/Co
 - For an app: follows the full menu's fade, sleeps as the menu closes, steps aside for a box of the game's own, holds its
   keys under a box or All apps the kit draws, and tells the frame (`UiShell`) to take the menu's chrome.
 - A fault in your screen gives the game's screen back for the session, with one warning in Player.log.
+- Counts what your screen costs by its `Name` (`UiCost`): with Developer diagnostics on, one `UI check (...)` line as
+  it closes (its frames, its open, its layouts and its presses against 0.5 ms a frame and 8 ms an open or a press) and
+  its share in the minute's session line. A screen on its way out (its menu closing) is not laid out.
 
 ## The mod's own apps
 
