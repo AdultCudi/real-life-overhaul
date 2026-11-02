@@ -162,6 +162,7 @@ namespace RealLifeOverhaul.Uptown
         private void Awake()
         {
             Instance = this;
+            _incompleteSaid = false;   // a city load of its own: the notice of buildings not whole may be shown once in it (LifeDirector.Complete)
             if (SaveGameManager.Current == null || SaveGameManager.Current != _earlyFor)
             {
                 Begin();   // a load that did not pass the main menu (a funeral's backup) had no early step
