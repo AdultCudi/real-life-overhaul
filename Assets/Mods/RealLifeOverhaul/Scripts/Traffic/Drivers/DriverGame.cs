@@ -24,6 +24,9 @@ namespace RealLifeOverhaul
 
         public static IModLogger Logger;
 
+        /// <summary>The look's clock stopped and started again around the lines this writes (CityDrivers' own), so a look costs what it costs without them.</summary>
+        public Action Quiet, Loud;
+
         // ---------------------------------------------------------------- the pool, measured once a car
 
         private object _pool;            // the traffic system the measurements belong to
@@ -320,10 +323,12 @@ namespace RealLifeOverhaul
                 _line[i].layer = layer;
             }
             _linesLayered = true;
+            Quiet?.Invoke();
             Logger?.Info($"City drivers: {_line.Length} hold lines made on layer '{LayerMask.LayerToName(_lineLayer)}' (triggers tagged '{HaltTag}', as the game's own "
                          + "parking room is): made once, switched off until needed.");
             Logger?.Info(FormattableString.Invariant($"Traffic check (hold lines made out of play): made {(_linesHidden ? "behind the loading screen" : "in the look that first wanted one")} ")
                          + FormattableString.Invariant($"in {_linesMs:F2} ms (wanted: none made in play): ") + (_linesHidden ? "PASS" : "FAIL") + ".");
+            Loud?.Invoke();
             return true;
         }
 
