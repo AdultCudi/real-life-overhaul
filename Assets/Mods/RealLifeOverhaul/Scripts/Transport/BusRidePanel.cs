@@ -124,7 +124,7 @@ namespace RealLifeOverhaul
         /// <summary>The fast-forward key, which the game's panel reads only indoors. Per frame while a ride runs.</summary>
         public void Keys()
         {
-            if (!Running || !HasFastForward() || ThirdPersonCamera.IsUiOpen() || GameManager.ShouldBlockKeyboardShortcuts() || !PlayerAction.SecondaryInteract.Pressed())
+            if (!Running || !HasFastForward() || ThirdPersonCamera.IsUiOpen() || GameManager.ShouldBlockKeyboardShortcuts() || !PlayerAction.SecondaryInteract.Pressed() || TypingNow.Now)
             {
                 return;
             }

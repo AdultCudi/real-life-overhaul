@@ -16,7 +16,7 @@ namespace RealLifeOverhaul
 
         private static bool WantsOff()
         {
-            return !ThirdPersonCamera.IsUiOpen() && !GameManager.ShouldBlockKeyboardShortcuts() && PlayerAction.Move.Vector().sqrMagnitude > 0.25f;
+            return !ThirdPersonCamera.IsUiOpen() && !GameManager.ShouldBlockKeyboardShortcuts() && PlayerAction.Move.Vector().sqrMagnitude > 0.25f && !TypingNow.Now;
         }
 
         // Off again before the bus has left: the fare back, up from the seat, out by the nearest door.

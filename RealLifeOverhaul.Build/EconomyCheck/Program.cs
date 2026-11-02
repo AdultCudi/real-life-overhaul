@@ -91,6 +91,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--typing")
+        {
+            TypingKeys();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--stocker")
         {
             StockerFixes();
@@ -667,6 +673,7 @@ internal static partial class Program
         BugsMisc();     // the Guide audit's smaller bugs: the police report, the coat, a preset's value, the save report, a hand-over in a session, the school's hours, the cart (BugsMiscChecks.cs)
         VendorCartFixes();   // the drinks cart off crossings, its pitch checked after the cut, a customer who cannot reach it replaced (VendorCartFixChecks.cs)
         StockerFixes();      // the shelf to stock shown as soon as a box is carried in, its marker cleared on the way out (StockerFixChecks.cs)
+        TypingKeys();        // no shortcut fires while a text field has the keyboard: every key reader asks, every field stands on the game's layer (TypingChecks.cs)
         Work();
         Desks();
         SetOff();       // a class's desk, the work desk and the computer at home: set off as the game's activities, stood up whatever fails, the keys (SetOffChecks.cs)

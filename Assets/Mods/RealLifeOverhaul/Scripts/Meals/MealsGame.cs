@@ -167,7 +167,7 @@ namespace RealLifeOverhaul.Meals
         /// <summary>A movement key held, or the stick pushed: the player wants to be off.</summary>
         public static bool MovePressed()
         {
-            return PlayerAction.Move.Vector().sqrMagnitude >= 0.05f;
+            return PlayerAction.Move.Vector().sqrMagnitude >= 0.05f && !TypingNow.Now;   // a letter typed in a field is not a step
         }
 
         /// <summary>

@@ -83,18 +83,21 @@ namespace RealLifeOverhaul.Ui
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void ReadKeys(ref UiInputState state)
         {
-            Vector2 move = PlayerAction.Move.Vector();
+            // A field has the keyboard: its letters, digits and arrows are the field's, never a step, a tab or a choice. Enter
+            // (Confirm) and Esc (Back) stay, as the field and its screen want them.
+            bool typing = TypingNow.Now;
+            Vector2 move = typing ? Vector2.zero : PlayerAction.Move.Vector();
             state.MoveX = move.x > 0.5f ? 1 : move.x < -0.5f ? -1 : 0;
             state.MoveY = move.y > 0.5f ? -1 : move.y < -0.5f ? 1 : 0;   // the game's up is +y; the kit's rows run down
             state.Confirm = PlayerAction.Confirm.Pressed();
             state.Back = PlayerAction.Cancel.Pressed();
-            state.TabPrev = PlayerAction.RotateLeft.Pressed();
-            state.TabNext = PlayerAction.RotateRight.Pressed();
-            state.Alt = PlayerAction.Interact.Pressed();
-            state.Option = PlayerAction.SecondaryInteract.Pressed();
+            state.TabPrev = !typing && PlayerAction.RotateLeft.Pressed();
+            state.TabNext = !typing && PlayerAction.RotateRight.Pressed();
+            state.Alt = !typing && PlayerAction.Interact.Pressed();
+            state.Option = !typing && PlayerAction.SecondaryInteract.Pressed();
             Keyboard keyboard = Keyboard.current;
             Mouse mouse = Mouse.current;
-            for (int i = 0; keyboard != null && i < 9; i++)
+            for (int i = 0; keyboard != null && !typing && i < 9; i++)
             {
                 if (keyboard[Key.Digit1 + i].wasPressedThisFrame || keyboard[Key.Numpad1 + i].wasPressedThisFrame)
                 {
@@ -105,7 +108,7 @@ namespace RealLifeOverhaul.Ui
             if (keyboard != null)
             {
                 // Page Up and Down and Shift are no bindings of the game's: a long read's page and a resize are the same on every keyboard.
-                state.Page = keyboard.pageUpKey.wasPressedThisFrame ? -1 : keyboard.pageDownKey.wasPressedThisFrame ? 1 : 0;
+                state.Page = typing ? 0 : keyboard.pageUpKey.wasPressedThisFrame ? -1 : keyboard.pageDownKey.wasPressedThisFrame ? 1 : 0;
                 state.Shift = keyboard.shiftKey.isPressed;
             }
             state.Pointed = mouse != null && (mouse.leftButton.wasPressedThisFrame || mouse.delta.ReadValue().sqrMagnitude > 4f);
