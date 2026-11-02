@@ -245,6 +245,7 @@ namespace RealLifeOverhaul.Economy
                 return;   // LifeEvents makes the save's modData ready first
             }
             KeepDayResult();
+            KeepGoalRewards(Settings.Economy && _running);   // goals reached since the last second: paid while the economy runs, else only counted
             if (!Settings.Economy)
             {
                 if (_running)

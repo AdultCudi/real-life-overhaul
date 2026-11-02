@@ -144,6 +144,7 @@ namespace RealLifeOverhaul
             PendingFineDue = ReadFloat(data, KeyPendingFineDue);
 
             Leisure.LeisureState.ReadSave(data);   // records, landmarks, the clothes bought, outfits
+            Leisure.LeisureState.SettleDances(save.Day <= 1);   // a new game starts with the first four dances
             CharacterCatalogue.ReadSave(data);   // the player's picks of the mod's own hair and clothes, by id
 
             // Absent from older saves: every event counts as unseen.

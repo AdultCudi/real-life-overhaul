@@ -75,5 +75,25 @@ namespace RealLifeOverhaul
         public static readonly GameMember HudHintsOn = Prop(HudScreens, Game, "PlayerPrefSettings", "ControlHints", "Boolean", true);
         public static readonly GameMember HudKeyName = StaticMethod(HudScreens, HudInputAssembly, "BigAmbitions.InputSystem.InputActionHelper", "GetDisplayName", "String", "PlayerAction");
         public static readonly GameMember HudImperial = StaticField(HudScreens, Game, "UnitHelper", "useImperial", "Boolean");
+
+        // The money pill's today (the balance at the last midnight), the customers in the shop the player is in, the
+        // personal goals as the Persona app reads them, the collapse and the hospital's bill, and the day statement's best
+        // earner.
+        public static readonly GameMember HudMidnights = Field(HudScreens, Game, "GameInstance", "midnightBankBalances", "List<Single>");
+        public static readonly GameMember HudCustomers = StaticField(HudScreens, Game, "IndoorCustomerSpawner", "Customers", "List<Customer>");
+        public static readonly GameMember HudSpawnsCustomers = Field(HudScreens, Game, "BusinessType", "spawnCustomers", "Boolean");
+        public static readonly GameMember HudGoalList = Field(HudScreens, Game, "GameManager", "personalGoals", "List<GenericPersonalGoal>");
+        public static readonly GameMember HudGoalsReached = Field(HudScreens, Game, "GameInstance", "completedPersonalGoals", "List<String>");
+        public static readonly GameMember HudGoalHidden = Field(HudScreens, Game, "GenericPersonalGoal", "isHidden", "Boolean");
+        public static readonly GameMember HudGoalKind = Field(HudScreens, Game, "GenericPersonalGoal", "tierIdentifier", "String");
+        public static readonly GameMember HudGoalId = Field(HudScreens, Game, "GenericPersonalGoal", "identifier", "String");
+        public static readonly GameMember HudGoalTitle = Method(HudScreens, Game, "GenericPersonalGoal", "GetTitle", "LanguageChangeEventDataHolder");
+        public static readonly GameMember HudGoalProgress = Method(HudScreens, Game, "GenericPersonalGoal", "GetProgress", "LanguageChangeEventDataHolder");
+        public static readonly GameMember HudGoalHasProgress = Method(HudScreens, Game, "GenericPersonalGoal", "HasProgress", "Boolean");
+        public static readonly GameMember HudGoalOrder = Method(HudScreens, Game, "GenericPersonalGoal", "GetSortValue", "Single");
+        public static readonly GameMember HudCollapse = StaticField(HudScreens, Game, "GlobalEvents", "onHospitalRespawnStarts", "Action");
+        public static readonly GameMember HudTransactions = Field(HudScreens, Game, "GameInstance", "Transactions", "Queue<Transaction>");
+        public static readonly GameMember HudStatements = Field(HudScreens, Game, "Entities.FinancialSummary", "businessIncomeStatements",
+            "List<FinancialSummary.BusinessIncomeStatement>");
     }
 }

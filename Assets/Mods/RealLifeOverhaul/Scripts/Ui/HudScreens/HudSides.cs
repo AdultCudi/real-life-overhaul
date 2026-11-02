@@ -288,7 +288,8 @@ namespace RealLifeOverhaul.Ui
 
         // The game's building panel as it wrote itself (the name or address, the open state in its colour, the parking,
         // the switch and the buttons the game left on, Going Public's owner actions among them), with the address, the
-        // kind and today's opening hours from the building's own registration.
+        // kind and today's opening hours from the building's own registration, and in the player's own shop the customers
+        // the game has in it now (IndoorCustomerSpawner, the building the player is in).
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static int BuildingPanel(UiSidePanelModel m)
         {
@@ -328,6 +329,12 @@ namespace RealLifeOverhaul.Ui
                     Rows[rows++] = new UiInfoRow { Label = UiText.T("bizman_schedule_opening_hours"), Value = hours };
                     sig = unchecked(sig * 31 + hours.GetHashCode());
                 }
+            }
+            if (owned && kind != null && manager.businessType.spawnCustomers && rows < UiSidePanelModel.MostRows)
+            {
+                int inside = IndoorCustomerSpawner.Customers.Count;
+                Rows[rows++] = new UiInfoRow { Label = UiText.T("reallife_ui_hud_customers"), Value = inside.ToString(System.Globalization.CultureInfo.InvariantCulture) };
+                sig = unchecked(sig * 31 + inside + 17);
             }
             Transform parking = _buildingPanel.Find("ParkingInfo");
             if (parking != null && parking.gameObject.activeInHierarchy)

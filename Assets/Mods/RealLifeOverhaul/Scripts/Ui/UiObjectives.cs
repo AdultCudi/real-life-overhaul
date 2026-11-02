@@ -27,7 +27,7 @@ namespace RealLifeOverhaul.Ui
         public bool Collapsed;     // the group folded to its band's label
 
         // Appended with the HUD's screens (3 Nov 2026).
-        public string Note;        // the band's quiet word at its right: how many, "1 of 3 done", a mission's pay; null for none
+        public string Note;        // the band's quiet word at its right: how many, "1 of 3 done", a mission's pay; left out where the whole name needs its room; null for none
         public int LineCount;      // the lines in use when Lines is kept between layouts; 0 for all of Lines
     }
 
@@ -186,12 +186,16 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Icon(s, onFace, ix, y + (Head - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, group.Icon, UiRole.None, UiFlags.Middle);
             float chevron = ix + iw - UiTokens.IconSmall;
             UiDraw.Icon(s, onFace, chevron, y + (Head - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, group.Collapsed ? UiIcon.Down : UiIcon.Up, UiRole.Text2, UiFlags.Middle);
+            float tx = ix + UiTokens.IconSmall + UiTokens.S2;
             float nw = string.IsNullOrEmpty(group.Note) ? 0f : Math.Min(iw * 0.45f, UiDraw.Snap(UiTextRules.Width(group.Note, UiStyle.Small) + UiTokens.S1));
+            if (nw > 0f && tx + UiTextRules.Width(group.Title, UiStyle.SectionHeader) + UiTokens.S3 + nw > chevron - UiTokens.S2)
+            {
+                nw = 0f;   // the name wins: the quiet word stands only where the whole name leaves it room
+            }
             if (nw > 0f)
             {
                 UiDraw.TextMiddle(s, onFace, chevron - UiTokens.S2 - nw, y, Head, nw, UiStyle.Small, UiRole.Text2, group.Note, UiFlags.Right | UiFlags.Truncate);
             }
-            float tx = ix + UiTokens.IconSmall + UiTokens.S2;
             float tw = chevron - UiTokens.S2 - (nw > 0f ? nw + UiTokens.S3 : 0f) - tx;
             UiDraw.TextMiddle(s, onFace, tx, y, Head, tw, UiStyle.SectionHeader, UiRole.Text2, group.Title, UiFlags.Label | UiFlags.Truncate);
             int header = UiDraw.Node(s, at, x, y, Width, Head, GroupCommand, index, face);

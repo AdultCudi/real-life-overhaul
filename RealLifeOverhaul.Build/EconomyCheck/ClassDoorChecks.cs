@@ -109,9 +109,9 @@ internal static partial class Program
                 : c.Kind == CourseKind.Short && c.Campus == Campus.School;
         }
         Check(groups, "education box: each course is in the group of where it is taught and what it is");
-        Check(inGroup[(int)EducationGroup.Degree] == 14 && inGroup[(int)EducationGroup.Postgrad] == 4 && inGroup[(int)EducationGroup.Nursing] == 1 && inGroup[(int)EducationGroup.Short] == 9
+        Check(inGroup[(int)EducationGroup.Degree] == 14 && inGroup[(int)EducationGroup.Postgrad] == 4 && inGroup[(int)EducationGroup.Nursing] == 1 && inGroup[(int)EducationGroup.Short] == 10
               && inGroup[(int)EducationGroup.Diploma] == 9 && inGroup[(int)EducationGroup.Online] == 2 && inGroup[(int)EducationGroup.Certificate] == 13,
-            "education box: 14 degrees, 4 after a degree, nursing, 9 short courses, 9 diplomas, 2 online courses and 13 certificates (the building trades' four among them)");
+            "education box: 14 degrees, 4 after a degree, nursing, 10 short courses, 9 diplomas, 2 online courses and 13 certificates (the building trades' four among them)");
         Check(EducationRules.Order.Length == 7 && EducationRules.Order[0] == EducationGroup.Degree && EducationRules.Order[6] == EducationGroup.Certificate
               && EducationRules.GroupKeys.Length == EducationRules.Order.Length,
             "education box: the university's degrees first, the certificates last, each group with its words");
@@ -164,7 +164,7 @@ internal static partial class Program
         Check(!rows[1].Heading && rows[1].Course == StudyCatalogue.ComputerScience && rows[0].Group == EducationGroup.Degree,
             "education box: nothing begun, a group keeps the catalogue's order (computer science first)");
         listed = EducationRules.Rows(fresh, c => c.Kind == CourseKind.Short || c.Kind == CourseKind.Vocational, false, 10, 0, -1, rows);
-        Check(listed == 20 && rows.Count == 20 + 3 && rows[0].Group == EducationGroup.Short,
+        Check(listed == 21 && rows.Count == 21 + 3 && rows[0].Group == EducationGroup.Short,
             "education box: the university switched off, only the school's courses and the two online ones are listed, with no empty group");
         listed = EducationRules.Rows(fresh, c => true, true, 10, 0, -1, rows);
         Check(listed == 0 && rows.Count == 0, "education box: a box that cannot scroll, nothing begun: nothing more than the game's own");

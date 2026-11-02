@@ -1,5 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Extensions;
+using RealLifeOverhaul.Calendar;
+using Streets;
 using TMPro;
 using UI;
 using UnityEngine;
@@ -9,9 +13,10 @@ namespace RealLifeOverhaul.Ui
 {
     /// <summary>
     /// The game's short notices as notice cards at the top centre, mirrored while the game shows them and in the game's own
-    /// fade (in quarters): the personal goal reached (PersonalGoalOverlay), the day's summary (DailySummary: its figure as
-    /// the game, or the mod's day result, wrote it, each row as it fades in, the EconoView link), the hospital (its words and
-    /// its Continue), the casino boat's message and the skip bridge button. The game's pieces run as before, hidden by leaf
+    /// fade (in quarters): the personal goal reached (PersonalGoalOverlay, with the next goal and the reward the economy
+    /// paid), the day's summary (DailySummary: its figure as the game, or the mod's day result, wrote it, each row as it
+    /// fades in, the day's best earner, the EconoView link), the hospital (where and when the player collapsed, the bill, a
+    /// shift the stay went over, its Continue), the casino boat's message and the skip bridge button. The game's pieces run as before, hidden by leaf
     /// (each panel's own picture by its renderer, its group left to the game's fades); the hospital's dimmer stays the
     /// game's, so the city dims and clicks are held as the game wants. Every press is the game's own button. Cost: four
     /// reads a second of a few alphas while the HUD shows.
@@ -34,11 +39,26 @@ namespace RealLifeOverhaul.Ui
         private static UI.DailySummary.DailySummary _daily;
         private static bool _on;
 
+        // The collapse, recorded as the game's hospital sequence starts (GlobalEvents.onHospitalRespawnStarts)...
+        private static readonly Action OnCollapse = Guard.Wrap(Collapsed);
+        private static Action _collapseSeen;
+        private static int _fellDay = -1, _fellMinute;
+        private static string _fellPlace;
+        // ...and the hospital card's words, worked out once a notice.
+        private static bool _stayRead;
+        private static string _stayBody, _stayMeta;
+        private static readonly string[] StayChips = new string[3];
+        private static readonly UiRole[] StayTones = new UiRole[3];
+        private static int _stayChipCount;
+        // The day summary's best earner, worked out once a statement.
+        private static object _bestOf;
+        private static string _best;
+
         static HudNotes()
         {
             for (int i = 0; i < Kinds; i++)
             {
-                Cards[i] = new UiHudNoticeModel { Rows = new UiInfoRow[4] };
+                Cards[i] = new UiHudNoticeModel { Rows = new UiInfoRow[4], Chips = new string[3], ChipTones = new UiRole[3] };
             }
         }
 
@@ -164,13 +184,18 @@ namespace RealLifeOverhaul.Ui
         private static int Read(ref int count)
         {
             int sig = 0;
+            EventHold.Keep(ref GlobalEvents.onHospitalRespawnStarts, OnCollapse, ref _collapseSeen);
             if (Up(_goal, out float a))
             {
                 UiHudNoticeModel c = Card(Goal, a, ref count);
                 c.Kicker = Words(_goalWords);
                 c.Icon = UiIcon.Trophy;
                 c.Title = Words(_goalTitle);
-                sig = unchecked(sig * 31 + Hash(c.Title) + Quarter(a));
+                string next = NextGoal();
+                c.Body = next != null && next != c.Title ? UiText.T("reallife_ui_hud_goal_next").Replace("{goal}", next) : null;
+                float paid = Economy.EconomyDirector.LastGoalReward;
+                c.Figure = paid > 0f && Time.unscaledTime - Economy.EconomyDirector.LastGoalRewardAt < RewardShows ? "+" + paid.ToShortCurrencyFormat() : null;
+                sig = unchecked(sig * 31 + Hash(c.Title) + Hash(c.Body) * 3 + Hash(c.Figure) * 5 + Quarter(a));
             }
             if (Up(_summary, out a))
             {
@@ -186,7 +211,12 @@ namespace RealLifeOverhaul.Ui
                 c.Title = UiText.T("reallife_ui_hud_hospital_title");
                 c.Body = OneLine(Words(_hospitalText));
                 c.Action = UiWidgets.There(_continue) ? UiWidgets.Label(_continue) : null;
-                sig = unchecked(sig * 31 + Hash(c.Body) + Quarter(a));
+                Stay(c);
+                sig = unchecked(sig * 31 + Hash(c.Body) + Hash(c.Meta) * 3 + c.ChipCount * 5 + Quarter(a));
+            }
+            else
+            {
+                _stayRead = false;   // the next notice works its words out again
             }
             if (Up(_casino, out a))
             {
@@ -255,7 +285,160 @@ namespace RealLifeOverhaul.Ui
                 c.Link = UiWidgets.Label(_econo);
                 c.LinkIcon = UiIcon.ChartLineUp;
             }
-            return unchecked(sig * 31 + rows + (c.Link != null ? 1 : 0));
+            c.Footer = BestEarner();
+            return unchecked(sig * 31 + rows + (c.Link != null ? 1 : 0) + Hash(c.Footer) * 3);
+        }
+
+        // The day's best earner on the summary's foot: the business with the highest profit in the game's latest statement;
+        // none when no business made one.
+        private static string BestEarner()
+        {
+            GameInstance save = SaveGameManager.Current;
+            List<Entities.FinancialSummary> days = save != null ? save.financialSummaries : null;
+            Entities.FinancialSummary day = days != null && days.Count > 0 ? days[days.Count - 1] : null;
+            if (ReferenceEquals(day, _bestOf))
+            {
+                return _best;
+            }
+            _bestOf = day;
+            _best = null;
+            if (day == null || day.businessIncomeStatements == null)
+            {
+                return null;
+            }
+            float top = 0f;
+            Address at = null;
+            for (int i = 0; i < day.businessIncomeStatements.Count; i++)
+            {
+                Entities.FinancialSummary.BusinessIncomeStatement b = day.businessIncomeStatements[i];
+                if (b != null && b.Address != null && b.TotalProfit > top)
+                {
+                    top = b.TotalProfit;
+                    at = b.Address;
+                }
+            }
+            if (at == null)
+            {
+                return null;
+            }
+            BuildingRegistration reg = Helpers.BuildingHelper.GetBuildingRegistration(at);
+            string name = reg != null && !string.IsNullOrEmpty(reg.BusinessName) ? reg.BusinessName : at.ToFormattedString();
+            _best = UiText.T("reallife_ui_hud_best_earner").Replace("{name}", name);
+            return _best;
+        }
+
+        // The goal after the newest one reached, read when due (HudGoalBook); none on a game without the goals.
+        private static string NextGoal()
+        {
+            try
+            {
+                HudGoalBook.Keep();
+                return HudGoalBook.Next;
+            }
+            catch (Exception e) when (Guard.Missing(e))
+            {
+                Guard.DoesWithout(e, "the next personal goal on the HUD's goal card");
+                return null;
+            }
+        }
+
+        private const float RewardShows = 7f;   // s: a reward paid this long ago is the card's (the game shows a goal for five)
+
+        // ------------------------------------------------------------------------------------------------- the hospital
+
+        // The game's hospital sequence starts: when and near where the player collapsed, for the hospital card.
+        private static void Collapsed()
+        {
+            try
+            {
+                Fell();
+            }
+            catch (Exception e) when (Guard.Missing(e))
+            {
+                Guard.DoesWithout(e, "where the player collapsed, on the HUD's hospital card");
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Fell()
+        {
+            GameInstance save = SaveGameManager.Current;
+            if (save == null)
+            {
+                return;
+            }
+            _fellDay = save.Day;
+            _fellMinute = save.Hour * 60 + (int)save.Minute;
+            _fellPlace = HudLive.LastBar != null ? HudLive.LastBar.Place : null;   // the place pill as the player last saw it
+        }
+
+        // The hospital card's words, once a notice: the collapse in a sentence, the time now, and its chips: the bill the
+        // game charged, a rota shift the stay went over, and the energy the game gave back.
+        private static void Stay(UiHudNoticeModel c)
+        {
+            GameInstance save = SaveGameManager.Current;
+            if (!_stayRead && save != null)
+            {
+                _stayRead = true;
+                StayWords(save);
+            }
+            if (_stayBody != null)
+            {
+                c.Body = _stayBody;
+            }
+            c.Meta = _stayMeta;
+            for (int i = 0; i < _stayChipCount; i++)
+            {
+                c.Chips[i] = StayChips[i];
+                c.ChipTones[i] = StayTones[i];
+            }
+            c.ChipCount = _stayChipCount;
+        }
+
+        private static void StayWords(GameInstance save)
+        {
+            int now = save.Hour * 60 + (int)save.Minute;
+            _stayMeta = CalendarText.Clock(now);
+            bool fell = _fellDay > 0 && _fellDay >= save.Day - 2;   // this stay's record, not an older one's
+            string time = fell ? CalendarText.Clock(_fellMinute) : null;
+            _stayBody = !fell ? null : !string.IsNullOrEmpty(_fellPlace)
+                ? UiText.T("reallife_ui_hud_hospital_where").Replace("{place}", _fellPlace).Replace("{time}", time)
+                : UiText.T("reallife_ui_hud_hospital_when").Replace("{time}", time);
+            int n = 0;
+            float bill = LastBill(save);
+            if (bill < 0f)
+            {
+                StayChips[n] = UiText.T("reallife_ui_hud_hospital_bill").Replace("{amount}", "-" + Math.Abs(bill).ToShortCurrencyFormat());
+                StayTones[n++] = UiRole.Danger;
+            }
+            if (fell && CareerState.Employed
+                && HudNoteRules.MissedShift(CareerState.RotaDays, CareerState.RotaHour, CareerCatalogue.ShiftHours, _fellDay, _fellMinute, save.Day, now) > 0)
+            {
+                StayChips[n] = UiText.T("reallife_ui_hud_hospital_missed").Replace("{time}", CareerClock.Time(CareerState.RotaHour));
+                StayTones[n++] = UiRole.Warn;
+            }
+            StayChips[n] = UiText.T("reallife_ui_hud_hospital_energy");
+            StayTones[n++] = UiRole.Ok;
+            _stayChipCount = n;
+            _fellDay = -1;   // used: the next stay records its own
+        }
+
+        // The game's newest hospital bill, from its transactions (a walk of the week's once a notice); 0 for none today.
+        private static float LastBill(GameInstance save)
+        {
+            if (save.Transactions == null)
+            {
+                return 0f;
+            }
+            float bill = 0f;
+            foreach (Transaction t in save.Transactions)
+            {
+                if (t != null && t.timestamp != null && t.timestamp.Day == save.Day && t.transactionType == "ba:transaction_hospitalbill")
+                {
+                    bill = t.amount;
+                }
+            }
+            return bill;
         }
 
         // A kind's card made ready to fill: its words cleared, its fade in quarters.

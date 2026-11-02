@@ -14,8 +14,9 @@ namespace RealLifeOverhaul.Ui
     /// <summary>
     /// The objectives at the left, mirrored from the game's objectives window (TasksUI) as the game and the mods fill it: its
     /// groups in its order (the business alerts, Uncle Fred, the side quests, the delivery missions, the workout plan, the
-    /// mod's construction and any group another mod adds), each line's words, its tick, its place and its way out, a high
-    /// priority alert marked, a mission's quieter lines under it and the delivery's way so far as a meter. A line, its locate
+    /// mod's construction and any group another mod adds) with how many are open or done, each line's words, tick, place and
+    /// way out, a high priority alert marked, a mission's quieter lines and the delivery's way so far as a meter; after the
+    /// alerts, the game's personal goals now with their progress (HudGoalBook), their lines pressing nothing. A line, its locate
     /// link and its Cancel press the entry's own buttons, so the game does what its window does; the strip folds the game's
     /// own window (TasksUI.SetCollapsedState) and each group folds for the session. The panel never runs into the bar: the
     /// last open groups fold first, then a long group shows its first lines. The game's window stays up, hidden by leaf.
@@ -25,6 +26,7 @@ namespace RealLifeOverhaul.Ui
     {
         private const int MostGroups = 12, MostLines = 24;
         private const string DeliveryKey = "ba:skill_deliverydriver";   // the delivery driver's group, as the game titles it
+        private const string AlertsKey = "bizman_alerts";               // the business alerts' group: the personal goals' band follows it
 
         private static readonly UiConceal Hidden = new UiConceal();
         private static readonly UiObjectivesModel Model = new UiObjectivesModel { Groups = new UiObjectiveGroup[MostGroups], GroupCount = 0 };
@@ -89,6 +91,7 @@ namespace RealLifeOverhaul.Ui
             _title = null;
             Folded.Clear();
             Array.Clear(GroupOf, 0, GroupOf.Length);
+            HudGoalBook.Forget();
         }
 
         /// <summary>The window read again into the HUD's model, fitted above the bar; the signature of what shows.</summary>
@@ -139,17 +142,22 @@ namespace RealLifeOverhaul.Ui
             m.EmptyTitle = UiText.T("reallife_ui_hud_goals_empty");
             m.EmptyBody = UiText.T("reallife_ui_hud_goals_empty_body");
             int groups = 0, open = 0, sig = Hash(m.Title);
+            bool goals = GoalsKept() && HudGoalBook.Count > 0;
+            int after = goals ? AlertsAt() : -1;   // the goals' band after the alerts' group, first without one
             for (int i = 0; i < _content.childCount && groups < MostGroups; i++)
             {
+                if (goals && i > after)
+                {
+                    groups += GoalsBand(groups, ref sig);
+                    goals = false;
+                }
                 Transform group = _content.GetChild(i);
-                if (!group.gameObject.activeSelf || group.name == "GroupTemplate")
+                if (!group.gameObject.activeSelf || group.name == "GroupTemplate" || groups >= MostGroups)
                 {
                     continue;
                 }
                 ref UiObjectiveGroup g = ref m.Groups[groups];
-                TMP_Text head = Text(group, "Headline/Label");
-                TextLocalizationComponent named = head != null ? head.GetComponent<TextLocalizationComponent>() : null;
-                string key = named != null ? named.Key : null;
+                string key = KeyOf(group, out TMP_Text head);
                 int lines = Lines(group, groups, ref g, key == DeliveryKey, ref open, ref sig);
                 if (lines == 0)
                 {
@@ -157,7 +165,12 @@ namespace RealLifeOverhaul.Ui
                 }
                 g.Title = Words(head);
                 g.Icon = IconOf(key, group);
-                g.Note = null;
+                int done = 0;
+                for (int l = 0; l < lines; l++)
+                {
+                    done += g.Lines[l].Done ? 1 : 0;
+                }
+                g.Note = HudNoteRules.GroupNote(done, lines, UiText.T("reallife_ui_hud_goals_done"));   // "3" open, or "1 of 3 done"
                 g.LineCount = lines;
                 g.Collapsed = Folded.TryGetValue(g.Title ?? string.Empty, out bool f) && f;
                 GroupOf[groups] = group;
@@ -165,9 +178,72 @@ namespace RealLifeOverhaul.Ui
                 sig = unchecked(sig * 31 + Hash(g.Title) + lines);
                 groups++;
             }
+            if (goals && groups < MostGroups)
+            {
+                groups += GoalsBand(groups, ref sig);   // the window's groups are all before it
+            }
             m.GroupCount = groups;
             m.Meta = open > 0 ? UiText.T("reallife_ui_hud_goals_open").Replace("{count}", open.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null;
             return unchecked(sig * 31 + open);
+        }
+
+        // A group's key, as the game titled it, and its headline's label.
+        private static string KeyOf(Transform group, out TMP_Text head)
+        {
+            head = Text(group, "Headline/Label");
+            TextLocalizationComponent named = head != null ? head.GetComponent<TextLocalizationComponent>() : null;
+            return named != null ? named.Key : null;
+        }
+
+        // The window's child the business alerts are in; -1 for none.
+        private static int AlertsAt()
+        {
+            for (int i = 0; i < _content.childCount; i++)
+            {
+                Transform group = _content.GetChild(i);
+                if (group.gameObject.activeSelf && group.name != "GroupTemplate" && KeyOf(group, out _) == AlertsKey)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        // The game's personal goals read when due (HudGoalBook); none on a game without them.
+        private static bool GoalsKept()
+        {
+            try
+            {
+                HudGoalBook.Keep();
+                return true;
+            }
+            catch (Exception e) when (Guard.Missing(e))
+            {
+                Guard.DoesWithout(e, "the personal goals on the HUD's objectives");
+                return false;
+            }
+        }
+
+        // The personal goals' band: the first kinds' goals now, each with its progress, and at its right all the goals done.
+        private static int GoalsBand(int index, ref int sig)
+        {
+            ref UiObjectiveGroup g = ref Model.Groups[index];
+            int n = Math.Min(HudGoalBook.Count, MostLines);
+            for (int k = 0; k < n; k++)
+            {
+                g.Lines[k] = new UiObjectiveLine { Text = HudGoalBook.Titles[k], Progress = HudGoalBook.Progress[k] };
+                LineOf[index][k] = null;   // nothing of the game's behind it: a press does nothing
+                sig = unchecked(sig * 31 + Hash(g.Lines[k].Text) + Hash(g.Lines[k].Progress) * 3);
+            }
+            g.Title = UiText.T("common_personal_goals");
+            g.Icon = UiIcon.Trophy;
+            g.Note = HudNoteRules.DoneNote(HudGoalBook.Done, HudGoalBook.Total, UiText.T("reallife_ui_hud_goals_done"));
+            g.LineCount = n;
+            g.Collapsed = Folded.TryGetValue(g.Title ?? string.Empty, out bool f) && f;
+            GroupOf[index] = null;
+            AutoFolded[index] = false;
+            sig = unchecked(sig * 31 + Hash(g.Title) + Hash(g.Note) + n);
+            return 1;
         }
 
         // A group's entries as lines: a plain entry's words, tick, place and way out; a mission's nested entry's address

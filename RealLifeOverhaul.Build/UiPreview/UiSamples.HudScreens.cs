@@ -26,6 +26,8 @@ internal static partial class UiSamples
         m.Season = night ? "Autumn, rain" : "Spring, sunny";
         m.Place = night ? "1250 Avenue of the Americas" : "7 5th Avenue";
         m.District = night ? "Lower Manhattan" : "Midtown";
+        m.MoneyDay = BarWords("reallife_ui_hud_money_today", "{amount} today").Replace("{amount}", night ? "-$385" : "+$1,240");
+        m.MoneyTrend = night ? -1 : 1;
         m.Tools = new[] { UiIcon.MusicNotes, UiIcon.Cap, UiIcon.Info };
         m.ToolsOn = new bool[3];
         m.ToolsOff = new bool[3];
@@ -88,7 +90,11 @@ internal static partial class UiSamples
         {
             Title = "7 5th Avenue", Meta = t("reallife_ui_hud_your_business", "Your business"), Icon = UiIcon.Store,
             HeadName = "Bloom & Co", HeadSub = "Florist, Midtown", HeadChip = t("common_open", "Open"), HeadTone = UiRole.Ok,
-            Rows = new[] { new UiInfoRow { Label = t("bizman_schedule_opening_hours", "Opening hours"), Value = "08:00 - 20:00" } },
+            Rows = new[]
+            {
+                new UiInfoRow { Label = t("bizman_schedule_opening_hours", "Opening hours"), Value = "08:00 - 20:00" },
+                new UiInfoRow { Label = t("reallife_ui_hud_customers", "Customers inside"), Value = "6" },
+            },
             SwitchLabel = t("bizman_temporarily_closed", "Temporarily closed"),
             Actions = new[]
             {
@@ -107,9 +113,9 @@ internal static partial class UiSamples
     // ------------------------------------------------------------------------------------------------- the objectives
 
     /// <summary>
-    /// The objectives as the game's window lists them: the business alerts (one the game marks red), Uncle Fred, a delivery
-    /// mission with its time, Cancel and the way so far, the workout plan and a construction; or, tight, more than the
-    /// screen holds, the last groups folded to their bands.
+    /// The objectives as the game's window lists them: the business alerts (one the game marks red), the personal goals now
+    /// with their progress, Uncle Fred, a delivery mission with its time, Cancel and the way so far, the workout plan and a
+    /// construction, each band with its count; or, tight, more than the screen holds, the last groups folded to their bands.
     /// </summary>
     public static UiObjectivesModel PiecesGoals(UiWords t, bool tight)
     {
@@ -119,9 +125,19 @@ internal static partial class UiSamples
             Meta = t("reallife_ui_hud_goals_open", "{count} open").Replace("{count}", tight ? "14" : "9"),
             EmptyTitle = t("reallife_ui_hud_goals_empty", "Nothing to do right now"), EmptyBody = t("reallife_ui_hud_goals_empty_body", "New tasks, alerts and quests show here as they come."),
         };
+        string done = t("reallife_ui_hud_goals_done", "{done} of {count} done");
+        var goals = new UiObjectiveGroup
+        {
+            Title = t("common_personal_goals", "Personal Goals"), Icon = UiIcon.Trophy, Note = done.Replace("{done}", "12").Replace("{count}", "96"), Lines = new[]
+            {
+                new UiObjectiveLine { Text = t("personalgoal_bank_balance", "Reach a bank balance of {amount}").Replace("{amount}", "$50,000"), Progress = "$31,400" },
+                new UiObjectiveLine { Text = t("personalgoal_minemployees", "Employ at least {minimumEmployees} people").Replace("{minimumEmployees}", "2"), Progress = t("reallife_ui_hud_goal_of", "{current} of {amount}").Replace("{current}", "1").Replace("{amount}", "2") },
+                new UiObjectiveLine { Text = t("personalgoal_realestate", "Own at least {amount} buildings").Replace("{amount}", "1"), Progress = t("reallife_ui_hud_goal_of", "{current} of {amount}").Replace("{current}", "0").Replace("{amount}", "1") },
+            }
+        };
         var alerts = new UiObjectiveGroup
         {
-            Title = t("bizman_alerts", "Alerts"), Icon = UiIcon.ListChecks, Lines = new[]
+            Title = t("bizman_alerts", "Alerts"), Icon = UiIcon.ListChecks, Note = "3", Lines = new[]
             {
                 new UiObjectiveLine { Text = "Bloom & Co is dirty and needs to be cleaned", Locate = true, Urgent = true },
                 new UiObjectiveLine { Text = "Bloom & Co has no products to sell.", Locate = true },
@@ -130,14 +146,14 @@ internal static partial class UiSamples
         };
         var fred = new UiObjectiveGroup
         {
-            Title = t("uncle_fred", "Uncle Fred"), Icon = UiIcon.Person, Lines = new[]
+            Title = t("uncle_fred", "Uncle Fred"), Icon = UiIcon.Person, Note = done.Replace("{done}", "1").Replace("{count}", "2"), Lines = new[]
             {
                 new UiObjectiveLine { Text = "Rent apartment at 12 Hudson Street", Locate = true }, new UiObjectiveLine { Text = "Buy a phone", Done = true },
             }
         };
         var delivery = new UiObjectiveGroup
         {
-            Title = t("ba:skill_deliverydriver", "Delivery Driver"), Icon = UiIcon.Truck, Lines = new[]
+            Title = t("ba:skill_deliverydriver", "Delivery Driver"), Icon = UiIcon.Truck, Note = "3", Lines = new[]
             {
                 new UiObjectiveLine { Text = "1 h 40 min", Close = t("common_cancel", "Cancel"), HasShare = true, Share = 0.34f },
                 new UiObjectiveLine { Text = "88 Elm Street (1.2 km)", Sub = "24 x Lilies", Locate = true },
@@ -146,17 +162,17 @@ internal static partial class UiSamples
         };
         var workout = new UiObjectiveGroup
         {
-            Title = t("workout_plan", "Workout Plan"), Icon = UiIcon.Heartbeat, Collapsed = tight,
+            Title = t("workout_plan", "Workout Plan"), Icon = UiIcon.Heartbeat, Collapsed = tight, Note = done.Replace("{done}", "1").Replace("{count}", "2"),
             Lines = new[] { new UiObjectiveLine { Text = "Do Cardio for 30 minutes", Done = true }, new UiObjectiveLine { Text = "Do Weights for 20 minutes" } }
         };
         var build = new UiObjectiveGroup
         {
-            Title = t("reallife_bld_track_header", "Construction"), Icon = UiIcon.Hammer, Collapsed = tight,
+            Title = t("reallife_bld_track_header", "Construction"), Icon = UiIcon.Hammer, Collapsed = tight, Note = "1",
             Lines = new[] { new UiObjectiveLine { Text = "Annex, 38th Street: frame the first floor", Locate = true } }
         };
         if (!tight)
         {
-            m.Groups = new[] { alerts, fred, delivery, workout, build };
+            m.Groups = new[] { alerts, goals, fred, delivery, workout, build };
             return m;
         }
         var food = new UiObjectiveGroup
@@ -169,7 +185,8 @@ internal static partial class UiSamples
             alerts.Lines[0], alerts.Lines[1], alerts.Lines[2],
             new UiObjectiveLine { Text = "Corner Perk is out of Coffee", Locate = true }, new UiObjectiveLine { Text = "Business is open but there are no employees working", Locate = true },
         };
-        m.Groups = new[] { alerts, fred, delivery, workout, build, food };
+        alerts.Note = "5";
+        m.Groups = new[] { alerts, goals, fred, delivery, workout, build, food };
         return m;
     }
 
@@ -180,8 +197,9 @@ internal static partial class UiSamples
     // ------------------------------------------------------------------------------------------------- the notices
 
     /// <summary>
-    /// The short notices as cards at the top: a personal goal reached, the day's summary as the game's panel fills it, and the
-    /// hospital's word with its Continue; or at night the casino boat's welcome and the way over the bridge.
+    /// The short notices as cards at the top: a personal goal reached with its reward and the next goal, the day's summary as
+    /// the game's panel fills it with the day's best earner, and the hospital's word (where and when, the bill, the shift
+    /// missed, the energy back) with its Continue; or at night the casino boat's welcome and the way over the bridge.
     /// </summary>
     public static UiHudNoticeModel[] PiecesNotes(UiWords t, bool night)
     {
@@ -199,19 +217,32 @@ internal static partial class UiSamples
         }
         return new[]
         {
-            new UiHudNoticeModel { Kicker = t("personalgoal_achieved", "Personal goal achieved"), Icon = UiIcon.Trophy, Title = "Open your first business" },
+            new UiHudNoticeModel
+            {
+                Kicker = t("personalgoal_achieved", "Personal goal achieved"), Icon = UiIcon.Trophy, Figure = "+$5,000",
+                Title = t("personalgoal_bank_balance", "Reach a bank balance of {amount}").Replace("{amount}", "$10,000"),
+                Body = t("reallife_ui_hud_goal_next", "Next goal: {goal}").Replace("{goal}", t("personalgoal_bank_balance", "Reach a bank balance of {amount}").Replace("{amount}", "$50,000")),
+            },
             new UiHudNoticeModel
             {
                 Kicker = t("daily_summary", "Day {day} Summary").Replace("{day}", "1"), Icon = UiIcon.Chart,
                 BigLabel = t("total_profit", "Total profit"), Big = "$2,115", BigTone = UiRole.OkText,
                 Rows = new[] { new UiInfoRow { Label = t("daily_summary_businesses", "Businesses"), Value = "3" } }, RowCount = 1,
                 Link = t("daily_summary_details", "Details (EconoView)"), LinkIcon = UiIcon.ChartLineUp,
+                Footer = t("reallife_ui_hud_best_earner", "Best earner today: {name}").Replace("{name}", "Bloom & Co"),
             },
             new UiHudNoticeModel
             {
                 Kicker = t("reallife_ui_hud_hospital", "Hospital"), Icon = UiIcon.Plus, IconTone = UiRole.Danger,
-                Title = t("reallife_ui_hud_hospital_title", "You were taken to hospital"),
-                Body = t("hospital_respawn_notification", "You had no more energy and passed out.\nThe local authorities transported you to closest medical center to recover.").Replace("\n", " "),
+                Title = t("reallife_ui_hud_hospital_title", "You were taken to hospital"), Meta = "08:00",
+                Body = t("reallife_ui_hud_hospital_where", "You collapsed near {place} at {time}.").Replace("{place}", "7 5th Avenue").Replace("{time}", "02:14"),
+                Chips = new[]
+                {
+                    t("reallife_ui_hud_hospital_bill", "{amount} bill").Replace("{amount}", "-$2,000"),
+                    t("reallife_ui_hud_hospital_missed", "Missed {time} shift").Replace("{time}", "06:00"),
+                    t("reallife_ui_hud_hospital_energy", "Energy restored"),
+                },
+                ChipTones = new[] { UiRole.Danger, UiRole.Warn, UiRole.Ok }, ChipCount = 3,
                 Action = t("menu_continue", "Continue"),
             },
         };
@@ -227,9 +258,9 @@ internal static partial class UiSamples
     // ------------------------------------------------------------------------------------------------- the bar's popups
 
     /// <summary>
-    /// The top bar's two lists over the bar: the game's dances, the one danced chosen, with Stop dancing; and the accessories
-    /// the player wears, the hand's and the head's with their switches, with Take all off. Indoors, the accessories alone,
-    /// with nothing worn.
+    /// The top bar's two lists over the bar: the game's dances, the four known pressable, the one danced chosen, the rest to
+    /// learn at the dance class, with Stop dancing; and the accessories the player wears, the hand's and the head's with
+    /// their switches, how many show, with Take all off. Indoors, the accessories alone, with nothing worn.
     /// </summary>
     public static UiHudPopupModel[] PiecesPopups(UiWords t, UiStatusModel bar, float frameWidth, bool indoors)
     {
@@ -250,17 +281,24 @@ internal static partial class UiSamples
             new UiHudPopupRow { Icon = UiIcon.Headset, Text = "Earbuds", Sub = t("reallife_ui_hud_slot_phone", "Phone") },
         };
         accessories.RowCount = 3;
+        accessories.Meta = t("reallife_ui_hud_accessories_shown", "{shown} of {count} shown").Replace("{shown}", "2").Replace("{count}", "3");
         accessories.Action = t("reallife_ui_hud_accessories_off", "Take all off");
         string dancing = t("reallife_ui_hud_dancing", "Dancing");
-        string[] names = { "Disco", "Hip hop", "Salsa", "Robot", "Breakdance", "Waltz", "Twist", "Moonwalk", "Tango" };
+        string[] names = { "Boogie", "Sway", "Swing", "The Macarena", "Shy Dance", "Fist Pump", "Swim", "Twist", "Smooth Operator" };
+        string known = t("reallife_ui_hud_dances_known", "{known} of {count} known").Replace("{known}", "4").Replace("{count}", "9");
         var dances = new UiHudPopupModel
         {
-            Title = t("reallife_ui_hud_dances", "Dances"), Meta = dancing, Numbered = true, Rows = new UiHudPopupRow[names.Length], RowCount = names.Length,
+            Title = t("reallife_ui_hud_dances", "Dances"), Meta = known, Numbered = true, Rows = new UiHudPopupRow[names.Length], RowCount = names.Length,
             Empty = t("reallife_ui_hud_dances_empty", "No dances to choose from here."), Action = t("reallife_ui_hud_dance_stop", "Stop dancing"), AnchorX = UiDraw.ToolMiddle(plan, 0),
         };
         for (int i = 0; i < names.Length; i++)
         {
-            dances.Rows[i] = new UiHudPopupRow { Text = names[i], Press = true, Chip = i == 2 ? dancing : null, ChipTone = UiRole.Accent };
+            bool locked = i >= 4;   // past the first four: learned at the school's dance class
+            dances.Rows[i] = new UiHudPopupRow
+            {
+                Text = names[i], Press = !locked, Disabled = locked, Chip = i == 2 ? dancing : locked ? t("reallife_study_course_dance_class", "Dance class") : null,
+                ChipTone = i == 2 ? UiRole.Accent : UiRole.None,
+            };
         }
         return new[] { dances, accessories };
     }

@@ -152,6 +152,7 @@ namespace RealLifeOverhaul.Careers
             {
                 _visit = null;   // likewise an interview at a place, once over
             }
+            Leisure.DanceLocks.Keep(_studyOn);   // the dances not learned yet held back while the dance class can teach them
             if (!_studyOn)
             {
                 ClassPromptGone();
@@ -579,6 +580,7 @@ namespace RealLifeOverhaul.Careers
                 CloseSitting();
                 StopWork(false);
                 StopStudy(true, false);
+                Leisure.DanceLocks.Release();
             }
             catch (Exception e)
             {

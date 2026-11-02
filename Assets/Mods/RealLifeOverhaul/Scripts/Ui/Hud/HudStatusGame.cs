@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using BigAmbitions.DayNightCycle;
+using Extensions;
 using Helpers;
 using RealLifeOverhaul.Events;
 using RealLifeOverhaul.Seasons;
@@ -16,8 +17,8 @@ namespace RealLifeOverhaul.Ui
     /// lock (GameSpeedController), the player's energy, hunger and happiness as the game's top bar reads them, the mod's
     /// hygiene, stress and home (HomeState, while the needs are on), the season (the mod's calendar, while the seasons are
     /// on), the weather in a glyph and a word (the mod's snow and its reading of the game's rain, Events.Weather), the place
-    /// as the game's HUD names it (PlayerHUD's nearest building and district), the figure the game's top bar writes under
-    /// its money with its arrow (Topbar.moneyChange: yesterday's result), and the notices the game's list keeps. It stands
+    /// as the game's HUD names it (PlayerHUD's nearest building and district), today's money so far under the money (less
+    /// the last midnight's balance; before one, Topbar.moneyChange: yesterday's result), and the notices the game keeps. It stands
     /// behind UiChrome.Bar, after the time, the day, the money and the app row (UiGame.Bar). A member that fails leaves its
     /// pill out with one line in Player.log. Cost: a few reads each time the bar is laid out; <see cref="Signature"/> a few
     /// loads a frame while the HUD shows.
@@ -256,11 +257,20 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // The figure the game's top bar writes under its money (yesterday's result, or the mod's day result in its place,
-        // Economy/DayResult) and which of its arrows shows; left out while the bar shows none.
+        // Today's money so far under the money ("+$1,240 today"): the money now less the game's balance at the last midnight
+        // (GameInstance.midnightBankBalances, saved). Before a save's first midnight, the figure the game's top bar writes
+        // under its money (yesterday's result, or the mod's day result, Economy/DayResult) with its arrow; else none.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void MoneyDay(UiStatusModel m, UIs uis)
         {
+            GameInstance save = SaveGameManager.Current;
+            if (save != null && HudNoteRules.Today(save.Money, save.midnightBankBalances, out double net))
+            {
+                m.MoneyTrend = HudNoteRules.Trend(net);
+                string sign = m.MoneyTrend > 0 ? "+" : m.MoneyTrend < 0 ? "-" : string.Empty;
+                m.MoneyDay = UiText.T("reallife_ui_hud_money_today").Replace("{amount}", sign + Math.Abs(net).ToShortCurrencyFormat(abbreviated: true));
+                return;
+            }
             TextMeshProUGUI day = uis != null && uis.topBar != null ? uis.topBar.moneyChange : null;
             if (day == null || !day.gameObject.activeSelf || string.IsNullOrEmpty(day.text))
             {

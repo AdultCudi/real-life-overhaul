@@ -865,6 +865,8 @@ namespace RealLifeOverhaul
                     v => Settings.EconomyGradeUpNotes = v)
                 .AddToggle(Settings.EconomyDayResultId, "reallife_econ_opt_day_result", Settings.EconomyDayResult,
                     v => Settings.EconomyDayResult = v)
+                .AddToggle(Settings.EconomyGoalRewardsId, "reallife_econ_opt_goal_rewards", Settings.EconomyGoalRewards,
+                    v => Settings.EconomyGoalRewards = v)
                 .AddToggle(Settings.EconomyProductsId, "reallife_econ_products", Settings.EconomyProducts,
                     v => Settings.EconomyProducts = v)
                 .AddToggle(Settings.EconomySharkId, "reallife_econ_shark", Settings.EconomyShark,

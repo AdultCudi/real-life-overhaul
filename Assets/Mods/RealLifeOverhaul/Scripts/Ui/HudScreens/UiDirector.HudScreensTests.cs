@@ -141,7 +141,11 @@ namespace RealLifeOverhaul.Ui
             {
                 Title = "7 5th Avenue", Meta = UiText.T("reallife_ui_hud_your_business"), Icon = UiIcon.Store,
                 HeadName = "Bloom & Co", HeadSub = UiText.T("ba:businesstype_florist") + ", Midtown", HeadChip = UiText.T("common_open"), HeadTone = UiRole.Ok,
-                Rows = new[] { new UiInfoRow { Label = UiText.T("bizman_schedule_opening_hours"), Value = Hours(8, 20) } },
+                Rows = new[]
+                {
+                    new UiInfoRow { Label = UiText.T("bizman_schedule_opening_hours"), Value = Hours(8, 20) },
+                    new UiInfoRow { Label = UiText.T("reallife_ui_hud_customers"), Value = "6" },
+                },
                 SwitchLabel = UiText.T("bizman_temporarily_closed"),
                 Actions = new[]
                 {
@@ -156,6 +160,8 @@ namespace RealLifeOverhaul.Ui
         private static UiObjectivesModel SampleGoals()
         {
             string Plain(string words) => words.Replace("<u>", string.Empty).Replace("</u>", string.Empty);
+            string Done(int done, int count) => HudNoteRules.GroupNote(done, count, UiText.T("reallife_ui_hud_goals_done"));
+            string Of(string current, string amount) => UiText.T("reallife_ui_hud_goal_of").Replace("{current}", current).Replace("{amount}", amount);
             return new UiObjectivesModel
             {
                 Title = UiText.T("tutorial_objectives"), LocateLabel = UiText.T("reallife_ui_hud_locate"),
@@ -164,11 +170,21 @@ namespace RealLifeOverhaul.Ui
                 {
                     new UiObjectiveGroup
                     {
-                        Title = UiText.T("bizman_alerts"), Icon = UiIcon.ListChecks,
+                        Title = UiText.T("bizman_alerts"), Icon = UiIcon.ListChecks, Note = Done(0, 2),
                         Lines = new[]
                         {
                             new UiObjectiveLine { Text = Plain(UiText.T("tutorial_todotask_dirtyfloors").Replace("{businessname}", "Bloom & Co")), Locate = true, Urgent = true },
                             new UiObjectiveLine { Text = Plain(UiText.T("tutorial_todotask_paytaxes").Replace("{remainingDays}", "3")) },
+                        },
+                    },
+                    new UiObjectiveGroup
+                    {
+                        Title = UiText.T("common_personal_goals"), Icon = UiIcon.Trophy,
+                        Note = HudNoteRules.DoneNote(12, 96, UiText.T("reallife_ui_hud_goals_done")),
+                        Lines = new[]
+                        {
+                            new UiObjectiveLine { Text = UiText.T("personalgoal_bank_balance").Replace("{amount}", 50000f.ToShortCurrencyFormat()), Progress = 31400f.ToShortCurrencyFormat() },
+                            new UiObjectiveLine { Text = UiText.T("personalgoal_minemployees").Replace("{minimumEmployees}", "2"), Progress = Of("1", "2") },
                         },
                     },
                     new UiObjectiveGroup
@@ -194,7 +210,7 @@ namespace RealLifeOverhaul.Ui
                     },
                     new UiObjectiveGroup
                     {
-                        Title = UiText.T("workout_plan"), Icon = UiIcon.Heartbeat,
+                        Title = UiText.T("workout_plan"), Icon = UiIcon.Heartbeat, Note = Done(1, 1),
                         Lines = new[] { new UiObjectiveLine { Text = UiText.T("workout_plan_objective").Replace("{workoutType}", "Cardio").Replace("{duration}", "30"), Done = true } },
                     },
                     new UiObjectiveGroup
@@ -215,6 +231,7 @@ namespace RealLifeOverhaul.Ui
                 BigLabel = UiText.T("total_profit"), Big = 2115f.ToShortCurrencyFormat(), BigTone = UiRole.OkText,
                 Rows = new[] { new UiInfoRow { Label = UiText.T("daily_summary_businesses"), Value = "3" } }, RowCount = 1,
                 Link = UiText.T("daily_summary_details"), LinkIcon = UiIcon.ChartLineUp,
+                Footer = UiText.T("reallife_ui_hud_best_earner").Replace("{name}", "Bloom & Co"),
             };
         }
 

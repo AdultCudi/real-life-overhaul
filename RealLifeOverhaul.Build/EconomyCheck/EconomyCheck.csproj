@@ -115,6 +115,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Seasons\SeasonLookRules.cs" Link="Mod\SeasonLookRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Seasons\SnowCoverRules.cs" Link="Mod\SnowCoverRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Seasons\TemperatureRules.cs" Link="Mod\TemperatureRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Leisure\DanceRules.cs" Link="Mod\DanceRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meals\MealsRules.cs" Link="Mod\MealsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meals\MealsText.cs" Link="Mod\MealsText.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Networking\NetworkFile.cs" Link="Mod\NetworkFile.cs" />
@@ -253,6 +254,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\TableSpec.cs" Link="Mod\TableSpec.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\CashCategory.cs" Link="Mod\CashCategory.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\DayRules.cs" Link="Mod\DayRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\GoalRewardRules.cs" Link="Mod\GoalRewardRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialModel.cs" Link="Mod\SocialModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialRules.cs" Link="Mod\SocialRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\PartnerWorkRules.cs" Link="Mod\PartnerWorkRules.cs" />
@@ -674,6 +676,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiHud.cs" Link="Mod\UiHud.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiHudNotice.cs" Link="Mod\UiHudNotice.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiHudPopup.cs" Link="Mod\UiHudPopup.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\HudScreens\HudNoteRules.cs" Link="Mod\HudNoteRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.EmptyStateHeight.cs" Link="Mod\UiDraw.EmptyStateHeight.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\IUiDragging.cs" Link="Mod\IUiDragging.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDiary.cs" Link="Mod\UiDiary.cs" />
