@@ -89,7 +89,7 @@ internal static partial class UiSamples
     /// <summary>A business in the world as an info panel: Bloom Café, open, with its owner, takings and staff.</summary>
     public static UiInfoModel HudBusiness(UiWords t) => new UiInfoModel
     {
-        Title = "Bloom Café", Icon = UiIcon.Coffee, Tabs = new[] { UiIcon.Store, UiIcon.Coffee, UiIcon.People }, Tab = 1,
+        Title = "Bloom Café", Icon = UiIcon.Coffee, Tabs = new[] { UiIcon.Store, UiIcon.Coffee, UiIcon.IdBadge }, Tab = 1,
         Status = "Open until 22:00", StatusIcon = UiIcon.Check, StatusTone = UiRole.None, Facts = "Coffee shop, 70 Fifth Avenue",
         Sections = new[]
         {
@@ -201,7 +201,7 @@ internal static partial class UiSamples
     /// <summary>The shift at the café: its hours as a meter, where and until when, Clock out.</summary>
     public static UiSidePanelModel HudShift(UiWords t, bool collapsed) => new UiSidePanelModel
     {
-        Title = "Barista shift", Icon = UiIcon.Briefcase, Collapsed = collapsed,
+        Title = "Barista shift", Icon = UiIcon.Coffee, Collapsed = collapsed,
         Rows = new[]
         {
             new UiInfoRow { Label = "Until", Value = "18:00" },
@@ -292,7 +292,7 @@ internal static partial class UiSamples
         Hud(s, f, dark, k, t, new UiHudModel { Objectives = HudGoals(t, false, empty) }, HudBar(t, false, false, night));
 
     /// <summary>The HUD on a trade job: the timing gauge with its zone and marker, and a delivery's meter running late.</summary>
-    public static void HudMeters(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t)
+    public static void HudMeters(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool night = false)
     {
         var timing = new UiSidePanelModel
         {
@@ -304,10 +304,10 @@ internal static partial class UiSamples
         var delivery = new UiSidePanelModel
         {
             Title = "Delivery to Hudson Street", Icon = UiIcon.Truck,
-            Rows = new[] { new UiInfoRow { Label = "Boxes", Value = "4 of 12" }, new UiInfoRow { Label = "Due", Value = "15:00", Ink = UiRole.WarnText } },
+            Rows = new[] { new UiInfoRow { Label = "Boxes", Value = "4 of 12" }, new UiInfoRow { Label = "Due", Value = night ? "23:15" : "15:00", Ink = UiRole.WarnText } },
             HasProgress = true, Progress = new UiProgressModel { Label = "Time left", Value = "28 min", Share = 0.22f, Tone = UiRole.Warn },
         };
-        Hud(s, f, dark, k, t, new UiHudModel { Side = new[] { timing, delivery } }, HudBar(t, false, false, false));
+        Hud(s, f, dark, k, t, new UiHudModel { Side = new[] { timing, delivery } }, HudBar(t, false, false, night));
     }
 
     // ------------------------------------------------------------------------------------------------- the picker
@@ -438,7 +438,7 @@ internal static partial class UiSamples
     /// <summary>The city map's side panel: the places' filters, the rent legend and a picked café.</summary>
     public static UiMapPanelModel HudMap(UiWords t, bool picked) => new UiMapPanelModel
     {
-        Title = "Rent", Icon = UiIcon.Coin, Views = new[] { UiIcon.Coin, UiIcon.Store, UiIcon.Key, UiIcon.Factory, UiIcon.People, UiIcon.Car }, View = 0,
+        Title = "Rent", Icon = UiIcon.Coin, Views = new[] { UiIcon.Coin, UiIcon.Store, UiIcon.Key, UiIcon.Factory, UiIcon.Person, UiIcon.Car }, View = 0,
         SearchPlaceholder = "Search for a place or an address", FiltersTitle = "Show on the map",
         Filters = new[]
         {

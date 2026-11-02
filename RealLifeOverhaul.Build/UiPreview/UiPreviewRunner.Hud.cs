@@ -26,7 +26,8 @@ public static partial class UiPreviewRunner
         screens.Add(Hud("hud_side_collapsed", "11.jpg", (s, f, d, k) => UiSamples.HudSide(s, f, d, k, English, true), UiSidePanel.FoldCommand, 1, "RDDDLD"));
         screens.Add(Hud("hud_objectives", "02.jpg", (s, f, d, k) => UiSamples.HudObjectives(s, f, d, k, English, false), UiObjectives.LocateCommand, 0, "DDDDDDDDDDDDDD"));
         screens.Add(Hud("hud_objectives_empty", "13.jpg", (s, f, d, k) => UiSamples.HudObjectives(s, f, d, k, English, true), UiObjectives.FoldCommand, 0, "RR"));
-        screens.Add(Hud("hud_meters", "09.jpg", (s, f, d, k) => UiSamples.HudMeters(s, f, d, k, English), UiSidePanel.FoldCommand, 0, "DD"));
+        screens.Add(Hud("hud_meters", "13.jpg", (s, f, d, k) => UiSamples.HudMeters(s, f, d, k, English), UiSidePanel.FoldCommand, 0, "DD"));
+        screens.Add(Hud("hud_meters_night", "11.jpg", (s, f, d, k) => UiSamples.HudMeters(s, f, d, k, English, true), UiSidePanel.FoldCommand, 1, "DD"));
         screens.Add(new Screen { Name = "hud_picker", AppName = "Subway", Icon = UiIcon.MapTrifold, Backdrop = "13.jpg",
             Lay = (s, f, d, k) => UiSamples.HudPickerScene(s, f, d, k, English, false, false), HoverCommand = UiPicker.EntryCommand, HoverArg = 2, Walk = Moves("DDDDDDDDR") });
         screens.Add(new Screen { Name = "hud_picker_locked", AppName = "Court", Icon = UiIcon.Scales, Backdrop = "11.jpg",
