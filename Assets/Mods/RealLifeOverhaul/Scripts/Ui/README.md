@@ -240,6 +240,34 @@ The settings list's controls are drawn by stand-ins in `UiSettingsList` (`Contro
 `ControlChoice`, `ControlText`, `ControlKey`, `ControlStepper`) with the parameter lists of the kit's own controls, which
 take their places.
 
+## The HUD's pieces
+
+What stands over the running game, built for the HUD wave and the waves after it (Scripts/Ui/Hud holds the host; the
+pieces are game-free). Their samples are in `UiSamples.Hud.cs`, their previews in not-in-repo/previews/ui/hud, and
+EconomyCheck's `UiHudChecks.cs` holds what a machine can check.
+
+- **The HUD** (`UiHud`, `UiHudModel`): one scene of the pieces at the screen's edges, the status bar last. The left
+  column (an info panel from `UiInfoPanel.Draw`, the objectives under it), the side panels at the top right, an
+  activity's strip above the bar, a tool row in the bar, a world prompt and the money's change. It takes no key: the
+  game reads its keys and the kit shows which (`UiGameKey`, `UiDraw.GameKey`); the mouse presses.
+- **The pills** (`UiDraw.HudBar.cs`): the time with the speed or the pause in words, the weather and season, the place
+  (address and district), the money, six needs as meters (stress fills as it rises), the alerts. `PlanPills` drops the
+  least needed on a narrow bar (the district, the place, the meters' length, the day, the temperature). The pills are
+  targets only where `UiStatusModel.PillsPress` says so: the HUD's own bar. `MoneyChange` is the chip that rises from
+  the money (`UiMoneyFlow` merges changes per minute and sign as the game's top bar does; `UiHudRules.ChangeLift`).
+- **World prompt** (`UiWorldPrompt`): the box at a door, a desk, a person or an item, one model for the game's
+  OverlayUI and the mod's WorldPanel and DoorPanel; the hover form for items. `UiHudRules.Beside` keeps it beside its
+  point, inside the screen above the bar, off the left column, at the foot when the point is behind the camera.
+- **Side panels** (`UiSidePanel`), **objectives** (`UiObjectives`), **meter and timing gauge** (`UiDraw.Progress`,
+  `UiDraw.Timing`), **picker** (`UiPicker`, with pages and a locked mode), **activity** (`UiActivity`: the card before
+  it starts, the strip while it runs, every state of the game's PlayerActivityState), **time skip veil**
+  (`UiTimeSkip`), **map side panel** (`UiMapPanel`) and **tool row** (`UiToolRow`).
+- **The host** (`HudHost` in Scripts/Ui/Hud): a canvas nested in the game's HUD canvas (`Host/UiOverCanvas`), so the
+  game's scaler and UI zoom scale it; the layout holds at least `UiHudRules.LeastWidth` wide. The HUD is one view laid
+  out only when its model or the pills' signature changes; a world prompt is a follower moved by one projection a frame;
+  one modal piece at a time (a picker, a card, the veil, All apps while walking) runs on a `UiHost` and takes the keys.
+  `HudStatusGame` fills the pills from the game behind `UiChrome.Bar`.
+
 ## Previews
 
 `RealLifeOverhaul.Build/UiPreview/preview.ps1` renders the samples with the real fonts. It needs the font bundle built

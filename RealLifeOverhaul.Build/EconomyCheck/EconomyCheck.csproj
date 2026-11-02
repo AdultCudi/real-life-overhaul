@@ -658,6 +658,20 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiEdition.cs" Link="Mod\UiEdition.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiSettingsList.cs" Link="Mod\UiSettingsList.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Links.cs" Link="Mod\UiDraw.Links.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.HudBar.cs" Link="Mod\UiDraw.HudBar.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.HudParts.cs" Link="Mod\UiDraw.HudParts.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiHudRules.cs" Link="Mod\UiHudRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiMoneyFlow.cs" Link="Mod\UiMoneyFlow.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiWorldPrompt.cs" Link="Mod\UiWorldPrompt.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiSidePanel.cs" Link="Mod\UiSidePanel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiObjectives.cs" Link="Mod\UiObjectives.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPicker.cs" Link="Mod\UiPicker.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiActivity.cs" Link="Mod\UiActivity.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiTimeSkip.cs" Link="Mod\UiTimeSkip.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiMapPanel.cs" Link="Mod\UiMapPanel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiToolRow.cs" Link="Mod\UiToolRow.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiHud.cs" Link="Mod\UiHud.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.EmptyStateHeight.cs" Link="Mod\UiDraw.EmptyStateHeight.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\IUiDragging.cs" Link="Mod\IUiDragging.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDiary.cs" Link="Mod\UiDiary.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiBoard.cs" Link="Mod\UiBoard.cs" />

@@ -137,6 +137,16 @@ namespace RealLifeOverhaul.Ui
         PiggyBank,
         Tag,
         Percent,
+        Drop,          // hygiene, a need of the mod's
+        Brain,         // stress, a need of the mod's
+        Cloud,         // the weather: overcast
+        CloudRain,
+        CloudSnow,
+        SkipForward,   // an activity's jump to its end (the game's time machine)
+        Train,         // the subway
+        ListChecks,    // the objectives
+        ClipboardText, // the game's to-dos
+        Ring,          // an open ring: a line still to do, beside the done tick
         Count
     }
 
@@ -151,6 +161,20 @@ namespace RealLifeOverhaul.Ui
         {
             switch (icon)
             {
+                case UiIcon.SkipForward:
+                    return UiRole.Accent;   // with the clock's other controls
+                case UiIcon.Train:
+                    return UiRole.CatServices;   // a public service, apart from the maps' blue
+                case UiIcon.ListChecks:
+                    return UiRole.Chart3;
+                case UiIcon.ClipboardText:
+                    return UiRole.Chart2;
+                case UiIcon.Drop:
+                    return UiRole.Chart1;   // hygiene's sky blue, as the mod's own needs bar had it
+                case UiIcon.Brain:
+                    return UiRole.Chart7;   // stress's purple, as the mod's own needs bar had it
+                case UiIcon.Cloud: case UiIcon.CloudRain: case UiIcon.CloudSnow:
+                    return UiRole.Chart5;   // the weather's grey days in a cool blue, a fair one keeps the sun's yellow
                 case UiIcon.Check: case UiIcon.ShieldCheck: case UiIcon.SmileyHappy: case UiIcon.TrendUp: case UiIcon.Phone:
                     return UiRole.Ok;
                 case UiIcon.Trash: case UiIcon.SmileySad: case UiIcon.TrendDown: case UiIcon.Heartbeat: case UiIcon.Heart:

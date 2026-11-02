@@ -57,7 +57,7 @@ namespace RealLifeOverhaul.Ui
                 UiTweens.Instance = gameObject.AddComponent<UiTweens>();
             }
             UiChrome.Status = UiGame.Status;
-            UiChrome.Bar = UiGame.Bar;
+            UiChrome.Bar = HudStatusGame.Bar;   // the game's time, day, money and apps (UiGame.Bar), then the HUD's pills
             UiIcons.Own = UiGame.OwnIcon;
             RealLifeOverhaul.GameUi.GameSprites.Want(UiGame.OwnIconNames);
             UiShell.Start();
