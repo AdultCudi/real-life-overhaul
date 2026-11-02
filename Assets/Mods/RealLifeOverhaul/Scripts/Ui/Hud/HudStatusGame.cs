@@ -158,29 +158,32 @@ namespace RealLifeOverhaul.Ui
             if (Settings.Seasons && seasons != null && seasons.Snowing)
             {
                 m.Weather = UiIcon.CloudSnow;
-                key = "snow";
+                key = "reallife_ui_hud_weather_snow";
             }
             else if (Weather.Sky == Events.Sky.Storm)
             {
                 m.Weather = UiIcon.CloudRain;
-                key = "storm";
+                key = "reallife_ui_hud_weather_storm";
             }
             else if (Weather.Sky == Events.Sky.Mist)
             {
                 m.Weather = UiIcon.Cloud;
-                key = "mist";
+                key = "reallife_ui_hud_weather_mist";
             }
             else if (Weather.Sky == Events.Sky.Rain || RainHelper.isRaining)
             {
                 m.Weather = UiIcon.CloudRain;
-                key = "rain";
+                key = "reallife_ui_hud_weather_rain";
             }
             else
             {
                 m.Weather = fair;
-                key = Weather.Spell == Events.Spell.HeatWave ? "heat" : Weather.Spell == Events.Spell.ColdSnap ? "cold" : Weather.Spell == Events.Spell.Ice ? "ice" : day ? "sunny" : "clear";
+                key = Weather.Spell == Events.Spell.HeatWave ? "reallife_ui_hud_weather_heat"
+                    : Weather.Spell == Events.Spell.ColdSnap ? "reallife_ui_hud_weather_cold"
+                    : Weather.Spell == Events.Spell.Ice ? "reallife_ui_hud_weather_ice"
+                    : day ? "reallife_ui_hud_weather_sunny" : "reallife_ui_hud_weather_clear";
             }
-            m.WeatherWords = UiText.T("reallife_ui_hud_weather_" + key);
+            m.WeatherWords = UiText.T(key);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
