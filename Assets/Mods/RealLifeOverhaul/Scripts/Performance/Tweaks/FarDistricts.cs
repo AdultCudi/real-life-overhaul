@@ -51,7 +51,7 @@ namespace RealLifeOverhaul
 
         private const double SliceMs = 1.0;   // milliseconds of a tick the sorting or holding may take
         private const int LookEvery = 64;              // renderers between two looks at the clock
-        private const int SurveyLookEvery = 8;         // renderers sorted between two looks at the clock: the first of a new hierarchy walks up to its root
+        private const int SurveyLookEvery = 4;         // renderers sorted between two looks at the clock: the first of a new hierarchy walks up to its root
         private const float HiddenEvery = 0.25f;   // seconds between looks at whether the screen is black, while a scene waits
 
         private readonly bool _byEnabled;
@@ -248,6 +248,35 @@ namespace RealLifeOverhaul
             {
                 Refresh();   // an earlier city's scenes were forgotten first: now the ones here
             }
+            // The survey's code and its maps made ready here too: compiled in its first tick, they were part of its slowest, 3.9 ms (2 Nov 2026).
+            LoadWarm.Now("performance: the far squares' survey compiled", new[] { typeof(FarDistricts) });
+            WarmMaps();
+        }
+
+        // The survey's maps and its list of flags put to work once on lists of their own, behind the loading screen: under Mono
+        // each is compiled for its own kind of key the first time it is used, the growing too. Nothing of the tweak's is touched.
+        private static void WarmMaps()
+        {
+            var cells = new Dictionary<long, Cell>(1);
+            var parents = new Dictionary<int, bool>(1);
+            var onMap = new List<bool>(1);
+            for (int i = 0; i < 4; i++)   // past their room
+            {
+                if (!cells.TryGetValue(i, out _))
+                {
+                    cells.Add(i, null);
+                }
+                if (!parents.TryGetValue(i, out _))
+                {
+                    parents[i] = false;
+                }
+                onMap.Add(false);
+            }
+            parents.EnsureCapacity(16);
+            parents.Clear();
+            parents.TrimExcess();
+            cells.Clear();
+            onMap.Clear();
         }
 
         // the timer only takes squares out; OnCameraRendering gives them back the moment it is needed
@@ -419,7 +448,8 @@ namespace RealLifeOverhaul
                     continue;
                 }
                 Transform transform = renderer.transform;
-                if (Moves(transform) || (_byEnabled && (!renderer.enabled || GameSwitches(transform))))
+                int layer = renderer.gameObject.layer;   // read once: the moving layers' test and the map's
+                if (Moves(transform, layer) || (_byEnabled && (!renderer.enabled || GameSwitches(transform))))
                 {
                     _leftAlone++;
                     continue;
@@ -438,7 +468,7 @@ namespace RealLifeOverhaul
                     cell.Bounds.Encapsulate(new Bounds(at, Vector3.one * (Margin * 2f)));
                 }
                 cell.Scenery.Add(renderer);
-                cell.OnMap.Add(((_mapMask >> renderer.gameObject.layer) & 1) != 0);
+                cell.OnMap.Add(((_mapMask >> layer) & 1) != 0);
                 _scenery++;
             }
             _surveyWorst = Math.Max(_surveyWorst, System.Diagnostics.Stopwatch.GetTimestamp() - began);
@@ -511,14 +541,14 @@ namespace RealLifeOverhaul
             _working = cell.Cursor < cell.Scenery.Count ? cell : null;
         }
 
-        // on or under an object of a moving layer; asked once a parent while sorting, as siblings share their parents
-        private bool Moves(Transform transform)
+        // on or under an object of a moving layer (the object's own layer given); asked once a parent while sorting, as siblings share their parents
+        private bool Moves(Transform transform, int layer)
         {
             if (_movingMask == 0)
             {
                 _movingMask = LayerMask.GetMask(MovingLayers);
             }
-            if (((_movingMask >> transform.gameObject.layer) & 1) != 0)
+            if (((_movingMask >> layer) & 1) != 0)
             {
                 return true;
             }
@@ -530,7 +560,7 @@ namespace RealLifeOverhaul
             int id = parent.GetInstanceID();
             if (!_moves.TryGetValue(id, out bool moves))
             {
-                moves = Moves(parent);
+                moves = Moves(parent, parent.gameObject.layer);
                 _moves[id] = moves;
             }
             return moves;

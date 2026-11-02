@@ -168,4 +168,99 @@ namespace RealLifeOverhaul
             b.Append(')');
         }
     }
+
+    /// <summary>
+    /// What the office count reads of one building of the city's list: its kind (0 an office, 1 a shop, 2 a warehouse; any
+    /// other number is not counted), its district, how it stands and the book id of the feature holding it (null for none).
+    /// False for a building not counted at all.
+    /// </summary>
+    public delegate bool OfficeRead(int building, out int kind, out string district, out LetState state, out string holder);
+
+    /// <summary>
+    /// The city's offices, shops and warehouses counted a building a step, so the count can go a slice a frame
+    /// (docs/standards/performance.md, RLO-PERF-024): whole in one tick it was 8.5 ms in the owner's log of 2 Nov 2026. The
+    /// buildings are read in the list's order, each once, into the same three tallies as one pass over them. Game-free (the
+    /// reading is the caller's); EconomyCheck holds it to the whole pass.
+    /// </summary>
+    public sealed class OfficeCount
+    {
+        public const int Kinds = 3;
+
+        private readonly OfficeTally[] _tallies = new OfficeTally[Kinds];
+        private OfficeRead _read;
+        private int _count;
+        private int _next;
+
+        public OfficeCount()
+        {
+            for (int k = 0; k < Kinds; k++)
+            {
+                _tallies[k] = new OfficeTally();
+            }
+        }
+
+        /// <summary>True from <see cref="Begin"/> until the last building is counted or it is stopped.</summary>
+        public bool Running => _read != null;
+
+        /// <summary>The buildings counted so far.</summary>
+        public int Counted => _next;
+
+        /// <summary>A tally by kind: 0 the offices, 1 the shops, 2 the warehouses.</summary>
+        public OfficeTally Of(int kind) => _tallies[kind];
+
+        /// <summary>A new count of <paramref name="count"/> buildings, each read by <paramref name="read"/>; what was counted before is forgotten.</summary>
+        public void Begin(int count, OfficeRead read)
+        {
+            for (int k = 0; k < Kinds; k++)
+            {
+                _tallies[k] = new OfficeTally();
+            }
+            _count = Math.Max(0, count);
+            _next = 0;
+            _read = read;
+            if (_count == 0)
+            {
+                _read = null;
+            }
+        }
+
+        /// <summary>Stopped where it is: nothing more is read.</summary>
+        public void Stop()
+        {
+            _read = null;
+        }
+
+        /// <summary>One building counted; false once the count is done (the tallies are then whole) or stopped.</summary>
+        public bool Step()
+        {
+            if (_read == null)
+            {
+                return false;
+            }
+            int i = _next++;
+            if (_read(i, out int kind, out string district, out LetState state, out string holder) && kind >= 0 && kind < Kinds)
+            {
+                _tallies[kind].Add(district, state, holder);
+            }
+            if (_next >= _count)
+            {
+                _read = null;
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>The count in one pass, for the offline checks: what the steps add up to.</summary>
+        public static OfficeCount Whole(int count, OfficeRead read)
+        {
+            var whole = new OfficeCount();
+            whole.Begin(count, read);
+            bool more = whole.Running;
+            while (more)
+            {
+                more = whole.Step();
+            }
+            return whole;
+        }
+    }
 }

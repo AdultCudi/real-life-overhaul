@@ -311,6 +311,7 @@ namespace RealLifeOverhaul
             }
             if (Meta.Dev.Verbose)
             {
+                Quiet();
                 float behind = _playerDriving ? RoomBehindPlayer(line.Place, line.Way) : 0f;
                 float wanted = slot == LetOutLine ? DriverRules.LetOutBack : DriverRules.ParkRoom;
                 bool pass = !_playerDriving || behind >= wanted - 0.5f;
@@ -319,6 +320,7 @@ namespace RealLifeOverhaul
                                  : System.FormattableString.Invariant($"Traffic check (parking room): the player is reversing in the lane; a hold line goes up {behind:F1} m behind their car"))
                              + System.FormattableString.Invariant($" (wanted {wanted:F1}), after {line.WentBy} look(s) waiting for cars too close to stop gently to go by")
                              + (_game.LinesUsable ? "" : "; held by the mod's own braking") + ": " + (pass ? "PASS" : "FAIL, the lane gave no room that far back"));
+                Loud();
             }
         }
 
@@ -332,11 +334,13 @@ namespace RealLifeOverhaul
                 float held = now - line.UpAt;
                 if (Meta.Dev.Verbose)
                 {
+                    Quiet();
                     bool letOut = slot == LetOutLine;
                     bool pass = held <= DriverRules.HoldMost + 0.5f;
                     Logger?.Info((letOut ? "Traffic check (let out)" : "Traffic check (parking room)")
                                  + $": the hold line comes down after {held:F0} s ({why}; the most is {DriverRules.HoldMost:F0})"
                                  + (letOut ? $", {_letOutHeld} car(s) gave way for it" : "") + ": " + (pass ? "PASS" : "FAIL, it was held too long"));
+                    Loud();
                 }
             }
             line.Up = false;

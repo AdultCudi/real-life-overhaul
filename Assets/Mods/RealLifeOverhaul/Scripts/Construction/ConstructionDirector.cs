@@ -51,6 +51,7 @@ namespace RealLifeOverhaul.Construction
             _onSave = OnSave;
             GameSprites.Want(AppGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             ScenePrewarm.Add("construction: the game's parking lane being found to copy for the rows of a car park's bays", CarParkGame.Prewarm);
+            BareGroundWarm();
         }
 
         private void OnDestroy()

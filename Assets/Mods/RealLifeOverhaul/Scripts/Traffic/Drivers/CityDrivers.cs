@@ -59,6 +59,32 @@ namespace RealLifeOverhaul
             Instance = this;
             _brakes = gameObject.AddComponent<DriverBrakes>();
             ScenePrewarm.Add("traffic: the hold lines for the player's car being made", PrewarmLines);
+            // The look's code compiled behind the loading screen (Core/LoadWarm): compiled in the first look it was 7.2 ms (2 Nov 2026).
+            LoadWarm.Add("traffic: the city drivers' look compiled",
+                new[] { typeof(CityDrivers), typeof(DriverGame), typeof(DriverBrakes), typeof(DriverRules), typeof(TrafficTools) });
+            _game.Quiet = Quiet;
+            _game.Loud = Loud;
+        }
+
+        // The diagnostics' own lines stop the look's clock (Quiet, Loud), so a look costs what it costs with them off.
+        private bool _quieted;
+
+        private void Quiet()
+        {
+            if (_clock.IsRunning)
+            {
+                _clock.Stop();
+                _quieted = true;
+            }
+        }
+
+        private void Loud()
+        {
+            if (_quieted)
+            {
+                _quieted = false;
+                _clock.Start();
+            }
         }
 
         // Behind the loading screen (ScenePrewarm): the two hold lines made where no frame is seen (DriverGame.MakeAll).
@@ -155,6 +181,7 @@ namespace RealLifeOverhaul
             if (timed)
             {
                 _lookTicks = 0L;
+                _quieted = false;
                 _clock.Restart();
             }
             int cars = BeginLook(now);
@@ -182,6 +209,7 @@ namespace RealLifeOverhaul
             bool timed = Meta.Dev.Verbose;
             if (timed)
             {
+                _quieted = false;
                 _clock.Restart();
             }
             int end = Mathf.Min(_cars, _cursor + DriverRules.SliceCars);
