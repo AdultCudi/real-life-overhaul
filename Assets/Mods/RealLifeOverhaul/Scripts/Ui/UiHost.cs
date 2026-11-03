@@ -824,6 +824,7 @@ namespace RealLifeOverhaul.Ui
         private static TMP_InputField MakeField(Transform parent)
         {
             RectTransform r = UiView.NewRect(parent, "Typing");
+            TypingNow.OnGameLayer(r.gameObject);   // the layer the game's shortcuts look at: its letters stay out of them (GameManager.HasInputSelected)
             r.sizeDelta = new Vector2(1f, 1f);
             r.gameObject.AddComponent<CanvasGroup>().alpha = 0f;
             RectTransform area = UiView.NewRect(r, "Area");

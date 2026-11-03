@@ -542,7 +542,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return Keys.Down(KeyAction.Phone);
             }
-            if (!UnityEngine.Input.GetKeyDown(Keys.Key(KeyAction.Phone)))
+            if (!UnityEngine.Input.GetKeyDown(Keys.Key(KeyAction.Phone)) || TypingNow.Now)
             {
                 return false;
             }
@@ -596,7 +596,7 @@ namespace RealLifeOverhaul.Ui
         private static void Take()
         {
             EventSystem events = EventSystem.current;
-            if (_keys == null || events == null || Typing(events))
+            if (_keys == null || events == null || TypingNow.Selected(events))
             {
                 UiGame.Instance.Play(UiCue.Error);
                 return;
@@ -631,13 +631,6 @@ namespace RealLifeOverhaul.Ui
                 _host.Exclusive = false;
                 _host.PointerLeads();
             }
-        }
-
-        // A text field is being typed in: the keys are its own.
-        private static bool Typing(EventSystem events)
-        {
-            GameObject now = events.currentSelectedGameObject;
-            return now != null && now.activeInHierarchy && (now.GetComponent<TMP_InputField>() != null || now.GetComponent<InputField>() != null);
         }
 
         // The game's readings the phone shows: its name, the time, the radio, the private driver, the fold. Written into the

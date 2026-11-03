@@ -333,7 +333,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             float dt = Time.unscaledDeltaTime;
             Turn();
-            if (_mode == Mode.Look && PlayerAction.Interact.Pressed())
+            if (_mode == Mode.Look && !TypingNow.Now && PlayerAction.Interact.Pressed())
             {
                 PlayerAction.Interact.Reset();
                 _fromLook = true;
@@ -388,11 +388,11 @@ namespace RealLifeOverhaul.Economy.Dealership
                     TurnCar();   // a short right click turns the item, as in the game's placement
                 }
             }
-            if (PlayerAction.RotateLeft.Pressed())
+            if (!TypingNow.Now && PlayerAction.RotateLeft.Pressed())
             {
                 _yawWanted = ShowroomFloorRules.Step(_yawWanted, CameraControllers.PedestrianCam.invertRotation ? 1 : -1);
             }
-            if (PlayerAction.RotateRight.Pressed())
+            if (!TypingNow.Now && PlayerAction.RotateRight.Pressed())
             {
                 _yawWanted = ShowroomFloorRules.Step(_yawWanted, CameraControllers.PedestrianCam.invertRotation ? -1 : 1);
             }
@@ -445,7 +445,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                     }
                 }
             }
-            if (PlayerAction.RotateItem.Pressed())
+            if (!TypingNow.Now && PlayerAction.RotateItem.Pressed())
             {
                 TurnCar();
             }
