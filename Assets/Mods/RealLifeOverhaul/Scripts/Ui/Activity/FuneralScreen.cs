@@ -250,12 +250,13 @@ namespace RealLifeOverhaul.Ui
             return true;
         }
 
-        // A key the game's own screen reads (F, P, Escape, as bound) pressed this frame: the game acts on it in its own Update.
+        // A key the game's own screen reads (F, P, Escape, as bound) pressed this frame: the game acts on it in its own Update,
+        // and holds it while a text field has the keyboard (TypingNow), as the mod does.
         private static bool GameKeyed()
         {
             try
             {
-                return PlayerAction.Interact.Pressed() || PlayerAction.SecondaryInteract.Pressed() || PlayerAction.Cancel.Pressed();
+                return !TypingNow.Now && (PlayerAction.Interact.Pressed() || PlayerAction.SecondaryInteract.Pressed() || PlayerAction.Cancel.Pressed());
             }
             catch (Exception e) when (Guard.Missing(e))
             {
