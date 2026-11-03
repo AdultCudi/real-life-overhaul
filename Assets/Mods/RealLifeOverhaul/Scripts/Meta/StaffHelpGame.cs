@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using Localizor;
@@ -21,6 +22,7 @@ namespace RealLifeOverhaul.Meta
         private static Action _onLanguage;
         private static UnityEngine.Events.UnityAction<string> _onPage;
         private static HelpSystem _hooked;
+        private static int _due = -1;   // the frame the lists were last asked to be put back in a frame (-1: none)
 
         /// <summary>Writes the pages and hooks the help, once per city load; false when the game's help is not built as the contract says.</summary>
         public static bool Begin()
@@ -59,6 +61,7 @@ namespace RealLifeOverhaul.Meta
                 _hooked.currentSlugChanged.RemoveListener(_onPage);
             }
             _hooked = null;
+            _due = -1;
         }
 
         private static void OnLanguage()
@@ -67,10 +70,42 @@ namespace RealLifeOverhaul.Meta
             Inject();
         }
 
-        // Each page the help shows: the lists are added if the help has been loaded anew since.
+        // Each page the help shows: the lists are added if the help has been loaded anew since, a frame later. The help says
+        // its page from inside its own walk of its categories (HelpSystem.OpenLink, on its first opening of a session), and
+        // building that list again there broke the walk: "Collection was modified" from the game's help button or the HUD's.
         private static void OnPage(string slug)
         {
+            HelpSystem help = InstanceBehavior<HelpSystem>.Instance;
+            if ((_due >= 0 && UnityEngine.Time.frameCount <= _due + 1) || help == null || !help.isActiveAndEnabled || !Missing(help))
+            {
+                return;
+            }
+            _due = UnityEngine.Time.frameCount;   // asked again only once this one is done, or its frame went by (a closed help ends it)
+            help.StartCoroutine(Guard.Routine(Later()));
+        }
+
+        private static IEnumerator Later()
+        {
+            yield return null;
+            _due = -1;
             Inject();
+        }
+
+        // The help's categories have not got the two lists (it read its file again since they were put in).
+        private static bool Missing(HelpSystem help)
+        {
+            if (!(GameContract.HelpCategories.Field?.GetValue(help) is List<HelpStructureGroupEntry> categories))
+            {
+                return false;
+            }
+            for (int i = 0; i < categories.Count; i++)
+            {
+                if (categories[i].CategoryLocalizorKey == FirstCategory)
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         /// <summary>The pages in the language shown now, written into the game's table under "help_{slug}_content". Returns how many; -1 when the table is not where the contract says.</summary>
