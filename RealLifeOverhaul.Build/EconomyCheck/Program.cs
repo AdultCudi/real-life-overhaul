@@ -733,6 +733,7 @@ internal static partial class Program
         UiKit();        // the interface kit: tokens, fonts, text, motion, focus, every registered screen at every frame, language and look, the rules failing once, sources, texts, timings (UiChecks.cs)
         UiIconChecks(); // the icons: Phosphor's outlines, both variants, filled as their winding says, pinned and regenerated (UiIconChecks.cs)
         HudKitChecks(); // the HUD's pieces and host: the UI zoom, the world prompt inside the screen at every frame, every pill whole in every language, the activity's states, the money's changes, no key taken, the cost (UiHudChecks.cs)
+        PauseMenuChecks();   // the pause menu: the time played in the save, a save's age and the time in words, the game's save list and loading (PauseMenuChecks.cs)
         UiGrids();      // the app window's page shapes (diary, board, reader, settings list, conversation, message list, feed, edition) and the kit's links (UiGridChecks.cs)
         PhoneKitChecks();   // the kit phone: every app on one page, the nav bar still, its own height, the apps' colours, the sources (UiChecks.Phone.cs)
         ActivityKitChecks();   // the activity panel, time skip, funeral and time of day tool on the kit: every activity through the one panel, the game's keys left to it, its sources (UiChecks.Activity.cs)

@@ -94,6 +94,7 @@ namespace RealLifeOverhaul.Ui
             ShellPages.Remove(why);
             ShellBoxes.Remove(why);
             BuyKits.Remove(why);
+            PauseKits.Remove(why);
             ShellNotices.Remove(why);
             ActivityKit.Remove(why);
             HudLive.Remove(why);
@@ -163,6 +164,7 @@ namespace RealLifeOverhaul.Ui
                 ShellPages.Rearm();
                 ShellBoxes.Rearm();
                 BuyKits.Rearm();
+                PauseKits.Rearm();
                 ShellNotices.Rearm();
                 ActivityKit.Rearm();
                 HudLive.Rearm();
@@ -170,6 +172,7 @@ namespace RealLifeOverhaul.Ui
                 _waited = 0;
                 return;
             }
+            PlayTime.Tick();   // the city's time played, for the pause menu's card: counted with the interface on or off
             if (!On)
             {
                 RemoveAll("the switch is off");
@@ -208,6 +211,7 @@ namespace RealLifeOverhaul.Ui
             UiShell.Tick();
             ShellBoxes.Install();
             BuyKits.Install();
+            PauseKits.Install();
             ShellNotices.Install();
             ActivityKit.Install();
             HudLive.Install();
@@ -236,7 +240,7 @@ namespace RealLifeOverhaul.Ui
                    + WorldKits.State + ", "
                    + EconoViewKit.State + ", the phone (" + PhoneKit.State + "), " + EmployeesKit.State + ", " + PersonaKit.State + ", " + UniformsKit.State + ", " + RivalsKit.State + ", "
                    + MarketKit.State + ", " + DialogKits.State + ", "
-                   + ShellBoxes.States() + ", " + ShellNotices.States() + ", " + ActivityKit.States() + ", the HUD (" + HudLive.State + "), " + BuyKits.States()
+                   + ShellBoxes.States() + ", " + ShellNotices.States() + ", " + ActivityKit.States() + ", the HUD (" + HudLive.State + "), " + BuyKits.States() + ", " + PauseKits.States()
                    + ", pages (" + ShellPages.States() + "), desk sessions (" + (Settings.LivingDesks ? "over the game's panel as each opens" : "off")
                    + "); the full menu's frame while an app on the kit shows; from Options, Tests: the gallery and each screen.";
         }
