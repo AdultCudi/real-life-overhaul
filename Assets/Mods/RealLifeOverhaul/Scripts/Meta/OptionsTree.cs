@@ -603,5 +603,43 @@ namespace RealLifeOverhaul.Meta
             }
             return null;
         }
+
+        /// <summary>How many sections and rows a group declares. The settings sidebar uses these, not a picture's counts.</summary>
+        public static void Counts(TreeGroup group, out int sections, out int options)
+        {
+            sections = 0;
+            options = 0;
+            if (group == null)
+            {
+                return;
+            }
+            sections = group.Sections.Count;
+            for (int i = 0; i < group.Sections.Count; i++)
+            {
+                options += group.Sections[i].Rows.Count;
+            }
+        }
+
+        /// <summary>The Guide page that explains a section. Null when the section has nothing of its own to open.</summary>
+        public static string GuidePage(TreeSection section)
+        {
+            if (section == null)
+            {
+                return null;
+            }
+            if (section.Id == "guide")
+            {
+                return "start";
+            }
+            if (section.Id == "presets")
+            {
+                return "presets";
+            }
+            if (section.Id == "help")
+            {
+                return "trouble";
+            }
+            return section.GuideFeature != null ? "feature_" + section.GuideFeature : null;
+        }
     }
 }

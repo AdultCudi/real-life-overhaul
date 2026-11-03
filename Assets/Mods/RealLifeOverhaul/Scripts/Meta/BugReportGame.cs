@@ -376,6 +376,72 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
+        /// <summary>How large the game's log is, read once when a report is asked for. 0 when it cannot be read.</summary>
+        public static long LogBytes()
+        {
+            try
+            {
+                string path = GameLog();
+                return string.IsNullOrEmpty(path) || !File.Exists(path) ? 0L : new FileInfo(path).Length;
+            }
+            catch (Exception)
+            {
+                return 0L;
+            }
+        }
+
+        /// <summary>The open app, and the page when the kit knows it. Never a raw id. Null outside the phone.</summary>
+        public static string Place()
+        {
+            try
+            {
+                UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;
+                UI.Smartphone.FullMenu menu = uis != null ? uis.fullMenu : null;
+                if (menu == null || !UI.Smartphone.FullMenu.IsOpen || menu.appsContainer == null)
+                {
+                    return null;
+                }
+                Transform apps = menu.appsContainer;
+                for (int i = 0; i < apps.childCount; i++)
+                {
+                    Transform child = apps.GetChild(i);
+                    if (!child.gameObject.activeSelf)
+                    {
+                        continue;
+                    }
+                    string title = PhoneApp.TitleOf(child.name);
+                    if (string.IsNullOrEmpty(title))
+                    {
+                        continue;
+                    }
+                    string page = PageOf(child.name);
+                    return string.IsNullOrEmpty(page) ? title : title + ", " + page;
+                }
+            }
+            catch (Exception e)
+            {
+                MetaLog.Error(e);
+            }
+            return null;
+        }
+
+        private static string PageOf(string id)
+        {
+            if (id == SettingsApp.AppId)
+            {
+                return Ui.SettingsScreen.Place;
+            }
+            if (id == GuideApp.AppId)
+            {
+                return Ui.GuideScreen.Place;
+            }
+            if (id == StaffApp.AppId)
+            {
+                return Ui.StaffScreen.Place;
+            }
+            return null;
+        }
+
         /// <summary>The game's log of this session, when it is in the game's own data folder (a log written elsewhere is not read).</summary>
         public static string GameLog()
         {

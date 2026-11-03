@@ -30,6 +30,14 @@ namespace RealLifeOverhaul.Meta
 
         private static bool Busy => _making != null;            // a report is being made: a second press says so
         private static bool Waiting => _waiting != null;
+        private static bool _shot = true;                       // the card can leave the screenshot out; the older box still takes one
+
+        /// <summary>The card's save: the two boxes already joined, and whether a screenshot was asked for.</summary>
+        public static void MakeFromCard(string words, bool shot)
+        {
+            _shot = shot;
+            Make(words);
+        }
 
         /// <summary>The button: asks for the words where the game can, or asks first where it cannot.</summary>
         public static void Press()
@@ -79,12 +87,17 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        // The game's text box; without one, or when it fails, the report is made without the player's words.
+        // The card when the interface is on; otherwise the game's text box. Without either, the report is made with no words.
         private static void Ask()
         {
             bool asked;
             try
             {
+                if (Ui.BugReportBox.TryShow(BugReportGame.Place(), BugReportGame.LogBytes()))
+                {
+                    return;
+                }
+                _shot = true;
                 asked = BugReportGame.AskWords(Make);
             }
             catch (Exception e)
@@ -150,7 +163,7 @@ namespace RealLifeOverhaul.Meta
             }
 
             // The screen a frame after the text box closed, at the end of that frame: without the box, as the player saw the bug.
-            if (BugReportGame.InCity)
+            if (BugReportGame.InCity && _shot)
             {
                 yield return null;
                 yield return new WaitForEndOfFrame();

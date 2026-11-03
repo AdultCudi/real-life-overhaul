@@ -714,6 +714,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiBoard.cs" Link="Mod\UiBoard.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiBoardRules.cs" Link="Mod\UiBoardRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiReader.cs" Link="Mod\UiReader.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiReport.cs" Link="Mod\UiReport.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiReaderRules.cs" Link="Mod\UiReaderRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDecision.cs" Link="Mod\UiDecision.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPhone.cs" Link="Mod\UiPhone.cs" />
@@ -740,6 +741,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiContacts.cs" Link="Mod\UiContacts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCallCard.cs" Link="Mod\UiCallCard.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiAppWindow.Footed.cs" Link="Mod\UiAppWindow.Footed.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiAppWindow.Groups.cs" Link="Mod\UiAppWindow.Groups.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiAppWindow.Head.cs" Link="Mod\UiAppWindow.Head.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiConversation.Fields.cs" Link="Mod\UiConversation.Fields.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFormRows.cs" Link="Mod\UiFormRows.cs" />
@@ -824,6 +826,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\MarketViews.cs" Link="Mod\MarketViews.cs" />
     <Compile Include="..\UiPreview\UiSamples*.cs" Link="Shared\%(Filename)%(Extension)" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\BugReportRules.cs" Link="Mod\BugReportRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\ReleaseDates.cs" Link="Mod\ReleaseDates.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\OptionsTree.cs" Link="Mod\OptionsTree.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\BetaRules.cs" Link="Mod\BetaRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\HardTimesRules.cs" Link="Mod\HardTimesRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\TalkRules.cs" Link="Mod\TalkRules.cs" />

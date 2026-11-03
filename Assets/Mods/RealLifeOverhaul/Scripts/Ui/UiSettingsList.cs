@@ -25,6 +25,7 @@ namespace RealLifeOverhaul.Ui
         public string Value;               // a slider's figure, a choice's value, a key's words, an action's label, a text
         public bool Greyed;                // its section's main switch is off: it reads quieter and takes no press
         public bool Listening;             // a key waiting for its new key
+        public bool Held;                  // a slider a press is holding: Left and Right step it, and the row shows the quiet cyan
         public bool Differs;               // it differs from the nearest preset: a dot by its name
         public int MatchStart, MatchLength;   // the search's letters in its name, marked; length 0 for none
         public UiIcon Icon;                // a heading's glyph, in its own colour on its tile
@@ -65,8 +66,10 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class UiSettingsList
     {
-        public const int RowCommand = 50, SearchCommand = 51, PresetCommand = 52, HistoryCommand = 53, GroupCommand = 54;
+        public const int RowCommand = 50, SearchCommand = 51, PresetCommand = 52, HistoryCommand = 53, GroupCommand = 54, ChoiceCommand = 55;
         private const float GroupRow = 48f;          // px: a group in the sidebar, as the app window's sections stand
+        // The count's column. The extra width keeps a long name on two lines in every language.
+        private const float GroupSide = UiAppWindow.Sidebar + UiTokens.S10;
         public const float OptionHeight = 56f;       // px: a name over its sentence, as a list row
         public const float SectionHeight = 48f;      // px: a section's band, its tile and its capitals
         public const float ControlWidth = 264f;      // px: the controls' column at the rows' right
@@ -134,11 +137,11 @@ namespace RealLifeOverhaul.Ui
         {
             frame.Window(out float wx, out float wy, out float ww, out float wh);
             float top = wy + UiFrame.Strip;
-            float x = wx + UiAppWindow.Sidebar + UiTokens.S5, y = top + UiTokens.S4;
+            float x = wx + GroupSide + UiTokens.S5, y = top + UiTokens.S4;
             Lay(s, at, m, x, y, wx + ww - UiTokens.S5 - x, wy + wh - UiTokens.S4 - y, keys);
-            UiDraw.Band(s, at, wx, top, UiAppWindow.Sidebar, wh - UiFrame.Strip);
+            UiDraw.Band(s, at, wx, top, GroupSide, wh - UiFrame.Strip);
             UiAt side = at.InRegion(3);
-            float gy = top + UiTokens.S3, ex = wx + UiTokens.S2, ew = UiAppWindow.Sidebar - UiTokens.S4;
+            float gy = top + UiTokens.S3, ex = wx + UiTokens.S2, ew = GroupSide - UiTokens.S4;
             for (int i = 0; i < groups.Length; i++, gy += GroupRow + UiTokens.S1)
             {
                 bool shown = i == chosen;

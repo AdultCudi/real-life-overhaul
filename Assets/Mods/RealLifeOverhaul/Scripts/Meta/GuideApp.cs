@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using RealLifeOverhaul.GameUi;
+using RealLifeOverhaul.Ui;
 using UI.MiniMenu;
 using UI.Notification;
 using UnityEngine;
@@ -89,7 +90,7 @@ namespace RealLifeOverhaul.Meta
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new GuideView();
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_guide_app",
@@ -97,8 +98,12 @@ namespace RealLifeOverhaul.Meta
                     new Color32(255, 170, 60, 255), new Color32(224, 104, 10, 255), 0.42f, "AppIcon-Guide"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out bool tryAgain);
+                Closed = view.Closed,
+                Kit = GuideScreen.Make,
+                KitScreen = GuideScreen.ScreenId,
+                KitIcon = UiIcon.Info
+            };
+            _app = PhoneApp.Install(def, out bool tryAgain);
             if (_app == null)
             {
                 _failed = !tryAgain;
@@ -109,6 +114,7 @@ namespace RealLifeOverhaul.Meta
                 return;
             }
             _view = view;
+            UiShell.Face(_app, def);
             if (Dev.Verbose)
             {
                 MetaLog.Info("Meta check (guide app): the Guide is on the phone: PASS.");
@@ -127,6 +133,7 @@ namespace RealLifeOverhaul.Meta
                 return;
             }
             _wantedTopic = topicId;
+            GuideScreen.Want(topicId);
             if (Blocked)
             {
                 Notifications.Show(NotificationType.Info, "reallife_guide_waits", null, 6f);
