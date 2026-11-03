@@ -60,11 +60,11 @@ namespace RealLifeOverhaul.Ui
 
         private void ReleasePictures()
         {
-            foreach (KeyValuePair<string, Sprite> pair in _sprites)
+            foreach (Sprite sprite in _sprites.Values)
             {
-                if (pair.Value != null)
+                if (sprite != null)
                 {
-                    UnityEngine.Object.Destroy(pair.Value);
+                    UnityEngine.Object.Destroy(sprite);
                 }
             }
             _sprites.Clear();

@@ -44,6 +44,7 @@ namespace RealLifeOverhaul.Ui
         private int _revision = -1;
         private int _askedFrame = -1;
         private bool _dirty = true;
+        private bool _moved;                     // only a list moved (the wheel, a row revealed) or a picture came: laid again, not filled
         private long _seenBefore = long.MaxValue;   // Notifications: seen up to here when the page opened, so what came since stays marked while it shows
 
         public FlareScreen(FlareDirector flare)
@@ -65,7 +66,7 @@ namespace RealLifeOverhaul.Ui
                     Shown();   // asked again after a gap: the screen was closed and is shown again
                 }
                 _askedFrame = frame;
-                return _dirty || (_flare != null && _flare.Revision != _revision) || PicturesCame || Stale;   // Stale: the times shown moved on (ClockStep)
+                return _dirty || _moved || (_flare != null && _flare.Revision != _revision) || PicturesCame || Stale;   // Stale: the times shown moved on (ClockStep)
             }
         }
 
@@ -160,14 +161,19 @@ namespace RealLifeOverhaul.Ui
 
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
+            // A scroll or a picture come in lays the rows filled already (their heights kept): only what changed is read again.
+            bool fill = _dirty || _flare == null || _flare.Revision != _revision || Stale;
             if (_flare != null)
             {
                 _revision = _flare.Revision;   // read first: what the fill itself changes (a message read) shows on the next layout
             }
             PicturesLaid();
-            Fill();
+            if (fill)
+            {
+                Fill();
+            }
             FlareFace.Lay(s, frame, dark, keys, UiText.Words, _m);
-            _dirty = false;
+            _dirty = _moved = false;
         }
 
         public void Focused(int command, int arg)
@@ -301,7 +307,7 @@ namespace RealLifeOverhaul.Ui
             if (l != null)
             {
                 l.Reveal = index;
-                _dirty = true;
+                _moved = true;
             }
         }
 
@@ -313,7 +319,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             l.Offset = Math.Max(0f, l.Offset - notches * UiTokens.S16 * 2f);
-            _dirty = true;
+            _moved = true;
         }
 
         // ------------------------------------------------------------------------------------------------ going places

@@ -340,7 +340,7 @@ namespace RealLifeOverhaul.Ui
                 r.Tint = UiRole.Chart2;
                 r.Text = FlareText.Fill("reallife_flare_kit_campaign_running", "handle", lead != null ? lead.Handle : "?", "business", h.Name ?? "?");
                 r.Line = today < h.From
-                    ? FlareText.Fill("reallife_flare_kit_campaign_starts", "days", (h.From - today).ToString(CultureInfo.InvariantCulture))
+                    ? FlareText.Fill("reallife_flare_kit_campaign_starts", "day", h.From.ToString(CultureInfo.InvariantCulture))
                     : FlareText.Fill("reallife_flare_kit_campaign_day", "day", (today - h.From + 1).ToString(CultureInfo.InvariantCulture), "days",
                         (h.To - h.From + 1).ToString(CultureInfo.InvariantCulture));
                 r.Value = FlareText.Fill("reallife_flare_kit_campaign_percent", "percent", h.Percent.ToString(CultureInfo.InvariantCulture));

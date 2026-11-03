@@ -210,7 +210,9 @@ namespace RealLifeOverhaul.Ui
                     string[] days = new string[PromoteDays.Length];
                     for (int i = 0; i < days.Length; i++)
                     {
-                        days[i] = PromoteDays[i] == 1 ? FlareText.T("reallife_flare_kit_day_one") : FlareText.Fill("reallife_flare_kit_days_n", "count", PromoteDays[i].ToString(CultureInfo.InvariantCulture));
+                        days[i] = PromoteDays[i] == 1
+                            ? FlareText.T("reallife_flare_kit_day_one")
+                            : FlareText.Fill("reallife_flare_kit_days_n", "count", PromoteDays[i].ToString(CultureInfo.InvariantCulture));
                     }
                     Group(groups, chips, chosen, GroupDays, FlareText.T("reallife_flare_kit_for_how_long"), days, _promoteDays);
                 }
@@ -305,8 +307,8 @@ namespace RealLifeOverhaul.Ui
             var groups = new List<string>(2);
             var chips = new List<string[]>(2);
             var chosen = new List<int>(2);
-            Group(groups, chips, chosen, GroupBusiness, FlareText.T("reallife_flare_hire_business"), names, _hireShop);
-            Group(groups, chips, chosen, GroupDeal, FlareText.T("reallife_flare_hire_deal"), deals, _hireDeal);
+            Group(groups, chips, chosen, GroupBusiness, FlareText.T("reallife_flare_kit_group_business"), names, _hireShop);
+            Group(groups, chips, chosen, GroupDeal, FlareText.T("reallife_flare_kit_group_deal"), deals, _hireDeal);
             k.Groups = groups.ToArray();
             k.Chips = chips.ToArray();
             k.Chosen = chosen.ToArray();
@@ -317,7 +319,8 @@ namespace RealLifeOverhaul.Ui
             bool fits = shop.District != null && shop.District == inf.District;
             k.FigureLabels = new[]
             {
-                FlareText.T("reallife_flare_kit_fig_cost"), FlareText.T("reallife_flare_kit_fig_customers"), FlareText.T("reallife_flare_kit_fig_likely"), FlareText.T("reallife_flare_kit_fig_audience")
+                FlareText.T("reallife_flare_kit_fig_cost"), FlareText.T("reallife_flare_kit_fig_customers"), FlareText.T("reallife_flare_kit_fig_likely"),
+                FlareText.T("reallife_flare_kit_fig_audience")
             };
             k.Figures = new[]
             {
