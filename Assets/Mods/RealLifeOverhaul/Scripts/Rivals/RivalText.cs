@@ -18,19 +18,22 @@ namespace RealLifeOverhaul.Rivals
         private static readonly string[] WhatKeys =
         {
             "reallife_rival_what_property", "reallife_rival_what_outlet", "reallife_rival_what_poach", "reallife_rival_what_stake", "reallife_rival_what_bid",
-            "reallife_rival_what_lobby", "reallife_rival_what_suit", "reallife_rival_what_press"
+            "reallife_rival_what_lobby", "reallife_rival_what_suit", "reallife_rival_what_press",
+            "reallife_rival_what_prices", "reallife_rival_what_borrowed", "reallife_rival_what_shares"
         };
 
         private static readonly string[] CameKeys =
         {
             "reallife_rival_came_property", "reallife_rival_came_outlet", "reallife_rival_came_poach", "reallife_rival_came_stake", "reallife_rival_came_bid",
-            "reallife_rival_came_lobby", "reallife_rival_came_suit", "reallife_rival_came_press"
+            "reallife_rival_came_lobby", "reallife_rival_came_suit", "reallife_rival_came_press",
+            "reallife_rival_came_prices", "reallife_rival_came_borrowed", "reallife_rival_came_shares"
         };
 
         private static readonly string[] PaperCameKeys =
         {
             "reallife_rival_paper_came_property", "reallife_rival_paper_came_outlet", "reallife_rival_paper_came_poach", "reallife_rival_paper_came_stake", "reallife_rival_paper_came_bid",
-            "reallife_rival_paper_came_lobby", "reallife_rival_paper_came_suit", "reallife_rival_paper_came_press"
+            "reallife_rival_paper_came_lobby", "reallife_rival_paper_came_suit", "reallife_rival_paper_came_press",
+            "reallife_rival_paper_came_prices", "reallife_rival_paper_came_borrowed", "reallife_rival_paper_came_shares"
         };
 
         private static readonly string[] PaperDoneKeys =
@@ -184,7 +187,11 @@ namespace RealLifeOverhaul.Rivals
                 case RivalMoveKind.Lobby:
                     return Permille(m.Amount);
                 case RivalMoveKind.Outlet:
+                case RivalMoveKind.PriceRise:
                     return m.Amount.ToString(Inv) + "%";
+                case RivalMoveKind.Borrowed:
+                case RivalMoveKind.Shares:
+                    return Money(m.Amount);
                 case RivalMoveKind.Suit:
                     return Money(m.Amount);
                 default:

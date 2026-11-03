@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using BAModAPI;
+using RealLifeOverhaul.DaySeries;
 using UI.Load;
 using UI.Notification;
 using UnityEngine;
@@ -505,7 +506,7 @@ namespace RealLifeOverhaul.Rivals
             {
                 return 0;
             }
-            return RivalRules.OutletDip(f, district, reg.businessTypeName);
+            return RivalRules.OutletDip(f, district, reg.businessTypeName) + RivalRules.PriceWar(f) + DaySeriesRules.CutFootfall(DaySeriesDirector.Book, RivalGame.Day);
         }
 
         /// <summary>The premium on buildings for sale in a district, per mille.</summary>

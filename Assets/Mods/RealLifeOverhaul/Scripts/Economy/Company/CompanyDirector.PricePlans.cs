@@ -37,6 +37,65 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Whether a plan has prices from before its last reprice to go back to.</summary>
         internal bool PlanHasYesterday(string id) => id != null && _pricePlans.TryGetValue(id, out PricePlanFile f) && f.Yesterday.Count > 0;
 
+        /// <summary>
+        /// Cuts the player's own plans by <paramref name="percent"/> and holds them, so the daily reprice does not put the
+        /// prices back. Another player's plan is never touched. Returns how many prices moved.
+        /// </summary>
+        internal int CutPlans(int percent)
+        {
+            GameInstance save = Save;
+            if (!PricePlansOn || save == null || save.pricingManagerPlans == null || percent <= 0 || percent >= 50)
+            {
+                return 0;
+            }
+            int changed = 0;
+            for (int i = 0; i < save.pricingManagerPlans.Count; i++)
+            {
+                PricingManagerPlan plan = save.pricingManagerPlans[i];
+                if (!PlanMine(plan) || plan.appliedPrices == null)
+                {
+                    continue;
+                }
+                PricePlanFile file = PlanFile(plan.id);
+                PriceStrategy strategy = file.Strategy;
+                strategy.Hold = true;
+                file.Strategy = strategy;
+                for (int p = 0; p < plan.appliedPrices.Count; p++)
+                {
+                    RetailPrice price = plan.appliedPrices[p];
+                    if (price == null || string.IsNullOrEmpty(price.itemName) || price.price <= 0f || plan.IsManuallyPriced(price.itemName))
+                    {
+                        continue;
+                    }
+                    plan.ApplySuggestedPrice(price.itemName, price.price * (100 - percent) / 100f);
+                    changed++;
+                }
+            }
+            return changed;
+        }
+
+        /// <summary>The hold a price cut put on the player's plans, taken off. A plan that was already held stays held.</summary>
+        internal void ReleaseCut(string alreadyHeld)
+        {
+            GameInstance save = Save;
+            if (!PricePlansOn || save == null || save.pricingManagerPlans == null)
+            {
+                return;
+            }
+            for (int i = 0; i < save.pricingManagerPlans.Count; i++)
+            {
+                PricingManagerPlan plan = save.pricingManagerPlans[i];
+                if (!PlanMine(plan) || string.IsNullOrEmpty(plan.id) || (alreadyHeld != null && alreadyHeld.IndexOf(plan.id, StringComparison.Ordinal) >= 0))
+                {
+                    continue;
+                }
+                PricePlanFile file = PlanFile(plan.id);
+                PriceStrategy strategy = file.Strategy;
+                strategy.Hold = false;
+                file.Strategy = strategy;
+            }
+        }
+
         /// <summary>A plan's strategy set from its page: kept, and the plan's prices worked out by it at once (the hold aside).</summary>
         internal void SetPlanStrategy(PricingManagerPlan plan, PriceStrategy s)
         {
