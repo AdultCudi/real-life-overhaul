@@ -113,7 +113,23 @@ namespace RealLifeOverhaul.Ui
             m.Paused = speed.Paused;
             m.Speed = speed.isFastForwarding ? 3 : 1;   // the game has its normal speed and an activity's fast forward: the play square or the fast forward's
             m.TimeLocked = speed.isTimeControlDisabled;
+            m.FastOffered = FastOffered(uis);
         }
+
+        /// <summary>
+        /// The game's fast forward is its activity panel's switch, there only while an activity that has it runs inside a building
+        /// (PlayerActivityUI, HasFastForward and BuildingManager.IsInsideBuilding); the game's top bar has none.
+        /// </summary>
+        public static bool FastOffered(UIs uis)
+        {
+            PlayerActivity.PlayerActivityUI ui = uis != null ? uis.playerActivityUI : null;
+            PlayerActivity.IPlayerActivity a = ui != null && PlayerActivity.PlayerActivityUI.IsPanelOpen ? ui.GetCurrentActivity : null;
+            return a != null && a.HasFastForward() && BuildingManager.IsInsideBuilding;
+        }
+
+        // Flips the game's own fast forward switch as its key does (the game's Secondary key). The press stays here, with the
+        // game's state, so the HUD's view names no key at all.
+        public static void PressFast(UIs uis) { uis.playerActivityUI.OnPlayerActionPressed(global::PlayerAction.SecondaryInteract); }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void Needs(UiStatusModel m)
@@ -301,7 +317,7 @@ namespace RealLifeOverhaul.Ui
                 h = h * 31 + (int)Math.Round(save.Money * 100.0);
                 h = h * 31 + Whole(save.Energy) * 10201 + Whole(save.Hunger) * 101 + Whole(HappinessHelper.Happiness);
                 h = h * 31 + Whole(HomeState.Hygiene) * 10201 + Whole(HomeState.Stress) * 101 + Whole(HomeState.Tidy);
-                h = h * 31 + (speed != null ? (speed.Paused ? 1 : 0) + (speed.isFastForwarding ? 2 : 0) + (speed.isTimeControlDisabled ? 4 : 0) : 7);
+                h = h * 31 + (speed != null ? (speed.Paused ? 1 : 0) + (speed.isFastForwarding ? 2 : 0) + (speed.isTimeControlDisabled ? 4 : 0) + (FastOffered(uis) ? 8 : 0) : 7);
                 h = h * 31 + (save.notifications != null ? save.notifications.Count : 0);
                 h = h * 31 + (int)Weather.Sky * 16 + (int)Weather.Spell * 4 + (RainHelper.isRaining ? 2 : 0) + (SeasonDirector.Instance != null && SeasonDirector.Instance.Snowing ? 1 : 0);
                 TextMeshProUGUI day = uis != null && uis.topBar != null ? uis.topBar.moneyChange : null;

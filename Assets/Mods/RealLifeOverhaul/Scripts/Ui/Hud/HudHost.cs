@@ -119,6 +119,8 @@ namespace RealLifeOverhaul.Ui
         {
             Instance = this;
             _rect = rect;
+            _canvas = rect.GetComponent<Canvas>();
+            _order = _canvas != null ? _canvas.sortingOrder : 0;
             _view = new UiView(rect, "Hud") { Scale = _scale };
             _view.PointerEntered = Guard.Wrap<int>(PointerEntered);
             _view.PointerExited = Guard.Wrap<int>(PointerExited);
@@ -128,6 +130,19 @@ namespace RealLifeOverhaul.Ui
             _changeGroup = _change.Root.gameObject.AddComponent<CanvasGroup>();
             _changeGroup.alpha = 0f;
             _screen.AllApps = OpenAllApps;   // pressed from the guarded pointer handler
+        }
+
+        private Canvas _canvas;
+        private int _order;   // the order it was made at, over the game's HUD (UiOverCanvas)
+
+        /// <summary>The HUD kept drawn over the kit phone, whose canvas is at <paramref name="phone"/> (UiHostRules.OverPhone).</summary>
+        public void KeepOver(int phone)
+        {
+            int want = UiHostRules.OverPhone(_order, phone);
+            if (_canvas != null && _canvas.sortingOrder != want)
+            {
+                _canvas.sortingOrder = want;
+            }
         }
 
         /// <summary>The HUD shows: laid out fresh, then kept current while it shows.</summary>

@@ -56,7 +56,7 @@ namespace RealLifeOverhaul.Ui
             switch (command)
             {
                 case UiDraw.TimePillCommand:
-                    return Pause(arg == 0);
+                    return arg == UiDraw.FastSquare ? Fast() : Pause(arg == 0);
                 case UiDraw.MoneyPillCommand:
                     return TopBar(true);
                 case UiDraw.NeedsPillCommand:
@@ -104,6 +104,20 @@ namespace RealLifeOverhaul.Ui
             {
                 uis.gameSpeed.TogglePause();
             }
+            return true;
+        }
+
+        // The fast forward square: the game's own switch on its activity panel, flipped as its key flips it (the game's Secondary
+        // key, through HudStatusGame.PressFast), while the game offers it; else a notice of when the game offers one.
+        private static bool Fast()
+        {
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            if (!HudStatusGame.FastOffered(uis))
+            {
+                UI.Notification.Notifications.Show(UI.Notification.NotificationType.Info, "reallife_hud_fast_why", null, 6f);
+                return true;
+            }
+            HudStatusGame.PressFast(uis);
             return true;
         }
 

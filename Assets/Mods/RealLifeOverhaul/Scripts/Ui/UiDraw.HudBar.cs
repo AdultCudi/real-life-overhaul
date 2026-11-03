@@ -40,10 +40,13 @@ namespace RealLifeOverhaul.Ui
     public static partial class UiDraw
     {
         /// <summary>
-        /// The pills' targets on the HUD's bar: the time's squares (arg 0 the pause, 1 the play), the money, the needs, the
-        /// alerts and the settings.
+        /// The pills' targets on the HUD's bar: the time's squares (arg 0 the pause, 1 the play, 2 the fast forward), the money,
+        /// the needs, the alerts and the settings.
         /// </summary>
         public const int TimePillCommand = 9020, MoneyPillCommand = 9021, NeedsPillCommand = 9022, AlertsPillCommand = 9023, SettingsPillCommand = 9024;
+
+        /// <summary>The time pill's fast forward square, its arg (0 the pause, 1 the play).</summary>
+        public const int FastSquare = 2;
 
         /// <summary>One of the top bar's small buttons in their pill after the place (arg: its index in UiStatusModel.Tools).</summary>
         public const int ToolPillCommand = 9025;
@@ -433,7 +436,7 @@ namespace RealLifeOverhaul.Ui
 
         // The time pill: the game's pause, play and fast forward as squares, the one in force on the cyan, then the time over
         // the day. The pause and the play are targets where the HUD answers them, dim while the game holds the clock; the
-        // fast forward is the game's own during an activity, shown and never pressed, dim while it is not on.
+        // fast forward is a target there too, pressing the game's own while it offers one (an activity's), dim while it does not.
         private static void TimePill(UiScene s, UiAt at, float x, float y, float w, UiStatusModel m, bool day)
         {
             int face = PillFace(s, at, x, y, w);
@@ -445,7 +448,7 @@ namespace RealLifeOverhaul.Ui
                 float sy = y + (BarPill - Square) / 2f;
                 SpeedSquare(s, inside, cx, sy, UiIcon.Pause, lit == 0, 0, m);
                 SpeedSquare(s, inside, cx + Square + UiTokens.S1, sy, UiIcon.Play, lit == 1, 1, m);
-                SpeedSquare(s, inside, cx + (Square + UiTokens.S1) * 2f, sy, UiIcon.FastForward, lit == 2, -1, m);
+                SpeedSquare(s, inside, cx + (Square + UiTokens.S1) * 2f, sy, UiIcon.FastForward, lit == 2, 2, m);
                 cx += Squares + PillInner;
             }
             Column(s, inside, cx, y, x + w - PillPad - cx, m.Time, UiStyle.Number, day ? m.Day : null);
@@ -459,10 +462,12 @@ namespace RealLifeOverhaul.Ui
                 UiFlags.Chrome | UiFlags.Middle | (lit ? UiFlags.Selected : UiFlags.None));
             float g = SquareGlyph;
             Icon(s, at.In(face), x + (Square - g) / 2f, y + (Square - g) / 2f, g, icon, lit ? UiRole.OnAccent : UiRole.None, UiFlags.Middle | UiFlags.Centre | UiFlags.Chrome, true);
-            int node = arg >= 0 && m.PillsPress ? Node(s, at, x, y, Square, Square, TimePillCommand, arg, face, m.TimeLocked) : -1;
-            if ((arg >= 0 && m.TimeLocked) || (arg < 0 && !lit))
+            // The fast forward dim while the game offers none is still a target: pressed, it says when the game offers one.
+            bool dim = arg == FastSquare ? !lit && !m.FastOffered : m.TimeLocked;
+            int node = m.PillsPress ? Node(s, at, x, y, Square, Square, TimePillCommand, arg, face, arg != FastSquare && m.TimeLocked) : -1;
+            if (dim)
             {
-                Dim(s, first, node);
+                Dim(s, first, arg == FastSquare ? -1 : node);
             }
         }
 
