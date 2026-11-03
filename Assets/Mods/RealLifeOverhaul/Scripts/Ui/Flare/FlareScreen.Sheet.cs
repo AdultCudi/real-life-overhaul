@@ -385,7 +385,7 @@ namespace RealLifeOverhaul.Ui
             {
                 var option = (FlareReplyOption)i;
                 int quality = FlareReplyRules.Quality(option, stars);
-                k.Options[i] = FlareText.T("reallife_flare_kit_option_" + i.ToString(CultureInfo.InvariantCulture));
+                k.Options[i] = FlareText.T(OptionKeys[Math.Min(i, OptionKeys.Length - 1)]);
                 k.OptionLines[i] = FlareReplyRules.Eases(quality, stars) ? FlareText.T("reallife_flare_kit_option_eases")
                     : FlareReplyRules.Worsens(quality) ? FlareText.T("reallife_flare_kit_option_worsens") : FlareText.T("reallife_flare_kit_option_stands");
             }
@@ -589,14 +589,21 @@ namespace RealLifeOverhaul.Ui
                 QuickAdd("reallife_flare_kit_rival_back", FlareText.T("reallife_flare_kit_quick_back"));
                 return;
             }
-            string kind = with.StartsWith("i:", StringComparison.Ordinal) ? "inf" : with.Length > 1 && with[0] == 'c' && char.IsDigit(with[1]) ? "res"
-                : with.StartsWith("k:", StringComparison.Ordinal) || with.StartsWith("b:", StringComparison.Ordinal) ? "biz" : "chat";
-            for (int i = 0; i < 3; i++)
+            string[] keys = with.StartsWith("i:", StringComparison.Ordinal) ? QuickInfluencer : with.Length > 1 && with[0] == 'c' && char.IsDigit(with[1]) ? QuickResident
+                : with.StartsWith("k:", StringComparison.Ordinal) || with.StartsWith("b:", StringComparison.Ordinal) ? QuickBusiness : QuickChat;
+            for (int i = 0; i < keys.Length; i++)
             {
-                string key = "reallife_flare_kit_quick_" + kind + "_" + i.ToString(CultureInfo.InvariantCulture);
-                QuickAdd(key, FlareText.T(key));
+                QuickAdd(keys[i], FlareText.T(keys[i]));
             }
         }
+
+        // The answers to a review (FlareReplyOption: thanks, sorry, stand your ground) and the short answers each writer gets:
+        // whole keys, so the catalogue checks each one is written.
+        private static readonly string[] OptionKeys = { "reallife_flare_kit_option_0", "reallife_flare_kit_option_1", "reallife_flare_kit_option_2" };
+        private static readonly string[] QuickResident = { "reallife_flare_kit_quick_res_0", "reallife_flare_kit_quick_res_1", "reallife_flare_kit_quick_res_2" };
+        private static readonly string[] QuickBusiness = { "reallife_flare_kit_quick_biz_0", "reallife_flare_kit_quick_biz_1", "reallife_flare_kit_quick_biz_2" };
+        private static readonly string[] QuickInfluencer = { "reallife_flare_kit_quick_inf_0", "reallife_flare_kit_quick_inf_1", "reallife_flare_kit_quick_inf_2" };
+        private static readonly string[] QuickChat = { "reallife_flare_kit_quick_chat_0", "reallife_flare_kit_quick_chat_1", "reallife_flare_kit_quick_chat_2" };
 
         private void QuickAdd(string key, string words)
         {

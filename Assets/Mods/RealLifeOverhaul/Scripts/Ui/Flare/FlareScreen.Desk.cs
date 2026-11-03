@@ -154,12 +154,26 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        // A review's words by its stars, one to five, and what it was about (FlareReviewNote.Why, 0 to 4), good then poor: whole
+        // keys, so the catalogue checks each one is written.
+        private static readonly string[] ReviewKeys =
+        {
+            "reallife_flare_review_post_1", "reallife_flare_review_post_2", "reallife_flare_review_post_3", "reallife_flare_review_post_4", "reallife_flare_review_post_5"
+        };
+
+        private static readonly string[] WhyKeys =
+        {
+            "reallife_flare_kit_why_0_good", "reallife_flare_kit_why_0_poor", "reallife_flare_kit_why_1_good", "reallife_flare_kit_why_1_poor",
+            "reallife_flare_kit_why_2_good", "reallife_flare_kit_why_2_poor", "reallife_flare_kit_why_3_good", "reallife_flare_kit_why_3_poor",
+            "reallife_flare_kit_why_4_good", "reallife_flare_kit_why_4_poor"
+        };
+
         // A resident's review in words: its stars, then what it was about, good or poor as its stars say.
         private static string NoteWords(FlareReviewNote n, string business)
         {
             int why = FlareRules.Clamp(n.Why, 0, 4);
-            string stars = FlareText.Fill("reallife_flare_review_post_" + FlareRules.Clamp(n.Stars, 1, 5).ToString(CultureInfo.InvariantCulture), "name", business ?? "?");
-            string about = FlareText.T("reallife_flare_kit_why_" + why.ToString(CultureInfo.InvariantCulture) + (n.Stars >= 3 ? "_good" : "_poor"));
+            string stars = FlareText.Fill(ReviewKeys[FlareRules.Clamp(n.Stars, 1, 5) - 1], "name", business ?? "?");
+            string about = FlareText.T(WhyKeys[why * 2 + (n.Stars >= 3 ? 0 : 1)]);
             return stars + " " + about;
         }
 
