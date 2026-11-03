@@ -138,6 +138,12 @@ namespace RealLifeOverhaul.Ui
             {
                 _fallbackSet = UiGame.FallbackFont();
             }
+            if (!UiFonts.Ready && !LoadHold.Holding && UiFonts.Step())
+            {
+                // The loading screen's hold lasts at most two seconds and then forgets its pieces: fonts still reading by then
+                // never came in, and the HUD and the line below waited on them all session. Their read goes on here instead.
+                Logger?.Info("UI: the interface's fonts came in after the loading screen (its hold ended first).");
+            }
             bool city = SaveGameManager.Current != null && !UI.Load.LoadScene.isLoading;
             if (!city)
             {
