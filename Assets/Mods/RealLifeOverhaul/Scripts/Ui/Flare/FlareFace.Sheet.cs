@@ -11,6 +11,7 @@ namespace RealLifeOverhaul.Ui
     {
         public const float SheetWidth = 720f, SheetField = 104f, OptionHeight = 56f, FigureHeight = 64f;
         public const int GroupStride = 16;   // SheetChipCommand's argument: group * GroupStride + chip
+        private const int SheetLines = 4;    // the compose box's lines of words
 
         private static void Sheet(UiScene s, FlareFaceModel m, float wx, float wy, float ww, float wh, IUiKeys keys)
         {
@@ -79,15 +80,28 @@ namespace RealLifeOverhaul.Ui
                 {
                     int field = UiDraw.Box(s, at, x, cy, fw, SheetField, UiRole.Field, UiRole.None, UiTokens.RadiusLarge);
                     bool typed = !string.IsNullOrEmpty(k.FieldText);
-                    UiDraw.Text(s, at.In(field), x + UiTokens.S3, cy + UiTokens.S3, fw - UiTokens.S6, UiStyle.Body, typed ? UiRole.Text : UiRole.Text2, typed ? k.FieldText : k.FieldHint,
-                        UiFlags.Wrap | UiFlags.Truncate, 4);
+                    bool caret = UiDraw.Typing(s, FieldCommand, ComposeField);
+                    float tx = x + UiTokens.S3, room = fw - UiTokens.S6, lead = caret && !typed ? UiDraw.CaretRoom : 0f, last = 0f;
+                    // Typed: the last lines, the ones the caret is on.
+                    string shown = caret && typed
+                        ? UiTextRules.LastLines(k.FieldText, UiStyle.Body, room - UiDraw.CaretRoom, SheetLines, out last)
+                        : typed ? k.FieldText : k.FieldHint;
+                    UiDraw.Text(s, at.In(field), tx + lead, cy + UiTokens.S3, room - lead, UiStyle.Body, typed ? UiRole.Text : UiRole.Text2, shown,
+                        UiFlags.Wrap | UiFlags.Truncate | (typed ? UiFlags.None : UiFlags.Label), SheetLines);
+                    if (caret)
+                    {
+                        int line = typed ? Math.Max(0, UiTextRules.Lines(shown, UiStyle.Body, room - UiDraw.CaretRoom, SheetLines, out float _) - 1) : 0;
+                        UiDraw.Caret(s, at.In(field), tx + (typed ? last + 1f : 0f), cy + UiTokens.S3 + line * UiTextRules.LineHeight(UiStyle.Body), UiTextRules.LineHeight(UiStyle.Body),
+                            UiStyle.Body);
+                    }
                     UiDraw.Node(s, at, x, cy, fw, SheetField, FieldCommand, ComposeField, field);
                     if (pic)
                     {
                         int tile = UiDraw.Box(s, at, x + w - pw, cy, pw, SheetField, UiRole.Tile, UiRole.None, UiTokens.RadiusLarge);
                         var item = new UiItem
                         {
-                            Kind = UiKind.Picture, Flags = UiFlags.Middle | UiFlags.Centre, X = x + w - pw, Y = cy, W = pw, H = SheetField, Text = PictureKey(k.Picture, pw / SheetField), Value = pw / SheetField,
+                            Kind = UiKind.Picture, Flags = UiFlags.Middle | UiFlags.Centre, X = x + w - pw, Y = cy, W = pw, H = SheetField,
+                            Text = PictureKey(k.Picture, pw / SheetField), Value = pw / SheetField,
                             Clip = -1, Node = -1, Layer = at.Layer, Order = -1, Parent = tile, Alpha = 1f
                         };
                         s.Add(ref item);

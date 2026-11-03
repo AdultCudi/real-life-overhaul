@@ -240,7 +240,7 @@ namespace RealLifeOverhaul.Ui
         };
 
         public const int MostTargets = 48;          // a layer's targets at most (UiCheckRules.MostTargets): rows past them wait for the scroll
-        public const float NavWidth = 240f;
+        public const float NavWidth = 264f;         // the mockup's: room for the longest name beside its count ("Benachrichtigungen  12")
         public const float PictureAspect = 2.4f;    // a post's picture: the bank's photo, cut to a band
         public const float SideShare = 0.47f;       // of the room after the nav, the side column's
 
@@ -248,7 +248,7 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>
         /// A picture item's key: Flare's prefix, the shape its box wants and the account's own key ("flare:2.40:f:..."), so the
-        /// game's side cuts the photo to that shape once and keeps it (FlarePicturesScreen); the previews read the same.
+        /// game's side cuts the photo to that shape once and keeps it (FlareScreen.Pictures.cs); the previews read the same.
         /// </summary>
         public static string PictureKey(string key, float aspect) => PicturePrefix + aspect.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + ":" + key;
 
@@ -359,13 +359,14 @@ namespace RealLifeOverhaul.Ui
             int face = UiDraw.Box(s, at, x, y, w, h, chosen ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusLarge, chosen ? UiFlags.Selected : UiFlags.None);
             UiAt inside = at.In(face);
             UiDraw.Icon(s, inside, x + UiTokens.S3, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, icon, chosen ? UiRole.Text : UiRole.Text2, UiFlags.Middle, chosen);
-            float bw = 0f;
+            float tx = x + UiTokens.S3 + UiTokens.Icon + UiTokens.S3, end = x + w - UiTokens.S4;
             if (badge > 0)
             {
-                bw = BadgeOf(s, inside, x + w - UiTokens.S3, y + (h - UiTokens.Badge) / 2f, badge);
+                end = x + w - UiTokens.S3 - BadgeOf(s, inside, x + w - UiTokens.S3, y + (h - UiTokens.Badge) / 2f, badge);
             }
-            float tx = x + UiTokens.S3 + UiTokens.Icon + UiTokens.S3;
-            UiDraw.TextMiddle(s, inside, tx, y, h, x + w - tx - bw - UiTokens.S4, UiStyle.Nav, UiRole.Text, label, UiFlags.Label | UiFlags.Truncate);
+            // A long name of a language's in the smaller strong words, as the kit's own sidebar has it, rather than cut short.
+            UiStyle style = UiTextRules.Width(label, UiStyle.Nav) <= end - tx ? UiStyle.Nav : UiStyle.SmallStrong;
+            UiDraw.TextMiddle(s, inside, tx, y, h, end - tx, style, UiRole.Text, label, UiFlags.Label | UiFlags.Truncate);
             UiDraw.Node(s, at, x, y, w, h, NavCommand, arg, face);
         }
 
@@ -385,13 +386,22 @@ namespace RealLifeOverhaul.Ui
         {
             float cx = x + UiTokens.S6, cw = w - UiTokens.S12, bottom = y + h - UiTokens.S4;
             float cy = y + UiTokens.S4;
-            int search = UiDraw.Box(s, at, cx, cy, cw, UiTokens.Control, UiRole.Field, UiRole.None, UiTokens.Control / 2f, UiFlags.Circle);
-            UiAt inSearch = at.In(search);
-            UiDraw.Icon(s, inSearch, cx + UiTokens.S4, cy + (UiTokens.Control - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Search, UiRole.Text2, UiFlags.Middle);
-            UiDraw.TextMiddle(s, inSearch, cx + UiTokens.S4 + UiTokens.Icon + UiTokens.S3, cy, UiTokens.Control, cw - UiTokens.S12 - UiTokens.Icon, UiStyle.Body, UiRole.Text2,
-                m.SearchHint, UiFlags.Label | UiFlags.Truncate);
-            UiDraw.Node(s, at, cx, cy, cw, UiTokens.Control, FieldCommand, SearchField, search);   // pressed, the typing goes to Explore's search
-            cy += UiTokens.Control + UiTokens.S4;
+            if (m.Page != Explore)
+            {
+                // Explore has its own field at the page's head: the side's pill is for the other pages, and pressed it types into Explore's.
+                int search = UiDraw.Box(s, at, cx, cy, cw, UiTokens.Control, UiRole.Field, UiRole.None, UiTokens.Control / 2f, UiFlags.Circle);
+                UiAt inSearch = at.In(search);
+                UiDraw.Icon(s, inSearch, cx + UiTokens.S4, cy + (UiTokens.Control - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Search, UiRole.Text2, UiFlags.Middle);
+                bool caret = UiDraw.Typing(s, FieldCommand, SearchField);
+                float tx = cx + UiTokens.S4 + UiTokens.Icon + UiTokens.S3, room = cw - UiTokens.S12 - UiTokens.Icon, lead = caret ? UiDraw.CaretRoom : 0f;
+                UiDraw.TextMiddle(s, inSearch, tx + lead, cy, UiTokens.Control, room - lead, UiStyle.Body, UiRole.Text2, m.SearchHint, UiFlags.Label | UiFlags.Truncate);
+                if (caret)
+                {
+                    UiDraw.CaretAfter(s, inSearch, tx, cy, UiTokens.Control, null, UiStyle.Body, room);
+                }
+                UiDraw.Node(s, at, cx, cy, cw, UiTokens.Control, FieldCommand, SearchField, search);
+                cy += UiTokens.Control + UiTokens.S4;
+            }
             cy = Week(s, at, m, cx, cy, cw, bottom);
             cy = Trends(s, at, m, cx, cy, cw, bottom);
             WhoToFollow(s, at, m, cx, cy, cw, bottom);
@@ -646,8 +656,15 @@ namespace RealLifeOverhaul.Ui
                 tx += UiTokens.Icon + UiTokens.S3;
             }
             bool typed = !string.IsNullOrEmpty(text);
-            UiDraw.TextMiddle(s, inside, tx, y, h, x + w - tx - UiTokens.S4, UiStyle.Body, typed ? UiRole.Text : UiRole.Text2, typed ? text : hint,
+            bool caret = UiDraw.Typing(s, FieldCommand, field);   // the field that takes the keys shows where the next letter goes
+            float room = x + w - tx - UiTokens.S4, lead = caret && !typed ? UiDraw.CaretRoom : 0f;
+            string shown = caret && typed ? UiDraw.Typed(text, UiStyle.Body, room) : typed ? text : hint;
+            UiDraw.TextMiddle(s, inside, tx + lead, y, h, room - lead, UiStyle.Body, typed ? UiRole.Text : UiRole.Text2, shown,
                 typed ? UiFlags.Truncate : UiFlags.Label | UiFlags.Truncate);
+            if (caret)
+            {
+                UiDraw.CaretAfter(s, inside, tx, y, h, typed ? shown : null, UiStyle.Body, room);
+            }
             return UiDraw.Node(s, at, x, y, w, h, FieldCommand, field, face);
         }
 

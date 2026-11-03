@@ -13,8 +13,8 @@ using RealLifeOverhaul.Ui;
 internal static partial class Program
 {
     // Every class that runs a screen with a text field (IUiTyping) and the commands its TypingCommand answers. A screen with no entry
-    // fails below, so a new typing screen cannot ship without its field being checked. FlareScreen draws its own field (FlareFace)
-    // and is being rebuilt: its entry is the Flare job's to fill when it draws the field with UiDraw.TextField.
+    // fails below, so a new typing screen cannot ship without its field being checked. FlareScreen draws its own fields (FlareFace's
+    // TextField, the side's search and the compose sheet's box), each with the caret through UiDraw.Typing.
     private static readonly Dictionary<string, int[]> TypingScreens = new Dictionary<string, int[]>(StringComparer.Ordinal)
     {
         { "BizManScreen", new[] { BizManPages.Type, BizManPages.OpsType, BizManPages.OpsSearch, UiDataTable.First + UiDataTable.Search, BizManPages.Goods + UiDataTable.Type,
@@ -36,7 +36,7 @@ internal static partial class Program
         { "StocksScreen", new[] { StocksLay.Shares, UiDataTable.First + UiDataTable.Search } },
         { "ItemsListScreen", new[] { UiItemsList.TypeCommand } },
         { "UiPartsGalleryScreen", new[] { UiPartsGallery.Field } },
-        { "FlareScreen", null }
+        { "FlareScreen", new[] { FlareFace.FieldCommand } }
     };
 
     private static void UiCaretChecks()

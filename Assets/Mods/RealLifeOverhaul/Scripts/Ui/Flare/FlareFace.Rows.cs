@@ -100,12 +100,36 @@ namespace RealLifeOverhaul.Ui
                         budget -= targets ? need : 0;
                     }
                     shown += targets ? 1 : 0;
-                    Row(s, inClip.Arriving(i - first), ref r, i, index, py, cw, targets);
+                    // The panel's own slate under the row: what its words stand on, also where the row runs past the view.
+                    UiAt rowAt = inClip.Arriving(i - first);
+                    int ground = UiDraw.Box(s, rowAt, 0f, py, cw, rh, UiRole.Panel, UiRole.None, 0f, UiFlags.Decor);
+                    int nodes = s.NodeCount;
+                    Row(s, rowAt.In(ground), ref r, i, index, py, cw, targets);
+                    OutOfView(s, nodes, offset, vh);
                 }
                 py += rh;
             }
             s.Lists[index].Shown = shown;   // rows without targets wait for the scroll, which the d-pad asks for
             return clip;
+        }
+
+        // A row half in view: its targets wholly past the view's edge can be neither pressed nor reached, so they wait, held, for
+        // the scroll that lays the row again (the d-pad asks for it from the row's own target in the list).
+        private static void OutOfView(UiScene s, int from, float offset, float vh)
+        {
+            for (int n = from; n < s.NodeCount; n++)
+            {
+                ref UiNode node = ref s.Nodes[n];
+                if (node.Y + node.H <= offset + 0.5f || node.Y >= offset + vh - 0.5f)
+                {
+                    node.Disabled = true;
+                }
+            }
+            for (int n = from; n < s.NodeCount; n++)
+            {
+                ref UiNode node = ref s.Nodes[n];
+                node.Right = node.Right >= 0 && s.Nodes[node.Right].Disabled ? -1 : node.Right;   // a way into a held target is the nearest's again
+            }
         }
 
         private static void Empty(UiScene s, UiAt at, FlareList list, float x, float y, float w, float h)
@@ -279,10 +303,7 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDraw.TextMiddle(s, inHead, hx + UiTokens.S2, cy, UiTokens.S6, handleW, UiStyle.Small, UiRole.Text2, handle, UiFlags.Truncate);
             }
-            if (targets)
-            {
-                UiDraw.Node(s, inRow, UiTokens.S4, cy, headW, UiTokens.S6, AuthorCommand, index, head, false, list, index);
-            }
+            int author = targets ? UiDraw.Node(s, inRow, UiTokens.S4, cy, headW, UiTokens.S6, AuthorCommand, index, head, false, list, index) : -1;
             cy += UiTokens.S6;
             if (!string.IsNullOrEmpty(r.Text))
             {
@@ -330,7 +351,13 @@ namespace RealLifeOverhaul.Ui
             }
             float slot = UiDraw.SnapDown(cw / 5f);
             bool liked = (r.Flags & FlareRowFlags.Liked) != 0, reposted = (r.Flags & FlareRowFlags.Reposted) != 0;
-            Count(s, inRow, cx - UiTokens.S2, cy, slot, UiIcon.Heart, r.Likes, liked ? UiRole.CatRetail : UiRole.Text2, liked, targets ? LikeCommand : -1, index);
+            int like = Count(s, inRow, cx - UiTokens.S2, cy, slot, UiIcon.Heart, r.Likes, liked ? UiRole.CatRetail : UiRole.Text2, liked, targets ? LikeCommand : -1, index);
+            if (author >= 0 && like >= 0)
+            {
+                // Up and down step from post to post through the list (author to author, scrolling); right goes into the post's own
+                // counts, which stand under its words where no straight line from the name reaches them.
+                s.Nodes[author].Right = like;
+            }
             Count(s, inRow, cx - UiTokens.S2 + slot, cy, slot, UiIcon.Message, r.Comments, UiRole.Text2, false, targets ? CommentCommand : -1, index);
             if ((r.Flags & FlareRowFlags.Comment) == 0)
             {
@@ -348,8 +375,8 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Icon(s, at.In(disc), x + UiTokens.S1 / 2f, y + UiTokens.S1 / 2f, UiTokens.S3, UiIcon.Check, UiRole.OnAccent, UiFlags.Middle | UiFlags.Centre);
         }
 
-        // A count beside its glyph in a slot: liked, the heart is filled in its pink. A target when it has a command.
-        private static void Count(UiScene s, UiAt at, float x, float y, float slot, UiIcon icon, string count, UiRole tint, bool given, int command, int arg)
+        // A count beside its glyph in a slot: liked, the heart is filled in its pink. A target when it has a command; returns it, or -1.
+        private static int Count(UiScene s, UiAt at, float x, float y, float slot, UiIcon icon, string count, UiRole tint, bool given, int command, int arg)
         {
             float h = UiTokens.ControlSmall;
             float cw = string.IsNullOrEmpty(count) ? 0f : Math.Min(UiDraw.Snap(UiTextRules.Width(count, UiStyle.SmallStrong) + UiTokens.S1), slot - h - UiTokens.S2);
@@ -361,10 +388,7 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDraw.TextMiddle(s, inside, x + h, y, h, cw, UiStyle.SmallStrong, tint, count, UiFlags.Truncate);
             }
-            if (command >= 0)
-            {
-                UiDraw.Node(s, at, x, y, bw, h, command, arg, face);
-            }
+            return command >= 0 ? UiDraw.Node(s, at, x, y, bw, h, command, arg, face) : -1;
         }
 
         // A notification: unread marked by the dot and strong words; its kind's glyph on a disc, the line, the detail, when.
