@@ -172,6 +172,7 @@ namespace RealLifeOverhaul.Ui
                 _waited = 0;
                 return;
             }
+            PlayTime.Tick();   // the city's time played, for the pause menu's card: counted with the interface on or off
             if (!On)
             {
                 RemoveAll("the switch is off");

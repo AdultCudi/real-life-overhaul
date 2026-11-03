@@ -40,6 +40,8 @@ namespace RealLifeOverhaul.Ui
                 .Test("reallife_ui_test_contacts_call", "reallife_ui_test_contacts_offer", "reallife_ui_test_contacts_tax", "reallife_ui_test_contacts_wage")
                 .Test("reallife_ui_test_dialog_bank", "reallife_ui_test_dialog_wholesale", "reallife_ui_test_dialog_import", "reallife_ui_test_dialog_desk", "reallife_ui_test_dialog_court",
                     "reallife_ui_test_dialog_tax_court", "reallife_ui_test_dialog_fred", "reallife_ui_test_dialog_switch")
+                .Data(PlayTimeStore.Key)   // the time played in the city, for the pause menu's card (Ui/Pause/PlayTime)
+                .ResetData(PlayTime.Forget)
                 .Cleanup(() => UiDirector.RemoveAll("cleaned up"), 0);
         }
     }

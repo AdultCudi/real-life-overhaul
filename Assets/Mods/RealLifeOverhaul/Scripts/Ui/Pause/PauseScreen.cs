@@ -1,8 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using BigAmbitions.DayNightCycle;
 using BigAmbitions.InputSystem;
+using Entities;
 using Helpers;
 using TMPro;
 using UI.MiniMenu;
@@ -12,10 +14,12 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// The pause menu as the kit's narrow panel: the day and time, the save's name typed into the game's own field, when
-    /// the game last saved, and the game's rows in the game's order with the game's words, each pressing the game's own
-    /// button, so its checks, its questions and Going Public's patches on them run as they always do. A piece another mod
-    /// put on the panel is a row too, pressing its own button. Esc and the way back at the foot press the game's Close.
+    /// The pause menu as the kit's pause screen: the day and time, the save's name typed into the game's own field, when
+    /// the game last saved, and the game's rows in the game's order, each pressing the game's own button, so its checks, its
+    /// questions and Going Public's patches on them run as they always do. A piece another mod put on the panel is a row
+    /// too, pressing its own button. Esc and the way back at the foot press the game's Close. Beside it, read as the menu
+    /// opens: the city's card (money, net worth, businesses, employees, the day, the time played) and this city's latest
+    /// saves, each loaded or saved over through the game's own calls and questions (<see cref="PauseSaves"/>).
     /// </summary>
     internal sealed class PauseScreen : IUiScreen, IUiTyping
     {
@@ -37,6 +41,13 @@ namespace RealLifeOverhaul.Ui
         private string _savedLine, _when;   // the two lines of words, made again only when a minute passes
         private int _savedMinutes = -2, _autosave = -1, _whenMinute = -1;
         private static readonly UiWords Words = (key, english) => UiText.T(key);
+        private static readonly string[] DayKeys =
+        {
+            "common_monday", "common_tuesday", "common_wednesday", "common_thursday", "common_friday", "common_saturday", "common_sunday"
+        };
+        private readonly List<SaveGameManager.SaveGameStruct> _saves = new List<SaveGameManager.SaveGameStruct>(UiPauseMenu.SavesMost);
+        private readonly List<UiPauseFact> _facts = new List<UiPauseFact>(6);
+        private bool _open;   // the game's menu stood open at the last look: the city and the saves are read as it opens
 
         public PauseScreen(MiniMenu menu, Transform panel)
         {
@@ -47,6 +58,10 @@ namespace RealLifeOverhaul.Ui
             _m.NameLabel = UiText.T("reallife_ui_pause_name");
             _m.NamePlaceholder = UiText.T("common_name");
             _m.Back = UiText.T("reallife_ui_pause_back");
+            _m.CityTitle = UiText.T("reallife_ui_pause_city");
+            _m.SavesEmpty = UiText.T("reallife_ui_pause_saves_none");
+            _m.Load = UiText.T("reallife_ui_pause_load");
+            _m.Over = UiText.T("reallife_ui_pause_over");
         }
 
         public string Id => PauseKits.PauseId;
@@ -91,6 +106,15 @@ namespace RealLifeOverhaul.Ui
                     return Again(UiWidgets.Press(_buttons[arg]));
                 case UiPauseMenu.BackCommand:
                     return Again(Close());
+                case UiPauseMenu.LoadCommand:
+                    if (arg < 0 || arg >= _saves.Count || !PauseSaves.CanLoad)
+                    {
+                        return false;
+                    }
+                    PauseSaves.AskLoad(_saves[arg]);
+                    return true;
+                case UiPauseMenu.OverCommand:
+                    return arg >= 0 && arg < _saves.Count && Again(Over(_saves[arg]));
             }
             return false;
         }
@@ -147,6 +171,18 @@ namespace RealLifeOverhaul.Ui
             return done;
         }
 
+        // Saving over a save: its name typed into the game's field and the game's own Save pressed, so the game asks first
+        // ("it exists, save over it?") and its checks and Going Public's patches run. The game's autosaves are never named over.
+        private bool Over(SaveGameManager.SaveGameStruct s)
+        {
+            if (s == null || s.isRecoverSave || _name == null || !_name.interactable || _buttons.Count == 0 || _rows.Count == 0 || !_rows[0].Primary)
+            {
+                return false;
+            }
+            UiWidgets.Type(_name, s.name, false);
+            return UiWidgets.Press(_buttons[0]);
+        }
+
         // The game's Close, as its own button; the game's own close when another version has none.
         private bool Close()
         {
@@ -194,7 +230,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
-                string words = BuyKits.NoKey(UiWidgets.Label(b));
+                string words = Own(name) ?? BuyKits.NoKey(UiWidgets.Label(b));
                 var row = new UiMenuRowModel { Label = words ?? Fallback(name), Key = UiAction.Count, Split = split, Disabled = !b.interactable };
                 Look(name, ref row);
                 split = false;
@@ -211,6 +247,20 @@ namespace RealLifeOverhaul.Ui
             _m.NameDisabled = _name == null || !_name.interactable;
             _m.When = When();
             _m.Saved = Saved();
+            bool open = _panel != null && _panel.gameObject.activeInHierarchy;
+            if (open && !_open)
+            {
+                City();
+                Saves();
+            }
+            _open = open;
+            for (int i = 0; i < _m.Saves.Length; i++)
+            {
+                _m.Saves[i].NoLoad = !PauseSaves.CanLoad;
+                _m.Saves[i].Current = _m.Name != null && string.Equals(_m.Saves[i].Name, _m.Name.Trim(), StringComparison.Ordinal);
+                _sb.Append(_m.Saves[i].Current ? '*' : '-');
+            }
+            _sb.Append(_m.Facts.Length).Append(_m.Saves.Length);
             _sb.Append(_m.Name).Append('|').Append(_m.NameDisabled).Append('|').Append(_m.When).Append('|').Append(_m.Saved).Append('|').Append(_close != null);
             return _sb.ToString();
         }
@@ -229,6 +279,7 @@ namespace RealLifeOverhaul.Ui
                 case SaveRow:
                     row.Icon = UiIcon.FloppyDisk;
                     row.Key = UiAction.Alt;
+                    row.Primary = true;   // the menu's main action, on the cyan with its F
                     break;
                 case "WishlistButton":
                     row.Icon = UiIcon.Star;
@@ -242,10 +293,11 @@ namespace RealLifeOverhaul.Ui
                     break;
                 case "MainMenuButton":
                     row.Icon = UiIcon.Home;
-                    row.Tint = UiRole.Chart7;
+                    row.Tint = UiRole.CatTech;   // the violet of the mockup's house
                     break;
                 case "SaveAndExitToDesktopButton":
                     row.Icon = UiIcon.SignOut;
+                    row.Tint = UiRole.WarnText;   // leaving, though with a save: amber, short of quitting's red
                     break;
                 case "ExitToDesktopButton":
                     row.Icon = UiIcon.Power;
@@ -255,6 +307,88 @@ namespace RealLifeOverhaul.Ui
                     row.Icon = UiIcon.Cube;
                     break;
             }
+        }
+
+        // The menu's own words where the game's mean the same (the mockup's "Save game", "Main menu", "Quit to desktop");
+        // null keeps the game's own label (Options, Blueprints, Save and exit, another mod's row).
+        private static string Own(string name)
+        {
+            switch (name)
+            {
+                case SaveRow: return UiText.T("reallife_ui_pause_save_game");
+                case "MainMenuButton": return UiText.T("reallife_ui_pause_main_menu");
+                case "ExitToDesktopButton": return UiText.T("reallife_ui_pause_quit");
+                default: return null;
+            }
+        }
+
+        // The city at a glance, read as the menu opens (the clock stands still behind it): the game's money and day, the
+        // books' net worth and businesses, the game's own count of employees, and the time played (Ui/Pause/PlayTime).
+        private void City()
+        {
+            GameInstance save = SaveGameManager.Current;
+            _facts.Clear();
+            if (save == null)
+            {
+                _m.Facts = new UiPauseFact[0];
+                return;
+            }
+            _facts.Add(new UiPauseFact { Icon = UiIcon.Wallet, Label = UiText.T("reallife_ui_pause_money"), Value = UiText.Money(save.Money) });
+            if (PauseKits.NetWorth != null)
+            {
+                _facts.Add(new UiPauseFact { Icon = UiIcon.ChartLineUp, Label = UiText.T("reallife_ui_pause_worth"), Value = UiText.Money(PauseKits.NetWorth()) });
+            }
+            if (PauseKits.Businesses != null)
+            {
+                _facts.Add(new UiPauseFact { Icon = UiIcon.Store, Label = UiText.T("reallife_ui_pause_businesses"), Value = Count(PauseKits.Businesses()) });
+            }
+            _facts.Add(new UiPauseFact { Icon = UiIcon.People, Label = UiText.T("reallife_ui_pause_employees"), Value = Count(Staff()) });
+            _facts.Add(new UiPauseFact { Icon = UiIcon.Calendar, Label = UiText.T("reallife_ui_pause_day"), Value = Count(save.Day) });
+            long played = PlayTime.Seconds;
+            if (played >= 0L)
+            {
+                _facts.Add(new UiPauseFact { Icon = UiIcon.Clock, Label = UiText.T("reallife_ui_pause_played"), Value = UiPauseMenu.Played(Words, played) });
+            }
+            _m.Facts = _facts.ToArray();
+            int day = Math.Max(0, Math.Min(DayKeys.Length - 1, TimeHelper.GetDayOfWeekIndex(TimeHelper.GetDayOfWeek())));
+            _m.CityNote = UiText.T(DayKeys[day]);
+        }
+
+        // The player's employees as the game's Employees app counts them (those being replaced left out).
+        private static readonly List<EmployeeInstance> Staffed = new List<EmployeeInstance>(32);
+
+        private static int Staff()
+        {
+            int n = EmployeeHelper.GetEmployeeInstances(new EmployeeInstancesQueryInfo { excludeBeingReplaced = true }, Staffed).Count;
+            Staffed.Clear();
+            return n;
+        }
+
+        private static string Count(int n) => n.ToString("N0", CultureInfo.CurrentCulture);
+
+        // This city's latest saves, read once as the menu opens (Ui/Pause/PauseSaves): the name, its day and its age.
+        private void Saves()
+        {
+            int total = PauseSaves.Read(_saves, UiPauseMenu.SavesMost);
+            if (total < 0)
+            {
+                _m.SavesTitle = null;   // the list could not be read: the card stands down
+                _m.Saves = new UiPauseSave[0];
+                return;
+            }
+            _m.SavesTitle = UiText.T("reallife_ui_pause_saves");
+            var saves = new UiPauseSave[_saves.Count];
+            DateTime now = DateTime.Now;
+            for (int i = 0; i < _saves.Count; i++)
+            {
+                SaveGameManager.SaveGameStruct sv = _saves[i];
+                long minutes = sv.lastPlayedDate > DateTime.MinValue && sv.lastPlayedDate <= now ? (long)(now - sv.lastPlayedDate).TotalMinutes : -1L;
+                saves[i] = new UiPauseSave { Name = sv.name, Line = UiPauseMenu.SaveLine(Words, sv.day, minutes), Auto = sv.isRecoverSave };
+            }
+            _m.Saves = saves;
+            _m.SavesCount = total > _saves.Count
+                ? UiText.Fill("reallife_ui_pause_saves_count", "shown", _saves.Count.ToString(CultureInfo.CurrentCulture), "all", total.ToString(CultureInfo.CurrentCulture))
+                : null;
         }
 
         // The game's words for a row whose button shows none yet (its text set a frame late).

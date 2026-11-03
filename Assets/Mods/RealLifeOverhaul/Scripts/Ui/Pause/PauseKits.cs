@@ -18,6 +18,12 @@ namespace RealLifeOverhaul.Ui
         private static readonly Action OnSave = Saved;
         private static float _lastSave = -1f;   // unscaled seconds of the last save this city, or -1 for none yet
 
+        /// <summary>The player's net worth as the Overview counts it, for the city's card; wired by Wiring/PauseLinks, null leaves it out.</summary>
+        public static Func<long> NetWorth;
+
+        /// <summary>How many businesses the player runs that take money, for the city's card; wired by Wiring/PauseLinks, null leaves it out.</summary>
+        public static Func<int> Businesses;
+
         /// <summary>Once a second while the interface is on: the host put on while its switch is on, the game's own while off.</summary>
         public static void Install()
         {
