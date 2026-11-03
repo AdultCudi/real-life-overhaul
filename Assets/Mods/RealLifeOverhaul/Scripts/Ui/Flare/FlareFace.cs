@@ -325,7 +325,8 @@ namespace RealLifeOverhaul.Ui
         private static void Nav(UiScene s, UiAt at, FlareFaceModel m, float x, float y, float w, float h)
         {
             float ix = x + UiTokens.S4, iw = w - UiTokens.S8;
-            // The flame is Flare's mark, in its orange; the window's strip already says the name.
+            // The flame is Flare's mark, in its orange; the window's strip already says the name, and the kit repeats no title
+            // under its masthead (the mockup's wordmark would).
             UiDraw.Icon(s, at, ix + UiTokens.S2, y + UiTokens.S4, UiTokens.S8, UiIcon.Fire, UiRole.Chart2, UiFlags.None, true);
             float iy = y + UiTokens.S4 + UiTokens.S8 + UiTokens.S4;
             int n = m.Nav != null ? m.Nav.Length : 0;

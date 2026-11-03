@@ -271,6 +271,8 @@ namespace RealLifeOverhaul.Ui
         }
 
         // A post: the line over it, the author's face, name, mark, handle and time, the words, the tags, the picture, what it brought, the counts.
+        private const string Dot = "\u00b7";   // between a post's handle and its time
+
         private static void PostRow(UiScene s, UiAt at, ref FlareRow r, int index, short list, float y, float w, bool targets)
         {
             int row = UiDraw.Box(s, at, 0f, y, w, r.Height, UiRole.None, UiRole.None, 0f);
@@ -286,7 +288,10 @@ namespace RealLifeOverhaul.Ui
             float nameW = Math.Min(UiDraw.Snap(UiTextRules.Width(r.Name, UiStyle.Title) + UiTokens.S1), UiDraw.SnapDown(cw * 0.55f));
             float markW = verified ? UiTokens.IconSmall + UiTokens.S2 : 0f;
             string handle = r.Handle;
-            float handleW = Math.Min(UiDraw.Snap(UiTextRules.Width(handle, UiStyle.Small) + UiTokens.S1), cw - nameW - markW - UiTokens.S2);
+            // How long ago after the handle, as a feed has it ("@speedybites · 2h"): the dot and the time keep their room, the handle gives way.
+            float timeW = string.IsNullOrEmpty(r.Time) ? 0f : UiDraw.Snap(UiTextRules.Width(r.Time, UiStyle.Small) + UiTokens.S1);
+            float dotW = timeW > 0f ? UiDraw.Snap(UiTextRules.Width(Dot, UiStyle.Small) + UiTokens.S2) : 0f;
+            float handleW = Math.Min(UiDraw.Snap(UiTextRules.Width(handle, UiStyle.Small) + UiTokens.S1), cw - nameW - markW - UiTokens.S2 - dotW - timeW);
             float headW = cx - UiTokens.S4 + nameW + markW + UiTokens.S2 + Math.Max(0f, handleW);
             int head = UiDraw.Box(s, inRow, UiTokens.S4, cy, headW, UiTokens.S6, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
             UiAt inHead = inRow.In(head);
@@ -302,6 +307,12 @@ namespace RealLifeOverhaul.Ui
             if (handleW > UiTokens.S4)
             {
                 UiDraw.TextMiddle(s, inHead, hx + UiTokens.S2, cy, UiTokens.S6, handleW, UiStyle.Small, UiRole.Text2, handle, UiFlags.Truncate);
+            }
+            if (timeW > 0f)
+            {
+                float tx = hx + UiTokens.S2 + (handleW > UiTokens.S4 ? handleW : 0f);
+                UiDraw.TextMiddle(s, inRow, tx, cy, UiTokens.S6, dotW, UiStyle.Small, UiRole.Text2, Dot, UiFlags.Centre);
+                UiDraw.TextMiddle(s, inRow, tx + dotW, cy, UiTokens.S6, timeW, UiStyle.Small, UiRole.Text2, r.Time, UiFlags.None);
             }
             int author = targets ? UiDraw.Node(s, inRow, UiTokens.S4, cy, headW, UiTokens.S6, AuthorCommand, index, head, false, list, index) : -1;
             cy += UiTokens.S6;
