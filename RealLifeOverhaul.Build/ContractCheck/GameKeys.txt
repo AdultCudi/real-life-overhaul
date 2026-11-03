@@ -566,6 +566,7 @@ common_apply_changes
 common_available_for_rent
 common_back
 common_balance
+common_blueprints
 common_building_type
 common_business
 common_business_name
@@ -642,6 +643,7 @@ common_unknown
 common_vehicle
 common_wednesday
 common_weekly_income
+common_wishlist_now
 common_years_amount
 common_yes
 contactcategoryname_business
@@ -880,7 +882,11 @@ marketinsider_import_price_index
 marketinsider_lowest_market_price
 marketinsider_providers
 menu_continue
+menu_exit_to_desktop
+menu_main_menu
+menu_options
 menu_save
+menu_save_and_exit_to_desktop
 myemployees_age
 myemployees_assignbusiness
 myemployees_called_in_sick

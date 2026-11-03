@@ -164,6 +164,21 @@ ICONS = [
     ("ListChecks", "list-checks", "duotone", "aa71967b96fc44f2e40fabf3b297e333925c994cc22a2da2177980b7eea5a55e"),
     ("ClipboardText", "clipboard-text", "duotone", "d1e13568193ac0b89bef7b92cf351d9253f850480ccc1a52faf9061114bc8aac"),
     ("Ring", "circle", "bold", "98864523b27ed74ae7792549a77adfe7ed459238385bbb50fe77c9f92c16bb7f"),
+    ("FloppyDisk", "floppy-disk", "duotone", "f71f3cd35caa70eb63a6e12fb50b0ac33051f2889cc010f7423ee8342a0d36a4"),
+    ("Power", "power", "duotone", "663fcfcebf142cc92bf7e0d89bbb877349431dfa8761cbadbe12708d7d0c5406"),
+    ("SignOut", "sign-out", "duotone", "4a44a628329ed8d4e17167610e27f289f1e068b27db1a5e8284415b0c245a6cf"),
+    ("Pencil", "pencil-simple", "duotone", "03fa15e242468e14db0f279ddfc308bbb5c195af5b306680d37c4e26a86bed9a"),
+    ("Layout", "layout", "duotone", "f8d0876ac047847e913ad4de06f2c44a88bdc7b583538808757b47857f87af62"),
+    ("Monitor", "monitor", "duotone", "93d85c4c8cc8014c2a83ff4c0ac176166c99f12b5948d22807aacfd3925c6088"),
+    ("SpeakerHigh", "speaker-high", "duotone", "df9b42e5af71a3f87a7588397ba9ad73f70133cbc1352e3f916ac8c2f380207b"),
+    ("Keyboard", "keyboard", "duotone", "4484955d19ca1e9054e2b9faf9085c34dd8292d18dd01090c6873205d0817b1b"),
+    ("Sliders", "sliders-horizontal", "duotone", "76260b62780cba20278d8c45eb9107801090414b0fbb8a6b67c97860664d7237"),
+    ("Cube", "cube", "duotone", "5a4833e706e0d7431e607b930ce22af06fcb8ee29ff05da50cb12701a8e64e5b"),
+    ("Lock", "lock", "duotone", "08412a11cc0ebb4d842904f2930ebdf66d12439e95bfe6c5a7174505c0280149"),
+    ("Reset", "arrow-counter-clockwise", "duotone", "7f8253410467897776eff66017822f3b9b44f15a317d9d19b9a0ba07e277118e"),
+    ("Upload", "upload-simple", "duotone", "f95c3c5150c3c15e27828fd1600cc8b00a60c236b7c911da89941da4bfdb336e"),
+    ("Books", "books", "duotone", "7898d95403db718d42cd3e4d8b9785a2c295076d500d4adbc174bd817167a303"),
+    ("Download", "download-simple", "duotone", "68ffe027868f3e33b2788d5cc246dbcb47a86f210b39a2866ab7e2d1cddee9a4"),
 ]
 
 # Phosphor's fill weight of every duotone icon, its second variant: the chunky solid glyph a toolbar's tile asks for
@@ -273,6 +288,21 @@ FILLS = {
     "Train": "559c7f2fbed4fe9cb1ccb38900b6a2f24f9c2d0ce3c77347dddeeca4c7914a08",
     "ListChecks": "eefe95747f02e0aa9f183c75aac7ffdf87f69317cd775c383a606344cc7c78ae",
     "ClipboardText": "f455443ef50d7e60aecd2b25411be752b444943b91afdb7775900473d603a468",
+    "FloppyDisk": "5cdcf21a2857922007b846b5ad02490374cf1a9bdf724d8be1fa9240ad3e246c",
+    "Power": "42ad4a90770ba84dba25b95b8295d9f287f69115037a5063c04fcfe4e3a3256e",
+    "SignOut": "2f2f2255d122c68badef3828451ac608c35b0a4b50a70242ca1a18029d44dd8f",
+    "Pencil": "b78e7b71cb19d43e235983a883d50ab78cf9227f9864106e1aa4f366ee317aa8",
+    "Layout": "56fcdfd673bc6fa51940957e9ea9b5609858193402bcf5ff0b02a278bbed540f",
+    "Monitor": "0261a47b5f08e4c58f657ddb0596b64e59cc397f93085aecd2e05d8220249c20",
+    "SpeakerHigh": "c266c407915382db3866570f816934b804c1b84bd47d971fad0e95ac5107dd6b",
+    "Keyboard": "43d265edc6585ecc2a8a28edd15abe550ad5aa9ffe916c439e8cd76d6ea7df54",
+    "Sliders": "59fdf39771e7939dd315912702f3c8241a9dfeb1f5b6512a074525884765a76c",
+    "Cube": "9c681bfc8547fbb142d5df4d69ad923af5c422fea1013e6d69c32cef9ced3de3",
+    "Lock": "7c3bb342922c2eb313d14a196d50dd897f7048e336da9382c418242e59c4cf79",
+    "Reset": "e3d0f0459b6cbb52c485987d8612d77095202cf96c0b5e39b203686b004d864f",
+    "Upload": "3d1c38449725c61048e136e7ab491b020fbf92bffc5581c3abf59b363323d8af",
+    "Books": "308aa85d7c0f3aedebc77ac3a3dff0ac47d5957a4cd80f5a134304300ce8a138",
+    "Download": "dee151da85ad71e90a882a556481e2069a154b8892063c9f91b621a0e06ad479",
 }
 
 # The shapes an icon may be drawn with, and the attributes each may carry. Anything else stops the run, so an icon is never

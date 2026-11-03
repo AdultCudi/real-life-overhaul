@@ -1101,6 +1101,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_ui_test_cargo", () => Ui.UiDirector.Instance?.TestCargo())
                 .AddButton("reallife_ui_test_wardrobe", () => Ui.UiDirector.Instance?.TestWardrobe())
                 .AddButton("reallife_ui_test_buy_switch", () => Ui.UiDirector.Instance?.TestBuySwitch())
+                .AddButton("reallife_ui_test_pause_menu", () => Ui.UiDirector.Instance?.TestPauseMenu())
+                .AddButton("reallife_ui_test_pause_switch", () => Ui.UiDirector.Instance?.TestPauseSwitch())
                 .AddButton("reallife_ui_test_persona", () => Ui.UiDirector.Instance?.TestPersona())
                 .AddButton("reallife_ui_test_rivals", () => Ui.UiDirector.Instance?.TestRivals())
                 .AddButton("reallife_ui_test_market", () => Ui.UiDirector.Instance?.TestMarket())

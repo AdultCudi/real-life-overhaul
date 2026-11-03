@@ -147,6 +147,21 @@ namespace RealLifeOverhaul.Ui
         ListChecks,    // the objectives
         ClipboardText, // the game's to-dos
         Ring,          // an open ring: a line still to do, beside the done tick
+        FloppyDisk,    // saving the game
+        Power,         // quitting the game
+        SignOut,       // saving and leaving
+        Pencil,        // a field that is typed in
+        Layout,        // a blueprint: a business's layout
+        Monitor,       // the game's graphics options
+        SpeakerHigh,   // the game's audio options
+        Keyboard,      // the game's controls
+        Sliders,       // the game's own settings
+        Cube,          // the game's mods
+        Lock,          // a thing another holds (a session's lock)
+        Reset,         // back to the defaults
+        Upload,        // up to the Workshop
+        Books,         // a library
+        Download,      // into the library
         Count
     }
 
@@ -161,6 +176,10 @@ namespace RealLifeOverhaul.Ui
         {
             switch (icon)
             {
+                case UiIcon.Power:
+                    return UiRole.Danger;   // quitting: the one that loses unsaved play
+                case UiIcon.FloppyDisk: case UiIcon.Layout:
+                    return UiRole.Accent;   // saving and the blueprints, the pause menu's own cyan
                 case UiIcon.SkipForward:
                     return UiRole.Accent;   // with the clock's other controls
                 case UiIcon.Train:
