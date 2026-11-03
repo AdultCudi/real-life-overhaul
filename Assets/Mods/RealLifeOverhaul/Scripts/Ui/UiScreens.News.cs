@@ -94,7 +94,20 @@ namespace RealLifeOverhaul.Ui
                 "reallife_news_prices_shops", "reallife_news_prices_today", "reallife_news_sectors", "reallife_news_stand_chip",
                 "reallife_news_stand_lead", "reallife_news_stand_to_read", "reallife_news_stand_week", "reallife_news_the_economy",
                 "reallife_ledger_tab_front", "reallife_ledger_tab_markets", "reallife_ledger_tab_prices", "reallife_ledger_risers",
-                "reallife_ledger_fallers", "reallife_news_traded"
+                "reallife_ledger_fallers", "reallife_news_traded",
+                "reallife_pop_fig_unemployment", "reallife_pop_fig_rent", "reallife_pop_fig_jobs", "reallife_pop_fig_moved_in",
+                "reallife_pop_fig_moved_out", "reallife_ledger_online_box_net", "reallife_ledger_online_box_today",
+                "reallife_ledger_online_state_renews", "reallife_ledger_online_tagline_ledger",
+                "reallife_ledger_online_tagline_exchange", "reallife_ledger_online_tagline_street",
+                "reallife_ledger_online_tagline_review", "reallife_ledger_online_about_ledger",
+                "reallife_ledger_online_about_exchange", "reallife_ledger_online_about_street",
+                "reallife_ledger_online_about_review", "reallife_ledger_online_about_pass", "reallife_ledger_online_today_in",
+                "reallife_ledger_dateline_number", "reallife_ledger_dateline_price", "reallife_ledger_sec_economy",
+                "reallife_ledger_sec_city", "reallife_ledger_sec_business", "reallife_ledger_sec_around",
+                "reallife_ledger_sec_weather", "reallife_ledger_sec_markets", "reallife_ledger_quiet_head",
+                "reallife_ledger_quiet_body", "reallife_ledger_prices_legend", "reallife_pd_obit_kicker",
+                "reallife_econapp_day", "reallife_econapp_verdict_line_slowing", "reallife_econapp_tile_inflation",
+                "reallife_econapp_tile_rate", "reallife_econapp_tile_unemployment", "reallife_ledger_week"
             };
         }
     }

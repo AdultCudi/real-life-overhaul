@@ -85,7 +85,7 @@ internal static partial class UiSamples
         {
             m.Figures = new UiFigureModel[0];
             m.Table = NewsJobs(t);
-            m.TableTitle = t("reallife_news_jobs_table", "The labour market");
+            m.TableTitle = null;
         }
         else
         {
@@ -96,10 +96,10 @@ internal static partial class UiSamples
 
     private static void NewsPricesPage(UiWords t, NewsModel m)
     {
-        m.Chip = NewsFill(t("reallife_news_chip_led", "{good} led"), "good", t("reallife_macro_kind_food", "Food"));
+        m.Chip = NewsFill(t("reallife_news_chip_led", "{good} led"), "good", "Food");
         m.ChipTone = UiRole.WarnText;
         m.Lead = NewsFill(t("reallife_news_basket", "Shopping costs {change} more than a month ago."), "change", "4.8%");
-        m.Body = NewsFill(t("reallife_news_led", "Led by {good}."), "good", t("reallife_macro_kind_food", "Food"));
+        m.Body = NewsFill(t("reallife_news_led", "Led by {good}."), "good", "Food");
         m.Figures = new[]
         {
             new UiFigureModel
@@ -252,8 +252,7 @@ internal static partial class UiSamples
             {
                 new UiSeries { Label = "Fuel", Values = fuel, Tint = UiRole.Danger },
                 new UiSeries { Label = "Food", Values = food, Tint = UiRole.Warn },
-                new UiSeries { Label = "Rent", Values = rent, Tint = UiRole.Chart3 },
-                new UiSeries { Label = "Clothes", Values = tech, Tint = UiRole.Accent }
+                new UiSeries { Label = "Rent", Values = rent, Tint = UiRole.Accent }
             },
             Format = x => x.ToString("0")
         };

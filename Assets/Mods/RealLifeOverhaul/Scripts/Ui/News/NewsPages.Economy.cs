@@ -313,7 +313,8 @@ namespace RealLifeOverhaul.Ui
         // What you hold in the market, beside what it is worth: a few named lines in a card, each with its initials.
         private static void HoldingsCard(UiScene s, UiAt at, NewsModel m, float x, float y, float w, float h, IUiKeys keys)
         {
-            UiAt on = Card(s, at, x, y, w, h, m.MovesTitle, null, out float cy);
+            float linkW = string.IsNullOrEmpty(m.MovesLink) ? 0f : UiDraw.Snap(UiTextRules.Width(m.MovesLink, UiStyle.BodyStrong) + UiTokens.IconSmall + UiTokens.S4);
+            UiAt on = Card(s, at, x, y, w, h, m.MovesTitle, null, out float cy, linkW + UiTokens.S3);
             int n = Math.Min(3, m.Moves.Length);
             float slot = UiDraw.SnapDown((w - UiTokens.S4 * 2f) / n);
             for (int i = 0; i < n; i++)
@@ -328,8 +329,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (!string.IsNullOrEmpty(m.MovesLink))
             {
-                float lw = UiDraw.Snap(UiTextRules.Width(m.MovesLink, UiStyle.BodyStrong) + UiTokens.IconSmall + UiTokens.S4);
-                UiDraw.LinkRow(s, on, x + w - UiTokens.S4 - lw, y + UiTokens.S3, lw, UiTokens.PairRow, m.MovesLink, NewsCommands.Link, m.MovesTarget, false);
+                UiDraw.LinkRow(s, on, x + w - UiTokens.S4 - linkW, y + UiTokens.S3, linkW, UiTokens.PairRow, m.MovesLink, NewsCommands.Link, m.MovesTarget, false);
             }
         }
     }

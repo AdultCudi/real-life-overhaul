@@ -223,7 +223,11 @@ namespace RealLifeOverhaul.Ui
             model.Table = TableFor(model.Shape, book);
             model.Table2 = model.Shape == NewsShape.Overview ? DistrictTable() : null;
             model.TableTitle = OutlookText.T(model.Shape == NewsShape.Overview ? "reallife_news_prices_today" : model.Shape == NewsShape.Districts ? "reallife_news_districts_pull"
-                : "reallife_news_jobs_table");
+                : "reallife_news_nav_jobs");
+            if (model.Shape == NewsShape.Jobs)
+            {
+                model.TableTitle = null;
+            }
             model.Table2Title = OutlookText.T("reallife_news_districts_pull");
             if (model.Shape == NewsShape.Prices)
             {

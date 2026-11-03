@@ -112,7 +112,7 @@ namespace RealLifeOverhaul.Ui
                     row.Chip = OutlookText.T("reallife_news_stand_chip");
                     row.Renews = LedgerText.Fill("reallife_ledger_online_state_ends", "day", x.PaidUntil.ToString(Inv));
                     row.Action = LedgerText.T("reallife_ledger_online_resume");
-                    row.ActionKind = UiButtonKind.Primary;
+                    row.ActionKind = UiButtonKind.Secondary;
                 }
                 else if (inPass)
                 {
@@ -121,7 +121,7 @@ namespace RealLifeOverhaul.Ui
                 else
                 {
                     row.Action = OutlookText.T("reallife_news_stand_sub");
-                    row.ActionKind = UiButtonKind.Primary;
+                    row.ActionKind = UiButtonKind.Secondary;   // the Pass alone is the page's main action
                 }
                 titles[i] = row;
             }
@@ -152,7 +152,7 @@ namespace RealLifeOverhaul.Ui
                     : LedgerText.Fill("reallife_ledger_online_state_renews", "day", (pass.PaidUntil + 1).ToString(Inv));
             }
             row.Action = taken ? OutlookText.T("reallife_news_stand_stop") : ending ? LedgerText.T("reallife_ledger_online_resume") : OutlookText.T("reallife_news_stand_sub");
-            row.ActionKind = taken ? UiButtonKind.Secondary : UiButtonKind.Primary;
+            row.ActionKind = taken || ending ? UiButtonKind.Secondary : UiButtonKind.Primary;
             return row;
         }
 

@@ -25,7 +25,7 @@ namespace RealLifeOverhaul.Ui
         /// A card on the page: a band with its label over its room, a note at its right. Returns the card to draw in and
         /// the y where its content begins.
         /// </summary>
-        private static UiAt Card(UiScene s, UiAt at, float x, float y, float w, float h, string title, string note, out float contentY)
+        private static UiAt Card(UiScene s, UiAt at, float x, float y, float w, float h, string title, string note, out float contentY, float reserve = 0f)
         {
             int box = UiDraw.Box(s, at, x, y, w, h, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
             UiAt on = at.In(box);
@@ -35,7 +35,7 @@ namespace RealLifeOverhaul.Ui
                 return on;
             }
             float nw = string.IsNullOrEmpty(note) ? 0f : UiDraw.Snap(UiTextRules.Width(note, UiStyle.Small) + UiTokens.S1);
-            UiDraw.TextMiddle(s, on, x + UiTokens.S4, y + UiTokens.S3, UiTokens.PairRow, w - UiTokens.S4 * 2f - (nw > 0f ? nw + UiTokens.S3 : 0f),
+            UiDraw.TextMiddle(s, on, x + UiTokens.S4, y + UiTokens.S3, UiTokens.PairRow, w - UiTokens.S4 * 2f - (nw > 0f ? nw + UiTokens.S3 : 0f) - reserve,
                 UiStyle.SectionHeader, UiRole.Text, title, UiFlags.Label | UiFlags.Truncate);
             if (nw > 0f)
             {

@@ -75,7 +75,7 @@ internal static partial class Program
             UiEdition.StoryCommand, UiEdition.LeadCommand, UiReader.AnchorCommand, UiReader.RelatedCommand, UiReader.ContentsCommand,
             UiDecision.ChoiceCommand, UiDecision.ButtonCommand, UiInfoView.ViewCommand,
             UiInfoPanel.TabCommand, UiInfoPanel.LinkCommand, UiInfoPanel.FooterCommand,
-            NewsCommands.Link, NewsCommands.Rent, NewsCommands.Busy, NewsCommands.Home,
+            NewsCommands.Link, NewsCommands.Rent, NewsCommands.Busy, NewsCommands.Home, NewsCommands.Title,
             NewsCommands.District + UiDataTable.Row
         };
         for (int i = 0; i <= UiDataTable.MassAnswer; i++)
@@ -166,7 +166,7 @@ internal static partial class Program
             named += axis[i].Length > 0 ? 1 : 0;
         }
         Check(named == 3, "news: a day axis names every fifth day, not every day");
-        Check(UiTokens.PhaseWash <= 0.15f, "news: the cycle's phases are quiet tints");
+        Check(UiTokens.PhaseTint <= 0.15f, "news: the cycle's phases are quiet tints");
     }
 
     private static bool HasPlaceholder(NewsModel m)

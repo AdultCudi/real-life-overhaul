@@ -293,7 +293,7 @@ namespace RealLifeOverhaul.Ui
 
         private static float Y(float v, float lo, float hi, float top, float h) => top + h - (v - lo) / Math.Max(1e-6f, hi - lo) * h;
 
-        // One flat, quiet tint for each phase behind the lines (UiTokens.PhaseWash), and its name small at the top of that tint.
+        // One flat, quiet tint for each phase behind the lines (UiTokens.PhaseTint), and its name small at the top of that tint.
         private static void Phases(UiScene s, UiAt at, UiChartModel m, float px, float top, float pw, float ph)
         {
             if (m.Kind != UiChartKind.Line || m.PlotBands == null)
@@ -314,7 +314,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 var wash = new UiItem
                 {
-                    Kind = UiKind.Box, Flags = UiFlags.Decor, Fill = band.Tint, X = x0, Y = top, W = bw, H = ph, Alpha = UiTokens.PhaseWash,
+                    Kind = UiKind.Box, Flags = UiFlags.Decor, Fill = band.Tint, X = x0, Y = top, W = bw, H = ph, Alpha = UiTokens.PhaseTint,
                     Clip = at.Clip, Node = -1, Layer = at.Layer, Order = -1, Parent = at.Parent
                 };
                 s.Add(ref wash);

@@ -209,8 +209,8 @@ namespace RealLifeOverhaul.Ui
             {
                 return null;
             }
-            var chosen = new List<UiSeries>(4);
-            for (int pick = 0; pick < 4 && all.Count > 0; pick++)
+            var chosen = new List<UiSeries>(3);
+            for (int pick = 0; pick < 3 && all.Count > 0; pick++)
             {
                 int top = 0;
                 for (int i = 1; i < all.Count; i++)

@@ -79,13 +79,13 @@ internal static partial class UiSamples
             {
                 Mark = "SS", Tint = UiRole.Chart3, Name = t("reallife_ledger_online_name_street", "The Street Sheet"), Tagline = t("reallife_ledger_online_tagline_street", "What happened on the streets"),
                 Covers = t("reallife_ledger_online_about_street", "Crime, accidents, the courts and City Hall"), LeadLabel = lead, Lead = "Warehouse fire in Hell's Kitchen put out in an hour",
-                EditionLabel = edition, Edition = read, Price = "$3", PerWeek = week, Action = sub, ActionKind = UiButtonKind.Primary
+                EditionLabel = edition, Edition = read, Price = "$3", PerWeek = week, Action = sub, ActionKind = UiButtonKind.Secondary
             },
             new NewsTitle
             {
                 Mark = "WR", Tint = UiRole.Chart4, Name = t("reallife_ledger_online_name_review", "The Weekend Review"), Tagline = t("reallife_ledger_online_tagline_review", "Where to go"),
                 Covers = t("reallife_ledger_online_about_review", "What's on, the city after dark and its people"), LeadLabel = lead, Lead = "Five places to hear jazz in Murray Hill this weekend",
-                EditionLabel = edition, Edition = read, Price = "$3", PerWeek = week, Action = sub, ActionKind = UiButtonKind.Primary
+                EditionLabel = edition, Edition = read, Price = "$3", PerWeek = week, Action = sub, ActionKind = UiButtonKind.Secondary
             },
             new NewsTitle
             {

@@ -410,7 +410,8 @@ namespace RealLifeOverhaul.Ui
             int box = UiDraw.Box(s, at, x, y, w, BandHeight + FootFigure, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
             UiAt inside = at.In(box);
             UiDraw.Icon(s, inside, x + UiTokens.S4, y + (BandHeight - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.ChartLineUp, UiRole.None, UiFlags.Middle);
-            UiDraw.TextMiddle(s, inside, x + UiTokens.S4 + UiTokens.IconSmall + UiTokens.S2, y, BandHeight, w / 2f, UiStyle.SectionHeader, UiRole.Text, m.BandTitle,
+            float titleX = x + UiTokens.S4 + UiTokens.IconSmall + UiTokens.S2;
+            UiDraw.TextMiddle(s, inside, titleX, y, BandHeight, x + w / 2f - titleX, UiStyle.SectionHeader, UiRole.Text, m.BandTitle,
                 UiFlags.Label | UiFlags.Truncate);
             if (!string.IsNullOrEmpty(m.BandNote))
             {
@@ -492,7 +493,10 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Icon(s, at, x + UiTokens.S2, ry + (UiTokens.PairRow - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, m.Notices[i].Icon, UiRole.None, UiFlags.Middle);
                 float vw = string.IsNullOrEmpty(m.Notices[i].Value) ? 0f : UiDraw.Snap(UiTextRules.Width(m.Notices[i].Value, UiStyle.BodyStrong) + UiTokens.S1);
                 float tx = x + UiTokens.S2 + UiTokens.IconSmall + UiTokens.S2;
-                UiDraw.TextMiddle(s, at, tx, ry, UiTokens.PairRow, x + w - UiTokens.S2 - tx - (vw > 0f ? vw + UiTokens.S3 : 0f), UiStyle.Body, UiRole.Text2, m.Notices[i].Text, UiFlags.Truncate);
+                UiIcon mark = m.Notices[i].Icon;
+                UiRole ink = mark == UiIcon.TrendUp ? UiRole.OkText : mark == UiIcon.TrendDown ? UiRole.DangerText : UiRole.Text2;   // a rise or a fall in its colour
+                float room = x + w - UiTokens.S2 - tx - (vw > 0f ? vw + UiTokens.S3 : 0f);
+                UiDraw.TextMiddle(s, at, tx, ry, UiTokens.PairRow, room, UiStyle.Body, ink, m.Notices[i].Text, UiFlags.Truncate);
                 if (vw > 0f)
                 {
                     UiDraw.TextMiddle(s, at, x + w - UiTokens.S2 - vw, ry, UiTokens.PairRow, vw, UiStyle.BodyStrong, UiRole.Text, m.Notices[i].Value, UiFlags.Right);
