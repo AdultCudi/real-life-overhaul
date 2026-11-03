@@ -91,6 +91,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--hud-start")
+        {
+            HudStart();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--scroll-hints")
         {
             ScrollHints();
@@ -690,6 +696,7 @@ internal static partial class Program
         StockerFixes();      // the shelf to stock shown as soon as a box is carried in, its marker cleared on the way out (StockerFixChecks.cs)
         TypingKeys();        // no shortcut fires while a text field has the keyboard: every key reader asks, every field stands on the game's layer (TypingChecks.cs)
         ScrollHints();       // the wheel over a list's rows reaches the list, the phone folds with the HUD on, the key chips keep left of the phone (ScrollHintsChecks.cs)
+        HudStart();          // the fonts read on past the loading screen's hold, every wait of the HUD's start named in Player.log (HudStartChecks.cs)
         Work();
         Desks();
         SetOff();       // a class's desk, the work desk and the computer at home: set off as the game's activities, stood up whatever fails, the keys (SetOffChecks.cs)
