@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using BigAmbitions.DayNightCycle;
 using Controllers;
 using Entities;
 using RealLifeOverhaul.Careers;
@@ -18,7 +19,10 @@ namespace RealLifeOverhaul.Tech
     /// (Jobs/ShiftSkip: Start, the skip-time button, fast forward, Stop), they sit at it as the game seats its own staff
     /// (WorkActivity), and every minute worked is kept on the firm by the day. The next morning's crew counts those minutes as
     /// a professional of the player's role, level and skills would give them (<see cref="OwnShare"/>), with no pay. Energy
-    /// goes at the desk's own rate; Careers is told the hours (learning, a long week's burnout, a restraint clause). Cost:
+    /// goes at the desk's own rate; Careers is told the hours (learning, a long week's burnout, a restraint clause). The length
+    /// of a stint is the player's to pick on the panel's slider before it starts (<see cref="OwnDeskRules.LeastHours"/> to
+    /// <see cref="OwnDeskRules.MostHours"/> hours, eight to begin with): every figure above follows the minutes worked, so
+    /// nothing else assumes a day. The firms' own staff and the rivals work the professions' day and are not touched. Cost:
     /// nothing per frame; once a second inside a firm a look at the desks found on entering (the building's items read once a
     /// visit, and again at most every ten seconds while none is free).
     /// </summary>
@@ -31,6 +35,7 @@ namespace RealLifeOverhaul.Tech
         private string _deskInside;                  // the firm (its place key) the player stands in, once a second; null outside
         private float _deskLookAt;
         private OwnStint _stint;                     // the player's stint at a desk, from the panel's offer until it is over
+        private int _ownHours = OwnDeskRules.DefaultHours;   // the hours last chosen on the panel's slider; kept in the save (OwnDeskRules.HoursKey), the default for a save without them
         private EmployeeStationController _sharedDesk;   // the free desk offered through the desk sessions' panel, theirs to click (TechBridges.SessionDesk); null otherwise
 
         // Once a second while the firms run: the firm the player stands in, a free desk of it to click, a stint watched.
@@ -181,7 +186,7 @@ namespace RealLifeOverhaul.Tech
             {
                 return;
             }
-            var stint = new OwnStint(this, desk, firm.File.Place, firm.File.Name, standing);
+            var stint = new OwnStint(this, desk, firm.File.Place, firm.File.Name, standing, _ownHours);
             stint.Skip = ShiftSkip.Offer(this, stint);
             _stint = stint.Skip != null ? stint : null;
         }
@@ -229,7 +234,7 @@ namespace RealLifeOverhaul.Tech
             }
             FirmsGame.Tiring(stint.Desk, true);
             Logger?.Info("Tech: the player works at a desk of '" + stint.Name + "' from hour " + Save.Hour + " of day " + Save.Day + " as "
-                         + TalentCatalogue.Role(stint.Standing.Role).Key + " (level " + stint.Standing.Level + ").");
+                         + TalentCatalogue.Role(stint.Standing.Role).Key + " (level " + stint.Standing.Level + ") for " + stint.Hours + " hour(s).");
         }
 
         // The clock moved: the minutes since the last count go on the firm, under today.
@@ -406,30 +411,30 @@ namespace RealLifeOverhaul.Tech
                 Notifications.Show(NotificationType.Warning, why, Data("professions", professions), 10f);
                 return;
             }
-            int day = Save.Day, before = OwnDeskRules.MinutesOn(firm.File, day);
-            OwnDeskRules.Credit(firm.File, day, OwnDeskRules.StintMinutes);
+            int day = Save.Day, before = OwnDeskRules.MinutesOn(firm.File, day), stint = OwnDeskRules.MinutesFor(_ownHours);   // the stint as the slider last stood
+            OwnDeskRules.Credit(firm.File, day, stint);
             int after = OwnDeskRules.MinutesOn(firm.File, day);
             var own = new Crew();
             int seniors = 0;
             long faults = 0;
-            int points = OwnDeskRules.Join(ref own, s, OwnDeskRules.StintMinutes, day, ref seniors, ref faults);
+            int points = OwnDeskRules.Join(ref own, s, stint, day, ref seniors, ref faults);
             int given = own.Engineering + own.Testing + own.Design + own.Product + own.Selling;
-            bool ok = after == Math.Min(OwnDeskRules.DayMost, before + OwnDeskRules.StintMinutes) && points == OwnDeskRules.Points(s, OwnDeskRules.StintMinutes, day)
+            bool ok = after == Math.Min(OwnDeskRules.DayMost, before + stint) && points == OwnDeskRules.Points(s, stint, day)
                       && (TalentCatalogue.Role(s.Role).Family == Family.Support ? own.Support == 1 : given == points);
-            Logger?.Info("Tech check (own desk test): a full stint at '" + firm.File.Name + "' counted under day " + day + " (" + before + " minute(s) before, " + after + " after) as "
+            Logger?.Info("Tech check (own desk test): a stint of " + stint / 60 + " hour(s) at '" + firm.File.Name + "' counted under day " + day + " (" + before + " minute(s) before, " + after + " after) as "
                          + TalentCatalogue.Role(s.Role).Key + " level " + s.Level + ": " + points + " point(s) for tomorrow's crew, " + given + " in its buckets: " + (ok ? "PASS" : "FAIL"));
             if (!ok)
             {
                 Notifications.ShowError("reallife_tech_test_own_fail");
                 return;
             }
-            TellTech(NotificationType.Success, "reallife_tech_own_note_done", Data("firm", firm.File.Name, "time", TechText.Minutes(OwnDeskRules.StintMinutes),
+            TellTech(NotificationType.Success, "reallife_tech_own_note_done", Data("firm", firm.File.Name, "time", TechText.Minutes(stint),
                 "points", points.ToString(CultureInfo.InvariantCulture)), TabFirms, TechApp.FirmRow + firm.File.Place);
             ChangedTech();
         }
 
         /// <summary>A stint at a desk as the game's work panel runs it (Jobs/ShiftSkip): its words, and its steps handed to the director.</summary>
-        private sealed class OwnStint : ISkippableShift
+        private sealed class OwnStint : ISlidingShift
         {
             private readonly TechDirector _director;
             public readonly EmployeeStationController Desk;
@@ -438,9 +443,11 @@ namespace RealLifeOverhaul.Tech
             public ShiftSkip Skip;
             public bool Begun;       // sat down at the desk, the clock running
             public int Credited;     // minutes of it already put on the firm
+            public int Hours;        // the hours it runs: the slider's, as it stood when the panel opened until the player moves it
 
-            public OwnStint(TechDirector director, EmployeeStationController desk, string place, string name, OwnerStanding standing)
+            public OwnStint(TechDirector director, EmployeeStationController desk, string place, string name, OwnerStanding standing, int hours)
             {
+                Hours = OwnDeskRules.ClampHours(hours);
                 _director = director;
                 Desk = desk;
                 Place = place;
@@ -450,7 +457,32 @@ namespace RealLifeOverhaul.Tech
 
             public string SkipTitle => TechText.T("reallife_tech_own_title", "firm", Name);
 
-            public int SkipMinutes => OwnDeskRules.StintMinutes;
+            public int SkipMinutes => OwnDeskRules.MinutesFor(Hours);
+
+            public int SlideLeast => OwnDeskRules.LeastHours;
+
+            public int SlideMost => OwnDeskRules.MostHours;
+
+            public int SlideNow => Hours;
+
+            // The slider moved: the hours kept for the next stint too (written with the save), the panel's length follows.
+            public void Slide(int value)
+            {
+                Hours = OwnDeskRules.ClampHours(value);
+                _director._ownHours = Hours;
+            }
+
+            // The hours chosen, the time they end at if the stint began now, and the work points they give the next morning.
+            public (string key, object arguments) SlideInfo()
+            {
+                int minutes = SkipMinutes, day = SaveGameManager.Current != null ? SaveGameManager.Current.Day : 0;
+                return ("reallife_tech_own_slider", new
+                {
+                    hours = Hours,
+                    time = TimeHelper.Now().AddMinutes(minutes).GetFormattedTime(),
+                    points = OwnDeskRules.Points(Standing, minutes, day).ToString(CultureInfo.InvariantCulture)
+                });
+            }
 
             public LabelInfo[] SkipLabels()
             {

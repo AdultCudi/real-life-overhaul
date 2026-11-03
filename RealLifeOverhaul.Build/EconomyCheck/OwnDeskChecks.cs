@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using RealLifeOverhaul.Careers;
 using RealLifeOverhaul.Tech;
 
@@ -17,6 +18,7 @@ internal static partial class Program
         OwnDeskCrew();
         OwnDeskProfessions();
         OwnDeskSave();
+        OwnDeskHours();
         OwnDeskSources();
         OwnDeskTexts();
     }
@@ -229,6 +231,98 @@ internal static partial class Program
         Firm o = old.Firms.Count == 1 ? old.Firms[0] : null;
         Check(o != null && o.OwnDay == -1 && o.OwnMinutes == 0 && o.OwnPrevDay == -1 && o.OwnPrevMinutes == 0 && o.Days[2] == 3 && OwnDeskRules.MinutesOn(o, 19) == 0,
             "own desk save: a firm saved before has no minutes of the owner's, and its takings as they were");
+    }
+
+    // The hours of a stint are the player's to pick on the work panel's slider (ShiftSkip's ISlidingShift): one to twelve, eight to begin
+    // with, kept in the save under reallife:own_desk_hours. Every figure of a stint follows the minutes worked, so none assumes a day.
+    private static void OwnDeskHours()
+    {
+        Check(OwnDeskRules.DefaultHours == 8 && OwnDeskRules.DefaultHours == TalentCatalogue.DayHours && OwnDeskRules.MinutesFor(OwnDeskRules.DefaultHours) == OwnDeskRules.StintMinutes
+              && OwnDeskRules.StintMinutes == 480 && OwnDeskRules.HoursFrom(OwnDeskRules.HoursLine(OwnDeskRules.DefaultHours)) == 8,
+            "own desk hours: eight is the default, a working day, as the stint was before the slider");
+        Check(OwnDeskRules.LeastHours == 1 && OwnDeskRules.MostHours == 12 && OwnDeskRules.MostHours * 60 <= OwnDeskRules.DayMost, "own desk hours: the slider runs from 1 to 12 hours, and a day holds them");
+        bool follows = true;
+        for (int h = OwnDeskRules.LeastHours; h <= OwnDeskRules.MostHours; h++)
+        {
+            follows &= OwnDeskRules.MinutesFor(h) == h * 60 && OwnDeskRules.ClampHours(h) == h && OwnDeskRules.HoursFrom(OwnDeskRules.HoursLine(h)) == h;
+        }
+        Check(follows, "own desk hours: the stint's length follows the choice, an hour for an hour, and each choice survives the save's line");
+        Check(OwnDeskRules.HoursFrom(null) == 8 && OwnDeskRules.HoursFrom(string.Empty) == 8 && OwnDeskRules.HoursFrom("v=1") == 8 && OwnDeskRules.HoursFrom("6.5") == 8,
+            "own desk hours: a save without the line, or with one no one can read, gets 8");
+        Check(OwnDeskRules.ClampHours(0) == 1 && OwnDeskRules.ClampHours(-7) == 1 && OwnDeskRules.ClampHours(13) == 12 && OwnDeskRules.ClampHours(int.MaxValue) == 12 && OwnDeskRules.ClampHours(int.MinValue) == 1
+              && OwnDeskRules.HoursFrom("0") == 1 && OwnDeskRules.HoursFrom("-3") == 1 && OwnDeskRules.HoursFrom("99") == 12 && OwnDeskRules.HoursLine(40) == "12"
+              && OwnDeskRules.MinutesFor(0) == 60 && OwnDeskRules.MinutesFor(99) == 720, "own desk hours: a value outside the range is held to it, in the save's line and in the stint");
+
+        // The work points are a professional's for the same minutes, so they scale with the hours; so do the begun hours a crew counts.
+        OwnerStanding mid = Owner(TalentCatalogue.SoftwareEngineer, TalentCatalogue.Mid, 50, 50, 50);
+        bool exact = true, rises = true;
+        int before = 0;
+        for (int h = OwnDeskRules.LeastHours; h <= OwnDeskRules.MostHours; h++)
+        {
+            int points = OwnDeskRules.Points(mid, OwnDeskRules.MinutesFor(h), 3);
+            int staff = TalentRules.Output(OwnDeskRules.AsProfile(mid), 50, 3) * FirmsCatalogue.PointsPerDay * h / TalentCatalogue.DayHours / 1000;
+            exact &= points == staff;
+            rises &= points > before;
+            before = points;
+            var crew = new Crew();
+            int seniors = 0;
+            long faults = 0;
+            exact &= OwnDeskRules.Join(ref crew, mid, OwnDeskRules.MinutesFor(h), 3, ref seniors, ref faults) == points && crew.Engineering == points
+                     && OwnDeskRules.HoursFor(OwnDeskRules.MinutesFor(h), TalentCatalogue.SoftwareEngineer, -1, FirmKind.Software) == h;
+        }
+        Check(exact && rises, "own desk hours: the points of a stint are exactly a professional's for those hours, one hour to twelve, and the crew counts the hours chosen");
+        int four = OwnDeskRules.Points(mid, 240, 3), eight = OwnDeskRules.Points(mid, 480, 3), twelve = OwnDeskRules.Points(mid, 720, 3);
+        Check(eight == FirmsCatalogue.PointsPerDay && four * 2 == eight && twelve * 2 == eight * 3,
+            "own desk hours: half the hours give half the points, and twelve give a day and a half (" + four + ", " + eight + ", " + twelve + ")");
+        Check(OwnDeskRules.Points(mid, OwnDeskRules.MinutesFor(0), 3) == OwnDeskRules.Points(mid, 60, 3) && OwnDeskRules.Points(mid, OwnDeskRules.MinutesFor(50), 3) == twelve,
+            "own desk hours: a choice outside the range gives the points of the nearest end");
+
+        // The sources: the panel's slider, the choice kept and read, and no figure of the stint tied to a day.
+        string desk = ModSource(@"Tech\TechDirector.OwnDesk.cs");
+        string firms = ModSource(@"Tech\TechDirector.Firms.cs");
+        string skip = ModSource(@"Jobs\ShiftSkip.cs");
+        string facts = ModSource(@"Ui\Activity\ActivityFacts.cs");
+        string careers = ModSource(@"Careers\CareersDirector.OwnDesk.cs");
+        Check(desk.Contains("private sealed class OwnStint : ISlidingShift") && desk.Contains("public int SkipMinutes => OwnDeskRules.MinutesFor(Hours);") && desk.Contains("public int SlideLeast => OwnDeskRules.LeastHours;")
+              && desk.Contains("public int SlideMost => OwnDeskRules.MostHours;") && desk.Contains("Hours = OwnDeskRules.ClampHours(value);")
+              && MethodText(desk, "private void OpenStint(FirmPlace firm, EmployeeStationController desk, OwnerStanding standing)").Contains("standing, _ownHours);"),
+            "own desk hours sources: the stint takes its length from the slider, which starts where the player left it");
+        Check(desk.Contains("_director._ownHours = Hours;") && firms.Contains("OwnDeskRules.HoursFrom(save.modData != null && save.modData.TryGetValue(OwnDeskRules.HoursKey, out string hours) ? hours : null)")
+              && firms.Contains("data[OwnDeskRules.HoursKey] = OwnDeskRules.HoursLine(_ownHours);") && OwnDeskRules.HoursKey == "reallife:own_desk_hours",
+            "own desk hours sources: the last choice is kept in the save under reallife:own_desk_hours and read back, a save without it at 8");
+        Check(skip.Contains("public interface ISlidingShift : ISkippableShift") && skip.Contains("return _slide != null && _shift != null && _state == PlayerActivityState.NotStarted && _slide.SlideMost > _slide.SlideLeast;")
+              && skip.Contains("_total = Mathf.Max(1, _shift.SkipMinutes);") && MethodText(skip, "private IEnumerator Begin()").Contains("_total = Mathf.Max(1, _shift.SkipMinutes);")
+              && facts.Contains("a is ShiftSkip skip && skip.Slides && m.HasDuration"),
+            "own desk hours sources: the game's work panel shows the slider before the start only, the clock runs the hours chosen, and the card says when they end");
+        Check(desk.Split(new[] { "OwnDeskRules.StintMinutes" }, StringSplitOptions.None).Length - 1 == 2
+              && MethodText(desk, "public LabelInfo[] SkipLabels()").Contains("OwnDeskRules.StintMinutes") && MethodText(desk, "internal void OwnDeskLine(InfoBox box, FirmPlace firm)").Contains("OwnDeskRules.StintMinutes"),
+            "own desk hours sources: the only fixed day left is the rate the page and the panel's line quote for a full day; the stint, its end, its notice and its test use the hours chosen");
+        Regex day = new Regex(@"\b(480|DayHours|StintMinutes)\b");
+        Check(!day.IsMatch(MethodText(desk, "private void EndStint(OwnStint stint, bool told)")) && !day.IsMatch(MethodText(desk, "private void StintWorked(OwnStint stint, int minutes)"))
+              && !day.IsMatch(MethodText(careers, "internal void FirmWorked(int prof, int rank, int minutes)")),
+            "own desk hours sources: what a stint ends with (the points, Careers' learning and burnout) is worked out from the minutes, with no day's length in it");
+        Check(OwnDeskSliderTexts(), "own desk hours texts: the slider's words are in en, pt and zh-cn with the hours, the time and the points to fill in");
+        Check(LineEverywhere(new[] { "has an hours slider on the game's work panel", "tem um controle de horas no painel de trabalho do jogo", "时长滑块", "gibt es im Arbeitspanel des Spiels einen Stundenregler",
+                "dispose d'un curseur d'heures dans le panneau de travail du jeu", "tiene un control de horas en el panel de trabajo del juego", "имеет ползунок часов на рабочей панели игры",
+                "heeft in het werkpaneel van het spel een urenschuif", "oyunun iş panelinde 1 ile 12 saat arasında" }),
+            "own desk hours texts: What's new tells of the hours slider in some row of every language");
+    }
+
+    private static bool OwnDeskSliderTexts()
+    {
+        Dictionary<string, string>[] langs = LanguageWords(out string[] codes);
+        bool all = true;
+        for (int l = 0; l < codes.Length; l++)
+        {
+            if (langs[l] == null)
+            {
+                continue;
+            }
+            bool slider = langs[l].TryGetValue("reallife_tech_own_slider", out string text) && text.Contains("{hours}") && text.Contains("{time}") && text.Contains("{points}");
+            bool core = codes[l] == "en" || codes[l] == "pt" || codes[l] == "zh-cn";
+            all &= slider || !core;
+        }
+        return all && AllIn(new[] { "reallife_tech_own_slider" }, out _);
     }
 
     private static void OwnDeskSources()

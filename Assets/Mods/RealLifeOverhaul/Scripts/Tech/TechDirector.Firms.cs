@@ -54,6 +54,7 @@ namespace RealLifeOverhaul.Tech
                 file = new FirmsFile { Seed = new System.Random().Next(1, int.MaxValue), FirstDay = save.Day, LastTender = save.Day };
             }
             _firmsFile = file;
+            _ownHours = OwnDeskRules.HoursFrom(save.modData != null && save.modData.TryGetValue(OwnDeskRules.HoursKey, out string hours) ? hours : null);   // a save without the line: a working day
             _firmsOn = true;
             CatchUpMoves(MoveRules.PartFirms);
             ReadFirms(save.Day);
@@ -91,6 +92,14 @@ namespace RealLifeOverhaul.Tech
             if (_firmsFile != null && data != null)
             {
                 data[FirmsStore.Key] = FirmsStore.Write(_firmsFile);
+                if (_ownHours != OwnDeskRules.DefaultHours)
+                {
+                    data[OwnDeskRules.HoursKey] = OwnDeskRules.HoursLine(_ownHours);   // the stint's hours last chosen; the default is no line at all, as in a save from before
+                }
+                else
+                {
+                    data.Remove(OwnDeskRules.HoursKey);
+                }
             }
         }
 

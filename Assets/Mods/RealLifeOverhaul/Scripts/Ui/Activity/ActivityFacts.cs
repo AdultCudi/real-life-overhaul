@@ -30,6 +30,14 @@ namespace RealLifeOverhaul.Ui
             if (a is DeskWork desk)
             {
                 Desk(desk, m);
+                return;
+            }
+            if (a is ShiftSkip skip && skip.Slides && m.HasDuration)
+            {
+                // a shift whose hours are the player's to pick (an own desk stint): the ends of the slider, and the time the hours give
+                m.DurationFrom = ActivityRead.Words("common_hours_abbr", new { hours = a.GetMinSliderValue() });
+                m.DurationTo = ActivityRead.Words("common_hours_abbr", new { hours = a.GetMaxSliderValue() });
+                m.Finish = UiText.Fill("reallife_ui_activity_finish", "time", TimeHelper.Now().AddMinutes(skip.ChosenMinutes).GetFormattedTime());
             }
         }
 
