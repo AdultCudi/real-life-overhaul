@@ -78,7 +78,7 @@ namespace RealLifeOverhaul.Outlook
         public const int HistoryDays = 120;                    // days of each figure kept: two of the game's 60-day years
         public const int ShortDays = 7;                        // the short change on a tile
         public const int LongDays = 30;                        // ...and the long one
-        public const int LinesMost = 72;                       // figures the book keeps: the national ones, then a few for each district
+        public const int LinesMost = 120;                     // national figures, then income, level, demand and pull for each district
         public const int NoValue = int.MinValue;               // a day with no reading
 
         // The national figures, by the name the save keeps them under (never changed).
@@ -101,10 +101,12 @@ namespace RealLifeOverhaul.Outlook
         public const string DistrictIncome = "di:";
         public const string DistrictLevel = "dl:";
         public const string DistrictDemand = "dd:";
+        public const string DistrictPull = "dp:";             // customer pull, 100 the city's mean
 
         public static string OfDistrictIncome(string district) => DistrictIncome + Clean(district);
         public static string OfDistrictLevel(string district) => DistrictLevel + Clean(district);
         public static string OfDistrictDemand(string district, int use) => DistrictDemand + use + ":" + Clean(district);
+        public static string OfDistrictPull(string district) => DistrictPull + Clean(district);
 
         /// <summary>A name with the dividers of the save's line taken out, so a district's id can never break the line apart.</summary>
         public static string Clean(string text)

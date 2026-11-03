@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Ui
             screens.Add(new UiScreenDef("newsstand", UiTemplate.AppWindow, "NewsstandScreen", NewsKeys(shared,
                 "reallife_ledger_online_app", "reallife_ledger_online_tab_titles", "reallife_ledger_online_tab_reading"))
                 .Switch(UiScreenSwitches.News));
-            screens.Add(new UiScreenDef("ledger", UiTemplate.AppWindow, "LedgerScreen", NewsKeys(shared, "reallife_ledger_title"))
+            screens.Add(new UiScreenDef("ledger", UiTemplate.AppWindow, "LedgerScreen", NewsKeys(shared, "reallife_ledger_title", "reallife_news_nav_markets"))
                 .Switch(UiScreenSwitches.News));
             screens.Add(new UiScreenDef("ending", UiTemplate.Decision, "EndingScreen", NewsKeys(shared,
                 "reallife_news_end_kicker", "reallife_news_end_load", "reallife_news_end_quit"))

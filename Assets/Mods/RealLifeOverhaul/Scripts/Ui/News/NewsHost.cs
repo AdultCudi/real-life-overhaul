@@ -76,7 +76,7 @@ namespace RealLifeOverhaul.Ui
 
         public bool Back()
         {
-            if (NewsLive.CloseList())
+            if (_source != null && _source.Back())
             {
                 _dirty = true;
                 return true;

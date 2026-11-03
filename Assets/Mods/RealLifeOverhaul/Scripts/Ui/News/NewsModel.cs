@@ -100,6 +100,9 @@ namespace RealLifeOverhaul.Ui
         void Fill(NewsModel model);
 
         bool Press(NewsModel model, int command, int arg);
+
+        /// <summary>A step back inside the page. True when it had a list or a household open.</summary>
+        bool Back();
     }
 
     /// <summary>Commands past the kit blocks. A link's argument is which row.</summary>

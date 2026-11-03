@@ -230,6 +230,10 @@ namespace RealLifeOverhaul.Outlook
                 {
                     OutlookDistrict d = r.Districts[i];
                     book.Set(OutlookCatalogue.OfDistrictIncome(d.Id), day, d.Income);
+                    if (d.Pull > 0)
+                    {
+                        book.Set(OutlookCatalogue.OfDistrictPull(d.Id), day, d.Pull);
+                    }
                     if (d.Level > 0)
                     {
                         book.Set(OutlookCatalogue.OfDistrictLevel(d.Id), day, d.Level);

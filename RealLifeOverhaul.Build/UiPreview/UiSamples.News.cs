@@ -190,7 +190,12 @@ internal static partial class UiSamples
                 LeadStandfirst = quiet
                     ? t("reallife_news_paper_quiet_body", "The city had little to report. The next edition is at 06:00.")
                     : t("reallife_news_lead_body", "Prices are rising faster than wages."),
-                Markets = NewsFigs(),
+                Markets = new[]
+                {
+                    new UiFigureModel { Label = "Inflation", Value = "6.0%", Change = "0.6 in a month", Rising = true, Good = false, Trend = new[] { 4.2f, 4.8f, 5.1f, 5.6f, 6.0f } },
+                    new UiFigureModel { Label = "Bank rate", Value = "4.00%", Change = "0.50 in a month", Rising = true, Good = false, Trend = new[] { 3.2f, 3.4f, 3.5f, 3.8f, 4.0f } },
+                    new UiFigureModel { Label = "Jobless", Value = "5.9%", Change = "0.4 in a month", Rising = true, Good = false, Trend = new[] { 5.2f, 5.4f, 5.5f, 5.7f, 5.9f } }
+                },
                 QuietLine = quiet ? t("reallife_news_paper_quiet_body", "The city had little to report. The next edition is at 06:00.") : null,
                 Sections = quiet ? new UiEditionSection[0] : new[]
                 {
@@ -204,6 +209,20 @@ internal static partial class UiSamples
                             {
                                 Headline = t("reallife_news_open_title", "A new business opens"),
                                 Body = t("reallife_news_open_body", "4 businesses opened in the city this month."),
+                                Byline = "Midtown"
+                            }
+                        }
+                    },
+                    new UiEditionSection
+                    {
+                        Icon = UiIcon.ChartLineUp,
+                        Label = t("reallife_news_nav_markets", "Markets"),
+                        Stories = new[]
+                        {
+                            new UiEditionStory
+                            {
+                                Headline = t("reallife_news_series_index", "City index"),
+                                Body = t("reallife_news_hold_body", "You hold shares worth more than you paid."),
                                 Byline = "Midtown"
                             }
                         }
@@ -225,6 +244,7 @@ internal static partial class UiSamples
                 Kicker = t("reallife_news_end_kicker", "A life in the city"),
                 Title = "Jordan Hale",
                 Emblem = UiIcon.Person,
+                Faces = new[] { "Jordan Hale" },
                 Body = t("reallife_news_end_body", "After 412 days, the businesses and the people employed are what the life leaves."),
                 Choices = new[]
                 {
