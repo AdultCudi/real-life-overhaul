@@ -18,7 +18,8 @@ namespace RealLifeOverhaul.Ui
         More,       // a step up, its increase button
         Reply,      // a call's reply (the game's confirm or second option)
         HangUp,     // a call's way out (the game's cancel: Hang up, Decline)
-        Clear       // an empty search cleared, the kit's own search box
+        Clear,      // an empty search cleared, the kit's own search box
+        Waiting     // the foot's count of contacts with unread messages: the list filtered to them, or the one sender opened
     }
 
     /// <summary>
@@ -32,7 +33,7 @@ namespace RealLifeOverhaul.Ui
     public static class ContactsRoutes
     {
         public const int MapArg = 0, CallArg = 1;           // the head's actions by what they do, not where they stand: the map's button may be hidden
-        public const int MarkReadArg = 0, DeleteAllArg = 1;  // the sidebar foot's actions in the order the window draws them
+        public const int MarkReadArg = 0, DeleteAllArg = 1, WaitingArg = 2;  // the sidebar foot's actions by what they do (Waiting is drawn first)
 
         /// <summary>
         /// The route of a target's command and argument. <paramref name="head"/> is the head's buttons as the screen laid
@@ -48,7 +49,9 @@ namespace RealLifeOverhaul.Ui
                 case UiMessageList.ClearCommand: return ContactsRoute.Clear;
                 case UiAppWindow.ActionCommand: return Head(head, arg);
                 case UiContacts.ActionCommand: return ContactsRoute.Service;
-                case UiContacts.SideCommand: return arg == MarkReadArg ? ContactsRoute.MarkRead : arg == DeleteAllArg ? ContactsRoute.DeleteAll : ContactsRoute.None;
+                case UiContacts.SideCommand:
+                    return arg == MarkReadArg ? ContactsRoute.MarkRead : arg == DeleteAllArg ? ContactsRoute.DeleteAll
+                        : arg == WaitingArg ? ContactsRoute.Waiting : ContactsRoute.None;
                 case UiConversation.ChoiceCommand: return ContactsRoute.Choice;
                 case UiConversation.FormCommand: return ContactsRoute.Field;
                 case UiConversation.FormLess: return ContactsRoute.Less;

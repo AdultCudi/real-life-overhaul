@@ -130,16 +130,27 @@ namespace RealLifeOverhaul.Ui
                 chosen = shown.HasValue && (int)shown.Value == _groups[g] ? g + 1 : chosen;
             }
             _m.Groups = nav;
-            _m.GroupShown = chosen;
+            _m.GroupShown = _waiting ? -1 : chosen;   // no group is the open one while the list is the waiting senders
         }
 
         private void Rows(List<Contact> all, ContactCategoryName? shown)
         {
             _rows.Clear();
+            _senders.Clear();
+            for (int i = 0; i < all.Count; i++)
+            {
+                if (all[i] != null && all[i].HasUnreadMessages)
+                {
+                    _senders.Add(all[i]);
+                }
+            }
+            _senders.Sort((a, b) => b.lastTimeUpdated.CompareTo(a.lastTimeUpdated));   // the newest first, as the line names them
+            _waiting &= _senders.Count > 0;   // the last one read: the filter goes with them
             for (int i = 0; i < all.Count; i++)
             {
                 Contact c = all[i];
-                if (c == null || (shown.HasValue && c.category != shown.Value) || (_query.Length > 0 && Name(c).IndexOf(_query, StringComparison.CurrentCultureIgnoreCase) < 0))
+                if (c == null || !ContactsRules.InList(_waiting, c.HasUnreadMessages, !shown.HasValue || c.category == shown.Value,
+                        _query.Length == 0 || Name(c).IndexOf(_query, StringComparison.CurrentCultureIgnoreCase) >= 0))
                 {
                     continue;
                 }
@@ -195,19 +206,33 @@ namespace RealLifeOverhaul.Ui
             {
                 unread += all[i] != null ? all[i].NumberOfUnreadMessages : 0;
             }
+            string[] who = new string[_senders.Count];
+            for (int i = 0; i < who.Length; i++)
+            {
+                who[i] = Name(_senders[i]);
+            }
             Button mark = ButtonOf(GameContract.ContactsMarkAll), delete = ButtonOf(GameContract.KitDeleteAll);
-            _m.Foot.Actions = new[]
+            var foot = new List<UiActionModel>(3);
+            if (_senders.Count > 0)
+            {
+                foot.Add(new UiActionModel { Label = UiText.Fill(_waiting ? "reallife_ui_contacts_waiting_on" : "reallife_ui_contacts_waiting", "count", UiText.Whole(_senders.Count)),
+                    Kind = _waiting ? UiButtonKind.Primary : UiButtonKind.Secondary, Icon = UiIcon.Envelope, Key = UiAction.Count, Arg = ContactsRoutes.WaitingArg });
+            }
+            foot.AddRange(new[]
             {
                 new UiActionModel { Label = UiText.T("contacts_mark_all_as_read_button"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Check, Key = UiAction.Count,
                     Arg = ContactsRoutes.MarkReadArg, Disabled = !Shows(mark) },
                 new UiActionModel { Label = UiText.T("contacts_delete_all_button"), Kind = UiButtonKind.Destructive, Icon = UiIcon.Trash, Key = UiAction.Count,
                     Arg = ContactsRoutes.DeleteAllArg, Disabled = !Shows(delete) },   // the game allows it only on one group, never on all
-            };
+            });
+            _m.Foot.Actions = foot.ToArray();
             string player = PlayerName();
             FaceSources.Player(player);
             _m.Foot.Player = player;
             _m.Foot.PlayerHue = UiColour.HueOf(player ?? string.Empty);
-            _m.Foot.PlayerLine = UiText.Fill("reallife_ui_contacts_summary", "count", UiText.Whole(all.Count), "unread", UiText.Whole(unread));
+            _m.Foot.PlayerLine = _senders.Count > 0
+                ? UiText.Fill("reallife_ui_contacts_waiting_from", "who", ContactsRules.Senders(UiText.Words, who))
+                : UiText.Fill("reallife_ui_contacts_summary", "count", UiText.Whole(all.Count), "unread", UiText.Whole(unread));
         }
 
         // ------------------------------------------------------------------------------------------------- the open contact

@@ -30430,5 +30430,11 @@
   "reallife_flare_kit_option_worsens": "Draws eyes: it counts for more, and talk sours",
   "reallife_flare_kit_fig_rating_now": "Rating now",
   "reallife_flare_kit_fig_rating_after": "After",
-  "reallife_flare_kit_reply_failed": "The reply did not go up. Try again."
+  "reallife_flare_kit_reply_failed": "The reply did not go up. Try again.",
+  "reallife_travel_room_messages_from": "Unread messages on your phone: {count}, from {who}.",
+  "reallife_ui_contacts_waiting": "{count} waiting",
+  "reallife_ui_contacts_waiting_on": "Showing {count} waiting",
+  "reallife_ui_contacts_waiting_from": "Waiting: {who}",
+  "reallife_ui_contacts_from_two": "{a} and {b}",
+  "reallife_ui_contacts_from_more": "{a} and {count} more"
 }

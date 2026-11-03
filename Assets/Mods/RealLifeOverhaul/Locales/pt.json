@@ -30430,5 +30430,11 @@
   "reallife_flare_kit_option_worsens": "Chama atenção: conta mais, e a conversa azeda",
   "reallife_flare_kit_fig_rating_now": "Avaliação agora",
   "reallife_flare_kit_fig_rating_after": "Depois",
-  "reallife_flare_kit_reply_failed": "A resposta não foi ao ar. Tente de novo."
+  "reallife_flare_kit_reply_failed": "A resposta não foi ao ar. Tente de novo.",
+  "reallife_travel_room_messages_from": "Mensagens não lidas no seu celular: {count}, de {who}.",
+  "reallife_ui_contacts_waiting": "{count} à espera",
+  "reallife_ui_contacts_waiting_on": "A mostrar {count} à espera",
+  "reallife_ui_contacts_waiting_from": "À espera: {who}",
+  "reallife_ui_contacts_from_two": "{a} e {b}",
+  "reallife_ui_contacts_from_more": "{a} e mais {count}"
 }

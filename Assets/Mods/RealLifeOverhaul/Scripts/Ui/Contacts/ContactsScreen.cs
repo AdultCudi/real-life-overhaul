@@ -27,6 +27,7 @@ namespace RealLifeOverhaul.Ui
         private readonly ContactsApp _app;
         private readonly UiContactsModel _m = new UiContactsModel();
         private readonly List<Contact> _rows = new List<Contact>(64);
+        private readonly List<Contact> _senders = new List<Contact>(16);   // the contacts with unread messages, as last read
         private readonly List<int> _groups = new List<int>(16);          // the categories shown, the game's then the mod's
         private readonly List<Button> _services = new List<Button>(8);   // the aside's actions: the game's buttons, null for the game's own view or Delete contact
         private int _remove = -1;          // the aside's place of Delete contact; -1 where the game's list offers none for them
@@ -35,6 +36,7 @@ namespace RealLifeOverhaul.Ui
         private readonly List<Field> _fields = new List<Field>(2);       // the form's fields
         private readonly List<KeyValuePair<TMP_Text, Color>> _names = new List<KeyValuePair<TMP_Text, Color>>(2);   // the header's name labels as the game made them
         private string _query = string.Empty;
+        private bool _waiting;             // the list shows only the contacts with unread messages, in every group
         private bool _dirty = true;
         private float _next;
         private long _seen;
@@ -153,9 +155,12 @@ namespace RealLifeOverhaul.Ui
                     {
                         return false;
                     }
+                    _waiting = false;
                     _app.LoadContactsList(arg == 0 ? (ContactCategoryName?)null : (ContactCategoryName)_groups[arg - 1]);
                     _m.List.Offset = 0f;
                     return true;
+                case ContactsRoute.Waiting:
+                    return Waiting();
                 case ContactsRoute.Row:
                     return arg >= 0 && arg < _rows.Count && Open(_rows[arg]);
                 case ContactsRoute.Map:
@@ -191,6 +196,27 @@ namespace RealLifeOverhaul.Ui
                 default:
                     return Unrouted("a press (command " + command + ", " + arg + ") that no route answers", open);
             }
+        }
+
+        // The count of contacts waiting is a control: one sender opens as a press on its row does (the game marks it read as it opens),
+        // several filter the list to them, in every group, and a second press puts the list back.
+        private bool Waiting()
+        {
+            if (_waiting)
+            {
+                _waiting = false;
+                _query = string.Empty;
+                _m.List.Offset = 0f;
+                return true;
+            }
+            if (_senders.Count == 1)
+            {
+                return Open(_senders[0]);
+            }
+            _waiting = _senders.Count > 1;
+            _query = string.Empty;
+            _m.List.Offset = 0f;
+            return _waiting;
         }
 
         // The game's own button pressed: its listener runs as a click would run it. A button the game holds (it greys one

@@ -16,7 +16,7 @@ internal static partial class UiSamples
     public static readonly string[] ContactsStates =
     {
         "all", "business", "rivals", "general", "offer", "wage", "tax", "empty", "call_start", "call_replies", "call_long", "offer_fr",
-        "relative", "friend", "service", "restaurant"
+        "relative", "friend", "service", "restaurant", "three", "waiting"
     };
 
     // The four of the owner's report, who have no address and so no View on map: a relative and a friend of the mod, one of the game's
@@ -79,6 +79,11 @@ internal static partial class UiSamples
                 ContactsEmployee(m, w);   // the one open stays open while a search finds no one, as the game keeps it
                 m.HasDetail = true;
                 break;
+            case "three":
+            case "waiting":
+                everyone[3].Unread = 0;   // the recruitment agency read: three senders wait
+                ContactsRows(m, st == "three" ? everyone : System.Array.FindAll(everyone, r => r.Unread > 0), -1);
+                break;
             case "relative":
                 ContactsRows(m, everyone, RelativeRow);
                 ContactsRelative(m, w);
@@ -100,8 +105,17 @@ internal static partial class UiSamples
                 ContactsEmployee(m, w);
                 break;
         }
-        int unread = 5 - (st == "offer" || st == "wage" ? 2 : st == "business" ? 1 : 0);   // the one opened is read
-        ContactsFoot(m, w, group > 0, unread);
+        var senders = new List<string>();
+        int unread = 0;
+        foreach (UiMessageRow r in everyone)   // the contacts waiting in the whole phone, as the game counts them (the one opened is read)
+        {
+            if (r.Unread > 0)
+            {
+                senders.Add(r.Name);
+                unread += r.Unread;
+            }
+        }
+        ContactsFoot(m, w, group > 0, unread, senders.ToArray(), st == "waiting");
         if (st.StartsWith("call"))
         {
             m.Call = ContactsCall(w, st);
@@ -154,17 +168,26 @@ internal static partial class UiSamples
         m.GroupShown = shown;
     }
 
-    private static void ContactsFoot(UiContactsModel m, UiWords t, bool oneGroup, int unread)
+    private static void ContactsFoot(UiContactsModel m, UiWords t, bool oneGroup, int unread, string[] senders, bool waiting)
     {
-        m.Foot.Actions = new[]
+        var actions = new List<UiActionModel>(3);
+        if (senders.Length > 0)
+        {
+            actions.Add(new UiActionModel { Label = t(waiting ? "reallife_ui_contacts_waiting_on" : "reallife_ui_contacts_waiting", waiting ? "Showing {count} waiting" : "{count} waiting").Replace("{count}", senders.Length.ToString()),
+                Kind = waiting ? UiButtonKind.Primary : UiButtonKind.Secondary, Icon = UiIcon.Envelope, Key = UiAction.Count, Arg = ContactsRoutes.WaitingArg });
+        }
+        actions.AddRange(new[]
         {
             new UiActionModel { Label = t("contacts_mark_all_as_read_button", "Mark all as read"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Check, Key = UiAction.Count, Arg = ContactsRoutes.MarkReadArg },
             new UiActionModel { Label = t("contacts_delete_all_button", "Delete all"), Kind = UiButtonKind.Destructive, Icon = UiIcon.Trash, Key = UiAction.Count, Arg = ContactsRoutes.DeleteAllArg,
                 Disabled = !oneGroup },
-        };
+        });
+        m.Foot.Actions = actions.ToArray();
         m.Foot.Player = "Alex Carter";
         m.Foot.PlayerHue = 40f;
-        m.Foot.PlayerLine = t("reallife_ui_contacts_summary", "{count} contacts, {unread} unread").Replace("{count}", EveryoneGroups.Length.ToString()).Replace("{unread}", unread.ToString());
+        m.Foot.PlayerLine = senders.Length > 0
+            ? t("reallife_ui_contacts_waiting_from", "Waiting: {who}").Replace("{who}", ContactsRules.Senders(t, senders))
+            : t("reallife_ui_contacts_summary", "{count} contacts, {unread} unread").Replace("{count}", EveryoneGroups.Length.ToString()).Replace("{unread}", unread.ToString());
     }
 
     // The list with one row chosen: that one opened, so read, as the game marks a contact's messages read as it opens.

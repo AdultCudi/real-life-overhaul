@@ -30430,5 +30430,11 @@
   "reallife_flare_kit_option_worsens": "引人注目：评价权重增加，舆论会变差",
   "reallife_flare_kit_fig_rating_now": "当前评分",
   "reallife_flare_kit_fig_rating_after": "之后",
-  "reallife_flare_kit_reply_failed": "回复没有发出，请重试。"
+  "reallife_flare_kit_reply_failed": "回复没有发出，请重试。",
+  "reallife_travel_room_messages_from": "手机上的未读消息：{count}条，来自{who}。",
+  "reallife_ui_contacts_waiting": "{count} 人在等",
+  "reallife_ui_contacts_waiting_on": "正在显示 {count} 人",
+  "reallife_ui_contacts_waiting_from": "待查看：{who}",
+  "reallife_ui_contacts_from_two": "{a}和{b}",
+  "reallife_ui_contacts_from_more": "{a}等另外 {count} 人"
 }

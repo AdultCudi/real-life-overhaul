@@ -85,7 +85,53 @@ internal static partial class Program
         Check(s.FindNode(UiCallCard.ChoiceCommand, 0) >= 0 && s.FindNode(UiCallCard.ButtonCommand, 0) >= 0 && s.FindNode(UiAppWindow.NavCommand, 0) < 0
               && s.Nodes[s.FindNode(UiCallCard.ChoiceCommand, 0)].Key == UiAction.Pick1,
             "contacts: a call stands as its card alone, its replies on the number keys and Hang up its way out, the window not reachable under it");
+        WaitingChecks();
         ContactPictureChecks();
+    }
+
+    // Who is waiting: every contact with unread messages is marked in the list and stands first, the foot's count of them is a control
+    // that filters the list to them whatever group is open, and the count is the number of marked rows. Senders are named in a line.
+    private static void WaitingChecks()
+    {
+        UiContactsModel three = UiSamples.ContactsSample(UiWords("en"), "three");
+        int marked = 0, firstRead = -1, lastMarked = -1;
+        for (int i = 0; i < three.List.RowCount; i++)
+        {
+            if (three.List.Rows[i].Unread > 0)
+            {
+                marked++;
+                lastMarked = i;
+            }
+            else if (firstRead < 0)
+            {
+                firstRead = i;
+            }
+        }
+        Check(marked == 3 && lastMarked < firstRead && three.List.Rows[0].Section != null, "contacts: every contact with unread messages is marked in the list with its count and stands before the read ones");
+        UiActionModel button = System.Array.Find(three.Foot.Actions, a => a.Arg == ContactsRoutes.WaitingArg);
+        Check(button.Label == "3 waiting" && three.Foot.PlayerLine == "Waiting: Luis Romero and 2 more",
+            "contacts: the waiting count is a button that counts the marked rows, and the foot names the senders");
+        UiContactsModel only = UiSamples.ContactsSample(UiWords("en"), "waiting");
+        bool allMarked = only.List.RowCount == marked;
+        for (int i = 0; i < only.List.RowCount; i++)
+        {
+            allMarked &= only.List.Rows[i].Unread > 0;
+        }
+        Check(allMarked && System.Array.Find(only.Foot.Actions, a => a.Arg == ContactsRoutes.WaitingArg).Kind == UiButtonKind.Primary,
+            "contacts: with the waiting filter on only the marked rows show, and the button reads as pressed");
+        var scene = new UiScene();
+        UiContacts.Lay(scene, three, UiFrame.FullMenu(16f / 9f, "Contacts"), true, UiDefaultKeys.Keyboard);
+        int node = scene.FindNode(UiContacts.SideCommand, ContactsRoutes.WaitingArg);
+        Check(node >= 0 && ContactsRoutes.Route(UiContacts.SideCommand, ContactsRoutes.WaitingArg, three.HeadActions) == ContactsRoute.Waiting,
+            "contacts: a press on the waiting count has a route of its own");
+        Check(ContactsRules.InList(true, true, false, true) && !ContactsRules.InList(true, false, true, true) && !ContactsRules.InList(true, true, true, false)
+              && ContactsRules.InList(false, false, true, true) && !ContactsRules.InList(false, true, false, true),
+            "contacts: the waiting filter shows every sender in any group; without it the group and the search decide");
+        var t = UiWords("en");
+        Check(ContactsRules.Senders(t, new string[0]) == string.Empty && ContactsRules.Senders(t, new[] { "Ana Ruiz" }) == "Ana Ruiz"
+              && ContactsRules.Senders(t, new[] { "Ana Ruiz", "Tom Becker" }) == "Ana Ruiz and Tom Becker"
+              && ContactsRules.Senders(t, new[] { "Ana Ruiz", "Tom Becker", "Mom", "Alex" }) == "Ana Ruiz and 3 more",
+            "contacts: the senders read as a name, two names, or the first and how many more");
     }
 
     // A firm's own picture (its logo, as the game's Contacts shows it) in its list row, its head, on the call card and as

@@ -21,6 +21,31 @@ namespace RealLifeOverhaul.Ui
         // The conversations the game runs in the thread from an offer's Negotiate button: an offer's talk, not a call.
         private static readonly string[] ThreadTalks = { "CandidateSalaryNegotiationDialog", "HealthInsuranceNegotiationDialog" };
 
+        /// <summary>
+        /// Whether a contact stands in the list: the waiting filter shows every contact with unread messages, whatever group is open,
+        /// so a sender in another group is never hidden behind the count; otherwise the open group and the search decide.
+        /// </summary>
+        public static bool InList(bool waitingOnly, bool unread, bool inGroup, bool inSearch) => waitingOnly ? unread && inSearch : inGroup && inSearch;
+
+        /// <summary>The senders as a line: one name, two names joined, or the first with how many more ("Ana Ruiz and 2 more"). Empty for none.</summary>
+        public static string Senders(UiWords t, string[] names)
+        {
+            int n = names == null ? 0 : names.Length;
+            if (n == 0)
+            {
+                return string.Empty;
+            }
+            if (n == 1)
+            {
+                return names[0];
+            }
+            if (n == 2)
+            {
+                return t("reallife_ui_contacts_from_two", "{a} and {b}").Replace("{a}", names[0]).Replace("{b}", names[1]);
+            }
+            return t("reallife_ui_contacts_from_more", "{a} and {count} more").Replace("{a}", names[0]).Replace("{count}", (n - 1).ToString(CultureInfo.InvariantCulture));
+        }
+
         /// <summary>The key of a group's name, as the game asks for a category's (ContactCategoryName.GetLocalizeKey).</summary>
         public static string GroupKey(int category) =>
             "contactcategoryname_" + (category >= 0 && category < GameCategories.Length ? GameCategories[category] : category.ToString(CultureInfo.InvariantCulture));
