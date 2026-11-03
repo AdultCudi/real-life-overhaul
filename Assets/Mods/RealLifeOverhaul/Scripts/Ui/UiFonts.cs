@@ -147,6 +147,13 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>The face for a style: the bundle's cut of its family and weight, or the game's font while the bundle is not in.</summary>
+        /// <summary>
+        /// True when the kit has a face to write with: one of the bundle's, or the game's own standing in. A screen that hides
+        /// the game's piece to draw its own asks this first, so it never hides the game's and writes nothing (3 Nov: the
+        /// fonts missed the loading screen's hold and stayed out all session).
+        /// </summary>
+        public static bool CanDraw => For(UiStyle.Body) != null;
+
         public static TMP_FontAsset For(UiStyle style)
         {
             UiType t = UiTokens.Type(style);

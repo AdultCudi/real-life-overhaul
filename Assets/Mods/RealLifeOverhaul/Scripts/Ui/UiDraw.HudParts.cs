@@ -57,7 +57,7 @@ namespace RealLifeOverhaul.Ui
             var item = new UiItem
             {
                 Kind = UiKind.KeyCap, Fill = onAccent ? UiRole.OnAccent : UiRole.Track, Edge = ink, Ink = ink, Style = UiStyle.KeyCap, Icon = key.Glyph,
-                Text = key.Glyph != UiIcon.None ? string.Empty : key.Name ?? string.Empty, X = x, Y = y, W = w, H = h, Radius = UiTokens.RadiusSmall,
+                Text = key.Glyph != UiIcon.None ? string.Empty : CapWord(key.Name), X = x, Y = y, W = w, H = h, Radius = UiTokens.RadiusSmall,
                 Clip = at.Clip, Node = -1, Layer = at.Layer, Order = at.Order, Parent = at.Parent, Alpha = onAccent ? 0.16f : 1f, Value = (int)UiAction.Count,
                 Flags = UiFlags.Middle
             };
@@ -74,7 +74,35 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>A game key's width before it is drawn.</summary>
         public static float GameKeyWidth(UiGameKey key) =>
-            !key.Shown ? 0f : key.Glyph != UiIcon.None ? UiTokens.KeyCap : Math.Max(UiTokens.KeyCap, Snap(UiTextRules.Width(key.Name, UiStyle.KeyCap) + UiTokens.S2 * 2f));
+            !key.Shown ? 0f : key.Glyph != UiIcon.None ? UiTokens.KeyCap : Math.Max(UiTokens.KeyCap, Snap(UiTextRules.Width(CapWord(key.Name), UiStyle.KeyCap) + UiTokens.S2 * 2f));
+
+        /// <summary>
+        /// A key's word as its cap carries it: the long names the game spells out ("BACKSPACE") in the short form a keyboard
+        /// prints, so a cap stays a cap beside its button's words. Any other name as it is. Allocates nothing.
+        /// </summary>
+        public static string CapWord(string name)
+        {
+            if (string.IsNullOrEmpty(name) || name.Length <= 5)
+            {
+                return name ?? string.Empty;
+            }
+            for (int i = 0; i + 1 < CapWords.Length; i += 2)
+            {
+                if (string.Equals(name, CapWords[i], StringComparison.OrdinalIgnoreCase))
+                {
+                    return CapWords[i + 1];
+                }
+            }
+            return name;
+        }
+
+        // A long key name and its cap's short word, in pairs.
+        private static readonly string[] CapWords =
+        {
+            "Backspace", "Bksp", "Delete", "Del", "Escape", "Esc", "Insert", "Ins", "Return", "Enter", "Page Up", "PgUp", "PageUp", "PgUp",
+            "Page Down", "PgDn", "PageDown", "PgDn", "Left Shift", "Shift", "Right Shift", "Shift", "Left Ctrl", "Ctrl", "Right Ctrl", "Ctrl",
+            "Left Control", "Ctrl", "Right Control", "Ctrl", "Control", "Ctrl", "Left Alt", "Alt", "Right Alt", "Alt", "Spacebar", "Space",
+        };
 
         /// <summary>A progress meter's height: its words over its bar, or the bar alone.</summary>
         public static float ProgressHeight(ref UiProgressModel m) => (string.IsNullOrEmpty(m.Label) && string.IsNullOrEmpty(m.Value) ? 0f : UiTokens.PairRow + UiTokens.S1) + UiTokens.S2;

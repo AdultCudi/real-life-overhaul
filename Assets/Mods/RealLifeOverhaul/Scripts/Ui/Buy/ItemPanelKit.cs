@@ -4,6 +4,8 @@ using System.Globalization;
 using System.Text;
 using BigAmbitions.InputSystem;
 using BigAmbitions.Items;
+using Extensions;
+using Helpers;
 using NWH.VehiclePhysics2.Modules.Fuel;
 using TMPro;
 using UI;
@@ -248,7 +250,14 @@ namespace RealLifeOverhaul.Ui
         private const string SpeedRow = "RealLifeOverhaul Speed";   // the mod's speed, a copy of the condition row in the vehicle panel
         private readonly ItemPanelUI _ui;
         private readonly UiItemPanelModel _m = new UiItemPanelModel();
-        private readonly List<Button> _buttons = new List<Button>(10);
+        private readonly List<Button> _buttons = new List<Button>(10);   // the game's button an action presses; null for Manage cargo
+        private VehicleController _car;                                  // the vehicle the panel shows, or null
+        private string _sellFor;                                         // "Sell for $2,407", made again only when the price changes
+        private float _sellPrice = -1f;
+        private float _frameW, _frameH;                                  // the layout's size, last laid: the minimap's card is read into it
+        private static readonly Vector3[] Corners = new Vector3[4];
+        private RectTransform _cardOf;   // the minimap card last read, and the canvas it stands on
+        private Canvas _cardCanvas;
         private readonly List<UiItemAction> _actions = new List<UiItemAction>(10);
         private readonly List<UiReading> _readings = new List<UiReading>(6);
         private readonly List<UiInfoRow> _facts = new List<UiInfoRow>(4);
@@ -292,6 +301,12 @@ namespace RealLifeOverhaul.Ui
             {
                 _seen = Read();
             }
+            if (frame.Width != _frameW || frame.Height != _frameH)
+            {
+                _frameW = frame.Width;
+                _frameH = frame.Height;
+                Minimap();
+            }
             UiItemPanel.Lay(s, _m, frame, dark, keys);
             _dirty = false;
         }
@@ -301,6 +316,15 @@ namespace RealLifeOverhaul.Ui
             switch (command)
             {
                 case UiItemPanel.ActionCommand:
+                    if (arg >= 0 && arg < _buttons.Count && _buttons[arg] == null)
+                    {
+                        // Manage cargo: the game's own walk to the trunk and its cargo screen, as a click on the vehicle does.
+                        if (_car != null)
+                        {
+                            _car.MoveAndManageStorage();
+                        }
+                        return Again(_car != null);
+                    }
                     return arg >= 0 && arg < _buttons.Count && Again(UiWidgets.Press(_buttons[arg]));
                 case UiItemPanel.CargoCommand:
                     return arg >= 0 && arg < _slots.Count && Again(UiWidgets.Press(BuyKits.Get<Button>(GameContract.SlotButton, _slots[arg].GetComponent<CargoItemUi>())));
@@ -440,10 +464,12 @@ namespace RealLifeOverhaul.Ui
             _m.Picture = game ? null : BuyPictures.Item(type);
             _m.Aspect = 1f;
             _sb.Append(_m.Title).Append('|').Append(_m.Name).Append('|').Append(_m.Status).Append('|').Append(_m.Picture).Append('|');
+            _car = car;
             ReadVehicle(car);
             ReadMeta();
             ReadCargo(car, item);
             ReadButtons();
+            Minimap();
             return _sb.ToString();
         }
 
@@ -582,6 +608,7 @@ namespace RealLifeOverhaul.Ui
         {
             _buttons.Clear();
             _actions.Clear();
+            ManageCargo();
             Add(_ui.parkButton, null, Key(PlayerAction.SecondaryInteract), false);
             Add(_ui.placeButton, _ui.placeButtonLabel, Key(PlayerAction.SecondaryInteract), false);
             Add(_ui.leaveButton, null, default(UiGameKey), false);
@@ -590,6 +617,7 @@ namespace RealLifeOverhaul.Ui
             Add(_ui.grabButton, null, default(UiGameKey), false);
             Add(_ui.useMopButton, null, default(UiGameKey), false);
             Add(_ui.sellButton, null, Key(PlayerAction.Sell), true);
+            SellFor();
             Add(_ui.discardButton, null, default(UiGameKey), true);
             if (_actions.Count > 0)
             {
@@ -618,6 +646,95 @@ namespace RealLifeOverhaul.Ui
             }
             _buttons.Add(b);
             _actions.Add(new UiItemAction { Label = BuyKits.Words(label != null ? label : b), Key = key, Danger = danger, Disabled = !b.interactable });
+        }
+
+        // Manage cargo, first and the panel's main, while the vehicle holds cargo and the player is on foot with empty hands:
+        // the game offers it then by a click on the vehicle (VehicleCtaBehavior), never from its panel. Driving, the game
+        // offers none, so neither does the panel. No key: F is the game's own in the world.
+        private void ManageCargo()
+        {
+            if (_car == null || _car.vehicleType == null || _car.vehicleType.maxCargoCapacity <= 0 || _car.controlledByPlayer || PlayerHelper.IsUsingVehicle
+                || PlayerHelper.IsHoldingItem)
+            {
+                return;
+            }
+            _buttons.Add(null);
+            _actions.Add(new UiItemAction { Label = UiText.T("reallife_ui_buy_manage_cargo") });
+        }
+
+        // A vehicle's Sell says what it sells for, the price the game's own confirm offers (VehicleInstance.GetSellingPrice).
+        private void SellFor()
+        {
+            int last = _actions.Count - 1;
+            ItemInstance item = _ui.selectedItemInstance;
+            if (((_car == null || _car.vehicleInstance == null) && item == null) || last < 0 || _buttons[last] != _ui.sellButton)
+            {
+                return;
+            }
+            float price = _car != null && _car.vehicleInstance != null ? _car.vehicleInstance.GetSellingPrice() : ItemPrice(item);
+            if (price != _sellPrice || _sellFor == null)
+            {
+                _sellPrice = price;
+                _sellFor = UiText.T("reallife_ui_buy_sell_for").Replace("{price}", price.ToCurrencyFormat());
+            }
+            UiItemAction a = _actions[last];
+            a.Label = _sellFor;
+            _actions[last] = a;
+        }
+
+        // The mod's minimap card (Navigation) where it stands, in px of the layout, so the panel keeps clear of it wherever it
+        // is and whichever HUD shows; nothing while it is hidden. Read with the panel, four times a second; whole px.
+        private void Minimap()
+        {
+            RectTransform card = RealLifeOverhaul.Nav.NavHud.Card;
+            _m.AvoidX = _m.AvoidY = _m.AvoidW = _m.AvoidH = 0f;
+            if (card == null || _frameW <= 0f || Screen.width <= 0)
+            {
+                return;
+            }
+            if (!ReferenceEquals(card, _cardOf))
+            {
+                _cardOf = card;
+                _cardCanvas = card.GetComponentInParent<Canvas>(true);   // the game's HUD canvas it stands on, as WorldBuilding reads the door box's
+            }
+            Camera camera = _cardCanvas != null && _cardCanvas.renderMode != RenderMode.ScreenSpaceOverlay ? _cardCanvas.worldCamera : null;
+            card.GetWorldCorners(Corners);   // bottom left, top left, top right, bottom right
+            Vector2 low = RectTransformUtility.WorldToScreenPoint(camera, Corners[0]), high = RectTransformUtility.WorldToScreenPoint(camera, Corners[2]);
+            UiHudRules.ToLayout(low.x, high.y, Screen.width, Screen.height, _frameW, _frameH, out float x, out float y);
+            UiHudRules.ToLayout(high.x, low.y, Screen.width, Screen.height, _frameW, _frameH, out float right, out float bottom);
+            if (right <= x || bottom <= y)
+            {
+                return;
+            }
+            _m.AvoidX = Mathf.Floor(x);
+            _m.AvoidY = Mathf.Floor(y);
+            _m.AvoidW = Mathf.Ceil(right - x);
+            _m.AvoidH = Mathf.Ceil(bottom - y);
+            _sb.Append(_m.AvoidX).Append(',').Append(_m.AvoidY).Append(',').Append(_m.AvoidW).Append(',').Append(_m.AvoidH).Append('|');
+        }
+
+        // A thing in hand's price as the game's own Sell confirm offers it (ItemPanelUI.GetTotalSellingPrice): its own, and
+        // indoors the price of what is stacked on it too.
+        private static float ItemPrice(ItemInstance item)
+        {
+            float price = item.GetSellingPrice();
+            if (!BuildingManager.IsInsideBuilding || item.stackedItems == null)
+            {
+                return price;
+            }
+            var registration = InstanceBehavior<BuildingManager>.Instance != null ? InstanceBehavior<BuildingManager>.Instance.buildingRegistration : null;
+            if (registration == null)
+            {
+                return price;
+            }
+            foreach (var child in item.stackedItems)
+            {
+                if (registration.itemInstances.TryGetValue(child.childId, out ItemInstance stacked) && stacked != item)
+                {
+                    price += ItemPrice(stacked);
+                }
+            }
+            return price;
         }
 
         // A button another mod put among the game's (Going Public's passenger lock) that shows now: only the game's view has it.

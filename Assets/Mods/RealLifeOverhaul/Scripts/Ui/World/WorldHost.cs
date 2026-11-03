@@ -25,6 +25,7 @@ namespace RealLifeOverhaul.Ui
 
         private RectTransform _rect;
         private Vector2 _laidSize;
+        private bool _noFaceSaid;   // the line that the world's boxes wait for a font, said once
         private float _scale = UiTokens.CanvasPerPx;
         private readonly WorldPrompt _prompt = new WorldPrompt();
         private readonly WorldBuilding _building = new WorldBuilding();
@@ -116,8 +117,17 @@ namespace RealLifeOverhaul.Ui
                 _building.Rescale(_scale);
             }
             UiFrame frame = Frame();
-            _prompt.Frame(frame, UiScreenSwitches.On(WorldKits.PromptId));
-            _building.Frame(frame, UiScreenSwitches.On(WorldKits.BuildingId));
+            // No face to write with yet: the game's own boxes stay, so a door, a prompt or a right click is never hidden and
+            // left blank; said once a city.
+            bool write = UiFonts.CanDraw;
+            if (!write && !_noFaceSaid)
+            {
+                _noFaceSaid = true;
+                UiDirector.Logger?.Warn("UI: the world's boxes stay the game's own for now: the kit has no font to write with yet ("
+                                        + (UiFonts.Ready ? "the fonts are read" : "the fonts are still being read") + ").");
+            }
+            _prompt.Frame(frame, write && UiScreenSwitches.On(WorldKits.PromptId));
+            _building.Frame(frame, write && UiScreenSwitches.On(WorldKits.BuildingId));
         }
 
         private UiFrame Frame() => new UiFrame { Width = _laidSize.x / _scale, Height = _laidSize.y / _scale, Band = UiFrame.BandHeight, Pointer = true };
