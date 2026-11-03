@@ -279,8 +279,13 @@ internal static partial class UiSamples
 
     // ------------------------------------------------------------------------------------------------- the colour picker
 
-    /// <summary>The colour picker's frame round the game's colour field, which the kit never draws.</summary>
-    public static void WorldColourScene(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t)
+    /// <summary>
+    /// The colour picker's frame round the game's colour field. The kit never draws the field (in the game it is the game's own,
+    /// seen through the frame's hole); the preview's shot (<paramref name="field"/>) has no game, so a stand-in of it fills
+    /// the hole: a saturation and value box of the chosen hue, the hue strip under it, and the hex field. The checks lay the
+    /// kit's own frame alone.
+    /// </summary>
+    public static void WorldColourScene(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool field = false)
     {
         var lines = new[]
         {
@@ -291,7 +296,67 @@ internal static partial class UiSamples
         s.Begin("colour picker", f.Width, f.Height, dark);
         s.Pointer = f.Pointer;
         s.Floats = true;
-        UiToolPanel.Around(s, UiAt.Screen, m, UiDraw.SnapDown((f.Width - fw) / 2f), UiDraw.SnapDown((f.BandY - fh) / 2f), fw, fh, k);
+        float hx = UiDraw.SnapDown((f.Width - fw) / 2f), hy = UiDraw.SnapDown((f.BandY - fh) / 2f);
+        UiToolPanel.Around(s, UiAt.Screen, m, hx, hy, fw, fh, k);
+        if (field)
+        {
+            GameColourField(s, hx, hy, fw, fh);
+        }
+    }
+
+    // The game's colour field as the preview's stand-in: what the hole shows in the game.
+    private static void GameColourField(UiScene s, float x, float y, float w, float h)
+    {
+        UiDraw.Box(s, UiAt.Screen, x, y, w, h, UiRole.Field, UiRole.None, 0f, UiFlags.Decor);
+        // Whole cells of the layout's grid, so the field reads as one smooth square with no seams between its rows.
+        const float cell = UiTokens.S3;
+        const float hue = 0.54f;
+        float pad = UiTokens.S3, bw = w - pad * 2f, bh = h - pad * 4f - UiTokens.S5 - UiTokens.Control;
+        int across = (int)(bw / cell), down = (int)(bh / cell);
+        float gx = x + pad + (bw - across * cell) / 2f;
+        for (int r = 0; r < down; r++)
+        {
+            for (int c = 0; c < across; c++)
+            {
+                Cell(s, gx + c * cell, y + pad + r * cell, cell, cell, Hsv(hue, c / (across - 1f), 1f - r / (down - 1f)));
+            }
+        }
+        float sy = y + pad * 2f + down * cell;
+        for (int i = 0; i < across; i++)
+        {
+            Cell(s, gx + i * cell, sy, cell, UiTokens.S5, Hsv(i / (float)across, 1f, 1f));
+        }
+        float fy = sy + UiTokens.S5 + pad;
+        Cell(s, x + pad, fy, UiTokens.Control, UiTokens.Control, Hsv(hue, 0.8f, 0.95f));
+        float tx = x + pad + UiTokens.Control + UiTokens.S2, tw = bw - UiTokens.Control - UiTokens.S2;
+        int field = UiDraw.Box(s, UiAt.Screen, tx, fy, tw, UiTokens.Control, UiRole.Bg, UiRole.None, UiTokens.RadiusMedium, UiFlags.Decor);
+        UiDraw.TextMiddle(s, UiAt.Screen.In(field), tx + UiTokens.S3, fy, UiTokens.Control, tw - UiTokens.S3 * 2f, UiStyle.Body, UiRole.Text, "#30C6F2", UiFlags.None);
+    }
+
+    private static void Cell(UiScene s, float x, float y, float w, float h, int rgb)
+    {
+        var item = new UiItem
+        {
+            Kind = UiKind.Picture, Text = UiDraw.SwatchKey(rgb), Value = w / h, X = x, Y = y, W = w, H = h, Flags = UiFlags.Middle, Clip = -1, Node = -1, Parent = -1, Order = -1,
+            Alpha = 1f
+        };
+        s.Add(ref item);
+    }
+
+    private static int Hsv(float hue, float sat, float val)
+    {
+        float hh = (hue % 1f) * 6f, c = val * sat, xx = c * (1f - System.Math.Abs(hh % 2f - 1f)), mm = val - c;
+        float r = 0f, g = 0f, b = 0f;
+        switch ((int)hh)
+        {
+            case 0: r = c; g = xx; break;
+            case 1: r = xx; g = c; break;
+            case 2: g = c; b = xx; break;
+            case 3: g = xx; b = c; break;
+            case 4: r = xx; b = c; break;
+            default: r = c; b = xx; break;
+        }
+        return ((int)((r + mm) * 255f) << 16) | ((int)((g + mm) * 255f) << 8) | (int)((b + mm) * 255f);
     }
 
     // ------------------------------------------------------------------------------------------------- shared

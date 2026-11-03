@@ -22,6 +22,9 @@ namespace RealLifeOverhaul.Ui
         private int _seen = -1, _laidPage = -1;
         private bool _locked;
         private float _room;
+        private bool _file;              // custody: the charge sheet read out in full (P), folded to its heading until then
+        private bool _hasFile;           // the list holds a note with words under its heading
+        private int _chosenLaid = -1;
 
         public string Id => WorldKits.PickerId;
 
@@ -34,7 +37,7 @@ namespace RealLifeOverhaul.Ui
         public UiPickerModel Model => _m;
 
         /// <summary>True when the list says more than was laid out (a filling, a line, a lock) or the page turned.</summary>
-        public bool Dirty => _list != null && (_list.Version != _seen || _list.Locked != _locked || _m.Page != _laidPage);
+        public bool Dirty => _list != null && (_list.Version != _seen || _list.Locked != _locked || _m.Page != _laidPage || _m.Chosen != _chosenLaid);
 
         /// <summary>The list to draw; null when none.</summary>
         public void Show(TravelList list)
@@ -42,6 +45,8 @@ namespace RealLifeOverhaul.Ui
             _list = list;
             _seen = -1;
             _m.Page = 0;
+            _m.Chosen = -1;
+            _file = false;
             if (list != null)
             {
                 Read();
@@ -66,6 +71,9 @@ namespace RealLifeOverhaul.Ui
             _m.EmptyTitle = UiText.T("reallife_ui_world_pick_empty");
             _m.EmptyBody = UiText.T("reallife_ui_world_pick_empty_body");
             _m.EmptyAction = _locked ? null : UiText.T("common_close");
+            _m.Surfaces = true;
+            _m.Choose = UiText.T("reallife_ui_world_pick_choose");
+            _hasFile = false;
             int n = _list.Count;
             if (_m.Entries.Length != n)
             {
@@ -77,11 +85,19 @@ namespace RealLifeOverhaul.Ui
                 _list.Read(i, out int id, out string name, out string detail, out string _, out bool enabled, out bool note);
                 _list.ReadMark(i, out string figure, out string reason);
                 _ids[i] = id;
+                string words = Plain(detail);
+                bool file = custody && note && !string.IsNullOrEmpty(words);   // the charge sheet: its heading until P reads it out
+                _hasFile |= file;
                 _m.Entries[i] = new UiPickEntry
                 {
-                    Icon = custody && !note ? CustodyIcon(id) : _m.Icon, Name = Plain(name) ?? string.Empty, Detail = Plain(detail), Note = note,
+                    Icon = custody && !note ? CustodyIcon(id) : _m.Icon, Name = Plain(name) ?? string.Empty, Detail = file && !_file ? null : words, Note = note,
                     Disabled = !note && !enabled, Figure = Plain(figure), Reason = Plain(reason),
                 };
+            }
+            _m.Second = _hasFile ? UiText.T(_file ? "reallife_ui_world_pick_file_close" : "reallife_ui_world_pick_file") : null;
+            if (_m.Chosen < 0 || _m.Chosen >= n || _m.Entries[_m.Chosen].Note || _m.Entries[_m.Chosen].Disabled)
+            {
+                _m.Chosen = FirstChoice(0);
             }
             // The list's facts over its entries ("Held since"), as many as the panel shows.
             int facts = Math.Min(UiPickerModel.MostContext, _list.FactCount);
@@ -121,7 +137,13 @@ namespace RealLifeOverhaul.Ui
             }
             _m.Page = Math.Max(0, Math.Min(_m.Page, UiPicker.Pages(_m) - 1));
             _laidPage = _m.Page;
-            UiWorld.PickerLay(s, _m, frame, dark, keys, Docked);
+            int first = _m.Page * Math.Max(1, _m.PerPage);
+            if (_m.Chosen < first || _m.Chosen >= first + _m.PerPage)
+            {
+                _m.Chosen = FirstChoice(first);   // the page turned: its first entry that can be chosen
+            }
+            _chosenLaid = _m.Chosen;
+            UiWorld.PickerLay(s, _m, frame, dark, keys);
         }
 
         // The panel without its entries: what a page's entries have left of the screen.
@@ -134,8 +156,18 @@ namespace RealLifeOverhaul.Ui
         // The cell's entries by what each does (Law/CustodyList: sit it out, bail, a lawyer, the duty doctor).
         private UiIcon CustodyIcon(int id) => id == 0 ? UiIcon.Clock : id == 1 ? UiIcon.Key : id == 2 ? UiIcon.Scales : id == 3 ? UiIcon.Heart : _m.Icon;
 
-        // The caller stood its window at the screen's right edge (custody beside the cell): the picker stands there too.
-        private bool Docked => _list != null && _list.Window != null && _list.Window.anchorMin.x > 0.9f;
+        // The first entry from an index on that can be chosen (no note, not greyed), or -1.
+        private int FirstChoice(int from)
+        {
+            for (int i = Math.Max(0, from); i < _m.Entries.Length; i++)
+            {
+                if (!_m.Entries[i].Note && !_m.Entries[i].Disabled)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
 
         public bool Press(int command, int arg)
         {
@@ -147,6 +179,19 @@ namespace RealLifeOverhaul.Ui
             {
                 case UiPicker.EntryCommand:
                     return arg >= 0 && arg < _ids.Length && !_m.Entries[arg].Note && !_m.Entries[arg].Disabled && _list.Pick(_ids[arg]);
+                case UiPicker.ChooseCommand:
+                    return Press(UiPicker.EntryCommand, _m.Chosen);
+                case UiPicker.SecondCommand:
+                    if (!_hasFile)
+                    {
+                        return false;
+                    }
+                    _file = !_file;   // the charge sheet read out or folded again
+                    int page = _m.Page;
+                    Read();
+                    _m.Page = page;
+                    _laidPage = -1;
+                    return true;
                 case UiPicker.PageCommand:
                     return Turn(arg);
                 case UiPicker.EmptyCommand:
@@ -167,8 +212,13 @@ namespace RealLifeOverhaul.Ui
             return true;
         }
 
+        /// <summary>The entry the pointer or the keys rest on becomes the chosen one, the one F takes.</summary>
         public void Focused(int command, int arg)
         {
+            if (command == UiPicker.EntryCommand && arg >= 0 && arg < _m.Entries.Length && !_m.Entries[arg].Note && !_m.Entries[arg].Disabled)
+            {
+                _m.Chosen = arg;
+            }
         }
 
         /// <summary>Back closes the list as its Cancel did; a locked list keeps the player, and Escape opens the game's menu as over the window.</summary>

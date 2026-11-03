@@ -25,6 +25,8 @@ namespace RealLifeOverhaul.Ui
         private readonly List<PurchaseUiItem> _rows = new List<PurchaseUiItem>(10);
         private readonly List<PurchaseUiTax> _taxes = new List<PurchaseUiTax>(2);
         private readonly List<UiCheckoutLine> _lines = new List<UiCheckoutLine>(10);
+        private readonly UiInfoRow[] _sums = new UiInfoRow[2];
+        private float _sumsOf = -1f;            // the order's price the sums were written for
         private readonly StringBuilder _sb = new StringBuilder(256);
         private string _seen;
         private float _next;
@@ -52,6 +54,9 @@ namespace RealLifeOverhaul.Ui
             _m.OwedWords = UiText.T("reallife_ui_buy_owed");
             _m.EmptyTitle = UiText.T("reallife_ui_buy_empty");
             _m.EmptyBody = UiText.T("reallife_ui_buy_empty_body");
+            _sums[0].Label = UiText.T("reallife_ui_buy_goods");
+            _sums[1].Label = UiText.T("reallife_ui_buy_sales_tax")
+                .Replace("{rate}", (RealLifeOverhaul.Population.PopulationCatalogue.SalesTax / 10.0).ToString("0.#", CultureInfo.CurrentCulture) + "%");
             _m.Prompts = BuyKits.Prompts();
             _m.PromptCount = _m.Prompts.Length;
         }
@@ -235,6 +240,7 @@ namespace RealLifeOverhaul.Ui
             bool itemsShown = container != null && container.gameObject.activeSelf;
             _lines.Clear();
             _m.Choose = false;
+            float order = 0f;   // what the order costs as the game totals it: a row's pack price for each pack taken
             for (int i = 0; itemsShown && i < _rows.Count; i++)
             {
                 PurchaseUiItem row = _rows[i];
@@ -242,6 +248,10 @@ namespace RealLifeOverhaul.Ui
                 bool picks = stepper != null && stepper.gameObject.activeSelf;
                 _m.Choose |= picks;
                 CargoInstance ci = cargo != null && i < cargo.Count ? cargo[i] : null;
+                if (ci != null)
+                {
+                    order += ci.amount * ci.pricePerUnit * (picks ? row.Amount : 1);
+                }
                 Button less = BuyKits.Get<Button>(GameContract.StepLess, stepper), more = BuyKits.Get<Button>(GameContract.StepMore, stepper);
                 var line = new UiCheckoutLine
                 {
@@ -250,7 +260,8 @@ namespace RealLifeOverhaul.Ui
                     Picture = ci != null ? BuyPictures.Item(ci.itemName) : null,
                     Icon = ci != null ? UiIcon.Package : UiIcon.Tag,
                     Price = ci != null ? (ci.amount * ci.pricePerUnit).ToCurrencyFormat() : null,
-                    Total = UiWidgets.Text(BuyKits.Get<TMP_Text>(GameContract.BuyRowPrice, row)),
+                    // The game writes a pack's price on a row of none taken; the row adds nothing to the order, so it reads nothing.
+                    Total = picks && row.Amount == 0 ? 0f.ToCurrencyFormat() : UiWidgets.Text(BuyKits.Get<TMP_Text>(GameContract.BuyRowPrice, row)),
                     Packs = picks ? row.Amount : 0,
                     CanLess = less != null && less.interactable,
                     CanMore = more != null && more.interactable
@@ -282,7 +293,8 @@ namespace RealLifeOverhaul.Ui
             ReadHead();
             _m.Total = _ui.totalPrice != null && _ui.totalPrice.activeSelf ? UiWidgets.Text(_ui.totalPriceValue) : null;
             _m.Queue = _ui.inQueueLabel != null && _ui.inQueueLabel.gameObject.activeSelf ? UiWidgets.Text(_ui.inQueueLabel) : null;
-            _m.QueueDetail = _m.Queue != null ? QueueWords() : null;
+            _m.QueueDetail = _m.Queue != null || _lines.Count > 0 ? QueueWords() : null;   // while choosing, the place in the line alone
+            Sums(itemsShown && _lines.Count > 0 && cargo != null ? order : -1f);
             _m.Paused = _m.Queue == null ? UiText.T("reallife_ui_buy_paused") : null;   // the game holds time while the register is open
             _m.Order = _ui.orderButton.gameObject.activeSelf ? BuyKits.Words(_ui.orderButton) : null;
             _m.OrderEnabled = _ui.orderButton.interactable;
@@ -299,6 +311,28 @@ namespace RealLifeOverhaul.Ui
                 typing.DeactivateInputField();   // the game focuses its field as it opens: the kit's own field types, so no key lands twice
             }
             return _sb.ToString();
+        }
+
+        // The order's price as the goods and the sales tax in it, as the city's rule takes it from every price (the council's
+        // share, PopulationCatalogue.SalesTax): shown only, nothing charged beyond the game's own total. None for a ticket or
+        // the tax office. Written again only when the price changes.
+        private void Sums(float order)
+        {
+            if (order < 0f)
+            {
+                _m.Sums = System.Array.Empty<UiInfoRow>();
+                _sumsOf = -1f;
+                return;
+            }
+            if (order != _sumsOf)
+            {
+                _sumsOf = order;
+                float tax = order * RealLifeOverhaul.Population.PopulationCatalogue.SalesTax / 1000f;
+                _sums[0].Value = (order - tax).ToCurrencyFormat();
+                _sums[1].Value = tax.ToCurrencyFormat();
+            }
+            _m.Sums = _sums;
+            _sb.Append(_sums[0].Value).Append(';').Append(_sums[1].Value).Append('|');
         }
 
         // The shop the register stands in as the game registers it (its name, its address with the district) and, for goods,

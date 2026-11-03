@@ -10,7 +10,7 @@ internal static partial class Program
         UiActivity.FastCommand, UiActivity.CancelCommand, UiToolRow.ToolCommand, UiToolRow.ChoiceCommand, UiDraw.TimePillCommand, UiDraw.MoneyPillCommand, UiDraw.NeedsPillCommand,
         UiDraw.AlertsPillCommand, UiDraw.SettingsPillCommand
     };
-    private static readonly int[] PickerCommands = { UiPicker.EntryCommand, UiPicker.PageCommand, UiPicker.EmptyCommand };
+    private static readonly int[] PickerCommands = { UiPicker.EntryCommand, UiPicker.PageCommand, UiPicker.EmptyCommand, UiPicker.ChooseCommand, UiPicker.SecondCommand };
     private static readonly int[] ActivityCardCommands = { UiActivity.ButtonCommand, UiActivity.StepCommand };
     private static readonly int[] TimeSkipCommands = { UiTimeSkip.CancelCommand };
     private static readonly int[] MapPanelCommands = { UiMapPanel.ViewCommand, UiMapPanel.SearchCommand, UiMapPanel.FilterCommand, UiMapPanel.LocateCommand, UiMapPanel.DestinationCommand };

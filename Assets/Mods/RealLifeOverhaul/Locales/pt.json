@@ -29666,5 +29666,12 @@
   "reallife_ui_test_world_preview_shown": "A pré-visualização do seu prédio roda com a barra na interface RLO. Cancelar pré-visualização a encerra.",
   "reallife_ui_test_world_colour": "O seletor de cor",
   "reallife_ui_test_world_colour_shown": "O seletor de cor está emoldurado na interface RLO. Cancelar o fecha sem guardar uma cor.",
-  "reallife_opt_sec_uiscreens_tools": "Interface RLO: janelas menores"
+  "reallife_opt_sec_uiscreens_tools": "Interface RLO: janelas menores",
+  "reallife_ui_buy_sales_tax": "Imposto sobre vendas incluído no preço, {rate}",
+  "reallife_ui_buy_piece": "Peça {number}",
+  "reallife_ui_buy_style": "Estilo {number}",
+  "reallife_ui_buy_free": "Grátis",
+  "reallife_ui_world_pick_choose": "Escolher",
+  "reallife_ui_world_pick_file": "Ler a folha",
+  "reallife_ui_world_pick_file_close": "Fechar a folha"
 }

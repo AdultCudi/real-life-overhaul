@@ -99,6 +99,21 @@ namespace RealLifeOverhaul.Ui
             return Grid(s, at, m, x, y, w, h, columns, command);
         }
 
+        /// <summary>
+        /// The height a grid of <see cref="LayGrid"/> takes in a width with every row at its least, so a panel can end under
+        /// its last row rather than stand the screen's height; the empty state's when there are no cards.
+        /// </summary>
+        public static float GridHeight(UiCatalogueModel m, float w, float least)
+        {
+            if (m.CardCount == 0)
+            {
+                return UiDraw.EmptyStateHeight(w, m.EmptyTitle, m.EmptyBody, null) + UiTokens.S6 * 2f;
+            }
+            int columns = Math.Max(1, (int)((w + UiTokens.S3) / (Math.Max(UiTokens.S16, least) + UiTokens.S3)));
+            int rows = (m.CardCount + columns - 1) / columns;
+            return rows * (TileHeight(CardWidth(w, columns)) + FootHeight + UiTokens.S3) - UiTokens.S3;
+        }
+
         private static float CardWidth(float gw, int columns) => UiDraw.SnapDown((gw - UiTokens.S3 * (columns - 1)) / columns);
 
         private static float TileHeight(float cw) => UiDraw.SnapDown(cw * TileShare);

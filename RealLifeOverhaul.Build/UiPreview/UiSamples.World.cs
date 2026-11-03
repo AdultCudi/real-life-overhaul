@@ -247,6 +247,7 @@ internal static partial class UiSamples
             EmptyAction = t("common_close", "Close"),
         };
         Prompts(m, t, false);
+        Foot(m, t);
         m.Entries = new[]
         {
             Desk("Report a crime or an accident"), Desk("Pay your outstanding fines: $420"), Desk("Ask about your record"),
@@ -264,6 +265,14 @@ internal static partial class UiSamples
         return m;
     }
 
+    // The world's lists as the screen sets them: each entry on its surface, the first chosen at rest, F Choose at the foot.
+    private static void Foot(UiPickerModel m, UiWords t)
+    {
+        m.Surfaces = true;
+        m.Chosen = 0;
+        m.Choose = t("reallife_ui_world_pick_choose", "Choose");
+    }
+
     private static UiPickEntry Desk(string name) => new UiPickEntry { Icon = UiIcon.ShieldCheck, Name = name };
 
     private static UiPickEntry Shut(string name) => new UiPickEntry { Icon = UiIcon.ShieldCheck, Name = name, Disabled = true };
@@ -279,8 +288,11 @@ internal static partial class UiSamples
         m.PromptCount = m.Prompts.Length;
     }
 
-    /// <summary>The holding cell's list, locked: the clock and the sentence, the charge sheet whole, the three ways to go on.</summary>
-    public static UiPickerModel WorldCustody(UiWords t)
+    /// <summary>
+    /// The holding cell's list, locked: the clock and the sentence, the charge sheet by its heading (whole once P reads the
+    /// file, <paramref name="file"/>), the ways to go on with Sit it out chosen, F Choose and P at the foot.
+    /// </summary>
+    public static UiPickerModel WorldCustody(UiWords t, bool file = false)
     {
         var m = new UiPickerModel
         {
@@ -300,12 +312,15 @@ internal static partial class UiSamples
             EmptyTitle = t("reallife_ui_world_pick_empty", "Nothing to choose"), EmptyBody = t("reallife_ui_world_pick_empty_body", "There is nothing here to choose right now."),
         };
         Prompts(m, t, true);
+        Foot(m, t);
+        m.Chosen = 1;
+        m.Second = file ? t("reallife_ui_world_pick_file_close", "Close the file") : t("reallife_ui_world_pick_file", "Read the file");
         m.Entries = new[]
         {
             new UiPickEntry
             {
                 Note = true, Name = "CHARGE SHEET",
-                Detail = "Driving through a red light on Fifth Avenue\nDriving without a licence\nFines and damages charged at your arrest: $1,260",
+                Detail = file ? "Driving through a red light on Fifth Avenue\nDriving without a licence\nFines and damages charged at your arrest: $1,260" : null,
             },
             new UiPickEntry
             {
@@ -331,9 +346,9 @@ internal static partial class UiSamples
         return m;
     }
 
-    /// <summary>A list over the street with the HUD's bar, centred, or at the right where its caller docked it (custody).</summary>
-    public static void WorldPickerScene(UiScene s, UiFrame f, bool dark, IUiKeys k, UiPickerModel m, bool docked, bool night = false) =>
-        WithBar(Over(HudBar(BarWords, false, false, night)), () => UiWorld.PickerLay(s, m, f, dark, k, docked));
+    /// <summary>A list over the street with the HUD's bar, centred high.</summary>
+    public static void WorldPickerScene(UiScene s, UiFrame f, bool dark, IUiKeys k, UiPickerModel m, bool night = false) =>
+        WithBar(Over(HudBar(BarWords, false, false, night)), () => UiWorld.PickerLay(s, m, f, dark, k));
 
     // ------------------------------------------------------------------------------------------------- the job offer
 

@@ -17,17 +17,17 @@ namespace RealLifeOverhaul.Ui
             PreviewId = "world_building_preview", ColourId = "world_colour_picker";
 
         /// <summary>
-        /// The picker over the running game with the status bar and its prompts: centred above the bar, or at the right
-        /// beside the player when its caller docked the list there (custody beside the cell).
+        /// The picker over the running game with the status bar and its prompts: centred, a third of the way down the room
+        /// above the bar, as every list of the world's stands (custody's too).
         /// </summary>
-        public static void PickerLay(UiScene s, UiPickerModel m, UiFrame frame, bool dark, IUiKeys keys, bool docked)
+        public static void PickerLay(UiScene s, UiPickerModel m, UiFrame frame, bool dark, IUiKeys keys)
         {
             s.Begin(PickerId, frame.Width, frame.Height, dark);
             s.Pointer = frame.Pointer;
             s.Floats = true;
             float h = UiPicker.Height(m);
-            float x = docked ? UiDraw.SnapDown(frame.Width - UiPicker.Width - UiTokens.S16) : UiDraw.SnapDown((frame.Width - UiPicker.Width) / 2f);
-            float y = UiDraw.SnapDown(Math.Max(UiTokens.S8, (frame.BandY - h) / 2f));
+            float x = UiDraw.SnapDown((frame.Width - UiPicker.Width) / 2f);
+            float y = UiDraw.SnapDown(Math.Max(UiTokens.S8, (frame.BandY - h) / 3f));
             UiPicker.Draw(s, UiAt.Screen, m, x, y, keys);
             for (int i = 0; i < m.PromptCount; i++)
             {
