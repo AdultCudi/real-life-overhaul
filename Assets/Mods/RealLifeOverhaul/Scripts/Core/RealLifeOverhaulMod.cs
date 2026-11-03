@@ -865,6 +865,8 @@ namespace RealLifeOverhaul
                     v => Settings.EconomyGradeUpNotes = v)
                 .AddToggle(Settings.EconomyDayResultId, "reallife_econ_opt_day_result", Settings.EconomyDayResult,
                     v => Settings.EconomyDayResult = v)
+                .AddToggle(Settings.EconomyGoalRewardsId, "reallife_econ_opt_goal_rewards", Settings.EconomyGoalRewards,
+                    v => Settings.EconomyGoalRewards = v)
                 .AddToggle(Settings.EconomyProductsId, "reallife_econ_products", Settings.EconomyProducts,
                     v => Settings.EconomyProducts = v)
                 .AddToggle(Settings.EconomySharkId, "reallife_econ_shark", Settings.EconomyShark,
@@ -1036,6 +1038,10 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_ui_test_flare", () => Ui.UiDirector.Instance?.TestFlareCity())
                 .AddButton("reallife_ui_test_hud", () => Ui.UiDirector.Instance?.TestHud())
                 .AddButton("reallife_ui_test_hud_box", () => Ui.UiDirector.Instance?.TestHudPrompt())
+                .AddButton("reallife_ui_test_hud_sides", () => Ui.UiDirector.Instance?.TestHudSides())
+                .AddButton("reallife_ui_test_hud_goals", () => Ui.UiDirector.Instance?.TestHudGoals())
+                .AddButton("reallife_ui_test_hud_summary", () => Ui.UiDirector.Instance?.TestHudSummary())
+                .AddButton("reallife_ui_test_hud_own", () => Ui.UiDirector.Instance?.TestHudOwn())
                 .AddButton("reallife_ui_test_activity_work", () => Ui.UiDirector.Instance?.TestActivityWork())
                 .AddButton("reallife_ui_test_activity_class", () => Ui.UiDirector.Instance?.TestActivityClass())
                 .AddButton("reallife_ui_test_activity_chair", () => Ui.UiDirector.Instance?.TestActivityChair())

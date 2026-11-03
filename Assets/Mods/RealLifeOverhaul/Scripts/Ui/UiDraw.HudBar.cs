@@ -16,6 +16,8 @@ namespace RealLifeOverhaul.Ui
         public int Apps;                              // the app row's apps before All apps
         public float RowX, RowW;                      // px: the app row's left edge and its width; 0 wide for no row
         public float PromptX, Prompts;                // px: the keys' prompts' left edge and width, before the right pills
+        public float Tools;                           // px: the top bar's small buttons' pill after the place (appended with the HUD's screens)
+        public float ToolsX;                          // px: that pill's left edge, for a button's own panel to rise over it
     }
 
     /// <summary>
@@ -42,6 +44,9 @@ namespace RealLifeOverhaul.Ui
         /// alerts and the settings.
         /// </summary>
         public const int TimePillCommand = 9020, MoneyPillCommand = 9021, NeedsPillCommand = 9022, AlertsPillCommand = 9023, SettingsPillCommand = 9024;
+
+        /// <summary>One of the top bar's small buttons in their pill after the place (arg: its index in UiStatusModel.Tools).</summary>
+        public const int ToolPillCommand = 9025;
 
         /// <summary>px: a pill's height on the bar, the app tiles' own, so every piece stands on the one centre line.</summary>
         public const float BarPill = UiFrame.Toolbar;
@@ -71,7 +76,7 @@ namespace RealLifeOverhaul.Ui
         private const float BarGap = UiTokens.S6;         // px between the row and the pills each side, and before the prompts
 
         /// <summary>True for a pill's target, which only the HUD answers.</summary>
-        public static bool IsPill(int command) => command >= TimePillCommand && command <= SettingsPillCommand;
+        public static bool IsPill(int command) => command >= TimePillCommand && command <= ToolPillCommand;
 
         /// <summary>
         /// Where everything stands on a strip of a width, as <see cref="StatusBar"/> draws it: the row's apps and place, each
@@ -93,9 +98,10 @@ namespace RealLifeOverhaul.Ui
             p.Alerts = AlertsWidth(m);
             p.Money = MoneyWidth(m, true);
             p.Settings = m.PillsPress ? SquarePill : 0f;
+            p.Tools = ToolsWidth(m);
             // The row keeps every app it is given until the time with its day, or the right pills at their tightest (or the
             // prompts while the keys lead), would not stand whole beside it; then apps wait under All apps, down to four.
-            float least = Math.Max(p.Time, Math.Max(prompts, Pills(NeedsWidth(m, NeedTight), p.Alerts, p.Money, p.Settings)));
+            float least = Math.Max(p.Time + (p.Tools > 0f ? PillGap + p.Tools : 0f), Math.Max(prompts, Pills(NeedsWidth(m, NeedTight), p.Alerts, p.Money, p.Settings)));
             int apps = RowApps(m);
             while (apps > 0 && (Zone(m, w, RowWidth(m, apps)) < 0f || (apps > RowLeast && Zone(m, w, RowWidth(m, apps)) < least)))
             {
@@ -105,9 +111,11 @@ namespace RealLifeOverhaul.Ui
             p.RowW = RowWidth(m, apps);
             p.RowX = SnapDown((w - p.RowW) / 2f);
             float zone = Zone(m, w, p.RowW);
-            FitLeft(m, ref p, zone);
+            FitLeft(m, ref p, zone - (p.Tools > 0f ? p.Tools + PillGap : 0f));   // the buttons keep their pill: the mouse's only way to them
             FitRight(m, ref p, zone);
             p.MoneyX = w - BarEdge - p.Settings - (p.Settings > 0f ? PillGap : 0f) - p.Money;
+            float left = Pills(p.Time, p.Weather, p.Place, 0f);
+            p.ToolsX = BarEdge + left + (left > 0f ? PillGap : 0f);
             float pills = Pills(p.Needs, p.Alerts, p.Money, p.Settings);
             p.PromptX = w - BarEdge - pills - (pills > 0f && prompts > 0f ? BarGap : 0f) - prompts;
             return p;
@@ -256,6 +264,36 @@ namespace RealLifeOverhaul.Ui
 
         private static float NeedGap(float cell) => cell > NeedTight ? UiTokens.S2 : UiTokens.S1;
 
+        // The top bar's small buttons: one pill of square glyphs, on the HUD's bar alone.
+        private static float ToolsWidth(UiStatusModel m) =>
+            !m.PillsPress || m.Tools == null || m.ToolCount <= 0 ? 0f : PillPad * 2f + m.ToolCount * ToolButton + (m.ToolCount - 1) * UiTokens.S1;
+
+        private const float ToolButton = UiTokens.Control + UiTokens.S1;   // px: one of the small buttons, square, on the pill's centre line, a grid step from its edges
+
+        /// <summary>px: the middle of the bar's small button <paramref name="index"/>, from the plan's pill, for its panel to rise over it.</summary>
+        public static float ToolMiddle(UiPillPlan p, int index) => p.ToolsX + PillPad + index * (ToolButton + UiTokens.S1) + ToolButton / 2f;
+
+        // The small buttons' pill: each glyph a target on its own square, the one whose panel is open on the chosen tone, one
+        // the game will not answer now greyed.
+        private static void ToolsPill(UiScene s, UiAt at, float x, float y, float w, UiStatusModel m)
+        {
+            int pill = PillFace(s, at, x, y, w);
+            UiAt on = at.In(pill);
+            float bx = x + PillPad, by = y + (BarPill - ToolButton) / 2f;
+            for (int i = 0; i < m.ToolCount && i < m.Tools.Length; i++)
+            {
+                bool chosen = m.ToolsOn != null && i < m.ToolsOn.Length && m.ToolsOn[i];
+                bool off = m.ToolsOff != null && i < m.ToolsOff.Length && m.ToolsOff[i];
+                int first = s.ItemCount;
+                int node = IconButton(s, on, bx, by, ToolButton, m.Tools[i], UiRole.Text, ToolPillCommand, i, chosen);
+                if (off)
+                {
+                    Dim(s, first, node);
+                }
+                bx += ToolButton + UiTokens.S1;
+            }
+        }
+
         // The bell: on the HUD's bar always, as the game's own top bar keeps it; elsewhere only while notices wait.
         private static float AlertsWidth(UiStatusModel m) => m.Alerts > 0 || m.PillsPress ? SquarePill : 0f;
 
@@ -288,6 +326,11 @@ namespace RealLifeOverhaul.Ui
             if (p.Place > 0f)
             {
                 PlacePill(s, row, px, py, p.Place, m, p.District);
+                px += p.Place + PillGap;
+            }
+            if (p.Tools > 0f)
+            {
+                ToolsPill(s, row, px, py, p.Tools, m);
             }
             float rx = w - BarEdge - Pills(p.Needs, p.Alerts, p.Money, p.Settings);
             if (p.Needs > 0f)

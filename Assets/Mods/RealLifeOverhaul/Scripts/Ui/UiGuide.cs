@@ -19,7 +19,8 @@ namespace RealLifeOverhaul.Ui
                 .Test("reallife_ui_test_all_apps", "reallife_ui_test_question", "reallife_ui_test_question_negative", "reallife_ui_test_acknowledge",
                     "reallife_ui_test_text_box", "reallife_ui_test_mod_box", "reallife_ui_test_notices", "reallife_ui_test_contacts_switch")
                 .Test("reallife_ui_test_bizman", "reallife_ui_test_bizman_rival", "reallife_ui_test_bizman_rent", "reallife_ui_test_bizman_switch")
-                .Test("reallife_ui_test_hud", "reallife_ui_test_hud_box")
+                .Test("reallife_ui_test_hud", "reallife_ui_test_hud_box", "reallife_ui_test_hud_sides", "reallife_ui_test_hud_goals", "reallife_ui_test_hud_summary",
+                    "reallife_ui_test_hud_own")
                 .Test("reallife_ui_test_activity_work", "reallife_ui_test_activity_class", "reallife_ui_test_activity_chair", "reallife_ui_test_activity_skip",
                     "reallife_ui_test_activity_funeral")
                 .Test("reallife_ui_test_bizops_schedule", "reallife_ui_test_bizops_managers", "reallife_ui_test_bizops_factory", "reallife_ui_test_bizops_warehouse",

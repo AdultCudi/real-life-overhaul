@@ -154,6 +154,7 @@
         public const string EconomyId = "economy";
         public const string EconomyGradeUpNotesId = "economy_grade_up_notes";
         public const string EconomyDayResultId = "economy_day_result";   // the day-end panel and the top bar show the game's figure with the mod's money
+        public const string EconomyGoalRewardsId = "economy_goal_rewards";   // a personal goal reached pays a reward sized by its tier
         public const string EconomyProductsId = "economy_products";
         public const string EconomySharkId = "economy_shark";
         public const string EconomyConsequencesId = "economy_consequences";
@@ -531,6 +532,7 @@
         public static bool Economy = true;               // the credit rating, the banks' terms by it, loans from the phone and the Finance app
         public static bool EconomyGradeUpNotes = true;   // ...a notification when the rating rises a grade
         public static bool EconomyDayResult = true;      // ...the day's result with the mod's money on the day-end panel and the top bar
+        public static bool EconomyGoalRewards = true;    // ...a personal goal reached pays a reward (Economy/Finance/GoalRewardRules)
         public static bool EconomyProducts = true;       // more kinds of credit (off: nothing new is opened or drawn; what is owed stays owed)
         public static bool EconomyShark = true;          // the lender of last resort
         public static bool EconomyConsequences = true;   // what lenders do when payments are missed (off: only the rating is affected)
@@ -962,6 +964,7 @@
             Economy = Bool(modId, EconomyId, Economy);
             EconomyGradeUpNotes = Bool(modId, EconomyGradeUpNotesId, EconomyGradeUpNotes);
             EconomyDayResult = Bool(modId, EconomyDayResultId, EconomyDayResult);
+            EconomyGoalRewards = Bool(modId, EconomyGoalRewardsId, EconomyGoalRewards);
             EconomyProducts = Bool(modId, EconomyProductsId, EconomyProducts);
             EconomyShark = Bool(modId, EconomySharkId, EconomyShark);
             EconomyConsequences = Bool(modId, EconomyConsequencesId, EconomyConsequences);

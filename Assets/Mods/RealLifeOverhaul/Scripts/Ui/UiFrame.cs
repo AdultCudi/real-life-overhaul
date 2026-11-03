@@ -138,6 +138,13 @@ namespace RealLifeOverhaul.Ui
         public bool AppsPress;        // the tiles are targets: true where the frame answers them (the full menu)
         public string AllAppsLabel;   // the prompt's words for the pad's View, which opens All apps from anywhere
         public float Middle;          // px the strip's middle keeps clear for a row drawn over the bar in the apps' place (UiToolRow.Width)
+
+        // Appended with the HUD's screens (3 Nov 2026): the top bar's small buttons (the dances, the accessories, the help, the bug
+        // report), one pill of square glyphs after the place on the HUD's bar, each opening its own short panel above the bar.
+        public UiIcon[] Tools;        // in order; null for none
+        public bool[] ToolsOn;        // each one's panel open: its glyph on the chosen tone
+        public bool[] ToolsOff;       // each one the game will not answer now (the dances while driving): greyed
+        public int ToolCount;
     }
 
     /// <summary>The status bar's source; the game file sets it. Status is the older one line, kept for the game file's log.</summary>
