@@ -29,12 +29,20 @@ namespace RealLifeOverhaul.DaySeries
         public const string FortunePrefix = "worth.f";
 
         // flare.{account}  Flare reach for one account. Flare appends this. This job does not write it.
-        public const string PricePrefix = "price.";   // retail price of one good, cents. News appends it.
+        public const string PricePrefix = "price.";   // the player's own retail price of one good, cents. Only where they sell it. News appends it.
+        public const string CityPrefix = "city.";     // the city's shop price of one good, cents, the goods the News pages follow
+        public const int CityGoodsMost = 12;
 
         public static string Price(string good)
         {
             string clean = Clean(good);
             return clean.Length == 0 ? string.Empty : PricePrefix + clean;
+        }
+
+        public static string CityPrice(string good)
+        {
+            string clean = Clean(good);
+            return clean.Length == 0 ? string.Empty : CityPrefix + clean;
         }
 
         public static string Category(int index) => CategoryPrefix + index.ToString(System.Globalization.CultureInfo.InvariantCulture);

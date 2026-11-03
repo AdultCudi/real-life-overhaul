@@ -273,6 +273,67 @@ namespace RealLifeOverhaul.Economy
             return Priced.Count;
         }
 
+        private static readonly List<int> Followed = new List<int>(16);
+        private static int _followedOf = -1;
+
+        /// <summary>
+        /// The goods the News pages follow, two of each kind by name so every machine follows the same, and the city's shop price of each
+        /// today in cents: the game's own market price moved by its kind's factor. At most <paramref name="most"/>.
+        /// </summary>
+        internal static int RetailPrices(List<string> names, List<int> cents, int most)
+        {
+            names.Clear();
+            cents.Clear();
+            if (_followedOf != Priced.Count)
+            {
+                Follow();
+            }
+            for (int f = 0; f < Followed.Count && names.Count < most; f++)
+            {
+                int i = Followed[f];
+                Item item = i < Priced.Count ? Priced[i] : null;
+                if (item == null || string.IsNullOrEmpty(item.itemName) || item.DefaultMarketPrice <= 0f)
+                {
+                    continue;
+                }
+                int kind = PricedKind[i];
+                int factor = kind >= 0 && kind < Factors.Length && Factors[kind] > 0 ? Factors[kind] : 1000;
+                names.Add(item.itemName);
+                cents.Add((int)Math.Round(item.DefaultMarketPrice * factor / 10f));
+            }
+            return names.Count;
+        }
+
+        // Two goods of each kind, the least by name, found once for the catalogue as it stands.
+        private static void Follow()
+        {
+            Followed.Clear();
+            _followedOf = Priced.Count;
+            for (int round = 0; round < 2; round++)
+            {
+                for (int k = 0; k < KindCount.Length; k++)
+                {
+                    int pick = -1;
+                    for (int i = 0; i < Priced.Count; i++)
+                    {
+                        Item item = Priced[i];
+                        if (PricedKind[i] != k || item == null || string.IsNullOrEmpty(item.itemName) || item.DefaultMarketPrice <= 0f || Followed.Contains(i))
+                        {
+                            continue;
+                        }
+                        if (pick < 0 || string.CompareOrdinal(item.itemName, Priced[pick].itemName) < 0)
+                        {
+                            pick = i;
+                        }
+                    }
+                    if (pick >= 0)
+                    {
+                        Followed.Add(pick);
+                    }
+                }
+            }
+        }
+
         public static int CountOf(int kind)
         {
             return kind >= 0 && kind < KindCount.Length ? KindCount[kind] : 0;

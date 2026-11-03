@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.Ui
     /// Fills a news page from the city when the day or the tab changes, and carries a press to the feature that already
     /// owns it. Nothing a frame.
     /// </summary>
-    public sealed class NewsLive : INewsSource
+    public sealed partial class NewsLive : INewsSource
     {
         public static readonly NewsLive Economy = new NewsLive(NewsApp.Economy);
         public static readonly NewsLive People = new NewsLive(NewsApp.People);
@@ -51,6 +51,10 @@ namespace RealLifeOverhaul.Ui
         private static readonly float[] Inflation = new float[NewsRules.DaysBook];
         private static readonly float[] Rate = new float[NewsRules.DaysBook];
         private static readonly float[] Wages = new float[NewsRules.DaysBook];
+        private static readonly string[] VerdictHeads =
+        {
+            "reallife_news_head_growing", "reallife_news_head_steady", "reallife_news_head_slowing", "reallife_news_head_overheating", "reallife_news_head_recession"
+        };
         private static readonly List<OutlookInsight> Insights = new List<OutlookInsight>(8);
         private readonly NewsApp _app;
         private int _local;
@@ -68,7 +72,7 @@ namespace RealLifeOverhaul.Ui
             get
             {
                 int day = OutlookDirector.Instance != null && OutlookDirector.Instance.History != null ? OutlookDirector.Instance.History.LastDay : 0;
-                return day + _local + _range * 1000 + DaySeriesDirector.Generation;
+                return day + _local + _range * 1000 + DaySeriesDirector.Generation + (_app == NewsApp.Paper ? PaperStamp() : 0);
             }
         }
 
@@ -144,15 +148,9 @@ namespace RealLifeOverhaul.Ui
             {
                 return EndChoice(arg);
             }
-            if (_app == NewsApp.Stand && command == UiCatalogue.First + UiCatalogue.Action)
+            if (_app == NewsApp.Stand && command == NewsCommands.Title)
             {
-                return Subscription(model, arg);
-            }
-            if (_app == NewsApp.Stand && command == UiCatalogue.First + UiCatalogue.Card)
-            {
-                model.Tab = 1;
-                _local++;
-                return true;
+                return TakeTitle(arg);
             }
             if (command == UiAppWindow.NavCommand && _app == NewsApp.Economy && arg == 7)
             {
@@ -168,6 +166,7 @@ namespace RealLifeOverhaul.Ui
             model.Icon = UiIcon.Chart;
             model.Title = OutlookText.T("reallife_econapp_app");
             model.Nav = Nav();
+            model.StripNote = OutlookText.Day(Look.Day);
             if (model.Tab == 7)
             {
                 FillPeople(model);
@@ -196,8 +195,8 @@ namespace RealLifeOverhaul.Ui
             OutlookBook book = OutlookDirector.Instance != null ? OutlookDirector.Instance.History : null;
             OutlookVerdict verdict = book != null ? OutlookStudy.Run(book, Look, Scratch) : OutlookVerdict.Steady;
             model.Chip = OutlookText.Words.VerdictWord(verdict);
-            model.Lead = model.Shape == NewsShape.Prices ? BasketLead(book) : OutlookText.Words.VerdictLine(verdict, Look);
-            model.Body = model.Shape == NewsShape.Overview ? OutlookText.Words.VerdictLine(verdict, Look) : string.Empty;
+            model.Lead = OutlookText.T(VerdictHeads[(int)verdict < VerdictHeads.Length ? (int)verdict : 1]);
+            model.Body = OutlookText.Words.VerdictLine(verdict, Look);
             model.ChipTone = verdict == OutlookVerdict.Growing ? UiRole.OkText : verdict == OutlookVerdict.Recession ? UiRole.DangerText : UiRole.WarnText;
             model.Figures = model.Shape == NewsShape.Overview || model.Shape == NewsShape.Finances ? Figures() : new UiFigureModel[0];
             model.Chart = Chart(book, model.Shape);
@@ -207,6 +206,13 @@ namespace RealLifeOverhaul.Ui
                 model.Figures[0].Trend = Tail(Inflation, span);
                 model.Figures[1].Trend = Tail(Rate, span);
                 model.Figures[2].Trend = Tail(Wages, span);
+                int back = Math.Max(0, span - 1 - NewsRules.DaysMonth);
+                float rateMove = Rate[span - 1] - Rate[back];
+                if (Math.Abs(rateMove) >= 0.005f)
+                {
+                    model.Figures[1] = Fig("reallife_econapp_tile_rate", (Look.RateBp / 100f).ToString("0.00", Inv) + "%", rateMove, "0.00");
+                    model.Figures[1].Trend = Tail(Rate, span);
+                }
             }
             model.Bands = model.Shape == NewsShape.Overview ? Bands(book) : new NewsBand[0];
             model.Marks = model.Shape == NewsShape.Overview ? RiseMarks(book) : new int[0];
@@ -214,9 +220,19 @@ namespace RealLifeOverhaul.Ui
             model.AdviceTitle = OutlookText.T("reallife_news_advice");
             model.Advice = model.Shape == NewsShape.Overview || model.Shape == NewsShape.Insights ? Advice(book) : new NewsAdvice[0];
             model.Actions = model.Shape == NewsShape.Overview ? Ranges() : new UiActionModel[0];
-            model.Note = model.Shape == NewsShape.Prices ? Movers() : model.Shape == NewsShape.Markets ? Holding() : string.Empty;
             model.Table = TableFor(model.Shape, book);
             model.Table2 = model.Shape == NewsShape.Overview ? DistrictTable() : null;
+            model.TableTitle = OutlookText.T(model.Shape == NewsShape.Overview ? "reallife_news_prices_today" : model.Shape == NewsShape.Districts ? "reallife_news_districts_pull"
+                : "reallife_news_jobs_table");
+            model.Table2Title = OutlookText.T("reallife_news_districts_pull");
+            if (model.Shape == NewsShape.Prices)
+            {
+                FillPrices(model, book);
+            }
+            else if (model.Shape == NewsShape.Markets)
+            {
+                FillMarkets(model);
+            }
         }
 
         private static UiNavEntry[] Nav()
@@ -243,19 +259,21 @@ namespace RealLifeOverhaul.Ui
         {
             return new[]
             {
-                Fig("reallife_econapp_tile_inflation", (Look.Inflation / 100f).ToString("0.0", Inv) + "%", Look.MonthChange),
-                Fig("reallife_econapp_tile_rate", (Look.RateBp / 100f).ToString("0.00", Inv) + "%", Look.PendingMove),
-                Fig("reallife_econapp_tile_unemployment", (Look.Unemployment / 10f).ToString("0.0", Inv) + "%", 0)
+                Fig("reallife_econapp_tile_inflation", (Look.Inflation / 100f).ToString("0.0", Inv) + "%", Look.MonthChange / 100f, "0.0"),
+                Fig("reallife_econapp_tile_rate", (Look.RateBp / 100f).ToString("0.00", Inv) + "%", 0f, "0.00"),
+                Fig("reallife_econapp_tile_unemployment", (Look.Unemployment / 10f).ToString("0.0", Inv) + "%", 0f, "0.0")
             };
         }
 
-        private static UiFigureModel Fig(string key, string value, int change)
+        // A figure with its change over the month in words ("+0.6 in a month"), or none when it did not move.
+        private static UiFigureModel Fig(string key, string value, float change, string format)
         {
+            bool moved = Math.Abs(change) >= 0.005f;
             return new UiFigureModel
             {
                 Label = OutlookText.T(key),
                 Value = value,
-                Change = change == 0 ? null : (change > 0 ? "+" : "") + change.ToString(Inv),
+                Change = moved ? (change > 0 ? "+" : "-") + Math.Abs(change).ToString(format, Inv) + " " + OutlookText.T("reallife_news_in_month") : null,
                 Rising = change > 0,
                 Good = change < 0
             };
@@ -268,22 +286,44 @@ namespace RealLifeOverhaul.Ui
             Copy(book, OutlookCatalogue.Inflation, end, span, Inflation);
             Copy(book, OutlookCatalogue.Rate, end, span, Rate);
             Copy(book, OutlookCatalogue.Income, end, span, Wages);
-            var points = new string[span];
+            if (shape == NewsShape.Overview)
+            {
+                Units(span);
+            }
+            var whole = new string[span];
             for (int i = 0; i < span; i++)
             {
-                points[i] = end > span ? (end - span + 1 + i).ToString(Inv) : (i + 1).ToString(Inv);
+                whole[i] = OutlookText.T("reallife_news_axis_day", "day", (end > span ? end - span + 1 + i : i + 1).ToString(Inv));
             }
+            string[] points = NewsText.AxisPoints(whole, NewsText.AxisStep(span));
             UiSeries[] series = SeriesFor(book, shape, end, span);
             return new UiChartModel
             {
                 Kind = UiChartKind.Line,
                 Title = OutlookText.T("reallife_news_chart"),
                 Points = points,
+                Reads = whole,
                 Series = series,
-                Format = v => v.ToString("0.0", Inv),
+                Format = shape == NewsShape.Finances ? (Func<float, string>)(v => LedgerText.Money((int)Math.Max(int.MinValue, Math.Min(int.MaxValue, v * 1000f))))
+                    : v => v.ToString("0.0", Inv),
                 EmptyTitle = OutlookText.T("reallife_news_empty_city"),
                 EmptyBody = OutlookText.T("reallife_news_empty_city_body")
             };
+        }
+
+        // The book's units into the chart's: inflation in per cent a year, the bank rate in per cent, and wages as the growth of the
+        // income level over a month taken to a year, so the three lines share one axis.
+        private static void Units(int span)
+        {
+            var level = new float[span];
+            Array.Copy(Wages, level, span);
+            for (int i = 0; i < span; i++)
+            {
+                Inflation[i] /= 100f;
+                Rate[i] = (OwnBankCatalogue.CityRateStart + Rate[i] * (100 / MacroCatalogue.QuartersPerPoint)) / 100f;
+                int w = Math.Min(NewsRules.DaysMonth, i);
+                Wages[i] = w == 0 || level[i - w] <= 0f ? 0f : (level[i] / level[i - w] - 1f) * 100f * NewsRules.YearDays / w;
+            }
         }
 
         private UiSeries[] SeriesFor(OutlookBook book, NewsShape shape, int end, int span)
@@ -292,11 +332,11 @@ namespace RealLifeOverhaul.Ui
             {
                 Copy(book, OutlookCatalogue.Unemployment, end, span, Inflation);
                 Copy(book, OutlookCatalogue.Vacancies, end, span, Rate);
-                return new[]
+                for (int i = 0; i < span; i++)
                 {
-                    new UiSeries { Label = OutlookText.T("reallife_news_series_jobless"), Values = Take(Inflation, span), Tint = UiRole.Danger },
-                    new UiSeries { Label = OutlookText.T("reallife_news_series_vacancies"), Values = Take(Rate, span), Tint = UiRole.Ok }
-                };
+                    Inflation[i] /= 10f;   // per mille into per cent
+                }
+                return new[] { new UiSeries { Label = OutlookText.T("reallife_news_series_jobless"), Values = Take(Inflation, span), Tint = UiRole.Danger } };
             }
             if (shape == NewsShape.Finances)
             {
@@ -310,96 +350,12 @@ namespace RealLifeOverhaul.Ui
                     new UiSeries { Label = OutlookText.T("reallife_news_series_spending"), Values = Take(Wages, span), Tint = UiRole.Danger }
                 };
             }
-            if (shape == NewsShape.Markets)
-            {
-                return IndexSeries(span);
-            }
-            if (shape == NewsShape.Prices)
-            {
-                Copy(book, OutlookCatalogue.Prices, end, span, Inflation);
-                return new[] { new UiSeries { Label = OutlookText.T("reallife_news_series_index"), Values = Take(Inflation, span), Tint = UiRole.Accent } };
-            }
             return new[]
             {
                 new UiSeries { Label = OutlookText.T("reallife_news_series_inflation"), Values = Take(Inflation, span), Tint = UiRole.Danger },
                 new UiSeries { Label = OutlookText.T("reallife_news_series_rate"), Values = Take(Rate, span), Tint = UiRole.Accent },
                 new UiSeries { Label = OutlookText.T("reallife_news_series_wages"), Values = Take(Wages, span), Tint = UiRole.Ok }
             };
-        }
-
-        private string BasketLead(OutlookBook book)
-        {
-            int now = Look.Prices;
-            int then = now;
-            if (book != null && book.Get(OutlookCatalogue.Prices, book.LastDay - NewsRules.DaysMonth, out int earlier))
-            {
-                then = earlier;
-            }
-            int bp = NewsRules.BasketBp(now, then);
-            string led = string.Empty;
-            int best = 0;
-            for (int i = 0; i < Look.Supply.Length; i++)
-            {
-                if (i >= OutlookWords.KindKeys.Length)
-                {
-                    continue;
-                }
-                int move = Look.Supply[i].Factor - 1000;
-                if (move > best)
-                {
-                    best = move;
-                    led = OutlookText.T(OutlookWords.KindKeys[i]);
-                }
-            }
-            string change = (bp / 100f).ToString("0.0", Inv) + "%";
-            return OutlookText.T("reallife_news_basket", "change", change) + (led.Length > 0 ? " " + OutlookText.T("reallife_news_led", "good", led) : string.Empty);
-        }
-
-        private string Movers()
-        {
-            string line = string.Empty;
-            var file = RivalDirector.Instance != null ? RivalDirector.Instance.File : null;
-            int day = Look.Day;
-            if (file != null)
-            {
-                for (int i = 0; i < file.Moves.Count; i++)
-                {
-                    RivalMove move = file.Moves[i];
-                    if (move.Kind != RivalMoveKind.PriceRise || day - move.Announced > 7)
-                    {
-                        continue;
-                    }
-                    string who = move.Tycoon >= 0 && move.Tycoon < RivalCatalogue.Tycoons.Length ? RivalCatalogue.Tycoons[move.Tycoon].Name : string.Empty;
-                    line = Join(line, who);
-                }
-            }
-            MarketState market = MarketDirector.Instance != null ? MarketDirector.Instance.State : null;
-            int firms = 0;
-            if (market != null)
-            {
-                for (int i = 0; i < market.Stocks.Count && firms < 3; i++)
-                {
-                    Stock stock = market.Stocks[i];
-                    if (stock == null || stock.Name.Length == 0 || !string.IsNullOrEmpty(stock.RivalId) || stock.Last <= 0 || stock.Last == stock.PrevClose)
-                    {
-                        continue;
-                    }
-                    line = Join(line, stock.Name);
-                    firms++;
-                }
-            }
-            line = Join(line, PolicyName(Lever.TradeLevy));
-            line = Join(line, PolicyName(Lever.BusinessTax));
-            return line.Length == 0 ? string.Empty : OutlookText.T("reallife_news_moved") + " " + line;
-        }
-
-        private static string Join(string line, string who)
-        {
-            if (string.IsNullOrEmpty(who))
-            {
-                return line;
-            }
-            return line.Length == 0 ? who : line + ", " + who;
         }
 
         // City Hall only when a price lever actually stands off the city's own setting.
@@ -454,70 +410,11 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        private UiSeries[] IndexSeries(int span)
-        {
-            MarketState state = MarketDirector.Instance != null ? MarketDirector.Instance.State : null;
-            var values = new float[span];
-            if (state != null && state.IndexDaily.Count > 0)
-            {
-                int n = state.IndexDaily.Count;
-                int take = n < span ? n : span;
-                int from = n - take;
-                for (int i = 0; i < span; i++)
-                {
-                    int at = from + (i < take ? i : take - 1);
-                    values[i] = state.IndexDaily[at].C / 100f;
-                }
-            }
-            return new[] { new UiSeries { Label = OutlookText.T("reallife_news_series_index"), Values = values, Tint = UiRole.Accent } };
-        }
-
-        private string Holding()
-        {
-            MarketState state = MarketDirector.Instance != null ? MarketDirector.Instance.State : null;
-            if (state == null)
-            {
-                return string.Empty;
-            }
-            Position best = null;
-            Stock named = null;
-            long gain = 0;
-            long worth = 0;
-            for (int i = 0; i < state.Positions.Count; i++)
-            {
-                Position p = state.Positions[i];
-                if (p == null || p.Test || p.Shares == 0)
-                {
-                    continue;
-                }
-                Stock stock = state.Stock(p.StockId);
-                if (stock == null || stock.Last <= 0)
-                {
-                    continue;
-                }
-                long now = p.Shares * stock.Last / 100L;
-                long g = now - p.Cost;
-                if (best == null || (g > 0 ? g : -g) > (gain > 0 ? gain : -gain))
-                {
-                    best = p;
-                    named = stock;
-                    worth = now;
-                    gain = g;
-                }
-            }
-            if (best == null || named == null)
-            {
-                return string.Empty;
-            }
-            string way = (gain >= 0 ? "+" : string.Empty) + LedgerText.Money((int)Math.Max(int.MinValue, Math.Min(int.MaxValue, gain)));
-            return named.Name + " " + LedgerText.Money((int)Math.Max(0, Math.Min(int.MaxValue, worth))) + " " + way;
-        }
-
         private UiDataTableModel TableFor(NewsShape shape, OutlookBook book)
         {
-            if (shape == NewsShape.Overview || shape == NewsShape.Prices)
+            if (shape == NewsShape.Overview)
             {
-                return PriceTable(shape == NewsShape.Prices);
+                return PriceTable(false);
             }
             if (shape == NewsShape.Districts)
             {
@@ -526,10 +423,6 @@ namespace RealLifeOverhaul.Ui
             if (shape == NewsShape.Jobs)
             {
                 return JobsTable();
-            }
-            if (shape == NewsShape.Markets)
-            {
-                return SectorTable();
             }
             return null;
         }
@@ -541,112 +434,7 @@ namespace RealLifeOverhaul.Ui
                 new UiDataRow { Cells = new[] { OutlookText.T("reallife_news_series_jobless"), (Look.Unemployment / 10f).ToString("0.0", Inv) + "%" }, Values = new int[2], Tones = new UiRole[2] },
                 new UiDataRow { Cells = new[] { OutlookText.T("reallife_news_series_vacancies"), Look.Vacancies.ToString(Inv) }, Values = new int[2], Tones = new UiRole[2] }
             };
-            return Table(new[] { "reallife_news_col_good", "reallife_news_col_today" }, rows);
-        }
-
-        private UiDataTableModel SectorTable()
-        {
-            MarketState state = MarketDirector.Instance != null ? MarketDirector.Instance.State : null;
-            var rows = new List<UiDataRow>(12);
-            if (state != null)
-            {
-                int sectors = (int)MarketSector.Count;
-                int up = -1;
-                int down = -1;
-                int upBp = int.MinValue;
-                int downBp = int.MaxValue;
-                for (int i = 0; i < sectors && i < state.SectorDaily.Length; i++)
-                {
-                    int bp = SessionBp(state.SectorDaily[i], 5);
-                    if (bp > upBp)
-                    {
-                        upBp = bp;
-                        up = i;
-                    }
-                    if (bp < downBp)
-                    {
-                        downBp = bp;
-                        down = i;
-                    }
-                }
-                AddSession(rows, OutlookText.T("reallife_news_riser"), up, upBp);
-                AddSession(rows, OutlookText.T("reallife_news_faller"), down, downBp);
-                AddTraded(rows, state);
-            }
-            return new UiDataTableModel
-            {
-                Columns = new[]
-                {
-                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_good"), Kind = UiCellKind.Text, Width = 128f },
-                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_district"), Kind = UiCellKind.Text },
-                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_five"), Kind = UiCellKind.Trend, Width = 128f }
-                },
-                Rows = rows.ToArray(),
-                RowCount = rows.Count,
-                EmptyTitle = OutlookText.T("reallife_news_empty_city"),
-                EmptyBody = OutlookText.T("reallife_news_empty_city_body"),
-                EmptyIcon = UiIcon.ChartLineUp
-            };
-        }
-
-        private static int SessionBp(List<int> daily, int sessions)
-        {
-            if (daily == null || daily.Count < 2)
-            {
-                return 0;
-            }
-            int last = daily[daily.Count - 1];
-            int from = daily.Count - sessions;
-            if (from < 0)
-            {
-                from = 0;
-            }
-            int then = daily[from];
-            if (then == 0)
-            {
-                return 0;
-            }
-            return (int)((long)(last - then) * 10000L / then);
-        }
-
-        private static void AddSession(List<UiDataRow> rows, string kind, int sector, int bp)
-        {
-            if (sector < 0)
-            {
-                return;
-            }
-            int way = bp > 0 ? 1 : bp < 0 ? -1 : 0;
-            rows.Add(new UiDataRow
-            {
-                Cells = new[] { kind, ((MarketSector)sector).ToString(), (bp / 100f).ToString("0.00", Inv) + "%" },
-                Values = new[] { 0, 0, way },
-                Tones = new[] { UiRole.None, UiRole.None, UiRole.None }
-            });
-        }
-
-        private static void AddTraded(List<UiDataRow> rows, MarketState state)
-        {
-            int best = -1;
-            long volume = -1;
-            for (int i = 0; i < state.Stocks.Count; i++)
-            {
-                Stock s = state.Stocks[i];
-                if (s != null && s.DayVolume > volume)
-                {
-                    volume = s.DayVolume;
-                    best = i;
-                }
-            }
-            if (best < 0 || volume <= 0)
-            {
-                return;
-            }
-            rows.Add(new UiDataRow
-            {
-                Cells = new[] { OutlookText.T("reallife_news_traded"), state.Stocks[best].Name, volume.ToString(Inv) },
-                Values = new int[3],
-                Tones = new UiRole[3]
-            });
+            return Table(new[] { "reallife_news_col_name", "reallife_news_col_today" }, rows);
         }
 
         private static void Copy(OutlookBook book, string key, int end, int span, float[] into)
@@ -929,19 +717,6 @@ namespace RealLifeOverhaul.Ui
             return NewsRules.Defensive(state.SectorVar[0], state.SectorVar[state.SectorVar.Length - 1]);
         }
 
-        private UiDataTableModel GoodsOrDistricts(NewsShape shape, OutlookBook book)
-        {
-            if (shape == NewsShape.Districts || shape == NewsShape.Overview)
-            {
-                return shape == NewsShape.Overview ? PriceTable(false) : DistrictTable();
-            }
-            if (shape == NewsShape.Prices)
-            {
-                return PriceTable(true);
-            }
-            return HoldingTable();
-        }
-
         private UiDataTableModel PriceTable(bool full)
         {
             UiDataTableModel priced = RetailTable(full);
@@ -963,81 +738,6 @@ namespace RealLifeOverhaul.Ui
                 });
             }
             return GoodsColumns(rows, false);
-        }
-
-        // The player's retail series, one row a good. The prices page adds the week and your price. The series is that shop price.
-        private UiDataTableModel RetailTable(bool full)
-        {
-            DaySeriesBook series = DaySeriesDirector.Book;
-            if (series == null || series.LastDay <= 0)
-            {
-                return null;
-            }
-            List<string> names = series.Names();
-            var rows = new List<UiDataRow>(8);
-            int end = series.LastDay;
-            for (int i = 0; i < names.Count && rows.Count < 8; i++)
-            {
-                string key = names[i];
-                if (key == null || !key.StartsWith(DaySeriesCatalogue.PricePrefix, StringComparison.Ordinal) || key.Length <= DaySeriesCatalogue.PricePrefix.Length)
-                {
-                    continue;
-                }
-                int found = series.Window(key, end, NewsRules.DaysBook, Raw);
-                if (found <= 0)
-                {
-                    continue;
-                }
-                int today = LastPriced(NewsRules.DaysBook);
-                if (today == DaySeriesCatalogue.NoValue)
-                {
-                    continue;
-                }
-                int week = PricedAt(NewsRules.DaysBook - 8);
-                int month = PricedAt(NewsRules.DaysBook - 1 - NewsRules.DaysMonth);
-                int way;
-                string move = Move(today, month == DaySeriesCatalogue.NoValue ? week : month, out way);
-                string good = key.Substring(DaySeriesCatalogue.PricePrefix.Length);
-                var line = new float[NewsRules.DaysBook];
-                float carry = today / 100f;
-                for (int d = 0; d < NewsRules.DaysBook; d++)
-                {
-                    if (Raw[d] != DaySeriesCatalogue.NoValue)
-                    {
-                        carry = Raw[d] / 100f;
-                    }
-                    line[d] = carry;
-                }
-                rows.Add(new UiDataRow
-                {
-                    Cells = new[] { good, Cents(today), Move(today, week, out _), move, string.Empty, Cents(today) },
-                    Values = new[] { 0, 0, 0, way, 0, 0 },
-                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.Danger, way < 0 ? UiRole.Ok : UiRole.Danger, UiRole.None },
-                    Line = line
-                });
-            }
-            return rows.Count == 0 ? null : GoodsColumns(rows, full);
-        }
-
-        private static int LastPriced(int span)
-        {
-            for (int i = span - 1; i >= 0; i--)
-            {
-                if (Raw[i] != DaySeriesCatalogue.NoValue)
-                {
-                    return Raw[i];
-                }
-            }
-            return DaySeriesCatalogue.NoValue;
-        }
-
-        private static int PricedAt(int index)
-        {
-            if (index < 0)
-            {
-                return DaySeriesCatalogue.NoValue;
-            }
-            return Raw[index] == DaySeriesCatalogue.NoValue ? DaySeriesCatalogue.NoValue : Raw[index];
         }
 
         private static string Cents(int cents) => (cents / 100.0).ToString("0.00", Inv);
@@ -1069,9 +769,9 @@ namespace RealLifeOverhaul.Ui
                 : new[]
                 {
                     new UiDataColumn { Title = OutlookText.T("reallife_news_col_good"), Kind = UiCellKind.Text },
-                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_today"), Kind = UiCellKind.Text, Width = 96f },
-                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_month"), Kind = UiCellKind.Trend, Width = 128f },
-                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_spark"), Kind = UiCellKind.Spark, Width = 96f }
+                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_today"), Kind = UiCellKind.Text, Width = 80f },
+                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_month"), Kind = UiCellKind.Trend, Width = 104f },
+                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_spark"), Kind = UiCellKind.Spark, Width = 88f }
                 };
             if (!full)
             {
@@ -1119,9 +819,9 @@ namespace RealLifeOverhaul.Ui
                 Columns = new[]
                 {
                     new UiDataColumn { Title = OutlookText.T("reallife_news_col_district"), Kind = UiCellKind.Tile },
-                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_pull"), Kind = UiCellKind.Meter, Width = 160f },
-                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_week"), Kind = UiCellKind.Trend, Width = 112f },
-                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_rent"), Kind = UiCellKind.Text, Width = 112f }
+                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_pull"), Kind = UiCellKind.Meter, Width = 104f },
+                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_week"), Kind = UiCellKind.Trend, Width = 80f },
+                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_rent"), Kind = UiCellKind.Text, Width = 80f }
                 },
                 Rows = rows.ToArray(),
                 RowCount = rows.Count,
@@ -1174,11 +874,7 @@ namespace RealLifeOverhaul.Ui
                 View = _view < 0 ? 0 : _view > 4 ? 4 : _view,
                 HeadLabel = OutlookText.T("reallife_news_head_people"),
                 HeadValue = people.ToString(Inv),
-                Rows = new[]
-                {
-                    new UiInfoRow { Label = OutlookText.T("reallife_news_head_homes"), Value = homes.ToString(Inv) },
-                    new UiInfoRow { Label = OutlookText.T("reallife_news_busy_link"), Value = busy }
-                },
+                Rows = PeopleRows(homes, busy),
                 ChartTitle = OutlookText.T("reallife_news_ages"),
                 ChartLabels = new[] { OutlookText.T("reallife_news_age_young"), OutlookText.T("reallife_news_age_work"), OutlookText.T("reallife_news_age_older") },
                 ChartValues = ShareWords(ageCounts),
@@ -1198,366 +894,6 @@ namespace RealLifeOverhaul.Ui
             {
                 new UiActionModel { Label = OutlookText.T("reallife_news_rent_link"), Icon = UiIcon.Home, Command = NewsCommands.Rent, Arg = 0 },
                 new UiActionModel { Label = OutlookText.T("reallife_news_busy_link"), Icon = UiIcon.MapPin, Command = NewsCommands.Busy, Arg = 0 }
-            };
-        }
-
-        private void FillStand(NewsModel model)
-        {
-            model.Icon = UiIcon.Newspaper;
-            model.Title = OutlookText.T("reallife_ledger_online_app");
-            model.Across = true;
-            model.Nav = new[]
-            {
-                Item(UiIcon.Newspaper, "reallife_ledger_online_tab_titles"),
-                Item(UiIcon.Books, "reallife_ledger_online_tab_reading")
-            };
-            LedgerDirector director = LedgerDirector.Instance;
-            if (director == null || !director.OnlineRunning)
-            {
-                model.Shape = NewsShape.Notice;
-                model.EmptyTitle = OutlookText.T("reallife_news_stand_off");
-                model.EmptyBody = OutlookText.T("reallife_news_stand_off_body");
-                return;
-            }
-            NetState net = director.Net(out _);
-            if (!NewsstandRules.Works(net))
-            {
-                model.Shape = NewsShape.Notice;
-                model.EmptyTitle = OutlookText.T(net == NetState.Outage ? "reallife_news_stand_out" : "reallife_news_stand_off");
-                model.EmptyBody = OutlookText.T(net == NetState.Outage ? "reallife_news_stand_out_body" : "reallife_news_stand_off_body");
-                model.Note = model.EmptyBody;
-                return;
-            }
-            if (model.Tab == 1)
-            {
-                model.Shape = NewsShape.Reading;
-                model.Reader = ReaderOf(director.Latest);
-                return;
-            }
-            model.Shape = NewsShape.Stand;
-            NewsstandState state = director.Online;
-            int weekly = state != null ? NewsstandRules.Weekly(state, RealLifeOverhaul.Prices.Level) : 0;
-            int level = RealLifeOverhaul.Prices.Level;
-            int titles = 0;
-            for (int i = 0; i < NewsstandCatalogue.Titles; i++)
-            {
-                titles += NewsstandRules.WeekPrice(i, level);
-            }
-            model.Note = OutlookText.T("reallife_news_stand_sum", "count", NewsstandRules.Running(state).ToString(Inv), "money", LedgerText.Money(weekly));
-            model.Note2 = OutlookText.T("reallife_news_stand_save", "money", LedgerText.Money(NewsRules.PassSaving(titles, NewsstandRules.WeekPrice(NewsstandCatalogue.Pass, level))));
-            var cards = new UiCatalogueCard[NewsstandCatalogue.Subscriptions];
-            for (int i = 0; i < cards.Length; i++)
-            {
-                bool on = state != null && state.Subs[i].Subscribed && !state.Subs[i].Cancelled;
-                cards[i] = new UiCatalogueCard
-                {
-                    Icon = UiIcon.Newspaper,
-                    Name = LedgerText.T(NewsstandCatalogue.NameKeys[i]),
-                    Figure = LedgerText.Money(director.OnlinePrice(i)),
-                    State = on ? OutlookText.T("reallife_news_stand_on") : null,
-                    StateTone = UiRole.Ok
-                };
-            }
-            model.Catalogue = new UiCatalogueModel
-            {
-                Cards = cards,
-                CardCount = cards.Length,
-                Actions = new[]
-                {
-                    new UiActionModel { Label = OutlookText.T("reallife_news_stand_sub"), Kind = UiButtonKind.Primary, Key = UiAction.Alt },
-                    new UiActionModel { Label = OutlookText.T("reallife_news_stand_stop"), Kind = UiButtonKind.Secondary, Key = UiAction.Option }
-                }
-            };
-        }
-
-        private bool Subscription(NewsModel model, int arg)
-        {
-            LedgerDirector director = LedgerDirector.Instance;
-            if (director == null || model.Catalogue == null)
-            {
-                return false;
-            }
-            int sub = model.Catalogue.Chosen >= 0 ? model.Catalogue.Chosen : 0;
-            if (arg == 0)
-            {
-                director.SubscribeOnline(sub, out _);
-            }
-            else
-            {
-                director.CancelOnline(sub);
-            }
-            _local++;
-            return true;
-        }
-
-        private void FillPaper(NewsModel model)
-        {
-            model.Icon = UiIcon.Newspaper;
-            LedgerDirector director = LedgerDirector.Instance;
-            LedgerEdition edition = director != null ? director.Latest : null;
-            if (edition == null)
-            {
-                model.Shape = NewsShape.Notice;
-                model.Title = OutlookText.T("reallife_ledger_title");
-                model.EmptyTitle = OutlookText.T("reallife_news_paper_quiet");
-                model.EmptyBody = OutlookText.T("reallife_news_paper_quiet_body");
-                return;
-            }
-            model.Shape = NewsShape.Paper;
-            model.Title = OutlookText.T("reallife_ledger_title") + "  " + NewsRules.YearOf(edition.Day).ToString(Inv) + "  " + NewsRules.EditionOf(edition.Day).ToString(Inv);
-            model.Edition = Edition(edition, OutlookDirector.Instance != null ? OutlookDirector.Instance.History : null);
-        }
-
-        private static UiEditionModel Edition(LedgerEdition edition, OutlookBook book)
-        {
-            LedgerPiece lead = null;
-            for (int i = 0; i < edition.Pieces.Count; i++)
-            {
-                if (lead == null || edition.Pieces[i].Weight > lead.Weight)
-                {
-                    lead = edition.Pieces[i];
-                }
-            }
-            var sections = new List<UiEditionSection>(4);
-            for (int s = 0; s < (int)LedgerSection.Count; s++)
-            {
-                var stories = new List<UiEditionStory>(4);
-                for (int i = 0; i < edition.Pieces.Count; i++)
-                {
-                    if ((int)edition.Pieces[i].Section != s || edition.Pieces[i] == lead)
-                    {
-                        continue;
-                    }
-                    stories.Add(Story(edition.Pieces[i]));
-                }
-                if (stories.Count > 0)
-                {
-                    sections.Add(new UiEditionSection { Icon = SectionIcon((LedgerSection)s), Label = SectionName((LedgerSection)s), Stories = stories.ToArray() });
-                }
-            }
-            return new UiEditionModel
-            {
-                LeadIcon = lead != null ? SectionIcon(lead.Section) : UiIcon.Newspaper,
-                LeadTint = UiRole.Accent,
-                LeadKicker = lead != null ? SectionName(lead.Section) : string.Empty,
-                LeadHeadline = lead != null ? PieceHead(lead) : OutlookText.T("reallife_news_paper_quiet"),
-                LeadStandfirst = lead != null ? PieceBody(lead) : OutlookText.T("reallife_news_paper_quiet_body"),
-                Markets = MarketFigures(edition, book),
-                Sections = Openings(sections),
-                QuietLine = edition.Pieces.Count < 3 ? OutlookText.T("reallife_news_paper_quiet_body") : null
-            };
-        }
-
-        private static UiFigureModel[] MarketFigures(LedgerEdition edition, OutlookBook book)
-        {
-            float[] prices = SparkOf(book, OutlookCatalogue.Prices, 12);
-            float[] rate = SparkOf(book, OutlookCatalogue.Rate, 12);
-            return new[]
-            {
-                new UiFigureModel
-                {
-                    Label = OutlookText.T("reallife_news_series_index"),
-                    Value = edition.IndexLevel <= 0 ? "-" : (edition.IndexLevel / 100f).ToString("0.00", Inv),
-                    Trend = prices,
-                    Good = true
-                },
-                new UiFigureModel
-                {
-                    Label = OutlookText.T("reallife_news_series_rate"),
-                    Value = edition.RateBp < 0 ? "-" : (edition.RateBp / 100f).ToString("0.00", Inv),
-                    Trend = rate,
-                    Good = false
-                }
-            };
-        }
-
-        private static float[] SparkOf(OutlookBook book, string key, int span)
-        {
-            if (book == null || book.LastDay <= 0)
-            {
-                return null;
-            }
-            var raw = new int[span];
-            if (book.Window(key, book.LastDay, span, raw) < 2)
-            {
-                return null;
-            }
-            var line = new float[span];
-            float carry = 0f;
-            bool any = false;
-            for (int i = 0; i < span; i++)
-            {
-                if (raw[i] != OutlookCatalogue.NoValue)
-                {
-                    carry = raw[i];
-                    any = true;
-                }
-                line[i] = carry;
-            }
-            return any ? line : null;
-        }
-
-        private static UiEditionStory Story(LedgerPiece piece)
-        {
-            return new UiEditionStory { Headline = PieceHead(piece), Body = PieceBody(piece), Byline = SectionName(piece.Section) };
-        }
-
-        private static string PieceHead(LedgerPiece piece)
-        {
-            LedgerText.Words(piece, out _, out string headline, out _);
-            return string.IsNullOrEmpty(headline) ? OutlookText.T("reallife_news_paper_quiet") : headline;
-        }
-
-        private static string PieceBody(LedgerPiece piece)
-        {
-            LedgerText.Words(piece, out _, out _, out string body);
-            return string.IsNullOrEmpty(body) ? OutlookText.T("reallife_news_paper_quiet_body") : body;
-        }
-
-        private static string SectionName(LedgerSection section)
-        {
-            int i = (int)section;
-            if (i < 0 || i >= LedgerCatalogue.SectionKeys.Length)
-            {
-                return OutlookText.T("reallife_news_sec_city");
-            }
-            return LedgerText.T(LedgerCatalogue.SectionKeys[i]);
-        }
-
-        private static UiIcon SectionIcon(LedgerSection section)
-        {
-            switch (section)
-            {
-                case LedgerSection.Economy: return UiIcon.Chart;
-                case LedgerSection.Business: return UiIcon.Store;
-                case LedgerSection.Markets: return UiIcon.ChartLineUp;
-                case LedgerSection.People: return UiIcon.People;
-                case LedgerSection.AroundTown: return UiIcon.MapPin;
-                case LedgerSection.Weather: return UiIcon.Cloud;
-                default: return UiIcon.Newspaper;
-            }
-        }
-
-        private static UiEditionSection[] Openings(List<UiEditionSection> sections)
-        {
-            int opened = Population.CityPopulation.FirmsOpened;
-            string firm = OpenedFirm();
-            if (opened > 0 && firm.Length > 0)
-            {
-                sections.Add(new UiEditionSection
-                {
-                    Icon = UiIcon.Store,
-                    Label = OutlookText.T("reallife_news_sec_business"),
-                    Stories = new[]
-                    {
-                        new UiEditionStory
-                        {
-                            Headline = firm,
-                            Body = OutlookText.T("reallife_news_open_body", "count", opened.ToString(Inv)),
-                            Byline = OutlookText.T("reallife_news_sec_city")
-                        }
-                    }
-                });
-            }
-            return sections.ToArray();
-        }
-
-        // A city firm that is not the player's, named as the game names the business. Empty when none has opened.
-        private static string OpenedFirm()
-        {
-            PopulationState pop = Population.PopulationDirector.Instance != null ? Population.PopulationDirector.Instance.State : null;
-            if (pop == null || pop.Growth.Opened <= 0)
-            {
-                return string.Empty;
-            }
-            for (int e = pop.Employers.Count - 1; e >= 0; e--)
-            {
-                if (pop.Employers.Players[e])
-                {
-                    continue;
-                }
-                string key = pop.Employers.Key[e];
-                string name = Population.PopulationGame.BusinessName(key);
-                if (!string.IsNullOrEmpty(name) && name != key)
-                {
-                    return name;
-                }
-            }
-            return string.Empty;
-        }
-
-        private static UiReaderModel ReaderOf(LedgerEdition edition)
-        {
-            if (edition == null || edition.Pieces.Count == 0)
-            {
-                return new UiReaderModel
-                {
-                    Title = OutlookText.T("reallife_ledger_title"),
-                    Blocks = new[] { new UiReaderBlock { Kind = UiReaderKind.Paragraph, Text = OutlookText.T("reallife_news_paper_quiet_body") } }
-                };
-            }
-            var blocks = new List<UiReaderBlock>(edition.Pieces.Count * 2);
-            for (int i = 0; i < edition.Pieces.Count; i++)
-            {
-                blocks.Add(new UiReaderBlock { Kind = UiReaderKind.Heading, Text = PieceHead(edition.Pieces[i]) });
-                blocks.Add(new UiReaderBlock { Kind = UiReaderKind.Paragraph, Text = PieceBody(edition.Pieces[i]) });
-            }
-            return new UiReaderModel
-            {
-                Title = OutlookText.T("reallife_ledger_title") + " " + NewsRules.YearOf(edition.Day).ToString(Inv) + " " + NewsRules.EditionOf(edition.Day).ToString(Inv),
-                Blocks = blocks.ToArray()
-            };
-        }
-
-        private static string Facts(LifeStory story)
-        {
-            int rank = 0;
-            RivalFile file = RivalDirector.Instance != null ? RivalDirector.Instance.File : null;
-            if (file != null)
-            {
-                rank = RivalRules.Rank(file, story.Worth, RealLifeOverhaul.Prices.Level);
-            }
-            string text = OutlookText.T("reallife_news_end_days") + " " + story.Day.ToString(Inv)
-                + ". " + OutlookText.T("reallife_news_end_shops") + " " + story.Owned.ToString(Inv)
-                + ". " + OutlookText.T("reallife_news_end_staff") + " " + story.Employees.ToString(Inv)
-                + ". " + OutlookText.T("reallife_news_end_worth") + " " + LedgerText.Money((int)Math.Min(int.MaxValue, Math.Max(int.MinValue, story.Worth)));
-            if (rank > 0)
-            {
-                text = text + ". " + OutlookText.T("reallife_news_end_rank") + " " + rank.ToString(Inv);
-            }
-            return text;
-        }
-
-        private void FillEnding(NewsModel model)
-        {
-            model.Shape = NewsShape.Ending;
-            LifeStory story = EndingStory ?? new LifeStory();
-            ObituaryPage page = PermadeathText.Page(story, false);
-            string obituary = page.Body.Length > 0 ? page.Body : Facts(story);
-            model.Decision = new UiDecisionModel
-            {
-                Kicker = page.Kicker.Length > 0 ? page.Kicker : OutlookText.T("reallife_news_end_kicker"),
-                Title = story.Name.Length > 0 ? story.Name : page.Headline,
-                Emblem = UiIcon.Person,
-                Faces = story.Name.Length > 0 ? new[] { story.Name } : new string[0],
-                Body = obituary,
-                Prompts = model.Prompts,
-                PromptCount = model.Prompts.Length,
-                Choices = new[]
-                {
-                    new UiDecisionChoice
-                    {
-                        Key = UiAction.Pick1,
-                        Name = OutlookText.T("reallife_news_end_load"),
-                        Lines = new[] { new UiConsequence { Text = OutlookText.T("reallife_news_end_days") + " " + story.Day.ToString(Inv), Tone = 0 } }
-                    },
-                    new UiDecisionChoice
-                    {
-                        Key = UiAction.Pick2,
-                        Name = OutlookText.T("reallife_news_end_quit"),
-                        Lines = new[] { new UiConsequence { Text = OutlookText.T("reallife_news_end_worth"), Tone = 0 } }
-                    }
-                }
             };
         }
 
@@ -1607,6 +943,41 @@ namespace RealLifeOverhaul.Ui
             model.Table = RentTable();
             model.EmptyTitle = OutlookText.T("reallife_news_empty_rent");
             model.EmptyBody = OutlookText.T("reallife_news_empty_rent_body");
+        }
+
+        // The headline rows of the city's people: the households, the jobs, the work lost, the mean rent, who moved in and out, and the busiest district.
+        private static UiInfoRow[] PeopleRows(int homes, string busy)
+        {
+            var rows = new List<UiInfoRow>(8)
+            {
+                new UiInfoRow { Label = OutlookText.T("reallife_news_head_homes"), Value = homes.ToString(Inv) }
+            };
+            PopulationState pop = Population.PopulationDirector.Instance != null ? Population.PopulationDirector.Instance.State : null;
+            if (pop != null)
+            {
+                Population.PopulationView city = Population.PopulationViews.City(pop);
+                for (int i = 1; i < city.Hero.Count; i++)
+                {
+                    rows.Add(FigureRow(city.Hero[i]));
+                }
+                for (int i = 0; i < city.Details.Count; i++)
+                {
+                    string key = city.Details[i].Label;
+                    if (key == "reallife_pop_fig_jobs" || key == "reallife_pop_fig_moved_in" || key == "reallife_pop_fig_moved_out")
+                    {
+                        rows.Add(FigureRow(city.Details[i]));
+                    }
+                }
+            }
+            rows.Add(new UiInfoRow { Label = OutlookText.T("reallife_news_busy_link"), Value = busy });
+            return rows.ToArray();
+        }
+
+        private static UiInfoRow FigureRow(Population.ViewFigure f)
+        {
+            string value = f.Format == Population.ViewFormat.Money ? LedgerText.Money((int)Math.Max(int.MinValue, Math.Min(int.MaxValue, f.Value)))
+                : f.Format == Population.ViewFormat.Permille ? (f.Value / 10f).ToString("0.0", Inv) + "%" : f.Value.ToString("N0", CultureInfo.CurrentCulture);
+            return new UiInfoRow { Label = OutlookText.T(f.Label), Value = value };
         }
 
         private int CountPeople(int[] ages, int[] incomes, out int homes, out string busy)

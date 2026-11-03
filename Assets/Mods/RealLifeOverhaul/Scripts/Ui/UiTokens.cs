@@ -197,6 +197,7 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- strokes
 
+        public const float PhaseWash = 0.07f;   // a chart's cycle phase behind its lines: a quiet tint of its role, never a block of colour
         public const float Hairline = 1f;       // px: a panel's edge, a rule
         public const float FocusStroke = 3f;    // px: the focus ring, drawn outside its target
         public const float FocusGap = 3f;       // px: between a target and its focus ring

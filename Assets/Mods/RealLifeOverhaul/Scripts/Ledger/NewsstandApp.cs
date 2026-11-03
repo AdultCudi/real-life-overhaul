@@ -366,6 +366,26 @@ namespace RealLifeOverhaul.Ledger
             Refresh();
         }
 
+        /// <summary>The kit's Newsstand takes a title or the pass: the same path, notices and money as the old page's Subscribe button.</summary>
+        public void Take(int sub)
+        {
+            UiClone.Safe(() => Subscribe(sub));
+        }
+
+        /// <summary>The kit's Newsstand stops a title or the pass at its last paid day, as the old page's Cancel button does.</summary>
+        public void Stop(int sub)
+        {
+            UiClone.Safe(() =>
+            {
+                OnlineSub x = _director.Online != null ? _director.Online.Subs[sub] : null;
+                if (x != null && _director.CancelOnline(sub))
+                {
+                    Say(NotificationType.Info, "reallife_ledger_online_note_cancelled", "title", LedgerText.T(NewsstandCatalogue.NameKeys[sub]), "day", x.PaidUntil.ToString());
+                }
+                Refresh();
+            });
+        }
+
         private void Back()
         {
             if (_pick < 0)

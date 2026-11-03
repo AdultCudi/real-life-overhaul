@@ -50,7 +50,7 @@ namespace RealLifeOverhaul.Ui
             return new[]
             {
                 "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back",
-                "reallife_econapp_verdict_slowing", "reallife_news_lead", "reallife_news_lead_body",
+                "reallife_econapp_verdict_slowing",
                 "reallife_news_series_inflation", "reallife_news_series_rate", "reallife_news_series_wages",
                 "reallife_news_series_jobless", "reallife_news_series_vacancies", "reallife_news_series_reserve",
                 "reallife_news_series_revenue", "reallife_news_series_spending", "reallife_news_series_index",
@@ -69,20 +69,32 @@ namespace RealLifeOverhaul.Ui
                 "reallife_news_head_jobs", "reallife_news_head_rent", "reallife_news_ages",
                 "reallife_news_age_young", "reallife_news_age_work", "reallife_news_age_older",
                 "reallife_news_income_title", "reallife_news_income_work", "reallife_news_income_middle", "reallife_news_income_upper",
-                "reallife_news_col_five", "reallife_news_riser", "reallife_news_faller", "reallife_news_traded",
                 "reallife_news_legend", "reallife_news_scale", "reallife_news_low", "reallife_news_high",
                 "reallife_news_rent_link", "reallife_news_busy_link", "reallife_news_home_title",
                 "reallife_news_empty_rent", "reallife_news_empty_rent_body",
-                "reallife_news_stand_sum", "reallife_news_stand_save", "reallife_news_stand_renew",
-                "reallife_news_stand_sub", "reallife_news_stand_stop", "reallife_news_stand_on",
+                "reallife_news_stand_sum", "reallife_news_stand_save",
+                "reallife_news_stand_sub", "reallife_news_stand_stop",
                 "reallife_news_stand_off", "reallife_news_stand_off_body", "reallife_news_stand_out", "reallife_news_stand_out_body",
                 "reallife_ledger_online_name_ledger", "reallife_ledger_online_name_exchange",
                 "reallife_ledger_online_name_street", "reallife_ledger_online_name_review", "reallife_ledger_online_name_pass",
-                "reallife_news_paper_quiet", "reallife_news_paper_quiet_body", "reallife_news_sec_city", "reallife_news_sec_business",
-                "reallife_news_open_title", "reallife_news_open_body", "reallife_news_hold_body",
+                "reallife_news_paper_quiet", "reallife_news_paper_quiet_body",
+                "reallife_news_open_body",
                 "reallife_news_end_kicker", "reallife_news_end_body", "reallife_news_end_load", "reallife_news_end_quit",
                 "reallife_news_end_days", "reallife_news_end_worth", "reallife_news_end_shops", "reallife_news_end_staff", "reallife_news_end_rank",
-                "reallife_ledger_title"
+                "reallife_ledger_title",
+                "reallife_news_axis_day", "reallife_news_band_title", "reallife_news_band_note", "reallife_news_basket_flat",
+                "reallife_news_basket_label", "reallife_news_basket_less", "reallife_news_chip_led", "reallife_news_col_close",
+                "reallife_news_col_code", "reallife_news_col_company", "reallife_news_col_move", "reallife_news_col_price",
+                "reallife_news_col_sector", "reallife_news_col_shares", "reallife_news_districts_pull", "reallife_news_empty_board",
+                "reallife_news_end_title", "reallife_news_five_note", "reallife_news_goods_index", "reallife_news_hall_detail",
+                "reallife_news_hall_mark", "reallife_news_head_growing", "reallife_news_head_overheating", "reallife_news_head_recession",
+                "reallife_news_head_slowing", "reallife_news_head_steady", "reallife_news_hold_down", "reallife_news_hold_head",
+                "reallife_news_hold_up", "reallife_news_holdings", "reallife_news_in_month", "reallife_news_index_close", "reallife_news_jobs_table",
+                "reallife_news_moved_detail", "reallife_news_moved_rival", "reallife_news_movers", "reallife_news_on_day", "reallife_news_open_head",
+                "reallife_news_prices_shops", "reallife_news_prices_today", "reallife_news_sectors", "reallife_news_stand_chip",
+                "reallife_news_stand_lead", "reallife_news_stand_to_read", "reallife_news_stand_week", "reallife_news_the_economy",
+                "reallife_ledger_tab_front", "reallife_ledger_tab_markets", "reallife_ledger_tab_prices", "reallife_ledger_risers",
+                "reallife_ledger_fallers", "reallife_news_traded"
             };
         }
     }

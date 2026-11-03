@@ -45,6 +45,9 @@ namespace RealLifeOverhaul.Ui
         public UiEditionNotice[] Notices = new UiEditionNotice[0];
         public float Offset;
         public string QuietLine;                       // said under the stories on a day with few: what fills the paper and when
+        public string BandTitle;                       // "The markets": the band of figures under the columns
+        public string BandNote;                        // at its right: "Prices at the close of day 288"
+        public UiFigureModel[] Band = new UiFigureModel[0];   // its figures, up to five, each with its change and its line
     }
 
     /// <summary>
@@ -318,7 +321,8 @@ namespace RealLifeOverhaul.Ui
                 tallest = Math.Max(tallest, heights[c]);
             }
             float quietH = string.IsNullOrEmpty(m.QuietLine) ? 0f : UiTokens.S2 + UiTokens.ControlSmall + UiTokens.S4;
-            float contentH = tallest + quietH;
+            float footH = FootHeight(m);
+            float contentH = tallest + quietH + footH;
             float offset = Math.Max(0f, Math.Min(m.Offset, contentH - vh));
             m.Offset = offset;
             short clip = s.AddClip(x, y, w, vh, offset);
@@ -385,6 +389,63 @@ namespace RealLifeOverhaul.Ui
                     UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
                 float tx = UiTokens.S2 + UiTokens.ControlSmall + UiTokens.S3;
                 UiDraw.TextMiddle(s, inClip, tx, qy, UiTokens.ControlSmall, w - tx, UiStyle.Body, UiRole.Text2, m.QuietLine, UiFlags.Label | UiFlags.Truncate);
+            }
+            if (footH > 0f)
+            {
+                Foot(s, inClip, m, 0f, tallest + quietH + UiTokens.S2, w);
+            }
+        }
+
+        private const float FootFigure = 108f;       // px: a figure of the markets band: its name, its figure and change, its line
+
+        private static int FootCount(UiEditionModel m) => Math.Min(5, m.Band != null ? m.Band.Length : 0);
+
+        // The markets band's height under the columns, its gap above included; 0 for no band.
+        private static float FootHeight(UiEditionModel m) => FootCount(m) == 0 ? 0f : UiTokens.S2 + BandHeight + FootFigure + UiTokens.S4;
+
+        // The markets band: its name in a band, then each figure in its slot, its name, its figure with the arrow and change
+        // in good's or bad's colour, and its line under them in that colour.
+        private static void Foot(UiScene s, UiAt at, UiEditionModel m, float x, float y, float w)
+        {
+            int box = UiDraw.Box(s, at, x, y, w, BandHeight + FootFigure, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
+            UiAt inside = at.In(box);
+            UiDraw.Icon(s, inside, x + UiTokens.S4, y + (BandHeight - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.ChartLineUp, UiRole.None, UiFlags.Middle);
+            UiDraw.TextMiddle(s, inside, x + UiTokens.S4 + UiTokens.IconSmall + UiTokens.S2, y, BandHeight, w / 2f, UiStyle.SectionHeader, UiRole.Text, m.BandTitle,
+                UiFlags.Label | UiFlags.Truncate);
+            if (!string.IsNullOrEmpty(m.BandNote))
+            {
+                UiDraw.TextMiddle(s, inside, x + w / 2f, y, BandHeight, w / 2f - UiTokens.S4, UiStyle.Small, UiRole.Muted, m.BandNote, UiFlags.Right | UiFlags.Truncate);
+            }
+            int count = FootCount(m);
+            float slot = UiDraw.SnapDown(w / count);
+            float fy = y + BandHeight;
+            for (int i = 0; i < count; i++)
+            {
+                ref UiFigureModel f = ref m.Band[i];
+                float fx = x + i * slot;
+                if (i > 0)
+                {
+                    UiDraw.Box(s, inside, fx, fy + UiTokens.S1, UiTokens.Hairline, FootFigure - UiTokens.S3, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
+                }
+                float ix = fx + UiTokens.S4, iw = slot - UiTokens.S4 * 2f;
+                bool changed = !string.IsNullOrEmpty(f.Change);
+                UiRole tone = !changed ? UiRole.Accent : f.Good ? UiRole.OkText : UiRole.DangerText;
+                UiDraw.Text(s, inside, ix, fy, iw, UiStyle.Small, UiRole.Text2, f.Label, UiFlags.Truncate);
+                float ry = fy + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S1;
+                float vw = UiDraw.Snap(UiTextRules.Width(f.Value, UiStyle.BodyStrong) + UiTokens.S1);
+                UiDraw.TextMiddle(s, inside, ix, ry, UiTokens.PairRow, Math.Min(iw, vw), UiStyle.BodyStrong, UiRole.Text, f.Value, UiFlags.Truncate);
+                if (changed)
+                {
+                    float cx = ix + vw + UiTokens.S2;
+                    UiDraw.Icon(s, inside, cx, ry + (UiTokens.PairRow - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiModels.Rises(ref f) ? UiIcon.TrendUp : UiIcon.TrendDown, tone,
+                        UiFlags.Middle | UiFlags.Share);
+                    UiDraw.TextMiddle(s, inside, cx + UiTokens.IconSmall + UiTokens.S1, ry, UiTokens.PairRow, Math.Max(0f, ix + iw - cx - UiTokens.IconSmall - UiTokens.S1),
+                        UiStyle.SmallStrong, tone, f.Change, UiFlags.Truncate);
+                }
+                if (UiDraw.Drawn(f.Trend))
+                {
+                    UiDraw.Spark(s, inside, ix, ry + UiTokens.PairRow + UiTokens.S1, iw, UiTokens.S8, f.Trend, !changed ? UiRole.Accent : f.Good ? UiRole.Ok : UiRole.Danger);
+                }
             }
         }
 

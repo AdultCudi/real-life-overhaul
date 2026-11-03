@@ -44,6 +44,24 @@ namespace RealLifeOverhaul.DaySeries
             Borrow(book, day);
             Moves(book, day);
             Retail(book, day);
+            CityRetail(book, day);
+        }
+
+        private static readonly List<string> CityNames = new List<string>(DaySeriesCatalogue.CityGoodsMost);
+        private static readonly List<int> CityCents = new List<int>(DaySeriesCatalogue.CityGoodsMost);
+
+        // The city's shop price of the goods the News pages follow, one a good, in cents. The goods are the same on every machine.
+        private static void CityRetail(DaySeriesBook book, int day)
+        {
+            CityGame.RetailPrices(CityNames, CityCents, DaySeriesCatalogue.CityGoodsMost);
+            for (int i = 0; i < CityNames.Count; i++)
+            {
+                string key = DaySeriesCatalogue.CityPrice(CityNames[i]);
+                if (key.Length > 0 && CityCents[i] > 0)
+                {
+                    book.Set(key, day, CityCents[i]);
+                }
+            }
         }
 
         // One retail price a good, in cents, from the player's own plans. A plan of another player is not read.

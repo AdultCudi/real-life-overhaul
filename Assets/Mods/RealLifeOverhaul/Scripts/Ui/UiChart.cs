@@ -102,9 +102,7 @@ namespace RealLifeOverhaul.Ui
             float plotTop = top + UiTokens.S2, plotFoot = iy + ih - labelH;
             float volumeH = m.Kind == UiChartKind.Candles && m.Volume != null ? UiDraw.SnapDown((plotFoot - plotTop) * VolumeShare) : 0f;
             float ph = plotFoot - plotTop - (volumeH > 0f ? volumeH + UiTokens.S3 : 0f);
-            float nameH = m.Kind == UiChartKind.Line && m.PlotBands != null && m.PlotBands.Length > 0
-                ? UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2 : 0f;
-            float drawH = ph - nameH;
+            float drawH = ph;
             Axis(s, on, m, ix, axisW, plotTop, drawH, px, pw, lo, hi, step);
             float slot = pw / n;
             int plot = UiDraw.Box(s, on, px, plotTop, pw, ph, UiRole.None, UiRole.None, 0f);
@@ -295,7 +293,7 @@ namespace RealLifeOverhaul.Ui
 
         private static float Y(float v, float lo, float hi, float top, float h) => top + h - (v - lo) / Math.Max(1e-6f, hi - lo) * h;
 
-        // One flat fill for each phase behind the lines, and its name in the strip under that fill.
+        // One flat, quiet tint for each phase behind the lines (UiTokens.PhaseWash), and its name small at the top of that tint.
         private static void Phases(UiScene s, UiAt at, UiChartModel m, float px, float top, float pw, float ph)
         {
             if (m.Kind != UiChartKind.Line || m.PlotBands == null)
@@ -316,7 +314,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 var wash = new UiItem
                 {
-                    Kind = UiKind.Box, Flags = UiFlags.Decor, Fill = band.Tint, X = x0, Y = top, W = bw, H = ph, Alpha = 0.22f,
+                    Kind = UiKind.Box, Flags = UiFlags.Decor, Fill = band.Tint, X = x0, Y = top, W = bw, H = ph, Alpha = UiTokens.PhaseWash,
                     Clip = at.Clip, Node = -1, Layer = at.Layer, Order = -1, Parent = at.Parent
                 };
                 s.Add(ref wash);
@@ -324,8 +322,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
-                UiDraw.Text(s, at, x0, top + ph + UiTokens.S1, bw, UiStyle.Small, UiRole.Text2, band.Label,
-                    UiFlags.Centre | UiFlags.Middle | UiFlags.Truncate | UiFlags.Decor);
+                UiDraw.Text(s, at, x0 + UiTokens.S2, top + UiTokens.S1, bw - UiTokens.S2 * 2f, UiStyle.Small, UiRole.Muted, band.Label,
+                    UiFlags.Label | UiFlags.Truncate | UiFlags.Decor);
             }
         }
 
@@ -492,15 +490,21 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             float most = 0f;
+            bool stepped = false;   // the points already say which of them are named: the rest are empty
             for (int i = 0; i < n; i++)
             {
                 most = Math.Max(most, UiTextRules.Width(m.Points[i], UiStyle.Small));
+                stepped |= string.IsNullOrEmpty(m.Points[i]);
             }
-            int every = Math.Max(1, (int)Math.Ceiling((most + UiTokens.S3) / Math.Max(1f, slot)));
-            float lw = Math.Min(most + UiTokens.S1, slot * every - UiTokens.S1);
+            int every = stepped ? 1 : Math.Max(1, (int)Math.Ceiling((most + UiTokens.S3) / Math.Max(1f, slot)));
+            float lw = stepped ? most + UiTokens.S1 : Math.Min(most + UiTokens.S1, slot * every - UiTokens.S1);
             float kept = float.MinValue;   // the right edge of the last label drawn
             for (int i = 0; i < n; i += every)
             {
+                if (stepped && string.IsNullOrEmpty(m.Points[i]))
+                {
+                    continue;
+                }
                 float lx = Math.Max(px, Math.Min(px + slot * n - lw, px + slot * (i + 0.5f) - lw / 2f));   // the ends stay over the plot, clear of the value axis
                 if (lx < kept + UiTokens.S2)
                 {
@@ -517,6 +521,10 @@ namespace RealLifeOverhaul.Ui
             float most = 0f;
             for (int i = 0; i < m.Points.Length; i++)
             {
+                if (string.IsNullOrEmpty(m.Points[i]))
+                {
+                    return 1;   // stepped by the model: every named point is shown
+                }
                 most = Math.Max(most, UiTextRules.Width(m.Points[i], UiStyle.Small));
             }
             return Math.Max(1, (int)Math.Ceiling((most + UiTokens.S3) / Math.Max(1f, slot)));

@@ -110,6 +110,63 @@ internal static partial class Program
         Check(open < 8.0, "news: the Economy overview opens in " + open.ToString("0.000") + " ms, under 8 ms");
         Check(ledger < 8.0, "news: the Ledger opens in " + ledger.ToString("0.000") + " ms, under 8 ms");
         Check(!HasPlaceholder(overview) && !HasPlaceholder(paper), "news: no page shows placeholder text");
+        NewsFinishChecks(scene, frame);
+    }
+
+    // The News finish: the paper's title, the ending's facts, the Newsstand's one action and the prices page's own lead.
+    private static void NewsFinishChecks(UiScene scene, UiFrame frame)
+    {
+        UiWords en = UiWords("en");
+        var culture = System.Globalization.CultureInfo.InvariantCulture;
+        Check(NewsText.Thousands(1102, culture) == "1,102", "news: an edition's number is written with its thousands apart");
+        string line = NewsText.StripLine(new[] { "Tuesday, day 289", "Year 3, number 1,102", "Price $2" });
+        Check(line == "Tuesday, day 289 · Year 3, number 1,102 · Price $2", "news: the title strip reads the day, the year and number, the price: " + line);
+        NewsModel paper = UiSamples.NewsPaper(en, "busy");
+        Check(paper.Title == "The City Ledger" && paper.StripNote.Contains("Year 3, number 1,102") && paper.StripNote.Contains("day 289") && !paper.Title.Contains("1102"),
+            "news: the paper's title is its name, the strip says the date, the year and the number");
+        Check(paper.Edition.Sections.Length >= 3 && paper.Edition.Band.Length >= 4 && paper.Edition.Markets.Length >= 3, "news: the busy edition has columns under bands and a markets band");
+        int stories = 0;
+        for (int i = 0; i < paper.Edition.Sections.Length; i++)
+        {
+            stories += paper.Edition.Sections[i].Stories.Length;
+        }
+        Check(stories >= 8, "news: the busy edition holds " + stories + " stories, not two");
+        UiDecisionModel end = UiSamples.NewsEnding(en, "card").Decision;
+        bool bare = end.Choices.Length == 2;
+        for (int i = 0; i < end.Choices.Length; i++)
+        {
+            bare &= end.Choices[i].Lines == null || end.Choices[i].Lines.Length == 0;
+        }
+        Check(bare && end.FactLabels.Length == 5 && end.FactValues.Length == 5 && end.Body.Length > 200, "news: the ending's facts are a strip, nothing stands under its two choices");
+        NewsModel stand = UiSamples.NewsStand(en, "titles");
+        bool one = stand.Titles.Length == 5;
+        for (int i = 0; i < stand.Titles.Length; i++)
+        {
+            NewsTitle t = stand.Titles[i];
+            bool taken = !string.IsNullOrEmpty(t.Chip);
+            one &= !string.IsNullOrEmpty(t.Action) && (taken ? t.Action == "Stop" : t.Action == "Subscribe") && !string.IsNullOrEmpty(t.Price) && !string.IsNullOrEmpty(t.PerWeek);
+            one &= t.Pass || (!string.IsNullOrEmpty(t.Mark) && !string.IsNullOrEmpty(t.Covers) && !string.IsNullOrEmpty(t.Lead));
+        }
+        NewsPages.Lay(scene, stand, frame, true, UiDefaultKeys.Keyboard);
+        int actions = 0;
+        for (int i = 0; i < scene.NodeCount; i++)
+        {
+            actions += scene.Nodes[i].Command == NewsCommands.Title ? 1 : 0;
+        }
+        Check(one && actions == stand.Titles.Length, "news: each paper shows its mark, its lead and one action (" + actions + " actions for " + stand.Titles.Length + " rows), Subscribe or Stop");
+        NewsModel overview = UiSamples.NewsEconomy(en, "overview");
+        NewsModel prices = UiSamples.NewsEconomy(en, "prices");
+        Check(prices.Lead != overview.Lead && prices.Lead.Contains("4.8%") && prices.Table.Columns.Length == 6 && NewsText.BasketKey(480) != NewsText.BasketKey(-30),
+            "news: the prices page leads with the basket, not the overview's sentence");
+        Check(prices.Table.Rows[0].Cells[5].Length > 0 && prices.Table.Rows[2].Cells[5].Length == 0, "news: your price is filled only for goods you sell");
+        string[] axis = NewsText.AxisPoints(new[] { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k" }, 5);
+        int named = 0;
+        for (int i = 0; i < axis.Length; i++)
+        {
+            named += axis[i].Length > 0 ? 1 : 0;
+        }
+        Check(named == 3, "news: a day axis names every fifth day, not every day");
+        Check(UiTokens.PhaseWash <= 0.15f, "news: the cycle's phases are quiet tints");
     }
 
     private static bool HasPlaceholder(NewsModel m)
