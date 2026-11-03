@@ -55,7 +55,10 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_dialog_cost_now", "dialog_private_driver_service_npc_name", "dialog_private_driver_start", "dialog_private_driver_hire_driver",
                     "dialog_private_driver_select", "ba:private_driver_type_advanced", "ba:private_driver_type_advanced_description", "dialog_private_driver_max_cars",
                     "dialog_private_driver_cost_per_day", "common_cancel", "reallife_travel_desk_name", "reallife_travel_desk_nights", "reallife_travel_desk_book",
-                    "reallife_travel_desk_pay", "reallife_travel_desk_pay_now", "reallife_travel_desk_pay_deposit", "reallife_ui_dialog_cost_deposit"
+                    "reallife_travel_desk_pay", "reallife_travel_desk_pay_now", "reallife_travel_desk_pay_deposit", "reallife_ui_dialog_cost_deposit",
+                    "dialog_bank_investment_header", "common_amount", "dialog_bank_investment_risk_info", "priority_medium", "common_investment_fund", "common_risk",
+                    "econoview_investments_autoinvest", "reallife_ui_dialog_cost_invest", "reallife_ui_dialog_cost_invest_daily", "reallife_ui_dialog_cost_invest_least",
+                    "reallife_ui_dialog_cost_invest_range", "reallife_ui_dialog_cost_invest_short", "reallife_ui_dialog_cost_invest_nofund"
                 }).Switch(UiScreenSwitches.Boxes),
                 new UiScreenDef("monologue", UiTemplate.Decision, "MonologueScreen", new[]
                 {

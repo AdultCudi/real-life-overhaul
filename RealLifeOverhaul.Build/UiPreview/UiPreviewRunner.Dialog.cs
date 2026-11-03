@@ -171,7 +171,7 @@ public static partial class UiPreviewRunner
             Bar = () => UiSamples.ShellBar(UiSamples.RowContacts, false),
             Lay = (s, f, d, k) => UiContacts.Lay(s, UiSamples.CallSample(t, which), f, d, k),
             FocusCommand = card ? UiFormRows.FieldCommand : UiConversation.FormCommand, FocusArg = 0,
-            HoverCommand = card ? UiCallCard.ChoiceCommand : UiConversation.ChoiceCommand, HoverArg = 0, Walk = Moves(which == "loan" ? "DDUU" : which == "tow" ? "DU" : "DDDUR")
+            HoverCommand = card ? UiCallCard.ChoiceCommand : UiConversation.ChoiceCommand, HoverArg = 0, Walk = Moves(which == "loan" || which == "invest" ? "DDUU" : which == "tow" || which == "invest_list" ? "DU" : "DDDUR")
         };
     }
 

@@ -188,16 +188,62 @@ namespace RealLifeOverhaul.Ui
             if (form.TryGetComponent(out BankInvestmentSettings investment))
             {
                 entry.NoCosts(DialogButton.Confirm);
-                if (Unmade(entry, heading, 1))
-                {
-                    return;
-                }
-                string raw = investment.amountField != null ? investment.amountField.GetRawValue() : null;
-                if (!string.IsNullOrEmpty(raw) && float.TryParse(raw, out float sum) && sum > 0f)
-                {
-                    Line(entry, UiText.Fill("reallife_ui_dialog_cost_invest", "amount", Money(sum)), -1, -1);
-                }
+                Invest(investment, entry, heading);
             }
+        }
+
+        // The bank's investment: no fund offered here, the cash under the bank's least (the form keeps each sum to the cash),
+        // the fund still to choose, the least and the most while no sum is typed, a sum under the least, or the sum leaving the
+        // account today and the daily auto-invest after it, by the same figures BankDialog.InvestmentRequest reads.
+        private void Invest(BankInvestmentSettings investment, DialogEntry entry, int heading)
+        {
+            int fund = -1;
+            for (int i = heading; i < _rows.Count && fund < 0; i++)
+            {
+                fund = _rows[i].Kind == UiFormKind.Choice ? i : -1;
+            }
+            int funds = fund >= 0 ? _widgets[fund].Options : 0;
+            float cash = SaveGameManager.Current != null ? SaveGameManager.Current.Money : 0f;
+            const float least = BankInvestmentSettings.MinimumAmount;
+            float sum = Sum(investment.amountField), daily = Sum(investment.autoInvestField);
+            DialogRules.InvestNote note = DialogRules.Invest(funds, cash, sum, least);
+            if (note == DialogRules.InvestNote.NoFund)
+            {
+                Line(entry, UiText.T("reallife_ui_dialog_cost_invest_nofund"), -1);
+                return;
+            }
+            if (note == DialogRules.InvestNote.Short)
+            {
+                Line(entry, UiText.Fill("reallife_ui_dialog_cost_invest_short", "cash", Money(Mathf.Max(0f, cash)), "least", Money(least)), -1);
+                return;
+            }
+            if (Unmade(entry, heading, 1))
+            {
+                return;
+            }
+            switch (note)
+            {
+                case DialogRules.InvestNote.Range:
+                    Line(entry, UiText.Fill("reallife_ui_dialog_cost_invest_range", "least", Money(least), "cash", Money(cash)), 0);
+                    break;
+                case DialogRules.InvestNote.Least:
+                    Line(entry, UiText.Fill("reallife_ui_dialog_cost_invest_least", "least", Money(least)), -1);
+                    break;
+                default:
+                    Line(entry, UiText.Fill("reallife_ui_dialog_cost_invest", "amount", Money(sum)), -1, -1);
+                    if (daily > 0f)
+                    {
+                        Line(entry, UiText.Fill("reallife_ui_dialog_cost_invest_daily", "amount", Money(daily)), -1, -1);
+                    }
+                    break;
+            }
+        }
+
+        // A figure typed into one of the game's number fields, as the game reads it back (its raw value); 0 when none.
+        private static float Sum(global::UI.Components.InputField field)
+        {
+            string raw = field != null ? field.GetRawValue() : null;
+            return !string.IsNullOrEmpty(raw) && float.TryParse(raw, out float sum) && sum > 0f ? sum : 0f;
         }
 
         /// <summary>
