@@ -106,6 +106,40 @@ internal static partial class Program
             ReportJoinChecks();
             ReleaseDateChecks();
             FirstOpenChecks();
+            WheelPaneChecks();
+        }
+    }
+
+    // The wheel scrolls the pane under the pointer, selected or not. The Guide and Staff and roles hold two scrolling panes (the
+    // topic list and the page); the screen is told the clip the pointer is over, and had always scrolled the page whichever it was.
+    private static void WheelPaneChecks()
+    {
+        var s = new UiScene();
+        UiFrame frame = UiFrame.FullMenu(16f / 9f);
+        s.Begin("wheel", frame.Width, frame.Height, true);
+        var nav = new UiNavEntry[40];
+        for (int i = 0; i < nav.Length; i++)
+        {
+            nav[i] = new UiNavEntry { Label = "Topic " + i, Icon = UiIcon.Info };
+        }
+        int navClip = s.ClipCount;
+        float offset = 0f;
+        UiAppWindow.ShellFooted(s, frame, "Guide", UiIcon.Info, nav, 0, ref offset, null, 0, UiDefaultKeys.Keyboard, out float x, out float y, out float w, out float bottom);
+        int pageClip = s.ClipCount;
+        s.AddClip(x, y, w, bottom - y, 0f);
+        Check(pageClip == navClip + 1 && s.ClipCount == pageClip + 1 && s.Clips[navClip].X < x && s.Clips[navClip].ContentHeight > s.Clips[navClip].H,
+            "wheel: the sidebar's scroll region is the clip the footed window adds first, apart from the page's, and it scrolls (more entries than room)");
+        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Settings"));
+        foreach (string name in new[] { "GuideScreen.cs", "StaffScreen.cs" })
+        {
+            string text = File.ReadAllText(System.IO.Path.Combine(folder, name));
+            int lay = text.IndexOf("_navClip = s.ClipCount;", System.StringComparison.Ordinal);
+            int shell = text.IndexOf("UiAppWindow.ShellFooted(", System.StringComparison.Ordinal);
+            int wheel = text.IndexOf("public void Wheel(int clip, float notches)", System.StringComparison.Ordinal);
+            string body = wheel > 0 ? text.Substring(wheel, System.Math.Min(520, text.Length - wheel)) : string.Empty;
+            Check(lay > 0 && shell > lay && body.Contains("if (clip == _navClip)") && body.Contains("_navOffset = Math.Max(0f, _navOffset - notches")
+                  && body.Contains("_page.Offset -= notches"),
+                "wheel: " + name + " scrolls the sidebar when the pointer is over it and the page otherwise, no click or selection first");
         }
     }
 
