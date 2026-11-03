@@ -734,7 +734,7 @@ namespace RealLifeOverhaul.Ui
                 Kicker = OutlookText.T("reallife_news_end_kicker"),
                 Title = story.Name.Length > 0 ? story.Name : OutlookText.T("reallife_news_end_kicker"),
                 Emblem = UiIcon.Person,
-                Body = PermadeathText.Fill("reallife_pd_obit", story),
+                Body = story.Name.Length > 0 ? story.Name : OutlookText.T("reallife_news_end_body"),
                 Prompts = model.Prompts,
                 PromptCount = model.Prompts.Length,
                 Choices = new[]

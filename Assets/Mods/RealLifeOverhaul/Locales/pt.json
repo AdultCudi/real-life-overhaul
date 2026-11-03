@@ -30204,7 +30204,7 @@
   "reallife_opt_tip_ui_screen_ending": "O final na interface RLO. Desligado: o obituario como era, e o resto fica na interface.",
   "reallife_ui_screen_household": "Moradia",
   "reallife_opt_tip_ui_screen_household": "Uma moradia na interface RLO. Desligado: a pagina antiga, e o resto fica na interface.",
-  "reallife_ui_screen_renters": "Alugueis",
+  "reallife_ui_screen_renters": "Moradias",
   "reallife_opt_tip_ui_screen_renters": "Quem paga o aluguel mais alto, na interface RLO. Desligado: a pagina antiga.",
   "reallife_ui_test_economy": "Abrir o app Economia na interface",
   "reallife_ui_test_people": "Abrir as pessoas da cidade",

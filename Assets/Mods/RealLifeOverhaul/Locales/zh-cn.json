@@ -30204,7 +30204,7 @@
   "reallife_opt_tip_ui_screen_ending": "RLO 界面中的结局。关闭后，讣告恢复原样，其余仍使用新界面。",
   "reallife_ui_screen_household": "住户",
   "reallife_opt_tip_ui_screen_household": "RLO 界面中的住户。关闭后恢复旧页面，其余仍使用新界面。",
-  "reallife_ui_screen_renters": "租金",
+  "reallife_ui_screen_renters": "住户花费",
   "reallife_opt_tip_ui_screen_renters": "租金最高的人，在 RLO 界面中。关闭后恢复旧页面。",
   "reallife_ui_test_economy": "在界面中打开经济应用",
   "reallife_ui_test_people": "打开城市居民",
