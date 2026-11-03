@@ -444,6 +444,9 @@ namespace RealLifeOverhaul.Markets
             s.Low = Math.Min(s.Low, l);
             s.Last = c;
             s.DayVolume += v;
+            int phase = MarketCatalogue.PhaseOpen + k;
+            State.Names.NoteFlow(s.Id, o, c, v, day, phase);
+            State.Charts.Check(s.Id, c, day);
         }
 
         private static int Cents(double logPrice)

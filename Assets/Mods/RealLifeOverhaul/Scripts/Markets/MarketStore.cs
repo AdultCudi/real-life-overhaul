@@ -277,6 +277,11 @@ namespace RealLifeOverhaul.Markets
                     t.Append("~u:").Append(s.Listing.Suspended);
                 }
             }
+            if (!city && DeskStore.Any(s))
+            {
+                t.Append("~z:");
+                DeskStore.Write(t, s);
+            }
             return t.ToString();
         }
 
@@ -462,6 +467,9 @@ namespace RealLifeOverhaul.Markets
                                 s.SectorDayZ[sec] = Clamp(F(c, 8, 0.0), -100.0, 100.0);
                             }
                         }
+                        break;
+                    case 'z':
+                        DeskStore.Read(s, body);   // a body this version does not know is ignored, and not written back
                         break;
                 }
             }

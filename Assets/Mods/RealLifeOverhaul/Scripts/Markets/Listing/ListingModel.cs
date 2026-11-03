@@ -163,6 +163,12 @@ namespace RealLifeOverhaul.Markets
         public readonly List<string> HandOver = new List<string>(8);   // ...and the places of those still to go
         public readonly List<BookQuarter> Books = new List<BookQuarter>(16);
 
+        // The book's named bids, filled when it is priced. Empty until then, so an older line is unchanged.
+        public int BidCount;
+        public int CoverBp;
+        public int SetCents;
+        public readonly BookBid[] Bids = new BookBid[BookBids.Most];
+
         public bool OnTheWay => Stage >= ListingStage.Advised && Stage <= ListingStage.Priced;
 
         /// <summary>True for a file with nothing in it: the save line then has no part for it.</summary>

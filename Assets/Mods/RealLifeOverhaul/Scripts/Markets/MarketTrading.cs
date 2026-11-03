@@ -667,6 +667,7 @@ namespace RealLifeOverhaul.Markets
             {
                 state.Trades.RemoveAt(0);
             }
+            state.Names.NoteFill(trade);   // the named tape, at the fill, not from a frame
         }
 
         public static long Worth(MarketState state, int phase, out long cost)

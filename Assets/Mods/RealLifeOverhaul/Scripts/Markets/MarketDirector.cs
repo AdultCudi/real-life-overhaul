@@ -231,6 +231,7 @@ namespace RealLifeOverhaul.Markets
                     if (moved)
                     {
                         Moved();   // a frame that only worked on a moment half played changed nothing the app shows
+                        TellAlerts();
                     }
                     if (_following)
                     {
@@ -361,6 +362,11 @@ namespace RealLifeOverhaul.Markets
             _tapeSaved = -1;   // the file as read may have lines added after its last whole
             _save = save;
             _running = true;
+            TradeLog.Load(save.modData, state);
+            if (fresh)
+            {
+                RuleBots.SeedRivals(state);   // rivals run the same rules; a save that already has rules keeps them
+            }
             BuilderMarket.Clear();   // news of builders heard before this save's market ran is no news of its
             Behind = _engine.State.Now < Target();
             if (fresh)
@@ -406,6 +412,7 @@ namespace RealLifeOverhaul.Markets
                     Logger?.Info("Stock market: stopping; " + back + " of worked orders' money with the broker is back in the cash.");
                 }
                 MarketStore.Save(Save.modData, _engine.State);
+                TradeLog.Save(Save.modData, _engine.State);
                 MarketTapeFile.Rewrite(_engine.Tape.Id, _engine.Tape.Lines());
             }
             else if (_running)
@@ -482,6 +489,7 @@ namespace RealLifeOverhaul.Markets
                     _engine.Finish();
                     Flush();   // the lines on their way, to the file and the guests, before the tape is written whole
                     MarketStore.Save(Save.modData, _engine.State);
+                    TradeLog.Save(Save.modData, _engine.State);
                     SaveTape();
                 }
             }
