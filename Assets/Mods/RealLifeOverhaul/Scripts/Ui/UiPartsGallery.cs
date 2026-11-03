@@ -205,8 +205,7 @@ namespace RealLifeOverhaul.Ui
                             UiDraw.TextField(s, inRow, cx, ty, cw, row.Value, row.Placeholder, Field, arg, row.Disabled, row.On);
                             break;
                         case UiPartsField.Search:
-                            UiDraw.Search(s, inRow, cx, ty, cw, row.Placeholder, row.Value, null, Field);
-                            s.Nodes[s.NodeCount - 1].Arg = arg;
+                            UiDraw.Search(s, inRow, cx, ty, cw, row.Placeholder, row.Value, null, Field, arg);
                             break;
                         default:
                             UiDraw.KeyBinding(s, inRow, cx, ty, cw, row.Value, row.On, Key, arg, row.Disabled);

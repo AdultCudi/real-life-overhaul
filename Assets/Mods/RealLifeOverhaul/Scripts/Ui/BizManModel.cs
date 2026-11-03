@@ -154,7 +154,7 @@ namespace RealLifeOverhaul.Ui
         public string NameText;
         public string NamePlaceholder;
         public string NameLabel;
-        public bool Typing;
+        public bool Typing;   // the name field shows its caret (a sample: the host says so itself while it types)
 
         // Insight
         public UiChartModel Chart;

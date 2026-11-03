@@ -33,7 +33,7 @@ namespace RealLifeOverhaul.Ui
         public int Chosen = 6;
         public bool ShelvesEmpty;
         public int Held = -1;                // the slider held for Left and Right, or -1
-        public bool Typing;                  // the business's name being typed (its caret shows)
+        public bool Typing;                  // the business's name being typed (the prompts drop its keys; the caret is the host's)
         public float CatalogueOffset;
         public int CatalogueReveal = -1;
         public bool NewSave;
@@ -571,7 +571,7 @@ namespace RealLifeOverhaul.Ui
                     Title = t("reallife_ui_parts_sec_fields", "Words and keys"),
                     Rows = new[]
                     {
-                        new UiPartsRow { Kind = UiPartsField.Text, Label = t("reallife_ui_parts_name", "Business name"), Value = st.Name, On = st.Typing },
+                        new UiPartsRow { Kind = UiPartsField.Text, Label = t("reallife_ui_parts_name", "Business name"), Value = st.Name },
                         new UiPartsRow { Kind = UiPartsField.Search, Label = t("common_search", "Search"), Value = st.Search, Placeholder = t("reallife_ui_parts_search_goods", "Search goods") },
                         new UiPartsRow { Kind = UiPartsField.Text, Label = t("reallife_ui_parts_licence_no", "Licence number"),
                             Placeholder = t("reallife_ui_parts_licence_needs", "Needs a liquor licence"), Disabled = true },

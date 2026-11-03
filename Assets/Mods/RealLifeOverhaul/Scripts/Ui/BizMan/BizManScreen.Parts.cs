@@ -253,7 +253,6 @@ namespace RealLifeOverhaul.Ui
             _m.NameLabel = UiText.T("common_business_name");
             _m.NameText = name != null ? name.text : null;
             _m.NamePlaceholder = UiText.T("reallife_ui_bizman_name_hint");
-            _m.Typing = false;
             Transform kinds = Get<Transform>(GameContract.StartKinds, start);
             _kindCards.Clear();
             for (int i = 0; kinds != null && i < kinds.childCount; i++)

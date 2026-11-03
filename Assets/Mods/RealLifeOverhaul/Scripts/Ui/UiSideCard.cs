@@ -47,6 +47,7 @@ namespace RealLifeOverhaul.Ui
         // The slider, its ends under its track and two sums under those.
         public bool HasSlider;
         public string SliderLabel, SliderValue;        // "Work for", "6 hours"
+        public string SliderNote;                      // its own lines under the track: "Will stop resting at 19:15"
         public string SliderFrom, SliderTo;            // "1 h", "8 h"
         public float SliderShare;
         public bool SliderDisabled, SliderHeld;
@@ -79,6 +80,7 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class UiSideCard
     {
+        private const int NoteLines = 2;   // the slider's note under the track, at most
         public const int ButtonCommand = 246, SliderCommand = 247, ChoiceCommand = 248;
         public const float Width = 980f;      // px: the card
         public const float Side = 288f;       // px: the side's column
@@ -131,7 +133,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (m.HasSlider)
             {
-                h += SliderHeight(m) + UiTokens.S4;
+                h += SliderHeight(m, inner) + UiTokens.S4;
             }
             for (int i = 0; i < m.Choices.Length; i++)
             {
@@ -186,7 +188,7 @@ namespace RealLifeOverhaul.Ui
             if (m.HasSlider)
             {
                 Slider(s, on, m, cx, cy, inner);
-                cy += SliderHeight(m) + UiTokens.S4;
+                cy += SliderHeight(m, inner) + UiTokens.S4;
             }
             for (int i = 0; i < m.Choices.Length; i++)
             {
@@ -300,9 +302,13 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- the slider
 
-        private static float SliderHeight(UiSideCardModel m)
+        private static float SliderHeight(UiSideCardModel m, float w)
         {
             float h = UiTokens.PairRow + UiTokens.PairRow;   // its words, then its track
+            if (!string.IsNullOrEmpty(m.SliderNote))
+            {
+                h += UiDraw.Snap(UiTextRules.WrappedHeight(m.SliderNote, UiStyle.Body, w, NoteLines));   // never drawn over the track
+            }
             if (!string.IsNullOrEmpty(m.SliderFrom) || !string.IsNullOrEmpty(m.SliderTo))
             {
                 h += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
@@ -318,9 +324,9 @@ namespace RealLifeOverhaul.Ui
         private static void Slider(UiScene s, UiAt at, UiSideCardModel m, float x, float y, float w)
         {
             bool off = m.SliderDisabled;
-            float vw = UiDraw.Snap(UiTextRules.Width(m.SliderValue, UiStyle.BodyStrong) + UiTokens.S1);
+            float vw = Math.Min(UiDraw.SnapDown(w * 0.75f), UiDraw.Snap(UiTextRules.Width(m.SliderValue, UiStyle.BodyStrong) + UiTokens.S1));
             UiDraw.TextMiddle(s, at, x, y, UiTokens.PairRow, w - vw - UiTokens.S3, UiStyle.Body, UiRole.Text, m.SliderLabel, UiFlags.Label | UiFlags.Truncate);
-            UiDraw.TextMiddle(s, at, x + w - vw, y, UiTokens.PairRow, vw, UiStyle.BodyStrong, off ? UiRole.Text2 : UiRole.Text, m.SliderValue, UiFlags.Right);
+            UiDraw.TextMiddle(s, at, x + w - vw, y, UiTokens.PairRow, vw, UiStyle.BodyStrong, off ? UiRole.Text2 : UiRole.Text, m.SliderValue, UiFlags.Right | UiFlags.Truncate);
             y += UiTokens.PairRow;
             float share = m.SliderShare < 0f ? 0f : m.SliderShare > 1f ? 1f : m.SliderShare;
             int face = UiDraw.Box(s, at, x, y, w, UiTokens.PairRow, m.SliderHeld && !off && !s.Pointer ? UiRole.AccentSoft : UiRole.None, UiRole.None, UiTokens.RadiusLarge,
@@ -344,6 +350,12 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Text(s, at, x, y, ew, UiStyle.Small, UiRole.Text2, m.SliderFrom, UiFlags.Truncate);
                 UiDraw.Text(s, at, x + w - ew, y, ew, UiStyle.Small, UiRole.Text2, m.SliderTo, UiFlags.Right | UiFlags.Truncate);
                 y += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
+            }
+            if (!string.IsNullOrEmpty(m.SliderNote))
+            {
+                float nh = UiDraw.Snap(UiTextRules.WrappedHeight(m.SliderNote, UiStyle.Body, w, NoteLines));
+                UiDraw.Text(s, at, x, y, w, UiStyle.Body, UiRole.Text2, m.SliderNote, UiFlags.Label | UiFlags.Wrap, NoteLines);
+                y += nh;
             }
             if (!string.IsNullOrEmpty(m.SumLeft) || !string.IsNullOrEmpty(m.SumRight))
             {

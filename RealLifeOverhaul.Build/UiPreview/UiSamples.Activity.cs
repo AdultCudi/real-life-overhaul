@@ -104,6 +104,26 @@ internal static partial class UiSamples
         };
     }
 
+    /// <summary>
+    /// Rest on a bench with the slider at its most: the game writes its slider line as two sentences ("Rest for 24 hours, 0
+    /// minutes. Will stop resting at 19:15"); the card puts the first beside the label and the second under the track.
+    /// </summary>
+    public static UiActivityModel ActivityRest(UiWords t, IUiKeys k)
+    {
+        return new UiActivityModel
+        {
+            State = UiActivityState.NotStarted, Icon = UiIcon.Sofa, Bar = true, Headline = Pick("Rest on bench", "Auf der Bank ausruhen"), Place = "7 4th Avenue", PlaceLines = new[] { "Garment District" },
+            HasDuration = true, DurationLabel = t("reallife_ui_activity_how_long", "How long"), DurationShare = 1f,
+            DurationValue = Pick("Rest for 24 hours, 0 minutes. Will stop resting at 19:15", "24 Stunden, 0 Minuten ausruhen. Die Ruhe endet um 19:15 Uhr"),
+            Buttons = new[]
+            {
+                GameButton(t("common_cancel", "Cancel"), UiButtonKind.Secondary, GameKey(k, "Esc", UiIcon.PadB), true),
+                GameButton(Pick("Start resting", "Ausruhen"), UiButtonKind.Primary, GameKey(k, "Enter", UiIcon.PadX)),
+            },
+            Clock = "19:15",
+        };
+    }
+
     // ------------------------------------------------------------------------------------------------- the strip's others
 
     /// <summary>A desk session's time in the chair: the strip with the session's meter and Stop.</summary>

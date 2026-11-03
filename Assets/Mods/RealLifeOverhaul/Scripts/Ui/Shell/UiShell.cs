@@ -216,7 +216,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The game's own close: its BizMan question about unsaved changes is kept.
-        private static bool CloseMenu()
+        internal static bool CloseMenu()
         {
             if (_appsOpen)
             {

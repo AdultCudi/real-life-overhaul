@@ -29,15 +29,18 @@ public static partial class UiPreviewRunner
         screens.Add(SettingsShot("settings_longest", "Mod settings", UiIcon.Gear, "02.jpg",
             (s, f, d, k) => UiSamples.SettingsKit(s, f, d, k, French, "you"), UiSettingsList.GroupCommand, 1));
         screens.Add(SettingsShot("guide_page", "Guide", UiIcon.Info, "13.jpg", (s, f, d, k) => UiSamples.GuideKit(s, f, d, k, English, "page"), UiAppWindow.NavCommand, 1));
-        screens.Add(SettingsShot("guide_search", "Guide", UiIcon.Info, "13.jpg", (s, f, d, k) => UiSamples.GuideKit(s, f, d, k, English, "search"), UiSettingsList.SearchCommand, 0));
+        screens.Add(Typing(SettingsShot("guide_search", "Guide", UiIcon.Info, "13.jpg", (s, f, d, k) => UiSamples.GuideKit(s, f, d, k, English, "search"), UiSettingsList.SearchCommand, 0),
+            UiSettingsList.SearchCommand, 0));
         screens.Add(SettingsShot("guide_whatsnew", "Guide", UiIcon.Info, "02.jpg", (s, f, d, k) => UiSamples.GuideKit(s, f, d, k, English, "whatsnew"), UiReader.AnchorCommand, 0));
         screens.Add(SettingsShot("guide_long", "Guide", UiIcon.Info, "13.jpg", (s, f, d, k) => UiSamples.GuideKit(s, f, d, k, English, "long"), UiReader.RelatedCommand, 0));
         screens.Add(SettingsShot("guide_empty", "Guide", UiIcon.Info, "13.jpg", (s, f, d, k) => UiSamples.GuideKit(s, f, d, k, English, "empty"), UiSettingsList.SearchCommand, 0));
         screens.Add(SettingsShot("staff_page", "Staff and roles", UiIcon.People, "13.jpg", (s, f, d, k) => UiSamples.StaffKit(s, f, d, k, English, "page"), UiReader.AnchorCommand, 0));
-        screens.Add(SettingsShot("staff_search", "Staff and roles", UiIcon.People, "02.jpg", (s, f, d, k) => UiSamples.StaffKit(s, f, d, k, English, "search"), UiSettingsList.SearchCommand, 0));
+        screens.Add(Typing(SettingsShot("staff_search", "Staff and roles", UiIcon.People, "02.jpg", (s, f, d, k) => UiSamples.StaffKit(s, f, d, k, English, "search"), UiSettingsList.SearchCommand, 0),
+            UiSettingsList.SearchCommand, 0));
         screens.Add(SettingsShot("staff_empty", "Staff and roles", UiIcon.People, "13.jpg", (s, f, d, k) => UiSamples.StaffKit(s, f, d, k, English, "empty"), UiSettingsList.SearchCommand, 0));
         screens.Add(SettingsShot("bug_report", "Report a bug", UiIcon.Bug, "13.jpg", (s, f, d, k) => UiSamples.BugKit(s, f, d, k, English, false), UiReport.ButtonCommand, 1));
-        screens.Add(SettingsShot("bug_report_shot", "Report a bug", UiIcon.Bug, "02.jpg", (s, f, d, k) => UiSamples.BugKit(s, f, d, k, English, true), UiReport.FieldCommand, 0));
+        screens.Add(Typing(SettingsShot("bug_report_shot", "Report a bug", UiIcon.Bug, "02.jpg", (s, f, d, k) => UiSamples.BugKit(s, f, d, k, English, true), UiReport.FieldCommand, 0),
+            UiReport.FieldCommand, 0));
         screens.Add(SettingsShot("save_prepare", "Save tools", UiIcon.Warning, "13.jpg", (s, f, d, k) => UiSamples.SaveKit(s, f, d, k, English, 0), UiCard.ButtonCommand, 0));
         screens.Add(SettingsShot("save_reset", "Save tools", UiIcon.Warning, "02.jpg", (s, f, d, k) => UiSamples.SaveKit(s, f, d, k, English, 1), UiCard.ButtonCommand, 0));
         screens.Add(SettingsShot("save_repair", "Save tools", UiIcon.Warning, "13.jpg", (s, f, d, k) => UiSamples.SaveKit(s, f, d, k, English, 2), UiCard.ButtonCommand, 1));

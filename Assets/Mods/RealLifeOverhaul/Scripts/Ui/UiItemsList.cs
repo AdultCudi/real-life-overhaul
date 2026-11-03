@@ -198,9 +198,7 @@ namespace RealLifeOverhaul.Ui
         // The search: its glyph, the words typed or the placeholder, how many show; its target the typing command with the search's argument.
         private static int Search(UiScene s, UiAt at, UiItemsListModel m, float x, float y, float w)
         {
-            int node = UiDraw.Search(s, at, x, y, w, m.Placeholder, m.Search, m.Count, TypeCommand);
-            s.Nodes[node].Arg = SearchArg;
-            return node;
+            return UiDraw.Search(s, at, x, y, w, m.Placeholder, m.Search, m.Count, TypeCommand, SearchArg);
         }
     }
 }

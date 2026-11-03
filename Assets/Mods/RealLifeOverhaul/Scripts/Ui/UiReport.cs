@@ -30,7 +30,7 @@ namespace RealLifeOverhaul.Ui
         public string[] WhereOptions = new string[0];
         public int WhereChosen;
         public float WhereOffset;
-        public int Typing;                 // 0 what happened, 1 what was expected, -1 neither
+        public int Typing = -1;            // 0 what happened, 1 what was expected, -1 neither (the host says which itself while it types; this is for a sample)
         public UiReportCheck[] Checks = new UiReportCheck[0];
         public UiActionModel[] Buttons = new UiActionModel[0];
         public UiPrompt[] Prompts = new UiPrompt[0];
@@ -46,6 +46,7 @@ namespace RealLifeOverhaul.Ui
         public const int FieldCommand = 1, WhereCommand = 2, CheckCommand = 3, LinkCommand = 4, ButtonCommand = 5, OptionCommand = 6;
         public const float Width = 880f;
         private const float FieldHeight = 72f;
+        private const int FieldLines = 3;       // lines a field shows: the ones the caret is on
 
         public static void Lay(UiScene s, UiReportModel m, UiFrame frame, bool dark, IUiKeys keys)
         {
@@ -124,12 +125,17 @@ namespace RealLifeOverhaul.Ui
             y += labelH + UiTokens.S2;
             int face = UiDraw.Box(s, at, x, y, w, FieldHeight, UiRole.Field, UiRole.None, UiTokens.RadiusLarge);
             bool empty = string.IsNullOrEmpty(text);
-            bool typing = m.Typing == which;
-            UiDraw.Text(s, at.In(face), x + UiTokens.S3, y + UiTokens.S2, w - UiTokens.S3 * 2f, UiStyle.Body, empty ? UiRole.Muted : UiRole.Text,
-                empty ? hint : text, UiFlags.Wrap | UiFlags.Truncate | (empty ? UiFlags.Label : UiFlags.None), 3);
+            bool typing = m.Typing == which || UiDraw.Typing(s, FieldCommand, which);
+            float tx = x + UiTokens.S3, room = w - UiTokens.S3 * 2f;
+            float lead = typing && empty ? UiDraw.CaretRoom : 0f;   // the caret before the hint, not over its first letter
+            float last = 0f;
+            string shown = typing && !empty ? UiTextRules.LastLines(text, UiStyle.Body, room - UiDraw.CaretRoom, FieldLines, out last) : empty ? hint : text;   // typed: the lines the caret is on
+            UiDraw.Text(s, at.In(face), tx + lead, y + UiTokens.S2, room - lead, UiStyle.Body, empty ? UiRole.Muted : UiRole.Text,
+                shown, UiFlags.Wrap | UiFlags.Truncate | (empty ? UiFlags.Label : UiFlags.None), FieldLines);
             if (typing)
             {
-                UiDraw.Box(s, at.In(face), x + UiTokens.S3, y + UiTokens.S2, UiTokens.Hairline * 2f, UiTokens.Icon, UiRole.Accent, UiRole.None, 0f, UiFlags.Decor);
+                int row = empty ? 0 : Math.Max(0, UiTextRules.Lines(shown, UiStyle.Body, room - UiDraw.CaretRoom, FieldLines, out float _) - 1);
+                UiDraw.Caret(s, at.In(face), tx + (empty ? 0f : last + 1f), y + UiTokens.S2 + row * UiTextRules.LineHeight(UiStyle.Body), UiTextRules.LineHeight(UiStyle.Body), UiStyle.Body);
             }
             int node = UiDraw.Node(s, at, x, y, w, FieldHeight, FieldCommand, which, face);
             if (which == 0)

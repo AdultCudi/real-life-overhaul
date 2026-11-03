@@ -115,14 +115,57 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The slider's share for a point across the screen, by the card laid last.</summary>
         public static float SliderShare(UiActivityModel m, float x) => m != null && m.Card != null ? UiSideCard.TrackShare(m.Card, x) : 0f;
 
+        /// <summary>
+        /// The game writes its slider's line as two sentences ("Rest for 24 hours, 0 minutes. Will stop resting at 19:15"): the
+        /// first is the value beside the label, the rest a line of its own under the track, so neither is ever drawn over it.
+        /// Splits at a line break or a full stop that ends a sentence (a stop and a space, or the Chinese one); a line that is
+        /// one sentence is the value alone.
+        /// </summary>
+        public static string SplitValue(string text, out string note)
+        {
+            note = null;
+            if (string.IsNullOrEmpty(text))
+            {
+                return text;
+            }
+            int cut = -1, skip = 0;
+            for (int i = 0; i < text.Length && cut < 0; i++)
+            {
+                char c = text[i];
+                if (c == '\n' || c == '\r')
+                {
+                    cut = i;
+                    skip = 1;
+                }
+                else if ((c == '.' || c == '!' || c == '?') && i + 1 < text.Length && text[i + 1] == ' ')
+                {
+                    cut = i;
+                    skip = 2;
+                }
+                else if ((c == '\u3002' || c == '\uFF01' || c == '\uFF1F') && i + 1 < text.Length)
+                {
+                    cut = i;
+                    skip = 1;
+                }
+            }
+            if (cut < 0)
+            {
+                return text.Trim();
+            }
+            string rest = text.Substring(cut + skip).Trim();
+            note = rest.Length > 0 ? rest : null;
+            return text.Substring(0, cut).Trim();
+        }
+
         // The activity as a side card: its emblem and place at the left, its headline as the title, its lines as rows.
         private static UiSideCardModel Card(UiActivityModel m, IUiKeys keys)
         {
+            string value = SplitValue(m.DurationValue, out string note);
             var c = new UiSideCardModel
             {
                 Emblem = m.Icon, EmblemTint = m.IconTint == UiRole.None ? UiRole.Gold : m.IconTint, SideName = m.Place, SideLines = m.PlaceLines ?? new string[0],
                 Person = m.Person, PersonLine = m.PersonLine, Kicker = m.Kicker, Title = string.IsNullOrEmpty(m.Title) ? m.Headline : m.Title, Body = m.Body,
-                Rows = m.Lines ?? new UiInfoRow[0], HasSlider = m.HasDuration, SliderLabel = m.DurationLabel, SliderValue = m.DurationValue, SliderShare = m.DurationShare,
+                Rows = m.Lines ?? new UiInfoRow[0], HasSlider = m.HasDuration, SliderLabel = m.DurationLabel, SliderValue = value, SliderNote = note, SliderShare = m.DurationShare,
                 SliderHeld = m.DurationHeld, SliderFrom = m.DurationFrom, SliderTo = m.DurationTo, SumLeft = m.Finish, SumRight = m.Sum, Prompts = m.Prompts,
                 PromptCount = m.PromptCount, Bar = m.Bar, ButtonCommand = ButtonCommand, SliderCommand = StepCommand,
             };

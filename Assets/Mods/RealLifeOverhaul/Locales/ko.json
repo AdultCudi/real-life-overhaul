@@ -18933,7 +18933,7 @@
   "reallife_phonecam_latest": "가장 최근 사진: {taken}",
   "reallife_gallery_row_count": "사진",
   "reallife_gallery_count_of": "{cap}장 중 {count}장",
-  "reallife_gallery_taken": "{day}, {hour} ({real})",
+  "reallife_gallery_taken": "{day}, {hour}",
   "reallife_gallery_tab_all": "모든 사진",
   "reallife_gallery_tab_selfies": "셀카",
   "reallife_gallery_place": "{count}장 중 {place}",

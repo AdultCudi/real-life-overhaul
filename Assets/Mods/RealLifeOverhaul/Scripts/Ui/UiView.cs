@@ -158,6 +158,22 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The object an item of the last write was bound to, for the host's pointer and the motion.</summary>
         internal Slot SlotOf(int item) => item >= 0 && item < _itemSlots.Length ? _itemSlots[item] : null;
 
+        /// <summary>
+        /// Shows or hides the caret the scene drew (UiScene.CaretItem): the blink. One object's visibility, a canvas redraw of
+        /// that object alone; no layout, nothing allocated. The next write shows it again.
+        /// </summary>
+        public void SetCaret(bool on)
+        {
+            if (_scene != null && _scene.CaretItem >= 0 && _scene.CaretItem < _scene.ItemCount)
+            {
+                Slot slot = SlotOf(_scene.CaretItem);
+                if (slot != null)
+                {
+                    Show(slot.Rect, on);
+                }
+            }
+        }
+
         // ------------------------------------------------------------------------------------------------- scroll regions
 
         private sealed class ClipView
