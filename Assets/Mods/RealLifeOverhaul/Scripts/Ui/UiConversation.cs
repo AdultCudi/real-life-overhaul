@@ -36,6 +36,7 @@ namespace RealLifeOverhaul.Ui
         public float Hue;
         public UiRole Ring = UiRole.Ok;                // the mood
         public UiIcon Icon = UiIcon.None;              // nobody's face (a file, a firm): its picture on a tile in the face's place; None for the face
+        public string Picture;                         // a firm's own picture (its logo, a UiPictures key) on that tile in place of the icon; null for none
         public string Role;                            // "Customer Service, Bloom Cafe"
         public string Status;                          // a chip beside the role ("On shift"); null for none
         public UiRole StatusTone = UiRole.Ok;
@@ -158,7 +159,11 @@ namespace RealLifeOverhaul.Ui
         private static float Head(UiScene s, UiAt at, UiConversationModel m, float x, float y, float w)
         {
             float ring = UiTokens.S1;   // the mood's ring inside the head's square, so the face keeps to the grid
-            if (m.Icon != UiIcon.None)
+            if (!string.IsNullOrEmpty(m.Picture))
+            {
+                UiDraw.PictureFace(s, at, x + ring, y + ring, Face - ring * 2f, m.Picture);   // the firm's own logo, as the game's Contacts shows it
+            }
+            else if (m.Icon != UiIcon.None)
             {
                 // Nobody's face (a file, a firm): its picture on a tile, as the call card and a contact's head show one.
                 float side = Face - ring * 2f, g = UiDraw.Snap(side * 0.5f);

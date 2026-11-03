@@ -22,7 +22,11 @@ namespace RealLifeOverhaul.Ui
             UiAt inside = at.In(face);
             float ax = x + UiTokens.S3, ay = y + (h - UiTokens.AvatarRow) / 2f, size = UiTokens.AvatarRow;
             int avatar;
-            if (row.Icon != UiIcon.None)
+            if (!string.IsNullOrEmpty(row.Picture))
+            {
+                avatar = PictureFace(s, inside, ax, ay, size, row.Picture);   // the business's own logo, as the game's Contacts shows it
+            }
+            else if (row.Icon != UiIcon.None)
             {
                 // A business or a place has no face: its icon on a tile of its family's colour says what it is.
                 avatar = Tile(s, inside, ax, ay, size, row.Tint, false);

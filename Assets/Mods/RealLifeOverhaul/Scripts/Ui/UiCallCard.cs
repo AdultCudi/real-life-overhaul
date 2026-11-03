@@ -10,6 +10,7 @@ namespace RealLifeOverhaul.Ui
         public UiRole Ring = UiRole.None;           // the mood the game shows by the line; None where it shows none
         public UiIcon Icon = UiIcon.None;           // a firm or a service: its picture on a tile in place of a face
         public UiRole Tint = UiRole.None;
+        public string Picture;                      // the firm's own picture (its logo, a UiPictures key) on the tile in place of the icon; null for the icon
         public string Role;                         // over the name: "Customer Service, Bloom Cafe"
         public string Length;                       // the call's length, "1:24"
         public string Line;                         // what they say now
@@ -180,7 +181,11 @@ namespace RealLifeOverhaul.Ui
         {
             float top = y + UiDraw.SnapDown((h - SideHeight(m)) / 2f);
             float fx = x + (Side - Face) / 2f, fy = top + UiTokens.S1;
-            if (m.Icon != UiIcon.None)
+            if (!string.IsNullOrEmpty(m.Picture))
+            {
+                UiDraw.PictureFace(s, at, fx, fy, Face, m.Picture);
+            }
+            else if (m.Icon != UiIcon.None)
             {
                 int tile = UiDraw.Tile(s, at, fx, fy, Face, m.Tint, false);
                 float g = UiDraw.Snap(Face * 0.5f);

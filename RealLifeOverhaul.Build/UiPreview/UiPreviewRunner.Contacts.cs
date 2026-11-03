@@ -1,12 +1,64 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using RealLifeOverhaul.Ui;
+using UnityEngine;
 
 public static partial class UiPreviewRunner
 {
+    private static Func<string, Sprite> _contactPictures;   // the chain this file put in place; another runner's laid over it is chained again
+    private static readonly Dictionary<string, Sprite> ContactLogos = new Dictionary<string, Sprite>();
+
+    // A firm's picture as the game's Contacts shows it ("contact:" and a shape of the game's logo maker, its sign's colour
+    // after the colon): the game's own logo shape, white on the sign's colour, as its square signs are drawn.
+    private static void ContactPicturesOn()
+    {
+        if (_contactPictures != null && UiPictures.Find == _contactPictures)
+        {
+            return;
+        }
+        Func<string, Sprite> before = UiPictures.Find;
+        UiPictures.Find = _contactPictures = key => key != null && key.StartsWith("contact:", StringComparison.Ordinal) ? ContactLogo(key) : before?.Invoke(key);
+    }
+
+    private static Sprite ContactLogo(string key)
+    {
+        if (ContactLogos.TryGetValue(key, out Sprite known))
+        {
+            return known;
+        }
+        string[] parts = key.Substring("contact:".Length).Split(':');
+        string path = Path.Combine(BizGameShapes, parts[0] + ".png");
+        Sprite sprite = null;
+        if (File.Exists(path) && parts.Length > 1 && ColorUtility.TryParseHtmlString("#" + parts[1], out Color sign))
+        {
+            var shape = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            shape.LoadImage(File.ReadAllBytes(path));
+            const int side = 128;
+            var tex = new Texture2D(side, side, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear };
+            var pixels = new Color[side * side];
+            for (int y = 0; y < side; y++)
+            {
+                for (int x = 0; x < side; x++)
+                {
+                    float u = (x - side * 0.15f) / (side * 0.7f), v = (y - side * 0.15f) / (side * 0.7f);
+                    float a = u >= 0f && u <= 1f && v >= 0f && v <= 1f ? shape.GetPixelBilinear(u, v).a : 0f;
+                    pixels[y * side + x] = Color.Lerp(sign, Color.white, a);
+                }
+            }
+            tex.SetPixels(pixels);
+            tex.Apply();
+            sprite = Sprite.Create(tex, new Rect(0f, 0f, side, side), new Vector2(0.5f, 0.5f));
+        }
+        ContactLogos[key] = sprite;
+        return sprite;
+    }
+
     // The game's Contacts app on the kit in every state, over the day street the full menu leaves, with the frame's app row
     // under it; a call over a day street and the night street, as a call comes wherever the player is.
     static partial void AddContacts(List<Screen> screens)
     {
+        ContactPicturesOn();
         foreach (string state in UiSamples.ContactsStates)
         {
             string st = state;
@@ -14,7 +66,11 @@ public static partial class UiPreviewRunner
             var screen = new Screen
             {
                 Name = "contacts_" + st, AppName = "Contacts", Icon = UiIcon.AddressBook, Backdrop = st == "call_replies" ? "11.jpg" : call ? "02.jpg" : "13.jpg",
-                Bar = () => UiSamples.ShellBar(UiSamples.RowContacts, false), Lay = (s, f, d, k) => UiContacts.Lay(s, UiSamples.ContactsSample(English, st), f, d, k)
+                Bar = () => UiSamples.ShellBar(UiSamples.RowContacts, false), Lay = (s, f, d, k) =>
+                {
+                    ContactPicturesOn();
+                    UiContacts.Lay(s, UiSamples.ContactsSample(English, st), f, d, k);
+                }
             };
             if (call)
             {

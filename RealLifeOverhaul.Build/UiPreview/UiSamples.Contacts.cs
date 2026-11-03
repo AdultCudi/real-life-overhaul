@@ -23,6 +23,10 @@ internal static partial class UiSamples
     // services and a restaurant that delivers. Their row in everyone's list, by state.
     private const int RelativeRow = 14, FriendRow = 15, ServiceRow = 16, RestaurantRow = 17;
 
+    // Firms' own pictures as the game's Contacts shows them (a logo shape of the game's on its sign's colour, the preview's
+    // stand-in for the game's square sign); the services the game has no logo for keep their icon's tile.
+    public const string BankLogo = "contact:bank1:1F4E8C", RecruitmentLogo = "contact:recruitment1:C0392B";
+
     // The game's categories and the mod's groups this world's contacts stand in.
     private static readonly int[] SampleGroups = { 0, 1, 2, 3, 4, 5, 6, 101, 102 };
     private static readonly string[] SampleGroupWords = { "General", "Business", "Finance", "Furniture / Equipment", "Imports / Goods", "Employees", "Rivals", "Family", "Friends and people" };
@@ -207,15 +211,15 @@ internal static partial class UiSamples
             new UiMessageRow { Name = "Luis Romero", Hue = 30f, Preview = "Van needs fuel before the afternoon run, and the left tyre looks low", Time = "10:02", Unread = 1, Section = t("reallife_ui_contacts_new", "New messages") },
             new UiMessageRow { Name = "Uncle Fred", Hue = 280f, Preview = "Proud of you, kid. Dinner on Sunday? Your aunt is cooking", Time = "09:02", Unread = 1 },
             new UiMessageRow { Name = "Nadia Haddad", Hue = 200f, Preview = "Thank you for considering me for the open position. Let's discuss the wages for this job.", Time = "08:58", Unread = 2 },
-            new UiMessageRow { Name = "Anderson Recruitment Corp.", Icon = UiIcon.IdBadge, Preview = "Three candidates for the barista job are in My Employees", Time = "08:52", Unread = 1 },
+            new UiMessageRow { Name = "Anderson Recruitment Corp.", Icon = UiIcon.IdBadge, Picture = RecruitmentLogo, Preview = "Three candidates for the barista job are in My Employees", Time = "08:52", Unread = 1 },
             new UiMessageRow { Name = "Maya Okafor", Hue = 24f, Preview = you.Replace("{text}", "Let me look at the rota tonight."), Time = "09:20", Section = t("reallife_ui_contacts_earlier", "Earlier") },
             new UiMessageRow { Name = "Logistics Alerts", Icon = UiIcon.Truck, Preview = "Your Tuesday delivery left the warehouse", Time = "07:30" },
-            new UiMessageRow { Name = "McCain's eMarketing", Icon = UiIcon.Megaphone, Preview = "Click-through on your last campaign was up 18%", Time = "Day 411" },
+            new UiMessageRow { Name = "McCain's eMarketing", Icon = UiIcon.Megaphone, Picture = "contact:marketing2:7B3FA0", Preview = "Click-through on your last campaign was up 18%", Time = "Day 411" },
             new UiMessageRow { Name = "Hana Sato", Hue = 330f, Preview = "Requesting a better desk chair. My back is not happy", Time = "Day 411" },
             new UiMessageRow { Name = "Ingrid Schneider", Hue = 350f, Preview = "You won't keep Midtown to yourself for long", Time = "Day 410" },
-            new UiMessageRow { Name = "Harbor Line Wholesale", Icon = UiIcon.Package, Preview = "Container of coffee beans landed. Your order ships tomorrow", Time = "Day 409" },
-            new UiMessageRow { Name = "Lumen and Oak Interiors", Icon = UiIcon.Sofa, Preview = "The walnut counters you asked about are back in stock", Time = "Day 408" },
-            new UiMessageRow { Name = "Midtown Savings Bank", Icon = UiIcon.Bank, Preview = "Your loan's daily payment went through", Time = "Day 406" },
+            new UiMessageRow { Name = "Harbor Line Wholesale", Icon = UiIcon.Package, Picture = "contact:wholesale1:2E7D5B", Preview = "Container of coffee beans landed. Your order ships tomorrow", Time = "Day 409" },
+            new UiMessageRow { Name = "Lumen and Oak Interiors", Icon = UiIcon.Sofa, Picture = "contact:furniture2:8A5A2B", Preview = "The walnut counters you asked about are back in stock", Time = "Day 408" },
+            new UiMessageRow { Name = "Midtown Savings Bank", Icon = UiIcon.Bank, Picture = BankLogo, Preview = "Your loan's daily payment went through", Time = "Day 406" },
             new UiMessageRow { Name = "Internal Revenue Service", Icon = UiIcon.Bank, Preview = "Notice of outstanding tax payment", Time = "Day 400" },
             new UiMessageRow { Name = "Tom Becker", Hue = 210f, Preview = "Can do Tuesday evenings if Maya takes Sunday", Time = "Day 399" },
             new UiMessageRow { Name = "Mom", Hue = 14f, Preview = "Dinner is at six on Sunday. Bring nothing but yourself", Time = "Day 398" },
@@ -227,7 +231,7 @@ internal static partial class UiSamples
 
     private static void ContactsHead(UiContactsModel m, UiWords t, string name, float hue, UiIcon icon, UiRole ring, string role, string employer, bool map, bool call)
     {
-        m.Head = new UiHeadModel { Name = name, Hue = hue, Icon = icon, Ring = ring, Role = role, Employer = employer };
+        m.Head = new UiHeadModel { Name = name, Hue = hue, Icon = icon, Ring = ring, Role = role, Employer = employer, Picture = name == "Anderson Recruitment Corp." ? RecruitmentLogo : null };
         var actions = new List<UiActionModel>(2);
         if (map)
         {

@@ -623,7 +623,7 @@ internal static partial class UiSamples
         UiContactsModel m = ContactsSample(t, "call_replies");
         m.Call = new UiCallModel
         {
-            Name = "Midtown Savings Bank", Icon = UiIcon.Bank, Role = t("contactcategoryname_finance", "Finance"), Length = "1:12",
+            Name = "Midtown Savings Bank", Icon = UiIcon.Bank, Picture = BankLogo, Role = t("contactcategoryname_finance", "Finance"), Length = "1:12",
             Line = t("dialog_bank_loan_amount_header", "Loan amount"),   // the line's header: a form's line has no message of its own
             Rows = LoanRows(t, false),
             Choices = LoanAnswers(t, true),

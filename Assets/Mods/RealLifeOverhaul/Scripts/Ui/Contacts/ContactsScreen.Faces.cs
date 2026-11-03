@@ -33,5 +33,81 @@ namespace RealLifeOverhaul.Ui
                 FaceSources.Held(name, FaceSources.Icon(c.id));   // the sprite the game's own contacts list holds for them
             }
         }
+
+        // A firm's contact (a bank, a shop, a rival's business, an agency): the game's own picture for it, as the game's
+        // Contacts shows it (FirmPictures); null for a person or a firm the game has none for, which keeps its icon's tile.
+        private static string Logo(Contact c) => c == null || Person(c) ? null : FirmPictures.Of(c);
+    }
+
+    /// <summary>
+    /// The game's own picture of a firm's contact, the one its Contacts app shows by the name (ContactsApp.GetContactIcon:
+    /// the contact's own icon where the game has one, else the business's square logo, its own or an AI business's), as a
+    /// picture key the kit draws (UiPictures, "contact:" and the sprite's id). The game's and the mod's businesses and every
+    /// rival's are asked the same way. Each contact is asked once a city, a firm with no picture remembered as none, so
+    /// the game's own "no logo" line is written once; nothing is asked again while the screen reads the list.
+    /// </summary>
+    internal static class FirmPictures
+    {
+        public const string Prefix = "contact:";
+
+        private static readonly Dictionary<string, string> Keys = new Dictionary<string, string>(System.StringComparer.Ordinal);   // a contact's id: its picture's key, or null for none
+        private static readonly Dictionary<string, Sprite> Sprites = new Dictionary<string, Sprite>(System.StringComparer.Ordinal); // a key: the game's sprite
+        private static object _city;
+        private static bool _on;
+
+        /// <summary>The picture key of a firm's contact, or null when the game has no picture for it.</summary>
+        public static string Of(Contact c)
+        {
+            if (c == null || string.IsNullOrEmpty(c.id))
+            {
+                return null;
+            }
+            On();
+            object city = SaveGameManager.Current;
+            if (!ReferenceEquals(city, _city))
+            {
+                _city = city;   // a new city: its businesses and their logos are asked again
+                Keys.Clear();
+                Sprites.Clear();
+            }
+            if (Keys.TryGetValue(c.id, out string known))
+            {
+                if (known == null || Sprites.TryGetValue(known, out Sprite held) && held != null)
+                {
+                    return known;
+                }
+                Keys.Remove(c.id);   // the game let its sprite go: asked again
+            }
+            Sprite sprite = null;
+            try
+            {
+                sprite = ContactsApp.GetContactIcon(c);
+            }
+            catch (System.Exception e) when (Guard.Missing(e))
+            {
+                sprite = null;   // this version has no such picture: the icon's tile stays
+            }
+            string key = sprite != null ? Prefix + sprite.GetInstanceID().ToString(System.Globalization.CultureInfo.InvariantCulture) : null;
+            Keys[c.id] = key;
+            if (key != null)
+            {
+                Sprites[key] = sprite;
+            }
+            return key;
+        }
+
+        // The keys this file gives its pictures, answered here; any other key goes to whoever asked before.
+        private static void On()
+        {
+            if (_on)
+            {
+                return;
+            }
+            _on = true;
+            System.Func<string, Sprite> before = UiPictures.Find;
+            UiPictures.Find = key => key != null && key.StartsWith(Prefix, System.StringComparison.Ordinal)
+                ? Sprites.TryGetValue(key, out Sprite sprite) ? sprite : null
+                : before?.Invoke(key);
+        }
     }
 }

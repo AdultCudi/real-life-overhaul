@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -85,6 +85,55 @@ internal static partial class Program
         Check(s.FindNode(UiCallCard.ChoiceCommand, 0) >= 0 && s.FindNode(UiCallCard.ButtonCommand, 0) >= 0 && s.FindNode(UiAppWindow.NavCommand, 0) < 0
               && s.Nodes[s.FindNode(UiCallCard.ChoiceCommand, 0)].Key == UiAction.Pick1,
             "contacts: a call stands as its card alone, its replies on the number keys and Hang up its way out, the window not reachable under it");
+        ContactPictureChecks();
+    }
+
+    // A firm's own picture (its logo, as the game's Contacts shows it) in its list row, its head, on the call card and as
+    // the speaker of a conversation, each on its tile in place of the icon; a firm the game has no picture for keeps its
+    // icon, a person their face. The game side asks the game's own ContactsApp.GetContactIcon once a contact a city.
+    private static void ContactPictureChecks()
+    {
+        var s = new UiScene();
+        UiFrame frame = UiFrame.FullMenu(16f / 9f, "Contacts");
+        UiContacts.Lay(s, UiSamples.ContactsSample(UiWords("en"), "business"), frame, true, UiDefaultKeys.Keyboard);
+        bool rowLogo = Pictured(s, "contact:marketing2:7B3FA0"), headLogo = Count(s, UiSamples.RecruitmentLogo) >= 2;   // the agency's row and its head
+        UiContacts.Lay(s, UiSamples.ContactsSample(UiWords("en"), "all"), frame, true, UiDefaultKeys.Keyboard);
+        bool kept = false;
+        for (int i = 0; i < s.ItemCount; i++)
+        {
+            kept |= s.Items[i].Kind == UiKind.Icon && s.Items[i].Icon == UiIcon.Truck;   // a service the game has no logo for keeps its glyph
+        }
+        UiContacts.Lay(s, UiSamples.LoanCall(UiWords("en")), frame, true, UiDefaultKeys.Keyboard);
+        bool callLogo = Pictured(s, UiSamples.BankLogo);
+        var talk = new UiConversationModel { Name = "Midtown Savings Bank", Picture = UiSamples.BankLogo, Title = "Conversation" };
+        UiConversation.LayDocked(s, talk, UiFrame.FullMenu(16f / 9f, "Dialogue"), true, UiDefaultKeys.Keyboard);
+        bool speakerLogo = Pictured(s, UiSamples.BankLogo);
+        Check(rowLogo && headLogo && kept && callLogo && speakerLogo,
+            "contacts: a firm's own picture stands on its tile in its list row, its head, the call card and as a conversation's speaker; a firm the game has none for keeps its icon ("
+            + rowLogo + ", " + headLogo + ", " + callLogo + ", " + speakerLogo + ", " + kept + ")");
+        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui"));
+        string faces = File.ReadAllText(System.IO.Path.Combine(folder, "Contacts", "ContactsScreen.Faces.cs"));
+        string read = File.ReadAllText(System.IO.Path.Combine(folder, "Contacts", "ContactsScreen.Read.cs"));
+        string dialog = File.ReadAllText(System.IO.Path.Combine(folder, "Dialog", "DialogScreen.cs"));
+        string of = Between(faces, "public static string Of(Contact c)", "private static void On()");
+        Check(of.Contains("ContactsApp.GetContactIcon(c)") && of.Contains("Keys.TryGetValue(c.id") && of.Contains("Keys[c.id] = key;") && faces.Contains("Person(c) ? null")
+              && read.Contains("Picture = Logo(c)") && read.Contains("h.Picture = Logo(c);") && read.Contains("Picture = _m.Head.Picture") && dialog.Contains("FirmPictures.Of(c)"),
+            "contacts: the game's own picture of a firm's contact is asked once a contact a city through the game's Contacts (a firm with none remembered as none), for the list, the head, the call and the conversation, a person never");
+    }
+
+    private static bool Pictured(UiScene s, string key) => Count(s, key) > 0;
+
+    private static int Count(UiScene s, string key)
+    {
+        int n = 0;
+        for (int i = 0; i < s.ItemCount; i++)
+        {
+            if (s.Items[i].Kind == UiKind.Picture && s.Items[i].Text == key)
+            {
+                n++;
+            }
+        }
+        return n;
     }
 
     // Every action a sample contact shows is bound to the game's own: the button drawn in a place of the head does what its

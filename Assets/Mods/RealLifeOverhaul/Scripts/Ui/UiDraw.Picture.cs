@@ -59,6 +59,23 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>
+        /// A game's own picture by its key (a firm's logo, UiPictures) filling a face's tile a hair inside its edge, in the
+        /// place of a face or a glyph; returns the tile.
+        /// </summary>
+        public static int PictureFace(UiScene s, UiAt at, float x, float y, float size, string key, bool chosen = false)
+        {
+            int tile = Tile(s, at, x, y, size, UiRole.None, chosen);
+            UiAt inside = at.In(tile);
+            var item = new UiItem
+            {
+                Kind = UiKind.Picture, Flags = UiFlags.Middle | UiFlags.Centre, X = x + UiTokens.S1, Y = y + UiTokens.S1, W = size - UiTokens.S2, H = size - UiTokens.S2,
+                Text = key, Value = 1f, Clip = inside.Clip, Node = -1, Layer = inside.Layer, Order = inside.Order, Parent = inside.Parent, Alpha = 1f
+            };
+            s.Add(ref item);
+            return tile;
+        }
+
+        /// <summary>
         /// A picture on an icon's tile, sized as <see cref="IconButton"/> sizes its glyph, so another mod's button stands in a
         /// row of the kit's own as one of them. Returns the tile.
         /// </summary>
