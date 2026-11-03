@@ -691,6 +691,7 @@ internal static partial class Program
         ListSector();   // a listed company's sector from what it earns now: the mix, the review, the load, the save (ListSectorChecks.cs)
         OwnDesk();      // working at a desk of one's own tech firm: the minutes by the day, the crew's points, the professions, the save, the sources and texts (OwnDeskChecks.cs)
         DeskSeat();     // every seat at a desk or station is one pair: held or given back at once, begun before it holds, stood up on every end; the test and texts (DeskSeatChecks.cs)
+        DeskScreens();  // the screens at a computer desk lit while somebody is seated there to work and dark when they stand up, for the player and the staff the mod seats (DeskScreenChecks.cs)
         Careers();
         WorkPace();     // place keys, the professions a type employs and the save's writer, as they were (WorkPaceChecks.cs)
         LifePace();     // utility accounts and Flare's shops seen from their indexes, as the passes found them (LifePaceChecks.cs)
