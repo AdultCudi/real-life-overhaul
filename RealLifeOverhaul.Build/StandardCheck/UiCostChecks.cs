@@ -55,7 +55,18 @@ internal static partial class Program
         ("Diagnostics/SessionWatch.Lines.cs", "OwnScripts", new[] { "UiCost.MinuteLine(_line, seconds)" }, new string[0],
             "the minute's line carries the interface's share of every frame"),
         ("Diagnostics/SessionWatch.cs", "Long", new[] { "HotSpots.FrameGameMs(frame)" }, new string[0],
-            "a long frame's line says the game's own work the mod handed to it, apart from the mod's")
+            "a long frame's line says the game's own work the mod handed to it, apart from the mod's"),
+        // Flare's feed (the owner, 3 Nov: the kit's Flare complete; its cost measured in EconomyCheck's FlareCompleteCost): the
+        // account is read again only when it changed, a scroll lays the rows already filled, and only the rows in view are laid.
+        ("Ui/Flare/FlareScreen.cs", "Lay", new[] { "if (fill)" }, new string[0], "Flare reads its account again only when something changed, not on every layout"),
+        ("Ui/Flare/FlareScreen.cs", "Wheel", new[] { "_moved = true" }, new[] { "_dirty = true" },
+            "a notch of the wheel over Flare's feed lays its kept rows again without reading the account"),
+        ("Ui/Flare/FlareScreen.cs", "Reveal", new[] { "_moved = true" }, new[] { "_dirty = true" },
+            "a row the d-pad steps to is scrolled into view without reading the account"),
+        ("Ui/Flare/FlareFace.Rows.cs", "Measure", new[] { "if (Math.Abs(list.Measured - w) < 0.5f)" }, new string[0],
+            "a feed's rows are measured once at a width; a scroll lays them by the heights kept"),
+        ("Ui/Flare/FlareFace.Rows.cs", "List", new[] { "if (py + rh > offset && py < offset + vh)", "OutOfView(" }, new string[0],
+            "only the rows in view are laid out, and a target past the view's edge waits for the scroll")
     };
 
     private static readonly Regex GameClick = new Regex(@"\.onClick\.Invoke\(\)", RegexOptions.Compiled);

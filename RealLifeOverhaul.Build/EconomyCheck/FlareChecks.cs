@@ -35,6 +35,7 @@ internal static partial class Program
         FlarePictureChecks();
         FlareBankChecks();   // the bank of city photos: what it takes and its caps, the clean-up, the fit of a post's photo, never a wrong one, the share, Going Public, the file, the sources, the cost (FlareBankChecks.cs)
         FlareUseChecks();
+        FlareCompleteChecks();   // the kit's Flare whole: a post's words, the inbox, the notifications, a hire, answers to reviews, the rivals' parity, every handler, Home's cost (FlareCompleteChecks.cs)
         FlarePlayChecks();
     }
 
