@@ -127,6 +127,10 @@ namespace RealLifeOverhaul.Ui
             return a != null && a.HasFastForward() && BuildingManager.IsInsideBuilding;
         }
 
+        // Flips the game's own fast forward switch as its key does (the game's Secondary key). The press stays here, with the
+        // game's state, so the HUD's view names no key at all.
+        public static void PressFast(UIs uis) { uis.playerActivityUI.OnPlayerActionPressed(global::PlayerAction.SecondaryInteract); }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void Needs(UiStatusModel m)
         {

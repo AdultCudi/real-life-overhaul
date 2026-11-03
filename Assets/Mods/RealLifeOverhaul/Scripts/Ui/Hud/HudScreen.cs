@@ -108,7 +108,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The fast forward square: the game's own switch on its activity panel, flipped as its key flips it (the game's Secondary
-        // key, PlayerActivityUI.OnPlayerActionPressed), while the game offers it; else a notice of when the game offers one.
+        // key, through HudStatusGame.PressFast), while the game offers it; else a notice of when the game offers one.
         private static bool Fast()
         {
             UIs uis = InstanceBehavior<UIs>.Instance;
@@ -117,7 +117,7 @@ namespace RealLifeOverhaul.Ui
                 UI.Notification.Notifications.Show(UI.Notification.NotificationType.Info, "reallife_hud_fast_why", null, 6f);
                 return true;
             }
-            uis.playerActivityUI.OnPlayerActionPressed(global::PlayerAction.SecondaryInteract);
+            HudStatusGame.PressFast(uis);
             return true;
         }
 

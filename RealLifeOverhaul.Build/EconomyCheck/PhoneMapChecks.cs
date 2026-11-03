@@ -145,7 +145,8 @@ internal static partial class Program
         string screen = ModSource(@"Ui\Hud\HudScreen.cs"), status = ModSource(@"Ui\Hud\HudStatusGame.cs");
         string fast = MemberText(screen, "private static bool Fast()"), offered = MemberText(status, "public static bool FastOffered(UIs uis)");
         Check(MemberText(screen, "public bool Press(int command, int arg)").Contains("return arg == UiDraw.FastSquare ? Fast() : Pause(arg == 0);")
-              && fast.Contains("HudStatusGame.FastOffered(uis)") && fast.Contains("OnPlayerActionPressed(global::PlayerAction.SecondaryInteract)") && fast.Contains("\"reallife_hud_fast_why\""),
+              && fast.Contains("HudStatusGame.FastOffered(uis)") && fast.Contains("HudStatusGame.PressFast(uis);")
+              && MemberText(status, "public static void PressFast(UIs uis)").Contains("uis.playerActivityUI.OnPlayerActionPressed(global::PlayerAction.SecondaryInteract);") && fast.Contains("\"reallife_hud_fast_why\""),
             "fast forward: its square presses the game's own switch as its key does (PlayerActivityUI.OnPlayerActionPressed), and says when the game offers it");
         Check(offered.Contains("PlayerActivity.PlayerActivityUI.IsPanelOpen") && offered.Contains("a.HasFastForward()") && offered.Contains("BuildingManager.IsInsideBuilding")
               && status.Contains("m.FastOffered = FastOffered(uis);") && status.Contains("(FastOffered(uis) ? 8 : 0)"),
