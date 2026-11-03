@@ -27,6 +27,14 @@ public static partial class UiPreviewRunner
             var screen = new Screen { Name = "parts_" + (i + 1) + "_" + state, AppName = "Interface parts", Icon = UiIcon.Grid, Backdrop = "13.jpg",
                 Lay = (s, f, d, k) => UiPartsGallery.Lay(s, UiSamples.Parts(English, state), f, d, k) };
             PartsInput(screen, state);
+            if (state == "fields_typing")
+            {
+                Typing(screen, UiPartsGallery.Field, UiPartsGallery.Arg(true, 2, 0));   // the business's name takes the keys
+            }
+            else if (state == "amount_typing")
+            {
+                Typing(screen, UiPartsGallery.Amount, UiPartsGallery.Arg(false, 2, 2));   // the shelves' amount takes the keys
+            }
             screens.Add(screen);
         }
     }
@@ -73,6 +81,13 @@ public static partial class UiPreviewRunner
                 screen.HoverArg = UiPartsGallery.Arg(true, 2, 3);
                 screen.FocusCommand = UiPartsGallery.Field;
                 screen.FocusArg = UiPartsGallery.Arg(true, 2, 0);
+                screen.Walk = Moves("DDDLUUU");
+                break;
+            case "amount_typing":
+                screen.HoverCommand = UiPartsGallery.Choice;
+                screen.HoverArg = UiPartsGallery.Arg(false, 0, 1);
+                screen.FocusCommand = UiPartsGallery.Amount;
+                screen.FocusArg = UiPartsGallery.Arg(false, 2, 2);
                 screen.Walk = Moves("DDDLUUU");
                 break;
             case "choice_open":

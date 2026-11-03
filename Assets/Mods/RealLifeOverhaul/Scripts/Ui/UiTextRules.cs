@@ -67,9 +67,14 @@ namespace RealLifeOverhaul.Ui
         /// <paramref name="most"/>; <paramref name="widest"/> is the longest line's width. A word wider than the line
         /// breaks inside itself, as TextMeshPro does.
         /// </summary>
-        public static int Lines(string text, UiStyle style, float width, int most, out float widest)
+        public static int Lines(string text, UiStyle style, float width, int most, out float widest) => Wrap(text, style, width, most, -1, out widest, out int _, out int _);
+
+        // The greedy wrap: the lines it takes, the widest, where line number wantLine begins and where the last line begins.
+        private static int Wrap(string text, UiStyle style, float width, int most, int wantLine, out float widest, out int wantStart, out int lastStart)
         {
             widest = 0f;
+            wantStart = 0;
+            lastStart = 0;
             if (string.IsNullOrEmpty(text))
             {
                 return 0;
@@ -89,6 +94,11 @@ namespace RealLifeOverhaul.Ui
                     break;
                 }
                 lines++;
+                lastStart = i;
+                if (lines - 1 == wantLine)
+                {
+                    wantStart = i;
+                }
                 float line = 0f, atBreak = 0f;
                 int brk = -1, j = i;
                 bool ended = false;
@@ -148,6 +158,56 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             return lines;
+        }
+
+        /// <summary>
+        /// The end of a text that fills at most <paramref name="most"/> lines of a width, whole lines as they wrap, so a field
+        /// that shows a few lines shows the ones the caret is on: the text itself when it fits. <paramref name="last"/> is
+        /// the width of the last line, where the caret stands. Cost: two wraps of the text, once a layout.
+        /// </summary>
+        public static string LastLines(string text, UiStyle style, float width, int most, out float last)
+        {
+            last = 0f;
+            if (string.IsNullOrEmpty(text))
+            {
+                return text;
+            }
+            int total = Wrap(text, style, width, 0, -1, out float _, out int _, out int lastStart);
+            int skip = total - (most < 1 ? 1 : most);
+            if (skip > 0)
+            {
+                Wrap(text, style, width, 0, skip, out float _, out int start, out lastStart);
+                text = text.Substring(start);
+                lastStart -= start;
+            }
+            last = System.Math.Min(width, Width(text, lastStart, text.Length, style));
+            return text;
+        }
+
+        /// <summary>
+        /// The end of a one line text that fits a width, nothing added: what a field shows while it is typed in, so the caret
+        /// stands after the last letter as it does in a game's own field. The text itself when it fits. Cost: a few widths.
+        /// </summary>
+        public static string Tail(string text, UiStyle style, float width)
+        {
+            if (string.IsNullOrEmpty(text) || Fits(text, style, width))
+            {
+                return text;
+            }
+            int low = 0, high = text.Length;   // the first letter kept: the least start whose rest fits
+            while (low < high)
+            {
+                int mid = (low + high) / 2;
+                if (Width(text, mid, text.Length, style) <= width)
+                {
+                    high = mid;
+                }
+                else
+                {
+                    low = mid + 1;
+                }
+            }
+            return text.Substring(low);
         }
 
         /// <summary>The height a text takes wrapped in a width, up to a number of lines, px.</summary>

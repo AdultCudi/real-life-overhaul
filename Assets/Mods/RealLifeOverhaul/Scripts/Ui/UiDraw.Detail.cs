@@ -153,8 +153,15 @@ namespace RealLifeOverhaul.Ui
             float bw = ButtonWidth(UiButtonKind.Primary, send, UiIcon.Send, UiAction.Count, null);
             float bx = x + w - UiTokens.S2 - bw;
             Button(s, inside, bx, y + UiTokens.S2, bw, UiTokens.ControlSmall, ready ? UiButtonKind.Primary : UiButtonKind.Quiet, send, UiIcon.Send, UiAction.Count, null, sendCommand, 0, !ready);
-            TextMiddle(s, inside, x + UiTokens.S5, y, h, bx - x - UiTokens.S5 - UiTokens.S3, UiStyle.Body, ready ? UiRole.Text : UiRole.Text2, ready ? draft : placeholder,
-                ready ? UiFlags.Truncate : UiFlags.Truncate | UiFlags.Label);
+            bool caret = Typing(s, inputCommand, 0);
+            float tx = x + UiTokens.S5, room = bx - x - UiTokens.S5 - UiTokens.S3;
+            float lead = caret && !ready ? CaretRoom : 0f;   // the caret before the placeholder, not over its first letter
+            string shown = caret && ready ? Typed(draft, UiStyle.Body, room) : ready ? draft : placeholder;
+            TextMiddle(s, inside, tx + lead, y, h, room - lead, UiStyle.Body, ready ? UiRole.Text : UiRole.Text2, shown, ready ? UiFlags.Truncate : UiFlags.Truncate | UiFlags.Label);
+            if (caret)
+            {
+                CaretAfter(s, inside, tx, y, h, ready ? shown : null, UiStyle.Body, room);
+            }
             return Node(s, at, x, y, bx - x - UiTokens.S2, h, inputCommand, 0, face);
         }
     }

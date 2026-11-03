@@ -203,7 +203,7 @@ internal static partial class UiSamples
         bool empty = string.IsNullOrEmpty(typed);
         var m = new UiCardModel
         {
-            Icon = UiIcon.Message, Title = t("reallife_brand_name_placeholder", "The brand's name"), HasField = true, Field = typed, Typing = true,
+            Icon = UiIcon.Message, Title = t("reallife_brand_name_placeholder", "The brand's name"), HasField = true, Field = typed,
             Placeholder = t("reallife_ui_box_type_here", "Type here"),
             Buttons = new[]
             {

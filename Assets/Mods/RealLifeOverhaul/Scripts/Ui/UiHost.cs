@@ -37,7 +37,9 @@ namespace RealLifeOverhaul.Ui
     /// while words are typed. The mouse and the keys each lead in turn (UiFocusMode): the ring is the keys' alone, so a
     /// hover never moves the focus or makes a sound. Runs before the game's own Update (as the mod's other Escape-takers
     /// do), so Back a screen takes is not also the game's. Cost a frame: nothing while its screen is hidden, and while it
-    /// shows a few input reads and comparisons, a layout only on a change. What its screen costs while it shows is counted
+    /// shows a few input reads and comparisons, a layout only on a change. While a field takes the keys the screen's caret
+    /// (UiDraw.Caret) blinks on the clock: one comparison a frame and one item shown or hidden twice a second, never a layout,
+    /// and nothing at all while no field types. What its screen costs while it shows is counted
     /// by name for the session record (UiCost, Developer diagnostics on), with one Verbose line as it closes.
     /// </summary>
     [DefaultExecutionOrder(-31000)]
@@ -51,6 +53,8 @@ namespace RealLifeOverhaul.Ui
         private const float RepeatDelay = 0.35f;   // seconds a direction is held before it repeats
         private const float RepeatEvery = 0.08f;   // seconds between repeats
         private const int SearchLimit = 64;        // characters a search field takes
+        private const float BlinkEvery = 0.5f;     // seconds the caret shows, then hides, as a normal text box blinks
+        private const float SolidFor = 0.6f;       // seconds the caret stays shown after a layout (a key typed lays the screen out): it never blinks mid-word
 
         private readonly UiScene _scene = new UiScene();
         private readonly UiFocusMode _mode = new UiFocusMode(UiLead.Pointer);
@@ -65,6 +69,9 @@ namespace RealLifeOverhaul.Ui
         private UiIcon _icon;
         private Vector2 _laidSize;
         private bool _laidDark, _arrive, _typing, _typeSoon, _held;
+        private int _typeCommand = -1, _typeArg;   // the target that takes the keys while _typing: the scene tells its field to draw the caret
+        private bool _caretOn;                      // the caret shows now (the blink's state)
+        private float _blinkAt;                     // the clock time of the blink's next turn
         private UiPad _laidPad;
         private int _laidFaces;   // UiFaces.Version at the last layout: a game picture that arrived since lays the screen out again
         private int _heldX, _heldY;
@@ -289,7 +296,7 @@ namespace RealLifeOverhaul.Ui
                 _typeSoon = false;
                 if (_screen is IUiTypingSubmit box)
                 {
-                    BeginTyping(box);
+                    BeginTyping(box, box.TypingCommand, 0);
                 }
             }
             _input.Read(ref _state);
@@ -314,6 +321,10 @@ namespace RealLifeOverhaul.Ui
                     _input.TakeBack();
                     EndTyping();
                     _sound?.Play(UiCue.Back);
+                }
+                else if (now >= _blinkAt)
+                {
+                    Blink(now);
                 }
                 return;
             }
@@ -520,7 +531,7 @@ namespace RealLifeOverhaul.Ui
             _view.Press(now);
             if (_screen is IUiTyping typing && n.Command == typing.TypingCommand)
             {
-                BeginTyping(typing);
+                BeginTyping(typing, n.Command, n.Arg);
                 _sound?.Play(UiCue.Confirm);
                 return;
             }
@@ -566,6 +577,8 @@ namespace RealLifeOverhaul.Ui
             bool dark = _dark != null && _dark();
             _view.Motion = _motion != null ? _motion() : UiMotionSetting.Full;
             IUiKeys keys = _input != null ? _input.Keys : UiDefaultKeys.Keyboard;
+            _scene.TypingCommand = _typing ? _typeCommand : -1;   // the field that takes the keys draws its caret (UiDraw.Typing)
+            _scene.TypingArg = _typeArg;
             _screen.Lay(_scene, frame, dark, keys);
             _laidSize = size;
             _laidDark = dark;
@@ -574,6 +587,8 @@ namespace RealLifeOverhaul.Ui
             bool arrive = _arrive;
             _arrive = false;
             _view.Write(_scene, arrive);
+            _caretOn = true;
+            _blinkAt = Time.unscaledTime + SolidFor;   // a layout is a key typed or a field just opened: the caret shows solid a moment
             int again = command >= 0 && !_scene.FocusReset ? _scene.FindNode(command, arg) : -1;
             int top = UiFocusRules.TopLayer(_scene);
             if (again < 0 || _scene.Nodes[again].Layer != top)
@@ -755,7 +770,7 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- typing
 
-        private void BeginTyping(IUiTyping typing)
+        private void BeginTyping(IUiTyping typing, int command, int arg)
         {
             if (_field == null)
             {
@@ -768,6 +783,9 @@ namespace RealLifeOverhaul.Ui
                 _field.onSubmit.AddListener(_onSubmit);
             }
             _typing = true;
+            _typeCommand = command;
+            _typeArg = arg;
+            _laidSize = Vector2.zero;   // laid out again next frame, with the caret in the field that takes the keys
             _field.characterLimit = typing is IUiTypingSubmit limited && limited.TypingLimit > 0 ? limited.TypingLimit : SearchLimit;
             _field.gameObject.SetActive(true);
             _field.SetTextWithoutNotify(typing.TypingText ?? string.Empty);
@@ -776,6 +794,14 @@ namespace RealLifeOverhaul.Ui
             {
                 EventSystem.current.SetSelectedGameObject(_field.gameObject);   // the game holds its key shortcuts while a field is selected
             }
+        }
+
+        // The caret's blink: its one item shown or hidden on the clock, never a layout. Run only while a field takes the keys.
+        private void Blink(float now)
+        {
+            _blinkAt = now + BlinkEvery;
+            _caretOn = !_caretOn;
+            _view.SetCaret(_caretOn);
         }
 
         private void Typed(string text)
@@ -808,6 +834,8 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             _typing = false;
+            _typeCommand = -1;
+            _laidSize = Vector2.zero;   // laid out again next frame, the caret gone
             if (_field != null)
             {
                 _field.DeactivateInputField();

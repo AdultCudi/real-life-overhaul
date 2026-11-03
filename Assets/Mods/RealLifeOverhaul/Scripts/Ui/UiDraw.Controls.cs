@@ -182,8 +182,11 @@ namespace RealLifeOverhaul.Ui
             return Node(s, at, x, y, w, h, command, arg, face);
         }
 
-        /// <summary>A search box: its glyph, the words typed or its placeholder, and how many it finds. Returns the focus target.</summary>
-        public static int Search(UiScene s, UiAt at, float x, float y, float w, string placeholder, string query, string count, int command)
+        /// <summary>
+        /// A search box: its glyph, the words typed or its placeholder, and how many it finds; its target takes the command
+        /// with an argument (0 where a screen has one search). Returns the focus target.
+        /// </summary>
+        public static int Search(UiScene s, UiAt at, float x, float y, float w, string placeholder, string query, string count, int command, int arg = 0)
         {
             float h = UiTokens.Control;
             int face = Box(s, at, x, y, w, h, UiRole.Field, UiRole.None, UiTokens.RadiusLarge);
@@ -196,9 +199,16 @@ namespace RealLifeOverhaul.Ui
             }
             float tx = x + UiTokens.S4 + UiTokens.Icon + UiTokens.S3;
             bool typed = !string.IsNullOrEmpty(query);
-            TextMiddle(s, inside, tx, y, h, w - (tx - x) - cw - UiTokens.S6, UiStyle.Body, typed ? UiRole.Text : UiRole.Muted, typed ? query : placeholder,
-                typed ? UiFlags.Truncate : UiFlags.Label | UiFlags.Truncate);
-            return Node(s, at, x, y, w, h, command, 0, face);
+            bool caret = Typing(s, command, arg);
+            float room = w - (tx - x) - cw - UiTokens.S6;
+            float lead = caret && !typed ? CaretRoom : 0f;   // the caret before the placeholder, not over its first letter
+            string shown = caret && typed ? Typed(query, UiStyle.Body, room) : typed ? query : placeholder;
+            TextMiddle(s, inside, tx + lead, y, h, room - lead, UiStyle.Body, typed ? UiRole.Text : UiRole.Muted, shown, typed ? UiFlags.Truncate : UiFlags.Label | UiFlags.Truncate);
+            if (caret)
+            {
+                CaretAfter(s, inside, tx, y, h, typed ? shown : null, UiStyle.Body, room);
+            }
+            return Node(s, at, x, y, w, h, command, arg, face);
         }
 
         /// <summary>

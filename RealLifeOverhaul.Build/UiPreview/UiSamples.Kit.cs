@@ -22,6 +22,11 @@ internal static partial class UiSamples
                 st.Focused = UiPartsGallery.Arg(true, 2, 0);
                 st.Name = "Bloom Caf";
                 break;
+            case "amount_typing":
+                st.Typing = true;
+                st.Focused = UiPartsGallery.Arg(false, 2, 2);
+                st.Shelves = 12;
+                break;
             case "choice_open": st.OpenChoice = UiPartsGallery.Arg(false, 0, 0); break;
             case "table":
                 st.Page = UiPartsGallery.PageTable;   // one firm's staff, sorted by skill: the filter row with its count
@@ -65,6 +70,6 @@ internal static partial class UiSamples
     /// <summary>Every state of the parts' gallery, in the order the previews show them.</summary>
     public static readonly string[] PartStates =
     {
-        "controls", "choice_open", "fields_typing", "table", "table_picked", "table_empty", "charts", "catalogue", "catalogue_empty", "statement", "statement_new", "track"
+        "controls", "choice_open", "fields_typing", "amount_typing", "table", "table_picked", "table_empty", "charts", "catalogue", "catalogue_empty", "statement", "statement_new", "track"
     };
 }
