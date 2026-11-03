@@ -48,6 +48,7 @@ namespace RealLifeOverhaul.Flare
                 }
                 p.Topic = FlareLiveRules.TagsOf(text, Join(c.Tags, BuiltTag(p)));
                 PostLive(p);
+                NoteUse(p, c);
                 Logger?.Info("Flare: the player posts (" + p.Source + (p.Place != null ? ", " + p.Name : string.Empty) + (text != null ? ", " + text.Length + " characters typed" : string.Empty)
                              + (p.Pic != null ? ", a picture" : string.Empty) + (p.Topic != null ? ", #" + p.Topic.Replace(" ", " #") : string.Empty) + ").");
                 Changed();

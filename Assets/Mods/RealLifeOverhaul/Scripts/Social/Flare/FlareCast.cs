@@ -449,10 +449,26 @@ namespace RealLifeOverhaul.Flare
                 }
                 if (hire != null)
                 {
+                    if (inf.BookedUntil >= day && !string.IsNullOrEmpty(inf.BookedBy) && inf.BookedBy != hire.Name)
+                    {
+                        continue;   // a rival or a city business has the slot
+                    }
                     Add(f, inf, day, FlareSource.Hired, hire.Place, hire.Name, hire.OffMessage ? 1 : 0);
                     hire.Counted |= hire.Posted == 0 && day == hire.From + (hire.Late ? 1 : 0);   // an older save's deal whose first post is this one is counted whole
                     hire.Posted++;
                     hire.LastPost = day;
+                    var brief = new FlareBrief
+                    {
+                        Followers = inf.Followers, Hour = hire.Hour < 0 ? 12 : hire.Hour, Photo = true, PhotoHere = true, SameDistrict = 1,
+                        Reliability = inf.Reliability, Style = (int)inf.Style, Seed = inf.Seed, RollKey = hire.Id
+                    };
+                    FlareExpect ex = FlareUseRules.Expect(in brief);
+                    hire.Flopped = ex.Flopped;
+                    hire.WentViral = ex.WentViral;
+                    if (f.PastHires.Count < 32)
+                    {
+                        f.PastHires.Add(new FlarePastHire { Who = inf.Id, Place = hire.Place, Name = hire.Name, Day = day, Visitors = ex.Visitors, Cents = ex.Cents, Flopped = ex.Flopped });
+                    }
                     continue;
                 }
                 int roll = FlareRules.Roll(inf.Seed, day, 70);

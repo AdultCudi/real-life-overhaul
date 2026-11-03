@@ -20,6 +20,11 @@ namespace RealLifeOverhaul.Flare
         public bool Open(int day) => !Accepted && day <= Until;
 
         public bool Running => Accepted && Done < Posts;
+
+        public int AskHour = -1;     // the hour a post must go out, -1 any. Kept for the screen; the save's tail holds it.
+        public bool NeedPhoto;
+        public string NeedTags;
+        public int MinFollowers;
     }
 
     /// <summary>

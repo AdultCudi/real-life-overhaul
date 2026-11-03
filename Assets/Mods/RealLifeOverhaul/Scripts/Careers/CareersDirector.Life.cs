@@ -191,7 +191,7 @@ namespace RealLifeOverhaul.Careers
             j.Rating = rating;
             j.ReviewDay = day;
             string employer = CareersText.Employer(j.Post.Employer);
-            int rise = LifeRules.RiseFor(rating, j.Raises);
+            int rise = LifeRules.RiseFor(rating, j.Raises) + Flare.FlareBrand.RaiseExtra();
             if (rise > 0)
             {
                 j.Pay = (int)((long)j.Pay * (10000 + rise) / 10000);

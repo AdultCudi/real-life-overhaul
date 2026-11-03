@@ -173,7 +173,14 @@ namespace RealLifeOverhaul.Flare
                     continue;   // a visitor's or a commuter's visit: no resident wrote it
                 }
                 int stars = Stars(bt, b, s.Households.Class[h], bears, Mille(c.Seed, b, SaltStars, day * 31 + draw));
+                int price = PoolRules.PriceTerm(bt.Price[b], Math.Max(0, Math.Min((int)s.Households.Class[h], 2)), bears);
+                int priceScore = price >= 1000 ? 100 : price / 10;
+                int why = (int)FlareUseRules.Reason(priceScore, bt.Quality[b], FlareUseRules.WaitScore(bt.Visits[b], bt.Room[b]), bt.Content[b]);
                 AddReview(c, b, s.People.Id[p], stars, day);
+                if (FlareUseRules.NoteReview(c.ReviewNotes, c.StarRows, bt.Key[b], s.People.Id[p], stars, day, why))
+                {
+                    c.WarnKey = bt.Key[b];
+                }
                 written++;
                 Read(c, s, b, p, stars, day, draw, scratch, accountBiz);
             }

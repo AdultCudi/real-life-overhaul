@@ -120,7 +120,9 @@ namespace RealLifeOverhaul.Flare
                 b.Append('|').Append(Clean(n.Handle));
                 Join(b, (int)n.Niche);
                 b.Append('|').Append(Clean(n.District));
-                Join(b, n.Followers, n.Engagement, n.Reliability, (int)n.Style, n.Reputation, n.StartDay, n.Quit ? 1 : 0, n.Star ? 1 : 0, n.Person, n.ScandalDay, n.Seed, n.Staff ? 1 : 0);
+                Join(b, n.Followers, n.Engagement, n.Reliability, (int)n.Style, n.Reputation, n.StartDay, n.Quit ? 1 : 0, n.Star ? 1 : 0, n.Person, n.ScandalDay, n.Seed,
+                    n.Staff ? 1 : 0, n.BookedUntil);
+                b.Append('|').Append(Clean(n.BookedBy));
             }
             for (int i = 0; i < f.Hires.Count; i++)
             {
@@ -134,7 +136,9 @@ namespace RealLifeOverhaul.Flare
                 {
                     b.Append(k > 0 ? "," : string.Empty).Append(h.Who[k].ToString(Inv));
                 }
-                Join(b, h.Late ? 1 : 0, h.OffMessage ? 1 : 0, h.Backfired ? 1 : 0, h.Ended ? 1 : 0, h.Posted, h.LastPost, h.Counted ? 1 : 0);   // the last three appended: an older save lacks them
+                // Hour, flop and viral are appended: an older save lacks them.
+                Join(b, h.Late ? 1 : 0, h.OffMessage ? 1 : 0, h.Backfired ? 1 : 0, h.Ended ? 1 : 0, h.Posted, h.LastPost, h.Counted ? 1 : 0, h.Hour,
+                    h.Flopped ? 1 : 0, h.WentViral ? 1 : 0);
             }
             for (int i = 0; i < f.Follows.Count; i++)
             {
@@ -180,7 +184,8 @@ namespace RealLifeOverhaul.Flare
                             Id = I(c, 1), Handle = Text(c[2]) ?? "@?", Niche = (FlareNiche)niche, District = Text(c[4]), Followers = Math.Max(0, I(c, 5)),
                             Engagement = FlareRules.Clamp(I(c, 6), 0, 10000),
                             Reliability = FlareRules.Clamp(I(c, 7), 0, 100), Style = (FlareStyle)style, Reputation = FlareRules.Clamp(I(c, 9), 0, 100), StartDay = I(c, 10), Quit = I(c, 11) != 0,
-                            Star = I(c, 12) != 0, Person = I(c, 13, -1), ScandalDay = I(c, 14, -100), Seed = I(c, 15), Staff = I(c, 16) != 0
+                            Star = I(c, 12) != 0, Person = I(c, 13, -1), ScandalDay = I(c, 14, -100), Seed = I(c, 15), Staff = I(c, 16) != 0,
+                            BookedUntil = I(c, 17, -1), BookedBy = c.Length > 18 ? Text(c[18]) : null
                         });
                     }
                     else if (c[0] == "H" && c.Length >= 13 && f.Hires.Count < 32)
@@ -189,7 +194,7 @@ namespace RealLifeOverhaul.Flare
                         {
                             Id = I(c, 1), Kind = I(c, 2), Place = Text(c[3]), Name = Text(c[4]), From = I(c, 5), To = I(c, 6), Percent = I(c, 7),
                             Late = I(c, 9) != 0, OffMessage = I(c, 10) != 0, Backfired = I(c, 11) != 0, Ended = I(c, 12) != 0, Posted = Math.Max(0, I(c, 13)), LastPost = I(c, 14, -1),
-                            Counted = c.Length >= 15 && I(c, 15, 1) != 0   // a deal saved before the posts were counted
+                            Counted = c.Length >= 15 && I(c, 15, 1) != 0, Hour = I(c, 16, -1), Flopped = I(c, 17) != 0, WentViral = I(c, 18) != 0
                         };
                         string[] who = c[8].Split(',');
                         for (int k = 0; k < who.Length && hire.Who.Count < 3; k++)
@@ -277,6 +282,40 @@ namespace RealLifeOverhaul.Flare
                     Join(b, post, slot, kind, who);
                 }
             }
+            bool reach = f.ReachDay >= 0;
+            if (!string.IsNullOrEmpty(f.Bio) || !string.IsNullOrEmpty(f.Banner) || f.TierSeen != 0 || f.ReviewWarnDay != -1 || reach)
+            {
+                b.Append("\nU|").Append(Clean(f.Bio)).Append('|').Append(Clean(f.Banner));
+                Join(b, f.TierSeen, f.ReviewWarnDay, f.ReachDay);
+                b.Append('|');
+                for (int i = 0; i < f.ReachDays.Length; i++)
+                {
+                    b.Append(i > 0 ? "," : string.Empty).Append(f.ReachDays[i].ToString(Inv));
+                }
+            }
+            for (int i = 0; i < f.Boosts.Count; i++)
+            {
+                FlareBoost m = f.Boosts[i];
+                b.Append("\nM");
+                Join(b, m.Post);
+                b.Append('|').Append(Clean(m.Place));
+                Join(b, m.FromMinute, m.Hours, m.Visitors, m.Cents, m.GivenVisitors, m.GivenCents, m.Percent, m.Hour, m.Flags);
+                b.Append('|').Append(Clean(m.PicPlace));
+            }
+            for (int i = 0; i < f.PastHires.Count; i++)
+            {
+                FlarePastHire p = f.PastHires[i];
+                b.Append("\nQ");
+                Join(b, p.Who, p.Day, p.Visitors, p.Cents, p.Flopped ? 1 : 0);
+                b.Append('|').Append(Clean(p.Place)).Append('|').Append(Clean(p.Name));
+            }
+            for (int i = 0; i < f.Answers.Count; i++)
+            {
+                FlareReviewNote n = f.Answers[i];
+                b.Append("\nN|").Append(Clean(n.Key));
+                Join(b, n.Person, n.Stars, n.Day, n.Why, n.Quality);
+                b.Append('|').Append(Clean(n.Answer));
+            }
             return b.ToString();
         }
 
@@ -354,6 +393,42 @@ namespace RealLifeOverhaul.Flare
                     else if (c[0] == "B" && c.Length >= 4 && c[1].Length > 0 && f.Buzz.Count < 64)
                     {
                         f.Buzz.Add(new FlareBuzz { Place = c[1], Percent = FlareRules.Clamp(I(c, 2), -FlareRules.BuzzMost, FlareRules.BuzzMost), Until = I(c, 3) });
+                    }
+                    else if (c[0] == "U" && c.Length >= 6)
+                    {
+                        f.Bio = Text(c[1]);
+                        f.Banner = Text(c[2]);
+                        f.TierSeen = I(c, 3);
+                        f.ReviewWarnDay = I(c, 4, -1);
+                        f.ReachDay = I(c, 5, -1);
+                        if (c.Length >= 7)
+                        {
+                            string[] days = c[6].Split(',');
+                            for (int d = 0; d < f.ReachDays.Length && d < days.Length; d++)
+                            {
+                                f.ReachDays[d] = Math.Max(0, I(days, d));
+                            }
+                        }
+                    }
+                    else if (c[0] == "M" && c.Length >= 12 && f.Boosts.Count < 32)
+                    {
+                        f.Boosts.Add(new FlareBoost
+                        {
+                            Post = I(c, 1), Place = Text(c[2]), FromMinute = I(c, 3), Hours = Math.Max(0, I(c, 4)), Visitors = Math.Max(0, I(c, 5)),
+                            Cents = Math.Max(0, I(c, 6)), GivenVisitors = Math.Max(0, I(c, 7)), GivenCents = Math.Max(0, I(c, 8)), Percent = Math.Max(0, I(c, 9)),
+                            Hour = I(c, 10, -1), Flags = I(c, 11), PicPlace = c.Length > 12 ? Text(c[12]) : null
+                        });
+                    }
+                    else if (c[0] == "Q" && c.Length >= 8 && f.PastHires.Count < 32)
+                    {
+                        f.PastHires.Add(new FlarePastHire { Who = I(c, 1), Day = I(c, 2), Visitors = I(c, 3), Cents = I(c, 4), Flopped = I(c, 5) != 0, Place = Text(c[6]), Name = Text(c[7]) });
+                    }
+                    else if (c[0] == "N" && c.Length >= 7 && f.Answers.Count < 64)
+                    {
+                        f.Answers.Add(new FlareReviewNote
+                        {
+                            Key = Text(c[1]), Person = I(c, 2), Stars = I(c, 3), Day = I(c, 4), Why = I(c, 5), Quality = I(c, 6), Answer = c.Length > 7 ? Text(c[7]) : null
+                        });
                     }
                 }
                 ReadPosts(f, posts);

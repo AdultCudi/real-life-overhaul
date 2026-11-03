@@ -382,6 +382,10 @@ namespace RealLifeOverhaul.Flare
             };
             FlareLiveRules.SetAt(p, review.At + 40 + FlareRules.Roll(_file.Seed, id, 4) % 200);
             _file.Posts.Add(p);
+            if (review.Arg <= 2)
+            {
+                SoftenPlace(review.Place);
+            }
         }
 
         private void MentionAnswer(FlarePost p)

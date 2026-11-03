@@ -274,6 +274,17 @@ namespace RealLifeOverhaul.Flare
         public readonly List<long> CommentLikes = new List<long>(4);   // comments under others' posts the player liked (FlareCommentRules.LikeKey)
         public readonly FlareNet Net = new FlareNet();   // the living network: the City Office's cases, the messages, the watches
 
+        // What a post brings, kept on the account. ReachDays is Flare's own series until Money's day series is the one store.
+        public string Bio;
+        public string Banner;
+        public int TierSeen;
+        public int ReviewWarnDay = -1;
+        public int ReachDay = -1;
+        public readonly int[] ReachDays = new int[FlareUseRules.ReachDays];
+        public readonly List<FlareBoost> Boosts = new List<FlareBoost>(8);
+        public readonly List<FlarePastHire> PastHires = new List<FlarePastHire>(8);
+        public readonly List<FlareReviewNote> Answers = new List<FlareReviewNote>(8);
+
         public FlareInfluencer Influencer(int id)
         {
             for (int i = 0; i < Influencers.Count; i++)
@@ -431,6 +442,8 @@ namespace RealLifeOverhaul.Flare
         public bool Staff;           // one of the player's own staff, who took it up
         public int ScandalDay = -100;
         public int Seed;
+        public int BookedUntil = -1;   // a business has this influencer until this day, -1 free
+        public string BookedBy;        // that business's name
 
         public int Engaged => (int)((long)Followers * Engagement / 10000);
 
@@ -454,6 +467,9 @@ namespace RealLifeOverhaul.Flare
         public int Posted;           // the paid posts made so far: the Feed keeps only the newest posts, so they are counted here
         public int LastPost = -1;    // the day of the last of them; -1 before the first
         public bool Counted = true;  // false for a deal saved half run, before the posts were counted
+        public int Hour = -1;        // the hour the posts go out, -1 whenever the day runs
+        public bool Flopped;
+        public bool WentViral;
 
         public bool On(int day) => !Ended && day >= From && day <= To;
     }

@@ -34,6 +34,7 @@ internal static partial class Program
         FlareCommentLikeChecks();
         FlarePictureChecks();
         FlareBankChecks();   // the bank of city photos: what it takes and its caps, the clean-up, the fit of a post's photo, never a wrong one, the share, Going Public, the file, the sources, the cost (FlareBankChecks.cs)
+        FlareUseChecks();
     }
 
     private static List<FlarePerson> FlarePeople()

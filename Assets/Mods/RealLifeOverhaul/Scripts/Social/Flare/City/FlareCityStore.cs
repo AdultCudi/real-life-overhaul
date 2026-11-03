@@ -277,7 +277,121 @@ namespace RealLifeOverhaul.Flare
             w.Int(plan.Answer ? 1 : 0);
             w.Int(plan.Manager ? 1 : 0);
             w.Int(plan.Turn);
+            WriteUse(w, c);
             w.Flush();
+        }
+
+        // Columns added after the plan. An older line ends at the plan, and this reader does not ask for them.
+        private static void WriteUse(Writer w, FlareCityState c)
+        {
+            bool any = c.ReviewNotes.Count > 0 || c.StarRows.Count > 0 || c.AdMasks.Count > 0 || c.OfferNeeds.Count > 0
+                || c.RivalBoosts.Count > 0 || !string.IsNullOrEmpty(c.WarnKey) || c.RivalDay >= 0;
+            if (!any)
+            {
+                return;
+            }
+            w.Int(1);
+            w.Text(c.WarnKey);
+            w.Int(c.ReviewNotes.Count);
+            for (int i = 0; i < c.ReviewNotes.Count; i++)
+            {
+                FlareReviewNote n = c.ReviewNotes[i];
+                w.Text(n.Key);
+                w.Int(n.Person);
+                w.Int(n.Stars);
+                w.Int(n.Day);
+                w.Int(n.Why);
+                w.Int(n.Quality);
+                w.Text(n.Answer);
+            }
+            w.Int(c.StarRows.Count);
+            for (int i = 0; i < c.StarRows.Count; i++)
+            {
+                FlareStarRow s = c.StarRows[i];
+                w.Text(s.Key);
+                w.Int(s.One);
+                w.Int(s.Two);
+                w.Int(s.Three);
+                w.Int(s.Four);
+                w.Int(s.Five);
+                w.Int(s.Recent);
+                w.Int(s.Earlier);
+            }
+            w.Int(c.AdMasks.Count);
+            for (int i = 0; i < c.AdMasks.Count; i++)
+            {
+                w.Int(c.AdMasks[i].Id);
+                w.Int(c.AdMasks[i].Mask);
+            }
+            w.Int(c.OfferNeeds.Count);
+            for (int i = 0; i < c.OfferNeeds.Count; i++)
+            {
+                FlareOfferNeed n = c.OfferNeeds[i];
+                w.Int(n.Id);
+                w.Int(n.Hour);
+                w.Int(n.Photo ? 1 : 0);
+                w.Text(n.Tags);
+                w.Int(n.MinFollowers);
+            }
+            w.Int(c.RivalBoosts.Count);
+            for (int i = 0; i < c.RivalBoosts.Count; i++)
+            {
+                FlareBoost m = c.RivalBoosts[i];
+                w.Int(m.Post);
+                w.Text(m.Place);
+                w.Int(m.FromMinute);
+                w.Int(m.Hours);
+                w.Int(m.Visitors);
+                w.Int(m.Cents);
+                w.Int(m.Percent);
+                w.Int(m.Flags);
+            }
+            w.Int(c.RivalDay);
+        }
+
+        private static void ReadUse(Reader r, FlareCityState c)
+        {
+            if (!r.More)
+            {
+                return;
+            }
+            if (r.Int() != 1)
+            {
+                return;
+            }
+            c.WarnKey = r.TextOrNull();
+            int notes = r.Int();
+            for (int i = 0; i < notes && i < 400; i++)
+            {
+                c.ReviewNotes.Add(new FlareReviewNote { Key = r.TextOrNull(), Person = r.Int(), Stars = r.Int(), Day = r.Int(), Why = r.Int(), Quality = r.Int(), Answer = r.TextOrNull() });
+            }
+            int stars = r.Int();
+            for (int i = 0; i < stars && i < 2000; i++)
+            {
+                c.StarRows.Add(new FlareStarRow { Key = r.TextOrNull(), One = r.Int(), Two = r.Int(), Three = r.Int(), Four = r.Int(), Five = r.Int(), Recent = r.Int(), Earlier = r.Int() });
+            }
+            int masks = r.Int();
+            for (int i = 0; i < masks && i < 64; i++)
+            {
+                c.AdMasks.Add(new FlareAdMask { Id = r.Int(), Mask = r.Int() });
+            }
+            int needs = r.Int();
+            for (int i = 0; i < needs && i < 64; i++)
+            {
+                c.OfferNeeds.Add(new FlareOfferNeed { Id = r.Int(), Hour = r.Int(), Photo = r.Int() != 0, Tags = r.TextOrNull(), MinFollowers = r.Int() });
+            }
+            int boosts = r.Int();
+            for (int i = 0; i < boosts && i < 64; i++)
+            {
+                c.RivalBoosts.Add(new FlareBoost
+                {
+                    Post = r.Int(), Place = r.TextOrNull(), FromMinute = r.Int(), Hours = r.Int(), Visitors = r.Int(), Cents = r.Int(), Percent = r.Int(), Flags = r.Int() | 16
+                });
+            }
+            if (r.More)
+            {
+                c.RivalDay = r.Int();
+            }
         }
 
         // ---------------------------------------------------------------- reading
@@ -436,8 +550,9 @@ namespace RealLifeOverhaul.Flare
             c.Plan = new FlarePlan
             {
                 Day = r.Int(), Posts = Math.Max(0, Math.Min(FlareCityRules.PlanDailyPosts, r.Int())), Gap = Math.Max(1, r.Int()), Done = Math.Max(0, r.Int()), Made = Math.Max(0, r.Int()),
-                Next = r.Int(), Strength = Math.Max(0, Math.Min(1000, r.Int())), Answer = r.Int() != 0, Manager = r.Int() != 0, Turn = Math.Max(0, r.Int())
+                Next = r.Int(), Strength = Math.Max(0, Math.Min(1000, r.Int())), Answer = r.Int() != 0, Manager = r.Int() != 0,                 Turn = Math.Max(0, r.Int())
             };
+            ReadUse(r, c);
             return c;
         }
 
@@ -565,6 +680,8 @@ namespace RealLifeOverhaul.Flare
             {
                 _from = from;
             }
+
+            public bool More => _from.CanSeek && _from.Position < _from.Length;
 
             private byte Byte()
             {

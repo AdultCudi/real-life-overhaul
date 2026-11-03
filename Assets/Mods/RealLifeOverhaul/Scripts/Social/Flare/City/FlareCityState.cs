@@ -137,6 +137,13 @@ namespace RealLifeOverhaul.Flare
         public readonly List<FlareTrend> Trends = new List<FlareTrend>(FlareCityCatalogue.TrendsMost);   // what is trending (FlareCityRules.Trends)
         public FlarePlan Plan = new FlarePlan();     // this week's content plan from the desk session (FlareCityRules.Plan)
         public int NextTrend = 1;
+        public string WarnKey;       // a business whose reviews fell a star, until the player is told
+        public int RivalDay = -1;    // the last day a rival posted, promoted or answered, so the day is played once
+        public readonly List<FlareReviewNote> ReviewNotes = new List<FlareReviewNote>(32);
+        public readonly List<FlareStarRow> StarRows = new List<FlareStarRow>(16);
+        public readonly List<FlareAdMask> AdMasks = new List<FlareAdMask>(8);
+        public readonly List<FlareOfferNeed> OfferNeeds = new List<FlareOfferNeed>(8);
+        public readonly List<FlareBoost> RivalBoosts = new List<FlareBoost>(8);
         public uint TrendCity;                       // the day's lookups: a bit for each kind trending in the whole city...
         public int[] TrendDistrict = FlareCityRules.NoDistricts();   // ...and the district each kind trends in, -1 none (not saved)
         public int[] Voices = new int[FlareLiveRules.Citizens];   // the person id behind each of the city's voices ("c0" to "c399"), 0 for none yet

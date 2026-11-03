@@ -124,16 +124,24 @@ namespace RealLifeOverhaul.Flare
         public static int FootfallOf(BuildingRegistration reg)
         {
             FlareDirector d = Instance;
-            if (d == null || !d.Running || reg == null || SaveGameManager.Current == null || (d._file.Buzz.Count == 0 && d._file.Net.Watches.Count == 0))
+            if (d == null || !d.Running || reg == null || SaveGameManager.Current == null)
             {
                 return 0;
             }
             int day = SaveGameManager.Current.Day;
+            string place = FlareGame.Place(reg);
+            int minute = day * 1440 + SaveGameManager.Current.Hour * 60;
+            int marketing = FlareUseRules.Marketing(d._file.Boosts, place, minute);
+            if (d._file.Buzz.Count == 0 && d._file.Net.Watches.Count == 0 && marketing == 0)
+            {
+                return 0;
+            }
             string district = d._file.Net.Watches.Count > 0 ? GameRegistrations.District(reg) : null;
             int clean = district != null && d._file.Net.WatchIn(district, day, FlareOrder.Cleanup) != FlareOrder.None ? FlareLiveRules.CleanFootfall : 0;
-            int talk = d._file.Buzz.Count > 0 ? d._file.BuzzAt(FlareGame.Place(reg), day) : 0;
-            // With the residents' side on, Flare's talk is the population's attention (FlareDirector.Residents): only a clean street and a deal's late first day stay here.
-            return FlareRules.Footfall(d.CityOn ? Math.Min(0, talk) : talk, clean);
+            int talk = d._file.Buzz.Count > 0 ? d._file.BuzzAt(place, day) : 0;
+            // With the residents' side on, Flare's talk is the population's attention. A post's own hours are a separate
+            // grant, beside the game's marketing, and they still apply.
+            return FlareRules.Footfall(d.CityOn ? Math.Min(0, talk) : talk, clean) + marketing;
         }
 
         /// <summary>For brands: how a scandal at a shop spreads, thousandths of its loss, by the account's reputation.</summary>
