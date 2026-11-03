@@ -22,6 +22,14 @@ public static partial class UiPreviewRunner
                 screen.HoverArg = 0;
                 screen.Walk = new[] { Down, Up };
             }
+            else if (st.Contains("_review"))
+            {
+                screen.HoverCommand = UiBatch.ButtonCommand;
+                screen.HoverArg = 1;   // the mouse rests on the yes
+                screen.FocusCommand = UiBatch.ButtonCommand;
+                screen.FocusArg = st == "hire_review_none" ? 0 : 1;
+                screen.Walk = new[] { Left, Right };
+            }
             else if (person)
             {
                 screen.HoverCommand = UiAppWindow.ActionCommand;

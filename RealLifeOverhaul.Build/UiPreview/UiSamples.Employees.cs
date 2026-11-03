@@ -16,7 +16,7 @@ internal static partial class UiSamples
     public static readonly string[] StaffStates =
     {
         "employees_40", "employees_1", "employees_0", "candidates_hidden", "picking_5", "mass_ask", "filter_open", "person_employee", "person_candidate",
-        "training_card", "person_long", "employees_fr", "person_fr"
+        "training_card", "person_long", "employees_fr", "person_fr", "raise_review", "raise_review_long", "hire_review", "hire_review_none", "raise_review_fr"
     };
 
     private static readonly string[] Firsts =
@@ -109,6 +109,25 @@ internal static partial class UiSamples
                     t(Skills[3], SkillWords[3]), t(Skills[4], SkillWords[4]) };
                 v.OptionChosen = 0;
                 break;
+            case "raise_review":
+            case "raise_review_long":
+            case "raise_review_fr":
+                Squad(t, v, 40);
+                v.Picking = true;
+                v.PickedCount = state == "raise_review_long" ? 26 : 9;
+                v.AskTitle = t("reallife_co_mass_raise_title", "Give the picked employees a raise");
+                v.AskValue = t("reallife_co_mass_raise_percent", "{percent}% more an hour").Replace("{percent}", "5");
+                v.Batch = RaiseBatch(t, state == "raise_review_long" ? 26 : 9);
+                break;
+            case "hire_review":
+            case "hire_review_none":
+                Candidates(t, v, 6);
+                v.Picking = true;
+                v.PickedCount = 5;
+                v.AskTitle = t("myemployees_mass_action_assign_business_and_hire_title", "Select business to assign to employees and hire them");
+                v.AskValue = Shops[1];
+                v.Batch = HireBatch(t, state == "hire_review_none");
+                break;
             case "person_employee":
             case "person_fr":
                 v.Person = PersonSample(t, "Maya Okafor", false, false, false);
@@ -155,6 +174,67 @@ internal static partial class UiSamples
             Satisfaction = top.Satisfaction, Age = 31, Hours = 28, Wage = top.Wage, Demands = 7, DemandsMet = 4,
             DemandRows = PersonSample(t, top.Name, false, false, false).Demands
         };
+    }
+
+    // A raise for several picked: five per cent of what each is paid, a few left out for the reasons the plan gives.
+    private static StaffBatchView RaiseBatch(UiWords t, int count)
+    {
+        var b = new StaffBatchView { Subject = t("reallife_co_mass_raise_percent", "{percent}% more an hour").Replace("{percent}", "5"), Picked = count, Rows = new StaffBatchRow[count] };
+        string[] why = { t("reallife_staff_batch_why_rested", "Had a raise lately"), t("reallife_staff_batch_why_waiting", "Rival offer waiting"), t("reallife_staff_batch_why_at_rate", "Paid the going rate") };
+        long now = 0, after = 0, day = 0;
+        for (int i = 0; i < count; i++)
+        {
+            StaffRow e = Employee(t, i * 2 + 1);
+            float pay = Wage(i * 2 + 1);
+            bool left = i % 5 == 3 || i == 8;
+            int raise = left ? 0 : System.Math.Max(1, (int)(((int)System.Math.Round(pay * 100f) * 5L + 50) / 100));
+            int hundredths = (int)System.Math.Round(pay * 100f);
+            long dayRaise = (long)(hundredths + raise) * 800 / 100 - (long)hundredths * 800 / 100;
+            now += hundredths;
+            after += hundredths + raise;
+            day += dayRaise;
+            if (!left)
+            {
+                b.Ready++;
+            }
+            b.Rows[i] = new StaffBatchRow
+            {
+                Name = e.Name, Role = e.Role, Business = e.Business, Now = Money(hundredths / 100f), After = Money((hundredths + raise) / 100f),
+                Day = left ? string.Empty : Money(dayRaise / 100f), Result = left ? why[i % 3] : t("reallife_staff_batch_result_raise", "Raise"), Tone = left ? UiRole.Warn : UiRole.Ok
+            };
+        }
+        b.Left = count - b.Ready;
+        b.TotalNow = Money(now / 100f);
+        b.TotalAfter = Money(after / 100f);
+        b.TotalDay = Money(day / 100f);
+        return b;
+    }
+
+    // Hiring five picked candidates to one business: one has no skill the business needs; or, for the empty state, none can be hired.
+    private static StaffBatchView HireBatch(UiWords t, bool none)
+    {
+        var b = new StaffBatchView { Hire = true, Subject = Shops[1], Picked = 5, Rows = new StaffBatchRow[5] };
+        string[] why = { t("reallife_staff_batch_why_no_fit", "No skill it needs"), t("reallife_staff_batch_why_gone", "No longer a candidate") };
+        float total = 0f;
+        for (int i = 0; i < 5; i++)
+        {
+            int kind = (i + 2) % 5;
+            float pay = 16f + (5 - i) * 1.6f;
+            bool left = none || i == 2 || i == 4;
+            if (!left)
+            {
+                b.Ready++;
+                total += pay;
+            }
+            b.Rows[i] = new StaffBatchRow
+            {
+                Name = Firsts[(i + 9) % Firsts.Length] + " " + Lasts[(i * 5 + 3) % Lasts.Length], Role = t(Skills[kind], SkillWords[kind]), Business = Shops[1], Now = Money(pay), After = Money(pay),
+                Result = left ? why[i % 2] : t("reallife_staff_batch_result_hire", "Will be hired"), Tone = left ? UiRole.Warn : UiRole.Ok
+            };
+        }
+        b.Left = 5 - b.Ready;
+        b.TotalNow = Money(total);
+        return b;
     }
 
     private static StaffRow Employee(UiWords t, int i)

@@ -49,7 +49,8 @@ internal static partial class Program
         UiAppWindow.PersonCommand, UiAppWindow.AllCommand,
         UiDataTable.First + UiDataTable.Head, UiDataTable.First + UiDataTable.Filter, UiDataTable.First + UiDataTable.Search, UiDataTable.First + UiDataTable.Row,
         UiDataTable.First + UiDataTable.Pick, UiDataTable.First + UiDataTable.Mass, UiDataTable.First + UiDataTable.Done, UiDataTable.First + UiDataTable.Clear,
-        UiDataTable.First + UiDataTable.MassChoice, UiDataTable.First + UiDataTable.MassAnswer, UiCard.ButtonCommand
+        UiDataTable.First + UiDataTable.MassChoice, UiDataTable.First + UiDataTable.MassAnswer, UiCard.ButtonCommand,
+        UiBatch.ButtonCommand, UiBatch.TableFirst + UiDataTable.Row
     };
 
     // What the staff views promise beyond the layout: the game's mass actions keep their order with the danger first and

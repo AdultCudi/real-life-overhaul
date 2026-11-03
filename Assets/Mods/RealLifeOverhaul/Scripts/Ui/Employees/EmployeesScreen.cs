@@ -94,12 +94,21 @@ namespace RealLifeOverhaul.Ui
             UiStaff.Lay(s, _m, frame, dark, keys);
             _offset = _m.Table.Offset;
             _reveal = -1;
+            if (_m.Batch != null)
+            {
+                _batchOffset = _m.Batch.Table.Offset;   // the sheet's own list scrolls on its own offset
+            }
+            _batchReveal = -1;
             _dirty = false;
         }
 
         public bool Press(int command, int arg)
         {
             _dirty = true;
+            if (_m.Batch != null)
+            {
+                return BatchPress(command, arg);   // the review sheet has the keys and the pointer: nothing under it answers
+            }
             if (_m.Card != null)
             {
                 return command == UiCard.ButtonCommand && PutCardAway();
@@ -164,6 +173,10 @@ namespace RealLifeOverhaul.Ui
         public bool Back()
         {
             _dirty = true;
+            if (StaffBatch.Sheet != null)
+            {
+                return Done(StaffBatch.Cancel(), "the review sheet put away: nothing was changed");   // the sheet goes first, back to the game's panel of choices
+            }
             if (_open >= 0)
             {
                 _open = -1;   // an open list closes first, as the game's drop-down does
@@ -192,7 +205,7 @@ namespace RealLifeOverhaul.Ui
 
         public void Tab(int step)
         {
-            if (_m.Card == null && _open < 0)
+            if (_m.Card == null && _m.Batch == null && _open < 0)
             {
                 ShowTab(!Candidates());
             }
@@ -202,7 +215,11 @@ namespace RealLifeOverhaul.Ui
 
         public void Reveal(int list, int index)
         {
-            if (_open >= 0)
+            if (_m.Batch != null)
+            {
+                _batchReveal = index;
+            }
+            else if (_open >= 0)
             {
                 _optionOffset = Math.Max(0f, (index - 7) * UiTokens.ControlSmall);
             }
@@ -215,7 +232,11 @@ namespace RealLifeOverhaul.Ui
 
         public void Wheel(int clip, float notches)
         {
-            if (_open >= 0)
+            if (_m.Batch != null)
+            {
+                _batchOffset = Math.Max(0f, _batchOffset - notches * UiTokens.S16);
+            }
+            else if (_open >= 0)
             {
                 _optionOffset = Math.Max(0f, _optionOffset - notches * UiTokens.ControlSmall);
             }
@@ -237,6 +258,8 @@ namespace RealLifeOverhaul.Ui
             {
                 return true;
             }
+            StaffBatch.Close();
+            _massType = null;
             _app.ChangeTab(candidates ? CandidatesTab : EmployeesTab);
             _picking = false;
             _armed = false;
@@ -446,6 +469,8 @@ namespace RealLifeOverhaul.Ui
         // Picking ends and what was picked is let go, as the game's own selection is when it changes tab.
         private bool StopPicking()
         {
+            StaffBatch.Close();
+            _massType = null;
             _picking = false;
             _open = -1;
             List<EmployeeInstance> picked = MyEmployeesMassActionsUI.massActionSelectedEmployees;
@@ -479,6 +504,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
+            _massType = type < _v.Mass.Length ? _v.Mass[type].Type : null;
             drop.SelectOption(type);
             return Done(true, "a mass action for " + _v.PickedCount + " picked: handed to the game");
         }
@@ -489,8 +515,13 @@ namespace RealLifeOverhaul.Ui
             _open = -1;
             if (arg == 0)
             {
+                _massType = null;
                 _app.massActionsUI.ClosePanel();
                 return true;
+            }
+            if (ReviewHire())
+            {
+                return Done(true, "hiring to a business: the review sheet is up, nothing is hired yet");   // the yes on the sheet hires, each by the game's own hire
             }
             _app.massActionsUI.ConfirmMassActionOption();   // what the panel's Confirm calls: the game asks its question next
             return Done(true, "a mass action's choice confirmed: handed to the game");

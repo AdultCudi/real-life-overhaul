@@ -26,9 +26,12 @@ namespace RealLifeOverhaul.Ui
         /// <summary>True while the kit draws My Employees.</summary>
         public static bool Showing => Staff.Showing;
 
+        private static readonly System.Func<bool> KitShowing = () => Staff.Showing;
+
         /// <summary>Puts the kit over each screen whose switch is on, and gives back the one whose switch is off; asked once a second.</summary>
         public static void Install()
         {
+            StaffBatch.KitShows = KitShowing;   // a batch on My Employees is reviewed on the kit's sheet while the kit draws it, else in the game's own question box
             Keep(Staff, StaffId);
             Keep(Rival, RivalId);
         }

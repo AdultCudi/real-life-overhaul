@@ -83,6 +83,7 @@ namespace RealLifeOverhaul.Ui
             var panel = GameContract.StaffMassPanel.Field?.GetValue(_app.massActionsUI) as Transform;
             var choices = GameContract.StaffMassOptions.Field?.GetValue(_app.massActionsUI) as Dropdown;
             sig = sig * 31 + (panel != null && panel.gameObject.activeSelf ? 1 + (choices != null ? choices.SelectedOptionIndex + 1 : 0) : 0);
+            sig = sig * 31 + (StaffBatch.Sheet != null ? System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(StaffBatch.Sheet) : 0);
             EmployeeInstance p = _app.SelectedEmployeeInstance;
             if (p != null)
             {
@@ -114,6 +115,8 @@ namespace RealLifeOverhaul.Ui
             if (open != null)
             {
                 _picking = false;   // the game's box is up: the picking bar belongs to the table
+                StaffBatch.Close();   // a review sheet belongs to the table too
+                v.Batch = null;
                 Person(open);
                 v.Person = _person;
             }
@@ -124,6 +127,10 @@ namespace RealLifeOverhaul.Ui
                 Rows(v, candidates);
             }
             Options(v);
+            if (open == null)
+            {
+                Batch(v);
+            }
         }
 
         private void Rows(StaffView v, bool candidates)

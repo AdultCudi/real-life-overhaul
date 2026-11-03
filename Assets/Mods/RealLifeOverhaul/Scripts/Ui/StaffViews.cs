@@ -83,6 +83,27 @@ namespace RealLifeOverhaul.Ui
         public string Label;
     }
 
+    /// <summary>One person on a review sheet: who, where, what they are paid now and after, and the result for them.</summary>
+    public struct StaffBatchRow
+    {
+        public string Name, Role, Business;
+        public string Now, After, Day;   // pay an hour now, after, and the change for a working day (empty when nothing changes)
+        public string Result;            // "Raise", "Will be hired", or why they are left out
+        public UiRole Tone;              // the result chip's tone: good, or warn for one left out
+    }
+
+    /// <summary>A review sheet's words and rows, as the screen reads them from the pending batch (Core/StaffBatch): plain data for <see cref="StaffViews.Batch"/>.</summary>
+    public sealed class StaffBatchView
+    {
+        public bool Hire;                          // hiring several; otherwise a raise for several
+        public string Subject;                     // the raise's words, or the business hired to
+        public int Picked, Ready, Left;
+        public StaffBatchRow[] Rows = new StaffBatchRow[0];
+        public string TotalNow, TotalAfter, TotalDay;   // the picked's pay an hour in all now and after, and the change for a working day of each
+        public float Offset;
+        public int Reveal = -1;
+    }
+
     /// <summary>One person's page, from the game's employee box: their facts, the box's buttons, skills, demands and work.</summary>
     public sealed class StaffPersonView
     {
@@ -144,6 +165,7 @@ namespace RealLifeOverhaul.Ui
         public float Offset;
         public int Reveal = -1;
         public StaffPersonView Person;
+        public StaffBatchView Batch;               // the review sheet of a batch waiting for a yes; null for none
         public StaffPreviewView Preview;           // the row under the cursor; null for none
         public int OpenList = -1;
         public string[] Options = new string[0];
@@ -185,6 +207,7 @@ namespace RealLifeOverhaul.Ui
             m.Person = v.Person != null ? Person(t, v.Person) : null;
             m.Preview = v.Person == null && v.Preview != null ? Preview(t, v.Preview) : null;
             m.Card = v.Person != null && v.Person.TrainingCard ? TrainingCard(t, v.Person) : null;
+            m.Batch = v.Batch != null ? Batch(t, v.Batch) : null;
             m.EmptyOnly = false;
             if (m.Person == null)
             {
@@ -596,6 +619,85 @@ namespace RealLifeOverhaul.Ui
             return list.ToArray();
         }
 
+        /// <summary>
+        /// The review sheet of a batch: the raise for several picked or hiring several picked, before anything changes. Each person
+        /// is a row with what changes for them and the result (the change, or why they are left out); the foot sums the picked; the
+        /// buttons are the way back and the yes, which says what it does and is not offered when nobody would be reached.
+        /// </summary>
+        public static UiBatchModel Batch(UiWords t, StaffBatchView v)
+        {
+            var m = new UiBatchModel
+            {
+                Icon = v.Hire ? UiIcon.Handshake : UiIcon.ChartLineUp,
+                Title = v.Hire ? t("reallife_staff_batch_hire_title", "Review the hiring") : t("reallife_staff_batch_raise_title", "Review the pay rise"),
+                Lead = v.Hire
+                    ? Fill(t("reallife_staff_batch_hire_lead", "{count} of the {picked} picked will be hired at {business}. The others stay candidates. Nobody is hired until you confirm."),
+                        "count", Whole(v.Ready), "picked", Whole(v.Picked), "business", v.Subject)
+                    : Fill(t("reallife_staff_batch_raise_lead", "{what}. {count} of the {picked} picked will be paid more, {change} more a day in all. Nothing changes until you give it."),
+                        "what", v.Subject, "count", Whole(v.Ready), "picked", Whole(v.Picked), "change", v.TotalDay)
+            };
+            UiDataTableModel table = m.Table;
+            string person = t("myemployees_employee_name", "Employee Name"), result = t("reallife_staff_batch_result", "Result");
+            table.Columns = v.Hire
+                ? new[]
+                {
+                    new UiDataColumn { Title = person, Kind = UiCellKind.Person },
+                    new UiDataColumn { Title = t("reallife_staff_batch_hired_to", "Hired to"), Kind = UiCellKind.Text },
+                    new UiDataColumn { Title = t("reallife_ui_staff_asking", "Asking wage"), Kind = UiCellKind.Money, Width = 144f },
+                    new UiDataColumn { Title = result, Kind = UiCellKind.Chip, Width = 224f },
+                }
+                : new[]
+                {
+                    new UiDataColumn { Title = person, Kind = UiCellKind.Person },
+                    new UiDataColumn { Title = t("myemployees_current_business", "Current Business"), Kind = UiCellKind.Text },
+                    new UiDataColumn { Title = t("reallife_staff_batch_now", "Pay now"), Kind = UiCellKind.Money, Width = 112f },
+                    new UiDataColumn { Title = t("reallife_staff_batch_after", "Pay after"), Kind = UiCellKind.Money, Width = 112f },
+                    new UiDataColumn { Title = t("reallife_staff_batch_day", "Change a day"), Kind = UiCellKind.Money, Width = 144f },
+                    new UiDataColumn { Title = result, Kind = UiCellKind.Chip, Width = 224f },
+                };
+            string none = t("common_unassigned", "Unassigned");
+            table.Rows = new UiDataRow[v.Rows.Length];
+            for (int i = 0; i < v.Rows.Length; i++)
+            {
+                ref StaffBatchRow r = ref v.Rows[i];
+                string business = string.IsNullOrEmpty(r.Business) ? none : r.Business;
+                table.Rows[i] = v.Hire
+                    ? new UiDataRow
+                    {
+                        Cells = new[] { r.Name, business, r.Now, r.Result }, Values = new[] { -1, -1, -1, -1 },
+                        Tones = new[] { UiRole.None, UiRole.None, UiRole.None, r.Tone }, Sub = r.Role, Hue = UiColour.HueOf(r.Name ?? string.Empty), Ring = UiRole.None
+                    }
+                    : new UiDataRow
+                    {
+                        Cells = new[] { r.Name, business, r.Now, r.After, r.Day, r.Result }, Values = new[] { -1, -1, -1, -1, -1, -1 },
+                        Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, r.Tone }, Sub = r.Role, Hue = UiColour.HueOf(r.Name ?? string.Empty), Ring = UiRole.None
+                    };
+            }
+            table.RowCount = table.Rows.Length;
+            table.Selected = -1;
+            table.TotalsLabel = t("reallife_staff_batch_total", "In all");
+            table.Totals = v.Hire ? new[] { null, null, v.TotalNow, null } : new[] { null, null, v.TotalNow, v.TotalAfter, v.TotalDay, null };
+            table.Offset = v.Offset;
+            table.Reveal = v.Reveal;
+            m.Buttons = new[]
+            {
+                new UiActionModel { Label = t("common_cancel", "Cancel"), Kind = UiButtonKind.Secondary, Key = UiAction.Count, Command = UiBatch.ButtonCommand, Arg = 0 },
+                new UiActionModel
+                {
+                    Label = v.Hire ? Fill(t("reallife_staff_batch_hire_give", "Hire {count}"), "count", Whole(v.Ready)) : t("reallife_co_mass_raise_give", "Give the raise"),
+                    Kind = UiButtonKind.Primary, Icon = UiIcon.Check, Key = UiAction.Alt, Command = UiBatch.ButtonCommand, Arg = 1, Disabled = v.Ready == 0
+                },
+            };
+            m.Focus = v.Ready == 0 ? 0 : 1;
+            m.Prompts = new[]
+            {
+                new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") }, new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_select", "Select") },
+                new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
+            };
+            m.PromptCount = m.Prompts.Length;
+            return m;
+        }
+
         // The training under way, said once as the person's page opens: the game holds their box until it ends.
         private static UiCardModel TrainingCard(UiWords t, StaffPersonView v)
         {
@@ -626,6 +728,7 @@ namespace RealLifeOverhaul.Ui
             m.SwitchLabel = null;
             m.Person = null;
             m.Card = null;
+            m.Batch = null;
             m.EmptyOnly = false;
             m.OpenList = -1;
             m.Next = null;

@@ -170,6 +170,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\CompanyCatalogue.cs" Link="Mod\CompanyCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\CompanyState.cs" Link="Mod\CompanyState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\StaffRules.cs" Link="Mod\StaffRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\StaffBatchRules.cs" Link="Mod\StaffBatchRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\StaffBatch.cs" Link="Mod\StaffBatch.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\CoverRules.cs" Link="Mod\CoverRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\CampaignRules.cs" Link="Mod\CampaignRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\TaxRules.cs" Link="Mod\TaxRules.cs" />
@@ -750,6 +752,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiScreenSwitches.cs" Link="Mod\UiScreenSwitches.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.AppRow.cs" Link="Mod\UiDraw.AppRow.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCard.cs" Link="Mod\UiCard.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiBatch.cs" Link="Mod\UiBatch.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiNotices.cs" Link="Mod\UiNotices.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiAllApps.cs" Link="Mod\UiAllApps.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Host\UiHostRules.cs" Link="Mod\UiHostRules.cs" />
