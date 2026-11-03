@@ -992,7 +992,7 @@ namespace RealLifeOverhaul.Ui
         {
             PurchasingAgentsPlanList list = b.purchasingAgentsPlanList;
             GameObject none = Get<GameObject>(GameContract.BuyNone, list);
-            Plans(Get<ReorderableList>(GameContract.BuyOrder, list), null, UiText.T("bizman_menu_purchasing_agents"), UiText.T("reallife_ui_bizops_imports_none"),
+            Plans(Get<ReorderableList>(GameContract.BuyPlanOrder, list), null, UiText.T("bizman_menu_purchasing_agents"), UiText.T("reallife_ui_bizops_imports_none"),
                 UiText.T("reallife_ui_bizops_imports_none_body"), e => Entry(e, UiIcon.Handshake, "ContractName", null));
             if (none != null && none.activeInHierarchy)
             {

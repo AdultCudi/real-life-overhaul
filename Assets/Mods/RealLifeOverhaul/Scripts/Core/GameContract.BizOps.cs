@@ -75,7 +75,7 @@ namespace RealLifeOverhaul
         public static readonly GameMember StopRemove = Optional(Field(BizOpsPart, Game, Biz + "LogisticsManagers.LogisticsManagerDestinationUI", "removeButton", "Button"));
         public static readonly GameMember StopName = Optional(Field(BizOpsPart, Game, Biz + "LogisticsManagers.LogisticsManagerDestinationUI", "nameText", "TextLocalizationComponent"));
         public static readonly GameMember BuyNone = Optional(Field(BizOpsPart, Game, Biz + "PurchasingAgentsPlanList", "noPartnershipsWarning", "GameObject"));
-        public static readonly GameMember BuyOrder = Optional(Field(BizOpsPart, Game, Biz + "PurchasingAgentsPlanList", "reorderableList", "ReorderableList"));
+        public static readonly GameMember BuyPlanOrder = Optional(Field(BizOpsPart, Game, Biz + "PurchasingAgentsPlanList", "reorderableList", "ReorderableList"));
         public static readonly GameMember BuyMassTo = Optional(Field(BizOpsPart, Game, Biz + "PurchasingAgent.PurchasingAgentProductsMassActionsUI", "massActionDropdown", "Dropdown"));
         public static readonly GameMember HrEntry = Optional(Field(BizOpsPart, Game, Biz + "HRManagers.HrManagersPlanList", "entryTemplate", "Transform"));
         public static readonly GameMember HrAdd = Optional(Field(BizOpsPart, Game, Biz + "HRManagers.HrManagersPlanList", "buttonEntry", "Transform"));

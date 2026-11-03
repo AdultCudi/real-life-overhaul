@@ -35,7 +35,7 @@ namespace RealLifeOverhaul.Ui
         // rather than a page that says there is nothing.
         private static readonly GameMember[] PricingCore = { GameContract.PriceList, GameContract.PriceOrder, GameContract.PriceGoods };
         private static readonly GameMember[] RoutesCore = { GameContract.RouteOrder, GameContract.RouteStops, GameContract.RouteFrom };
-        private static readonly GameMember[] BuyingCore = { GameContract.BuyOrder };
+        private static readonly GameMember[] BuyingCore = { GameContract.BuyPlanOrder };
         private static readonly GameMember[] HrCore = { GameContract.HrOrder, GameContract.HrStaff };
         private static readonly GameMember[] HuntCore = { GameContract.HuntPlan, GameContract.HuntOrder };
         private static readonly GameMember[] FactoryCore = { GameContract.FactoryMachineName, GameContract.FactoryMachineItem, GameContract.FactoryRecipe };
