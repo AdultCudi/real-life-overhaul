@@ -29592,5 +29592,6 @@
   "reallife_svc_rsale_keeps": "你可以在第{day}天前购买。之后仍归{seller}所有。",
   "reallife_svc_rsale_takings": "营业额：每周约{amount}。",
   "reallife_svc_rsale_how": "你像在 BizMan 中收购一样购买它，需要相同的文凭。它会成为你在那里的企业。",
-  "reallife_svc_rsale_buy": "购买这家企业"
+  "reallife_svc_rsale_buy": "购买这家企业",
+  "reallife_opt_sec_uiscreens_activity": "RLO 界面：活动与时间"
 }

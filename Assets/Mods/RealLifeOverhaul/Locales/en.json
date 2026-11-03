@@ -29592,5 +29592,6 @@
   "reallife_svc_rsale_keeps": "You may buy it until day {day}. After that {seller} keeps it.",
   "reallife_svc_rsale_takings": "Its takings: about {amount} a week.",
   "reallife_svc_rsale_how": "You buy it as a takeover in BizMan, with the same diplomas. It becomes your business there.",
-  "reallife_svc_rsale_buy": "Buy this business"
+  "reallife_svc_rsale_buy": "Buy this business",
+  "reallife_opt_sec_uiscreens_activity": "RLO interface: activities and time"
 }

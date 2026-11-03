@@ -29592,5 +29592,6 @@
   "reallife_svc_rsale_keeps": "Você pode comprá-la até o dia {day}. Depois disso, {seller} fica com ela.",
   "reallife_svc_rsale_takings": "Faturamento: cerca de {amount} por semana.",
   "reallife_svc_rsale_how": "Você a compra como numa aquisição pelo BizMan, com os mesmos diplomas. Ela passa a ser sua empresa ali.",
-  "reallife_svc_rsale_buy": "Comprar esta empresa"
+  "reallife_svc_rsale_buy": "Comprar esta empresa",
+  "reallife_opt_sec_uiscreens_activity": "Interface RLO: atividades e tempo"
 }

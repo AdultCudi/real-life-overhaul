@@ -27,12 +27,12 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_activity_hours", "reallife_ui_activity_skill", "reallife_ui_activity_skill_day", "reallife_ui_activity_standing", "reallife_ui_activity_stress",
                     "reallife_ui_activity_finish", "reallife_ui_activity_before_tax", "reallife_ui_activity_work_strip", "reallife_ui_activity_hour_of", "reallife_ui_activity_earned",
                     "reallife_ui_activity_skip_end", "reallife_ui_activity_stop", "reallife_ui_activity_shift_hours",
-                })).Switch(UiScreenSwitches.Hud),
+                })).Switch(UiScreenSwitches.Activity),
                 new UiScreenDef("time_skip", UiTemplate.Hud, "TimeSkipScreen", ActivityWords(ActivityBarKeys, new[]
                 {
                     "playeractivityui_timemachine", "common_cancel", "reallife_ui_skip_until", "reallife_ui_skip_to_end", "reallife_ui_skip_goal_day", "reallife_ui_skip_left",
                     "reallife_ui_skip_until_left", "reallife_ui_skip_hours_minutes", "reallife_ui_skip_minutes",
-                })).Switch(UiScreenSwitches.Hud),
+                })).Switch(UiScreenSwitches.Activity),
                 new UiScreenDef("funeral", UiTemplate.Decision, "FuneralScreen", ActivityWords(ActivityBarKeys, new[]
                 {
                     "reallife_ui_prompt_choose", "reallife_ui_funeral_kicker", "reallife_ui_funeral_kicker_plain", "reallife_ui_funeral_title", "reallife_ui_funeral_body",
@@ -41,11 +41,11 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_funeral_note_two", "reallife_ui_funeral_you", "reallife_ui_funeral_quit_short", "reallife_ui_funeral_rival",
                     "reallife_pd_obit_lived", "reallife_pd_obit_no_business", "reallife_pd_obit_founded_one", "reallife_pd_obit_founded_many", "reallife_pd_obit_staff_one",
                     "reallife_pd_obit_staff_many",
-                })).Switch(UiScreenSwitches.Hud),
+                })).Switch(UiScreenSwitches.Activity),
                 new UiScreenDef("time_of_day", UiTemplate.Hud, "TimeOfDayScreen", ActivityWords(ActivityBarKeys, new[]
                 {
                     "reallife_ui_time_of_day", "reallife_ui_time_of_day_earlier", "reallife_ui_time_of_day_later",
-                })).Switch(UiScreenSwitches.Hud),
+                })).Switch(UiScreenSwitches.Activity),
             });
         }
 
