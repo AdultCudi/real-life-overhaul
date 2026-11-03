@@ -123,12 +123,15 @@ namespace RealLifeOverhaul.Ui
             if (!write && !_noFaceSaid)
             {
                 _noFaceSaid = true;
-                UiDirector.Logger?.Warn("UI: the world's boxes stay the game's own for now: the kit has no font to write with yet ("
-                                        + (UiFonts.Ready ? "the fonts are read" : "the fonts are still being read") + ").");
+                SayNoFace();
             }
             _prompt.Frame(frame, write && UiScreenSwitches.On(WorldKits.PromptId));
             _building.Frame(frame, write && UiScreenSwitches.On(WorldKits.BuildingId));
         }
+
+        private static void SayNoFace() =>
+            UiDirector.Logger?.Warn("UI: the world's boxes stay the game's own for now: the kit has no font to write with yet ("
+                                    + (UiFonts.Ready ? "the fonts are read" : "the fonts are still being read") + ").");
 
         private UiFrame Frame() => new UiFrame { Width = _laidSize.x / _scale, Height = _laidSize.y / _scale, Band = UiFrame.BandHeight, Pointer = true };
 
