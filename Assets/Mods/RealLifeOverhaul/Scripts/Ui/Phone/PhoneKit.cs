@@ -192,7 +192,10 @@ namespace RealLifeOverhaul.Ui
             Readings(true);
             _state = "drawn over the game's phone";
             _root.AddComponent<PhoneKitWatch>();   // its OnEnable shows the kit at once while the phone shows
-            UiDirector.Logger?.Info("UI: the phone is drawn on the RLO interface (" + PhoneItemsGame.Items.Count + " apps, the Phone key " + Keys.Label(KeyAction.Phone) + ").");
+            // The apps are counted as the game's grid holds them now: the mod's come one a frame after the city and are read
+            // as the grid lays them out (Frame, PhoneItemsGame.Poll), so a low count here is the start of the city, not a fault.
+            UiDirector.Logger?.Info("UI: the phone is drawn on the RLO interface (" + PhoneItemsGame.Items.Count + " apps on its grid so far, the rest as the game lays them out; the Phone key "
+                                    + Keys.Label(KeyAction.Phone) + ").");
         }
 
         private static System.Func<string, Sprite> _picturesBefore;
