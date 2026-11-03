@@ -80,6 +80,9 @@ namespace RealLifeOverhaul.Flare
         public bool Flopped => (Flags & 4) != 0;
         public bool WentViral => (Flags & 8) != 0;
         public bool Rival => (Flags & 16) != 0;
+        public bool Paid => (Flags & PaidFlag) != 0;   // the post bought reach: its card says Promoted
+
+        public const int PaidFlag = 32;
 
         public bool On(int minute, int hoursInDay)
         {
@@ -111,6 +114,8 @@ namespace RealLifeOverhaul.Flare
         public int One, Two, Three, Four, Five;
         public int Recent;    // thousandths of a star, the newest stretch
         public int Earlier;   // thousandths of a star, the stretch before that
+        public int Eased, EasedStars;     // poor reviews a good answer eased, and their stars (FlareReplyRules): saved after the rows
+        public int Raised, RaisedStars;   // reviews a rude answer drew eyes to, and their stars
 
         public int Total => One + Two + Three + Four + Five;
 
@@ -699,8 +704,7 @@ namespace RealLifeOverhaul.Flare
             {
                 return 0;
             }
-            int sum = row.One + row.Two * 2 + row.Three * 3 + row.Four * 4 + row.Five * 5;
-            int avg = sum * 1000 / row.Total;
+            int avg = FlareReplyRules.Average(row);   // the answers weighed in: a well answered poor review pulls half as hard
             int pull = (avg - 3000) / 50;
             if (pull > 80)
             {

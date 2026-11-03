@@ -62,6 +62,7 @@ namespace RealLifeOverhaul.Flare
         public const int ActiveSoft = 60;          // a safety bound, never reached in play: no newcomer at this many active
         public const int KeptMost = 240;           // records kept, active or not: one who stopped and is named by nothing goes first
         public const int MonthDays = 30;
+        public const int PastHiresMost = 32;   // the campaign posts kept: the newest, for the studio and the notifications
         public const int StarFrom = 100000;        // followers
         public const int FadeUnder = 1500, QuitUnder = 600;   // followers
         public const int EngagedPerRadio = 800;    // engaged followers whose posts bring what a day of radio does
@@ -465,10 +466,11 @@ namespace RealLifeOverhaul.Flare
                     FlareExpect ex = FlareUseRules.Expect(in brief);
                     hire.Flopped = ex.Flopped;
                     hire.WentViral = ex.WentViral;
-                    if (f.PastHires.Count < 32)
+                    if (f.PastHires.Count >= PastHiresMost)
                     {
-                        f.PastHires.Add(new FlarePastHire { Who = inf.Id, Place = hire.Place, Name = hire.Name, Day = day, Visitors = ex.Visitors, Cents = ex.Cents, Flopped = ex.Flopped });
+                        f.PastHires.RemoveAt(0);   // the newest kept: the studio and the notifications show the latest
                     }
+                    f.PastHires.Add(new FlarePastHire { Who = inf.Id, Place = hire.Place, Name = hire.Name, Day = day, Visitors = ex.Visitors, Cents = ex.Cents, Flopped = ex.Flopped });
                     continue;
                 }
                 int roll = FlareRules.Roll(inf.Seed, day, 70);

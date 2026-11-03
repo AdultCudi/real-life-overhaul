@@ -347,6 +347,9 @@ namespace RealLifeOverhaul.Flare
                 case "answer_office": return "reallife_flare_dm_answer_office";
                 case "answer_chat": return "reallife_flare_dm_answer_chat";
                 case "chat": return "reallife_flare_dm_chat";   // only after a post of the player's (FlareLiveRules.PostedBefore)
+                case "praise": return "reallife_flare_dm_praise";       // a customer after a good review of the player's business
+                case "complaint": return "reallife_flare_dm_complaint"; // ...after a poor one
+                case "question": return "reallife_flare_dm_question";   // ...after a middling one
                 default: return "reallife_flare_dm_hello";      // claims no post
             }
         }

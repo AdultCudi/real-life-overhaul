@@ -19,6 +19,10 @@ namespace RealLifeOverhaul.Flare
         public int Post;             // the post it is about (local number), or -1
         public string Who;           // as a reaction names them, or an account key
         public int Dm;               // a message's number, or -1
+        public long Figure;          // followers won, visitors brought or posts asked for (Follow, Campaign, Promo, Offer)
+        public long Cents;           // money brought or offered
+        public string Name;          // the business it is about, as shown
+        public bool Bad;             // a campaign post that flopped
     }
 
     /// <summary>

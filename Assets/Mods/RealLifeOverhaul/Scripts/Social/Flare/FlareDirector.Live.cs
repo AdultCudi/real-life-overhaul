@@ -295,14 +295,14 @@ namespace RealLifeOverhaul.Flare
         private void CityDm(int day)
         {
             bool hiring = day - _hiringDay <= 7 || FlareBridges.Ask(FlareBridges.Hiring, false);
-            string with, what;
+            string with, what, about;
             long at;
-            if (!FlareLiveRules.CityDm(_file, day, hiring, out with, out what, out at))
+            if (!FlareLiveRules.CityDm(_file, day, hiring, _myPlaces, out with, out what, out at, out about))
             {
                 return;
             }
             string name = AccountName(with);
-            FlareLiveRules.Dm(_file.Net, with, name, at, false, null, FlareText.DmKey(what), null);
+            FlareLiveRules.Dm(_file.Net, with, name, at, false, null, FlareText.DmKey(what), about != null ? "business=" + about.Replace('~', ' ') : null);
             Logger?.Info("Flare: " + name + " writes to the player (" + what + ") on day " + day + ".");
         }
 
@@ -423,6 +423,9 @@ namespace RealLifeOverhaul.Flare
                     return key.Length == 1 ? FlareText.T("reallife_flare_your_boss") : key.Substring(2);
                 case 'l':
                     return FlareText.T("reallife_flare_ledger_name");
+                case 'd':
+                    FlareOffer offer = OfferOf(FlareLiveRules.OfferOf(key));   // a business's offer of paid posts writes as the business
+                    return offer != null && !string.IsNullOrEmpty(offer.Name) ? offer.Name : "?";
                 default:
                     return key.Length > 2 ? key.Substring(2) : key;
             }

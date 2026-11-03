@@ -182,7 +182,7 @@ namespace RealLifeOverhaul.Flare
             return v;
         }
 
-        private static bool FemaleOf(PopulationState s, int[] personSlot, int person)
+        internal static bool FemaleOf(PopulationState s, int[] personSlot, int person)
         {
             int p = s != null ? FlareCityRules.Slot(personSlot, s, person) : -1;
             return p >= 0 && s.People.Female[p] != 0;
