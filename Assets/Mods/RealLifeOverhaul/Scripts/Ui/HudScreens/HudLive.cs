@@ -23,9 +23,11 @@ namespace RealLifeOverhaul.Ui
     {
         private const float LookEvery = 0.25f;    // seconds between reads of the game's pieces while the HUD shows
         private const float BeginEvery = 1f;      // seconds between tries to stand the HUD up while it waits for the city
+        public const float LateAfter = 10f;       // seconds a loaded city stands without the HUD before Player.log is told why
 
         private static HudLiveWatch _watch;
-        private static bool _live, _shown, _gameOwn;
+        private static bool _live, _shown, _gameOwn, _lateSaid;
+        private static float _cityAt = -1f;       // when the HUD first waited in this loaded city; -1: not waiting
         private static bool _sides, _goals, _notes;
         private static float _beginDue, _lookDue;
         private static int _signature;
@@ -114,6 +116,8 @@ namespace RealLifeOverhaul.Ui
             SampleSides = null;
             SampleGoals = null;
             SampleNote = null;
+            _cityAt = -1f;
+            _lateSaid = false;
             _state = "waiting for the city";
         }
 
@@ -176,18 +180,31 @@ namespace RealLifeOverhaul.Ui
                 _state = _gameOwn ? "the game's own, for a test" : "its switch is off";
                 return;
             }
-            if (SaveGameManager.Current == null || UI.Load.LoadScene.isLoading || !UiFonts.Ready)
+            if (SaveGameManager.Current == null || UI.Load.LoadScene.isLoading)
             {
+                _cityAt = -1f;
+                return;
+            }
+            if (!UiFonts.Ready)
+            {
+                Waits("the interface's fonts are not in");
                 return;
             }
             UIs uis = InstanceBehavior<UIs>.Instance;
             if (uis == null || uis.topBar == null || uis.playerHUD == null)
             {
+                Waits(uis == null ? "the game's interface is not there" : uis.topBar == null ? "the game's top bar is not there" : "the game's HUD is not there");
                 return;
             }
             HudHost host = HudHost.Ensure();
-            if (host == null || !HudTopGame.Begin(uis))
+            if (host == null)
             {
+                Waits("the HUD's own canvas could not be made");
+                return;
+            }
+            if (!HudTopGame.Begin(uis))
+            {
+                Waits("the game's top bar has no left bar or buttons yet");
                 return;   // the game's HUD is built a little after the city: tried again in a second
             }
             HomeNeedsBar.Held = true;    // the needs and the season are pills of the bar now
@@ -199,7 +216,28 @@ namespace RealLifeOverhaul.Ui
             _lookDue = 0f;
             Switches(uis);
             _state = "over the game's top bar";
-            UiDirector.Logger?.Info("UI: the HUD stands over the game's top bar (" + State + "); the game's own pieces are hidden by leaf and kept running.");
+            UiDirector.Logger?.Info("UI: the HUD stands over the game's top bar (" + State + "); the game's own pieces are hidden by leaf and kept running"
+                                    + (_lateSaid ? ", " + (Time.unscaledTime - _cityAt).ToString("F0") + " s after the city loaded." : "."));
+            _cityAt = -1f;
+            _lateSaid = false;
+        }
+
+        // The HUD could not stand up yet: what it waits for is its state, and said once in Player.log when the city has stood
+        // LateAfter seconds without it, so a HUD that never comes is never silent.
+        private static void Waits(string what)
+        {
+            _state = "waiting: " + what;
+            float now = Time.unscaledTime;
+            if (_cityAt < 0f)
+            {
+                _cityAt = now;
+            }
+            if (!_lateSaid && now - _cityAt >= LateAfter)
+            {
+                _lateSaid = true;
+                UiDirector.Logger?.Warn("UI: the HUD has not stood up " + (now - _cityAt).ToString("F0") + " s after the city loaded: " + what
+                                        + "; the game's own top bar shows meanwhile, and it is tried again each second.");
+            }
         }
 
         // A piece's switch turned on or off: it hides and mirrors the game's, or gives it back.
