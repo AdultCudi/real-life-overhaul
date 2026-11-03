@@ -38,7 +38,7 @@ Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui') -Filte
 } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Copy-Item (Join-Path $PSScriptRoot 'PreviewStubs.cs') (Join-Path $preview 'Kit')
 # The phone's model and screen, and the pages' and folders' rules they stand on: game-free, outside the kit's own folder.
-@('Scripts\Ui\Phone\PhoneItems.cs', 'Scripts\Ui\Phone\PhoneScreen.cs', 'Scripts\Core\GameUi\PagerRules.cs', 'Scripts\Core\GameUi\PhoneLayoutRules.cs') | ForEach-Object {
+@('Scripts\Ui\Phone\PhoneItems.cs', 'Scripts\Ui\Phone\PhoneScreen.cs', 'Scripts\Core\GameUi\PagerRules.cs', 'Scripts\Core\GameUi\PhoneLayoutRules.cs', 'Scripts\Ui\Host\UiCost.cs') | ForEach-Object {
     Copy-Item (Join-Path $repo (Join-Path 'Assets\Mods\RealLifeOverhaul' $_)) (Join-Path $preview 'Kit')
 }
 Get-ChildItem $PSScriptRoot -Filter 'UiSamples*.cs' | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
