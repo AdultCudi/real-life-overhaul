@@ -12,15 +12,11 @@ internal static partial class UiSamples
 
     public static readonly string[] MoneyOwnStates = { "bank", "bank_new", "savers", "lending", "fund", "branches", "long" };
 
-    public static readonly string[] MoneyUtilStates = { "accounts", "accounts_new", "internet", "network", "long" };
-
     public static MoneyModel MoneyFinance(UiWords t, string state) => FinancePage(t, state);
 
     public static MoneyModel MoneyBanks(UiWords t, string state) => BanksPage(t, state);
 
     public static MoneyModel MoneyOwn(UiWords t, string state) => OwnPage(t, state);
-
-    public static MoneyModel MoneyUtilities(UiWords t, string state) => UtilPage(t, state);
 
     private static string W(UiWords t, string key, string english) => t(key, english);
 
@@ -309,66 +305,6 @@ internal static partial class UiSamples
         return m;
     }
 
-    private static MoneyModel UtilPage(UiWords t, string state)
-    {
-        bool fresh = state == "accounts_new";
-        bool longName = state == "long";
-        int index = state.StartsWith("internet", StringComparison.Ordinal) ? 1 : state.StartsWith("network", StringComparison.Ordinal) || state == "long" ? 2 : 0;
-        var m = new MoneyModel
-        {
-            App = MoneyApp.Utilities,
-            Icon = UiIcon.Globe,
-            Across = true,
-            Title = W(t, "reallife_util_app", "Utilities"),
-            Tab = index,
-            Nav = new[]
-            {
-                Nav(t, "reallife_util_tab_accounts", "Accounts", UiIcon.Wallet),
-                Nav(t, "reallife_util_tab_internet", "Internet", UiIcon.Globe),
-                Nav(t, "reallife_util_tab_network", "Your network", UiIcon.HardDrives)
-            },
-            Prompts = Prompts(t, index == 2),
-            EmptyTitle = W(t, "reallife_money_empty_debts", "No debts yet"),
-            EmptyBody = W(t, "reallife_money_coming", "Coming up: rent on day 12, wages on day 14."),
-            EmptyIcon = UiIcon.Globe
-        };
-        if (index == 1)
-        {
-            m.Shape = MoneyShape.Plans;
-            m.Catalogue = Plans(t, fresh);
-        }
-        else if (index == 2)
-        {
-            m.Shape = MoneyShape.Network;
-            m.Hero = new UiHeroModel
-            {
-                Icon = UiIcon.HardDrives, Tint = UiRole.None,
-                Kicker = W(t, "reallife_util_tab_network", "Your network"),
-                Title = longName ? "Your broadband company with a long name" : "Your network",
-                Line = fresh ? "Not founded yet" : "Two districts live",
-                Progress = fresh ? 0 : 40,
-                Note = fresh ? "Found it to begin" : "Dig the next district",
-                NoteIcon = UiIcon.Wrench
-            };
-            m.Figures = fresh ? new UiFigureModel[0] : new[]
-            {
-                new UiFigureModel { Label = W(t, "reallife_money_customers", "Customers"), Value = "1,240" }
-            };
-            m.Chart = fresh ? null : LineChart(W(t, "reallife_money_customers", "Customers over 60 days"), 12, 800f, 1240f);
-            m.Table = DistrictTable(t, fresh);
-            m.Actions = new[]
-            {
-                new UiActionModel { Label = W(t, "reallife_money_dig", "Dig"), Kind = UiButtonKind.Primary, Icon = UiIcon.Wrench, Key = UiAction.Alt, Command = UiAppWindow.ActionCommand }
-            };
-        }
-        else
-        {
-            m.Shape = MoneyShape.Flow;
-            m.Statement = Statement(t, fresh, "Bills");
-        }
-        return m;
-    }
-
     private static UiActionModel Link(UiWords t)
     {
         return new UiActionModel { Label = W(t, "reallife_money_economy", "Economy"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Locate, Key = UiAction.Option, Command = MoneyCommands.Link };
@@ -629,61 +565,6 @@ internal static partial class UiSamples
             ChipRow("Harbour branch", "180", "Digging", UiRole.Warn)
         };
         m.RowCount = m.Rows.Length;
-        return m;
-    }
-
-    private static UiDataTableModel DistrictTable(UiWords t, bool fresh)
-    {
-        var m = new UiDataTableModel
-        {
-            Columns = new[]
-            {
-                new UiDataColumn { Title = "District", Kind = UiCellKind.Text, Width = 0f },
-                new UiDataColumn { Title = "Homes", Kind = UiCellKind.Figure, Width = UiTokens.S16 * 2f },
-                new UiDataColumn { Title = "Customers", Kind = UiCellKind.Figure, Width = UiTokens.S16 * 2f },
-                new UiDataColumn { Title = "Take up", Kind = UiCellKind.Meter, Width = UiTokens.S16 * 3f },
-                new UiDataColumn { Title = "State", Kind = UiCellKind.Chip, Width = UiTokens.S16 * 2f }
-            },
-            EmptyTitle = W(t, "reallife_util_tab_network", "Your network"),
-            EmptyBody = W(t, "reallife_money_dig", "Dig"),
-            EmptyIcon = UiIcon.HardDrives
-        };
-        if (fresh)
-        {
-            return m;
-        }
-        var live = ChipRow("Midtown", "12,400", "640", W(t, "reallife_money_live", "Live"), UiRole.Ok);
-        live.Values = new[] { 0, 12400, 640, 42, 0 };
-        var dig = ChipRow("Harbour", "9,200", "0", "12 days", UiRole.Warn);
-        dig.Values = new[] { 0, 9200, 0, 0, 0 };
-        m.Rows = new[] { live, dig };
-        m.RowCount = m.Rows.Length;
-        return m;
-    }
-
-    private static UiCatalogueModel Plans(UiWords t, bool fresh)
-    {
-        var m = new UiCatalogueModel
-        {
-            EmptyTitle = W(t, "reallife_util_tab_internet", "Internet"),
-            EmptyBody = W(t, "reallife_money_plan", "The plan you are on is marked."),
-            EmptyIcon = UiIcon.Globe
-        };
-        if (fresh)
-        {
-            return m;
-        }
-        m.Cards = new[]
-        {
-            new UiCatalogueCard { Icon = UiIcon.Globe, Name = "Basic", Figure = "$1 a day", State = null },
-            new UiCatalogueCard { Icon = UiIcon.Globe, Name = "Home", Figure = "$2 a day", State = "On" , StateTone = UiRole.Ok },
-            new UiCatalogueCard { Icon = UiIcon.Globe, Name = "Fast", Figure = "$4 a day" }
-        };
-        m.CardCount = 3;
-        m.Chosen = 1;
-        m.DetailKicker = W(t, "reallife_money_plan", "The plan you are on is marked.");
-        m.DetailLabels = new[] { "Speed", "Price" };
-        m.DetailValues = new[] { "Home", "$2 a day" };
         return m;
     }
 

@@ -3,7 +3,7 @@ using System;
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// The four money apps, each shaped by what the player does there. The window and its sections are the kit's; the page
+    /// The three money apps, each shaped by what the player does there. The window and its sections are the kit's; the page
     /// under them is a statement, an offer, a league, a form or a catalogue, never the same row of cards. Game-free. Cost:
     /// a layout when the model changes.
     /// </summary>
@@ -24,8 +24,7 @@ namespace RealLifeOverhaul.Ui
                 case MoneyShape.Home: Home(s, at, m, x, y, w, bottom, keys); break;
                 case MoneyShape.Table: Table(s, at, m, x, y, w, bottom - y, keys); break;
                 case MoneyShape.Fund: Fund(s, at, m, x, y, w, bottom, keys); break;
-                case MoneyShape.Plans: Plans(s, at, m, x, y, w, bottom - y, keys); break;
-                default: Network(s, at, m, x, y, w, bottom, keys); break;
+                default: Overview(s, at, m, x, y, w, bottom, keys); break;
             }
             for (int i = 0; i < m.Prompts.Length; i++)
             {
@@ -189,41 +188,6 @@ namespace RealLifeOverhaul.Ui
                 }
                 return;
             }
-            Rest(s, at, m, x, y, w, bottom, keys);
-        }
-
-        private static void Plans(UiScene s, UiAt at, MoneyModel m, float x, float y, float w, float h, IUiKeys keys)
-        {
-            if (m.Catalogue != null && m.Catalogue.CardCount > 0)
-            {
-                UiCatalogue.Lay(s, at, m.Catalogue, x, y, w, h, keys, out _);
-            }
-            else
-            {
-                Empty(s, at, m, x, y, w, h, keys);
-            }
-        }
-
-        // The company, its customers over the last two months, then each district.
-        private static void Network(UiScene s, UiAt at, MoneyModel m, float x, float y, float w, float bottom, IUiKeys keys)
-        {
-            if (m.Hero != null)
-            {
-                float fw = m.Figures.Length > 0 ? UiDraw.SnapDown(w * 0.32f) : 0f;
-                float hh = UiAppWindow.Hero(s, at, m.Hero, x, y, fw > 0f ? w - fw - UiTokens.S4 : w);
-                if (fw > 0f)
-                {
-                    UiAppWindow.Figures(s, at, m.Figures, x + w - fw, y, fw, hh);
-                }
-                y += hh + UiTokens.S5;
-            }
-            float chartH = UiTokens.S16 * 3f;
-            if (m.Chart != null && bottom - y > chartH + UiTokens.S16)
-            {
-                UiChart.Lay(s, at, m.Chart, x, y, w, chartH);
-                y += chartH + UiTokens.S4;
-            }
-            y = Note(s, at, m.Note, x, y, w);
             Rest(s, at, m, x, y, w, bottom, keys);
         }
 

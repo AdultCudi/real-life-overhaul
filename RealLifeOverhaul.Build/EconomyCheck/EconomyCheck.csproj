@@ -107,6 +107,14 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\BanksScreen.cs" Link="Mod\Money\BanksScreen.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\OwnBankScreen.cs" Link="Mod\Money\OwnBankScreen.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\UtilitiesScreen.cs" Link="Mod\Money\UtilitiesScreen.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\UtilitiesFacts.cs" Link="Mod\Money\UtilitiesFacts.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\UtilitiesFaceModel.cs" Link="Mod\Money\UtilitiesFaceModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\UtilitiesBuild.cs" Link="Mod\Money\UtilitiesBuild.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\UtilitiesBuild.Internet.cs" Link="Mod\Money\UtilitiesBuild.Internet.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\UtilitiesBuild.Network.cs" Link="Mod\Money\UtilitiesBuild.Network.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\UtilitiesFace.cs" Link="Mod\Money\UtilitiesFace.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\UtilitiesFace.Card.cs" Link="Mod\Money\UtilitiesFace.Card.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\UtilitiesFace.Sheet.cs" Link="Mod\Money\UtilitiesFace.Sheet.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookStore.cs" Link="Mod\Outlook\OutlookStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookReadings.cs" Link="Mod\Outlook\OutlookReadings.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookRules.cs" Link="Mod\Outlook\OutlookRules.cs" />

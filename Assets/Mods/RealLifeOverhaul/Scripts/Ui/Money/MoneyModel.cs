@@ -1,12 +1,11 @@
 namespace RealLifeOverhaul.Ui
 {
-    /// <summary>Which of the four money apps a model is, so one page drawer can keep their shapes apart.</summary>
+    /// <summary>Which of the three money apps a model is, so one page drawer can keep their shapes apart. Utilities has a face of its own (UtilitiesScreen).</summary>
     public enum MoneyApp : byte
     {
         Finance = 0,
         Banks,
-        OwnBank,
-        Utilities
+        OwnBank
     }
 
     /// <summary>How a page is shaped. Each app uses a few of these, never one dashboard for all of them.</summary>
@@ -20,9 +19,7 @@ namespace RealLifeOverhaul.Ui
         Apply,          // a form in two columns and the headroom
         Home,           // a business's hero, its month, then its table
         Table,          // one big table
-        Fund,           // the fund's line, its holdings, its largest accounts
-        Plans,          // a short catalogue
-        Network         // the company's hero, its customers, its districts
+        Fund            // the fund's line, its holdings, its largest accounts
     }
 
     /// <summary>
@@ -63,6 +60,45 @@ namespace RealLifeOverhaul.Ui
         public string[] Choices = new string[0];
         public string[] ChoiceBody = new string[0];
         public UiPrompt[] Prompts = new UiPrompt[0];
+
+        /// <summary>
+        /// Clears what a page shows before it is filled again: a tab that does not set a part must not show the one before's
+        /// (a statement, a chart, a table, a button left from another tab). The app, the icon and the tab are the host's and stay.
+        /// </summary>
+        public void Reset()
+        {
+            Shape = MoneyShape.Overview;
+            Title = null;
+            Across = false;
+            Nav = new UiNavEntry[0];
+            Profile = null;
+            Actions = new UiActionModel[0];
+            Hero = null;
+            Figures = new UiFigureModel[0];
+            DonutTitle = null;
+            Donut = new float[0];
+            DonutLabels = new string[0];
+            DonutValues = new string[0];
+            Statement = null;
+            Chart = null;
+            Table = null;
+            Catalogue = null;
+            Amount = null;
+            CanLess = CanMore = false;
+            Note = null;
+            Note2 = null;
+            Lines = new string[0];
+            LineBody = new string[0];
+            LineOn = new bool[0];
+            Marks = new int[0];
+            Meter = -1;
+            MeterLabel = null;
+            Choices = new string[0];
+            ChoiceBody = new string[0];
+            Prompts = new UiPrompt[0];
+            EmptyTitle = null;
+            EmptyBody = null;
+        }
 
         /// <summary>The live fill, set by the game. Samples leave it unset and draw the model as it stands.</summary>
         public IMoneySource Source;

@@ -330,7 +330,7 @@ namespace RealLifeOverhaul.Utilities
             }
             Logger?.Info("Utilities: internet at " + place.Place + ": " + InternetRules.Get(provider).Id + " plan " + plan + (contract ? " on contract" : " month by month") + ", " + price
                          + " cents a month" + (exit > 0 ? ", exit fee " + exit : string.Empty) + (install > 0 ? ", installation " + install : string.Empty) + ".");
-            _view?.Changed();
+            Touch();
             return true;
         }
 
@@ -355,7 +355,7 @@ namespace RealLifeOverhaul.Utilities
             a.ContractUntil = 0;
             a.OutageFrom = a.OutageUntil = 0;
             UtilitiesText.Toast(NotificationType.Info, UtilitiesText.T("reallife_net_toast_cancelled", "place", place.Name), 8f);
-            _view?.Changed();
+            Touch();
             return true;
         }
 
@@ -377,7 +377,7 @@ namespace RealLifeOverhaul.Utilities
             a.CutForDebt = false;
             a.ConnectDay = UtilitiesGame.Today + 1;
             UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_net_toast_reconnect", "place", place.Name), 8f);
-            _view?.Changed();
+            Touch();
             return true;
         }
     }

@@ -47,13 +47,13 @@ internal static partial class Program
         }
         else if (def.Id == "utilities")
         {
-            foreach (string state in UiSamples.MoneyUtilStates)
+            foreach (string state in UiSamples.UtilitiesStates)
             {
                 string st = state;
                 cases.Add(new UiScreenCase
                 {
-                    Def = def, Name = "utilities (" + st + ")", Title = "Utilities", Commands = MoneyCommandsAll,
-                    Lay = (s, f, dark, k, t) => MoneyPages.Lay(s, UiSamples.MoneyUtilities(t, st), f, dark, k)
+                    Def = def, Name = "utilities (" + st + ")", Title = "Utilities", Commands = UtilitiesFace.Commands,
+                    Lay = (s, f, dark, k, t) => UtilitiesFace.Lay(s, UiSamples.Utilities(t, st), f, dark, k)
                 });
             }
         }
@@ -61,6 +61,11 @@ internal static partial class Program
         {
             _moneyChecked = true;
             MoneyRuleChecks();
+        }
+        if (!_utilitiesFaceChecked && def.Id == "utilities")
+        {
+            _utilitiesFaceChecked = true;
+            UtilitiesFaceChecks();
         }
     }
 
