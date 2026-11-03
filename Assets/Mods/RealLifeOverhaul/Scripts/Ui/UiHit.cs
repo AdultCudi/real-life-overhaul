@@ -6,8 +6,9 @@ namespace RealLifeOverhaul.Ui
 {
     /// <summary>
     /// The pointer on a kit screen: entering and leaving a target's face, a click on it, and the wheel over a scroll
-    /// region, each told to the view, which tells its host (UiFocusMode decides what a hover does). Pooled with its object
-    /// and pointed at the target it shows now. Cost a frame: nothing, the engine calls it on pointer events.
+    /// region (over a gap in it, or over a target's face standing in it), each told to the view, which tells its host
+    /// (UiFocusMode decides what a hover does). Pooled with its object and pointed at the target it shows now. Cost a frame:
+    /// nothing, the engine calls it on pointer events.
     /// </summary>
     public sealed class UiHit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler, IScrollHandler, IPointerDownHandler, IBeginDragHandler,
         IDragHandler, IEndDragHandler
@@ -24,15 +25,19 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The pointer is over this face. A pooled face keeps it across a layout that points it at another target.</summary>
         public bool Inside { get; private set; }
 
-        /// <summary>Points this at a target's face (or at none, with a null view).</summary>
-        public void Face(UiView view, int node)
+        /// <summary>
+        /// Points this at a target's face (or at none, with a null view), and at the scroll region it stands in (-1 for none).
+        /// The engine gives the wheel to the first object under the pointer that takes it, and a face takes it (it is a
+        /// UiHit), so a face in a list passes the wheel on to its list: without it the wheel over any row went nowhere.
+        /// </summary>
+        public void Face(UiView view, int node, int clip)
         {
             _view = view;
             _node = view != null ? node : -1;
-            _clip = -1;
+            _clip = view != null ? clip : -1;
         }
 
-        /// <summary>Points this at a scroll region, for the wheel.</summary>
+        /// <summary>Points this at a scroll region, for the wheel anywhere over it between its targets.</summary>
         public void Wheel(UiView view, int clip)
         {
             _view = view;

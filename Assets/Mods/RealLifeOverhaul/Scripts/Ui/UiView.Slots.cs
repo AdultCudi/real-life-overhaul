@@ -341,7 +341,7 @@ namespace RealLifeOverhaul.Ui
             }
             bool face = it.Node >= 0 && _scene.Nodes[it.Node].Face == index;
             b.Fill.raycastTarget = face;
-            b.Hit.Face(face ? this : null, it.Node);
+            b.Hit.Face(face ? this : null, it.Node, it.Clip);   // a row in a list hands the wheel on to its list
             // No panel wears a head rule now: a title strip's hairline is the only line on a panel's head.
             bool rule = false;
             if (rule && b.Rule == null)
