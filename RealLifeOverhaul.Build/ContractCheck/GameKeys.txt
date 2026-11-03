@@ -168,6 +168,7 @@ ba:itemname_picturebook
 ba:itemname_pizza
 ba:itemname_plastic
 ba:itemname_popcorn
+ba:itemname_previewterminal
 ba:itemname_rawsausage
 ba:itemname_resistors
 ba:itemname_russetpotatoes
@@ -229,8 +230,12 @@ ba:neighborhood_lowermanhattan
 ba:neighborhood_midtown
 ba:neighborhood_murrayhill
 ba:neighborhood_thehamptons
+ba:private_driver
+ba:private_driver_no_vehicles
 ba:private_driver_type_advanced
 ba:private_driver_type_advanced_description
+ba:private_driver_type_premium
+ba:private_driver_waiting
 ba:skill_actor
 ba:skill_cleaning
 ba:skill_customerservice
@@ -514,6 +519,8 @@ bizman_start_business_button
 bizman_start_new_business_button
 bizman_status
 bizman_stock_count
+bizman_store_furniture_delivery_title
+bizman_store_inventory_title
 bizman_temporarily_closed
 bizman_terminate_contract_button
 bizman_traffic_index
@@ -523,6 +530,7 @@ bizman_warehouses
 building_rival_owner_description
 buildingmanager_notification_business_closed
 buildingmanager_notification_private_property
+buildingpreview_cancel_preview
 buildingresume_closed_opening_in_hour
 buildingresume_closed_opening_in_hours
 buildingresume_left_click
@@ -550,6 +558,7 @@ click_to_learn
 click_to_talk
 click_to_work
 common_accepted
+common_add
 common_address
 common_agree
 common_amount
@@ -613,6 +622,7 @@ common_saturday
 common_save_changes
 common_search
 common_select_option
+common_select_type
 common_setdestination
 common_show_on_map
 common_show_warehouse
@@ -620,6 +630,7 @@ common_subtotal
 common_sunday
 common_thursday
 common_today
+common_toggle_walls
 common_tomorrow
 common_total
 common_total_price
@@ -669,6 +680,7 @@ contacts_taxes_total_tax_due
 contacts_today_opening_hours
 contacts_today_opening_hours_closed
 contacts_today_opening_hours_open
+custom_color_picker_headline
 daily_summary
 daily_summary_businesses
 daily_summary_details
@@ -956,6 +968,11 @@ playerhud_currentjob_day_off
 playerhud_currentjob_quit_job
 playerhud_skip_bridge_button
 poi_custom_location
+preview_terminal_preview_button
+preview_terminal_select_building_size
+preview_terminal_select_building_type
+preview_terminal_select_business_type
+preview_terminal_select_design
 purchasecar_specs
 purchaseui_pay_taxes
 purchaseui_place_order
@@ -978,6 +995,11 @@ rivals_defense_icons_product_shortage_title
 rivals_leaderboard
 rivals_overview
 rivals_real_estate_properties
+sign_appearance
+sign_appearance_sign_bulb_color
+sign_appearance_sign_light_color
+sign_appearance_sign_type
+sign_type
 smartphone_bizman
 smartphone_contacts
 smartphone_econoview

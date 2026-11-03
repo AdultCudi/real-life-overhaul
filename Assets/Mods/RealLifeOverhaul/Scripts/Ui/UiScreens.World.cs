@@ -5,7 +5,9 @@ namespace RealLifeOverhaul.Ui
     public static partial class UiScreens
     {
         // The world's pieces over the running game (Ui/World): the box over a door, a lift or a desk; a building's panel;
-        // the mod's list windows as the picker; the game's job offer. Each has its switch under "status bar and world".
+        // the mod's list windows as the picker; the game's job offer; the game's smaller windows (the private driver, the
+        // items list, a sign's look, the preview terminal, the preview's bar, the colour picker's frame). Each has its switch
+        // under "status bar and world".
         static partial void AddWorld(List<UiScreenDef> screens)
         {
             screens.AddRange(new[]
@@ -41,6 +43,42 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_world_offer_boss", "reallife_ui_world_offer_span", "reallife_ui_world_offer_run", "reallife_ui_world_offer_and", "playerhud_currentjob_day_off",
                     "common_monday", "common_tuesday", "common_wednesday", "common_thursday", "common_friday", "common_saturday", "common_sunday"
                 }).Switch(UiScreenSwitches.Hud),
+                new UiScreenDef("world_private_driver", UiTemplate.Hud, "PrivateDriverScreen", new[]
+                {
+                    "ba:private_driver", "ba:private_driver_waiting", "ba:private_driver_no_vehicles", "ba:private_driver_type_premium", "reallife_ui_world_driver_state_riding",
+                    "reallife_ui_world_driver_state_waiting", "reallife_ui_world_driver_state_coming", "reallife_ui_world_driver_riding_line", "reallife_ui_world_driver_waiting_line",
+                    "reallife_ui_world_driver_coming_line", "reallife_ui_world_driver_riding", "reallife_ui_world_driver_coming", "reallife_ui_world_driver_dismiss",
+                    "reallife_ui_world_driver_state_cars", "reallife_ui_world_driver_contract", "reallife_ui_world_driver_ready", "reallife_ui_world_driver_call",
+                    "reallife_ui_world_driver_fee_due", "reallife_ui_world_driver_fee_paid", "reallife_ui_world_driver_state_none", "reallife_ui_world_driver_state_no_cars",
+                    "reallife_ui_world_driver_none", "reallife_ui_world_driver_locate", "reallife_ui_prompt_move", "input_key_menu"
+                }).Switch(UiScreenSwitches.Tools),
+                new UiScreenDef("world_items_list", UiTemplate.Form, "ItemsListScreen", new[]
+                {
+                    "bizman_store_inventory_title", "bizman_store_furniture_delivery_title", "common_search", "common_close", "reallife_ui_prompt_move", "reallife_ui_prompt_select",
+                    "reallife_ui_world_items_count", "reallife_ui_world_items_none_found", "reallife_ui_world_items_none_found_body", "reallife_ui_world_items_empty",
+                    "reallife_ui_world_items_empty_body", "reallife_ui_world_items_clear", "reallife_ui_world_items_each"
+                }).Switch(UiScreenSwitches.Tools),
+                new UiScreenDef("world_sign", UiTemplate.Hud, "SignAppearanceScreen", new[]
+                {
+                    "sign_appearance", "sign_appearance_sign_type", "sign_appearance_sign_light_color", "sign_appearance_sign_bulb_color", "sign_type", "common_select_type",
+                    "reallife_ui_prompt_move", "input_key_menu"
+                }).Switch(UiScreenSwitches.Tools),
+                new UiScreenDef("world_preview_terminal", UiTemplate.Hud, "PreviewTerminalScreen", new[]
+                {
+                    "ba:itemname_previewterminal", "preview_terminal_select_building_type", "preview_terminal_select_building_size", "preview_terminal_select_business_type",
+                    "preview_terminal_select_design", "preview_terminal_preview_button", "reallife_ui_world_terminal_note", "reallife_ui_world_terminal_building",
+                    "reallife_ui_world_terminal_size", "reallife_ui_world_terminal_business", "reallife_ui_world_terminal_design", "reallife_ui_world_terminal_blueprints",
+                    "reallife_ui_prompt_move", "input_key_menu"
+                }).Switch(UiScreenSwitches.Tools),
+                new UiScreenDef("world_building_preview", UiTemplate.Hud, "BuildingPreviewScreen", new[]
+                {
+                    "buildingpreview_cancel_preview", "common_toggle_walls", "reallife_ui_world_preview_walls_up", "reallife_ui_world_preview_walls_down",
+                    "reallife_ui_world_preview_walls_cut", "reallife_ui_world_preview_title"
+                }).Switch(UiScreenSwitches.Tools),
+                new UiScreenDef("world_colour_picker", UiTemplate.Hud, "ColourPickerScreen", new[]
+                {
+                    "custom_color_picker_headline", "common_add", "common_cancel"
+                }).Switch(UiScreenSwitches.Tools),
             });
         }
     }

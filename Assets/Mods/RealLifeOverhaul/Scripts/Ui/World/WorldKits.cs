@@ -6,8 +6,9 @@ namespace RealLifeOverhaul.Ui
     /// <summary>
     /// The world's pieces on the RLO interface, each behind its own switch under "RLO interface: status bar and world":
     /// the world prompt (every box the game stands over a door, a lift or a desk, the mod's WorldPanel and DoorPanel
-    /// among them), the building's panel (BuildingResume), the picker (every TravelList and DeskList of the mod's) and the
-    /// job offer (the game's JobOffer). Installed once a second by the director while the interface is on; each switch
+    /// among them), the building's panel (BuildingResume), the picker (every TravelList and DeskList of the mod's), the
+    /// job offer (the game's JobOffer) and the game's smaller windows (the private driver, the items list, a sign's look,
+    /// the preview terminal, the preview's bar, the colour picker). Installed once a second by the director while the interface is on; each switch
     /// gives its piece back to the game's own at once. Cost: a few comparisons a second.
     /// </summary>
     public static class WorldKits
@@ -16,11 +17,36 @@ namespace RealLifeOverhaul.Ui
 
         private static readonly UiGameHost Offer = new UiGameHost(new JobOfferKit());
 
+        // The game's smaller windows over the world, each on its own switch: the private driver, the items list, a sign's
+        // look, the preview terminal, the preview's bar and the colour picker's frame.
+        private static readonly UiGameHost Driver = new UiGameHost(new PrivateDriverKit());
+        private static readonly UiGameHost Items = new UiGameHost(new ItemsListKit());
+        private static readonly UiGameHost Sign = new UiGameHost(new SignAppearanceKit());
+        private static readonly UiGameHost Terminal = new UiGameHost(new PreviewTerminalKit());
+        private static readonly UiGameHost Preview = new UiGameHost(new BuildingPreviewKit());
+        private static readonly UiGameHost Colour = new UiGameHost(new ColourPickerKit());
+        private static readonly UiGameHost[] Tools = { Driver, Items, Sign, Terminal, Preview, Colour };
+
         /// <summary>What each piece is doing, for the interface's line at load.</summary>
-        public static string State => WorldHost.State + ", the picker (" + WorldPicker.State + "), the job offer (" + Offer.State + ")";
+        public static string State => WorldHost.State + ", the picker (" + WorldPicker.State + "), the job offer (" + Offer.State + "), the private driver ("
+                                      + Driver.State + "), the items list (" + Items.State + "), a sign's look (" + Sign.State + "), the preview terminal ("
+                                      + Terminal.State + "), the preview's bar (" + Preview.State + "), the colour picker (" + Colour.State + ")";
 
         /// <summary>True while the job offer stands on the kit, for the tests.</summary>
         public static bool OfferShowing => Offer.Showing;
+
+        /// <summary>The host of a smaller window by its id, for the tests; null for none.</summary>
+        internal static UiGameHost Tool(string id)
+        {
+            for (int i = 0; i < Tools.Length; i++)
+            {
+                if (Tools[i].Id == id)
+                {
+                    return Tools[i];
+                }
+            }
+            return null;
+        }
 
         /// <summary>Each piece on the kit or the game's own, as its switch says.</summary>
         public static void Install()
@@ -49,6 +75,17 @@ namespace RealLifeOverhaul.Ui
             {
                 Offer.Remove("its switch is off");
             }
+            for (int i = 0; i < Tools.Length; i++)
+            {
+                if (UiScreenSwitches.On(Tools[i].Id))
+                {
+                    Tools[i].Install();
+                }
+                else
+                {
+                    Tools[i].Remove("its switch is off");
+                }
+            }
         }
 
         /// <summary>Every piece the game's own again, exactly as found.</summary>
@@ -57,12 +94,21 @@ namespace RealLifeOverhaul.Ui
             WorldHost.Remove(why);
             WorldPicker.Give(why);
             Offer.Remove(why);
+            for (int i = 0; i < Tools.Length; i++)
+            {
+                Tools[i].Remove(why);
+            }
         }
 
         /// <summary>A new city: a piece that never looked as expected in the last one is looked at again.</summary>
         public static void Rearm()
         {
             Offer.Rearm();
+            for (int i = 0; i < Tools.Length; i++)
+            {
+                Tools[i].Rearm();
+            }
+            WorldPictures.Forget();
         }
 
         /// <summary>
