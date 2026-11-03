@@ -80,7 +80,8 @@ namespace RealLifeOverhaul
         /// <summary>
         /// A page of one of the mod's dialogs as it goes to DialogController.ShowEntry, wrapped once: its answers, and
         /// each page they lead to, run in their class's guard, and one that fails or is off ends with the game's own
-        /// closing; its cancels and on-show are caught, never skipped.
+        /// closing; its cancels and on-show are caught, never skipped. A page shown in a contact's call is also kept as
+        /// that contact's line (TalkLogGame).
         /// </summary>
         public static DialogEntry Entry(DialogEntry entry)
         {
@@ -89,6 +90,7 @@ namespace RealLifeOverhaul
                 return entry;
             }
             Calls.Pages.Add(entry, Calls.Mark);
+            TalkLogGame.Page(entry);   // what a contact's call says is kept for the Contacts thread (caught inside; a page is shown once)
             if (Ours(entry.OnConfirm))
             {
                 entry.OnConfirm = new Answer(entry.OnConfirm).Give;

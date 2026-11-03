@@ -43,6 +43,7 @@ namespace RealLifeOverhaul.Ui
         private object _talk;              // the conversation the game runs now, as last seen
         private float _talkSince;          // when it began, real time
         private Button _call, _map, _hangUp;
+        private Contact _clearing;         // the contact whose Clear chat was pressed, until the game has emptied its texts (ChatCleared)
 
         // A field of the form: the game's own figure field and its two steps.
         private struct Field
@@ -400,6 +401,7 @@ namespace RealLifeOverhaul.Ui
                 ContactsKit.Classic();
                 return Done(true, "the game's own view for another mod's buttons by " + Who(open));
             }
+            _clearing = b == ButtonOf(GameContract.KitClearChat) ? open : _clearing;
             return Handed(b, b.name, open, "handed to the game");
         }
 

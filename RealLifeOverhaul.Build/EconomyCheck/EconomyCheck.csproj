@@ -722,6 +722,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPlaces.cs" Link="Mod\UiPlaces.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\ContactsRoutes.cs" Link="Mod\ContactsRoutes.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\ContactsRules.cs" Link="Mod\ContactsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Phone\Contacts\TalkLog.cs" Link="Mod\TalkLog.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Phone\Contacts\TalkLogStore.cs" Link="Mod\TalkLogStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiContacts.cs" Link="Mod\UiContacts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCallCard.cs" Link="Mod\UiCallCard.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiAppWindow.Footed.cs" Link="Mod\UiAppWindow.Footed.cs" />

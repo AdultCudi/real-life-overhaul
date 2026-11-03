@@ -153,7 +153,14 @@ namespace RealLifeOverhaul
 
         private DialogEntry Reply(SocialTopic topic, bool warm, Dictionary<string, string> data)
         {
+            Chose(topic, warm, data);
             return Onward(Line(Answered(topic, warm), data));
+        }
+
+        // The answer the player pressed, kept in the contact's talk history as the player's line, before their reaction is.
+        private static void Chose(SocialTopic topic, bool warm, Dictionary<string, string> data)
+        {
+            TalkLogGame.Said(SocialLife.T(warm ? topic.ReplyA : topic.ReplyB, data));
         }
 
         // What an answer is worth, a choice's or typed words' alike, settled now; the key of their written reaction.
