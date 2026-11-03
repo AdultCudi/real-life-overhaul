@@ -211,7 +211,7 @@ namespace RealLifeOverhaul.Ui
                 _rows.Add(new BizOpsRow
                 {
                     Kind = number ? BizOpsRowKind.Stepper : BizOpsRowKind.Text, Label = label, Value = f.text, Placeholder = placeholder, Disabled = !f.interactable,
-                    Typing = _typeCommand == BizManPages.OpsType && _typeArg == arg, Arg = arg, Right = _right
+                    Arg = arg, Right = _right
                 });
             }
         }

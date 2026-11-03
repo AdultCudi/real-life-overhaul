@@ -55,10 +55,10 @@ public static partial class UiPreviewRunner
             Bar = () => UiSamples.ShellBar(UiSamples.RowContacts, false), HoverCommand = UiCard.ButtonCommand, HoverArg = 0, Walk = new[] { Left, Right } });
         screens.Add(new Screen { Name = "shell_acknowledge", AppName = "Acknowledge", Lay = (s, f, d, k) => UiCard.Lay(s, UiSamples.Acknowledge(English, true), f, d, k),
             Backdrop = "02.jpg", HoverCommand = UiCard.CheckCommand, HoverArg = 0, Walk = new[] { Down, Left, Right, Up }, Bar = UiSamples.WalkingBar });
-        screens.Add(new Screen { Name = "shell_text_box", AppName = "Text box", Lay = (s, f, d, k) => UiCard.Lay(s, UiSamples.TextBox(English, null), f, d, k),
-            Backdrop = "13.jpg", HoverCommand = UiCard.ButtonCommand, HoverArg = 0, Walk = new[] { Down, Left, Up }, Bar = UiSamples.WalkingBar });
-        screens.Add(new Screen { Name = "shell_text_box_typed", AppName = "Text box", Lay = (s, f, d, k) => UiCard.Lay(s, UiSamples.TextBox(English, "Harbour Lights Bakery"), f, d, k),
-            Backdrop = "11.jpg", HoverCommand = UiCard.ButtonCommand, HoverArg = 1, Walk = new[] { Down, Left, Up }, Bar = UiSamples.WalkingBar });
+        screens.Add(Typing(new Screen { Name = "shell_text_box", AppName = "Text box", Lay = (s, f, d, k) => UiCard.Lay(s, UiSamples.TextBox(English, null), f, d, k),
+            Backdrop = "13.jpg", HoverCommand = UiCard.ButtonCommand, HoverArg = 0, Walk = new[] { Down, Left, Up }, Bar = UiSamples.WalkingBar }, UiCard.FieldCommand, 0));
+        screens.Add(Typing(new Screen { Name = "shell_text_box_typed", AppName = "Text box", Lay = (s, f, d, k) => UiCard.Lay(s, UiSamples.TextBox(English, "Harbour Lights Bakery"), f, d, k),
+            Backdrop = "11.jpg", HoverCommand = UiCard.ButtonCommand, HoverArg = 1, Walk = new[] { Down, Left, Up }, Bar = UiSamples.WalkingBar }, UiCard.FieldCommand, 0));
         screens.Add(new Screen { Name = "shell_mod_box", AppName = "Message", Lay = (s, f, d, k) => UiCard.Lay(s, UiSamples.ModBox(English), f, d, k),
             Backdrop = "02.jpg", HoverCommand = UiCard.ButtonCommand, HoverArg = 1, Walk = new[] { Left, Right }, Bar = UiSamples.WalkingBar });
         for (int first = 0; first < 14; first += 3)
