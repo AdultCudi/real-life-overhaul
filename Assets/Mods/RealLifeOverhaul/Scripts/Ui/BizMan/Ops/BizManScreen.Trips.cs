@@ -192,7 +192,15 @@ namespace RealLifeOverhaul.Ui
             GameConfirm.Show("reallife_ui_bizops_send_title", "reallife_trips_send_body", () =>
             {
                 LogisticsManagerPlan now = Economy.LogisticsDirector.Instance != null ? FindRoute(id) : null;
+                if (now != null && SentToday(now))
+                {
+                    return;   // sent while the question stood
+                }
                 int sent = now != null ? Economy.LogisticsDirector.Instance.SendNow(now) : 0;
+                if (sent > 0)
+                {
+                    Economy.SendNowLimit.Sent(id, TimeHelper.CurrentDay);   // the day is used only when a vehicle left
+                }
                 _sentOn = now;
                 _sent = sent > 0 ? UiText.Fill("reallife_trips_sent", "count", UiText.Whole(sent)) : UiText.T("reallife_trips_sent_none");
             }, null, "reallife_ui_bizops_send_now", null, true, false);

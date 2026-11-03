@@ -123,7 +123,6 @@ namespace RealLifeOverhaul.Careers
         public const int Mba = 40, MscComputing = 41, LegalPractice = 42, Pgce = 43;
         public const int CloudAssociate = 50, CloudArchitect = 51, SecurityPractitioner = 52, ProjectManagement = 53, CharteredAccountant = 54, BarExam = 55,
             CharteredEngineer = 56, DataAnalyst = 57, NetworkProfessional = 58, MachineLearning = 59, PrivacyProfessional = 60, TestingProfessional = 61;
-        public const int DanceClass = 35;   // each class sat teaches a dance the player does not know yet (Leisure/DanceRules)
         public const int IdsMost = 64;   // ids are under this: a set of courses is a 64-bit mask
 
         private const int Bootcamp = TalentCatalogue.Bootcamp, Diploma = TalentCatalogue.Diploma, Bachelor = TalentCatalogue.Bachelor, Master = TalentCatalogue.Master;
@@ -141,7 +140,6 @@ namespace RealLifeOverhaul.Careers
             new CourseDef(Bookkeeping, "bookkeeping", CourseKind.Short, Campus.School, 4, 2, 3, Tue | Thu, 13, 400, TalentCatalogue.Accounting, 20, TalentCatalogue.Analysis, 5),
             new CourseDef(CustomerService, "customer_service", CourseKind.Short, Campus.School, 2, 0, 3, Wed | Fri, 10, 120, TalentCatalogue.Relationships, 15, TalentCatalogue.Selling, 10),
             new CourseDef(DigitalMarketing, "digital_marketing", CourseKind.Short, Campus.Online, 4, 2, 3, Tue | Thu, 19, 600, TalentCatalogue.Marketing, 20, TalentCatalogue.Analysis, 5),
-            new CourseDef(DanceClass, "dance_class", CourseKind.Short, Campus.School, 5, 0, 2, Mon | Wed | Fri, 15, 150, TalentCatalogue.Relationships, 10, Skills.Hospitality, 5),
 
             // vocational diplomas at the school
             new CourseDef(Electrician, "electrician", CourseKind.Vocational, Campus.School, 7, 3, 4, Mon | Wed | Fri, 9, 3200, Skills.Electrical, 45, TalentCatalogue.Troubleshooting, 10, Diploma),

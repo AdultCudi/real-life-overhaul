@@ -285,20 +285,14 @@ internal static partial class UiSamples
         accessories.Action = t("reallife_ui_hud_accessories_off", "Take all off");
         string dancing = t("reallife_ui_hud_dancing", "Dancing");
         string[] names = { "Boogie", "Sway", "Swing", "The Macarena", "Shy Dance", "Fist Pump", "Swim", "Twist", "Smooth Operator" };
-        string known = t("reallife_ui_hud_dances_known", "{known} of {count} known").Replace("{known}", "4").Replace("{count}", "9");
         var dances = new UiHudPopupModel
         {
-            Title = t("reallife_ui_hud_dances", "Dances"), Meta = known, Numbered = true, Rows = new UiHudPopupRow[names.Length], RowCount = names.Length,
+            Title = t("reallife_ui_hud_dances", "Dances"), Numbered = true, Rows = new UiHudPopupRow[names.Length], RowCount = names.Length,
             Empty = t("reallife_ui_hud_dances_empty", "No dances to choose from here."), Action = t("reallife_ui_hud_dance_stop", "Stop dancing"), AnchorX = UiDraw.ToolMiddle(plan, 0),
         };
         for (int i = 0; i < names.Length; i++)
         {
-            bool locked = i >= 4;   // past the first four: learned at the school's dance class
-            dances.Rows[i] = new UiHudPopupRow
-            {
-                Text = names[i], Press = !locked, Disabled = locked, Chip = i == 2 ? dancing : locked ? t("reallife_study_course_dance_class", "Dance class") : null,
-                ChipTone = i == 2 ? UiRole.Accent : UiRole.None,
-            };
+            dances.Rows[i] = new UiHudPopupRow { Text = names[i], Press = true, Chip = i == 2 ? dancing : null, ChipTone = UiRole.Accent };
         }
         return new[] { dances, accessories };
     }

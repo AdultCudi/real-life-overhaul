@@ -102,7 +102,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_bizops_routes_none_body", "reallife_ui_bizops_run_days_ago", "reallife_ui_bizops_run_today",
                     "reallife_ui_bizops_run_yesterday", "reallife_ui_bizops_runs_at", "reallife_ui_bizops_runs_none", "reallife_ui_bizops_send_body",
                     "reallife_ui_bizops_send_now", "reallife_ui_bizops_send_title", "reallife_ui_bizops_sent", "reallife_ui_bizops_sent_none",
-                    "reallife_ui_bizops_sent_one", "reallife_ui_bizops_shelf_space", "reallife_ui_bizops_shops", "reallife_ui_bizops_shops_line",
+                    "reallife_ui_bizops_sent_one", "reallife_ui_bizops_sent_today", "reallife_ui_bizops_shelf_space", "reallife_ui_bizops_shops", "reallife_ui_bizops_shops_line",
                     "reallife_ui_bizops_shops_none", "reallife_ui_bizops_shops_one", "reallife_ui_bizops_skill_line", "reallife_ui_bizops_slots_line",
                     "reallife_ui_bizops_slots_none", "reallife_ui_bizops_slots_one", "reallife_ui_bizops_span", "reallife_ui_bizops_staff_on_day",
                     "reallife_ui_bizops_stance_manager", "reallife_ui_bizops_stance_match", "reallife_ui_bizops_stance_premium",

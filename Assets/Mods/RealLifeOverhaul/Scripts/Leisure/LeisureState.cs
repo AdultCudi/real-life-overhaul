@@ -32,7 +32,6 @@ namespace RealLifeOverhaul.Leisure
         private const string KeyDrinks = "reallife:leisure_drinks";
         private const string KeyDrinkTime = "reallife:leisure_drink_time";
         private const string KeySpent = "reallife:leisure_spent";
-        private const string KeyDances = "reallife:leisure_dances";
 
         private static readonly Dictionary<string, int> Best = new Dictionary<string, int>(12);
         private static readonly Dictionary<string, int> Plays = new Dictionary<string, int>(12);
@@ -60,14 +59,6 @@ namespace RealLifeOverhaul.Leisure
 
         public static int Spent;
 
-        /// <summary>The dances the player knows (DanceRules): every dance until a save says otherwise.</summary>
-        public static int Dances { get; private set; } = DanceRules.All;
-
-        /// <summary>Goes up whenever the dances known change.</summary>
-        public static int DancesVersion { get; private set; }
-
-        private static bool _dancesRead;   // the save held a set of dances
-
         /// <summary>Goes up whenever what is owned changes.</summary>
         public static int OwnedVersion { get; private set; }
 
@@ -84,9 +75,6 @@ namespace RealLifeOverhaul.Leisure
             Drinks = 0f;
             DrinkTime = 0f;
             Spent = 0;
-            Dances = DanceRules.All;
-            _dancesRead = false;
-            DancesVersion++;
             foreach (SavedOutfit outfit in Saved)
             {
                 outfit.Used = false;
@@ -109,9 +97,6 @@ namespace RealLifeOverhaul.Leisure
             Drinks = ReadFloat(data, KeyDrinks);
             DrinkTime = ReadFloat(data, KeyDrinkTime);
             Spent = (int)ReadFloat(data, KeySpent);
-            int dances = DanceRules.All;
-            _dancesRead = data.TryGetValue(KeyDances, out string set) && int.TryParse(set, NumberStyles.Integer, CultureInfo.InvariantCulture, out dances);
-            Dances = _dancesRead ? DanceRules.Sound(dances) : DanceRules.All;   // absent from older saves: every dance, as before
             for (int i = 0; i < Outfits; i++)
             {
                 if (!data.TryGetValue(KeyOutfit + i, out string line) || string.IsNullOrEmpty(line))
@@ -162,31 +147,6 @@ namespace RealLifeOverhaul.Leisure
                 }
                 data[KeyOutfit + i] = Text.ToString();
             }
-            data[KeyDances] = Dances.ToString(CultureInfo.InvariantCulture);
-        }
-
-        /// <summary>
-        /// After the save is read: a new game (<paramref name="newGame"/>, its first day) that holds no leisure data yet starts
-        /// with the first four dances; any other save without a set keeps every dance.
-        /// </summary>
-        public static void SettleDances(bool newGame)
-        {
-            if (!_dancesRead && Fresh && newGame)
-            {
-                Dances = DanceRules.FirstSet(true);
-                DancesVersion++;
-            }
-        }
-
-        /// <summary>The next dance learned (a dance class sat): which, by its place in the game's list; -1 when every dance was known.</summary>
-        public static int LearnDance()
-        {
-            Dances = DanceRules.Learn(Dances, out int learned);
-            if (learned >= 0)
-            {
-                DancesVersion++;
-            }
-            return learned;
         }
 
         public static int BestOf(string activity)

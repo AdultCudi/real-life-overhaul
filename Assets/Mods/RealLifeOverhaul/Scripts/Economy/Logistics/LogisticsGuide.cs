@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Economy
             Features.Add("trips", "reallife_meta_title_trips")
                 .About("reallife_guide_trips_about").Help("reallife_guide_trips")
                 .Owns(Settings.LivingTripsId, Settings.LivingSpoilageId)
-                .Data(TripStore.Key, SpoilStore.Key)
+                .Data(TripStore.Key, SpoilStore.Key, SendNowLimit.Key)
                 .Test("reallife_trips_test", "reallife_spoil_test")
                 .Fact("trips_load", () => Whole(TripRules.LoadMinutes))
                 .Fact("trips_unload", () => Whole(TripRules.UnloadMinutes))

@@ -42,7 +42,7 @@ namespace RealLifeOverhaul.Leisure
                 return false;
             }
             Ctx.Body.Hold();
-            _dance = DanceRules.Pick(DanceLocks.Mask, Random.Range(0, 1000));   // one the player knows
+            _dance = Random.Range(0, 9);
             if (!Ctx.Body.Dance((DanceType)_dance))
             {
                 refusalKey = "reallife_leisure_no_clips";
@@ -109,7 +109,7 @@ namespace RealLifeOverhaul.Leisure
             LeisureSound.Cue(judged == 2 ? LeisureCue.Good : LeisureCue.Tick);
             if (_run % 6 == 0)
             {
-                _dance = DanceRules.Other(DanceLocks.Mask, _dance, Random.Range(0, 1000));   // a different one the player knows
+                _dance = (_dance + 1 + Random.Range(0, 7)) % 9;   // a different one
                 Ctx.Body.Dance((DanceType)_dance);
                 Objective = T("reallife_leisure_dance_new_move");
             }

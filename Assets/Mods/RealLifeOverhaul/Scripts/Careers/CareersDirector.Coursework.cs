@@ -282,10 +282,6 @@ namespace RealLifeOverhaul.Careers
                         Teach(c.SkillA, StudyRules.ClassGain(c.GainA, c.Sessions, StudyRules.Points(_study, c.SkillA), learning), day);
                         Teach(c.SkillB, StudyRules.ClassGain(c.GainB, c.Sessions, StudyRules.Points(_study, c.SkillB), learning), day);
                         AfterClass(e, day, true);
-                        if (c.Id == StudyCatalogue.DanceClass)
-                        {
-                            DanceLearned();
-                        }
                     }
                     break;
                 case SittingKind.Homework:
@@ -400,21 +396,6 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>What a pass brings beyond the qualification itself.</summary>
-        // A dance class sat: the next dance the player did not know is learned and said; nothing once every dance is known.
-        private void DanceLearned()
-        {
-            int dance = Leisure.LeisureState.LearnDance();
-            if (dance < 0)
-            {
-                return;
-            }
-            Leisure.DanceLocks.Keep(Settings.CareersStudy);   // the game's dance list lets it be danced at once
-            Tell(NotificationType.Info, "reallife_study_note_dance_learned", Data("dance", CareersText.T("dancetype_dance" + (dance + 1))), TabStudying,
-                CampusApp.CourseRow + StudyCatalogue.DanceClass);
-            Logger?.Info("Careers: a dance class sat; the game's dance " + (dance + 1) + " learned, " + Leisure.DanceRules.KnownCount(Leisure.LeisureState.Dances)
-                         + " of " + Leisure.DanceRules.Count + " known.");
-        }
-
         private void Passed(Enrolment e, int day)
         {
             CourseDef c = e.Def;

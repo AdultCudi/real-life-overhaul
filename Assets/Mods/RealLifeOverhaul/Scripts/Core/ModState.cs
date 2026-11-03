@@ -116,6 +116,7 @@ namespace RealLifeOverhaul
             SeenEvents.Clear();
             LastEventId = null;
             Leisure.LeisureState.Reset();
+            Economy.SendNowLimit.Reset();
             CharacterCatalogue.Leave();   // no save, no picks of the mod's looks
         }
 
@@ -143,8 +144,8 @@ namespace RealLifeOverhaul
             }
             PendingFineDue = ReadFloat(data, KeyPendingFineDue);
 
+            Economy.SendNowLimit.ReadSave(data);   // the routes BizMan sent today; an older save has none
             Leisure.LeisureState.ReadSave(data);   // records, landmarks, the clothes bought, outfits
-            Leisure.LeisureState.SettleDances(save.Day <= 1);   // a new game starts with the first four dances
             CharacterCatalogue.ReadSave(data);   // the player's picks of the mod's own hair and clothes, by id
 
             // Absent from older saves: every event counts as unseen.
@@ -225,6 +226,7 @@ namespace RealLifeOverhaul
             data[KeySeenEvents] = string.Join(",", SeenEvents);
             CharacterCatalogue.WriteSave(data);
             Leisure.LeisureState.WriteSave(data);
+            Economy.SendNowLimit.WriteSave(data, TimeHelper.CurrentDay);
             return removed;
         }
 

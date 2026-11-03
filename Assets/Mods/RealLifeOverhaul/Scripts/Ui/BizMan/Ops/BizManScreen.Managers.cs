@@ -706,8 +706,9 @@ namespace RealLifeOverhaul.Ui
             var actions = new List<UiActionModel>(3);
             if (route != null)
             {
-                actions.Add(new UiActionModel { Label = UiText.T("reallife_ui_bizops_send_now"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Truck, Key = UiAction.Count,
-                    Arg = DoSendNow, Disabled = !CanSend(route) });
+                bool today = SentToday(route);   // once a day for each route: the button greys and says so until tomorrow
+                actions.Add(new UiActionModel { Label = UiText.T(today ? "reallife_ui_bizops_sent_today" : "reallife_ui_bizops_send_now"), Kind = UiButtonKind.Secondary,
+                    Icon = UiIcon.Truck, Key = UiAction.Count, Arg = DoSendNow, Disabled = today || !CanSend(route) });
             }
             Button show = Get<Button>(GameContract.RouteShow, plan2), add = Get<Button>(GameContract.RouteAddStop, plan2);
             if (show != null && show.gameObject.activeInHierarchy)
@@ -776,6 +777,9 @@ namespace RealLifeOverhaul.Ui
             return n;
         }
 
+        // Send now was used on this route today: it may be used once a game day for each route (Economy/SendNowLimit).
+        private static bool SentToday(LogisticsManagerPlan route) => route != null && !Economy.SendNowLimit.Allowed(route.id, TimeHelper.CurrentDay);
+
         // Send now may run: a manager on the route, its warehouse the player's own, no stop another player's, at least one
         // stop it can serve, and no run of the game's under way (its nightly run goes through the same two queues).
         private static bool CanSend(LogisticsManagerPlan route)
@@ -808,7 +812,7 @@ namespace RealLifeOverhaul.Ui
         private bool SendNow()
         {
             LogisticsManagerPlan route = ChosenRoute();
-            if (!CanSend(route))
+            if (!CanSend(route) || SentToday(route))
             {
                 return false;
             }
@@ -829,9 +833,9 @@ namespace RealLifeOverhaul.Ui
             {
                 route = plans[i] != null && plans[i].id == id ? plans[i] : null;
             }
-            if (!CanSend(route))
+            if (!CanSend(route) || SentToday(route))
             {
-                return;   // a run of the game's began, or the route changed, while the question stood
+                return;   // a run of the game's began, or the route changed or was sent, while the question stood
             }
             var from = (Entities.Warehouse)BuildingHelper.GetBuildingRegistration(route.targetAddress);
             List<DeliveryTransaction> log = from.deliveryTransactions;
@@ -850,6 +854,10 @@ namespace RealLifeOverhaul.Ui
             for (int i = log != null ? (mark != null ? log.IndexOf(mark) + 1 : 0) : 0; log != null && i < log.Count; i++)
             {
                 sent += log[i] != null ? Out(log[i]) : 0;
+            }
+            if (sent > 0)
+            {
+                Economy.SendNowLimit.Sent(id, TimeHelper.CurrentDay);   // the day is used only when something went out
             }
             _sentOn = route;
             _sent = sent > 0 ? UiText.Fill(_sending.Count == 1 ? "reallife_ui_bizops_sent_one" : "reallife_ui_bizops_sent", "count", UiText.Whole(sent), "stops", UiText.Whole(_sending.Count))
@@ -1654,6 +1662,7 @@ namespace RealLifeOverhaul.Ui
                     sig = sig * 31 + _stops.Count + _goods.Count * 7 + TimeHelper.CurrentHour * 4 + (int)TimeHelper.CurrentMinute / 15;
                     sig = sig * 3 + (LogisticsManagerHelper.WarehouseDeliveriesWork.HasPendingWork || LogisticsManagerHelper.FactoryDeliveriesWork.HasPendingWork ? 1 : 0);
                     sig = sig * 31 + TripsSignature();
+                    sig = sig * 3 + (SentToday(ChosenRoute()) ? 1 : 0);
                     for (int i = 0; i < _goods.Count; i++)
                     {
                         sig = sig * 31 + Hash(WordsAt(_goods[i], "BusinessTarget/Amount/Text Area/Text"));

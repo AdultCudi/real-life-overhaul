@@ -40,8 +40,8 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_prompt_move", "input_key_menu", "reallife_ui_hud_dances", "reallife_ui_hud_dancing", "reallife_ui_hud_dances_empty",
                     "reallife_ui_hud_dance_stop", "reallife_ui_hud_accessories", "reallife_ui_hud_accessories_empty", "reallife_ui_hud_accessories_off",
                     "reallife_ui_hud_slot_hand", "reallife_ui_hud_slot_head", "reallife_ui_hud_slot_phone", "reallife_ui_hud_season_weather", "input_key_openmap",
-                    "input_key_pause", "input_key_throttle", "input_key_brakes", "input_key_handbrake", "reallife_ui_hud_dances_known",
-                    "reallife_ui_hud_accessories_shown", "reallife_study_course_dance_class", "reallife_ui_hud_money_today"
+                    "input_key_pause", "input_key_throttle", "input_key_brakes", "input_key_handbrake",
+                    "reallife_ui_hud_accessories_shown", "reallife_ui_hud_money_today"
                 }),
             });
         }

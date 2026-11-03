@@ -92,57 +92,36 @@ internal static partial class Program
             "goal rewards: a goal's tier is how many goals of its kind ask for less");
     }
 
-    // The dances the player knows: a new game's four, an older save's nine, the dance class's next dance in the game's
-    // order, and the dance floor's picks among the known alone; the class itself as the catalogue's rules want a course.
+    // The dances: all nine are open from the start, in every game. The dance class (course 35) is gone from the catalogue, and a
+    // save that held it, or held the old set of known dances, still loads: the course is dropped quietly, the set ignored.
     private static void HudDanceChecks()
     {
-        Check(DanceRules.FirstSet(true) == DanceRules.Starter && DanceRules.FirstSet(false) == DanceRules.All && DanceRules.KnownCount(DanceRules.Starter) == 4
-              && DanceRules.KnownCount(DanceRules.All) == DanceRules.Count && DanceRules.Sound(0) == DanceRules.Starter && DanceRules.Sound(-1) == DanceRules.All,
-            "dances: a new game knows the first four, an older save every dance; a saved set holds the four and nothing past the nine");
-        int set = DanceRules.Starter;
-        bool order = true;
-        for (int i = 4; i < DanceRules.Count; i++)
+        bool none = StudyCatalogue.Find(35) == null;
+        for (int i = 0; i < StudyCatalogue.All.Length; i++)
         {
-            set = DanceRules.Learn(set, out int learned);
-            order &= learned == i && DanceRules.Known(set, i);
+            none &= StudyCatalogue.All[i].Key != "dance_class" && StudyCatalogue.All[i].Id != 35;
         }
-        set = DanceRules.Learn(set, out int none);
-        Check(order && none == -1 && set == DanceRules.All && DanceRules.NextLocked(DanceRules.All) == -1 && DanceRules.NextLocked(DanceRules.Starter) == 4,
-            "dances: each dance class teaches the next dance in the game's order, the fifth to the ninth, then none");
-        bool picks = true, varied = false;
-        for (int roll = -20; roll < 40; roll++)
-        {
-            int p = DanceRules.Pick(DanceRules.Starter, roll), o = DanceRules.Other(DanceRules.Starter, 2, roll);
-            picks &= DanceRules.Known(DanceRules.Starter, p) && o != 2 && DanceRules.Known(DanceRules.Starter, o);
-            varied |= p == 3;
-        }
-        Check(picks && varied && DanceRules.Other(1, 0, 5) == 0 && DanceRules.Pick(0, 3) == 0 && !DanceRules.Known(DanceRules.All, 9) && !DanceRules.Known(DanceRules.All, -1),
-            "dances: the dance floor dances known dances alone, another one each time while there is one");
-        CourseDef dance = StudyCatalogue.Find(StudyCatalogue.DanceClass);
-        Check(dance != null && dance.Key == "dance_class" && dance.Kind == CourseKind.Short && dance.Campus == Campus.School && dance.Sessions >= DanceRules.Count - 4
-              && dance.Homework == 0,
-            "dances: the school's dance class is a short course of no homework with a class for each dance a new game does not know");
+        Check(none, "dances: the school has no dance class any more");
+        var f = new StudyFile { Seed = 5, FirstDay = 2, LastDay = 9 };
+        f.Courses.Add(new Enrolment { Course = 35, Start = 3, Seen = 2, Done = 1, Instalments = 1, Fee = 15000 });
+        f.Courses.Add(new Enrolment { Course = StudyCatalogue.FirstAid, Start = 4, Instalments = 1 });
+        f.Results.Add(new Enrolment { Course = 35, Stage = (int)EnrolStage.Passed, Score = 70, Grade = 3, Ended = 8 });
+        StudyFile back = CareersStore.Read(CareersStore.Write(f), out int _);
+        Check(back.Courses.Count == 1 && back.Courses[0].Course == StudyCatalogue.FirstAid && back.Results.Count == 0 && !back.Holds(35),
+            "dances: a save part-way through the old dance class, or holding its pass, loads with that course dropped and the rest kept");
     }
 
-    // What the new items promise, read from their source: an older save keeps every dance and only a new game starts with
-    // four, the dance class teaches when a class counts, the dance floor dances known dances, a goal pays once, the goals
-    // reached before pay nothing, and the dances held back are given back when the careers stand down.
+    // What the new items promise, read from their source: the dance floor and the top bar's list offer all nine dances, no
+    // code holds a dance back or reads the old set, a goal pays once and the goals reached before pay nothing.
     private static void HudItemSourceChecks()
     {
         string scripts = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
         string Read(string rel) => File.ReadAllText(System.IO.Path.Combine(scripts, rel));
-        string leisure = Read(@"Leisure\LeisureState.cs"), state = Read(@"Core\ModState.cs");
-        Check(leisure.Contains("Dances = _dancesRead ? DanceRules.Sound(dances) : DanceRules.All;") && leisure.Contains("if (!_dancesRead && Fresh && newGame)")
-              && leisure.Contains("data[KeyDances] = Dances.ToString(CultureInfo.InvariantCulture);") && state.Contains("Leisure.LeisureState.SettleDances(save.Day <= 1);"),
-            "dances: a save without the set keeps every dance; only a new game with no leisure data starts with four; the set is saved");
-        string work = Read(@"Careers\CareersDirector.Coursework.cs"), careers = Read(@"Careers\CareersDirector.cs"), floor = Read(@"Leisure\Activities\NightOut.cs");
-        int taught = work.IndexOf("AfterClass(e, day, true);", StringComparison.Ordinal);
-        Check(taught > 0 && work.IndexOf("if (c.Id == StudyCatalogue.DanceClass)", taught, StringComparison.Ordinal) > taught
-              && work.IndexOf("if (c.Id == StudyCatalogue.DanceClass)", taught, StringComparison.Ordinal) < taught + 200,
-            "dances: a dance class teaches the next dance when its class counts, and only then");
-        Check(careers.Contains("Leisure.DanceLocks.Keep(_studyOn);") && careers.Contains("Leisure.DanceLocks.Release();")
-              && floor.Contains("DanceRules.Pick(DanceLocks.Mask") && floor.Contains("DanceRules.Other(DanceLocks.Mask") && !floor.Contains("Random.Range(0, 9)"),
-            "dances: the dances not learned are held back while the courses run and given back when the careers stand down; the dance floor dances known ones");
+        string leisure = Read(@"Leisure\LeisureState.cs"), floor = Read(@"Leisure\Activities\NightOut.cs"), hud = Read(@"Ui\HudScreens\HudTopGame.cs");
+        Check(!leisure.Contains("leisure_dances") && !leisure.Contains("Dances") && floor.Contains("Random.Range(0, 9)") && !floor.Contains("DanceLocks")
+              && !hud.Contains("DanceLocked") && !hud.Contains("dances_known") && !hud.Contains("dance_class")
+              && !File.Exists(System.IO.Path.Combine(scripts, @"Leisure\DanceLocks.cs")) && !File.Exists(System.IO.Path.Combine(scripts, @"Leisure\DanceRules.cs")),
+            "dances: nothing holds a dance back, nothing reads the old set of known dances, and the dance floor and the top bar's list offer all nine");
         string rewards = Read(@"Economy\Banking\EconomyDirector.GoalRewards.cs"), econ = Read(@"Economy\Banking\EconomyDirector.cs");
         Check(rewards.Contains("reached.IndexOf(reached[i]) == i") && rewards.Contains("_goalsCounted = reached.Count;\r\n                return;")
               && rewards.Contains("if (goal == null || goal.isHidden)") && econ.Contains("KeepGoalRewards(Settings.Economy && _running);"),

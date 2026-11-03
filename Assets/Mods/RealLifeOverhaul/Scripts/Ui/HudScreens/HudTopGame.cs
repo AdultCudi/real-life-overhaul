@@ -36,7 +36,6 @@ namespace RealLifeOverhaul.Ui
         private static readonly int[] ToolKind = new int[4];   // which tool each place of the pill holds
         private static readonly Button[] DanceButtons = new Button[16];
         private static readonly string[] DanceNames = new string[16];
-        private static readonly bool[] DanceLocked = new bool[16];   // not learned yet (Leisure/DanceLocks): greyed, the dance class named
         private static readonly UiHudPopupModel DancesPopup = new UiHudPopupModel { Numbered = true, Rows = new UiHudPopupRow[16] };
         private static readonly UiHudPopupModel AccessoriesPopup = new UiHudPopupModel { Rows = new UiHudPopupRow[3] };
 
@@ -341,30 +340,28 @@ namespace RealLifeOverhaul.Ui
                     }
                     DanceButtons[_danceCount] = button;
                     DanceNames[_danceCount] = UiWidgets.Text(label.GetComponent<TMPro.TMP_Text>());
-                    int dance = Leisure.DanceLocks.DanceOf(b);
-                    DanceLocked[_danceCount] = Leisure.DanceLocks.Active && dance >= 0 && !Leisure.DanceRules.Known(Leisure.LeisureState.Dances, dance);
                     _danceCount++;
                 }
             }
             bool dancing = IsDancing(out int which);
             UiHudPopupModel m = DancesPopup;
             m.Title = UiText.T("reallife_ui_hud_dances");
-            m.Meta = Leisure.DanceLocks.Active ? Known() : dancing ? UiText.T("reallife_ui_hud_dancing") : null;   // "4 of 9 known" while some are to learn
+            m.Meta = dancing ? UiText.T("reallife_ui_hud_dancing") : null;
             m.Empty = UiText.T("reallife_ui_hud_dances_empty");
             m.Action = dancing ? UiText.T("reallife_ui_hud_dance_stop") : null;
             m.ActionDisabled = false;
             m.RowCount = _danceCount;
-            int sig = _danceCount * 7 + which * 3 + (dancing ? 1 : 0) + (m.Meta != null ? m.Meta.GetHashCode() : 0);
+            int sig = _danceCount * 7 + which * 3 + (dancing ? 1 : 0);
             for (int i = 0; i < _danceCount; i++)
             {
-                bool now = i == which, locked = DanceLocked[i];
+                bool now = i == which;
                 m.Rows[i] = new UiHudPopupRow
                 {
-                    Text = DanceNames[i], Press = !locked, Disabled = locked || !DanceButtons[i].interactable,
-                    Chip = now ? UiText.T("reallife_ui_hud_dancing") : locked ? UiText.T("reallife_study_course_dance_class") : null,
+                    Text = DanceNames[i], Press = true, Disabled = !DanceButtons[i].interactable,
+                    Chip = now ? UiText.T("reallife_ui_hud_dancing") : null,
                     ChipTone = now ? UiRole.Accent : UiRole.None
                 };
-                sig = sig * 31 + (DanceNames[i] != null ? DanceNames[i].GetHashCode() : 0) + (locked ? 1 : 0) + (m.Rows[i].Disabled ? 2 : 0);
+                sig = sig * 31 + (DanceNames[i] != null ? DanceNames[i].GetHashCode() : 0);
             }
             m.AnchorX = AnchorOf(Dances);
             if (count < popups.Length)
@@ -372,13 +369,6 @@ namespace RealLifeOverhaul.Ui
                 popups[count++] = m;
             }
             return sig;
-        }
-
-        // "4 of 9 known": the dances learned of the game's nine.
-        private static string Known()
-        {
-            int known = Leisure.DanceRules.KnownCount(Leisure.LeisureState.Dances);
-            return UiText.T("reallife_ui_hud_dances_known").Replace("{known}", known.ToString()).Replace("{count}", Leisure.DanceRules.Count.ToString());
         }
 
         // ------------------------------------------------------------------------------------------------- the accessories

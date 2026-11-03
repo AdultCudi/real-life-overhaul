@@ -14,7 +14,50 @@ internal static partial class Program
         SpoilBatches();
         SpoilLives();
         SpoilSave();
+        SendNowCap();
         LogisticsTexts();
+    }
+
+    // BizMan's Send now, once a game day for each route: a second send on the day is refused, the next day is allowed, a route
+    // is counted alone, the save line reads back (its day only), and a save from before it counts every route as not sent today.
+    private static void SendNowCap()
+    {
+        SendNowLimit.Reset();
+        bool fresh = SendNowLimit.Allowed("route-a", 40) && SendNowLimit.Allowed("route-b", 40) && SendNowLimit.Allowed(null, 40);
+        SendNowLimit.Sent("route-a", 40);
+        Check(fresh && !SendNowLimit.Allowed("route-a", 40) && SendNowLimit.Allowed("route-a", 41) && SendNowLimit.Allowed("route-b", 40),
+            "send now: a second send of a route on the same day is refused, the next day is allowed, and another route is counted alone");
+        SendNowLimit.Sent("route|b^1", 40);
+        string line = SendNowLimit.Write(40);
+        SendNowLimit.Reset();
+        bool read = SendNowLimit.Read(line);
+        Check(read && !SendNowLimit.Allowed("route-a", 40) && !SendNowLimit.Allowed("route|b^1", 40) && SendNowLimit.Allowed("route-a", 41) && SendNowLimit.Write(40) == line
+              && SendNowLimit.Write(41) == "v=" + SendNowLimit.Version,
+            "send now: the save line gives the routes sent today back as they were, and writes nothing for an earlier day");
+        var old = new Dictionary<string, string>();
+        SendNowLimit.ReadSave(old);
+        bool noKey = SendNowLimit.Allowed("route-a", 40);
+        SendNowLimit.WriteSave(old, 40);
+        var later = new Dictionary<string, string> { { SendNowLimit.Key, "v=9^route-a|40" } };
+        SendNowLimit.ReadSave(later);
+        bool unread = SendNowLimit.Allowed("route-a", 40);
+        SendNowLimit.WriteSave(later, 40);
+        var broken = new Dictionary<string, string> { { SendNowLimit.Key, "v=1^route-a|x" } };
+        SendNowLimit.ReadSave(broken);
+        Check(noKey && old.TryGetValue(SendNowLimit.Key, out string written) && written == "v=1" && unread && later[SendNowLimit.Key] == "v=9^route-a|40"
+              && SendNowLimit.Allowed("route-a", 40) && !SendNowLimit.Read("v=1^a|1^b"),
+            "send now: a save from before has no line and every route may be sent; a line this version cannot read is kept as it was and allows the send");
+        SendNowLimit.Reset();
+        string managers = ModSource(@"Ui\BizMan\Ops\BizManScreen.Managers.cs"), trips = ModSource(@"Ui\BizMan\Ops\BizManScreen.Trips.cs");
+        Check(managers.Contains("Disabled = today || !CanSend(route)") && managers.Contains("\"reallife_ui_bizops_sent_today\"")
+              && MemberText(managers, "private bool SendNow()").Contains("SentToday(route)") && MemberText(managers, "private void Sent(string id)").Contains("SentToday(route)")
+              && MemberText(managers, "private void Sent(string id)").Contains("Economy.SendNowLimit.Sent(id, TimeHelper.CurrentDay)")
+              && MemberText(trips, "private bool SendTrips(LogisticsManagerPlan route)").Contains("Economy.SendNowLimit.Sent(id, TimeHelper.CurrentDay)")
+              && !managers.Contains("RunMainGameTick"),
+            "send now: both ways of sending, the game's run and the trips, refuse a route sent today and use the day only when something went out; the 02:00 run is not touched");
+        Check(ModSource(@"Core\ModState.cs").Contains("Economy.SendNowLimit.ReadSave(data);") && ModSource(@"Core\ModState.cs").Contains("Economy.SendNowLimit.WriteSave(data, TimeHelper.CurrentDay);")
+              && ModSource(@"Core\ModState.cs").Contains("Economy.SendNowLimit.Reset();"),
+            "send now: the day each route was sent is read with the save, written with it and let go when there is no save");
     }
 
     private static void TripTimes()
@@ -232,7 +275,7 @@ internal static partial class Program
             "reallife_trips_no_driver", "reallife_trips_stop_at", "reallife_trips_stop_done", "reallife_trips_road", "reallife_trips_last", "reallife_trips_none_yet",
             "reallife_trips_note", "reallife_trips_send_body", "reallife_trips_sent", "reallife_trips_sent_none", "reallife_spoil_col", "reallife_spoil_tonight",
             "reallife_spoil_days", "reallife_spoil_today", "reallife_spoil_factory", "reallife_spoil_share", "reallife_spoil_note",
-            "reallife_trips_tomorrow", "reallife_trips_on_day"
+            "reallife_trips_tomorrow", "reallife_trips_on_day", "reallife_ui_bizops_sent_today"
         };
         Check(AllIn(keys, out string missing), "trips and spoilage texts: every key in English, Portuguese and Chinese (" + missing + ")");
         Dictionary<string, string> en = LocaleFile("en");
