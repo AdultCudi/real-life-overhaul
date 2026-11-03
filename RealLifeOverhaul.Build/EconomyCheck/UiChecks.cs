@@ -538,6 +538,7 @@ internal static partial class Program
     // Each area adds its own screens' cases in a file of its own (UiChecks.<Area>.cs), so jobs on different areas never edit
     // one list; a screen its area gives no case is laid out with its template's own sample. An area with no file yet is a
     // partial method nobody wrote, and the compiler drops its call. A new area adds its line to both lists below.
+    private static string UiOnly;   // set by --ui-only: only the screens whose case name begins so
     private static List<UiScreenCase> UiCases()
     {
         var cases = new List<UiScreenCase>();
@@ -584,6 +585,10 @@ internal static partial class Program
             }
         }
         cases.AddRange(PrototypeCases());
+        if (UiOnly != null)
+        {
+            cases.RemoveAll(c => !c.Name.StartsWith(UiOnly, StringComparison.Ordinal));   // a job rechecks its own screen: --ui-only <name>
+        }
         return cases;
     }
 

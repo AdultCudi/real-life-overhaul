@@ -181,6 +181,54 @@ namespace RealLifeOverhaul.Markets
             return n;
         }
 
+
+        /// <summary>
+        /// Whether a company answers a search: the words typed are in its name or its ticker, any case. Nothing typed, or only
+        /// spaces, matches all. The table's search filters by it as the player types.
+        /// </summary>
+        public static bool Matches(Stock s, string find)
+        {
+            if (s == null)
+            {
+                return false;
+            }
+            string q = find == null ? string.Empty : find.Trim();
+            if (q.Length == 0)
+            {
+                return true;
+            }
+            return (s.Name != null && s.Name.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0)
+                || (s.Ticker != null && s.Ticker.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        public static void LadderOffers(List<BondOffer> offers, List<BondOffer> into)
+        {
+            into.Clear();
+            for (int i = 0; i < offers.Count; i++)
+            {
+                if (offers[i].Def != null && offers[i].Def.Kind == BondKind.Treasury)
+                {
+                    int at = into.Count;
+                    while (at > 0 && into[at - 1].Def.TermQuarters > offers[i].Def.TermQuarters)
+                    {
+                        at--;
+                    }
+                    into.Insert(at, offers[i]);
+                }
+            }
+        }
+
+        /// <summary>The average of the ladder's yields, as its pieces are even.</summary>
+        public static int LadderYield(List<BondOffer> ladder)
+        {
+            long sum = 0;
+            for (int i = 0; i < ladder.Count; i++)
+            {
+                sum += ladder[i].YieldBp;
+            }
+            return ladder.Count > 0 ? (int)(sum / ladder.Count) : 0;
+        }
+
         /// <summary>
         /// A holding marked to each candle: start from the shares, walk the candles, and apply a trade on its day.
         /// <paramref name="trades"/> are day, signed shares, unused price. Nothing is saved.

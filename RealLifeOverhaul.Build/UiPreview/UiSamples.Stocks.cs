@@ -7,11 +7,21 @@ using RealLifeOverhaul.Ui;
 /// </summary>
 internal static partial class UiSamples
 {
-    public static readonly string[] StockStates =
+    public static string[] StockStates => Join(StockBaseStates, StockOfferStates);   // joined on asking: static fields of two files start in no fixed order
+
+    private static string[] Join(string[] a, string[] b)
+    {
+        var all = new string[a.Length + b.Length];
+        a.CopyTo(all, 0);
+        b.CopyTo(all, a.Length);
+        return all;
+    }
+
+    private static readonly string[] StockBaseStates =
     {
         "market_boom", "market_crash", "companies", "watch", "watch_empty", "company_today", "company_days", "company_weeks",
         "company_months", "company_years", "company_area", "ticket", "portfolio_empty", "portfolio_full", "orders", "history",
-        "bonds", "futures", "bots", "listing", "long"
+        "listing", "long"
     };
 
     public static StocksModel Stocks(UiWords t, string state)
@@ -21,6 +31,11 @@ internal static partial class UiSamples
         m.PromptBack = t("reallife_ui_prompt_back", "Back");
         m.PromptMove = t("reallife_ui_prompt_move", "Move");
         m.PromptSelect = t("reallife_ui_prompt_select", "Select");
+        if (StocksOffers(m, t, state) || StocksSheet(m, t, state))
+        {
+            Nav(m, t);
+            return m;
+        }
         switch (state)
         {
             case "market_crash": Market(m, t, false); break;
@@ -40,13 +55,6 @@ internal static partial class UiSamples
             case "portfolio_full": Portfolio(m, t); break;
             case "orders": m.Statement = Statement(t, true); break;
             case "history": m.Statement = Statement(t, false); break;
-            case "bonds":
-                m.Table = EmptyTable(t, t("reallife_mkt_tab_bonds", "Bonds"), "reallife_stk_bonds_empty", "No bonds yet", "reallife_stk_bonds_empty_body", "Treasury and city bonds you buy show here, with what they pay.");
-                break;
-            case "futures":
-                m.Table = EmptyTable(t, t("reallife_mkt_tab_futures", "Futures"), "reallife_stk_fut_empty", "No futures yet", "reallife_stk_fut_empty_body", "A future you open shows here until it settles.");
-                break;
-            case "bots": Bots(m, t); break;
             case "listing": Listing(m, t); break;
             default: Company(m, t, state); break;
         }
@@ -67,7 +75,13 @@ internal static partial class UiSamples
             case "ticket": return StocksPage.Ticket;
             case "portfolio_empty":
             case "portfolio_full": return StocksPage.Portfolio;
-            case "orders": return StocksPage.Orders;
+            case "orders":
+            case "orders_table": return StocksPage.Orders;
+            case "search":
+            case "search_none": return StocksPage.Companies;
+            case "bonds_held": return StocksPage.Bonds;
+            case "futures_held": return StocksPage.Futures;
+            case "bots_rules": return StocksPage.Bots;
             case "history": return StocksPage.History;
             case "bonds": return StocksPage.Bonds;
             case "futures": return StocksPage.Futures;

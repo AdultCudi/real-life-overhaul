@@ -798,6 +798,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\StocksModel.cs" Link="Mod\StocksModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\UiChartDesk.cs" Link="Mod\UiChartDesk.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\StocksLay.cs" Link="Mod\StocksLay.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\StocksSheetModel.cs" Link="Mod\StocksSheetModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\StocksSheetState.cs" Link="Mod\StocksSheetState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\StocksSheetLay.cs" Link="Mod\StocksSheetLay.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\StocksSheets.cs" Link="Mod\StocksSheets.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCatalogue.cs" Link="Mod\UiCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiAlbum.cs" Link="Mod\UiAlbum.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPhotoViewer.cs" Link="Mod\UiPhotoViewer.cs" />

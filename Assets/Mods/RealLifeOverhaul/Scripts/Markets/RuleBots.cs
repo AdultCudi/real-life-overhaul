@@ -84,12 +84,24 @@ namespace RealLifeOverhaul.Markets
     /// </summary>
     public static class RuleBots
     {
-        public const int Most = 8;
+        public const int Most = 12;          // every rule of the save: the rivals' four and the player's
+        public const int PlayerMost = 8;     // the player's own
 
         public delegate bool PlaceRule(RuleBot rule, int stockId, bool buy, long qty, int limitCents, OrderType type);
 
         /// <summary>Shares to buy, under nothing to sell, or 0 to stand still.</summary>
         public static long Intent(RuleBot rule, Stock stock, MarketBots.Work work)
+        {
+            long intent = IntentRaw(rule, stock, work);
+            if (intent > 0 && stock != null && stock.Last > 0)
+            {
+                long affordable = Math.Max(0L, rule.Cash) * 100L / stock.Last;   // its budget is a cap on what it buys, not a hope
+                intent = Math.Min(intent, affordable);
+            }
+            return intent;
+        }
+
+        private static long IntentRaw(RuleBot rule, Stock stock, MarketBots.Work work)
         {
             if (rule == null || stock == null || !stock.Listed || rule.Status != RuleStatus.Running || work == null)
             {
@@ -219,6 +231,10 @@ namespace RealLifeOverhaul.Markets
                     continue;   // once a day, so a replay of the step does not deal twice
                 }
                 Stock stock = state.Stock(rule.StockId);
+                if (rule.Kind == RuleKind.StopGuard && rule.Owner == 0 && stock != null)
+                {
+                    rule.OpenTrades = state.Held(stock.Id) > 0 ? Math.Max(1, rule.OpenTrades) : 0;   // it guards what is held: it never buys, so a trade count would stay empty
+                }
                 long intent = Intent(rule, stock, work);
                 if (intent == 0)
                 {
@@ -226,6 +242,10 @@ namespace RealLifeOverhaul.Markets
                 }
                 bool buy = intent > 0;
                 long qty = buy ? intent : -intent;
+                if (!buy && rule.Kind == RuleKind.StopGuard && rule.Owner == 0)
+                {
+                    qty = Math.Max(1L, state.Held(stock.Id));   // a stop sells the whole holding
+                }
                 int limit = rule.Type == OrderType.Limit ? stock.Last : 0;
                 if (rule.Owner == 0)
                 {
@@ -272,6 +292,54 @@ namespace RealLifeOverhaul.Markets
                 rule.DayResult += signed;
                 rule.WeekResult += signed;
             }
+        }
+
+        /// <summary>How many of the save's rules are the player's.</summary>
+        public static int PlayerCount(MarketState state)
+        {
+            int n = 0;
+            for (int i = 0; state != null && i < state.Rules.Count; i++)
+            {
+                n += state.Rules[i].Owner == 0 ? 1 : 0;
+            }
+            return n;
+        }
+
+        /// <summary>
+        /// A rule of the player's, written on a listed company with its budget: null when the company is not listed, the budget is
+        /// under nothing, or the player runs as many as they may. Its id is one past the largest, so a removed rule's is not reused.
+        /// </summary>
+        public static RuleBot NewRule(MarketState state, RuleKind kind, int stockId, int level, int gainBp, OrderType type, long budget, long perTrade, int stopBp,
+            bool openOnly, bool reinvest, bool tell, int maxOpen)
+        {
+            Stock stock = state != null ? state.Stock(stockId) : null;
+            if (stock == null || !stock.Listed || stock.Own != null || budget <= 0 || PlayerCount(state) >= PlayerMost || state.Rules.Count >= Most)
+            {
+                return null;
+            }
+            int id = 0;
+            for (int i = 0; i < state.Rules.Count; i++)
+            {
+                id = Math.Max(id, state.Rules[i].Id);
+            }
+            var rule = new RuleBot
+            {
+                Id = id + 1, Kind = kind, Owner = 0, StockId = stockId, Level = level, GainBp = gainBp, Type = type, Budget = budget, Cash = budget,
+                PerTrade = Math.Max(1L, perTrade), StopBp = stopBp, OpenOnly = openOnly, Reinvest = reinvest, Tell = tell, MaxOpen = Math.Max(1, maxOpen), Status = RuleStatus.Running
+            };
+            state.Rules.Add(rule);
+            return rule;
+        }
+
+        /// <summary>A rule of the player's taken away; a rival's is never touched.</summary>
+        public static bool Remove(MarketState state, int index)
+        {
+            if (state == null || index < 0 || index >= state.Rules.Count || state.Rules[index].Owner != 0)
+            {
+                return false;
+            }
+            state.Rules.RemoveAt(index);
+            return true;
         }
 
         /// <summary>One rule for each rival template, on a listed company, seeded from the catalogue. Once, when the list is empty.</summary>
