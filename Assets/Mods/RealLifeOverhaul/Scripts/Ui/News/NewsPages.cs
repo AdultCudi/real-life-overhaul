@@ -62,17 +62,17 @@ namespace RealLifeOverhaul.Ui
             float left = UiDraw.SnapDown(w * 0.62f);
             float rx = x + left + gap;
             float rw = UiDraw.SnapDown(x + w - rx);
-            float chartH = UiTokens.S16 * 4f;
+            float chartH = UiTokens.S16 * 3f;
             float block = chartH;
             if (m.Advice != null && m.Advice.Length > 0)
             {
-                block = Math.Max(chartH, UiTokens.S8 + m.Advice.Length * UiTokens.S16 * 2f);
+                block = Math.Max(chartH, UiTokens.S6 + m.Advice.Length * UiTokens.S16);
             }
-            if (m.Chart != null && bottom - y > block + UiTokens.S16)
+            if (m.Chart != null && bottom - y > chartH)
             {
                 UiChart.Lay(s, at, m.Chart, x, y, left, chartH);
                 Advice(s, at, m, rx, y, rw, keys);
-                y += block + UiTokens.S4;
+                y += block + UiTokens.S2;
             }
             y = Line(s, at, m.RiseLine, x, y, w);
             if (m.Table != null && m.Table2 != null && bottom - y > UiTokens.S16 * 2f)
@@ -261,17 +261,17 @@ namespace RealLifeOverhaul.Ui
             }
             for (int i = 0; i < m.Advice.Length; i++)
             {
-                UiDraw.Icon(s, at, x, y + UiTokens.S2, UiTokens.Icon, m.Advice[i].Icon, UiRole.None, UiFlags.None, true);
-                float tx = x + UiTokens.S8;
-                float tw = w - UiTokens.S8;
-                UiDraw.Text(s, at, tx, y, tw, UiStyle.BodyStrong, UiRole.Text, m.Advice[i].Title, UiFlags.Label | UiFlags.Truncate);
-                UiDraw.Text(s, at, tx, y + UiTokens.S6, tw, UiStyle.Small, UiRole.Text2, m.Advice[i].Body, UiFlags.Truncate);
+                float bw = UiTokens.S16 * 2f;
+                float tw = w - UiTokens.S8 - bw - UiTokens.S2;
+                UiDraw.Icon(s, at, x, y + UiTokens.S1, UiTokens.Icon, m.Advice[i].Icon, UiRole.None, UiFlags.None, true);
+                UiDraw.Text(s, at, x + UiTokens.S8, y, tw, UiStyle.BodyStrong, UiRole.Text, m.Advice[i].Title, UiFlags.Label | UiFlags.Truncate);
+                UiDraw.Text(s, at, x + UiTokens.S8, y + UiTokens.S6, tw, UiStyle.Small, UiRole.Text2, m.Advice[i].Body, UiFlags.Truncate);
                 if (!string.IsNullOrEmpty(m.Advice[i].Link))
                 {
-                    UiDraw.Button(s, at, tx, y + UiTokens.S12, UiTokens.S16 * 3f, UiTokens.S8, UiButtonKind.Secondary, m.Advice[i].Link, UiIcon.None,
+                    UiDraw.Button(s, at, x + w - bw, y, bw, UiTokens.S8, UiButtonKind.Secondary, m.Advice[i].Link, UiIcon.None,
                         UiAction.Count, keys, NewsCommands.Link, m.Advice[i].Target, false);
                 }
-                y += UiTokens.S16 * 2f;
+                y += UiTokens.S16;
             }
         }
 

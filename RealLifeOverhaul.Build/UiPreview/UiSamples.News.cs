@@ -49,7 +49,7 @@ internal static partial class UiSamples
                 new UiActionModel { Label = t("reallife_news_range_year", "A year"), Kind = UiButtonKind.Secondary }
             };
         }
-        m.Table = state == "districts" || state == "overview" ? NewsDistricts(t) : NewsGoods(t);
+        m.Table = state == "districts" ? NewsDistricts(t) : NewsGoods(t);
         m.Table2 = state == "overview" ? NewsDistricts(t) : null;
         if (state == "markets")
         {
