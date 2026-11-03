@@ -32,6 +32,23 @@ public static partial class UiPreviewRunner
             Lay = (s, f, d, k) => UiSamples.ActivityDayToolScene(s, f, d, k, English), HoverCommand = UiTimeOfDay.StepCommand, HoverArg = 1, Walk = Moves("DRUL") });
         screens.Add(new Screen { Name = "activity_funeral", AppName = "Funeral", Icon = UiIcon.Flag, Backdrop = "11.jpg",
             Lay = (s, f, d, k) => UiSamples.ActivityFuneralScene(s, f, d, k, English), HoverCommand = UiSideCard.ChoiceCommand, HoverArg = 1, Walk = Moves("DDDRUU") });
+        screens.Add(new Screen { Name = "activity_rest_longest", AppName = "Rest", Icon = UiIcon.Sofa, Backdrop = "03.jpg",
+            Lay = (s, f, d, k) => UiSamples.ActivityCardScene(s, f, d, k, English, UiSamples.ActivityRest(English, k)),
+            HoverCommand = UiActivity.StepCommand, Walk = Moves("DRRLU") });
+        screens.Add(new Screen { Name = "activity_rest_german", AppName = "Ausruhen", Icon = UiIcon.Sofa, Backdrop = "03.jpg",
+            Lay = (s, f, d, k) =>
+            {
+                UiSamples.ActivityGerman = true;
+                try
+                {
+                    UiSamples.ActivityCardScene(s, f, d, k, BizGerman, UiSamples.ActivityRest(BizGerman, k));
+                }
+                finally
+                {
+                    UiSamples.ActivityGerman = false;
+                }
+            },
+            HoverCommand = UiActivity.StepCommand, Walk = Moves("DRRLU") });
         screens.Add(new Screen { Name = "activity_longest", AppName = "Arbeit", Icon = UiIcon.Briefcase, Backdrop = "05.jpg",
             Lay = (s, f, d, k) =>
             {

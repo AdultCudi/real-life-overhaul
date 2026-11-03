@@ -25,6 +25,7 @@ internal static partial class Program
         {
             case "activity_panel":
                 Add("a working day before it starts", "Work", ActivityCardCommands2, true, (s, f, d, k, t) => UiSamples.ActivityCardScene(s, f, d, k, t, UiSamples.ActivityWork(t, k, UiActivityState.NotStarted)));
+                Add("rest on a bench, the slider at its most", "Rest", ActivityCardCommands2, true, (s, f, d, k, t) => UiSamples.ActivityCardScene(s, f, d, k, t, UiSamples.ActivityRest(t, k)));
                 Add("a class before it starts", "Class", ActivityCardCommands2, true, (s, f, d, k, t) => UiSamples.ActivityCardScene(s, f, d, k, t, UiSamples.ActivityClass(t, k)));
                 Add("a working day at night", "Work", ActivityCardCommands2, true, (s, f, d, k, t) => UiSamples.ActivityCardScene(s, f, d, k, t, UiSamples.ActivityWork(t, k, UiActivityState.NotStarted), true));
                 foreach (UiActivityState state in new[] { UiActivityState.Moving, UiActivityState.Waiting, UiActivityState.Started, UiActivityState.Running, UiActivityState.Finished })
@@ -186,5 +187,46 @@ internal static partial class Program
         UiActivity.LayCard(s, card, frame, true, UiDefaultKeys.Keyboard);
         float left = UiActivity.SliderShare(card, card.Card.TrackX), right = UiActivity.SliderShare(card, card.Card.TrackX + card.Card.TrackW);
         Check(card.Card.TrackW > 0f && left <= 0.001f && right >= 0.999f, "activity kit: the card's slider reads 0 at its left end and 1 at its right, where it was laid");
+        // The game's two-sentence slider line ("Rest for 24 hours, 0 minutes. Will stop resting at 19:15") splits into the value
+        // and a note, and no word of the card is drawn over the slider, in every language of the check and the longest line.
+        string v = UiActivity.SplitValue("Rest for 24 hours, 0 minutes. Will stop resting at 19:15", out string nt);
+        Check(v == "Rest for 24 hours, 0 minutes" && nt == "Will stop resting at 19:15", "activity kit: the slider's two sentences split into its value and its note (" + v + " | " + nt + ")");
+        v = UiActivity.SplitValue("1.5 hours", out nt);
+        Check(v == "1.5 hours" && nt == null, "activity kit: a decimal point does not split the slider's value");
+        v = UiActivity.SplitValue("休息24小时。将在19:15停止", out nt);
+        Check(v == "休息24小时" && nt == "将在19:15停止", "activity kit: the Chinese full stop splits the slider's value too");
+        foreach (bool german in new[] { false, true })
+        {
+            UiSamples.ActivityGerman = german;
+            try
+            {
+                foreach (float aspect in new[] { 16f / 9f, 4f / 3f })
+                {
+                    UiActivityModel rest = UiSamples.ActivityRest(t, UiDefaultKeys.Keyboard);
+                    var rs = new UiScene();
+                    UiActivity.LayCard(rs, rest, UiFrame.FullMenu(aspect, "Rest"), true, UiDefaultKeys.Keyboard);
+                    int slider = -1;
+                    for (int i = 0; i < rs.NodeCount && slider < 0; i++)
+                    {
+                        slider = rs.Nodes[i].Command == UiActivity.StepCommand ? i : -1;
+                    }
+                    string over = slider < 0 ? "no slider" : null;
+                    for (int i = 0; i < rs.ItemCount && over == null; i++)
+                    {
+                        ref UiItem it = ref rs.Items[i];
+                        if (it.Kind == UiKind.Text && !string.IsNullOrEmpty(it.Text) && it.X < rs.Nodes[slider].X + rs.Nodes[slider].W && it.X + it.W > rs.Nodes[slider].X
+                            && it.Y < rs.Nodes[slider].Y + rs.Nodes[slider].H && it.Y + it.H > rs.Nodes[slider].Y)
+                        {
+                            over = "\"" + it.Text + "\" is over the slider";
+                        }
+                    }
+                    Check(over == null && rest.Card != null && rest.Card.SliderNote != null, "activity kit: rest at its most" + (german ? " in German" : "") + " at " + aspect.ToString("0.00") + ": no text over the slider (" + (over ?? "clear") + ")");
+                }
+            }
+            finally
+            {
+                UiSamples.ActivityGerman = false;
+            }
+        }
     }
 }
