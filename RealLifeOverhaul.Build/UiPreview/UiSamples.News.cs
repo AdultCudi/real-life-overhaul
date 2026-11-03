@@ -39,7 +39,16 @@ internal static partial class UiSamples
         };
         m.RiseLine = t("reallife_news_rise", "The bank rate rose on day 240 and day 268.");
         m.AdviceTitle = t("reallife_news_advice", "What it means for you");
-        m.Advice = NewsAdvice(t);
+        m.Advice = state == "overview" || state == "insights" ? NewsAdvice(t) : new NewsAdvice[0];
+        if (state == "overview")
+        {
+            m.Actions = new[]
+            {
+                new UiActionModel { Label = t("reallife_news_range_30", "30 days"), Kind = UiButtonKind.Secondary },
+                new UiActionModel { Label = t("reallife_news_range_120", "120 days"), Kind = UiButtonKind.Chip },
+                new UiActionModel { Label = t("reallife_news_range_year", "A year"), Kind = UiButtonKind.Secondary }
+            };
+        }
         m.Table = state == "districts" || state == "overview" ? NewsDistricts(t) : NewsGoods(t);
         m.Table2 = state == "overview" ? NewsDistricts(t) : null;
         if (state == "markets")

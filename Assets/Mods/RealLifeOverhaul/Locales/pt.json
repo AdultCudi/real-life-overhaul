@@ -30299,5 +30299,14 @@
   "reallife_news_end_worth": "Patrimonio",
   "reallife_news_end_rank": "Lista dos ricos",
   "reallife_news_end_body": "Depois dos dias na cidade, os negocios e as pessoas empregadas sao o que a vida deixa.",
-  "reallife_news_hold_body": "Voce tem acoes que valem mais do que pagou."
+  "reallife_news_hold_body": "Voce tem acoes que valem mais do que pagou.",
+  "reallife_news_series_jobless": "Desemprego",
+  "reallife_news_series_vacancies": "Vagas",
+  "reallife_news_series_reserve": "Reserva",
+  "reallife_news_series_revenue": "Receita",
+  "reallife_news_series_spending": "Gasto",
+  "reallife_news_series_index": "Indice da cidade",
+  "reallife_news_basket": "As compras custam {change} a mais que ha um mes.",
+  "reallife_news_led": "Puxado por {good}.",
+  "reallife_news_moved": "Quem moveu os precos nesta semana"
 }

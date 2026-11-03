@@ -30299,5 +30299,14 @@
   "reallife_news_end_worth": "Net worth",
   "reallife_news_end_rank": "Rich list",
   "reallife_news_end_body": "After the days in the city, the businesses and the people employed there are what the life leaves.",
-  "reallife_news_hold_body": "You hold shares worth more than you paid."
+  "reallife_news_hold_body": "You hold shares worth more than you paid.",
+  "reallife_news_series_jobless": "Jobless",
+  "reallife_news_series_vacancies": "Vacancies",
+  "reallife_news_series_reserve": "Reserve",
+  "reallife_news_series_revenue": "Revenue",
+  "reallife_news_series_spending": "Spending",
+  "reallife_news_series_index": "City index",
+  "reallife_news_basket": "Shopping costs {change} more than a month ago.",
+  "reallife_news_led": "Led by {good}.",
+  "reallife_news_moved": "Who moved prices this week"
 }

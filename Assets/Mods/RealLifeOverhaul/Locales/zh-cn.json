@@ -30299,5 +30299,14 @@
   "reallife_news_end_worth": "净资产",
   "reallife_news_end_rank": "富豪榜",
   "reallife_news_end_body": "在城里的日子之后，留下的是那些店铺和受雇的人。",
-  "reallife_news_hold_body": "你持有的股票比买入时更值钱。"
+  "reallife_news_hold_body": "你持有的股票比买入时更值钱。",
+  "reallife_news_series_jobless": "失业",
+  "reallife_news_series_vacancies": "空缺",
+  "reallife_news_series_reserve": "储备",
+  "reallife_news_series_revenue": "收入",
+  "reallife_news_series_spending": "支出",
+  "reallife_news_series_index": "城市指数",
+  "reallife_news_basket": "购物比一个月前贵了 {change}。",
+  "reallife_news_led": "主要由{good}带动。",
+  "reallife_news_moved": "本周谁动了价格"
 }

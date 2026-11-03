@@ -34,7 +34,7 @@ namespace RealLifeOverhaul.Ui
                 case NewsShape.Jobs: Jobs(s, at, m, x, y, w, bottom, keys); break;
                 case NewsShape.Districts: OneTable(s, at, m, x, y, w, bottom, keys); break;
                 case NewsShape.Markets: Markets(s, at, m, x, y, w, bottom, keys); break;
-                case NewsShape.Finances: Jobs(s, at, m, x, y, w, bottom, keys); break;
+                case NewsShape.Finances: Finances(s, at, m, x, y, w, bottom, keys); break;
                 case NewsShape.Insights: Insights(s, at, m, x, y, w, bottom, keys); break;
                 case NewsShape.Stand: Stand(s, at, m, x, y, w, bottom, keys); break;
                 case NewsShape.Reading: Read(s, at, m, x, y, w, bottom, keys); break;
@@ -52,14 +52,53 @@ namespace RealLifeOverhaul.Ui
         private static void Overview(UiScene s, UiAt at, NewsModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
             y = Lead(s, at, m, x, y, w);
-            float chartH = UiTokens.S16 * 4f;
-            if (m.Chart != null && bottom - y > chartH + UiTokens.S16)
+            y = Ranges(s, at, m, x, y, keys);
+            if (m.Bands != null && m.Bands.Length > 0)
             {
-                UiChart.Lay(s, at, m.Chart, x, y, w, chartH);
-                y += chartH + UiTokens.S4;
+                Bands(s, at, m, x, y, w);
+                y += UiTokens.S4;
+            }
+            float gap = UiTokens.S4;
+            float left = UiDraw.SnapDown(w * 0.62f);
+            float rx = x + left + gap;
+            float rw = UiDraw.SnapDown(x + w - rx);
+            float chartH = UiTokens.S16 * 4f;
+            float block = chartH;
+            if (m.Advice != null && m.Advice.Length > 0)
+            {
+                block = Math.Max(chartH, UiTokens.S8 + m.Advice.Length * UiTokens.S16 * 2f);
+            }
+            if (m.Chart != null && bottom - y > block + UiTokens.S16)
+            {
+                UiChart.Lay(s, at, m.Chart, x, y, left, chartH);
+                Advice(s, at, m, rx, y, rw, keys);
+                y += block + UiTokens.S4;
             }
             y = Line(s, at, m.RiseLine, x, y, w);
+            if (m.Table != null && m.Table2 != null && bottom - y > UiTokens.S16 * 2f)
+            {
+                float half = UiDraw.SnapDown((w - gap) * 0.5f);
+                float h = bottom - y;
+                UiDataTable.Lay(s, at, m.Table, x, y, half, h, keys);
+                UiDataTable.Lay(s, at, m.Table2, x + half + gap, y, w - half - gap, h, keys);
+                return;
+            }
             Rest(s, at, m, x, y, w, bottom, keys);
+        }
+
+        private static float Ranges(UiScene s, UiAt at, NewsModel m, float x, float y, IUiKeys keys)
+        {
+            if (m.Actions == null || m.Actions.Length == 0)
+            {
+                return y;
+            }
+            float bw = UiTokens.S16 * 2f;
+            for (int i = 0; i < m.Actions.Length && i < 3; i++)
+            {
+                UiDraw.Button(s, at, x + i * (bw + UiTokens.S2), y, bw, UiTokens.S8, m.Actions[i].Kind, m.Actions[i].Label, UiIcon.None,
+                    UiAction.Count, keys, UiAppWindow.ActionCommand, i, false);
+            }
+            return y + UiTokens.S8 + UiTokens.S2;
         }
 
         private static void Prices(UiScene s, UiAt at, NewsModel m, float x, float y, float w, float bottom, IUiKeys keys)
@@ -106,10 +145,20 @@ namespace RealLifeOverhaul.Ui
             Rest(s, at, m, x, y, w, bottom, keys);
         }
 
+        private static void Finances(UiScene s, UiAt at, NewsModel m, float x, float y, float w, float bottom, IUiKeys keys)
+        {
+            y = Lead(s, at, m, x, y, w);
+            float chartH = UiTokens.S16 * 4f;
+            if (m.Chart != null && bottom - y > chartH)
+            {
+                UiChart.Lay(s, at, m.Chart, x, y, w, chartH);
+            }
+        }
+
         private static void Insights(UiScene s, UiAt at, NewsModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
             y = Lead(s, at, m, x, y, w);
-            Rest(s, at, m, x, y, w, bottom, keys);
+            Advice(s, at, m, x, y, w, keys);
         }
 
         private static void Stand(UiScene s, UiAt at, NewsModel m, float x, float y, float w, float bottom, IUiKeys keys)
@@ -212,19 +261,17 @@ namespace RealLifeOverhaul.Ui
             }
             for (int i = 0; i < m.Advice.Length; i++)
             {
-                float row = UiTokens.S16 + UiTokens.S2;
-                UiDraw.Icon(s, at, x, y + UiTokens.S1, UiTokens.Icon, m.Advice[i].Icon, UiRole.None, UiFlags.None, true);
-                float tx = x + UiTokens.Icon + UiTokens.S3;
-                float tw = w - UiTokens.Icon - UiTokens.S3;
+                UiDraw.Icon(s, at, x, y + UiTokens.S2, UiTokens.Icon, m.Advice[i].Icon, UiRole.None, UiFlags.None, true);
+                float tx = x + UiTokens.S8;
+                float tw = w - UiTokens.S8;
                 UiDraw.Text(s, at, tx, y, tw, UiStyle.BodyStrong, UiRole.Text, m.Advice[i].Title, UiFlags.Label | UiFlags.Truncate);
-                UiDraw.Text(s, at, tx, y + UiTokens.S5, tw, UiStyle.Small, UiRole.Text2, m.Advice[i].Body, UiFlags.Truncate);
+                UiDraw.Text(s, at, tx, y + UiTokens.S6, tw, UiStyle.Small, UiRole.Text2, m.Advice[i].Body, UiFlags.Truncate);
                 if (!string.IsNullOrEmpty(m.Advice[i].Link))
                 {
-                    float bw = UiTokens.S16 * 3f;
-                    UiDraw.Button(s, at, tx, y + UiTokens.S8, bw, UiTokens.S6, UiButtonKind.Quiet, m.Advice[i].Link, UiIcon.None,
+                    UiDraw.Button(s, at, tx, y + UiTokens.S12, UiTokens.S16 * 3f, UiTokens.S8, UiButtonKind.Secondary, m.Advice[i].Link, UiIcon.None,
                         UiAction.Count, keys, NewsCommands.Link, m.Advice[i].Target, false);
                 }
-                y += row + UiTokens.S2;
+                y += UiTokens.S16 * 2f;
             }
         }
 
