@@ -49,6 +49,12 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>What the panel is over, for the log ("stop"): one word, set once by its owner.</summary>
         public string Name = "panel";
 
+        /// <summary>
+        /// True while the game's building box stands elsewhere on the screen than at its door (the RLO interface docks it at
+        /// the top left once a building is picked): a panel then has the door to itself and stays at home. Null: never.
+        /// </summary>
+        public static Func<bool> ResumeElsewhere;
+
         /// <summary>True when the last <see cref="Show"/> was refused because the game's building box left the panel no room. The owner's timer tries again.</summary>
         public bool Waiting { get; private set; }
 
@@ -118,7 +124,7 @@ namespace RealLifeOverhaul.GameUi
                     Watch(false);   // the game took its box back, put its own panel in it, or its interface went with the city
                     return;
                 }
-                bool up = _resumeBox.gameObject.activeInHierarchy;
+                bool up = _resumeBox.gameObject.activeInHierarchy && !(ResumeElsewhere != null && ResumeElsewhere());
                 Vector3 at = _box.position;
                 Vector3 resumeAt = up ? _resumeBox.position : _resumeAt;
                 if (!_measureAgain && !PanelPlacement.Due(up, _boxWasUp, (at - _panelAt).sqrMagnitude, (resumeAt - _resumeAt).sqrMagnitude))

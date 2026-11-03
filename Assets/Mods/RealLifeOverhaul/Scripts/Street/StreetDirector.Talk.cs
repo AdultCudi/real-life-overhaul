@@ -39,6 +39,21 @@ namespace RealLifeOverhaul.Street
         private bool _aheadNow;                // the click is the blue button asked ahead (its words may be ready)
         private bool _testAge;                 // the age test's talk: the age question is the first blue button until asked, and its checks are written
 
+        /// <summary>
+        /// A chat with somebody at work whom the street talk does not offer by itself (the vendor behind a cart, Scripts/CityLife),
+        /// begun as with anybody posed by another's hand: nothing on their body changes. False while a talk is on, the game's
+        /// dialogue is open, street talk is off or not ready, or they cannot be talked to.
+        /// </summary>
+        public static bool TalkTo(BaseHuman body)
+        {
+            StreetDirector d = Instance;
+            if (d == null || d._failed || d._chat != null || d._save == null || !Settings.StreetTalk || body == null || StreetGame.DialogOpen || !StreetGame.Usable(body))
+            {
+                return false;
+            }
+            return d.Begin(body, null, StreetFigure.Seated, Time.unscaledTime);
+        }
+
         private void TalkPressed()
         {
             try

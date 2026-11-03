@@ -31,6 +31,8 @@ namespace RealLifeOverhaul
                 StreetBridges.InviteLook = a => FlareBridges.InviteLook?.Invoke(a);
                 StreetBridges.InviteBook = Book;
                 StreetBridges.MouthChanged = MouthChanged;
+                CityLifeDirector.TalkTo = StreetDirector.TalkTo;   // a chat with the vendor behind a cart
+                CityLifeDirector.Talking = () => StreetDirector.Talking;
                 _ambientBefore = BusinessGame.Ambient;
                 BusinessGame.Ambient = Ambient;
                 StreetTexts.Connect();
@@ -40,6 +42,8 @@ namespace RealLifeOverhaul
             {
                 StreetTexts.Disconnect();
                 StreetBridges.Reset();
+                CityLifeDirector.TalkTo = null;
+                CityLifeDirector.Talking = null;
                 BusinessGame.Ambient = _ambientBefore;   // the others' pairings take theirs off next
                 _ambientBefore = null;
             }

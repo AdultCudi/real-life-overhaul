@@ -79,6 +79,7 @@ namespace RealLifeOverhaul.Ui
         // Every screen the kit draws over given back: the game's own, exactly as found.
         internal static void RemoveAll(string why)
         {
+            WorldKits.Remove(why);
             ContactsKit.Remove(why);
             BizManKit.Remove(why);
             EconoViewKit.Remove(why);
@@ -140,6 +141,7 @@ namespace RealLifeOverhaul.Ui
             if (!city)
             {
                 RemoveAll("no city");
+                WorldKits.Rearm();
                 ContactsKit.Rearm();
                 BizManKit.Rearm();
                 EconoViewKit.Rearm();
@@ -170,6 +172,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 return;
             }
+            WorldKits.Install();
             if (UiScreenSwitches.On("contacts"))
             {
                 ContactsKit.Install();
@@ -221,6 +224,7 @@ namespace RealLifeOverhaul.Ui
                 : UiFonts.Faces > 0 ? "fonts: " + UiFonts.Faces + " of " + UiFonts.FacesWanted + " faces from " + UiFonts.BundleFile + ", the game's font for the rest"
                 : "fonts: not loaded from " + (UiFonts.BundleFile ?? "(no path)") + ", the game's font stands in";
             return "UI: the RLO interface is on; " + fonts + "; screens: Contacts (" + ContactsKit.State + "), BizMan (" + BizManKit.State + "), "
+                   + WorldKits.State + ", "
                    + EconoViewKit.State + ", the phone (" + PhoneKit.State + "), " + EmployeesKit.State + ", " + PersonaKit.State + ", " + UniformsKit.State + ", " + RivalsKit.State + ", "
                    + MarketKit.State + ", " + DialogKits.State + ", "
                    + ShellBoxes.States() + ", " + ShellNotices.States() + ", " + ActivityKit.States() + ", the HUD (" + HudLive.State + ")"

@@ -61,6 +61,18 @@ namespace RealLifeOverhaul.Floors
         internal readonly int[] DoorFloors = new int[FloorsRules.Slots];   // the floor on each button: above 0 a floor, -1 "more floors", 0 none
         internal readonly int[] LiftFloors = new int[FloorsRules.Slots];
         internal int DoorPage, LiftPage;
+        private readonly Dictionary<int, object> _goArgs = new Dictionary<int, object>(2);
+
+        /// <summary>The lift's "Go up to floor {floor}" arguments for a floor, made once and kept (the game's panel compares them by reference).</summary>
+        internal object GoArgs(int floor)
+        {
+            if (!_goArgs.TryGetValue(floor, out object args))
+            {
+                args = new { floor = floor.ToString() };
+                _goArgs[floor] = args;
+            }
+            return args;
+        }
 
         /// <summary>The floors it has now: its own places' and the places given spare floors.</summary>
         public int Floors => Table.Length;

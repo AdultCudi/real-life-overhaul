@@ -1,0 +1,227 @@
+using System;
+using BigAmbitions.InputSystem;
+using UI;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace RealLifeOverhaul.Ui
+{
+    /// <summary>
+    /// The world's pieces on the RLO interface, on one canvas of the kit's nested over the game's OverlayUI canvas
+    /// (UiOverCanvas), so the game's scaler and the UI zoom scale it as they scale the game's own boxes:
+    /// - the world prompt (<see cref="WorldPrompt"/>): every box the game's OverlayUI shows (a door, a lift, a fuel stop, a
+    ///   garage bay) and every one of the mod's WorldPanel and DoorPanel, which stand in it, drawn as the kit's card where
+    ///   the game put its own: the game projects its box each frame and the card reads that place, so a shown prompt costs no
+    ///   projection of its own;
+    /// - the building's panel (<see cref="WorldBuilding"/>): the game's BuildingResume as a card at its door while the
+    ///   pointer is over a building, and as the info panel docked at the top left once the building is picked.
+    /// The game's own boxes are hidden by leaf (UiConceal) while the kit draws them and come back as they were when a switch
+    /// or the interface goes off. Cost a frame: a few reference comparisons and one move per shown piece; nothing allocated.
+    /// </summary>
+    public sealed class WorldHost : MonoBehaviour
+    {
+        private static readonly FeatureGuard FrameGuard = Guard.For("ui", "WorldHost", typeof(WorldHost));   // its Update (Core/Guard)
+        private static readonly int HotUpdate = HotSpots.Slot("Ui: WorldHost.Update");
+
+        private RectTransform _rect;
+        private Vector2 _laidSize;
+        private float _scale = UiTokens.CanvasPerPx;
+        private readonly WorldPrompt _prompt = new WorldPrompt();
+        private readonly WorldBuilding _building = new WorldBuilding();
+
+        /// <summary>The one host while it stands.</summary>
+        public static WorldHost Instance { get; private set; }
+
+        /// <summary>The prompt's reader, for the tests.</summary>
+        internal WorldPrompt Prompt => _prompt;
+
+        /// <summary>The building's reader, for the tests.</summary>
+        internal WorldBuilding Building => _building;
+
+        /// <summary>What each piece is doing, for the interface's line at load.</summary>
+        public static string State => Instance == null ? "the world: not built yet" : "the world: the prompt " + Instance._prompt.State + ", the building's panel " + Instance._building.State;
+
+        /// <summary>The host over the game's OverlayUI, made the first time it is asked for in a city; null while the game has not built it.</summary>
+        public static WorldHost Ensure()
+        {
+            if (Instance != null)
+            {
+                return Instance;
+            }
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            RectTransform rect = UiOverCanvas.Make(uis != null ? uis.overlayUI : null, "RealLife Interface World");
+            if (rect == null)
+            {
+                return null;   // asked again in a second
+            }
+            WorldHost host = rect.gameObject.AddComponent<WorldHost>();
+            Instance = host;
+            host._rect = rect;
+            host._prompt.Build(rect, host._scale);
+            host._building.Build(rect, host._scale);
+            rect.gameObject.SetActive(true);
+            return host;
+        }
+
+        /// <summary>The host gone and the game's boxes as they were, for a city unloading, a switch or a fault.</summary>
+        public static void Remove(string why)
+        {
+            if (Instance == null)
+            {
+                return;
+            }
+            WorldHost host = Instance;
+            Instance = null;
+            host._prompt.Give();
+            host._building.Give();
+            Destroy(host.gameObject);
+            if (Meta.Dev.Verbose && why != null)
+            {
+                UiDirector.Logger?.Info("UI: the world's pieces are the game's own again (" + why + ").");
+            }
+        }
+
+        private void Update()
+        {
+            using var hotSpot = HotSpots.Time(HotUpdate);
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // its feature was switched off after its faults (Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+                Remove("a fault");
+            }
+        }
+
+        private void OnUpdate()
+        {
+            if (!UiDirector.On)
+            {
+                Remove("the interface is off");
+                return;
+            }
+            Vector2 size = _rect.rect.size;
+            if (size != _laidSize)
+            {
+                _laidSize = size;
+                _scale = UiHudRules.Scale(size.x);
+                _prompt.Rescale(_scale);
+                _building.Rescale(_scale);
+            }
+            UiFrame frame = Frame();
+            _prompt.Frame(frame, UiScreenSwitches.On(WorldKits.PromptId));
+            _building.Frame(frame, UiScreenSwitches.On(WorldKits.BuildingId));
+        }
+
+        private UiFrame Frame() => new UiFrame { Width = _laidSize.x / _scale, Height = _laidSize.y / _scale, Band = UiFrame.BandHeight, Pointer = true };
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+        }
+
+        // ------------------------------------------------------------------------------------------------- shared helpers
+
+        /// <summary>A screen point (px of the screen) as px of the layout.</summary>
+        internal static Vector2 ToLayout(Vector2 screen, UiFrame frame)
+        {
+            UiHudRules.ToLayout(screen.x, screen.y, UnityEngine.Screen.width, UnityEngine.Screen.height, frame.Width, frame.Height, out float x, out float y);
+            return new Vector2(x, y);
+        }
+
+        /// <summary>The game's words with its rich text taken off, the lines kept; null for none.</summary>
+        internal static string Plain(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return null;
+            }
+            if (text.IndexOf('<') < 0)
+            {
+                return text.Trim();
+            }
+            var sb = new System.Text.StringBuilder(text.Length);
+            bool tag = false;
+            int start = 0;
+            for (int i = 0; i < text.Length; i++)
+            {
+                char c = text[i];
+                if (c == '<')
+                {
+                    tag = true;
+                    start = i;
+                }
+                else if (c == '>' && tag)
+                {
+                    tag = false;
+                    string name = text.Substring(start + 1, i - start - 1).Trim().ToLowerInvariant();
+                    if (name == "br" || name == "br/")
+                    {
+                        sb.Append('\n');
+                    }
+                }
+                else if (!tag)
+                {
+                    sb.Append(c);
+                }
+            }
+            return sb.ToString().Trim();
+        }
+
+        /// <summary>The kit's tone for the colour the game gives its words (its green open, red closed, yellow yours, blue for rent).</summary>
+        internal static UiRole Tone(Color c)
+        {
+            if (c.g > 0.55f && c.r < 0.5f && c.b < 0.6f)
+            {
+                return UiRole.OkText;
+            }
+            if (c.r > 0.6f && c.g < 0.45f)
+            {
+                return UiRole.DangerText;
+            }
+            if (c.r > 0.6f && c.g > 0.5f && c.b < 0.4f)
+            {
+                return UiRole.WarnText;
+            }
+            if (c.b > 0.6f && c.r < 0.5f)
+            {
+                return UiRole.AccentText;
+            }
+            return UiRole.Text2;
+        }
+
+        /// <summary>The game's key for one of its actions, named as its windows name it, a pad's glyph when one leads.</summary>
+        internal static UiGameKey Key(PlayerAction action)
+        {
+            UiAction kit = action == PlayerAction.Interact ? UiAction.Alt : action == PlayerAction.SecondaryInteract ? UiAction.Option
+                : action == PlayerAction.Cancel ? UiAction.Back : action == PlayerAction.Confirm ? UiAction.Confirm : UiAction.Count;
+            UiPad pad = UiGame.Instance != null ? UiGame.Instance.Pad : UiPad.None;
+            if (pad != UiPad.None && kit != UiAction.Count)
+            {
+                UiIcon glyph = UiKeyGlyphs.For(kit, pad);
+                if (glyph != UiIcon.None)
+                {
+                    return new UiGameKey { Glyph = glyph };
+                }
+            }
+            try
+            {
+                return new UiGameKey { Name = action.GetDisplayName() };
+            }
+            catch (Exception e) when (Guard.Missing(e))
+            {
+                return default(UiGameKey);
+            }
+        }
+    }
+}
