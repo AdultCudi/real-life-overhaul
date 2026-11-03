@@ -128,8 +128,8 @@ internal static partial class Program
 
         string kit = ModSource(@"Ui\Phone\PhoneKit.cs");
         string size = MemberText(kit, "private static void Size()");
-        Check(size.Contains("UiPhone.Raise(Lift, LiftCorners[0].y, rect.anchoredPosition.y * scale, travel)") && size.Contains("_window.unCollapsedPosition.y")
-              && !size.Contains("Math.Max(0f, Lift - foot)"),
+        Check(size.Contains("UiPhone.Raise(Lift, LiftCorners[0].y, rect.anchoredPosition.y * scale, FoldTravel(scale))") && !size.Contains("Math.Max(0f, Lift - foot)")
+              && MemberText(kit, "private static float FoldTravel(float scale)").Contains("_container.anchoredPosition.y - _window.unCollapsedPosition.y"),
             "phone fold: the kit's phone measures its raise where the game's container stands open (PhoneKit.Size)");
     }
 

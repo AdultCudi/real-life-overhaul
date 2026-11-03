@@ -406,14 +406,20 @@ namespace RealLifeOverhaul.Ui
             // measured where the container stands open, so the game's fold (and its hover) still takes the phone down.
             float scale = rect.lossyScale.y > 0f ? rect.lossyScale.y : 1f;
             rect.GetWorldCorners(LiftCorners);   // an overlay canvas: world is screen pixels
-            Transform holder = _container.parent;
-            float outer = holder != null && holder.lossyScale.y > 0f ? holder.lossyScale.y : scale;
-            float travel = (_container.anchoredPosition.y - _window.unCollapsedPosition.y) * outer;
-            var at = new Vector2(0f, UiPhone.Raise(Lift, LiftCorners[0].y, rect.anchoredPosition.y * scale, travel) / scale);
+            var at = new Vector2(0f, UiPhone.Raise(Lift, LiftCorners[0].y, rect.anchoredPosition.y * scale, FoldTravel(scale)) / scale);
             if (rect.anchoredPosition != at)
             {
                 rect.anchoredPosition = at;
             }
+        }
+
+        // How far the game's fold (or its hover) has taken the phone's container from its open place, in screen pixels: its
+        // place only, never its size, which the kit's frame never follows.
+        private static float FoldTravel(float scale)
+        {
+            Transform holder = _container.parent;
+            float outer = holder != null && holder.lossyScale.y > 0f ? holder.lossyScale.y : scale;
+            return (_container.anchoredPosition.y - _window.unCollapsedPosition.y) * outer;
         }
 
         // Walked by hand: the game builds the phone switched off, and the engine keeps rootCanvas up only while it is on.

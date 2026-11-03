@@ -14,8 +14,9 @@ namespace RealLifeOverhaul.Ui
     /// shows its own top bar (it hides it for the full menu, the time machine, a building's preview, the mini menu and the
     /// interior designer, and the HUD follows). Each piece has its own switch under the HUD's (hud_side, hud_objectives,
     /// hud_notices); a switch turned off, the interface's switch, a fault or a city unloading give every piece back exactly
-    /// as found. While the HUD shows, the kit's phone stands over its bar (and folds down to its head with the game's), its key
-    /// chips keep to the phone's left, and the game's notifications start under its side panels. Cost a frame: one hierarchy test and a clock compare; four times a second a read of what the pieces show,
+    /// as found. While the HUD shows, the kit's phone stands over its bar (and folds down to its head with the game's), the
+    /// key chips keep to the phone's left, and the game's notifications start under its side panels. Cost a frame: one
+    /// hierarchy test and a clock compare; four times a second a read of what the pieces show (and where the phone stands),
     /// laid out only when that changed.
     /// </summary>
     internal static class HudLive
