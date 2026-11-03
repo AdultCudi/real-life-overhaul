@@ -20,8 +20,8 @@ internal static partial class UiSamples
         Owners
     }
 
-    // The status bar's words under a list or an offer, which the HUD writes, not the screen: never counted as the screen's.
-    private static string BarWords(string key, string english) => english;
+    // The status bar's words under a list or an offer (BarWords, UiSamples.HudScreens.cs) are the HUD's, not the screen's:
+    // never counted as the screen's.
 
     // ------------------------------------------------------------------------------------------------- a building's panel
 

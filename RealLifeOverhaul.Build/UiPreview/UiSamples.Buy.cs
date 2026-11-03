@@ -20,7 +20,7 @@ internal static partial class UiSamples
     public static readonly string[] WardrobeStates = { "clothes", "wardrobe", "hair", "surgery", "surgery_face", "clothes_fr" };
     public static readonly string[] GarageStates = { "main", "paint", "figures" };
 
-    private static readonly string[] Goods = { "Cupcake", "Croissant", "Ice cream", "Popcorn", "Cheese platter", "Paper bags", "Donut", "Coffee beans" };
+    private static readonly string[] BuyGoods = { "Cupcake", "Croissant", "Ice cream", "Popcorn", "Cheese platter", "Paper bags", "Donut", "Coffee beans" };
     private static readonly string[] GoodsPictures = { "buy:cupcake", "buy:croissant", "buy:icecream", "buy:popcorn", "buy:cheese", "buy:boxes", "buy:cupcake2", "buy:brewed" };
     private static readonly float[] GoodsAspects = { 2.15f, 2.6f, 1.6f, 1f, 1.25f, 1f, 2.09f, 0.67f };
     private static readonly int[] GoodsPieces = { 1500, 500, 500, 2000, 500, 2000, 1000, 400 };
@@ -64,7 +64,7 @@ internal static partial class UiSamples
             total += price * n;
             lines[i] = new UiCheckoutLine
             {
-                Name = ticket ? t("casinoboat_ticket_pay_item", "Casino Boat Ticket") : Goods[i], Picture = ticket ? null : GoodsPictures[i], Aspect = GoodsAspects[i],
+                Name = ticket ? t("casinoboat_ticket_pay_item", "Casino Boat Ticket") : BuyGoods[i], Picture = ticket ? null : GoodsPictures[i], Aspect = GoodsAspects[i],
                 Icon = ticket ? UiIcon.Tag : UiIcon.Package,
                 Pack = ticket ? null : t("reallife_ui_buy_pack", "{count} pieces").Replace("{count}", GoodsPieces[i].ToString("N0", System.Globalization.CultureInfo.InvariantCulture)),
                 Price = Money(price), Total = Money(n == 0 ? price : price * n), Packs = n, CanLess = n > 0, CanMore = true
@@ -308,7 +308,7 @@ internal static partial class UiSamples
                 bool owed = unpaid && i == 2;
                 m.Catalogue.Cards[i] = new UiCatalogueCard
                 {
-                    Picture = GoodsPictures[i], Aspect = GoodsAspects[i], Name = Goods[i],
+                    Picture = GoodsPictures[i], Aspect = GoodsAspects[i], Name = BuyGoods[i],
                     Figure = t("reallife_ui_buy_count", "x{count}").Replace("{count}", (GoodsPieces[i] * (i == 0 ? 3 : 1)).ToString("N0", System.Globalization.CultureInfo.InvariantCulture)),
                     State = owed ? t("reallife_ui_buy_unpaid", "Unpaid") : i == 2 ? t("reallife_ui_buy_keeps_tile", "Keeps {days} days").Replace("{days}", "3") : null,
                     StateTone = UiRole.Warn
