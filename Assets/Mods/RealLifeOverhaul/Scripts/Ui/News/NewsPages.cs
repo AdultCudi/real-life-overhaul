@@ -81,7 +81,7 @@ namespace RealLifeOverhaul.Ui
                 float half = UiDraw.SnapDown((w - gap) * 0.5f);
                 float h = bottom - y;
                 UiDataTable.Lay(s, at, m.Table, x, y, half, h, keys);
-                UiDataTable.Lay(s, at, m.Table2, x + half + gap, y, w - half - gap, h, keys);
+                UiDataTable.Lay(s, at, m.Table2, x + half + gap, y, w - half - gap, h, keys, NewsCommands.District);
                 return;
             }
             Rest(s, at, m, x, y, w, bottom, keys);
@@ -203,7 +203,7 @@ namespace RealLifeOverhaul.Ui
         private static void OneTable(UiScene s, UiAt at, NewsModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
             y = Lead(s, at, m, x, y, w);
-            Rest(s, at, m, x, y, w, bottom, keys);
+            Rest(s, at, m, x, y, w, bottom, keys, m.Shape == NewsShape.Districts ? NewsCommands.District : UiDataTable.First);
         }
 
         private static void People(UiScene s, NewsModel m, UiFrame frame, bool dark, IUiKeys keys)
@@ -372,11 +372,11 @@ namespace RealLifeOverhaul.Ui
             UiDataTable.Lay(s, at, m.Table2, x + left + gap, y, w - left - gap, h, keys);
         }
 
-        private static void Rest(UiScene s, UiAt at, NewsModel m, float x, float y, float w, float bottom, IUiKeys keys)
+        private static void Rest(UiScene s, UiAt at, NewsModel m, float x, float y, float w, float bottom, IUiKeys keys, int command = UiDataTable.First)
         {
             if (m.Table != null && bottom - y > UiTokens.S16)
             {
-                UiDataTable.Lay(s, at, m.Table, x, y, w, bottom - y, keys);
+                UiDataTable.Lay(s, at, m.Table, x, y, w, bottom - y, keys, command);
                 return;
             }
             Notice(s, at, m, x, y, w, bottom - y);

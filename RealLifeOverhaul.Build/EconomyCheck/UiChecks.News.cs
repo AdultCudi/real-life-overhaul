@@ -75,7 +75,8 @@ internal static partial class Program
             UiEdition.StoryCommand, UiEdition.LeadCommand, UiReader.AnchorCommand, UiReader.RelatedCommand, UiReader.ContentsCommand,
             UiDecision.ChoiceCommand, UiDecision.ButtonCommand, UiInfoView.ViewCommand,
             UiInfoPanel.TabCommand, UiInfoPanel.LinkCommand, UiInfoPanel.FooterCommand,
-            NewsCommands.Link, NewsCommands.Rent, NewsCommands.Busy, NewsCommands.Home
+            NewsCommands.Link, NewsCommands.Rent, NewsCommands.Busy, NewsCommands.Home,
+            NewsCommands.District + UiDataTable.Row
         };
         for (int i = 0; i <= UiDataTable.MassAnswer; i++)
         {

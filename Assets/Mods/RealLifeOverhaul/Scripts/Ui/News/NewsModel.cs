@@ -109,5 +109,6 @@ namespace RealLifeOverhaul.Ui
         public const int Rent = 445;
         public const int Busy = 446;
         public const int Home = 447;
+        public const int District = 448;   // a district row: added to UiDataTable's own offsets
     }
 }

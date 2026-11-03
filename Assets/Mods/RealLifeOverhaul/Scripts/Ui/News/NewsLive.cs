@@ -105,6 +105,13 @@ namespace RealLifeOverhaul.Ui
                 _local++;
                 return true;
             }
+            if (command == NewsCommands.District + UiDataTable.Row)
+            {
+                model.Tab = 7;
+                _view = 0;
+                _local++;
+                return true;
+            }
             if (command == UiDecision.ChoiceCommand)
             {
                 return EndChoice(arg);
@@ -341,7 +348,7 @@ namespace RealLifeOverhaul.Ui
         {
             if (shape == NewsShape.Overview || shape == NewsShape.Prices)
             {
-                return PriceTable(book);
+                return PriceTable(shape == NewsShape.Prices);
             }
             if (shape == NewsShape.Districts)
             {
@@ -665,21 +672,161 @@ namespace RealLifeOverhaul.Ui
             return HoldingTable();
         }
 
-        private UiDataTableModel PriceTable(OutlookBook book)
+        private UiDataTableModel PriceTable(bool full)
         {
+            UiDataTableModel priced = RetailTable(full);
+            if (priced != null)
+            {
+                return priced;
+            }
             var rows = new List<UiDataRow>(6);
             for (int i = 0; i < OutlookWords.KindKeys.Length && i < Look.Supply.Length; i++)
             {
                 int factor = Look.Supply[i].Factor;
-                string today = (factor / 10f).ToString("0.0", Inv) + "%";
+                int way = factor > 1000 ? 1 : factor < 1000 ? -1 : 0;
+                string move = way == 0 ? "0%" : (way > 0 ? "+" : "") + ((factor - 1000) / 10f).ToString("0.0", Inv) + "%";
                 rows.Add(new UiDataRow
                 {
-                    Cells = new[] { OutlookText.T(OutlookWords.KindKeys[i]), today, string.Empty, string.Empty, today },
-                    Values = new int[5],
-                    Tones = new UiRole[5]
+                    Cells = new[] { OutlookText.T(OutlookWords.KindKeys[i]), (factor / 10f).ToString("0.0", Inv), move, string.Empty },
+                    Values = new[] { 0, 0, way, 0 },
+                    Tones = new[] { UiRole.None, UiRole.None, UiRole.Danger, UiRole.None }
                 });
             }
-            return Table(new[] { "reallife_news_col_good", "reallife_news_col_today", "reallife_news_col_week", "reallife_news_col_month", "reallife_news_col_yours" }, rows);
+            return GoodsColumns(rows, false);
+        }
+
+        // The player's retail series, one row a good. The prices page adds the week and your price. The series is that shop price.
+        private UiDataTableModel RetailTable(bool full)
+        {
+            DaySeriesBook series = DaySeriesDirector.Book;
+            if (series == null || series.LastDay <= 0)
+            {
+                return null;
+            }
+            List<string> names = series.Names();
+            var rows = new List<UiDataRow>(8);
+            int end = series.LastDay;
+            for (int i = 0; i < names.Count && rows.Count < 8; i++)
+            {
+                string key = names[i];
+                if (key == null || !key.StartsWith(DaySeriesCatalogue.PricePrefix, StringComparison.Ordinal) || key.Length <= DaySeriesCatalogue.PricePrefix.Length)
+                {
+                    continue;
+                }
+                int found = series.Window(key, end, NewsRules.DaysBook, Raw);
+                if (found <= 0)
+                {
+                    continue;
+                }
+                int today = LastPriced(NewsRules.DaysBook);
+                if (today == DaySeriesCatalogue.NoValue)
+                {
+                    continue;
+                }
+                int week = PricedAt(NewsRules.DaysBook - 8);
+                int month = PricedAt(NewsRules.DaysBook - 1 - NewsRules.DaysMonth);
+                int way;
+                string move = Move(today, month == DaySeriesCatalogue.NoValue ? week : month, out way);
+                string good = key.Substring(DaySeriesCatalogue.PricePrefix.Length);
+                var line = new float[NewsRules.DaysBook];
+                float carry = today / 100f;
+                for (int d = 0; d < NewsRules.DaysBook; d++)
+                {
+                    if (Raw[d] != DaySeriesCatalogue.NoValue)
+                    {
+                        carry = Raw[d] / 100f;
+                    }
+                    line[d] = carry;
+                }
+                rows.Add(new UiDataRow
+                {
+                    Cells = new[] { good, Cents(today), Move(today, week, out _), move, string.Empty, Cents(today) },
+                    Values = new[] { 0, 0, 0, way, 0, 0 },
+                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.Danger, way < 0 ? UiRole.Ok : UiRole.Danger, UiRole.None },
+                    Line = line
+                });
+            }
+            return rows.Count == 0 ? null : GoodsColumns(rows, full);
+        }
+
+        private static int LastPriced(int span)
+        {
+            for (int i = span - 1; i >= 0; i--)
+            {
+                if (Raw[i] != DaySeriesCatalogue.NoValue)
+                {
+                    return Raw[i];
+                }
+            }
+            return DaySeriesCatalogue.NoValue;
+        }
+
+        private static int PricedAt(int index)
+        {
+            if (index < 0)
+            {
+                return DaySeriesCatalogue.NoValue;
+            }
+            return Raw[index] == DaySeriesCatalogue.NoValue ? DaySeriesCatalogue.NoValue : Raw[index];
+        }
+
+        private static string Cents(int cents) => (cents / 100.0).ToString("0.00", Inv);
+
+        private static string Move(int now, int then, out int way)
+        {
+            way = 0;
+            if (now == DaySeriesCatalogue.NoValue || then == DaySeriesCatalogue.NoValue || then <= 0)
+            {
+                return string.Empty;
+            }
+            double pct = (now - then) * 100.0 / then;
+            way = pct > 0.05 ? 1 : pct < -0.05 ? -1 : 0;
+            return (pct > 0 ? "+" : string.Empty) + pct.ToString("0.0", Inv) + "%";
+        }
+
+        private static UiDataTableModel GoodsColumns(List<UiDataRow> rows, bool full)
+        {
+            UiDataColumn[] columns = full
+                ? new[]
+                {
+                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_good"), Kind = UiCellKind.Text },
+                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_today"), Kind = UiCellKind.Text, Width = 96f },
+                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_week"), Kind = UiCellKind.Trend, Width = 112f },
+                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_month"), Kind = UiCellKind.Trend, Width = 112f },
+                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_spark"), Kind = UiCellKind.Spark, Width = 96f },
+                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_yours"), Kind = UiCellKind.Text, Width = 112f }
+                }
+                : new[]
+                {
+                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_good"), Kind = UiCellKind.Text },
+                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_today"), Kind = UiCellKind.Text, Width = 96f },
+                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_month"), Kind = UiCellKind.Trend, Width = 128f },
+                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_spark"), Kind = UiCellKind.Spark, Width = 96f }
+                };
+            if (!full)
+            {
+                for (int i = 0; i < rows.Count; i++)
+                {
+                    UiDataRow row = rows[i];
+                    if (row.Cells == null || row.Cells.Length < 6)
+                    {
+                        continue;
+                    }
+                    row.Cells = new[] { row.Cells[0], row.Cells[1], row.Cells[3], string.Empty };
+                    row.Values = new[] { 0, 0, row.Values[3], 0 };
+                    row.Tones = new[] { UiRole.None, UiRole.None, UiRole.Danger, row.Tones != null && row.Tones.Length > 4 ? row.Tones[4] : UiRole.Accent };
+                    rows[i] = row;
+                }
+            }
+            return new UiDataTableModel
+            {
+                Columns = columns,
+                Rows = rows.ToArray(),
+                RowCount = rows.Count,
+                EmptyTitle = OutlookText.T("reallife_news_empty_city"),
+                EmptyBody = OutlookText.T("reallife_news_empty_city_body"),
+                EmptyIcon = UiIcon.Tag
+            };
         }
 
         private UiDataTableModel DistrictTable()
@@ -688,14 +835,30 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < Look.DistrictCount; i++)
             {
                 OutlookDistrict d = Look.Districts[i];
+                int pull = d.Pull < 0 ? 0 : d.Pull > 100 ? 100 : d.Pull;
+                string name = OutlookText.Words.District != null ? OutlookText.Words.District(d.Id) : d.Id;
                 rows.Add(new UiDataRow
                 {
-                    Cells = new[] { d.Id, d.Pull.ToString(Inv), LedgerText.Money(d.Land) },
-                    Values = new[] { 0, d.Pull, 0 },
-                    Tones = new[] { UiRole.Text, UiRole.Text, UiRole.Text }
+                    Cells = new[] { string.IsNullOrEmpty(name) ? d.Id : name, d.Pull.ToString(Inv), string.Empty, LedgerText.Money(d.Land) },
+                    Values = new[] { 0, pull, 0, 0 },
+                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None }
                 });
             }
-            return Table(new[] { "reallife_news_col_district", "reallife_news_col_pull", "reallife_news_col_rent" }, rows);
+            return new UiDataTableModel
+            {
+                Columns = new[]
+                {
+                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_district"), Kind = UiCellKind.Text },
+                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_pull"), Kind = UiCellKind.Meter, Width = 160f },
+                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_week"), Kind = UiCellKind.Trend, Width = 112f },
+                    new UiDataColumn { Title = OutlookText.T("reallife_news_col_rent"), Kind = UiCellKind.Text, Width = 112f }
+                },
+                Rows = rows.ToArray(),
+                RowCount = rows.Count,
+                EmptyTitle = OutlookText.T("reallife_news_empty_city"),
+                EmptyBody = OutlookText.T("reallife_news_empty_city_body"),
+                EmptyIcon = UiIcon.MapTrifold
+            };
         }
 
         private static UiDataTableModel HoldingTable()
