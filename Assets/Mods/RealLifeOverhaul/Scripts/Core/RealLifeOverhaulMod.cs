@@ -694,6 +694,10 @@ namespace RealLifeOverhaul
                 .AddDropdown(Settings.FlareCityPhotosId, "reallife_flare_opt_city_photos",
                     new[] { "reallife_flare_city_photos_0", "reallife_flare_city_photos_1", "reallife_flare_city_photos_2", "reallife_flare_city_photos_3" }, Settings.FlareCityPhotos,
                     v => Settings.FlareCityPhotos = v)
+                .AddButton("reallife_flare_test_kit", () => Flare.FlareDirector.Instance?.TestKit(0))
+                .AddButton("reallife_flare_test_compose", () => Flare.FlareDirector.Instance?.TestKit(7))
+                .AddButton("reallife_flare_test_city_kit", () => Flare.FlareDirector.Instance?.TestKit(6))
+                .AddButton("reallife_flare_test_switch", () => Flare.FlareDirector.Instance?.TestKitSwitch())
                 .AddButton("reallife_flare_test_drafts", () => Flare.FlareDirector.Instance?.TestDrafts())
                 .AddButton("reallife_flare_test_day", () => Flare.FlareDirector.Instance?.TestDay())
                 .AddButton("reallife_flare_test_followers", () => Flare.FlareDirector.Instance?.TestFollowers())

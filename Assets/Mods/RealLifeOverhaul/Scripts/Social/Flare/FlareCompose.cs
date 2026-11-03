@@ -17,6 +17,11 @@ namespace RealLifeOverhaul.Flare
         public int ReplyTo = -1;         // a reply's post
         public int When = -1;            // an event's hour (day * 24 + hour)
         public string Tags;              // tags picked from the chips, a space between each
+        public int PromoteReach;         // residents a day a promotion buys, 0 when the post is free
+        public int PromoteDays = 1;
+        public int PromoteMask;          // districts, a bit each; 0 is the business's own
+        public int ScheduleHour = -1;    // the hour it should land, -1 now
+        public bool Poll;
 
         public void Reset()
         {

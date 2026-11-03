@@ -39,6 +39,9 @@ namespace RealLifeOverhaul.Flare
 
         public bool Running => _running && !_broken;
 
+        /// <summary>Moves when the account changes, so a screen lays out again and not every frame.</summary>
+        public int Revision { get; private set; }
+
         /// <summary>The save's account; null while Flare is not running.</summary>
         public FlareFile File => Running ? _file : null;
 
@@ -277,7 +280,10 @@ namespace RealLifeOverhaul.Flare
                 Icon = like => AppIconPainter.Paint(like, Glyph(), new Color32(255, 150, 92, 255), new Color32(214, 62, 98, 255), 0.42f, "AppIcon-Flare"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
+                Closed = view.Closed,
+                Kit = () => new RealLifeOverhaul.Ui.FlareScreen(this),
+                KitScreen = "flare",
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Fire
             }, out tryAgain);
             if (_app == null)
             {
@@ -399,6 +405,7 @@ namespace RealLifeOverhaul.Flare
                 case FlareHourSteps.Milestones:
                     Milestones(day, hour);
                     PlanHour(day, hour);   // this week's content plan: its post due, a storm answered (FlareDirector.Desk)
+                    UseHour(day, hour);
                     break;
                 default:
                     LiveHour(day, hour, step);   // the cases, the invitations, the unread count, the words (FlareDirector.Live)
@@ -705,6 +712,7 @@ namespace RealLifeOverhaul.Flare
 
         private void Changed()
         {
+            Revision++;
             Badge();
             if (_view != null)
             {

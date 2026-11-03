@@ -68,7 +68,11 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             result.Kind = LookKind.Rolled;
             result.Investor = who;
-            result.Chance = OfferRules.Chance(who.LikesSector(b.Sector), phase);
+            result.Chance = OfferRules.Chance(who.LikesSector(b.Sector), phase) + Flare.FlareBrand.InvestorExtra();
+            if (result.Chance > 100)
+            {
+                result.Chance = 100;
+            }
             result.Roll = VenturesRandom.Percent(file.Seed, day, VenturesRandom.Of(place));
             result.Offer = result.Roll < result.Chance ? OfferRules.Make(file, who, place, name, b, day, level, OfferSource.Inbound) : null;
             return result;

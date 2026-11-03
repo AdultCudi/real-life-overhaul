@@ -439,7 +439,7 @@ namespace RealLifeOverhaul.Flare
                 int b = BusinessOfPlace(ad.Place);
                 int kind = b >= 0 ? s.Businesses.Kind[b] : -1;
                 int account = b >= 0 && b < BusinessAccount.Length ? BusinessAccount[b] : -1;
-                FlareCityRules.Deliver(c, s, ad, b, kind, account, Day, AccountBiz, Scratch, c.Funnel(FunnelKind.Ad, ad.Id));
+                FlareCityRules.DeliverMasked(c, s, ad, b, kind, account, Day, AccountBiz, Scratch, c.Funnel(FunnelKind.Ad, ad.Id));
                 Advertised++;
             }
             int n = FlareCityRules.CityAdvertisers(s, c.Seed, Day, Inputs.Busy, _advertisers);

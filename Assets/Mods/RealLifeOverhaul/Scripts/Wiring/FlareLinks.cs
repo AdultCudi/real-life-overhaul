@@ -34,6 +34,11 @@ namespace RealLifeOverhaul
 
             internal static void Connect()
             {
+                FlareBrand.FollowersOf = () =>
+                {
+                    FlareDirector flare = FlareDirector.Instance;
+                    return flare != null && flare.Running && flare.File != null ? flare.File.Followers : 0;
+                };
                 FlareBridges.People = People;
                 FlareBridges.SavedPeople = SavedPeople;
                 FlareBridges.PublicStanding = () => LawState.Loaded ? Standing.Public : FlareRules.ReputationStart;
@@ -96,6 +101,7 @@ namespace RealLifeOverhaul
 
             internal static void Disconnect()
             {
+                FlareBrand.FollowersOf = null;
                 FlareBridges.Reset();
                 PhotoMode.Saved -= PictureSaved;
                 SocialLinks.OutingDone = null;

@@ -230,6 +230,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\OfficeSupply.cs" Link="Mod\OfficeSupply.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareModel.cs" Link="Mod\FlareModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareRules.cs" Link="Mod\FlareRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareUseRules.cs" Link="Mod\FlareUseRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareRules.Elsewhere.cs" Link="Mod\FlareRules.Elsewhere.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareRules.Round.cs" Link="Mod\FlareRules.Round.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareStore.cs" Link="Mod\FlareStore.cs" />
@@ -670,6 +671,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiConversation.cs" Link="Mod\UiConversation.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiMessageList.cs" Link="Mod\UiMessageList.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFeed.cs" Link="Mod\UiFeed.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Flare\FlareFace.cs" Link="Mod\FlareFace.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiEdition.cs" Link="Mod\UiEdition.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiSettingsList.cs" Link="Mod\UiSettingsList.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Links.cs" Link="Mod\UiDraw.Links.cs" />
@@ -969,6 +971,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Civic.cs" Link="Mod\FlareCity\FlareCityRules.Civic.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Trends.cs" Link="Mod\FlareCity\FlareCityRules.Trends.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Plan.cs" Link="Mod\FlareCity\FlareCityRules.Plan.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Use.cs" Link="Mod\FlareCity\FlareCityRules.Use.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityPass.cs" Link="Mod\FlareCity\FlareCityPass.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityStore.cs" Link="Mod\FlareCity\FlareCityStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityViews.cs" Link="Mod\FlareCity\FlareCityViews.cs" />
