@@ -30,7 +30,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_staff_batch_why_unknown", "reallife_staff_batch_why_no_fit", "reallife_staff_batch_why_not_yours",
                     "reallife_staff_batch_why_gone", "reallife_staff_batch_why_failed", "reallife_staff_batch_more",
                     "reallife_co_mass_raise_title", "reallife_co_mass_raise_percent", "reallife_co_mass_raise_give",
-                    "myemployees_mass_action_assign_business_and_hire_title",
+                    "reallife_staff_batch_hired_to",
                     "reallife_ui_staff_app", "myemployees_employees_tab", "myemployees_candidates_tab", "myemployees_candidates_hide_job_board", "common_cancel",
                     "common_confirm", "common_ok", "common_unassigned", "common_unassign", "common_select_option", "common_hours", "common_days", "common_hours_left", "myemployees_employee_name",
                     "myemployees_current_business", "myemployees_age", "myemployees_jobtype", "myemployees_hourly_wage", "myemployees_satisfaction", "myemployees_task",

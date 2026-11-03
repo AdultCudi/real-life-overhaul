@@ -124,7 +124,7 @@ internal static partial class UiSamples
                 Candidates(t, v, 6);
                 v.Picking = true;
                 v.PickedCount = 5;
-                v.AskTitle = t("myemployees_mass_action_assign_business_and_hire_title", "Select business to assign to employees and hire them");
+                v.AskTitle = t("myemployees_mass_action_assign_business_title", "Select business to assign to employees");
                 v.AskValue = Shops[1];
                 v.Batch = HireBatch(t, state == "hire_review_none");
                 break;
