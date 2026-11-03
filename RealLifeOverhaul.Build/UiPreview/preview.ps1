@@ -36,6 +36,7 @@ $gameFiles = @('UiGame*.cs', 'UiDirector*.cs', 'UiText.cs', 'UiGuide.cs')
     $_.Name -notlike '*Screen.cs' -and $_.Name -notlike '*Build.cs'
 } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne 'MoneyLive.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
+Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\News') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne 'NewsLive.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui') -Filter *.cs | Where-Object {
     $name = $_.Name
     -not ($gameFiles | Where-Object { $name -like $_ })

@@ -10,7 +10,7 @@ namespace RealLifeOverhaul.DaySeries
         public const string Key = "reallife:dayseries";
         public const int Version = 1;
         public const int Days = 120;
-        public const int LinesMost = 160;     // room for the money series and for flare reach and a price a good, appended later
+        public const int LinesMost = 480;     // money, flare reach, and a retail price for each good the city sells
         public const int NoValue = int.MinValue;
         public const int LoansMost = 48;
         public const int WorthScale = 1000;   // one stored unit of worth is a thousand dollars
@@ -29,7 +29,13 @@ namespace RealLifeOverhaul.DaySeries
         public const string FortunePrefix = "worth.f";
 
         // flare.{account}  Flare reach for one account. Flare appends this. This job does not write it.
-        // price.{good}     the retail price of one good, in cents. A later job appends this. This job does not write it.
+        public const string PricePrefix = "price.";   // retail price of one good, cents. News appends it.
+
+        public static string Price(string good)
+        {
+            string clean = Clean(good);
+            return clean.Length == 0 ? string.Empty : PricePrefix + clean;
+        }
 
         public static string Category(int index) => CategoryPrefix + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
