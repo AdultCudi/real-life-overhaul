@@ -42,18 +42,47 @@ namespace RealLifeOverhaul.Ui
             float navTop = top + UiTokens.S3, navH = UiDraw.SnapDown(footTop - UiTokens.S4 - navTop);
             int n = nav == null ? 0 : nav.Length;
             float rowH = NavRow + UiTokens.S1;
-            float content = n * rowH;
+            bool grouped = Grouped(nav);
+            if (grouped)
+            {
+                MeasureGroups(nav);
+            }
+            float content = grouped ? GroupContent : n * rowH;
             offset = Math.Max(0f, Math.Min(offset, content - navH));
             short clip = s.AddClip(ex, navTop, ew, navH, offset);
             s.Clips[clip].ContentHeight = content;
             float entryW = content > navH + 0.5f ? ew - UiTokens.S2 : ew;   // a list that scrolls leaves its thumb a gutter of its own
-            int first = Math.Max(0, Math.Min(n - 1, (int)(offset / rowH))), last = Math.Max(first, Math.Min(n - 1, (int)((offset + navH - 1f) / rowH)));
+            int first, last;
+            if (!grouped)
+            {
+                first = Math.Max(0, Math.Min(n - 1, (int)(offset / rowH)));
+                last = Math.Max(first, Math.Min(n - 1, (int)((offset + navH - 1f) / rowH)));
+            }
+            else
+            {
+                first = 0;
+                last = n - 1;
+                while (n > 1 && first < n - 1 && GroupBox(first) + rowH <= offset)
+                {
+                    first++;
+                }
+                last = first;
+                while (n > 1 && last < n - 1 && GroupBox(last + 1) < offset + navH)
+                {
+                    last++;
+                }
+            }
             short list = s.AddList(n, first, n == 0 ? 0 : last - first + 1, clip, selected);
             var inClip = new UiAt { Parent = -1, Clip = clip, Layer = at.Layer, Order = -1, Region = at.Region };
             int shownNode = -1, firstNode = -1;
             for (int i = first; n > 0 && i <= last; i++)
             {
-                int node = NavEntry(s, inClip, ref nav[i], i, i == selected, 0f, i * rowH, entryW, list, true);
+                float ey = grouped ? GroupBox(i) : i * rowH;
+                if (grouped && StartsGroup(nav, i))
+                {
+                    GroupCaption(s, inClip, 0f, ey - GroupLabel, entryW, nav[i].Group);
+                }
+                int node = NavEntry(s, inClip, ref nav[i], i, i == selected, 0f, ey, entryW, list, true);
                 shownNode = i == selected ? node : shownNode;
                 firstNode = firstNode < 0 ? node : firstNode;
             }

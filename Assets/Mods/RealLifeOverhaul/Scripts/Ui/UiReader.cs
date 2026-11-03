@@ -24,6 +24,7 @@ namespace RealLifeOverhaul.Ui
         public UiIcon Icon;      // a picture's glyph, in its own colour on its tile, until the kit carries pictures of its own
         public int Target;       // a link's page, given back on its press
         public int Number;       // a numbered line's number
+        public string Chip;      // a heading's version chip, drawn above its words; null for none
     }
 
     /// <summary>
@@ -212,7 +213,7 @@ namespace RealLifeOverhaul.Ui
             switch (b.Kind)
             {
                 case UiReaderKind.Heading:
-                    return (first ? 0f : UiTokens.S6) + Lines(b.Text, UiStyle.Number, cw) + UiTokens.S3;
+                    return (first ? 0f : UiTokens.S6) + ChipRow(ref b) + Lines(b.Text, UiStyle.Number, cw) + UiTokens.S3;
                 case UiReaderKind.Subheading:
                     return (first ? 0f : UiTokens.S3) + Lines(b.Text, UiStyle.SectionHeader, cw) + UiTokens.S2;
                 case UiReaderKind.Bullet:
@@ -230,6 +231,9 @@ namespace RealLifeOverhaul.Ui
         }
 
         private static float Indent(UiReaderKind kind) => kind == UiReaderKind.Numbered ? UiTokens.S6 : UiTokens.S5;
+
+        // A version chip above a heading, and the step under it. None when the heading has no chip, so a page without one is unchanged.
+        private static float ChipRow(ref UiReaderBlock b) => string.IsNullOrEmpty(b.Chip) ? 0f : UiTokens.Badge + UiTokens.S1 + UiTokens.S2;
 
         // Lines' height of a block's words at a width, on the grid.
         private static float Lines(string text, UiStyle style, float width) => UiDraw.Snap(RawLines(text, style, width));
@@ -327,10 +331,16 @@ namespace RealLifeOverhaul.Ui
                 case UiReaderKind.Heading:
                 {
                     float top = y + (first ? 0f : UiTokens.S6);
+                    float chip = ChipRow(ref b);
+                    if (chip > 0f)
+                    {
+                        UiDraw.Chip(s, at, 0f, top, b.Chip, UiRole.AccentText, cw);
+                    }
+                    float textY = top + chip;
                     float hh = Lines(b.Text, UiStyle.Number, cw);
-                    int face = UiDraw.Box(s, at, 0f, top, cw, hh, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
-                    Words(s, at.In(face), b.Text, UiStyle.Number, UiRole.Text, UiRole.Text, 0f, top, cw);
-                    return UiDraw.Node(s, at, 0f, top, cw, Math.Max(hh, UiTokens.MinTarget), AnchorCommand, anchor, face);
+                    int face = UiDraw.Box(s, at, 0f, textY, cw, hh, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
+                    Words(s, at.In(face), b.Text, UiStyle.Number, UiRole.Text, UiRole.Text, 0f, textY, cw);
+                    return UiDraw.Node(s, at, 0f, top, cw, Math.Max(chip + hh, UiTokens.MinTarget), AnchorCommand, anchor, face);
                 }
                 case UiReaderKind.Subheading:
                     Words(s, at, b.Text, UiStyle.SectionHeader, UiRole.Text, UiRole.Text, 0f, y + (first ? 0f : UiTokens.S3), cw);

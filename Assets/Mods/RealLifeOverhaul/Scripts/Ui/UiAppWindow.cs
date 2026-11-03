@@ -9,6 +9,9 @@ namespace RealLifeOverhaul.Ui
         public UiRole Tint;
         public string Label;
         public string Count;
+
+        /// <summary>A capitals label drawn above this entry when it begins a group. Empty leaves the sidebar as it was.</summary>
+        public string Group;
     }
 
     /// <summary>A row of an app window's table: its icon in its colour, its cells, a graded figure and a status chip.</summary>
@@ -219,6 +222,11 @@ namespace RealLifeOverhaul.Ui
             float ex = x + UiTokens.S2, ew = Sidebar - UiTokens.S4;
             for (int i = 0; i < nav.Length; i++)
             {
+                if (StartsGroup(nav, i))
+                {
+                    GroupCaption(s, at, ex, ny, ew, nav[i].Group);
+                    ny += GroupLabel;
+                }
                 int node = NavEntry(s, at, ref nav[i], i, i == selected, ex, ny, ew, -1, false);
                 shownNode = i == selected ? node : shownNode;
                 ny += NavRow + UiTokens.S1;
