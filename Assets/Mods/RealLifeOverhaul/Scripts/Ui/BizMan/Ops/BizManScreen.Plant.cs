@@ -42,6 +42,19 @@ namespace RealLifeOverhaul.Ui
         private const int MachineAll = 0, MachineRunning = 1, MachineNoWorker = 2, MachineNoInput = 3, MachineStopped = 4;
         private const string NoWorkerReason = "bizman_factory_inactive_reason_no_employee", NoInputReason = "bizman_factory_inactive_reason_not_enough_ingredients";
 
+        // The game's reasons a machine stands (FactoryWorkstationInstance.GetInactiveReasonKeys), each as a short chip and its tone.
+        private static readonly string[] StopReasons =
+        {
+            "bizman_factory_inactive_reason_invalid_workstation", "bizman_factory_inactive_reason_closed", NoWorkerReason, "bizman_factory_inactive_reason_no_space",
+            NoInputReason, "bizman_factory_inactive_reason_production_limit"
+        };
+        private static readonly string[] StopChips =
+        {
+            "reallife_ui_bizops_chip_missing", "reallife_ui_bizops_chip_closed", "reallife_ui_bizops_chip_no_worker", "reallife_ui_bizops_chip_full",
+            "reallife_ui_bizops_chip_no_input", "reallife_ui_bizops_chip_limit"
+        };
+        private static readonly UiRole[] StopTones = { UiRole.Danger, UiRole.Muted, UiRole.Danger, UiRole.Warn, UiRole.Warn, UiRole.Muted };
+
         // ------------------------------------------------------------------------------------------------- the factory
 
         private void Factory(BizManBusiness b)
@@ -93,13 +106,8 @@ namespace RealLifeOverhaul.Ui
             o.TableTitle = Words(Get<TMP_Text>(GameContract.FactoryActive, group)) ?? UiText.T("bizman_factory_production_machines");
             var t = new UiDataTableModel
             {
-                Columns = new[]
-                {
-                    new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_machine"), Kind = UiCellKind.Tile },
-                    new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_makes"), Kind = UiCellKind.Text, Width = 152f },
-                    new UiDataColumn { Title = UiText.T("reallife_ui_bizops_worker"), Kind = UiCellKind.Person, Width = 208f },
-                    new UiDataColumn { Title = UiText.T("reallife_ui_bizops_output"), Kind = UiCellKind.Text, Width = 136f },
-                },
+                Columns = BizOpsRules.MachineColumns(UiText.T("reallife_ui_bizops_col_machine"), UiText.T("reallife_ui_bizops_col_makes"), UiText.T("reallife_ui_bizops_worker"),
+                    UiText.T("reallife_ui_bizops_col_per_hour"), UiText.T("reallife_ui_bizops_col_state")),
                 EmptyIcon = UiIcon.Factory, EmptyTitle = UiText.T("reallife_ui_bizops_machines_none"), Offset = o.Table != null ? o.Table.Offset : 0f
             };
             BuildingRegistration reg = b.buildingRegistration;
@@ -138,6 +146,7 @@ namespace RealLifeOverhaul.Ui
                 t.Rows[r] = rows[_machineRows[r]];
             }
             t.RowCount = _machineRows.Count;
+            BizOpsRules.FitChips(t);
             o.Table = t;
             o.TableLead = output > 0 ? UiText.Fill("reallife_ui_bizops_output_total", "count", UiText.Whole(output)) : UiText.T("reallife_ui_bizops_output_none");
             if (factory.validWorkstationPanel != null && factory.validWorkstationPanel.gameObject.activeInHierarchy)
@@ -183,36 +192,49 @@ namespace RealLifeOverhaul.Ui
             object on = GameContract.FactoryMachineOn.Field != null ? GameContract.FactoryMachineOn.Field.GetValue(Get<UI.Components.IconSwapper>(GameContract.FactoryMachineState, m)) : null;
             bool running = !(on is bool b) || b;
             Tooltip.ListTooltip why = Get<Tooltip.ListTooltip>(GameContract.FactoryMachineWhy, m);
-            string state = running ? UiText.T("bizman_factory_running") : why != null && why.list != null && why.list.Count > 0 ? why.list[0] : UiText.T("bizman_factory_not_running");
             var item = Get<FactoryWorkstationInstance>(GameContract.FactoryMachineItem, m);
             EmployeeInstance worker = item != null && reg != null ? EmployeeHelper.GetEmployeeAtStationAndHour(reg, item.id) : null;
             string who = worker != null && worker.characterData != null ? worker.characterData.name : UiText.T("bizman_factory_no_employee_assigned");
             float skill = worker != null ? worker.GetSkillValue("ba:skill_factoryworker") : 0f;
-            string output = "-";
             perHour = 0;
             if (worker != null && item != null && item.SelectedRecipe != null && !string.IsNullOrEmpty(item.SelectedRecipe.output.item))
             {
                 perHour = item.SelectedRecipe.GetScaledOutputAmount(skill);
-                output = UiText.Fill("common_per_hour", "textValue", UiText.Whole(perHour) + "x " + UiText.T(item.SelectedRecipe.output.item));
             }
             kind = running ? MachineRunning : MachineStopped;
             List<string> reasons = !running && item != null && reg != null ? item.GetInactiveReasonKeys(reg) : null;
+            string chip = running ? UiText.T("bizman_factory_running") : UiText.T("bizman_factory_not_running");
+            UiRole tone = running ? UiRole.Ok : UiRole.Warn;
             if (reasons != null)
             {
                 kind = reasons.Contains(NoWorkerReason) ? MachineNoWorker : reasons.Contains(NoInputReason) ? MachineNoInput : MachineStopped;
+                // The game's first reason as a short chip: what stops the machine, in the colour of how much it needs the player.
+                string first = reasons.Count > 0 ? reasons[0] : null;
+                int at = Array.IndexOf(StopReasons, first);
+                if (at >= 0)
+                {
+                    chip = UiText.T(StopChips[at]);
+                    tone = StopTones[at];
+                }
             }
+            else if (!running && why != null && why.list != null && why.list.Count > 0)
+            {
+                chip = why.list[0];
+            }
+            string kindName = item != null && !string.IsNullOrEmpty(item.itemName) ? UiText.T(item.itemName) : null;
             return new UiDataRow
             {
-                Cells = new[] { name, makes ?? "-", who, output },
-                Values = new[] { (int)UiIcon.Factory, 0, 0, 0 },
-                Tones = new[] { running ? UiRole.None : UiRole.Warn, UiRole.None, UiRole.None, UiRole.None },
+                Cells = new[] { name, makes ?? "-", who, perHour > 0 ? UiText.Whole(perHour) : "-", chip },
+                Values = new[] { (int)UiIcon.Factory, 0, 0, 0, 0 },
+                Tones = new[] { running ? UiRole.None : UiRole.Warn, UiRole.None, UiRole.None, UiRole.None, tone },
                 Subs = new[]
                 {
-                    state, null,
+                    kindName != null && kindName != name ? kindName : null, null,
                     worker != null ? UiText.Fill("reallife_ui_bizops_skill_line", "skill", UiText.T("ba:skill_factoryworker"), "level", UiText.Whole(Mathf.FloorToInt(skill)))
                         : null,
-                    null
+                    null, null
                 },
+                Pictures = new[] { item != null ? BuyPictures.Item(item.itemName) : null, null, null, null, null },
                 Hue = worker != null ? UiColour.HueOf(who) : 0f, Ring = worker != null ? StaffViews.Mood((int)worker.satisfaction) : UiRole.None
             };
         }
@@ -343,6 +365,7 @@ namespace RealLifeOverhaul.Ui
             // The game lays a driver station for each of the warehouse's vehicle slots, in their order (Drivers.Start).
             List<VehicleSlot> slots = warehouse != null && warehouse.vehicleSlots != null && warehouse.vehicleSlots.Count == _slots.Count ? warehouse.vehicleSlots : null;
             int loaded = 0;
+            var cards = new List<BizOpsSlot>(_slots.Count);
             for (int i = 0; i < _slots.Count; i++)
             {
                 DriverStation s = _slots[i];
@@ -358,16 +381,29 @@ namespace RealLifeOverhaul.Ui
                 // the warehouse, or away where the player last left it (its own street data); a slot without one is empty.
                 bool home = v != null && warehouse != null && warehouse.Address != null && v.IsAtAddress(warehouse.Address);
                 string trip = v != null && warehouse != null ? SlotTrip(warehouse, i) : null;
-                InfoLine(UiText.T("reallife_ui_bizops_bay"), trip ?? UiText.T(v == null ? "reallife_ui_bizops_empty" : home ? "reallife_ui_bizops_parked" : "reallife_ui_bizops_away"),
-                    trip != null || home ? UiRole.OkText : UiRole.None);
+                string where = trip ?? UiText.T(v == null ? "reallife_ui_bizops_empty" : home ? "reallife_ui_bizops_parked" : "reallife_ui_bizops_away");
+                InfoLine(UiText.T("reallife_ui_bizops_bay"), where, trip != null || home ? UiRole.OkText : UiRole.None);
+                string load = null;
                 if (v != null && v.VehicleType != null && v.VehicleType.maxCargoCapacity > 0)
                 {
                     int boxes = v.cargoInstances != null ? v.cargoInstances.Count : 0;
                     loaded += boxes > 0 ? 1 : 0;
-                    InfoLine(UiText.T("reallife_ui_bizops_load"), UiText.Fill("reallife_ui_bizops_of_boxes", "count", UiText.Whole(boxes), "most", UiText.Whole(v.VehicleType.maxCargoCapacity)));
+                    load = UiText.Fill("reallife_ui_bizops_of_boxes", "count", UiText.Whole(boxes), "most", UiText.Whole(v.VehicleType.maxCargoCapacity));
+                    InfoLine(UiText.T("reallife_ui_bizops_load"), load);
                 }
+                int choice = _rows.Count;
                 ChoiceLine(Get<UI.Elements.Dropdown>(GameContract.DriverChoice, s), UiText.T("bizman_drivers_driver"));
+                // The same slot as a card: its vehicle and load, its driver (the choice row just laid, the same target), and
+                // where it is as a chip; on a trip in the go colour, parked in the calm one, away or empty quiet.
+                bool driverRow = _rows.Count > choice && _rows[choice].Kind == BizOpsRowKind.Choice;
+                cards.Add(new BizOpsSlot
+                {
+                    Title = v != null ? slotWords + ", " + vehicle : slotWords, Line = load ?? (v != null ? vehicle : UiText.T("bizman_warehouse_driverstation_no_vehicle_assigned")),
+                    Status = where, Tone = trip != null ? UiRole.Ok : home ? UiRole.Notice : UiRole.Muted, Vehicle = v != null,
+                    Driver = driverRow ? _rows[choice].Value : null, DriverArg = driverRow ? _rows[choice].Arg : -1, DriverDisabled = driverRow && _rows[choice].Disabled
+                });
             }
+            o.Slots = cards.ToArray();
             _right = false;
             if (_slots.Count > 0)
             {
@@ -407,18 +443,18 @@ namespace RealLifeOverhaul.Ui
             {
                 Columns = new[]
                 {
-                    new UiDataColumn { Title = UiText.T("common_product"), Kind = UiCellKind.Text },
+                    new UiDataColumn { Title = UiText.T("common_product"), Kind = UiCellKind.Tile },
                     new UiDataColumn { Title = UiText.T("bizman_inventory_in_stock"), Kind = UiCellKind.Figure, Width = 104f },
                     new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_boxes"), Kind = UiCellKind.Figure, Width = 80f },
                     new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_in_day"), Kind = UiCellKind.Figure, Width = 104f },
                     new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_out_day"), Kind = UiCellKind.Figure, Width = 104f },
-                    new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_lasts"), Kind = UiCellKind.Text, Width = 136f },
+                    new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_lasts"), Kind = UiCellKind.Chip, Width = 136f },
                     new UiDataColumn { Title = UiText.T("reallife_spoil_col"), Kind = UiCellKind.Text, Width = 112f },
                     new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_cost_each"), Kind = UiCellKind.Money, Width = 112f },
                     new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_value"), Kind = UiCellKind.Money, Width = 120f },
                 },
                 EmptyIcon = UiIcon.Package, EmptyTitle = UiText.T("reallife_ui_bizops_stock_none"), EmptyBody = UiText.T("reallife_ui_bizops_stock_none_body"),
-                Offset = o.Table != null ? o.Table.Offset : 0f
+                Offset = o.Table != null ? o.Table.Offset : 0f, SearchPlaceholder = UiText.T("reallife_ui_bizops_find_good"), Query = _tableQuery
             };
             int n = goods != null && goods.data != null ? goods.data.Count : 0;
             // The game's rows hold a product's name as it shows it (WarehouseProductModel: the item's own localisation): the
@@ -431,28 +467,42 @@ namespace RealLifeOverhaul.Ui
                     _productOf[product.GetLocalization()] = product;
                 }
             }
-            t.Rows = new UiDataRow[n];
+            var rows = new List<UiDataRow>(n);
             for (int i = 0; i < n; i++)
             {
                 WarehouseProductModel p = goods.data[i];
                 // In and out a day are the game's own seven days of deliveries in and shipments out (Warehouse.GetProductDeliveries, GetProductConsumption).
                 string days = p.DaysUntilEmpty < 0 ? UiText.T("bizman_inventory_run_out") : p.DaysUntilEmpty == int.MaxValue ? UiText.T("bizman_inventory_never_runs_out")
-                    : UiText.Fill("bizman_inventory_product_days_until_empty", "days", UiText.Whole(p.DaysUntilEmpty));
+                    : p.DaysUntilEmpty == 1 ? UiText.T("reallife_ui_bizops_one_day") : UiText.Fill("bizman_inventory_product_days_until_empty", "days", UiText.Whole(p.DaysUntilEmpty));
                 string item = p.ProductName != null && _productOf.TryGetValue(p.ProductName, out string name) ? name : null;
                 int pieces = item != null && _cargoPieces.TryGetValue(item, out int c) ? c : 0;
                 float paid = item != null && _cargoPaid.TryGetValue(item, out float v) ? v : 0f;
                 worth += paid;
                 string spoils = SpoilsWords(warehouse, item, out UiRole spoilTone);
-                t.Rows[i] = new UiDataRow
+                if (!Found(p.ProductName))
+                {
+                    continue;   // the stock's worth counts every good; the search only hides rows
+                }
+                UiRole lasts = BizOpsRules.LastsTone(p.DaysUntilEmpty);
+                rows.Add(new UiDataRow
                 {
                     Cells = new[] { p.ProductName, UiText.Whole(p.Stock), UiText.Whole(p.CargoAmount), BizOpsRules.PerDay(p.Deliveries), BizOpsRules.PerDay(p.Consumption), days,
                         spoils, pieces > 0 && paid > 0f ? (paid / pieces).ToCurrencyFormat() : "-", paid > 0f ? paid.ToCurrencyFormat() : "-" },
-                    Values = new[] { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-                    Tones = new[] { UiRole.None, p.Stock == 0 ? UiRole.DangerText : UiRole.None, UiRole.None, UiRole.None, UiRole.None, BizOpsRules.LastsTone(p.DaysUntilEmpty),
+                    Values = new[] { (int)UiIcon.Package, 0, 0, 0, 0, 0, 0, 0, 0 },
+                    Pictures = new[] { item != null ? BuyPictures.Item(item) : null },   // the good's own picture, as its shelves show it
+                    Tones = new[] { UiRole.None, p.Stock == 0 ? UiRole.DangerText : UiRole.None, UiRole.None, UiRole.None, UiRole.None,
+                        p.DaysUntilEmpty < 0 || lasts == UiRole.DangerText ? UiRole.Danger : lasts == UiRole.WarnText ? UiRole.Warn : p.DaysUntilEmpty == int.MaxValue ? UiRole.Muted : UiRole.Ok,
                         spoilTone, UiRole.None, UiRole.None }
-                };
+                });
             }
-            t.RowCount = n;
+            t.Rows = rows.ToArray();
+            t.RowCount = rows.Count;
+            t.EmptyAction = rows.Count == 0 && !string.IsNullOrEmpty(_tableQuery) ? UiText.T("bizman_schedule_clear_filter") : null;
+            if (t.EmptyAction != null)
+            {
+                t.EmptyTitle = UiText.T("reallife_ui_bizops_no_match");
+                t.EmptyBody = null;
+            }
             if (!SpoilShown)
             {
                 DropColumn(t, SpoilColumn);   // spoilage off: the table as before it
@@ -555,6 +605,10 @@ namespace RealLifeOverhaul.Ui
                         _m.Ops.Table.Offset = 0f;
                     }
                     return true;
+                case BizManPages.Table + UiDataTable.Search: return _m.Part == BizManPart.Stock;   // typing starts: the host opens the field
+                case BizManPages.Table + UiDataTable.Clear:
+                    _tableQuery = null;
+                    return true;
                 case BizManPages.OpsAction:
                     if (arg == DoSellAll)
                     {
@@ -592,6 +646,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     Inventory page = PageOf<Inventory>(b, BizManRules.Inventory);
                     var goods = page != null ? page.productsScrollerController : null;
+                    sig = sig * 31 + Hash(_tableQuery);   // the goods' search typed
                     for (int i = 0; goods != null && goods.data != null && i < goods.data.Count; i++)
                     {
                         sig = sig * 31 + goods.data[i].Stock * 7 + goods.data[i].Balance;

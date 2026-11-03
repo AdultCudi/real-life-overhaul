@@ -147,7 +147,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (m.Check != null)
             {
-                h += UiTokens.Control + UiTokens.S4;
+                h += CheckHeight(m, inner) + UiTokens.S4;
             }
             return UiDraw.Snap(UiTokens.S6 + h + UiTokens.Control + UiTokens.S6);
         }
@@ -175,21 +175,37 @@ namespace RealLifeOverhaul.Ui
         // A line to tick: its box (cyan with the tick when ticked) and its words, the whole line the target.
         private static float CheckLine(UiScene s, UiAt at, UiCardModel m, float x, float y, float w)
         {
-            float h = UiTokens.Control;
+            float h = CheckHeight(m, w);
             int face = UiDraw.Box(s, at, x, y, w, h, UiRole.None, UiRole.None, UiTokens.RadiusLarge);   // inside the words' column, its ring too
             UiAt inside = at.In(face);
             float box = UiTokens.KeyCap;   // 24 px: on the grid in a 40 px row
-            float bx = x + UiTokens.S2;
-            int tick = UiDraw.Box(s, inside, bx, y + (h - box) / 2f, box, box, m.Checked ? UiRole.Accent : UiRole.Field, m.Checked ? UiRole.None : UiRole.PanelEdge,
+            float bx = x + UiTokens.S2, by = y + UiDraw.SnapDown((h - box) / 2f);
+            int tick = UiDraw.Box(s, inside, bx, by, box, box, m.Checked ? UiRole.Accent : UiRole.Field, m.Checked ? UiRole.None : UiRole.PanelEdge,
                 UiTokens.RadiusSmall, m.Checked ? UiFlags.Selected : UiFlags.None);
             if (m.Checked)
             {
-                UiDraw.Icon(s, inside.In(tick), bx + (box - UiTokens.Icon) / 2f, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Check, UiRole.OnAccent, UiFlags.Middle | UiFlags.Centre);
+                UiDraw.Icon(s, inside.In(tick), bx + (box - UiTokens.Icon) / 2f, by + (box - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Check, UiRole.OnAccent, UiFlags.Middle | UiFlags.Centre);
             }
             float tx = bx + box + UiTokens.S3;
-            UiDraw.TextMiddle(s, inside, tx, y, h, x + w - tx, UiStyle.Body, UiRole.Text, m.Check, UiFlags.Label | UiFlags.Truncate);
+            if (h > UiTokens.Control)
+            {
+                float lh = UiTextRules.WrappedHeight(m.Check, UiStyle.Body, x + w - tx, 2);
+                UiDraw.Text(s, inside, tx, y + UiDraw.SnapDown((h - lh) / 2f), x + w - tx, UiStyle.Body, UiRole.Text, m.Check, UiFlags.Label | UiFlags.Wrap, 2);
+            }
+            else
+            {
+                UiDraw.TextMiddle(s, inside, tx, y, h, x + w - tx, UiStyle.Body, UiRole.Text, m.Check, UiFlags.Label | UiFlags.Truncate);
+            }
             UiDraw.Node(s, at, x, y, w, h, CheckCommand, 0, face);
             return h;
+        }
+
+        // The line to tick's height: a control's, or two lines' where a long translation needs them, never cut.
+        private static float CheckHeight(UiCardModel m, float w)
+        {
+            float room = w - UiTokens.S2 - UiTokens.KeyCap - UiTokens.S3;
+            return UiTextRules.Width(m.Check, UiStyle.Body) + UiTokens.S1 <= room ? UiTokens.Control
+                : Math.Max(UiTokens.Control, UiDraw.Snap(UiTextRules.WrappedHeight(m.Check, UiStyle.Body, room, 2) + UiTokens.S2));
         }
     }
 }

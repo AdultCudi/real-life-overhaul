@@ -21,7 +21,6 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public sealed partial class BizManScreen
     {
-        private static readonly string[] PriceHeads = { "ProductName", "SoldLastWeek", "StockCount", "MarketPrice", "RetailPriceSortField" };   // the game's sortable heads by column
         private readonly List<UiActionModel> _actions = new List<UiActionModel>(8);
         private readonly List<Transform> _agencies = new List<Transform>(8), _contacts = new List<Transform>(8), _kindCards = new List<Transform>(16);
         private readonly List<Toggle> _campaigns = new List<Toggle>(16);
@@ -441,7 +440,7 @@ namespace RealLifeOverhaul.Ui
                 EmptyIcon = UiIcon.Tag, EmptyTitle = UiText.T("reallife_ui_bizman_goods_none"), EmptyBody = UiText.T("reallife_ui_bizman_goods_none_body"),
                 Offset = old != null ? old.Offset : 0f, Reveal = old != null ? old.Reveal : -1
             };
-            Heads(t, table != null ? table.transform.Find("Headers") : null, PriceHeads);
+            Heads(t, table != null ? table.transform.Find("Headers") : null, BizManRules.PriceHeads);
             int n = table != null ? table.data.Count : 0;
             t.Rows = new UiDataRow[n];
             string district = b.building != null && !string.IsNullOrEmpty(b.building.Neighbourhood) ? b.building.Neighbourhood : null;   // the district the goods' market prices are of
@@ -548,9 +547,10 @@ namespace RealLifeOverhaul.Ui
         // A table's head from the game's own: which columns it sorts by, and the one it sorted with its order's arrow.
         private static void Heads(UiDataTableModel t, Transform heads, string[] names)
         {
-            for (int c = 0; c < t.Columns.Length && c < names.Length; c++)
+            for (int c = 0; c < t.Columns.Length; c++)
             {
-                Transform head = heads != null && names[c] != null ? heads.Find(names[c]) : null;
+                string name = BizManRules.HeadOf(names, c);
+                Transform head = heads != null && name != null ? heads.Find(name) : null;
                 t.Columns[c].Sortable = head != null && head.GetComponent<Button>() != null;
                 if (head != null && (Shown(head.Find("ArrowUp")) || Shown(head.Find("ArrowDown"))))
                 {

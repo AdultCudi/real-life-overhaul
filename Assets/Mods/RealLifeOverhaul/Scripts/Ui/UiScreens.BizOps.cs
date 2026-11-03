@@ -113,7 +113,17 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_bizops_strategy_step", "reallife_ui_bizops_takings_yesterday", "reallife_ui_bizops_target", "reallife_ui_bizops_today_at",
                     "reallife_ui_bizops_tomorrow_at", "reallife_ui_bizops_wages_day", "reallife_ui_bizops_week_planned", "reallife_ui_bizops_worker",
                     "reallife_ui_prompt_back", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_staff_all_demands",
-                    "reallife_ui_staff_chosen", "repeating_order", "smartphone_bizman", "stage_with_licensing_fee_disabled", "stage_with_licensing_fee_enabled"
+                    "reallife_ui_staff_chosen", "repeating_order", "smartphone_bizman", "stage_with_licensing_fee_disabled", "stage_with_licensing_fee_enabled",
+                    "bizman_factory_inactive_reason_closed", "bizman_factory_inactive_reason_no_space",
+                    "bizman_factory_inactive_reason_production_limit", "bizman_pricingmanagers_owned_businesses", "bizman_schedule_auto_fill_info",
+                    "common_sunday", "common_wednesday", "reallife_trips_on_route", "reallife_ui_bizops_assign_named",
+                    "reallife_ui_bizops_chip_closed", "reallife_ui_bizops_chip_full", "reallife_ui_bizops_chip_limit",
+                    "reallife_ui_bizops_chip_missing", "reallife_ui_bizops_chip_no_input", "reallife_ui_bizops_chip_no_worker",
+                    "reallife_ui_bizops_col_free", "reallife_ui_bizops_col_per_hour", "reallife_ui_bizops_col_state", "reallife_ui_bizops_crew_line",
+                    "reallife_ui_bizops_crew_line_chosen", "reallife_ui_bizops_empty_hint", "reallife_ui_bizops_empty_hint_gaps",
+                    "reallife_ui_bizops_find_good", "reallife_ui_bizops_find_product", "reallife_ui_bizops_free_all_day",
+                    "reallife_ui_bizops_hours_full", "reallife_ui_bizops_hours_left_short", "reallife_ui_bizops_more_goods",
+                    "reallife_ui_bizops_no_match", "reallife_ui_bizops_one_day", "reallife_ui_bizops_view_plan", "reallife_ui_bizops_view_prices"
                 }).Switch(UiScreenSwitches.Business),
                 new UiScreenDef("uniforms", UiTemplate.InfoPanel, "UniformsScreen", new[]
                 {

@@ -324,14 +324,14 @@ namespace RealLifeOverhaul.Ui
 
         private bool GoodsHead(BizManBusiness b, int column)
         {
-            if (_shown != BizManRules.Pricing || column < 0 || column >= PriceHeads.Length)
+            if (_shown != BizManRules.Pricing || column < 0 || BizManRules.HeadOf(BizManRules.PriceHeads, column) == null)
             {
                 return false;
             }
             InventoryProductsScrollerController table = b.bizManInventoryPricing != null ? b.bizManInventoryPricing.inventoryProductsScrollerController : null;
             Transform heads = table != null ? table.transform.Find("Headers") : null;
-            Transform head = heads != null ? heads.Find(PriceHeads[column]) : null;
-            return head != null && Click(head.GetComponent<Button>(), "sort the goods by " + PriceHeads[column]);
+            Transform head = heads != null ? heads.Find(BizManRules.PriceHeads[column]) : null;
+            return head != null && Click(head.GetComponent<Button>(), "sort the goods by " + BizManRules.PriceHeads[column]);
         }
 
         // A row's minus or plus, pressed on the game's own cell for that row once its scroller has brought it in.

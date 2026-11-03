@@ -117,7 +117,7 @@ namespace RealLifeOverhaul.Ui
             if (strip != null && UiActivity.Strip(strip.State))
             {
                 UiActivity.StripPlace(frame, strip, out float ax, out float ay);
-                if (UiHudRules.Overlaps(x, y, w, h, ax, ay, UiActivity.StripWidth, UiActivity.Height(strip)))
+                if (UiHudRules.Overlaps(x, y, w, h, ax, ay, strip.StripW, UiActivity.Height(strip)))
                 {
                     y = ay - UiTokens.S2 - h;
                 }

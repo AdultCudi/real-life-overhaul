@@ -109,6 +109,32 @@ namespace RealLifeOverhaul.Ui
     }
 
     /// <summary>
+    /// Where a scene stood at a moment of its layout: Back takes everything laid since away again, so a template can try a
+    /// shape (a column beside a board), measure it and lay another in its place. Cost: a few integers.
+    /// </summary>
+    public struct UiMark
+    {
+        private int _items, _nodes, _clips, _lists, _prompts, _focus;
+
+        /// <summary>The scene as it stands now.</summary>
+        public static UiMark Of(UiScene s) => new UiMark
+        {
+            _items = s.ItemCount, _nodes = s.NodeCount, _clips = s.ClipCount, _lists = s.ListCount, _prompts = s.PromptCount, _focus = s.FocusFirst
+        };
+
+        /// <summary>Takes away everything laid since the mark.</summary>
+        public void Back(UiScene s)
+        {
+            s.ItemCount = _items;
+            s.NodeCount = _nodes;
+            s.ClipCount = _clips;
+            s.ListCount = _lists;
+            s.PromptCount = _prompts;
+            s.FocusFirst = _focus;
+        }
+    }
+
+    /// <summary>
     /// A laid-out screen: every item drawn, every focus target, the scroll regions, the lists and the prompt bar, in px of
     /// a 1920 x 1080 screen. A template writes it from a view model; the renderer draws it and EconomyCheck checks it, so
     /// both see the same boxes. Its arrays grow while a screen is first laid out and are then kept: laying the same

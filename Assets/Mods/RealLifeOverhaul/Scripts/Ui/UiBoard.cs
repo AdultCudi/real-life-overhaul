@@ -22,6 +22,7 @@ namespace RealLifeOverhaul.Ui
         public bool Warn;        // overworked, or missing the skill: the warning's glyph on the bar
         public float Hue;        // the person's face's hue, where the board shows faces on its bars
         public UiRole Ring;      // their mood, as every portrait's ring says it
+        public string Span;      // its hours in the game's form ("07:00 to 15:00"), a second line where the bar has the room; null for none
     }
 
     /// <summary>How a drag takes hold of a shift: its start edge, its end edge or its body.</summary>
@@ -262,8 +263,17 @@ namespace RealLifeOverhaul.Ui
             bool warns = !string.IsNullOrEmpty(l.Warning);
             string sub = warns ? l.Warning : l.Sub;
             float nameH = UiTextRules.LineHeight(UiStyle.Title), subH = string.IsNullOrEmpty(sub) ? 0f : UiTextRules.LineHeight(UiStyle.Small);
-            float top = y + (LaneHeight - nameH - (subH > 0f ? UiTokens.S1 + subH : 0f)) / 2f;
-            UiDraw.Text(s, inside, tx, top, tw, UiStyle.Title, UiRole.Text, l.Name, UiFlags.Truncate | UiFlags.Middle);
+            bool twoLines = !warns && !string.IsNullOrEmpty(l.Name) && UiTextRules.Width(l.Name, UiStyle.Title) + UiTokens.S1 > tw;
+            if (twoLines)
+            {
+                // A long name takes the lane head's two lines whole, in place of its quiet line: the station is what the
+                // player reads the lane by, its customers an hour only a detail.
+                nameH = UiTextRules.WrappedHeight(l.Name, UiStyle.Title, tw, 2);
+                subH = 0f;
+            }
+            float top = twoLines ? y + UiDraw.SnapDown((LaneHeight - nameH) / 2f)   // the two lines' box on the grid
+                : y + (LaneHeight - nameH - (subH > 0f ? UiTokens.S1 + subH : 0f)) / 2f;
+            UiDraw.Text(s, inside, tx, top, tw, UiStyle.Title, UiRole.Text, l.Name, twoLines ? UiFlags.Wrap | UiFlags.Truncate : UiFlags.Truncate | UiFlags.Middle, twoLines ? 2 : 1);
             if (subH > 0f)
             {
                 float sx = tx;
@@ -330,6 +340,33 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        /// <summary>
+        /// The words a bar of some room shows of a person's name, never cut mid word: the whole name, else the first name,
+        /// else the initials, else nothing (a bar too short for two letters says it by its face and its place).
+        /// </summary>
+        public static string BarWords(string name, float room)
+        {
+            if (string.IsNullOrEmpty(name) || room < UiTokens.S4)
+            {
+                return null;
+            }
+            if (UiTextRules.Width(name, UiStyle.SmallStrong) + UiTokens.S1 <= room)
+            {
+                return name;
+            }
+            name = name.Trim();
+            int space = name.IndexOf(' ');
+            string first = space > 0 ? name.Substring(0, space) : name;
+            if (UiTextRules.Width(first, UiStyle.SmallStrong) + UiTokens.S1 <= room)
+            {
+                return first;
+            }
+            int last = name.LastIndexOf(' ');
+            string initials = space > 0 && last + 1 < name.Length ? name.Substring(0, 1) + name.Substring(last + 1, 1) : name.Substring(0, 1);
+            initials = initials.ToUpperInvariant();
+            return UiTextRules.Width(initials, UiStyle.SmallStrong) + UiTokens.S1 <= room ? initials : null;
+        }
+
         // Hours outside the opening hours, darker, as a closed shop's hours are on the game's schedule.
         private static void Closed(UiScene s, UiAt at, UiBoardModel m, float y, float rx, int from, int to, float perHour)
         {
@@ -380,15 +417,17 @@ namespace RealLifeOverhaul.Ui
                     UiFlags.Middle | UiFlags.Share);
                 room -= UiTokens.IconSmall + UiTokens.S1;
             }
-            bool times = chosen && m.Moving && !string.IsNullOrEmpty(m.MovingSpan);
-            if (room >= UiTokens.S6)
+            string span = chosen && m.Moving && !string.IsNullOrEmpty(m.MovingSpan) ? m.MovingSpan : shift.Span;
+            bool times = !string.IsNullOrEmpty(span) && UiTextRules.Width(span, UiStyle.Small) + UiTokens.S1 <= room;
+            string words = BarWords(shift.Name, room);
+            if (words != null)
             {
                 float nameH = UiTextRules.LineHeight(UiStyle.SmallStrong), timeH = UiTextRules.LineHeight(UiStyle.Small);
                 float top = by + (bh - nameH - (times ? timeH : 0f)) / 2f;
-                UiDraw.Text(s, inside, bx + pad, top, room, UiStyle.SmallStrong, ink, shift.Name, UiFlags.Truncate | UiFlags.Share | UiFlags.Middle);
+                UiDraw.Text(s, inside, bx + pad, top, room, UiStyle.SmallStrong, ink, words, UiFlags.Truncate | UiFlags.Share | UiFlags.Middle);
                 if (times)
                 {
-                    UiDraw.Text(s, inside, bx + pad, top + nameH, room, UiStyle.Small, ink, m.MovingSpan, UiFlags.Truncate | UiFlags.Share | UiFlags.Middle);
+                    UiDraw.Text(s, inside, bx + pad, top + nameH, room, UiStyle.Small, chosen ? ink : UiRole.Text2, span, UiFlags.Truncate | UiFlags.Share | UiFlags.Middle);
                 }
             }
             if (chosen && m.Moving)

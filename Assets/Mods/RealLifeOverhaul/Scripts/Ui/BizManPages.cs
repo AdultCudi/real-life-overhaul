@@ -45,7 +45,7 @@ namespace RealLifeOverhaul.Ui
             People + UiDataTable.Head, People + UiDataTable.Filter, People + UiDataTable.Search, People + UiDataTable.Row, People + UiDataTable.Clear,
             Table + UiDataTable.Head, Table + UiDataTable.Filter, Table + UiDataTable.Search, Table + UiDataTable.Row, Table + UiDataTable.Clear,
             Table + UiDataTable.Pick, Table + UiDataTable.Mass, Table + UiDataTable.Done, Table + UiDataTable.Less, Table + UiDataTable.Type, Table + UiDataTable.More,
-            Table + UiDataTable.Act
+            Table + UiDataTable.Act, OpsFormTab, Crew + UiDataTable.Row
         };
 
         [ThreadStatic] private static float _split;   // where a page's own layout splits its two columns this layout (a photo's page), or NaN for the middle
@@ -73,15 +73,17 @@ namespace RealLifeOverhaul.Ui
             _split = float.NaN;
             UiPageFence.Lay(s, page, split, split);
             Restore(s);   // the schedule's board keeps its own way from a lane along its shifts
+            if (m.Page == BizManPage.Business && m.Ops.Card != null)
+            {
+                // A question the game asks inside the page stands over it as its own boxes do, its prompt bar in place of the window's.
+                UiCard.LayOver(s, m.Ops.Card, frame, keys);
+                return;
+            }
             for (int i = 0; i < m.PromptCount; i++)
             {
                 s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
             }
             UiDraw.PromptBar(s, frame, keys);
-            if (m.Page == BizManPage.Business && m.Ops.Card != null)
-            {
-                UiCard.LayOver(s, m.Ops.Card, frame, keys);   // a question the game asks inside the page stands over it as its own boxes do
-            }
         }
 
         /// <summary>The page dimmed under a list or a card opened over it, so what it covers reads as behind it.</summary>

@@ -65,6 +65,9 @@ namespace RealLifeOverhaul.Ui
         private float _downX = -1f;                 // where the pointer last went down on a lane, so its click says which hour
         private int _downLane = -1;
         private string _renaming;                   // the workstation whose name is being typed
+        private string _crewPick;                   // the person chosen in the people beside the board, to be put on the next hour pressed
+        private bool _crewDrag;                     // a person of the column held by the pointer
+        private int _crewLane = -1, _crewHour = -1; // where that drag rests: a lane and an hour, or -1
         private bool _hoursOpen;                    // the opening hours' sheet is open
         private readonly int[] _placedAt = new int[BizOpsRules.Hours];    // the day's work shifts at each hour
         private readonly int[] _neededAt = new int[BizOpsRules.Hours];    // the stations the planner wants worked at each hour
@@ -138,6 +141,8 @@ namespace RealLifeOverhaul.Ui
             DayLine(b, days, day, hq);
             Hours(sch, hq);
             People();
+            Crew(hq);
+            Hint(day);
             Filler(sch);
         }
 
@@ -175,7 +180,8 @@ namespace RealLifeOverhaul.Ui
                     shifts.Add(new UiBoardShift
                     {
                         Lane = held && _dragLane >= 0 ? _dragLane : i, Start = (held ? _dragStart : s.startingHour) * 60, End = (held ? _dragEnd : s.endingHour) * 60,
-                        Name = name, Warn = e != null && Warns(e), Hue = UiColour.HueOf(name), Ring = e != null ? StaffViews.Mood((int)e.satisfaction) : UiRole.None
+                        Name = name, Warn = e != null && Warns(e), Hue = UiColour.HueOf(name), Ring = e != null ? StaffViews.Mood((int)e.satisfaction) : UiRole.None,
+                        Span = UiText.Fill("reallife_ui_bizops_span", "from", s.startingHour.GetFormattedTime(0f), "to", (s.endingHour % BizOpsRules.Hours).GetFormattedTime(0f))
                     });
                     _shifts.Add(s);
                 }
@@ -294,6 +300,7 @@ namespace RealLifeOverhaul.Ui
             ScheduleDayButton shown = DayButton(days, day);
             Toggle open = Get<Toggle>(GameContract.SchedDayOpen, shown);
             o.DayOpenWords = UiText.Fill("reallife_ui_bizops_open_on", "day", UiText.T(day.day.GetLocalizeKey()));
+            o.DayOpenShort = UiText.T(day.day.GetLocalizeKey());   // the game's own name of the day
             o.DayOpen = open != null ? open.isOn : day.isOpen;
             o.DayOpenDisabled = hq || open == null || !open.interactable;
             int runs = BizOpsRules.Runs(_m.Ops.Board.OpenHours, _fromHours, _toHours);
@@ -336,16 +343,21 @@ namespace RealLifeOverhaul.Ui
                 Offer(_actions, Get<Button>(GameContract.SchedDayPaste, shown), DoPasteDay, UiButtonKind.Secondary, UiIcon.None, UiAction.Count, "reallife_ui_bizops_paste");
                 Offer(_actions, Get<Button>(GameContract.SchedDayPasteAll, shown), DoPasteAll, UiButtonKind.Secondary, UiIcon.None, UiAction.Count, "reallife_ui_bizops_paste_all");
                 Offer(_actions, Get<Button>(GameContract.SchedDayClear, shown), DoClearDay, UiButtonKind.Secondary, UiIcon.Trash, UiAction.Count, "reallife_ui_bizops_clear");
-                if (!hq && _plannerPlace != null && Company.Instance != null && Company.Instance.RotaOn)
+                bool gaps = !hq && _plannerPlace != null && Company.Instance != null && Company.Instance.RotaOn;
+                if (gaps)
                 {
-                    // Beside the day's facts and problems it mends, not among the game's own day buttons.
+                    // Beside the day's facts and problems it mends, not among the game's own day buttons; the page's one
+                    // main action on F while the day is open.
                     o.FactActions = new[]
                     {
-                        new UiActionModel { Label = UiText.T("reallife_ui_bizops_fill_gaps"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Plus, Key = UiAction.Count,
-                            Arg = DoFillGaps, Disabled = !_plannerReady || !day.isOpen }
+                        new UiActionModel { Label = UiText.T("reallife_ui_bizops_fill_gaps"), Kind = day.isOpen ? UiButtonKind.Primary : UiButtonKind.Secondary, Icon = UiIcon.Plus,
+                            Key = day.isOpen ? UiAction.Alt : UiAction.Count, Arg = DoFillGaps, Disabled = !_plannerReady || !day.isOpen }
                     };
                 }
-                Offer(_actions, Get<Button>(GameContract.SchedDayAuto, shown), DoAutoDay, UiButtonKind.Primary, UiIcon.Spark, UiAction.Alt, "bizman_schedule_auto_fill_day");
+                // The game's auto fill is the main action only where Fill the gaps is not offered and the day is open.
+                bool autoMain = !gaps && day.isOpen;
+                Offer(_actions, Get<Button>(GameContract.SchedDayAuto, shown), DoAutoDay, autoMain ? UiButtonKind.Primary : UiButtonKind.Secondary, UiIcon.Spark,
+                    autoMain ? UiAction.Alt : UiAction.Count, "bizman_schedule_auto_fill_day");
                 Reword(DoCopyDay, "reallife_ui_bizops_copy");
                 Reword(DoPasteDay, "reallife_ui_bizops_paste");
                 Reword(DoPasteAll, "reallife_ui_bizops_paste_all");
@@ -439,7 +451,8 @@ namespace RealLifeOverhaul.Ui
             {
                 new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_person"), Kind = UiCellKind.Person },
                 new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_skill"), Kind = UiCellKind.Figure, Width = 64f, Graded = true, Sortable = true },
-                new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_week"), Kind = UiCellKind.Figure, Width = 72f, Sortable = true },
+                new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_week"), Kind = UiCellKind.Figure, Width = 96f, Sortable = true },
+                new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_free"), Kind = UiCellKind.Text, Width = 120f },
                 new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_fit"), Kind = UiCellKind.Chip, Width = 112f },
             };
             List<ScheduleEmployeeModel> data = list.data;
@@ -452,12 +465,18 @@ namespace RealLifeOverhaul.Ui
                 string fit = !p.isAvailable ? "reallife_ui_bizops_fit_busy" : demand ? "reallife_ui_bizops_fit_demand" : worn ? "reallife_ui_bizops_fit_tired"
                     : p.perfectMatch ? "reallife_ui_bizops_fit_best" : "reallife_ui_bizops_fit_free";
                 UiRole tone = !p.isAvailable ? UiRole.Muted : demand || worn ? UiRole.Warn : UiRole.Ok;
+                // The hours they work this week against what their demand allows, and the hours free around the one being
+                // filled, each a column of its own so neither is cut from a long line under the name.
+                int most = MostHours(ScheduleHelper.GetScheduleEmployeeById(p.employeeId));
+                string week = most > 0 ? UiText.Fill("reallife_ui_bizops_hours_of", "count", UiText.Whole(p.hoursAssigned), "most", UiText.Whole(most))
+                    : UiText.Fill("reallife_ui_bizops_hours_week", "hours", UiText.Whole(p.hoursAssigned));
                 t.Rows[i] = new UiDataRow
                 {
-                    Cells = new[] { p.employeeName, UiText.Whole(p.primarySkillPercentage) + "%", UiText.Fill("reallife_ui_bizops_hours_week", "hours", UiText.Whole(p.hoursAssigned)), UiText.T(fit) },
-                    Values = new[] { 0, p.primarySkillPercentage, 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, tone },
+                    Cells = new[] { p.employeeName, UiText.Whole(p.primarySkillPercentage) + "%", week, PickFree(p, hour) ?? "-", UiText.T(fit) },
+                    Values = new[] { 0, p.primarySkillPercentage, 0, 0, 0 },
+                    Tones = new[] { UiRole.None, UiRole.None, most > 0 && p.hoursAssigned >= most ? UiRole.WarnText : UiRole.None, UiRole.None, tone },
                     Sub = string.IsNullOrEmpty(p.primarySkillName) ? null
-                        : UiText.T(p.primarySkillName) + ", " + UiText.Fill("bizman_schedule_hourly_wage", "wage", PickWage(p).ToShortCurrencyFormat()) + PickFree(p, hour),
+                        : UiText.T(p.primarySkillName) + ", " + UiText.Fill("bizman_schedule_hourly_wage", "wage", PickWage(p).ToShortCurrencyFormat()),
                     Hue = UiColour.HueOf(p.employeeName ?? string.Empty), Ring = StaffViews.Mood((int)p.satisfaction)
                 };
             }
@@ -473,11 +492,11 @@ namespace RealLifeOverhaul.Ui
             t.EmptyAction = !string.IsNullOrEmpty(t.Query) || FiltersOn() > 0 ? UiText.T("bizman_schedule_clear_filter") : null;
         }
 
-        // A person's free hours around the hour being filled on the day shown, by their own shifts that day, and the hours
-        // a week their demand still leaves them: ", free 17:00 to 23:00, 12 h left this week".
+        // A person's free hours around the hour being filled on the day shown, by their own shifts that day ("17:00 to
+        // 23:00"), "All day" with nothing else that day, or null when busy then.
         private string PickFree(ScheduleEmployeeModel p, int hour)
         {
-            string words = string.Empty;
+            string words = null;
             List<WorkShift> own = p.isAvailable && hour >= 0 ? ScheduleHelper.GetWorkShiftsByEmployeeId(p.employeeId) : null;
             if (own != null)
             {
@@ -491,19 +510,145 @@ namespace RealLifeOverhaul.Ui
                         n++;
                     }
                 }
-                if (BizOpsRules.FreeWindow(_freeStarts, _freeEnds, n, hour, out int from, out int to) && (from > 0 || to < BizOpsRules.Hours))
+                if (BizOpsRules.FreeWindow(_freeStarts, _freeEnds, n, hour, out int from, out int to))
                 {
-                    words += ", " + UiText.Fill("reallife_ui_bizops_free", "from", from.GetFormattedTime(0f), "to", (to % BizOpsRules.Hours).GetFormattedTime(0f));
+                    words = from > 0 || to < BizOpsRules.Hours
+                        ? UiText.Fill("reallife_ui_bizops_span", "from", from.GetFormattedTime(0f), "to", (to % BizOpsRules.Hours).GetFormattedTime(0f))
+                        : UiText.T("reallife_ui_bizops_free_all_day");
                 }
             }
-            EmployeeInstance e = ScheduleHelper.GetScheduleEmployeeById(p.employeeId);
+            return words;
+        }
+
+        // ------------------------------------------------------------------------------------------------- the people beside the board
+
+        private readonly List<string> _crew = new List<string>(32);   // the column's people, by row: each one's id
+
+        // The place's people as the game's schedule holds them (ScheduleHelper.Employees, its own list for this place), each
+        // their face, role and wage, and their hours this week against what their demand allows; the one chosen in the cyan
+        // fifth. A headquarters keeps the game's own working hours, and while the game's picker is open it is the list.
+        private void Crew(bool hq)
+        {
+            BizOpsModel o = _m.Ops;
+            List<EmployeeInstance> staff = ScheduleHelper.Employees;
+            _crew.Clear();
+            if (hq || staff == null || o.Board == null || o.Board.Lanes.Length == 0)
+            {
+                o.Crew = null;
+                _crewPick = null;
+                return;
+            }
+            UiDataTableModel old = o.Crew;
+            var t = new UiDataTableModel
+            {
+                Columns = new[]
+                {
+                    new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_person"), Kind = UiCellKind.Person },
+                    new UiDataColumn { Title = UiText.T("reallife_ui_bizops_col_week"), Kind = UiCellKind.Chip, Width = 96f },
+                },
+                Offset = old != null ? old.Offset : 0f, EmptyIcon = UiIcon.People, EmptyTitle = UiText.T("bizman_schedule_employee_no_employees")
+            };
+            var rows = new List<UiDataRow>(staff.Count);
+            for (int i = 0; i < staff.Count; i++)
+            {
+                EmployeeInstance e = staff[i];
+                if (e == null || e.characterData == null)
+                {
+                    continue;
+                }
+                int most = MostHours(e), left = BizOpsRules.HoursLeft(most, e.assignedWeeklyHours);
+                string hours = left == 0 ? UiText.Fill("reallife_ui_bizops_hours_full", "hours", UiText.Whole(e.assignedWeeklyHours))
+                    : left > 0 ? UiText.Fill("reallife_ui_bizops_hours_left_short", "hours", UiText.Whole(left))
+                    : UiText.Fill("reallife_ui_bizops_hours_week", "hours", UiText.Whole(e.assignedWeeklyHours));
+                string skill = e.GetPrimarySkill();
+                rows.Add(new UiDataRow
+                {
+                    Cells = new[] { e.characterData.name, hours }, Tones = new[] { UiRole.None, left == 0 ? UiRole.Warn : UiRole.Ok },
+                    Sub = (string.IsNullOrEmpty(skill) ? string.Empty : UiText.T(skill) + ", ")
+                          + UiText.Fill("bizman_schedule_hourly_wage", "wage", PaidWage.NowMoney(e.hourlyWage, e.id).ToShortCurrencyFormat()),
+                    Hue = UiColour.HueOf(e.characterData.name), Ring = StaffViews.Mood((int)e.satisfaction)
+                });
+                t.Selected = e.id == _crewPick ? _crew.Count : t.Selected;
+                _crew.Add(e.id);
+            }
+            if (t.Selected < 0)
+            {
+                _crewPick = null;   // gone from the place since it was chosen
+            }
+            t.Rows = rows.ToArray();
+            t.RowCount = rows.Count;
+            BizOpsRules.FitChips(t);
+            o.Crew = t;
+            o.CrewTitle = UiText.T("bizman_schedule_employee_header_no_workstation");
+            o.CrewLine = UiText.T(_crewPick != null ? "reallife_ui_bizops_crew_line_chosen" : "reallife_ui_bizops_crew_line");
+        }
+
+        // A day with stations and nobody on it: the first thing to do, as one sentence over the board.
+        private void Hint(ScheduleDay day)
+        {
+            BizOpsModel o = _m.Ops;
+            bool empty = day.isOpen && o.Board != null && o.Board.Lanes.Length > 0 && o.Board.Shifts.Length == 0;
+            o.BoardHint = !empty ? null : UiText.T(o.FactActions.Length > 0 ? "reallife_ui_bizops_empty_hint_gaps" : "reallife_ui_bizops_empty_hint");
+        }
+
+        // The hours a week a person's demand allows (the game's HoursWorkingPerWeek), or 0 where they ask for no limit.
+        private static int MostHours(EmployeeInstance e)
+        {
             int most = 0;
             for (int i = 0; e != null && e.demands != null && i < e.demands.Count; i++)
             {
                 most = JobDemandHelper.GetByName(e.demands[i]) is HoursWorkingPerWeek week && week.MaxHours > 0 ? week.MaxHours : most;
             }
-            int left = BizOpsRules.HoursLeft(most, p.hoursAssigned);
-            return left >= 0 ? words + ", " + UiText.Fill("reallife_ui_bizops_hours_left", "hours", UiText.Whole(left)) : words;
+            return most;
+        }
+
+        // A person of the column pressed: chosen to place, or let go when pressed again.
+        private bool CrewChoose(int row)
+        {
+            if (row < 0 || row >= _crew.Count)
+            {
+                return false;
+            }
+            _crewPick = _crew[row] == _crewPick ? null : _crew[row];
+            _chosen = null;
+            _renaming = null;
+            return true;
+        }
+
+        // The person dropped on a lane at an hour: as a press there, if the game's own hour button would take a shift.
+        private void CrewDrop(string lane, int hour)
+        {
+            if (!ScheduleHelper.CurrentScheduleDay.isOpen)
+            {
+                Notifications.ShowError("bizman_schedule_notification_cant_assign_on_closed_days");
+                return;
+            }
+            bool[] open = ScheduleHelper.OpeningHoursState ?? new bool[BizOpsRules.Hours];
+            if (BizOpsRules.CanStart(open, Taken(lane), ScheduleHelper.IsCleaningStation(lane), hour))
+            {
+                CrewPlace(lane, hour);
+            }
+        }
+
+        // The chosen person given the hour of a lane, by the game's own ScheduleHelper.AddWorkShift as its picker gives it
+        // (it sets the shift's end by its own rule, Going Public and the schedule mods see the same call); refused with the
+        // game's own notice where they lack the skill or work elsewhere then, and only where the game's row takes edits.
+        private bool CrewPlace(string lane, int hour)
+        {
+            string who = _crewPick;
+            if (who == null || ScheduleHelper.GetScheduleEmployeeById(who) == null || !Renamable(lane))
+            {
+                return false;
+            }
+            if (!ScheduleHelper.IsEmployeeAvailable(lane, who, hour))
+            {
+                Notifications.ShowError("bizman_schedule_employee_not_available");
+                return false;
+            }
+            ScheduleHelper.AddWorkShift(hour, lane, who);
+            _crewPick = null;
+            UiDirector.Logger?.Info("BizMan (kit): a person of the column put on the schedule through the game's ScheduleHelper");
+            return true;
         }
 
         // ------------------------------------------------------------------------------------------------- the day's facts
@@ -960,7 +1105,8 @@ namespace RealLifeOverhaul.Ui
             {
                 return 0;
             }
-            long sig = (int)day.day * 7 + (day.isOpen ? 1 : 0) + (_renaming != null ? 1000 : 0) + (_hoursOpen ? 2000 : 0) + (_chosen != null ? _chosen.GetHashCode() : 0);
+            long sig = (int)day.day * 7 + (day.isOpen ? 1 : 0) + (_renaming != null ? 1000 : 0) + (_hoursOpen ? 2000 : 0) + (_chosen != null ? _chosen.GetHashCode() : 0)
+                + (_crewPick != null ? _crewPick.GetHashCode() * 3 : 0);
             for (int i = 0; i < day.workShifts.Count; i++)
             {
                 WorkShift s = day.workShifts[i];
@@ -1047,6 +1193,7 @@ namespace RealLifeOverhaul.Ui
                     return Click(Get<Button>(GameContract.SchedFillerCancel, sch.scheduleAutoFillerUI), "cancel the auto fill");
                 case BizManPages.OpsSearch: return true;   // typing: the host opens the field
                 case BizManPages.People + UiDataTable.Row: return Pick(arg);
+                case BizManPages.Crew + UiDataTable.Row: return CrewChoose(arg);
                 case BizManPages.People + UiDataTable.Head: return Sort(arg);
                 case BizManPages.People + UiDataTable.Search: return true;
                 case BizManPages.People + UiDataTable.Filter:
@@ -1120,6 +1267,10 @@ namespace RealLifeOverhaul.Ui
             if (!BizOpsRules.CanStart(open, taken, cleaning, hour))
             {
                 return false;   // the game's own hour there is closed or taken: its button does nothing
+            }
+            if (_crewPick != null)
+            {
+                return CrewPlace(id, hour);   // the person chosen beside the board takes this hour
             }
             ScheduleHelper.OnRequestEmployeeSelection.Invoke(hour, id);   // what the game's hour button does
             UiDirector.Logger?.Info("BizMan (kit): the game's picker opened for an hour of a workstation");
@@ -1360,6 +1511,15 @@ namespace RealLifeOverhaul.Ui
         public bool DragBegin(int command, int arg, float x, float y)
         {
             UiBoardModel board = _m.Ops.Board;
+            if (_m.Part == BizManPart.Schedule && command == BizManPages.Crew + UiDataTable.Row && board != null && arg >= 0 && arg < _crew.Count)
+            {
+                // A person of the column held: dropped on an hour of a lane, they take it as a press there would give it.
+                _crewPick = _crew[arg];
+                _crewDrag = true;
+                _crewLane = _crewHour = -1;
+                _dirty = true;
+                return true;
+            }
             if (_m.Part != BizManPart.Schedule || command != UiBoard.ShiftCommand || board == null || arg < 0 || arg >= _shifts.Count)
             {
                 return false;
@@ -1387,6 +1547,13 @@ namespace RealLifeOverhaul.Ui
         public void DragMove(float x, float y)
         {
             UiBoardModel board = _m.Ops.Board;
+            if (_crewDrag)
+            {
+                bool over = board != null && x >= board.RulerX && x < board.RulerX + board.RulerW && y >= board.LanesTop && y < board.LanesTop + board.LanesHeight;
+                _crewLane = over ? UiBoardRules.LaneAt(board, y) : -1;
+                _crewHour = over ? UiBoardRules.MinuteAt(board, x) / 60 : -1;
+                return;
+            }
             int index = _dragged != null && board != null ? board.Chosen : -1;
             if (index < 0)
             {
@@ -1417,6 +1584,18 @@ namespace RealLifeOverhaul.Ui
 
         public void DragEnd(bool cancelled)
         {
+            if (_crewDrag)
+            {
+                _crewDrag = false;
+                _dirty = true;
+                int lane = _crewLane, hour = _crewHour;
+                _crewLane = _crewHour = -1;
+                if (!cancelled && lane >= 0 && lane < _lanes.Count && hour >= 0 && !string.IsNullOrEmpty(_lanes[lane]) && (lane >= _feeLanes.Count || !_feeLanes[lane]))
+                {
+                    CrewDrop(_lanes[lane], hour);
+                }
+                return;
+            }
             WorkShift s = _dragged;
             _dragged = null;
             _dirty = true;

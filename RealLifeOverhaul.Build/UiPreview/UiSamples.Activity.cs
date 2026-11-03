@@ -38,7 +38,7 @@ internal static partial class UiSamples
                     Label = t("reallife_ui_activity_skill", "Skill"), Value = t("reallife_ui_activity_skill_day", "{skill} +{amount} a day").Replace("{skill}", Pick("Game design", "Spieldesign")).Replace("{amount}", "6"),
                     Ink = UiRole.OkText,
                 },
-                new UiInfoRow { Label = t("reallife_ui_activity_standing", "Standing with the team"), Value = "64", Ink = UiRole.OkText },
+                new UiInfoRow { Label = t("reallife_ui_activity_standing", "Standing with the team"), Value = "+3", Ink = UiRole.OkText },
                 new UiInfoRow { Label = t("reallife_ui_activity_stress", "Stress"), Value = "+9%", Ink = UiRole.WarnText },
             },
             HasDuration = true, DurationLabel = t("reallife_ui_activity_work_for", "Work for"), DurationValue = t("common_hours", "{hours} hours").Replace("{hours}", "6"), DurationShare = 5f / 7f,
@@ -67,7 +67,7 @@ internal static partial class UiSamples
         m.SkipKey = GameKey(k, "O", UiIcon.PadRb);
         m.CanFast = state == UiActivityState.Running || state == UiActivityState.Started;
         m.Fast = state == UiActivityState.Running;
-        m.FastLabel = t("playeractivityui_fast_forward", "Fast-forward time");
+        m.FastLabel = t("reallife_ui_activity_fast_speed", "Fast forward x{speed}").Replace("{speed}", "6");
         m.FastKey = GameKey(k, "P", UiIcon.PadY);
         m.StripButtons = state == UiActivityState.Moving
             ? new[] { GameButton(t("common_cancel", "Cancel"), UiButtonKind.Secondary, GameKey(k, "Esc", UiIcon.PadB)) }
@@ -210,14 +210,14 @@ internal static partial class UiSamples
         {
             choices.Add(new UiSideChoice
             {
-                Name = t("reallife_ui_funeral_backup", "Load the backup"), Line = t("reallife_ui_funeral_backup_line", "Return to the backup saved when you turned {age}").Replace("{age}", "70"), GameKey = GameKey(k, "F", UiIcon.PadX),
+                Name = t("reallife_ui_funeral_backup", "Load the backup"), Line = t("reallife_ui_funeral_backup_line", "Return to the backup saved when you turned {age}").Replace("{age}", "70"),
             });
         }
         choices.Add(new UiSideChoice
         {
-            Name = t("reallife_ui_funeral_menu", "Back to the main menu"), Line = t("reallife_ui_funeral_menu_line", "Pick another save or start a new city"), GameKey = GameKey(k, "P", UiIcon.PadY),
+            Name = t("reallife_ui_funeral_menu", "Back to the main menu"), Line = t("reallife_ui_funeral_menu_line", "Pick another save or start a new city"),
         });
-        choices.Add(new UiSideChoice { Name = t("reallife_ui_funeral_quit", "Quit to the desktop"), Line = t("reallife_ui_funeral_quit_line", "Close the game"), GameKey = GameKey(k, "Esc", UiIcon.PadB) });
+        choices.Add(new UiSideChoice { Name = t("reallife_ui_funeral_quit", "Quit to the desktop"), Line = t("reallife_ui_funeral_quit_line", "Close the game") });
         var buttons = new System.Collections.Generic.List<UiSideButton>
         {
             GameButton(t("reallife_ui_funeral_menu_short", "Main menu"), backup ? UiButtonKind.Secondary : UiButtonKind.Primary, GameKey(k, "P", UiIcon.PadY)),
@@ -233,8 +233,8 @@ internal static partial class UiSamples
             Kicker = t("reallife_ui_funeral_kicker", "The end of a life, {place}").Replace("{place}", "Midtown"), Title = t("reallife_ui_funeral_title", "The funeral"),
             // The life as the obituary words it, the strongest rival's flowers last; names are the sample's own.
             Body = t("reallife_pd_obit_lived", "{name} had lived in the city for {years}.").Replace("{name}", name).Replace("{years}", "3 years")
-                   + " " + t("reallife_pd_obit_founded_many", "{name} founded {founded} businesses.").Replace("{name}", name).Replace("{founded}", "4")
-                   + " " + t("reallife_pd_obit_staff_many", "{employees} people worked for {name}.").Replace("{employees}", "37").Replace("{name}", name)
+                   + " " + t("reallife_ui_funeral_founded_many", "They founded {founded} businesses.").Replace("{founded}", "4")
+                   + " " + t("reallife_ui_funeral_staff_many", "{employees} people worked for them.").Replace("{employees}", "37")
                    + " " + t("reallife_ui_funeral_rival", "{rival} sent flowers but did not stay.").Replace("{rival}", "Bald Luthor"),
             Choices = choices.ToArray(), Selected = 0, Note = backup ? t("reallife_ui_funeral_note", "Press 1, 2 or 3") : t("reallife_ui_funeral_note_two", "Press 1 or 2"),
             Buttons = buttons.ToArray(),

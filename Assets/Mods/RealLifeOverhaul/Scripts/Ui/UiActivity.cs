@@ -71,6 +71,9 @@ namespace RealLifeOverhaul.Ui
 
         // Laid out: the card it was drawn as, for a press or a drag on the slider to read its share.
         public UiSideCardModel Card;
+
+        // Laid out: the strip's width, as wide as its words, meter, clock and buttons need (StripPlace writes it).
+        public float StripW;
     }
 
     /// <summary>
@@ -92,8 +95,9 @@ namespace RealLifeOverhaul.Ui
         public const float StripWidth = 1020f;    // px: the strip, centred over the bar's apps
         public const float StripHeight = 72f;     // px: a tile's row with room round it, the meter's words over its bar
         public const float StripShort = 72f;      // px: the same while there is no meter (walking there, waiting): the strip does not jump
-        private const float MeterWidth = 208f;    // px: the meter's column
+        private const float MeterWidth = 208f;    // px: the meter's column at the least while there is room
         private const float MeterLeast = 128f;    // px: the least it keeps before the headline gives way
+        private const float StripMargin = 64f;    // px: the strip's least room to the screen's sides
 
         /// <summary>True for the states the strip shows; the card shows the rest.</summary>
         public static bool Strip(UiActivityState state) => state != UiActivityState.NotStarted;
@@ -145,8 +149,81 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The strip's place: centred over the status bar's apps, a grid step above the bar.</summary>
         public static void StripPlace(UiFrame frame, UiActivityModel m, out float x, out float y)
         {
-            x = UiDraw.SnapDown((frame.Width - StripWidth) / 2f);
+            m.StripW = Width(frame, m);
+            x = UiDraw.SnapDown((frame.Width - m.StripW) / 2f);
             y = frame.BandY - UiTokens.S3 - Height(m);
+        }
+
+        /// <summary>
+        /// The strip's width: its least, grown so its headline, the line under it, the meter's words, the clock and every
+        /// button stand whole, at most the screen less a margin each side (then the headline gives way first).
+        /// </summary>
+        public static float Width(UiFrame frame, UiActivityModel m)
+        {
+            float need = UiTokens.S4 * 2f + UiTokens.IconTile + UiTokens.S3 + HeadNeed(m) + UiTokens.S5 + ButtonsNeed(m) + UiTokens.S3;
+            if (!string.IsNullOrEmpty(m.Clock))
+            {
+                need += UiDraw.Snap(UiTextRules.Width(m.Clock, UiStyle.Number) + UiTokens.S1) + UiTokens.S5;
+            }
+            if (Metered(m))
+            {
+                need += MeterNeed(m) + UiTokens.S5;
+            }
+            return UiDraw.Snap(Math.Max(StripWidth, Math.Min(need, frame.Width - StripMargin * 2f)));
+        }
+
+        // The headline's column: the wider of the headline in capitals and the line under it.
+        private static float HeadNeed(UiActivityModel m)
+        {
+            bool walking = m.State == UiActivityState.Moving || m.State == UiActivityState.Waiting;
+            string under = m.State == UiActivityState.Finished || walking || string.IsNullOrEmpty(m.Place) ? m.StateWords : m.Place;
+            string head = string.IsNullOrEmpty(m.Kicker) ? m.Headline : m.Kicker;
+            float w = Math.Max(string.IsNullOrEmpty(head) ? 0f : UiTextRules.Width(head, UiStyle.SectionTitle), string.IsNullOrEmpty(under) ? 0f : UiTextRules.Width(under, UiStyle.Small));
+            return UiDraw.Snap(w + UiTokens.S1);
+        }
+
+        // The meter's column: its words at the left and its figure at the right whole, the figure in at most half of it.
+        private static float MeterNeed(UiActivityModel m)
+        {
+            string label = !string.IsNullOrEmpty(m.MeterLeft) ? m.MeterLeft : m.Progress.Label, value = !string.IsNullOrEmpty(m.MeterRight) ? m.MeterRight : m.Progress.Value;
+            float lw = string.IsNullOrEmpty(label) ? 0f : UiTextRules.Width(label, UiStyle.Body) + UiTokens.S1;
+            float vw = string.IsNullOrEmpty(value) ? 0f : UiTextRules.Width(value, UiStyle.BodyStrong) + UiTokens.S1;
+            return UiDraw.Snap(Math.Max(MeterWidth, Math.Max(lw + UiTokens.S3 + vw, vw * 2f)));
+        }
+
+        // The buttons' row as DrawStrip lays them, their gaps included.
+        private static float ButtonsNeed(UiActivityModel m)
+        {
+            bool walking = m.State == UiActivityState.Moving || m.State == UiActivityState.Waiting;
+            bool done = m.State == UiActivityState.Finished;
+            float sum = 0f;
+            if (m.StripButtons != null && m.StripButtons.Length > 0)
+            {
+                for (int i = 0; i < m.StripButtons.Length; i++)
+                {
+                    sum += ButtonWidth(m.StripButtons[i].Label, m.StripButtons[i].GameKey) + UiTokens.S2;
+                }
+            }
+            else if (walking && m.CanCancel)
+            {
+                sum += ButtonWidth(m.CancelLabel, default(UiGameKey)) + UiTokens.S2;
+            }
+            if (!done && !walking)
+            {
+                sum += m.CanFast ? ButtonWidth(m.FastLabel, m.FastKey) + UiTokens.S2 : 0f;
+                sum += m.CanSkip ? ButtonWidth(m.SkipLabel, m.SkipKey) + UiTokens.S2 : 0f;
+            }
+            else if (walking && m.State == UiActivityState.Waiting && m.CanSkip && (m.StripButtons == null || m.StripButtons.Length == 0) && !m.CanCancel)
+            {
+                sum += ButtonWidth(m.SkipLabel, m.SkipKey) + UiTokens.S2;
+            }
+            return sum;
+        }
+
+        private static float ButtonWidth(string label, UiGameKey key)
+        {
+            float kw = UiDraw.GameKeyWidth(key);
+            return UiDraw.Snap(UiTokens.S3 + (kw > 0f ? kw + UiTokens.S2 : 0f) + UiTextRules.Width(label ?? string.Empty, UiStyle.Button) + UiTokens.S1 + UiTokens.S3);
         }
 
         /// <summary>The strip's height: one height in every state, so it never jumps as the state changes.</summary>
@@ -161,7 +238,7 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
         public static void DrawStrip(UiScene s, UiAt at, UiActivityModel m, float x, float y)
         {
-            float w = StripWidth, h = Height(m);
+            float w = m.StripW > 0f ? m.StripW : StripWidth, h = Height(m);
             int firstNode = s.NodeCount;
             int panel = UiDraw.Box(s, at, x, y, w, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt on = at.In(panel);
@@ -211,7 +288,9 @@ namespace RealLifeOverhaul.Ui
             float cx = x + pad + tile + UiTokens.S3;
             if (Metered(m))
             {
-                float mw = Math.Max(MeterLeast, Math.Min(MeterWidth, UiDraw.SnapDown((right - cx) / 2f)));
+                // The meter whole where it can be; on a narrow screen the headline keeps half the room left and gives way first.
+                float room = right - cx;
+                float mw = UiDraw.SnapDown(Math.Max(MeterLeast, Math.Min(MeterNeed(m), room - Math.Min(HeadNeed(m), room / 2f) - UiTokens.S5)));
                 var bar = new UiProgressModel
                 {
                     Label = !string.IsNullOrEmpty(m.MeterLeft) ? m.MeterLeft : m.Progress.Label, Value = !string.IsNullOrEmpty(m.MeterRight) ? m.MeterRight : m.Progress.Value,
@@ -280,8 +359,7 @@ namespace RealLifeOverhaul.Ui
         // and while a toggle is on.
         private static float StripButton(UiScene s, UiAt at, float right, float y, string label, UiGameKey key, bool on, int command, int arg, bool disabled)
         {
-            float kw = UiDraw.GameKeyWidth(key);
-            float w = UiDraw.Snap(UiTokens.S3 + (kw > 0f ? kw + UiTokens.S2 : 0f) + UiTextRules.Width(label, UiStyle.Button) + UiTokens.S1 + UiTokens.S3);
+            float w = ButtonWidth(label, key);
             UiSideCard.GameButton(s, at, right - w, y, w, UiTokens.ControlSmall, on ? UiButtonKind.Primary : UiButtonKind.Secondary, label, key, command, arg, disabled);
             if (on && command == FastCommand)
             {

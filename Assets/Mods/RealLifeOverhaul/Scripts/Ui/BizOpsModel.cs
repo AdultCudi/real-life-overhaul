@@ -38,6 +38,19 @@ namespace RealLifeOverhaul.Ui
         public int Arg;             // what the screen presses for it
     }
 
+    /// <summary>A warehouse's vehicle slot as a card: its vehicle, its load, its driver as a choice, and where it is.</summary>
+    public struct BizOpsSlot
+    {
+        public string Title;        // "Slot 1, Box truck", or the slot alone without a vehicle
+        public string Line;         // "14 of 16 boxes", or what to do for a vehicle
+        public string Status;       // "On route, back 14:20", "Parked", "Away", or null
+        public UiRole Tone;         // the status chip's tone
+        public string Driver;       // the driver choice's value
+        public int DriverArg;       // the driver choice's target (the form's own choice row's), or -1 for none
+        public bool DriverDisabled;
+        public bool Vehicle;        // a vehicle stands in the slot
+    }
+
     /// <summary>A stop of a logistics route: the place goods go to, its goods' count, and whether it is the one whose goods the table shows.</summary>
     public struct BizOpsStop
     {
@@ -46,6 +59,12 @@ namespace RealLifeOverhaul.Ui
         public bool Open;           // the stop chosen: its goods are the table under the route
         public bool Warn;           // past the route's limit
         public bool Removable;
+        public string Open2;        // its opening words alone ("Open now", "Opens 16:00"), for its card; null for none
+        public UiRole OpenTone;     // their chip's tone
+        public string[] Goods;      // the goods the route keeps there, by name, the first few; null for none
+        public string[] Fills;      // each good's target there ("Fill to 120")
+        public string[] Pictures;   // each good's picture key, or null for its glyph
+        public string More;         // "2 more", or null
     }
 
     /// <summary>
@@ -60,6 +79,7 @@ namespace RealLifeOverhaul.Ui
         // The schedule
         public UiBoardModel Board;
         public string DayOpenWords;                     // "Open on Monday"
+        public string DayOpenShort;                     // the day's own name alone ("Monday"), where the line has no room for the whole words
         public bool DayOpen;
         public bool DayOpenDisabled;                    // a headquarters keeps the game's own days
         public string HoursWords;                       // the day's opening hours in the game's form, or that it is closed
@@ -78,6 +98,12 @@ namespace RealLifeOverhaul.Ui
         public string Progress;                         // the auto fill at work, or null
         public int ProgressShare;                       // 0 to 100
         public string CancelWords;                      // the auto fill's Cancel, in the game's own word
+        public string[] FormTabs = new string[0];       // a plan's halves as one switch over its form (a pricing plan's prices, its plan); none for none
+        public int FormTab;
+        public BizOpsSlot[] Slots = new BizOpsSlot[0];   // a warehouse's vehicle slots as cards; none: its rows as a form
+        public string BoardHint;                        // a day with stations and nobody on it: what to do first, or null
+        public string CrewTitle, CrewLine;              // the place's people beside the board: its title and what a press does
+        public UiDataTableModel Crew;                   // each person, their role and wage, their hours this week; the one chosen to place in the cyan fifth
 
         // A manager kind
         public string[] Tabs = new string[0];           // a kind's own tabs (logistics: warehouses and factories; headhunters: recruiting and replacement)

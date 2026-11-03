@@ -20,9 +20,11 @@ namespace RealLifeOverhaul.Ui
             OpsHours = 517,       // the day's opening hours: their sheet opened or closed
             OpsHour = 518,        // an hour of that sheet, opened or closed by the game's own toggle (its argument the hour)
             OpsSheetDone = 519,   // a sheet's Done or Cancel: the hours' sheet closed, or the game's picker
-            OpsFilter = 520;      // a table's filter chosen, its argument the choice
+            OpsFilter = 520,      // a table's filter chosen, its argument the choice
+            OpsFormTab = 521;     // a half of the chosen plan's form, its argument the half
         public const int People = 600;                // the picker's table, its commands from here as UiDataTable's from its First
         public const int Table = 700;                 // a page's big table (a plan's goods, the machines, the stock)
+        public const int Crew = 800;                  // the schedule's people beside the board, its commands from here as UiDataTable's from its First
         public const int OpsStopList = 1000;          // ListOpen for a stop's business choice: from here
         public const int OpsPeopleList = 2000;        // ListOpen for the picker's filter
         private const float SheetW = 560f;            // px: the picker's sheet at the least: a face, a name and three figures, inside its padding
@@ -30,8 +32,12 @@ namespace RealLifeOverhaul.Ui
         private const float HourChip = 48f;           // px: an hour of the opening hours' sheet at the least, its figure and its tick
         private const int HourColumns = 6;            // the day in four rows of six hours: the night, the morning, the afternoon, the evening
         private const float PlansW = 360f;            // px: a manager kind's plans down the left
+        private const float CrewW = 352f;             // px: the schedule's people beside the board: a face, a name and their hours
+        private const float CrewLeastHour = 30f;      // px: an hour of the board at the least beside them; narrower, the column waits for a wider screen
         private const float StopRow = 48f;            // px: a stop of a route, its tile and two lines
         private const float FormLabel = 0.42f;        // the share of a form's column its labels take, at most
+        private const float MachineFormShare = 0.34f; // the share of a factory's page its chosen machine's form takes beside the machines
+        private const float MachineFormLeast = 320f;  // px: and the least, a label and a control side by side
 
         [ThreadStatic] private static int[] _kept;    // the board's own sideways links, as target, left, right: the page fence would replace them
         [ThreadStatic] private static int _keptCount;
@@ -47,11 +53,25 @@ namespace RealLifeOverhaul.Ui
             _headChain = true;
             DayLine(s, at, m, x, y, w, keys);
             float top = Facts(s, at, o, x, y + UiTokens.Control + UiTokens.S5, w, keys);
-            if (o.Board != null)
+            bool crew = o.Crew != null && o.Board != null && o.Board.Lanes.Length > 0
+                        && (w - CrewW - UiTokens.S8 - UiBoard.LaneHead) / Math.Max(1, o.Board.LastHour - o.Board.FirstHour) >= CrewLeastHour;
+            if (crew)
             {
-                int first = s.NodeCount;
-                UiBoard.Lay(s, at, o.Board, x, top, w, bottom - top, keys);
-                Keep(s, first);
+                // The board beside the people, as many of them in view as the page's targets leave room for (the firm's head,
+                // laid after the page, counted too); with fewer than a few, the board takes the width and the picker lists them.
+                UiMark mark = UiMark.Of(s);
+                float bw = w - CrewW - UiTokens.S8;
+                Board(s, at, o, x, top, bw, bottom, keys);
+                int room = UiCheckRules.MostTargets - PageTargets(s) - HeadTargets(s, at, m, x, y, w, keys);
+                crew = room >= CrewLeastRows && CrewColumn(s, at, o, x + bw + UiTokens.S8, top, CrewW, bottom, keys, room);
+                if (!crew)
+                {
+                    mark.Back(s);
+                }
+            }
+            if (!crew)
+            {
+                Board(s, at, o, x, top, w, bottom, keys);
             }
             float above = m.Head != null ? y - UiFirmHead.Height - UiTokens.S6 : y;   // a sheet dims the firm's head too: it waits under the sheet
             if (o.HoursOpen && o.HoursPress)
@@ -67,12 +87,78 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        // The place's people beside the board, as a rota's picker column: their title and what a press does, then each
+        // person's face, name, role and wage, and their hours this week as a chip; the one chosen to place in the cyan fifth.
+        // A press chooses them; a press on an hour of a lane then gives them that shift through the game's own schedule.
+        // Returns false when not even the least of them fit in view (the column is then taken back).
+        private static bool CrewColumn(UiScene s, UiAt at, BizOpsModel o, float x, float y, float w, float bottom, IUiKeys keys, int most)
+        {
+            float cy = Title(s, at, x, y, w, o.CrewTitle);
+            cy = Lead(s, at, o.CrewLine, x, cy, w);
+            UiMark mark = UiMark.Of(s);
+            int before = PageTargets(s);
+            UiDataTable.Lay(s, at, o.Crew, x, cy, w, bottom - cy, keys, Crew);
+            int shown = PageTargets(s) - before;
+            if (shown > most)
+            {
+                // Fewer rows in view, the rest a scroll away (the wheel, or the picker's sheet with every one of them).
+                mark.Back(s);
+                float h = bottom - cy - (shown - most) * UiDataTable.RowHeight(o.Crew);
+                before = PageTargets(s);
+                UiDataTable.Lay(s, at, o.Crew, x, cy, w, h, keys, Crew);
+                shown = PageTargets(s) - before;
+            }
+            return shown >= Math.Min(CrewLeastRows, o.Crew.RowCount) && shown <= most;
+        }
+
+        private const int CrewLeastRows = 3;   // people in view beside the board at the least; fewer, the column is left out
+
+        // The board, its shifts' and lanes' left and right kept for the keys.
+        private static void Board(UiScene s, UiAt at, BizOpsModel o, float x, float y, float w, float bottom, IUiKeys keys)
+        {
+            if (o.Board != null)
+            {
+                int first = s.NodeCount;
+                UiBoard.Lay(s, at, o.Board, x, y, w, bottom - y, keys);
+                Keep(s, first);
+            }
+        }
+
+        // The focus targets on the page's own layer so far, the frame's app row not counted (UiCheckRules.Crowded's count).
+        private static int PageTargets(UiScene s)
+        {
+            int n = 0;
+            for (int i = 0; i < s.NodeCount; i++)
+            {
+                if (s.Nodes[i].Layer == 0 && !UiDraw.IsChrome(s.Nodes[i].Command))
+                {
+                    n++;
+                }
+            }
+            return n;
+        }
+
+        // The targets the firm's head will add when it is laid after the page: laid here, counted and taken back.
+        private static int HeadTargets(UiScene s, UiAt at, BizManModel m, float x, float y, float w, IUiKeys keys)
+        {
+            if (m.Head == null)
+            {
+                return 0;
+            }
+            UiMark mark = UiMark.Of(s);
+            int before = PageTargets(s);
+            UiFirmHead.Lay(s, at, m.Head, x, y - UiFirmHead.Height - UiTokens.S6, w, keys);
+            int n = PageTargets(s) - before;
+            mark.Back(s);
+            return n;
+        }
+
         // The day's facts on a line under the day's line, each its quiet label and its figure (one that needs the player in
         // the warning's colour), what mends the day's problems at its right (a control's height then), and under them the
         // day's problems, each with the warning's glyph. Returns the y under them.
         private static float Facts(UiScene s, UiAt at, BizOpsModel o, float x, float y, float w, IUiKeys keys)
         {
-            if (o.FactLabels.Length == 0 && o.Problems.Length == 0 && o.FactActions.Length == 0)
+            if (o.FactLabels.Length == 0 && o.Problems.Length == 0 && o.FactActions.Length == 0 && string.IsNullOrEmpty(o.BoardHint))
             {
                 return y;
             }
@@ -100,6 +186,14 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Icon(s, at, x, y + (UiTokens.PairRow - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Warning, UiRole.Warn, UiFlags.Middle);
                 UiDraw.TextMiddle(s, at, x + UiTokens.IconSmall + UiTokens.S2, y, UiTokens.PairRow, w - UiTokens.IconSmall - UiTokens.S2, UiStyle.Small, UiRole.WarnText,
                     o.Problems[i], UiFlags.Truncate);
+                y += UiTokens.PairRow;
+            }
+            if (!string.IsNullOrEmpty(o.BoardHint))
+            {
+                // A day nobody works yet: the first thing to do, with the note's glyph.
+                UiDraw.Icon(s, at, x, y + (UiTokens.PairRow - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Info, UiRole.None, UiFlags.Middle, true);
+                UiDraw.TextMiddle(s, at, x + UiTokens.IconSmall + UiTokens.S2, y, UiTokens.PairRow, w - UiTokens.IconSmall - UiTokens.S2, UiStyle.Small, UiRole.Text,
+                    o.BoardHint, UiFlags.Truncate);
                 y += UiTokens.PairRow;
             }
             return y + UiTokens.S3;
@@ -131,10 +225,18 @@ namespace RealLifeOverhaul.Ui
                 right = Buttons(s, at, m.Actions, right, y, keys, OpsAction) - UiTokens.S6;
             }
             float track = UiTokens.S16;
-            float word = string.IsNullOrEmpty(o.DayOpenWords) ? 0f : UiDraw.Snap(UiTextRules.Width(o.DayOpenWords, UiStyle.BodyStrong) + UiTokens.S1);
             bool press = o.HoursPress && !string.IsNullOrEmpty(o.HoursWords);
             float hours = string.IsNullOrEmpty(o.HoursWords) ? 0f : press ? UiDraw.ButtonWidth(UiButtonKind.Secondary, o.HoursWords, UiIcon.Clock, UiAction.Count, keys)
                 : UiDraw.Snap(UiTokens.Icon + UiTokens.S2 + UiTextRules.Width(o.HoursWords, UiStyle.Body) + UiTokens.S1);
+            // The opening hours keep their whole words: where the day's words and the hours do not both fit before the actions,
+            // the day's words give way to the day's own name.
+            string dayWords = o.DayOpenWords;
+            if (!string.IsNullOrEmpty(o.DayOpenShort) && !string.IsNullOrEmpty(dayWords)
+                && x + UiTextRules.Width(dayWords, UiStyle.BodyStrong) + UiTokens.S1 + UiTokens.S3 + track + UiTokens.S5 + hours > right)
+            {
+                dayWords = o.DayOpenShort;
+            }
+            float word = string.IsNullOrEmpty(dayWords) ? 0f : UiDraw.Snap(UiTextRules.Width(dayWords, UiStyle.BodyStrong) + UiTokens.S1);
             float search = o.LaneSearchHint != null ? UiDraw.Snap(Math.Max(UiTokens.S16 * 3f, UiTextRules.Width(o.LaneSearchHint, UiStyle.Body) + UiTokens.S1 + UiTokens.S8)) : 0f;
             float left = word + UiTokens.S3 + track + (hours > 0f ? UiTokens.S5 + hours : 0f);
             if (search > 0f && x + left + UiTokens.S6 + search <= right)
@@ -148,7 +250,7 @@ namespace RealLifeOverhaul.Ui
             float lead = Math.Min(word, Math.Max(0f, right - x - track - UiTokens.S3));
             if (lead > 0f)
             {
-                UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, lead, UiStyle.BodyStrong, UiRole.Text, o.DayOpenWords, UiFlags.Truncate);
+                UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, lead, UiStyle.BodyStrong, UiRole.Text, dayWords, UiFlags.Truncate);
             }
             float sx = x + (lead > 0f ? lead + UiTokens.S3 : 0f);
             UiDraw.Switch(s, at, sx, y, track, o.DayOpen, null, OpsDayOpen, 0, o.DayOpenDisabled);
@@ -492,6 +594,11 @@ namespace RealLifeOverhaul.Ui
                 fy = Title(s, at, x, y, w, o.FormTitle);
             }
             fy = Lead(s, at, o.FormLead, x, fy, w);
+            if (o.FormTabs.Length > 1)
+            {
+                UiDraw.Tabs(s, at, x, fy, Math.Min(w, TabsWidth(o.FormTabs)), o.FormTabs, o.FormTab, null, OpsFormTab);
+                fy += UiTokens.Control + UiTokens.S5;
+            }
             fy = Rows(s, at, o.Rows, x, fy, w, keys);
             if (!onTitle && o.Actions.Length > 0)
             {
@@ -506,7 +613,8 @@ namespace RealLifeOverhaul.Ui
             if (o.Table != null && bottom - fy > UiTokens.S16)
             {
                 fy = Title(s, at, x, fy, w, o.TableTitle);
-                fy = Lead(s, at, o.Status ?? o.TableLead, x, fy, w);
+                // The chosen stop's card says whose goods the table holds; the words say it where the route is a list.
+                fy = Lead(s, at, o.Status ?? (StopsAsCards(o, w) ? null : o.TableLead), x, fy, w);
                 fy = Filter(s, at, o, x, fy, w);
                 int first = s.NodeCount;
                 UiDataTable.Lay(s, at, o.Table, x, fy, w, bottom - fy, keys, Table);
@@ -635,6 +743,18 @@ namespace RealLifeOverhaul.Ui
             return Math.Max(left, right);
         }
 
+        /// <summary>A form's rows in one column: its left blocks, then its right ones under them. Returns the y under them.</summary>
+        private static float Stack(UiScene s, UiAt at, BizOpsRow[] rows, float x, float y, float w, IUiKeys keys)
+        {
+            y = Column(s, at, rows, false, x, y, w, keys);
+            bool more = false;
+            for (int i = 0; i < rows.Length && !more; i++)
+            {
+                more = rows[i].Right;
+            }
+            return more ? Column(s, at, rows, true, x, y + UiTokens.S4, w, keys) : y;
+        }
+
         private static float Column(UiScene s, UiAt at, BizOpsRow[] rows, bool right, float x, float y, float w, IUiKeys keys)
         {
             float lw = LabelWidth(rows, right, w);
@@ -668,13 +788,13 @@ namespace RealLifeOverhaul.Ui
                         RowLabel(s, at, x, y, lw, r.Label);
                         // At the column's right edge, as the form's own actions stand under it: the d-pad steps between them
                         // whatever the buttons' words' widths.
-                        UiDraw.Button(s, at, x + w - bw, y, bw, UiTokens.Control, kind, r.Value, r.Icon, UiAction.Count, keys, OpsRow, i, r.Disabled);
+                        UiDraw.Button(s, at, x + w - bw, y, bw, UiTokens.Control, kind, r.Value, r.Icon, UiAction.Count, keys, OpsRow, r.Arg, r.Disabled);
                         y += UiTokens.Control + UiTokens.S2;
                         break;
                     }
                     default:
                         RowLabel(s, at, x, y, lw, r.Label);
-                        Control(s, at, ref r, i, cx, y, cw);
+                        Control(s, at, ref r, r.Arg, cx, y, cw);   // the row's own target, as the screen presses it (its widget)
                         y += UiTokens.Control + UiTokens.S2;
                         break;
                 }
@@ -711,9 +831,13 @@ namespace RealLifeOverhaul.Ui
                     UiDraw.Slider(s, at, x, y, w, r.Value, r.Share, OpsSlider, i, r.Disabled, r.Held);
                     break;
                 case BizOpsRowKind.Stepper:
-                    UiDraw.Stepper(s, at, x, y, UiDraw.SnapDown(Math.Min(w, UiDataTable.StepperWidth)), r.Value ?? string.Empty, r.CanLess && !r.Disabled,
+                {
+                    // At the column's right end, as a switch stands: in a wide column the keys go down the rows' ends alike.
+                    float sw = UiDraw.SnapDown(Math.Min(w, UiDataTable.StepperWidth));
+                    UiDraw.Stepper(s, at, x + w - sw, y, sw, r.Value ?? string.Empty, r.CanLess && !r.Disabled,
                         r.CanMore && !r.Disabled, OpsLess, OpsType, OpsMore, i, r.Disabled, r.Placeholder);
                     break;
+                }
                 case BizOpsRowKind.Text:
                     UiDraw.TextField(s, at, x, y, w, r.Value, r.Placeholder, OpsType, i, r.Disabled, r.Typing);
                     break;
@@ -738,9 +862,117 @@ namespace RealLifeOverhaul.Ui
         // A route's stops: each its tile, its goods' count and its place; the chosen one's chevron down (its goods are the
         // table under the route) with its place as a choice and its remove, another a row that opens it; a stop past the
         // route's limit marked. Returns the y under them.
+        private const float StopCardLeast = 232f;     // px: a stop's card at the least; narrower, the route is a list
+        private const int StopCardGoods = 3;          // goods lines on a stop's card
+        private const float StopGoodRow = 28f;        // px: one of them
+
+        // The route as cards left to right with arrows between, as a delivery route reads: each stop's number, its place
+        // and whether it is open, and the first goods the route keeps there with their targets. The chosen stop's place
+        // is its choice with its remove, its goods the table under the route. All on one row, or the route as a list.
+        private static float StopCards(UiScene s, UiAt at, BizOpsModel o, float x, float y, float w, IUiKeys keys)
+        {
+            int n = o.Stops.Length;
+            float gap = UiTokens.S8;
+            float cw = UiDraw.SnapDown((w - gap * (n - 1)) / n);
+            float pad = UiTokens.S3, head = UiTokens.Control, tile = UiTokens.ControlSmall;
+            float foot = UiDraw.Snap(Math.Max(UiTextRules.LineHeight(UiStyle.Small), UiTokens.Badge + UiTokens.S1));   // the foot's row, on the grid
+            float ch = pad + head + UiTokens.S2 + StopCardGoods * StopGoodRow + UiTokens.S1 + foot + pad;
+            float removeW = UiTokens.ControlSmall;
+            for (int i = 0; i < n; i++)
+            {
+                ref BizOpsStop st = ref o.Stops[i];
+                float cx = x + i * (cw + gap);
+                int card = UiDraw.Box(s, at, cx, y, cw, ch, st.Open ? UiRole.RowSel : UiRole.Row, st.Open ? UiRole.RowSelEdge : UiRole.None, UiTokens.RadiusLarge);
+                UiAt inside = at.In(card);
+                if (!st.Open)
+                {
+                    UiDraw.Node(s, at, cx, y, cw, ch, OpsStop, i, card);   // another stop: the whole card opens it
+                }
+                float ix = cx + pad, iw = cw - pad * 2f, hy = y + pad;
+                int t = UiDraw.Tile(s, inside, ix, hy + (head - tile) / 2f, tile, st.Warn ? UiRole.Warn : UiRole.None, false);
+                UiDraw.TextMiddle(s, inside.In(t), ix, hy + (head - tile) / 2f, tile, tile, UiStyle.SmallStrong, st.Warn ? UiRole.WarnText : UiRole.Text,
+                    (i + 1).ToString(System.Globalization.CultureInfo.InvariantCulture), UiFlags.Centre);
+                float tx = ix + tile + UiTokens.S2, tw = ix + iw - tx;
+                if (st.Open)
+                {
+                    float chw = tw - (st.Removable ? removeW + UiTokens.S1 : 0f);
+                    UiDraw.Choice(s, inside, tx, hy, chw, st.Name, OpsStopChoice, i, false);
+                    if (st.Removable)
+                    {
+                        UiDraw.Button(s, inside, ix + iw - removeW, hy + (head - removeW) / 2f, removeW, removeW, UiButtonKind.Quiet, null, UiIcon.Trash, UiAction.Count, keys, OpsStopRemove, i);
+                    }
+                }
+                else
+                {
+                    UiDraw.TextMiddle(s, inside, tx, hy, head, tw, UiStyle.Title, UiRole.Text, st.Name, UiFlags.Truncate);
+                }
+                float gy = hy + head + UiTokens.S2;
+                int shown = st.Goods != null ? Math.Min(StopCardGoods, st.Goods.Length) : 0;
+                float pic = UiTokens.IconSmall + UiTokens.S1;
+                for (int k = 0; k < shown; k++)
+                {
+                    float ry = gy + k * StopGoodRow;
+                    string key = st.Pictures != null && k < st.Pictures.Length ? st.Pictures[k] : null;
+                    if (!string.IsNullOrEmpty(key))
+                    {
+                        var item = new UiItem
+                        {
+                            Kind = UiKind.Picture, Flags = UiFlags.Middle | UiFlags.Centre, X = ix, Y = ry + (StopGoodRow - pic) / 2f, W = pic, H = pic, Text = key, Value = 1f,
+                            Clip = inside.Clip, Node = -1, Layer = inside.Layer, Order = inside.Order, Parent = card, Alpha = 1f
+                        };
+                        s.Add(ref item);
+                    }
+                    else
+                    {
+                        UiDraw.Icon(s, inside, ix, ry + (StopGoodRow - pic) / 2f, pic, UiIcon.Package, UiRole.Muted, UiFlags.Middle);
+                    }
+                    string fill = st.Fills != null && k < st.Fills.Length ? st.Fills[k] : null;
+                    float fw = string.IsNullOrEmpty(fill) ? 0f : UiDraw.Snap(UiTextRules.Width(fill, UiStyle.SmallStrong) + UiTokens.S1);
+                    UiDraw.TextMiddle(s, inside, ix + pic + UiTokens.S2, ry, StopGoodRow, iw - pic - UiTokens.S2 - fw - UiTokens.S2, UiStyle.Small, UiRole.Text, st.Goods[k], UiFlags.Truncate);
+                    if (fw > 0f)
+                    {
+                        UiDraw.TextMiddle(s, inside, ix + iw - fw, ry, StopGoodRow, fw, UiStyle.SmallStrong, UiRole.Text, fill, UiFlags.Right);
+                    }
+                }
+                if (shown == 0)
+                {
+                    UiDraw.TextMiddle(s, inside, ix, gy, StopGoodRow, iw, UiStyle.Small, UiRole.Muted, st.Line, UiFlags.Truncate);
+                }
+                // The foot: how many more goods, and the place's opening as a chip at the right.
+                float fy = y + ch - pad - foot;
+                float chip = 0f;
+                if (!string.IsNullOrEmpty(st.Open2))
+                {
+                    float most = iw / 2f;
+                    chip = Math.Min(most, ChipW(st.Open2));
+                    UiDraw.Chip(s, inside, ix + iw - chip, fy + UiDraw.SnapDown((foot - UiTokens.Badge - UiTokens.S1) / 2f), st.Open2, st.OpenTone, most);
+                }
+                if (!string.IsNullOrEmpty(st.More))
+                {
+                    UiDraw.TextMiddle(s, inside, ix, fy, foot, iw - chip - UiTokens.S2, UiStyle.Small, UiRole.Text, st.More, UiFlags.Truncate);
+                }
+                if (i < n - 1)
+                {
+                    float g = UiTokens.Icon;
+                    UiDraw.Icon(s, at, cx + cw + (gap - g) / 2f, y + (ch - g) / 2f, g, UiIcon.Next, UiRole.AccentText, UiFlags.Middle | UiFlags.Centre);
+                }
+            }
+            return y + ch;
+        }
+
+        private static bool StopsAsCards(BizOpsModel o, float w) => o.Stops.Length > 0 && (w - UiTokens.S8 * (o.Stops.Length - 1)) / o.Stops.Length >= StopCardLeast;
+
+        // A status chip's width as UiDraw.Chip lays it.
+        private static float ChipW(string text) =>
+            UiDraw.Snap(UiTokens.S2 + UiTokens.StatusDot + UiTokens.S2 + UiTextRules.Width(text, UiStyle.SmallStrong) + UiTokens.S1 + UiTokens.S2);
+
         private static float Stops(UiScene s, UiAt at, BizOpsModel o, float x, float y, float w, float bottom, IUiKeys keys)
         {
             y = Title(s, at, x, y, w, o.StopsTitle);
+            if (StopsAsCards(o, w))
+            {
+                return StopCards(s, at, o, x, y, w, keys);
+            }
             float tile = UiTokens.IconTile;
             float choiceW = UiDraw.SnapDown(Math.Min(UiTokens.S16 * 5f, w * 0.45f));
             float removeW = UiTokens.ControlSmall;
@@ -807,8 +1039,9 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- a factory
 
-        // The machine groups as tabs, the group's machines as the big table at the left, and at the right the chosen machine's
-        // recipe as a form, or the group's production when no machine is chosen.
+        // The machine groups as tabs, the group's machines as the big table across most of the page (each machine's state a
+        // chip, its picture on its tile), and in a column at the right the chosen machine's recipe as a form, its blocks one
+        // under another, or the group's production when no machine is chosen.
         private static void FactoryPage(UiScene s, UiAt at, BizManModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
             BizOpsModel o = m.Ops;
@@ -822,18 +1055,19 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.EmptyState(s, at, x, y, w, bottom - y, UiIcon.Factory, o.PlansEmpty, o.PlansEmptyBody, null, -1, keys);
                 return;
             }
-            float half = Half(w), rx = x + half + UiTokens.S8;
+            float side = UiDraw.SnapDown(Math.Max(MachineFormLeast, (w - UiTokens.S8) * MachineFormShare));
+            float tw = w - side - UiTokens.S8, rx = x + tw + UiTokens.S8;
             _split = rx - UiTokens.S4;
-            float ty = Title(s, at, x, y, half, o.TableTitle);
-            ty = Lead(s, at, o.TableLead, x, ty, half);
-            ty = Filter(s, at, o, x, ty, half);
-            UiDataTable.Lay(s, at, o.Table, x, ty, half, bottom - ty, keys, Table);
-            float fy = Title(s, at, rx, y, half, o.FormTitle);
-            fy = Lead(s, at, o.FormLead, rx, fy, half);
-            fy = Rows(s, at, o.Rows, rx, fy, half, keys);
+            float ty = Title(s, at, x, y, tw, o.TableTitle);
+            ty = Lead(s, at, o.TableLead, x, ty, tw);
+            ty = Filter(s, at, o, x, ty, tw);
+            UiDataTable.Lay(s, at, o.Table, x, ty, tw, bottom - ty, keys, Table);
+            float fy = Title(s, at, rx, y, side, o.FormTitle);
+            fy = Lead(s, at, o.FormLead, rx, fy, side);
+            fy = Stack(s, at, o.Rows, rx, fy, side, keys);
             if (o.Actions.Length > 0)
             {
-                Buttons(s, at, o.Actions, rx + half, fy + UiTokens.S2, keys, OpsAction);
+                Buttons(s, at, o.Actions, rx + side, fy + UiTokens.S2, keys, OpsAction);
             }
             OpenList(s, at, m, x, y, w, bottom);
         }
@@ -844,15 +1078,65 @@ namespace RealLifeOverhaul.Ui
         private static void DriversPage(UiScene s, UiAt at, BizManModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
             BizOpsModel o = m.Ops;
-            if (o.Rows.Length == 0)
+            if (o.Rows.Length == 0 && o.Slots.Length == 0)
             {
                 UiDraw.EmptyState(s, at, x, y, w, bottom - y, UiIcon.Truck, o.PlansEmpty, o.PlansEmptyBody, null, -1, keys);
                 return;
             }
             float fy = Title(s, at, x, y, w, o.FormTitle);
             fy = Lead(s, at, o.FormLead, x, fy, w);
-            Rows(s, at, o.Rows, x, fy, w, keys);
+            if (o.Slots.Length > 0)
+            {
+                SlotCards(s, at, o.Slots, x, fy, w, bottom);
+            }
+            else
+            {
+                Rows(s, at, o.Rows, x, fy, w, keys);
+            }
             OpenList(s, at, m, x, y, w, bottom);
+        }
+
+        private const float SlotLeast = 296f;         // px: a vehicle slot's card at the least; fewer cards a row below it
+        private const int SlotsAcross = 4;            // the most cards a row
+
+        // A warehouse's vehicle slots as cards, as a fleet screen shows its vehicles: each its vehicle's tile, its name and
+        // load, its driver as a choice, and where it is as a chip. Up to four a row, more rows under them.
+        private static void SlotCards(UiScene s, UiAt at, BizOpsSlot[] slots, float x, float y, float w, float bottom)
+        {
+            int across = Math.Max(1, Math.Min(SlotsAcross, (int)((w + UiTokens.S4) / (SlotLeast + UiTokens.S4))));
+            float cw = UiDraw.SnapDown((w - UiTokens.S4 * (across - 1)) / across);
+            float tile = UiTokens.S12, pad = UiTokens.S4;
+            float chipH = UiTokens.ControlSmall;
+            float ch = pad + tile + UiTokens.S3 + UiTokens.Control + UiTokens.S3 + chipH + pad;
+            for (int i = 0; i < slots.Length; i++)
+            {
+                ref BizOpsSlot sl = ref slots[i];
+                float cx = x + (i % across) * (cw + UiTokens.S4), cy = y + (i / across) * (ch + UiTokens.S4);
+                if (cy + ch > bottom)
+                {
+                    break;
+                }
+                int card = UiDraw.Box(s, at, cx, cy, cw, ch, UiRole.Row, UiRole.None, UiTokens.RadiusLarge);
+                UiAt inside = at.In(card);
+                float ix = cx + pad, iw = cw - pad * 2f;
+                int t = UiDraw.Tile(s, inside, ix, cy + pad, tile, UiRole.None, false);
+                float g = UiTokens.Icon + UiTokens.S2;
+                UiDraw.Icon(s, inside.In(t), ix + (tile - g) / 2f, cy + pad + (tile - g) / 2f, g, UiIcon.Truck, sl.Vehicle ? UiRole.None : UiRole.Muted, UiFlags.Middle | UiFlags.Centre, sl.Vehicle);
+                float tx = ix + tile + UiTokens.S3, tw = ix + iw - tx;
+                float nameH = UiTextRules.LineHeight(UiStyle.Title), lineH = UiTextRules.LineHeight(UiStyle.Small);
+                float top = cy + pad + (tile - nameH - lineH) / 2f;
+                UiDraw.Text(s, inside, tx, top, tw, UiStyle.Title, UiRole.Text, sl.Title, UiFlags.Truncate | UiFlags.Middle);
+                UiDraw.Text(s, inside, tx, top + nameH, tw, UiStyle.Small, UiRole.Text2, sl.Line, UiFlags.Truncate | UiFlags.Middle);
+                float dy = cy + pad + tile + UiTokens.S3;
+                if (sl.DriverArg >= 0)
+                {
+                    UiDraw.Choice(s, inside, ix, dy, iw, sl.Driver, OpsChoice, sl.DriverArg, sl.DriverDisabled);
+                }
+                if (!string.IsNullOrEmpty(sl.Status))
+                {
+                    UiDraw.Chip(s, inside, ix, dy + UiTokens.Control + UiTokens.S3 + (chipH - UiTokens.ControlSmall) / 2f, sl.Status, sl.Tone, iw);
+                }
+            }
         }
 
         // The stock as the big table under how full the warehouse is, Sell all at the right of that line.
@@ -866,7 +1150,9 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.TextMiddle(s, at, x + UiTokens.Icon + UiTokens.S2, y, UiTokens.Control, left - x - UiTokens.Icon - UiTokens.S6, UiStyle.BodyStrong, UiRole.Text, o.FormLead,
                     UiFlags.Truncate);
             }
-            float ty = y + UiTokens.Control + UiTokens.S5;
+            // The goods' search stands on the actions' row, at its left, where no words lead the page.
+            bool level = string.IsNullOrEmpty(o.FormLead) && o.Table != null && !string.IsNullOrEmpty(o.Table.SearchPlaceholder) && left - x >= UiTokens.S16 * 6f;
+            float ty = level ? y : y + UiTokens.Control + UiTokens.S5;
             float foot = Foot(s, at, o, x, bottom, w);
             if (o.Table != null)
             {

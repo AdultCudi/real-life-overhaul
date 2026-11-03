@@ -47,6 +47,7 @@ namespace RealLifeOverhaul.Ui
         public UiRole Ring;      // their mood, as every portrait's ring says it
         public bool Picked;      // picked for a mass action
         public float Share;      // a steps cell's way through the step after those reached, 0 to 1
+        public string[] Pictures;   // by column, a tile cell's picture of the game's (a good, a machine) by its UiPictures key, over its glyph; null: the glyph
     }
 
     /// <summary>
@@ -538,7 +539,20 @@ namespace RealLifeOverhaul.Ui
                 {
                     float tile = UiTokens.ControlSmall;
                     UiRole tint = row.Tones != null && c < row.Tones.Length ? row.Tones[c] : UiRole.None;
-                    if (value > 0)
+                    string picture = row.Pictures != null && c < row.Pictures.Length ? row.Pictures[c] : null;
+                    if (!string.IsNullOrEmpty(picture))
+                    {
+                        // The game's own picture of the thing on its tile, letterboxed, where the screen found one.
+                        int t = UiDraw.Tile(s, at, cx, ry + (rowH - tile) / 2f, tile, UiRole.None, false);
+                        var item = new UiItem
+                        {
+                            Kind = UiKind.Picture, Flags = UiFlags.Middle | UiFlags.Centre, X = cx + UiTokens.Hairline, Y = ry + (rowH - tile) / 2f + UiTokens.Hairline,
+                            W = tile - UiTokens.Hairline * 2f, H = tile - UiTokens.Hairline * 2f, Text = picture, Value = 1f, Clip = at.Clip, Node = -1, Layer = at.Layer,
+                            Order = at.Order, Parent = t, Alpha = 1f
+                        };
+                        s.Add(ref item);
+                    }
+                    else if (value > 0)
                     {
                         int t = UiDraw.Tile(s, at, cx, ry + (rowH - tile) / 2f, tile, tint, false);
                         float g = UiTokens.Icon;

@@ -469,7 +469,7 @@ internal static partial class Program
             UiActivity.DrawStrip(s, UiAt.Screen, a, x, y);
             bool skip = s.FindNode(UiActivity.SkipCommand, 0) >= 0, fast = s.FindNode(UiActivity.FastCommand, 0) >= 0, out1 = s.FindNode(UiActivity.CancelCommand, 0) >= 0;
             bool walking = state == UiActivityState.Moving || state == UiActivityState.Waiting, done = state == UiActivityState.Finished;
-            bool right = UiActivity.Strip(state) && y + UiActivity.Height(a) <= frame.BandY - UiTokens.S2 && Math.Abs(x + UiActivity.StripWidth / 2f - frame.Width / 2f) <= UiTokens.Grid
+            bool right = UiActivity.Strip(state) && y + UiActivity.Height(a) <= frame.BandY - UiTokens.S2 && Math.Abs(x + a.StripW / 2f - frame.Width / 2f) <= UiTokens.Grid
                          && (walking ? out1 && !skip && !fast : done ? !skip && !fast && !out1 : skip && fast && !out1);
             if (!right && wrong == null)
             {

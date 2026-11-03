@@ -74,13 +74,13 @@ namespace RealLifeOverhaul.Ui
                 choices.Add(new UiSideChoice
                 {
                     Name = UiText.T("reallife_ui_funeral_backup"), Line = UiText.Fill("reallife_ui_funeral_backup_line", "age", UiText.Whole(FuneralHelper.BackUpSaveAge)),
-                    GameKey = ActivityRead.Key(PlayerAction.Interact),
                 });
             }
             _ways[_count++] = Way.Menu;
-            choices.Add(new UiSideChoice { Name = UiText.T("reallife_ui_funeral_menu"), Line = UiText.T("reallife_ui_funeral_menu_line"), GameKey = ActivityRead.Key(PlayerAction.SecondaryInteract) });
+            // The rows carry their numbers only: the game's own keys stand on the buttons under them, so no key shows twice.
+            choices.Add(new UiSideChoice { Name = UiText.T("reallife_ui_funeral_menu"), Line = UiText.T("reallife_ui_funeral_menu_line") });
             _ways[_count++] = Way.Quit;
-            choices.Add(new UiSideChoice { Name = UiText.T("reallife_ui_funeral_quit"), Line = UiText.T("reallife_ui_funeral_quit_line"), GameKey = ActivityRead.Key(PlayerAction.Cancel) });
+            choices.Add(new UiSideChoice { Name = UiText.T("reallife_ui_funeral_quit"), Line = UiText.T("reallife_ui_funeral_quit_line") });
             var buttons = new System.Collections.Generic.List<UiSideButton>(2)
             {
                 new UiSideButton
@@ -128,10 +128,11 @@ namespace RealLifeOverhaul.Ui
                 var text = new StringBuilder(256);
                 Say(text, PermadeathText.Fill("reallife_pd_obit_lived", life));
                 int founded = PermadeathStory.Founded(life);
-                Say(text, PermadeathText.Fill(founded <= 0 ? "reallife_pd_obit_no_business" : founded == 1 ? "reallife_pd_obit_founded_one" : "reallife_pd_obit_founded_many", life));
+                // The name once, in the first sentence; the card's own lines after it say "they", as a eulogy reads.
+                Say(text, PermadeathText.Fill(founded <= 0 ? "reallife_ui_funeral_no_business" : founded == 1 ? "reallife_ui_funeral_founded_one" : "reallife_ui_funeral_founded_many", life));
                 if (life.Employees > 0)
                 {
-                    Say(text, PermadeathText.Fill(life.Employees == 1 ? "reallife_pd_obit_staff_one" : "reallife_pd_obit_staff_many", life));
+                    Say(text, PermadeathText.Fill(life.Employees == 1 ? "reallife_ui_funeral_staff_one" : "reallife_ui_funeral_staff_many", life));
                 }
                 string rival = Rival();
                 if (rival != null)

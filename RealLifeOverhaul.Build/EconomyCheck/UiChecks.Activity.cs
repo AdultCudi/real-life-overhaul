@@ -159,6 +159,28 @@ internal static partial class Program
             same &= y + h <= frame.BandY;
         }
         Check(same, "activity kit: the strip keeps one height above the status bar in every state, so it never jumps");
+        // The running strips grow to their words: the headline, "Hour 4 of 6", "Earned $152", the place and every button whole.
+        foreach (float aspect in new[] { 16f / 9f, 4f / 3f })
+        {
+            var wide = UiFrame.FullMenu(aspect, "HUD");
+            foreach (UiActivityModel run in new[] { UiSamples.ActivityWork(t, UiDefaultKeys.Keyboard, UiActivityState.Running), UiSamples.ActivityChair(t, UiDefaultKeys.Keyboard) })
+            {
+                var ss = new UiScene();
+                UiActivity.StripPlace(wide, run, out float sx, out float sy);
+                UiActivity.DrawStrip(ss, UiAt.Screen, run, sx, sy);
+                string cut = null;
+                for (int i = 0; i < ss.ItemCount && cut == null; i++)
+                {
+                    ref UiItem it = ref ss.Items[i];
+                    if (it.Kind == UiKind.Text && !string.IsNullOrEmpty(it.Text) && UiTextRules.Width(it.Text, it.Style) > it.W + 0.5f)
+                    {
+                        cut = "\"" + it.Text + "\" in " + it.W.ToString("0.#") + " px";
+                    }
+                }
+                Check(cut == null && sx >= 0f && sx + run.StripW <= wide.Width,
+                    "activity kit: the running strip at " + aspect.ToString("0.00") + " shows every word whole (" + (cut ?? "none cut") + ")");
+            }
+        }
         var s = new UiScene();
         UiActivityModel card = UiSamples.ActivityWork(t, UiDefaultKeys.Keyboard, UiActivityState.NotStarted);
         UiActivity.LayCard(s, card, frame, true, UiDefaultKeys.Keyboard);
