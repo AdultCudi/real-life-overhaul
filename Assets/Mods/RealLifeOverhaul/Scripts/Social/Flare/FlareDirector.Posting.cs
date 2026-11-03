@@ -20,6 +20,10 @@ namespace RealLifeOverhaul.Flare
             {
                 int day = Save.Day, minute = FlareGame.MinuteOfDay;
                 string text = FlareLiveRules.Clip(c.Text);
+                if (!PayPromotion(c, out why))
+                {
+                    return false;
+                }
                 FlarePost p;
                 switch (c.Kind)
                 {
@@ -59,6 +63,31 @@ namespace RealLifeOverhaul.Flare
                 Fault("a post", e);
                 return false;
             }
+        }
+
+        // A post that buys reach pays for it first, at its business, as the city's ads are paid (FlareCityGame.PayAd): the same
+        // price the sheet showed (BuildExpect). False, nothing taken and nothing posted, when the business cannot pay.
+        private bool PayPromotion(FlareCompose c, out string why)
+        {
+            why = null;
+            if (c.PromoteReach <= 0 || c.Kind == FlareSource.Reply || string.IsNullOrEmpty(c.Place))
+            {
+                return true;
+            }
+            BuildingRegistration reg = FlareGame.Business(c.Place);
+            if (reg == null)
+            {
+                why = "reallife_flare_compose_need_mine";
+                return false;
+            }
+            FlareExpect ex = BuildExpect(c, c.ScheduleHour >= 0 ? c.ScheduleHour : Save.Hour);
+            if (ex.Cost > 0 && !FlareCityGame.PayAd(reg, ex.Cost))
+            {
+                why = "reallife_flare_compose_no_money";
+                return false;
+            }
+            Logger?.Info("Flare: the player pays " + ex.Cost / 100 + " to promote a post about " + (c.Name ?? c.Place) + " to " + c.PromoteReach + " residents a day.");
+            return true;
         }
 
         private static string Join(string a, string b)

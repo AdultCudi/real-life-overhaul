@@ -22,6 +22,7 @@ namespace RealLifeOverhaul.Flare
         public int PromoteMask;          // districts, a bit each; 0 is the business's own
         public int ScheduleHour = -1;    // the hour it should land, -1 now
         public bool Poll;
+        public int Quality = -1;         // a reply sheet's answer: its quality by FlareReplyRules, -1 to judge it by its words
 
         public void Reset()
         {
@@ -34,6 +35,12 @@ namespace RealLifeOverhaul.Flare
             Tag = true;
             ReplyTo = -1;
             When = -1;
+            PromoteReach = 0;
+            PromoteDays = 1;
+            PromoteMask = 0;
+            ScheduleHour = -1;
+            Poll = false;
+            Quality = -1;
         }
     }
 }

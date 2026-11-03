@@ -88,6 +88,7 @@ namespace RealLifeOverhaul.Flare
             Names(FlareBridges.Brands, _brands);
             _visits.Clear();
             FlareCast.Day(_file, day, _shops, _rivals, _candidates, _brands, _visits);
+            CampaignDms(day, 0);
             for (int i = 0; i < _visits.Count; i++)
             {
                 if (CityTalk(_visits[i].Place, 1, "i:" + _visits[i].Who.ToString(System.Globalization.CultureInfo.InvariantCulture), 2000000 + day * 64 + i, FlareRules.Roll(_file.Seed, day, 863 + i)))
@@ -467,6 +468,7 @@ namespace RealLifeOverhaul.Flare
                     FlareCast.Outcome(h, lead, _file.CastSeed);
                 }
                 _file.Hires.Add(h);
+                HiredDm(h);
                 Logger?.Info("Flare: hired " + WhoLine(h) + " for " + h.Name + " (" + (FlareDeal)(kind - FlareCast.FirstDealKind) + ", days " + from + " to " + to + ", " + percent
                              + "% more customers" + (h.Late ? ", the first post a day late" : string.Empty) + (h.OffMessage ? ", off message" : string.Empty)
                              + (h.Backfired ? ", it will backfire" : string.Empty) + ").");

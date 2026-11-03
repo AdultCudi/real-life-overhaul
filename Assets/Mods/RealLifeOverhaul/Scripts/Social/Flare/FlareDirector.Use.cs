@@ -54,7 +54,7 @@ namespace RealLifeOverhaul.Flare
                     _file.Boosts.Add(new FlareBoost
                     {
                         Post = p.Id, Place = p.Place, FromMinute = from, Hours = ex.Hours, Visitors = ex.Visitors, Cents = ex.Cents, Percent = ex.Percent,
-                        Hour = hour, Flags = (c.Pic != null || p.Pic != null ? 1 : 0) | (ex.Flopped ? 4 : 0) | (ex.WentViral ? 8 : 0),
+                        Hour = hour, Flags = (c.Pic != null || p.Pic != null ? 1 : 0) | (ex.Flopped ? 4 : 0) | (ex.WentViral ? 8 : 0) | (c.PromoteReach > 0 ? FlareBoost.PaidFlag : 0),
                         PicPlace = _picturePlace
                     });
                 }
@@ -62,7 +62,7 @@ namespace RealLifeOverhaul.Flare
             }
             if (p.Source == FlareSource.Reply && !string.IsNullOrEmpty(p.Place))
             {
-                int quality = FlareUseRules.AnswerQuality(p.Text);
+                int quality = c.Quality >= 0 ? c.Quality : FlareUseRules.AnswerQuality(p.Text);   // the reply sheet's option, else judged by its words
                 if (_file.Answers.Count >= 64)
                 {
                     _file.Answers.RemoveAt(0);
@@ -330,7 +330,7 @@ namespace RealLifeOverhaul.Flare
                 _city.RivalBoosts.Add(new FlareBoost
                 {
                     Post = day, Place = place, FromMinute = day * 1440 + hour * 60, Hours = ex.Hours, Visitors = ex.Visitors, Cents = ex.Cents,
-                    Percent = ex.Percent, Hour = hour, Flags = 1 | 2 | 16 | (ex.Flopped ? 4 : 0) | (ex.WentViral ? 8 : 0)
+                    Percent = ex.Percent, Hour = hour, Flags = 1 | 2 | 16 | (move == 1 ? FlareBoost.PaidFlag : 0) | (ex.Flopped ? 4 : 0) | (ex.WentViral ? 8 : 0)
                 });
                 if (hired != null)
                 {
@@ -342,6 +342,28 @@ namespace RealLifeOverhaul.Flare
             {
                 Tell(NotificationType.Warning, "reallife_flare_use_attack", _openFeed);
             }
+            RivalSeen(s, actor, move, day, hour);
+            NpcAnswers(s, day);
+        }
+
+        // What the city sees of the rival's move: its post, promoted when it bought reach, or its post against the player's business.
+        private void RivalSeen(PopulationState s, int actor, int move, int day, int hour)
+        {
+            string key = s.Businesses.Key[actor];
+            BuildingRegistration reg = FlareCityGame.Registration(key);
+            string name = FlareCityGame.NameOf(key);
+            int d = s.Businesses.District[actor];
+            string district = d >= 0 && d < s.Districts.Count ? s.Districts[d].Id : null;
+            if (move == 2)
+            {
+                string mine = PlayerPlace();
+                if (mine != null)
+                {
+                    RivalAttack(name, district, mine, day, hour);
+                }
+                return;
+            }
+            RivalPromo(reg != null ? FlareGame.Place(reg) : null, name, district, day, hour, move == 1);
         }
 
         private string PlayerPlace()
@@ -396,9 +418,12 @@ namespace RealLifeOverhaul.Flare
         /// <summary>A hire's quote: visitors, takings and the chance it flops. Nothing is saved.</summary>
         public FlareExpect HireExpect(FlareInfluencer inf, string place)
         {
+            FlareShop shop;
+            int same = place == null || !ShopOf(place, out shop) || inf == null || string.IsNullOrEmpty(shop.District) || string.IsNullOrEmpty(inf.District) ? -1
+                : string.Equals(shop.District, inf.District, StringComparison.Ordinal) ? 1 : 0;   // their followers live where they do
             var brief = new FlareBrief
             {
-                Followers = inf != null ? inf.Followers : 0, Hour = 12, Photo = true, PhotoHere = place != null, SameDistrict = place != null ? 1 : -1,
+                Followers = inf != null ? inf.Followers : 0, Hour = 12, Photo = true, PhotoHere = place != null, SameDistrict = same,
                 Reliability = inf != null ? inf.Reliability : 50, Style = inf != null ? (int)inf.Style : 0, Seed = inf != null ? inf.Seed : 1, RollKey = inf != null ? inf.Id : 1,
                 Guest = GuestPlace(place), DayCustomers = DayCustomers(place)
             };

@@ -78,7 +78,9 @@ internal static partial class Program
 
         string use = PlayFile("Social", "Flare", "FlareDirector.Use.cs");
         string links = PlayFile("Social", "Flare", "FlareDirector.Links.cs");
-        string screen = PlayFile("Ui", "Flare", "FlareScreen.cs");
+        // The kit's screen with its parts (FlareScreen.Fill, .Desk, .Sheet and .Rows since the kit's Flare was completed), read as one.
+        string screen = PlayFile("Ui", "Flare", "FlareScreen.cs") + PlayFile("Ui", "Flare", "FlareScreen.Fill.cs") + PlayFile("Ui", "Flare", "FlareScreen.Desk.cs")
+                        + PlayFile("Ui", "Flare", "FlareScreen.Sheet.cs") + PlayFile("Ui", "Flare", "FlareScreen.Rows.cs");
         string attention = PlayFile("Social", "Flare", "City", "FlareCityRules.Attention.cs");
         Check(use.Contains("KeepsBoost(") && use.IndexOf("PromoteReach <= 0", System.StringComparison.Ordinal) < 0
               && use.Contains("ReadSidecar(") && use.Contains("PhotoPlace(") && use.IndexOf("PhotoPlace(null", System.StringComparison.Ordinal) < 0
@@ -87,13 +89,16 @@ internal static partial class Program
             "Flare play: the post path stores a paid boost, reads the picture's place, and does not invent a flop");
         Check(links.Contains("RivalCustomers(") && links.Contains("RivalBoosts") && links.Contains("GoingPublic.Mine") && links.Contains("GoingPublic.Foreign"),
             "Flare play: footfall reads a rival's boost and leaves the player's and another player's alone");
-        Check(screen.Contains("FlareUseRules.Chip(") && screen.Contains("ApplyPick(") && screen.Contains("Credited(")
-              && screen.Contains("StarsFor(") && screen.Contains("PostDemand(")
+        // A composer chip opens the compose sheet on its part, the post goes to the business chosen there, a result is the
+        // visitors the hours that ran have credited, the city's demand is its real trends, and a poll's yes and no are the model's.
+        Check(screen.Contains("case FlareFace.ChipCommand: return OpenCompose(arg);") && screen.Contains("_compose.Place = shops[_place].Place;")
+              && screen.Contains("FlareUseRules.Credited(") && screen.Contains("StarsFor(") && screen.Contains("CityTrendsView()")
+              && screen.Contains("FlareFeedRules.Poll(p, now, out int yes, out int votes)")
               && screen.IndexOf("Shops[0]", System.StringComparison.Ordinal) < 0
               && screen.IndexOf("\"@me\"", System.StringComparison.Ordinal) < 0
               && screen.IndexOf("TrendDemand(file.Posts.Count)", System.StringComparison.Ordinal) < 0
               && screen.IndexOf("PollYes", System.StringComparison.Ordinal) < 0
-              && screen.IndexOf("chip_poll", System.StringComparison.Ordinal) < 0,
+              && screen.IndexOf("Roll(p.Seed, p.Id, 931)", System.StringComparison.Ordinal) < 0,
             "Flare play: the kit's press runs the chip, the chosen business, the credited result and the city's demand");
         Check(attention.Contains("StarPull("), "Flare play: attention reads the saved stars");
     }

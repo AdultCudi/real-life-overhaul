@@ -20,6 +20,7 @@ namespace RealLifeOverhaul.Flare
             if (offer != null)
             {
                 offer.Name = FlareCityGame.NameOf(offer.Key);
+                OfferDm(offer, day);   // the business writes with its offer: the kit's inbox takes or turns it down
                 Logger?.Info("Flare in the city: " + offer.Name + " offers " + offer.Fee / 100 + " a post for " + offer.Posts + " post(s), open until day " + offer.Until + ".");
                 if (FlareRules.MayNotify(_file, day, Settings.SocialMediaNotices))
                 {

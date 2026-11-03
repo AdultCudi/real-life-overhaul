@@ -149,7 +149,12 @@ namespace RealLifeOverhaul.Flare
         Case = 4,
         Dm = 5,
         Going = 6,
-        Review = 7
+        Review = 7,
+        Follow = 8,      // the day's new followers, from the account's history (the kit's list: FlareLiveRules.AllNotices)
+        Offer = 9,       // a business of the city's offers paid posts
+        Job = 10,        // one of the city's people writes about a job
+        Campaign = 11,   // an influencer hired posted, and what it brought
+        Promo = 12       // a post's boost ran its hours, and what it brought
     }
 
     /// <summary>What one of the city's people is like: what they post about.</summary>

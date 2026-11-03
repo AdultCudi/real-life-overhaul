@@ -190,7 +190,7 @@ internal static partial class Program
             "flare saw your post: only a chat's key names a post; any other first message is the hello");
         string tests = ModSource(@"Social\Flare\FlareDirector.Tests.cs"), invites = ModSource(@"Social\Flare\FlareDirector.Invites.cs"), live = ModSource(@"Social\Flare\FlareDirector.Live.cs");
         Check(!tests.Contains("\"reallife_flare_dm_chat\"") && !invites.Contains("\"reallife_flare_dm_chat\"") && tests.Contains("FlareText.DmKey(FlareLiveRules.Opener(_file, Now))")
-              && invites.Contains("FlareText.DmKey(FlareLiveRules.Opener(_file, Now))") && live.Contains("FlareLiveRules.CityDm(_file, day, hiring, out with, out what, out at)"),
+              && invites.Contains("FlareText.DmKey(FlareLiveRules.Opener(_file, Now))") && live.Contains("FlareLiveRules.CityDm(_file, day, hiring, _myPlaces, out with, out what, out at, out about)"),
             "flare saw your post: the tests' messages and the city's daily one take their opener from the rule");
     }
 

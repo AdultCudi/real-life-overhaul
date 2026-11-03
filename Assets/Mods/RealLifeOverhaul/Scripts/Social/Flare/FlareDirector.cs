@@ -216,6 +216,7 @@ namespace RealLifeOverhaul.Flare
             {
                 _view.Dispose();
             }
+            RealLifeOverhaul.Ui.FlareScreen.Release();   // the kit face's pictures go with the old panel's
             if (_app != null)
             {
                 _app.Remove();

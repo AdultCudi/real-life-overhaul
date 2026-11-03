@@ -347,6 +347,15 @@ namespace RealLifeOverhaul.Flare
                 w.Int(m.Flags);
             }
             w.Int(c.RivalDay);
+            w.Int(c.StarRows.Count);   // the answers each rating weighs (FlareReplyRules), after the rival's day: an older reader stops before them
+            for (int i = 0; i < c.StarRows.Count; i++)
+            {
+                FlareStarRow s = c.StarRows[i];
+                w.Int(s.Eased);
+                w.Int(s.EasedStars);
+                w.Int(s.Raised);
+                w.Int(s.RaisedStars);
+            }
         }
 
         private static void ReadUse(Reader r, FlareCityState c)
@@ -391,6 +400,24 @@ namespace RealLifeOverhaul.Flare
             if (r.More)
             {
                 c.RivalDay = r.Int();
+            }
+            if (!r.More)
+            {
+                FlareReplyRules.Recount(c.ReviewNotes, c.StarRows);   // an older save: the answers counted again from the notes it kept
+                return;
+            }
+            int answered = r.Int();
+            for (int i = 0; i < answered && i < 2000; i++)
+            {
+                int eased = r.Int(), easedStars = r.Int(), raised = r.Int(), raisedStars = r.Int();
+                if (i < c.StarRows.Count)
+                {
+                    FlareStarRow s = c.StarRows[i];
+                    s.Eased = eased;
+                    s.EasedStars = easedStars;
+                    s.Raised = raised;
+                    s.RaisedStars = raisedStars;
+                }
             }
         }
 
