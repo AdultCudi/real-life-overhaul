@@ -13,7 +13,8 @@ namespace RealLifeOverhaul
     /// PrefabHelper.LoadPrefabAssetByName) with everything that makes it an item taken off before it wakes. The copy is
     /// made under a holder that is switched off, so none of its scripts runs; the placing and selling helpers and every
     /// script, collider, body and sound go, leaving meshes, LODs and the game's materials (a light keeps its light,
-    /// without shadows). Item prefabs stand at their pivot facing +Z; wall items hang from z = 0, ceiling lamps from y = 0.
+    /// without shadows; a monitor keeps the game's ScreenVideoController, switched off, which DeskScreens lights for somebody
+    /// at the desk). Item prefabs stand at their pivot facing +Z; wall items hang from z = 0, ceiling lamps from y = 0.
     /// COST: nothing runs by itself; a copy is made when first wanted. FitOut copies from a kept stripped template, one
     /// instantiation per further copy.
     /// </summary>
@@ -241,6 +242,10 @@ namespace RealLifeOverhaul
                 {
                     light.shadows = LightShadows.None;   // no shadow map of its own
                 }
+                else if (Components[i] is ScreenVideoController screen)
+                {
+                    screen.enabled = false;   // dark, and no update of its own, until DeskScreens lights it for somebody seated at the desk
+                }
             }
             Components.Clear();
             Children.Clear();
@@ -270,7 +275,8 @@ namespace RealLifeOverhaul
             }
             if (c is MonoBehaviour)
             {
-                return c.GetType().Name != "HDAdditionalLightData";   // the pipeline draws a light by it
+                // the pipeline draws a light by its data; a monitor's screen is the game's own ScreenVideoController, kept (switched off) for DeskScreens
+                return c.GetType().Name != "HDAdditionalLightData" && !(c is ScreenVideoController);
             }
             return c is Collider || c is Rigidbody || c is NavMeshObstacle || c is AudioSource || c is SpriteRenderer || c is Animator || c is ReflectionProbe || c is Canvas;
         }

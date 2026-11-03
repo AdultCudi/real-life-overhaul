@@ -442,7 +442,7 @@ namespace RealLifeOverhaul.FitOut
             {
                 if (i != mine)
                 {
-                    _seatsView.Add(new FitCast.SeatPlace { At = _seats[i].At, Use = _seats[i].Use, Stand = _seats[i].Stand });
+                    _seatsView.Add(new FitCast.SeatPlace { At = _seats[i].At, Use = _seats[i].Use, Stand = _seats[i].Stand, Desk = _seats[i].Desk });
                 }
             }
         }
