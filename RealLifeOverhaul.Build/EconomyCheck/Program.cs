@@ -135,6 +135,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--sale-buyers")
+        {
+            ServicesBuyers();   // (selling a business's named buyers, quality and rivals' sales alone, while working on them: ServicesBuyerChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--branch")
         {
             Branches();   // (the bank branches' checks alone, while working on them: BranchChecks.cs)

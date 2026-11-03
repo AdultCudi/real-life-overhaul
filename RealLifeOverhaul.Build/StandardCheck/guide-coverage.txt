@@ -24,6 +24,7 @@ population	reallife_guide_population,reallife_guide_population_demand	the city's
 economy-banks	reallife_guide_economy_banks	the Banks app
 economy-city	reallife_guide_economy_city	the city's economy
 economy-company	reallife_guide_economy_company	running a business
+economy-sale	reallife_guide_economy_sale	selling a business
 economy-credit-products	reallife_guide_economy	credit products
 economy-credit	reallife_guide_economy	credit
 economy-hierarchy	reallife_guide_economy_hierarchy	the company hierarchy

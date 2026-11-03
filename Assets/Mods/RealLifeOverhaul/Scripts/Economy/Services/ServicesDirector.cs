@@ -549,14 +549,14 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>How many things wait for the player's answer: contract offers and offers for a business.</summary>
+        /// <summary>How many things wait for the player's answer: contract offers, offers for a business and rivals' businesses for sale.</summary>
         public int Waiting()
         {
             if (!_running)
             {
                 return 0;
             }
-            return (CleaningOn ? _state.Offers.Count : 0) + (SaleOn ? _state.SaleOffers.Count : 0);
+            return (CleaningOn ? _state.Offers.Count : 0) + (SaleOn ? _state.SaleOffers.Count + _state.RivalSales.Count : 0);
         }
 
         /// <summary>For the save tools: no shift of the mod's stays in any schedule; the timer starts the feature again if an option is on.</summary>

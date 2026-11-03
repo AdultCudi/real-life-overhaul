@@ -41,6 +41,7 @@ namespace RealLifeOverhaul.Economy
             {
                 t.Append('|').Append(s.FeeIncome[i].ToString(Inv));
             }
+            t.Append('|').Append(s.RivalSaleDay.ToString(Inv));
             t.Append("^k:");
             for (int i = 0; i < s.Crew.Count && i < ServicesCatalogue.CrewMost; i++)
             {
@@ -78,6 +79,8 @@ namespace RealLifeOverhaul.Economy
                 Join(t, o.Id);
                 t.Append('|').Append(Clean(o.Place)).Append('|');
                 Join(t, o.Buyer, o.Price, o.Ceiling, o.KeepsStaff ? 1 : 0, o.Parts, o.ClauseDays, o.Deadline, o.Countered ? 1 : 0, o.Face);
+                t.Append('|').Append(Clean(o.Who)).Append('|').Append(Clean(o.WhoName)).Append('|');
+                Join(t, o.WhoCount);
             }
             t.Append("^d:");
             for (int i = Math.Max(0, s.Dues.Count - ServicesCatalogue.DuesMost), n = 0; i < s.Dues.Count; i++, n++)
@@ -101,6 +104,16 @@ namespace RealLifeOverhaul.Economy
                 Join(t, r.Day);
                 t.Append('|').Append(Clean(r.Name)).Append('|');
                 Join(t, r.Price, r.Gain);
+            }
+            t.Append("^v:");
+            for (int i = Math.Max(0, s.RivalSales.Count - ServicesCatalogue.RivalSalesMost), n = 0; i < s.RivalSales.Count; i++, n++)
+            {
+                RivalSale v = s.RivalSales[i];
+                t.Append(n > 0 ? ";" : string.Empty);
+                Join(t, v.Id);
+                t.Append('|').Append(Clean(v.Place)).Append('|').Append(Clean(v.Business)).Append('|').Append(Clean(v.Seller)).Append('|').Append(Clean(v.SellerName))
+                    .Append('|').Append(Clean(v.Buyer)).Append('|').Append(Clean(v.BuyerName)).Append('|');
+                Join(t, v.Price, v.Weekly, v.Day, v.Deadline);
             }
             return t.ToString();
         }
@@ -147,6 +160,7 @@ namespace RealLifeOverhaul.Economy
                                 s.VanCost[i] = Math.Max(0, I(c, 7 + i));
                                 s.FeeIncome[i] = I(c, 14 + i);
                             }
+                            s.RivalSaleDay = Math.Max(0, I(c, 21));
                             header = true;
                             break;
                         }
@@ -211,7 +225,7 @@ namespace RealLifeOverhaul.Economy
                                     {
                                         Id = Math.Max(1, I(c, 0, 1)), Place = c[1], Buyer = buyer, Price = price, Ceiling = Math.Max(price, I(c, 4)), KeepsStaff = I(c, 5) != 0,
                                         Parts = ServicesCatalogue.Clamp(I(c, 6), 0, 12), ClauseDays = Math.Max(0, I(c, 7)), Deadline = Math.Max(0, I(c, 8)), Countered = I(c, 9) != 0,
-                                        Face = Math.Max(0, I(c, 10))
+                                        Face = Math.Max(0, I(c, 10)), Who = S(c, 11), WhoName = S(c, 12), WhoCount = Math.Max(0, I(c, 13))
                                     });
                                 }
                             }
@@ -239,6 +253,20 @@ namespace RealLifeOverhaul.Economy
                                     s.Clauses.Add(new SaleClause
                                     {
                                         Type = c[0], District = c[1], Name = c[2], FromDay = Math.Max(0, I(c, 3)), Until = Math.Max(0, I(c, 4)), Price = Math.Max(0, I(c, 5))
+                                    });
+                                }
+                            }
+                            break;
+                        case 'v':
+                            foreach (string record in records)
+                            {
+                                string[] c = record.Split('|');
+                                if (c.Length >= 11 && c[1].Length > 0 && c[3].Length > 0 && s.RivalSales.Count < ServicesCatalogue.RivalSalesMost && s.RivalSale(I(c, 0)) == null)
+                                {
+                                    s.RivalSales.Add(new RivalSale
+                                    {
+                                        Id = Math.Max(1, I(c, 0, 1)), Place = c[1], Business = c[2], Seller = c[3], SellerName = c[4], Buyer = c[5], BuyerName = c[6],
+                                        Price = Math.Max(0, I(c, 7)), Weekly = Math.Max(0, I(c, 8)), Day = Math.Max(0, I(c, 9)), Deadline = Math.Max(0, I(c, 10))
                                     });
                                 }
                             }
@@ -295,6 +323,8 @@ namespace RealLifeOverhaul.Economy
                 t.Append(i > 0 ? "|" : string.Empty).Append(values[i].ToString(Inv));
             }
         }
+
+        private static string S(string[] c, int at) => at < c.Length ? c[at] : string.Empty;
 
         private static int I(string[] c, int at, int fallback = 0)
         {

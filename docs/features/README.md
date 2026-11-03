@@ -61,6 +61,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [Investors](economy-investors.md): investors, pitches and the lettings page.
 - [The stock market, your listed company and trading bots](economy-markets.md).
 - [Running a business](economy-company.md).
+- [Selling a business](economy-sale.md): its value and quality, named buyers with the game's rivals among them, and the rivals' own sales.
 - [The game studio](game-studio.md): games from a concept pitched at your desk to a life after launch, sold to a real audience with no cap, against rival studios.
 - [The tech firms' markets](tech-firms.md): software, AI, consultancy, security, web, design and data centres in markets sized from the city, against rivals by the same rules, with desk sessions for each kind.
 - [Delivery trips and food spoilage](delivery-trips.md): logistics routes run as delivery trips with departure times, vehicles, drivers, drive time and fuel, and fresh food spoils by its kind, longer in a fridge or a freezer.

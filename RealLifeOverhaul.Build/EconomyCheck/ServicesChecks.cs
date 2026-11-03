@@ -28,6 +28,7 @@ internal static partial class Program
         ServicesMoney();
         ServicesClause();
         ServicesSave();
+        ServicesBuyers();
         ServicesTiming();
     }
 
