@@ -30,6 +30,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back",
                     "reallife_phonecam_app", "reallife_ui_life_camera_full_title", "reallife_ui_life_camera_full_body", "reallife_ui_life_newest",
+                    "reallife_phonecam_page_note", "reallife_ui_life_empty_gallery_title",
                     "reallife_ui_life_open_gallery", "reallife_ui_life_camera_stay", "common_close",
                 }).Switch(UiScreenSwitches.Life),
                 new UiScreenDef("photo_gallery", UiTemplate.AppWindow, "GalleryScreen", new[]

@@ -18940,7 +18940,7 @@
   "reallife_phonecam_latest": "Sua foto mais recente: {taken}",
   "reallife_gallery_row_count": "Fotos",
   "reallife_gallery_count_of": "{count} de {cap}",
-  "reallife_gallery_taken": "Dia {day}, {hour} ({real})",
+  "reallife_gallery_taken": "Dia {day}, {hour}",
   "reallife_gallery_tab_all": "Todas as fotos",
   "reallife_gallery_tab_selfies": "Selfies",
   "reallife_gallery_place": "{place} de {count}",
