@@ -105,7 +105,44 @@ internal static partial class Program
             SettingsTreeChecks();
             ReportJoinChecks();
             ReleaseDateChecks();
+            FirstOpenChecks();
         }
+    }
+
+    // An app of the mod's on the kit has its panel built on the first opening, asleep. The kit's face must bind over it right
+    // then (PhoneApp.Ready), not at the next second's tick, or the game's old panel shows beside the kit on that first opening.
+    private static void FirstOpenChecks()
+    {
+        string scripts = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
+        string apps = File.ReadAllText(System.IO.Path.Combine(scripts, "Core", "GameUi", "PhoneApps.cs"));
+        string shell = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "Shell", "UiShell.cs"));
+        string pages = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "Shell", "ShellPages.cs"));
+        int ready = apps.IndexOf("public bool Ready()", System.StringComparison.Ordinal);
+        int kitOver = ready > 0 ? apps.IndexOf("KitOver();", ready, System.StringComparison.Ordinal) : -1;
+        int rootSet = ready > 0 ? apps.IndexOf("Root = root;", ready, System.StringComparison.Ordinal) : -1;
+        int returned = rootSet > 0 ? apps.IndexOf("return true;", rootSet, System.StringComparison.Ordinal) : -1;
+        Check(rootSet > 0 && kitOver > rootSet && kitOver < returned && apps.Contains("RealLifeOverhaul.Ui.UiShell.Built(_def.KitScreen)"),
+            "first open: the app's panel is built, then its kit face binds over it before the game switches the panel on");
+        int built = shell.IndexOf("public static void Built(string screenId)", System.StringComparison.Ordinal);
+        string body = built > 0 ? shell.Substring(built, System.Math.Min(700, shell.Length - built)) : string.Empty;
+        Check(body.Contains("UiDirector.On") && body.Contains("UiScreenSwitches.On(screenId)") && body.Contains("Faces[i].Install()") && body.Contains("ShellPages.Built(screenId)"),
+            "first open: the bind happens only with the interface and the screen's own switch on, for every mod app and every page");
+        Check(pages.Contains("KitScreen = p.ScreenId") && !pages.Contains("Opened = () => page.Host"),
+            "first open: the overhaul's pages bind through the same path, not one of their own");
+        int apps2 = 0, withScreen = 0, withoutScreen = 0;
+        foreach (string file in Directory.GetFiles(scripts, "*.cs", SearchOption.AllDirectories))
+        {
+            string text = File.ReadAllText(file);
+            if (!text.Contains("new PhoneAppDef"))
+            {
+                continue;
+            }
+            int kits = Regex.Matches(text, @"\bKit = ").Count, screens = Regex.Matches(text, @"\bKitScreen = ").Count;
+            apps2 += kits;
+            withScreen += System.Math.Min(kits, screens);
+            withoutScreen += System.Math.Max(0, kits - screens);
+        }
+        Check(apps2 >= 8 && withoutScreen == 0, "first open: every app with a kit face names its screen (" + withScreen + " of " + apps2 + "), so none is left to show the old panel first");
     }
 
     private static void SettingsTreeChecks()

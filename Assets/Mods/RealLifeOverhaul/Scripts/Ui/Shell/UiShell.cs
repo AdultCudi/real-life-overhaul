@@ -72,6 +72,27 @@ namespace RealLifeOverhaul.Ui
             Faces.Add(new UiGameHost(new ModAppScreen(def.Id, def.KitScreen, def.TitleKey, def.KitIcon, () => held.Root, def.Kit)));
         }
 
+        /// <summary>
+        /// A mod app's panel was just built, asleep, on its first opening (PhoneApp.Ready): its face binds over it at once, when the
+        /// interface and the screen's own switch are on, so the game's Select that follows shows the kit alone. Waiting for the next
+        /// second's <see cref="Tick"/> showed the app's old panel for up to a second first. One path for every app with a Kit.
+        /// </summary>
+        public static void Built(string screenId)
+        {
+            if (!UiDirector.On || !UiScreenSwitches.On(screenId))
+            {
+                return;
+            }
+            for (int i = 0; i < Faces.Count; i++)
+            {
+                if (Faces[i].Id == screenId)
+                {
+                    Faces[i].Install();
+                }
+            }
+            ShellPages.Built(screenId);
+        }
+
         /// <summary>Once a second while the interface is on: the mod apps' faces put on, the apps' news read while the frame shows.</summary>
         public static void Tick()
         {

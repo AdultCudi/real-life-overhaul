@@ -607,7 +607,26 @@ namespace RealLifeOverhaul.GameUi
             }
             root.AddComponent<PhoneAppRoot>().App = this;
             Root = root;
+            KitOver();
             return true;
+        }
+
+        // The app's panel is built asleep: the kit's face, if it has one, binds over it now, before the game's Select switches the
+        // panel on, so the first opening shows the kit alone, as every later one does (UiShell.Built is the one way, for every app).
+        private void KitOver()
+        {
+            if (_def.Kit == null || string.IsNullOrEmpty(_def.KitScreen))
+            {
+                return;
+            }
+            try
+            {
+                RealLifeOverhaul.Ui.UiShell.Built(_def.KitScreen);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
         }
 
         // Each phone's private "appButtonTemplate"; failing that the object of that name; failing that any button of the kind

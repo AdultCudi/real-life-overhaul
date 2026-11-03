@@ -70,6 +70,19 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        /// <summary>A page's panel was just built on its first opening: its kit binds over it at once, when the page is offered now.</summary>
+        internal static void Built(string screenId)
+        {
+            for (int i = 0; i < Pages.Length; i++)
+            {
+                Page p = Pages[i];
+                if (p.ScreenId == screenId && p.App != null && p.Host != null && p.Ready())
+                {
+                    p.Host.Install();
+                }
+            }
+        }
+
         /// <summary>Every page off: the interface switched off, the city gone or the mod unloading.</summary>
         public static void Remove(string why)
         {
@@ -139,7 +152,7 @@ namespace RealLifeOverhaul.Ui
                 NoButtons = true,
                 Build = (menu, holder) => Panel(holder),
                 Kit = p.Make,
-                Opened = () => page.Host?.Install()   // the panel is built on the first opening: the kit binds over it at once
+                KitScreen = p.ScreenId   // the panel is built on the first opening: PhoneApp.Ready has the kit bind over it (UiShell.Built)
             }, out bool _);
             if (p.App != null && p.Host == null)
             {
