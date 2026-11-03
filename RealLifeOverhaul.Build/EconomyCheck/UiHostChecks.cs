@@ -128,7 +128,10 @@ internal static partial class Program
             if (text.Contains("KitScreen = ") && !path.EndsWith("PhoneAppDef.cs", StringComparison.Ordinal))
             {
                 kitApps++;
-                if (!text.Contains("UiShell.Face("))
+                // The overhaul's own pages (Ui/Shell/ShellPages) carry their kit host themselves and bind it through
+                // ShellPages.Built, which UiShell.Built calls on the panel's first build; every other app hands its face over.
+                bool pages = path.EndsWith("ShellPages.cs", StringComparison.Ordinal) && text.Contains("p.Host.Install()");
+                if (!text.Contains("UiShell.Face(") && !pages)
                 {
                     unfaced = System.IO.Path.GetFileName(path);
                 }
