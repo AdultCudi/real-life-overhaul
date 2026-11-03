@@ -16,6 +16,21 @@ namespace RealLifeOverhaul.Ui
             PricingManagers = "PricingManagers", LogisticsManagers = "LogisticsManagers", PurchasingAgents = "PurchasingAgents", HrManagers = "HRManagers",
             Headhunters = "Headhunters";
 
+        /// <summary>
+        /// The game's sortable heads of the business list, one a column of the kit's table (null where the game has none to
+        /// press: the district and the set destination column at the end).
+        /// </summary>
+        public static readonly string[] ShopHeads = { "BusinessName", null, "AvgDailyIncome", "Satisfaction", "Alerts", "Status", null };
+
+        /// <summary>The game's sortable heads of a store's prices, one a column of the kit's table.</summary>
+        public static readonly string[] PriceHeads = { "ProductName", "SoldLastWeek", "StockCount", "MarketPrice", "RetailPriceSortField" };
+
+        /// <summary>
+        /// The game's head over a column of the kit's table, or null for none: a column past the game's heads (the kit's own,
+        /// such as set destination) has none, never an index past the names.
+        /// </summary>
+        public static string HeadOf(string[] names, int column) => names != null && column >= 0 && column < names.Length ? names[column] : null;
+
         /// <summary>The mod's own Interior tab (Interiors/InteriorTab.Id), a child of the tab bar the mod made.</summary>
         public const string Interiors = "RealLifeInteriors";
 

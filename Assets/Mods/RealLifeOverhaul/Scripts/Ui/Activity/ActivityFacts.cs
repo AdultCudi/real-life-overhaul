@@ -58,7 +58,8 @@ namespace RealLifeOverhaul.Ui
                     new UiInfoRow { Label = UiText.T("reallife_ui_activity_hours"), Value = CareersText.Hours(p) },
                     new UiInfoRow
                     {
-                        Label = UiText.T("reallife_ui_activity_standing"), Value = UiText.Whole(j.Favour), Ink = j.Favour > 0 ? UiRole.OkText : j.Favour < 0 ? UiRole.WarnText : UiRole.None,
+                        Label = UiText.T("reallife_ui_activity_standing"), Value = (j.Favour > 0 ? "+" : string.Empty) + UiText.Whole(j.Favour),
+                        Ink = j.Favour > 0 ? UiRole.OkText : j.Favour < 0 ? UiRole.WarnText : UiRole.None,
                     },
                 };
                 if (m.HasDuration)

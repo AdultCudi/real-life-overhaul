@@ -186,7 +186,8 @@ namespace RealLifeOverhaul.Ui
             GameSpeedController speed = InstanceBehavior<UIs>.Instance != null ? InstanceBehavior<UIs>.Instance.gameSpeed : null;
             _m.CanFast = a.HasFastForward() && BuildingManager.IsInsideBuilding;
             _m.Fast = speed != null && speed.isFastForwarding;
-            _m.FastLabel = UiText.T("playeractivityui_fast_forward");
+            // The game's fast forward runs time at its one speed (TimeSpeed.FastForward, x6): the button says how fast.
+            _m.FastLabel = UiText.Fill("reallife_ui_activity_fast_speed", "speed", UiText.Whole((int)TimeSpeed.FastForward));
             _m.FastKey = ActivityRead.Key(PlayerAction.SecondaryInteract);
             _m.CanCancel = state == UiActivityState.Moving;
             _m.CancelLabel = UiText.T("common_cancel");

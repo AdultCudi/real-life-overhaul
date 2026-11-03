@@ -19,7 +19,7 @@ internal static partial class UiSamples
     {
         "schedule_empty", "schedule_full", "schedule_drag", "schedule_picker", "schedule_hours", "schedule_none", "schedule_closed", "schedule_long", "pricing", "pricing_none",
         "pricing_unassigned", "logistics", "logistics_sent", "purchasing", "hr", "hr_assign", "headhunters", "headhunters_replace", "factory", "factory_missing",
-        "factory_none", "warehouse_drivers", "warehouse_stock", "warehouse_empty"
+        "factory_none", "warehouse_drivers", "warehouse_stock", "warehouse_empty", "schedule_auto_fill_confirm", "no_manager_popup", "pricing_plan"
     };
 
     public static readonly string[] UniformStates = { "uniforms", "uniforms_colours", "uniforms_new", "uniforms_long" };
@@ -71,9 +71,21 @@ internal static partial class UiSamples
     /// <summary>A state of BizMan's operations by its name, as the previews and the checks lay each one out.</summary>
     public static BizManModel BizOps(UiWords t, string state)
     {
+        BizManModel m = OpsState(t, state);
+        // Each row's target as the screen gives it, one widget a row here: the samples' rows in their order.
+        for (int i = 0; m.Ops != null && i < m.Ops.Rows.Length; i++)
+        {
+            m.Ops.Rows[i].Arg = i;
+        }
+        return m;
+    }
+
+    private static BizManModel OpsState(UiWords t, string state)
+    {
         switch (state)
         {
-            case "pricing": case "pricing_none": case "pricing_unassigned": return OpsPricing(t, state);
+            case "pricing": case "pricing_none": case "pricing_unassigned": case "pricing_plan": return OpsPricing(t, state);
+            case "no_manager_popup": return OpsNoManager(t);
             case "logistics": case "logistics_sent": return OpsLogistics(t, state == "logistics_sent");
             case "purchasing": return OpsPurchasing(t);
             case "hr": case "hr_assign": return OpsHr(t, state == "hr_assign");
@@ -155,7 +167,8 @@ internal static partial class UiSamples
     private static BizManModel OpsSchedule(UiWords t, string state)
     {
         bool longNames = state == "schedule_long", none = state == "schedule_none", closed = state == "schedule_closed";
-        bool full = state == "schedule_full" || state == "schedule_drag" || state == "schedule_picker" || state == "schedule_hours" || longNames;
+        bool full = state == "schedule_full" || state == "schedule_drag" || state == "schedule_picker" || state == "schedule_hours" || state == "schedule_auto_fill_confirm"
+                    || longNames;
         BizManModel m = OpsStore(t, longNames);
         BizOpsModel o = m.Ops;
         var board = new UiBoardModel();
@@ -207,7 +220,8 @@ internal static partial class UiSamples
                     board.Shifts[i] = new UiBoardShift
                     {
                         Lane = lane, Start = OpsShifts[i, 1] * 60, End = OpsShifts[i, 2] * 60, Name = names[who], Warn = who == 3, Hue = UiColour.HueOf(names[who]),
-                        Ring = StaffViews.Mood(OpsMood[who])
+                        Ring = StaffViews.Mood(OpsMood[who]),
+                        Span = t("reallife_ui_bizops_span", "{from} to {to}").Replace("{from}", OpsHour(OpsShifts[i, 1])).Replace("{to}", OpsHour(OpsShifts[i, 2] % BizOpsRules.Hours))
                     };
                 }
             }
@@ -227,7 +241,10 @@ internal static partial class UiSamples
             new UiActionModel { Label = t("reallife_ui_bizops_clear_week", "Clear the week"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Trash, Key = UiAction.Count, Disabled = !full }
         };
         OpsDayFacts(t, o, board, full, closed, none);
-        o.DayOpenWords = t("reallife_ui_bizops_open_on", "Open on {day}").Replace("{day}", closed ? "Sunday" : "Wednesday");
+        // The day's name is the game's own (common_wednesday), as the screen asks the game's localisation for it.
+        string dayName = closed ? t("common_sunday", "Sunday") : t("common_wednesday", "Wednesday");
+        o.DayOpenWords = t("reallife_ui_bizops_open_on", "Open on {day}").Replace("{day}", dayName);
+        o.DayOpenShort = dayName;
         o.DayOpen = !closed;
         o.HoursWords = closed ? t("reallife_ui_bizops_closed_day", "Closed this day") : t("reallife_ui_bizops_hours", "{from} to {to}").Replace("{from}", "06:00").Replace("{to}", "22:00");
         o.HoursPress = !closed;
@@ -261,16 +278,38 @@ internal static partial class UiSamples
                 new UiActionModel { Label = t("reallife_ui_bizops_paste", "Paste day"), Kind = UiButtonKind.Secondary, Key = UiAction.Count, Disabled = !full },
                 new UiActionModel { Label = t("reallife_ui_bizops_paste_all", "Paste to every day"), Kind = UiButtonKind.Secondary, Key = UiAction.Count, Disabled = !full },
                 new UiActionModel { Label = t("reallife_ui_bizops_clear", "Clear day"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Trash, Key = UiAction.Count, Disabled = !full },
-                new UiActionModel { Label = t("bizman_schedule_auto_fill_day", "Auto-fill day"), Kind = UiButtonKind.Primary, Icon = UiIcon.Spark, Key = UiAction.Alt, Disabled = closed }
+                new UiActionModel { Label = t("bizman_schedule_auto_fill_day", "Auto-fill day"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Spark, Key = UiAction.Count, Disabled = closed }
             };
-            o.FactActions = new[]   // beside the day's facts and problems it mends
+            o.FactActions = new[]   // beside the day's facts and problems it mends: the page's one main action while the day is open
             {
-                new UiActionModel { Label = t("reallife_ui_bizops_fill_gaps", "Fill the gaps"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Plus, Key = UiAction.Count, Disabled = closed }
+                new UiActionModel { Label = t("reallife_ui_bizops_fill_gaps", "Fill the gaps"), Kind = closed ? UiButtonKind.Secondary : UiButtonKind.Primary, Icon = UiIcon.Plus,
+                    Key = closed ? UiAction.Count : UiAction.Alt, Disabled = closed }
             };
+            if (state == "schedule_empty")
+            {
+                o.BoardHint = t("reallife_ui_bizops_empty_hint_gaps", "Nobody works this day yet. Press Fill the gaps, or press an hour on a lane to put someone on it.");
+            }
+            OpsCrew(t, o, names, state == "schedule_empty" ? 5 : -1);
         }
         if (state == "schedule_picker")
         {
             OpsPicker(t, o, names);
+        }
+        if (state == "schedule_auto_fill_confirm")
+        {
+            // The game's own question before Auto-fill all, as the screen draws it over the page: its words, its speed tick.
+            o.Card = new UiCardModel
+            {
+                Icon = UiIcon.Spark, Title = t("reallife_ui_bizops_auto_title", "Fill the schedule automatically"),
+                Body = t("bizman_schedule_auto_fill_info", "You can continue playing while the schedule is being filled. You will receive a notification when the process is complete."),
+                Check = t("bizman_schedule_fast_autofill", "Fast auto-fill (may produce more fragmented schedule)"), Checked = true,
+                Buttons = new[]
+                {
+                    new UiActionModel { Label = t("common_cancel", "Cancel"), Kind = UiButtonKind.Secondary, Key = UiAction.Back },
+                    new UiActionModel { Label = t("bizman_schedule_auto_fill", "Auto-fill all"), Kind = UiButtonKind.Primary, Icon = UiIcon.Spark, Key = UiAction.Confirm }
+                },
+                Prompts = new[] { new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") } }, PromptCount = 1
+            };
         }
         return m;
     }
@@ -371,6 +410,40 @@ internal static partial class UiSamples
 
     private static string OpsHour(int hour) => hour.ToString("00", CultureInfo.InvariantCulture) + ":00";
 
+    // The place's people beside the board as the screen lists them: each with their role and wage, and their hours this
+    // week against what their demand allows as a chip (full in the warning's colour); one chosen to place where asked.
+    private static void OpsCrew(UiWords t, BizOpsModel o, string[] names, int chosen)
+    {
+        o.CrewTitle = t("bizman_schedule_employee_header_no_workstation", "Employees list");
+        o.CrewLine = chosen >= 0 ? t("reallife_ui_bizops_crew_line_chosen", "Now press an hour on a lane to give them that shift, or drop them there.")
+            : t("reallife_ui_bizops_crew_line", "Choose a person, then press an hour on a lane, or drag them onto it.");
+        var crew = new UiDataTableModel
+        {
+            Columns = new[]
+            {
+                new UiDataColumn { Title = t("reallife_ui_bizops_col_person", "Person"), Kind = UiCellKind.Person },
+                new UiDataColumn { Title = t("reallife_ui_bizops_col_week", "This week"), Kind = UiCellKind.Chip, Width = 96f },
+            },
+            EmptyIcon = UiIcon.People, Selected = chosen
+        };
+        crew.Rows = new UiDataRow[names.Length];
+        for (int p = 0; p < names.Length; p++)
+        {
+            int left = System.Math.Max(0, 40 - OpsWeek[p]);
+            crew.Rows[p] = new UiDataRow
+            {
+                Cells = new[] { names[p], left == 0 ? t("reallife_ui_bizops_hours_full", "{hours} h, full").Replace("{hours}", OpsWhole(OpsWeek[p]))
+                    : t("reallife_ui_bizops_hours_left_short", "{hours} h left").Replace("{hours}", OpsWhole(left)) },
+                Tones = new[] { UiRole.None, left == 0 ? UiRole.Warn : UiRole.Ok },
+                Sub = OpsSkillWords[p] + ", " + t("bizman_schedule_hourly_wage", "{wage}/h").Replace("{wage}", OpsMoney(OpsWage[p])),
+                Hue = UiColour.HueOf(names[p]), Ring = StaffViews.Mood(OpsMood[p])
+            };
+        }
+        crew.RowCount = names.Length;
+        BizOpsRules.FitChips(crew);
+        o.Crew = crew;
+    }
+
     // The game's picker for Register 2 at two in the afternoon, best fits first: who is free, who is busy then, who would
     // work too long or against what they asked for; each with their free hours that day and the hours their demand leaves.
     private static void OpsPicker(UiWords t, BizOpsModel o, string[] names)
@@ -386,7 +459,8 @@ internal static partial class UiSamples
             {
                 new UiDataColumn { Title = t("reallife_ui_bizops_col_person", "Person"), Kind = UiCellKind.Person },
                 new UiDataColumn { Title = t("reallife_ui_bizops_col_skill", "Skill"), Kind = UiCellKind.Figure, Width = 64f, Graded = true, Sortable = true },
-                new UiDataColumn { Title = t("reallife_ui_bizops_col_week", "This week"), Kind = UiCellKind.Figure, Width = 72f, Sortable = true },
+                new UiDataColumn { Title = t("reallife_ui_bizops_col_week", "This week"), Kind = UiCellKind.Figure, Width = 96f, Sortable = true },
+                new UiDataColumn { Title = t("reallife_ui_bizops_col_free", "Free"), Kind = UiCellKind.Text, Width = 120f },
                 new UiDataColumn { Title = t("reallife_ui_bizops_col_fit", "Fit"), Kind = UiCellKind.Chip, Width = 112f },
             },
             SortColumn = 1, SortDown = true, SearchPlaceholder = t("bizman_schedule_employee_search_placeholder", "e.g. \"Uncle Fred\""), Query = string.Empty,
@@ -404,12 +478,15 @@ internal static partial class UiSamples
                 : t("reallife_ui_bizops_fit_demand", "Against their wishes");
             table.Rows[i] = new UiDataRow
             {
-                Cells = new[] { names[p], OpsWhole(OpsSkill[p]) + "%", t("reallife_ui_bizops_hours_week", "{hours} h").Replace("{hours}", OpsWhole(OpsWeek[p])), words },
-                Values = new[] { 0, OpsSkill[p], 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, tone },
-                Sub = OpsSkillWords[p] + ", " + t("bizman_schedule_hourly_wage", "{wage}/h").Replace("{wage}", OpsMoney(OpsWage[p]))
-                      + (fit == "busy" ? string.Empty : ", " + t("reallife_ui_bizops_free", "free {from} to {to}")
-                          .Replace("{from}", i % 3 == 0 ? "00:00" : i % 3 == 1 ? "12:00" : "10:00").Replace("{to}", i % 3 == 0 ? "18:00" : i % 3 == 1 ? "00:00" : "20:00"))
-                      + ", " + t("reallife_ui_bizops_hours_left", "{hours} h left this week").Replace("{hours}", OpsWhole(System.Math.Max(0, 40 - OpsWeek[p]))),
+                Cells = new[]
+                {
+                    names[p], OpsWhole(OpsSkill[p]) + "%", t("reallife_ui_bizops_hours_of", "{count} of {most} h").Replace("{count}", OpsWhole(OpsWeek[p])).Replace("{most}", "40"),
+                    fit == "busy" ? "-" : i % 4 == 3 ? t("reallife_ui_bizops_free_all_day", "All day") : t("reallife_ui_bizops_span", "{from} to {to}")
+                        .Replace("{from}", i % 3 == 0 ? "00:00" : i % 3 == 1 ? "12:00" : "10:00").Replace("{to}", i % 3 == 0 ? "18:00" : i % 3 == 1 ? "00:00" : "20:00"),
+                    words
+                },
+                Values = new[] { 0, OpsSkill[p], 0, 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, OpsWeek[p] >= 40 ? UiRole.WarnText : UiRole.None, UiRole.None, tone },
+                Sub = OpsSkillWords[p] + ", " + t("bizman_schedule_hourly_wage", "{wage}/h").Replace("{wage}", OpsMoney(OpsWage[p])),
                 Hue = UiColour.HueOf(names[p]),
                 Ring = StaffViews.Mood(OpsMood[p])
             };
@@ -512,12 +589,19 @@ internal static partial class UiSamples
                 OpsNote(t("bizman_pricingmanagers_not_assigned_description", "Assign a Pricing Manager to get price suggestions for this neighborhood.")),
                 OpsChoice(t("reallife_ui_bizops_manager", "Manager"), t("common_unassigned", "Unassigned"))
             };
-            o.Actions = new[] { new UiActionModel { Label = t("bizman_delete_plan", "Delete plan"), Kind = UiButtonKind.Destructive, Icon = UiIcon.Trash, Key = UiAction.Count } };
+            o.Actions = new[]
+            {
+                new UiActionModel { Label = t("bizman_delete_plan", "Delete plan"), Kind = UiButtonKind.Destructive, Icon = UiIcon.Trash, Key = UiAction.Count },
+                new UiActionModel { Label = t("reallife_ui_bizops_assign_named", "Assign {name}").Replace("{name}", "Ines Duarte"), Kind = UiButtonKind.Primary, Icon = UiIcon.People,
+                    Key = UiAction.Alt }
+            };
             OpsPlanActions(t, o, chosen);
             return m;
         }
         string percent = t("reallife_ui_bizops_percent", "{count}%");
         string shops = Businesses[0] + ", " + Businesses[3] + ", " + Businesses[4] + ", " + Businesses[6];
+        o.FormTabs = new[] { t("reallife_ui_bizops_view_prices", "Prices"), t("reallife_ui_bizops_view_plan", "Plan and strategy") };
+        o.FormTab = state == "pricing_plan" ? 1 : 0;
         o.Rows = new[]
         {
             OpsChoice(t("reallife_ui_bizops_manager", "Manager"), "Grace Holloway, 84%"),
@@ -540,7 +624,11 @@ internal static partial class UiSamples
             OpsSwitch(t("reallife_ui_bizops_strategy_cost", "Never under cost"), true, true),
             OpsChoice(t("reallife_ui_bizops_strategy_step", "Biggest change a day"), t("reallife_ui_bizops_step_none", "No limit"), true)
         };
-        o.FormLead = "Owned businesses 4";
+        o.FormLead = t("bizman_pricingmanagers_owned_businesses", "Owned businesses {numberOfBusinesses}").Replace("{numberOfBusinesses}", "4");
+        if (o.FormTab == 0)
+        {
+            o.Rows = new BizOpsRow[0];   // the prices' half: the table takes the room, the manager on the plan's row
+        }
         o.Actions = new[]
         {
             new UiActionModel { Label = t("reallife_ui_bizops_reset_prices", "Reset to yesterday"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Back, Key = UiAction.Count },
@@ -550,7 +638,7 @@ internal static partial class UiSamples
         {
             Columns = new[]
             {
-                new UiDataColumn { Title = t("bizman_pricingmanagers_header_product", "Product"), Kind = UiCellKind.Text, Sortable = true },
+                new UiDataColumn { Title = t("bizman_pricingmanagers_header_product", "Product"), Kind = UiCellKind.Tile, Sortable = true },
                 new UiDataColumn { Title = t("reallife_ui_bizops_col_cost", "Cost"), Kind = UiCellKind.Money, Width = 88f },
                 new UiDataColumn { Title = t("bizman_pricingmanagers_header_rivals_prices", "Market Price"), Kind = UiCellKind.Money, Width = 104f, Sortable = true },
                 new UiDataColumn { Title = t("bizman_pricingmanagers_header_suggested_price", "Suggested Price"), Kind = UiCellKind.Money, Width = 152f, Sortable = true },
@@ -559,7 +647,8 @@ internal static partial class UiSamples
                 new UiDataColumn { Title = t("reallife_ui_bizops_col_margin", "Margin"), Kind = UiCellKind.Figure, Width = 80f },
                 new UiDataColumn { Title = t("reallife_ui_bizops_col_vs_rivals", "Vs rivals"), Kind = UiCellKind.Figure, Width = 88f },
             },
-            EmptyIcon = UiIcon.Tag, EmptyTitle = t("bizman_pricingmanagers_no_products", "No products to price"), SortColumn = 0, Selected = 1
+            EmptyIcon = UiIcon.Tag, EmptyTitle = t("bizman_pricingmanagers_no_products", "No products to price"), SortColumn = 0, Selected = 1,
+            SearchPlaceholder = t("reallife_ui_bizops_find_product", "Find a product")
         };
         table.Rows = new UiDataRow[OpsGoods.Length];
         int byHand = 0, over = 0;
@@ -578,14 +667,14 @@ internal static partial class UiSamples
             {
                 Cells = new[] { OpsGoods[i], OpsMoney(cost), i % 9 == 5 ? "-" : OpsMoney(rivals), suggested, OpsMoney(price),
                     percent.Replace("{count}", (margin < 0 ? "-" : string.Empty) + OpsWhole(System.Math.Abs(margin))), vs },
-                Values = new[] { 0, 0, 0, 0, UiDataTable.CanLess | UiDataTable.CanMore, 0, 0 },
+                Values = new[] { (int)UiIcon.Tag, 0, 0, 0, UiDataTable.CanLess | UiDataTable.CanMore, 0, 0 },
                 Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, margin < 0 ? UiRole.DangerText : UiRole.None,
                     against != int.MinValue && against > 0 ? UiRole.WarnText : UiRole.None }
             };
         }
         table.RowCount = OpsGoods.Length;
-        o.Table = table;
-        o.Filters = new[]
+        o.Table = o.FormTab == 0 ? table : null;
+        o.Filters = o.FormTab != 0 ? new string[0] : new[]
         {
             t("reallife_ui_bizops_filter_all", "All {count}").Replace("{count}", OpsWhole(OpsGoods.Length)),
             t("reallife_ui_bizops_filter_changed", "Set by hand {count}").Replace("{count}", OpsWhole(byHand)),
@@ -627,11 +716,14 @@ internal static partial class UiSamples
         o.Stops = new[]
         {
             new BizOpsStop { Name = Businesses[0], Line = "Destination #1, " + goods.Replace("{count}", "6") + ", " + t("reallife_ui_bizops_open_now", "Open now"), Open = true,
-                Removable = true },
+                Removable = true, Open2 = t("reallife_ui_bizops_open_now", "Open now"), OpenTone = UiRole.Ok, Goods = new[] { "Coffee beans", "Whole milk", "Croissant" },
+                Fills = new[] { "120", "200", "80" }, More = t("reallife_ui_bizops_more_goods", "{count} more").Replace("{count}", "3") },
             new BizOpsStop { Name = Businesses[3], Line = "Destination #2, " + goods.Replace("{count}", "4") + ", " + t("reallife_ui_bizops_opens_at", "Opens {hour}")
-                .Replace("{hour}", "16:00"), Removable = true },
+                .Replace("{hour}", "16:00"), Removable = true, Open2 = t("reallife_ui_bizops_opens_at", "Opens {hour}").Replace("{hour}", "16:00"), OpenTone = UiRole.Warn,
+                Goods = new[] { "Coffee beans", "Paper cups", "Sugar sachets" }, Fills = new[] { "60", "400", "50" }, More = t("reallife_ui_bizops_more_goods", "{count} more").Replace("{count}", "1") },
             new BizOpsStop { Name = Businesses[6], Line = "Destination #3, " + goods.Replace("{count}", "5") + ", " + t("reallife_ui_bizops_closed_today", "Closed today"),
-                Removable = true }
+                Removable = true, Open2 = t("reallife_ui_bizops_closed_today", "Closed today"), OpenTone = UiRole.Muted, Goods = new[] { "Croissant", "Bottled water", "Whole milk" },
+                Fills = new[] { "40", "100", "80" }, More = t("reallife_ui_bizops_more_goods", "{count} more").Replace("{count}", "2") }
         };
         o.TableLead = t("reallife_ui_bizops_stop_goods", "Goods the route keeps in stock at {place}.").Replace("{place}", Businesses[0]);
         o.Status = sent ? t("reallife_ui_bizops_sent", "Sent {count} pieces to {stops} stops.").Replace("{count}", "1,240").Replace("{stops}", "3") : null;
@@ -858,7 +950,6 @@ internal static partial class UiSamples
                 OpsSwitch(t("reallife_ui_bizops_hunt_always", "Recruit continuously"), false),
                 OpsSwitch(t("reallife_ui_bizops_hunt_count", "Recruit a number of candidates"), true),
                 new BizOpsRow { Kind = BizOpsRowKind.Text, Label = t("reallife_ui_bizops_hunt_amount", "Candidates"), Value = "3" },
-                OpsButton(t("bizman_headhunters_start_recruiting_button", "Start Recruiting"), UiIcon.Play, false),
                 OpsHeading(t("bizman_headhunters_deal_breakers_title", "Deal Breakers"), true),
                 OpsNote("Points used: 3", true),
                 OpsSwitch("Smokes on breaks", true, true),
@@ -866,6 +957,11 @@ internal static partial class UiSamples
                 OpsSwitch("Asks for health insurance", false, true),
                 OpsSwitch("Works part time only", false, true),
                 OpsButton(t("bizman_headhunters_deal_breakers_clear_all_button", "Clear All"), UiIcon.Close, false, true)
+            };
+            // Start recruiting is the page's one main action, at the form's head, as the screen offers the game's own button.
+            o.Actions = new[]
+            {
+                new UiActionModel { Label = t("bizman_headhunters_start_recruiting_button", "Start Recruiting"), Kind = UiButtonKind.Primary, Icon = UiIcon.Play, Key = UiAction.Alt }
             };
         }
         OpsPlanActions(t, o, 0);
@@ -902,13 +998,8 @@ internal static partial class UiSamples
         bool missing = state == "factory_missing";
         var table = new UiDataTableModel
         {
-            Columns = new[]
-            {
-                new UiDataColumn { Title = t("reallife_ui_bizops_col_machine", "Workstation"), Kind = UiCellKind.Tile },
-                new UiDataColumn { Title = t("reallife_ui_bizops_col_makes", "Makes"), Kind = UiCellKind.Text, Width = 152f },
-                new UiDataColumn { Title = t("reallife_ui_bizops_worker", "Worker"), Kind = UiCellKind.Person, Width = 208f },
-                new UiDataColumn { Title = t("reallife_ui_bizops_output", "Output"), Kind = UiCellKind.Text, Width = 136f },
-            },
+            Columns = BizOpsRules.MachineColumns(t("reallife_ui_bizops_col_machine", "Workstation"), t("reallife_ui_bizops_col_makes", "Makes"), t("reallife_ui_bizops_worker", "Worker"),
+                t("reallife_ui_bizops_col_per_hour", "An hour"), t("reallife_ui_bizops_col_state", "State")),
             EmptyIcon = UiIcon.Factory, EmptyTitle = t("reallife_ui_bizops_machines_none", "No production machines"), Selected = missing ? 5 : 0
         };
         table.Rows = new UiDataRow[machines.Length];
@@ -916,19 +1007,20 @@ internal static partial class UiSamples
         {
             bool running = worker[i] >= 0;
             string who = running ? OpsStaff[worker[i]] : t("bizman_factory_no_employee_assigned", "No employee assigned");
-            string state0 = running ? t("bizman_factory_running", "Running") : i == 5 ? t("bizman_factory_inactive_reason_invalid_workstation", "Missing production machines")
-                : t("bizman_factory_not_running", "Not Running");
+            string chip = running ? t("bizman_factory_running", "Running") : i == 5 ? t("reallife_ui_bizops_chip_missing", "Missing machine")
+                : t("reallife_ui_bizops_chip_no_worker", "No worker");
             table.Rows[i] = new UiDataRow
             {
-                Cells = new[] { machines[i], makes[i], who, running ? t("common_per_hour", "{textValue} / hour").Replace("{textValue}", OpsWhole(made[i]) + "x " + makes[i]) : "-" },
-                Values = new[] { (int)UiIcon.Factory, 0, 0, 0 },
-                Tones = new[] { running ? UiRole.None : UiRole.Warn, UiRole.None, UiRole.None, UiRole.None },
-                Subs = new[] { state0, null, running ? t("reallife_ui_bizops_skill_line", "{skill} {level}%").Replace("{skill}", t("ba:skill_factoryworker", "Factory Worker"))
-                    .Replace("{level}", OpsWhole(OpsSkill[worker[i]])) : null, null },
+                Cells = new[] { machines[i], makes[i], who, running ? OpsWhole(made[i]) : "-", chip },
+                Values = new[] { (int)UiIcon.Factory, 0, 0, 0, 0 },
+                Tones = new[] { running ? UiRole.None : UiRole.Warn, UiRole.None, UiRole.None, UiRole.None, running ? UiRole.Ok : UiRole.Danger },
+                Subs = new[] { i < 3 ? "Drum roaster" : i < 5 ? "Burr grinder" : "Blending table", null, running ? t("reallife_ui_bizops_skill_line", "{skill} {level}%").Replace("{skill}", t("ba:skill_factoryworker", "Factory Worker"))
+                    .Replace("{level}", OpsWhole(OpsSkill[worker[i]])) : null, null, null },
                 Hue = running ? UiColour.HueOf(who) : 0f, Ring = running ? StaffViews.Mood(OpsMood[worker[i]]) : UiRole.None
             };
         }
         table.RowCount = machines.Length;
+        BizOpsRules.FitChips(table);
         o.Table = table;
         if (missing)
         {
@@ -994,6 +1086,48 @@ internal static partial class UiSamples
             rows.Add(OpsChoice(t("bizman_drivers_driver", "Driver"), drivers[i], right));
         }
         o.Rows = rows.ToArray();
+        // The same slots as cards, as the screen lays them: the vehicle and load, the driver as a choice, where it is.
+        o.Slots = new BizOpsSlot[vehicles.Length];
+        int choice = -1;
+        for (int i = 0; i < vehicles.Length; i++)
+        {
+            choice = rows.FindIndex(choice + 1, r => r.Kind == BizOpsRowKind.Choice);   // the slot's driver row: its target, as BizOps numbers them
+            string slot = t("bizman_drivers_slot_number", "Slot #{number}").Replace("{number}", OpsWhole(i + 1));
+            string where = vehicles[i] == null ? t("reallife_ui_bizops_empty", "Empty") : i == 0 ? t("reallife_trips_on_route", "On route, back {time}").Replace("{time}", "16:20")
+                : home[i] ? t("reallife_ui_bizops_parked", "Parked") : t("reallife_ui_bizops_away", "Away");
+            o.Slots[i] = new BizOpsSlot
+            {
+                Title = vehicles[i] != null ? slot + ", " + vehicles[i] : slot, Vehicle = vehicles[i] != null,
+                Line = vehicles[i] != null ? t("reallife_ui_bizops_of_boxes", "{count} of {most} boxes").Replace("{count}", OpsWhole(boxes[i])).Replace("{most}", OpsWhole(holds[i])) : t("bizman_warehouse_driverstation_no_vehicle_assigned", "No vehicle assigned"),
+                Status = where, Tone = vehicles[i] == null ? UiRole.Muted : i == 0 ? UiRole.Ok : home[i] ? UiRole.Notice : UiRole.Muted, Driver = drivers[i], DriverArg = choice
+            };
+        }
+        return m;
+    }
+
+    // A plan without a manager, as the game asks: what is missing, the people who could take it with the list open, and
+    // the one main action that assigns the first of them; Delete plan beside it.
+    private static BizManModel OpsNoManager(UiWords t)
+    {
+        BizManModel m = OpsPlace(t, "headquarters", BizManPart.Managers, 3);
+        BizOpsModel o = m.Ops;
+        o.Tabs = new[] { t("bizman_warehouses", "Warehouses"), t("reallife_ui_bizops_factories", "Factories") };
+        OpsPlans(t, o, t("bizman_menu_logistics_managers", "Logistics Managers"), new[] { "Pier 40 Storage", "Red Hook Depot", "Bronx Terminal" },
+            new[] { "Isaac Brennan, 77%", "Mei Tanaka, 69%", null }, 2, 2, UiIcon.Package);
+        o.FormTitle = "Bronx Terminal";
+        o.Rows = new[]
+        {
+            OpsHeading(t("bizman_logisticsmanagers_not_assigned", "No Logistics Manager assigned")),
+            OpsNote(t("bizman_logisticsmanagers_not_assigned_description", "Assign a Logistics Manager to deliver goods from this warehouse to your businesses.")),
+            new BizOpsRow { Kind = BizOpsRowKind.Choice, Label = t("reallife_ui_bizops_manager", "Manager"), Value = t("common_unassigned", "Unassigned") }
+        };
+        o.Actions = new[]
+        {
+            new UiActionModel { Label = t("bizman_delete_plan", "Delete plan"), Kind = UiButtonKind.Destructive, Icon = UiIcon.Trash, Key = UiAction.Count },
+            new UiActionModel { Label = t("reallife_ui_bizops_assign_named", "Assign {name}").Replace("{name}", "Ines Duarte"), Kind = UiButtonKind.Primary, Icon = UiIcon.People,
+                Key = UiAction.Alt }
+        };
+        OpsPlanActions(t, o, 2);
         return m;
     }
 
@@ -1014,17 +1148,18 @@ internal static partial class UiSamples
         {
             Columns = new[]
             {
-                new UiDataColumn { Title = t("common_product", "Product"), Kind = UiCellKind.Text },
+                new UiDataColumn { Title = t("common_product", "Product"), Kind = UiCellKind.Tile },
                 new UiDataColumn { Title = t("bizman_inventory_in_stock", "In stock"), Kind = UiCellKind.Figure, Width = 104f },
                 new UiDataColumn { Title = t("reallife_ui_bizops_col_boxes", "Boxes"), Kind = UiCellKind.Figure, Width = 80f },
                 new UiDataColumn { Title = t("reallife_ui_bizops_col_in_day", "In a day"), Kind = UiCellKind.Figure, Width = 104f },
                 new UiDataColumn { Title = t("reallife_ui_bizops_col_out_day", "Out a day"), Kind = UiCellKind.Figure, Width = 104f },
-                new UiDataColumn { Title = t("reallife_ui_bizops_col_lasts", "Lasts"), Kind = UiCellKind.Text, Width = 136f },
+                new UiDataColumn { Title = t("reallife_ui_bizops_col_lasts", "Lasts"), Kind = UiCellKind.Chip, Width = 136f },
                 new UiDataColumn { Title = t("reallife_ui_bizops_col_cost_each", "Cost each"), Kind = UiCellKind.Money, Width = 112f },
                 new UiDataColumn { Title = t("reallife_ui_bizops_col_value", "Value"), Kind = UiCellKind.Money, Width = 120f },
             },
             EmptyIcon = UiIcon.Package, EmptyTitle = t("reallife_ui_bizops_stock_none", "The warehouse is empty"),
-            EmptyBody = t("reallife_ui_bizops_stock_none_body", "Goods delivered or made here show with their stock and how long they last.")
+            EmptyBody = t("reallife_ui_bizops_stock_none_body", "Goods delivered or made here show with their stock and how long they last."),
+            SearchPlaceholder = t("reallife_ui_bizops_find_good", "Find a good")
         };
         int n = empty ? 0 : names.Length;
         table.Rows = new UiDataRow[n];
@@ -1033,7 +1168,8 @@ internal static partial class UiSamples
         for (int i = 0; i < n; i++)
         {
             string left = days[i] < 0 ? t("bizman_inventory_run_out", "Run out") : days[i] == int.MaxValue ? t("bizman_inventory_never_runs_out", "Never")
-                : t("bizman_inventory_product_days_until_empty", "{days} days").Replace("{days}", OpsWhole(days[i]));
+                : days[i] == 1 ? t("reallife_ui_bizops_one_day", "1 day") : t("bizman_inventory_product_days_until_empty", "{days} days").Replace("{days}", OpsWhole(days[i]));
+            UiRole lasts = BizOpsRules.LastsTone(days[i]);
             int paid = stock[i] * each[i];
             worth += paid;
             used += boxes[i];
@@ -1041,8 +1177,9 @@ internal static partial class UiSamples
             {
                 Cells = new[] { names[i], OpsWhole(stock[i]), OpsWhole(boxes[i]), BizOpsRules.PerDay(import[i]), BizOpsRules.PerDay(shipped[i]), left,
                     stock[i] > 0 ? OpsMoney(each[i]) : "-", paid > 0 ? OpsMoney(paid) : "-" },
-                Values = new[] { 0, 0, 0, 0, 0, 0, 0, 0 },
-                Tones = new[] { UiRole.None, stock[i] == 0 ? UiRole.DangerText : UiRole.None, UiRole.None, UiRole.None, UiRole.None, BizOpsRules.LastsTone(days[i]), UiRole.None,
+                Values = new[] { (int)UiIcon.Package, 0, 0, 0, 0, 0, 0, 0 },
+                Tones = new[] { UiRole.None, stock[i] == 0 ? UiRole.DangerText : UiRole.None, UiRole.None, UiRole.None, UiRole.None,
+                    days[i] < 0 || lasts == UiRole.DangerText ? UiRole.Danger : lasts == UiRole.WarnText ? UiRole.Warn : days[i] == int.MaxValue ? UiRole.Muted : UiRole.Ok, UiRole.None,
                     UiRole.None }
             };
         }

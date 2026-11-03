@@ -187,17 +187,23 @@ internal static partial class Program
               && s.FindNode(BizManPages.Table + UiDataTable.Type, 1) >= 0 && s.FindNode(BizManPages.Table + UiDataTable.More, 1) >= 0
               && s.FindNode(BizManPages.Table + UiDataTable.Type, 0) < 0 && s.FindNode(BizManPages.Table + UiDataTable.More, 0) < 0 && s.FindNode(BizManPages.OpsPlan, 3) >= 0,
             "bizops: a pricing plan's forty products are listed beside the plans, the chosen one's new price stepped on its row");
-        // Its facts, its strategy's own rows in the form's right column, its filter over the table and Reset to yesterday.
+        // Its facts, its strategy's own rows in the form's right column (the plan's half), its filter over the table and Reset
+        // to yesterday (the prices' half, with the products' search and pictures).
+        Check(s.FindNode(BizManPages.OpsFilter, 2) >= 0 && s.FindNode(BizManPages.Table + UiDataTable.Search, 0) >= 0 && pricing.Ops.Table.Columns.Length == 7
+              && pricing.Ops.Table.Columns[0].Kind == UiCellKind.Tile && pricing.Ops.Table.Columns[4].Kind == UiCellKind.Stepper && s.FindNode(BizManPages.OpsFormTab, 1) >= 0
+              && OpsSays(s, t("reallife_ui_bizops_reset_prices", "Reset to yesterday")),
+            "bizops: a pricing plan's prices show its three filters, a search and seven columns with the good's picture and the price stepped in its own, and Reset to yesterday");
+        s = new UiScene();
+        pricing = UiSamples.BizOps(t, "pricing_plan");
+        BizManPages.Lay(s, pricing, frame, true, UiDefaultKeys.Keyboard);
         int stanceRow = Array.FindIndex(pricing.Ops.Rows, r => r.Kind == BizOpsRowKind.Choice && r.Right);
         int marginRow = stanceRow < 0 ? -1 : Array.FindIndex(pricing.Ops.Rows, stanceRow + 1, r => r.Kind == BizOpsRowKind.Choice && r.Right);
         int stepRow = Array.FindLastIndex(pricing.Ops.Rows, r => r.Kind == BizOpsRowKind.Choice && r.Right);
         int followRow = Array.FindIndex(pricing.Ops.Rows, r => r.Kind == BizOpsRowKind.Switch && r.Right);
         Check(stanceRow > 0 && marginRow > stanceRow && stepRow > marginRow && followRow > 0 && s.FindNode(BizManPages.OpsChoice, stanceRow) >= 0
               && s.FindNode(BizManPages.OpsChoice, marginRow) >= 0 && s.FindNode(BizManPages.OpsChoice, stepRow) >= 0 && s.FindNode(BizManPages.OpsRow, followRow) >= 0
-              && s.FindNode(BizManPages.OpsFilter, 2) >= 0 && pricing.Ops.Table.Columns.Length == 7 && pricing.Ops.Table.Columns[4].Kind == UiCellKind.Stepper
-              && OpsSays(s, t("reallife_ui_bizops_average_margin", "Average margin")) && OpsSays(s, t("reallife_ui_bizops_reset_prices", "Reset to yesterday")),
-            "bizops: a pricing plan shows its facts, its strategy as switches and choices, its table's three filters and seven columns with the price stepped in "
-            + "its own, and Reset to yesterday");
+              && pricing.Ops.Table == null && OpsSays(s, t("reallife_ui_bizops_average_margin", "Average margin")),
+            "bizops: a pricing plan's other half shows its facts and its strategy as switches and choices");
         s = new UiScene();
         BizManPages.Lay(s, UiSamples.BizOps(t, "logistics"), frame, true, UiDefaultKeys.Keyboard);
         int good = s.FindNode(BizManPages.Table + UiDataTable.Row, 1), less = s.FindNode(BizManPages.Table + UiDataTable.Less, 1);
@@ -225,8 +231,8 @@ internal static partial class Program
         BizManPages.Lay(s, drivers, frame, true, UiDefaultKeys.Keyboard);
         int lastChoice = Array.FindLastIndex(drivers.Ops.Rows, r => r.Kind == BizOpsRowKind.Choice);
         Check(lastChoice > 0 && s.FindNode(BizManPages.OpsChoice, lastChoice) >= 0 && OpsSays(s, t("reallife_ui_bizops_away", "Away"))
-              && OpsSays(s, t("reallife_ui_bizops_load", "Load")),
-            "bizops: every vehicle slot shows its bay, its load and its driver's choice, the last slot's too");
+              && OpsSays(s, drivers.Ops.Slots[0].Line) && drivers.Ops.Slots.Length == 6 && drivers.Ops.Slots[5].DriverArg == lastChoice,
+            "bizops: every vehicle slot is a card with where it is, its load and its driver's choice, the last slot's too");
         s = new UiScene();
         BizManModel stock = UiSamples.BizOps(t, "warehouse_stock");
         BizManPages.Lay(s, stock, frame, true, UiDefaultKeys.Keyboard);

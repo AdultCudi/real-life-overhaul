@@ -25,7 +25,6 @@ namespace RealLifeOverhaul.Ui
         // The game's filter groups in the filter row's order: district, kind of business, kind of building, status.
         private static readonly FilterToggleGroup[] FilterGroups = { Neighborhood, FilterToggleGroup.BusinessType, FilterToggleGroup.BuildingType, FilterToggleGroup.Other };
         private static readonly string[] AnyKeys = { "reallife_ui_bizman_any_district", "reallife_ui_bizman_any_kind", "reallife_ui_bizman_any_building", "reallife_ui_bizman_any_status" };
-        private static readonly string[] ShopHeads = { "BusinessName", null, "AvgDailyIncome", "Satisfaction", "Alerts", "Status" };   // the game's sortable heads by column
 
         private readonly List<int> _kinds = new List<int>(4);
         private readonly List<BizManFilterToggle> _toggles = new List<BizManFilterToggle>(64);
@@ -175,17 +174,8 @@ namespace RealLifeOverhaul.Ui
                 SearchPlaceholder = UiText.T("reallife_ui_bizman_search"), EmptyIcon = UiIcon.Store,
                 EmptyTitle = UiText.T("reallife_ui_bizman_none_title"), EmptyBody = UiText.T("reallife_ui_bizman_none_body")
             };
-            Transform heads = shops != null ? shops.transform.Find("Headers") : null;
-            for (int c = 0; c < t.Columns.Length; c++)
-            {
-                Transform head = heads != null && ShopHeads[c] != null ? heads.Find(ShopHeads[c]) : null;
-                t.Columns[c].Sortable = head != null && head.GetComponent<Button>() != null;
-                if (head != null && (Shown(head.Find("ArrowUp")) || Shown(head.Find("ArrowDown"))))
-                {
-                    t.SortColumn = c;
-                    t.SortDown = Shown(head.Find("ArrowDown"));
-                }
-            }
+            // The game's heads by column: the set destination column at the end is the kit's own and has none.
+            Heads(t, shops != null ? shops.transform.Find("Headers") : null, BizManRules.ShopHeads);
             Filters(t);
             t.Query = SearchField() is TMP_InputField f && f.text.Length > 0 ? f.text : null;
             int n = shops != null ? shops.data.Count : 0;
@@ -539,8 +529,9 @@ namespace RealLifeOverhaul.Ui
                 case UiDataTable.First + UiDataTable.Head:
                 {
                     Transform heads = shops != null ? shops.transform.Find("Headers") : null;
-                    Transform head = heads != null && arg >= 0 && arg < ShopHeads.Length && ShopHeads[arg] != null ? heads.Find(ShopHeads[arg]) : null;
-                    return head != null && Click(head.GetComponent<Button>(), "sort the business list by " + ShopHeads[arg]);
+                    string name = BizManRules.HeadOf(BizManRules.ShopHeads, arg);
+                    Transform head = heads != null && name != null ? heads.Find(name) : null;
+                    return head != null && Click(head.GetComponent<Button>(), "sort the business list by " + name);
                 }
                 case UiDataTable.First + UiDataTable.Clear:
                     shops?.ClearFilters();

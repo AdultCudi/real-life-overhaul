@@ -370,9 +370,21 @@ namespace RealLifeOverhaul.Ui
             o.FactLabels = o.FactValues = o.Problems = new string[0];
             o.FactWarn = new bool[0];
             o.FactActions = new UiActionModel[0];
+            o.BoardHint = o.DayOpenShort = o.CrewTitle = o.CrewLine = null;
+            o.FormTabs = new string[0];
+            o.Slots = new BizOpsSlot[0];
+            if (_shown != BizManRules.Schedule)
+            {
+                o.Crew = null;
+                _crewPick = null;
+            }
             if (o.Table != null && _tableFor != _shown)
             {
                 o.Table = null;
+            }
+            if (_tableFor != _shown)
+            {
+                _tableQuery = null;   // another tab's goods start unsearched
             }
             _tableFor = _shown;
             if (_shown != BizManRules.Schedule)
@@ -481,6 +493,11 @@ namespace RealLifeOverhaul.Ui
                     o.People.Offset = Math.Max(0f, o.People.Offset + by);
                     return true;
                 }
+                if (o.Crew != null)
+                {
+                    o.Crew.Offset = Math.Max(0f, o.Crew.Offset + by);   // the people beside the board
+                    return true;
+                }
                 return false;
             }
             if ((_m.Part == BizManPart.Managers || _m.Part == BizManPart.Factory || _m.Part == BizManPart.Stock) && o.Table != null)
@@ -513,6 +530,9 @@ namespace RealLifeOverhaul.Ui
                 case BizManPages.Table + UiDataTable.Type:
                     text = ManagersField(b, _typeArg)?.text;
                     return true;
+                case BizManPages.Table + UiDataTable.Search:
+                    text = _tableQuery;
+                    return true;
                 default:
                     return false;
             }
@@ -534,6 +554,13 @@ namespace RealLifeOverhaul.Ui
                 case BizManPages.OpsType:
                     RowTyped(arg, text);
                     return true;
+                case BizManPages.Table + UiDataTable.Search:
+                    _tableQuery = string.IsNullOrEmpty(text) ? null : text;
+                    if (_m.Ops.Table != null)
+                    {
+                        _m.Ops.Table.Offset = 0f;
+                    }
+                    return true;
                 case BizManPages.Table + UiDataTable.Type:
                 {
                     TMP_InputField f = ManagersField(b, arg);
@@ -549,5 +576,9 @@ namespace RealLifeOverhaul.Ui
         }
 
         private string _tableFor;   // the tab the page's table was last laid for: its scroll kept while the tab stays
+        private string _tableQuery; // the words typed in the goods' search (the game's pricing and stock pages have none): a row shows when its name holds them
+
+        // A good's row kept by the search: every row while nothing is typed, else one whose name holds the words.
+        private bool Found(string name) => string.IsNullOrEmpty(_tableQuery) || (name != null && name.IndexOf(_tableQuery, StringComparison.CurrentCultureIgnoreCase) >= 0);
     }
 }

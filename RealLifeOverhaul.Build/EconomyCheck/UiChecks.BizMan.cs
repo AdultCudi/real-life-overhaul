@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.Ui;
 
@@ -76,5 +77,28 @@ internal static partial class Program
         BizManPages.Lay(s, UiSamples.BizMan(UiWords("en"), "portfolio"), UiFrame.FullMenu(16f / 9f, "BizMan"), true, UiDefaultKeys.Keyboard);
         Check(s.FindNode(UiDataTable.First + UiDataTable.Row, 9) >= 0 && s.FindNode(UiDataTable.First + UiDataTable.Filter, 3) >= 0 && s.FindNode(UiDataTable.First + UiDataTable.Search, 0) >= 0,
             "bizman: the portfolio shows all ten businesses with the game's four filters and its search");
+        // The owner's crash (3 Nov 2026): the list has seven columns, set destination the last, and the game six heads; the
+        // screen read a head for each column and ran past the names. Every column of every list the screen heads asks for its
+        // head safely, and the kit's own last column has none.
+        foreach (string state in new[] { "portfolio", "portfolio_long", "store_pricing" })
+        {
+            BizManModel b = UiSamples.BizMan(UiWords("en"), state);
+            UiDataTableModel table = state == "store_pricing" ? b.Goods : b.Table;
+            string[] names = state == "store_pricing" ? BizManRules.PriceHeads : BizManRules.ShopHeads;
+            bool safe = table != null && table.Columns != null;
+            for (int c = 0; safe && c <= table.Columns.Length; c++)
+            {
+                try
+                {
+                    BizManRules.HeadOf(names, c);
+                }
+                catch (IndexOutOfRangeException)
+                {
+                    safe = false;
+                }
+            }
+            Check(safe && (state == "store_pricing" || (table.Columns.Length == 7 && BizManRules.HeadOf(names, table.Columns.Length - 1) == null)),
+                "bizman: every column of the " + state + " list asks for the game's head safely, the kit's own set destination column with none");
+        }
     }
 }

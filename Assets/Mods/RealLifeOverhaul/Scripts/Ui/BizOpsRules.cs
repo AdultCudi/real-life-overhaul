@@ -214,6 +214,42 @@ namespace RealLifeOverhaul.Ui
             return n;
         }
 
+        /// <summary>
+        /// A factory's machines as a table: the workstation on its picture's tile with its machine's kind under it, what it
+        /// makes (the column that takes the room left), who works it, the pieces it makes an hour, and its state as a chip.
+        /// </summary>
+        public static UiDataColumn[] MachineColumns(string station, string makes, string worker, string perHour, string state) => new[]
+        {
+            new UiDataColumn { Title = station, Kind = UiCellKind.Tile, Width = 192f },
+            new UiDataColumn { Title = makes, Kind = UiCellKind.Text },
+            new UiDataColumn { Title = worker, Kind = UiCellKind.Person, Width = 192f },
+            new UiDataColumn { Title = perHour, Kind = UiCellKind.Figure, Width = 96f },
+            new UiDataColumn { Title = state, Kind = UiCellKind.Chip, Width = 112f },
+        };
+
+        /// <summary>Each chip column as wide as its widest chip in this language (and its head), so no state is cut.</summary>
+        public static void FitChips(UiDataTableModel t)
+        {
+            for (int c = 0; c < t.Columns.Length; c++)
+            {
+                ref UiDataColumn col = ref t.Columns[c];
+                if (col.Kind != UiCellKind.Chip)
+                {
+                    continue;
+                }
+                float most = col.Width;
+                for (int r = 0; r < t.RowCount && r < t.Rows.Length; r++)
+                {
+                    string words = t.Rows[r].Cells != null && c < t.Rows[r].Cells.Length ? t.Rows[r].Cells[c] : null;
+                    if (!string.IsNullOrEmpty(words))
+                    {
+                        most = Math.Max(most, UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(words, UiStyle.SmallStrong) + UiTokens.S1));
+                    }
+                }
+                col.Width = Math.Max(most, UiDraw.Snap(UiTextRules.Width(col.Title ?? string.Empty, UiStyle.SectionHeader) + UiTokens.S1));
+            }
+        }
+
         private static bool In(int s, int e, int hour) => hour >= s && hour < e;
 
         private static int FirstOverlap(int s, int e, int from, int to)

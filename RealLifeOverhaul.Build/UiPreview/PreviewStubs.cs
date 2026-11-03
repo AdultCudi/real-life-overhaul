@@ -49,5 +49,46 @@ namespace RealLifeOverhaul
         public static int Slot(string name) => 0;
 
         public static Scope Time(int slot) => default(Scope);
+
+        // What UiCost (Ui/Host) reads: nothing is measured in a preview.
+        public static bool On;
+        public static int SampleEvery = 1;
+        public static Func<int> FrameSource;
+        public static Func<long> HeapSource;
+        public static long GameTicks => 0L;
+        public static long InsideGameTicks => 0L;
+    }
+}
+
+namespace RealLifeOverhaul
+{
+    // What UiHost reads from outside the kit: the developer's verbose switch and the typing layer (Core/TypingNow).
+    public static class Meta
+    {
+        public static class Dev
+        {
+            public static bool Verbose => false;
+        }
+    }
+
+    public static class TypingNow
+    {
+        public static void OnGameLayer(GameObject field)
+        {
+        }
+    }
+}
+
+namespace RealLifeOverhaul.Ui
+{
+    public interface IPreviewLogger
+    {
+        void Info(string line);
+    }
+
+    // UiDirector stays out of the preview (it meets the game); UiHost only logs through it.
+    public static class UiDirector
+    {
+        public static IPreviewLogger Logger;
     }
 }

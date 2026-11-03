@@ -47,8 +47,11 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Text(s, on, ix + iw - ew, cy, ew, UiStyle.Small, UiRole.Text2, m.To, UiFlags.Right | UiFlags.Truncate);
             cy += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S4;
             float bw = UiDraw.SnapDown((iw - UiTokens.S3) / 2f);
-            int earlier = UiDraw.Button(s, on, ix, cy, bw, UiTokens.Control, UiButtonKind.Secondary, m.Earlier, UiIcon.Minus, UiAction.Count, keys, StepCommand, -1);
-            int later = UiDraw.Button(s, on, ix + iw - bw, cy, bw, UiTokens.Control, UiButtonKind.Secondary, m.Later, UiIcon.Plus, UiAction.Count, keys, StepCommand, 1);
+            // The pair alike: both with their glyphs where both fit with them, else both in words alone.
+            bool glyphs = UiDraw.ButtonWidth(UiButtonKind.Secondary, m.Earlier, UiIcon.Minus, UiAction.Count, keys) <= bw
+                          && UiDraw.ButtonWidth(UiButtonKind.Secondary, m.Later, UiIcon.Plus, UiAction.Count, keys) <= bw;
+            int earlier = UiDraw.Button(s, on, ix, cy, bw, UiTokens.Control, UiButtonKind.Secondary, m.Earlier, glyphs ? UiIcon.Minus : UiIcon.None, UiAction.Count, keys, StepCommand, -1);
+            int later = UiDraw.Button(s, on, ix + iw - bw, cy, bw, UiTokens.Control, UiButtonKind.Secondary, m.Later, glyphs ? UiIcon.Plus : UiIcon.None, UiAction.Count, keys, StepCommand, 1);
             s.Nodes[earlier].Right = later;
             s.Nodes[later].Left = earlier;
             if (m.Bar)

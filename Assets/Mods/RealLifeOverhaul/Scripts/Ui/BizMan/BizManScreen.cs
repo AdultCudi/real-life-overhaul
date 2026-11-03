@@ -158,7 +158,8 @@ namespace RealLifeOverhaul.Ui
         private void Aim(int command, int arg)
         {
             if (command == BizManPages.Type || command == UiDataTable.First + UiDataTable.Search || command == BizManPages.Goods + UiDataTable.Type || command == BizManPages.OpsType
-                || command == BizManPages.OpsSearch || command == BizManPages.People + UiDataTable.Search || command == BizManPages.Table + UiDataTable.Type)
+                || command == BizManPages.OpsSearch || command == BizManPages.People + UiDataTable.Search || command == BizManPages.Table + UiDataTable.Type
+                || command == BizManPages.Table + UiDataTable.Search)
             {
                 _typeCommand = command;
                 _typeArg = arg;

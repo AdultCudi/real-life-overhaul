@@ -27,6 +27,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_activity_hours", "reallife_ui_activity_skill", "reallife_ui_activity_skill_day", "reallife_ui_activity_standing", "reallife_ui_activity_stress",
                     "reallife_ui_activity_finish", "reallife_ui_activity_before_tax", "reallife_ui_activity_work_strip", "reallife_ui_activity_hour_of", "reallife_ui_activity_earned",
                     "reallife_ui_activity_skip_end", "reallife_ui_activity_stop", "reallife_ui_activity_shift_hours",
+                    "reallife_ui_activity_fast_speed",
                 })).Switch(UiScreenSwitches.Activity),
                 new UiScreenDef("time_skip", UiTemplate.Hud, "TimeSkipScreen", ActivityWords(ActivityBarKeys, new[]
                 {
@@ -40,7 +41,8 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_funeral_menu_line", "reallife_ui_funeral_menu_short", "reallife_ui_funeral_quit", "reallife_ui_funeral_quit_line", "reallife_ui_funeral_note",
                     "reallife_ui_funeral_note_two", "reallife_ui_funeral_you", "reallife_ui_funeral_quit_short", "reallife_ui_funeral_rival",
                     "reallife_pd_obit_lived", "reallife_pd_obit_no_business", "reallife_pd_obit_founded_one", "reallife_pd_obit_founded_many", "reallife_pd_obit_staff_one",
-                    "reallife_pd_obit_staff_many",
+                    "reallife_pd_obit_staff_many", "reallife_ui_funeral_no_business", "reallife_ui_funeral_founded_one", "reallife_ui_funeral_founded_many",
+                    "reallife_ui_funeral_staff_one", "reallife_ui_funeral_staff_many",
                 })).Switch(UiScreenSwitches.Activity),
                 new UiScreenDef("time_of_day", UiTemplate.Hud, "TimeOfDayScreen", ActivityWords(ActivityBarKeys, new[]
                 {
