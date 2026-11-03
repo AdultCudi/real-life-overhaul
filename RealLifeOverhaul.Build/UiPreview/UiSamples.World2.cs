@@ -89,7 +89,7 @@ internal static partial class UiSamples
 
     // ------------------------------------------------------------------------------------------------- the items list
 
-    private static readonly string[] Goods =
+    private static readonly string[] ItemsGoods =
     {
         "Flower stand", "Storage shelf", "Brass pendant light", "Potted palm", "Oak counter", "Bar stool", "Cash register", "Coat rack", "Display table", "Wall mirror",
         "Floor lamp", "Bench", "Shoe rack", "Plant pot"
@@ -109,13 +109,13 @@ internal static partial class UiSamples
             Placeholder = t("common_search", "Search"), Search = search,
         };
         var rows = new System.Collections.Generic.List<UiGoodsRow>();
-        for (int i = 0; i < Goods.Length && !none; i++)
+        for (int i = 0; i < ItemsGoods.Length && !none; i++)
         {
-            if (search != null && Goods[i].IndexOf(search, System.StringComparison.OrdinalIgnoreCase) < 0)
+            if (search != null && ItemsGoods[i].IndexOf(search, System.StringComparison.OrdinalIgnoreCase) < 0)
             {
                 continue;
             }
-            var r = new UiGoodsRow { Name = Goods[i], Icon = UiIcon.Package, Sub = Prices[i] };
+            var r = new UiGoodsRow { Name = ItemsGoods[i], Icon = UiIcon.Package, Sub = Prices[i] };
             if (order)
             {
                 r.Sub = t("reallife_ui_world_items_each", "{price} each").Replace("{price}", Prices[i]);
@@ -137,7 +137,7 @@ internal static partial class UiSamples
         m.RowCount = m.Rows.Length;
         bool searching = !string.IsNullOrEmpty(search);
         m.Count = searching ? t("reallife_ui_world_items_count", "{shown} of {all}").Replace("{shown}", m.RowCount.ToString(System.Globalization.CultureInfo.InvariantCulture))
-            .Replace("{all}", Goods.Length.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null;
+            .Replace("{all}", ItemsGoods.Length.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null;
         m.EmptyTitle = searching ? t("reallife_ui_world_items_none_found", "Nothing matches") : t("reallife_ui_world_items_empty", "Nothing to list");
         m.EmptyBody = searching ? t("reallife_ui_world_items_none_found_body", "No goods match {search}. Try a shorter word.").Replace("{search}", search)
             : t("reallife_ui_world_items_empty_body", "There are no goods in this list yet.");
