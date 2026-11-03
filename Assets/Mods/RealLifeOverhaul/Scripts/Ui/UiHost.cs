@@ -29,6 +29,11 @@ namespace RealLifeOverhaul.Ui
         void Submitted(string text);
     }
 
+    /// <summary>A typing screen whose fields wait to be pressed (a social app's): the host does not start typing as it opens.</summary>
+    public interface IUiTypingQuiet
+    {
+    }
+
     /// <summary>
     /// Runs one kit screen: lays it out when its view model, the frame, the look, the pad or the input's lead changes,
     /// reads the game's bindings and a pad through its input (arrows or d-pad move the one focus, held directions repeat
@@ -178,7 +183,7 @@ namespace RealLifeOverhaul.Ui
             Layout();
             _view.Open();
             _view.SetFocus(UiFocusRules.First(_scene), false, Time.unscaledTime);
-            _typeSoon = _screen is IUiTypingSubmit;   // a box for words takes the keys as it opens, once the game has filled it (next frame)
+            _typeSoon = _screen is IUiTypingSubmit && !(_screen is IUiTypingQuiet);   // a box for words takes the keys as it opens, once the game has filled it (next frame)
         }
 
         /// <summary>
