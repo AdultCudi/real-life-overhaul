@@ -403,6 +403,16 @@ namespace RealLifeOverhaul
             vehicle.input.inputModifyCallback.AddListener(_easePedal);
         }
 
+        /// <summary>
+        /// The targets a new car of this spec is tuned to by the player's two sliders, before any custom shop's parts: 0 to
+        /// 100 km/h in seconds and the top speed in km/h. The vehicle purchase shows them for the car on sale.
+        /// </summary>
+        public static void Targets(in CarSpec spec, out float seconds, out float topKmh)
+        {
+            seconds = spec.Seconds * 100f / Mathf.Clamp(Settings.CarAcceleration, 70, 150);
+            topKmh = Mathf.Min(spec.TopKmh * Mathf.Clamp(Settings.CarTopSpeed, 70, 150) / 100f, MaxTopKmh);
+        }
+
         // The search for the car's power begun: the checks and the car read now (the handling, if any, is on it already),
         // the search's steps in the frames after (CarSolve). False if the car keeps the game's own power (said once).
         private bool TuneBegin(CarController car, NwhVehicle vehicle)
@@ -434,8 +444,7 @@ namespace RealLifeOverhaul
                 return false;
             }
 
-            float seconds = spec.Seconds * 100f / Mathf.Clamp(Settings.CarAcceleration, 70, 150);
-            float topKmh = Mathf.Min(spec.TopKmh * Mathf.Clamp(Settings.CarTopSpeed, 70, 150) / 100f, MaxTopKmh);
+            Targets(spec, out float seconds, out float topKmh);
             GarageModifiers garage = GarageTuning.Claim(car.vehicleInstance);   // what the custom shop fitted
             seconds /= garage.Acceleration;
             topKmh = Mathf.Min(topKmh * garage.TopSpeed, MaxTopKmh);

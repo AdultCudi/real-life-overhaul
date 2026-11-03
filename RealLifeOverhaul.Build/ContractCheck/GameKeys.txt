@@ -1,6 +1,7 @@
 # Keys of the game's own texts and data (its en.json) that the mod's code names: business types, items, skills,
 # districts, transactions, vehicles and a few texts. ContractCheck checks each against the game's en.json, and that
 # this list holds every one the code names and no other. One key a line, sorted.
+action_take
 amountoption_all
 amountoption_negative
 amountoption_positive
@@ -531,7 +532,18 @@ buildingresume_owned_by_you
 buildingresume_rented_by_you
 buildingresume_right_click
 businessschool_holding_item
+casinoboat_ticket_pay_item
+change_character_clothes_save_button
+change_character_clothes_title
 change_character_clothes_unsaved_changes_warning
+change_character_hair_save_button
+change_character_hair_title
+character_customization_hair
+character_customization_head
+character_customization_legs
+character_customization_shoes
+character_customization_skin_color
+character_customization_torso
 citymap_category_special_buildings
 click_to_learn
 click_to_talk
@@ -540,6 +552,7 @@ common_accepted
 common_address
 common_agree
 common_amount
+common_apply_changes
 common_available_for_rent
 common_back
 common_balance
@@ -550,6 +563,8 @@ common_business_type
 common_businesses
 common_businessschool
 common_cancel
+common_cargo
+common_cargo_capacity
 common_casino
 common_close
 common_closed
@@ -591,6 +606,7 @@ common_products
 common_purchase
 common_real_estate
 common_requirements
+common_revert
 common_sales_price
 common_saturday
 common_save_changes
@@ -611,9 +627,11 @@ common_tuesday
 common_unassign
 common_unassigned
 common_unknown
+common_vehicle
 common_wednesday
 common_weekly_income
 common_years_amount
+common_yes
 contactcategoryname_business
 contactcategoryname_employees
 contactcategoryname_finance
@@ -696,6 +714,7 @@ dialog_interior_installation_firm_design_settings_header
 dialog_interior_installation_firm_npc_name
 dialog_interior_installation_firm_start
 dialog_interior_installation_layout_price
+dialog_leave_button
 dialog_marketing_agency_campaign_settings_header
 dialog_marketing_agency_npc_name
 dialog_marketing_agency_start
@@ -730,6 +749,7 @@ dialog_recruitment_agency_primary_skills
 dialog_recruitment_agency_schedule_types
 dialog_recruitment_agency_start
 dialog_recruitment_agency_start_new_campaign
+dialog_select_address
 dialog_send_offer_button
 dialog_wholesale_start_contract
 dialog_wholesale_store_delivery_contract_header
@@ -801,8 +821,22 @@ input_key_openmap
 input_key_pause
 input_key_throttle
 interior_designer
+intro_tooltip_randomize_appearance
 itemhelper_notification_you_are_to_stuffed_to_eat_this
+itemoverlay_contents_headline
+itempanelui_buttons_auto_park
+itempanelui_buttons_discard
 itempanelui_buttons_leave
+itempanelui_buttons_park_vehicle
+itempanelui_buttons_place
+itempanelui_buttons_place_box
+itempanelui_buttons_sleep
+itempanelui_maintenance_condition
+itempanelui_parkingzone_illegal
+itempanelui_parkingzone_legal_payed
+itempanelui_sell
+itempanelui_vehicle_fuel
+itempanelui_vehicle_parkingzone
 job_board
 job_demand_priority_high
 job_demand_priority_low
@@ -909,6 +943,7 @@ personalgoal_taxes_paid
 personalgoal_taxi_rides
 phone_call_button
 phone_view_on_map_button
+plastic_surgery_title
 playeractivityui_fast_forward
 playeractivityui_time_remaining
 playeractivityui_timemachine
@@ -916,6 +951,14 @@ playerhud_currentjob_day_off
 playerhud_currentjob_quit_job
 playerhud_skip_bridge_button
 poi_custom_location
+purchasecar_specs
+purchaseui_pay_taxes
+purchaseui_place_order
+purchaseui_title_with_amounts
+purchaseui_totalprice
+purchaseui_waiting_in_queue
+purchasevehicleui_delivertowarehouse
+purchasevehicleui_no_warehouses_available
 real_estate_estimated_value
 repeating_order
 rival
@@ -944,6 +987,8 @@ socialclass_working
 stage_with_licensing_fee_disabled
 stage_with_licensing_fee_enabled
 tax_import
+taxes_back_taxes_pay_item
+taxes_pay_item
 timestamp_full
 topbar_date_format
 total_profit
@@ -957,6 +1002,9 @@ tutorial_todotask_paytaxes
 uncle_fred
 uniform_customizer_create_new_preset
 uniform_customizer_save_preset_changes
+vehicle_auto_park_support
+vehicle_max_speed
+vehicle_tank_capacity
 workout_plan
 workout_plan_objective
 workpanel_business_is_currently_closed

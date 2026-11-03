@@ -93,6 +93,7 @@ namespace RealLifeOverhaul.Ui
             UiShell.Remove(why);
             ShellPages.Remove(why);
             ShellBoxes.Remove(why);
+            BuyKits.Remove(why);
             ShellNotices.Remove(why);
             ActivityKit.Remove(why);
             HudLive.Remove(why);
@@ -155,6 +156,7 @@ namespace RealLifeOverhaul.Ui
                 UiShell.Rearm();
                 ShellPages.Rearm();
                 ShellBoxes.Rearm();
+                BuyKits.Rearm();
                 ShellNotices.Rearm();
                 ActivityKit.Rearm();
                 HudLive.Rearm();
@@ -199,6 +201,7 @@ namespace RealLifeOverhaul.Ui
             ShellPages.Install();
             UiShell.Tick();
             ShellBoxes.Install();
+            BuyKits.Install();
             ShellNotices.Install();
             ActivityKit.Install();
             HudLive.Install();
@@ -227,7 +230,7 @@ namespace RealLifeOverhaul.Ui
                    + WorldKits.State + ", "
                    + EconoViewKit.State + ", the phone (" + PhoneKit.State + "), " + EmployeesKit.State + ", " + PersonaKit.State + ", " + UniformsKit.State + ", " + RivalsKit.State + ", "
                    + MarketKit.State + ", " + DialogKits.State + ", "
-                   + ShellBoxes.States() + ", " + ShellNotices.States() + ", " + ActivityKit.States() + ", the HUD (" + HudLive.State + ")"
+                   + ShellBoxes.States() + ", " + ShellNotices.States() + ", " + ActivityKit.States() + ", the HUD (" + HudLive.State + "), " + BuyKits.States()
                    + ", pages (" + ShellPages.States() + "), desk sessions (" + (Settings.LivingDesks ? "over the game's panel as each opens" : "off")
                    + "); the full menu's frame while an app on the kit shows; from Options, Tests: the gallery and each screen.";
         }

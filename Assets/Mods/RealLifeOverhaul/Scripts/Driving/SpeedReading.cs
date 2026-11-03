@@ -27,6 +27,12 @@ namespace RealLifeOverhaul
         private static readonly string[][] Texts = new string[2][];   // each unit's texts by reading, for the two units in use
         private static readonly string[] Units = new string[2];       // and which unit each holds
 
+        /// <summary>The whole figure the reading shows while on (the item panel's speed against the limit); int.MinValue while off.</summary>
+        internal static int Shown => _on ? _shownValue : int.MinValue;
+
+        /// <summary>The unit of <see cref="Shown"/> ("km/h" or "mph"), or null while off.</summary>
+        internal static string ShownUnit => _on ? _shownUnit : null;
+
         public static void Show(int value, string unit)
         {
             if (_failed)

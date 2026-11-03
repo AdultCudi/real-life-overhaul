@@ -70,6 +70,7 @@ internal static partial class Program
         ("Ui/UiSprites.cs", "_ring", "_ring = Sprite.Create", "the time skip veil's thin ring, drawn once a session and filled into slices by Unity's radial fill"),
         ("Ui/UiSprites.cs", "s", "UnityEngine.Object.Destroy(gone.texture)", "a person's painted face, kept by their name, the oldest destroyed past 160"),
         ("Ui/UiFaces.cs", "made", "Let(gone)", "a person's round copy of the game's picture of them, kept by the picture for the session, the oldest destroyed past 160"),
+        ("Ui/Buy/BuyKits.cs", "sprite", "Squares[rgb] = sprite", "a colour's square for the buying screens' swatches, drawn once a session for each colour the game's cars and clothes offer"),
         ("Tech/Sites/SiteProps.cs", "made", "Tech/Sites/ServerRoomView.cs|UnityEngine.Object.Destroy(_setA)", "the server room's status lights, destroyed when the room's view ends"),
         ("Traffic/TrafficEffects.cs", "clip", "Object.Destroy(_wailClip)", "the sirens' two sounds, made once a session and destroyed in Dispose"),
     };
