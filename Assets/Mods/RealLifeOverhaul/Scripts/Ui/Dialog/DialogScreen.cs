@@ -594,12 +594,13 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The game's own list a form's button opened over the panel (a delivery's goods to add): it is seen and answered in the
-        // game's own view, and the kit is back the moment it closes.
+        // game's own view, and the kit is back the moment it closes; while the kit draws that list itself (the world's items
+        // list, UiWorld.ItemsId) the panel stays and the list shows over it.
         private void GameList()
         {
             UIs uis = InstanceBehavior<UIs>.Instance;
             global::ItemsList list = uis != null ? uis.itemsList : null;
-            if (list == null || !list.gameObject.activeInHierarchy)
+            if (list == null || !list.gameObject.activeInHierarchy || WorldKits.Tool(UiWorld.ItemsId)?.Showing == true)
             {
                 return;
             }
@@ -613,7 +614,7 @@ namespace RealLifeOverhaul.Ui
                     return false;
                 }
                 next = now + Every;
-                return list == null || !list.gameObject.activeInHierarchy;
+                return list == null || !list.gameObject.activeInHierarchy || WorldKits.Tool(UiWorld.ItemsId)?.Showing == true;   // the kit took the list up
             });
         }
 
