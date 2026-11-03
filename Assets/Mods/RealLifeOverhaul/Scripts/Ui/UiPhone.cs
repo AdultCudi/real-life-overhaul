@@ -159,11 +159,72 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The height of the phone's top that shows while it is folded down: its rim, status line and head.</summary>
         public static float FoldedHeight => Bezel + StatusH + HeadH + UiTokens.S2;
 
+        /// <summary>
+        /// The kit phone's left edge as a share of the screen's width while it shows, open or folded (folded, its top still
+        /// stands in the same column at the screen's foot); 1 while it does not. The phone's host sets it as it stands the
+        /// phone (PhoneKit), a preview or a check from <see cref="OverWorld"/>. A panel docked at the right keeps clear of it.
+        /// </summary>
+        public static float LeftShare = 1f;
+
+        /// <summary>The share the phone's left edge stands at over the world on a frame, as <see cref="Lay"/> stands it.</summary>
+        public static float OverWorld(UiFrame frame) => frame.Width > 0f ? (frame.Width - Width - UiTokens.S4) / frame.Width : 1f;
+
+        /// <summary>The right edge a panel docked at the right keeps to on a frame: the phone's left edge while it shows, else the frame's.</summary>
+        public static float RoomRight(UiFrame frame) => LeftShare >= 1f ? frame.Width : Math.Min(frame.Width, UiDraw.SnapDown(frame.Width * LeftShare));
+
+        /// <summary>The phone's place on a frame, open (its tallest, with the radio row) or folded: for the checks that nothing meets it.</summary>
+        public static void Spot(UiFrame frame, bool folded, out float x, out float y, out float w, out float h)
+        {
+            w = Width;
+            h = folded ? FoldedHeight : DeviceHeight(true, frame.BandY - UiTokens.S4);
+            x = frame.Width - Width - UiTokens.S4;
+            y = frame.BandY - h - (folded ? 0f : UiTokens.S4);
+        }
+
         public static void Lay(UiScene s, UiPhoneModel m, UiFrame frame, bool dark, IUiKeys keys)
         {
             s.Begin("phone", frame.Width, frame.Height, dark);
             s.Pointer = frame.Pointer;
             s.Floats = true;
+            bool own = frame.Kind == UiFrameKind.Phone, peek = m.Collapsed && !own;
+            int first = Device(s, m, frame, keys, UiAt.Screen, out int firstNode);
+            Links(s, firstNode, s.NodeCount);
+            if (first >= 0)
+            {
+                s.FocusFirst = first;   // the apps, never the chevron: a pad's first press would fold the phone away
+            }
+            if (!own)
+            {
+                for (int i = 0; i < m.PromptCount; i++)
+                {
+                    // Only the keys that do something now: no pages to turn on one page, nothing to move to on a folded phone.
+                    UiAction act = m.Prompts[i].Action;
+                    if ((act == UiAction.TabPrev || act == UiAction.TabNext) && (peek || m.Pages <= 1) || act == UiAction.Move && peek)
+                    {
+                        continue;
+                    }
+                    s.AddPrompt(act, m.Prompts[i].Label);
+                }
+                UiDraw.PromptBar(s, frame, keys);
+            }
+        }
+
+        /// <summary>
+        /// The phone over the world as a layer over a scene already laid (a preview of a conversation with the phone up): its
+        /// device only, the scene's focus, keys and bar left as they were.
+        /// </summary>
+        public static void LayOver(UiScene s, UiPhoneModel m, UiFrame frame, IUiKeys keys)
+        {
+            int keep = s.FocusFirst;
+            frame.Kind = UiFrameKind.Window;   // over the world, never the game's own phone
+            Device(s, m, frame, keys, new UiAt { Parent = -1, Clip = -1, Layer = 1, Order = -1 }, out int from);
+            Links(s, from, s.NodeCount);
+            s.FocusFirst = keep;
+        }
+
+        // The device: its body, status line, head and (open) its tiles, next, radio and nav. Returns its first app's target.
+        private static int Device(UiScene s, UiPhoneModel m, UiFrame frame, IUiKeys keys, UiAt root, out int firstNode)
+        {
             bool own = frame.Kind == UiFrameKind.Phone;
             // Over the world (a preview, a check), a folded phone is its top standing on the status bar, as the game lowers
             // its phone to the screen's edge; on the game's phone the game's container does the lowering.
@@ -171,12 +232,12 @@ namespace RealLifeOverhaul.Ui
             float h = peek ? FoldedHeight : HeightOn(frame, m);
             float w = own ? frame.Width : Width;
             float x = own ? 0f : frame.Width - Width - UiTokens.S4, y = own ? 0f : frame.BandY - h - (peek ? 0f : UiTokens.S4);
-            int body = UiDraw.Box(s, UiAt.Screen, x, y, w, h, UiRole.StatusBar, UiRole.PanelEdge, peek ? -BodyCorner : BodyCorner, UiFlags.Panel | UiFlags.Chrome);
-            UiAt at = UiAt.Screen.In(body);
+            int body = UiDraw.Box(s, root, x, y, w, h, UiRole.StatusBar, UiRole.PanelEdge, peek ? -BodyCorner : BodyCorner, UiFlags.Panel | UiFlags.Chrome);
+            UiAt at = root.In(body);
             float sx = x + Bezel, sy = y + Bezel, sw = w - Bezel * 2f, sh = h - Bezel * (peek ? 1f : 2f);
             int screen = UiDraw.Box(s, at, sx, sy, sw, sh, UiRole.Panel, UiRole.None, peek ? -ScreenCorner : ScreenCorner, UiFlags.Chrome);
             UiAt on = at.In(screen);
-            int firstNode = s.NodeCount;
+            firstNode = s.NodeCount;
             StatusLine(s, on, m, sx, sy, sw);
             float ty = Head(s, on, m, sx, sy + StatusH, sw);
             int first = -1;
@@ -212,25 +273,7 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Box(s, on, sx + UiDraw.SnapDown((sw - IndicatorW) / 2f), sy + sh - IndicatorH + UiTokens.S2 - UiTokens.S1 / 2f, IndicatorW, UiTokens.S1, UiRole.Track,
                     UiRole.None, UiTokens.S1 / 2f, UiFlags.Circle | UiFlags.Decor);
             }
-            Links(s, firstNode, s.NodeCount);
-            if (first >= 0)
-            {
-                s.FocusFirst = first;   // the apps, never the chevron: a pad's first press would fold the phone away
-            }
-            if (!own)
-            {
-                for (int i = 0; i < m.PromptCount; i++)
-                {
-                    // Only the keys that do something now: no pages to turn on one page, nothing to move to on a folded phone.
-                    UiAction act = m.Prompts[i].Action;
-                    if ((act == UiAction.TabPrev || act == UiAction.TabNext) && (peek || m.Pages <= 1) || act == UiAction.Move && peek)
-                    {
-                        continue;
-                    }
-                    s.AddPrompt(act, m.Prompts[i].Label);
-                }
-                UiDraw.PromptBar(s, frame, keys);
-            }
+            return first;
         }
 
         // The d-pad's ways, as a phone's are: left and right along the row and nowhere past its ends; up and down to the

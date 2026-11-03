@@ -324,7 +324,7 @@ namespace RealLifeOverhaul.Ui
             0x8ADC72FF,   // OkText: a step lighter, for words on its soft fill
             0x74D35A2E,   // OkSoft
             0xEE6352FF,   // Danger
-            0xF6A69CFF,   // DangerText: lighter, so small words read on the slate and on its soft fill
+            0xF8B3AAFF,   // DangerText: lighter, so small words read on the slate, on its soft fill and on a chosen row (4.8:1)
             0xEE63522E,   // DangerSoft
             0xF2C14EFF,   // Warn
             0xF2C14EFF,   // WarnText

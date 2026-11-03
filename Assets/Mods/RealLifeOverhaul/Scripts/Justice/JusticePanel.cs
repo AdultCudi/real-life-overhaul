@@ -49,6 +49,8 @@ namespace RealLifeOverhaul
         public int Speaker = -1;        // 0 left, 1 middle, 2 right; -1 nobody
         public string SpeakerName;
         public string Body;
+        public UiLedgerLine[] Statement;   // on the RLO interface: the body's figures as a statement, its words over it and its foot under it; null for none
+        public string StatementWords, StatementFoot;
         public readonly string[] Choices = new string[JusticePanel.MostChoices];
         public readonly string[] Hints = new string[JusticePanel.MostChoices];
         public readonly string[] Times = new string[JusticePanel.MostChoices];   // the time an answer costs ("3 days"); null for none
@@ -76,7 +78,7 @@ namespace RealLifeOverhaul
             return this;
         }
 
-        /// <summary>A line under the answer added last: what it costs or brings, in its colour.</summary>
+        /// <summary>A line under the answer added last: what it costs or brings, in its colour (UiConsequence.Loss for money paid out).</summary>
         public JusticePage Line(string text, int tone)
         {
             if (Count > 0 && !string.IsNullOrEmpty(text))
@@ -167,6 +169,10 @@ namespace RealLifeOverhaul
                 lines += body[i] == '\n' ? 1 : 0;
             }
             list.AddNote(speaker, body, list.HeightFor((int)((body.Length + 70 * lines) * 1.3f), false));
+            if (page.Statement != null)
+            {
+                list.Statement(page.StatementWords, page.Statement, page.StatementFoot);
+            }
             for (int i = 0; i < _count; i++)
             {
                 string hint = page.Hints[i];
@@ -232,7 +238,13 @@ namespace RealLifeOverhaul
             var made = new UiConsequence[lines.Count];
             for (int i = 0; i < made.Length; i++)
             {
-                made[i] = new UiConsequence { Text = lines[i].Text, Tone = Math.Sign(lines[i].Tone) };
+                int tone = lines[i].Tone;
+                made[i] = new UiConsequence
+                {
+                    Text = lines[i].Text,
+                    Tone = tone <= UiConsequence.Loss ? UiConsequence.Loss : Math.Sign(tone),   // money out stays red; the rest good, against or neither
+                    Change = tone <= UiConsequence.Loss ? -1 : 0
+                };
             }
             return made;
         }

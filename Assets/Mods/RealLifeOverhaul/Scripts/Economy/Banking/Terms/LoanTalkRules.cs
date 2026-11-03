@@ -37,6 +37,34 @@ namespace RealLifeOverhaul.Economy
         public const int LowerRatePoints = 1;        // per cent a year off
         public const int LeastDailyPayment = 5;      // the game's own (LoanHelper.MinimumDailyPayment)
 
+        public const int LeastLoan = 500;            // the least a bank lends (BankDialog.LoanRequest refuses less)
+
+        /// <summary>A loan amount's step on the kit's minus and plus: 500 under 5,000, 1,000 under 20,000, 5,000 under 100,000, then 10,000.</summary>
+        public static int AmountStep(float amount) => amount < 5000f ? 500 : amount < 20000f ? 1000 : amount < 100000f ? 5000 : 10000;
+
+        /// <summary>
+        /// The amount one step on: down or up to the next whole step (a typed 1,234 steps to 1,500 or to 1,000), never under
+        /// nothing nor over the most the bank lends now; up from nothing to the least a bank lends.
+        /// </summary>
+        public static float StepAmount(float amount, int direction, float most)
+        {
+            amount = Math.Max(0f, amount);
+            most = Math.Max(0f, most);
+            if (direction > 0)
+            {
+                float up = amount < LeastLoan ? LeastLoan : (float)(Math.Floor(amount / AmountStep(amount)) + 1) * AmountStep(amount);
+                return Math.Min(up, most);
+            }
+            if (amount <= LeastLoan)
+            {
+                return 0f;
+            }
+            float below = amount - 0.5f;
+            int step = AmountStep(below);
+            float down = (float)Math.Floor(below / step) * step;
+            return Math.Max(down, LeastLoan);
+        }
+
         /// <summary>The terms offered, shortest first: two years under the bank's own, its own, a year over it. Returns how many.</summary>
         public static int Terms(int bankYears, int[] into)
         {

@@ -26,7 +26,10 @@ namespace RealLifeOverhaul.Ui
             var made = new UiConsequence[lines.Count];
             for (int i = 0; i < made.Length; i++)
             {
-                made[i] = new UiConsequence { Text = DialogRules.OneLine(lines[i].Text), Tone = Math.Sign(lines[i].Tone), Change = Math.Sign(lines[i].Change) };
+                // Money paid out (against the player, the figure falling: a price, a fee, a payment) in the red; a risk or a reason in the amber.
+                int tone = Math.Sign(lines[i].Tone), change = Math.Sign(lines[i].Change);
+                bool loss = lines[i].Tone <= UiConsequence.Loss || (tone < 0 && change < 0);
+                made[i] = new UiConsequence { Text = DialogRules.OneLine(lines[i].Text), Tone = loss ? UiConsequence.Loss : tone, Change = change };
             }
             return made;
         }

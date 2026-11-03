@@ -169,6 +169,18 @@ namespace RealLifeOverhaul.Ui
             List.AddNote(name, detail, height);
         }
 
+        /// <summary>
+        /// On the RLO interface the notes read as a statement: <paramref name="words"/> over it, its lines (a file's figures
+        /// on one right edge, the total under them) and <paramref name="foot"/> under it. The game's own list keeps the notes.
+        /// </summary>
+        public void Statement(string words, UiLedgerLine[] lines, string foot)
+        {
+            Page.Statement = lines;
+            Page.StatementWords = string.IsNullOrEmpty(words) ? null : words;
+            Page.StatementFoot = string.IsNullOrEmpty(foot) ? null : foot;
+            Page.Stamp++;
+        }
+
         public float HeightFor(int characters, bool button) => List.HeightFor(characters, button);
 
         /// <summary>

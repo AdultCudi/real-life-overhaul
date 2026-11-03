@@ -41,6 +41,12 @@ Copy-Item (Join-Path $PSScriptRoot 'PreviewStubs.cs') (Join-Path $preview 'Kit')
 @('Scripts\Ui\Phone\PhoneItems.cs', 'Scripts\Ui\Phone\PhoneScreen.cs', 'Scripts\Core\GameUi\PagerRules.cs', 'Scripts\Core\GameUi\PhoneLayoutRules.cs', 'Scripts\Ui\Host\UiCost.cs') | ForEach-Object {
     Copy-Item (Join-Path $repo (Join-Path 'Assets\Mods\RealLifeOverhaul' $_)) (Join-Path $preview 'Kit')
 }
+# A Windows font with Chinese and Korean, for the shots in those languages: the game falls back to its own Noto fonts.
+New-Item -ItemType Directory -Force (Join-Path $preview 'Fonts') | Out-Null
+@('msyh.ttc', 'malgun.ttf') | ForEach-Object {
+    $font = Join-Path $env:WINDIR (Join-Path 'Fonts' $_)
+    if (Test-Path $font) { Copy-Item $font (Join-Path $preview 'Fonts') }
+}
 Get-ChildItem $PSScriptRoot -Filter 'UiSamples*.cs' | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Get-ChildItem $PSScriptRoot -Filter 'UiPreviewRunner*.cs' | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Editor') }
 

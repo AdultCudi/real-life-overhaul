@@ -389,6 +389,7 @@ namespace RealLifeOverhaul.Ui
             using var hotSpot = HotSpots.Time(HotHidden);
             Leave();
             _pressItem = -1;
+            UiPhone.LeftShare = 1f;   // put away: a docked conversation takes the screen's right again
             _host?.Hide();
         }
 
@@ -409,6 +410,8 @@ namespace RealLifeOverhaul.Ui
             // measured where the container stands open, so the game's fold (and its hover) still takes the phone down.
             float scale = rect.lossyScale.y > 0f ? rect.lossyScale.y : 1f;
             rect.GetWorldCorners(LiftCorners);   // an overlay canvas: world is screen pixels
+            // Its column for what docks at the right (a conversation): its left edge, by whole px, the same open or folded.
+            UiPhone.LeftShare = UnityEngine.Screen.width > 0 ? Mathf.Clamp01(Mathf.Round(LiftCorners[0].x) / UnityEngine.Screen.width) : 1f;
             var at = new Vector2(0f, UiPhone.Raise(Lift, LiftCorners[0].y, rect.anchoredPosition.y * scale, FoldTravel(scale)) / scale);
             if (rect.anchoredPosition != at)
             {

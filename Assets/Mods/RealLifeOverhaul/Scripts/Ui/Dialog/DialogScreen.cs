@@ -49,6 +49,8 @@ namespace RealLifeOverhaul.Ui
         private float _next;
         private long _seen;
         private int _typing = -1, _dragging = -1, _shownLines = -1;
+        private int _main = -1, _second = -1;   // the answers F and P take, as their caps show
+        private float _phone = 1f;              // the phone's place it was docked beside (UiPhone.LeftShare)
         private object _dialog;            // the conversation the game runs now, as last seen
         private object _asideFor;          // the line the game's own panel answers now
 
@@ -85,6 +87,7 @@ namespace RealLifeOverhaul.Ui
                     _dirty |= sig != _seen;
                     _seen = sig;
                 }
+                _dirty |= UiPhone.LeftShare != _phone;   // the phone shown or put away: the dock moves clear of it
                 return _dirty;
             }
         }
@@ -123,6 +126,7 @@ namespace RealLifeOverhaul.Ui
         {
             _form.Pick.Most = UiDraw.SnapDown((frame.BandY - UiTokens.S4 * 2f) * FormShare);
             Build();
+            _phone = UiPhone.LeftShare;
             UiConversation.LayDocked(s, _m, frame, dark, keys);
             _dirty = false;
             _seen = Signature();
@@ -177,7 +181,12 @@ namespace RealLifeOverhaul.Ui
         {
         }
 
-        public bool Act(UiAction action) => false;
+        // F takes the answer the line leads with, P the next, as the caps on them say: each pressed as a click presses it.
+        public bool Act(UiAction action)
+        {
+            int answer = action == UiAction.Alt ? _main : action == UiAction.Option ? _second : -1;
+            return answer >= 0 && Choose(answer);
+        }
 
         public void Reveal(int list, int index)
         {
@@ -451,7 +460,9 @@ namespace RealLifeOverhaul.Ui
                 _m.Offset = -1f;   // a new line: the thread shows its newest
             }
             _m.Choices = _made.ToArray();
-            _m.Chosen = -1;
+            _main = DialogRules.Keys(_m.Choices, _leave != null ? _choices.IndexOf(_leave) : -1, out _second);
+            _m.Chosen = _main;   // the answer the line leads with, on F, in the chosen fill
+            _m.ChoicesLabel = _m.Choices.Length > 0 ? UiText.T("reallife_ui_dialog_your_answer") : null;
             _m.Typing = _made.Count == 0 && !_formShown;   // their next line is coming
             Prompts();
         }

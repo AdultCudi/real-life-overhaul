@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Text;
+using RealLifeOverhaul.Ui;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -214,7 +215,7 @@ namespace RealLifeOverhaul
             if (settle)
             {
                 page.Add(JusticeText.T("reallife_justice_plea_settle"), JusticeText.T("reallife_justice_plea_settle_hint"))
-                    .Line(JusticeText.T("reallife_justice_settle_cost", "amount", JusticeText.Money(trial.Due)), -1)
+                    .Line(JusticeText.T("reallife_justice_settle_cost", "amount", JusticeText.Money(trial.Due)), UiConsequence.Loss)
                     .Line(JusticeText.T("reallife_justice_settle_gain"), 1);
             }
             else if (deal)
@@ -316,7 +317,7 @@ namespace RealLifeOverhaul
             }
             if (cost.Due > 0)
             {
-                page.Line(JusticeText.T(ifLost ? "reallife_justice_cost_lost_fine" : "reallife_justice_cost_fine", "amount", JusticeText.Money(cost.Due)), -1);
+                page.Line(JusticeText.T(ifLost ? "reallife_justice_cost_lost_fine" : "reallife_justice_cost_fine", "amount", JusticeText.Money(cost.Due)), UiConsequence.Loss);
             }
             string prison = ifLost ? "reallife_justice_cost_lost_prison" : "reallife_justice_cost_prison";
             string custody = ifLost ? "reallife_justice_cost_lost_custody" : "reallife_justice_cost_custody";

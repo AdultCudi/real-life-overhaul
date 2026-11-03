@@ -43,7 +43,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 Building store = talk != null && talk.contact != null ? BuildingHelper.GetBuilding(talk.contact.Address) : null;
                 var settings = store != null && store.SpecialService != null ? store.SpecialService.settings as WholesaleStoreSettings : null;
-                Line(entry, UiText.Fill("reallife_ui_dialog_cost_supplied", "business", Chosen(heading, 0), "day", Day(DeliveryHelper.GetNextDeliveryDay())), 0);
+                Line(entry, UiText.Fill("reallife_ui_dialog_cost_supplied", "business", Chosen(heading, 0), "day", Day(DeliveryHelper.GetNextDeliveryDay())), 1);
                 if (settings != null)
                 {
                     Line(entry, UiText.Fill("reallife_ui_dialog_cost_each_delivery", "fee", Money(settings.deliveryFee)), -1, -1);
@@ -60,11 +60,11 @@ namespace RealLifeOverhaul.Ui
                 }
                 EmployeeInstance agent = import.selectedEmployeeInstance;
                 string name = agent != null && agent.characterData != null && !string.IsNullOrEmpty(agent.characterData.name) ? agent.characterData.name : Chosen(heading, 0);
-                Line(entry, UiText.Fill("reallife_ui_dialog_cost_agent", "buyer", name, "day", Day(DeliveryHelper.GetNextDeliveryDay())), 0);
+                Line(entry, UiText.Fill("reallife_ui_dialog_cost_agent", "buyer", name, "day", Day(DeliveryHelper.GetNextDeliveryDay())), 1);
                 if (agent != null && !string.IsNullOrEmpty(agent.id) && EmployeeHelper.GetEmployeeById(agent.id, false) != null)
                 {
                     float off = 1f - new ImportPartnership { employeeInstanceId = agent.id }.GetDiscount;
-                    Line(entry, UiText.Fill("reallife_ui_dialog_cost_discount", "discount", (off * 100f).ToString("0.#", CultureInfo.CurrentCulture)), 1);
+                    Line(entry, UiText.Fill("reallife_ui_dialog_cost_discount", "discount", (off * 100f).ToString("0.#", CultureInfo.CurrentCulture)), 1, 1);
                 }
                 return;
             }
@@ -260,16 +260,17 @@ namespace RealLifeOverhaul.Ui
             for (int i = heading; i < _rows.Count && seen < most; i++)
             {
                 UiFormRow r = _rows[i];
-                if (r.Kind != UiFormKind.Choice)
+                bool group = r.Kind == UiFormKind.Pick && (i == heading || _rows[i - 1].Kind != UiFormKind.Pick);   // a list to pick from counts as one choice
+                if (r.Kind != UiFormKind.Choice && !group)
                 {
                     continue;
                 }
                 seen++;
-                if (!string.IsNullOrEmpty(r.Value))
+                if (group ? PickedFrom(i) != null : !string.IsNullOrEmpty(r.Value))
                 {
                     continue;
                 }
-                string words = !string.IsNullOrEmpty(r.Hint) ? r.Hint
+                string words = group ? _pickHint : !string.IsNullOrEmpty(r.Hint) ? r.Hint
                     : !string.IsNullOrEmpty(r.Label) ? UiText.Fill("reallife_ui_dialog_cost_unchosen", "what", r.Label) : null;
                 if (words != null)
                 {
@@ -289,8 +290,25 @@ namespace RealLifeOverhaul.Ui
                 {
                     return _rows[i].Value ?? string.Empty;
                 }
+                if (_rows[i].Kind == UiFormKind.Pick && (i == heading || _rows[i - 1].Kind != UiFormKind.Pick) && nth-- == 0)
+                {
+                    return PickedFrom(i) ?? string.Empty;
+                }
             }
             return string.Empty;
+        }
+
+        // The name of the one chosen in the list of picks from a row on; null for none.
+        private string PickedFrom(int first)
+        {
+            for (int i = first; i < _rows.Count && _rows[i].Kind == UiFormKind.Pick; i++)
+            {
+                if (_rows[i].On)
+                {
+                    return _rows[i].Label;
+                }
+            }
+            return null;
         }
 
         // The form's total as the game writes it: its last strong figure.

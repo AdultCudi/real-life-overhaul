@@ -18,7 +18,10 @@ namespace RealLifeOverhaul.Ui
         Action,        // a button alone (add an item)
         Swatches,      // colours to pick, each a square of its own colour
         Break,         // a hairline between the form's parts, where the game puts its splitter
-        Radio          // one of a few options of which one is chosen (where a tow takes the car)
+        Radio,         // one of a few options of which one is chosen (where a tow takes the car)
+        Pick,          // a line of a list to choose from: its mark, its name, a line under it, a figure at the right, why it cannot be chosen
+        Segments,      // a few short options side by side, the chosen one in the cyan (a loan's term)
+        Check          // a need and whether it is met: a tick or a warning, its words, what meets it at the right
     }
 
     /// <summary>
@@ -43,6 +46,7 @@ namespace RealLifeOverhaul.Ui
         public bool Typing;
         public UiDecisionChoice[] Choices = new UiDecisionChoice[0];
         public int Chosen = -1;
+        public string ChoicesLabel;                    // the CAPS line over the answers ("Your answer"); null for none
         public UiFormKind Form;
         public string FormLabel;                       // "Your offer"
         public string FormValue;                       // the figure, the choice, the words typed
@@ -127,8 +131,11 @@ namespace RealLifeOverhaul.Ui
             s.Begin("conversation", frame.Width, frame.Height, dark);
             s.Pointer = frame.Pointer;
             s.Floats = true;
-            float w = Math.Max(DockLeast, UiDraw.SnapDown(frame.Width * DockShare));
-            float x = UiDraw.SnapDown(frame.Width - w - UiTokens.S4);
+            // At the right, left of the kit phone while it shows (open or folded, it keeps its column at the screen's foot),
+            // so neither covers the other.
+            float right = UiPhone.RoomRight(frame);
+            float w = Math.Min(Math.Max(DockLeast, UiDraw.SnapDown(frame.Width * DockShare)), UiDraw.SnapDown(right - UiTokens.S4 * 2f));
+            float x = UiDraw.SnapDown(right - w - UiTokens.S4);
             // As tall as it holds, standing on the status bar, so a short talk leaves the world above it in view; a long
             // one grows up the screen and then scrolls.
             float inner = w - UiTokens.S5 * 2f;
@@ -215,7 +222,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < m.MessageCount; i++)
             {
                 float bh = UiDraw.BubbleHeight(ref m.Messages[i], w);
-                if (my >= offset - 0.5f && my < offset + vh)   // one cut by the head's edge waits until it scrolls in whole: a sliver of a bubble reads as clutter
+                if (my + bh > offset + UiTokens.S4 && my < offset + vh)   // one cut by the head's edge shows clipped, so no hole stands over the thread; a sliver under a step waits
                 {
                     if (m.Messages[i].From == UiFrom.System)
                     {
@@ -254,10 +261,10 @@ namespace RealLifeOverhaul.Ui
             return h + (m.Typing ? UiTokens.S10 + UiTokens.S3 : 0f);
         }
 
-        /// <summary>The choices' height at a width: each row with its lines and the gap under it.</summary>
+        /// <summary>The choices' height at a width: the line over them, each row with its lines and the gap under it.</summary>
         public static float ChoicesHeight(UiConversationModel m, float w)
         {
-            float h = 0f;
+            float h = LabelHeight(m);
             for (int i = 0; i < m.Choices.Length; i++)
             {
                 h += ChoiceHeight(ref m.Choices[i]) + (i > 0 ? UiTokens.S2 : 0f);
@@ -269,12 +276,22 @@ namespace RealLifeOverhaul.Ui
         public static float ChoiceHeight(ref UiDecisionChoice c) =>
             UiDraw.Snap(UiTokens.S3 * 2f + UiTextRules.LineHeight(UiStyle.BodyStrong) + (c.Lines?.Length ?? 0) * (UiTokens.S1 + UiTextRules.LineHeight(UiStyle.Small)));
 
+        // The line over the answers, where there are answers and it is given: a CAPS label and the step under it.
+        private static float LabelHeight(UiConversationModel m) =>
+            m.Choices.Length == 0 || string.IsNullOrEmpty(m.ChoicesLabel) ? 0f : UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2;
+
         private static void Choices(UiScene s, UiAt at, UiConversationModel m, float x, float y, float w, IUiKeys keys)
         {
             float cy = y;
+            float label = LabelHeight(m);
+            if (label > 0f)
+            {
+                UiDraw.Text(s, at, x, cy, w, UiStyle.SectionHeader, UiRole.Text2, m.ChoicesLabel, UiFlags.Label | UiFlags.Truncate);
+                cy += label;
+            }
             for (int i = 0; i < m.Choices.Length; i++)
             {
-                cy += ChoiceRow(s, at, ref m.Choices[i], i, i == m.Chosen, x, cy, w, ChoiceCommand) + UiTokens.S2;
+                cy += ChoiceRow(s, at, ref m.Choices[i], i, i == m.Chosen, x, cy, w, ChoiceCommand, keys) + UiTokens.S2;
             }
         }
 
@@ -283,7 +300,11 @@ namespace RealLifeOverhaul.Ui
         /// its consequences under it each behind its rise or fall in its colour; chosen, the cyan's tone. On its number's key
         /// (the first nine). Returns its height.
         /// </summary>
-        public static float ChoiceRow(UiScene s, UiAt at, ref UiDecisionChoice c, int index, bool chosen, float x, float y, float w, int command)
+        public static float ChoiceRow(UiScene s, UiAt at, ref UiDecisionChoice c, int index, bool chosen, float x, float y, float w, int command) =>
+            ChoiceRow(s, at, ref c, index, chosen, x, y, w, command, null);
+
+        /// <summary>A choice as above, with the bound key it carries (F, P, the way back) at the right of its name.</summary>
+        public static float ChoiceRow(UiScene s, UiAt at, ref UiDecisionChoice c, int index, bool chosen, float x, float y, float w, int command, IUiKeys keys)
         {
             float h = ChoiceHeight(ref c);
             // The card's tone under a clear face, so the pointer's still lift reads on it as on a row.
@@ -298,28 +319,27 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Text(s, inside, ix, ny, numW, UiStyle.BodyStrong, chosen ? UiRole.Text : UiRole.AccentText, number, UiFlags.Middle);
             float tx = ix + numW, tw = iw - numW;
             float noteW = string.IsNullOrEmpty(c.Note) ? 0f : UiDraw.Snap(UiTextRules.Width(c.Note, UiStyle.Small) + UiTokens.S1);
+            float capW = UiDraw.ChoiceCapWidth(c.Cap, keys);   // room for its key at the right: F, P, the way back
+            float right = ix + iw - capW;
             float noteLead = noteW > 0f ? noteW + UiTokens.IconSmall + UiTokens.S1 + UiTokens.S3 : 0f;
-            UiDraw.Text(s, inside, tx, ny, tw - noteLead, UiStyle.BodyStrong, UiRole.Text, c.Name, UiFlags.Label | UiFlags.Truncate | UiFlags.Middle);
+            UiDraw.Text(s, inside, tx, ny, right - tx - noteLead, UiStyle.BodyStrong, UiRole.Text, c.Name, UiFlags.Label | UiFlags.Truncate | UiFlags.Middle);
             if (noteW > 0f)
             {
                 UiRole noteInk = chosen ? UiRole.Text : UiRole.Muted;
-                UiDraw.Icon(s, inside, ix + iw - noteW - UiTokens.IconSmall - UiTokens.S1, ny + (nameH - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Clock, noteInk, UiFlags.Middle);
-                UiDraw.Text(s, inside, ix + iw - noteW, ny + (nameH - UiTextRules.LineHeight(UiStyle.Small)) / 2f, noteW, UiStyle.Small, noteInk, c.Note, UiFlags.Right | UiFlags.Middle);
+                UiDraw.Icon(s, inside, right - noteW - UiTokens.IconSmall - UiTokens.S1, ny + (nameH - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Clock, noteInk, UiFlags.Middle);
+                UiDraw.Text(s, inside, right - noteW, ny + (nameH - UiTextRules.LineHeight(UiStyle.Small)) / 2f, noteW, UiStyle.Small, noteInk, c.Note, UiFlags.Right | UiFlags.Middle);
             }
             float ly = ny + nameH, lh = UiTextRules.LineHeight(UiStyle.Small);
             for (int i = 0; c.Lines != null && i < c.Lines.Length; i++)
             {
                 ly += UiTokens.S1;
-                UiConsequence line = c.Lines[i];
-                UiRole tone = line.Tone > 0 ? UiRole.OkText : line.Tone < 0 ? UiRole.WarnText : UiRole.Text2;
-                UiIcon mark = line.Change > 0 ? UiIcon.TrendUp : line.Change < 0 ? UiIcon.TrendDown : line.Tone > 0 ? UiIcon.Check : line.Tone < 0 ? UiIcon.Warning : UiIcon.Minus;
-                UiDraw.Icon(s, inside, tx, ly + (lh - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, mark, tone, UiFlags.Middle);
-                UiDraw.Text(s, inside, tx + UiTokens.IconSmall + UiTokens.S2, ly, tw - UiTokens.IconSmall - UiTokens.S2, UiStyle.Small, tone, line.Text,
-                    UiFlags.Label | UiFlags.Truncate | UiFlags.Middle);
+                UiDraw.ConsequenceLine(s, inside, tx, ly, tw, ref c.Lines[i], chosen);
                 ly += lh;
             }
             UiAction key = index < 9 ? (UiAction)((int)UiAction.Pick1 + index) : UiAction.Count;
             UiDraw.Node(s, at, x, y, w, h, command, index, face, c.Disabled, -1, 0, key);
+            // The cap after the target, so it is not the target's own key (that is its number): the screen takes F and P itself.
+            UiDraw.ChoiceCap(s, inside, ix + iw, ny, nameH, c.Cap, keys);
             return h;
         }
 
