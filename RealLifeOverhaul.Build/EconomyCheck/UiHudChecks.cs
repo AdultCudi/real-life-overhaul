@@ -176,8 +176,9 @@ internal static partial class Program
             {
                 elsewhere += UiDraw.IsPill(s.Nodes[i].Command) ? 1 : 0;
             }
-            Check(pills == 6 && elsewhere == 0,
-                "hud: the pause and the play, the needs, the bell, the money and the gear are targets on the HUD's bar (" + pills + ") and pictures on every other bar (" + elsewhere + ")");
+            Check(pills == 7 && elsewhere == 0,
+                "hud: the pause, the play and the fast forward, the needs, the bell, the money and the gear are targets on the HUD's bar (" + pills + ") and pictures on every other bar ("
+                + elsewhere + ")");
         }
         finally
         {
@@ -189,17 +190,19 @@ internal static partial class Program
     }
 
     // The time's squares as the game's speed buttons (the bar the owner approved, 2 Nov): the one in force on the cyan,
-    // the pause and the play pressable and the fast forward only shown, all three dim and inert while the game holds the
-    // clock; and the gear's own command at the strip's corner.
+    // the pause and the play pressable, dim and inert while the game holds the clock; the fast forward a target always,
+    // dim while the game offers none (the owner, 3 Nov: "The fast forward in the hud is disabled. It is not pressable",
+    // when an activity offered it); and the gear's own command at the strip's corner.
     private static void HudSquareChecks()
     {
         string wrong = null;
         Func<UiStatusModel> was = UiChrome.Bar;
         try
         {
-            foreach (int state in new[] { 0, 1, 2, 3 })   // walking, paused, fast-forwarding, the clock held
+            foreach (int state in new[] { 0, 1, 2, 3, 4 })   // walking, paused, fast-forwarding, the clock held, an activity offering it
             {
                 UiStatusModel bar = UiSamples.HudBar(UiWords("en"), state == 1, state == 2, false, state == 3);
+                bar.FastOffered = state == 2 || state == 4;
                 UiChrome.Bar = () => bar;
                 var s = new UiScene();
                 UiFrame frame = UiFrame.FullMenu(16f / 9f);
@@ -221,9 +224,11 @@ internal static partial class Program
                     }
                 }
                 int pause = s.FindNode(UiDraw.TimePillCommand, 0), play = s.FindNode(UiDraw.TimePillCommand, 1), gear = s.FindNode(UiDraw.SettingsPillCommand, 0);
+                int fast = s.FindNode(UiDraw.TimePillCommand, UiDraw.FastSquare);
                 bool locked = state == 3;
-                bool right = squares == 3 && lit == (state == 1 ? 0 : state == 2 ? 2 : 1) && pause >= 0 && play >= 0 && gear >= 0
-                             && s.Nodes[pause].Disabled == locked && s.Nodes[play].Disabled == locked && dim == (locked ? 3 : state == 2 ? 0 : 1)
+                bool right = squares == 3 && lit == (state == 1 ? 0 : state == 2 ? 2 : 1) && pause >= 0 && play >= 0 && fast >= 0 && gear >= 0
+                             && s.Nodes[pause].Disabled == locked && s.Nodes[play].Disabled == locked && !s.Nodes[fast].Disabled
+                             && dim == (locked ? 3 : state == 2 || state == 4 ? 0 : 1)
                              && s.Nodes[gear].X > s.Nodes[s.FindNode(UiDraw.MoneyPillCommand, 0)].X;
                 if (!right && wrong == null)
                 {
@@ -235,7 +240,8 @@ internal static partial class Program
         {
             UiChrome.Bar = was;
         }
-        Check(wrong == null, "hud: the time's squares light the game's pause, play or fast forward in force, only the pause and the play press, the held clock dims all three, and the gear ends the strip"
+        Check(wrong == null, "hud: the time's squares light the game's pause, play or fast forward in force, all three press, the fast forward is dim only while the game offers none, the held"
+                             + " clock dims all three, and the gear ends the strip"
                              + (wrong == null ? "" : " (" + wrong + ")"));
     }
 

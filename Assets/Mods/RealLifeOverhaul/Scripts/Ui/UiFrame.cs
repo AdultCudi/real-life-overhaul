@@ -108,6 +108,7 @@ namespace RealLifeOverhaul.Ui
         public bool Paused;
         public int Speed;             // 1 the game's own pace, 3 an activity's fast forward, or 0 while the game has not said
         public bool TimeLocked;       // the game holds the clock (a scene, Going Public's shared one): its pause and play are dim and press nothing
+        public bool FastOffered;      // the game offers its fast forward now (an activity that has it, inside a building): its square presses it
         public string Season;         // "Autumn"
         public UiIcon Weather = UiIcon.CloudSun;
         public string Temperature;    // beside the weather's icon, as the game writes it; null for the season alone
