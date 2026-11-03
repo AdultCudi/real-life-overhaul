@@ -34,7 +34,8 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_world_pick_empty_body", "common_close", "reallife_law_cell_held", "reallife_law_cell_held_today", "reallife_law_cell_held_yesterday",
                     "reallife_law_cell_held_days", "reallife_law_cell_span", "reallife_law_cell_when_today", "reallife_law_cell_when_tomorrow", "reallife_law_cell_when_days",
                     "reallife_law_cell_hearing", "reallife_law_cell_hearing_detail", "reallife_law_cell_doctor", "reallife_law_cell_doctor_detail",
-                    "reallife_law_cell_doctor_free", "reallife_law_cell_doctor_fine"
+                    "reallife_law_cell_doctor_free", "reallife_law_cell_doctor_fine", "reallife_ui_world_pick_choose", "reallife_ui_world_pick_file",
+                    "reallife_ui_world_pick_file_close"
                 }).Switch(UiScreenSwitches.Hud),
                 new UiScreenDef("world_job_offer", UiTemplate.Decision, "JobOfferScreen", new[]
                 {

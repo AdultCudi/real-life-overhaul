@@ -26,8 +26,8 @@ namespace RealLifeOverhaul.Ui
     /// Voogle Route's own) with the address's camera move after them. An owner who is one of the game's rivals is a link to
     /// their page in the game's rivals app, the neighbourhood a link to the city map; a business's customers this hour stand
     /// against the building's room on a meter. In the HUD's left column when the kit's HUD shows, so the objectives stand
-    /// under it; on the world's canvas otherwise. Every word is read from the game's own labels after the game and other mods
-    /// wrote them, or from its registration where the game's own box reads it; every press is the game's own button or call.
+    /// under it; at its door on the world's canvas otherwise, where the game shows its own options. Every word is read from
+    /// the game's own labels after the game and other mods wrote them, or from its registration where the game's own box reads it; every press is the game's own button or call.
     /// Cost a frame while it shows: a dozen reference comparisons, the hour and a move; nothing allocated. The game's customer count
     /// is asked once a reading (a building picked or hovered, the hour turning).
     /// </summary>
@@ -54,6 +54,8 @@ namespace RealLifeOverhaul.Ui
         private Canvas _canvas;
         private Button _main;                 // the footer's wide button: the taxi in taxi mode, else BizMan
         private bool _shown, _docked, _inHud, _off, _dirty = true;
+        private bool _awaySaid;            // the line that the picked panel stands at the door, no kit HUD holding it, said once a city
+        private float _dockW, _dockH;      // px: the docked panel's size, last laid
         private int _seenKids = -1;
         private int _tab;
         private int _readHour = -1;   // the game's hour the panel was read at: its customers are that hour's
@@ -66,9 +68,9 @@ namespace RealLifeOverhaul.Ui
         private Vector2 _at = new Vector2(float.NaN, float.NaN);
         private string _state = "not looked at yet";
 
-        public string State => _off ? _state : _docked ? (_inHud ? "docked in the HUD's left column" : "docked at the top left") : _shown ? "at the door" : _state;
+        public string State => _off ? _state : _docked ? (_inHud ? "docked in the HUD's left column" : "picked, at its door") : _shown ? "at the door" : _state;
 
-        /// <summary>True while the panel stands docked at the top left (a building picked): a world panel then has the door to itself.</summary>
+        /// <summary>True while a building is picked and the panel shows its rows and buttons (in the HUD or at the door).</summary>
         public bool Docked => _docked;
 
         /// <summary>The models last read, for the tests.</summary>
@@ -87,7 +89,7 @@ namespace RealLifeOverhaul.Ui
             _dockView.PointerExited = Guard.Wrap<int>(node => _dockView.SetHover(-1));
             _dockView.Root.gameObject.SetActive(false);
             _chain = Press;
-            GameUi.WorldPanel.ResumeElsewhere = () => Instance() != null && Instance()._docked;
+            GameUi.WorldPanel.ResumeElsewhere = () => Instance() != null && Instance()._docked && Instance()._inHud;   // at the door it is where the game's box is
         }
 
         private static WorldBuilding Instance() => WorldHost.Instance != null ? WorldHost.Instance.Building : null;
@@ -604,6 +606,8 @@ namespace RealLifeOverhaul.Ui
                 return;   // the HUD lays it out in its left column (Dock)
             }
             float dw = UiInfoPanel.OuterWidth(_info), dh = UiInfoPanel.Height(_info);
+            _dockW = dw + UiTokens.S2;
+            _dockH = dh;
             _dockScene.Begin(WorldKits.BuildingId, dw + UiTokens.S2, dh, true);
             _dockScene.Floats = true;
             _dockScene.Pointer = true;
@@ -637,9 +641,18 @@ namespace RealLifeOverhaul.Ui
                 Undock();
                 Lay(frame);
             }
+            // No HUD of the kit's to hold it (its switch is off, the game hid its top bar, or it has not stood up): the panel
+            // stands where the game shows its own options, at the door, on the world's canvas. Docked at the top left here it
+            // stood under the game's HUD canvas (its tasks, the minimap's card), so a right click showed nothing at all.
+            if (!_awaySaid)
+            {
+                _awaySaid = true;
+                UiDirector.Logger?.Info("UI: a picked building's panel stands at its door on the world's canvas: the kit's HUD is "
+                                        + (hud == null ? "not up (" + HudLive.State + ")" : "hidden") + ", so its left column cannot hold it.");
+            }
             _dockView.Root.gameObject.SetActive(true);
-            float y = UiDraw.Snap(TopBarFoot(frame)) + UiTokens.S4;
-            _dockView.Root.anchoredPosition = new Vector2(UiTokens.S4 * _scale, -y * _scale);
+            Vector2 at = Door(frame, _dockW, _dockH);
+            _dockView.Root.anchoredPosition = new Vector2(at.x * _scale, -at.y * _scale);
         }
 
         private void Undock()
@@ -668,31 +681,22 @@ namespace RealLifeOverhaul.Ui
             _was = null;
         }
 
-        // Where the game's top bar ends, px of the layout, so the docked panel stands under it while the game's HUD shows.
-        private float TopBarFoot(UiFrame frame)
+        // Where a piece w by h stands at the door, px of the layout: its top left at the game's box's, kept inside the screen.
+        private Vector2 Door(UiFrame frame, float w, float h)
         {
-            UIs uis = InstanceBehavior<UIs>.Instance;
-            var bar = uis != null && uis.topBar != null ? uis.topBar.transform as RectTransform : null;
-            if (bar == null || !bar.gameObject.activeInHierarchy)
-            {
-                return 0f;
-            }
-            Canvas canvas = bar.GetComponentInParent<Canvas>(false);
-            bar.GetWorldCorners(_corners);
-            Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-            Vector2 low = RectTransformUtility.WorldToScreenPoint(cam, _corners[0]);
-            return Mathf.Max(0f, WorldHost.ToLayout(low, frame).y);
+            _panel.GetWorldCorners(_corners);
+            Camera cam = _canvas != null && _canvas.renderMode != RenderMode.ScreenSpaceOverlay ? _canvas.worldCamera : null;
+            Vector2 topLeft = WorldHost.ToLayout(RectTransformUtility.WorldToScreenPoint(cam, _corners[1]), frame);
+            float x = topLeft.x, y = topLeft.y;
+            UiHudRules.Clamp(ref x, ref y, w, h, frame.Width, frame.BandY);
+            return new Vector2(Mathf.Round(x), Mathf.Round(y));
         }
 
         // At the door: the card where the game's box stands, its top left at the box's, kept inside the screen.
         private void Place(UiFrame frame)
         {
-            _panel.GetWorldCorners(_corners);
-            Camera cam = _canvas != null && _canvas.renderMode != RenderMode.ScreenSpaceOverlay ? _canvas.worldCamera : null;
-            Vector2 topLeft = WorldHost.ToLayout(RectTransformUtility.WorldToScreenPoint(cam, _corners[1]), frame);
-            float w = UiPromptCard.Width(_card), h = UiPromptCard.Height(_card), x = topLeft.x, y = topLeft.y;
-            UiHudRules.Clamp(ref x, ref y, w, h, frame.Width, frame.BandY);
-            var at = new Vector2(Mathf.Round(x) * _scale, -Mathf.Round(y) * _scale);
+            Vector2 door = Door(frame, UiPromptCard.Width(_card), UiPromptCard.Height(_card));
+            var at = new Vector2(door.x * _scale, -door.y * _scale);
             if (at != _at)
             {
                 _at = at;

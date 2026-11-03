@@ -88,6 +88,14 @@ namespace RealLifeOverhaul.Nav
 
         public bool Alive => _panel != null && _rect != null;
 
+        private static NavHud _live;   // the one built last; the game's HUD holds one
+
+        /// <summary>
+        /// The minimap's card on the screen while it shows (its map and its route lines), so a panel docked at the bottom left
+        /// (the kit's item panel) can stand clear of it; null while it is hidden or gone.
+        /// </summary>
+        public static RectTransform Card => _live != null && _live._panel != null && _live._panel.activeInHierarchy ? _live._rect : null;
+
         /// <summary>The view's width and height in the HUD's own units, as last laid out.</summary>
         public float ViewWidth => _width - ViewSide * 2f;
         public float ViewHeight => _mapHeight;
@@ -97,6 +105,10 @@ namespace RealLifeOverhaul.Nav
 
         public void Destroy()
         {
+            if (_live == this)
+            {
+                _live = null;
+            }
             if (_panel != null)
             {
                 UnityEngine.Object.Destroy(_panel);

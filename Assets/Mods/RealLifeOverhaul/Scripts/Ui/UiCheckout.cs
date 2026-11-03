@@ -40,7 +40,8 @@ namespace RealLifeOverhaul.Ui
         public string TotalLabel, Total;                       // "To pay", "$4,980"; Total null when the game hides it
         public string Paused;                                  // "Time is paused" while the game holds time, else null
         public string Queue;                                   // the game's words for the queue once the order is in, else null
-        public string QueueDetail;                             // a line under them, or null
+        public string QueueDetail;                             // a line under them, or null; while the goods are chosen, the place in the line alone
+        public UiInfoRow[] Sums = new UiInfoRow[0];            // the goods and the tax in them on a band over the total, or none
         public string Order;                                   // the order button's words, null when the game hides it
         public bool OrderEnabled;
         public string Cancel;                                  // the cancel button's words, null when the game hides it
@@ -109,10 +110,16 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                h += UiTokens.TableRow + Shown(m) * LineH + UiTokens.S2 + (Pages(m) > 1 ? UiTokens.Control + UiTokens.S2 : 0f);
+                h += UiTokens.TableRow + Shown(m) * LineH + UiTokens.S2 + (Pages(m) > 1 ? UiTokens.Control + UiTokens.S2 : 0f) + SumsH(m) + PlaceH(m);
             }
             return UiDraw.Snap(h + Foot);
         }
+
+        // The goods and the tax in them on a band, a row each.
+        private static float SumsH(UiCheckoutModel m) => m.Sums.Length == 0 ? 0f : UiTokens.S2 * 2f + m.Sums.Length * UiTokens.PairRow;
+
+        // While the goods are chosen, the player's place in the register's line as one row on a band; none outside a line.
+        private static float PlaceH(UiCheckoutModel m) => Queued(m) || string.IsNullOrEmpty(m.QueueDetail) ? 0f : UiTokens.S3 * 2f + UiTokens.PairRow;
 
         private static float QueueH(UiCheckoutModel m) => UiTokens.S4 * 2f + UiTokens.PairRow + (string.IsNullOrEmpty(m.QueueDetail) ? 0f : UiTokens.PairRow);
 
@@ -186,6 +193,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     cy = Pager(s, on, m, page, pages, ix, cy, iw);
                 }
+                cy = Sums(s, on, m, x, cy);
+                cy = Place(s, on, m, x, cy);
             }
             Footer(s, on, m, x, cy, keys, true);
             return h;
@@ -302,6 +311,39 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Dim(s, drawn, next);
             }
             return y + UiTokens.Control + UiTokens.S2;
+        }
+
+        // The goods and the tax in them, a row each on a band under the goods, their sum the total at the foot.
+        private static float Sums(UiScene s, UiAt at, UiCheckoutModel m, float x, float y)
+        {
+            float h = SumsH(m);
+            if (h <= 0f)
+            {
+                return y;
+            }
+            UiDraw.Band(s, at, x, y, Width, h);
+            float ry = y + UiTokens.S2, ix = x + UiTokens.S4, iw = Width - UiTokens.S4 * 2f;
+            for (int i = 0; i < m.Sums.Length; i++)
+            {
+                ry += UiDraw.InfoRow(s, at, ix, ry, iw, m.Sums[i].Label, m.Sums[i].Value, false, -1, 0, m.Sums[i].Ink == UiRole.None ? UiRole.Text : m.Sums[i].Ink);
+            }
+            return y + h;
+        }
+
+        // The player's place in the register's line while the goods are still chosen: its clock and the words, on a hairline.
+        private static float Place(UiScene s, UiAt at, UiCheckoutModel m, float x, float y)
+        {
+            float h = PlaceH(m);
+            if (h <= 0f)
+            {
+                return y;
+            }
+            UiDraw.Box(s, at, x, y, Width, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
+            float ix = x + UiTokens.S4, iy = y + UiTokens.S3;
+            UiDraw.Icon(s, at, ix, iy + (UiTokens.PairRow - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Clock, UiRole.Warn, UiFlags.Middle, true);
+            float tx = ix + UiTokens.Icon + UiTokens.S3;
+            UiDraw.TextMiddle(s, at, tx, iy, UiTokens.PairRow, x + Width - UiTokens.S4 - tx, UiStyle.Body, UiRole.Text, m.QueueDetail, UiFlags.Truncate);
+            return y + h;
         }
 
         // Once the order is in: the queue in the game's words, on a band, with its clock.

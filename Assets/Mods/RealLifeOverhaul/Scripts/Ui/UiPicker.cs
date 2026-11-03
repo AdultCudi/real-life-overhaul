@@ -44,19 +44,26 @@ namespace RealLifeOverhaul.Ui
         public string EmptyAction;                         // the way out of an empty list as a button ("Call a taxi"), where the keys start; null for none
         public UiPrompt[] Prompts = new UiPrompt[0];
         public int PromptCount;
+        public bool Surfaces;                              // each entry on its own row surface, a step apart, as the world's lists set them
+        public int Chosen = -1;                            // the entry shown chosen at rest (the one F takes), or -1 for none
+        public string Choose;                              // the foot's main button on F, taking the chosen entry ("Choose"); null for none
+        public string Second;                              // the foot's second button on P ("Read the file"); null for none
     }
 
     /// <summary>
     /// The picker: a slate panel centred over the running game for choosing one of a list (where to travel, which desk,
     /// which station, which item): its title strip (no close while locked), two rows of context on a band, the entries as
     /// rows (a glyph on its tile, the name over its line, the figure at the right, or the reason it is greyed as a chip),
-    /// and, when the list is long, the pages in a bar fixed at its foot with the dimmed arrow where no page lies. Commands:
-    /// <see cref="EntryCommand"/> (an entry's index), <see cref="PageCommand"/> (-1 or 1) and the strip's close (Back).
+    /// and, when the list is long, the pages in a bar fixed at its foot with the dimmed arrow where no page lies; a foot of
+    /// its own may carry its note and its buttons (F Choose, P a second). Commands: <see cref="EntryCommand"/> (an entry's
+    /// index), <see cref="PageCommand"/> (-1 or 1), <see cref="ChooseCommand"/>, <see cref="SecondCommand"/> and the
+    /// strip's close (Back).
     /// Game-free. Cost: a layout a change.
     /// </summary>
     public static class UiPicker
     {
         public const int EntryCommand = 230, PageCommand = 231, EmptyCommand = 232;   // the empty state's way out
+        public const int ChooseCommand = 233, SecondCommand = 234;                     // the foot's buttons: the chosen entry, the list's second action
         public const float Width = 640f;          // px: two columns of words beside a tile, as the world's mockup sets the lists
         private const float SaidFace = 48f;       // px: the speaker's face beside their words
         private const int SaidLines = 4;          // what the desk says, at most, before it ends in an ellipsis
@@ -83,12 +90,15 @@ namespace RealLifeOverhaul.Ui
             {
                 h += Foot;
             }
-            if (!string.IsNullOrEmpty(m.FootNote) && shown > 0)
+            if (Footed(m) && shown > 0)
             {
                 h += Foot;
             }
             return UiDraw.Snap(h);
         }
+
+        // A foot of its own under the entries: the note, the buttons, or both on one line.
+        private static bool Footed(UiPickerModel m) => !string.IsNullOrEmpty(m.FootNote) || !string.IsNullOrEmpty(m.Choose) || !string.IsNullOrEmpty(m.Second);
 
         // What the desk says under the strip: the words wrapped beside the speaker's face, a step of room round them.
         private static float SaidHeight(UiPickerModel m) => string.IsNullOrEmpty(m.Said) ? 0f
@@ -243,14 +253,14 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < shown; i++)
             {
                 bool counted = m.Numbered && !m.Entries[first + i].Note;
-                Entry(s, list, ref m.Entries[first + i], first + i, x + UiTokens.S2, ey, Width - UiTokens.S2 * 2f, tiles, counted ? ++number : 0);
+                Entry(s, list, ref m.Entries[first + i], first + i, x + UiTokens.S2, ey, Width - UiTokens.S2 * 2f, tiles, counted ? ++number : 0, m.Surfaces, m.Chosen == first + i);
                 ey += EntryHeight(ref m.Entries[first + i]);
             }
             float foot = y + h;
-            if (!string.IsNullOrEmpty(m.FootNote))
+            if (Footed(m))
             {
                 foot -= Foot;
-                Note(s, on, m.FootNote, x, foot - (pages > 1 ? Foot : 0f));
+                FootRow(s, on.InRegion(FootRegion), m, x, foot - (pages > 1 ? Foot : 0f), keys ?? UiDefaultKeys.Keyboard);
             }
             if (pages > 1)
             {
@@ -259,19 +269,42 @@ namespace RealLifeOverhaul.Ui
             return h;
         }
 
-        // The line at the panel's foot over a hairline: why the player cannot leave, in the quiet ink by its glyph.
-        private static void Note(UiScene s, UiAt at, string words, float x, float y)
+        // The panel's foot over a hairline: the buttons at its right (P the second, F Choose the main), and in the room left
+        // the line saying why the player cannot leave, in the quiet ink by its glyph.
+        private static void FootRow(UiScene s, UiAt at, UiPickerModel m, float x, float y, IUiKeys keys)
         {
             UiDraw.Box(s, at, x, y, Width, UiTokens.Hairline, UiRole.Rule, UiRole.None, 0f, UiFlags.Decor);
+            float right = x + Width - UiTokens.S4, by = y + (Foot - UiTokens.Control) / 2f;
+            if (!string.IsNullOrEmpty(m.Choose))
+            {
+                bool none = m.Chosen < 0 || m.Chosen >= m.Entries.Length || m.Entries[m.Chosen].Note || m.Entries[m.Chosen].Disabled;
+                float bw = UiDraw.ButtonWidth(UiButtonKind.Primary, m.Choose, UiIcon.None, UiAction.Alt, keys);
+                right -= bw;
+                UiDraw.Button(s, at, right, by, bw, UiTokens.Control, UiButtonKind.Primary, m.Choose, UiIcon.None, UiAction.Alt, keys, ChooseCommand, 0, none);
+                right -= UiTokens.S2;
+            }
+            if (!string.IsNullOrEmpty(m.Second))
+            {
+                float bw = UiDraw.ButtonWidth(UiButtonKind.Secondary, m.Second, UiIcon.None, UiAction.Option, keys);
+                right -= bw;
+                UiDraw.Button(s, at, right, by, bw, UiTokens.Control, UiButtonKind.Secondary, m.Second, UiIcon.None, UiAction.Option, keys, SecondCommand, 0);
+                right -= UiTokens.S2;
+            }
+            if (string.IsNullOrEmpty(m.FootNote))
+            {
+                return;
+            }
             UiDraw.Icon(s, at, x + UiTokens.S4, y + (Foot - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Info, UiRole.Muted, UiFlags.Middle);
             float tx = x + UiTokens.S4 + UiTokens.Icon + UiTokens.S2;
-            UiDraw.TextMiddle(s, at, tx, y, Foot, x + Width - UiTokens.S4 - tx, UiStyle.Small, UiRole.Text2, words, UiFlags.Truncate);
+            UiDraw.Text(s, at, tx, y + (Foot - UiTextRules.WrappedHeight(m.FootNote, UiStyle.Small, right - UiTokens.S2 - tx, 2)) / 2f, right - UiTokens.S2 - tx, UiStyle.Small,
+                UiRole.Text2, m.FootNote, UiFlags.Wrap | UiFlags.Middle, 2);
         }
 
         // An entry: its glyph on a tile, its name over its line, its figure at the right, or the reason it is greyed as a chip.
-        private static void Entry(UiScene s, UiAt at, ref UiPickEntry e, int index, float x, float y, float w, bool tiles, int number)
+        private static void Entry(UiScene s, UiAt at, ref UiPickEntry e, int index, float x, float y, float w, bool tiles, int number, bool surfaces, bool chosen)
         {
             float tile = UiTokens.IconTile;
+            float Row = surfaces ? UiPicker.Row - UiTokens.S2 : UiPicker.Row;   // on surfaces, a grid step between the rows
             if (e.Note && !string.IsNullOrEmpty(e.Detail))
             {
                 // A note with words under its heading: the heading, then every line of its words in the quiet ink.
@@ -291,7 +324,8 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             int drawn = s.ItemCount, markFrom = -1, markTo = -1;
-            int face = UiDraw.Box(s, at, x, y, w, Row, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
+            UiRole ground = chosen && !e.Disabled ? UiRole.RowSel : surfaces ? UiRole.Row : UiRole.None;
+            int face = UiDraw.Box(s, at, x, y, w, Row, ground, UiRole.None, UiTokens.RadiusLarge, chosen && !e.Disabled ? UiFlags.Selected : UiFlags.None);
             UiAt inside = at.In(face);
             float tx = x + UiTokens.S2, nx = x + UiTokens.S3;
             if (number > 0)
@@ -348,7 +382,7 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Text(s, inside, nx, ny, nw, UiStyle.Title, UiRole.Text, e.Name, UiFlags.Truncate | UiFlags.Middle);
             if (detail)
             {
-                UiDraw.Text(s, inside, nx, ny + nh + UiTokens.S1, nw, UiStyle.Small, UiRole.Text2, e.Detail, UiFlags.Truncate | UiFlags.Middle);
+                UiDraw.Text(s, inside, nx, ny + nh + UiTokens.S1, nw, UiStyle.Small, ground == UiRole.RowSel ? UiRole.Text : UiRole.Text2, e.Detail, UiFlags.Truncate | UiFlags.Middle);
             }
             UiAction key = number > 0 && number <= 9 ? (UiAction)((int)UiAction.Pick1 + number - 1) : UiAction.Count;
             int node = UiDraw.Node(s, at, x, y, w, Row, EntryCommand, index, face, e.Disabled, -1, 0, key);
@@ -358,7 +392,8 @@ namespace RealLifeOverhaul.Ui
                 for (int i = drawn; i < s.ItemCount; i++)
                 {
                     bool mark = i >= markFrom && i < markTo;   // the line's bullet stays readable: which line is closed is the point
-                    if (!mark && (s.Items[i].Kind != UiKind.Text || s.Items[i].Style != UiStyle.SmallStrong))
+                    bool surface = surfaces && i == face;   // the row's surface keeps its shade: the chip on it still reads
+                    if (!mark && !surface && (s.Items[i].Kind != UiKind.Text || s.Items[i].Style != UiStyle.SmallStrong))
                     {
                         s.Items[i].Alpha = UiDraw.DimAlpha;
                     }

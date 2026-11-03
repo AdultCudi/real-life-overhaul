@@ -55,8 +55,12 @@ namespace RealLifeOverhaul.Ui
         public const int TabCommand = 640, SubCommand = 641, GridCommand = 642, SwatchCommand = 644, SliderCommand = 645, ActionCommand = 646,
             FilterCommand = 648, SearchCommand = 649;                                  // GridCommand + UiCatalogue.Card is a tile
         public static readonly int[] Commands = { TabCommand, SubCommand, GridCommand + UiCatalogue.Card, SwatchCommand, SliderCommand, ActionCommand, FilterCommand, SearchCommand };
-        public const float Width = 520f;                       // px: four tiles across, the preview keeps the rest
-        public const float LeastTile = 108f;                   // px: a tile's narrowest
+        public const float Width = 520f;                       // px: the surgeon's sliders, the preview keeps the rest
+        public const float GridWidth = 760f;                   // px: four tiles across with their names and prices whole
+        public const float LeastTile = 160f;                   // px: a tile's narrowest, a garment's name and its price on it
+
+        /// <summary>The panel's width: wide enough for four named tiles where there is a grid, the sliders' own where not.</summary>
+        public static float WidthOf(UiWardrobeModel m) => m.Grid.CardCount > 0 || m.SliderCount == 0 ? GridWidth : Width;
         private const float BasketW = 320f;
 
         public static void Lay(UiScene s, UiWardrobeModel m, UiFrame frame, bool dark, IUiKeys keys)
@@ -71,7 +75,7 @@ namespace RealLifeOverhaul.Ui
                 x += UiCataloguePanel.Beside(m.TabCount);
             }
             float h = UiDraw.SnapDown(frame.BandY - UiTokens.S4 * 2f);
-            Draw(s, m, x, y, Width, h, keys);
+            Draw(s, m, x, y, WidthOf(m), h, keys);
             if (m.Basket.Length > 0)
             {
                 Basket(s, m, frame.Width - UiTokens.S4 - BasketW, y);
@@ -108,13 +112,12 @@ namespace RealLifeOverhaul.Ui
             float band = ChosenHeight(m, iw);
             float sliders = SlidersHeight(m);
             bool grid = m.Grid.CardCount > 0 || m.SliderCount == 0;
-            if (!grid)
-            {
-                // The surgeon's sliders alone: the panel ends under its buttons rather than standing the screen's height.
-                float under = cy + sliders - UiTokens.S2 + (band > 0f ? UiTokens.S3 + band : 0f) + UiTokens.S3 + buttons + UiTokens.S4;
-                h = Math.Min(h, UiDraw.Snap(under - y));
-                s.Items[panel].H = h;
-            }
+            // The panel ends under its buttons, its grid as tall as its rows, rather than standing the screen's height; a grid of
+            // more rows than the screen holds scrolls in what is left.
+            float gridNeed = grid ? UiCatalogue.GridHeight(m.Grid, iw - UiTokens.S3, LeastTile) + UiTokens.S3 : 0f;
+            float under = cy + gridNeed + sliders - (sliders > 0f ? UiTokens.S2 : 0f) + (band > 0f ? UiTokens.S3 + band : 0f) + UiTokens.S3 + buttons + UiTokens.S4;
+            h = Math.Min(h, UiDraw.Snap(under - y));
+            s.Items[panel].H = h;
             float foot = y + h - UiTokens.S4 - buttons;
             float gridBottom = foot - UiTokens.S3 - (band > 0f ? band + UiTokens.S3 : 0f) - (sliders > 0f ? sliders + UiTokens.S3 : 0f);
             if (grid)

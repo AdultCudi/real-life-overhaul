@@ -39,7 +39,9 @@ namespace RealLifeOverhaul.Ui
         private readonly List<string> _basketNames = new List<string>(4);
         private readonly List<int> _basketPrices = new List<int>(4);
         private int _basketStamp = int.MinValue;
-        private int _resetAt = -1;                                    // the clothes' Reset among the actions (the kit's own button), or -1
+        private int _resetAt = -1;
+        // "Piece 3", "Style 3": a game piece's name by its place, made once a place.
+        private readonly string[] _numbered = new string[64];                                    // the clothes' Reset among the actions (the kit's own button), or -1
 
         public WardrobeScreen(WardrobeKind kind, CharacterCustomizer ui)
         {
@@ -345,6 +347,7 @@ namespace RealLifeOverhaul.Ui
             _m.ChosenName = null;
             _m.ChosenDetail = null;
             string owned = UiText.T("reallife_clothes_screen_owned");
+            string free = _kind == WardrobeKind.Clothes && Leisure.ClothesScreen.Shopping ? UiText.T("reallife_ui_buy_free") : null;   // the game's own clothes cost nothing
             for (int i = 0; i < _pieces.Count; i++)
             {
                 Transform p = _pieces[i];
@@ -361,7 +364,13 @@ namespace RealLifeOverhaul.Ui
                     }
                 }
                 string name = _bands.Count > 0 ? BuyKits.Words(_bands[0]) : null, corner = _bands.Count > 1 ? BuyKits.Words(_bands[1]) : null;
-                bool price = corner != null && corner.Length > 0 && !char.IsLetter(corner[0]);
+                if (_bands.Count == 0)
+                {
+                    // The game names none of its pieces: each says what it is by its place in the game's list, and its price.
+                    name = Numbered(i);
+                    corner = free;
+                }
+                bool price = corner != null && corner.Length > 0 && (ReferenceEquals(corner, free) || !char.IsLetter(corner[0]));
                 _all[i] = new UiCatalogueCard
                 {
                     Picture = BuyPictures.Of(sprite), Aspect = BuyPictures.Aspect(sprite), Icon = UiIcon.Tag, Name = name,
@@ -382,6 +391,17 @@ namespace RealLifeOverhaul.Ui
             }
             Filter(_pieces.Count, ownedCount, modCount, chosenAt);
             _sb.Append(chosenAt).Append('|').Append(_filterKind).Append(_search).Append('|');
+        }
+
+        // A game piece's name by its place in the game's list, in the screen's own word for what it is.
+        private string Numbered(int i)
+        {
+            if (i >= _numbered.Length)
+            {
+                return null;
+            }
+            return _numbered[i] ?? (_numbered[i] = UiText.T(_kind == WardrobeKind.Hair ? "reallife_ui_buy_style" : "reallife_ui_buy_piece")
+                .Replace("{number}", (i + 1).ToString(CultureInfo.CurrentCulture)));
         }
 
         // The pills over the grid with their counts, where they tell pieces apart (Owned in the shop, the mod's own beside the

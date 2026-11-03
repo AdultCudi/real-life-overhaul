@@ -15,7 +15,7 @@ internal static partial class UiSamples
 {
     public static readonly string[] CheckoutStates = { "goods", "goods_page2", "taxes", "queue", "ticket", "empty", "goods_fr" };
     public static readonly string[] VehicleBuyStates = { "car", "car_delivery", "boat", "car_fr" };
-    public static readonly string[] ItemPanelStates = { "vehicle", "vehicle_foreign", "hand_truck", "mop", "basket", "minigame", "vehicle_fr" };
+    public static readonly string[] ItemPanelStates = { "vehicle", "vehicle_foreign", "hand_truck", "mop", "basket", "minigame", "vehicle_fr", "vehicle_parked", "paper_bag", "paper_bag_minimap" };
     public static readonly string[] CargoStates = { "truck", "truck_unpaid", "empty", "truck_fr" };
     public static readonly string[] WardrobeStates = { "clothes", "wardrobe", "hair", "surgery", "surgery_face", "clothes_fr" };
     public static readonly string[] GarageStates = { "main", "paint", "figures" };
@@ -67,7 +67,7 @@ internal static partial class UiSamples
                 Name = ticket ? t("casinoboat_ticket_pay_item", "Casino Boat Ticket") : BuyGoods[i], Picture = ticket ? null : GoodsPictures[i], Aspect = GoodsAspects[i],
                 Icon = ticket ? UiIcon.Tag : UiIcon.Package,
                 Pack = ticket ? null : t("reallife_ui_buy_pack", "{count} pieces").Replace("{count}", GoodsPieces[i].ToString("N0", System.Globalization.CultureInfo.InvariantCulture)),
-                Price = Money(price), Total = Money(n == 0 ? price : price * n), Packs = n, CanLess = n > 0, CanMore = true
+                Price = Money(price), Total = Money(price * n), Packs = n, CanLess = n > 0, CanMore = true
             };
         }
         m.Lines = lines;
@@ -80,6 +80,17 @@ internal static partial class UiSamples
             Mark = UiIcon.Store, Name = "NY Distro Inc", Address = "37 1st Street, Garment District",
             DeliveredLabel = state == "queue" ? null : t("reallife_ui_buy_delivered_to", "Delivered to"), DeliveredTo = state == "queue" ? null : "Hand Truck"
         };
+        if (state.StartsWith("goods"))
+        {
+            // The goods and the sales tax in their price (8.9% of it, the city's rule), and the player third in the register's line.
+            int tax = total * 89 / 1000;
+            m.Sums = new[]
+            {
+                new UiInfoRow { Label = t("reallife_ui_buy_goods", "Goods"), Value = Money(total - tax) },
+                new UiInfoRow { Label = t("reallife_ui_buy_sales_tax", "Sales tax in the price, {rate}").Replace("{rate}", "8.9%"), Value = Money(tax) }
+            };
+            m.QueueDetail = t("reallife_ui_buy_queue_place", "Place {place} of {count}, {ahead} ahead of you").Replace("{place}", "3").Replace("{count}", "4").Replace("{ahead}", "2");
+        }
         switch (state)
         {
             case "taxes":
@@ -163,6 +174,9 @@ internal static partial class UiSamples
     // ------------------------------------------------------------------------------------------------- the item panel
 
     /// <summary>The item panel: a box truck, another player's car, a hand truck, a mop, an unpaid basket and a mini game.</summary>
+    /// <summary>Where the sample's minimap card stands (px of a 1080 high layout): the bottom of the left column, as Navigation docks it.</summary>
+    public const float MinimapX = 8f, MinimapY = 600f, MinimapW = 232f, MinimapH = 392f;
+
     public static UiItemPanelModel ItemPanel(UiWords t, string state)
     {
         t = Words(t, state);
@@ -173,7 +187,9 @@ internal static partial class UiSamples
             case "vehicle":
             case "vehicle_fr":
             case "vehicle_foreign":
+            case "vehicle_parked":
             {
+                bool parked = state == "vehicle_parked";   // the player on foot beside it: Manage cargo first, nothing to park
                 bool foreign = state == "vehicle_foreign";
                 m.Name = foreign ? "Stallion GT" : "Bimmer Box Truck";
                 m.Status = "5th Avenue, Midtown";
@@ -213,15 +229,17 @@ internal static partial class UiSamples
                         new UiCatalogueCard { Picture = "buy:cheese", Aspect = 1.25f, Figure = "x1" }, new UiCatalogueCard { Picture = "buy:boxes", Aspect = 1f, Figure = "x2" }
                     };
                 }
-                var actions = new List<UiItemAction>
-                {
-                    new UiItemAction { Label = t("itempanelui_buttons_park_vehicle", "Park Vehicle"), Key = park, Main = true },
-                    new UiItemAction { Label = t("itempanelui_buttons_auto_park", "Auto Park"), Key = auto },
-                    new UiItemAction { Label = t("itempanelui_buttons_sleep", "Sleep"), Key = sleep }
-                };
+                var actions = parked
+                    ? new List<UiItemAction> { new UiItemAction { Label = t("reallife_ui_buy_manage_cargo", "Manage cargo"), Main = true } }
+                    : new List<UiItemAction>
+                    {
+                        new UiItemAction { Label = t("itempanelui_buttons_park_vehicle", "Park Vehicle"), Key = park, Main = true },
+                        new UiItemAction { Label = t("itempanelui_buttons_auto_park", "Auto Park"), Key = auto },
+                        new UiItemAction { Label = t("itempanelui_buttons_sleep", "Sleep"), Key = sleep }
+                    };
                 if (!foreign)
                 {
-                    actions.Add(new UiItemAction { Label = t("itempanelui_sell", "Sell"), Key = sell, Danger = true });
+                    actions.Add(new UiItemAction { Label = t("reallife_ui_buy_sell_for", "Sell for {price}").Replace("{price}", "$18,400"), Key = sell, Danger = true });
                 }
                 m.Actions = actions.ToArray();
                 break;
@@ -269,6 +287,31 @@ internal static partial class UiSamples
                     new UiCatalogueCard { Picture = "buy:boxes", Aspect = 1f, Figure = "$235", State = "unpaid" }
                 };
                 m.Actions = new[] { new UiItemAction { Label = t("itempanelui_buttons_discard", "Discard"), Key = new UiGameKey { Name = "Del" }, Danger = true } };
+                break;
+            case "paper_bag":
+            case "paper_bag_minimap":
+                // The owner's case (3 Nov): a paper bag of ten slots holding one croissant, on the game's Backspace for Sell; with
+                // the minimap's card at the bottom left the panel stands beside it.
+                m.Title = t("reallife_ui_buy_in_hands", "In your hands");
+                m.Icon = UiIcon.ShoppingBag;
+                m.Name = "Paper Bag";
+                m.Glyph = UiIcon.ShoppingBag;
+                m.CargoLabel = t("common_cargo", "Cargo");
+                m.CargoValue = t("reallife_ui_buy_slots", "{used} of {most}").Replace("{used}", "1").Replace("{most}", "10");
+                m.CargoSlots = 10;
+                m.Cargo = new[] { new UiCatalogueCard { Picture = "buy:croissant", Aspect = 2.6f, Figure = "x1" } };
+                m.Actions = new[]
+                {
+                    new UiItemAction { Label = t("reallife_ui_buy_sell_for", "Sell for {price}").Replace("{price}", "$12"), Key = new UiGameKey { Name = "BACKSPACE" }, Danger = true },
+                    new UiItemAction { Label = t("itempanelui_buttons_discard", "Discard"), Danger = true }
+                };
+                if (state == "paper_bag_minimap")
+                {
+                    m.AvoidX = MinimapX;
+                    m.AvoidY = MinimapY;
+                    m.AvoidW = MinimapW;
+                    m.AvoidH = MinimapH;
+                }
                 break;
             case "minigame":
                 m.Title = t("reallife_ui_buy_minigame", "Playing");
@@ -381,7 +424,7 @@ internal static partial class UiSamples
             m.Grid.Cards = new UiCatalogueCard[8];
             for (int i = 0; i < 8; i++)
             {
-                m.Grid.Cards[i] = new UiCatalogueCard { Icon = UiIcon.Person, Name = t("character_customization_hair", "Hair") + " " + (i + 1) };
+                m.Grid.Cards[i] = new UiCatalogueCard { Icon = UiIcon.Person, Name = t("reallife_ui_buy_style", "Style {number}").Replace("{number}", (i + 1).ToString()) };
             }
             m.Grid.CardCount = 8;
             m.Grid.Chosen = 2;
@@ -439,8 +482,8 @@ internal static partial class UiSamples
             bool owned = i == 0 || i == 11 || !shop;
             m.Grid.Cards[i] = new UiCatalogueCard
             {
-                Picture = TeePictures[i], Aspect = TeeAspects[i], Name = mod ? Tees[i] : null,
-                Figure = mod && shop && !owned ? Money(prices[i]) : null,
+                Picture = TeePictures[i], Aspect = TeeAspects[i], Name = mod ? Tees[i] : t("reallife_ui_buy_piece", "Piece {number}").Replace("{number}", (i + 1).ToString()),
+                Figure = mod && shop && !owned ? Money(prices[i]) : !mod && shop ? t("reallife_ui_buy_free", "Free") : null,
                 State = mod ? (owned && shop ? t("reallife_clothes_screen_owned", "Owned") : shop ? null : t("reallife_creator_tag", "RLO")) : null,
                 StateTone = owned && shop ? UiRole.Ok : UiRole.Accent
             };
@@ -485,32 +528,32 @@ internal static partial class UiSamples
             InfoCount = 2, Prompts = Prompts(t), PromptCount = 3
         };
         var cards = new List<UiGarageCard>();
-        string choose = t("reallife_garage_list_choose", "Choose");
         switch (state)
         {
             case "paint":
-                cards.Add(new UiGarageCard { Name = t("reallife_garage_list_back_name", "Back"), Detail = t("reallife_customshop_total", "This visit: {amount}").Replace("{amount}", "$1,840"), Button = choose, Enabled = true });
-                cards.Add(new UiGarageCard { Name = "Factory colour", Detail = t("reallife_garage_paint_prices", "Chart colour {palette}, mixed {custom}").Replace("{palette}", "$900").Replace("{custom}", "$1,400"), Button = choose, Enabled = true });
+                cards.Add(new UiGarageCard { Name = t("reallife_garage_list_back_name", "Back"), Detail = t("reallife_customshop_total", "This visit: {amount}").Replace("{amount}", "$1,840"), Enabled = true, Back = true });
+                cards.Add(new UiGarageCard { Name = "Factory colour", Detail = t("reallife_garage_paint_prices", "Chart colour {palette}, mixed {custom}").Replace("{palette}", "$900").Replace("{custom}", "$1,400"), Enabled = true, Swatch = UiDraw.SwatchKey(0x2B3A55) });
                 string[] colours = { "Racing red", "Midnight blue", "Pearl white", "Graphite", "Lime", "Copper" };
+                int[] paints = { 0xC0282D, 0x1B2A4A, 0xEDEDE6, 0x3C4045, 0x8BC34A, 0xB87333 };
                 for (int i = 0; i < colours.Length; i++)
                 {
-                    cards.Add(new UiGarageCard { Name = colours[i], Detail = "$900", Button = i == 1 ? t("reallife_garage_list_chosen", "Chosen") : choose, Enabled = i != 1 });
+                    cards.Add(new UiGarageCard { Name = colours[i], Detail = "$900", Button = i == 1 ? t("reallife_garage_list_chosen", "Chosen") : null, Enabled = i != 1, Swatch = UiDraw.SwatchKey(paints[i]) });
                 }
                 break;
             case "figures":
-                cards.Add(new UiGarageCard { Name = t("reallife_garage_list_back_name", "Back"), Detail = t("reallife_customshop_total", "This visit: {amount}").Replace("{amount}", "$1,840"), Button = choose, Enabled = true });
+                cards.Add(new UiGarageCard { Name = t("reallife_garage_list_back_name", "Back"), Detail = t("reallife_customshop_total", "This visit: {amount}").Replace("{amount}", "$1,840"), Enabled = true, Back = true });
                 cards.Add(new UiGarageCard { Name = t("reallife_tuning_tab_figures", "Figures"), Detail = "Power 310 hp as standard, 334 hp now. 0 to 100 km/h in 5.4 s, 5.1 s with the cart.", Note = true });
                 cards.Add(new UiGarageCard { Name = "Braking", Detail = "100 to 0 km/h in 36 m as standard, 34 m now.", Note = true });
                 cards.Add(new UiGarageCard { Name = "Weight", Detail = "1,480 kg as standard, 1,452 kg now.", Note = true });
                 break;
             default:
                 cards.Add(new UiGarageCard { Name = t("reallife_garage_pay", "Pay {amount}").Replace("{amount}", "$1,840"), Detail = "Paint, wheels and a spoiler", Button = t("reallife_garage_list_pay", "Pay"), Enabled = true, Main = true });
-                cards.Add(new UiGarageCard { Name = t("reallife_garage_tab_paint", "Paint"), Detail = "Midnight blue, chart colour", Button = choose, Enabled = true });
-                cards.Add(new UiGarageCard { Name = t("reallife_garage_tab_finish", "Finish"), Detail = "Gloss", Button = choose, Enabled = true });
-                cards.Add(new UiGarageCard { Name = t("reallife_garage_tab_lights", "Lights"), Detail = "Standard", Button = choose, Enabled = true });
-                cards.Add(new UiGarageCard { Name = t("reallife_garage_tab_body", "Body"), Detail = "Spoiler", Button = choose, Enabled = true });
-                cards.Add(new UiGarageCard { Name = t("reallife_garage_tab_parts", "Parts"), Detail = "Mesh wheels, sport exhaust", Button = choose, Enabled = true });
-                cards.Add(new UiGarageCard { Name = t("reallife_tuning_tab_figures", "Figures"), Detail = t("reallife_tuning_tab_figures_detail", "The dyno sheet"), Button = choose, Enabled = true });
+                cards.Add(new UiGarageCard { Name = t("reallife_garage_tab_paint", "Paint"), Detail = "Midnight blue, chart colour", Enabled = true, Opens = true });
+                cards.Add(new UiGarageCard { Name = t("reallife_garage_tab_finish", "Finish"), Detail = "Gloss", Enabled = true, Opens = true });
+                cards.Add(new UiGarageCard { Name = t("reallife_garage_tab_lights", "Lights"), Detail = "Standard", Enabled = true, Opens = true });
+                cards.Add(new UiGarageCard { Name = t("reallife_garage_tab_body", "Body"), Detail = "Spoiler", Enabled = true, Opens = true });
+                cards.Add(new UiGarageCard { Name = t("reallife_garage_tab_parts", "Parts"), Detail = "Mesh wheels, sport exhaust", Enabled = true, Opens = true });
+                cards.Add(new UiGarageCard { Name = t("reallife_tuning_tab_figures", "Figures"), Detail = t("reallife_tuning_tab_figures_detail", "The dyno sheet"), Enabled = true, Opens = true });
                 cards.Add(new UiGarageCard { Name = t("reallife_garage_stock", "All stock"), Detail = t("reallife_garage_list_stock_detail", "Puts the whole car back to standard."), Button = t("reallife_garage_list_reset", "Reset"), Enabled = true });
                 break;
         }

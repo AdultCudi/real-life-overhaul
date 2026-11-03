@@ -18,6 +18,7 @@ namespace RealLifeOverhaul.Nav
             _dormant = dormant;
             _panel = panel;
             _rect = (RectTransform)panel.transform;
+            _live = this;
             _screen = (RectTransform)uis.playerHUD.transform;
             _tasksUi = uis.tasksUI;
             _tasks = tasks as RectTransform;

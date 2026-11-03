@@ -97,7 +97,9 @@ namespace RealLifeOverhaul.Ui
             p.Needs = NeedsWidth(m, NeedCell);
             p.Alerts = AlertsWidth(m);
             p.Money = MoneyWidth(m, true);
-            p.Settings = m.PillsPress ? SquarePill : 0f;
+            // The gear keeps its corner on every bar with money on it, a picture where the bar takes no press, so the money never
+            // meets the screen's edge; a bar given nothing has none.
+            p.Settings = m.PillsPress || !string.IsNullOrEmpty(m.Money) ? SquarePill : 0f;
             p.Tools = ToolsWidth(m);
             // The row keeps every app it is given until the time with its day, or the right pills at their tightest (or the
             // prompts while the keys lead), would not stand whole beside it; then apps wait under All apps, down to four.

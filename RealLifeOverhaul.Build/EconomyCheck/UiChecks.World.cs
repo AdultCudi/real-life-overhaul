@@ -41,13 +41,13 @@ internal static partial class Program
                 break;
             case UiWorld.PickerId:
                 cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (a front desk, eight things to ask, one greyed)", Title = "Front desk", Commands = PickerCommands,
-                    Lay = (s, f, d, k, t) => UiSamples.WorldPickerScene(s, f, d, k, UiSamples.WorldDesk(t, false), false) });
+                    Lay = (s, f, d, k, t) => UiSamples.WorldPickerScene(s, f, d, k, UiSamples.WorldDesk(t, false)) });
                 cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (eleven, over two pages)", Title = "Front desk", Commands = PickerCommands,
-                    Lay = (s, f, d, k, t) => UiSamples.WorldPickerScene(s, f, d, k, UiSamples.WorldDesk(t, true), false) });
+                    Lay = (s, f, d, k, t) => UiSamples.WorldPickerScene(s, f, d, k, UiSamples.WorldDesk(t, true)) });
                 cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (custody, locked, the charge sheet whole)", Title = "Holding cell", Commands = PickerCommands,
-                    Lay = (s, f, d, k, t) => UiSamples.WorldPickerScene(s, f, d, k, UiSamples.WorldCustody(t), true, true) });
+                    Lay = (s, f, d, k, t) => UiSamples.WorldPickerScene(s, f, d, k, UiSamples.WorldCustody(t, true), true) });
                 cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (nothing to choose)", Title = "Front desk", Commands = PickerCommands,
-                    Lay = (s, f, d, k, t) => UiSamples.WorldPickerScene(s, f, d, k, UiSamples.WorldNothing(t), false) });
+                    Lay = (s, f, d, k, t) => UiSamples.WorldPickerScene(s, f, d, k, UiSamples.WorldNothing(t)) });
                 break;
             case UiWorld.OfferId:
                 cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (a barista's job)", Title = "HUD", Commands = OfferCommands,
@@ -313,5 +313,47 @@ internal static partial class Program
         string frame = update >= 0 && updateEnd > update ? city.Substring(update, updateEnd - update) : null;
         Check(frame != null && !frame.Contains("Counter()") && !frame.Contains("Keys.Down") && Regex.IsMatch(city, @"_cart = cart;\s*\}\s*\}\s*Counter\(\);"),
             "world prompt: the cart's box is set from city life's one-second look, nothing a frame, and the game's own panel takes its keys");
+        CriticChecks(en);
+    }
+
+    // The wave 2 critic's findings on the buying and world screens (3 Nov), each held by its sample.
+    private static void CriticChecks(UiWords en)
+    {
+        UiPickerModel cell = UiSamples.WorldCustody(en), file = UiSamples.WorldCustody(en, true);
+        Check(cell.Choose == "Choose" && cell.Second == "Read the file" && file.Second == "Close the file" && cell.Chosen == 1 && cell.Surfaces
+              && cell.Entries[0].Detail == null && file.Entries[0].Detail != null,
+            "world custody: F Choose and P Read the file at the foot, Sit it out chosen at rest, the charge sheet folded to its heading until P opens it");
+        var s = new UiScene();
+        UiFrame frame = UiFrame.FullMenu(16f / 9f, "HUD");
+        UiItemPanelModel bag = UiSamples.ItemPanel(en, "paper_bag_minimap");
+        UiItemPanel.Lay(s, bag, frame, true, UiDefaultKeys.Keyboard);
+        int panel = -1, tiles = 0;
+        for (int i = 0; i < s.ItemCount && panel < 0; i++)
+        {
+            panel = (s.Items[i].Flags & UiFlags.Panel) != 0 ? i : -1;
+        }
+        for (int i = 0; i < s.NodeCount; i++)
+        {
+            tiles += s.Nodes[i].Command == UiItemPanel.CargoCommand ? 1 : 0;
+        }
+        UiItem box = panel >= 0 ? s.Items[panel] : default(UiItem);
+        Check(panel >= 0 && !UiHudRules.Overlaps(box.X, box.Y, box.W, box.H, bag.AvoidX, bag.AvoidY, bag.AvoidW, bag.AvoidH) && tiles == 1
+              && box.W == UiItemPanel.Narrow && UiDraw.CapWord("BACKSPACE") == "Bksp" && bag.Actions[0].Label == "Sell for $12",
+            "item panel: a paper bag stands beside the minimap's card, as narrow as a thing in hand, one tile for its one stack and no wall of empty slots, Sell with its price on a short cap");
+        UiCheckoutModel goods = UiSamples.Checkout(en, "goods");
+        UiCheckoutLine popcorn = Array.Find(goods.Lines, l => l.Name == "Popcorn");
+        Check(popcorn.Packs == 0 && popcorn.Total == "$0" && goods.Sums.Length == 2 && goods.QueueDetail != null,
+            "checkout: a row of none taken totals $0, the goods and the sales tax in the price stand over the total, and the place in the line shows while choosing");
+        // The owner's right click on a building (3 Nov): with no kit HUD up, the picked panel stood at the top left on the
+        // world's canvas, under the game's HUD canvas, and nothing showed. It stands at the door now, and says so once.
+        string building = File.ReadAllText(System.IO.Path.Combine(ModScripts(), "Ui", "World", "WorldBuilding.cs"));
+        int dock = building.IndexOf("private void Dock(UiFrame frame)", StringComparison.Ordinal);
+        int dockEnd = dock >= 0 ? building.IndexOf("private void Undock()", dock, StringComparison.Ordinal) : -1;
+        string dockCode = dock >= 0 && dockEnd > dock ? building.Substring(dock, dockEnd - dock) : "";
+        Check(dockCode.Contains("Door(frame, _dockW, _dockH)") && dockCode.Contains("_awaySaid") && dockCode.Contains("UiDirector.Logger?.Info(") && !building.Contains("TopBarFoot"),
+            "world building: a picked building's panel with no kit HUD to hold it stands at its door where the game shows its options, and Player.log says why once");
+        string host = File.ReadAllText(System.IO.Path.Combine(ModScripts(), "Ui", "World", "WorldHost.cs"));
+        Check(host.Contains("bool write = UiFonts.CanDraw;") && host.Contains("_prompt.Frame(frame, write && ") && host.Contains("_building.Frame(frame, write && ") && host.Contains("_noFaceSaid = true;"),
+            "world host: the door box and the building's panel stay the game's own until the kit has a font to write with, and Player.log says so once");
     }
 }

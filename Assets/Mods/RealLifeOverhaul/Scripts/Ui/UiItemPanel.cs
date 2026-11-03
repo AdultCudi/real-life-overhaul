@@ -38,30 +38,53 @@ namespace RealLifeOverhaul.Ui
         public UiInfoRow[] Facts = new UiInfoRow[0];           // the parking zone, the unpaid total, what the game's panel adds
         public string CargoLabel, CargoValue;
         public UiCatalogueCard[] Cargo = new UiCatalogueCard[0];   // a tile each stack: its picture, its count as the figure
-        public int CargoSlots;                                 // the slots there are, the empty ones drawn as empty tiles
+        public int CargoSlots;                                 // the slots there are: said as "1 of 10", the empty ones never drawn
         public UiItemAction[] Actions = new UiItemAction[0];
         public string More;                                    // another mod's button in the game's panel: opens the game's own view; null for none
         public bool Hidden;                                    // the game has the panel faded out (a menu over the world): nothing is drawn
+        public float AvoidX, AvoidY, AvoidW, AvoidH;           // px of the layout: the mod's minimap card, kept clear of; 0 wide for none
     }
 
     /// <summary>
     /// The item panel (the game's ItemPanelUI): a compact info panel docked at the bottom left above the status bar for the
     /// thing in hand or the vehicle: its strip, its picture with its name, state and whose it is, a vehicle's readings
-    /// (fuel, condition, the mod's speed and what the car needs) as meters with their glyphs, its cargo as a row of
-    /// tiles, and the game's actions with the game's own key caps. The HUD takes no key: the game answers its keys, the
+    /// (fuel, condition, the mod's speed and what the car needs) as meters with their glyphs, its cargo as a tile a stack
+    /// under how many of its slots are used, and the game's actions with the game's own key caps. It is as wide as what it
+    /// holds needs (narrower with no readings) and keeps clear of the mod's minimap card. The HUD takes no key: the game answers its keys, the
     /// pointer presses the rest. Commands from <see cref="ActionCommand"/>. Game-free. Cost: a layout a change.
     /// </summary>
     public static class UiItemPanel
     {
         public const int ActionCommand = 620, CargoCommand = 621, MoreCommand = 622;
         public static readonly int[] Commands = { ActionCommand, CargoCommand, MoreCommand };
-        public const float Width = UiInfoPanel.Width;
+        public const float Width = UiInfoPanel.Width;   // px: with a vehicle's readings
+        public const float Narrow = 360f;               // px: a thing in hand, its name, its cargo and its buttons
+
+        /// <summary>The panel's width: the info panel's with readings or facts to show, narrower for a thing in hand.</summary>
+        public static float WidthOf(UiItemPanelModel m) => m.Readings.Length > 0 || m.Facts.Length > 0 ? Width : Narrow;
         private const float HeadH = UiTokens.S16 + UiTokens.S4;
         private const float PicW = UiTokens.S16 + UiTokens.S6, PicH = UiTokens.S12;
         private const float ReadingH = UiTokens.PairRow + UiTokens.S1;
         private const float LabelW = 96f, ValueW = 112f;
-        private const float CargoTile = UiTokens.S12;
-        private const int CargoAcross = 8;
+        private const float CargoTile = UiTokens.S12 + UiTokens.S2;   // px: a stack's tile, its picture big enough to tell
+        private const int CargoAcross = 8;   // tiles a row at most; fewer, wider ones when a count needs the room
+
+        // Tiles a row: as many as stand at least as wide as they are high, fewer where the widest count needs the room
+        // ("$3,009"), never under four.
+        private static int Across(UiItemPanelModel m)
+        {
+            float need = 0f;
+            for (int i = 0; i < m.Cargo.Length; i++)
+            {
+                if (!string.IsNullOrEmpty(m.Cargo[i].Figure))
+                {
+                    need = Math.Max(need, UiDraw.Snap(UiTextRules.Width(m.Cargo[i].Figure, UiStyle.SmallStrong) + UiTokens.S2) + UiTokens.S1 * 2f);
+                }
+            }
+            float iw = WidthOf(m) - UiTokens.S4 * 2f;
+            int fit = (int)((iw + UiTokens.S2) / (Math.Max(need, CargoTile) + UiTokens.S2));
+            return Math.Max(4, Math.Min(CargoAcross, fit));
+        }
 
         public static float Height(UiItemPanelModel m)
         {
@@ -74,16 +97,14 @@ namespace RealLifeOverhaul.Ui
             {
                 h += UiTokens.S2 * 2f + (m.Readings.Length > 0 ? UiTokens.PairRow + m.Readings.Length * ReadingH : 0f) + m.Facts.Length * UiTokens.PairRow + UiTokens.S1;
             }
-            int slots = Math.Max(m.CargoSlots, m.Cargo.Length);
-            if (slots > 0)
+            if (Math.Max(m.CargoSlots, m.Cargo.Length) > 0)
             {
-                int rows = (slots + CargoAcross - 1) / CargoAcross;
-                h += UiTokens.S2 * 2f + UiTokens.PairRow + UiTokens.S2 + rows * CargoTile + (rows - 1) * UiTokens.S2 + UiTokens.S1;
+                h += CargoHeight(m) + UiTokens.S1;
             }
             int actions = m.Actions.Length + (string.IsNullOrEmpty(m.More) ? 0 : 1);
             if (actions > 0)
             {
-                int rows = ActionRows(m, Width - UiTokens.S4 * 2f);
+                int rows = ActionRows(m, WidthOf(m) - UiTokens.S4 * 2f);
                 h += UiTokens.S3 + rows * UiTokens.Control + (rows - 1) * UiTokens.S2 + UiTokens.S3;
             }
             else
@@ -103,22 +124,36 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
-            float h = Height(m);
-            Draw(s, m, UiTokens.S4, UiDraw.SnapDown(frame.BandY - UiTokens.S4 - h));
+            float h = Height(m), w = WidthOf(m);
+            float x = UiTokens.S4, y = UiDraw.SnapDown(frame.BandY - UiTokens.S4 - h);
+            if (m.AvoidW > 0f && m.AvoidH > 0f && UiHudRules.Overlaps(x, y, w, h, m.AvoidX, m.AvoidY, m.AvoidW, m.AvoidH))
+            {
+                // The minimap's card stands there: beside it at the same foot, or over it where the screen is too narrow.
+                float beside = UiDraw.Snap(m.AvoidX + m.AvoidW + UiTokens.S2);
+                if (beside + w <= frame.Width - UiTokens.S4)
+                {
+                    x = beside;
+                }
+                else
+                {
+                    y = Math.Max(UiTokens.S4, UiDraw.SnapDown(m.AvoidY - UiTokens.S2 - h));
+                }
+            }
+            Draw(s, m, x, y);
         }
 
         public static float Draw(UiScene s, UiItemPanelModel m, float x, float y)
         {
-            float h = Height(m);
-            int panel = UiDraw.Box(s, UiAt.Screen, x, y, Width, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
+            float h = Height(m), w = WidthOf(m);
+            int panel = UiDraw.Box(s, UiAt.Screen, x, y, w, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt on = UiAt.Screen.In(panel);
-            float cy = UiDraw.TitleStrip(s, on, x, y, Width, m.Icon, m.Title, false);
-            cy = Head(s, on, m, x, cy);
-            float ix = x + UiTokens.S4, iw = Width - UiTokens.S4 * 2f;
+            float cy = UiDraw.TitleStrip(s, on, x, y, w, m.Icon, m.Title, false);
+            cy = Head(s, on, m, x, cy, w);
+            float ix = x + UiTokens.S4, iw = w - UiTokens.S4 * 2f;
             if (m.Readings.Length > 0 || m.Facts.Length > 0)
             {
                 float rh = UiTokens.S2 * 2f + (m.Readings.Length > 0 ? UiTokens.PairRow + m.Readings.Length * ReadingH : 0f) + m.Facts.Length * UiTokens.PairRow;
-                UiDraw.Band(s, on, x, cy, Width, rh);
+                UiDraw.Band(s, on, x, cy, w, rh);
                 float ry = cy + UiTokens.S2;
                 if (m.Readings.Length > 0)
                 {
@@ -135,23 +170,22 @@ namespace RealLifeOverhaul.Ui
                 }
                 cy += rh + UiTokens.S1;
             }
-            int slots = Math.Max(m.CargoSlots, m.Cargo.Length);
-            if (slots > 0)
+            if (Math.Max(m.CargoSlots, m.Cargo.Length) > 0)
             {
-                cy = Cargo(s, on, m, slots, x, cy);
+                cy = Cargo(s, on, m, x, cy, w);
             }
             Actions(s, on, m, ix, cy + UiTokens.S3, iw);
             return y + h;
         }
 
         // The thing's picture on a tile, its name over its state, and whose it is as a chip at the right.
-        private static float Head(UiScene s, UiAt at, UiItemPanelModel m, float x, float y)
+        private static float Head(UiScene s, UiAt at, UiItemPanelModel m, float x, float y, float w)
         {
             float ix = x + UiTokens.S4, py = y + (HeadH - PicH) / 2f;
             int tile = UiDraw.Box(s, at, ix, py, PicW, PicH, UiRole.Tile, UiRole.None, UiTokens.RadiusLarge);
             var card = new UiCatalogueCard { Picture = m.Picture, Aspect = m.Aspect, Icon = m.Glyph };
             UiCatalogue.Picture(s, at.In(tile), ref card, ix, py, PicW, PicH, UiTokens.S6);
-            float tx = ix + PicW + UiTokens.S3, right = x + Width - UiTokens.S4;
+            float tx = ix + PicW + UiTokens.S3, right = x + w - UiTokens.S4;
             if (!string.IsNullOrEmpty(m.Owner))
             {
                 float cw = UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(m.Owner, UiStyle.SmallStrong) + UiTokens.S1);
@@ -185,30 +219,32 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // The cargo: a tile a stack, its picture and its count, the empty slots as empty tiles; a stack's tile takes it out.
-        private static float Cargo(UiScene s, UiAt at, UiItemPanelModel m, int slots, float x, float y)
+        // The cargo's band: its line ("1 of 10") and a row of tiles for the stacks held; the empty slots are said, not drawn.
+        private static float CargoHeight(UiItemPanelModel m)
         {
-            float ix = x + UiTokens.S4, iw = Width - UiTokens.S4 * 2f;
-            int rows = (slots + CargoAcross - 1) / CargoAcross;
-            float ch = UiTokens.S2 * 2f + UiTokens.PairRow + UiTokens.S2 + rows * CargoTile + (rows - 1) * UiTokens.S2;
-            UiDraw.Band(s, at, x, y, Width, ch);
+            int stacks = m.Cargo.Length, across = Across(m), rows = (stacks + across - 1) / across;
+            return UiTokens.S2 * 2f + UiTokens.PairRow + (stacks > 0 ? UiTokens.S2 + rows * CargoTile + (rows - 1) * UiTokens.S2 : 0f);
+        }
+
+        // The cargo: a tile a stack, its picture and its count; a stack's tile takes it out.
+        private static float Cargo(UiScene s, UiAt at, UiItemPanelModel m, float x, float y, float w)
+        {
+            float ix = x + UiTokens.S4, iw = w - UiTokens.S4 * 2f;
+            int slots = m.Cargo.Length, across = Across(m);
+            float ch = CargoHeight(m);
+            UiDraw.Band(s, at, x, y, w, ch);
             float ry = y + UiTokens.S2;
             ry += UiDraw.SectionRow(s, at, ix, ry, iw, m.CargoLabel, m.CargoValue, false, -1, 0);
             ry += UiTokens.S2;
-            float tw = UiDraw.SnapDown((iw - UiTokens.S2 * (CargoAcross - 1)) / CargoAcross);
+            float tw = UiDraw.SnapDown((iw - UiTokens.S2 * (across - 1)) / across);
             int first = s.NodeCount;
             for (int i = 0; i < slots; i++)
             {
-                float tx = ix + (i % CargoAcross) * (tw + UiTokens.S2), ty = ry + (i / CargoAcross) * (CargoTile + UiTokens.S2);
-                if (i >= m.Cargo.Length)
-                {
-                    UiDraw.Box(s, at, tx, ty, tw, CargoTile, UiRole.Track, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
-                    continue;
-                }
+                float tx = ix + (i % across) * (tw + UiTokens.S2), ty = ry + (i / across) * (CargoTile + UiTokens.S2);
                 ref UiCatalogueCard c = ref m.Cargo[i];
                 int face = UiDraw.Box(s, at, tx, ty, tw, CargoTile, UiRole.Tile, UiRole.None, UiTokens.RadiusLarge);
                 UiAt inside = at.In(face);
-                UiCatalogue.Picture(s, inside, ref c, tx, ty, tw, CargoTile, UiTokens.S6);
+                UiCatalogue.Picture(s, inside, ref c, tx, ty, tw, CargoTile, UiTokens.S8);
                 if (!string.IsNullOrEmpty(c.Figure))
                 {
                     float fw = Math.Min(tw - UiTokens.S1 * 2f, UiDraw.Snap(UiTextRules.Width(c.Figure, UiStyle.SmallStrong) + UiTokens.S2));

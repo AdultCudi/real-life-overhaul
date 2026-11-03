@@ -30,11 +30,14 @@ public static partial class UiPreviewRunner
         screens.Add(World("world_bus_stop", "02.jpg", (s, f, d, k) => UiSamples.WorldPromptScene(s, f, d, k, English, UiSamples.WorldBusStop(English, k), 0.7f, 0.62f),
             UiPromptCard.ActionCommand, 0, "DD"));
         screens.Add(new Screen { Name = "world_desk", AppName = "Front desk", Icon = UiIcon.ShieldCheck, Backdrop = "05.jpg",
-            Lay = (s, f, d, k) => UiSamples.WorldPickerScene(s, f, d, k, UiSamples.WorldDesk(English, false), false), HoverCommand = UiPicker.EntryCommand, HoverArg = 2,
+            Lay = (s, f, d, k) => UiSamples.WorldPickerScene(s, f, d, k, UiSamples.WorldDesk(English, false)), HoverCommand = UiPicker.EntryCommand, HoverArg = 2,
             Walk = Moves("DDDDDDDDU") });
         screens.Add(new Screen { Name = "world_custody", AppName = "Holding cell", Icon = UiIcon.ShieldCheck, Backdrop = "03.jpg",
-            Lay = (s, f, d, k) => UiSamples.WorldPickerScene(s, f, d, k, UiSamples.WorldCustody(English), true, true), HoverCommand = UiPicker.EntryCommand, HoverArg = 2,
+            Lay = (s, f, d, k) => UiSamples.WorldPickerScene(s, f, d, k, UiSamples.WorldCustody(English), true), HoverCommand = UiPicker.EntryCommand, HoverArg = 2,
             Walk = Moves("DDDU") });
+        screens.Add(new Screen { Name = "world_custody_file", AppName = "Holding cell", Icon = UiIcon.ShieldCheck, Backdrop = "03.jpg",
+            Lay = (s, f, d, k) => UiSamples.WorldPickerScene(s, f, d, k, UiSamples.WorldCustody(English, true), true), HoverCommand = UiPicker.SecondCommand, HoverArg = 0,
+            Walk = Moves("DD") });
         screens.Add(new Screen { Name = "world_job_offer", AppName = "Job offer", Icon = UiIcon.Briefcase, Backdrop = "05.jpg",
             Lay = (s, f, d, k) => UiSamples.WorldOfferScene(s, f, d, k, English, false), HoverCommand = UiOfferCard.GoCommand, Walk = Moves("RL") });
         screens.Add(World("world_longest_door", "13.jpg", (s, f, d, k) => UiSamples.WorldPromptScene(s, f, d, k, BizGerman, UiSamples.WorldGameDoor(BizGerman, k), 0.62f, 0.58f),
@@ -67,7 +70,7 @@ public static partial class UiPreviewRunner
         screens.Add(World("world_preview_terminal", "03.jpg", (s, f, d, k) => UiSamples.WorldTerminalScene(s, f, d, k, English, 4, false), UiToolPanel.LineCommand, 5, "DDDDR"));
         screens.Add(World("world_preview_terminal_open", "03.jpg", (s, f, d, k) => UiSamples.WorldTerminalScene(s, f, d, k, English, 3, true), UiToolPanel.OptionCommand, 1, "DD"));
         screens.Add(World("world_building_preview", "13.jpg", (s, f, d, k) => UiSamples.WorldPreviewScene(s, f, d, k, English, false), UiToolPanel.SecondCommand, 0, "R"));
-        screens.Add(World("world_colour_picker", "11.jpg", (s, f, d, k) => UiSamples.WorldColourScene(s, f, d, k, English), UiToolPanel.LineCommand, 0, "L"));
+        screens.Add(World("world_colour_picker", "11.jpg", (s, f, d, k) => UiSamples.WorldColourScene(s, f, d, k, English, true), UiToolPanel.LineCommand, 0, "L"));
     }
 
     // A world piece over its street, the HUD's bar under it: the mouse resting on one of its targets, the pad's walk from its first.

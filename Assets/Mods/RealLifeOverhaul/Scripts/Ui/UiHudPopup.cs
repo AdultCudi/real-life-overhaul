@@ -77,13 +77,37 @@ namespace RealLifeOverhaul.Ui
             y = UiDraw.SnapDown(bandY - UiTokens.S2 - Height(m));
         }
 
-        /// <summary>Lays the popups over the bar, the first over its button and each next one to the right of the one before.</summary>
+        /// <summary>
+        /// Lays the popups over the bar, each over its own button. Two over buttons side by side cannot both centre on theirs:
+        /// they stand as a pair centred on the middle of their buttons, so each still rises over its own, the earlier at the
+        /// left, never one pushed off to the right of the other.
+        /// </summary>
         public static void LayAll(UiScene s, UiAt at, UiHudPopupModel[] popups, int count, float frameWidth, float bandY)
         {
+            count = Math.Min(count, popups.Length);
             float edge = 0f;
-            for (int i = 0; i < count && i < popups.Length; i++)
+            bool meet = false;
+            if (count > 1)
+            {
+                float sum = 0f;
+                for (int i = 0; i < count; i++)
+                {
+                    sum += popups[i].AnchorX;
+                    meet |= i > 0 && popups[i].AnchorX - popups[i - 1].AnchorX < Width + UiTokens.S2;
+                }
+                if (meet)
+                {
+                    float all = count * Width + (count - 1) * UiTokens.S2;
+                    edge = Math.Max(UiHud.Left, Math.Min(frameWidth - UiHud.Left - all, sum / count - all / 2f));
+                }
+            }
+            for (int i = 0; i < count; i++)
             {
                 Place(popups[i], frameWidth, bandY, edge, out float x, out float y);
+                if (meet)
+                {
+                    x = UiDraw.SnapDown(edge);   // the pair's own place, not each centred on its button
+                }
                 Lay(s, at, popups[i], i, x, y);
                 edge = x + Width + UiTokens.S2;
             }
