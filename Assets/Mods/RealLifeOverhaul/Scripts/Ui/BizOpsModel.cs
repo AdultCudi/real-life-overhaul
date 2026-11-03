@@ -29,7 +29,7 @@ namespace RealLifeOverhaul.Ui
         public float Share;         // a slider's place, 0 to 1
         public bool On;             // a switch's state
         public bool Held;           // a slider held to take Left and Right
-        public bool Typing;         // a field typed into now
+        public bool Typing;         // shows its caret (a sample: the host says so itself while it types)
         public bool CanLess, CanMore;
         public bool Disabled;       // the game holds it now (Going Public's locks, a plan without a manager)
         public bool Right;          // laid in the form's right column

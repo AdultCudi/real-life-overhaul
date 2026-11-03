@@ -31,9 +31,10 @@ namespace RealLifeOverhaul.Ui
         public const string Social = "uiscreens_social";  // Flare, once the apps section is full (ten rows)
         public const string Tools = "uiscreens_tools";    // the world's smaller windows: the private driver, the items list, a sign's look and the like
         public const string Life = "uiscreens_life";      // the Planner, the Calendar, the Camera, the Gallery and the viewfinder
+        public const string Money = "uiscreens_money";    // Finance, Banks, Your bank and Utilities
 
         /// <summary>Every section, in the page's order; a section with no switch yet is left off the page.</summary>
-        public static readonly string[] Sections = { Apps, Business, Market, Boxes, Hud, Tools, Activity, Buy, Pause, Life, Social, Help };
+        public static readonly string[] Sections = { Apps, Business, Market, Boxes, Hud, Tools, Activity, Buy, Pause, Life, Social, Help, Money };
 
         private static readonly UiScreenDef[] Switched = Gather();
         private static readonly bool[] Values = Fill(Switched.Length);

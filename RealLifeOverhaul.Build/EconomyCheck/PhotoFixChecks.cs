@@ -30,6 +30,8 @@ internal static partial class Program
         PhotoWaysOut();
         PhotoWholeLoads();
         PhotoFullWords();
+        CameraPageChecks();
+        CameraTakenWords();
         PhotoNameFree(System.IO.Path.Combine(scratch, "free"));
     }
 

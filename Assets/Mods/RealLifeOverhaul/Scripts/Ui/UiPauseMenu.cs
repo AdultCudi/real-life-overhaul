@@ -353,9 +353,10 @@ namespace RealLifeOverhaul.Ui
             float pen = UiTokens.Icon;
             bool typed = !string.IsNullOrEmpty(m.Name);
             // The words end clear of the pencil: cut here so the field's own room never runs under it.
-            string words = typed && !m.Typing ? UiTextRules.Cut(m.Name, UiStyle.Body, w - UiTokens.S4 * 2f - pen - UiTokens.S2) : m.Name;
-            int field = UiDraw.TextField(s, at, x, y, w, words, m.NamePlaceholder, NameCommand, 0, m.NameDisabled, m.Typing);
-            if (!m.Typing)
+            bool typing = m.Typing || UiDraw.Typing(s, NameCommand, 0);
+            string words = typed && !typing ? UiTextRules.Cut(m.Name, UiStyle.Body, w - UiTokens.S4 * 2f - pen - UiTokens.S2) : m.Name;
+            int field = UiDraw.TextField(s, at, x, y, w, words, m.NamePlaceholder, NameCommand, 0, m.NameDisabled, typing);
+            if (!typing)
             {
                 int face = s.Nodes[field].Face;
                 UiDraw.Icon(s, at.In(face), x + w - UiTokens.S3 - pen, y + (UiTokens.Control - pen) / 2f, pen, UiIcon.Pencil, m.NameDisabled ? UiRole.Muted : UiRole.Text2,

@@ -81,6 +81,8 @@ internal static partial class Program
             "the district save joins the report's text, written on a worker beside its section"),
         ("World/MapLinks.cs", "Feed", new[] { "apply: false", "Category.Show()" }, new string[0],
             "a batch of markers is shown once, not once a marker (the row's markers were gone over for each)"),
+        ("DaySeries/DaySeriesDirector.cs", "OnDay", new[] { "DaySpread.Shared.Add(", "_dayStep", "Time.frameCount" }, new[] { "Record(", "CashFlow" },
+            "the day's figures are queued at midnight, not read: yesterday's movements are read in the frames after"),
         ("Population/PopulationDirector.cs", "BeginDay", new[] { "DaySpread.Shared.Flush(this)", "DaySpread.Shared.Add(", "_dayStep", "Time.frameCount" },
             new[] { "ReadSeeds(", "_sim.Step(", "RunAll(" }, "the city's day is queued at midnight, not lived: a day still owed is finished first, the businesses are read in the frames after"),
         ("Population/PopulationDirector.cs", "DayStep", new[] { "WorkSlice.Of(StepMs", "_sim.Step(ref slice)", "ReadSeeds(" }, new[] { "WorkSlice.Whole", "RunAll(" },

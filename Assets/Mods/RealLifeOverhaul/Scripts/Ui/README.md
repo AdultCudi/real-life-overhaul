@@ -59,8 +59,11 @@ mixed with a few other games: the owner's choice of 1 November 2026. The rules a
 
    When a screen needs something no template has, add it to the kit as a reusable piece (a block, a component), with
    its sample and its checks, never as a one-off drawn in the screen.
-3. **A runner**: a class implementing `IUiScreen` (and `IUiTyping` for a search) that owns the model and answers the
-   presses. Register it in `UiScreens` with its template (`UiTemplate` names each one) and every key it labels with,
+3. **A runner**: a class implementing `IUiScreen` (and `IUiTyping` for a search or any field of words) that owns the
+   model and answers the presses. The host blinks the caret of the field that takes the keys: draw every field with the
+   kit's `TextField`, `Search`, `Composer` or `Stepper` and give its target the command `IUiTyping` names, and the caret
+   needs nothing from the screen (`UiScene.TypingCommand`, `UiDraw.Typing`; EconomyCheck's caret check lists each typing
+   screen and fails one it does not know). Register it in `UiScreens` with its template (`UiTemplate` names each one) and every key it labels with,
    in its area's file, `UiScreens.<Area>.cs` (`UiScreens.Contacts.cs`, `UiScreens.Kit.cs`, `UiScreens.Pages.cs`).
 4. **Samples**: add the screen's sample to its area's `RealLifeOverhaul.Build/UiPreview/UiSamples.<Area>.cs` (the
    first screens' are in `UiSamples.cs`, the prototype's in `UiSamples.Cs2.cs`), so EconomyCheck lays it out in every
@@ -131,7 +134,7 @@ Use these, and never draw a part of your own. All are in `UiDraw.Chrome.cs` unle
   `Slider` keeps its two lines and the same track), `Stepper` (the game's AmountSelector: minus, the typed figure,
   plus, each end greyed), `Switch` (the game's Toggle, its state in words, flush with the column's right edge),
   `CheckLine` (a requirement met or not, read only), `TextField` (the game's input field; typing through the host, its
-  caret shown while typed in) and `KeyBinding` (the bound key on its cap, or "Press a key" while it waits). Use them for
+  caret shown and blinking while typed in) and `KeyBinding` (the bound key on its cap, or "Press a key" while it waits). Use them for
   any setting or form; not for an action (a `Button`) or a page's sections (the window's sidebar or tabs). A screen
   whose held slider steps with Left and Right implements `IUiStepping` (`IUiStepping.cs`); the host gives it the step
   instead of a focus move only while it says the control is held, so the d-pad still crosses a page of controls.

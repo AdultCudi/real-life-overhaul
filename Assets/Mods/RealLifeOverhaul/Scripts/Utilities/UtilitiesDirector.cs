@@ -31,6 +31,26 @@ namespace RealLifeOverhaul.Utilities
         public static IModLogger Logger;
         public static UtilitiesDirector Instance { get; private set; }
 
+        /// <summary>The kit's dig: the first district that is not started, through the company's own order.</summary>
+        public bool KitDig()
+        {
+            BroadbandCompany company = Company;
+            Network network = company != null ? company.Network : null;
+            if (network == null || !network.Running)
+            {
+                return false;
+            }
+            int day = UtilitiesGame.Today;
+            for (int i = 0; i < Network.Districts; i++)
+            {
+                if (!network.Open(i, day) && !network.Digging(i))
+                {
+                    return company.Build(i, out _);
+                }
+            }
+            return false;
+        }
+
         /// <summary>True while the office's panel is up, or its button was pressed this frame.</summary>
         public static bool TakesInteractKey => Instance != null && Instance._door != null && Instance._door.TakesKey;
 
@@ -734,15 +754,19 @@ namespace RealLifeOverhaul.Utilities
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new UtilitiesApp(this);
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_util_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(), new Color32(250, 205, 90, 255), new Color32(40, 120, 150, 255), 0.42f, "AppIcon-Utilities"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out bool tryAgain);
+                Closed = view.Closed,
+                Kit = () => new RealLifeOverhaul.Ui.UtilitiesScreen(RealLifeOverhaul.Ui.MoneyLive.UtilitiesLive),
+                KitScreen = RealLifeOverhaul.Ui.UtilitiesScreen.ScreenId,
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Globe
+            };
+            _app = PhoneApp.Install(def, out bool tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -754,6 +778,7 @@ namespace RealLifeOverhaul.Utilities
                 return;
             }
             _view = view;
+            RealLifeOverhaul.Ui.UiShell.Face(_app, def);   // the kit's face over the app, once its switch is on (Ui/Shell/UiShell.Tick)
         }
 
         private static Sprite Glyph()

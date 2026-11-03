@@ -18933,7 +18933,7 @@
   "reallife_phonecam_latest": "Je nieuwste foto: {taken}",
   "reallife_gallery_row_count": "Foto's",
   "reallife_gallery_count_of": "{count} van {cap}",
-  "reallife_gallery_taken": "Dag {day}, {hour} ({real})",
+  "reallife_gallery_taken": "Dag {day}, {hour}",
   "reallife_gallery_tab_all": "Alle foto's",
   "reallife_gallery_tab_selfies": "Selfies",
   "reallife_gallery_place": "{place} van {count}",

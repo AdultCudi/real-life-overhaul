@@ -114,12 +114,12 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public struct UiMark
     {
-        private int _items, _nodes, _clips, _lists, _prompts, _focus;
+        private int _items, _nodes, _clips, _lists, _prompts, _focus, _caret;
 
         /// <summary>The scene as it stands now.</summary>
         public static UiMark Of(UiScene s) => new UiMark
         {
-            _items = s.ItemCount, _nodes = s.NodeCount, _clips = s.ClipCount, _lists = s.ListCount, _prompts = s.PromptCount, _focus = s.FocusFirst
+            _items = s.ItemCount, _nodes = s.NodeCount, _clips = s.ClipCount, _lists = s.ListCount, _prompts = s.PromptCount, _focus = s.FocusFirst, _caret = s.CaretItem
         };
 
         /// <summary>Takes away everything laid since the mark.</summary>
@@ -131,6 +131,7 @@ namespace RealLifeOverhaul.Ui
             s.ListCount = _lists;
             s.PromptCount = _prompts;
             s.FocusFirst = _focus;
+            s.CaretItem = _caret;
         }
     }
 
@@ -160,6 +161,9 @@ namespace RealLifeOverhaul.Ui
         public bool Floats;              // the page floats over the world (a docked panel, a card, the phone), never meant to fill the screen
         public bool Held;                // something of the kit's stands over it with the keys (a box, All apps): its buttons show no key caps
         public string Name;              // the screen's id, for the checks' messages
+        public int TypingCommand = -1;   // the field that takes the keys now: its target's command and argument, set by the host before a layout (or -1 for none)
+        public int TypingArg = -1;
+        public int CaretItem = -1;       // the caret drawn in that field this layout, for the host to blink (UiView.SetCaret), or -1
         public float PromptX, PromptY, PromptW, PromptH;   // where the prompt bar stands
 
         /// <summary>Empties the scene for a new layout at a size, keeping its arrays.</summary>
@@ -172,6 +176,7 @@ namespace RealLifeOverhaul.Ui
             ItemCount = NodeCount = ClipCount = ListCount = PromptCount = 0;
             FocusFirst = -1;
             FocusReset = false;
+            CaretItem = -1;
             Pointer = false;
             Floats = false;
             Held = false;

@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Ui
         public bool HasField;                        // a text box: one field of words
         public string Field;                         // its words
         public string Placeholder;                   // what it asks for while empty
-        public bool Typing;                          // the field takes the keys now: a caret shows where the words go
+        public bool Typing;                          // the field takes the keys now: a caret shows where the words go (the host says so itself while it types; this is for a sample)
         public int Focus = -1;                       // the button the keys start on (a negative box: the way back), or -1 for the first target
         public int BodyLines = 8;                    // how far a long body wraps before it ends at a whole word (the mod's long notes take more)
         public UiActionModel[] Buttons = new UiActionModel[0];   // the way back first, the confirming one last
@@ -37,7 +37,6 @@ namespace RealLifeOverhaul.Ui
         public const int ButtonCommand = 1, CheckCommand = 2, FieldCommand = 3;
         public const float Width = 640f;      // px: the card, as wide as a long sentence reads in one sweep
         private const float Emblem = 56f;     // px: the emblem's tile
-        private const float CaretWidth = 2f;  // px: the field's caret
         private const int TitleLines = 2;     // a long translation of a header takes a second line, never a cut word
 
         // The header's height: one line, or two for a long translation.
@@ -158,15 +157,15 @@ namespace RealLifeOverhaul.Ui
             float h = UiTokens.Control;
             bool empty = string.IsNullOrEmpty(m.Field);
             int face = UiDraw.Box(s, at, x, y, w, h, UiRole.Field, UiRole.None, UiTokens.RadiusMedium);   // as the search field: the ring alone says where the keys are
-            float lead = m.Typing && empty ? UiTokens.S2 : 0f;   // the caret before the words it asks for, not over their first letter
-            UiDraw.TextMiddle(s, at.In(face), x + UiTokens.S4 + lead, y, h, w - UiTokens.S4 * 2f - lead, UiStyle.Body, empty ? UiRole.Muted : UiRole.Text,
-                empty ? m.Placeholder : m.Field, UiFlags.Truncate | (empty ? UiFlags.Label : UiFlags.None));
-            if (m.Typing)
+            bool caret = m.Typing || UiDraw.Typing(s, FieldCommand, 0);
+            float tx = x + UiTokens.S4, room = w - UiTokens.S4 * 2f;
+            float lead = caret && empty ? UiDraw.CaretRoom : 0f;   // the caret before the words it asks for, not over their first letter
+            string shown = caret && !empty ? UiDraw.Typed(m.Field, UiStyle.Body, room) : empty ? m.Placeholder : m.Field;
+            UiDraw.TextMiddle(s, at.In(face), tx + lead, y, h, room - lead, UiStyle.Body, empty ? UiRole.Muted : UiRole.Text, shown,
+                UiFlags.Truncate | (empty ? UiFlags.Label : UiFlags.None));
+            if (caret)
             {
-                // The caret: a thin cyan line where the next letter goes, as a game's own field shows it takes the keys.
-                float cx = x + UiTokens.S4 + Math.Min(empty ? 0f : UiTextRules.Width(m.Field, UiStyle.Body) + UiTokens.S1 / 2f, w - UiTokens.S4 * 2f);
-                float ch = UiTokens.Icon;
-                UiDraw.Box(s, at.In(face), cx, y + (h - ch) / 2f, CaretWidth, ch, UiRole.Accent, UiRole.None, 0f, UiFlags.Decor);
+                UiDraw.CaretAfter(s, at.In(face), tx, y, h, empty ? null : shown, UiStyle.Body, room);   // a thin cyan line where the next letter goes
             }
             UiDraw.Node(s, at, x, y, w, h, FieldCommand, 0, face);
             return h;

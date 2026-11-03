@@ -171,6 +171,14 @@ namespace RealLifeOverhaul.Ui
             bool hint = string.IsNullOrEmpty(figure) && !string.IsNullOrEmpty(placeholder);   // an empty field says what to type, as a text field's hint
             TextMiddle(s, at.In(field), fx + UiTokens.S2, y, h, fw - UiTokens.S4, hint ? UiStyle.Body : UiStyle.BodyStrong, disabled || hint ? UiRole.Muted : UiRole.Text,
                 hint ? placeholder : figure, UiFlags.Centre | UiFlags.Truncate | (disabled ? UiFlags.Disabled : UiFlags.None));
+            if (!disabled && Typing(s, typeCommand, arg))
+            {
+                // The figure is centred: the caret stands after its last digit, or before the hint of an empty field.
+                float room = fw - UiTokens.S4, words = hint ? UiTextRules.Width(placeholder, UiStyle.Body) : UiTextRules.Width(figure, UiStyle.BodyStrong);
+                words = Math.Min(words, Math.Max(0f, room - CaretWidth - CaretGap));
+                float left = fx + UiTokens.S2 + (room - words) / 2f;
+                Caret(s, at.In(field), figure == null || figure.Length == 0 ? left - CaretWidth - CaretGap : left + words + CaretGap, y, h, UiStyle.BodyStrong);
+            }
             int node = Node(s, at, fx, y, fw, h, typeCommand, arg, field, disabled);
             StepKey(s, at, x + w - StepButton, by, UiIcon.Plus, moreCommand, arg, disabled || !canMore);
             return node;
@@ -208,19 +216,15 @@ namespace RealLifeOverhaul.Ui
             float h = UiTokens.Control;
             int face = Box(s, at, x, y, w, h, UiRole.Field, UiRole.None, UiTokens.RadiusLarge, disabled ? UiFlags.Disabled : UiFlags.None);
             bool typed = !string.IsNullOrEmpty(text);
-            float room = w - UiTokens.S4 * 2f - (typing ? UiTokens.S2 : 0f);
-            bool caret = typing && !disabled;
-            float tw = caret ? (typed ? Math.Min(room, UiTextRules.Width(text, UiStyle.Body) + UiTokens.S1) : 0f) : room;   // typed words end where the caret stands
-            if (tw > 0f)
-            {
-                TextMiddle(s, at.In(face), x + UiTokens.S4, y, h, tw, UiStyle.Body, typed && !disabled ? UiRole.Text : UiRole.Muted, typed ? text : placeholder,
-                    (typed ? UiFlags.Truncate : UiFlags.Label | UiFlags.Truncate) | (disabled ? UiFlags.Disabled : UiFlags.None));
-            }
+            bool caret = !disabled && (typing || Typing(s, command, arg));
+            float tx = x + UiTokens.S4, room = w - UiTokens.S4 * 2f;
+            float lead = caret && !typed ? CaretRoom : 0f;   // the caret before the placeholder, not over its first letter
+            string shown = caret && typed ? Typed(text, UiStyle.Body, room) : typed ? text : placeholder;   // typed words end where the caret stands
+            TextMiddle(s, at.In(face), tx + lead, y, h, room - lead, UiStyle.Body, typed && !disabled ? UiRole.Text : UiRole.Muted, shown,
+                (typed ? UiFlags.Truncate : UiFlags.Label | UiFlags.Truncate) | (disabled ? UiFlags.Disabled : UiFlags.None));
             if (caret)
             {
-                // The caret after the words while they are typed, as the game's own field shows where the next letter goes.
-                float cx = x + UiTokens.S4 + tw;
-                Box(s, at.In(face), cx, y + (h - UiTokens.Icon) / 2f, UiTokens.Hairline * 2f, UiTokens.Icon, UiRole.Accent, UiRole.None, 0f, UiFlags.Share | UiFlags.Middle);
+                CaretAfter(s, at.In(face), tx, y, h, typed ? shown : null, UiStyle.Body, room);   // where the next letter goes, as the game's own field shows
             }
             return Node(s, at, x, y, w, h, command, arg, face, disabled);
         }

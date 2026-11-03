@@ -36,6 +36,7 @@ internal static partial class Program
         UiSourceChecks();
         UiBindChecks();
         UiHostChecks();
+        UiCaretChecks();
         UiTextKeys();
         UiTimings();
         Console.WriteLine("  Interface kit: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");

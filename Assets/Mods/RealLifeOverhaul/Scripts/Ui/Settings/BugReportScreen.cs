@@ -96,7 +96,6 @@ namespace RealLifeOverhaul.Ui
             _model.Where = _where;
             _model.WhereOptions = new[] { _detected, T("reallife_bug_where_city") };
             _model.WhereChosen = _where == T("reallife_bug_where_city") && _detected != _where ? 1 : 0;
-            _model.Typing = _field;
             _model.Checks = new[]
             {
                 new UiReportCheck { Text = T("reallife_bug_log_line").Replace("{size}", Size(_bytes)), Met = true },

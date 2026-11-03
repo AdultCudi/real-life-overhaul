@@ -18933,7 +18933,7 @@
   "reallife_phonecam_latest": "Ваше новое фото: {taken}",
   "reallife_gallery_row_count": "Фото",
   "reallife_gallery_count_of": "{count} из {cap}",
-  "reallife_gallery_taken": "День {day}, {hour} ({real})",
+  "reallife_gallery_taken": "День {day}, {hour}",
   "reallife_gallery_tab_all": "Все фото",
   "reallife_gallery_tab_selfies": "Селфи",
   "reallife_gallery_place": "{place} из {count}",

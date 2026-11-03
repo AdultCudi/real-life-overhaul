@@ -39,6 +39,21 @@ public static partial class UiPreviewRunner
         public UiIcon Icon;       // the window's icon, as the host is given it in the game
         public Func<UiStatusModel> Bar;   // the status bar it stands over, when not the sample's with App open (the frame's app row)
         public bool NoKeys;       // takes no key (the notice cards): its keys and pad shots show it as the keys leave it, no ring, no path
+        public bool Types;        // a field of it takes the keys (Typing below): it also gets a shot with the caret hidden, the blink's other half
+    }
+
+    // The screen laid out as the host lays it while the field of that command and argument takes the keys (UiScene.TypingCommand).
+    private static Screen Typing(Screen screen, int command, int arg)
+    {
+        LayOut lay = screen.Lay;
+        screen.Lay = (s, f, d, k) =>
+        {
+            s.TypingCommand = command;
+            s.TypingArg = arg;
+            lay(s, f, d, k);
+        };
+        screen.Types = true;
+        return screen;
     }
 
     private sealed class Shot
@@ -50,6 +65,7 @@ public static partial class UiPreviewRunner
         public bool Path;
         public bool Keys;    // the keys lead: the ring shows and the band names every prompt
         public bool Hover;   // the mouse rests on the screen's hover target
+        public bool CaretOff;   // the blink's hidden half: the caret of the typing field not drawn
         public UiPad Pad;
     }
 
@@ -97,6 +113,10 @@ public static partial class UiPreviewRunner
                 {
                     shots.Add(new Shot { Screen = screen, Name = screen.Name + "_1080_mouse_hover", Width = 1920, Height = 1080, Dark = true, Hover = true });
                     shots.Add(new Shot { Screen = screen, Name = screen.Name + "_1080_keys", Width = 1920, Height = 1080, Dark = true, Keys = true });
+                }
+                if (screen.Types)
+                {
+                    shots.Add(new Shot { Screen = screen, Name = screen.Name + "_1080_caret_off", Width = 1920, Height = 1080, Dark = true, CaretOff = true });
                 }
                 if (!prototype)
                 {
@@ -282,6 +302,10 @@ public static partial class UiPreviewRunner
             shot.Screen.Lay(scene, frame, shot.Dark, keys);
             view.Ring = shot.Keys && !shot.Screen.NoKeys;
             view.Write(scene, false);
+            if (shot.CaretOff)
+            {
+                view.SetCaret(false);   // as the host's blink hides it
+            }
             int focus = shot.Screen.FocusCommand >= 0 ? scene.FindNode(shot.Screen.FocusCommand, shot.Screen.FocusArg) : UiFocusRules.First(scene);
             focus = focus >= 0 ? focus : UiFocusRules.First(scene);
             view.SetFocus(focus, false, 0f);

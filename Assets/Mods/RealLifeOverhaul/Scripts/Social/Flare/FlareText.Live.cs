@@ -133,7 +133,8 @@ namespace RealLifeOverhaul.Flare
         private static readonly string[] TycoonMoveKeys =
         {
             "reallife_flare_tycoon_move_0", "reallife_flare_tycoon_move_1", "reallife_flare_tycoon_move_2", "reallife_flare_tycoon_move_3",
-            "reallife_flare_tycoon_move_4", "reallife_flare_tycoon_move_5", "reallife_flare_tycoon_move_6", "reallife_flare_tycoon_move_7"
+            "reallife_flare_tycoon_move_4", "reallife_flare_tycoon_move_5", "reallife_flare_tycoon_move_6", "reallife_flare_tycoon_move_7",
+            "reallife_flare_tycoon_move_8", "reallife_flare_tycoon_move_9", "reallife_flare_tycoon_move_10"
         };
 
         /// <summary>A tycoon answering an announcement, in their own voice.</summary>
