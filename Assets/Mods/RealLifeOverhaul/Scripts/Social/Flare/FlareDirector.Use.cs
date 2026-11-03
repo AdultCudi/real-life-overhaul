@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RealLifeOverhaul.Photos;
 using RealLifeOverhaul.Population;
 using UI.Notification;
 
@@ -16,6 +17,10 @@ namespace RealLifeOverhaul.Flare
 
         /// <summary>The last dry run, for the screen. Not saved.</summary>
         public FlareExpect LastExpect;
+
+        private string _picturePlace;
+        private string _sidecarPic;
+        private string _sidecarPlace;
 
         /// <summary>What this post would do. Nothing is saved.</summary>
         public FlareExpect Preview(FlareCompose c)
@@ -35,7 +40,7 @@ namespace RealLifeOverhaul.Flare
             {
                 FlareExpect ex = BuildExpect(c, hour);
                 LastExpect = ex;
-                if (c.PromoteReach <= 0 && ex.Visitors > 0 && !GuestPlace(p.Place))
+                if (FlareUseRules.KeepsBoost(c.PromoteReach, ex.Visitors, GuestPlace(p.Place)))
                 {
                     int from = (Save != null ? Save.Day : 0) * 1440 + hour * 60;
                     if (c.ScheduleHour >= 0 && Save != null && c.ScheduleHour < Save.Hour)
@@ -50,7 +55,7 @@ namespace RealLifeOverhaul.Flare
                     {
                         Post = p.Id, Place = p.Place, FromMinute = from, Hours = ex.Hours, Visitors = ex.Visitors, Cents = ex.Cents, Percent = ex.Percent,
                         Hour = hour, Flags = (c.Pic != null || p.Pic != null ? 1 : 0) | (ex.Flopped ? 4 : 0) | (ex.WentViral ? 8 : 0),
-                        PicPlace = FlareUseRules.PhotoPlace(null, c.Place)
+                        PicPlace = _picturePlace
                     });
                 }
                 FlareUseRules.NoteReach(_file.ReachDays, ref _file.ReachDay, Save != null ? Save.Day : 0, ex.Reach);
@@ -80,9 +85,10 @@ namespace RealLifeOverhaul.Flare
         {
             int followers = _file != null ? _file.Followers : 0;
             bool photo = c != null && (!string.IsNullOrEmpty(c.Pic));
+            string where = PicturePlace(c);
             var brief = new FlareBrief
             {
-                Followers = followers, Hour = hour, Photo = photo, PhotoHere = photo && c != null && c.Place != null,
+                Followers = followers, Hour = hour, Photo = photo, PhotoHere = photo && where != null && c.Place != null && where == c.Place,
                 SameDistrict = c != null && c.Place != null ? 1 : -1, BasketCents = FlareUseRules.BasketDefault,
                 Districts = c != null && c.PromoteMask != 0 ? Math.Max(1, FlareUseRules.MaskCount(c.PromoteMask)) : 1,
                 PriceLevel = 1000, ReachPaid = c != null ? c.PromoteReach : 0, AdDays = c != null && c.PromoteDays > 0 ? c.PromoteDays : 1,
@@ -93,6 +99,92 @@ namespace RealLifeOverhaul.Flare
             brief.DayCustomers = dayCustomers;
             return FlareUseRules.Expect(in brief);
         }
+
+        // Life's sidecar place when the picture's file is there, otherwise the place the compose named.
+        private string PicturePlace(FlareCompose c)
+        {
+            string saved = c != null ? c.Place : null;
+            _picturePlace = FlareUseRules.PhotoPlace(ReadSidecar(c != null ? c.Pic : null), saved);
+            return _picturePlace;
+        }
+
+        private string ReadSidecar(string pic)
+        {
+            if (pic == _sidecarPic)
+            {
+                return _sidecarPlace;
+            }
+            _sidecarPic = pic;
+            _sidecarPlace = null;
+            string path = FlarePictures.PathOf(pic);
+            PhotoSidecar side;
+            if (path != null && PhotoSidecarFile.Read(path, out side) && !string.IsNullOrEmpty(side.Place))
+            {
+                _sidecarPlace = side.Place;
+            }
+            return _sidecarPlace;
+        }
+
+        /// <summary>The stars kept for a business, by its place or by the population's key. Null when none have been written.</summary>
+        public FlareStarRow StarsFor(string place)
+        {
+            if (!CityOn || string.IsNullOrEmpty(place))
+            {
+                return null;
+            }
+            FlareStarRow row = FlareUseRules.StarsOf(_city.StarRows, place);
+            if (row != null || place.IndexOf('~') < 0)
+            {
+                return row;
+            }
+            return FlareUseRules.StarsOf(_city.StarRows, place.Replace('~', '|'));
+        }
+
+        /// <summary>Demand, per cent, for the kind a live trend or the newest placed post is about. Not a function of how many posts there are.</summary>
+        public int PostDemand()
+        {
+            int kind = -1;
+            if (CityOn)
+            {
+                for (int i = 0; i < _city.Trends.Count; i++)
+                {
+                    FlareTrend t = _city.Trends[i];
+                    if (t != null && t.Kind != TrendKind.Genre)
+                    {
+                        kind = t.What;
+                        break;
+                    }
+                }
+            }
+            if (kind < 0 && _file != null)
+            {
+                PopulationState s = Residents;
+                if (s != null)
+                {
+                    for (int i = _file.Posts.Count - 1; i >= 0; i--)
+                    {
+                        string place = _file.Posts[i].Place;
+                        if (string.IsNullOrEmpty(place))
+                        {
+                            continue;
+                        }
+                        int b = _cityPass.BusinessOfPlace(place);
+                        if (b >= 0 && b < s.Businesses.Count)
+                        {
+                            kind = s.Businesses.Kind[b];
+                            break;
+                        }
+                    }
+                }
+            }
+            return FlareUseRules.TrendDemand(FlareUseRules.KindShare(kind));
+        }
+
+        /// <summary>Trends the city is running, for the city page.</summary>
+        public int TrendRows => CityOn ? _city.Trends.Count : 0;
+
+        /// <summary>Offers the city has open, for the city page.</summary>
+        public int OfferRows => CityOn ? _city.Offers.Count : 0;
 
         private int DayCustomers(string place)
         {
@@ -197,11 +289,22 @@ namespace RealLifeOverhaul.Flare
             }
             string place = s.Businesses.Key[actor];
             int followers = 400 + FlareRules.Roll(_city.Seed, day, 81) % 4000;
+            FlareInfluencer hired = null;
+            if (move == 1 && _file != null && _file.Influencers.Count > 0)
+            {
+                int who = FlareRules.Roll(_city.Seed, day, 82) % _file.Influencers.Count;
+                FlareInfluencer inf = _file.Influencers[who];
+                if (inf != null && inf.Active && (inf.BookedUntil < day || string.IsNullOrEmpty(inf.BookedBy)))
+                {
+                    hired = inf;
+                }
+            }
             var brief = new FlareBrief
             {
                 Followers = followers, Hour = hour, Photo = true, PhotoHere = true, SameDistrict = 1,
                 DayCustomers = Math.Max(40, s.Businesses.Room[actor] / 2), ReachPaid = move == 1 ? 2000 : 0, AdDays = 1,
-                Reliability = move == 1 ? 70 : -1, Style = (int)FlareStyle.Honest, Seed = _city.Seed, RollKey = day
+                Reliability = hired != null ? hired.Reliability : -1, Style = hired != null ? (int)hired.Style : 0,
+                Seed = hired != null ? hired.Seed : _city.Seed, RollKey = hired != null ? hired.Id : day
             };
             FlareExpect ex = FlareUseRules.Expect(in brief);
             if (move == 2)
@@ -229,15 +332,10 @@ namespace RealLifeOverhaul.Flare
                     Post = day, Place = place, FromMinute = day * 1440 + hour * 60, Hours = ex.Hours, Visitors = ex.Visitors, Cents = ex.Cents,
                     Percent = ex.Percent, Hour = hour, Flags = 1 | 2 | 16 | (ex.Flopped ? 4 : 0) | (ex.WentViral ? 8 : 0)
                 });
-                if (move == 1 && _file.Influencers.Count > 0)
+                if (hired != null)
                 {
-                    int who = FlareRules.Roll(_city.Seed, day, 82) % _file.Influencers.Count;
-                    FlareInfluencer inf = _file.Influencers[who];
-                    if (inf.Active && (inf.BookedUntil < day || string.IsNullOrEmpty(inf.BookedBy)))
-                    {
-                        inf.BookedUntil = day + 2;
-                        inf.BookedBy = place;
-                    }
+                    hired.BookedUntil = day + 2;
+                    hired.BookedBy = place;
                 }
             }
             if (move == 2)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RealLifeOverhaul.Population;
 
 namespace RealLifeOverhaul.Flare
 {
@@ -604,16 +605,187 @@ namespace RealLifeOverhaul.Flare
             return yes < 50 ? 50 : yes > 950 ? 950 : yes;
         }
 
-        /// <summary>Demand a trend adds, per cent, from the posts about it. Eight at the least, twenty at the most.</summary>
-        public static int TrendDemand(int posts)
+        /// <summary>
+        /// The demand a trend shows, per cent, from the city's own spending share for the kind the posts are about
+        /// (<see cref="KindShare"/>, thousandths). Post count does not invent a demand. Nothing below zero, and nothing past the whole.
+        /// </summary>
+        public static int TrendDemand(int cityThousandths)
         {
-            int n = posts < 0 ? 0 : posts;
-            int add = n / 2;
-            if (add > 12)
+            if (cityThousandths <= 0)
             {
-                add = 12;
+                return 0;
             }
-            return 8 + add;
+            int pct = cityThousandths / 10;
+            return pct > 100 ? 100 : pct;
+        }
+
+        /// <summary>The middle household's share of spending on a kind, thousandths, as the population spends it. A kind the table does not have is nothing.</summary>
+        public static int KindShare(int kind)
+        {
+            if (kind < 0 || kind >= PopulationCatalogue.Categories)
+            {
+                return 0;
+            }
+            int[] mid = PopulationCatalogue.SpendShares[1];
+            return kind < mid.Length ? mid[kind] : 0;
+        }
+
+        /// <summary>A post about the player's own business is kept as a boost, whether or not they paid for reach. Another player's business is not.</summary>
+        public static bool KeepsBoost(int promoteReach, int visitors, bool guest)
+        {
+            return !guest && visitors > 0 && promoteReach >= 0;
+        }
+
+        /// <summary>
+        /// The per cent a rival's own promotion adds at that rival's place. The player's business and another player's business get nothing,
+        /// even when a place string happens to match.
+        /// </summary>
+        public static int RivalCustomers(List<FlareBoost> boosts, string place, int minute, bool mine, bool guest)
+        {
+            if (mine || guest || boosts == null || string.IsNullOrEmpty(place))
+            {
+                return 0;
+            }
+            int sum = 0;
+            int cap = 0;
+            for (int i = 0; i < boosts.Count; i++)
+            {
+                FlareBoost b = boosts[i];
+                if (b == null || !b.Rival || b.Place != place || !b.On(minute, MinuteHour))
+                {
+                    continue;
+                }
+                sum += b.Percent;
+                if (b.Percent > cap)
+                {
+                    cap = b.Percent;
+                }
+            }
+            int most = cap > 0 ? cap : PercentCap[PercentCap.Length - 1];
+            return sum < 0 ? 0 : sum > most ? most : sum;
+        }
+
+        /// <summary>True once an hour of the boost has been credited, or the clock has passed its first hour.</summary>
+        public static bool HourRan(FlareBoost b, int minute)
+        {
+            if (b == null)
+            {
+                return false;
+            }
+            if (b.GivenVisitors > 0 || b.GivenCents > 0)
+            {
+                return true;
+            }
+            return minute >= b.FromMinute + MinuteHour;
+        }
+
+        /// <summary>Visitors and cents already credited. Before an hour has run, both are nothing: the forecast is not a result.</summary>
+        public static void Credited(FlareBoost b, int minute, out int visits, out int cents)
+        {
+            visits = 0;
+            cents = 0;
+            if (!HourRan(b, minute))
+            {
+                return;
+            }
+            visits = b.GivenVisitors;
+            cents = b.GivenCents;
+        }
+
+        /// <summary>What the saved stars add to attention, thousandths. None when the business has no row. Three stars is the middle.</summary>
+        public static int StarPull(FlareStarRow row)
+        {
+            if (row == null || row.Total <= 0)
+            {
+                return 0;
+            }
+            int sum = row.One + row.Two * 2 + row.Three * 3 + row.Four * 4 + row.Five * 5;
+            int avg = sum * 1000 / row.Total;
+            int pull = (avg - 3000) / 50;
+            if (pull > 80)
+            {
+                pull = 80;
+            }
+            if (pull < -80)
+            {
+                pull = -80;
+            }
+            return pull;
+        }
+
+        /// <summary>Residents a day a promotion step buys. Step 0 is a free post.</summary>
+        public static readonly int[] ReachSteps = { 0, 2000, 5000, 10000 };
+
+        public static int PromoteOf(int step)
+        {
+            if (step < 0 || ReachSteps.Length == 0)
+            {
+                return 0;
+            }
+            return step >= ReachSteps.Length ? ReachSteps[ReachSteps.Length - 1] : ReachSteps[step];
+        }
+
+        /// <summary>The compose choices. Shop, Photo and Tag stay -1 until that chip is pressed, so nothing is forced onto the first business.</summary>
+        public struct FlarePick
+        {
+            public int Shop;
+            public int Photo;
+            public int Tag;
+            public int Promote;
+            public string Pic;
+            public string Tags;
+
+            public static FlarePick Fresh()
+            {
+                return new FlarePick { Shop = -1, Photo = -1, Tag = -1 };
+            }
+        }
+
+        /// <summary>One press of a compose chip. Photo, place, tag and promote each move their own choice. A poll is not among them.</summary>
+        public static void Chip(ref FlarePick pick, int chip, int shops, int photos, int tags)
+        {
+            if (chip == 0)
+            {
+                pick.Photo = photos <= 0 ? -1 : pick.Photo < 0 ? 0 : (pick.Photo + 1) % photos;
+            }
+            else if (chip == 1)
+            {
+                pick.Shop = shops <= 0 ? -1 : pick.Shop < 0 ? 0 : (pick.Shop + 1) % shops;
+            }
+            else if (chip == 2)
+            {
+                pick.Tag = tags <= 0 ? -1 : pick.Tag < 0 ? 0 : (pick.Tag + 1) % tags;
+            }
+            else if (chip == 3)
+            {
+                int n = ReachSteps.Length > 0 ? ReachSteps.Length : 1;
+                pick.Promote = (pick.Promote + 1) % n;
+            }
+        }
+
+        /// <summary>The business a compose choice names, or null when none was chosen. The first shop is not a stand-in.</summary>
+        public static string ChosenPlace(List<FlareShopSeen> shops, int shop)
+        {
+            if (shops == null || shop < 0 || shop >= shops.Count || shops[shop] == null)
+            {
+                return null;
+            }
+            return shops[shop].Place;
+        }
+
+        /// <summary>Writes the choice onto a compose. The place is <see cref="ChosenPlace"/>, and the reach is <see cref="PromoteOf"/>.</summary>
+        public static void ApplyPick(FlareCompose c, List<FlareShopSeen> shops, FlarePick pick)
+        {
+            if (c == null)
+            {
+                return;
+            }
+            c.Place = ChosenPlace(shops, pick.Shop);
+            c.Name = c.Place;
+            c.Pic = pick.Pic;
+            c.Tags = pick.Tags;
+            c.PromoteReach = PromoteOf(pick.Promote);
+            c.PromoteDays = c.PromoteDays > 0 ? c.PromoteDays : 1;
         }
 
         /// <summary>What a rival does today: 0 a post, 1 a promotion, 2 an attack on a reputation. The same rules as the player.</summary>

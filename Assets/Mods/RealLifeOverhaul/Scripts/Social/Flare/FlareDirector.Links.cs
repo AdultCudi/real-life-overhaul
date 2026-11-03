@@ -132,7 +132,10 @@ namespace RealLifeOverhaul.Flare
             string place = FlareGame.Place(reg);
             int minute = day * 1440 + SaveGameManager.Current.Hour * 60;
             int marketing = FlareUseRules.Marketing(d._file.Boosts, place, minute);
-            if (d._file.Buzz.Count == 0 && d._file.Net.Watches.Count == 0 && marketing == 0)
+            bool mine = GoingPublic.Mine(reg);
+            bool guest = GoingPublic.Foreign(reg);
+            int rival = d._city != null ? FlareUseRules.RivalCustomers(d._city.RivalBoosts, place, minute, mine, guest) : 0;
+            if (d._file.Buzz.Count == 0 && d._file.Net.Watches.Count == 0 && marketing == 0 && rival == 0)
             {
                 return 0;
             }
@@ -140,8 +143,8 @@ namespace RealLifeOverhaul.Flare
             int clean = district != null && d._file.Net.WatchIn(district, day, FlareOrder.Cleanup) != FlareOrder.None ? FlareLiveRules.CleanFootfall : 0;
             int talk = d._file.Buzz.Count > 0 ? d._file.BuzzAt(place, day) : 0;
             // With the residents' side on, Flare's talk is the population's attention. A post's own hours are a separate
-            // grant, beside the game's marketing, and they still apply.
-            return FlareRules.Footfall(d.CityOn ? Math.Min(0, talk) : talk, clean) + marketing;
+            // grant, beside the game's marketing, and they still apply. A rival's grant is only that rival's place.
+            return FlareRules.Footfall(d.CityOn ? Math.Min(0, talk) : talk, clean) + marketing + rival;
         }
 
         /// <summary>For brands: how a scandal at a shop spreads, thousandths of its loss, by the account's reputation.</summary>
