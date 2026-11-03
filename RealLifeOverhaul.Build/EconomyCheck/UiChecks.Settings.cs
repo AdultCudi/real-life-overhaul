@@ -107,7 +107,33 @@ internal static partial class Program
             ReleaseDateChecks();
             FirstOpenChecks();
             WheelPaneChecks();
+            GuideFillChecks();
         }
+    }
+
+    // A Guide page is written with {facts} the features fill (Guide.Fill, which the old Guide's page, its search and the set-up check all use).
+    // The kit's window once showed the raw text, {sale_days} and all. No screen of the kit may read a topic's Body() without Guide.Fill.
+    private static void GuideFillChecks()
+    {
+        string ui = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui"));
+        int calls = 0, filled = 0;
+        string offender = null;
+        foreach (string file in Directory.GetFiles(ui, "*.cs", SearchOption.AllDirectories))
+        {
+            string text = File.ReadAllText(file);
+            int c = Regex.Matches(text, @"\.Body\(\)").Count, f = Regex.Matches(text, @"Guide\.Fill\(\s*\w+\.Body\(\)\s*\)").Count;
+            calls += c;
+            filled += f;
+            offender = c != f && offender == null ? System.IO.Path.GetFileName(file) : offender;
+        }
+        Check(calls >= 1 && calls == filled && offender == null, "guide: the kit reads a topic's text only through Guide.Fill (" + filled + " of " + calls + " reads)" + (offender != null ? ", not in " + offender : string.Empty));
+        string screen = File.ReadAllText(System.IO.Path.Combine(ui, "Settings", "GuideScreen.cs"));
+        int hit = screen.IndexOf("private bool Hit(int index)", System.StringComparison.Ordinal);
+        int build = screen.IndexOf("private void BuildPage()", System.StringComparison.Ordinal);
+        string hitBody = hit > 0 ? screen.Substring(hit, System.Math.Min(420, screen.Length - hit)) : string.Empty;
+        string buildBody = build > 0 ? screen.Substring(build, System.Math.Min(900, screen.Length - build)) : string.Empty;
+        Check(hitBody.Contains("BodyOf(index)") && buildBody.Contains("UiReaderRules.Parse(BodyOf(_pageAt))"),
+            "guide: the kit's search and its page both read the filled text, so a {fact} is found by its words and shown as its value");
     }
 
     // The wheel scrolls the pane under the pointer, selected or not. The Guide and Staff and roles hold two scrolling panes (the
