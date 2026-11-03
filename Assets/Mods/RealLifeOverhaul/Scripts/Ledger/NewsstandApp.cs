@@ -82,15 +82,19 @@ namespace RealLifeOverhaul.Ledger
             {
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_ledger_online_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(), new Color32(128, 150, 186, 255), new Color32(44, 58, 96, 255), 0.42f, "AppIcon-Newsstand"),
                 Build = Build,
                 Opened = () => UiClone.Safe(Opened),
-                Closed = Closed
-            }, out bool tryAgain);
+                Closed = Closed,
+                Kit = () => new RealLifeOverhaul.Ui.NewsstandScreen(RealLifeOverhaul.Ui.NewsLive.Stand),
+                KitScreen = RealLifeOverhaul.Ui.NewsstandScreen.ScreenId,
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Newspaper
+            };
+            _app = PhoneApp.Install(def, out bool tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -101,6 +105,7 @@ namespace RealLifeOverhaul.Ledger
                 }
                 return;
             }
+            RealLifeOverhaul.Ui.UiShell.Face(_app, def);
             if (!_listening)
             {
                 LocalizorManager.OnLanguageChanged += _languageChanged;
@@ -359,6 +364,26 @@ namespace RealLifeOverhaul.Ledger
             }
             _pick = row.Index;
             Refresh();
+        }
+
+        /// <summary>The kit's Newsstand takes a title or the pass: the same path, notices and money as the old page's Subscribe button.</summary>
+        public void Take(int sub)
+        {
+            UiClone.Safe(() => Subscribe(sub));
+        }
+
+        /// <summary>The kit's Newsstand stops a title or the pass at its last paid day, as the old page's Cancel button does.</summary>
+        public void Stop(int sub)
+        {
+            UiClone.Safe(() =>
+            {
+                OnlineSub x = _director.Online != null ? _director.Online.Subs[sub] : null;
+                if (x != null && _director.CancelOnline(sub))
+                {
+                    Say(NotificationType.Info, "reallife_ledger_online_note_cancelled", "title", LedgerText.T(NewsstandCatalogue.NameKeys[sub]), "day", x.PaidUntil.ToString());
+                }
+                Refresh();
+            });
         }
 
         private void Back()

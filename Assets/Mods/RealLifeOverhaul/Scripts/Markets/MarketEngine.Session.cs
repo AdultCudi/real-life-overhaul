@@ -191,10 +191,38 @@ namespace RealLifeOverhaul.Markets
             {
                 Say(new MarketNews { Day = day, Kind = MarketNewsKind.Rate, A = env.RateBp - _openRate, B = (int)((long)(indexNow - _openIndex) * 10000L / _openIndex) });
             }
+            if (_openRate >= 0 && env.RateBp > _openRate)
+            {
+                FixRivalDebt(env.RateBp);
+            }
             State.RateSeenBp = env.RateBp;
             OpenOrders(day);
             BotsOpen();   // stops the night went through, and floors
             Margin(day, MarketCatalogue.PhaseOpen);
+        }
+
+        // A rival company fixes its debt on the same rule as the player's loan, when the bank rate is set to rise and the fixed day is cheaper.
+        // A rival has no credit file, so the terms use the middle of the score scale.
+        private void FixRivalDebt(int rateBp)
+        {
+            int days = State.YearDays > 0 ? State.YearDays : Economy.NewsRules.YearDays;
+            int score = (Economy.CreditCatalogue.ScoreMin + Economy.CreditCatalogue.ScoreMax) / 2;
+            for (int i = 0; i < State.Stocks.Count; i++)
+            {
+                Stock s = State.Stocks[i];
+                if (s == null || string.IsNullOrEmpty(s.RivalId) || s.Debt <= 1.0 || s.DebtRate <= 0.0)
+                {
+                    continue;
+                }
+                int amount = s.Debt > int.MaxValue ? int.MaxValue : (int)s.Debt;
+                int variable = (int)Math.Round(s.Debt * s.DebtRate / days);
+                Economy.NewsRules.Offer(amount, variable, score, rateBp, days, out int fixedDaily);
+                if (!Economy.NewsRules.WillFix(true, variable, fixedDaily) || fixedDaily <= 0)
+                {
+                    continue;
+                }
+                s.DebtRate = fixedDaily * (double)days / s.Debt;
+            }
         }
 
         private void Business(Stock s, int day)

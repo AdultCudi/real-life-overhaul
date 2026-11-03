@@ -82,15 +82,19 @@ namespace RealLifeOverhaul.Ledger
             {
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_ledger_title",
                 NoButtons = true,
                 Build = Build,
                 Opened = () => UiClone.Safe(Opened),
-                Closed = Closed
-            }, out bool tryAgain);
+                Closed = Closed,
+                Kit = () => new RealLifeOverhaul.Ui.LedgerScreen(RealLifeOverhaul.Ui.NewsLive.Paper),
+                KitScreen = RealLifeOverhaul.Ui.LedgerScreen.ScreenId,
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Newspaper
+            };
+            _app = PhoneApp.Install(def, out bool tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -98,7 +102,9 @@ namespace RealLifeOverhaul.Ledger
                 {
                     LedgerDirector.Logger?.Warn("City Ledger: the game's menu is not built as this version expects, so the paper's page cannot be shown. Subscriptions and kiosks still work.");
                 }
+                return;
             }
+            RealLifeOverhaul.Ui.UiShell.Face(_app, def);
         }
 
         public void Remove()

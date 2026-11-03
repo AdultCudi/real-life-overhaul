@@ -17,6 +17,10 @@ namespace RealLifeOverhaul.Ui
         public string[] ChartLabels = new string[0];
         public string[] ChartValues = new string[0];
         public float[] ChartShares = new float[0];
+        public string Chart2Title;                 // a second donut, incomes beside ages; null for none
+        public string[] Chart2Labels = new string[0];
+        public string[] Chart2Values = new string[0];
+        public float[] Chart2Shares = new float[0];
         public string LegendTitle;                 // "Map legend"
         public string ScaleLabel;                  // what the city is coloured by ("Rent by block")
         public string ScaleLow, ScaleHigh;
@@ -69,19 +73,8 @@ namespace RealLifeOverhaul.Ui
                 cy += UiDraw.InfoRow(s, at, ix, cy, iw, m.Rows[i].Label, m.Rows[i].Value, false, -1, 0, m.Rows[i].Ink == UiRole.None ? UiRole.Text : m.Rows[i].Ink);
             }
             cy += UiTokens.S2;
-            if (m.ChartShares.Length > 0)
-            {
-                float bh = ChartHeight(m);
-                UiDraw.Band(s, at, px, cy, Width, bh);
-                float by = cy + UiTokens.S3;
-                UiDraw.Text(s, at, ix, by, iw, UiStyle.SectionHeader, UiRole.Text, m.ChartTitle, UiFlags.Label | UiFlags.Truncate);
-                by += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3;
-                UiDraw.Donut(s, at, ix, by, DonutSize, m.ChartShares, m.ChartShares.Length);
-                float lx = ix + DonutSize + UiTokens.S6, lw = ix + iw - lx;
-                float lh = m.ChartLabels.Length * 20f;
-                UiDraw.Legend(s, at, lx, by + (DonutSize - lh) / 2f, lw, m.ChartLabels, m.ChartValues, m.ChartLabels.Length);
-                cy += bh + UiTokens.S1;
-            }
+            cy = Donut(s, at, m.ChartTitle, m.ChartLabels, m.ChartValues, m.ChartShares, px, cy, ix, iw);
+            cy = Donut(s, at, m.Chart2Title, m.Chart2Labels, m.Chart2Values, m.Chart2Shares, px, cy, ix, iw);
             if (!string.IsNullOrEmpty(m.LegendTitle))
             {
                 float by = cy + UiTokens.S3;
@@ -102,9 +95,13 @@ namespace RealLifeOverhaul.Ui
         public static float Height(UiInfoViewModel m)
         {
             float h = UiFrame.Strip + UiTokens.S2 + (string.IsNullOrEmpty(m.HeadLabel) ? 0f : UiTokens.PairRow) + m.Rows.Length * UiTokens.PairRow + UiTokens.S2;
-            if (m.ChartShares.Length > 0)
+            if (m.ChartShares != null && m.ChartShares.Length > 0)
             {
-                h += ChartHeight(m) + UiTokens.S1;
+                h += ChartHeight(m.ChartLabels) + UiTokens.S1;
+            }
+            if (m.Chart2Shares != null && m.Chart2Shares.Length > 0)
+            {
+                h += ChartHeight(m.Chart2Labels) + UiTokens.S1;
             }
             if (!string.IsNullOrEmpty(m.LegendTitle))
             {
@@ -114,8 +111,27 @@ namespace RealLifeOverhaul.Ui
             return UiDraw.Snap(h);
         }
 
-        private static float ChartHeight(UiInfoViewModel m) =>
-            UiTokens.S3 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3 + Math.Max(DonutSize, m.ChartLabels.Length * 20f) + UiTokens.S4;
+        private static float ChartHeight(string[] labels) =>
+            UiTokens.S3 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3 + Math.Max(DonutSize, (labels == null ? 0 : labels.Length) * 20f) + UiTokens.S4;
+
+        private static float Donut(UiScene s, UiAt at, string title, string[] labels, string[] values, float[] shares, float px, float cy, float ix, float iw)
+        {
+            if (shares == null || shares.Length == 0)
+            {
+                return cy;
+            }
+            float bh = ChartHeight(labels);
+            UiDraw.Band(s, at, px, cy, Width, bh);
+            float by = cy + UiTokens.S3;
+            UiDraw.Text(s, at, ix, by, iw, UiStyle.SectionHeader, UiRole.Text, title, UiFlags.Label | UiFlags.Truncate);
+            by += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3;
+            UiDraw.Donut(s, at, ix, by, DonutSize, shares, shares.Length);
+            int n = labels == null ? 0 : labels.Length;
+            float lx = ix + DonutSize + UiTokens.S6, lw = ix + iw - lx;
+            float lh = n * 20f;
+            UiDraw.Legend(s, at, lx, by + (DonutSize - lh) / 2f, lw, labels, values, n);
+            return cy + bh + UiTokens.S1;
+        }
 
         // The views as tinted icons two across, the shown one filled cyan, as a game's menu of info views.
         private static void ViewsMenu(UiScene s, UiInfoViewModel m, float x, float y)

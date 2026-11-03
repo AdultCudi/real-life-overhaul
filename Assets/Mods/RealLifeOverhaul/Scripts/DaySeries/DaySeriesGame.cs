@@ -43,6 +43,61 @@ namespace RealLifeOverhaul.DaySeries
             Customers(book, day);
             Borrow(book, day);
             Moves(book, day);
+            Retail(book, day);
+            CityRetail(book, day);
+        }
+
+        private static readonly List<string> CityNames = new List<string>(DaySeriesCatalogue.CityGoodsMost);
+        private static readonly List<int> CityCents = new List<int>(DaySeriesCatalogue.CityGoodsMost);
+
+        // The city's shop price of the goods the News pages follow, one a good, in cents. The goods are the same on every machine.
+        private static void CityRetail(DaySeriesBook book, int day)
+        {
+            CityGame.RetailPrices(CityNames, CityCents, DaySeriesCatalogue.CityGoodsMost);
+            for (int i = 0; i < CityNames.Count; i++)
+            {
+                string key = DaySeriesCatalogue.CityPrice(CityNames[i]);
+                if (key.Length > 0 && CityCents[i] > 0)
+                {
+                    book.Set(key, day, CityCents[i]);
+                }
+            }
+        }
+
+        // One retail price a good, in cents, from the player's own plans. A plan of another player is not read.
+        private static void Retail(DaySeriesBook book, int day)
+        {
+            GameInstance save = SaveGameManager.Current;
+            if (save == null || save.pricingManagerPlans == null)
+            {
+                return;
+            }
+            int wrote = 0;
+            for (int i = 0; i < save.pricingManagerPlans.Count && wrote < 80; i++)
+            {
+                var plan = save.pricingManagerPlans[i];
+                if (plan == null || plan.appliedPrices == null || !CompanyDirector.PlanMine(plan))
+                {
+                    continue;
+                }
+                for (int p = 0; p < plan.appliedPrices.Count && wrote < 80; p++)
+                {
+                    var price = plan.appliedPrices[p];
+                    if (price == null || string.IsNullOrEmpty(price.itemName) || price.price <= 0f)
+                    {
+                        continue;
+                    }
+                    string key = DaySeriesCatalogue.Price(price.itemName);
+                    if (key.Length == 0)
+                    {
+                        continue;
+                    }
+                    if (book.Set(key, day, (int)Math.Round(price.price * 100.0)))
+                    {
+                        wrote++;
+                    }
+                }
+            }
         }
 
         // Yesterday's categories: the game still has that day's movements, and today has barely started.

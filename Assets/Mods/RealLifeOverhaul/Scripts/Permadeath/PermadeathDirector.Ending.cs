@@ -182,6 +182,18 @@ namespace RealLifeOverhaul.Permadeath
         // The obituary on the City Ledger's page, or as a message if that cannot be had, until it is put down.
         private IEnumerator Print(LifeStory story, bool test)
         {
+            if (Ui.UiScreenSwitches.On(Ui.EndingScreen.ScreenId) && Ui.UiDirector.Instance != null)
+            {
+                Ui.NewsLive.EndingStory = story;
+                Ui.NewsLive.EndingOpen = true;
+                Ui.UiDirector.Instance.TestEnding();
+                float untilKit = Time.realtimeSinceStartup + 30f;
+                while (Ui.NewsLive.EndingOpen && Time.realtimeSinceStartup < untilKit)
+                {
+                    yield return null;
+                }
+                yield break;
+            }
             ObituaryPage page = PermadeathText.Page(story, test);
             _closed = false;
             bool shown = false;

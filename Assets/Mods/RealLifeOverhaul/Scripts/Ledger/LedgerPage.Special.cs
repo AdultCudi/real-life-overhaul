@@ -14,6 +14,9 @@ namespace RealLifeOverhaul.Ledger
 
         public bool Special => _special != null;
 
+        /// <summary>The front page of its own that is up, for the kit's paper to draw; null while the morning's is.</summary>
+        public LedgerSpecial CurrentSpecial => _special;
+
         /// <summary>Opens the page on a front page of its own, its inside pages hidden; <paramref name="closed"/> is told once when it goes down.</summary>
         public bool ShowSpecial(LedgerSpecial special, Action closed)
         {

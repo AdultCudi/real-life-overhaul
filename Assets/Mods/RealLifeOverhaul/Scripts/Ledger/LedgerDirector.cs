@@ -325,6 +325,9 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
+        /// <summary>The front page of its own that is up now (the obituary, the rich list); null for the morning's paper.</summary>
+        public LedgerSpecial ActiveSpecial => (_page ?? _spare)?.CurrentSpecial;
+
         /// <summary>A front page of its own (Permadeath's obituary), paper running or not; false while the menu cannot take it yet.</summary>
         public bool ShowSpecial(LedgerSpecial special, Action closed)
         {

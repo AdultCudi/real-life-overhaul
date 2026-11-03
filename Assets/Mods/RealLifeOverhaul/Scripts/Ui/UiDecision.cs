@@ -38,6 +38,11 @@ namespace RealLifeOverhaul.Ui
         public UiRole[] FaceRings;                  // with the roles, each face's ring (whose side they are on); null or None for none
         public int Speaking = -1;                   // with the roles, the face whose name is in the accent: who speaks; -1 for nobody
         public string Body;
+        public int BodyLines = 5;                   // the lines the paragraph may take: an obituary takes more than a decision's sentence
+        public string[] FactLabels = new string[0]; // a strip of facts under the paragraph, each a label in capitals over its figure
+        public string[] FactValues = new string[0];
+        public string Portrait;                     // one person's portrait large in the side, in place of the emblem and the faces, with their name under it
+        public string[] PortraitLines = new string[0];   // under the name, in the quiet grey: "Aged 38", "Founder of Speedy Bites"
         public UiDecisionChoice[] Choices = new UiDecisionChoice[0];
         public int Selected = -1;
         public UiActionModel[] Buttons = new UiActionModel[0];
@@ -58,6 +63,7 @@ namespace RealLifeOverhaul.Ui
         public const float Width = 1040f;     // px: the card
         private const float Side = 296f;      // px: the emblem's column
         private const float Emblem = 168f;    // px
+        private const float Hero = 144f;      // px: one person's portrait, large
         private const float Face = 72f;       // px: a face in the grid of the people it is about
         private const int FacesAcross = 3, FacesDown = 4;
         private const float Person = 56f;     // px: a face beside its name and who they are, those present told with their roles
@@ -86,9 +92,14 @@ namespace RealLifeOverhaul.Ui
             cy += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.AppTitle)) + UiTokens.S4;
             if (!string.IsNullOrEmpty(m.Body))
             {
-                float bh = UiTextRules.WrappedHeight(m.Body, UiStyle.Body, inner, 5);
-                UiDraw.Text(s, at, cx, cy, inner, UiStyle.Body, UiRole.Text2, m.Body, UiFlags.Label | UiFlags.Wrap | UiFlags.Middle, 5);
+                float bh = UiTextRules.WrappedHeight(m.Body, UiStyle.Body, inner, m.BodyLines);
+                UiDraw.Text(s, at, cx, cy, inner, UiStyle.Body, UiRole.Text2, m.Body, UiFlags.Label | UiFlags.Wrap | UiFlags.Middle, m.BodyLines);
                 cy += UiDraw.Snap(bh) + UiTokens.S5;
+            }
+            if (m.FactLabels.Length > 0)
+            {
+                Facts(s, at, m, cx, cy, inner);
+                cy += FactsHeight(m) + UiTokens.S5;
             }
             for (int i = 0; i < m.Choices.Length; i++)
             {
@@ -126,7 +137,11 @@ namespace RealLifeOverhaul.Ui
             h += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.AppTitle)) + UiTokens.S4;
             if (!string.IsNullOrEmpty(m.Body))
             {
-                h += UiDraw.Snap(UiTextRules.WrappedHeight(m.Body, UiStyle.Body, inner, 5)) + UiTokens.S5;
+                h += UiDraw.Snap(UiTextRules.WrappedHeight(m.Body, UiStyle.Body, inner, m.BodyLines)) + UiTokens.S5;
+            }
+            if (m.FactLabels.Length > 0)
+            {
+                h += FactsHeight(m) + UiTokens.S5;
             }
             for (int i = 0; i < m.Choices.Length; i++)
             {
@@ -147,6 +162,20 @@ namespace RealLifeOverhaul.Ui
             float labelH = string.IsNullOrEmpty(m.EmblemLabel) ? 0f : UiTokens.S5 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader));
             float top = y + UiDraw.SnapDown((h - SideHeight(m)) / 2f);
             float ly;
+            if (!string.IsNullOrEmpty(m.Portrait))
+            {
+                float px = x + UiDraw.SnapDown((Side - Hero) / 2f);
+                UiDraw.Portrait(s, at, px, top, Hero, m.Portrait, UiColour.HueOf(m.Portrait), UiRole.None);
+                float ny = top + Hero + UiTokens.S4;
+                UiDraw.Text(s, at, x + UiTokens.S5, ny, Side - UiTokens.S5 * 2f, UiStyle.Title, UiRole.Text, m.Portrait, UiFlags.Centre | UiFlags.Truncate);
+                ny += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)) + UiTokens.S1;
+                for (int i = 0; i < m.PortraitLines.Length; i++)
+                {
+                    UiDraw.Text(s, at, x + UiTokens.S5, ny, Side - UiTokens.S5 * 2f, UiStyle.Small, UiRole.Muted, m.PortraitLines[i], UiFlags.Centre | UiFlags.Truncate);
+                    ny += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S1;
+                }
+                return;
+            }
             if (m.Faces.Length > 0 && m.FaceRoles != null)
             {
                 People(s, at, m, x, top);
@@ -193,7 +222,37 @@ namespace RealLifeOverhaul.Ui
         private static float SideHeight(UiDecisionModel m)
         {
             float labelH = string.IsNullOrEmpty(m.EmblemLabel) ? 0f : UiTokens.S5 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader));
+            if (!string.IsNullOrEmpty(m.Portrait))
+            {
+                return Hero + UiTokens.S4 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)) + m.PortraitLines.Length * (UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S1);
+            }
             return (m.Faces.Length > 0 ? m.FaceRoles != null ? PeopleHeight(m) : FacesHeight(m) : Emblem + UiTokens.S2) + labelH;
+        }
+
+        // The facts' strip: each a label in capitals over its figure, in slots across the card's words.
+        private static float FactsHeight(UiDecisionModel m) =>
+            UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title));
+
+        private static void Facts(UiScene s, UiAt at, UiDecisionModel m, float x, float y, float w)
+        {
+            int n = Math.Min(m.FactLabels.Length, m.FactValues.Length);
+            float labelH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader));
+            // Each fact takes the width of its words and the rest of the strip is shared out between them, so no label is cut short.
+            var wide = new float[n];
+            float sum = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                wide[i] = UiDraw.Snap(Math.Max(UiTextRules.Width(m.FactLabels[i], UiStyle.SectionHeader) * 1.18f, UiTextRules.Width(m.FactValues[i], UiStyle.Title)) + UiTokens.S1);
+                sum += wide[i];
+            }
+            float gap = n > 1 ? Math.Max(UiTokens.S1, UiDraw.SnapDown((w - sum) / (n - 1))) : 0f;
+            float fx = x;
+            for (int i = 0; i < n; i++)
+            {
+                UiDraw.Text(s, at, fx, y, wide[i], UiStyle.SectionHeader, UiRole.Text2, m.FactLabels[i], UiFlags.Label | UiFlags.Truncate);
+                UiDraw.Text(s, at, fx, y + labelH + UiTokens.S1, wide[i], UiStyle.Title, UiRole.Text, m.FactValues[i], UiFlags.Truncate);
+                fx += wide[i] + gap;
+            }
         }
 
         // Those present with who each is, one to a row: each face in its ring at the left, at its right its name (in the
