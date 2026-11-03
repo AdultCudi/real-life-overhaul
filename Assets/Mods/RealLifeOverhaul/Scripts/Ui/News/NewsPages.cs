@@ -215,6 +215,22 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             UiInfoView.Lay(s, m.People, frame, dark, keys);
+            if (m.Actions == null || m.Actions.Length == 0)
+            {
+                return;
+            }
+            float x = UiTokens.S2 + 104f + UiTokens.S4;
+            float y = UiTokens.S4 + UiInfoView.Height(m.People) + UiTokens.S4;
+            int shown = m.Actions.Length < 2 ? m.Actions.Length : 2;
+            float bh = UiTokens.S2 + shown * (UiTokens.S8 + UiTokens.S2);
+            int box = UiDraw.Box(s, UiAt.Screen, x, y, 360f, bh, UiRole.Panel, UiRole.None, UiTokens.RadiusLarge, UiFlags.Panel);
+            UiAt inside = UiAt.Screen.In(box);
+            float ly = y + UiTokens.S2;
+            for (int i = 0; i < shown; i++)
+            {
+                UiDraw.LinkRow(s, inside, x + UiTokens.S3, ly, 360f - UiTokens.S3 * 2f, UiTokens.S8, m.Actions[i].Label, m.Actions[i].Command, 0, false);
+                ly += UiTokens.S8 + UiTokens.S2;
+            }
         }
 
         private static float Lead(UiScene s, UiAt at, NewsModel m, float x, float y, float w)

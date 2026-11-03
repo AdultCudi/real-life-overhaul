@@ -68,6 +68,8 @@ namespace RealLifeOverhaul.Ui
                 "reallife_news_people_title", "reallife_news_head_people", "reallife_news_head_homes",
                 "reallife_news_head_jobs", "reallife_news_head_rent", "reallife_news_ages",
                 "reallife_news_age_young", "reallife_news_age_work", "reallife_news_age_older",
+                "reallife_news_income_title", "reallife_news_income_work", "reallife_news_income_middle", "reallife_news_income_upper",
+                "reallife_news_col_five", "reallife_news_riser", "reallife_news_faller", "reallife_news_traded",
                 "reallife_news_legend", "reallife_news_scale", "reallife_news_low", "reallife_news_high",
                 "reallife_news_rent_link", "reallife_news_busy_link", "reallife_news_home_title",
                 "reallife_news_empty_rent", "reallife_news_empty_rent_body",

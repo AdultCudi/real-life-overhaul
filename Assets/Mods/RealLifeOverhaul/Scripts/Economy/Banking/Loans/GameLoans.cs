@@ -126,5 +126,17 @@ namespace RealLifeOverhaul.Economy
             }
             return WholeMoney.Floor(most - owed);   // a rich player's limit is past an int: saturated, never a cast (Core/WholeMoney)
         }
+
+        /// <summary>Writes a fixed rate onto the game's loan. The mark keeps the same figures so a later save does not put the old rate back.</summary>
+        public static void WriteTerms(LoanView view, int interest, int payment)
+        {
+            var loan = view.Ref as Loan;
+            if (loan == null)
+            {
+                return;
+            }
+            loan.dailyInterest = Mathf.Max(0, interest);
+            loan.dailyPayment = Mathf.Max(0, payment);
+        }
     }
 }

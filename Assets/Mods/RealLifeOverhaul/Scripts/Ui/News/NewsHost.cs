@@ -76,6 +76,11 @@ namespace RealLifeOverhaul.Ui
 
         public bool Back()
         {
+            if (NewsLive.CloseList())
+            {
+                _dirty = true;
+                return true;
+            }
             if (_model.App == NewsApp.Economy && _model.Tab == 7)
             {
                 _model.Tab = 0;
