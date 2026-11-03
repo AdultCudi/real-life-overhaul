@@ -245,7 +245,7 @@ internal static partial class UiSamples
         return new UiChartModel
         {
             Kind = UiChartKind.Line,
-            Title = NewsFill(t("reallife_news_goods_index", "Price index by good, day {day} = 100"), "day", "170"),
+            Title = NewsFill(t("reallife_news_goods_index", "Index, day {day} = 100"), "day", "170"),
             Points = NewsText.AxisPoints(NewsDays(t, 170, n), 40),
             Reads = NewsDays(t, 170, n),
             Series = new[]
