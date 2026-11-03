@@ -142,6 +142,16 @@ internal static partial class Program
             withScreen += System.Math.Min(kits, screens);
             withoutScreen += System.Math.Max(0, kits - screens);
         }
+        bool named = true;
+        foreach (string app in new[] { "Meta/SettingsApp.cs", "Meta/GuideApp.cs", "Meta/StaffApp.cs", "Planner/PlannerDirector.cs", "Calendar/CalendarDirector.cs",
+                                       "Photos/CameraApp.cs", "Photos/GalleryApp.cs", "Markets/MarketDirector.App.cs" })
+        {
+            string text = File.ReadAllText(System.IO.Path.Combine(scripts, app));
+            bool one = text.Contains("new PhoneAppDef") && text.Contains("Kit = ") && text.Contains("KitScreen = ") && text.Contains("UiShell.Face(");
+            Check(one, "first open: " + app + " puts its kit face on the app (Kit, KitScreen, UiShell.Face), so PhoneApp.Ready binds it over the panel at the first opening");
+            named &= one;
+        }
+        Check(named, "first open: Mod settings, the Guide, Staff and roles and the other kit apps all take the one first-open path");
         Check(apps2 >= 8 && withoutScreen == 0, "first open: every app with a kit face names its screen (" + withScreen + " of " + apps2 + "), so none is left to show the old panel first");
     }
 
