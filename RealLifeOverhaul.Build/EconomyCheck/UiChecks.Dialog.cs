@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using RealLifeOverhaul;
+using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Ui;
 
 internal static partial class Program
@@ -62,6 +63,7 @@ internal static partial class Program
         {
             _dialogChecked = true;
             DialogRuleChecks();
+            DialogPhoneChecks();
             DialogSceneChecks();
             DialogCallChecks();
             DialogTalkLooks();
@@ -191,13 +193,138 @@ internal static partial class Program
         Check(first >= 0 && third >= 0 && s.Nodes[first].Key == UiAction.Pick1 && s.Nodes[third].Key == (UiAction)((int)UiAction.Pick1 + 2) && Prompted(s, UiAction.Back),
             "dialog: the panel's answers are numbered 1 to 9 in the game's order, and Back is the way out");
         UiSamples.DialogDocked(s, frame, true, UiDefaultKeys.Keyboard, en, "bank_loan");
-        int amount = s.FindNode(UiFormRows.FieldCommand, 1), term = s.FindNode(UiFormRows.FieldCommand, 2), figure = s.FindNode(UiFormRows.FieldCommand, 4);
+        int amount = s.FindNode(UiFormRows.FieldCommand, 1), less = s.FindNode(UiFormRows.LessCommand, 1), more = s.FindNode(UiFormRows.MoreCommand, 1);
+        int term = s.FindNode(UiFormRows.SwatchCommand, UiFormRows.SwatchArg(2, 0)), longer = s.FindNode(UiFormRows.SwatchCommand, UiFormRows.SwatchArg(2, 2));
+        int figure = s.FindNode(UiFormRows.FieldCommand, 4);
         int confirm = s.FindNode(UiConversation.ChoiceCommand, 0);
-        Check(amount >= 0 && term >= 0 && figure < 0 && confirm >= 0 && s.Nodes[confirm].Key == UiAction.Pick1,
-            "dialog: the bank's loan form takes its amount as typing and its term as a choice, its figures are read only, and Confirm is the first answer");
+        Check(amount >= 0 && less >= 0 && more >= 0 && term >= 0 && longer >= 0 && figure < 0 && confirm >= 0 && s.Nodes[confirm].Key == UiAction.Pick1,
+            "dialog: the bank's loan form takes its amount typed or stepped and its term as chips, its figures are read only, and Confirm is the first answer");
+
+        // The answers' keys: F the first that can be taken, P the next, Escape the way out; the first chosen; money out red.
+        var keyed = new[]
+        {
+            new UiDecisionChoice { Name = "Confirm" }, new UiDecisionChoice { Name = "Lower", Disabled = true }, new UiDecisionChoice { Name = "Line" },
+            new UiDecisionChoice { Name = "Leave" }
+        };
+        int main = DialogRules.Keys(keyed, 3, out int second);
+        Check(main == 0 && second == 2 && keyed[0].Cap == UiChoiceCap.Main && keyed[1].Cap == UiChoiceCap.None && keyed[2].Cap == UiChoiceCap.Second
+              && keyed[3].Cap == UiChoiceCap.Leave && UiDraw.CapAction(UiChoiceCap.Main) == UiAction.Alt && UiDraw.CapAction(UiChoiceCap.Second) == UiAction.Option,
+            "dialog: F takes the first answer that can be taken, P the next, a greyed one neither, and the way out carries Escape");
+        UiConversationModel loan = UiSamples.Dialog(en, "bank_loan");
+        Check(loan.Chosen == 0 && !string.IsNullOrEmpty(loan.ChoicesLabel) && loan.Choices[0].Lines[1].Tone == UiConsequence.Loss
+              && UiDraw.ConsequenceInk(UiConsequence.Loss) == UiRole.DangerText && UiDraw.ConsequenceInk(-1) == UiRole.WarnText && UiDraw.ConsequenceInk(1) == UiRole.OkText,
+            "dialog: the answer F takes shows chosen under the answers' label, money paid out reads red, a risk amber and what it brings green");
+        Check(DialogRules.Pair("Owed: $1,850 in all.", out string owedLabel, out string owed) && owedLabel == "Owed" && owed == "$1,850 in all"
+              && DialogRules.Pair("欠款：共$1,850。", out string zhLabel, out string zhOwed) && zhLabel == "欠款" && zhOwed == "共$1,850"
+              && !DialogRules.Pair("No open case.", out _, out _),
+            "dialog: a line of the Legal file splits into its label and figure at its colon, a full-width one too, and a sentence stays words");
+        Check(LoanTalkRules.StepAmount(0f, 1, 100000f) == LoanTalkRules.LeastLoan && LoanTalkRules.StepAmount(1234f, 1, 100000f) == 1500f
+              && LoanTalkRules.StepAmount(1234f, -1, 100000f) == 1000f && LoanTalkRules.StepAmount(25000f, 1, 27000f) == 27000f
+              && LoanTalkRules.StepAmount(500f, -1, 100000f) == 0f && LoanTalkRules.StepAmount(20000f, -1, 100000f) == 19000f,
+            "dialog: the loan's amount steps by whole steps, never past what the bank lends nor under its least");
         UiConversationModel between = UiSamples.Dialog(en, "between_lines");
         Check(between.Typing && between.Choices.Length == 0 && between.PromptCount == 0 && !UiSamples.DialogChecked("between_lines"),
             "dialog: between two lines, while the game shows no button, the panel shows the dots and the bar no key");
+    }
+
+    // The owner, 3 Nov 2026: "The user interaction dialog box comes in the bottom right overlapping the mobile phone." On
+    // every screen shape the conversation docks left of the phone's column, and the call card and the spoken line's card
+    // keep clear of it, the phone open (its tallest, with the radio) or folded; with no phone the dock takes the right again.
+    private static void DialogPhoneChecks()
+    {
+        UiWords en = UiWords("en");
+        var s = new UiScene();
+        bool clear = true, back = true;
+        string where = null;
+        float[] aspects = { 16f / 9f, 16f / 10f, 4f / 3f, 5f / 4f, 21f / 9f, 32f / 9f };
+        string[] states = { "desk_full", "bank_loan", "import", "wholesale", "furniture" };
+        try
+        {
+            foreach (float aspect in aspects)
+            {
+                UiFrame frame = UiFrame.FullMenu(aspect, "Dialogue");
+                UiPhone.LeftShare = UiPhone.OverWorld(frame);
+                foreach (bool folded in new[] { false, true })
+                {
+                    UiPhone.Spot(frame, folded, out float px, out float py, out float pw, out float ph);
+                    foreach (string state in states)
+                    {
+                        UiSamples.DialogDocked(s, frame, true, UiDefaultKeys.Keyboard, en, state);
+                        if (PanelMeets(s, px, py, pw, ph))
+                        {
+                            clear = false;
+                            where = where ?? "conversation (" + state + ") at " + aspect.ToString("0.00") + (folded ? ", phone folded" : ", phone open");
+                        }
+                    }
+                    foreach (string state in UiSamples.SceneStates)
+                    {
+                        UiSamples.Scene(s, frame, true, UiDefaultKeys.Keyboard, en, state);
+                        if (PanelMeets(s, px, py, pw, ph))
+                        {
+                            clear = false;
+                            where = where ?? "scene (" + state + ") at " + aspect.ToString("0.00") + (folded ? ", phone folded" : ", phone open");
+                        }
+                    }
+                    UiContacts.Lay(s, UiSamples.LoanCall(en), frame, true, UiDefaultKeys.Keyboard);
+                    if (PanelMeets(s, px, py, pw, ph))
+                    {
+                        clear = false;
+                        where = where ?? "call card at " + aspect.ToString("0.00");
+                    }
+                    foreach (string state in UiSamples.MonologueStates)
+                    {
+                        UiMonologue.Lay(s, UiSamples.Monologue(en, state), frame, true);
+                        if (PanelMeets(s, px, py, pw, ph))
+                        {
+                            clear = false;
+                            where = where ?? "spoken line (" + state + ") at " + aspect.ToString("0.00");
+                        }
+                    }
+                }
+                // The phone put away: the dock stands at the screen's right edge again.
+                UiPhone.LeftShare = 1f;
+                UiSamples.DialogDocked(s, frame, true, UiDefaultKeys.Keyboard, en, "desk");
+                int panel = FirstPanel(s);
+                back &= panel >= 0 && Math.Abs(s.Items[panel].X + s.Items[panel].W - (frame.Width - UiTokens.S4)) < 1.5f;
+            }
+        }
+        finally
+        {
+            UiPhone.LeftShare = 1f;
+        }
+        Check(clear, "dialog: the conversation, the scenes, the call card and the spoken line's card never meet the phone, open or folded, on any screen shape"
+                     + (where != null ? " (meets: " + where + ")" : string.Empty));
+        Check(back, "dialog: with the phone put away the conversation docks at the screen's right edge");
+    }
+
+    // True where a panel of the scene overlaps the box.
+    private static bool PanelMeets(UiScene s, float x, float y, float w, float h)
+    {
+        for (int i = 0; i < s.ItemCount; i++)
+        {
+            ref UiItem it = ref s.Items[i];
+            if ((it.Flags & UiFlags.Panel) == 0 || (it.Flags & UiFlags.Chrome) != 0)
+            {
+                continue;
+            }
+            if (it.X < x + w && it.X + it.W > x && it.Y < y + h && it.Y + it.H > y)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static int FirstPanel(UiScene s)
+    {
+        for (int i = 0; i < s.ItemCount; i++)
+        {
+            if ((s.Items[i].Flags & UiFlags.Panel) != 0)
+            {
+                return i;
+            }
+        }
+        return -1;
     }
 
     // The scenes as the kit draws them: the look each page takes, the hearing that may not be left, the answers' meanings
@@ -343,11 +470,11 @@ internal static partial class Program
         UiWords en = UiWords("en");
         UiFrame f = UiFrame.FullMenu(16f / 9f, "Contacts");
         UiContacts.Lay(s, UiSamples.LoanCall(en), f, true, UiDefaultKeys.Keyboard);
-        int typed = s.FindNode(UiFormRows.FieldCommand, 0), term = s.FindNode(UiFormRows.FieldCommand, 1), figure = s.FindNode(UiFormRows.FieldCommand, 3);
+        int typed = s.FindNode(UiFormRows.FieldCommand, 0), term = s.FindNode(UiFormRows.SwatchCommand, UiFormRows.SwatchArg(1, 0)), figure = s.FindNode(UiFormRows.FieldCommand, 3);
         int reply = s.FindNode(UiCallCard.ChoiceCommand, 0), lower = s.FindNode(UiCallCard.ChoiceCommand, 1), hangUp = s.FindNode(UiCallCard.ButtonCommand, 0);
         Check(typed >= 0 && term >= 0 && figure < 0 && reply >= 0 && s.Nodes[reply].Key == UiAction.Pick1 && lower >= 0 && s.Nodes[lower].Key == (UiAction)((int)UiAction.Pick1 + 1)
               && hangUp >= 0 && s.Nodes[hangUp].Key == UiAction.Back && s.FindNode(UiAppWindow.NavCommand, 0) < 0,
-            "dialog: a call's form stands on the call card, its amount typed, its term chosen, its figures read only, Confirm on 1, the bank's own answers after it, Hang up on Back, the window not reachable under it");
+            "dialog: a call's form stands on the call card, its amount typed, its term on chips, its figures read only, Confirm on 1, the bank's own answers after it, Hang up on Back, the window not reachable under it");
         UiContacts.Lay(s, UiSamples.MoodCall(en), f, true, UiDefaultKeys.Keyboard);
         bool mood = false;
         for (int i = 0; i < s.ItemCount; i++)
@@ -401,12 +528,12 @@ internal static partial class Program
         Check(plea.Faces.Length == 4 && plea.FaceRoles != null && plea.FaceRoles[1] == "Presiding" && plea.FaceRoles[3] == "The defendant" && plea.FaceRings[0] == UiRole.Danger
               && plea.FaceRings[2] == UiRole.Ok && plea.EmblemLabel == "4 present" && DialogDrawn(s, "Presiding") && DialogDrawn(s, "4 present"),
             "scenes: the court shows those present one to a row with who each is and whose side they are on, and how many are present");
-        Check(plea.Choices[0].Note == "24 hours" && DialogHas(plea.Choices[0].Lines, "A fine of $1,200", -1) && DialogHas(plea.Choices[1].Lines, "About 4 in 10 chance to be cleared", 0)
-              && DialogHas(plea.Choices[1].Lines, "If convicted, a fine of $2,400", -1) && DialogHas(plea.Choices[2].Lines, "A fine of $720", -1) && DialogDrawn(s, "About 4 in 10 chance to be cleared"),
+        Check(plea.Choices[0].Note == "24 hours" && DialogHas(plea.Choices[0].Lines, "A fine of $1,200", UiConsequence.Loss) && DialogHas(plea.Choices[1].Lines, "About 4 in 10 chance to be cleared", 0)
+              && DialogHas(plea.Choices[1].Lines, "If convicted, a fine of $2,400", UiConsequence.Loss) && DialogHas(plea.Choices[2].Lines, "A fine of $720", UiConsequence.Loss) && DialogDrawn(s, "About 4 in 10 chance to be cleared"),
             "scenes: each plea says what it costs under its meaning, the time it takes by its name, a trial its chance in words and what losing it brings");
         Check(tax.FaceRoles != null && tax.FaceRoles[0] == "For the city's tax office" && tax.Choices.Length == 3 && tax.Choices[2].Name == "Settle with the city"
-              && DialogHas(tax.Choices[2].Lines, "$9,600 to the city", -1) && DialogHas(tax.Choices[2].Lines, "The charge is dropped; the inspector comes less often for a year", 1)
-              && DialogHas(tax.Choices[1].Lines, "If convicted, a fine of $9,600", -1),
+              && DialogHas(tax.Choices[2].Lines, "$9,600 to the city", UiConsequence.Loss) && DialogHas(tax.Choices[2].Lines, "The charge is dropped; the inspector comes less often for a year", 1)
+              && DialogHas(tax.Choices[1].Lines, "If convicted, a fine of $9,600", UiConsequence.Loss),
             "scenes: a tax case's plea offers the city's settlement in place of a deal, what a lost trial costs and the charge dropped with the inspector less often");
         var costs = new[] { new UiConsequence { Text = "A fine of $1,200" }, new UiConsequence { Text = "24 hours of community service" } };
         Check(SceneViews.Joined("No trial.", costs, "24 hours") == "No trial.\nA fine of $1,200 \u00b7 24 hours of community service \u00b7 24 hours"
@@ -455,13 +582,13 @@ internal static partial class Program
         UiConversationModel wholesale = UiSamples.Dialog(en, "wholesale");
         UiSamples.DialogDocked(s, frame, true, UiDefaultKeys.Keyboard, en, "wholesale");
         UiConsequence[] accept = wholesale.Choices[0].Lines;
-        Check(accept.Length == 2 && DialogHas(accept, "Deliveries to Harbour Lights Bakery from day 415", 0) && accept[1].Tone < 0 && accept[1].Change < 0
+        Check(accept.Length == 2 && DialogHas(accept, "Deliveries to Harbour Lights Bakery from day 415", 1) && accept[1].Tone == UiConsequence.Loss && accept[1].Change < 0
               && DialogDrawn(s, "$120 on each delivery, with the goods") && DialogDrawn(s, "Delivery fee") && DialogDrawn(s, "$120"),
-            "dialog: a wholesale contract names its fee as the game labels it, and Accept says the first delivery day and the fee paid with each delivery, its arrow down");
+            "dialog: a wholesale contract names its fee as the game labels it, and Accept says the first delivery day and the fee paid with each delivery, its arrow down and red");
 
         UiConversationModel unset = UiSamples.Dialog(en, "import_unset"), chosen = UiSamples.Dialog(en, "import");
-        Check(unset.Choices[0].Lines.Length == 1 && DialogHas(unset.Choices[0].Lines, "Select purchasing agent", 0) && unset.Rows[1].Value == null && unset.Rows[1].Hint == "Select purchasing agent"
-              && DialogHas(chosen.Choices[0].Lines, "20.5% off every import order", 1) && DialogHas(chosen.Choices[0].Lines, "Priya Nair buys for you from day 415", 0),
+        Check(unset.Choices[0].Lines.Length == 1 && DialogHas(unset.Choices[0].Lines, "Select purchasing agent", 0) && unset.Rows[1].Kind == UiFormKind.Pick && !unset.Rows[1].On && chosen.Rows[1].On
+              && DialogHas(chosen.Choices[0].Lines, "20.5% off every import order", 1) && DialogHas(chosen.Choices[0].Lines, "Priya Nair buys for you from day 415", 1),
             "dialog: a confirm whose choice is not made yet says so in the game's own words for it, in place of a cost; once made, the partnership's agent and discount");
 
         UiSamples.DialogDocked(s, frame, true, UiDefaultKeys.Keyboard, en, "insurance_unset");
@@ -477,7 +604,7 @@ internal static partial class Program
             amounts += goods.Rows[i].Kind == UiFormKind.Amount && goods.Rows[i].Remove && goods.Rows[i].CanLess && goods.Rows[i].CanMore ? 1 : 0;
         }
         UiSamples.DialogDocked(s, frame, true, UiDefaultKeys.Keyboard, en, "furniture");
-        Check(amounts == 3 && DialogDrawn(s, "Add item") && DialogHas(goods.Choices[0].Lines, "$9,030, paid on delivery", -1) && s.FindNode(UiFormRows.RemoveCommand, 5) >= 0,
+        Check(amounts == 3 && DialogDrawn(s, "Add item") && DialogHas(goods.Choices[0].Lines, "$9,030, paid on delivery", UiConsequence.Loss) && s.FindNode(UiFormRows.RemoveCommand, 5) >= 0,
             "dialog: a delivery's goods each stand with their steps and the button that takes them away, Add item under them, and Order says the total is paid on delivery");
 
         UiFrame contacts = UiFrame.FullMenu(16f / 9f, "Contacts");
@@ -488,7 +615,7 @@ internal static partial class Program
         Check(towWhy == "none", "dialog: a tow by phone offers the game's two places as options on the call card, each with its price, and Accept says what it costs now (" + towWhy + ")");
 
         UiConversationModel wage = UiSamples.MoodCall(en).Talk;
-        Check(wage.Choices.Length > 0 && DialogHas(wage.Choices[0].Lines, "$18.50 an hour and $250 on signing, if they agree", -1) && DialogHas(wage.Choices[0].Lines, "They asked for $19.50 an hour and $400", 0),
+        Check(wage.Choices.Length > 0 && DialogHas(wage.Choices[0].Lines, "$18.50 an hour and $250 on signing, if they agree", UiConsequence.Loss) && DialogHas(wage.Choices[0].Lines, "They asked for $19.50 an hour and $400", 0),
             "dialog: a wage offer typed in a Contacts thread says under Send Offer what it pays and on signing, beside what the candidate asked");
     }
 

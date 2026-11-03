@@ -36,6 +36,7 @@ namespace RealLifeOverhaul.Ui
     {
         public string Move, Choose, Back, Menu;
         public string Present;   // under the faces of those present, told with their roles: "{count} present"
+        public string Answer;    // over the answers in the conversation: "Your answer"; null for none
     }
 
     /// <summary>
@@ -57,6 +58,9 @@ namespace RealLifeOverhaul.Ui
         public string Role;                   // under their name: who they are to the player
         public bool InfoSaid = true;          // the lines under the headline are said; false where they are the moment's caption (its kicker and faces)
         public bool Locked;                   // the player may not leave: no way out but an answer
+        public UiLedgerLine[] Statement;      // what the page says as a statement (a file's figures), drawn in place of its notes' words; null for none
+        public string StatementWords;         // the words over the statement (a case's hearing); null for none
+        public string StatementFoot;          // the words under it (probation, the licence); null for none
         public readonly List<SceneNote> Notes = new List<SceneNote>(4);
         public readonly List<SceneEntry> Entries = new List<SceneEntry>(8);
         public int Stamp;                     // grows with every change, so a screen sees a new page by one number
@@ -75,6 +79,9 @@ namespace RealLifeOverhaul.Ui
             Speaker = null;
             Role = null;
             InfoSaid = true;
+            Statement = null;
+            StatementWords = null;
+            StatementFoot = null;
             Notes.Clear();
             Entries.Clear();
             Stamp++;
@@ -130,7 +137,7 @@ namespace RealLifeOverhaul.Ui
         {
             string said = SaidOf(page, out string _);
             int lines = Lines(Body(page)) + (Kicks(page, said) ? 0 : Lines(said));
-            return DialogRules.Look(page.Look == SceneLook.Talk, lines);
+            return DialogRules.Look(page.Look == SceneLook.Talk || page.Statement != null, lines);   // a statement reads in the conversation's bubble
         }
 
         /// <summary>The card stands whole over the status bar, a gutter above and below it; one that cannot is a conversation.</summary>
@@ -187,9 +194,33 @@ namespace RealLifeOverhaul.Ui
                     ? new UiActionModel[0]
                     : new[] { new UiActionModel { Label = words.Back, Kind = UiButtonKind.Secondary, Key = UiAction.Back, Command = UiDecision.ButtonCommand } },
             };
+            m.Selected = DialogRules.Keys(m.Choices, -1, out int _);   // F on the answer it leads with, chosen; P on the next
             m.Prompts = Prompts(page, words);
             m.PromptCount = m.Prompts.Length;
             return m;
+        }
+
+        /// <summary>The answers F and P take: the first two that can be taken, as their caps say; -1 for none.</summary>
+        public static int Keyed(ScenePage page, out int second)
+        {
+            int main = -1;
+            second = -1;
+            for (int i = 0; i < page.Entries.Count; i++)
+            {
+                if (!page.Entries[i].Enabled)
+                {
+                    continue;
+                }
+                if (main < 0)
+                {
+                    main = i;
+                }
+                else if (second < 0)
+                {
+                    second = i;
+                }
+            }
+            return main;
         }
 
         /// <summary>The page as the conversation: the speaker at the head with the progress in a chip, the thread so far, the answers.</summary>
@@ -222,6 +253,8 @@ namespace RealLifeOverhaul.Ui
                 Choices = Choices(page, TalkLine(frameWidth)),
                 Offset = -1f
             };
+            m.Chosen = DialogRules.Keys(m.Choices, -1, out int _);
+            m.ChoicesLabel = m.Choices.Length > 0 ? Clean(words.Answer) : null;
             m.Typing = m.Choices.Length == 0;
             m.Prompts = Prompts(page, words);
             m.PromptCount = m.Prompts.Length;
@@ -234,6 +267,12 @@ namespace RealLifeOverhaul.Ui
             if (!string.IsNullOrEmpty(said))
             {
                 into.Add(new UiMessageModel { From = UiFrom.Them, Text = said });
+            }
+            if (page.Statement != null)
+            {
+                // A file's figures as a statement: its words over it, the figures on one right edge, the rest under it.
+                into.Add(new UiMessageModel { From = UiFrom.Them, Text = Clean(page.StatementWords), Table = page.Statement, TableFoot = Clean(page.StatementFoot) });
+                return;
             }
             for (int i = 0; i < page.Notes.Count; i++)
             {
@@ -308,15 +347,16 @@ namespace RealLifeOverhaul.Ui
             return lines.ToArray();
         }
 
-        // A sentence ends at a stop, a question or an exclamation followed by a space, or at a full-width stop.
+        // A sentence ends at a stop, a question or an exclamation followed by a space, or at a full-width stop; a semicolon
+        // keeps its two halves on one line, broken only where the line is too short for them.
         private static bool Ends(string words, int i)
         {
             char c = words[i];
-            if (c == '。' || c == '？' || c == '！' || c == '；' || c == '\n')
+            if (c == '。' || c == '？' || c == '！' || c == '\n')
             {
                 return true;
             }
-            return (c == '.' || c == '?' || c == '!' || c == ';') && i + 1 < words.Length && words[i + 1] == ' ';
+            return (c == '.' || c == '?' || c == '!') && i + 1 < words.Length && words[i + 1] == ' ';
         }
 
         // A sentence onto lines that fit: whole if it fits, else broken where a space allows, else between characters.
@@ -454,16 +494,52 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < choices.Length; i++)
             {
                 SceneEntry e = page.Entries[i];
+                string said = Clean(e.Said);
+                string name = Clean(e.Name) ?? string.Empty, detail = e.Detail;
+                if (said != null && said == Clean(e.Detail))
+                {
+                    // An answer the player says ("Answer 1" over its words): its words are its name, the rest of a long one under it.
+                    name = Head(said, lineWidth, out string rest);
+                    detail = rest;
+                }
                 choices[i] = new UiDecisionChoice
                 {
                     Key = i < 9 ? (UiAction)((int)UiAction.Pick1 + i) : UiAction.Count,
-                    Name = Clean(e.Name) ?? string.Empty,
-                    Lines = With(Meaning(e.Detail, lineWidth), e.Lines),
+                    Name = name,
+                    Lines = With(Meaning(detail, lineWidth), e.Lines),
                     Note = Clean(e.Note),
                     Disabled = !e.Enabled
                 };
             }
             return choices;
+        }
+
+        // As much of an answer's words as its name's line holds (its key's cap beside it), broken between words; the rest
+        // after it, null for none.
+        private static string Head(string words, float width, out string rest)
+        {
+            rest = null;
+            width -= UiTokens.S10;   // the cap of F or P at the line's end
+            if (UiTextRules.Fits(words, UiStyle.BodyStrong, width))
+            {
+                return words;
+            }
+            int cut = 1;
+            for (int j = 1; j < words.Length; j++)
+            {
+                if (!UiTextRules.Fits(words.Substring(0, j + 1), UiStyle.BodyStrong, width))
+                {
+                    break;
+                }
+                cut = j + 1;
+            }
+            int space = words.LastIndexOf(' ', System.Math.Min(cut, words.Length - 1));
+            if (space > cut / 2)
+            {
+                cut = space;
+            }
+            rest = Clean(words.Substring(cut));
+            return words.Substring(0, cut).Trim();
         }
 
         // A scene the player may not leave keeps the cancel key for the game, whose own menu it opens (the window leaves

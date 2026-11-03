@@ -137,15 +137,23 @@ internal static partial class UiSamples
                 Head(m, t("dialog_wholesale_store_npc_name", "Store Manager"), "Bronx Provisions Wholesale");
                 lines.Add(Them(t("dialog_wholesale_store_start", "Hello! How can I help you?")));
                 lines.Add(Me(t("dialog_wholesale_start_contract", "Start contract")));
+                // The businesses as DialogForm.Contracts lists them: the game would refuse the greyed ones, and says why.
                 m.Rows = new[]
                 {
                     FormHeading(t("dialog_wholesale_store_delivery_contract_header", "Delivery contract")),
-                    FormChoice(t("common_business", "Business"), Bakery),
+                    Pick(Bakery, Fill("{kind}, {district}", "kind", t("ba:businesstype_giftshop", "Gift Shop"), "district", "Midtown"), UiIcon.Store, true, null),
+                    Pick("Brewed Beans", Fill("{kind}, {district}", "kind", t("ba:businesstype_coffeeshop", "Coffee Shop"), "district", "Midtown"), UiIcon.Store, false, null),
+                    Pick(Florist, Fill("{kind}, {district}", "kind", t("ba:businesstype_florist", "Florist"), "district", "Garment District"), UiIcon.Store, false,
+                        t("reallife_ui_dialog_has_contract", "Has a contract here")),
+                    Pick("Speedy Bites", Fill("{kind}, {district}", "kind", t("ba:businesstype_fastfoodrestaurant", "Fast Food Restaurant"), "district", "Midtown"), UiIcon.Store, false,
+                        t("reallife_ui_dialog_needs_storage", "Needs a storage shelf")),
                     FormBreak(),
                     FormFigure(t("dialog_delivery_fee", "Delivery fee"), "$120", false),
+                    FormFigure(t("reallife_ui_dialog_first_delivery", "First delivery"), Fill(t("reallife_ui_dialog_contract_day", "Day {day}"), "day", "415"), false),
+                    new UiFormRow { Kind = UiFormKind.Note, Label = t("reallife_ui_dialog_each_delivery_note", "Each delivery costs the fee plus the goods you set in BizMan.") },
                 };
                 choices.Add(Priced(t("dialog_accept_button", "Accept"),
-                    Line(Fill(t("reallife_ui_dialog_cost_supplied", "Deliveries to {business} from day {day}"), "business", Bakery, "day", "415"), 0),
+                    Line(Fill(t("reallife_ui_dialog_cost_supplied", "Deliveries to {business} from day {day}"), "business", Bakery, "day", "415"), 1),
                     Line(Fill(t("reallife_ui_dialog_cost_each_delivery", "{fee} on each delivery, with the goods"), "fee", "$120"), -1, -1)));
                 choices.Add(Choice(leave));
                 break;
@@ -157,14 +165,39 @@ internal static partial class UiSamples
                 lines.Add(Them(t("dialog_import_start", "Hello and welcome! How can I help you?")));
                 lines.Add(Me(t("dialog_import_create_new_partnership", "New partnership")));
                 string agent = t("dialog_import_purchasing_agent", "Purchasing Agent"), ask = t("dialog_import_select_purchasing_agent", "Select purchasing agent");
-                m.Rows = new[]
+                // The agents as DialogForm.Contracts lists them, each with the discount their skill gives; then what it needs and brings.
+                bool picked = state == "import";
+                string sub = t("reallife_ui_dialog_agent_sub", "Purchasing agent, {place}"), off = t("reallife_ui_dialog_agent_off", "{discount}% off");
+                string skill = t("reallife_ui_dialog_agent_skill", "skill {skill}");
+                var rows = new List<UiFormRow>
                 {
-                    FormHeading(t("dialog_import_partnership_header", "Import Partnership")),
-                    state == "import" ? FormChoice(agent, "Priya Nair") : FormUnchosen(agent, ask),
+                    new UiFormRow
+                    {
+                        Kind = UiFormKind.Heading, Label = t("dialog_import_partnership_header", "Import Partnership"),
+                        Value = t("reallife_ui_dialog_agents_note", "On a shift, no partnership yet")
+                    },
+                    Agent("Priya Nair", Fill(sub, "place", "Harbour Lights HQ"), Fill(off, "discount", "20.5"), Fill(skill, "skill", "82"), picked),
+                    Agent("Tom Eriksen", Fill(sub, "place", "Harbour Lights HQ"), Fill(off, "discount", "16"), Fill(skill, "skill", "64"), false),
+                    Agent("Lena Adler", Fill(sub, "place", "Hudson Warehouse"), Fill(off, "discount", "11.8"), Fill(skill, "skill", "47"), false),
+                    FormHeading(t("reallife_ui_dialog_import_needs", "What you need to start")),
+                    new UiFormRow { Kind = UiFormKind.Check, Label = t("reallife_ui_dialog_import_warehouse", "A rented warehouse"), Value = "Hudson Warehouse, Hell's Kitchen", On = true },
+                    new UiFormRow
+                    {
+                        Kind = UiFormKind.Check, Label = t("reallife_ui_dialog_import_agent_on_shift", "A purchasing agent on a shift"), On = true,
+                        Value = Fill(t("reallife_ui_dialog_import_free", "{free} free of {all}"), "free", "3", "all", "5")
+                    },
+                    FormBreak(),
                 };
-                choices.Add(state == "import"
-                    ? Priced(t("dialog_accept_button", "Accept"), Line(Fill(t("reallife_ui_dialog_cost_agent", "{buyer} buys for you from day {day}"), "buyer", "Priya Nair", "day", "415"), 0),
-                        Line(Fill(t("reallife_ui_dialog_cost_discount", "{discount}% off every import order"), "discount", "20.5"), 1))
+                if (picked)
+                {
+                    rows.Add(FormFigure(t("reallife_ui_dialog_import_discount", "Discount on every import order"), "20.5%", false));
+                }
+                rows.Add(FormFigure(t("reallife_ui_dialog_import_orders", "Orders go out"), t("reallife_ui_dialog_import_mondays", "Mondays"), false));
+                rows.Add(FormFigure(t("reallife_ui_dialog_import_products", "Products and amounts"), t("reallife_ui_dialog_import_in_bizman", "Set next, in BizMan"), true));
+                m.Rows = rows.ToArray();
+                choices.Add(picked
+                    ? Priced(t("dialog_accept_button", "Accept"), Line(Fill(t("reallife_ui_dialog_cost_agent", "{buyer} buys for you from day {day}"), "buyer", "Priya Nair", "day", "415"), 1),
+                        Line(Fill(t("reallife_ui_dialog_cost_discount", "{discount}% off every import order"), "discount", "20.5"), 1, 1))
                     : Priced(t("dialog_accept_button", "Accept"), Line(ask, 0)));   // the choice the confirm needs, in the game's own words for it
                 choices.Add(Choice(leave));
                 break;
@@ -327,8 +360,8 @@ internal static partial class UiSamples
             case "desk":
             {
                 Head(m, t("reallife-business", "Business desk"), Bakery);
-                lines.Add(Them(Matter(t, t("reallife_biz_undercut_name", "A competitor undercuts you"), Undercut(t), "412")));
-                choices.Add(Choice(t("reallife_biz_desk_options", "What can I do?")));
+                lines.Add(Them(Matter(t, t("reallife_biz_undercut_name", "A competitor undercuts you"), Undercut(t))));
+                choices.Add(Priced(t("reallife_biz_desk_options", "What can I do?"), Line(Due(t, "412"), 0)));
                 choices.Add(Choice(t("reallife_biz_desk_next", "Next matter")));
                 choices.Add(Choice(leave));
                 break;
@@ -338,20 +371,22 @@ internal static partial class UiSamples
                 Head(m, t("reallife-business", "Business desk"), Bakery);
                 lines.Add(Them(Matter(t, t("reallife_biz_health_name", "Health inspection"),
                     Fill(t("reallife_biz_health_start", "The health inspector will call at {business} tomorrow at {time}. They look at one thing: how clean the place is. It is at {clean} of 100 now; {pass} is a pass."),
-                        "business", Bakery, "time", "10:00", "clean", "64", "pass", "70"), "411")));
+                        "business", Bakery, "time", "10:00", "clean", "64", "pass", "70"))));
                 lines.Add(Me(t("reallife_biz_desk_next", "Next matter")));
                 lines.Add(Them(Matter(t, t("reallife_biz_supplierlate_name", "A late delivery"),
                     Fill(t("reallife_biz_supplierlate_start", "The wholesaler for {business} says the next delivery will be a day late (a lorry off the road) unless you pay {amount} for an express run. Answer today."),
-                        "business", Bakery, "amount", "$180"), "410")));
+                        "business", Bakery, "amount", "$180"))));
                 lines.Add(Me(t("reallife_biz_desk_next", "Next matter")));
-                lines.Add(Them(Matter(t, t("reallife_biz_undercut_name", "A competitor undercuts you"), Undercut(t), "412")));
+                lines.Add(Them(Matter(t, t("reallife_biz_undercut_name", "A competitor undercuts you"), Undercut(t))));
                 lines.Add(Me(t("reallife_biz_desk_options", "What can I do?")));
                 lines.Add(Them(Fill(t("reallife_biz_desk_option", "Choice {number} of {count}: {text}"), "number", "1", "count", "3",
                     "text", Fill(t("reallife_biz_undercut_marketing", "A week of leaflets and local adverts: {amount}. It cancels the dip at once and brings a few extra customers in for three days."), "amount", "$450"))));
-                choices.Add(Choice(t("reallife_biz_undercut_do_marketing", "Run a marketing push")));
+                // The option's price under its answer (BusinessDesk.OptionPage: Pays), the deadline under deciding later.
+                choices.Add(Priced(t("reallife_biz_undercut_do_marketing", "Run a marketing push"),
+                    Line(Fill(t("reallife_ui_dialog_cost_now", "{amount} now"), "amount", "$450"), -1, -1)));
                 choices.Add(Choice(t("reallife_biz_desk_another", "Another way")));
                 back = t("reallife_biz_desk_later", "Decide later");
-                choices.Add(Choice(back));
+                choices.Add(Priced(back, Line(Due(t, "412"), 0)));
                 break;
             }
             case "street":
@@ -429,7 +464,11 @@ internal static partial class UiSamples
         m.RowCount = m.Rows != null ? m.Rows.Length : 0;
         m.Messages = lines.ToArray();
         m.MessageCount = lines.Count;
+        // The answers' keys as DialogScreen sets them: F on the first, P on the next, Escape on the way out; the first chosen.
+        int leaveAt = back != null && choices.Count > 0 && choices[choices.Count - 1].Name == DialogRules.OneLine(back) ? choices.Count - 1 : -1;
         m.Choices = choices.ToArray();
+        m.Chosen = DialogRules.Keys(m.Choices, leaveAt, out int _);
+        m.ChoicesLabel = m.Choices.Length > 0 ? t("reallife_ui_dialog_your_answer", "Your answer") : null;
         m.Typing = choices.Count == 0 && m.RowCount == 0;
         var prompts = new List<UiPrompt>(3);
         if (choices.Count > 0 || m.RowCount > 0)
@@ -459,8 +498,13 @@ internal static partial class UiSamples
             rows.Add(new UiFormRow { Kind = UiFormKind.Heading, Label = t("dialog_bank_loan_amount_header", "Loan amount") });   // the line's own question
         }
         string term = Fill(t("reallife_ui_dialog_loan_term_years", "{years} years ({days} days)"), "years", "2", "days", "120");
-        rows.Add(new UiFormRow { Kind = UiFormKind.Text, Label = t("dialog_bank_amount_to_loan", "Amount to loan"), Value = "25000" });
-        rows.Add(new UiFormRow { Kind = UiFormKind.Choice, Label = t("reallife_ui_dialog_loan_term", "Term"), Value = term });
+        string years = t("reallife_ui_dialog_loan_chip_years", "{years} years");
+        rows.Add(new UiFormRow { Kind = UiFormKind.Amount, Label = t("dialog_bank_amount_to_loan", "Amount to loan"), Value = "25000", CanLess = true, CanMore = true });
+        rows.Add(new UiFormRow
+        {
+            Kind = UiFormKind.Segments, Label = t("reallife_ui_dialog_loan_term", "Term"), Value = term, Chosen = 1,
+            Options = new[] { t("reallife_ui_dialog_loan_chip_year", "1 year"), Fill(years, "years", "2"), Fill(years, "years", "3") }
+        });
         rows.Add(new UiFormRow { Kind = UiFormKind.Break });
         rows.Add(new UiFormRow { Kind = UiFormKind.Figure, Label = t("reallife_ui_dialog_loan_rate", "Interest rate"), Value = Fill(t("reallife_ui_dialog_loan_rate_value", "{rate}% a year"), "rate", "9") });
         rows.Add(new UiFormRow { Kind = UiFormKind.Figure, Label = t("reallife_ui_dialog_loan_payment", "Payment a day"), Value = "$245" });
@@ -487,7 +531,7 @@ internal static partial class UiSamples
                 Lines = new[]
                 {
                     new UiConsequence { Text = Fill(t("reallife_ui_dialog_loan_cost_in", "{amount} in your account today"), "amount", "$25,000"), Tone = 1, Change = 1 },
-                    new UiConsequence { Text = Fill(t("reallife_ui_dialog_loan_cost_out", "{payment} a day for {days} days"), "payment", "$245", "days", "121"), Tone = -1 }
+                    new UiConsequence { Text = Fill(t("reallife_ui_dialog_loan_cost_out", "{payment} a day for {days} days"), "payment", "$245", "days", "121"), Tone = UiConsequence.Loss, Change = -1 }
                 }
             },
             new UiDecisionChoice { Name = t("reallife_ui_dialog_loan_lower", "Ask for a lower rate"), Disabled = !lower, Lines = new[] { point } },
@@ -514,8 +558,10 @@ internal static partial class UiSamples
     // An answer with what it pays and costs under it, as the dialog or the form's confirm tells it (DialogAnswers).
     private static UiDecisionChoice Priced(string words, params UiConsequence[] lines) => new UiDecisionChoice { Name = DialogRules.OneLine(words), Lines = lines };
 
-    // A line under an answer: for the player (+1), against them (-1) or neither, and which way their money goes.
-    private static UiConsequence Line(string text, int tone, int change = 0) => new UiConsequence { Text = text, Tone = tone, Change = change };
+    // A line under an answer: for the player (+1), against them (-1) or neither, and which way their money goes; money
+    // paid out (against them, falling) in the red, as DialogChoices.Lines makes it.
+    private static UiConsequence Line(string text, int tone, int change = 0) =>
+        new UiConsequence { Text = text, Tone = tone < 0 && change < 0 ? UiConsequence.Loss : tone, Change = change };
 
     // A game form's rows as DialogForm reads them: its question, a choice made or still asking, a figure, a splitter.
     private static UiFormRow FormHeading(string words) => new UiFormRow { Kind = UiFormKind.Heading, Label = words };
@@ -528,6 +574,14 @@ internal static partial class UiSamples
 
     private static UiFormRow FormBreak() => new UiFormRow { Kind = UiFormKind.Break };
 
+    // A line of a list to choose from (DialogForm.Contracts): a business with its kind and district, greyed with why it cannot be.
+    private static UiFormRow Pick(string name, string where, UiIcon icon, bool chosen, string reason) =>
+        new UiFormRow { Kind = UiFormKind.Pick, Label = name, Hint = where, Icon = icon, On = chosen, Disabled = reason != null, Reason = reason };
+
+    // ...an agent with their workplace, the discount their skill gives and the skill.
+    private static UiFormRow Agent(string name, string where, string off, string skill, bool chosen) =>
+        new UiFormRow { Kind = UiFormKind.Pick, Label = name, Hint = where, Side = off, SideNote = skill, On = chosen };
+
     // A delivery's line of goods: its name and price as the game writes them, its amount with its steps and the button that takes it away.
     private static UiFormRow Goods(UiWords t, string item, string english, string price, string amount) => new UiFormRow
     {
@@ -536,9 +590,12 @@ internal static partial class UiSamples
     };
 
     // A matter as the desk tells it: its name and business, what happened, and when it must be decided.
-    private static string Matter(UiWords t, string name, string text, string day) =>
-        Fill(t("reallife_biz_desk_issue", "{name}: {business}\n{text}\nDecide by day {day}, {time} (today is day {today})."),
-            "name", name, "business", Bakery, "text", text, "day", day, "time", "18:00", "today", "410");
+    // A matter as the desk says it now (BusinessDesk.IssuePage): one paragraph; its deadline goes under the answers.
+    private static string Matter(UiWords t, string name, string text) =>
+        Fill(t("reallife_biz_desk_matter", "{name}, {business}. {text}"), "name", name, "business", Bakery, "text", text);
+
+    private static string Due(UiWords t, string day) =>
+        Fill(t("reallife_biz_desk_due", "Decide by day {day}, {time}. Today is day {today}."), "day", day, "time", "18:00", "today", "410");
 
     private static string Undercut(UiWords t) =>
         Fill(t("reallife_biz_undercut_start", "{rival} has opened near {business} and is undercutting you. Expect about {percent}% fewer customers for {length} days. Your Business desk has ways to answer it."),
@@ -671,7 +728,7 @@ internal static partial class UiSamples
     public static SceneWords SceneWordsOf(UiWords t) => new SceneWords
     {
         Move = t("reallife_ui_prompt_move", "Move"), Choose = t("reallife_ui_prompt_choose", "Choose"), Back = t("common_cancel", "Cancel"), Menu = t("input_key_menu", "Menu"),
-        Present = t("reallife_ui_scene_present", "{count} present")
+        Present = t("reallife_ui_scene_present", "{count} present"), Answer = t("reallife_ui_dialog_your_answer", "Your answer")
     };
 
     /// <summary>A scene's page laid as SceneScreen lays it: the decision card for a moment, the conversation for questions and answers.</summary>
@@ -702,17 +759,17 @@ internal static partial class UiSamples
                         "charge", t("reallife_justice_charge_reckless", "Dangerous driving"), "percent", "62");
                     p.Notes.Add(new SceneNote { Name = judge, Detail = t("reallife_justice_court_plea", "You have heard the charges. How do you plead?") + "\n\n" + aside });
                     Answer(p, 0, t("reallife_justice_plea_guilty", "Guilty"), t("reallife_justice_plea_guilty_hint", "No trial. Convicted on every charge that stands, with a quarter off the sentence."));
-                    Costs(p, Fill(t("reallife_justice_cost_hours", "{hours} hours"), "hours", "24"), Cost(Fill(t("reallife_justice_cost_fine", "A fine of {amount}"), "amount", "$1,200"), -1),
+                    Costs(p, Fill(t("reallife_justice_cost_hours", "{hours} hours"), "hours", "24"), Cost(Fill(t("reallife_justice_cost_fine", "A fine of {amount}"), "amount", "$1,200"), UiConsequence.Loss),
                         Cost(Fill(t("reallife_justice_cost_community", "{hours} hours of community service"), "hours", "24"), -1));
                     Answer(p, 1, t("reallife_justice_plea_not_guilty", "Not guilty"),
                         Fill(t("reallife_justice_plea_not_guilty_hint", "A trial of {rounds} rounds. The case against you starts at {percent} in 100; your answers move it."), "rounds", "3", "percent", "62"));
                     Costs(p, null, Cost(Fill(t("reallife_justice_odds", "About {count} in 10 chance to be cleared"), "count", "4"), 0),
-                        Cost(Fill(t("reallife_justice_cost_lost_fine", "If convicted, a fine of {amount}"), "amount", "$2,400"), -1),
+                        Cost(Fill(t("reallife_justice_cost_lost_fine", "If convicted, a fine of {amount}"), "amount", "$2,400"), UiConsequence.Loss),
                         Cost(Fill(t("reallife_justice_cost_lost_community", "If convicted, {hours} hours of community service"), "hours", "32"), -1));
                     Answer(p, 2, t("reallife_justice_plea_deal", "Take the deal"),
                         Fill(t("reallife_justice_deal_reduced", "You plead guilty to {to} instead of {from}."), "to", t("reallife_justice_charge_evading", "Evading the police"),
                             "from", t("reallife_justice_charge_reckless", "Dangerous driving")) + " " + t("reallife_justice_deal_tail", "Sentence cut by 40%, and no prison."));
-                    Costs(p, null, Cost(Fill(t("reallife_justice_cost_fine", "A fine of {amount}"), "amount", "$720"), -1));
+                    Costs(p, null, Cost(Fill(t("reallife_justice_cost_fine", "A fine of {amount}"), "amount", "$720"), UiConsequence.Loss));
                 }
                 else
                 {
@@ -743,13 +800,13 @@ internal static partial class UiSamples
                     "charge", t("reallife_justice_charge_tax_evasion", "Tax evasion"), "percent", "70");
                 p.Notes.Add(new SceneNote { Name = judge, Detail = t("reallife_justice_court_plea", "You have heard the charges. How do you plead?") + "\n\n" + aside });
                 Answer(p, 0, t("reallife_justice_plea_guilty", "Guilty"), t("reallife_justice_plea_guilty_hint", "No trial. Convicted on every charge that stands, with a quarter off the sentence."));
-                Costs(p, null, Cost(Fill(t("reallife_justice_cost_fine", "A fine of {amount}"), "amount", "$4,800"), -1));
+                Costs(p, null, Cost(Fill(t("reallife_justice_cost_fine", "A fine of {amount}"), "amount", "$4,800"), UiConsequence.Loss));
                 Answer(p, 1, t("reallife_justice_plea_not_guilty", "Not guilty"),
                     Fill(t("reallife_justice_plea_not_guilty_hint", "A trial of {rounds} rounds. The case against you starts at {percent} in 100; your answers move it."), "rounds", "3", "percent", "70"));
                 Costs(p, null, Cost(Fill(t("reallife_justice_odds", "About {count} in 10 chance to be cleared"), "count", "3"), 0),
-                    Cost(Fill(t("reallife_justice_cost_lost_fine", "If convicted, a fine of {amount}"), "amount", "$9,600"), -1));
+                    Cost(Fill(t("reallife_justice_cost_lost_fine", "If convicted, a fine of {amount}"), "amount", "$9,600"), UiConsequence.Loss));
                 Answer(p, 2, t("reallife_justice_plea_settle", "Settle with the city"), t("reallife_justice_plea_settle_hint", "No trial and no conviction. You pay the city what a lost trial would cost."));
-                Costs(p, null, Cost(Fill(t("reallife_justice_settle_cost", "{amount} to the city"), "amount", "$9,600"), -1),
+                Costs(p, null, Cost(Fill(t("reallife_justice_settle_cost", "{amount} to the city"), "amount", "$9,600"), UiConsequence.Loss),
                     Cost(t("reallife_justice_settle_gain", "The charge is dropped; the inspector comes less often for a year"), 1));
                 p.Locked = true;
                 break;
@@ -759,13 +816,20 @@ internal static partial class UiSamples
                 string kicker = Fill(t("reallife_justice_file_subtitle", "Day {day}, {hour}:00"), "day", "410", "hour", "14");
                 p.Reset(t("reallife_justice_file_title", "Legal file"), kicker);
                 Moment(p, kicker, UiIcon.Briefcase);
-                string body = Fill(t("reallife_justice_file_case", "CASE {number}: {charges}."), "number", "114", "charges", t("reallife_justice_charge_reckless", "Dangerous driving"))
-                              + " " + Fill(t("reallife_justice_file_case_date", "Hearing: day {day}, 9:00 to 17:00, {place}."), "day", "412", "place", "the courthouse on Centre Street")
-                              + "\n" + Fill(t("reallife_justice_file_counsel", "Counsel: {name}"), "name", "Whitmore & Vale")
-                              + "\n" + Fill(t("reallife_justice_file_owed", "Owed: {amount} in all."), "amount", "$1,850")
-                              + "\n  - " + Fill(t("reallife_justice_file_debt_fine", "Court fine: {left} left, {perday} a day"), "left", "$1,850", "perday", "$50")
-                              + "\n" + t("reallife_justice_file_probation_none", "Probation: none.") + "\n" + t("reallife_justice_file_licence_ok", "Driving licence: not suspended.");
-                p.Notes.Add(new SceneNote { Name = string.Empty, Detail = body });
+                // The file as LegalFile.ShowMain tells it now: the case in words over a statement of its figures.
+                string cases = Fill(t("reallife_justice_file_case", "CASE {number}: {charges}."), "number", "114", "charges", t("reallife_justice_charge_reckless", "Dangerous driving"))
+                               + " " + Fill(t("reallife_justice_file_case_date", "Hearing: day {day}, 9:00 to 17:00, {place}."), "day", "412", "place", "the courthouse on Centre Street");
+                p.Notes.Add(new SceneNote { Name = string.Empty, Detail = cases });
+                p.Statement = new[]
+                {
+                    FileRow(Fill(t("reallife_justice_file_counsel", "Counsel: {name}"), "name", "Whitmore & Vale"), UiLedgerKind.Line),
+                    FileRow(Fill(t("reallife_justice_file_debt_fine", "Court fine: {left} left, {perday} a day"), "left", "$1,850", "perday", "$50"), UiLedgerKind.Line),
+                    FileRow(Fill(t("reallife_justice_file_owed", "Owed: {amount} in all."), "amount", "$1,850"), UiLedgerKind.Total),
+                    new UiLedgerLine { Kind = UiLedgerKind.Gap },
+                    FileRow(t("reallife_justice_file_probation_none", "Probation: none."), UiLedgerKind.Line),
+                    FileRow(t("reallife_justice_file_licence_ok", "Driving licence: not suspended."), UiLedgerKind.Line)
+                };
+                p.StatementWords = cases;
                 Answer(p, 0, t("reallife_justice_file_actions", "What I can do"), t("reallife_justice_file_actions_hint", "Pay off, answer a claim, appeal, community service."));
                 Answer(p, 1, t("reallife_justice_file_record", "My record"), Fill(t("reallife_justice_file_record_hint", "Entries: {count}, and closed cases."), "count", "2"));
                 Answer(p, 2, t("reallife_justice_file_close", "Close the file"), null);
@@ -876,8 +940,13 @@ internal static partial class UiSamples
                                  + " " + Fill(t("reallife_ven_verdict_helped", "What helped most was {topic}."), "topic", Part(MoneyFor(t), 4))
                     });
                     Answer(p, 0, t("reallife_ven_meet_take_title", "Accept the terms"),
-                        Fill(t("reallife_ven_meet_take", "{amount} is paid to you now for {share} of each day's profit of {business}. They expect its recent daily profit to grow by {growth}% within {days} days."),
-                            "amount", "$40,000", "share", "12%", "business", Bakery, "growth", "15", "days", "30"));
+                        Fill(t("reallife_ven_meet_take_expect", "They expect its recent daily profit to grow by {growth}% within {days} days."), "growth", "15", "days", "30"));
+                    Costs(p, null, new UiConsequence { Text = Fill(t("reallife_ven_meet_take_in", "{amount} is paid to you now"), "amount", "$40,000"), Tone = 1, Change = 1 },
+                        new UiConsequence
+                        {
+                            Text = Fill(t("reallife_ven_meet_take_share", "{share} of each day's profit of {business} goes to them"), "share", "12%", "business", Bakery),
+                            Tone = UiConsequence.Loss, Change = -1
+                        });
                     Answer(p, 1, t("reallife_ven_meet_think", "Think it over"), Fill(t("reallife_ven_meet_think_detail", "The offer waits in Ventures until day {day}. You can accept, refuse or counter it there."), "day", "417"));
                     Answer(p, 2, t("reallife_ven_meet_decline", "Decline"), null);
                 }
@@ -934,7 +1003,8 @@ internal static partial class UiSamples
         p.Entries[p.Entries.Count - 1] = e;
     }
 
-    private static UiConsequence Cost(string text, int tone) => new UiConsequence { Text = text, Tone = tone };
+    // A line as JusticePanel.Lines makes it: money paid out (UiConsequence.Loss) red behind the falling arrow.
+    private static UiConsequence Cost(string text, int tone) => new UiConsequence { Text = text, Tone = tone, Change = tone <= UiConsequence.Loss ? -1 : 0 };
 
     // The court as JusticePanel tells it: the case against the player, the judge, the player's lawyer, and the player in
     // the dock, each with who they are and their ring (SceneList.Roles).
@@ -944,6 +1014,12 @@ internal static partial class UiSamples
         p.Roles = new[] { againstRole, t("reallife_justice_role_judge", "Presiding"), t("reallife_justice_role_counsel", "Your lawyer"), t("reallife_justice_role_defendant", "The defendant") };
         p.Rings = new[] { UiRole.Danger, UiRole.Warn, UiRole.Ok, UiRole.Accent };
     }
+
+    // A line of the Legal file as its statement's (LegalFile.Row): its label and figure where it has both.
+    private static UiLedgerLine FileRow(string line, UiLedgerKind kind) =>
+        DialogRules.Pair(line, out string label, out string value)
+            ? new UiLedgerLine { Kind = kind, Label = label, Value = value }
+            : new UiLedgerLine { Kind = UiLedgerKind.Line, Label = line };
 
     // An investor's question with its three answers and its topic, as the pitch keeps them in one text.
     private static string MoneyFor(UiWords t) =>

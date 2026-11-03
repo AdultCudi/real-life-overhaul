@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using RealLifeOverhaul.Ui;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -17,6 +18,9 @@ namespace RealLifeOverhaul
 
         private readonly JusticeDirector _director;
         private readonly StringBuilder _text = new StringBuilder(900);
+        private readonly StringBuilder _words = new StringBuilder(300);   // on the RLO interface: the cases over the statement
+        private readonly StringBuilder _foot = new StringBuilder(300);    // ...and what is left to do under it
+        private readonly List<UiLedgerLine> _rows = new List<UiLedgerLine>(12);
         private readonly List<Act> _acts = new List<Act>(8);
 
         public LegalFile(JusticeDirector director)
@@ -72,6 +76,26 @@ namespace RealLifeOverhaul
             return text.ToString();
         }
 
+        // A line of the file as the statement's: its label and its figure where it has both, else its words alone.
+        private void Row(string line, UiLedgerKind kind)
+        {
+            _rows.Add(DialogRules.Pair(line, out string label, out string value)
+                ? new UiLedgerLine { Kind = kind, Label = label, Value = value }
+                : new UiLedgerLine { Kind = UiLedgerKind.Line, Label = line });
+        }
+
+        // A sentence of the file in its own words (a claim, a suit): in the game's list, and under the statement.
+        private void Said(string line)
+        {
+            _text.Append('\n').Append(line);
+            Foot(line);
+        }
+
+        private void Foot(string line)
+        {
+            _foot.Append(_foot.Length > 0 ? "\n" : string.Empty).Append(line);
+        }
+
         private static JusticePage Page(string body)
         {
             return new JusticePage
@@ -87,6 +111,9 @@ namespace RealLifeOverhaul
         {
             int day = TimeHelper.CurrentDay;
             _text.Length = 0;
+            _words.Length = 0;
+            _foot.Length = 0;
+            _rows.Clear();
             bool any = false;
             for (int i = 0; i < JusticeState.Cases.Count; i++)
             {
@@ -119,50 +146,61 @@ namespace RealLifeOverhaul
             {
                 _text.Append(JusticeText.T("reallife_justice_file_no_case")).Append('\n');
             }
-            _text.Append(JusticeText.T("reallife_justice_file_counsel", "name", LegalCounsel.Name()));
+            _words.Append(_text.ToString().TrimEnd('\n'));   // the cases are sentences: the words over the statement
+
+            string counsel = JusticeText.T("reallife_justice_file_counsel", "name", LegalCounsel.Name());
             if (JusticeState.Lawyer == LawyerKind.Firm)
             {
-                _text.Append(" (").Append(JusticeText.Stars(JusticeState.LawyerStars)).Append(')');
+                counsel += " (" + JusticeText.Stars(JusticeState.LawyerStars) + ")";
             }
-            _text.Append('\n');
+            _text.Append(counsel).Append('\n');
+            Row(counsel, UiLedgerKind.Line);
 
             if (JusticeState.Debts.Count == 0)
             {
-                _text.Append(JusticeText.T("reallife_justice_file_owed_none"));
+                string none = JusticeText.T("reallife_justice_file_owed_none");
+                _text.Append(none);
+                Row(none, UiLedgerKind.Line);
             }
             else
             {
-                _text.Append(JusticeText.T("reallife_justice_file_owed", "amount", JusticeText.Money(JusticeState.Owed)));
+                string owed = JusticeText.T("reallife_justice_file_owed", "amount", JusticeText.Money(JusticeState.Owed));
+                _text.Append(owed);
                 for (int i = 0; i < JusticeState.Debts.Count; i++)
                 {
                     JusticeDebt debt = JusticeState.Debts[i];
                     string key = debt.Kind == JusticeDebt.Fee ? "reallife_justice_file_debt_fee"
                         : debt.Kind == JusticeDebt.Civil ? "reallife_justice_file_debt_civil" : "reallife_justice_file_debt_fine";
-                    _text.Append("\n  - ").Append(JusticeText.T(key, "left", JusticeText.Money(debt.Left), "perday", JusticeText.Money(Mathf.Min(debt.PerDay, debt.Left))));
+                    string line = JusticeText.T(key, "left", JusticeText.Money(debt.Left), "perday", JusticeText.Money(Mathf.Min(debt.PerDay, debt.Left)));
+                    _text.Append("\n  - ").Append(line);
+                    Row(line, UiLedgerKind.Line);
                     if (debt.Missed > 0)
                     {
-                        _text.Append(' ').Append(JusticeText.T("reallife_justice_file_debt_missed", "missed", JusticeText.N(debt.Missed),
-                            "most", JusticeText.N(JusticeLaw.MissedInstalmentsMost)));
+                        string missed = JusticeText.T("reallife_justice_file_debt_missed", "missed", JusticeText.N(debt.Missed), "most", JusticeText.N(JusticeLaw.MissedInstalmentsMost));
+                        _text.Append(' ').Append(missed);
+                        Foot(missed);
                     }
                 }
+                Row(owed, UiLedgerKind.Total);   // the debts each a line, the whole owed under them as the statement's total
             }
-            _text.Append('\n');
-            _text.Append(JusticeState.OnProbation(day)
+            _rows.Add(new UiLedgerLine { Kind = UiLedgerKind.Gap });
+            string probation = JusticeState.OnProbation(day)
                 ? JusticeText.T("reallife_justice_file_probation", "day", JusticeText.N(JusticeState.ProbationUntil))
-                : JusticeText.T("reallife_justice_file_probation_none"));
-            _text.Append("  ");
-            _text.Append(Justice.DrivingSuspended
+                : JusticeText.T("reallife_justice_file_probation_none");
+            string licence = Justice.DrivingSuspended
                 ? JusticeText.T("reallife_justice_file_licence_suspended", "day", JusticeText.N(JusticeState.SuspendedUntil))
-                : JusticeText.T("reallife_justice_file_licence_ok"));
+                : JusticeText.T("reallife_justice_file_licence_ok");
+            _text.Append('\n').Append(probation).Append("  ").Append(licence);
+            Row(probation, UiLedgerKind.Line);
+            Row(licence, UiLedgerKind.Line);
             if (JusticeState.CommunityHours > 0)
             {
-                _text.Append('\n').Append(JusticeText.T("reallife_justice_file_community", "hours", JusticeText.N(JusticeState.CommunityHours),
-                    "day", JusticeText.N(JusticeState.CommunityDue)));
+                Said(JusticeText.T("reallife_justice_file_community", "hours", JusticeText.N(JusticeState.CommunityHours), "day", JusticeText.N(JusticeState.CommunityDue)));
             }
             for (int i = 0; i < JusticeState.Suits.Count; i++)
             {
                 JusticeSuit suit = JusticeState.Suits[i];
-                _text.Append('\n').Append(JusticeText.T(suit.Contested ? "reallife_justice_file_suit_contested" : "reallife_justice_file_suit",
+                Said(JusticeText.T(suit.Contested ? "reallife_justice_file_suit_contested" : "reallife_justice_file_suit",
                     "amount", JusticeText.Money(suit.Claim), "day", JusticeText.N(suit.DueDay)));
             }
             for (int i = 0; i < JusticeState.Claims.Count; i++)
@@ -170,20 +208,23 @@ namespace RealLifeOverhaul
                 JusticeClaim claim = JusticeState.Claims[i];
                 if (claim.Result < 0)
                 {
-                    _text.Append('\n').Append(JusticeText.T("reallife_justice_file_claim", "defendant", claim.Defendant, "amount", JusticeText.Money(claim.Amount),
+                    Said(JusticeText.T("reallife_justice_file_claim", "defendant", claim.Defendant, "amount", JusticeText.Money(claim.Amount),
                         "day", JusticeText.N(claim.HearDay)));
                 }
             }
             JusticeCase appeal = JusticeSettings.Aftermath ? JusticeState.Appealable(day) : null;
             if (appeal != null)
             {
-                _text.Append('\n').Append(JusticeText.T("reallife_justice_file_appealable", "number", JusticeText.N(appeal.Number),
+                Said(JusticeText.T("reallife_justice_file_appealable", "number", JusticeText.N(appeal.Number),
                     "day", JusticeText.N(appeal.ClosedDay + JusticeLaw.AppealWindowDays)));
             }
             JusticePage page = Page(_text.ToString())
                 .Add(JusticeText.T("reallife_justice_file_actions"), JusticeText.T("reallife_justice_file_actions_hint"))
                 .Add(JusticeText.T("reallife_justice_file_record"), JusticeText.T("reallife_justice_file_record_hint", "count", JusticeText.N(JusticeState.Record.Count)))
                 .Add(JusticeText.T("reallife_justice_file_close"));
+            page.Statement = _rows.ToArray();
+            page.StatementWords = _words.ToString();
+            page.StatementFoot = _foot.Length > 0 ? _foot.ToString() : null;
             JusticePanel.Instance.Show(page, choice =>
             {
                 if (choice == 0)

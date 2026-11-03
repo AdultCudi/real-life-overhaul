@@ -174,13 +174,14 @@ namespace RealLifeOverhaul.Ui
 
     /// <summary>
     /// A scene's page on the kit: the decision card for a moment, the conversation docked at the right for questions and
-    /// answers (SceneViews), the answers numbered on 1 to 9, each pressed through the window's own pick, and Back the
+    /// answers (SceneViews), the answers numbered on 1 to 9 (F the first, P the second), each pressed through the window's own pick, and Back the
     /// window's cancel where the scene lets the player leave. Cost: a number compared a frame; a layout a page.
     /// </summary>
     public sealed class SceneScreen : IUiScreen
     {
         internal readonly SceneList List;
         private int _stamp = -1, _heard = -1, _laidPage = -1;
+        private float _phone = 1f;   // the phone's place the conversation was docked beside (UiPhone.LeftShare)
         private bool _dirty = true;
         private SceneLook _look;
         private float _offset = -1f;
@@ -192,7 +193,7 @@ namespace RealLifeOverhaul.Ui
 
         public string Id => DialogKits.ScenesId;
 
-        public bool Dirty => _dirty || List.Page.Stamp != _stamp || List.Thread.Count != _heard;
+        public bool Dirty => _dirty || List.Page.Stamp != _stamp || List.Thread.Count != _heard || UiPhone.LeftShare != _phone;   // the phone shown or put away: the dock moves
 
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
@@ -200,7 +201,7 @@ namespace RealLifeOverhaul.Ui
             var words = new SceneWords
             {
                 Move = UiText.T("reallife_ui_prompt_move"), Choose = UiText.T("reallife_ui_prompt_choose"), Back = UiText.T("common_cancel"),
-                Menu = UiText.T("input_key_menu"), Present = UiText.T("reallife_ui_scene_present")
+                Menu = UiText.T("input_key_menu"), Present = UiText.T("reallife_ui_scene_present"), Answer = UiText.T("reallife_ui_dialog_your_answer")
             };
             if (page.Stamp != _laidPage)
             {
@@ -210,6 +211,7 @@ namespace RealLifeOverhaul.Ui
             _look = SceneViews.Lay(s, page, List.Thread, words, _offset, frame, dark, keys);
             _stamp = page.Stamp;
             _heard = List.Thread.Count;
+            _phone = UiPhone.LeftShare;
             _dirty = false;
         }
 
@@ -240,7 +242,13 @@ namespace RealLifeOverhaul.Ui
         {
         }
 
-        public bool Act(UiAction action) => false;
+        // F takes the answer the page leads with, P the next, as the caps on them say: each through the window's own pick.
+        public bool Act(UiAction action)
+        {
+            int main = SceneViews.Keyed(List.Page, out int second);
+            int answer = action == UiAction.Alt ? main : action == UiAction.Option ? second : -1;
+            return answer >= 0 && Press(_look == SceneLook.Talk ? UiConversation.ChoiceCommand : UiDecision.ChoiceCommand, answer);
+        }
 
         public void Reveal(int list, int index)
         {

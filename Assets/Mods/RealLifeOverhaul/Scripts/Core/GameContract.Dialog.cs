@@ -4,7 +4,7 @@ namespace RealLifeOverhaul
     /// The game contract's lines for the game's dialogue panel, its forms and the spoken lines drawn on the RLO interface
     /// (Scripts/Ui/Dialog): the panel the game shows and hides, the entry it shows now with the copy it made of it and the
     /// form that copy asks for, the copies of the lines before it, the name the conversation gives its speaker, the game's
-    /// own drop-down, the amount steps of a delivery's line, a slider's figure, the spoken line's panel, picture, words and
+    /// own drop-down, a wholesale contract's businesses, the amount steps of a delivery's line, a slider's figure, the spoken line's panel, picture, words and
     /// queue, and Uncle Fred's face for the interface's test of a spoken line. Each part and its members
     /// are in this file alone; a part file's fields are made in their own order and lean on nothing in another part file.
     /// </summary>
@@ -31,6 +31,12 @@ namespace RealLifeOverhaul
         public static readonly GameMember DialogDropLocalised = Field(UiDialog, Game, "UI.Elements.Dropdown", "_localizeOptions", "Boolean");
         public static readonly GameMember DialogDropShown = Field(UiDialog, Game, "UI.Elements.Dropdown", "selectedOptionPlaceholderLabel", "TMP_Text");
         public static readonly GameMember DialogDropGroup = Field(UiDialog, Game, "UI.Elements.Dropdown", "canvasGroup", "CanvasGroup");
+
+        // A wholesale store's contract form: its drop-down of the player's businesses and the businesses in its order, so the
+        // conversation lists each with its kind, its district and why it cannot be chosen (a contract there already, no shelf).
+        public static readonly GameMember DialogWholesaleDrop = Optional(Field(UiDialog, Game, "UI.Dialog.DeliveryContractSettings", "businessDropdown", "Dropdown"));
+        public static readonly GameMember DialogWholesaleList = Optional(Field(UiDialog, Game, "UI.Dialog.DeliveryContractSettings", "_buildingRegistrations",
+            "List<BuildingRegistration>"));
 
         // A delivery's line of goods: its figure's field, its steps and the button that takes the line away.
         public static readonly GameMember DialogAmountField = Field(UiDialog, Game, "UI.AmountSelector", "amountInput", "TMP_InputField");

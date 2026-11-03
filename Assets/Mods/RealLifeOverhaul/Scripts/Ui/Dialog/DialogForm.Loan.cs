@@ -24,6 +24,10 @@ namespace RealLifeOverhaul.Ui
     internal sealed partial class DialogForm
     {
         private const int TermRow = 1;   // the kit's own row over the loan form: its term
+        private const int AmountRow = 2; // ...and the game's amount field, stepped on the kit by whole steps
+
+        private readonly string[] _termShort = new string[LoanTalkRules.TermsMost];   // the terms as the chips say them: "3 years"
+        private float _most;                                                          // the most the bank lends now: its cap less what is owed it
 
         private readonly int[] _terms = new int[LoanTalkRules.TermsMost];
         private readonly string[] _termWords = new string[LoanTalkRules.TermsMost];
@@ -71,7 +75,10 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < _termCount; i++)
             {
                 _termWords[i] = TermWords(_terms[i], daysPerYear);
+                _termShort[i] = _terms[i] == 1 ? UiText.T("reallife_ui_dialog_loan_chip_year")
+                    : UiText.Fill("reallife_ui_dialog_loan_chip_years", "years", _terms[i].ToString(CultureInfo.CurrentCulture));
             }
+            _most = Math.Max(0f, bank.maxTotalLoanAmount - GameLoans.OwedTo(talk.contact.Address));   // as BankDialog.LoanRequest caps it
 
             // The game's three daily figures hold for the bank's own term: the kit's take their place.
             for (int i = _rows.Count - 1; i >= heading; i--)
@@ -83,9 +90,30 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             LoanFigures f = Figures(out float amount, out int rate);
+
+            // The amount: the game's own field, stepped by whole steps on the kit's minus and plus, typed as ever.
+            for (int i = heading; i < _rows.Count; i++)
+            {
+                if (_widgets[i].Input != null && ReferenceEquals(_widgets[i].Input, settings.amountInput))
+                {
+                    UiFormRow r = _rows[i];
+                    r.Kind = UiFormKind.Amount;
+                    r.CanLess = !r.Disabled && amount > 0f;
+                    r.CanMore = !r.Disabled && amount < _most && _most >= LoanTalkRules.LeastLoan;
+                    _rows[i] = r;
+                    Widget w = _widgets[i];
+                    w.Kit = AmountRow;
+                    _widgets[i] = w;
+                    break;
+                }
+            }
+
+            // The term: the three a bank offers side by side, the one chosen in the cyan; the bank's own alone where it holds to it.
             string termLabel = UiText.T("reallife_ui_dialog_loan_term");
+            string[] chips = new string[_termCount];
+            Array.Copy(_termShort, chips, _termCount);
             Add(own
-                ? new UiFormRow { Kind = UiFormKind.Choice, Label = termLabel, Value = _termWords[_term] }
+                ? new UiFormRow { Kind = UiFormKind.Segments, Label = termLabel, Value = _termWords[_term], Options = chips, Chosen = _term }
                 : new UiFormRow { Kind = UiFormKind.Figure, Label = termLabel, Value = _termWords[_term] }, new Widget { Kit = own ? TermRow : 0 });
             Add(new UiFormRow { Kind = UiFormKind.Break }, default);
             Add(new UiFormRow { Kind = UiFormKind.Figure, Label = UiText.T("reallife_ui_dialog_loan_rate"), Value = RateWords(rate) }, default);
@@ -97,7 +125,8 @@ namespace RealLifeOverhaul.Ui
             if (amount > 0f)
             {
                 entry.Cost(DialogButton.Confirm, UiText.Fill("reallife_ui_dialog_loan_cost_in", "amount", Money(amount)), 1, 1)
-                     .Cost(DialogButton.Confirm, UiText.Fill("reallife_ui_dialog_loan_cost_out", "payment", Money(f.PerDay), "days", f.Days.ToString(CultureInfo.CurrentCulture)), -1);
+                     .Cost(DialogButton.Confirm, UiText.Fill("reallife_ui_dialog_loan_cost_out", "payment", Money(f.PerDay), "days",
+                         f.Days.ToString(CultureInfo.CurrentCulture)), -1, -1);   // money out: red
             }
             LoanConfirm.Wrap(entry, this);
             if (own)
@@ -230,6 +259,27 @@ namespace RealLifeOverhaul.Ui
         }
 
         private int KitIndex(int kit) => kit == TermRow ? _term : -1;
+
+        // A step on the loan's amount: the next whole step down or up, typed into the game's own field so its figures follow.
+        private bool LoanStep(int row, int direction)
+        {
+            if (_loanForm == null || _loanForm.amountInput == null || row < 0 || row >= Count || Rows[row].Disabled)
+            {
+                return false;
+            }
+            float amount = 0f;
+            string text = _loanForm.amountInput.text;
+            if (!string.IsNullOrEmpty(text) && (!float.TryParse(text, out amount) || amount < 0f))
+            {
+                amount = 0f;
+            }
+            float next = LoanTalkRules.StepAmount(amount, direction, _most);
+            if (Math.Abs(next - amount) < 0.5f)
+            {
+                return false;
+            }
+            return Type(row, Mathf.RoundToInt(next).ToString(CultureInfo.InvariantCulture));
+        }
 
         private void KitOptions(int kit)
         {

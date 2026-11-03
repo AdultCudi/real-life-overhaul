@@ -52,6 +52,33 @@ public static partial class UiPreviewRunner
         screens.Add(DialogScreenOf("furniture", "de"));
         screens.Add(DialogScreenOf("desk_full", "de"));
         screens.Add(SceneScreenOf("court_plea", "de"));
+        // The owner, 3 Nov 2026: the conversation stood over the phone. With the phone up, open and folded, it docks left of it.
+        screens.Add(PhoneBeside("desk_full", false));
+        screens.Add(PhoneBeside("bank_loan", true));
+    }
+
+    // A conversation with the phone up at the screen's right: the dock beside its column, the phone over the world.
+    private static Screen PhoneBeside(string state, bool folded)
+    {
+        Screen screen = DialogScreenOf(state, "en");
+        screen.Name = "dialog_" + state + (folded ? "_phone_folded" : "_phone");
+        UiWords t = DialogWords("en");
+        screen.Lay = (s, f, d, k) =>
+        {
+            UiPhone.LeftShare = UiPhone.OverWorld(f);
+            try
+            {
+                UiSamples.DialogDocked(s, f, d, k, t, state);
+                UiPhoneModel phone = UiSamples.PhoneHome(t);
+                phone.Collapsed = folded;
+                UiPhone.LayOver(s, phone, f, k);
+            }
+            finally
+            {
+                UiPhone.LeftShare = 1f;
+            }
+        };
+        return screen;
     }
 
     // The dialogue panel in one state: where the talk is held behind it, the mouse on an answer, the keys from the first target.

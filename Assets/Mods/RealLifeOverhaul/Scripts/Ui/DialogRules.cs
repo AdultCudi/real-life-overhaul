@@ -150,6 +150,61 @@ namespace RealLifeOverhaul.Ui
             return key.Trim();
         }
 
+        /// <summary>
+        /// The answers' keys, as the conversation and the decision card show them: F on the first answer that can be taken,
+        /// P on the next one, Escape on the way out (<paramref name="leave"/>, -1 for none). Returns the answer F takes, the
+        /// one the screen leads with and shows chosen; -1 where none can be taken. The second's index in <paramref name="second"/>.
+        /// </summary>
+        public static int Keys(UiDecisionChoice[] choices, int leave, out int second)
+        {
+            int main = -1;
+            second = -1;
+            for (int i = 0; choices != null && i < choices.Length; i++)
+            {
+                choices[i].Cap = i == leave ? UiChoiceCap.Leave : UiChoiceCap.None;
+                if (i == leave || choices[i].Disabled)
+                {
+                    continue;
+                }
+                if (main < 0)
+                {
+                    main = i;
+                    choices[i].Cap = UiChoiceCap.Main;
+                }
+                else if (second < 0)
+                {
+                    second = i;
+                    choices[i].Cap = UiChoiceCap.Second;
+                }
+            }
+            return main;
+        }
+
+        /// <summary>
+        /// A line of a file ("Owed: $1,850 in all.") as a statement's label and figure, split at its first colon (a full-width
+        /// one in Chinese), the full stop at its end taken off; false for a line with no colon, or one whose figure is a
+        /// sentence (it then stays words).
+        /// </summary>
+        public static bool Pair(string line, out string label, out string value)
+        {
+            label = value = null;
+            string t = Blank(line);
+            if (t == null)
+            {
+                return false;
+            }
+            int at = t.IndexOf(": ", StringComparison.Ordinal);
+            int wide = t.IndexOf('：');
+            int cut = at >= 0 && (wide < 0 || at < wide) ? at : wide;
+            if (cut <= 0)
+            {
+                return false;
+            }
+            label = Blank(t.Substring(0, cut));
+            value = Blank(t.Substring(cut + (cut == at ? 2 : 1)).TrimEnd('.', '。'));
+            return label != null && value != null && value.Length <= FigureMost * 2;
+        }
+
         private static string Blank(string text)
         {
             string t = text != null ? text.Trim() : null;

@@ -76,7 +76,7 @@ public static partial class UiPreviewRunner
             }
             // The game's own font (with its Noto fallbacks) is the faces' last fallback in play; here a system font with
             // Chinese and Korean stands in for it, so a name in those scripts draws as it will in the game.
-            TMP_FontAsset cjk = TMP_FontAsset.CreateFontAsset("Microsoft YaHei", "Regular") ?? TMP_FontAsset.CreateFontAsset("Malgun Gothic", "Regular");
+            TMP_FontAsset cjk = CjkFallback();
             if (cjk != null)
             {
                 UiFonts.SetFallback(cjk);
@@ -409,6 +409,38 @@ public static partial class UiPreviewRunner
     }
 
     private static string English(string key, string english) => english;
+
+    // A Windows font with Chinese and Korean, copied into the project by preview.ps1 (Assets/Preview/Fonts) and made a
+    // dynamic font asset whose one atlas holds every glyph the shots draw (a second atlas page does not render offline); the system font by name where the copy is not there.
+    private static TMP_FontAsset CjkFallback()
+    {
+        foreach (string path in new[] { "Assets/Preview/Fonts/msyh.ttc", "Assets/Preview/Fonts/malgun.ttf" })
+        {
+            Font font = AssetDatabase.LoadAssetAtPath<Font>(path);
+            TMP_FontAsset asset = font != null
+                ? TMP_FontAsset.CreateFontAsset(font, 36, 4, UnityEngine.TextCore.LowLevel.GlyphRenderMode.SDFAA, 4096, 4096, AtlasPopulationMode.Dynamic, true)
+                : null;
+            if (asset != null)
+            {
+                // Its line box cut to the interface face's: YaHei's tall ascent and descent overflow a one-line box at the
+                // kit's leading, and a truncated line then drew as nothing.
+                TMP_FontAsset own = UiFonts.For(UiStyle.Small);
+                if (own != null && own.faceInfo.pointSize > 0f)
+                {
+                    var face = asset.faceInfo;
+                    float scale = face.pointSize / own.faceInfo.pointSize;
+                    face.ascentLine = own.faceInfo.ascentLine * scale;
+                    face.descentLine = own.faceInfo.descentLine * scale;
+                    face.lineHeight = own.faceInfo.lineHeight * scale;
+                    asset.faceInfo = face;
+                }
+                Debug.Log("[UiPreview] Chinese and Korean fall back to " + path);
+                return asset;
+            }
+        }
+        Debug.Log("[UiPreview] no Windows CJK font copied: falling back to the system font by name");
+        return TMP_FontAsset.CreateFontAsset("Microsoft YaHei", "Regular") ?? TMP_FontAsset.CreateFontAsset("Malgun Gothic", "Regular");
+    }
 
     private static string Argument(string name, string fallback)
     {

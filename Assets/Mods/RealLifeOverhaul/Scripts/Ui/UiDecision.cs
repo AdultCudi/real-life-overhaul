@@ -5,8 +5,11 @@ namespace RealLifeOverhaul.Ui
     /// <summary>A consequence of a choice: what changes, said in words, which way it goes, and whether that is good for the player.</summary>
     public struct UiConsequence
     {
+        /// <summary>The tone of money the player pays out (a price, a fine, a fee): red, behind the falling arrow.</summary>
+        public const int Loss = -2;
+
         public string Text;
-        public int Tone;            // +1 good for the player, -1 bad, 0 neither: its colour
+        public int Tone;            // +1 good for the player, -1 against them (a risk, a reason), Loss money paid out, 0 neither: its colour
         public int Change;          // +1 the thing rises, -1 it falls, 0 no way: its arrow, so burnout easing is a green arrow down
     }
 
@@ -18,6 +21,7 @@ namespace RealLifeOverhaul.Ui
         public UiConsequence[] Lines;
         public string Note;
         public bool Disabled;
+        public UiChoiceCap Cap;     // the bound key at the right of its name (F, P, the way back); None for its number alone
     }
 
     /// <summary>What a decision card shows: who or what it is about, its words, its numbered choices and its buttons.</summary>
@@ -44,8 +48,8 @@ namespace RealLifeOverhaul.Ui
     /// <summary>
     /// The decision card, after Frostpunk 2's big moments (design/DIRECTION_CS2.md, section 4.5): centred over the dimmed
     /// world, an emblem or the faces of the people it is about at its left, its kicker and title in capitals, a paragraph of
-    /// what is happening, the choices numbered, each with its consequences in coloured lines (green good, amber a cost), and
-    /// its buttons centred at its foot. Commands: <see cref="ChoiceCommand"/> (a choice's index) and
+    /// what is happening, the choices numbered, each with its consequences in coloured lines (green good, red money paid out, amber a risk), and
+    /// its buttons centred at its foot; the main answer carries F, the second P, as the conversation's do. Commands: <see cref="ChoiceCommand"/> (a choice's index) and
     /// <see cref="ButtonCommand"/> (a button's index). Game-free. Cost: a layout a change.
     /// </summary>
     public static class UiDecision
@@ -250,28 +254,27 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Text(s, inside, x, ny, numW, UiStyle.BodyStrong, chosen ? UiRole.Text : UiRole.AccentText, number, UiFlags.Middle);
             float tx = x + numW, tw = w - numW;
             float noteW = string.IsNullOrEmpty(c.Note) ? 0f : UiDraw.Snap(UiTextRules.Width(c.Note, UiStyle.Small) + UiTokens.S1);
+            float capW = UiDraw.ChoiceCapWidth(c.Cap, keys);   // room for its key at the right: F, P, the way back
+            float right = x + w - capW;
             float noteLead = noteW > 0f ? noteW + UiTokens.IconSmall + UiTokens.S1 + UiTokens.S3 : 0f;
-            UiDraw.Text(s, inside, tx, ny, tw - noteLead, UiStyle.BodyStrong, UiRole.Text, c.Name, UiFlags.Label | UiFlags.Truncate | UiFlags.Middle);
+            UiDraw.Text(s, inside, tx, ny, right - tx - noteLead, UiStyle.BodyStrong, UiRole.Text, c.Name, UiFlags.Label | UiFlags.Truncate | UiFlags.Middle);
             if (noteW > 0f)
             {
                 UiRole noteInk = chosen ? UiRole.Text : UiRole.Muted;   // on the chosen card's cyan the quiet grey would not read
-                UiDraw.Icon(s, inside, x + w - noteW - UiTokens.IconSmall - UiTokens.S1, ny + (nameH - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Clock, noteInk, UiFlags.Middle);
-                UiDraw.Text(s, inside, x + w - noteW, ny + (nameH - UiTextRules.LineHeight(UiStyle.Small)) / 2f, noteW, UiStyle.Small, noteInk, c.Note, UiFlags.Right | UiFlags.Middle);
+                UiDraw.Icon(s, inside, right - noteW - UiTokens.IconSmall - UiTokens.S1, ny + (nameH - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Clock, noteInk, UiFlags.Middle);
+                UiDraw.Text(s, inside, right - noteW, ny + (nameH - UiTextRules.LineHeight(UiStyle.Small)) / 2f, noteW, UiStyle.Small, noteInk, c.Note, UiFlags.Right | UiFlags.Middle);
             }
             float ly = ny + nameH;
             float lh = UiTextRules.LineHeight(UiStyle.Small);
             for (int i = 0; c.Lines != null && i < c.Lines.Length; i++)
             {
                 ly += UiTokens.S1;
-                UiConsequence line = c.Lines[i];
-                UiRole tone = line.Tone > 0 ? UiRole.OkText : line.Tone < 0 ? UiRole.WarnText : UiRole.Text2;
-                UiIcon mark = line.Change > 0 ? UiIcon.TrendUp : line.Change < 0 ? UiIcon.TrendDown : line.Tone > 0 ? UiIcon.Check : line.Tone < 0 ? UiIcon.Warning : UiIcon.Minus;
-                UiDraw.Icon(s, inside, tx, ly + (lh - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, mark, tone, UiFlags.Middle);
-                UiDraw.Text(s, inside, tx + UiTokens.IconSmall + UiTokens.S2, ly, tw - UiTokens.IconSmall - UiTokens.S2, UiStyle.Small, tone, line.Text,
-                    UiFlags.Label | UiFlags.Truncate | UiFlags.Middle);
+                UiDraw.ConsequenceLine(s, inside, tx, ly, tw, ref c.Lines[i], chosen);
                 ly += lh;
             }
             UiDraw.Node(s, at, x - UiTokens.S3, y, w + UiTokens.S3 * 2f, h, ChoiceCommand, index, face, c.Disabled, -1, 0, c.Key);
+            // The cap after the target, so it is not the target's own key (that is its number): the screen takes F and P itself.
+            UiDraw.ChoiceCap(s, inside, x + w, ny, nameH, c.Cap, keys);
             return h;
         }
     }

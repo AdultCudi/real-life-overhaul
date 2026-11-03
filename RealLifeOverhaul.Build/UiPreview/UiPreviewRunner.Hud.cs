@@ -92,7 +92,7 @@ public static partial class UiPreviewRunner
             {
                 throw new InvalidOperationException("the font bundle did not load from " + bundle);
             }
-            TMP_FontAsset cjk = TMP_FontAsset.CreateFontAsset("Microsoft YaHei", "Regular") ?? TMP_FontAsset.CreateFontAsset("Malgun Gothic", "Regular");
+            TMP_FontAsset cjk = CjkFallback();
             if (cjk != null)
             {
                 UiFonts.SetFallback(cjk);

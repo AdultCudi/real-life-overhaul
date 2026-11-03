@@ -41,6 +41,7 @@ namespace RealLifeOverhaul.Ui
             public bool EndsEdit;          // the game's amount selector: its figure counts once its edit ends, so each typed figure ends it
             public Button[] Swatches;
             public int Kit;                // a row of the kit's own over the game's form (the loan's term): which; 0 for the game's widget
+            public int Option;             // a pick's option in its drop-down (a business, an agent), chosen through it
         }
 
         private static readonly List<Button> SwatchesFound = new List<Button>(16);
@@ -90,6 +91,7 @@ namespace RealLifeOverhaul.Ui
             int heading = _rows.Count;
             Walk(form, 0);
             Tidy();
+            Contracts(form, talk, heading);
             Loan(form, entry, talk, heading);
             Costs(form, entry, talk, heading);
             bool any = _rows.Count > heading;
@@ -137,7 +139,7 @@ namespace RealLifeOverhaul.Ui
         /// <summary>True for a row Left and Right step: an amount, a slider, a choice.</summary>
         public bool Steps(int row) =>
             row >= 0 && row < Count && !Rows[row].Disabled
-            && (Rows[row].Kind == UiFormKind.Amount || Rows[row].Kind == UiFormKind.Slider || Rows[row].Kind == UiFormKind.Choice);
+            && (Rows[row].Kind == UiFormKind.Amount || Rows[row].Kind == UiFormKind.Slider || Rows[row].Kind == UiFormKind.Choice || Rows[row].Kind == UiFormKind.Segments);
 
         /// <summary>The words in a typed row's field as the game holds them.</summary>
         public string Text(int row) => row >= 0 && row < Count && _widgets[row].Input != null ? _widgets[row].Input.text : string.Empty;
@@ -176,7 +178,7 @@ namespace RealLifeOverhaul.Ui
             switch (Rows[row].Kind)
             {
                 case UiFormKind.Amount:
-                    return UiWidgets.Press(step < 0 ? w.Less : w.More);
+                    return w.Kit == AmountRow ? LoanStep(row, step) : UiWidgets.Press(step < 0 ? w.Less : w.More);
                 case UiFormKind.Slider:
                 {
                     Slider s = w.Slide;
@@ -220,6 +222,10 @@ namespace RealLifeOverhaul.Ui
             if (command == UiFormRows.SwatchCommand)
             {
                 int row = UiFormRows.SwatchRow(arg), k = UiFormRows.SwatchIndex(arg);
+                if (row >= 0 && row < Count && Rows[row].Kind == UiFormKind.Segments)
+                {
+                    return Choose(row, k, true);   // a chip of a few side by side: chosen as its list's option would be
+                }
                 Button[] swatches = row >= 0 && row < Count ? _widgets[row].Swatches : null;
                 return swatches != null && k < swatches.Length && UiWidgets.Press(swatches[k]);
             }
@@ -232,12 +238,16 @@ namespace RealLifeOverhaul.Ui
             switch (command)
             {
                 case UiFormRows.LessCommand:
-                    return UiWidgets.Press(w.Less);
+                    return w.Kit == AmountRow ? LoanStep(arg, -1) : UiWidgets.Press(w.Less);
                 case UiFormRows.MoreCommand:
-                    return UiWidgets.Press(w.More);
+                    return w.Kit == AmountRow ? LoanStep(arg, 1) : UiWidgets.Press(w.More);
                 case UiFormRows.RemoveCommand:
                     return UiWidgets.Press(w.Remove);
                 case UiFormRows.RowCommand:
+                    if (r.Kind == UiFormKind.Pick)
+                    {
+                        return PickChosen(arg);
+                    }
                     return r.Kind == UiFormKind.Radio ? UiWidgets.Set(w.Toggle, true) : UiWidgets.Press(w.Press);
                 case UiFormRows.FieldCommand:
                     switch (r.Kind)
@@ -810,7 +820,7 @@ namespace RealLifeOverhaul.Ui
         // An option chosen through the drop-down's own SelectOption, so its listeners (the form's prices, the next fields) run.
         private bool Choose(int row, int option, bool exact)
         {
-            if (row < 0 || row >= Count || Rows[row].Kind != UiFormKind.Choice || Rows[row].Disabled)
+            if (row < 0 || row >= Count || (Rows[row].Kind != UiFormKind.Choice && Rows[row].Kind != UiFormKind.Segments) || Rows[row].Disabled)
             {
                 return false;
             }

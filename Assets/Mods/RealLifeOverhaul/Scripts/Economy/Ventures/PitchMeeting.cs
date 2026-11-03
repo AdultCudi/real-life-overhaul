@@ -289,12 +289,18 @@ namespace RealLifeOverhaul.Economy.Ventures
                 offer.Test = _state.Test;
                 file.Unseen = Mathf.Max(0, file.Unseen - 1);   // it is being shown now
                 _offerId = offer.Id;
+                // Taken now: the money paid in, green, and the share of profit paid out, red, under it; what they expect as its words.
+                UiConsequence[] takeLines = forNew ? null : new[]
+                {
+                    new UiConsequence { Text = FinanceText.Fill("reallife_ven_meet_take_in", "amount", amount), Tone = 1, Change = 1 },
+                    new UiConsequence { Text = FinanceText.Fill("reallife_ven_meet_take_share", "share", share, "business", _state.Business), Tone = UiConsequence.Loss, Change = -1 }
+                };
                 string take = forNew
                     ? FinanceText.Fill("reallife_ven_meet_take_new", "amount", amount, "share", share, "type", _state.Business, "days", VenturesCatalogue.PledgeDays.ToString())
-                    : FinanceText.Fill("reallife_ven_meet_take", "amount", amount, "share", share, "business", _state.Business, "growth", offer.TargetPct.ToString(),
-                        "days", offer.TargetDays.ToString());
+                    : FinanceText.Fill("reallife_ven_meet_take_expect", "growth", offer.TargetPct.ToString(), "days", offer.TargetDays.ToString());
                 string think = FinanceText.T("reallife_ven_meet_think_detail", "day", offer.LapseDay.ToString());
-                list.Add(TakeIt, FinanceText.T("reallife_ven_meet_take_title"), take, ButtonDo, true, list.HeightFor(take.Length, true));
+                string takeSaid = SceneViews.Joined(take, takeLines, null);   // as the game's own list says it, with what it brings and costs
+                list.Add(TakeIt, FinanceText.T("reallife_ven_meet_take_title"), take, ButtonDo, true, list.HeightFor(takeSaid.Length, true), takeLines, null);
                 list.Add(ThinkItOver, FinanceText.T("reallife_ven_meet_think"), think, ButtonDo, true, list.HeightFor(think.Length, true));
                 list.Add(Decline, FinanceText.T("reallife_ven_meet_decline"), string.Empty, ButtonDo, true);
             }

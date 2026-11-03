@@ -17,8 +17,13 @@ namespace RealLifeOverhaul.Ui
         public bool Warn;           // a note that warns (a design needs mods the player lacks)
         public float Share;         // a slider's place between its ends, 0 to 1
         public string[] Swatches;   // the colours to pick, as their pictures' keys
-        public int Chosen;          // the colour chosen, or -1
+        public int Chosen;          // the colour chosen, or -1; a segments row's option chosen
         public bool Disabled;
+        public string[] Options;    // a segments row's options, in their words
+        public string Side;         // a pick's figure at its right, in the green (an agent's discount)
+        public string SideNote;     // ...and the small line under it (their skill)
+        public string Reason;       // why a pick cannot be chosen, in a chip at its right
+        public UiIcon Icon;         // a pick's mark; None for the initials of its name on a circle of their hue
     }
 
     /// <summary>What a form's screen keeps between layouts: the choice whose list is open, the slider the keys hold, how far it scrolled.</summary>
@@ -88,7 +93,9 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Whether a row takes a press: the rows the keys move through (a line of a list only with its button).</summary>
         public static bool Takes(ref UiFormRow r) =>
             r.Kind == UiFormKind.Choice || r.Kind == UiFormKind.Amount || r.Kind == UiFormKind.Text || r.Kind == UiFormKind.Switch || r.Kind == UiFormKind.Slider
-            || r.Kind == UiFormKind.Radio || r.Kind == UiFormKind.Action || (r.Kind == UiFormKind.Swatches && r.Swatches != null && r.Swatches.Length > 0)
+            || r.Kind == UiFormKind.Radio || r.Kind == UiFormKind.Action || r.Kind == UiFormKind.Pick
+            || (r.Kind == UiFormKind.Swatches && r.Swatches != null && r.Swatches.Length > 0)
+            || (r.Kind == UiFormKind.Segments && r.Options != null && r.Options.Length > 0)
             || (r.Kind == UiFormKind.Entry && !string.IsNullOrEmpty(r.Action));
 
         /// <summary>Whether a row's control is typed into (its words or its figure).</summary>
@@ -101,7 +108,12 @@ namespace RealLifeOverhaul.Ui
             switch (r.Kind)
             {
                 case UiFormKind.Figure:
+                case UiFormKind.Check:
                     return UiTokens.PairRow;
+                case UiFormKind.Pick:
+                    return PickHeight;
+                case UiFormKind.Segments:
+                    return Labelled(ref r, w);
                 case UiFormKind.Radio:
                     return UiTokens.ControlSmall;
                 case UiFormKind.Break:
@@ -344,8 +356,42 @@ namespace RealLifeOverhaul.Ui
                     break;
                 }
                 case UiFormKind.Heading:
-                    UiDraw.Text(s, at, x, y, w, UiStyle.SectionHeader, UiRole.Text2, r.Label, UiFlags.Label | UiFlags.Truncate);
+                {
+                    // Its words at the left; what the list under it holds, small at the right, where it says.
+                    float vw = string.IsNullOrEmpty(r.Value) ? 0f : Math.Min(UiDraw.Snap(UiTextRules.Width(r.Value, UiStyle.Small) + UiTokens.S1), UiDraw.SnapDown(w * 0.5f));
+                    UiDraw.Text(s, at, x, y, w - (vw > 0f ? vw + UiTokens.S3 : 0f), UiStyle.SectionHeader, UiRole.Text2, r.Label, UiFlags.Label | UiFlags.Truncate);
+                    if (vw > 0f)
+                    {
+                        UiDraw.TextMiddle(s, at, x + w - vw, y, h, vw, UiStyle.Small, UiRole.Text2, r.Value, UiFlags.Right | UiFlags.Truncate);
+                    }
                     break;
+                }
+                case UiFormKind.Pick:
+                    Listed(s, Pick(s, at, ref r, i, x, y, w, h), list, ordinal);
+                    break;
+                case UiFormKind.Check:
+                {
+                    // A need: the tick where it is met, the warning where not, its words, and what meets it at the right.
+                    float vw = string.IsNullOrEmpty(r.Value) ? 0f : Math.Min(UiDraw.Snap(UiTextRules.Width(r.Value, UiStyle.Small) + UiTokens.S1), UiDraw.SnapDown(w * 0.5f));
+                    UiDraw.Icon(s, at, x, y + (h - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, r.On ? UiIcon.Check : UiIcon.Warning, r.On ? UiRole.OkText : UiRole.WarnText, UiFlags.Middle);
+                    float tx = x + UiTokens.IconSmall + UiTokens.S2;
+                    UiDraw.TextMiddle(s, at, tx, y, h, x + w - tx - (vw > 0f ? vw + UiTokens.S3 : 0f), UiStyle.Body, r.On ? UiRole.Text : UiRole.WarnText, r.Label,
+                        UiFlags.Label | UiFlags.Truncate);
+                    if (vw > 0f)
+                    {
+                        UiDraw.TextMiddle(s, at, x + w - vw, y, h, vw, UiStyle.Small, UiRole.Text2, r.Value, UiFlags.Right | UiFlags.Truncate);
+                    }
+                    break;
+                }
+                case UiFormKind.Segments:
+                {
+                    if (label)
+                    {
+                        UiDraw.TextMiddle(s, at, x, y, h, labelW, UiStyle.Body, UiRole.Text, r.Label, UiFlags.Label | UiFlags.Truncate);
+                    }
+                    Listed(s, Segments(s, at, ref r, i, label ? cx : x, y + Math.Max(0f, UiDraw.SnapDown((h - UiTokens.ControlSmall) / 2f)), label ? cw : w), list, ordinal);
+                    break;
+                }
                 case UiFormKind.Break:
                     UiDraw.Box(s, at, x, y + UiTokens.S2, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
                     break;
@@ -465,6 +511,108 @@ namespace RealLifeOverhaul.Ui
         }
 
         private static int SwatchesAcross(float w) => Math.Max(1, (int)((w + UiTokens.S2) / (Swatch + UiTokens.S2)));
+
+        private static float PickHeight => UiDraw.Snap(UiTextRules.LineHeight(UiStyle.BodyStrong) + UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2 * 2f;
+
+        // A line of a list to choose from: its mark (an icon, or the initials of a name on its hue), its name and the line
+        // under it, its figure at the right in the green with a small line under it, or why it cannot be chosen in a chip;
+        // chosen, the cyan's tone, as an answer's row. Pressed as RowCommand. Returns its focus target.
+        private static int Pick(UiScene s, UiAt at, ref UiFormRow r, int i, float x, float y, float w, float h)
+        {
+            int face = UiDraw.Box(s, at, x, y, w, h, r.On ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusLarge,
+                (r.On ? UiFlags.Selected : UiFlags.None) | (r.Disabled ? UiFlags.Disabled : UiFlags.None));
+            UiAt inside = at.In(face);
+            if (!r.On)
+            {
+                UiDraw.Box(s, inside, x + UiTokens.S2, y + h - UiTokens.Hairline, w - UiTokens.S2 * 2f, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
+            }
+            float mark = UiTokens.AvatarSmall;
+            float my = y + UiDraw.SnapDown((h - mark) / 2f);   // on the grid, its glyph too
+            if (r.Icon != UiIcon.None)
+            {
+                int tile = UiDraw.Box(s, inside, x + UiTokens.S2, my, mark, mark, UiRole.Field, UiRole.None, UiTokens.RadiusMedium, UiFlags.Middle);
+                UiDraw.Icon(s, inside.In(tile), x + UiTokens.S2 + (mark - UiTokens.IconSmall) / 2f, my + (mark - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, r.Icon,
+                    r.Disabled ? UiRole.Muted : UiRole.AccentText, UiFlags.Middle);
+            }
+            else
+            {
+                UiDraw.Avatar(s, inside, x + UiTokens.S2, my, mark, r.Label ?? string.Empty, UiColour.HueOf(r.Label ?? string.Empty));
+            }
+            float tx = x + UiTokens.S2 + mark + UiTokens.S3;
+            float right = x + w - UiTokens.S3;
+            float sideW = 0f;
+            if (r.Disabled && !string.IsNullOrEmpty(r.Reason))
+            {
+                float most = UiDraw.SnapDown((right - tx) * 0.5f);
+                float cw = Math.Min(most, UiDraw.Snap(UiTextRules.Width(r.Reason, UiStyle.Small) + UiTokens.S3 * 2f));
+                float ch = UiTokens.Badge + UiTokens.S1;
+                int chip = UiDraw.Box(s, inside, right - cw, y + (h - ch) / 2f, cw, ch, UiRole.Pill, UiRole.None, ch / 2f, UiFlags.Middle);
+                UiDraw.TextMiddle(s, inside.In(chip), right - cw + UiTokens.S3, y + (h - ch) / 2f, ch, cw - UiTokens.S3 * 2f, UiStyle.Small, UiRole.WarnText, r.Reason,
+                    UiFlags.Centre | UiFlags.Truncate);
+                sideW = cw + UiTokens.S3;
+            }
+            else if (!string.IsNullOrEmpty(r.Side))
+            {
+                Lines(h, out float top, out float nameBox, out float subBox);
+                sideW = UiDraw.Snap(Math.Max(UiTextRules.Width(r.Side, UiStyle.BodyStrong), string.IsNullOrEmpty(r.SideNote) ? 0f : UiTextRules.Width(r.SideNote, UiStyle.Small)) + UiTokens.S1);
+                sideW = Math.Min(sideW, UiDraw.SnapDown((right - tx) * 0.4f));
+                if (string.IsNullOrEmpty(r.SideNote))
+                {
+                    UiDraw.TextMiddle(s, inside, right - sideW, y, h, sideW, UiStyle.BodyStrong, UiRole.OkText, r.Side, UiFlags.Right | UiFlags.Truncate);
+                }
+                else
+                {
+                    UiDraw.TextMiddle(s, inside, right - sideW, y + top, nameBox, sideW, UiStyle.BodyStrong, UiRole.OkText, r.Side, UiFlags.Right | UiFlags.Truncate);
+                    UiDraw.TextMiddle(s, inside, right - sideW, y + top + nameBox, subBox, sideW, UiStyle.Small, r.On ? UiRole.Text : UiRole.Text2, r.SideNote,
+                        UiFlags.Right | UiFlags.Truncate);
+                }
+                sideW += UiTokens.S3;
+            }
+            float tw = Math.Max(0f, right - sideW - tx);
+            UiRole ink = r.Disabled ? UiRole.Muted : UiRole.Text;
+            if (string.IsNullOrEmpty(r.Hint))
+            {
+                UiDraw.TextMiddle(s, inside, tx, y, h, tw, UiStyle.BodyStrong, ink, r.Label, UiFlags.Label | UiFlags.Truncate);
+            }
+            else
+            {
+                Lines(h, out float top, out float nameBox, out float subBox);
+                UiDraw.TextMiddle(s, inside, tx, y + top, nameBox, tw, UiStyle.BodyStrong, ink, r.Label, UiFlags.Label | UiFlags.Truncate);
+                UiDraw.TextMiddle(s, inside, tx, y + top + nameBox, subBox, tw, UiStyle.Small, r.Disabled ? UiRole.Muted : r.On ? UiRole.Text : UiRole.Text2, r.Hint,
+                    UiFlags.Truncate);
+            }
+            return UiDraw.Node(s, at, x, y, w, h, RowCommand, i, face, r.Disabled);
+        }
+
+        // A pick's two lines on the grid: the name's box and the line's under it, held in the middle of the row.
+        private static void Lines(float h, out float top, out float nameBox, out float subBox)
+        {
+            subBox = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
+            nameBox = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.BodyStrong));
+            top = UiDraw.SnapDown((h - nameBox - subBox) / 2f);
+        }
+
+        // A few short options side by side across the column, the chosen one in the cyan with its ink on it, the rest on
+        // the field. Pressed as SwatchCommand with SwatchArg (its row and its place). Returns the first's target.
+        private static int Segments(UiScene s, UiAt at, ref UiFormRow r, int i, float x, float y, float w)
+        {
+            int n = r.Options != null ? r.Options.Length : 0;
+            float gap = UiTokens.S1;
+            float each = n > 0 ? UiDraw.SnapDown((w - gap * (n - 1)) / n) : 0f;
+            int first = -1;
+            for (int k = 0; k < n; k++)
+            {
+                bool chosen = k == r.Chosen;
+                float sx = x + k * (each + gap);
+                int face = UiDraw.Box(s, at, sx, y, each, UiTokens.ControlSmall, chosen ? UiRole.Accent : UiRole.Field, UiRole.None, UiTokens.RadiusMedium,
+                    (chosen ? UiFlags.Selected : UiFlags.None) | (r.Disabled ? UiFlags.Disabled : UiFlags.None));
+                UiDraw.TextMiddle(s, at.In(face), sx + UiTokens.S1, y, UiTokens.ControlSmall, each - UiTokens.S1 * 2f, chosen ? UiStyle.SmallStrong : UiStyle.Small,
+                    chosen ? UiRole.OnAccent : UiRole.Text, r.Options[k], UiFlags.Centre | UiFlags.Truncate);
+                int node = UiDraw.Node(s, at, sx, y, each, UiTokens.ControlSmall, SwatchCommand, SwatchArg(i, k), face, r.Disabled);
+                first = first < 0 ? node : first;
+            }
+            return first;
+        }
 
         // A row's target as a row of the form's list while it scrolls, so the keys can ask for one scrolled away.
         private static void Listed(UiScene s, int node, short list, int ordinal)
