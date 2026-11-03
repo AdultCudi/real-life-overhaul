@@ -179,6 +179,11 @@ namespace RealLifeOverhaul.Rivals
         public const long SuitMost = 25000000L;    // at the start's prices: a claim is a nuisance, never a ruin
 
         public const int PressCustomers = -2;      // points of the customers' reputation (Standing)
+        public const int PriceRiseCustomers = 4;   // per cent fewer customers at the player's while a rival's prices are up
+        public const int PriceWarMost = 10;        // ...and never more than this, however many rises run
+        public const int BorrowedLeast = 1000;     // a rival's loan at a city bank: the least, and the sum at power 1000 (scaled by the move's power)
+        public const int BorrowedBase = 250000;
+        public const int SharesBase = 100000;      // a block of a listed company: the same least, this sum at power 1000
 
         public const int BidAfterStakeDays = 90;   // a bid comes only within this many days of the same tycoon's stake...
         public const int BidRestDays = 180;        // ...and never twice within this many days

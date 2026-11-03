@@ -30189,5 +30189,6 @@
   "reallife_staff_batch_more": "以及另外 {count} 人",
   "reallife_tech_own_slider": "{hours}小时，大约到{time}。约{points}个工作点数，于次日早上计入。",
   "reallife_flare_preview": "大约 {visits} 次到访和 {money}，持续 {hours} 小时。",
-  "reallife_flare_star_line": "{stars} 星"
+  "reallife_flare_star_line": "{stars} 星",
+  "reallife_money_nav_rivals": "对手"
 }

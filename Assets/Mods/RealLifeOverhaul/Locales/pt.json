@@ -30189,5 +30189,6 @@
   "reallife_staff_batch_more": "e mais {count}",
   "reallife_tech_own_slider": "{hours} h, até cerca de {time}. Cerca de {points} pontos de trabalho, contados amanhã de manhã.",
   "reallife_flare_preview": "Cerca de {visits} visitas e {money}, por {hours} horas.",
-  "reallife_flare_star_line": "{stars} estrelas"
+  "reallife_flare_star_line": "{stars} estrelas",
+  "reallife_money_nav_rivals": "Rivais"
 }

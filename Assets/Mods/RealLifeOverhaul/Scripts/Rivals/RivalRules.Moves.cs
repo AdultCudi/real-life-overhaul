@@ -255,13 +255,13 @@ namespace RealLifeOverhaul.Rivals
                     m.Amount = RivalCatalogue.PressCustomers;
                     break;
                 case RivalMoveKind.PriceRise:
-                    m.Amount = 4;   // per cent fewer customers while it runs
+                    m.Amount = RivalCatalogue.PriceRiseCustomers;   // per cent fewer customers while it runs
                     break;
                 case RivalMoveKind.Borrowed:
-                    m.Amount = Math.Max(1000, 250000 * power / 1000);
+                    m.Amount = Math.Max(RivalCatalogue.BorrowedLeast, RivalCatalogue.BorrowedBase * power / 1000);
                     break;
                 case RivalMoveKind.Shares:
-                    m.Amount = Math.Max(1000, 100000 * power / 1000);
+                    m.Amount = Math.Max(RivalCatalogue.BorrowedLeast, RivalCatalogue.SharesBase * power / 1000);
                     break;
                 default:
                     m.Amount = 0;   // (a stake and a bid: the market sizes them by its own rules)
@@ -380,7 +380,7 @@ namespace RealLifeOverhaul.Rivals
                     dip += (int)m.Amount;
                 }
             }
-            return -(int)Math.Min(10, dip);
+            return -(int)Math.Min(RivalCatalogue.PriceWarMost, dip);
         }
 
         /// <summary>The premium on buildings for sale in a district, per mille (the largest running buying up).</summary>

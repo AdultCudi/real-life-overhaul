@@ -30189,5 +30189,6 @@
   "reallife_staff_batch_more": "and {count} more",
   "reallife_tech_own_slider": "{hours} h, until about {time}. About {points} work points, counted tomorrow morning.",
   "reallife_flare_preview": "About {visits} visits and {money}, for {hours} hours.",
-  "reallife_flare_star_line": "{stars} stars"
+  "reallife_flare_star_line": "{stars} stars",
+  "reallife_money_nav_rivals": "Rivals"
 }
