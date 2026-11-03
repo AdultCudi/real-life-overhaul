@@ -33,10 +33,11 @@ internal static partial class UiSamples
         m.Chart = NewsChart(t, state == "jobs" || state == "finances" ? 30 : 24);
         m.Bands = new[]
         {
-            new NewsBand { Share = 0.45f, Tint = UiRole.Ok },
-            new NewsBand { Share = 0.35f, Tint = UiRole.Warn },
-            new NewsBand { Share = 0.2f, Tint = UiRole.Danger }
+            new NewsBand { Share = 0.45f, Tint = UiRole.Ok, Label = t("reallife_macro_state_boom", "Growth") },
+            new NewsBand { Share = 0.35f, Tint = UiRole.Warn, Label = t("reallife_macro_state_steady", "Peak") },
+            new NewsBand { Share = 0.2f, Tint = UiRole.Danger, Label = t("reallife_macro_state_slowdown", "Slowdown") }
         };
+        m.Marks = state == "overview" ? new[] { 8, 20 } : new int[0];
         m.RiseLine = t("reallife_news_rise", "The bank rate rose on day 240 and day 268.");
         m.AdviceTitle = t("reallife_news_advice", "What it means for you");
         m.Advice = state == "overview" || state == "insights" ? NewsAdvice(t) : new NewsAdvice[0];
@@ -317,9 +318,9 @@ internal static partial class UiSamples
     {
         return new[]
         {
-            new UiFigureModel { Label = "Inflation", Value = "6.0%", Change = "+0.6", Rising = true, Good = false, Trend = new[] { 4.2f, 4.8f, 5.1f, 5.6f, 6.0f } },
-            new UiFigureModel { Label = "Bank rate", Value = "4.00%", Change = "+0.50", Rising = true, Good = false },
-            new UiFigureModel { Label = "Jobless", Value = "5.9%", Change = "+0.4", Rising = true, Good = false }
+            new UiFigureModel { Label = "Inflation", Value = "6.0%", Change = "0.6 in a month", Rising = true, Good = false },
+            new UiFigureModel { Label = "Bank rate", Value = "4.00%", Change = "0.50 in a month", Rising = true, Good = false },
+            new UiFigureModel { Label = "Jobless", Value = "5.9%", Change = "0.4 in a month", Rising = true, Good = false }
         };
     }
 
@@ -331,9 +332,9 @@ internal static partial class UiSamples
         var points = new string[n];
         for (int i = 0; i < n; i++)
         {
-            a[i] = 4f + i * 0.08f;
-            b[i] = 3f + (i / 6) * 0.25f;
-            c[i] = 100f + i * 0.4f;
+            a[i] = 3.2f + i * 0.12f;
+            b[i] = 3f + (i / 8) * 0.5f;
+            c[i] = 2.6f + i * 0.04f;
             points[i] = (240 + i).ToString();
         }
         return new UiChartModel
@@ -357,16 +358,16 @@ internal static partial class UiSamples
         {
             new NewsAdvice { Icon = UiIcon.People, Title = t("reallife_news_pay_title", "Expect pay talks"),
                 Body = t("reallife_news_pay_body", "4 of your staff are paid under the going rate."),
-                Link = t("reallife_news_open_staff", "Open Employees"), Target = 1 },
+                Link = t("reallife_news_open_staff", "Staff"), Target = 1 },
             new NewsAdvice { Icon = UiIcon.Bank, Title = t("reallife_news_fix_title", "Fix your loan's rate now"),
                 Body = t("reallife_news_fix_body", "A fixed rate saves $860 a month."),
-                Link = t("reallife_news_fix_do", "Fix the rate"), Target = 4 },
+                Link = t("reallife_news_fix_do", "Fix rate"), Target = 4 },
             new NewsAdvice { Icon = UiIcon.MapPin, Title = t("reallife_news_pull_title", "Hold off on this district"),
                 Body = t("reallife_news_pull_body", "Its pull fell 4 points this week."),
-                Link = t("reallife_news_open_map", "Show on the map"), Target = 3 },
+                Link = t("reallife_news_open_map", "Map"), Target = 3 },
             new NewsAdvice { Icon = UiIcon.ChartLineUp, Title = t("reallife_news_def_title", "Defensive shares hold up"),
                 Body = t("reallife_news_def_body", "Food and utilities moved less than luxury."),
-                Link = t("reallife_news_open_stocks", "Open Stocks"), Target = 2 }
+                Link = t("reallife_news_open_stocks", "Stocks"), Target = 2 }
         };
     }
 
@@ -377,11 +378,17 @@ internal static partial class UiSamples
             Columns = new[]
             {
                 new UiDataColumn { Title = t("reallife_news_col_good", "Good"), Kind = UiCellKind.Text },
-                new UiDataColumn { Title = t("reallife_news_col_today", "Today"), Kind = UiCellKind.Text, Width = 112f },
-                new UiDataColumn { Title = t("reallife_news_col_week", "Week"), Kind = UiCellKind.Text, Width = 96f },
-                new UiDataColumn { Title = t("reallife_news_col_yours", "Your price"), Kind = UiCellKind.Text, Width = 128f }
+                new UiDataColumn { Title = t("reallife_news_col_today", "Price"), Kind = UiCellKind.Text, Width = 96f },
+                new UiDataColumn { Title = t("reallife_news_col_month", "In a month"), Kind = UiCellKind.Trend, Width = 128f },
+                new UiDataColumn { Title = t("reallife_news_col_spark", "120 days"), Kind = UiCellKind.Spark, Width = 96f }
             },
-            Rows = new[] { Row("Fresh food", "$4.20"), Row("Groceries", "$6.10"), Row("Clothing", "$28"), Row("Electronics", "$90") },
+            Rows = new[]
+            {
+                Good("Burgers", "$8.40", "+6.2%", 1, new[] { 7.6f, 7.8f, 8.0f, 8.1f, 8.4f }),
+                Good("Coffee", "$3.10", "+1.4%", 1, new[] { 3.0f, 3.02f, 3.05f, 3.08f, 3.10f }),
+                Good("Clothes", "$34.00", "+1.0%", 1, new[] { 33.2f, 33.4f, 33.6f, 33.8f, 34f }),
+                Good("Electronics", "$410", "-2.4%", -1, new[] { 430f, 424f, 418f, 414f, 410f })
+            },
             RowCount = 4,
             EmptyIcon = UiIcon.Tag
         };
@@ -394,23 +401,41 @@ internal static partial class UiSamples
             Columns = new[]
             {
                 new UiDataColumn { Title = t("reallife_news_col_district", "District"), Kind = UiCellKind.Text },
-                new UiDataColumn { Title = t("reallife_news_col_pull", "Pull"), Kind = UiCellKind.Text, Width = 80f },
-                new UiDataColumn { Title = t("reallife_news_col_rent", "Rent"), Kind = UiCellKind.Text, Width = 100f }
+                new UiDataColumn { Title = t("reallife_news_col_pull", "Pull"), Kind = UiCellKind.Meter, Width = 160f },
+                new UiDataColumn { Title = t("reallife_news_col_week", "Week"), Kind = UiCellKind.Trend, Width = 112f },
+                new UiDataColumn { Title = t("reallife_news_col_rent", "Rent"), Kind = UiCellKind.Text, Width = 96f }
             },
-            Rows = new[] { Row3("Midtown", "112", "$2,400"), Row3("Hell's Kitchen", "104", "$1,900"), Row3("Garment District", "96", "$1,600") },
-            RowCount = 3,
+            Rows = new[]
+            {
+                District("Midtown", "92", 92, "+3", 1, "$148"),
+                District("Murray Hill", "81", 81, "+1", 1, "$96"),
+                District("Garment District", "74", 74, "-4", -1, "$88"),
+                District("Hell's Kitchen", "68", 68, "-2", -1, "$71")
+            },
+            RowCount = 4,
             EmptyIcon = UiIcon.MapTrifold
         };
     }
 
-    private static UiDataRow Row(string a, string b)
+    private static UiDataRow Good(string name, string price, string month, int way, float[] line)
     {
-        return new UiDataRow { Cells = new[] { a, b, "+0.4%", "$4.00" }, Values = new int[4], Tones = new UiRole[4] };
+        return new UiDataRow
+        {
+            Cells = new[] { name, price, month, string.Empty },
+            Values = new[] { 0, 0, way, 0 },
+            Tones = new[] { UiRole.None, UiRole.None, UiRole.Danger, way < 0 ? UiRole.Ok : UiRole.Danger },
+            Line = line
+        };
     }
 
-    private static UiDataRow Row3(string a, string b, string c)
+    private static UiDataRow District(string name, string pull, int meter, string week, int way, string rent)
     {
-        return new UiDataRow { Cells = new[] { a, b, c }, Values = new int[3], Tones = new UiRole[3] };
+        return new UiDataRow
+        {
+            Cells = new[] { name, pull, week, rent },
+            Values = new[] { 0, meter, way, 0 },
+            Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None }
+        };
     }
 
     private static UiCatalogueCard Card(UiWords t, string key, string english, string price, bool on)

@@ -70,6 +70,7 @@ namespace RealLifeOverhaul.Ui
         public UiFigureModel[] Figures = new UiFigureModel[0];
         public UiChartModel Chart;
         public NewsBand[] Bands = new NewsBand[0];
+        public int[] Marks = new int[0];
         public string RiseLine;
         public NewsAdvice[] Advice = new NewsAdvice[0];
         public string AdviceTitle;

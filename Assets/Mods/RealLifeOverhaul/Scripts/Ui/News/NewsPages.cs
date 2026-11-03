@@ -53,28 +53,29 @@ namespace RealLifeOverhaul.Ui
         {
             y = Lead(s, at, m, x, y, w);
             y = Ranges(s, at, m, x, y, keys);
-            if (m.Bands != null && m.Bands.Length > 0)
-            {
-                Bands(s, at, m, x, y, w);
-                y += UiTokens.S4;
-            }
+            Dress(m);
             float gap = UiTokens.S4;
             float left = UiDraw.SnapDown(w * 0.62f);
             float rx = x + left + gap;
             float rw = UiDraw.SnapDown(x + w - rx);
-            float chartH = UiTokens.S16 * 3f;
-            float block = chartH;
-            if (m.Advice != null && m.Advice.Length > 0)
+            float adviceH = AdviceBlock(m);
+            float chartH = Math.Max(UiTokens.S16 * 3f, adviceH);
+            float room = bottom - y - UiTokens.S16 * 2f;
+            if (room < chartH)
             {
-                block = Math.Max(chartH, UiTokens.S6 + m.Advice.Length * UiTokens.S16);
+                chartH = Math.Max(UiTokens.S16 * 2f, room);
             }
+            float block = Math.Max(chartH, adviceH);
             if (m.Chart != null && bottom - y > chartH)
             {
                 UiChart.Lay(s, at, m.Chart, x, y, left, chartH);
                 Advice(s, at, m, rx, y, rw, keys);
                 y += block + UiTokens.S2;
             }
-            y = Line(s, at, m.RiseLine, x, y, w);
+            if (m.Marks == null || m.Marks.Length == 0)
+            {
+                y = Line(s, at, m.RiseLine, x, y, w);
+            }
             if (m.Table != null && m.Table2 != null && bottom - y > UiTokens.S16 * 2f)
             {
                 float half = UiDraw.SnapDown((w - gap) * 0.5f);
@@ -218,14 +219,95 @@ namespace RealLifeOverhaul.Ui
 
         private static float Lead(UiScene s, UiAt at, NewsModel m, float x, float y, float w)
         {
-            y = Line(s, at, m.Chip, x, y, w);
-            y = Line(s, at, m.Lead, x, y, w);
+            if (!string.IsNullOrEmpty(m.Chip))
+            {
+                UiDraw.Chip(s, at, x, y, m.Chip, m.ChipTone);
+                y += UiTokens.Badge + UiTokens.S1 + UiTokens.S2;
+            }
+            if (!string.IsNullOrEmpty(m.Lead))
+            {
+                UiDraw.Text(s, at, x, y, w, UiStyle.Title, UiRole.Text, m.Lead, UiFlags.Truncate);
+                y += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)) + UiTokens.S1;
+            }
             y = Line(s, at, m.Body, x, y, w);
             if (m.Figures != null && m.Figures.Length > 0)
             {
-                y = UiAppWindow.Figures(s, at, m.Figures, x, y, w) + UiTokens.S4;
+                y = Figures(s, at, m.Figures, x, y, w) + UiTokens.S2;
             }
             return y;
+        }
+
+        // The three headline figures, each with the monthly change under the number. A spark stays on the chart and in the table.
+        private static float Figures(UiScene s, UiAt at, UiFigureModel[] figures, float x, float y, float w)
+        {
+            int count = Math.Min(figures.Length, 4);
+            bool change = false;
+            for (int i = 0; i < count; i++)
+            {
+                change |= !string.IsNullOrEmpty(figures[i].Change);
+            }
+            float labelH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader));
+            float numberH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display));
+            float h = UiTokens.S3 * 2f + labelH + UiTokens.S1 + numberH + (change ? UiTokens.S6 : 0f);
+            UiDraw.Box(s, at, x, y, w, h, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
+            float slot = UiDraw.SnapDown(w / count);
+            for (int i = 0; i < count; i++)
+            {
+                float fx = x + i * slot;
+                if (i > 0)
+                {
+                    UiDraw.Box(s, at, fx, y + UiTokens.S3, UiTokens.Hairline, h - UiTokens.S3 * 2f, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
+                }
+                float ix = fx + UiTokens.S4;
+                float iw = slot - UiTokens.S4 * 2f;
+                UiDraw.Text(s, at, ix, y + UiTokens.S3, iw, UiStyle.SectionHeader, UiRole.Text2, figures[i].Label, UiFlags.Label | UiFlags.Truncate);
+                float ny = y + UiTokens.S3 + labelH + UiTokens.S1;
+                UiDraw.Text(s, at, ix, ny, iw, UiStyle.Display, UiRole.Text, figures[i].Value, UiFlags.Truncate);
+                if (string.IsNullOrEmpty(figures[i].Change))
+                {
+                    continue;
+                }
+                string words = figures[i].Change;
+                UiRole ink = figures[i].Good ? UiRole.OkText : UiRole.DangerText;
+                UiDraw.Icon(s, at, ix, ny + numberH, UiTokens.Icon, UiModels.Rises(ref figures[i]) ? UiIcon.TrendUp : UiIcon.TrendDown, ink, UiFlags.Middle);
+                UiDraw.TextMiddle(s, at, ix + UiTokens.Icon + UiTokens.S1, ny + numberH, UiTokens.S6, iw - UiTokens.Icon - UiTokens.S1, UiStyle.SmallStrong, ink, words, UiFlags.Truncate);
+            }
+            return y + h;
+        }
+
+        // The cycle's phases and the rate rises travel with the chart, as washes and marks, not as a bar above it.
+        private static void Dress(NewsModel m)
+        {
+            if (m.Chart == null)
+            {
+                return;
+            }
+            if (m.Bands != null && m.Bands.Length > 0)
+            {
+                var plot = new UiPlotBand[m.Bands.Length];
+                float from = 0f;
+                for (int i = 0; i < m.Bands.Length; i++)
+                {
+                    float share = m.Bands[i].Share < 0f ? 0f : m.Bands[i].Share;
+                    plot[i] = new UiPlotBand { From = from, To = from + share, Tint = m.Bands[i].Tint, Label = m.Bands[i].Label };
+                    from += share;
+                }
+                m.Chart.PlotBands = plot;
+            }
+            if (m.Marks != null && m.Marks.Length > 0)
+            {
+                m.Chart.Marks = m.Marks;
+            }
+        }
+
+        private static float AdviceBlock(NewsModel m)
+        {
+            if (m.Advice == null || m.Advice.Length == 0)
+            {
+                return 0f;
+            }
+            float head = string.IsNullOrEmpty(m.AdviceTitle) ? 0f : UiTokens.S6;
+            return head + m.Advice.Length * (UiTokens.S12 + UiTokens.S6);
         }
 
         private static void Bands(UiScene s, UiAt at, NewsModel m, float x, float y, float w)
@@ -259,19 +341,18 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Text(s, at, x, y, w, UiStyle.SectionHeader, UiRole.Muted, m.AdviceTitle, UiFlags.Label | UiFlags.Truncate);
                 y += UiTokens.S6;
             }
+            float row = UiTokens.S12 + UiTokens.S6;
             for (int i = 0; i < m.Advice.Length; i++)
             {
-                float bw = UiTokens.S16 * 2f;
-                float tw = w - UiTokens.S8 - bw - UiTokens.S2;
+                float tw = w - UiTokens.S8;
                 UiDraw.Icon(s, at, x, y + UiTokens.S1, UiTokens.Icon, m.Advice[i].Icon, UiRole.None, UiFlags.None, true);
                 UiDraw.Text(s, at, x + UiTokens.S8, y, tw, UiStyle.BodyStrong, UiRole.Text, m.Advice[i].Title, UiFlags.Label | UiFlags.Truncate);
                 UiDraw.Text(s, at, x + UiTokens.S8, y + UiTokens.S6, tw, UiStyle.Small, UiRole.Text2, m.Advice[i].Body, UiFlags.Truncate);
                 if (!string.IsNullOrEmpty(m.Advice[i].Link))
                 {
-                    UiDraw.Button(s, at, x + w - bw, y, bw, UiTokens.S8, UiButtonKind.Secondary, m.Advice[i].Link, UiIcon.None,
-                        UiAction.Count, keys, NewsCommands.Link, m.Advice[i].Target, false);
+                    UiDraw.LinkRow(s, at, x + UiTokens.S8, y + UiTokens.S12, tw, UiTokens.S6, m.Advice[i].Link, NewsCommands.Link, m.Advice[i].Target, false);
                 }
-                y += UiTokens.S16;
+                y += row;
             }
         }
 

@@ -17,7 +17,8 @@ namespace RealLifeOverhaul.Ui
                       // a Warn or Danger tone puts the warning's glyph before it where the column has MarkRoom
         Action,       // a thing to do with the row, as an icon button at its right (Values: the icon, Tones: its tint; Cells: its words, unseen): set the destination
         Trend,        // a figure at the right with its direction's arrow (Values: 1, -1 or 0; Tones: Danger where a rise is bad) (UiDataCells)
-        Steps         // a short ladder as a bar of segments (Values: the steps reached, the column's Steps: how many, the row's Share)
+        Steps,        // a short ladder as a bar of segments (Values: the steps reached, the column's Steps: how many, the row's Share)
+        Spark         // a sparkline of the row's Line, oldest first
     }
 
     /// <summary>A column of a big table: what its cells are, how wide it stands and whether its head sorts it.</summary>
@@ -48,6 +49,7 @@ namespace RealLifeOverhaul.Ui
         public bool Picked;      // picked for a mass action
         public float Share;      // a steps cell's way through the step after those reached, 0 to 1
         public string[] Pictures;   // by column, a tile cell's picture of the game's (a good, a machine) by its UiPictures key, over its glyph; null: the glyph
+        public float[] Line;        // a spark column's values, oldest first, or null
     }
 
     /// <summary>
@@ -633,6 +635,13 @@ namespace RealLifeOverhaul.Ui
                     break;
                 case UiCellKind.Steps:
                     UiDataCells.Steps(s, at, words, value, row.Share, col.Steps, cx, ry, cw, rowH, sel);
+                    break;
+                case UiCellKind.Spark:
+                    if (row.Line != null && row.Line.Length > 1 && cw >= UiTokens.S8)
+                    {
+                        UiRole spark = row.Tones != null && c < row.Tones.Length && row.Tones[c] != UiRole.None ? row.Tones[c] : UiRole.Accent;
+                        UiDraw.Spark(s, at, cx, ry + UiTokens.S2, cw, rowH - UiTokens.S4, row.Line, spark);
+                    }
                     break;
                 case UiCellKind.Money:
                 case UiCellKind.Date:

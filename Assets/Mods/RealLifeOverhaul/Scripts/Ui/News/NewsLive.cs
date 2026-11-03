@@ -164,6 +164,7 @@ namespace RealLifeOverhaul.Ui
                 model.Figures[2].Trend = Tail(Wages, span);
             }
             model.Bands = model.Shape == NewsShape.Overview ? Bands(book) : new NewsBand[0];
+            model.Marks = model.Shape == NewsShape.Overview ? RiseMarks(book) : new int[0];
             model.RiseLine = model.Shape == NewsShape.Overview ? Rises(book) : string.Empty;
             model.AdviceTitle = OutlookText.T("reallife_news_advice");
             model.Advice = model.Shape == NewsShape.Overview || model.Shape == NewsShape.Insights ? Advice(book) : new NewsAdvice[0];
@@ -451,7 +452,7 @@ namespace RealLifeOverhaul.Ui
                 int next = i < span && Raw[i] != OutlookCatalogue.NoValue ? Raw[i] : phase;
                 if (i == span || next != phase)
                 {
-                    list.Add(new NewsBand { Label = phase.ToString(Inv), Share = (float)run / span, Tint = PhaseRole(phase) });
+                    list.Add(new NewsBand { Label = PhaseName(phase), Share = (float)run / span, Tint = PhaseRole(phase) });
                     phase = next;
                     run = 1;
                 }
@@ -478,6 +479,40 @@ namespace RealLifeOverhaul.Ui
                 return UiRole.Warn;
             }
             return UiRole.Danger;
+        }
+
+        private static string PhaseName(int phase)
+        {
+            string[] keys =
+            {
+                "reallife_macro_state_boom", "reallife_macro_state_steady", "reallife_macro_state_slowdown", "reallife_macro_state_recession"
+            };
+            int i = phase < 0 ? 0 : phase > 3 ? 3 : phase;
+            return OutlookText.T(keys[i]);
+        }
+
+        private int[] RiseMarks(OutlookBook book)
+        {
+            if (book == null)
+            {
+                return new int[0];
+            }
+            int span = NewsRules.Span(_range);
+            book.Window(OutlookCatalogue.Rate, book.LastDay, span, Raw);
+            var marks = new List<int>(4);
+            int last = Raw[0];
+            for (int i = 1; i < span && marks.Count < 4; i++)
+            {
+                if (Raw[i] != OutlookCatalogue.NoValue && last != OutlookCatalogue.NoValue && Raw[i] > last)
+                {
+                    marks.Add(i);
+                }
+                if (Raw[i] != OutlookCatalogue.NoValue)
+                {
+                    last = Raw[i];
+                }
+            }
+            return marks.ToArray();
         }
 
         private string Rises(OutlookBook book)
