@@ -103,6 +103,25 @@ namespace RealLifeOverhaul.Ui
             return most > 0f && wanted > most ? most : wanted;
         }
 
+        /// <summary>
+        /// How far the kit's phone stands raised inside the game's phone container, in screen pixels, so its foot clears
+        /// the HUD's bar (<paramref name="lift"/>, 0 while no bar stands there). The foot is measured where the container
+        /// stands open: <paramref name="footNow"/> is the phone's foot on the screen now, <paramref name="raisedNow"/> the
+        /// raise it already has, and <paramref name="travel"/> how far the game's fold has taken the container from its
+        /// open place (below it is less than 0; screen pixels). The raise is then the same at every point of the fold, so
+        /// the phone folds away with the game's and comes back with it. Measured from where the container stands now, the
+        /// raise grew by every pixel of the fold and held the phone up (the owner, 3 Nov 2026: "The phone is not closing").
+        /// </summary>
+        public static float Raise(float lift, float footNow, float raisedNow, float travel)
+        {
+            if (!(lift > 0f))
+            {
+                return 0f;
+            }
+            float footOpen = footNow - raisedNow - Math.Min(0f, travel);
+            return Math.Max(0f, lift - footOpen);
+        }
+
         /// <summary>A label's height under its tile: two lines, so a long name wraps whole rather than being cut.</summary>
         private static float LabelH => UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small) * 2f);
 

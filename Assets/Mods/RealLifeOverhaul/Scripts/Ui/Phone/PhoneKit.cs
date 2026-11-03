@@ -402,11 +402,14 @@ namespace RealLifeOverhaul.Ui
             {
                 rect.sizeDelta = want;
             }
-            // Over the HUD's bar while it shows: the foot raised by as much as its own place falls short of the bar's top.
+            // Over the HUD's bar while it shows: the foot raised by as much as its own place falls short of the bar's top,
+            // measured where the container stands open, so the game's fold (and its hover) still takes the phone down.
             float scale = rect.lossyScale.y > 0f ? rect.lossyScale.y : 1f;
             rect.GetWorldCorners(LiftCorners);   // an overlay canvas: world is screen pixels
-            float foot = LiftCorners[0].y - rect.anchoredPosition.y * scale;
-            var at = new Vector2(0f, Lift > 0f ? Math.Max(0f, Lift - foot) / scale : 0f);
+            Transform holder = _container.parent;
+            float outer = holder != null && holder.lossyScale.y > 0f ? holder.lossyScale.y : scale;
+            float travel = (_container.anchoredPosition.y - _window.unCollapsedPosition.y) * outer;
+            var at = new Vector2(0f, UiPhone.Raise(Lift, LiftCorners[0].y, rect.anchoredPosition.y * scale, travel) / scale);
             if (rect.anchoredPosition != at)
             {
                 rect.anchoredPosition = at;
