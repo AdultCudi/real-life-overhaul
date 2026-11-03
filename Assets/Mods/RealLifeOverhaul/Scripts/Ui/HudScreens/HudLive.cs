@@ -14,8 +14,8 @@ namespace RealLifeOverhaul.Ui
     /// shows its own top bar (it hides it for the full menu, the time machine, a building's preview, the mini menu and the
     /// interior designer, and the HUD follows). Each piece has its own switch under the HUD's (hud_side, hud_objectives,
     /// hud_notices); a switch turned off, the interface's switch, a fault or a city unloading give every piece back exactly
-    /// as found. While the HUD shows, the kit's phone stands over its bar and the game's notifications start under its side
-    /// panels. Cost a frame: one hierarchy test and a clock compare; four times a second a read of what the pieces show,
+    /// as found. While the HUD shows, the kit's phone stands over its bar (and folds down to its head with the game's), its key
+    /// chips keep to the phone's left, and the game's notifications start under its side panels. Cost a frame: one hierarchy test and a clock compare; four times a second a read of what the pieces show,
     /// laid out only when that changed.
     /// </summary>
     internal static class HudLive
@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.Ui
         private static float _foot = float.NaN;   // the side panels' foot as the game's notifications were last told it
         private static string _state = "waiting for the city";
         private static readonly UiHudPopupModel[] Popups = new UiHudPopupModel[2];
+        private static readonly Vector3[] PhoneCorners = new Vector3[4];
 
         /// <summary>For the director's line: what the HUD does now.</summary>
         public static string State => _live
@@ -280,6 +281,33 @@ namespace RealLifeOverhaul.Ui
             m.PopupCount = 0;
             m.PromptCount = 0;
             m.ActivityClear = null;
+            m.PhoneW = m.PhoneH = 0f;
+        }
+
+        // The kit's phone where it stands on the screen (its part above the screen's foot, open or folded) as px of the HUD's
+        // layout, so the key chips keep clear of it; nothing while it does not show. Read with the HUD's other pieces, four
+        // times a second, into a kept array: nothing allocated. The signature moves by whole px.
+        private static int PhoneBox(UiHudModel m)
+        {
+            RectTransform phone = PhoneKit.Rect;
+            m.PhoneW = m.PhoneH = 0f;
+            if (phone == null)
+            {
+                return 0;
+            }
+            phone.GetWorldCorners(PhoneCorners);   // the phone's canvas is an overlay: world is screen pixels
+            float foot = Math.Max(0f, PhoneCorners[0].y), top = Math.Min(Screen.height, PhoneCorners[2].y);
+            if (top <= foot)
+            {
+                return 0;
+            }
+            UiHudRules.ToLayout(PhoneCorners[0].x, top, Screen.width, Screen.height, FrameWidth, FrameHeight, out float x, out float y);
+            UiHudRules.ToLayout(PhoneCorners[2].x, foot, Screen.width, Screen.height, FrameWidth, FrameHeight, out float right, out float bottom);
+            m.PhoneX = x;
+            m.PhoneY = y;
+            m.PhoneW = right - x;
+            m.PhoneH = bottom - y;
+            return unchecked(((int)x * 31 + (int)y) * 31 + (int)m.PhoneW) | 1;
         }
 
         // ------------------------------------------------------------------------------------------------- reading
@@ -316,6 +344,7 @@ namespace RealLifeOverhaul.Ui
                 sig = sig * 31 + HudHints.Look(m);
                 m.ActivityClear = ActivityStrip != null ? ActivityStrip() : null;
                 sig = sig * 31 + (m.ActivityClear != null ? 1 + (int)m.ActivityClear.State : 0);
+                sig = sig * 31 + PhoneBox(m);
             }
             if (sig != _signature)
             {

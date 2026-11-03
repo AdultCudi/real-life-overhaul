@@ -27,6 +27,10 @@ namespace RealLifeOverhaul.Ui
         public UiHudPopupModel[] Popups = new UiHudPopupModel[0];      // the bar's small buttons' panels over it (UiHudPopup)
         public int PopupCount;
         public UiActivityModel ActivityClear;   // an activity strip another view draws (the activity panel's own): kept clear of, never drawn here
+
+        // Appended with the phone's place (3 Nov 2026): the kit's phone, a view of its own at the bar's right end, as px of
+        // the layout (its part on the screen); the key chips keep clear of it. 0 wide while it does not show.
+        public float PhoneX, PhoneY, PhoneW, PhoneH;
     }
 
     /// <summary>
@@ -88,8 +92,9 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>
-        /// Where the key chips stand: ending at the bar's right edge, a step over the bar, lifted over the activity's strip or
-        /// a tool's panel where they would meet them. False while the mouse leads or there is nothing to say.
+        /// Where the key chips stand: ending at the bar's right edge, a step over the bar, on the phone's left while the phone
+        /// stands there (open or folded), lifted over the activity's strip or a tool's panel where they would meet them.
+        /// False while the mouse leads or there is nothing to say.
         /// </summary>
         public static bool Chips(UiScene s, UiHudModel m, UiFrame frame, IUiKeys keys, out float x, out float y, out float w, out float h)
         {
@@ -102,6 +107,12 @@ namespace RealLifeOverhaul.Ui
             h = UiDraw.KeyChipHeight;
             x = frame.Width - Left - w;
             y = frame.BandY - UiTokens.S3 - h;
+            if (m != null && m.PhoneW > 0f && m.PhoneH > 0f && UiHudRules.Overlaps(x, y, w, h, m.PhoneX, m.PhoneY, m.PhoneW, m.PhoneH))
+            {
+                // The phone stands at the bar's right end, over the chips' place (the owner, 3 Nov 2026: "The map, pause and
+                // menu are overlapping on the phone"): the chips keep their row and end a step left of it.
+                x = UiDraw.SnapDown(m.PhoneX - UiTokens.S2 - w);
+            }
             UiActivityModel strip = m == null ? null : m.Activity ?? m.ActivityClear;
             if (strip != null && UiActivity.Strip(strip.State))
             {
