@@ -199,9 +199,9 @@ internal static partial class Program
         }
         string callNow = Between(screen, "private bool CallNow(Contact open)", "private bool Service(");
         string handed = Between(screen, "private bool Handed(", "private static bool Unrouted(");
-        Check(all && press.Contains("Handed(_map,") && press.Contains("Handed(_hangUp,") && press.Contains("Handed(_choices[arg],") && handed.Contains("b.onClick.Invoke()")
-              && callNow.Contains("_call.onClick.Invoke()"),
-            "ui contacts: the screen acts on every route, View on map, a reply and Hang up through the game's own buttons and Call through the listener the game wires on its call button");
+        Check(all && press.Contains("Handed(_map,") && press.Contains("Handed(_hangUp,") && press.Contains("Handed(_choices[arg],") && handed.Contains("UiWidgets.Hand(b);")
+              && callNow.Contains("UiWidgets.Hand(_call);") && !screen.Contains("onClick.Invoke()"),
+            "ui contacts: the screen acts on every route, View on map, a reply and Hang up through the game's own buttons and Call through the listener the game wires on its call button, each handed to the game (UiWidgets.Hand)");
         // A press that cannot be bound to the game's button or entry is answered in the game's own view, with a line, never by nothing.
         string open = Between(screen, "private bool Open(Contact c)", "private ContactModel EntryOf(");
         string unrouted = Between(screen, "private static bool Unrouted(", "// One line a press in Player.log");

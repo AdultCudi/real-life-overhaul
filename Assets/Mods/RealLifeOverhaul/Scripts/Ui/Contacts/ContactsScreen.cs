@@ -205,7 +205,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return Done(false, what + " " + Who(open));
             }
-            b.onClick.Invoke();
+            UiWidgets.Hand(b);   // the game's listeners run as the game's own work (View on map opens its city map)
             return Done(true, what + " " + Who(open) + ": " + how);
         }
 
@@ -378,7 +378,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return Done(false, "call " + Who(open));   // the game holds its call button while a call runs
             }
-            _call.onClick.Invoke();
+            UiWidgets.Hand(_call);
             bool talking = !_call.interactable;   // the game holds its call button while a call runs
             return Done(true, "call " + Who(open) + (talking ? ": the game's call, drawn as the call card" : ": the game answered in the thread"));
         }
@@ -421,7 +421,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
-            b.onClick.Invoke();
+            UiWidgets.Hand(b);
             return true;
         }
 

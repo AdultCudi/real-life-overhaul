@@ -110,9 +110,9 @@ internal static partial class Program
 
         // Every press of a game button under Scripts/Ui is a hand-off to the game (UiWidgets.Hand, or a HotSpots.Game
         // scope opened just above it), so what its listeners do is never counted as the mod's own; and a sliced picture's
-        // scale is written through UiView.SliceScale alone. Contacts' own presses (ContactsScreen.Click and CallNow, View on
-        // map among them) still press the game's buttons directly and are the one exception, named here rather than in the
-        // baseline (RLO-TST-011): hand them on through UiWidgets.Hand and take the file off DirectPresses in the same change.
+        // scale is written through UiView.SliceScale alone. A file that must still press the game's buttons directly is named
+        // in DirectPresses rather than in the baseline (RLO-TST-011), with why; none is now (Contacts' own presses,
+        // ContactsScreen's Handed, Click and CallNow, View on map among them, go through UiWidgets.Hand since wave 2's merge).
         foreach (SourceFile f in Scripts)
         {
             if (!f.Rel.StartsWith(ScriptsDir + "/Ui/", StringComparison.Ordinal))
@@ -145,7 +145,7 @@ internal static partial class Program
     }
 
     // The files whose presses of a game button are not handed on yet (paths under Scripts), each named with why above.
-    private static readonly string[] DirectPresses = { "Ui/Contacts/ContactsScreen.cs" };
+    private static readonly string[] DirectPresses = Array.Empty<string>();
 
     // A HotSpots.Game scope opened on the line or within the three lines above it.
     private static bool HandedAbove(SourceFile f, int line)
