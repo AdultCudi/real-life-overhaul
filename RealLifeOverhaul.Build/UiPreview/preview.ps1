@@ -32,6 +32,7 @@ if (Test-Path $preview) { Remove-Item -Recurse -Force $preview }
 New-Item -ItemType Directory -Force (Join-Path $preview 'Kit') | Out-Null
 New-Item -ItemType Directory -Force (Join-Path $preview 'Editor') | Out-Null
 $gameFiles = @('UiGame*.cs', 'UiDirector*.cs', 'UiText.cs', 'UiGuide.cs')
+Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money') -Filter *.cs -ErrorAction SilentlyContinue | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui') -Filter *.cs | Where-Object {
     $name = $_.Name
     -not ($gameFiles | Where-Object { $name -like $_ })

@@ -1034,6 +1034,11 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_ui_test_econoview", () => Ui.UiDirector.Instance?.TestEconoView())
                 .AddButton("reallife_ui_test_econoview_loans", () => Ui.UiDirector.Instance?.TestEconoViewLoans())
                 .AddButton("reallife_ui_test_econoview_switch", () => Ui.UiDirector.Instance?.TestEconoViewSwitch())
+                .AddButton("reallife_ui_test_finance", () => Ui.UiDirector.Instance?.TestFinance())
+                .AddButton("reallife_ui_test_banks", () => Ui.UiDirector.Instance?.TestBanks())
+                .AddButton("reallife_ui_test_own_bank", () => Ui.UiDirector.Instance?.TestOwnBank())
+                .AddButton("reallife_ui_test_utilities", () => Ui.UiDirector.Instance?.TestUtilities())
+                .AddButton("reallife_ui_test_money_switch", () => Ui.UiDirector.Instance?.TestMoneySwitch())
                 .AddButton("reallife_ui_test_population", () => Ui.UiDirector.Instance?.TestPopulation())
                 .AddButton("reallife_ui_test_flare", () => Ui.UiDirector.Instance?.TestFlareCity())
                 .AddButton("reallife_ui_test_hud", () => Ui.UiDirector.Instance?.TestHud())
@@ -1814,6 +1819,8 @@ namespace RealLifeOverhaul
             Guard.Step("Outlook.OutlookApp", () => Outlook.OutlookApp.Logger = context.Logger);
             // The Economy app: after the city's economy, the market and the council, whose figures it reads; its day follows the city's. No Update.
             Guard.Step("Outlook.OutlookDirector", () => Guard.Add<Outlook.OutlookDirector>(_root));
+            Guard.Step("DaySeries.DaySeriesDirector", () => DaySeries.DaySeriesDirector.Logger = context.Logger);
+            Guard.Step("DaySeries.DaySeriesDirector", () => Guard.Add<DaySeries.DaySeriesDirector>(_root));
             Guard.Step("Population.PopulationDirector", () => Population.PopulationDirector.Logger = context.Logger);
             // The city's people: after the city's economy, the company, the estate and Uptown's buildings, whose figures it reads. No Update.
             Guard.Step("Population.PopulationDirector", () => Guard.Add<Population.PopulationDirector>(_root));

@@ -29,7 +29,10 @@ namespace RealLifeOverhaul.Economy
                 Icon = like => AppIconPainter.Paint(like, FinanceApp.Glyph(), new Color32(92, 214, 148, 255), new Color32(24, 148, 110, 255), 0.42f, "AppIcon-Finance"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
+                Closed = view.Closed,
+                Kit = () => new RealLifeOverhaul.Ui.FinanceScreen(RealLifeOverhaul.Ui.MoneyLive.FinanceLive),
+                KitScreen = RealLifeOverhaul.Ui.FinanceScreen.ScreenId,
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Wallet
             }, out tryAgain);
             if (_app == null)
             {
@@ -70,6 +73,12 @@ namespace RealLifeOverhaul.Economy
                 Logger?.Info("Economy: a bank's dialogue opened with the rating at " + CreditLedger.Score.Value + ", under " + CreditCatalogue.LendingThreshold
                              + ": the reason was said (the bank's cap is 0, so the game refuses any amount).");
             }
+        }
+
+        /// <summary>The kit's borrow: the app's own question box.</summary>
+        internal void KitBorrow(int amount)
+        {
+            _view?.KitBorrow(amount);
         }
 
         /// <summary>For the credit desk: a loan it has just made gets its mark now, so the hour does not take it for one made at a bank.</summary>

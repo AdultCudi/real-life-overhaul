@@ -181,6 +181,13 @@ namespace RealLifeOverhaul.Economy
             Refresh();
         }
 
+        /// <summary>The kit's Take it: the same question the page asks, for the amount the player stepped to.</summary>
+        internal void KitBorrow(int amount)
+        {
+            _amount = amount;
+            Apply();
+        }
+
         // Everything the loan costs is said in the game's own question box before it is taken.
         private void Apply()
         {

@@ -233,7 +233,10 @@ namespace RealLifeOverhaul.Economy
                 TitleKey = "reallife_ob_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(), new Color32(214, 182, 96, 255), new Color32(128, 92, 30, 255), 0.42f, "AppIcon-OwnBank"),
                 Build = view.Build,
-                Opened = view.Opened
+                Opened = view.Opened,
+                Kit = () => new RealLifeOverhaul.Ui.OwnBankScreen(RealLifeOverhaul.Ui.MoneyLive.OwnLive),
+                KitScreen = RealLifeOverhaul.Ui.OwnBankScreen.ScreenId,
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.PiggyBank
             }, out bool tryAgain);
             if (_app == null)
             {

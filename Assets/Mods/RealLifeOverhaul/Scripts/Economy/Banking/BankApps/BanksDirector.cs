@@ -29,6 +29,9 @@ namespace RealLifeOverhaul.Economy
         public static IModLogger Logger;
         public static BanksDirector Instance { get; private set; }
 
+        /// <summary>The kit's apply at the bank showing.</summary>
+        internal void KitApply(int amount) => _view?.KitApply(amount);
+
         private PhoneApp _app;
         private BankApp _view;
         private readonly List<Lender> _banks = new List<Lender>(BankRules.AppsMost);   // the banks the app shows, largest first
@@ -179,7 +182,10 @@ namespace RealLifeOverhaul.Economy
                 {
                     view.Closed();
                     Badges();
-                }
+                },
+                Kit = () => new RealLifeOverhaul.Ui.BanksScreen(RealLifeOverhaul.Ui.MoneyLive.BanksLive),
+                KitScreen = RealLifeOverhaul.Ui.BanksScreen.ScreenId,
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Bank
             }, out tryAgain);
             if (app == null)
             {

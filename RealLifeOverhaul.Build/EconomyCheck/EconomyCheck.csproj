@@ -96,6 +96,13 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityEconomy.cs" Link="Mod\CityEconomy.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookCatalogue.cs" Link="Mod\Outlook\OutlookCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookBook.cs" Link="Mod\Outlook\OutlookBook.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\DaySeries\DaySeriesCatalogue.cs" Link="Mod\DaySeries\DaySeriesCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\DaySeries\DaySeries.cs" Link="Mod\DaySeries\DaySeries.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\DaySeries\DaySeriesStore.cs" Link="Mod\DaySeries\DaySeriesStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\DaySeries\DaySeriesRules.cs" Link="Mod\DaySeries\DaySeriesRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\MoneyModel.cs" Link="Mod\Money\MoneyModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\MoneyPages.cs" Link="Mod\Money\MoneyPages.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\MoneyScreens.cs" Link="Mod\Money\MoneyScreens.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookStore.cs" Link="Mod\Outlook\OutlookStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookReadings.cs" Link="Mod\Outlook\OutlookReadings.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookRules.cs" Link="Mod\Outlook\OutlookRules.cs" />

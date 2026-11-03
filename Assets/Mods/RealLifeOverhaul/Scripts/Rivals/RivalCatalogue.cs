@@ -11,7 +11,10 @@ namespace RealLifeOverhaul.Rivals
         Lobby = 5,      // lobbies the council: inspectors at the player's businesses more often, and one called in now
         Suit = 6,       // sues the player in the civil court (Justice's own suit, answered in the Legal file)
         Press = 7,      // a piece against the player in the City Ledger: a smear at the best business, and the customers think less of them
-        Count = 8
+        PriceRise = 8,  // raises prices in their shops: fewer customers at the player's for a while
+        Borrowed = 9,   // borrows at a city bank, on the same terms as anyone, and shows in the loan feed
+        Shares = 10,    // buys a block of a listed company
+        Count = 11
     }
 
     /// <summary>What the player does back. Saved as a number: never renumber, add at the end.</summary>
@@ -81,10 +84,10 @@ namespace RealLifeOverhaul.Rivals
     {
         public static readonly TycoonDef[] Tycoons =
         {
-            //                 name                  holding                stock   worth at start  aim   property outlet poach stake bid lobby suit press
-            new TycoonDef("Space Karen", "Karen Aerospace & Motors", 143, 40000000L, 700, new[] { 30, 10, 10, 15, 10, 25, 10, 10 }),
-            new TycoonDef("Bald Luthor", "Luthor Everything Co.", 144, 60000000L, 900, new[] { 10, 35, 30, 10, 5, 10, 5, 15 }),
-            new TycoonDef("The Zucc", "Zucc Social Holdings", 145, 90000000L, 1100, new[] { 10, 10, 10, 30, 25, 5, 25, 20 })
+            //                 name                  holding                stock   worth at start  aim   property outlet poach stake bid lobby suit press prices borrowed shares
+            new TycoonDef("Space Karen", "Karen Aerospace & Motors", 143, 40000000L, 700, new[] { 30, 10, 10, 15, 10, 25, 10, 10, 8, 6, 8 }),
+            new TycoonDef("Bald Luthor", "Luthor Everything Co.", 144, 60000000L, 900, new[] { 10, 35, 30, 10, 5, 10, 5, 15, 8, 6, 8 }),
+            new TycoonDef("The Zucc", "Zucc Social Holdings", 145, 90000000L, 1100, new[] { 10, 10, 10, 30, 25, 5, 25, 20, 8, 6, 8 })
         };
 
         public const int TycoonCount = 3;
@@ -181,7 +184,7 @@ namespace RealLifeOverhaul.Rivals
         public const int BidRestDays = 180;        // ...and never twice within this many days
 
         /// <summary>How long each kind of move runs once it has come, in days (0: it is over the day it comes; its own feature carries it from there).</summary>
-        public static readonly int[] MoveDays = { PropertyDays, OutletDays, 0, 0, 0, LobbyDays, 0, 0 };
+        public static readonly int[] MoveDays = { PropertyDays, OutletDays, 0, 0, 0, LobbyDays, 0, 0, 14, 0, 0 };
 
         /// <summary>What a counter costs, per ten thousand of the player's worth, between the least and the most below (a takeover is priced by the market).</summary>
         public static readonly int[] CounterShare = { 20, 10, 5, 10, 0 };

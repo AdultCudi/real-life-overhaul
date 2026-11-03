@@ -632,7 +632,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        public const int TycoonVoices = 3, TycoonLines = 3, TycoonMoves = 8;   // the tycoons with a voice of their own, their everyday lines, the kinds of move they post about
+        public const int TycoonVoices = 3, TycoonLines = 3, TycoonMoves = 11;   // the tycoons with a voice of their own, their everyday lines, the kinds of move they post about
         public const int TycoonMoveArg = 10;                                     // a post's Arg from here on: about a move of that kind (Arg - 10)
 
         /// <summary>A rival tycoon's post on about a third of days, about their latest move if any; null on other days.</summary>
