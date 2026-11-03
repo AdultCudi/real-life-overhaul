@@ -32,7 +32,7 @@ if (Test-Path $preview) { Remove-Item -Recurse -Force $preview }
 New-Item -ItemType Directory -Force (Join-Path $preview 'Kit') | Out-Null
 New-Item -ItemType Directory -Force (Join-Path $preview 'Editor') | Out-Null
 $gameFiles = @('UiGame*.cs', 'UiDirector*.cs', 'UiText.cs', 'UiGuide.cs')
-Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object {
+@('Stocks', 'Flare') | ForEach-Object { Get-ChildItem (Join-Path $repo (Join-Path 'Assets\Mods\RealLifeOverhaul\Scripts\Ui' $_)) -Filter *.cs -ErrorAction SilentlyContinue } | Where-Object {
     $_.Name -notlike '*Screen.cs' -and $_.Name -notlike '*Build.cs'
 } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui') -Filter *.cs | Where-Object {

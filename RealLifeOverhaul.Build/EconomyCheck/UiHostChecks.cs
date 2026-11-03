@@ -80,6 +80,68 @@ internal static partial class Program
         bool off = !UiScreenSwitches.On("contacts");
         UiScreenSwitches.Set("ui_screen_contacts", true);
         Check(off && UiScreenSwitches.On("contacts"), "ui switches: flipping one changes that screen alone");
+        // Every section the page lists has its const, every const is listed, every switch starts on, and a section's switches
+        // read back in it (a hand merge of the four branches that each added a section once lost a part of one).
+        var consts = new List<string>();
+        foreach (var field in typeof(UiScreenSwitches).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
+        {
+            if (field.IsLiteral && field.FieldType == typeof(string) && ((string)field.GetRawConstantValue()).StartsWith("uiscreens_", StringComparison.Ordinal))
+            {
+                consts.Add((string)field.GetRawConstantValue());
+            }
+        }
+        string sectionGap = "none";
+        foreach (string c in consts)
+        {
+            if (Array.IndexOf(UiScreenSwitches.Sections, c) < 0 || !en.ContainsKey("reallife_opt_sec_" + c) || !pt.ContainsKey("reallife_opt_sec_" + c) || !zh.ContainsKey("reallife_opt_sec_" + c))
+            {
+                sectionGap = c;
+            }
+        }
+        foreach (string listed in UiScreenSwitches.Sections)
+        {
+            if (!consts.Contains(listed))
+            {
+                sectionGap = listed;
+            }
+        }
+        string offByDefault = "none", rowsGap = "none";
+        foreach (UiScreenDef def in UiScreenSwitches.All)
+        {
+            if (!UiScreenSwitches.Value(UiScreenSwitches.OptionOf(def.Id)) || !UiScreenSwitches.On(def.Id))
+            {
+                offByDefault = def.Id;
+            }
+            if (Array.IndexOf(UiScreenSwitches.OptionIds(def.Section), UiScreenSwitches.OptionOf(def.Id)) < 0)
+            {
+                rowsGap = def.Id;
+            }
+        }
+        Check(sectionGap == "none" && consts.Count == UiScreenSwitches.Sections.Length && offByDefault == "none" && rowsGap == "none",
+            "ui switches: every section has its const, its place on the page and its title in three languages, every switch starts on and stands in its section (" + sectionGap + " " + offByDefault + " " + rowsGap + ")");
+        // Every app drawn on the kit (a PhoneAppDef with a KitScreen) hands its face to the frame; without that call the phone shows the game's old panel.
+        string unfaced = "none";
+        int kitApps = 0;
+        foreach (string path in Directory.GetFiles(DesignScripts, "*.cs", SearchOption.AllDirectories))
+        {
+            string text = File.ReadAllText(path);
+            if (text.Contains("KitScreen = ") && !path.EndsWith("PhoneAppDef.cs", StringComparison.Ordinal))
+            {
+                kitApps++;
+                if (!text.Contains("UiShell.Face("))
+                {
+                    unfaced = System.IO.Path.GetFileName(path);
+                }
+            }
+        }
+        Check(kitApps >= 9 && unfaced == "none", "ui apps: every mod app drawn on the kit gives its face to the frame, so its button opens the kit screen when its switch is on (" + kitApps + " apps; " + unfaced + ")");
+        foreach (UiScreenDef def in UiScreenSwitches.All)
+        {
+            if (def.Id == "flare")
+            {
+                Check(def.Section == UiScreenSwitches.Social && UiScreenSwitches.On("flare"), "ui switches: Flare's face is on by default, in the social section");
+            }
+        }
         // The app row: the phone's first page then All apps, its commands the frame's and never a screen's.
         var bar = new UiStatusModel { Apps = new UiIcon[12], AllApps = true };
         Check(UiDraw.AppsShown(bar, 1920f) == 10 && UiDraw.IsChrome(UiDraw.AppRowCommand) && UiDraw.IsChrome(UiDraw.AllAppsCommand) && !UiDraw.IsChrome(UiDraw.CloseCommand)

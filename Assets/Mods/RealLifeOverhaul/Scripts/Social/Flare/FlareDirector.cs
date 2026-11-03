@@ -273,7 +273,7 @@ namespace RealLifeOverhaul.Flare
             }
             var view = new FlareApp(this);
             bool tryAgain;
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_flare_app",
@@ -284,7 +284,8 @@ namespace RealLifeOverhaul.Flare
                 Kit = () => new RealLifeOverhaul.Ui.FlareScreen(this),
                 KitScreen = "flare",
                 KitIcon = RealLifeOverhaul.Ui.UiIcon.Fire
-            }, out tryAgain);
+            };
+            _app = PhoneApp.Install(def, out tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -295,6 +296,7 @@ namespace RealLifeOverhaul.Flare
                 return;
             }
             _view = view;
+            RealLifeOverhaul.Ui.UiShell.Face(_app, def);   // the kit's face over the app, once its switch is on (Ui/Shell/UiShell.Tick)
             Badge();
         }
 
