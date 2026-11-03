@@ -61,7 +61,7 @@ internal static partial class UiSamples
                 Nav(t, "reallife_econ_tab_borrow", "Borrow", UiIcon.Bank),
                 Nav(t, "reallife_econ_tab_cash", "Cash flow", UiIcon.ChartLineUp),
                 Nav(t, "reallife_econ_tab_accounts", "Accounts", UiIcon.Wallet),
-                Nav(t, "reallife_rival_title", "Rival tycoons", UiIcon.Trophy),
+                Nav(t, "reallife_money_nav_rivals", "Rivals", UiIcon.Trophy),
                 Nav(t, "reallife_fame_title", "Standing", UiIcon.Star)
             },
             Prompts = Prompts(t, index == 1 || index == 2),
@@ -103,7 +103,7 @@ internal static partial class UiSamples
             {
                 new UiActionModel { Label = W(t, "reallife_money_take", "Take it"), Kind = UiButtonKind.Primary, Icon = UiIcon.Check, Key = UiAction.Alt, Command = UiAppWindow.ActionCommand }
             };
-            m.Table = Feed(t, fresh);
+            m.Table = MoneyFeedTable(t, fresh);
         }
         else if (index == 3 || index == 4)
         {
@@ -352,10 +352,7 @@ internal static partial class UiSamples
             };
             m.Figures = fresh ? new UiFigureModel[0] : new[]
             {
-                new UiFigureModel { Label = "Customers", Value = "1,240" },
-                new UiFigureModel { Label = "Takings a day", Value = "$1,860", Good = true },
-                new UiFigureModel { Label = "Upkeep a day", Value = "$640", Good = false },
-                new UiFigureModel { Label = "Profit a day", Value = "$1,220", Change = "+$80", Rising = true, Good = true }
+                new UiFigureModel { Label = W(t, "reallife_money_customers", "Customers"), Value = "1,240" }
             };
             m.Chart = fresh ? null : LineChart(W(t, "reallife_money_customers", "Customers over 60 days"), 12, 800f, 1240f);
             m.Table = DistrictTable(t, fresh);
@@ -402,8 +399,6 @@ internal static partial class UiSamples
             Hue = 320f,
             Role = "Karen Aerospace & Motors",
             RoleIcon = UiIcon.Rocket,
-            Employer = "Holding",
-            EmployerIcon = UiIcon.Building,
             Status = fresh ? "Quiet" : W(t, "reallife_money_expanding", "Expanding"),
             StatusTone = UiRole.Warn,
             FactLabels = new[] { "Worth", "30 days", "90 days" },
@@ -505,7 +500,7 @@ internal static partial class UiSamples
         return m;
     }
 
-    private static UiDataTableModel Feed(UiWords t, bool fresh)
+    private static UiDataTableModel MoneyFeedTable(UiWords t, bool fresh)
     {
         var m = new UiDataTableModel
         {

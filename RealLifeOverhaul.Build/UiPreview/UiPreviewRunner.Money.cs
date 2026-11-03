@@ -26,6 +26,7 @@ public static partial class UiPreviewRunner
                 Backdrop = night ? "11.jpg" : i % 2 == 0 ? "13.jpg" : "02.jpg",
                 HoverCommand = UiAppWindow.NavCommand,
                 HoverArg = 1,
+                Walk = Moves("DDR"),
                 Lay = (s, f, d, k) => MoneyPages.Lay(s, make(English, st), f, d, k)
             });
         }
