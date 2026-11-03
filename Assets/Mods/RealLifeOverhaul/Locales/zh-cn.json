@@ -18940,7 +18940,7 @@
   "reallife_phonecam_latest": "你最新的照片：{taken}",
   "reallife_gallery_row_count": "照片",
   "reallife_gallery_count_of": "{count} / {cap}",
-  "reallife_gallery_taken": "第{day}天 {hour}（{real}）",
+  "reallife_gallery_taken": "第{day}天 {hour}",
   "reallife_gallery_tab_all": "全部照片",
   "reallife_gallery_tab_selfies": "自拍",
   "reallife_gallery_place": "第{place}张，共{count}张",

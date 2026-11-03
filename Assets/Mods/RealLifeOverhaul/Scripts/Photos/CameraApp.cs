@@ -55,7 +55,7 @@ namespace RealLifeOverhaul.Photos
                 Build = Build,
                 Opened = () => UiClone.Safe(Opened),
                 Closed = Closed,
-                Kit = () => new RealLifeOverhaul.Ui.CameraScreen(_director),
+                Kit = () => new RealLifeOverhaul.Ui.CameraScreen(_director) { Close = () => RealLifeOverhaul.Ui.UiShell.CloseMenu() },
                 KitScreen = "camera",
                 KitIcon = RealLifeOverhaul.Ui.UiIcon.Camera,
             };
@@ -116,7 +116,7 @@ namespace RealLifeOverhaul.Photos
                 return;
             }
             _refused = CameraRules.Refuse(PhotosGame.Situation(false));
-            Write();
+            UiClone.Safe(Write);   // a fault writing the old page never stops the camera opening below
             if (_refused == CameraRefusal.None)
             {
                 Ask(false);

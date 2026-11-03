@@ -311,7 +311,7 @@ namespace RealLifeOverhaul.Ui
             _photo.FactsTitle = UiText.T("reallife_ui_life_facts");
             _photo.Facts = new[]
             {
-                new UiPhotoFact { Label = UiText.T("reallife_ui_life_fact_taken"), Value = PhotosText.Taken(photo) },
+                new UiPhotoFact { Label = UiText.T("reallife_ui_life_fact_taken"), Value = PhotosText.TakenOn(photo) },
                 new UiPhotoFact { Label = UiText.T("reallife_ui_life_fact_place"), Value = place, Link = !string.IsNullOrEmpty(side.Place) },
                 new UiPhotoFact { Label = UiText.T("reallife_ui_life_fact_camera"), Value = UiText.T(photo.Selfie ? "reallife_ui_life_camera_selfie" : "reallife_ui_life_camera_rear") },
                 new UiPhotoFact { Label = UiText.T("reallife_ui_life_fact_filter"), Value = FilterName(side.Filter) },

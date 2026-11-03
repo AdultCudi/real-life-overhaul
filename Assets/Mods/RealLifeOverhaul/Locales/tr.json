@@ -18933,7 +18933,7 @@
   "reallife_phonecam_latest": "En yeni fotoğrafınız: {taken}",
   "reallife_gallery_row_count": "Fotoğraflar",
   "reallife_gallery_count_of": "{cap} fotoğraftan {count}.",
-  "reallife_gallery_taken": "Gün {day}, {hour} ({real})",
+  "reallife_gallery_taken": "Gün {day}, {hour}",
   "reallife_gallery_tab_all": "Tüm fotoğraflar",
   "reallife_gallery_tab_selfies": "Selfieler",
   "reallife_gallery_place": "{count} fotoğraftan {place}.",

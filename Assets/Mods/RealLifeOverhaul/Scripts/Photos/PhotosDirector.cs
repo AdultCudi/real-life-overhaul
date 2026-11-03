@@ -285,9 +285,12 @@ namespace RealLifeOverhaul.Photos
             Logger?.Info("Camera: not now (" + refusal + ").");
         }
 
-        // The phone's close fades for a tenth of a second; a quarter is waited, longer while the menu is still open.
+        // A frame is let go first: pressed from the closed phone, the app is switched on before the game opens the menu, so a close
+        // asked at once finds the menu not yet open, and the camera would wait on a menu that then stays up. The phone's close
+        // fades for a tenth of a second; a quarter is waited, longer while the menu is still open.
         private IEnumerator OpenWhenPutAway(bool selfie, bool fromFlare)
         {
+            yield return null;
             PhotosGame.CloseMenu();
             float until = Time.unscaledTime + 0.25f;
             while (Time.unscaledTime < until || PhotosGame.MenuOpen)
