@@ -129,6 +129,32 @@ namespace RealLifeOverhaul.Markets
             Queue(NotificationType.Warning, "reallife_mkt_note_call", "amount", MarketText.Money(amount), "day", byDay.ToString());
         }
 
+        // Alerts the step marked, and a rule that asked to be told. Once when the clock moved, not every frame.
+        private void TellAlerts()
+        {
+            MarketState s = _engine != null ? _engine.State : null;
+            if (s == null)
+            {
+                return;
+            }
+            while (s.Charts.TakeHit(out int stock, out int cents, out int _))
+            {
+                Stock k = s.Stock(stock);
+                Queue(NotificationType.Info, "reallife_stk_alert_hit", "name", k != null ? k.Ticker : string.Empty, "price", MarketText.Price(cents));
+            }
+            for (int i = 0; i < s.Rules.Count; i++)
+            {
+                RuleBot rule = s.Rules[i];
+                if (rule.Owner != 0 || rule.ToldStock <= 0)
+                {
+                    continue;
+                }
+                Stock k = s.Stock(rule.ToldStock);
+                rule.ToldStock = 0;
+                Queue(NotificationType.Info, "reallife_stk_rule_told", "name", k != null ? k.Ticker : string.Empty);
+            }
+        }
+
         private void Queue(NotificationType type, string key, params string[] pairs)
         {
             if (_notes.Count < 24)

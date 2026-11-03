@@ -323,6 +323,12 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketTrading.cs" Link="Mod\MarketTrading.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketHistory.cs" Link="Mod\MarketHistory.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketIndicators.cs" Link="Mod\MarketIndicators.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\TradeLog.cs" Link="Mod\TradeLog.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\ChartBook.cs" Link="Mod\ChartBook.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\RuleBots.cs" Link="Mod\RuleBots.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\BookBids.cs" Link="Mod\BookBids.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\DeskStore.cs" Link="Mod\DeskStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\StocksMath.cs" Link="Mod\StocksMath.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketTape.cs" Link="Mod\MarketTape.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketLife.cs" Link="Mod\MarketLife.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.cs" Link="Mod\MarketEngine.cs" />
@@ -761,6 +767,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Fields.cs" Link="Mod\UiDraw.Fields.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDataTable.cs" Link="Mod\UiDataTable.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiChart.cs" Link="Mod\UiChart.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\StocksModel.cs" Link="Mod\StocksModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\UiChartDesk.cs" Link="Mod\UiChartDesk.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\StocksLay.cs" Link="Mod\StocksLay.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCatalogue.cs" Link="Mod\UiCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Swatches.cs" Link="Mod\UiDraw.Swatches.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCataloguePanel.cs" Link="Mod\UiCataloguePanel.cs" />

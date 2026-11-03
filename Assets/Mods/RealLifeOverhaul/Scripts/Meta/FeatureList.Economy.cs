@@ -228,8 +228,9 @@ namespace RealLifeOverhaul.Meta
                 .Group("reallife_mkt_header")
                 .About("reallife_guide_markets_about").Help("reallife_guide_markets")
                 .Owns(Settings.MarketsId, Settings.MarketsMarginId, Settings.MarketsDividendNotesId, Settings.MarketsBondsId, Settings.MarketsBondSoFarId, Settings.MarketsHoldingId)
-                .Test("reallife_mkt_bond_test_open", "reallife_mkt_bond_test_pay", "reallife_mkt_test_holding")
-                .Data(Markets.MarketStore.Key)
+                .Test("reallife_mkt_bond_test_open", "reallife_mkt_bond_test_pay", "reallife_mkt_test_holding",
+                    "reallife_stk_test_open", "reallife_stk_test_company", "reallife_stk_test_order", "reallife_stk_test_switch")
+                .Data(Markets.MarketStore.Key, Markets.TradeLog.Key)
                 .Fact("mkt_companies", () => Whole(MarketsListed()))
                 .Fact("mkt_sectors", () => Whole((int)Markets.MarketSector.Count))
                 .Fact("mkt_open", () => MarketsTime(Markets.MarketCatalogue.OpenMinute))

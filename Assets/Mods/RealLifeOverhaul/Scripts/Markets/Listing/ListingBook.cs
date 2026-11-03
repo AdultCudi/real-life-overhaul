@@ -271,7 +271,9 @@ namespace RealLifeOverhaul.Markets
             keen = ListingCatalogue.DemandSpread * MarketRandom.Normal(secret, MarketRandom.Book, stockId, 1) + index + name - disclosed - supply;
             double price = mid * Math.Exp(keen);
             double least = f.LowCents * (1.0 - ListingCatalogue.PriceBeyondRange), most = f.HighCents * (1.0 + ListingCatalogue.PriceBeyondRange);
-            return Step(MarketValuation.Clamp(price, least, most), false);
+            int priced = Step(MarketValuation.Clamp(price, least, most), false);
+            BookBids.Fill(f, secret, stockId, priced);   // the same secret, a draw of its own, so this price does not move
+            return priced;
         }
 
         public static int FairCents(ListingFile f, ulong owner, int day, int year, in MarketEnv env, long debt)

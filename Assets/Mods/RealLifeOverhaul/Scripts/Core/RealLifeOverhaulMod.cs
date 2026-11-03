@@ -957,6 +957,10 @@ namespace RealLifeOverhaul
                     new[] { "reallife_mkt_opt_holding_tenth", "reallife_mkt_opt_holding_quarter", "reallife_mkt_opt_holding_half", "reallife_mkt_opt_holding_all" }, Settings.MarketsHolding,
                     v => Settings.MarketsHolding = v)
                 .AddButton("reallife_mkt_test_open", () => Markets.MarketDirector.Instance?.TestOpen())
+                .AddButton("reallife_stk_test_open", () => Markets.MarketDirector.Instance?.TestKit())
+                .AddButton("reallife_stk_test_company", () => Markets.MarketDirector.Instance?.TestKitCompany())
+                .AddButton("reallife_stk_test_order", () => Markets.MarketDirector.Instance?.TestKitOrder())
+                .AddButton("reallife_stk_test_switch", () => Markets.MarketDirector.Instance?.TestKitSwitch())
                 .AddButton("reallife_mkt_test_crisis", () => Markets.MarketDirector.Instance?.TestNews(true))
                 .AddButton("reallife_mkt_test_windfall", () => Markets.MarketDirector.Instance?.TestNews(false))
                 .AddButton("reallife_mkt_test_bid", () => Markets.MarketDirector.Instance?.TestBid())

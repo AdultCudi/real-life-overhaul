@@ -446,6 +446,12 @@ namespace RealLifeOverhaul.Markets
         public readonly int[] SectorPrevClose = new int[(int)MarketSector.Count];
         public readonly List<int>[] SectorDaily = NewSectorLists();
 
+        // The named tape, the chart the player keeps, and rule bots. The tape has its own save line. The rest sit at the
+        // end of this market's line. None of them is in the line a host sends.
+        public readonly TradeLog Names = new TradeLog();
+        public readonly ChartBook Charts = new ChartBook();
+        public readonly List<RuleBot> Rules = new List<RuleBot>(4);
+
         private static List<int>[] NewSectorLists()
         {
             var lists = new List<int>[(int)MarketSector.Count];
