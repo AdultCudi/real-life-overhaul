@@ -363,6 +363,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
+            host.KeepOver(PhoneKit.Order);   // the bar, its chips and its money's change over the phone's foot, whatever was switched on last
             var size = ((RectTransform)host.transform).rect.size;
             if (host.PxScale > 0f && size.x > 1f)
             {

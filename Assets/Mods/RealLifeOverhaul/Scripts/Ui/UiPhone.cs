@@ -121,6 +121,17 @@ namespace RealLifeOverhaul.Ui
             return Math.Max(0f, lift - footOpen);
         }
 
+        /// <summary>
+        /// How much of the kit phone's foot, screen px, is cut off under the HUD's bar (<paramref name="lift"/>, 0 for no bar):
+        /// <paramref name="foot"/> and <paramref name="top"/> where the device stands now. Open it stands over the bar and
+        /// nothing is cut; folded, all under the bar's top, never more than the device.
+        /// </summary>
+        public static float Below(float lift, float foot, float top)
+        {
+            // The owner, 3 Nov 2026: "the phone is hiding the settings, money notifications in the HUD".
+            return lift > 0f && top > foot ? Math.Min(top - foot, Math.Max(0f, lift - foot)) : 0f;
+        }
+
         /// <summary>A label's height under its tile: two lines, so a long name wraps whole rather than being cut.</summary>
         private static float LabelH => UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small) * 2f);
 

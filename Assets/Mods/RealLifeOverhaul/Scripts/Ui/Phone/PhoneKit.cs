@@ -82,8 +82,31 @@ namespace RealLifeOverhaul.Ui
         /// <summary>
         /// Screen pixels from the screen's foot that the device keeps clear of while the HUD's bar stands there (HudLive sets
         /// it as the bar shows and hides), so the two never overlap; 0 for the device's own place. Appended with the HUD's screens.
+        /// A change places the phone at once, not at its next look: a window that hid the bar and the phone together (the
+        /// game's menu, its options) shows the phone a moment before the bar.
         /// </summary>
-        public static float Lift;
+        public static float Lift
+        {
+            get => _lift;
+            set
+            {
+                if (value == _lift)
+                {
+                    return;
+                }
+                _lift = value;
+                if (Showing && _clip != null)
+                {
+                    Size();
+                }
+            }
+        }
+
+        private static float _lift;
+        private static RectMask2D _clip;   // nothing of the phone drawn or pressed below the HUD's bar (UiPhone.Below)
+
+        /// <summary>The kit phone's canvas order while it stands (the HUD keeps over it, HudLive), or int.MinValue.</summary>
+        public static int Order => _canvas != null ? _canvas.sortingOrder : int.MinValue;
 
         private static readonly Vector3[] LiftCorners = new Vector3[4];
 
@@ -177,6 +200,7 @@ namespace RealLifeOverhaul.Ui
             _keys.layer = ui >= 0 ? ui : UiLayer;
             _canvas = _root.AddComponent<Canvas>();
             _root.AddComponent<GraphicRaycaster>();
+            _clip = _root.AddComponent<RectMask2D>();
             PhoneItemsGame.Read(pager);
             PhoneItems.Current = PhoneItemsGame.Items;
             HookPictures();
@@ -330,6 +354,7 @@ namespace RealLifeOverhaul.Ui
             _host = null;
             _screen = null;
             _canvas = null;
+            _clip = null;
             _phone = null;
             _window = null;
             _container = null;
@@ -413,6 +438,14 @@ namespace RealLifeOverhaul.Ui
             if (rect.anchoredPosition != at)
             {
                 rect.anchoredPosition = at;
+                rect.GetWorldCorners(LiftCorners);
+            }
+            // Folded, its head stands over the bar and its body passes behind it: nothing of it is drawn or pressed below
+            // the bar's top, so the bar's bell, money and settings show and answer whatever the canvases' order.
+            float below = UiPhone.Below(Lift, LiftCorners[0].y, LiftCorners[1].y) / scale;
+            if (_clip != null && Math.Abs(_clip.padding.y - below) > 0.01f)
+            {
+                _clip.padding = new Vector4(0f, below, 0f, 0f);
             }
         }
 

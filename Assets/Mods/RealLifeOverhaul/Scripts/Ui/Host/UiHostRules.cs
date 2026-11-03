@@ -57,5 +57,12 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>The order a kit canvas takes over a screen drawn at this order: just above it, below the game's boxes, notices and other mods.</summary>
         public static int Above(int covered) => covered + 1;
+
+        /// <summary>
+        /// The HUD's order with the kit phone's canvas at <paramref name="phone"/> (int.MinValue: none): its own, or one over
+        /// the phone's. Two canvases of one order are drawn in the order they were last switched on, and the map switches the
+        /// phone off and on alone, so after it the phone stood over the bar; one order apart, the bar stays over the phone.
+        /// </summary>
+        public static int OverPhone(int own, int phone) => phone == int.MinValue || phone < own ? own : phone + 1;
     }
 }
