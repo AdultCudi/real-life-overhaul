@@ -163,9 +163,19 @@ namespace RealLifeOverhaul.Photos
         }
 
         private static readonly Comparison<PhotoEntry> DayFirst = ByDay;
+        private static readonly Comparison<PhotoEntry> DayLast = Oldest;
 
-        /// <summary>An album's photos in the Gallery's order; <paramref name="into"/> is emptied first.</summary>
+        /// <summary>The reverse of <see cref="ByDay"/>: the oldest day first.</summary>
+        public static int Oldest(PhotoEntry a, PhotoEntry b) => ByDay(b, a);
+
+        /// <summary>An album's photos, newest day first; <paramref name="into"/> is emptied first.</summary>
         public static void Album(List<PhotoEntry> photos, GalleryAlbum album, ICollection<string> favourites, List<PhotoEntry> into)
+        {
+            Album(photos, album, favourites, into, false);
+        }
+
+        /// <summary>An album's photos. <paramref name="oldestFirst"/> reverses the day order. <paramref name="into"/> is emptied first.</summary>
+        public static void Album(List<PhotoEntry> photos, GalleryAlbum album, ICollection<string> favourites, List<PhotoEntry> into, bool oldestFirst)
         {
             into.Clear();
             for (int i = 0; i < photos.Count; i++)
@@ -175,7 +185,7 @@ namespace RealLifeOverhaul.Photos
                     into.Add(photos[i]);
                 }
             }
-            into.Sort(DayFirst);
+            into.Sort(oldestFirst ? DayLast : DayFirst);
         }
 
         public static int IndexOf(List<PhotoEntry> photos, string name)

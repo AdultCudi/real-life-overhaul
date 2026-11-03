@@ -33,6 +33,14 @@ namespace RealLifeOverhaul.Economy
         }
     }
 
+    /// <summary>A stop still to come, copied for the Planner. The trip itself stays in the logistics book.</summary>
+    public struct TripDue
+    {
+        public int Arrive;
+        public string Place;
+        public string Item;
+    }
+
     /// <summary>A trip waiting to leave or on the road: one vehicle and its driver, from a route's warehouse, round its stops and back.</summary>
     public sealed class Trip
     {

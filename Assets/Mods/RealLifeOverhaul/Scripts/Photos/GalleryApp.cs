@@ -65,15 +65,19 @@ namespace RealLifeOverhaul.Photos
             {
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_gallery_app",
                 Icon = like => AppIconPainter.Paint(like, FlareIcons.Get(FlareGlyph.Picture), new Color32(255, 183, 77, 255), new Color32(226, 84, 110, 255), 0.46f, "AppIcon-Gallery"),
                 Build = Build,
                 Opened = () => UiClone.Safe(Opened),
-                Closed = Closed
-            }, out bool tryAgain);
+                Closed = Closed,
+                Kit = () => new RealLifeOverhaul.Ui.GalleryScreen(this),
+                KitScreen = "photo_gallery",
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Image,
+            };
+            _app = PhoneApp.Install(def, out bool tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -81,6 +85,10 @@ namespace RealLifeOverhaul.Photos
                 {
                     Logger?.Warn("Gallery: the game's phone is not built as this version expects, so the Gallery app is left off. Photos are still saved.");
                 }
+            }
+            else
+            {
+                RealLifeOverhaul.Ui.UiShell.Face(_app, def);
             }
         }
 
@@ -220,6 +228,7 @@ namespace RealLifeOverhaul.Photos
 
         private void Closed()
         {
+            Ui.GalleryScreen.Release();
             _latestAskedAt = -1f;   // an opening that never came does not open a later one on the newest photo
             Forget();
             _nav.Back();

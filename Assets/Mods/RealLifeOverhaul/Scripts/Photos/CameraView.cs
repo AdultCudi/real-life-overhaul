@@ -35,13 +35,16 @@ namespace RealLifeOverhaul.Photos
         private readonly Image _top, _bottom, _close, _gridButton, _poseButton, _ring, _disc, _flip, _thumbBack, _toastBack, _flash;
         private readonly TextMeshProUGUI _closeLabel, _mode, _zoom, _gridLabel, _poseLabel, _hint, _flipLabel, _galleryLabel, _toast;
         private readonly RawImage _thumb;
-        private readonly Image[] _filterChips = new Image[5];
-        private readonly TextMeshProUGUI[] _filterLabels = new TextMeshProUGUI[5];
+        private readonly Image[] _filterChips;
+        private readonly TextMeshProUGUI[] _filterLabels;
         private readonly Image[] _frameChips = new Image[3];
         private readonly TextMeshProUGUI[] _frameLabels = new TextMeshProUGUI[3];
         private float _laidWidth = -1f;
 
         public readonly ViewfinderInput Input;
+
+        /// <summary>The kit draws the bars and the chips, so this view keeps the picture, the grid and the frame only.</summary>
+        public bool KitChrome;
 
         public CameraView(Transform parent, Action close, Action shoot, Action flip, Action grid, Action pose, Action gallery, Action<int> filter, Action<int> frame)
         {
@@ -112,6 +115,8 @@ namespace RealLifeOverhaul.Photos
             _flipLabel = FlareKit.Text(_flip.transform, "Label", 30f, Color.white, FontStyles.Bold, TextAlignmentOptions.Center);   // the camera it turns to
             FlareKit.Stretch(_flipLabel.rectTransform, 10f, 0f, 10f, 0f);
 
+            _filterChips = new Image[CameraRules.Filters.Length];
+            _filterLabels = new TextMeshProUGUI[CameraRules.Filters.Length];
             for (int i = 0; i < _filterChips.Length; i++)
             {
                 int n = i;
@@ -286,7 +291,7 @@ namespace RealLifeOverhaul.Photos
         /// <summary>Everything but the photo's frame put away for the frame the screen is read in, or back.</summary>
         public void ForShot(bool shot, bool grid)
         {
-            FlareKit.Show(_controls, !shot);
+            FlareKit.Show(_controls, !shot && !KitChrome);
             FlareKit.Show(_grid, !shot && grid);
         }
 

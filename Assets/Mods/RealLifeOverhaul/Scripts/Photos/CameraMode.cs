@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Threading.Tasks;
 using BAModAPI;
 using Cinemachine;
+using Helpers;
 using UnityEngine;
 using UnityEngine.Rendering.HighDefinition;
 
@@ -42,6 +43,9 @@ namespace RealLifeOverhaul.Photos
         private float _placedYaw = float.NaN, _placedFov = -1f;
         private int _filter;
         private CameraFrame _frame;
+        private int _linedHour = -1;
+        private PhotoSidecar _note;
+        private bool _noted;
         private string _toast;
         private float _toastUntil, _flashFrom = -10f;
         private int _worldMask;                          // the mask the camera set on the world's clicks
@@ -167,6 +171,7 @@ namespace RealLifeOverhaul.Photos
                 _view.Show(true);
                 _view.Busy(false);
                 _view.ForShot(false, _grid);   // the controls back, whatever an earlier shot left
+                SyncFinder(true);
                 _view.Latest(PhotosDirector.Instance != null ? PhotosDirector.Instance.LatestTexture : null);
                 PhotosGame.Grade(_color, _filter);
                 Rear();
@@ -261,6 +266,11 @@ namespace RealLifeOverhaul.Photos
             GiveBack();
             try
             {
+                Ui.ViewfinderHost.Hide();
+                if (_view != null)
+                {
+                    _view.KitChrome = false;
+                }
                 _view?.Show(false);
             }
             catch (Exception e)
@@ -388,6 +398,14 @@ namespace RealLifeOverhaul.Photos
                 Close(must != CameraRefusal.None ? "the moment: " + must : "the player or the camera went");
                 return;
             }
+            if (_linedHour != PhotosGame.Hour)
+            {
+                _linedHour = PhotosGame.Hour;
+                if (_view != null && _view.KitChrome)
+                {
+                    SyncFinder(false);
+                }
+            }
             PhotosGame.TakeTurnKeys();
             if (PhotosGame.TakeCancel())
             {
@@ -498,6 +516,92 @@ namespace RealLifeOverhaul.Photos
         private void Write()
         {
             _view.Write(_inSelfie, _zoom, _grid, _inSelfie && _selfie != null ? _selfie.PoseKey : null, _filter, _frame);
+            if (_view.KitChrome)
+            {
+                SyncFinder(false);
+            }
+        }
+
+        // The kit's bars, or the view's own when the screen's switch is off.
+        private void SyncFinder(bool opening)
+        {
+            bool kit = Ui.ViewfinderHost.Show(
+                () => Close("its Close button"), Shoot, ToggleGrid, Gallery, Filter, Frame, Mode);
+            if (!opening)
+            {
+                kit = Ui.ViewfinderHost.Wanted;
+            }
+            _view.KitChrome = kit;
+            _view.ForShot(false, _grid);
+            if (!kit)
+            {
+                Ui.ViewfinderHost.Hide();
+                return;
+            }
+            PhotoSidecar side = PhotoShot.Capture(_filter, (int)_frame);
+            int today = 0;
+            PhotosDirector director = PhotosDirector.Instance;
+            if (director != null)
+            {
+                for (int i = 0; i < director.Photos.Count; i++)
+                {
+                    today += director.Photos[i].Day == PhotosGame.Day ? 1 : 0;
+                }
+            }
+            string place = string.IsNullOrEmpty(side.District) || string.IsNullOrEmpty(side.Place) || side.Place == side.District
+                ? side.Place : side.Place + ", " + side.District;
+            var model = new Ui.UiFinderModel
+            {
+                Modes = new[] { Ui.UiText.T("reallife_ui_life_mode_photo"), Ui.UiText.T("reallife_ui_life_mode_selfie") },
+                Mode = _inSelfie ? 1 : 0,
+                Place = place,
+                When = PhotosGame.Hour.ToString("00", CultureInfo.InvariantCulture) + ":" + Mathf.FloorToInt(TimeHelper.CurrentMinute).ToString("00", CultureInfo.InvariantCulture)
+                    + ", " + Ui.UiText.T(PhotoShot.Words(side.Weather)),
+                Count = Ui.UiText.Fill("reallife_ui_life_photos_today", "count", today.ToString()),
+                Filters = FilterLabels(),
+                Filter = _filter,
+                Frames = FrameLabels(),
+                Frame = (int)_frame,
+                Grid = _grid,
+                Toast = _toast,
+                Open = _toast != null ? Ui.UiText.T("reallife_ui_life_open") : null,
+                Move = Ui.UiText.T("reallife_ui_prompt_move"),
+                Select = Ui.UiText.T("reallife_ui_prompt_select"),
+                Back = Ui.UiText.T("reallife_ui_prompt_back"),
+            };
+            Ui.ViewfinderHost.Apply(model);
+        }
+
+        private void Mode(int mode)
+        {
+            if (mode == 0 && _inSelfie)
+            {
+                Flip();
+            }
+            else if (mode == 1 && !_inSelfie)
+            {
+                StartSelfie();
+            }
+        }
+
+        private static string[] FilterLabels()
+        {
+            var labels = new string[CameraRules.Filters.Length];
+            for (int i = 0; i < labels.Length; i++)
+            {
+                labels[i] = Ui.UiText.T(CameraRules.Filters[i].NameKey);
+            }
+            return labels;
+        }
+
+        private static string[] FrameLabels()
+        {
+            var labels = new string[CameraRules.FrameKeys.Length];
+            for (int i = 0; i < labels.Length; i++)
+            {
+                labels[i] = Ui.UiText.T(CameraRules.FrameKeys[i]);
+            }
+            return labels;
         }
 
         private void Toast(string words)
@@ -628,8 +732,11 @@ namespace RealLifeOverhaul.Photos
             string path = null;
             try
             {
+                _note = PhotoShot.Capture(_filter, (int)_frame);
+                _noted = true;
                 _view.Busy(true);
                 _view.ForShot(true, _grid);
+                Ui.ViewfinderHost.ForShot(true);
                 yield return null;                       // a frame drawn without the controls,
                 yield return new WaitForEndOfFrame();    // read at its end
                 if (!Active)
@@ -668,9 +775,15 @@ namespace RealLifeOverhaul.Photos
                     }
                     yield break;
                 }
+                if (_noted && path != null)
+                {
+                    PhotoSidecarFile.Write(path, _note);
+                    _noted = false;
+                }
                 PhotosDirector director = PhotosDirector.Instance;
                 Texture latest = director != null ? director.Added(folder, path, made) : null;
-                Logger?.Info("Camera: a " + (selfie ? "selfie" : "photo") + " saved (" + System.IO.Path.GetFileName(path) + ", " + made.Width + " x " + made.Height + ", " + (made.Bytes / 1024) + " KB).");
+                Logger?.Info("Camera: a " + (selfie ? "selfie" : "photo") + " saved (" + System.IO.Path.GetFileName(path)
+                    + ", " + made.Width + " x " + made.Height + ", " + (made.Bytes / 1024) + " KB).");
                 if (Meta.Dev.Verbose)
                 {
                     Logger?.Info("Camera check (the screen read on the main thread in " + shot.ReadMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms, wanted under "
@@ -705,6 +818,7 @@ namespace RealLifeOverhaul.Photos
                     _view.Busy(false);              // open or shut, so the next opening has its controls
                     _view.ForShot(false, _grid);
                 }
+                Ui.ViewfinderHost.ForShot(false);
                 PhotosGame.Shot left = shot;
                 if (work != null && !work.IsCompleted)
                 {

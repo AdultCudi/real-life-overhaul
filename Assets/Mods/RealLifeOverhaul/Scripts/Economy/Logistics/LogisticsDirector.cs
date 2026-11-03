@@ -37,6 +37,29 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Whether the routes run as trips now: the option on and the feature running.</summary>
         public bool TripsOn => _running && _tripsOn;
 
+        /// <summary>Stops still to arrive between two absolute minutes, the player's routes only. Rivals pay the same supply in their books.</summary>
+        public void DueStops(int fromMinute, int toMinute, List<TripDue> into)
+        {
+            into.Clear();
+            if (_trips == null)
+            {
+                return;
+            }
+            for (int i = 0; i < _trips.Trips.Count; i++)
+            {
+                Trip trip = _trips.Trips[i];
+                for (int s = 0; s < trip.Stops.Count; s++)
+                {
+                    TripStop stop = trip.Stops[s];
+                    if (stop.Done || stop.Arrive < fromMinute || stop.Arrive >= toMinute)
+                    {
+                        continue;
+                    }
+                    into.Add(new TripDue { Arrive = stop.Arrive, Place = stop.Place, Item = stop.Items.Count > 0 ? stop.Items[0] : null });
+                }
+            }
+        }
+
         /// <summary>Whether goods spoil now.</summary>
         public bool SpoilOn => _running && _spoilOn;
 

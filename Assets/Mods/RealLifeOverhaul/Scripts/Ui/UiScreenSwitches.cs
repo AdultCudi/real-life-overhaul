@@ -27,9 +27,10 @@ namespace RealLifeOverhaul.Ui
         public const string Activity = "uiscreens_activity";   // what the player does over time: an activity's card and strip, the time skip, the funeral, the time of day
         public const string Buy = "uiscreens_buy";        // buying and what the player holds: the checkout, a vehicle, the item panel, cargo, clothes, the garage
         public const string Tools = "uiscreens_tools";    // the world's smaller windows: the private driver, the items list, a sign's look and the like
+        public const string Life = "uiscreens_life";      // the Planner, the Calendar, the Camera, the Gallery and the viewfinder
 
         /// <summary>Every section, in the page's order; a section with no switch yet is left off the page.</summary>
-        public static readonly string[] Sections = { Apps, Business, Market, Boxes, Hud, Tools, Activity, Buy };
+        public static readonly string[] Sections = { Apps, Business, Market, Boxes, Hud, Tools, Activity, Buy, Life };
 
         private static readonly UiScreenDef[] Switched = Gather();
         private static readonly bool[] Values = Fill(Switched.Length);

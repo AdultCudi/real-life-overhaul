@@ -160,6 +160,11 @@ namespace RealLifeOverhaul.Photos
                 {
                     File.Delete(thumb);
                 }
+                string side = PhotoSidecarRules.PathOf(photo);
+                if (side != null && File.Exists(side))
+                {
+                    File.Delete(side);
+                }
                 return !File.Exists(photo);
             }
             catch (Exception e) when (Disk(e))

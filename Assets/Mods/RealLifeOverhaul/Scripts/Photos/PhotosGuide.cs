@@ -46,6 +46,7 @@ namespace RealLifeOverhaul.Photos
                 .AddButton("reallife_gallery_test_open", () => PhotosDirector.Instance?.TestGallery())
                 .AddButton("reallife_gallery_test_full", () => PhotosDirector.Instance?.TestFull())
                 .AddButton("reallife_gallery_test_sweep", () => PhotosDirector.Instance?.TestSweep())
+                .AddButton("reallife_ui_life_test_gallery", () => RealLifeOverhaul.Ui.LifeUiTests.OpenGallery())
                 .AddSplitter();
         }
     }
