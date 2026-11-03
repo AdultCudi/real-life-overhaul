@@ -421,7 +421,8 @@ namespace RealLifeOverhaul.Tech
             int given = own.Engineering + own.Testing + own.Design + own.Product + own.Selling;
             bool ok = after == Math.Min(OwnDeskRules.DayMost, before + stint) && points == OwnDeskRules.Points(s, stint, day)
                       && (TalentCatalogue.Role(s.Role).Family == Family.Support ? own.Support == 1 : given == points);
-            Logger?.Info("Tech check (own desk test): a stint of " + stint / 60 + " hour(s) at '" + firm.File.Name + "' counted under day " + day + " (" + before + " minute(s) before, " + after + " after) as "
+            Logger?.Info("Tech check (own desk test): a stint of " + stint / 60 + " hour(s) at '" + firm.File.Name + "' counted under day " + day
+                         + " (" + before + " minute(s) before, " + after + " after) as "
                          + TalentCatalogue.Role(s.Role).Key + " level " + s.Level + ": " + points + " point(s) for tomorrow's crew, " + given + " in its buckets: " + (ok ? "PASS" : "FAIL"));
             if (!ok)
             {
