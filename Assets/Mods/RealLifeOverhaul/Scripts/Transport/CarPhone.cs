@@ -4,6 +4,7 @@ using Dialogs;
 using Entities;
 using Helpers;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using Streets;
 using UI.Smartphone.Apps.Contacts;
 using UnityEngine;
@@ -264,7 +265,7 @@ namespace RealLifeOverhaul
                 SecondOptionTextOverride = "reallife_garage_go_through",
                 OnSecondOption = () => Page(0),
                 OnCancel = PhoneContacts.HangUp
-            };
+            }.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_month", "amount", TransitText.Money(total));
         }
 
         private static DialogEntry Page(int index)
@@ -317,6 +318,7 @@ namespace RealLifeOverhaul
             else
             {
                 entry.ConfirmTextOverride = "reallife_garage_insure".Localize(new { amount = TransitText.Money(premium) });
+                entry.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_month", "amount", TransitText.Money(premium));
                 entry.OnConfirm = () => CarPhone.Insure(car, record, true) < 0f
                     ? PhoneContacts.Closing("reallife_garage_no_money")
                     : PhoneContacts.Closing("reallife_garage_policy_bought");

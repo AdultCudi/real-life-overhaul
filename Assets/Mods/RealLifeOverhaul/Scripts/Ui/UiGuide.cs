@@ -30,6 +30,8 @@ namespace RealLifeOverhaul.Ui
                 .Test("reallife_ui_test_persona", "reallife_ui_test_rivals", "reallife_ui_test_market", "reallife_ui_test_persona_switch", "reallife_ui_test_rivals_switch",
                     "reallife_ui_test_market_switch")
                 .Test("reallife_ui_test_contacts_call", "reallife_ui_test_contacts_offer", "reallife_ui_test_contacts_tax", "reallife_ui_test_contacts_wage")
+                .Test("reallife_ui_test_dialog_bank", "reallife_ui_test_dialog_wholesale", "reallife_ui_test_dialog_import", "reallife_ui_test_dialog_desk", "reallife_ui_test_dialog_court",
+                    "reallife_ui_test_dialog_tax_court", "reallife_ui_test_dialog_fred", "reallife_ui_test_dialog_switch")
                 .Cleanup(() => UiDirector.RemoveAll("cleaned up"), 0);
         }
     }

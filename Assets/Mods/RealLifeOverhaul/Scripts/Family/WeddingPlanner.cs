@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Entities;
 using Helpers;
+using RealLifeOverhaul.GameUi;
 using UI.Notification;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -179,7 +180,9 @@ namespace RealLifeOverhaul.Family
             var fill = PlanFill(_draft).Cost(total).Count(Guests(_draft));
             fill.Text = FamilyText.Money(deposit);
             return FamilyTalk.Either(FamilyText.Say("reallife_family_plan_summary", fill), "reallife_family_plan_book", () => Book(deposit),
-                "reallife_family_plan_restart", () => VenueStep(0));
+                "reallife_family_plan_restart", () => VenueStep(0))
+                .Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", FamilyText.Money(deposit))
+                .Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_rest_on_day", "amount", FamilyText.Money(total - deposit));
         }
 
         private static DialogEntry Book(int deposit)
@@ -275,7 +278,8 @@ namespace RealLifeOverhaul.Family
                 PutBack(plan, 7);
                 FamilyState.Harmony(-3f);
                 return FamilyTalk.Close("reallife_family_plan_postponed", PlanFill(plan));
-            }, "reallife_family_plan_keep", () => FamilyTalk.Close("reallife_family_plan_kept", PlanFill(plan)));
+            }, "reallife_family_plan_keep", () => FamilyTalk.Close("reallife_family_plan_kept", PlanFill(plan)))
+                .Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", FamilyText.Money(fee));
         }
 
         public static void PutBack(WeddingPlan plan, int days)

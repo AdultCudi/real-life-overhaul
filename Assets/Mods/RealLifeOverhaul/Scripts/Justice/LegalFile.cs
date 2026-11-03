@@ -11,6 +11,7 @@ namespace RealLifeOverhaul
         private sealed class Act
         {
             public string Label, Hint;
+            public string Odds;         // the chance it comes off, in words under it ("About 4 in 10 chance to win"); null for none
             public Func<string> Do;     // returns what to say afterwards; null if it closed the file itself
         }
 
@@ -258,6 +259,10 @@ namespace RealLifeOverhaul
             JusticePanel.Instance.Show(Page(_text.ToString()).Add(JusticeText.T("reallife_justice_file_back")), _ => ShowMain());
         }
 
+        // A chance in words, about so many in ten (JusticeLaw.InTen), held between one and nine: these chances never reach either end.
+        private static string Tenths(string key, float chance) =>
+            JusticeText.T(key, "count", JusticeText.N(System.Math.Max(1, System.Math.Min(9, JusticeLaw.InTen(chance)))));
+
         public static string OutcomeKey(CaseOutcome outcome)
         {
             switch (outcome)
@@ -268,6 +273,7 @@ namespace RealLifeOverhaul
                 case CaseOutcome.Guilty: return "reallife_justice_outcome_guilty";
                 case CaseOutcome.Deal: return "reallife_justice_outcome_deal";
                 case CaseOutcome.Quashed: return "reallife_justice_outcome_quashed";
+                case CaseOutcome.Settled: return "reallife_justice_outcome_settled";
                 default: return "reallife_justice_outcome_none";
             }
         }
@@ -322,6 +328,7 @@ namespace RealLifeOverhaul
                     Label = JusticeText.T("reallife_justice_act_contest"),
                     Hint = JusticeText.T("reallife_justice_act_contest_hint", "percent", JusticeText.Percent(_director.SuitWinChance(suit)), "day", JusticeText.N(suit.DueDay),
                         "costs", JusticeText.Money(JusticeLaw.Round10(suit.Claim * 1.15f))),
+                    Odds = Tenths("reallife_justice_odds_win", _director.SuitWinChance(suit)),   // a rival's claim and an NPC's said by the same rule
                     Do = () => _director.ContestSuit(suit)
                 });
             }
@@ -334,6 +341,7 @@ namespace RealLifeOverhaul
                 {
                     Label = JusticeText.T("reallife_justice_act_appeal", "number", JusticeText.N(appeal.Number)),
                     Hint = JusticeText.T("reallife_justice_act_appeal_hint", "fee", JusticeText.Money(fee), "percent", JusticeText.Percent(chance)),
+                    Odds = Tenths("reallife_justice_odds_appeal", chance),
                     Do = () => _director.Appeal(appeal)
                 });
             }
@@ -369,14 +377,14 @@ namespace RealLifeOverhaul
             Act first = _acts[from];
             bool more = _acts.Count - from > 2;
             Act second = !more && from + 1 < _acts.Count ? _acts[from + 1] : null;
-            JusticePage page = Page(JusticeText.T("reallife_justice_file_actions_head")).Add(first.Label, first.Hint);
+            JusticePage page = Page(JusticeText.T("reallife_justice_file_actions_head")).Add(first.Label, first.Hint).Line(first.Odds, 0);
             if (more)
             {
                 page.Add(JusticeText.T("reallife_justice_file_more"), JusticeText.T("reallife_justice_file_more_hint", "count", JusticeText.N(_acts.Count - from - 1)));
             }
             else if (second != null)
             {
-                page.Add(second.Label, second.Hint);
+                page.Add(second.Label, second.Hint).Line(second.Odds, 0);
             }
             page.Add(JusticeText.T("reallife_justice_file_back"));
             int last = page.Count - 1;

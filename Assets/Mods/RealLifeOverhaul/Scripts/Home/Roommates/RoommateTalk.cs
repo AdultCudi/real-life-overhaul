@@ -4,6 +4,7 @@ using Dialogs;
 using Entities;
 using Localizor;
 using Localizor.LanguageChangeEvent;
+using RealLifeOverhaul.GameUi;
 using UI.Notification;
 
 namespace RealLifeOverhaul.Roommates
@@ -189,7 +190,8 @@ namespace RealLifeOverhaul.Roommates
             return Ask(RoommateText.Say(s.OwedSlips > 0 ? "reallife_roommate_talk_rent_again" : "reallife_roommate_talk_rent", f),
                 "reallife_roommate_reply_wait", () => { d.RentWait(); return Close("reallife_roommate_talk_rent_wait", f); },
                 "reallife_roommate_reply_now", () => Close(d.RentChase() ? "reallife_roommate_talk_rent_paid" : "reallife_roommate_talk_rent_cannot", f),
-                "reallife_roommate_reply_forget", Third(() => { d.RentCover(); return "reallife_roommate_talk_rent_covered"; }, NotificationType.Success));
+                "reallife_roommate_reply_forget", Third(() => { d.RentCover(); return "reallife_roommate_talk_rent_covered"; }, NotificationType.Success))
+                .Gets(DialogButton.Second, "reallife_ui_dialog_cost_ask_in", "amount", RoommateText.Money(s.Owed));
         }
 
         private static DialogEntry Noise(RoommateDirector d)
@@ -206,7 +208,8 @@ namespace RealLifeOverhaul.Roommates
             return Ask(RoommateText.Say("reallife_roommate_talk_raid", f),
                 "reallife_roommate_reply_help_yourself", () => { d.RaidFine(); return Close("reallife_roommate_talk_raid_fine"); },
                 "reallife_roommate_reply_stop", () => { d.RaidStop(); return Close("reallife_roommate_talk_raid_stop"); },
-                "reallife_roommate_reply_replace", Third(() => d.RaidReplace() ? "reallife_roommate_talk_raid_replace" : "reallife_roommate_talk_raid_grumble"));
+                "reallife_roommate_reply_replace", Third(() => d.RaidReplace() ? "reallife_roommate_talk_raid_replace" : "reallife_roommate_talk_raid_grumble"))
+                .Gets(DialogButton.Cancel, "reallife_ui_dialog_cost_ask_in", "amount", RoommateText.Money(RoommateRules.FoodPrice));
         }
 
         private static DialogEntry Borrow(RoommateDirector d, RoommateState s)
@@ -214,7 +217,8 @@ namespace RealLifeOverhaul.Roommates
             Fill f = Us.Cost(s.BorrowAsk).On(RoommateText.When(RoommateGame.Day + RoommateRules.BorrowDays));
             return Ask(RoommateText.Say("reallife_roommate_talk_borrow", f),
                 "reallife_roommate_reply_lend", () => Close(d.BorrowYes() ? "reallife_roommate_talk_borrow_yes" : "reallife_roommate_talk_borrow_short", f),
-                "reallife_roommate_reply_cannot", () => { d.BorrowNo(); return Close("reallife_roommate_talk_borrow_no"); });
+                "reallife_roommate_reply_cannot", () => { d.BorrowNo(); return Close("reallife_roommate_talk_borrow_no"); })
+                .Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_lend", "amount", RoommateText.Money(s.BorrowAsk), "day", RoommateText.When(RoommateGame.Day + RoommateRules.BorrowDays));
         }
 
         private static DialogEntry Cooked(RoommateDirector d)

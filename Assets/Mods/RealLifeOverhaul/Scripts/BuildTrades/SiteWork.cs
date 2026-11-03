@@ -3,6 +3,7 @@ using Dialogs;
 using Entities;
 using Extensions;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
 namespace RealLifeOverhaul.BuildTrades
@@ -130,6 +131,7 @@ namespace RealLifeOverhaul.BuildTrades
             {
                 entry.ConfirmTextOverride = "reallife_jobline_take".Localize();
                 entry.OnConfirm = () => Take(def);
+                entry.Gets(DialogButton.Confirm, "reallife_ui_dialog_cost_shift", "amount", (def.UnitPay * def.ShiftUnits * rate).ToCurrencyFormat());
                 if (count > 1)
                 {
                     entry.SecondOptionTextOverride = "reallife_jobline_next";

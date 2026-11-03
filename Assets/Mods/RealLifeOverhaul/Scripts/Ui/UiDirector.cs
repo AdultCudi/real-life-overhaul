@@ -87,6 +87,7 @@ namespace RealLifeOverhaul.Ui
             UniformsKit.Remove(why);
             RivalsKit.Remove(why);
             MarketKit.Remove(why);
+            DialogKits.Remove(why);
             UiShell.Remove(why);
             ShellPages.Remove(why);
             ShellBoxes.Remove(why);
@@ -146,6 +147,7 @@ namespace RealLifeOverhaul.Ui
                 UniformsKit.Rearm();
                 RivalsKit.Rearm();
                 MarketKit.Rearm();
+                DialogKits.Rearm();
                 UiShell.Rearm();
                 ShellPages.Rearm();
                 ShellBoxes.Rearm();
@@ -187,6 +189,7 @@ namespace RealLifeOverhaul.Ui
             UniformsKit.Install();
             RivalsKit.Install();
             MarketKit.Install();
+            DialogKits.Install();
             ShellPages.Install();
             UiShell.Tick();
             ShellBoxes.Install();
@@ -215,7 +218,7 @@ namespace RealLifeOverhaul.Ui
                 : "fonts: not loaded from " + (UiFonts.BundleFile ?? "(no path)") + ", the game's font stands in";
             return "UI: the RLO interface is on; " + fonts + "; screens: Contacts (" + ContactsKit.State + "), BizMan (" + BizManKit.State + "), "
                    + EconoViewKit.State + ", the phone (" + PhoneKit.State + "), " + EmployeesKit.State + ", " + PersonaKit.State + ", " + UniformsKit.State + ", " + RivalsKit.State + ", "
-                   + MarketKit.State + ", "
+                   + MarketKit.State + ", " + DialogKits.State + ", "
                    + ShellBoxes.States() + ", " + ShellNotices.States() + ", " + ActivityKit.States()
                    + ", pages (" + ShellPages.States() + "), desk sessions (" + (Settings.LivingDesks ? "over the game's panel as each opens" : "off")
                    + "); the full menu's frame while an app on the kit shows; from Options, Tests: the gallery and each screen.";

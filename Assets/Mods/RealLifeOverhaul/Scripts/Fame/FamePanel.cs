@@ -1,6 +1,7 @@
 using System;
 using Helpers;
 using RealLifeOverhaul.GameUi;
+using RealLifeOverhaul.Ui;
 using UI;
 using UI.Smartphone;
 using UnityEngine;
@@ -9,7 +10,8 @@ namespace RealLifeOverhaul.Fame
 {
     /// <summary>
     /// The screen for a scene the player is in (the night show, a magazine, an evening), in the game's own list window
-    /// as a court hearing is. It stays until the scene is over, and the player stands still for it. Per frame: nothing.
+    /// as a court hearing is (on the RLO interface the decision card: who speaks, the answers numbered with what each
+    /// means). It stays until the scene is over, and the player stands still for it. Per frame: nothing.
     /// </summary>
     internal sealed class FamePanel
     {
@@ -18,7 +20,7 @@ namespace RealLifeOverhaul.Fame
         private const float InputDelay = 0.4f;                               // seconds after a page appears before an answer counts
         private const string ButtonChoose = "reallife_fame_list_choose";
 
-        private readonly DeskList _window = new DeskList("RealLifeOverhaul Standing", 1250f, 150f);
+        private readonly SceneDesk _window = new SceneDesk("RealLifeOverhaul Standing", 1250f, 150f);
         private readonly Action<int> _onPick;
         private readonly Action _onClosed;
         private Action<int> _answer;
@@ -58,7 +60,7 @@ namespace RealLifeOverhaul.Fame
         /// <summary>One page of up to three answers, each a name and what it means. False, and the scene ended, if the window cannot be made.</summary>
         public bool Show(string title, string subtitle, string speaker, string body, string[] names, string[] hints, int count, Action<int> answer)
         {
-            TravelList list = Active ? _window.Take(this) : null;
+            SceneList list = Active ? _window.Take(this) : null;
             if (list == null)
             {
                 End();
@@ -67,6 +69,7 @@ namespace RealLifeOverhaul.Fame
             _answer = answer;
             _count = Mathf.Clamp(count, 1, MostChoices);
             list.Begin(title ?? string.Empty, subtitle ?? string.Empty);
+            list.Moment(subtitle, UiIcon.Star, speaker);
             body = body ?? string.Empty;
             int lines = 1;
             for (int i = 0; i < body.Length; i++)

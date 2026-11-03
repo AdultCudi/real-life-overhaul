@@ -9,7 +9,16 @@ namespace RealLifeOverhaul.Ui
         Amount,        // a figure with less and more, typed or stepped
         Choice,
         Switch,
-        Text
+        Text,
+        Slider,        // a value between two ends, the game's Slider, its figure beside the track
+        Figure,        // a line read only: a label and its value (a fee, a total), as an info panel's row
+        Note,          // a sentence of the form's own (what a contract covers, a warning), wrapped in the slot
+        Heading,       // a short label over the fields under it (the hours a job asks for)
+        Entry,         // a line of a list with its button at the right (a contract to cancel)
+        Action,        // a button alone (add an item)
+        Swatches,      // colours to pick, each a square of its own colour
+        Break,         // a hairline between the form's parts, where the game puts its splitter
+        Radio          // one of a few options of which one is chosen (where a tow takes the car)
     }
 
     /// <summary>
@@ -23,6 +32,7 @@ namespace RealLifeOverhaul.Ui
         public string Name;
         public float Hue;
         public UiRole Ring = UiRole.Ok;                // the mood
+        public UiIcon Icon = UiIcon.None;              // nobody's face (a file, a firm): its picture on a tile in the face's place; None for the face
         public string Role;                            // "Customer Service, Bloom Cafe"
         public string Status;                          // a chip beside the role ("On shift"); null for none
         public UiRole StatusTone = UiRole.Ok;
@@ -39,6 +49,9 @@ namespace RealLifeOverhaul.Ui
         public string FormHint;                        // a quiet line under it ("The bank lends up to $40,000"); null for none
         public UiFormField[] Fields = new UiFormField[0];   // a form of several fields (a wage and a signing bonus) in place of the one above
         public int FieldCount;
+        public UiFormRow[] Rows = new UiFormRow[0];         // a game's whole form (a loan, a campaign, a delivery) in place of both (UiFormRows)
+        public int RowCount;
+        public UiFormPick Pick = new UiFormPick();           // that form's open choice, held slider and scroll
         public bool FormOn;                            // a switch
         public bool FormCanLess = true, FormCanMore = true;
         public bool Composer;                          // the line takes the player's own words (the mod's texts): the composer at the foot
@@ -93,7 +106,7 @@ namespace RealLifeOverhaul.Ui
                 foot -= composerH + (m.Choices.Length > 0 ? UiTokens.S3 : 0f);
             }
             float choicesH = ChoicesHeight(m, w);
-            float formH = FormHeight(m);
+            float formH = FormHeight(m, w);
             float cy = foot - choicesH;
             Choices(s, at.InRegion(RegionChoices), m, x, cy, w, keys);
             float fy = cy - (formH > 0f ? formH + UiTokens.S3 : 0f);
@@ -119,7 +132,7 @@ namespace RealLifeOverhaul.Ui
             // As tall as it holds, standing on the status bar, so a short talk leaves the world above it in view; a long
             // one grows up the screen and then scrolls.
             float inner = w - UiTokens.S5 * 2f;
-            float need = UiFrame.Strip + UiTokens.S4 + Face + UiTokens.S4 + ThreadHeight(m, inner) + UiTokens.S4 + FormHeight(m) + (FormHeight(m) > 0f ? UiTokens.S3 : 0f)
+            float need = UiFrame.Strip + UiTokens.S4 + Face + UiTokens.S4 + ThreadHeight(m, inner) + UiTokens.S4 + FormHeight(m, inner) + (FormHeight(m, inner) > 0f ? UiTokens.S3 : 0f)
                          + ChoicesHeight(m, inner) + (m.Composer ? UiTokens.Control + UiTokens.S2 + UiTokens.S3 : 0f) + UiTokens.S5;
             float h = Math.Min(UiDraw.SnapDown(frame.BandY - UiTokens.S4 * 2f), UiDraw.Snap(need));
             float y = UiDraw.SnapDown(frame.BandY - UiTokens.S4 - h);
@@ -138,7 +151,17 @@ namespace RealLifeOverhaul.Ui
         private static float Head(UiScene s, UiAt at, UiConversationModel m, float x, float y, float w)
         {
             float ring = UiTokens.S1;   // the mood's ring inside the head's square, so the face keeps to the grid
-            UiDraw.Portrait(s, at, x + ring, y + ring, Face - ring * 2f, m.Name, m.Hue, m.Ring);
+            if (m.Icon != UiIcon.None)
+            {
+                // Nobody's face (a file, a firm): its picture on a tile, as the call card and a contact's head show one.
+                float side = Face - ring * 2f, g = UiDraw.Snap(side * 0.5f);
+                int tile = UiDraw.Tile(s, at, x + ring, y + ring, side, UiRole.None, false);
+                UiDraw.Icon(s, at.In(tile), x + ring + (side - g) / 2f, y + ring + (side - g) / 2f, g, m.Icon, UiRole.Accent, UiFlags.Middle | UiFlags.Centre, true);
+            }
+            else
+            {
+                UiDraw.Portrait(s, at, x + ring, y + ring, Face - ring * 2f, m.Name, m.Hue, m.Ring);
+            }
             float tx = x + Face + UiTokens.S3, tw = x + w - tx;
             float nameH = UiTextRules.LineHeight(UiStyle.Title), roleH = UiTextRules.LineHeight(UiStyle.Small);
             float top = y + (Face - nameH - UiTokens.S1 - roleH) / 2f;
@@ -179,7 +202,7 @@ namespace RealLifeOverhaul.Ui
             UiDraw.ScrollThumb(s, at, x + w + UiTokens.S1, y, vh, offset, contentH);
             var inClip = new UiAt { Parent = -1, Clip = clip, Layer = at.Layer, Order = -1, Region = at.Region };
             // A short thread sits at its foot by what answers it; with nothing under it, it starts under the head, so no hole stands over it.
-            bool answered = m.Choices.Length > 0 || m.Composer || FormHeight(m) > 0f;
+            bool answered = m.Choices.Length > 0 || m.Composer || FormHeight(m, w) > 0f;
             float my = answered ? UiDraw.SnapDown(Math.Max(0f, vh - contentH)) : 0f;
             if (startH > 0f)
             {
@@ -300,8 +323,12 @@ namespace RealLifeOverhaul.Ui
             return h;
         }
 
-        private static float FormHeight(UiConversationModel m)
+        private static float FormHeight(UiConversationModel m, float w)
         {
+            if (m.RowCount > 0)
+            {
+                return UiFormRows.Height(m.Rows, m.RowCount, w, m.Pick);
+            }
             if (m.FieldCount > 0)
             {
                 return FieldsHeight(m);
@@ -316,12 +343,17 @@ namespace RealLifeOverhaul.Ui
         // The form slot on a band: its label at the left, its control at the right, a quiet hint under them.
         private static void Form(UiScene s, UiAt at, UiConversationModel m, float x, float y, float w)
         {
+            if (m.RowCount > 0)
+            {
+                UiFormRows.Lay(s, at, m.Rows, m.RowCount, m.Pick, x, y, w);
+                return;
+            }
             if (m.FieldCount > 0)
             {
                 Fields(s, at, m, x, y, w);
                 return;
             }
-            float h = FormHeight(m);
+            float h = FormHeight(m, w);
             UiDraw.Band(s, at, x, y, w, h);
             float cw = Math.Min(FormControl, UiDraw.SnapDown(w / 2f)), cx = x + w - UiTokens.S3 - cw, cy = y + UiTokens.S3;
             UiDraw.TextMiddle(s, at, x + UiTokens.S3, cy, UiTokens.Control, cx - UiTokens.S4 - x - UiTokens.S3, UiStyle.Title, UiRole.Text, m.FormLabel, UiFlags.Label | UiFlags.Truncate);

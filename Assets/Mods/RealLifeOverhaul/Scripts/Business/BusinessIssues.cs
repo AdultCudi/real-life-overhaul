@@ -14,6 +14,8 @@ namespace RealLifeOverhaul
         public string Text;       // what it means, with {amount} and the issue's other values
         public int Amount;        // what it costs (or pays), for {amount}
         public bool Blocked;      // on offer but not possible now (cannot be paid, a condition not met): said, not chosen
+        public string Line;       // the line told under its answer for Amount (DialogAnswers), null for none
+        public bool Gets;         // the line is a sum the player receives, not one they pay
     }
 
     /// <summary>

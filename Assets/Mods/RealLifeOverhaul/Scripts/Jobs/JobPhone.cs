@@ -4,6 +4,7 @@ using Dialogs;
 using Entities;
 using Extensions;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using UI.Smartphone.Apps.Contacts;
 using UnityEngine;
 
@@ -185,6 +186,12 @@ namespace RealLifeOverhaul
                 entry.ConfirmTextOverride = "reallife_jobline_next".Localize();
                 entry.OnConfirm = () => Offer(next);
             }
+            if (available && size > 0)
+            {
+                // the pitch's own sum for a shift of its size: a gig that goes on until the player stops has none to state
+                entry.Gets(DialogButton.Confirm, def.PayPerMetre > 0f ? "reallife_ui_dialog_cost_shift_distance" : "reallife_ui_dialog_cost_shift", "amount",
+                    (def.UnitPay * size * rate).ToCurrencyFormat());
+            }
             return entry;
         }
 
@@ -212,6 +219,12 @@ namespace RealLifeOverhaul
             {
                 entry.ConfirmTextOverride = "reallife_jobline_heavy_take".Localize();
                 entry.OnConfirm = () => TakeHeavy(def);
+                entry.Gets(DialogButton.Confirm, "reallife_ui_dialog_cost_shift_distance", "amount",
+                    ((float)HeavyRules.LoadPayFor(UnityEngine.Mathf.RoundToInt(def.UnitPay * rate)) * size).ToCurrencyFormat());
+                if (!own)
+                {
+                    entry.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_pay", "amount", ((float)JobRental.TruckFee).ToCurrencyFormat());
+                }
                 entry.SecondOptionTextOverride = "reallife_jobline_next";
                 entry.OnSecondOption = () => Offer(next);
             }

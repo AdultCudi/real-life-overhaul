@@ -1,6 +1,7 @@
 using System;
 using Helpers;
 using RealLifeOverhaul.GameUi;
+using RealLifeOverhaul.Ui;
 using UI;
 using UI.Notification;
 using UI.Smartphone;
@@ -9,8 +10,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Tech
 {
     /// <summary>
-    /// An interview in the game's own list window (<see cref="TravelList"/> through a <see cref="DeskList"/>), the player standing
-    /// still until it is over. Clicks do it all; the director checks once a second that the window is still there.
+    /// An interview in the game's own list window (<see cref="TravelList"/> through a <see cref="SceneDesk"/>; on the RLO
+    /// interface the conversation, and the decision card at its end), the player standing still until it is over. Clicks do it all; the director checks once a second that the window is still there.
     /// </summary>
     internal sealed class InterviewMeeting
     {
@@ -32,7 +33,7 @@ namespace RealLifeOverhaul.Tech
         };
 
         private readonly TechDirector _director;
-        private readonly DeskList _window = new DeskList("RealLifeOverhaul Interview", 1250f, 150f);
+        private readonly SceneDesk _window = new SceneDesk("RealLifeOverhaul Interview", 1250f, 150f);
         private readonly Action<int> _onPick;
         private readonly Action _onClosed;
 
@@ -89,13 +90,14 @@ namespace RealLifeOverhaul.Tech
 
         private bool Show()
         {
-            TravelList list = _window.Take(this);
+            SceneList list = _window.Take(this);
             if (list == null)
             {
                 return false;
             }
             string progress = TechText.T("reallife_hire_meet_progress", "number", (_round + 1).ToString(), "of", HiringCatalogue.InterviewRounds.ToString());
             list.Begin(Title, _heard + "\n<size=80%>" + progress + "</size>");
+            list.Talk(_s.P.Name, TechText.Role(_ad != null ? _ad.Role : _s.P.Role));
             for (int t = 0; t < HiringRules.Topics; t++)
             {
                 if ((_asked & (1 << t)) != 0)
@@ -111,7 +113,7 @@ namespace RealLifeOverhaul.Tech
             return true;
         }
 
-        private void Open(TravelList list)
+        private void Open(SceneList list)
         {
             list.Open(_onPick, _onClosed);
             list.ScrollToTop();
@@ -184,7 +186,7 @@ namespace RealLifeOverhaul.Tech
 
         private void ShowSummary()
         {
-            TravelList list = _window.Take(this);
+            SceneList list = _window.Take(this);
             if (list == null)
             {
                 End();
@@ -194,6 +196,7 @@ namespace RealLifeOverhaul.Tech
                 "skill", (_a.Revealed & HiringRules.RevealSkill) != 0 ? TechText.Percent(_s.P.Main / 1000) : TechText.T("reallife_hire_unknown"),
                 "ask", (_a.Revealed & HiringRules.RevealAsk) != 0 ? TechText.Rate(_s.Ask) : TechText.T("reallife_hire_unknown"));
             list.Begin(Title, TechText.T("reallife_hire_meet_over"));
+            list.Moment(TechText.T("reallife_hire_meet_over"), UiIcon.IdBadge, _s.P.Name);
             list.AddNote(_s.P.Name, body, list.HeightFor((int)(body.Length * 1.3f), false));
             list.Add(Close, TechText.T("reallife_hire_meet_close"), TechText.T("reallife_hire_meet_close_detail"), ButtonDo, true);
             _over = true;

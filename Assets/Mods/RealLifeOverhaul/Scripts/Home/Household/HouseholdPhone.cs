@@ -7,6 +7,7 @@ using Entities;
 using Extensions;
 using Localizor;
 using Localizor.LanguageChangeEvent;
+using RealLifeOverhaul.GameUi;
 using UI.Smartphone.Apps.Contacts;
 
 namespace RealLifeOverhaul.Household
@@ -205,7 +206,7 @@ namespace RealLifeOverhaul.Household
                 });
             }
             string name = c.Name;
-            return Entry(text,
+            DialogEntry offer = Entry(text,
                 "reallife_household_do_hire_this", () =>
                 {
                     string refusal = d.Hire(kind, HouseholdGame.HomeAt(street, number));
@@ -218,6 +219,9 @@ namespace RealLifeOverhaul.Household
                     StaffKind next = HouseholdRules.NextOpen(kind, d.State.Staff, street, number);
                     return Offer(next != StaffKind.None ? next : kind, street, number);
                 });
+            return role.Kind == StaffKind.Mechanic
+                ? offer.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_callout", "amount", HouseholdText.Money(HouseholdRules.CallOutAt(HouseholdGame.PriceLevel)))
+                : offer.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_visit", "amount", HouseholdText.Money(HouseholdRules.VisitWage(hourly, role)));
         }
 
         private static DialogEntry Member(int index)

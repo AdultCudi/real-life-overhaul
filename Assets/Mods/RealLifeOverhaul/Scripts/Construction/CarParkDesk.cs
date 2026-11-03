@@ -5,6 +5,7 @@ using BAModAPI;
 using Dialogs;
 using Entities;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Construction
 {
@@ -252,7 +253,7 @@ namespace RealLifeOverhaul.Construction
             {
                 _bays = next;
                 return LeaseHere();
-            }, Status, "reallife_park_desk_back", ConstructionText.N(_bays));
+            }, Status, "reallife_park_desk_back", ConstructionText.N(_bays)).Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_month_first", "amount", ConstructionText.Money(each * _bays));
         }
 
         private static DialogEntry SignLease()

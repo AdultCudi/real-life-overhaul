@@ -30,6 +30,9 @@ namespace RealLifeOverhaul.Ui
         public string EmblemLabel;                  // under the emblem or the faces: "12 people"
         public string[] Faces = new string[0];      // the people it is about: their faces in a grid take the emblem's place
         public int FaceCount;                       // how many people that is, when more than the faces given; 0 for the faces alone
+        public string[] FaceRoles;                  // who each face is ("Presiding"): one to a row, each beside its name and this; null for the grid alone
+        public UiRole[] FaceRings;                  // with the roles, each face's ring (whose side they are on); null or None for none
+        public int Speaking = -1;                   // with the roles, the face whose name is in the accent: who speaks; -1 for nobody
         public string Body;
         public UiDecisionChoice[] Choices = new UiDecisionChoice[0];
         public int Selected = -1;
@@ -53,6 +56,8 @@ namespace RealLifeOverhaul.Ui
         private const float Emblem = 168f;    // px
         private const float Face = 72f;       // px: a face in the grid of the people it is about
         private const int FacesAcross = 3, FacesDown = 4;
+        private const float Person = 56f;     // px: a face beside its name and who they are, those present told with their roles
+        private const int PeopleMost = 6, RoleLines = 2;
 
         public static void Lay(UiScene s, UiDecisionModel m, UiFrame frame, bool dark, IUiKeys keys)
         {
@@ -123,7 +128,8 @@ namespace RealLifeOverhaul.Ui
             {
                 h += ChoiceHeight(ref m.Choices[i]) + UiTokens.S2;
             }
-            h += UiTokens.S4 + UiTokens.Control + UiTokens.S8;
+            // The buttons' row at the foot; a card without buttons (a moment the player may not leave) ends a padding under its last choice.
+            h += m.Buttons.Length > 0 ? UiTokens.S4 + UiTokens.Control + UiTokens.S8 : UiTokens.S8 - UiTokens.S2;
             return Math.Max(UiDraw.Snap(h), SideHeight(m) + UiTokens.S12 * 2f);
         }
 
@@ -137,7 +143,12 @@ namespace RealLifeOverhaul.Ui
             float labelH = string.IsNullOrEmpty(m.EmblemLabel) ? 0f : UiTokens.S5 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader));
             float top = y + UiDraw.SnapDown((h - SideHeight(m)) / 2f);
             float ly;
-            if (m.Faces.Length > 0)
+            if (m.Faces.Length > 0 && m.FaceRoles != null)
+            {
+                People(s, at, m, x, top);
+                ly = top + PeopleHeight(m) + UiTokens.S5;
+            }
+            else if (m.Faces.Length > 0)
             {
                 int cells = FacesAcross * FacesDown;
                 int total = Math.Max(m.FaceCount, m.Faces.Length);
@@ -178,7 +189,41 @@ namespace RealLifeOverhaul.Ui
         private static float SideHeight(UiDecisionModel m)
         {
             float labelH = string.IsNullOrEmpty(m.EmblemLabel) ? 0f : UiTokens.S5 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader));
-            return (m.Faces.Length > 0 ? FacesHeight(m) : Emblem + UiTokens.S2) + labelH;
+            return (m.Faces.Length > 0 ? m.FaceRoles != null ? PeopleHeight(m) : FacesHeight(m) : Emblem + UiTokens.S2) + labelH;
+        }
+
+        // Those present with who each is, one to a row: each face in its ring at the left, at its right its name (in the
+        // accent for who speaks) and who they are under it in the quiet grey, on two lines where a language needs them, so a
+        // long title in any language is read whole.
+        private static void People(UiScene s, UiAt at, UiDecisionModel m, float x, float top)
+        {
+            int shown = Math.Min(m.Faces.Length, PeopleMost);
+            float tx = x + UiTokens.S5 + Person + UiTokens.S3, tw = PeopleWords;
+            float nameH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SmallStrong));
+            for (int i = 0; i < shown; i++)
+            {
+                float cy = top + i * (Person + UiTokens.S3);
+                string name = m.Faces[i];
+                UiRole ring = m.FaceRings != null && i < m.FaceRings.Length ? m.FaceRings[i] : UiRole.None;
+                UiDraw.Portrait(s, at, x + UiTokens.S5, cy, Person, name, UiColour.HueOf(name), ring);
+                string role = i < m.FaceRoles.Length && !string.IsNullOrEmpty(m.FaceRoles[i]) ? m.FaceRoles[i] : null;
+                float roleH = role != null ? UiDraw.Snap(UiTextRules.WrappedHeight(role, UiStyle.Small, tw, RoleLines)) : 0f;
+                float ty = cy + UiDraw.SnapDown((Person - nameH - roleH) / 2f);
+                UiDraw.Text(s, at, tx, ty, tw, UiStyle.SmallStrong, i == m.Speaking ? UiRole.AccentText : UiRole.Text, name, UiFlags.Label | UiFlags.Truncate);
+                if (role != null)
+                {
+                    UiDraw.Text(s, at, tx, ty + nameH, tw, UiStyle.Small, UiRole.Muted, role, UiFlags.Label | UiFlags.Wrap, RoleLines);
+                }
+            }
+        }
+
+        // The words' room beside a face among those present.
+        private static float PeopleWords => Side - UiTokens.S5 * 2f - Person - UiTokens.S3;
+
+        private static float PeopleHeight(UiDecisionModel m)
+        {
+            int shown = Math.Min(m.Faces.Length, PeopleMost);
+            return shown * Person + Math.Max(0, shown - 1) * UiTokens.S3;
         }
 
         private static float FacesHeight(UiDecisionModel m)

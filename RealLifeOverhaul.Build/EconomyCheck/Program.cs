@@ -642,6 +642,7 @@ internal static partial class Program
         LogNumbers();   // no number in a log line written in the machine's culture: decimals and groupings invariant (LogNumberChecks.cs)
         JusticeSaveRoundTrip();   // Justice's save line: names with %XXXX escapes come back as written, one at the very end too (JusticeSaveChecks.cs)
         CameraBills();   // a getaway's camera bill taken by its court case: nothing beside a summons, nothing after a dismissal, damages with a conviction (CameraBillChecks.cs)
+        DialogTalk();   // the bank's loan terms and a point off, a lost trial's doubled fine, a tax settlement's quiet audits, and their saves (DialogTalkChecks.cs)
         TravelPrices();   // travel's extras, dinners, splurges, events and loyalty night at today's prices, and what the room shows is what it charges (TravelPriceChecks.cs)
         InsureAll();   // Insure all in the Garage contact: one way to buy a policy, every uninsured car or none, the summary only with two cars and one uninsured, its words (InsureAllChecks.cs)
         DealerFixedPrices();   // fixed prices at a Car Showroom: saved per showroom, every offer at the asking price, fewer offers sized so a fair price sells, the app and words (DealerFixedChecks.cs)

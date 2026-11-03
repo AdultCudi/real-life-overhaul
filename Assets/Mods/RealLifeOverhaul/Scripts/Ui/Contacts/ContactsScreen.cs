@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.Ui
         private readonly List<Button> _services = new List<Button>(8);   // the aside's actions: the game's buttons, null for the game's own view or Delete contact
         private int _remove = -1;          // the aside's place of Delete contact; -1 where the game's list offers none for them
         private readonly List<Button> _choices = new List<Button>(4);    // the conversation's or the call's numbered choices
+        private readonly List<GameUi.DialogExtra> _extras = new List<GameUi.DialogExtra>(4);   // by choice: the dialog's own answer past the game's three; null for a button
         private readonly List<Field> _fields = new List<Field>(2);       // the form's fields
         private readonly List<KeyValuePair<TMP_Text, Color>> _names = new List<KeyValuePair<TMP_Text, Color>>(2);   // the header's name labels as the game made them
         private string _query = string.Empty;
@@ -71,6 +72,7 @@ namespace RealLifeOverhaul.Ui
                     _dirty |= sig != _seen;
                     _seen = sig;
                 }
+                CallFormDue();
                 if (_talk != null && !_dirty && _m.Call != null && (int)(now - _talkSince) != _second)
                 {
                     _dirty = true;   // the call's length ticks on
@@ -81,13 +83,19 @@ namespace RealLifeOverhaul.Ui
 
         public int TypingCommand => _typing >= 0 ? UiConversation.FormCommand : UiMessageList.SearchCommand;
 
-        public string TypingText => _typing >= 0 ? (_typing < _fields.Count && _fields[_typing].Input != null ? _fields[_typing].Input.text : string.Empty) : _query;
+        public string TypingText => _typing < 0 ? _query
+            : CallFormShown ? _callForm.Text(_typing)
+            : _typing < _fields.Count && _fields[_typing].Input != null ? _fields[_typing].Input.text : string.Empty;
 
         public void Typed(string text)
         {
             if (_typing >= 0)
             {
-                if (_typing < _fields.Count)
+                if (CallFormShown)
+                {
+                    CallFormType(_typing, text);   // the call's form: its own field, read back by the call's dialog
+                }
+                else if (_typing < _fields.Count)
                 {
                     UiWidgets.Type(_fields[_typing].Input, text ?? string.Empty, false);   // the game's own field, read back by its conversation on Send
                 }
@@ -103,11 +111,18 @@ namespace RealLifeOverhaul.Ui
 
         public void Step(int command, int arg, int step)
         {
+            if (CallFormShown)
+            {
+                CallFormStep(arg, step);
+                _dirty = true;
+                return;
+            }
             Press(step < 0 ? UiConversation.FormLess : UiConversation.FormMore, arg);
         }
 
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
+            _callForm.Pick.Most = UiDraw.SnapDown((frame.BandY - UiTokens.S8) * CallFormShare);
             Build();
             UiContacts.Lay(s, _m, frame, dark, keys);
             _second = _talk != null ? (int)(Time.unscaledTime - _talkSince) : -1;
@@ -126,6 +141,10 @@ namespace RealLifeOverhaul.Ui
         private bool Take(ContactsRoute route, int command, int arg)
         {
             Contact open = _app.selectedContact;
+            if (CallFormPress(command, arg, out bool formed))
+            {
+                return formed;   // the call's form: its widget's own press
+            }
             switch (route)
             {
                 case ContactsRoute.Group:
@@ -150,6 +169,10 @@ namespace RealLifeOverhaul.Ui
                     return Handed(ButtonOf(GameContract.KitDeleteAll), "delete all", open, "handed to the game, which asks first");
                 case ContactsRoute.Choice:
                 case ContactsRoute.Reply:
+                    if (arg >= 0 && arg < _extras.Count && _extras[arg] != null)
+                    {
+                        return CallExtra(_extras[arg]);
+                    }
                     return arg >= 0 && arg < _choices.Count && Handed(_choices[arg], "a reply", open, "the game's own button");
                 case ContactsRoute.HangUp:
                     return Handed(_hangUp, "hang up", open, "the game's own button");
@@ -210,7 +233,8 @@ namespace RealLifeOverhaul.Ui
             // A contact opens on a press only: the game marks its messages read as it opens, so the cursor passing never does.
             if (command == UiConversation.FormCommand)
             {
-                _typing = arg;   // the field the next typing goes into: one target a field, pressed after it takes focus
+                // The field the next typing goes into: one target a field, pressed after it takes focus; on a call's form only its figures and words.
+                _typing = !CallFormShown || CallFormTyped(arg) ? arg : -1;
             }
             else if (command == UiMessageList.SearchCommand)
             {
@@ -220,6 +244,11 @@ namespace RealLifeOverhaul.Ui
 
         public bool Back()
         {
+            if (CallFormBack())
+            {
+                _dirty = true;
+                return true;   // an open list closes, a held slider is let go, before the call ends
+            }
             if (_m.Call != null && Shows(_hangUp))
             {
                 return Press(UiCallCard.ButtonCommand, 0);   // Back on a call is its way out, as the game's Esc ends it
@@ -255,6 +284,11 @@ namespace RealLifeOverhaul.Ui
 
         public void Reveal(int list, int index)
         {
+            if (CallFormReveal(list, index))
+            {
+                _dirty = true;
+                return;
+            }
             if (list == _m.GroupsList)
             {
                 _m.GroupsOffset = Math.Max(0f, (index - 2) * (UiTokens.Control + UiTokens.S3));
@@ -269,6 +303,11 @@ namespace RealLifeOverhaul.Ui
         public void Wheel(int clip, float notches)
         {
             float by = -notches * UiTokens.S16;
+            if (CallFormWheel(clip, notches))
+            {
+                _dirty = true;
+                return;
+            }
             if (clip == _m.GroupsClip)
             {
                 _m.GroupsOffset = Math.Max(0f, _m.GroupsOffset + by);

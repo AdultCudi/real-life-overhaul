@@ -5,6 +5,7 @@ using Dialogs;
 using Entities;
 using Extensions;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using UI.Smartphone.Apps.Contacts;
 
 namespace RealLifeOverhaul
@@ -271,6 +272,17 @@ namespace RealLifeOverhaul
             {
                 entry.ConfirmTextOverride = picked.Label.Localize();
                 entry.OnConfirm = G(() => Choose(issue, option));
+                if (picked.Line != null && picked.Amount > 0)
+                {
+                    if (picked.Gets)
+                    {
+                        entry.Gets(DialogButton.Confirm, picked.Line, "amount", data["amount"]);
+                    }
+                    else
+                    {
+                        entry.Pays(DialogButton.Confirm, picked.Line, "amount", data["amount"]);
+                    }
+                }
                 if (count > 1)
                 {
                     entry.SecondOptionTextOverride = "reallife_biz_desk_another";

@@ -2,6 +2,7 @@ using BigAmbitions.Characters.Appearance;
 using BigAmbitions.DayNightCycle;
 using Entities;
 using Helpers;
+using RealLifeOverhaul.GameUi;
 using UI.Notification;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -32,7 +33,8 @@ namespace RealLifeOverhaul.Family
             FamilySave s = FamilyState.S;
             var fill = Args.Us.Cost(FamilyBalance.Ring(tier)).With(FamilyText.T(RingNames[tier]));
             string key = s.Ring == tier ? "reallife_family_rings_have" : s.Ring > 0 ? "reallife_family_rings_offer_again" : "reallife_family_rings_offer";
-            return FamilyTalk.Either(FamilyText.Say(key, fill), "reallife_family_rings_buy", () => Buy(tier), "reallife_family_rings_next", () => Rings(index + 1));
+            return FamilyTalk.Either(FamilyText.Say(key, fill), "reallife_family_rings_buy", () => Buy(tier), "reallife_family_rings_next", () => Rings(index + 1))
+                .Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", FamilyText.Money(FamilyBalance.Ring(tier)));
         }
 
         private static DialogEntry Buy(int tier)

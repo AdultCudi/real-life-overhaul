@@ -51,9 +51,10 @@ internal static partial class Program
                     && JusticeState.Cases[0].Charges.Count == 1 && JusticeState.Cases[0].Charges[0].Id == JusticeLaw.HitRunInjury;
         Check(back, "camera bill: the damages a case holds come back from the save, its charges with them");
 
-        // A line from before the field: the case line ends with its charges.
-        string older = Regex.Replace(line, @",1234(?=;|\|)", string.Empty);
-        older = Regex.Replace(older, @",0(?=\|D:)", string.Empty);
+        // A line from before the field: the case line ends with its charges (the sum a case is about, written after the
+        // damages since, taken off too).
+        string older = Regex.Replace(line, @",1234,0(?=;|\|)", string.Empty);
+        older = Regex.Replace(older, @",0,0(?=\|D:)", string.Empty);
         JusticeState.Clear();
         JusticeState.Parse(older);
         bool olderReads = JusticeState.Cases.Count == 2 && JusticeState.Cases[0].Damages == 0 && JusticeState.Cases[0].Charges.Count == 1;

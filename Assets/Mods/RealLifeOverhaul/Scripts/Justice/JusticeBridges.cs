@@ -170,6 +170,9 @@ namespace RealLifeOverhaul
             /// <summary>A hearing of the player's is over (somebody famous makes it a story).</summary>
             public static Action Heard;
 
+            /// <summary>A tax case settled with the city, on this day: the tax inspector comes to the player's businesses less often for a while. Null: nothing follows.</summary>
+            public static Action<int> TaxSettled;
+
             public static void Reset()
             {
                 Law = null;
@@ -178,6 +181,7 @@ namespace RealLifeOverhaul
                 Transport = null;
                 Fame = null;
                 Heard = null;
+                TaxSettled = null;
             }
         }
 

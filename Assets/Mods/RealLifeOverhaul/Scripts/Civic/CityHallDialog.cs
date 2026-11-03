@@ -4,6 +4,7 @@ using System.Text;
 using Dialogs;
 using Entities;
 using Helpers;
+using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -554,7 +555,7 @@ namespace RealLifeOverhaul
                     string result = director.OrderRefit(shop, bid);
                     return CityHallPhone.Closing(CivicText.T(result, "address", address, "amount", CivicText.Money(price)));
                 },
-                "reallife_civic_button_next_bid", () => RefitOffer(next));
+                "reallife_civic_button_next_bid", () => RefitOffer(next)).Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", CivicText.Money(price));
         }
 
         private static DialogEntry PetitionPage()

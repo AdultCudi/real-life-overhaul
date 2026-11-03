@@ -18,6 +18,13 @@ namespace RealLifeOverhaul
     {
         private enum Beat { Officer, Witness, Camera, Flight, Character, Closing }
 
+        // What an answer to the plea comes to, worked out as the sentence would be now: the money due and the time.
+        private struct Cost
+        {
+            public int Due;
+            public int PrisonDays, JailHours, CommunityHours;
+        }
+
         private static readonly string[] Judges = { "reallife_justice_judge_1", "reallife_justice_judge_2", "reallife_justice_judge_3", "reallife_justice_judge_4" };
         private static readonly string[] Prosecutors = { "reallife_justice_prosecutor_1", "reallife_justice_prosecutor_2", "reallife_justice_prosecutor_3" };
         private static readonly string[] Calls = { "reallife_justice_court_call_1", "reallife_justice_court_call_2", "reallife_justice_court_call_3" };
@@ -37,6 +44,8 @@ namespace RealLifeOverhaul
         private readonly string _judge, _prosecutor;
         private readonly List<Beat> _beats = new List<Beat>(4);
         private readonly List<ChargeDef> _convicted = new List<ChargeDef>(4);
+        private readonly List<ChargeDef> _weighed = new List<ChargeDef>(4);       // the charges an answer's cost is worked out on
+        private readonly List<JusticeCharge> _dealDrops = new List<JusticeCharge>(4);
         private readonly StringBuilder _text = new StringBuilder(600);
 
         private float _quality;
@@ -44,6 +53,7 @@ namespace RealLifeOverhaul
         private int _choices;           // thousandths the accused's own answers added to (or took off) the case against them
         private float _mitigation;
         private float _factor = 1f;
+        private float _fineFactor = -1f;   // the fine's own factor where it is not the sentence's (a lost trial's); -1 for the same
         private bool _testified, _friendCalled, _footageShown;
         private bool _appointed;
         private string _friend;
@@ -79,7 +89,9 @@ namespace RealLifeOverhaul
                 RightName = LegalCounsel.Name(),
                 Speaker = speaker,
                 SpeakerName = speaker == 0 ? _prosecutor : speaker == 1 ? _judge : speaker == 2 ? LegalCounsel.Name() : string.Empty,
-                Body = body
+                Body = body,
+                LeftRole = Taxed ? JusticeText.T("reallife_justice_role_inspector") : null,   // a tax case is brought for the city's tax office
+                Defendant = true
             };
             if (page.Right == JusticeFace.None && speaker == 2)
             {
@@ -90,6 +102,16 @@ namespace RealLifeOverhaul
         }
 
         private static string Continue => JusticeText.T("reallife_justice_continue");
+
+        // A case about tax kept back: brought for the city's tax office, which takes a settlement.
+        private bool Taxed => _case.Main != null && _case.Main.Id == JusticeLaw.TaxEvasion;
+
+        // The words for the sum a charge is about, where the case holds one (TaxCases): null for none.
+        private static string FigureKey(string charge) =>
+            charge == JusticeLaw.TaxEvasion ? "reallife_justice_court_figure_tax"
+            : charge == JusticeLaw.Bribery ? "reallife_justice_court_figure_bribery"
+            : charge == JusticeLaw.CampaignFinance ? "reallife_justice_court_figure_campaign"
+            : charge == JusticeLaw.BidRigging ? "reallife_justice_court_figure_rigging" : null;
 
         /// <summary>The first page. The director has already paused the game and holds the player.</summary>
         public void Begin()
@@ -145,6 +167,11 @@ namespace RealLifeOverhaul
                     continue;
                 }
                 _text.Append("\n  - ").Append(JusticeText.T(def.NameKey)).Append("  (").Append(JusticeText.T(ClassKey(def.Class))).Append(')');
+                string figure = _case.Amount > 0 ? FigureKey(charge.Id) : null;
+                if (figure != null)
+                {
+                    _text.Append(": ").Append(JusticeText.T(figure, "amount", JusticeText.Money(_case.Amount)));   // the sum it is about
+                }
             }
             if (withdrawn.Count > 0)
             {
@@ -172,14 +199,31 @@ namespace RealLifeOverhaul
             _text.Append(JusticeText.T("reallife_justice_court_plea"));
             _text.Append("\n\n").Append(JusticeText.T("reallife_justice_court_aside", "charge", JusticeText.Charge(main.Id), "percent", JusticeText.Percent(against)));
             bool deal = _case.DealReady || _case.Remand;   // brought up from the cells with no chance to ring anybody: counsel asks at the door
+            // Each answer's money and time, worked out as the sentence would be now; a lost trial's fine twice a guilty plea's.
+            Standing(_weighed);
+            Cost guilty = CostOf(JusticeLaw.GuiltyPleaFactor, -1f, _weighed);
+            Cost trial = CostOf(1f, JusticeLaw.TrialFineFactor, _weighed);
+            bool settle = Taxed && trial.Due > 0;   // the city's tax office takes a settlement in place of a deal
             JusticePage page = Page(1, _text.ToString())
-                .Add(JusticeText.T("reallife_justice_plea_guilty"), JusticeText.T("reallife_justice_plea_guilty_hint"))
-                .Add(JusticeText.T("reallife_justice_plea_not_guilty"),
-                    JusticeText.T("reallife_justice_plea_not_guilty_hint", "rounds", JusticeText.N(_beats.Count), "percent", JusticeText.Percent(against)));
-            if (deal)
+                .Add(JusticeText.T("reallife_justice_plea_guilty"), JusticeText.T("reallife_justice_plea_guilty_hint"));
+            Lines(page, guilty, false);
+            page.Add(JusticeText.T("reallife_justice_plea_not_guilty"),
+                    JusticeText.T("reallife_justice_plea_not_guilty_hint", "rounds", JusticeText.N(_beats.Count), "percent", JusticeText.Percent(against)))
+                .Line(Odds(Cleared()), 0);
+            Lines(page, trial, true);
+            if (settle)
+            {
+                page.Add(JusticeText.T("reallife_justice_plea_settle"), JusticeText.T("reallife_justice_plea_settle_hint"))
+                    .Line(JusticeText.T("reallife_justice_settle_cost", "amount", JusticeText.Money(trial.Due)), -1)
+                    .Line(JusticeText.T("reallife_justice_settle_gain"), 1);
+            }
+            else if (deal)
             {
                 page.Add(JusticeText.T("reallife_justice_plea_deal"), LegalCounsel.DealText(_case, _quality));
+                DealCharges(_weighed);
+                Lines(page, CostOf(JusticeLaw.DealFactor, -1f, _weighed), false);
             }
+            int settlement = trial.Due;
             JusticePanel.Instance.Show(page, choice =>
             {
                 if (choice == 0)
@@ -187,6 +231,10 @@ namespace RealLifeOverhaul
                     _factor = JusticeLaw.GuiltyPleaFactor;
                     ConvictAll();
                     Sentence(CaseOutcome.Guilty, JusticeText.T("reallife_justice_verdict_guilty_plea"));
+                }
+                else if (choice == 2 && settle)
+                {
+                    Settle(settlement);
                 }
                 else if (choice == 2)
                 {
@@ -198,6 +246,104 @@ namespace RealLifeOverhaul
                     ShowBeat();
                 }
             });
+        }
+
+        // The charges still standing, as a plea or a verdict on every one would take them.
+        private void Standing(List<ChargeDef> into)
+        {
+            into.Clear();
+            for (int i = 0; i < _case.Charges.Count; i++)
+            {
+                ChargeDef def = _case.Charges[i].Dropped ? null : JusticeLaw.Find(_case.Charges[i].Id);
+                if (def != null)
+                {
+                    into.Add(def);
+                }
+            }
+        }
+
+        // The charges the deal on the table leaves: those it drops gone, the main one the lesser where it is reduced.
+        private void DealCharges(List<ChargeDef> into)
+        {
+            into.Clear();
+            LegalCounsel.DealPlan(_case, _quality, _dealDrops, out JusticeCharge main, out string lesser);
+            for (int i = 0; i < _case.Charges.Count; i++)
+            {
+                JusticeCharge charge = _case.Charges[i];
+                ChargeDef def = charge.Dropped || _dealDrops.Contains(charge) ? null : JusticeLaw.Find(charge == main && lesser != null ? lesser : charge.Id);
+                if (def != null)
+                {
+                    into.Add(def);
+                }
+            }
+        }
+
+        // The chance to be cleared of every charge standing, before the trial's answers move it: each is weighed on its own.
+        private float Cleared()
+        {
+            float cleared = 1f;
+            for (int i = 0; i < _case.Charges.Count; i++)
+            {
+                JusticeCharge charge = _case.Charges[i];
+                if (!charge.Dropped && JusticeLaw.Find(charge.Id) != null)
+                {
+                    cleared *= 1f - JusticeLaw.CaseAgainst(charge.Evidence, _priors, _quality, 0) / 1000f;
+                }
+            }
+            return cleared;
+        }
+
+        // An answer's money and time as the sentence would be worked out now: what was paid at the roadside off the fine,
+        // damages held added, the hours already held taken off.
+        private Cost CostOf(float factor, float fineFactor, List<ChargeDef> convicted)
+        {
+            JusticeSentence s = Work(factor, fineFactor, convicted);
+            return new Cost
+            {
+                Due = JusticeLaw.ConvictionDue(s.Fine, _case.PaidAtScene, _case.Damages), PrisonDays = s.PrisonDays,
+                JailHours = s.JailHours - Mathf.Min(s.JailHours, Mathf.Max(0, _case.HeldHours)), CommunityHours = s.CommunityHours
+            };
+        }
+
+        // An answer's cost under it: its money and its time, the time beside it too; a trial's as what losing it brings.
+        private static void Lines(JusticePage page, Cost cost, bool ifLost)
+        {
+            if (!ifLost)
+            {
+                page.Takes(cost.PrisonDays > 0 ? JusticeText.T("reallife_justice_cost_days", "days", JusticeText.N(cost.PrisonDays))
+                    : cost.JailHours > 0 ? JusticeText.T("reallife_justice_cost_hours", "hours", JusticeText.N(cost.JailHours))
+                    : cost.CommunityHours > 0 ? JusticeText.T("reallife_justice_cost_hours", "hours", JusticeText.N(cost.CommunityHours)) : null);
+            }
+            if (cost.Due > 0)
+            {
+                page.Line(JusticeText.T(ifLost ? "reallife_justice_cost_lost_fine" : "reallife_justice_cost_fine", "amount", JusticeText.Money(cost.Due)), -1);
+            }
+            string prison = ifLost ? "reallife_justice_cost_lost_prison" : "reallife_justice_cost_prison";
+            string custody = ifLost ? "reallife_justice_cost_lost_custody" : "reallife_justice_cost_custody";
+            string community = ifLost ? "reallife_justice_cost_lost_community" : "reallife_justice_cost_community";
+            page.Line(cost.PrisonDays > 0 ? JusticeText.T(prison, "days", JusticeText.N(cost.PrisonDays))
+                : cost.JailHours > 0 ? JusticeText.T(custody, "hours", JusticeText.N(cost.JailHours))
+                : cost.CommunityHours > 0 ? JusticeText.T(community, "hours", JusticeText.N(cost.CommunityHours)) : null, -1);
+        }
+
+        // The chance to be cleared, in words: about so many in ten.
+        private static string Odds(float cleared)
+        {
+            int tenths = JusticeLaw.InTen(cleared);
+            return tenths <= 0 ? JusticeText.T("reallife_justice_odds_none")
+                : tenths >= 10 ? JusticeText.T("reallife_justice_odds_all")
+                : JusticeText.T("reallife_justice_odds", "count", JusticeText.N(tenths));
+        }
+
+        // A tax case settled with the city: the settlement paid as a fine is, the charge dropped and nothing on the record.
+        private void Settle(int amount)
+        {
+            for (int i = 0; i < _case.Charges.Count; i++)
+            {
+                _case.Charges[i].Convicted = false;
+            }
+            _result = new HearingResult { Case = _case, Outcome = CaseOutcome.Settled, FineDue = amount };
+            JusticePanel.Instance.Show(Page(1, JusticeText.T("reallife_justice_verdict_settled", "amount", JusticeText.Money(amount))).Add(Continue), _ => Finish());
         }
 
         private void ConvictAll()
@@ -483,6 +629,7 @@ namespace RealLifeOverhaul
                 return;
             }
             _factor = 1f;
+            _fineFactor = JusticeLaw.TrialFineFactor;   // a lost trial: twice the fine a guilty plea brings
             Sentence(CaseOutcome.Convicted, explanation);
         }
 
@@ -491,11 +638,13 @@ namespace RealLifeOverhaul
             return value > 0 ? "+" + JusticeText.N(value) : JusticeText.N(value);
         }
 
-        private void Sentence(CaseOutcome outcome, string lead)
+        // The sentence for these convictions as the court works it out, with the answers and the record so far.
+        private JusticeSentence Work(float factor, float fineFactor, List<ChargeDef> convicted)
         {
             float mitigation = _mitigation + (_case.Complied ? 0.15f : 0f);
             float cash = Crime.Cash;
-            JusticeSentence sentence = JusticeLaw.Sentence(_convicted, _factor, mitigation, _priors, _probation, JusticeSettings.PrisonCap, JusticeSettings.NoPrison, cash);
+            JusticeSentence sentence = JusticeLaw.Sentence(convicted, factor, mitigation, _priors, _probation, JusticeSettings.PrisonCap, JusticeSettings.NoPrison, cash,
+                fineFactor);
             if (sentence.CommunityHours > 0 && !JusticeSettings.Community)
             {
                 // Community service switched off: the hours become money, inside the same bound.
@@ -504,6 +653,13 @@ namespace RealLifeOverhaul
                 sentence.Bounded = sentence.Fine < sentence.FineNominal;
                 sentence.CommunityHours = 0;
             }
+            return sentence;
+        }
+
+        private void Sentence(CaseOutcome outcome, string lead)
+        {
+            float cash = Crime.Cash;
+            JusticeSentence sentence = Work(_factor, _fineFactor, _convicted);
             int fineDue = Mathf.Max(0, sentence.Fine - _case.PaidAtScene);
             int due = JusticeLaw.ConvictionDue(sentence.Fine, _case.PaidAtScene, _case.Damages);
             // Hours already sat in a cell for this, after the arrest or on remand, are time served.
@@ -569,7 +725,7 @@ namespace RealLifeOverhaul
                 _text.Append('\n').Append(JusticeText.T("reallife_justice_sentence_suspension", "days", JusticeText.N(sentence.SuspensionDays)));
             }
             _text.Append("\n\n").Append(JusticeText.T(_factor <= JusticeLaw.DealFactor ? "reallife_justice_reason_deal"
-                : _factor < 1f ? "reallife_justice_reason_guilty" : "reallife_justice_reason_trial"));
+                : _factor < 1f ? "reallife_justice_reason_guilty" : _fineFactor > _factor ? "reallife_justice_reason_trial_fine" : "reallife_justice_reason_trial"));
             if (_priors > 0)
             {
                 _text.Append(' ').Append(JusticeText.T("reallife_justice_reason_record", "count", JusticeText.N(_priors)));

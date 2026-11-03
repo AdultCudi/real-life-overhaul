@@ -70,6 +70,7 @@ namespace RealLifeOverhaul.Economy
         public readonly SharkDebt Shark = new SharkDebt();
         public readonly Relief Relief = new Relief();
         public int NextAccountId = 1;
+        public int RateAskedDay;        // the day a bank was last asked for a point off a loan's rate; 0 for never
 
         /// <summary>The open account of a kind, or null; never a test tool's. Of several finance accounts, the first.</summary>
         public CreditAccount Account(ProductKind kind)

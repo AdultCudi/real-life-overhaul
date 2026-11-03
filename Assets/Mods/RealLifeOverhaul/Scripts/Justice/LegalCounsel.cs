@@ -7,6 +7,7 @@ using Dialogs;
 using Entities;
 using Helpers;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using Streets;
 using UI.Smartphone.Apps.Contacts;
 using UnityEngine;
@@ -232,8 +233,8 @@ namespace RealLifeOverhaul
         public static void Retain(LawFirm firm, IModLogger logger)
         {
             int fee = Fee(firm);
-            int down = JusticeLaw.Round10(fee * 0.25f);
-            if (down > 0 && Crime.Cash - down >= JusticeLaw.CashFloor && Crime.Pay(down, "reallife_transaction_legal_fee"))
+            int down = DownNow(fee);
+            if (down > 0 && Crime.Pay(down, "reallife_transaction_legal_fee"))
             {
                 fee -= down;
             }
@@ -248,6 +249,13 @@ namespace RealLifeOverhaul
             JusticeState.LawyerNumber = firm.Number;
             JusticeState.LawyerStars = firm.Stars;
             logger?.Info("Justice: retained " + firm.Name + " (" + firm.Stars + "/5), " + down + " down, " + fee + " over " + JusticeLaw.FeePlanDays + " days.");
+        }
+
+        /// <summary>The quarter of a fee taken as a firm is retained, or 0 when it cannot be spared and all of it goes on the plan.</summary>
+        public static int DownNow(int fee)
+        {
+            int down = JusticeLaw.Round10(fee * 0.25f);
+            return down > 0 && Crime.Cash - down >= JusticeLaw.CashFloor ? down : 0;
         }
 
         public static void RetainSimple(LawyerKind kind, IModLogger logger)
@@ -538,6 +546,18 @@ namespace RealLifeOverhaul
                 LegalCounsel.Retain(firm, JusticeDirector.Logger);
                 return PhoneContacts.Closing("reallife_justice_hired_firm", new { name = firm.Name });
             };
+            if (fee > 0)
+            {
+                int down = LegalCounsel.DownNow(fee), rest = fee - down, each = JusticeState.PlanPerDay(rest, JusticeLaw.FeePlanDays);
+                if (down > 0)
+                {
+                    entry.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", JusticeText.Money(down));
+                }
+                if (rest > 0)
+                {
+                    entry.Pays(DialogButton.Confirm, "reallife_ui_dialog_loan_cost_out", "payment", JusticeText.Money(each), "days", ((rest + each - 1) / each).ToString());
+                }
+            }
             if (more != null)
             {
                 entry.SecondOptionTextOverride = "reallife_justice_offer_next";

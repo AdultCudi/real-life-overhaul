@@ -54,6 +54,7 @@ namespace RealLifeOverhaul.Ui
                 sig = sig * 31 + (_fields[i].Input != null ? _fields[i].Input.text.GetHashCode() : 0);
             }
             sig = sig * 31 + Offers(null);
+            sig = sig * 31 + CallFormSignature();
             return sig;
         }
 
@@ -69,6 +70,7 @@ namespace RealLifeOverhaul.Ui
             _m.PickBody = UiText.T("reallife_ui_contacts_pick_body");
             _m.Call = null;
             _choices.Clear();
+            _extras.Clear();
             _fields.Clear();
             _hangUp = null;
             Contact open = _app.selectedContact;
@@ -526,6 +528,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Button b = found[offer ? Order[i] : i];
                 _choices.Add(b);
+                _extras.Add(null);
                 choices[i] = new UiDecisionChoice { Name = UiWidgets.Label(b) };
             }
             if (offer)
@@ -566,7 +569,7 @@ namespace RealLifeOverhaul.Ui
             string line = Words(view.transform);
             if (!string.IsNullOrEmpty(line))
             {
-                list.Add(new UiMessageModel { From = UiFrom.Them, Text = line, Time = Now() });
+                list.Add(new UiMessageModel { From = UiFrom.Them, Text = line, Time = Now(), Mood = LineMood() });
             }
             _m.Head.Ring = Mood(_m.Head.Ring);   // the mood the game shows by their line, in the ring of their face
             bool form = Forms(t);
@@ -586,14 +589,19 @@ namespace RealLifeOverhaul.Ui
             };
             if (view != null)
             {
-                call.Line = Words(view.transform);
+                call.Line = CallSaidBack(view) ?? Words(view.transform);
+                call.Mood = LineMood();
+                bool drawn = CallForm(call);   // read first: the bank's loan tells its line what taking it costs
                 call.Choices = Choices(view.transform, false, out _hangUp);
                 if (_hangUp != null)
                 {
                     call.Buttons = new[] { new UiActionModel { Label = UiWidgets.Label(_hangUp), Kind = UiButtonKind.Destructive, Icon = UiIcon.Phone, Key = UiAction.Back } };
                 }
                 call.Waiting = call.Choices.Length == 0;
-                StepAsideForForm();
+                if (!drawn)
+                {
+                    StepAsideForForm();
+                }
             }
             else
             {
@@ -635,10 +643,27 @@ namespace RealLifeOverhaul.Ui
             var choices = new List<UiDecisionChoice>(3);
             if (hasCancel || hasSecond || hasConfirm)
             {
-                int n = ContactsRules.ChoiceOrder(hasCancel, hasSecond, hasConfirm, cancelAsChoice, Order);
-                for (int i = 0; i < n; i++)
+                // The confirm, the second option, the dialog's own answers past the game's three, the cancel: each with the
+                // lines the dialog told of it (GameUi.DialogAnswers).
+                GameUi.DialogNotes notes = GameUi.DialogAnswers.Of(e);
+                int n = ContactsRules.ChoiceOrder(hasCancel, hasSecond, hasConfirm, cancelAsChoice, Order), k = 0;
+                if (hasConfirm && k < n)
                 {
-                    Add(choices, buttons[Order[i]]);
+                    Add(choices, buttons[Order[k++]], DialogChoices.Lines(notes, GameUi.DialogButton.Confirm));
+                }
+                if (hasSecond && k < n)
+                {
+                    Add(choices, buttons[Order[k++]], DialogChoices.Lines(notes, GameUi.DialogButton.Second));
+                }
+                for (int i = 0; notes != null && i < notes.More.Count; i++)
+                {
+                    _choices.Add(null);
+                    _extras.Add(notes.More[i]);
+                    choices.Add(DialogChoices.Choice(notes.More[i]));
+                }
+                if (hasCancel && cancelAsChoice && k < n)
+                {
+                    Add(choices, buttons[Order[k++]], DialogChoices.Lines(notes, GameUi.DialogButton.Cancel));
                 }
                 if (hasCancel && !cancelAsChoice && buttons[0].interactable)
                 {
@@ -649,16 +674,17 @@ namespace RealLifeOverhaul.Ui
             {
                 for (int i = 0; i < buttons.Count; i++)
                 {
-                    Add(choices, buttons[i]);
+                    Add(choices, buttons[i], null);
                 }
             }
             return choices.ToArray();
         }
 
-        private void Add(List<UiDecisionChoice> choices, Button b)
+        private void Add(List<UiDecisionChoice> choices, Button b, UiConsequence[] lines)
         {
             _choices.Add(b);
-            choices.Add(new UiDecisionChoice { Name = UiWidgets.Label(b), Disabled = !b.interactable });
+            _extras.Add(null);
+            choices.Add(new UiDecisionChoice { Name = UiWidgets.Label(b), Lines = lines, Disabled = !b.interactable });
         }
 
         // The salary offer's two fields or an offer's one, read from the game's own form: its figures and its steps. True when
@@ -686,6 +712,7 @@ namespace RealLifeOverhaul.Ui
             }
             t.Fields = fields.ToArray();
             t.FieldCount = fields.Count;
+            DialogForm.Offers(form, GameContract.TalkEntry.Field != null ? GameContract.TalkEntry.Field.GetValue(_app) as DialogEntry : null);   // what it pays, under Send Offer
             return fields.Count > 0;
         }
 
@@ -707,8 +734,8 @@ namespace RealLifeOverhaul.Ui
             });
         }
 
-        // A form the kit does not draw yet in a call (a bank's loan, an agency's campaign): the game's own view answers it,
-        // and the kit is back the moment that line is answered or the call ends.
+        // A form the kit cannot draw in a call (a casino's game, nothing it knows): the game's own view answers it, and the kit
+        // is back the moment that line is answered or the call ends.
         private void StepAsideForForm()
         {
             DialogEntry e = GameContract.TalkEntry.Field != null ? GameContract.TalkEntry.Field.GetValue(_app) as DialogEntry : null;

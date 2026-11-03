@@ -41,7 +41,7 @@ namespace RealLifeOverhaul.Economy
             TaxFile x = s.Tax;
             t.Append("^t:");
             Join(t, x.QuarterFrom, x.Quarter, x.Costs[0], x.Costs[1], x.Costs[2], x.Costs[3], x.Costs[4], x.ReturnDue, x.ReturnQuarter, x.ReturnTakings, x.ReturnCosts,
-                x.ReturnPenalties, x.LateRun, x.Accountant, x.AccountantNext, x.Risk, x.Saved, x.Owed, x.LastAudit, x.CaseNumber);
+                x.ReturnPenalties, x.LateRun, x.Accountant, x.AccountantNext, x.Risk, x.Saved, x.Owed, x.LastAudit, x.CaseNumber, x.QuietUntil);
             t.Append("^s:");
             for (int i = 0; i < s.Shops.Count && i < CompanyCatalogue.ShopsMost; i++)
             {
@@ -231,6 +231,7 @@ namespace RealLifeOverhaul.Economy
             x.Owed = Math.Max(0, I(c, 17));
             x.LastAudit = Math.Max(0, I(c, 18));
             x.CaseNumber = Math.Max(0, I(c, 19));
+            x.QuietUntil = Math.Max(0, I(c, 20));   // absent from older saves: no quiet time
         }
 
         private static ShopFile Shop(string[] c)

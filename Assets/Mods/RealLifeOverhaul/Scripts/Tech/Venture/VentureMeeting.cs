@@ -1,6 +1,7 @@
 using System;
 using Helpers;
 using RealLifeOverhaul.GameUi;
+using RealLifeOverhaul.Ui;
 using UI;
 using UI.Smartphone;
 using UnityEngine;
@@ -9,7 +10,8 @@ namespace RealLifeOverhaul.Tech
 {
     /// <summary>
     /// A pitch meeting in the game's own list window, the player standing still until it is over: founders pitching the player,
-    /// or the player pitching their firm. Clicks do it all; the director checks once a second that the window is still there.
+    /// or the player pitching their firm (on the RLO interface the conversation, and the decision card at its end). Clicks do it
+    /// all; the director checks once a second that the window is still there.
     /// </summary>
     internal sealed class VentureMeeting
     {
@@ -33,7 +35,7 @@ namespace RealLifeOverhaul.Tech
         private static readonly string[] PitchQuestions = { "reallife_vc_pitch_revenue", "reallife_vc_pitch_growth", "reallife_vc_pitch_team" };
 
         private readonly TechDirector _director;
-        private readonly DeskList _window = new DeskList("RealLifeOverhaul Venture", 1250f, 150f);
+        private readonly SceneDesk _window = new SceneDesk("RealLifeOverhaul Venture", 1250f, 150f);
         private readonly Action<int> _onPick;
         private readonly Action _onClosed;
 
@@ -110,9 +112,12 @@ namespace RealLifeOverhaul.Tech
         private string Title => _startup != null ? TechText.T("reallife_vc_meet_title_founders", "name", _startup.Name)
             : TechText.T("reallife_vc_meet_title_player", "firm", VentureCatalogue.Firms[TalentCatalogue.Clamp(_vc, 0, VentureCatalogue.FirmCount - 1)].Name);
 
+        // The firm the player pitches to, who asks the questions.
+        private string FirmName => VentureCatalogue.Firms[TalentCatalogue.Clamp(_vc, 0, VentureCatalogue.FirmCount - 1)].Name;
+
         private bool Show()
         {
-            TravelList list = _window.Take(this);
+            SceneList list = _window.Take(this);
             if (list == null)
             {
                 return false;
@@ -120,6 +125,7 @@ namespace RealLifeOverhaul.Tech
             string progress = TechText.T("reallife_hire_meet_progress", "number", (_round + 1).ToString(), "of", VentureCatalogue.MeetingQuestions.ToString());
             string question = _startup != null ? string.Empty : TechText.T(PitchQuestions[TalentCatalogue.Clamp(_round, 0, PitchQuestions.Length - 1)]) + "\n";
             list.Begin(Title, _heard + "\n" + question + "<size=80%>" + progress + "</size>");
+            list.Talk(_startup != null ? _startup.Name : FirmName, null);
             if (_startup != null)
             {
                 for (int t = 0; t < Topics; t++)
@@ -135,7 +141,7 @@ namespace RealLifeOverhaul.Tech
                 string[] answers = PitchAnswers(_round);
                 for (int a = 0; a < answers.Length; a++)
                 {
-                    list.Add(a, TechText.T("reallife_vc_meet_answer", "number", (a + 1).ToString()), answers[a], ButtonAsk, true, list.HeightFor(answers[a].Length, true));
+                    list.AddAnswer(a, TechText.T("reallife_vc_meet_answer", "number", (a + 1).ToString()), answers[a], ButtonAsk, true, list.HeightFor(answers[a].Length, true));
                 }
             }
             list.Add(Leave, TechText.T("reallife_vc_meet_leave"), string.Empty, ButtonDo, true);
@@ -170,7 +176,7 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        private void Open(TravelList list)
+        private void Open(SceneList list)
         {
             list.Open(_onPick, _onClosed);
             list.ScrollToTop();
@@ -280,13 +286,14 @@ namespace RealLifeOverhaul.Tech
 
         private void Caught()
         {
-            TravelList list = _window.Take(this);
+            SceneList list = _window.Take(this);
             if (list == null)
             {
                 End();
                 return;
             }
             list.Begin(Title, TechText.T("reallife_vc_meet_caught"));
+            list.Moment(TechText.T("reallife_vc_meet_caught"), UiIcon.Rocket, FirmName);
             string body = TechText.T("reallife_vc_meet_caught_body", "firm", VentureCatalogue.Firms[TalentCatalogue.Clamp(_vc, 0, VentureCatalogue.FirmCount - 1)].Name);
             list.AddNote(TechText.T("reallife_vc_meet_caught"), body, list.HeightFor((int)(body.Length * 1.3f), false));
             list.Add(Done, TechText.T("reallife_hire_meet_close"), string.Empty, ButtonDo, true);
@@ -296,13 +303,14 @@ namespace RealLifeOverhaul.Tech
 
         private void Summary()
         {
-            TravelList list = _window.Take(this);
+            SceneList list = _window.Take(this);
             if (list == null)
             {
                 End();
                 return;
             }
             list.Begin(Title, TechText.T("reallife_vc_meet_over"));
+            list.Moment(TechText.T("reallife_vc_meet_over"), UiIcon.Rocket, _startup != null ? _startup.Name : FirmName);
             if (_startup != null && _startup.Ask != null)
             {
                 TermSheet a = _startup.Ask;

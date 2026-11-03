@@ -7,7 +7,8 @@ namespace RealLifeOverhaul.Ui
     {
         App = 0,   // an app of the full menu: fades with the menu, sleeps as it closes, holds its keys under a box; the frame owns the chrome
         Box,       // a box over everything (the question, the text box): its keys are its own while the game's box is up
-        Overlay    // over the world and every screen (the notices): takes no key, the pointer presses it
+        Overlay,   // over the world and every screen (the notices): takes no key, the pointer presses it
+        Panel      // a panel of the game's HUD over the world (its dialogue): the keys its own, held under a box, away under the pause menu
     }
 
     /// <summary>

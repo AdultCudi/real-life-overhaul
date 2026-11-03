@@ -3,6 +3,7 @@ using System.Text;
 using Entities;
 using Helpers;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -194,11 +195,13 @@ namespace RealLifeOverhaul
                     int needed = OfficeRules.SignaturesNeeded(s.Race);
                     string text = Fill("reallife_civic_office_prep_file", "signatures", s.Signatures.ToString(), "needed", needed.ToString(), "deposit", Money(Prices.At(OfficeRules.Deposit(s.Race))),
                         "back", Mathf.RoundToInt(OfficeRules.DepositBack * 100f).ToString());
-                    return CityHallPhone.Page(text, s.Incumbent || s.Signatures >= needed ? "reallife_civic_office_button_file" : "reallife_civic_office_button_file_deposit", () =>
+                    bool deposit = !s.Incumbent && s.Signatures < needed;
+                    DialogEntry filing = CityHallPhone.Page(text, deposit ? "reallife_civic_office_button_file_deposit" : "reallife_civic_office_button_file", () =>
                     {
                         string result = office.File(true, Day);
                         return office.State.Filed ? CityHallPhone.Closing(Fill(result, "race", Race(s.Race, office))) : CityHallPhone.Page(T(result), "reallife_civic_button_back", () => Prep(4));
                     }, "reallife_civic_button_next_option", more);
+                    return deposit ? filing.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", Money(Prices.At(OfficeRules.Deposit(s.Race)))) : filing;
                 }
                 case 5:
                     return FundPage(() => Prep(6));
@@ -397,7 +400,7 @@ namespace RealLifeOverhaul
                     }
                 }
                 return CityHallPhone.Page(Fill(result, "count", office.State.PostersHeld.ToString(), "fund", Money(office.State.Fund)), "reallife_civic_button_next_option", () => Spend(next, more));
-            }, "reallife_civic_button_next_option", () => Spend(next, more));
+            }, "reallife_civic_button_next_option", () => Spend(next, more)).Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_fund", "amount", Money(CivicOffice.Price(item)));
         }
 
         private static DialogEntry Endorsers(int body, Func<DialogEntry> more)
