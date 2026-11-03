@@ -24,6 +24,7 @@ namespace RealLifeOverhaul.Ui
         public bool CanLess = true, CanMore = true;
         public string Place, Instead;
         public bool PlaceDisabled;
+        public string Price, Why, Watch, PutBack;     // a limit or stop price (null at the market), why it cannot be placed, the watch button, the share of dividends put back
     }
 
     /// <summary>
@@ -65,5 +66,11 @@ namespace RealLifeOverhaul.Ui
         public UiIcon EmptyIcon = UiIcon.ChartLineUp;
         public string PromptBack, PromptMove, PromptSelect, PromptPlace, PromptOther;
         public UiFormRow[] Form = new UiFormRow[0];
+        public string Status;                                      // the market's state, over the page's actions
+        public UiActionModel[] Actions = new UiActionModel[0];     // the page's own buttons: pay a call, add a rule, deposit
+        public string TableTitle, Table2Title;                     // the capitals over a table, when the page holds two
+        public UiDataTableModel Table2;                            // the lower table of a page of two: what is held under what is on offer
+        public StocksSheetModel Sheet;                             // the sheet over the page
+        public int ClipOne = -1, ClipTwo = -1, ListOne = -1, ListTwo = -1;                     // written back by the layout: the scroll regions of the tables
     }
 }

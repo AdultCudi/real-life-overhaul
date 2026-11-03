@@ -1,13 +1,17 @@
 using System;
+using System.Collections.Generic;
 using RealLifeOverhaul.Markets;
+using UI.Notification;
 
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
     /// The Stocks app on the kit. The market's own page stays underneath for the way back. A layout only when the page,
-    /// the price or the chart set changed. Cost: one comparison a frame while it shows; a layout when that changes.
+    /// the price, the chart set or a sheet changed. Cost: one comparison a frame while it shows; a layout when that changes.
+    /// What can be bought, opened or hired is a sheet over the page (StocksScreen.Sheet.cs): it asks the same director the old
+    /// app asks, so the money and the state move as the engine says.
     /// </summary>
-    public sealed class StocksScreen : IUiScreen, IUiTyping
+    public sealed partial class StocksScreen : IUiScreen, IUiTyping, IUiStepping
     {
         private readonly MarketDirector _market;
         private StocksPage _page = StocksPage.Market;
@@ -23,6 +27,11 @@ namespace RealLifeOverhaul.Ui
         private int _focus = -1;
         private int _rule;
         private int _pane;
+        private bool _done;
+        private int _kind, _price;
+        private float _offsetOne, _offsetTwo;
+        private int _revealOne = -1, _revealTwo = -1;
+        private int _listOne = -1, _clipTwo = -1;
         private string _find = string.Empty;
         private bool _dirty = true;
         private int _stamp = int.MinValue;
@@ -41,6 +50,10 @@ namespace RealLifeOverhaul.Ui
         {
             get
             {
+                if (_sheet.Open)
+                {
+                    return _typedId >= 0 ? StocksSheetLay.Type : -1;
+                }
                 if (_page == StocksPage.Company)
                 {
                     return StocksLay.Shares;
@@ -53,29 +66,23 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        public string TypingText => _page == StocksPage.Company ? _qty.ToString() : _find ?? string.Empty;
+        public string TypingText => _sheet.Open ? SheetTypingText() : _page == StocksPage.Company ? _qty.ToString() : _find ?? string.Empty;
 
         public void Typed(string text)
         {
+            if (_sheet.Open)
+            {
+                SheetTyped(text);
+                return;
+            }
             if (_page == StocksPage.Company)
             {
-                long n = 0;
-                if (text != null)
-                {
-                    for (int i = 0; i < text.Length; i++)
-                    {
-                        char c = text[i];
-                        if (c >= '0' && c <= '9' && n < 1000000000L)
-                        {
-                            n = n * 10L + (c - '0');
-                        }
-                    }
-                }
-                _qty = n < 1 ? 1 : n;
+                _qty = StocksSheetState.Typed(text, 1, 1000000000L);
                 _dirty = true;
                 return;
             }
             _find = text ?? string.Empty;
+            _offsetOne = 0f;
             _dirty = true;
         }
 
@@ -106,18 +113,59 @@ namespace RealLifeOverhaul.Ui
 
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
-            StocksModel m = StocksBuild.Page(_market != null ? _market.State : null, _page, _stock, _tool, _buy, _type, _life, _qty, _sort, _sector, _size, _focus, _rule, _find, Words);
+            MarketState state = _market != null ? _market.State : null;
+            StocksModel m = StocksBuild.Page(state, _page, _stock, _tool, _buy, _type, _life, _qty, _sort, _sector, _size, _focus, _rule, _find, Words, _market, _done, _kind, _price);
+            if (state != null && _sheet.Open)
+            {
+                m.Sheet = BuildSheet();
+            }
+            if (m.Table != null)
+            {
+                m.Table.Offset = _offsetOne;
+                m.Table.Reveal = _revealOne;
+            }
+            if (m.Table2 != null)
+            {
+                m.Table2.Offset = _offsetTwo;
+                m.Table2.Reveal = _revealTwo;
+            }
             StocksLay.Lay(s, m, frame, dark, keys);
+            if (m.Table != null)
+            {
+                _offsetOne = m.Table.Offset;
+            }
+            if (m.Table2 != null)
+            {
+                _offsetTwo = m.Table2.Offset;
+            }
+            _listOne = m.ListOne;
+            _clipTwo = m.ClipTwo;
+            _revealOne = -1;
+            _revealTwo = -1;
             _dirty = false;
         }
 
         public bool Press(int command, int arg)
         {
+            if (_sheet.Open)
+            {
+                return SheetPress(command, arg);
+            }
             if (command == UiAppWindow.NavCommand && arg >= 0 && arg < StocksBuild.NavPages.Length)
             {
                 _page = StocksBuild.NavPages[arg];
+                _offsetOne = 0f;
+                _offsetTwo = 0f;
                 _dirty = true;
                 return true;
+            }
+            if (command == StocksLay.Act)
+            {
+                return PageAction(arg);
+            }
+            if (command >= StocksLay.Second && command < StocksLay.Second + 10)
+            {
+                return command - StocksLay.Second == UiDataTable.Row && RowPressed(true, arg);
             }
             if (command == UiDataTable.First + UiDataTable.Head)
             {
@@ -129,9 +177,20 @@ namespace RealLifeOverhaul.Ui
             {
                 return true;
             }
+            if (command == UiDataTable.First + UiDataTable.Clear)
+            {
+                _find = string.Empty;
+                _dirty = true;
+                return true;
+            }
             if (command == UiDataTable.First + UiDataTable.Filter)
             {
-                if (_page == StocksPage.Bots)
+                if (_page == StocksPage.Orders)
+                {
+                    _done = !_done;
+                    _offsetOne = 0f;
+                }
+                else if (_page == StocksPage.Bots)
                 {
                     _rule = (_rule + 1) % 8;
                 }
@@ -156,6 +215,10 @@ namespace RealLifeOverhaul.Ui
             }
             if (command == UiDataTable.First + UiDataTable.Row && _page != StocksPage.Company)
             {
+                if (RowPressed(false, arg))
+                {
+                    return true;
+                }
                 if (_page == StocksPage.Portfolio)
                 {
                     MarketState book = _market != null ? _market.State : null;
@@ -186,10 +249,21 @@ namespace RealLifeOverhaul.Ui
                 if (arg == 0)
                 {
                     _buy = !_buy;
+                    _price = 0;
                 }
                 else if (arg == 1)
                 {
-                    _type = _type == OrderType.Market ? OrderType.Limit : _type == OrderType.Limit ? OrderType.Stop : OrderType.Market;
+                    _kind = (_kind + 1) % 4;
+                    _price = 0;
+                    long held = _market != null && _market.State != null ? Math.Abs(_market.State.Held(_stock)) : 0;
+                    if (_kind >= 2 && held > 0)
+                    {
+                        _qty = held;   // a stop loss or a take profit is on what is held: all of it, to begin with
+                    }
+                }
+                else if (arg == 3)
+                {
+                    return CyclePutBack();
                 }
                 else
                 {
@@ -197,6 +271,28 @@ namespace RealLifeOverhaul.Ui
                 }
                 _dirty = true;
                 return true;
+            }
+            if (command == StocksLay.PriceLess || command == StocksLay.PriceMore)
+            {
+                MarketState book = _market != null ? _market.State : null;
+                Stock quoted = book != null ? book.Stock(_stock) : null;
+                if (quoted == null)
+                {
+                    return false;
+                }
+                int now = StocksBuild.TicketPrice(book, quoted, !_buy, _kind, _price);
+                int step = Math.Max(1, now / 100);
+                _price = Math.Max(1, command == StocksLay.PriceLess ? now - step : now + step);
+                _dirty = true;
+                return true;
+            }
+            if (command == StocksLay.PricePlain)
+            {
+                return true;
+            }
+            if (command == StocksLay.Watch)
+            {
+                return ToggleWatch();
             }
             if (command == StocksLay.Shares)
             {
@@ -253,6 +349,10 @@ namespace RealLifeOverhaul.Ui
 
         public bool Back()
         {
+            if (_sheet.Open)
+            {
+                return SheetBack();
+            }
             if (_page == StocksPage.Ticket)
             {
                 _page = StocksPage.Company;
@@ -270,24 +370,38 @@ namespace RealLifeOverhaul.Ui
 
         public void Tab(int step)
         {
+            if (_sheet.Open)
+            {
+                return;
+            }
             int at = StocksBuild.NavOf(_page);
             int n = StocksBuild.NavPages.Length;
             at = (at + (step < 0 ? n - 1 : 1)) % n;
             _page = StocksBuild.NavPages[at];
+            _offsetOne = 0f;
+            _offsetTwo = 0f;
             _dirty = true;
         }
 
         public bool Act(UiAction action)
         {
+            if (_sheet.Open)
+            {
+                return action == UiAction.Alt && SheetConfirm();
+            }
             if (action == UiAction.Alt)
             {
+                if (_page == StocksPage.Futures)
+                {
+                    return PayCall();
+                }
                 return Place();
             }
             if (action == UiAction.Option)
             {
                 if (_page == StocksPage.Bots)
                 {
-                    return AddRule();
+                    return OpenRule(-1);
                 }
                 _buy = !_buy;
                 _dirty = true;
@@ -298,10 +412,28 @@ namespace RealLifeOverhaul.Ui
 
         public void Reveal(int list, int index)
         {
+            if (list == _listOne)
+            {
+                _revealOne = index;
+            }
+            else
+            {
+                _revealTwo = index;
+            }
+            _dirty = true;
         }
 
         public void Wheel(int clip, float notches)
         {
+            if (_clipTwo >= 0 && clip == _clipTwo)
+            {
+                _offsetTwo = Math.Max(0f, _offsetTwo - notches * UiTokens.S16);
+            }
+            else
+            {
+                _offsetOne = Math.Max(0f, _offsetOne - notches * UiTokens.S16);
+            }
+            _dirty = true;
         }
 
         /// <summary>Opens one company. The test buttons use it.</summary>
@@ -325,12 +457,84 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
-            Stock quoted = _market.State.Stock(_stock);
-            RealLifeOverhaul.Markets.Order placed = _market.Place(_stock, _buy ? OrderSide.Buy : OrderSide.Sell, _type, _life, _qty,
-                quoted != null ? quoted.Last : 0, 0, false, out OrderWhy _);
+            MarketState book = _market.State;
+            Stock quoted = book.Stock(_stock);
+            if (quoted == null)
+            {
+                return false;
+            }
+            if (quoted.Own != null && _market.Engine != null && _market.Engine.Mine(quoted))
+            {
+                OpenSheet(StocksSheets.Founder, (int)OwnAction.Deal);   // the founder deals by their own rules
+                return true;
+            }
+            bool closing = _kind >= 2;
+            bool buy = closing ? book.Held(_stock) < 0 : _buy;
+            OrderType type = StocksBuild.TypeOf(_kind);
+            int price = StocksBuild.TicketPrice(book, quoted, !buy, _kind, _price);
+            OrderSide side = buy ? OrderSide.Buy : OrderSide.Sell;
+            Estimate e = _market.Estimate(_stock, side, type, _qty, type == OrderType.Limit ? price : 0, type == OrderType.Stop ? price : 0, closing);
+            OrderWhy why = e.Why;
+            RealLifeOverhaul.Markets.Order placed = null;
+            if (why == OrderWhy.TooLarge && type == OrderType.Market && !closing && Settings.MarketsLarge)
+            {
+                placed = _market.PlaceWorked(_stock, side, _qty, out why);
+            }
+            else if (why == OrderWhy.None)
+            {
+                placed = _market.Place(_stock, side, type, _life, _qty, type == OrderType.Limit ? price : 0, type == OrderType.Stop ? price : 0, false, out why, closing);
+            }
+            if (placed == null)
+            {
+                Notifications.Show(NotificationType.Error, "reallife_mkt_note_refused",
+                    new Dictionary<string, string> { { "name", quoted.Name }, { "why", MarketText.Why(why, quoted) } }, 8f, null, null, true, false);
+                return false;
+            }
+            if (placed.IsOpen && placed.Filled == 0)
+            {
+                Notifications.Show(NotificationType.Info, "reallife_mkt_note_waiting", new Dictionary<string, string> { { "name", quoted.Name } }, 6f, null, null, true, false);
+            }
             _page = StocksPage.Orders;
+            _done = false;
             _dirty = true;
-            return placed != null;
+            return true;
+        }
+
+        private bool ToggleWatch()
+        {
+            MarketState book = _market != null ? _market.State : null;
+            if (book == null || _stock <= 0)
+            {
+                return false;
+            }
+            if (!_market.Watch(_stock, !book.Watching(_stock)))
+            {
+                Notifications.ShowError("reallife_mkt_note_watch_full", null, false);
+                return false;
+            }
+            _dirty = true;
+            return true;
+        }
+
+        // The share of each dividend put back into the holding: the next of the old app's choices.
+        private bool CyclePutBack()
+        {
+            MarketState book = _market != null ? _market.State : null;
+            Position p = book != null ? book.Position(_stock) : null;
+            if (p == null || p.Shares <= 0)
+            {
+                return false;
+            }
+            int[] choices = InvestRules.ReinvestChoices;
+            int at = Array.IndexOf(choices, InvestRules.ReinvestOf(p.Reinvest));
+            if (!_market.SetReinvest(_stock, choices[(Math.Max(0, at) + 1) % choices.Length], out OrderWhy why))
+            {
+                Notifications.Show(NotificationType.Error, "reallife_mkt_note_refused", new Dictionary<string, string> { { "name", string.Empty },
+                    { "why", MarketText.Why(why, book.Stock(_stock)) } }, 8f, null, null, true, false);
+                return false;
+            }
+            _dirty = true;
+            return true;
         }
 
         private int StockAt(int row)
@@ -350,8 +554,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
-                if (!string.IsNullOrEmpty(_find) && (s.Name == null || s.Name.IndexOf(_find.Trim(), StringComparison.OrdinalIgnoreCase) < 0)
-                    && (s.Ticker == null || s.Ticker.IndexOf(_find.Trim(), StringComparison.OrdinalIgnoreCase) < 0))
+                if (!StocksMath.Matches(s, _find))
                 {
                     continue;
                 }
@@ -517,52 +720,6 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             return false;
-        }
-
-        private bool AddRule()
-        {
-            MarketState state = _market != null ? _market.State : null;
-            if (state == null || state.Rules.Count >= RuleBots.Most)
-            {
-                return false;
-            }
-            Stock stock = state.Stock(_stock);
-            if (stock == null || !stock.Listed)
-            {
-                for (int i = 0; i < state.Stocks.Count; i++)
-                {
-                    if (state.Stocks[i].Listed)
-                    {
-                        stock = state.Stocks[i];
-                        break;
-                    }
-                }
-            }
-            if (stock == null)
-            {
-                return false;
-            }
-            long budget = Math.Max(1000L, stock.Last * 10L);
-            state.Rules.Add(new RuleBot
-            {
-                Id = state.Rules.Count + 1,
-                Kind = (RuleKind)(_rule % 8),
-                Owner = 0,
-                StockId = stock.Id,
-                Level = _rule % 8 == (int)RuleKind.Dip ? 30 : stock.Last,
-                GainBp = 800,
-                Type = OrderType.Market,
-                Budget = budget,
-                Cash = budget,
-                PerTrade = 10,
-                StopBp = 500,
-                OpenOnly = true,
-                Tell = true,
-                MaxOpen = 1,
-                Status = RuleStatus.Running
-            });
-            _dirty = true;
-            return true;
         }
     }
 }

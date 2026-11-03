@@ -8,7 +8,7 @@ namespace RealLifeOverhaul.Ui
     /// The Stocks desk filled from the market the save already has. Words through the mod's keys. Built when the desk
     /// changes, not every frame. The old page stays for the way back.
     /// </summary>
-    public static class StocksBuild
+    public static partial class StocksBuild
     {
         public static readonly string[] NavKeys =
         {
@@ -57,7 +57,8 @@ namespace RealLifeOverhaul.Ui
         }
 
         public static StocksModel Page(MarketState state, StocksPage page, int stockId, int tool, bool buy, OrderType type,
-            OrderLife life, long qty, int sort, int sector, int size, int focus, int rule, string find, UiWords words)
+            OrderLife life, long qty, int sort, int sector, int size, int focus, int rule, string find, UiWords words,
+            MarketDirector director = null, bool done = false, int kind = 0, int price = 0)
         {
             var m = new StocksModel { Title = words("reallife_mkt_app", "Stocks"), Page = page };
             Nav(m, words);
@@ -72,15 +73,19 @@ namespace RealLifeOverhaul.Ui
                 case StocksPage.Companies: m.Table = Companies(state, words, false, sort, sector, size, find); break;
                 case StocksPage.Watch: m.Table = Companies(state, words, true, sort, sector, size, find); break;
                 case StocksPage.Market: Market(m, state, words, sort, sector, size, find); break;
-                case StocksPage.Company: Company(m, state, stockId, tool, buy, type, life, qty, focus, words); break;
+                case StocksPage.Company: Company(m, state, stockId, tool, buy, type, life, qty, focus, words, kind, price, director); break;
                 case StocksPage.Ticket: Ticket(m, state, stockId, buy, type, life, qty, words); break;
                 case StocksPage.Portfolio: Portfolio(m, state, words); break;
-                case StocksPage.Orders: m.Statement = Orders(state, words, true); break;
+                case StocksPage.Orders: OrdersPage(m, state, words, done); break;
                 case StocksPage.History: m.Statement = Orders(state, words, false); break;
-                case StocksPage.Bots: Bots(m, state, rule, words); break;
+                case StocksPage.Bots: if (director != null) { BotsPage(m, director, words); } break;
                 case StocksPage.Listing: Listing(m, state, words); break;
-                case StocksPage.Bonds: m.Table = Bonds(state, words); break;
-                default: m.Table = Futures(state, words); break;
+                case StocksPage.Bonds: if (director != null) { BondsPage(m, director, words); } break;
+                default: if (director != null) { FuturesPage(m, director, words); } break;
+            }
+            if (director != null)
+            {
+                PageButtons(m, director, words);
             }
             return m;
         }
@@ -98,27 +103,13 @@ namespace RealLifeOverhaul.Ui
             m.TapeTitle = words("reallife_stk_tape", "Who is trading");
             m.Tape = Tape(state, 0, 3, words);
             m.Table = Companies(state, words, false, sort, sector, size, find);
-            if (m.Table.RowCount == 0)
+            if (m.Table.RowCount == 0 && string.IsNullOrWhiteSpace(find))
             {
                 m.Table.EmptyTitle = words("reallife_stk_market_empty", "No companies are listed");
                 m.Table.EmptyBody = words("reallife_stk_market_empty_body", "Listed companies show here with the day's move.");
             }
         }
 
-        private static bool Matches(Stock s, string find)
-        {
-            if (string.IsNullOrEmpty(find))
-            {
-                return true;
-            }
-            string q = find.Trim();
-            if (q.Length == 0)
-            {
-                return true;
-            }
-            return (s.Name != null && s.Name.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0)
-                || (s.Ticker != null && s.Ticker.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0);
-        }
 
         private static UiFigureModel Fig(string label, string value, int bp)
         {
@@ -145,7 +136,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
-                if (!Matches(s, find))
+                if (!StocksMath.Matches(s, find))
                 {
                     continue;
                 }
@@ -160,7 +151,19 @@ namespace RealLifeOverhaul.Ui
             }
             table.Rows = rows;
             table.RowCount = n;
-            if (n == 0)
+            table.Query = find;
+            bool searching = !string.IsNullOrWhiteSpace(find);
+            if (searching)
+            {
+                table.Count = MarketText.Fill("reallife_stk_search_count", "shown", n.ToString(), "all", listed.ToString());
+            }
+            if (n == 0 && searching)
+            {
+                table.EmptyTitle = words("reallife_stk_search_none", "No company matches");
+                table.EmptyBody = words("reallife_stk_search_none_body", "Nothing here has that in its name or ticker.");
+                table.EmptyAction = words("reallife_stk_search_clear", "Clear search");
+            }
+            else if (n == 0)
             {
                 table.EmptyTitle = words(watch ? "reallife_stk_watch_empty" : "reallife_stk_market_empty", watch ? "Nothing on the watch yet" : "No companies are listed");
                 table.EmptyBody = words(watch ? "reallife_stk_watch_empty_body" : "reallife_stk_market_empty_body",
@@ -186,7 +189,8 @@ namespace RealLifeOverhaul.Ui
             };
         }
 
-        private static void Company(StocksModel m, MarketState state, int stockId, int tool, bool buy, OrderType type, OrderLife life, long qty, int focus, UiWords words)
+        private static void Company(StocksModel m, MarketState state, int stockId, int tool, bool buy, OrderType type, OrderLife life, long qty, int focus, UiWords words,
+            int kind = 0, int price = 0, MarketDirector d = null)
         {
             Stock s = state.Stock(stockId) ?? First(state);
             if (s == null)
@@ -221,7 +225,7 @@ namespace RealLifeOverhaul.Ui
             m.Tools = new[] { " ", " ", " ", " ", " ", " ", " ", " ", " ", words("reallife_stk_clear", "Clear") };
             m.Chips = Chips(state, words);
             m.Signals = SignalLines(s, words);
-            m.Ticket = TicketOf(state, s, buy, type, life, qty, words);
+            m.Ticket = TicketOf(state, s, buy, type, life, qty, words, kind, price, d);
             m.PromptPlace = m.Ticket.Place;
             m.PromptOther = m.Ticket.Instead;
             int alerts = 1;
@@ -572,38 +576,101 @@ namespace RealLifeOverhaul.Ui
             return new UiChartLine { Name = name, Values = v, Tint = tint };
         }
 
-        private static StocksTicket TicketOf(MarketState state, Stock s, bool buy, OrderType type, OrderLife life, long qty, UiWords words)
+        private static readonly string[] KindKeys = { "reallife_stk_market_order", "reallife_stk_limit", "reallife_mkt_type_stop_loss", "reallife_mkt_type_take_profit" };
+        private static readonly string[] KindEnglish = { "Market", "Limit", "Stop loss", "Take profit" };
+
+        /// <summary>The order type a ticket kind places: market, limit, a stop loss is a stop, a take profit a limit.</summary>
+        public static OrderType TypeOf(int kind) => kind == 0 ? OrderType.Market : kind == 2 ? OrderType.Stop : OrderType.Limit;
+
+        /// <summary>
+        /// A limit's or a stop's price to begin with, as the old ticket takes it: a limit at the offer or bid, a stop loss a twentieth
+        /// beyond, a take profit a tenth; the price typed once one was. Cents.
+        /// </summary>
+        public static int TicketPrice(MarketState state, Stock s, bool sell, int kind, int typed)
+        {
+            if (typed > 0)
+            {
+                return typed;
+            }
+            Quote q = MarketTrading.QuoteOf(state, s, state.Phase);
+            if (kind == 2)
+            {
+                return sell ? Math.Max(1, q.Bid * 95 / 100) : q.Ask * 105 / 100;
+            }
+            if (kind == 3)
+            {
+                return sell ? q.Bid * 110 / 100 : Math.Max(1, q.Ask * 90 / 100);
+            }
+            return sell ? q.Bid : q.Ask;
+        }
+
+        private static StocksTicket TicketOf(MarketState state, Stock s, bool buy, OrderType type, OrderLife life, long qty, UiWords words, int kind = 0, int typedPrice = 0, MarketDirector d = null)
         {
             if (qty < 1)
             {
                 qty = 1;
             }
+            long held = state.Held(s.Id);
+            bool closing = kind >= 2;
+            if (closing)
+            {
+                buy = held < 0;
+            }
+            type = TypeOf(kind);
             int price = Math.Max(1, s.Last);
+            int limit = TicketPrice(state, s, !buy, kind, typedPrice);
             long value = MarketTrading.Value(qty, price, buy);
             long fee = MarketTrading.Commission(value, MarketCatalogue.CommissionLeastAtStart);
+            long total = buy ? value + fee : Math.Max(0, value - fee);
+            string why = null;
+            bool worked = false;
+            if (d != null)
+            {
+                Estimate e = d.Estimate(s.Id, buy ? OrderSide.Buy : OrderSide.Sell, type, qty, type == OrderType.Limit ? limit : 0, type == OrderType.Stop ? limit : 0, closing);
+                if (e.Why == OrderWhy.None)
+                {
+                    value = e.Value;
+                    fee = e.Fee;
+                    total = e.Total;
+                }
+                else if (!(e.Why == OrderWhy.TooLarge && type == OrderType.Market && !closing && Settings.MarketsLarge))
+                {
+                    why = MarketText.Why(e.Why, s);
+                }
+                else
+                {
+                    worked = true;
+                    why = MarketText.Fill("reallife_mkt_inv_ticket_worked", "most", MarketTrading.MostPerOrder(s).ToString("N0"), "days", InvestRules.MarketDays(qty, s.Adv).ToString());
+                }
+            }
             long cash = state.Account.Cash;
             long most = MostShares(cash, price, buy);
-            long held = state.Held(s.Id);
-            long afterShares = held + (buy ? qty : -qty);
             Position position = state.Position(s.Id);
+            long afterShares = held + (buy ? qty : -qty);
             long cost = position != null ? position.Cost : 0;
             long afterCost = buy ? cost + value + fee : cost;
             long average = afterShares != 0 ? afterCost / Math.Abs(afterShares) : 0;
+            int back = position != null && position.Shares > 0 && Settings.MarketsReinvest ? InvestRules.ReinvestOf(position.Reinvest) : -1;
             return new StocksTicket
             {
                 Side = buy ? words("reallife_mkt_buy", "Buy") : words("reallife_mkt_sell", "Sell"),
-                Kind = type == OrderType.Limit ? words("reallife_stk_limit", "Limit") : type == OrderType.Stop ? words("reallife_stk_stop", "Stop") : words("reallife_stk_market_order", "Market"),
+                Kind = words(KindKeys[kind], KindEnglish[kind]),
                 Life = life == OrderLife.UntilCancelled ? words("reallife_stk_gtc", "Until cancelled") : words("reallife_stk_day", "Day"),
                 Shares = qty.ToString(),
                 Limit = type == OrderType.Market ? words("reallife_stk_max", "Most you can buy") : words("reallife_mkt_col_price", "Price"),
-                Max = type == OrderType.Market ? most.ToString() : MarketText.Price(price),
+                Max = type == OrderType.Market ? most.ToString() : MarketText.Price(limit),
+                Price = type == OrderType.Market ? null : MarketText.Price(limit),
                 Cost = MarketText.Money(value),
                 Fee = MarketText.Money(fee),
-                Total = MarketText.Money(buy ? value + fee : Math.Max(0, value - fee)),
-                CashAfter = MarketText.Money(Math.Max(0, cash - (buy ? value + fee : -(value - fee)))),
+                Total = MarketText.Money(total),
+                CashAfter = MarketText.Money(Math.Max(0, cash - (buy ? total : -total))),
                 After = words("reallife_stk_position_after", "Position after") + " " + afterShares + "  " + MarketText.Money(average),
                 Place = words("reallife_stk_place", "Place order"),
-                Instead = buy ? words("reallife_stk_sell_instead", "Sell instead") : words("reallife_stk_buy_instead", "Buy instead")
+                Instead = closing ? null : buy ? words("reallife_stk_sell_instead", "Sell instead") : words("reallife_stk_buy_instead", "Buy instead"),
+                Why = why,
+                PlaceDisabled = why != null && !worked,
+                Watch = state.Watching(s.Id) ? words("reallife_mkt_unwatch", "Unwatch") : words("reallife_mkt_watch", "Watch"),
+                PutBack = back >= 0 ? InvestText.Reinvest(back) : null
             };
         }
 
@@ -866,76 +933,6 @@ namespace RealLifeOverhaul.Ui
             };
         }
 
-        private static void Bots(StocksModel m, MarketState state, int rule, UiWords words)
-        {
-            long budget = 0, day = 0;
-            for (int i = 0; i < state.Bots.Count; i++)
-            {
-                budget += state.Bots[i].Capital;
-                day += state.Bots[i].Realised;
-            }
-            for (int i = 0; i < state.Rules.Count; i++)
-            {
-                budget += state.Rules[i].Budget;
-                day += state.Rules[i].DayResult;
-            }
-            m.Figures = new[]
-            {
-                Fig(words("reallife_stk_budget", "Budget in use"), MarketText.Money(budget), 0),
-                Fig(words("reallife_stk_day_result", "Today"), MarketText.Money(day), day > 0 ? 1 : day < 0 ? -1 : 0)
-            };
-            int n = state.Bots.Count + state.Rules.Count;
-            var rows = new UiDataRow[n];
-            int at = 0;
-            for (int i = 0; i < state.Bots.Count; i++)
-            {
-                Bot b = state.Bots[i];
-                rows[at++] = BotRow(b.Def != null ? b.Def.Name : words("reallife_stk_bot", "Bot"), StocksMath.BotChip(b), words);
-            }
-            for (int i = 0; i < state.Rules.Count; i++)
-            {
-                RuleBot r = state.Rules[i];
-                rows[at++] = BotRow(RuleWord((int)r.Kind, words), r.Chip, words);
-            }
-            m.Table = new UiDataTableModel
-            {
-                Columns = new[]
-                {
-                    new UiDataColumn { Title = words("reallife_mkt_col_company", "Company"), Kind = UiCellKind.Tile },
-                    new UiDataColumn { Title = words("reallife_mkt_col_state", "State"), Kind = UiCellKind.Chip, Width = 180f }
-                },
-                Rows = rows, RowCount = n, EmptyIcon = UiIcon.Cpu,
-                Filters = new[] { RuleWord(rule, words) },
-                EmptyTitle = words("reallife_stk_bots_empty", "No bots yet"),
-                EmptyBody = words("reallife_stk_bots_empty_body", "Hire a firm, or add a rule. Rivals run the same rules.")
-            };
-            m.PromptOther = words("reallife_stk_add_rule", "Add a rule");
-        }
-
-        private static string RuleWord(int rule, UiWords words)
-        {
-            string[] keys =
-            {
-                "reallife_stk_rule_dip", "reallife_stk_rule_rider", "reallife_stk_rule_div", "reallife_stk_rule_rebalance",
-                "reallife_stk_rule_grid", "reallife_stk_rule_earn", "reallife_stk_rule_stop", "reallife_stk_rule_gap"
-            };
-            string[] english = { "Dip buyer", "Trend rider", "Dividend", "Rebalance", "Grid", "Earnings", "Stop guard", "Open gap" };
-            int i = rule >= 0 && rule < keys.Length ? rule : 0;
-            return words(keys[i], english[i]);
-        }
-
-        private static UiDataRow BotRow(string name, int chip, UiWords words)
-        {
-            string[] chips =
-            {
-                words("reallife_stk_running", "Running"), words("reallife_stk_waiting", "Waiting"), words("reallife_stk_paused", "Paused"),
-                words("reallife_stk_out_budget", "Out of budget"), words("reallife_stk_stopped", "Stopped"), words("reallife_mkt_bot_status_selling", "Selling up")
-            };
-            UiRole[] tones = { UiRole.Ok, UiRole.None, UiRole.Warn, UiRole.Danger, UiRole.Muted, UiRole.Warn };
-            int c = chip < 0 || chip >= chips.Length ? 0 : chip;
-            return new UiDataRow { Cells = new[] { name, chips[c] }, Values = new[] { (int)UiIcon.Cpu, 0 }, Tones = new[] { UiRole.None, tones[c] }, Sub = string.Empty };
-        }
-
         private static void Listing(StocksModel m, MarketState state, UiWords words)
         {
             ListingFile f = state.Listing;
@@ -1060,93 +1057,6 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             return null;
-        }
-
-        private static UiDataTableModel Bonds(MarketState state, UiWords words)
-        {
-            int n = state.Bonds.Holdings.Count;
-            var rows = new UiDataRow[n];
-            for (int i = 0; i < n; i++)
-            {
-                BondHolding h = state.Bonds.Holdings[i];
-                BondDef def = BondCatalogue.Find(h.Def);
-                string name = !string.IsNullOrEmpty(h.Issuer) ? h.Issuer : BondName(def, words);
-                rows[i] = new UiDataRow
-                {
-                    Cells = new[] { name, MarketText.Money(h.Face), MarketText.Percent(h.RateBp), h.EndDay.ToString() },
-                    Values = new[] { (int)UiIcon.Bank, 0, 0, 0 },
-                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None }
-                };
-            }
-            return new UiDataTableModel
-            {
-                Columns = new[]
-                {
-                    new UiDataColumn { Title = words("reallife_mkt_tab_bonds", "Bonds"), Kind = UiCellKind.Tile },
-                    new UiDataColumn { Title = words("reallife_stk_worth", "Worth"), Kind = UiCellKind.Figure, Width = 140f },
-                    new UiDataColumn { Title = words("reallife_mkt_col_yield", "Yield"), Kind = UiCellKind.Figure, Width = 120f },
-                    new UiDataColumn { Title = words("reallife_mkt_col_day", "Day"), Kind = UiCellKind.Figure, Width = 100f }
-                },
-                Rows = rows, RowCount = n, EmptyIcon = UiIcon.Bank,
-                EmptyTitle = words("reallife_stk_bonds_empty", "No bonds yet"),
-                EmptyBody = words("reallife_stk_bonds_empty_body", "Treasury and city bonds you buy show here, with what they pay.")
-            };
-        }
-
-        private static string BondName(BondDef def, UiWords words)
-        {
-            if (def != null && def.Kind == BondKind.City)
-            {
-                return words("reallife_mkt_bond_kind_city", "City");
-            }
-            if (def != null && def.Kind == BondKind.Deposit)
-            {
-                return words("reallife_mkt_bond_kind_deposit", "Bank deposit");
-            }
-            return words("reallife_mkt_bond_kind_treasury", "Treasury");
-        }
-
-        private static UiDataTableModel Futures(MarketState state, UiWords words)
-        {
-            int n = 0;
-            for (int i = 0; i < state.Derivs.Contracts.Count; i++)
-            {
-                if (state.Derivs.Contracts[i].IsOpen && state.Derivs.Contracts[i].IsFuture)
-                {
-                    n++;
-                }
-            }
-            var rows = new UiDataRow[n];
-            int at = 0;
-            for (int i = 0; i < state.Derivs.Contracts.Count && at < n; i++)
-            {
-                DerivContract c = state.Derivs.Contracts[i];
-                if (!c.IsOpen || !c.IsFuture)
-                {
-                    continue;
-                }
-                string name = !string.IsNullOrEmpty(c.Material) ? c.Material : words("reallife_mkt_tab_futures", "Futures");
-                string kind = words(c.Kind == ContractKind.Short ? "reallife_mkt_drv_kind_short" : "reallife_mkt_drv_kind_long", c.Kind == ContractKind.Short ? "Future sold" : "Future bought");
-                rows[at++] = new UiDataRow
-                {
-                    Cells = new[] { name, kind, c.Qty.ToString(), MarketText.Money(c.Margin) },
-                    Values = new[] { (int)UiIcon.Chart, 0, 0, 0 },
-                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None }
-                };
-            }
-            return new UiDataTableModel
-            {
-                Columns = new[]
-                {
-                    new UiDataColumn { Title = words("reallife_mkt_tab_futures", "Futures"), Kind = UiCellKind.Tile },
-                    new UiDataColumn { Title = words("reallife_mkt_col_what", "What"), Kind = UiCellKind.Text, Width = 160f },
-                    new UiDataColumn { Title = words("reallife_mkt_col_shares", "Shares"), Kind = UiCellKind.Figure, Width = 120f },
-                    new UiDataColumn { Title = words("reallife_stk_worth", "Worth"), Kind = UiCellKind.Figure, Width = 140f }
-                },
-                Rows = rows, RowCount = n, EmptyIcon = UiIcon.Chart,
-                EmptyTitle = words("reallife_stk_fut_empty", "No futures yet"),
-                EmptyBody = words("reallife_stk_fut_empty_body", "A future you open shows here until it settles.")
-            };
         }
 
     }
