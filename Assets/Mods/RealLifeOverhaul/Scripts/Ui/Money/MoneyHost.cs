@@ -1,40 +1,5 @@
 namespace RealLifeOverhaul.Ui
 {
-    /// <summary>
-    /// Finance on the kit: your position, then the lines behind it. The old page stays underneath for the switch.
-    /// Nothing a frame; the page is laid again when its numbers or its tab change.
-    /// </summary>
-    public sealed class FinanceScreen : MoneyHost, IUiScreen
-    {
-        public const string ScreenId = "finance";
-
-        public FinanceScreen(IMoneySource source) : base(ScreenId, MoneyApp.Finance, UiIcon.Wallet, source) { }
-    }
-
-    /// <summary>One bank's counter on the kit. Nothing a frame.</summary>
-    public sealed class BanksScreen : MoneyHost, IUiScreen
-    {
-        public const string ScreenId = "banks";
-
-        public BanksScreen(IMoneySource source) : base(ScreenId, MoneyApp.Banks, UiIcon.Bank, source) { }
-    }
-
-    /// <summary>The bank the player owns, on the kit. Nothing a frame.</summary>
-    public sealed class OwnBankScreen : MoneyHost, IUiScreen
-    {
-        public const string ScreenId = "own_bank";
-
-        public OwnBankScreen(IMoneySource source) : base(ScreenId, MoneyApp.OwnBank, UiIcon.PiggyBank, source) { }
-    }
-
-    /// <summary>Bills and the broadband company, on the kit. Nothing a frame.</summary>
-    public sealed class UtilitiesScreen : MoneyHost, IUiScreen
-    {
-        public const string ScreenId = "utilities";
-
-        public UtilitiesScreen(IMoneySource source) : base(ScreenId, MoneyApp.Utilities, UiIcon.Globe, source) { }
-    }
-
     /// <summary>The four money screens share one host: a model, a fill when the series changes, and the page drawer.</summary>
     public class MoneyHost
     {

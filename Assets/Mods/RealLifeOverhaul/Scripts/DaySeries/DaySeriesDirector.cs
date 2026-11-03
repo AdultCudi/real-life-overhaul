@@ -9,8 +9,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.DaySeries
 {
     /// <summary>
-    /// Writes the day series once a day, after the economy's day, and once when a save is first seen. No Update, so nothing
-    /// per frame: the timer is one comparison a second, and the write itself is the day's pass.
+    /// Writes the day series once a day, in the frames after the economy's day (queued on the day, played by Core/DayPump),
+    /// and once when a save is first seen. No Update, so nothing per frame: the timer is one comparison a second, and the
+    /// write itself is the day's pass.
     /// </summary>
     public sealed class DaySeriesDirector : MonoBehaviour
     {
@@ -22,6 +23,7 @@ namespace RealLifeOverhaul.DaySeries
         private readonly WaitForSecondsRealtime _wait = new WaitForSecondsRealtime(1f);
         private DaySeriesBook _book = new DaySeriesBook();
         private Action _onSave, _onDay;
+        private Func<bool> _dayStep;
         private GameInstance _loadedFor;
         private int _written = -1;
         private bool _broken;
@@ -37,6 +39,7 @@ namespace RealLifeOverhaul.DaySeries
             Instance = this;
             _onSave = OnSave;
             _onDay = OnDay;
+            _dayStep = DayStep;
             EconomyDirector.AfterDay += _onDay;
             StartCoroutine(Guard.Routine(Tick()));
         }
@@ -44,6 +47,7 @@ namespace RealLifeOverhaul.DaySeries
         private void OnDestroy()
         {
             EconomyDirector.AfterDay -= _onDay;
+            DaySpread.Shared.Drop(this);
             SaveHook.Drop(_onSave);
             if (Instance == this)
             {
@@ -85,14 +89,20 @@ namespace RealLifeOverhaul.DaySeries
             {
                 return;
             }
-            try
+            // The figures are read in the frames after the day turns (the read of yesterday's movements is the heavy part);
+            // the save plays a step still waiting (SaveHook), and the one-second tick below writes the day if this is lost.
+            DaySpread.Shared.Add(this, "Day series: the day's figures", _dayStep, Time.frameCount);
+        }
+
+        private bool DayStep()
+        {
+            GameInstance save = SaveGameManager.Current;
+            if (_broken || save == null || !ReferenceEquals(_loadedFor, save) || _written == save.Day)
             {
-                Record(save.Day);
+                return true;
             }
-            catch (Exception e)
-            {
-                Fault(e);
-            }
+            Record(save.Day);
+            return true;
         }
 
         private void Load(GameInstance save)

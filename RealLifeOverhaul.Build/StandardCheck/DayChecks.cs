@@ -51,6 +51,8 @@ internal static partial class Program
             "the labour market is read by the professionals' day (its shortages), which sets the game's employees' moods and absences before the game's employee run; the firms and data centres book takings and costs into yesterday's statement; an accepted applicant starts as the game's employee"),
         ("Fame/FameDirector.cs", "Fame/FameDirector.cs", "OnDay", "kept",
             "the standing is worked from yesterday's statements and read the same frame by the company's and the tech sector's esteem; each business's customers are written for the day (a second or less after the first day)"),
+        ("DaySeries/DaySeriesDirector.cs", "DaySeries/DaySeriesDirector.cs", "OnDay", "spread",
+            "the day's figures (cash, credit, worth, the fund, the loan feed, yesterday's movements by kind) are queued and read in the frames after; only the queueing is in the frame"),
         ("Core/HeldUnits.cs", "Core/HeldUnits.cs", "OnDay", "kept",
             "puts the game's ignore lists back as they were before the game's rivals' step, which follows the day event in the same frame"),
         ("Core/DayRollGuard.cs", "Core/DayRollGuard.cs", "OnDay", "kept",
