@@ -20,6 +20,7 @@ namespace RealLifeOverhaul.Ui
         private readonly List<string> _words = new List<string>(4);
         private UiNavEntry[] _nav = new UiNavEntry[0];
         private float _navOffset;
+        private int _navClip = -1;   // the sidebar's scroll region in the last layout, so the wheel scrolls the pane under the pointer
         private int _pageAt;
         private int _built = -1;
         private string _query = string.Empty;
@@ -80,6 +81,7 @@ namespace RealLifeOverhaul.Ui
             s.Begin("guide", frame.Width, frame.Height, dark);
             frame.Icon = UiIcon.Info;
             float offset = _navOffset;
+            _navClip = s.ClipCount;   // the sidebar's clip is the first the footed window adds
             UiAt at = UiAppWindow.ShellFooted(s, frame, T("reallife_guide_app"), UiIcon.Info, _nav, ShownIndex(), ref offset, null, 0, keys,
                 out float x, out float y, out float w, out float bottom);
             _navOffset = offset;
@@ -182,7 +184,14 @@ namespace RealLifeOverhaul.Ui
 
         public void Wheel(int clip, float notches)
         {
-            _page.Offset -= notches * UiTokens.S10;
+            if (clip == _navClip)
+            {
+                _navOffset = Math.Max(0f, _navOffset - notches * UiTokens.S16);   // the sidebar, under the pointer, selected or not
+            }
+            else
+            {
+                _page.Offset -= notches * UiTokens.S10;
+            }
             _dirty = true;
         }
 
@@ -275,12 +284,28 @@ namespace RealLifeOverhaul.Ui
         {
             GuideTopic topic = _topics[index];
             string title = (topic.Title ?? T(topic.TitleKey)).ToLowerInvariant();
+            string body = BodyOf(index).ToLowerInvariant();
+            return OptionsFind.Matches(_words, title, body, topic.Group);
+        }
+
+        // A page's text with its {facts} filled in, as the Guide's old page and the set-up check read it (Guide.Fill); made once a topic.
+        // The search and the page both read this, never the topic's raw Body(), so no {name} reaches the player.
+        private string BodyOf(int index)
+        {
+            GuideTopic topic = _topics[index];
             if (_body[index] == null && topic.Body != null)
             {
-                _body[index] = topic.Body() ?? string.Empty;
+                try
+                {
+                    _body[index] = Guide.Fill(topic.Body()) ?? string.Empty;
+                }
+                catch (Exception e)
+                {
+                    MetaLog.Error(e);
+                    _body[index] = string.Empty;
+                }
             }
-            string body = _body[index] == null ? string.Empty : _body[index].ToLowerInvariant();
-            return OptionsFind.Matches(_words, title, body, topic.Group);
+            return _body[index] ?? string.Empty;
         }
 
         private int ShownIndex()
@@ -308,12 +333,8 @@ namespace RealLifeOverhaul.Ui
                 BuildNews();
                 return;
             }
-            if (_body[_pageAt] == null && topic.Body != null)
-            {
-                _body[_pageAt] = topic.Body() ?? string.Empty;
-            }
             _page.Title = topic.Title ?? T(topic.TitleKey);
-            _page.Blocks = UiReaderRules.Parse(_body[_pageAt] ?? string.Empty);
+            _page.Blocks = UiReaderRules.Parse(BodyOf(_pageAt));
             _page.Picture = IconOf(topic);
             _page.PictureCaption = null;
             _page.FactsTitle = T("reallife_guide_on_page");
