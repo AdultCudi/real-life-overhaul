@@ -169,7 +169,11 @@ public static partial class UiPreviewRunner
         {
             Name = "dialog_phone_" + which + Suffix(lang), AppName = "Contacts", Icon = UiIcon.AddressBook, Backdrop = which == "loan" ? "11.jpg" : "13.jpg",
             Bar = () => UiSamples.ShellBar(UiSamples.RowContacts, false),
-            Lay = (s, f, d, k) => UiContacts.Lay(s, UiSamples.CallSample(t, which), f, d, k),
+            Lay = (s, f, d, k) =>
+            {
+                ContactPicturesOn();
+                UiContacts.Lay(s, UiSamples.CallSample(t, which), f, d, k);
+            },
             FocusCommand = card ? UiFormRows.FieldCommand : UiConversation.FormCommand, FocusArg = 0,
             HoverCommand = card ? UiCallCard.ChoiceCommand : UiConversation.ChoiceCommand, HoverArg = 0, Walk = Moves(which == "loan" ? "DDUU" : which == "tow" ? "DU" : "DDDUR")
         };

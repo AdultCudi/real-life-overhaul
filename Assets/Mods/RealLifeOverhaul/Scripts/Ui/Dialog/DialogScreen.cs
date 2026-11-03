@@ -466,6 +466,9 @@ namespace RealLifeOverhaul.Ui
             string where = with ?? Place();
             _m.Name = name ?? UiText.T("reallife_ui_dialog_title");
             _m.Hue = UiColour.HueOf(_m.Name);
+            // A firm on the line (its desk, or a clerk the game gives no face of their own): the firm's own picture, as the game's
+            // Contacts shows it; a person, or a clerk with a face, keeps the face.
+            _m.Picture = c != null && !ContactsScreen.Person(c) && (name == with || !UiFaces.Has(name)) ? FirmPictures.Of(c) : null;
             _m.Ring = ContactsRules.MoodRing(mood);
             _m.Role = where != null && where != _m.Name ? where : null;
             string word = DialogRules.MoodWord(mood);   // the mood in a word beside the face, in the ring's colour

@@ -171,7 +171,7 @@ namespace RealLifeOverhaul.Ui
                 bool mine = talked ? talk[talk.Count - 1].Mine : last != null && last.isFromPlayer;
                 rows[i] = new UiMessageRow
                 {
-                    Name = Name(c), Hue = UiColour.HueOf(c.id), Icon = Person(c) ? UiIcon.None : ContactsRules.FirmIcon(BusinessType(c), (int)c.category),
+                    Name = Name(c), Hue = UiColour.HueOf(c.id), Icon = Person(c) ? UiIcon.None : ContactsRules.FirmIcon(BusinessType(c), (int)c.category), Picture = Logo(c),
                     Preview = mine ? UiText.Fill("reallife_ui_contacts_you", "text", preview) : preview,
                     Time = talked ? When(talk[talk.Count - 1].Minute) : last != null ? When(last) : string.Empty,
                     Unread = c.NumberOfUnreadMessages, Selected = c == _app.selectedContact, Section = section
@@ -228,6 +228,7 @@ namespace RealLifeOverhaul.Ui
             Face(c);
             h.Hue = UiColour.HueOf(c.id);
             h.Icon = Person(c) ? UiIcon.None : ContactsRules.FirmIcon(BusinessType(c), (int)c.category);
+            h.Picture = Logo(c);
             h.Tint = UiRole.None;
             h.Ring = employee != null && !candidate ? StaffViews.Mood(Mathf.RoundToInt(employee.satisfaction)) : UiRole.None;   // a candidate has no mood at work yet
             h.Status = null;
@@ -640,7 +641,7 @@ namespace RealLifeOverhaul.Ui
             CanvasGroup view = EntryView();
             var call = new UiCallModel
             {
-                Name = _m.Head.Name, Hue = _m.Head.Hue, Icon = _m.Head.Icon, Tint = _m.Head.Tint, Ring = Mood(_m.Head.Ring),
+                Name = _m.Head.Name, Hue = _m.Head.Hue, Icon = _m.Head.Icon, Tint = _m.Head.Tint, Picture = _m.Head.Picture, Ring = Mood(_m.Head.Ring),
                 Role = string.IsNullOrEmpty(_m.Head.Employer) ? _m.Head.Role : _m.Head.Role + " \u00b7 " + _m.Head.Employer,
                 Length = ContactsRules.Length(Time.unscaledTime - _talkSince)
             };
@@ -913,7 +914,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         // A person has a face: staff, rivals, Uncle Fred and the people of the mod's own; a firm or a service has its picture.
-        private static bool Person(Contact c)
+        internal static bool Person(Contact c)
         {
             if (c.IsEmployeeContact || c.category == ContactCategoryName.Rivals || c.id == "uncle_fred")
             {

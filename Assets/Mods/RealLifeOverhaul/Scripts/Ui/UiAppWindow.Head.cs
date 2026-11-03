@@ -14,6 +14,7 @@ namespace RealLifeOverhaul.Ui
         public UiRole Ring = UiRole.None;   // the mood; None where it is not known
         public UiIcon Icon = UiIcon.None;   // a firm or a place: its picture on a tile in place of a face
         public UiRole Tint = UiRole.None;   // None for the icon's own colour
+        public string Picture;              // the firm's own picture (its logo, a UiPictures key) on the tile in place of the icon; null for the icon
         public string Role;                 // "Customer Service", "Wholesale store"
         public string Employer;             // "Bloom Cafe"; null for none
         public string Status;               // "On shift"; null for none
@@ -34,7 +35,11 @@ namespace RealLifeOverhaul.Ui
         public static float Head(UiScene s, UiAt at, UiHeadModel h, UiActionModel[] actions, float x, float y, float w, IUiKeys keys)
         {
             float ring = UiTokens.S1;
-            if (h.Icon != UiIcon.None)
+            if (!string.IsNullOrEmpty(h.Picture))
+            {
+                UiDraw.PictureFace(s, at, x + ring, y + ring, HeadFace, h.Picture);
+            }
+            else if (h.Icon != UiIcon.None)
             {
                 int tile = UiDraw.Tile(s, at, x + ring, y + ring, HeadFace, h.Tint, false);
                 float g = UiDraw.Snap(HeadFace * 0.5f);

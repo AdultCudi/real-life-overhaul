@@ -59,6 +59,7 @@ namespace RealLifeOverhaul.Ui
         public string Section;   // the capitals over the block the row opens, or null when it continues the block above
         public UiIcon Icon;      // a business's or a place's icon on a tile in its family's colour, in place of a person's face
         public UiRole Tint;
+        public string Picture;   // the business's own picture (its logo, a UiPictures key) on the tile in place of the icon; null for the icon
     }
 
     /// <summary>A service or an action with its price, as a detail's side column lists them.</summary>
