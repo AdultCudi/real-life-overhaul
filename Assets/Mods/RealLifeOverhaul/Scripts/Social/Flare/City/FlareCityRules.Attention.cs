@@ -96,7 +96,21 @@ namespace RealLifeOverhaul.Flare
             }
             long heard = good / weight, sour = bad / weight;   // per mille of its customers' residents
             long attention = (heard * FlareCityCatalogue.PositiveLift - sour * FlareCityCatalogue.NegativeLift) / 1000;
-            return (int)Math.Max(FlareCityCatalogue.AttentionLeast, Math.Min(FlareCityCatalogue.AttentionMost, attention));
+            int at = (int)Math.Max(FlareCityCatalogue.AttentionLeast, Math.Min(FlareCityCatalogue.AttentionMost, attention));
+            int pull = FlareUseRules.StarPull(FlareUseRules.StarsOf(c.StarRows, s.Businesses.Key[b]));
+            if (pull != 0)
+            {
+                at += pull;
+                if (at < FlareCityCatalogue.AttentionLeast)
+                {
+                    at = FlareCityCatalogue.AttentionLeast;
+                }
+                if (at > FlareCityCatalogue.AttentionMost)
+                {
+                    at = FlareCityCatalogue.AttentionMost;
+                }
+            }
+            return at;
         }
 
         /// <summary>Every business's attention for the population's next day.</summary>

@@ -45,8 +45,10 @@ internal static partial class Program
         }
         FlareStarRow row = FlareUseRules.StarsOf(stars, "cafe");
         Check(row != null && row.Five == 3 && row.Two == 3 && row.Total == 6 && (turned || row.Earlier >= 0), "Flare use: stars are kept past the ring of six (" + (row != null ? row.Total : 0) + ", turned " + turned + ")");
-        Check(FlareUseRules.TrendDemand(0) == 8 && FlareUseRules.TrendDemand(40) == 20 && FlareUseRules.PollYes(4, 2, 1) >= 50 && FlareUseRules.PollYes(4, 2, 1) <= 950,
-            "Flare use: a trend is demand you can act on, and a poll has two sides");
+        Check(FlareUseRules.TrendDemand(0) == 0 && FlareUseRules.KindShare(3) == 106 && FlareUseRules.TrendDemand(106) == 10
+              && FlareUseRules.TrendDemand(FlareUseRules.KindShare(2)) == 17
+              && FlareUseRules.PollYes(4, 2, 1) >= 50 && FlareUseRules.PollYes(4, 2, 1) <= 950,
+            "Flare use: a trend is the city's own demand for what the posts are about, and a poll has two sides");
         Check(FlareUseRules.MaskCount(7) == 3 && FlareUseRules.InMask(1, 0) && !FlareUseRules.InMask(1, 2), "Flare use: a promotion can name several districts");
         int move = FlareUseRules.RivalMove(9, 3);
         Check(move >= 0 && move <= 2 && FlareUseRules.RivalMove(9, 3) == move, "Flare use: a rival's move is seeded");

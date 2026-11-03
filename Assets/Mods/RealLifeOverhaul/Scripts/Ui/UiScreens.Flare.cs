@@ -12,6 +12,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_flare_nav_home", "reallife_flare_nav_explore", "reallife_flare_nav_notices", "reallife_flare_nav_messages",
                 "reallife_flare_nav_profile", "reallife_flare_nav_business", "reallife_flare_nav_city", "reallife_flare_nav_hire", "reallife_flare_nav_studio",
                 "reallife_flare_chip_photo", "reallife_flare_chip_place", "reallife_flare_chip_tag", "reallife_flare_chip_promote",
+                "reallife_flare_preview", "reallife_flare_stars", "reallife_flare_star_line",
                 "reallife_flare_you", "reallife_flare_followers", "reallife_flare_posts", "reallife_flare_result", "reallife_flare_expect",
                 "reallife_flare_visits", "reallife_flare_takings", "reallife_flare_hours", "reallife_flare_cost", "reallife_flare_gain",
                 "reallife_flare_city_fig_reach",

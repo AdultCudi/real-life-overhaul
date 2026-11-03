@@ -25,6 +25,7 @@ namespace RealLifeOverhaul.Ui
         public string EmptyTitle;
         public string EmptyBody;
         public string Action;
+        public string Hint;       // the compose forecast, under the chips; null when there is nothing to price
     }
 
     /// <summary>
@@ -88,8 +89,11 @@ namespace RealLifeOverhaul.Ui
         {
             int rail = UiDraw.Box(s, at, x, y, Rail, h, UiRole.Band, UiRole.None, UiTokens.RadiusMedium);
             UiAt on = at.In(rail);
-            int n = m.Nav != null ? m.Nav.Length : 0;
             float iy = y + UiTokens.S4;
+            // The flame is Flare's mark, in the orange. The window's title already says the name, so the rail does not say it again.
+            UiDraw.Icon(s, on, x + UiTokens.S4, iy + (UiTokens.Control - UiTokens.S6) / 2f, UiTokens.S6, UiIcon.Fire, UiRole.Chart2, UiFlags.Middle, true);
+            iy += UiTokens.Control;
+            int n = m.Nav != null ? m.Nav.Length : 0;
             for (int i = 0; i < n; i++)
             {
                 UiIcon icon = m.NavIcon != null && i < m.NavIcon.Length ? m.NavIcon[i] : UiIcon.Info;
@@ -97,7 +101,7 @@ namespace RealLifeOverhaul.Ui
                 iy += UiTokens.Control;
             }
             float by = y + h - UiTokens.S4 - UiTokens.Control;
-            int face = UiDraw.Box(s, on, x + UiTokens.S4, by, Rail - UiTokens.S8, UiTokens.Control, UiRole.Chart6, UiRole.None, UiTokens.RadiusMedium);
+            int face = UiDraw.Box(s, on, x + UiTokens.S4, by, Rail - UiTokens.S8, UiTokens.Control, UiRole.Chart2, UiRole.None, UiTokens.RadiusMedium);
             UiDraw.TextMiddle(s, on.In(face), x + UiTokens.S4, by, UiTokens.Control, Rail - UiTokens.S8, UiStyle.Button, UiRole.OnAccent, m.Post, UiFlags.Centre);
             UiDraw.Node(s, on, x + UiTokens.S4, by, Rail - UiTokens.S8, UiTokens.Control, PostCommand, 0, face, false, -1, 0, UiAction.Alt);
         }
@@ -163,6 +167,12 @@ namespace RealLifeOverhaul.Ui
             if (m.Chips != null && m.Chips.Length > 0)
             {
                 yy += UiDraw.Chips(s, at, x, yy, w, m.Chips, m.Chips.Length, ChipCommand) + UiTokens.S3;
+            }
+            if (!string.IsNullOrEmpty(m.Hint))
+            {
+                float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
+                UiDraw.Text(s, at, x, yy, w, UiStyle.Small, UiRole.Text2, m.Hint, UiFlags.Truncate);
+                yy += lh + UiTokens.S2;
             }
             float left = h - (yy - y);
             if (left < UiTokens.S16)
