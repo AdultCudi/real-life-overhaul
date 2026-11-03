@@ -105,6 +105,7 @@ namespace RealLifeOverhaul.Ui
         public int OptionChosen = -1;
         public float OptionOffset;
         public UiCardModel Card;                   // a card over the page (the training under way); null for none
+        public UiBatchModel Batch;                 // the review sheet of a batch waiting for a yes (a raise for several, hiring several); null for none
         public UiPrompt[] Prompts = new UiPrompt[0];
         public float TableX, TableY;               // written back: where the table's tool row stood
     }
@@ -139,7 +140,8 @@ namespace RealLifeOverhaul.Ui
         {
             s.Begin("staff", frame.Width, frame.Height, dark);
             UiFrame under = frame;
-            if (m.Card != null)
+            bool over = m.Card != null || m.Batch != null;
+            if (over)
             {
                 under.Held = true;      // the card over the page has the keys: the page's buttons show no key caps under it
                 under.Pointer = true;
@@ -170,7 +172,7 @@ namespace RealLifeOverhaul.Ui
             {
                 s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
             }
-            if (m.Card != null)
+            if (over)
             {
                 // The card has the keys and the pointer: the page under it answers nothing, so no press or rest lands there.
                 for (int i = 0; i < s.NodeCount; i++)
@@ -180,7 +182,11 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             UiDraw.PromptBar(s, under, keys);
-            if (m.Card != null)
+            if (m.Batch != null)
+            {
+                UiBatch.LayOver(s, m.Batch, frame, keys);
+            }
+            else if (m.Card != null)
             {
                 UiCard.LayOver(s, m.Card, frame, keys);
             }

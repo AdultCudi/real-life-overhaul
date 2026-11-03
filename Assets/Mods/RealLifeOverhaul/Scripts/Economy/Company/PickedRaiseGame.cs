@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using BAModAPI;
 using Entities;
+using Helpers;
 using Localizor;
 using UI;
 using UI.Notification;
@@ -20,6 +21,9 @@ namespace RealLifeOverhaul.Economy
     /// is never written. The action is put in the game's two lists of mass actions by name (GameContract.MassActions,
     /// MassActionTabs) while the staff part runs, and taken out again when it stops. Going Public: the picked employees are the
     /// player's own, and the raise lives in this player's save only; nothing is sent.
+    /// While the kit draws My Employees (StaffBatch.Wanted) the confirmation is the kit's review sheet instead of the game's question
+    /// box: a line for each picked employee with their pay now and after, from the very plan the question box sums, and Give on the
+    /// sheet is the same <see cref="Give"/>. Nothing is written until Give.
     /// COST: one dictionary look a second while it stands; everything else on the player's clicks.
     /// </summary>
     internal static class PickedRaiseGame
@@ -33,6 +37,8 @@ namespace RealLifeOverhaul.Economy
         private static string[] _tabs = new string[0];   // the tabs it was added to
         private static bool _off, _toldOff;
         private static readonly List<string> Ids = new List<string>(16);
+        private static readonly List<string> Names = new List<string>(16), Roles = new List<string>(16), Places = new List<string>(16);   // beside Ids, for the review sheet
+        private static readonly List<PickedLine> Lines = new List<PickedLine>(16);
         private static readonly UnityAction<int> OnChosen = Guard.Listener<int>(Chosen);
 
         /// <summary>The action stands in the game's lists while <paramref name="on"/>, and not otherwise. Called each second.</summary>
@@ -180,13 +186,22 @@ namespace RealLifeOverhaul.Economy
                 Notifications.ShowError(company == null || !company.PickedRaisesOn ? "reallife_co_mass_raise_off" : "myemployees_mass_action_no_employees_selected");
                 return;
             }
-            PickedPlan plan = company.PlanPicked(Ids, choice);
+            PickedPlan plan = company.PlanPicked(Ids, choice, Lines);
             if (plan.Raised == 0)
             {
                 Notifications.Show(NotificationType.Error, "reallife_co_mass_raise_none", Words(plan), 9f, null, null, true, false);
                 return;
             }
             var ids = new List<string>(Ids);
+            if (StaffBatch.Wanted)
+            {
+                // The kit's review sheet: each picked employee's pay now and after and the day's total, then Give or Cancel. Cancel
+                // leaves the game's panel of choices open to choose again.
+                StaffSheet sheet = StaffBatchRules.RaiseSheet(Ids, Names, Roles, Places, Lines, plan, CompanyDirector.PickedChoiceText(choice));
+                sheet.Give = () => Give(ids, choice);
+                StaffBatch.Open(sheet);
+                return;
+            }
             GameConfirm.Show(Type.Localize(), "reallife_co_mass_raise_confirm".Localize(new
             {
                 count = plan.Raised.ToString(), picked = plan.Picked.ToString(), what = CompanyDirector.PickedChoiceText(choice),
@@ -215,12 +230,19 @@ namespace RealLifeOverhaul.Economy
         private static bool ReadPicked()
         {
             Ids.Clear();
+            Names.Clear();
+            Roles.Clear();
+            Places.Clear();
             List<EmployeeInstance> picked = MyEmployeesMassActionsUI.massActionSelectedEmployees;
             for (int i = 0; picked != null && i < picked.Count; i++)
             {
-                if (picked[i] != null && !picked[i].IsCandidate && !string.IsNullOrEmpty(picked[i].id))
+                EmployeeInstance e = picked[i];
+                if (e != null && !e.IsCandidate && !string.IsNullOrEmpty(e.id))
                 {
-                    Ids.Add(picked[i].id);
+                    Ids.Add(e.id);
+                    Names.Add(e.characterData != null ? e.characterData.name : null);
+                    Roles.Add(e.GetPrimarySkill());
+                    Places.Add(BuildingHelper.GetBuildingRegistration(e.assignedAddress)?.BusinessName);
                 }
             }
             return Ids.Count > 0;

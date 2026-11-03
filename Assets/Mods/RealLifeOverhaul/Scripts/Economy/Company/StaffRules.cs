@@ -44,6 +44,15 @@ namespace RealLifeOverhaul.Economy
         public int Left => Rested + Waiting + AtRate + Unknown;
     }
 
+    /// <summary>One picked employee's part of a raise (<see cref="StaffRules.Plan(IList{StaffFile}, int, int, List{PickedLine})"/>): what they are paid now, the raise and who is left out.</summary>
+    public struct PickedLine
+    {
+        public int Now;             // what they are paid an hour, hundredths; 0 for somebody the company does not know
+        public int Raise;           // the raise an hour, hundredths; 0 when they are left out
+        public int Hours;           // their working day in hundredths of an hour
+        public BatchState State;    // Ready when raised, else why they are left out
+    }
+
     /// <summary>
     /// Staff as an economy: the going rate, raises, a rival's offer, a strike, overtime and sick pay. Game-free.
     /// The game's wage is never changed: what is agreed here is <see cref="StaffFile.Raise"/>, paid on top of it.
@@ -229,9 +238,16 @@ namespace RealLifeOverhaul.Economy
         /// their pay an hour and a working day in all, before and after, hundredths. A null file is somebody the company does
         /// not know (not at one of the player's businesses).
         /// </summary>
-        public static PickedPlan Plan(IList<StaffFile> picked, int choice, int day)
+        public static PickedPlan Plan(IList<StaffFile> picked, int choice, int day) => Plan(picked, choice, day, null);
+
+        /// <summary>
+        /// The same plan, with a line for each picked employee in the order given (cleared first) when <paramref name="lines"/> is
+        /// not null: the review shows these lines and the totals are summed from the very same pass, so they cannot differ.
+        /// </summary>
+        public static PickedPlan Plan(IList<StaffFile> picked, int choice, int day, List<PickedLine> lines)
         {
             var plan = new PickedPlan();
+            lines?.Clear();
             for (int i = 0; picked != null && i < picked.Count; i++)
             {
                 StaffFile f = picked[i];
@@ -239,26 +255,32 @@ namespace RealLifeOverhaul.Economy
                 if (f == null)
                 {
                     plan.Unknown++;
+                    lines?.Add(new PickedLine { State = BatchState.Unknown });
                     continue;
                 }
                 int raise = CanPick(f, day) ? PickedRaise(f, choice) : 0;
+                BatchState state = BatchState.Ready;
                 if (f.PoachDay > 0 || f.LeaveDay > 0)
                 {
                     plan.Waiting++;
+                    state = BatchState.Waiting;
                 }
                 else if (!CanPick(f, day))
                 {
                     plan.Rested++;
+                    state = BatchState.Rested;
                 }
                 else if (raise <= 0)
                 {
                     plan.AtRate++;
+                    state = BatchState.AtRate;
                 }
                 else
                 {
                     plan.Raised++;
                     plan.Raise += raise;
                 }
+                lines?.Add(new PickedLine { Now = f.Paid, Raise = Math.Max(0, raise), Hours = Math.Max(0, f.DayHours), State = state });
                 long hours = Math.Max(0, f.DayHours);
                 plan.Before += f.Paid;
                 plan.After += f.Paid + Math.Max(0, raise);
