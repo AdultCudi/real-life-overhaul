@@ -227,7 +227,7 @@ namespace RealLifeOverhaul.Economy
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new OwnBankApp(this);
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_ob_app",
@@ -237,7 +237,8 @@ namespace RealLifeOverhaul.Economy
                 Kit = () => new RealLifeOverhaul.Ui.OwnBankScreen(RealLifeOverhaul.Ui.MoneyLive.OwnLive),
                 KitScreen = RealLifeOverhaul.Ui.OwnBankScreen.ScreenId,
                 KitIcon = RealLifeOverhaul.Ui.UiIcon.PiggyBank
-            }, out bool tryAgain);
+            };
+            _app = PhoneApp.Install(def, out bool tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -249,6 +250,7 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             _view = view;
+            RealLifeOverhaul.Ui.UiShell.Face(_app, def);   // the kit's face over the app, once its switch is on (Ui/Shell/UiShell.Tick)
         }
 
         private static Sprite Glyph()

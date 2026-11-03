@@ -22,7 +22,7 @@ namespace RealLifeOverhaul.Economy
             }
             var view = new FinanceApp(this);
             bool tryAgain;
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_econ_app",
@@ -33,7 +33,8 @@ namespace RealLifeOverhaul.Economy
                 Kit = () => new RealLifeOverhaul.Ui.FinanceScreen(RealLifeOverhaul.Ui.MoneyLive.FinanceLive),
                 KitScreen = RealLifeOverhaul.Ui.FinanceScreen.ScreenId,
                 KitIcon = RealLifeOverhaul.Ui.UiIcon.Wallet
-            }, out tryAgain);
+            };
+            _app = PhoneApp.Install(def, out tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -44,6 +45,7 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             _view = view;
+            RealLifeOverhaul.Ui.UiShell.Face(_app, def);   // the kit's face over the app, once its switch is on (Ui/Shell/UiShell.Tick)
             Badge();
         }
 

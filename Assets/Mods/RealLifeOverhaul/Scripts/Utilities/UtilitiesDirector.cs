@@ -754,7 +754,7 @@ namespace RealLifeOverhaul.Utilities
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new UtilitiesApp(this);
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_util_app",
@@ -765,7 +765,8 @@ namespace RealLifeOverhaul.Utilities
                 Kit = () => new RealLifeOverhaul.Ui.UtilitiesScreen(RealLifeOverhaul.Ui.MoneyLive.UtilitiesLive),
                 KitScreen = RealLifeOverhaul.Ui.UtilitiesScreen.ScreenId,
                 KitIcon = RealLifeOverhaul.Ui.UiIcon.Globe
-            }, out bool tryAgain);
+            };
+            _app = PhoneApp.Install(def, out bool tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -777,6 +778,7 @@ namespace RealLifeOverhaul.Utilities
                 return;
             }
             _view = view;
+            RealLifeOverhaul.Ui.UiShell.Face(_app, def);   // the kit's face over the app, once its switch is on (Ui/Shell/UiShell.Tick)
         }
 
         private static Sprite Glyph()
