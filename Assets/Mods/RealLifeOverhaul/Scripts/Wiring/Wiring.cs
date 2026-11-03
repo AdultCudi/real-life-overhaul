@@ -70,6 +70,7 @@ namespace RealLifeOverhaul
             Step("invitations in Flare messages", FlareInviteLinks.Connect);
             Step("street talk", StreetLinks.Connect);   // after the invitations': Flare's look for an invitation; footfall on top of the others'
             Step("the camera and the gallery", PhotosLinks.Connect);   // after Flare's: the selfie button it wraps is theirs already
+            Step("the planner's deliveries, pay and posts", LifePlanSources.Connect);
             Step("interiors and decor", InteriorLinks.Connect);   // after Flare's: its part of footfall goes on top of the others'
             Step("the city's faults", FaultLinks.Connect);   // after Flare's and the interiors': its part of footfall goes on top of theirs
             Step("RLO Texts", TextsLinks.Connect);
@@ -136,6 +137,7 @@ namespace RealLifeOverhaul
             Step("RLO Texts", TextsLinks.Disconnect);
             Step("the city's faults", FaultLinks.Disconnect);   // before Flare's: what it wrapped of footfall goes back first
             Step("interiors and decor", InteriorLinks.Disconnect);   // before Flare's, for the same reason
+            Step("the planner's deliveries, pay and posts", LifePlanSources.Disconnect);
             Step("the camera and the gallery", PhotosLinks.Disconnect);   // before Flare's: the selfie button it wrapped goes back first
             Step("street talk", StreetLinks.Disconnect);   // before the invitations': what it wrapped of footfall goes back first
             Step("invitations in Flare messages", FlareInviteLinks.Disconnect);

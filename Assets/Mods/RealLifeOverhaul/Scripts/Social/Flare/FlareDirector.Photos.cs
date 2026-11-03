@@ -498,5 +498,63 @@ namespace RealLifeOverhaul.Flare
                 StartCoroutine(Guard.Routine(PhotoTake(shot, FocusFor(shot, focus), _photoGeneration, true)));
             });
         }
+
+        /// <summary>Sponsored posts the player still owes, on the days they fall. City businesses post on their own; this is the player's.</summary>
+        public void DuePosts(int fromDay, int toDay, List<FlareOffer> into)
+        {
+            into.Clear();
+            if (_city == null)
+            {
+                return;
+            }
+            for (int i = 0; i < _city.Offers.Count; i++)
+            {
+                FlareOffer offer = _city.Offers[i];
+                if (offer.Running && offer.Next >= fromDay && offer.Next <= toDay)
+                {
+                    into.Add(offer);
+                }
+            }
+        }
+
+        /// <summary>What a photo did on Flare, if a post of the player's used it. Read when the photo is opened.</summary>
+        public bool PictureStory(string photoName, out string business, out int likes, out int came, out long cents)
+        {
+            business = null;
+            likes = 0;
+            came = 0;
+            cents = 0;
+            if (_file == null || string.IsNullOrEmpty(photoName))
+            {
+                return false;
+            }
+            string pic = "f:" + photoName;
+            FlarePost found = null;
+            for (int i = 0; i < _file.Posts.Count; i++)
+            {
+                FlarePost post = _file.Posts[i];
+                if (post != null && string.Equals(post.Pic, pic, StringComparison.Ordinal))
+                {
+                    found = post;
+                    break;
+                }
+            }
+            if (found == null)
+            {
+                return false;
+            }
+            business = found.Name;
+            likes = found.Likes;
+            if (_city != null)
+            {
+                FlareFunnel funnel = _city.Funnel(FunnelKind.Post, found.Id);
+                if (funnel != null)
+                {
+                    came = funnel.Came;
+                    cents = funnel.Spent;
+                }
+            }
+            return true;
+        }
     }
 }

@@ -232,7 +232,8 @@ namespace RealLifeOverhaul.Photos
             new CameraFilter { NameKey = "reallife_phonecam_filter_warm", R = 1f, G = 0.93f, B = 0.82f, Saturation = 8f },
             new CameraFilter { NameKey = "reallife_phonecam_filter_cool", R = 0.85f, G = 0.93f, B = 1f, Saturation = -4f },
             new CameraFilter { NameKey = "reallife_phonecam_filter_mono", R = 1f, G = 1f, B = 1f, Saturation = -100f, Contrast = 15f },
-            new CameraFilter { NameKey = "reallife_phonecam_filter_vivid", R = 1f, G = 1f, B = 1f, Saturation = 35f, Contrast = 12f }
+            new CameraFilter { NameKey = "reallife_phonecam_filter_vivid", R = 1f, G = 1f, B = 1f, Saturation = 35f, Contrast = 12f },
+            new CameraFilter { NameKey = "reallife_phonecam_filter_fade", R = 0.96f, G = 0.94f, B = 0.90f, Saturation = -28f, Contrast = -20f, Exposure = 0.2f }
         };
 
         /// <summary>Whether a filter grades the picture at all (the first does not).</summary>

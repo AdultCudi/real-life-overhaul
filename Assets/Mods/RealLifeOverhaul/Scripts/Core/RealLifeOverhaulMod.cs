@@ -855,6 +855,8 @@ namespace RealLifeOverhaul
                     v => Settings.PlannerMorning = v)
                 .AddButton("reallife_planner_test_fill", () => Planner.PlannerDirector.Instance?.TestFill())
                 .AddButton("reallife_planner_test_clear", () => Planner.PlannerDirector.Instance?.TestClear())
+                .AddButton("reallife_ui_life_test_planner", () => Ui.LifeUiTests.OpenPlanner())
+                .AddButton("reallife_ui_life_test_switches", () => Ui.LifeUiTests.Switches())
                 .AddSplitter()
                 .Guarded(o => Calendar.CalendarOptions.AddCalendar(o))   // the month on the phone (Scripts/Calendar)
                 .Guarded(o => Hustles.HustleOptions.AddHustles(o))   // the Marketplace and freelance visits (Scripts/Hustles)

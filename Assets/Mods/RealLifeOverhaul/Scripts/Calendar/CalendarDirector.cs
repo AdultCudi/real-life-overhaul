@@ -148,15 +148,19 @@ namespace RealLifeOverhaul.Calendar
             }
             var view = new CalendarApp(this);
             bool tryAgain;
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_calendar_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(), new Color32(108, 178, 255, 255), new Color32(36, 92, 196, 255), 0.42f, "AppIcon-Calendar"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out tryAgain);
+                Closed = view.Closed,
+                Kit = () => new RealLifeOverhaul.Ui.CalendarScreen(this),
+                KitScreen = "calendar",
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Calendar,
+            };
+            _app = PhoneApp.Install(def, out tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -167,6 +171,7 @@ namespace RealLifeOverhaul.Calendar
                 return;
             }
             _view = view;
+            RealLifeOverhaul.Ui.UiShell.Face(_app, def);
         }
 
         private static Sprite Glyph()

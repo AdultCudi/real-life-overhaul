@@ -101,7 +101,7 @@ namespace RealLifeOverhaul.Planner
         /// <summary>The filter's words for the groups, in PlannerGroup's order.</summary>
         public static readonly string[] GroupKeyList =
         {
-            "reallife_planner_group_work", "reallife_planner_group_money", "reallife_planner_group_life", "reallife_planner_group_business"
+            "reallife_ui_life_group_work", "reallife_planner_group_money", "reallife_ui_life_group_life", "reallife_planner_group_business", "reallife_ui_life_group_study"
         };
 
         // an entry's word in the Week tab: the kind's own, or a shorter one

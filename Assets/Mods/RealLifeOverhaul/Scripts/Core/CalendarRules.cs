@@ -137,6 +137,13 @@ namespace RealLifeOverhaul
             return FloorDiv(month, MonthsIn(year)) + 1;
         }
 
+        /// <summary>The week of a day, from 1. Day 1 is a Monday, so each week is seven days from there.</summary>
+        public static int WeekNumber(int day)
+        {
+            int d = day < 1 ? 1 : day;
+            return (d - 1) / 7 + 1;
+        }
+
         /// <summary>The year a day is in, from 1: days 1 to the year's length are the first year.</summary>
         public static int YearOf(int day, int year)
         {
