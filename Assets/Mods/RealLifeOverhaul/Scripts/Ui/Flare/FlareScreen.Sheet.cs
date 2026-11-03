@@ -274,7 +274,7 @@ namespace RealLifeOverhaul.Ui
             _compose.PromoteReach = _compose.Place != null ? FlareUseRules.PromoteOf(_promote) : 0;
             _compose.PromoteDays = PromoteDays[Math.Max(0, Math.Min(_promoteDays, PromoteDays.Length - 1))];
             _compose.Poll = _poll;
-            _compose.Tags = _poll ? (string.IsNullOrEmpty(_composeTag) ? PollTag : _composeTag + " " + PollTag) : _composeTag;
+            _compose.Tags = _poll ? (string.IsNullOrEmpty(_composeTag) ? FlareFeedRules.PollTag : _composeTag + " " + FlareFeedRules.PollTag) : _composeTag;
         }
 
         private void HireSheet(FlareFile file, long now, FlareSheetModel k)

@@ -51,8 +51,7 @@ namespace RealLifeOverhaul.Ui
             b.RatingLine = total > 0 ? ReviewsCount(total) : FlareText.T("reallife_flare_kit_week_no_reviews");
             b.Bars = row != null ? new[] { row.Five, row.Four, row.Three, row.Two, row.One } : new int[5];
             // What Flare brought it this week: the posts' and the campaigns' visitors and takings, its followers in the city, a campaign.
-            int today = (int)(now / 1440);
-            Brought(file, shop.Place, today, out int visitors, out long cents, out _, out _);
+            Brought(file, shop.Place, now, out int visitors, out long cents, out _, out _);
             FlareCityView view = _flare.CityBusinessView(shop.Place, shop.Name);
             long followers = view != null && view.Hero.Count > 0 ? view.Hero[0].Value : 0;
             bool campaign = _flare.CampaignAt(shop.Place, out FlareCampaign running);
@@ -165,10 +164,11 @@ namespace RealLifeOverhaul.Ui
         }
 
         // What Flare brought a business (or all of them, with no place) over the last week and the week before: the posts' boosts and the campaigns.
-        private static void Brought(FlareFile file, string place, int today, out int visitors, out long cents, out int visitorsBefore, out long centsBefore)
+        private static void Brought(FlareFile file, string place, long now, out int visitors, out long cents, out int visitorsBefore, out long centsBefore)
         {
             visitors = visitorsBefore = 0;
             cents = centsBefore = 0;
+            int today = (int)(now / 1440), minute = (int)Math.Min(int.MaxValue, now);
             for (int i = 0; i < file.Boosts.Count; i++)
             {
                 FlareBoost b = file.Boosts[i];
@@ -176,16 +176,17 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
+                FlareUseRules.Credited(b, minute, out int given, out int givenCents);   // what the hours that ran brought
                 int age = today - b.FromMinute / 1440;
                 if (age >= 0 && age < WeekDays)
                 {
-                    visitors += b.GivenVisitors;
-                    cents += b.GivenCents;
+                    visitors += given;
+                    cents += givenCents;
                 }
                 else if (age >= WeekDays && age < WeekDays * 2)
                 {
-                    visitorsBefore += b.GivenVisitors;
-                    centsBefore += b.GivenCents;
+                    visitorsBefore += given;
+                    centsBefore += givenCents;
                 }
             }
             for (int i = 0; i < file.PastHires.Count; i++)
@@ -220,7 +221,7 @@ namespace RealLifeOverhaul.Ui
             int gain = FlareFeedRules.WeekGain(file.History, file.Followers);
             FlareFeedRules.Reach(file.Posts, today, out long week, out long before);
             int change = FlareFeedRules.Change(week, before);
-            Brought(file, null, today, out int visitors, out long cents, out int visitorsBefore, out long centsBefore);
+            Brought(file, null, now, out int visitors, out long cents, out int visitorsBefore, out long centsBefore);
             st.Labels = new[]
             {
                 FlareText.T("reallife_flare_kit_fig_followers"), FlareText.T("reallife_flare_kit_fig_reach"), FlareText.T("reallife_flare_kit_fig_visitors"),
@@ -304,7 +305,8 @@ namespace RealLifeOverhaul.Ui
                 r.Icon = b.Paid ? UiIcon.Megaphone : UiIcon.ChartLineUp;
                 r.Tint = b.WentViral ? UiRole.Chart2 : UiRole.AccentText;
                 string business = p.Name ?? b.Place ?? "?";
-                if (b.Flopped && b.GivenVisitors <= 0 && !on)
+                FlareUseRules.Credited(b, minute, out int given, out int givenCents);   // what the hours that ran brought
+                if (b.Flopped && given <= 0 && !on)
                 {
                     r.Text = FlareText.Fill("reallife_flare_kit_result_flopped", "business", business);
                     r.Flags |= FlareRowFlags.Bad;
@@ -312,9 +314,9 @@ namespace RealLifeOverhaul.Ui
                 else
                 {
                     r.Text = FlareText.Fill(b.WentViral ? "reallife_flare_kit_result_viral" : "reallife_flare_kit_result_post", "business", business, "visitors",
-                        FlareText.N(b.GivenVisitors));
-                    r.Value = Signed(b.GivenCents);
-                    r.Flags |= b.GivenCents > 0 ? FlareRowFlags.Good : FlareRowFlags.None;
+                        FlareText.N(given));
+                    r.Value = Signed(givenCents);
+                    r.Flags |= givenCents > 0 ? FlareRowFlags.Good : FlareRowFlags.None;
                 }
                 r.Line = on ? FlareText.Fill("reallife_flare_kit_result_on", "hours", Math.Max(1, (b.FromMinute + b.Hours * 60 - minute + 59) / 60).ToString(CultureInfo.InvariantCulture),
                         "visitors", FlareText.N(b.Visitors))

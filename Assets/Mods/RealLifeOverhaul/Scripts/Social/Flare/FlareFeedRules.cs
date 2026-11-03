@@ -219,6 +219,48 @@ namespace RealLifeOverhaul.Flare
             return line;
         }
 
+        /// <summary>The tag a poll carries under its words: a post with it asks yes or no.</summary>
+        public const string PollTag = "poll";
+
+        /// <summary>
+        /// A poll's result at a minute: its votes are the people who reacted so far (the likes, replies and reposts shown then,
+        /// and the player's own like), and the yes share is the post's own roll, leaning yes on a post that went viral and no on
+        /// one that went badly; per cent, 5 to 95. False for a post that is not a poll.
+        /// </summary>
+        public static bool Poll(FlarePost p, long now, out int yes, out int votes)
+        {
+            yes = votes = 0;
+            if (p == null || !HasTag(p.Topic, PollTag))
+            {
+                return false;
+            }
+            votes = FlareLiveRules.Shown(p.Likes, p, now) + FlareLiveRules.Shown(p.Replies, p, now) + FlareLiveRules.Shown(p.Reposts, p, now)
+                    + Math.Max(0, p.PlayerLikes) + (p.Liked ? 1 : 0);
+            int lean = p.Bad ? -15 : p.Viral ? 15 : 0;
+            yes = FlareRules.Clamp(35 + FlareRules.Roll(p.Seed, p.Id, 931) % 31 + lean, 5, 95);
+            return true;
+        }
+
+        /// <summary>Whether a post's topic holds a tag as a whole word, in any case.</summary>
+        public static bool HasTag(string topic, string tag)
+        {
+            if (string.IsNullOrEmpty(topic) || string.IsNullOrEmpty(tag))
+            {
+                return false;
+            }
+            int at = topic.IndexOf(tag, StringComparison.OrdinalIgnoreCase);
+            while (at >= 0)
+            {
+                bool start = at == 0 || topic[at - 1] == ' ', end = at + tag.Length == topic.Length || topic[at + tag.Length] == ' ';
+                if (start && end)
+                {
+                    return true;
+                }
+                at = topic.IndexOf(tag, at + 1, StringComparison.OrdinalIgnoreCase);
+            }
+            return false;
+        }
+
         /// <summary>Whether a post's promotion was paid for: a boost of it that bought reach.</summary>
         public static bool Promoted(List<FlareBoost> boosts, int post)
         {

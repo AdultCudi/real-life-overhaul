@@ -58,6 +58,20 @@ internal static partial class Program
         FlarePost again = back != null ? back.Post(p.Id) : null;
         Check(again != null && again.Text == text && again.Topic == topic && again.At == p.At && again.Place == "a~1",
             "Flare complete: a post keeps its typed words, its tags and its minute through the save (reallife:flare_posts)");
+        // A poll: the post carries the poll tag; its votes are the people who reacted so far, its yes share the post's own roll.
+        var poll = new FlarePost
+        {
+            Id = 77, Seed = 5, Day = 3, Hour = 9, Author = FlareAuthor.Player, Source = FlareSource.Life, Text = "A new menu?", Topic = "bloomcafe " + FlareFeedRules.PollTag,
+            Likes = 40, Replies = 6, Reposts = 4
+        };
+        long later = FlareLiveRules.Now(6, 9, 0);
+        bool asked = FlareFeedRules.Poll(poll, later, out int yes, out int votes);
+        FlareFeedRules.Poll(poll, later, out int yesAgain, out int votesAgain);
+        int reacted = FlareLiveRules.Shown(40, poll, later) + FlareLiveRules.Shown(6, poll, later) + FlareLiveRules.Shown(4, poll, later);
+        Check(asked && votes == reacted && votes > 0 && yes >= 5 && yes <= 95 && yes == yesAgain && votes == votesAgain && !FlareFeedRules.Poll(p, later, out _, out _)
+              && !FlareFeedRules.HasTag("pollen shoplocal", FlareFeedRules.PollTag) && FlareFeedRules.HasTag("shoplocal POLL", FlareFeedRules.PollTag),
+            "Flare complete: a poll's votes are the people who reacted to it and its yes share is the post's own; only a post tagged as a poll is one ("
+            + yes + "% yes of " + votes + ")");
     }
 
     // ---------------------------------------------------------------- how long ago
@@ -156,7 +170,8 @@ internal static partial class Program
         FlareLiveRules.Dm(net, "c12", "Ana Ruiz", FlareLiveRules.Now(29, 9, 0), false, null, "reallife_flare_dm_praise", "business=Bloom Cafe");
         FlareLiveRules.Dm(net, "c12", "Ana Ruiz", FlareLiveRules.Now(29, 9, 20), true, "Thank you, that means a lot.", null, null);
         FlareLiveRules.Dm(net, "c12", "Ana Ruiz", FlareLiveRules.Now(30, 17, 42), false, null, "reallife_flare_dm_complaint", "business=Bloom Cafe");
-        FlareLiveRules.Dm(net, FlareLiveRules.OfferKey(7), "Glow Cosmetics", FlareLiveRules.Now(30, FlareLiveRules.OfferHour, 0), false, null, "reallife_flare_dm_offer", "business=Glow Cosmetics~fee=$450~posts=3");
+        FlareLiveRules.Dm(net, FlareLiveRules.OfferKey(7), "Glow Cosmetics", FlareLiveRules.Now(30, FlareLiveRules.OfferHour, 0), false, null, "reallife_flare_dm_offer",
+            "business=Glow Cosmetics~fee=$450~posts=3");
         FlareLiveRules.Dm(net, "i:3", "@jaderivers", FlareLiveRules.Now(30, 15, 0), false, null, "reallife_flare_dm_campaign_post", "business=Bloom Cafe~visitors=38~money=$912");
         FlareLiveRules.Dm(net, "k:Speedy Bites", "Speedy Bites", FlareLiveRules.Now(28, 12, 30), false, null, "reallife_flare_dm_rival", "business=Bloom Cafe").Read = true;
         FlareLiveRules.Dm(net, "c40", "Tom", FlareLiveRules.Now(31, 9, 0), false, null, "reallife_flare_dm_fan", null);   // not yet due
@@ -169,7 +184,8 @@ internal static partial class Program
         Check(FlareLiveRules.UnreadDms(net, now) == 4, "Flare complete: the inbox's badge counts the unread messages from others that are due");
         var one = new List<FlareDm>();
         FlareLiveRules.Thread(net, "c12", now, one);
-        Check(one.Count == 3 && one[0].At < one[1].At && one[1].Mine && one[2].At == FlareLiveRules.Now(30, 17, 42), "Flare complete: a conversation opens oldest first, the player's own answers in it");
+        Check(one.Count == 3 && one[0].At < one[1].At && one[1].Mine && one[2].At == FlareLiveRules.Now(30, 17, 42),
+            "Flare complete: a conversation opens oldest first, the player's own answers in it");
         Check(FlareLiveRules.OfferKey(7) == "d:7" && FlareLiveRules.OfferOf("d:7") == 7 && FlareLiveRules.OfferOf("c7") == -1 && FlareLiveRules.OfferOf("d:") == -1,
             "Flare complete: a sponsor's conversation names its offer, so Accept and Decline answer that offer");
         // Who writes, by the city's seed and the day: residents (a fan, a chat), the customers of a review, a job, an influencer.
@@ -194,7 +210,8 @@ internal static partial class Program
                 missing = LocaleFile(lang).ContainsKey(key) ? missing : lang + " " + key;
             }
         }
-        Check(keys.Count >= 8 && missing == "none", "Flare complete: the sponsors', rivals' and hires' messages are written in English, Portuguese and Chinese (" + keys.Count + " kinds, missing " + missing + ")");
+        Check(keys.Count >= 8 && missing == "none",
+            "Flare complete: the sponsors', rivals' and hires' messages are written in English, Portuguese and Chinese (" + keys.Count + " kinds, missing " + missing + ")");
     }
 
     // A year of the city's messages to a Local account with a business, its reviews and its posts: who wrote and about what.
@@ -208,7 +225,10 @@ internal static partial class Program
         {
             if (day % 9 == 0)
             {
-                f.Posts.Add(new FlarePost { Id = f.NextId++, Day = day, Hour = 8, Author = FlareAuthor.Citizen, Who = day % 50, Source = FlareSource.Review, Place = "a~1", Name = "Bloom Cafe", Arg = 1 + day % 5 });
+                f.Posts.Add(new FlarePost
+                {
+                    Id = f.NextId++, Day = day, Hour = 8, Author = FlareAuthor.Citizen, Who = day % 50, Source = FlareSource.Review, Place = "a~1", Name = "Bloom Cafe", Arg = 1 + day % 5
+                });
             }
             if (day % 13 == 0)
             {
@@ -237,7 +257,8 @@ internal static partial class Program
             "Flare complete: a hire on Flare is the company's campaign of its kind, priced at the influencer's fee for each post (" + fee + ")");
         // The company books it and pays it through its own costs (CompanyDirector.BookCampaign: CostKind.Marketing); what it paid is the booking's.
         CampaignRules.Book(shop, kind, fee, 8, 9);
-        Check(shop.Push == kind && shop.PushCost == fee && shop.PushFrom == 10 && !CampaignRules.CanBook(shop) && CampaignRules.Busy(shop, 10, out int busyKind, out int from, out int to, out bool started)
+        Check(shop.Push == kind && shop.PushCost == fee && shop.PushFrom == 10 && !CampaignRules.CanBook(shop)
+              && CampaignRules.Busy(shop, 10, out int busyKind, out int from, out int to, out bool started)
               && busyKind == kind && from == 10 && started,
             "Flare complete: the booking keeps what was paid and holds the business, so a second hire waits for it to end");
         var hire = new FlareHire { Id = 700, Kind = kind, Place = "A~1", Name = "Bloom Cafe", From = shop.PushFrom, To = shop.PushEnd - 1, Percent = shop.PushPercent };
@@ -286,6 +307,25 @@ internal static partial class Program
             told += x.Kind == FlareNoticeKind.Campaign && x.Who == "i:" + inf.Id && x.Name == "Bloom Cafe" ? 1 : 0;
         }
         Check(told == made, "Flare complete: each campaign post is told in the notifications with what it brought (" + told + ")");
+        // The money goes by the game's own path: Flare asks the company to book (FlareLinks.Book), the company pays the quote
+        // from the business's books as marketing, then books it; each post's result is a message from the influencer and a
+        // row of the studio.
+        string scripts = ModScripts();
+        string hireCode = FlareMethod(File.ReadAllText(System.IO.Path.Combine(scripts, "Social", "Flare", "FlareDirector.Cast.cs")),
+            "public bool Hire(string place, FlareDeal deal, int influencer)");
+        string links = FlareMethod(File.ReadAllText(System.IO.Path.Combine(scripts, "Wiring", "FlareLinks.cs")), "private static bool Book(string place, int kind)");
+        string booking = FlareMethod(File.ReadAllText(System.IO.Path.Combine(scripts, "Economy", "Company", "CompanyDirector.Marketing.cs")),
+            "public void BookCampaign(string place, int kind)");
+        int paid = booking.IndexOf("Cost(cost, CompanyGame.CampaignKey, shop, shop.Name, CostKind.Marketing", StringComparison.Ordinal);
+        int booked = booking.IndexOf("CampaignRules.Book(shop.File, kind, cost, percent, Save.Day);", StringComparison.Ordinal);
+        Check(hireCode.Contains("FlareBridges.Book(place, _hireKind)") && links.Contains("company.BookCampaign(place, kind);") && paid > 0 && booked > paid
+              && booking.Contains("Notifications.ShowInsufficientMoney();"),
+            "Flare complete: a hire is paid from the business's books as marketing before the company books it, and short of money it is not booked");
+        string kit = File.ReadAllText(System.IO.Path.Combine(scripts, "Social", "Flare", "FlareDirector.Kit.cs"));
+        string desk = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "Flare", "FlareScreen.Desk.cs"));
+        Check(kit.Contains("\"reallife_flare_dm_campaign_hired\"") && kit.Contains("p.Flopped ? \"reallife_flare_dm_campaign_flop\" : \"reallife_flare_dm_campaign_post\"")
+              && desk.Contains("file.PastHires"),
+            "Flare complete: a hire is told in Messages as it is booked and as each post comes or falls flat, and the studio lists what each campaign brought");
         // Flop or viral, by the post's own roll: an unreliable, flaky one falls flat far more often; a big one goes viral now and then.
         int flops = 0, virals = 0, flopsSteady = 0;
         FlareExpect shaky = default(FlareExpect);
@@ -378,7 +418,11 @@ internal static partial class Program
         FlareReplyRules.Answered(mine, 2, FlareReplyRules.Quality(FlareReplyOption.Sorry, 2));
         Check(FlareReplyRules.Average(theirs) == FlareReplyRules.Average(mine), "Flare complete: a rival's answer moves its rating exactly as the player's same answer moves theirs");
         // A rival's promoted post and its hire are forecast by the player's own rule: the same brief, the same result.
-        var brief = new FlareBrief { Followers = 2400, Hour = 12, Photo = true, PhotoHere = true, SameDistrict = 1, DayCustomers = 180, ReachPaid = 2000, AdDays = 1, Reliability = 70, Style = (int)FlareStyle.Edgy, Seed = 9, RollKey = 4 };
+        var brief = new FlareBrief
+        {
+            Followers = 2400, Hour = 12, Photo = true, PhotoHere = true, SameDistrict = 1, DayCustomers = 180, ReachPaid = 2000, AdDays = 1, Reliability = 70,
+            Style = (int)FlareStyle.Edgy, Seed = 9, RollKey = 4
+        };
         FlareExpect rival = FlareUseRules.Expect(in brief), player = FlareUseRules.Expect(in brief);
         Check(rival.Visitors == player.Visitors && rival.Cost == player.Cost && rival.Flop == player.Flop && rival.Flopped == player.Flopped && rival.WentViral == player.WentViral && rival.Cost > 0,
             "Flare complete: a rival's paid post is priced and rolled by the player's rule (" + rival.Visitors + " visitors for " + rival.Cost / 100 + ")");
@@ -387,7 +431,8 @@ internal static partial class Program
         {
             moves[FlareUseRules.RivalMove(13, day)]++;
         }
-        Check(moves[0] > 60 && moves[1] > 60 && moves[2] > 60, "Flare complete: a rival promotes, hires or runs the player down, each by the seed and the day (" + moves[0] + ", " + moves[1] + ", " + moves[2] + ")");
+        Check(moves[0] > 60 && moves[1] > 60 && moves[2] > 60,
+            "Flare complete: a rival promotes, hires or runs the player down, each by the seed and the day (" + moves[0] + ", " + moves[1] + ", " + moves[2] + ")");
     }
 
     // ---------------------------------------------------------------- every target has a handler
@@ -561,7 +606,8 @@ internal static partial class Program
                 FlareFaceModel m = UiSamples.FlareSample(en, state);
                 if (longer)
                 {
-                    m.Sheet0.FieldText = FlareLiveRules.Clip("Fresh cinnamon buns at Bloom Cafe from seven, the first twenty get a free coffee, and the new oat latte is on the board all week long for everyone #MurrayHillEats");
+                    m.Sheet0.FieldText = FlareLiveRules.Clip("Fresh cinnamon buns at Bloom Cafe from seven, the first twenty get a free coffee, and the new oat latte"
+                                                             + " is on the board all week long for everyone #MurrayHillEats");
                 }
                 var s = new UiScene();
                 s.Begin("flare", 1920f, 1080f, true);

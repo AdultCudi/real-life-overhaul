@@ -123,7 +123,7 @@ namespace RealLifeOverhaul.Ui
             r.Reposts = reposts > 0 ? FlareFeedRules.Count(reposts) : null;
             int views = FlareLiveRules.Shown(p.Reach, p, now);
             r.Views = views > 0 ? FlareFeedRules.Count(views) : null;
-            ResultOf(file, p, ref r);
+            ResultOf(file, p, now, ref r);
         }
 
         // The line over a post: promoted where, a paid partnership, replying to whom, calling on whom, the built part of a typed post.
@@ -169,9 +169,9 @@ namespace RealLifeOverhaul.Ui
         }
 
         // What a post of the player's brought (its boost's visitors and money), a poll's votes, in the line under its picture.
-        private void ResultOf(FlareFile file, FlarePost p, ref FlareRow r)
+        private void ResultOf(FlareFile file, FlarePost p, long now, ref FlareRow r)
         {
-            if (Poll(p, out int yes, out int votes))
+            if (FlareFeedRules.Poll(p, now, out int yes, out int votes))
             {
                 r.Value = FlareText.Fill("reallife_flare_kit_poll", "yes", yes.ToString(), "no", (100 - yes).ToString(), "votes", FlareText.N(votes));
                 return;
@@ -185,15 +185,16 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
-            if (b.Flopped && b.GivenVisitors <= 0)
+            FlareUseRules.Credited(b, (int)Math.Min(int.MaxValue, now), out int given, out int givenCents);   // what the hours that ran brought
+            if (b.Flopped && given <= 0)
             {
                 r.Value = FlareText.T("reallife_flare_kit_result_flop");
                 r.Flags |= FlareRowFlags.Bad;
                 return;
             }
-            if (b.GivenVisitors > 0)
+            if (given > 0)
             {
-                r.Value = FlareText.Fill("reallife_flare_kit_brought", "visitors", FlareText.N(b.GivenVisitors), "money", FlareText.Money(b.GivenCents / 100));
+                r.Value = FlareText.Fill("reallife_flare_kit_brought", "visitors", FlareText.N(given), "money", FlareText.Money(givenCents / 100));
                 r.Flags |= FlareRowFlags.Good;
             }
             else
@@ -214,39 +215,7 @@ namespace RealLifeOverhaul.Ui
             return null;
         }
 
-        /// <summary>
-        /// A poll's votes: a post tagged #poll asks yes or no; its votes are the people who reacted, split by its seed and how it
-        /// was taken (a well liked post leans yes). False for a post that is not a poll.
-        /// </summary>
-        public static bool Poll(FlarePost p, out int yes, out int votes)
-        {
-            yes = votes = 0;
-            if (p == null || string.IsNullOrEmpty(p.Topic) || !HasTag(p.Topic, PollTag))
-            {
-                return false;
-            }
-            votes = Math.Max(0, p.Likes) + Math.Max(0, p.Replies) * 3 + Math.Max(0, p.Reposts) * 2 + p.PlayerLikes;
-            int lean = p.Bad ? -15 : p.Viral ? 15 : 0;
-            yes = FlareRules.Clamp(35 + FlareRules.Roll(p.Seed, p.Id, 931) % 31 + lean, 5, 95);
-            return true;
-        }
-
-        public const string PollTag = "poll";
-
-        private static bool HasTag(string topic, string tag)
-        {
-            int at = topic.IndexOf(tag, StringComparison.OrdinalIgnoreCase);
-            while (at >= 0)
-            {
-                bool start = at == 0 || topic[at - 1] == ' ', end = at + tag.Length == topic.Length || topic[at + tag.Length] == ' ';
-                if (start && end)
-                {
-                    return true;
-                }
-                at = topic.IndexOf(tag, at + 1, StringComparison.OrdinalIgnoreCase);
-            }
-            return false;
-        }
+        private static bool HasTag(string topic, string tag) => FlareFeedRules.HasTag(topic, tag);
 
         // ------------------------------------------------------------------------------------------------ who wrote it
 
