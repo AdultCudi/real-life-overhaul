@@ -42,6 +42,7 @@ namespace RealLifeOverhaul.Ui
             public Button[] Swatches;
             public int Kit;                // a row of the kit's own over the game's form (the loan's term): which; 0 for the game's widget
             public int Option;             // a pick's option in its drop-down (a business, an agent), chosen through it
+            public int Options;            // a game drop-down's options when read: none, and the choice is held with nothing to choose
         }
 
         private static readonly List<Button> SwatchesFound = new List<Button>(16);
@@ -50,6 +51,7 @@ namespace RealLifeOverhaul.Ui
         private readonly List<UiFormRow> _rows = new List<UiFormRow>(16);
         private readonly List<Widget> _widgets = new List<Widget>(16);
         private Transform _form;
+        private long _told;        // the read the log last told of this form, so each form's shape is told once and again when it changes
         private string _carried;   // a label the game hung under another one, for the next lone figure
 
         public UiFormRow[] Rows = new UiFormRow[0];
@@ -75,6 +77,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Pick.Reset();
                 _form = form;
+                _told = 0L;
             }
             _rows.Clear();
             _widgets.Clear();
@@ -96,6 +99,7 @@ namespace RealLifeOverhaul.Ui
             Costs(form, entry, talk, heading);
             bool any = _rows.Count > heading;
             Publish();
+            Tell(form);
             if (Pick.Row >= Count || (Pick.Row >= 0 && Rows[Pick.Row].Kind != UiFormKind.Choice))
             {
                 Pick.Row = -1;
@@ -115,6 +119,7 @@ namespace RealLifeOverhaul.Ui
         public void Clear()
         {
             _form = null;
+            _told = 0L;
             _loanForm = null;   // a line answered in the game's own panel takes the bank's own figures
             _rows.Clear();
             _widgets.Clear();
@@ -585,10 +590,11 @@ namespace RealLifeOverhaul.Ui
                     var drop = c.GetComponent<global::UI.Elements.Dropdown>();
                     bool chosen = drop.SelectedOptionIndex >= 0;
                     string shown = Shown(drop);
+                    int options = OptionCount(drop);
                     return Add(new UiFormRow
                     {
-                        Kind = UiFormKind.Choice, Label = name, Value = chosen ? shown : null, Hint = chosen ? null : shown, Disabled = !Open(drop)
-                    }, new Widget { Drop = drop });
+                        Kind = UiFormKind.Choice, Label = name, Value = chosen ? shown : null, Hint = chosen ? null : shown, Disabled = !Open(drop) || options == 0
+                    }, new Widget { Drop = drop, Options = options });
                 }
                 case Piece.Amount:
                 {
@@ -792,6 +798,47 @@ namespace RealLifeOverhaul.Ui
 
         private static int Index(global::UI.Elements.Dropdown drop) => drop != null ? drop.SelectedOptionIndex : -1;
 
+        // How many options the game's drop-down holds now (none before its form's Start has filled it).
+        private static int OptionCount(global::UI.Elements.Dropdown drop) =>
+            drop != null && GameContract.DialogDropOptions.Field != null && GameContract.DialogDropOptions.Field.GetValue(drop) is List<string> options ? options.Count : 0;
+
+        // The form's shape in Player.log: once for each form, and again when its rows or its choices' options change (a list the
+        // game fills a frame later), so a form that cannot be answered says what the kit found in it. Costs a sum a read.
+        private void Tell(Transform form)
+        {
+            long shape = _rows.Count;
+            for (int i = 0; i < _rows.Count; i++)
+            {
+                shape = shape * 31L + (int)_rows[i].Kind * 7L + _widgets[i].Options + (_rows[i].Disabled ? 1L : 0L);
+            }
+            shape = shape == 0L ? 1L : shape;
+            if (shape == _told || UiDirector.Logger == null)
+            {
+                return;
+            }
+            _told = shape;
+            var line = new System.Text.StringBuilder(160);
+            line.Append("Dialog form (kit): '").Append(form.name).Append("' read as ").Append(_rows.Count).Append(" row(s):");
+            for (int i = 0; i < _rows.Count; i++)
+            {
+                UiFormRow r = _rows[i];
+                line.Append(i == 0 ? " " : "; ").Append(r.Kind);
+                if (!string.IsNullOrEmpty(r.Label))
+                {
+                    line.Append(" '").Append(r.Label).Append("'");
+                }
+                if (r.Kind == UiFormKind.Choice && _widgets[i].Kit == 0)
+                {
+                    line.Append(" with ").Append(_widgets[i].Options).Append(" option(s)");
+                }
+                if (r.Disabled)
+                {
+                    line.Append(" (held)");
+                }
+            }
+            UiDirector.Logger.Info(line.ToString());
+        }
+
         // The open choice's options in the game's words, as its own list shows them.
         private void Options(int row)
         {
@@ -876,7 +923,7 @@ namespace RealLifeOverhaul.Ui
             var drop = c.GetComponent<global::UI.Elements.Dropdown>();
             if (drop != null)
             {
-                return drop.SelectedOptionIndex * 7L + (Open(drop) ? 1L : 0L);
+                return drop.SelectedOptionIndex * 7L + (Open(drop) ? 1L : 0L) + OptionCount(drop) * 131L;   // a list filled after the first read reads again
             }
             var input = c.GetComponent<TMP_InputField>();
             if (input != null)

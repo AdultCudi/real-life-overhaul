@@ -601,6 +601,7 @@ common_hours_abbr
 common_hours_left
 common_hunger
 common_in_training
+common_investment_fund
 common_investments
 common_market_demands
 common_monday
@@ -623,6 +624,7 @@ common_purchase
 common_real_estate
 common_requirements
 common_revert
+common_risk
 common_sales_price
 common_saturday
 common_save_changes
@@ -693,6 +695,8 @@ daily_summary_businesses
 daily_summary_details
 dialog_accept_button
 dialog_bank_amount_to_loan
+dialog_bank_investment_header
+dialog_bank_investment_risk_info
 dialog_bank_larry
 dialog_bank_loan_amount_header
 dialog_bank_new_investment
@@ -984,6 +988,7 @@ preview_terminal_select_building_size
 preview_terminal_select_building_type
 preview_terminal_select_business_type
 preview_terminal_select_design
+priority_medium
 purchasecar_specs
 purchaseui_pay_taxes
 purchaseui_place_order

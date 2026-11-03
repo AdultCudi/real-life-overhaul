@@ -475,6 +475,26 @@ internal static partial class Program
         Check(typed >= 0 && term >= 0 && figure < 0 && reply >= 0 && s.Nodes[reply].Key == UiAction.Pick1 && lower >= 0 && s.Nodes[lower].Key == (UiAction)((int)UiAction.Pick1 + 1)
               && hangUp >= 0 && s.Nodes[hangUp].Key == UiAction.Back && s.FindNode(UiAppWindow.NavCommand, 0) < 0,
             "dialog: a call's form stands on the call card, its amount typed, its term on chips, its figures read only, Confirm on 1, the bank's own answers after it, Hang up on Back, the window not reachable under it");
+        // The bank's investment by phone: its fund a choice, its risk read only, its sum and daily auto-invest typed, Confirm
+        // on 1 saying what leaves the account today and each day after, Hang up on Back; with the list open, each fund an option.
+        UiContacts.Lay(s, UiSamples.InvestCall(en, false), f, true, UiDefaultKeys.Keyboard);
+        int fund = s.FindNode(UiFormRows.FieldCommand, 0), risk = s.FindNode(UiFormRows.FieldCommand, 2), sum = s.FindNode(UiFormRows.FieldCommand, 4),
+            daily = s.FindNode(UiFormRows.FieldCommand, 5), invest = s.FindNode(UiCallCard.ChoiceCommand, 0), leave = s.FindNode(UiCallCard.ButtonCommand, 0);
+        Check(fund >= 0 && !s.Nodes[fund].Disabled && risk < 0 && sum >= 0 && daily >= 0 && invest >= 0 && s.Nodes[invest].Key == UiAction.Pick1 && leave >= 0
+              && s.Nodes[leave].Key == UiAction.Back && DialogDrawn(s, "$5,000 from your account today") && DialogDrawn(s, "Then $250 a day from your account")
+              && DialogDrawn(s, "Medium (between -6% and 14%)") && DialogDrawn(s, "5,000"),
+            "dialog: the bank's investment stands on the call card: its fund chosen, its risk read only, its sum and daily auto-invest typed, Confirm on 1 with what leaves the account today and each day, Hang up on Back");
+        UiContacts.Lay(s, UiSamples.InvestCall(en, true), f, true, UiDefaultKeys.Keyboard);
+        int options = 0;
+        for (int i = 0; i < 4; i++)
+        {
+            options += s.FindNode(UiFormRows.OptionCommand, i) >= 0 ? 1 : 0;
+        }
+        Check(options == 4 && DialogDrawn(s, "HG China Bonds"), "dialog: the investment's fund list opens on the call card with every fund the bank offers as an option to press");
+        Check(DialogRules.Invest(0, 50000f, 5000f, 1000f) == DialogRules.InvestNote.NoFund && DialogRules.Invest(3, 600f, 600f, 1000f) == DialogRules.InvestNote.Short
+              && DialogRules.Invest(3, -40f, 0f, 1000f) == DialogRules.InvestNote.Short && DialogRules.Invest(3, 12480f, 0f, 1000f) == DialogRules.InvestNote.Range
+              && DialogRules.Invest(3, 12480f, 500f, 1000f) == DialogRules.InvestNote.Least && DialogRules.Invest(3, 12480f, 1000f, 1000f) == DialogRules.InvestNote.Takes,
+            "dialog: the investment's confirm says no fund is offered, the cash is under the bank's least, the least and the most, a sum under the least, or what leaves the account");
         UiContacts.Lay(s, UiSamples.MoodCall(en), f, true, UiDefaultKeys.Keyboard);
         bool mood = false;
         for (int i = 0; i < s.ItemCount; i++)

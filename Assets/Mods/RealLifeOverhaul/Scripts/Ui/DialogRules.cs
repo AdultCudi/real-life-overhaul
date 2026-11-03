@@ -57,6 +57,37 @@ namespace RealLifeOverhaul.Ui
         /// <summary>A figure too long to stand at the right of its label (a sentence): it reads as a heading and a note.</summary>
         public static bool LongFigure(string figure) => figure != null && figure.Length > FigureMost;
 
+        /// <summary>What the bank's investment form's confirm says under it, by its funds, the cash, the sum typed and the bank's least.</summary>
+        public enum InvestNote : byte
+        {
+            NoFund,   // the bank offers no fund here: nothing to choose
+            Short,    // the cash is under the bank's least: the form keeps each sum to the cash, so no sum the bank takes can be typed
+            Range,    // no sum typed yet: the least and the most, the cash
+            Least,    // a sum under the bank's least
+            Takes     // a sum the bank takes: it leaves the account today
+        }
+
+        /// <summary>
+        /// The investment form's note (BankInvestmentSettings, BankDialog.InvestmentRequest): the game keeps each sum typed to
+        /// the player's cash and refuses one under its least only after Confirm, so the confirm says which it is before.
+        /// </summary>
+        public static InvestNote Invest(int funds, float cash, float sum, float least)
+        {
+            if (funds <= 0)
+            {
+                return InvestNote.NoFund;
+            }
+            if (cash < least)
+            {
+                return InvestNote.Short;
+            }
+            if (!(sum > 0f))
+            {
+                return InvestNote.Range;
+            }
+            return sum < least ? InvestNote.Least : InvestNote.Takes;
+        }
+
         /// <summary>A label's words on one line: the game's line breaks (a campaign's kind over its price) as a middle dot.</summary>
         public static string OneLine(string words)
         {

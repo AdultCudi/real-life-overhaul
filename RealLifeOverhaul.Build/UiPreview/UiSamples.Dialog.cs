@@ -27,18 +27,18 @@ internal static partial class UiSamples
     /// <summary>The dialogue panel's states, in the previews' order.</summary>
     public static readonly string[] DialogStates =
     {
-        "bank_start", "bank_loan", "marketing", "marketing_list", "wholesale", "import", "import_unset", "furniture", "installation", "moving", "insurance",
+        "bank_start", "bank_loan", "bank_invest", "marketing", "marketing_list", "wholesale", "import", "import_unset", "furniture", "installation", "moving", "insurance",
         "insurance_unset", "recruitment", "driver", "hotel", "desk", "desk_full", "street", "street_said", "haggle", "other_mod", "long_names", "between_lines"
     };
 
     /// <summary>The states a game form stands in, its confirm saying what it pays and costs.</summary>
     public static readonly string[] DialogFormStates =
     {
-        "bank_loan", "marketing", "wholesale", "import", "import_unset", "furniture", "installation", "moving", "insurance", "insurance_unset", "recruitment", "driver"
+        "bank_loan", "bank_invest", "marketing", "wholesale", "import", "import_unset", "furniture", "installation", "moving", "insurance", "insurance_unset", "recruitment", "driver"
     };
 
-    /// <summary>A call's states on the call card: the bank's loan, a candidate's wage talk in the thread, a tow.</summary>
-    public static readonly string[] CallStates = { "loan", "mood", "tow" };
+    /// <summary>A call's states on the call card: the bank's loan, a candidate's wage talk in the thread, a tow, the bank's investment and its funds' list open.</summary>
+    public static readonly string[] CallStates = { "loan", "mood", "tow", "invest", "invest_list" };
 
     /// <summary>
     /// The states the screen checks lay out: all but the second between two lines, when the game's line has no button, so
@@ -81,6 +81,20 @@ internal static partial class UiSamples
         string back = leave;
         switch (state)
         {
+            case "bank_invest":
+            {
+                // The game's investment form at the counter: the fund chosen, its risk, no sum typed yet, so Confirm says the
+                // least the bank takes and the most the form lets in (the cash).
+                Head(m, t("dialog_bank_larry", "Larry"), Bank);
+                lines.Add(Them(t("dialog_bank_selector", "Hi there! How can I help you today?")));
+                lines.Add(Me(t("dialog_bank_new_investment", "New investment")));
+                m.Rows = InvestRows(t, true, false);
+                m.RowCount = m.Rows.Length;
+                choices.Add(Priced(t("common_confirm", "Confirm"),
+                    Line(Fill(t("reallife_ui_dialog_cost_invest_range", "At least {least}, at most your cash, {cash}"), "least", "$1,000", "cash", "$48,210"), 0)));
+                choices.Add(Choice(leave));
+                break;
+            }
             case "bank_start":
             case "bank_loan":
             {
@@ -625,8 +639,67 @@ internal static partial class UiSamples
         return m;
     }
 
-    /// <summary>A call's state on the call card: the bank's loan, the wage talk, the tow.</summary>
-    public static UiContactsModel CallSample(UiWords t, string which) => which == "loan" ? LoanCall(t) : which == "tow" ? TowCall(t) : MoodCall(t);
+    /// <summary>A call's state on the call card: the bank's loan, the wage talk, the tow, the bank's investment (its funds' list open).</summary>
+    public static UiContactsModel CallSample(UiWords t, string which) =>
+        which == "loan" ? LoanCall(t) : which == "tow" ? TowCall(t) : which == "invest" ? InvestCall(t, false) : which == "invest_list" ? InvestCall(t, true) : MoodCall(t);
+
+    /// <summary>
+    /// The bank's investment form as DialogForm reads the game's (BankInvestmentSettings): the fund, a hairline, its risk as
+    /// the game words it, a hairline, the sum and the daily auto-invest typed as the game formats them.
+    /// </summary>
+    public static UiFormRow[] InvestRows(UiWords t, bool heading, bool typed)
+    {
+        var rows = new List<UiFormRow>(7);
+        if (heading)
+        {
+            rows.Add(FormHeading(t("dialog_bank_investment_header", "Investment")));   // the line's own question
+        }
+        string amount = t("common_amount", "Amount");
+        string risk = Fill(t("dialog_bank_investment_risk_info", "{risk} (between {min}% and {max}%)"), "risk", t("priority_medium", "Medium"), "min", "-6", "max", "14");
+        rows.Add(FormChoice(t("common_investment_fund", "Investment fund"), "Franklin US"));
+        rows.Add(FormBreak());
+        rows.Add(FormFigure(t("common_risk", "Risk"), risk, false));
+        rows.Add(FormBreak());
+        rows.Add(new UiFormRow { Kind = UiFormKind.Text, Label = ContactsRules.Label(amount), Value = typed ? "5,000" : string.Empty, Hint = amount });
+        rows.Add(new UiFormRow { Kind = UiFormKind.Text, Label = ContactsRules.Label(t("econoview_investments_autoinvest", "Daily auto-invest")), Value = typed ? "250" : string.Empty, Hint = amount });
+        return rows.ToArray();
+    }
+
+    /// <summary>
+    /// The bank's investment asked for by phone: the form under the line, Confirm saying what leaves the account today and
+    /// each day after; with the list open, the bank's funds under their choice, the one chosen marked.
+    /// </summary>
+    public static UiContactsModel InvestCall(UiWords t, bool open)
+    {
+        UiContactsModel m = ContactsSample(t, "call_replies");
+        m.Call = new UiCallModel
+        {
+            Name = "Vantander Bank", Icon = UiIcon.Bank, Role = t("contactcategoryname_finance", "Finance"), Length = "0:48",
+            Line = t("dialog_bank_investment_header", "Investment"),   // the line's header: a form's line has no message of its own
+            Rows = InvestRows(t, false, true),
+            Choices = new[]
+            {
+                Priced(t("common_confirm", "Confirm"), Line(Fill(t("reallife_ui_dialog_cost_invest", "{amount} from your account today"), "amount", "$5,000"), -1, -1),
+                    Line(Fill(t("reallife_ui_dialog_cost_invest_daily", "Then {amount} a day from your account"), "amount", "$250"), -1, -1))
+            },
+            Buttons = new[] { new UiActionModel { Label = t("dialog_hang_up_button", "Hang up"), Kind = UiButtonKind.Destructive, Icon = UiIcon.Phone, Key = UiAction.Back } },
+            Prompts = new[]
+            {
+                new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") }, new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_choose", "Choose") },
+                new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
+            },
+            PromptCount = 3
+        };
+        m.Call.RowCount = m.Call.Rows.Length;
+        if (open)
+        {
+            m.Call.Pick.Row = 0;
+            m.Call.Pick.Options = new[] { "Franklin US", "Lace Global A", "HG China Bonds", "Euro Energy High" };
+            m.Call.Pick.Count = m.Call.Pick.Options.Length;
+            m.Call.Pick.Chosen = 0;
+        }
+        return m;
+    }
 
     /// <summary>
     /// A tow asked for by phone: the tow company's two places as the game's options, each with its price in its words, the
