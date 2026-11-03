@@ -31,24 +31,14 @@ namespace RealLifeOverhaul.Utilities
         public static IModLogger Logger;
         public static UtilitiesDirector Instance { get; private set; }
 
-        /// <summary>The kit's dig: the first district that is not started, through the company's own order.</summary>
-        public bool KitDig()
+        /// <summary>Counts every change the app's pages would show (an account paid, a plan bought, the day's books), so the kit's face reads again only then.</summary>
+        public int Revision { get; private set; }
+
+        // Something the Utilities pages show changed: the old panel writes itself again if it is showing, and the kit's face reads again.
+        private void Touch()
         {
-            BroadbandCompany company = Company;
-            Network network = company != null ? company.Network : null;
-            if (network == null || !network.Running)
-            {
-                return false;
-            }
-            int day = UtilitiesGame.Today;
-            for (int i = 0; i < Network.Districts; i++)
-            {
-                if (!network.Open(i, day) && !network.Digging(i))
-                {
-                    return company.Build(i, out _);
-                }
-            }
-            return false;
+            Revision++;
+            _view?.Changed();
         }
 
         /// <summary>True while the office's panel is up, or its button was pressed this frame.</summary>
@@ -540,7 +530,7 @@ namespace RealLifeOverhaul.Utilities
             }
             Unconnected();
             Effects();
-            _view?.Changed();
+            Touch();
             if (Meta.Dev.Verbose)
             {
                 Logger?.Info("Utilities check (day " + today + "): " + _state.Accounts.Count + " account(s), " + bills + " bill(s) of " + billed + "; the month began on day "
@@ -713,7 +703,7 @@ namespace RealLifeOverhaul.Utilities
                 Logger?.Info("Utilities: " + (phone ? "no office to visit now; the Utilities app takes applications by phone."
                     : "the office is open again at " + OfficeName() + "; applications are in person again."));
             }
-            _view?.Changed();
+            Touch();
         }
 
         private void OfficePanel()
@@ -762,7 +752,7 @@ namespace RealLifeOverhaul.Utilities
                 Build = view.Build,
                 Opened = view.Opened,
                 Closed = view.Closed,
-                Kit = () => new RealLifeOverhaul.Ui.UtilitiesScreen(RealLifeOverhaul.Ui.MoneyLive.UtilitiesLive),
+                Kit = () => new RealLifeOverhaul.Ui.UtilitiesScreen(RealLifeOverhaul.Ui.UtilitiesLive.Instance, RealLifeOverhaul.Ui.UtilitiesLive.Words()),
                 KitScreen = RealLifeOverhaul.Ui.UtilitiesScreen.ScreenId,
                 KitIcon = RealLifeOverhaul.Ui.UiIcon.Globe
             };

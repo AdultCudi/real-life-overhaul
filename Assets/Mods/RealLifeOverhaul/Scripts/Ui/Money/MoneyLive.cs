@@ -7,7 +7,6 @@ using RealLifeOverhaul.DaySeries;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Flare;
 using RealLifeOverhaul.Rivals;
-using RealLifeOverhaul.Utilities;
 
 namespace RealLifeOverhaul.Ui
 {
@@ -20,7 +19,6 @@ namespace RealLifeOverhaul.Ui
         public static readonly MoneyLive FinanceLive = new MoneyLive(MoneyApp.Finance);
         public static readonly MoneyLive BanksLive = new MoneyLive(MoneyApp.Banks);
         public static readonly MoneyLive OwnLive = new MoneyLive(MoneyApp.OwnBank);
-        public static readonly MoneyLive UtilitiesLive = new MoneyLive(MoneyApp.Utilities);
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private readonly MoneyApp _app;
@@ -36,8 +34,8 @@ namespace RealLifeOverhaul.Ui
         public void Fill(MoneyModel model)
         {
             model.App = _app;
-            model.Icon = _app == MoneyApp.Banks ? UiIcon.Bank : _app == MoneyApp.OwnBank ? UiIcon.PiggyBank : _app == MoneyApp.Utilities ? UiIcon.Globe : UiIcon.Wallet;
-            bool act = (_app == MoneyApp.Finance && (model.Tab == 1 || model.Tab == 2)) || (_app == MoneyApp.Banks && model.Tab == 3) || (_app == MoneyApp.Utilities && model.Tab == 2);
+            model.Icon = _app == MoneyApp.Banks ? UiIcon.Bank : _app == MoneyApp.OwnBank ? UiIcon.PiggyBank : UiIcon.Wallet;
+            bool act = (_app == MoneyApp.Finance && (model.Tab == 1 || model.Tab == 2)) || (_app == MoneyApp.Banks && model.Tab == 3);
             model.Prompts = Prompts(act);
             if (_app == MoneyApp.Finance)
             {
@@ -47,13 +45,9 @@ namespace RealLifeOverhaul.Ui
             {
                 FillBanks(model);
             }
-            else if (_app == MoneyApp.OwnBank)
-            {
-                FillOwn(model);
-            }
             else
             {
-                FillUtilities(model);
+                FillOwn(model);
             }
             if (string.IsNullOrEmpty(model.EmptyTitle))
             {
@@ -191,29 +185,6 @@ namespace RealLifeOverhaul.Ui
             {
                 model.Shape = MoneyShape.Table;
                 model.Table = model.Tab == 4 ? BranchRows(bank) : Biggest(bank, model.Tab == 2);
-            }
-        }
-
-        private void FillUtilities(MoneyModel model)
-        {
-            model.Title = T("reallife_util_app");
-            model.Across = true;
-            model.Nav = new[] { Nav("reallife_util_tab_accounts", UiIcon.Wallet), Nav("reallife_util_tab_internet", UiIcon.Globe), Nav("reallife_util_tab_network", UiIcon.HardDrives) };
-            model.Tab = Clamp(model.Tab, 2);
-            Network network = UtilitiesDirector.Instance != null && UtilitiesDirector.Instance.Company != null ? UtilitiesDirector.Instance.Company.Network : null;
-            if (model.Tab == 1)
-            {
-                model.Shape = MoneyShape.Plans;
-                model.Catalogue = Plans();
-            }
-            else if (model.Tab == 2)
-            {
-                NetworkPage(model, network);
-            }
-            else
-            {
-                model.Shape = MoneyShape.Flow;
-                model.Statement = CashStatement(false);
             }
         }
 
@@ -358,26 +329,6 @@ namespace RealLifeOverhaul.Ui
             model.Table = Biggest(bank, true);
         }
 
-        private void NetworkPage(MoneyModel model, Network network)
-        {
-            int customers = network != null && network.Running ? BroadbandRules.Connections(network) : 0;
-            model.Shape = MoneyShape.Network;
-            model.Hero = new UiHeroModel
-            {
-                Icon = UiIcon.HardDrives,
-                Kicker = T("reallife_util_tab_network"),
-                Title = T("reallife_util_tab_network"),
-                Line = customers.ToString(Inv),
-                Progress = network != null && network.Running ? 40 : 0,
-                Note = T("reallife_money_dig"),
-                NoteIcon = UiIcon.Wrench
-            };
-            model.Figures = new[] { new UiFigureModel { Label = T("reallife_money_customers"), Value = customers.ToString(Inv) } };
-            model.Chart = Chart(DaySeriesCatalogue.Customers, T("reallife_money_customers"));
-            model.Table = DistrictRows(network);
-            model.Actions = new[] { new UiActionModel { Label = T("reallife_money_dig"), Kind = UiButtonKind.Primary, Icon = UiIcon.Wrench, Key = UiAction.Alt, Command = UiAppWindow.ActionCommand } };
-        }
-
         private bool Act(MoneyModel model)
         {
             if (_app == MoneyApp.Finance && (model.Tab == 1 || model.Tab == 2) && EconomyDirector.Instance != null)
@@ -390,7 +341,7 @@ namespace RealLifeOverhaul.Ui
                 BanksDirector.Instance.KitApply(_amount);
                 return true;
             }
-            return _app == MoneyApp.Utilities && model.Tab == 2 && UtilitiesDirector.Instance != null && UtilitiesDirector.Instance.KitDig();
+            return false;
         }
 
         private bool Answer(int which)
@@ -610,58 +561,6 @@ namespace RealLifeOverhaul.Ui
             UiDataTableModel table = Make(rows, new[] { "Branch", "Customers", "State" }, T("reallife_branch_tab"), T("reallife_money_locate"), UiIcon.Building);
             table.Columns[2].Kind = UiCellKind.Chip;
             return table;
-        }
-
-        private static UiDataTableModel DistrictRows(Network network)
-        {
-            var rows = new List<UiDataRow>(4);
-            if (network != null)
-            {
-                int day = RivalGame.Day;
-                for (int i = 0; i < Network.Districts; i++)
-                {
-                    if (!network.Open(i, day) && !network.Digging(i))
-                    {
-                        continue;
-                    }
-                    rows.Add(new UiDataRow
-                    {
-                        Cells = new[]
-                        {
-                            BroadbandCompany.District(i),
-                            BroadbandRules.Connections(network, i).ToString(Inv),
-                            network.Digging(i) ? network.ReadyDay(i).ToString(Inv) : T("reallife_money_live")
-                        },
-                        Tones = new[] { UiRole.None, UiRole.None, network.Digging(i) ? UiRole.Warn : UiRole.Ok }
-                    });
-                }
-            }
-            UiDataTableModel table = Make(rows, new[] { "District", T("reallife_money_customers"), "State" }, T("reallife_util_tab_network"), T("reallife_money_dig"), UiIcon.HardDrives);
-            table.Columns[2].Kind = UiCellKind.Chip;
-            return table;
-        }
-
-        private static UiCatalogueModel Plans()
-        {
-            var model = new UiCatalogueModel { EmptyTitle = T("reallife_util_tab_internet"), EmptyBody = T("reallife_money_plan"), EmptyIcon = UiIcon.Globe };
-            Provider provider = InternetCatalogue.Providers[0];
-            int n = provider.Mbps != null ? provider.Mbps.Length : 0;
-            if (n == 0)
-            {
-                return model;
-            }
-            model.Cards = new UiCatalogueCard[n];
-            for (int i = 0; i < n; i++)
-            {
-                int cents = provider.MonthCents != null && i < provider.MonthCents.Length ? provider.MonthCents[i] : 0;
-                model.Cards[i] = new UiCatalogueCard { Icon = UiIcon.Globe, Name = provider.Mbps[i].ToString(Inv), Figure = Money(cents / 100) };
-            }
-            model.CardCount = n;
-            model.Chosen = 0;
-            model.DetailKicker = T(provider.NameKey);
-            model.DetailLabels = new[] { "Mb" };
-            model.DetailValues = new[] { provider.Mbps[0].ToString(Inv) };
-            return model;
         }
 
         private static UiStatementModel CashStatement(bool accounts)

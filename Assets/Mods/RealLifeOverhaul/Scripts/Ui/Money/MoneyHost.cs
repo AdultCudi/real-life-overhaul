@@ -1,6 +1,6 @@
 namespace RealLifeOverhaul.Ui
 {
-    /// <summary>The four money screens share one host: a model, a fill when the series changes, and the page drawer.</summary>
+    /// <summary>The three money screens share one host: a model, a fill when the series changes, and the page drawer.</summary>
     public class MoneyHost
     {
         private readonly string _id;
@@ -25,6 +25,7 @@ namespace RealLifeOverhaul.Ui
         {
             if (_source != null)
             {
+                _model.Reset();   // a tab never inherits a part (the statement, a chart, a button) from the one before it
                 _source.Fill(_model);
             }
             MoneyPages.Lay(s, _model, frame, dark, keys);

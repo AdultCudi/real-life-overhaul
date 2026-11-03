@@ -686,8 +686,13 @@ internal static partial class Program
                 Console.WriteLine("        " + line);   // each different finding once
             }
         };
+        string only = Environment.GetEnvironmentVariable("RLO_UI_ONLY");   // a screen's id: the screens' checks of that one alone (with --ui), to iterate on a layout
         foreach (UiScreenCase c in UiCases())
         {
+            if (only != null && c.Def.Id != only)
+            {
+                continue;
+            }
             c.Commands = c.Commands ?? Commands(c.Def.Template);
             if (c.Def.Runner != null)
             {
