@@ -666,6 +666,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPromptCard.cs" Link="Mod\UiPromptCard.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiOfferCard.cs" Link="Mod\UiOfferCard.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiWorld.cs" Link="Mod\UiWorld.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiToolPanel.cs" Link="Mod\UiToolPanel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiItemsList.cs" Link="Mod\UiItemsList.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiSidePanel.cs" Link="Mod\UiSidePanel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiObjectives.cs" Link="Mod\UiObjectives.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPicker.cs" Link="Mod\UiPicker.cs" />
@@ -730,6 +732,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDataTable.cs" Link="Mod\UiDataTable.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiChart.cs" Link="Mod\UiChart.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCatalogue.cs" Link="Mod\UiCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Swatches.cs" Link="Mod\UiDraw.Swatches.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiStatement.cs" Link="Mod\UiStatement.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPickList.cs" Link="Mod\UiPickList.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiEcono.cs" Link="Mod\UiEcono.cs" />

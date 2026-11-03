@@ -24,9 +24,10 @@ namespace RealLifeOverhaul.Ui
         public const string Boxes = "uiscreens_boxes";    // the boxes and the notices every screen uses
         public const string Market = "uiscreens_market";  // the player's own profile, the rivals and the districts' market (the game's Persona, Rivals, Market Insider)
         public const string Hud = "uiscreens_hud";        // the HUD over the running game and its pieces
+        public const string Tools = "uiscreens_tools";    // the world's smaller windows: the private driver, the items list, a sign's look and the like
 
         /// <summary>Every section, in the page's order; a section with no switch yet is left off the page.</summary>
-        public static readonly string[] Sections = { Apps, Business, Market, Boxes, Hud };
+        public static readonly string[] Sections = { Apps, Business, Market, Boxes, Hud, Tools };
 
         private static readonly UiScreenDef[] Switched = Gather();
         private static readonly bool[] Values = Fill(Switched.Length);

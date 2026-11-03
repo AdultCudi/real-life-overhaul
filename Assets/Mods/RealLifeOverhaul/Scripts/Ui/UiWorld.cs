@@ -12,6 +12,10 @@ namespace RealLifeOverhaul.Ui
     {
         public const string PromptId = "world_prompt", BuildingId = "world_building", PickerId = "world_picker", OfferId = "world_job_offer";
 
+        // The smaller windows of the game's over the world, each on its own switch too.
+        public const string DriverId = "world_private_driver", ItemsId = "world_items_list", SignId = "world_sign", TerminalId = "world_preview_terminal",
+            PreviewId = "world_building_preview", ColourId = "world_colour_picker";
+
         /// <summary>
         /// The picker over the running game with the status bar and its prompts: centred above the bar, or at the right
         /// beside the player when its caller docked the list there (custody beside the cell).

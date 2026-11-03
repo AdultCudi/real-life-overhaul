@@ -43,6 +43,31 @@ public static partial class UiPreviewRunner
             UiInfoPanel.FooterCommand, -1, "RDDDDDDDDDLDRR"));
         screens.Add(World("world_longest_bus_stop", "02.jpg", (s, f, d, k) => UiSamples.WorldPromptScene(s, f, d, k, BizGerman, UiSamples.WorldBusStop(BizGerman, k), 0.7f, 0.62f),
             UiPromptCard.ActionCommand, 0, "DD"));
+        // The game's smaller windows: the private driver beside the phone in its four states, the items list of a store and of an
+        // order, a sign's look, the preview terminal, the preview's bar and the colour picker's frame.
+        screens.Add(World("world_private_driver_nothing", "02.jpg", (s, f, d, k) => UiSamples.WorldDriverScene(s, f, d, k, English, UiSamples.DriverState.Nothing),
+            UiToolPanel.LineCommand, 1, "D"));
+        screens.Add(World("world_private_driver", "02.jpg", (s, f, d, k) => UiSamples.WorldDriverScene(s, f, d, k, English, UiSamples.DriverState.Cars),
+            UiToolPanel.LineCommand, 1, "DD"));
+        screens.Add(World("world_private_driver_coming", "02.jpg", (s, f, d, k) => UiSamples.WorldDriverScene(s, f, d, k, English, UiSamples.DriverState.Coming),
+            UiToolPanel.LineCommand, 2, "D"));
+        screens.Add(World("world_private_driver_waiting", "02.jpg", (s, f, d, k) => UiSamples.WorldDriverScene(s, f, d, k, English, UiSamples.DriverState.Waiting),
+            UiToolPanel.LineCommand, 2, "D"));
+        screens.Add(new Screen { Name = "world_items_list", AppName = "Items", Icon = UiIcon.ShoppingCart, Backdrop = "05.jpg",
+            Lay = (s, f, d, k) => UiSamples.WorldItemsScene(s, f, d, k, English, UiSamples.WorldItems(English, false)), HoverCommand = UiItemsList.TypeCommand, HoverArg = -1,
+            Walk = Moves("DDD") });
+        screens.Add(new Screen { Name = "world_items_order", AppName = "Items", Icon = UiIcon.ShoppingCart, Backdrop = "05.jpg",
+            Lay = (s, f, d, k) => UiSamples.WorldItemsScene(s, f, d, k, English, UiSamples.WorldItems(English, true)), HoverCommand = UiItemsList.MoreCommand, HoverArg = 0,
+            Walk = Moves("DDRRDD") });
+        screens.Add(new Screen { Name = "world_items_none_found", AppName = "Items", Icon = UiIcon.ShoppingCart, Backdrop = "05.jpg",
+            Lay = (s, f, d, k) => UiSamples.WorldItemsScene(s, f, d, k, English, UiSamples.WorldItems(English, true, "zebra")), HoverCommand = UiItemsList.ClearCommand, HoverArg = 0,
+            Walk = Moves("D") });
+        screens.Add(World("world_sign", "11.jpg", (s, f, d, k) => UiSamples.WorldSignScene(s, f, d, k, English, true, false), UiToolPanel.SwatchCommand + 1, 3, "DDRRD"));
+        screens.Add(World("world_sign_open", "11.jpg", (s, f, d, k) => UiSamples.WorldSignScene(s, f, d, k, English, false, true), UiToolPanel.OptionCommand, 4, "DD"));
+        screens.Add(World("world_preview_terminal", "03.jpg", (s, f, d, k) => UiSamples.WorldTerminalScene(s, f, d, k, English, 4, false), UiToolPanel.LineCommand, 5, "DDDDR"));
+        screens.Add(World("world_preview_terminal_open", "03.jpg", (s, f, d, k) => UiSamples.WorldTerminalScene(s, f, d, k, English, 3, true), UiToolPanel.OptionCommand, 1, "DD"));
+        screens.Add(World("world_building_preview", "13.jpg", (s, f, d, k) => UiSamples.WorldPreviewScene(s, f, d, k, English, false), UiToolPanel.SecondCommand, 0, "R"));
+        screens.Add(World("world_colour_picker", "11.jpg", (s, f, d, k) => UiSamples.WorldColourScene(s, f, d, k, English), UiToolPanel.LineCommand, 0, "L"));
     }
 
     // A world piece over its street, the HUD's bar under it: the mouse resting on one of its targets, the pad's walk from its first.

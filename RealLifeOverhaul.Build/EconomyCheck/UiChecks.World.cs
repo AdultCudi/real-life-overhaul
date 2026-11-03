@@ -55,8 +55,59 @@ internal static partial class Program
                 cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (the job already held)", Title = "HUD", Commands = OfferCommands,
                     Lay = (s, f, d, k, t) => UiSamples.WorldOfferScene(s, f, d, k, t, true) });
                 break;
+            case UiWorld.DriverId:
+                WorldTool(def, cases, "nothing hired", (s, f, d, k, t) => UiSamples.WorldDriverScene(s, f, d, k, t, UiSamples.DriverState.Nothing));
+                WorldTool(def, cases, "two cars to call under a contract", (s, f, d, k, t) => UiSamples.WorldDriverScene(s, f, d, k, t, UiSamples.DriverState.Cars));
+                WorldTool(def, cases, "a car on its way", (s, f, d, k, t) => UiSamples.WorldDriverScene(s, f, d, k, t, UiSamples.DriverState.Coming));
+                WorldTool(def, cases, "the car waiting", (s, f, d, k, t) => UiSamples.WorldDriverScene(s, f, d, k, t, UiSamples.DriverState.Waiting));
+                break;
+            case UiWorld.ItemsId:
+                WorldItems(def, cases, "a store's goods to look at", (s, f, d, k, t) => UiSamples.WorldItemsScene(s, f, d, k, t, UiSamples.WorldItems(t, false)));
+                WorldItems(def, cases, "an order's goods, four in it, one past the most", (s, f, d, k, t) => UiSamples.WorldItemsScene(s, f, d, k, t, UiSamples.WorldItems(t, true)));
+                WorldItems(def, cases, "a search with two found", (s, f, d, k, t) => UiSamples.WorldItemsScene(s, f, d, k, t, UiSamples.WorldItems(t, true, "rack")));
+                WorldItems(def, cases, "a search with none found", (s, f, d, k, t) => UiSamples.WorldItemsScene(s, f, d, k, t, UiSamples.WorldItems(t, true, "zebra")));
+                WorldItems(def, cases, "nothing to list", (s, f, d, k, t) => UiSamples.WorldItemsScene(s, f, d, k, t, UiSamples.WorldItems(t, false, null, true)));
+                break;
+            case UiWorld.SignId:
+                WorldTool(def, cases, "a neon sign", (s, f, d, k, t) => UiSamples.WorldSignScene(s, f, d, k, t, false, false));
+                WorldTool(def, cases, "neon and bulbs", (s, f, d, k, t) => UiSamples.WorldSignScene(s, f, d, k, t, true, false));
+                WorldTool(def, cases, "its kinds open", (s, f, d, k, t) => UiSamples.WorldSignScene(s, f, d, k, t, false, true));
+                break;
+            case UiWorld.TerminalId:
+                WorldTool(def, cases, "its first choice", (s, f, d, k, t) => UiSamples.WorldTerminalScene(s, f, d, k, t, 0, false));
+                WorldTool(def, cases, "all four made", (s, f, d, k, t) => UiSamples.WorldTerminalScene(s, f, d, k, t, 4, false));
+                WorldTool(def, cases, "the designs open", (s, f, d, k, t) => UiSamples.WorldTerminalScene(s, f, d, k, t, 3, true));
+                break;
+            case UiWorld.PreviewId:
+                cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (a building)", Title = "HUD", Commands = ToolCommands, Overlay = true,
+                    Lay = (s, f, d, k, t) => UiSamples.WorldPreviewScene(s, f, d, k, t, false) });
+                cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (a design, the walls cut away)", Title = "HUD", Commands = ToolCommands, Overlay = true,
+                    Lay = (s, f, d, k, t) => UiSamples.WorldPreviewScene(s, f, d, k, t, true) });
+                break;
+            case UiWorld.ColourId:
+                cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (round the game's field)", Title = "HUD", Commands = ToolCommands, Overlay = true,
+                    Lay = (s, f, d, k, t) => UiSamples.WorldColourScene(s, f, d, k, t) });
+                break;
         }
     }
+
+    // The commands of the world's small windows (UiToolPanel): a line, a second button, a colour's add, an open choice's option
+    // and every Swatches line's colours.
+    private static readonly int[] ToolCommands = Enumerable.Range(UiToolPanel.SwatchCommand, UiToolPanel.MostLines)
+        .Concat(new[] { UiToolPanel.LineCommand, UiToolPanel.SecondCommand, UiToolPanel.AddCommand, UiToolPanel.OptionCommand }).ToArray();
+
+    private static readonly int[] ItemsCommands =
+    {
+        UiItemsList.AddCommand, UiItemsList.LessCommand, UiItemsList.MoreCommand, UiItemsList.TypeCommand, UiItemsList.ClearCommand
+    };
+
+    // A small window over the HUD: the HUD's own targets with the window's.
+    private static void WorldTool(UiScreenDef def, List<UiScreenCase> cases, string name, Action<UiScene, UiFrame, bool, IUiKeys, UiWords> lay) =>
+        cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (" + name + ")", Title = "HUD", Commands = HudCommands.Concat(ToolCommands).ToArray(), Lay = lay });
+
+    // The items list over the world, its keys its own.
+    private static void WorldItems(UiScreenDef def, List<UiScreenCase> cases, string name, Action<UiScene, UiFrame, bool, IUiKeys, UiWords> lay) =>
+        cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (" + name + ")", Title = "HUD", Commands = ItemsCommands, Lay = lay });
 
     // A world piece over the HUD: the HUD's own targets with the card's actions.
     private static void WorldBox(UiScreenDef def, List<UiScreenCase> cases, string name, Action<UiScene, UiFrame, bool, IUiKeys, UiWords> lay) =>

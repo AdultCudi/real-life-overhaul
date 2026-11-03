@@ -78,6 +78,9 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The kit phone's screen while it stands, for the tests and the checks.</summary>
         internal static PhoneScreen Screen => _screen;
 
+        /// <summary>The kit's phone on the screen while it shows, for a window that stands beside it (the private driver); null while it does not.</summary>
+        internal static RectTransform Rect => _root != null && _root.activeInHierarchy ? (RectTransform)_root.transform : null;
+
         /// <summary>Puts the kit phone over the game's once per city; asked again once a second while the switches are on.</summary>
         public static void Install()
         {
