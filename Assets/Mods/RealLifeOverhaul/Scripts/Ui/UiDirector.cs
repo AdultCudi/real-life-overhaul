@@ -59,6 +59,7 @@ namespace RealLifeOverhaul.Ui
             UiChrome.Status = UiGame.Status;
             UiChrome.Bar = HudStatusGame.Bar;   // the game's time, day, money and apps (UiGame.Bar), then the HUD's pills
             UiIcons.Own = UiGame.OwnIcon;
+            HudLive.ActivityStrip = () => ActivityKit.Strip;   // the activity panel's strip: the HUD keeps clear of it and never draws it twice
             RealLifeOverhaul.GameUi.GameSprites.Want(UiGame.OwnIconNames);
             UiShell.Start();
             ShellModBox.Start();
