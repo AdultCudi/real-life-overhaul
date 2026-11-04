@@ -369,6 +369,7 @@ namespace RealLifeOverhaul.Ui
             float mx = wx + NavWidth, rest = ww - NavWidth;
             UiDraw.Box(s, at, mx, top, UiTokens.Hairline, h, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             bool side = HasSide(m.Page);
+            int firstOfSide = s.NodeCount;
             float sw = side ? UiDraw.SnapDown(rest * SideShare) : 0f;
             float mw = rest - sw;
             if (side)
@@ -379,10 +380,28 @@ namespace RealLifeOverhaul.Ui
             }
             int firstOfPage = s.NodeCount;
             Page(s, at.InRegion(RegionMain), m, mx, top, mw, h, keys);
+            int lastOfPage = ReadingLinks(s, firstOfPage, 0, !side);
+            // The way on from the page's last target: into the side if it lies to the right, else into the nav at its first entry (the nav then goes down in one run).
+            int navFirst = -1;
+            for (int i = 0; i < firstOfSide && navFirst < 0; i++)
+            {
+                navFirst = !UiDraw.IsChrome(s.Nodes[i].Command) && s.Nodes[i].Command == NavCommand ? i : -1;
+            }
+            if (lastOfPage >= 0 && navFirst >= 0 && !side)
+            {
+                s.Nodes[lastOfPage].Right = navFirst;
+            }
+            int lastOfSide = side && firstOfPage > firstOfSide ? firstOfPage - 1 : -1;
+            if (lastOfSide >= 0 && navFirst >= 0 && s.Nodes[lastOfSide].Right < 0)
+            {
+                s.Nodes[lastOfSide].Right = navFirst;   // after the side, the nav from its top
+            }
             s.FocusFirst = PageStart(s, firstOfPage, m);
             if (m.Sheet != NoSheet)
             {
+                int firstOfSheet = s.NodeCount;
                 Sheet(s, m, wx, wy, ww, wh, keys);
+                ReadingLinks(s, firstOfSheet, 1, true);
                 s.FocusFirst = SheetStart(s, m.Sheet);
             }
             s.AddPrompt(UiAction.Move, m.Move);
@@ -393,6 +412,88 @@ namespace RealLifeOverhaul.Ui
             }
             s.AddPrompt(UiAction.Back, m.Back);
             UiDraw.PromptBar(s, frame, keys);
+        }
+
+        private static int[] _read = new int[64];
+
+        /// <summary>
+        /// Right at the end of a row goes on to the first target of the next row, and left at the start of one back to the last of the one before, so the page or the sheet
+        /// is walked left to right and top to bottom, group after group, with one run of presses, the commit button last and a sheet's close after it. On a page with a side
+        /// column only where the d-pad would find nothing that way (what lies to the right is still what right reaches); on a sheet or a page without one always.
+        /// A list keeps its own up and down.
+        /// </summary>
+        public static int ReadingLinks(UiScene s, int from, byte layer, bool always)
+        {
+            int n = 0, close = -1;
+            for (int i = from; i < s.NodeCount; i++)
+            {
+                if (layer == 1 && s.Nodes[i].Command == SheetCancelCommand && s.Nodes[i].Arg == 0)
+                {
+                    close = i;   // the sheet's way out: read last
+                }
+                else if (s.Nodes[i].Layer == layer && !s.Nodes[i].Disabled && !UiDraw.IsChrome(s.Nodes[i].Command))
+                {
+                    if (n == _read.Length)
+                    {
+                        Array.Resize(ref _read, n * 2);
+                    }
+                    _read[n++] = i;
+                }
+            }
+            // by row, then left to right (an insertion sort: a screen has a few dozen of them)
+            for (int a = 1; a < n; a++)
+            {
+                int key = _read[a], b = a - 1;
+                while (b >= 0 && ReadsBefore(s, key, _read[b]))
+                {
+                    _read[b + 1] = _read[b];
+                    b--;
+                }
+                _read[b + 1] = key;
+            }
+            for (int k = 0; k + 1 < n; k++)
+            {
+                int a = _read[k], b = _read[k + 1];
+                if (Math.Abs(Mid(s, b) - Mid(s, a)) <= ReadRow)
+                {
+                    continue;   // the same row: right and left already find each other
+                }
+                if (always || UiFocusRules.Next(s, a, 1, 0) == -1)
+                {
+                    s.Nodes[a].Right = b;
+                }
+                if (always || UiFocusRules.Next(s, b, -1, 0) == -1)
+                {
+                    s.Nodes[b].Left = a;
+                }
+            }
+            if (close >= 0 && n > 0)
+            {
+                s.Nodes[_read[n - 1]].Right = close;
+                s.Nodes[close].Left = _read[n - 1];
+            }
+            return n > 0 ? _read[n - 1] : -1;
+        }
+
+        private const float ReadRow = 14f;
+
+        private static float Mid(UiScene s, int node)
+        {
+            s.NodeBox(node, out _, out float y, out _, out float h);   // on the screen, a list's rows scrolled
+            return y + h / 2f;
+        }
+
+        private static float Left(UiScene s, int node)
+        {
+            s.NodeBox(node, out float x, out _, out _, out _);
+            return x;
+        }
+
+        // Whether a target is read before another: on an earlier row, or on the same row further left.
+        private static bool ReadsBefore(UiScene s, int p, int q)
+        {
+            float dy = Mid(s, p) - Mid(s, q);
+            return Math.Abs(dy) > ReadRow ? dy < 0f : Left(s, p) < Left(s, q);
         }
 
         // The target focus starts on: the chosen tab of the page, else the first target the page drew; a page with none (news is read, not pressed) starts
@@ -530,22 +631,21 @@ namespace RealLifeOverhaul.Ui
                 cy += UiTokens.Control + UiTokens.S4;
             }
             cy = Week(s, at, m, cx, cy, cw, bottom);
-            cy = Trends(s, at, m, cx, cy, cw, bottom);
+            // Who to follow keeps two rows in every language: the trends take what it leaves
+            int whoRows = Math.Min(2, m.Who.Count);
+            float whoRoom = whoRows > 0 ? UiTokens.S4 + L(UiStyle.Number) + UiTokens.S2 + whoRows * WhoRow + UiTokens.S2 + UiTokens.S4 : 0f;
+            cy = Trends(s, at, m, cx, cy, cw, bottom - whoRoom);
             WhoToFollow(s, at, m, cx, cy, cw, bottom);
         }
+
+        private const float WhoRow = 56f;
 
         // Your week: followers, reach and rating with what changed, the followers' line, and the way to the studio.
         private static float Week(UiScene s, UiAt at, FlareFaceModel m, float x, float y, float w, float bottom)
         {
             int n = Math.Min(3, m.WeekLabels.Length);
             const float lineH = 48f;
-            float tileW = n > 0 ? UiDraw.SnapDown((w - UiTokens.S8 - UiTokens.S2 * (n - 1)) / n) : 0f;
-            bool twoLines = false;
-            for (int i = 0; i < n; i++)
-            {
-                twoLines |= UiTextRules.Width(At(m.WeekDeltas, i) ?? string.Empty, UiStyle.Small) > tileW - UiTokens.S6;   // a longer language's change takes a second line
-            }
-            float tileH = twoLines ? 88f + L(UiStyle.Small) : 88f;
+            float tileH = 88f + L(UiStyle.Small);   // the same in every language: a change of a longer language takes the second line, and the rail below holds the same rows
             float title = L(UiStyle.Number), link = UiTokens.Control;
             float h = UiTokens.S4 + title + UiTokens.S3 + (n > 0 ? tileH + UiTokens.S3 : 0f) + (Drawn(m.Line) ? lineH + UiTokens.S2 : 0f) + link + UiTokens.S2;
             if (y + h > bottom)
@@ -635,7 +735,7 @@ namespace RealLifeOverhaul.Ui
         private static void WhoToFollow(UiScene s, UiAt at, FlareFaceModel m, float x, float y, float w, float bottom)
         {
             FlareList list = m.Who;
-            const float row = 56f;
+            const float row = WhoRow;
             float title = L(UiStyle.Number);
             int n = list.Count;
             while (n > 0 && y + UiTokens.S4 + title + UiTokens.S2 + n * row + UiTokens.S2 > bottom)

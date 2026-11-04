@@ -450,12 +450,14 @@ public static partial class UiPreviewRunner
             {
                 return ra.CompareTo(rb);
             }
-            float ya = a.Y + a.H / 2f, yb = b.Y + b.H / 2f;
+            scene.NodeBox(p, out float ax, out float ay, out _, out float ah);   // on the screen: a list's rows are scrolled
+            scene.NodeBox(q, out float bx, out float by, out _, out float bh);
+            float ya = ay + ah / 2f, yb = by + bh / 2f;
             if (Mathf.Abs(ya - yb) > 14f)
             {
                 return ya.CompareTo(yb);
             }
-            return a.X.CompareTo(b.X);
+            return ax.CompareTo(bx);
         });
         var sb = new System.Text.StringBuilder();
         foreach (int w in want) { sb.Append("[" + scene.Nodes[w].Region + ":" + scene.Nodes[w].Command + "/" + scene.Nodes[w].Arg + "@" + (int)scene.Nodes[w].X + "," + (int)scene.Nodes[w].Y + "]"); }
@@ -506,6 +508,9 @@ public static partial class UiPreviewRunner
         {
             reached += seen.Contains(n) ? 1 : 0;
         }
+        var letters = new System.Text.StringBuilder();
+        foreach (Vector2Int mv in moves) { letters.Append(mv == Right ? 'R' : mv == Down ? 'D' : mv == Left ? 'L' : 'U'); }
+        Debug.Log(Tag + "pad moves " + letters);
         Debug.Log(Tag + "pad tour: " + reached + " of " + want.Count + " targets reached in " + moves.Count + " moves");
         return moves.ToArray();
     }

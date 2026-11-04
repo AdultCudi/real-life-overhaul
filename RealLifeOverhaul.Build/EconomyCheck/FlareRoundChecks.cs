@@ -15,6 +15,7 @@ internal static partial class Program
         FlareRoundWiring();
         FlareRoundFaces();
         FlareRoundWords();
+        FlareOrderChecks();
     }
 
     // Every text the Flare screens say is in Portuguese and Chinese in those languages, not the English left in their place: each key the screens' entry names and each key the samples
@@ -62,6 +63,13 @@ internal static partial class Program
                 }
             }
         }
+        bool raw = System.Text.RegularExpressions.Regex.IsMatch(samples, "\"[0-9]+[mhd]\"");
+        bool chinese = true;
+        foreach (string age in new[] { "reallife_flare_ago_min", "reallife_flare_ago_hour", "reallife_flare_kit_ago_day" })
+        {
+            chinese &= words["zh-cn"].TryGetValue(age, out string zh) && zh.Replace("{n}", string.Empty).Length > 0 && zh.Replace("{n}", string.Empty)[0] > 127;
+        }
+        Check(!raw && chinese, "flare round: a short age is written from its keyed template in every language (zh-cn 分钟, 小时, 天), never as letters of the sample's");
         Check(missing == "none" && english == "none" && keys.Count > 300,
             "flare round: every key of the Flare screens is in pt and zh-cn and is not the English left in its place (" + keys.Count + " keys; missing " + missing + "; English " + english + ")");
     }

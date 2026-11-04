@@ -57,6 +57,10 @@ namespace RealLifeOverhaul.Ui
                 // a lone chip in the last row is an orphan: one more to a row if the room takes it, else one column
                 columns = (columns + 1) * chip + columns * UiTokens.S2 <= room ? columns + 1 : 1;
             }
+            if (columns == 1)
+            {
+                chip = room;   // a column of options is as wide as the room: no void beside it
+            }
         }
 
         // The sheet's parts from the top: measured with draw false, laid with it true. Returns the height they take.
