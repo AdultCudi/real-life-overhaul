@@ -80,7 +80,7 @@ namespace RealLifeOverhaul.Rivals
     {
         public const int CrewStart = 3;                         // people a new outlet hires, and up to two more by a seeded draw
         public const int CrewMost = 8;
-        public const int OutMost = CrewMost * 4;                // people let go that an outlet remembers by id (those no longer on the game's crew are forgotten each day, so this is a bound, never a limit met)
+        public const int OutMost = CrewMost * 4;                // people let go that an outlet remembers by id: those the game's crew no longer holds are forgotten each day, so it is a bound
         public const int OutletsMost = RivalCatalogue.OutletsMost;   // outlets open at once, for the moves and for the firms (one cap, in the catalogue): past it the oldest closes
         public const int HoursADay = 8;                         // a working day, paid
         public const int GoingBase = 1700;                      // hundredths an hour at the starting prices, for the middle of the pay
