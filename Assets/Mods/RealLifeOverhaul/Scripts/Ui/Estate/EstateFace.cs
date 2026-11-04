@@ -26,6 +26,7 @@ namespace RealLifeOverhaul.Ui
             {
                 list.Add(TableBase + i);
             }
+            list.Add(TableBase + UiDataTable.Act);
             return list.ToArray();
         }
 
@@ -36,12 +37,11 @@ namespace RealLifeOverhaul.Ui
                 UiInfoView.Lay(s, m.Rents, frame, dark, keys);   // the city's rents stand over the world with no window, as every info view
                 return;
             }
-            Tidy(m);
-            if (m.Lower == null)
+            Tidy(m);   // a chart stands on a page only where the source gave a series over time: a chart of a table's own column repeats the table
+            if (m.Card && (m.Shape == EstateShape.Detail || m.Shape == EstateShape.Auction))
             {
-                // A short page is filled with a chart of its own figures: its table's graded or money column, or its cards' money rows.
-                m.Lower = (m.Shape == EstateShape.Roll || m.Shape == EstateShape.Table) && m.Table != null ? EstateCharts.FromTable(m.Table)
-                    : m.Shape == EstateShape.Detail ? EstateCharts.FromCards(m.Left, m.Right, !string.IsNullOrEmpty(m.DetailTitle) ? m.DetailTitle : m.Title) : null;
+                CardLay(s, m, frame, dark, keys);
+                return;
             }
             s.Begin("estate", frame.Width, frame.Height, dark);
             UiAt at = UiAppWindow.Shell(s, frame, m.Title, m.Icon, m.Nav, m.Tab, m.TabsAcross, keys, out float x, out float y, out float w, out float bottom);
@@ -67,6 +67,9 @@ namespace RealLifeOverhaul.Ui
                     break;
                 case EstateShape.Chart:
                     ChartPage(s, at, m, x, y, w, bottom, keys);
+                    break;
+                case EstateShape.Empty:
+                    EmptyPage(s, at, m, x, y, w, bottom, keys);
                     break;
                 default:
                     UiDraw.EmptyState(s, at, x, y, w, bottom - y, m.OffIcon, m.OffTitle, m.OffBody, null, -1, keys);
@@ -101,9 +104,9 @@ namespace RealLifeOverhaul.Ui
             }
             float tx = x + TileBig + UiTokens.S4;
             float room = x + w - tx - (figW > 0f ? figW + UiTokens.S6 : 0f);
-            UiDraw.Text(s, at, tx, y + UiTokens.S1, room, UiStyle.Display, UiRole.Text, m.HeadTitle, UiFlags.Truncate);
+            UiDraw.Text(s, at, tx, y + UiTokens.S1, room, UiStyle.Display, UiRole.Text, m.HeadTitle, UiFlags.Truncate | UiFlags.Middle);
             float nh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display));
-            UiDraw.Text(s, at, tx, y + UiTokens.S1 + nh + UiTokens.S2, room - (linkW > 0f ? linkW + UiTokens.S3 : 0f), UiStyle.Body, UiRole.Text2, m.HeadSub, UiFlags.Truncate);
+            UiDraw.Text(s, at, tx, y + UiTokens.S1 + nh + UiTokens.S2, room - (linkW > 0f ? linkW + UiTokens.S3 : 0f), UiStyle.Body, UiRole.Text2, m.HeadSub, UiFlags.Truncate | UiFlags.Middle);
             if (linkW > 0f)
             {
                 float sub = y + UiTokens.S1 + nh + UiTokens.S2;
@@ -113,10 +116,10 @@ namespace RealLifeOverhaul.Ui
             float fx = x + w - figW;
             for (int i = 0; i < n; i++)
             {
-                UiDraw.Text(s, at, fx, y + UiTokens.S1, colW[i], UiStyle.SectionHeader, UiRole.Muted, m.FigLabels[i], UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
+                UiDraw.Text(s, at, fx, y + UiTokens.S1, colW[i], UiStyle.SectionHeader, UiRole.Muted, m.FigLabels[i], UiFlags.Label | UiFlags.Right | UiFlags.Truncate | UiFlags.Middle);
                 UiRole ink = i < m.FigInks.Length && m.FigInks[i] != UiRole.None ? m.FigInks[i] : UiRole.Text;
                 UiDraw.Text(s, at, fx, y + UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1, colW[i],
-                    UiStyle.Number, ink, m.FigValues[i], UiFlags.Right | UiFlags.Truncate);
+                    UiStyle.Number, ink, m.FigValues[i], UiFlags.Right | UiFlags.Truncate | UiFlags.Middle);
                 fx += colW[i] + UiTokens.S6;
             }
             return TileBig + UiTokens.S3 + (linkW > 0f ? UiTokens.S3 : 0f);
@@ -145,13 +148,13 @@ namespace RealLifeOverhaul.Ui
                 float ly = m.Lower != null ? under : bottom - listsH, half = UiDraw.SnapDown((w - UiTokens.S6) * ListWidthShare);
                 under = ly + listsH + UiTokens.S3;
                 UiAt lists = at.InRegion(RegionLists);
-                List(s, lists, m.ListATitle, m.ListALink, m.ListALinkRun, m.ListAEmpty, m.ListA, x, ly, half, listsH);
-                List(s, lists, m.ListBTitle, m.ListBLink, m.ListBLinkRun, m.ListBEmpty, m.ListB, x + half + UiTokens.S6, ly, w - half - UiTokens.S6, listsH);
+                List(s, lists, m.ListATitle, m.ListALink, m.ListALinkRun, m.ListAEmpty, m.ListA, x, ly, half, listsH, ListRows(m));
+                List(s, lists, m.ListBTitle, m.ListBLink, m.ListBLinkRun, m.ListBEmpty, m.ListB, x + half + UiTokens.S6, ly, w - half - UiTokens.S6, listsH, ListRows(m));
             }
-            LowerCard(s, at, m, x, under, w, bottom);
+            LowerCard(s, at, m, x, under, w, bottom, LowerLeast, LowerMost);
         }
 
-        private const float LowerLeast = 200f;
+        private const float LowerLeast = 200f, LowerMost = 380f;   // a series reads at this height: a few months stretched over the floor say no more
 
         // What the pages say, put in one style before they are drawn: a state chip begins with a capital, an empty cell is blank (no stray hyphen),
         // a graded figure carries its percent, and a side box that only repeats the section's name has no title.
@@ -207,22 +210,23 @@ namespace RealLifeOverhaul.Ui
         private static float Natural(UiDataTableModel t) => t == null ? 0f : UiDraw.Snap(UiDataTable.Chrome(t) + t.RowCount * UiDataTable.RowHeight(t));
 
         // The chart that fills the floor a short page leaves: it takes what is left, never less than it needs to read, and is not drawn where the page is full.
-        private static void LowerCard(UiScene s, UiAt at, EstateModel m, float x, float y, float w, float bottom, float least = LowerLeast)
+        private static void LowerCard(UiScene s, UiAt at, EstateModel m, float x, float y, float w, float bottom, float least = LowerLeast, float most = float.MaxValue)
         {
             if (m.Lower == null || bottom - y < least - 0.5f)
             {
                 return;
             }
             y = UiDraw.Snap(y);
-            UiChart.Lay(s, at.InRegion(RegionChart), m.Lower, x, y, w, UiDraw.SnapDown(bottom - y), UiChart.First);
+            UiChart.Lay(s, at.InRegion(RegionChart), m.Lower, x, y, w, UiDraw.SnapDown(Math.Min(most, bottom - y)), UiChart.First);
         }
 
-        private const int ListRows = 2;
+        // Two rows under the table, three where a list has them: a first flat's page is the lists and the series, not one line under a wall.
+        private static int ListRows(EstateModel m) => Math.Max(2, Math.Min(3, Math.Max(m.ListA.Length, m.ListB.Length)));
 
-        private static float ListsHeight(EstateModel m) => UiDraw.Snap(UiTokens.PairRow + UiTokens.S2 + ListRows * RowHeight);
+        private static float ListsHeight(EstateModel m) => UiDraw.Snap(UiTokens.PairRow + UiTokens.S2 + ListRows(m) * RowHeight);
 
         // A short list under a table: its title in capitals with its link at the right, then its rows.
-        private static void List(UiScene s, UiAt at, string title, string link, int linkRun, string empty, EstateRow[] rows, float x, float y, float w, float h)
+        private static void List(UiScene s, UiAt at, string title, string link, int linkRun, string empty, EstateRow[] rows, float x, float y, float w, float h, int most)
         {
             if (string.IsNullOrEmpty(title))
             {
@@ -243,7 +247,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 return;
             }
-            for (int i = 0; i < rows.Length && i < ListRows && ry + RowHeight <= y + h + 0.5f; i++)
+            for (int i = 0; i < rows.Length && i < most && ry + RowHeight <= y + h + 0.5f; i++)
             {
                 Row(s, at, rows[i], x, ry, w);
                 ry += RowHeight;
@@ -295,19 +299,27 @@ namespace RealLifeOverhaul.Ui
         private static void TablePage(UiScene s, UiAt at, EstateModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
             y += Head(s, at.InRegion(RegionHead), m, x, y, w);
+            y = StripBand(s, at, m.Strip, x, y, w);
             bool side = m.Side != null && Acts(m.Side);
             float sw = side ? Math.Min(SideWidth, UiDraw.SnapDown(w * 0.34f)) : 0f;
             float tw = w - (sw > 0f ? sw + UiTokens.S4 : 0f);
-            float room = bottom - y - (m.Lower != null ? LowerLeast + UiTokens.S3 : 0f);
+            float footH = FootHeight(m, w), foot = footH > 0f ? footH + UiTokens.S4 : 0f;
+            float room = bottom - y - foot - (m.Lower != null ? LowerLeast + UiTokens.S3 : 0f);
             float sideH = side ? UiFactCard.Height(m.Side, sw, keys, true) : 0f;
-            float th = m.Lower != null ? Math.Max(UiTokens.S16, Math.Min(Math.Max(Natural(m.Table), sideH), room)) : bottom - y;
+            float th = m.Lower != null || foot > 0f ? Math.Max(UiTokens.S16, Math.Min(Math.Max(Natural(m.Table), sideH), room)) : bottom - y;
             m.TableList = UiDataTable.Lay(s, at.InRegion(RegionTable), m.Table, x, y, tw, th, keys, TableBase);
             m.TableClip = ClipOf(s, m.TableList);
             if (side)
             {
                 UiFactCard.Lay(s, at.InRegion(RegionRight), m.Side, x + tw + UiTokens.S4, y, sw, th, keys, true);
             }
-            LowerCard(s, at, m, x, y + th + UiTokens.S3, w, bottom);
+            float under = y + th + UiTokens.S3;
+            if (foot > 0f)
+            {
+                Foot(s, at, m, x, under + UiTokens.S1, w, bottom);
+                under += foot;
+            }
+            LowerCard(s, at, m, x, under, w, bottom);
         }
 
         // ------------------------------------------------------------------------------------------------- a page about one thing
@@ -329,7 +341,7 @@ namespace RealLifeOverhaul.Ui
             float chip = string.IsNullOrEmpty(m.DetailChip) ? 0f : UiFactCard.ChipWidth(m.DetailChip);
             float nh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display));
             float nameW = Math.Min(x + w - tx - (chip > 0f ? chip + UiTokens.S3 : 0f), UiDraw.Snap(UiTextRules.Width(m.DetailTitle ?? string.Empty, UiStyle.Display) + UiTokens.S1));
-            UiDraw.Text(s, head, tx, y + UiTokens.S1, nameW, UiStyle.Display, UiRole.Text, m.DetailTitle, UiFlags.Truncate);
+            UiDraw.Text(s, head, tx, y + UiTokens.S1, nameW, UiStyle.Display, UiRole.Text, m.DetailTitle, UiFlags.Truncate | UiFlags.Middle);
             if (chip > 0f)
             {
                 UiDraw.Chip(s, head, tx + nameW + UiTokens.S3, y + UiTokens.S1 + UiDraw.SnapDown((nh - UiTokens.Badge - UiTokens.S1) / 2f), m.DetailChip, m.DetailChipTone, chip);
@@ -342,12 +354,22 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.LinkRow(s, head, x + w - lw, subY - UiDraw.SnapDown((UiTokens.Control - UiTokens.PairRow) / 2f), lw, UiTokens.Control, m.DetailLocate, ActionCommand, m.DetailLocateRun);
                 subRoom -= lw + UiTokens.S3;
             }
-            UiDraw.Text(s, head, tx, subY, subRoom, UiStyle.Body, UiRole.Text2, m.DetailSub, UiFlags.Truncate);
+            UiDraw.Text(s, head, tx, subY, subRoom, UiStyle.Body, UiRole.Text2, m.DetailSub, UiFlags.Truncate | UiFlags.Middle);
             y += TileBig + UiTokens.S4;
-            bool both = m.Left.Length > 0 && m.Right.Length > 0;
+            y = StripBand(s, at, m.Strip, x, y, w);
+            bool related = m.Related != null && m.Related.Length > 0, grid = m.Grid != null && m.Grid.Length > 0, shares = m.ShareLabels != null && m.ShareLabels.Length > 0;
+            bool related2 = m.Related2 != null && m.Related2.Length > 0, person = m.Person != null && !string.IsNullOrEmpty(m.Person.TenantName);
+            bool cards2 = m.Left.Length > 0 && m.Right.Length > 0;
+            bool both = cards2 || (related || related2 || grid || shares || person) && (m.Left.Length > 0 || m.Right.Length > 0 || related && (grid || shares || person || related2));
             float cw = both ? UiDraw.SnapDown((w - UiTokens.S4) / 2f) : UiDraw.SnapDown(Math.Min(w, UiTokens.S16 * 40f));
-            float leftH = Stack(m.Left.Length > 0 ? m.Left : m.Right, cw, keys), rightH = both ? Stack(m.Right, w - cw - UiTokens.S4, keys) : 0f;
-            float natural = y + Math.Max(leftH, rightH);
+            float rw = w - cw - UiTokens.S4, rx = x + cw + UiTokens.S4;
+            UiFactCardModel[] leftCards = m.Left.Length > 0 ? m.Left : m.Right, rightCards = cards2 ? m.Right : new UiFactCardModel[0];
+            // The left column holds its cards and then the things related to the page; the right the person, its cards, the equal buttons, the shares and a second list.
+            float leftH = Stack(leftCards, cw, keys), rightH = Stack(rightCards, rw, keys);
+            float relatedH = RelatedHeight(m), personH = person ? PersonHeight(m.Person, rw) : 0f, gridH = GridHeight(m, rw), related2H = Related2Height(m);
+            float sharesH = SharesHeight(m.ShareLabels, m.ShareValues, m.ShareTitle, both ? rw : cw);
+            float columnsH = Math.Max(leftH + relatedH, personH + rightH + gridH + sharesH);
+            float natural = y + columnsH + (related2 ? UiTokens.S3 + related2H : 0f);   // the second list runs the page's width under both columns
             float leftBottom = bottom, rightBottom = bottom, chartX = x, chartW = w, chartY = 0f;
             bool chart = false;
             if (m.Lower != null)
@@ -359,23 +381,50 @@ namespace RealLifeOverhaul.Ui
                     chartY = natural + UiTokens.S3;
                     chart = true;
                 }
-                else if (both && bottom - (y + Math.Min(leftH, rightH)) - UiTokens.S3 >= LowerLeast - 0.5f)
+                else if (both && !related2 && bottom - (y + Math.Min(leftH + relatedH, personH + rightH + gridH + sharesH)) - UiTokens.S3 >= LowerLeast - 0.5f)
                 {
                     // One column ends well short of the other: the chart stands under it, in its width, and the page stays whole.
-                    bool leftShort = leftH <= rightH;
-                    float shortBottom = y + (leftShort ? leftH : rightH);
+                    bool leftShort = leftH + relatedH <= personH + rightH + gridH + sharesH;
+                    float shortBottom = y + (leftShort ? leftH + relatedH : personH + rightH + gridH + sharesH);
                     leftBottom = leftShort ? shortBottom : bottom;
                     rightBottom = leftShort ? bottom : shortBottom;
-                    chartX = leftShort ? x : x + cw + UiTokens.S4;
-                    chartW = leftShort ? cw : w - cw - UiTokens.S4;
+                    chartX = leftShort ? x : rx;
+                    chartW = leftShort ? cw : rw;
                     chartY = shortBottom + UiTokens.S3;
                     chart = true;
                 }
             }
-            Column(s, at.InRegion(RegionLeft), m.Left.Length > 0 ? m.Left : m.Right, x, y, cw, leftBottom, keys);
+            float listsBottom = related2 ? leftBottom - related2H - UiTokens.S3 : leftBottom;   // what the columns may take: the second list keeps its own foot
+            Column(s, at.InRegion(RegionLeft), leftCards, x, y, cw, listsBottom - relatedH, keys);
+            if (related)
+            {
+                Related(s, at, m, x, y + Math.Min(leftH, listsBottom - relatedH - y), cw, listsBottom);
+            }
             if (both)
             {
-                Column(s, at.InRegion(RegionRight), m.Right, x + cw + UiTokens.S4, y, w - cw - UiTokens.S4, rightBottom, keys);
+                float below = y;
+                if (person)
+                {
+                    below = Tenant(s, at.InRegion(RegionTenant), m.Person, rx, below, rw, rightBottom);
+                }
+                if (rightCards.Length > 0)
+                {
+                    Column(s, at.InRegion(RegionRight), rightCards, rx, below, rw, listsBottom - gridH - sharesH, keys);
+                    below += Math.Min(rightH, listsBottom - gridH - sharesH - below);
+                }
+                if (grid)
+                {
+                    below = Grid(s, at, m, rx, below, rw, keys);
+                }
+                Shares(s, at, m.ShareTitle, m.ShareLabels, m.ShareValues, rx, below, rw, m.ShareTexts);
+            }
+            else
+            {
+                Shares(s, at, m.ShareTitle, m.ShareLabels, m.ShareValues, x, y + leftH, cw, m.ShareTexts);
+            }
+            if (related2)
+            {
+                Related2(s, at, m, x, y + columnsH + UiTokens.S3, w, rightBottom);
             }
             if (chart)
             {

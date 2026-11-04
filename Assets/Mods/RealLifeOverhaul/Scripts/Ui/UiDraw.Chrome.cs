@@ -356,12 +356,12 @@ namespace RealLifeOverhaul.Ui
         /// An attribute as a management game grades it: its name, a bar filled to its value and the value, both in the
         /// grade's colour from poor red to excellent green. Returns the height.
         /// </summary>
-        public static float GradeBar(UiScene s, UiAt at, float x, float y, float w, string label, int value, float labelW = 0f)
+        public static float GradeBar(UiScene s, UiAt at, float x, float y, float w, string label, int value, float labelW = 0f, string unit = null, string figureText = null)
         {
             float h = UiTokens.PairRow;
             UiRole grade = UiTokens.Grade(value);
-            string figure = Math.Max(0, Math.Min(100, value)).ToString(System.Globalization.CultureInfo.InvariantCulture);
-            float fw = UiTextRules.Width("100", UiStyle.BodyStrong) + UiTokens.S1;
+            string figure = figureText ?? Math.Max(0, Math.Min(100, value)).ToString(System.Globalization.CultureInfo.InvariantCulture) + unit;
+            float fw = UiTextRules.Width(figureText ?? "100" + unit, UiStyle.BodyStrong) + UiTokens.S1;
             float lw = labelW > 0f ? labelW : LabelColumn(w, label);
             TextMiddle(s, at, x, y, h, lw, UiStyle.Body, UiRole.Text2, label, UiFlags.Label | UiFlags.Truncate);
             float bx = x + lw + UiTokens.S3, bw = w - lw - UiTokens.S3 - fw - UiTokens.S2;

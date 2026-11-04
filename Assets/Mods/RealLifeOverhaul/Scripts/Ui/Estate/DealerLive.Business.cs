@@ -87,19 +87,47 @@ namespace RealLifeOverhaul.Ui
                     sold += _s.Yards[y].Today.Sold;
                     margin += _s.Yards[y].Today.Margin;
                 }
-                var side = new UiFactCardModel
+                int best = 0;
+                for (int y = 0; y < _s.Yards.Count; y++)
                 {
-                    Title = DealerText.T("reallife_dealer_offers_title"), Heading = true,
-                    Lines = new[]
+                    for (int d = 0; d < _s.Yards[y].Deals.Count; d++)
                     {
-                        UiFactLine.Row(DealerText.T("reallife_dealer_sum_waiting"), waiting.ToString(Inv), waiting > 0 ? UiRole.WarnText : UiRole.None),
-                        UiFactLine.Say(DealerText.Fill("reallife_dealer_offers_today", "sold", sold.ToString(Inv), "margin", Money(margin))),
-                        UiFactLine.Say(DealerText.T("reallife_dealer_offers_about"))
+                        StockCar bc = _s.Yards[y].Car(_s.Yards[y].Deals[d].Car);
+                        best = bc != null ? Math.Max(best, DealerRules.Price(_s.Yards[y], _s.Yards[y].Deals[d], bc)) : best;
                     }
-                };
+                }
                 TableShape(UiIcon.Handshake, DealerText.T("reallife_dealer_offers_title"),
-                    DealerText.T("reallife_ui_dealer_offers_sub", "waiting", waiting.ToString(Inv), "sold", (rows.Count - waiting).ToString(Inv)), cols, rows, keys, side,
+                    DealerText.T("reallife_ui_dealer_offers_sub", "waiting", waiting.ToString(Inv), "sold", (rows.Count - waiting).ToString(Inv)), cols, rows, keys, null,
                     DealerText.T("reallife_ui_dealer_empty_offers"), DealerText.T("reallife_dealer_offers_about"));
+                var rivals = new List<EstateRow>(3);
+                for (int y = 0; y < _s.Yards.Count && rivals.Count < 3; y++)
+                {
+                    for (int d = 0; d < _s.Yards[y].Deals.Count && rivals.Count < 3; d++)
+                    {
+                        StockCar rc = _s.Yards[y].Car(_s.Yards[y].Deals[d].Car);
+                        int rivalAt;
+                        int cheapest = rc != null ? RivalRules.Cheapest(_s, rc.Type, out rivalAt) : 0;
+                        if (rc == null || cheapest <= 0)
+                        {
+                            continue;
+                        }
+                        RivalRules.Cheapest(_s, rc.Type, out rivalAt);
+                        int gap = cheapest - rc.Asking;
+                        string rn = DealerGame.CarName(rc.Type).ToLowerInvariant();
+                        rivals.Add(new EstateRow
+                        {
+                            Icon = rn.Contains("truck") || rn.Contains("pickup") || rn.Contains("van") ? UiIcon.Truck : UiIcon.Car, Title = DealerGame.CarName(rc.Type),
+                            Sub = rivalAt >= 0 ? DealerCatalogue.RivalNames[rivalAt % DealerCatalogue.RivalNames.Length] : string.Empty, Amount = Money(cheapest),
+                            Chip = DealerText.T(gap >= 0 ? "reallife_ui_dealer_over_you" : "reallife_ui_dealer_under_you", "amount", Money(Math.Abs(gap))), ChipTone = gap >= 0 ? UiRole.Ok : UiRole.Warn, Run = -1
+                        });
+                    }
+                }
+                _m.RelatedTitle = DealerText.T("reallife_ui_dealer_rivals_ask");
+                _m.RelatedCount = rivals.Count > 0 ? rivals.Count.ToString(Inv) : null;
+                _m.Related = rivals.ToArray();
+                _m.FigLabels = new[] { DealerText.T("reallife_dealer_sum_waiting"), DealerText.T("reallife_ui_dealer_fig_best_offer"), DealerText.T("reallife_ui_dealer_fig_sold_today"), DealerText.T("reallife_ui_dealer_fig_margin_today") };
+                _m.FigValues = new[] { waiting.ToString(Inv), best > 0 ? Money(best) : string.Empty, sold.ToString(Inv), Money(margin) };
+                _m.FigInks = new[] { waiting > 0 ? UiRole.WarnText : UiRole.None, UiRole.None, UiRole.None, margin > 0 ? UiRole.OkText : UiRole.None };
             }
 
             private string Extras(DealerOffer d)
@@ -151,12 +179,18 @@ namespace RealLifeOverhaul.Ui
                 int offer = DealerRules.Price(yard, d, car);
                 DetailHead(UiIcon.Handshake, d.Customer, DealerText.Profile(d.Profile) + ", " + DealerGame.CarName(car.Type) + ", " + yard.Name,
                     DealerText.T(d.Stage == OfferStage.Driving ? "reallife_ibox_chip_driving" : "reallife_dealer_state_waiting"), UiRole.Warn, d.Customer);
+                _m.Card = true;
+                int dealMargin = offer - car.Cost;
+                _m.Strip = new[]
+                {
+                    new UiFigureModel { Label = DealerText.T("reallife_ibox_offer"), Value = Money(offer) },
+                    new UiFigureModel { Label = DealerText.T("reallife_ibox_asking"), Value = Money(car.Asking) },
+                    new UiFigureModel { Label = DealerText.T("reallife_ui_dealer_l_cost"), Value = Money(car.Cost) },
+                    new UiFigureModel { Label = DealerText.T("reallife_ui_dealer_l_margin_offer"), Value = (dealMargin >= 0 ? "+" : "-") + Money(Math.Abs(dealMargin)) }
+                };
                 var lines = new List<UiFactLine>(10)
                 {
-                    UiFactLine.Row(DealerText.T("reallife_ibox_offer"), Money(offer), UiRole.AccentText),
-                    UiFactLine.Row(DealerText.T("reallife_ibox_asking"), Money(car.Asking)),
-                    UiFactLine.Say(DealerText.Fill("reallife_dealer_deal_what", "car", DealerGame.CarName(car.Type), "name", yard.Name, "offer",
-                        Money(offer), "asking", Money(car.Asking), "left", DealerText.Hours(Mathf.Max(0, d.Expires - _now))))
+                    UiFactLine.Row(DealerText.T("reallife_ui_dealer_fig_time_left"), DealerText.Hours(Mathf.Max(0, d.Expires - _now)))
                 };
                 if (d.Looks > 0)
                 {
@@ -255,11 +289,9 @@ namespace RealLifeOverhaul.Ui
                     int worth = DealerDirector.Worth(car, _level), margin = offer - car.Cost;
                     var carLines = new List<UiFactLine>(7)
                     {
-                        UiFactLine.Row(DealerText.T("reallife_ui_dealer_l_cost"), Money(car.Cost)),
                         UiFactLine.Row(DealerText.T("reallife_ibox_worth"), Money(worth)),
-                        UiFactLine.Row(DealerText.T("reallife_ui_dealer_l_margin_offer"), (margin >= 0 ? "+" : "-") + Money(Math.Abs(margin)), margin >= 0 ? UiRole.OkText : UiRole.DangerText),
-                        UiFactLine.Row(DealerText.T("reallife_ui_dealer_l_condition"), DealerText.Condition(car.Condition)),
-                        UiFactLine.Row(DealerText.T("reallife_ui_dealer_l_km"), DealerText.Km(car.Km))
+                        UiFactLine.Row(DealerText.T("reallife_ui_dealer_l_km"), DealerText.Km(car.Km)),
+                        UiFactLine.Bar(DealerText.T("reallife_ui_dealer_l_condition"), Math.Max(0, Math.Min(100, car.Condition)))
                     };
                     int rivalAt;
                     int cheapest = RivalRules.Cheapest(_s, car.Type, out rivalAt);
@@ -324,20 +356,39 @@ namespace RealLifeOverhaul.Ui
                     new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_until"), Kind = UiCellKind.Date, Width = 96f },
                     new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_state"), Kind = UiCellKind.Chip, Width = 200f }
                 };
-                var side = new UiFactCardModel
-                {
-                    Title = DealerText.T("reallife_dealer_finance_title"), Heading = true,
-                    Lines = new[]
-                    {
-                        UiFactLine.Say(DealerText.Fill("reallife_dealer_finance_plans", "plans", _s.Plans.Count.ToString(Inv), "owed", Money(owed),
-                            "weekly", Money(weekly), "missed", missed.ToString(Inv))),
-                        UiFactLine.Say(DealerText.Fill("reallife_dealer_finance_covers", "covers", _s.Covers.Count.ToString(Inv), "paid",
-                            Money(paidOut))), UiFactLine.Say(DealerText.T("reallife_dealer_finance_about"))
-                    }
-                };
                 TableShape(UiIcon.Receipt, DealerText.T("reallife_dealer_finance_title"),
-                    DealerText.T("reallife_ui_dealer_finance_sub", "plans", _s.Plans.Count.ToString(Inv), "covers", _s.Covers.Count.ToString(Inv)), cols, rows, keys, side,
+                    DealerText.T("reallife_ui_dealer_finance_sub", "plans", _s.Plans.Count.ToString(Inv), "covers", _s.Covers.Count.ToString(Inv)), cols, rows, keys, null,
                     DealerText.T("reallife_ui_dealer_empty_finance"), DealerText.T("reallife_dealer_finance_about"));
+                int[] grades = new int[5];
+                for (int i = 0; i < _s.Plans.Count; i++)
+                {
+                    grades[Math.Max(0, Math.Min(4, (int)CreditCatalogue.GradeOf(_s.Plans[i].Score)))]++;
+                }
+                var gradeNames = new List<string>(5);
+                var gradeShares = new List<int>(5);
+                for (int g = 4; g >= 0 && _s.Plans.Count > 0; g--)
+                {
+                    if (grades[g] > 0)
+                    {
+                        gradeNames.Add(DealerText.T("reallife_ui_dealer_grade_n", "grade", FinanceText.Grade((CreditGrade)g)));
+                        gradeShares.Add(grades[g] * 100 / _s.Plans.Count);
+                    }
+                }
+                _m.ShareTitle = DealerText.T("reallife_ui_dealer_sh_grades");
+                _m.ShareLabels = gradeNames.ToArray();
+                _m.ShareValues = gradeShares.ToArray();
+                var ending = new List<EstateRow>(3);
+                for (int i = 0; i < _s.Covers.Count && ending.Count < 3; i++)
+                {
+                    DealerCover cv = _s.Covers[i];
+                    ending.Add(new EstateRow { Icon = UiIcon.ShieldCheck, Title = DealerGame.CarName(cv.Type), Sub = cv.Customer, Chip = FinanceText.Day(cv.Until), ChipTone = UiRole.Notice, Amount = Money(cv.Paid), Run = -1 });
+                }
+                _m.RelatedTitle = DealerText.T("reallife_ui_dealer_warranties_end");
+                _m.RelatedCount = ending.Count > 0 ? ending.Count.ToString(Inv) : null;
+                _m.Related = ending.ToArray();
+                _m.FigLabels = new[] { DealerText.T("reallife_ui_dealer_fig_owed"), DealerText.T("reallife_ui_dealer_fig_a_week"), DealerText.T("reallife_ui_dealer_fig_behind"), DealerText.T("reallife_ui_dealer_fig_paid_out") };
+                _m.FigValues = new[] { Money(owed), Money(weekly), missed.ToString(Inv), Money(paidOut) };
+                _m.FigInks = new[] { UiRole.None, UiRole.None, missed > 0 ? UiRole.DangerText : UiRole.None, UiRole.None };
             }
 
             // ------------------------------------------------------------------------------------------------- growth
@@ -422,14 +473,8 @@ namespace RealLifeOverhaul.Ui
                     new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_about"), Kind = UiCellKind.Text, Width = 0f },
                     new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_state"), Kind = UiCellKind.Chip, Width = 200f }
                 };
-                var side = new UiFactCardModel
-                {
-                    Title = DealerText.T("reallife_dealer_growth_title"), Heading = true,
-                    Lines = new[] { UiFactLine.Say(DealerText.T("reallife_dealer_growth_events")),
-                        UiFactLine.Say(DealerText.T("reallife_dealer_growth_rep")), UiFactLine.Say(DealerText.T("reallife_dealer_growth_missions")) }
-                };
                 TableShape(UiIcon.Rocket, DealerText.T("reallife_dealer_growth_title"), DealerText.T("reallife_ui_dealer_growth_sub"), cols, rows,
-                    keys, side, DealerText.T("reallife_dealer_row_no_dealership"), DealerText.T("reallife_dealer_growth_events"));
+                    keys, null, DealerText.T("reallife_dealer_row_no_dealership"), DealerText.T("reallife_dealer_growth_events"));
                 if (_s.Yards.Count > 0)
                 {
                     _m.FigLabels = new[] { DealerText.T("reallife_ui_dealer_fig_events_on"), DealerText.T("reallife_ui_dealer_fig_missions_done"), DealerText.T("reallife_ui_dealer_fig_sold_today") };
@@ -451,14 +496,13 @@ namespace RealLifeOverhaul.Ui
             {
                 int cost = DealerDirector.EventCost(kind);
                 DetailHead(UiIcon.Megaphone, DealerText.Event(kind, 0), DealerText.EventShort(kind), null, UiRole.Notice);
-                var terms = new List<UiFactLine>
+                _m.DetailSub = DealerText.EventAbout(kind);
+                _m.Strip = new[]
                 {
-                    UiFactLine.Say(DealerText.EventAbout(kind)), UiFactLine.Row(DealerText.T("reallife_ibox_cost"), Money(cost)),
-                    UiFactLine.Say(DealerText.Fill("reallife_dealer_event_terms", "cost", Money(cost), "days",
-                        DealerCatalogue.EventDays[kind].ToString(Inv), "rest", DealerCatalogue.EventRest.ToString(Inv))),
-                    UiFactLine.Say(DealerText.T("reallife_dealer_event_campaigns"))
+                    new UiFigureModel { Label = DealerText.T("reallife_ibox_cost"), Value = Money(cost) },
+                    new UiFigureModel { Label = DealerText.T("reallife_ui_dealer_fig_runs"), Value = DealerText.T("reallife_dealer_days", "days", DealerCatalogue.EventDays[kind].ToString(Inv)) },
+                    new UiFigureModel { Label = DealerText.T("reallife_ui_dealer_fig_rests"), Value = DealerText.T("reallife_dealer_days", "days", DealerCatalogue.EventRest.ToString(Inv)) }
                 };
-                _m.Left = new[] { new UiFactCardModel { Title = DealerText.T("reallife_ibox_sec_terms"), Heading = true, Lines = terms.ToArray() } };
                 _m.Lower = Trend(RealLifeOverhaul.Economy.Dealership.ReportKind.Visitors, null, "reallife_dealer_report_visitors");
                 var where = new List<UiFactLine>(5);
                 var actions = new List<UiActionModel>(1);
@@ -647,25 +691,38 @@ namespace RealLifeOverhaul.Ui
                 int week = DealerReport.Sum(_s, place, _day - DealerCatalogue.WeekBooks + 1, _day, _day, _rWeek, _rDay);
                 int kept = DealerReport.Sum(_s, place, _day - DealerCatalogue.ReportDays + 1, _day, _day, _rAll, _rDay);
                 DealerReport.Day(_s, place, _day, _day, _rNow);
-                _m.Side = new UiFactCardModel
-                {
-                    Title = DealerText.T("reallife_ui_dealer_sums"), Heading = true,
-                    Lines = new[]
-                    {
-                        UiFactLine.Section(DealerText.T("reallife_ibox_sec_this_week")), UiFactLine.Say(Sums("reallife_dealer_reports_week", _rWeek, week)),
-                        UiFactLine.Section(DealerText.T("reallife_ibox_sec_kept")), UiFactLine.Say(Sums("reallife_dealer_reports_kept", _rAll, kept)),
-                        UiFactLine.Section(DealerText.T("reallife_ibox_sec_now")),
-                        UiFactLine.Say(DealerText.Fill("reallife_dealer_reports_now", "cars", _rNow.Cars.ToString(Inv), "age",
-                            DealerReport.Value(_rNow, RealLifeOverhaul.Economy.Dealership.ReportKind.StockAge).ToString(Inv),
-                            "arrears", Money(_rNow.Arrears), "late", _rNow.Late.ToString(Inv)))
-                    }
-                };
+                var sums = new List<UiFactLine>(16);
+                sums.AddRange(SumRows(_rWeek));
+                sums.Add(UiFactLine.Section(DealerText.T("reallife_ibox_sec_now")));
+                sums.Add(UiFactLine.Row(DealerText.T("reallife_ui_dealer_fig_cars_lot"), _rNow.Cars.ToString(Inv)));
+                sums.Add(UiFactLine.Row(DealerText.T("reallife_ui_dealer_fig_age"), DealerReport.Value(_rNow, RealLifeOverhaul.Economy.Dealership.ReportKind.StockAge).ToString(Inv)));
+                sums.Add(UiFactLine.Row(DealerText.T("reallife_ui_dealer_fig_arrears"), Money(_rNow.Arrears), _rNow.Arrears > 0 ? UiRole.DangerText : UiRole.None));
+                sums.Add(UiFactLine.Row(DealerText.T("reallife_ui_dealer_fig_late"), _rNow.Late.ToString(Inv), _rNow.Late > 0 ? UiRole.DangerText : UiRole.None));
+                _m.Side = new UiFactCardModel { Title = DealerText.T("reallife_ibox_sec_this_week"), Heading = true, Lines = sums.ToArray() };
+                _m.ChartKindsTitle = DealerText.T("reallife_ui_dealer_plot_what");
+                _m.ChartPlacesTitle = DealerText.T("reallife_ui_dealer_plot_where");
             }
 
             private string FormatFigure(float v, RealLifeOverhaul.Economy.Dealership.ReportKind kind, bool money)
             {
                 return money ? Money((int)Math.Max(int.MinValue / 2, Math.Min(int.MaxValue / 2, v)))
                     : kind == RealLifeOverhaul.Economy.Dealership.ReportKind.Conversion ? (v / 10f).ToString("0.#", Inv) + "%" : ((int)v).ToString(Inv);
+            }
+
+            // A week's sums as rows of a label and its figure.
+            private List<UiFactLine> SumRows(DealerBook b)
+            {
+                long conversion = DealerReport.Value(b, RealLifeOverhaul.Economy.Dealership.ReportKind.Conversion);
+                return new List<UiFactLine>(8)
+                {
+                    UiFactLine.Row(DealerText.T("reallife_ui_dealer_fig_cars_sold"), b.Sold.ToString(Inv)),
+                    UiFactLine.Row(DealerText.T("reallife_dealer_report_revenue"), Money(b.Revenue)),
+                    UiFactLine.Row(DealerText.T("reallife_ui_dealer_fig_margin"), Money(b.Margin), b.Margin > 0 ? UiRole.OkText : UiRole.None),
+                    UiFactLine.Row(DealerText.T("reallife_ui_dealer_fig_extras"), Money(b.Extras)),
+                    UiFactLine.Row(DealerText.T("reallife_ui_dealer_fig_spent"), Money(b.Spent)),
+                    UiFactLine.Row(DealerText.T("reallife_dealer_report_visitors"), b.Visitors.ToString(Inv)),
+                    UiFactLine.Row(DealerText.T("reallife_dealer_report_conversion"), (conversion / 10.0).ToString("0.#", Inv) + "%")
+                };
             }
 
             private string Sums(string key, DealerBook b, int days)

@@ -182,7 +182,8 @@ namespace RealLifeOverhaul.Ui
                 _m.Shape = EstateShape.Roll;
                 _m.HeadIcon = UiIcon.Home;
                 _m.HeadTitle = EstateText.T("reallife_ui_estate_roll_title");
-                _m.HeadSub = EstateText.T("reallife_ui_estate_roll_sub", "units", units.ToString(Inv), "buildings", buildings.ToString(Inv), "waiting", _d.Waiting().ToString(Inv));
+                _m.HeadSub = _d.Waiting() > 0 ? EstateText.T("reallife_ui_estate_roll_sub", "units", units.ToString(Inv), "buildings", buildings.ToString(Inv), "waiting", _d.Waiting().ToString(Inv))
+                    : EstateText.T("reallife_ui_estate_roll_sub_clear", "units", units.ToString(Inv), "buildings", buildings.ToString(Inv));
                 _m.FigLabels = new[] { EstateText.T("reallife_ui_estate_fig_due"), EstateText.T("reallife_ui_estate_fig_collected"),
                     EstateText.T("reallife_ui_estate_fig_arrears"), EstateText.T("reallife_ui_estate_fig_empty") };
                 _m.FigValues = new[] { Cash(due), Cash(Math.Max(0, due - owed)), Cash(owed), Cash(empty) };
@@ -216,7 +217,7 @@ namespace RealLifeOverhaul.Ui
                     var rents = new float[_s.RentRingCount];
                     for (int i = 0; i < months.Length; i++)
                     {
-                        months[i] = EstateText.T("reallife_ui_estate_month_n", "month", (_s.RentRingMonth - months.Length + 1 + i).ToString(Inv));
+                        months[i] = EstateText.T("reallife_ui_estate_month_n", "month", _s.RentRingMonths[i].ToString(Inv));
                         rents[i] = _s.RentRing[i];
                     }
                     _m.Lower = EstateCharts.Line(EstateText.T("reallife_ui_estate_ring_chart"), months, rents, EstateText.T("reallife_ui_estate_rv_mean_flat"), EstateCharts.Dollars);
@@ -319,10 +320,10 @@ namespace RealLifeOverhaul.Ui
             private EstateRow[] LandlordRows()
             {
                 RentMapData map = _d.Rents;
-                var rows = new List<EstateRow>(2);
+                var rows = new List<EstateRow>(3);
                 var ordered = new List<RentLandlord>(map.Landlords);
                 ordered.Sort((a, b) => b.Units.CompareTo(a.Units));
-                for (int i = 0; i < ordered.Count && rows.Count < 2; i++)
+                for (int i = 0; i < ordered.Count && rows.Count < 3; i++)
                 {
                     RentLandlord l = ordered[i];
                     int change = RentRingRules.LandlordChange(_s, l.Id);
@@ -332,7 +333,7 @@ namespace RealLifeOverhaul.Ui
                         Title = EstateText.T("reallife_ui_estate_landlord_line", "name", name, "units", l.Units.ToString(Inv), "rent", Money(l.Mean(map.MonthDays))),
                         Face = name, Hue = UiColour.HueOf(name),
                         Amount = change == int.MinValue ? string.Empty : ((change >= 0 ? "+" : string.Empty) + EstateText.Share(change)),
-                        AmountInk = change > 0 ? UiRole.WarnText : UiRole.None, Run = -1
+                        AmountInk = change > 0 ? UiRole.OkText : change < 0 ? UiRole.WarnText : UiRole.None, Run = -1
                     });
                 }
                 return rows.ToArray();

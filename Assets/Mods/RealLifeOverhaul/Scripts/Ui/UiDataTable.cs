@@ -483,7 +483,7 @@ namespace RealLifeOverhaul.Ui
                     if (m.Columns[c].Kind == UiCellKind.Action)
                     {
                         // Laid after the row's own target, so the button over it takes its press.
-                        ActButton(s, inside, ref row, c, cx[c] - x, ry, cw[c], rowH, command, r);
+                        ActButton(s, inside, ref row, c, cx[c] - x, ry, cw[c], rowH, command, r, list);
                     }
                     else if (sel && m.Columns[c].Kind == UiCellKind.Stepper && m.Columns[c].OnChosen)
                     {
@@ -507,7 +507,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         // A row's action at the right of its cell: its icon on a slate tile in its colour, a target of its own.
-        private static void ActButton(UiScene s, UiAt at, ref UiDataRow row, int c, float cx, float ry, float cw, float rowH, int command, int r)
+        private static void ActButton(UiScene s, UiAt at, ref UiDataRow row, int c, float cx, float ry, float cw, float rowH, int command, int r, short list)
         {
             int value = row.Values != null && c < row.Values.Length ? row.Values[c] : 0;
             if (value <= 0)
@@ -516,7 +516,12 @@ namespace RealLifeOverhaul.Ui
             }
             UiRole tint = row.Tones != null && c < row.Tones.Length ? row.Tones[c] : UiRole.None;
             float size = UiTokens.ControlSmall;
-            UiDraw.IconButton(s, at, cx + cw - size, ry + (rowH - size) / 2f, size, (UiIcon)value, tint, command + Act, r);
+            int node = UiDraw.IconButton(s, at, cx + cw - size, ry + (rowH - size) / 2f, size, (UiIcon)value, tint, command + Act, r);
+            if (node >= 0 && node < s.NodeCount && s.Nodes[node].Command == command + Act)
+            {
+                s.Nodes[node].List = list;   // a row's own button is of its list: the pad that reaches the list reaches it
+                s.Nodes[node].Index = r;
+            }
         }
 
         // A cell by its column's kind, its box from cx to cx + cw in the row. Returns a stepper's typed figure, the target that

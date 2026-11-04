@@ -8,6 +8,7 @@ namespace RealLifeOverhaul.Ui
         public string Picture;       // a picture's key the game resolves (UiPictures), or null for the glyph
         public float Aspect;         // the picture's width over its height, so its tile letterboxes it and never stretches it
         public UiIcon Icon;          // the glyph when there is no picture, in its own colour
+        public UiRole Tint;          // or in this colour (a car's class), None for the glyph's own
         public string Name;
         public string Figure;        // the price as the game writes it, or the figure that matters
         public string State;         // "Owned", "Sold out", "Locked", or null
@@ -242,7 +243,7 @@ namespace RealLifeOverhaul.Ui
                 };
                 return s.Add(ref item);
             }
-            return UiDraw.Icon(s, at, x + UiDraw.SnapDown((w - glyph) / 2f), y + UiDraw.SnapDown((h - glyph) / 2f), glyph, c.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
+            return UiDraw.Icon(s, at, x + UiDraw.SnapDown((w - glyph) / 2f), y + UiDraw.SnapDown((h - glyph) / 2f), glyph, c.Icon, c.Tint, UiFlags.Middle | UiFlags.Centre, true);
         }
 
         // How many rows above the first the detail's actions need, the main one last in the bottom row, as the foot lays them out.
@@ -269,6 +270,11 @@ namespace RealLifeOverhaul.Ui
             // Actions that do not all fit one row wrap into rows above the main one, which stays last in the bottom row.
             float step = UiTokens.Control + UiTokens.S1;
             float extra = ActionRows(m, w, keys);
+            bool grid = extra > 0f && m.Actions.Length >= 3;   // more than a row of them: two equal columns, so the blocks never read ragged
+            if (grid)
+            {
+                extra = (m.Actions.Length + 1) / 2 - 1;
+            }
             float actionsH = (extra + 1f) * UiTokens.Control + extra * UiTokens.S1;
             // The picture takes what the facts and the actions leave of the column, at most its own height: a short window gets a shorter picture, never a cut sentence.
             float restH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1
@@ -317,6 +323,20 @@ namespace RealLifeOverhaul.Ui
             // The actions under what they act on, the main one last at the right in the bottom row, as the hero's actions stand by it.
             float by = Math.Min(UiDraw.Snap(ty + UiTokens.S5 + extra * step), y + h - UiTokens.Control);
             float right = x + w, rowY = by;
+            if (grid)
+            {
+                float cw = UiDraw.SnapDown((w - UiTokens.S3) / 2f);
+                int n = m.Actions.Length, first = n % 2;   // an odd one out stands alone on the top row, across the width
+                for (int i = 0; i < n; i++)
+                {
+                    ref UiActionModel a = ref m.Actions[i];
+                    int slot = i + first, row = slot / 2, col = slot % 2;
+                    bool alone = first == 1 && i == 0;
+                    float gy = by - ((n + first) / 2 - 1 - row) * step;
+                    UiDraw.Button(s, at, alone ? x : x + col * (cw + UiTokens.S3), gy, alone ? w : cw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, command + Action, i, a.Disabled || c.Disabled);
+                }
+                return;
+            }
             for (int i = m.Actions.Length - 1; i >= 0; i--)
             {
                 ref UiActionModel a = ref m.Actions[i];

@@ -98,7 +98,16 @@ namespace RealLifeOverhaul.Ui
             {
                 // The info view's own buttons share the number 1 with the window's sections, and the rents view stands without the window:
                 // a press there is the view's, never a change of section.
-                if (_m.Shape == EstateShape.Rents || arg < 0 || arg >= _m.Nav.Length)
+                if (_m.Shape == EstateShape.Rents)
+                {
+                    if (_m.Rents == null || arg < 0 || arg >= _m.Rents.Views.Length)
+                    {
+                        return false;
+                    }
+                    _view.RentUse = arg;   // the view's own icons: the kind of rent the districts are ranked by
+                    return true;
+                }
+                if (arg < 0 || arg >= _m.Nav.Length)
                 {
                     return false;
                 }
@@ -114,6 +123,11 @@ namespace RealLifeOverhaul.Ui
                 _view.Pick = _m.RowKeys[arg];
                 _view.Offset = 0f;
                 return true;
+            }
+            if (command == EstateFace.TableBase + UiDataTable.Act)
+            {
+                // A row's own button (Locate): the run the row's source gave it.
+                return _m.RowRuns != null && arg >= 0 && arg < _m.RowRuns.Length && _m.RowRuns[arg] >= 0 && Run(_m.RowRuns[arg]);
             }
             if (command == UiCatalogue.First + UiCatalogue.Card && _m.Shape == EstateShape.Catalogue)
             {
@@ -213,7 +227,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
-            bool done = Key(_m.DetailActions, action) || (_m.Unit != null && Key(_m.Unit.NeedActions, action));
+            bool done = Key(_m.DetailActions, action) || (_m.Shape == EstateShape.Empty && _m.Side != null && Key(_m.Side.Actions, action)) || (_m.Unit != null && Key(_m.Unit.NeedActions, action));
             for (int i = 0; !done && i < _m.Left.Length; i++)
             {
                 done = Key(_m.Left[i].Actions, action);

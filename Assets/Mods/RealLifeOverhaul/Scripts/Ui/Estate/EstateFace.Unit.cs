@@ -27,11 +27,11 @@ namespace RealLifeOverhaul.Ui
             float tx = x + TileBig + UiTokens.S4, tw = w - TileBig - UiTokens.S4;
             float nh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display));
             float rentW = string.IsNullOrEmpty(u.Rent) ? 0f : UiDraw.Snap(UiTextRules.Width(u.Rent, UiStyle.Number) + UiTokens.S1);
-            UiDraw.Text(s, at, tx, y + UiTokens.S1, tw - rentW - UiTokens.S3, UiStyle.Display, UiRole.Text, u.Title, UiFlags.Truncate);
+            UiDraw.Text(s, at, tx, y + UiTokens.S1, tw - rentW - UiTokens.S3, UiStyle.Display, UiRole.Text, u.Title, UiFlags.Truncate | UiFlags.Middle);
             if (rentW > 0f)
             {
-                UiDraw.Text(s, at, x + w - rentW, y, rentW, UiStyle.Number, UiRole.Text, u.Rent, UiFlags.Right);
-                UiDraw.Text(s, at, x + w - rentW, y + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Number)), rentW, UiStyle.Small, UiRole.Text2, u.RentPer, UiFlags.Right | UiFlags.Truncate);
+                UiDraw.Text(s, at, x + w - rentW, y, rentW, UiStyle.Number, UiRole.Text, u.Rent, UiFlags.Right | UiFlags.Middle);
+                UiDraw.Text(s, at, x + w - rentW, y + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Number)), rentW, UiStyle.Small, UiRole.Text2, u.RentPer, UiFlags.Right | UiFlags.Truncate | UiFlags.Middle);
             }
             y += UiTokens.S1 + nh + UiTokens.S3;
             float locW = string.IsNullOrEmpty(u.Locate) ? 0f : Math.Min(UiDraw.SnapDown(tw * 0.5f), UiDraw.Snap(UiTextRules.Width(u.Locate, UiStyle.Body) + UiTokens.Icon + UiTokens.S4));
@@ -54,17 +54,30 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.TextMiddle(s, at, x + w - vw, y, UiTokens.PairRow, vw, UiStyle.BodyStrong, UiRole.Text, u.NextValue, UiFlags.Right);
                 y += UiTokens.PairRow + UiTokens.S1;
             }
-            float half = UiDraw.SnapDown((w - UiTokens.S6) / 2f);
             int facts = Math.Min(u.FactLabels.Length, u.FactValues.Length);
-            for (int i = 0; i < facts; i++)
+            if (facts > 0)
             {
-                float fx = x + (i % 2) * (half + UiTokens.S6), fy = y + (i / 2) * UiTokens.PairRow;
-                UiDraw.InfoRow(s, at, fx, fy, half, u.FactLabels[i], u.FactValues[i]);
+                // The facts as pairs of a name and its value on a band of their own, two across, so none is a value standing as a name.
+                float bandPad = UiTokens.S3, half = UiDraw.SnapDown((w - bandPad * 2f - UiTokens.S6) / 2f), bandH = ((facts + 1) / 2) * UiTokens.PairRow + bandPad * 2f;
+                int band = UiDraw.Box(s, at, x, y, w, bandH, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
+                for (int i = 0; i < facts; i++)
+                {
+                    float fx = x + bandPad + (i % 2) * (half + UiTokens.S6), fy = y + bandPad + (i / 2) * UiTokens.PairRow;
+                    UiDraw.InfoRow(s, at.In(band), fx, fy, half, u.FactLabels[i], u.FactValues[i]);
+                }
+                y += bandH + UiTokens.S3;
             }
-            y += ((facts + 1) / 2) * UiTokens.PairRow + UiTokens.S3;
+            if (u.Strip.Length > 0)
+            {
+                y = UiAppWindow.Figures(s, at, u.Strip, x, y, w) - UiTokens.S2;
+            }
             if (!string.IsNullOrEmpty(u.TenantName) && y + UiTokens.S16 * 2f < bottom)
             {
                 y = Tenant(s, tenant, u, x, y, w, bottom);
+            }
+            if (u.ShareLabels.Length > 0 && y + SharesHeight(u.ShareLabels, u.ShareValues, u.ShareTitle, w) <= bottom)
+            {
+                y = Shares(s, at, u.ShareTitle, u.ShareLabels, u.ShareValues, x, y, w);
             }
             if (u.YearChart != null && bottom - y >= LowerLeast - 0.5f)
             {
@@ -73,7 +86,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (u.YearLabels.Length > 0 && y + UiTokens.PairRow * (u.YearLabels.Length + 2) <= bottom)
             {
-                UiDraw.Text(s, at, x, y, w, UiStyle.SectionHeader, UiRole.Text2, u.YearTitle, UiFlags.Label | UiFlags.Truncate);
+                UiDraw.Text(s, at, x, y, w, UiStyle.SectionHeader, UiRole.Text2, u.YearTitle, UiFlags.Label | UiFlags.Truncate | UiFlags.Middle);
                 y += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2;
                 for (int i = 0; i < u.YearLabels.Length && i < u.YearValues.Length; i++)
                 {
@@ -85,17 +98,13 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.TextMiddle(s, at, x + w * 0.5f, y, UiTokens.PairRow, w * 0.5f, UiStyle.BodyStrong, UiRole.OkText, u.YearKept, UiFlags.Right | UiFlags.Truncate);
                 y += UiTokens.PairRow + UiTokens.S3;
             }
-            if (u.LeftChart != null && bottom - y >= LowerLeast - 0.5f)
-            {
-                UiChart.Lay(s, chart, u.LeftChart, x, y, w, UiDraw.SnapDown(bottom - y), UiChart.First);   // what is left under the unit's facts holds the unit's own figures
-            }
         }
 
         private static float Tenant(UiScene s, UiAt at, EstateUnitPage u, float x, float y, float w, float bottom)
         {
             float hh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader));
             float olw = string.IsNullOrEmpty(u.TenantOpen) ? 0f : Math.Min(UiDraw.SnapDown(w * 0.5f), UiDraw.Snap(UiTextRules.Width(u.TenantOpen, UiStyle.Body) + UiTokens.Icon + UiTokens.S4));
-            UiDraw.Text(s, at, x, y, w - olw - (olw > 0f ? UiTokens.S3 : 0f), UiStyle.SectionHeader, UiRole.Text2, u.TenantTitle, UiFlags.Label | UiFlags.Truncate);
+            UiDraw.Text(s, at, x, y, w - olw - (olw > 0f ? UiTokens.S3 : 0f), UiStyle.SectionHeader, UiRole.Text2, u.TenantTitle, UiFlags.Label | UiFlags.Truncate | UiFlags.Middle);
             if (olw > 0f)
             {
                 UiDraw.LinkRow(s, at, x + w - olw, y - UiDraw.SnapDown((UiTokens.Control - hh) / 2f), olw, UiTokens.Control, u.TenantOpen, ActionCommand, u.TenantOpenRun);
@@ -107,18 +116,18 @@ namespace RealLifeOverhaul.Ui
             float nameH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Number));
             float chip = string.IsNullOrEmpty(u.TenantChip) ? 0f : UiFactCard.ChipWidth(u.TenantChip);
             float nameW = Math.Min(x + w - tx - (chip > 0f ? chip + UiTokens.S3 : 0f), UiDraw.Snap(UiTextRules.Width(u.TenantName, UiStyle.Number) + UiTokens.S1));
-            UiDraw.Text(s, at, tx, y + UiTokens.S1, nameW, UiStyle.Number, UiRole.Text, u.TenantName, UiFlags.Truncate);
+            UiDraw.Text(s, at, tx, y + UiTokens.S1, nameW, UiStyle.Number, UiRole.Text, u.TenantName, UiFlags.Truncate | UiFlags.Middle);
             if (chip > 0f)
             {
                 UiDraw.Chip(s, at, tx + nameW + UiTokens.S3, y + UiTokens.S1 + UiDraw.SnapDown((nameH - UiTokens.Badge - UiTokens.S1) / 2f), u.TenantChip, u.TenantChipTone, chip);
             }
-            UiDraw.Text(s, at, tx, y + UiTokens.S1 + nameH + UiTokens.S1, x + w - tx, UiStyle.Body, UiRole.Text2, u.TenantLine, UiFlags.Truncate);
+            UiDraw.Text(s, at, tx, y + UiTokens.S1 + nameH + UiTokens.S1, x + w - tx, UiStyle.Body, UiRole.Text2, u.TenantLine, UiFlags.Truncate | UiFlags.Middle);
             y += face + UiTokens.S3;
             int n = Math.Min(u.MeterLabels.Length, u.MeterValues.Length);
             float lw2 = UiDraw.LabelColumn(w, u.MeterLabels);
             for (int i = 0; i < n && y + UiTokens.PairRow <= bottom; i++)
             {
-                UiDraw.GradeBar(s, at, x, y, w, u.MeterLabels[i], u.MeterValues[i], lw2);
+                UiDraw.GradeBar(s, at, x, y, w, u.MeterLabels[i], u.MeterValues[i], lw2, "%");
                 y += UiTokens.PairRow;
             }
             return y + UiTokens.S3;
@@ -133,6 +142,16 @@ namespace RealLifeOverhaul.Ui
             else if (!string.IsNullOrEmpty(u.NeedHead))
             {
                 y = Need(s, need, u, x, y, w, keys) + UiTokens.S4;
+            }
+            if (u.Applicants.Length > 0 && y + RowHeight * 2f < bottom)
+            {
+                y = Section(s, at, u.ApplicantsTitle, u.ApplicantsCount, x, y, w);
+                for (int i = 0; i < u.Applicants.Length && y + RowHeight <= bottom; i++)
+                {
+                    Row(s, at, u.Applicants[i], x, y, w);
+                    y += RowHeight;
+                }
+                y += UiTokens.S3;
             }
             if (u.Record.Length > 0 && y + UiTokens.PairRow * 3 < bottom)
             {
@@ -162,12 +181,6 @@ namespace RealLifeOverhaul.Ui
                     y += RowHeight;
                 }
             }
-            if (!string.IsNullOrEmpty(u.MarketNote) && y + UiTokens.S10 <= bottom)
-            {
-                UiDraw.Icon(s, at, x, y + UiTokens.S1, UiTokens.Icon, UiIcon.Info, UiRole.None, UiFlags.Middle, true);
-                UiDraw.Text(s, at, x + UiTokens.Icon + UiTokens.S2, y + UiTokens.S1, w - UiTokens.Icon - UiTokens.S2, UiStyle.Small, UiRole.Text2, u.MarketNote, UiFlags.Label | UiFlags.Wrap, 2);
-                y += UiDraw.Snap(UiTextRules.WrappedHeight(u.MarketNote, UiStyle.Small, w - UiTokens.Icon - UiTokens.S2, 2)) + UiTokens.S3;
-            }
             if (!string.IsNullOrEmpty(u.BuildingLink) && y + UiTokens.Control <= bottom)
             {
                 UiDraw.LinkRow(s, at, x, y, w, UiTokens.Control, u.BuildingLink, ActionCommand, u.BuildingRun);
@@ -185,9 +198,9 @@ namespace RealLifeOverhaul.Ui
             int box = UiDraw.Box(s, at, x, y, w, h, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
             UiAt on = at.In(box);
             float cy = y + pad;
-            UiDraw.Text(s, on, x + pad, cy, iw, UiStyle.SectionHeader, UiRole.Text2, u.NeedKicker, UiFlags.Label | UiFlags.Truncate);
+            UiDraw.Text(s, on, x + pad, cy, iw, UiStyle.SectionHeader, UiRole.Text2, u.NeedKicker, UiFlags.Label | UiFlags.Truncate | UiFlags.Middle);
             cy += kick + UiTokens.S1;
-            UiDraw.Text(s, on, x + pad, cy, iw, UiStyle.Title, UiRole.Text, u.NeedHead, UiFlags.Truncate);
+            UiDraw.Text(s, on, x + pad, cy, iw, UiStyle.Title, UiRole.Text, u.NeedHead, UiFlags.Truncate | UiFlags.Middle);
             cy += head + UiTokens.S1;
             if (body > 0f)
             {
@@ -198,7 +211,7 @@ namespace RealLifeOverhaul.Ui
             {
                 cy += UiTokens.S3;
                 float bx = x + pad;
-                float linkW = string.IsNullOrEmpty(u.NeedLink) ? 0f : UiDraw.Snap(UiTextRules.Width(u.NeedLink, UiStyle.Body) + UiTokens.S4);
+                float linkW = string.IsNullOrEmpty(u.NeedLink) ? 0f : UiDraw.ButtonWidth(UiButtonKind.Destructive, u.NeedLink, UiIcon.None, UiAction.Count, keys) + UiTokens.S3;
                 for (int i = 0; i < u.NeedActions.Length; i++)
                 {
                     ref UiActionModel a = ref u.NeedActions[i];
@@ -212,8 +225,8 @@ namespace RealLifeOverhaul.Ui
                 }
                 if (linkW > 0f)
                 {
-                    int link = UiDraw.TextMiddle(s, on, x + w - pad - linkW, cy, UiTokens.Control, linkW, UiStyle.Body, UiRole.DangerText, u.NeedLink, UiFlags.Right | UiFlags.Truncate);
-                    UiDraw.Node(s, on, x + w - pad - linkW, cy, linkW, UiTokens.Control, ActionCommand, u.NeedLinkRun, link);
+                    // The one thing here that cannot be taken back is a button of its own look, never a word among the others.
+                    UiDraw.Button(s, on, x + w - pad - linkW + UiTokens.S3, cy, linkW - UiTokens.S3, UiTokens.Control, UiButtonKind.Destructive, u.NeedLink, UiIcon.None, UiAction.Count, keys, ActionCommand, u.NeedLinkRun, false);
                 }
             }
             return y + h;
@@ -224,10 +237,10 @@ namespace RealLifeOverhaul.Ui
         {
             float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader));
             float nw = string.IsNullOrEmpty(note) ? 0f : Math.Min(UiDraw.SnapDown(w * 0.4f), UiDraw.Snap(UiTextRules.Width(note, UiStyle.Small) + UiTokens.S1));
-            UiDraw.Text(s, at, x, y, w - nw - (nw > 0f ? UiTokens.S3 : 0f), UiStyle.SectionHeader, UiRole.Text2, title, UiFlags.Label | UiFlags.Truncate);
+            UiDraw.Text(s, at, x, y, w - nw - (nw > 0f ? UiTokens.S3 : 0f), UiStyle.SectionHeader, UiRole.Text2, title, UiFlags.Label | UiFlags.Truncate | UiFlags.Middle);
             if (nw > 0f)
             {
-                UiDraw.Text(s, at, x + w - nw, y, nw, UiStyle.Small, UiRole.AccentText, note, UiFlags.Right | UiFlags.Truncate);
+                UiDraw.Text(s, at, x + w - nw, y, nw, UiStyle.Small, UiRole.Muted, note, UiFlags.Right | UiFlags.Truncate | UiFlags.Middle);
             }
             return y + lh + UiTokens.S2;
         }

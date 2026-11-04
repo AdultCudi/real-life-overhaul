@@ -25,7 +25,7 @@ public static partial class UiPreviewRunner
                 Name = "estate_" + st,
                 AppName = "Property",
                 Icon = UiIcon.Home,
-                Backdrop = rents ? "map_rent.png" : st.StartsWith("unit", System.StringComparison.Ordinal) || st == "building" ? "12.jpg" : i % 2 == 0 ? "13.jpg" : "02.jpg",
+                Backdrop = rents ? "tint_city.jpg" : st.StartsWith("unit", System.StringComparison.Ordinal) || st == "building" ? "12.jpg" : i % 2 == 0 ? "13.jpg" : "02.jpg",
                 HoverCommand = UiAppWindow.NavCommand,
                 HoverArg = 1,
                 Walk = Moves("DDR"),

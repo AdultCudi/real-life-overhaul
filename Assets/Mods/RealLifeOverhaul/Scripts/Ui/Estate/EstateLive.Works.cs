@@ -114,22 +114,25 @@ namespace RealLifeOverhaul.Ui
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_state"), Kind = UiCellKind.Chip, Width = 128f },
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_satisfaction"), Kind = UiCellKind.Meter, Width = 128f }
                 };
-                var side = new UiFactCardModel
+                int happySum = 0, happyCount = 0;
+                for (int i = 0; i < _s.Holdings.Count; i++)
                 {
-                    Title = EstateText.T("reallife_estate_tab_tenants"), Heading = true,
-                    Lines = new[]
+                    for (int n = 0; _s.Holdings[i].Managed && n < _s.Holdings[i].Units.Count; n++)
                     {
-                        UiFactLine.Row(EstateText.T("reallife_estate_tenants_let"), let.ToString(Inv)),
-                        UiFactLine.Row(EstateText.T("reallife_estate_tenants_empty"), empty.ToString(Inv), empty > 0 ? UiRole.WarnText : UiRole.None),
-                        UiFactLine.Row(EstateText.T("reallife_estate_tenants_owed"), Money(owed), owed > 0 ? UiRole.DangerText : UiRole.None),
-                        UiFactLine.Say(EstateText.T("reallife_estate_tenants_notice_what", "days", EstateCatalogue.NoticeArrearsDays.ToString(Inv),
-                            "notice", EstateRules.NoticeLength(_c.RentLever).ToString(Inv),
-                            "court", EstateCatalogue.CourtDays.ToString(Inv)))
+                        EstateUnit hu = _s.Holdings[i].Units[n];
+                        if (hu.Let && hu.Happy >= 0)
+                        {
+                            happySum += hu.Happy / 10;
+                            happyCount++;
+                        }
                     }
-                };
+                }
                 TableShape(UiIcon.People, EstateText.T("reallife_estate_tab_tenants"),
-                    EstateText.T("reallife_ui_estate_tenants_sub", "let", let.ToString(Inv), "empty", empty.ToString(Inv)), null, null, cols, rows, keys, side,
+                    EstateText.T("reallife_ui_estate_tenants_sub", "let", let.ToString(Inv), "empty", empty.ToString(Inv)),
+                    new[] { EstateText.T("reallife_estate_tenants_let"), EstateText.T("reallife_estate_tenants_empty"), EstateText.T("reallife_estate_tenants_owed"), EstateText.T("reallife_ui_estate_fig_mean_happy") },
+                    new[] { let.ToString(Inv), empty.ToString(Inv), Money(owed), happyCount > 0 ? EstateText.Share(happySum / happyCount * 10) : string.Empty }, cols, rows, keys, null,
                     EstateText.T(_s.Holdings.Count == 0 ? "reallife_estate_row_nothing_owned" : "reallife_estate_row_none_managed"), EstateText.T("reallife_ui_estate_empty_tenants_body"));
+                _m.FigInks = new[] { UiRole.None, empty > 0 ? UiRole.WarnText : UiRole.None, owed > 0 ? UiRole.DangerText : UiRole.None, UiRole.None };
             }
 
             // An applicant for a unit: what they offer, what that is against the market, and their record. True when it was written.
@@ -152,6 +155,7 @@ namespace RealLifeOverhaul.Ui
                 h.ApplicantOf(id, out unit);
                 int market = EstateRules.UnitRent(h, _c);
                 _m.Shape = EstateShape.Detail;
+                _m.Card = true;
                 _m.Back = EstateText.T("reallife_co_back");
                 _m.DetailIcon = UiIcon.People;
                 _m.DetailTitle = EstateText.Tenant(h.Use, a.Kind);
@@ -159,14 +163,17 @@ namespace RealLifeOverhaul.Ui
                 _m.DetailSub = EstateText.UnitName(h, unit);
                 _m.DetailChip = EstateText.Record(a.Record);
                 _m.DetailChipTone = a.Record >= 60 ? UiRole.Ok : UiRole.Warn;
+                _m.Strip = new[]
+                {
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_their_offer"), Value = Money(a.Offer) },
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_ch_market_rent"), Value = Money(market) },
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_of_market"), Value = EstateText.Share(market > 0 ? (int)((long)a.Offer * 1000 / market) : 0) },
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_deposit"), Value = Money(a.Offer * EstateCatalogue.DepositDays) }
+                };
                 var terms = new List<UiFactLine>
                 {
-                    UiFactLine.Say(EstateText.T("reallife_estate_app_for", "building", EstateText.UnitName(h, unit), "day", a.Lapse.ToString(Inv))),
-                    UiFactLine.Say(EstateText.T("reallife_estate_app_offer", "amount", Money(a.Offer), "market", Money(market), "share",
-                        EstateText.Share(market > 0 ? (int)((long)a.Offer * 1000 / market) : 0))),
-                    UiFactLine.Say(EstateText.T("reallife_estate_app_term", "days", a.Term.ToString(Inv), "deposit", Money(a.Offer * EstateCatalogue.DepositDays))),
-                    UiFactLine.Say(EstateText.T("reallife_estate_app_record", "record", EstateText.Record(a.Record), "miss", EstateText.Share(EstateRules.MissChance(a.Record, _c.Cycle)),
-                        "back", EstateText.Share(EstateRules.CatchUpChance(a.Record))))
+                    UiFactLine.Row(EstateText.T("reallife_ui_estate_term_lease"), EstateText.T("reallife_ui_estate_n_days", "days", a.Term.ToString(Inv))),
+                    UiFactLine.Row(EstateText.T("reallife_ui_estate_term_until"), EstateText.T("reallife_ui_estate_day", "day", a.Lapse.ToString(Inv)))
                 };
                 var actions = new List<UiActionModel>(2);
                 int at = unit;
@@ -181,10 +188,18 @@ namespace RealLifeOverhaul.Ui
                     _v.Pick = taken >= 0 ? EstateDirector.UnitPick(h, taken) : null;
                 }), h.Units[unit].Let || h.Busy));
                 _m.Left = new[] { new UiFactCardModel { Title = EstateText.T("reallife_ibox_sec_terms"), Heading = true, Lines = terms.ToArray(), Actions = actions.ToArray() } };
-                _m.Right = new[] { new UiFactCardModel { Lines = new[] { UiFactLine.Say(EstateText.T("reallife_estate_app_note")) } } };
-                _m.Lower = EstateCharts.Few(EstateText.T("reallife_ui_estate_ch_offer_market"),
-                    new[] { EstateText.T("reallife_ui_estate_ch_their_offer"), EstateText.T("reallife_ui_estate_ch_market_rent") },
-                    new[] { (float)a.Offer, market });
+                _m.ShareTitle = EstateText.T("reallife_ui_estate_sh_record");
+                _m.ShareLabels = new[] { EstateText.T("reallife_ui_estate_col_record"), EstateText.T("reallife_ui_estate_sh_pays"), EstateText.T("reallife_ui_estate_sh_catches") };
+                _m.ShareValues = new[] { a.Record, 100 - EstateRules.MissChance(a.Record, _c.Cycle) / 10, EstateRules.CatchUpChance(a.Record) / 10 };
+                _m.RelatedTitle = EstateText.T("reallife_ui_estate_the_unit_they_want");
+                _m.Related = new[]
+                {
+                    new EstateRow
+                    {
+                        Icon = UseIcon(h.Use), Title = EstateText.UnitName(h, unit), Sub = EstateText.District(h.District), Chip = EstateText.T("reallife_estate_state_empty", "days", h.Units[unit].VoidDays.ToString(Inv)),
+                        ChipTone = UiRole.Warn, Amount = Money(market), Run = _runs.Do(() => Open(EstateDirector.UnitPick(h, at), null))
+                    }
+                };
                 return at >= 0;
             }
 
@@ -259,18 +274,26 @@ namespace RealLifeOverhaul.Ui
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_cost"), Kind = UiCellKind.Money, Width = 120f },
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_day"), Kind = UiCellKind.Date, Width = 112f }
                 };
-                var side = new UiFactCardModel
+                int open = 0, bookedCalls = 0, unfit = 0, callsCost = 0;
+                for (int i = 0; Duties && i < _s.Holdings.Count; i++)
                 {
-                    Title = EstateText.T("reallife_ibox_sec_how"), Heading = true,
-                    Lines = new[]
+                    EstateHolding h = _s.Holdings[i];
+                    unfit += h.Cond < EstateCatalogue.ConditionUnfit ? 1 : 0;
+                    for (int n = 0; h.Managed && n < h.Units.Count; n++)
                     {
-                        UiFactLine.Say(EstateText.T("reallife_estate_works_wear", "poor", EstateText.Level(EstateCatalogue.ConditionPoor), "unfit", EstateText.Level(EstateCatalogue.ConditionUnfit))),
-                        UiFactLine.Say(EstateText.T("reallife_estate_works_market", "market", EstateText.Share(_s.Real))),
-                        UiFactLine.Say(EstateText.T("reallife_estate_works_what"))
+                        EstateUnit u = h.Units[n];
+                        if (u.Let && u.Call > 0)
+                        {
+                            bookedCalls += u.CallAnswer == (int)CallAnswer.Contractor ? 1 : 0;
+                            open += u.CallAnswer == (int)CallAnswer.Contractor ? 0 : 1;
+                            callsCost += u.CallCost;
+                        }
                     }
-                };
+                }
                 TableShape(UiIcon.Wrench, EstateText.T("reallife_estate_tab_works"),
-                    EstateText.T("reallife_ui_estate_works_sub", "count", rows.Count.ToString(Inv)), null, null, cols, rows, keys, side,
+                    EstateText.T("reallife_ui_estate_works_sub", "count", rows.Count.ToString(Inv)),
+                    new[] { EstateText.T("reallife_ui_estate_fig_open_calls"), EstateText.T("reallife_ui_estate_fig_booked"), EstateText.T("reallife_ui_estate_fig_unfit"), EstateText.T("reallife_ui_estate_fig_calls_cost") },
+                    new[] { open.ToString(Inv), bookedCalls.ToString(Inv), unfit.ToString(Inv), Money(callsCost) }, cols, rows, keys, null,
                     EstateText.T("reallife_estate_row_nothing_owned"), EstateText.T("reallife_ui_estate_empty_works_body"));
             }
 
@@ -293,6 +316,7 @@ namespace RealLifeOverhaul.Ui
                 bool contractor = u.CallAnswer == (int)CallAnswer.Contractor, yours = u.CallAnswer == (int)CallAnswer.Yourself;
                 int materials = EstateRules.DiyCost(u.CallCost), minutes = EstateCatalogue.CallMinutes[EstateCatalogue.Clamp(u.Call, 0, EstateCatalogue.CallKinds)];
                 _m.Shape = EstateShape.Detail;
+                _m.Card = true;
                 _m.Back = EstateText.T("reallife_co_back");
                 _m.DetailIcon = UiIcon.Wrench;
                 _m.DetailTitle = EstateText.UnitName(h, unit);
@@ -301,13 +325,15 @@ namespace RealLifeOverhaul.Ui
                 _m.DetailChipTone = u.CallAnswer == (int)CallAnswer.Waiting ? UiRole.Danger : UiRole.Warn;
                 _m.DetailLocate = EstateText.T("reallife_ui_estate_locate");
                 _m.DetailLocateRun = _runs.Do(() => EstateGame.Locate(place));
-                var lines = new List<UiFactLine>
+                // The prices and the waiting are figures; the card keeps what is to be done.
+                _m.Strip = new[]
                 {
-                    UiFactLine.Say(EstateText.T("reallife_estate_call_since", "day", u.CallDay.ToString(Inv), "days",
-                        Math.Max(0, _day - u.CallDay).ToString(Inv), "grace", EstateCatalogue.CallGraceDays.ToString(Inv)),
-                        _day - u.CallDay > EstateCatalogue.CallGraceDays ? UiRole.WarnText : UiRole.None),
-                    UiFactLine.Say(EstateText.T("reallife_estate_call_tenant", "who", WhoOf(h, u).Name, "happy", EstateText.Happy(u.Happy)))
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_ch_contractor"), Value = Money(u.CallCost) },
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_ch_yourself"), Value = Money(materials) },
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_reported"), Value = EstateText.T("reallife_ui_estate_days_ago", "days", Math.Max(0, _day - u.CallDay).ToString(Inv)) },
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_grace"), Value = EstateText.T("reallife_ui_estate_n_days", "days", EstateCatalogue.CallGraceDays.ToString(Inv)) }
                 };
+                var lines = new List<UiFactLine>();
                 if (contractor)
                 {
                     lines.Add(UiFactLine.Say(EstateText.T("reallife_estate_call_booked", "day", u.CallDue.ToString(Inv)), UiRole.OkText));
@@ -319,10 +345,24 @@ namespace RealLifeOverhaul.Ui
                 }
                 else
                 {
-                    lines.Add(UiFactLine.Say(EstateText.T("reallife_estate_call_contractor", "amount", Money(u.CallCost))));
-                    lines.Add(UiFactLine.Say(EstateText.T("reallife_estate_call_yourself", "amount", Money(materials), "minutes",
-                        minutes.ToString(Inv), "days", EstateCatalogue.DiyDays.ToString(Inv))));
+                    lines.Add(UiFactLine.Say(EstateText.T("reallife_ui_estate_call_minutes", "minutes", minutes.ToString(Inv))));
                 }
+                int repairsTerm, valueTerm, conditionTerm;
+                HappyTerms.Of(h, unit, _day, _c, out repairsTerm, out valueTerm, out conditionTerm);
+                _m.ShareTitle = EstateText.T("reallife_ui_estate_sh_call");
+                _m.ShareLabels = new[] { EstateText.T("reallife_ui_estate_m_condition"), EstateText.T("reallife_ui_estate_m_satisfaction"), EstateText.T("reallife_ui_estate_m_repairs") };
+                _m.ShareValues = new[] { conditionTerm, u.Happy < 0 ? 50 : u.Happy / 10, repairsTerm };
+                Who who = WhoOf(h, u);
+                StateChip(h, u, out string stateChip, out UiRole stateTone);
+                _m.RelatedTitle = EstateText.T("reallife_ui_estate_the_tenant");
+                _m.Related = new[]
+                {
+                    new EstateRow
+                    {
+                        Face = who.Name, Hue = who.Hue, Title = who.Name, Sub = who.Line, Chip = stateChip, ChipTone = stateTone, Amount = Month(u.Rent),
+                        Run = _runs.Do(() => Open(EstateDirector.UnitPick(h, unit), null))
+                    }
+                };
                 var actions = new List<UiActionModel>(2)
                 {
                     _runs.Button(EstateText.T("reallife_estate_btn_yourself"), UiButtonKind.Secondary, UiIcon.MapPin, UiAction.Option,
@@ -330,10 +370,6 @@ namespace RealLifeOverhaul.Ui
                     _runs.Button(EstateText.T("reallife_estate_btn_contractor"), UiButtonKind.Primary, UiIcon.Wrench, UiAction.Alt, () => Show(() => _d.SendContractor(place, unit)), contractor)
                 };
                 _m.Left = new[] { new UiFactCardModel { Title = EstateText.T("reallife_ibox_sec_quote"), Heading = true, Lines = lines.ToArray(), Actions = actions.ToArray() } };
-                _m.Right = new[] { new UiFactCardModel { Lines = new[] { UiFactLine.Say(EstateText.T("reallife_estate_call_what", "days",
-                    EstateCatalogue.CallLapseDays.ToString(Inv), "old", EstateCatalogue.InspectCallOld.ToString(Inv))) } } };
-                _m.Lower = EstateCharts.Few(EstateText.T("reallife_ui_estate_ch_ways"), new[] { EstateText.T("reallife_ui_estate_ch_contractor"), EstateText.T("reallife_ui_estate_ch_yourself") },
-                    new[] { (float)u.CallCost, materials });
                 return true;
             }
 
@@ -344,17 +380,19 @@ namespace RealLifeOverhaul.Ui
             {
                 string place = h.Place;
                 _m.Shape = EstateShape.Detail;
+                _m.Card = true;
                 _m.Back = EstateText.T("reallife_co_back");
                 _m.DetailIcon = UiIcon.Wrench;
                 _m.DetailTitle = h.Name;
                 _m.DetailSub = EstateText.T("reallife_ibox_type_in", "type", EstateText.Use(h.Use), "district", EstateText.District(h.District));
-                _m.DetailChip = EstateText.Level(h.Cond);
-                _m.DetailChipTone = h.Cond < EstateCatalogue.ConditionUnfit ? UiRole.Danger : h.Cond < EstateCatalogue.ConditionPoor ? UiRole.Warn : UiRole.Ok;
-                var cond = new List<UiFactLine>
+                _m.Strip = new[]
                 {
-                    UiFactLine.Say(EstateText.T("reallife_estate_works_cond", "condition", EstateText.Level(h.Cond), "value",
-                        EstateText.Share(EstateRules.ConditionValue(h.Cond)), "rent", EstateText.Share(EstateRules.ConditionRent(h.Cond))))
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_m_condition"), Value = EstateText.Level(h.Cond) },
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_worth_of_best"), Value = EstateText.Share(EstateRules.ConditionValue(h.Cond)) },
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_rents_of_best"), Value = EstateText.Share(EstateRules.ConditionRent(h.Cond)) },
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_booked"), Value = h.Services.Count.ToString(Inv) }
                 };
+                var cond = new List<UiFactLine>();
                 var actions = new List<UiActionModel>(3);
                 if (h.Busy)
                 {
@@ -365,7 +403,8 @@ namespace RealLifeOverhaul.Ui
                     int repair = EstateRules.Quote(h, EstateWork.Repair, -1, _c), refurbish = EstateRules.Quote(h, EstateWork.Refurbish, -1, _c);
                     if (repair > 0)
                     {
-                        cond.Add(UiFactLine.Say(EstateText.T("reallife_estate_works_repair", "amount", Money(repair), "days", EstateRules.RepairDays(h.Cond, _c.PermitLever).ToString(Inv))));
+                        cond.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_works_repair_costs"), Money(repair)));
+                        cond.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_works_repair_takes"), EstateText.T("reallife_ui_estate_n_days", "days", EstateRules.RepairDays(h.Cond, _c.PermitLever).ToString(Inv))));
                         actions.Add(_runs.Button(EstateText.T("reallife_estate_btn_repair"), UiButtonKind.Primary, UiIcon.Wrench, UiAction.Alt,
                             () => Show(() => _d.StartWork(place, EstateWork.Repair, -1))));
                     }
@@ -390,8 +429,11 @@ namespace RealLifeOverhaul.Ui
                     left.Add(UseCard(h));
                 }
                 _m.Left = left.ToArray();
-                _m.Right = new[] { ServiceCard(h) };
-                _m.Lower = ServiceChart(h);
+                UiFactCardModel service = ServiceCard(h);
+                _m.GridTitle = EstateText.T("reallife_ui_estate_book_a_visit");
+                _m.Grid = service.Actions;   // the visits that can be booked stand as equal buttons under the card, never a ragged run in it
+                service.Actions = new UiActionModel[0];
+                _m.Right = new[] { service };
             }
 
             // A change of use: the council first, then the builders.
@@ -455,8 +497,7 @@ namespace RealLifeOverhaul.Ui
             {
                 string place = h.Place;
                 var lines = new List<UiFactLine>(8);
-                lines.Add(UiFactLine.Say(EstateText.T("reallife_ui_estate_service_what", "days", ServiceRules.Season(_c.DaysPerYear).ToString(Inv),
-                    "share", EstateText.Share(EstateCatalogue.ServiceCut))));
+                lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_service_keeps"), EstateText.T("reallife_ui_estate_n_days", "days", ServiceRules.Season(_c.DaysPerYear).ToString(Inv))));
                 for (int b = 0; b < h.Services.Count; b++)
                 {
                     ServiceBooking v = h.Services[b];
@@ -464,10 +505,6 @@ namespace RealLifeOverhaul.Ui
                     lines.Add(_runs.Link(EstateText.Fill("reallife_ui_estate_service_line", "fault", EstateText.Fault(v.Kind), "day",
                         v.Day.ToString(Inv), "who", ContractorName(v.Contractor), "amount", Money(v.Fee)),
                         () => Show(() => _d.CancelService(place, at))));
-                }
-                if (h.Services.Count > 0)
-                {
-                    lines.Add(UiFactLine.Say(EstateText.T("reallife_ui_estate_service_cancel"), UiRole.None));
                 }
                 var actions = new List<UiActionModel>(EstateCatalogue.CallKinds);
                 for (int kind = 1; kind <= EstateCatalogue.CallKinds; kind++)

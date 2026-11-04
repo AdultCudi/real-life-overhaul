@@ -13,7 +13,8 @@ namespace RealLifeOverhaul.Ui
         Rents,      // the info view of the city's rents, over the world with no window
         Catalogue,  // the showroom's cars as cards with the chosen one's detail beside them
         Chart,      // a page of one line chart with its choices under it and its sums beside it
-        Auction     // a lot of the trade auction as a card over the world: its facts, its bids and the one to place
+        Auction,    // a lot of the trade auction as a card over the world: its facts, its bids and the one to place
+        Empty       // a section with nothing in it yet: what it is, and the card that starts it, together in the middle of the page
     }
 
     /// <summary>A short row under the roll or on a unit's page: a glyph on its tile, a title and a line under it, a
@@ -68,13 +69,17 @@ namespace RealLifeOverhaul.Ui
         public EstateRow[] Works = new EstateRow[0];
         public string OthersTitle, OthersCount;
         public EstateRow[] Others = new EstateRow[0];
-        public string MarketNote;
         public UiChartModel YearChart;                    // the flat's tax year as bars, drawn in place of its figure rows when there is room
-        public UiChartModel LeftChart;                    // the unit's figures as bars under its facts, or null
         public string BuildingLink;                      // "The building" opens the building's own page
         public int BuildingRun = -1;
         public string EmptyTitle, EmptyBody;             // a unit with nobody in: what it asks and what to do
         public UiFactCardModel Empty;                    // the asking rent step, the to-let switch and the market line, when nobody is in
+        public UiFigureModel[] Strip = new UiFigureModel[0];   // the flat's figures when nobody is in: asking, market, days empty, applicants
+        public string ShareTitle;
+        public string[] ShareLabels = new string[0];     // what a tenant would weigh in the building, as meters with their percent
+        public int[] ShareValues = new int[0];
+        public string ApplicantsTitle, ApplicantsCount;  // the people who asked for the empty unit, as rows with their faces
+        public EstateRow[] Applicants = new EstateRow[0];
     }
 
     /// <summary>A lot of the trade auction as a card: the car's picture and facts at the left, the bidding at the right.</summary>
@@ -86,6 +91,10 @@ namespace RealLifeOverhaul.Ui
         public float Aspect = 1.6f;
         public UiFactCardModel Left, Right;
         public UiChartModel Bids;       // the bids so far, oldest first, as bars; null with none
+        public string Face;             // a name for the person the page is about, or null
+        public string[] ShareLabels = new string[0];   // the lot's condition and the like as meters with their percent
+        public int[] ShareValues = new int[0];
+        public string ShareTitle;
         public string Back;
     }
 
@@ -133,12 +142,26 @@ namespace RealLifeOverhaul.Ui
         public UiChartModel Chart;
         public UiActionModel[] ChartKinds = new UiActionModel[0], ChartPlaces = new UiActionModel[0];   // the choices under a chart: what it plots, and where
         public int ChartKind, ChartPlace;
+        public string ChartKindsTitle, ChartPlacesTitle;   // the labels over the two groups of choices, in the column beside the chart
         public UiActionModel[] FilterChips = new UiActionModel[0], SortChips = new UiActionModel[0];   // the choices over a catalogue: what shows, and in what order
         public int FilterAt, SortAt;
         public string DetailFace;   // a person the page is about: their portrait stands where the tile would
         public UiChartModel Lower;   // the chart that fills what a short page leaves under its table or its cards (real figures of the page), or null
         public string SearchHint, SearchCount, Query;   // a search over a catalogue: its placeholder, how many it holds, and the words typed (null SearchHint: no field)
         public EstateAuction Auction;
+
+        // What fills a page that is short, from the page's own figures, in place of a chart that would only repeat them: a band of figures under the head,
+        // the shares as graded meters with their unit, and a list of the related things (the people, the units, the works) with the same row as the roll's.
+        public UiFigureModel[] Strip = new UiFigureModel[0];
+        public string ShareTitle;
+        public string[] ShareLabels = new string[0];
+        public int[] ShareValues = new int[0];       // 0 to 100: each shows with its percent
+        public string RelatedTitle, RelatedCount;
+        public EstateRow[] Related = new EstateRow[0];
+        public int RelatedRows = 4;                  // the most rows the related list shows (a building's flats show more)
+        public string GridTitle;                     // a block of equal buttons under the right column (the visits that can be booked)
+        public UiActionModel[] Grid = new UiActionModel[0];
+        public int[] RowRuns = new int[0];           // by row of the table: the run its action button presses (Locate), or -1
 
         // A detail page: its head, and two columns of cards.
         public string DetailTitle, DetailSub, DetailChip;
@@ -149,6 +172,12 @@ namespace RealLifeOverhaul.Ui
         public UiActionModel[] DetailActions = new UiActionModel[0];
         public UiFactCardModel[] Left = new UiFactCardModel[0];
         public UiFactCardModel[] Right = new UiFactCardModel[0];
+
+        public bool Card;                            // a decision about one thing (a call, an applicant, an offer, a bid): its page is a card over the dimmed world, as tall as its words, not a window
+        public EstateUnitPage Person;                // the person a card is about: their block (name, line, chip, their meters), as the unit page shows its tenant
+        public string Related2Title, Related2Count;  // a second list of related things, under the first column's or the shares
+        public EstateRow[] Related2 = new EstateRow[0];
+        public string[] ShareTexts = new string[0];  // what each share's figure says in place of its percent (a rent per m2), by share; empty for the percents
 
         public string Back;                          // the way back's words on a sub page; null on a tab's own page
         public Func<bool>[] Runs = new Func<bool>[0];
@@ -165,6 +194,7 @@ namespace RealLifeOverhaul.Ui
         public string From;             // the page a unit was opened from, so Back returns there
         public int ListShare = 2;       // the asking price showing on a building's page, a place in the shares
         public int ToUse = -1;          // the use showing for a change of use
+        public int RentUse;             // the rents view's kind of rent: 0 flats, 1 shops, 2 offices
         public int Unit;                // the unit showing on a building's page
         public int Office;              // the office showing for the agency
         public int Lot;                 // the building showing for the car hire lot

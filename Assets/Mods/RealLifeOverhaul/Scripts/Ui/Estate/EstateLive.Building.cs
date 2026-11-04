@@ -27,46 +27,75 @@ namespace RealLifeOverhaul.Ui
                     _m.DetailChip = EstateText.T(h.SaleDay > 0 ? "reallife_ibox_chip_sold" : h.Offer > 0 ? "reallife_ibox_chip_offer" : "reallife_ibox_chip_for_sale");
                     _m.DetailChipTone = h.Offer > 0 ? UiRole.Ok : UiRole.Notice;
                 }
-                _m.Left = new[] { MoneyCard(h, value), LettingCard(h, value) };
-                _m.Right = new[] { SellingCard(h, value), MoreCard(h) };
-                _m.Lower = RentChart(h);
-            }
-
-            // What each let unit pays a month, side by side, under a building of several: the rent roll's own figures for this building.
-            private UiChartModel RentChart(EstateHolding h)
-            {
-                if (!h.Managed || h.Self)
-                {
-                    return null;
-                }
-                var names = new List<string>(h.Units.Count);
-                var rents = new List<float>(h.Units.Count);
-                for (int n = 0; n < h.Units.Count && names.Count < 8; n++)
-                {
-                    if (h.Units[n].Let)
-                    {
-                        string name = EstateText.UnitName(h, n);
-                        int comma = name.IndexOf(',');
-                        names.Add(comma > 0 ? name.Substring(comma + 1).Trim() : name);
-                        rents.Add((float)h.Units[n].Rent * _monthDays);
-                    }
-                }
-                return names.Count >= 2 ? EstateCharts.Bars(EstateText.T("reallife_ui_estate_col_rent_month"), names.ToArray(), rents.ToArray(), null, EstateCharts.Dollars) : null;
-            }
-
-            private UiFactCardModel MoneyCard(EstateHolding h, int value)
-            {
-                var lines = new List<UiFactLine>
-                {
-                    UiFactLine.Row(EstateText.T("reallife_ibox_worth"), Money(value)),
-                    UiFactLine.Say(EstateText.T("reallife_estate_own_worth", "amount", Money(value), "paid", Money(h.Paid), "day", h.BoughtDay.ToString(Inv))),
-                    UiFactLine.Say(EstateText.T("reallife_estate_own_year", "rent", Money(h.RentYear), "costs", Money(h.CostYear), "spent", Money(h.Spent)))
-                };
                 int fee = EstateRules.AgentFee(value, _c.Index), tax = EstateRules.GainsTax(value, fee, h.Paid, h.Spent, _c.TaxPercent);
-                long kept = (long)value - fee - tax, gain = kept - h.Paid - h.Spent;
-                lines.Add(UiFactLine.Say(EstateText.Fill(gain >= 0 ? "reallife_estate_flip_gain" : "reallife_estate_flip_loss", "paid", Money(h.Paid), "spent", Money(h.Spent), "amount", Cash(kept),
-                    "gain", Cash(Math.Abs(gain))), gain >= 0 ? UiRole.OkText : UiRole.WarnText));
-                return new UiFactCardModel { Title = EstateText.T("reallife_ibox_sec_money"), Heading = true, Lines = lines.ToArray() };
+                long gain = (long)value - fee - tax - h.Paid - h.Spent;
+                _m.Strip = new[]
+                {
+                    new UiFigureModel { Label = EstateText.T("reallife_ibox_worth"), Value = Money(value) },
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_bought"), Value = Money(h.Paid) },
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_works_spent"), Value = Money(h.Spent) },
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_gain"), Value = (gain >= 0 ? "+" : "-") + Cash(Math.Abs(gain)) }
+                };
+                _m.Left = new[] { LettingCard(h, value) };
+                _m.Right = new[] { SellingCard(h, value), MoreCard(h) };
+                if (h.Managed && !h.Self)
+                {
+                    int behind, let = h.LetUnits(out behind);
+                    int happy = EstateRules.BuildingHappy(h);
+                    var labels = new List<string> { EstateText.T("reallife_ibox_let") };
+                    var values = new List<int> { h.Units.Count > 0 ? let * 100 / h.Units.Count : 0 };
+                    if (happy >= 0)
+                    {
+                        labels.Add(EstateText.T("reallife_estate_duty_happy"));
+                        values.Add(happy / 10);
+                    }
+                    labels.Add(EstateText.T("reallife_ui_estate_m_condition"));
+                    values.Add(h.Cond / 10);
+                    _m.ShareTitle = EstateText.T("reallife_ui_estate_sh_building");
+                    _m.ShareLabels = labels.ToArray();
+                    _m.ShareValues = values.ToArray();
+                    // The flats as the roll's rows: the tenant's face, their state and what they pay a month.
+                    var flats = new List<EstateRow>(h.Units.Count);
+                    for (int n = 0; n < h.Units.Count; n++)
+                    {
+                        EstateUnit u = h.Units[n];
+                        StateChip(h, u, out string chip, out UiRole tone);
+                        Who who = u.Let ? WhoOf(h, u) : default(Who);
+                        int at = n;
+                        flats.Add(new EstateRow
+                        {
+                            Face = u.Let ? who.Name : null, Hue = who.Hue, Icon = u.Let ? UiIcon.None : UseIcon(h.Use), Title = u.Let ? who.Name : EstateText.T("reallife_estate_row_nobody"),
+                            Sub = EstateText.UnitName(h, n), Chip = chip, ChipTone = tone, Amount = Month(u.Let ? u.Rent : EstateCatalogue.Share(EstateRules.UnitRent(h, _c), u.Ask)),
+                            Run = _runs.Do(() => Open(EstateDirector.UnitPick(h, at), "own:" + place))
+                        });
+                    }
+                    _m.RelatedTitle = EstateText.T("reallife_ui_estate_rel_let_to");
+                    _m.RelatedCount = EstateText.T("reallife_ui_estate_units_n", "count", h.Units.Count.ToString(Inv));
+                    _m.RelatedRows = 6;
+                    _m.Related = flats.ToArray();
+                    // The works and the servicing booked on it.
+                    var works = new List<EstateRow>(4);
+                    for (int b = 0; b < h.Services.Count && works.Count < 3; b++)
+                    {
+                        ServiceBooking v = h.Services[b];
+                        works.Add(new EstateRow
+                        {
+                            Icon = UiIcon.Wrench, Title = EstateText.T("reallife_ui_estate_service_name", "fault", EstateText.Fault(v.Kind)), Sub = ContractorName(v.Contractor),
+                            Chip = EstateText.T("reallife_ui_estate_day", "day", v.Day.ToString(Inv)), ChipTone = UiRole.Notice, Amount = Money(v.Fee), Run = -1
+                        });
+                    }
+                    if (h.InspectDay > 0 && works.Count < 4)
+                    {
+                        works.Add(new EstateRow
+                        {
+                            Icon = UiIcon.Eye, Title = EstateText.T("reallife_ui_estate_next_inspection"), Sub = EstateText.T(h.LastInspect == (int)InspectResult.Failed ? "reallife_ui_estate_last_failed" : "reallife_ui_estate_last_passed"),
+                            Chip = EstateText.T("reallife_ui_estate_in_days", "days", Math.Max(0, h.InspectDay - _day).ToString(Inv)), ChipTone = UiRole.Notice, Run = -1
+                        });
+                    }
+                    _m.Related2Title = EstateText.T("reallife_ui_estate_works_servicing");
+                    _m.Related2Count = works.Count > 0 ? works.Count.ToString(Inv) : null;
+                    _m.Related2 = works.ToArray();
+                }
             }
 
             private UiFactCardModel LettingCard(EstateHolding h, int value)
@@ -84,16 +113,6 @@ namespace RealLifeOverhaul.Ui
                 }
                 else
                 {
-                    int behind, let = h.LetUnits(out behind);
-                    lines.Add(UiFactLine.Bar(EstateText.T("reallife_ibox_let"), h.Units.Count > 0 ? let * 100 / h.Units.Count : 0));
-                    for (int n = 0; n < h.Units.Count; n++)
-                    {
-                        EstateUnit u = h.Units[n];
-                        int at = n;
-                        string who = u.Let ? WhoOf(h, u).Name : EstateText.T("reallife_estate_row_nobody");
-                        string line = EstateText.UnitName(h, n) + ", " + who + ", " + (u.Let ? Month(u.Rent) : EstateText.T("reallife_estate_state_empty", "days", u.VoidDays.ToString(Inv)));
-                        lines.Add(_runs.Link(line, () => Open(EstateDirector.UnitPick(h, at), "own:" + place)));
-                    }
                     if (Duties)
                     {
                         long roll = 0, owed = 0;
@@ -102,13 +121,8 @@ namespace RealLifeOverhaul.Ui
                             roll += h.Units[n].Let ? h.Units[n].Rent : 0;
                             owed += h.Units[n].Let ? h.Units[n].Arrears : 0;
                         }
-                        lines.Add(UiFactLine.Row(EstateText.T("reallife_estate_duty_roll"), EstateText.T("reallife_estate_row_a_day", "amount", Cash(roll))));
+                        lines.Add(UiFactLine.Row(EstateText.T("reallife_estate_duty_roll"), Month((int)roll)));
                         lines.Add(UiFactLine.Row(EstateText.T("reallife_estate_duty_owed"), Cash(owed), owed > 0 ? UiRole.DangerText : UiRole.None));
-                        int happy = EstateRules.BuildingHappy(h);
-                        if (happy >= 0)
-                        {
-                            lines.Add(UiFactLine.Bar(EstateText.T("reallife_estate_duty_happy"), happy / 10));
-                        }
                         int calls = EstateRules.OpenCalls(h);
                         if (calls > 0)
                         {
@@ -139,7 +153,7 @@ namespace RealLifeOverhaul.Ui
                     bool cover = h.Cover;
                     lines.Add(_runs.Switch(EstateText.T("reallife_estate_own_cover"), cover, on => Show(() => _d.SetCover(place, on))));
                 }
-                return new UiFactCardModel { Title = EstateText.T("reallife_ibox_sec_letting"), Heading = true, Lines = lines.ToArray() };
+                return new UiFactCardModel { Title = EstateText.T("reallife_ui_estate_running"), Heading = true, Lines = lines.ToArray() };
             }
 
             private UiFactCardModel SellingCard(EstateHolding h, int value)

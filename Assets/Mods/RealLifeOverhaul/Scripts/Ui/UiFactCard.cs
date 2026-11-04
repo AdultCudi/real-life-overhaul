@@ -61,7 +61,7 @@ namespace RealLifeOverhaul.Ui
 
         public static UiFactLine Tick(string words, bool met) => new UiFactLine { Kind = UiFactKind.Check, Value = Plain(words), Met = met };
 
-        public static UiFactLine Bar(string label, int fill) => new UiFactLine { Kind = UiFactKind.Meter, Label = label, Fill = fill };
+        public static UiFactLine Bar(string label, int fill, string figure = null) => new UiFactLine { Kind = UiFactKind.Meter, Label = label, Fill = fill, Value = figure };
 
         public static UiFactLine Go(string words, int command, int arg = 0) => new UiFactLine { Kind = UiFactKind.Link, Value = words, Command = command, Arg = arg };
 
@@ -225,7 +225,8 @@ namespace RealLifeOverhaul.Ui
                         l.Value, UiFlags.Wrap | UiFlags.Label, SentenceLines);
                     break;
                 case UiFactKind.Meter:
-                    UiDraw.GradeBar(s, at, x, y, w, l.Label, l.Fill, Math.Min(UiDraw.SnapDown(w * 0.5f), UiDraw.Snap(UiTextRules.Width(l.Label ?? string.Empty, UiStyle.Body) + UiTokens.S2)));
+                    UiDraw.GradeBar(s, at, x, y, w, l.Label, l.Fill, Math.Min(UiDraw.SnapDown(w * 0.5f), UiDraw.Snap(UiTextRules.Width(l.Label ?? string.Empty, UiStyle.Body) + UiTokens.S2)),
+                        string.IsNullOrEmpty(l.Value) ? "%" : null, string.IsNullOrEmpty(l.Value) ? null : l.Value);   // a share carries its percent; a bar of time or places says its own unit
                     break;
                 case UiFactKind.Link:
                     UiDraw.LinkRow(s, at, x, y, w, UiTokens.Control, l.Value, l.Command, l.Arg);
@@ -251,7 +252,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 case UiFactKind.Heading:
                     UiDraw.Box(s, at, x, y, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
-                    UiDraw.Text(s, at, x, y + UiTokens.S3, w, UiStyle.SectionHeader, UiRole.Text2, l.Label, UiFlags.Label | UiFlags.Truncate);
+                    UiDraw.Text(s, at, x, y + UiTokens.S3, w, UiStyle.SectionHeader, UiRole.Text2, l.Label, UiFlags.Label | UiFlags.Truncate | UiFlags.Middle);
                     break;
             }
         }

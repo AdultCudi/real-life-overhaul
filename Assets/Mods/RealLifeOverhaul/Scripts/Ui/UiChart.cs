@@ -243,6 +243,22 @@ namespace RealLifeOverhaul.Ui
             {
                 hi = lo + step;
             }
+            if (m.Kind == UiChartKind.Bars)
+            {
+                // The tallest bar keeps room above it for its value: a bar that ends on the axis's top would lose its label.
+                float tallest = float.MinValue;
+                for (int k = 0; m.Series != null && k < m.Series.Length; k++)
+                {
+                    for (int i = 0; m.Series[k].Values != null && i < m.Series[k].Values.Length; i++)
+                    {
+                        tallest = Math.Max(tallest, m.Series[k].Values[i]);
+                    }
+                }
+                if (tallest > float.MinValue && tallest > hi - step * 0.2f)
+                {
+                    hi += step;
+                }
+            }
         }
 
         /// <summary>
@@ -517,6 +533,12 @@ namespace RealLifeOverhaul.Ui
                 for (int i = 0; i < n; i++)
                 {
                     float bw = slot - UiTokens.S1;
+                    if (UiTextRules.Width(m.Points[i] ?? string.Empty, UiStyle.Small) <= bw)
+                    {
+                        // A name that fits one line is a single centred line (a wrapped one sits a little high in a script with taller lines).
+                        UiDraw.TextMiddle(s, at, px + slot * i + UiTokens.S1 / 2f, y, UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S1, bw, UiStyle.Small, UiRole.Muted, m.Points[i], UiFlags.Centre | UiFlags.Label);
+                        continue;
+                    }
                     UiDraw.Text(s, at, px + slot * i + UiTokens.S1 / 2f, y, bw, UiStyle.Small, UiRole.Muted, m.Points[i], UiFlags.Centre | UiFlags.Wrap | UiFlags.Middle | UiFlags.Label, 2);
                 }
                 return;

@@ -256,8 +256,9 @@ internal static partial class Program
             sectionNodes += rentScene.Nodes[i].Command == UiAppWindow.NavCommand && rentScene.Nodes[i].Layer == 0 ? 1 : 0;
             viewNodes += rentScene.Nodes[i].Command == UiInfoView.ViewCommand ? 1 : 0;
         }
-        rents.Press(UiInfoView.ViewCommand, 1);
-        Check(rents.Press(UiAppWindow.NavCommand, 1) == false && rentsStub.FiredCount == 0, "estate: on the rents view the number 1 is the view's own and never a change of the window's section (" + viewNodes + " view buttons)");
+        // The view's icons choose the kind of rent (flats, shops, offices): number 1 there is the view's own, and the only nodes of that number on the rents view are the view's own icons.
+        Check(rents.Press(UiInfoView.ViewCommand, 1) && rents.Press(UiAppWindow.NavCommand, 2) && !rents.Press(UiAppWindow.NavCommand, 9) && sectionNodes == viewNodes && viewNodes == 3 && rentsStub.FiredCount == 0,
+            "estate: on the rents view the number 1 is the view's own (it chooses the kind of rent) and never a change of the window's section (" + viewNodes + " view buttons)");
 
         // Esc and the close button: a sub page steps back to its tab, a tab's own page lets the window close.
         int stuck = 0;

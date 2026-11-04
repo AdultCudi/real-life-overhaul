@@ -217,7 +217,8 @@ internal static partial class UiSamples
         m.Shape = EstateShape.Roll;
         m.HeadIcon = home;
         m.HeadTitle = W(t, "reallife_ui_estate_roll_title", "The rent roll");
-        m.HeadSub = state == "roll_empty" ? null : W(t, "reallife_ui_estate_roll_sub", "{units} units in {buildings} buildings, {waiting} waiting for you").Replace("{units}", state == "roll" ? "12" : state == "roll_twenty" ? "20" : "1").Replace("{buildings}", state == "roll" ? "9" : state == "roll_twenty" ? "13" : "1").Replace("{waiting}", "2");
+        m.HeadSub = state == "roll_empty" ? null : state == "roll_first" ? W(t, "reallife_ui_estate_roll_sub_clear", "{units} unit(s) in {buildings} building(s), nothing waiting for you").Replace("{units}", "1").Replace("{buildings}", "1")
+                : W(t, "reallife_ui_estate_roll_sub", "{units} unit(s) in {buildings} building(s), {waiting} waiting for you").Replace("{units}", state == "roll" ? "12" : "20").Replace("{buildings}", state == "roll" ? "9" : "13").Replace("{waiting}", "2");
         m.FigLabels = new[] { W(t, "reallife_ui_estate_fig_due", "Due"), W(t, "reallife_ui_estate_fig_collected", "Collected"), W(t, "reallife_ui_estate_fig_arrears", "In arrears"), W(t, "reallife_ui_estate_fig_empty", "Empty, asking") };
         m.FigValues = state == "roll_twenty" ? new[] { "$86,500", "$77,700", "$8,800", "$4,100" } : state == "roll" ? new[] { "$47,500", "$38,700", "$8,800", "$4,100" } : state == "roll_first" ? new[] { "$2,600", "$2,600", "$0", "$0" } : new[] { "$0", "$0", "$0", "$0" };
         m.FigInks = new[] { UiRole.None, UiRole.None, state.StartsWith("roll_t") || state == "roll" ? UiRole.DangerText : UiRole.None, state.StartsWith("roll_t") || state == "roll" ? UiRole.WarnText : UiRole.None };
@@ -228,7 +229,7 @@ internal static partial class UiSamples
         };
         if (rows.Count > 0)
         {
-            table.TotalsLabel = W(t, "reallife_ui_estate_total_let", "{count} let units").Replace("{count}", state == "roll" ? "11" : state == "roll_twenty" ? "19" : "1");
+            table.TotalsLabel = W(t, "reallife_ui_estate_total_let", "{count} let unit(s)").Replace("{count}", state == "roll" ? "11" : state == "roll_twenty" ? "19" : "1");
             table.Totals = new[] { string.Empty, string.Empty, string.Empty, state == "roll_twenty" ? "$86,500" : state == "roll" ? "$47,500" : "$2,600", W(t, "reallife_ui_estate_total_in", "{amount} in").Replace("{amount}", state == "roll_twenty" ? "$77,700" : state == "roll" ? "$38,700" : "$2,600"), string.Empty };
         }
         m.Table = table;
@@ -250,6 +251,19 @@ internal static partial class UiSamples
             }
             m.Lower = EstateCharts.Line(W(t, "reallife_ui_estate_ring_chart", "The city's rents, a month at a time"), months, new[] { 2700f, 2740f, 2790f, 2820f, 2860f, 2900f }, W(t, "reallife_ui_estate_rv_mean_flat", "Mean rent, a flat"), EstateCharts.Dollars);
         }
+        if (state == "roll_first")
+        {
+            m.ListA = new[]
+            {
+                new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_ui_estate_service_title", "{fault}, {building}").Replace("{fault}", "Boiler service").Replace("{building}", "12 W 39th Street, flat 2"), Chip = W(t, "reallife_ui_estate_day", "Day {day}").Replace("{day}", "231"), ChipTone = UiRole.Notice, Amount = "$320", Run = -1 }
+            };
+            m.ListB = new[]
+            {
+                new EstateRow { Face = "Gustavo Ruiz", Hue = UiColourHue("Gustavo Ruiz"), Title = W(t, "reallife_ui_estate_landlord_line", "{name}, {units} units, flats at the market rent of {rent}").Replace("{name}", "Gustavo Ruiz").Replace("{units}", "14").Replace("{rent}", "$2,930"), Amount = "+2.1%", AmountInk = UiRole.OkText, Run = -1 },
+                new EstateRow { Face = "Halden Estates", Hue = UiColourHue("Halden Estates"), Title = W(t, "reallife_ui_estate_landlord_line", "{name}, {units} units, flats at the market rent of {rent}").Replace("{name}", "Halden Estates").Replace("{units}", "9").Replace("{rent}", "$2,640"), Amount = "+0.4%", AmountInk = UiRole.OkText, Run = -1 },
+                new EstateRow { Face = "Okafor and Sons", Hue = UiColourHue("Okafor and Sons"), Title = W(t, "reallife_ui_estate_landlord_line", "{name}, {units} units, flats at the market rent of {rent}").Replace("{name}", "Okafor and Sons").Replace("{units}", "6").Replace("{rent}", "$2,410"), Amount = "-0.8%", AmountInk = UiRole.WarnText, Run = -1 }
+            };
+        }
         if (state == "roll" || state == "roll_twenty")
         {
             runs.Add(Yes);
@@ -261,8 +275,8 @@ internal static partial class UiSamples
             };
             m.ListB = new[]
             {
-                new EstateRow { Face = "Gustavo Ruiz", Hue = UiColourHue("Gustavo Ruiz"), Title = W(t, "reallife_ui_estate_landlord_line", "{name}, {units} units, flats average {rent}").Replace("{name}", "Gustavo Ruiz").Replace("{units}", "14").Replace("{rent}", "$2,930"), Amount = "+2.1%", AmountInk = UiRole.WarnText, Run = -1 },
-                new EstateRow { Face = "Halden Estates", Hue = UiColourHue("Halden Estates"), Title = W(t, "reallife_ui_estate_landlord_line", "{name}, {units} units, flats average {rent}").Replace("{name}", "Halden Estates").Replace("{units}", "9").Replace("{rent}", "$2,640"), Amount = "+0.4%", Run = -1 }
+                new EstateRow { Face = "Gustavo Ruiz", Hue = UiColourHue("Gustavo Ruiz"), Title = W(t, "reallife_ui_estate_landlord_line", "{name}, {units} units, flats average {rent}").Replace("{name}", "Gustavo Ruiz").Replace("{units}", "14").Replace("{rent}", "$2,930"), Amount = "+2.1%", AmountInk = UiRole.OkText, Run = -1 },
+                new EstateRow { Face = "Halden Estates", Hue = UiColourHue("Halden Estates"), Title = W(t, "reallife_ui_estate_landlord_line", "{name}, {units} units, flats average {rent}").Replace("{name}", "Halden Estates").Replace("{units}", "9").Replace("{rent}", "$2,640"), Amount = "+0.4%", AmountInk = UiRole.OkText, Run = -1 }
             };
         }
     }
@@ -277,12 +291,12 @@ internal static partial class UiSamples
         p.NextLabel = W(t, "reallife_ui_estate_next_inspection", "Next inspection");
         p.NextValue = W(t, "reallife_ui_estate_in_days", "in {days} days").Replace("{days}", "9");
         p.NextFill = 70;
-        p.FactLabels = new[] { W(t, "reallife_ui_estate_bed_2", "Two bedrooms"), W(t, "reallife_ui_estate_lease_ends", "Lease ends"), W(t, "reallife_ui_estate_deposit_held", "Deposit held"), W(t, "reallife_ui_estate_last_inspected", "Last inspected") };
-        p.FactValues = new[] { W(t, "reallife_ui_estate_sqm", "{area} m2").Replace("{area}", "78"), W(t, "reallife_ui_estate_day", "Day {day}").Replace("{day}", "262"), "$5,200", W(t, "reallife_ui_estate_day", "Day {day}").Replace("{day}", "193") };
+        p.FactLabels = new[] { W(t, "reallife_ui_estate_fact_bedrooms", "Bedrooms"), W(t, "reallife_ui_estate_fact_area", "Area"), W(t, "reallife_ui_estate_lease_ends", "Lease ends"), W(t, "reallife_ui_estate_deposit_held", "Deposit held"),
+            W(t, "reallife_ui_estate_last_inspected", "Last inspected"), W(t, "reallife_ui_estate_fact_market", "On the market, a month") };
+        p.FactValues = new[] { "2", W(t, "reallife_ui_estate_sqm", "{area} m2").Replace("{area}", "78"), W(t, "reallife_ui_estate_day", "Day {day}").Replace("{day}", "262"), "$5,200", W(t, "reallife_ui_estate_day", "Day {day}").Replace("{day}", "193"), "$2,750" };
         p.BuildingLink = W(t, "reallife_ui_estate_the_building", "The building");
         runs.Add(Yes);
         p.BuildingRun = runs.Count - 1;
-        p.MarketNote = W(t, "reallife_ui_estate_market_note", "A unit like this rents for {amount} a month on the market. You could ask that when the lease ends on day {day}.").Replace("{amount}", "$2,750").Replace("{day}", "262");
         p.OthersTitle = W(t, "reallife_ui_estate_other_units", "Your other units here");
         p.OthersCount = "2";
         runs.Add(Yes);
@@ -295,17 +309,29 @@ internal static partial class UiSamples
         if (state == "unit_empty")
         {
             p.Rent = "$2,750";
-            p.FactValues[1] = "-";
-            p.FactValues[2] = "-";
-            p.MarketNote = null;
+            p.FactLabels = new[] { p.FactLabels[0], p.FactLabels[1], p.FactLabels[4] };
+            p.FactValues = new[] { p.FactValues[0], p.FactValues[1], p.FactValues[4] };
             var lines = new List<UiFactLine>
             {
-                UiFactLine.Say(W(t, "reallife_estate_ten_market", "A flat like this lets for {amount} a month. Homes yield {yield}, and the building's condition is {condition}.").Replace("{amount}", "$92").Replace("{use}", "homes").Replace("{yield}", "5%").Replace("{condition}", "80%")),
                 EstateStep(runs, W(t, "reallife_estate_ten_asking", "Asking rent"), "105%", W(t, "reallife_estate_ten_asking_what", "Asks {amount} a month, and about {chance} of the days an applicant comes.").Replace("{amount}", "$96").Replace("{chance}", "12%")),
-                EstateSwitch(runs, W(t, "reallife_estate_ten_to_let", "Look for applicants"), true),
-                EstateLink(runs, W(t, "reallife_ui_estate_applicants", "{count} applicants waiting").Replace("{count}", "2"))
+                EstateSwitch(runs, W(t, "reallife_estate_ten_to_let", "Look for applicants"), true)
             };
-            p.LeftChart = EstateCharts.Few(W(t, "reallife_ui_estate_ch_ask_market", "The asking rent and the market's, a day"), new[] { W(t, "reallife_ui_estate_ch_asking", "Asking"), W(t, "reallife_ui_estate_ch_market_rent", "The market's rent") }, new[] { 96f, 92f });
+            p.Strip = new[]
+            {
+                Fig(W(t, "reallife_ui_estate_fig_asking_day", "Asking, a day"), "$96"), Fig(W(t, "reallife_ui_estate_fig_market_day", "Market rent, a day"), "$92"), Fig(W(t, "reallife_ui_estate_fig_days_empty", "Days empty"), "12")
+            };
+            p.ShareTitle = W(t, "reallife_ui_estate_sh_weigh", "What a tenant would weigh");
+            p.ShareLabels = new[] { W(t, "reallife_ui_estate_m_repairs", "Repairs"), W(t, "reallife_ui_estate_m_value", "Value for rent"), W(t, "reallife_ui_estate_m_condition", "Condition") };
+            p.ShareValues = new[] { 70, 58, 80 };
+            p.ApplicantsTitle = W(t, "reallife_ui_estate_applicants_title", "Applicants");
+            p.ApplicantsCount = "2";
+            runs.Add(Yes);
+            runs.Add(Yes);
+            p.Applicants = new[]
+            {
+                new EstateRow { Face = "Noor Haddad", Hue = UiColourHue("Noor Haddad"), Title = "Noor Haddad", Sub = W(t, "reallife_estate_row_until", "Until day {day}").Replace("{day}", "221"), Chip = W(t, "reallife_estate_record_good", "Good"), ChipTone = UiRole.Ok, Amount = "$94", Run = runs.Count - 2 },
+                new EstateRow { Face = "Ravi Shah", Hue = UiColourHue("Ravi Shah"), Title = "Ravi Shah", Sub = W(t, "reallife_estate_row_until", "Until day {day}").Replace("{day}", "224"), Chip = W(t, "reallife_estate_record_fair", "Fair"), ChipTone = UiRole.Warn, Amount = "$96", Run = runs.Count - 1 }
+            };
             p.Empty = new UiFactCardModel { Title = W(t, "reallife_ui_estate_empty_title", "Empty for {days} days").Replace("{days}", "12"), Chip = W(t, "reallife_ibox_chip_empty", "Empty"), ChipTone = UiRole.Warn, Lines = lines.ToArray() };
             m.Unit = p;
             return;

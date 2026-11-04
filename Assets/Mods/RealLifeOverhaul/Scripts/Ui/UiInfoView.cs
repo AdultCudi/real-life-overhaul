@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.Ui
         public string[] RankLabels = new string[0];
         public string[] RankValues = new string[0];
         public int[] RankFills = new int[0];       // 0 to 100: each row's bar on the ramp
+        public int[] RankSteps;                    // each row's step of the map's legend (0 to its last), so a district's dot is the colour the map shows it in; null: by its bar
         public UiPrompt[] Prompts = new UiPrompt[0];
         public int PromptCount;
     }
@@ -143,7 +144,9 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < m.RankLabels.Length; i++)
             {
                 int fill = i < m.RankFills.Length ? Math.Max(0, Math.Min(100, m.RankFills[i])) : 0;
-                UiRole tone = fill >= 80 ? UiRole.Ramp5 : fill >= 60 ? UiRole.Ramp4 : fill >= 40 ? UiRole.Ramp3 : fill >= 20 ? UiRole.Ramp2 : UiRole.Ramp1;
+                UiRole[] ramp = m.ScaleSteps ?? Steps;
+                UiRole tone = m.RankSteps != null && i < m.RankSteps.Length ? ramp[Math.Max(0, Math.Min(ramp.Length - 1, m.RankSteps[i]))]
+                    : fill >= 80 ? UiRole.Ramp5 : fill >= 60 ? UiRole.Ramp4 : fill >= 40 ? UiRole.Ramp3 : fill >= 20 ? UiRole.Ramp2 : UiRole.Ramp1;
                 UiDraw.Box(s, at, ix, ry + (RankRow - UiTokens.S2) / 2f, UiTokens.S2, UiTokens.S2, tone, UiRole.None, UiTokens.S1, UiFlags.Decor);
                 UiDraw.TextMiddle(s, at, ix + UiTokens.S4, ry, RankRow, lw - UiTokens.S4, UiStyle.Body, UiRole.Text, m.RankLabels[i], UiFlags.Truncate);
                 float bx = ix + lw + UiTokens.S2, bw = iw - lw - vw - UiTokens.S4;

@@ -36,20 +36,22 @@ namespace RealLifeOverhaul.Ui
                 var values = new List<string>(4);
                 if (h.Use == (int)EstateUse.Homes)
                 {
-                    int bedrooms = UnitRules.Bedrooms(sqm);
-                    string[] bedKeys = { "reallife_ui_estate_bed_0", "reallife_ui_estate_bed_1", "reallife_ui_estate_bed_2", "reallife_ui_estate_bed_3", "reallife_ui_estate_bed_4",
-                        "reallife_ui_estate_bed_5" };
-                    labels.Add(EstateText.T(bedKeys[Math.Max(0, Math.Min(5, bedrooms))]));
+                    // A name and its value: how many bedrooms, never "Two bedrooms" standing where a name belongs.
+                    labels.Add(EstateText.T("reallife_ui_estate_fact_bedrooms"));
+                    values.Add(UnitRules.Bedrooms(sqm).ToString(Inv));
                 }
-                else
+                if (sqm > 0)
                 {
-                    labels.Add(EstateText.T("reallife_ui_estate_floor"));
+                    labels.Add(EstateText.T("reallife_ui_estate_fact_area"));
+                    values.Add(EstateText.T("reallife_ui_estate_sqm", "area", sqm.ToString(Inv)));
                 }
-                values.Add(sqm > 0 ? EstateText.T("reallife_ui_estate_sqm", "area", sqm.ToString(Inv)) : "-");
-                labels.Add(EstateText.T("reallife_ui_estate_lease_ends"));
-                values.Add(u.Let ? EstateText.T("reallife_ui_estate_day", "day", u.Until.ToString(Inv)) : "-");
-                labels.Add(EstateText.T("reallife_ui_estate_deposit_held"));
-                values.Add(u.Let ? Money(u.Deposit) : "-");
+                if (u.Let)
+                {
+                    labels.Add(EstateText.T("reallife_ui_estate_lease_ends"));
+                    values.Add(EstateText.T("reallife_ui_estate_day", "day", u.Until.ToString(Inv)));
+                    labels.Add(EstateText.T("reallife_ui_estate_deposit_held"));
+                    values.Add(Money(u.Deposit));
+                }
                 labels.Add(EstateText.T("reallife_ui_estate_last_inspected"));
                 values.Add(h.LastInspectDay > 0
                     ? EstateText.T("reallife_ui_estate_day", "day", h.LastInspectDay.ToString(Inv))
@@ -71,7 +73,8 @@ namespace RealLifeOverhaul.Ui
                 int market = EstateRules.UnitRent(h, _c);
                 if (market > 0 && u.Let)
                 {
-                    p.MarketNote = EstateText.T("reallife_ui_estate_market_note", "amount", Month(market), "day", u.Until.ToString(Inv));
+                    p.FactLabels = AddFact(p.FactLabels, EstateText.T("reallife_ui_estate_fact_market"));   // what a flat like this rents for when the lease ends: a fact, not a sentence
+                    p.FactValues = AddFact(p.FactValues, Month(market));
                 }
                 // The building's other units.
                 var others = new List<EstateRow>(4);
@@ -96,6 +99,14 @@ namespace RealLifeOverhaul.Ui
                 p.OthersCount = h.Units.Count > 1 ? (h.Units.Count - 1).ToString(Inv) : null;
                 p.Others = others.ToArray();
                 _m.Unit = p;
+            }
+
+            private static string[] AddFact(string[] list, string fact)
+            {
+                var more = new string[list.Length + 1];
+                Array.Copy(list, more, list.Length);
+                more[list.Length] = fact;
+                return more;
             }
 
             private void LetUnit(EstateHolding h, int n, EstateUnit u, EstateUnitPage p)
@@ -305,10 +316,10 @@ namespace RealLifeOverhaul.Ui
                 var card = new UiFactCardModel { Title = EstateText.T("reallife_ui_estate_empty_title", "days", u.VoidDays.ToString(Inv)),
                     Chip = EstateText.T("reallife_ibox_chip_empty"), ChipTone = UiRole.Warn };
                 var lines = new List<UiFactLine>(8);
-                lines.Add(UiFactLine.Say(market > 0
-                    ? EstateText.Fill("reallife_estate_ten_market", "amount", Money(market), "use", EstateText.Use(h.Use), "yield",
-                        EstateText.Share(EstateRules.Yield(h.Use, h.Income)), "condition", EstateText.Level(h.Cond))
-                    : EstateText.T("reallife_estate_ten_unfit", "condition", EstateText.Level(h.Cond))));
+                if (market <= 0)
+                {
+                    lines.Add(UiFactLine.Say(EstateText.T("reallife_estate_ten_unfit", "condition", EstateText.Level(h.Cond))));
+                }
                 int steps = (EstateCatalogue.AskMost - EstateCatalogue.AskLeast) / EstateCatalogue.AskStep;
                 int ask = EstateCatalogue.Clamp(u.Ask, EstateCatalogue.AskLeast, EstateCatalogue.AskMost);
                 lines.Add(_runs.Step(EstateText.T("reallife_estate_ten_asking"), EstateText.Share(ask),
@@ -318,21 +329,40 @@ namespace RealLifeOverhaul.Ui
                     () => Show(() => _d.SetAsk(place, n, ask - EstateCatalogue.AskStep)), () => Show(() => _d.SetAsk(place, n, ask + EstateCatalogue.AskStep))));
                 bool toLet = u.ToLet;
                 lines.Add(_runs.Switch(EstateText.T("reallife_estate_ten_to_let"), toLet, on => Show(() => _d.SetToLet(place, n, on))));
-                if (u.Applicants.Count > 0)
+                var waiting = new List<EstateRow>(4);
+                for (int a = 0; a < u.Applicants.Count && a < 4; a++)
                 {
-                    lines.Add(_runs.Link(EstateText.T("reallife_ui_estate_applicants", "count", u.Applicants.Count.ToString(Inv)), () => Show(() =>
+                    RentApplicant ap = u.Applicants[a];
+                    string who = EstateText.Tenant(h.Use, ap.Kind);
+                    int id = ap.Id;
+                    waiting.Add(new EstateRow
                     {
-                        _v.Tab = Array.IndexOf(NavTab, EstateDirector.TabTenants);
-                        _v.Pick = "app:" + place + ":" + u.Applicants[0].Id;
-                    })));
+                        Face = who, Hue = UiColour.HueOf(who), Title = who, Sub = EstateText.T("reallife_estate_row_until", "day", ap.Lapse.ToString(Inv)), Chip = EstateText.Record(ap.Record),
+                        ChipTone = ap.Record >= 60 ? UiRole.Ok : UiRole.Warn, Amount = Money(ap.Offer),
+                        Run = _runs.Do(() =>
+                        {
+                            _v.Tab = Array.IndexOf(NavTab, EstateDirector.TabTenants);
+                            _v.Pick = "app:" + place + ":" + id;
+                        })
+                    });
                 }
+                p.ApplicantsTitle = EstateText.T("reallife_ui_estate_applicants_title");
+                p.ApplicantsCount = waiting.Count > 0 ? u.Applicants.Count.ToString(Inv) : null;
+                p.Applicants = waiting.ToArray();
                 card.Lines = lines.ToArray();
                 p.Empty = card;
-                if (market > 0)
+                // The flat's own figures, and what a tenant would weigh in the building: each said once, as a figure or a meter.
+                p.Strip = new[]
                 {
-                    p.LeftChart = EstateCharts.Few(EstateText.T("reallife_ui_estate_ch_ask_market"),
-                        new[] { EstateText.T("reallife_ui_estate_ch_asking"), EstateText.T("reallife_ui_estate_ch_market_rent") }, new[] { (float)EstateCatalogue.Share(market, ask), (float)market });
-                }
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_asking_day"), Value = Money(EstateCatalogue.Share(market, ask)) },
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_market_day"), Value = market > 0 ? Money(market) : EstateText.T("reallife_ui_estate_not_yet") },
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_days_empty"), Value = u.VoidDays.ToString(Inv) }
+                };
+                int rep, val, cond;
+                HappyTerms.Of(h, n, _day, _c, out rep, out val, out cond);
+                p.ShareTitle = EstateText.T("reallife_ui_estate_sh_weigh");
+                p.ShareLabels = new[] { EstateText.T("reallife_ui_estate_m_repairs"), EstateText.T("reallife_ui_estate_m_value"), EstateText.T("reallife_ui_estate_m_condition") };
+                p.ShareValues = new[] { rep, val, cond };
                 if (steps < 0)
                 {
                     p.Empty = null;

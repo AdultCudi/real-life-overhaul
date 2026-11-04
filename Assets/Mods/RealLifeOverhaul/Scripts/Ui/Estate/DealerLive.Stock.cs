@@ -305,12 +305,7 @@ namespace RealLifeOverhaul.Ui
                     new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_takings"), Kind = UiCellKind.Money, Width = 112f },
                     new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_offers"), Kind = UiCellKind.Figure, Width = 80f }
                 };
-                var side = new UiFactCardModel
-                {
-                    Title = DealerText.T("reallife_dealer_lots_title"), Heading = true,
-                    Lines = new[] { UiFactLine.Say(DealerText.T("reallife_dealer_lots_about")), UiFactLine.Say(DealerText.T("reallife_dealer_lots_staff")) }
-                };
-                TableShape(UiIcon.Store, DealerText.T("reallife_dealer_tab_lots"), DealerText.T("reallife_ui_dealer_lots_sub", "count", _s.Yards.Count.ToString(Inv)), cols, rows, keys, side,
+                TableShape(UiIcon.Store, DealerText.T("reallife_dealer_tab_lots"), DealerText.T("reallife_ui_dealer_lots_sub", "count", _s.Yards.Count.ToString(Inv)), cols, rows, keys, null,
                     DealerText.T("reallife_dealer_row_no_dealership"), DealerText.T("reallife_dealer_lots_about"));
                 int carsAll = 0, takingsAll = 0, soldAll = 0, dealsAll = 0;
                 for (int y = 0; y < _s.Yards.Count; y++)
@@ -338,28 +333,51 @@ namespace RealLifeOverhaul.Ui
                 BuildingRegistration reg = _d.RegOf(y);
                 int step = DealerRules.Step(y.Rep);
                 string place = y.Place;
-                DetailHead(UiIcon.Store, y.Name, DealerText.T("reallife_ui_dealer_rep_line", "rep", y.Rep.ToString(Inv), "step", DealerText.Step(step)), DealerText.Step(step), UiRole.Notice);
+                DetailHead(UiIcon.Store, y.Name, DealerText.T("reallife_ui_dealer_rep_n", "rep", y.Rep.ToString(Inv)), DealerText.Step(step), UiRole.Notice);
+                // The showroom's day as figures, its week as rows, and the lot, the visitors looked after and the way to the next step as meters.
+                _m.Strip = new[]
+                {
+                    new UiFigureModel { Label = DealerText.T("reallife_ui_dealer_fig_visitors_today"), Value = y.Today.Visitors.ToString(Inv) },
+                    new UiFigureModel { Label = DealerText.T("reallife_ui_dealer_fig_looked_after"), Value = y.Today.Served.ToString(Inv) },
+                    new UiFigureModel { Label = DealerText.T("reallife_ui_dealer_fig_offers_today"), Value = y.Today.Offers.ToString(Inv) },
+                    new UiFigureModel { Label = DealerText.T("reallife_ui_dealer_fig_sold_today"), Value = y.Today.Sold.ToString(Inv) }
+                };
+                var shareLabels = new List<string>(3);
+                var shareValues = new List<int>(3);
+                if (y.Laid)
+                {
+                    shareLabels.Add(DealerText.T("reallife_ibox_lot"));
+                    shareValues.Add(y.Spots.Count > 0 ? y.Cars.Count * 100 / y.Spots.Count : 0);
+                }
+                shareLabels.Add(DealerText.T("reallife_ui_dealer_sh_looked_after"));
+                shareValues.Add(y.Today.Visitors > 0 ? Math.Min(100, y.Today.Served * 100 / y.Today.Visitors) : 0);
+                if (step + 1 < DealerCatalogue.RepSteps.Length)
+                {
+                    int from = DealerCatalogue.RepSteps[step], to = DealerCatalogue.RepSteps[step + 1];
+                    shareLabels.Add(DealerText.T("reallife_ui_dealer_sh_next_step"));
+                    shareValues.Add(Math.Max(0, Math.Min(100, (y.Rep - from) * 100 / Math.Max(1, to - from))));
+                }
+                _m.ShareTitle = DealerText.T("reallife_ibox_sec_now");
+                _m.ShareLabels = shareLabels.ToArray();
+                _m.ShareValues = shareValues.ToArray();
                 var now = new List<UiFactLine>(8);
                 if (reg != null && DealerGame.Salespeople(reg) == 0)
                 {
                     now.Add(UiFactLine.Say(DealerText.T("reallife_dealer_yard_no_staff"), UiRole.DangerText));
                 }
-                now.Add(UiFactLine.Say(DealerText.Fill("reallife_dealer_yard_rep", "rep", y.Rep.ToString(Inv), "step", DealerText.Step(step), "next", step + 1 < DealerCatalogue.RepSteps.Length
-                    ? DealerText.T("reallife_dealer_rep_next", "points", DealerCatalogue.RepSteps[step + 1].ToString(Inv)) : DealerText.T("reallife_dealer_rep_top"))));
+                if (!y.Laid)
+                {
+                    now.Add(UiFactLine.Say(DealerText.T("reallife_dealer_yard_unlaid"), UiRole.WarnText));
+                }
                 if (y.EventOn(_day))
                 {
                     now.Add(UiFactLine.Say(DealerText.Fill("reallife_dealer_yard_event", "event", DealerText.Event(y.Event, y.Feature), "day", FinanceText.Day(y.EventUntil)), UiRole.OkText));
                 }
-                now.Add(y.Laid ? UiFactLine.Bar(DealerText.T("reallife_ibox_lot"), y.Spots.Count > 0 ? y.Cars.Count * 100 / y.Spots.Count : 0)
-                    : UiFactLine.Say(DealerText.T("reallife_dealer_yard_unlaid"), UiRole.WarnText));
-                now.Add(UiFactLine.Section(DealerText.T("reallife_ibox_today")));
-                now.Add(UiFactLine.Say(DealerText.Fill("reallife_dealer_yard_today", "visitors", y.Today.Visitors.ToString(Inv), "served",
-                    y.Today.Served.ToString(Inv), "lost", y.Today.Lost.ToString(Inv),
-                    "offers", y.Today.Offers.ToString(Inv), "sold", y.Today.Sold.ToString(Inv))));
-                now.Add(UiFactLine.Section(DealerText.T("reallife_ibox_sec_this_week")));
-                now.Add(UiFactLine.Say(DealerText.Fill("reallife_dealer_yard_week", "sold", (w.Sold + y.Today.Sold).ToString(Inv), "takings",
-                    Money(w.Takings + y.Today.Takings), "bought", Money(w.Bought + y.Today.Bought),
-                    "margin", Money(w.Margin + y.Today.Margin), "claims", Money(w.Claims + y.Today.Claims))));
+                now.Add(UiFactLine.Row(DealerText.T("reallife_ui_dealer_fig_cars_sold"), (w.Sold + y.Today.Sold).ToString(Inv)));
+                now.Add(UiFactLine.Row(DealerText.T("reallife_dealer_report_revenue"), Money(w.Takings + y.Today.Takings)));
+                now.Add(UiFactLine.Row(DealerText.T("reallife_ui_dealer_fig_bought"), Money(w.Bought + y.Today.Bought)));
+                now.Add(UiFactLine.Row(DealerText.T("reallife_ui_dealer_fig_margin"), Money(w.Margin + y.Today.Margin)));
+                now.Add(UiFactLine.Row(DealerText.T("reallife_ui_dealer_fig_claims"), Money(w.Claims + y.Today.Claims)));
                 var terms = new List<UiFactLine>(8);
                 bool fix = y.Fixed;
                 terms.Add(_runs.Switch(DealerText.T("reallife_ui_dealer_sw_fixed"), fix, on => Show(() => _d.FixedPrices(place, on))));
@@ -385,8 +403,8 @@ namespace RealLifeOverhaul.Ui
                         () => Show(() => Confirm("reallife_dealer_q_relay_title", DealerText.T("reallife_dealer_q_relay"),
                         () => _d.Relay(place), false))));
                 }
-                _m.Left = new[] { new UiFactCardModel { Title = DealerText.T("reallife_ibox_sec_now"), Heading = true, Lines = now.ToArray() } };
-                _m.Right = new[] { new UiFactCardModel { Title = DealerText.T("reallife_ui_dealer_terms"), Heading = true, Lines = terms.ToArray(), Actions = actions.ToArray() } };
+                _m.Left = new[] { new UiFactCardModel { Title = DealerText.T("reallife_ui_dealer_terms"), Heading = true, Lines = terms.ToArray(), Actions = actions.ToArray() } };
+                _m.Right = new[] { new UiFactCardModel { Title = DealerText.T("reallife_ibox_sec_this_week"), Heading = true, Lines = now.ToArray() } };
                 _m.Lower = Trend(RealLifeOverhaul.Economy.Dealership.ReportKind.Revenue, y.Place, "reallife_dealer_report_revenue");
             }
         }

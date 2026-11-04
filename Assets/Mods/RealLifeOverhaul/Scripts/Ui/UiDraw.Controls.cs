@@ -10,7 +10,8 @@ namespace RealLifeOverhaul.Ui
         Destructive,    // quiet until pressed once, then armed: a second press does it
         Armed,          // a destructive button waiting for its second press
         Chip,           // a quick reply or a filter
-        Quiet           // words only (a composer's Send while there is nothing to send)
+        Quiet,          // words only (a composer's Send while there is nothing to send)
+        Chosen          // the one chosen of a group of choices: the accent with dark words, marked as chosen and so never a second primary action
     }
 
     /// <summary>The kit's controls: buttons, nav items, search, tabs, toggles, sliders and the left-right selector.</summary>
@@ -52,6 +53,7 @@ namespace RealLifeOverhaul.Ui
             switch (kind)
             {
                 case UiButtonKind.Primary: fill = UiRole.Accent; edge = UiRole.None; ink = UiRole.OnAccent; break;
+                case UiButtonKind.Chosen: fill = UiRole.Accent; edge = UiRole.None; ink = UiRole.OnAccent; break;
                 case UiButtonKind.Destructive: fill = UiRole.Field; edge = UiRole.None; ink = UiRole.DangerText; break;
                 case UiButtonKind.Armed: fill = UiRole.DangerSoft; edge = UiRole.Danger; ink = UiRole.DangerText; break;
                 case UiButtonKind.Chip: fill = UiRole.AccentSoft; edge = UiRole.None; ink = UiRole.AccentText; break;
@@ -59,7 +61,7 @@ namespace RealLifeOverhaul.Ui
                 default: fill = UiRole.Field; edge = UiRole.None; ink = UiRole.Text; break;
             }
             float radius = kind == UiButtonKind.Chip ? UiTokens.RadiusMedium : UiTokens.RadiusLarge;   // a chip's corners crisper: a game's tag, not a pill
-            int face = Box(s, at, x, y, w, h, fill, edge, radius, disabled ? UiFlags.Disabled : UiFlags.None);
+            int face = Box(s, at, x, y, w, h, fill, edge, radius, (disabled ? UiFlags.Disabled : UiFlags.None) | (kind == UiButtonKind.Chosen ? UiFlags.Selected : UiFlags.None));
             UiAt inside = at.In(face);
             float cx = x + Math.Max(pad, (w - content) / 2f);
             if (cap)
