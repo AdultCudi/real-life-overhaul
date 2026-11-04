@@ -93,7 +93,6 @@ namespace RealLifeOverhaul.Ui
                 "reallife_news_read_none", "reallife_news_read_not_held", "reallife_news_read_not_held_body", "reallife_ledger_online_to_titles",
                 "reallife_ledger_online_printed", "reallife_ledger_online_nothing", "reallife_ledger_online_box_kept", "reallife_ledger_online_gone",
                 "reallife_ledger_online_day_today", "reallife_ledger_online_day", "reallife_news_in_days",
-                "reallife_news_moved_firm_up", "reallife_news_moved_firm_down", "reallife_news_moved_firm_detail",
                 "reallife_ledger_online_name_ledger", "reallife_ledger_online_name_exchange",
                 "reallife_ledger_online_name_street", "reallife_ledger_online_name_review", "reallife_ledger_online_name_pass",
                 "reallife_news_paper_quiet", "reallife_news_paper_quiet_body",

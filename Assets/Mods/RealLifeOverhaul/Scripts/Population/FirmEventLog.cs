@@ -3,8 +3,8 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Population
 {
     /// <summary>
-    /// The firms' doings, kept so a story is told once and about the firm that did it: a business that opened (its name and its day), and a business that moved
-    /// its prices. The newest <see cref="Most"/> are kept, oldest first; one firm's one doing on one day is kept once. Saved with the population. Game-free.
+    /// The firms' doings, kept so a story is told once and about the firm that did it: a business that opened (its name and its day).
+    /// The newest <see cref="Most"/> are kept, oldest first; one firm's one doing on one day is kept once. Saved with the population. Game-free.
     /// </summary>
     public sealed class FirmEventLog
     {

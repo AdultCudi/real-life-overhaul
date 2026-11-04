@@ -6,6 +6,9 @@ namespace RealLifeOverhaul.Economy
     public struct LoanFixCase
     {
         public int Index;            // the loan's place in the game's list at the time it was read
+        public string Street;        // the loan's identity (the game's Loan has no id): its street and number and the total it was taken for
+        public int Number;
+        public int Total;
         public int Remaining;        // what is left to repay, whole money
         public int OldDaily;         // its daily interest now
         public int NewDaily;         // and fixed
@@ -20,6 +23,12 @@ namespace RealLifeOverhaul.Economy
     {
         /// <summary>The variable game loan the fix helps most today; false if no loan would gain.</summary>
         bool Find(out LoanFixCase found);
+
+        /// <summary>The same loan found again by its identity (not its place in the list), the offer worked out afresh; false if it is repaid or gone, or the fix no longer saves.</summary>
+        bool Again(LoanFixCase asked, out LoanFixCase now);
+
+        /// <summary>Tells the player the loan is no longer there to fix.</summary>
+        void Gone();
 
         /// <summary>The game's question box with the case; <paramref name="yes"/> runs only when the player says yes.</summary>
         void Ask(LoanFixCase asked, Action yes);
@@ -45,7 +54,7 @@ namespace RealLifeOverhaul.Economy
         /// The case for one loan: the fixed rate from the same terms a consolidation uses, what a month saves, and whether the fix is wanted (a rise is set, or it
         /// saves anyway, and the fixed day is cheaper). False for a loan the fix would not help.
         /// </summary>
-        public static bool Offer(int index, int remaining, int dailyInterest, int score, int ownRateBp, int daysPerYear, bool rising, out LoanFixCase made)
+        public static bool Offer(int index, string street, int number, int total, int remaining, int dailyInterest, int score, int ownRateBp, int daysPerYear, bool rising, out LoanFixCase made)
         {
             made = default(LoanFixCase);
             if (remaining <= 0 || dailyInterest <= 0 || daysPerYear <= 0)
@@ -60,6 +69,9 @@ namespace RealLifeOverhaul.Economy
             made = new LoanFixCase
             {
                 Index = index,
+                Street = street,
+                Number = number,
+                Total = total,
                 Remaining = remaining,
                 OldDaily = dailyInterest,
                 NewDaily = fixedDaily,
@@ -73,7 +85,8 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>
         /// The press. With a loan to fix it asks first and changes nothing until yes; the loan is read again when yes comes, and is changed only if it is
-        /// still the same place in the list and the fix still saves. With none to fix it opens the Economy app. True when something was opened or asked.
+        /// still the same loan (found by its identity, not its place in the list) and the fix still saves; if not, nothing is changed and the player
+        /// is told. With none to fix it opens the Economy app. True when something was opened or asked.
         /// </summary>
         public static bool Press(ILoanFixDesk desk)
         {
@@ -83,9 +96,13 @@ namespace RealLifeOverhaul.Economy
             }
             desk.Ask(asked, () =>
             {
-                if (desk.Find(out LoanFixCase now) && now.Index == asked.Index)
+                if (desk.Again(asked, out LoanFixCase now))
                 {
                     desk.Fix(now);
+                }
+                else
+                {
+                    desk.Gone();
                 }
             });
             return true;

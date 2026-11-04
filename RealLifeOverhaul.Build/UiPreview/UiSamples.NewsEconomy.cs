@@ -130,11 +130,7 @@ internal static partial class UiSamples
         {
             new NewsMove { Mark = "HG", Head = NewsFill(rival, "who", "Huang Guo"), Detail = NewsFill(detail, "firm", "Guo Holdings", "day", "284") },
             new NewsMove { Mark = "IB", Head = NewsFill(rival, "who", "Imani Brooks"), Detail = NewsFill(detail, "firm", "Brooks Group", "day", "286") },
-            new NewsMove { Mark = "KM", Head = NewsFill(rival, "who", "Kwame Mensah"), Detail = NewsFill(detail, "firm", "Mensah Auto Group", "day", "288") },
-            new NewsMove { Mark = "PL", Head = NewsFill(t("reallife_news_moved_firm_up", "{firm} raised its prices"), "firm", "Pizzeria Luigi"),
-                Detail = NewsFill(t("reallife_news_moved_firm_detail", "by {percent}%, day {day}"), "percent", "6.0", "day", "287") },
-            new NewsMove { Mark = "CB", Head = NewsFill(t("reallife_news_moved_firm_down", "{firm} cut its prices"), "firm", "Corner Bakery"),
-                Detail = NewsFill(t("reallife_news_moved_firm_detail", "by {percent}%, day {day}"), "percent", "3.5", "day", "288") }
+            new NewsMove { Mark = "KM", Head = NewsFill(rival, "who", "Kwame Mensah"), Detail = NewsFill(detail, "firm", "Mensah Auto Group", "day", "288") }
         };
     }
 

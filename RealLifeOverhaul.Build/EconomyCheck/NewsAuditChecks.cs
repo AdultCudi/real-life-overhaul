@@ -145,18 +145,48 @@ internal static partial class Program
 
     // ---------------------------------------------------------------- Fix your loan's rate
 
+    // The game's loans as a list the checks can change between the question and the answer; a loan is told apart by its street, number and total.
     private sealed class FixDeskFake : ILoanFixDesk
     {
-        public bool Has = true;
-        public LoanFixCase Case;
-        public int Asked, Fixed, Opened;
+        public readonly List<LoanFixCase> Loans = new List<LoanFixCase>();
+        public int Asked, Fixed, Opened, Told;
+        public string FixedStreet;
+        public int FixedIndex = -1;
         public Action Yes;
 
         public bool Find(out LoanFixCase found)
         {
-            found = Case;
-            return Has;
+            int best = -1;
+            for (int i = 0; i < Loans.Count; i++)
+            {
+                best = best < 0 || Loans[i].Remaining > Loans[best].Remaining ? i : best;
+            }
+            found = default(LoanFixCase);
+            if (best < 0)
+            {
+                return false;
+            }
+            found = Loans[best];
+            found.Index = best;
+            return true;
         }
+
+        public bool Again(LoanFixCase asked, out LoanFixCase now)
+        {
+            now = default(LoanFixCase);
+            for (int i = 0; i < Loans.Count; i++)
+            {
+                if (Loans[i].Street == asked.Street && Loans[i].Number == asked.Number && Loans[i].Total == asked.Total)
+                {
+                    now = Loans[i];
+                    now.Index = i;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public void Gone() => Told++;
 
         public void Ask(LoanFixCase asked, Action yes)
         {
@@ -164,7 +194,12 @@ internal static partial class Program
             Yes = yes;
         }
 
-        public void Fix(LoanFixCase fixing) => Fixed++;
+        public void Fix(LoanFixCase fixing)
+        {
+            Fixed++;
+            FixedStreet = fixing.Street;
+            FixedIndex = fixing.Index;
+        }
 
         public bool OpenApp()
         {
@@ -173,26 +208,47 @@ internal static partial class Program
         }
     }
 
+    private static LoanFixCase FixLoan(string street, int total, int remaining) => new LoanFixCase { Street = street, Number = 1, Total = total, Remaining = remaining };
+
     private static void NewsFixChecks()
     {
         int fixedDaily = NewsRules.FixedDaily(1200000, ProductTerms.FixedRateBp(700, 300, 0, 1f), AccountRules.DaysPerYear);
         int variableDaily = fixedDaily * 2;   // a variable loan that costs twice what its fixed rate would
-        bool offered = NewsLoanFix.Offer(0, 1200000, variableDaily, 700, 300, AccountRules.DaysPerYear, true, out LoanFixCase made);
+        bool offered = NewsLoanFix.Offer(0, "Elm", 4, 1500000, 1200000, variableDaily, 700, 300, AccountRules.DaysPerYear, true, out LoanFixCase made);
         Check(offered && made.OldRateBp > made.NewRateBp && made.NewRateBp == ProductTerms.FixedRateBp(700, 300, 0, 1f) && made.Saving == NewsRules.MonthlySaving(made.OldDaily, made.NewDaily)
-              && made.Saving > 0 && made.Fee == 0,
-            "news fix: the case shows the old rate (" + made.OldRateBp + "), the new rate (" + made.NewRateBp + "), the saving ($" + made.Saving + ") and the fee (none)");
-        Check(!NewsLoanFix.Offer(0, 1200000, fixedDaily / 2, 700, 300, AccountRules.DaysPerYear, false, out _) && !NewsLoanFix.Offer(0, 0, variableDaily, 700, 300, AccountRules.DaysPerYear, true, out _),
+              && made.Saving > 0 && made.Fee == 0 && made.Street == "Elm" && made.Number == 4 && made.Total == 1500000,
+            "news fix: the case shows the old rate (" + made.OldRateBp + "), the new rate (" + made.NewRateBp + "), the saving ($" + made.Saving + ") and the fee (none), and names the loan");
+        Check(!NewsLoanFix.Offer(0, "Elm", 4, 1, 1200000, fixedDaily / 2, 700, 300, AccountRules.DaysPerYear, false, out _) && !NewsLoanFix.Offer(0, "Elm", 4, 1, 0, variableDaily, 700, 300, AccountRules.DaysPerYear, true, out _),
             "news fix: a loan the fixed rate would not help, or one with nothing left, is not offered");
 
-        var desk = new FixDeskFake { Case = made };
+        var desk = new FixDeskFake();
+        desk.Loans.Add(FixLoan("Elm", 900000, 800000));
+        desk.Loans.Add(FixLoan("Oak", 1500000, 1200000));
         Check(NewsLoanFix.Press(desk) && desk.Asked == 1 && desk.Fixed == 0, "news fix: the press asks first and changes no loan");
         Check(desk.Fixed == 0 && desk.Yes != null, "news fix: an answer of no, or none, leaves the loan as it was");
+        desk.Loans.RemoveAt(0);   // the other loan is repaid while the question is open: the one asked about moves up the list
         desk.Yes();
-        Check(desk.Fixed == 1 && desk.Asked == 1, "news fix: yes fixes the loan, once");
-        desk.Has = false;
-        desk.Yes();
-        Check(desk.Fixed == 1, "news fix: a yes after the loan has gone changes nothing");
-        var none = new FixDeskFake { Has = false };
+        Check(desk.Fixed == 1 && desk.FixedStreet == "Oak" && desk.FixedIndex == 0 && desk.Told == 0, "news fix: yes fixes the loan asked about, found by its identity after the list moved");
+        var bigger = new FixDeskFake();
+        bigger.Loans.Add(FixLoan("Oak", 1500000, 1200000));
+        NewsLoanFix.Press(bigger);
+        bigger.Loans.Insert(0, FixLoan("Pine", 9000000, 8000000));   // a bigger loan is taken meanwhile: it is the best to fix now, but it is not the one asked about
+        bigger.Yes();
+        Check(bigger.Fixed == 1 && bigger.FixedStreet == "Oak" && bigger.FixedIndex == 1, "news fix: a bigger loan taken while the question is open does not take the answer's place");
+        var gone = new FixDeskFake();
+        gone.Loans.Add(FixLoan("Oak", 1500000, 1200000));
+        NewsLoanFix.Press(gone);
+        gone.Loans.Clear();
+        gone.Yes();
+        Check(gone.Fixed == 0 && gone.Told == 1, "news fix: a yes after the loan is repaid changes nothing and tells the player");
+        var other = new FixDeskFake();
+        other.Loans.Add(FixLoan("Oak", 1500000, 1200000));
+        NewsLoanFix.Press(other);
+        other.Loans.Clear();
+        other.Loans.Add(FixLoan("Pine", 9000000, 8000000));   // repaid, and another taken: the index is the same, the loan is not
+        other.Yes();
+        Check(other.Fixed == 0 && other.Told == 1, "news fix: a loan repaid and another taken while the question is open is not fixed in its place");
+        var none = new FixDeskFake();
         Check(NewsLoanFix.Press(none) && none.Asked == 0 && none.Fixed == 0 && none.Opened == 1, "news fix: with no loan to fix the press opens the Economy app and asks nothing");
         string fix = File.ReadAllText(NewsRoot("Ui/News/NewsLive.Fix.cs"));
         string live = File.ReadAllText(NewsRoot("Ui/News/NewsLive.cs"));
@@ -259,7 +315,7 @@ internal static partial class Program
         Check(!Regex.IsMatch(prices, @"StartsWith\(DaySeriesCatalogue\.CityPrefix"), "news jobless: the goods table reads its goods through IsCityGood");
     }
 
-    // ---------------------------------------------------------------- a business that opens, a firm that moves its prices
+    // ---------------------------------------------------------------- a business that opens
 
     private static void NewsOpeningChecks()
     {
@@ -301,15 +357,6 @@ internal static partial class Program
             o.Owner = owner;
             return o;
         }
-        // A city seed that stays, whose prices will move on day 30.
-        int moverAt = -1;
-        for (int i = 0; i < seeds.Count && moverAt < 0; i++)
-        {
-            moverAt = seeds[i].Owner == FirmOwner.City && PopulationCatalogue.CategoryOfType(seeds[i].Type) >= 0 && s.BuildingOfKey(PopulationState.KeyOf(seeds[i].Street, seeds[i].Number)) >= 0 ? i : -1;
-        }
-        Check(moverAt >= 0, "news openings: the checks' city has a business of the city to move prices");
-        int movedFrom = seeds[moverAt].Price > 0 ? seeds[moverAt].Price : 1000;
-        string mover = seeds[moverAt].Name;
         var openings = new List<FirmEvent>();
         var played = new List<BusinessSeed>(seeds);
         for (int day = 2; day <= 60; day++)
@@ -322,12 +369,6 @@ internal static partial class Program
             {
                 played.Add(OpenAt(vacant[1], "Brooks Bistro", FirmOwner.Rival));
             }
-            if (day == 30)
-            {
-                BusinessSeed p = played[moverAt];
-                p.Price = (int)(movedFrom * 1.07);
-                played[moverAt] = p;
-            }
             sim.BeginDay(day, Ordinary, new List<BusinessSeed>(played));
             sim.RunAll();
         }
@@ -335,12 +376,6 @@ internal static partial class Program
         Check(openings.Count == 2 && openings[0].Name == "Pizzeria Luigi" && openings[0].Day == 10 && openings[0].Owner == FirmOwner.City
               && openings[1].Name == "Brooks Bistro" && openings[1].Day == 20 && openings[1].Owner == FirmOwner.Rival,
             "news openings: each opening is recorded with its firm and its day, the city's and the rival's alike (" + openings.Count + " recorded)");
-        var moves = new List<FirmEvent>();
-        s.Events.Between(FirmEventKind.PriceMoved, 1, 61, moves);
-        Check(moves.Count == 1 && moves[0].Name == mover && moves[0].Day == 30 && moves[0].Value >= CityFirmRules.PriceMoveLeast && moves[0].Owner == FirmOwner.City,
-            "news prices: a city firm that moved its prices by seven per cent is recorded once, with its name and its day (" + moves.Count + " recorded)");
-        Check(CityFirmRules.PriceMove(1000, 1010) == 0 && CityFirmRules.PriceMove(1000, 900) == -100 && CityFirmRules.PriceMove(0, 900) == 0, "news prices: a small move is no news, a fall is told as a fall");
-
         // The Ledger's story: in the edition after the day, once, naming the right firm; not in the editions before or after it.
         var stories = new List<string>();
         for (int day = 5; day <= 25; day++)

@@ -4,6 +4,7 @@ using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.GameUi;
 using RealLifeOverhaul.Ledger;
 using RealLifeOverhaul.Outlook;
+using UI.Notification;
 
 namespace RealLifeOverhaul.Ui
 {
@@ -40,12 +41,32 @@ namespace RealLifeOverhaul.Ui
                         at = i;
                     }
                 }
-                if (at < 0)
+                return at >= 0 && Offer(at, out found);
+            }
+
+            // The loan asked about, found again among the game's by its street, number and total; a loan repaid or a new one taken meanwhile does not move it.
+            public bool Again(LoanFixCase asked, out LoanFixCase now)
+            {
+                now = default(LoanFixCase);
+                _live.Clear();
+                GameLoans.Read(_live);
+                for (int i = 0; i < _live.Count; i++)
                 {
-                    return false;
+                    if (_live[i].Street == asked.Street && _live[i].Number == asked.Number && (int)_live[i].Total == asked.Total && _live[i].Remaining > 0 && _live[i].Interest > 0)
+                    {
+                        return Offer(i, out now);
+                    }
                 }
+                return false;
+            }
+
+            public void Gone() => Notifications.Show(NotificationType.Info, "reallife_news_fix_gone", (Dictionary<string, string>)null, 6f);
+
+            private bool Offer(int at, out LoanFixCase made)
+            {
                 bool rising = Look.Pending && Look.PendingMove > 0;
-                return NewsLoanFix.Offer(at, best, _live[at].Interest, CreditLedger.Value, Look.RateBp, AccountRules.DaysPerYear, rising, out found);
+                LoanView v = _live[at];
+                return NewsLoanFix.Offer(at, v.Street, v.Number, (int)v.Total, (int)v.Remaining, v.Interest, CreditLedger.Value, Look.RateBp, AccountRules.DaysPerYear, rising, out made);
             }
 
             public void Ask(LoanFixCase asked, Action yes)

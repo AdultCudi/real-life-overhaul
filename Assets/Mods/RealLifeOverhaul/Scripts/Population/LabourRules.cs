@@ -127,8 +127,7 @@ namespace RealLifeOverhaul.Population
             return Math.Max(PopulationCatalogue.ShopJobsLeast, (int)((long)Math.Max(b.UnitSqm, 1) * PopulationCatalogue.OfficeNetShare / 1000 / PopulationCatalogue.DeskSqm));
         }
 
-        // A business found by its key or added, its figures brought up to date. On a game day (day above 0) what a city or rival firm did is noted:
-        // a business new to the table opened, and a city business whose prices moved (the same kind of business under the same owner) moved them.
+        // A business found by its key or added, its figures brought up to date. On a game day (day above 0) a city or rival business new to the table has opened, and is noted.
         private static int Business(PopulationState s, string key, int building, in BusinessSeed bs, int day)
         {
             BusinessTable bt = s.Businesses;
@@ -140,10 +139,9 @@ namespace RealLifeOverhaul.Population
                 s.KnowBusiness(key, b);
                 opened = true;
             }
-            int was = !opened && string.Equals(bt.Type[b], bs.Type, StringComparison.Ordinal) && bt.Owner[b] == (byte)bs.Owner ? bt.Price[b] : 0;
-            if (day > 0)
+            if (day > 0 && opened)
             {
-                CityFirmRules.Noted(s, bs, opened, was, bs.Price > 0 ? bs.Price : 1000, day);
+                CityFirmRules.Opened(s, bs, day);
             }
             if (!string.Equals(bt.Type[b], bs.Type, StringComparison.Ordinal))
             {
