@@ -31414,5 +31414,14 @@
   "reallife_ui_dealer_the_car": "The car",
   "reallife_ui_dealer_l_margin_offer": "Margin at the offer",
   "reallife_ui_estate_your_employee": "works for you",
-  "reallife_estate_note_improve_broke": "{building}: the improvement of {amount} could not be paid, so the request stands."
+  "reallife_estate_note_improve_broke": "{building}: the improvement of {amount} could not be paid, so the request stands.",
+  "reallife_ui_dealer_bids_chart": "Bids so far",
+  "reallife_ui_estate_month_n": "Month {month}",
+  "reallife_ui_estate_ring_chart": "The city's rents, a month at a time",
+  "reallife_ui_dealer_fig_cars": "Cars",
+  "reallife_ui_dealer_fig_sold_today": "Sold today",
+  "reallife_ui_dealer_fig_takings_today": "Takings today",
+  "reallife_ui_dealer_fig_offers": "Offers waiting",
+  "reallife_ui_dealer_fig_events_on": "Events on",
+  "reallife_ui_dealer_fig_missions_done": "Missions done"
 }

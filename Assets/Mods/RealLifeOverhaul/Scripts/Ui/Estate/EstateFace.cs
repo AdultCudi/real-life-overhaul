@@ -181,6 +181,10 @@ namespace RealLifeOverhaul.Ui
                     {
                         cells[c] = v + "%";
                     }
+                    else if (kind == UiCellKind.Meter && v.Length > 0 && char.IsLower(v[0]))
+                    {
+                        cells[c] = char.ToUpperInvariant(v[0]) + v.Substring(1);
+                    }
                 }
             }
             CapRows(m.ListA);

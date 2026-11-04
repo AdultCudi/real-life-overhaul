@@ -300,6 +300,15 @@ namespace RealLifeOverhaul.Ui
                 {
                     right.Add(UiFactLine.Say(DealerText.T("reallife_dealer_lot_over")));
                 }
+                var bidNames = new List<string>(DealerCatalogue.BidsKept);
+                var bidValues = new List<float>(DealerCatalogue.BidsKept);
+                for (int i = Math.Min(l.BidLogCount, DealerCatalogue.BidsKept) - 1; i >= 0; i--)
+                {
+                    BidEntry made = l.BidLog[i];
+                    bidNames.Add(made.Bidder == 0 ? DealerText.T("reallife_ui_dealer_you") : DealerCatalogue.RivalNames[(made.Bidder - 1) % DealerCatalogue.RivalNames.Length]);
+                    bidValues.Add(made.Amount);
+                }
+                a.Bids = EstateCharts.Bars(DealerText.T("reallife_ui_dealer_bids_chart"), bidNames.ToArray(), bidValues.ToArray(), null, EstateCharts.Dollars);
                 var actions = new List<UiActionModel>(3);
                 actions.Add(_runs.Button(DealerText.T("reallife_ui_dealer_walk_away"), UiButtonKind.Secondary, UiIcon.None, UiAction.Option, () => Show(() => _v.Pick = null)));
                 if (!l.Inspected && !l.Gone)

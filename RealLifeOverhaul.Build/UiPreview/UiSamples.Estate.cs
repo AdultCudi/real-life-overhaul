@@ -8,7 +8,7 @@ internal static partial class UiSamples
 {
     public static readonly string[] EstateStates =
     {
-        "roll", "roll_first", "roll_empty", "unit_late", "unit_request", "unit_empty", "tenants", "works", "market", "building", "listing", "works_page", "call", "applicant", "agency", "agency_closed", "hotel",
+        "roll", "roll_twenty", "roll_first", "roll_empty", "unit_late", "unit_request", "unit_empty", "tenants", "works", "market", "building", "listing", "works_page", "call", "applicant", "agency", "agency_closed", "hotel",
         "hire", "rents", "rents_new", "off"
     };
 
@@ -103,7 +103,7 @@ internal static partial class UiSamples
     public static EstateModel Estate(UiWords t, string state)
     {
         var runs = new List<Func<bool>>();
-        EstateModel m = EstateBase(t, state == "roll_first" ? new[] { "1", "1", null, null, null, null, null } : state == "roll_empty" ? new string[7] : new[] { "12", "11", "8", null, null, null, null });
+        EstateModel m = EstateBase(t, state == "roll_twenty" ? new[] { "20", "19", "8", null, null, null, null } : state == "roll_first" ? new[] { "1", "1", null, null, null, null, null } : state == "roll_empty" ? new string[7] : new[] { "12", "11", "8", null, null, null, null });
         switch (state)
         {
             case "off":
@@ -114,6 +114,7 @@ internal static partial class UiSamples
                 m.OffBody = W(t, "reallife_estate_off_body", "Turn it on in Mod settings, or load a city to see your property.");
                 break;
             case "roll":
+            case "roll_twenty":
             case "roll_first":
             case "roll_empty":
                 Roll(t, m, runs, state);
@@ -169,7 +170,7 @@ internal static partial class UiSamples
         {
             rows.Add(EstateUnitRow(t, "12 W 39th Street, flat 2", "Garment District", "Priya Nair", "Nurse, Murray Hill Clinic", W(t, "reallife_estate_row_until", "Until day {day}").Replace("{day}", "290"), "$2,600", W(t, "reallife_ui_estate_paid", "Paid"), UiRole.Ok, 82, home, false));
         }
-        else if (state == "roll")
+        else if (state == "roll" || state == "roll_twenty")
         {
             string[][] units =
             {
@@ -186,6 +187,23 @@ internal static partial class UiSamples
                 new[] { "520 8th Avenue, suite 12", "Midtown", "Yuki Tanaka", "An import firm", "230", "$5,600", "notice", "33" },
                 new[] { "412 10th Avenue, unit B", "Hell's Kitchen", "Chen Wei", "Chef, Harbour Kitchen", "390", "$4,800", "ok", "63" }
             };
+            if (state == "roll_twenty")
+            {
+                string[][] more =
+                {
+                    new[] { "60 W 57th Street, flat 5", "Midtown", "Ana Souza", "Dentist, Park Smiles", "300", "$3,800", "ok", "79" },
+                    new[] { "60 W 57th Street, flat 6", "Midtown", "Ben Carter", "Teacher, Lincoln School", "341", "$3,800", "ok", "72" },
+                    new[] { "3 Canal Row, shop", "Garment District", "Ines Duarte", "A florist", "410", "$4,400", "ok", "81" },
+                    new[] { "17 Mercer Street, house", "Murray Hill", "Tom Okafor", "Nurse, Murray Hill Clinic", "365", "$2,900", "ok", "66" },
+                    new[] { "88 Fulton Street, shop", "Midtown", "Ravi Shah", "A pharmacy", "290", "$5,200", "ok", "84" },
+                    new[] { "250 Park Avenue, floor 11", "Midtown", "Mia Lang", "Architect, Lang Studio", "455", "$8,100", "ok", "75" },
+                    new[] { "250 Park Avenue, floor 12", "Midtown", "Luis Pena", "Software, Pena Labs", "430", "$8,100", "ok", "88" },
+                    new[] { "6 Harlem Row, house", "Uptown", "Zoe Adler", "Teacher, Lincoln School", "380", "$2,700", "ok", "70" }
+                };
+                var all = new List<string[]>(units);
+                all.AddRange(more);
+                units = all.ToArray();
+            }
             foreach (string[] u in units)
             {
                 bool empty = u[6] == "empty";
@@ -199,10 +217,10 @@ internal static partial class UiSamples
         m.Shape = EstateShape.Roll;
         m.HeadIcon = home;
         m.HeadTitle = W(t, "reallife_ui_estate_roll_title", "The rent roll");
-        m.HeadSub = W(t, "reallife_ui_estate_roll_sub", "{units} units in {buildings} buildings, {waiting} waiting for you").Replace("{units}", state == "roll" ? "12" : "1").Replace("{buildings}", state == "roll" ? "9" : "1").Replace("{waiting}", "2");
+        m.HeadSub = W(t, "reallife_ui_estate_roll_sub", "{units} units in {buildings} buildings, {waiting} waiting for you").Replace("{units}", state == "roll" ? "12" : state == "roll_twenty" ? "20" : "1").Replace("{buildings}", state == "roll" ? "9" : state == "roll_twenty" ? "13" : "1").Replace("{waiting}", "2");
         m.FigLabels = new[] { W(t, "reallife_ui_estate_fig_due", "Due"), W(t, "reallife_ui_estate_fig_collected", "Collected"), W(t, "reallife_ui_estate_fig_arrears", "In arrears"), W(t, "reallife_ui_estate_fig_empty", "Empty, asking") };
-        m.FigValues = state == "roll" ? new[] { "$47,500", "$38,700", "$8,800", "$4,100" } : state == "roll_first" ? new[] { "$2,600", "$2,600", "$0", "$0" } : new[] { "$0", "$0", "$0", "$0" };
-        m.FigInks = new[] { UiRole.None, UiRole.None, state == "roll" ? UiRole.DangerText : UiRole.None, state == "roll" ? UiRole.WarnText : UiRole.None };
+        m.FigValues = state == "roll_twenty" ? new[] { "$86,500", "$77,700", "$8,800", "$4,100" } : state == "roll" ? new[] { "$47,500", "$38,700", "$8,800", "$4,100" } : state == "roll_first" ? new[] { "$2,600", "$2,600", "$0", "$0" } : new[] { "$0", "$0", "$0", "$0" };
+        m.FigInks = new[] { UiRole.None, UiRole.None, state.StartsWith("roll_t") || state == "roll" ? UiRole.DangerText : UiRole.None, state.StartsWith("roll_t") || state == "roll" ? UiRole.WarnText : UiRole.None };
         var table = new UiDataTableModel
         {
             Columns = EstateRollColumns(t), Rows = rows.ToArray(), RowCount = rows.Count,
@@ -210,8 +228,8 @@ internal static partial class UiSamples
         };
         if (rows.Count > 0)
         {
-            table.TotalsLabel = W(t, "reallife_ui_estate_total_let", "{count} let units").Replace("{count}", state == "roll" ? "11" : "1");
-            table.Totals = new[] { string.Empty, string.Empty, string.Empty, state == "roll" ? "$47,500" : "$2,600", W(t, "reallife_ui_estate_total_in", "{amount} in").Replace("{amount}", state == "roll" ? "$38,700" : "$2,600"), string.Empty };
+            table.TotalsLabel = W(t, "reallife_ui_estate_total_let", "{count} let units").Replace("{count}", state == "roll" ? "11" : state == "roll_twenty" ? "19" : "1");
+            table.Totals = new[] { string.Empty, string.Empty, string.Empty, state == "roll_twenty" ? "$86,500" : state == "roll" ? "$47,500" : "$2,600", W(t, "reallife_ui_estate_total_in", "{amount} in").Replace("{amount}", state == "roll_twenty" ? "$77,700" : state == "roll" ? "$38,700" : "$2,600"), string.Empty };
         }
         m.Table = table;
         m.RowKeys = new string[rows.Count];
@@ -223,7 +241,16 @@ internal static partial class UiSamples
         m.ListAEmpty = W(t, "reallife_ui_estate_no_repairs", "Nothing is due for repair.");
         m.ListBTitle = W(t, "reallife_ui_estate_other_landlords", "Other landlords");
         m.ListBEmpty = W(t, "reallife_ui_estate_no_landlords", "No other landlord holds buildings in the city yet.");
-        if (state == "roll")
+        if (state != "roll_empty")
+        {
+            var months = new string[6];
+            for (int i = 0; i < months.Length; i++)
+            {
+                months[i] = W(t, "reallife_ui_estate_month_n", "Month {month}").Replace("{month}", (3 + i).ToString());
+            }
+            m.Lower = EstateCharts.Line(W(t, "reallife_ui_estate_ring_chart", "The city's rents, a month at a time"), months, new[] { 2700f, 2740f, 2790f, 2820f, 2860f, 2900f }, W(t, "reallife_ui_estate_rv_mean_flat", "Mean rent, a flat"), EstateCharts.Dollars);
+        }
+        if (state == "roll" || state == "roll_twenty")
         {
             runs.Add(Yes);
             runs.Add(Yes);

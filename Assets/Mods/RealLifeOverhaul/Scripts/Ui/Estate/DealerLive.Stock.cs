@@ -9,6 +9,13 @@ namespace RealLifeOverhaul.Ui
     {
         private sealed partial class Page
         {
+            // A car's glyph by its body: the work vehicles wear the truck, the rest the car, so a lot of them is not one repeated picture.
+            private static UiIcon CarGlyph(string type)
+            {
+                string t = (type ?? string.Empty).ToLowerInvariant();
+                return t.Contains("truck") || t.Contains("pickup") || t.Contains("van") || t.Contains("bus") || t.Contains("camper") ? UiIcon.Truck : UiIcon.Car;
+            }
+
             private string State(DealerYard yard, StockCar car)
             {
                 if (car.ShopUntil > _now)
@@ -82,7 +89,7 @@ namespace RealLifeOverhaul.Ui
                         string picture = DealerLive.PictureOf(car.Type, out aspect);
                         cards.Add(new UiCatalogueCard
                         {
-                            Picture = picture, Aspect = aspect, Icon = UiIcon.Car, Name = DealerGame.CarName(car.Type), Figure = Money(car.Asking),
+                            Picture = picture, Aspect = aspect, Icon = CarGlyph(car.Type), Name = DealerGame.CarName(car.Type), Figure = Money(car.Asking),
                             State = days >= 1 ? DealerText.T("reallife_ui_dealer_days_chip", "days", days.ToString(Inv)) : DealerText.T("reallife_ui_dealer_today"),
                             StateTone = days >= 30 ? UiRole.Danger : days >= 14 ? UiRole.Warn : UiRole.Notice
                         });
@@ -304,6 +311,20 @@ namespace RealLifeOverhaul.Ui
                 };
                 TableShape(UiIcon.Store, DealerText.T("reallife_dealer_tab_lots"), DealerText.T("reallife_ui_dealer_lots_sub", "count", _s.Yards.Count.ToString(Inv)), cols, rows, keys, side,
                     DealerText.T("reallife_dealer_row_no_dealership"), DealerText.T("reallife_dealer_lots_about"));
+                int carsAll = 0, takingsAll = 0, soldAll = 0, dealsAll = 0;
+                for (int y = 0; y < _s.Yards.Count; y++)
+                {
+                    carsAll += _s.Yards[y].Cars.Count;
+                    takingsAll += _s.Yards[y].Today.Takings;
+                    soldAll += _s.Yards[y].Today.Sold;
+                    dealsAll += _s.Yards[y].Deals.Count;
+                }
+                if (_s.Yards.Count > 0)
+                {
+                    _m.FigLabels = new[] { DealerText.T("reallife_ui_dealer_fig_cars"), DealerText.T("reallife_ui_dealer_fig_sold_today"), DealerText.T("reallife_ui_dealer_fig_takings_today"), DealerText.T("reallife_ui_dealer_fig_offers") };
+                    _m.FigValues = new[] { carsAll.ToString(Inv), soldAll.ToString(Inv), Money(takingsAll), dealsAll.ToString(Inv) };
+                    _m.Lower = Trend(RealLifeOverhaul.Economy.Dealership.ReportKind.Revenue, null, "reallife_dealer_report_revenue");
+                }
             }
 
             private readonly DealerBook _weekSum = new DealerBook(), _weekDay = new DealerBook();

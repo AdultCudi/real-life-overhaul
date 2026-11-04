@@ -239,6 +239,20 @@ namespace RealLifeOverhaul.Ui
                 TableShape(UiIcon.Key, EstateText.T("reallife_estate_tab_agency"), agency.Running ? EstateGame.NameOf(agency.Office)
                     : EstateText.T("reallife_estate_row_no_agency"), null, null, cols, rows, keys, AgencySide(agency),
                     EstateText.T(agency.Running ? "reallife_estate_row_no_instructions" : "reallife_estate_row_no_agency"), EstateText.T("reallife_estate_agency_open_what"));
+                if (agency.Running)
+                {
+                    var names = new List<string>(6);
+                    var reps = new List<float>(6);
+                    for (int i = 0; i < agency.Districts.Count && names.Count < 6; i++)
+                    {
+                        if (agency.Districts[i].SqmPrice > 0)
+                        {
+                            names.Add(EstateText.District(agency.Districts[i].Name));
+                            reps.Add(EstateCatalogue.Clamp(agency.Districts[i].Rep, 0, 1000) / 10f);
+                        }
+                    }
+                    _m.Lower = names.Count >= 2 ? EstateCharts.Bars(EstateText.T("reallife_estate_agency_reputation"), names.ToArray(), reps.ToArray(), null, EstateCharts.Percent) : null;
+                }
             }
 
             private static bool Parse(string pick, string prefix, out int id)

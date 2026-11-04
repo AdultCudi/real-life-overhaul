@@ -365,15 +365,17 @@ namespace RealLifeOverhaul.Ui
                 }
                 var rows = new List<UiDataRow>(16);
                 var keys = new List<string>(16);
+                int eventsOn = 0, missionsDone = 0, missionsAll = 0;
                 for (int k = 0; k < DealerCatalogue.EventKinds; k++)
                 {
                     DealerYard running = Running(k);
+                    eventsOn += running != null ? 1 : 0;
                     rows.Add(new UiDataRow
                     {
                         Cells = new[] { DealerText.Event(k, 0), running != null ? running.Name
                             : DealerText.T("reallife_dealer_days", "days", DealerCatalogue.EventDays[k].ToString(Inv)), Money(DealerDirector.EventCost(k)), DealerText.EventShort(k),
                             running != null ? DealerText.T("reallife_dealer_state_event_on", "day", FinanceText.Day(running.EventUntil)) : DealerText.T("reallife_dealer_state_event_ready") },
-                        Values = new[] { (int)UiIcon.Megaphone, 0, 0, 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, running != null ? UiRole.Ok : UiRole.Notice },
+                        Values = new[] { (int)UiIcon.Megaphone, 0, -1, 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, running != null ? UiRole.Ok : UiRole.Notice },
                         Subs = new[] { DealerText.T("reallife_ui_dealer_growth_event"), null, null, null, null }
                     });
                     keys.Add(DealerDirector.EventRow(k));
@@ -385,13 +387,15 @@ namespace RealLifeOverhaul.Ui
                     {
                         bool done = DealerRules.MissionDone(yard, m);
                         int progress = DealerRules.Progress(yard, m);
+                        missionsAll++;
+                        missionsDone += done ? 1 : 0;
                         rows.Add(new UiDataRow
                         {
                             Cells = new[] { DealerText.Mission(m), yard.Name,
                                 DealerText.T("reallife_dealer_progress", "done", progress.ToString(Inv), "target",
                                 DealerCatalogue.MissionTarget[m].ToString(Inv)), DealerText.MissionAbout(m),
                                 DealerText.T(done ? "reallife_dealer_state_mission_done" : "reallife_dealer_state_mission_open") },
-                            Values = new[] { (int)UiIcon.Trophy, 0, 0, 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, done ? UiRole.Ok : UiRole.Notice },
+                            Values = new[] { (int)UiIcon.Trophy, 0, Math.Min(100, progress * 100 / Math.Max(1, DealerCatalogue.MissionTarget[m])), 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, done ? UiRole.Ok : UiRole.Notice },
                             Subs = new[] { DealerText.T("reallife_ui_dealer_growth_mission", "points", DealerCatalogue.MissionReward[m].ToString(Inv)), null, null, null, null }
                         });
                         keys.Add(null);
@@ -402,7 +406,7 @@ namespace RealLifeOverhaul.Ui
                     {
                         Cells = new[] { DealerText.Step(step), yard.Name, yard.Rep.ToString(Inv)
                             + (top ? string.Empty : " / " + DealerCatalogue.RepSteps[step + 1].ToString(Inv)), DealerText.Perk(step), string.Empty },
-                        Values = new[] { (int)UiIcon.Star, 0, 0, 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None },
+                        Values = new[] { (int)UiIcon.Star, 0, top ? 100 : Math.Min(100, yard.Rep * 100 / Math.Max(1, DealerCatalogue.RepSteps[step + 1])), 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None },
                         Subs = new[] { DealerText.T("reallife_ui_dealer_growth_rep"), null, null, null, null }
                     });
                     keys.Add(null);
@@ -412,7 +416,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_what"), Kind = UiCellKind.Tile, Width = 216f },
                     new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_showroom"), Kind = UiCellKind.Text, Width = 176f },
-                    new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_progress"), Kind = UiCellKind.Text, Width = 144f },
+                    new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_progress"), Kind = UiCellKind.Meter, Width = 176f },
                     new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_about"), Kind = UiCellKind.Text, Width = 0f },
                     new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_state"), Kind = UiCellKind.Chip, Width = 200f }
                 };
@@ -424,6 +428,17 @@ namespace RealLifeOverhaul.Ui
                 };
                 TableShape(UiIcon.Rocket, DealerText.T("reallife_dealer_growth_title"), DealerText.T("reallife_ui_dealer_growth_sub"), cols, rows,
                     keys, side, DealerText.T("reallife_dealer_row_no_dealership"), DealerText.T("reallife_dealer_growth_events"));
+                if (_s.Yards.Count > 0)
+                {
+                    _m.FigLabels = new[] { DealerText.T("reallife_ui_dealer_fig_events_on"), DealerText.T("reallife_ui_dealer_fig_missions_done"), DealerText.T("reallife_ui_dealer_fig_sold_today") };
+                    int soldToday = 0;
+                    for (int y = 0; y < _s.Yards.Count; y++)
+                    {
+                        soldToday += _s.Yards[y].Today.Sold;
+                    }
+                    _m.FigValues = new[] { eventsOn.ToString(Inv), missionsDone.ToString(Inv) + " / " + missionsAll.ToString(Inv), soldToday.ToString(Inv) };
+                    _m.Lower = Trend(RealLifeOverhaul.Economy.Dealership.ReportKind.Sold, null, "reallife_dealer_report_sold");
+                }
             }
 
             private readonly List<int> _kinds = new List<int>(6);
@@ -522,6 +537,36 @@ namespace RealLifeOverhaul.Ui
             };
 
             private readonly DealerBook _rWeek = new DealerBook(), _rAll = new DealerBook(), _rNow = new DealerBook(), _rDay = new DealerBook(), _rScratch = new DealerBook();
+
+            // The showrooms' takings, day by day over the days kept: the chart that fills the foot of a short page (Still: read by its axes alone).
+            private UiChartModel Trend(RealLifeOverhaul.Economy.Dealership.ReportKind kind, string place, string titleKey)
+            {
+                int days = DealerCatalogue.ReportDays;
+                var values = new long[days];
+                var have = new bool[days];
+                int first = DealerReport.Series(_s, place, kind, _day, days, values, have, _rScratch);
+                bool money = DealerReport.Money(kind);
+                var pts = new List<string>(days);
+                var line = new List<float>(days);
+                for (int i = Math.Max(0, Math.Min(days, first)); i < days; i++)
+                {
+                    if (have[i])
+                    {
+                        pts.Add(DealerText.T("reallife_ui_dealer_chart_day", "day", (_day - (days - 1 - i)).ToString(Inv)));
+                        line.Add(values[i]);
+                    }
+                }
+                if (line.Count < 2)
+                {
+                    return null;
+                }
+                return new UiChartModel
+                {
+                    Kind = UiChartKind.Line, Title = DealerText.T(titleKey), Points = pts.ToArray(), Still = true,
+                    Series = new[] { new UiSeries { Label = DealerText.T(titleKey), Values = line.ToArray(), Tint = UiRole.None } },
+                    Format = v => FormatFigure(v, kind, money), AxisFormat = v => FormatFigure(v, kind, money)
+                };
+            }
 
             public void Reports()
             {

@@ -83,6 +83,7 @@ namespace RealLifeOverhaul.Ui
         public string Picture;          // the game's picture of the car by its UiPictures key, or null for the glyph
         public float Aspect = 1.6f;
         public UiFactCardModel Left, Right;
+        public UiChartModel Bids;       // the bids so far, oldest first, as bars; null with none
         public string Back;
     }
 

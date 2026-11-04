@@ -31414,5 +31414,14 @@
   "reallife_ui_dealer_the_car": "O carro",
   "reallife_ui_dealer_l_margin_offer": "Margem na oferta",
   "reallife_ui_estate_your_employee": "trabalha para você",
-  "reallife_estate_note_improve_broke": "{building}: a melhoria de {amount} não pôde ser paga, então o pedido continua."
+  "reallife_estate_note_improve_broke": "{building}: a melhoria de {amount} não pôde ser paga, então o pedido continua.",
+  "reallife_ui_dealer_bids_chart": "Lances até agora",
+  "reallife_ui_estate_month_n": "Mês {month}",
+  "reallife_ui_estate_ring_chart": "Os aluguéis da cidade, mês a mês",
+  "reallife_ui_dealer_fig_cars": "Carros",
+  "reallife_ui_dealer_fig_sold_today": "Vendidos hoje",
+  "reallife_ui_dealer_fig_takings_today": "Receita de hoje",
+  "reallife_ui_dealer_fig_offers": "Ofertas à espera",
+  "reallife_ui_dealer_fig_events_on": "Eventos em curso",
+  "reallife_ui_dealer_fig_missions_done": "Missões cumpridas"
 }

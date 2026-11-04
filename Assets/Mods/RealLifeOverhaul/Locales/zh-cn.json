@@ -31414,5 +31414,14 @@
   "reallife_ui_dealer_the_car": "这辆车",
   "reallife_ui_dealer_l_margin_offer": "按报价的利润",
   "reallife_ui_estate_your_employee": "为你工作",
-  "reallife_estate_note_improve_broke": "{building}：{amount}的改善费用付不起，请求仍然有效。"
+  "reallife_estate_note_improve_broke": "{building}：{amount}的改善费用付不起，请求仍然有效。",
+  "reallife_ui_dealer_bids_chart": "目前的出价",
+  "reallife_ui_estate_month_n": "第{month}月",
+  "reallife_ui_estate_ring_chart": "城市租金，逐月",
+  "reallife_ui_dealer_fig_cars": "车辆",
+  "reallife_ui_dealer_fig_sold_today": "今日售出",
+  "reallife_ui_dealer_fig_takings_today": "今日收入",
+  "reallife_ui_dealer_fig_offers": "待处理报价",
+  "reallife_ui_dealer_fig_events_on": "进行中的活动",
+  "reallife_ui_dealer_fig_missions_done": "已完成任务"
 }

@@ -203,6 +203,10 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
+                if (it.Clip >= 0 && it.Y - s.Clips[it.Clip].Offset >= s.Clips[it.Clip].H)
+                {
+                    continue;   // a row below the end of its scroll region is not on show, so there is nothing to read
+                }
                 UiColour under = Beneath(s, i, dark);
                 UiColour ink = UiColour.Of(text ? it.Ink : it.Fill, dark);
                 ink = ink.WithAlpha(ink.A * it.Alpha).Over(under);

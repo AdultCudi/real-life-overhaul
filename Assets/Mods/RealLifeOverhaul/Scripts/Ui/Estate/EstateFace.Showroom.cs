@@ -168,8 +168,7 @@ namespace RealLifeOverhaul.Ui
             float lx = x, rx = x + lw + UiTokens.S6;
             // The picture takes what the bidding's column is taller by, so the two columns end together.
             float factsH = UiFactCard.Height(a.Left, lw, keys, true), rightH = UiFactCard.Height(a.Right, rw, keys, true);
-            float picH = Math.Min(UiDraw.SnapDown(lw / Math.Max(1f, a.Aspect)), UiTokens.S16 * 12f);
-            picH = Math.Max(picH, UiDraw.SnapDown(Math.Min(bottom - y, rightH) - factsH - UiTokens.S3));
+            float picH = Math.Min(UiDraw.SnapDown(lw / Math.Max(1f, a.Aspect)), UiTokens.S16 * 3f);   // the car's picture is a tile, not the page
             UiAt on = at.InRegion(RegionLeft);
             int pic = UiDraw.Box(s, on, lx, y, lw, picH, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
             if (!string.IsNullOrEmpty(a.Picture))
@@ -187,7 +186,13 @@ namespace RealLifeOverhaul.Ui
                 float g = UiTokens.S16;
                 UiDraw.Icon(s, on.In(pic), lx + (lw - g) / 2f, y + (picH - g) / 2f, g, a.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
             }
-            UiFactCard.Lay(s, on, a.Left, lx, y + picH + UiTokens.S3, lw, bottom - (y + picH + UiTokens.S3), keys, true);
+            float factsTop = y + picH + UiTokens.S3;
+            float usedH = UiFactCard.Lay(s, on, a.Left, lx, factsTop, lw, bottom - factsTop, keys, true);
+            float chartTop = UiDraw.Snap(factsTop + usedH + UiTokens.S3);
+            if (a.Bids != null && bottom - chartTop >= LowerLeast - 0.5f)
+            {
+                UiChart.Lay(s, at.InRegion(RegionChart), a.Bids, lx, chartTop, lw, UiDraw.SnapDown(bottom - chartTop), UiChart.First);
+            }
             UiFactCard.Lay(s, at.InRegion(RegionRight), a.Right, rx, y, rw, bottom - y, keys, true);
         }
     }

@@ -209,6 +209,18 @@ namespace RealLifeOverhaul.Ui
                 _m.ListBTitle = EstateText.T("reallife_ui_estate_other_landlords");
                 _m.ListBEmpty = EstateText.T("reallife_ui_estate_no_landlords");
                 _m.ListB = LandlordRows();
+                // The chart under a short roll: the city's mean flat rent, a month at a time, from the ring the day turns keep.
+                if (_s.RentRingCount >= 2)
+                {
+                    var months = new string[_s.RentRingCount];
+                    var rents = new float[_s.RentRingCount];
+                    for (int i = 0; i < months.Length; i++)
+                    {
+                        months[i] = EstateText.T("reallife_ui_estate_month_n", "month", (_s.RentRingMonth - months.Length + 1 + i).ToString(Inv));
+                        rents[i] = _s.RentRing[i];
+                    }
+                    _m.Lower = EstateCharts.Line(EstateText.T("reallife_ui_estate_ring_chart"), months, rents, EstateText.T("reallife_ui_estate_rv_mean_flat"), EstateCharts.Dollars);
+                }
             }
 
             private string Cash(long amount) => EstateText.Money((float)Math.Min(amount, int.MaxValue / 2));

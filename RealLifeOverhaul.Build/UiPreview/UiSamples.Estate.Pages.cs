@@ -254,11 +254,17 @@ internal static partial class UiSamples
             lines.Add(UiFactLine.Section(W(t, "reallife_estate_agency_reputation", "What the districts think")));
             lines.Add(UiFactLine.Say("Midtown: 62%, " + Fx(W(t, "reallife_estate_agency_chance", "{chance} of instructions"), "chance", "14%")));
             lines.Add(UiFactLine.Say("Uptown: 48%, " + Fx(W(t, "reallife_estate_agency_chance", "{chance} of instructions"), "chance", "11%")));
+            lines.Add(UiFactLine.Say("Garment District: 55%, " + Fx(W(t, "reallife_estate_agency_chance", "{chance} of instructions"), "chance", "12%")));
+            lines.Add(UiFactLine.Say("Murray Hill: 31%, " + Fx(W(t, "reallife_estate_agency_chance", "{chance} of instructions"), "chance", "7%")));
             actions.Add(EstateButton(runs, W(t, "reallife_estate_btn_close_agency", "Close the agency"), UiButtonKind.Destructive, UiIcon.None, UiAction.Count));
         }
         var side = new UiFactCardModel { Title = W(t, "reallife_estate_tab_agency", "Agency"), Heading = true, Lines = lines.ToArray(), Actions = actions.ToArray() };
         TableOf(m, UiIcon.Key, W(t, "reallife_estate_tab_agency", "Agency"), closed ? W(t, "reallife_estate_row_no_agency", "No agency yet") : "7 5th Avenue", cols, rows, side,
             closed ? W(t, "reallife_estate_row_no_agency", "No agency yet") : W(t, "reallife_estate_row_no_instructions", "No instructions"), W(t, "reallife_estate_agency_open_what", "Run the agency from an office you hold."));
+        if (!closed)
+        {
+            m.Lower = EstateCharts.Bars(W(t, "reallife_estate_agency_reputation", "Reputation by district"), new[] { "Midtown", "Uptown", "Garment District", "Murray Hill" }, new[] { 62f, 48f, 55f, 31f }, null, EstateCharts.Percent);
+        }
     }
 
     private static void Hotel(UiWords t, EstateModel m, List<Func<bool>> runs)
@@ -329,6 +335,7 @@ internal static partial class UiSamples
                 m.DetailLocate = W(t, "reallife_ui_estate_locate", "Locate");
                 runs.Add(Yes);
                 m.DetailLocateRun = runs.Count - 1;
+                m.Lower = EstateCharts.Bars(W(t, "reallife_ui_estate_col_rent_month", "Rent a month"), new[] { "flat 3A", "flat 3B", "flat 4A" }, new[] { 2600f, 3300f, 2600f }, null, EstateCharts.Dollars);
                 m.Left = new[]
                 {
                     new UiFactCardModel

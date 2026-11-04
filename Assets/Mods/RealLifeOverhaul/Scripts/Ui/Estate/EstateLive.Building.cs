@@ -29,6 +29,29 @@ namespace RealLifeOverhaul.Ui
                 }
                 _m.Left = new[] { MoneyCard(h, value), LettingCard(h, value) };
                 _m.Right = new[] { SellingCard(h, value), MoreCard(h) };
+                _m.Lower = RentChart(h);
+            }
+
+            // What each let unit pays a month, side by side, under a building of several: the rent roll's own figures for this building.
+            private UiChartModel RentChart(EstateHolding h)
+            {
+                if (!h.Managed || h.Self)
+                {
+                    return null;
+                }
+                var names = new List<string>(h.Units.Count);
+                var rents = new List<float>(h.Units.Count);
+                for (int n = 0; n < h.Units.Count && names.Count < 8; n++)
+                {
+                    if (h.Units[n].Let)
+                    {
+                        string name = EstateText.UnitName(h, n);
+                        int comma = name.IndexOf(',');
+                        names.Add(comma > 0 ? name.Substring(comma + 1).Trim() : name);
+                        rents.Add((float)h.Units[n].Rent * _monthDays);
+                    }
+                }
+                return names.Count >= 2 ? EstateCharts.Bars(EstateText.T("reallife_ui_estate_col_rent_month"), names.ToArray(), rents.ToArray(), null, EstateCharts.Dollars) : null;
             }
 
             private UiFactCardModel MoneyCard(EstateHolding h, int value)

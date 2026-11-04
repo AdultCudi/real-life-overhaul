@@ -61,6 +61,7 @@ namespace RealLifeOverhaul.Ui
                     }
                     var names = new System.Collections.Generic.List<string>(Most);
                     var values = new System.Collections.Generic.List<float>(Most);
+                    var used = new System.Collections.Generic.List<int>(Most);
                     for (int r = 0; r < t.RowCount && r < t.Rows.Length && names.Count < Most; r++)
                     {
                         UiDataRow row = t.Rows[r];
@@ -71,15 +72,100 @@ namespace RealLifeOverhaul.Ui
                         {
                             names.Add(Short(row.Cells[0]));
                             values.Add(v);
+                            used.Add(r);
                         }
                     }
-                    if (names.Count >= 2 && Reads(values))
+                    if (names.Count >= 2 && Reads(values) && Varies(values))
                     {
+                        Distinct(names, t, used);
                         return Bars(t.Columns[c].Title, names.ToArray(), values.ToArray(), t.Columns[c].Title, pass == 1 ? (Func<float, string>)Dollars : pass == 0 ? Percent : Percent);
                     }
                 }
             }
+            return t.RowCount == 1 ? Across(t) : t.RowCount >= 4 ? Counted(t) : null;
+        }
+
+        // The states a table's rows are in, counted: "Open 3, Booked 2, Sound 3", for a table whose figures are too far apart to draw as bars.
+        private static UiChartModel Counted(UiDataTableModel t)
+        {
+            for (int c = 0; c < t.Columns.Length; c++)
+            {
+                if (t.Columns[c].Kind != UiCellKind.Chip)
+                {
+                    continue;
+                }
+                var names = new System.Collections.Generic.List<string>(Most);
+                var counts = new System.Collections.Generic.List<float>(Most);
+                for (int r = 0; r < t.RowCount && r < t.Rows.Length; r++)
+                {
+                    string chip = t.Rows[r].Cells != null && c < t.Rows[r].Cells.Length ? t.Rows[r].Cells[c] : null;
+                    int at = chip == null ? -1 : names.IndexOf(chip);
+                    if (at >= 0)
+                    {
+                        counts[at] += 1f;
+                    }
+                    else if (!string.IsNullOrEmpty(chip) && names.Count < Most)
+                    {
+                        names.Add(chip);
+                        counts.Add(1f);
+                    }
+                }
+                if (names.Count >= 2 && Reads(counts))
+                {
+                    return Bars(t.Columns[c].Title, names.ToArray(), counts.ToArray(), t.Columns[c].Title, Count);
+                }
+            }
             return null;
+        }
+
+        // Names that collide ("41 E 37th Street" for three flats) say the unit instead: the words after the street's comma, else the row's own second cell.
+        private static void Distinct(System.Collections.Generic.List<string> names, UiDataTableModel t, System.Collections.Generic.List<int> used)
+        {
+            for (int i = 0; i < names.Count; i++)
+            {
+                bool twice = false;
+                for (int k = 0; k < names.Count && !twice; k++)
+                {
+                    twice = k != i && names[k] == names[i];
+                }
+                if (twice && t.Rows[used[i]].Cells != null)
+                {
+                    string full = t.Rows[used[i]].Cells[0] ?? string.Empty;
+                    int comma = full.IndexOf(',');
+                    names[i] = comma > 0 ? full.Substring(comma + 1).Trim() : names[i];
+                }
+            }
+        }
+
+        // Bars that differ: a chart of figures all alike (every offer near the asking price) says nothing the table does not.
+        private static bool Varies(System.Collections.Generic.List<float> v)
+        {
+            float lo = float.MaxValue, hi = 0f;
+            for (int i = 0; i < v.Count; i++)
+            {
+                lo = Math.Min(lo, v[i]);
+                hi = Math.Max(hi, v[i]);
+            }
+            return (hi - lo) * 6f >= hi;
+        }
+
+        // A table of one row: its money (else its percentages) side by side as bars, each named by its column.
+        private static UiChartModel Across(UiDataTableModel t)
+        {
+            UiDataRow row = t.Rows[0];
+            var names = new System.Collections.Generic.List<string>(6);
+            var values = new System.Collections.Generic.List<float>(6);
+            for (int c = 0; c < t.Columns.Length && row.Cells != null && c < row.Cells.Length; c++)
+            {
+                float v;
+                bool pct;
+                if ((t.Columns[c].Kind == UiCellKind.Money || t.Columns[c].Kind == UiCellKind.Figure) && Parse(row.Cells[c], out v, out pct) && v > 0 && !pct)
+                {
+                    names.Add(t.Columns[c].Title);
+                    values.Add(v);
+                }
+            }
+            return names.Count >= 2 && Reads(values) ? Bars(row.Cells[0], names.ToArray(), values.ToArray(), row.Cells[0], Dollars) : null;
         }
 
         /// <summary>
@@ -156,11 +242,11 @@ namespace RealLifeOverhaul.Ui
                 most = Math.Max(most, values[i]);
                 least = Math.Min(least, values[i]);
             }
-            return most > 0f && least * 7f >= most;
+            return most > 0f && least * 12f >= most;
         }
 
         // A name for an axis: the street before the first comma, no longer than a label holds, cut at a word.
-        private static string Short(string name)
+        public static string Short(string name)
         {
             int comma = name.IndexOf(',');
             string s = (comma > 0 ? name.Substring(0, comma) : name).Trim();
