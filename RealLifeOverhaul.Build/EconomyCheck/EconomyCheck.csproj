@@ -839,6 +839,14 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiNotices.cs" Link="Mod\UiNotices.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiAllApps.cs" Link="Mod\UiAllApps.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Host\UiHostRules.cs" Link="Mod\UiHostRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Math.cs" Link="Mod\Map25Math.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Palette.cs" Link="Mod\Map25Palette.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Mesh.cs" Link="Mod\Map25Mesh.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Blocks.cs" Link="Mod\Map25Blocks.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Set.cs" Link="Mod\Map25Set.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Ground.cs" Link="Mod\Map25Ground.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Fixture.cs" Link="Mod\Map25Fixture.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25View.cs" Link="Mod\Map25View.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiForeignMark.cs" Link="Mod\UiForeignMark.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiBreaker.cs" Link="Mod\UiBreaker.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Compat\UiForeignRules.cs" Link="Mod\UiForeignRules.cs" />
