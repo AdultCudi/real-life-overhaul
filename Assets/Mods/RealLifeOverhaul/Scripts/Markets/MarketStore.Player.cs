@@ -169,6 +169,8 @@ namespace RealLifeOverhaul.Markets
                 Join(t, b.OwnYear, b.OwnBoughtBp, b.OwnSoldBp, b.OwnBuyDay, b.OwnSellDay);
                 Join(t, b.TopUp);   // then capital added while it runs, and its fee's money-days
                 L(t, b.MonthAdded);
+                L(t, b.DayGain, b.WeekGain);   // then the gain of the day and of the week, and the day they are of
+                Join(t, b.FigDay);
             }
         }
 
@@ -238,6 +240,12 @@ namespace RealLifeOverhaul.Markets
                 b.OwnSellDay = I(c, 41);
                 b.TopUp = Clamp(I(c, 42), 0, MarketBots.TopUpDecidedAgain);
                 b.MonthAdded = L(c, 43);
+                if (c.Length > 46)
+                {
+                    b.DayGain = L(c, 44);   // a record from before them has none: they start at nothing
+                    b.WeekGain = L(c, 45);
+                    b.FigDay = I(c, 46);
+                }
                 s.Bots.Add(b);
             }
         }

@@ -51,7 +51,8 @@ namespace RealLifeOverhaul.Markets
                     .Append('|').Append(r.StockId).Append('|').Append(r.Level).Append('|').Append(r.GainBp).Append('|').Append((int)r.Type)
                     .Append('|').Append(r.Budget).Append('|').Append(r.PerTrade).Append('|').Append(r.StopBp).Append('|').Append(r.OpenOnly ? 1 : 0)
                     .Append('|').Append(r.Reinvest ? 1 : 0).Append('|').Append(r.Tell ? 1 : 0).Append('|').Append(r.MaxOpen).Append('|').Append((int)r.Status)
-                    .Append('|').Append(r.Cash).Append('|').Append(r.DayResult).Append('|').Append(r.WeekResult).Append('|').Append(r.OpenTrades);
+                    .Append('|').Append(r.Cash).Append('|').Append(0).Append('|').Append(0).Append('|').Append(r.OpenTrades)   // the two before the open trades were a cash flow's day and week, never a gain: kept as places, read as nothing
+                    .Append('|').Append(r.DayGain).Append('|').Append(r.WeekGain).Append('|').Append(r.FigDay).Append('|').Append(r.Shares).Append('|').Append(r.Cost);
             }
             ListingFile file = state.Listing;
             if (file != null && file.BidCount > 0)
@@ -110,8 +111,18 @@ namespace RealLifeOverhaul.Markets
                         Id = I(c, 1), Kind = (RuleKind)Clamp(I(c, 2), 0, 7), Owner = I(c, 3) == 0 ? 0 : 1, Who = I(c, 4), StockId = I(c, 5),
                         Level = I(c, 6), GainBp = I(c, 7), Type = (OrderType)Clamp(I(c, 8), 0, 2), Budget = L(c, 9), PerTrade = L(c, 10), StopBp = I(c, 11),
                         OpenOnly = I(c, 12) != 0, Reinvest = I(c, 13) != 0, Tell = I(c, 14) != 0, MaxOpen = Math.Max(1, I(c, 15)),
-                        Status = (RuleStatus)Clamp(I(c, 16), 0, 2), Cash = L(c, 17), DayResult = L(c, 18), WeekResult = L(c, 19), OpenTrades = Math.Max(0, I(c, 20))
+                        Status = (RuleStatus)Clamp(I(c, 16), 0, 2), Cash = L(c, 17), OpenTrades = Math.Max(0, I(c, 20))
                     });
+                    if (c.Length >= 26)
+                    {
+                        // The gain figures and what the rule holds, at the end of its line: an older line has none, and starts them at nothing.
+                        RuleBot made = state.Rules[state.Rules.Count - 1];
+                        made.DayGain = L(c, 21);
+                        made.WeekGain = L(c, 22);
+                        made.FigDay = I(c, 23);
+                        made.Shares = Math.Max(0, L(c, 24));
+                        made.Cost = Math.Max(0, L(c, 25));
+                    }
                 }
                 else if (c[0] == "b" && state.Listing != null && c.Length >= 4)
                 {

@@ -46,8 +46,10 @@ namespace RealLifeOverhaul.Markets
         public int MaxOpen = 1;
         public RuleStatus Status;
         public long Cash;
-        public long DayResult;
-        public long WeekResult;
+        public long DayGain;         // gain or loss taken on what it sold today (money, not cash flow: a purchase is no loss)
+        public long WeekGain;        // ...and this week; both set to nothing at the day and the week turn (RuleBots.Turn)
+        public int FigDay;           // the day those two are counted for
+        public long Shares, Cost;    // what it holds now and what that cost: a sale's gain is its price less its part of the cost
         public int OpenTrades;
         public int LastDay;
         public int ToldStock;        // a trade to mention, cleared when the director has said it
@@ -219,6 +221,7 @@ namespace RealLifeOverhaul.Markets
             {
                 return;
             }
+            Turn(state, day);   // the day's figures are of this day, whatever turned (a replay, a load) before it
             for (int i = 0; i < state.Rules.Count; i++)
             {
                 RuleBot rule = state.Rules[i];
@@ -247,6 +250,8 @@ namespace RealLifeOverhaul.Markets
                     qty = Math.Max(1L, state.Held(stock.Id));   // a stop sells the whole holding
                 }
                 int limit = rule.Type == OrderType.Limit ? stock.Last : 0;
+                Position held = rule.Owner == 0 && !buy ? state.Position(stock.Id) : null;
+                long heldShares = held != null && held.Shares > 0 ? held.Shares : 0L, heldCost = held != null && held.Shares > 0 ? held.Cost : 0L;   // what a stop sells from, as it stood before the order filled
                 if (rule.Owner == 0)
                 {
                     if (place == null || !place(rule, stock.Id, buy, qty, limit, rule.Type))
@@ -288,11 +293,83 @@ namespace RealLifeOverhaul.Markets
                 {
                     rule.ToldStock = stock.Id;
                 }
-                long signed = (buy ? -1 : 1) * qty * stock.Last / 100L;
-                rule.DayResult += signed;
-                rule.WeekResult += signed;
+                Fill(rule, buy, qty, stock.Last, day, heldShares, heldCost);
             }
         }
+
+        /// <summary>
+        /// A trade of a rule booked: a purchase adds to what it holds and what that cost; a sale's gain is what it brought less its part of
+        /// the cost, so a purchase is never a loss and a sale of the same shares at the same price is none. Shares it did not buy itself (a
+        /// stop guard sells the player's holding) take their cost from <paramref name="otherShares"/> and <paramref name="otherCost"/>; with none
+        /// known, the gain on them is nothing. The price is the one the rule saw, so a fee is not in it.
+        /// </summary>
+        public static void Fill(RuleBot rule, bool buy, long qty, int priceCents, int day, long otherShares = 0, long otherCost = 0)
+        {
+            Turn(rule, day);
+            long value = qty * priceCents / 100L;
+            if (buy)
+            {
+                rule.Shares += qty;
+                rule.Cost += value;
+                return;
+            }
+            long own = Math.Min(qty, Math.Max(0L, rule.Shares));
+            long ownCost = own > 0 ? rule.Cost * own / rule.Shares : 0L;
+            long basis = ownCost;
+            long rest = qty - own;
+            if (rest > 0)
+            {
+                long used = Math.Min(rest, Math.Max(0L, otherShares));
+                basis += used > 0 ? otherCost * used / otherShares : 0L;
+                basis += (rest - used) * priceCents / 100L;   // no cost known: no gain, no loss
+            }
+            if (own > 0)
+            {
+                rule.Shares -= own;
+                rule.Cost -= ownCost;
+                if (rule.Shares <= 0)
+                {
+                    rule.Shares = 0;
+                    rule.Cost = 0;
+                }
+            }
+            long gain = value - basis;
+            rule.DayGain += gain;
+            rule.WeekGain += gain;
+        }
+
+        /// <summary>
+        /// The day turn: today's gain is nothing again, and this week's on the first day of a week. Called for every day the market moves
+        /// on and at the open of a session, so a Saturday does not read Friday's gain as today's; a day gone back to changes nothing.
+        /// </summary>
+        public static void Turn(RuleBot rule, int day)
+        {
+            if (day <= rule.FigDay)
+            {
+                return;
+            }
+            rule.DayGain = 0;
+            if (MarketCatalogue.WeekOf(day) != MarketCatalogue.WeekOf(rule.FigDay))
+            {
+                rule.WeekGain = 0;
+            }
+            rule.FigDay = day;
+        }
+
+        /// <summary>Every rule's figures turned to the day.</summary>
+        public static void Turn(MarketState state, int day)
+        {
+            for (int i = 0; state != null && i < state.Rules.Count; i++)
+            {
+                Turn(state.Rules[i], day);
+            }
+        }
+
+        /// <summary>A rule's gain of the day asked for: nothing when it was counted for another.</summary>
+        public static long DayOf(RuleBot rule, int day) => rule.FigDay == day ? rule.DayGain : 0L;
+
+        /// <summary>A rule's gain of the week the day is in: nothing when it was counted for another week.</summary>
+        public static long WeekOf(RuleBot rule, int day) => MarketCatalogue.WeekOf(rule.FigDay) == MarketCatalogue.WeekOf(day) ? rule.WeekGain : 0L;
 
         /// <summary>How many of the save's rules are the player's.</summary>
         public static int PlayerCount(MarketState state)
