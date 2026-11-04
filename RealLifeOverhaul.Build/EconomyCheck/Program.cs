@@ -107,6 +107,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--kit-prompt")
+        {
+            KitPromptChecks();   // (the keys' prompts and the app tray alone, while working on them: KitPromptChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--toasts")
         {
             ToastChecks();   // (the game's toasts on the kit alone, while working on them: ToastChecks.cs)

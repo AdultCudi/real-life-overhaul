@@ -28,6 +28,12 @@ namespace RealLifeOverhaul.Ui
         public const float Toolbar = 60f;          // px: the status bar's app tiles and pills, one height on its one centre line (UiDraw.StatusBar)
         public const float StatusRow = 28f;        // px: the room the strip keeps round them, half above and half below
 
+        /// <summary>
+        /// px: the lane over the status bar that the keys' prompts stand in (UiDraw.KeyChips): a chip's height with a step above
+        /// and below it. The bar's own row holds the tray, so a window ends this far over the bar and the prompts never meet it.
+        /// </summary>
+        public const float PromptLane = UiDraw.KeyChipHeight + UiDraw.KeyChipLift * 2f;
+
         public float Width;     // px: the area's width
         public float Height;    // px: the area's whole height, the status bar included
         public float Top;       // px: kept for the host's binding: no masthead, so 0
@@ -72,7 +78,9 @@ namespace RealLifeOverhaul.Ui
             float room = BandY;
             h = Math.Min(UiDraw.Snap(Math.Min(Height, ScreenHeight * Math.Max(1f, Height / ScreenHeight)) * WindowShareY), UiDraw.SnapDown(room - UiTokens.S8 * 2f));
             x = UiDraw.SnapDown((Width - w) / 2f);
-            y = UiDraw.SnapDown((room - h) / 2f);
+            // Centred, but never lower than the lane over the bar leaves: on a short screen the world above the window is the
+            // smaller gap, so the prompts keep clear of the window's foot as they do of the bar.
+            y = UiDraw.SnapDown(Math.Min((room - h) / 2f, room - h - PromptLane));
         }
 
         /// <summary>The content box: the window's inside under its title strip, its padding taken off.</summary>
