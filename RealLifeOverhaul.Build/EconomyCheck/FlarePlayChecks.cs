@@ -80,7 +80,7 @@ internal static partial class Program
         string links = PlayFile("Social", "Flare", "FlareDirector.Links.cs");
         // The kit's screen with its parts (FlareScreen.Fill, .Desk, .Sheet and .Rows since the kit's Flare was completed), read as one.
         string screen = PlayFile("Ui", "Flare", "FlareScreen.cs") + PlayFile("Ui", "Flare", "FlareScreen.Fill.cs") + PlayFile("Ui", "Flare", "FlareScreen.Desk.cs")
-                        + PlayFile("Ui", "Flare", "FlareScreen.Sheet.cs") + PlayFile("Ui", "Flare", "FlareScreen.Rows.cs");
+                        + PlayFile("Ui", "Flare", "FlareScreen.Sheet.cs") + PlayFile("Ui", "Flare", "FlareScreen.Rows.cs") + PlayFile("Ui", "Flare", "FlareScreen.Compose.cs");
         string attention = PlayFile("Social", "Flare", "City", "FlareCityRules.Attention.cs");
         Check(use.Contains("KeepsBoost(") && use.IndexOf("PromoteReach <= 0", System.StringComparison.Ordinal) < 0
               && use.Contains("ReadSidecar(") && use.Contains("PhotoPlace(") && use.IndexOf("PhotoPlace(null", System.StringComparison.Ordinal) < 0
