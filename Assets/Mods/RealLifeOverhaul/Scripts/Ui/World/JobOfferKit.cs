@@ -4,6 +4,7 @@ using System.Text;
 using Extensions;
 using Helpers;
 using Localizor;
+using RealLifeOverhaul.Careers;
 using Streets;
 using UI;
 using UI.CustomUI;
@@ -141,6 +142,21 @@ namespace RealLifeOverhaul.Ui
                 _m.Face = job.employerName;
                 _m.FaceLine = UiText.T("reallife_ui_world_offer_boss").Replace("{name}", job.employerName);
             }
+            _m.Body = building != null ? Line(building.Address) : null;
+        }
+
+        // How the player got here, in one line and only if it is true: the mod's interview for a post in this very building (its score
+        // sets how warmly it is put), else the game's own record of a firing here. Nothing to say, nothing said.
+        private static string Line(Address at)
+        {
+            CareersDirector careers = CareersDirector.Instance;
+            Careers.Application a = careers != null && careers.Work != null && at != null ? OfferLineRules.Find(careers.Work.Applications, at.streetName, at.streetNumber) : null;
+            if (a != null)
+            {
+                return UiText.T(OfferLineRules.Key(OfferLineRules.Band(a.Stage, a.Score)));
+            }
+            JobInstance mine = at != null ? JobHelper.GetJobInstance(at) : null;
+            return mine != null && mine.fired ? UiText.Fill("reallife_ui_world_offer_let_go", "day", UiText.Whole(mine.firedDay)) : null;
         }
 
         // "About $1,520 a week": the wage for the hours of every shift of the week, as the job's schedule has them.

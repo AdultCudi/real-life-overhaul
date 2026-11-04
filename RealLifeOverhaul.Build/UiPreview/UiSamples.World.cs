@@ -380,6 +380,7 @@ internal static partial class UiSamples
                     Sub = t("reallife_ui_world_offer_week", "About {amount} a week").Replace("{amount}", "$720"),
                 },
             },
+            Body = t("reallife_ui_world_offer_liked", "They liked your interview and want you on the team."),
             BackLabel = t("reallife_ui_world_offer_not_now", "Not now"), BackKey = GameKey(k, "Esc", UiIcon.PadB),
             GoLabel = hired ? t("reallife_ui_world_offer_hired", "You work here") : t("joboffer_accept_job", "Accept job"), GoKey = GameKey(k, "F", UiIcon.PadX), GoOff = hired,
         };
