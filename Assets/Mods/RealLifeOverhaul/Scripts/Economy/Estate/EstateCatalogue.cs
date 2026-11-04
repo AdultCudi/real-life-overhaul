@@ -343,7 +343,7 @@ namespace RealLifeOverhaul.Economy
         public const int ManagerOfferLeast = 950;   // of the asking rent, taken at once; less waits for the application's last day
         public const int ManagerRepairDays = 7;     // days before an order's deadline that a manager starts the repair works
 
-        // Wave 4 (EstateTenants.cs): named tenants, the rent record, booked servicing, improvements the tenants ask for, the city's rents.
+        // Wave 4 (TenantRules.cs, ServiceRules.cs, ImproveRules.cs): named tenants, the rent record, booked servicing, improvements the tenants ask for, the city's rents.
         public const int PaymentsKept = 6;          // a unit's rent record: its last months of rent
         public const int RentRingKept = 12;         // the city's mean rent, a month at a time
         public const int LandlordsMost = 12;        // other landlords read from the city's buildings

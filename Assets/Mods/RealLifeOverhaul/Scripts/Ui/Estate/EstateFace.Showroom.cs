@@ -32,7 +32,8 @@ namespace RealLifeOverhaul.Ui
             {
                 float lw = UiDraw.Snap(UiTextRules.Width(m.FigLabels[i] + " ", UiStyle.Body));
                 UiDraw.TextMiddle(s, head, fx, y, h, lw, UiStyle.Body, UiRole.Text2, m.FigLabels[i], UiFlags.Truncate);
-                UiDraw.TextMiddle(s, head, fx + lw, y, h, colW[i] - lw, UiStyle.BodyStrong, i < m.FigInks.Length && m.FigInks[i] != UiRole.None ? m.FigInks[i] : UiRole.Text, m.FigValues[i], UiFlags.Truncate);
+                UiDraw.TextMiddle(s, head, fx + lw, y, h, colW[i] - lw, UiStyle.BodyStrong, i < m.FigInks.Length && m.FigInks[i] != UiRole.None
+                    ? m.FigInks[i] : UiRole.Text, m.FigValues[i], UiFlags.Truncate);
                 fx += colW[i] + UiTokens.S4;
             }
             y += h + UiTokens.S3;
@@ -77,7 +78,8 @@ namespace RealLifeOverhaul.Ui
             {
                 ref UiActionModel a = ref chips[i];
                 float bw = ChipWide(a.Label, keys);
-                UiDraw.Button(s, at, x, y, bw, UiTokens.Control, i == chosen ? (primary ? UiButtonKind.Primary : UiButtonKind.Secondary) : UiButtonKind.Chip, a.Label, UiIcon.None, UiAction.Count, keys, a.Command, a.Arg, a.Disabled);
+                UiDraw.Button(s, at, x, y, bw, UiTokens.Control, i == chosen ? (primary ? UiButtonKind.Primary : UiButtonKind.Secondary)
+                    : UiButtonKind.Chip, a.Label, UiIcon.None, UiAction.Count, keys, a.Command, a.Arg, a.Disabled);
                 x += bw + UiTokens.S2;
             }
         }
@@ -119,14 +121,17 @@ namespace RealLifeOverhaul.Ui
                     cx = x;
                     cy += UiTokens.Control + UiTokens.S1;
                 }
-                UiDraw.Button(s, at, cx, cy, bw, UiTokens.Control, i == chosen ? (primary ? UiButtonKind.Primary : UiButtonKind.Secondary) : UiButtonKind.Chip, a.Label, UiIcon.None, UiAction.Count, keys, a.Command, a.Arg, a.Disabled);
+                UiDraw.Button(s, at, cx, cy, bw, UiTokens.Control, i == chosen ? (primary ? UiButtonKind.Primary : UiButtonKind.Secondary)
+                    : UiButtonKind.Chip, a.Label, UiIcon.None, UiAction.Count, keys, a.Command, a.Arg, a.Disabled);
                 cx += bw + UiTokens.S2;
             }
             return cy + UiTokens.Control + UiTokens.S2;
         }
 
         // One width for a chip chosen or not, so choosing one never changes how the rows break.
-        private static float ChipWide(string label, IUiKeys keys) => Math.Max(UiDraw.ButtonWidth(UiButtonKind.Chip, label, UiIcon.None, UiAction.Count, keys), UiDraw.ButtonWidth(UiButtonKind.Primary, label, UiIcon.None, UiAction.Count, keys));
+        private static float ChipWide(string label,
+            IUiKeys keys) => Math.Max(UiDraw.ButtonWidth(UiButtonKind.Chip, label, UiIcon.None, UiAction.Count, keys),
+            UiDraw.ButtonWidth(UiButtonKind.Primary, label, UiIcon.None, UiAction.Count, keys));
 
         private static float ChipRows(UiActionModel[] chips, float w)
         {
@@ -171,7 +176,8 @@ namespace RealLifeOverhaul.Ui
             {
                 var item = new UiItem
                 {
-                    Kind = UiKind.Picture, Flags = UiFlags.Middle | UiFlags.Centre, X = lx, Y = y, W = lw, H = picH, Text = a.Picture, Value = a.Aspect, Clip = on.Clip, Node = -1, Layer = on.Layer, Order = on.Order,
+                    Kind = UiKind.Picture, Flags = UiFlags.Middle | UiFlags.Centre, X = lx, Y = y, W = lw, H = picH, Text = a.Picture,
+                        Value = a.Aspect, Clip = on.Clip, Node = -1, Layer = on.Layer, Order = on.Order,
                     Parent = pic, Alpha = 1f
                 };
                 s.Add(ref item);

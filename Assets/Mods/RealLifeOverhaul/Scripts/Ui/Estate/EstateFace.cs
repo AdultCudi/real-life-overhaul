@@ -79,7 +79,8 @@ namespace RealLifeOverhaul.Ui
         // A glyph on its tile, the page's title and a line under it, and up to four figures at the right. Returns the height.
         private static float Head(UiScene s, UiAt at, EstateModel m, float x, float y, float w)
         {
-            float linkW = string.IsNullOrEmpty(m.TableLink) || m.Shape != EstateShape.Table ? 0f : Math.Min(UiDraw.SnapDown(w * 0.3f), UiDraw.Snap(UiTextRules.Width(m.TableLink, UiStyle.Body) + UiTokens.Icon + UiTokens.S4));
+            float linkW = string.IsNullOrEmpty(m.TableLink) || m.Shape != EstateShape.Table ? 0f
+                : Math.Min(UiDraw.SnapDown(w * 0.3f), UiDraw.Snap(UiTextRules.Width(m.TableLink, UiStyle.Body) + UiTokens.Icon + UiTokens.S4));
             int tile = UiDraw.Tile(s, at, x, y, TileBig, UiRole.None, false);
             float g = UiTokens.S8;
             UiDraw.Icon(s, at.In(tile), x + (TileBig - g) / 2f, y + (TileBig - g) / 2f, g, m.HeadIcon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
@@ -99,14 +100,16 @@ namespace RealLifeOverhaul.Ui
             if (linkW > 0f)
             {
                 float sub = y + UiTokens.S1 + nh + UiTokens.S2;
-                UiDraw.LinkRow(s, at, tx + room - linkW, sub - UiDraw.SnapDown((UiTokens.Control - UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body))) / 2f), linkW, UiTokens.Control, m.TableLink, ActionCommand, m.TableLinkRun);
+                UiDraw.LinkRow(s, at, tx + room - linkW,
+                    sub - UiDraw.SnapDown((UiTokens.Control - UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body))) / 2f), linkW, UiTokens.Control, m.TableLink, ActionCommand, m.TableLinkRun);
             }
             float fx = x + w - figW;
             for (int i = 0; i < n; i++)
             {
                 UiDraw.Text(s, at, fx, y + UiTokens.S1, colW[i], UiStyle.SectionHeader, UiRole.Muted, m.FigLabels[i], UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
                 UiRole ink = i < m.FigInks.Length && m.FigInks[i] != UiRole.None ? m.FigInks[i] : UiRole.Text;
-                UiDraw.Text(s, at, fx, y + UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1, colW[i], UiStyle.Number, ink, m.FigValues[i], UiFlags.Right | UiFlags.Truncate);
+                UiDraw.Text(s, at, fx, y + UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1, colW[i],
+                    UiStyle.Number, ink, m.FigValues[i], UiFlags.Right | UiFlags.Truncate);
                 fx += colW[i] + UiTokens.S6;
             }
             return TileBig + UiTokens.S3;

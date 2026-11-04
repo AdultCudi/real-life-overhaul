@@ -44,7 +44,7 @@ namespace RealLifeOverhaul.Economy
         public int PlanEach;            // an instalment
         public int QuitDay;             // the day an unhappy tenant has said they go; 0 for none
 
-        // Wave 4: a named tenant, the rent record and what a tenant asks for (EstateTenants.cs); saved apart, under reallife:estate_tenants.
+        // Wave 4: a named tenant, the rent record and what a tenant asks for (TenantRules.cs, ServiceRules.cs, ImproveRules.cs); saved apart, under reallife:estate_tenants.
         public int PersonId;            // the shared people pool's person who lives or works here; 0 for none
         public int PersonSince;         // the day they came
         public readonly RentPayment[] Payments = new RentPayment[EstateCatalogue.PaymentsKept];   // newest first

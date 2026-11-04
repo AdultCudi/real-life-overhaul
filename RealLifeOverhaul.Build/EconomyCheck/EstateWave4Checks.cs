@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using RealLifeOverhaul.Economy;
 
-// Wave 4 of the property business (Scripts/Economy/Estate/EstateTenants.cs, EstateExtraStore.cs, RentMap.cs): a unit let to a named person of the
+// Wave 4 of the property business (Scripts/Economy/Estate/TenantRules.cs, ServiceRules.cs, ImproveRules.cs, EstateExtraStore.cs, RentMapData.cs): a unit let to a named person of the
 // people pool, rent trouble following their job and wage, a unit's rent record of six months, booked servicing that holds a kind of fault down for a
 // season, the improvements a tenant asks for and what refusing costs, the four terms behind a tenant's satisfaction, the city's rents by district and
 // use with the other landlords and the monthly mean in a ring of twelve, and every one of them through the save and back, from a line that is not

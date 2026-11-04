@@ -56,7 +56,8 @@ namespace RealLifeOverhaul.Ui
                 }
                 else if (!h.Managed)
                 {
-                    lines.Add(UiFactLine.Say(EstateText.T("reallife_estate_own_game", "amount", Money(EstateRules.GameNight(EstateGame.GameRent(h), _c.RentScale)), "market", Money(EstateRules.MarketRent(h, _c)))));
+                    lines.Add(UiFactLine.Say(EstateText.T("reallife_estate_own_game", "amount",
+                        Money(EstateRules.GameNight(EstateGame.GameRent(h), _c.RentScale)), "market", Money(EstateRules.MarketRent(h, _c)))));
                 }
                 else
                 {
@@ -96,7 +97,8 @@ namespace RealLifeOverhaul.Ui
                         }
                         else if (h.OrderDay > 0)
                         {
-                            lines.Add(UiFactLine.Say(EstateText.T("reallife_estate_duty_order", "day", h.OrderDay.ToString(Inv), "mark", EstateText.Level(EstateCatalogue.InspectPass)), UiRole.DangerText));
+                            lines.Add(UiFactLine.Say(EstateText.T("reallife_estate_duty_order", "day", h.OrderDay.ToString(Inv), "mark",
+                                EstateText.Level(EstateCatalogue.InspectPass)), UiRole.DangerText));
                         }
                         else if (h.InspectDay > 0)
                         {
@@ -106,7 +108,8 @@ namespace RealLifeOverhaul.Ui
                         lines.Add(UiFactLine.Row(EstateText.T("reallife_estate_duty_costs_row"), Cash((long)h.CallsYear + h.FeesYear + h.FinesYear)));
                         int manager = h.Manager;
                         lines.Add(_runs.Step(EstateText.T("reallife_estate_duty_who"), EstateText.Manager(manager),
-                            EstateText.T(manager == (int)EstateManager.Manager ? "reallife_estate_duty_manager_what" : manager == (int)EstateManager.Agent ? "reallife_estate_duty_agent_what" : "reallife_estate_duty_self_what",
+                            EstateText.T(manager == (int)EstateManager.Manager ? "reallife_estate_duty_manager_what"
+                                : manager == (int)EstateManager.Agent ? "reallife_estate_duty_agent_what" : "reallife_estate_duty_self_what",
                                 "share", EstateText.Share(EstateCatalogue.ManagerShare), "days", EstateCatalogue.AgentLetDays.ToString(Inv)),
                             manager > 0, manager < EstateCatalogue.Managers - 1, () => Show(() => _d.SetManager(place, manager - 1)), () => Show(() => _d.SetManager(place, manager + 1))));
                     }
@@ -123,7 +126,8 @@ namespace RealLifeOverhaul.Ui
                 var actions = new List<UiActionModel>(2);
                 if (h.SaleDay > 0)
                 {
-                    lines.Add(UiFactLine.Tick(EstateText.T("reallife_estate_own_sale_agreed", "amount", Money(h.SalePrice), "day", h.SaleDay.ToString(Inv), "fee", Money(EstateRules.AgentFee(h.SalePrice, _c.Index))), true));
+                    lines.Add(UiFactLine.Tick(EstateText.T("reallife_estate_own_sale_agreed", "amount", Money(h.SalePrice), "day",
+                        h.SaleDay.ToString(Inv), "fee", Money(EstateRules.AgentFee(h.SalePrice, _c.Index))), true));
                 }
                 else if (h.Offer > 0)
                 {
@@ -144,7 +148,8 @@ namespace RealLifeOverhaul.Ui
                     int at = Math.Max(0, Math.Min(ListShares.Length - 1, _v.ListShare));
                     int share = ListShares[at], asked = EstateCatalogue.Share(value, share);
                     lines.Add(_runs.Step(EstateText.T("reallife_estate_own_selling"), EstateText.Share(share),
-                        EstateText.T("reallife_estate_own_list_what", "amount", Money(asked), "chance", EstateText.Share(EstateRules.SaleChance(asked, value, _c.Cycle)), "fee", EstateText.Share(EstateCatalogue.AgentFee)),
+                        EstateText.T("reallife_estate_own_list_what", "amount", Money(asked), "chance",
+                            EstateText.Share(EstateRules.SaleChance(asked, value, _c.Cycle)), "fee", EstateText.Share(EstateCatalogue.AgentFee)),
                         at > 0, at < ListShares.Length - 1, () => Show(() => _v.ListShare = at - 1), () => Show(() => _v.ListShare = at + 1)));
                     actions.Add(_runs.Button(EstateText.T("reallife_estate_btn_list"), UiButtonKind.Primary, UiIcon.Tag, UiAction.Alt, () => Show(() => _d.List(place, share))));
                 }

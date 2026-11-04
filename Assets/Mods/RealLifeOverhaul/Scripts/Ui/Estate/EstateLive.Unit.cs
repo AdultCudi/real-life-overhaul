@@ -50,7 +50,8 @@ namespace RealLifeOverhaul.Ui
                 values.Add(u.Let ? Money(u.Deposit) : "-");
                 labels.Add(EstateText.T("reallife_ui_estate_last_inspected"));
                 values.Add(h.LastInspectDay > 0
-                    ? EstateText.T("reallife_ui_estate_day", "day", h.LastInspectDay.ToString(Inv)) + (h.LastInspect == (int)InspectResult.Failed ? ", " + EstateText.T("reallife_ui_estate_failed") : string.Empty)
+                    ? EstateText.T("reallife_ui_estate_day", "day", h.LastInspectDay.ToString(Inv))
+                        + (h.LastInspect == (int)InspectResult.Failed ? ", " + EstateText.T("reallife_ui_estate_failed") : string.Empty)
                     : EstateText.T("reallife_ui_estate_not_yet"));
                 p.FactLabels = labels.ToArray();
                 p.FactValues = values.ToArray();
@@ -84,7 +85,8 @@ namespace RealLifeOverhaul.Ui
                     Who ow = o.Let ? WhoOf(h, o) : default(Who);
                     others.Add(new EstateRow
                     {
-                        Title = o.Let ? ow.Name : EstateText.T("reallife_estate_row_nobody"), Sub = EstateText.UnitName(h, i), Face = o.Let ? ow.Name : null, Hue = ow.Hue, Icon = o.Let ? UiIcon.None : UseIcon(h.Use),
+                        Title = o.Let ? ow.Name : EstateText.T("reallife_estate_row_nobody"), Sub = EstateText.UnitName(h, i), Face = o.Let ? ow.Name
+                            : null, Hue = ow.Hue, Icon = o.Let ? UiIcon.None : UseIcon(h.Use),
                         Chip = chip, ChipTone = tone, Amount = Month(o.Let ? o.Rent : EstateCatalogue.Share(market, o.Ask)), Run = _runs.Do(() => Open(EstateDirector.UnitPick(h, at), _v.From))
                     });
                 }
@@ -151,13 +153,15 @@ namespace RealLifeOverhaul.Ui
                     record.Add(new EstateRecordRow
                     {
                         Due = EstateText.T("reallife_ui_estate_due_day", "day", Math.Max(1, _day - u.ArrearsDays).ToString(Inv)), What = EstateText.T("reallife_ui_estate_not_paid_yet"),
-                        Chip = EstateText.T("reallife_ui_estate_late_days", "days", u.ArrearsDays.ToString(Inv)), ChipTone = u.ArrearsDays >= 10 ? UiRole.Danger : UiRole.Warn, Amount = Money(u.Arrears)
+                        Chip = EstateText.T("reallife_ui_estate_late_days", "days", u.ArrearsDays.ToString(Inv)), ChipTone = u.ArrearsDays >= 10
+                            ? UiRole.Danger : UiRole.Warn, Amount = Money(u.Arrears)
                     });
                 }
                 for (int i = 0; i < u.PaymentCount && record.Count < EstateCatalogue.PaymentsKept; i++)
                 {
                     RentPayment r = u.Payments[i];
-                    string chipText = r.State == (byte)PaymentState.OnTime ? EstateText.T("reallife_ui_estate_paid") : r.State == (byte)PaymentState.Late ? EstateText.T("reallife_ui_estate_paid_late") : EstateText.T("reallife_ui_estate_missed");
+                    string chipText = r.State == (byte)PaymentState.OnTime ? EstateText.T("reallife_ui_estate_paid")
+                        : r.State == (byte)PaymentState.Late ? EstateText.T("reallife_ui_estate_paid_late") : EstateText.T("reallife_ui_estate_missed");
                     record.Add(new EstateRecordRow
                     {
                         Due = EstateText.T("reallife_ui_estate_due_day", "day", r.Due.ToString(Inv)),
@@ -201,7 +205,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     p.NeedKicker = EstateText.T("reallife_ui_estate_needs_you", "what", EstateText.T("reallife_ui_estate_need_rent"));
                     p.NeedHead = EstateText.T("reallife_ui_estate_late_head", "name", first, "days", u.ArrearsDays.ToString(Inv), "amount", Money(u.Arrears));
-                    p.NeedBody = EstateText.T("reallife_estate_ten_arrears", "amount", Money(u.Arrears), "days", u.ArrearsDays.ToString(Inv), "back", EstateText.Share(EstateRules.CatchUpChance(u.Record)));
+                    p.NeedBody = EstateText.T("reallife_estate_ten_arrears", "amount", Money(u.Arrears), "days", u.ArrearsDays.ToString(Inv), "back",
+                        EstateText.Share(EstateRules.CatchUpChance(u.Record)));
                     var actions = new List<UiActionModel>(3);
                     bool remind = !u.Reminded && !u.OnPlan && u.CourtDay == 0;
                     actions.Add(_runs.Button(EstateText.T("reallife_estate_btn_remind"), UiButtonKind.Primary, UiIcon.None, UiAction.Alt, () => Show(() => _d.Remind(place, n)), !remind));
@@ -224,12 +229,14 @@ namespace RealLifeOverhaul.Ui
                 {
                     p.NeedKicker = EstateText.T("reallife_ui_estate_needs_you", "what", EstateText.T("reallife_ui_estate_need_repair"));
                     p.NeedHead = EstateText.T("reallife_ui_estate_call_head", "fault", EstateText.Fault(u.Call), "name", first);
-                    p.NeedBody = EstateText.T("reallife_estate_call_since", "day", u.CallDay.ToString(Inv), "days", Math.Max(0, _day - u.CallDay).ToString(Inv), "grace", EstateCatalogue.CallGraceDays.ToString(Inv));
+                    p.NeedBody = EstateText.T("reallife_estate_call_since", "day", u.CallDay.ToString(Inv), "days",
+                        Math.Max(0, _day - u.CallDay).ToString(Inv), "grace", EstateCatalogue.CallGraceDays.ToString(Inv));
                     bool contractor = u.CallAnswer != (int)CallAnswer.Contractor;
                     p.NeedActions = new[]
                     {
                         _runs.Button(EstateText.T("reallife_estate_btn_contractor"), UiButtonKind.Primary, UiIcon.Wrench, UiAction.Alt, () => Show(() => _d.SendContractor(place, n)), !contractor),
-                        _runs.Button(EstateText.T("reallife_estate_btn_yourself"), UiButtonKind.Secondary, UiIcon.MapPin, UiAction.Option, () => Show(() => _d.DoItYourself(place, n)), u.CallAnswer != (int)CallAnswer.Waiting)
+                        _runs.Button(EstateText.T("reallife_estate_btn_yourself"), UiButtonKind.Secondary, UiIcon.MapPin, UiAction.Option,
+                            () => Show(() => _d.DoItYourself(place, n)), u.CallAnswer != (int)CallAnswer.Waiting)
                     };
                 }
             }
@@ -284,15 +291,18 @@ namespace RealLifeOverhaul.Ui
             {
                 string place = h.Place;
                 int market = EstateRules.UnitRent(h, _c);
-                var card = new UiFactCardModel { Title = EstateText.T("reallife_ui_estate_empty_title", "days", u.VoidDays.ToString(Inv)), Chip = EstateText.T("reallife_ibox_chip_empty"), ChipTone = UiRole.Warn };
+                var card = new UiFactCardModel { Title = EstateText.T("reallife_ui_estate_empty_title", "days", u.VoidDays.ToString(Inv)),
+                    Chip = EstateText.T("reallife_ibox_chip_empty"), ChipTone = UiRole.Warn };
                 var lines = new List<UiFactLine>(8);
                 lines.Add(UiFactLine.Say(market > 0
-                    ? EstateText.Fill("reallife_estate_ten_market", "amount", Money(market), "use", EstateText.Use(h.Use), "yield", EstateText.Share(EstateRules.Yield(h.Use, h.Income)), "condition", EstateText.Level(h.Cond))
+                    ? EstateText.Fill("reallife_estate_ten_market", "amount", Money(market), "use", EstateText.Use(h.Use), "yield",
+                        EstateText.Share(EstateRules.Yield(h.Use, h.Income)), "condition", EstateText.Level(h.Cond))
                     : EstateText.T("reallife_estate_ten_unfit", "condition", EstateText.Level(h.Cond))));
                 int steps = (EstateCatalogue.AskMost - EstateCatalogue.AskLeast) / EstateCatalogue.AskStep;
                 int ask = EstateCatalogue.Clamp(u.Ask, EstateCatalogue.AskLeast, EstateCatalogue.AskMost);
                 lines.Add(_runs.Step(EstateText.T("reallife_estate_ten_asking"), EstateText.Share(ask),
-                    EstateText.T("reallife_estate_ten_asking_what", "amount", Money(EstateCatalogue.Share(market, ask)), "chance", EstateText.Share(EstateRules.ApplicantChance(ask, h.Cond, _c.Cycle))),
+                    EstateText.T("reallife_estate_ten_asking_what", "amount", Money(EstateCatalogue.Share(market, ask)), "chance",
+                        EstateText.Share(EstateRules.ApplicantChance(ask, h.Cond, _c.Cycle))),
                     ask > EstateCatalogue.AskLeast, ask < EstateCatalogue.AskMost,
                     () => Show(() => _d.SetAsk(place, n, ask - EstateCatalogue.AskStep)), () => Show(() => _d.SetAsk(place, n, ask + EstateCatalogue.AskStep))));
                 bool toLet = u.ToLet;

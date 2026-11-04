@@ -17,7 +17,8 @@ namespace RealLifeOverhaul.Ui
         Person          // a face with a name and a line under it (Hint), and a figure at the right (Value, in Ink)
     }
 
-    /// <summary>One line of a fact card. Commands: a link and a switch run <see cref="Command"/>; a step's minus runs it and its plus runs <see cref="Command2"/>; every one with <see cref="Arg"/>.</summary>
+    /// <summary>One line of a fact card. Commands: a link and a switch run <see cref="Command"/>; a step's minus runs
+    /// it and its plus runs <see cref="Command2"/>; every one with <see cref="Arg"/>.</summary>
     public struct UiFactLine
     {
         public UiFactKind Kind;
@@ -71,7 +72,8 @@ namespace RealLifeOverhaul.Ui
 
         public static UiFactLine Space() => new UiFactLine { Kind = UiFactKind.Gap };
 
-        public static UiFactLine Who(string name, string line, string value, UiRole ink = UiRole.None) => new UiFactLine { Kind = UiFactKind.Person, Label = name, Hint = line, Value = value, Ink = ink };
+        public static UiFactLine Who(string name, string line, string value, UiRole ink = UiRole.None) => new UiFactLine { Kind = UiFactKind.Person,
+            Label = name, Hint = line, Value = value, Ink = ink };
     }
 
     /// <summary>A panel of facts and what to do about them: a title with a state chip, a line under it, the lines and the buttons.</summary>
@@ -216,7 +218,8 @@ namespace RealLifeOverhaul.Ui
                     break;
                 case UiFactKind.Check:
                     UiDraw.Icon(s, at, x, y + UiTokens.S1, UiTokens.Icon, l.Met ? UiIcon.Check : UiIcon.Warning, UiRole.None, UiFlags.None, true);
-                    UiDraw.Text(s, at, x + UiTokens.Icon + UiTokens.S2, y + UiTokens.S1, w - UiTokens.Icon - UiTokens.S2, UiStyle.Body, UiRole.Text2, l.Value, UiFlags.Wrap | UiFlags.Label, SentenceLines);
+                    UiDraw.Text(s, at, x + UiTokens.Icon + UiTokens.S2, y + UiTokens.S1, w - UiTokens.Icon - UiTokens.S2, UiStyle.Body, UiRole.Text2,
+                        l.Value, UiFlags.Wrap | UiFlags.Label, SentenceLines);
                     break;
                 case UiFactKind.Meter:
                     UiDraw.GradeBar(s, at, x, y, w, l.Label, l.Fill, Math.Min(UiDraw.SnapDown(w * 0.5f), UiDraw.Snap(UiTextRules.Width(l.Label ?? string.Empty, UiStyle.Body) + UiTokens.S2)));

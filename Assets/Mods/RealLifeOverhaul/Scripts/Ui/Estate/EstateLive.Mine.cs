@@ -62,7 +62,8 @@ namespace RealLifeOverhaul.Ui
                 return h != null && h.Managed && h.Unit(unit) != null;
             }
 
-            private static UiIcon UseIcon(int use) => use == (int)EstateUse.Shops ? UiIcon.Store : use == (int)EstateUse.Offices ? UiIcon.Briefcase : use == (int)EstateUse.Storage ? UiIcon.Package : UiIcon.Home;
+            private static UiIcon UseIcon(int use) => use == (int)EstateUse.Shops ? UiIcon.Store : use == (int)EstateUse.Offices ? UiIcon.Briefcase
+                : use == (int)EstateUse.Storage ? UiIcon.Package : UiIcon.Home;
 
             private static UiRole HappyRing(int happy) =>
                 happy < 0 ? UiRole.None : happy >= EstateCatalogue.HappyFair ? UiRole.Ok : happy >= EstateCatalogue.HappyPoor ? UiRole.Warn : UiRole.Danger;
@@ -173,7 +174,8 @@ namespace RealLifeOverhaul.Ui
                 }
                 if (_d.On(EstatePart.Hire) && _s.Hire.Running)
                 {
-                    rows.Add(OtherRow(UiIcon.Car, EstateGame.NameOf(_s.Hire.Lot), EstateText.T("reallife_estate_row_lot", "out", _s.Hire.Count(HireState.Out).ToString(Inv), "count", _s.Hire.Cars.Count.ToString(Inv)),
+                    rows.Add(OtherRow(UiIcon.Car, EstateGame.NameOf(_s.Hire.Lot),
+                        EstateText.T("reallife_estate_row_lot", "out", _s.Hire.Count(HireState.Out).ToString(Inv), "count", _s.Hire.Cars.Count.ToString(Inv)),
                         0, EstateText.T("reallife_estate_kind_lot"), UiRole.None));
                     keys.Add("lot:");
                 }
@@ -181,7 +183,8 @@ namespace RealLifeOverhaul.Ui
                 _m.HeadIcon = UiIcon.Home;
                 _m.HeadTitle = EstateText.T("reallife_ui_estate_roll_title");
                 _m.HeadSub = EstateText.T("reallife_ui_estate_roll_sub", "units", units.ToString(Inv), "buildings", buildings.ToString(Inv), "waiting", _d.Waiting().ToString(Inv));
-                _m.FigLabels = new[] { EstateText.T("reallife_ui_estate_fig_due"), EstateText.T("reallife_ui_estate_fig_collected"), EstateText.T("reallife_ui_estate_fig_arrears"), EstateText.T("reallife_ui_estate_fig_empty") };
+                _m.FigLabels = new[] { EstateText.T("reallife_ui_estate_fig_due"), EstateText.T("reallife_ui_estate_fig_collected"),
+                    EstateText.T("reallife_ui_estate_fig_arrears"), EstateText.T("reallife_ui_estate_fig_empty") };
                 _m.FigValues = new[] { Cash(due), Cash(Math.Max(0, due - owed)), Cash(owed), Cash(empty) };
                 _m.FigInks = new[] { UiRole.None, UiRole.None, owed > 0 ? UiRole.DangerText : UiRole.None, empty > 0 ? UiRole.WarnText : UiRole.None };
                 var t = new UiDataTableModel { Columns = RollColumns(), Rows = rows.ToArray(), RowCount = rows.Count };
@@ -243,7 +246,8 @@ namespace RealLifeOverhaul.Ui
 
             private UiDataRow BuildingRow(EstateHolding h)
             {
-                string chip = h.SaleDay > 0 ? EstateText.T("reallife_ibox_chip_sold") : h.Busy ? EstateText.Work(h.Work) : h.Self ? EstateText.T("reallife_estate_state_self") : EstateText.T("reallife_estate_state_game");
+                string chip = h.SaleDay > 0 ? EstateText.T("reallife_ibox_chip_sold") : h.Busy ? EstateText.Work(h.Work) : h.Self
+                    ? EstateText.T("reallife_estate_state_self") : EstateText.T("reallife_estate_state_game");
                 int income = EstateRules.GameNight(EstateGame.GameRent(h), _c.RentScale);
                 return new UiDataRow
                 {

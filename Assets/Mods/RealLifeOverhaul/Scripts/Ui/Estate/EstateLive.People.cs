@@ -62,7 +62,8 @@ namespace RealLifeOverhaul.Ui
             {
                 int b = s.Employers.Business[e];
                 where = b >= 0 && b < s.Businesses.Count ? PopulationGame.BusinessName(s.Businesses.Key[b])
-                    : !string.IsNullOrEmpty(s.Employers.Key[e]) ? PopulationGame.BusinessName(s.Employers.Key[e].Replace("|t", string.Empty)) : EstateText.T(PopulationViews.EmployerKey((EmployerKind)s.Employers.Kind[e]));
+                    : !string.IsNullOrEmpty(s.Employers.Key[e]) ? PopulationGame.BusinessName(s.Employers.Key[e].Replace("|t", string.Empty))
+                        : EstateText.T(PopulationViews.EmployerKey((EmployerKind)s.Employers.Kind[e]));
             }
             p.Job = string.IsNullOrEmpty(where) ? field : field + ", " + where;
             return p;

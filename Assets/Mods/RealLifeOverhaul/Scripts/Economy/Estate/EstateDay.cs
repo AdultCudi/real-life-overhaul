@@ -3,6 +3,14 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy
 {
+    /// <summary>The city's inspection of a building, as the last one came out. Saved as a number.</summary>
+    public enum InspectResult : byte
+    {
+        None = 0,
+        Passed = 1,
+        Failed = 2
+    }
+
     /// <summary>
     /// The property business's morning as the director runs it, for what the interface conversion added: who the tenants are, what a month's
     /// servicing does, the rent record, and the city's rent ring. Game-free: the director calls these on its day turn with the game's money and

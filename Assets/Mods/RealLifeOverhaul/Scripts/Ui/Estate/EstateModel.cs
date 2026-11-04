@@ -16,7 +16,8 @@ namespace RealLifeOverhaul.Ui
         Auction     // a lot of the trade auction as a card over the world: its facts, its bids and the one to place
     }
 
-    /// <summary>A short row under the roll or on a unit's page: a glyph on its tile, a title and a line under it, a state chip and an amount. A press runs <see cref="Run"/> (an index of the model's runs).</summary>
+    /// <summary>A short row under the roll or on a unit's page: a glyph on its tile, a title and a line under it, a
+    /// state chip and an amount. A press runs <see cref="Run"/> (an index of the model's runs).</summary>
     public struct EstateRow
     {
         public UiIcon Icon;

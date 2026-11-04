@@ -212,7 +212,8 @@ namespace RealLifeOverhaul.Economy
             t.Append('|');
             for (int i = 0; i < s.Marks.Count && i < EstateCatalogue.LandlordsMost; i++)
             {
-                t.Append(i > 0 ? "," : string.Empty).Append(Uri.EscapeDataString(s.Marks[i].Id).Replace(".", "%2E")).Append('.').Append(s.Marks[i].Rent.ToString(Inv)).Append('.').Append(s.Marks[i].Prev.ToString(Inv));
+                t.Append(i > 0 ? "," : string.Empty).Append(Uri.EscapeDataString(s.Marks[i].Id).Replace(".",
+                    "%2E")).Append('.').Append(s.Marks[i].Rent.ToString(Inv)).Append('.').Append(s.Marks[i].Prev.ToString(Inv));
             }
             return t.ToString();
         }

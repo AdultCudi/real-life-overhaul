@@ -27,7 +27,8 @@ namespace RealLifeOverhaul.Ui
         private int _local;
 
         // The sidebar's order, each the director's tab number: the showrooms first, then the cars, the market, and the money.
-        private static readonly int[] NavTab = { DealerDirector.TabLots, DealerDirector.TabStock, DealerDirector.TabMarket, DealerDirector.TabOffers, DealerDirector.TabFinance, DealerDirector.TabGrowth, DealerDirector.TabReports };
+        private static readonly int[] NavTab = { DealerDirector.TabLots, DealerDirector.TabStock, DealerDirector.TabMarket, DealerDirector.TabOffers,
+            DealerDirector.TabFinance, DealerDirector.TabGrowth, DealerDirector.TabReports };
         private static readonly string[] TabKeys =
         {
             "reallife_dealer_tab_stock", "reallife_dealer_tab_market", "reallife_dealer_tab_offers", "reallife_dealer_tab_finance", "reallife_dealer_tab_lots", "reallife_dealer_tab_growth",
@@ -200,7 +201,8 @@ namespace RealLifeOverhaul.Ui
             public UiNavEntry[] Nav()
             {
                 int cars = _d.CarCount(), offers = _d.Waiting(), lots = _s.Yards.Count;
-                string[] counts = { lots > 0 ? lots.ToString(Inv) : string.Empty, cars > 0 ? cars.ToString(Inv) : string.Empty, string.Empty, offers > 0 ? offers.ToString(Inv) : string.Empty, string.Empty, string.Empty, string.Empty };
+                string[] counts = { lots > 0 ? lots.ToString(Inv) : string.Empty, cars > 0 ? cars.ToString(Inv) : string.Empty, string.Empty,
+                    offers > 0 ? offers.ToString(Inv) : string.Empty, string.Empty, string.Empty, string.Empty };
                 UiIcon[] icons = { UiIcon.Store, UiIcon.Car, UiIcon.Tag, UiIcon.Handshake, UiIcon.Receipt, UiIcon.Rocket, UiIcon.Chart };
                 var nav = new UiNavEntry[NavTab.Length];
                 for (int i = 0; i < nav.Length; i++)
@@ -257,7 +259,8 @@ namespace RealLifeOverhaul.Ui
                 string words = DealerText.T("reallife_dealer_goes_to", "name", room[at].Name, "free", _s.Room(room[at]).ToString(Inv));
                 if (room.Count > 1)
                 {
-                    lines.Add(_runs.Step(DealerText.T("reallife_ui_dealer_goes_to_label"), words, null, at > 0, at < room.Count - 1, () => Show(() => _yardChoice = room[at - 1].Place), () => Show(() => _yardChoice = room[at + 1].Place)));
+                    lines.Add(_runs.Step(DealerText.T("reallife_ui_dealer_goes_to_label"), words, null, at > 0, at < room.Count - 1,
+                        () => Show(() => _yardChoice = room[at - 1].Place), () => Show(() => _yardChoice = room[at + 1].Place)));
                 }
                 else
                 {

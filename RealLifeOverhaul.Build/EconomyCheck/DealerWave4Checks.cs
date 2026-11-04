@@ -4,7 +4,7 @@ using System.Diagnostics;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Economy.Dealership;
 
-// Wave 4 of the car showroom (Scripts/Economy/Dealer/DealerWave4.cs): the other dealers' cars with prices of their own and a buyer who compares
+// Wave 4 of the car showroom (Scripts/Economy/Dealer/RivalRules.cs, ViewRules.cs, DealerExtraStore.cs): the other dealers' cars with prices of their own and a buyer who compares
 // them with the player's, the looks each car gets in a day and what a buyer looked before an offer, the last eight bids of each auction lot
 // (the dealers of the room are the bidders) and a bid above the next step, each through the save and back, from a save that has none of it, and
 // in the time an hour allows.

@@ -264,7 +264,8 @@ namespace RealLifeOverhaul.Ui
             }
             float actionsH = rows * UiTokens.Control + (rows - 1) * UiTokens.S2;
             // The picture takes what the facts and the actions leave of the column, at most its own height: a short window gets a shorter picture, never a cut sentence.
-            float restH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display)) + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.BodyStrong))
+            float restH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1
+                + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display)) + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.BodyStrong))
                 + UiTokens.S3 + Math.Min(m.DetailLabels.Length, m.DetailValues.Length) * UiTokens.PairRow + UiTokens.S4 + UiTokens.S5 + actionsH;
             if (!string.IsNullOrEmpty(m.DetailNote))
             {

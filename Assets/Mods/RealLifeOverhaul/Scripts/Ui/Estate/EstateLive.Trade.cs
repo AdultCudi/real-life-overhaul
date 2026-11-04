@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using RealLifeOverhaul.Economy;
 using Extensions;
+using RealLifeOverhaul.Economy;
 using Streets;
 
 namespace RealLifeOverhaul.Ui
@@ -34,8 +34,10 @@ namespace RealLifeOverhaul.Ui
                     int rooms = HotelRules.Rooms(f.Tier), sold = f.Sold[0] + f.Sold[1];
                     rows.Add(new UiDataRow
                     {
-                        Cells = new[] { f.Name, EstateText.T("reallife_estate_row_sold", "sold", sold.ToString(Inv), "rooms", rooms.ToString(Inv)), Money(f.Takings), Money(f.Costs), Money(f.TakingsYear), Money(f.CostsYear) },
-                        Values = new[] { (int)UiIcon.Building, 0, 0, 0, 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, f.Takings < f.Costs ? UiRole.Danger : UiRole.None, UiRole.None, UiRole.None },
+                        Cells = new[] { f.Name, EstateText.T("reallife_estate_row_sold", "sold", sold.ToString(Inv), "rooms", rooms.ToString(Inv)),
+                            Money(f.Takings), Money(f.Costs), Money(f.TakingsYear), Money(f.CostsYear) },
+                        Values = new[] { (int)UiIcon.Building, 0, 0, 0, 0, 0 },
+                            Tones = new[] { UiRole.None, UiRole.None, UiRole.None, f.Takings < f.Costs ? UiRole.Danger : UiRole.None, UiRole.None, UiRole.None },
                         Subs = new[] { EstateText.T("reallife_ibox_stars", "stars", HotelRules.Stars(f.Rating).ToString(Inv)), null, null, null, null, null }
                     });
                     keys.Add("hot:" + f.Slot);
@@ -54,11 +56,13 @@ namespace RealLifeOverhaul.Ui
                     Title = EstateText.T("reallife_estate_tab_hotel"), Heading = true,
                     Lines = new[]
                     {
-                        UiFactLine.Say(EstateText.T("reallife_estate_hotel_what")), UiFactLine.Say(EstateText.T("reallife_estate_hotel_night_what", "share", EstateText.Share(EstateCatalogue.Occupancy))),
+                        UiFactLine.Say(EstateText.T("reallife_estate_hotel_what")),
+                            UiFactLine.Say(EstateText.T("reallife_estate_hotel_night_what", "share", EstateText.Share(EstateCatalogue.Occupancy))),
                         UiFactLine.Say(EstateText.T("reallife_estate_hotel_staff_what")), UiFactLine.Say(EstateText.T("reallife_estate_hotel_held_what"))
                     }
                 };
-                TableShape(UiIcon.Building, EstateText.T("reallife_estate_tab_hotel"), EstateText.T("reallife_ui_estate_hotels_sub", "count", _s.Hotels.Count.ToString(Inv)), null, null, cols, rows, keys, side,
+                TableShape(UiIcon.Building, EstateText.T("reallife_estate_tab_hotel"),
+                    EstateText.T("reallife_ui_estate_hotels_sub", "count", _s.Hotels.Count.ToString(Inv)), null, null, cols, rows, keys, side,
                     EstateText.T("reallife_estate_row_no_hotel"), EstateText.T("reallife_ui_estate_empty_hotel_body"));
             }
 
@@ -99,7 +103,8 @@ namespace RealLifeOverhaul.Ui
                     }
                 }
                 var actions = new List<UiActionModel>(3);
-                actions.Add(_runs.Button(EstateText.T(f.Leased ? "reallife_estate_btn_end_lease" : "reallife_estate_btn_sell_hotel"), UiButtonKind.Destructive, UiIcon.None, UiAction.Count, () => Show(() => _d.GiveUpHotel(slot))));
+                actions.Add(_runs.Button(EstateText.T(f.Leased ? "reallife_estate_btn_end_lease" : "reallife_estate_btn_sell_hotel"),
+                    UiButtonKind.Destructive, UiIcon.None, UiAction.Count, () => Show(() => _d.GiveUpHotel(slot))));
                 if (f.AskRooms > 0)
                 {
                     actions.Add(_runs.Button(EstateText.T("reallife_estate_btn_refuse"), UiButtonKind.Secondary, UiIcon.None, UiAction.Option, () => Show(() => _d.AnswerGroup(slot, false))));
@@ -113,19 +118,22 @@ namespace RealLifeOverhaul.Ui
                     int t = type, rate = f.Rate[type];
                     int steps = (EstateCatalogue.RateMost - EstateCatalogue.RateLeast) / EstateCatalogue.RateStep;
                     rooms2.Add(_runs.Step(EstateGame.RoomName(f.Tier, type), EstateText.Money(HotelRules.Rate(f.Going[type], rate)),
-                        EstateText.Fill("reallife_estate_hotel_rate", "room", EstateGame.RoomName(f.Tier, type), "count", HotelRules.Rooms(f.Tier, type).ToString(Inv), "amount", Money(HotelRules.Rate(f.Going[type], rate)),
+                        EstateText.Fill("reallife_estate_hotel_rate", "room", EstateGame.RoomName(f.Tier, type), "count",
+                            HotelRules.Rooms(f.Tier, type).ToString(Inv), "amount", Money(HotelRules.Rate(f.Going[type], rate)),
                             "going", Money(f.Going[type]), "share", EstateText.Share(HotelRules.RateDemand(rate))), rate > EstateCatalogue.RateLeast, rate < EstateCatalogue.RateMost,
                         () => Show(() => _d.SetRoomRate(slot, t, rate - EstateCatalogue.RateStep)), () => Show(() => _d.SetRoomRate(slot, t, rate + EstateCatalogue.RateStep))) );
                     steps = steps + 0;
                 }
                 int staff = f.Staff;
                 rooms2.Add(_runs.Step(EstateText.T("reallife_estate_hotel_staff"), EstateText.Staff(staff),
-                    EstateText.T("reallife_estate_hotel_staff_cost", "amount", Money(HotelRules.Costs(f.Tier, staff, sold, _c.Index)), "clean", EstateText.Level(EstateCatalogue.CleanTarget[staff]), "day", f.InspectDay.ToString(Inv)),
+                    EstateText.T("reallife_estate_hotel_staff_cost", "amount", Money(HotelRules.Costs(f.Tier, staff, sold, _c.Index)), "clean",
+                        EstateText.Level(EstateCatalogue.CleanTarget[staff]), "day", f.InspectDay.ToString(Inv)),
                     staff > 0, staff < EstateCatalogue.StaffLevels - 1, () => Show(() => _d.SetHotelStaff(slot, staff - 1)), () => Show(() => _d.SetHotelStaff(slot, staff + 1))));
                 rooms2.Add(UiFactLine.Section(EstateText.T("reallife_ibox_sec_campaign")));
                 rooms2.Add(UiFactLine.Say(f.PushEnd >= _day
                     ? EstateText.T("reallife_estate_hotel_campaign_on", "day", f.PushEnd.ToString(Inv), "share", EstateText.Share(EstateCatalogue.CampaignDemand))
-                    : EstateText.T("reallife_estate_hotel_campaign", "amount", Money(HotelRules.CampaignCost(f.Tier, _c.Index)), "days", EstateCatalogue.CampaignDays.ToString(Inv), "share", EstateText.Share(EstateCatalogue.CampaignDemand))));
+                    : EstateText.T("reallife_estate_hotel_campaign", "amount", Money(HotelRules.CampaignCost(f.Tier, _c.Index)), "days",
+                        EstateCatalogue.CampaignDays.ToString(Inv), "share", EstateText.Share(EstateCatalogue.CampaignDemand))));
                 var campaign = new List<UiActionModel>(1);
                 if (f.PushEnd < _day)
                 {
@@ -173,8 +181,11 @@ namespace RealLifeOverhaul.Ui
                     int rate = HireRules.Rate(car.Price, car.Rate, _c.Index), carClass = HireRules.Class(car.Price);
                     rows.Add(new UiDataRow
                     {
-                        Cells = new[] { EstateGame.CarName(car.Type), EstateText.CarState(car.State), Money(rate), car.Hires.ToString(Inv), Money(car.Takings), car.State == (int)HireState.Out ? EstateText.T("reallife_estate_row_until", "day", car.Day.ToString(Inv)) : "-" },
-                        Values = new[] { (int)UiIcon.Car, 0, 0, 0, 0, 0 }, Tones = new[] { UiRole.None, car.State == (int)HireState.Waiting ? UiRole.Warn : car.State == (int)HireState.Out ? UiRole.Ok : UiRole.Notice, UiRole.None, UiRole.None, UiRole.None, UiRole.None },
+                        Cells = new[] { EstateGame.CarName(car.Type), EstateText.CarState(car.State), Money(rate), car.Hires.ToString(Inv),
+                            Money(car.Takings), car.State == (int)HireState.Out ? EstateText.T("reallife_estate_row_until", "day", car.Day.ToString(Inv)) : "-" },
+                        Values = new[] { (int)UiIcon.Car, 0, 0, 0, 0, 0 },
+                            Tones = new[] { UiRole.None, car.State == (int)HireState.Waiting ? UiRole.Warn : car.State == (int)HireState.Out
+                            ? UiRole.Ok : UiRole.Notice, UiRole.None, UiRole.None, UiRole.None, UiRole.None },
                         Subs = new[] { EstateText.CarClass(carClass), null, null, null, null, null }
                     });
                     keys.Add("car:" + car.Id);
@@ -200,7 +211,8 @@ namespace RealLifeOverhaul.Ui
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_takings"), Kind = UiCellKind.Money, Width = 112f },
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_day"), Kind = UiCellKind.Date, Width = 104f }
                 };
-                TableShape(UiIcon.Car, EstateText.T("reallife_estate_tab_hire"), hire.Running ? EstateGame.NameOf(hire.Lot) : EstateText.T("reallife_estate_row_no_lot"), null, null, cols, rows, keys, HireSide(hire),
+                TableShape(UiIcon.Car, EstateText.T("reallife_estate_tab_hire"), hire.Running ? EstateGame.NameOf(hire.Lot)
+                    : EstateText.T("reallife_estate_row_no_lot"), null, null, cols, rows, keys, HireSide(hire),
                     EstateText.T(hire.Running ? "reallife_estate_row_no_cars" : "reallife_estate_row_no_lot"), EstateText.T("reallife_estate_hire_what"));
             }
 
@@ -221,7 +233,8 @@ namespace RealLifeOverhaul.Ui
                     }
                     bool cover = hire.Cover;
                     lines.Add(_runs.Switch(EstateText.T("reallife_estate_hire_cover"), cover, on => Show(() => _d.SetFleetCover(on))));
-                    lines.Add(UiFactLine.Say(EstateText.T("reallife_estate_hire_cover_what", "amount", Money(premium), "share", EstateText.Share(EstateCatalogue.HireCoverPays), "excess", Money(EstateCatalogue.HireCoverExcess))));
+                    lines.Add(UiFactLine.Say(EstateText.T("reallife_estate_hire_cover_what", "amount", Money(premium), "share",
+                        EstateText.Share(EstateCatalogue.HireCoverPays), "excess", Money(EstateCatalogue.HireCoverExcess))));
                     lines.Add(UiFactLine.Say(EstateText.T("reallife_estate_hire_how", "metres", EstateCatalogue.HireLotMetres.ToString(Inv))));
                     if (hire.Count(HireState.Out) + hire.Count(HireState.Waiting) == 0)
                     {
@@ -240,8 +253,10 @@ namespace RealLifeOverhaul.Ui
                     {
                         int at = Math.Max(0, Math.Min(places.Count - 1, _v.Lot));
                         string lot = EstateGame.Place(places[at].StreetName, places[at].StreetNumber);
-                        lines.Add(_runs.Step(EstateText.T("reallife_estate_hire_lot"), places[at].Address.ToFormattedString(), null, at > 0, at < places.Count - 1, () => Show(() => _v.Lot = at - 1), () => Show(() => _v.Lot = at + 1)));
-                        lines.Add(UiFactLine.Say(EstateText.T("reallife_estate_hire_lot_what", "spaces", EstateCatalogue.HireSpacesAnyBuilding.ToString(Inv), "metres", EstateCatalogue.HireLotMetres.ToString(Inv))));
+                        lines.Add(_runs.Step(EstateText.T("reallife_estate_hire_lot"), places[at].Address.ToFormattedString(), null, at > 0,
+                            at < places.Count - 1, () => Show(() => _v.Lot = at - 1), () => Show(() => _v.Lot = at + 1)));
+                        lines.Add(UiFactLine.Say(EstateText.T("reallife_estate_hire_lot_what", "spaces",
+                            EstateCatalogue.HireSpacesAnyBuilding.ToString(Inv), "metres", EstateCatalogue.HireLotMetres.ToString(Inv))));
                         actions.Add(_runs.Button(EstateText.T("reallife_estate_btn_open_lot"), UiButtonKind.Primary, UiIcon.Car, UiAction.Alt, () => Show(() => _d.SetLot(lot))));
                     }
                 }
@@ -257,7 +272,8 @@ namespace RealLifeOverhaul.Ui
                 _m.DetailIcon = UiIcon.Car;
                 _m.DetailTitle = EstateGame.CarName(car.Type);
                 _m.DetailSub = EstateText.CarClass(carClass);
-                _m.DetailChip = EstateText.T(car.State == (int)HireState.Out ? "reallife_ibox_chip_out" : car.State == (int)HireState.Waiting ? "reallife_ibox_chip_waiting_one" : car.State == (int)HireState.Valet ? "reallife_ibox_chip_valet" : "reallife_ibox_chip_idle");
+                _m.DetailChip = EstateText.T(car.State == (int)HireState.Out ? "reallife_ibox_chip_out" : car.State == (int)HireState.Waiting
+                    ? "reallife_ibox_chip_waiting_one" : car.State == (int)HireState.Valet ? "reallife_ibox_chip_valet" : "reallife_ibox_chip_idle");
                 _m.DetailChipTone = car.State == (int)HireState.Out ? UiRole.Ok : UiRole.Notice;
                 string say;
                 switch ((HireState)car.State)
@@ -275,7 +291,8 @@ namespace RealLifeOverhaul.Ui
                     UiFactLine.Row(EstateText.T("reallife_ibox_takings"), Money(car.Takings)),
                     UiFactLine.Say(EstateText.T("reallife_estate_car_what", "class", EstateText.CarClass(carClass), "price", Money(car.Price), "going", Money(HireRules.Going(car.Price, _c.Index)))),
                     _runs.Step(EstateText.T("reallife_ui_estate_rate"), EstateText.Share(rate),
-                        EstateText.T("reallife_estate_car_rate", "amount", Money(HireRules.Rate(car.Price, rate, _c.Index)), "chance", EstateText.Share(HireRules.Demand(carClass, _c.Season, _c.Event, _c.Cycle, rate, hire.Rating)),
+                        EstateText.T("reallife_estate_car_rate", "amount", Money(HireRules.Rate(car.Price, rate, _c.Index)), "chance",
+                            EstateText.Share(HireRules.Demand(carClass, _c.Season, _c.Event, _c.Cycle, rate, hire.Rating)),
                             "rating", EstateText.Level(hire.Rating)), rate > EstateCatalogue.RateLeast, rate < EstateCatalogue.RateMost,
                         () => Show(() => _d.SetCarRate(id, rate - EstateCatalogue.RateStep)), () => Show(() => _d.SetCarRate(id, rate + EstateCatalogue.RateStep)))
                 };
@@ -293,7 +310,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     new UiFactCardModel
                     {
-                        Lines = new[] { UiFactLine.Say(EstateText.T("reallife_estate_car_risk", "damage", EstateText.Share(EstateCatalogue.HireDamageChance), "late", EstateText.Share(EstateCatalogue.HireLateChance), "cleaning", Money(HireRules.Cleaning(_c.Index)))) }
+                        Lines = new[] { UiFactLine.Say(EstateText.T("reallife_estate_car_risk", "damage",
+                            EstateText.Share(EstateCatalogue.HireDamageChance), "late", EstateText.Share(EstateCatalogue.HireLateChance), "cleaning", Money(HireRules.Cleaning(_c.Index)))) }
                     }
                 };
             }
@@ -375,7 +393,8 @@ namespace RealLifeOverhaul.Ui
                     new UiInfoRow { Label = EstateText.T("reallife_ui_estate_rv_empty"), Value = empty < 0 ? notYet : EstateText.Share(empty), Ink = empty > 100 ? UiRole.WarnText : UiRole.None },
                     new UiInfoRow
                     {
-                        Label = EstateText.T("reallife_ui_estate_rv_month"), Value = change == int.MinValue ? EstateText.T("reallife_ui_estate_rv_month_wait") : (change >= 0 ? "+" : string.Empty) + EstateText.Share(change),
+                        Label = EstateText.T("reallife_ui_estate_rv_month"), Value = change == int.MinValue
+                            ? EstateText.T("reallife_ui_estate_rv_month_wait") : (change >= 0 ? "+" : string.Empty) + EstateText.Share(change),
                         Ink = change > 0 ? UiRole.WarnText : change < 0 ? UiRole.OkText : UiRole.None
                     },
                     new UiInfoRow { Label = EstateText.T("reallife_ui_estate_rv_your_let"), Value = EstateText.T("reallife_ui_estate_of", "value", let.ToString(Inv), "most", units.ToString(Inv)) },
@@ -383,7 +402,8 @@ namespace RealLifeOverhaul.Ui
                 };
                 var v = new UiInfoViewModel
                 {
-                    Title = EstateText.T("reallife_ui_estate_rv_title"), Icon = UiIcon.Key, HeadLabel = EstateText.T("reallife_ui_estate_rv_rent"), HeadValue = EstateText.T("reallife_ui_estate_rv_per_month"), Rows = rows.ToArray(),
+                    Title = EstateText.T("reallife_ui_estate_rv_title"), Icon = UiIcon.Key, HeadLabel = EstateText.T("reallife_ui_estate_rv_rent"),
+                        HeadValue = EstateText.T("reallife_ui_estate_rv_per_month"), Rows = rows.ToArray(),
                     ChartTitle = EstateText.T("reallife_ui_estate_rv_for_sale"), LegendTitle = EstateText.T("reallife_ui_estate_rv_legend"), ScaleLabel = EstateText.T("reallife_ui_estate_rv_scale")
                 };
                 int total = map.ForSaleAll();
