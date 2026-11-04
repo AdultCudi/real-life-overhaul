@@ -24,7 +24,8 @@ namespace RealLifeOverhaul.Ui
             Hire,           // an influencer: the hire sheet
             Trend,          // the city's trend: a post about it
             Going,          // an invitation: going or not
-            Business        // one of the player's businesses: its page
+            Business,       // one of the player's businesses: its page
+            Campaign        // a campaign running: its influencer's conversation, and the button that ends it
         }
 
         private struct RowRef
@@ -386,7 +387,8 @@ namespace RealLifeOverhaul.Ui
                 case RowAct.Thread: return r.Post != null && r.Post.Id >= 0 && OpenThread(r.Post.Id);
                 case RowAct.Profile: return OpenProfile(r.Key);
                 case RowAct.Tag: return OpenTag(r.Key);
-                case RowAct.Conversation: return OpenConversation(r.Key);
+                case RowAct.Conversation:
+                case RowAct.Campaign: return OpenConversation(r.Key);
                 case RowAct.Business: return OpenBusiness(r.Id);
                 case RowAct.Review:
                 case RowAct.Note: return OpenReply(r);
@@ -404,7 +406,8 @@ namespace RealLifeOverhaul.Ui
                 case RowAct.Review:
                 case RowAct.Note: return OpenReply(r);
                 case RowAct.Hire: return OpenHire(r.Id);
-                case RowAct.Trend: return OpenCompose(-1, r.Key);
+                case RowAct.Trend: return PromoteTrend(r.Id);
+                case RowAct.Campaign: return _kit.End(r.Id);
                 case RowAct.Going:
                     if (r.Post == null)
                     {
@@ -485,7 +488,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
-            _compose.Mention = r.Key != null && r.Key != "me" && r.Key != _flare.MeKey ? r.Key : null;
+            _mention = r.Key != null && r.Key != "me" && r.Key != _flare.MeKey ? r.Key : null;
             Author(r.Post, out string name, out _, out _, out _);
             _compose.Text = FlareLiveRules.Clip(FlareText.Fill("reallife_flare_kit_share_text", "name", name), FlareLiveRules.TextMost);
             return true;

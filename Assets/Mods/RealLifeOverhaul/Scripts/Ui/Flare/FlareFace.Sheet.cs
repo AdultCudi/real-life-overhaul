@@ -85,7 +85,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     int field = UiDraw.Box(s, at, x, cy, fw, SheetField, UiRole.Field, UiRole.None, UiTokens.RadiusLarge);
                     bool typed = !string.IsNullOrEmpty(k.FieldText);
-                    bool caret = UiDraw.Typing(s, FieldCommand, ComposeField);
+                    bool caret = UiDraw.Typing(s, FieldCommand, k.FieldArg);
                     float tx = x + UiTokens.S3, room = fw - UiTokens.S6, lead = caret && !typed ? UiDraw.CaretRoom : 0f, last = 0f;
                     // Typed: the last lines, the ones the caret is on.
                     string shown = caret && typed
@@ -99,7 +99,7 @@ namespace RealLifeOverhaul.Ui
                         UiDraw.Caret(s, at.In(field), tx + (typed ? last + 1f : 0f), cy + UiTokens.S3 + line * UiTextRules.LineHeight(UiStyle.Body), UiTextRules.LineHeight(UiStyle.Body),
                             UiStyle.Body);
                     }
-                    UiDraw.Node(s, at, x, cy, fw, SheetField, FieldCommand, ComposeField, field);
+                    UiDraw.Node(s, at, x, cy, fw, SheetField, FieldCommand, k.FieldArg, field);
                     if (pic)
                     {
                         int tile = UiDraw.Box(s, at, x + w - pw, cy, pw, SheetField, UiRole.Tile, UiRole.None, UiTokens.RadiusLarge);
@@ -123,8 +123,9 @@ namespace RealLifeOverhaul.Ui
                 }
                 cy += UiTokens.S3;
             }
-            // The groups of chips, each under its label, wrapped to the width.
+            // The groups of chips, each beside its label, wrapped to the room the label leaves (so a long sheet still fits the window).
             int groups = Math.Min(k.Groups.Length, k.Chips.Length);
+            float labelW = UiDraw.SnapDown(w * 0.3f), chipsX = x + labelW;
             for (int g = 0; g < groups; g++)
             {
                 string[] chips = k.Chips[g];
@@ -134,17 +135,16 @@ namespace RealLifeOverhaul.Ui
                 }
                 if (draw)
                 {
-                    UiDraw.Text(s, at, x, cy, w, UiStyle.SectionHeader, UiRole.Text2, k.Groups[g], UiFlags.Label | UiFlags.Truncate);
+                    UiDraw.TextMiddle(s, at, x, cy, UiTokens.ControlSmall, labelW - UiTokens.S2, UiStyle.SectionHeader, UiRole.Text2, k.Groups[g], UiFlags.Label | UiFlags.Truncate);
                 }
-                cy += L(UiStyle.SectionHeader) + UiTokens.S2;
-                float px = x;
+                float px = chipsX;
                 int chosen = g < k.Chosen.Length ? k.Chosen[g] : -1;
                 for (int i = 0; i < chips.Length && i < GroupStride; i++)
                 {
-                    float pw = Math.Min(w, PillWidth(chips[i]));
-                    if (px + pw > x + w && px > x)
+                    float pw = Math.Min(x + w - chipsX, PillWidth(chips[i]));
+                    if (px + pw > x + w && px > chipsX)
                     {
-                        px = x;
+                        px = chipsX;
                         cy += UiTokens.ControlSmall + UiTokens.S2;
                     }
                     if (draw)
@@ -192,6 +192,35 @@ namespace RealLifeOverhaul.Ui
                     }
                 }
                 cy += FigureHeight + UiTokens.S3;
+            }
+            // Where an audience lives: a bar for each district, by its share of the most.
+            int bars = Math.Min(k.BarLabels.Length, Math.Min(k.BarShares.Length, k.BarFigures.Length));
+            if (bars > 0)
+            {
+                float rowH = UiTokens.S5;
+                if (draw)
+                {
+                    UiDraw.Text(s, at, x, cy, w, UiStyle.SectionHeader, UiRole.Text2, k.BarsTitle, UiFlags.Label | UiFlags.Truncate);
+                }
+                cy += L(UiStyle.SectionHeader) + UiTokens.S2;
+                float barLabelW = UiDraw.SnapDown(w * 0.3f), figW = UiTokens.S12;
+                for (int i = 0; i < bars; i++)
+                {
+                    if (draw)
+                    {
+                        UiDraw.TextMiddle(s, at, x, cy, rowH, barLabelW - UiTokens.S2, UiStyle.Small, UiRole.Text, k.BarLabels[i], UiFlags.Truncate);
+                        float tx = x + barLabelW, tw = w - barLabelW - figW - UiTokens.S2;
+                        int track = UiDraw.Box(s, at, tx, cy + (rowH - UiTokens.S2) / 2f, tw, UiTokens.S2, UiRole.Track, UiRole.None, UiTokens.S1, UiFlags.Middle);
+                        if (k.BarShares[i] > 0f)
+                        {
+                            UiDraw.Box(s, at.In(track), tx, cy + (rowH - UiTokens.S2) / 2f, Math.Max(UiTokens.S2, tw * Math.Min(1f, k.BarShares[i])), UiTokens.S2, UiRole.Chart2, UiRole.None,
+                                UiTokens.S1, UiFlags.Middle | UiFlags.Share);
+                        }
+                        UiDraw.TextMiddle(s, at, x + w - figW, cy, rowH, figW, UiStyle.Small, UiRole.Text2, k.BarFigures[i], UiFlags.Right);
+                    }
+                    cy += rowH;
+                }
+                cy += UiTokens.S3;
             }
             if (!string.IsNullOrEmpty(k.Note))
             {

@@ -165,6 +165,8 @@ namespace RealLifeOverhaul.Ui
                     return ((r.Flags & FlareRowFlags.Comment) != 0 ? 3 : 5) + (r.Tags != null ? Math.Min(TagsWithTargets, r.Tags.Length) : 0);
                 case FlareRowKind.Account:
                     return 2;
+                case FlareRowKind.Result:
+                    return string.IsNullOrEmpty(r.Button) ? 1 : 2;
                 case FlareRowKind.Review:
                 case FlareRowKind.Influencer:
                 case FlareRowKind.Card:
@@ -421,9 +423,16 @@ namespace RealLifeOverhaul.Ui
             float timeW = string.IsNullOrEmpty(r.Time) ? 0f : UiDraw.Snap(UiTextRules.Width(r.Time, UiStyle.Small) + UiTokens.S1);
             float tw = w - tx - timeW - UiTokens.S6;
             UiDraw.Text(s, inRow, tx, y + UiTokens.S3, tw, unread ? UiStyle.BodyStrong : UiStyle.Body, UiRole.Text, r.Text, UiFlags.Truncate);
+            float valueW = string.IsNullOrEmpty(r.Value) ? 0f : Math.Min(UiDraw.Snap(UiTextRules.Width(r.Value, UiStyle.SmallStrong) + UiTokens.S1), UiDraw.SnapDown(tw * 0.5f));
             if (!string.IsNullOrEmpty(r.Line))
             {
-                UiDraw.Text(s, inRow, tx, y + UiTokens.S3 + UiTokens.S6, tw, UiStyle.Small, UiRole.Text2, r.Line, UiFlags.Truncate);
+                UiDraw.Text(s, inRow, tx, y + UiTokens.S3 + UiTokens.S6, tw - valueW - (valueW > 0f ? UiTokens.S3 : 0f), UiStyle.Small, UiRole.Text2, r.Line, UiFlags.Truncate);
+            }
+            if (valueW > 0f)
+            {
+                // What the post it is about has brought, in the good news' green, at the row's right under the time.
+                UiDraw.Text(s, inRow, w - UiTokens.S4 - valueW, y + UiTokens.S3 + UiTokens.S6, valueW, UiStyle.SmallStrong, (r.Flags & FlareRowFlags.Bad) != 0 ? UiRole.DangerText : UiRole.OkText,
+                    r.Value, UiFlags.Right | UiFlags.Truncate);
             }
             if (timeW > 0f)
             {
@@ -568,18 +577,25 @@ namespace RealLifeOverhaul.Ui
             int disc = UiDraw.Circle(s, inRow, UiTokens.S4, y + UiTokens.S3, UiTokens.AvatarRow, UiTokens.AvatarRow, UiRole.Tile);
             UiDraw.Icon(s, inRow.In(disc), UiTokens.S4 + (UiTokens.AvatarRow - UiTokens.Icon) / 2f, y + UiTokens.S3 + (UiTokens.AvatarRow - UiTokens.Icon) / 2f, UiTokens.Icon,
                 r.Icon == UiIcon.None ? UiIcon.ChartLineUp : r.Icon, r.Tint == UiRole.None ? UiRole.Text2 : r.Tint, UiFlags.Middle | UiFlags.Centre, true);
+            float bw = string.IsNullOrEmpty(r.Button) ? 0f : PillWidth(r.Button) + UiTokens.S3;
             float vw = string.IsNullOrEmpty(r.Value) ? 0f : UiDraw.Snap(UiTextRules.Width(r.Value, UiStyle.BodyStrong) + UiTokens.S1);
-            float tx = ContentX, tw = w - tx - vw - UiTokens.S8;
+            float tx = ContentX, tw = w - tx - vw - bw - UiTokens.S8;
             UiDraw.Text(s, inRow, tx, y + UiTokens.S3, tw, UiStyle.Body, UiRole.Text, r.Text, UiFlags.Truncate);
             UiDraw.Text(s, inRow, tx, y + UiTokens.S3 + UiTokens.S6, tw, UiStyle.Small, UiRole.Text2, r.Line, UiFlags.Truncate);
             if (vw > 0f)
             {
                 UiRole ink = (r.Flags & FlareRowFlags.Bad) != 0 ? UiRole.DangerText : (r.Flags & FlareRowFlags.Good) != 0 ? UiRole.OkText : UiRole.Text;
-                UiDraw.TextMiddle(s, inRow, w - UiTokens.S4 - vw, y, h, vw, UiStyle.BodyStrong, ink, r.Value, UiFlags.Right);
+                UiDraw.TextMiddle(s, inRow, w - UiTokens.S4 - vw - bw, y, h, vw, UiStyle.BodyStrong, ink, r.Value, UiFlags.Right);
             }
             if (targets)
             {
-                UiDraw.Node(s, at, 0f, y, w, h, RowCommand, index, row, false, list, index);
+                UiDraw.Node(s, at, 0f, y, w - bw, h, RowCommand, index, row, false, list, index);
+            }
+            if (bw > 0f)
+            {
+                float pw = PillWidth(r.Button);
+                bool armed = (r.Flags & FlareRowFlags.Chosen) != 0;
+                Pill(s, inRow, w - UiTokens.S4 - pw, y + (h - UiTokens.ControlSmall) / 2f, pw, r.Button, armed ? PillKind.Chosen : PillKind.Line, targets ? ButtonCommand : -1, index);
             }
             UiDraw.Box(s, inRow, tx, y + h - UiTokens.Hairline, w - tx - UiTokens.S4, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
         }

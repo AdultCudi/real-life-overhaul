@@ -22,7 +22,12 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.EmptyState(s, at, x + UiTokens.S8, cy + UiTokens.S8, w - UiTokens.S16, bottom - cy - UiTokens.S16, UiIcon.Store, m.List.EmptyTitle, m.List.EmptyBody);
                 return;
             }
-            cy += Picks(s, at, x + UiTokens.S4, cy, w - UiTokens.S8, b.Picker, b.Chosen) + UiTokens.S4;
+            float promoteW = string.IsNullOrEmpty(b.Promote) ? 0f : IconPillWidth(b.Promote);
+            if (promoteW > 0f)
+            {
+                Pill(s, at, x + w - UiTokens.S4 - promoteW, cy, promoteW, b.Promote, PillKind.Orange, PromoteCommand, b.Chosen, UiIcon.Megaphone);
+            }
+            cy += Picks(s, at, x + UiTokens.S4, cy, w - UiTokens.S8 - (promoteW > 0f ? promoteW + UiTokens.S2 : 0f), b.Picker, b.Chosen) + UiTokens.S4;
             float cx = x + UiTokens.S4, inner = w - UiTokens.S8, gap = UiTokens.S4;
             float cw = UiDraw.SnapDown((inner - gap * 2f) / 3f);
             RatingCard(s, at, b, cx, cy, cw);
@@ -38,6 +43,15 @@ namespace RealLifeOverhaul.Ui
                     UiFlags.Truncate);
                 cy += WarningHeight + UiTokens.S4;
             }
+            if (!string.IsNullOrEmpty(b.Rival))
+            {
+                int rival = UiDraw.Box(s, at, cx, cy, inner, WarningHeight, UiRole.Tile, UiRole.None, UiTokens.RadiusLarge);
+                UiAt inRival = at.In(rival);
+                UiDraw.Icon(s, inRival, cx + UiTokens.S4, cy + (WarningHeight - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Flag, UiRole.Text2, UiFlags.Middle);
+                UiDraw.TextMiddle(s, inRival, cx + UiTokens.S4 + UiTokens.Icon + UiTokens.S3, cy, WarningHeight, inner - UiTokens.S12 - UiTokens.Icon, UiStyle.Body, UiRole.Text, b.Rival,
+                    UiFlags.Truncate);
+                cy += WarningHeight + UiTokens.S4;
+            }
             UiDraw.Text(s, at, cx, cy, inner, UiStyle.SectionHeader, UiRole.Text2, b.ReviewsTitle, UiFlags.Label | UiFlags.Truncate);
             cy += L(UiStyle.SectionHeader) + UiTokens.S2;
             UiDraw.Box(s, at, x, cy - UiTokens.Hairline, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
@@ -45,7 +59,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>A row of choices as pills, the chosen one in the accent; those that do not fit wait off it. Returns its height.</summary>
-        private static float Picks(UiScene s, UiAt at, float x, float y, float w, string[] picks, int chosen)
+        private static float Picks(UiScene s, UiAt at, float x, float y, float w, string[] picks, int chosen, int command = PickCommand)
         {
             float px = x;
             for (int i = 0; i < picks.Length; i++)
@@ -55,7 +69,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     break;
                 }
-                Pill(s, at, px, y, pw, picks[i], i == chosen ? PillKind.Chosen : PillKind.Line, PickCommand, i);
+                Pill(s, at, px, y, pw, picks[i], i == chosen ? PillKind.Chosen : PillKind.Line, command, i);
                 px += pw + UiTokens.S2;
             }
             return UiTokens.ControlSmall;
@@ -166,6 +180,18 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Spark(s, inLine, cx + UiTokens.S4, sy, lw - UiTokens.S8, cy + LineCardHeight - UiTokens.S4 - sy, st.Line, UiRole.Chart2);
             }
             cy += LineCardHeight + UiTokens.S3;
+            if (!string.IsNullOrEmpty(st.CreatorTitle))
+            {
+                const float creatorH = 76f;
+                int creator = Card(s, at, cx, cy, lw, creatorH);
+                UiAt inCreator = at.In(creator);
+                UiDraw.Text(s, inCreator, cx + UiTokens.S4, cy + UiTokens.S3, lw - UiTokens.S8, UiStyle.SectionHeader, UiRole.Text2, st.CreatorTitle, UiFlags.Label | UiFlags.Truncate);
+                float figW = UiDraw.Snap(UiTextRules.Width(st.Creator, UiStyle.Number) + UiTokens.S3);
+                UiDraw.Text(s, inCreator, cx + UiTokens.S4, cy + UiTokens.S3 + L(UiStyle.SectionHeader), figW, UiStyle.Number, UiRole.Text, st.Creator, UiFlags.Truncate);
+                UiDraw.Text(s, inCreator, cx + UiTokens.S4 + figW, cy + UiTokens.S3 + L(UiStyle.SectionHeader) + (L(UiStyle.Number) - L(UiStyle.Small)), lw - UiTokens.S8 - figW, UiStyle.Small,
+                    UiRole.Text2, st.CreatorLine, UiFlags.Truncate);
+                cy += creatorH + UiTokens.S3;
+            }
             List(s, at, m.List, cx - UiTokens.S4, cy, lw + UiTokens.S4, bottom - cy, keys);
         }
 
@@ -225,15 +251,83 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        // ------------------------------------------------------------------------------------------------ In the city
+
+        public const float CityBandHeight = 176f;
+
+        private static void CityPage(UiScene s, UiAt at, FlareFaceModel m, float x, float y, float w, float h, IUiKeys keys)
+        {
+            FlareCityModel c = m.City;
+            float cy = y + PageHead(s, at, x, y, w, m.Head, m.HeadLine, false);
+            UiDraw.Box(s, at, x, cy - UiTokens.Hairline, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
+            float cx = x + UiTokens.S4, inner = w - UiTokens.S8;
+            cy += UiTokens.S3;
+            if (c.Shown)
+            {
+                float gap = UiTokens.S4, lw = UiDraw.SnapDown((inner - gap) * 0.6f), rw = inner - lw - gap;
+                DonutCard(s, at, c, cx, cy, lw, CityBandHeight);
+                FiguresCard(s, at, c.WeekTitle, c.WeekFigures, c.WeekLabels, cx + lw + gap, cy, rw, CityBandHeight);
+                cy += CityBandHeight + UiTokens.S3;
+            }
+            List(s, at, m.List, cx, cy, inner, y + h - cy, keys);
+        }
+
+        // The followers by district: the donut, and beside it each district named with its followers; or why there is nothing to show.
+        private static void DonutCard(UiScene s, UiAt at, FlareCityModel c, float x, float y, float w, float h)
+        {
+            int card = Card(s, at, x, y, w, h);
+            UiAt inCard = at.In(card);
+            float ix = x + UiTokens.S4, iw = w - UiTokens.S8, cy = y + UiTokens.S4;
+            UiDraw.Text(s, inCard, ix, cy, iw, UiStyle.SectionHeader, UiRole.Text2, c.DonutTitle, UiFlags.Label | UiFlags.Truncate);
+            cy += L(UiStyle.SectionHeader) + UiTokens.S3;
+            int n = Math.Min(c.Names.Length, Math.Min(c.Values.Length, c.Shares.Length));
+            if (n == 0)
+            {
+                UiDraw.Text(s, inCard, ix, cy, iw, UiStyle.Body, UiRole.Text2, c.DonutEmpty, UiFlags.Wrap | UiFlags.Truncate, 3);
+                return;
+            }
+            float size = h - (cy - y) - UiTokens.S4;
+            UiDraw.Donut(s, inCard, ix, cy, size, c.Shares, n, c.Rest);
+            float lx = ix + size + UiTokens.S6;
+            float used = UiDraw.Legend(s, inCard, lx, cy, x + w - UiTokens.S4 - lx, c.Names, c.Values, n);
+            if (c.Rest > 0f && !string.IsNullOrEmpty(c.DonutRest) && cy + used + L(UiStyle.Small) <= y + h)
+            {
+                UiDraw.Text(s, inCard, lx, cy + used + UiTokens.S1, x + w - UiTokens.S4 - lx, UiStyle.Small, UiRole.Text2, c.DonutRest, UiFlags.Truncate);
+            }
+        }
+
         // ------------------------------------------------------------------------------------------------ Hire
 
         private static void HirePage(UiScene s, UiAt at, FlareFaceModel m, float x, float y, float w, float h, IUiKeys keys)
         {
             float bottom = y + h;
             float cy = y + PageHead(s, at, x, y, w, m.Head, m.HeadLine, false);
-            if (m.Business.Picker.Length > 0)
+            FlareBusinessModel b = m.Business;
+            if (b.Picker.Length > 0)
             {
-                cy += Picks(s, at, x + UiTokens.S4, cy, w - UiTokens.S8, m.Business.Picker, m.Business.Chosen) + UiTokens.S4;
+                cy += Picks(s, at, x + UiTokens.S4, cy, w - UiTokens.S8, b.Picker, b.Chosen, PickCommand) + UiTokens.S2;
+            }
+            if (b.Picker2.Length > 0 || b.Sort.Length > 0)
+            {
+                // The order at the right (by followers, by fit), the niches across the rest.
+                float sortW = 0f;
+                for (int i = 0; i < b.Sort.Length; i++)
+                {
+                    sortW += PillWidth(b.Sort[i]) + UiTokens.S2;
+                }
+                float sx = x + w - UiTokens.S4 - sortW + UiTokens.S2;
+                for (int i = 0; i < b.Sort.Length; i++)
+                {
+                    float pw = PillWidth(b.Sort[i]);
+                    Pill(s, at, sx, cy, pw, b.Sort[i], i == b.SortChosen ? PillKind.Light : PillKind.Quiet, SortCommand, i);
+                    sx += pw + UiTokens.S2;
+                }
+                Picks(s, at, x + UiTokens.S4, cy, w - UiTokens.S8 - sortW - UiTokens.S2, b.Picker2, b.Chosen2, NicheCommand);
+                cy += UiTokens.ControlSmall + UiTokens.S4;
+            }
+            else
+            {
+                cy += UiTokens.S2;
             }
             List(s, at, m.List, x + UiTokens.S4, cy, w - UiTokens.S8, bottom - cy, keys);
         }

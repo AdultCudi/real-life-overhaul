@@ -103,6 +103,7 @@ namespace RealLifeOverhaul.Ui
         public string Follow;        // the Follow or Following button; null on the player's own
         public bool Following;
         public bool Verified;
+        public string Edit;          // the Edit profile button; null on another's
     }
 
     /// <summary>A business's page: which business, its stars, what Flare brought it and a warning when its reviews turn.</summary>
@@ -118,6 +119,12 @@ namespace RealLifeOverhaul.Ui
         public string[] FigureLabels = new string[0];
         public string Warning;                           // the reviews have turned: what to do; null when they have not
         public string ReviewsTitle;
+        public string Rival;                             // the business of its kind across the street and its rating; null when none is rated
+        public string Promote;                           // the button that runs an ad for this business; null when it cannot
+        public string[] Picker2 = new string[0];         // Hire: the niches to pick from, the first all of them...
+        public int Chosen2;
+        public string[] Sort = new string[0];            // ...and the orders: by followers, by fit
+        public int SortChosen;
     }
 
     /// <summary>The creator studio: the week in cards, the followers' line, the tier and what it unlocks.</summary>
@@ -130,6 +137,19 @@ namespace RealLifeOverhaul.Ui
         public string TierTitle, Tier, TierLine;         // "Sponsorship", "Local", "Next tier at 5,000 followers"
         public float TierShare;
         public string[] Perks = new string[0];
+        public string CreatorTitle, Creator, CreatorLine;   // the creator income: what was paid and when the next is due; null title hides it
+    }
+
+    /// <summary>In the city: the followers by district as a donut with its legend, and the week of what posts did there.</summary>
+    public sealed class FlareCityModel
+    {
+        public bool Shown;
+        public string DonutTitle, DonutEmpty, DonutRest;
+        public string[] Names = new string[0], Values = new string[0];
+        public float[] Shares = new float[0];
+        public float Rest;                               // the share held by the districts not named
+        public string WeekTitle;
+        public string[] WeekLabels = new string[0], WeekFigures = new string[0];
     }
 
     /// <summary>
@@ -139,6 +159,10 @@ namespace RealLifeOverhaul.Ui
     public sealed class FlareSheetModel
     {
         public string Title, Line;
+        public int FieldArg;                             // the field the words are typed into (ComposeField or BioField)
+        public string BarsTitle;                         // the bars under the figures: where an audience lives
+        public string[] BarLabels = new string[0], BarFigures = new string[0];
+        public float[] BarShares = new float[0];
         public int Stars;                                // a review's stars before its words, 0 for none
         public string Words;
         public bool Field;
@@ -171,6 +195,9 @@ namespace RealLifeOverhaul.Ui
         public string MyName = string.Empty, MyHandle = string.Empty;
         public float MyHue;
         public string Move = "Move", Select = "Select", Back = "Back";
+        public string MarkAll;                           // Notifications: the button that marks them all read; null hides it
+        public bool MarkAllOff;
+        public readonly FlareCityModel City = new FlareCityModel();
 
         // The column beside Home, Explore, Notifications, Profile and a post's thread.
         public string SearchHint, WeekTitle, StudioLink, TrendTitle, WhoTitle, FollowWord, FollowingWord;
@@ -220,10 +247,10 @@ namespace RealLifeOverhaul.Ui
         public const int Pages = 9;
 
         // The sheets.
-        public const int NoSheet = 0, ComposeSheet = 1, HireSheet = 2, ReplySheet = 3, PhotosSheet = 4;
+        public const int NoSheet = 0, ComposeSheet = 1, HireSheet = 2, ReplySheet = 3, PhotosSheet = 4, AdSheet = 5, EditSheet = 6;
 
         // The text fields (FieldCommand's argument): which one typing fills.
-        public const int ComposeField = 0, SearchField = 1, InboxField = 2, ReplyField = 3, ThreadField = 4, PickerField = 5;
+        public const int ComposeField = 0, SearchField = 1, InboxField = 2, ReplyField = 3, ThreadField = 4, PickerField = 5, BioField = 6;
 
         public const int NavCommand = 300, PostCommand = 301, AccountCommand = 302, TabCommand = 303, ComposerCommand = 304, ChipCommand = 305,
             StoryCommand = 306, FieldCommand = 307, RowCommand = 308, AuthorCommand = 309, LikeCommand = 310, CommentCommand = 311, RepostCommand = 312,
@@ -232,13 +259,17 @@ namespace RealLifeOverhaul.Ui
             SheetCancelCommand = 326, SendCommand = 327, BackCommand = 328, ProfileFollowCommand = 329, QuickCommand = 330, DetailCommand = 331,
             PickerPhotoCommand = 332, PickerAlbumCommand = 333;
 
+        // The audit's block (340 to 359; 300 to 333 are the face's own, 400 up are other parts'): none is a number another part of the window uses.
+        public const int MarkAllCommand = 340, SortCommand = 341, NicheCommand = 342, PromoteCommand = 343, EditCommand = 344;
+
         /// <summary>Every command the face gives its targets, for the checks.</summary>
         public static readonly int[] Commands =
         {
             NavCommand, PostCommand, AccountCommand, TabCommand, ComposerCommand, ChipCommand, StoryCommand, FieldCommand, RowCommand, AuthorCommand,
             LikeCommand, CommentCommand, RepostCommand, ShareCommand, TagCommand, FollowCommand, ButtonCommand, SearchCommand, StudioLinkCommand,
             TrendCommand, WhoCommand, WhoFollowCommand, PickCommand, OptionCommand, SheetChipCommand, SheetConfirmCommand, SheetCancelCommand,
-            SendCommand, BackCommand, ProfileFollowCommand, QuickCommand, DetailCommand, PickerPhotoCommand, PickerAlbumCommand
+            SendCommand, BackCommand, ProfileFollowCommand, QuickCommand, DetailCommand, PickerPhotoCommand, PickerAlbumCommand, MarkAllCommand, SortCommand, NicheCommand,
+            PromoteCommand, EditCommand
         };
 
         public const int MostTargets = 48;          // a layer's targets at most (UiCheckRules.MostTargets): rows past them wait for the scroll

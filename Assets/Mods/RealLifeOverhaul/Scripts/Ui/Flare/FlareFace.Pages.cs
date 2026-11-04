@@ -17,13 +17,13 @@ namespace RealLifeOverhaul.Ui
             {
                 case Home: HomePage(s, at, m, x, y, w, h, keys); break;
                 case Explore: ExplorePage(s, at, m, x, y, w, h, keys); break;
-                case Notices: ListPage(s, at, m, x, y, w, h, keys); break;
+                case Notices: NoticesPage(s, at, m, x, y, w, h, keys); break;
                 case Messages: MessagesPage(s, at, m, x, y, w, h, keys); break;
                 case Profile: ProfilePage(s, at, m, x, y, w, h, keys); break;
                 case Studio: StudioPage(s, at, m, x, y, w, h, keys); break;
                 case Business: BusinessPage(s, at, m, x, y, w, h, keys); break;
                 case Hire: HirePage(s, at, m, x, y, w, h, keys); break;
-                case City: ListPage(s, at, m, x, y, w, h, keys); break;
+                case City: CityPage(s, at, m, x, y, w, h, keys); break;
                 case Thread: ThreadPage(s, at, m, x, y, w, h, keys); break;
             }
         }
@@ -116,7 +116,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>A page's head: the way back when it has one, its title and a line under it. Returns its height.</summary>
-        private static float PageHead(UiScene s, UiAt at, float x, float y, float w, string title, string line, bool back)
+        private static float PageHead(UiScene s, UiAt at, float x, float y, float w, string title, string line, bool back, float reserve = 0f)
         {
             float h = UiTokens.S16;
             float tx = x + UiTokens.S4;
@@ -128,7 +128,7 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Node(s, at, x + UiTokens.S2, by, UiTokens.Control, UiTokens.Control, BackCommand, 0, b);
                 tx = x + UiTokens.S2 + UiTokens.Control + UiTokens.S2;
             }
-            float tw = x + w - tx - UiTokens.S4;
+            float tw = x + w - tx - UiTokens.S4 - reserve;
             bool lined = !string.IsNullOrEmpty(line);
             float ty = lined ? y + UiTokens.S2 : y + (h - L(UiStyle.Number)) / 2f;
             UiDraw.Text(s, at, tx, UiDraw.SnapDown(ty), tw, UiStyle.Number, UiRole.Text, title, UiFlags.Truncate);
@@ -148,6 +148,19 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Box(s, at, x, cy - UiTokens.Hairline, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             float lx = x + (m.Page == City ? UiTokens.S4 : 0f), lw = w - (m.Page == City ? UiTokens.S8 : 0f);
             List(s, at, m.List, lx, cy + (m.Page == City ? UiTokens.S3 : 0f), lw, y + h - cy - (m.Page == City ? UiTokens.S3 : 0f), keys);
+        }
+
+        // The notifications: the head with Mark all read, the tabs by what a notice is about, and the list.
+        private static void NoticesPage(UiScene s, UiAt at, FlareFaceModel m, float x, float y, float w, float h, IUiKeys keys)
+        {
+            float cy = y + PageHead(s, at, x, y, w, m.Head, m.HeadLine, false, string.IsNullOrEmpty(m.MarkAll) ? 0f : IconPillWidth(m.MarkAll) + UiTokens.S4);
+            if (!string.IsNullOrEmpty(m.MarkAll))
+            {
+                float pw = IconPillWidth(m.MarkAll);
+                Pill(s, at, x + w - UiTokens.S4 - pw, y + (UiTokens.S16 - UiTokens.ControlSmall) / 2f, pw, m.MarkAll, PillKind.Line, MarkAllCommand, 0, UiIcon.Check, m.MarkAllOff);
+            }
+            cy += TabRow(s, at, x, cy, w, m.Tabs, m.Tab);
+            List(s, at, m.List, x, cy, w, y + h - cy, keys);
         }
 
         // ------------------------------------------------------------------------------------------------ Messages
@@ -252,6 +265,11 @@ namespace RealLifeOverhaul.Ui
             {
                 float fw = PillWidth(p.Follow);
                 Pill(s, at, x + w - UiTokens.S4 - fw, cy, fw, p.Follow, p.Following ? PillKind.Quiet : PillKind.Light, ProfileFollowCommand, 0);
+            }
+            else if (!string.IsNullOrEmpty(p.Edit))
+            {
+                float ew = IconPillWidth(p.Edit);
+                Pill(s, at, x + w - UiTokens.S4 - ew, cy, ew, p.Edit, PillKind.Line, EditCommand, 0, UiIcon.Pencil);
             }
             cy = ay + UiTokens.AvatarHero + UiTokens.S2 + UiTokens.S3;
             float tx = x + UiTokens.S4, tw = w - UiTokens.S8;
