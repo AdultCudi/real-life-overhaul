@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             float gap = UiTokens.S6;
-            float lw = UiDraw.SnapDown(Math.Min(cw * 0.22f, 320f));
+            float lw = UiDraw.SnapDown(Math.Min(cw * 0.25f, 360f));
             CompanyRotaPlace p = r.Place;
             float needsH = p != null && p.NeedWhen.Length > 0 ? UiTokens.PairRow + UiTokens.S1 + Math.Min(p.NeedWhen.Length, 5) * (UiTokens.PairRow + UiTokens.S1) + UiTokens.S4 : 0f;
             ListPane(s, at.InRegion(RegionList), r.Places, v, w, lay, x, y, lw, bottom - needsH, keys);
@@ -199,7 +199,7 @@ namespace RealLifeOverhaul.Ui
                     bool warn = pr.Tones != null && d < pr.Tones.Length && pr.Tones[d] != UiRole.None;
                     if (string.IsNullOrEmpty(shift))
                     {
-                        UiDraw.TextMiddle(s, at, dx, dy, dh, dw, UiStyle.Small, UiRole.Muted, w.T("reallife_rota_off", "off"), UiFlags.Centre | UiFlags.Truncate);
+                        UiDraw.TextMiddle(s, at, dx, dy, dh, dw, UiStyle.Small, UiRole.Muted, w.T("reallife_rota_day_off", "off"), UiFlags.Centre | UiFlags.Truncate);
                         continue;
                     }
                     int face = UiDraw.Box(s, at, dx, dy, dw, dh, warn ? UiRole.WarnSoft : d == p.Day ? UiRole.RowSel : UiRole.Row, UiRole.None, UiTokens.RadiusLarge, UiFlags.None);
@@ -285,14 +285,24 @@ namespace RealLifeOverhaul.Ui
             if (p.Legend.Length > 0)
             {
                 cy += UiTokens.S2;
-                float lx = x + labelW + UiTokens.S2;
-                for (int i = 0; i < p.Legend.Length && cy + UiTokens.PairRow <= bottom; i++)
+                float lx = x;
+                for (int i = 0; i < p.Legend.Length; i++)
                 {
+                    float lw = UiDraw.Snap(UiTextRules.Width(p.Legend[i], UiStyle.Small) + UiTokens.S1);
+                    float need = UiTokens.StatusDot + UiTokens.S2 + lw;
+                    if (lx > x && lx + need > x + width)
+                    {
+                        lx = x;   // the key goes on to a second line where the words of a language are long
+                        cy += UiTokens.PairRow;
+                    }
+                    if (cy + UiTokens.PairRow > bottom)
+                    {
+                        break;
+                    }
                     UiRole dot = i == 0 ? UiRole.Accent : i == 1 ? UiRole.Danger : UiRole.Text;
                     UiDraw.Box(s, at, lx, cy + (UiTokens.PairRow - UiTokens.StatusDot) / 2f, i == 2 ? 2f : UiTokens.StatusDot, UiTokens.StatusDot, dot, UiRole.None, UiTokens.RadiusSmall, UiFlags.Decor);
-                    float lw = UiDraw.Snap(UiTextRules.Width(p.Legend[i], UiStyle.Small) + UiTokens.S1);
-                    UiDraw.TextMiddle(s, at, lx + UiTokens.StatusDot + UiTokens.S2, cy, UiTokens.PairRow, lw, UiStyle.Small, UiRole.Text2, p.Legend[i], UiFlags.Truncate);
-                    lx += UiTokens.StatusDot + UiTokens.S2 + lw + UiTokens.S3;
+                    UiDraw.TextMiddle(s, at, lx + UiTokens.StatusDot + UiTokens.S2, cy, UiTokens.PairRow, Math.Min(lw, x + width - (lx + UiTokens.StatusDot + UiTokens.S2)), UiStyle.Small, UiRole.Text2, p.Legend[i], UiFlags.Truncate);
+                    lx += need + UiTokens.S3;
                 }
             }
         }

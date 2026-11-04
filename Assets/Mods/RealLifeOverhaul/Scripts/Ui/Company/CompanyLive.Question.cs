@@ -94,7 +94,7 @@ namespace RealLifeOverhaul.Ui
             int now = f != null ? f.Paid : 0;
             q.FactLabels = new[] { w.T("reallife_co_q_now", "Now"), w.T(offer ? "reallife_co_q_rival_pays" : "reallife_co_q_asks_for", offer ? "Rival pays" : "Asks for"), w.T("reallife_co_q_limit", "Limit"),
                 w.T("reallife_co_q_standing", "Standing") };
-            q.FactValues = new[] { CompanyText.Wage(now) + w.T("reallife_co_per_hour", " / h"), CompanyText.Wage(e.A) + w.T("reallife_co_per_hour", " / h"), CompanyText.Wage(e.B) + w.T("reallife_co_per_hour", " / h"),
+            q.FactValues = new[] { w.PerHour(now), w.PerHour(e.A), w.PerHour(e.B),
                 f != null ? f.Standing.ToString() : "-" };
             int year = f != null ? YearCost(f, e.A - now) : 0;
             string pay = CompanyText.Wage(e.A);

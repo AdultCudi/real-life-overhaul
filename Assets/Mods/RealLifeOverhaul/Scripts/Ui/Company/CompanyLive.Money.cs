@@ -25,7 +25,7 @@ namespace RealLifeOverhaul.Ui
             CompanyPage page = f.Marketing;
             if (!d.On(CompanyPart.Marketing))
             {
-                PartOff(page);
+                PartOff(page, w.T("reallife_co_tab_marketing", "Marketing"));
                 return;
             }
             CompanyState s = d.State;
@@ -85,11 +85,12 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        private static void PartOff(CompanyPage page)
+        // A part that is off says so under its own name, with what that means.
+        private static void PartOff(CompanyPage page, string title)
         {
             page.PartOff = true;
-            page.OffTitle = CompanyText.T("reallife_co_part_off");
-            page.OffBody = CompanyText.T("reallife_co_part_off_row");
+            page.OffTitle = title;
+            page.OffBody = CompanyText.T("reallife_co_part_off");
         }
 
         private CompanyCard CampaignCard(CompanyDirector d, CompanyShop shop, CompanyView v, Words w, int day)
@@ -190,7 +191,7 @@ namespace RealLifeOverhaul.Ui
             CompanyPage page = f.Cover;
             if (!d.On(CompanyPart.Cover))
             {
-                PartOff(page);
+                PartOff(page, w.T("reallife_co_tab_cover", "Cover"));
                 return;
             }
             CompanyState s = d.State;

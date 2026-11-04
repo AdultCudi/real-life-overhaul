@@ -27,8 +27,8 @@ namespace RealLifeOverhaul.Ui
             if (!tax && !licences)
             {
                 t.PartOff = true;
-                t.OffTitle = CompanyText.T("reallife_co_part_off");
-                t.OffBody = CompanyText.T("reallife_co_part_off_row");
+                t.OffTitle = w.T("reallife_co_nav_tax", "Tax and licences");
+                t.OffBody = CompanyText.T("reallife_co_part_off");
                 return;
             }
             CompanyState s = d.State;

@@ -13,7 +13,7 @@ namespace RealLifeOverhaul.Ui
             CompanyPage page = f.Staff;
             if (!d.On(CompanyPart.Staff))
             {
-                page.PartOff = true;
+                PartOff(page, w.T("reallife_co_tab_staff", "Staff"));
                 return;
             }
             CompanyState s = d.State;
@@ -61,7 +61,7 @@ namespace RealLifeOverhaul.Ui
                     {
                         Id = "emp:" + p.Id, Title = p.Name, Sub = d.ShopName(p.Place), Face = true, Hue = UiColour.HueOf(p.Name),
                         Ring = waits || p.LeaveDay > 0 ? UiRole.Warn : StaffRules.StandsLow(p) ? UiRole.Danger : UiRole.Ok,
-                        Figure = CompanyText.Wage(p.Paid) + w.T("reallife_co_per_hour", " / h"), Note = w.F("reallife_co_going", "going {wage}", "wage", CompanyText.Wage(p.Going)),
+                        Figure = w.PerHour(p.Paid), Note = w.F("reallife_co_going", "going {wage}", "wage", CompanyText.Wage(p.Going)),
                         Chip = stands, ChipTone = p.PoachDay > 0 || p.LeaveDay > 0 ? UiRole.Danger : UiRole.Warn
                     });
                 }

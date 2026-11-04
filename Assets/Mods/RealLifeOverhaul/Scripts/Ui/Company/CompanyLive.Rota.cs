@@ -40,11 +40,11 @@ namespace RealLifeOverhaul.Ui
                 bool gaps = p.Type != RotaType.Warehouse && !p.Shut && p.Staff > 0 && p.GapHours > 0;
                 string hours = p.OpenHours > 0 ? CompanyText.T("reallife_rota_row_open", "hours", p.OpenHours.ToString()) : CompanyText.T("reallife_rota_closed");
                 string state = p.Type == RotaType.Warehouse ? CompanyText.T("reallife_rota_row_none") : p.Staff == 0 ? CompanyText.T("reallife_rota_row_no_staff")
-                    : gaps ? CompanyText.T("reallife_rota_row_gaps", "hours", p.GapHours.ToString()) : CompanyText.T("reallife_rota_row_covered");
+                    : gaps ? w.F("reallife_co_row_gap_short", "{hours} h short", "hours", p.GapHours.ToString()) : CompanyText.T("reallife_rota_row_covered");
                 rows.Add(new CompanyRow
                 {
-                    Id = "p:" + p.Place, Title = p.Name, Sub = RotaGame.TypeName(p.Reg) + ", " + hours, Icon = UiIcon.Calendar, Figure = p.Staff.ToString(), Note = w.T("reallife_rota_staff_word", "staff"),
-                    Chip = state, ChipTone = p.Type == RotaType.Warehouse ? UiRole.Muted : p.Staff == 0 ? UiRole.Danger : gaps ? UiRole.Warn : UiRole.Ok
+                    Id = "p:" + p.Place, Title = p.Name, Sub = RotaGame.TypeName(p.Reg) + ", " + hours, Icon = UiIcon.Calendar, Figure = state, Note = w.F("reallife_co_tree_staff", "{count} staff", "count", p.Staff.ToString()),
+                    FigureTone = p.Type == RotaType.Warehouse ? UiRole.Muted : p.Staff == 0 ? UiRole.DangerText : gaps ? UiRole.WarnText : UiRole.OkText
                 });
                 if (p.Place == place)
                 {

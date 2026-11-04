@@ -8,8 +8,8 @@ namespace RealLifeOverhaul.Ui
         /// <summary>A number that changes when the company's state does, so the screen reads again only then.</summary>
         int Generation { get; }
 
-        /// <summary>A tab (and what is picked on it) another part of the game asked for (a notification's press), taken once; false for none.</summary>
-        bool TakeWanted(out int tab, out string pick);
+        /// <summary>A place in the app another part of the game asked for (a notification's press): the tab, what is picked on it, its sub page, what is picked in that and a question to open as a card (0 for none), taken once; false for none.</summary>
+        bool TakeWanted(out int tab, out string pick, out int sub, out string subPick, out int question);
 
         /// <summary>The app has been opened since the last read: its sub pages and open question start from the tab as left.</summary>
         bool TakeOpened();
@@ -65,12 +65,15 @@ namespace RealLifeOverhaul.Ui
                     ClearSubPages();
                     _stale = true;
                 }
-                if (_source.TakeWanted(out int tab, out string pick) && tab >= 0 && tab < CompanyView.Tabs)
+                if (_source.TakeWanted(out int tab, out string pick, out int sub, out string subPick, out int question) && tab >= 0 && tab < CompanyView.Tabs)
                 {
                     _view.Tab = tab;
                     _view.Pick[tab] = pick ?? string.Empty;
-                    _view.Sub[tab] = 0;
-                    _view.Question = 0;
+                    _view.Sub[tab] = sub;
+                    _view.SubPick[tab] = subPick ?? string.Empty;
+                    _view.SubArg[tab] = 0;
+                    _view.Question = question;
+                    _view.Choice = 0;
                     _stale = true;
                 }
                 if (_stale || _seen != _source.Generation)

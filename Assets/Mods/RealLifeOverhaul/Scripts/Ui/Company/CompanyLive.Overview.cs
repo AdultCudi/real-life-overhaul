@@ -263,11 +263,11 @@ namespace RealLifeOverhaul.Ui
                         return "-" + w.Money(dec.G);
                     }
                     tone = dec.A > 0 ? -1 : 0;
-                    return dec.A > 0 ? "-" + CompanyText.Wage(dec.A) + w.T("reallife_co_per_hour", " / h") : string.Empty;
+                    return dec.A > 0 ? "-" + w.PerHour(dec.A) : string.Empty;
                 case ManagerTask.Leases:
                     int more = dec.C - dec.B;
                     tone = more > 0 ? -1 : more < 0 ? 1 : 0;
-                    return more != 0 ? (more > 0 ? "-" : "+") + w.Money(Math.Abs(more)) + w.T("reallife_co_per_month", " a month") : string.Empty;
+                    return more != 0 ? (more > 0 ? "-" : "+") + w.F("reallife_co_row_a_month", "{amount} a month", "amount", w.Money(Math.Abs(more))) : string.Empty;
                 default:
                     return string.Empty;
             }

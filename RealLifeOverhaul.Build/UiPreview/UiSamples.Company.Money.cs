@@ -20,15 +20,15 @@ internal static partial class UiSamples
         var rows = new List<CompanyRow>();
         if (one)
         {
-            rows.Add(new CompanyRow { Id = "p:Corner Cafe~12", Title = "Corner Cafe", Sub = w.F("reallife_rota_row_open", "Open {hours} hours", "hours", "84"), Icon = UiIcon.Calendar, Figure = "2", Note = w.T("reallife_rota_staff_word", "staff"), Chip = w.F("reallife_rota_row_gaps", "{hours} hours uncovered", "hours", "14"), ChipTone = UiRole.Warn });
+            rows.Add(new CompanyRow { Id = "p:Corner Cafe~12", Title = "Corner Cafe", Sub = w.F("reallife_rota_row_open", "Open {hours} hours", "hours", "84"), Icon = UiIcon.Calendar, Figure = w.F("reallife_co_row_gap_short", "{hours} h short", "hours", "14"), FigureTone = UiRole.WarnText, Note = w.F("reallife_co_tree_staff", "{count} staff", "count", "2") });
         }
         else
         {
-            rows.Add(new CompanyRow { Id = "p:Speedy Bites~7", Title = "Speedy Bites", Sub = "Restaurant, " + w.F("reallife_rota_row_open", "Open {hours} hours", "hours", "112"), Icon = UiIcon.Calendar, Figure = "9", Note = w.T("reallife_rota_staff_word", "staff"), Chip = w.T("reallife_rota_row_covered", "Covered"), ChipTone = UiRole.Ok });
+            rows.Add(new CompanyRow { Id = "p:Speedy Bites~7", Title = "Speedy Bites", Sub = "Restaurant, " + w.F("reallife_rota_row_open", "Open {hours} hours", "hours", "112"), Icon = UiIcon.Calendar, Figure = w.T("reallife_rota_row_covered", "Covered"), FigureTone = UiRole.OkText, Note = w.F("reallife_co_tree_staff", "{count} staff", "count", "9") });
             rows.Add(new CompanyRow { Id = "pl:Speedy Bites~7:1", Title = "Standard week", Sub = w.T("reallife_rota_repeat_every", "Every week"), Icon = UiIcon.ClipboardText, Dim = true, Chip = w.T("reallife_rota_in_use", "In use"), ChipTone = UiRole.Ok });
             rows.Add(new CompanyRow { Id = "pl:Speedy Bites~7:2", Title = "Holiday week", Sub = w.F("reallife_rota_plan_range", "Days {from} to {to}", "from", "220", "to", "226"), Icon = UiIcon.ClipboardText, Dim = true });
-            rows.Add(new CompanyRow { Id = "p:Bloom & Co~214", Title = "Bloom & Co", Sub = "Shop, " + w.F("reallife_rota_row_open", "Open {hours} hours", "hours", "72"), Icon = UiIcon.Calendar, Figure = "5", Note = w.T("reallife_rota_staff_word", "staff"), Chip = w.F("reallife_rota_row_gaps", "{hours} hours uncovered", "hours", "6"), ChipTone = UiRole.Warn });
-            rows.Add(new CompanyRow { Id = "p:Hudson Warehouse~4", Title = "Hudson Warehouse", Sub = "Warehouse", Icon = UiIcon.Calendar, Figure = "4", Note = w.T("reallife_rota_staff_word", "staff"), Chip = w.T("reallife_rota_row_none", "No rota"), ChipTone = UiRole.Muted });
+            rows.Add(new CompanyRow { Id = "p:Bloom & Co~214", Title = "Bloom & Co", Sub = "Shop, " + w.F("reallife_rota_row_open", "Open {hours} hours", "hours", "72"), Icon = UiIcon.Calendar, Figure = w.F("reallife_co_row_gap_short", "{hours} h short", "hours", "6"), FigureTone = UiRole.WarnText, Note = w.F("reallife_co_tree_staff", "{count} staff", "count", "5") });
+            rows.Add(new CompanyRow { Id = "p:Hudson Warehouse~4", Title = "Hudson Warehouse", Sub = "Warehouse", Icon = UiIcon.Calendar, Figure = w.T("reallife_rota_row_none", "No rota"), FigureTone = UiRole.Muted, Note = w.F("reallife_co_tree_staff", "{count} staff", "count", "4") });
         }
         r.Places = new CompanyList { Title = w.T("reallife_rota_tab", "Rota"), Count = one ? "1" : "4", Rows = rows.ToArray(), Chosen = 0 };
         var p = new CompanyRotaPlace { Id = one ? "Corner Cafe~12" : "Speedy Bites~7", Name = one ? "Corner Cafe" : "Speedy Bites", Sub = (one ? "Cafe, " : "Restaurant, ") + w.F("reallife_rota_row_open", "Open {hours} hours", "hours", one ? "84" : "112") };
@@ -36,7 +36,7 @@ internal static partial class UiSamples
         {
             r.Places.Chosen = 3;
             p.Name = "Hudson Warehouse";
-            p.Refused = w.F("reallife_rota_refused_warehouse", "A warehouse has no rota: the game gives its drivers their vehicles itself.");
+            p.Refused = SF("A warehouse has no rota: the game gives its drivers their vehicles itself.");
             r.Place = p;
             return;
         }
@@ -184,8 +184,8 @@ internal static partial class UiSamples
         if (state == "marketing_off")
         {
             p.PartOff = true;
-            p.OffTitle = w.T("reallife_co_part_off", "This part is switched off");
-            p.OffBody = w.T("reallife_co_part_off_row", "Switch it on in the mod's settings to use it here.");
+            p.OffTitle = w.T("reallife_co_tab_marketing", "Marketing");
+            p.OffBody = w.T("reallife_co_part_off", "Switched off in the options, or stopped after an error. Nothing of it runs and nothing is charged.");
             return;
         }
         bool one = state == "marketing_one";
@@ -367,8 +367,8 @@ internal static partial class UiSamples
         if (state == "tax_off")
         {
             t.PartOff = true;
-            t.OffTitle = w.T("reallife_co_part_off", "This part is switched off");
-            t.OffBody = w.T("reallife_co_part_off_row", "Switch it on in the mod's settings to use it here.");
+            t.OffTitle = w.T("reallife_co_nav_tax", "Tax and licences");
+            t.OffBody = w.T("reallife_co_part_off", "Switched off in the options, or stopped after an error. Nothing of it runs and nothing is charged.");
             return;
         }
         bool one = state == "tax_one";

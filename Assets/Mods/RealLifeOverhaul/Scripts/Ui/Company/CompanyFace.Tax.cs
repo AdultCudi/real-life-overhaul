@@ -86,6 +86,16 @@ namespace RealLifeOverhaul.Ui
             float managerW = showManager ? Math.Min(UiDraw.SnapDown(width * 0.2f), 168f) : 0f;
             float stateW = Math.Min(UiDraw.SnapDown(width * 0.2f), 176f), dayW = 76f;
             int rows = Math.Min(t.Licences.Length, fit);
+            // The button's column is as wide as the widest button of the rows in view, so that the manager, the state and the day stand in the same place in every row.
+            float actCol = 0f;
+            for (int i = 0; i < rows; i++)
+            {
+                if (t.Licences[i].HasAction)
+                {
+                    CompanyButton a = t.Licences[i].Action;
+                    actCol = Math.Max(actCol, Math.Min(UiDraw.SnapDown(width * 0.2f), UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, a.Key, keys)));
+                }
+            }
             for (int i = 0; i < rows; i++)
             {
                 ref CompanyLicence l = ref t.Licences[i];
@@ -101,7 +111,7 @@ namespace RealLifeOverhaul.Ui
                 float g = UiTokens.S6;
                 UiDraw.Icon(s, inside.In(tile), x + UiTokens.S1 + (size - g) / 2f, cy + (LicenceRow - g) / 2f, g, l.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
                 float right = x + width - UiTokens.S2;
-                float rx = right - actW - (actW > 0f ? UiTokens.S3 : 0f) - dayW;
+                float rx = right - actCol - (actCol > 0f ? UiTokens.S3 : 0f) - dayW;
                 float sx = rx - UiTokens.S2 - stateW;
                 float mx = sx - UiTokens.S3 - managerW;
                 float tx = x + UiTokens.S1 + size + UiTokens.S3, tw = (showManager ? mx : sx) - UiTokens.S3 - tx;
@@ -120,7 +130,7 @@ namespace RealLifeOverhaul.Ui
                 if (l.Open.Do != CompanyDo.None)
                 {
                     int index = lay.Add(new CompanyButton { Label = l.Name, Act = l.Open });
-                    UiDraw.Node(s, at, x, cy, width - actW - (actW > 0f ? UiTokens.S4 : 0f), LicenceRow, Act, index, face);
+                    UiDraw.Node(s, at, x, cy, width - actCol - (actCol > 0f ? UiTokens.S4 : 0f), LicenceRow, Act, index, face);
                 }
                 if (actW > 0f)
                 {

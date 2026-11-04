@@ -202,8 +202,8 @@ internal static partial class UiSamples
         if (state == "managers_off")
         {
             m.PartOff = true;
-            m.OffTitle = w.T("reallife_mgr_off_title", "Managers are off");
-            m.OffBody = w.T("reallife_mgr_off", "Managers are switched off in the mod's settings.");
+            m.OffTitle = w.T("reallife_co_tab_managers", "Managers");
+            m.OffBody = w.T("reallife_mgr_off", "Managers are switched off in the options, or they stopped after an error. Nothing is decided by them and everything comes to you.");
             return;
         }
         var nodes = new List<UiOrgNode>();
@@ -323,7 +323,7 @@ internal static partial class UiSamples
             new CompanyDone { When = "Day 214", Text = w.F("reallife_mgr_did_stock", "Reordered stock for {count} products, a {day}-day cover", "count", "6", "day", "3"), Money = "-" + CM(410), Tone = -1 },
             new CompanyDone { When = "Day 214", Text = w.F("reallife_mgr_did_raise_agree", "Agreed a raise of {raise} for {name}", "name", "Lena Adler", "raise", "$0.50"), Money = "-" + CM(390), Tone = -1 },
             new CompanyDone { When = "Day 213", Text = w.F("reallife_mgr_did_prices", "Changed {count} prices", "count", "4"), Money = "+" + CM(85), Tone = 1 },
-            new CompanyDone { When = "Day 212", Text = w.F("reallife_mgr_did_rota", "Wrote the rota: {shifts} shifts, {covered} of {wanted} hours covered", "shifts", "24", "covered", "112", "wanted", "112"), Money = w.T("reallife_co_no_cost", "no cost") }
+            new CompanyDone { When = "Day 212", Text = w.F("reallife_mgr_did_rota", "Wrote the rota: {shifts} shifts, {covered} of {wanted} hours covered", "shifts", "24", "covered", "112", "wanted", "112"), Money = "no cost" }
         };
         p.CrewTitle = w.F("reallife_co_crew_title", "{name}'s crew", "name", "Ray");
         p.CrewCount = w.F("reallife_co_staff_count_n", "{count} staff", "count", "9");
@@ -485,7 +485,7 @@ internal static partial class UiSamples
                 var c = new CompanyCard { Kicker = "Speedy Bites", Title = "Raises", Icon = UiIcon.Coin, Back = CBack(w, "mgr:" + place, CompanyView.Managers) };
                 c.Blocks = new[]
                 {
-                    CNote(w.T("reallife_mgr_task_what_raises", "The manager answers a request for a raise inside the limit you set, and asks you about anything above it.")),
+                    CNote("The manager answers a request for a raise inside the limit you set, and asks you about anything above it."),
                     new CompanyBlock { Kind = CompanyBlockKind.Switch, Text = w.T("reallife_mgr_task_given", "Ray decides this"), Sub = "Up to 110% of the going rate", On = true, Value = "Ray", Act = CA(CompanyDo.TaskSet, place, 0, 0) },
                     new CompanyBlock { Kind = CompanyBlockKind.Stepper, Text = w.T("reallife_co_lim_raise", "Raise limit"), Sub = w.T("reallife_co_lim_raise_sub", "Of the going rate, above the pay now"), Value = "110%", CanLess = true, CanMore = true,
                         Act = CA(CompanyDo.LimitSet, place, 0, 1), Act2 = CA(CompanyDo.LimitSet, place, 0, 3), Act3 = CA(CompanyDo.LimitSet, place, 0, 2) }
@@ -497,12 +497,12 @@ internal static partial class UiSamples
             {
                 page.List = new CompanyList
                 {
-                    Title = w.T("reallife_hier_dir_inbox", "Questions inbox"), Count = "5", Chosen = 0,
+                    Title = w.T("reallife_hier_dir_inbox", "Questions inbox"), Count = "3", Chosen = 0,
                     Rows = new[]
                     {
                         new CompanyRow { Id = "he:1", Title = "Exception", Sub = "Speedy Bites", Icon = UiIcon.Envelope, Figure = "Day 214", Note = w.T("reallife_hier_you", "You"), Chip = w.T("reallife_hier_state_open", "Open"), ChipTone = UiRole.Warn },
                         new CompanyRow { Id = "he:2", Title = "Lease", Sub = "Hudson Warehouse", Icon = UiIcon.Envelope, Figure = "Day 213", Note = "Meera Iyer", Chip = w.T("reallife_hier_state_open", "Open") },
-                        new CompanyRow { Id = "he:3", Title = "Budget", Sub = "Bloom & Co", Icon = UiIcon.Envelope, Figure = "Day 211", Note = "Tessa Brandt", Chip = w.T("reallife_hier_state_settled", "Settled"), ChipTone = UiRole.Muted }
+                        new CompanyRow { Id = "he:3", Title = "Budget", Sub = "Bloom & Co", Icon = UiIcon.Envelope, Figure = "Day 211", Note = "Tessa Brandt", Chip = "Settled", ChipTone = UiRole.Muted }
                     }
                 };
                 var c = new CompanyCard
@@ -533,7 +533,7 @@ internal static partial class UiSamples
                 {
                     new CompanyRow { Caption = true, Title = w.T("reallife_pol_cat_hiring", "Hiring") },
                     new CompanyRow { Id = "pf:0", Title = w.T("reallife_pol_field_skill_floor", "Least skill hired"), Icon = UiIcon.Sliders, Figure = "None", Sub = w.T("reallife_pol_as_above", "As above") },
-                    new CompanyRow { Id = "pf:1", Title = w.T("reallife_pol_field_hire_pay_cap", "Most a hire is paid"), Icon = UiIcon.Sliders, Figure = "100%", Sub = w.T("reallife_pol_as_above", "As above") },
+                    new CompanyRow { Id = "pf:1", Title = "Most a hire is paid", Icon = UiIcon.Sliders, Figure = "100%", Sub = w.T("reallife_pol_as_above", "As above") },
                     new CompanyRow { Caption = true, Title = w.T("reallife_pol_cat_pay", "Pay") },
                     new CompanyRow { Id = "pf:3", Title = w.T("reallife_pol_field_pay_band", "Pay band"), Icon = UiIcon.Sliders, Figure = "110%", Sub = w.T("reallife_pol_set_here_row", "Set here"), Chip = w.T("reallife_co_held", "Held"), ChipTone = UiRole.Warn },
                     new CompanyRow { Id = "pf:4", Title = w.T("reallife_pol_field_raise_most", "Largest raise"), Icon = UiIcon.Sliders, Figure = "No limit", Sub = w.T("reallife_pol_as_above", "As above") },
@@ -626,7 +626,7 @@ internal static partial class UiSamples
                     Rows = new[]
                     {
                         new CompanyRow { Id = "he:1", Title = "Exception", Sub = w.T("reallife_hier_you", "You"), Icon = UiIcon.Envelope, Figure = "Day 214", Chip = w.T("reallife_hier_state_open", "Open"), ChipTone = UiRole.Warn },
-                        new CompanyRow { Id = "he:7", Title = "Budget", Sub = "Ray Walsh", Icon = UiIcon.Envelope, Figure = "Day 201", Chip = w.T("reallife_hier_state_settled", "Settled"), ChipTone = UiRole.Muted }
+                        new CompanyRow { Id = "he:7", Title = "Budget", Sub = "Ray Walsh", Icon = UiIcon.Envelope, Figure = "Day 201", Chip = "Settled", ChipTone = UiRole.Muted }
                     }
                 };
                 var c = new CompanyCard

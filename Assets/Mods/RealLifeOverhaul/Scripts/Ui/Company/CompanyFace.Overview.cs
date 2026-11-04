@@ -106,7 +106,8 @@ namespace RealLifeOverhaul.Ui
                 cy += h + UiTokens.S5;
             }
             int doneWant = o.Done.Length;
-            float doneNeed = (doneWant > 0 || !string.IsNullOrEmpty(o.DoneNote) ? UiTokens.PairRow + UiTokens.S1 + Math.Min(Math.Max(doneWant, 1), 3) * DoneRow : 0f);
+            // What waits for the owner has the room first; what was done for them comes after it, as many rows as are left, from a header and one row.
+            float doneNeed = (doneWant > 0 || !string.IsNullOrEmpty(o.DoneNote) ? UiTokens.PairRow + UiTokens.S1 + DoneRow : 0f);
             if (o.Waiting.Length > 0)
             {
                 cy = Section(s, at, lay, x, cy, lw, w.T("reallife_co_also_waiting", "Also waiting"), o.WaitingCount);
@@ -115,6 +116,13 @@ namespace RealLifeOverhaul.Ui
                 for (int i = 0; i < rows; i++)
                 {
                     cy += WaitingLine(s, at, lay, ref o.Waiting[i], x, cy, lw, keys);
+                }
+                if (rows < o.Waiting.Length && cy + UiTokens.PairRow <= bottom)
+                {
+                    // What waits and has no room is counted, so that the list never says fewer than it holds; it comes up as the ones above are answered.
+                    UiDraw.TextMiddle(s, at, x + UiTokens.AvatarRow + UiTokens.S3, cy, UiTokens.PairRow, lw - UiTokens.AvatarRow - UiTokens.S3, UiStyle.Small, UiRole.Muted,
+                        w.F("reallife_co_and_more", "and {count} more", "count", (o.Waiting.Length - rows).ToString()), UiFlags.Truncate);
+                    cy += UiTokens.PairRow;
                 }
                 cy += UiTokens.S4;
             }

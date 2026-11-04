@@ -80,10 +80,11 @@ internal static partial class Program
 
         public int Generation => 1;
 
-        public bool TakeWanted(out int tab, out string pick)
+        public bool TakeWanted(out int tab, out string pick, out int sub, out string subPick, out int question)
         {
             tab = -1;
-            pick = null;
+            pick = subPick = null;
+            sub = question = 0;
             return false;
         }
 

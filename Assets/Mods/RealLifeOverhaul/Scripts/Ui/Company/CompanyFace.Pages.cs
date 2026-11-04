@@ -6,7 +6,7 @@ namespace RealLifeOverhaul.Ui
     {
         public const int StepLess = 7420, StepMore = 7421, StepType = 7422;   // a stepper's minus and plus, and its typed figure: the argument is the index of its first action
 
-        private const float ListRow = 56f, ListGap = 4f, SwitchRow = 48f;
+        private const float ListRow = 56f, ListGap = 4f, SwitchRow = 48f, CardMeasure = 800f;
 
         // ------------------------------------------------------------------------------------------------- a row of a list or a card
 
@@ -35,10 +35,13 @@ namespace RealLifeOverhaul.Ui
             float lx = tx + size + UiTokens.S3, lw = Math.Max(0f, right - fw - (fw > 0f ? UiTokens.S3 : 0f) - lx);
             float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
             bool meter = grade >= 0;
-            float chipW = string.IsNullOrEmpty(chip) ? 0f : Math.Min(UiDraw.SnapDown(lw * 0.5f), UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(chip, UiStyle.SmallStrong) + UiTokens.S1));
+            // The name keeps what it needs up to nearly half the line, and the chip takes the rest of the line: a status that says whole words is worth more than the tail of a long name.
+            float nameFull = UiDraw.Snap(UiTextRules.Width(title ?? string.Empty, UiStyle.Title) + UiTokens.S1);
+            float chipNatural = string.IsNullOrEmpty(chip) ? 0f : UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(chip, UiStyle.SmallStrong) + UiTokens.S1);
+            float chipW = chipNatural > 0f ? Math.Max(0f, Math.Min(chipNatural, UiDraw.SnapDown(lw - Math.Min(nameFull, UiDraw.SnapDown(lw * 0.45f)) - UiTokens.S3))) : 0f;
             float block = th + (string.IsNullOrEmpty(sub) ? 0f : UiTokens.S1 + sh) + (meter ? UiTokens.S2 + UiTokens.S1 : 0f);
             float top = y + UiDraw.SnapDown((h - block) / 2f);
-            float nameW = Math.Min(UiDraw.Snap(UiTextRules.Width(title ?? string.Empty, UiStyle.Title) + UiTokens.S1), lw - (chipW > 0f ? chipW + UiTokens.S3 : 0f));
+            float nameW = Math.Min(nameFull, lw - (chipW > 0f ? chipW + UiTokens.S3 : 0f));
             UiDraw.TextMiddle(s, inside, lx, top, th, nameW, UiStyle.Title, dim ? UiRole.Text2 : UiRole.Text, title ?? string.Empty, UiFlags.Truncate);
             if (chipW > 0f)
             {
@@ -184,7 +187,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             float gap = UiTokens.S6;
-            float lw = UiDraw.SnapDown(Math.Min(cw * 0.34f, 420f));
+            float lw = UiDraw.SnapDown(Math.Min(cw * 0.36f, 456f));
             float cx = x + lw + gap, ccw = cw - lw - gap;
             short list = ListPane(s, at.InRegion(RegionList), page.List, v, w, lay, x, y, lw, bottom, keys);
             if (page.Card != null)
@@ -237,7 +240,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     break;
                 }
-                cy = Block(s, at, lay, v, w, c.Blocks[i], x, cy, cw, bottom, keys);
+                cy = Block(s, at, lay, v, w, c.Blocks[i], x, cy, Math.Min(cw, CardMeasure), bottom, keys);   // a row's words and its figure stay within a line's reach, however wide the window
             }
             return cy;
         }
@@ -258,13 +261,29 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Icon(s, at.In(t), x + (size - g) / 2f, y + (size - g) / 2f, g, c.Icon, c.Tint, UiFlags.Middle | UiFlags.Centre, true);
             }
             int facts = Math.Min(4, Math.Min(c.FactLabels.Length, c.FactValues.Length));
-            float factW = 0f;
+            float exact = 0f;
             for (int i = 0; i < facts; i++)
             {
-                factW = Math.Max(factW, Math.Max(UiTextRules.Width(c.FactLabels[i], UiStyle.SectionHeader) * 1.18f, UiTextRules.Width(c.FactValues[i], UiStyle.Title)));
+                exact = Math.Max(exact, Math.Max(UiTextRules.Width(c.FactLabels[i], UiStyle.SectionHeader), UiTextRules.Width(c.FactValues[i], UiStyle.Title)));
             }
-            factW = facts > 0 ? UiDraw.Snap(factW + UiTokens.S4) : 0f;
-            float factsTotal = Math.Min(factW * facts, UiDraw.SnapDown(cw * 0.5f));
+            // Each fact as roomy as the widest asks for, then as tight as its words allow, with half the width for the facts and up to three fifths where a language's words need it.
+            float factW = facts > 0 ? UiDraw.Snap(exact * 1.18f + UiTokens.S4) : 0f, tight = facts > 0 ? UiDraw.Snap(exact + UiTokens.S3) : 0f;
+            float half = UiDraw.SnapDown(cw * 0.5f), most = UiDraw.SnapDown(cw * 0.6f);
+            float factsTotal = factW * facts;
+            if (factsTotal > half)
+            {
+                factsTotal = tight * facts <= half ? half : Math.Min(tight * facts, most);
+            }
+            if (facts > 0 && !string.IsNullOrEmpty(c.Kicker))
+            {
+                // What the kicker over the name says is a label too: the facts leave it its words where their own labels allow.
+                float kickerNeed = UiDraw.Snap(UiTextRules.Width(c.Kicker, UiStyle.SectionHeader) + UiTokens.S2);
+                float spare = cw - size - UiTokens.S4 * 2f - kickerNeed;
+                if (factsTotal > spare)
+                {
+                    factsTotal = Math.Max(Math.Min(tight * facts, factsTotal), spare);
+                }
+            }
             if (facts > 0)
             {
                 factW = UiDraw.SnapDown(factsTotal / facts);

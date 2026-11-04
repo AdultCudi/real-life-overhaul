@@ -21,6 +21,8 @@ namespace RealLifeOverhaul.Ui
             if (!d.ManagersOn || d.ManagerData == null)
             {
                 m.PartOff = true;
+                m.OffTitle = w.T("reallife_co_tab_managers", "Managers");
+                m.OffBody = CompanyText.T("reallife_mgr_off");
                 return;
             }
             m.Deep = f.Deep;
@@ -294,7 +296,7 @@ namespace RealLifeOverhaul.Ui
             };
             Face(m.Name, m.Id);
             p.FactLabels = new[] { w.T("reallife_co_f_manager_since", "Manager since"), w.T("reallife_co_f_wage", "Wage"), w.T("reallife_co_f_this_month", "This month"), w.T("reallife_co_f_asked", "Asked you") };
-            p.FactValues = new[] { CompanyText.Day(m.From), CompanyText.Wage(d.PayOf(m)) + w.T("reallife_co_per_hour", " / h"), w.F("reallife_co_f_decisions", "{count} decisions", "count", m.Decided.ToString()), asked.ToString() };
+            p.FactValues = new[] { CompanyText.Day(m.From), w.PerHour(d.PayOf(m)), w.F("reallife_co_f_decisions", "{count} decisions", "count", m.Decided.ToString()), asked.ToString() };
             // The question waiting for the owner, if there is one.
             if (asked > 0)
             {
@@ -413,7 +415,7 @@ namespace RealLifeOverhaul.Ui
             // What can be done with the post.
             var buttons = new List<CompanyButton>(2)
             {
-                Btn(w.T("reallife_mgr_replace", "Replace or stand down"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "mgr:" + place, CompanyView.Managers, CompanyView.SubAppoint), UiAction.Count, UiIcon.People)
+                Btn(w.T("reallife_co_replace_or_stand", "Replace or stand down"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "mgr:" + place, CompanyView.Managers, CompanyView.SubAppoint), UiAction.Count, UiIcon.People)
             };
             if (d.HierarchyOn && d.HierarchyData.Deep)
             {
@@ -633,7 +635,7 @@ namespace RealLifeOverhaul.Ui
             p.More = more.ToArray();
             var buttons = new List<CompanyButton>(4)
             {
-                Btn(w.T("reallife_mgr_replace", "Replace or stand down"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "reg:" + area, CompanyView.Managers, CompanyView.SubAppoint), UiAction.Count, UiIcon.People)
+                Btn(w.T("reallife_co_replace_or_stand", "Replace or stand down"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "reg:" + area, CompanyView.Managers, CompanyView.SubAppoint), UiAction.Count, UiIcon.People)
             };
             if (d.HierarchyOn)
             {

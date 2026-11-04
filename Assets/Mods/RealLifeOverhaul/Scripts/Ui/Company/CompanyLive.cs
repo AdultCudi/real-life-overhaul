@@ -15,8 +15,8 @@ namespace RealLifeOverhaul.Ui
         public static readonly CompanyLive Instance = new CompanyLive();
 
         private static int _generation = 1;
-        private static int _wantedTab = -1;
-        private static string _wantedPick;
+        private static int _wantedTab = -1, _wantedSub, _wantedQuestion;
+        private static string _wantedPick, _wantedSubPick;
         private static bool _opened;
 
         private CompanyDirector D => CompanyDirector.Instance;
@@ -41,7 +41,64 @@ namespace RealLifeOverhaul.Ui
         {
             _wantedTab = OldToKit(oldTab);
             _wantedPick = pick;
+            _wantedSub = CompanyView.SubMain;
+            _wantedSubPick = null;
+            _wantedQuestion = 0;
+            OldPick(oldTab, pick);
             _generation++;
+        }
+
+        // The old pages' picks, as the notices and the tests ask for them, in the kit's own: "mp:place" the manager of a place, "db:place" its dashboard, "dr:area" a region's, "he:id" a question,
+        // "hx:" the inbox, "xs:" the seats, "rota:place" a place's rota, "ret" the return.
+        private static void OldPick(int oldTab, string pick)
+        {
+            if (string.IsNullOrEmpty(pick))
+            {
+                return;
+            }
+            int colon = pick.IndexOf(':');
+            string kind = colon >= 0 ? pick.Substring(0, colon + 1) : pick, rest = colon >= 0 ? pick.Substring(colon + 1) : string.Empty;
+            switch (oldTab)
+            {
+                case CompanyDirector.TabManagers:
+                    switch (kind)
+                    {
+                        case "mp:": _wantedPick = "mgr:" + rest; break;
+                        case "db:": _wantedPick = "mgr:" + rest; _wantedSub = CompanyView.SubDashboard; break;
+                        case "dr:": _wantedPick = "reg:" + rest; _wantedSub = CompanyView.SubRegion; break;
+                        case "hx:": _wantedPick = "own"; _wantedSub = CompanyView.SubInbox; break;
+                        case "xs:": _wantedPick = "seat:" + (int)Careers.ExecSeat.Coo; _wantedSub = CompanyView.SubSeat; break;
+                        case "he:": OldQuestion(rest); break;
+                        default: _wantedPick = pick; break;
+                    }
+                    break;
+                case CompanyDirector.TabRota:
+                    _wantedPick = kind == "rota:" ? "p:" + rest : pick;
+                    break;
+                case CompanyDirector.TabTax:
+                    if (pick == "ret")
+                    {
+                        _wantedSub = CompanyView.SubReturn;
+                    }
+                    break;
+            }
+        }
+
+        // A question the owner holds opens as the decision card; one held below (or settled) is read in the inbox.
+        private static void OldQuestion(string id)
+        {
+            CompanyDirector d = CompanyDirector.Instance;
+            int number;
+            Escalation e = d != null && d.HierarchyOn && int.TryParse(id, out number) ? d.HierarchyData.Find(number) : null;
+            if (e != null && e.Open && e.Level >= EscalationRules.LevelOwner)
+            {
+                _wantedQuestion = e.Id;
+                _wantedPick = string.Empty;
+                return;
+            }
+            _wantedPick = "own";
+            _wantedSub = CompanyView.SubInbox;
+            _wantedSubPick = e != null ? "he:" + e.Id : null;
         }
 
         // The old app's tabs were Overview, Staff, Cover, Marketing, Tax, Rota, Managers; the kit's are Overview, Staff, Managers, Rota, Marketing, Cover, Tax.
@@ -59,13 +116,17 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        public bool TakeWanted(out int tab, out string pick)
+        public bool TakeWanted(out int tab, out string pick, out int sub, out string subPick, out int question)
         {
             tab = _wantedTab;
             pick = _wantedPick;
+            sub = _wantedSub;
+            subPick = _wantedSubPick;
+            question = _wantedQuestion;
             bool has = _wantedTab >= 0;
             _wantedTab = -1;
-            _wantedPick = null;
+            _wantedPick = _wantedSubPick = null;
+            _wantedSub = _wantedQuestion = 0;
             return has;
         }
 
@@ -157,6 +218,9 @@ namespace RealLifeOverhaul.Ui
             public string T(string key, string english) => W.T(key, english);
 
             public string L(string key, string english) => W.L(key, english);
+
+            /// <summary>A wage an hour, hundredths, as the page writes it: "$17.00 / h".</summary>
+            public string PerHour(int hundredths) => W.F("reallife_co_per_hour", "{wage} / h", "wage", CompanyText.Wage(hundredths));
 
             public string F(string key, string english, params string[] pairs) => W.F(key, english, pairs);
 

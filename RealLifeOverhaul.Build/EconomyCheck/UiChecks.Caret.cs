@@ -37,7 +37,8 @@ internal static partial class Program
         { "ItemsListScreen", new[] { UiItemsList.TypeCommand } },
         { "UiPartsGalleryScreen", new[] { UiPartsGallery.Field } },
         { "FlareScreen", new[] { FlareFace.FieldCommand } },
-        { "FinanceScreen", new[] { FinanceFace.AmountType } }
+        { "FinanceScreen", new[] { FinanceFace.AmountType } },
+        { "CompanyScreen", new[] { CompanyFace.StepType } }
     };
 
     private static void UiCaretChecks()
