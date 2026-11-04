@@ -196,7 +196,6 @@ internal static partial class UiSamples
             var fit = new WorkSection { Part = WorkPart.Checks, Title = w.T("reallife_work_fit_for_role", "Fit for the role") };
             fit.Checks.Add(new WorkNeed { Words = "Craft above your team's average of 71", Met = int.Parse(p[2]) > 71 });
             fit.Checks.Add(new WorkNeed { Words = "Asks less than the $42 you set", Met = true });
-            fit.Checks.Add(new WorkNeed { Words = "Teamwork below your team's 75", Met = int.Parse(p[4]) >= 75 });
             r.Sections.Add(fit);
             if (competing)
             {

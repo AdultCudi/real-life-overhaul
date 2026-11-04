@@ -636,6 +636,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\StandingFile.cs" Link="Mod\StandingFile.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\StandingRules.cs" Link="Mod\StandingRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\PostFilterRules.cs" Link="Mod\PostFilterRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\PeoplePool.cs" Link="Mod\PeoplePool.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\CareersDirector.People.cs" Link="Mod\CareersDirector.People.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\HustleDirector.Morning.cs" Link="Mod\HustleDirector.Morning.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\StandingStore.cs" Link="Mod\StandingStore.cs" />

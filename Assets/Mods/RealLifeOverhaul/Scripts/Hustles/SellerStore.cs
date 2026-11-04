@@ -25,7 +25,7 @@ namespace RealLifeOverhaul.Hustles
             for (int i = 0; i < f.Sellers.Count && i < SellerRules.PoolSize + SellerRules.RivalsMost; i++)
             {
                 Seller s = f.Sellers[i];
-                w.Record().Add(s.Id).Add(s.Name).Add(s.Rating).Add(s.Tag).Add(s.Rival).Add(s.Sold);
+                w.Record().Add(s.Id).Add(s.Name).Add(s.Rating).Add(s.Tag).Add(s.Rival).Add(s.Sold).Add(s.PersonId);
             }
             return w.ToString();
         }
@@ -43,6 +43,7 @@ namespace RealLifeOverhaul.Hustles
                     Id = x.Int(), Name = x.Text(), Rating = TalentCatalogue.Clamp(x.Int(30), 10, 50),
                     Tag = TalentCatalogue.Clamp(x.Int(), 0, (int)SellerTag.Trade), Rival = x.Text(), Sold = System.Math.Max(0, x.Int())
                 };
+                s.PersonId = System.Math.Max(0, x.Int());
                 if (s.Id > 0 && s.Name.Length > 0 && f.Sellers.Count < SellerRules.PoolSize + SellerRules.RivalsMost)
                 {
                     f.Sellers.Add(s);

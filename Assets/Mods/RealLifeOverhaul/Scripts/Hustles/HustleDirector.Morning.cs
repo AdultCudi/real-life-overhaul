@@ -8,7 +8,7 @@ namespace RealLifeOverhaul.Hustles
         // Game-free but for four reads (SellerName, ReadDealers, ShopLevel, MarketPeople): EconomyCheck plays it day by day as it stands.
         private void MorningOf(int day)
         {
-            SellerRules.Ensure(_sellers, _state.Seed, SellerName);
+            SellerRules.Ensure(_sellers, _state.Seed, SellerPerson);
             ReadDealers();
             HustleRules.Morning(_state, day, _homes, _cars, _colours, ShopLevel, MarketPeople, _sellers, _dealers);
         }

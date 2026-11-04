@@ -25,7 +25,8 @@ namespace RealLifeOverhaul.Careers
     {
         public const int RingSize = 12;
 
-        public string Name = string.Empty;   // from the game's own name roll, kept so the same person stays
+        public string Name = string.Empty;   // a person of the city's people pool (PersonId), kept so the same person stays
+        public int PersonId;                  // their id in the pool; 0 for a name of the catalogue (the population off, or an older save)
         public int Rank;                      // the rank they hold (a colleague) or apply for (an applicant)
         public int Skill;                     // 0 to 100: where their record settles
         public int Day;                       // the day they joined the shift, or applied

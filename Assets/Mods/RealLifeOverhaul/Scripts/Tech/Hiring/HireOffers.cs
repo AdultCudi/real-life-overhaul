@@ -119,12 +119,15 @@ namespace RealLifeOverhaul.Tech
         {
             int level = s.P.Level;
             var sb = new StringBuilder();
-            int count = Math.Min(HistoryMost, level);
+            int budget = YearsBudget(s);
+            int count = Math.Min(Math.Min(HistoryMost, level), budget);
             int at = level;
             for (int k = 0; k < count; k++)
             {
                 at = Math.Max(0, at - (k == 0 ? 0 : 1));
-                int years = TechRandom.Range(seed, 7911 + s.Id, k, 0, 1, 4);
+                int left = budget - (count - 1 - k);   // a year is left for each job still to list
+                int years = Math.Min(left, TechRandom.Range(seed, 7911 + s.Id, k, 0, 1, 4));
+                budget -= years;
                 string firm = HiringCatalogue.RivalFirms[TechRandom.Range(seed, 7912 + s.Id, k, 0, 0, HiringCatalogue.RivalFirms.Length - 1)];
                 if (sb.Length > 0)
                 {
@@ -156,9 +159,26 @@ namespace RealLifeOverhaul.Tech
             return into.Count;
         }
 
-        /// <summary>The seeker's history, made on first need and kept on the seeker.</summary>
+        /// <summary>The whole years of work a seeker has behind them: no CV lists more.</summary>
+        public static int YearsBudget(Seeker s) => Math.Max(1, s.P.YearsDays / 365);
+
+        /// <summary>The seeker's history, made on first need and kept on the seeker; one that lists more years than they have is made again.</summary>
         public static string HistoryOf(int seed, Seeker s)
         {
+            if (s.History != null && s.History.Length > 1)
+            {
+                var list = new List<PastJob>(HistoryMost);
+                Read(s.History, list);
+                int total = 0;
+                for (int i = 0; i < list.Count; i++)
+                {
+                    total += list[i].Years;
+                }
+                if (total > YearsBudget(s))
+                {
+                    s.History = null;
+                }
+            }
             if (s.History == null || s.History.Length == 0)
             {
                 s.History = s.P.Level > 0 ? PastJobs(seed, s) : "-";

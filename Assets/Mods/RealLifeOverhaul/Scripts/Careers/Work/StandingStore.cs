@@ -56,6 +56,7 @@ namespace RealLifeOverhaul.Careers
         {
             w.Record().Add(p.Name).Add(p.Rank).Add(p.Skill).Add(p.Day).Add(p.Post).Add(p.Role).Add(p.Score).Add(p.Punctuality).Add(p.Reliability).Add(p.Teamwork).Add(p.Count);
             Ring(w, p.Ring);
+            w.Add(p.PersonId);   // at the end: an older save's record has none
         }
 
         public static StandingFile Read(string text, out int version)
@@ -115,6 +116,7 @@ namespace RealLifeOverhaul.Careers
             {
                 p.Ring[i] = Score(x.Int());
             }
+            p.PersonId = System.Math.Max(0, x.Int());
             return p;
         }
     }

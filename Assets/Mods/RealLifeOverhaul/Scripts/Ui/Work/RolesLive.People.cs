@@ -129,11 +129,6 @@ namespace RealLifeOverhaul.Ui
                 fit.Checks.Add(new WorkNeed { Words = w.F("reallife_work_fit_craft", "Craft above your team's average of {n}", "n", teamAverage.ToString(Inv)), Met = s.CvMain > teamAverage });
                 fit.Checks.Add(new WorkNeed { Words = w.F("reallife_work_fit_pay", "Asks less than the {pay} you set", "pay", TechText.Rate(ad.PayMost)), Met = s.Ask <= ad.PayMost });
                 fit.Checks.Add(new WorkNeed { Words = w.T("reallife_work_fit_refs", "References checked"), Met = a.Refs });
-                int teamwork = shown != null ? TeamworkAverage(d) : 0;
-                if (teamwork > 0 && (a.Revealed & HiringRules.RevealFit) != 0)
-                {
-                    fit.Checks.Add(new WorkNeed { Words = w.F("reallife_work_fit_team", "Settles in with your team of {n}", "n", teamwork.ToString(Inv)), Met = s.Fit >= 500 });
-                }
                 r.Sections.Add(fit);
                 if (competing)
                 {
@@ -161,8 +156,6 @@ namespace RealLifeOverhaul.Ui
             }
             return t;
         }
-
-        private static int TeamworkAverage(TechDirector d) => d.People.Count == 0 ? 0 : 60;
 
         // Past jobs the CV lists, made and kept the first time they are read (HireOffers.HistoryOf).
         private static WorkSection WorkSoFar(TechDirector d, Seeker s, UtilitiesWords w)

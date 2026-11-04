@@ -164,10 +164,10 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>Another person for the post, drawn when the player first looks at it: their record settles near the post's own bar.</summary>
-        public static Peer Applicant(string name, Opening o, int bar, int day, int seed, int index)
+        public static Peer Applicant(string name, Opening o, int bar, int day, int seed, int index, int personId = 0)
         {
             int skill = TalentCatalogue.Clamp(bar + TechRandom.Range(seed, 7731, o.Id, index, -18, 14), 30, 98);
-            var p = new Peer { Name = name, Rank = o.Rank, Skill = skill, Score = skill, Post = o.Id, Role = (int)PeerRole.Applicant,
+            var p = new Peer { Name = name, Rank = o.Rank, Skill = skill, Score = skill, Post = o.Id, Role = (int)PeerRole.Applicant, PersonId = personId,
                 Day = day - TechRandom.Range(seed, 7732, o.Id, index, 0, 4) };
             p.Punctuality = TalentCatalogue.Clamp(skill + TechRandom.Range(seed, 7733, o.Id, index, -6, 6), 0, 100);
             p.Reliability = TalentCatalogue.Clamp(skill + TechRandom.Range(seed, 7734, o.Id, index, -6, 6), 0, 100);
@@ -183,7 +183,7 @@ namespace RealLifeOverhaul.Careers
         /// The others who applied for a post, made from the post alone (its id, the day it opened, the save's seed): the same people with the same
         /// records and days every time they are asked for, for every post the board shows, so the one who is weighed against the player at the end of
         /// an interview is one the player could see. Nothing is kept: a post asked for twice, or a page read a hundred times, gives the same list.
-        /// Names come from the mod's catalogue by the post and the place in the list (RosterRules.NameOf).
+        /// Each is a person of the city's people pool by the post and the place in the list (RosterRules.PersonOf), a name of the catalogue while the population is off.
         /// </summary>
         public static int OthersDerive(int seed, Opening o, int bar, List<Peer> into)
         {
@@ -191,7 +191,8 @@ namespace RealLifeOverhaul.Careers
             int n = OthersFor(seed, o);
             for (int i = 0; i < n; i++)
             {
-                into.Add(Applicant(RosterRules.NameOf(seed, 9500 + o.Id, o.From, i), o, bar, o.From + 4, seed, i));
+                PoolPerson who = RosterRules.PersonOf(seed, 9500 + o.Id, o.From, i);
+                into.Add(Applicant(who.Name, o, bar, o.From + 4, seed, i, who.Id));
             }
             return into.Count;
         }

@@ -424,6 +424,19 @@ namespace RealLifeOverhaul.Careers
         /// Metres on the flat between the player's first home's door and a building's door, as the crow flies; -1 where the player has no home or
         /// either door has no place in the city. Read for the posts of the jobs board when the Career page is read (never per frame).
         /// </summary>
+        public static int HomeKey()
+        {
+            try
+            {
+                RealLifeOverhaul.Household.HouseholdGame.Homes(HomesNow);
+                return HomesNow.Count == 0 ? 0 : unchecked((HomesNow[0].StreetName ?? string.Empty).GetHashCode() * 397 + HomesNow[0].StreetNumber);
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
         public static int MetresFromHome(string street, int number)
         {
             try

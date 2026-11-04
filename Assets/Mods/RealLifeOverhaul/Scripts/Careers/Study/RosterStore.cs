@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.Tech;
 
@@ -8,8 +9,8 @@ namespace RealLifeOverhaul.Careers
     /// both as they were. Fields a later version adds at the end of a record read as nothing here. Game-free.
     ///
     ///   h  seed
-    ///   i  each cohort: course|start|capacity|player in|students: name|gpa|employee, repeated
-    ///   t  each tutor: course|name|years|rating
+    ///   i  each cohort: course|start|capacity|player in|students: name|gpa|employee, repeated, then each student's person id (an older save has none)
+    ///   t  each tutor: course|name|years|rating|person id
     /// </summary>
     public static class RosterStore
     {
@@ -35,11 +36,15 @@ namespace RealLifeOverhaul.Careers
                 {
                     w.Add(i.Students[s].Name).Add(i.Students[s].Gpa).Add(i.Students[s].Employee);
                 }
+                for (int s = 0; s < i.Students.Count; s++)
+                {
+                    w.Add(i.Students[s].PersonId);   // at the end of the record: an older save's has none
+                }
             }
             w.Part('t');
             for (int k = 0; k < f.Tutors.Count && k < RosterRules.TutorsMost; k++)
             {
-                w.Record().Add(f.Tutors[k].Course).Add(f.Tutors[k].Name).Add(f.Tutors[k].Years).Add(f.Tutors[k].Rating);
+                w.Record().Add(f.Tutors[k].Course).Add(f.Tutors[k].Name).Add(f.Tutors[k].Years).Add(f.Tutors[k].Rating).Add(f.Tutors[k].PersonId);
             }
             return w.ToString();
         }
@@ -59,6 +64,10 @@ namespace RealLifeOverhaul.Careers
                 {
                     i.Students.Add(new Student { Name = x.Text(), Gpa = TalentCatalogue.Clamp(x.Int(), 0, 400), Employee = x.Bool() });
                 }
+                for (int s = 0; s < n; s++)
+                {
+                    i.Students[s].PersonId = Math.Max(0, x.Int());
+                }
                 if (StudyCatalogue.Find(i.Course) != null && f.Intakes.Count < RosterRules.IntakesMost)
                 {
                     f.Intakes.Add(i);
@@ -68,6 +77,7 @@ namespace RealLifeOverhaul.Careers
             {
                 var t = new Tutor { Course = x.Int(), Name = x.Text(), Years = TalentCatalogue.Clamp(x.Int(), 0, 60),
                     Rating = TalentCatalogue.Clamp(x.Int(30), 10, 50) };
+                t.PersonId = Math.Max(0, x.Int());
                 if (StudyCatalogue.Find(t.Course) != null && f.Tutors.Count < RosterRules.TutorsMost)
                 {
                     f.Tutors.Add(t);

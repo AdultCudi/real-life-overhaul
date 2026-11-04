@@ -103,6 +103,22 @@ namespace RealLifeOverhaul.Careers
         private void SeedColleagues(StandingFile f, Job j, int day)
         {
             StandingRules.Seed(f, j.Post.Rank, Math.Max(0, j.Def.Ranks.Length - 1), PerformanceNow(j), day, StudySeed + j.Hired, Names);
+            TagPeople(f);
+        }
+
+        // The pool people the names were picked from, by name, until the colleagues made with them are tagged with their ids.
+        private readonly Dictionary<string, int> _pickedIds = new Dictionary<string, int>(8);
+
+        private void TagPeople(StandingFile f)
+        {
+            for (int i = 0; i < f.Peers.Count; i++)
+            {
+                if (f.Peers[i].PersonId == 0 && _pickedIds.TryGetValue(f.Peers[i].Name, out int id))
+                {
+                    f.Peers[i].PersonId = id;
+                }
+            }
+            _pickedIds.Clear();
         }
 
         // A worked shift goes into the ring of the last seven with its score and pay (whole money at today's prices, as the job pays it).
@@ -135,7 +151,13 @@ namespace RealLifeOverhaul.Careers
             {
                 return true;
             }
+            Standing now = StandingNow();
+            if (now.Measured && now.Teamwork < PostFilterRules.PromotionTeamwork)
+            {
+                return false;   // an employer does not promote someone the shift does not get on with, whoever else is up for the post
+            }
             bool mine = StandingRules.Contest(f, j.Post.Rank, Math.Max(0, j.Def.Ranks.Length - 1), day, StudySeed + day, Names, out Peer rival);
+            TagPeople(f);
             if (!mine)
             {
                 PassedOver(rival.Name, j.Post.Employer);

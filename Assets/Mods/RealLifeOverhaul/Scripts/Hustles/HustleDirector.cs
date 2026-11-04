@@ -487,7 +487,7 @@ namespace RealLifeOverhaul.Hustles
         }
 
         // What the morning reads of the game (HustleDirector.Morning.cs is game-free and runs in EconomyCheck as it stands).
-        private string SellerName(int k) => HustleGame.SellerName(_state.Seed, k);
+        private RealLifeOverhaul.Careers.PoolPerson SellerPerson(int k) => HustleGame.Seller(_state.Seed, k);
         private void ReadDealers() => HustleGame.Dealers(_dealers);
         private static int ShopLevel => HustleGame.Level;
         private static int MarketPeople => People(HustleBridges.Sellers);

@@ -71,7 +71,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (j.WeekHours != null || j.WeekPay != null)
             {
-                ry += UiDraw.SectionHeader(s, at, rx, ry, rw, w.T("reallife_work_this_week", "This week"));
+                ry += WorkPanel.SectionHead(s, at, rx, ry, rw, w.T("reallife_work_this_week", "This week"), null);
                 if (j.WeekHours != null)
                 {
                     ry += UiDraw.InfoRow(s, at, rx, ry, rw, w.T("reallife_work_week_hours", "Hours worked"), j.WeekHours) + UiTokens.S1;
@@ -88,7 +88,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (j.Shifts.Count > 0 && bottom - ry > UiTokens.S16 * 3f)
             {
-                int most = Math.Min(Math.Min(j.Shifts.Count, 4), (int)((bottom - ry - UiTokens.S16 * 3f) / UiTokens.TableRow) + 1);
+                int most = Math.Min(Math.Min(j.Shifts.Count, 3), (int)((bottom - ry - UiTokens.S16 * 3f) / UiTokens.TableRow) + 1);
                 var rows = new UiAppRow[Math.Max(1, most)];
                 for (int i = 0; i < rows.Length; i++)
                 {
@@ -141,7 +141,7 @@ namespace RealLifeOverhaul.Ui
             return t;
         }
 
-        private static UiChartModel Chart(CareerJob j, UtilitiesWords w)
+        internal static UiChartModel Chart(CareerJob j, UtilitiesWords w)
         {
             int n = j.Mine.Length;
             var points = new string[n];
@@ -152,12 +152,13 @@ namespace RealLifeOverhaul.Ui
                 mine[i] = j.Mine[i];
             }
             var series = new List<UiSeries> { new UiSeries { Label = w.T("reallife_work_you_line", "You"), Values = mine, Tint = UiRole.Accent } };
-            if (j.RivalName != null && j.Theirs.Length == n)
+            if (j.RivalName != null && j.Theirs.Length > 0)
             {
+                // the weeks end together: the colleague's last n weeks, and before their record begins (they came with fewer weeks) their first
                 var theirs = new float[n];
                 for (int i = 0; i < n; i++)
                 {
-                    theirs[i] = j.Theirs[i];
+                    theirs[i] = j.Theirs[Math.Max(0, j.Theirs.Length - n + i)];
                 }
                 series.Add(new UiSeries { Label = j.RivalName, Values = theirs, Tint = UiRole.Warn });
             }

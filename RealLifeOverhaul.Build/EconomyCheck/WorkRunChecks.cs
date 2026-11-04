@@ -73,6 +73,18 @@ internal static partial class Program
 
     private static void WkRunStanding()
     {
+        // a player the shift does not get on with is not promoted at a review, whoever else is up for the post; one who is liked is
+        var cold = new StandingRun(31);
+        for (int day = 1; day <= 60; day++)
+        {
+            cold.Day(day);
+        }
+        cold.J.Favour = -LifeRules.FavourMost;
+        bool coldPromoted = cold.D.RunStandingDecides(cold.J, 61);
+        cold.J.Favour = LifeRules.FavourMost;
+        bool warmPromoted = cold.D.RunStandingDecides(cold.J, 62);
+        Check(!coldPromoted && StandingRules.TeamworkOf(-LifeRules.FavourMost) < PostFilterRules.PromotionTeamwork && (warmPromoted || cold.D.PassedCount >= 1),
+            "work run: StandingDecides does not promote a player whose teamwork is under the bar the page names, and goes by the better record for one who is over it");
         var a = new StandingRun(31);
         for (int day = 1; day <= 120; day++)
         {
@@ -343,6 +355,7 @@ internal static partial class Program
     {
         public HiringFile F;
         public int Offered, Beaten, Hired;
+        public bool IgnoreRivals;   // the player lets a rival's open offer pass
 
         public void Day(int day)
         {
@@ -358,6 +371,10 @@ internal static partial class Program
                     continue;
                 }
                 bool competing = HireOffers.Competing(a, day);
+                if (competing && IgnoreRivals)
+                {
+                    continue;
+                }
                 if (a.Stage < (int)ApplyStage.Offered && HireOffers.ToFill(F, ad) > 0 && (competing ? a.Id % 2 == 0 : a.Id % 3 == 0))
                 {
                     HiringRules.Offer(a, competing ? a.RivalBid : s.Ask, day);
@@ -414,7 +431,36 @@ internal static partial class Program
         Check(offerMade && seenBid.Count >= 1, "hiring run: over 120 days a rival with an ad in an applicant's line made a named offer with a deadline (" + seenBid.Count + " made)");
         Check(a.Offered >= 1 && postsHeld, "hiring run: the player's offers were made and the ad never took more applicants than its posts");
         Check(a.Hired >= 1, "hiring run: the player hired at least one applicant (" + a.Hired + "), " + a.Beaten + " of them against a rival's open offer");
-        Check(lapsed || seenBid.Count == 0 || a.Beaten >= 1, "hiring run: a rival's offer the player did not beat took the applicant, or the player beat it");
+        // a rival's offer the player let pass takes the applicant at its deadline: asked of several worlds, since one may make a single offer and have it beaten
+        int lapses = 0;
+        for (int seed = 77; seed < 101 && lapses == 0; seed++)
+        {
+            HiringRun w = new HiringRun { F = NewLabour(seed, 1), IgnoreRivals = true };
+            Family fam = w.F.Seekers[0].P.Def.Family;
+            w.F.Ads.Add(new JobAd { Id = w.F.Next(), Place = "Main St~1", Role = w.F.Seekers[0].P.Role, Level = w.F.Seekers[0].P.Level, PayLeast = 2000, PayMost = 9000, From = 1, To = 200, Posts = 3 });
+            for (int level = 0; level < TalentCatalogue.Levels; level++)
+            {
+                w.F.RivalAds.Add(new RivalAd { Rival = HiringCatalogue.RivalFirms[level % HiringCatalogue.RivalFirms.Length], Family = (int)fam, Level = level, To = 400 });
+            }
+            var bids = new HashSet<int>();
+            for (int day = 2; day <= 120; day++)
+            {
+                w.Day(day);
+                foreach (Applicant ap in w.F.Applicants)
+                {
+                    if (ap.RivalBid > 0 && ap.RivalLapse > 0)
+                    {
+                        bids.Add(ap.Id);
+                    }
+                }
+            }
+            foreach (int id in bids)
+            {
+                Applicant ap = w.F.ApplicantOf(id);
+                lapses += ap != null && ap.Stage == (int)ApplyStage.Withdrawn && ap.RivalLapse > 0 ? 1 : 0;   // withdrawn by the day after the deadline: the rival had them
+            }
+        }
+        Check(lapses >= 1, "hiring run: a rival's offer the player let pass took the applicant at its deadline (" + lapses + " found over the worlds tried)");
 
         HiringRun c = Start();
         HiringRun b = Start();

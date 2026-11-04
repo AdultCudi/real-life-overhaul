@@ -30,7 +30,7 @@ namespace RealLifeOverhaul.Ui
         private int _wanted = -1;
         private CareerFacts _facts = new CareerFacts();
         private int _readGeneration = -1;
-        private readonly Dictionary<int, int> _metres = new Dictionary<int, int>(64);
+        private readonly Dictionary<long, int> _metres = new Dictionary<long, int>(64);   // by post and by the home the distance is from
 
         private CareerLive() { }
 
@@ -256,7 +256,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return -1;
             }
-            int key = o.Id;
+            long key = ((long)o.Id << 32) | (uint)WorkGame.HomeKey();
             if (!_metres.TryGetValue(key, out int metres))
             {
                 metres = WorkGame.MetresFromHome(o.Street, o.Number);
@@ -358,12 +358,6 @@ namespace RealLifeOverhaul.Ui
             int points = ProRules.Points(study, p, o.Rank), asked = ProRules.Need(study, p, o.Rank);
             sec.Checks.Add(new WorkNeed { Words = words.F("reallife_work_need_skill_points", "Skills at {n} points", "n", asked.ToString(Inv)), Met = points >= asked,
                 Have = points >= asked ? null : words.F("reallife_work_you_have", "you have {n}", "n", points.ToString(Inv)) });
-            if (rank.Days > 0)
-            {
-                int months = Math.Max(1, LifeRules.Paced(rank.Days, GameCalendar.DaysPerYear) / 30);
-                sec.Checks.Add(new WorkNeed { Words = words.F("reallife_work_need_months", "{n} months at the rank below", "n", months.ToString(Inv)), Met = qualified || w.Job == null,
-                    Have = null });
-            }
             sec.Checks.Add(new WorkNeed { Words = words.T("reallife_work_need_takes_you", "The employer takes people like you"), Met = eligible });
             Job job = w.Job;
             if (job != null && job.Post.Employer == o.Employer && o.Prof == job.Post.Prof && o.Rank > job.Post.Rank)

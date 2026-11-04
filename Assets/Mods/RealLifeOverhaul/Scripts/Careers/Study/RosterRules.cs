@@ -25,8 +25,8 @@ namespace RealLifeOverhaul.Careers
     /// <summary>
     /// The people in a campus's classes and what they decide: seats in a cohort that NPC students fill over time, the player's own
     /// employees who may enrol beside them, a tutor for each course whose rating moves an exam a little, a skill floor, credits, the
-    /// grade point average by quarter and the player's rank in the class. Names come from the game's own name roll (the caller's
-    /// function); everything else is seeded from the save's seed, the course and the day, so a load gives the same class. Game-free
+    /// grade point average by quarter and the player's rank in the class. Students and tutors are people of the city's one people pool
+    /// (<see cref="PeoplePool"/>), or names from the mod's catalogue while the population is off; everything else is seeded from the save's seed, the course and the day, so a load gives the same class. Game-free
     /// (EconomyCheck runs it). Cost: a few additions a call; nothing per frame.
     /// </summary>
     public static class RosterRules
@@ -59,17 +59,18 @@ namespace RealLifeOverhaul.Careers
         public static bool CanJoin(Intake i) => i != null && Left(i) > 0;
 
         /// <summary>
-        /// A student's name: the mod's own catalogue of names (the one the city's customers have) walked by the save's seed, the course and the cohort,
-        /// so the same student has the same name every time the class is read, whatever was kept or dropped between two reads, and no two in a cohort share
-        /// one. Never the game's own roll, which remembers every name it makes.
+        /// A student as a person of the city's people pool (or, with the population off, a name of the mod's catalogue), picked by the save's seed, the
+        /// course, the cohort and the place in it, so the same student is the same person every time the class is read, whatever was kept or dropped
+        /// between two reads. Never the game's own name roll, which remembers every name it makes.
         /// </summary>
-        public static string NameOf(int seed, int course, int start, int index)
+        public static PoolPerson PersonOf(int seed, int course, int start, int index)
         {
-            int firsts = DealerCatalogue.FirstNames.Length, lasts = DealerCatalogue.LastNames.Length, total = firsts * lasts;
-            long begin = TechRandom.Hash(seed, 7841 + course, start) % total;
-            int at = (int)((begin + (long)Math.Max(0, index) * NameStride) % total);
-            return DealerCatalogue.FirstNames[at % firsts] + " " + DealerCatalogue.LastNames[at / firsts % lasts];
+            long begin = TechRandom.Hash(seed, 7841 + course, start) & long.MaxValue;
+            return PeoplePool.For(begin + (long)Math.Max(0, index) * NameStride);
         }
+
+        /// <summary>A student's name: <see cref="PersonOf"/>'s.</summary>
+        public static string NameOf(int seed, int course, int start, int index) => PersonOf(seed, course, start, index).Name;
 
         /// <summary>
         /// Whether a cohort has to be saved: the player sits in it, an employee of theirs does, or a student's name is not the one the catalogue
@@ -117,7 +118,8 @@ namespace RealLifeOverhaul.Careers
             while (i.Students.Count - employees < want && i.Students.Count < i.Capacity - (i.PlayerIn ? 1 : 0))
             {
                 int index = i.Students.Count - employees;
-                i.Students.Add(new Student { Name = NameOf(f.Seed, course, start, index), Gpa = GpaOf(f.Seed, course, start, index) });
+                PoolPerson who = PersonOf(f.Seed, course, start, index);
+                i.Students.Add(new Student { Name = who.Name, PersonId = who.Id, Gpa = GpaOf(f.Seed, course, start, index) });
             }
             return i;
         }
@@ -193,9 +195,10 @@ namespace RealLifeOverhaul.Careers
             {
                 return t;
             }
+            PoolPerson teacher = PersonOf(f.Seed, course, 0, 600);
             t = new Tutor
             {
-                Course = course, Name = NameOf(f.Seed, course, 0, 600), Years = TechRandom.Range(f.Seed, 7831, course, 0, 2, 28),
+                Course = course, Name = teacher.Name, PersonId = teacher.Id, Years = TechRandom.Range(f.Seed, 7831, course, 0, 2, 28),
                 Rating = (TechRandom.Range(f.Seed, 7832, course, 0, 30, 50) + TechRandom.Range(f.Seed, 7833, course, 0, 36, 50)) / 2
             };
             f.Tutors.Add(t);

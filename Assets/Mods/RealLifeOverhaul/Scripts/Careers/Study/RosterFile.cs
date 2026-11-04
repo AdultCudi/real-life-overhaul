@@ -6,6 +6,7 @@ namespace RealLifeOverhaul.Careers
     public sealed class Student
     {
         public string Name = string.Empty;   // from the game's own name roll, kept so the same person stays
+        public int PersonId;                 // the person of the city's people pool (0: a name of the catalogue); saved at the end of the cohort's record
         public int Gpa;                      // hundredths of a grade point, 0 to 400
         public bool Employee;                // an employee of the player's, enrolled in the same intake
     }
@@ -25,6 +26,7 @@ namespace RealLifeOverhaul.Careers
     {
         public int Course;
         public string Name = string.Empty;
+        public int PersonId;                 // the person of the people pool (0 none)
         public int Years;                    // years teaching
         public int Rating;                   // students' rating in tenths, 10 to 50
     }

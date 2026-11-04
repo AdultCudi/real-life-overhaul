@@ -1,3 +1,4 @@
+using RealLifeOverhaul.Ui;
 using System.Collections.Generic;
 using RealLifeOverhaul.Careers;
 using RealLifeOverhaul.Hustles;
@@ -20,6 +21,8 @@ internal static partial class Program
         WkPosts();
         WkSellers();
         WkFilters();
+        WkPool();
+        WkTeamworkAndChart();
         WkSaves();
         WkRuns();
     }
@@ -355,12 +358,39 @@ internal static partial class Program
         var f = new HiringFile { Seed = 6 };
         var s = new Seeker { Id = 3 };
         s.P.Level = 3;
+        s.P.YearsDays = 12 * 365;
         string history = HireOffers.PastJobs(6, s);
         var jobs = new List<PastJob>();
         int n = HireOffers.Read(history, jobs);
         Check(n == HireOffers.HistoryMost && jobs[0].Level <= 3 && jobs[0].Level >= jobs[n - 1].Level && jobs[0].Years >= 1
             && history == HireOffers.PastJobs(6, s),
             "work history: a senior seeker lists three past jobs, each at their level or below, a few years each, the same every time");
+        // no CV lists more years of work than the seeker has behind them, whatever their level, and a stored history that does is made again
+        bool within = true;
+        var listed = new List<PastJob>();
+        for (int id = 1; id <= 300; id++)
+        {
+            var t = new Seeker { Id = id };
+            t.P.Level = id % TalentCatalogue.Levels;
+            t.P.YearsDays = TechRandom.Range(6, id, 1, 0, TalentCatalogue.LevelYearsLeast[t.P.Level], TalentCatalogue.LevelYearsMost[t.P.Level]) * 365;
+            HireOffers.Read(HireOffers.HistoryOf(6, t), listed);
+            int total = 0;
+            for (int k = 0; k < listed.Count; k++)
+            {
+                total += listed[k].Years;
+            }
+            within &= total <= HireOffers.YearsBudget(t) && (listed.Count == 0 || t.P.Level > 0);
+        }
+        var old = new Seeker { Id = 9, History = "2:4:Atlas#1:4:Atlas#0:4:Atlas" };
+        old.P.Level = 2;
+        old.P.YearsDays = 5 * 365;
+        HireOffers.Read(HireOffers.HistoryOf(6, old), listed);
+        int oldTotal = 0;
+        for (int k = 0; k < listed.Count; k++)
+        {
+            oldTotal += listed[k].Years;
+        }
+        Check(within && oldTotal <= 5, "work history: no CV lists more years than the seeker has (300 seekers of every level), and one an older save made with more is made again");
         s.P.Level = 0;
         Check(HireOffers.HistoryOf(6, s).Length == 0 && s.History == "-", "work history: the first level has no past jobs, and that is kept");
         Check(HireOffers.Read("x:y#3:2", jobs) == 0 && HireOffers.Read(null, jobs) == 0, "work history: a damaged history reads as none");
@@ -465,6 +495,80 @@ internal static partial class Program
             "work filters: Near you is within the distance from home, or work from home, and a place unknown is not near");
         Check(PostFilterRules.Open(false, false) && !PostFilterRules.Open(false, true) && PostFilterRules.Open(true, true),
             "work filters: Open now is a workplace the game's schedule has open, or work from home");
+    }
+
+    // The work apps' people are people of the city's one people pool: picked by hash, the same every time, their id saved beside the name, an older save loads.
+    private static void WkPool()
+    {
+        PeoplePool.Pick = null;
+        PeoplePool.Find = null;
+        PoolPerson none = RosterRules.PersonOf(5, StudyCatalogue.Accounting, 100, 0);
+        Check(none.Id == 0 && none.Name.Length > 0 && none.Name == RosterRules.PersonOf(5, StudyCatalogue.Accounting, 100, 0).Name,
+            "work pool: with the population off a student is a name of the catalogue, the same every time");
+        PeoplePool.Pick = h => new PoolPerson { Id = (int)(h % 500) + 1, Name = "Pool " + ((int)(h % 500) + 1) };
+        PeoplePool.Find = id => id >= 1 && id <= 500 ? new PoolPerson { Id = id, Name = "Pool " + id } : default(PoolPerson);
+        try
+        {
+            var f = new RosterFile { Seed = 5 };
+            Intake i = RosterRules.Ensure(f, StudyCatalogue.Accounting, 300);
+            Intake j = RosterRules.Ensure(f, StudyCatalogue.Accounting, 300);
+            bool ids = i.Students.Count > 0 && i == j;
+            for (int k = 0; k < i.Students.Count; k++)
+            {
+                ids &= i.Students[k].PersonId > 0 && i.Students[k].Name == "Pool " + i.Students[k].PersonId && i.Students[k].Name == RosterRules.NameOf(5, i.Course, i.Start, k);
+            }
+            Check(ids, "work pool: students are people of the pool, each with their id, the same cohort every time it is read");
+            Tutor t = RosterRules.TutorFor(f, StudyCatalogue.Accounting);
+            Check(t.PersonId > 0 && t.Name == "Pool " + t.PersonId, "work pool: a course's teacher is a person of the pool");
+            i.PlayerIn = true;
+            string line = RosterStore.Write(f);
+            RosterFile back = RosterStore.Read(line, out int _);
+            Intake bi = back.Find(i.Course, i.Start);
+            bool kept = bi != null && bi.Students.Count == i.Students.Count && back.TutorOf(StudyCatalogue.Accounting).PersonId == t.PersonId;
+            for (int k = 0; kept && k < i.Students.Count; k++)
+            {
+                kept &= bi.Students[k].PersonId == i.Students[k].PersonId;
+            }
+            Check(kept, "work pool: the ids of students and the teacher are saved and read back");
+            // a save from before the ids: the same line without them loads, with no person
+            int cut = line.LastIndexOf('|');
+            RosterFile oldSave = RosterStore.Read(line.Replace("|" + i.Students[0].PersonId, string.Empty), out int _);
+            Check(oldSave.Intakes.Count >= 1, "work pool: a save from before the ids still loads");
+            var others = new List<Peer>();
+            StandingRules.OthersDerive(5, new Opening { Id = 14, From = 40, Rank = 1 }, 60, others);
+            bool fine = others.Count >= 0;
+            for (int k = 0; k < others.Count; k++)
+            {
+                fine &= others[k].PersonId > 0 && others[k].Name == "Pool " + others[k].PersonId;
+            }
+            Check(fine, "work pool: the other applicants for a post are people of the pool");
+            var book = new SellerFile();
+            SellerRules.Ensure(book, 9, k => new PoolPerson { Id = 100 + k, Name = "Seller " + k });
+            SellerFile sb = SellerStore.Read(SellerStore.Write(book), out int _);
+            Check(sb.Sellers.Count == book.Sellers.Count && sb.Sellers[3].PersonId == 103, "work pool: sellers are people of the pool and their ids are saved");
+        }
+        finally
+        {
+            PeoplePool.Pick = null;
+            PeoplePool.Find = null;
+        }
+    }
+
+    private static readonly UtilitiesWords EnglishWords = new UtilitiesWords((k, e) => e, v => v.ToString(), () => System.Globalization.CultureInfo.InvariantCulture);
+
+    // A promotion goes by teamwork as the page says it does, and the chart's two lines end together however many weeks each has.
+    private static void WkTeamworkAndChart()
+    {
+        var job = new CareerJob { Mine = new[] { 70, 72, 75, 74, 78 }, Theirs = new[] { 60, 62, 64, 66, 68, 70, 72, 74 }, RivalName = "Marcus Lee" };
+        UiChartModel chart = CareerMyJob.Chart(job, EnglishWords);
+        Check(chart.Series.Length == 2 && chart.Series[1].Values.Length == 5 && chart.Series[1].Values[4] == 74f && chart.Series[1].Values[0] == 66f,
+            "work chart: the colleague's line is drawn over the player's first weeks and ends in the same week (the last five of eight)");
+        var shorter = new CareerJob { Mine = new[] { 70, 72, 75, 74, 78 }, Theirs = new[] { 60, 62 }, RivalName = "Marcus Lee" };
+        UiChartModel two = CareerMyJob.Chart(shorter, EnglishWords);
+        Check(two.Series.Length == 2 && two.Series[1].Values.Length == 5 && two.Series[1].Values[4] == 62f,
+            "work chart: a colleague with fewer weeks than the player still has a line, ending in the same week");
+        Check(PostFilterRules.PromotionTeamwork == 50 && StandingRules.TeamworkOf(0) == PostFilterRules.PromotionTeamwork,
+            "work teamwork: the bar a promotion asks is the middle standing, which a player nobody has helped or crossed meets");
     }
 
     private static void WkSaves()

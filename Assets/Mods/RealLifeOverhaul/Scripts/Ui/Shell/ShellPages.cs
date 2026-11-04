@@ -113,6 +113,9 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        /// <summary>Opens the city's people page.</summary>
+        internal static bool OpenPeople() => Open(UiShellApps.ShellPeople);
+
         /// <summary>Opens a page by its id; false for an id that is no page or one not offered now.</summary>
         internal static bool Open(string id)
         {

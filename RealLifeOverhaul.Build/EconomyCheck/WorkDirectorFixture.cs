@@ -59,7 +59,7 @@ namespace RealLifeOverhaul.Hustles
         private readonly List<string> _colours = new List<string>();
         private readonly List<RivalDealer> _dealers = new List<RivalDealer>();
         public readonly List<RivalDealer> RivalShops = new List<RivalDealer>();
-        private string SellerName(int k) => "Seller " + k;
+        private PoolPerson SellerPerson(int k) => new PoolPerson { Name = "Seller " + k };
         private void ReadDealers() { _dealers.Clear(); _dealers.AddRange(RivalShops); }
         private static int ShopLevel => 1000;
         private static int MarketPeople => 1000;

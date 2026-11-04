@@ -21,7 +21,7 @@ namespace RealLifeOverhaul.Ui
 
         // the actions of this app, from 100 (the screen's own are 1 to 3)
         private const int Buy = 100, Haggle = 101, Accept = 102, Counter = 103, Decline = 104, Unlist = 105, Book = 106, Cancel = 107, Send = 108,
-            List = 109, FixHome = 110, CleanHome = 111, ToShop = 112, CancelPlan = 113, WayItem = 114, BuyDeliver = 120, WayListing = 121, MakeOffer = 122;
+            List = 109, FixHome = 110, CleanHome = 111, ToShop = 112, CancelPlan = 113, WayItem = 114, BuyDeliver = 120, WayListing = 121, MakeOffer = 122, Reprice = 123, SendHelper = 124;
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private int _local, _wanted = -1, _readGeneration = -1;
         private WorkApp _app = new WorkApp();
@@ -79,6 +79,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     view.Sub = 0;
                 }
+                _app.Tabs[1] = Yours(d, s, view);
             }
             return WorkTabPages.Build(_app, view, W);
         }
@@ -107,7 +108,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
-            _app.Tabs = new[] { Listings(d, state), Yours(d, state), Offers(d, state), Freelance(d, state) };
+            _app.Tabs = new[] { Listings(d, state), new WorkTab(), Offers(d, state), Freelance(d, state) };
         }
 
         private static int Alive(HustleState s)
@@ -188,6 +189,12 @@ namespace RealLifeOverhaul.Ui
                     facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_colour", "Colour"), l.Colour ?? "-"));
                     facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_km", "Driven"), l.Km.ToString("N0", Inv) + " km"));
                     facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_price_new", "Price new"), HustleText.Money(HustleRules.AtPrices(l.Price, level))));
+                    if (HustleGame.Specs(l.Thing, out int cargo, out float tank, out int speed))
+                    {
+                        facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_cargo", "Cargo"), cargo.ToString(Inv)));
+                        facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_fuel_tank", "Fuel tank"), tank.ToString("0", Inv) + " l"));
+                        facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_top_speed", "Top speed"), speed == 0 ? "-" : speed.ToString(Inv) + " km/h"));
+                    }
                 }
                 else
                 {
@@ -303,7 +310,7 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        private WorkTab Yours(HustleDirector d, HustleState s)
+        private WorkTab Yours(HustleDirector d, HustleState s, WorkView view)
         {
             UtilitiesWords w = W;
             var t = new WorkTab { Shape = WorkShape.Table, Search = w.T("reallife_work_search_yours", "Search your things") };
@@ -330,6 +337,8 @@ namespace RealLifeOverhaul.Ui
                 if (o.State == OwnedState.Listed)
                 {
                     r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_listed_at", "Listed at"), HustleText.Money(o.Asking)));
+                    r.Sections.Add(new WorkSection { Part = WorkPart.Amount, Title = w.T("reallife_work_your_asking", "Your asking price"), Stepper = 0 });
+                    r.Acts.Add(Act(Reprice, o.Id, w.T("reallife_hustle_button_reprice", "Change the price"), UiButtonKind.Primary, UiIcon.Tag));
                     r.Acts.Add(Act(Unlist, o.Id, w.T("reallife_hustle_button_unlist", "Take it off sale"), UiButtonKind.Secondary, UiIcon.Close));
                 }
                 else if (o.State == OwnedState.Kept && o.Plan != OwnedPlan.None)
@@ -344,7 +353,8 @@ namespace RealLifeOverhaul.Ui
                 else if (o.State == OwnedState.Kept)
                 {
                     ThingDef def = o.Car ? null : HustleCatalogue.Thing(o.Thing);
-                    r.Acts.Add(Act(List, o.Id, w.F("reallife_work_list_at", "List at {price}", "price", HustleText.Money(Math.Max(1, worth))), UiButtonKind.Primary, UiIcon.Tag));
+                    r.Sections.Add(new WorkSection { Part = WorkPart.Amount, Title = w.T("reallife_work_your_asking", "Your asking price"), Stepper = 0 });
+                    r.Acts.Add(Act(List, o.Id, w.F("reallife_work_list_at", "List at {price}", "price", HustleText.Money(AskOf(d, o, view))), UiButtonKind.Primary, UiIcon.Tag));
                     if (def != null && def.FixMinutes > 0)
                     {
                         r.Acts.Add(Act(def.ShopFix ? ToShop : FixHome, o.Id, def.ShopFix ? w.T("reallife_hustle_button_plan_shop",
@@ -358,7 +368,23 @@ namespace RealLifeOverhaul.Ui
                 }
                 t.Rows.Add(r);
             }
+            WorkRow chosen = WorkTabPages.ChosenRow(t, view);
+            Owned mine = chosen != null ? s.Item(chosen.Id) : null;
+            if (mine != null && (mine.State == OwnedState.Kept || mine.State == OwnedState.Listed))
+            {
+                int worth = Math.Max(1, d.WorthOf(mine)), step = Math.Max(0, Math.Min(HustleRules.AskSteps - 1, view.Get(0, DefaultAskStep(mine, worth))));
+                t.Amounts.Add(new WorkAmount { Id = 0, Value = step, Min = 0, Max = HustleRules.AskSteps - 1, Figure = HustleText.Money(HustleRules.AskAt(worth, step)) });
+            }
             return t;
+        }
+
+        private static int DefaultAskStep(Owned o, int worth) => o.State == OwnedState.Listed ? HustleRules.AskStepOf(worth, o.Asking) : HustleRules.AskStepAtWorth;
+
+        // The asking price the player stepped to for a thing of theirs, or the one it starts at.
+        private static int AskOf(HustleDirector d, Owned o, WorkView view)
+        {
+            int worth = Math.Max(1, d.WorthOf(o));
+            return HustleRules.AskAt(worth, Math.Max(0, Math.Min(HustleRules.AskSteps - 1, view.Get(0, DefaultAskStep(o, worth)))));
         }
 
         // ------------------------------------------------------------------------------------------------- Offers
@@ -571,7 +597,17 @@ namespace RealLifeOverhaul.Ui
                     {
                         return false;
                     }
-                    d.List(act.Arg, Math.Max(1, d.WorthOf(o)));
+                    d.List(act.Arg, AskOf(d, o, view));
+                    return true;
+                }
+                case Reprice:
+                {
+                    Owned o = s.Item(act.Arg);
+                    if (o == null)
+                    {
+                        return false;
+                    }
+                    d.List(act.Arg, AskOf(d, o, view));
                     return true;
                 }
                 case Book: d.Book(act.Arg); return true;
@@ -589,7 +625,23 @@ namespace RealLifeOverhaul.Ui
                     d.ShowWay(way.Street, way.Number);
                     return true;
                 }
-                case Send: d.Send(act.Arg); return true;
+                case Send:
+                {
+                    Gig g = s.GigOf(act.Arg);
+                    if (g == null)
+                    {
+                        return false;
+                    }
+                    int id = g.Id;
+                    GameConfirm.Show("reallife_hustle_q_helper_title".GetLocalization(),
+                        HustleText.T("reallife_hustle_q_helper", "client", g.Client, "fee", HustleText.Money(HustleRules.HelperFee(g.Pay)), "pay", HustleText.Money(g.Pay)),
+                        () =>
+                        {
+                            d.Send(id);
+                            _local++;
+                        }, null, null, null, true, false);
+                    return true;
+                }
                 case Cancel:
                 {
                     Gig g = s.GigOf(act.Arg);

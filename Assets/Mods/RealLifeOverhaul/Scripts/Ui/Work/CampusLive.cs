@@ -487,6 +487,15 @@ namespace RealLifeOverhaul.Ui
                         w.F("reallife_work_in_n_days", "{n} days", "n", Math.Max(0, from - day).ToString(Inv))));
                 }
             }
+            for (int i = 0; i < f.Courses.Count && s.Coming.Count < 4; i++)
+            {
+                Enrolment e = f.Courses[i];
+                if (e.Def != null && e.Start > day)
+                {
+                    s.Coming.Add(new KeyValuePair<string, string>(CareersText.Day(e.Start) + ", " + w.F("reallife_work_starts_of", "{course} starts", "course", CareersText.Course(e.Course)),
+                        w.F("reallife_work_in_n_days", "{n} days", "n", (e.Start - day).ToString(Inv))));
+                }
+            }
             s.ClassTitle = w.T("reallife_work_your_class", "Your class");
             s.ClassNote = w.T("reallife_work_by_gpa", "by grade point average");
             for (int i = 0; i < list.Count && i < 8; i++)

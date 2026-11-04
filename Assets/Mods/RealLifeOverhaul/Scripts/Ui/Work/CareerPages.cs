@@ -175,7 +175,7 @@ namespace RealLifeOverhaul.Ui
                 FactValues = new[] { j.Pay, j.Hours, j.Months }
             };
             b.M.Profile = p;
-            b.M.Hero = new UiHeroModel { Icon = UiIcon.Clock, Tint = UiRole.None, Kicker = j.NextTitle, Title = j.NextLine, Line = j.Desk, Progress = j.Progress, Note = j.NextNote };
+            b.M.Hero = new UiHeroModel { Icon = UiIcon.Clock, Tint = UiRole.None, Kicker = j.NextTitle, Title = j.NextLine, TitleStyle = UiStyle.Number, Line = j.Desk, Progress = j.Progress, Note = j.NextNote };
             var labels = new List<string>(4);
             var values = new List<int>(4);
             void Mark(string key, string english, int value)

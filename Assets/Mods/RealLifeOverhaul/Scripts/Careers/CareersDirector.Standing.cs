@@ -9,28 +9,40 @@ namespace RealLifeOverhaul.Careers
     // notices (CareersDirector.People.cs holds the rest and is game-free).
     public sealed partial class CareersDirector
     {
-        private readonly HashSet<string> _taken = new HashSet<string>();
         private readonly List<string> _employees = new List<string>(16);
+        private int _whoCount;
 
-        // A name nobody in the company, the campus or the game's staff has: the game's own roll, as the tech sector draws its seekers' names.
+        // A person of the city's people pool for a colleague, picked by the save's seed and a count, one the shift does not have yet; the pool's id is
+        // kept to be saved beside the name (TagPeople).
         private string NameRoll()
         {
-            _taken.Clear();
-            StaffNamesGame.Names(_taken);
-            if (_standing != null)
+            PeoplePoolGame.Install();
+            PoolPerson who = default(PoolPerson);
+            for (int tries = 0; tries < 8; tries++)
             {
-                for (int i = 0; i < _standing.Peers.Count; i++) { _taken.Add(_standing.Peers[i].Name); }
-                for (int i = 0; i < _standing.Others.Count; i++) { _taken.Add(_standing.Others[i].Name); }
-            }
-            if (_roster != null)
-            {
-                for (int i = 0; i < _roster.Intakes.Count; i++)
+                who = PeoplePool.For(TechRandom.Hash(StudySeed, 7790, _whoCount++));
+                if (!HasPeer(who.Name))
                 {
-                    for (int s = 0; s < _roster.Intakes[i].Students.Count; s++) { _taken.Add(_roster.Intakes[i].Students[s].Name); }
+                    break;
                 }
-                for (int i = 0; i < _roster.Tutors.Count; i++) { _taken.Add(_roster.Tutors[i].Name); }
             }
-            return StaffNamesGame.Fresh(_taken, out bool _);
+            if (who.Id > 0)
+            {
+                _pickedIds[who.Name] = who.Id;
+            }
+            return who.Name;
+        }
+
+        private bool HasPeer(string name)
+        {
+            for (int i = 0; _standing != null && i < _standing.Peers.Count; i++)
+            {
+                if (_standing.Peers[i].Name == name)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private Func<string> _nameRoll;
@@ -38,18 +50,13 @@ namespace RealLifeOverhaul.Careers
 
         private void PeopleForgotten()
         {
-            _taken.Clear();
+            _pickedIds.Clear();
         }
 
         private IList<string> EmployeeNames()
         {
             _employees.Clear();
-            var hired = new List<global::Entities.EmployeeInstance>(16);
-            StaffNamesGame.Hired(hired, new List<bool>(16));
-            for (int i = 0; i < hired.Count && _employees.Count < 24; i++)
-            {
-                _employees.Add(StaffNamesGame.Name(hired[i]));
-            }
+            PeoplePoolGame.EmployeeNames(_employees, 24);
             return _employees;
         }
 

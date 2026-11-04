@@ -24,7 +24,20 @@ namespace RealLifeOverhaul.Ui
     {
         public const int AmountsMost = 16;
         public int Tab;
-        public int Row = -1;      // the row the detail shows, by its place in the page's table
+        private int _row = -1;
+        /// <summary>The row the detail shows, by its place in the page's table; choosing another leaves the amounts stepped for the last one (an offer is for one applicant).</summary>
+        public int Row
+        {
+            get => _row;
+            set
+            {
+                if (value != _row)
+                {
+                    _row = value;
+                    _set = 0;
+                }
+            }
+        }
         public int Filter;        // a filter chip chosen
         public int Sub;           // a sub page (a person's page in Open Roles, a haggle); 0 for none
         public int Pick;          // an id the page carries from one tab to another (a post, a course) or into a sub page

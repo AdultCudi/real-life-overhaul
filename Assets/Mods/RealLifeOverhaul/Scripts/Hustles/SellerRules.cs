@@ -21,6 +21,7 @@ namespace RealLifeOverhaul.Hustles
         public int Tag;                       // SellerTag
         public string Rival = string.Empty;   // the game's rival whose business this is; empty for a person of the city
         public int Sold;                      // things sold through the Marketplace, all told
+        public int PersonId;                  // the seller as a person of the city's people pool (0: a catalogue name or a rival's business)
     }
 
     /// <summary>A rival that owns a business that sells used vehicles or used equipment, as the game's rivals are read.</summary>
@@ -78,7 +79,10 @@ namespace RealLifeOverhaul.Hustles
         public const int DiscountShare = 160, PremiumShare = 120, TradeShare = 100;   // per mille of the pool
 
         /// <summary>The pool of sellers, made up to <see cref="PoolSize"/> persons by the given name function, each with its rating and tag.</summary>
-        public static void Ensure(SellerFile f, int seed, Func<int, string> name)
+        public static void Ensure(SellerFile f, int seed, Func<int, string> name) => Ensure(f, seed, k => new RealLifeOverhaul.Careers.PoolPerson { Name = name(k) });
+
+        /// <summary>The pool of sellers made up to its size, each a person of the city's people pool (or a catalogue name) by their place in it.</summary>
+        public static void Ensure(SellerFile f, int seed, Func<int, RealLifeOverhaul.Careers.PoolPerson> who)
         {
             int persons = 0;
             for (int i = 0; i < f.Sellers.Count; i++)
@@ -91,7 +95,8 @@ namespace RealLifeOverhaul.Hustles
                 int tag = roll < DiscountShare ? (int)SellerTag.Discount
                     : roll < DiscountShare + PremiumShare ? (int)SellerTag.Premium
                     : roll < DiscountShare + PremiumShare + TradeShare ? (int)SellerTag.Trade : (int)SellerTag.None;
-                f.Sellers.Add(new Seller { Id = f.NextId++, Name = name(k), Rating = Rating(seed, k, tag), Tag = tag });
+                RealLifeOverhaul.Careers.PoolPerson person = who(k);
+                f.Sellers.Add(new Seller { Id = f.NextId++, Name = person.Name, PersonId = person.Id, Rating = Rating(seed, k, tag), Tag = tag });
             }
         }
 

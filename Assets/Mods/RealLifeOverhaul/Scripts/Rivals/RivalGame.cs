@@ -64,6 +64,25 @@ namespace RealLifeOverhaul.Rivals
             Regs.Clear();
         }
 
+        /// <summary>
+        /// Only the names and business types of the rivals' shops, at most a number of them: no revenue, worth or bridge is read, so it costs a walk of
+        /// the rivals' registrations and a name and a type from each (the Marketplace asks it once a morning).
+        /// </summary>
+        public static void NamesAndTypes(List<RivalShop> into, int most)
+        {
+            into.Clear();
+            if (Save == null)
+            {
+                return;
+            }
+            Books.Businesses(Regs);
+            for (int i = 0; i < Regs.Count && into.Count < most; i++)
+            {
+                into.Add(new RivalShop { Name = Name(Regs[i]), Type = Regs[i].businessTypeName ?? string.Empty });
+            }
+            Regs.Clear();
+        }
+
         /// <summary>The player's net worth: the Finance app's figure through the wiring, else the game's own, else their cash.</summary>
         public static long Worth()
         {
