@@ -138,6 +138,7 @@ internal static partial class Program
         Check(painters == 0 && staff.Contains("FaceSources.Employee(") && rivalStaff.Contains("FaceSources.Employee(") && contacts.Contains("Face(c);") && contacts.Contains("FaceSources.Player(")
               && pictures.Contains("Ui.UiFaces.Source(id,"),
             "faces: no screen paints a face of its own; employees, a rival's staff, contacts and the mod's people (the cast, a partner, a roommate) are told to the one rule");
+        TycoonFaceChecks();
     }
 
     private static bool SameFace(byte[] a, byte[] b)
