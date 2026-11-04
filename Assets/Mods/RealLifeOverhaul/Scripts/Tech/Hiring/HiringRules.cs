@@ -156,6 +156,7 @@ namespace RealLifeOverhaul.Tech
         /// <summary>A day of the labour market: seekers leave, the rivals post and hire, the list is filled again.</summary>
         public static void Day(HiringFile f, int day, int cycle, bool summer, IList<string> rivals, RateOf rate, IList<string> districts, List<MarketNote> notes)
         {
+            HireOffers.Day(f, day, rivals);   // rivals' offers to waiting applicants, and the ones whose deadline has passed
             for (int i = f.Seekers.Count - 1; i >= 0; i--)
             {
                 Seeker s = f.Seekers[i];
@@ -374,7 +375,7 @@ namespace RealLifeOverhaul.Tech
                 {
                     rivals += f.RivalAds[r].Family == (int)family && f.RivalAds[r].To > day ? 1 : 0;
                 }
-                for (int i = 0; i < f.Seekers.Count && ad.Came < WeekCap(ad, day) && f.Applicants.Count < HiringCatalogue.ApplicantsMost; i++)
+                for (int i = 0; i < f.Seekers.Count && ad.Came < WeekCap(ad, day) && f.Applicants.Count < HiringCatalogue.ApplicantsMost && !HireOffers.Full(f, ad); i++)
                 {
                     Seeker s = f.Seekers[i];
                     if (s.Taken || s.Passive || !Matches(s, ad) || HasApplied(f, s.Id, ad.Id))
@@ -474,6 +475,14 @@ namespace RealLifeOverhaul.Tech
         {
             int threshold = (int)((long)s.Ask * Threshold(a, esteem) / 10000);
             bool rival = a.RivalBid == 0 && !s.Passive && shortage >= 1150 && TechRandom.Mille(f.Seed, a.Id, day, 31) < HiringCatalogue.RivalOfferChance;
+            bool beaten = a.RivalBid > 0 && a.RivalLapse >= day && !HireOffers.Beats(a, a.Offer);   // another firm's open offer stands over this one
+            if (beaten)
+            {
+                a.Counter = a.RivalBid;
+                a.OfferDay = day;
+                a.Stage = (int)ApplyStage.Countered;
+                return ApplyStage.Countered;
+            }
             if (a.Offer >= threshold && !(rival && a.Offer < s.Ask * (10000L + HiringCatalogue.RivalOfferBp) / 10000))
             {
                 a.Stage = (int)ApplyStage.Accepted;
@@ -487,6 +496,7 @@ namespace RealLifeOverhaul.Tech
                 a.RivalBid = (int)(s.Ask * (10000L + HiringCatalogue.RivalOfferBp) / 10000);
                 a.Counter = a.RivalBid;
                 a.OfferDay = day;
+                a.RivalLapse = day + HireOffers.RivalDays;
                 a.Stage = (int)ApplyStage.Countered;
                 return ApplyStage.Countered;
             }

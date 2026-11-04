@@ -19,6 +19,34 @@ namespace RealLifeOverhaul.Hustles
     /// </summary>
     internal static class HustleGame
     {
+        private static readonly RealLifeOverhaul.Rivals.RivalWorld Rivals = new RealLifeOverhaul.Rivals.RivalWorld();
+
+        /// <summary>A name of a seller of the pool: the city's customers' own, drawn from the save's seed and the seller's place.</summary>
+        public static string SellerName(int seed, int index)
+        {
+            var dice = new DealerDice(seed, index, 4107);
+            return DealerRules.CustomerName(ref dice);
+        }
+
+        /// <summary>The rivals that own a business which sells used vehicles or runs on equipment, by the shops they hold; read once a day.</summary>
+        public static void Dealers(List<RivalDealer> into)
+        {
+            into.Clear();
+            RealLifeOverhaul.Rivals.RivalGame.Read(Rivals);
+            for (int i = 0; i < Rivals.Shops.Count && into.Count < SellerRules.RivalsMost; i++)
+            {
+                string type = (Rivals.Shops[i].Type ?? string.Empty).ToLowerInvariant();
+                bool vehicles = type.Contains("car") && (type.Contains("dealer") || type.Contains("showroom") || type.Contains("workshop")
+                    || type.Contains("garage"));
+                bool machines = type.Contains("restaurant") || type.Contains("bakery") || type.Contains("cafe") || type.Contains("kitchen")
+                    || type.Contains("diner");
+                if ((vehicles || machines) && !string.IsNullOrEmpty(Rivals.Shops[i].Name))
+                {
+                    into.Add(new RivalDealer { Name = Rivals.Shops[i].Name, Vehicles = vehicles, Machines = machines });
+                }
+            }
+        }
+
         private const string Residential = "ba:buildingtype_residential";
         private const string ElectronicsStore = "ba:businesstype_electronicsstore";
         private const string ApplianceStore = "ba:businesstype_appliancestore";

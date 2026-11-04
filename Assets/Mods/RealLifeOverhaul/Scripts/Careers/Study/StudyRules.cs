@@ -13,7 +13,9 @@ namespace RealLifeOverhaul.Careers
         Full,           // four courses at once already
         NoMoney,
         NoDistance,     // asked for online study of a course that has none
-        Closed          // the part of studying it belongs to is switched off
+        Closed,         // the part of studying it belongs to is switched off
+        Floor,          // a skill the course asks for is under its floor
+        Seats           // every seat of the cohort is taken
     }
 
     /// <summary>Where the player is, as far as study cares: read from the game by the director, decided on here.</summary>

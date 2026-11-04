@@ -252,7 +252,8 @@ namespace RealLifeOverhaul.Hustles
         private static string ParcelFor(Owned o)
         {
             ThingDef def = o.Car ? null : HustleCatalogue.Thing(o.Thing);
-            return def == null ? "parcel_s" : def.Kind == ThingKind.Furniture ? "parcel_l" : def.Kind == ThingKind.Electronics ? "parcel_m" : "parcel_s";
+            return def == null ? "parcel_s" : def.Kind == ThingKind.Furniture
+                || def.Kind == ThingKind.Machine ? "parcel_l" : def.Kind == ThingKind.Electronics ? "parcel_m" : "parcel_s";
         }
 
         private void Stand(Door d, Owned o)

@@ -7,7 +7,9 @@ namespace RealLifeOverhaul.Hustles
         Furniture = 1,
         Clothes = 2,
         Shoes = 3,
-        Car = 4
+        Car = 4,
+        Machine = 5,   // used equipment a business runs on (a grill, a fridge, a mixer)
+        Stock = 6      // a lot of goods a business sells, at a price under what it would pay the wholesaler
     }
 
     /// <summary>The freelance work clients ask for: each a visit to an address, Moving two.</summary>
@@ -100,7 +102,16 @@ namespace RealLifeOverhaul.Hustles
             new ThingDef("suit", "reallife_hustle_thing_suit", ThingKind.Clothes, 450, 60, 85, 16),
             new ThingDef("trainers", "reallife_hustle_thing_trainers", ThingKind.Shoes, 160, 30, 80, 20),
             new ThingDef("boots", "reallife_hustle_thing_boots", ThingKind.Shoes, 220, 45, 85, 16),
-            new ThingDef("heels", "reallife_hustle_thing_heels", ThingKind.Shoes, 380, 45, 85, 16)
+            new ThingDef("heels", "reallife_hustle_thing_heels", ThingKind.Shoes, 380, 45, 85, 16),
+            new ThingDef("espresso_machine", "reallife_hustle_thing_espresso_machine", ThingKind.Machine, 2600, 120, 90, 6),
+            new ThingDef("commercial_grill", "reallife_hustle_thing_commercial_grill", ThingKind.Machine, 3200, 150, 88, 8),
+            new ThingDef("display_fridge", "reallife_hustle_thing_display_fridge", ThingKind.Machine, 1500, 120, 90, 6),
+            new ThingDef("dough_mixer", "reallife_hustle_thing_dough_mixer", ThingKind.Machine, 5800, 150, 88, 6),
+            new ThingDef("chest_freezer", "reallife_hustle_thing_chest_freezer", ThingKind.Machine, 1700, 120, 90, 6),
+            new ThingDef("coffee_pallet", "reallife_hustle_thing_coffee_pallet", ThingKind.Stock, 1800, 0, 100, 0),
+            new ThingDef("flour_pallet", "reallife_hustle_thing_flour_pallet", ThingKind.Stock, 900, 0, 100, 0),
+            new ThingDef("tinned_goods_lot", "reallife_hustle_thing_tinned_goods_lot", ThingKind.Stock, 1200, 0, 100, 0),
+            new ThingDef("bottled_water_lot", "reallife_hustle_thing_bottled_water_lot", ThingKind.Stock, 600, 0, 100, 0)
         };
 
         public static readonly GigDef[] Gigs =
@@ -116,6 +127,7 @@ namespace RealLifeOverhaul.Hustles
         };
 
         // The day's listings
+        public const int StockUnderBp = 1500;       // a lot of stock asks this much under the wholesale price
         public const int GoodsADay = 9;             // goods the city's people put up each morning
         public const int CarsADay = 2;              // and cars
         public const int ListingsPeopleMost = 3000; // thousandths: the most the city's sellers multiply a day's listings by (a bound for the arithmetic)
@@ -224,6 +236,8 @@ namespace RealLifeOverhaul.Hustles
                 case ThingKind.Furniture: return "reallife_hustle_kind_furniture";
                 case ThingKind.Clothes: return "reallife_hustle_kind_clothes";
                 case ThingKind.Shoes: return "reallife_hustle_kind_shoes";
+                case ThingKind.Machine: return "reallife_hustle_kind_machine";
+                case ThingKind.Stock: return "reallife_hustle_kind_stock";
                 default: return "reallife_hustle_kind_car";
             }
         }

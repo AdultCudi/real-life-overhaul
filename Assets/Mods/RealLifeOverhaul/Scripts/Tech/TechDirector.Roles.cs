@@ -20,15 +20,19 @@ namespace RealLifeOverhaul.Tech
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new RolesApp(this);
-            _rolesApp = PhoneApp.Install(new PhoneAppDef
+            PhoneAppDef kitDef = new PhoneAppDef
             {
                 Id = RolesAppId,
                 TitleKey = "reallife_roles_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(RolesGlyphs), new Color32(96, 176, 168, 255), new Color32(40, 112, 120, 255), 0.42f, "AppIcon-OpenRoles"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out bool tryAgain);
+                Closed = view.Closed,
+                Kit = () => new RealLifeOverhaul.Ui.WorkScreen(RealLifeOverhaul.Ui.RolesLive.Instance),
+                KitScreen = "open_roles",
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.People
+            };
+            _rolesApp = PhoneApp.Install(kitDef, out bool tryAgain);
             if (_rolesApp == null)
             {
                 _rolesGaveUp = !tryAgain;
@@ -39,6 +43,7 @@ namespace RealLifeOverhaul.Tech
                 }
                 return;
             }
+            RealLifeOverhaul.Ui.UiShell.Face(_rolesApp, kitDef);   // the kit's face over the app, once its switch is on
             _rolesView = view;
             RolesBadge();
         }

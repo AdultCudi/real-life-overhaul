@@ -39,6 +39,8 @@ namespace RealLifeOverhaul.Hustles
 
         private HustleState _state;
         private bool _running, _broken, _gaveUp, _cityRead;
+        private SellerFile _sellers = new SellerFile();   // the Marketplace's sellers, in a line of their own (SellerStore)
+        private readonly List<RivalDealer> _dealers = new List<RivalDealer>(8);
         private float _next;
         private HustleApp _view;
         private PhoneApp _app;
@@ -48,6 +50,9 @@ namespace RealLifeOverhaul.Hustles
 
         /// <summary>The state in use; null while the feature is not running.</summary>
         public HustleState State => _running ? _state : null;
+
+        /// <summary>The Marketplace's sellers, for the kit's listings.</summary>
+        public SellerFile Sellers => _sellers;
 
         private static bool Verbose => Meta.Dev.Verbose;
 
@@ -164,6 +169,7 @@ namespace RealLifeOverhaul.Hustles
             HustleState state = HustleStore.Load(save.modData, out int version);
             bool fresh = state == null;
             _state = state ?? new HustleState { Seed = HustleRules.SeedOf(HustleGame.SeedText) };
+            _sellers = SellerStore.Load(save.modData, out int _) ?? new SellerFile();
             _running = true;
             ReadCity();
             int lost = Reconcile();
@@ -236,15 +242,19 @@ namespace RealLifeOverhaul.Hustles
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new HustleApp(this);
-            _app = PhoneApp.Install(new PhoneAppDef
+            PhoneAppDef kitDef = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_hustle_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(), new Color32(255, 178, 74, 255), new Color32(214, 104, 28, 255), 0.42f, "AppIcon-Marketplace"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out bool tryAgain);
+                Closed = view.Closed,
+                Kit = () => new RealLifeOverhaul.Ui.WorkScreen(RealLifeOverhaul.Ui.MarketLive.Instance),
+                KitScreen = "marketplace",
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Store
+            };
+            _app = PhoneApp.Install(kitDef, out bool tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -254,6 +264,7 @@ namespace RealLifeOverhaul.Hustles
                 }
                 return;
             }
+            RealLifeOverhaul.Ui.UiShell.Face(_app, kitDef);   // the kit's face over the app, once its switch is on
             _view = view;
             Badge();
         }
@@ -334,7 +345,7 @@ namespace RealLifeOverhaul.Hustles
                 int day = _state.LastHour / 24;
                 if (_state.Day != day)
                 {
-                    HustleRules.Morning(_state, day, _homes, _cars, _colours, HustleGame.Level, People(HustleBridges.Sellers));
+                    MorningOf(day);
                     if (Verbose)
                     {
                         Logger?.Info("Hustles: the listings of day " + day + ": " + _state.Listings.Count + " thing(s), " + _state.Gigs.Count + " visit(s) asked for or booked (seed "
@@ -347,7 +358,7 @@ namespace RealLifeOverhaul.Hustles
             }
             if (_state.Day != stamp / 24)
             {
-                HustleRules.Morning(_state, stamp / 24, _homes, _cars, _colours, HustleGame.Level, People(HustleBridges.Sellers));
+                MorningOf(stamp / 24);
             }
             Tell(_events);
             Changed();
@@ -471,6 +482,15 @@ namespace RealLifeOverhaul.Hustles
                 save.modData = new Dictionary<string, string>();
             }
             save.modData[HustleStore.Key] = HustleStore.Write(_state);
+            save.modData[SellerStore.Key] = SellerStore.Write(_sellers);
+        }
+
+        // A day's listings from the sellers of the book, and from the rivals that own a business that sells used vehicles or machines (read once a day).
+        private void MorningOf(int day)
+        {
+            SellerRules.Ensure(_sellers, _state.Seed, k => HustleGame.SellerName(_state.Seed, k));
+            HustleGame.Dealers(_dealers);
+            HustleRules.Morning(_state, day, _homes, _cars, _colours, HustleGame.Level, People(HustleBridges.Sellers), _sellers, _dealers);
         }
 
         /// <summary>Everything put away (the save tools, the feature list's clean-up): the panel, the work on the clock and the app.</summary>

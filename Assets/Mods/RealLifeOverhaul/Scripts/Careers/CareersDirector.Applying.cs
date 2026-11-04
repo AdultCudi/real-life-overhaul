@@ -342,7 +342,14 @@ namespace RealLifeOverhaul.Careers
             }
             int day = Save.Day;
             StudyRules.Use(_study, TalentCatalogue.Relationships, day);
-            if (ProRules.Offered(a.Score, ProRules.Luck(StudySeed, a.Post.Id, 2, ProRules.InterviewLuck)))
+            string other = ProRules.Offered(a.Score, ProRules.Luck(StudySeed, a.Post.Id, 2, ProRules.InterviewLuck)) ? OtherGotIt(a) : null;   // the employer weighs every applicant
+            if (other != null)
+            {
+                a.Reject(day);
+                Tell2(NotificationType.Warning, "reallife_work_note_other_got_it", Data("name", other, "employer", CareersText.Employer(a.Post.Employer)), TabApplications,
+                    CareerApp.ApplicationRow + a.Post.Id);
+            }
+            else if (ProRules.Offered(a.Score, ProRules.Luck(StudySeed, a.Post.Id, 2, ProRules.InterviewLuck)))
             {
                 Offer(a, day);
             }
