@@ -82,6 +82,12 @@ internal static partial class Program
             Console.WriteLine("OthersHash " + OthersFaces() + "UL");
             return 0;
         }
+        if (args.Length == 1 && args[0] == "--life-audit")
+        {
+            LifeAuditChecks();   // the Planner and the Calendar flows alone (LifeAuditChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--ui-screens")
         {
             UiScreenChecks();   // the kit screens' layout checks alone: RLO_UI_ONLY=<screen id> keeps one screen
@@ -876,6 +882,7 @@ internal static partial class Program
         HardTimesTriggers(); // a difficult moment at home comes of what is going on: each one's causes, nothing when all is well, a cause gone, the options, the save, the same state (HardTimesChecks.cs)
         MorningNotices(); // the morning line only from a sleep the game ended, with its hours; the city's news of the night packed into it; four notices' switches (MorningNewsChecks.cs)
         Hustles();      // the Marketplace: listings, worth, haggling, repairs, buyers, visits and their stars, helpers, the save, a year of it, the texts (HustleChecks.cs)
+        LifeAuditChecks();   // the Planner and the Calendar on the kit pressed through their flows: the board's hours, Jump to now, notes deleted, done and edited, the Calendar's day (LifeAuditChecks.cs)
         CalendarApp();  // the Calendar: the months of every year length, the grid, each schedule's days against its feature's own rule, an empty month, the sources, the texts (CalendarAppChecks.cs)
         Meals();        // meals and music: the seat a meal is taken to, how long it is eaten, the dance's lift and its cap, every way out, the texts (MealsChecks.cs)
         HeldUnitsChecks(); // the game leaves the mod's buildings alone: claims counted per address, the ignore list's one rule, the night's lists, every way out, nothing saved (HeldUnitsChecks.cs)

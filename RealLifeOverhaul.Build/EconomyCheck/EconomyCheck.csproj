@@ -862,6 +862,14 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\LifePages.Finder.cs" Link="Mod\LifePages.Finder.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Life\CameraPage.cs" Link="Mod\CameraPage.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Life\ViewfinderScreen.cs" Link="Mod\ViewfinderScreen.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPlanDay.cs" Link="Mod\UiPlanDay.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPlanEntry.cs" Link="Mod\UiPlanEntry.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPlanForm.cs" Link="Mod\UiPlanForm.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Life\PlannerFlow.cs" Link="Mod\PlannerFlow.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Life\CalendarFlow.cs" Link="Mod\CalendarFlow.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Planner\PlannerModel.cs" Link="Mod\PlannerModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Planner\PlannerStore.cs" Link="Mod\PlannerStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Planner\PlannerRules.cs" Link="Mod\PlannerRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Swatches.cs" Link="Mod\UiDraw.Swatches.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCataloguePanel.cs" Link="Mod\UiCataloguePanel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCheckout.cs" Link="Mod\UiCheckout.cs" />
