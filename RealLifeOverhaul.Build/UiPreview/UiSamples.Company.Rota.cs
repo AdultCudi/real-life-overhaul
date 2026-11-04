@@ -12,7 +12,7 @@ internal static partial class UiSamples
     public static string RotaPickOf(string state) => state == "rota_one" ? "p:Corner Cafe~12" : state == "rota_refused" ? "p:Hudson Warehouse~4" : state == "rota_edit" ? "pl:Speedy Bites~7:1"
         : state == "rota_edit_other" ? "pl:Speedy Bites~7:2" : "p:Speedy Bites~7";
 
-    private static readonly string[] RotaNames = { "Dev Kapoor", "Lena Adler", "Maya Okafor", "Tomas Reyes", "Sana Malik", "Rui Tanaka", "Priya Nair", "Omar Haddad", "Ines Duarte" };
+    private static readonly string[] RotaNames = { "Dev Kapoor", "Lena Adler", "Noa Silva", "Kai Brennan", "Zara Quinn", "Rui Tanaka", "Ben Ortiz", "Eli Novak", "Ines Duarte" };
     private static readonly string[] RotaRoles = { "Customer service", "Cooking", "Customer service", "Cleaning", "Cooking", "Customer service", "Cooking", "Cleaning", "Customer service" };
 
     // Everybody of a shop on their shifts: each starts at the hour their number gives, works the same hours five days a week with two days off set apart, and the day totals add up.
@@ -102,7 +102,7 @@ internal static partial class UiSamples
             p.Id = "Hudson Warehouse~4";
             p.Refused = w.T("reallife_rota_warehouse", "A warehouse keeps no rota. The game gives its drivers their vehicles on the warehouse's own page.");
             CompanyAct staff = CA(CompanyDo.Go, null, CompanyView.Staff, CompanyView.SubMain);
-            string[] crew = { "Hugo Brandt", "Mei Lin", "Carlos Vega", "Nadia Ortiz" };
+            string[] crew = { "Hugo Brandt", "Mei Lin", "Carlos Vega", "Tomas Reyes" };
             string[] kinds = { "Driving", "Driving", "Logistics", "Driving" };
             var crewItems = new CompanyItem[crew.Length];
             for (int i = 0; i < crew.Length; i++)
@@ -321,14 +321,14 @@ internal static partial class UiSamples
         string hoursOf(int n) => w.F("reallife_rota_hours_n", "{hours} h", "hours", n.ToString());
         p.Folk = new[]
         {
-            new CompanyRotaFolk { Name = "Sana Malik", Role = "Cooking", Asks = between("20", "32"), Figure = hoursOf(36), Plan = 36, Least = 20, Most = 32, Hue = 0.66f, Ring = UiRole.Warn,
+            new CompanyRotaFolk { Name = "Zara Quinn", Role = "Cooking", Asks = between("20", "32"), Figure = hoursOf(36), Plan = 36, Least = 20, Most = 32, Hue = 0.66f, Ring = UiRole.Warn,
                 Tone = UiRole.WarnText, Note = w.F("reallife_rota_hours_over", "{hours} h over", "hours", "4") },
             new CompanyRotaFolk { Name = "Rui Tanaka", Role = "Customer service", Asks = between("32", "40"), Figure = hoursOf(28), Plan = 28, Least = 32, Most = 40, Hue = 0.8f, Ring = UiRole.Ok,
                 Tone = UiRole.WarnText, Note = w.F("reallife_rota_hours_under", "{hours} h under", "hours", "4") },
             new CompanyRotaFolk { Name = "Dev Kapoor", Role = "Customer service", Asks = between("20", "40"), Figure = hoursOf(36), Plan = 36, Least = 20, Most = 40, Hue = 0.1f, Ring = UiRole.Ok },
             new CompanyRotaFolk { Name = "Lena Adler", Role = "Cooking", Asks = w.F("reallife_rota_asks_least", "at least {least} hours a week", "least", "24"), Figure = hoursOf(32), Plan = 32, Least = 24,
                 Hue = 0.24f, Ring = UiRole.Ok },
-            new CompanyRotaFolk { Name = "Maya Okafor", Role = "Customer service", Asks = between("16", "32"), Figure = hoursOf(32), Plan = 32, Least = 16, Most = 32, Hue = 0.38f, Ring = UiRole.Ok }
+            new CompanyRotaFolk { Name = "Noa Silva", Role = "Customer service", Asks = between("16", "32"), Figure = hoursOf(32), Plan = 32, Least = 16, Most = 32, Hue = 0.38f, Ring = UiRole.Ok }
         };
         p.Beside = new[]
         {

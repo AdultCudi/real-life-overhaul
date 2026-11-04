@@ -34,7 +34,7 @@ internal static partial class UiSamples
             rows.Add(new CompanyRow { Id = "emp:sana", Title = "Sana Malik", Sub = "Pioneer Game Studio", Face = true, Hue = 0.25f, Ring = UiRole.Danger, Figure = "$24.00 / h", Note = w.F("reallife_co_going", "going {wage}", "wage", "$26.00") });
             string[][] more =
             {
-                new[] { "rui", "Rui Tanaka", "Speedy Bites", "15.90", "0.5" }, new[] { "ines", "Ines Duarte", "Speedy Bites", "16.20", "0.15" }, new[] { "hana", "Hana Sato", "Speedy Bites", "15.60", "0.8" },
+                new[] { "rui", "Rui Tanaka", "Speedy Bites", "15.90", "0.5" }, new[] { "noa", "Noa Silva", "Speedy Bites", "15.80", "0.2" }, new[] { "kai", "Kai Brennan", "Speedy Bites", "15.70", "0.45" }, new[] { "zara", "Zara Quinn", "Speedy Bites", "16.40", "0.7" }, new[] { "ben", "Ben Ortiz", "Speedy Bites", "15.50", "0.1" }, new[] { "eli", "Eli Novak", "Speedy Bites", "15.60", "0.85" }, new[] { "ines", "Ines Duarte", "Speedy Bites", "16.20", "0.15" }, new[] { "hana", "Hana Sato", "Speedy Bites", "15.60", "0.8" },
                 new[] { "leo", "Leo Martin", "Speedy Bites", "16.00", "0.3" }, new[] { "hugo", "Hugo Brandt", "Hudson Warehouse", "15.60", "0.65" }, new[] { "mei", "Mei Lin", "Hudson Warehouse", "15.60", "0.05" },
                 new[] { "carlos", "Carlos Vega", "Hudson Warehouse", "16.80", "0.4" }, new[] { "jonah", "Jonah Reyes", "Bloom & Co", "17.10", "0.55" }, new[] { "inespark", "Ines Park", "Pioneer Game Studio", "22.50", "0.9" }
             };
@@ -734,7 +734,6 @@ internal static partial class UiSamples
                 };
                 c.Blocks = new[]
                 {
-                    CRow(w.T("reallife_mgr_mistake_chance", "Chance of a mistake"), "7.2%"),
                     new CompanyBlock { Kind = CompanyBlockKind.Meter, Text = w.T("reallife_mgr_mistake_chance", "Chance of a mistake"), Value = "7.2%", Number = 14, Tone = UiRole.Warn },
                     CSec(w.T("reallife_mgr_sec_would_own", "What this person would own"), "10"),
                     new CompanyBlock { Kind = CompanyBlockKind.Items, Items = HandOverRows(w) },
@@ -1053,7 +1052,7 @@ internal static partial class UiSamples
                     Rows = new[]
                     {
                         new CompanyRow { Id = "xc:pro1", Title = filled ? "Marta Silva" : "Noah Feldman", Sub = filled ? "Operations, senior" : "Finance, senior", Face = true, Hue = 0.2f, Ring = UiRole.None, Figure = filled ? "$46.00" : "$42.00", Note = "Pioneer HQ" },
-                        new CompanyRow { Id = "xc:pro2", Title = filled ? "Jonah Reyes" : "Ines Duarte", Sub = filled ? "Operations, lead" : "Finance, lead", Face = true, Hue = 0.5f, Ring = UiRole.None, Figure = filled ? "$58.00" : "$55.00", Note = "Pioneer HQ" }
+                        new CompanyRow { Id = "xc:pro2", Title = filled ? "Tobias Wren" : "Lucia Ferro", Sub = filled ? "Operations, lead" : "Finance, lead", Face = true, Hue = 0.5f, Ring = UiRole.None, Figure = filled ? "$58.00" : "$55.00", Note = "Pioneer HQ" }
                     }
                 };
                 var c = new CompanyCard { Kicker = w.T("reallife_hier_seats", "Executive seats"), Title = "Chief financial officer", Icon = UiIcon.IdBadge, Back = CBack(w, "seat:3", CompanyView.Managers), Chips = new[] { w.T("reallife_mgr_empty_post", "Empty post") }, ChipTones = new[] { UiRole.Muted } };

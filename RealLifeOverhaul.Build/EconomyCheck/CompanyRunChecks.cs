@@ -31,6 +31,7 @@ internal static partial class Program
         CompanyRun();       // a hundred and twenty days of all of it together, a save on day 30 and an old save (this file)
         CompanyRunPins();   // the director's source calls what the run calls, in the order the run calls it (this file)
         CompanyDayVariants();   // the day entries through their switches, a long jump of days and the market rent (CompanyDayChecks.cs)
+        CompanyLocaleChecks();  // the words of the screen in pt and zh-cn are not English (CompanyLocaleChecks.cs)
         CompanyDoesChecks();    // every action of the screen through the live map against a recording director (CompanyDoesChecks.cs)
     }
 
@@ -830,12 +831,12 @@ internal static partial class Program
         string reserve = SourceText(dir, "CompanyDirector.TaxReserve.cs"), esc = SourceText(dir, "CompanyDirector.Escalations.cs"), decisions = SourceText(dir, "CompanyDirector.ManagerDecisions.cs");
         string managers = SourceText(dir, "CompanyDirector.Managers.cs"), plans = SourceText(dir, "CompanyDirector.RotaPlans.cs"), lic = SourceText(dir, "CompanyDirector.Licences.cs");
         string game = SourceText(dir, "CompanyGame.cs"), staff = SourceText(dir, "CompanyDirector.Staff.cs"), rotaRead = SourceText(dir, "RotaGame.Read.cs"), day2 = SourceText(dir, "CompanyDay.cs");
-        Check(RunInOrder(day, "Read(day, false, true", "PartDay(part, day)", "ReserveFreed()", "ManagerDay(day)", "LeaseDay(day)", "Books(day, next)", "HierarchyDay(day)") && reserve.Contains("TaxRules.Release(t)")
-              && reserve.Contains("t.Reserve <= 0 || On(CompanyPart.Tax)"),
+        Check(RunInOrder(day, "Read(day, false, true", "PartDay(part, day)", "ReserveFreed()", "ManagerDay(day)", "LeaseDay(day)", "Books(day, next)", "HierarchyDay(day)")
+              && reserve.Contains("TaxRules.Freed(_state.Tax, On(CompanyPart.Tax))"),
             "company run pins: the day reads, runs the parts, frees a reserve the tax part no longer runs, then the managers, the leases, the books and the hierarchy, as the run does");
         var held = new TaxFile { Reserve = 1840 };
-        int freed = TaxRules.Release(held);
-        Check(freed == 1840 && held.Reserve == 0 && TaxRules.Release(held) == 0, "company run pins: money set aside goes back whole, once (" + freed + "), which the day does when the tax part is off");
+        int kept = TaxRules.Freed(held, true), freed = TaxRules.Freed(held, false);
+        Check(kept == 0 && freed == 1840 && held.Reserve == 0 && TaxRules.Freed(held, false) == 0, "company run pins: money set aside goes back whole, once (" + freed + "), which the day does when the tax part is off");
         Check(RunInOrder(leases, "CityMonth(day, monthDays)", "CompanyDay.LeaseShop(this", "Settled(l, shop, day)", "OfferMade(l, shop, was, day)")
               && RunInOrder(day2, "public static LeaseDayWas LeaseShop(", "LeaseRules.Begin(", "LeaseRules.TopUp(l)", "LeaseRules.Settle(l, day", "LeaseRules.OfferDue(l, day)", "Offer(w, place, l, managerRuns"),
             "company run pins: the lease day: the city's month, then one shared step for each place (CompanyDay.LeaseShop: a lease begun, the rise worked out, the lease settled or the offer made), then the director's notices");

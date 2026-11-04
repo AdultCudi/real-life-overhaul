@@ -207,6 +207,12 @@ namespace RealLifeOverhaul.Economy
             return short_ > 0 ? SetAside(t, Math.Min(short_, CompanyCatalogue.Share(Math.Max(0, cash), CompanyCatalogue.ReserveCashShare)), cash) : 0;
         }
 
+        /// <summary>What goes back to the cash on a day: the whole reserve while the tax part does not run, nothing while it does (the part's own days then handle it).</summary>
+        public static int Freed(TaxFile t, bool taxRuns)
+        {
+            return taxRuns || t.Reserve <= 0 ? 0 : Release(t);
+        }
+
         /// <summary>The reserve goes back to the cash, all of it. Returns what goes back.</summary>
         public static int Release(TaxFile t)
         {

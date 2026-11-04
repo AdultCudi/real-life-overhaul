@@ -155,6 +155,23 @@ internal static partial class Program
         RivalFirms.Day(g, g.Seed, 101, 30, 0, RunIndex, null, seats);
         Check(og.Crew.TrueForAll(p => p.Id != gone) && og.Crew.Exists(p => p.Id == "new=") && og.LetGo == letGo && og.Hires == hires + 1 && !og.Out.Contains(gone) && og.Lease.Rent == 120,
             "rival seats: a person who has left the game's crew leaves the outlet without being let go, a new one is hired by their own id, and the rent follows the building");
+        // Somebody let go stays out while the game's crew holds them, however many are let go: the ids are forgotten only when the game's crew no longer has the person.
+        Check(RivalFirms.OutMost >= RivalFirms.CrewMost * 2, "rival seats: the let-go ids are bounded well past the crew, so that a ninth let go cannot bring the oldest back");
+        og.Out.Clear();
+        og.Crew.Clear();   // (each of them let go: off the crew and into the book of those kept out)
+        foreach (RivalHand h in live.Hands)
+        {
+            og.Out.Add(h.Id);
+        }
+        int heldOut = live.Hands.Count;
+        og.Out.Add("someone-the-game-lost=");
+        for (int n = 0; n < 12; n++)
+        {
+            live.Hands.Add(new RivalHand { Id = "extra" + n + "=", Name = "Extra" + n, Skill = 40, Hourly = 1500, WeekHours = 40 });
+        }
+        RivalFirms.Day(g, g.Seed, 102, 30, 0, RunIndex, null, seats);
+        Check(!og.Out.Contains("someone-the-game-lost=") && live.Hands.Count > RivalFirms.CrewMost && og.Crew.TrueForAll(p => !og.Out.Contains(p.Id)) && og.Out.Count == heldOut,
+            "rival seats: a let-go person the game no longer holds is forgotten, those it still holds stay out of the book (" + og.Out.Count + " kept, held " + heldOut + ", lost " + og.Out.Contains("someone-the-game-lost=") + ", hands " + live.Hands.Count + ", crewOk " + og.Crew.TrueForAll(p => !og.Out.Contains(p.Id)) + ")");
         seats.Book.RemoveAll(x => x.Value.Key == og.Seat);
         RivalFirms.Day(g, g.Seed, 102, 30, 0, RunIndex, null, seats);
         Check(og.Seat.Length == 0 && og.Crew.Count >= RivalFirms.CrewStart, "rival seats: when the game's business is gone the outlet goes on as a seeded stand-in with the crew and rent it has");

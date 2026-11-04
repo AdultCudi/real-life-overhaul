@@ -160,13 +160,15 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The notice that tells the owner of an offer: with a rise, its share; an offer of no rise says the rent stays the same.</summary>
         public static string OfferNote(LeaseFile l)
         {
-            return OfferOver(l) > 0 ? "reallife_co_note_lease_offer" : "reallife_co_note_lease_offer_same";
+            int over = OfferOver(l);
+            return over > 0 ? "reallife_co_note_lease_offer" : over == 0 ? "reallife_co_note_lease_offer_same" : "reallife_co_note_lease_offer_less";
         }
 
         /// <summary>The notice that tells a lease came to its end and was settled: held over, renewed with a rise, or renewed at the same rent.</summary>
         public static string RenewedNote(LeaseFile l)
         {
-            return l.Hold ? "reallife_co_note_lease_hold" : l.Last > 0 ? "reallife_co_note_lease_renewed" : "reallife_co_note_lease_renewed_same";
+            return l.Hold ? "reallife_co_note_lease_hold" : l.Last > 0 ? "reallife_co_note_lease_renewed" : l.Last == 0 ? "reallife_co_note_lease_renewed_same"
+                : "reallife_co_note_lease_renewed_less";
         }
 
         /// <summary>The rent a day at a rise over the game's rent, whole money.</summary>

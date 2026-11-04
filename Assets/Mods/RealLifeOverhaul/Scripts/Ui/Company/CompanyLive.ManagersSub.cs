@@ -163,7 +163,6 @@ namespace RealLifeOverhaul.Ui
                 card.FactValues = new[] { h.Skill.ToString(), CompanyText.Wage(h.Wage), CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(allowance)) };
                 if (!region)
                 {
-                    blocks.Add(Row(CompanyText.T("reallife_mgr_mistake_chance"), CompanyText.Share(ManagerRules.MistakeChance(h.Skill, review))));
                     blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Meter, Text = CompanyText.T("reallife_mgr_mistake_chance"), Value = CompanyText.Share(ManagerRules.MistakeChance(h.Skill, review)),
                         Number = Math.Min(100, ManagerRules.MistakeChance(h.Skill, review) / 5), Tone = UiRole.Warn });
                     var would = new List<CompanyItem>(ManagerTaskCount);

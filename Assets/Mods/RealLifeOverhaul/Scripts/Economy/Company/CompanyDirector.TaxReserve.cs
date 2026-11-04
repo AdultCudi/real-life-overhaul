@@ -71,12 +71,12 @@ namespace RealLifeOverhaul.Economy
         // The tax part is switched off (or stopped after an error) with money set aside: it goes back to the cash, once, so that it is never held for a part that does not run.
         private void ReserveFreed()
         {
-            TaxFile t = _state.Tax;
-            if (t.Reserve <= 0 || On(CompanyPart.Tax))
+            int back = TaxRules.Freed(_state.Tax, On(CompanyPart.Tax));
+            if (back <= 0)
             {
                 return;
             }
-            GiveBack(TaxRules.Release(t), "the tax option is switched off");
+            GiveBack(back, "the tax option is switched off");
             _quarterStamp = -1;
         }
 

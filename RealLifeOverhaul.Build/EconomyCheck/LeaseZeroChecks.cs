@@ -123,6 +123,18 @@ internal static partial class Program
         OfferWas skipped = CompanyDay.Offer(fall, "Mill~9", lm2, true, 0, 0, 90, RunMonth, lm2.End + 3);
         Check(skipped == OfferWas.Renewed && lm2.Renewals == 1 && lm2.Rise == 0 && lm2.End > lm2.Start + 360, "zero offers: made after the lease had ended, an offer of nothing renews the lease (" + skipped + ")");
 
+        // A rent that goes down is told as a cut, with its figure, not as "the rent stays": a hold-over's premium dropped at the renewal, and a market under the rent that pulls the ask below it.
+        var cut = new LeaseFile { Place = "Mill~9", Start = 100, Term = 360, Rent = 200, Rise = 0, Hold = true };
+        LeaseRules.Make(cut, 0, cut.End - LeaseRules.NoticeDays);
+        bool offerLess = LeaseRules.OfferOver(cut) < 0 && LeaseRules.OfferNote(cut) == "reallife_co_note_lease_offer_less";
+        Check(offerLess && LeaseRules.Within(cut, 0), "rent cut: an offer under the rent paid now (the premium of a hold-over dropped) is told as the rent going down (" + LeaseRules.OfferOver(cut) + " per mille)");
+        Check(LeaseRules.Settle(cut, cut.End, zero[4], RunMonth) && cut.Last < 0 && !cut.Hold && LeaseRules.RenewedNote(cut) == "reallife_co_note_lease_renewed_less",
+            "rent cut: and the renewal that follows says the rent went down (" + cut.Last + " per mille)");
+        var drop = new LeaseFile { Place = "Mill~9", Start = 100, Term = 360, Rent = 200, Rise = 150, Renewals = 1, Last = 0 };
+        LeaseRules.Make(drop, LeaseRules.Offer(drop, zero[5], 0, 0, 60), drop.End - LeaseRules.NoticeDays);   // a market of 60 under a rent of 200 pulls the ask under the rent now
+        Check(drop.Offer < drop.Rise && LeaseRules.OfferOver(drop) < 0 && LeaseRules.OfferNote(drop) == "reallife_co_note_lease_offer_less",
+            "rent cut: a falling market pulls an ask under the rent paid now, and it is told as a cut (" + LeaseRules.OfferOver(drop) + " per mille)");
+
         // The manager with the Leases task answers it without asking anyone, at any limit.
         var ml = new ManagerFile { Place = "Mill~9", Id = "mz", Name = "Mia Cole", Role = ManagerCatalogue.RolePlace, From = 1, Skill = 90, Seen = true, LeaseStep = 0, Tasks = ManagerRules.Bit(ManagerTask.Leases) };
         mw.M.Managers.Add(ml);

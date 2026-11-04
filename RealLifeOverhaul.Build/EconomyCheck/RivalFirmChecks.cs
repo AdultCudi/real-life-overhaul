@@ -66,7 +66,7 @@ internal static partial class Program
         RivalFile many = RivalFirmFile(31, 1, 6);
         RivalFirms.Sync(many, many.Seed, 120, 30, 100);
         RivalOutlet first = many.Outlets.Count > 0 ? many.Outlets[0] : null;
-        Check(many.Outlets.Count == RivalFirms.OutletsMost && first != null && first.Move >= 3, "rival firms: a tycoon keeps four outlets at most: the oldest closes (" + many.Outlets.Count + " open)");
+        Check(many.Outlets.Count == RivalFirms.OutletsMost && first != null && first.Move > 6 - RivalFirms.OutletsMost, "rival firms: a tycoon keeps the most outlets the one cap allows (RivalCatalogue.OutletsMost): the oldest closes (" + many.Outlets.Count + " open)");
         var kept = new List<StaffFile>(first.Crew);
         many.Tycoons[1].DefeatedDay = 130;
         RivalFirms.Sync(many, many.Seed, 131, 30, 100);
