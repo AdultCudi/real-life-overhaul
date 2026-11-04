@@ -243,20 +243,40 @@ namespace RealLifeOverhaul.Ui
             return UiDraw.Icon(s, at, x + UiDraw.SnapDown((w - glyph) / 2f), y + UiDraw.SnapDown((h - glyph) / 2f), glyph, c.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
         }
 
+        // How many rows above the first the detail's actions need, the main one last in the bottom row, as the foot lays them out.
+        private static float ActionRows(UiCatalogueModel m, float w, IUiKeys keys)
+        {
+            float row = 0f, used = 0f;
+            for (int i = m.Actions.Length - 1; i >= 0; i--)
+            {
+                float need = Math.Min(w, UiDraw.ButtonWidth(m.Actions[i].Kind, m.Actions[i].Label, m.Actions[i].Icon, m.Actions[i].Key, keys));
+                if (used > 0f && used + UiTokens.S3 + need > w)
+                {
+                    row++;
+                    used = 0f;
+                }
+                used += (used > 0f ? UiTokens.S3 : 0f) + need;
+            }
+            return row;
+        }
+
         // The chosen card's detail: its picture large, what it is in capitals, its name in the figures' size, its price,
         // its facts as compact rows, a sentence on it, and its actions at the foot, the main one last.
         private static void Detail(UiScene s, UiAt at, UiCatalogueModel m, float x, float y, float w, float h, IUiKeys keys, int command)
         {
             ref UiCatalogueCard c = ref m.Cards[m.Chosen];
-            int tile = UiDraw.Box(s, at, x, y, w, DetailTile, UiRole.Tile, UiRole.None, UiTokens.RadiusLarge);
-            Picture(s, at.In(tile), ref c, x, y, w, DetailTile, UiTokens.S16);
+            // Actions that do not all fit one row wrap into rows above the main one; the picture gives up that much height.
+            float step = UiTokens.Control + UiTokens.S1;
+            float rows = ActionRows(m, w, keys), tileH = DetailTile - rows * step;
+            int tile = UiDraw.Box(s, at, x, y, w, tileH, UiRole.Tile, UiRole.None, UiTokens.RadiusLarge);
+            Picture(s, at.In(tile), ref c, x, y, w, tileH, UiTokens.S16);
             if (!string.IsNullOrEmpty(c.State))
             {
                 int over = s.ItemCount;
                 UiDraw.Chip(s, at.In(tile), x + UiTokens.S3, y + UiTokens.S3, c.State, c.StateTone, w - UiTokens.S6);
                 Over(s, over);
             }
-            float ty = y + DetailTile + UiTokens.S4;
+            float ty = y + tileH + UiTokens.S4;
             UiDraw.Text(s, at, x, ty, w, UiStyle.SectionHeader, UiRole.Text2, m.DetailKicker, UiFlags.Label | UiFlags.Truncate);
             ty += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1;
             UiDraw.Text(s, at, x, ty, w, UiStyle.Display, UiRole.Text, c.Name, UiFlags.Truncate);
@@ -275,17 +295,7 @@ namespace RealLifeOverhaul.Ui
             }
             // The actions under what they act on, the main one last at the right, as the hero's actions stand by it.
             // When they do not all fit one row they wrap: the main one stays last in the bottom row, the others stand in rows above it.
-            float step = UiTokens.Control + UiTokens.S1, row = 0f, used = 0f;
-            for (int i = m.Actions.Length - 1; i >= 0; i--)
-            {
-                float need = Math.Min(w, UiDraw.ButtonWidth(m.Actions[i].Kind, m.Actions[i].Label, m.Actions[i].Icon, m.Actions[i].Key, keys)) + UiTokens.S3;
-                if (used > 0f && used + need - UiTokens.S3 > w)
-                {
-                    row++;
-                    used = 0f;
-                }
-                used += need;
-            }
+            float row = rows;
             float by = Math.Min(UiDraw.Snap(ty + UiTokens.S5 + row * step), y + h - UiTokens.Control);
             float right = x + w, rowY = by;
             for (int i = m.Actions.Length - 1; i >= 0; i--)
