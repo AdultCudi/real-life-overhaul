@@ -241,7 +241,8 @@ namespace RealLifeOverhaul.Ui
                 };
                 TableShape(UiIcon.Key, EstateText.T("reallife_estate_tab_agency"), agency.Running ? EstateGame.NameOf(agency.Office)
                     : string.Empty, null, null, cols, rows, keys, AgencySide(agency),
-                    EstateText.T(agency.Running ? "reallife_estate_row_no_instructions" : "reallife_estate_row_no_agency"), agency.Running ? EstateText.T("reallife_estate_agency_open_what") : string.Empty);
+                    EstateText.T(agency.Running ? "reallife_estate_row_no_instructions" : "reallife_estate_row_no_agency"),
+                    agency.Running ? EstateText.T("reallife_estate_agency_open_what") : string.Empty);
                 if (agency.Running)
                 {
                     var names = new List<string>(6);

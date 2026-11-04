@@ -117,7 +117,8 @@ namespace RealLifeOverhaul.Ui
                 var m = new UiCatalogueModel
                 {
                     Cards = cards.ToArray(), CardCount = cards.Count, Chosen = chosen,
-                    EmptyTitle = DealerText.T(_s.Yards.Count == 0 ? "reallife_dealer_row_no_dealership" : "reallife_dealer_empty_stock"), EmptyBody = DealerText.T("reallife_ui_dealer_empty_stock_body"), EmptyIcon = UiIcon.Car
+                    EmptyTitle = DealerText.T(_s.Yards.Count == 0 ? "reallife_dealer_row_no_dealership" : "reallife_dealer_empty_stock"),
+                    EmptyBody = DealerText.T("reallife_ui_dealer_empty_stock_body"), EmptyIcon = UiIcon.Car
                 };
                 var runs = new List<int>(8);
                 if (picked != null)
