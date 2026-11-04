@@ -48,6 +48,7 @@ namespace RealLifeOverhaul.Ui
         public WorkDo[] Rows = new WorkDo[0];       // by the first table's rows
         public WorkDo[] MoreRows = new WorkDo[0];   // by the second table's rows
         public WorkDo[] People = new WorkDo[0];     // by the people
+        public WorkDo[] GridActs = new WorkDo[0];   // by the catalogue detail's buttons
         public WorkDo All;                          // the link under the people
         public WorkDo Note;                         // the link under the note
         public int Chosen = -1;                     // the table's row the detail shows

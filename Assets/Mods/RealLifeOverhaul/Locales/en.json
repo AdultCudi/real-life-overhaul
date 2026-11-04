@@ -31358,5 +31358,19 @@
   "reallife_work_week_n": "Week {n}",
   "reallife_work_what_needs": "What {rung} needs",
   "reallife_work_you_have": "you have {n}",
-  "reallife_work_you_line": "You"
+  "reallife_work_you_line": "You",
+  "reallife_work_before_evenings": "Class times free",
+  "reallife_work_before_fee": "You have the fee",
+  "reallife_work_before_money": "You have the money",
+  "reallife_work_buy_deliver": "Buy and deliver, {price}",
+  "reallife_work_clash": "Clashes with your shifts",
+  "reallife_work_condition": "Condition said",
+  "reallife_work_delivery_adds": "Delivery adds",
+  "reallife_work_leave_early": "Yes, leaving early",
+  "reallife_work_market_price": "Market price",
+  "reallife_work_next_morning": "next morning",
+  "reallife_work_no": "No",
+  "reallife_work_short_by": "No, short by",
+  "reallife_work_show_desk": "Show the desk",
+  "reallife_work_yes": "Yes"
 }

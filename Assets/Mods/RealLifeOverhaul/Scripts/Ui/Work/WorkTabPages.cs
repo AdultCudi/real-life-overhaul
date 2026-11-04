@@ -41,6 +41,7 @@ namespace RealLifeOverhaul.Ui
         public readonly List<WorkAct> Acts = new List<WorkAct>(4);
         public readonly List<WorkPerson> People = new List<WorkPerson>(4);
         public string PeopleTitle;
+        public readonly List<KeyValuePair<string, string>> Facts = new List<KeyValuePair<string, string>>(6);   // label and value pairs the catalogue's detail lists
         public int Group = -1;                                 // a filter chip it belongs to (by the tab's chips); -1: every one
     }
 
@@ -65,6 +66,8 @@ namespace RealLifeOverhaul.Ui
         public readonly List<WorkPerson> People = new List<WorkPerson>(8);
         public string Note;
         public UiRole NoteTone = UiRole.Warn;
+        public bool Grid;                                      // laid as a catalogue of cards with the chosen one's detail beside them
+        public string GridKicker;                              // what the chosen thing is, over its detail
         public bool Sub;                                       // a sub page (a person, a haggle): Back steps out of it
     }
 
@@ -136,6 +139,17 @@ namespace RealLifeOverhaul.Ui
                 AddActs(b, chosen.Acts, chosen.Id);
             }
             AddActs(b, t.Acts, 0);
+            if (t.Grid && shown.Count > 0)
+            {
+                int gi = at >= 0 ? at : 0;
+                UiCatalogueModel cat = WorkGrid.Model(shown, gi, w, t.GridKicker, out WorkDo[] gridActs);
+                b.Page.GridActs = gridActs;
+                b.Page.Model.Hero = null;
+                b.Page.Model.Next = null;
+                b.Page.Body = (s, ats, x, y, cw, bottom, keys) => WorkGrid.Lay(s, ats, cat, b.M, x, y, cw, bottom, keys);
+                b.Page.Chosen = gi;
+                return b.Done();
+            }
             if (shown.Count > 0)
             {
                 var rows = new UiAppRow[shown.Count];

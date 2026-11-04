@@ -226,18 +226,28 @@ internal static partial class UiSamples
         string[][] list = { new[] { "Introduction to Accounting", "Midtown Community College", "12 weeks", "6 of 24", "$1,850" },
             new[] { "Professional Cooking", "Garment District Trade School", "16 weeks", "11 of 24", "$2,400" },
             new[] { "Forklift and Warehouse Safety", "Garment District Trade School", "3 weeks", state == "courses_full" ? "Full" : "9 of 24",
-                "$650" }, new[] { "Python for Business", "Hudson Tech Institute", "10 weeks", "14 of 24", "$1,600" } };
+                "$650" }, new[] { "Python for Business", "Hudson Tech Institute", "10 weeks", "14 of 24", "$1,600" },
+            new[] { "Spanish, Level 1", "Midtown Community College", "14 weeks", "10 of 24", "$900" }, new[] { "Retail Management", "Midtown Community College", "12 weeks", "8 of 24", "$2,100" },
+            new[] { "Electrical Basics", "Garment District Trade School", "20 weeks", "12 of 24", "$3,200" }, new[] { "Game Design Studio", "Hudson Tech Institute", "14 weeks", "5 of 24", "$2,800" },
+            new[] { "Customer Service Basics", "Midtown Community College", "4 weeks", "15 of 24", "$480" } };
         for (int i = 0; i < list.Length; i++)
         {
             var r = new WorkRow { Id = i + 1, Icon = i == 2 ? UiIcon.Wrench : UiIcon.Cap, Cells = list[i], Status = i == 2 ? "Licence" : "Beginner",
                 Tone = i == 2 ? UiRole.Warn : UiRole.Accent,
                 Detail = list[i][0] + " at " + list[i][1] + ". Before you enrol: you have the fee, your evenings are free. Your teacher: Dr. Elena Marsh, 12 years teaching, rated 4.7 by students.", Group = i < 2 ? i : 2 };
+            r.Facts.Add(new KeyValuePair<string, string>("Fee", list[i][4]));
+            r.Facts.Add(new KeyValuePair<string, string>("Classes", list[i][2]));
+            r.Facts.Add(new KeyValuePair<string, string>("Seats left", list[i][3]));
+            r.Facts.Add(new KeyValuePair<string, string>("You have the fee", "Yes"));
+            r.Facts.Add(new KeyValuePair<string, string>("Class times free", "Yes"));
             r.Acts.Add(WkAct(100, state == "courses_full" && i == 2 ? "Full" : "Enrol, " + list[i][4], UiButtonKind.Primary, UiIcon.Check,
                 state == "courses_full" && i == 2 ? "Every seat of this course is taken." : null));
             r.People.Add(new WorkPerson { Name = "Ava Lindqvist", Role = "From your Pioneer team, in this class", Label = "Skill", Score = 52 });
             r.PeopleTitle = "In this class";
             courses.Rows.Add(r);
         }
+        courses.Grid = true;
+        courses.GridKicker = "Courses";
         var studying = new WorkTab { Lead = "Nothing under way. Enrol on a course and its classes, homework and exam appear here.",
             TableTitle = "Studying", Columns = WkCols("Course", "Next class", "Attended", "Exam") };
         studying.Rows.Add(new WorkRow { Id = 1, Icon = UiIcon.Cap, Cells = new[] { "Business Maths", "Mon 18:00", "96%", "Day 421" },
@@ -317,15 +327,23 @@ internal static partial class UiSamples
             Chips = new[] { "All 86", "Vehicles 18", "Machines 22", "Furniture 31", "Stock 15" } };
         string[][] things = state == "listings_machines"
             ? new[] { new[] { "Espresso machine", "Sofia Marin", "$1,950", "-9%" }, new[] { "Commercial grill", "Hana Okada", "$2,300", "-3%" },
-                new[] { "Display fridge", "Leo Park", "$1,150", "-15%" } }
+                new[] { "Display fridge", "Leo Park", "$1,150", "-15%" }, new[] { "Dough mixer", "Colm Doyle", "$4,600", "+5%" }, new[] { "Chest freezer", "Ada Voss", "$1,380", "-5%" },
+                new[] { "Espresso machine", "Guo Logistics", "$2,050", "+4%" } }
             : new[] { new[] { "Red delivery van", "Huang Guo", "$14,200", "-12%" }, new[] { "Box truck", "Harbourside Freight HSF", "$27,900",
-                "-6%" }, new[] { "Blue sport coupe", "Marco Bellini", "$38,500", "-4%" } };
+                "-6%" }, new[] { "Blue sport coupe", "Marco Bellini", "$38,500", "-4%" }, new[] { "Tan minibus", "Amara Nwosu", "$19,400", "+3%" }, new[] { "Lounge armchair", "Nia Brooks", "$320", "-8%" },
+                new[] { "Corner sofa", "Tomas Reyes", "$890", "+2%" }, new[] { "Dining set", "Priya Shah", "$740", "-11%" }, new[] { "Chest freezer", "Ada Voss", "$1,380", "-5%" },
+                new[] { "Coffee pallet", "Colm Doyle", "$1,530", "-15%" } };
         for (int i = 0; i < things.Length && state != "listings_none"; i++)
         {
             var r = new WorkRow { Id = i + 1, Icon = state == "listings_machines" ? UiIcon.Factory : UiIcon.Car, Cells = things[i],
                 Status = things[i][3].StartsWith("-") ? things[i][3].Substring(1) + " under" : things[i][3] + " over",
                 Tone = things[i][3].StartsWith("-") ? UiRole.Ok : UiRole.Warn,
                 Detail = things[i][0] + " from " + things[i][1] + ", asking " + things[i][2] + ". Before you buy: you have the money, a free bay at Hudson Warehouse, delivery adds $120 and a day." };
+            r.Facts.Add(new KeyValuePair<string, string>("Market price", "$16,100"));
+            r.Facts.Add(new KeyValuePair<string, string>("Condition said", "Good, 82%"));
+            r.Facts.Add(new KeyValuePair<string, string>("Seller", things[i][1] + ", 4.1"));
+            r.Facts.Add(new KeyValuePair<string, string>("You have the money", "Yes"));
+            r.Facts.Add(new KeyValuePair<string, string>("Delivery adds", "$120, next morning"));
             r.Acts.Add(WkAct(100, "Buy now, " + things[i][2], UiButtonKind.Primary, UiIcon.Check));
             r.Acts.Add(WkAct(101, "Haggle", UiButtonKind.Secondary, UiIcon.Arrows));
             if (i == 0)
@@ -335,6 +353,8 @@ internal static partial class UiSamples
             }
             listings.Rows.Add(r);
         }
+        listings.Grid = true;
+        listings.GridKicker = "Listings";
         var yours = new WorkTab { Lead = "Things you bought and what to do with them: fix, clean, list or keep.", TableTitle = "Yours",
             Columns = WkCols("Thing", "State", "Paid", "Worth") };
         yours.Rows.Add(new WorkRow { Id = 1, Icon = UiIcon.Sofa, Cells = new[] { "Corner sofa", "Kept", "$890", "$960" },

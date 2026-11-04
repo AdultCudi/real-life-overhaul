@@ -152,12 +152,32 @@ namespace RealLifeOverhaul.Ui
                     }
                     r.PeopleTitle = w.T("reallife_work_in_class", "In this class");
                 }
+                long cash = (long)HustleCashOf();
+                int owe = fee;
+                r.Facts.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_fee", "Fee"), CareersText.Money(fee)));
+                r.Facts.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_length", "Classes"), c.Timetabled ? c.Sessions.ToString(Inv) : "-"));
+                r.Facts.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_seats", "Seats left"), seats));
+                r.Facts.Add(new KeyValuePair<string, string>(w.T("reallife_work_before_fee", "You have the fee"), cash >= owe ? w.T("reallife_work_yes", "Yes") : w.T("reallife_work_short_by", "No, short by") + " " + CareersText.Money(owe - cash)));
+                RealLifeOverhaul.Careers.Job job = d.Work != null ? d.Work.Job : null;
+                if (job != null && c.Timetabled)
+                {
+                    WorkFit fit = StudyRules.Fit(c, StudyMode.FullTime, job.Def, out int _, out int _);
+                    r.Facts.Add(new KeyValuePair<string, string>(w.T("reallife_work_before_evenings", "Class times free"), fit == WorkFit.Fits ? w.T("reallife_work_yes", "Yes") : fit == WorkFit.Clash ? w.T("reallife_work_clash", "Clashes with your shifts") : w.T("reallife_work_leave_early", "Yes, leaving early")));
+                }
+                if (RosterRules.Floor(c, out int fs, out int fn))
+                {
+                    r.Facts.Add(new KeyValuePair<string, string>(CareersText.Skill(fs), SkillPoints(d, c).ToString(Inv) + " / " + fn.ToString(Inv)));
+                }
                 t.Rows.Add(r);
             }
+            t.Grid = true;
+            t.GridKicker = w.T("reallife_campus_tab_courses", "Courses");
             t.Chips = new[] { w.F("reallife_work_filter_all", "All {n}", "n", t.Rows.Count.ToString(Inv)), w.T("reallife_work_kind_short", "Short"),
                 w.T("reallife_work_kind_trade", "Diplomas"), w.T("reallife_work_kind_higher", "Degrees") };
             return t;
         }
+
+        private static int HustleCashOf() => RealLifeOverhaul.Hustles.HustleGame.Cash;
 
         private static int SkillPoints(CareersDirector d, CourseDef c) => RosterRules.Floor(c, out int skill, out int _) ? StudyRules.Points(d.Study,
             skill) : 0;

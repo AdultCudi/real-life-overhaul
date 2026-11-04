@@ -137,6 +137,15 @@ namespace RealLifeOverhaul.Ui
                     Why = l.Gone ? w.T("reallife_work_sold_elsewhere",
                         "Sold to someone else today.") : l.Haggles >= HustleCatalogue.HagglesMost ? w.T("reallife_work_haggled_out",
                         "They will not haggle again.") : null });
+                int deliver = HustleRules.DeliveryFee(l.Asking, HustleGame.Level);
+                r.Facts.Add(new KeyValuePair<string, string>(w.T("reallife_work_market_price", "Market price"), worth > 0 ? HustleText.Money(worth) : "-"));
+                r.Facts.Add(new KeyValuePair<string, string>(w.T("reallife_work_condition", "Condition said"), HustleText.Condition(l.Shown)));
+                r.Facts.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_seller", "Seller"), seller != null ? seller.Name + ", " + (seller.Rating / 10f).ToString("0.0", Inv) : l.Seller));
+                r.Facts.Add(new KeyValuePair<string, string>(w.T("reallife_work_before_money", "You have the money"), HustleGame.Cash >= l.Asking ? w.T("reallife_work_yes", "Yes") : w.T("reallife_work_no", "No")));
+                r.Facts.Add(new KeyValuePair<string, string>(w.T("reallife_work_delivery_adds", "Delivery adds"), HustleText.Money(deliver) + ", " + w.T("reallife_work_next_morning", "next morning")));
+                r.Acts.Insert(1, new WorkAct { Kind = Buy + 20, Arg = l.Id, Label = w.F("reallife_work_buy_deliver", "Buy and deliver, {price}", "price", HustleText.Money(l.Asking + deliver)), Style = UiButtonKind.Secondary, Icon = UiIcon.Truck,
+                    Why = l.Gone ? w.T("reallife_work_sold_elsewhere", "Sold to someone else today.") : HustleGame.Cash < l.Asking + deliver ? w.T("reallife_work_no_money", "You do not have the money.") : null });
+                r.Acts.Add(new WorkAct { Kind = Buy + 21, Arg = l.Id, Label = w.T("reallife_hustle_button_way", "Show the way"), Style = UiButtonKind.Secondary, Icon = UiIcon.Locate, Opens = true });
                 if (seller != null && SellerRules.MoreFrom(s.Listings, seller.Id, l.Id, more) > 0)
                 {
                     r.PeopleTitle = w.T("reallife_work_more_from", "More from this seller");
@@ -153,6 +162,8 @@ namespace RealLifeOverhaul.Ui
                 w.F("reallife_work_cat_machines", "Machines {n}", "n", counts[1].ToString(Inv)), w.F("reallife_work_cat_furniture", "Household {n}",
                     "n", counts[2].ToString(Inv)),
                 w.F("reallife_work_cat_stock", "Stock {n}", "n", counts[3].ToString(Inv)) };
+            t.Grid = true;
+            t.GridKicker = w.T("reallife_hustle_tab_listings", "Listings");
             return t;
         }
 
@@ -264,6 +275,14 @@ namespace RealLifeOverhaul.Ui
                     case Haggle:
                         if (l == null) { return false; }
                         d.Haggle(act.Arg, Math.Max(1, l.Asking * 9 / 10), false, out int _);
+                        break;
+                    case Buy + 20:
+                        if (l == null) { return false; }
+                        done = d.Buy(act.Arg, l.Asking, true);
+                        break;
+                    case Buy + 21:
+                        if (l == null) { return false; }
+                        d.ShowWay(l.Street, l.Number);
                         break;
                     case Accept: done = d.Accept(act.Arg); break;
                     case Decline: d.Decline(act.Arg); break;

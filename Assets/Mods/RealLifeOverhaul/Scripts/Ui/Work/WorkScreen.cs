@@ -124,6 +124,11 @@ namespace RealLifeOverhaul.Ui
                     return Carry(_page.All);
                 case UiAppWindow.NoteCommand:
                     return Carry(_page.Note);
+                case UiCatalogue.First + UiCatalogue.Card:
+                    _view.Row = arg;
+                    return true;   // a card chooses what the detail beside shows
+                case UiCatalogue.First + UiCatalogue.Action:
+                    return Run(_page.GridActs, arg);
                 case UiChart.First + UiChart.Point:
                 case UiTrack.First + UiTrack.Step:
                     return true;   // a point or a step is read, never acted on: its card or its note is its answer

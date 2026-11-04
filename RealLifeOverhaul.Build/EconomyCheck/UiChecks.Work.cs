@@ -12,7 +12,8 @@ internal static partial class Program
     private static readonly int[] WorkCommandsAll =
     {
         UiAppWindow.NavCommand, UiAppWindow.RowCommand, UiAppWindow.PersonCommand, UiAppWindow.ActionCommand, UiAppWindow.MoreCommand,
-            UiAppWindow.AllCommand, UiAppWindow.NoteCommand, UiChart.First + UiChart.Point, UiTrack.First + UiTrack.Step
+            UiAppWindow.AllCommand, UiAppWindow.NoteCommand, UiChart.First + UiChart.Point, UiTrack.First + UiTrack.Step,
+        UiCatalogue.First + UiCatalogue.Card, UiCatalogue.First + UiCatalogue.Action
     };
 
     static partial void UiCasesWork(UiScreenDef def, List<UiScreenCase> cases)
