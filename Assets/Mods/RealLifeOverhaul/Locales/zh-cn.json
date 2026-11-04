@@ -30242,7 +30242,7 @@
   "reallife_news_open_finance": "打开财务",
   "reallife_news_open_staff": "员工",
   "reallife_news_open_stocks": "股票",
-  "reallife_news_open_map": "地图",
+  "reallife_news_open_map": "街区",
   "reallife_news_empty_city": "城市还没有报告",
   "reallife_news_empty_city_body": "数字会在经济运行的第一个早晨出现。",
   "reallife_news_col_good": "商品",
@@ -31032,5 +31032,7 @@
   "reallife_flare_biz_offer_10": "{name}的团队来了新面孔。来打个招呼吧。",
   "reallife_flare_biz_offer_11": "{name}的雨天优惠。进来避避雨。",
   "reallife_flare_dm_hello_2": "你好，你是新搬来的吗？我想我们住得不远。",
-  "reallife_flare_dm_hello_3": "嗨。你的名字总在城里出现。最近怎么样？"
+  "reallife_flare_dm_hello_3": "嗨。你的名字总在城里出现。最近怎么样？",
+  "reallife_news_not_yet": "暂无：从第 {day} 天起",
+  "reallife_news_where": "居民的居住地"
 }

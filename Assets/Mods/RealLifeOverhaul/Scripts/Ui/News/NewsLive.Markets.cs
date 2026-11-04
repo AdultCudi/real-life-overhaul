@@ -81,16 +81,25 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             model.BigValue = (state.IndexLast / 100f).ToString("N1", CultureInfo.CurrentCulture);
-            int day = state.IndexPrevClose > 0 ? (int)((long)(state.IndexLast - state.IndexPrevClose) * 10000L / state.IndexPrevClose) : 0;
-            int n = state.IndexDaily.Count;
-            int then = n > Sessions ? state.IndexDaily[n - 1 - Sessions].C : n > 0 ? state.IndexDaily[0].C : 0;
-            int week = then > 0 ? (int)((long)(state.IndexLast - then) * 10000L / then) : 0;
-            model.BigChanges = new[]
+            // A change is given only where the market has the sessions for it: no close before today, no change on the day; fewer than five closes, none over five.
+            var changes = new List<string>(2);
+            var good = new List<bool>(2);
+            if (state.IndexPrevClose > 0)
             {
-                OutlookText.T("reallife_news_on_day", "change", Percent(day)),
-                LedgerText.Fill("reallife_ledger_week", "change", Percent(week))
-            };
-            model.BigGood = new[] { day >= 0, week >= 0 };
+                int day = (int)((long)(state.IndexLast - state.IndexPrevClose) * 10000L / state.IndexPrevClose);
+                changes.Add(OutlookText.T("reallife_news_on_day", "change", Percent(day)));
+                good.Add(day >= 0);
+            }
+            int n = state.IndexDaily.Count;
+            int then = n > Sessions ? state.IndexDaily[n - 1 - Sessions].C : 0;
+            if (then > 0)
+            {
+                int week = (int)((long)(state.IndexLast - then) * 10000L / then);
+                changes.Add(LedgerText.Fill("reallife_ledger_week", "change", Percent(week)));
+                good.Add(week >= 0);
+            }
+            model.BigChanges = changes.ToArray();
+            model.BigGood = good.ToArray();
         }
 
         private static string Percent(int bp)
