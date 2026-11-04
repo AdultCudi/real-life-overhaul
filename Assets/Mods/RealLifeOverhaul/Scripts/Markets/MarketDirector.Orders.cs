@@ -5,6 +5,9 @@ namespace RealLifeOverhaul.Markets
     /// <summary>Part of the market director: what the player asks of the market, orders, the watch list and the margin account.</summary>
     public sealed partial class MarketDirector
     {
+        /// <summary>The cash an order can spend: the player's own and the money worked orders have with the broker (the cash Estimate counts), zero while the market is closed to the desk.</summary>
+        public long Spendable => Running ? _engine.Wallet.Cash : 0L;
+
         public Estimate Estimate(int stockId, OrderSide side, OrderType type, long qty, int limitCents, int stopCents, bool closing = false)
         {
             if (!Running)

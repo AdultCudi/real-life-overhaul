@@ -29,6 +29,34 @@ namespace RealLifeOverhaul.Markets
             return (int)(priceCents * 100L / annual);
         }
 
+        /// <summary>
+        /// The most shares a sum of cash buys at a price in cents, fee included: the largest number whose cost and commission (the
+        /// market's rule, <see cref="MarketTrading.Commission"/> with its floor) the cash covers. A search, because the fee moves
+        /// with the cost. Zero when the cash buys none. Game-free; the ticket's "Most you can buy".
+        /// </summary>
+        public static long MostToBuy(long cash, int priceCents, int least)
+        {
+            if (cash <= 0 || priceCents <= 0)
+            {
+                return 0L;
+            }
+            long lo = 0L, hi = cash * 100L / priceCents;
+            while (lo < hi)
+            {
+                long mid = lo + (hi - lo + 1L) / 2L;
+                long value = MarketTrading.Value(mid, priceCents, true);
+                if (value + MarketTrading.Commission(value, least) <= cash)
+                {
+                    lo = mid;
+                }
+                else
+                {
+                    hi = mid - 1L;
+                }
+            }
+            return lo;
+        }
+
         /// <summary>The dividend yield in basis points, four quarters of the last dividend against the price.</summary>
         public static int YieldBp(int priceCents, int dpsCents)
         {

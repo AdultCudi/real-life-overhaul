@@ -43,7 +43,12 @@ namespace RealLifeOverhaul.Markets
         Support = 2      // under a drawn level
     }
 
-    /// <summary>One saved drawing on one company. Prices in cents, the ends as candle indexes in the frame it was drawn on.</summary>
+    /// <summary>
+    /// One saved drawing on one company. Prices in cents, the ends as the game days they stand on, so a drawing keeps its place on
+    /// its price and day whatever range the chart shows (a day is found in a week's or a month's candle by its start). Frame is the
+    /// range it was drawn in. A drawing made before the days were kept has candle numbers there, which stand on days of the
+    /// game's first weeks and fall off the chart's left as it moves on.
+    /// </summary>
     public struct ChartDrawing
     {
         public int StockId;
@@ -149,7 +154,7 @@ namespace RealLifeOverhaul.Markets
             }
             if (Drawings.Count >= DrawingsMost)
             {
-                Drawings.RemoveAt(0);
+                DropDrawing(0);
             }
             Drawings.Add(drawing);
             Touch();
@@ -163,7 +168,7 @@ namespace RealLifeOverhaul.Markets
             {
                 if (Drawings[i].StockId == stockId)
                 {
-                    Drawings.RemoveAt(i);
+                    DropDrawing(i);
                     gone++;
                 }
             }
@@ -172,6 +177,49 @@ namespace RealLifeOverhaul.Markets
                 Touch();
             }
             return gone;
+        }
+
+        /// <summary>The drawing of a company that is the so-manyth one it made (from 0), taken off. False when there is none.</summary>
+        public bool RemoveDrawing(int stockId, int ordinal)
+        {
+            int seen = 0;
+            for (int i = 0; i < Drawings.Count; i++)
+            {
+                if (Drawings[i].StockId != stockId)
+                {
+                    continue;
+                }
+                if (seen++ == ordinal)
+                {
+                    DropDrawing(i);
+                    Touch();
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // A drawing gone: an alert under it goes too (its line is no more), and the alerts under later drawings follow them down a place.
+        private void DropDrawing(int at)
+        {
+            Drawings.RemoveAt(at);
+            for (int i = Alerts.Count - 1; i >= 0; i--)
+            {
+                PriceAlert a = Alerts[i];
+                if (a.Kind != AlertKind.Support || a.Drawing < 0)
+                {
+                    continue;
+                }
+                if (a.Drawing == at)
+                {
+                    Alerts.RemoveAt(i);
+                }
+                else if (a.Drawing > at)
+                {
+                    a.Drawing--;
+                    Alerts[i] = a;
+                }
+            }
         }
 
         public bool AddAlert(PriceAlert alert)
