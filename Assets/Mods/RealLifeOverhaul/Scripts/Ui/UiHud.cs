@@ -86,7 +86,7 @@ namespace RealLifeOverhaul.Ui
             UiDraw.StatusBar(s, frame, keys, false);
             if (Chips(s, m, frame, keys, out float x, out float y, out float w, out float h))
             {
-                UiDraw.KeyChips(s, x + w, y, keys);
+                UiDraw.KeyChips(s, x + w, y, keys, UiDraw.KeyChipsRoom(frame));
             }
             OnBar(s, m, frame);
         }
@@ -103,10 +103,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
-            w = UiDraw.KeyChipsWidth(s, keys);
-            h = UiDraw.KeyChipHeight;
-            x = frame.Width - Left - w;
-            y = frame.BandY - UiTokens.S3 - h;
+            UiDraw.KeyChipsPlace(s, frame, keys, out x, out y, out w, out h, false);
             if (m != null && m.PhoneW > 0f && m.PhoneH > 0f && UiHudRules.Overlaps(x, y, w, h, m.PhoneX, m.PhoneY, m.PhoneW, m.PhoneH))
             {
                 // The phone stands at the bar's right end, over the chips' place (the owner, 3 Nov 2026: "The map, pause and
