@@ -10,7 +10,7 @@ public static partial class UiPreviewRunner
         AddWorkApp(screens, "career", "Career", UiIcon.Briefcase, UiSamples.CareerStates, (t, st) => UiSamples.CareerScreenOf(t, st));
         AddWorkApp(screens, "campus", "Campus", UiIcon.Cap, UiSamples.CampusStates, (t, st) => UiSamples.CampusScreenOf(t, st));
         AddWorkApp(screens, "roles", "Open Roles", UiIcon.People, UiSamples.RolesStates, (t, st) => UiSamples.RolesScreenOf(t, st));
-        AddWorkApp(screens, "hustle", "Marketplace", UiIcon.Store, UiSamples.MarketStates, (t, st) => UiSamples.MarketScreenOf(t, st));
+        AddWorkApp(screens, "hustle", "Marketplace", UiIcon.Store, UiSamples.MarketplaceStates, (t, st) => UiSamples.MarketScreenOf(t, st));
     }
 
     private static void AddWorkApp(List<Screen> screens, string id, string title, UiIcon icon, string[] states, System.Func<UiWords, string, WorkScreen> make)
