@@ -51,15 +51,23 @@ namespace RealLifeOverhaul.Economy
                 }
                 // The policy's ceiling: the band, the largest raise and the days between two (PolicyRules); at its start, the band alone.
                 int ceiling = PolicyRules.RaiseDue(LastRaise(mp, f.Id), day, every) ? PolicyRules.RaiseCeiling(f.Paid, f.Going, band, most) : f.Paid, roll;
-                RaiseAnswer fair = ManagerRules.RaiseAnswerFor(f.Paid, f.AskTo, ceiling, false);
-                if (fair != RaiseAnswer.Agree && ToApprover(mp, f, false, ceiling, day))
+                RaiseAnswer asked = ManagerRules.RaiseAnswerFor(f.Paid, f.AskTo, ceiling, false);
+                if (asked != RaiseAnswer.Agree && ToApprover(mp, f, false, ceiling, day))
                 {
                     continue;   // past what the manager may agree: left open for whoever the policy names to approve it
                 }
+                // A refusal is a one-off bonus instead when the month's budget left covers it (the bonus comes out of that budget).
+                int bonus = BonusOf(mp.Place.Place), left = ManagerRules.Left(BudgetOf(m), m.Spent);
+                RaiseAnswer fair = ManagerRules.OrBonus(asked, bonus, left, false);
                 bool slip = Slips(skill, review, day, mp.Place.Place, ManagerTask.Raises, f.Id, out roll);
-                RaiseAnswer answer = ManagerRules.RaiseAnswerFor(f.Paid, f.AskTo, ceiling, slip);
+                RaiseAnswer answer = ManagerRules.OrBonus(ManagerRules.RaiseAnswerFor(f.Paid, f.AskTo, ceiling, slip), bonus, left, slip);
+                if (answer == RaiseAnswer.Bonus && !Cost(bonus, CompanyGame.BonusKey, mp.Shop, f.Name, CostKind.Wages, null, "a one-off bonus given by the manager in place of a raise"))
+                {
+                    answer = RaiseAnswer.Refuse;   // the cash does not cover it: the request is refused as before
+                }
                 int askDay = f.AskDay, askTo = f.AskTo, rest = f.AskRest, standing = f.Standing, added = StaffRules.RaiseFor(f, answer);
                 StaffRules.Answer(f, answer, day);
+                m.Spent += answer == RaiseAnswer.Bonus ? bonus : 0;
                 Decision d = Record(mp, ManagerTask.Raises, f.Id, who, day, hour, answer != fair);
                 d.A = added;
                 d.B = f.Standing - standing;
@@ -68,6 +76,11 @@ namespace RealLifeOverhaul.Economy
                 d.E = rest;
                 d.F = (int)answer;
                 d.Detail = ManagerStore.Word(f.Name);
+                d.G = answer == RaiseAnswer.Bonus ? bonus : 0;
+                if (answer == RaiseAnswer.Bonus)
+                {
+                    d.State = DecisionState.Closed;   // the money is paid: nothing to put back
+                }
                 Logger?.Info("Company: " + who + " (manager, skill " + skill + ") answered " + f.Name + "'s request for " + askTo + " an hour (hundredths): " + answer
                              + "; the ceiling is " + ceiling + " (" + ManagerCatalogue.Step(ManagerCatalogue.WageBands, band) + " thousandths of the going rate "
                              + f.Going + ")" + (answer != fair ? ", a mistake: " + fair + " was the answer" : string.Empty) + ".");
@@ -647,6 +660,10 @@ namespace RealLifeOverhaul.Economy
                 case ManagerTask.Raises:
                 {
                     StaffFile f = _state.Employee(d.Subject);
+                    if (d.F == (int)RaiseAnswer.Bonus)
+                    {
+                        return Never(out why, "reallife_mgr_undo_paid");   // a bonus is paid the day it is given
+                    }
                     if (f == null || !On(CompanyPart.Staff))
                     {
                         return Never(out why, "reallife_mgr_undo_gone");

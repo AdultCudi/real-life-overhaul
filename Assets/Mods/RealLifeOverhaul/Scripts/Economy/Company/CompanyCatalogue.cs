@@ -102,6 +102,8 @@ namespace RealLifeOverhaul.Economy
         public const int StandAgree = 10;
         public const int StandLess = -8;
         public const int StandRefuse = -18;
+        public const int StandBonus = 5;            // a one-off bonus in place of a raise: less than a raise's, more than a refusal's
+        public const int BonusBase = 300;           // a bonus in place of a raise, whole money at a price index of 100, at the starting wage band
         public const int StandUnderDay = -1;        // each day underpaid
         public const int StandFairDay = 1;          // each day paid fairly, up to StandingCalm
         public const int StandMatch = 5;            // a rival's offer matched

@@ -185,6 +185,7 @@ namespace RealLifeOverhaul.Economy
     internal static partial class CompanyGame
     {
         public const string RaiseKey = "reallife_transaction_co_raise";
+        public const string BonusKey = "reallife_transaction_co_bonus";   // a one-off bonus in place of a raise: a wage cost, deductible
         public const string SickKey = "reallife_transaction_co_sick";
         public const string OvertimeKey = "reallife_transaction_co_overtime";
         public const string StrikeKey = "reallife_transaction_co_strike";

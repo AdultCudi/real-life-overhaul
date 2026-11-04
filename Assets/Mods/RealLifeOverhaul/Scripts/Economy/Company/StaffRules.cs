@@ -8,7 +8,8 @@ namespace RealLifeOverhaul.Economy
     {
         Agree = 0,
         Less = 1,
-        Refuse = 2
+        Refuse = 2,
+        Bonus = 3       // a one-off sum in place of a raise: the request closes and the rest begins (StaffRules.BonusFor)
     }
 
     /// <summary>How a strike ends.</summary>
@@ -164,10 +165,29 @@ namespace RealLifeOverhaul.Economy
             }
             f.Raise += RaiseFor(f, answer);
             MoveStanding(f, answer == RaiseAnswer.Agree ? CompanyCatalogue.StandAgree
-                : answer == RaiseAnswer.Less ? CompanyCatalogue.StandLess : CompanyCatalogue.StandRefuse);
+                : answer == RaiseAnswer.Less ? CompanyCatalogue.StandLess : answer == RaiseAnswer.Bonus ? CompanyCatalogue.StandBonus : CompanyCatalogue.StandRefuse);
             f.AskDay = f.AskTo = 0;
             f.UnderDays = 0;
             f.AskRest = day + CompanyCatalogue.RaiseRestDays;
+        }
+
+        /// <summary>
+        /// A one-off bonus given in place of a raise, whole money at today's prices: <see cref="CompanyCatalogue.BonusBase"/> at the starting wage
+        /// band, more under a wider band and less under a tighter one (the band is the share of the going rate the place's pay may reach).
+        /// </summary>
+        public static int BonusFor(int bandStep, int index)
+        {
+            int band = ManagerCatalogue.Step(ManagerCatalogue.WageBands, bandStep), middle = ManagerCatalogue.Step(ManagerCatalogue.WageBands, ManagerCatalogue.WageBandDefault);
+            return CompanyCatalogue.AtPrices((int)((long)CompanyCatalogue.BonusBase * band / middle), index);
+        }
+
+        /// <summary>
+        /// What a raise adds to the wages over a year of the game, for a card's consequence line: its hundredths an hour over a working day's
+        /// hours (hundredths) for each day of the year, in whole money.
+        /// </summary>
+        public static int YearOf(int raise, int dayHours, int daysPerYear)
+        {
+            return (int)Math.Min(int.MaxValue / 4, (long)Math.Max(0, raise) * Math.Max(0, dayHours) * Math.Max(1, daysPerYear) / 10000);
         }
 
         /// <summary>The choices of a raise for several picked employees: up to the going rate, then the shares, then the amounts.</summary>

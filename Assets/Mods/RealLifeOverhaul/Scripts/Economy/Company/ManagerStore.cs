@@ -63,6 +63,7 @@ namespace RealLifeOverhaul.Economy
                 t.Append(n > 0 ? ";" : string.Empty);
                 Join(t, d.Id, d.Day, d.Hour, d.Task, (int)d.State, d.Mistake ? 1 : 0, d.A, d.B, d.C, d.D, d.E, d.F);
                 t.Append('|').Append(Clean(d.Place)).Append('|').Append(Clean(d.Subject)).Append('|').Append(Clean(d.Who)).Append('|').Append(Clean(d.Detail));
+                t.Append('|').Append(d.G.ToString(Inv));   // after the detail: a newer figure goes at the end, an older line has none
             }
             return t.ToString();
         }
@@ -203,7 +204,8 @@ namespace RealLifeOverhaul.Economy
                 Place = c[DecisionFields],
                 Subject = c.Length > DecisionFields + 1 ? c[DecisionFields + 1] : string.Empty,
                 Who = c.Length > DecisionFields + 2 ? c[DecisionFields + 2] : string.Empty,
-                Detail = c.Length > DecisionFields + 3 ? c[DecisionFields + 3] : string.Empty
+                Detail = c.Length > DecisionFields + 3 ? c[DecisionFields + 3] : string.Empty,
+                G = Math.Max(0, I(c, DecisionFields + 4))
             };
         }
 

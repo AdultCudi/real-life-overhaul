@@ -97,6 +97,7 @@ namespace RealLifeOverhaul.Economy
         public string Subject = string.Empty;   // the employee's id, a claim's number, a contract's wholesaler; empty for the place
         public string Who = string.Empty;       // the manager's name when they made it
         public int A, B, C, D, E, F;
+        public int G;                           // a seventh figure, written after the detail (a line from before it has none): the money a bonus paid
         public bool Mistake;
         public DecisionState State;
         public string Detail = string.Empty;    // products: "item*before*after/item*before*after"; or a name

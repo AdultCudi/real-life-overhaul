@@ -948,14 +948,10 @@ namespace RealLifeOverhaul.Economy
                         break;
                     }
                     case EscalationKind.Exception:
-                        if (how == 0)
-                        {
-                            done = Approve(e, mp, EscalationRules.LevelOwner, who, day, hour, true);
-                        }
-                        else
-                        {
-                            done = Refuse(e);
-                        }
+                        done = how == AnswerAgree ? Approve(e, mp, EscalationRules.LevelOwner, who, day, hour, true)
+                            : how == AnswerBonus ? GiveBonus(e, who, day, hour)
+                            : how == AnswerLimit ? RaiseLimit(e, mp, who, day, hour)
+                            : Refuse(e);
                         break;
                     case EscalationKind.Mood:
                     case EscalationKind.Wave:
@@ -983,6 +979,81 @@ namespace RealLifeOverhaul.Economy
                 entry.B = e.Kind;
             }
             Changed();
+        }
+
+        /// <summary>The owner's answers to an exception: the kind's own (agree), the other (refuse), a one-off bonus, and a raise of the manager's limit that stands.</summary>
+        public const int AnswerAgree = 0, AnswerRefuse = 1, AnswerBonus = 2, AnswerLimit = 3;
+
+        /// <summary>Whether the owner's bonus answer is open for an exception: only for a request for a raise, which a bonus answers; a rival's offer it does not.</summary>
+        internal bool CanBonus(Escalation e)
+        {
+            StaffFile f = e != null && e.Kind == (int)EscalationKind.Exception && e.C != 1 ? _state.Employee(e.Subject) : null;
+            return f != null && f.AskDay > 0;
+        }
+
+        /// <summary>
+        /// The pay band and largest raise (steps) that would let the place's manager agree an exception's raise by themselves; false when even the widest
+        /// does not reach it, or the exception is a rival's offer, which a limit does not answer.
+        /// </summary>
+        internal bool LimitSteps(Escalation e, out int band, out int most)
+        {
+            band = most = 0;
+            ManagedPlace mp = e != null && e.Kind == (int)EscalationKind.Exception && e.C != 1 ? ManagedAt(e.Place) : null;
+            StaffFile f = mp != null ? _state.Employee(e.Subject) : null;
+            if (f == null || f.AskDay == 0)
+            {
+                return false;
+            }
+            // The scope above the store holds it: the company's and the region's rules are the most the store may be set to.
+            PolicySet region = _hier.Region(AreaOf(mp));
+            int bandMost = PolicyRules.Effective(_hier.Company, region, null, PolicyField.PayBand), raiseMost = PolicyRules.Effective(_hier.Company, region, null, PolicyField.RaiseMost);
+            return PolicyRules.LimitFor(f.Paid, f.Going, f.AskTo, Rule(mp, PolicyField.PayBand), Rule(mp, PolicyField.RaiseMost), bandMost, raiseMost, out band, out most);
+        }
+
+        // An exception answered with the one-off bonus in place of the raise: the request closes, the person may ask again after the rest.
+        private bool GiveBonus(Escalation e, string who, int day, int hour)
+        {
+            StaffFile f = _state.Employee(e.Subject);
+            if (f == null || e.C == 1 || f.AskDay == 0)
+            {
+                if (f == null || (e.C == 1 ? f.PoachDay == 0 : f.AskDay == 0))
+                {
+                    Close(e, EscalationState.Lapsed, string.Empty, day);
+                }
+                return false;
+            }
+            int amount = BonusOf(e.Place);
+            AnswerRaise(f.Id, RaiseAnswer.Bonus);
+            if (f.AskDay != 0)
+            {
+                return false;   // the cash did not cover it: the question stays with the owner
+            }
+            HierarchyEntry entry = _hier.Log(HierarchyLog.Bonus, (int)Rung.Owner, who, e.Place, day, hour);
+            entry.A = amount;
+            entry.Detail = HierarchyStore.Clean(f.Name);
+            return true;
+        }
+
+        // An exception answered by raising the manager's limit: the pay band and the largest raise of the place are written (as the store's own rules, which
+        // the manager's panel mirrors) so that their decisions reach the pay asked for, and the request is agreed. The limit stands for the next ones.
+        private bool RaiseLimit(Escalation e, ManagedPlace mp, string who, int day, int hour)
+        {
+            int band, most;
+            if (!LimitSteps(e, out band, out most))
+            {
+                Notify(NotificationType.Warning, "reallife_hier_note_limit_short", null, 8f);
+                return false;
+            }
+            PolicySetRule(ScopeStore, mp.Place.Place, PolicyField.PayBand, band);
+            if (most != Rule(mp, PolicyField.RaiseMost))
+            {
+                PolicySetRule(ScopeStore, mp.Place.Place, PolicyField.RaiseMost, most);
+            }
+            HierarchyEntry entry = _hier.Log(HierarchyLog.Limit, (int)Rung.Owner, who, mp.Place.Place, day, hour);
+            entry.A = band;
+            entry.B = most;
+            entry.Detail = HierarchyStore.Clean(mp.Own != null ? mp.Own.Name : string.Empty);
+            return Approve(e, mp, EscalationRules.LevelOwner, who, day, hour, true);
         }
 
         // An exception refused by the owner: the request answered no, or the offer let go, as the Staff tab would.

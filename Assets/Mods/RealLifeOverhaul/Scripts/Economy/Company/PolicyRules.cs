@@ -332,6 +332,30 @@ namespace RealLifeOverhaul.Economy
             return (int)Math.Min(band, Math.Min(int.MaxValue / 4, capped));
         }
 
+        /// <summary>
+        /// The least pay band and largest raise (steps, each no lower than the one in force now) under which a manager may agree a raise to
+        /// <paramref name="askTo"/> (hundredths an hour): the answer "raise the limit and let them decide". A store is held to the scope above it, so
+        /// a step past <paramref name="bandMost"/> or <paramref name="raiseMost"/> (those in force above the store) cannot take effect: false, with
+        /// nothing to write, when what is asked is out of reach inside them.
+        /// </summary>
+        public static bool LimitFor(int paid, int going, int askTo, int bandNow, int raiseNow, int bandMost, int raiseMost, out int band, out int most)
+        {
+            int bands = ManagerCatalogue.WageBands.Length, mosts = PolicyCatalogue.Def(PolicyField.RaiseMost).Steps.Length;
+            band = CompanyCatalogue.Clamp(bandNow, 0, bands - 1);
+            most = CompanyCatalogue.Clamp(raiseNow, 0, mosts - 1);
+            bandMost = CompanyCatalogue.Clamp(bandMost, 0, bands - 1);
+            raiseMost = CompanyCatalogue.Clamp(raiseMost, 0, mosts - 1);
+            while (band < bandMost && ManagerRules.Ceiling(going, band) < askTo)
+            {
+                band++;
+            }
+            while (most < raiseMost && RaiseCeiling(paid, going, band, most) < askTo)
+            {
+                most++;
+            }
+            return RaiseCeiling(paid, going, band, most) >= askTo;
+        }
+
         /// <summary>Whether a manager may agree a raise for somebody today: none since the policy's days between two raises.</summary>
         public static bool RaiseDue(int lastRaise, int day, int everyStep)
         {

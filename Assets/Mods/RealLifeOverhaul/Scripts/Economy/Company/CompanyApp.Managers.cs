@@ -503,6 +503,10 @@ namespace RealLifeOverhaul.Economy
             switch ((ManagerTask)d.Task)
             {
                 case ManagerTask.Raises:
+                    if (d.F == (int)RaiseAnswer.Bonus)
+                    {
+                        return CompanyText.T("reallife_mgr_did_raise_bonus", "name", name, "amount", CompanyText.Money(d.G));
+                    }
                     return CompanyText.T(d.F == (int)RaiseAnswer.Agree ? "reallife_mgr_did_raise_agree" : d.F == (int)RaiseAnswer.Less ? "reallife_mgr_did_raise_less"
                         : "reallife_mgr_did_raise_refuse", "name", name, "raise", CompanyText.Wage(d.A));
                 case ManagerTask.Offers:

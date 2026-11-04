@@ -324,6 +324,15 @@ namespace RealLifeOverhaul.Economy
             return answer;
         }
 
+        /// <summary>
+        /// A refusal a manager would give becomes a one-off bonus when the month's budget left covers it (the bonus is money out of that budget).
+        /// A raise, whole or half, stays one, and a mistake never adds a bonus.
+        /// </summary>
+        public static RaiseAnswer OrBonus(RaiseAnswer answer, int bonus, int left, bool mistake)
+        {
+            return answer == RaiseAnswer.Refuse && !mistake && bonus > 0 && bonus <= left ? RaiseAnswer.Bonus : answer;
+        }
+
         /// <summary>Whether a rival's offer is matched: only inside the ceiling. A mistake lets somebody go who could have stayed.</summary>
         public static bool Match(int offer, int ceiling, bool mistake)
         {

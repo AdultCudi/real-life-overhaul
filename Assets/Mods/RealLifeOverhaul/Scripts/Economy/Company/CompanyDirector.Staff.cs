@@ -381,6 +381,12 @@ namespace RealLifeOverhaul.Economy
             AnswerRaise(id, RaiseAnswer.Agree);
         }
 
+        /// <summary>The bonus a place's staff are given in place of a raise: the starting sum scaled by the place's wage band, at today's prices.</summary>
+        internal int BonusOf(string place)
+        {
+            return StaffRules.BonusFor(Rule(ManagedAt(place), PolicyField.PayBand), _index);
+        }
+
         public void AnswerRaise(string id, RaiseAnswer answer)
         {
             StaffFile f = On(CompanyPart.Staff) ? _state.Employee(id) : null;
@@ -388,13 +394,26 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
+            int bonus = answer == RaiseAnswer.Bonus ? BonusOf(f.Place) : 0;
+            if (bonus > 0 && !Cost(bonus, CompanyGame.BonusKey, ShopAt(f.Place), f.Name, CostKind.Wages, null,
+                    "a one-off bonus in place of a raise, at today's prices (" + _index + ")"))
+            {
+                Notifications.ShowInsufficientMoney();
+                return;
+            }
             int raise = StaffRules.RaiseFor(f, answer), standing = f.Standing;
             StaffRules.Answer(f, answer, Save.Day);
             Logger?.Info("Company: " + f.Name + "'s request for " + f.Going + " an hour (hundredths) answered: " + answer + ". Agreed raise now " + f.Raise
-                         + " (" + raise + " more), standing " + standing + " to " + f.Standing + "; the game's wage of " + f.Wage + " is not changed.");
+                         + " (" + raise + " more" + (bonus > 0 ? ", a bonus of " + bonus + " paid" : string.Empty) + "), standing " + standing + " to " + f.Standing
+                         + "; the game's wage of " + f.Wage + " is not changed.");
             Notify(answer == RaiseAnswer.Refuse ? NotificationType.Warning : NotificationType.Success,
-                answer == RaiseAnswer.Agree ? "reallife_co_note_raise_agreed" : answer == RaiseAnswer.Less ? "reallife_co_note_raise_less" : "reallife_co_note_raise_refused",
-                new Dictionary<string, string> { { "name", f.Name }, { "raise", CompanyText.Wage(raise) }, { "standing", f.Standing.ToString() } }, 8f);
+                answer == RaiseAnswer.Agree ? "reallife_co_note_raise_agreed" : answer == RaiseAnswer.Less ? "reallife_co_note_raise_less"
+                    : answer == RaiseAnswer.Bonus ? "reallife_co_note_raise_bonus" : "reallife_co_note_raise_refused",
+                new Dictionary<string, string>
+                {
+                    { "name", f.Name }, { "raise", CompanyText.Wage(raise) }, { "standing", f.Standing.ToString() }, { "amount", CompanyText.Money(bonus) },
+                    { "days", CompanyCatalogue.RaiseRestDays.ToString() }
+                }, 8f);
             Recount();
             Changed();
         }

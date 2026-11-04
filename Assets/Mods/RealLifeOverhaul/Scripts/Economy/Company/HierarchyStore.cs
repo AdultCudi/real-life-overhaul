@@ -314,7 +314,7 @@ namespace RealLifeOverhaul.Economy
         private static HierarchyEntry EntryOf(string[] c)
         {
             int kind = I(c, 3, -1);
-            if (c.Length < 9 || kind < 0 || kind > (int)HierarchyLog.Policy)
+            if (c.Length < 9 || kind < 0 || kind > (int)HierarchyLog.HandedDown)
             {
                 return null;
             }
