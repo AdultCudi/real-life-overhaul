@@ -7,5 +7,6 @@ internal static partial class Program
         CompanyDown();      // the managers' grades and a question handed down to the executive (CompanyDownChecks.cs)
         CompanyLate();      // late days and the manager who lets go (CompanyLateChecks.cs)
         CompanyLeases();    // leases, the manager's marketing and lease answers (CompanyLeaseChecks.cs)
+        CompanyPlans();     // rota plans: in use, the cap, the floor, copies and the save (CompanyPlanChecks.cs)
     }
 }

@@ -274,6 +274,7 @@ namespace RealLifeOverhaul.Economy
             }
             save.modData[CompanyStore.Key] = CompanyStore.Write(_state);
             RotaSave(save);
+            RotaPlansSave(save);
             ManagerSave(save);
             HierarchySave(save);
             LeaseSave(save);
