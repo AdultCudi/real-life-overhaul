@@ -260,7 +260,7 @@ internal static partial class UiSamples
     {
         var t = new WorkTab { Shape = WorkShape.Table };
         t.Columns = new[] { WkCol(w.T("reallife_work_col_client", "Client"), UiCellKind.Person), WkCol(w.T("reallife_work_col_job", "Job"), UiCellKind.Text, 152), WkCol(w.T("reallife_work_col_when", "When"), UiCellKind.Text, 140),
-            WkCol(w.T("reallife_work_col_pay", "Pay"), UiCellKind.Money, 80), WkCol(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 152) };
+            WkCol(w.T("reallife_work_col_pay", "Pay"), UiCellKind.Money, 80), WkCol(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 184) };
         t.EmptyTitle = w.T("reallife_work_no_gigs_title", "No visit is asked for today");
         t.EmptyBody = w.T("reallife_work_no_gigs", "Clients ask each morning for detailing, handyman jobs and moves.");
         // client, job, address, window, pay, state, helper fee

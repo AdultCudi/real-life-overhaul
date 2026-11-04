@@ -586,10 +586,10 @@ namespace RealLifeOverhaul.Ui
                 t.Kids.Add(k);
             }
             var form = new WorkFormModel();
-            var tutor = new WorkFormBand { Title = w.T("reallife_work_tutor_title", "Tutor a pupil"), Note = w.T("reallife_work_tutor_note",
-                "Teach a pupil a skill you know well, for a fee. It takes an evening.") };
+            var tutor = new WorkFormBand { Title = w.T("reallife_work_tutor_title", "Tutor a pupil") };
             string why = d.CanTutor(out int _);
-            tutor.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = string.Empty, Act = new WorkAct { Kind = Tutor, Label = w.T("reallife_campus_button_tutor", "Give a tutoring session"),
+            tutor.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_tutor_note", "Teach a pupil a skill you know well, for a fee. It takes an evening."),
+                Act = new WorkAct { Kind = Tutor, Label = w.T("reallife_campus_button_tutor", "Give a tutoring session"),
                 Style = UiButtonKind.Secondary, Icon = UiIcon.Cap, Why = why == null ? null : w.T(why, "You cannot tutor now.") } });
             form.Left.Add(tutor);
             t.Form = form;

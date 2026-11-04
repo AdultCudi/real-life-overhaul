@@ -109,6 +109,7 @@ namespace RealLifeOverhaul.Ui
             }
             m.Columns = columns;
             m.FirstList = firstList;
+            _vis = offset + h;
             var inClip = new UiAt { Parent = -1, Clip = clip, Layer = at.Layer, Order = -1, Region = at.Region };
             for (int r = first; r <= last; r++)
             {
@@ -124,6 +125,8 @@ namespace RealLifeOverhaul.Ui
             }
             UiDraw.ScrollThumb(s, at, x + w + UiTokens.S2, y, h, offset, content);
         }
+
+        private static float _vis = float.MaxValue;   // the content row the grid shows to: a card's words below it are not laid (they would stand over what is below the grid)
 
         private static void CardAt(UiScene s, UiAt at, WorkCardsModel m, int i, float x, float y, float w, float h, short list, int row)
         {
@@ -200,6 +203,10 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Chip(s, at.In(t), x + pad + UiTokens.S2, y + pad + UiTokens.S2, r.Status, r.Tone, cw);
             }
             float cy = y + pad + Tile + UiTokens.S3;
+            if (y + h - pad > _vis)
+            {
+                return;   // the words of a card cut by the grid's foot are left out: only its tile is seen
+            }
             UiDraw.Text(s, at, x + pad + UiTokens.S1, cy, iw - UiTokens.S2, UiStyle.Title, UiRole.Text, r.Name, UiFlags.Truncate);
             cy += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)) + UiTokens.S1;
             float under = string.IsNullOrEmpty(r.Under) ? 0f : UiTextRules.Width(r.Under, UiStyle.BodyStrong) + UiTokens.S2;

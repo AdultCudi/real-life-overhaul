@@ -226,7 +226,7 @@ namespace RealLifeOverhaul.Ui
                     {
                         label = Math.Max(label, UiTextRules.Width(sec.Bars[i].Label ?? string.Empty, UiStyle.Body));
                     }
-                    label = Math.Min(UiDraw.Snap(label + UiTokens.S2), w * 0.34f);
+                    label = Math.Min(UiDraw.Snap(label + UiTokens.S2), UiDraw.SnapDown(w * 0.34f));
                     float value = UiTextRules.Width("100", UiStyle.BodyStrong) + UiTextRules.Width("+00", UiStyle.Small) + UiTokens.S3;
                     for (int i = 0; i < sec.Bars.Count; i++)
                     {

@@ -6,7 +6,7 @@ internal static partial class UiSamples
     public static WorkScreen RolesScreenOf(UiWords t, string state)
     {
         UtilitiesWords w = UtilitiesWordsOf(t);
-        UiNavEntry[] nav = RolesNav(w);
+        UiNavEntry[] nav = RolesNav(w, state);
         var screen = new WorkScreen(new SampleWork("open_roles", w.T("reallife_roles_app", "Open Roles"), UiIcon.People, true, nav, t, v => WorkTabPages.Build(RolesAppOf(w, state, v), v, w)));
         screen.View.Tab = WkTabOf("roles", state);
         if (state == "person" || state == "person_contract")
@@ -21,13 +21,13 @@ internal static partial class UiSamples
         return screen;
     }
 
-    private static UiNavEntry[] RolesNav(UtilitiesWords w) => new[] { WkNav(UiIcon.ClipboardText, w.T("reallife_roles_tab_jobs", "Jobs"), "5"),
-        WkNav(UiIcon.People, w.T("reallife_roles_tab_applicants", "Applicants"), "30"), WkNav(UiIcon.Globe, w.T("reallife_roles_tab_market", "Market")),
+    private static UiNavEntry[] RolesNav(UtilitiesWords w, string state) => new[] { WkNav(UiIcon.ClipboardText, w.T("reallife_roles_tab_jobs", "Jobs"), "5"),
+        WkNav(UiIcon.People, w.T("reallife_roles_tab_applicants", "Applicants"), state == "applicants_none" ? null : "30"), WkNav(UiIcon.Globe, w.T("reallife_roles_tab_market", "Market")),
         WkNav(UiIcon.Search, w.T("reallife_roles_tab_search", "Search")), WkNav(UiIcon.Person, w.T("reallife_roles_tab_team", "Team"), "8") };
 
     private static WorkApp RolesAppOf(UtilitiesWords w, string state, WorkView v)
     {
-        var app = new WorkApp { Ready = true, Nav = RolesNav(w) };
+        var app = new WorkApp { Ready = true, Nav = RolesNav(w, state) };
         WorkTab team = RolesTeam(w);
         WorkTab jobs = RolesJobs(w);
         if (v.Sub == 1)
@@ -149,10 +149,10 @@ internal static partial class UiSamples
     private static WorkTab RolesApplicants(UtilitiesWords w, string state, WorkView v)
     {
         var t = new WorkTab { Shape = WorkShape.Table, Search = w.T("reallife_work_search_people", "Search people") };
-        t.Columns = new[] { WkCol(w.T("reallife_work_col_applicant", "Applicant"), UiCellKind.Person), WkCol(w.T("reallife_work_skill_craft", "Craft"), UiCellKind.Meter, 120),
-            WkCol(w.T("reallife_work_skill_ideas", "Ideas"), UiCellKind.Meter, 120), WkCol(w.T("reallife_work_skill_team", "Team"), UiCellKind.Meter,
-                120), WkCol(w.T("reallife_work_col_asks", "Asks"), UiCellKind.Money, 72),
-            WkCol(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 152) };
+        t.Columns = new[] { WkCol(w.T("reallife_work_col_applicant", "Applicant"), UiCellKind.Person), WkCol(w.T("reallife_work_skill_craft", "Craft"), UiCellKind.Meter, 96),
+            WkCol(w.T("reallife_work_skill_ideas", "Ideas"), UiCellKind.Meter, 96), WkCol(w.T("reallife_work_skill_team", "Team"), UiCellKind.Meter,
+                96), WkCol(w.T("reallife_work_col_asks", "Asks"), UiCellKind.Money, 72),
+            WkCol(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 192) };
         t.EmptyTitle = w.T("reallife_work_no_applicants_title", "No applicants yet");
         t.EmptyBody = w.T("reallife_work_no_applicants", "Applicants arrive over a few days and other firms hire too. A boosted ad brings more.");
         t.EmptyIcon = UiIcon.People;

@@ -276,9 +276,9 @@ internal static partial class UiSamples
             t.Kids.Add(k2);
         }
         var form = new WorkFormModel();
-        var tutor = new WorkFormBand { Title = w.T("reallife_work_tutor_title", "Tutor a pupil"), Note = w.T("reallife_work_tutor_note",
-            "Teach a pupil a skill you know well, for a fee. It takes an evening.") };
-        tutor.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = string.Empty, Act = WkAct(106, w.T("reallife_campus_button_tutor",
+        var tutor = new WorkFormBand { Title = w.T("reallife_work_tutor_title", "Tutor a pupil") };
+        tutor.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_tutor_note",
+            "Teach a pupil a skill you know well, for a fee. It takes an evening."), Act = WkAct(106, w.T("reallife_campus_button_tutor",
             "Give a tutoring session"), UiButtonKind.Secondary, UiIcon.Cap) });
         form.Left.Add(tutor);
         t.Form = form;

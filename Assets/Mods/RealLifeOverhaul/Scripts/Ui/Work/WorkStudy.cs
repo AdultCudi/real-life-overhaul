@@ -23,10 +23,12 @@ namespace RealLifeOverhaul.Ui
             if (n > 0)
             {
                 float gap = UiTokens.S3, cw = UiDraw.SnapDown((w - gap * (Math.Min(n, 4) - 1)) / Math.Min(n, 4)), ch = CardHeight;
+                int firstNode = s.NodeCount;
                 for (int i = 0; i < n && i < 4; i++)
                 {
                     CourseCard(s, at, t.Rows[i], actions, cardActs, i, x + i * (cw + gap), cy, cw, ch, keys);
                 }
+                LinkButtons(s, firstNode);
                 cy += ch + UiTokens.S4;
             }
             if (t.Diary != null)
@@ -35,7 +37,32 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        public const float CardHeight = 232f;
+        public const float CardHeight = 200f;
+
+        // The cards' buttons are one row to the d-pad: left and right go from one to the next, however far apart the cards stand (the
+        // diary's cells under them are nearer by the d-pad's reckoning, and would take the move).
+        private static void LinkButtons(UiScene s, int from)
+        {
+            int last = -1;
+            var order = new List<int>(8);
+            for (int i = from; i < s.NodeCount; i++)
+            {
+                if (s.Nodes[i].Command == UiAppWindow.ActionCommand && !s.Nodes[i].Disabled)
+                {
+                    order.Add(i);
+                }
+            }
+            order.Sort((a, b) => s.Nodes[a].X.CompareTo(s.Nodes[b].X));
+            for (int k = 0; k < order.Count; k++)
+            {
+                if (last >= 0)
+                {
+                    s.Nodes[last].Right = order[k];
+                    s.Nodes[order[k]].Left = last;
+                }
+                last = order[k];
+            }
+        }
 
         private static void CourseCard(UiScene s, UiAt at, WorkRow r, UiActionModel[] actions, int[] cardActs, int index, float x, float y, float w, float h, IUiKeys keys)
         {
@@ -256,8 +283,10 @@ namespace RealLifeOverhaul.Ui
             bool you = p.Ring == UiRole.Accent;
             if (you)
             {
-                UiDraw.Box(s, at, x - UiTokens.S2, y, w + UiTokens.S2 * 2f, h, UiRole.RowSel, UiRole.None, UiTokens.RadiusLarge, UiFlags.Selected | UiFlags.Decor);
+                UiDraw.Box(s, at, x, y, w, h, UiRole.RowSel, UiRole.None, UiTokens.RadiusLarge, UiFlags.Selected | UiFlags.Decor);
             }
+            x += UiTokens.S2;   // every line stands inside the highlight's width, so the chosen one does not bleed past the column
+            w -= UiTokens.S2 * 2f;
             UiDraw.TextMiddle(s, at, x, y, h, UiTokens.S6, UiStyle.Small, UiRole.Text2, place.ToString(Inv), UiFlags.Right);
             UiDraw.Portrait(s, at, x + UiTokens.S6 + UiTokens.S2, y + (h - face) / 2f, face, p.Name, UiColour.HueOf(p.Name), UiRole.None);
             float vw = UiTextRules.Width(p.Right ?? string.Empty, UiStyle.BodyStrong) + UiTokens.S1;

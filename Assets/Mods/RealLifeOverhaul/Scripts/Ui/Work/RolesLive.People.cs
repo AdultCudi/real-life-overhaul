@@ -86,9 +86,9 @@ namespace RealLifeOverhaul.Ui
             int roleIndex = Math.Max(0, Math.Min(Math.Max(0, roleAds.Count - 1), view.Aside));
             RoleDef shown = roleAds.Count > 0 ? TalentCatalogue.Role(roleAds[roleIndex].Role) : null;
             t.Columns = new[] { WorkBuilder.Col(w.T("reallife_work_col_applicant", "Applicant"), UiCellKind.Person),
-                WorkBuilder.Col(w.T("reallife_work_skill_claimed", "Craft on the CV"), UiCellKind.Meter, 128),
-                WorkBuilder.Col(w.T("reallife_work_skill_found", "Found at interview"), UiCellKind.Meter, 128), WorkBuilder.Col(w.T("reallife_work_col_asks", "Asks"), UiCellKind.Money, 72),
-                WorkBuilder.Col(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 152) };
+                WorkBuilder.Col(w.T("reallife_work_skill_claimed", "Craft on the CV"), UiCellKind.Meter, 104),
+                WorkBuilder.Col(w.T("reallife_work_skill_found", "Found at interview"), UiCellKind.Meter, 104), WorkBuilder.Col(w.T("reallife_work_col_asks", "Asks"), UiCellKind.Money, 72),
+                WorkBuilder.Col(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 192) };
             t.EmptyTitle = w.T("reallife_work_no_applicants_title", "No applicants yet");
             t.EmptyBody = w.T("reallife_work_no_applicants", "Applicants arrive over a few days and other firms hire too. A boosted ad brings more.");
             t.EmptyIcon = UiIcon.People;

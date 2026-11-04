@@ -32,7 +32,7 @@ namespace RealLifeOverhaul.Ui
             if (!string.IsNullOrEmpty(r.Status))
             {
                 float chip = Math.Min(Side - UiTokens.S4 * 2f, UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(r.Status, UiStyle.SmallStrong) + UiTokens.S1));
-                UiDraw.Chip(s, on, cx + (Side - chip) / 2f, ny, r.Status, r.Tone, chip);
+                UiDraw.Chip(s, on, cx + UiDraw.SnapDown((Side - chip) / 2f), ny, r.Status, r.Tone, chip);
             }
             // the card's words at the right
             float tx = UiDraw.Snap(cx + Side + UiTokens.S8), ty = cy + UiTokens.S8;
@@ -65,9 +65,7 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Stepper(s, on, tx, ty, UiDraw.SnapDown(Math.Min(inner, 320f)), a.Figure, a.CanLess, a.CanMore, WorkCmd.Less, WorkCmd.Type, WorkCmd.More, 0, false);
                 ty += UiTokens.Control + UiTokens.S5;
             }
-            // the choices stand at the card's foot: a button and what choosing it does, in a column of one width
-            float foot = choices.Length * (Choice + UiTokens.S2) + (string.IsNullOrEmpty(why) ? 0f : UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2);
-            ty = Math.Max(ty, cy + ch - UiTokens.S8 - foot);
+            // the choices follow the offer: a button and what choosing it does, in a column of one width
             float bw = 0f;
             for (int i = 0; i < choices.Length; i++)
             {
