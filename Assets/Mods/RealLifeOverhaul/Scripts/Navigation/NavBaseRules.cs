@@ -317,7 +317,9 @@ namespace RealLifeOverhaul.Nav
     /// </summary>
     public sealed class NavBaseData
     {
-        public const int Format = 3;   // 2: each outline's building is named by its address, not by its place in the game's list (which the game does not keep from one load to the next); 3: and each outline has its foot's height and its own, for the 2.5D map's blocks
+        // 2: each outline's building is named by its address, not by its place in the game's list (which the game does not keep from one
+        // load to the next); 3: and each outline has the height of its ground and its own, for the 2.5D map's blocks
+        public const int Format = 3;
         private const int Magic = 0x424D4C52;   // "RLMB"
 
         public int Build;                              // the game's build number

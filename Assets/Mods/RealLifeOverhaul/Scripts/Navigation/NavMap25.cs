@@ -49,7 +49,7 @@ namespace RealLifeOverhaul.Nav
         private readonly MaterialPropertyBlock _block = new MaterialPropertyBlock();
         private static readonly int SelectionColour = Shader.PropertyToID("_SelectionColor");
         private float _alpha;
-        private bool _masked, _dirty = true, _failed;
+        private bool _masked, _dirty = true, _failed, _said;
         private float _px, _py, _pz, _heading;
         private bool _hasPlayer;
         private float _flatX, _flatZ = 1f;
@@ -174,6 +174,20 @@ namespace RealLifeOverhaul.Nav
             }
             Standing = true;
             Show(map);
+            if (!_said && Meta.Dev.Verbose && _target != null)
+            {
+                _said = true;
+                SayShown(map);
+            }
+        }
+
+        // One line, the first time the picture shows (with Developer diagnostics on).
+        private void SayShown(CityMap map)
+        {
+            Logger?.Info("Navigation: the 2.5D city map shows: a picture of " + _target.width + " x " + _target.height + " pixels ("
+                         + _target.antiAliasing + "x multisampled), the game's own camera drawing nothing behind it, pitch "
+                         + Mathf.RoundToInt(_view.PitchDegrees) + " degrees at " + Mathf.RoundToInt(map.cityMapCam.distance)
+                         + " m, the projection given " + (Map25Scene.IntoTexture ? "for a texture" : "plain") + ".");
         }
 
         // The game's own camera has come where the map's camera is.
@@ -258,7 +272,11 @@ namespace RealLifeOverhaul.Nav
             float pitch = Mathf.Asin(Mathf.Clamp(-_camera.transform.forward.y, -1f, 1f)) * Mathf.Rad2Deg;
             _view.Set(_viewMatrix, _projection, pitch);
             _scene.Scene.Refresh();
-            var frame = new Map25Frame { Player = _hasPlayer, PlayerX = _px, PlayerY = _py - _scene.Y0, PlayerZ = _pz, Heading = _heading, ConeRadius = Mathf.Max(30f, map.cityMapCam.distance * 0.3f), Fog = pitch < 70f };
+            var frame = new Map25Frame
+            {
+                Player = _hasPlayer, PlayerX = _px, PlayerY = _py - _scene.Y0, PlayerZ = _pz, Heading = _heading,
+                ConeRadius = Mathf.Max(30f, map.cityMapCam.distance * 0.3f), Fog = pitch < 70f
+            };
             _scene.Scene.Draw(_target, _view, frame, 0);
             PlacePlayer();
         }

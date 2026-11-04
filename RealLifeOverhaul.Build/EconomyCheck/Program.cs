@@ -110,6 +110,7 @@ internal static partial class Program
         if (args.Length == 1 && args[0] == "--map25")
         {
             Map25Checks();   // the 2.5D map's game-free parts alone (Map25Checks.cs): RLO_MAP25_REPORT=1 prints the figures
+            MinimapChecks();   // and the minimap's place, order and avoid rect it must leave as the HUD fix has them (UiMinimapChecks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }

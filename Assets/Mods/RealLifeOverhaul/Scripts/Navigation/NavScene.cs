@@ -139,7 +139,8 @@ namespace RealLifeOverhaul.Nav
                 if (!more)
                 {
                     State = Stage.Ready;
-                    Logger?.Info("Navigation: the 2.5D map is made: " + Summary + ", its meshes sent in " + _uploadFrames + " frames (" + _uploadMilliseconds.ToString("F1", CultureInfo.InvariantCulture) + " ms in all).");
+                    Logger?.Info("Navigation: the 2.5D map is made: " + Summary + ", its meshes sent in " + _uploadFrames + " frames ("
+                                 + _uploadMilliseconds.ToString("F1", CultureInfo.InvariantCulture) + " ms in all).");
                 }
                 return more;
             }

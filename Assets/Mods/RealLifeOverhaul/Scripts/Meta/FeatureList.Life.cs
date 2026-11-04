@@ -642,8 +642,8 @@ namespace RealLifeOverhaul.Meta
             Features.Add("navigation", "reallife_meta_title_nav")
                 .Group("reallife_nav_header")
                 .About("reallife_guide_nav_about").Help("reallife_guide_nav")
-                .Owns(Settings.MinimapId, Settings.GpsId, Settings.MinimapRotateId, Settings.MinimapSizeId, Settings.MinimapZoomId, Settings.MinimapBaseId, Settings.Map25Id, Settings.Minimap25Id, Settings.NavOtherRouteId,
-                    Settings.MapPlacesShownId, Settings.SpecialNamesId)
+                .Owns(Settings.MinimapId, Settings.GpsId, Settings.MinimapRotateId, Settings.MinimapSizeId, Settings.MinimapZoomId, Settings.MinimapBaseId,
+                    Settings.Map25Id, Settings.Minimap25Id, Settings.NavOtherRouteId, Settings.MapPlacesShownId, Settings.SpecialNamesId)
                 .Present(Settings.NavOtherRouteId, () => OtherMods.VoogleRoute.Loaded)   // a row that is there only with that mod switched on
                 .Objects(Nav.NavHud.PanelName, Nav.NavCityMap.ObjectName)
                 .Fact("nav_arrive_foot", () => Nav.NavTracker.ArriveOnFoot.ToString("F0", CultureInfo.InvariantCulture))

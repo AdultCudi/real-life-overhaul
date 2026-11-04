@@ -1774,6 +1774,8 @@ namespace RealLifeOverhaul
             Guard.Step("Nav.NavHud", () => Nav.NavHud.Logger = context.Logger);
             Guard.Step("Nav.NavBase", () => Nav.NavBase.Logger = context.Logger);
             Guard.Step("Nav.NavCityMap", () => Nav.NavCityMap.Logger = context.Logger);
+            Guard.Step("Nav.NavScene", () => Nav.NavScene.Logger = context.Logger);
+            Guard.Step("Nav.NavMap25", () => Nav.NavMap25.Logger = context.Logger);
             Guard.Step("Nav.NavDirector", () => Nav.NavDirector.Logger = context.Logger);
             Guard.Step("Nav.NavDirector", () => Guard.Add<Nav.NavDirector>(_root));
             Guard.Step("CivicDirector", () => Guard.Add<CivicDirector>(_root));   // its own cast of five

@@ -251,7 +251,7 @@ The owner's call (3 Nov 2026): the maps look flat seen from straight above, and 
 Ui/Map/  (game-free except Map25Scene, which uses only the engine, so the preview draws with it too)
   Map25Math     matrices as the engine keeps them, view, frustum, a place on the picture and back, half floats, a seeded generator
   Map25Palette  the mockups' colours and the shading rules (light from the west, a darker foot, podium and crown)
-  Map25Mesh     vertices and triangles into growing arrays, handed out as chunks (16 bit indices, colours as half floats)
+  Map25Builder  vertices and triangles into growing arrays, handed out as chunks (16 bit indices, colours as half floats)
   Map25Blocks   one building: walls shaded by the way they face, windows as bands, cornice, parapet rim, setback, water tank,
                 air conditioners, stair hut, shop awnings on the north and south walls, lit windows on towers, contact shadow
   Map25Set      the whole city in 192 m chunks and two details (full map, minimap); a tint rewrites one building's vertices

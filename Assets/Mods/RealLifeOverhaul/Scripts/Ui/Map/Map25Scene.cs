@@ -406,6 +406,15 @@ namespace RealLifeOverhaul.Map25
             Graphics.ExecuteCommandBuffer(cmd);
         }
 
+        private static void DropMaterial(ref Material material)
+        {
+            if (material != null)
+            {
+                UnityEngine.Object.Destroy(material);
+                material = null;
+            }
+        }
+
         private static void DestroyMesh(ref Mesh mesh)
         {
             if (mesh != null)
@@ -433,9 +442,9 @@ namespace RealLifeOverhaul.Map25
             DestroyMesh(ref _fog);
             DestroyMesh(ref _route);
             DestroyMesh(ref _ghost);
-            if (_flat != null) { UnityEngine.Object.Destroy(_flat); _flat = null; }
-            if (_solid != null) { UnityEngine.Object.Destroy(_solid); _solid = null; }
-            if (_blend != null) { UnityEngine.Object.Destroy(_blend); _blend = null; }
+            DropMaterial(ref _flat);
+            DropMaterial(ref _solid);
+            DropMaterial(ref _blend);
             if (_cmd != null)
             {
                 _cmd.Release();

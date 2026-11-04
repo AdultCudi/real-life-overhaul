@@ -210,7 +210,8 @@ namespace RealLifeOverhaul.Map25
             }
         }
 
-        private void Wall(Map25Builder b, float ax, float az, float bx, float bz, float y0, float h, Map25Colour tone, Map25Detail detail, int edge, bool tinted, Map25Colour tint, ref Map25Rng awningRng)
+        private void Wall(Map25Builder b, float ax, float az, float bx, float bz, float y0, float h, Map25Colour tone, Map25Detail detail,
+                          int edge, bool tinted, Map25Colour tint, ref Map25Rng awningRng)
         {
             float dx = bx - ax, dz = bz - az;
             float length = (float)Math.Sqrt(dx * dx + dz * dz);

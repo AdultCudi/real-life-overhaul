@@ -19,7 +19,52 @@ internal static partial class Program
         Map25TintChecks(city);
         Map25GroundChecks();
         Map25FrameChecks(city);
+        Map25MinimapChecks();
         Map25TextChecks();
+    }
+
+    // The minimap's place, order and avoid rect are the HUD fix's (Navigation/NavPlaceRules, UiHostRules.MinimapOrder, UiMinimapChecks); the
+    // 2.5D picture lives inside the card's view and must leave all three alone, and must never take the pointer from the card's backdrop.
+    private static void Map25MinimapChecks()
+    {
+        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "Assets", "Mods",
+                                                                          "RealLifeOverhaul", "Scripts", "Navigation"));
+        string[] forbidden = { "_rect.anchoredPosition", "_rect.sizeDelta", "_rect.anchorMin", "_rect.anchorMax", "_canvas", "sortingOrder",
+                               "overrideSorting", "HasRoom", "NavPlaceRules", "AvoidX", "SetAsFirstSibling", "SetParent(uis" };
+        string touches = "none", pointer = "none";
+        foreach (string name in new[] { "NavHud.Scene.cs", "NavHud.Strip.cs" })
+        {
+            string text = System.IO.File.ReadAllText(System.IO.Path.Combine(folder, name));
+            foreach (string word in forbidden)
+            {
+                if (text.Contains(word))
+                {
+                    touches = name + " names " + word;
+                }
+            }
+            int made = Map25Count(text, "AddComponent<Image>") + Map25Count(text, "AddComponent<RawImage>");
+            int clear = Map25Count(text, "raycastTarget = false");
+            if (made > clear)
+            {
+                pointer = name + " makes " + made + " graphics and lets " + clear + " go of the pointer";
+            }
+        }
+        Check(touches == "none", "2.5D minimap: its own files never write the card's place, size or canvas order, or the avoid rect (" + touches + ")");
+        Check(pointer == "none", "2.5D minimap: every picture and plate it adds lets the pointer through, so the card's own backdrop is what the pointer hits over it (" + pointer + ")");
+        Check(RealLifeOverhaul.Ui.UiHostRules.MinimapOrder(RealLifeOverhaul.Ui.UiHostRules.Above(2)) > RealLifeOverhaul.Ui.UiHostRules.Above(2)
+              && RealLifeOverhaul.Ui.UiHostRules.MinimapOrder(RealLifeOverhaul.Ui.UiHostRules.Above(2)) < RealLifeOverhaul.Ui.UiHostRules.Above(21),
+            "2.5D minimap: the card's canvas is still over the kit HUD's and under the game's windows");
+    }
+
+    private static int Map25Count(string text, string word)
+    {
+        int count = 0, at = 0;
+        while ((at = text.IndexOf(word, at, StringComparison.Ordinal)) >= 0)
+        {
+            count++;
+            at += word.Length;
+        }
+        return count;
     }
 
     private sealed class Map25Map

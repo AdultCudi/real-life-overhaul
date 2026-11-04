@@ -1,4 +1,5 @@
 using System;
+using Localizor;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Nav
@@ -87,6 +88,24 @@ namespace RealLifeOverhaul.Nav
             {
                 _scene.Dispose();
             }
+        }
+
+        private string _districtId, _districtText;
+
+        // On the slow tick while the minimap shows its 2.5D picture: the district's name (the game's, in capitals) and the street under the player.
+        private void SceneStrip()
+        {
+            if (!_hud.SceneMode)
+            {
+                return;
+            }
+            string id = NeighborhoodHelper.CurrentNeighborhood;
+            if (id != _districtId)
+            {
+                _districtId = id;
+                _districtText = string.IsNullOrEmpty(id) ? null : id.GetLocalization().ToUpperInvariant();
+            }
+            _hud.SceneStrip(_districtText, _graph.Ready ? _graph.StreetNear(_px, _py, _pz) : null);
         }
 
         // Once a frame while the scene's meshes are made.

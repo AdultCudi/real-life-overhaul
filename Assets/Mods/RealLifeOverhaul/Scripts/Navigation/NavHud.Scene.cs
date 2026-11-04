@@ -51,6 +51,7 @@ namespace RealLifeOverhaul.Nav
                 _scenePicture = rect.gameObject.AddComponent<RawImage>();
                 _scenePicture.raycastTarget = false;
                 _scenePicture.enabled = false;
+                StripMake();
             }
             if (on == _sceneOn && tilted == _sceneTilted && source == _sceneFrom)
             {
@@ -59,6 +60,7 @@ namespace RealLifeOverhaul.Nav
             _sceneOn = on;
             _sceneTilted = tilted;
             _sceneFrom = source;
+            StripShow(on);
             _sceneDirty = true;
             _sceneRouteStale = true;
             _sceneTurn = float.MaxValue;
@@ -154,6 +156,7 @@ namespace RealLifeOverhaul.Nav
                 _sceneDrawn = now;
                 _sceneDirty = false;
                 _scenePicture.enabled = true;
+                StripFrame(turn, metresAcross);
                 _scenePlayerX = px;
                 _scenePlayerY = py - y0;
                 _scenePlayerZ = pz;
