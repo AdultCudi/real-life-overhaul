@@ -118,9 +118,9 @@ internal static partial class UiSamples
         {
             new CompanyRow { Id = "claim:1", Title = "Speedy Bites", Sub = w.F("reallife_co_row_claim", "Claim, {cover}", "cover", "fire") + ", Safeguard", Icon = UiIcon.ShieldCheck, Figure = w.F("reallife_co_row_claim_by", "by day {day}", "day", "220"), Chip = w.T("reallife_ibox_chip_open", "Open"), ChipTone = UiRole.Warn },
             new CompanyRow { Id = "pol:Speedy Bites~7:0", Title = w.F("reallife_co_row_cover_title", "{cover} cover", "cover", "Fire"), Sub = "Speedy Bites, Safeguard", Icon = UiIcon.Fire, Figure = w.F("reallife_co_row_a_day", "{amount} a day", "amount", "$14") },
-            new CompanyRow { Id = "pol:Speedy Bites~7:1", Title = w.F("reallife_co_row_cover_title", "{cover} cover", "cover", "Theft"), Sub = "Speedy Bites, " + w.T("reallife_co_none", "None"), Icon = UiIcon.Lock, Chip = w.T("reallife_co_row_uninsured", "Not covered"), ChipTone = UiRole.Warn },
+            new CompanyRow { Id = "pol:Speedy Bites~7:1", Title = w.F("reallife_co_row_cover_title", "{cover} cover", "cover", "Theft"), Sub = "Speedy Bites, " + w.T("reallife_co_none", "None"), Icon = UiIcon.Lock, Chip = w.T("reallife_ibox_chip_not_covered", "Not covered"), ChipTone = UiRole.Warn },
             new CompanyRow { Id = "pol:Speedy Bites~7:2", Title = w.F("reallife_co_row_cover_title", "{cover} cover", "cover", "Liability"), Sub = "Speedy Bites, Safeguard", Icon = UiIcon.ShieldCheck, Figure = w.F("reallife_co_row_a_day", "{amount} a day", "amount", "$9") },
-            new CompanyRow { Id = "pol:Bloom & Co~214:0", Title = w.F("reallife_co_row_cover_title", "{cover} cover", "cover", "Fire"), Sub = "Bloom & Co, " + w.T("reallife_co_none", "None"), Icon = UiIcon.Fire, Chip = w.T("reallife_co_row_uninsured", "Not covered"), ChipTone = UiRole.Warn }
+            new CompanyRow { Id = "pol:Bloom & Co~214:0", Title = w.F("reallife_co_row_cover_title", "{cover} cover", "cover", "Fire"), Sub = "Bloom & Co, " + w.T("reallife_co_none", "None"), Icon = UiIcon.Fire, Chip = w.T("reallife_ibox_chip_not_covered", "Not covered"), ChipTone = UiRole.Warn }
         };
         p.List = new CompanyList { Title = w.T("reallife_co_tab_cover", "Cover"), Count = "5", Rows = rows.ToArray() };
         string pick = state == "cover_claim" ? "claim:1" : state == "cover_covered" ? "pol:Speedy Bites~7:0" : state == "cover_summary" ? null : "pol:Speedy Bites~7:1";
@@ -175,7 +175,7 @@ internal static partial class UiSamples
             else
             {
                 b.Add(CNote(w.T("reallife_co_policy_none", "Speedy Bites has no cover against this. Choose an insurer.")));
-                b.Add(new CompanyBlock { Kind = CompanyBlockKind.Choice, Text = w.T("reallife_co_claim_insurer", "Insurer"), Options = new[] { "Budget Mutual", "Safeguard", "Prime Assurance" }, Chosen = 1, Acts = new[] { CA(CompanyDo.Go, "insurer", 0), CA(CompanyDo.Go, "insurer", 1), CA(CompanyDo.Go, "insurer", 2) } });
+                b.Add(new CompanyBlock { Kind = CompanyBlockKind.Choice, Text = w.L("reallife_co_claim_insurer", "Insurer"), Options = new[] { "Budget Mutual", "Safeguard", "Prime Assurance" }, Chosen = 1, Acts = new[] { CA(CompanyDo.Go, "insurer", 0), CA(CompanyDo.Go, "insurer", 1), CA(CompanyDo.Go, "insurer", 2) } });
             }
             b.Add(CNote(w.F("reallife_co_policy_excess", "The excess is {share} of a loss, at least {least}.", "share", "10%", "least", CM(200))));
             b.Add(CNote(w.F("reallife_co_policy_most", "It pays up to {most}, within {days} days.", "most", CM(covered ? 10000 : 5000), "days", "5")));
@@ -261,15 +261,14 @@ internal static partial class UiSamples
         t.PaidEmpty = w.T("reallife_co_paid_none", "No return has been settled yet.");
         t.Paid = one ? new CompanyItem[0] : new[]
         {
-            new CompanyItem { Title = w.F("reallife_co_row_quarter", "Quarter {quarter}", "quarter", "2"), Sub = "Day 182", Figure = CM(3780), Chip = w.T("reallife_co_paid_on_time", "On time"), ChipTone = UiRole.Ok },
             new CompanyItem { Title = w.F("reallife_co_row_quarter", "Quarter {quarter}", "quarter", "1"), Sub = "Day 96", Figure = CM(3120), Chip = w.T("reallife_ibox_chip_late", "Late"), ChipTone = UiRole.Warn }
         };
         t.ToolsTitle = w.T("reallife_co_tax_tools", "Return, accountant and books");
         t.Tools = new[]
         {
             new CompanyItem { Title = w.T("reallife_co_row_return", "Tax return"), Sub = w.F("reallife_co_row_quarter", "Quarter {quarter}", "quarter", one ? "1" : "2"), Chip = one ? w.T("reallife_co_row_return_running", "Running") : w.T("reallife_co_row_return_due", "Due"), ChipTone = one ? UiRole.Muted : UiRole.Warn, Press = true, Act = CA(CompanyDo.Go, "ret", CompanyView.Tax, CompanyView.SubReturn) },
-            new CompanyItem { Title = w.T("reallife_co_row_accountant", "Accountant"), Sub = "Careful", Figure = w.F("reallife_co_row_a_month", "{amount} a month", "amount", CM(620)), Press = true, Act = CA(CompanyDo.Go, "acc", CompanyView.Tax, CompanyView.SubAccountant) },
-            new CompanyItem { Title = "Speedy Bites", Sub = w.T("reallife_co_row_hidden", "Cash off the books"), Figure = "5%", FigureTone = UiRole.WarnText, Press = true, Act = CA(CompanyDo.Go, "hide:Speedy Bites~7", CompanyView.Tax, CompanyView.SubHide) }
+            new CompanyItem { Title = w.T("reallife_co_row_accountant", "Accountant"), Sub = one ? w.T("reallife_co_none", "None") : "Careful", Figure = one ? null : w.F("reallife_co_row_a_month", "{amount} a month", "amount", CM(620)), Press = true, Act = CA(CompanyDo.Go, "acc", CompanyView.Tax, CompanyView.SubAccountant) },
+            new CompanyItem { Title = one ? "Corner Cafe" : "Speedy Bites", Sub = w.T("reallife_co_row_hidden", "Cash off the books"), Figure = one ? "0%" : "5%", FigureTone = one ? UiRole.None : UiRole.WarnText, Press = true, Act = CA(CompanyDo.Go, one ? "hide:Corner Cafe~12" : "hide:Speedy Bites~7", CompanyView.Tax, CompanyView.SubHide) }
         };
         t.PropertyTitle = w.T("reallife_co_property_tax", "Property tax");
         t.Property = one ? new CompanyStatementLine[0] : new[] { new CompanyStatementLine { Label = "Hudson Warehouse", Value = CM(2140) } };
@@ -278,7 +277,7 @@ internal static partial class UiSamples
         {
             t.HasLead = true;
             t.LeadKicker = w.F("reallife_co_lead_chief", "Finance chief, {name}", "name", "Noah Feldman");
-            t.LeadTitle = w.F("reallife_co_lead_reserve", "The year's tax so far is {tax}. {set} is set aside.", "tax", CM(4260), "set", CM(2420));
+            t.LeadTitle = w.F("reallife_co_lead_reserve", "The year's tax so far is {tax}. {set} is set aside.", "tax", CM(11160), "set", CM(2420));
             t.LeadBody = w.F("reallife_co_lead_reserve_body", "Setting aside {amount} puts it out of reach of the cash until the bill comes.", "amount", CM(1840));
             t.LeadAsker = "Noah Feldman";
             t.LeadHue = 0.2f;
@@ -297,7 +296,7 @@ internal static partial class UiSamples
                 Blocks = new[]
                 {
                     CNote(w.F("reallife_co_return_due", "File by day {day}; after that a penalty of {amount} is charged, {count} so far.", "day", "218", "amount", CM(420), "count", "0"), UiRole.WarnText),
-                    CSec(w.T("reallife_ibox_sec_return", "The return")), CRow(w.T("reallife_co_return_quarter", "Quarter"), "2"), CRow(w.T("reallife_co_return_takings", "Takings"), CM(68400)), CRow(w.T("reallife_co_return_deduct", "Costs that count"), CM(47100)),
+                    CSec(w.T("reallife_ibox_sec_return", "The return")), CRow(w.L("reallife_co_return_quarter", "Quarter"), "2"), CRow(w.L("reallife_co_return_takings", "Takings"), CM(68400)), CRow(w.L("reallife_co_return_deduct", "Costs that count"), CM(47100)),
                     new CompanyBlock { Kind = CompanyBlockKind.Break },
                     CNote(w.F("reallife_co_return_rebate", "{name} files it for you and takes back {amount}.", "name", "Careful", "amount", CM(210)), UiRole.OkText),
                     CBtns(CB(w.T("reallife_co_return_file", "File the return"), UiButtonKind.Primary, UiAction.Alt, CA(CompanyDo.ReturnFile), UiIcon.Check))

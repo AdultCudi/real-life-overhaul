@@ -305,7 +305,7 @@ internal static partial class UiSamples
         {
             new CompanyManagerToday { Name = "Ray Walsh", Place = "Speedy Bites", Figures = w.F("reallife_co_decided_asked", "{decided} decided, {asked} asked you", "decided", "14", "asked", "1"), Hue = 0.55f, Ring = UiRole.Ok, Open = CA(CompanyDo.Go, "mgr:Speedy Bites~7", CompanyView.Managers) },
             new CompanyManagerToday { Name = "Tessa Brandt", Place = "Bloom & Co", Figures = w.F("reallife_co_decided_asked", "{decided} decided, {asked} asked you", "decided", "6", "asked", "1"), Hue = 0.9f, Ring = UiRole.Ok, Open = CA(CompanyDo.Go, "mgr:Bloom & Co~214", CompanyView.Managers) },
-            new CompanyManagerToday { Name = "Meera Iyer", Place = "Operations", Figures = w.F("reallife_co_decided_asked", "{decided} decided, {asked} asked you", "decided", "9", "asked", "1"), Hue = 0.75f, Ring = UiRole.Ok, Open = CA(CompanyDo.Go, "exe:2", CompanyView.Managers) }
+            new CompanyManagerToday { Name = "Omar Haddad", Place = "Hudson Warehouse", Figures = w.F("reallife_co_decided_asked", "{decided} decided, {asked} asked you", "decided", "9", "asked", "1"), Hue = 0.75f, Ring = UiRole.Ok, Open = CA(CompanyDo.Go, "exe:2", CompanyView.Managers) }
         };
         o.Tools = new[]
         {
@@ -424,6 +424,23 @@ internal static partial class UiSamples
                 CB(w.T("reallife_co_sell", "Sell this business"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.SellBusiness, panel ? "Corner Cafe~12" : "Speedy Bites~7"), UiIcon.Handshake)
             }
         });
+        if (!panel)
+        {
+            string[][] crew =
+            {
+                new[] { "Dev Kapoor", "Customer service", "$17.00", "0.35" }, new[] { "Lena Adler", "Cooking", "$16.50", "0.1" }, new[] { "Rui Tanaka", "Customer service", "$15.90", "0.5" },
+                new[] { "Ines Duarte", "Cooking", "$16.20", "0.15" }, new[] { "Hana Sato", "Cleaning", "$15.60", "0.8" }, new[] { "Leo Martin", "Cooking", "$16.00", "0.3" },
+                new[] { "Maya Okafor", "Customer service", "$18.20", "0.6" }, new[] { "Tomas Reyes", "Cleaning", "$15.40", "0.8" }, new[] { "Sana Malik", "Cooking", "$24.00", "0.25" }
+            };
+            var rows = new CompanyItem[crew.Length];
+            for (int i = 0; i < crew.Length; i++)
+            {
+                rows[i] = new CompanyItem { Title = crew[i][0], Sub = crew[i][1], Face = true, Hue = float.Parse(crew[i][3], System.Globalization.CultureInfo.InvariantCulture), Ring = UiRole.Ok,
+                    Figure = w.F("reallife_rota_hours_n", "{hours} h", "hours", "8"), Note = crew[i][2] + " / h", Grade = -1, Press = true, Act = CA(CompanyDo.Go, "emp:" + i, CompanyView.Staff) };
+            }
+            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Section, Text = w.T("reallife_co_staff_people", "Your people"), Value = "9" });
+            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = rows });
+        }
         c.Blocks = blocks.ToArray();
         return c;
     }

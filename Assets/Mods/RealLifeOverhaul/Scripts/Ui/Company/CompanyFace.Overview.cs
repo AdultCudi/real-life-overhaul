@@ -67,9 +67,9 @@ namespace RealLifeOverhaul.Ui
                 CompanyButton log = new CompanyButton { Label = w.T("reallife_co_managers_log", "Managers' log"), Act = CompanyAct.Of(CompanyDo.Go, null, CompanyView.Managers) };
                 cy = Section(s, main, lay, x, cy, lw, w.T("reallife_co_done_today", "Done for you today"), null, log);
                 int fit = (int)Math.Max(1f, Math.Floor((bottom - cy) / DoneRow));
-                for (int i = 0; i < Math.Min(o.Done.Length, fit); i++)
+                for (int i = 0; i < Math.Min(o.Done.Length, fit) && cy + DoneRow <= bottom; i++)
                 {
-                    cy += DoneLine(s, main, lay, ref o.Done[i], x, cy, lw, DoneRow);
+                    cy += DoneLine(s, main, lay, ref o.Done[i], x, cy, lw, DoneRow, bottom);
                 }
             }
             float rx = x + lw + gap;
@@ -220,9 +220,9 @@ namespace RealLifeOverhaul.Ui
                     float keep = managersLeft ? UiTokens.S4 + UiTokens.PairRow + UiTokens.S1 + PersonRow * Math.Min(3, o.Managers.Length) : 0f;   // the room the managers keep under the rows
                     int fit = (int)Math.Max(1f, Math.Floor((bottom - cy - keep) / DoneRow));
                     int rows = Math.Min(doneWant, fit);
-                    for (int i = 0; i < rows; i++)
+                    for (int i = 0; i < rows && cy + DoneRow <= bottom - keep; i++)
                     {
-                        cy += DoneLine(s, at, lay, ref o.Done[i], x, cy, lw, DoneRow);
+                        cy += DoneLine(s, at, lay, ref o.Done[i], x, cy, lw, DoneRow, bottom - keep);
                     }
                 }
             }
@@ -290,8 +290,23 @@ namespace RealLifeOverhaul.Ui
         }
 
         // A row of "done for you": when, what the manager did, what it cost or saved.
-        internal static float DoneLine(UiScene s, UiAt at, CompanyLayout lay, ref CompanyDone row, float x, float y, float w, float h)
+        internal static float DoneLine(UiScene s, UiAt at, CompanyLayout lay, ref CompanyDone row, float x, float y, float w, float h, float limit = -1f)
         {
+            // The words have the width left by the time and the money; one that does not fit one line takes two where the column has the room (limit: the y it may not pass).
+            float whenW = Math.Min(UiDraw.SnapDown(w * 0.2f), UiDraw.Snap(UiTextRules.Width("Day 000 00:00", UiStyle.Small) + UiTokens.S2));
+            float mw = string.IsNullOrEmpty(row.Money) ? 0f : Math.Min(UiDraw.SnapDown(w * 0.25f), UiDraw.Snap(UiTextRules.Width(row.Money, UiStyle.BodyStrong) + UiTokens.S1));
+            float textW = w - whenW - UiTokens.S2 - mw - UiTokens.S3;
+            string text = row.Text ?? string.Empty;
+            float oneLine = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)), wrapped = 0f;
+            if (limit > 0f && UiTextRules.Width(text, UiStyle.Body) > textW)
+            {
+                float two = UiDraw.Snap(UiTextRules.WrappedHeight(text, UiStyle.Body, textW, 2));
+                if (two > oneLine + 1f && y + Math.Max(h, two + UiTokens.S3) <= limit)
+                {
+                    wrapped = two;
+                    h = Math.Max(h, two + UiTokens.S3);
+                }
+            }
             bool press = row.Open.Do != CompanyDo.None;
             int face = -1;
             UiAt inside = at;
@@ -302,10 +317,15 @@ namespace RealLifeOverhaul.Ui
                 inside = at.In(face);
                 UiDraw.Node(s, at, x - UiTokens.S2, y, w + UiTokens.S4, h, Act, index, face);
             }
-            float whenW = Math.Min(UiDraw.SnapDown(w * 0.2f), UiDraw.Snap(UiTextRules.Width("Day 000 00:00", UiStyle.Small) + UiTokens.S2));
-            float mw = string.IsNullOrEmpty(row.Money) ? 0f : Math.Min(UiDraw.SnapDown(w * 0.25f), UiDraw.Snap(UiTextRules.Width(row.Money, UiStyle.BodyStrong) + UiTokens.S1));
             UiDraw.TextMiddle(s, inside, x, y, h, whenW, UiStyle.Small, UiRole.Muted, row.When ?? string.Empty, UiFlags.Truncate);
-            UiDraw.TextMiddle(s, inside, x + whenW + UiTokens.S2, y, h, w - whenW - UiTokens.S2 - mw - UiTokens.S3, UiStyle.Body, UiRole.Text, row.Text ?? string.Empty, UiFlags.Truncate);
+            if (wrapped > 0f)
+            {
+                UiDraw.Text(s, inside, x + whenW + UiTokens.S2, y + UiDraw.SnapDown((h - wrapped) / 2f), textW, UiStyle.Body, UiRole.Text, text, UiFlags.Wrap | UiFlags.Truncate, 2);
+            }
+            else
+            {
+                UiDraw.TextMiddle(s, inside, x + whenW + UiTokens.S2, y, h, textW, UiStyle.Body, UiRole.Text, text, UiFlags.Truncate);
+            }
             if (mw > 0f)
             {
                 UiDraw.TextMiddle(s, inside, x + w - mw, y, h, mw, UiStyle.BodyStrong, ToneInk(row.Tone), row.Money, UiFlags.Right | UiFlags.Truncate);
@@ -411,9 +431,10 @@ namespace RealLifeOverhaul.Ui
             }
             if (!string.IsNullOrEmpty(o.Note) && bottom - toolsH - cy >= UiTokens.S10)
             {
-                Sentence(s, at, o.Note, x, cy + UiTokens.S2, rw, UiRole.Text2, 3, UiStyle.Small);
+                cy = Sentence(s, at, o.Note, x, cy + UiTokens.S2, rw, UiRole.Text2, 3, UiStyle.Small);
             }
-            ToolsRow(s, at, lay, v, o, x, rw, bottom, keys);
+            // The tools stand under what the column holds; they take the foot of the column only when the column is full.
+            ToolsRow(s, at, lay, v, o, x, rw, Math.Min(bottom, cy + UiTokens.S6 + UiTokens.Control), keys);
         }
 
         private static float ManagerLine(UiScene s, UiAt at, CompanyLayout lay, ref CompanyManagerToday m, float x, float y, float w)

@@ -31635,5 +31635,8 @@
   "reallife_rota_look_gain": "Against now",
   "reallife_rota_was_hours": "was {hours} h",
   "reallife_rota_floor_hours": "Floor hours a week",
-  "reallife_rota_floor_chart": "The floor by hour"
+  "reallife_rota_floor_chart": "The floor by hour",
+  "reallife_co_rota_open": "open {hours} h a week",
+  "reallife_co_staff_answer_by": "answer by day {day}",
+  "reallife_co_strike_low_sec": "Who stands low"
 }

@@ -1054,8 +1054,8 @@ namespace RealLifeOverhaul.Ui
             int target = PolicyCatalogue.Value(PolicyField.ProfitTarget, ruleStep);
             var card = new CompanyCard
             {
-                Kicker = CompanyText.T("reallife_mgr_row_region", "district", CompanyDirector.AreaName(area)) + (r != null ? ", " + r.Name
-                    : string.Empty), Title = CompanyText.T("reallife_hier_dash_title"),
+                Kicker = CompanyText.T("reallife_mgr_row_region", "district", CompanyDirector.AreaName(area)), Sub = r != null ? r.Name : null,
+                Title = CompanyText.T("reallife_hier_dash_title"),
                 Icon = UiIcon.ChartPie, Back = BackTo(w, "reg:" + area),
                 FactLabels = new[] { w.T("reallife_co_f_places", "Places"), w.T("reallife_co_f_gaps", "Gaps"), w.T("reallife_co_f_standing", "Standing"), w.T("reallife_co_f_pending", "Pending") },
                 FactValues = new[] { managed + "/" + places, gaps.ToString(), standing.ToString(), pending.ToString() }

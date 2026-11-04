@@ -273,7 +273,7 @@ namespace RealLifeOverhaul.Ui
                         Sub = shops[i].Name + ", " + (p.Active ? CompanyText.Insurer(p.Insurer) : CompanyText.T("reallife_co_none")),
                         Icon = k == (int)CoverKind.Fire ? UiIcon.Fire : k == (int)CoverKind.Theft ? UiIcon.Lock : UiIcon.ShieldCheck,
                         Figure = p.Active ? CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(p.Premium)) : null,
-                        Chip = p.Active ? null : CompanyText.T("reallife_co_row_uninsured"), ChipTone = UiRole.Warn
+                        Chip = p.Active ? null : CompanyText.T("reallife_ibox_chip_not_covered"), ChipTone = UiRole.Warn
                     });
                 }
             }

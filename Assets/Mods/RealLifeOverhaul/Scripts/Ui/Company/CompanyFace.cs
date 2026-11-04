@@ -146,9 +146,10 @@ namespace RealLifeOverhaul.Ui
         internal static float ChoiceChip(UiScene s, UiAt at, float x, float y, string label, bool chosen, int command, int arg, bool disabled = false)
         {
             float w = UiDraw.ButtonWidth(UiButtonKind.Chip, label, UiIcon.None, UiAction.Count, null);
-            int face = UiDraw.Box(s, at, x, y, w, UiTokens.Chip, chosen ? UiRole.Accent : UiRole.AccentSoft, UiRole.None, UiTokens.RadiusMedium,
+            // The chosen option is the bright one; the others are plain, so that a row of chips never reads as all chosen.
+            int face = UiDraw.Box(s, at, x, y, w, UiTokens.Chip, chosen ? UiRole.Accent : UiRole.Row, UiRole.None, UiTokens.RadiusMedium,
                 (chosen ? UiFlags.Selected : UiFlags.None) | (disabled ? UiFlags.Disabled : UiFlags.None));
-            UiDraw.TextMiddle(s, at.In(face), x + UiTokens.S4, y, UiTokens.Chip, w - UiTokens.S4 * 2f + UiTokens.S1, UiStyle.Button, chosen ? UiRole.OnAccent : UiRole.AccentText, label,
+            UiDraw.TextMiddle(s, at.In(face), x + UiTokens.S4, y, UiTokens.Chip, w - UiTokens.S4 * 2f + UiTokens.S1, UiStyle.Button, chosen ? UiRole.OnAccent : UiRole.Text2, label,
                 UiFlags.Label | UiFlags.Centre | (disabled ? UiFlags.Disabled : UiFlags.None));
             UiDraw.Node(s, at, x, y, w, UiTokens.Chip, command, arg, face, disabled);
             return w;

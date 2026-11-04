@@ -552,6 +552,16 @@ namespace RealLifeOverhaul.Ui
                     Act = CompanyAct.Of(CompanyDo.SellBusiness, file.Place) });
             }
             blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Buttons, Buttons = buttons.ToArray() });
+            if (page && d.On(CompanyPart.Staff))
+            {
+                // The people of the business, under what can be done: the rows that fit the room, and a count of the rest.
+                CompanyItem[] crew = CrewItems(d, file.Place, w, false, 12);
+                if (crew.Length > 0)
+                {
+                    blocks.Add(Sec(w.T("reallife_co_staff_people", "Your people"), shop.Staff.ToString()));
+                    blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = crew });
+                }
+            }
             c.Blocks = blocks.ToArray();
             return c;
         }

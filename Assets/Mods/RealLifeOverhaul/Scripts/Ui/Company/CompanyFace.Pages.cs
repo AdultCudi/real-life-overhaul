@@ -248,7 +248,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             float gap = UiTokens.S6;
-            float lw = UiDraw.SnapDown(Math.Min(cw * 0.36f, 456f));
+            float lw = UiDraw.SnapDown(Math.Min(cw * 0.4f, 560f));   // the list takes what the card (a line's reach, 800) leaves of the window
             float cx = x + lw + gap, ccw = cw - lw - gap;
             short list = ListPane(s, at.InRegion(RegionList), page.List, v, w, lay, x, y, lw, bottom, keys);
             if (page.Card != null)
@@ -469,9 +469,9 @@ namespace RealLifeOverhaul.Ui
                 {
                     int rows = b.Rows != null ? b.Rows.Length : 0;
                     int fit = (int)Math.Max(0f, Math.Floor((bottom - y) / DoneRow));
-                    for (int i = 0; i < Math.Min(rows, fit); i++)
+                    for (int i = 0; i < Math.Min(rows, fit) && y + DoneRow <= bottom; i++)
                     {
-                        y += DoneLine(s, at, lay, ref b.Rows[i], x, y, cw, DoneRow);
+                        y += DoneLine(s, at, lay, ref b.Rows[i], x, y, cw, DoneRow, bottom);
                     }
                     if (rows == 0 && !string.IsNullOrEmpty(b.Text))
                     {
@@ -500,7 +500,7 @@ namespace RealLifeOverhaul.Ui
                 case CompanyBlockKind.Compare:
                     return CompareBlock(s, at, b, x, y, cw);
                 case CompanyBlockKind.Items:
-                    return ItemsBlock(s, at, lay, b, x, y, cw, bottom);
+                    return ItemsBlock(s, at, lay, w, b, x, y, cw, bottom);
                 default:
                     return y;
             }
@@ -527,8 +527,9 @@ namespace RealLifeOverhaul.Ui
         // A figure before and during: the label at the left, the two figures in columns at the right, the second in its tone; two heads over the first row of a run.
         private static float CompareBlock(UiScene s, UiAt at, CompanyBlock b, float x, float y, float cw)
         {
-            float colW = Math.Min(UiDraw.SnapDown(cw * 0.26f), UiDraw.Snap(Math.Max(UiTextRules.Width(b.Value ?? string.Empty, UiStyle.BodyStrong),
-                UiTextRules.Width(b.Sub ?? string.Empty, UiStyle.BodyStrong)) + UiTokens.S4));
+            // The two columns are as wide as a fifth of the card whatever the figures are, so that the rows of a run stand in the same columns (a wider figure widens its own row only).
+            float colW = Math.Min(UiDraw.SnapDown(cw * 0.3f), Math.Max(UiDraw.SnapDown(cw * 0.2f), UiDraw.Snap(Math.Max(UiTextRules.Width(b.Value ?? string.Empty, UiStyle.BodyStrong),
+                UiTextRules.Width(b.Sub ?? string.Empty, UiStyle.BodyStrong)) + UiTokens.S4)));
             colW = Math.Max(colW, UiDraw.Snap(UiTextRules.Width(b.Options != null && b.Options.Length > 1 ? b.Options[1] : string.Empty, UiStyle.SectionHeader) + UiTokens.S3));
             float second = x + cw - colW, first = second - colW;
             if (b.Options != null && b.Options.Length > 1)
@@ -545,9 +546,15 @@ namespace RealLifeOverhaul.Ui
         }
 
         // Rows with a face or a glyph, two lines, a figure and a chip: the rows of a list, in a card; one that is pressable does its action.
-        private static float ItemsBlock(UiScene s, UiAt at, CompanyLayout lay, CompanyBlock b, float x, float y, float cw, float bottom)
+        private static float ItemsBlock(UiScene s, UiAt at, CompanyLayout lay, CompanyWords w, CompanyBlock b, float x, float y, float cw, float bottom)
         {
-            int rows = b.Items != null ? Math.Min(b.Items.Length, (int)Math.Max(0f, Math.Floor((bottom - y + ListGap) / (ListRow + ListGap)))) : 0;   // the rows that fit the room
+            int total = b.Items != null ? b.Items.Length : 0;
+            int rows = Math.Min(total, (int)Math.Max(0f, Math.Floor((bottom - y + ListGap) / (ListRow + ListGap))));   // the rows that fit the room
+            bool rest = rows < total;
+            if (rest && rows > 1 && bottom - (y + rows * (ListRow + ListGap)) < UiTokens.PairRow)
+            {
+                rows--;   // the room for the count of the rest
+            }
             for (int i = 0; i < rows; i++)
             {
                 ref CompanyItem it = ref b.Items[i];
@@ -561,6 +568,14 @@ namespace RealLifeOverhaul.Ui
                 }
                 y += ListRow + ListGap;
             }
+            if (rest && rows > 0 && bottom - y >= UiTokens.PairRow)
+            {
+                // What has no room is counted, so that a count in the head never disagrees with the rows under it.
+                UiDraw.TextMiddle(s, at, x + UiTokens.S3, y, UiTokens.PairRow, cw - UiTokens.S3, UiStyle.Small, UiRole.Muted, w.F("reallife_co_and_more", "and {count} more", "count",
+                    (total - rows).ToString()),
+                    UiFlags.Truncate);
+                y += UiTokens.PairRow;
+            }
             return y + UiTokens.S2;
         }
 
@@ -571,14 +586,22 @@ namespace RealLifeOverhaul.Ui
             float switchW = Math.Min(UiDraw.SnapDown(cw * 0.4f), SwitchWidth(b.Value));
             float tw = cw - switchW - UiTokens.S4;
             float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
-            float top = y + UiDraw.SnapDown((SwitchRow - th - (string.IsNullOrEmpty(b.Sub) ? 0f : sh)) / 2f);
+            // What it decides takes two lines when it does not fit one, and the row grows with it, instead of ending in an ellipsis.
+            float subH = string.IsNullOrEmpty(b.Sub) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(b.Sub, UiStyle.Small, tw, 2));
+            bool two = subH > sh + 1f;
+            float rowH = two ? Math.Max(SwitchRow, th + subH + UiTokens.S3) : SwitchRow;
+            float top = y + UiDraw.SnapDown((rowH - th - (string.IsNullOrEmpty(b.Sub) ? 0f : two ? subH : sh)) / 2f);
             UiDraw.TextMiddle(s, at, x, top, th, tw, UiStyle.Title, b.Disabled ? UiRole.Text2 : UiRole.Text, b.Text ?? string.Empty, UiFlags.Truncate);
-            if (!string.IsNullOrEmpty(b.Sub))
+            if (two)
+            {
+                UiDraw.Text(s, at, x, top + th, tw, UiStyle.Small, UiRole.Text2, b.Sub, UiFlags.Wrap | UiFlags.Truncate, 2);
+            }
+            else if (!string.IsNullOrEmpty(b.Sub))
             {
                 UiDraw.TextMiddle(s, at, x, top + th, sh, tw, UiStyle.Small, UiRole.Text2, b.Sub, UiFlags.Truncate);
             }
-            UiDraw.Switch(s, at, x + cw - switchW, y + Mid(SwitchRow, UiTokens.Control), switchW, b.On, b.Value, Act, index, b.Disabled);
-            return y + SwitchRow;
+            UiDraw.Switch(s, at, x + cw - switchW, y + Mid(rowH, UiTokens.Control), switchW, b.On, b.Value, Act, index, b.Disabled);
+            return y + rowH;
         }
 
         // A stepper with what it sets: the words and their line at the left, minus, the typed figure and plus at the right.

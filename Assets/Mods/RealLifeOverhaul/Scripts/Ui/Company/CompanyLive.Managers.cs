@@ -144,7 +144,7 @@ namespace RealLifeOverhaul.Ui
                     ManagedPlace mp = d.ManagedAt(posts[i]);
                     nodes.Add(new UiOrgNode
                     {
-                        Kind = UiOrgKind.Post, Level = 1, Name = w.F("reallife_co_tree_post", "Manager of {place}", "place", mp.Place.Name), Sub = CompanyApp.PlaceKindName(mp.Kind) + ", "
+                        Kind = UiOrgKind.Post, Level = 1, Name = mp.Place.Name, Sub = CompanyApp.PlaceKindName(mp.Kind) + ", "
                             + CompanyText.District(mp.District),
                         Right = w.T("reallife_co_tree_hire", "Appoint")
                     });
@@ -577,8 +577,10 @@ namespace RealLifeOverhaul.Ui
             var p = new CompanyProfile
             {
                 Id = "own", Name = owner, Role = w.T("reallife_co_role_owner", "Owner"), Hue = UiColour.HueOf(owner), Ring = UiRole.Ok, Status = null,
-                FactLabels = new[] { w.T("reallife_co_f_businesses", "Businesses"), w.T("reallife_co_f_managers", "Managers"), w.T("reallife_co_f_asked", "Asked you") },
-                FactValues = new[] { d.Shops.Count.ToString(), d.ManagerData.Managers.Count.ToString(), mine.ToString() }
+                FactLabels = d.ManagerData.Managers.Count > 0 ? new[] { w.T("reallife_co_f_businesses", "Businesses"), w.T("reallife_co_f_managers", "Managers"), w.T("reallife_co_f_asked",
+                    "Asked you") }
+                    : new[] { w.T("reallife_co_f_businesses", "Businesses") },
+                FactValues = d.ManagerData.Managers.Count > 0 ? new[] { d.Shops.Count.ToString(), d.ManagerData.Managers.Count.ToString(), mine.ToString() } : new[] { d.Shops.Count.ToString() }
             };
             FaceSources.Player(owner);
             // The left column: the questions waiting for you and your managers; the right: the month and the levels.
@@ -637,8 +639,7 @@ namespace RealLifeOverhaul.Ui
             month.Add(Row(w.T("reallife_co_owner_cost", "Managers' allowances, a month"), CompanyText.Money(cost)));
             if (left.Count == 0)
             {
-                left.AddRange(month);
-                left.Add(Note(CompanyText.T("reallife_co_no_managers")));
+                left.Add(Note(CompanyText.T("reallife_co_no_managers")));   // nothing to count for a company that has no manager: no month of zeros
                 month.Clear();
             }
             var right = month;

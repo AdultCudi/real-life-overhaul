@@ -131,9 +131,9 @@ namespace RealLifeOverhaul.Ui
                 ry = Section(s, at, lay, c2x, ry, c2w, p.LogTitle, null, all);
                 int reserve = p.Crew.Length > 0 ? (int)(UiTokens.PairRow + ListRow * 2f + UiTokens.S4) : 0;
                 int fit = (int)Math.Max(1f, Math.Floor((bottom - ry - reserve) / DoneRow));
-                for (int i = 0; i < Math.Min(p.Log.Length, fit); i++)
+                for (int i = 0; i < Math.Min(p.Log.Length, fit) && ry + DoneRow <= bottom - reserve; i++)
                 {
-                    ry += DoneLine(s, at, lay, ref p.Log[i], c2x, ry, c2w, DoneRow);
+                    ry += DoneLine(s, at, lay, ref p.Log[i], c2x, ry, c2w, DoneRow, bottom - reserve);
                 }
                 ry += UiTokens.S3;
             }

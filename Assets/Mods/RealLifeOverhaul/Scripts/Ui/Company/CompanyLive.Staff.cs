@@ -219,6 +219,35 @@ namespace RealLifeOverhaul.Ui
                         Tone = p.Mood < 30 ? UiRole.Danger : p.Mood < 60 ? UiRole.Warn : UiRole.Ok });
                 }
             }
+            int perHour, asks = d.RaisesWaiting(out perHour);
+            if (asks > 1)
+            {
+                blocks.Add(Sec(w.T("reallife_co_staff_asks_sec", "Asking for a raise")));
+                blocks.Add(Note(CompanyText.T("reallife_co_staff_asks", "count", asks.ToString(), "amount", CompanyText.Wage(perHour)), UiRole.WarnText));
+                blocks.Add(Buttons(
+                    Btn(CompanyText.T("reallife_co_staff_agree_all"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.RaisesAll, null, 0), UiAction.Alt, UiIcon.Check),
+                    Btn(CompanyText.T("reallife_co_staff_refuse_all"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.RaisesAll, null, 1), UiAction.Count, UiIcon.Close, true)));
+                var asking = new List<CompanyItem>(5);
+                for (int i = 0; i < s.Staff.Count && asking.Count < 5; i++)
+                {
+                    StaffFile p = s.Staff[i];
+                    if (p.AskDay <= 0)
+                    {
+                        continue;
+                    }
+                    Face(p.Name, p.Id);
+                    asking.Add(new CompanyItem
+                    {
+                        Title = p.Name, Sub = d.ShopName(p.Place), Face = true, Hue = UiColour.HueOf(p.Name), Ring = UiRole.Warn, Press = true, Grade = -1, Figure = w.PerHour(p.AskTo),
+                        Note = w.F("reallife_co_staff_answer_by", "answer by day {day}", "day", (p.AskDay + CompanyCatalogue.RaiseAnswerDays).ToString()),
+                        Act = CompanyAct.Of(CompanyDo.Go, "emp:" + p.Id, CompanyView.Staff)
+                    });
+                }
+                if (asking.Count > 0)
+                {
+                    blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = asking.ToArray() });
+                }
+            }
             blocks.Add(Sec(w.T("reallife_co_staff_sick", "Sick pay")));
             var options = new string[CompanyText.SickKeys.Length];
             var acts = new CompanyAct[options.Length];
@@ -374,6 +403,8 @@ namespace RealLifeOverhaul.Ui
                     UiRole.DangerText),
                 Note(CompanyText.T("reallife_co_strike_effect", "percent", (-CompanyCatalogue.StrikeFootfall).ToString(), "hours", CompanyCatalogue.StrikeClosedHours.ToString())),
                 Note(CompanyText.T("reallife_co_strike_why", "low", shop.Low.ToString(), "count", shop.Staff.ToString())),
+                Sec(w.T("reallife_co_strike_low_sec", "Who stands low")),
+                new CompanyBlock { Kind = CompanyBlockKind.Items, Items = CrewItems(d, place, w, true, 6) },
                 Sec(CompanyText.T("reallife_co_strike_ways")),
                 Row(CompanyText.T("reallife_co_strike_do_raise"), CompanyText.Wage(d.StrikeCost(place, StrikeAnswer.Raise))),
                 Row(CompanyText.T("reallife_co_strike_do_payment"), CompanyText.Money(d.StrikeCost(place, StrikeAnswer.Payment))),
@@ -384,6 +415,45 @@ namespace RealLifeOverhaul.Ui
                     Btn(CompanyText.T("reallife_co_strike_do_sit"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "", CompanyView.Staff), UiAction.Count, UiIcon.Close))
             };
             return c;
+        }
+
+        // The people of a place as rows that open their page: those who stand low (lowest first, with their standing as a bar), or the crew with their hours a day and their pay.
+        private IEnumerable<StaffFile> CrewList(CompanyDirector d, string place, bool low, int most)
+        {
+            var list = new List<StaffFile>(most);
+            IReadOnlyList<StaffFile> all = d.State.Staff;
+            for (int i = 0; i < all.Count; i++)
+            {
+                if (all[i].Place == place && (!low || StaffRules.StandsLow(all[i])))
+                {
+                    list.Add(all[i]);
+                }
+            }
+            if (low)
+            {
+                list.Sort((a, b) => a.Standing.CompareTo(b.Standing));
+            }
+            for (int i = 0; i < list.Count && i < most; i++)
+            {
+                yield return list[i];
+            }
+        }
+
+        private CompanyItem[] CrewItems(CompanyDirector d, string place, Words w, bool low, int most)
+        {
+            var items = new List<CompanyItem>(most);
+            foreach (StaffFile p in CrewList(d, place, low, most))
+            {
+                Face(p.Name, p.Id);
+                items.Add(new CompanyItem
+                {
+                    Title = p.Name, Sub = CompanyGame.SkillName(p.Id), Face = true, Hue = UiColour.HueOf(p.Name), Ring = low || StaffRules.StandsLow(p) ? UiRole.Danger : UiRole.Ok, Press = true,
+                    Figure = low ? p.Standing.ToString() : w.F("reallife_rota_hours_n", "{hours} h", "hours", p.DayHours.ToString()), Note = low ? null : w.PerHour(p.Paid), Grade = low ? p.Standing
+                        : -1,
+                    Act = CompanyAct.Of(CompanyDo.Go, "emp:" + p.Id, CompanyView.Staff)
+                });
+            }
+            return items.ToArray();
         }
 
         private CompanyCard OvertimeCard(CompanyDirector d, CompanyShop shop, Words w)
@@ -401,6 +471,8 @@ namespace RealLifeOverhaul.Ui
                 Sec(CompanyText.T("reallife_ibox_sec_terms")),
                 Row(CompanyText.Label("reallife_co_overtime_cost"), CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(d.OvertimeCost(place)))),
                 Row(CompanyText.Label("reallife_co_overtime_gain"), CompanyText.Percent(CompanyCatalogue.OvertimeFootfall)),
+                Sec(w.T("reallife_co_staff_people", "Your people")),
+                new CompanyBlock { Kind = CompanyBlockKind.Items, Items = CrewItems(d, place, w, false, 6) },
                 Buttons(
                     Btn(CompanyText.T("reallife_co_overtime_agree"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.OvertimeAnswer, place, 1), UiAction.Alt, UiIcon.Check),
                     Btn(CompanyText.T("reallife_co_overtime_refuse"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.OvertimeAnswer, place, 0), UiAction.Count, UiIcon.Close, true))

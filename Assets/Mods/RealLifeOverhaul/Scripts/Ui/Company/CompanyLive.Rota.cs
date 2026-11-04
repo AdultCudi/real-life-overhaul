@@ -38,7 +38,7 @@ namespace RealLifeOverhaul.Ui
             {
                 RotaPlace p = places[i];
                 bool gaps = p.Type != RotaType.Warehouse && !p.Shut && p.Staff > 0 && p.GapHours > 0;
-                string hours = p.OpenHours > 0 ? CompanyText.T("reallife_rota_row_open", "hours", p.OpenHours.ToString()) : CompanyText.T("reallife_rota_closed");
+                string hours = p.OpenHours > 0 ? CompanyText.T("reallife_co_rota_open", "hours", p.OpenHours.ToString()) : CompanyText.T("reallife_rota_closed");
                 string state = p.Type == RotaType.Warehouse ? CompanyText.T("reallife_rota_row_none") : p.Staff == 0 ? CompanyText.T("reallife_rota_row_no_staff")
                     : gaps ? w.F("reallife_co_row_gap_short", "{hours} h short", "hours", p.GapHours.ToString()) : CompanyText.T("reallife_rota_row_covered");
                 rows.Add(new CompanyRow
@@ -114,7 +114,7 @@ namespace RealLifeOverhaul.Ui
         {
             string place = at.Place;
             bool gaps = !at.Shut && at.Staff > 0 && at.GapHours > 0;
-            string hoursWords = at.OpenHours > 0 ? CompanyText.T("reallife_rota_row_open", "hours", at.OpenHours.ToString()) : CompanyText.T("reallife_rota_closed");
+            string hoursWords = at.OpenHours > 0 ? CompanyText.T("reallife_co_rota_open", "hours", at.OpenHours.ToString()) : CompanyText.T("reallife_rota_closed");
             var p = new CompanyRotaPlace { Id = place, Name = at.Name, Sub = RotaGame.TypeName(at.Reg) + ", " + hoursWords };
             RotaSheet sheet = d.RotaSheetFor(at);
             if (sheet == null)
