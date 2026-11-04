@@ -17,6 +17,7 @@ internal static partial class Program
         DayLongJump();
         DayEntriesAlone();
         DayMarketRent();
+        DayLeaseCard();
         LeaseZeroOffers();   // an offer of nothing is an offer (LeaseZeroChecks.cs)
         Console.WriteLine("  the day entries through their switches, a long jump of days and the market rent: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed");
     }
@@ -152,6 +153,21 @@ internal static partial class Program
 
     // Offer takes the market rent from the one function the property feature feeds: none known leaves the ask as it was; a market above the rent pulls the ask up by a
     // share of the way, one below pulls it down; and the director asks CompanyBridges.MarketRent, and nothing else, for it.
+    // The lease question's figures are measured against the rent paid now (the escalation's own A, with the agreed rise and a hold-over premium in it), not the game's base rent: in a falling
+    // market the landlord's offer is under what is paid, and the card must show a cut with its figure and a Rent now that differs from the Offered.
+    private static void DayLeaseCard()
+    {
+        var held = new LeaseFile { Place = "Mill~9", Start = 100, Term = 360, Rent = 200, Rise = 0, Hold = true };
+        LeaseRules.Make(held, 0, held.End - LeaseRules.NoticeDays);   // a market under the rent pulls the ask to nothing: the premium of the hold-over goes
+        int paidNow = LeaseRules.RentAt(held.Rent, held.Running), offered = LeaseRules.RentAt(held.Rent, held.Offer);
+        int more, less;
+        LeaseRules.YearChange(paidNow, offered, 365, out more, out less);
+        Check(paidNow != offered && less > 0 && more == 0, "lease card: a hold-over lease in a falling market shows rent now (" + paidNow + ") apart from the offered (" + offered + ") and a cut of " + less + " a year, not nought");
+        int baseRent = held.Rent;
+        LeaseRules.YearChange(baseRent, offered, 365, out more, out less);
+        Check(less == 0 && baseRent == offered, "lease card: measured against the game's base rent the same cut reads as nought, which is what the card said before");
+    }
+
     private static void DayMarketRent()
     {
         var l = new LeaseFile { Place = "Main~1", Start = 100, Term = 360, Rent = 200, Rise = 40 };

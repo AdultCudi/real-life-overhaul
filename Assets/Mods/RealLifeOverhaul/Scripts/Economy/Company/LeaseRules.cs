@@ -171,6 +171,17 @@ namespace RealLifeOverhaul.Economy
                 : "reallife_co_note_lease_renewed_less";
         }
 
+        /// <summary>
+        /// What the rent offered at a renewal comes to over a year against the rent paid now, the one the question card says: a rise in <paramref name="more"/>,
+        /// a cut in <paramref name="less"/>. The rent paid
+        /// now is the running one (the agreed rise and any hold-over premium in it), so a landlord who comes down in a falling market shows a cut and not a nought.
+        /// </summary>
+        public static void YearChange(int paidNow, int offered, int daysPerYear, out int more, out int less)
+        {
+            more = Math.Max(0, offered - paidNow) * daysPerYear;
+            less = Math.Max(0, paidNow - offered) * daysPerYear;
+        }
+
         /// <summary>The rent a day at a rise over the game's rent, whole money.</summary>
         public static int RentAt(int rent, int risePermille)
         {

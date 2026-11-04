@@ -55,7 +55,11 @@ namespace RealLifeOverhaul.Ui
             {
                 case EscalationKind.Exception: Exception(d, e, mp, q, w); break;
                 case EscalationKind.Lease: Lease(d, e, q, w); break;
-                case EscalationKind.Gap: Plain(q, e, w, "reallife_hier_do_fill", 0, w.T("reallife_co_q_gap_line", "A person from the staff board, at the going rate"), true); break;
+                case EscalationKind.Gap:
+                    Plain(q, e, w, "reallife_hier_do_fill", 0, w.T("reallife_co_q_gap_line", "A person from the staff board, at the going rate"), true);
+                    q.FactLabels = new[] { w.T("reallife_co_f_staff", "Staff"), w.T("reallife_co_f_since", "Since") };   // what the headline counts, said again as figures
+                    q.FactValues = new[] { e.A.ToString(), CompanyText.Day(e.C) };
+                    break;
                 case EscalationKind.Budget: Budget(d, e, mp, q, w); break;
                 case EscalationKind.Mood:
                 case EscalationKind.Wave: Plain(q, e, w, "reallife_hier_do_raise", 0, w.T("reallife_co_q_raise_line", "The underpaid staff are brought up to the going rate"), true); break;
@@ -170,7 +174,7 @@ namespace RealLifeOverhaul.Ui
         private void Lease(CompanyDirector d, Escalation e, CompanyQuestion q, Words w)
         {
             LeaseFile l = d.LeaseOf(e);
-            int rent = l != null ? l.Rent : e.A, offered = e.B, days = e.C;
+            int rent = e.A, offered = e.B, days = e.C;   // the rent paid now (an agreed rise and a hold-over premium in it), never the game's base rent: the offer is measured against what is paid
             string business = e.Detail;
             q.Title = w.T("reallife_co_q_lease_title", "A lease is up for renewal");
             int rise = e.A > 0 ? (int)((e.B - e.A) * 1000L / e.A) : 0;
@@ -178,7 +182,8 @@ namespace RealLifeOverhaul.Ui
                 "Rise") };
             q.FactValues = new[] { w.Money(d.Monthly(rent)), w.Money(d.Monthly(offered)), l != null ? w.F("reallife_co_q_months", "{count} months", "count", Math.Max(1, l.Term / Math.Max(1,
                 CompanyGame.MonthDays)).ToString()) : "-", CompanyText.Share(rise) };
-            int yearMore = Math.Max(0, (offered - rent)) * CompanyGame.DaysPerYear;
+            int yearMore, yearLess;
+            LeaseRules.YearChange(rent, offered, CompanyGame.DaysPerYear, out yearMore, out yearLess);
             var choices = new List<CompanyChoice>(3)
             {
                 new CompanyChoice
@@ -186,7 +191,7 @@ namespace RealLifeOverhaul.Ui
                     Name = w.T("reallife_co_q_c_renew", "Renew at the offered rent"), Button = w.T("reallife_co_q_renew_do", "Renew the lease"), Note = w.T("reallife_co_q_standing_note", "standing"),
                     Act = CompanyAct.Of(CompanyDo.LeaseAnswer, e.Place, CompanyDirector.AnswerAgree),
                     Lines = new[] { new CompanyConsequence { Text = rise > 0 ? w.F("reallife_co_q_rent_year", "About {amount} a year more in rent", "amount", w.Money(yearMore))
-                        : rise < 0 ? w.F("reallife_co_q_rent_less", "About {amount} a year less in rent", "amount", w.Money(Math.Max(0, (rent - offered)) * CompanyGame.DaysPerYear))
+                        : rise < 0 ? w.F("reallife_co_q_rent_less", "About {amount} a year less in rent", "amount", w.Money(yearLess))
                         : w.T("reallife_co_q_rent_same", "The rent stays as it is"), Tone = rise > 0 ? UiConsequence.Loss : rise < 0 ? 1 : 0, Change = rise > 0 ? 1 : rise < 0 ? -1 : 0 } }
                 },
                 new CompanyChoice
