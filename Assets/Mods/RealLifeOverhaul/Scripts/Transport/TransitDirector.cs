@@ -171,6 +171,7 @@ namespace RealLifeOverhaul
             TransitState.Reset();
             ScenePrewarm.AddLate("transit: the bus routes laid between the subway stations", TransitMap.Prewarm);
             ScenePrewarm.AddLate("transit: the bus stops' dressings built for the routes (props, lettering, boxes and paint)", PrewarmDressings);
+            ScenePrewarm.AddLate("transit: the city map's window for the stops copied, with an entry and a marker for every stop", PrewarmPicker);
             ScenePrewarm.Add("transit: the game's road paint found for the bus bays (everything in memory gone through)", RoadPaint.Prewarm);
             ScenePrewarm.Add("transit: the people who wait at the stops and get off the bus being made", PrewarmPeople);
             _root = new GameObject("RealLifeOverhaul Transit").transform;

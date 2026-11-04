@@ -130,8 +130,6 @@ namespace RealLifeOverhaul.Ui
         public int FilterOpen = -1;
         public int FilterChosen;
         public float FilterOffset;
-        public string Note;                             // a quiet line under the table (another mod's part of the list, how it opens)
-        public UiActionModel[] NoteActions = new UiActionModel[0];
 
         // A place's page
         public UiFirmHeadModel Head;

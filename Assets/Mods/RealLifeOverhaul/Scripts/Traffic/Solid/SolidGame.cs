@@ -327,6 +327,14 @@ namespace RealLifeOverhaul
         private AiCarHorn[] _horn = new AiCarHorn[0];
         private bool[] _hornAsked = new bool[0];
         private bool[] _known = new bool[0];
+        private bool[] _wanted = new bool[0];     // seen in a look before it was measured: measured in a frame of its own
+        private int _waiting;                     // how many are
+        private float _waitingSince;              // when the first of them was seen
+        private readonly Dictionary<int, int> _byKind = new Dictionary<int, int>(32);   // a car's kind (its prefab) and a car of it measured
+
+        /// <summary>The minute's figures for its line: cars measured outside the looks, cars that took their kind's figures, the slowest measure.</summary>
+        public int MeasuredOut, CopiedByKind;
+        public long MeasureWorst;
 
         /// <summary>Makes room for the traffic system's cars, forgetting what was measured if it is another city's; true if it was.</summary>
         public bool Pool(object traffic, int cars)
@@ -344,52 +352,126 @@ namespace RealLifeOverhaul
             _horn = new AiCarHorn[cars];
             _hornAsked = new bool[cars];
             _known = new bool[cars];
+            _wanted = new bool[cars];
+            _waiting = 0;
+            _byKind.Clear();
             How = Mode.Unknown;
             _proxiesFailed = false;
             return true;
         }
 
-        private const int MeasuredAtOnce = 3;        // cars measured for the first time in one look: the rest wait for the next (an eighth of a second)
-        private int _budget;
-
-        /// <summary>A new look begins: a few more cars may be measured in it.</summary>
-        public void BeginLook()
-        {
-            _budget = MeasuredAtOnce;
-        }
-
-        /// <summary>The car's transform, measured the first time it is seen; null if not measured yet and this look's budget is spent.</summary>
+        /// <summary>
+        /// The car's transform once it is measured; null until then. A car of a kind already measured (the same prefab, so the
+        /// same shape in its own space) takes that one's figures at once; any other is measured in a frame of its own
+        /// (<see cref="MeasureWaiting"/>), never inside a look: three measured in one look were a look of 1.7 ms.
+        /// </summary>
         public Transform At(int index, VehicleComponent car)
         {
-            if (!_known[index])
+            if (_known[index])
             {
-                if (_budget <= 0)
-                {
-                    return null;
-                }
-                _budget--;
-                Transform body = car.transform;
-                Transform trigger = car.frontTrigger;
-                _carAt[index] = body;
-                _halfWidth[index] = Mathf.Max(0.8f, car.colliderWidth * 0.5f);
-                _axle[index] = trigger != null ? body.InverseTransformPoint(trigger.position).z : Mathf.Max(1.5f, car.length * 0.5f);
-                BoxCollider box = trigger != null ? trigger.GetComponentInChildren<BoxCollider>(true) : null;
-                // (Measured in the sensor's own space: it is turned with the wheels, and its length is not to depend on that.)
-                _reach[index] = box != null
-                    ? _axle[index] + trigger.InverseTransformPoint(box.transform.TransformPoint(box.center + new Vector3(0f, 0f, box.size.z * 0.5f))).z
-                    : _axle[index];
-                // Its nose, from its colliders (CarStrikes measures each pooled car once and remembers).
-                CarStrikes strikes = CarStrikes.Instance;
-                float nose = _axle[index] + 0.9f;
-                if (strikes != null)
-                {
-                    strikes.Box(car, out Vector3 centre, out Vector3 half);
-                    nose = centre.z + half.z;
-                }
-                _nose[index] = nose;
-                _known[index] = true;
+                return _carAt[index];
             }
-            return _carAt[index];
+            int kind = Kind(car);
+            if (kind != 0 && _byKind.TryGetValue(kind, out int like) && like < _known.Length && _known[like])
+            {
+                Transform own = car.transform;
+                _carAt[index] = own;
+                _halfWidth[index] = _halfWidth[like];
+                _axle[index] = _axle[like];
+                _reach[index] = _reach[like];
+                _nose[index] = _nose[like];
+                _known[index] = true;
+                CopiedByKind++;
+                return own;
+            }
+            if (!_wanted[index])
+            {
+                if (_waiting == 0)
+                {
+                    _waitingSince = Time.time;
+                }
+                _wanted[index] = true;
+                _waiting++;
+            }
+            return null;
+        }
+
+        /// <summary>True while a car seen in a look waits to be measured; and how long the first of them has waited.</summary>
+        public bool Waiting => _waiting > 0;
+        public float WaitedFor => _waiting > 0 ? Time.time - _waitingSince : 0f;
+
+        /// <summary>
+        /// One car seen in a look and not measured yet, measured now (outside any look; its kind's figures kept for the others of
+        /// it). One a call: the caller does it in a frame with no look, or after a look that found some waiting too long.
+        /// </summary>
+        public void MeasureWaiting(List<VehicleComponent> pooled)
+        {
+            for (int i = 0; i < _wanted.Length; i++)
+            {
+                if (!_wanted[i])
+                {
+                    continue;
+                }
+                _wanted[i] = false;
+                _waiting--;
+                VehicleComponent car = i < pooled.Count ? pooled[i] : null;
+                if (car == null || _known[i] || !car.isActiveAndEnabled || car.rb == null || car.GetIndex() != i)
+                {
+                    continue;   // back in the pool, or measured already: measured when it is next seen
+                }
+                TrafficTools.Measured();
+                long began = System.Diagnostics.Stopwatch.GetTimestamp();
+                Measure(i, car);
+                long took = System.Diagnostics.Stopwatch.GetTimestamp() - began;
+                MeasuredOut++;
+                if (took > MeasureWorst)
+                {
+                    MeasureWorst = took;
+                }
+                int kind = Kind(car);
+                if (kind != 0 && !_byKind.ContainsKey(kind))
+                {
+                    _byKind[kind] = i;
+                }
+                if (_waiting > 0)
+                {
+                    _waitingSince = Time.time;
+                }
+                return;
+            }
+            _waiting = 0;
+        }
+
+        // A car's kind: the prefab the traffic system made it of; 0 for none known (then each is measured).
+        private static int Kind(VehicleComponent car)
+        {
+            GameObject prefab = car.prefab;
+            return prefab != null ? prefab.GetInstanceID() : 0;
+        }
+
+        // The car's figures in its own space, once: where its sensor reaches and its nose.
+        private void Measure(int index, VehicleComponent car)
+        {
+            Transform body = car.transform;
+            Transform trigger = car.frontTrigger;
+            _carAt[index] = body;
+            _halfWidth[index] = Mathf.Max(0.8f, car.colliderWidth * 0.5f);
+            _axle[index] = trigger != null ? body.InverseTransformPoint(trigger.position).z : Mathf.Max(1.5f, car.length * 0.5f);
+            BoxCollider box = trigger != null ? trigger.GetComponentInChildren<BoxCollider>(true) : null;
+            // (Measured in the sensor's own space: it is turned with the wheels, and its length is not to depend on that.)
+            _reach[index] = box != null
+                ? _axle[index] + trigger.InverseTransformPoint(box.transform.TransformPoint(box.center + new Vector3(0f, 0f, box.size.z * 0.5f))).z
+                : _axle[index];
+            // Its nose, from its colliders (CarStrikes measures each pooled car once and remembers).
+            CarStrikes strikes = CarStrikes.Instance;
+            float nose = _axle[index] + 0.9f;
+            if (strikes != null)
+            {
+                strikes.Box(car, out Vector3 centre, out Vector3 half);
+                nose = centre.z + half.z;
+            }
+            _nose[index] = nose;
+            _known[index] = true;
         }
 
         public float HalfWidth(int index) => _halfWidth[index];

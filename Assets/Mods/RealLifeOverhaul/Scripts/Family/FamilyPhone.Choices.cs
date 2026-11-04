@@ -103,7 +103,10 @@ namespace RealLifeOverhaul.Family
                 {
                     FamilyDirector.Instance.WhenFree(WeddingDay.OfferHoneymoon);
                     return FamilyTalk.Close("reallife_family_honeymoon_asking");
-                }));
+                })
+            {
+                Costs = e => e.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_on_the_day", "amount", FamilyText.Money(FamilyBalance.HoneymoonCost))   // paid when it is booked
+            });
 
             list.Add(new Choice(() => Children.CanTalk, () => FamilyText.Say("reallife_family_do_children"), "reallife_family_do_children_yes", Children.Talk));
             list.Add(new Choice(() => FamilyState.AnyUnder(FamilyBalance.SchoolFrom),
@@ -121,7 +124,11 @@ namespace RealLifeOverhaul.Family
                 list.Add(new Choice(() => Has(child) && s().Children[child].Age >= FamilyBalance.PocketFrom,
                     () => FamilyText.Say("reallife_family_do_pocket",
                         Args.Us.Kid(s().Children[child].Name).Cost(FamilyBalance.PocketMoney(s().Children[child].Pocket))),
-                    "reallife_family_pocket_change", () => Children.PocketStep(child)));
+                    "reallife_family_pocket_change", () => Children.PocketStep(child))
+                {
+                    Costs = e => e.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_week", "amount",
+                        FamilyText.Money(FamilyBalance.PocketMoney((s().Children[child].Pocket + 1) % FamilyBalance.PocketLevels)))   // the next level's, a week
+                });
                 list.Add(new Choice(() => Has(child),
                     () => FamilyText.Say("reallife_family_do_fund",
                         Args.Us.Kid(s().Children[child].Name).Cost(s().Children[child].Fund).With(FamilyText.Money(FamilyBalance.FundStep))),

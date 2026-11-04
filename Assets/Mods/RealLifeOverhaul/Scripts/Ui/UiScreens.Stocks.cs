@@ -71,17 +71,30 @@ namespace RealLifeOverhaul.Ui
                 "reallife_stk_sig_macd_under", "reallife_stk_sig_atr", "reallife_stk_sig_obv_up", "reallife_stk_sig_obv_down", "reallife_stk_sig_level_over",
                 "reallife_stk_sig_level_under", "reallife_stk_sig_trend_over", "reallife_stk_sig_trend_under", "reallife_stk_signals_title",
                 "reallife_stk_signals_none", "reallife_stk_position_title", "reallife_stk_position_none", "reallife_stk_avg_cost", "reallife_stk_gain",
-                "reallife_stk_alerts_title", "reallife_stk_alerts_none", "reallife_stk_alert_up", "reallife_stk_alert_down", "reallife_stk_alert_above",
+                "reallife_stk_alerts_title", "reallife_stk_alerts_none", "reallife_stk_alert_set", "reallife_stk_alert_line", "reallife_stk_alert_line_off", "reallife_stk_alert_above",
                 "reallife_stk_alert_below", "reallife_stk_alert_support", "reallife_stk_alert_state_on", "reallife_stk_alert_state_hit", "reallife_stk_order_title",
                 "reallife_stk_cash_line", "reallife_stk_good_for", "reallife_stk_put_back", "reallife_stk_limit_price", "reallife_stk_stop_price",
                 "reallife_stk_profit_price", "reallife_stk_row_price", "reallife_stk_row_cost", "reallife_stk_row_fee", "reallife_stk_row_total",
                 "reallife_stk_row_most_buy", "reallife_stk_row_most_sell", "reallife_stk_place_buy", "reallife_stk_place_sell", "reallife_stk_cap_large",
-                "reallife_stk_cap_mid", "reallife_stk_cap_small", "reallife_stk_exchange", "reallife_stk_close", "reallife_stk_measure", "reallife_stk_big_chart",
+                "reallife_stk_cap_mid", "reallife_stk_cap_small", "reallife_stk_close", "reallife_stk_measure", "reallife_stk_big_chart",
                 "reallife_stk_small_chart", "reallife_stk_tape_buy", "reallife_stk_tape_sell",
                 "reallife_mkt_chart_day", "reallife_mkt_frame_days", "reallife_stk_chart_empty", "reallife_stk_chart_empty_body", "reallife_mkt_sector_logistics",
                 "reallife_stk_cap", "reallife_mkt_frame_today", "reallife_mkt_frame_weeks", "reallife_mkt_frame_months", "reallife_mkt_frame_years",
                 "reallife_stk_kind_candles", "reallife_stk_kind_line", "reallife_stk_kind_area", "reallife_mkt_type_stop_loss", "reallife_mkt_type_take_profit",
-                "reallife_stk_gtc"
+                "reallife_stk_gtc",
+                "reallife_stk_view_held", "reallife_stk_view_pays", "reallife_stk_view_account", "reallife_stk_period_month", "reallife_stk_period_quarter", "reallife_stk_period_year",
+                "reallife_stk_period_all", "reallife_stk_realised_all", "reallife_stk_pays_year", "reallife_stk_pays_next", "reallife_stk_pays_from", "reallife_stk_pays_ends",
+                "reallife_stk_pays_rolls", "reallife_stk_pays_empty", "reallife_stk_acc_dividends", "reallife_stk_acc_div_paid", "reallife_stk_acc_commission", "reallife_stk_acc_power",
+                "reallife_stk_acc_interest", "reallife_stk_acc_borrow", "reallife_stk_your_orders", "reallife_stk_orders_open_count", "reallife_stk_your_day", "reallife_stk_five_days",
+                "reallife_stk_sort_gainers", "reallife_stk_sort_losers", "reallife_stk_sort_active", "reallife_stk_gain_today", "reallife_stk_gain_week", "reallife_stk_expected_range",
+                "reallife_stk_days_span", "reallife_stk_policy_chair", "reallife_stk_policy_board", "reallife_stk_policy_proposed", "reallife_stk_policy_none", "reallife_stk_retail",
+                "reallife_stk_alert_why_full", "reallife_stk_alert_why_line", "reallife_stk_alert_why_level", "reallife_stk_alert_sheet", "reallife_stk_alert_about", "reallife_stk_alert_goes",
+                "reallife_stk_alert_over", "reallife_stk_alert_under", "reallife_stk_alert_level", "reallife_stk_alert_set_go", "reallife_stk_sh_per_day", "reallife_stk_position_value",
+                "reallife_mkt_day", "reallife_mkt_withdraw", "reallife_mkt_account_margin", "reallife_mkt_account_call",
+                "reallife_mkt_inv_yield", "reallife_mkt_inv_sec_year",
+                "reallife_mkt_inv_income_owed", "reallife_mkt_inv_income_all",
+                "reallife_ibox_sec_payments", "reallife_mkt_col_money", "reallife_mkt_col_commission",
+                "reallife_mkt_confirm_buy", "reallife_mkt_inv_work", "reallife_stk_hist_empty", "reallife_stk_hist_empty_body"
             }).Switch(UiScreenSwitches.Market));
         }
     }

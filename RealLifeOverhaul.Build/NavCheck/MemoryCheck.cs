@@ -101,7 +101,7 @@ internal static partial class Program
             "pooled record: it starts again only past twice the pool and the slack");
         string scripts = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
         string refresh = Body(Source(scripts, @"People\StreetPeople.cs"), "private static void Refresh(");
-        int stale = refresh.IndexOf("CacheRules.Stale(Known.Count, live)", StringComparison.Ordinal), add = refresh.IndexOf("Known[id] = human", StringComparison.Ordinal);
+        int stale = refresh.IndexOf("CacheRules.Stale(Known.Count, live)", StringComparison.Ordinal), add = refresh.IndexOf("Known[id] = entry", StringComparison.Ordinal);
         Check(stale >= 0 && add > stale && refresh.Contains("live += Pools[p] != null ? Pools[p].childCount : 0"),
             "pooled record: StreetPeople counts what its pools hold and starts its record again before it adds to it");
     }

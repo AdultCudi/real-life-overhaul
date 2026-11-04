@@ -347,6 +347,7 @@ namespace RealLifeOverhaul.Economy
                 case ProductAnswer.TooLittle: return FinanceText.T("reallife_econ_why_too_little");
                 case ProductAnswer.TooMuch: return FinanceText.T("reallife_econ_why_too_much");
                 case ProductAnswer.NoSecurity: return FinanceText.T("reallife_econ_why_no_security", "days", ProductCatalogue.BusinessDaysOnRecord.ToString());
+                case ProductAnswer.NoCover: return FinanceText.T("reallife_econ_why_no_cover", "cover", ProductCatalogue.BusinessCoverTimes.ToString());
                 case ProductAnswer.NoCash: return FinanceText.T("reallife_econ_why_no_cash");
                 case ProductAnswer.NothingOwed: return FinanceText.T("reallife_econ_why_nothing");
                 case ProductAnswer.Busy: return FinanceText.T("reallife_econ_why_busy");

@@ -17,6 +17,7 @@ namespace RealLifeOverhaul.Population
         public int Content;        // its customers' satisfaction, 0 to 100
         public int Staff;          // the player's: the game's staff there now; -1 for the city's and the rivals' (worked out from the floor)
         public int Promotion;      // thousandths: the game's promotion multiplier now (its base plus 0.75 times the promotion over 100)
+        public string Name;        // the business's name as the game shows it; empty or null where it has none (no story is told of a business without one)
     }
 
     /// <summary>
@@ -49,7 +50,7 @@ namespace RealLifeOverhaul.Population
         /// of each office building, the special services and the public sector by their floor, a residential building's staff. A key already
         /// known keeps its slot (a load's or a day's look again): only its figures are brought up to date, and its jobs follow its floor.
         /// </summary>
-        public static void Setup(PopulationState s, IList<BusinessSeed> seeds)
+        public static void Setup(PopulationState s, IList<BusinessSeed> seeds, int day = 0)
         {
             var byBuilding = new Dictionary<int, int>(seeds != null ? seeds.Count : 0);
             for (int i = 0; seeds != null && i < seeds.Count; i++)
@@ -80,7 +81,7 @@ namespace RealLifeOverhaul.Population
                 int business = -1;
                 if (seed >= 0 && PopulationCatalogue.CategoryOfType(bs.Type) >= 0)
                 {
-                    business = Business(s, key, b, bs);
+                    business = Business(s, key, b, bs, day);
                 }
                 switch (cb.Use)
                 {
@@ -126,15 +127,21 @@ namespace RealLifeOverhaul.Population
             return Math.Max(PopulationCatalogue.ShopJobsLeast, (int)((long)Math.Max(b.UnitSqm, 1) * PopulationCatalogue.OfficeNetShare / 1000 / PopulationCatalogue.DeskSqm));
         }
 
-        // A business found by its key or added, its figures brought up to date.
-        private static int Business(PopulationState s, string key, int building, in BusinessSeed bs)
+        // A business found by its key or added, its figures brought up to date. On a game day (day above 0) a city or rival business new to the table has opened, and is noted.
+        private static int Business(PopulationState s, string key, int building, in BusinessSeed bs, int day)
         {
             BusinessTable bt = s.Businesses;
             int b = s.BusinessOfKey(key);
+            bool opened = false;
             if (b < 0)
             {
                 b = bt.Add(key);
                 s.KnowBusiness(key, b);
+                opened = true;
+            }
+            if (day > 0 && opened)
+            {
+                CityFirmRules.Opened(s, bs, day);
             }
             if (!string.Equals(bt.Type[b], bs.Type, StringComparison.Ordinal))
             {

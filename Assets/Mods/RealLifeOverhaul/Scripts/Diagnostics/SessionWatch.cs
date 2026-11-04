@@ -560,8 +560,9 @@ namespace RealLifeOverhaul
             double handed = HotSpots.FrameGameMs(frame);
             if (handed >= 0.05)
             {
-                // A button of the game's the RLO interface pressed (View on map): what its listeners did is the game's own work.
-                _line.Append("; the game's own work the mod handed to it (a button of the game's pressed for the RLO interface): ")
+                // A button of the game's the RLO interface pressed (View on map), or the game's city map opened or shut for a choice
+                // of the mod's: what its listeners and its map's handlers did is the game's own work (the mod's handlers are the mod's).
+                _line.Append("; the game's own work the mod handed to it (a button of the game's pressed, or its city map opened or shut, for the RLO interface): ")
                     .Append(handed.ToString("F1", CultureInfo.InvariantCulture)).Append(" ms, the game's and not in the mod's figure");
             }
 

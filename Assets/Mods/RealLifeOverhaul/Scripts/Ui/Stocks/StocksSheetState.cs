@@ -43,6 +43,50 @@ namespace RealLifeOverhaul.Ui
             return ((value + dir) % n + n) % n;
         }
 
+        /// <summary>
+        /// A price typed in dollars ("56.4", "56,40") as cents, kept between its ends; an empty or unreadable text keeps <paramref name="keep"/>.
+        /// A comma is a decimal point. Never more than two decimals are read.
+        /// </summary>
+        public static long TypedPrice(string text, long least, long most, long keep)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return keep;
+            }
+            long whole = 0, cents = 0;
+            int decimals = -1;
+            for (int i = 0; i < text.Length; i++)
+            {
+                char c = text[i];
+                if ((c == '.' || c == ',') && decimals < 0)
+                {
+                    decimals = 0;
+                }
+                else if (c >= '0' && c <= '9')
+                {
+                    if (decimals < 0)
+                    {
+                        whole = whole < 10000000000L ? whole * 10L + (c - '0') : whole;
+                    }
+                    else if (decimals < 2)
+                    {
+                        cents = cents * 10L + (c - '0');
+                        decimals++;
+                    }
+                }
+            }
+            if (decimals == 1)
+            {
+                cents *= 10L;
+            }
+            long total = whole * 100L + cents;
+            if (most >= least && total > most)
+            {
+                total = most;
+            }
+            return total < least ? least : total;
+        }
+
         /// <summary>Digits typed into a stepper, kept to its upper end.</summary>
         public static long Typed(string text, long least, long most)
         {

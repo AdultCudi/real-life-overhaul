@@ -34,6 +34,18 @@ public static partial class UiPreviewRunner
             Lay = (s, f, d, k) => UiSamples.PlannerNotes(s, f, d, k, ModEnglish, false), HoverCommand = LifePages.Add, HoverArg = 0, Walk = Moves("D") });
         screens.Add(new Screen { Name = "planner_notes_empty", AppName = "Planner", Icon = UiIcon.Clock, Backdrop = "02.jpg",
             Lay = (s, f, d, k) => UiSamples.PlannerNotes(s, f, d, k, ModEnglish, true), HoverCommand = LifePages.Add, HoverArg = 0, Walk = Moves("D") });
+        screens.Add(new Screen { Name = "planner_jump", AppName = "Planner", Icon = UiIcon.Clock, Backdrop = "13.jpg",
+            Lay = (s, f, d, k) => UiSamples.PlannerToday(s, f, d, k, ModEnglish, false, 4), HoverCommand = UiBoard.ActionCommand, HoverArg = 0, Walk = Moves("R") });
+        screens.Add(new Screen { Name = "planner_day", AppName = "Planner", Icon = UiIcon.Clock, Backdrop = "02.jpg",
+            Lay = (s, f, d, k) => UiSamples.PlannerDay(s, f, d, k, ModEnglish), HoverCommand = LifePages.Row, HoverArg = 0, Walk = Moves("D") });
+        screens.Add(new Screen { Name = "planner_entry", AppName = "Planner", Icon = UiIcon.Clock, Backdrop = "13.jpg",
+            Lay = (s, f, d, k) => UiSamples.PlannerEntry(s, f, d, k, ModEnglish, false), HoverCommand = UiPlanEntry.ActionCommand, HoverArg = 0, Walk = Moves("R") });
+        screens.Add(new Screen { Name = "planner_entry_note", AppName = "Planner", Icon = UiIcon.Clock, Backdrop = "02.jpg",
+            Lay = (s, f, d, k) => UiSamples.PlannerEntry(s, f, d, k, ModEnglish, true), HoverCommand = UiPlanEntry.ActionCommand, HoverArg = 3, Walk = Moves("R") });
+        screens.Add(new Screen { Name = "planner_note_form", AppName = "Planner", Icon = UiIcon.Clock, Backdrop = "13.jpg",
+            Lay = (s, f, d, k) => UiSamples.PlannerForm(s, f, d, k, ModEnglish, false), HoverCommand = UiPlanForm.FieldCommand, HoverArg = 0, Walk = Moves("D") });
+        screens.Add(new Screen { Name = "planner_settings", AppName = "Planner", Icon = UiIcon.Clock, Backdrop = "02.jpg",
+            Lay = (s, f, d, k) => UiSamples.PlannerForm(s, f, d, k, ModEnglish, true), HoverCommand = UiPlanForm.FieldCommand, HoverArg = 1, Walk = Moves("D") });
         screens.Add(new Screen { Name = "calendar_month", AppName = "Calendar", Icon = UiIcon.Calendar, Backdrop = "13.jpg",
             Lay = (s, f, d, k) => UiSamples.CalendarMonth(s, f, d, k, ModEnglish, false), HoverCommand = UiDiary.DayCommand, HoverArg = 2, Walk = Moves("DRR") });
         screens.Add(new Screen { Name = "calendar_empty", AppName = "Calendar", Icon = UiIcon.Calendar, Backdrop = "02.jpg",

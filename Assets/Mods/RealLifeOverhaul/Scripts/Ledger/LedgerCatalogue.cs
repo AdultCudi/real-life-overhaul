@@ -117,6 +117,10 @@ namespace RealLifeOverhaul.Ledger
             K("_ledger_bought_own", LedgerSection.Business, 90, "bought_own"),
             K("_ledger_bought_city", LedgerSection.Business, 64, "bought_city"),
 
+            // business: a firm of the city or of a rival that opened (LedgerStories.Opened), the edition after its day
+            K("_ledger_opened_city", LedgerSection.Business, 52, "opened_city"),
+            K("_ledger_opened_rival", LedgerSection.Business, 55, "opened_rival"),
+
             // business: the player's own shops and their staff
             K("_co_news_strike", LedgerSection.Business, 72, "strike"),
             K("_ob_news_closed", LedgerSection.Business, 90),

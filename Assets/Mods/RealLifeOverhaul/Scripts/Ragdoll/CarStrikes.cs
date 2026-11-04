@@ -63,6 +63,7 @@ namespace RealLifeOverhaul
         private Vector3[] _boxHalf = new Vector3[0];
         private bool[] _boxKnown = new bool[0];
         private object _boxPool;            // the traffic system the boxes were measured in
+        private readonly Dictionary<int, int> _boxByKind = new Dictionary<int, int>(32);   // a car's kind (its prefab) and a place in the pool measured of it
 
         private void Awake()
         {
@@ -267,7 +268,8 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// A pooled traffic car's box in its own space: its middle and half its width, height and length. Measured once per
-        /// place in the pool; two array reads after that.
+        /// kind of car (its prefab: the same colliders in the same places), copied for every other car of the kind; two array
+        /// reads after that.
         /// </summary>
         public void Box(VehicleComponent car, out Vector3 centre, out Vector3 half)
         {
@@ -281,6 +283,7 @@ namespace RealLifeOverhaul
                 _boxHalf = new Vector3[size];
                 _boxKnown = new bool[size];
                 _boxPool = pool;
+                _boxByKind.Clear();
             }
             if (index < 0)
             {
@@ -289,7 +292,21 @@ namespace RealLifeOverhaul
             }
             if (!_boxKnown[index])
             {
-                Measure(car, car.rb, out _boxCentre[index], out _boxHalf[index], false);
+                GameObject prefab = car.prefab;
+                int kind = prefab != null ? prefab.GetInstanceID() : 0;
+                if (kind != 0 && _boxByKind.TryGetValue(kind, out int like) && like < _boxKnown.Length && _boxKnown[like])
+                {
+                    _boxCentre[index] = _boxCentre[like];
+                    _boxHalf[index] = _boxHalf[like];
+                }
+                else
+                {
+                    Measure(car, car.rb, out _boxCentre[index], out _boxHalf[index], false);
+                    if (kind != 0)
+                    {
+                        _boxByKind[kind] = index;
+                    }
+                }
                 _boxKnown[index] = true;
             }
             centre = _boxCentre[index];

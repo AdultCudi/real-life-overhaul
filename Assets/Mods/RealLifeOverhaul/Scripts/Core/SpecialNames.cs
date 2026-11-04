@@ -93,6 +93,8 @@ namespace RealLifeOverhaul
                 _searchOptions = null;
                 Changed();
             });
+            // The map's search list of every building, made behind the loading screen: the first opening of the map then only finds it made.
+            ScenePrewarm.AddLate("names: the city map's search list made with the special buildings' names", PrewarmSearch);
             try
             {
                 LocalizorManager.OnLanguageChanged = (Action)Delegate.Combine(LocalizorManager.OnLanguageChanged, _onLanguage);
@@ -447,9 +449,21 @@ namespace RealLifeOverhaul
 
         private static readonly int HotSearch = HotSpots.Slot("Core: SpecialNames.Search");
 
+        // Behind the loading screen. A fault there is not kept: the map's first opening makes the list as it always did.
+        private bool PrewarmSearch()
+        {
+            if (SaveGameManager.Current == null || InstanceBehavior<CityManager>.Instance == null)
+            {
+                return false;
+            }
+            Search(true);
+            return true;
+        }
+
         // The game lists every building with a business name as "name, address" and finds it by the name; the list is made
-        // again the game's way, with the special names, only when the game has made its own anew since.
-        private void Search()
+        // again the game's way, with the special names, only when the game has made its own anew since. ahead: made behind
+        // the loading screen, where a fault only leaves the list to the map's first opening.
+        private void Search(bool ahead = false)
         {
             using var hotSpot = HotSpots.Time(HotSearch);
             if (_searchFailed)
@@ -545,6 +559,13 @@ namespace RealLifeOverhaul
             }
             catch (Exception e)
             {
+                if (ahead)
+                {
+                    _searchOptions = null;   // made again when the map first opens
+                    SpecialBuildings.Logger?.Info("Special buildings: the city map's search list could not be made behind the loading screen ("
+                                                  + e.GetType().Name + "); it is made when the map first opens.");
+                    return;
+                }
                 _searchFailed = true;
                 SpecialBuildings.Logger?.Error(e);
                 SpecialBuildings.Logger?.Info("Special buildings: the city map's search could not be given the names (the error above); it lists the game's own.");

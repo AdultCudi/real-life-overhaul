@@ -201,10 +201,10 @@ namespace RealLifeOverhaul.Ui
             }
             cy += UiTokens.S2;
             float half = UiDraw.SnapDown((iw - UiTokens.S2) / 2f);
-            UiDraw.Button(s, on, ix, cy, half, UiTokens.ControlSmall, UiButtonKind.Secondary, c.AlertAbove, UiIcon.None, UiAction.Count, keys,
+            UiDraw.Button(s, on, ix, cy, half, UiTokens.ControlSmall, UiButtonKind.Secondary, c.AlertSet, UiIcon.None, UiAction.Count, keys,
                 StocksCompanyLay.AlertAdd, 0, c.AlertsFull);
-            UiDraw.Button(s, on, ix + half + UiTokens.S2, cy, half, UiTokens.ControlSmall, UiButtonKind.Secondary, c.AlertBelow, UiIcon.None, UiAction.Count, keys,
-                StocksCompanyLay.AlertAdd, 1, c.AlertsFull);
+            UiDraw.Button(s, on, ix + half + UiTokens.S2, cy, half, UiTokens.ControlSmall, UiButtonKind.Secondary, c.AlertLine, UiIcon.None, UiAction.Count, keys,
+                StocksCompanyLay.AlertLine, 0, c.AlertsFull || c.AlertLineOff);
         }
     }
 }

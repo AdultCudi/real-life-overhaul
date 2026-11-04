@@ -856,6 +856,14 @@ namespace RealLifeOverhaul.Ui
                 }
             }
 
+            public void TakeInteract()
+            {
+                if (Focused)
+                {
+                    UiGame.Instance.TakeInteract();
+                }
+            }
+
             public IUiKeys Keys => UiGame.Instance.Keys;
         }
 

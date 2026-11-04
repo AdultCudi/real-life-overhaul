@@ -37,6 +37,9 @@ namespace RealLifeOverhaul.Ui
         /// <summary>A new city: a screen that never looked as expected in the last one is looked at again.</summary>
         public static void Rearm() => Host.Rearm();
 
+        /// <summary>The game's own Rivals view until the app closes: a press the game has no tab or button for.</summary>
+        public static void Classic() => Host.Classic();
+
         /// <summary>The game's app as it was: the kit gone, its layout seen and touchable again.</summary>
         public static void Remove(string why) => Host.Remove(why);
 
@@ -68,6 +71,12 @@ namespace RealLifeOverhaul.Ui
                 if (found.transform.Find(Layout) == null)
                 {
                     return "its layout is not there";
+                }
+                string tabs = UiProbe.Need("Rivals", "TabMenu above the businesses table", RivalsScreen.GameTab(GameContract.RivalsBusinessTable.Field?.GetValue(found) as Component, false))
+                              ?? UiProbe.Need("Rivals", "TabMenu above the buildings table", RivalsScreen.GameTab(GameContract.RivalsBuildingTable.Field?.GetValue(found) as Component, false));
+                if (tabs != null)
+                {
+                    return tabs;
                 }
                 return GameContract.RivalsBoard.Field?.GetValue(found) == null || GameContract.RivalsChosen.Field?.GetValue(found) == null
                        || GameContract.RivalsBusinessTable.Field?.GetValue(found) == null || GameContract.RivalsBuildingTable.Field?.GetValue(found) == null

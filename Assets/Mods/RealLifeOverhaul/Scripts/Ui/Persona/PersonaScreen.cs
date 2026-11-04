@@ -34,7 +34,6 @@ namespace RealLifeOverhaul.Ui
         private readonly CharacterStats _stats;
         private readonly EducationInfo _education;
         private readonly PersonalGoalsUI _goals;
-        private readonly Button _sortCurrent, _sortSteam;
         private readonly PersonaView _v = new PersonaView();
         private readonly UiPersonaModel _m = new UiPersonaModel();
         private readonly List<PersonaModifier> _mods = new List<PersonaModifier>(16);
@@ -53,8 +52,6 @@ namespace RealLifeOverhaul.Ui
             _stats = root.GetComponentInChildren<CharacterStats>(true);
             _education = root.GetComponentInChildren<EducationInfo>(true);
             _goals = root.GetComponentInChildren<PersonalGoalsUI>(true);
-            _sortCurrent = Find<Button>("PersonalGoals/Header/CurrentGoalsLabel");   // the game's own sort buttons over its goals
-            _sortSteam = Find<Button>("PersonalGoals/Header/SteamAchievementsLabel");
         }
 
         public string Id => PersonaKit.Id;
@@ -165,11 +162,23 @@ namespace RealLifeOverhaul.Ui
             return true;
         }
 
-        // A goals' head is the game's own sort button over its list: its toggle cycles the order, which the kit reads back.
+        // A goals' head is the game's own sort over its list, called by its public method (the one its header buttons call):
+        // it cycles the order, which the kit reads back.
         private bool Sort(int column)
         {
-            Button b = _tab != UiPersona.Goals ? null : column == 1 ? _sortCurrent : column == 3 ? _sortSteam : null;
-            return Done(b != null && UiWidgets.Press(b), "sort the goals by " + (column == 1 ? "their tier" : "Steam's tier") + ": handed to the game");
+            if (_tab != UiPersona.Goals || _goals == null || (column != 1 && column != 3))
+            {
+                return Done(false, "sort the goals");
+            }
+            if (column == 1)
+            {
+                _goals.ToggleCurrentGoalTierSorting();
+            }
+            else
+            {
+                _goals.ToggleSteamAchievementTierSorting();
+            }
+            return Done(true, "sort the goals by " + (column == 1 ? "their tier" : "Steam's tier") + ": handed to the game");
         }
 
         // ------------------------------------------------------------------------------------------------- the game's state
@@ -374,12 +383,6 @@ namespace RealLifeOverhaul.Ui
         }
 
         // ------------------------------------------------------------------------------------------------- reading helpers
-
-        private T Find<T>(string path) where T : Component
-        {
-            Transform t = _root.Find(path);
-            return t != null ? t.GetComponent<T>() : null;
-        }
 
         private static TMP_Text Label(GameMember member, Component owner) => owner != null ? member.Field?.GetValue(owner) as TMP_Text : null;
 

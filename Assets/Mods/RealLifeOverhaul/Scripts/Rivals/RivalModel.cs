@@ -142,6 +142,8 @@ namespace RealLifeOverhaul.Rivals
         public bool Issues;                    // business pressure runs (a smear, an inspection)
         public bool Court;                     // the justice system takes civil claims
         public bool Paper;                     // the City Ledger prints
+        public bool PlayerCut;                 // the player has a price cut on (DaySeries): the rivals answer it in kind
+        public bool PlayerCampaign;            // the player has a campaign running on Flare: the rivals answer it in the paper
         public readonly List<RivalShop> Shops = new List<RivalShop>(16);
 
         public void Clear()
@@ -152,7 +154,7 @@ namespace RealLifeOverhaul.Rivals
             Level = 1000;
             Cycle = 1;
             FirstFrom = RivalCatalogue.TierFrom[1];
-            Listed = Market = Staff = Issues = Court = Paper = false;
+            Listed = Market = Staff = Issues = Court = Paper = PlayerCut = PlayerCampaign = false;
             Shops.Clear();
         }
     }

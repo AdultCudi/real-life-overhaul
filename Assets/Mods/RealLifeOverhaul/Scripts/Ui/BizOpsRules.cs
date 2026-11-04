@@ -52,6 +52,53 @@ namespace RealLifeOverhaul.Ui
             return days < LastsShort ? UiRole.DangerText : days < LastsLow ? UiRole.WarnText : UiRole.None;
         }
 
+        /// <summary>
+        /// The rival shop whose crew the schedule names: the nearest of those with a crew (staff above 0), by their distances in
+        /// metres; -1 for none. The game keeps a rival shop's head count (its AI employees) and no rota by the hour, so the line says
+        /// how many staff the rival keeps, never who is in at the busy hour.
+        /// </summary>
+        public static int NearestCrew(float[] metres, int[] staff, int count)
+        {
+            int best = -1;
+            for (int i = 0; i < count; i++)
+            {
+                if (staff[i] > 0 && metres[i] >= 0f && (best < 0 || metres[i] < metres[best]))
+                {
+                    best = i;
+                }
+            }
+            return best;
+        }
+
+        /// <summary>
+        /// Whether a route's last run was at the game's fixed nightly hour: only a run of today, on a route Send now was not used on today,
+        /// can be told so (the record holds the day only, and Send now's own record keeps today alone).
+        /// </summary>
+        public static bool RunHourKnown(int lastRunDay, int today, bool sentNowToday) => lastRunDay >= 0 && lastRunDay >= today && !sentNowToday;
+
+        public const int TodayFrom = 6;   // the hour a table's day is counted from: "made since 06:00"
+
+        /// <summary>
+        /// The hours a machine has worked today from <see cref="TodayFrom"/>: each whole hour before <paramref name="hourNow"/> that somebody
+        /// stood at it by the shift (worked[hour]), and the hour now when it is running. The game keeps no count of what a table made, so
+        /// the page says "about": a past hour is counted by the table's worker, not by what was on the shelves then.
+        /// </summary>
+        public static int TodayHours(bool[] worked, int hourNow, bool runningNow)
+        {
+            int hours = 0;
+            for (int h = TodayFrom; h < hourNow && h < Hours && worked != null && h < worked.Length; h++)
+            {
+                hours += worked[h] ? 1 : 0;
+            }
+            return hours + (runningNow && hourNow >= TodayFrom ? 1 : 0);
+        }
+
+        /// <summary>The pieces a machine made in some hours at so many an hour.</summary>
+        public static int TodayMade(int hours, int perHour) => Math.Max(0, hours) * Math.Max(0, perHour);
+
+        /// <summary>Money of some pieces at a price each, whole money; 0 for none.</summary>
+        public static long TodayWorth(int pieces, float each) => pieces <= 0 || each <= 0f ? 0L : (long)Math.Round(pieces * (double)each, MidpointRounding.AwayFromZero);
+
         /// <summary>Tenths of a second (of the game's clock) a machine takes for one piece at so many an hour, rounded; 0 for none.</summary>
         public static int TenthsEach(int perHour) => perHour <= 0 ? 0 : (36000 + perHour / 2) / perHour;
 

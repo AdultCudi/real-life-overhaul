@@ -36,6 +36,7 @@ internal static partial class Program
         UiSourceChecks();
         UiBindChecks();
         UiHostChecks();
+        ToastChecks();
         UiForeignChecks();
         UiCaretChecks();
         UiTextKeys();

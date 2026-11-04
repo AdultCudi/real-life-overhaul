@@ -28,9 +28,7 @@ namespace RealLifeOverhaul.Population
         /// <summary>Homes finished in the city in the running year of the population (any builder's).</summary>
         public static int HomesBuilt => Live != null ? Live.Growth.Built : 0;
 
-        /// <summary>Firms opened and closed in the running year of the population.</summary>
-        public static int FirmsOpened => Live != null ? Live.Growth.Opened : 0;
-
+        /// <summary>Firms closed in the running year of the population.</summary>
         public static int FirmsClosed => Live != null ? Live.Growth.Closed : 0;
 
         /// <summary>True on a Going Public guest that follows the host's population: the figures are the host's, the people the host's to keep.</summary>

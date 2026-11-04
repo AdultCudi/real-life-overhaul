@@ -39,6 +39,8 @@ internal static partial class Program
         { "GalleryScreen", new[] { UiAlbum.Search } },
         { "FlareScreen", new[] { FlareFace.FieldCommand } },
         { "FinanceScreen", new[] { FinanceFace.AmountType } },
+        { "BanksScreen", new[] { MoneyCommands.TypeField } },
+        { "OwnBankScreen", new[] { MoneyCommands.TypeField } },
         { "CompanyScreen", new[] { CompanyFace.StepType } }
     };
 
@@ -166,13 +168,15 @@ internal static partial class Program
                 on.ScreenBox(on.CaretItem, out float cx, out float _, out float _, out float _);
                 float end = words >= 0 ? on.Items[words].X + Math.Min(on.Items[words].W, UiTextRules.Width(on.Items[words].Text, UiStyle.Body)) : -1f;
                 Check(words >= 0 && cx >= end - 0.5f && on.Items[words].Text.Length > 0, "ui caret: " + c.name + " puts the caret after the last letter shown");
-                Check(words >= 0 && UiTextRules.Fits(on.Items[words].Text, UiStyle.Body, on.Items[words].W), "ui caret: " + c.name + " shows the end of its words that fits, so the last letter is never cut");
+                Check(words >= 0 && UiTextRules.Fits(on.Items[words].Text, UiStyle.Body, on.Items[words].W),
+                    "ui caret: " + c.name + " shows the end of its words that fits, so the last letter is never cut");
             }
         }
         // An empty field's caret comes before its placeholder, not over it.
         UiScene empty = UiCaretScene(s => UiDraw.TextField(s, at, 100f, 100f, 360f, string.Empty, "Name", command, arg, false), command, arg);
         int hint = UiCaretWords(empty, command, arg);
-        Check(hint >= 0 && empty.CaretItem >= 0 && empty.Items[empty.CaretItem].X + empty.Items[empty.CaretItem].W <= empty.Items[hint].X, "ui caret: an empty field's caret stands before its placeholder");
+        Check(hint >= 0 && empty.CaretItem >= 0 && empty.Items[empty.CaretItem].X + empty.Items[empty.CaretItem].W <= empty.Items[hint].X,
+            "ui caret: an empty field's caret stands before its placeholder");
         // A disabled field takes no keys.
         UiScene disabled = UiCaretScene(s => UiDraw.TextField(s, at, 100f, 100f, 360f, "Locked", "Name", command, arg, true), command, arg);
         Check(disabled.CaretItem < 0, "ui caret: a disabled field draws no caret");
@@ -238,7 +242,8 @@ internal static partial class Program
         string head = "short words";
         Check(UiTextRules.LastLines(head, UiStyle.Body, 800f, 3, out float _) == head && UiTextRules.Tail(head, UiStyle.Body, 800f) == head, "ui caret: words that fit are shown whole");
         string cut = UiTextRules.Tail(many, UiStyle.Body, 300f);
-        Check(UiTextRules.Fits(cut, UiStyle.Body, 300f) && many.EndsWith(cut, StringComparison.Ordinal) && cut.Length > 5, "ui caret: a line shows the end of long words that fits, the last letter kept");
+        Check(UiTextRules.Fits(cut, UiStyle.Body, 300f) && many.EndsWith(cut, StringComparison.Ordinal) && cut.Length > 5,
+            "ui caret: a line shows the end of long words that fits, the last letter kept");
     }
 
     // ---------------------------------------------------------------- every screen with a field
@@ -350,7 +355,8 @@ internal static partial class Program
         set = set ?? string.Empty;
         Check(!blink.Contains("Layout(") && !blink.Contains("Dirty") && !blink.Contains("Again(") && !blink.Contains("_laidSize") && !blink.Contains(".Write("),
             "ui caret: the blink never lays the screen out or marks it dirty");
-        Check(!set.Contains("new ") && !set.Contains("Write(") && !set.Contains("Layout") && set.Contains("Show(slot.Rect, on)"), "ui caret: SetCaret shows or hides the one item and allocates nothing");
+        Check(!set.Contains("new ") && !set.Contains("Write(") && !set.Contains("Layout") && set.Contains("Show(slot.Rect, on)"),
+            "ui caret: SetCaret shows or hides the one item and allocates nothing");
         Check(blink.Contains("now + BlinkEvery") && blink.Contains("_view.SetCaret(_caretOn)") && host.Contains("private const float BlinkEvery = 0.5f;"),
             "ui caret: the blink turns every half second on the clock");
         int typing = host.IndexOf("if (_typing)\n            {\n                if (_state.Back)", StringComparison.Ordinal);
@@ -359,14 +365,16 @@ internal static partial class Program
         Check(typing >= 0 && call > typing && call < next && host.IndexOf("Blink(now);", call + 1, StringComparison.Ordinal) < 0 && host.Contains("else if (now >= _blinkAt)"),
             "ui caret: the blink runs only while a field takes the keys, and costs one clock comparison a frame");
         string end = UiCaretMember(host, "private void EndTyping()") ?? string.Empty;
-        Check(host.Contains("_scene.TypingCommand = _typing ? _typeCommand : -1;") && host.Contains("BeginTyping(typing, n.Command, n.Arg);") && host.Contains("BeginTyping(box, box.TypingCommand, 0);")
+        Check(host.Contains("_scene.TypingCommand = _typing ? _typeCommand : -1;") && host.Contains("BeginTyping(typing, n.Command, n.Arg);")
+            && host.Contains("BeginTyping(box, box.TypingCommand, 0);")
               && end.Contains("_typeCommand = -1;") && end.Contains("_laidSize = Vector2.zero;"),
             "ui caret: the host tells the scene which target takes the keys, from the press to the end of the typing");
         string layout = UiCaretMember(host, "private void Layout()") ?? string.Empty;
         Check(layout.Contains("_caretOn = true;") && layout.Contains("_blinkAt = Time.unscaledTime + SolidFor"), "ui caret: a layout (a key typed) leaves the caret solid for a moment");
         string hide = UiCaretMember(host, "public void Hide()") ?? string.Empty, hold = UiCaretMember(host, "public void Hold(bool hold)") ?? string.Empty;
         string pointer = UiCaretMember(host, "private void PointerPressed(int node)") ?? string.Empty, ended = UiCaretMember(host, "private void TypingEnded(string text)") ?? string.Empty;
-        Check(hide.Contains("EndTyping();") && hold.Contains("EndTyping();") && pointer.Contains("EndTyping();") && ended.Contains("EndTyping();") && host.Contains("_input.TakeBack();\n                    EndTyping();"),
+        Check(hide.Contains("EndTyping();") && hold.Contains("EndTyping();") && pointer.Contains("EndTyping();") && ended.Contains("EndTyping();")
+            && host.Contains("_input.TakeBack();\n                    EndTyping();"),
             "ui caret: typing ends on Enter, Esc, a click elsewhere and the screen closing, and the caret goes with it");
     }
 }

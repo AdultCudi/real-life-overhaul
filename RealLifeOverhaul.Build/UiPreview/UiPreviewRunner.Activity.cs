@@ -14,6 +14,12 @@ public static partial class UiPreviewRunner
         screens.Add(new Screen { Name = "activity_work_running", AppName = "Work", Icon = UiIcon.Briefcase, Backdrop = "00.jpg",
             Lay = (s, f, d, k) => UiSamples.ActivityStripScene(s, f, d, k, English, UiSamples.ActivityWork(English, k, UiActivityState.Running)),
             HoverCommand = UiActivity.SkipCommand, Walk = Moves("LRR") });
+        screens.Add(new Screen { Name = "activity_cart_before", AppName = "Work", Icon = UiIcon.Coffee, Backdrop = "13.jpg",
+            Lay = (s, f, d, k) => UiSamples.ActivityCardScene(s, f, d, k, English, UiSamples.ActivityCart(English, k, UiActivityState.NotStarted)),
+            HoverCommand = UiActivity.StepCommand, Walk = Moves("DRRLU") });
+        screens.Add(new Screen { Name = "activity_cart_running", AppName = "Work", Icon = UiIcon.Coffee, Backdrop = "13.jpg",
+            Lay = (s, f, d, k) => UiSamples.ActivityStripScene(s, f, d, k, English, UiSamples.ActivityCart(English, k, UiActivityState.Running)),
+            HoverCommand = UiActivity.SkipCommand, Walk = Moves("LRR") });
         screens.Add(new Screen { Name = "activity_class", AppName = "Class", Icon = UiIcon.Cap, Backdrop = "03.jpg",
             Lay = (s, f, d, k) => UiSamples.ActivityCardScene(s, f, d, k, English, UiSamples.ActivityClass(English, k)),
             HoverCommand = UiActivity.StepCommand, Walk = Moves("DRRLU") });

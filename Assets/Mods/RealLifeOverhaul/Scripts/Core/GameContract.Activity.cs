@@ -25,6 +25,9 @@ namespace RealLifeOverhaul
         // The funeral's backup button's label: the game hides its row when there is no backup (the one made at 70).
         public static readonly GameMember FuneralBackup = Field(UiFuneral, Game, "UI.FuneralUI", "loadBackUpSaveLabel", "TextLocalizationComponent");
 
+        // The backup the funeral found, as the game read it (its day, and the time its file was written); null when there is none.
+        public static readonly GameMember FuneralBackupMeta = Field(UiFuneral, Game, "UI.FuneralUI", "_backUpMetaData", "SaveGameManager.SaveGameStruct");
+
         // The time of day tool keeps itself and its slider to itself: found, read and moved as its own buttons move it.
         public static readonly GameMember DayToolSelf = StaticField(UiTimeOfDay, Game, "InGameTimeOfDayPanel", "Instance", "InGameTimeOfDayPanel");
         public static readonly GameMember DayToolSlider = Field(UiTimeOfDay, Game, "InGameTimeOfDayPanel", "timeOfDaySlider", "Slider");

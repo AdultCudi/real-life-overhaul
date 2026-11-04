@@ -44,6 +44,9 @@ namespace RealLifeOverhaul.DaySeries
         /// <summary>Plan ids that were already holding their prices, so the cut's end does not turn their hold off.</summary>
         public string HeldAlready { get; set; } = string.Empty;
 
+        /// <summary>Plan ids the price cut put on hold, so its end takes off those holds and no others.</summary>
+        public string HeldByCut { get; set; } = string.Empty;
+
         /// <summary>How many figures the book keeps.</summary>
         public int Lines => _lines.Count;
 
@@ -64,6 +67,7 @@ namespace RealLifeOverhaul.DaySeries
             CutFrom = 0;
             CutUntil = 0;
             HeldAlready = string.Empty;
+            HeldByCut = string.Empty;
             Refused = 0;
             Generation++;
         }

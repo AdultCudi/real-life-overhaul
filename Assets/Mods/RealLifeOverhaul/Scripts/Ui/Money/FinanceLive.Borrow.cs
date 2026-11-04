@@ -231,7 +231,9 @@ namespace RealLifeOverhaul.Ui
             return q;
         }
 
-        // What you still owe at the end of each stretch of the term: the loan's own payments take off the principal a day at a time.
+            // What you still owe at the end of each stretch of the term. The game's loans and the mod's finance take the same payment off the principal every
+        // day and charge the interest on top (a flat daily interest on a loan, a falling one on a finance), so the principal is a straight line down:
+        // an annuity's falling balance would show a debt the game never keeps.
         private UiChartModel OwingChart(UtilitiesWords w, int amount, LoanQuote quote)
         {
             const int points = 12;
@@ -330,7 +332,15 @@ namespace RealLifeOverhaul.Ui
             string record = FinanceText.T("reallife_econ_business_record", "days", days.ToString(Inv), "profit", Money(profit));
             if (offer.Answer != ProductAnswer.Yes)
             {
-                q.Refused = record + " " + FinanceApp.Why(offer.Answer);
+                // The cover rule is said on a refusal too: with the days and the profit there it is the reason, with the number the takings reach.
+                int times = desk.BusinessCover(shop, offer.Bank);
+                string rule = w.F("reallife_fin_business_check",
+                    "A bank wants {need} days of takings on record and takings that cover the payment {cover} times. Yours cover it {times} times.",
+                    "need", ProductCatalogue.BusinessDaysOnRecord.ToString(Inv), "cover", ProductCatalogue.BusinessCoverTimes.ToString(Inv), "times", times.ToString(Inv));
+                q.Refused = offer.Answer == ProductAnswer.NoCover
+                    ? record + " " + w.F("reallife_fin_business_cover_no", "Your takings must cover the payment {cover} times; they cover it {times} times.",
+                        "cover", ProductCatalogue.BusinessCoverTimes.ToString(Inv), "times", times.ToString(Inv))
+                    : record + " " + FinanceApp.Why(offer.Answer) + " " + rule;
                 q.Steps = steps.ToArray();
                 q.StepMoves = moves.ToArray();
                 return;
@@ -345,7 +355,13 @@ namespace RealLifeOverhaul.Ui
             Lines(q, w.T("reallife_fin_l_borrow", "You borrow"), Money(amount), Label("reallife_econ_offer_fee"), Money(quote.Fee),
                 Label("reallife_econ_offer_payment"), Money(quote.DailyPayment),
                 Label("reallife_econ_offer_interest"), Money(quote.DailyInterest), Label("reallife_econ_offer_days"), quote.Days.ToString(Inv));
-            q.Note = record + " " + ProductAbout(BusinessLoan);
+            // The rule the desk lends by (ProductTerms.HistoryOk and CoverOk): a month of takings on record that cover this loan's payment 20 times.
+            long takings = (long)Books.TakingsOnRecord(shop.Address, ProductCatalogue.BusinessDaysOnRecord, out _);
+            int pay = quote.DailyPayment + quote.DailyInterest;
+            q.Note = record + " " + ProductAbout(BusinessLoan) + " " + w.F("reallife_fin_business_check",
+                "A bank wants {need} days of takings on record and takings that cover the payment {cover} times. Yours cover it {times} times.",
+                "need", ProductCatalogue.BusinessDaysOnRecord.ToString(Inv), "cover", ProductCatalogue.BusinessCoverTimes.ToString(Inv),
+                "times", (pay > 0 ? takings / pay : 0L).ToString(Inv));
             q.Steps = steps.ToArray();
             q.StepMoves = moves.ToArray();
             q.TakeLabel = FinanceText.T("reallife_econ_offer_apply");

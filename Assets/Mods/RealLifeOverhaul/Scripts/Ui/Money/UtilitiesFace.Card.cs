@@ -157,9 +157,19 @@ namespace RealLifeOverhaul.Ui
         // An amount: its name at the left, the minus, the figure and the plus at the right, what the figure means under them.
         private static void Step(UiScene s, UiAt at, UtilitiesStep step, int index, float x, float y, float w, int lessCommand, int moreCommand)
         {
-            float lw = UiDraw.SnapDown(w * StepLabel);
+            float lw = Math.Max(UiDraw.SnapDown(w * StepLabel), Math.Min(UiDraw.SnapDown(w * 0.5f), UiDraw.Snap(UiTextRules.Width(step.Label ?? string.Empty, UiStyle.Body)) + UiTokens.S3));
             UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, lw - UiTokens.S2, UiStyle.Body, UiRole.Text, step.Label, UiFlags.Label | UiFlags.Truncate);
             float cx = x + lw, cw = w - lw, b = UiDraw.StepButton, by = y + (UiTokens.Control - b) / 2f;
+            if (step.TypeCommand != 0)
+            {
+                // A figure that is typed too: the kit's stepper, with its caret.
+                UiDraw.Stepper(s, at, cx, y, cw, step.Value, step.CanLess, step.CanMore, lessCommand, step.TypeCommand, moreCommand, step.TypeArg, false);
+                if (!string.IsNullOrEmpty(step.Hint))
+                {
+                    UiDraw.Text(s, at, x, y + UiTokens.Control + UiTokens.S1, w, UiStyle.Small, UiRole.Text2, step.Hint, UiFlags.Wrap | UiFlags.Label, 2);
+                }
+                return;
+            }
             Square(s, at, cx, by, b, UiIcon.Minus, lessCommand, index, !step.CanLess);
             Square(s, at, cx + cw - b, by, b, UiIcon.Plus, moreCommand, index, !step.CanMore);
             float fx = cx + b + UiTokens.S2, fw = cw - (b + UiTokens.S2) * 2f;

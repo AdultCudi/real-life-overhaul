@@ -22,7 +22,7 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>The rest of a shift left to the game's clock (<see cref="ShiftSkip"/>), for every job but the cart, which does it inline.</summary>
-    public sealed class ShiftClock : ISkippableShift
+    public sealed class ShiftClock : ISlidingShift, IShiftFacts
     {
         private readonly JobContext _ctx;
         private readonly Job _job;
@@ -36,8 +36,10 @@ namespace RealLifeOverhaul
         private readonly Func<int> _openFor;
         private readonly int _each;
         private ShiftSkip _skip;
-        private int _left;
+        private int _left;   // the units this run covers: the slider's part of what the shift had left when it began
         private int _done;
+        private int _hours;   // the hours the slider keeps before a run; 0: the whole shift
+        private bool _running;
         private int _open;   // game minutes the place of work stays open from the run's start
         private float _startedAt;
         private bool _closed;
@@ -108,7 +110,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            int pay = Mathf.RoundToInt(count * _shift.ClockPay * ShiftRates.Share);
+            int pay = ShiftFactsRules.Pay(_shift.ClockPay, count, ShiftRates.Share);
             slip = _asTips ? new PaySlip { Units = count, Tips = pay } : new PaySlip { Units = count, Base = pay };
             return true;
         }
@@ -117,6 +119,7 @@ namespace RealLifeOverhaul
         public void Close()
         {
             _closed = true;
+            _running = false;
             if (_skip != null)
             {
                 _skip.Close();
@@ -138,11 +141,35 @@ namespace RealLifeOverhaul
             ? JobText.T("reallife_career_shift_title", "title", JobText.T(_ctx.Shift.Rank.TitleKey), "employer", JobText.T(_ctx.Shift.Employer.NameKey))
             : JobText.T(_job.Def.NameKey);
 
-        int ISkippableShift.SkipMinutes => _shift.ClockLeft * _each;
+        int ISkippableShift.SkipMinutes => (_running ? _left : ShiftFactsRules.Units(_hours, _shift.ClockLeft, _each)) * _each;
+
+        // The length of the run is the player's to pick before it starts: from one hour to what the shift has left (Jobs/ShiftFactsRules).
+        // A shift that cannot be stopped part way has no slider; this one can, since the clock pays the units done when it stops (SkipEnded).
+        int ISlidingShift.SlideLeast => 1;
+
+        int ISlidingShift.SlideMost => ShiftFactsRules.MostHours(_shift.ClockLeft * _each);
+
+        int ISlidingShift.SlideNow => _hours > 0 ? Math.Min(_hours, ((ISlidingShift)this).SlideMost) : ((ISlidingShift)this).SlideMost;
+
+        void ISlidingShift.Slide(int value) => _hours = ShiftFactsRules.Chosen(value, ((ISlidingShift)this).SlideMost);
+
+        (string key, object arguments) ISlidingShift.SlideInfo() => ("common_hours", new { hours = ((ISlidingShift)this).SlideNow });
+
+        int IShiftFacts.PayFor(int minutes)
+        {
+            int left = _running ? _left : ShiftFactsRules.Units(_hours, _shift.ClockLeft, _each);
+            return ShiftFactsRules.Pay(_shift.ClockPay, ClockRules.Units(minutes, false, left, _each, _running ? _open : int.MaxValue), ShiftRates.Share);
+        }
+
+        string IShiftFacts.SkillKey => ShiftFactsRules.SkillKey(_job.Def, _ctx.Shift != null ? _ctx.Shift.Employer : null);
+
+        float IShiftFacts.SkillFor(int minutes) => ShiftFactsRules.Skill(_job.Def.UnitSkill, _each > 0 ? minutes / _each : 0);
+
+        float IShiftFacts.StressRate => HomeBalance.StressJobShift;
 
         LabelInfo[] ISkippableShift.SkipLabels()
         {
-            int left = _shift.ClockLeft;
+            int left = ((ISkippableShift)this).SkipMinutes / _each;   // the part the slider keeps, as its sum under the slider says
             int minutes = left * _each;
             Color32 white = WorldPanel.White();
             string things = JobText.T(_unitsKey);
@@ -159,7 +186,8 @@ namespace RealLifeOverhaul
 
         void ISkippableShift.SkipStarted()
         {
-            _left = _shift.ClockLeft;
+            _left = ShiftFactsRules.Units(_hours, _shift.ClockLeft, _each);
+            _running = true;
             _done = 0;
             _open = _openFor != null ? _openFor() : int.MaxValue;
             _startedAt = Time.time;
@@ -192,12 +220,13 @@ namespace RealLifeOverhaul
             }
             int count = ClockRules.Units(minutes, whole, _left, _each, _open);
             _done = 0;
+            _running = false;
             if (!_ctx.Stand.Standing)
             {
                 _ctx.Self.Free();
             }
             float energyBefore = SaveGameManager.Current != null ? SaveGameManager.Current.Energy : 0f;
-            int pay = count > 0 ? Mathf.RoundToInt(count * _shift.ClockPay * ShiftRates.Share) : 0;
+            int pay = ShiftFactsRules.Pay(_shift.ClockPay, count, ShiftRates.Share);
             _shift.ClockEnded(count, pay, Time.time - _startedAt);
             if (count > 0)
             {
@@ -208,7 +237,8 @@ namespace RealLifeOverhaul
                               + JobText.T(_unitsKey) + " at " + ShiftRates.Percent + "%: pay " + pay + ", no tips, no bonus; energy " + energyBefore.ToString("F1", CultureInfo.InvariantCulture)
                               + " -> "
                               + energyAfter.ToString("F1", CultureInfo.InvariantCulture) + "; "
-                              + (count >= _left ? "to the end of the shift" : (minutes > _open ? "the client closed " + _open + " min in: " : "stopped early: ")
+                              + (count >= _left ? (_shift.ClockLeft > 0 ? "to the end of the hours chosen, " + _shift.ClockLeft + " are left to do by hand" :
+                                  "to the end of the shift") : (minutes > _open ? "the client closed " + _open + " min in: " : "stopped early: ")
                                  + _shift.ClockLeft + " are left to do by hand") + ".");
         }
     }

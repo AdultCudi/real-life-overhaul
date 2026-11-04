@@ -37,7 +37,7 @@ internal static partial class UiSamples
         {
             new UiFigureModel { Label = t("reallife_econapp_tile_inflation", "Inflation a year"), Value = "6.0%", Change = "+0.6" + month, Rising = true, Good = false },
             new UiFigureModel { Label = t("reallife_econapp_tile_rate", "Bank rate"), Value = "4.00%", Change = "+0.50" + month, Rising = true, Good = false },
-            new UiFigureModel { Label = t("reallife_econapp_tile_unemployment", "Unemployment"), Value = "5.9%", Change = "+0.4" + month, Rising = true, Good = false }
+            new UiFigureModel { Label = t("reallife_econapp_tile_unemployment", "Unemployment"), Value = "5.9%", Change = "+0.4 " + NewsFill(t("reallife_news_in_days", "in {days} days"), "days", "29"), Rising = true, Good = false }
         };
         m.Chart = NewsChart(t, state == "jobs" || state == "finances" ? 30 : 120, state);
         if (state == "overview")
@@ -80,6 +80,16 @@ internal static partial class UiSamples
         {
             m.Table = NewsDistricts(t);
             m.TableTitle = t("reallife_news_districts_pull", "Districts by pull on customers");
+        }
+        else if (state == "finances")
+        {
+            string days = " " + NewsFill(t("reallife_news_in_days", "in {days} days"), "days", "119");
+            m.Figures = new[]
+            {
+                new UiFigureModel { Label = t("reallife_news_series_reserve", "Reserve"), Value = "$4,210,000", Change = "+$310,000" + days, Rising = true, Good = true },
+                new UiFigureModel { Label = t("reallife_news_series_revenue", "Revenue"), Value = "$612,000", Change = "+$48,000" + days, Rising = true, Good = true },
+                new UiFigureModel { Label = t("reallife_news_series_spending", "Spending"), Value = "$574,000", Change = "+$61,000" + days, Rising = true, Good = false }
+            };
         }
         else if (state == "jobs")
         {

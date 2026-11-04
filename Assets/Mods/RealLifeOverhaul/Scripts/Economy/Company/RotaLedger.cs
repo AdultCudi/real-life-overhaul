@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy
@@ -109,6 +110,41 @@ namespace RealLifeOverhaul.Economy
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// The runs of hours of one planned shift that Fill the gaps may write on a day: an hour is free when the place is open (a cleaning
+        /// shift needs no opening hour), no shift of the day already stands at the station then, and the person is free then. A shift that
+        /// is already placed is never touched: its hours are simply not free. Runs go into <paramref name="starts"/> and
+        /// <paramref name="ends"/> (the end not counted); the count is returned.
+        /// </summary>
+        public static int GapRuns(int from, int to, bool cleaning, bool[] open, bool[] stationBusy, bool[] personFree, int[] starts, int[] ends)
+        {
+            int runs = 0, h = Math.Max(0, from);
+            to = Math.Min(to, RotaCatalogue.Hours);
+            while (h < to)
+            {
+                while (h < to && !FreeAt(h, cleaning, open, stationBusy, personFree))
+                {
+                    h++;
+                }
+                int start = h;
+                while (h < to && FreeAt(h, cleaning, open, stationBusy, personFree))
+                {
+                    h++;
+                }
+                if (h > start && runs < starts.Length && runs < ends.Length)
+                {
+                    starts[runs] = start;
+                    ends[runs++] = h;
+                }
+            }
+            return runs;
+        }
+
+        private static bool FreeAt(int hour, bool cleaning, bool[] open, bool[] stationBusy, bool[] personFree)
+        {
+            return (cleaning || (open != null && hour < open.Length && open[hour])) && !stationBusy[hour] && personFree[hour];
         }
 
         /// <summary>A fill on a week of plain shifts, as RotaGame does it to the game's own lists: what it takes out goes, the plan's shifts come.</summary>
