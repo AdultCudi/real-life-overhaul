@@ -42,6 +42,42 @@ internal static partial class Program
         }
     }
 
+    // What a page costs to open: the heaviest pages laid out again and again. A page is laid out once when the facts change or the player acts, and the face does nothing per frame.
+    private static void CompanyCost()
+    {
+        UiWords en = UiWords("en");
+        string[] heavy = { "overview_big", "overview_tall", "managers_big", "rota_big", "rota_day", "tax_big", "staff_big", "managers_sub_policy", "managers_sub_dashboard" };
+        var scene = new UiScene();
+        UiFrame frame = UiFrame.FullMenu(16f / 9f, "Company");
+        double worst = 0, total = 0;
+        string worstState = string.Empty;
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        foreach (string state in heavy)
+        {
+            CompanyFacts facts = UiSamples.CompanyFactsOf(en, state);
+            CompanyView view = UiSamples.CompanyViewOf(state);
+            CompanyWords words = UiSamples.CompanyWordsOf(en);
+            var layout = new CompanyLayout();
+            CompanyFace.Lay(scene, facts, view, words, layout, frame, true, UiDefaultKeys.Keyboard);   // the first, warm
+            watch.Restart();
+            for (int i = 0; i < 40; i++)
+            {
+                layout = new CompanyLayout();
+                CompanyFace.Lay(scene, facts, view, words, layout, frame, true, UiDefaultKeys.Keyboard);
+            }
+            watch.Stop();
+            double each = watch.Elapsed.TotalMilliseconds / 40.0;
+            total += each;
+            if (each > worst)
+            {
+                worst = each;
+                worstState = state;
+            }
+        }
+        Console.WriteLine("    company face cost: the heaviest of " + heavy.Length + " pages (" + worstState + ") lays out in " + worst.ToString("0.00") + " ms, the " + heavy.Length + " together in " + total.ToString("0.00") + " ms");
+        Check(worst < 5.0, "company face cost: the heaviest of " + heavy.Length + " pages (" + worstState + ") lays out in " + worst.ToString("0.00") + " ms, the " + heavy.Length + " together in " + total.ToString("0.00") + " ms: one layout when the facts change or the player acts, nothing per frame");
+    }
+
     private static void CompanyDump(string state)
     {
         var s = new UiScene();
@@ -97,7 +133,6 @@ internal static partial class Program
             into.OffBody = Facts.OffBody;
             into.Name = Facts.Name;
             into.Mark = Facts.Mark;
-            into.Today = Facts.Today;
             into.Counts = Facts.Counts;
             into.Overview = Facts.Overview;
             into.Staff = Facts.Staff;
@@ -109,7 +144,6 @@ internal static partial class Program
             into.Business = Facts.Business;
             into.Question = Facts.Question;
             into.Deep = Facts.Deep;
-            into.GuideNote = Facts.GuideNote;
         }
 
         public bool Do(CompanyAct act, CompanyView view)
@@ -143,6 +177,7 @@ internal static partial class Program
         }
         Check(all, "company face: every target of every state runs the action drawn, as its own kind, and changes only what its kind owns (any failure is said above)");
         Console.WriteLine("    company face: " + pressed + " targets pressed in " + UiSamples.CompanyStates.Length + " states, " + drawn.Count + " kinds of action drawn");
+        CompanyCost();
         // No action without a page that draws it, and none without the live source's handler: an orphan either way is a button nobody can press or a press nothing answers.
         var orphans = new StringBuilder();
         var unhandled = new StringBuilder();

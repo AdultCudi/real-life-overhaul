@@ -219,6 +219,59 @@ namespace RealLifeOverhaul.Economy
             return fill.CoveredHours > now.CoveredHours || placedAfter > placedNow ? RotaCall.Write : RotaCall.NoBetter;
         }
 
+        /// <summary>
+        /// The person a new rota moves to another station, for the manager's log ("moved Lena Adler from the fryer to the grill"): of those on both weeks (the planner's
+        /// own fixed ones apart), whose main station (the one they stand at for most hours) is not the same, the one with the most hours at the new one. False when nobody
+        /// changes station. Cost: one pass over both weeks' cells, once a week a place.
+        /// </summary>
+        public static bool Move(RotaPlan now, RotaPlan fill, int stations, int workers, bool[] fixedWorker, out int worker, out int from, out int to)
+        {
+            worker = from = to = -1;
+            int most = 0;
+            if (now == null || fill == null || stations <= 0 || workers <= 0 || now.Stations != stations || fill.Stations != stations)
+            {
+                return false;
+            }
+            int cells = Math.Min(Math.Min(now.At.Length, fill.At.Length), RotaCatalogue.Cells * stations);
+            for (int w = 0; w < workers; w++)
+            {
+                if (fixedWorker != null && w < fixedWorker.Length && fixedWorker[w])
+                {
+                    continue;
+                }
+                int a = MainStation(now, stations, cells, w, out int hoursNow), b = MainStation(fill, stations, cells, w, out int hoursAfter);
+                if (a >= 0 && b >= 0 && a != b && hoursNow > 0 && hoursAfter > most)
+                {
+                    most = hoursAfter;
+                    worker = w;
+                    from = a;
+                    to = b;
+                }
+            }
+            return worker >= 0;
+        }
+
+        // The station a worker stands at for most hours of a week, the lowest on a tie; -1 for none, and the hours they stand there.
+        private static int MainStation(RotaPlan plan, int stations, int cells, int worker, out int hours)
+        {
+            int best = -1;
+            hours = 0;
+            for (int s = 0; s < stations; s++)
+            {
+                int n = 0;
+                for (int c = s; c < cells; c += stations)
+                {
+                    n += plan.At[c] == worker ? 1 : 0;
+                }
+                if (n > hours)
+                {
+                    hours = n;
+                    best = s;
+                }
+            }
+            return best;
+        }
+
         // Each worker's hours in a week: one for every cell of a station they hold.
         private static void Count(RotaPlan plan, int stations, int workers, int[] hours)
         {

@@ -132,7 +132,7 @@ namespace RealLifeOverhaul.Ui
         public string Headline;                 // the Lead's one-line statement: "Dev Kapoor asks for $19 an hour. Ray can approve up to $18."
         public string Body;                     // the narrative
         public string Asker, AskerRole, Subject, SubjectRole;     // the manager (or executive) who asks and the person it is about; null where there is none
-        public float AskerHue, SubjectHue;
+        public float AskerHue;
         public UiRole AskerRing = UiRole.Warn, SubjectRing = UiRole.Ok;
         public string[] FactLabels = new string[0];
         public string[] FactValues = new string[0];
@@ -140,7 +140,6 @@ namespace RealLifeOverhaul.Ui
         public int Selected;                    // the choice the main button does
         public string OpenLabel;                // "Open Ray's page"
         public CompanyAct Open;                 // where it goes
-        public string MainLabel, LaterLabel;    // the buttons: "Raise Dev to $19", "Decide later"
         public bool Deep;                       // held below the owner: Deep Mode's Try now and Pass stand in place of answers
     }
 
@@ -203,7 +202,6 @@ namespace RealLifeOverhaul.Ui
         public string[] CostValues = new string[0];
         public string CostTotal;
         public CompanyManagerToday[] Managers = new CompanyManagerToday[0];
-        public string ManagersCount;
         public CompanyButton[] Tools = new CompanyButton[0];     // Open cleaning, Open your bank, the listing: only what is there
         public string Note;                     // a line under the right column (the stock market line)
         public bool PartOff;                    // the company's parts are off
@@ -220,13 +218,10 @@ namespace RealLifeOverhaul.Ui
         Switch,         // Text, Sub, On, Act
         Stepper,        // Text, Sub, Value, CanLess, CanMore, Act (less), Act2 (more), Act3 (typed)
         Choice,         // Text, Sub, Options, Chosen, Acts (one per option)
-        Grades,         // Labels, Numbers
         Lines,          // Rows of when, what, money (a log)
         Field,          // Text label, Value the words now, Sub the hint, Act the commit (a typed name rides in S2)
         Chips,          // Options as a row of chips
-        Meter,          // Text, Number 0 to 100, Tone
-        Check,          // Text, On: a requirement met or not
-        Rows            // a list of rows: Items
+        Meter           // Text, Number 0 to 100, Tone
     }
 
     /// <summary>A row of a card's list: a face or a tile, two lines, a figure, a chip, and what a press does.</summary>
@@ -254,13 +249,11 @@ namespace RealLifeOverhaul.Ui
         public bool On, CanLess = true, CanMore = true, Disabled;
         public string Why;
         public int Number = -1, Chosen;
-        public string[] Options, Labels;
-        public int[] Numbers;
+        public string[] Options;
         public CompanyAct Act, Act2, Act3;
         public CompanyAct[] Acts;
         public CompanyButton[] Buttons;
         public CompanyDone[] Rows;
-        public CompanyItem[] Items;
         public UiIcon Icon = UiIcon.None;
     }
 
@@ -304,9 +297,6 @@ namespace RealLifeOverhaul.Ui
         public CompanyRow[] Rows = new CompanyRow[0];
         public int Chosen = -1;
         public string Empty;
-        public string FootLabel;                // a link under the list
-        public CompanyAct Foot;
-        public UiIcon FootIcon = UiIcon.Sliders;
         public CompanyButton[] Tools = new CompanyButton[0];     // buttons under the title ("New plan")
         public string[] Filters = new string[0];                 // chips above the rows
         public int Filter;

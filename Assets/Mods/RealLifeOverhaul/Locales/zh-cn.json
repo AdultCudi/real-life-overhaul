@@ -31086,7 +31086,6 @@
   "reallife_rota_edit": "编辑",
   "reallife_rota_advised": "建议",
   "reallife_co_coming_up": "即将到来",
-  "reallife_co_today_line": "第{day}天",
   "reallife_co_company_of": "{name}的公司",
   "reallife_co_open_policy": "打开政策中心",
   "reallife_co_tree_owner": "业主",
@@ -31274,7 +31273,6 @@
   "reallife_co_q_proposal_line": "公司规则立即改变，每位经理的规则也随之改变",
   "reallife_co_q_reject_line": "规则保持不变",
   "reallife_co_q_dismiss_line": "若情况仍然属实会再次出现",
-  "reallife_rota_staff_word": "员工",
   "reallife_rota_in_use": "使用中",
   "reallife_rota_copy": "复制方案",
   "reallife_rota_sum_served": "已服务",
@@ -31456,5 +31454,7 @@
   "reallife_ui_test_company_on": "公司现在使用界面打开。",
   "reallife_ui_test_company_off_page": "公司现在使用旧页面打开。",
   "reallife_ui_test_company_off": "这个存档里公司没有运行，没有可打开的内容。",
-  "reallife_co_row_gap_short": "缺{hours}小时"
+  "reallife_co_row_gap_short": "缺{hours}小时",
+  "reallife_mgr_did_rota_moved": "编写了本周排班表：{shifts}个班次，覆盖了{wanted}小时中的{covered}小时，并把{person}从{from}调到了{to}。",
+  "reallife_co_plan_ahead": "{plan}从第{from}天持续到第{to}天：每人最多{cap}，每周最低人手{floor}小时（与本方案相比）"
 }

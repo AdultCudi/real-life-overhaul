@@ -45,7 +45,6 @@ namespace RealLifeOverhaul.Ui
             m.Chosen = pick;
             m.Profile = ProfileOf(d, pick, w);
             m.TreeFoot = d.HierarchyOn ? w.T("reallife_co_open_policy", "Open the policy centre") : null;
-            m.TreeFootAct = CompanyAct.Of(CompanyDo.Go, null, CompanyView.Managers, CompanyView.SubPolicy);
             m.TreeTitle = w.T("reallife_co_who_decides", "Who decides what");
             m.Empty = w.T("reallife_co_mgr_none_body", "Pick a person in the tree to see what they decide, what they may spend and how they are doing.");
         }

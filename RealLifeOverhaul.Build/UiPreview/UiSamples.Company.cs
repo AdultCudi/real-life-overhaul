@@ -82,7 +82,7 @@ internal static partial class UiSamples
         CompanyWords w = CompanyWordsOf(t);
         bool one = state.EndsWith("_one", StringComparison.Ordinal);
         one = one || state == "staff_one" || state == "rota_one" || state == "marketing_one" || state == "tax_one";
-        var f = new CompanyFacts { Ready = state != "company_off", Name = one ? "Corner Cafe" : "Pioneer Holdings", Mark = one ? "CC" : "PH", Today = "Mon, Day " + (one ? "5" : "214") };
+        var f = new CompanyFacts { Ready = state != "company_off", Name = one ? "Corner Cafe" : "Pioneer Holdings", Mark = one ? "CC" : "PH" };
         f.Counts = state == "company_off" ? new string[7] : one ? new string[] { null, "2", null, "1", null, null, "1" } : new[] { null, "31", "6", null, "2", null, "1" };
         if (state == "company_off")
         {
@@ -132,11 +132,11 @@ internal static partial class UiSamples
             Headline = SF("{name} asks for {pay} an hour. {manager} can approve up to {limit}.", "name", "Dev Kapoor", "pay", "$19", "manager", "Ray", "limit", "$18"),
             Body = SF("{name} has worked both registers for 41 days and covered the lunch rush all week. Another raise this month goes over {manager}'s limit.", "name", "Dev", "manager", "Ray"),
             Asker = "Ray Walsh", AskerRole = w.T("reallife_co_q_manager_asks", "Manager, asks"), AskerHue = 0.55f, AskerRing = UiRole.Warn,
-            Subject = "Dev Kapoor", SubjectRole = w.F("reallife_co_q_cashier_days", "Cashier, {days} days", "days", "41"), SubjectHue = 0.35f, SubjectRing = UiRole.Ok,
+            Subject = "Dev Kapoor", SubjectRole = w.F("reallife_co_q_cashier_days", "Cashier, {days} days", "days", "41"), SubjectRing = UiRole.Ok,
             FactLabels = new[] { w.T("reallife_co_q_now", "Now"), w.T("reallife_co_q_asks_for", "Asks for"), w.T("reallife_co_q_limit", "Limit"), "Covered this week" },
             FactValues = new[] { "$17 / h", "$19 / h", "$18 / h", "38 h" },
             OpenLabel = w.F("reallife_co_open_page", "Open {name}'s page", "name", "Ray"), Open = CA(CompanyDo.Go, "mgr:Speedy Bites~7", CompanyView.Managers),
-            MainLabel = w.F("reallife_co_q_raise_do", "Raise {name} to {pay}", "name", "Dev", "pay", "$19"), Selected = 0
+            Selected = 0
         };
         q.Choices = new[]
         {
@@ -297,7 +297,6 @@ internal static partial class UiSamples
             new CompanyManagerToday { Name = "Tessa Brandt", Place = "Bloom & Co", Figures = w.F("reallife_co_decided_asked", "{decided} decided, {asked} asked you", "decided", "6", "asked", "1"), Hue = 0.9f, Ring = UiRole.Ok, Open = CA(CompanyDo.Go, "mgr:Bloom & Co~214", CompanyView.Managers) },
             new CompanyManagerToday { Name = "Meera Iyer", Place = "Operations", Figures = w.F("reallife_co_decided_asked", "{decided} decided, {asked} asked you", "decided", "9", "asked", "1"), Hue = 0.75f, Ring = UiRole.Ok, Open = CA(CompanyDo.Go, "exe:2", CompanyView.Managers) }
         };
-        o.ManagersCount = "6";
         o.Tools = new[]
         {
             CB(w.T("reallife_co_open_cleaning", "Open cleaning"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.OpenCleaning), UiIcon.Package),

@@ -32,7 +32,7 @@ namespace RealLifeOverhaul.Ui
             }
             buttons.Add(new CompanyButton
             {
-                Label = string.IsNullOrEmpty(q.LaterLabel) ? w.T("reallife_co_decide_later", "Decide later") : q.LaterLabel, Kind = UiButtonKind.Secondary, Key = UiAction.Option,
+                Label = w.T("reallife_co_decide_later", "Decide later"), Kind = UiButtonKind.Secondary, Key = UiAction.Option,
                 Act = CompanyAct.Of(CompanyDo.Go, "later", q.Id)
             });
             if (q.Deep)

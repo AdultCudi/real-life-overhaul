@@ -11,6 +11,13 @@ namespace RealLifeOverhaul.Economy
         /// <summary>A decision in one line, as the log says it.</summary>
         internal static string DecisionWords(Decision d) => Summary(d);
 
+        // The person, the station they came from and the station they were moved to, where a written week moved somebody (Decision.Detail, "person~from~to"); null for none.
+        internal static string[] RotaMoved(Decision d)
+        {
+            string[] parts = d != null && d.Task == (int)ManagerTask.Rota && !string.IsNullOrEmpty(d.Detail) ? d.Detail.Split('~') : null;
+            return parts != null && parts.Length == 3 && parts[0].Length > 0 && parts[1].Length > 0 && parts[2].Length > 0 ? parts : null;
+        }
+
         /// <summary>A kind of escalation, named.</summary>
         internal static string EscalationName(int kind) => CompanyText.T(EscalationKeys[CompanyCatalogue.Clamp(kind, 0, EscalationKeys.Length - 1)]);
 
@@ -29,9 +36,6 @@ namespace RealLifeOverhaul.Economy
             string key = TaskWaitKeys[CompanyCatalogue.Clamp(task, 0, TaskWaitKeys.Length - 1)];
             return key == null ? null : CompanyText.T(key);
         }
-
-        /// <summary>A manager's limit for a kind, in words.</summary>
-        internal static string LimitWords(ManagerFile m, ManagerTask task) => LimitText(m, task);
 
         /// <summary>The line under a kind's switch: its limit, or when the rota is written.</summary>
         internal static string TaskLine(ManagerFile m, ManagerTask task) => TaskNote(m, task);
@@ -111,9 +115,6 @@ namespace RealLifeOverhaul.Economy
             standing = tone == GameUi.TableRow.Green ? 1 : tone == GameUi.TableRow.Red ? 2 : 0;
             return words;
         }
-
-        /// <summary>Whether a rung meets somebody's demands, in words; empty for somebody left as they are.</summary>
-        internal static string RotaDemandWords(RotaSheet sheet, RotaRung r, int worker) => RotaDemandState(sheet, r, worker);
 
         /// <summary>The first demand of somebody that a rota leaves unmet; null if it meets them all.</summary>
         internal static string RotaUnmetWords(RotaSheet sheet, RotaPlan plan, int worker) => RotaUnmetOf(sheet, plan, worker);

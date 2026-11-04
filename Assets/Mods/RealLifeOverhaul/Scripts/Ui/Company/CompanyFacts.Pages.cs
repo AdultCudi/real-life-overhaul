@@ -68,8 +68,7 @@ namespace RealLifeOverhaul.Ui
         public string OffTitle, OffBody;
         public UiOrgNode[] Tree = new UiOrgNode[0];     // every row, in order, with the levels (the folds are the view's)
         public string[] TreeIds = new string[0];        // each row's id
-        public string TreeTitle, TreeAction, TreeFoot;
-        public CompanyAct TreeFootAct;
+        public string TreeTitle, TreeFoot;
         public string[] Filters = new string[0];        // "All", "Needs you", "Open posts"
         public string[] FilterIds = new string[0];      // on the policy centre: the node each scope chip picks
         public string Chosen;                           // the id of the row the page shows
@@ -77,8 +76,6 @@ namespace RealLifeOverhaul.Ui
         public CompanyPage Sub = new CompanyPage();     // the page of a sub page (the inbox, the policy centre, the dashboards, the seats...): a list and a card
         public string Empty;
         public bool Deep;
-        public CompanyButton DeepSwitch;                // the owner's Deep Mode
-        public CompanyBlock[] Summary = new CompanyBlock[0];    // what the page says with nothing chosen: the month's figures, what needs the owner
     }
 
     /// <summary>A person of the rota: their name and role and their shift on each day.</summary>
@@ -97,7 +94,6 @@ namespace RealLifeOverhaul.Ui
         public string Name, Line, Hours, Net, Gain;
         public bool Advised;
         public CompanyButton Use;
-        public string[] Needs;
     }
 
     /// <summary>A place's rota: the plan form, the week by person and day, the day hour by hour, the needs, and the planner's advice.</summary>
@@ -109,7 +105,6 @@ namespace RealLifeOverhaul.Ui
         // The plan form.
         public string[] PlanNames = new string[0];
         public int PlanChosen;
-        public CompanyAct[] PlanActs = new CompanyAct[0];   // choosing the plan in use by name
         public string[] RepeatOptions = new string[0];
         public int Repeat;
         public CompanyAct[] RepeatActs = new CompanyAct[0];
@@ -131,6 +126,7 @@ namespace RealLifeOverhaul.Ui
         public string[] SummaryLabels = new string[0];
         public string[] SummaryValues = new string[0];
         public UiRole[] SummaryTones = new UiRole[0];
+        public string Ahead;                                    // the dated plan that holds next, against the one in view: its days, its hours cap and its floor of crew; null for none
         // The day, hour by hour.
         public string DayTitle, DayNote, DayShort;           // "Tuesday, hour by hour", its note, and the day's name alone for a room too narrow for the whole
         public string[] HourLabels = new string[0];
@@ -142,7 +138,6 @@ namespace RealLifeOverhaul.Ui
         public string NeedsTitle;
         public string[] NeedWhen = new string[0];
         public string[] NeedWho = new string[0];
-        public string[] NeedsNote;
         // The planner's ladder.
         public string AdviceTitle, AdviceNote;
         public CompanyRung[] Rungs = new CompanyRung[0];
@@ -197,7 +192,6 @@ namespace RealLifeOverhaul.Ui
         public string LicencesTitle, LicencesCount;
         public CompanyLicence[] Licences = new CompanyLicence[0];
         public string LicencesEmpty;
-        public string[] LicenceColumns = new string[0];
         // Coming up.
         public CompanyDone[] ComingUp = new CompanyDone[0];
         // The quarter so far.
@@ -223,7 +217,6 @@ namespace RealLifeOverhaul.Ui
         public bool Ready;                      // the feature runs and a save is loaded
         public string OffTitle, OffBody;
         public string Name, Mark;               // the company's name, its initials on the mark
-        public string Today;                    // "Mon, Day 214" at the window's right
         public string[] Counts = new string[CompanyView.Tabs];   // the sidebar's counts, null for none
         public CompanyOverviewFacts Overview = new CompanyOverviewFacts();
         public CompanyPage Staff = new CompanyPage();
@@ -235,6 +228,5 @@ namespace RealLifeOverhaul.Ui
         public CompanyCard Business;            // a business's page (Overview, SubBusiness)
         public CompanyQuestion Question;        // the escalation open as a card, when one is
         public bool Deep;                       // Deep Mode: the policy centre and the levels are in play
-        public string GuideNote;                // the guide's link under a page: its words
     }
 }

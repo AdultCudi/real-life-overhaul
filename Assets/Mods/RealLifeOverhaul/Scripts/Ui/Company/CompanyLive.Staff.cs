@@ -21,7 +21,15 @@ namespace RealLifeOverhaul.Ui
             var rows = new List<CompanyRow>(s.Staff.Count + 4);
             int under = 0, low = 0;
             IReadOnlyList<CompanyShop> shops = d.Shops;
-            for (int i = 0; i < shops.Count; i++)
+            // The old table's filters in one row of chips: all, then how a person stands (waiting, leaving, underpaid, fine), then each business.
+            var filterNames = new List<string> { CompanyText.T("reallife_tab_co_all_staff"), CompanyText.T("reallife_tab_co_staff_waiting"), CompanyText.T("reallife_tab_co_staff_leaving"),
+                CompanyText.T("reallife_tab_co_staff_underpaid"), CompanyText.T("reallife_tab_co_staff_fine") };
+            for (int i = 0; shops.Count > 1 && i < shops.Count; i++)
+            {
+                filterNames.Add(shops[i].Name);
+            }
+            int sel = CompanyCatalogue.Clamp(v.Filter, 0, filterNames.Count - 1);
+            for (int i = 0; (sel == 0 || sel == 1) && i < shops.Count; i++)
             {
                 ShopFile file = shops[i].File;
                 if (file.StrikeFrom > 0)
@@ -52,8 +60,15 @@ namespace RealLifeOverhaul.Ui
                     {
                         continue;
                     }
-                    under += StaffRules.Underpaid(p, d.Level) ? 1 : 0;
+                    bool unpaid = StaffRules.Underpaid(p, d.Level);
+                    under += unpaid ? 1 : 0;
                     low += StaffRules.StandsLow(p) ? 1 : 0;
+                    bool shown = sel == 0 || (sel == 1 && waits) || (sel == 2 && p.LeaveDay > 0) || (sel == 3 && unpaid) || (sel == 4 && !waits && p.LeaveDay == 0 && !unpaid)
+                                 || (sel >= 5 && shops[sel - 5].File.Place == p.Place);
+                    if (!shown)
+                    {
+                        continue;
+                    }
                     Face(p.Name, p.Id);
                     string stands = p.AskDay > 0 ? CompanyText.T("reallife_co_row_asks") : p.PoachDay > 0 ? CompanyText.T("reallife_co_row_offer")
                         : p.LeaveDay > 0 ? CompanyText.T("reallife_co_row_leaves", "day", p.LeaveDay.ToString()) : null;
@@ -68,7 +83,8 @@ namespace RealLifeOverhaul.Ui
             }
             page.List = new CompanyList
             {
-                Title = w.T("reallife_co_staff_list", "Staff"), Count = s.Staff.Count.ToString(), Rows = rows.ToArray(), Empty = CompanyText.T("reallife_co_row_no_staff")
+                Title = w.T("reallife_co_staff_list", "Staff"), Count = s.Staff.Count.ToString(), Rows = rows.ToArray(), Empty = CompanyText.T("reallife_co_row_no_staff"),
+                Filters = filterNames.ToArray(), Filter = sel
             };
             string pick = v.Pick[CompanyView.Staff] ?? string.Empty;
             for (int i = 0; i < rows.Count; i++)

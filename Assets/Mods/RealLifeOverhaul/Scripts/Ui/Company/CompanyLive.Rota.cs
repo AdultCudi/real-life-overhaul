@@ -195,6 +195,7 @@ namespace RealLifeOverhaul.Ui
             // The week as the place has it now.
             p.Day = Math.Max(0, Math.Min(6, v.Day));
             WeekFacts(p, sheet, now, d, w);
+            p.Ahead = PlanAhead(set, plan, day, w);
             DayFacts(p, sheet, now, p.Day, w);
             NeedsFacts(p, plan, place, w);
             if (v.Sub[CompanyView.Rota] == CompanyView.SubDay)
@@ -309,6 +310,29 @@ namespace RealLifeOverhaul.Ui
                 p.SummaryValues = new[] { CompanyApp.RotaMoneyWords(-s2.Wages), plan.CoveredHours + "/" + plan.WantedHours, plan.UnmetCount.ToString() };
                 p.SummaryTones = new[] { UiRole.None, plan.CoveredHours < plan.WantedHours ? UiRole.WarnText : UiRole.None, plan.UnmetCount > 0 ? UiRole.WarnText : UiRole.None };
             }
+        }
+
+        // The dated plan that holds next (or holds now and is not the one in view), against the one in view: the days it holds for, the hours it caps each person at and the
+        // floor of crew it puts under the planner, in crew hours a week more or fewer than the plan in view has. Null where no dated plan is ahead.
+        private static string PlanAhead(RotaPlanSet set, RotaPlanFile inView, int day, Words w)
+        {
+            RotaPlanFile next = null;
+            for (int i = 0; set != null && i < set.Plans.Count; i++)
+            {
+                RotaPlanFile c = set.Plans[i];
+                if (c.Dated && (inView == null || c.Id != inView.Id) && (c.To <= 0 || c.To >= day) && (next == null || c.From < next.From))
+                {
+                    next = c;
+                }
+            }
+            if (next == null)
+            {
+                return null;
+            }
+            int floor = RotaPlanRules.FloorHours(next) - (inView != null ? RotaPlanRules.FloorHours(inView) : 0);
+            string cap = next.Hours <= 0 ? CompanyText.T("reallife_rota_hours_own") : CompanyText.T("reallife_rota_hours_n", "hours", next.Hours.ToString());
+            return w.F("reallife_co_plan_ahead", "{plan} holds from day {from} to day {to}: up to {cap} each, and {floor} crew hours of floor a week against this plan",
+                "plan", next.Name, "from", Math.Max(1, next.From).ToString(), "to", next.To > 0 ? next.To.ToString() : "-", "cap", cap, "floor", (floor > 0 ? "+" : string.Empty) + floor);
         }
 
         private static string Truncate3(string day) => day != null && day.Length > 3 ? day.Substring(0, 3) : day ?? string.Empty;
@@ -507,6 +531,7 @@ namespace RealLifeOverhaul.Ui
                 RotaWeekSum adv = l.Rungs[l.Recommended].Sum;
                 beside.Add(Note(CompanyText.T("reallife_rota_box_stock_short", "count", adv.StockShort.ToString(), "amount", CompanyApp.RotaMoneyWords(adv.StockLost)), UiRole.WarnText));
             }
+            AddWaysOut(beside, d, sheet, l.Rungs[l.Recommended]);
             if (sheet.Late)
             {
                 beside.Add(Note(CompanyText.T("reallife_rota_note_late", "fee", CompanyText.Money(LicenceRules.Fee((int)LicenceKind.Late, d.Index)), "days", CompanyCatalogue.LicenceTerm[(int)LicenceKind.Late].ToString()), UiRole.WarnText));
@@ -516,6 +541,33 @@ namespace RealLifeOverhaul.Ui
                 beside.Add(Note(CompanyText.T("reallife_rota_cleaned")));
             }
             p.Beside = beside.ToArray();
+        }
+
+        // For somebody whose hours the advised plan cannot meet: where else they could go, in the order the mod can help with them (the business that is short of people, the cleaning
+        // service), and that a replacement would fit better. As the old week page says it.
+        private static void AddWaysOut(List<CompanyBlock> beside, CompanyDirector d, RotaSheet sheet, RotaRung r)
+        {
+            int rows = 0;
+            for (int i = 0; i < r.Plan.Unmet.Count && rows < 3; i++)
+            {
+                RotaUnmet unmet = r.Plan.Unmet[i];
+                if (unmet.Worker >= sheet.Workers.Count || unmet.Reason != RotaReason.Short)
+                {
+                    continue;
+                }
+                EmployeeInstance who = sheet.Workers[unmet.Worker];
+                RotaPlace busier = d.RotaBusier(sheet.Place, who);
+                bool cleans = false;
+                for (int s = 0; s < sheet.Stations.Count; s++)
+                {
+                    cleans |= sheet.Shop.GroupKind[sheet.Shop.Group[s]] == RotaGroupKind.Cleaning && sheet.Problem.Can[unmet.Worker * sheet.Stations.Count + s] != 0;
+                }
+                string words = busier != null ? CompanyText.T("reallife_rota_way_busier", "name", RotaGame.WorkerName(who), "business", busier.Name, "hours", busier.GapHours.ToString())
+                    : CompanyText.T("reallife_rota_way_none", "name", RotaGame.WorkerName(who));
+                words += cleans && CompanyDirector.RotaCleaningService ? " " + CompanyText.T("reallife_rota_way_service") : string.Empty;
+                beside.Add(Note(words + " " + CompanyText.T("reallife_rota_way_replace")));
+                rows++;
+            }
         }
 
         // The plan's own card: its name (typed), how it repeats, the days it holds for, the shifts a day, the most hours, overtime and the floor of crew in each block of hours.

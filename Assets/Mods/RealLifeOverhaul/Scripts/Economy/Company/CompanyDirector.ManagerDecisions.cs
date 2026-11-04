@@ -29,6 +29,7 @@ namespace RealLifeOverhaul.Economy
         private readonly List<DeliveryContract> _contracts = new List<DeliveryContract>(4);
         private readonly HashSet<string> _rounds = new HashSet<string>(StringComparer.Ordinal);
         private readonly List<EmployeeInstance> _candidates = new List<EmployeeInstance>(4);
+        private readonly Dictionary<string, string> _rotaMoved = new Dictionary<string, string>(4, StringComparer.Ordinal);   // a place's manager's week to write: who it moves from which station to which, "person~from~to"
         private readonly Dictionary<string, string> _rotaBy = new Dictionary<string, string>(4, StringComparer.Ordinal);   // who asked for a rota being worked out, by place
         private int[] _hireWage = new int[8], _hireGoing = new int[8], _hireSkill = new int[8];
         private int[] _rotaHoursNow = new int[16], _rotaHoursAfter = new int[16];   // each worker's hours in the week now and in the new one (ManagerRules.Rota)
@@ -490,8 +491,13 @@ namespace RealLifeOverhaul.Economy
                              : "left as it is, a new one would leave hours with nobody that have somebody now") + ".");
             if (call == RotaCall.Write)
             {
+                if (ManagerRules.Move(now, fill, sheet.Problem.Stations, workers, sheet.Fixed, out int moved, out int from, out int to) && moved < sheet.Workers.Count && from < sheet.Stations.Count && to < sheet.Stations.Count)
+                {
+                    _rotaMoved[place] = ManagerStore.Word(RotaGame.WorkerName(sheet.Workers[moved])) + "~" + ManagerStore.Word(RotaGame.Name(sheet.Stations[from])) + "~" + ManagerStore.Word(RotaGame.Name(sheet.Stations[to]));
+                }
                 return true;   // who asked stays for ManagerRotaWritten
             }
+            _rotaMoved.Remove(place);
             _rotaBy.Remove(place);
             if (call == RotaCall.LeavesOut || call == RotaCall.CoversLess)
             {
@@ -553,6 +559,11 @@ namespace RealLifeOverhaul.Economy
             d.A = shifts;
             d.B = plan.CoveredHours;
             d.C = plan.WantedHours;
+            if (_rotaMoved.TryGetValue(place, out string move))
+            {
+                d.Detail = move;   // who the new week moved, from which station to which: the log says it
+                _rotaMoved.Remove(place);
+            }
             Changed();
         }
 

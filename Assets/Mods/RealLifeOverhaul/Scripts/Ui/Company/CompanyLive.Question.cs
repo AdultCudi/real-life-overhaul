@@ -86,7 +86,6 @@ namespace RealLifeOverhaul.Ui
             if (f != null)
             {
                 q.Subject = f.Name;
-                q.SubjectHue = UiColour.HueOf(f.Name);
                 q.SubjectRole = w.F("reallife_co_q_cashier_days", "{skill}, {days} days", "skill", CompanyGame.SkillName(f.Id), "days", Math.Max(0, d.Today - f.AskDay).ToString());
                 Face(f.Name, f.Id);
             }

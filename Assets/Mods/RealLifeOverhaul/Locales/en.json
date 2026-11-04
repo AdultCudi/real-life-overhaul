@@ -31086,7 +31086,6 @@
   "reallife_rota_edit": "Edit",
   "reallife_rota_advised": "Advised",
   "reallife_co_coming_up": "Coming up",
-  "reallife_co_today_line": "Day {day}",
   "reallife_co_company_of": "{name}'s company",
   "reallife_co_open_policy": "Open the policy centre",
   "reallife_co_tree_owner": "Owner",
@@ -31274,7 +31273,6 @@
   "reallife_co_q_proposal_line": "The company's rule changes at once, every manager's with it",
   "reallife_co_q_reject_line": "The rule stays as it is",
   "reallife_co_q_dismiss_line": "It comes back if it stays true",
-  "reallife_rota_staff_word": "staff",
   "reallife_rota_in_use": "In use",
   "reallife_rota_copy": "Copy plan",
   "reallife_rota_sum_served": "Served",
@@ -31456,5 +31454,7 @@
   "reallife_ui_test_company_on": "Company now opens on the kit.",
   "reallife_ui_test_company_off_page": "Company now opens on its old pages.",
   "reallife_ui_test_company_off": "The company is not running in this save, so there is nothing to open.",
-  "reallife_co_row_gap_short": "{hours} h short"
+  "reallife_co_row_gap_short": "{hours} h short",
+  "reallife_mgr_did_rota_moved": "Wrote the week's rota: {shifts} shifts, {covered} of {wanted} hours covered, and moved {person} from {from} to {to}.",
+  "reallife_co_plan_ahead": "{plan} holds from day {from} to day {to}: up to {cap} each, and {floor} crew hours of floor a week against this plan"
 }

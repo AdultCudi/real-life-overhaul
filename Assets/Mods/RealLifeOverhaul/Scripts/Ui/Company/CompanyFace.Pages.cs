@@ -100,9 +100,21 @@ namespace RealLifeOverhaul.Ui
             }
             if (list.Filters != null && list.Filters.Length > 1)
             {
-                cy += UiDraw.Chips(s, at, x, cy, width, list.Filters, list.Filters.Length, Filter) + UiTokens.S3;
+                // The filters as chips in rows, the chosen one filled (a state, so not a second primary).
+                float fx = x, fy = cy;
+                for (int i = 0; i < list.Filters.Length; i++)
+                {
+                    float cwid = Math.Min(width, UiDraw.ButtonWidth(UiButtonKind.Chip, list.Filters[i], UiIcon.None, UiAction.Count, null));
+                    if (fx > x && fx + cwid > x + width)
+                    {
+                        fx = x;
+                        fy += UiTokens.Chip + UiTokens.S2;
+                    }
+                    ChoiceChip(s, at, fx, fy, list.Filters[i], i == list.Filter, Filter, i);
+                    fx += cwid + UiTokens.S2;
+                }
+                cy = fy + UiTokens.Chip + UiTokens.S3;
             }
-            float footH = string.IsNullOrEmpty(list.FootLabel) ? 0f : UiTokens.Control + UiTokens.S2;
             int rows = list.Rows.Length;
             lay.RowIds = lay.RowIds.Length >= rows ? lay.RowIds : new string[rows];
             short result = -1;
@@ -116,7 +128,7 @@ namespace RealLifeOverhaul.Ui
             else
             {
                 const float step = ListRow + ListGap;
-                float viewH = Math.Max(ListRow, (float)Math.Floor((bottom - footH - cy + ListGap) / step) * step - ListGap);
+                float viewH = Math.Max(ListRow, (float)Math.Floor((bottom - cy + ListGap) / step) * step - ListGap);
                 float content = rows * step - ListGap;
                 float offset = lay.Offset[CompanyLayout.SlotList];
                 int reveal = lay.Reveal[CompanyLayout.SlotList];
@@ -157,21 +169,6 @@ namespace RealLifeOverhaul.Ui
                 lay.Clip[CompanyLayout.SlotList] = clip;
                 result = lst;
                 cy += Math.Min(viewH, content);
-            }
-            if (footH > 0f)
-            {
-                CompanyButton foot = new CompanyButton { Label = list.FootLabel, Act = list.Foot };
-                int index = lay.Add(foot);
-                float fy = Math.Max(cy + UiTokens.S2, bottom - footH + UiTokens.S2);
-                int face = UiDraw.Box(s, at, x, fy, width, UiTokens.Control, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
-                UiAt inside = at.In(face);
-                UiDraw.Icon(s, inside, x + UiTokens.S3, fy + (UiTokens.Control - UiTokens.Icon) / 2f, UiTokens.Icon, list.FootIcon, UiRole.AccentText, UiFlags.Middle | UiFlags.Decor);
-                float lx = x + UiTokens.S3 + UiTokens.Icon + UiTokens.S2, room = x + width - lx - UiTokens.S3 - UiTokens.IconSmall;
-                string shown = UiTextRules.Cut(list.FootLabel, UiStyle.BodyStrong, room);
-                float drawn = UiTextRules.Width(shown, UiStyle.BodyStrong);
-                UiDraw.TextMiddle(s, inside, lx, fy, UiTokens.Control, Math.Min(UiDraw.Snap(drawn + UiTokens.S1), room), UiStyle.BodyStrong, UiRole.AccentText, shown, UiFlags.Truncate);
-                UiDraw.Icon(s, inside, lx + drawn + UiDraw.LinkGap, fy + (UiTokens.Control - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Next, UiRole.AccentText, UiFlags.Middle | UiFlags.Share | UiFlags.Decor);
-                UiDraw.Node(s, at, x, fy, width, UiTokens.Control, Act, index, face);
             }
             return result;
         }
@@ -362,15 +359,6 @@ namespace RealLifeOverhaul.Ui
                     return FieldBlock(s, at, lay, v, b, x, y, cw);
                 case CompanyBlockKind.Choice:
                     return ChoiceBlock(s, at, lay, b, x, y, cw);
-                case CompanyBlockKind.Grades:
-                {
-                    float label = UiDraw.LabelColumn(cw, b.Labels);
-                    for (int i = 0; i < b.Labels.Length && i < b.Numbers.Length; i++)
-                    {
-                        y += UiDraw.GradeBar(s, at, x, y, cw, b.Labels[i], b.Numbers[i], label) + UiTokens.S1;
-                    }
-                    return y + UiTokens.S2;
-                }
                 case CompanyBlockKind.Lines:
                 {
                     int rows = b.Rows != null ? b.Rows.Length : 0;
@@ -401,10 +389,6 @@ namespace RealLifeOverhaul.Ui
                     UiDraw.Meter(s, at, x, y + UiTokens.PairRow + UiTokens.S1, cw, UiTokens.S1, Math.Max(0, b.Number), b.Tone == UiRole.None ? UiRole.Accent : b.Tone);
                     return y + UiTokens.PairRow + UiTokens.S3 + UiTokens.S2;
                 }
-                case CompanyBlockKind.Check:
-                    return y + UiDraw.CheckLine(s, at, x, y, cw, b.Text, b.On) + UiTokens.S1;
-                case CompanyBlockKind.Rows:
-                    return ItemRows(s, at, lay, w, b, x, y, cw, bottom);
                 default:
                     return y;
             }
@@ -496,34 +480,5 @@ namespace RealLifeOverhaul.Ui
             return below ? cy + UiTokens.Chip + UiTokens.S2 : y + SwitchRow;
         }
 
-        // A list of rows in a card: each a row with its own press; the rows that do not fit are left to the page's wheel. Returns the y under them.
-        private static float ItemRows(UiScene s, UiAt at, CompanyLayout lay, CompanyWords w, CompanyBlock b, float x, float y, float cw, float bottom)
-        {
-            CompanyItem[] items = b.Items ?? new CompanyItem[0];
-            int fit = (int)Math.Max(0f, Math.Floor((bottom - y + ListGap) / (ListRow + ListGap)));
-            for (int i = 0; i < Math.Min(items.Length, fit); i++)
-            {
-                ref CompanyItem it = ref items[i];
-                bool press = it.Press && it.Act.Do != CompanyDo.None;
-                int face = UiDraw.Box(s, at, x, y, cw, ListRow, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.None);
-                RowFace(s, at.In(face), x, y, cw, ListRow, it.Title, it.Sub, it.Figure, it.Note, it.Chip, it.ChipTone, it.FigureTone, it.Icon, it.Tint, it.Face, it.Hue, it.Ring, it.Grade, false, false);
-                if (press)
-                {
-                    int index = lay.Add(new CompanyButton { Label = it.Title, Act = it.Act });
-                    UiDraw.Node(s, at, x, y, cw, ListRow, Item, index, face);
-                }
-                y += ListRow + ListGap;
-            }
-            if (items.Length > fit && fit >= 0)
-            {
-                UiDraw.TextMiddle(s, at, x, y, UiTokens.PairRow, cw, UiStyle.Small, UiRole.Muted, w.F("reallife_co_and_more", "and {count} more", "count", (items.Length - fit).ToString()), UiFlags.Truncate);
-                y += UiTokens.PairRow;
-            }
-            if (items.Length == 0 && !string.IsNullOrEmpty(b.Text))
-            {
-                y = Sentence(s, at, b.Text, x, y, cw, UiRole.Muted, 2);
-            }
-            return y + UiTokens.S2;
-        }
     }
 }

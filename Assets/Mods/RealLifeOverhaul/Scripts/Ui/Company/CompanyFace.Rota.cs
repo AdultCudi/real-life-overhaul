@@ -232,6 +232,11 @@ namespace RealLifeOverhaul.Ui
                     UiRole tone = i < p.SummaryTones.Length && p.SummaryTones[i] != UiRole.None ? p.SummaryTones[i] : UiRole.Text;
                     UiDraw.Text(s, at, x + i * slot, cy + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S1, slot - UiTokens.S3, UiStyle.Title, tone, p.SummaryValues[i], UiFlags.Truncate);
                 }
+                cy += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)) + UiTokens.S3;
+            }
+            if (!string.IsNullOrEmpty(p.Ahead) && cy + UiTokens.PairRow * 2f <= bottom)
+            {
+                Sentence(s, at, p.Ahead, x, cy, width, UiRole.AccentText, 2, UiStyle.Small);
             }
         }
 
@@ -337,11 +342,15 @@ namespace RealLifeOverhaul.Ui
                 float bw = string.IsNullOrEmpty(use.Label) ? 0f : Math.Min(UiDraw.SnapDown(width * 0.3f), UiDraw.ButtonWidth(use.Kind, use.Label, use.Icon, use.Key, keys));
                 float tw = width - UiTokens.S5 * 2f - bw - UiTokens.S3 - UiDraw.Snap(UiTextRules.Width(r.Hours ?? string.Empty, UiStyle.BodyStrong) + UiTokens.S4);
                 float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
-                float top = cy + UiDraw.SnapDown((rowH - th - sh) / 2f);
+                float top = cy + UiDraw.SnapDown((rowH - th - sh * (string.IsNullOrEmpty(r.Gain) ? 1f : 2f)) / 2f);
                 float advisedW = r.Advised ? UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(w.T("reallife_rota_advised", "Advised"), UiStyle.SmallStrong) + UiTokens.S1) : 0f;
                 float nameW = Math.Min(UiDraw.Snap(UiTextRules.Width(r.Name ?? string.Empty, UiStyle.Title) + UiTokens.S1), Math.Max(0f, tw - (advisedW > 0f ? advisedW + UiTokens.S3 : 0f)));
                 UiDraw.TextMiddle(s, inside, x + UiTokens.S4, top, th, nameW, UiStyle.Title, UiRole.Text, r.Name ?? string.Empty, UiFlags.Truncate);
                 UiDraw.TextMiddle(s, inside, x + UiTokens.S4, top + th, sh, tw, UiStyle.Small, UiRole.Text2, r.Line ?? string.Empty, UiFlags.Truncate);
+                if (!string.IsNullOrEmpty(r.Gain))
+                {
+                    UiDraw.TextMiddle(s, inside, x + UiTokens.S4, top + th + sh, sh, tw, UiStyle.Small, UiRole.OkText, r.Gain, UiFlags.Truncate);
+                }
                 float fx = x + width - UiTokens.S4 - bw - UiTokens.S3 - UiDraw.Snap(UiTextRules.Width(r.Hours ?? string.Empty, UiStyle.BodyStrong) + UiTokens.S4);
                 UiDraw.TextMiddle(s, inside, fx, top, th, UiDraw.Snap(UiTextRules.Width(r.Hours ?? string.Empty, UiStyle.BodyStrong) + UiTokens.S4), UiStyle.BodyStrong, UiRole.Text, r.Hours ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
                 UiDraw.TextMiddle(s, inside, fx, top + th, sh, UiDraw.Snap(UiTextRules.Width(r.Hours ?? string.Empty, UiStyle.BodyStrong) + UiTokens.S4), UiStyle.Small, UiRole.Muted, r.Net ?? string.Empty, UiFlags.Right | UiFlags.Truncate);

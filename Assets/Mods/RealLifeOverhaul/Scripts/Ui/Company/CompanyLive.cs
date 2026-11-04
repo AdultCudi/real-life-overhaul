@@ -191,7 +191,7 @@ namespace RealLifeOverhaul.Ui
         private static void Reset(CompanyFacts f)
         {
             f.Ready = false;
-            f.OffTitle = f.OffBody = f.Name = f.Mark = f.Today = f.GuideNote = null;
+            f.OffTitle = f.OffBody = f.Name = f.Mark = null;
             f.Counts = new string[CompanyView.Tabs];
             f.Overview = new CompanyOverviewFacts();
             f.Staff = new CompanyPage();
@@ -219,7 +219,7 @@ namespace RealLifeOverhaul.Ui
 
             public string L(string key, string english) => W.L(key, english);
 
-            /// <summary>A wage an hour, hundredths, as the page writes it: "$17.00 / h".</summary>
+            /// <summary>A wage an hour, hundredths, as the page writes it: the money, then the per-hour words.</summary>
             public string PerHour(int hundredths) => W.F("reallife_co_per_hour", "{wage} / h", "wage", CompanyText.Wage(hundredths));
 
             public string F(string key, string english, params string[] pairs) => W.F(key, english, pairs);
@@ -233,7 +233,6 @@ namespace RealLifeOverhaul.Ui
             string name = HeadName(w);
             f.Name = name;
             f.Mark = CompanyFace.Initials(name);
-            f.Today = w.F("reallife_co_today_line", "Day {day}", "day", d.Today.ToString());
         }
 
         private static string HeadName(Words w)

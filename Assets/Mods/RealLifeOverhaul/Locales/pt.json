@@ -31086,7 +31086,6 @@
   "reallife_rota_edit": "Editar",
   "reallife_rota_advised": "Recomendado",
   "reallife_co_coming_up": "Próximos",
-  "reallife_co_today_line": "Dia {day}",
   "reallife_co_company_of": "Empresa de {name}",
   "reallife_co_open_policy": "Abrir a central de políticas",
   "reallife_co_tree_owner": "Dono",
@@ -31274,7 +31273,6 @@
   "reallife_co_q_proposal_line": "A regra da empresa muda de imediato, e a de cada gerente junto",
   "reallife_co_q_reject_line": "A regra continua como está",
   "reallife_co_q_dismiss_line": "Volta se continuar valendo",
-  "reallife_rota_staff_word": "funcionários",
   "reallife_rota_in_use": "Em uso",
   "reallife_rota_copy": "Copiar plano",
   "reallife_rota_sum_served": "Atendidos",
@@ -31456,5 +31454,7 @@
   "reallife_ui_test_company_on": "Empresa agora abre na interface.",
   "reallife_ui_test_company_off_page": "Empresa agora abre nas páginas antigas.",
   "reallife_ui_test_company_off": "A empresa não está em funcionamento neste save, então não há nada para abrir.",
-  "reallife_co_row_gap_short": "faltam {hours} h"
+  "reallife_co_row_gap_short": "faltam {hours} h",
+  "reallife_mgr_did_rota_moved": "Montou a escala da semana: {shifts} turnos, {covered} de {wanted} horas cobertas, e moveu {person} de {from} para {to}.",
+  "reallife_co_plan_ahead": "{plan} vale do dia {from} ao dia {to}: até {cap} por pessoa e {floor} horas de equipe mínima por semana em relação a este plano"
 }

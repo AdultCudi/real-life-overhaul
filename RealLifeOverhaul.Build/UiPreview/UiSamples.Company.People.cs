@@ -36,7 +36,10 @@ internal static partial class UiSamples
             rows.Add(new CompanyRow { Id = "emp:ana", Title = "Ana Costa", Sub = "Corner Cafe", Face = true, Hue = 0.45f, Ring = UiRole.Ok, Figure = "$13.00 / h", Note = w.F("reallife_co_going", "going {wage}", "wage", "$13.00") });
             rows.Add(new CompanyRow { Id = "emp:jin", Title = "Jin Park", Sub = "Corner Cafe", Face = true, Hue = 0.7f, Ring = UiRole.Ok, Figure = "$13.00 / h", Note = w.F("reallife_co_going", "going {wage}", "wage", "$13.00") });
         }
-        p.List = new CompanyList { Title = w.T("reallife_co_staff_list", "Staff"), Count = one ? "2" : "31", Rows = rows.ToArray(), Empty = w.T("reallife_co_row_no_staff", "Nobody works for you yet.") };
+        p.List = new CompanyList { Title = w.T("reallife_co_staff_list", "Staff"), Count = one ? "2" : "31", Rows = rows.ToArray(), Empty = w.T("reallife_co_row_no_staff", "Nobody works for you yet."),
+            Filters = one ? new[] { w.T("reallife_tab_co_all_staff", "All staff"), w.T("reallife_tab_co_staff_waiting", "Waiting"), w.T("reallife_tab_co_staff_leaving", "Leaving"), w.T("reallife_tab_co_staff_underpaid", "Underpaid"), w.T("reallife_tab_co_staff_fine", "Fine") }
+                : new[] { w.T("reallife_tab_co_all_staff", "All staff"), w.T("reallife_tab_co_staff_waiting", "Waiting"), w.T("reallife_tab_co_staff_leaving", "Leaving"), w.T("reallife_tab_co_staff_underpaid", "Underpaid"), w.T("reallife_tab_co_staff_fine", "Fine"),
+                    "Speedy Bites", "Bloom & Co", "Pioneer Game Studio", "Hudson Warehouse" }, Filter = 0 };
         string pick = state == "staff_strike" ? "strike:Speedy Bites~7" : state == "staff_overtime" ? "ot:Hudson Warehouse~4" : state == "staff_offer" ? "emp:lena" : state == "staff_give" ? "emp:sana" : state == "staff_summary" || one ? null : "emp:dev";
         for (int i = 0; i < rows.Count; i++)
         {
@@ -240,7 +243,6 @@ internal static partial class UiSamples
         m.TreeIds = ids.ToArray();
         m.TreeTitle = w.T("reallife_co_who_decides", "Who decides what");
         m.TreeFoot = f.Deep ? w.T("reallife_co_open_policy", "Open the policy centre") : null;
-        m.TreeFootAct = CA(CompanyDo.Go, null, CompanyView.Managers, CompanyView.SubPolicy);
         m.Empty = w.T("reallife_co_mgr_none_body", "Pick a person in the tree to see what they decide, what they may spend and how they are doing.");
         string tail = state.Substring(state.IndexOf('_') + 1);
         switch (tail)

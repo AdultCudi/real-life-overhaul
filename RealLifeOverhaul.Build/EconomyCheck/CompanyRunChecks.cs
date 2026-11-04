@@ -646,8 +646,29 @@ internal static partial class Program
             "company run pins: a manager's answer is a bonus where a refusal would be (OrBonus) and its wait goes in the ring (AddSpeed)");
         Check(decisions.Contains("ManagerRules.LetGo(worst.LateDays, replace)") && game.Contains("StaffRules.LateDay(") && staff.Contains("StaffRules.Day(f, _level, day"),
             "company run pins: lateness is counted by StaffRules.LateDay, an ask comes from StaffRules.Day, and the manager lets go by ManagerRules.LetGo");
+        Check(decisions.Contains("ManagerRules.Move(now, fill") && decisions.Contains("d.Detail = move;") && SourceText(dir, "CompanyApp.Managers.cs").Contains("reallife_mgr_did_rota_moved"),
+            "company run pins: a week the manager writes that moves somebody from one station to another says so in the log (ManagerRules.Move, the decision's detail, the words)");
         Check(plans.Contains("RotaPlanRules.InUse(") && rotaRead.Contains("RotaPlanRules.FloorCells(") && lic.Contains("LicenceRules.Day(") && lic.Contains("LicenceRules.Grant("),
             "company run pins: the rota write asks RotaPlanRules.InUse and puts its floor under the planner, and the licence day asks LicenceRules.Day and grants on the decision day");
+        // The live source reads the director and holds no sample: no invented name of the previews and no money literal in any of its files.
+        string ui = dir.Replace(System.IO.Path.Combine("Scripts", "Economy", "Company"), System.IO.Path.Combine("Scripts", "Ui", "Company"));
+        string[] invented = { "Ray Walsh", "Dev Kapoor", "Tessa Brandt", "Meera Iyer", "Lena Adler", "Pioneer", "Speedy Bites", "Bloom & Co", "Hudson", "Corner Cafe", "Noah Feldman", "Ethan Brooks", "Priya Nair", "Maya Okafor", "Alex Moreno", "Huang Guo" };
+        string found = "none";
+        int live = 0;
+        if (System.IO.Directory.Exists(ui))
+        {
+            foreach (string file in System.IO.Directory.GetFiles(ui, "CompanyLive*.cs"))
+            {
+                live++;
+                string text = File.ReadAllText(file);
+                foreach (string name in invented)
+                {
+                    found = text.Contains(name) ? name + " in " + System.IO.Path.GetFileName(file) : found;
+                }
+                found = System.Text.RegularExpressions.Regex.IsMatch(text, "\"[$][0-9]") ? "a money literal in " + System.IO.Path.GetFileName(file) : found;
+            }
+        }
+        Check(live >= 8 && found == "none", "company run pins: the live source holds no sample (" + live + " live files read; found: " + found + ")");
         Console.WriteLine("  the director's source calls what the run calls, in its order: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed");
     }
 

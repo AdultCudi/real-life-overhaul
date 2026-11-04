@@ -13,7 +13,70 @@ internal static partial class Program
         OtherGrades();
         HandDownRule();
         DownSaves();
-        Console.WriteLine("  the managers' grades and the question handed down: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed");
+        RotaMoves();
+        Console.WriteLine("  the managers' grades, the question handed down and the person a new rota moves: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed");
+    }
+
+    // The week a manager writes moves somebody from one station to another: the log says who, from where and to where (ManagerRules.Move).
+    private static void RotaMoves()
+    {
+        var now = new RotaPlan();
+        var fill = new RotaPlan();
+        now.Size(2);
+        fill.Size(2);
+        // Station 0 the fryer, 1 the grill. Worker 0 stands at the fryer for 20 hours now and at the grill for 30 after; worker 1 stays at the grill; worker 2 moves too, but is a fixed one.
+        for (int c = 0; c < 20; c++)
+        {
+            now.At[c * 2] = 0;
+        }
+        for (int c = 20; c < 50; c++)
+        {
+            fill.At[c * 2 + 1] = 0;
+        }
+        for (int c = 60; c < 100; c++)
+        {
+            now.At[c * 2 + 1] = 1;
+            fill.At[c * 2 + 1] = 1;
+        }
+        for (int c = 100; c < 160; c++)
+        {
+            now.At[c * 2] = 2;
+            fill.At[c * 2 + 1] = 2;
+        }
+        int worker, from, to;
+        bool found = ManagerRules.Move(now, fill, 2, 3, new[] { false, false, true }, out worker, out from, out to);
+        Check(found && worker == 0 && from == 0 && to == 1, "rota move: the person a new week moves is found with the station they came from and the one they go to (" + worker + " from " + from + " to " + to + ")");
+        Check(!ManagerRules.Move(now, now, 2, 3, null, out worker, out from, out to) && worker == -1, "rota move: the same week twice moves nobody");
+        found = ManagerRules.Move(now, fill, 2, 3, null, out worker, out from, out to);
+        Check(found && worker == 2 && from == 0 && to == 1, "rota move: of two who move, the one with more hours at the new station (" + worker + ")");
+        found = ManagerRules.Move(now, fill, 2, 3, new[] { true, false, true }, out worker, out from, out to);
+        Check(!found, "rota move: the planner's fixed ones are never moved, and somebody on one week only is placed or taken off, not moved");
+        var other = new RotaPlan();
+        other.Size(3);
+        Check(!ManagerRules.Move(now, other, 2, 3, null, out worker, out from, out to) && !ManagerRules.Move(null, fill, 2, 3, null, out worker, out from, out to) && !ManagerRules.Move(now, fill, 0, 3, null, out worker, out from, out to),
+            "rota move: weeks of different stations, no week or no stations move nobody");
+        // A place's weeks of different people over sixty weeks: a move is never of somebody who is not on both.
+        bool never = true;
+        for (int week = 0; week < 60; week++)
+        {
+            var a = new RotaPlan();
+            var b = new RotaPlan();
+            a.Size(3);
+            b.Size(3);
+            for (int c = 0; c < RotaCatalogue.Cells; c++)
+            {
+                for (int s = 0; s < 3; s++)
+                {
+                    a.At[c * 3 + s] = (short)(CityModel.Draw(31, week, c * 3 + s, 5) - 1);
+                    b.At[c * 3 + s] = (short)(CityModel.Draw(32, week, c * 3 + s, 5) - 1);
+                }
+            }
+            if (ManagerRules.Move(a, b, 3, 4, null, out worker, out from, out to))
+            {
+                never &= worker >= 0 && worker < 4 && from >= 0 && to >= 0 && from != to && from < 3 && to < 3;
+            }
+        }
+        Check(never, "rota move: over sixty seeded weeks a move names a worker and two different stations of the place");
     }
 
     private static void SpeedGrade()

@@ -43,6 +43,8 @@ internal static partial class UiSamples
         p.Weekly = w.F("reallife_rota_weekly", "Week {week}, open {hours} hours", "week", "31", "hours", one ? "84" : "112");
         p.PlanNames = new[] { "Standard week", "Holiday week" };
         p.PlanChosen = 0;
+        p.Ahead = one ? null : w.F("reallife_co_plan_ahead", "{plan} holds from day {from} to day {to}: up to {cap} each, and {floor} crew hours of floor a week against this plan", "plan", "Holiday week", "from", "220", "to", "226",
+            "cap", w.F("reallife_rota_hours_n", "{hours} h", "hours", "32"), "floor", "+8");
         p.RepeatOptions = new[] { w.T("reallife_rota_repeat_every", "Every week"), w.T("reallife_rota_repeat_odd", "Odd weeks"), w.T("reallife_rota_repeat_even", "Even weeks") };
         p.Repeat = 0;
         p.RepeatActs = new[] { CA(CompanyDo.PlanChange, p.Id, 1, 4, 0), CA(CompanyDo.PlanChange, p.Id, 1, 4, 1), CA(CompanyDo.PlanChange, p.Id, 1, 4, 2) };

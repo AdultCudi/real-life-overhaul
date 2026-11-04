@@ -318,7 +318,6 @@ namespace RealLifeOverhaul.Ui
                 });
             }
             o.Managers = list.ToArray();
-            o.ManagersCount = ms.Managers.Count.ToString();
         }
 
         private static int OpenAsksOf(HierarchyState h, string place)
