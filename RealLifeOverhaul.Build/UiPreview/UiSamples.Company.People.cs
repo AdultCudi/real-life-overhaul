@@ -737,7 +737,7 @@ internal static partial class UiSamples
                 string open = w.T("reallife_hier_state_open", "Open");
                 page.List = new CompanyList
                 {
-                    Title = w.T("reallife_hier_dir_inbox", "Questions inbox"), Count = "3", Chosen = 0,
+                    Title = w.T("reallife_co_inbox", "Questions inbox"), Count = "3", Chosen = 0,
                     Rows = new[]
                     {
                         new CompanyRow { Id = "he:1", Title = w.T("reallife_co_q_raise_title", "A raise above my limit"), FaceName = "Ray Walsh", Face = true, Hue = 0.55f, Ring = UiRole.Warn, Sub = "Speedy Bites", Figure = "Day 214", Note = w.T("reallife_hier_you", "You"), Chip = open, ChipTone = UiRole.Warn },
@@ -747,7 +747,7 @@ internal static partial class UiSamples
                 };
                 var c = new CompanyCard
                 {
-                    Kicker = w.T("reallife_hier_dir_inbox", "Questions inbox"), Title = w.T("reallife_co_q_raise_title", "A raise above my limit"), Sub = "Speedy Bites", Icon = UiIcon.Envelope,
+                    Kicker = w.T("reallife_co_inbox", "Questions inbox"), Title = w.T("reallife_co_q_raise_title", "A raise above my limit"), Sub = "Speedy Bites", Icon = UiIcon.Envelope,
                     Chips = new[] { open, w.F("reallife_hier_chip_with", "With {who}", "who", w.T("reallife_hier_you", "You")) },
                     ChipTones = new[] { UiRole.Warn, UiRole.Accent }, Back = CBack(w, null, CompanyView.Managers)
                 };
@@ -778,7 +778,7 @@ internal static partial class UiSamples
                     new CompanyRow { Id = "pf:3", Title = w.T("reallife_pol_field_pay_band", "Pay band"), Icon = CompanyGlyphs.Policy(3), Figure = "110%", Sub = w.T("reallife_pol_set_here_row", "Set here"), Chip = w.T("reallife_co_held", "Held"), ChipTone = UiRole.Warn },
                     new CompanyRow { Id = "pf:4", Title = w.T("reallife_pol_field_raise_most", "Largest raise"), Icon = CompanyGlyphs.Policy(4), Figure = "5%", Sub = w.T("reallife_pol_set_here_row", "Set here") },
                     new CompanyRow { Caption = true, Title = w.T("reallife_pol_cat_escalation", "Escalation") },
-                    new CompanyRow { Id = "pf:21", Title = w.T("reallife_pol_field_unmet_days", "Days a request may wait"), Icon = CompanyGlyphs.Policy(21), Figure = "2 days", Sub = w.T("reallife_pol_as_above", "As above") }
+                    new CompanyRow { Id = "pf:21", Title = w.T("reallife_pol_field_unmet_days", "Days a request may wait"), Icon = CompanyGlyphs.Policy(21), Figure = "2 days", Sub = w.T("reallife_pol_set_here_row", "Set here") }
                 };
                 page.List = new CompanyList
                 {

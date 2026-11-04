@@ -588,9 +588,29 @@ namespace RealLifeOverhaul.Ui
                 cy = Sentence(s, atM, p.AdviceNote, x, cy, width, UiRole.Text2, 2);
             }
             float rowH = 72f;
+            float actCol = 0f, lookCol = 0f, hoursCol = 0f;
+            for (int i = 0; i < p.Rungs.Length; i++)
+            {
+                ref CompanyRung q = ref p.Rungs[i];
+                if (!string.IsNullOrEmpty(q.Chip))
+                {
+                    actCol = Math.Max(actCol, UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(q.Chip, UiStyle.SmallStrong) + UiTokens.S1));
+                }
+                else if (!string.IsNullOrEmpty(q.Use.Label))
+                {
+                    actCol = Math.Max(actCol, Math.Min(UiDraw.SnapDown(width * 0.3f), UiDraw.ButtonWidth(q.Use.Kind, q.Use.Label, q.Use.Icon, q.Use.Key, keys)));
+                }
+                if (!string.IsNullOrEmpty(q.Look.Label))
+                {
+                    lookCol = Math.Max(lookCol, Math.Min(UiDraw.SnapDown(width * 0.2f), UiDraw.ButtonWidth(q.Look.Kind, q.Look.Label, q.Look.Icon, q.Look.Key, keys)));
+                }
+                hoursCol = Math.Max(hoursCol, UiDraw.Snap(Math.Max(UiTextRules.Width(q.Hours ?? string.Empty, UiStyle.BodyStrong), UiTextRules.Width(q.Net ?? string.Empty, UiStyle.Small))
+                    + UiTokens.S1));
+            }
+            hoursCol = Math.Min(hoursCol, UiDraw.SnapDown(width * 0.3f));
             for (int i = 0; i < p.Rungs.Length && cy + rowH <= bottom; i++)
             {
-                RungRow(s, atM, lay, v, w, ref p.Rungs[i], x, cy, width, rowH, keys);
+                RungRow(s, atM, lay, v, w, ref p.Rungs[i], x, cy, width, rowH, actCol, lookCol, hoursCol, keys);
                 cy += rowH + UiTokens.S2;
             }
             float besideH = 0f;
@@ -636,34 +656,37 @@ namespace RealLifeOverhaul.Ui
 
         // A rung of the ladder: its name (the advised one marked), what it needs and gains, its hours and what it nets, and at the right a Look at its week and the button that
         // uses it, or a short word where it cannot be used yet.
-        private static void RungRow(UiScene s, UiAt at, CompanyLayout lay, CompanyView v, CompanyWords w, ref CompanyRung r, float x, float y, float width, float rowH, IUiKeys keys)
+        private static void RungRow(UiScene s, UiAt at, CompanyLayout lay, CompanyView v, CompanyWords w, ref CompanyRung r, float x, float y, float width, float rowH, float actCol, float lookCol,
+            float hoursCol, IUiKeys keys)
         {
             int face = UiDraw.Box(s, at, x, y, width, rowH, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
             UiAt inside = at.In(face);
             float right = x + width - UiTokens.S4;
+            // The columns stand in the same places in every row: the action (the widest of them sets its room), the Look, and the hours.
+            right -= actCol;
             string chip = r.Chip;
             if (!string.IsNullOrEmpty(chip))
             {
                 float cwid = UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(chip, UiStyle.SmallStrong) + UiTokens.S1);
-                right -= cwid;
                 UiDraw.Chip(s, inside, right, y + UiDraw.SnapDown((rowH - UiTokens.Badge - UiTokens.S1) / 2f), chip, UiRole.Warn, cwid);
             }
             else if (!string.IsNullOrEmpty(r.Use.Label))
             {
                 CompanyButton use = r.Use;
                 float bw = Math.Min(UiDraw.SnapDown(width * 0.3f), UiDraw.ButtonWidth(use.Kind, use.Label, use.Icon, use.Key, keys));
-                right -= bw;
                 Button(s, inside, lay, v, ref use, right, y + (rowH - UiTokens.Control) / 2f, bw, keys);
             }
-            if (!string.IsNullOrEmpty(r.Look.Label))
+            if (lookCol > 0f)
             {
-                CompanyButton look = r.Look;
-                float bw = Math.Min(UiDraw.SnapDown(width * 0.2f), UiDraw.ButtonWidth(look.Kind, look.Label, look.Icon, look.Key, keys));
-                right -= UiTokens.S3 + bw;
-                Button(s, inside, lay, v, ref look, right, y + (rowH - UiTokens.Control) / 2f, bw, keys);
+                right -= UiTokens.S3 + lookCol;
+                if (!string.IsNullOrEmpty(r.Look.Label))
+                {
+                    CompanyButton look = r.Look;
+                    float bw = Math.Min(UiDraw.SnapDown(width * 0.2f), UiDraw.ButtonWidth(look.Kind, look.Label, look.Icon, look.Key, keys));
+                    Button(s, inside, lay, v, ref look, right, y + (rowH - UiTokens.Control) / 2f, bw, keys);
+                }
             }
-            float hoursW = UiDraw.Snap(Math.Max(UiTextRules.Width(r.Hours ?? string.Empty, UiStyle.BodyStrong), UiTextRules.Width(r.Net ?? string.Empty, UiStyle.Small)) + UiTokens.S1);
-            hoursW = Math.Min(hoursW, UiDraw.SnapDown(width * 0.3f));
+            float hoursW = hoursCol;
             float fx = right - UiTokens.S4 - hoursW;
             float tw = Math.Max(0f, fx - UiTokens.S4 - (x + UiTokens.S4));
             float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));

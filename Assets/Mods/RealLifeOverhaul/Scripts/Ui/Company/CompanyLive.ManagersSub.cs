@@ -474,7 +474,7 @@ namespace RealLifeOverhaul.Ui
                     });
                 }
             }
-            page.List = new CompanyList { Title = w.T("reallife_hier_dir_inbox", "Questions inbox"), Count = rows.Count.ToString(), Rows = rows.ToArray(),
+            page.List = new CompanyList { Title = w.T("reallife_co_inbox", "Questions inbox"), Count = rows.Count.ToString(), Rows = rows.ToArray(),
                 Empty = CompanyText.T("reallife_hier_inbox_none") };
             string chosen = v.SubPick[CompanyView.Managers] ?? string.Empty;
             page.List.Chosen = ChosenRow(page.List.Rows, chosen);
@@ -485,7 +485,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (picked == null)
             {
-                var top = new CompanyCard { Kicker = w.T("reallife_co_tab_managers", "Managers"), Title = w.T("reallife_hier_dir_inbox", "Questions inbox"), Icon = UiIcon.Envelope, Back = BackTo(w,
+                var top = new CompanyCard { Kicker = w.T("reallife_co_tab_managers", "Managers"), Title = w.T("reallife_co_inbox", "Questions inbox"), Icon = UiIcon.Envelope, Back = BackTo(w,
                     null) };
                 top.Chips = new[] { CompanyText.T("reallife_hier_chip_yours", "count", yours.ToString()) };
                 top.ChipTones = new[] { yours > 0 ? UiRole.Warn : UiRole.Ok };
@@ -520,7 +520,7 @@ namespace RealLifeOverhaul.Ui
             string asker = AskerOf(d, e, out askerHue);
             var card = new CompanyCard
             {
-                Kicker = w.T("reallife_hier_dir_inbox", "Questions inbox"), Title = AskTitle(e, w), Sub = CompanyApp.PlaceWords(e), Icon = UiIcon.Envelope, Back = BackTo(w, null)
+                Kicker = w.T("reallife_co_inbox", "Questions inbox"), Title = AskTitle(e, w), Sub = CompanyApp.PlaceWords(e), Icon = UiIcon.Envelope, Back = BackTo(w, null)
             };
             var chips = new List<string> { CompanyApp.EscalationStateName(e.State) };
             var tones = new List<UiRole> { e.Open ? UiRole.Warn : UiRole.Ok };

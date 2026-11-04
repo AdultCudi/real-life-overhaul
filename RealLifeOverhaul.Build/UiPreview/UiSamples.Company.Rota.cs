@@ -43,7 +43,7 @@ internal static partial class UiSamples
             total += hours;
             people[i] = new CompanyRotaPerson
             {
-                Name = hire ? SF("To hire: Customer service") : RotaNames[i % RotaNames.Length], Role = hire ? SF("$18.00 an hour") : RotaRoles[i % RotaRoles.Length], Hue = 0.1f + i * 0.14f, Ring = UiRole.Ok,
+                Name = hire ? SF("To hire") : RotaNames[i % RotaNames.Length], Role = hire ? SF("Customer service, $18.00 an hour") : RotaRoles[i % RotaRoles.Length], Hue = 0.1f + i * 0.14f, Ring = UiRole.Ok,
                 Shifts = shifts, Tones = tones, Hours = hours + "h", HoursTone = !hire && i == 4 && variant == 0 ? UiRole.WarnText : UiRole.None, ToHire = hire
             };
         }

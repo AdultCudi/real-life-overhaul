@@ -745,8 +745,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     int group = wk - sheet.Workers.Count < r.Hires ? r.Hire[wk - sheet.Workers.Count] : -1;
                     person.ToHire = true;
-                    person.Name = CompanyText.T("reallife_rota_plan_hired", "skill", RotaGame.GroupSkill(sheet, group));
-                    person.Role = CompanyText.T("reallife_rota_person_wage", "wage", CompanyText.Wage(RotaLadder.Going(shop, group)));
+                    person.Name = w.T("reallife_rota_to_hire", "To hire");
+                    person.Role = RotaGame.GroupSkill(sheet, group) + ", " + CompanyText.T("reallife_rota_person_wage", "wage", CompanyText.Wage(RotaLadder.Going(shop, group)));
                 }
                 total += hours;
                 person.Hours = hours + "h";

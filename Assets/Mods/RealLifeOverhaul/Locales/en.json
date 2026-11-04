@@ -31642,5 +31642,6 @@
   "reallife_co_staff_sick_flat": "Off sick: paid {share} of a day's pay. Their standing does not change.",
   "reallife_co_row_less": "{amount} less",
   "reallife_co_policy_quotes": "What each insurer asks",
-  "reallife_co_policy_pick": "No cover yet. Pick the insurer whose terms suit you."
+  "reallife_co_policy_pick": "No cover yet. Pick the insurer whose terms suit you.",
+  "reallife_rota_to_hire": "To hire"
 }
