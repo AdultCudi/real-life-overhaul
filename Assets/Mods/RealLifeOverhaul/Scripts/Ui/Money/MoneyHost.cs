@@ -7,9 +7,10 @@ namespace RealLifeOverhaul.Ui
     /// The money screens that are a bank's counter (Banks, Your bank) share one host: a model, a fill when the series, the hour or a
     /// press changes it, the page drawer, and what a press does. A press either changes what the player has chosen (a bank, a row, an
     /// amount, a step: <see cref="MoneyView"/>, the host's own), or goes to the source's <see cref="IMoneyActs"/> as one act of the
-    /// game. Nothing a frame.
+    /// game. The screens that derive from it (BanksScreen, OwnBankScreen) are the typing screens: they name IUiTypingSubmit and
+    /// take its members from here. Nothing a frame.
     /// </summary>
-    public class MoneyHost : IUiTypingSubmit
+    public class MoneyHost
     {
         private readonly string _id;
         private readonly MoneyModel _model = new MoneyModel();

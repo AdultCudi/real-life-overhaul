@@ -1,0 +1,15 @@
+CatalogueCheck: 1 CHECK(S) FAILED
+CatalogueCheck fail: BanksLive.cs: "reallife_bank_profile_" is not in en.json
+NavCheck: ALL CHECKS PASSED (18148)
+EconomyCheck: 6 of 735121 CHECKS FAILED
+EconomyCheck fail: and by a text column (2.130 ms)
+EconomyCheck fail: pace: no piece of the market's work takes a millisecond (the slowest 1.796 ms)
+EconomyCheck fail: sessions timing: an hour's turn over 64 firms with 4 kinds each costs 0.766 ms, under 0.5 (it comes once a game hour)
+EconomyCheck fail: ui caret: every screen with a text field is in the caret check (IUiTyping; not listed: MoneyHost)
+EconomyCheck fail: bare ground spread: no step takes more than 0.5 ms here (the slowest 0.543 ms of up to 10929 steps)
+PlannerCheck: ALL CHECKS PASSED (225)
+ContractCheck: ALL CHECKS PASSED (5439)
+StandardCheck: ALL CHECKS PASSED (161869)
+check.pl non-zero counts: 0
+locales: LOCALES OK
+STOP: NOT EVERY CHECK PASSED

@@ -125,7 +125,9 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        private static string ProfileKey(Lender bank) => "reallife_bank_profile_" + Math.Max(0, Math.Min(2, bank.Rank));
+        private static readonly string[] ProfileKeys = { "reallife_bank_profile_0", "reallife_bank_profile_1", "reallife_bank_profile_2" };
+
+        private static string ProfileKey(Lender bank) => ProfileKeys[Math.Max(0, Math.Min(2, bank.Rank))];
 
         private BankFact ReadBank(Lender lender, CreditDesk desk, CreditScore score)
         {
