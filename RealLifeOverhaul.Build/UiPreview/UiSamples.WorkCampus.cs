@@ -15,13 +15,10 @@ internal static partial class UiSamples
         }
         else if (state == "courses_cooking")
         {
-            screen.View.Filter = 2;
+            screen.View.Filter = 4;
         }
         return screen;
     }
-
-    private static string KindWord(UtilitiesWords w, int level) => level == 0 ? w.T("reallife_work_level_beginner", "Beginner") : level == 1 ? w.T("reallife_work_level_intermediate", "Intermediate")
-        : w.T("reallife_work_level_licence", "Licence");
 
     private static WorkApp CampusAppOf(UtilitiesWords w, string state)
     {
@@ -41,63 +38,79 @@ internal static partial class UiSamples
         return app;
     }
 
+    private static string SDays(UtilitiesWords w, int a, int b) => a == b ? SWd(w, a) : SWd(w, a) + ", " + SWd(w, b);
+
+    // The real courses of the catalogue, with their own figures: key, glyph, subject chip, kind (0 short, 1 diploma), weeks, fee, the two class days and the hour, seats left of 24,
+    // the two skills (key, gain) and the teacher (name, years, rating in tenths).
+    private sealed class WkCourse
+    {
+        public string Key;
+        public UiIcon Icon;
+        public int Group, Kind, Weeks, Fee, D1, D2, Hour, Seats;
+        public string SkillA, SkillB, Teacher;
+        public int GainA, GainB, Years, Rating;
+    }
+
+    private static readonly WkCourse[] WkCourses =
+    {
+        new WkCourse { Key = "first_aid", Icon = UiIcon.Heartbeat, Group = 4, Kind = 0, Weeks = 2, Fee = 120, D1 = 2, D2 = 5, Hour = 10, Seats = 11, SkillA = "first_aid", GainA = 25, SkillB = "care", GainB = 5, Teacher = "Ines Calloway", Years = 12, Rating = 47 },
+        new WkCourse { Key = "barista", Icon = UiIcon.Coffee, Group = 3, Kind = 0, Weeks = 2, Fee = 150, D1 = 0, D2 = 3, Hour = 10, Seats = 8, SkillA = "hospitality", GainA = 20, SkillB = "cooking", GainB = 5, Teacher = "Marco Ferrante", Years = 9, Rating = 43 },
+        new WkCourse { Key = "bartending", Icon = UiIcon.ForkKnife, Group = 3, Kind = 0, Weeks = 3, Fee = 180, D1 = 1, D2 = 4, Hour = 14, Seats = 14, SkillA = "hospitality", GainA = 25, SkillB = "cooking", GainB = 5, Teacher = "Ruth Okonkwo", Years = 6, Rating = 41 },
+        new WkCourse { Key = "forklift", Icon = UiIcon.Wrench, Group = 2, Kind = 0, Weeks = 2, Fee = 250, D1 = 0, D2 = 2, Hour = 9, Seats = 9, SkillA = "handling", GainA = 30, SkillB = "driving", GainB = 5, Teacher = "Walter Haas", Years = 15, Rating = 45 },
+        new WkCourse { Key = "security_licence", Icon = UiIcon.ShieldCheck, Group = 4, Kind = 0, Weeks = 2, Fee = 200, D1 = 0, D2 = 3, Hour = 18, Seats = 12, SkillA = "guarding", GainA = 25, SkillB = "first_aid", GainB = 5, Teacher = "Dara Quinn", Years = 8, Rating = 39 },
+        new WkCourse { Key = "driving_refresher", Icon = UiIcon.Car, Group = 2, Kind = 0, Weeks = 1, Fee = 90, D1 = 5, D2 = 5, Hour = 9, Seats = 15, SkillA = "driving", GainA = 15, SkillB = null, Teacher = "Pat Lindgren", Years = 11, Rating = 42 },
+        new WkCourse { Key = "electrician", Icon = UiIcon.Lightning, Group = 2, Kind = 1, Weeks = 20, Fee = 3200, D1 = 4, D2 = 4, Hour = 9, Seats = 12, SkillA = "electrical", GainA = 40, SkillB = "handling", GainB = 5, Teacher = "Gus Varga", Years = 18, Rating = 44 },
+        new WkCourse { Key = "plumber", Icon = UiIcon.Drop, Group = 2, Kind = 1, Weeks = 18, Fee = 2800, D1 = 2, D2 = 4, Hour = 9, Seats = 9, SkillA = "plumbing", GainA = 40, SkillB = "handling", GainB = 5, Teacher = "Nell Hartigan", Years = 14, Rating = 46 },
+        new WkCourse { Key = "carpenter", Icon = UiIcon.Hammer, Group = 2, Kind = 1, Weeks = 18, Fee = 2600, D1 = 1, D2 = 3, Hour = 9, Seats = 7, SkillA = "joinery", GainA = 40, SkillB = "handling", GainB = 5, Teacher = "Tobias Reyes", Years = 21, Rating = 48 },
+        new WkCourse { Key = "chef", Icon = UiIcon.ForkKnife, Group = 3, Kind = 1, Weeks = 16, Fee = 2400, D1 = 1, D2 = 4, Hour = 9, Seats = 10, SkillA = "cooking", GainA = 35, SkillB = "hospitality", GainB = 5, Teacher = "Ilse Brandt", Years = 17, Rating = 47 },
+        new WkCourse { Key = "hairdresser", Icon = UiIcon.PaintBrush, Group = 4, Kind = 1, Weeks = 14, Fee = 1900, D1 = 0, D2 = 2, Hour = 10, Seats = 13, SkillA = "hair", GainA = 35, SkillB = "beauty", GainB = 5, Teacher = "Soraya Malik", Years = 10, Rating = 44 },
+        new WkCourse { Key = "care_worker", Icon = UiIcon.Heart, Group = 4, Kind = 1, Weeks = 16, Fee = 2100, D1 = 1, D2 = 3, Hour = 9, Seats = 16, SkillA = "care", GainA = 35, SkillB = "clinical", GainB = 5, Teacher = "Joan Pellew", Years = 13, Rating = 45 }
+    };
+
     private static WorkTab CoursesTab(UtilitiesWords w, string state)
     {
         var t = new WorkTab { Shape = WorkShape.Cards, Search = w.T("reallife_work_search_courses", "Search courses"), AllWord = w.T("reallife_work_filter_all_word", "All"),
-            Chips = new[] { w.T("reallife_work_subject_business", "Business"), w.T("reallife_work_subject_cooking", "Cooking"), w.T("reallife_work_subject_tech", "Tech"),
-                w.T("reallife_work_subject_trades", "Trades"), w.T("reallife_work_subject_languages", "Languages") }, EmptyTitle = w.T("reallife_work_empty_courses_title", "No course matches"),
+            Chips = new[] { w.T("reallife_work_subject_business", "Business"), w.T("reallife_work_subject_tech", "Tech"), w.T("reallife_work_subject_trades", "Trades"),
+                w.T("reallife_work_subject_food", "Food and drink"), w.T("reallife_work_subject_care", "Care and service") }, EmptyTitle = w.T("reallife_work_empty_courses_title", "No course matches"),
             EmptyBody = w.T("reallife_work_empty_courses", "Another subject, or a shorter search, may show one.") };
-        // name, school, line, next class, weeks, fee, subject group, glyph, level, seats left
-        object[][] list =
+        for (int i = 0; i < WkCourses.Length; i++)
         {
-            new object[] { "Introduction to Accounting", "Midtown Community College", "Books, tax and a balance sheet you can read.", "Mon 18:00", 12, "$1,850", 0, UiIcon.ChartLineUp, 0, 6 },
-            new object[] { "Professional Cooking", "Garment District Trade School", "Knife work, stocks and running a line.", "Tue 09:00", 16, "$2,400", 1, UiIcon.ForkKnife, 0, 11 },
-            new object[] { "Python for Business", "Hudson Tech Institute", "Scripts that clean up a stock sheet.", "Thu 18:30", 10, "$1,600", 2, UiIcon.Code, 0, 14 },
-            new object[] { "Forklift and Warehouse Safety", "Garment District Trade School", "The licence for depot work.", "Mon 08:00", 3, "$650", 3,
-                UiIcon.Wrench, 2, state == "courses_full" ? 0 : 9 },
-            new object[] { "Spanish, Level 1", "Midtown Community College", "Enough to hire and manage a crew.", "Wed 18:00", 14, "$900", 4, UiIcon.Globe, 0, 10 },
-            new object[] { "Retail Management", "Midtown Community College", "Staffing, stock and shop floors.", "Tue 18:00", 12, "$2,100", 0, UiIcon.Store, 1, 8 },
-            new object[] { "Electrical Basics", "Garment District Trade School", "Wiring, fuses and safe repairs.", "Fri 09:00", 20, "$3,200", 3, UiIcon.Lightning, 0, 12 },
-            new object[] { "Game Design Studio", "Hudson Tech Institute", "Prototype a game with a small team.", "Thu 10:00", 14, "$2,800", 2, UiIcon.GameController, 1, 5 },
-            new object[] { "Customer Service Basics", "Midtown Community College", "Handling queues and complaints calmly.", "Sat 10:00", 4, "$480", 0, UiIcon.Headset, 0, 15 },
-            new object[] { "Bread and Pastry", "Garment District Trade School", "Doughs, ovens and a morning's bake.", "Mon 06:00", 8, "$1,150", 1, UiIcon.Coffee, 0, 7 },
-            new object[] { "Italian, Level 1", "Midtown Community College", "Menus, orders and small talk.", "Thu 18:00", 14, "$900", 4, UiIcon.Globe, 0, 13 },
-            new object[] { "Plumbing Basics", "Garment District Trade School", "Pipes, valves and a leak at night.", "Wed 09:00", 12, "$2,000", 3, UiIcon.Drop, 0, 9 }
-        };
-        for (int i = 0; i < list.Length; i++)
-        {
-            object[] p = list[i];
-            string name = (string)p[0], school = (string)p[1];
-            int weeks = (int)p[4], seats = (int)p[9];
-            string fee = (string)p[5];
-            var r = new WorkRow { Id = i + 1, Icon = (UiIcon)p[7], Name = name, Sub = school, Line = (string)p[2], Status = KindWord(w, (int)p[8]),
-                Tone = (int)p[8] == 2 ? UiRole.Warn : UiRole.Muted, Group = (int)p[6],
-                NextLabel = w.T("reallife_work_next_class", "Next class"), NextValue = (string)p[3], FootLeft = w.F("reallife_work_n_weeks", "{n} weeks", "n", weeks.ToString()), FootRight = fee };
-            r.Sub = school;
-            r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_length", "Length"), w.F("reallife_work_n_weeks", "{n} weeks", "n", weeks.ToString())));
+            WkCourse c = WkCourses[i];
+            int seats = c.Key == "forklift" && state == "courses_full" ? 0 : c.Seats;
+            string fee = "$" + c.Fee.ToString("N0", System.Globalization.CultureInfo.InvariantCulture), weeks = w.F("reallife_work_n_weeks", "{n} weeks", "n", c.Weeks.ToString());
+            string timetable = Sf(w, "reallife_study_timetable", "days", SDays(w, c.D1, c.D2), "hour", c.Hour.ToString("00") + ":00");
+            string tag = Sx(w, c.Kind == 0 ? "reallife_study_kind_short" : "reallife_study_kind_vocational");
+            var r = new WorkRow { Id = i + 1, Icon = c.Icon, Name = SCourse(w, c.Key), Sub = Sx(w, "reallife_study_campus_school"), Line = Sx(w, "reallife_study_about_" + c.Key), Status = tag,
+                Tone = c.Kind == 0 ? UiRole.Muted : UiRole.Accent, Group = c.Group, NextLabel = w.T("reallife_work_next_class", "Next class"), NextValue = timetable, FootLeft = weeks, FootRight = fee };
+            r.Title = r.Name;
+            r.HeadSub = r.Sub;
+            r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_length", "Length"), weeks));
             r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_fee", "Fee"), fee));
-            r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_classes", "Classes"), ((string)p[3]).Replace("Mon ", "Mon, Wed ").Replace("Tue ", "Tue, Thu ")));
-            r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_seats", "Seats left"), seats == 0 ? w.T("reallife_work_full",
-                "Full") : w.F("reallife_work_seats_of", "{n} of {all}", "n", seats.ToString(), "all", "24")));
+            r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_classes", "Classes"), timetable));
+            r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_seats", "Seats left"), seats == 0 ? w.T("reallife_work_full", "Full")
+                : w.F("reallife_work_seats_of", "{n} of {all}", "n", seats.ToString(), "all", "24")));
             var learn = new WorkSection { Part = WorkPart.Bars, Title = w.T("reallife_work_you_will_learn", "What you will learn"), Note = w.T("reallife_work_skill_after", "skill after the course") };
-            learn.Bars.Add(new WorkBar { Label = i % 2 == 0 ? "Accounting" : "Craft", Value = 38, Note = "+12" });
-            learn.Bars.Add(new WorkBar { Label = i % 2 == 0 ? "Business" : "Safety", Value = 54, Note = "+6" });
-            learn.Bars.Add(new WorkBar { Label = "Numeracy", Value = 71, Note = "+4" });
+            learn.Bars.Add(new WorkBar { Label = SSkill(w, c.SkillA), Value = c.SkillA == "handling" ? 74 : c.SkillA == "first_aid" ? 55 : c.SkillA == "hospitality" ? 40 : c.SkillA == "cooking" ? 38 : 20 + i * 3, Note = "+" + c.GainA });
+            if (c.SkillB != null)
+            {
+                learn.Bars.Add(new WorkBar { Label = SSkill(w, c.SkillB), Value = c.SkillB == "driving" ? 66 : c.SkillB == "care" ? 31 : 12 + i * 2, Note = "+" + c.GainB });
+            }
             r.Sections.Add(learn);
             var before = new WorkSection { Part = WorkPart.Checks, Title = w.T("reallife_work_before_enrol", "Before you enrol") };
             before.Checks.Add(new WorkNeed { Words = w.F("reallife_work_you_have_fee", "You have the {fee} fee", "fee", fee), Met = true });
             before.Checks.Add(new WorkNeed { Words = w.T("reallife_work_evenings_free", "Your evenings are free"), Met = true });
-            before.Checks.Add(new WorkNeed { Words = i == 0 ? w.F("reallife_work_skill_floor", "{skill} {have}, the course asks for {need}", "skill",
-                "Numeracy", "have", "67", "need", "40") : "No skill is asked first", Met = true });
-            r.Sections.Add(before);
-            if (i == 0)
+            if (c.Kind == 1)
             {
-                var team = new WorkSection { Part = WorkPart.Text, Text = "Ava Lindqvist from your Pioneer team is in this class." };
-                r.Sections.Add(team);
+                before.Checks.Add(new WorkNeed { Words = w.F("reallife_work_skill_floor", "{skill} {have}, the course asks for {need}", "skill", SSkill(w, "handling"), "have", "74", "need", "40"), Met = true });
+            }
+            r.Sections.Add(before);
+            if (c.Key == "first_aid")
+            {
+                r.Sections.Add(new WorkSection { Part = WorkPart.Text, Text = w.F("reallife_work_employee_in_class", "{name} from your team is in this class.", "name", "Ava Lindqvist") });
             }
             var teacher = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_your_teacher_title", "Your teacher") };
-            teacher.People.Add(new WorkPerson { Name = "Dr. Elena Marsh", Role = w.F("reallife_work_teacher_line",
-                "{years} years teaching, rated {rating} by students", "years", "12", "rating", "4.7"), Ring = UiRole.None });
+            teacher.People.Add(new WorkPerson { Name = c.Teacher, Role = w.F("reallife_work_teacher_line", "{years} years teaching, rated {rating} by students", "years", c.Years.ToString(), "rating", (c.Rating / 10f).ToString("0.0")),
+                Halves = SHalves(c.Rating), Ring = UiRole.None });
             r.Sections.Add(teacher);
             r.HintLead = w.T("reallife_work_classes_desk_lead", "Classes start at your desk.");
             r.Hint = w.T("reallife_work_classes_desk_line", "Click it in the classroom when the bell rings, in the game's own work panel.");
@@ -115,60 +128,63 @@ internal static partial class UiSamples
         var t = new WorkTab { Shape = WorkShape.Diary };
         if (state != "studying_none")
         {
-            string[][] live =
+            // against today (412, a Tuesday): barista from day 405, care work from day 380, chef booked for day 440
+            object[][] live =
             {
-                new[] { "Introduction to Accounting", "Midtown Community College", "Mon 18:00", "83%", "day 421" }, new[] { "Spanish, Level 1",
-                    "Midtown Community College", "Tue 19:00", "91%", "day 424" },
-                new[] { "Retail Management", "Midtown Community College", "Sat 10:00", "-", "day 450" }
+                new object[] { "barista", UiIcon.Coffee, 0, 3, 10, "100%", 421, false }, new object[] { "care_worker", UiIcon.Heart, 1, 3, 9, "91%", 468, false },
+                new object[] { "chef", UiIcon.ForkKnife, 1, 4, 9, null, 0, true }
             };
-            UiIcon[] icons = { UiIcon.ChartLineUp, UiIcon.Globe, UiIcon.Store };
             for (int i = 0; i < live.Length; i++)
             {
-                bool booked = i == 2;
-                var r = new WorkRow { Id = i + 1, Icon = icons[i], Name = live[i][0], Sub = live[i][1],
+                bool booked = (bool)live[i][7];
+                string key = (string)live[i][0];
+                var r = new WorkRow { Id = i + 1, Icon = (UiIcon)live[i][1], Name = SCourse(w, key), Sub = Sx(w, "reallife_study_campus_school"),
                     Status = booked ? w.F("reallife_work_starts_day", "Starts day {n}", "n", "440") : w.T("reallife_work_under_way", "Under way"), Tone = booked ? UiRole.Muted : UiRole.Accent };
-                r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_next", "Next class"), live[i][2]));
-                r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_attended", "Attended"), live[i][3]));
-                r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_exam", "Exam"), live[i][4]));
-                if (i < 0)
-                {
-                    r.Acts.Add(WkAct(101, w.T("reallife_campus_button_pay", "Pay what is owed"), UiButtonKind.Secondary, UiIcon.Coin,
-                        i == 0 ? null : w.T("reallife_work_nothing_owed", "Nothing is owed."), false, r.Id));
-                }
+                r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_next", "Next class"), booked ? SDay(w, 440) + " " + ((int)live[i][4]).ToString("00") + ":00" : SDay(w, 414) + " " + ((int)live[i][4]).ToString("00") + ":00"));
+                r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_attended", "Attended"), (string)live[i][5] ?? w.T("reallife_work_not_started", "Not started")));
+                r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_exam", "Exam"), booked ? w.T("reallife_work_not_set", "Not set") : SDay(w, (int)live[i][6])));
                 r.Acts.Add(WkAct(102, w.T("reallife_campus_button_withdraw", "Withdraw"), UiButtonKind.Destructive, UiIcon.Close, null, false, r.Id));
                 t.Rows.Add(r);
             }
         }
+        // March, the 14th is today (day 412, a Tuesday): the 1st falls on a Wednesday
         var m = new UiDiaryModel
         {
-            Month = "March, year 3", Weekdays = new[] { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" }, Lead = 2, Length = 30, Today = 14, Chosen = 16, PastBefore = 14,
-            ChosenTitle = "Thursday 16 March", ChosenEmpty = w.T("reallife_work_diary_empty", "No class, homework or exam falls on this day."),
+            Month = Sx(w, "reallife_calendar_month_3"), Weekdays = new[] { SWd(w, 0), SWd(w, 1), SWd(w, 2), SWd(w, 3), SWd(w, 4), SWd(w, 5), SWd(w, 6) }, Lead = 2, Length = 31, Today = 14, Chosen = 16, PastBefore = 14,
+            ChosenTitle = SWd(w, 3) + " 16 " + Sx(w, "reallife_calendar_month_3"), ChosenEmpty = w.T("reallife_work_diary_empty", "No class, homework or exam falls on this day."),
                 AheadTitle = w.T("reallife_work_diary_ahead", "Coming up")
         };
         var entries = new List<UiDiaryEntry>();
         if (state != "studying_none")
         {
-            for (int day = 1; day <= 30; day++)
+            string barista = SCourse(w, "barista"), care = SCourse(w, "care_worker");
+            for (int day = 1; day <= 31; day++)
             {
                 int weekday = (2 + day - 1) % 7;
-                if (weekday == 0)
+                if ((weekday == 0 || weekday == 3) && day >= 7 && day <= 22)
                 {
-                    entries.Add(new UiDiaryEntry { Day = day, Icon = UiIcon.Cap, Title = w.F("reallife_work_diary_class", "Class: {course}", "course",
-                        "Introduction to Accounting"), Value = "18:00" });
+                    entries.Add(new UiDiaryEntry { Day = day, Icon = UiIcon.Coffee, Title = w.F("reallife_work_diary_class", "Class: {course}", "course", barista), Short = barista, Value = "10:00" });
                 }
-                if (weekday == 1)
+                if (weekday == 1 || weekday == 3)
                 {
-                    entries.Add(new UiDiaryEntry { Day = day, Icon = UiIcon.Globe, Title = w.F("reallife_work_diary_class", "Class: {course}", "course", "Spanish, Level 1"), Value = "19:00" });
+                    entries.Add(new UiDiaryEntry { Day = day, Icon = UiIcon.Heart, Title = w.F("reallife_work_diary_class", "Class: {course}", "course", care), Short = care, Value = "09:00" });
                 }
             }
-            entries.Add(new UiDiaryEntry { Day = 9, Icon = UiIcon.ClipboardText, Title = w.F("reallife_work_diary_homework", "Homework due: {course}", "course", "Introduction to Accounting") });
-            entries.Add(new UiDiaryEntry { Day = 16, Icon = UiIcon.ClipboardText, Title = w.F("reallife_work_diary_homework", "Homework due: {course}", "course", "Spanish, Level 1") });
-            entries.Add(new UiDiaryEntry { Day = 23, Icon = UiIcon.Scales, Title = w.F("reallife_work_diary_exam", "Exam: {course}", "course", "Introduction to Accounting"), Value = "10:00" });
-            entries.Add(new UiDiaryEntry { Day = 26, Icon = UiIcon.Scales, Title = w.F("reallife_work_diary_oral", "Oral test: {course}", "course", "Spanish, Level 1"), Value = "19:00" });
+            entries.Add(new UiDiaryEntry { Day = 9, Icon = UiIcon.ClipboardText, Title = w.F("reallife_work_diary_homework", "Homework due: {course}", "course", care), Short = care });
+            entries.Add(new UiDiaryEntry { Day = 17, Icon = UiIcon.ClipboardText, Title = w.F("reallife_work_diary_homework", "Homework due: {course}", "course", care), Short = care });
+            entries.Add(new UiDiaryEntry { Day = 23, Icon = UiIcon.Scales, Title = w.F("reallife_work_diary_exam", "Exam: {course}", "course", barista), Short = barista, Value = "10:00" });
+            entries.Sort((a, b) => a.Day.CompareTo(b.Day));   // in date order, as the live diary sorts it
         }
         m.Entries = entries.ToArray();
         t.Diary = new WorkDiary { Month = m };
         return t;
+    }
+
+    private static WorkMark WkMark(UtilitiesWords w, string course, UiIcon icon, int credits, int attendance, int exam, string status, UiRole tone)
+    {
+        string letter = exam >= 80 ? "A" : exam >= 70 ? "B" : exam >= 60 ? "C" : "D";
+        return new WorkMark { Icon = icon, Course = SCourse(w, course), Place = Sx(w, "reallife_study_campus_school"), Credits = credits.ToString(), Attendance = attendance + "%", AttendanceGrade = attendance,
+            Exam = exam.ToString(), ExamGrade = exam, Letter = letter, Percent = exam + "%", LetterGrade = exam, Status = status, Tone = tone };
     }
 
     private static WorkTab ResultsTab(UtilitiesWords w, string state)
@@ -181,59 +197,47 @@ internal static partial class UiSamples
         {
             return t;
         }
-        s.Head = new UiProfileModel { Name = "Jordan Hayes", Hue = UiColour.HueOf("Jordan Hayes"), Role = "Midtown Community College, Diploma in Business, year 1", Ring = UiRole.Ok };
+        s.Head = new UiProfileModel { Name = "Jordan Hayes", Hue = UiColour.HueOf("Jordan Hayes"), Role = w.T("reallife_work_student", "Student") + ", " + Sx(w, "reallife_study_campus_school"), Ring = UiRole.Ok };
         s.FigureLabels = new[] { w.T("reallife_work_gpa_short", "GPA"), w.T("reallife_work_credits_word", "Credits"), w.T("reallife_work_class_rank", "Class rank") };
-        s.FigureValues = new[] { "3.4", "48 of 120", "7 of 32" };
-        s.CreditShare = 0.4f;
+        s.FigureValues = new[] { "3.4", "11", w.F("reallife_work_rank_of", "{rank} of {all}", "rank", "7", "all", "24") };
         s.TranscriptTitle = w.T("reallife_work_transcript", "Transcript");
         s.Heads = new[] { w.T("reallife_campus_col_course", "Course"), w.T("reallife_work_col_credits", "Credits"), w.T("reallife_work_col_attendance", "Attendance"),
             w.T("reallife_campus_col_exam", "Exam"), w.T("reallife_work_col_grade", "Grade"), w.T("reallife_work_col_state", "State") };
         s.TotalLabel = w.T("reallife_work_total_label", "Credits earned, grade point average");
-        s.TotalCredits = "48 credits";
+        s.TotalCredits = w.F("reallife_work_n_credits", "{n} credits", "n", "11");
         s.TotalGpa = "3.4";
-        var autumn = new WorkTerm { Title = "Autumn term, day 240 to 330", Note = "4 courses, 17 credits" };
-        autumn.Marks.Add(new WorkMark { Icon = UiIcon.ChartLineUp, Course = "Business Maths", Place = "Midtown Community College", Credits = "6",
-            Attendance = "96%", AttendanceGrade = 96, Exam = "88", ExamGrade = 88, Letter = "A", Percent = "88%", LetterGrade = 88, Status = w.T("reallife_work_passed", "Passed"), Tone = UiRole.Ok });
-        autumn.Marks.Add(new WorkMark { Icon = UiIcon.Headset, Course = "Customer Service Basics", Place = "Midtown Community College", Credits = "4",
-            Attendance = "100%", AttendanceGrade = 100, Exam = "81", ExamGrade = 81, Letter = "B+", Percent = "81%", LetterGrade = 81,
-            Status = w.T("reallife_work_passed", "Passed"), Tone = UiRole.Ok });
-        autumn.Marks.Add(new WorkMark { Icon = UiIcon.Wrench, Course = "Forklift and Warehouse Safety", Place = "Garment District Trade School",
-            Credits = "3", Attendance = "100%", AttendanceGrade = 100, Exam = "74", ExamGrade = 74, Letter = "B", Percent = "74%", LetterGrade = 74,
-            Status = w.T("reallife_work_licence_won", "Licence won"), Tone = UiRole.Ok });
-        autumn.Marks.Add(new WorkMark { Icon = UiIcon.Globe, Course = "Spanish, Level 1", Place = "Midtown Community College", Credits = "4",
-            Attendance = "72%", AttendanceGrade = 72, Exam = "52", ExamGrade = 52, Letter = "C", Percent = "52%", LetterGrade = 52,
-            Status = w.T("reallife_work_repeat", "Repeat"), Tone = UiRole.Warn });
-        s.Terms.Add(autumn);
-        var spring = new WorkTerm { Title = "Spring term, day 340 to 430", Note = "now, 2 courses" };
-        spring.Marks.Add(new WorkMark { Icon = UiIcon.ChartLineUp, Course = "Introduction to Accounting", Place = "Midtown Community College",
-            Credits = "6", Attendance = "83%", AttendanceGrade = 83, Exam = "-", Letter = "B", Percent = "76% so far", LetterGrade = 76,
-            Status = w.T("reallife_work_under_way", "Under way"), Tone = UiRole.Accent });
-        spring.Marks.Add(new WorkMark { Icon = UiIcon.Globe, Course = "Spanish, Level 1", Place = "Midtown Community College", Credits = "4",
-            Attendance = "91%", AttendanceGrade = 91, Exam = "-", Letter = "B", Percent = "70% so far", LetterGrade = 70, Status = w.T("reallife_work_under_way", "Under way"), Tone = UiRole.Accent });
-        s.Terms.Add(spring);
-        var summer = new WorkTerm { Title = "Summer term, starts day 440", Note = w.T("reallife_work_booked", "booked") };
-        summer.Marks.Add(new WorkMark { Icon = UiIcon.Store, Course = "Retail Management", Place = "Midtown Community College", Credits = "6",
-            Attendance = "-", Exam = "-", Letter = null, Percent = "-", Status = w.T("reallife_work_booked", "booked"), Tone = UiRole.Muted });
-        s.Terms.Add(summer);
-        s.Chart = new UiChartModel { Kind = UiChartKind.Line, Title = w.T("reallife_work_gpa_by_term", "Grade point average by quarter"), Points = new[] { "Autumn", "Spring", "Now" },
-            Series = new[] { new UiSeries { Label = "GPA", Values = new[] { 3.1f, 3.3f, 3.4f }, Tint = UiRole.Accent } }, Format = v => v.ToString("0.0") };
+        var q4 = new WorkTerm { Title = w.F("reallife_work_term_title", "Quarter {n}, day {from} to {to}", "n", "4", "from", "270", "to", "359"), Note = w.F("reallife_work_term_note", "{n} courses, {credits} credits", "n", "3", "credits", "9") };
+        q4.Marks.Add(WkMark(w, "forklift", UiIcon.Wrench, 3, 100, 74, w.T("reallife_work_licence_won", "Licence won"), UiRole.Ok));
+        q4.Marks.Add(WkMark(w, "first_aid", UiIcon.Heartbeat, 3, 96, 88, w.T("reallife_work_passed", "Passed"), UiRole.Ok));
+        q4.Marks.Add(WkMark(w, "security_licence", UiIcon.ShieldCheck, 3, 72, 52, w.T("reallife_work_repeat", "Repeat"), UiRole.Warn));
+        s.Terms.Add(q4);
+        var q5 = new WorkTerm { Title = w.F("reallife_work_term_title", "Quarter {n}, day {from} to {to}", "n", "5", "from", "360", "to", "449"), Note = w.F("reallife_work_term_note", "{n} courses, {credits} credits", "n", "3", "credits", "8") };
+        q5.Marks.Add(new WorkMark { Icon = UiIcon.Coffee, Course = SCourse(w, "barista"), Place = Sx(w, "reallife_study_campus_school"), Credits = "2", Attendance = "100%", AttendanceGrade = 100,
+            Exam = w.T("reallife_work_not_yet", "Not yet"), Percent = w.T("reallife_work_not_yet", "Not yet"), Status = w.T("reallife_work_under_way", "Under way"), Tone = UiRole.Accent });
+        q5.Marks.Add(new WorkMark { Icon = UiIcon.Heart, Course = SCourse(w, "care_worker"), Place = Sx(w, "reallife_study_campus_school"), Credits = "6", Attendance = "91%", AttendanceGrade = 91,
+            Exam = w.T("reallife_work_not_yet", "Not yet"), Percent = w.T("reallife_work_not_yet", "Not yet"), Status = w.T("reallife_work_under_way", "Under way"), Tone = UiRole.Accent });
+        q5.Marks.Add(new WorkMark { Icon = UiIcon.ForkKnife, Course = SCourse(w, "chef"), Place = Sx(w, "reallife_study_campus_school"), Credits = "6", Attendance = w.T("reallife_work_not_started", "Not started"),
+            Exam = w.T("reallife_work_not_yet", "Not yet"), Percent = w.T("reallife_work_not_yet", "Not yet"), Status = w.T("reallife_work_booked", "booked"), Tone = UiRole.Muted });
+        s.Terms.Add(q5);
+        s.Chart = new UiChartModel { Kind = UiChartKind.Line, Title = w.T("reallife_work_gpa_by_term", "Grade point average by quarter"),
+            Points = new[] { w.F("reallife_work_quarter_n", "Quarter {n}", "n", "3"), w.F("reallife_work_quarter_n", "Quarter {n}", "n", "4"), w.F("reallife_work_quarter_n", "Quarter {n}", "n", "5") },
+            Series = new[] { new UiSeries { Label = w.T("reallife_work_gpa_short", "GPA"), Values = new[] { 3.1f, 3.3f, 3.4f }, Tint = UiRole.Accent } }, Format = v => v.ToString("0.0") };
         s.ComingTitle = w.T("reallife_work_coming_up", "Coming up");
-        s.Coming.Add(new KeyValuePair<string, string>("Day 421, Accounting exam", "19 days"));
-        s.Coming.Add(new KeyValuePair<string, string>("Day 424, Spanish oral test", "22 days"));
-        s.Coming.Add(new KeyValuePair<string, string>("Day 440, Retail Management starts", "38 days"));
+        s.Coming.Add(new KeyValuePair<string, string>(SDay(w, 421) + ", " + w.F("reallife_work_exam_of", "Exam: {course}", "course", SCourse(w, "barista")), w.F("reallife_work_in_n_days", "{n} days", "n", "9")));
+        s.Coming.Add(new KeyValuePair<string, string>(SDay(w, 440) + ", " + w.F("reallife_work_starts_of", "{course} starts", "course", SCourse(w, "chef")), w.F("reallife_work_in_n_days", "{n} days", "n", "28")));
         s.ClassTitle = w.T("reallife_work_your_class", "Your class");
         s.ClassNote = w.T("reallife_work_by_gpa", "by grade point average");
-        string[] names = { "Priya Shah", "Hana Okada", "Leo Park", "Amara Nwosu", "Sofia Marin", "Tomas Reyes", "Jordan Hayes (you)" };
+        string[] names = { "Priya Shah", "Hana Okada", "Leo Park", "Amara Nwosu", "Sofia Marin", "Tomas Reyes", "Jordan Hayes" };
         string[] gpa = { "4.0", "3.9", "3.8", "3.6", "3.5", "3.5", "3.4" };
         for (int i = 0; i < names.Length; i++)
         {
             s.Class.Add(new WorkPerson { Name = names[i], Right = gpa[i], Ring = i == 6 ? UiRole.Accent : UiRole.None });
         }
         s.GainTitle = w.T("reallife_work_courses_gave", "What the courses gave you");
-        s.Gains.Add(new WorkBar { Label = "Numeracy", Value = 71, Note = "+9" });
-        s.Gains.Add(new WorkBar { Label = "Customer care", Value = 88, Note = "+6" });
-        s.Gains.Add(new WorkBar { Label = "Warehouse safety", Value = 74, Note = "+10" });
-        s.Gains.Add(new WorkBar { Label = "Spanish", Value = 31, Note = "+4" });
+        s.Gains.Add(new WorkBar { Label = SSkill(w, "handling"), Value = 74, Note = "+30" });
+        s.Gains.Add(new WorkBar { Label = SSkill(w, "first_aid"), Value = 55, Note = "+25" });
+        s.Gains.Add(new WorkBar { Label = SSkill(w, "driving"), Value = 66, Note = "+5" });
+        s.Gains.Add(new WorkBar { Label = SSkill(w, "guarding"), Value = 25, Note = "+5" });
         return t;
     }
 
@@ -242,19 +246,21 @@ internal static partial class UiSamples
         var t = new WorkTab { Shape = WorkShape.Skills, Title = w.T("reallife_campus_tab_skills", "Skills"), Lead = w.T("reallife_work_skills_lead", "What your courses and work have taught you."),
             EmptyTitle = w.T("reallife_work_skills_empty_title", "No skills yet"), EmptyBody = w.T("reallife_work_no_skills",
                 "Courses and work teach them. Enrol on a course and its skills grow here.") };
-        string[][] skills =
+        // skill key, points, the course that taught it (null: learned at work)
+        object[][] skills =
         {
-            new[] { "Numeracy", "71", "Midtown Community College" }, new[] { "Customer care", "88", "Work: Harbourside Freight HSF" },
-                new[] { "Warehouse safety", "74", "Garment District Trade School" },
-            new[] { "Spanish", "31", "Midtown Community College" }, new[] { "Accounting", "38", "Midtown Community College" }, new[] { "Business", "54", "Midtown Community College" },
-            new[] { "Teamwork", "71", "Work: Harbourside Freight HSF" }, new[] { "Forklift driving", "66", "Garment District Trade School" }
+            new object[] { "handling", 74, "forklift" }, new object[] { "driving", 66, "forklift" }, new object[] { "first_aid", 55, "first_aid" }, new object[] { "hospitality", 40, "barista" },
+            new object[] { "cooking", 38, "barista" }, new object[] { "care", 31, "first_aid" }, new object[] { "guarding", 25, "security_licence" }, new object[] { "electrical", 12, null }
         };
-        foreach (string[] s in skills)
+        foreach (object[] s in skills)
         {
-            t.Skills.Add(new WorkBar { Label = s[0], Value = int.Parse(s[1]) });
-            t.SkillIcons.Add(s[2].StartsWith("Work") ? UiIcon.Briefcase : UiIcon.Cap);
-            t.SkillPlaces.Add(s[2].StartsWith("Work") ? w.T("reallife_work_taught_at_work", "Learned at work") : w.F("reallife_work_taught_at", "Taught at {place}", "place", s[2]));
+            int points = (int)s[1];
+            t.Skills.Add(new WorkBar { Label = SSkill(w, (string)s[0]), Value = points });
+            t.SkillIcons.Add(s[2] == null ? UiIcon.Briefcase : UiIcon.Cap);
+            t.SkillPlaces.Add(CampusBands.SkillLine(w, points, s[2] == null ? w.T("reallife_work_taught_at_work", "Learned at work") : w.F("reallife_work_taught_in", "Taught in {course}", "course", SCourse(w, (string)s[2]))));
         }
+        CampusBands.SkillsBands(w, t, SSkill(w, "handling") + " 74", SSkill(w, "electrical") + " 12", 43, new[] { SCourse(w, "electrician"), SCourse(w, "care_worker"), SCourse(w, "security_licence") },
+            new[] { "+40 " + SSkill(w, "electrical"), "+35 " + SSkill(w, "care"), "+25 " + SSkill(w, "guarding") }, new[] { "$3,200", "$2,100", "$200" });
         return t;
     }
 
@@ -262,25 +268,32 @@ internal static partial class UiSamples
     {
         var t = new WorkTab { Shape = WorkShape.Profiles, EmptyTitle = w.T("reallife_work_no_kids_title", "No child is at university yet"),
             EmptyBody = w.T("reallife_work_no_children", "A grown child who wants a degree comes to you with a course and its fee. You pay for it or decline, and what they study shows here.") };
+        var form = new WorkFormModel();
         if (state != "family_none")
         {
-            var k1 = new WorkKid { Name = "Maya Hayes", Role = "Reads Business, Midtown Community College", Ring = UiRole.Ok, Fund = 62,
-                FundLabel = w.T("reallife_work_college_fund", "College fund"), FundNote = "$9,300 of $15,000",
-                FactLabels = new[] { "Year", "Grade", "Tutoring" }, FactValues = new[] { "1 of 3", "B+", "None" } };
+            var k1 = new WorkKid { Name = "Maya Hayes", Role = SCourse(w, "cybersecurity"), Ring = UiRole.Ok, Fund = 78,
+                FundLabel = w.T("reallife_work_college_fund", "College fund"), FundNote = w.F("reallife_work_fund_of", "{fund} of {cost}", "fund", "$9,300", "cost", "$12,000"),
+                FactLabels = new[] { w.T("reallife_work_kid_age", "Age"), w.T("reallife_work_kid_school", "School"), w.T("reallife_work_col_state", "State") },
+                FactValues = new[] { "19", Sx(w, "reallife_work_school_state"), Sx(w, "reallife_work_step_offered") } };
             k1.Acts.Add(WkAct(104, w.T("reallife_campus_button_child_pay", "Pay for the degree"), UiButtonKind.Primary, UiIcon.Check, null, false, 0));
             k1.Acts.Add(WkAct(105, w.T("reallife_campus_button_child_decline", "Not this time"), UiButtonKind.Destructive, UiIcon.Close, null, false, 0));
             t.Kids.Add(k1);
-            var k2 = new WorkKid { Name = "Theo Hayes", Role = "Primary school, Hudson Primary", Ring = UiRole.Ok, Fund = 34,
-                FundLabel = w.T("reallife_work_college_fund", "College fund"), FundNote = "$5,100 of $15,000",
-                FactLabels = new[] { "Year", "Grade", "Tutoring" }, FactValues = new[] { "Year 4", "B", "Maths" } };
+            var k2 = new WorkKid { Name = "Theo Hayes", Role = w.T("reallife_work_no_course_yet", "No course yet"), Ring = UiRole.Ok, Fund = 34,
+                FundLabel = w.T("reallife_work_college_fund", "College fund"), FundNote = w.F("reallife_work_fund_of", "{fund} of {cost}", "fund", "$5,100", "cost", "$15,000"),
+                FactLabels = new[] { w.T("reallife_work_kid_age", "Age"), w.T("reallife_work_kid_school", "School"), w.T("reallife_work_col_state", "State") },
+                FactValues = new[] { "9", Sx(w, "reallife_work_school_private"), w.T("reallife_work_kid_too_young", "Too young") } };
             t.Kids.Add(k2);
+            CampusBands.FamilyBand(w, form, "$14,400", 1, "$12,000", "$0");
         }
-        var form = new WorkFormModel();
+        else
+        {
+            CampusBands.FamilyBand(w, form, "$0", 0, "$0", "$0");
+        }
         var tutor = new WorkFormBand { Title = w.T("reallife_work_tutor_title", "Tutor a pupil") };
         tutor.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_tutor_note",
             "Teach a pupil a skill you know well, for a fee. It takes an evening."), Act = WkAct(106, w.T("reallife_campus_button_tutor",
             "Give a tutoring session"), UiButtonKind.Secondary, UiIcon.Cap) });
-        form.Left.Add(tutor);
+        form.Left.Insert(0, tutor);
         t.Form = form;
         return t;
     }
@@ -299,12 +312,14 @@ internal static partial class UiSamples
             new[] { "Hudson Tech Institute", "Hudson Yards", "198 / 240", "84", "Good", "ok" }, new[] { "Murray Hill Academy", "Murray Hill", "310 / 300", "61", "Needs work", "warn" },
             new[] { "Uptown Prep", "Uptown", "280 / 400", "91", "Outstanding", "ok" }
         };
+        string[] grades = { "reallife_work_inspect_outstanding", "reallife_work_inspect_good", "reallife_work_inspect_good", "reallife_work_inspect_needs_work", "reallife_work_inspect_outstanding" };
         for (int i = 0; i < schools.Length; i++)
         {
             string[] s = schools[i];
-            var r = new WorkRow { Id = i + 1, Icon = UiIcon.Building, Name = s[0], Sub = s[1], Cells = new[] { null, s[1], s[2], s[3], s[4] },
-                Values = new[] { 0, 0, 0, int.Parse(s[3]), 0 }, Status = s[4],
-                Tone = s[5] == "ok" ? UiRole.Ok : UiRole.Warn, Chip = s[4], ChipTone = s[5] == "ok" ? UiRole.Ok : UiRole.Warn };
+            string grade = Sx(w, grades[i]);
+            var r = new WorkRow { Id = i + 1, Icon = UiIcon.Building, Name = s[0], Sub = s[1], Cells = new[] { null, s[1], s[2], s[3], grade },
+                Values = new[] { 0, 0, 0, int.Parse(s[3]), 0 }, Status = grade,
+                Tone = s[5] == "ok" ? UiRole.Ok : UiRole.Warn, Chip = grade, ChipTone = s[5] == "ok" ? UiRole.Ok : UiRole.Warn };
             r.Locate = WkAct(107, w.T("reallife_work_show_school", "Show school"), UiButtonKind.Secondary, UiIcon.Locate, null, true, r.Id);
             r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_pupils", "Pupils"), s[2]));
             r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_results", "Results"), s[3] + "%"));
@@ -331,6 +346,7 @@ internal static partial class UiSamples
         t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_pupils", "Pupils in all"), "1,456"));
         t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_places", "Places"), "1,740"));
         t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_best_results", "Best results"), "91%"));
+        CampusBands.SchoolsBands(w, t);
         return t;
     }
 }

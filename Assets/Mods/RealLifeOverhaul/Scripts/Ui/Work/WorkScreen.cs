@@ -106,6 +106,10 @@ namespace RealLifeOverhaul.Ui
             {
                 focus = s.FindNode(WorkCmd.Card, _page.Chosen);
             }
+            else if (_page.Diary != null)
+            {
+                focus = s.FindNode(UiDiary.DayCommand, _page.Diary.Chosen);   // the term's diary starts on its chosen day, never on a button that withdraws
+            }
             for (int i = before; focus < 0 && i < s.NodeCount; i++)
             {
                 if (!s.Nodes[i].Disabled && s.Nodes[i].Layer == 0)

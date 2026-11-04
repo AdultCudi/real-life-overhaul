@@ -9,10 +9,10 @@ using RealLifeOverhaul.Ui;
 internal static partial class UiSamples
 {
     public static readonly string[] CareerStates = { "professions", "jobs", "jobs_qualify", "applications", "my_job", "management", "own", "cv", "my_job_new", "jobs_empty",
-        "jobs_long", "my_job_pt", "jobs_pt" };
+        "jobs_long" };
     public static readonly string[] CampusStates = { "courses", "courses_full", "courses_cooking", "studying", "results", "skills", "family", "schools", "results_new", "studying_none",
-        "family_none", "courses_pt" };
-    public static readonly string[] RolesStates = { "jobs", "applicants", "applicants_none", "market", "search", "team", "person", "new_ad", "person_contract", "applicants_pt" };
+        "family_none" };
+    public static readonly string[] RolesStates = { "jobs", "applicants", "applicants_none", "market", "search", "team", "person", "new_ad", "person_contract" };
     public static readonly string[] MarketplaceStates = { "listings", "listings_machines", "listings_stock", "listings_none", "haggle", "yours", "offers", "freelance",
         "listings_pt" };
 
@@ -65,7 +65,7 @@ internal static partial class UiSamples
     private static int WkTabOf(string app, string state)
     {
         string s = state;
-        foreach (string suffix in new[] { "_new", "_empty", "_long", "_full", "_none", "_machines", "_stock", "_cooking", "_qualify", "_pt", "_contract" })
+        foreach (string suffix in new[] { "_new", "_empty", "_long", "_full", "_none", "_machines", "_stock", "_cooking", "_qualify", "_contract" })
         {
             if (s.EndsWith(suffix, System.StringComparison.Ordinal))
             {

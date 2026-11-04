@@ -361,7 +361,7 @@ namespace RealLifeOverhaul.Ui
                         if (StudyRules.On(days, day))
                         {
                             entries.Add(new UiDiaryEntry { Day = day - from + 1, Icon = WorkGlyphs.Course(c), Title = W.F("reallife_work_diary_class",
-                                "Class: {course}", "course", CareersText.Course(c.Id)), Value = CareersText.Hour(hour) });
+                                "Class: {course}", "course", CareersText.Course(c.Id)), Short = CareersText.Course(c.Id), Value = CareersText.Hour(hour) });
                         }
                     }
                 }

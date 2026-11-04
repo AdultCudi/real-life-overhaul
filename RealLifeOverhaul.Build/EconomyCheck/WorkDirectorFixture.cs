@@ -53,9 +53,6 @@ namespace RealLifeOverhaul.Careers
         public string LastPassed, LastFollower;
         private void PassedOver(string rival, string employer) { PassedCount++; LastPassed = rival; }
         private void EmployeeFollowed(string who, int course) { FollowedCount++; LastFollower = who; }
-        public int BlockedCount;
-        public string LastBlocked;
-        private void TeamworkBlocks(string employer, int teamwork, int bar) { BlockedCount++; LastBlocked = employer + " " + teamwork + "/" + bar; }
 
         public CareersDirector(StudyFile study)
         {

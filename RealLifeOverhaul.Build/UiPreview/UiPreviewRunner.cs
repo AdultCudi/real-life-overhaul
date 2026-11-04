@@ -39,6 +39,7 @@ public static partial class UiPreviewRunner
         public UiIcon Icon;       // the window's icon, as the host is given it in the game
         public Func<UiStatusModel> Bar;   // the status bar it stands over, when not the sample's with App open (the frame's app row)
         public bool NoKeys;       // takes no key (the notice cards): its keys and pad shots show it as the keys leave it, no ring, no path
+        public bool Single;       // one shot only, the 1080 base (a language's render of a state)
         public bool Types;        // a field of it takes the keys (Typing below): it also gets a shot with the caret hidden, the blink's other half
     }
 
@@ -108,6 +109,10 @@ public static partial class UiPreviewRunner
                 }
                 // One look now: each screen at 1080 and 720, with the mouse resting on a target and with the keys leading.
                 shots.Add(new Shot { Screen = screen, Name = screen.Name + "_1080", Width = 1920, Height = 1080, Dark = true });
+                if (screen.Single)
+                {
+                    continue;
+                }
                 shots.Add(new Shot { Screen = screen, Name = screen.Name + "_720", Width = 1280, Height = 720, Dark = true });
                 if (!prototype || screen.Extra)
                 {

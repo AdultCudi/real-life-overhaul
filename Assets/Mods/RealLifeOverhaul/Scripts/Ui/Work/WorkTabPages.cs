@@ -51,6 +51,7 @@ namespace RealLifeOverhaul.Ui
                 AsideChosen = t.Aside != null ? asideRole : -1, UnderLead = t.NoteLead,
                 UnderText = t.NoteText };
             m.Chips = Chips(b, t, v, w, out m.ChosenChip);
+            m.Below = t.Below;
             UiDataTableModel tm = m.Table;
             tm.Columns = t.Columns;
             tm.RowCount = shown.Count;

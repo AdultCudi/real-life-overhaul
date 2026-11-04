@@ -21,12 +21,23 @@ public static partial class UiPreviewRunner
         {
             string st = states[i];
             WorkHover(id, st, out int command, out int arg, out string walk);
+            string backdrop = id == "career" && st.StartsWith("my_job") ? "05.jpg" : i % 2 == 0 ? "13.jpg" : "02.jpg";
             screens.Add(new Screen
             {
-                Name = id + "_" + st, AppName = title, Icon = icon, Backdrop = id == "career" && st.StartsWith("my_job") ? "05.jpg" : i % 2 == 0 ? "13.jpg" : "02.jpg",
+                Name = id + "_" + st, AppName = title, Icon = icon, Backdrop = backdrop,
                 Bar = () => UiSamples.ShellBar(4, false), HoverCommand = command, HoverArg = arg, Walk = Moves(walk),
-                Lay = (s, f, d, k) => make(st.EndsWith("_pt") ? DialogWords("pt") : ModEnglish, st).Lay(s, f, d, k)
+                Lay = (s, f, d, k) => make(ModEnglish, st).Lay(s, f, d, k)
             });
+            // every state again in Brazilian Portuguese and in Simplified Chinese, the 1080 base only: the longer words and the wider script
+            foreach (string lang in new[] { "pt", "zh-cn" })
+            {
+                string code = lang;
+                screens.Add(new Screen
+                {
+                    Name = id + "_" + st + (code == "pt" ? "_pt" : "_zh"), AppName = title, Icon = icon, Backdrop = backdrop, Single = true, Bar = () => UiSamples.ShellBar(4, false),
+                    Lay = (s, f, d, k) => make(DialogWords(code), st).Lay(s, f, d, k)
+                });
+            }
         }
     }
 

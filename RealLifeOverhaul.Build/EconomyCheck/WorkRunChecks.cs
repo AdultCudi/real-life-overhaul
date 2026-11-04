@@ -80,12 +80,14 @@ internal static partial class Program
         {
             cold.Day(day);
         }
+        // a review that promotes promotes, whatever the teamwork: with nobody else up for the post, a player the shift does not get on with is promoted as one it likes
+        cold.D.Standing.Peers.RemoveAll(p => p.Role == (int)PeerRole.UpForPost);
         cold.J.Favour = -LifeRules.FavourMost;
         bool coldPromoted = cold.D.RunStandingDecides(cold.J, 61);
         cold.J.Favour = LifeRules.FavourMost;
         bool warmPromoted = cold.D.RunStandingDecides(cold.J, 62);
-        Check(!coldPromoted && StandingRules.TeamworkOf(-LifeRules.FavourMost) < PostFilterRules.PromotionTeamwork && (warmPromoted || cold.D.PassedCount >= 1),
-            "work run: StandingDecides does not promote a player whose teamwork is under the bar the page names, and goes by the better record for one who is over it");
+        Check(coldPromoted && warmPromoted && StandingRules.TeamworkOf(-LifeRules.FavourMost) < 50,
+            "work run: StandingDecides promotes a player whose teamwork is lowest as it promotes one whose teamwork is highest, when nobody else is up for the post (no teamwork gate)");
         var a = new StandingRun(31);
         for (int day = 1; day <= 120; day++)
         {

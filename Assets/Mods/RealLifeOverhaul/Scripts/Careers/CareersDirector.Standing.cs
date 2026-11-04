@@ -66,13 +66,6 @@ namespace RealLifeOverhaul.Careers
             Tell2(NotificationType.Warning, "reallife_work_note_passed_over", Data("name", rival, "employer", CareersText.Employer(employer)), TabJob, null);
         }
 
-        // The review would have promoted the player, but the shift rates their teamwork under the rung's bar: told in a notice.
-        private void TeamworkBlocks(string employer, int teamwork, int bar)
-        {
-            Tell2(NotificationType.Warning, "reallife_work_note_teamwork_blocks", Data("employer", CareersText.Employer(employer), "teamwork", teamwork.ToString(), "bar", bar.ToString()),
-                TabJob, null);
-        }
-
         // An employee of the player's follows the same course: told in a notice.
         private void EmployeeFollowed(string who, int course)
         {

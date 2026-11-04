@@ -311,7 +311,7 @@ internal static partial class Program
         WorkScreen jobs = LaidWork("career", "jobs");
         int all = jobs.Page.Table.RowCount;
         jobs.Press(WorkCmd.Search, 0);
-        jobs.Typed("cook");
+        jobs.Typed("chef");
         jobs.Lay(new UiScene(), UiFrame.FullMenu(1.78f, "Work"), true, UiDefaultKeys.Keyboard);
         int narrowed = jobs.Page.Table.RowCount;
         jobs.Typed("zzz");
@@ -321,7 +321,7 @@ internal static partial class Program
         WorkScreen courses = LaidWork("campus", "courses");
         int cards = courses.Page.Cards.Cards.Length;
         courses.Press(WorkCmd.Search, 0);
-        courses.Typed("python");
+        courses.Typed("plumber");
         courses.Lay(new UiScene(), UiFrame.FullMenu(1.78f, "Work"), true, UiDefaultKeys.Keyboard);
         Check(cards > 8 && courses.Page.Cards.Cards.Length == 1, "work screens: Campus's search narrows the courses (" + cards + ", then " + courses.Page.Cards.Cards.Length + ")");
         // a tab key turns the sections round

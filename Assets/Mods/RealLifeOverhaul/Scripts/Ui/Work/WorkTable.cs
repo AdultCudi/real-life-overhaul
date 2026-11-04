@@ -17,6 +17,7 @@ namespace RealLifeOverhaul.Ui
         public int AsideChosen = -1;
         public string UnderLead, UnderText;                     // a quiet band under a short table
         public List<KeyValuePair<string, string>> Stats;        // figures that sum the list, in a strip under a short table
+        public List<WorkFormBand> Below;                        // bands under a short table and its figures: what fills the foot of the list's column
         public UiActionModel[] PageActs = new UiActionModel[0]; // buttons of the page itself, in the tool row's right
         public string Why;                                      // why a disabled button of the detail is disabled
     }
@@ -66,7 +67,8 @@ namespace RealLifeOverhaul.Ui
             float ty = Tools(s, at, m, tx, y, tw, keys);
             float room = bottom - ty;
             bool strip = m.Stats != null && m.Stats.Count > 0;
-            if ((m.UnderText != null || strip) && m.Table.RowCount > 0)
+            bool below = m.Below != null && m.Below.Count > 0;
+            if ((m.UnderText != null || strip || below) && m.Table.RowCount > 0)
             {
                 float stats = strip ? StatsHeight() + UiTokens.S3 : 0f;
                 float under = (m.UnderText != null ? WorkPanel.NoteHeight(m.UnderLead, m.UnderText, tw) + UiTokens.S3 : 0f) + stats;
@@ -82,6 +84,11 @@ namespace RealLifeOverhaul.Ui
                     if (m.UnderText != null)
                     {
                         WorkPanel.Note(s, at, UiIcon.Info, m.UnderLead, m.UnderText, tx, end + UiTokens.S3, tw);
+                        end += UiTokens.S3 + WorkPanel.NoteHeight(m.UnderLead, m.UnderText, tw);
+                    }
+                    if (below)
+                    {
+                        WorkForm.Strip(s, at, m.Below, tx, end + UiTokens.S4, tw, bottom, keys);
                     }
                     Detail(s, at, m, x + w - panel, y, panel, bottom - y, keys);
                     return;

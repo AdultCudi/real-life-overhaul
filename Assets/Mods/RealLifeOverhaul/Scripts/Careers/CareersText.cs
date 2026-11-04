@@ -202,6 +202,9 @@ namespace RealLifeOverhaul.Careers
             return Fill("reallife_work_hours", "days", DaySpan(p.Days), "from", Hour(p.Hour), "to", Hour((p.Hour + p.Hours) % 24));
         }
 
+        /// <summary>A profession's working hours alone, for a table's cell: "09:00 to 17:00".</summary>
+        public static string HourSpan(Profession p) => T("reallife_career_row_hours", "from", Hour(p.Hour), "to", Hour((p.Hour + p.Hours) % 24));
+
         /// <summary>A profession's working week: "Mon, Tue, Wed, Thu, Fri, 09:00 to 17:00".</summary>
         public static string Hours(Profession p)
         {

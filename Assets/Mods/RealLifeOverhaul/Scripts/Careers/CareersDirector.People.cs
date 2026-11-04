@@ -156,12 +156,6 @@ namespace RealLifeOverhaul.Careers
             {
                 return true;
             }
-            Standing now = StandingNow();
-            if (now.Measured && now.Teamwork < PostFilterRules.PromotionTeamwork)
-            {
-                TeamworkBlocks(j.Post.Employer, now.Teamwork, PostFilterRules.PromotionTeamwork);
-                return false;   // an employer does not promote someone the shift does not get on with, whoever else is up for the post
-            }
             bool mine = StandingRules.Contest(f, j.Post.Rank, Math.Max(0, j.Def.Ranks.Length - 1), day, StudySeed + day, Names, out Peer rival);
             TagPeople(f);
             if (!mine)

@@ -303,7 +303,9 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Portrait(s, at, x, ty, face, p.Name, UiColour.HueOf(p.Name ?? string.Empty), p.Ring);
             }
             float right = string.IsNullOrEmpty(p.Right) ? 0f : Math.Min(w * 0.3f, UiTextRules.Width(p.Right, UiStyle.BodyStrong) + UiTokens.S1);
-            float tx = x + face + UiTokens.S3, tw = w - face - UiTokens.S3 - right - (right > 0f ? UiTokens.S2 : 0f);
+            float star = UiTokens.IconSmall, starsW = p.Halves >= 0 ? 5f * (star + UiTokens.Hairline * 2f) + UiTokens.S2 : 0f;
+            float chipW = string.IsNullOrEmpty(p.Chip) ? 0f : Math.Min(w * 0.34f, UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(p.Chip, UiStyle.SmallStrong) + UiTokens.S1));
+            float tx = x + face + UiTokens.S3, tw = w - face - UiTokens.S3 - right - (right > 0f ? UiTokens.S2 : 0f) - starsW - (chipW > 0f ? chipW + UiTokens.S2 : 0f);
             float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
             float top = y + (PersonLine - lh - sh) / 2f;
             UiDraw.Text(s, at, tx, top, tw, UiStyle.Title, UiRole.Text, p.Name, UiFlags.Truncate | UiFlags.Middle);
@@ -311,6 +313,16 @@ namespace RealLifeOverhaul.Ui
             if (right > 0f)
             {
                 UiDraw.TextMiddle(s, at, x + w - right, y, PersonLine, right, UiStyle.BodyStrong, UiRole.Text, p.Right, UiFlags.Right | UiFlags.Truncate);
+            }
+            float edge = x + w - right - (right > 0f ? UiTokens.S2 : 0f);
+            if (p.Halves >= 0)
+            {
+                UiDraw.Stars(s, at, edge - starsW + UiTokens.S2, y + (PersonLine - star) / 2f, star, p.Halves);
+                edge -= starsW;
+            }
+            if (chipW > 0f)
+            {
+                UiDraw.Chip(s, at, edge - chipW, y + (PersonLine - UiTokens.Badge - UiTokens.S1) / 2f, p.Chip, p.ChipTone, chipW);
             }
             return PersonLine;
         }

@@ -8,7 +8,6 @@ namespace RealLifeOverhaul.Careers
     public static class PostFilterRules
     {
         public const int NearMetres = 1200;   // as the crow flies from the home's door
-        public const int PromotionTeamwork = 50;   // standing with colleagues a step up asks: at least the middle (StandingRules.TeamworkOf(0)), since a disliked player is not promoted
 
         /// <summary>Near the home: within <see cref="NearMetres"/>, or work done from home. A post whose place is unknown (-1) is not near.</summary>
         public static bool Near(int metres, bool remote) => remote || (metres >= 0 && metres <= NearMetres);

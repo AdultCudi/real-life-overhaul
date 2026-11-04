@@ -45,6 +45,9 @@ namespace RealLifeOverhaul.Ui
         public UiIcon Icon = UiIcon.None;   // a glyph on a tile instead of a face (a thing, not a person)
         public UiRole Ring = UiRole.None;
         public WorkAct Open;        // pressing them opens their page; null for none
+        public string Chip;         // a chip before the figure ("Rival for the post"); null for none
+        public UiRole ChipTone = UiRole.Warn;
+        public int Halves = -1;     // a rating in halves of five stars, drawn as stars before the figure; -1 for none
     }
 
     /// <summary>What a section of a detail is made of.</summary>
@@ -122,6 +125,7 @@ namespace RealLifeOverhaul.Ui
         public string Sentence;                // words under the head
         public readonly List<KeyValuePair<string, string>> Figures = new List<KeyValuePair<string, string>>(4);   // a grid of big figures under the head
         public readonly List<WorkSection> Sections = new List<WorkSection>(6);
+        public readonly List<WorkFormBand> Bands = new List<WorkFormBand>(3);   // a page's own bands under its card (a haggle's seller and listings)
         public readonly List<WorkAct> Acts = new List<WorkAct>(4);
         public WorkAct Locate;                 // the row's own link to the map: the glyph at its right in a table
         public WorkAct Open;                   // pressing the row opens a page of its own (a person)
@@ -276,6 +280,8 @@ namespace RealLifeOverhaul.Ui
         public bool Sub;                               // a sub page (a person, a haggle): Back steps out of it
         public WorkRow Haggle;                         // a haggle's card, when one is open
         public string NoteLead, NoteText;
+        /// <summary>Bands under the page's main part, in up to three columns: related lists, meters, the person. They have no buttons of their own; what fills a page's foot is facts.</summary>
+        public readonly List<WorkFormBand> Below = new List<WorkFormBand>(3);
         public readonly List<KeyValuePair<string, string>> Stats = new List<KeyValuePair<string, string>>(4);   // figures that sum a short list, drawn in a strip under it
     }
 

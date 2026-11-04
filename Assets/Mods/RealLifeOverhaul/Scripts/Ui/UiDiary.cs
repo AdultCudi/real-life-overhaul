@@ -9,6 +9,7 @@ namespace RealLifeOverhaul.Ui
         public UiIcon Icon;      // its kind (money, an appointment, the city), in the glyph's own colour
         public UiRole Tint;      // None for the icon's own
         public string Title;     // "Rent to Hudson Realty"
+        public string Short;     // what a cell of the grid says in the room it has (a class's own name); null: the title
         public string Value;     // at its right in the chosen day's rows: "$1,240", "09:00"; null for none
         public string Action;    // the link under it that deals with it ("Open the bank"); null when nothing does
         public string Date;      // in the days ahead: its date and weekday as written ("3 Tue"); null for the day of the month and the grid's weekday
@@ -158,7 +159,7 @@ namespace RealLifeOverhaul.Ui
             {
                 ref UiDiaryEntry entry = ref m.Entries[first + i];
                 UiDraw.Icon(s, inside, lx, ly + (EntryLine - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, entry.Icon, entry.Tint, UiFlags.Middle, true);
-                UiDraw.TextMiddle(s, inside, lx + UiTokens.IconSmall + UiTokens.S1, ly, EntryLine, lw - UiTokens.IconSmall - UiTokens.S1, UiStyle.Small, UiRole.Text, entry.Title,
+                UiDraw.TextMiddle(s, inside, lx + UiTokens.IconSmall + UiTokens.S1, ly, EntryLine, lw - UiTokens.IconSmall - UiTokens.S1, UiStyle.Small, UiRole.Text, string.IsNullOrEmpty(entry.Short) ? entry.Title : entry.Short,
                     UiFlags.Truncate);
                 ly += EntryLine;
             }

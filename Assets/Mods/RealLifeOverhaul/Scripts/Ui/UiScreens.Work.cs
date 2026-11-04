@@ -115,7 +115,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_work_n_people", "reallife_work_n_weeks", "reallife_work_n_years", "reallife_work_nav_applications", "reallife_work_nav_cv",
                 "reallife_work_nav_jobs", "reallife_work_nav_management", "reallife_work_nav_my_job", "reallife_work_nav_own", "reallife_work_nav_professions",
                 "reallife_work_need_days", "reallife_work_need_performance", "reallife_work_need_rating", "reallife_work_need_skill_points",
-                "reallife_work_need_takes_you", "reallife_work_need_teamwork", "reallife_work_needs_course", "reallife_work_needs_licence", "reallife_work_needs_met",
+                "reallife_work_need_takes_you", "reallife_work_needs_course", "reallife_work_needs_licence", "reallife_work_needs_met",
                 "reallife_work_needs_more", "reallife_work_needs_n_more", "reallife_work_new_ad", "reallife_work_new_ad_lead", "reallife_work_next_class",
                 "reallife_work_next_shift", "reallife_work_no", "reallife_work_no_ads", "reallife_work_no_ads_title", "reallife_work_no_applicants",
                 "reallife_work_no_applicants_title", "reallife_work_no_children", "reallife_work_no_colleagues", "reallife_work_no_contracts",

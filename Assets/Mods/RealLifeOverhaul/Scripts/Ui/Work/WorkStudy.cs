@@ -334,6 +334,7 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Meter(s, at, UiDraw.Snap(rx + lw0), ry + UiDraw.SnapDown((rowH - UiTokens.Hairline - UiTokens.S1) / 2f), bw, UiTokens.S1, b.Value, UiRole.Accent);
                 UiDraw.TextMiddle(s, at, rx + colW - pad - vw, ry, rowH - UiTokens.Hairline, vw, UiStyle.BodyStrong, UiTokens.Grade(b.Value), b.Value.ToString(Inv), UiFlags.Right);
             }
+            WorkForm.Strip(s, at, t.Below, x, y + Math.Min(perColumn, t.Skills.Count) * rowH + UiTokens.S4, w, bottom, keys);
         }
 
         private static void Bar(UiScene s, UiAt at, WorkBar b, float x, float y, float w)

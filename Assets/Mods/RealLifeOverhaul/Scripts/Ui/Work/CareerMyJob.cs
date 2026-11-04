@@ -62,13 +62,8 @@ namespace RealLifeOverhaul.Ui
             }
             // right: standing, this week, recent shifts, the people on the shift, the working life
             float ry = UiAppWindow.Attributes(s, at, m.AttributesTitle, m.AttributeLabels, m.AttributeValues, rx, y, rw);
-            if (!j.SafetyKept && j.Performance >= 0)
-            {
-                ry -= UiTokens.S1;
-                int note = UiDraw.Text(s, at, rx, ry, rw, UiStyle.Small, UiRole.Text2, w.T("reallife_work_safety_note", "Safety is not tracked: the work panel keeps no record of faults in a shift."),
-                    UiFlags.Wrap | UiFlags.Truncate, 2);
-                ry = UiDraw.Snap(s.Items[note].Y + s.Items[note].H) + UiTokens.S3;
-            }
+            ry += UiTokens.S3;
+            float peersNeed = j.Peers.Count > 0 ? UiTokens.PairRow + UiTokens.S1 + j.Peers.Count * 48f + UiTokens.S3 : 0f;   // the people on the shift are all drawn: the rows above give way
             if (j.WeekHours != null || j.WeekPay != null)
             {
                 ry += WorkPanel.SectionHead(s, at, rx, ry, rw, w.T("reallife_work_this_week", "This week"), null);
@@ -86,9 +81,9 @@ namespace RealLifeOverhaul.Ui
                 }
                 ry += UiTokens.S3;
             }
-            if (j.Shifts.Count > 0 && bottom - ry > UiTokens.S16 * 3f)
+            if (j.Shifts.Count > 0 && bottom - ry - peersNeed > UiTokens.S16 * 2f)
             {
-                int most = Math.Min(Math.Min(j.Shifts.Count, 3), (int)((bottom - ry - UiTokens.S16 * 3f) / UiTokens.TableRow) + 1);
+                int most = Math.Min(Math.Min(j.Shifts.Count, 3), (int)((bottom - ry - peersNeed - UiTokens.S16 * 2f) / UiTokens.TableRow) + 1);
                 var rows = new UiAppRow[Math.Max(1, most)];
                 for (int i = 0; i < rows.Length; i++)
                 {
@@ -97,15 +92,15 @@ namespace RealLifeOverhaul.Ui
                 }
                 ry = UiAppWindow.Table(s, at, w.T("reallife_work_recent_shifts", "Recent shifts"), new[] { Col(w.T("reallife_work_col_shift", "Shift"), 0f, false, true),
                     Col(w.T("reallife_work_col_score", "Score"), 96f, true, false), Col(w.T("reallife_work_col_pay", "Pay"), 96f, true, false) }, 1, rows, UiAppWindow.MoreCommand,
-                    rx, ry, rw, Math.Min(bottom - ry, UiTokens.S16 * 6f)) + UiTokens.S3;
+                    rx, ry, rw, Math.Min(bottom - ry - peersNeed, UiTokens.S16 * 6f)) + UiTokens.S3;
             }
             if (j.Peers.Count > 0 && bottom - ry > UiTokens.S16 * 2f)
             {
                 ry += WorkPanel.SectionHead(s, at, rx, ry, rw, w.T("reallife_work_on_shift", "On shift with you"), j.Peers.Count.ToString());
-                for (int i = 0; i < j.Peers.Count && ry + 48f <= bottom; i++)
+                for (int i = 0; i < j.Peers.Count && ry + 48f <= bottom + 0.5f; i++)
                 {
                     CareerPeer c = j.Peers[i];
-                    ry += WorkPanel.PersonRow(s, at, new WorkPerson { Name = c.Name, Role = c.Tag != null ? c.Role + ", " + c.Tag : c.Role, Right = c.Score.ToString(), Ring = UiRole.Ok }, rx, ry, rw);
+                    ry += WorkPanel.PersonRow(s, at, new WorkPerson { Name = c.Name, Role = c.Role, Right = c.Score.ToString(), Ring = UiRole.Ok, Chip = c.Tag, ChipTone = c.Tone }, rx, ry, rw);
                 }
                 ry += UiTokens.S3;
             }

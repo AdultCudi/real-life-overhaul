@@ -23,7 +23,7 @@ namespace RealLifeOverhaul.Ui
     public sealed class CareerNeed { public string Words, Have; public bool Met; }
 
     /// <summary>A person beside the player: a colleague on the shift or another applicant.</summary>
-    public sealed class CareerPeer { public string Name, Role, Tag, Day; public int Score, Team; public float Hue; }
+    public sealed class CareerPeer { public string Name, Role, Tag, Day; public UiRole Tone = UiRole.Accent; public int Score, Team; public float Hue; }
 
     /// <summary>One worked shift of the recent shifts: the day, the hours, the score that day and the pay.</summary>
     public sealed class CareerShift { public string Day, Hours, Pay; public int Score; }
@@ -63,6 +63,7 @@ namespace RealLifeOverhaul.Ui
         public WorkTab Professions = new WorkTab(), Jobs = new WorkTab(), Applications = new WorkTab(), Management = new WorkTab(), Own = new WorkTab(), Cv = new WorkTab();
         public int ApplicationsWaiting;
         public bool CanRetire;
+        public readonly List<WorkFormBand> NewBelow = new List<WorkFormBand>(2);   // under a new player's page: what employers see, and the courses that open a door
     }
 
     /// <summary>
@@ -70,7 +71,7 @@ namespace RealLifeOverhaul.Ui
     /// vacancies with what each needs and who else applied), Professions, Applications, Management, Own work and the CV. Each tab builds a page of
     /// its own from its own part of the facts. Game-free (the previews and the checks lay it out).
     /// </summary>
-    public static class CareerPages
+    public static partial class CareerPages
     {
         public const int Professions = 0, Jobs = 1, Applications = 2, MyJob = 3, Management = 4, Own = 5, Cv = 6, Tabs = 7;
 
@@ -258,8 +259,9 @@ namespace RealLifeOverhaul.Ui
             UiActionModel[] actions = page.Model.Actions;
             var best = f.Best.ToArray();
             string laid = f.Laid;
+            List<WorkFormBand> below = f.NewBelow;
             string title = w.T("reallife_career_job_none_title", "No job");
-            string line = laid ?? w.T("reallife_career_job_none", "No job. Apply for one under Jobs.");
+            string line = laid ?? w.T("reallife_work_new_line", "Employers answer a day or two after you apply. Start with the posts that suit what you can do now.");
             string bestTitle = w.T("reallife_career_best_title", "Where to start");
             string stepsTitle = w.T("reallife_career_how_title", "How a post is won");
             string[] steps =
@@ -273,14 +275,13 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Text(s, at, x, y, cw, UiStyle.Number, UiRole.Text, title, UiFlags.Truncate);
                 int id = UiDraw.Text(s, at, x, y + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Number)) + UiTokens.S2, cw, UiStyle.Body, UiRole.Text2, line, UiFlags.Wrap | UiFlags.Truncate, 2);
                 float cy = UiDraw.Snap(s.Items[id].Y + s.Items[id].H) + UiTokens.S4;
-                float right = x + cw;
-                for (int i = actions.Length - 1; i >= 0; i--)
+                float left = x;
+                for (int i = 0; i < actions.Length; i++)
                 {
                     UiActionModel a = actions[i];
                     float bw = UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, a.Key, keys);
-                    right -= bw;
-                    UiDraw.Button(s, at, right, cy, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, a.Command, a.Arg, a.Disabled);
-                    right -= UiTokens.S3;
+                    UiDraw.Button(s, at, left, cy, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, a.Command, a.Arg, a.Disabled);
+                    left += bw + UiTokens.S3;
                 }
                 cy += UiTokens.Control + UiTokens.S5;
                 float ly = cy + WorkPanel.SectionHead(s, at, x, cy, lw, bestTitle, null);
@@ -316,6 +317,7 @@ namespace RealLifeOverhaul.Ui
                         UiFlags.Truncate);
                     ry += UiTokens.Control + UiTokens.S1;
                 }
+                WorkForm.Strip(s, at, below, x, Math.Max(ly, ry) + UiTokens.S4, cw, bottom, keys);
             };
             return page;
         }

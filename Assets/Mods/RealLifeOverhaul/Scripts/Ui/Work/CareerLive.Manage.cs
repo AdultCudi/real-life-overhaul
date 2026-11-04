@@ -420,7 +420,39 @@ namespace RealLifeOverhaul.Ui
                     "No contract is on offer. Clients ask once you have a profession to offer.") });
             }
             form.Right.Add(contracts);
+            OwnFoot(w, form);
             return t;
+        }
+
+        // Own work's record: the contracts finished, what they earned and the practice's name, and the last three finished.
+        private static void OwnFoot(WorkFile w, WorkFormModel form)
+        {
+            var clients = new List<string>(3);
+            var fees = new List<string>(3);
+            var days = new List<string>(3);
+            int finished = 0;
+            long earned = 0;
+            for (int i = w.Contracts.Count - 1; i >= 0; i--)
+            {
+                RealLifeOverhaul.Careers.Contract c = w.Contracts[i];
+                if (c.At != ContractStep.Done)
+                {
+                    continue;
+                }
+                finished++;
+                earned += Prices.At((int)c.Fee);
+                if (clients.Count < 3)
+                {
+                    clients.Add(c.Client);
+                    fees.Add(CareersText.Money(Prices.At((int)c.Fee)));
+                    days.Add(CareersText.Day(c.Due));
+                }
+            }
+            if (finished > 0 || w.Practice.Open)
+            {
+                CareerPages.OwnBands(Words(), form, finished, (int)Math.Min(int.MaxValue, earned), w.Practice.Open ? Math.Max(0, Math.Min(100, w.Practice.Reputation)) : 0,
+                    clients.ToArray(), fees.ToArray(), days.ToArray());
+            }
         }
 
         // ------------------------------------------------------------------------------------------------- the CV
@@ -428,60 +460,61 @@ namespace RealLifeOverhaul.Ui
         private WorkTab CvTab(CareersDirector d, WorkFile w, StudyFile study)
         {
             UtilitiesWords words = W;
-            var t = new WorkTab { Shape = WorkShape.Reader };
-            var blocks = new List<UiReaderBlock>(24);
-            blocks.Add(new UiReaderBlock { Kind = UiReaderKind.Heading, Text = words.T("reallife_work_cv_working_life", "Working life") });
+            var t = new WorkTab { Shape = WorkShape.Form };
+            var spells = new List<CareerSpell>(6);
             if (w.Job != null)
             {
-                blocks.Add(new UiReaderBlock { Kind = UiReaderKind.Paragraph, Text = CareersText.Title(w.Job.Post.Prof, w.Job.Post.Rank) + ", " + CareersText.Employer(w.Job.Post.Employer) + ". "
-                    + CareersText.Day(w.Job.Hired) + " " + words.T("reallife_work_cv_to_now", "to now") + "." });
+                spells.Add(new CareerSpell { Title = CareersText.Title(w.Job.Post.Prof, w.Job.Post.Rank), Employer = CareersText.Employer(w.Job.Post.Employer),
+                    Dates = CareersText.Day(w.Job.RankDay > 0 ? w.Job.RankDay : w.Job.Hired) + " " + words.T("reallife_work_cv_to_now", "to now"), Icon = WorkGlyphs.Profession(w.Job.Post.Prof), Current = true });
             }
-            for (int i = w.History.Count - 1; i >= 0; i--)
+            int good = 0;
+            for (int i = w.History.Count - 1; i >= 0 && spells.Count < 6; i--)
             {
                 Spell s = w.History[i];
-                blocks.Add(new UiReaderBlock { Kind = UiReaderKind.Paragraph, Text = CareersText.Title(s.Prof, s.Top) + ", " + CareersText.Employer(s.Employer) + ". " + CareersText.Day(s.From) + " "
-                    + words.T("reallife_work_cv_to", "to") + " " + CareersText.Day(s.To) + ". " + CareersText.Fill("reallife_career_row_spell",
-                        "leaving", CareersText.Leaving(s.Leaving), "reference", CareersText.Reference(s.Reference)) });
+                good += s.Reference >= 3 ? 1 : 0;
+                spells.Add(new CareerSpell { Title = CareersText.Title(s.Prof, s.Top), Employer = CareersText.Employer(s.Employer),
+                    Dates = CareersText.Day(s.From) + " " + words.T("reallife_work_cv_to", "to") + " " + CareersText.Day(s.To),
+                    Note = CareersText.Fill("reallife_career_row_spell", "leaving", CareersText.Leaving(s.Leaving), "reference", CareersText.Reference(s.Reference)),
+                    Icon = WorkGlyphs.Profession(s.Prof), Tone = s.Reference >= 3 ? UiRole.Ok : UiRole.Warn });
             }
-            if (w.Job == null && w.History.Count == 0)
-            {
-                blocks.Add(new UiReaderBlock { Kind = UiReaderKind.Paragraph, Text = words.T("reallife_work_cv_none", "No job yet. Your jobs and references appear here as you earn them.") });
-            }
-            bool any = false;
-            for (int i = 0; i < study.Results.Count; i++)
+            var quals = new List<CareerSpell>(5);
+            for (int i = 0; i < study.Results.Count && quals.Count < 5; i++)
             {
                 Enrolment e = study.Results[i];
                 if (e.Def != null && e.Stage == (int)EnrolStage.Passed)
                 {
-                    if (!any)
-                    {
-                        blocks.Add(new UiReaderBlock { Kind = UiReaderKind.Heading, Text = words.T("reallife_work_cv_qualifications", "Qualifications") });
-                        any = true;
-                    }
-                    blocks.Add(new UiReaderBlock { Kind = UiReaderKind.Bullet, Text = CareersText.Course(e.Course) + ", " + CareersText.Day(e.Ended) + ". " + CareersText.Grade(e.Def, e.Grade) });
+                    quals.Add(new CareerSpell { Title = CareersText.Course(e.Course), Employer = CareersText.Day(e.Ended), Dates = CareersText.Grade(e.Def, e.Grade), Icon = WorkGlyphs.Course(e.Def) });
                 }
             }
-            blocks.Add(new UiReaderBlock { Kind = UiReaderKind.Heading, Text = words.T("reallife_work_cv_pension", "Pension") });
-            blocks.Add(new UiReaderBlock { Kind = UiReaderKind.Paragraph, Text = words.F("reallife_work_cv_pension_line", "Your pension pot holds {pot}.", "pot", CareersText.Cents(w.Pension))
-                + (w.Retired > 0 ? " " + CareersText.T("reallife_life_retired_on", "day", CareersText.Day(w.Retired)) : string.Empty) });
+            var skills = new List<string>(4);
+            var values = new List<int>(4);
+            var order = new List<int>(Skills.Count);
+            for (int s = 0; s < Skills.Count; s++)
+            {
+                if (StudyRules.Points(study, s) > 0)
+                {
+                    order.Add(s);
+                }
+            }
+            order.Sort((a, b) => StudyRules.Points(study, b).CompareTo(StudyRules.Points(study, a)));
+            for (int i = 0; i < order.Count && i < 4; i++)
+            {
+                skills.Add(CareersText.Skill(order[i]));
+                values.Add(Math.Min(100, StudyRules.Points(study, order[i])));
+            }
             int jobs = (w.Job != null ? 1 : 0) + w.History.Count;
             long earned = w.Job != null ? w.Job.Earned : 0;
+            int days = w.Job != null ? Math.Max(0, SaveGameManager.Current.Day - w.Job.Hired) : 0;
             for (int i = 0; i < w.History.Count; i++)
             {
                 earned += w.History[i].Earned;
+                days += Math.Max(0, w.History[i].To - w.History[i].From);
             }
-            t.Reader = new UiReaderModel { Title = _facts.Player, Picture = UiIcon.Person, PictureCaption = words.T("reallife_work_cv_caption", "Your working life, as an employer reads it"),
-                FactsTitle = words.T("reallife_work_cv_in_short", "In short"), Blocks = blocks.ToArray(),
-                Facts = new[] { new UiPairModel { Key = words.T("reallife_work_cv_jobs_held", "Jobs held"), Value = jobs.ToString(Inv) },
-                    new UiPairModel { Key = words.T("reallife_work_cv_earned", "Earned"),
-                    Value = CareersText.Cents(earned) }, new UiPairModel { Key = words.T("reallife_life_sum_pension", "Pension pot"), Value = CareersText.Cents(w.Pension) } } };
             string why = d.CanRetire();
             _facts.CanRetire = why == null;
-            if (w.Retired <= 0)
-            {
-                t.Acts.Add(Act(CareerAct.Retire, 0, words.T("reallife_life_button_retire", "Retire"), UiButtonKind.Destructive, UiIcon.SignOut, false,
-                    why == null ? null : words.T(why, "You cannot retire yet.")));
-            }
+            CareerPages.CvPage(words, t, _facts.Player, w.Job != null ? CareersText.Title(w.Job.Post.Prof, w.Job.Post.Rank) : null, w.Job != null ? CareersText.Employer(w.Job.Post.Employer) : null,
+                spells, quals, jobs, days / 30, CareersText.Cents(earned), good, CareersText.Cents(w.Pension), CareersGame.AgeYears(), LifeRules.RetireEarlyAge, skills.ToArray(), values.ToArray(),
+                why == null ? null : words.T(why, "You cannot retire yet."), w.Retired > 0);
             return t;
         }
 

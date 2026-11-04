@@ -14,9 +14,10 @@ namespace RealLifeOverhaul.Ui
 
         public static void Lay(UiScene s, UiAt at, WorkRow r, List<WorkAct> acts, UiActionModel[] choices, WorkAmount[] amounts, string why, float x, float y, float w, float bottom, IUiKeys keys)
         {
-            // the card is the page: the seller at the left, the offer at the right, the choices at the foot
-            float cw = w, cx = x, cy = y, ch = bottom - y;
+            // the card is as high as what it says: the seller at the left, the offer at the right, the choices at the foot; the seller's other things stand under it
+            float cw = w, cx = x, cy = y;
             float inner = cw - Side - UiTokens.S8 * 2f;
+            float ch = Math.Min(bottom - y, Need(r, choices.Length, amounts.Length > 0, why, inner));
             int card = UiDraw.Box(s, at, cx, cy, cw, ch, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Decor);
             UiAt on = at.In(card);
             UiDraw.Box(s, on, cx, cy, Side, ch, UiRole.Band, UiRole.None, -UiTokens.RadiusPanel, UiFlags.Decor);
@@ -88,6 +89,31 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDraw.Text(s, on, tx, ty, inner, UiStyle.Small, UiRole.WarnText, why, UiFlags.Truncate);
             }
+            WorkForm.Strip(s, at, r.Bands, x, cy + ch + UiTokens.S4, w, bottom, keys);
+        }
+
+        // The card's height: the same steps the layout takes, down to the last choice and a line for what stops one.
+        private static float Need(WorkRow r, int choices, bool offer, string why, float inner)
+        {
+            float h = UiTokens.S8;
+            h += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.AppTitle)) + UiTokens.S4;
+            if (!string.IsNullOrEmpty(r.Sentence))
+            {
+                h += UiTextRules.WrappedHeight(r.Sentence, UiStyle.Body, inner, 3) + UiTokens.S4;
+            }
+            if (r.Figures.Count > 0)
+            {
+                h += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Number)) + UiTokens.S5;
+            }
+            if (offer)
+            {
+                h += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2 + UiTokens.Control + UiTokens.S5;
+            }
+            h += choices * (Choice + UiTokens.S2);
+            h += string.IsNullOrEmpty(why) ? 0f : UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
+            float side = UiTokens.S8 + UiTokens.AvatarHero + UiTokens.S4 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)) + UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small))
+                + UiTokens.S3 + UiTokens.Badge + UiTokens.S8;
+            return UiDraw.Snap(Math.Max(side, h + UiTokens.S6));
         }
     }
 }

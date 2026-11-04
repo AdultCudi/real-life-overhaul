@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class WorkCards
     {
-        public const float Least = 232f, Course = 236f, Listing = 228f, Tile = 112f;
+        public const float Least = 232f, Course = 260f, Listing = 228f, Tile = 112f;
 
         public static void Lay(UiScene s, UiAt at, WorkCardsModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
@@ -164,7 +164,7 @@ namespace RealLifeOverhaul.Ui
             cy += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2;
             if (!string.IsNullOrEmpty(r.Line))
             {
-                UiDraw.Text(s, at, x + pad, cy, iw, UiStyle.Body, UiRole.Text, r.Line, UiFlags.Truncate);
+                UiDraw.Text(s, at, x + pad, cy, iw, UiStyle.Body, UiRole.Text, FitWords(r.Line, UiStyle.Body, iw, 2), UiFlags.Wrap, 2);
             }
             float foot = y + h - pad - UiDraw.Snap(UiTextRules.LineHeight(UiStyle.BodyStrong));
             float next = UiDraw.SnapDown(foot - UiTokens.S3 * 2f - UiDraw.Snap(UiTextRules.LineHeight(UiStyle.BodyStrong)) - UiTokens.S1);
@@ -176,6 +176,31 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Box(s, at, x + pad, foot - UiTokens.S3, iw, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             UiDraw.Text(s, at, x + pad, foot, iw * 0.5f, UiStyle.Body, quiet, r.FootLeft, UiFlags.Truncate);
             UiDraw.Text(s, at, x + w - pad - iw * 0.5f, foot, iw * 0.5f, UiStyle.BodyStrong, UiRole.Text, r.FootRight, UiFlags.Right | UiFlags.Truncate);
+        }
+
+        /// <summary>Whole words that fit the lines, with "..." after the last when some are left out: a word is never cut in the middle.</summary>
+        public static string FitWords(string text, UiStyle style, float width, int lines)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return text;
+            }
+            float limit = lines * UiDraw.Snap(UiTextRules.LineHeight(style)) + 0.5f;
+            if (UiTextRules.WrappedHeight(text, style, width, lines + 1) <= limit)
+            {
+                return text;
+            }
+            string[] words = text.Split(' ');
+            string best = words[0];
+            for (int i = 1; i < words.Length; i++)
+            {
+                if (UiTextRules.WrappedHeight(best + " " + words[i] + "...", style, width, lines + 1) > limit)
+                {
+                    break;
+                }
+                best += " " + words[i];
+            }
+            return best.TrimEnd('.', ',', ';', ':') + "...";
         }
 
         // A listing: the picture or glyph of the thing on a tile over the card's width, name, price and how far it stands from its worth, the seller.

@@ -33,6 +33,51 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        /// <summary>
+        /// Bands side by side under a page's main part (up to three columns), each as high as its rows: what fills the foot of a short page. A band that
+        /// does not fit the room is left out whole. Returns the y under the tallest.
+        /// </summary>
+        public static float Strip(UiScene s, UiAt at, List<WorkFormBand> bands, float x, float y, float w, float bottom, IUiKeys keys)
+        {
+            if (bands == null || bands.Count == 0)
+            {
+                return y;
+            }
+            int cols = Math.Min(w >= 880f ? 3 : 2, bands.Count);
+            float gap = UiTokens.S4, cw = UiDraw.SnapDown((w - gap * (cols - 1)) / cols), end = y;
+            var none = new UiActionModel[0];
+            var noAmounts = new WorkAmount[0];
+            for (int i = 0; i < bands.Count && i < cols * 2; i++)
+            {
+                int col = i % cols;
+                float top = y + RowEnd(bands, cols, i, cw);
+                float h = Height(bands[i], cw);
+                if (top + h > bottom + 0.5f)
+                {
+                    continue;
+                }
+                Band(s, at, bands[i], none, noAmounts, x + col * (cw + gap), top, cw, h, keys);
+                end = Math.Max(end, top + h);
+            }
+            return end;
+        }
+
+        // The y offset of band i's row from the strip's top: the tallest band of the rows above it, and a gap.
+        private static float RowEnd(List<WorkFormBand> bands, int cols, int i, float cw)
+        {
+            float off = 0f;
+            for (int row = 0; row < i / cols; row++)
+            {
+                float tall = 0f;
+                for (int k = row * cols; k < (row + 1) * cols && k < bands.Count; k++)
+                {
+                    tall = Math.Max(tall, Height(bands[k], cw));
+                }
+                off += tall + UiTokens.S4;
+            }
+            return off;
+        }
+
         private static void Column(UiScene s, UiAt at, List<WorkFormBand> bands, UiActionModel[] actions, WorkAmount[] amounts, float x, float y, float w, float bottom, IUiKeys keys)
         {
             for (int i = 0; i < bands.Count; i++)

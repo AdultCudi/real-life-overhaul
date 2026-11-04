@@ -582,8 +582,8 @@ internal static partial class Program
         UiChartModel two = CareerMyJob.Chart(shorter, EnglishWords);
         Check(two.Series.Length == 2 && two.Series[1].Values.Length == 5 && two.Series[1].Values[4] == 62f,
             "work chart: a colleague with fewer weeks than the player still has a line, ending in the same week");
-        Check(PostFilterRules.PromotionTeamwork == 50 && StandingRules.TeamworkOf(0) == PostFilterRules.PromotionTeamwork,
-            "work teamwork: the bar a promotion asks is the middle standing, which a player nobody has helped or crossed meets");
+        Check(StandingRules.TeamworkOf(0) == 50 && StandingRules.TeamworkOf(-LifeRules.FavourMost) == 0 && StandingRules.TeamworkOf(LifeRules.FavourMost) == 100,
+            "work teamwork: the standing with colleagues is shown from Job.Favour, the middle for none (no promotion gate rests on it: the owner's decision of 4 Nov)");
     }
 
     private static void WkSaves()
