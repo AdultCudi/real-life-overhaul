@@ -36,7 +36,8 @@ internal static partial class Program
         { "StocksScreen", new[] { StocksLay.Shares, UiDataTable.First + UiDataTable.Search, StocksSheetLay.Type } },
         { "ItemsListScreen", new[] { UiItemsList.TypeCommand } },
         { "UiPartsGalleryScreen", new[] { UiPartsGallery.Field } },
-        { "FlareScreen", new[] { FlareFace.FieldCommand } }
+        { "FlareScreen", new[] { FlareFace.FieldCommand } },
+        { "FinanceScreen", new[] { FinanceFace.AmountType } }
     };
 
     private static void UiCaretChecks()

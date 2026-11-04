@@ -5,7 +5,6 @@ using System.IO;
 using System.Text;
 using RealLifeOverhaul.DaySeries;
 using RealLifeOverhaul.Economy;
-using RealLifeOverhaul.Flare;
 using RealLifeOverhaul.Rivals;
 
 namespace RealLifeOverhaul.Ui
@@ -16,7 +15,6 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public sealed class MoneyLive : IMoneySource
     {
-        public static readonly MoneyLive FinanceLive = new MoneyLive(MoneyApp.Finance);
         public static readonly MoneyLive BanksLive = new MoneyLive(MoneyApp.Banks);
         public static readonly MoneyLive OwnLive = new MoneyLive(MoneyApp.OwnBank);
 
@@ -24,7 +22,6 @@ namespace RealLifeOverhaul.Ui
         private readonly MoneyApp _app;
         private readonly float[] _chart = new float[12];
         private int _amount = 250000;
-        private int _rival;
         private int _local;
 
         private MoneyLive(MoneyApp app) { _app = app; }
@@ -35,13 +32,9 @@ namespace RealLifeOverhaul.Ui
         {
             model.App = _app;
             model.Icon = _app == MoneyApp.Banks ? UiIcon.Bank : _app == MoneyApp.OwnBank ? UiIcon.PiggyBank : UiIcon.Wallet;
-            bool act = (_app == MoneyApp.Finance && (model.Tab == 1 || model.Tab == 2)) || (_app == MoneyApp.Banks && model.Tab == 3);
+            bool act = _app == MoneyApp.Banks && model.Tab == 3;
             model.Prompts = Prompts(act);
-            if (_app == MoneyApp.Finance)
-            {
-                FillFinance(model);
-            }
-            else if (_app == MoneyApp.Banks)
+            if (_app == MoneyApp.Banks)
             {
                 FillBanks(model);
             }
@@ -65,69 +58,11 @@ namespace RealLifeOverhaul.Ui
                 _local++;
                 return true;
             }
-            if (command == MoneyCommands.Choice)
-            {
-                return Answer(arg);
-            }
-            if (command == MoneyCommands.Export)
-            {
-                return Export(model);
-            }
-            if (command == MoneyCommands.Follow)
-            {
-                return FollowTycoon();
-            }
-            if (command == MoneyCommands.Link)
-            {
-                return EconomyBridges.OpenEconomyApp != null && EconomyBridges.OpenEconomyApp(0);
-            }
-            if (command == UiDataTable.First + UiDataTable.Row && _app == MoneyApp.Finance && model.Tab == 5)
-            {
-                _rival = arg;
-                _local++;
-                return true;
-            }
             if (command == UiAppWindow.ActionCommand)
             {
                 return Act(model);
             }
             return false;
-        }
-
-        private void FillFinance(MoneyModel model)
-        {
-            model.Title = T("reallife_econ_app");
-            model.Across = false;
-            model.Nav = new[]
-            {
-                Nav("reallife_econ_tab_overview", UiIcon.IdCard), Nav("reallife_econ_tab_credit", UiIcon.Star),
-                Nav("reallife_econ_tab_borrow", UiIcon.Bank), Nav("reallife_econ_tab_cash", UiIcon.ChartLineUp),
-                Nav("reallife_econ_tab_accounts", UiIcon.Wallet), Nav("reallife_money_nav_rivals", UiIcon.Trophy),
-                Nav("reallife_fame_title", UiIcon.Star)
-            };
-            model.Tab = Clamp(model.Tab, 6);
-            if (model.Tab == 0)
-            {
-                Overview(model);
-            }
-            else if (model.Tab == 1 || model.Tab == 2)
-            {
-                Offer(model);
-            }
-            else if (model.Tab == 5)
-            {
-                LeaguePage(model);
-            }
-            else if (model.Tab == 6)
-            {
-                model.Shape = MoneyShape.Factors;
-                Factors(model);
-                model.Note = Threshold();
-            }
-            else
-            {
-                Flow(model, model.Tab == 4);
-            }
         }
 
         private void FillBanks(MoneyModel model)
@@ -188,94 +123,6 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        private void Overview(MoneyModel model)
-        {
-            int score = CreditLedger.Value;
-            model.Shape = MoneyShape.Overview;
-            model.Profile = new UiProfileModel
-            {
-                Name = T("reallife_money_you"), Hue = 28f, Role = T(CreditCatalogue.GradeKeys[(int)CreditCatalogue.GradeOf(score)]), RoleIcon = UiIcon.IdCard,
-                Status = score.ToString(Inv), StatusTone = score >= CreditCatalogue.LendingThreshold ? UiRole.Ok : UiRole.Warn,
-                FactLabels = new[] { T("reallife_money_owed"), T("reallife_money_cash") },
-                FactValues = new[] { Money(OwedTotal()), Money(RivalGame.Cash) },
-                RatingLabel = "Score", Rating = Stars(score)
-            };
-            model.Note = Leaves();
-            model.DonutTitle = T("reallife_money_owed");
-            OwedSplit(out float[] shares, out string[] labels, out string[] values);
-            model.Donut = shares; model.DonutLabels = labels; model.DonutValues = values;
-            model.Actions = new[]
-            {
-                new UiActionModel
-                {
-                    Label = T("reallife_money_economy"),
-                    Kind = UiButtonKind.Secondary,
-                    Icon = UiIcon.Locate,
-                    Key = UiAction.Option,
-                    Command = MoneyCommands.Link
-                }
-            };
-            model.Table = Debts();
-        }
-
-        private void Offer(MoneyModel model)
-        {
-            int pay = DaySeriesRules.DailyPayment(_amount, 480, 365 * 5);
-            model.Shape = MoneyShape.Offer;
-            model.Hero = new UiHeroModel { Icon = UiIcon.Bank, Kicker = T("reallife_econ_tab_borrow"), Title = BankName(0), Line = "4.8%", Note = Money(pay), NoteIcon = UiIcon.Coin, Progress = -1 };
-            model.Amount = Money(_amount); model.CanLess = _amount > 1000; model.CanMore = _amount < 5000000;
-            model.Note = T("reallife_money_all", "all", Money((long)pay * 365 * 5), "interest", Money(DaySeriesRules.Interest(_amount, pay, 365 * 5)));
-            model.Note2 = T("reallife_money_adds", "add", Money(pay), "already", Money(DailyOut()));
-            model.Actions = new[] { new UiActionModel { Label = T("reallife_money_take"), Kind = UiButtonKind.Primary, Icon = UiIcon.Check, Key = UiAction.Alt, Command = UiAppWindow.ActionCommand } };
-            model.Table = LoanFeed();
-        }
-
-        private void Flow(MoneyModel model, bool accounts)
-        {
-            model.Shape = MoneyShape.Flow;
-            model.Chart = Chart(DaySeriesCatalogue.Cash, T("reallife_money_where"));
-            model.Note = T("reallife_money_coming");
-            model.Statement = CashStatement(accounts);
-            model.Actions = new[]
-            {
-                new UiActionModel
-                {
-                    Label = T("reallife_money_export"),
-                    Kind = UiButtonKind.Secondary,
-                    Icon = UiIcon.ClipboardText,
-                    Key = UiAction.Option,
-                    Command = MoneyCommands.Export
-                }
-            };
-        }
-
-        private void LeaguePage(MoneyModel model)
-        {
-            model.Shape = MoneyShape.League;
-            model.Table = Rich();
-            model.Profile = new UiProfileModel
-            {
-                Name = RivalCatalogue.Tycoons[0].Name, Hue = 320f, Role = RivalCatalogue.Tycoons[0].Holding, RoleIcon = UiIcon.Rocket,
-                Status = T("reallife_money_expanding"), StatusTone = UiRole.Warn, Rating = 6, RatingLabel = "Place",
-                FactLabels = new[] { T("reallife_money_worth") }, FactValues = new[] { Money(0L) }
-            };
-            model.Chart = Chart(DaySeriesCatalogue.WorthYou, T("reallife_money_worth"));
-            model.Choices = new[] { T("reallife_money_cut"), T("reallife_money_campaign"), T("reallife_money_hold") };
-            string line = T("reallife_money_forecast", "count", DaySeriesRules.CampaignForecast(0, 40).ToString(Inv));
-            model.ChoiceBody = new[] { line, line, T("reallife_money_hold") };
-            model.Actions = new[]
-            {
-                new UiActionModel
-                {
-                    Label = T("reallife_money_follow"),
-                    Kind = UiButtonKind.Secondary,
-                    Icon = UiIcon.Megaphone,
-                    Key = UiAction.Option,
-                    Command = MoneyCommands.Follow
-                }
-            };
-        }
-
         private void ApplyPage(MoneyModel model)
         {
             model.Shape = MoneyShape.Apply;
@@ -331,87 +178,12 @@ namespace RealLifeOverhaul.Ui
 
         private bool Act(MoneyModel model)
         {
-            if (_app == MoneyApp.Finance && (model.Tab == 1 || model.Tab == 2) && EconomyDirector.Instance != null)
-            {
-                EconomyDirector.Instance.KitBorrow(_amount);
-                return true;
-            }
             if (_app == MoneyApp.Banks && model.Tab == 3 && BanksDirector.Instance != null)
             {
                 BanksDirector.Instance.KitApply(_amount);
                 return true;
             }
             return false;
-        }
-
-        private bool Answer(int which)
-        {
-            DaySeriesBook book = DaySeriesDirector.Book;
-            int day = RivalGame.Day;
-            if (book == null || day <= 0)
-            {
-                return false;
-            }
-            if (which == 0)
-            {
-                book.CutFrom = day;
-                book.CutUntil = day + DaySeriesRules.CutDays;
-                if (CompanyDirector.Instance != null)
-                {
-                    CompanyDirector.Instance.CutPlans(DaySeriesRules.CutPercent);
-                }
-            }
-            else if (which == 2 && book.CutFrom > 0)
-            {
-                if (CompanyDirector.Instance != null)
-                {
-                    CompanyDirector.Instance.ReleaseCut(book.HeldAlready);
-                }
-                book.CutFrom = 0;
-                book.CutUntil = 0;
-            }
-            _local++;
-            return true;
-        }
-
-        private bool FollowTycoon()
-        {
-            if (FlareDirector.Instance == null || _rival < 0 || _rival >= RivalCatalogue.TycoonCount)
-            {
-                return false;
-            }
-            FlareDirector.Instance.Follow("t:" + RivalCatalogue.Tycoons[_rival].Name, true);
-            return true;
-        }
-
-        private static bool Export(MoneyModel model)
-        {
-            if (model.Statement == null || model.Statement.Groups == null)
-            {
-                return false;
-            }
-            var text = new StringBuilder();
-            text.Append("when,what,in,out,balance\n");
-            for (int g = 0; g < model.Statement.Groups.Length; g++)
-            {
-                UiStatementLine[] lines = model.Statement.Groups[g].Lines;
-                for (int i = 0; lines != null && i < lines.Length; i++)
-                {
-                    UiStatementLine line = lines[i];
-                    text.Append(Csv(line.When))
-                        .Append(',')
-                        .Append(Csv(line.What))
-                        .Append(',')
-                        .Append(Csv(line.In))
-                        .Append(',')
-                        .Append(Csv(line.Out))
-                        .Append(',')
-                        .Append(Csv(line.Balance))
-                        .Append('\n');
-                }
-            }
-            File.WriteAllText(Path.Combine(RealLifeOverhaul.Meta.Presets.Folder, "statement.csv"), text.ToString(), new UTF8Encoding(false));
-            return true;
         }
 
         private UiChartModel Chart(string key, string title)
@@ -452,58 +224,6 @@ namespace RealLifeOverhaul.Ui
                 model.Lines[i] = T(CreditCatalogue.FactorKeys[i]);
                 model.Marks[i] = score != null ? (int)Math.Round(score.Factor[i] * 100f) : 0;
             }
-        }
-
-        private static UiDataTableModel Debts()
-        {
-            var rows = new List<UiDataRow>(8);
-            CreditFile file = CreditLedger.File;
-            for (int i = 0; file != null && i < file.Accounts.Count; i++)
-            {
-                CreditAccount account = file.Accounts[i];
-                if (account == null || account.Closed || account.Owed <= 0)
-                {
-                    continue;
-                }
-                rows.Add(new UiDataRow { Cells = new[] { T(account.NameKey), Money(account.Owed), (account.RateNow / 100f).ToString("0.#", Inv), account.NextDay.ToString(Inv) } });
-            }
-            return Make(rows, new[] { "Debt", T("reallife_money_owed"), "Rate", "Day" }, T("reallife_money_empty_debts"), T("reallife_money_empty_loans"), UiIcon.Bank);
-        }
-
-        private static UiDataTableModel LoanFeed()
-        {
-            DaySeriesBook book = DaySeriesDirector.Book;
-            var rows = new List<UiDataRow>(8);
-            int n = book != null ? book.LoanCount : 0;
-            for (int i = n - 1; i >= 0 && rows.Count < 6; i--)
-            {
-                DayLoan loan = book.LoanAt(i);
-                rows.Add(new UiDataRow { Cells = new[] { loan.Who, BankName(loan.Rank), loan.Day.ToString(Inv), Money(loan.Amount) } });
-            }
-            return Make(rows, new[] { T("reallife_money_feed"), "Bank", "Day", "Amount" }, T("reallife_money_feed_empty"), T("reallife_money_feed"), UiIcon.People);
-        }
-
-        private UiDataTableModel Rich()
-        {
-            var into = new List<RichRow>(12);
-            RivalFile file = RivalDirector.Instance != null ? RivalDirector.Instance.File : null;
-            RivalRules.RichList(file, RivalGame.Worth(), Prices.Level, T("reallife_money_you"), into);
-            var rows = new List<UiDataRow>(into.Count);
-            for (int i = 0; i < into.Count; i++)
-            {
-                RichRow row = into[i];
-                rows.Add(new UiDataRow
-                {
-                    Cells = new[] { string.IsNullOrEmpty(row.Name) ? T("reallife_money_you") : row.Name, Money(row.Worth), row.Worth >= row.WeekAgo ? "Up" : "Down" },
-                    Values = new[] { 0, 0, row.Worth >= row.WeekAgo ? 1 : -1 },
-                    Hue = 40f + i * 12f, Ring = UiRole.Ok
-                });
-            }
-            UiDataTableModel table = Make(rows, new[] { "Name", T("reallife_money_worth"), "30" }, T("reallife_money_worth"), T("reallife_rival_title"), UiIcon.Trophy);
-            table.Columns[0].Kind = UiCellKind.Person;
-            table.Columns[2].Kind = UiCellKind.Trend;
-            table.Selected = _rival >= 0 && _rival < rows.Count ? _rival : 0;
-            return table;
         }
 
         private static UiDataTableModel BanksTable()
@@ -601,72 +321,6 @@ namespace RealLifeOverhaul.Ui
             return model;
         }
 
-        private static void OwedSplit(out float[] shares, out string[] labels, out string[] values)
-        {
-            var sums = new float[(int)ProductKind.Count];
-            CreditFile file = CreditLedger.File;
-            for (int i = 0; file != null && i < file.Accounts.Count; i++)
-            {
-                CreditAccount account = file.Accounts[i];
-                if (account != null && !account.Closed && account.Owed > 0 && (int)account.Kind < sums.Length)
-                {
-                    sums[(int)account.Kind] += account.Owed;
-                }
-            }
-            int n = 0;
-            for (int i = 0; i < sums.Length; i++)
-            {
-                n += sums[i] > 0f ? 1 : 0;
-            }
-            shares = new float[n]; labels = new string[n]; values = new string[n];
-            int at = 0;
-            for (int i = 0; i < sums.Length; i++)
-            {
-                if (sums[i] <= 0f)
-                {
-                    continue;
-                }
-                shares[at] = sums[i];
-                labels[at] = T(ProductCatalogue.KindKeys[i]);
-                values[at] = Money(sums[i]);
-                at++;
-            }
-        }
-
-        private static float OwedTotal()
-        {
-            float sum = 0f;
-            CreditFile file = CreditLedger.File;
-            for (int i = 0; file != null && i < file.Accounts.Count; i++)
-            {
-                if (file.Accounts[i] != null && !file.Accounts[i].Closed)
-                {
-                    sum += file.Accounts[i].Owed;
-                }
-            }
-            return sum;
-        }
-
-        private static float DailyOut()
-        {
-            float sum = 0f;
-            CreditFile file = CreditLedger.File;
-            for (int i = 0; file != null && i < file.Accounts.Count; i++)
-            {
-                if (file.Accounts[i] != null)
-                {
-                    sum += file.Accounts[i].PaymentDue;
-                }
-            }
-            return sum;
-        }
-
-        private static string Leaves()
-        {
-            float due = DailyOut();
-            return due > 0f ? T("reallife_money_leaves", "money", Money(due)) : null;
-        }
-
         private static string BankName(int rank)
         {
             if (BankTerms.Banks != null && rank >= 0 && rank < BankTerms.Banks.Count && !string.IsNullOrEmpty(BankTerms.Banks[rank].Name))
@@ -751,6 +405,5 @@ namespace RealLifeOverhaul.Ui
         private static string T(string key) => FinanceText.T(key);
         private static string T(string key, string name, string value) => FinanceText.T(key, name, value);
         private static string T(string key, string a, string av, string b, string bv) => FinanceText.T(key, a, av, b, bv);
-        private static string Csv(string text) => string.IsNullOrEmpty(text) ? string.Empty : text.Replace(',', ' ');
     }
 }

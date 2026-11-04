@@ -5,20 +5,33 @@ using RealLifeOverhaul.Ui;
 
 internal static partial class Program
 {
-    private static bool _moneyChecked;
+    private static bool _moneyChecked, _financeFaceChecked;
+
+    private static readonly int[] FinanceCommandsAll = BuildFinanceCommands();
+
+    private static int[] BuildFinanceCommands()
+    {
+        var list = new List<int>(FinanceFace.Commands) { FinanceFace.TableA + UiDataTable.Act };
+        return list.ToArray();
+    }
 
     static partial void UiCasesMoney(UiScreenDef def, List<UiScreenCase> cases)
     {
         if (def.Id == "finance")
         {
-            foreach (string state in UiSamples.MoneyFinanceStates)
+            foreach (string state in UiSamples.FinanceStates)
             {
                 string st = state;
                 cases.Add(new UiScreenCase
                 {
-                    Def = def, Name = "finance (" + st + ")", Title = "Finance", Commands = MoneyCommandsAll,
-                    Lay = (s, f, dark, k, t) => MoneyPages.Lay(s, UiSamples.MoneyFinance(t, st), f, dark, k)
+                    Def = def, Name = "finance (" + st + ")", Title = "Finance", Commands = FinanceCommandsAll,
+                    Lay = (s, f, dark, k, t) => FinanceFace.Lay(s, UiSamples.FinanceFactsOf(t, st), UiSamples.FinanceViewOf(st), UiSamples.FinanceWordsOf(t), new FinanceLayout(), f, dark, k)
                 });
+            }
+            if (!_financeFaceChecked)
+            {
+                _financeFaceChecked = true;
+                FinanceFaceChecks();
             }
         }
         else if (def.Id == "banks")
