@@ -774,6 +774,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.HudBar.cs" Link="Mod\UiDraw.HudBar.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.HudParts.cs" Link="Mod\UiDraw.HudParts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiHudRules.cs" Link="Mod\UiHudRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Navigation\NavPlaceRules.cs" Link="Mod\NavPlaceRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiMoneyFlow.cs" Link="Mod\UiMoneyFlow.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiWorldPrompt.cs" Link="Mod\UiWorldPrompt.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPromptCard.cs" Link="Mod\UiPromptCard.cs" />
