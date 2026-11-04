@@ -91,7 +91,7 @@ namespace RealLifeOverhaul.Ui
                 };
                 // The market's own figures stand over the table, not in a box of sentences beside it.
                 TableShape(UiIcon.Tag, EstateText.T("reallife_estate_tab_market"), EstateText.T("reallife_ui_estate_market_sub", "count", rows.Count.ToString(Inv)),
-                    new[] { EstateText.T("reallife_estate_market_level"), EstateText.T("reallife_estate_market_prices"), EstateText.T("reallife_ui_estate_fig_cycle") },
+                    new[] { EstateText.T("reallife_ui_estate_fig_market_level"), EstateText.T("reallife_ui_estate_fig_prices_since"), EstateText.T("reallife_ui_estate_fig_cycle") },
                     new[] { EstateText.Share(_s.Real), EstateText.Share(_c.Index), EstateText.Cycle(_c.Cycle) }, cols, rows, keys, null,
                     EstateText.T("reallife_estate_row_no_market"), EstateText.T("reallife_ui_estate_empty_market_body"));
                 _m.RowRuns = locate.ToArray();
@@ -109,6 +109,7 @@ namespace RealLifeOverhaul.Ui
                 string place = b.Place;
                 _m.Shape = EstateShape.Detail;
                 _m.Card = true;
+                _m.FootBack = EstateText.T("reallife_ui_estate_not_now");
                 _m.Back = EstateText.T("reallife_co_back");
                 _m.DetailIcon = UseIcon(use);
                 _m.DetailTitle = EstateGame.NameOf(place);
@@ -118,10 +119,10 @@ namespace RealLifeOverhaul.Ui
                 // What makes the price, as figures: the price, the game's value and the three things that move it.
                 _m.Strip = new[]
                 {
-                    new UiFigureModel { Label = EstateText.T("reallife_estate_listing_price"), Value = Money(value) },
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_asking_price"), Value = Money(value) },
                     new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_game_value"), Value = Money(b.Base) },
-                    new UiFigureModel { Label = EstateText.T("reallife_estate_market_level"), Value = EstateText.Share(_s.Real) },
-                    new UiFigureModel { Label = EstateText.T("reallife_estate_market_prices"), Value = EstateText.Share(_c.Index) }
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_market_level"), Value = EstateText.Share(_s.Real) },
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_prices_since"), Value = EstateText.Share(_c.Index) }
                 };
                 var letting = new List<UiFactLine>();
                 if (rent > 0)
@@ -297,6 +298,47 @@ namespace RealLifeOverhaul.Ui
                 _m.ShareTitle = EstateText.T("reallife_estate_agency_reputation");
                 _m.ShareLabels = names.ToArray();
                 _m.ShareValues = reps.ToArray();
+                var chances = new List<EstateRow>(6);
+                for (int i = 0; i < agency.Districts.Count && chances.Count < 6; i++)
+                {
+                    DistrictRep d = agency.Districts[i];
+                    if (d.SqmPrice > 0)
+                    {
+                        chances.Add(new EstateRow
+                        {
+                            Icon = UiIcon.Locate, Title = EstateText.District(d.Name), Sub = EstateText.T("reallife_ui_estate_reputation_n", "value", EstateText.Share(EstateCatalogue.Clamp(d.Rep, 0, 1000))),
+                            Amount = EstateText.T("reallife_ui_estate_chance_a_day", "chance", EstateText.Share(AgencyRules.InstructionChance(d.Rep, _c.Cycle))), Run = -1
+                        });
+                    }
+                }
+                _m.Related2Title = EstateText.T("reallife_ui_estate_new_instruction_chance");
+                _m.Related2Count = chances.Count.ToString(Inv);
+                _m.Related2 = chances.ToArray();
+                // The first instruction offered to you stands over the table with its answers: taking it or turning it down is done where it is seen.
+                for (int i = 0; i < agency.Open.Count && _m.Offer == null; i++)
+                {
+                    Instruction n = agency.Open[i];
+                    if (n.Stage != (int)InstructionStage.Offered)
+                    {
+                        continue;
+                    }
+                    int oid = n.Id;
+                    DistrictRep rep = agency.District(n.District);
+                    _m.Offer = new EstateOffer
+                    {
+                        Icon = n.Sale ? UiIcon.Tag : UiIcon.Key, Title = EstateText.T(n.Sale ? "reallife_estate_row_sale" : "reallife_estate_row_letting", "district", EstateText.District(n.District)),
+                        Chip = EstateText.Stage(n.Stage), Sub = EstateText.T("reallife_ui_estate_offer_sub", "sqm", n.Sqm.ToString(Inv), "ask", EstateText.Share(n.Ask)),
+                        FigLabels = new[] { EstateText.T("reallife_ui_estate_offer_fee"), EstateText.T("reallife_ui_estate_offer_lapses"), EstateText.T("reallife_ui_estate_offer_chance"),
+                            EstateText.T("reallife_ui_estate_col_commission") },
+                        FigValues = new[] { Money(AgencyRules.TakeCost(n)), EstateText.T("reallife_ui_estate_n_days", "days", Math.Max(0, n.Day - _day).ToString(Inv)),
+                            EstateText.Share(AgencyRules.DealChance(n.Ask, rep != null ? rep.Rep : 0, _c.Cycle)), Money(AgencyRules.Commission(n.Sale, n.Value)) },
+                        Actions = new[]
+                        {
+                            _runs.Button(EstateText.T("reallife_estate_btn_decline"), UiButtonKind.Secondary, UiIcon.None, UiAction.Option, () => Show(() => _d.DeclineInstruction(oid))),
+                            _runs.Button(EstateText.T("reallife_estate_btn_take"), UiButtonKind.Primary, UiIcon.Check, UiAction.Alt, () => Show(() => _d.TakeInstruction(oid)))
+                        }
+                    };
+                }
             }
 
             private static bool Parse(string pick, string prefix, out int id)
@@ -311,7 +353,6 @@ namespace RealLifeOverhaul.Ui
                 var actions = new List<UiActionModel>(1);
                 if (agency.Running)
                 {
-                    lines.Add(UiFactLine.Row(EstateText.T("reallife_estate_agency_office"), EstateGame.NameOf(agency.Office)));
                     if (agency.Negotiators <= 0)
                     {
                         lines.Add(UiFactLine.Say(EstateText.T("reallife_estate_agency_no_staff", "count", "0", "hours", "0"), UiRole.DangerText));

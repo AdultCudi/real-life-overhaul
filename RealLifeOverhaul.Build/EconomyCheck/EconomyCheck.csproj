@@ -924,6 +924,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\EstateFace.Unit.cs" Link="Mod\Estate\EstateFace.Unit.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\EstateFace.Showroom.cs" Link="Mod\Estate\EstateFace.Showroom.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\EstateFace.Fill.cs" Link="Mod\Estate\EstateFace.Fill.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\EstateFace.Decide.cs" Link="Mod\Estate\EstateFace.Decide.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\EstateFace.Offer.cs" Link="Mod\Estate\EstateFace.Offer.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\EstateScreen.cs" Link="Mod\Estate\EstateScreen.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPickList.cs" Link="Mod\UiPickList.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiEcono.cs" Link="Mod\UiEcono.cs" />

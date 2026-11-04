@@ -80,6 +80,28 @@ namespace RealLifeOverhaul.Ui
             {
                 y = Shares(s, at, u.ShareTitle, u.ShareLabels, u.ShareValues, x, y, w);
             }
+            if (u.Empty != null)
+            {
+                if (u.Works.Length > 0 && y + RowHeight * 2f < bottom)
+                {
+                    y = Section(s, at, u.WorksTitle, u.WorksCount, x, y, w);
+                    for (int i = 0; i < u.Works.Length && y + RowHeight <= bottom; i++)
+                    {
+                        Row(s, at, u.Works[i], x, y, w);
+                        y += RowHeight;
+                    }
+                    y += UiTokens.S3;
+                }
+                if (u.Others.Length > 0 && y + RowHeight * 2f < bottom)
+                {
+                    y = Section(s, at, u.OthersTitle, u.OthersCount, x, y, w);
+                    for (int i = 0; i < u.Others.Length && y + RowHeight <= bottom; i++)
+                    {
+                        Row(s, at, u.Others[i], x, y, w);
+                        y += RowHeight;
+                    }
+                }
+            }
             if (u.YearChart != null && bottom - y >= LowerLeast - 0.5f)
             {
                 UiChart.Lay(s, chart, u.YearChart, x, y, w, UiDraw.SnapDown(bottom - y), UiChart.First);
@@ -163,7 +185,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 y += UiTokens.S3;
             }
-            if (u.Works.Length > 0 && y + RowHeight * 2f < bottom)
+            if (u.Empty == null && u.Works.Length > 0 && y + RowHeight * 2f < bottom)
             {
                 y = Section(s, at, u.WorksTitle, u.WorksCount, x, y, w);
                 for (int i = 0; i < u.Works.Length && y + RowHeight <= bottom; i++)
@@ -173,7 +195,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 y += UiTokens.S2;
             }
-            if (u.Others.Length > 0 && y + RowHeight * 2f < bottom)
+            if (u.Empty == null && u.Others.Length > 0 && y + RowHeight * 2f < bottom)
             {
                 y = Section(s, at, u.OthersTitle, u.OthersCount, x, y, w);
                 for (int i = 0; i < u.Others.Length && y + RowHeight <= bottom - UiTokens.S10; i++)

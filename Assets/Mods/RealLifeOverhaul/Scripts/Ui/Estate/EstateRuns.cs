@@ -67,6 +67,29 @@ namespace RealLifeOverhaul.Ui
             return UiFactLine.Amount(label, value, hint, canLess, canMore, EstateFace.StepLess, EstateFace.StepMore, at);
         }
 
+        /// <summary>A choice of a decision: its name, what it does as lines, and the run it presses; disabled, it presses none.</summary>
+        public EstateChoice Choice(string name, UiConsequence[] lines, Action run, bool disabled = false)
+        {
+            return new EstateChoice { Name = name, Lines = lines, Run = disabled ? -1 : Do(run), Disabled = disabled };
+        }
+
+        /// <summary>A consequence line of a choice: its words, whose side it is on (+1 for the player, -1 against, UiConsequence.Loss for money paid out, 0 neither).</summary>
+        public static UiConsequence Said(string text, int tone = 0) => new UiConsequence { Text = text, Tone = tone };
+
+        /// <summary>An amount to set before choosing: two runs in a row, the minus then the plus.</summary>
+        public UiDecisionStep Amount(string label, string value, string hint, bool canLess, bool canMore, Action less, Action more)
+        {
+            int at = Do(less);
+            Do(more);
+            return new UiDecisionStep { Label = label, Value = value, Hint = hint, CanLess = canLess, CanMore = canMore, Less = EstateFace.StepLess, More = EstateFace.StepMore, Arg = at };
+        }
+
+        /// <summary>The way out of a decision, at its foot: Esc, steps back from the page. The card has no back button of its own.</summary>
+        public static UiActionModel WayOut(string label) => new UiActionModel
+        {
+            Label = label, Kind = UiButtonKind.Secondary, Key = UiAction.Back, Command = EstateFace.BackCommand, Arg = 0
+        };
+
         public Func<bool>[] ToArray() => _list.ToArray();
     }
 }

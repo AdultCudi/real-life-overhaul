@@ -178,134 +178,125 @@ namespace RealLifeOverhaul.Ui
                 StockCar car = yard.Car(d.Car);
                 int id = d.Id;
                 int offer = DealerRules.Price(yard, d, car);
-                DetailHead(UiIcon.Handshake, d.Customer, DealerText.Profile(d.Profile) + ", " + DealerGame.CarName(car.Type) + ", " + yard.Name,
-                    DealerText.T(d.Stage == OfferStage.Driving ? "reallife_ibox_chip_driving" : "reallife_dealer_state_waiting"), UiRole.Warn, d.Customer);
+                _m.Shape = EstateShape.Decide;
                 _m.Card = true;
+                _m.FootBack = DealerText.T("reallife_ui_estate_not_now");
                 int dealMargin = offer - car.Cost;
-                _m.Strip = new[]
+                var say = new EstateDecision
                 {
-                    new UiFigureModel { Label = DealerText.T("reallife_ibox_offer"), Value = Money(offer) },
-                    new UiFigureModel { Label = DealerText.T("reallife_ibox_asking"), Value = Money(car.Asking) },
-                    new UiFigureModel { Label = DealerText.T("reallife_ui_dealer_l_cost"), Value = Money(car.Cost) },
-                    new UiFigureModel { Label = DealerText.T("reallife_ui_dealer_l_margin_offer"), Value = (dealMargin >= 0 ? "+" : "-") + Money(Math.Abs(dealMargin)) }
+                    Kicker = DealerText.T("reallife_ui_dealer_dec_deal_kicker", "showroom", yard.Name), Title = DealerGame.CarName(car.Type),
+                    Portrait = d.Customer, PortraitLines = new[] { DealerText.Profile(d.Profile),
+                        DealerText.T(d.Stage == OfferStage.Driving ? "reallife_ibox_chip_driving" : "reallife_dealer_state_waiting") },
+                    FactLabels = new[] { DealerText.T("reallife_ibox_offer"), DealerText.T("reallife_ibox_asking"), DealerText.T("reallife_ui_dealer_l_cost"),
+                        DealerText.T("reallife_ui_dealer_l_margin_offer") },
+                    FactValues = new[] { Money(offer), Money(car.Asking), Money(car.Cost), (dealMargin >= 0 ? "+" : "-") + Money(Math.Abs(dealMargin)) },
+                    FactInks = new[] { UiRole.None, UiRole.None, UiRole.None, dealMargin >= 0 ? UiRole.OkText : UiRole.DangerText }
                 };
-                var lines = new List<UiFactLine>(10)
-                {
-                    UiFactLine.Row(DealerText.T("reallife_ui_dealer_fig_time_left"), DealerText.Hours(Mathf.Max(0, d.Expires - _now)))
-                };
+                string body = DealerText.Fill("reallife_ui_dealer_dec_deal_offers", "name", d.Customer, "offer", Money(offer), "car", DealerGame.CarName(car.Type), "asking", Money(car.Asking));
                 if (d.Looks > 0)
                 {
-                    lines.Add(UiFactLine.Say(DealerText.T(d.Looks > 1 ? "reallife_ui_dealer_deal_looked" : "reallife_ui_dealer_deal_looked_once", "times", d.Looks.ToString(Inv))));
+                    body += " " + DealerText.T(d.Looks > 1 ? "reallife_ui_dealer_deal_looked" : "reallife_ui_dealer_deal_looked_once", "times", d.Looks.ToString(Inv));
                 }
                 if (d.Stage == OfferStage.Driving)
                 {
-                    lines.Add(UiFactLine.Say(DealerText.T("reallife_dealer_deal_driving")));
+                    body += " " + DealerText.T("reallife_dealer_deal_driving");
                 }
-                else if (d.WantsDrive && !d.Drove)
+                say.Body = body;
+                // What taking the offer brings with it: the margin, and the finance, the trade-in, the warranty and the extras the buyer asks for.
+                var accept = new List<UiConsequence>(6)
                 {
-                    lines.Add(UiFactLine.Say(DealerText.T("reallife_dealer_deal_wants_drive"), UiRole.WarnText));
-                }
-                if (yard.Fixed)
-                {
-                    lines.Add(UiFactLine.Say(DealerText.T("reallife_dealer_deal_fixed"), UiRole.OkText));
-                }
-                var extra = new List<UiFactLine>(6);
+                    EstateRuns.Said(DealerText.T("reallife_ui_dealer_dec_margin", "margin", (dealMargin >= 0 ? string.Empty : "-") + Money(Math.Abs(dealMargin))), dealMargin >= 0 ? 1 : -1)
+                };
                 if (d.WantsFinance)
                 {
                     bool lends = yard.Finance && DealerRules.Lends(d.Score);
-                    extra.Add(UiFactLine.Say(DealerText.Fill(lends ? "reallife_dealer_deal_finance" : yard.Finance
+                    accept.Add(EstateRuns.Said(DealerText.Fill(lends ? "reallife_dealer_deal_finance" : yard.Finance
                         ? "reallife_dealer_deal_finance_refused" : "reallife_dealer_deal_finance_off", "deposit", d.Deposit.ToString(Inv),
-                        "weeks", ((d.Term + DealerCatalogue.WeekDays - 1) / DealerCatalogue.WeekDays).ToString(Inv), "grade", FinanceText.Grade(CreditCatalogue.GradeOf(d.Score)))));
+                        "weeks", ((d.Term + DealerCatalogue.WeekDays - 1) / DealerCatalogue.WeekDays).ToString(Inv), "grade", FinanceText.Grade(CreditCatalogue.GradeOf(d.Score))),
+                        lends ? 0 : -1));
                 }
                 if (d.TradeType != null)
                 {
-                    extra.Add(UiFactLine.Say(DealerText.Fill("reallife_dealer_deal_trade", "car", DealerGame.CarName(d.TradeType), "km",
+                    accept.Add(EstateRuns.Said(DealerText.Fill("reallife_dealer_deal_trade", "car", DealerGame.CarName(d.TradeType), "km",
                         DealerText.Km(d.TradeKm), "allowance", Money(d.TradeAllowance))));
                 }
                 if (DealerRules.Tier(yard.Warranty, d.Tier, _s) >= 0)
                 {
-                    extra.Add(UiFactLine.Say(DealerText.T("reallife_dealer_deal_warranty", "tier", DealerText.Tier(d.Tier), "premium",
+                    accept.Add(EstateRuns.Said(DealerText.T("reallife_dealer_deal_warranty", "tier", DealerText.Tier(d.Tier), "premium",
                         Money(DealerRules.Premium(offer, d.Tier, Prices.At(DealerCatalogue.PremiumLeast))))));
                 }
                 if (d.Extras != 0 && yard.Extras)
                 {
                     int cost;
                     int sell = ExtrasPrice(d.Extras, offer, out cost);
-                    extra.Add(UiFactLine.Say(DealerText.Fill("reallife_dealer_deal_extras", "extras", DealerText.Extras(d.Extras), "price", Money(sell), "margin", Money(sell - cost))));
+                    accept.Add(EstateRuns.Said(DealerText.Fill("reallife_dealer_deal_extras", "extras", DealerText.Extras(d.Extras), "price", Money(sell), "margin", Money(sell - cost)), 1));
                 }
                 if (d.Lift > 0)
                 {
-                    extra.Add(UiFactLine.Say(DealerText.T("reallife_dealer_deal_lift"), UiRole.OkText));
+                    accept.Add(EstateRuns.Said(DealerText.T("reallife_dealer_deal_lift"), 1));
                 }
                 int steps = yard.Fixed ? 1 : DealerRules.CounterSteps(d, car.Asking);
                 string what = "deal:" + d.Id;
                 int step = Choice(what, steps - 1);
                 int counter = DealerRules.CounterAt(d, car.Asking, step);
-                if (d.Stage == OfferStage.Open && steps > 1)
+                bool open = d.Stage == OfferStage.Open;
+                var choices = new List<EstateChoice>(4);
+                int rivalAt;
+                int cheapest = RivalRules.Cheapest(_s, car.Type, out rivalAt);
+                string rival = cheapest > 0 && rivalAt >= 0
+                    ? DealerText.T("reallife_ui_dealer_rival_asks", "name", DealerCatalogue.RivalNames[rivalAt % DealerCatalogue.RivalNames.Length], "price", Money(cheapest)) : null;
+                if (open && steps > 1)
                 {
-                    lines.Add(_runs.Step(DealerText.T("reallife_ui_dealer_your_counter"), Money(counter),
-                        DealerText.T("reallife_ui_dealer_counters_left", "left", (DealerCatalogue.CountersMost - d.Counters).ToString(Inv)),
-                        step > 0, step < steps - 1, () => Show(() => SetChoice(what, step - 1)), () => Show(() => SetChoice(what, step + 1))));
+                    say.Steps = new[]
+                    {
+                        _runs.Amount(DealerText.T("reallife_ui_dealer_your_counter"), Money(counter), rival, step > 0, step < steps - 1,
+                            () => Show(() => SetChoice(what, step - 1)), () => Show(() => SetChoice(what, step + 1)))
+                    };
                 }
-                var actions = new List<UiActionModel>(4);
-                if (d.Stage == OfferStage.Open)
+                choices.Add(_runs.Choice(DealerText.T("reallife_dealer_button_accept"), accept.ToArray(), () => Show(() =>
                 {
-                    actions.Add(_runs.Button(DealerText.T("reallife_dealer_button_decline"), UiButtonKind.Destructive, UiIcon.None, UiAction.Count, () => Show(() =>
+                    if (_d.Accept(id))
                     {
-                        _d.Decline(id);
                         _v.Pick = null;
-                    })));
-                    if (d.WantsDrive && !d.Drove)
-                    {
-                        actions.Add(_runs.Button(DealerText.T("reallife_dealer_button_drive"), UiButtonKind.Secondary, UiIcon.Car, UiAction.Count, () => Show(() => _d.Drive(id))));
                     }
-                    if (steps > 1)
+                }), !open));
+                int counterAt = -1;
+                if (steps > 1)
+                {
+                    counterAt = choices.Count;
+                    choices.Add(_runs.Choice(DealerText.T("reallife_dealer_button_counter"),
+                        new[] { EstateRuns.Said(DealerText.T("reallife_ui_dealer_counters_left", "left", (DealerCatalogue.CountersMost - d.Counters).ToString(Inv))) }, () => Show(() =>
                     {
-                        actions.Add(_runs.Button(DealerText.T("reallife_dealer_button_counter"), UiButtonKind.Secondary, UiIcon.None, UiAction.Option, () => Show(() =>
-                        {
-                            bool gone;
-                            bool taken = _d.Counter(id, counter, out gone);
-                            if (taken || gone)
-                            {
-                                _v.Pick = null;
-                            }
-                            else
-                            {
-                                UI.Notification.Notifications.Show(UI.Notification.NotificationType.Info, "reallife_dealer_note_counter_refused", null, 6f);
-                            }
-                        })));
-                    }
-                    actions.Add(_runs.Button(DealerText.T("reallife_dealer_button_accept"), UiButtonKind.Primary, UiIcon.Check, UiAction.Alt, () => Show(() =>
-                    {
-                        if (_d.Accept(id))
+                        bool gone;
+                        bool taken = _d.Counter(id, counter, out gone);
+                        if (taken || gone)
                         {
                             _v.Pick = null;
                         }
-                    })));
+                        else
+                        {
+                            UI.Notification.Notifications.Show(UI.Notification.NotificationType.Info, "reallife_dealer_note_counter_refused", null, 6f);
+                        }
+                    }), !open));
                 }
-                _m.Left = new[] { new UiFactCardModel { Title = DealerText.T("reallife_ibox_sec_offer"), Heading = true, Lines = lines.ToArray(), Actions = actions.ToArray() } };
-                if (extra.Count > 0)
+                int driveAt = -1;
+                if (d.WantsDrive && !d.Drove)
                 {
-                    // The car itself first (what it cost and is worth, what the offer leaves, how the other dealers ask), then what the buyer brings with it.
-                    int worth = DealerDirector.Worth(car, _level), margin = offer - car.Cost;
-                    var carLines = new List<UiFactLine>(7)
-                    {
-                        UiFactLine.Row(DealerText.T("reallife_ibox_worth"), Money(worth)),
-                        UiFactLine.Row(DealerText.T("reallife_ui_dealer_l_km"), DealerText.Km(car.Km)),
-                        UiFactLine.Bar(DealerText.T("reallife_ui_dealer_l_condition"), Math.Max(0, Math.Min(100, car.Condition)))
-                    };
-                    int rivalAt;
-                    int cheapest = RivalRules.Cheapest(_s, car.Type, out rivalAt);
-                    carLines.Add(UiFactLine.Say(cheapest > 0 && rivalAt >= 0
-                        ? DealerText.T("reallife_ui_dealer_rival_asks", "name", DealerCatalogue.RivalNames[rivalAt % DealerCatalogue.RivalNames.Length], "price", Money(cheapest))
-                        : DealerText.T("reallife_ui_dealer_no_rival")));
-                    var cards = new List<UiFactCardModel>(2) { new UiFactCardModel { Title = DealerText.T("reallife_ui_dealer_the_car"), Heading = true, Lines = carLines.ToArray() } };
-                    if (extra.Count > 0)
-                    {
-                        cards.Add(new UiFactCardModel { Title = DealerText.T("reallife_ui_dealer_with_it"), Heading = true, Lines = extra.ToArray() });
-                    }
-                    _m.Right = cards.ToArray();
+                    driveAt = choices.Count;
+                    choices.Add(_runs.Choice(DealerText.T("reallife_dealer_button_drive"), new[] { EstateRuns.Said(DealerText.T("reallife_dealer_deal_wants_drive"), -1) },
+                        () => Show(() => _d.Drive(id)), !open));
                 }
+                choices.Add(_runs.Choice(DealerText.T("reallife_dealer_button_decline"),
+                    new[] { EstateRuns.Said(DealerText.T("reallife_ui_dealer_dec_leaves", "name", d.Customer), -1) }, () => Show(() =>
+                {
+                    _d.Decline(id);
+                    _v.Pick = null;
+                }), !open));
+                say.Choices = choices.ToArray();
+                // Focus starts on what commits to nothing: the test drive the buyer wants, else the counter, else the first answer that can be given.
+                say.Start = driveAt >= 0 && !say.Choices[driveAt].Disabled ? driveAt : counterAt >= 0 && !say.Choices[counterAt].Disabled ? counterAt : open ? 0 : -1;
+                say.Buttons = new[] { EstateRuns.WayOut(DealerText.T("reallife_ui_estate_not_now")) };
+                _m.Decision = say;
             }
 
             // ------------------------------------------------------------------------------------------------- finance

@@ -200,6 +200,12 @@ namespace RealLifeOverhaul.Economy
             return t == null ? CarKind.Untouched : CarCatalogue.For(type, new CarTraits(true, false, t.maxSpeed, t.maxCargoCapacity, t.isLuxuryCar, 1200f)).Kind;
         }
 
+        /// <summary>The place string of the building the city's hotel stands in (the Travel hotels file it under "hotel_" and its id), or null before it is placed.</summary>
+        public static string HotelPlace(string slotId)
+        {
+            return SpecialBuildings.PlaceOf("hotel_" + slotId, out string street, out int number) ? Place(street, number) : null;
+        }
+
         public static int CarPrice(VehicleInstance v)
         {
             return v != null && v.VehicleType != null ? Mathf.RoundToInt(Mathf.Max(0f, v.VehicleType.price)) : 0;

@@ -37,6 +37,11 @@ namespace RealLifeOverhaul.Ui
                 UiInfoView.Lay(s, m.Rents, frame, dark, keys);   // the city's rents stand over the world with no window, as every info view
                 return;
             }
+            if (m.Shape == EstateShape.Decide && m.Decision != null)
+            {
+                DecideLay(s, m, frame, dark, keys);
+                return;
+            }
             Tidy(m);   // a chart stands on a page only where the source gave a series over time: a chart of a table's own column repeats the table
             if (m.Card && (m.Shape == EstateShape.Detail || m.Shape == EstateShape.Auction))
             {
@@ -106,7 +111,14 @@ namespace RealLifeOverhaul.Ui
             float room = x + w - tx - (figW > 0f ? figW + UiTokens.S6 : 0f);
             UiDraw.Text(s, at, tx, y + UiTokens.S1, room, UiStyle.Display, UiRole.Text, m.HeadTitle, UiFlags.Truncate | UiFlags.Middle);
             float nh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display));
-            UiDraw.Text(s, at, tx, y + UiTokens.S1 + nh + UiTokens.S2, room - (linkW > 0f ? linkW + UiTokens.S3 : 0f), UiStyle.Body, UiRole.Text2, m.HeadSub, UiFlags.Truncate | UiFlags.Middle);
+            float subX = tx, subY = y + UiTokens.S1 + nh + UiTokens.S2;
+            if (m.HeadStars >= 0)
+            {
+                // A rating as the kit's stars before the line that says whose it is: never "4 stars" in words.
+                float size = UiTokens.IconSmall, lineH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body));
+                subX += UiDraw.Stars(s, at, tx, subY + (lineH - size) / 2f, size, Math.Min(10, m.HeadStars)) + UiTokens.S3;
+            }
+            UiDraw.Text(s, at, subX, subY, room - (subX - tx) - (linkW > 0f ? linkW + UiTokens.S3 : 0f), UiStyle.Body, UiRole.Text2, m.HeadSub, UiFlags.Truncate | UiFlags.Middle);
             if (linkW > 0f)
             {
                 float sub = y + UiTokens.S1 + nh + UiTokens.S2;
@@ -270,7 +282,16 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Icon(s, on.In(t), x + (tile - UiTokens.Icon) / 2f, ty + (tile - UiTokens.Icon) / 2f, UiTokens.Icon, r.Icon, r.Tint, UiFlags.Middle | UiFlags.Centre, true);
             }
             float tx = x + tile + UiTokens.S3, right = x + w;
-            float amount = string.IsNullOrEmpty(r.Amount) ? 0f : UiDraw.Snap(UiTextRules.Width(r.Amount, UiStyle.BodyStrong) + UiTokens.S1);
+            int button = -1;
+            if (!string.IsNullOrEmpty(r.Button))
+            {
+                // The row's own button at its right, over the row's target (laid after it), the pad going to it from the row by a link of its own.
+                float bw = Math.Min(UiDraw.SnapDown(w * 0.4f), UiDraw.ButtonWidth(UiButtonKind.Secondary, r.Button, UiIcon.None, UiAction.Count, null));
+                button = UiDraw.Button(s, on, right - bw, y + UiDraw.SnapDown((RowHeight - UiTokens.Control) / 2f), bw, UiTokens.Control, UiButtonKind.Secondary, r.Button, UiIcon.None,
+                    UiAction.Count, null, ActionCommand, r.ButtonRun, r.ButtonOff);
+                right -= bw + UiTokens.S3;
+            }
+            float amount = string.IsNullOrEmpty(r.Amount) || button >= 0 ? 0f : UiDraw.Snap(UiTextRules.Width(r.Amount, UiStyle.BodyStrong) + UiTokens.S1);
             if (amount > 0f)
             {
                 UiDraw.TextMiddle(s, on, right - amount, y, RowHeight, amount, UiStyle.BodyStrong, r.AmountInk == UiRole.None ? UiRole.Text : r.AmountInk, r.Amount, UiFlags.Right);
@@ -292,7 +313,12 @@ namespace RealLifeOverhaul.Ui
             }
             if (r.Run >= 0)
             {
-                UiDraw.Node(s, at, x - UiTokens.S2, y, w + UiTokens.S4, RowHeight, ActionCommand, r.Run, face);
+                int row = UiDraw.Node(s, at, x - UiTokens.S2, y, w + UiTokens.S4, RowHeight, ActionCommand, r.Run, face);
+                if (button >= 0 && !r.ButtonOff)
+                {
+                    s.Nodes[row].Right = button;
+                    s.Nodes[button].Left = row;
+                }
             }
         }
 
@@ -300,10 +326,17 @@ namespace RealLifeOverhaul.Ui
         {
             y += Head(s, at.InRegion(RegionHead), m, x, y, w);
             y = StripBand(s, at, m.Strip, x, y, w);
+            y = OfferBand(s, at, m.Offer, x, y, w, keys);
             bool side = m.Side != null && Acts(m.Side);
             float sw = side ? Math.Min(SideWidth, UiDraw.SnapDown(w * 0.34f)) : 0f;
             float tw = w - (sw > 0f ? sw + UiTokens.S4 : 0f);
             float footH = FootHeight(m, w), foot = footH > 0f ? footH + UiTokens.S4 : 0f;
+            if (m.FootFirst && foot > 0f)
+            {
+                Foot(s, at, m, x, y + UiTokens.S1, w, bottom);
+                y += foot;
+                foot = 0f;
+            }
             float room = bottom - y - foot - (m.Lower != null ? LowerLeast + UiTokens.S3 : 0f);
             float sideH = side ? UiFactCard.Height(m.Side, sw, keys, true) : 0f;
             float th = m.Lower != null || foot > 0f ? Math.Max(UiTokens.S16, Math.Min(Math.Max(Natural(m.Table), sideH), room)) : bottom - y;
@@ -327,7 +360,10 @@ namespace RealLifeOverhaul.Ui
         private static void DetailPage(UiScene s, UiAt at, EstateModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
             UiAt head = at.InRegion(RegionHead);
-            y = TopBar(s, head, m.Back, m.DetailActions, x, y, w, keys);
+            if (!m.Card || m.DetailActions.Length > 0)
+            {
+                y = TopBar(s, head, m.Card ? null : m.Back, m.DetailActions, x, y, w, keys);   // a card has no back button: its way out is at its foot
+            }
             if (!string.IsNullOrEmpty(m.DetailFace))
             {
                 UiDraw.Portrait(s, head, x, y, TileBig, m.DetailFace, UiColour.HueOf(m.DetailFace), UiRole.None);

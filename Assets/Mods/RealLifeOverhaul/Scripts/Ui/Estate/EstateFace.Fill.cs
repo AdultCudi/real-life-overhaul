@@ -131,19 +131,35 @@ namespace RealLifeOverhaul.Ui
             s.Floats = true;
             UiDraw.Box(s, UiAt.Screen, 0f, 0f, frame.Width, frame.BandY, UiRole.Scrim, UiRole.None, 0f, UiFlags.Decor);   // the world dimmed, the status bar left clear
             float cw = UiDraw.SnapDown(Math.Min(CardWidth, frame.Width - UiTokens.S8 * 2f)), inner = cw - UiTokens.S5 * 2f;
+            // A decision card has no title strip and no back button: its kicker over its title, the body, and the way out at its foot (Esc), the safe answer.
+            float kickH = string.IsNullOrEmpty(m.Kicker) ? 0f : UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3;
+            float footH = string.IsNullOrEmpty(m.FootBack) ? 0f : UiTokens.S4 + UiTokens.Control;
             float body = m.Shape == EstateShape.Auction ? AuctionHeight(m, inner, keys) : DetailHeight(m, inner, keys);
-            float h = UiDraw.Snap(Math.Min(UiFrame.Strip + UiTokens.S4 + body + UiTokens.S5, frame.BandY - UiTokens.S8 * 2f));
+            float h = UiDraw.Snap(Math.Min(UiTokens.S6 + kickH + body + footH + UiTokens.S6, frame.BandY - UiTokens.S8 * 2f));
             float x = UiDraw.SnapDown((frame.Width - cw) / 2f), y = UiDraw.SnapDown((frame.BandY - h) / 2f);
             int card = UiDraw.Box(s, UiAt.Screen, x, y, cw, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt at = UiAt.Screen.In(card);
-            float top = UiDraw.TitleStrip(s, at, x, y, cw, m.Icon, m.Title, true) + UiTokens.S4;
+            float top = y + UiTokens.S6;
+            if (kickH > 0f)
+            {
+                UiDraw.Text(s, at, x + UiTokens.S5, top, inner, UiStyle.SectionHeader, UiRole.Text2, m.Kicker, UiFlags.Label | UiFlags.Truncate | UiFlags.Middle);
+                top += kickH;
+            }
+            float bottom = y + h - UiTokens.S6 - footH;
             if (m.Shape == EstateShape.Auction)
             {
-                Auction(s, at, m, x + UiTokens.S5, top, inner, y + h - UiTokens.S5, keys);
+                Auction(s, at, m, x + UiTokens.S5, top, inner, bottom, keys);
             }
             else
             {
-                DetailPage(s, at, m, x + UiTokens.S5, top, inner, y + h - UiTokens.S5, keys);
+                DetailPage(s, at, m, x + UiTokens.S5, top, inner, bottom, keys);
+            }
+            if (footH > 0f)
+            {
+                float bw = UiDraw.ButtonWidth(UiButtonKind.Secondary, m.FootBack, UiIcon.None, UiAction.Back, keys);
+                int way = UiDraw.Button(s, at, x + cw - UiTokens.S5 - bw, y + h - UiTokens.S6 - UiTokens.Control, bw, UiTokens.Control, UiButtonKind.Secondary, m.FootBack, UiIcon.None,
+                    UiAction.Back, keys, BackCommand, 0);
+                s.FocusFirst = way;   // the keys start on the answer that commits to nothing: the card's own way out, not a close or a back at its top
             }
             for (int i = 0; i < m.Prompts.Length; i++)
             {
@@ -155,17 +171,18 @@ namespace RealLifeOverhaul.Ui
         // The auction card's body as tall as its parts: the way back and the kicker, then the car and its facts and the other lots, against the bidding.
         private static float AuctionHeight(EstateModel m, float w, IUiKeys keys)
         {
+            float back = m.Card ? 0f : UiTokens.Control + UiTokens.S4;
             EstateAuction a = m.Auction;
             float lw = UiDraw.SnapDown((w - UiTokens.S6) * 0.42f), rw = w - UiTokens.S6 - lw;
             float picH = Math.Min(UiDraw.SnapDown(lw / Math.Max(1f, a.Aspect)), UiTokens.S16 * 3f);
             float left = picH + UiTokens.S3 + UiFactCard.Height(a.Left, lw, keys, true) + (m.Related.Length > 0 ? UiTokens.S5 + RelatedHeight(m) : 0f);
-            return UiTokens.Control + UiTokens.S4 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3 + Math.Max(left, UiFactCard.Height(a.Right, rw, keys, true));
+            return back + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3 + Math.Max(left, UiFactCard.Height(a.Right, rw, keys, true));
         }
 
         // A card's body as tall as its parts: the way back, the person or thing, the figures and the taller of the two columns.
         private static float DetailHeight(EstateModel m, float w, IUiKeys keys)
         {
-            float h = UiTokens.Control + UiTokens.S4 + TileBig + UiTokens.S4 + StripHeight(m.Strip);
+            float h = (m.Card && m.DetailActions.Length == 0 ? 0f : UiTokens.Control + UiTokens.S4) + TileBig + UiTokens.S4 + StripHeight(m.Strip);
             bool related = m.Related != null && m.Related.Length > 0, grid = m.Grid != null && m.Grid.Length > 0, shares = m.ShareLabels != null && m.ShareLabels.Length > 0;
             bool related2 = m.Related2 != null && m.Related2.Length > 0, person = m.Person != null && !string.IsNullOrEmpty(m.Person.TenantName);
             bool cards2 = m.Left.Length > 0 && m.Right.Length > 0;

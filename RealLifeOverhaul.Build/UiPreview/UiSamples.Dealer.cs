@@ -344,6 +344,7 @@ internal static partial class UiSamples
         m.DetailChip = W(t, "reallife_ibox_chip_not_inspected", "Not inspected");
         m.DetailChipTone = UiRole.Warn;
         m.Card = true;
+        m.FootBack = W(t, "reallife_ui_estate_not_now", "Not now");
         m.Strip = new[]
         {
             Fig(W(t, "reallife_ibox_asking", "Asking"), "$11,900"), Fig(W(t, "reallife_ui_dealer_last_counter", "Their last counter"), W(t, "reallife_dealer_none", "None")),
@@ -393,6 +394,7 @@ internal static partial class UiSamples
     {
         m.Shape = EstateShape.Auction;
         m.Card = true;
+        m.FootBack = W(t, "reallife_ui_estate_not_now", "Not now");
         var a = new EstateAuction { Kicker = W(t, "reallife_ui_dealer_auction_kicker", "Live auction, the trade car auction"), Title = "Courier van", Icon = UiIcon.Truck, Aspect = 1.8f, Back = W(t, "reallife_ui_dealer_back", "Back") };
         a.Left = new UiFactCardModel
         {
@@ -539,63 +541,7 @@ internal static partial class UiSamples
 
     private static void DealerDeal(UiWords t, EstateModel m, List<Func<bool>> runs)
     {
-        m.Shape = EstateShape.Detail;
-        m.Back = W(t, "reallife_ui_dealer_back", "Back");
-        m.DetailIcon = UiIcon.Handshake;
-        m.DetailTitle = "Marcus Bell";
-        m.DetailFace = "Marcus Bell";
-        m.DetailSub = W(t, "reallife_dealer_profile_bargain", "A bargain hunter") + ", Meridian GT coupe, Pioneer Motors";
-        m.DetailChip = W(t, "reallife_dealer_state_waiting", "Waiting");
-        m.DetailChipTone = UiRole.Warn;
-        m.Card = true;
-        m.Strip = new[]
-        {
-            Fig(W(t, "reallife_ibox_offer", "Offer"), "$82,000"), Fig(W(t, "reallife_ibox_asking", "Asking"), "$84,500"),
-            Fig(W(t, "reallife_ui_dealer_l_cost", "Cost, all in"), "$72,300"), Fig(W(t, "reallife_ui_dealer_l_margin_offer", "Margin at the offer"), "+$9,700")
-        };
-        m.Left = new[]
-        {
-            new UiFactCardModel
-            {
-                Title = W(t, "reallife_ibox_sec_offer", "The offer"), Heading = true,
-                Lines = new[]
-                {
-                    UiFactLine.Say(W(t, "reallife_ui_dealer_deal_looked", "They looked at the car {times} times before they made it.").Replace("{times}", "2")),
-                    EstateStep(runs, W(t, "reallife_ui_dealer_your_counter", "Your counter"), "$83,200", Fx(W(t, "reallife_ui_dealer_counters_left", "{left} counters left"), "left", "2"))
-                },
-                Actions = new[]
-                {
-                    EstateButton(runs, W(t, "reallife_dealer_button_decline", "Decline"), UiButtonKind.Destructive, UiIcon.None, UiAction.Count), EstateButton(runs, W(t, "reallife_dealer_button_drive", "Test drive"), UiButtonKind.Secondary, UiIcon.Car, UiAction.Count),
-                    EstateButton(runs, W(t, "reallife_dealer_button_counter", "Counter"), UiButtonKind.Secondary, UiIcon.None, UiAction.Option), EstateButton(runs, W(t, "reallife_dealer_button_accept", "Accept"), UiButtonKind.Primary, UiIcon.Check, UiAction.Alt)
-                }
-            }
-        };
-        m.Right = new[]
-        {
-            new UiFactCardModel
-            {
-                Title = W(t, "reallife_ui_dealer_the_car", "The car"), Heading = true,
-                Lines = new[]
-                {
-                    UiFactLine.Row(W(t, "reallife_ibox_worth", "Worth"), "$83,800"), UiFactLine.Row(W(t, "reallife_ui_dealer_l_km", "Mileage"), "12,400 km"), UiFactLine.Bar(W(t, "reallife_ui_dealer_l_condition", "Condition"), 92),
-                    UiFactLine.Say(Fx(W(t, "reallife_ui_dealer_rival_asks", "{name} asks {price} for the same model."), "name", "Halden Motors", "price", "$86,900"))
-                }
-            },
-            new UiFactCardModel
-            {
-                Title = W(t, "reallife_ui_dealer_with_it", "With the car"), Heading = true,
-                Lines = new[] { UiFactLine.Say(Fx(W(t, "reallife_dealer_deal_finance", "They would put down {deposit}% and pay over {weeks} weeks. Their rating is {grade}."), "deposit", "20", "weeks", "8", "grade", "B")) }
-            }
-        };
-        m.RelatedTitle = W(t, "reallife_ui_dealer_also_waiting", "Also waiting for you");
-        m.RelatedCount = "2";
-        runs.Add(Yes);
-        runs.Add(Yes);
-        m.Related = new[]
-        {
-            new EstateRow { Face = "Priya Nair", Hue = UiColourHue("Priya Nair"), Title = "Priya Nair", Sub = "Halden sedan", Chip = Fx(W(t, "reallife_ui_dealer_of_asking", "{share} of asking"), "share", "88%"), ChipTone = UiRole.Notice, Amount = "$24,112", Run = runs.Count - 2 },
-            new EstateRow { Face = "Owen Park", Hue = UiColourHue("Owen Park"), Title = "Owen Park", Sub = "Sora hatchback", Chip = Fx(W(t, "reallife_ui_dealer_of_asking", "{share} of asking"), "share", "91%"), ChipTone = UiRole.Notice, Amount = "$18,018", Run = runs.Count - 1 }
-        };
+        DealerDecide(t, m, runs);   // an offer is a decision: UiSamples.Estate.Decide.cs
     }
 
     private static void DealerFinance(UiWords t, EstateModel m)

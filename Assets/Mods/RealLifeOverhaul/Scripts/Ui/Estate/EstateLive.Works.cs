@@ -108,7 +108,7 @@ namespace RealLifeOverhaul.Ui
                 var cols = new[]
                 {
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_unit"), Kind = UiCellKind.Tile, Width = 0f },
-                    new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_tenant"), Kind = UiCellKind.Person, Width = 208f },
+                    new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_tenant"), Kind = UiCellKind.Person, Width = 264f },
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_rent_month"), Kind = UiCellKind.Money, Width = 104f },
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_record"), Kind = UiCellKind.Meter, Width = 112f },
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_state"), Kind = UiCellKind.Chip, Width = 128f },
@@ -129,11 +129,48 @@ namespace RealLifeOverhaul.Ui
                 }
                 TableShape(UiIcon.People, EstateText.T("reallife_estate_tab_tenants"),
                     EstateText.T("reallife_ui_estate_tenants_sub", "let", let.ToString(Inv), "empty", empty.ToString(Inv)),
-                    new[] { EstateText.T("reallife_estate_tenants_let"), EstateText.T("reallife_estate_tenants_empty"),
+                    new[] { EstateText.T("reallife_ui_estate_fig_let"), EstateText.T("reallife_ui_estate_fig_empty_units"),
                         EstateText.T("reallife_estate_tenants_owed"), EstateText.T("reallife_ui_estate_fig_mean_happy") },
                     new[] { let.ToString(Inv), empty.ToString(Inv), Money(owed), happyCount > 0 ? EstateText.Share(happySum / happyCount * 10) : string.Empty }, cols, rows, keys, null,
                     EstateText.T(_s.Holdings.Count == 0 ? "reallife_estate_row_nothing_owned" : "reallife_estate_row_none_managed"), EstateText.T("reallife_ui_estate_empty_tenants_body"));
                 _m.FigInks = new[] { UiRole.None, empty > 0 ? UiRole.WarnText : UiRole.None, owed > 0 ? UiRole.DangerText : UiRole.None, UiRole.None };
+                NeedsYou();
+            }
+
+            // The tenants who are late with the rent, each with the reminder to send: what needs the landlord now, over the table where the pad reaches it first.
+            private void NeedsYou()
+            {
+                var needs = new List<EstateRow>(4);
+                for (int i = 0; Duties && i < _s.Holdings.Count && needs.Count < 6; i++)
+                {
+                    EstateHolding h = _s.Holdings[i];
+                    for (int n = 0; h.Managed && n < h.Units.Count && needs.Count < 6; n++)
+                    {
+                        EstateUnit u = h.Units[n];
+                        if (!u.Let || u.Arrears <= 0)
+                        {
+                            continue;
+                        }
+                        string place = h.Place;
+                        int at = n;
+                        Who who = WhoOf(h, u);
+                        StateChip(h, u, out string chip, out UiRole tone);
+                        bool remind = !u.Reminded && !u.OnPlan && u.CourtDay == 0;
+                        needs.Add(new EstateRow
+                        {
+                            Face = who.Name, Hue = who.Hue, Title = who.Name, Sub = EstateText.UnitName(h, n), Chip = chip, ChipTone = tone,
+                            Button = EstateText.T("reallife_estate_btn_remind"), ButtonOff = !remind, ButtonRun = remind ? _runs.Do(() => Show(() => _d.Remind(place, at))) : -1,
+                            Run = _runs.Do(() => Open(EstateDirector.UnitPick(h, at), null))
+                        });
+                    }
+                }
+                if (needs.Count > 0)
+                {
+                    _m.FootFirst = true;
+                    _m.RelatedTitle = EstateText.T("reallife_ui_estate_needs_you_list");
+                    _m.RelatedCount = needs.Count.ToString(Inv);
+                    _m.Related = needs.ToArray();
+                }
             }
 
             // An applicant for a unit: what they offer, what that is against the market, and their record. True when it was written.
@@ -155,55 +192,78 @@ namespace RealLifeOverhaul.Ui
                 }
                 h.ApplicantOf(id, out unit);
                 int market = EstateRules.UnitRent(h, _c);
-                _m.Shape = EstateShape.Detail;
+                _m.Shape = EstateShape.Decide;
                 _m.Card = true;
-                _m.Back = EstateText.T("reallife_co_back");
-                _m.DetailIcon = UiIcon.People;
-                _m.DetailTitle = EstateText.Tenant(h.Use, a.Kind);
-                _m.DetailFace = _m.DetailTitle;   // the applicant has a face, as every person has
-                _m.DetailSub = EstateText.UnitName(h, unit);
-                _m.DetailChip = EstateText.Record(a.Record);
-                _m.DetailChipTone = a.Record >= 60 ? UiRole.Ok : UiRole.Warn;
-                _m.Strip = new[]
+                _m.FootBack = EstateText.T("reallife_ui_estate_not_now");
+                bool taken = h.Units[unit].Let || h.Busy;
+                var say = new EstateDecision
                 {
-                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_their_offer"), Value = Money(a.Offer) },
-                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_ch_market_rent"), Value = Money(market) },
-                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_of_market"), Value = EstateText.Share(market > 0 ? (int)((long)a.Offer * 1000 / market) : 0) },
-                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_deposit"), Value = Money(a.Offer * EstateCatalogue.DepositDays) }
+                    Kicker = EstateText.T("reallife_ui_estate_dec_app_kicker", "district", EstateText.District(h.District)), Title = EstateText.UnitName(h, unit),
+                    Body = EstateText.T("reallife_ui_estate_dec_app_body", "day", a.Lapse.ToString(Inv), "days", a.Term.ToString(Inv)),
+                    Portrait = EstateText.Tenant(h.Use, a.Kind), PortraitLines = new[] { EstateText.Record(a.Record) },
+                    FactLabels = new[] { EstateText.T("reallife_ui_estate_fig_their_offer"), EstateText.T("reallife_ui_estate_ch_market_rent"),
+                        EstateText.T("reallife_ui_estate_fig_of_market"), EstateText.T("reallife_ui_estate_fig_deposit") },
+                    FactValues = new[] { Money(a.Offer), Money(market), EstateText.Share(market > 0 ? (int)((long)a.Offer * 1000 / market) : 0), Money(a.Offer * EstateCatalogue.DepositDays) }
                 };
-                var terms = new List<UiFactLine>
-                {
-                    UiFactLine.Row(EstateText.T("reallife_ui_estate_term_lease"), EstateText.T("reallife_ui_estate_n_days", "days", a.Term.ToString(Inv))),
-                    UiFactLine.Row(EstateText.T("reallife_ui_estate_term_until"), EstateText.T("reallife_ui_estate_day", "day", a.Lapse.ToString(Inv)))
-                };
-                var actions = new List<UiActionModel>(2);
+                int others = Math.Max(0, h.Units[unit].Applicants.Count - 1);
                 int at = unit;
-                actions.Add(_runs.Button(EstateText.T("reallife_estate_btn_refuse"), UiButtonKind.Secondary, UiIcon.None, UiAction.Option, () => Show(() =>
+                say.Choices = new[]
                 {
-                    _d.Refuse(place, id);
-                    _v.Pick = null;
-                })));
-                actions.Add(_runs.Button(EstateText.T("reallife_estate_btn_accept"), UiButtonKind.Primary, UiIcon.Check, UiAction.Alt, () => Show(() =>
-                {
-                    int taken = _d.Accept(place, id);
-                    _v.Pick = taken >= 0 ? EstateDirector.UnitPick(h, taken) : null;
-                }), h.Units[unit].Let || h.Busy));
-                _m.Left = new[] { new UiFactCardModel { Title = EstateText.T("reallife_ibox_sec_terms"), Heading = true, Lines = terms.ToArray(), Actions = actions.ToArray() } };
-                _m.ShareTitle = EstateText.T("reallife_ui_estate_sh_record");
-                _m.ShareLabels = new[] { EstateText.T("reallife_ui_estate_col_record"), EstateText.T("reallife_ui_estate_sh_pays"), EstateText.T("reallife_ui_estate_sh_catches") };
-                _m.ShareValues = new[] { a.Record, 100 - EstateRules.MissChance(a.Record, _c.Cycle) / 10, EstateRules.CatchUpChance(a.Record) / 10 };
-                _m.RelatedTitle = EstateText.T("reallife_ui_estate_the_unit_they_want");
-                _m.Related = new[]
-                {
-                    new EstateRow
+                    _runs.Choice(EstateText.T("reallife_estate_btn_accept"), new[]
                     {
-                        Icon = UseIcon(h.Use), Title = EstateText.UnitName(h, unit), Sub = EstateText.District(h.District),
-                            Chip = EstateText.T("reallife_estate_state_empty", "days", h.Units[unit].VoidDays.ToString(Inv)),
-                        ChipTone = UiRole.Warn, Amount = Money(market), Run = _runs.Do(() => Open(EstateDirector.UnitPick(h, at), null))
-                    }
+                        EstateRuns.Said(EstateText.T("reallife_ui_estate_sh_pays") + " " + EstateText.Share(1000 - EstateRules.MissChance(a.Record, _c.Cycle)), 1),
+                        EstateRuns.Said(EstateText.T("reallife_ui_estate_sh_catches") + " " + EstateText.Share(EstateRules.CatchUpChance(a.Record)), 1),
+                        EstateRuns.Said(EstateText.T("reallife_ui_estate_col_record") + " " + a.Record.ToString(Inv) + "%")
+                    }, () => Show(() =>
+                    {
+                        int placed = _d.Accept(place, id);
+                        _v.Pick = placed >= 0 ? EstateDirector.UnitPick(h, placed) : null;
+                    }), taken),
+                    _runs.Choice(EstateText.T("reallife_estate_btn_refuse"), RefusalLines(h, unit, others), () => Show(() =>
+                    {
+                        _d.Refuse(place, id);
+                        _v.Pick = null;
+                    }))
                 };
+                say.Start = 1;   // refusing costs nothing but the applicant; accepting binds the unit to a tenancy
+                say.Buttons = new[] { EstateRuns.WayOut(EstateText.T("reallife_ui_estate_not_now")) };
+                _m.Decision = say;
                 return at >= 0;
             }
+
+            private UiConsequence[] RefusalLines(EstateHolding h, int unit, int others)
+            {
+                var lines = new List<UiConsequence>(2)
+                {
+                    EstateRuns.Said(EstateText.T("reallife_estate_state_empty", "days", h.Units[unit].VoidDays.ToString(Inv)))
+                };
+                if (others > 0)
+                {
+                    lines.Add(EstateRuns.Said(EstateText.T("reallife_ui_estate_dec_app_others", "count", others.ToString(Inv))));
+                }
+                return lines.ToArray();
+            }
+
+            // The line of words under a person's name on a decision: what they do, their age and how they stand.
+            private static string[] PersonLines(Who who, string chip)
+            {
+                var lines = new List<string>(3);
+                if (!string.IsNullOrEmpty(who.Line))
+                {
+                    lines.Add(who.Line);
+                }
+                if (who.Age > 0)
+                {
+                    lines.Add(who.Age.ToString(Inv));
+                }
+                if (!string.IsNullOrEmpty(chip))
+                {
+                    lines.Add(chip);
+                }
+                return lines.ToArray();
+            }
+
+            private static string Capital(string text) => string.IsNullOrEmpty(text) ? text : char.ToUpperInvariant(text[0]) + text.Substring(1);
 
             // ------------------------------------------------------------------------------------------------- works
 
@@ -228,9 +288,11 @@ namespace RealLifeOverhaul.Ui
                 _v.Pick = null;
                 var rows = new List<UiDataRow>(16);
                 var keys = new List<string>(16);
+                var locate = new List<int>(16);
                 for (int i = 0; Duties && i < _s.Holdings.Count; i++)
                 {
                     EstateHolding h = _s.Holdings[i];
+                    string callPlace = h.Place;
                     for (int n = 0; h.Managed && n < h.Units.Count; n++)
                     {
                         EstateUnit u = h.Units[n];
@@ -239,13 +301,15 @@ namespace RealLifeOverhaul.Ui
                             continue;
                         }
                         bool booked = u.CallAnswer == (int)CallAnswer.Contractor;
+                        locate.Add(_runs.Do(() => EstateGame.Locate(callPlace)));
                         rows.Add(new UiDataRow
                         {
-                            Cells = new[] { EstateText.UnitName(h, n), EstateText.Fault(u.Call),
+                            Cells = new[] { EstateText.UnitName(h, n), Capital(EstateText.Fault(u.Call)), string.Empty,
                                 EstateText.T(booked ? "reallife_ibox_chip_booked" : u.CallAnswer == (int)CallAnswer.Yourself ? "reallife_ibox_chip_due" : "reallife_ibox_chip_open"),
-                                Money(u.CallCost), EstateText.T("reallife_estate_row_since", "day", u.CallDay.ToString(Inv)) },
-                            Values = new[] { (int)UiIcon.Wrench, 0, 0, 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, booked ? UiRole.Ok : UiRole.Warn, UiRole.None, UiRole.None },
-                            Subs = new[] { EstateText.District(h.District), null, null, null, null }
+                                Money(u.CallCost), EstateText.T("reallife_estate_row_since", "day", u.CallDay.ToString(Inv)), string.Empty },
+                            Values = new[] { (int)UiIcon.Wrench, 0, -1, 0, 0, 0, (int)UiIcon.Locate },
+                            Tones = new[] { UiRole.None, UiRole.None, UiRole.None, booked ? UiRole.Ok : UiRole.Warn, UiRole.None, UiRole.None, UiRole.None },
+                            Subs = new[] { EstateText.District(h.District), null, null, null, null, null, null }
                         });
                         keys.Add(EstateDirector.CallPick(h, n));
                     }
@@ -253,28 +317,31 @@ namespace RealLifeOverhaul.Ui
                 for (int i = 0; i < _s.Holdings.Count; i++)
                 {
                     EstateHolding h = _s.Holdings[i];
+                    string buildingPlace = h.Place;
                     int repair = EstateRules.Quote(h, EstateWork.Repair, -1, _c);
                     string state = h.Busy ? EstateText.Work(h.Work) : h.Cond < EstateCatalogue.ConditionUnfit
                         ? EstateText.T("reallife_ui_estate_unfit") : h.Cond < EstateCatalogue.ConditionPoor ? EstateText.T("reallife_ui_estate_poor")
                         : EstateText.T("reallife_ui_estate_sound");
                     UiRole tone = h.Busy ? UiRole.Notice : h.Cond < EstateCatalogue.ConditionUnfit ? UiRole.Danger : h.Cond < EstateCatalogue.ConditionPoor ? UiRole.Warn : UiRole.Ok;
+                    locate.Add(_runs.Do(() => EstateGame.Locate(buildingPlace)));
                     rows.Add(new UiDataRow
                     {
-                        Cells = new[] { h.Name, EstateText.T("reallife_ui_estate_condition_level", "condition", EstateText.Level(h.Cond), "level",
-                            h.Level.ToString(Inv)), state, repair > 0 ? Money(repair) : "-",
-                            h.Busy ? EstateText.T("reallife_estate_row_until", "day", h.WorkEnd.ToString(Inv)) : "-" },
-                        Values = new[] { (int)UseIcon(h.Use), 0, 0, 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, tone, UiRole.None, UiRole.None },
-                        Subs = new[] { EstateText.Use(h.Use) + ", " + EstateText.District(h.District), null, null, null, null }
+                        Cells = new[] { h.Name, EstateText.T("reallife_ui_estate_level_n", "level", h.Level.ToString(Inv)), (h.Cond / 10).ToString(Inv), state, repair > 0 ? Money(repair) : "-",
+                            h.Busy ? EstateText.T("reallife_estate_row_until", "day", h.WorkEnd.ToString(Inv)) : "-", string.Empty },
+                        Values = new[] { (int)UseIcon(h.Use), 0, h.Cond / 10, 0, 0, 0, (int)UiIcon.Locate }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, tone, UiRole.None, UiRole.None, UiRole.None },
+                        Subs = new[] { EstateText.Use(h.Use) + ", " + EstateText.District(h.District), null, null, null, null, null, null }
                     });
                     keys.Add("wrk:" + h.Place);
                 }
                 var cols = new[]
                 {
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_building"), Kind = UiCellKind.Tile, Width = 0f },
-                    new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_what"), Kind = UiCellKind.Text, Width = 200f },
+                    new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_what"), Kind = UiCellKind.Text, Width = 176f },
+                    new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_condition"), Kind = UiCellKind.Meter, Width = 136f },
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_state"), Kind = UiCellKind.Chip, Width = 144f },
-                    new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_cost"), Kind = UiCellKind.Money, Width = 120f },
-                    new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_day"), Kind = UiCellKind.Date, Width = 112f }
+                    new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_cost"), Kind = UiCellKind.Money, Width = 112f },
+                    new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_day"), Kind = UiCellKind.Date, Width = 120f },
+                    new UiDataColumn { Title = string.Empty, Kind = UiCellKind.Action, Width = 56f }
                 };
                 int open = 0, bookedCalls = 0, unfit = 0, callsCost = 0;
                 for (int i = 0; Duties && i < _s.Holdings.Count; i++)
@@ -298,6 +365,7 @@ namespace RealLifeOverhaul.Ui
                         EstateText.T("reallife_ui_estate_fig_unfit"), EstateText.T("reallife_ui_estate_fig_calls_cost") },
                     new[] { open.ToString(Inv), bookedCalls.ToString(Inv), unfit.ToString(Inv), Money(callsCost) }, cols, rows, keys, null,
                     EstateText.T("reallife_estate_row_nothing_owned"), EstateText.T("reallife_ui_estate_empty_works_body"));
+                _m.RowRuns = locate.ToArray();
             }
 
             // One call: what it is, how long it has waited, what the tenant thinks, and the two ways to answer it.
@@ -318,62 +386,48 @@ namespace RealLifeOverhaul.Ui
                 }
                 bool contractor = u.CallAnswer == (int)CallAnswer.Contractor, yours = u.CallAnswer == (int)CallAnswer.Yourself;
                 int materials = EstateRules.DiyCost(u.CallCost), minutes = EstateCatalogue.CallMinutes[EstateCatalogue.Clamp(u.Call, 0, EstateCatalogue.CallKinds)];
-                _m.Shape = EstateShape.Detail;
+                _m.Shape = EstateShape.Decide;
                 _m.Card = true;
-                _m.Back = EstateText.T("reallife_co_back");
-                _m.DetailIcon = UiIcon.Wrench;
-                _m.DetailTitle = EstateText.UnitName(h, unit);
-                _m.DetailSub = EstateText.Fault(u.Call);
-                _m.DetailChip = EstateText.T(contractor ? "reallife_ibox_chip_booked" : yours ? "reallife_ibox_chip_due" : "reallife_ibox_chip_open");
-                _m.DetailChipTone = u.CallAnswer == (int)CallAnswer.Waiting ? UiRole.Danger : UiRole.Warn;
-                _m.DetailLocate = EstateText.T("reallife_ui_estate_locate");
-                _m.DetailLocateRun = _runs.Do(() => EstateGame.Locate(place));
-                // The prices and the waiting are figures; the card keeps what is to be done.
-                _m.Strip = new[]
+                _m.FootBack = EstateText.T("reallife_ui_estate_not_now");
+                Who who = WhoOf(h, u);
+                StateChip(h, u, out string stateChip, out UiRole stateTone);
+                string first = who.Named ? who.Name.Split(' ')[0] : who.Name;
+                int days = Math.Max(0, _day - u.CallDay);
+                var say = new EstateDecision
                 {
-                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_ch_contractor"), Value = Money(u.CallCost) },
-                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_ch_yourself"), Value = Money(materials) },
-                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_reported"), Value = EstateText.T("reallife_ui_estate_days_ago",
-                        "days", Math.Max(0, _day - u.CallDay).ToString(Inv)) },
-                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_grace"), Value = EstateText.T("reallife_ui_estate_n_days", "days", EstateCatalogue.CallGraceDays.ToString(Inv)) }
+                    Kicker = EstateText.T("reallife_ui_estate_dec_call_kicker", "place", EstateText.UnitName(h, unit)), Title = Capital(EstateText.Fault(u.Call)),
+                    Portrait = who.Name, PortraitLines = PersonLines(who, stateChip),
+                    FactLabels = new[] { EstateText.T("reallife_ui_estate_ch_contractor"), EstateText.T("reallife_ui_estate_ch_yourself"),
+                        EstateText.T("reallife_ui_estate_fig_reported"), EstateText.T("reallife_ui_estate_fig_grace") },
+                    FactValues = new[] { Money(u.CallCost), Money(materials), EstateText.T("reallife_ui_estate_days_ago", "days", days.ToString(Inv)),
+                        EstateText.T("reallife_ui_estate_n_days", "days", EstateCatalogue.CallGraceDays.ToString(Inv)) }
                 };
-                var lines = new List<UiFactLine>();
                 if (contractor)
                 {
-                    lines.Add(UiFactLine.Say(EstateText.T("reallife_estate_call_booked", "day", u.CallDue.ToString(Inv)), UiRole.OkText));
+                    say.Body = EstateText.T("reallife_estate_call_booked", "day", u.CallDue.ToString(Inv));
                 }
                 else if (yours)
                 {
-                    lines.Add(UiFactLine.Say(EstateText.T("reallife_estate_call_yours", "day", u.CallDue.ToString(Inv), "minutes",
-                        minutes.ToString(Inv), "amount", Money(materials)), UiRole.WarnText));
+                    say.Body = EstateText.T("reallife_estate_call_yours", "day", u.CallDue.ToString(Inv), "minutes", minutes.ToString(Inv), "amount", Money(materials));
                 }
                 else
                 {
-                    lines.Add(UiFactLine.Say(EstateText.T("reallife_ui_estate_call_minutes", "minutes", minutes.ToString(Inv))));
+                    say.Body = EstateText.T("reallife_ui_estate_dec_call_body", "name", first, "when", EstateText.T("reallife_ui_estate_days_ago", "days", days.ToString(Inv)));
                 }
-                int repairsTerm, valueTerm, conditionTerm;
-                HappyTerms.Of(h, unit, _day, _c, out repairsTerm, out valueTerm, out conditionTerm);
-                _m.ShareTitle = EstateText.T("reallife_ui_estate_sh_call");
-                _m.ShareLabels = new[] { EstateText.T("reallife_ui_estate_m_condition"), EstateText.T("reallife_ui_estate_m_satisfaction"), EstateText.T("reallife_ui_estate_m_repairs") };
-                _m.ShareValues = new[] { conditionTerm, u.Happy < 0 ? 50 : u.Happy / 10, repairsTerm };
-                Who who = WhoOf(h, u);
-                StateChip(h, u, out string stateChip, out UiRole stateTone);
-                _m.RelatedTitle = EstateText.T("reallife_ui_estate_the_tenant");
-                _m.Related = new[]
+                bool open = u.CallAnswer == (int)CallAnswer.Waiting;
+                say.Choices = new[]
                 {
-                    new EstateRow
+                    _runs.Choice(EstateText.T("reallife_estate_btn_contractor"), new[] { EstateRuns.Said(EstateText.T("reallife_ui_estate_dec_costs", "amount", Money(u.CallCost)), UiConsequence.Loss) },
+                        () => Show(() => _d.SendContractor(place, unit)), contractor),
+                    _runs.Choice(EstateText.T("reallife_estate_btn_yourself"), new[]
                     {
-                        Face = who.Name, Hue = who.Hue, Title = who.Name, Sub = who.Line, Chip = stateChip, ChipTone = stateTone, Amount = Month(u.Rent),
-                        Run = _runs.Do(() => Open(EstateDirector.UnitPick(h, unit), null))
-                    }
+                        EstateRuns.Said(EstateText.T("reallife_ui_estate_dec_materials", "amount", Money(materials)), UiConsequence.Loss),
+                        EstateRuns.Said(EstateText.T("reallife_ui_estate_call_minutes", "minutes", minutes.ToString(Inv)))
+                    }, () => Show(() => _d.DoItYourself(place, unit)), !open)
                 };
-                var actions = new List<UiActionModel>(2)
-                {
-                    _runs.Button(EstateText.T("reallife_estate_btn_yourself"), UiButtonKind.Secondary, UiIcon.MapPin, UiAction.Option,
-                        () => Show(() => _d.DoItYourself(place, unit)), u.CallAnswer != (int)CallAnswer.Waiting),
-                    _runs.Button(EstateText.T("reallife_estate_btn_contractor"), UiButtonKind.Primary, UiIcon.Wrench, UiAction.Alt, () => Show(() => _d.SendContractor(place, unit)), contractor)
-                };
-                _m.Left = new[] { new UiFactCardModel { Title = EstateText.T("reallife_ibox_sec_quote"), Heading = true, Lines = lines.ToArray(), Actions = actions.ToArray() } };
+                say.Start = open ? 1 : -1;   // the answer that costs the least and commits to nothing until the work is done at the door
+                say.Buttons = new[] { EstateRuns.WayOut(EstateText.T("reallife_ui_estate_not_now")) };
+                _m.Decision = say;
                 return true;
             }
 
@@ -385,6 +439,7 @@ namespace RealLifeOverhaul.Ui
                 string place = h.Place;
                 _m.Shape = EstateShape.Detail;
                 _m.Card = true;
+                _m.FootBack = EstateText.T("reallife_ui_estate_not_now");
                 _m.Back = EstateText.T("reallife_co_back");
                 _m.DetailIcon = UiIcon.Wrench;
                 _m.DetailTitle = h.Name;

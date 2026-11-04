@@ -135,6 +135,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 _m.Left = new[] { new UiFactCardModel { Title = DealerText.T("reallife_ibox_sec_offer"), Heading = true, Lines = lines.ToArray(), Actions = actions.ToArray() } };
                 _m.Card = true;
+                _m.FootBack = DealerText.T("reallife_ui_estate_not_now");
                 _m.Strip = new[]
                 {
                     new UiFigureModel { Label = DealerText.T("reallife_ui_dealer_ch_price"), Value = Money(price) },
@@ -149,6 +150,7 @@ namespace RealLifeOverhaul.Ui
                 DetailHead(UiIcon.Car, DealerGame.CarName(l.Type), DealerGame.ColourName(l.Colour),
                     DealerText.T(l.Inspected ? "reallife_ibox_chip_inspected" : "reallife_ibox_chip_not_inspected"), l.Inspected ? UiRole.Ok : UiRole.Warn);
                 _m.Card = true;
+                _m.FootBack = DealerText.T("reallife_ui_estate_not_now");
                 var car = new List<UiFactLine>(4);
                 car.Add(UiFactLine.Row(DealerText.T("reallife_ui_dealer_l_km"), DealerText.Km(l.Km)));
                 if (l.Inspected)
@@ -374,6 +376,7 @@ namespace RealLifeOverhaul.Ui
                     Lines = right.ToArray(), Actions = actions.ToArray() };
                 _m.Shape = EstateShape.Auction;
                 _m.Card = true;
+                _m.FootBack = DealerText.T("reallife_ui_estate_not_now");
                 _m.Auction = a;
             }
         }

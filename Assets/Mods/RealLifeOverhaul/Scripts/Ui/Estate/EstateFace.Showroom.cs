@@ -208,7 +208,10 @@ namespace RealLifeOverhaul.Ui
         {
             EstateAuction a = m.Auction;
             UiAt head = at.InRegion(RegionHead);
-            y = TopBar(s, head, a.Back, new UiActionModel[0], x, y, w, keys);
+            if (!m.Card)
+            {
+                y = TopBar(s, head, a.Back, new UiActionModel[0], x, y, w, keys);
+            }
             UiDraw.Text(s, head, x, y, w, UiStyle.SectionHeader, UiRole.Text2, a.Kicker, UiFlags.Label | UiFlags.Truncate | UiFlags.Middle);
             y += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3;
             float lw = UiDraw.SnapDown((w - UiTokens.S6) * 0.42f), rw = w - UiTokens.S6 - lw;

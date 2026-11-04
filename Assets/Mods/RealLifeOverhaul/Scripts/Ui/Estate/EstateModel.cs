@@ -14,7 +14,8 @@ namespace RealLifeOverhaul.Ui
         Catalogue,  // the showroom's cars as cards with the chosen one's detail beside them
         Chart,      // a page of one line chart with its choices under it and its sums beside it
         Auction,    // a lot of the trade auction as a card over the world: its facts, its bids and the one to place
-        Empty       // a section with nothing in it yet: what it is, and the card that starts it, together in the middle of the page
+        Empty,      // a section with nothing in it yet: what it is, and the card that starts it, together in the middle of the page
+        Decide      // a decision, as the desk session's card: one question, the facts that decide it and its choices, over the dimmed world
     }
 
     /// <summary>A short row under the roll or on a unit's page: a glyph on its tile, a title and a line under it, a
@@ -31,6 +32,51 @@ namespace RealLifeOverhaul.Ui
         public int Run;         // an index into the model's runs, or -1 for a row that only says something
         public string Face;     // a name to paint a portrait of in the glyph's place, or null
         public float Hue;
+        public string Button;   // a button of its own at the row's right (Send a reminder, Add to the fleet), or null; it takes the place of the amount
+        public int ButtonRun;   // the run it presses
+        public bool ButtonOff;  // drawn disabled: its reason is the row's chip
+    }
+
+    /// <summary>
+    /// A thing offered to the player that waits for an answer, as a band across a page (an instruction the agency is offered): what it is, the few figures that decide it
+    /// and the two answers to give. It sits over the page's table, so the answer is made where the offer is seen.
+    /// </summary>
+    public sealed class EstateOffer
+    {
+        public UiIcon Icon = UiIcon.Key;
+        public string Title, Sub, Chip;
+        public UiRole ChipTone = UiRole.Warn;
+        public string[] FigLabels = new string[0], FigValues = new string[0];
+        public UiActionModel[] Actions = new UiActionModel[0];   // the answers, the main one last
+    }
+
+    /// <summary>One answer of a decision: its name, what it does as lines of consequences, and the run it presses. The first two that can be taken carry F and P.</summary>
+    public sealed class EstateChoice
+    {
+        public string Name, Note;
+        public UiConsequence[] Lines = new UiConsequence[0];
+        public int Run = -1;
+        public bool Disabled;
+    }
+
+    /// <summary>
+    /// A decision as the approved desk session's card: who or what it is about at the left, the kicker and the title, one question, the few facts that decide it,
+    /// the choices with what each does, and the way out at the foot. Focus starts on <see cref="Start"/>, the safe answer, never the way out.
+    /// </summary>
+    public sealed class EstateDecision
+    {
+        public string Kicker, Title, Body;
+        public string Portrait;                                  // the person it is about, large, with their name under it; null for the emblem
+        public string[] PortraitLines = new string[0];
+        public UiIcon Emblem = UiIcon.Home;
+        public UiRole EmblemTint = UiRole.Accent;
+        public string EmblemLabel;
+        public string[] FactLabels = new string[0], FactValues = new string[0];
+        public UiRole[] FactInks = new UiRole[0];
+        public UiDecisionStep[] Steps = new UiDecisionStep[0];   // an amount to set before choosing (a counter-offer)
+        public EstateChoice[] Choices = new EstateChoice[0];
+        public int Start = -1;                                   // the choice focus starts on
+        public UiActionModel[] Buttons = new UiActionModel[0];   // the way out ("Not now", Esc), after the choices
     }
 
     /// <summary>A row of the unit page's rent record: the month's due day, how it ended, its state and its sum.</summary>
@@ -117,6 +163,7 @@ namespace RealLifeOverhaul.Ui
         // The head of a page with a table: a glyph, a title, a line and up to four figures at the right.
         public UiIcon HeadIcon = UiIcon.Home;
         public string HeadTitle, HeadSub;
+        public int HeadStars = -1;                   // a rating in halves of a star, drawn before the sub line (the fleet's rating), or -1 for none
         public string[] FigLabels = new string[0], FigValues = new string[0];
         public UiRole[] FigInks = new UiRole[0];
 
@@ -158,6 +205,7 @@ namespace RealLifeOverhaul.Ui
         public int[] ShareValues = new int[0];       // 0 to 100: each shows with its percent
         public string RelatedTitle, RelatedCount;
         public EstateRow[] Related = new EstateRow[0];
+        public bool FootFirst;                       // the lists under a table stand over it instead: what needs the player first, where the pad reaches it from the sidebar
         public int RelatedRows = 4;                  // the most rows the related list shows (a building's flats show more)
         public string GridTitle;                     // a block of equal buttons under the right column (the visits that can be booked)
         public UiActionModel[] Grid = new UiActionModel[0];
@@ -179,6 +227,10 @@ namespace RealLifeOverhaul.Ui
         public EstateRow[] Related2 = new EstateRow[0];
         public string[] ShareTexts = new string[0];  // what each share's figure says in place of its percent (a rent per m2), by share; empty for the percents
 
+        public EstateOffer Offer;                    // an offer waiting for an answer, as a band between the figures and the table (the agency's offered instruction)
+        public EstateDecision Decision;              // with the Decide shape
+        public string FootBack;                      // a card's way out at its foot (Esc): "Not now"; the card has no back button of its own nor a title strip
+        public string Kicker;                        // a card's line over its title, as the desk session's: what kind of decision this is
         public string Back;                          // the way back's words on a sub page; null on a tab's own page
         public Func<bool>[] Runs = new Func<bool>[0];
 

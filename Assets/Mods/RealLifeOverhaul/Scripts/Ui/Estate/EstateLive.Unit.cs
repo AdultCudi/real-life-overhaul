@@ -169,8 +169,20 @@ namespace RealLifeOverhaul.Ui
                 NeedCard(h, n, u, p, who);
                 // The rent record: the running month if they owe, then the last months.
                 p.RecordTitle = EstateText.T("reallife_ui_estate_record_title");
+                List<EstateRecordRow> record = RecordRows(u);
+                p.RecordNote = EstateText.T(record.Count == 0 ? "reallife_ui_estate_record_none" : "reallife_ui_estate_last_months", "count", record.Count.ToString(Inv));
+                p.Record = record.ToArray();
+                p.WorksTitle = EstateText.T("reallife_ui_estate_works_here");
+                var works = WorkRows(h, n, u);
+                p.Works = works.ToArray();
+                p.WorksCount = works.Count > 0 ? works.Count.ToString(Inv) : null;
+            }
+
+            // The months of a unit's rent record, the running month first when rent is owed: what was due, how it ended, its state and its sum.
+            private List<EstateRecordRow> RecordRows(EstateUnit u)
+            {
                 var record = new List<EstateRecordRow>(EstateCatalogue.PaymentsKept + 1);
-                if (u.Arrears > 0)
+                if (u.Let && u.Arrears > 0)
                 {
                     record.Add(new EstateRecordRow
                     {
@@ -191,19 +203,7 @@ namespace RealLifeOverhaul.Ui
                         Chip = chipText, ChipTone = r.State == (byte)PaymentState.OnTime ? UiRole.Ok : r.State == (byte)PaymentState.Late ? UiRole.Warn : UiRole.Danger, Amount = Money(r.Amount)
                     });
                 }
-                if (record.Count == 0)
-                {
-                    p.RecordNote = EstateText.T("reallife_ui_estate_record_none");
-                }
-                else
-                {
-                    p.RecordNote = EstateText.T("reallife_ui_estate_last_months", "count", record.Count.ToString(Inv));
-                }
-                p.Record = record.ToArray();
-                p.WorksTitle = EstateText.T("reallife_ui_estate_works_here");
-                var works = WorkRows(h, n, u);
-                p.Works = works.ToArray();
-                p.WorksCount = works.Count > 0 ? works.Count.ToString(Inv) : null;
+                return record;
             }
 
             // What needs the landlord, the most pressing first: a tenant's request, rent that is late, a repair call waiting.
@@ -363,6 +363,17 @@ namespace RealLifeOverhaul.Ui
                 p.ShareTitle = EstateText.T("reallife_ui_estate_sh_weigh");
                 p.ShareLabels = new[] { EstateText.T("reallife_ui_estate_m_repairs"), EstateText.T("reallife_ui_estate_m_value"), EstateText.T("reallife_ui_estate_m_condition") };
                 p.ShareValues = new[] { rep, val, cond };
+                List<EstateRecordRow> last = RecordRows(u);
+                if (last.Count > 0)
+                {
+                    p.RecordTitle = EstateText.T("reallife_ui_estate_record_last_tenant");
+                    p.RecordNote = EstateText.T("reallife_ui_estate_last_months", "count", last.Count.ToString(Inv));
+                    p.Record = last.ToArray();
+                }
+                p.WorksTitle = EstateText.T("reallife_ui_estate_works_here");
+                List<EstateRow> works = WorkRows(h, n, u);
+                p.Works = works.ToArray();
+                p.WorksCount = works.Count > 0 ? works.Count.ToString(Inv) : null;
                 if (steps < 0)
                 {
                     p.Empty = null;

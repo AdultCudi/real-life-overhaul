@@ -227,6 +227,13 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
+            if (_m.Shape == EstateShape.Decide)
+            {
+                int run = EstateFace.DecisionKey(_m.Decision, action);   // F takes the first choice that can be taken, P the next, as their caps say
+                bool answered = run >= 0 && Run(run);
+                _dirty |= answered;
+                return answered;
+            }
             bool done = Key(_m.DetailActions, action) || (_m.Shape == EstateShape.Empty && _m.Side != null && Key(_m.Side.Actions, action)) || (_m.Unit != null && Key(_m.Unit.NeedActions, action));
             for (int i = 0; !done && i < _m.Left.Length; i++)
             {

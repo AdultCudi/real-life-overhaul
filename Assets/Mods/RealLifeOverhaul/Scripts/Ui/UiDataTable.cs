@@ -18,7 +18,8 @@ namespace RealLifeOverhaul.Ui
         Action,       // a thing to do with the row, as an icon button at its right (Values: the icon, Tones: its tint; Cells: its words, unseen): set the destination
         Trend,        // a figure at the right with its direction's arrow (Values: 1, -1 or 0; Tones: Danger where a rise is bad) (UiDataCells)
         Steps,        // a short ladder as a bar of segments (Values: the steps reached, the column's Steps: how many, the row's Share)
-        Spark         // a sparkline of the row's Line, oldest first
+        Spark,        // a sparkline of the row's Line, oldest first
+        Stars         // a rating as five stars by halves (Values: 0 to 10 halves), as Football Manager rates; Cells: its words, unseen, for the sort and the reader
     }
 
     /// <summary>A column of a big table: what its cells are, how wide it stands and whether its head sorts it.</summary>
@@ -381,7 +382,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         private static bool RightAligned(UiCellKind kind) => kind == UiCellKind.Figure || kind == UiCellKind.Money || kind == UiCellKind.Date || kind == UiCellKind.Meter
-                                                              || kind == UiCellKind.Chip || kind == UiCellKind.Stepper || kind == UiCellKind.Trend;
+                                                              || kind == UiCellKind.Chip || kind == UiCellKind.Stepper || kind == UiCellKind.Trend || kind == UiCellKind.Stars;
 
         // The head: each title in capitals, a sortable one a target, the sorted one in the words' colour with its order's
         // arrow beside it. Figures' titles stand at the right, over their figures.
@@ -657,6 +658,15 @@ namespace RealLifeOverhaul.Ui
                 case UiCellKind.Steps:
                     UiDataCells.Steps(s, at, words, value, row.Share, col.Steps, cx, ry, cw, rowH, sel);
                     break;
+                case UiCellKind.Stars:
+                {
+                    float size = UiTokens.IconSmall, starsW = 5f * size + 4f * UiTokens.Hairline * 2f;
+                    if (cw >= starsW)
+                    {
+                        UiDraw.Stars(s, at, cx + cw - starsW, ry + (rowH - size) / 2f, size, Math.Max(0, Math.Min(10, value)));
+                    }
+                    break;
+                }
                 case UiCellKind.Spark:
                     if (row.Line != null && row.Line.Length > 1 && cw >= UiTokens.S8)
                     {

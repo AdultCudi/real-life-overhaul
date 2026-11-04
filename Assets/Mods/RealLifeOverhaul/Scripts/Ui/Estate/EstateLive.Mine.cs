@@ -196,7 +196,7 @@ namespace RealLifeOverhaul.Ui
                 if (rows.Count > 0)
                 {
                     t.TotalsLabel = EstateText.T("reallife_ui_estate_total_let", "count", let.ToString(Inv));
-                    t.Totals = new[] { string.Empty, string.Empty, string.Empty, Cash(due), EstateText.T("reallife_ui_estate_total_in", "amount", Cash(Math.Max(0, due - owed))), string.Empty };
+                    t.Totals = new[] { string.Empty, string.Empty, string.Empty, Cash(due), string.Empty, string.Empty };   // the collected figure is the head's: said once
                 }
                 t.EmptyTitle = EstateText.T("reallife_estate_row_nothing_owned");
                 t.EmptyBody = EstateText.T("reallife_ui_estate_empty_roll_body");
