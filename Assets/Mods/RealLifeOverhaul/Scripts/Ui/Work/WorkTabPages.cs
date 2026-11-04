@@ -112,6 +112,14 @@ namespace RealLifeOverhaul.Ui
             return page;
         }
 
+        /// <summary>The row a table or a catalogue shows its detail for under this view, or null: what a source steps a choice of its own for.</summary>
+        public static WorkRow ChosenRow(WorkTab t, WorkView v)
+        {
+            List<WorkRow> shown = Shown(t, v, out int _);
+            int at = v.Row >= 0 && v.Row < shown.Count ? v.Row : shown.Count > 0 ? 0 : -1;
+            return at >= 0 ? shown[at] : null;
+        }
+
         // The rows the chips, the search and the chosen role of an aside leave.
         private static List<WorkRow> Shown(WorkTab t, WorkView v, out int asideRole)
         {
@@ -388,6 +396,14 @@ namespace RealLifeOverhaul.Ui
                     if (r.Act != null)
                     {
                         r.ActAt = b.Button(r.Act.Label, r.Act.Style, r.Act.Icon, UiAction.Count, WorkBuilder.Do(r.Act.Kind, r.Act.Arg, r.Act.Why, r.Act.Opens));
+                        for (int m = 0; m < r.More.Count; m++)
+                        {
+                            b.Button(r.More[m].Label, r.More[m].Style, r.More[m].Icon, UiAction.Count, WorkBuilder.Do(r.More[m].Kind, r.More[m].Arg, r.More[m].Why, r.More[m].Opens));
+                        }
+                        if (r.Act2 != null)
+                        {
+                            b.Button(r.Act2.Label, r.Act2.Style, r.Act2.Icon, UiAction.Count, WorkBuilder.Do(r.Act2.Kind, r.Act2.Arg, r.Act2.Why, r.Act2.Opens));   // the next place after the first
+                        }
                     }
                 }
                 if (band.Foot != null)

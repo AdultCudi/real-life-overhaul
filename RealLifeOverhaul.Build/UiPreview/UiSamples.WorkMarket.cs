@@ -75,7 +75,7 @@ internal static partial class UiSamples
             sec.People.Add(new WorkPerson { Name = seller, Role = i == 1 || i == 13 ? "Guo Logistics, a rival" : "Seller, " + (3 + i % 3) + " sales", Right = "4.1", Ring = UiRole.None });
             r.Sections.Add(sec);
             var facts = new WorkSection { Part = WorkPart.Pairs, Title = car ? w.T("reallife_work_the_vehicle", "The vehicle") : w.T("reallife_work_the_thing", "The thing") };
-            facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_condition", "Condition"), "Good, 82%"));
+            facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_condition", "Condition said"), "Good, 82%"));
             if (car)
             {
                 facts.Pairs.Add(new KeyValuePair<string, string>("Cargo", "1.8 tonnes"));
@@ -100,7 +100,7 @@ internal static partial class UiSamples
             before.Checks.Add(new WorkNeed { Words = "Delivery adds $120 and a day", Met = false });
             r.Sections.Add(before);
             r.Acts.Add(WkAct(100, w.F("reallife_work_buy_now", "Buy now, {price}", "price", (string)p[2]), UiButtonKind.Primary, UiIcon.Check, null, false, r.Id));
-            r.Acts.Add(WkAct(101, w.T("reallife_hustle_button_offer", "Haggle"), UiButtonKind.Secondary, UiIcon.Arrows, null, true, r.Id));
+            r.Acts.Add(WkAct(101, w.T("reallife_work_haggle", "Haggle"), UiButtonKind.Secondary, UiIcon.Arrows, null, true, r.Id));
             r.Acts.Add(WkAct(102, w.T("reallife_hustle_button_way", "Show the way"), UiButtonKind.Secondary, UiIcon.Locate, null, true, r.Id));
             t.Rows.Add(r);
         }
@@ -119,9 +119,9 @@ internal static partial class UiSamples
         r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_offers_left", "Offers left"), "3 of 3"));
         r.Acts.Add(new WorkAct { Kind = 103, Arg = 2, Label = w.F("reallife_work_make_offer", "Offer {amount}", "amount", "$" + offer.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)), Style = UiButtonKind.Primary, Icon = UiIcon.Check,
             Note = w.T("reallife_work_offer_note", "They may accept, counter or turn it down."), Choice = true });
-        r.Acts.Add(new WorkAct { Kind = 100, Arg = 2, Label = w.T("reallife_work_pay_asking", "Pay the asking price"), Style = UiButtonKind.Secondary, Icon = UiIcon.Coin, Note = w.T("reallife_work_pay_asking_note", "Buy now at $14,200, no more haggling."), Choice = true });
+        r.Acts.Add(new WorkAct { Kind = 100, Arg = 2, Label = w.T("reallife_work_pay_asking", "Pay the asking price"), Style = UiButtonKind.Secondary, Icon = UiIcon.Coin, Note = w.F("reallife_work_pay_asking_note", "Buy now at {price}, no more haggling.", "price", "$14,200"), Choice = true });
         r.Acts.Add(new WorkAct { Kind = WorkKinds.Back, Arg = 2, Label = w.T("reallife_work_walk_away_haggle", "Walk away"), Style = UiButtonKind.Destructive, Icon = UiIcon.Back, Opens = true,
-            Note = w.T("reallife_work_walk_note", "Back to the listings. The van stays for sale today."), Choice = true });
+            Note = w.F("reallife_work_walk_note", "Back to the listings. The {thing} stays for sale today.", "thing", "van"), Choice = true });
         t.Haggle = r;
         return t;
     }
@@ -148,7 +148,7 @@ internal static partial class UiSamples
             if (p[4] == "kept")
             {
                 r.Acts.Add(WkAct(109, w.F("reallife_work_list_at", "List at {price}", "price", p[3]), UiButtonKind.Primary, UiIcon.Tag, null, false, r.Id));
-                r.Acts.Add(WkAct(110, w.T("reallife_hustle_button_plan_fix", "Mend it at home"), UiButtonKind.Secondary, UiIcon.Wrench, null, false, r.Id));
+                r.Acts.Add(WkAct(110, w.T("reallife_hustle_button_plan_fix", "Fix it at home"), UiButtonKind.Secondary, UiIcon.Wrench, null, false, r.Id));
                 r.Acts.Add(WkAct(111, w.T("reallife_hustle_button_plan_clean", "Clean it at home"), UiButtonKind.Secondary, UiIcon.Drop, null, false, r.Id));
             }
             else if (p[4] == "listed")
@@ -184,8 +184,8 @@ internal static partial class UiSamples
             r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_offer", "Offer"), p[3]));
             r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_asking", "Asking"), p[2]));
             r.Acts.Add(WkAct(102, w.F("reallife_work_accept_at", "Accept {offer}", "offer", p[3]), UiButtonKind.Primary, UiIcon.Check, null, false, r.Id));
-            r.Acts.Add(WkAct(103, w.T("reallife_hustle_button_counter", "Counter at the asking price"), UiButtonKind.Secondary, UiIcon.Arrows, null, false, r.Id));
-            r.Acts.Add(WkAct(104, w.T("reallife_hustle_button_decline", "Turn down"), UiButtonKind.Destructive, UiIcon.Close, null, false, r.Id));
+            r.Acts.Add(WkAct(103, w.T("reallife_hustle_button_counter", "Counter"), UiButtonKind.Secondary, UiIcon.Arrows, null, false, r.Id));
+            r.Acts.Add(WkAct(104, w.T("reallife_hustle_button_decline", "Turn it down"), UiButtonKind.Destructive, UiIcon.Close, null, false, r.Id));
             t.Rows.Add(r);
         }
         return t;
@@ -214,7 +214,7 @@ internal static partial class UiSamples
             else
             {
                 r.Acts.Add(WkAct(108, w.T("reallife_hustle_button_helper", "Send a helper"), UiButtonKind.Secondary, UiIcon.People, null, false, r.Id));
-                r.Acts.Add(WkAct(107, w.T("reallife_hustle_button_cancel", "Cancel the visit"), UiButtonKind.Destructive, UiIcon.Close, null, false, r.Id));
+                r.Acts.Add(WkAct(107, w.T("reallife_hustle_button_cancel", "Call it off"), UiButtonKind.Destructive, UiIcon.Close, null, false, r.Id));
             }
             t.Rows.Add(r);
         }

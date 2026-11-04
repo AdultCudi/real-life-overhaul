@@ -13,7 +13,7 @@ namespace RealLifeOverhaul.Ui
         Resign = 109, WalkOut = 110, AskRise = 111, OpenCampus = 112, TaskYes = 113, TaskNo = 114, TaskUp = 115, TakeContract = 116, DropContract = 117,
         Retire = 118, Aiming = 119, Declare = 120, AnswerA = 121, AnswerB = 122, PolicyMore = 123, PolicyLess = 124, RotaLean = 125, RotaStandard = 126, RotaFull = 127,
         AskShiftEarlier = 128, AskShiftLater = 129, AskEquipment = 130, AskInsurance = 131, Raise = 132, PracticeOpen = 133, PracticeClose = 134, Found = 135, FoundWith = 136,
-        PracticeLeaveAct = 137, BringColleagues = 138, ShowBoard = 139, OpenJob = 140
+        PracticeLeaveAct = 137, BringColleagues = 138
     }
 
     /// <summary>One rung of the profession's ladder at the player's employer.</summary>
@@ -97,8 +97,8 @@ namespace RealLifeOverhaul.Ui
             if (!f.Ready)
             {
                 var b = new WorkBuilder(w);
-                string title = w.T("reallife_career_off_title", "Careers are not running");
-                string body = w.T("reallife_career_off_body", "Load a save with careers switched on to see your working life.");
+                string title = w.T("reallife_career_off_title", "Career is closed");
+                string body = w.T("reallife_career_off_body", "Professional jobs are switched off on the options page, or the save is still loading.");
                 b.Page.Body = (s, at, x, y, cw, bottom, keys) => UiDraw.EmptyState(s, at, x, y, cw, bottom - y, UiIcon.Briefcase, title, body, null, -1, keys);
                 return b.Done();
             }
@@ -116,6 +116,48 @@ namespace RealLifeOverhaul.Ui
             app.Tabs[Own] = f.Own;
             app.Tabs[Cv] = f.Cv;
             return WorkTabPages.Build(app, v, w);
+        }
+
+        // ------------------------------------------------------------------------------------------------- the list tabs' shells
+
+        private static UiDataColumn Col(string title, UiCellKind kind, float width = 0f, bool graded = false) => WorkBuilder.Col(title, kind, width, graded);
+
+        /// <summary>The Jobs tab as a squad page: its chips, its search, its columns and what an empty board says. The source fills its rows.</summary>
+        public static WorkTab JobsShell(UtilitiesWords w)
+        {
+            var t = new WorkTab { Shape = WorkShape.Table, Search = w.T("reallife_work_search_jobs", "Search jobs"), ChipsByMask = true, AllWord = w.T("reallife_work_filter_all_word", "All"),
+                Chips = new[] { w.T("reallife_work_filter_open_word", "Open now"), w.T("reallife_work_filter_qualify_word", "You qualify"), w.T("reallife_work_filter_near_word", "Near you") },
+                EmptyIcon = UiIcon.Briefcase, EmptyTitle = w.T("reallife_work_empty_jobs_title", "No post is open today"),
+                EmptyBody = w.T("reallife_work_empty_jobs", "Employers post their vacancies each morning. The professions show what to train for in the meantime."),
+                EmptyActLabel = w.T("reallife_career_button_professions", "See the professions"), EmptyAct = new WorkAct { Kind = WorkKinds.GoTab, Arg = Professions, Opens = true } };
+            t.Columns = new[] { Col(w.T("reallife_work_col_job", "Job"), UiCellKind.Tile), Col(w.T("reallife_work_col_where", "Where"), UiCellKind.Text, 128), Col(string.Empty, UiCellKind.Action, 32),
+                Col(w.T("reallife_work_col_hours", "Hours"), UiCellKind.Text, 128), Col(w.T("reallife_work_col_pay_hour", "Pay an hour"), UiCellKind.Money, 96),
+                Col(w.T("reallife_work_col_against", "Against yours"), UiCellKind.Trend, 104), Col(w.T("reallife_work_col_you", "You"), UiCellKind.Chip, 136) };
+            return t;
+        }
+
+        /// <summary>The Applications tab as a squad page.</summary>
+        public static WorkTab ApplicationsShell(UtilitiesWords w)
+        {
+            var t = new WorkTab { Shape = WorkShape.Table, EmptyIcon = UiIcon.ClipboardText, EmptyTitle = w.T("reallife_work_empty_apps_title", "No application is waiting"),
+                EmptyBody = w.T("reallife_work_empty_applications", "Apply from Jobs and the employer answers within a day or two. Offers and interviews show here."),
+                EmptyActLabel = w.T("reallife_career_button_see_jobs", "See all the jobs"), EmptyAct = new WorkAct { Kind = WorkKinds.GoTab, Arg = Jobs, Opens = true },
+                NoteLead = w.T("reallife_work_apps_how_lead", "How it goes."),
+                NoteText = w.T("reallife_work_apps_how", "An employer answers a day or two after you apply. An interview or an offer shows here, and an offer can be accepted, asked up or declined.") };
+            t.Columns = new[] { Col(w.T("reallife_work_col_job", "Job"), UiCellKind.Tile), Col(w.T("reallife_work_col_sent", "Sent"), UiCellKind.Text, 96),
+                Col(w.T("reallife_work_col_answer", "Answer by"), UiCellKind.Text, 104), Col(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 128) };
+            return t;
+        }
+
+        /// <summary>The Professions tab as a squad page.</summary>
+        public static WorkTab ProfessionsShell(UtilitiesWords w)
+        {
+            var t = new WorkTab { Shape = WorkShape.Table, EmptyIcon = UiIcon.ListChecks, EmptyTitle = w.T("reallife_work_empty_pro_title", "No profession is open to you"),
+                EmptyBody = w.T("reallife_work_empty_professions", "Courses open the professions that ask for a qualification.") };
+            t.Columns = new[] { Col(w.T("reallife_work_col_trade", "Profession"), UiCellKind.Tile), Col(w.T("reallife_work_col_hours", "Hours"), UiCellKind.Text, 176),
+                Col(w.T("reallife_work_col_pay_hour", "Pay an hour"), UiCellKind.Money, 104), Col(w.T("reallife_work_col_posts_open", "Posts open"), UiCellKind.Figure, 88, true),
+                Col(w.T("reallife_work_col_for_you", "For you"), UiCellKind.Chip, 136) };
+            return t;
         }
 
         // ------------------------------------------------------------------------------------------------- My job
@@ -175,9 +217,9 @@ namespace RealLifeOverhaul.Ui
             }
             if (j.CanDeclare)
             {
-                d = b.Button(w.T("reallife_life_button_declare", "Declare a conflict"), UiButtonKind.Secondary, UiIcon.Warning, UiAction.Count, WorkBuilder.Do((int)CareerAct.Declare));
+                d = b.Button(w.T("reallife_life_button_declare", "Declare the conflict"), UiButtonKind.Secondary, UiIcon.Warning, UiAction.Count, WorkBuilder.Do((int)CareerAct.Declare));
             }
-            int resign = j.Leaving ? -1 : b.Button(w.T("reallife_career_button_resign", "Resign"), UiButtonKind.Destructive, UiIcon.SignOut, UiAction.Count, WorkBuilder.Do((int)CareerAct.Resign));
+            int resign = j.Leaving ? -1 : b.Button(w.T("reallife_career_button_resign", "Hand in notice"), UiButtonKind.Destructive, UiIcon.SignOut, UiAction.Count, WorkBuilder.Do((int)CareerAct.Resign));
             int walk = b.Button(w.T("reallife_career_button_walk_out", "Walk out"), UiButtonKind.Destructive, UiIcon.SignOut, UiAction.Count, WorkBuilder.Do((int)CareerAct.WalkOut));
             var heads = new List<UiActionModel> { b.ModelAt(head), b.ModelAt(rise) };
             var more = new List<UiActionModel>(4);
@@ -210,8 +252,8 @@ namespace RealLifeOverhaul.Ui
             UiActionModel[] actions = page.Model.Actions;
             var best = f.Best.ToArray();
             string laid = f.Laid;
-            string title = w.T("reallife_career_job_none_title", "You have no job yet");
-            string line = laid ?? w.T("reallife_career_job_none", "Find one under Jobs and apply. The employer weighs your record, and you start at your desk.");
+            string title = w.T("reallife_career_job_none_title", "No job");
+            string line = laid ?? w.T("reallife_career_job_none", "No job. Apply for one under Jobs.");
             string bestTitle = w.T("reallife_career_best_title", "Where to start");
             string stepsTitle = w.T("reallife_career_how_title", "How a post is won");
             string[] steps =

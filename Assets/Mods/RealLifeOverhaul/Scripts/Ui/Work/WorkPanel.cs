@@ -104,21 +104,22 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             float tx = x + face + UiTokens.S3, tw = w - face - UiTokens.S3;
-            bool two = !string.IsNullOrEmpty(r.Sub) || !string.IsNullOrEmpty(r.Chip);
+            string below = string.IsNullOrEmpty(r.Chip) ? r.Sub : r.HeadSub;   // with a chip the table's second line is not said again
+            bool two = !string.IsNullOrEmpty(below) || !string.IsNullOrEmpty(r.Chip);
             float lh = UiTextRules.LineHeight(UiStyle.Number), sh = UiTextRules.LineHeight(UiStyle.Small);
             float top = y + (face - lh - (two ? sh + UiTokens.S1 : 0f)) / 2f;
             UiDraw.Text(s, at, tx, UiDraw.Snap(top), tw, UiStyle.Number, UiRole.Text, UiTextRules.Cut(title ?? string.Empty, UiStyle.Number, tw), UiFlags.Truncate | UiFlags.Middle);
             if (!string.IsNullOrEmpty(r.Chip))
             {
                 float cw = UiDraw.Chip(s, at, tx, UiDraw.Snap(top + lh + UiTokens.S1), r.Chip, r.ChipTone, tw);
-                if (!string.IsNullOrEmpty(r.Sub) && cw + UiTokens.S2 < tw)
+                if (!string.IsNullOrEmpty(below) && cw + UiTokens.S2 < tw)
                 {
-                    UiDraw.Text(s, at, tx + cw + UiTokens.S2, UiDraw.Snap(top + lh + UiTokens.S1), tw - cw - UiTokens.S2, UiStyle.Small, UiRole.Text2, r.Sub, UiFlags.Truncate | UiFlags.Middle);
+                    UiDraw.Text(s, at, tx + cw + UiTokens.S2, UiDraw.Snap(top + lh + UiTokens.S1), tw - cw - UiTokens.S2, UiStyle.Small, UiRole.Text2, below, UiFlags.Truncate | UiFlags.Middle);
                 }
             }
-            else if (!string.IsNullOrEmpty(r.Sub))
+            else if (!string.IsNullOrEmpty(below))
             {
-                UiDraw.Text(s, at, tx, UiDraw.Snap(top + lh + UiTokens.S1), tw, UiStyle.Small, UiRole.Text2, r.Sub, UiFlags.Truncate | UiFlags.Middle);
+                UiDraw.Text(s, at, tx, UiDraw.Snap(top + lh + UiTokens.S1), tw, UiStyle.Small, UiRole.Text2, below, UiFlags.Truncate | UiFlags.Middle);
             }
             return y + face + UiTokens.S4;
         }
@@ -225,7 +226,14 @@ namespace RealLifeOverhaul.Ui
                     if (sec.Stepper >= 0 && amounts != null && sec.Stepper < amounts.Length)
                     {
                         WorkAmount a = amounts[sec.Stepper];
-                        UiDraw.Stepper(s, at, x, y, w, a.Figure, a.CanLess, a.CanMore, WorkCmd.Less, WorkCmd.Type, WorkCmd.More, sec.Stepper, false);
+                        if (a.Words != null)
+                        {
+                            UiDraw.Selector(s, at, x, y, w, string.Empty, a.Figure, WorkCmd.Pick, sec.Stepper);
+                        }
+                        else
+                        {
+                            UiDraw.Stepper(s, at, x, y, w, a.Figure, a.CanLess, a.CanMore, WorkCmd.Less, WorkCmd.Type, WorkCmd.More, sec.Stepper, false);
+                        }
                     }
                     y += UiTokens.Control;
                     break;
@@ -305,6 +313,6 @@ namespace RealLifeOverhaul.Ui
     /// <summary>The command numbers of the work apps' own parts (a block nobody else uses: 1200 to 1219; the kit's are not unique across parts, so every handler tests the page it belongs to first).</summary>
     public static class WorkCmd
     {
-        public const int Less = 1201, Type = 1202, More = 1203, Field = 1204, Search = 1205, Card = 1206, PageTab = 1207, Aside = 1208, Sort = 1209, Close = 1210, Locate = 1211, Pick = 1212, Diary = 1213, Day = 1214;
+        public const int Less = 1201, Type = 1202, More = 1203, Field = 1204, Search = 1205, Card = 1206, PageTab = 1207, Aside = 1208, Sort = 1209, Close = 1210, Locate = 1211, Pick = 1212, Diary = 1213, Day = 1214, NudgeLess = 1215, NudgeMore = 1216, Read = 1217;
     }
 }

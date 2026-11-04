@@ -1,24 +1,32 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using Localizor;
 using RealLifeOverhaul.DaySeries;
 using RealLifeOverhaul.Tech;
+using TFamily = RealLifeOverhaul.Tech.Family;
 
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// Open Roles on the kit: the player's ads, the applicants of each with their skills, asks, past jobs and any rival's named offer with its
-    /// deadline, the market of seekers, the search firm and the team. Read from the hiring part of the tech sector; every button goes to the
-    /// director that owns it (TechDirector: Shortlist, MakeOffer, TakeCounter, WalkAway, CloseAd). Nothing a frame.
+    /// Open Roles on the kit: the player's ads and a new ad (with its posts to fill), the applicants of each role as a squad page (faces, graded skill, asking
+    /// pay, any rival's named offer with its deadline) and a person's page for each (File, Career, Contract), the market of seekers by line, the search firm and
+    /// the data centre crew briefs, and the team with a page for each. Read from the hiring part of the tech sector; every button goes to the director that
+    /// owns it. Nothing a frame.
     /// </summary>
-    public sealed class RolesLive : IWorkSource
+    public sealed partial class RolesLive : IWorkSource
     {
         public static readonly RolesLive Instance = new RolesLive();
 
-        private const int Shortlist = 100, Offer = 101, Counter = 102, Walk = 103, Close = 104;
+        // the actions of this app, from 100 (the screen's own are 1 to 3)
+        private const int Shortlist = 100, Offer = 101, Counter = 102, Walk = 103, Close = 104, NewAd = 105, PostAd = 107, OpenApplicant = 110, OpenPerson = 111, Interview = 112,
+            Refs = 113, Background = 114, Reject = 115, Buyout = 116, Brief = 120, BriefCrew = 121, Match = 130, LetThem = 131, GiveRise = 132, RefuseRise = 133, Promote = 134, SetRole = 141,
+            SetWork = 142, Clause = 143, LayOff = 144, Dismiss = 145, CourseA = 146, CourseB = 147, Degree = 148, Exam = 149;
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+        private static readonly int[] PayBands = { 900, 1000, 1100, 1200, 1350 };   // thousandths of the going rate an ad's top pay can be set at
         private int _local, _wanted = -1, _readGeneration = -1;
         private WorkApp _app = new WorkApp();
+        private readonly List<BuildingRegistration> _places = new List<BuildingRegistration>(8);
 
         private RolesLive() { }
 
@@ -60,8 +68,21 @@ namespace RealLifeOverhaul.Ui
         public WorkPage Page(WorkView view)
         {
             Read();
+            TechDirector d = TechDirector.Instance;
+            HiringFile h = d != null ? d.Hiring : null;
+            GameInstance save = SaveGameManager.Current;
+            if (_app.Ready && h != null && save != null)
+            {
+                int day = save.Day;
+                _app.Tabs[0] = view.Sub == 3 ? NewAdTab(d, view) : Jobs(d, h, day);
+                _app.Tabs[1] = view.Sub == 1 ? ApplicantPage(d, h, day, view) : Applicants(d, h, day, view);
+                _app.Tabs[3] = Search(d, h, day, view);
+                _app.Tabs[4] = view.Sub == 2 ? PersonPage(d, day, view) : Team(d, day);
+            }
             return WorkTabPages.Build(_app, view, W);
         }
+
+        // ------------------------------------------------------------------------------------------------- reading
 
         private void Read()
         {
@@ -75,42 +96,72 @@ namespace RealLifeOverhaul.Ui
             HiringFile h = d != null ? d.Hiring : null;
             GameInstance save = SaveGameManager.Current;
             UtilitiesWords w = W;
-            _app = new WorkApp { Ready = h != null && save != null, OffBody = w.T("reallife_work_roles_off",
-                "Load a save with the tech sector switched on to hire for your firms.") };
-            int applicants = 0;
+            _app = new WorkApp { Ready = h != null && save != null, OffTitle = w.T("reallife_work_roles_off_title", "Hiring is switched off"),
+                OffBody = w.T("reallife_work_roles_off", "Load a save with the tech sector switched on to hire for your firms.") };
+            int applicants = 0, ads = 0;
             for (int i = 0; h != null && i < h.Applicants.Count; i++)
             {
                 applicants += h.Applicants[i].Live ? 1 : 0;
             }
+            for (int i = 0; h != null && i < h.Ads.Count; i++)
+            {
+                ads += !h.Ads[i].Search ? 1 : 0;
+            }
             _app.Nav = new[]
             {
-                new UiNavEntry { Icon = UiIcon.ClipboardText, Label = w.T("reallife_roles_tab_jobs", "Jobs"), Count = h != null
-                    && h.Ads.Count > 0 ? h.Ads.Count.ToString(Inv) : null },
-                new UiNavEntry { Icon = UiIcon.People, Label = w.T("reallife_roles_tab_applicants", "Applicants"),
-                    Count = applicants > 0 ? applicants.ToString(Inv) : null },
+                new UiNavEntry { Icon = UiIcon.ClipboardText, Label = w.T("reallife_roles_tab_jobs", "Jobs"), Count = ads > 0 ? ads.ToString(Inv) : null },
+                new UiNavEntry { Icon = UiIcon.People, Label = w.T("reallife_roles_tab_applicants", "Applicants"), Count = applicants > 0 ? applicants.ToString(Inv) : null },
                 new UiNavEntry { Icon = UiIcon.Globe, Label = w.T("reallife_roles_tab_market", "Market") },
                 new UiNavEntry { Icon = UiIcon.Search, Label = w.T("reallife_roles_tab_search", "Search") },
-                new UiNavEntry { Icon = UiIcon.Person, Label = w.T("reallife_roles_tab_team", "Team"), Count = d != null
-                    && d.People.Count > 0 ? d.People.Count.ToString(Inv) : null }
+                new UiNavEntry { Icon = UiIcon.Person, Label = w.T("reallife_roles_tab_team", "Team"), Count = d != null && d.People.Count > 0 ? d.People.Count.ToString(Inv) : null }
             };
             if (!_app.Ready)
             {
                 return;
             }
-            int day = save.Day;
-            _app.Tabs = new[] { Jobs(h, day), Applicants(d, h, day), Market(h), Search(h), Team(d) };
+            _app.Tabs = new[] { new WorkTab(), new WorkTab(), Market(d, h, save.Day), new WorkTab(), new WorkTab() };
         }
 
-        private static UiColumn Col(string title, bool grow = false, bool right = false) => new UiColumn { Title = title, Grow = grow,
-            Width = grow ? 0f : 184f, Right = right };
+        private static UiIcon RoleGlyph(int role)
+        {
+            RoleDef r = TalentCatalogue.Role(role);
+            switch (r.Family)
+            {
+                case TFamily.Engineering: return UiIcon.Code;
+                case TFamily.Data: return UiIcon.Database;
+                case TFamily.Security: return UiIcon.ShieldCheck;
+                case TFamily.Infrastructure: return UiIcon.HardDrives;
+                case TFamily.Product: return UiIcon.Layout;
+                case TFamily.Design: return UiIcon.PaintBrush;
+                case TFamily.Commercial: return UiIcon.Handshake;
+                case TFamily.Support: return UiIcon.Headset;
+                case TFamily.Corporate: return UiIcon.Building;
+                case TFamily.Built: return UiIcon.Hammer;
+                default: return UiIcon.Person;
+            }
+        }
 
-        private WorkTab Jobs(HiringFile h, int day)
+        // ------------------------------------------------------------------------------------------------- Jobs
+
+        private WorkTab Jobs(TechDirector d, HiringFile h, int day)
         {
             UtilitiesWords w = W;
-            var t = new WorkTab { TableTitle = w.T("reallife_roles_tab_jobs", "Jobs"), Lead = w.T("reallife_work_no_ads",
-                "No open roles. Post an ad in the game's own Open Roles app and applicants arrive over a few days."),
-                Columns = new[] { Col(w.T("reallife_work_col_role", "Role"), true), Col(w.T("reallife_work_col_posts", "Posts to fill")),
-                    Col(w.T("reallife_work_col_applicants", "Applicants")), Col(w.T("reallife_work_col_pay_up_to", "Up to"), false, true) } };
+            var t = new WorkTab { Shape = WorkShape.Table };
+            t.Columns = new[] { WorkBuilder.Col(w.T("reallife_work_col_role", "Role"), UiCellKind.Tile), WorkBuilder.Col(w.T("reallife_work_col_posts", "Posts to fill"), UiCellKind.Text, 112),
+                WorkBuilder.Col(w.T("reallife_work_col_applicants", "Applicants"), UiCellKind.Figure, 96, true), WorkBuilder.Col(w.T("reallife_work_col_pay_up_to", "Up to"), UiCellKind.Money, 88),
+                WorkBuilder.Col(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 136) };
+            t.EmptyTitle = w.T("reallife_work_no_ads_title", "No role is open");
+            t.EmptyBody = w.T("reallife_work_no_ads", "Post an ad and applicants arrive over a few days.");
+            t.EmptyIcon = UiIcon.ClipboardText;
+            t.Acts.Add(new WorkAct { Kind = NewAd, Label = w.T("reallife_work_new_ad", "New ad"), Style = UiButtonKind.Primary, Icon = UiIcon.Plus, Opens = true });
+            var hired = new List<Applicant>(8);
+            for (int i = 0; i < h.Applicants.Count; i++)
+            {
+                if (h.Applicants[i].Stage == (int)ApplyStage.Started && h.Applicants[i].Start >= day - 30)
+                {
+                    hired.Add(h.Applicants[i]);
+                }
+            }
             for (int i = 0; i < h.Ads.Count; i++)
             {
                 JobAd ad = h.Ads[i];
@@ -123,181 +174,160 @@ namespace RealLifeOverhaul.Ui
                 {
                     came += h.Applicants[k].Ad == ad.Id && h.Applicants[k].Live ? 1 : 0;
                 }
-                int left = HireOffers.ToFill(h, ad);
-                var r = new WorkRow { Id = ad.Id, Icon = UiIcon.ClipboardText,
-                    Cells = new[] { TechText.Role(ad.Role) + ", " + TechText.Level(ad.Level),
-                    left.ToString(Inv) + " / " + HireOffers.Posts(ad).ToString(Inv), came.ToString(Inv), TechText.Rate(ad.PayMost) },
-                    Status = ad.Open(day) ? w.T("reallife_work_ad_open", "Open") : w.T("reallife_work_ad_closed", "Closed"),
-                        Tone = ad.Open(day) ? UiRole.Ok : UiRole.Warn,
-                    Detail = w.F("reallife_work_ad_line", "{role}, up to {pay} an hour, {n} posts to fill.", "role", TechText.Role(ad.Role), "pay",
-                        TechText.Rate(ad.PayMost), "n", left.ToString(Inv)) };
-                r.Acts.Add(new WorkAct { Kind = Close, Label = w.T("reallife_work_close_ad", "Close the ad"), Style = UiButtonKind.Destructive,
-                    Icon = UiIcon.Close });
-                t.Rows.Add(r);
-            }
-            for (int i = 0; i < h.Applicants.Count && t.People.Count < 6; i++)
-            {
-                Applicant a = h.Applicants[i];
-                Seeker hired = h.SeekerOf(a.Seeker);
-                if (a.Stage == (int)ApplyStage.Started && a.Start >= day - 30 && hired != null)
+                int left = HireOffers.ToFill(h, ad), posts = HireOffers.Posts(ad);
+                bool open = ad.Open(day);
+                string state = open ? (ad.To - day <= 3 ? w.F("reallife_work_ad_closes_in", "Closes in {n} days", "n", Math.Max(0, ad.To - day).ToString(Inv)) : w.T("reallife_work_ad_open", "Open"))
+                    : w.T("reallife_work_ad_closed", "Closed");
+                UiRole tone = open && ad.To - day > 3 ? UiRole.Ok : UiRole.Warn;
+                var r = new WorkRow { Id = ad.Id, Icon = RoleGlyph(ad.Role), Name = TechText.Role(ad.Role) + ", " + TechText.Level(ad.Level), Sub = TalentGame.NameOf(TalentGame.Find(ad.Place)), Group = ad.Id,
+                    Cells = new[] { null, left.ToString(Inv) + " / " + posts.ToString(Inv), came.ToString(Inv), TechText.Rate(ad.PayMost), state }, Values = new[] { 0, 0, Math.Min(100, came * 8), 0, 0 },
+                    Status = state, Tone = tone, Chip = state, ChipTone = tone, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, tone } };
+                r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_pay_up_to", "Pay up to"), w.F("reallife_career_row_rate", "{rate} an hour", "rate", TechText.Rate(ad.PayMost))));
+                r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_posts", "Posts to fill"), left.ToString(Inv) + " / " + posts.ToString(Inv)));
+                var facts = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_the_ad", "The ad") };
+                facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_ad_skill", "Minimum skill"), ad.MinSkill > 0 ? ad.MinSkill.ToString(Inv) : w.T("reallife_talent_none", "none")));
+                facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_ad_arrangement", "Arrangement"), TechText.Work(ad.Work)));
+                facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_ad_closes", "Closes"), TechText.Day(ad.To)));
+                facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_ad_boosted", "Boosted"), ad.Boost ? w.T("reallife_work_yes", "Yes") : w.T("reallife_work_no", "No")));
+                facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_ad_going", "Going rate"), TechText.Rate(d.GoingFor(ad.Role, ad.Level))));
+                r.Sections.Add(facts);
+                var hiredHere = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_hired_month", "Hired this month") };
+                for (int k = 0; k < hired.Count && hiredHere.People.Count < 3; k++)
                 {
-                    t.People.Add(new WorkPerson { Name = hired.P.Name, Role = TechText.Role(hired.P.Role) + ", " + TechText.Day(a.Start), Icon = UiIcon.Person });
-                }
-            }
-            t.PeopleTitle = w.T("reallife_work_hired_month", "Hired this month");
-            return t;
-        }
-
-        private WorkTab Applicants(TechDirector d, HiringFile h, int day)
-        {
-            UtilitiesWords w = W;
-            var t = new WorkTab { TableTitle = w.T("reallife_roles_tab_applicants", "Applicants"), Lead = w.T("reallife_work_no_applicants",
-                "No applicants yet. They arrive over a few days, and other firms hire too."), GradeColumn = 2,
-                Columns = new[] { Col(w.T("reallife_work_col_applicant", "Applicant"), true), Col(w.T("reallife_work_col_from", "From")),
-                    Col(w.T("reallife_work_col_skill", "Skill")), Col(w.T("reallife_work_col_asks", "Asks")), Col(w.T("reallife_work_col_stage",
-                    "Stage"), false, true) } };
-            for (int i = 0; i < h.Applicants.Count; i++)
-            {
-                Applicant a = h.Applicants[i];
-                Seeker s = h.SeekerOf(a.Seeker);
-                JobAd ad = h.AdOf(a.Ad);
-                if (s == null || !a.Live || ad == null)
-                {
-                    continue;
-                }
-                bool competing = HireOffers.Competing(a, day);
-                var r = new WorkRow { Id = a.Id, Icon = UiIcon.Person, Grade = s.CvMain,
-                    Cells = new[] { s.P.Name, string.IsNullOrEmpty(s.Employer) ? w.T("reallife_work_self_taught", "Self taught") : s.Employer,
-                        s.CvMain.ToString(Inv), TechText.Rate(s.Ask), StageName(a) },
-                    Status = competing ? w.T("reallife_work_competing_offer", "Competing offer") : StageName(a), Tone = competing ? UiRole.Warn : UiRole.Ok };
-                var sb = new System.Text.StringBuilder();
-                sb.Append(s.P.Name).Append(", ").Append(TechText.Role(s.P.Role)).Append(", ").Append(TechText.Rate(s.Ask)).Append('.');
-                if (competing)
-                {
-                    sb.Append(' ').Append(w.F("reallife_work_rival_offer",
-                        "{rival} offered {pay} an hour; they answer by day {day}. Offer as much to hire them.", "rival", a.RivalBy, "pay",
-                        TechText.Rate(a.RivalBid), "day", a.RivalLapse.ToString(Inv)));
-                }
-                var past = new List<PastJob>(HireOffers.HistoryMost);
-                if (HireOffers.Read(HireOffers.HistoryOf(d.TalentSeed, s), past) > 0)
-                {
-                    sb.Append(' ').Append(w.T("reallife_work_so_far", "Work so far:") + " ");
-                    for (int k = 0; k < past.Count; k++)
+                    Seeker s = h.SeekerOf(hired[k].Seeker);
+                    if (hired[k].Ad == ad.Id && s != null)
                     {
-                        sb.Append(k > 0 ? "; " : string.Empty).Append(TechText.Role(s.P.Role)).Append(", ").Append(TechText.Level(past[k].Level)).Append(", ")
-                            .Append(past[k].Firm).Append(", ").Append(past[k].Years.ToString(Inv)).Append(' ').Append(w.T("reallife_work_years", "years"));
+                        hiredHere.People.Add(new WorkPerson { Name = s.P.Name, Role = TechText.Role(s.P.Role) + ", " + TechText.Day(hired[k].Start), Ring = UiRole.Ok });
                     }
-                    sb.Append('.');
                 }
-                r.Detail = sb.ToString();
-                int teamAverage = TeamAverage(d);
-                r.NeedsTitle = w.T("reallife_work_fit_for_role", "Fit for the role");
-                r.Needs.Add(new SplitNeed { Words = w.F("reallife_work_fit_craft", "Craft above your team's average of {n}", "n", teamAverage.ToString(Inv)), Met = s.CvMain > teamAverage });
-                r.Needs.Add(new SplitNeed { Words = w.F("reallife_work_fit_pay", "Asks less than the {pay} you set", "pay", TechText.Rate(ad.PayMost)), Met = s.Ask <= ad.PayMost });
-                r.Needs.Add(new SplitNeed { Words = w.T("reallife_work_fit_refs", "References checked"), Met = a.Refs });
-                int cents = competing ? Math.Max(a.RivalBid, s.Ask) : s.Ask;
-                r.Acts.Add(new WorkAct { Kind = Offer, Arg = a.Id, Label = w.F("reallife_work_hire_at", "Hire at {pay} an hour", "pay",
-                    TechText.Rate(cents)), Style = UiButtonKind.Primary, Icon = UiIcon.Check,
-                    Why = a.Stage >= (int)ApplyStage.Accepted ? w.T("reallife_work_already_hired", "They have already accepted.") : null });
-                if (a.Stage == (int)ApplyStage.Countered)
+                if (hiredHere.People.Count > 0)
                 {
-                    r.Acts.Add(new WorkAct { Kind = Counter, Arg = a.Id, Label = w.T("reallife_work_take_counter", "Take their counter"),
-                        Style = UiButtonKind.Secondary, Icon = UiIcon.Check });
+                    hiredHere.Note = hiredHere.People.Count.ToString(Inv);
+                    r.Sections.Add(hiredHere);
                 }
-                else
+                r.Acts.Add(new WorkAct { Kind = WorkKinds.GoTab, Arg = 1, Label = w.T("reallife_hire_button_applicants", "Applicants"), Style = UiButtonKind.Primary, Icon = UiIcon.People, Opens = true });
+                r.Acts.Add(new WorkAct { Kind = Close, Arg = ad.Id, Label = w.T("reallife_work_close_ad", "Close the ad"), Style = UiButtonKind.Destructive, Icon = UiIcon.Close });
+                t.Rows.Add(r);
+            }
+            for (int i = 0; i < h.RivalAds.Count && i < 6; i++)
+            {
+                RivalAd ra = h.RivalAds[i];
+                if (ra.To <= day)
                 {
-                    r.Acts.Add(new WorkAct { Kind = Shortlist, Arg = a.Id, Label = w.T("reallife_hire_button_shortlist", "Shortlist"),
-                        Style = UiButtonKind.Secondary, Icon = UiIcon.Star,
-                        Why = a.Stage == (int)ApplyStage.Shortlisted ? w.T("reallife_work_already_shortlisted", "Already on your shortlist.") : null });
+                    continue;
                 }
-                r.Acts.Add(new WorkAct { Kind = Walk, Arg = a.Id, Label = w.T("reallife_work_walk_away", "Let them go"),
-                    Style = UiButtonKind.Destructive, Icon = UiIcon.Close });
+                int family = ra.Family;
+                int first = HiringRules.RoleOf((TFamily)family, 0);
+                var r = new WorkRow { Id = 900 + i, Icon = UiIcon.Flag, Name = TechText.FamilyName((TFamily)family) + ", " + TechText.Level(ra.Level), Sub = ra.Rival, Status = w.T("reallife_work_rival_ad", "Rival ad"),
+                    Tone = UiRole.Muted, Chip = w.T("reallife_work_rival_ad", "Rival ad"), ChipTone = UiRole.Muted, Group = 900 + i,
+                    Cells = new[] { null, "-", "-", first >= 0 ? TechText.Rate(d.GoingFor(first, ra.Level) * (10000 + ra.PayBp) / 10000) : "-", w.T("reallife_work_rival_ad", "Rival ad") },
+                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Muted },
+                    Sentence = w.F("reallife_work_rival_ad_line", "{rival} hires the same line and pays {bp} over the going rate. Their applicants may take an offer before yours.", "rival", ra.Rival,
+                        "bp", TechText.Bp(ra.PayBp)) };
                 t.Rows.Add(r);
             }
             return t;
         }
 
-        // The mean of the main skill of the player's own people, whole points; 0 with nobody on the payroll.
-        private static int TeamAverage(TechDirector d)
-        {
-            int sum = 0;
-            for (int i = 0; i < d.People.Count; i++)
-            {
-                sum += d.People[i].MainPoints;
-            }
-            return d.People.Count == 0 ? 0 : sum / d.People.Count;
-        }
+        // ------------------------------------------------------------------------------------------------- the new ad
 
-        private static string StageName(Applicant a) => TechText.T("reallife" + "_hire_stage_" + a.At.ToString().ToLowerInvariant());
-
-        private WorkTab Market(HiringFile h)
+        private WorkTab NewAdTab(TechDirector d, WorkView v)
         {
             UtilitiesWords w = W;
-            var t = new WorkTab { TableTitle = w.T("reallife_roles_tab_market", "Market"), Lead = w.T("reallife_work_market_lead",
-                "Professionals looking for work now. Post an ad and the ones who fit apply."),
-                Columns = new[] { Col(w.T("reallife_work_col_role", "Role"), true), Col(w.T("reallife_work_col_level", "Level")),
-                    Col(w.T("reallife_work_col_looking", "Looking")), Col(w.T("reallife_work_col_going_rate", "Asks"), false, true) } };
-            var seen = new Dictionary<int, int>();
-            var rate = new Dictionary<int, long>();
-            for (int i = 0; i < h.Seekers.Count; i++)
+            var t = new WorkTab { Shape = WorkShape.Form, Sub = true };
+            var form = new WorkFormModel { Lead = w.T("reallife_work_new_ad_lead", "An ad runs for the days you set and brings applicants over a few days. It is paid when it is posted.") };
+            t.Form = form;
+            TalentGame.Businesses(_places);
+            if (_places.Count == 0)
             {
-                Seeker s = h.Seekers[i];
-                if (s.Taken || s.Passive)
-                {
-                    continue;
-                }
-                int key = s.P.Role * 10 + s.P.Level;
-                seen[key] = seen.TryGetValue(key, out int n) ? n + 1 : 1;
-                rate[key] = (rate.TryGetValue(key, out long total) ? total : 0) + s.Ask;
+                form.Lead = TechText.T("reallife_hire_new_no_business");
+                t.Acts.Add(new WorkAct { Kind = WorkKinds.Back, Label = w.T("reallife_work_cancel", "Cancel"), Style = UiButtonKind.Secondary, Icon = UiIcon.Back, Opens = true });
+                return t;
             }
-            foreach (KeyValuePair<int, int> pair in seen)
+            int place = Math.Max(0, Math.Min(_places.Count - 1, v.Get(2, 0)));
+            int roleAt = Math.Max(0, Math.Min(TalentCatalogue.RoleCount - 1, v.Get(0, 0)));
+            RoleDef r = TalentCatalogue.Role(roleAt);
+            int levelAt = Math.Max(0, Math.Min(r.MostLevel - r.LeastLevel, v.Get(1, Math.Max(0, TalentCatalogue.Mid - r.LeastLevel))));
+            int level = r.LeastLevel + levelAt;
+            int going = d.GoingFor(r.Id, level);
+            int payAt = Math.Max(0, Math.Min(PayBands.Length - 1, v.Get(3, 1)));
+            int most = going * PayBands[payAt] / 1000, least = most * 85 / 100;
+            int skillAt = Math.Max(0, Math.Min(2, v.Get(5, 0)));
+            int skill = skillAt == 0 ? 0 : skillAt == 1 ? TalentCatalogue.LevelSkillLeast[level] : (TalentCatalogue.LevelSkillLeast[level] + TalentCatalogue.LevelSkillMost[level]) / 2;
+            int works = r.Remote ? 3 : 2;
+            int work = Math.Max(0, Math.Min(works - 1, v.Get(6, 0)));
+            int daysAt = Math.Max(0, Math.Min(HiringCatalogue.AdDays.Length - 1, v.Get(7, 1)));
+            int days = HiringCatalogue.AdDays[daysAt];
+            int posts = Math.Max(1, Math.Min(HireOffers.PostsMost, v.Get(8, 1)));
+            int boost = Math.Max(0, Math.Min(1, v.Get(4, 0)));
+            var names = new string[_places.Count];
+            for (int i = 0; i < names.Length; i++)
             {
-                if (t.Rows.Count >= 24)
-                {
-                    break;
-                }
-                t.Rows.Add(new WorkRow { Id = pair.Key, Icon = UiIcon.Person, Cells = new[] { TechText.Role(pair.Key / 10),
-                    TechText.Level(pair.Key % 10), pair.Value.ToString(Inv), TechText.Rate((int)(rate[pair.Key] / pair.Value)) },
-                    Detail = TechText.Role(pair.Key / 10) + ", " + TechText.Level(pair.Key % 10) + ": " + pair.Value.ToString(Inv) + " looking." });
+                names[i] = TalentGame.NameOf(_places[i]);
             }
+            var roleNames = new string[TalentCatalogue.RoleCount];
+            for (int i = 0; i < roleNames.Length; i++)
+            {
+                roleNames[i] = TechText.Role(i);
+            }
+            var levelNames = new string[r.MostLevel - r.LeastLevel + 1];
+            for (int i = 0; i < levelNames.Length; i++)
+            {
+                levelNames[i] = TechText.Level(r.LeastLevel + i);
+            }
+            var payNames = new string[PayBands.Length];
+            for (int i = 0; i < payNames.Length; i++)
+            {
+                payNames[i] = TechText.Fill("reallife_hire_new_pay", "most", TechText.Rate(going * PayBands[i] / 1000), "share", TechText.Mille(PayBands[i]));
+            }
+            string[] skillNames = { TechText.T("reallife_hire_new_skill_any"), TechText.T("reallife_hire_new_skill_level"), TechText.T("reallife_hire_new_skill_strong") };
+            var workNames = new string[works];
+            for (int i = 0; i < works; i++)
+            {
+                workNames[i] = TechText.Work(i);
+            }
+            var dayNames = new string[HiringCatalogue.AdDays.Length];
+            for (int i = 0; i < dayNames.Length; i++)
+            {
+                dayNames[i] = TechText.T("reallife_hire_new_days", "days", HiringCatalogue.AdDays[i].ToString());
+            }
+            string[] boostNames = { w.T("reallife_work_no", "No"), w.T("reallife_work_yes", "Yes") };
+            // the ids are the view's: place 2, role 0, level 1, pay 3, boost 4, skill 5, arrangement 6, days 7, posts 8
+            t.Amounts.Add(Choice(0, roleAt, roleNames));
+            t.Amounts.Add(Choice(1, level - r.LeastLevel, levelNames));
+            t.Amounts.Add(Choice(2, place, names));
+            t.Amounts.Add(Choice(3, payAt, payNames));
+            t.Amounts.Add(Choice(4, boost, boostNames));
+            t.Amounts.Add(Choice(5, skillAt, skillNames));
+            t.Amounts.Add(Choice(6, work, workNames));
+            t.Amounts.Add(Choice(7, daysAt, dayNames));
+            t.Amounts.Add(new WorkAmount { Id = 8, Value = posts, Min = 1, Max = HireOffers.PostsMost, Figure = posts.ToString(Inv) });
+            var role = new WorkFormBand { Title = w.T("reallife_work_the_role", "The role") };
+            role.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_col_role", "Role"), Stepper = 0 });
+            role.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_col_level", "Level"), Stepper = 1 });
+            role.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_place", "At"), Stepper = 2 });
+            role.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_posts", "Posts to fill"), Stepper = 8 });
+            role.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_arrangement", "Arrangement"), Stepper = 6 });
+            role.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = TechText.T(SeatRules.Needs(r) == Workstation.Desk ? "reallife_hire_seat_desk" : "reallife_hire_seat_payroll") });
+            form.Left.Add(role);
+            var terms = new WorkFormBand { Title = w.T("reallife_work_the_terms", "Pay and terms") };
+            terms.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_pay_most", "Pay up to"), Stepper = 3 });
+            terms.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_skill", "Minimum skill"), Stepper = 5 });
+            terms.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_days", "The ad runs"), Stepper = 7 });
+            terms.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_boost", "Boost the ad"), Stepper = 4 });
+            int cost = Prices.At(HiringRules.AdCost(days, boost == 1));
+            terms.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_ad_cost", "It costs"), Value = TechText.Money(cost) });
+            terms.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_ad_pay_range", "Pay from and up to"), Value = TechText.Rate(least) + " - " + TechText.Rate(most) });
+            form.Right.Add(terms);
+            bool seats = HiringRules.Seats(TalentGame.Shifts(_places[place]), r);
+            string why = !seats ? TechText.T(TechDirector.SeatRefusal) : null;
+            t.Acts.Add(new WorkAct { Kind = WorkKinds.Back, Label = w.T("reallife_work_cancel", "Cancel"), Style = UiButtonKind.Secondary, Icon = UiIcon.Back, Opens = true });
+            t.Acts.Add(new WorkAct { Kind = PostAd, Label = w.T("reallife_hire_button_post", "Post the ad"), Style = UiButtonKind.Primary, Icon = UiIcon.Check, Why = why });
             return t;
         }
 
-        private WorkTab Search(HiringFile h)
-        {
-            UtilitiesWords w = W;
-            var t = new WorkTab { Lead = w.T("reallife_work_search_lead",
-                "A search firm finds senior people, and a crew search finds technicians for a data centre. Brief one in the game's own Open Roles app; its fee is a share of a year's pay."),
-                TableTitle = w.T("reallife_roles_tab_search", "Search"), Columns = new[] { Col(w.T("reallife_work_col_role", "Role"), true),
-                    Col(w.T("reallife_work_col_fee", "Fee")), Col(w.T("reallife_work_col_due", "Delivers"), false, true) } };
-            for (int i = 0; i < h.Ads.Count; i++)
-            {
-                JobAd ad = h.Ads[i];
-                if (ad.Search)
-                {
-                    t.Rows.Add(new WorkRow { Id = ad.Id, Icon = UiIcon.Search,
-                        Cells = new[] { TechText.Role(ad.Role) + (ad.CrewSearch ? " x" + ad.Crew.ToString(Inv) : string.Empty),
-                        TechText.Money(ad.Fee / 100), TechText.Day(ad.Due) }, Detail = TechText.Role(ad.Role) });
-                }
-            }
-            return t;
-        }
-
-        private WorkTab Team(TechDirector d)
-        {
-            UtilitiesWords w = W;
-            var t = new WorkTab { TableTitle = w.T("reallife_roles_tab_team", "Team"), Lead = w.T("reallife_work_no_team",
-                "No professionals on your payroll yet."),
-                Columns = new[] { Col(w.T("reallife_work_col_applicant", "Name"), true), Col(w.T("reallife_work_col_role", "Role")),
-                    Col(w.T("reallife_work_col_skill", "Skill"), false, true) }, GradeColumn = 2 };
-            for (int i = 0; i < d.People.Count && i < 60; i++)
-            {
-                Person p = d.People[i];
-                t.Rows.Add(new WorkRow { Id = i, Icon = UiIcon.Person, Grade = Math.Min(100, p.MainPoints), Cells = new[] { p.Name,
-                    TechText.Role(p.File.Role) + ", " + TechText.Level(p.File.Level), p.MainPoints.ToString(Inv) }, Detail = p.Name + ", " + p.Business });
-            }
-            return t;
-        }
+        private static WorkAmount Choice(int id, int value, string[] words) => new WorkAmount { Id = id, Value = Math.Max(0, Math.Min(words.Length - 1, value)), Min = 0, Max = words.Length - 1, Words = words,
+            Figure = words[Math.Max(0, Math.Min(words.Length - 1, value))] };
 
         // ------------------------------------------------------------------------------------------------- doing
 
@@ -311,25 +341,12 @@ namespace RealLifeOverhaul.Ui
             }
             try
             {
-                Applicant a = h.ApplicantOf(act.Arg);
-                switch (act.Kind)
+                bool done = Carry(act, d, h, view);
+                if (done)
                 {
-                    case Shortlist: d.Shortlist(act.Arg, true); break;
-                    case Offer:
-                        Seeker s = a != null ? h.SeekerOf(a.Seeker) : null;
-                        if (a == null || s == null)
-                        {
-                            return false;
-                        }
-                        d.MakeOffer(act.Arg, HireOffers.Competing(a, SaveGameManager.Current.Day) ? Math.Max(a.RivalBid, s.Ask) : s.Ask);
-                        break;
-                    case Counter: d.TakeCounter(act.Arg); break;
-                    case Walk: d.WalkAway(act.Arg); break;
-                    case Close: d.CloseAd(act.Arg); break;
-                    default: return false;
+                    _local++;
                 }
-                _local++;
-                return true;
+                return done;
             }
             catch (Exception e)
             {

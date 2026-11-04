@@ -31,6 +31,23 @@ namespace RealLifeOverhaul.Careers
             return null;
         }
 
+        /// <summary>Show on map for a course's school: the university's permanent building or the game's school; a course taught online or on a ward has no place. Null if done, else a reason key.</summary>
+        internal string ShowCampus(Campus campus)
+        {
+            string street;
+            int number;
+            if (campus == Campus.University)
+            {
+                street = CampusRules.HomeStreet;
+                number = CampusRules.HomeNumber;
+            }
+            else if (campus != Campus.School || !CareersGame.SchoolAddress(out street, out number))
+            {
+                return "reallife_career_why_route";
+            }
+            return ShowPlace(CareersText.Campus(campus), street, number);
+        }
+
         /// <summary>Show on map for the job held. Null if done, else a reason key.</summary>
         internal string ShowWork()
         {

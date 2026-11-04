@@ -115,6 +115,7 @@ namespace RealLifeOverhaul.Ui
         // its detail
         public string Kicker;                  // capitals over the title in the detail
         public string Title;                   // the detail's title when it is not the name
+        public string HeadSub;                 // a line beside the chip under the title (where it is)
         public string Chip;                    // a chip beside the title: what the employer is, a state
         public UiRole ChipTone = UiRole.Ok;
         public string Sentence;                // words under the head
@@ -201,7 +202,7 @@ namespace RealLifeOverhaul.Ui
     /// <summary>A form's control: a label with a stepper, a switch, a choice or a figure, or a person or a button beneath.</summary>
     public enum WorkField : byte
     {
-        Label, Stepper, Switch, Choice, Button, Person, Bar, Text, Tile, Check, Input
+        Label, Stepper, Switch, Choice, Button, Person, Bar, Text, Tile, Check, Input, Nudge
     }
 
     public sealed class WorkFormRow
@@ -210,7 +211,8 @@ namespace RealLifeOverhaul.Ui
         public string Label, Value, Hint;
         public int Stepper = -1;               // for a stepper: its place in the page's amounts
         public bool On;                        // for a switch
-        public WorkAct Act;                    // what a press does
+        public WorkAct Act, Act2;              // what a press does; a nudge's less and more
+        public readonly List<WorkAct> More = new List<WorkAct>(2);   // more buttons beside the first, in the same row
         public int ActAt = -1;                 // its place in the page's buttons, set when the page is built
         public WorkPerson Person;
         public WorkBar Bar;

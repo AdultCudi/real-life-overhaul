@@ -26,16 +26,16 @@ internal static partial class UiSamples
         UiRole tone = needs == 0 ? UiRole.Ok : UiRole.Warn;
         var r = new WorkRow { Id = id, Icon = icon, Name = title, Sub = employer, Cells = new[] { null, where, null, hours, pay, WorkBuilder.Percent(against), status },
             Values = new[] { 0, 0, 0, 0, 0, against < 0 ? -1 : against > 0 ? 1 : 0, 0 },
-            Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, against < 0 ? UiRole.Danger : UiRole.None, tone }, Status = status, Tone = tone };
+            Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, tone }, Status = status, Tone = tone };
         r.Mask = 1 | (needs == 0 ? 2 : 0) | (id % 3 == 0 ? 4 : 0);
         r.Locate = new WorkAct { Kind = 101, Arg = id, Label = w.T("reallife_career_button_map", "Show on map"), Opens = true };
         r.Chip = employer;
         r.ChipTone = UiRole.Accent;
-        r.Sub = where;
+        r.HeadSub = where;
         r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_career_col_pay", "Pay"), pay + "/h"));
         r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_hours", "Hours"), hours));
         r.Acts.Add(new WorkAct { Kind = 100, Arg = id, Label = w.T("reallife_career_button_apply", "Apply"), Style = UiButtonKind.Primary, Icon = UiIcon.Check,
-            Why = needs == 3 ? w.T("reallife_work_why_unqualified", "You are not qualified for this post.") : null });
+            Why = needs == 3 ? w.T("reallife_work_why_unqualified", "You do not hold what that post needs.") : null });
         r.Acts.Add(new WorkAct { Kind = 101, Arg = id, Label = w.T("reallife_career_button_map", "Show on map"), Style = UiButtonKind.Secondary, Icon = UiIcon.Locate, Opens = true });
         var checks = new WorkSection { Part = WorkPart.Checks, Title = w.T("reallife_work_what_it_needs", "What it needs"), Note = w.F("reallife_work_needs_met", "{met} of {all} met", "met",
             (needs == 0 ? 4 : needs == 1 ? 3 : 2).ToString(), "all", "4") };
@@ -44,6 +44,10 @@ internal static partial class UiSamples
         checks.Checks.Add(new WorkNeed { Words = "Performance 85", Met = needs == 0, Have = needs == 0 ? null : "you have 82" });
         checks.Checks.Add(new WorkNeed { Words = "Teamwork 75", Met = needs <= 1, Have = needs <= 1 ? null : "you have 71" });
         r.Sections.Add(checks);
+        var against2 = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_pay_against", "Against your pay") };
+        against2.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_your_pay_now", "Your pay now"), "$21.50/h"));
+        against2.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_difference", "The difference"), WorkBuilder.Percent(against)));
+        r.Sections.Add(against2);
         return r;
     }
 
@@ -111,20 +115,7 @@ internal static partial class UiSamples
 
     private static void JobsTab(UtilitiesWords w, CareerFacts f, string state)
     {
-        WorkTab jobs = f.Jobs;
-        jobs.Shape = WorkShape.Table;
-        jobs.Search = w.T("reallife_work_search_jobs", "Search jobs");
-        jobs.ChipsByMask = true;
-        jobs.AllWord = w.T("reallife_work_filter_all_word", "All");
-        jobs.Chips = new[] { w.T("reallife_work_filter_open_word", "Open now"), w.T("reallife_work_filter_qualify_word", "You qualify"), w.T("reallife_work_filter_near_word", "Near you") };
-        jobs.Columns = new[] { WkCol(w.T("reallife_work_col_job", "Job"), UiCellKind.Tile), WkCol(w.T("reallife_work_col_where", "Where"), UiCellKind.Text, 128),
-            WkCol(string.Empty, UiCellKind.Action, 32), WkCol(w.T("reallife_work_col_hours", "Hours"), UiCellKind.Text, 128), WkCol(w.T("reallife_work_col_pay_hour", "Pay an hour"), UiCellKind.Money, 96),
-            WkCol(w.T("reallife_work_col_against", "Against yours"), UiCellKind.Trend, 104), WkCol(w.T("reallife_work_col_you", "You"), UiCellKind.Chip, 136) };
-        jobs.EmptyTitle = w.T("reallife_work_empty_jobs_title", "No post is open today");
-        jobs.EmptyBody = w.T("reallife_work_empty_jobs", "Employers post their vacancies each morning. The professions show what to train for in the meantime.");
-        jobs.EmptyIcon = UiIcon.Briefcase;
-        jobs.EmptyActLabel = w.T("reallife_career_button_professions", "See the professions");
-        jobs.EmptyAct = new WorkAct { Kind = WorkKinds.GoTab, Arg = CareerPages.Professions, Opens = true };
+        WorkTab jobs = f.Jobs = CareerPages.JobsShell(w);
         if (state == "jobs_empty")
         {
             return;
@@ -166,16 +157,7 @@ internal static partial class UiSamples
 
     private static void ApplicationsTab(UtilitiesWords w, CareerFacts f, bool none)
     {
-        WorkTab apps = f.Applications;
-        apps.Shape = WorkShape.Table;
-        apps.Columns = new[] { WkCol(w.T("reallife_work_col_job", "Job"), UiCellKind.Tile), WkCol(w.T("reallife_work_col_sent", "Sent"), UiCellKind.Text, 96),
-            WkCol(w.T("reallife_work_col_answer", "Answer by"), UiCellKind.Text, 104), WkCol(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 128) };
-        apps.EmptyTitle = w.T("reallife_work_empty_apps_title", "No application is waiting");
-        apps.EmptyBody = w.T("reallife_work_empty_applications", "Apply from Jobs and the employer answers within a day or two. Offers and interviews show here.");
-        apps.EmptyActLabel = w.T("reallife_career_button_see_jobs", "See all the jobs");
-        apps.EmptyAct = new WorkAct { Kind = WorkKinds.GoTab, Arg = CareerPages.Jobs, Opens = true };
-        apps.NoteLead = w.T("reallife_work_apps_how_lead", "How it goes.");
-        apps.NoteText = w.T("reallife_work_apps_how", "An employer answers a day or two after you apply. An interview or an offer shows here, and an offer can be accepted, asked up or declined.");
+        WorkTab apps = f.Applications = CareerPages.ApplicationsShell(w);
         if (none)
         {
             return;
@@ -201,15 +183,15 @@ internal static partial class UiSamples
             r.Sections.Add(steps);
             if (st == "Interview")
             {
-                r.Acts.Add(WkAct(102, w.T("reallife_career_button_interview", "Go to the interview"), UiButtonKind.Primary, UiIcon.Check, null, false, r.Id));
+                r.Acts.Add(WkAct(102, w.T("reallife_career_button_interview", "Attend the interview"), UiButtonKind.Primary, UiIcon.Check, null, false, r.Id));
                 r.Acts.Add(WkAct(101, w.T("reallife_career_button_map", "Show on map"), UiButtonKind.Secondary, UiIcon.Locate, null, true, r.Id));
                 r.Acts.Add(WkAct(103, w.T("reallife_career_button_withdraw", "Withdraw"), UiButtonKind.Destructive, UiIcon.Close, null, false, r.Id));
             }
             else if (st == "Offered")
             {
                 r.Acts.Add(WkAct(104, w.T("reallife_career_button_accept", "Accept"), UiButtonKind.Primary, UiIcon.Check, null, false, r.Id));
-                r.Acts.Add(WkAct(105, w.T("reallife_career_button_ask_small", "Ask for a little more"), UiButtonKind.Secondary, UiIcon.TrendUp, null, false, r.Id));
-                r.Acts.Add(WkAct(107, w.T("reallife_career_button_decline", "Decline"), UiButtonKind.Destructive, UiIcon.Close, null, false, r.Id));
+                r.Acts.Add(WkAct(105, w.T("reallife_career_button_ask_small", "Ask for 5% more"), UiButtonKind.Secondary, UiIcon.TrendUp, null, false, r.Id));
+                r.Acts.Add(WkAct(107, w.T("reallife_career_button_decline", "Turn it down"), UiButtonKind.Destructive, UiIcon.Close, null, false, r.Id));
             }
             else if (st == "Sent")
             {
@@ -223,13 +205,7 @@ internal static partial class UiSamples
 
     private static void ProfessionsTab(UtilitiesWords w, CareerFacts f)
     {
-        WorkTab pro = f.Professions;
-        pro.Shape = WorkShape.Table;
-        pro.Columns = new[] { WkCol(w.T("reallife_work_col_trade", "Profession"), UiCellKind.Tile), WkCol(w.T("reallife_work_col_hours", "Hours"), UiCellKind.Text, 176),
-            WkCol(w.T("reallife_work_col_pay_hour", "Pay an hour"), UiCellKind.Money, 104), WkCol(w.T("reallife_work_col_posts_open", "Posts open"), UiCellKind.Figure, 88, true),
-            WkCol(w.T("reallife_work_col_for_you", "For you"), UiCellKind.Chip, 136) };
-        pro.EmptyTitle = w.T("reallife_work_empty_pro_title", "No profession is open to you");
-        pro.EmptyBody = w.T("reallife_work_empty_professions", "Courses open the professions that ask for a qualification.");
+        WorkTab pro = f.Professions = CareerPages.ProfessionsShell(w);
         object[][] trades =
         {
             new object[] { UiIcon.Package, "Picker", "Warehouse picker", "Mon to Fri, 09:00 to 17:00", "$17.00", 6, true }, new object[] { UiIcon.Truck, "Courier", "Courier", "07:00 to 15:00", "$18.00", 4, true },
@@ -256,7 +232,7 @@ internal static partial class UiSamples
             var needs = new WorkSection { Part = WorkPart.Checks, Title = w.T("reallife_work_to_start", "To start") };
             needs.Checks.Add(new WorkNeed { Words = open ? "No qualification is asked" : "A course in the trade", Met = open });
             r.Sections.Add(needs);
-            r.Acts.Add(WkAct(WorkKinds.GoTab, w.T("reallife_career_button_vacancies", "See the vacancies"), UiButtonKind.Primary, UiIcon.Search, null, true, CareerPages.Jobs));
+            r.Acts.Add(WkAct(WorkKinds.GoTab, w.T("reallife_career_button_vacancies", "Vacancies"), UiButtonKind.Primary, UiIcon.Search, null, true, CareerPages.Jobs));
             r.Acts.Add(WkAct(112, w.T("reallife_career_button_see_courses", "See the courses"), UiButtonKind.Secondary, UiIcon.Books, null, true, r.Id));
             pro.Rows.Add(r);
         }
@@ -278,9 +254,9 @@ internal static partial class UiSamples
         man.Amounts.Add(new WorkAmount { Id = 1, Value = 3, Min = 1, Max = 7, Figure = "3 days" });
         policy.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = "Rota for the store", Stepper = 0 });
         policy.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = "Escalate after", Stepper = 1 });
-        policy.Rows.Add(new WorkFormRow { Field = WorkField.Switch, Label = w.T("reallife_ladder_aiming", "Put your name forward"), On = true, Act = WkAct(119, w.T("reallife_ladder_aiming", "Put your name forward"), UiButtonKind.Secondary, UiIcon.Check) });
+        policy.Rows.Add(new WorkFormRow { Field = WorkField.Switch, Label = w.T("reallife_ladder_aiming", "Put my name forward"), On = true, Act = WkAct(119, w.T("reallife_ladder_aiming", "Put my name forward"), UiButtonKind.Secondary, UiIcon.Check) });
         form.Left.Add(policy);
-        var ask = new WorkFormBand { Title = w.T("reallife_ladder_sec_requests", "Ask your manager") };
+        var ask = new WorkFormBand { Title = w.T("reallife_ladder_sec_requests", "Your requests") };
         ask.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = "A shift", Act = WkAct(128, w.T("reallife_work_ask_shift_earlier", "Ask for it earlier"), UiButtonKind.Secondary, UiIcon.Back) });
         ask.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = string.Empty, Act = WkAct(129, w.T("reallife_work_ask_shift_later", "Ask for it later"), UiButtonKind.Secondary, UiIcon.Next) });
         ask.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = "Equipment", Act = WkAct(130, w.T("reallife_work_ask_equipment", "Ask for equipment"), UiButtonKind.Secondary, UiIcon.Wrench) });
@@ -314,13 +290,13 @@ internal static partial class UiSamples
         practice.Foot = WkAct(134, w.T("reallife_own_button_close_practice", "Close the practice"), UiButtonKind.Destructive, UiIcon.Close);
         form.Left.Add(practice);
         var found = new WorkFormBand { Title = w.T("reallife_own_found_title", "Found a company"), Note = w.T("reallife_own_found_note", "Leave your job and start a company of your own. Colleagues who would come with you can follow.") };
-        found.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = "On your own", Act = WkAct(135, w.T("reallife_own_button_found", "Found a company"), UiButtonKind.Secondary, UiIcon.Building) });
+        found.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = "On your own", Act = WkAct(135, w.T("reallife_own_button_found", "Leave to found a company"), UiButtonKind.Secondary, UiIcon.Building) });
         found.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = "With colleagues", Act = WkAct(136, w.T("reallife_own_button_found_with", "Found it with colleagues"), UiButtonKind.Secondary, UiIcon.People,
             w.T("reallife_work_no_colleagues", "No colleagues would come with you.")) });
         form.Left.Add(found);
         var contracts = new WorkFormBand { Title = w.T("reallife_own_contracts", "Contracts"), Count = "2" };
         contracts.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Label = "Rose Wilder", Hint = "Carpenter, a shelf and a door frame", Value = "$180", Icon = UiIcon.Wrench });
-        contracts.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = "Due day 410", Act = WkAct(116, w.T("reallife_own_button_take", "Take the contract"), UiButtonKind.Primary, UiIcon.Check, null, false, 40) });
+        contracts.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = "Due day 410", Act = WkAct(116, w.T("reallife_own_button_take", "Take it on"), UiButtonKind.Primary, UiIcon.Check, null, false, 40) });
         contracts.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Label = "Hollis and Sons", Hint = "Carpenter, a kitchen fit", Value = "$640", Icon = UiIcon.Hammer });
         contracts.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = "Due day 418", Act = WkAct(117, w.T("reallife_own_button_drop", "Drop it"), UiButtonKind.Destructive, UiIcon.Close, null, false, 41) });
         form.Right.Add(contracts);

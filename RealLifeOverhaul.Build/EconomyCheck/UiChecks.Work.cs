@@ -14,7 +14,7 @@ internal static partial class Program
     private static readonly int[] WorkCommandsAll =
     {
         UiAppWindow.NavCommand, UiAppWindow.ActionCommand, UiAppWindow.RowCommand, UiAppWindow.MoreCommand, UiAppWindow.PersonCommand, UiDataTable.First + UiDataTable.Row, UiDataTable.First + UiDataTable.Act, UiDataTable.First + UiDataTable.Clear,
-        WorkCmd.Less, WorkCmd.Type, WorkCmd.More, WorkCmd.Field, WorkCmd.Search, WorkCmd.Card, WorkCmd.PageTab, WorkCmd.Aside, WorkCmd.Pick,
+        WorkCmd.Less, WorkCmd.Type, WorkCmd.More, WorkCmd.Field, WorkCmd.Search, WorkCmd.Card, WorkCmd.PageTab, WorkCmd.Aside, WorkCmd.Pick, WorkCmd.NudgeLess, WorkCmd.NudgeMore, WorkCmd.Read,
         UiDiary.DayCommand, UiDiary.MonthCommand, UiDiary.EntryCommand, UiChart.First + UiChart.Point, UiTrack.First + UiTrack.Step,
         UiReader.AnchorCommand, UiReader.RelatedCommand, UiReader.ContentsCommand
     };

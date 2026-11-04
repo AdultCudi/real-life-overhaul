@@ -30,6 +30,7 @@ namespace RealLifeOverhaul.Ui
         private int _wanted = -1;
         private CareerFacts _facts = new CareerFacts();
         private int _readGeneration = -1;
+        private readonly Dictionary<int, int> _metres = new Dictionary<int, int>(64);
 
         private CareerLive() { }
 
@@ -74,6 +75,15 @@ namespace RealLifeOverhaul.Ui
         public WorkPage Page(WorkView view)
         {
             Read();
+            CareersDirector d = CareersDirector.Instance;
+            GameInstance save = SaveGameManager.Current;
+            if (_facts.Ready && d != null && save != null)
+            {
+                // the tabs that hold choices the player steps are built for the view
+                _facts.Management = ManagementTab(d, view, save.Day);
+                _facts.Own = OwnTab(d, d.Work, d.Study, view, save.Day);
+                _facts.Cv = CvTab(d, d.Work, d.Study);
+            }
             return CareerPages.Build(_facts, view, W);
         }
 
@@ -97,17 +107,20 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
+            UtilitiesWords words = W;
+            _facts.Jobs = CareerPages.JobsShell(words);
+            _facts.Applications = CareerPages.ApplicationsShell(words);
+            _facts.Professions = CareerPages.ProfessionsShell(words);
             _facts.Player = RealLifeOverhaul.Rivals.RivalGame.PlayerName();
             _facts.Day = CareersText.Day(save.Day);
             ReadJob(d, w, save.Day);
             ReadOpenings(d, w, study, save.Day);
             ReadApplications(w, save.Day);
             ReadProfessions(w, study);
-            ReadManagement(d, save.Day);
-            ReadOwn(w, save.Day);
-            ReadOwnWork(d, w, save.Day);
-            ReadCv(w, study);
-            ReadRetire(d);
+            if (_facts.Job == null)
+            {
+                BestFor(words);
+            }
         }
 
         private void ReadJob(CareersDirector d, WorkFile w, int day)
@@ -175,13 +188,27 @@ namespace RealLifeOverhaul.Ui
                     if (c.Role == (int)PeerRole.UpForPost)
                     {
                         cj.RivalName = c.Name;
-                        cj.Theirs = Array.ConvertAll(Slice(c.Ring, c.Count), x => x);
+                        cj.Theirs = Slice(c.Ring, c.Count);
                     }
                 }
                 cj.Mine = Slice(f.Ring, f.Count);
             }
+            cj.CanAsk = day - j.AskDay >= LifeRules.AskGapDays && j.NoticeEnd <= 0;
+            cj.AskWhy = cj.CanAsk ? null : W.T("reallife_work_why_rise", "You asked for a rise not long ago.");
+            ReadLife(j, w, day, cj);
             ReadJobActs(d, w, cj, day);
             _facts.Job = cj;
+        }
+
+        // What the job lets the player see of the working life: the next review, the boss, overtime, burnout and the pension.
+        private void ReadLife(Job j, WorkFile w, int day, CareerJob cj)
+        {
+            UtilitiesWords words = W;
+            cj.Life.Add(new KeyValuePair<string, string>(words.T("reallife_ibox_next_review", "Next review"), CareersText.Day(j.ReviewDay + LifeRules.ReviewEvery(GameCalendar.DaysPerYear))));
+            cj.Life.Add(new KeyValuePair<string, string>(words.T("reallife_ibox_boss", "Boss"), CareersText.Boss((BossKind)j.Boss)));
+            cj.Life.Add(new KeyValuePair<string, string>(words.T("reallife_ibox_overtime", "Overtime since the review"), CareersText.Minutes(j.Overtime)));
+            cj.Life.Add(new KeyValuePair<string, string>(words.T("reallife_life_sum_pension", "Pension pot"), CareersText.Cents(w.Pension)));
+            cj.Burnout = Math.Max(0, Math.Min(100, j.Burnout / 10));
         }
 
         // What the next rung asks, from the profession's own ranks: the days at this one, the skills, a qualification and a review's rating.
@@ -221,10 +248,34 @@ namespace RealLifeOverhaul.Ui
             return a;
         }
 
+        // ------------------------------------------------------------------------------------------------- Jobs
+
+        private int MetresOf(Opening o)
+        {
+            if (string.IsNullOrEmpty(o.Street))
+            {
+                return -1;
+            }
+            int key = o.Id;
+            if (!_metres.TryGetValue(key, out int metres))
+            {
+                metres = WorkGame.MetresFromHome(o.Street, o.Number);
+                if (_metres.Count > 256)
+                {
+                    _metres.Clear();
+                }
+                _metres[key] = metres;
+            }
+            return metres;
+        }
+
         private void ReadOpenings(CareersDirector d, WorkFile w, StudyFile study, int day)
         {
+            UtilitiesWords words = W;
+            WorkTab tab = _facts.Jobs;
             Candidate template = d.Template();
             int mine = w.Job != null ? Prices.At(w.Job.Pay) : 0;
+            var others = new List<Peer>(StandingRules.OthersPerPostMost);
             for (int i = 0; i < w.Openings.Count; i++)
             {
                 Opening o = w.Openings[i];
@@ -234,161 +285,212 @@ namespace RealLifeOverhaul.Ui
                     continue;
                 }
                 bool qualified = ProRules.Qualified(study, p, o.Rank), eligible = qualified && d.OpenToMe(o, template), applied = w.Applied(o) != null;
-                var r = new CareerRow
+                bool remote = o.Work == (int)WorkMode.Remote;
+                bool open = PostFilterRules.Open(remote, !remote && WorkGame.ShutNow(o.Street, o.Number));
+                bool near = PostFilterRules.Near(MetresOf(o), remote);
+                int pay = Prices.At(o.Pay);
+                int against = mine > 0 ? (int)Math.Round((pay - mine) * 100.0 / mine) : 0;
+                string status = applied ? words.T("reallife_career_kind_applied", "Applied") : eligible ? words.T("reallife_work_you_qualify", "You qualify") : qualified
+                    ? words.T("reallife_work_needs_more", "Needs more") : words.T("reallife_work_needs_licence", "Needs a licence");
+                UiRole tone = applied || eligible ? UiRole.Ok : UiRole.Warn;
+                string employer = CareersText.Employer(o.Employer), where = WorkGame.Address(o.Street, o.Number), title = CareersText.Title(o.Prof, o.Rank);
+                var r = new WorkRow
                 {
-                    Id = o.Id, Icon = UiIcon.Briefcase, Open = true, Qualify = eligible, Near = false,
-                    Cells = new[] { CareersText.Title(o.Prof, o.Rank) + ", " + CareersText.Employer(o.Employer), WorkGame.Address(o.Street,
-                        o.Number), CareersText.Rate(Prices.At(o.Pay)),
-                        mine > 0 ? WorkBuilder.Percent((int)Math.Round((Prices.At(o.Pay) - mine) * 100.0 / mine)) : "-" },
-                    Status = applied ? W.T("reallife_career_kind_applied", "Applied") : eligible ? W.T("reallife_work_you_qualify",
-                        "You qualify") : qualified ? W.T("reallife_work_needs_more", "Needs more") : W.T("reallife_work_needs_licence", "Needs a licence"),
-                    Tone = applied || eligible ? UiRole.Ok : UiRole.Warn,
-                    Detail = W.F("reallife_work_post_line", "{title} at {employer}, {where}.", "title", CareersText.Title(o.Prof, o.Rank),
-                        "employer", CareersText.Employer(o.Employer), "where", WorkGame.Address(o.Street, o.Number))
+                    Id = o.Id, Icon = WorkGlyphs.Profession(o.Prof), Name = title, Sub = employer, HeadSub = where, Chip = employer, ChipTone = UiRole.Accent, Status = status, Tone = tone,
+                    Cells = new[] { null, where, null, CareersText.Hours(p), CareersText.Rate(pay), mine > 0 ? WorkBuilder.Percent(against) : "-", status },
+                    Values = new[] { 0, 0, 0, 0, 0, against < 0 ? -1 : against > 0 ? 1 : 0, 0 },
+                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, tone },
+                    Mask = (open ? 1 : 0) | (eligible ? 2 : 0) | (near ? 4 : 0),
+                    Locate = new WorkAct { Kind = (int)CareerAct.ShowPost, Arg = o.Id, Label = words.T("reallife_career_button_map", "Show on map"), Opens = true }
                 };
-                r.Needs.Add(new CareerNeed { Words = W.T("reallife_work_need_qualified", "The qualifications the post asks for"), Met = qualified });
-                r.Needs.Add(new CareerNeed { Words = W.T("reallife_work_need_skills", "The skills the post asks for"), Met = eligible });
-                var others = new List<Peer>(StandingRules.OthersPerPostMost);
-                d.AlsoApplied(o, others);
-                for (int k = 0; k < others.Count; k++)
+                r.Figures.Add(new KeyValuePair<string, string>(words.T("reallife_career_col_pay", "Pay"), words.F("reallife_career_row_rate", "{rate} an hour", "rate", CareersText.Rate(pay))));
+                r.Figures.Add(new KeyValuePair<string, string>(words.T("reallife_work_col_hours", "Hours"), CareersText.Hours(p)));
+                r.Sections.Add(NeedsOf(d, study, o, p, qualified, eligible, w, day));
+                if (mine > 0)
                 {
-                    r.Others.Add(new CareerPeer { Name = others[k].Name, Role = CareersText.Title(o.Prof, others[k].Rank),
-                        Day = CareersText.Day(others[k].Day), Score = others[k].Score, Team = others[k].Teamwork, Hue = UiColour.HueOf(others[k].Name) });
+                    var against2 = new WorkSection { Part = WorkPart.Pairs, Title = words.T("reallife_work_pay_against", "Against your pay") };
+                    against2.Pairs.Add(new KeyValuePair<string, string>(words.T("reallife_work_your_pay_now", "Your pay now"), CareersText.Rate(mine)));
+                    against2.Pairs.Add(new KeyValuePair<string, string>(words.T("reallife_work_difference", "The difference"), WorkBuilder.Percent(against)));
+                    r.Sections.Add(against2);
                 }
-                r.Acts.Add(CareerAct.Apply);
-                r.Why.Add(applied ? W.T("reallife_work_why_applied",
-                    "You have applied to this post.") : !qualified ? W.T("reallife_work_why_unqualified",
-                    "You are not qualified for this post.") : !eligible ? W.T("reallife_work_why_skills",
-                    "Your skills are short for this post.") : string.Empty);
-                r.Acts.Add(CareerAct.ShowPost);
-                r.Why.Add(string.Empty);
-                _facts.Jobs.Add(r);
-                _facts.OpenNow++;
-                _facts.Qualify += eligible ? 1 : 0;
+                d.AlsoApplied(o, others);
+                if (others.Count > 0)
+                {
+                    var also = new WorkSection { Part = WorkPart.People, Title = words.T("reallife_work_also_applied", "Also applied"), Note = words.F("reallife_work_n_people", "{n} people", "n", others.Count.ToString(Inv)) };
+                    for (int k = 0; k < others.Count; k++)
+                    {
+                        also.People.Add(new WorkPerson { Name = others[k].Name, Role = CareersText.Title(o.Prof, others[k].Rank) + ", " + words.F("reallife_work_performance_n", "performance {n}", "n", others[k].Score.ToString(Inv)),
+                            Right = CareersText.Day(others[k].Day), Ring = UiRole.Ok });
+                    }
+                    r.Sections.Add(also);
+                    r.HintLead = words.T("reallife_work_still_apply", "You can still apply.");
+                    r.Hint = words.F("reallife_work_weighs_all", "The employer weighs your record, and {name} has applied too. When you get the job, start each shift at your desk.", "name", others[0].Name);
+                }
+                string why = applied ? words.T("reallife_work_why_applied", "You have applied for that already.") : !qualified ? words.T("reallife_work_why_unqualified",
+                    "You do not hold what that post needs.") : !eligible ? words.T("reallife_work_why_skills", "Your skills are too far below what that post asks.") : null;
+                r.Acts.Add(new WorkAct { Kind = (int)CareerAct.Apply, Arg = o.Id, Label = words.T("reallife_career_button_apply", "Apply"), Style = UiButtonKind.Primary, Icon = UiIcon.Check, Why = why });
+                r.Acts.Add(new WorkAct { Kind = (int)CareerAct.ShowPost, Arg = o.Id, Label = words.T("reallife_career_button_map", "Show on map"), Style = UiButtonKind.Secondary, Icon = UiIcon.Locate, Opens = true });
+                tab.Rows.Add(r);
             }
         }
 
+        // What a post asks as check lines: the qualification, the skill points, the employer's own wish and, for a step up at the player's own employer, the
+        // performance and teamwork the promotion goes by.
+        private WorkSection NeedsOf(CareersDirector d, StudyFile study, Opening o, Profession p, bool qualified, bool eligible, WorkFile w, int day)
+        {
+            UtilitiesWords words = W;
+            var sec = new WorkSection { Part = WorkPart.Checks, Title = words.T("reallife_work_what_it_needs", "What it needs") };
+            ProRank rank = p.Ranks[Math.Max(0, Math.Min(p.Ranks.Length - 1, o.Rank))];
+            if (rank.Quals.Length > 0)
+            {
+                bool held = false;
+                for (int i = 0; i < rank.Quals.Length; i++)
+                {
+                    held |= study.Holds(rank.Quals[i]);
+                }
+                sec.Checks.Add(new WorkNeed { Words = CareersText.Course(rank.Quals[0]), Met = held });
+            }
+            int points = ProRules.Points(study, p, o.Rank), asked = ProRules.Need(study, p, o.Rank);
+            sec.Checks.Add(new WorkNeed { Words = words.F("reallife_work_need_skill_points", "Skills at {n} points", "n", asked.ToString(Inv)), Met = points >= asked,
+                Have = points >= asked ? null : words.F("reallife_work_you_have", "you have {n}", "n", points.ToString(Inv)) });
+            if (rank.Days > 0)
+            {
+                int months = Math.Max(1, LifeRules.Paced(rank.Days, GameCalendar.DaysPerYear) / 30);
+                sec.Checks.Add(new WorkNeed { Words = words.F("reallife_work_need_months", "{n} months at the rank below", "n", months.ToString(Inv)), Met = qualified || w.Job == null,
+                    Have = null });
+            }
+            sec.Checks.Add(new WorkNeed { Words = words.T("reallife_work_need_takes_you", "The employer takes people like you"), Met = eligible });
+            Job job = w.Job;
+            if (job != null && job.Post.Employer == o.Employer && o.Prof == job.Post.Prof && o.Rank > job.Post.Rank)
+            {
+                // a step up where the player works: the review's own bar for a promotion and the standing with colleagues
+                Standing s = d.StandingNow();
+                int bar = LifeRules.RatingFrom[LifeRules.PromoteRating - 1];
+                sec.Checks.Add(new WorkNeed { Words = words.F("reallife_work_need_performance", "Performance {n}", "n", bar.ToString(Inv)), Met = s.Performance >= bar,
+                    Have = s.Performance >= bar ? null : words.F("reallife_work_you_have", "you have {n}", "n", s.Performance.ToString(Inv)) });
+                sec.Checks.Add(new WorkNeed { Words = words.F("reallife_work_need_teamwork", "Teamwork {n}", "n", PostFilterRules.PromotionTeamwork.ToString(Inv)),
+                    Met = s.Teamwork >= PostFilterRules.PromotionTeamwork, Have = s.Teamwork >= PostFilterRules.PromotionTeamwork ? null : words.F("reallife_work_you_have", "you have {n}", "n", s.Teamwork.ToString(Inv)) });
+            }
+            int met = 0;
+            for (int i = 0; i < sec.Checks.Count; i++)
+            {
+                met += sec.Checks[i].Met ? 1 : 0;
+            }
+            sec.Note = words.F("reallife_work_needs_met", "{met} of {all} met", "met", met.ToString(Inv), "all", sec.Checks.Count.ToString(Inv));
+            return sec;
+        }
+
+        // The vacancies a player with no job could go for first: the ones they qualify for, best pay first.
+        private void BestFor(UtilitiesWords words)
+        {
+            var rows = new List<WorkRow>(_facts.Jobs.Rows);
+            rows.RemoveAll(r => (r.Mask & 2) == 0);
+            rows.Sort((a, b) => string.CompareOrdinal(b.Cells[4], a.Cells[4]));
+            for (int i = 0; i < rows.Count && i < 5; i++)
+            {
+                WorkRow r = rows[i];
+                _facts.Best.Add(new WorkRow { Id = r.Id, Icon = r.Icon, Name = r.Name, Sub = r.Sub + ", " + r.Cells[1], Price = r.Cells[4] + "/h", Status = r.Cells[6], Tone = UiRole.Ok });
+            }
+        }
+
+        // ------------------------------------------------------------------------------------------------- Applications, Professions
+
         private void ReadApplications(WorkFile w, int day)
         {
+            UtilitiesWords words = W;
+            WorkTab tab = _facts.Applications;
             for (int i = w.Applications.Count - 1; i >= 0; i--)
             {
                 Careers.Application a = w.Applications[i];
-                var r = new CareerRow
-                {
-                    Id = a.Post.Id, Icon = UiIcon.ClipboardText, Cells = new[] { CareersText.Title(a.Post.Prof, a.Post.Rank),
-                        CareersText.Employer(a.Post.Employer), CareersText.Day(a.Day), CareersText.Step(a.At) },
-                    Status = CareersText.Step(a.At), Tone = a.Stage == (int)ApplyStep.Offered
-                        || a.Stage == (int)ApplyStep.Interview ? UiRole.Ok : a.Live ? UiRole.Accent : UiRole.Warn,
-                    Detail = W.F("reallife_work_app_line", "{title} at {employer}. {step}", "title", CareersText.Title(a.Post.Prof, a.Post.Rank),
-                        "employer", CareersText.Employer(a.Post.Employer), "step", CareersText.Step(a.At))
-                };
+                string title = CareersText.Title(a.Post.Prof, a.Post.Rank), employer = CareersText.Employer(a.Post.Employer), step = CareersText.Step(a.At);
+                UiRole tone = a.Stage == (int)ApplyStep.Offered || a.Stage == (int)ApplyStep.Interview ? UiRole.Ok : a.Live ? UiRole.Accent : UiRole.Warn;
+                var r = new WorkRow { Id = a.Post.Id, Icon = WorkGlyphs.Profession(a.Post.Prof), Name = title, Sub = employer, Chip = step, ChipTone = tone, Status = step, Tone = tone,
+                    Cells = new[] { null, CareersText.Day(a.Day), a.Live ? CareersText.Day(a.Answer) : "-", step }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, tone } };
+                var steps = new WorkSection { Part = WorkPart.Checks, Title = words.T("reallife_work_where_it_stands", "Where it stands") };
+                steps.Checks.Add(new WorkNeed { Words = words.F("reallife_work_sent_on", "Sent on {day}", "day", CareersText.Day(a.Day)), Met = true });
+                bool interviewed = a.Stage >= (int)ApplyStep.Interview && a.Stage != (int)ApplyStep.Sent;
+                steps.Checks.Add(new WorkNeed { Words = words.T("reallife_work_step_interview", "Interview"), Met = interviewed,
+                    Have = a.At == ApplyStep.Interview ? CareersText.Day(a.InterviewDay) : null });
+                bool offered = a.Stage >= (int)ApplyStep.Offered;
+                steps.Checks.Add(new WorkNeed { Words = words.T("reallife_work_step_offer", "Offer"), Met = offered, Have = a.At == ApplyStep.Offered ? CareersText.Rate(Prices.At(a.Offer)) : null });
+                steps.Checks.Add(new WorkNeed { Words = words.T("reallife_work_step_start_desk", "Start at your desk"), Met = a.At == ApplyStep.Accepted });
+                r.Sections.Add(steps);
                 switch (a.At)
                 {
-                    case ApplyStep.Sent: r.Acts.Add(CareerAct.Withdraw); r.Why.Add(string.Empty); break;
-                    case ApplyStep.Interview: r.Acts.Add(CareerAct.Interview); r.Why.Add(string.Empty); r.Acts.Add(CareerAct.Withdraw); r.Why.Add(string.Empty); break;
+                    case ApplyStep.Sent:
+                        r.Acts.Add(Act(CareerAct.Withdraw, a.Post.Id, words.T("reallife_career_button_withdraw", "Withdraw"), UiButtonKind.Destructive, UiIcon.Close));
+                        break;
+                    case ApplyStep.Interview:
+                        r.Acts.Add(Act(CareerAct.Interview, a.Post.Id, words.T("reallife_career_button_interview", "Attend the interview"), UiButtonKind.Primary, UiIcon.Check));
+                        r.Acts.Add(Act(CareerAct.Withdraw, a.Post.Id, words.T("reallife_career_button_withdraw", "Withdraw"), UiButtonKind.Destructive, UiIcon.Close));
+                        break;
                     case ApplyStep.Offered:
-                        r.Acts.Add(CareerAct.Accept); r.Why.Add(string.Empty);
-                        if (a.Asks < ProRules.AsksMost) { r.Acts.Add(CareerAct.AskSmall); r.Why.Add(string.Empty); r.Acts.Add(CareerAct.AskLarge); r.Why.Add(string.Empty); }
-                        r.Acts.Add(CareerAct.Decline); r.Why.Add(string.Empty);
+                        r.Acts.Add(Act(CareerAct.Accept, a.Post.Id, words.T("reallife_career_button_accept", "Accept"), UiButtonKind.Primary, UiIcon.Check));
+                        if (a.Asks < ProRules.AsksMost)
+                        {
+                            r.Acts.Add(Act(CareerAct.AskSmall, a.Post.Id, words.T("reallife_career_button_ask_small", "Ask for 5% more"), UiButtonKind.Secondary, UiIcon.TrendUp));
+                            r.Acts.Add(Act(CareerAct.AskLarge, a.Post.Id, words.T("reallife_career_button_ask_large", "Ask for 10% more"), UiButtonKind.Secondary, UiIcon.TrendUp));
+                        }
+                        r.Acts.Add(Act(CareerAct.Decline, a.Post.Id, words.T("reallife_career_button_decline", "Turn it down"), UiButtonKind.Destructive, UiIcon.Close));
                         break;
                 }
-                r.Acts.Add(CareerAct.ShowPost);
-                r.Why.Add(string.Empty);
-                _facts.Applications.Add(r);
+                r.Acts.Add(Act(CareerAct.ShowPost, a.Post.Id, words.T("reallife_career_button_map", "Show on map"), UiButtonKind.Secondary, UiIcon.Locate, true));
+                tab.Rows.Add(r);
                 _facts.ApplicationsWaiting += a.Live ? 1 : 0;
             }
         }
 
+        private static WorkAct Act(CareerAct act, int arg, string label, UiButtonKind style, UiIcon icon, bool opens = false, string why = null)
+        {
+            return new WorkAct { Kind = (int)act, Arg = arg, Label = label, Style = style, Icon = icon, Opens = opens, Why = why };
+        }
+
         private void ReadProfessions(WorkFile w, StudyFile study)
         {
+            UtilitiesWords words = W;
+            WorkTab tab = _facts.Professions;
+            Job job = w.Job;
             for (int i = 0; i < ProCatalogue.All.Length; i++)
             {
                 Profession p = ProCatalogue.All[i];
-                var r = new CareerRow { Id = p.Id, Icon = UiIcon.Briefcase, Cells = new[] { CareersText.ProName(p.Id), CareersText.Title(p.Id, 0),
-                    CareersText.Rate(Prices.At(p.Ranks[0].Pay)),
-                        ProRules.Qualified(study, p, 0) ? W.T("reallife_work_open_to_you", "Open to you") : W.T("reallife_work_needs_course",
-                            "Needs a course") },
-                    Detail = W.F("reallife_work_prof_line", "{name}: the ladder starts at {pay} an hour.", "name", CareersText.ProName(p.Id), "pay",
-                        CareersText.Rate(Prices.At(p.Ranks[0].Pay))) };
-                r.Acts.Add(CareerAct.OpenCampus);
-                r.Why.Add(string.Empty);
-                _facts.Professions.Add(r);
-            }
-        }
-
-        private void ReadLadder(CareersDirector d)
-        {
-            LadderFile f = d.Ladder;
-            if (f == null)
-            {
-                _facts.ManagementLine = W.T("reallife_ladder_empty", "The management ladder opens when you work at one of the city's companies.");
-                return;
-            }
-            for (int i = 0; i < f.Tasks.Count; i++)
-            {
-                LadderTask t = f.Tasks[i];
-                var r = new CareerRow { Id = t.Id, Icon = UiIcon.People, Cells = new[] { TaskTitle(t), f.Company.Stores.Count > t.Store
-                    && t.Store >= 0 ? f.Company.Stores[t.Store].Name : "-", CareersText.Day(t.Day), CareersText.Day(t.Lapse) },
-                    Status = W.T("reallife_work_decide", "Decide"), Tone = UiRole.Warn, Detail = TaskTitle(t) };
-                r.Acts.Add(CareerAct.TaskYes); r.Why.Add(string.Empty);
-                r.Acts.Add(CareerAct.TaskNo); r.Why.Add(string.Empty);
-                r.Acts.Add(CareerAct.TaskUp); r.Why.Add(string.Empty);
-                _facts.Management.Add(r);
-            }
-            if (f.Tasks.Count == 0)
-            {
-                _facts.ManagementLine = W.T("reallife_work_nothing_to_decide",
-                    "Nothing waits for your decision. Tasks come from the stores as their staff ask.");
-            }
-        }
-
-        private static string TaskTitle(LadderTask t) => CareersText.T(t.Kind == (int)TaskKind.Cover ? "reallife_ladder_task_cover"
-                : t.Kind == (int)TaskKind.Hire ? "reallife_ladder_task_hire" : "reallife_ladder_task_demand");
-
-        private void ReadOwn(WorkFile w, int day)
-        {
-            for (int i = 0; i < w.Contracts.Count; i++)
-            {
-                Contract c = w.Contracts[i];
-                var r = new CareerRow { Id = c.Id, Icon = UiIcon.Wrench, Cells = new[] { c.Client, CareersText.ProName(c.Prof),
-                    CareersText.Money(c.Fee), CareersText.Day(c.Due) },
-                    Status = c.At == ContractStep.Offered ? W.T("reallife_own_kind_open", "Open") : W.T("reallife_work_underway", "Under way"),
-                        Tone = UiRole.Accent,
-                    Detail = W.F("reallife_work_contract_line", "{client}: {fee}, due {day}.", "client", c.Client, "fee", CareersText.Money(c.Fee),
-                        "day", CareersText.Day(c.Due)) };
-                if (c.At == ContractStep.Offered)
+                int open = 0;
+                for (int k = 0; k < w.Openings.Count; k++)
                 {
-                    r.Acts.Add(CareerAct.TakeContract); r.Why.Add(string.Empty);
+                    open += w.Openings[k].Prof == p.Id && w.Openings[k].Open(SaveGameManager.Current.Day) ? 1 : 0;
                 }
-                r.Acts.Add(CareerAct.DropContract); r.Why.Add(string.Empty);
-                _facts.Own.Add(r);
-            }
-        }
-
-        private void ReadCv(WorkFile w, StudyFile study)
-        {
-            if (w.Job != null)
-            {
-                _facts.Cv.Add(new CareerRow { Id = 0, Icon = UiIcon.Briefcase, Cells = new[] { CareersText.Title(w.Job.Post.Prof, w.Job.Post.Rank),
-                    CareersText.Employer(w.Job.Post.Employer), CareersText.Day(w.Job.Hired), W.T("reallife_career_row_now", "now") },
-                    Detail = W.T("reallife_work_cv_now", "Your job now.") });
-            }
-            for (int i = w.History.Count - 1; i >= 0; i--)
-            {
-                Spell s = w.History[i];
-                _facts.Cv.Add(new CareerRow { Id = 100 + i, Icon = UiIcon.Briefcase, Cells = new[] { CareersText.Title(s.Prof, s.Top),
-                    CareersText.Employer(s.Employer), CareersText.Day(s.From), CareersText.Day(s.To) },
-                    Detail = CareersText.Fill("reallife_career_row_spell", "leaving", CareersText.Leaving(s.Leaving), "reference",
-                        CareersText.Reference(s.Reference)) });
-            }
-            for (int i = 0; i < study.Results.Count; i++)
-            {
-                Enrolment e = study.Results[i];
-                if (e.Def != null && e.Stage == (int)EnrolStage.Passed)
+                bool ready = ProRules.Qualified(study, p, 0);
+                string status = ready ? words.T("reallife_work_open_to_you", "Open to you") : words.T("reallife_work_needs_course", "Needs a course");
+                int pay = Prices.At(p.Ranks[0].Pay);
+                var r = new WorkRow { Id = p.Id, Icon = WorkGlyphs.Profession(p.Id), Name = CareersText.ProName(p.Id), Sub = words.F("reallife_work_first_post", "First post: {post}", "post", CareersText.Title(p.Id, 0)),
+                    Cells = new[] { null, CareersText.Hours(p), CareersText.Rate(pay), open.ToString(Inv), status }, Values = new[] { 0, 0, 0, Math.Min(100, open * 14), 0 },
+                    Status = status, Tone = ready ? UiRole.Ok : UiRole.Warn, Chip = status, ChipTone = ready ? UiRole.Ok : UiRole.Warn };
+                var ladder = new WorkSection { Part = WorkPart.Pairs, Title = words.T("reallife_work_the_ladder", "The ladder") };
+                for (int rank = 0; rank < p.Ranks.Length; rank++)
                 {
-                    _facts.Cv.Add(new CareerRow { Id = 300 + i, Icon = UiIcon.Cap, Cells = new[] { CareersText.Course(e.Course), "-",
-                        CareersText.Day(e.Start), CareersText.Day(e.Ended) }, Detail = CareersText.Grade(e.Def, e.Grade) });
+                    bool here = job != null && job.Post.Prof == p.Id && job.Post.Rank == rank;
+                    ladder.Pairs.Add(new KeyValuePair<string, string>(CareersText.Title(p.Id, rank) + (here ? " (" + words.T("reallife_work_rung_you", "You") + ")" : string.Empty),
+                        CareersText.Rate(Prices.At(p.Ranks[rank].Pay))));
                 }
+                r.Sections.Add(ladder);
+                ProRank first = p.Ranks[0];
+                var needs = new WorkSection { Part = WorkPart.Checks, Title = words.T("reallife_work_to_start", "To start") };
+                if (first.Quals.Length == 0)
+                {
+                    needs.Checks.Add(new WorkNeed { Words = words.T("reallife_work_no_qualification", "No qualification is asked"), Met = true });
+                }
+                else
+                {
+                    bool held = false;
+                    for (int q = 0; q < first.Quals.Length; q++)
+                    {
+                        held |= study.Holds(first.Quals[q]);
+                    }
+                    needs.Checks.Add(new WorkNeed { Words = CareersText.Course(first.Quals[0]), Met = held });
+                }
+                r.Sections.Add(needs);
+                r.Acts.Add(new WorkAct { Kind = WorkKinds.GoTab, Arg = CareerPages.Jobs, Label = words.T("reallife_career_button_vacancies", "Vacancies"), Style = UiButtonKind.Primary, Icon = UiIcon.Search, Opens = true });
+                r.Acts.Add(Act(CareerAct.OpenCampus, p.Id, words.T("reallife_career_button_see_courses", "See the courses"), UiButtonKind.Secondary, UiIcon.Books, true));
+                tab.Rows.Add(r);
             }
         }
 
@@ -403,7 +505,7 @@ namespace RealLifeOverhaul.Ui
             }
             try
             {
-                bool done = Carry((CareerAct)act.Kind, act.Arg, d);
+                bool done = Carry((CareerAct)act.Kind, act.Arg, d, view);
                 if (done)
                 {
                     _local++;
@@ -417,7 +519,7 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        private bool Carry(CareerAct act, int arg, CareersDirector d)
+        private bool Carry(CareerAct act, int arg, CareersDirector d, WorkView view)
         {
             WorkFile w = d.Work;
             switch (act)
@@ -429,7 +531,6 @@ namespace RealLifeOverhaul.Ui
                 case CareerAct.Accept: return Said(d.Accept(arg), d);
                 case CareerAct.AskSmall: return Said(d.Ask(arg, ProRules.AskSmallBp), d);
                 case CareerAct.AskLarge: return Said(d.Ask(arg, ProRules.AskLargeBp), d);
-                case CareerAct.Register: return Said(d.Register(), d);
                 case CareerAct.AskRise: return Said(d.AskRise(), d);
                 case CareerAct.TakeContract: return Said(d.TakeContract(arg), d);
                 case CareerAct.DropContract: return Said(d.DropContract(arg), d);
@@ -451,7 +552,7 @@ namespace RealLifeOverhaul.Ui
                             w.Job.Post.Rank).ToString() : "0" }),
                         () => Said(d.Resign(), d), null, null, null, true, true);
                     return true;
-                default: return CarryMore(act, arg, d);
+                default: return CarryMore(act, arg, d, view);
             }
         }
 

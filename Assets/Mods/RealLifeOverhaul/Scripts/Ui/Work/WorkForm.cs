@@ -77,6 +77,7 @@ namespace RealLifeOverhaul.Ui
                 case WorkField.Text: return UiTextRules.WrappedHeight(r.Value ?? string.Empty, UiStyle.Body, w, 4) + UiTokens.S2;
                 case WorkField.Tile: return 48f;
                 case WorkField.Check: return UiTokens.PairRow + UiTokens.S1;
+                case WorkField.Nudge: return UiTokens.Control + UiTokens.S1;
                 default: return UiTokens.Control + UiTokens.S1;
             }
         }
@@ -150,13 +151,26 @@ namespace RealLifeOverhaul.Ui
                     if (r.ActAt >= 0 && r.ActAt < actions.Length)
                     {
                         UiActionModel a = actions[r.ActAt];
-                        float lw = Math.Max(0f, w - UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, UiAction.Count, keys) - UiTokens.S3);
+                        float used = 0f;
+                        for (int k = 0; k <= r.More.Count; k++)
+                        {
+                            UiActionModel u = k == 0 ? a : r.ActAt + k < actions.Length ? actions[r.ActAt + k] : a;
+                            used += UiDraw.ButtonWidth(u.Kind, u.Label, u.Icon, UiAction.Count, keys) + (k > 0 ? UiTokens.S2 : 0f);
+                        }
+                        float lw = Math.Max(0f, w - used - UiTokens.S3);
                         if (!string.IsNullOrEmpty(r.Label))
                         {
                             UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, lw, UiStyle.Body, UiRole.Text, r.Label, UiFlags.Label | UiFlags.Truncate);
                         }
-                        float bw = Math.Min(w, UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, UiAction.Count, keys));
-                        UiDraw.Button(s, at, x + w - bw, y, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, UiAction.Count, keys, a.Command, a.Arg, a.Disabled);
+                        float right = x + w;
+                        for (int k = r.More.Count; k >= 0; k--)
+                        {
+                            UiActionModel b = k == 0 ? a : r.ActAt + k < actions.Length ? actions[r.ActAt + k] : a;
+                            float bw = Math.Min(right - x, UiDraw.ButtonWidth(b.Kind, b.Label, b.Icon, UiAction.Count, keys));
+                            right -= bw;
+                            UiDraw.Button(s, at, right, y, bw, UiTokens.Control, b.Kind, b.Label, b.Icon, UiAction.Count, keys, b.Command, b.Arg, b.Disabled);
+                            right -= UiTokens.S2;
+                        }
                     }
                     break;
                 case WorkField.Person:
@@ -168,6 +182,13 @@ namespace RealLifeOverhaul.Ui
                             UiActionModel a = actions[r.ActAt];
                             UiDraw.Node(s, at, x, y, w, h, a.Command, a.Arg, -1);
                         }
+                    }
+                    break;
+                case WorkField.Nudge:
+                    if (r.ActAt >= 0 && r.ActAt + 1 < actions.Length)
+                    {
+                        UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, w - ControlWidth - UiTokens.S3, UiStyle.Body, UiRole.Text, r.Label, UiFlags.Label | UiFlags.Truncate);
+                        UiDraw.Stepper(s, at, x + w - ControlWidth, y, ControlWidth, r.Value, !actions[r.ActAt].Disabled, !actions[r.ActAt + 1].Disabled, WorkCmd.NudgeLess, WorkCmd.Read, WorkCmd.NudgeMore, r.ActAt, false);
                     }
                     break;
                 case WorkField.Check:

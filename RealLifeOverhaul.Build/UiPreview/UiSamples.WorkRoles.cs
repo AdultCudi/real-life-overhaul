@@ -66,7 +66,7 @@ internal static partial class UiSamples
         {
             var r = new WorkRow { Id = i + 1, Icon = icons[i], Name = ads[i][0], Sub = ads[i][1], Cells = new[] { null, ads[i][2], ads[i][3], ads[i][4], ads[i][5] }, Values = new[] { 0, 0, int.Parse(ads[i][3]) * 8, 0, 0 },
                 Status = ads[i][5], Tone = i == 3 ? UiRole.Warn : UiRole.Ok, Chip = ads[i][5], ChipTone = i == 3 ? UiRole.Warn : UiRole.Ok, Group = i };
-            r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_pay_up_to", "Pay up to"), ads[i][4] + "/h"));
+            r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_pay_up_to", "Pay up to"), ads[i][4] + "/h"));
             r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_posts", "Posts to fill"), ads[i][2]));
             var facts = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_the_ad", "The ad") };
             facts.Pairs.Add(new KeyValuePair<string, string>("Minimum skill", "60"));
@@ -81,7 +81,7 @@ internal static partial class UiSamples
                 hired.People.Add(new WorkPerson { Name = "Jonah Reyes", Role = "QA lead, day 394", Ring = UiRole.Ok });
                 r.Sections.Add(hired);
             }
-            r.Acts.Add(WkAct(WorkKinds.GoTab, w.T("reallife_hire_button_applicants", "See the applicants"), UiButtonKind.Primary, UiIcon.People, null, true, 1));
+            r.Acts.Add(WkAct(WorkKinds.GoTab, w.T("reallife_hire_button_applicants", "Applicants"), UiButtonKind.Primary, UiIcon.People, null, true, 1));
             r.Acts.Add(WkAct(104, w.T("reallife_work_close_ad", "Close the ad"), UiButtonKind.Destructive, UiIcon.Close, null, false, r.Id));
             t.Rows.Add(r);
         }
@@ -108,7 +108,7 @@ internal static partial class UiSamples
         t.Amounts.Add(new WorkAmount { Id = 6, Value = work, Min = 0, Max = 2, Words = works, Figure = works[work] });
         t.Amounts.Add(new WorkAmount { Id = 7, Value = days, Min = 3, Max = 30, Figure = days + " days" });
         t.Amounts.Add(new WorkAmount { Id = 8, Value = posts, Min = 1, Max = 6, Figure = posts.ToString() });
-        var form = new WorkFormModel { Lead = w.T("reallife_work_new_ad_lead", "An ad runs for the days you set and brings applicants over a few days. The going rate for the line is $34 an hour.") };
+        var form = new WorkFormModel { Lead = w.T("reallife_work_new_ad_lead", "An ad runs for the days you set and brings applicants over a few days. It is paid when it is posted.") };
         var role1 = new WorkFormBand { Title = w.T("reallife_work_the_role", "The role") };
         role1.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_col_role", "Role"), Stepper = 0 });
         role1.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_col_level", "Level"), Stepper = 1 });
@@ -121,7 +121,7 @@ internal static partial class UiSamples
         terms.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_pay_least", "Pay from"), Stepper = 4 });
         terms.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_skill", "Minimum skill"), Stepper = 5 });
         terms.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_days", "The ad runs"), Stepper = 7 });
-        terms.Rows.Add(new WorkFormRow { Field = WorkField.Switch, Label = w.T("reallife_work_ad_boost", "Boost the ad for more applicants"), On = false, Act = WkAct(106, w.T("reallife_work_ad_boost", "Boost the ad"), UiButtonKind.Secondary, UiIcon.Rocket) });
+        terms.Rows.Add(new WorkFormRow { Field = WorkField.Switch, Label = w.T("reallife_work_ad_boost", "Boost the ad"), On = false, Act = WkAct(106, w.T("reallife_work_ad_boost", "Boost the ad"), UiButtonKind.Secondary, UiIcon.Rocket) });
         form.Right.Add(terms);
         t.Form = form;
         t.Acts.Add(WkAct(WorkKinds.Back, w.T("reallife_work_cancel", "Cancel"), UiButtonKind.Secondary, UiIcon.Back, null, true));
@@ -139,7 +139,7 @@ internal static partial class UiSamples
         t.EmptyBody = w.T("reallife_work_no_applicants", "Applicants arrive over a few days and other firms hire too. A boosted ad brings more.");
         t.EmptyIcon = UiIcon.People;
         var aside = new WorkAside { Title = w.T("reallife_work_open_roles", "Open roles"), Count = "5", ListTitle = w.T("reallife_work_hired_month", "Hired this month"), ListCount = "3",
-            Foot = w.T("reallife_work_applicants_foot", "Applicants arrive over a few days and take other offers if you wait. Guo Interactive is hiring too.") };
+            Foot = w.T("reallife_work_applicants_foot", "Applicants arrive over a few days and take other offers if you wait.") };
         string[][] roles = { new[] { "Game designer", "Pioneer Game Studio", "7" }, new[] { "Support agent", "Pioneer Game Studio", "12" }, new[] { "Data centre technician", "Hudson Data Hall", "4" },
             new[] { "Network engineer", "Midtown Fibre Co", "5" }, new[] { "Tester", "Pioneer Game Studio", "3" } };
         UiIcon[] icons = { UiIcon.PaintBrush, UiIcon.Headset, UiIcon.HardDrives, UiIcon.Globe, UiIcon.Bug };
@@ -219,7 +219,7 @@ internal static partial class UiSamples
         t.Columns = new[] { WkCol(w.T("reallife_work_col_seeker", "Looking for work"), UiCellKind.Person), WkCol(w.T("reallife_work_col_level", "Level"), UiCellKind.Text, 96),
             WkCol(w.T("reallife_work_skill_craft", "Craft"), UiCellKind.Meter, 120), WkCol(w.T("reallife_work_col_asks", "Asks"), UiCellKind.Money, 72), WkCol(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 152) };
         t.EmptyTitle = w.T("reallife_work_market_empty_title", "Nobody is on the market");
-        t.EmptyBody = w.T("reallife_work_market_lead", "Professionals looking for work show here. Post an ad and the ones who fit apply.");
+        t.EmptyBody = w.T("reallife_work_market_lead", "Professionals looking for work show here by line. Post an ad and the ones who fit apply.");
         string[][] seekers =
         {
             new[] { "Dana Whelan", "Game design", "Mid", "74", "$34", "Looking", "0" }, new[] { "Pavel Novak", "Game design", "Senior", "86", "$48", "In work, 2 weeks", "0" },
@@ -348,7 +348,7 @@ internal static partial class UiSamples
             contract.Foot = WkAct(132, w.T("reallife_work_raise_pay", "Raise their pay"), UiButtonKind.Primary, UiIcon.TrendUp);
             form.Left.Add(contract);
             var leave = new WorkFormBand { Title = w.T("reallife_work_leaving", "Letting them go") };
-            leave.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_buyout_label", "Buy out their notice"), Act = WkAct(133, w.T("reallife_hire_button_buyout", "Buy out the notice"), UiButtonKind.Secondary, UiIcon.Coin) });
+            leave.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_buyout_label", "Buy out their notice"), Act = WkAct(133, w.T("reallife_hire_button_buyout", "Buy out their notice"), UiButtonKind.Secondary, UiIcon.Coin) });
             leave.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_release_label", "Release them"), Act = WkAct(134, w.T("reallife_work_release", "Release"), UiButtonKind.Destructive, UiIcon.SignOut) });
             form.Right.Add(leave);
         }

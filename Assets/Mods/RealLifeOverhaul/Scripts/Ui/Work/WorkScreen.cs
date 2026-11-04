@@ -69,7 +69,9 @@ namespace RealLifeOverhaul.Ui
             {
                 s.Begin("app window", frame.Width, frame.Height, dark);
                 UiAt at = UiAppWindow.Shell(s, frame, m.Title, m.Icon, m.Nav, m.NavSelected, m.TabsAcross, keys, out float x, out float y, out float w, out float bottom);
+                int before = s.NodeCount;
                 _page.Body(s, at, x, y, w, bottom, keys);
+                FocusFirst(s, before);
                 for (int i = 0; i < m.PromptCount; i++)
                 {
                     s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
@@ -90,6 +92,31 @@ namespace RealLifeOverhaul.Ui
             }
             _view.Reveal = -1;
             _dirty = false;
+        }
+
+        // The keys and the pad start on the page, not on the section already chosen: the chosen row or card, else the page's first target.
+        private void FocusFirst(UiScene s, int before)
+        {
+            int focus = -1;
+            if (_page.Table != null && _page.Chosen >= 0)
+            {
+                focus = s.FindNode(UiDataTable.First + UiDataTable.Row, _page.Chosen);
+            }
+            else if (_page.Cards != null && _page.Chosen >= 0)
+            {
+                focus = s.FindNode(WorkCmd.Card, _page.Chosen);
+            }
+            for (int i = before; focus < 0 && i < s.NodeCount; i++)
+            {
+                if (!s.Nodes[i].Disabled && s.Nodes[i].Layer == 0)
+                {
+                    focus = i;
+                }
+            }
+            if (focus >= 0)
+            {
+                s.FocusFirst = focus;
+            }
         }
 
         private void AddPrompt(UiAppModel m, UiAction action, string key, string english)
@@ -165,6 +192,12 @@ namespace RealLifeOverhaul.Ui
                     return Step(arg, 1);
                 case WorkCmd.Pick:
                     return Cycle(arg);
+                case WorkCmd.NudgeLess:
+                    return Run(_page.Acts, arg);
+                case WorkCmd.NudgeMore:
+                    return Run(_page.Acts, arg + 1);
+                case WorkCmd.Read:
+                    return true;   // the figure between a nudge's buttons is read, never typed: its buttons are what act
                 case UiDiary.DayCommand:
                     if (_page.Diary == null || arg < 1 || arg > _page.Diary.Length)
                     {
