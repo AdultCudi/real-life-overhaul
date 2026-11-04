@@ -6,7 +6,7 @@ namespace RealLifeOverhaul.Map25
     /// How tall a block is drawn, from how tall the building is and how wide its ground is. The game's real heights run from a shed to a
     /// tower of well over a hundred metres on a lot ten metres wide, and a block that stands that high on a thin lot is a needle that hides the
     /// streets round it. The approved mockups draw blocks about as tall as they are wide (21 to 36 m, a few to 50 m), so a height is kept as it
-    /// is up to a knee that grows with the shorter side of the ground, and above it only a seventh of what is left over is drawn, up to a cap that
+    /// is up to a knee that grows with the shorter side of the ground, and above it only 15 per cent of what is left over is drawn, up to a cap that
     /// also keeps a small square lot from being a chimney. A low building is exactly as tall as it is; a tower is still the tallest thing in
     /// its street. Game-free; EconomyCheck pins every number.
     /// </summary>

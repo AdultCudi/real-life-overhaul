@@ -155,7 +155,7 @@ internal static partial class Program
         string arrange = Map25Body(scene, "private void ArrangeMap()");
         string toggled = Map25Body(mapEvents, "private void MapToggled(bool open)");
         Check(!map.Contains("SetAsFirstSibling") && !city.Contains("SetAsFirstSibling") && arrange.Contains("NavMapLayers.Indices(") && Map25Count(arrange, "SetSiblingIndex(") == 2
-              && toggled.Contains("ArrangeMap();") && toggled.LastIndexOf("ArrangeMap();", StringComparison.Ordinal) > toggled.LastIndexOf("_map.Open(open);", StringComparison.Ordinal)
+              && Map25Body(scene, "private void OpenPicture(bool open)").Contains("ArrangeMap();") && toggled.Contains("ArrangeMap();") && toggled.LastIndexOf("ArrangeMap();", StringComparison.Ordinal) > toggled.LastIndexOf("_map.Open(open);", StringComparison.Ordinal)
               && Map25Body(scene, "private void SceneWanted(bool wantMinimap)").Contains("ArrangeMap();"),
             "2.5D city map: neither object sets its own place among the marker layer's children; the director does, after either is made and after the map opens, so the route is over the picture on the first open of a session");
 

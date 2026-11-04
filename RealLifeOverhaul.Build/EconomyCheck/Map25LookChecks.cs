@@ -85,7 +85,7 @@ internal static partial class Program
         bool low = Math.Abs(Map25Height.Drawn(12f, 15f, 40f) - 12f) < 1e-4f && Math.Abs(Map25Height.Drawn(29f, 15f, 40f) - 29f) < 1e-4f && Math.Abs(Map25Height.Knee(15f) - 29f) < 1e-4f;
         float tower = Map25Height.Drawn(100f, 15f, 40f);
         Check(low && Math.Abs(tower - (29f + 71f * Map25Height.Above)) < 1e-3f,
-            "2.5D map: a building up to the knee of its lot (8 m and 1.4 m a metre of its shorter side) is drawn exactly as tall as it is, above it a seventh of the rest (100 m on a 15 m lot is " + tower.ToString("F1") + " m)");
+            "2.5D map: a building up to the knee of its lot (8 m and 1.4 m a metre of its shorter side) is drawn exactly as tall as it is, above it 15 per cent of the rest (100 m on a 15 m lot is " + tower.ToString("F1") + " m)");
         float chimney = Map25Height.Drawn(150f, 10f, 10f), slab = Map25Height.Drawn(150f, 8f, 30f);
         Check(chimney <= Map25Height.Cap(10f, 10f) + 1e-4f && chimney <= 10f + 2f * 10f + 1e-3f && slab <= 6f + 3.4f * 8f + 1e-3f && slab / 30f < 1.5f && chimney / 10f <= 3.3f,
             "2.5D map: a real 150 m tower on a 10 by 10 m lot is drawn " + chimney.ToString("F0") + " m, no chimney, and on an 8 by 30 m sliver " + slab.ToString("F0") + " m, a slab no taller than it is long");

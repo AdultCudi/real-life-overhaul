@@ -124,6 +124,10 @@ namespace RealLifeOverhaul.Nav
                 _map25.Player(_px, _py, _pz, _follow != null ? _follow.eulerAngles.y : _heading);
             }
             _map25.Open(open);
+            if (open)
+            {
+                ArrangeMap();   // also with the GPS off, when no route object is made after it
+            }
         }
 
         // The one place that says where the game's marker layer's children stand: the 2.5D picture first, the mod's own route line over it, every pin of the game's over both.
