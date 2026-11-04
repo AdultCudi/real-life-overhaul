@@ -110,9 +110,9 @@ namespace RealLifeOverhaul.Ui
             int face = Box(s, on, x, y, tile, tile, chosen ? UiRole.RowSel : UiRole.Pill, UiRole.None, UiTokens.RadiusLarge,
                 UiFlags.Chrome | UiFlags.Middle | (chosen ? UiFlags.Selected : UiFlags.None));
             float g = BarGlyph;
-            if (picture > 0)
+            if (picture != 0)
             {
-                Picture(s, on.In(face), x + (tile - g) / 2f, y + (tile - g) / 2f, g, picture);   // another mod's app: its own picture, as on the phone
+                AppMark(s, on.In(face), x + (tile - g) / 2f, y + (tile - g) / 2f, g, picture);   // another mod's app: its own picture or the kit's mark, as on the phone
                 s.Items[s.ItemCount - 1].Flags |= UiFlags.Chrome;
             }
             else

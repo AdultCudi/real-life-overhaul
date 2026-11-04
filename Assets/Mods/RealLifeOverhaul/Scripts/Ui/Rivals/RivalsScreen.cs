@@ -293,6 +293,7 @@ namespace RealLifeOverhaul.Ui
         private void Build()
         {
             _v.Tab = _tab;
+            _v.Today = SaveGameManager.Current != null ? SaveGameManager.Current.Day : 0;
             _v.Money = f => f.ToShortCurrencyFormat();
             League();
             ChosenPanel();

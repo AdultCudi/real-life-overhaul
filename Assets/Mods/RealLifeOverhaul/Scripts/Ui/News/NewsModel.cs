@@ -44,6 +44,29 @@ namespace RealLifeOverhaul.Ui
         public int Target;
     }
 
+    /// <summary>
+    /// The city's people as a page of the Economy window: a card of headline figures with the links to who pays the most rent and the busiest district,
+    /// two donuts, and a table under them (the districts, or the renters of one district). A figure that needs history the save lacks carries its
+    /// own words in place of a number.
+    /// </summary>
+    public sealed class NewsPeople
+    {
+        public string Title;
+        public string HeadLabel;                   // the first row in capitals ("Residents") and its figure
+        public string HeadValue;
+        public UiInfoRow[] Rows = new UiInfoRow[0];
+        public string ChartTitle;
+        public string[] ChartLabels = new string[0];
+        public string[] ChartValues = new string[0];
+        public float[] ChartShares = new float[0];
+        public string Chart2Title;
+        public string[] Chart2Labels = new string[0];
+        public string[] Chart2Values = new string[0];
+        public float[] Chart2Shares = new float[0];
+        public string TableTitle;
+        public UiDataTableModel Table;
+    }
+
     /// <summary>A named fact with a mark of initials: who moved a price this week, what a holding is worth. A headline and a line under it.</summary>
     public struct NewsMove
     {
@@ -127,8 +150,10 @@ namespace RealLifeOverhaul.Ui
         public UiReaderModel Reader;
         public UiEditionModel Edition;
         public UiDecisionModel Decision;
-        public UiInfoViewModel People;
-        public UiInfoModel Household;
+        public NewsPeople People;
+        public UiInfoModel Household;                 // a household's rows
+        public string PageTitle;                      // the name of a page opened from another, beside its back button
+        public string BackLabel;                      // where Back goes from a page opened from another (the page under it); null on a tab
         public string Note;
         public string Note2;
         public string StripNote;                      // the title strip's note at the right: the day, the edition, the price
@@ -176,6 +201,7 @@ namespace RealLifeOverhaul.Ui
         public const int Rent = 445;
         public const int Busy = 446;
         public const int Home = 447;
+        public const int Back = 449;       // the page's back button: one step to the page it was opened from
         public const int District = 448;   // a district row: added to UiDataTable's own offsets
         public const int Title = 450;      // a paper's action on the Newsstand: its index in Arg
     }

@@ -19,11 +19,14 @@ internal static partial class Program
     {
         UiAppWindow.NavCommand, UiAlbum.Photo, UiAlbum.Sort, UiAlbum.Fav, UiAlbum.Select, UiAlbum.Delete,
         UiPhotoViewer.Action, UiPhotoViewer.Neighbour, UiPhotoViewer.Step, UiPhotoViewer.Fact,
+        UiAlbum.Search, UiAlbum.Share, UiAlbum.Camera, UiAlbum.FilterPlace, UiAlbum.FilterBusiness, UiAlbum.FilterDay, UiAlbum.FilterClear,
+        UiPhotoEdit.Filter, UiPhotoEdit.Frame, UiPhotoEdit.Shape, UiPhotoEdit.Turn, UiPhotoEdit.Save, UiPhotoEdit.Reset, UiPhotoEdit.Cancel,
     };
 
     private static readonly int[] LifeFinderCommands =
     {
-        LifePages.VMode, LifePages.VFilter, LifePages.VFrame, LifePages.VShutter, LifePages.VClose, LifePages.VGrid, LifePages.VOpen,
+        LifePages.VMode, LifePages.VFilter, LifePages.VFrame, LifePages.VShutter, LifePages.VClose, LifePages.VOpen, LifePages.VZoomOut, LifePages.VZoomIn,
+        LifePages.VLens, LifePages.VExposureDown, LifePages.VExposureUp, LifePages.VTool, LifePages.VFlip, LifePages.VFilterPage, LifePages.VClean,
     };
 
     static partial void UiCasesLife(UiScreenDef def, List<UiScreenCase> cases)
@@ -56,21 +59,45 @@ internal static partial class Program
                 break;
             case "photo_gallery":
                 cases.Add(new UiScreenCase { Def = def, Name = "gallery (a few photos)", Title = "Gallery", Commands = LifeGalleryCommands,
-                    Lay = (s, f, d, k, t) => UiSamples.GalleryGrid(s, f, d, k, t, 3, false) });
+                    Lay = (s, f, d, k, t) => UiSamples.GalleryGrid(s, f, d, k, t, 3, "grid") });
                 cases.Add(new UiScreenCase { Def = def, Name = "gallery (full)", Title = "Gallery", Commands = LifeGalleryCommands,
-                    Lay = (s, f, d, k, t) => UiSamples.GalleryGrid(s, f, d, k, t, 300, false) });
+                    Lay = (s, f, d, k, t) => UiSamples.GalleryGrid(s, f, d, k, t, 300, "grid") });
+                cases.Add(new UiScreenCase { Def = def, Name = "gallery (500 photos)", Title = "Gallery", Commands = LifeGalleryCommands,
+                    Lay = (s, f, d, k, t) => UiSamples.GalleryGrid(s, f, d, k, t, 500, "grid") });
                 cases.Add(new UiScreenCase { Def = def, Name = "gallery (empty)", Title = "Gallery", Commands = LifeGalleryCommands,
-                    Lay = (s, f, d, k, t) => UiSamples.GalleryGrid(s, f, d, k, t, 0, false) });
+                    Lay = (s, f, d, k, t) => UiSamples.GalleryGrid(s, f, d, k, t, 0, "grid") });
                 cases.Add(new UiScreenCase { Def = def, Name = "gallery (selecting)", Title = "Gallery", Commands = LifeGalleryCommands,
-                    Lay = (s, f, d, k, t) => UiSamples.GalleryGrid(s, f, d, k, t, 12, true) });
+                    Lay = (s, f, d, k, t) => UiSamples.GalleryGrid(s, f, d, k, t, 40, "select") });
+                cases.Add(new UiScreenCase { Def = def, Name = "gallery (a search and a filter)", Title = "Gallery", Commands = LifeGalleryCommands,
+                    Lay = (s, f, d, k, t) => UiSamples.GalleryGrid(s, f, d, k, t, 120, "search") });
+                cases.Add(new UiScreenCase { Def = def, Name = "gallery (the Flare album)", Title = "Gallery", Commands = LifeGalleryCommands,
+                    Lay = (s, f, d, k, t) => UiSamples.GalleryGrid(s, f, d, k, t, 120, "flare") });
                 cases.Add(new UiScreenCase { Def = def, Name = "gallery (a photo)", Title = "Gallery", Commands = LifeGalleryCommands,
-                    Lay = (s, f, d, k, t) => UiSamples.GalleryViewer(s, f, d, k, t) });
+                    Lay = (s, f, d, k, t) => UiSamples.GalleryViewer(s, f, d, k, t, false) });
+                cases.Add(new UiScreenCase { Def = def, Name = "gallery (an old photo)", Title = "Gallery", Commands = LifeGalleryCommands,
+                    Lay = (s, f, d, k, t) => UiSamples.GalleryViewer(s, f, d, k, t, true) });
+                cases.Add(new UiScreenCase { Def = def, Name = "gallery (editing)", Title = "Gallery", Commands = LifeGalleryCommands,
+                    Lay = (s, f, d, k, t) => UiSamples.GalleryEdit(s, f, d, k, t) });
                 break;
             case "viewfinder":
-                cases.Add(new UiScreenCase { Def = def, Name = "viewfinder", Title = "Camera", Commands = LifeFinderCommands, Overlay = true,
-                    Lay = (s, f, d, k, t) => UiSamples.Viewfinder(s, f, d, k, t, false) });
-                cases.Add(new UiScreenCase { Def = def, Name = "viewfinder (saved)", Title = "Camera", Commands = LifeFinderCommands, Overlay = true,
-                    Lay = (s, f, d, k, t) => UiSamples.Viewfinder(s, f, d, k, t, true) });
+                cases.Add(new UiScreenCase { Def = def, Name = "viewfinder", Title = "", Commands = LifeFinderCommands, Overlay = true,
+                    Lay = (s, f, d, k, t) => UiSamples.Viewfinder(s, f, d, k, t, "photo") });
+                cases.Add(new UiScreenCase { Def = def, Name = "viewfinder (saved)", Title = "", Commands = LifeFinderCommands, Overlay = true,
+                    Lay = (s, f, d, k, t) => UiSamples.Viewfinder(s, f, d, k, t, "saved") });
+                cases.Add(new UiScreenCase { Def = def, Name = "viewfinder (selfie)", Title = "", Commands = LifeFinderCommands, Overlay = true,
+                    Lay = (s, f, d, k, t) => UiSamples.Viewfinder(s, f, d, k, t, "selfie") });
+                cases.Add(new UiScreenCase { Def = def, Name = "viewfinder (portrait)", Title = "", Commands = LifeFinderCommands, Overlay = true,
+                    Lay = (s, f, d, k, t) => UiSamples.Viewfinder(s, f, d, k, t, "portrait") });
+                cases.Add(new UiScreenCase { Def = def, Name = "viewfinder (wide)", Title = "", Commands = LifeFinderCommands, Overlay = true,
+                    Lay = (s, f, d, k, t) => UiSamples.Viewfinder(s, f, d, k, t, "wide") });
+                cases.Add(new UiScreenCase { Def = def, Name = "viewfinder (timer counting)", Title = "", Commands = LifeFinderCommands, Overlay = true,
+                    Lay = (s, f, d, k, t) => UiSamples.Viewfinder(s, f, d, k, t, "timer") });
+                cases.Add(new UiScreenCase { Def = def, Name = "viewfinder (zoomed)", Title = "", Commands = LifeFinderCommands, Overlay = true,
+                    Lay = (s, f, d, k, t) => UiSamples.Viewfinder(s, f, d, k, t, "zoom") });
+                cases.Add(new UiScreenCase { Def = def, Name = "viewfinder (night)", Title = "", Commands = LifeFinderCommands, Overlay = true,
+                    Lay = (s, f, d, k, t) => UiSamples.Viewfinder(s, f, d, k, t, "night") });
+                cases.Add(new UiScreenCase { Def = def, Name = "viewfinder (clean view)", Title = "", Commands = LifeFinderCommands, Overlay = true,
+                    Lay = (s, f, d, k, t) => UiSamples.Viewfinder(s, f, d, k, t, "clean") });
                 break;
         }
     }

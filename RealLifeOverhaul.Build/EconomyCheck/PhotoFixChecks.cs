@@ -128,7 +128,7 @@ internal static partial class Program
         // The director's own path: Added is given the folder the shot took, and compares that, never the path taken apart.
         string director = Read(@"Photos\PhotosDirector.cs"), mode = Read(@"Photos\CameraMode.cs");
         string added = Between(director, "internal Texture Added(", "public IEnumerator Delete(");
-        Check(added.Contains("PhotoStoreRules.SameFolder(folder, _folder)") && !added.Contains("GetDirectoryName") && mode.Contains("director.Added(folder, path, made)"),
+        Check(added.Contains("PhotoStoreRules.SameFolder(folder, _folder)") && !added.Contains("GetDirectoryName") && mode.Contains("director.Added(folder, path, made, _note)"),
             "photos slashes: a photo is the followed save's by the folder the shot took, compared whatever the separators");
         Check(director.Contains("_root = Path.GetFullPath(PhotosGame.Root)") && !Regex.IsMatch(PhotoCode(), @"GetDirectoryName\("),
             "photos slashes: the root is made full once, and no Photos code takes a folder back from a path");
@@ -266,7 +266,7 @@ internal static partial class Program
         string load = Between(game, "public static IEnumerator Load(", "public static void Tell(");
         Check(!Regex.IsMatch(all2, @"UnityWebRequest|new Uri\(|file://|AbsoluteUri") && Regex.IsMatch(load, @"Task\.Run\(\(\) => PhotoStore\.ReadPhoto\(path\)\)"),
             "photos odd folders: a whole photo is read on a worker by its path on disk, never through a file URL");
-        Check(Regex.Matches(all2, @"\.LoadImage\(").Count == 1 && load.Contains("texture.LoadImage(bytes, true)") && load.Contains("HotSpots.Time(HotLoaded)"),
+        Check(Regex.Matches(all2, @"\.LoadImage\(").Count == 1 && load.Contains("texture.LoadImage(bytes, !readable)") && load.Contains("HotSpots.Time(HotLoaded)"),
             "photos odd folders: the one decode on the main thread is the engine's, timed under its own name, its copy in memory let go");
     }
 
@@ -386,12 +386,12 @@ internal static partial class Program
         int shotAt = mode.IndexOf("private IEnumerator Shot(", StringComparison.Ordinal);
         string shot = shotAt < 0 ? string.Empty : mode.Substring(shotAt);
         string fin = shot.Substring(Math.Max(0, shot.LastIndexOf("finally", StringComparison.Ordinal)));
-        Check(Regex.IsMatch(fin, @"if \(_view != null\)\s*\{\s*_view\.Busy\(false\);[^\n]*\n\s*_view\.ForShot\(false, _grid\);") && !fin.Contains("&& Active"),
+        Check(Regex.IsMatch(fin, @"if \(_view != null\)\s*\{\s*_view\.Busy\(false\);[^\n]*\n\s*_view\.ForShot\(false, _guide != CameraGuide\.Off\);") && !fin.Contains("&& Active"),
             "camera ways out: the controls come back after a shot whether or not the camera is still open (shut in the shutter's frame, the next opening has them)");
         string open = Between(mode, "public CameraRefusal Open(bool selfie, bool fromFlare)", "private void Hold()");
         int active = open.IndexOf("Active = true;", StringComparison.Ordinal);
         string after = active < 0 ? string.Empty : open.Substring(active);
-        Check(Regex.IsMatch(after, @"try\s*\{[\s\S]*_view\.Show\(true\);[\s\S]*_view\.ForShot\(false, _grid\);[\s\S]*Write\(\);\s*\}\s*catch \(Exception e\)\s*\{\s*Logger\?\.Error\(e\);\s*Close\(""a fault""\);"),
+        Check(Regex.IsMatch(after, @"try\s*\{[\s\S]*_view\.Show\(true\);[\s\S]*_view\.ForShot\(false, _guide != CameraGuide\.Off\);[\s\S]*Write\(\);\s*\}\s*catch \(Exception e\)\s*\{\s*Logger\?\.Error\(e\);\s*Close\(""a fault""\);"),
             "camera ways out: a fault partway through opening shuts the camera at once, everything given back; the opening puts the controls back");
         string hud = Between(game, "public static void Hud(bool shown)", "public static Camera MainCamera");
         Check(Regex.IsMatch(hud, @"else\s*\{\s*ScreenshotController\.uiIsVisible = shown;"), "camera ways out: with no interface to toggle, the game's own flag of the HUD is set back");

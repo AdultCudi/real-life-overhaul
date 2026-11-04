@@ -148,7 +148,8 @@ namespace RealLifeOverhaul.Ui
             t.RowCount = _machineRows.Count;
             BizOpsRules.FitChips(t);
             o.Table = t;
-            o.TableLead = output > 0 ? UiText.Fill("reallife_ui_bizops_output_total", "count", UiText.Whole(output)) : UiText.T("reallife_ui_bizops_output_none");
+            o.TableLead = output <= 0 ? UiText.T("reallife_ui_bizops_output_none")
+                : output == 1 ? UiText.T("reallife_ui_bizops_output_one") : UiText.Fill("reallife_ui_bizops_output_total", "count", UiText.Whole(output));
             if (factory.validWorkstationPanel != null && factory.validWorkstationPanel.gameObject.activeInHierarchy)
             {
                 Recipe(factory.validWorkstationPanel, o, list.activeWorkstationTemplate != null

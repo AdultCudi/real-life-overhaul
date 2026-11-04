@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Ui
 {
@@ -11,6 +12,9 @@ namespace RealLifeOverhaul.Ui
     /// name's hash picks the rest, so the same person always looks the same. The disc is lighter behind deeper skin, so
     /// every face stands at least 1.8:1 off it. Painted by signed distances, soft over one texel at every edge, into an
     /// RGBA buffer, and the view makes it a texture once a name. Game-free.
+    /// A few people have a look of their own, set in a table by their exact name (the rich list's tycoons and fortunes: an alien, a
+    /// polished bald head, a woman in a space suit, a man each in his parody's clothes); the table wins over the guess and over the
+    /// hash for what it sets, and the rest of the face still comes from the hash. Everyone not in it is painted as before.
     /// Cost: about 0.8 ms a face once at 128 texels (the afro, the heaviest, about 1.2), nothing allocated.
     /// </summary>
     public static class UiPortraits
@@ -22,6 +26,14 @@ namespace RealLifeOverhaul.Ui
         private const int Long = 8, Bob = 9, Ponytail = 10, Bun = 11, Curls = 12, Afro = 13, Braids = 14, Pixie = 15;
         private const int Crew = 0, VNeck = 1, Collar = 2, Blazer = 3, Hoodie = 4, Turtle = 5;
         private const int Solid = 0, Rim = 1, Glint = 2;
+
+        // The named looks: a seed made from one of these names is negative, with the look in bits 26 to 29.
+        private const int Karen = 1, Luthor = 2, Zucc = 3, Oracle = 4, Wolf = 5, Bill = 6, Steve = 7, Larry = 8, Rocket = 9;
+        private static readonly Dictionary<string, int> Named = new Dictionary<string, int>(16, StringComparer.Ordinal)
+        {
+            { "Space Karen", Karen }, { "Bald Luthor", Luthor }, { "The Zucc", Zucc }, { "The Oracle of Omaha", Oracle }, { "The Wolf in Cashmere", Wolf },
+            { "Chair-Leap Bill", Bill }, { "Developers Steve", Steve }, { "Yacht Larry", Larry }, { "Rocket Richard", Rocket }
+        };
         private const float HeadScale = 1.12f;   // the head's size over its 128 layout: a bust that fills the disc
         private const float Pivot = 62f;         // layout texels down: the point the head grows round
 
@@ -119,6 +131,11 @@ namespace RealLifeOverhaul.Ui
                 {
                     h = (h ^ name[i]) * 16777619;
                 }
+                if (name != null && Named.TryGetValue(name, out int look))
+                {
+                    // A named look: negative, the look in bits 26 to 29, the hash's lower bits, and the sex the table gives (Karen a woman, the rest men).
+                    return int.MinValue | (look << 26) | (h & 0x03FFFFFC) | (look == Karen ? 1 : 2);
+                }
                 return (h & 0x7FFFFFFC) | Presented(name);
             }
         }
@@ -129,7 +146,7 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
         public static int SeedFor(string name, bool female)
         {
-            return (Seed(name) & 0x7FFFFFFC) | (female ? 1 : 2);
+            return name != null && Named.ContainsKey(name) ? Seed(name) : (Seed(name) & 0x7FFFFFFC) | (female ? 1 : 2);
         }
 
         /// <summary>Paints the face for a seed into a buffer of size x size RGBA texels, rows from the bottom as a texture holds them.</summary>
@@ -170,10 +187,11 @@ namespace RealLifeOverhaul.Ui
         // Everything one face needs in the pixel loop, worked out once.
         private struct Face
         {
-            public bool Woman, Back, Lashes;
+            public bool Woman, Back, Lashes, Alien, Suit, Polish;
             public int Style, Neck, Beard, Glasses, Rings, Nose;
             public uint Ground, Skin, SkinLit, SkinShade, SkinDeep, Cheek, Lip, Mouth;
             public uint Hair, HairLit, HairShade, HairDeep, Brow, Stubble, Buzz, BuzzShade;
+            public uint Sheen;
             public uint Cloth, ClothLit, ClothShade, ClothDeep, Inner, InnerShade, Cord;
             public uint White, Iris, Lash, Frame, Metal;
             public float Crown, Jaw, Smile, NeckW, Top, Slope, SlopeNorm, Wide, EyeH, Arch;
@@ -182,28 +200,38 @@ namespace RealLifeOverhaul.Ui
         private static void Pick(int seed, float hue, int age, ref Face f)
         {
             uint s = Math.Max(1u, ((uint)seed >> 2) * 2654435761u ^ 0x5BD1E995u);
-            int look = seed & 3;
+            int look = seed & 3, named = seed < 0 ? (seed >> 26) & 15 : 0;
             f.Woman = look == 1 || (look != 2 && Roll(ref s, 2) == 0);
             int skin = Roll(ref s, Skins.Length);
-            f.Skin = Skins[skin];
+            skin = named == 0 ? skin : NamedSkin(named, skin);
+            f.Alien = named == Zucc;
+            f.Suit = named == Karen;
+            f.Polish = named == Luthor;
+            f.Skin = f.Alien ? 0xA9D3A4FF : Skins[skin];
             f.Ground = Ground(skin, hue);
             int hair = Odds(ref s, skin <= 2 ? LightHairOdds : skin == 3 ? TanHairOdds : DeepHairOdds);
             hair = age >= UiFaceRules.GreyFrom ? 7 + (int)(s & 1u) : hair;   // grey or silver whatever the roll gave; the rolls after it are the same
             // Grey on a light disc would melt into it, and dark brown on the deepest skin reads as one shape with the face.
+            hair = named == 0 ? hair : NamedHair(named, hair);
             hair = hair >= 7 && Contrast(Hairs[hair], f.Ground) < 1.25f ? 1 : hair;
             hair = skin >= 4 && hair < 7 && Contrast(Hairs[hair], Skins[skin]) < 1.45f ? 0 : hair;
             f.Hair = Hairs[hair];
             int style = Odds(ref s, f.Woman ? WomanOdds : ManOdds) + (f.Woman ? Long : 0);
             // Afro hair sits on the deeper skin tones.
             f.Style = style = skin >= 3 ? style : style == ShortAfro ? CurlyTop : style == Afro ? Curls : style == Braids ? Long : style;
+            if (named != 0)
+            {
+                style = f.Style = NamedStyle(named, style);
+            }
             f.Back = style == Long || style == Bob || style == Ponytail || style == Curls || style == Afro || style == Braids;
             f.Neck = Odds(ref s, f.Woman ? WomanNecks : ManNecks);
+            f.Neck = named == 0 ? f.Neck : NamedNeck(named);
             int cloth = Roll(ref s, Cloths.Length);
             for (int i = 0; i < Cloths.Length && Contrast(Cloths[cloth], f.Ground) < 1.4f; i++)
             {
                 cloth = (cloth + 1) % Cloths.Length;
             }
-            f.Cloth = Cloths[cloth];
+            f.Cloth = named == 0 ? Cloths[cloth] : NamedCloth(named);
             f.Inner = Shirts[Roll(ref s, Shirts.Length)];
             f.Iris = Irises[Odds(ref s, skin <= 3 ? LightIrisOdds : DeepIrisOdds)];
             f.Glasses = Roll(ref s, 100) < 22 ? 1 + Roll(ref s, 2) : 0;
@@ -211,12 +239,24 @@ namespace RealLifeOverhaul.Ui
             int beard = Roll(ref s, 100);
             f.Beard = f.Woman ? 0 : beard < 50 ? 0 : beard < 66 ? 1 : beard < 82 ? 2 : beard < 90 ? 3 : 4;
             f.Rings = f.Woman && Roll(ref s, 100) < 40 ? 1 + Roll(ref s, 2) : 0;
+            if (named != 0)
+            {
+                f.Beard = named == Wolf ? 1 : named == Rocket ? 2 : 0;
+                f.Glasses = named == Oracle ? 1 : named == Bill ? 2 : 0;
+                f.Rings = 0;
+            }
             f.Metal = Roll(ref s, 2) == 0 ? 0xD8B456FFu : 0xC8CCD2FFu;
             f.Lashes = f.Woman;
             f.Nose = Roll(ref s, 2);
             f.Crown = 20.6f + Roll(ref s, 3) * 0.5f;
             f.Jaw = (f.Woman ? 15.6f : 16.8f) + Roll(ref s, 3) * 0.6f;
             f.Smile = 6.4f + Roll(ref s, 3) * 0.4f;
+            if (f.Alien)
+            {
+                // An egg of a head, wide across the brow and narrow at the chin.
+                f.Crown = 22.8f;
+                f.Jaw = 11.6f;
+            }
 
             f.SkinLit = Tone(f.Skin, 0.045f, -0.05f, 4f, 0f);
             f.SkinShade = Tone(f.Skin, -0.075f, 0.1f, -6f, 0f);
@@ -238,14 +278,81 @@ namespace RealLifeOverhaul.Ui
             f.Cord = Lab(f.Cloth, out _, out _) > 0.62f ? f.ClothDeep : Tone(f.Cloth, 0.2f, -0.4f, 0f, 0f);
             f.White = Mix(0xF3EFEAFFu, f.Skin, 0.1f);
             f.Lash = 0x261B1BFFu;
+            f.Sheen = Mix(f.SkinLit, 0xFFFFFFFFu, 0.55f);
 
-            f.NeckW = f.Woman ? 8.2f : 9.6f;
+            f.NeckW = f.Alien ? 6.4f : f.Woman ? 8.2f : 9.6f;
             f.Top = f.Woman ? 94.5f : 93.5f;
             f.Slope = f.Woman ? 0.25f : 0.2f;
             f.SlopeNorm = 1f / (float)Math.Sqrt(1f + f.Slope * f.Slope);
             f.Wide = f.Woman ? 47f : 52f;
             f.EyeH = (f.Woman ? 2.8f : 2.5f) + Roll(ref s, 3) * 0.12f;
             f.Arch = Roll(ref s, 3) * 0.5f;
+        }
+
+        // The table's picks. Each is the guess or the hash's pick for the one thing it names, and nothing else.
+        // Karen takes one of the four lighter skins: her white suit needs the darker disc that goes with them.
+        private static int NamedSkin(int look, int rolled)
+        {
+            return look == Zucc ? 1 : look == Larry ? 2 : look == Rocket ? 1 : look == Luthor ? Math.Min(rolled, 2) : look == Karen ? rolled % 4 : rolled;
+        }
+
+        private static int NamedHair(int look, int rolled)
+        {
+            switch (look)
+            {
+                case Luthor: return 1;
+                case Oracle: return 8;
+                case Wolf: return 7;
+                case Bill: return 7;
+                case Steve: return 1;
+                case Larry: return 3;
+                case Rocket: return 6;
+                default: return rolled;
+            }
+        }
+
+        private static int NamedStyle(int look, int rolled)
+        {
+            switch (look)
+            {
+                case Karen: return Bob;
+                case Luthor: case Zucc: return Bald;
+                case Oracle: return SidePart;
+                case Wolf: return Quiff;
+                case Bill: return Receding;
+                case Steve: return Buzz;
+                case Larry: return Crop;
+                case Rocket: return CurlyTop;
+                default: return rolled;
+            }
+        }
+
+        private static int NamedNeck(int look)
+        {
+            switch (look)
+            {
+                case Luthor: case Rocket: return Blazer;
+                case Oracle: case Steve: case Larry: return Collar;
+                case Wolf: return Turtle;
+                case Bill: return VNeck;
+                default: return Crew;
+            }
+        }
+
+        private static uint NamedCloth(int look)
+        {
+            switch (look)
+            {
+                case Karen: return 0xE9ECF1FF;
+                case Luthor: return 0x2E4068FF;
+                case Zucc: return 0x6E7A8AFF;
+                case Oracle: return 0x3C4149FF;
+                case Wolf: return 0xB98B5FFF;
+                case Bill: return 0x3F7A5DFF;
+                case Steve: return 0xC4694FFF;
+                case Larry: return 0x2F8E89FF;
+                default: return 0x8C3647FF;
+            }
         }
 
         private static void Texel(ref Face f, float x, float y, float k, ref float r, ref float g, ref float b)
@@ -262,7 +369,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Body(ref f, x, y, ax, k, ref r, ref g, ref b);
             }
-            if (hax > 15f && hax < 27f && hy > 50f && hy < 72f)
+            if (!f.Alien && hax > 15f && hax < 27f && hy > 50f && hy < 72f)
             {
                 Ears(ref f, hx, hy, hax, hk, ref r, ref g, ref b);
             }
@@ -278,6 +385,10 @@ namespace RealLifeOverhaul.Ui
             if (hair * hk < 0.5f)
             {
                 FrontHair(ref f, hx, hy, hax, hk, hair, ref r, ref g, ref b);
+            }
+            if (f.Suit)
+            {
+                Helmet(ref f, x, y, k, ref r, ref g, ref b);
             }
         }
 
@@ -309,7 +420,14 @@ namespace RealLifeOverhaul.Ui
             Load(f.Cloth, out float mr, out float mg, out float mb);
             Over(ref mr, ref mg, ref mb, f.ClothLit, Cover(Math.Max(Math.Abs(line + 1.7f) - 1.3f, x - 50f) * k));
             Over(ref mr, ref mg, ref mb, f.ClothShade, Cover(flank));
-            if (ax < 21f)
+            if (f.Suit)
+            {
+                if (y > 98f)
+                {
+                    SuitFront(x, y, k, ref f, ref mr, ref mg, ref mb);
+                }
+            }
+            else if (ax < 21f)
             {
                 Neckline(ref f, x, y, ax, k, flank, ref mr, ref mg, ref mb);
             }
@@ -405,11 +523,22 @@ namespace RealLifeOverhaul.Ui
                     // The fringe's shade on the forehead, looked for only where the hair itself does not cover the skin.
                     Over(ref mr, ref mg, ref mb, f.SkinShade, Cover(FrontHairSdf(ref f, x - 0.6f, y - 2.4f, Math.Abs(x - 64.6f)) * k));
                 }
-                bool bare = f.Style == Bald || f.Style == Receding, cheek = f.Woman && ax > 9f && ax < 18f && y > 62f && y < 69f;
+                bool bare = f.Style == Bald || f.Style == Receding || f.Alien, cheek = f.Woman && ax > 9f && ax < 18f && y > 62f && y < 69f;
                 Over(ref mr, ref mg, ref mb, f.SkinLit, bare ? Cover(Tilted(x, y, 56.5f, 34f, 5.6f, 2.8f, 0.906f, -0.423f) * k) : 0f);
                 Over(ref mr, ref mg, ref mb, f.Cheek, cheek ? Cover(Ellipse(64f + ax, y, 77.2f, 65.6f, 3.7f, 2.2f) * k) : 0f);
                 Over(ref mr, ref mg, ref mb, f.Stubble, f.Beard == 1 ? Cover(SMax(SMax(head, -Ellipse(x, y, 64f, 58.5f, 16.2f, 12.6f), 1f), 57f - y, 1f) * k) : 0f);
-                if (ax < 6f && y > 57f && y < 69f)
+                if (f.Polish)
+                {
+                    // A polished head: a bright sheen on the crown with a glint in it.
+                    Over(ref mr, ref mg, ref mb, f.Sheen, Cover(Tilted(x, y, 55.5f, 35f, 7.4f, 3.1f, 0.906f, -0.423f) * k));
+                    Over(ref mr, ref mg, ref mb, 0xFFFFFFFFu, Cover(Circle(x, y, 51.6f, 38.2f, 1.25f) * k));
+                }
+                if (f.Alien)
+                {
+                    // No nose to speak of: two small nostrils.
+                    Over(ref mr, ref mg, ref mb, f.SkinDeep, Cover(Circle(64f + ax, y, 65.4f, 64.8f, 0.7f) * k));
+                }
+                else if (ax < 6f && y > 57f && y < 69f)
                 {
                     Nose(ref f, x, y, k, ref mr, ref mg, ref mb);
                 }
@@ -437,11 +566,18 @@ namespace RealLifeOverhaul.Ui
             {
                 Over(ref r, ref g, ref b, f.Hair, Cover(Tilted(64f + ax, y, 67.2f, 69f, 4.3f, 1.8f, 0.978f, 0.208f) * k));
             }
-            if (ax > 3.5f && ax < 16f && y > 52f && y < 62f)
+            if (f.Alien)
+            {
+                if (ax > 0.5f && ax < 17.5f && y > 50f && y < 69f)
+                {
+                    AlienEye(x, y, ax, k, ref r, ref g, ref b);
+                }
+            }
+            else if (ax > 3.5f && ax < 16f && y > 52f && y < 62f)
             {
                 Eye(ref f, x, y, ax, k, ref r, ref g, ref b);
             }
-            if (ax > 2.5f && ax < 16.5f && y > 46f && y < 54f)
+            if (!f.Alien && ax > 2.5f && ax < 16.5f && y > 46f && y < 54f)
             {
                 float mx = 64f + ax;
                 float peak = f.Woman ? 49.3f - f.Arch : 50f - f.Arch * 0.6f;
@@ -481,6 +617,60 @@ namespace RealLifeOverhaul.Ui
             float lid = Math.Max(Math.Abs(white) - 0.65f, y - (ey - 0.2f));
             lid = f.Lashes ? Math.Min(lid, Capsule(mx, y, ex + 3.9f, ey - 0.8f, ex + 5.3f, ey - 2.1f, 0.5f)) : lid;
             Over(ref r, ref g, ref b, f.Lash, Cover(lid * k));
+        }
+
+        // A big dark almond slanting down to the cheek, with two glints: the friendly alien's eye.
+        private static void AlienEye(float x, float y, float ax, float k, ref float r, ref float g, ref float b)
+        {
+            float mx = 64f + ax;
+            const float ex = 72.6f, ey = 59.2f;
+            float c = Cover(Tilted(mx, y, ex, ey, 6.6f, 4.7f, 0.94f, 0.34f) * k);
+            if (c > 0f)
+            {
+                Load(0x17121FFFu, out float er, out float eg, out float eb);
+                // A deep violet-blue rim light along the lower edge, so the eye is a surface and not a hole.
+                Over(ref er, ref eg, ref eb, 0x34304CFFu, Cover(Tilted(mx, y, ex + 0.6f, ey + 1.5f, 5.2f, 2.2f, 0.94f, 0.34f) * k));
+                float gx = x < 64f ? 128f - ex : ex;
+                Over(ref er, ref eg, ref eb, 0xFBF8F2FFu, Cover(Circle(x, y, gx - 2.4f, ey - 1.7f, 1.55f) * k));
+                Over(ref er, ref eg, ref eb, 0xC9C6D6FFu, Cover(Circle(x, y, gx + 1.9f, ey + 1.3f, 0.75f) * k));
+                Over(ref r, ref g, ref b, er, eg, eb, c);
+            }
+        }
+
+        // The space suit's front: a zip down the middle and a mission patch, a ring in blue, white and orange, no real mark.
+        private static void SuitFront(float x, float y, float k, ref Face f, ref float r, ref float g, ref float b)
+        {
+            Over(ref r, ref g, ref b, f.ClothShade, Cover(Capsule(x, y, 64f, 100f, 64f, 132f, 0.6f) * k));
+            Over(ref r, ref g, ref b, f.ClothShade, Cover(Capsule(x, y, 42f, 111f, 42f, 132f, 0.5f) * k));
+            Over(ref r, ref g, ref b, 0x3F6690FFu, Cover(Circle(x, y, 86f, 117f, 6.2f) * k));
+            Over(ref r, ref g, ref b, 0xF3F5F8FFu, Cover(Circle(x, y, 86f, 117f, 4.5f) * k));
+            Over(ref r, ref g, ref b, 0xE0743AFFu, Cover(Circle(x, y, 86f, 117f, 2.7f) * k));
+            Over(ref r, ref g, ref b, 0x3F6690FFu, Cover(Circle(x, y, 86f, 117f, 1.1f) * k));
+        }
+
+        // The helmet over the head: a clear bubble with a soft sheen and a bright streak on the upper left, on a collar ring.
+        private static void Helmet(ref Face f, float x, float y, float k, ref float r, ref float g, ref float b)
+        {
+            float d = x > 20f && x < 108f && y < 100f ? Circle(x, y, 64f, 57f, 41f) : 99f;
+            if (y < 96f && d < 2f)
+            {
+                Over(ref r, ref g, ref b, 0xD8ECFFFFu, Cover(d * k) * 0.13f);
+                Over(ref r, ref g, ref b, 0xFFFFFFFFu, Cover(Arc(x - 64f, y - 57f, -0.7071f, -0.7071f, 33.5f, 1.7f, 0.43f, 0.903f) * k) * 0.75f);
+                Over(ref r, ref g, ref b, 0xFFFFFFFFu, Cover(Circle(x, y, 33.5f, 71f, 1.6f) * k) * 0.6f);
+                float ring = SMax(Math.Abs(d + 1.7f) - 1.7f, y - 93f, 1f);
+                Load(0xDDE2EAFFu, out float rr, out float rg, out float rb);
+                Over(ref rr, ref rg, ref rb, 0xA3ACBAFFu, Cover(((x - 64f) * 0.7f + (y - 57f) * 0.7f - 12f) * k));
+                Over(ref r, ref g, ref b, rr, rg, rb, Cover(ring * k));
+            }
+            float band = y > 84f && y < 104f ? RoundBox(x, y, 37f, 87f, 91f, 101f, 5f) : 99f;
+            if (band < 1f)
+            {
+                Load(0xCBD2DCFFu, out float br, out float bg, out float bb);
+                Over(ref br, ref bg, ref bb, 0x9FA8B6FFu, Cover((y - 95f) * k));
+                Over(ref br, ref bg, ref bb, 0xF2F5F9FFu, Cover(Math.Max(Math.Abs(y - 89.4f) - 0.8f, Math.Abs(x - 64f) - 22f) * k));
+                Over(ref br, ref bg, ref bb, 0x7C8696FFu, Cover(Math.Min(Circle(x, y, 42.5f, 94f, 1.5f), Circle(x, y, 85.5f, 94f, 1.5f)) * k));
+                Over(ref r, ref g, ref b, br, bg, bb, Cover(band * k));
+            }
         }
 
         private static void Glasses(ref Face f, float x, float y, float ax, float k, ref float r, ref float g, ref float b)

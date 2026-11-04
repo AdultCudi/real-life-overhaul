@@ -18,6 +18,24 @@ namespace RealLifeOverhaul.Photos
         public int Day;
         public int Celsius;
         public string Weather;   // a short token: sunny, clear, rain, mist, storm, snow, heat, cold, ice
+
+        // Added with the camera's rebuild (4 Nov 2026). Each is a line at the end of the file that an older sidecar lacks;
+        // a field not read keeps its default, which says "not known" (HasMinute, HasPeople, 0 for a kind of the camera's).
+        public int Minute;       // the game's minute of the hour, 0 to 59, read only with HasMinute
+        public bool HasMinute;
+        public int Aspect;       // CameraAspect: 0 not known (a photo of the old camera, the screen's own shape)
+        public int Kind;         // CameraKind: photo, selfie, portrait, wide
+        public int Zoom;         // tenths of a times: 10 is 1x; 0 not known
+        public int Exposure;     // tenths of a stop, minus 20 to 20
+        public int Timer;        // seconds the shutter waited: 0, 3 or 10
+        public bool Boost;       // the night boost was on
+        public string Business;  // the business in view, by its name, or null
+        public string BusinessPlace;   // its place as the company writes it ("street~number"), or null
+        public int People;       // how many people stood in the frame, read only with HasPeople
+        public bool HasPeople;
+        public string Tags;      // words of the shot (PhotoSeenRules tokens), comma between, or null
+        public string Original;  // an edit's source photo (file name), or null for a photo the camera took
+        public string Edits;     // what an edit did (PhotoSeenRules edit tokens), comma between, or null
     }
 
     /// <summary>
@@ -48,6 +66,26 @@ namespace RealLifeOverhaul.Photos
             text.Append("day=").Append(s.Day.ToString(CultureInfo.InvariantCulture)).Append('\n');
             text.Append("c=").Append(s.Celsius.ToString(CultureInfo.InvariantCulture)).Append('\n');
             Line(text, "weather", s.Weather);
+            // Everything below was added after version 1's lines; a reader that does not know a line ignores it.
+            if (s.HasMinute)
+            {
+                text.Append("minute=").Append(Math.Max(0, Math.Min(59, s.Minute)).ToString(CultureInfo.InvariantCulture)).Append('\n');
+            }
+            Number(text, "aspect", s.Aspect);
+            Number(text, "kind", s.Kind);
+            Number(text, "zoom", s.Zoom);
+            Number(text, "ev", s.Exposure);
+            Number(text, "timer", s.Timer);
+            Number(text, "boost", s.Boost ? 1 : 0);
+            Line(text, "business", s.Business);
+            Line(text, "bplace", s.BusinessPlace);
+            if (s.HasPeople)
+            {
+                text.Append("people=").Append(Math.Max(0, Math.Min(999, s.People)).ToString(CultureInfo.InvariantCulture)).Append('\n');
+            }
+            Line(text, "tags", s.Tags);
+            Line(text, "original", s.Original);
+            Line(text, "edits", s.Edits);
             return text.ToString();
         }
 
@@ -154,6 +192,14 @@ namespace RealLifeOverhaul.Photos
             return n + 1;
         }
 
+        private static void Number(StringBuilder text, string key, int value)
+        {
+            if (value != 0)
+            {
+                text.Append(key).Append('=').Append(value.ToString(CultureInfo.InvariantCulture)).Append('\n');
+            }
+        }
+
         private static void Line(StringBuilder text, string key, string value)
         {
             if (string.IsNullOrEmpty(value))
@@ -189,6 +235,19 @@ namespace RealLifeOverhaul.Photos
                 case "day": s.Day = Int(value); return true;
                 case "c": s.Celsius = Int(value); return true;
                 case "weather": s.Weather = value; return true;
+                case "minute": s.Minute = Math.Max(0, Math.Min(59, Int(value))); s.HasMinute = true; return true;
+                case "aspect": s.Aspect = Int(value); return true;
+                case "kind": s.Kind = Int(value); return true;
+                case "zoom": s.Zoom = Int(value); return true;
+                case "ev": s.Exposure = Math.Max(-20, Math.Min(20, Int(value))); return true;
+                case "timer": s.Timer = Int(value); return true;
+                case "boost": s.Boost = Int(value) != 0; return true;
+                case "business": s.Business = value; return true;
+                case "bplace": s.BusinessPlace = value; return true;
+                case "people": s.People = Math.Max(0, Math.Min(999, Int(value))); s.HasPeople = true; return true;
+                case "tags": s.Tags = value; return true;
+                case "original": s.Original = value; return true;
+                case "edits": s.Edits = value; return true;
                 default: return false;
             }
         }

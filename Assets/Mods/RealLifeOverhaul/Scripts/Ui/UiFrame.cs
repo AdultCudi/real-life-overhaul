@@ -146,6 +146,9 @@ namespace RealLifeOverhaul.Ui
         public bool[] ToolsOn;        // each one's panel open: its glyph on the chosen tone
         public bool[] ToolsOff;       // each one the game will not answer now (the dances while driving): greyed
         public int ToolCount;
+
+        // Appended with the frames-a-second figure (4 Nov 2026).
+        public int Fps;               // the frames a second, shown as a small pill before the needs while the game's show-FPS option is on; 0 for none
     }
 
     /// <summary>The status bar's source; the game file sets it. Status is the older one line, kept for the game file's log.</summary>

@@ -19,7 +19,7 @@ public static partial class UiPreviewRunner
                 HoverCommand = card ? CompanyFace.Choice : UiAppWindow.NavCommand,
                 HoverArg = 1,
                 Walk = Moves("DDR"),
-                Lay = (s, f, d, k) => CompanyFace.Lay(s, UiSamples.CompanyFactsOf(English, st), UiSamples.CompanyViewOf(st), UiSamples.CompanyWordsOf(English), new CompanyLayout(), f, d, k)
+                Lay = (s, f, d, k) => CompanyFace.Lay(s, UiSamples.CompanyFactsOf(ModEnglish, st), UiSamples.CompanyViewOf(st), UiSamples.CompanyWordsOf(ModEnglish), new CompanyLayout(), f, d, k)
             });
         }
     }

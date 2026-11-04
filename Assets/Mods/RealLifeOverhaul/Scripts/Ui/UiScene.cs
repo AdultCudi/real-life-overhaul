@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Ui
 
     /// <summary>What an item is, beyond its kind: how its words sit and what the checks may allow it.</summary>
     [Flags]
-    public enum UiFlags : ushort
+    public enum UiFlags : uint
     {
         None = 0,
         Truncate = 1,      // player data (a name, a message): may end in an ellipsis, never wraps beyond its lines
@@ -38,7 +38,8 @@ namespace RealLifeOverhaul.Ui
         CountUp = 4096,    // a figure that ticks up from nothing as it arrives
         Prompt = 8192,     // part of the prompt bar, on the game's own bottom bar rather than a panel
         Panel = 16384,     // a screen's framed panel
-        Chrome = 32768     // a window's title strip or the status bar: the screen's frame, not the page's own words
+        Chrome = 32768,    // a window's title strip or the status bar: the screen's frame, not the page's own words
+        Cover = 65536      // a picture that fills its box, cropped to the box's shape and centred (a photo in a tile), never stretched
     }
 
     /// <summary>One thing drawn: its kind, its box in px and how it is painted, by role and style only.</summary>

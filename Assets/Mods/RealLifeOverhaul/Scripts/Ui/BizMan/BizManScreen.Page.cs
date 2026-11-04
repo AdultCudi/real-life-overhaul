@@ -107,7 +107,9 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             Extras(b);
-            var nav = new UiNavEntry[_tabs.Count + (_extras.Count > 0 ? 1 : 0)];
+            NoteForeign();
+            int pages = KitForOtherMods.PagesOfBizMan.Count;   // pages other mods added through the kit's interface (docs/reference/kit-for-other-mods.md)
+            var nav = new UiNavEntry[_tabs.Count + (_extras.Count > 0 ? 1 : 0) + pages];
             int shown = 0;
             for (int i = 0; i < _tabs.Count; i++)
             {
@@ -121,11 +123,41 @@ namespace RealLifeOverhaul.Ui
                 nav[_tabs.Count] = new UiNavEntry { Icon = UiIcon.Code, Tint = UiIconTints.Of(UiIcon.Code), Label = UiText.T("reallife_ui_bizman_other_mods"), Count = UiText.Whole(_extras.Count) };
                 shown = _shown == ExtrasName ? _tabs.Count : shown;
             }
+            int first = _tabs.Count + (_extras.Count > 0 ? 1 : 0);
+            for (int p = 0; p < pages; p++)
+            {
+                nav[first + p] = new UiNavEntry { Icon = UiIcon.Code, Tint = UiIconTints.Of(UiIcon.Code), Label = KitForOtherMods.PagesOfBizMan[p].Title };
+            }
             _m.Nav = nav;
             _m.NavSelected = shown;
         }
 
         private const string ExtrasName = "RealLife other mods";   // the kit's own entry for other mods' pieces outside the tab bar
+
+        private readonly HashSet<int> _noted = new HashSet<int>();   // the foreign pieces said already: said once, so no text is built for one seen again
+
+        // Which mod's tabs and pieces the sidebar holds, said once each in Player.log (the self-check names them too).
+        private void NoteForeign()
+        {
+            for (int i = 0; i < _tabs.Count; i++)
+            {
+                Transform tab = _tabs[i];
+                if (!UiHostRules.Own(tab.name, BizManRules.GameTabs) && _noted.Add(tab.GetInstanceID()))
+                {
+                    UiForeign.Note("bizman", UiPieceKind.Tab, UiForeignGame.OwnerOf(tab) ?? tab.name, "the business page's tab bar: " + tab.name,
+                        "its own entry in the sidebar; its page opens in the game's own view");
+                }
+            }
+            for (int i = 0; i < _extras.Count; i++)
+            {
+                Transform extra = _extras[i];
+                if (_noted.Add(extra.GetInstanceID()))
+                {
+                    UiForeign.Note("bizman", UiForeignGame.KindOf(extra), UiForeignGame.OwnerOf(extra) ?? extra.name, "the business page: " + extra.name,
+                        "listed under Other mods in the sidebar; opens in the game's own view");
+                }
+            }
+        }
 
         // A tab's name in the sidebar: the kit's short words for the game's own (the game's longer ones do not fit every
         // language beside a glyph), the mod's own, or another mod's own words.
@@ -328,7 +360,7 @@ namespace RealLifeOverhaul.Ui
             h.Urgent = urgent.ToArray();
             h.TodoTitle = UiText.T("common_requirements");
             h.Todo = missing > 0 ? UiText.Fill("reallife_ui_bizman_needs", "missing", UiText.Whole(missing), "count", UiText.Whole(checks.Count))
-                : alerts.Count > 0 ? UiText.Fill("reallife_ui_bizman_sum_alerts", "count", UiText.Whole(alerts.Count)) : null;
+                : alerts.Count == 1 ? UiText.T("reallife_ui_bizman_sum_alert_one") : alerts.Count > 0 ? UiText.Fill("reallife_ui_bizman_sum_alerts", "count", UiText.Whole(alerts.Count)) : null;
             h.TodoTone = missing > 0 || alerts.Count > 0 ? UiRole.Warn : UiRole.Ok;
         }
 

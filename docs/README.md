@@ -23,6 +23,7 @@ Start at the [front door](../RealLifeOverhaul.Build/README.md) if you are new: i
 - [Architecture](reference/architecture.md): start-up, the director pattern, wiring, the save, the guard, per-frame rules.
 - [Wiring](reference/wiring.md): every bridge between features and who answers it.
 - [The game's own interface](reference/game-interface.md): how the mod builds its screens from the game's.
+- [The interface kit and other authors' mods](reference/kit-for-other-mods.md): what the kit does with another mod's apps, tabs, windows and faults, and the small API for a mod that wants to fit it.
 - [Performance](reference/performance.md): the per-frame rules, what was measured, and the measuring tools.
 - [Map places](reference/map-places.md): putting a feature's places on the city map.
 - [The calendar and the price level](reference/calendar-and-prices.md): dates and every fixed amount.

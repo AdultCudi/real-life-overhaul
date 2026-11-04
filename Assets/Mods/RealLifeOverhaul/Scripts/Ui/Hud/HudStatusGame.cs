@@ -62,6 +62,10 @@ namespace RealLifeOverhaul.Ui
                     HudTopGame.Fill(m);   // the top bar's small buttons, on the HUD's own bar alone (appended with the HUD's screens)
                 }
                 MoneyDay(m, uis);
+                if (ForHud)
+                {
+                    m.Fps = HudFps.Value;   // 0 while the game's show-FPS option is off
+                }
                 m.Alerts = SaveGameManager.Current != null && SaveGameManager.Current.notifications != null ? SaveGameManager.Current.notifications.Count : 0;   // the notices the game's list keeps
             }
             catch (Exception e)
@@ -319,6 +323,7 @@ namespace RealLifeOverhaul.Ui
                 h = h * 31 + Whole(HomeState.Hygiene) * 10201 + Whole(HomeState.Stress) * 101 + Whole(HomeState.Tidy);
                 h = h * 31 + (speed != null ? (speed.Paused ? 1 : 0) + (speed.isFastForwarding ? 2 : 0) + (speed.isTimeControlDisabled ? 4 : 0) + (FastOffered(uis) ? 8 : 0) : 7);
                 h = h * 31 + (save.notifications != null ? save.notifications.Count : 0);
+                h = h * 31 + HudFps.Value;
                 h = h * 31 + (int)Weather.Sky * 16 + (int)Weather.Spell * 4 + (RainHelper.isRaining ? 2 : 0) + (SeasonDirector.Instance != null && SeasonDirector.Instance.Snowing ? 1 : 0);
                 TextMeshProUGUI day = uis != null && uis.topBar != null ? uis.topBar.moneyChange : null;
                 h = h * 31 + (day != null && day.gameObject.activeSelf && day.text != null ? day.text.GetHashCode() : 0);

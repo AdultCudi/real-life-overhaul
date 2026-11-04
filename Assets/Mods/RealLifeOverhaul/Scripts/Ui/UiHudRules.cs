@@ -17,6 +17,9 @@ namespace RealLifeOverhaul.Ui
         public const float ChangeTime = 4f;       // seconds from its arrival until it is gone, as the game's floating money lasts
         public const float ChangeRise = UiTokens.S12;   // px it rises in that time
 
+        /// <summary>The frames a second the status bar shows: frames over the seconds they took, rounded, at least 1 and at most 999 (0 for no time).</summary>
+        public static int Fps(int frames, float seconds) => seconds <= 0f || frames <= 0 ? 0 : Math.Max(1, Math.Min(999, (int)Math.Round(frames / seconds)));
+
         /// <summary>
         /// Canvas units in a px of the HUD's layout on a canvas of this width (the game's 3840, divided by its UI zoom): the
         /// kit's 2 while that leaves the layout at least <see cref="LeastWidth"/> wide, so a larger zoom draws the HUD larger,

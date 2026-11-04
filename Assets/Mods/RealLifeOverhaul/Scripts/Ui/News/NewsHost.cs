@@ -36,7 +36,7 @@ namespace RealLifeOverhaul.Ui
 
         public bool Press(int command, int arg)
         {
-            if (command == UiAppWindow.NavCommand || command == UiInfoView.ViewCommand)
+            if (command == UiAppWindow.NavCommand)
             {
                 _model.Tab = arg;
                 _dirty = true;
@@ -57,7 +57,7 @@ namespace RealLifeOverhaul.Ui
                 || command == UiDecision.ChoiceCommand || command == UiDecision.ButtonCommand
                 || command == UiInfoPanel.TabCommand || command == UiInfoPanel.LinkCommand || command == UiInfoPanel.FooterCommand
                 || command == UiReader.AnchorCommand || command == NewsCommands.Link || command == NewsCommands.Rent
-                || command == NewsCommands.Busy || command == NewsCommands.Home)
+                || command == NewsCommands.Busy || command == NewsCommands.Home || command == NewsCommands.Back)
             {
                 _dirty = true;
                 return true;
@@ -114,6 +114,10 @@ namespace RealLifeOverhaul.Ui
             }
             _model.Tab = next;
             _dirty = true;
+            if (_source != null)
+            {
+                _source.Press(_model, UiAppWindow.NavCommand, next);   // a list or a page opened from the tab it was on is put away, as a press on a tab does
+            }
         }
 
         public bool Act(UiAction action) => false;

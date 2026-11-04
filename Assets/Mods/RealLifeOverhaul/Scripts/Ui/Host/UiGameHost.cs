@@ -42,6 +42,8 @@ namespace RealLifeOverhaul.Ui
         private Canvas _canvas;
         private CanvasGroup _group;   // the kit's own fade, held to the full menu's
         private UiGameWatch _watch;
+        private readonly UiForeignGame.Top _top = new UiForeignGame.Top();   // the screen's top level as it was bound: what another mod added since is told from it
+        private readonly List<UiGamePart> _parts = new List<UiGamePart>(2);
         private int _order;
         private bool _classic, _held, _shown;
         private bool _underMenu;      // a panel of the HUD put away under the game's pause menu, brought back as it closes
@@ -120,6 +122,29 @@ namespace RealLifeOverhaul.Ui
             return order;
         }
 
+        /// <summary>The highest sort order a kit canvas of a screen has now (All apps one above an app, a box one above its screen): another mod's window lifted over the kit goes above it.</summary>
+        public static int TopOrder()
+        {
+            int order = 0;
+            for (int i = 0; i < Hosts.Count; i++)
+            {
+                if (Hosts[i]._root != null)
+                {
+                    order = Math.Max(order, Hosts[i]._order);
+                }
+            }
+            return order + 1;
+        }
+
+        /// <summary>The self-check at load: every bound screen looked at for another mod's additions (said once each), none of them stepped aside for yet.</summary>
+        public static void Survey()
+        {
+            for (int i = 0; i < Hosts.Count; i++)
+            {
+                Hosts[i].OthersAdded();
+            }
+        }
+
         /// <summary>Every host's line for Player.log at load.</summary>
         public static string States()
         {
@@ -174,6 +199,7 @@ namespace RealLifeOverhaul.Ui
             _order = UiHostRules.Above(above[UiBindRules.Sorter(overrides, above.Length)].sortingOrder) + (_screen.Kind == UiGameKind.Box ? 1 : 0);
             _found = found;
             _screen.Conceal(found, _conceal);
+            _top.Take(found.transform);
             _root = new GameObject("RealLife Interface " + _screen.Id, typeof(RectTransform));
             var rect = (RectTransform)_root.transform;
             rect.SetParent(root.transform, false);
@@ -207,6 +233,7 @@ namespace RealLifeOverhaul.Ui
             }
             _host.View.Scale = UiTokens.CanvasPerPx;
             _host.Failed = Fallback;
+            _host.ScreenId = _screen.Id;
             _host.Measure(_screen.Name, _screen.Kind == UiGameKind.Overlay);   // the notices over the world are the HUD's
             if (_screen.Kind == UiGameKind.App)
             {
@@ -222,6 +249,13 @@ namespace RealLifeOverhaul.Ui
             _state = Drawn;
             _watch = found.gameObject.AddComponent<UiGameWatch>();   // on an open screen its OnEnable shows the kit at once
             _watch.Host = this;
+        }
+
+        /// <summary>The host gone for good (an app's face replaced by a new city's): the game's screen as it was, and no more looks at it.</summary>
+        internal void Retire()
+        {
+            Remove("replaced");
+            Hosts.Remove(this);
         }
 
         /// <summary>A new city: a screen that never looked as expected in the last one is looked at again.</summary>
@@ -317,7 +351,20 @@ namespace RealLifeOverhaul.Ui
         /// <summary>A fault in the kit's screen (its host has counted it): the game's screen back for the rest of the session.</summary>
         public void Fallback(Exception e)
         {
-            UiDirector.Logger?.Warn("UI: " + UiText.T("reallife_ui_note_fallback") + " (" + _screen.Name + ", " + (e != null ? e.GetType().Name : "?") + ")");
+            string who = UiBreaker.Tripped(_screen.Id) ? null : UiForeignGame.Blame(e);   // another mod's code that threw while the kit read or pressed its piece
+            if (UiBreaker.Tripped(_screen.Id))
+            {
+                // its mod was named already, as the fault was caught
+            }
+            else if (who != null)
+            {
+                UiForeign.Note(_screen.Id, UiPieceKind.Fault, who, (e != null ? e.GetType().Name : "?") + " on " + _screen.Name, "the screen is the game's own for the session");
+            }
+            else
+            {
+                UiDirector.Logger?.Warn("UI: " + UiText.T("reallife_ui_note_fallback") + " (" + _screen.Name + ", " + (e != null ? e.GetType().Name : "?") + ")");
+            }
+            UiBreaker.Trip(_screen.Id);
             Remove("a fault");
             _gaveUp = true;
             _state = "the game's own after a fault of the kit's screen";
@@ -331,6 +378,11 @@ namespace RealLifeOverhaul.Ui
             }
             try
             {
+                if (!(_screen is IUiGameOffers) && OthersAdded())
+                {
+                    Classic();   // another mod put something on this screen that the kit does not draw: the game's own view, until it closes
+                    return;
+                }
                 Bring();
             }
             catch (Exception e)
@@ -369,6 +421,7 @@ namespace RealLifeOverhaul.Ui
                     UiDirector.Logger?.Info(_screen.Name + " (kit): the game's own view is done, the kit is back");
                 }
             }
+            UiForeignWindows.Poll();   // four times a second at most: another mod's window opened over the kit
             if (_root == null || _classic)
             {
                 return;
@@ -391,11 +444,15 @@ namespace RealLifeOverhaul.Ui
                 // A box over a panel of the HUD (the bank's question over its loan form) stands above the kit's canvas, and the
                 // phone opened beside a conversation takes the keys: the panel stays drawn and only its keys wait, so one key is
                 // never the box's (or the phone's) and the panel's at once.
-                Hold(UiBoxes.Up || UiBoxes.Over || global::UI.Smartphone.FullMenu.IsOpen);
+                Hold(!UiForeignRules.KitHasKeys(UiForeignWindows.Up, UiBoxes.Up || UiBoxes.Over || global::UI.Smartphone.FullMenu.IsOpen, false));
                 return;
             }
             if (_screen.Kind != UiGameKind.App)
             {
+                if (_screen.Kind == UiGameKind.Box)
+                {
+                    Hold(UiForeignWindows.Up);   // a window of another mod's over a question: its keys first
+                }
                 return;
             }
             if (Fade() && _host.enabled)
@@ -412,7 +469,29 @@ namespace RealLifeOverhaul.Ui
                     _host.Show();
                 }
             }
-            Hold(UiBoxes.Up || UiBoxes.Over);
+            Hold(!UiForeignRules.KitHasKeys(UiForeignWindows.Up, UiBoxes.Up, UiBoxes.Over));
+        }
+
+        // Another mod's pieces on this screen: the parts the screen names, then its top level against the snapshot taken at the bind.
+        // Said once each in Player.log; true when any is shown now, and the screen is then the game's own view until it closes.
+        private bool OthersAdded()
+        {
+            if (_found == null)
+            {
+                return false;
+            }
+            string handled = _screen is IUiGameOffers ? "the screen offers it in its own way" : "the screen shows the game's own view until it closes";
+            int shown = _top.Added(_found.transform, _screen.Id, null, handled);
+            if (_screen is IUiGameParts parts)
+            {
+                _parts.Clear();
+                parts.Parts(_found, _parts);
+                for (int i = 0; i < _parts.Count; i++)
+                {
+                    shown += _top.Added(_parts[i].Container, _screen.Id, _parts[i].GameNames, handled);
+                }
+            }
+            return shown > 0;
         }
 
         // Shows the kit over the game's screen, its leaves hidden, arriving.
@@ -443,6 +522,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             _shown = shown;
+            UiForeignWindows.Shown(shown);
             if (_screen.Kind == UiGameKind.Box)
             {
                 bool any = false;

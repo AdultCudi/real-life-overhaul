@@ -65,6 +65,8 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_bizops_col_person", "reallife_ui_bizops_col_skill", "reallife_ui_bizops_col_takes", "reallife_ui_bizops_col_value",
                     "reallife_ui_bizops_col_vs_rivals", "reallife_ui_bizops_col_wage", "reallife_ui_bizops_col_week", "reallife_ui_bizops_copy",
                     "reallife_ui_bizops_cover_figure", "reallife_ui_bizops_cover_line", "reallife_ui_bizops_cover_title", "reallife_ui_bizops_day_1",
+                    "reallife_ui_bizops_lane_blocked", "reallife_ui_bizops_legend_open", "reallife_ui_bizops_legend_closed", "reallife_ui_bizops_legend_add",
+                    "reallife_ui_bizops_legend_cleaning", "reallife_ui_bizops_legend_blocked",
                     "reallife_ui_bizops_day_2", "reallife_ui_bizops_day_3", "reallife_ui_bizops_day_4", "reallife_ui_bizops_day_5", "reallife_ui_bizops_day_6",
                     "reallife_ui_bizops_day_7", "reallife_ui_bizops_day_at", "reallife_ui_bizops_day_down", "reallife_ui_bizops_day_same",
                     "reallife_ui_bizops_day_up", "reallife_ui_bizops_designate", "reallife_ui_bizops_done", "reallife_ui_bizops_empty",

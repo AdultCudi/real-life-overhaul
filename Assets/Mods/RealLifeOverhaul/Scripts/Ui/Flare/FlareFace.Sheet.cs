@@ -15,6 +15,11 @@ namespace RealLifeOverhaul.Ui
 
         private static void Sheet(UiScene s, FlareFaceModel m, float wx, float wy, float ww, float wh, IUiKeys keys)
         {
+            if (m.Sheet == PhotosSheet)
+            {
+                PhotoSheet(s, m, wx, wy, ww, wh, keys);
+                return;
+            }
             FlareSheetModel k = m.Sheet0;
             UiDraw.Scrim(s, wx, wy, ww, wh, 1);
             float cw = Math.Min(SheetWidth, UiDraw.SnapDown(ww - UiTokens.S16 * 2f));
