@@ -5,60 +5,12 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Careers
 {
-    // The people beside the player: the standing at work with its colleagues and the other applicants, and the campus's cohorts and tutors.
-    // Each has its own line of the save (StandingStore, RosterStore), read when first asked for and written with the careers' own, so an
-    // older save loads with both empty and a build without them leaves them as they were. Names come from the game's own name roll.
+    // What the people beside the player need of the game: the colleagues' names from the game's own name roll, the player's employees, and the
+    // notices (CareersDirector.People.cs holds the rest and is game-free).
     public sealed partial class CareersDirector
     {
-        private StandingFile _standing;
-        private RosterFile _roster;
-        private bool _standingRead, _rosterRead;
         private readonly HashSet<string> _taken = new HashSet<string>();
         private readonly List<string> _employees = new List<string>(16);
-
-        // ------------------------------------------------------------------------------------------------- the save
-
-        private void StandingLoad()
-        {
-            if (_standingRead || Save == null)
-            {
-                return;
-            }
-            _standingRead = true;
-            _standing = StandingStore.Load(Save.modData, out int _) ?? new StandingFile { Seed = StudySeed, Hired = -1 };
-        }
-
-        private void RosterLoad()
-        {
-            if (_rosterRead || Save == null)
-            {
-                return;
-            }
-            _rosterRead = true;
-            _roster = RosterStore.Load(Save.modData, out int _) ?? new RosterFile { Seed = StudySeed };
-        }
-
-        private void PeopleWrite(Dictionary<string, string> data)
-        {
-            if (_standingRead && _standing != null)
-            {
-                data[StandingStore.Key] = StandingStore.Write(_standing);
-            }
-            if (_rosterRead && _roster != null)
-            {
-                data[RosterStore.Key] = RosterStore.Write(_roster);
-            }
-        }
-
-        private void PeopleForget()
-        {
-            _standing = null;
-            _roster = null;
-            _standingRead = _rosterRead = false;
-            _taken.Clear();
-        }
-
-        // ------------------------------------------------------------------------------------------------- names
 
         // A name nobody in the company, the campus or the game's staff has: the game's own roll, as the tech sector draws its seekers' names.
         private string NameRoll()
@@ -84,6 +36,11 @@ namespace RealLifeOverhaul.Careers
         private Func<string> _nameRoll;
         private Func<string> Names => _nameRoll ?? (_nameRoll = NameRoll);
 
+        private void PeopleForgotten()
+        {
+            _taken.Clear();
+        }
+
         private IList<string> EmployeeNames()
         {
             _employees.Clear();
@@ -96,206 +53,16 @@ namespace RealLifeOverhaul.Careers
             return _employees;
         }
 
-        // ------------------------------------------------------------------------------------------------- standing at work
-
-        /// <summary>The player's standing and the people beside them,
-        /// tied to the job now (a new job starts a new record and keeps the applicants seen).</summary>
-        public StandingFile Standing
+        // A colleague passed over for the post: told in a notice.
+        private void PassedOver(string rival, string employer)
         {
-            get
-            {
-                StandingLoad();
-                Job j = Work != null ? Work.Job : null;
-                if (_standing == null || j == null)
-                {
-                    return null;
-                }
-                if (!_standing.Of(j))
-                {
-                    var f = new StandingFile { Seed = StudySeed, Hired = j.Hired, Street = j.Post.Street, Number = j.Post.Number, Employer = j.Post.Employer };
-                    f.Others.AddRange(_standing.Others);
-                    _standing = f;
-                    SeedColleagues(f, j, Save != null ? Save.Day : 0);
-                }
-                return _standing;
-            }
+            Tell2(NotificationType.Warning, "reallife_work_note_passed_over", Data("name", rival, "employer", CareersText.Employer(employer)), TabJob, null);
         }
 
-        /// <summary>The standing figures now: the review's own score and what the job measured since the last review.</summary>
-        public Standing StandingNow()
+        // An employee of the player's follows the same course: told in a notice.
+        private void EmployeeFollowed(string who, int course)
         {
-            Job j = Work != null ? Work.Job : null;
-            return StandingRules.Of(j, j != null ? PerformanceNow(j) : 0);
-        }
-
-        /// <summary>The score a review would give today, 0 to 100, as the review works it out.</summary>
-        public int PerformanceNow(Job j)
-        {
-            Profession p = j.Def;
-            int score = LifeRules.ReviewScore(j, ProRules.Points(_study, p, j.Post.Rank), ProRules.Need(_study, p, j.Post.Rank),
-                (BossKind)j.Boss) + LadderReviewBonus();
-            return TalentCatalogue.Clamp(score, 0, 100);
-        }
-
-        // Three colleagues from the shift: a lead a rank above, one up for the same next rung, and one beside the player. Their records settle
-        // near the player's own, so the contest is a real one.
-        private void SeedColleagues(StandingFile f, Job j, int day)
-        {
-            StandingRules.Seed(f, j.Post.Rank, Math.Max(0, j.Def.Ranks.Length - 1), PerformanceNow(j), day, StudySeed + j.Hired, Names);
-        }
-
-        // A worked shift goes into the ring of the last seven with its score and pay (whole money at today's prices, as the job pays it).
-        private void RecordShift(Job j, int day, int minutes)
-        {
-            StandingFile f = Standing;
-            if (f != null)
-            {
-                StandingRules.Shift(f, day, minutes, PerformanceNow(j), (int)((long)Prices.At(j.Pay) * minutes / 6000));
-            }
-        }
-
-        // Each day: the week's score goes in the ring once a week. Runs on the day turn only.
-        private void StandingDay(int day)
-        {
-            StandingFile f = Standing;
-            Job j = Work != null ? Work.Job : null;
-            if (f != null && j != null && StandingRules.WeekDue(f, day))
-            {
-                StandingRules.Week(f, PerformanceNow(j), day);
-            }
-        }
-
-        // The review's promotion goes to the better record when a colleague is up for the same rung. A colleague who is passed over stays;
-        // the one who wins the post leaves the shift and another takes their place.
-        private bool StandingDecides(Job j, int day)
-        {
-            StandingFile f = Standing;
-            if (f == null)
-            {
-                return true;
-            }
-            bool mine = StandingRules.Contest(f, j.Post.Rank, Math.Max(0, j.Def.Ranks.Length - 1), day, StudySeed + day, Names, out Peer rival);
-            if (!mine)
-            {
-                Tell2(NotificationType.Warning, "reallife_work_note_passed_over", Data("name", rival.Name, "employer",
-                    CareersText.Employer(j.Post.Employer)), TabJob, null);
-            }
-            return mine;
-        }
-
-        // ------------------------------------------------------------------------------------------------- other applicants
-
-        /// <summary>The others who applied for a post, drawn the first time they are asked for and kept.</summary>
-        public int AlsoApplied(Opening o, List<Peer> into)
-        {
-            into.Clear();
-            StandingLoad();
-            if (_standing == null || o == null || Save == null)
-            {
-                return 0;
-            }
-            if (StandingRules.OthersOf(_standing, o.Id, into) == 0 && !_standing.Others.Exists(p => p.Post == o.Id) && Save != null)
-            {
-                int n = StandingRules.OthersFor(StudySeed, o);
-                int bar = Math.Max(40, Math.Min(85, ProRules.OfferPass));
-                for (int i = 0; i < n; i++)
-                {
-                    StandingRules.Add(_standing, StandingRules.Applicant(Names(), o, bar, Save.Day, StudySeed, i));
-                }
-                StandingRules.OthersOf(_standing, o.Id, into);
-            }
-            return into.Count;
-        }
-
-        // The employer's weighing at the end of an interview: another applicant who stands better gets the post. Null when the player does.
-        private string OtherGotIt(Application a)
-        {
-            var others = new List<Peer>(StandingRules.OthersPerPostMost);
-            if (AlsoApplied(a.Post, others) == 0)
-            {
-                return null;
-            }
-            int luck = ProRules.Luck(StudySeed, a.Post.Id, 3, StandingRules.LuckMost);
-            int beat = StandingRules.Beaten(a.Score, luck, others, StudySeed, a.Post.Id);
-            return beat >= 0 ? others[beat].Name : null;
-        }
-
-        // ------------------------------------------------------------------------------------------------- the campus
-
-        /// <summary>The campus's people, read when first asked for.</summary>
-        public RosterFile Roster
-        {
-            get
-            {
-                RosterLoad();
-                return _roster;
-            }
-        }
-
-        /// <summary>The cohort a course has today, made when first asked for (a course with no classes has none).</summary>
-        public Intake IntakeOf(CourseDef c)
-        {
-            RosterFile r = Roster;
-            return r == null || c == null || !c.Timetabled || Save == null ? null : RosterRules.Ensure(r, c.Id, Save.Day, Names);
-        }
-
-        /// <summary>The cohort the player's enrolment sat in, if it is still kept.</summary>
-        public Intake IntakeOf(Enrolment e)
-        {
-            RosterFile r = Roster;
-            return r == null || e == null ? null : r.Find(e.Course, RosterRules.StartOf(e.Start));
-        }
-
-        /// <summary>The tutor of a course, made when first asked for.</summary>
-        public Tutor TutorOf(CourseDef c)
-        {
-            RosterFile r = Roster;
-            return r == null || c == null ? null : RosterRules.TutorFor(r, c.Id, Names);
-        }
-
-        /// <summary>Why a course cannot be enrolled in for the campus's own reasons (a skill floor, no seat), a reason key, or null.</summary>
-        private string CampusWhy(CourseDef c)
-        {
-            if (RosterRules.Floor(c, out int skill, out int need) && Points(skill) < need)
-            {
-                return "reallife_study_why_floor";
-            }
-            Intake i = IntakeOf(c);
-            return i != null && !RosterRules.CanJoin(i) ? "reallife_study_why_seats" : null;
-        }
-
-        // The player has a seat, and an employee of theirs may follow the same course.
-        private void CampusEnrolled(CourseDef c, int day)
-        {
-            Intake i = IntakeOf(c);
-            if (i == null)
-            {
-                return;
-            }
-            RosterRules.Join(i);
-            string who = RosterRules.EmployeeFollows(Roster, i, EmployeeNames(), day);
-            if (who != null)
-            {
-                Tell(NotificationType.Info, "reallife_study_note_employee_follows", Data("name", who, "course", CareersText.Course(c.Id)),
-                    TabStudying, CampusApp.CourseRow + c.Id);
-            }
-        }
-
-        /// <summary>The marks of the player's finished courses, for the grade point average and the credits.</summary>
-        public int Marks(List<Mark> into)
-        {
-            into.Clear();
-            StudyFile f = Study;
-            for (int i = 0; f != null && i < f.Results.Count; i++)
-            {
-                Enrolment e = f.Results[i];
-                if (e.Def != null && (e.Stage == (int)EnrolStage.Passed || e.Stage == (int)EnrolStage.Failed))
-                {
-                    into.Add(new Mark { Credits = e.Stage == (int)EnrolStage.Passed ? RosterRules.CreditsOf(e.Def) : 0,
-                        Points = RosterRules.PointsOf(e.Score), Start = e.Start });
-                }
-            }
-            return into.Count;
+            Tell(NotificationType.Info, "reallife_study_note_employee_follows", Data("name", who, "course", CareersText.Course(course)), TabStudying, CampusApp.CourseRow + course);
         }
     }
 }

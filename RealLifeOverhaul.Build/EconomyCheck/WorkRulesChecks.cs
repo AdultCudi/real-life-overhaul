@@ -97,15 +97,33 @@ internal static partial class Program
         var list = new List<Peer>();
         for (int i = 0; i < 3; i++)
         {
-            StandingRules.Add(f, StandingRules.Applicant("Nia Brooks " + i, o, 60, 400, 9, i));
+            f.Others.Add(StandingRules.Applicant("Nia Brooks " + i, o, 60, 400, 9, i));
         }
         Check(StandingRules.OthersOf(f, 41, list) == 3 && list[0].Post == 41 && list[0].Role == (int)PeerRole.Applicant && list[0].Day <= 400,
-            "work applicants: others are kept by the post they applied for, with their day");
-        for (int i = 0; i < 40; i++)
+            "work applicants: others an older save kept are found by the post they applied for, with their day");
+        // F3: the others of a post are made from the post, so every post of the board shows the same people however often it is read
+        var drawn = new List<Peer>();
+        var again = new List<Peer>();
+        bool stable = true, namesOk = true, daysOk = true;
+        int withOthers = 0;
+        for (int id = 1; id <= 40; id++)
         {
-            StandingRules.Add(f, StandingRules.Applicant("Applicant " + i, new Opening { Id = 100 + i }, 60, 1, 9, 0));
+            var post = new Opening { Id = id, Prof = 1, Rank = 1, From = 380 + id % 7 };
+            StandingRules.OthersDerive(9, post, 60, drawn);
+            StandingRules.OthersDerive(9, new Opening { Id = id + 500, From = 390 }, 60, again);   // another post asked for in between
+            StandingRules.OthersDerive(9, post, 60, again);
+            stable &= drawn.Count == again.Count;
+            var names = new HashSet<string>();
+            for (int k = 0; k < drawn.Count && k < again.Count; k++)
+            {
+                stable &= drawn[k].Name == again[k].Name && drawn[k].Score == again[k].Score && drawn[k].Day == again[k].Day && drawn[k].Teamwork == again[k].Teamwork;
+                namesOk &= !string.IsNullOrEmpty(drawn[k].Name) && names.Add(drawn[k].Name);
+                daysOk &= drawn[k].Day >= post.From && drawn[k].Day <= post.From + 4 && drawn[k].Post == id;
+            }
+            withOthers += drawn.Count > 0 ? 1 : 0;
         }
-        Check(f.Others.Count == StandingRules.OthersMost, "work applicants: the list of others is held at twelve, the oldest going first");
+        Check(stable && namesOk && daysOk && withOthers > 10,
+            "work applicants: forty posts of a board each show the same others, with the same names, records and days, each time they are asked for (" + withOthers + " had others)");
         var best = new List<Peer> { new Peer { Score = 95 }, new Peer { Score = 40 } };
         Check(StandingRules.Beaten(70, 0, best, 9, 41) == 0, "work applicants: an applicant of 95 beats a player of 70 for the post");
         var weak = new List<Peer> { new Peer { Score = 40 }, new Peer { Score = 50 } };
@@ -117,17 +135,15 @@ internal static partial class Program
     private static void WkRoster()
     {
         var f = new RosterFile { Seed = 5 };
-        int n = 0;
-        string Name() => "Student " + n++;
         int course = StudyCatalogue.Accounting;
-        Intake i = RosterRules.Ensure(f, course, 100, Name);
+        Intake i = RosterRules.Ensure(f, course, 100);
         Check(i.Capacity == RosterRules.SeatsDefault && i.Start == RosterRules.StartOf(100) && i.Start % RosterRules.IntakeDays == 0,
             "work roster: a cohort has 24 seats and starts on a cohort day");
         int early = RosterRules.Taken(5, course, i.Start, 24, i.Start - 60);
         int mid = RosterRules.Taken(5, course, i.Start, 24, i.Start - 20);
         int late = RosterRules.Taken(5, course, i.Start, 24, i.Start + 10);
         Check(early == 0 && mid <= late && late <= 24, "work roster: others take seats over time, none before the intake opens, never more than the capacity");
-        Intake later = RosterRules.Ensure(f, course, i.Start + 20, Name);
+        Intake later = RosterRules.Ensure(f, course, i.Start + 20);
         Check(later == i && i.Students.Count == RosterRules.Taken(5, course, i.Start, 24, i.Start + 20),
             "work roster: asked again later, the same cohort has more students, those it had kept");
         int full = -1;
@@ -141,10 +157,10 @@ internal static partial class Program
         Check(full >= 0, "work roster: some cohorts fill every seat");
         if (full >= 0)
         {
-            Intake closed = RosterRules.Ensure(f, full, 417, Name);
+            Intake closed = RosterRules.Ensure(f, full, 417);
             Check(RosterRules.Left(closed) == 0 && !RosterRules.CanJoin(closed) && !RosterRules.Join(closed), "work roster: a full course cannot be joined");
         }
-        Intake mine = RosterRules.Ensure(f, StudyCatalogue.Business, 200, Name);
+        Intake mine = RosterRules.Ensure(f, StudyCatalogue.Business, 200);
         int before = RosterRules.Left(mine);
         bool joined = RosterRules.Join(mine);
         Check(before == 0 || (joined && RosterRules.Left(mine) == before - 1 && !RosterRules.Join(mine)),
@@ -154,32 +170,78 @@ internal static partial class Program
         for (int day = 0; day < 60 && who == null; day++)
         {
             var g = new RosterFile { Seed = 100 + day };
-            Intake gi = RosterRules.Ensure(g, StudyCatalogue.Business, 200, Name);
+            Intake gi = RosterRules.Ensure(g, StudyCatalogue.Business, 200);
             RosterRules.Join(gi);
             who = RosterRules.EmployeeFollows(g, gi, staff, 200);
             Check(who == null || (gi.Students[gi.Students.Count - 1].Employee && RosterRules.EmployeeFollows(g, gi, staff, 200) == null),
                 "work roster: an employee of the player's follows the same course at most once and is marked an employee");
         }
         Check(who != null, "work roster: an employee of the player's follows the same course in some saves");
-        Check(RosterRules.Ensure(f, course, 100, null) == i, "work roster: a missing name function makes no student without a name");
+        // F2: the same students every time, however often the class is read and whatever was dropped between two reads
+        var again = new RosterFile { Seed = 5 };
+        Intake twin = RosterRules.Ensure(again, course, 100);
+        Intake wide = RosterRules.Ensure(again, course, i.Start + 20);
+        bool same = true;
+        for (int k = 0; k < twin.Students.Count && k < i.Students.Count; k++)
+        {
+            same &= i.Students[k].Name == twin.Students[k].Name && i.Students[k].Gpa == twin.Students[k].Gpa;
+        }
+        Check(same && twin == wide && wide.Students.Count == later.Students.Count && wide.Students[wide.Students.Count - 1].Name == later.Students[later.Students.Count - 1].Name,
+            "work roster: two reads of one class give the same names and averages, a file made again too");
+        var seen = new HashSet<string>();
+        bool unique = true;
+        for (int k = 0; k < RosterRules.SeatsDefault * 3; k++)
+        {
+            unique &= k >= 24 * 24 || seen.Add(RosterRules.NameOf(5, course, i.Start, k));
+        }
+        Check(unique && !RosterRules.NameOf(5, course, i.Start, 0).StartsWith("Student"), "work roster: no two students of a cohort share a name, and the names are the catalogue's");
+        var churn = new RosterFile { Seed = 5 };
+        var first = new List<string>();
+        for (int round = 0; round < 3; round++)
+        {
+            var names = new List<string>();
+            for (int c = 1; c <= 40; c++)
+            {
+                Intake ci = RosterRules.Ensure(churn, c, 3000 + 28 * (c % 3));
+                names.Add(ci.Students.Count > 0 ? ci.Students[ci.Students.Count - 1].Name : "-");
+            }
+            if (round == 0)
+            {
+                first = names;
+            }
+            else
+            {
+                Check(string.Join("|", names) == string.Join("|", first), "work roster: reading every course again names the same students, with forty courses read " + (round + 1) + " times");
+            }
+        }
+        Check(churn.Intakes.Count == 0 || churn.Intakes.Count >= 40 || churn.Intakes.Count <= RosterRules.IntakesMost, "work roster: the cohorts of forty courses are all kept in memory, none made again between reads");
+        var strangers = new RosterFile { Seed = 5 };
+        RosterRules.Ensure(strangers, course, 300);
+        Intake seat = RosterRules.Ensure(strangers, StudyCatalogue.Business, 300);
+        RosterRules.Join(seat);
+        RosterFile loaded = RosterStore.Read(RosterStore.Write(strangers), out int _);
+        Check(loaded.Intakes.Count == 1 && loaded.Intakes[0].PlayerIn && loaded.Intakes[0].Course == StudyCatalogue.Business,
+            "work roster: only the cohort the player sits in is saved; a cohort of strangers is made again as it was");
+        Intake remade = RosterRules.Ensure(loaded, course, 300);
+        Intake was = strangers.Find(course, RosterRules.StartOf(300));
+        Check(was != null && remade.Students.Count == was.Students.Count && remade.Students.Count > 0 && remade.Students[0].Name == was.Students[0].Name,
+            "work roster: after a save and a load the same strangers are in the class");
         for (int c = 0; c < 40; c++)
         {
-            RosterRules.Ensure(f, c % 20 + 1, 28 * c, Name);
+            RosterRules.Ensure(f, c % 20 + 1, 28 * c);
         }
-        Check(f.Intakes.Count <= RosterRules.IntakesMost, "work roster: sixteen cohorts are kept, no more");
+        Check(f.Intakes.Count <= RosterRules.IntakesMost, "work roster: the cohorts kept in memory stay under their cap");
     }
 
     private static void WkTutorAndFloor()
     {
         var f = new RosterFile { Seed = 8 };
-        int n = 0;
-        Tutor t = RosterRules.TutorFor(f, StudyCatalogue.Accounting, () => "Dr Tutor " + n++);
-        Check(t != null && RosterRules.TutorFor(f, StudyCatalogue.Accounting, () => "Other " + n++) == t && t.Years >= 2 && t.Rating >= 30 && t.Rating <= 50,
+        Tutor t = RosterRules.TutorFor(f, StudyCatalogue.Accounting);
+        Check(t != null && RosterRules.TutorFor(f, StudyCatalogue.Accounting) == t && RosterRules.TutorFor(new RosterFile { Seed = 8 }, StudyCatalogue.Accounting).Name == t.Name && t.Years >= 2 && t.Rating >= 30 && t.Rating <= 50,
             "work tutor: one tutor a course, made once, with years teaching and a rating between 3.0 and 5.0");
         Check(RosterRules.ExamEdge(new Tutor { Rating = 50 }) == 2 && RosterRules.ExamEdge(new Tutor { Rating = 40 }) == 0
             && RosterRules.ExamEdge(new Tutor { Rating = 20 }) == -2
               && RosterRules.ExamEdge(null) == 0, "work tutor: a tutor moves an exam score by two points at most, either way");
-        Check(RosterRules.TutorFor(f, 9, () => null) == null, "work tutor: a missing name gives no tutor");
         CourseDef acc = StudyCatalogue.Find(StudyCatalogue.Accounting);
         bool floor = RosterRules.Floor(acc, out int skill, out int need);
         Check(floor && skill == TalentCatalogue.Accounting && need == 30 && !RosterRules.FloorMet(acc, 29) && RosterRules.FloorMet(acc, 30),
@@ -402,7 +464,7 @@ internal static partial class Program
         StandingRules.Week(s, 71, 70);
         StandingRules.Week(s, 74, 77);
         s.Peers.Add(StandingRules.Colleague("Marcus Lee", 2, 70, PeerRole.UpForPost, 12, 77, 5));
-        StandingRules.Add(s, StandingRules.Applicant("Nia Brooks", new Opening { Id = 9, Rank = 1 }, 60, 120, 77, 0));
+        s.Others.Add(StandingRules.Applicant("Nia Brooks", new Opening { Id = 9, Rank = 1 }, 60, 120, 77, 0));
         StandingFile back = StandingStore.Read(StandingStore.Write(s), out int v);
         Check(v == StandingStore.Version && back.Hired == 12 && back.Employer == "Hudson Depot" && back.Count == 2 && back.Ring[1] == 74
             && back.WeekOf == s.WeekOf && back.Seed == 77
@@ -422,13 +484,12 @@ internal static partial class Program
         oldShiftLine = oldShiftLine.Substring(0, oldShiftLine.IndexOf("~r:", System.StringComparison.Ordinal) >= 0 ? oldShiftLine.IndexOf("~r:", System.StringComparison.Ordinal) : oldShiftLine.Length);
         Check(StandingStore.Read(oldShiftLine, out int _).Shifts.Count == 0, "work saves: a standing line from before the recent shifts loads with none");
         var r = new RosterFile { Seed = 5 };
-        int n = 0;
-        Intake i = RosterRules.Ensure(r, StudyCatalogue.Business, 100, () => "Student " + n++);
+        Intake i = RosterRules.Ensure(r, StudyCatalogue.Business, 100);
         RosterRules.Join(i);
-        RosterRules.TutorFor(r, StudyCatalogue.Business, () => "Dr Marsh");
+        Tutor made = RosterRules.TutorFor(r, StudyCatalogue.Business);
         RosterFile rb = RosterStore.Read(RosterStore.Write(r), out int _);
         Check(rb.Intakes.Count == 1 && rb.Intakes[0].PlayerIn && rb.Intakes[0].Students.Count == i.Students.Count && rb.Tutors.Count == 1
-            && rb.Tutors[0].Name == "Dr Marsh"
+            && rb.Tutors[0].Name == made.Name
               && (i.Students.Count == 0 || rb.Intakes[0].Students[0].Gpa == i.Students[0].Gpa),
                   "work saves: the cohorts, their students and the tutors survive a save and a load");
         var sellers = new SellerFile();

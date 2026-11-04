@@ -486,13 +486,11 @@ namespace RealLifeOverhaul.Hustles
             save.modData[SellerStore.Key] = SellerStore.Write(_sellers);
         }
 
-        // A day's listings from the sellers of the book, and from the rivals that own a business that sells used vehicles or machines (read once a day).
-        private void MorningOf(int day)
-        {
-            SellerRules.Ensure(_sellers, _state.Seed, k => HustleGame.SellerName(_state.Seed, k));
-            HustleGame.Dealers(_dealers);
-            HustleRules.Morning(_state, day, _homes, _cars, _colours, HustleGame.Level, People(HustleBridges.Sellers), _sellers, _dealers);
-        }
+        // What the morning reads of the game (HustleDirector.Morning.cs is game-free and runs in EconomyCheck as it stands).
+        private string SellerName(int k) => HustleGame.SellerName(_state.Seed, k);
+        private void ReadDealers() => HustleGame.Dealers(_dealers);
+        private static int ShopLevel => HustleGame.Level;
+        private static int MarketPeople => People(HustleBridges.Sellers);
 
         /// <summary>Everything put away (the save tools, the feature list's clean-up): the panel, the work on the clock and the app.</summary>
         public void StopAll()

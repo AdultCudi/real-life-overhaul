@@ -3,40 +3,40 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Ui
 {
-    /// <summary>One worked shift of the recent shifts: the day, the hours, the score that day and the pay.</summary>
-    public sealed class CareerShift { public string Day, Hours, Pay; public int Score; }
-
     /// <summary>
-    /// My job laid out as the mockup draws it: the profile, the next shift as a hero, the ladder as a track, what the next rung needs as check
-    /// lines, the performance of twelve weeks as a chart with the colleague's line beside it, and at the right the standing, this week, the recent
-    /// shifts and the people on the shift. Every part is the kit's own. Game-free.
+    /// My job laid out as the mockup draws it: the profile with its buttons, the next shift as a hero, the ladder as a track, what the next rung needs
+    /// as check lines, the performance of twelve weeks as a chart with the colleague's line beside it, and at the right the standing, this week, the
+    /// recent shifts, the people on the shift and the working life. Every part is the kit's own. Game-free.
     /// </summary>
     public static class CareerMyJob
     {
         private const float LeftShare = 0.62f;
 
-        public static void Lay(UiScene s, UiAt at, CareerJob j, UiAppModel m, UtilitiesWords w, List<int> head, float x, float y, float cw, float bottom, IUiKeys keys)
+        public static void Lay(UiScene s, UiAt at, CareerJob j, UiAppModel m, UtilitiesWords w, List<UiActionModel> heads, List<UiActionModel> more, List<UiActionModel> leave,
+            float x, float y, float cw, float bottom, IUiKeys keys)
         {
-            var top = new List<UiActionModel>(3);
-            var more = new List<UiActionModel>(6);
-            for (int i = 0; i < m.Actions.Length; i++)
+            // the profile's own buttons: leaving first and quiet, the main one last
+            var ordered = new List<UiActionModel>(4);
+            ordered.AddRange(leave);
+            if (heads.Count > 1)
             {
-                (head.Contains(i) ? top : more).Add(m.Actions[i]);
+                ordered.Add(heads[1]);
             }
-            y = UiAppWindow.Profile(s, at, m.Profile, top.ToArray(), x, y, cw, keys);
+            ordered.Add(heads[0]);
+            y = UiAppWindow.Profile(s, at, m.Profile, ordered.ToArray(), x, y, cw, keys);
             if (more.Count > 0)
             {
                 float bx = x;
                 for (int i = 0; i < more.Count; i++)
                 {
                     UiActionModel a = more[i];
-                    float bw = UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, a.Key, keys);
-                    UiDraw.Button(s, at, bx, y, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, a.Command, a.Arg, a.Disabled);
+                    float bw = UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, UiAction.Count, keys);
+                    UiDraw.Button(s, at, bx, y - UiTokens.S3, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, UiAction.Count, keys, a.Command, a.Arg, a.Disabled);
                     bx += bw + UiTokens.S3;
                 }
-                y += UiTokens.Control + UiTokens.S4;
+                y += UiTokens.Control + UiTokens.S2;
             }
-            float lw = UiDraw.SnapDown(cw * LeftShare), rw = cw - lw - UiTokens.S6, rx = x + lw + UiTokens.S6;
+            float lw = UiDraw.SnapDown(cw * LeftShare), rw = cw - lw - UiTokens.S8, rx = x + lw + UiTokens.S8;
             // left: the next shift, the ladder, what the next rung needs, the twelve weeks
             float ly = y;
             ly += UiAppWindow.Hero(s, at, m.Hero, x, ly, lw) + UiTokens.S4;
@@ -44,9 +44,15 @@ namespace RealLifeOverhaul.Ui
             if (j.Needs.Count > 0)
             {
                 ly += UiDraw.SectionHeader(s, at, x, ly, lw, w.F("reallife_work_what_needs", "What {rung} needs", "rung", j.NextRung ?? string.Empty));
-                for (int i = 0; i < j.Needs.Count && ly + UiTokens.Control < bottom - UiTokens.S16 * 2f; i++)
+                for (int i = 0; i < j.Needs.Count && ly + UiTokens.PairRow < bottom - UiTokens.S16 * 2f; i++)
                 {
-                    ly += UiTokens.S1 + UiDraw.CheckLine(s, at, x, ly, lw, j.Needs[i].Words + (j.Needs[i].Have != null ? ", " + j.Needs[i].Have : string.Empty), j.Needs[i].Met);
+                    float have = string.IsNullOrEmpty(j.Needs[i].Have) ? 0f : Math.Min(lw * 0.35f, UiTextRules.Width(j.Needs[i].Have, UiStyle.Body) + UiTokens.S2);
+                    UiDraw.CheckLine(s, at, x, ly, lw - have - UiTokens.S2, j.Needs[i].Words, j.Needs[i].Met);
+                    if (have > 0f)
+                    {
+                        UiDraw.TextMiddle(s, at, x + lw - have, ly, UiTokens.PairRow, have, UiStyle.Body, UiRole.Text2, j.Needs[i].Have, UiFlags.Right | UiFlags.Truncate);
+                    }
+                    ly += UiTokens.PairRow + UiTokens.S1;
                 }
                 ly += UiTokens.S3;
             }
@@ -54,8 +60,15 @@ namespace RealLifeOverhaul.Ui
             {
                 UiChart.Lay(s, at, Chart(j, w), x, ly, lw, bottom - ly);
             }
-            // right: standing, this week, recent shifts, the people on the shift
+            // right: standing, this week, recent shifts, the people on the shift, the working life
             float ry = UiAppWindow.Attributes(s, at, m.AttributesTitle, m.AttributeLabels, m.AttributeValues, rx, y, rw);
+            if (!j.SafetyKept && j.Performance >= 0)
+            {
+                ry -= UiTokens.S1;
+                int note = UiDraw.Text(s, at, rx, ry, rw, UiStyle.Small, UiRole.Text2, w.T("reallife_work_safety_note", "Safety is not tracked: the work panel keeps no record of faults in a shift."),
+                    UiFlags.Wrap | UiFlags.Truncate, 2);
+                ry = UiDraw.Snap(s.Items[note].Y + s.Items[note].H) + UiTokens.S3;
+            }
             if (j.WeekHours != null || j.WeekPay != null)
             {
                 ry += UiDraw.SectionHeader(s, at, rx, ry, rw, w.T("reallife_work_this_week", "This week"));
@@ -67,25 +80,46 @@ namespace RealLifeOverhaul.Ui
                 {
                     ry += UiDraw.InfoRow(s, at, rx, ry, rw, w.T("reallife_work_week_pay", "Pay so far"), j.WeekPay) + UiTokens.S1;
                 }
+                if (j.PaidNote != null)
+                {
+                    ry += UiDraw.InfoRow(s, at, rx, ry, rw, w.T("reallife_work_paid_day", "Paid"), j.PaidNote) + UiTokens.S1;
+                }
                 ry += UiTokens.S3;
             }
-            if (j.Shifts.Count > 0 && bottom - ry > UiTokens.S16 * 4f)
+            if (j.Shifts.Count > 0 && bottom - ry > UiTokens.S16 * 3f)
             {
-                var rows = new UiAppRow[Math.Min(j.Shifts.Count, 4)];
+                int most = Math.Min(Math.Min(j.Shifts.Count, 4), (int)((bottom - ry - UiTokens.S16 * 3f) / UiTokens.TableRow) + 1);
+                var rows = new UiAppRow[Math.Max(1, most)];
                 for (int i = 0; i < rows.Length; i++)
                 {
                     CareerShift c = j.Shifts[j.Shifts.Count - 1 - i];
-                    rows[i] = WorkBuilder.Row(UiIcon.Clock, UiRole.None, new[] { c.Day + " " + c.Hours, c.Score.ToString(), c.Pay }, null, UiRole.Ok, c.Score);
+                    rows[i] = WorkBuilder.RowOf(UiIcon.Clock, UiRole.None, new[] { c.Day + " " + c.Hours, c.Score.ToString(), c.Pay }, null, UiRole.Ok, c.Score);
                 }
-                ry = UiAppWindow.Table(s, at, w.T("reallife_work_recent_shifts", "Recent shifts"), new[] { WorkBuilder.Col(w.T("reallife_work_col_shift", "Shift"), 0f, false, true),
-                    WorkBuilder.Col(w.T("reallife_work_col_score", "Score"), 96f, true), WorkBuilder.Col(w.T("reallife_work_col_pay", "Pay"), 96f, true) }, 1, rows, UiAppWindow.MoreCommand,
+                ry = UiAppWindow.Table(s, at, w.T("reallife_work_recent_shifts", "Recent shifts"), new[] { Col(w.T("reallife_work_col_shift", "Shift"), 0f, false, true),
+                    Col(w.T("reallife_work_col_score", "Score"), 96f, true, false), Col(w.T("reallife_work_col_pay", "Pay"), 96f, true, false) }, 1, rows, UiAppWindow.MoreCommand,
                     rx, ry, rw, Math.Min(bottom - ry, UiTokens.S16 * 6f)) + UiTokens.S3;
             }
-            if (m.People.Length > 0 && bottom - ry > UiTokens.S16 * 3f)
+            if (j.Peers.Count > 0 && bottom - ry > UiTokens.S16 * 2f)
             {
-                UiAppWindow.People(s, at, m.PeopleTitle, m.PeopleCount, m.People, null, m.Note, m.NoteTone, null, rx, ry, rw, bottom - ry);
+                ry += WorkPanel.SectionHead(s, at, rx, ry, rw, w.T("reallife_work_on_shift", "On shift with you"), j.Peers.Count.ToString());
+                for (int i = 0; i < j.Peers.Count && ry + 48f <= bottom; i++)
+                {
+                    CareerPeer c = j.Peers[i];
+                    ry += WorkPanel.PersonRow(s, at, new WorkPerson { Name = c.Name, Role = c.Tag != null ? c.Role + ", " + c.Tag : c.Role, Right = c.Score.ToString(), Ring = UiRole.Ok }, rx, ry, rw);
+                }
+                ry += UiTokens.S3;
+            }
+            if (j.Life.Count > 0 && bottom - ry > UiTokens.S16)
+            {
+                ry += UiDraw.SectionHeader(s, at, rx, ry, rw, w.T("reallife_work_working_life", "Working life"));
+                for (int i = 0; i < j.Life.Count && ry + UiTokens.PairRow <= bottom; i++)
+                {
+                    ry += UiDraw.InfoRow(s, at, rx, ry, rw, j.Life[i].Key, j.Life[i].Value) + UiTokens.S1;
+                }
             }
         }
+
+        private static UiColumn Col(string title, float width, bool right, bool grow) => new UiColumn { Title = title, Width = width, Right = right, Grow = grow };
 
         private static UiTrackModel Track(CareerJob j, UtilitiesWords w)
         {
@@ -97,10 +131,11 @@ namespace RealLifeOverhaul.Ui
             {
                 firstAhead = j.Rungs[i].State == 2 ? i : -1;
             }
+            UiIcon[] glyphs = { UiIcon.Person, UiIcon.IdBadge, UiIcon.Handshake, UiIcon.People, UiIcon.Presentation, UiIcon.Trophy };
             for (int i = 0; i < t.Steps.Length; i++)
             {
                 CareerRung r = j.Rungs[i];
-                t.Steps[i] = new UiTrackStep { Icon = UiIcon.Briefcase, Label = r.Title, Note = r.Pay,
+                t.Steps[i] = new UiTrackStep { Icon = r.State == 0 ? UiIcon.Check : glyphs[Math.Min(glyphs.Length - 1, i)], Label = r.Title, Note = r.Pay,
                     State = r.State == 0 ? UiStepState.Done : r.State == 1 ? UiStepState.Now : i == firstAhead ? UiStepState.Next : UiStepState.Later };
             }
             return t;

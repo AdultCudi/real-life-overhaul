@@ -4,10 +4,11 @@ using RealLifeOverhaul.Careers;
 using RealLifeOverhaul.Hustles;
 using RealLifeOverhaul.Tech;
 
-// Day by day runs of the work feature's game-free entries, the same calls the directors make on their day turn: the standing at work with its
-// colleagues and shifts, the campus's cohorts and tutors, the labour market's rival offers and ads' posts, and the Marketplace's morning with
-// its sellers and rivals. Each run is 60 to 120 days from a seed, asserts each new item's state changes as it should and that the NPC side acts,
-// writes the save on day 30, reads it back and plays the next 30 days to the same state, and plays an old save (the line before the new fields) on.
+// Day by day runs of the work feature, through the directors' own code: CareersDirector.People.cs (StandingDay, RecordShift, StandingDecides,
+// AlsoApplied, OtherGotIt, CampusEnrolled, CampusWhy, IntakeOf) and HustleDirector.Morning.cs (MorningOf) are linked as they ship and driven in the
+// order the directors' day turn drives them; the labour market's runs call its rules as the tech director's day turn does. Each run is 60 to 120
+// days from a seed, asserts each new item's state changes as it should and that the NPC side acts, writes the save on day 30, reads it back and plays
+// the next 30 days to the same state, and plays an old save (the line before the new fields) on.
 internal static partial class Program
 {
     private static void WkRuns()
@@ -20,46 +21,47 @@ internal static partial class Program
 
     // ------------------------------------------------------------------------------------------------- standing at work
 
+    // A save's day turn on the real director: the colleagues are seeded when the record starts (Standing), a worked day records its shift
+    // (RecordShift), the week writes the ring (StandingDay), and a review that would promote lets the better record have the post (StandingDecides).
     private sealed class StandingRun
     {
-        public StandingFile F = new StandingFile { Seed = 31, Hired = 5, Street = "Pine", Number = 3, Employer = "Hudson Depot" };
-        public Job J = new Job { Hired = 5 };
-        public int Names, Contests, PlayerWins, Passed, Reviews;
+        public CareersDirector D;
+        public StudyFile S;
+        public Job J;
+        public int Contests, PlayerWins, Passed, Reviews;
+        public int Top => J.Def.Ranks.Length - 1;
 
-        public StandingRun()
+        public StandingRun(int seed)
         {
+            S = new StudyFile { Seed = seed };
+            J = new Job { Hired = 5, Pay = 1700 };
+            J.Post.Prof = ProCatalogue.All[0].Id;
             J.Post.Street = "Pine";
             J.Post.Number = 3;
             J.Post.Employer = "Hudson Depot";
             J.Post.Rank = 1;
+            S.Work.Job = J;
+            D = new CareersDirector(S);
+            SaveGameManager.Current = new GameInstance { Day = 1 };
         }
 
-        public string Name() => "Colleague " + Names++;
-
-        // One game day as the director plays it: the colleagues are seeded when the record starts, a worked day records its shift, the week writes the
-        // ring, and a review that would promote lets the better record have the post.
-        public void Day(int day, int top)
+        public void Day(int day)
         {
-            if (F.Peers.Count == 0)
-            {
-                StandingRules.Seed(F, J.Post.Rank, top, 70, day, F.Seed + J.Hired, Name);
-            }
-            bool working = day % 7 < 5;
-            int score = 66 + day % 17 + J.Post.Rank * 2;
-            if (working)
+            SaveGameManager.Current.Day = day;
+            D.RunStandingDay(day);
+            if (day % 7 < 5)
             {
                 J.Due++;
                 J.Worked++;
-                StandingRules.Shift(F, day, 480 - (day % 3) * 60, score, 17000 + day);
+                D.RunRecordShift(J, day, 480 - (day % 3) * 60);
             }
-            StandingRules.Week(F, score, day);
             if (day % 28 == 27)
             {
                 Reviews++;
-                if (J.Post.Rank < top && J.Worked > 10)
+                if (J.Post.Rank < Top && J.Worked > 10)
                 {
                     Contests++;
-                    bool mine = StandingRules.Contest(F, J.Post.Rank, top, day, F.Seed + day, Name, out Peer _);
+                    bool mine = D.RunStandingDecides(J, day);
                     PlayerWins += mine ? 1 : 0;
                     Passed += mine ? 0 : 1;
                     J.Post.Rank += mine ? 1 : 0;
@@ -71,95 +73,151 @@ internal static partial class Program
 
     private static void WkRunStanding()
     {
-        var a = new StandingRun();
+        var a = new StandingRun(31);
         for (int day = 1; day <= 120; day++)
         {
-            a.Day(day, 4);
+            a.Day(day);
         }
-        Peer up = a.F.UpFor();
-        Check(a.F.Count == Peer.RingSize && a.F.Peers.Count == 3 && up != null && a.F.Peers.TrueForAll(p => p.Count > 0 && p.Count <= Peer.RingSize),
-            "work run: over 120 days the player's ring and every colleague's fill to twelve weeks and the shift's three people stay");
-        Check(a.F.Shifts.Count == StandingRules.ShiftsMost && a.F.Shifts[a.F.Shifts.Count - 1].Day >= 116 && a.F.Shifts[0].Day < a.F.Shifts[1].Day,
-            "work run: the last seven worked shifts are the latest, in order");
-        Check(a.Reviews == 4 && a.Contests >= 1 && a.PlayerWins + a.Passed == a.Contests && a.Names > 3,
-            "work run: each review that would promote went to the better record (" + a.PlayerWins + " to the player, " + a.Passed + " passed over) and a new colleague took the place");
+        StandingFile f = a.D.Standing;
+        Peer up = f.UpFor();
+        Check(f.Count == Peer.RingSize && f.Peers.Count == 3 && up != null && f.Peers.TrueForAll(p => p.Count > 0 && p.Count <= Peer.RingSize),
+            "work run: over 120 days, through the director's own StandingDay, the player's ring and every colleague's fill to twelve weeks and the shift's three people stay");
+        Check(f.Shifts.Count == StandingRules.ShiftsMost && f.Shifts[f.Shifts.Count - 1].Day >= 116 && f.Shifts[0].Day < f.Shifts[1].Day,
+            "work run: RecordShift on each worked day leaves the last seven shifts, the latest, in order");
+        Check(a.Reviews == 4 && a.Contests >= 1 && a.PlayerWins + a.Passed == a.Contests && a.D.NamesRolled > 3 && a.D.PassedCount == a.Passed,
+            "work run: StandingDecides at each review that would promote gave the post to the better record (" + a.PlayerWins + " to the player, " + a.Passed + " passed over, told) and a new colleague took the place");
         bool moved = false;
-        foreach (Peer p in a.F.Peers)
+        foreach (Peer p in f.Peers)
         {
             moved |= p.Score != p.Skill || p.Ring[0] != p.Ring[Peer.RingSize - 1];
         }
         Check(moved, "work run: the colleagues' weeks move (the NPC side acts) every week of the run");
 
-        // a save on day 30, read back, plays the next 30 days to the same state as the run that never stopped
-        var c = new StandingRun();
-        var b = new StandingRun();
+        // a save on day 30, read back by a new director, plays the next 30 days to the same state as the run that never stopped
+        var c = new StandingRun(31);
+        var b = new StandingRun(31);
         for (int day = 1; day <= 30; day++)
         {
-            c.Day(day, 4);
-            b.Day(day, 4);
+            c.Day(day);
+            b.Day(day);
         }
-        string line = StandingStore.Write(b.F);
-        b.F = StandingStore.Read(line, out int _);
-        b.Names = c.Names;
-        b.J = new Job { Hired = c.J.Hired, Due = c.J.Due, Worked = c.J.Worked };
-        b.J.Post.Street = "Pine";
-        b.J.Post.Number = 3;
-        b.J.Post.Employer = "Hudson Depot";
-        b.J.Post.Rank = c.J.Post.Rank;
+        var data = new Dictionary<string, string>();
+        b.D.RunPeopleWrite(data);
+        var restarted = new StandingRun(31);
+        restarted.J = b.J;
+        restarted.S.Work.Job = b.J;
+        restarted.D.NamesRolled = b.D.NamesRolled;   // the game remembers the names it rolled before the save
         for (int day = 31; day <= 60; day++)
         {
-            c.Day(day, 4);
-            b.Day(day, 4);
+            c.Day(day);
+            SaveGameManager.Current = new GameInstance { Day = day, modData = data };
+            restarted.J.Post.Rank = c.J.Post.Rank;
+            restarted.D.RunStandingDay(day);
+            if (day % 7 < 5)
+            {
+                restarted.J.Due++;
+                restarted.J.Worked++;
+                restarted.D.RunRecordShift(restarted.J, day, 480 - (day % 3) * 60);
+            }
+            if (day % 28 == 27)
+            {
+                if (restarted.J.Post.Rank < restarted.Top && restarted.J.Worked > 10)
+                {
+                    restarted.D.RunStandingDecides(restarted.J, day);
+                }
+                restarted.J.Due = restarted.J.Worked = 0;
+            }
         }
-        Check(StandingStore.Write(c.F) == StandingStore.Write(b.F), "work run: a standing line saved on day 30 and read back plays the next 30 days to the same state");
+        var after = new Dictionary<string, string>();
+        var wanted = new Dictionary<string, string>();
+        restarted.D.RunPeopleWrite(after);
+        c.D.RunPeopleWrite(wanted);
+        SaveGameManager.Current = new GameInstance { Day = 61 };
+        Check(after.TryGetValue(StandingStore.Key, out string got) && wanted.TryGetValue(StandingStore.Key, out string want) && got == want,
+            "work run: a standing line saved on day 30 and read back by a new director plays the next 30 days to the same state");
 
         // an old line, from before the recent shifts and the applicants, loads and plays on
-        string old = StandingStore.Write(c.F);
-        var oldJob = new Job { Hired = c.J.Hired, Due = c.J.Due, Worked = c.J.Worked };
-        oldJob.Post.Rank = c.J.Post.Rank;
+        string old = wanted[StandingStore.Key];
         int cut = old.IndexOf("~r:", StringComparison.Ordinal);
-        var d = new StandingRun { F = StandingStore.Read(cut > 0 ? old.Substring(0, cut) : old, out int _) };
-        d.J = oldJob;
-        d.Names = c.Names;
+        var older = new StandingRun(31);
+        older.J = c.J;
+        older.S.Work.Job = c.J;
+        var oldData = new Dictionary<string, string> { [StandingStore.Key] = cut > 0 ? old.Substring(0, cut) : old };
         for (int day = 61; day <= 90; day++)
         {
-            d.Day(day, 4);
+            SaveGameManager.Current = new GameInstance { Day = day, modData = oldData };
+            older.D.RunStandingDay(day);
+            older.D.RunRecordShift(c.J, day, 480);
         }
-        Check(d.F.Shifts.Count > 0 && d.F.Shifts.Count <= StandingRules.ShiftsMost && d.F.Count > 0, "work run: a standing line from before the recent shifts loads and plays on");
+        StandingFile of = older.D.Standing;
+        Check(of != null && of.Shifts.Count > 0 && of.Shifts.Count <= StandingRules.ShiftsMost && of.Count > 0, "work run: a standing line from before the recent shifts loads into the director and plays on");
 
-        // the applicants: drawn once per post, kept, and the employer's weighing is the same on a reload
-        var ap = new StandingFile { Seed = 7 };
-        var o = new Opening { Id = 12, Rank = 1 };
-        int made = StandingRules.OthersFor(7, o);
-        for (int i = 0; i < made; i++)
+        // the applicants: made from each post, the same every time, and the employer's weighing through the director is one of them
+        var ap = new StandingRun(7);
+        SaveGameManager.Current = new GameInstance { Day = 120 };
+        int weighed = 0, other = 0, same = 0;
+        for (int id = 1; id <= 40; id++)
         {
-            StandingRules.Add(ap, StandingRules.Applicant("Applicant " + i, o, 62, 100, 7, i));
+            var o = new Opening { Id = id, Prof = ap.J.Post.Prof, Rank = 1, From = 100 + id % 9, To = 140 };
+            var first = new List<Peer>();
+            var second = new List<Peer>();
+            ap.D.AlsoApplied(o, first);
+            ap.D.AlsoApplied(new Opening { Id = id + 77, From = 105 }, new List<Peer>());   // another post read in between
+            ap.D.AlsoApplied(o, second);
+            bool alike = first.Count == second.Count;
+            for (int k = 0; alike && k < first.Count; k++)
+            {
+                alike = first[k].Name == second[k].Name && first[k].Score == second[k].Score;
+            }
+            same += alike ? 1 : 0;
+            var application = new Application { Score = 60 + id % 20 };
+            application.Post.Id = o.Id;
+            application.Post.Prof = o.Prof;
+            application.Post.Rank = o.Rank;
+            application.Post.From = o.From;
+            application.Post.To = o.To;
+            string winner = ap.D.RunOtherGotIt(application);
+            weighed++;
+            if (winner != null)
+            {
+                other++;
+                bool seen = false;
+                for (int k = 0; k < first.Count; k++)
+                {
+                    seen |= first[k].Name == winner;
+                }
+                Check(seen, "work run: the applicant who got post " + id + " (" + winner + ") was one the player could see among the others");
+            }
         }
-        StandingFile back = StandingStore.Read(StandingStore.Write(ap), out int _);
-        var list = new List<Peer>();
-        var list2 = new List<Peer>();
-        StandingRules.OthersOf(ap, 12, list);
-        StandingRules.OthersOf(back, 12, list2);
-        Check(list.Count == made && list2.Count == made && StandingRules.Beaten(65, 2, list, 7, 12) == StandingRules.Beaten(65, 2, list2, 7, 12),
-            "work run: the other applicants for a post are drawn once, survive a save, and weigh the same against the player after it");
+        Check(same == 40 && weighed == 40 && other >= 1, "work run: forty posts each show the same others on every read, and OtherGotIt named one of them for the post in " + other + " of 40");
     }
 
     // ------------------------------------------------------------------------------------------------- the campus
 
     private sealed class CampusRun
     {
-        public RosterFile F = new RosterFile { Seed = 44 };
-        public int Names, Followed, Full, Joined, Refused;
-        public string Name() => "Student " + Names++;
+        public CareersDirector D;
+        public StudyFile S = new StudyFile { Seed = 44 };
+        public int Followed, Full, Joined, Refused;
+        public readonly CourseDef Business = StudyCatalogue.Find(StudyCatalogue.Business);
 
-        public void Day(int day, IList<string> staff)
+        public CampusRun()
         {
-            Intake i = RosterRules.Ensure(F, StudyCatalogue.Business, day, Name);
-            RosterRules.TutorFor(F, StudyCatalogue.Business, Name);
+            D = new CareersDirector(S);
+            D.StaffNames.AddRange(new[] { "Ava Lindqvist", "Tomas Reyes", "Hana Okada" });
+            SaveGameManager.Current = new GameInstance { Day = 1 };
+        }
+
+        public void Day(int day)
+        {
+            SaveGameManager.Current.Day = day;
+            Intake i = D.IntakeOf(Business);
+            D.TutorOf(Business);
             if (day == 20)
             {
-                if (RosterRules.CanJoin(i) && RosterRules.Join(i))
+                if (D.RunCampusWhy(Business) == null)
                 {
+                    D.RunCampusEnrolled(Business, day);
                     Joined++;
                 }
                 else
@@ -167,9 +225,11 @@ internal static partial class Program
                     Refused++;
                 }
             }
-            if (day >= 20 && day < 80 && i.PlayerIn && RosterRules.EmployeeFollows(F, i, staff, day) != null)
+            if (day >= 20 && day < 80 && i.PlayerIn)
             {
-                Followed++;
+                int before = D.FollowedCount;
+                D.RunCampusEnrolled(Business, day);   // the director's own press again: a seat if one is left and a follower at most once
+                Followed += D.FollowedCount - before;
             }
             Full += RosterRules.Left(i) == 0 ? 1 : 0;
         }
@@ -177,59 +237,103 @@ internal static partial class Program
 
     private static void WkRunRoster()
     {
-        var staff = new List<string> { "Ava Lindqvist", "Tomas Reyes", "Hana Okada" };
         var run = new CampusRun();
         int seatsAt20 = 0, seatsAt27 = 0;
         for (int day = 1; day <= 120; day++)
         {
-            run.Day(day, staff);
+            run.Day(day);
             if (day == 20)
             {
-                seatsAt20 = RosterRules.Left(run.F.Find(StudyCatalogue.Business, RosterRules.StartOf(20)));
+                seatsAt20 = RosterRules.Left(run.D.Roster.Find(StudyCatalogue.Business, RosterRules.StartOf(20)));
             }
             if (day == 27)
             {
-                seatsAt27 = RosterRules.Left(run.F.Find(StudyCatalogue.Business, RosterRules.StartOf(27)));
+                seatsAt27 = RosterRules.Left(run.D.Roster.Find(StudyCatalogue.Business, RosterRules.StartOf(27)));
             }
         }
-        Check(run.F.Intakes.Count >= 4 && run.F.Intakes.TrueForAll(i => i.Students.Count <= i.Capacity) && run.F.Tutors.Count == 1 && run.Names >= 20,
-            "campus run: over 120 days a new cohort stands every 28 days, none over its seats, one tutor, and the NPC students are named by the game's roll");
+        RosterFile f = run.D.Roster;
+        Check(f.Intakes.Count >= 4 && f.Intakes.TrueForAll(i => i.Students.Count <= i.Capacity) && f.Tutors.Count == 1,
+            "campus run: over 120 days, through IntakeOf, a new cohort stands every 28 days, none over its seats, one tutor, and the NPC students are named from the mod's catalogue");
         Check(seatsAt27 <= seatsAt20, "campus run: the others fill seats while a cohort runs, never empty them (" + seatsAt20 + " left on day 20, " + seatsAt27 + " on day 27)");
-        Check(run.Joined + run.Refused == 1, "campus run: the player's press for a seat on day 20 either took one or was refused for a full cohort");
-        Check(run.Joined == 0 || run.Followed <= 1, "campus run: an employee follows the same cohort at most once");
+        Check(run.Joined + run.Refused == 1, "campus run: CampusWhy on day 20 either let the player take a seat or refused for a reason");
+        Check(run.Joined == 0 || run.Followed <= 1, "campus run: through CampusEnrolled an employee follows the same cohort at most once");
 
-        var c = new CampusRun();
+        // every timetabled course read many times keeps its students: no cohort is made again with other names
+        var wide = new CampusRun();
+        var first = new Dictionary<int, string>();
+        int changed = 0, courses = 0;
+        for (int round = 0; round < 5; round++)
+        {
+            SaveGameManager.Current.Day = 200 + round * 3;
+            foreach (CourseDef c in StudyCatalogue.All)
+            {
+                Intake i = wide.D.IntakeOf(c);
+                if (i == null || i.Students.Count == 0)
+                {
+                    continue;
+                }
+                if (round == 0)
+                {
+                    first[c.Id] = i.Students[0].Name;
+                    courses++;
+                }
+                else if (first.TryGetValue(c.Id, out string name) && name != i.Students[0].Name)
+                {
+                    changed++;
+                }
+            }
+        }
+        Check(courses >= 20 && changed == 0 && wide.D.Roster.Intakes.Count >= courses && wide.D.NamesRolled == 0,
+            "campus run: " + courses + " timetabled courses read five times through IntakeOf keep their first students and roll no name of the game's (" + changed + " changed)");
+
+        // a save on day 30 read back by a new director plays the next 30 days to the same state
+        var c2 = new CampusRun();
         var b = new CampusRun();
         for (int day = 1; day <= 30; day++)
         {
-            c.Day(day, staff);
-            b.Day(day, staff);
+            c2.Day(day);
+            b.Day(day);
         }
-        b.F = RosterStore.Read(RosterStore.Write(b.F), out int _);
-        b.Names = c.Names;
+        var data = new Dictionary<string, string>();
+        b.D.RunPeopleWrite(data);
+        var again = new CampusRun();
         for (int day = 31; day <= 60; day++)
         {
-            c.Day(day, staff);
-            b.Day(day, staff);
+            c2.Day(day);
+            SaveGameManager.Current = new GameInstance { Day = day, modData = data };
+            Intake i = again.D.IntakeOf(again.Business);
+            again.D.TutorOf(again.Business);
+            if (i.PlayerIn)
+            {
+                again.D.RunCampusEnrolled(again.Business, day);
+            }
         }
-        Check(RosterStore.Write(c.F) == RosterStore.Write(b.F), "campus run: a roster saved on day 30 and read back plays the next 30 days to the same state");
-        string line = RosterStore.Write(c.F);
-        var old = new CampusRun { F = RosterStore.Read(line.Substring(0, line.IndexOf("~t:", StringComparison.Ordinal) > 0 ? line.IndexOf("~t:", StringComparison.Ordinal) : line.Length), out int _) };
-        old.Names = c.Names;
+        var written = new Dictionary<string, string>();
+        var wanted = new Dictionary<string, string>();
+        again.D.RunPeopleWrite(written);
+        c2.D.RunPeopleWrite(wanted);
+        SaveGameManager.Current = new GameInstance { Day = 61 };
+        Check(written.TryGetValue(RosterStore.Key, out string wrote) && wanted.TryGetValue(RosterStore.Key, out string want) && wrote == want,
+            "campus run: a roster saved on day 30 and read back by a new director plays the next 30 days to the same state");
+        string line = wanted[RosterStore.Key];
+        int t = line.IndexOf("~t:", StringComparison.Ordinal);
+        var old = new CampusRun();
         for (int day = 61; day <= 90; day++)
         {
-            old.Day(day, staff);
+            SaveGameManager.Current = new GameInstance { Day = day, modData = new Dictionary<string, string> { [RosterStore.Key] = t > 0 ? line.Substring(0, t) : line } };
+            old.D.IntakeOf(old.Business);
+            old.D.TutorOf(old.Business);
         }
-        Check(old.F.Tutors.Count == 1 && old.F.Intakes.Count >= 3, "campus run: a roster line without its tutors loads and plays on, the tutor made again");
+        Check(old.D.Roster.Tutors.Count == 1 && old.D.Roster.Intakes.Count >= 1, "campus run: a roster line without its tutors loads and plays on, the tutor made again");
         // marks over the run: a transcript across quarters gives an average, a rank and a class
         var marks = new List<Mark> { new Mark { Credits = 6, Points = 400, Start = 5 }, new Mark { Credits = 4, Points = 300, Start = 40 }, new Mark { Credits = 6, Points = 200, Start = 100 } };
         var q = new List<int>();
         var avg = new List<int>();
-        Intake last = run.F.Find(StudyCatalogue.Business, RosterRules.StartOf(20));
+        Intake last2 = run.D.Roster.Find(StudyCatalogue.Business, RosterRules.StartOf(20));
         int gpa = RosterRules.Gpa(marks);
         var lines = new List<ClassLine>();
-        int rank = RosterRules.Rank(last, "You", gpa, lines);
-        Check(RosterRules.ByTerm(marks, 60, q, avg) == 3 && rank >= 1 && rank <= lines.Count && lines.Count == last.Students.Count + 1,
+        int rank = RosterRules.Rank(last2, "You", gpa, lines);
+        Check(RosterRules.ByTerm(marks, 60, q, avg) == 3 && rank >= 1 && rank <= lines.Count && lines.Count == last2.Students.Count + 1,
             "campus run: the transcript groups by quarter and ranks the player among the run's own classmates");
     }
 
@@ -339,19 +443,26 @@ internal static partial class Program
 
     // ------------------------------------------------------------------------------------------------- the Marketplace
 
+    // The Marketplace's morning on the real director: the sellers of the book and the rivals' shops make a day's listings (MorningOf).
     private sealed class MarketRun
     {
-        public HustleState S = new HustleState { Seed = 9 };
-        public SellerFile Book = new SellerFile();
-        public int Bought, RivalListings, Sold, Discount, Plain;
+        public HustleDirector D;
+        public int Bought, RivalListings, Discount, Plain;
         public double DiscountSum, PlainSum;
-        public readonly List<RivalDealer> Dealers = new List<RivalDealer> { new RivalDealer { Name = "Guo Logistics", Vehicles = true, Machines = true } };
-        public readonly List<HustlePlace> Homes = new List<HustlePlace> { new HustlePlace("Broadway", 1), new HustlePlace("5th Avenue", 2), new HustlePlace("Pine", 4) };
+
+        public MarketRun()
+        {
+            D = new HustleDirector(new HustleState { Seed = 9 }, new SellerFile(), new List<HustlePlace> { new HustlePlace("Broadway", 1), new HustlePlace("5th Avenue", 2), new HustlePlace("Pine", 4) },
+                HustleCars, HustleColours);
+            D.RivalShops.Add(new RivalDealer { Name = "Guo Logistics", Vehicles = true, Machines = true });
+        }
+
+        public HustleState S => D.RunState;
+        public SellerFile Book => D.RunSellers;
 
         public void Day(int day)
         {
-            SellerRules.Ensure(Book, S.Seed, k => "Seller " + k);
-            HustleRules.Morning(S, day, Homes, HustleCars, HustleColours, 1000, 1000, Book, Dealers);
+            D.RunMorning(day);
             foreach (Listing l in S.Listings)
             {
                 ThingDef def = HustleCatalogue.Thing(l.Thing);
@@ -395,8 +506,9 @@ internal static partial class Program
         {
             sold += s.Sold;
         }
-        Check(a.Bought >= 25 && sold == a.Bought && a.S.Items.Count == a.Bought, "market run: over 90 days listings appeared each morning and were bought (" + a.Bought + "), each sale on its seller's record");
-        Check(a.RivalListings >= 1, "market run: a rival that owns a dealership or a machines business listed on the Marketplace (" + a.RivalListings + " listings; the NPC side)");
+        Check(a.Bought >= 25 && sold == a.Bought && a.S.Items.Count == a.Bought,
+            "market run: over 90 days HustleDirector.MorningOf made listings each morning and they were bought (" + a.Bought + "), each sale on its seller's record");
+        Check(a.RivalListings >= 1, "market run: a rival that owns a dealership or a machines business listed on the Marketplace through MorningOf (" + a.RivalListings + " listings; the NPC side)");
         Check(a.Discount >= 20 && a.Plain >= 20 && a.DiscountSum / a.Discount < a.PlainSum / a.Plain - 0.05,
             "market run: sellers tagged as discount sellers asked less against worth than plain sellers did (" + (a.DiscountSum / Math.Max(1, a.Discount)).ToString("0.00") + " against "
             + (a.PlainSum / Math.Max(1, a.Plain)).ToString("0.00") + ")");
@@ -408,8 +520,8 @@ internal static partial class Program
             c.Day(day);
             b.Day(day);
         }
-        b.S = HustleStore.Read(HustleStore.Write(b.S), out int _);
-        b.Book = SellerStore.Read(SellerStore.Write(b.Book), out int _);
+        b.D.RunState = HustleStore.Read(HustleStore.Write(b.S), out int _);
+        b.D.RunSellers = SellerStore.Read(SellerStore.Write(b.Book), out int _);
         for (int day = 31; day <= 60; day++)
         {
             c.Day(day);
@@ -418,7 +530,8 @@ internal static partial class Program
         Check(HustleStore.Write(c.S) == HustleStore.Write(b.S) && SellerStore.Write(c.Book) == SellerStore.Write(b.Book),
             "market run: the Marketplace and its sellers saved on day 30 and read back play the next 30 days to the same state");
 
-        var old = new MarketRun { S = HustleStore.Read(HustleStore.Write(c.S).Replace("|Broadway|7", "|Broadway|"), out int _) };
+        var old = new MarketRun();
+        old.D.RunState = HustleStore.Read(HustleStore.Write(c.S).Replace("|Broadway|7", "|Broadway|"), out int _);
         for (int day = 61; day <= 90; day++)
         {
             old.Day(day);

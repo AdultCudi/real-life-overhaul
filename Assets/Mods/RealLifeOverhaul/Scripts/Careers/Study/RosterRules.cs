@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RealLifeOverhaul.Economy.Dealership;
 using RealLifeOverhaul.Tech;
 
 namespace RealLifeOverhaul.Careers
@@ -33,7 +34,7 @@ namespace RealLifeOverhaul.Careers
         public const int SeatsDefault = 24;
         public const int IntakeDays = 28;                 // a cohort's length: classes begin and seats fill over this
         public const int FillRampDays = 28, HeadStartDays = 7;   // seats are taken over this many days, from a week before the cohort starts
-        public const int IntakesMost = 16, TutorsMost = 64;
+        public const int IntakesMost = 96, TutorsMost = 64;   // in memory: more than a cohort for each of the timetabled courses, so none is dropped and made again between two reads
         public const int FullShare = 150;                 // per mille of cohorts that fill every seat
         public const int FillLeast = 250, FillMost = 900; // per mille of the seats the others take by the start, when not full
         public const int EmployeeChance = 350;            // per mille that an employee of the player's follows the same course
@@ -58,10 +59,46 @@ namespace RealLifeOverhaul.Careers
         public static bool CanJoin(Intake i) => i != null && Left(i) > 0;
 
         /// <summary>
-        /// The cohort of a course for the day, made when it is first asked for and filled up to what the others have taken by then. New
-        /// students are named by <paramref name="name"/> (the game's roll). The oldest cohort without the player goes when the list is full.
+        /// A student's name: the mod's own catalogue of names (the one the city's customers have) walked by the save's seed, the course and the cohort,
+        /// so the same student has the same name every time the class is read, whatever was kept or dropped between two reads, and no two in a cohort share
+        /// one. Never the game's own roll, which remembers every name it makes.
         /// </summary>
-        public static Intake Ensure(RosterFile f, int course, int day, Func<string> name, int capacity = SeatsDefault)
+        public static string NameOf(int seed, int course, int start, int index)
+        {
+            int firsts = DealerCatalogue.FirstNames.Length, lasts = DealerCatalogue.LastNames.Length, total = firsts * lasts;
+            long begin = TechRandom.Hash(seed, 7841 + course, start) % total;
+            int at = (int)((begin + (long)Math.Max(0, index) * NameStride) % total);
+            return DealerCatalogue.FirstNames[at % firsts] + " " + DealerCatalogue.LastNames[at / firsts % lasts];
+        }
+
+        /// <summary>
+        /// Whether a cohort has to be saved: the player sits in it, an employee of theirs does, or a student's name is not the one the catalogue
+        /// gives (a cohort an older save made with the game's roll). A cohort of strangers is made again as it was, so it is never written.
+        /// </summary>
+        public static bool Keeps(int seed, Intake i)
+        {
+            if (i.PlayerIn)
+            {
+                return true;
+            }
+            int index = 0;
+            for (int s = 0; s < i.Students.Count; s++)
+            {
+                if (i.Students[s].Employee || i.Students[s].Name != NameOf(seed, i.Course, i.Start, index++))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private const int NameStride = 143;   // coprime with 24 times 24 names: a cohort walks every name once before one comes again
+
+        /// <summary>
+        /// The cohort of a course for the day, made when it is first asked for and filled up to what the others have taken by then: the others are
+        /// named by <see cref="NameOf"/>, so a cohort made again is the same cohort. The oldest cohort without the player goes when the list is full.
+        /// </summary>
+        public static Intake Ensure(RosterFile f, int course, int day, int capacity = SeatsDefault)
         {
             int start = StartOf(day);
             Intake i = f.Find(course, start);
@@ -79,12 +116,8 @@ namespace RealLifeOverhaul.Careers
             }
             while (i.Students.Count - employees < want && i.Students.Count < i.Capacity - (i.PlayerIn ? 1 : 0))
             {
-                string who = name != null ? name() : null;
-                if (string.IsNullOrEmpty(who))
-                {
-                    break;
-                }
-                i.Students.Add(new Student { Name = who, Gpa = GpaOf(f.Seed, course, start, i.Students.Count) });
+                int index = i.Students.Count - employees;
+                i.Students.Add(new Student { Name = NameOf(f.Seed, course, start, index), Gpa = GpaOf(f.Seed, course, start, index) });
             }
             return i;
         }
@@ -153,21 +186,16 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>The tutor of a course, made when first asked for: years teaching, a rating that is mostly good.</summary>
-        public static Tutor TutorFor(RosterFile f, int course, Func<string> name)
+        public static Tutor TutorFor(RosterFile f, int course)
         {
             Tutor t = f.TutorOf(course);
             if (t != null)
             {
                 return t;
             }
-            string who = name != null ? name() : null;
-            if (string.IsNullOrEmpty(who))
-            {
-                return null;
-            }
             t = new Tutor
             {
-                Course = course, Name = who, Years = TechRandom.Range(f.Seed, 7831, course, 0, 2, 28),
+                Course = course, Name = NameOf(f.Seed, course, 0, 600), Years = TechRandom.Range(f.Seed, 7831, course, 0, 2, 28),
                 Rating = (TechRandom.Range(f.Seed, 7832, course, 0, 30, 50) + TechRandom.Range(f.Seed, 7833, course, 0, 36, 50)) / 2
             };
             f.Tutors.Add(t);

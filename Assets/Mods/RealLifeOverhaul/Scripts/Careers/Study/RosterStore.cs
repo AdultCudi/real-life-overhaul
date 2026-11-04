@@ -26,6 +26,10 @@ namespace RealLifeOverhaul.Careers
             for (int k = 0; k < f.Intakes.Count && k < RosterRules.IntakesMost; k++)
             {
                 Intake i = f.Intakes[k];
+                if (!RosterRules.Keeps(f.Seed, i))
+                {
+                    continue;   // a cohort of strangers is made again as it was (RosterRules.NameOf), so only the ones the player or an employee of theirs sits in are kept
+                }
                 w.Record().Add(i.Course).Add(i.Start).Add(i.Capacity).Add(i.PlayerIn).Add(i.Students.Count);
                 for (int s = 0; s < i.Students.Count; s++)
                 {

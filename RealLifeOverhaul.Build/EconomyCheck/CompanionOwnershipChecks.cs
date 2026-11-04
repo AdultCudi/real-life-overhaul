@@ -10,6 +10,8 @@ public sealed class GameInstance
     public bool Available = true;
     public int Money = 123;
     public string ModData = "unchanged";
+    public int Day;
+    public System.Collections.Generic.Dictionary<string, string> modData = new System.Collections.Generic.Dictionary<string, string>();
 }
 
 namespace RealLifeOverhaul

@@ -388,8 +388,19 @@ namespace RealLifeOverhaul.Careers
             {
                 return false;
             }
+            if (!DoorOf(street, number, out Vector3 door))
+            {
+                return false;
+            }
+            Vector3 off = door - player.transform.position;
+            off.y = 0f;
+            return off.sqrMagnitude <= Reach * Reach;
+        }
+
+        // A building's door front, kept by address (the jobs board's posts, a few dozen), the whole list dropped when it grows past a city's worth.
+        private static bool DoorOf(string street, int number, out Vector3 door)
+        {
             string key = street + "#" + number;
-            Vector3 door;
             if (!Doors.TryGetValue(key, out door))
             {
                 CityBuildingController building = CivicCity.Find(street, number);
@@ -397,19 +408,39 @@ namespace RealLifeOverhaul.Careers
                 {
                     door = new Vector3(float.NaN, 0f, 0f);
                 }
-                if (Doors.Count > 16)
+                if (Doors.Count > DoorsMost)
                 {
                     Doors.Clear();
                 }
                 Doors[key] = door;
             }
-            if (float.IsNaN(door.x))
+            return !float.IsNaN(door.x);
+        }
+
+        private const int DoorsMost = 128;
+        private static readonly List<BuildingRegistration> HomesNow = new List<BuildingRegistration>(4);
+
+        /// <summary>
+        /// Metres on the flat between the player's first home's door and a building's door, as the crow flies; -1 where the player has no home or
+        /// either door has no place in the city. Read for the posts of the jobs board when the Career page is read (never per frame).
+        /// </summary>
+        public static int MetresFromHome(string street, int number)
+        {
+            try
             {
-                return false;
+                RealLifeOverhaul.Household.HouseholdGame.Homes(HomesNow);
+                if (HomesNow.Count == 0 || string.IsNullOrEmpty(street) || !DoorOf(HomesNow[0].StreetName, HomesNow[0].StreetNumber, out Vector3 home) || !DoorOf(street, number, out Vector3 there))
+                {
+                    return -1;
+                }
+                Vector3 off = there - home;
+                off.y = 0f;
+                return (int)off.magnitude;
             }
-            Vector3 off = door - player.transform.position;
-            off.y = 0f;
-            return off.sqrMagnitude <= Reach * Reach;
+            catch (Exception)
+            {
+                return -1;
+            }
         }
     }
 }

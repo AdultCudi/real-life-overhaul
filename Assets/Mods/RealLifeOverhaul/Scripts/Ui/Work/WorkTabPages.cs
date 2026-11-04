@@ -1,246 +1,503 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace RealLifeOverhaul.Ui
 {
-    /// <summary>A button of a row's detail: what it is called, how it is drawn and the app's own action number behind it.</summary>
-    public sealed class WorkAct
-    {
-        public int Kind;
-        public int Arg;
-        public string Label;
-        public UiButtonKind Style = UiButtonKind.Secondary;
-        public UiIcon Icon = UiIcon.Check;
-        public string Why;          // a reason it cannot be done now; the button is drawn disabled and the reason said
-        public bool Opens;          // it opens a page or a place and changes nothing else
-    }
-
-    /// <summary>A person under a page: a face, what they are and a record out of 100.</summary>
-    public sealed class WorkPerson
-    {
-        public string Name, Role;
-        public string Label;        // what the record is of ("Craft")
-        public int Score = -1;
-        public string Label2;
-        public int Score2 = -1;
-        public UiIcon Icon = UiIcon.Person;
-        public WorkAct Open;        // pressing them opens their page; null for none
-    }
-
-    /// <summary>One row of a tab's table and the detail it shows when chosen: a sentence, check lines and the buttons.</summary>
-    public sealed class WorkRow
-    {
-        public int Id;
-        public UiIcon Icon = UiIcon.Briefcase;
-        public UiRole Tint = UiRole.None;
-        public string[] Cells = new string[0];
-        public string Status;
-        public UiRole Tone = UiRole.Ok;
-        public int Grade = -1;
-        public string Detail;                                  // what the lead says when this row is chosen
-        public readonly List<WorkAct> Acts = new List<WorkAct>(4);
-        public readonly List<WorkPerson> People = new List<WorkPerson>(4);
-        public string PeopleTitle;
-        public readonly List<KeyValuePair<string, string>> Facts = new List<KeyValuePair<string, string>>(6);   // label and value pairs the catalogue's detail lists
-        public readonly List<SplitNeed> Needs = new List<SplitNeed>(6);   // requirements shown as check lines in the detail
-        public string NeedsTitle;
-        public int Group = -1;                                 // a filter chip it belongs to (by the tab's chips); -1: every one
-    }
-
-    /// <summary>One tab of an app: its profile or lead, figures, attributes, its table and the people under it. Everything a page is made of,
-    /// game-free.</summary>
-    public sealed class WorkTab
-    {
-        public string Lead;                                    // a sentence, when the chosen row has none
-        public UiProfileModel Profile;
-        public UiHeroModel Hero;
-        public UiFigureModel[] Figures = new UiFigureModel[0];
-        public string AttrTitle;
-        public string[] AttrLabels = new string[0];
-        public int[] AttrValues = new int[0];
-        public string TableTitle;
-        public UiColumn[] Columns = new UiColumn[0];
-        public int GradeColumn = -1;
-        public readonly List<WorkRow> Rows = new List<WorkRow>(24);
-        public string[] Chips = new string[0];                // filter chips above the table, each its own group
-        public readonly List<WorkAct> Acts = new List<WorkAct>(3);   // buttons of the page itself (a new ad, a search)
-        public string PeopleTitle, PeopleCount;
-        public readonly List<WorkPerson> People = new List<WorkPerson>(8);
-        public string Note;
-        public UiRole NoteTone = UiRole.Warn;
-        public UiChartModel Chart;                             // a line over the tab's table (the average by quarter), laid by WorkResults
-        public bool Grid;                                      // laid as a catalogue of cards with the chosen one's detail beside them
-        public string GridKicker;                              // what the chosen thing is, over its detail
-        public bool Sub;                                       // a sub page (a person, a haggle): Back steps out of it
-    }
-
-    /// <summary>An app of the work apps in facts: its sections and a tab for each. Game-free.</summary>
-    public sealed class WorkApp
-    {
-        public bool Ready;
-        public UiNavEntry[] Nav = new UiNavEntry[0];
-        public WorkTab[] Tabs = new WorkTab[0];
-        public string OffTitle, OffBody;
-    }
-
     /// <summary>
-    /// The page every tab of Campus, Open Roles and the Marketplace stands on (Career's own pages are CareerPages): the app window's blocks
-    /// from a tab's facts, the chosen row's detail as the lead and its buttons, its people under the table, and filter chips for the groups.
-    /// One builder, so each app's sources only say what is true, never where it goes. Game-free.
+    /// The page every tab of Campus, Open Roles and the Marketplace stands on (Career's My job is CareerMyJob): a tab's facts laid out in the shape it
+    /// takes (a squad page of a table and a detail, a catalogue of cards, a diary, a transcript, skills, children, a form, a reader), each its own
+    /// layout, with its buttons, chips and rows named by what they do. One builder, so each app's sources only say what is true, never where it goes.
+    /// Game-free.
     /// </summary>
     public static class WorkTabPages
     {
+        private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+
         public static WorkPage Build(WorkApp app, WorkView v, UtilitiesWords w)
         {
             var b = new WorkBuilder(w);
             if (!app.Ready || app.Tabs.Length == 0)
             {
-                b.About(UiIcon.Briefcase, null, w.T("reallife_work_nothing_here", "Nothing here yet"), app.OffBody ?? w.T("reallife_work_off",
-                    "Load a save to see this app."));
+                string title = app.OffTitle ?? w.T("reallife_work_off_title", "Nothing to show yet");
+                string body = app.OffBody ?? w.T("reallife_work_off", "Load a save to see this app.");
+                b.Page.Body = (s, at, x, y, cw, bottom, keys) => UiDraw.EmptyState(s, at, x, y, cw, bottom - y, UiIcon.Briefcase, title, body, null, -1, keys);
                 return b.Done();
             }
             WorkTab t = app.Tabs[Math.Max(0, Math.Min(app.Tabs.Length - 1, v.Tab))];
             b.Page.Back = t.Sub;
-            UiAppModel m = b.M;
-            m.Profile = t.Profile;
-            m.Hero = t.Hero;
-            m.Figures = t.Figures;
-            m.AttributesTitle = t.AttrTitle;
-            m.AttributeLabels = t.AttrLabels;
-            m.AttributeValues = t.AttrValues;
-            var shown = new List<WorkRow>(t.Rows.Count);
-            for (int i = 0; i < t.Rows.Count; i++)
+            switch (t.Shape)
             {
-                if (v.Filter == 0 || t.Rows[i].Group < 0 || t.Rows[i].Group + 1 == v.Filter)
-                {
-                    shown.Add(t.Rows[i]);
-                }
+                case WorkShape.Cards: return Cards(b, t, v, w);
+                case WorkShape.Diary: return Diary(b, t, v, w);
+                case WorkShape.Statement: return Statement(b, t, w);
+                case WorkShape.Skills: return Skills(b, t, w);
+                case WorkShape.Profiles: return Kids(b, t, w);
+                case WorkShape.Form: return Form(b, t, v, w);
+                case WorkShape.Reader: return Reader(b, t, w);
+                case WorkShape.Haggle: return Haggle(b, t, w);
+                default: return Table(b, t, v, w);
             }
-            int at = v.Row >= 0 && v.Row < shown.Count ? v.Row : shown.Count > 0 && t.Profile == null ? 0 : -1;
+        }
+
+        // ------------------------------------------------------------------------------------------------- the squad page
+
+        private static WorkPage Table(WorkBuilder b, WorkTab t, WorkView v, UtilitiesWords w)
+        {
+            List<WorkRow> shown = Shown(t, v, out int asideRole);
+            int at = v.Row >= 0 && v.Row < shown.Count ? v.Row : shown.Count > 0 ? 0 : -1;
             WorkRow chosen = at >= 0 ? shown[at] : null;
-            if (t.Profile == null && t.Hero == null)
+            var m = new WorkTableModel { SearchHint = t.Search, Query = v.Query, Aside = t.Aside, AsideChosen = t.Aside != null ? asideRole : -1, UnderLead = t.NoteLead,
+                UnderText = t.NoteText };
+            m.Chips = Chips(b, t, v, w, out m.ChosenChip);
+            UiDataTableModel tm = m.Table;
+            tm.Columns = t.Columns;
+            tm.RowCount = shown.Count;
+            tm.Rows = new UiDataRow[shown.Count];
+            tm.Selected = at;
+            tm.Offset = v.Offset;
+            tm.Reveal = v.Reveal;
+            tm.EmptyIcon = t.EmptyIcon;
+            tm.EmptyTitle = t.EmptyTitle;
+            tm.EmptyBody = t.EmptyBody;
+            tm.EmptyAction = t.EmptyActLabel;
+            var opens = new WorkDo[shown.Count];
+            var locates = new WorkDo[shown.Count];
+            for (int i = 0; i < shown.Count; i++)
             {
-                if (chosen != null && shown.Count > 0)
+                tm.Rows[i] = DataRow(t, shown[i]);
+                if (shown[i].Open != null)
                 {
-                    b.Page.Detail = Detail(chosen);
+                    opens[i] = WorkBuilder.Do(shown[i].Open.Kind, shown[i].Open.Arg != 0 ? shown[i].Open.Arg : shown[i].Id, shown[i].Open.Why, true);
                 }
-                else if (!string.IsNullOrEmpty(t.Lead) && shown.Count == 0 && t.AttrLabels.Length == 0 && t.Figures.Length == 0)
+                if (shown[i].Locate != null)
                 {
-                    b.About(UiIcon.Search, null, w.T("reallife_work_nothing_here", "Nothing here yet"), t.Lead);
+                    locates[i] = WorkBuilder.Do(shown[i].Locate.Kind, shown[i].Locate.Arg != 0 ? shown[i].Locate.Arg : shown[i].Id, shown[i].Locate.Why, true);
                 }
             }
-            if (chosen == null && shown.Count > 0)
+            if (t.Aside != null)
             {
-                b.Lead(t.Lead);
+                b.Page.Asides = new WorkDo[t.Aside.Rows.Count];
             }
-            for (int i = 0; i < t.Chips.Length; i++)
-            {
-                b.Chip(t.Chips[i], v.Filter == i, WorkBuilder.Do(WorkKinds.Filter, i, null, true));
-            }
+            var panelActs = new List<UiActionModel>(4);
             if (chosen != null)
             {
-                AddActs(b, chosen.Acts, chosen.Id);
-            }
-            AddActs(b, t.Acts, 0);
-            if (t.Grid && shown.Count > 0)
-            {
-                int gi = at >= 0 ? at : 0;
-                UiCatalogueModel cat = WorkGrid.Model(shown, gi, w, t.GridKicker, out WorkDo[] gridActs);
-                b.Page.GridActs = gridActs;
-                b.Page.Model.Hero = null;
-                b.Page.Model.Next = null;
-                b.Page.Body = (s, ats, x, y, cw, bottom, keys) => WorkGrid.Lay(s, ats, cat, b.M, x, y, cw, bottom, keys);
-                b.Page.Chosen = gi;
-                return b.Done();
-            }
-            if (shown.Count > 0)
-            {
-                var rows = new UiAppRow[shown.Count];
-                for (int i = 0; i < rows.Length; i++)
+                for (int i = 0; i < chosen.Acts.Count; i++)
                 {
-                    WorkRow r = shown[i];
-                    rows[i] = WorkBuilder.Row(r.Icon, r.Tint, r.Cells, r.Status, r.Tone, r.Grade);
+                    panelActs.Add(b.ModelAt(b.Act(chosen.Acts[i], chosen.Id, i)));
                 }
-                b.Table(null, t.Columns, t.GradeColumn, rows, new WorkDo[rows.Length], at);
-                if (b.Page.Detail != null)
-                {
-                    SplitDetail detail = b.Page.Detail;
-                    b.Page.Body = (s, ats, x, y, cw, bottom, keys) => WorkSplit.Lay(s, ats, b.M, detail, at, x, y, cw, bottom, keys);
-                }
+                m.Detail = chosen;
             }
-            List<WorkPerson> people = chosen != null && chosen.People.Count > 0 ? chosen.People : t.People;
-            if (people.Count > 0 && people.TrueForAll(x => x.Score2 < 0))
+            var pageActs = new List<UiActionModel>(2);
+            for (int i = 0; i < t.Acts.Count; i++)
             {
-                // people with a single figure are a short table (name, what they are, the figure): the people block always draws two bars
-                var more = new UiAppRow[people.Count];
-                for (int i = 0; i < more.Length; i++)
-                {
-                    WorkPerson p = people[i];
-                    more[i] = WorkBuilder.Row(p.Icon, UiRole.None, new[] { p.Name, p.Role, p.Score >= 0 ? p.Score.ToString(System.Globalization.CultureInfo.InvariantCulture) : "-" });
-                }
-                b.M.MoreTitle = chosen != null && chosen.People.Count > 0 && chosen.PeopleTitle != null ? chosen.PeopleTitle : t.PeopleTitle;
-                b.M.MoreColumns = new[] { WorkBuilder.Col(people[0].Label ?? string.Empty, 0f, false, true), WorkBuilder.Col(string.Empty, 184f), WorkBuilder.Col(string.Empty, 96f, true) };
-                b.M.MoreRows = more;
-                b.Page.MoreRows = new WorkDo[more.Length];
+                pageActs.Add(b.ModelAt(b.Act(t.Acts[i], 0, chosen == null ? i : i + 2)));
             }
-            else if (people.Count > 0)
+            m.Amounts = t.Amounts.ToArray();
+            b.Page.Amounts = m.Amounts;
+            b.Page.Rows = opens;
+            b.Page.Locates = locates;
+            b.Page.Chosen = at;
+            b.Page.Table = tm;
+            b.Page.Typing = !string.IsNullOrEmpty(t.Search);
+            if (t.EmptyAct != null)
             {
-                var list = new UiPersonRow[people.Count];
-                var opens = new WorkDo[people.Count];
-                for (int i = 0; i < list.Length; i++)
-                {
-                    WorkPerson p = people[i];
-                    list[i] = new UiPersonRow { Name = p.Name, Hue = UiColour.HueOf(p.Name ?? string.Empty), RoleIcon = p.Icon, Role = p.Role, FirstLabel = p.Label, First = p.Score,
-                        SecondLabel = p.Label2, Second = p.Score2 };
-                    opens[i] = p.Open != null ? WorkBuilder.Do(p.Open.Kind, p.Open.Arg, p.Open.Why, p.Open.Opens) : default(WorkDo);
-                }
-                b.People(chosen != null && chosen.People.Count > 0 && chosen.PeopleTitle != null ? chosen.PeopleTitle : t.PeopleTitle, t.PeopleCount, list, opens);
-                m.Note = t.Note;
-                m.NoteTone = t.NoteTone;
+                b.Page.Empty = WorkBuilder.Do(t.EmptyAct.Kind, t.EmptyAct.Arg, t.EmptyAct.Why, true);
             }
-            if (t.Chart != null && t.Profile != null)
-            {
-                UiChartModel chart = t.Chart;
-                b.Page.Body = (s, ats, x, y, cw, bottom, keys) => WorkResults.Lay(s, ats, b.M, chart, x, y, cw, bottom, keys);
-            }
-            return b.Done();
+            WorkPage page = b.Done();
+            m.Actions = panelActs.ToArray();
+            m.PageActs = pageActs.ToArray();
+            m.Why = page.Why;
+            page.Body = (s, ats, x, y, cw, bottom, keys) => WorkTable.Lay(s, ats, m, x, y, cw, bottom, keys);
+            return page;
         }
 
-        private static SplitDetail Detail(WorkRow r)
+        // The rows the chips, the search and the chosen role of an aside leave.
+        private static List<WorkRow> Shown(WorkTab t, WorkView v, out int asideRole)
         {
-            var d = new SplitDetail { Icon = r.Icon, Title = r.Cells.Length > 0 ? r.Cells[0] : string.Empty, Status = r.Status, Tone = r.Tone,
-                Sentence = r.Detail, PeopleTitle = r.PeopleTitle,
-                NeedsTitle = r.NeedsTitle };
-            d.Facts.AddRange(r.Facts);
-            d.Needs.AddRange(r.Needs);
-            if (r.People.Count > 0 && r.People.TrueForAll(x => x.Score2 >= 0))
+            asideRole = t.Aside != null ? Math.Max(0, Math.Min(Math.Max(0, t.Aside.Rows.Count - 1), v.Aside)) : -1;
+            int group = t.Aside != null && t.Aside.Rows.Count > 0 ? t.Aside.Rows[asideRole].Id : int.MinValue;
+            var shown = new List<WorkRow>(t.Rows.Count);
+            string query = v.Query ?? string.Empty;
+            for (int i = 0; i < t.Rows.Count; i++)
             {
-                d.People = new UiPersonRow[r.People.Count];
-                for (int i = 0; i < d.People.Length; i++)
+                WorkRow r = t.Rows[i];
+                if (t.Aside != null && r.Group != group)
                 {
-                    WorkPerson p = r.People[i];
-                    d.People[i] = new UiPersonRow { Name = p.Name, Hue = UiColour.HueOf(p.Name ?? string.Empty), RoleIcon = p.Icon, Role = p.Role, FirstLabel = p.Label, First = p.Score,
-                        SecondLabel = p.Label2, Second = p.Score2 };
+                    continue;
                 }
+                if (v.Filter != 0 && !Counts(t, r, v.Filter))
+                {
+                    continue;
+                }
+                if (query.Length > 0 && !Matches(r, query))
+                {
+                    continue;
+                }
+                shown.Add(r);
             }
-            return d;
+            return shown;
         }
 
-        private static void AddActs(WorkBuilder b, List<WorkAct> acts, int rowId)
+        private static bool Counts(WorkTab t, WorkRow r, int chip)
         {
-            for (int i = 0; i < acts.Count; i++)
+            return t.ChipsByMask ? (r.Mask >> (chip - 1) & 1) != 0 : r.Group == chip - 1;
+        }
+
+        private static bool Matches(WorkRow r, string query)
+        {
+            return Has(r.Name, query) || Has(r.Sub, query) || Has(r.Seller, query) || Has(r.Person, query) || Has(r.Line, query);
+        }
+
+        private static bool Has(string text, string query) => text != null && text.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
+
+        // "All 24", "Open now 17": the counts are the rows each chip holds, so a chip never promises more than it shows.
+        private static UiActionModel[] Chips(WorkBuilder b, WorkTab t, WorkView v, UtilitiesWords w, out int chosen)
+        {
+            chosen = Math.Max(0, Math.Min(t.Chips.Length, v.Filter));
+            if (t.Chips.Length == 0)
             {
-                WorkAct a = acts[i];
-                b.Button(a.Label, a.Style, a.Icon, i == 0 && a.Style == UiButtonKind.Primary ? UiAction.Alt : i <= 1
-                    && a.Style == UiButtonKind.Secondary ? UiAction.Option : UiAction.Count,
-                    WorkBuilder.Do(a.Kind, a.Arg != 0 ? a.Arg : rowId, a.Why, a.Opens));
+                return new UiActionModel[0];
             }
+            var models = new UiActionModel[t.Chips.Length + 1];
+            int[] counts = new int[t.Chips.Length + 1];
+            int group = t.Aside != null && t.Aside.Rows.Count > 0 ? t.Aside.Rows[Math.Max(0, Math.Min(t.Aside.Rows.Count - 1, v.Aside))].Id : int.MinValue;
+            for (int i = 0; i < t.Rows.Count; i++)
+            {
+                if (t.Aside != null && t.Rows[i].Group != group)
+                {
+                    continue;
+                }
+                counts[0]++;
+                for (int c = 1; c <= t.Chips.Length; c++)
+                {
+                    counts[c] += Counts(t, t.Rows[i], c) ? 1 : 0;
+                }
+            }
+            for (int c = 0; c <= t.Chips.Length; c++)
+            {
+                string name = (c == 0 ? t.AllWord ?? w.T("reallife_work_filter_all_word", "All") : t.Chips[c - 1]) + " " + counts[c].ToString(Inv);
+                b.Chip(name, v.Filter == c, WorkBuilder.Do(WorkKinds.Filter, c, null, true));
+                models[c] = b.ModelAt(b.Count - 1);
+            }
+            return models;
+        }
+
+        private static UiDataRow DataRow(WorkTab t, WorkRow r)
+        {
+            int n = t.Columns.Length;
+            var row = new UiDataRow { Cells = new string[n], Values = new int[n], Tones = new UiRole[n], Sub = r.Sub, Hue = UiColour.HueOf(r.Person ?? r.Name ?? string.Empty), Ring = r.Ring,
+                Pictures = new string[n] };
+            for (int c = 0; c < n; c++)
+            {
+                row.Values[c] = c < r.Values.Length ? r.Values[c] : -1;
+                row.Tones[c] = c < r.Tones.Length ? r.Tones[c] : UiRole.None;
+                row.Cells[c] = c < r.Cells.Length ? r.Cells[c] : null;
+                UiCellKind kind = t.Columns[c].Kind;
+                if (c == 0)
+                {
+                    row.Cells[0] = kind == UiCellKind.Person && !string.IsNullOrEmpty(r.Person) ? r.Person : r.Name;
+                    if (kind == UiCellKind.Tile)
+                    {
+                        row.Values[0] = (int)r.Icon;
+                        row.Tones[0] = r.Tint;
+                        row.Pictures[0] = r.Picture;
+                    }
+                }
+                if (kind == UiCellKind.Action)
+                {
+                    row.Values[c] = r.Locate != null ? (int)UiIcon.Locate : 0;
+                }
+                if (kind == UiCellKind.Chip && string.IsNullOrEmpty(row.Cells[c]))
+                {
+                    row.Cells[c] = r.Status;
+                    row.Tones[c] = r.Tone;
+                }
+            }
+            return row;
+        }
+
+        // ------------------------------------------------------------------------------------------------- the catalogue
+
+        private static WorkPage Cards(WorkBuilder b, WorkTab t, WorkView v, UtilitiesWords w)
+        {
+            List<WorkRow> shown = Shown(t, v, out int _);
+            int at = v.Row >= 0 && v.Row < shown.Count ? v.Row : shown.Count > 0 ? 0 : -1;
+            WorkRow chosen = at >= 0 ? shown[at] : null;
+            var m = new WorkCardsModel { SearchHint = t.Search, Query = v.Query, Cards = shown.ToArray(), Chosen = at, Offset = v.Offset, Reveal = v.Reveal, EmptyTitle = t.EmptyTitle,
+                EmptyBody = t.EmptyBody, EmptyIcon = t.EmptyIcon, SortLabel = t.SortWord };
+            m.Chips = Chips(b, t, v, w, out m.ChosenChip);
+            var panelActs = new List<UiActionModel>(4);
+            if (chosen != null)
+            {
+                for (int i = 0; i < chosen.Acts.Count; i++)
+                {
+                    panelActs.Add(b.ModelAt(b.Act(chosen.Acts[i], chosen.Id, i)));
+                }
+                m.Detail = chosen;
+            }
+            m.Amounts = t.Amounts.ToArray();
+            b.Page.Amounts = m.Amounts;
+            b.Page.Rows = new WorkDo[shown.Count];
+            b.Page.Chosen = at;
+            b.Page.Cards = m;
+            b.Page.Typing = !string.IsNullOrEmpty(t.Search);
+            WorkPage page = b.Done();
+            m.Actions = panelActs.ToArray();
+            m.Why = page.Why;
+            page.Body = (s, ats, x, y, cw, bottom, keys) => WorkCards.Lay(s, ats, m, x, y, cw, bottom, keys);
+            return page;
+        }
+
+        // ------------------------------------------------------------------------------------------------- Studying
+
+        private static WorkPage Diary(WorkBuilder b, WorkTab t, WorkView v, UtilitiesWords w)
+        {
+            var cardActs = new int[Math.Max(4, t.Rows.Count * 4)];
+            for (int i = 0; i < cardActs.Length; i++)
+            {
+                cardActs[i] = -1;
+            }
+            for (int i = 0; i < t.Rows.Count && i < 4; i++)
+            {
+                for (int k = 0; k < t.Rows[i].Acts.Count && k < 4; k++)
+                {
+                    cardActs[i * 4 + k] = b.Act(t.Rows[i].Acts[k], t.Rows[i].Id, 2);
+                }
+            }
+            var pageActs = new List<UiActionModel>(2);
+            for (int i = 0; i < t.Acts.Count; i++)
+            {
+                pageActs.Add(b.ModelAt(b.Act(t.Acts[i], 0, i)));
+            }
+            b.Page.Diary = t.Diary != null ? t.Diary.Month : null;
+            WorkPage page = b.Done();
+            UiActionModel[] actions = page.Model.Actions;
+            page.Body = (s, ats, x, y, cw, bottom, keys) =>
+            {
+                float cy = Buttons(s, ats, pageActs, x, y, cw, keys);
+                if (t.Rows.Count > 0)
+                {
+                    WorkStudy.Diary(s, ats, t, actions, cardActs, x, cy, cw, bottom, keys);
+                }
+                else if (t.Diary != null)
+                {
+                    UiDiary.Lay(s, ats, t.Diary.Month, x, cy, cw, bottom - cy, keys);
+                }
+            };
+            return page;
+        }
+
+        // A row of the page's own buttons at its right; the y under it, or the same y with none.
+        private static float Buttons(UiScene s, UiAt at, List<UiActionModel> list, float x, float y, float w, IUiKeys keys)
+        {
+            if (list.Count == 0)
+            {
+                return y;
+            }
+            float right = x + w;
+            for (int i = list.Count - 1; i >= 0; i--)
+            {
+                UiActionModel a = list[i];
+                float bw = UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, a.Key, keys);
+                right -= bw;
+                UiDraw.Button(s, at, right, y, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, a.Command, a.Arg, a.Disabled);
+                right -= UiTokens.S3;
+            }
+            return y + UiTokens.Control + UiTokens.S4;
+        }
+
+        // ------------------------------------------------------------------------------------------------- Results, Skills, Family
+
+        private static WorkPage Statement(WorkBuilder b, WorkTab t, UtilitiesWords w)
+        {
+            WorkStatement m = t.Statement;
+            WorkPage page = b.Done();
+            page.Body = (s, ats, x, y, cw, bottom, keys) => WorkStudy.Statement(s, ats, m, x, y, cw, bottom, keys);
+            return page;
+        }
+
+        private static WorkPage Skills(WorkBuilder b, WorkTab t, UtilitiesWords w)
+        {
+            WorkPage page = b.Done();
+            page.Body = (s, ats, x, y, cw, bottom, keys) => WorkStudy.Skills(s, ats, t, x, y, cw, bottom, keys);
+            return page;
+        }
+
+        private static WorkPage Kids(WorkBuilder b, WorkTab t, UtilitiesWords w)
+        {
+            var kidActs = new int[Math.Max(4, t.Kids.Count * 4)];
+            for (int i = 0; i < kidActs.Length; i++)
+            {
+                kidActs[i] = -1;
+            }
+            for (int i = 0; i < t.Kids.Count; i++)
+            {
+                for (int k = 0; k < t.Kids[i].Acts.Count && k < 4; k++)
+                {
+                    kidActs[i * 4 + k] = b.Act(t.Kids[i].Acts[k], i, k);
+                }
+            }
+            WorkFormModel form = t.Form;
+            WireForm(b, form);
+            WorkAmount[] amounts = t.Amounts.ToArray();
+            b.Page.Amounts = amounts;
+            WorkPage page = b.Done();
+            UiActionModel[] actions = page.Model.Actions;
+            page.Body = (s, ats, x, y, cw, bottom, keys) =>
+            {
+                float end = y;
+                if (t.Kids.Count > 0)
+                {
+                    end = WorkStudy.Kids(s, ats, t, actions, kidActs, x, y, cw, bottom, keys) + UiTokens.S4;
+                }
+                else
+                {
+                    float eh = Math.Min(bottom - y, UiTokens.S16 * 3f);
+                    UiDraw.EmptyState(s, ats, x, y, cw, eh, UiIcon.Heart, t.EmptyTitle, t.EmptyBody, null, -1, keys);
+                    end = y + eh + UiTokens.S4;
+                }
+                if (form != null)
+                {
+                    WorkForm.Lay(s, ats, form, actions, amounts, x, end, cw, bottom, keys);
+                }
+            };
+            return page;
+        }
+
+        // ------------------------------------------------------------------------------------------------- forms, readers
+
+        private static void WireForm(WorkBuilder b, WorkFormModel form)
+        {
+            if (form == null)
+            {
+                return;
+            }
+            WireBands(b, form.Left);
+            WireBands(b, form.Right);
+        }
+
+        private static void WireBands(WorkBuilder b, List<WorkFormBand> bands)
+        {
+            for (int i = 0; i < bands.Count; i++)
+            {
+                WorkFormBand band = bands[i];
+                for (int k = 0; k < band.Rows.Count; k++)
+                {
+                    WorkFormRow r = band.Rows[k];
+                    if (r.Act != null)
+                    {
+                        r.ActAt = b.Button(r.Act.Label, r.Act.Style, r.Act.Icon, UiAction.Count, WorkBuilder.Do(r.Act.Kind, r.Act.Arg, r.Act.Why, r.Act.Opens));
+                    }
+                }
+                if (band.Foot != null)
+                {
+                    band.FootAt = b.Button(band.Foot.Label, band.Foot.Style, band.Foot.Icon, UiAction.Count, WorkBuilder.Do(band.Foot.Kind, band.Foot.Arg, band.Foot.Why, band.Foot.Opens));
+                }
+            }
+        }
+
+        private static WorkPage Form(WorkBuilder b, WorkTab t, WorkView v, UtilitiesWords w)
+        {
+            WorkFormModel form = t.Form ?? new WorkFormModel();
+            var pageActs = new List<UiActionModel>(3);
+            for (int i = 0; i < t.Acts.Count; i++)
+            {
+                pageActs.Add(b.ModelAt(b.Act(t.Acts[i], 0, i)));
+            }
+            WireForm(b, form);
+            WorkAmount[] amounts = t.Amounts.ToArray();
+            b.Page.Amounts = amounts;
+            WorkPage page = b.Done();
+            UiActionModel[] actions = page.Model.Actions;
+            string why = page.Why;
+            page.Body = (s, ats, x, y, cw, bottom, keys) =>
+            {
+                float top = y;
+                if (t.PersonTabs.Length > 0)
+                {
+                    top = PageTabs(s, ats, t.PersonTabs, v.PageTab, x, top);
+                }
+                float cy = Buttons(s, ats, pageActs, x, top, cw, keys);
+                WorkForm.Lay(s, ats, form, actions, amounts, x, cy, cw, bottom - (why != null ? UiTokens.Control : 0f), keys);
+                if (why != null)
+                {
+                    UiDraw.Text(s, ats, x, bottom - UiTokens.Control + UiTokens.S2, cw, UiStyle.Small, UiRole.WarnText, why, UiFlags.Truncate);
+                }
+            };
+            return page;
+        }
+
+        // The person page's tabs: File, Career and Contract, as chips over the page they show.
+        private static float PageTabs(UiScene s, UiAt at, string[] names, int shown, float x, float y)
+        {
+            float cx = x, h = UiTokens.ControlSmall + UiTokens.S1;
+            for (int i = 0; i < names.Length; i++)
+            {
+                var a = new UiActionModel { Label = names[i], Kind = UiButtonKind.Chip, Command = WorkCmd.PageTab, Arg = i };
+                cx += WorkTable.Chip(s, at, a, i == shown, cx, y, h) + UiTokens.S2;
+            }
+            return y + h + UiTokens.S3;
+        }
+
+        private static WorkPage Haggle(WorkBuilder b, WorkTab t, UtilitiesWords w)
+        {
+            WorkRow r = t.Haggle;
+            var choices = new List<UiActionModel>(5);
+            for (int i = 0; i < r.Acts.Count; i++)
+            {
+                WorkAct a = r.Acts[i];
+                int at = b.Button(a.Label, a.Style, a.Icon, a.Choice ? (UiAction)((int)UiAction.Pick1 + Math.Min(8, choices.Count)) : UiAction.Count, WorkBuilder.Do(a.Kind, a.Arg != 0 ? a.Arg : r.Id, a.Why, a.Opens));
+                choices.Add(b.ModelAt(at));
+            }
+            WorkAmount[] amounts = t.Amounts.ToArray();
+            b.Page.Amounts = amounts;
+            WorkPage page = b.Done();
+            string why = page.Why;
+            page.Body = (s, ats, x, y, cw, bottom, keys) => WorkHaggle.Lay(s, ats, r, r.Acts, choices.ToArray(), amounts, why, x, y, cw, bottom, keys);
+            return page;
+        }
+
+        private static WorkPage Reader(WorkBuilder b, WorkTab t, UtilitiesWords w)
+        {
+            UiReaderModel m = t.Reader;
+            var pageActs = new List<UiActionModel>(2);
+            for (int i = 0; i < t.Acts.Count; i++)
+            {
+                pageActs.Add(b.ModelAt(b.Act(t.Acts[i], 0, i)));
+            }
+            b.Page.Reader = m;
+            WorkPage page = b.Done();
+            string why = page.Why;
+            page.Body = (s, ats, x, y, cw, bottom, keys) =>
+            {
+                float foot = pageActs.Count > 0 ? UiTokens.Control + UiTokens.S3 : 0f;
+                UiReader.Lay(s, ats, m, x, y, cw, bottom - y - foot, keys);
+                if (pageActs.Count > 0)
+                {
+                    float right = x + cw, by = bottom - UiTokens.Control;
+                    if (why != null)
+                    {
+                        UiDraw.TextMiddle(s, ats, x, by, UiTokens.Control, cw * 0.5f, UiStyle.Small, UiRole.WarnText, why, UiFlags.Truncate);
+                    }
+                    for (int i = pageActs.Count - 1; i >= 0; i--)
+                    {
+                        UiActionModel a = pageActs[i];
+                        float bw = UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, a.Key, keys);
+                        right -= bw;
+                        UiDraw.Button(s, ats, right, by, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, a.Command, a.Arg, a.Disabled);
+                        right -= UiTokens.S3;
+                    }
+                }
+            };
+            return page;
         }
     }
 
-    /// <summary>The action numbers every work app shares; each app adds its own from 100 up.</summary>
+    /// <summary>The action numbers every work app shares, taken by the screen itself; each app's own start at <see cref="AppsFirst"/>.</summary>
     public static class WorkKinds
     {
-        public const int Filter = 1, GoTab = 2, Locate = 3, Back = 4;
+        public const int Filter = 1, GoTab = 2, Back = 3;
+        public const int AppsFirst = 100;
     }
 }

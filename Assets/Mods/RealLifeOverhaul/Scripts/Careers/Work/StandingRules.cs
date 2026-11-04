@@ -179,6 +179,23 @@ namespace RealLifeOverhaul.Careers
         /// <summary>How many others apply for a post: none to three, seeded by the post and the save.</summary>
         public static int OthersFor(int seed, Opening o) => TechRandom.Range(seed, 7741, o.Id, 0, 0, OthersPerPostMost);
 
+        /// <summary>
+        /// The others who applied for a post, made from the post alone (its id, the day it opened, the save's seed): the same people with the same
+        /// records and days every time they are asked for, for every post the board shows, so the one who is weighed against the player at the end of
+        /// an interview is one the player could see. Nothing is kept: a post asked for twice, or a page read a hundred times, gives the same list.
+        /// Names come from the mod's catalogue by the post and the place in the list (RosterRules.NameOf).
+        /// </summary>
+        public static int OthersDerive(int seed, Opening o, int bar, List<Peer> into)
+        {
+            into.Clear();
+            int n = OthersFor(seed, o);
+            for (int i = 0; i < n; i++)
+            {
+                into.Add(Applicant(RosterRules.NameOf(seed, 9500 + o.Id, o.From, i), o, bar, o.From + 4, seed, i));
+            }
+            return into.Count;
+        }
+
         /// <summary>The others who applied for a post, in the order they came.</summary>
         public static int OthersOf(StandingFile f, int post, List<Peer> into)
         {
@@ -191,16 +208,6 @@ namespace RealLifeOverhaul.Careers
                 }
             }
             return into.Count;
-        }
-
-        /// <summary>Adds an applicant, the oldest going when the list is full.</summary>
-        public static void Add(StandingFile f, Peer p)
-        {
-            f.Others.Add(p);
-            while (f.Others.Count > OthersMost)
-            {
-                f.Others.RemoveAt(0);
-            }
         }
 
         /// <summary>
