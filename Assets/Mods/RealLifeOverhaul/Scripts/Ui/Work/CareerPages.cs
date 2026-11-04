@@ -35,6 +35,7 @@ namespace RealLifeOverhaul.Ui
         public string RivalName;
         public int[] Mine = new int[0], Theirs = new int[0];   // the weekly score, oldest first, twelve at most
         public string NextRung;
+        public readonly List<CareerShift> Shifts = new List<CareerShift>(7);
     }
 
     /// <summary>A vacancy, an application, a profession, a task, a contract or a line of the CV: one row each, with the detail the chosen one shows.</summary>
@@ -206,7 +207,8 @@ namespace RealLifeOverhaul.Ui
                     b.M.NoteTone = UiRole.Accent;
                 }
             }
-            b.Button(w.T("reallife_career_button_map", "Show the desk"), UiButtonKind.Secondary, UiIcon.Locate, UiAction.Option,
+            b.Page.Body = (s, at, x, y, cw, bottom, keys) => CareerMyJob.Lay(s, at, j, b.M, w, x, y, cw, bottom, keys);
+            b.Button(w.T("reallife_work_show_desk", "Show the desk"), UiButtonKind.Secondary, UiIcon.Locate, UiAction.Option,
                 WorkBuilder.Do((int)CareerAct.ShowDesk, 0, null, true));
             if (!j.Leaving)
             {

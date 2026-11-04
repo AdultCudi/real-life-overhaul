@@ -175,10 +175,12 @@ namespace RealLifeOverhaul.Careers
             {
                 return;
             }
+            int shiftMinutes = j.TodayDay == day ? j.TodayMinutes : 0;   // read before the settling closes the day
             bool worked = ProRules.Settle(j, day);
             if (worked)
             {
                 _study.Work.DaysWorked++;
+                RecordShift(j, day, shiftMinutes);
                 return;
             }
             if (Excused(day) || j.OffUntil >= day)

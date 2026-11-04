@@ -52,6 +52,7 @@ namespace RealLifeOverhaul.Ui
         public WorkDo Note;                         // the link under the note
         public int Chosen = -1;                     // the table's row the detail shows
         public bool Back;                           // a sub page: Back steps out of it
+        public Action<UiScene, UiAt, float, float, float, float, IUiKeys> Body;   // a page laid out by hand from the kit's blocks, in the room the window gives (x, y, width, bottom)
         public string Empty;                        // a sentence for a page that holds nothing yet (shown as the lead when the page has no head)
 
         public bool Has(WorkDo[] list, int i) => list != null && i >= 0 && i < list.Length && list[i].Any;

@@ -2,6 +2,12 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Careers
 {
+    /// <summary>One worked shift, kept for the Career app's recent shifts: the day, the minutes worked, the score that day and the pay in whole money.</summary>
+    public struct ShiftRecord
+    {
+        public int Day, Minutes, Score, Pay;
+    }
+
     /// <summary>What a person beside the player is: the saved number of <see cref="Peer.Role"/>.</summary>
     public enum PeerRole
     {
@@ -55,6 +61,7 @@ namespace RealLifeOverhaul.Careers
         public readonly int[] Ring = new int[Peer.RingSize];       // the player's weekly performance
         public readonly List<Peer> Peers = new List<Peer>(StandingRules.PeersMost);    // colleagues of the job
         public readonly List<Peer> Others = new List<Peer>(StandingRules.OthersMost);  // other applicants, by post
+        public readonly List<ShiftRecord> Shifts = new List<ShiftRecord>(StandingRules.ShiftsMost);   // the last shifts worked, oldest first
 
         public bool Of(Job j) => j != null && j.Hired == Hired && j.Post.Street == Street && j.Post.Number == Number && j.Post.Employer == Employer;
 

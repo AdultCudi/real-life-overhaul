@@ -23,6 +23,7 @@ namespace RealLifeOverhaul.Careers
     public static class StandingRules
     {
         public const int PeersMost = 4, OthersMost = 12;
+        public const int ShiftsMost = 7;               // worked shifts kept for the recent shifts
         public const int OthersPerPostMost = 3;        // other applicants for one post at most
         public const int WeeksToContest = 4;           // weeks of record before two records can be weighed
         public const int DriftMost = 4;                // points a person's weekly score moves from where their record settles, either way
@@ -40,6 +41,23 @@ namespace RealLifeOverhaul.Careers
             s.Reliability = j.Due > 0 ? TalentCatalogue.Clamp(100 * j.Worked / j.Due, 0, 100) : 100;
             s.Teamwork = TeamworkOf(j.Favour);
             return s;
+        }
+
+        /// <summary>Adds a worked shift to the ring of the last seven; one record a day (a day recorded again is replaced).</summary>
+        public static void Shift(StandingFile f, int day, int minutes, int score, int pay)
+        {
+            for (int i = f.Shifts.Count - 1; i >= 0; i--)
+            {
+                if (f.Shifts[i].Day == day)
+                {
+                    f.Shifts.RemoveAt(i);
+                }
+            }
+            f.Shifts.Add(new ShiftRecord { Day = day, Minutes = Math.Max(0, minutes), Score = TalentCatalogue.Clamp(score, 0, 100), Pay = Math.Max(0, pay) });
+            while (f.Shifts.Count > ShiftsMost)
+            {
+                f.Shifts.RemoveAt(0);
+            }
         }
 
         /// <summary>Teamwork out of 100 from the standing with colleagues (minus fifteen to fifteen), the middle for none.</summary>

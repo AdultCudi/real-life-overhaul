@@ -60,7 +60,21 @@ namespace RealLifeOverhaul.Ui
             {
                 m.Prompts[m.PromptCount++] = new UiPrompt { Action = UiAction.Alt, Label = main.Label };
             }
-            UiAppWindow.Lay(s, m, frame, dark, keys);
+            if (_page.Body != null)
+            {
+                s.Begin("app window", frame.Width, frame.Height, dark);
+                UiAt at = UiAppWindow.Shell(s, frame, m.Title, m.Icon, m.Nav, m.NavSelected, m.TabsAcross, keys, out float x, out float y, out float w, out float bottom);
+                _page.Body(s, at, x, y, w, bottom, keys);
+                for (int i = 0; i < m.PromptCount; i++)
+                {
+                    s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
+                }
+                UiDraw.PromptBar(s, frame, keys);
+            }
+            else
+            {
+                UiAppWindow.Lay(s, m, frame, dark, keys);
+            }
             _dirty = false;
         }
 
@@ -110,6 +124,9 @@ namespace RealLifeOverhaul.Ui
                     return Carry(_page.All);
                 case UiAppWindow.NoteCommand:
                     return Carry(_page.Note);
+                case UiChart.First + UiChart.Point:
+                case UiTrack.First + UiTrack.Step:
+                    return true;   // a point or a step is read, never acted on: its card or its note is its answer
                 default:
                     return false;
             }

@@ -145,9 +145,23 @@ namespace RealLifeOverhaul.Ui
                 cj.Rungs.Add(new CareerRung { Title = CareersText.Title(p.Id, r), Pay = CareersText.Rate(Prices.At(p.Ranks[r].Pay)),
                     State = r < j.Post.Rank ? 0 : r == j.Post.Rank ? 1 : 2 });
             }
+            NextRungNeeds(d, w.Job, cj, p, day);
+            int weekMinutes = j.WeekOf == day / 7 ? j.WeekMinutes : 0;
+            int contract = 0;
+            for (int bit = 0; bit < 7; bit++)
+            {
+                contract += (p.Days >> bit & 1) * p.Hours;
+            }
+            cj.WeekHours = (weekMinutes / 60).ToString(Inv) + " / " + contract.ToString(Inv);
+            cj.WeekPay = CareersText.Cents((long)Prices.At(j.Pay) * weekMinutes / 60);
             StandingFile f = d.Standing;
             if (f != null)
             {
+                for (int i = 0; i < f.Shifts.Count; i++)
+                {
+                    ShiftRecord sr = f.Shifts[i];
+                    cj.Shifts.Add(new CareerShift { Day = CareersText.Day(sr.Day), Hours = (sr.Minutes / 60f).ToString("0.#", Inv) + "h", Score = sr.Score, Pay = CareersText.Money(sr.Pay) });
+                }
                 for (int i = 0; i < f.Peers.Count; i++)
                 {
                     Peer c = f.Peers[i];
@@ -164,6 +178,33 @@ namespace RealLifeOverhaul.Ui
                 cj.Mine = Slice(f.Ring, f.Count);
             }
             _facts.Job = cj;
+        }
+
+        // What the next rung asks, from the profession's own ranks: the days at this one, the skills, a qualification and a review's rating.
+        private void NextRungNeeds(CareersDirector d, Job job, CareerJob cj, Profession p, int day)
+        {
+            int next = job.Post.Rank + 1;
+            if (next >= p.Ranks.Length)
+            {
+                return;
+            }
+            ProRank r = p.Ranks[next];
+            cj.NextRung = CareersText.Title(p.Id, next);
+            int need = LifeRules.Paced(r.Days, GameCalendar.DaysPerYear), had = day - job.RankDay;
+            cj.Needs.Add(new CareerNeed { Words = W.F("reallife_work_need_days", "{n} days in this role", "n", need.ToString(Inv)), Met = had >= need, Have = W.F("reallife_work_you_have", "you have {n}", "n", Math.Max(0, had).ToString(Inv)) });
+            int points = ProRules.Points(d.Study, p, next), asked = ProRules.Need(d.Study, p, next);
+            cj.Needs.Add(new CareerNeed { Words = W.F("reallife_work_need_skill_points", "Skills at {n} points", "n", asked.ToString(Inv)), Met = points >= asked, Have = W.F("reallife_work_you_have", "you have {n}", "n", points.ToString(Inv)) });
+            if (r.Quals.Length > 0)
+            {
+                bool held = false;
+                for (int i = 0; i < r.Quals.Length; i++)
+                {
+                    held |= d.Study.Holds(r.Quals[i]);
+                }
+                cj.Needs.Add(new CareerNeed { Words = CareersText.Course(r.Quals[0]), Met = held });
+            }
+            cj.Needs.Add(new CareerNeed { Words = W.F("reallife_work_need_rating", "A review rating of {n}", "n", LifeRules.PromoteRating.ToString(Inv)), Met = job.Rating >= LifeRules.PromoteRating,
+                Have = job.Rating > 0 ? W.F("reallife_work_you_have", "you have {n}", "n", job.Rating.ToString(Inv)) : null });
         }
 
         private static int[] Slice(int[] ring, int count)

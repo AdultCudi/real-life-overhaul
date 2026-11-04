@@ -11,6 +11,7 @@ namespace RealLifeOverhaul.Careers
     ///   h  hired|street|number|employer|seed|week|count|ring (12 whole numbers)
     ///   p  each colleague: name|rank|skill|day|post|role|score|punctuality|reliability|teamwork|count|ring (12)
     ///   o  each other applicant: the same
+    ///   r  each recent shift: day|minutes|score|pay
     /// </summary>
     public static class StandingStore
     {
@@ -34,6 +35,11 @@ namespace RealLifeOverhaul.Careers
             for (int i = 0; i < f.Others.Count && i < StandingRules.OthersMost; i++)
             {
                 One(w, f.Others[i]);
+            }
+            w.Part('r');
+            for (int i = 0; i < f.Shifts.Count && i < StandingRules.ShiftsMost; i++)
+            {
+                w.Record().Add(f.Shifts[i].Day).Add(f.Shifts[i].Minutes).Add(f.Shifts[i].Score).Add(f.Shifts[i].Pay);
             }
             return w.ToString();
         }
@@ -81,6 +87,13 @@ namespace RealLifeOverhaul.Careers
                 if (f.Others.Count < StandingRules.OthersMost)
                 {
                     f.Others.Add(ReadPeer(x));
+                }
+            }
+            foreach (Fields x in r.Records('r'))
+            {
+                if (f.Shifts.Count < StandingRules.ShiftsMost)
+                {
+                    f.Shifts.Add(new ShiftRecord { Day = x.Int(), Minutes = System.Math.Max(0, x.Int()), Score = Score(x.Int()), Pay = System.Math.Max(0, x.Int()) });
                 }
             }
             return f;

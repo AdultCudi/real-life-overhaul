@@ -409,6 +409,17 @@ internal static partial class Program
               && back.Others.Count == 1 && back.Others[0].Post == 9 && back.Others[0].Name == "Nia Brooks",
             "work saves: the standing, its ring, a colleague and another applicant survive a save and a load");
         Check(StandingStore.Write(back) == StandingStore.Write(s), "work saves: the standing line writes the same after a round trip");
+        for (int d = 1; d <= 10; d++)
+        {
+            StandingRules.Shift(s, d, 480, 70 + d, 17200);
+        }
+        StandingRules.Shift(s, 10, 240, 90, 8600);
+        StandingFile sh = StandingStore.Read(StandingStore.Write(s), out int _);
+        Check(s.Shifts.Count == StandingRules.ShiftsMost && s.Shifts[s.Shifts.Count - 1].Day == 10 && s.Shifts[s.Shifts.Count - 1].Minutes == 240 && sh.Shifts.Count == 7 && sh.Shifts[0].Day == 4
+              && sh.Shifts[6].Pay == 8600, "work saves: the last seven worked shifts are kept, a day written twice is one record, and they survive a save and a load");
+        string oldShiftLine = StandingStore.Write(s);
+        oldShiftLine = oldShiftLine.Substring(0, oldShiftLine.IndexOf("~r:", System.StringComparison.Ordinal) >= 0 ? oldShiftLine.IndexOf("~r:", System.StringComparison.Ordinal) : oldShiftLine.Length);
+        Check(StandingStore.Read(oldShiftLine, out int _).Shifts.Count == 0, "work saves: a standing line from before the recent shifts loads with none");
         var r = new RosterFile { Seed = 5 };
         int n = 0;
         Intake i = RosterRules.Ensure(r, StudyCatalogue.Business, 100, () => "Student " + n++);

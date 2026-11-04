@@ -71,7 +71,7 @@ internal static partial class UiSamples
                 NextTitle = "Next shift, starts in 15 minutes", NextLine = "Mon 09:00 to 17:00",
                     Desk = "Click your desk in the depot office to open the work panel and start the shift.",
                 NextNote = "Hudson Yards depot", Progress = 0, Performance = 82, Punctuality = 94, Teamwork = 71, Reliability = 88,
-                    WeekHours = "32 of 40", WeekPay = "$688",
+                    WeekHours = "32 / 40", WeekPay = "$688",
                 RivalName = "Marcus Lee", Mine = new[] { 71, 72, 74, 73, 77, 78, 77, 79, 81, 80, 81, 82 }, Theirs = new[] { 70, 71, 72, 70, 74, 75,
                     76, 76, 77, 78, 78, 79 }
             };
@@ -83,6 +83,17 @@ internal static partial class UiSamples
             j.Peers.Add(new CareerPeer { Name = "Marcus Lee", Role = "Senior picker", Tag = "up for the post", Score = 79, Team = 72 });
             j.Peers.Add(new CareerPeer { Name = "Pilar Duran", Role = "Shift lead", Tag = "your lead", Score = 90, Team = 88 });
             j.Peers.Add(new CareerPeer { Name = "Oleg Kozlov", Role = "Forklift driver", Score = 84, Team = 76 });
+            j.NextRung = "Shift lead";
+            j.Needs.Add(new CareerNeed { Words = "12 months as a senior picker", Met = true, Have = "you have 14" });
+            j.Needs.Add(new CareerNeed { Words = "Forklift licence", Met = true, Have = "held since day 311" });
+            j.Needs.Add(new CareerNeed { Words = "Performance 85", Met = false, Have = "you have 82" });
+            j.Needs.Add(new CareerNeed { Words = "Teamwork 75", Met = false, Have = "you have 71" });
+            string[] days = { "Fri", "Thu", "Wed", "Tue" };
+            int[] pay = { 172, 172, 86, 172 }, score = { 84, 81, 79, 83 };
+            for (int i = 3; i >= 0; i--)
+            {
+                j.Shifts.Add(new CareerShift { Day = days[i], Hours = i == 2 ? "4h" : "8h", Score = score[i], Pay = "$" + pay[i] });
+            }
             f.Job = j;
         }
         var jobs = new[]

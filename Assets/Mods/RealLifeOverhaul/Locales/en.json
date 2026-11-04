@@ -31343,5 +31343,20 @@
   "reallife_flare_kit_picker_title": "Choose a photo",
   "reallife_flare_kit_picker_search": "Search your photos",
   "reallife_news_not_yet": "Not yet: from day {day}",
-  "reallife_news_where": "Where people live"
+  "reallife_news_where": "Where people live",
+  "reallife_work_col_score": "Score",
+  "reallife_work_col_shift": "Shift",
+  "reallife_work_need_days": "{n} days in this role",
+  "reallife_work_need_rating": "A review rating of {n}",
+  "reallife_work_need_skill_points": "Skills at {n} points",
+  "reallife_work_performance_weeks": "Performance, 12 weeks",
+  "reallife_work_recent_shifts": "Recent shifts",
+  "reallife_work_step_done": "Done",
+  "reallife_work_step_later": "Later",
+  "reallife_work_step_locked": "Locked",
+  "reallife_work_this_week": "This week",
+  "reallife_work_week_n": "Week {n}",
+  "reallife_work_what_needs": "What {rung} needs",
+  "reallife_work_you_have": "you have {n}",
+  "reallife_work_you_line": "You"
 }

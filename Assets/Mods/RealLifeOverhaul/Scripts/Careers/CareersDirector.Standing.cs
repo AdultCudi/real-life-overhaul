@@ -153,6 +153,16 @@ namespace RealLifeOverhaul.Careers
             f.Peers.Add(StandingRules.Colleague(Names(), Math.Max(0, j.Post.Rank - 1), me - 6, PeerRole.Colleague, day, seed, 6));
         }
 
+        // A worked shift goes into the ring of the last seven with its score and pay (whole money at today's prices, as the job pays it).
+        private void RecordShift(Job j, int day, int minutes)
+        {
+            StandingFile f = Standing;
+            if (f != null)
+            {
+                StandingRules.Shift(f, day, minutes, PerformanceNow(j), (int)((long)Prices.At(j.Pay) * minutes / 6000));
+            }
+        }
+
         // Each day: the week's score goes in the ring once a week. Runs on the day turn only.
         private void StandingDay(int day)
         {
