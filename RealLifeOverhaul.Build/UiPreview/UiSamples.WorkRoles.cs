@@ -123,6 +123,11 @@ internal static partial class UiSamples
         terms.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_days", "The ad runs"), Stepper = 7 });
         terms.Rows.Add(new WorkFormRow { Field = WorkField.Switch, Label = w.T("reallife_work_ad_boost", "Boost the ad"), On = false, Act = WkAct(106, w.T("reallife_work_ad_boost", "Boost the ad"), UiButtonKind.Secondary, UiIcon.Rocket) });
         form.Right.Add(terms);
+        var sum = new WorkFormBand { Title = w.T("reallife_work_ad_summary", "What it comes to") };
+        sum.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_ad_going", "Going rate"), Value = "$34.00" });
+        sum.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_ad_pay_least", "Pay from"), Value = "$" + least + ".00" });
+        sum.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_ad_cost", "It costs"), Value = "$" + (days * 40) });
+        form.Right.Add(sum);
         t.Form = form;
         t.Acts.Add(WkAct(WorkKinds.Back, w.T("reallife_work_cancel", "Cancel"), UiButtonKind.Secondary, UiIcon.Back, null, true));
         t.Acts.Add(WkAct(107, w.T("reallife_hire_button_post", "Post the ad"), UiButtonKind.Primary, UiIcon.Check));

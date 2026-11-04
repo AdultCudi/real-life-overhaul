@@ -19,6 +19,7 @@ internal static partial class Program
         WkOffers();
         WkPosts();
         WkSellers();
+        WkFilters();
         WkSaves();
         WkRuns();
     }
@@ -456,6 +457,14 @@ internal static partial class Program
         HustleRules.Morning(plainDay, 5, homes, null, null, 100, 1000);
         Check(plainDay.Listings.Count > 0 && plainDay.Listings[0].SellerId == 0,
             "work sellers: without a book the day's listings are as they were, a name alone");
+    }
+
+    private static void WkFilters()
+    {
+        Check(PostFilterRules.Near(PostFilterRules.NearMetres, false) && !PostFilterRules.Near(PostFilterRules.NearMetres + 1, false) && !PostFilterRules.Near(-1, false) && PostFilterRules.Near(99999, true),
+            "work filters: Near you is within the distance from home, or work from home, and a place unknown is not near");
+        Check(PostFilterRules.Open(false, false) && !PostFilterRules.Open(false, true) && PostFilterRules.Open(true, true),
+            "work filters: Open now is a workplace the game's schedule has open, or work from home");
     }
 
     private static void WkSaves()

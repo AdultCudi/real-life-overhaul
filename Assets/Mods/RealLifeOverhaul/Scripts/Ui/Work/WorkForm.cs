@@ -11,7 +11,7 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class WorkForm
     {
-        private const float ControlWidth = 200f, SelectorWidth = 232f;
+        private const float ControlWidth = 200f, SelectorWidth = 440f;
 
         public static void Lay(UiScene s, UiAt at, WorkFormModel m, UiActionModel[] actions, WorkAmount[] amounts, float x, float y, float w, float bottom, IUiKeys keys)
         {
@@ -127,11 +127,12 @@ namespace RealLifeOverhaul.Ui
                     if (r.Stepper >= 0 && r.Stepper < amounts.Length)
                     {
                         WorkAmount a = amounts[r.Stepper];
-                        float lw = w - (a.Words != null ? SelectorWidth : ControlWidth) - UiTokens.S3;
+                        float sel = Math.Min(SelectorWidth, UiDraw.SnapDown(w * 0.7f));
+                        float lw = w - (a.Words != null ? sel : ControlWidth) - UiTokens.S3;
                         UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, lw, UiStyle.Body, UiRole.Text, r.Label, UiFlags.Label | UiFlags.Truncate);
                         if (a.Words != null)
                         {
-                            UiDraw.Selector(s, at, x + w - SelectorWidth, y, SelectorWidth, string.Empty, a.Figure, WorkCmd.Pick, r.Stepper);
+                            UiDraw.Selector(s, at, x + w - sel, y, sel, string.Empty, a.Figure, WorkCmd.Pick, r.Stepper);
                         }
                         else
                         {

@@ -59,7 +59,7 @@ namespace RealLifeOverhaul.Ui
             float h = UiTokens.ControlSmall + UiTokens.S1, cx = x, right = x + w;
             if (!string.IsNullOrEmpty(m.SortLabel))
             {
-                float sw = UiDraw.SnapDown(Math.Min(180f, UiTextRules.Width(m.SortLabel, UiStyle.Body) + UiTokens.S10));
+                float sw = UiDraw.SnapDown(Math.Min(220f, UiTextRules.Width(m.SortLabel, UiStyle.Body) + UiTokens.S10 + UiTokens.S6));
                 UiDraw.Choice(s, at, right - sw, y, sw, m.SortLabel, WorkCmd.Sort, 0, false);
                 right -= sw + UiTokens.S2;
             }

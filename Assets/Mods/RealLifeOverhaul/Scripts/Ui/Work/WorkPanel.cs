@@ -27,9 +27,11 @@ namespace RealLifeOverhaul.Ui
                 buttons |= actions[k].Kind != UiButtonKind.Chip;
             }
             float whyH = buttons && !string.IsNullOrEmpty(why) ? UiTextRules.WrappedHeight(why, UiStyle.Small, iw, 2) + UiTokens.S2 : 0f;
+            int rows = buttons ? ButtonRows(actions, iw, keys) : 0;
+            float buttonsH = rows * UiTokens.Control + (rows - 1) * UiTokens.S2;
             if (buttons)
             {
-                footer -= UiTokens.Control + UiTokens.S3 + whyH;
+                footer -= buttonsH + UiTokens.S3 + whyH;
             }
             iy = Head(s, at, r, ix, iy, iw);
             if (!string.IsNullOrEmpty(r.Sentence))
@@ -59,7 +61,7 @@ namespace RealLifeOverhaul.Ui
                 float by = y + h - UiTokens.S4 - UiTokens.Control, right = ix + iw;
                 if (whyH > 0f)
                 {
-                    UiDraw.Text(s, at, ix, by - whyH, iw, UiStyle.Small, UiRole.WarnText, why, UiFlags.Wrap | UiFlags.Truncate, 2);
+                    UiDraw.Text(s, at, ix, y + h - UiTokens.S4 - buttonsH - whyH, iw, UiStyle.Small, UiRole.WarnText, why, UiFlags.Wrap | UiFlags.Truncate, 2);
                 }
                 for (int k = 0; k < actions.Length; k++)
                 {
@@ -69,11 +71,38 @@ namespace RealLifeOverhaul.Ui
                         continue;
                     }
                     float bw = Math.Min(iw, UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, a.Key, keys));
+                    if (right - bw < ix - 0.5f)
+                    {
+                        right = ix + iw;
+                        by -= UiTokens.Control + UiTokens.S2;   // the buttons that do not fit stand in a row above
+                    }
                     right -= bw;
                     UiDraw.Button(s, at, right, by, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, a.Command, a.Arg, a.Disabled);
                     right -= UiTokens.S3;
                 }
             }
+        }
+
+        // How many rows the buttons take: they stand from the right, and one that does not fit starts a row above.
+        private static int ButtonRows(UiActionModel[] actions, float iw, IUiKeys keys)
+        {
+            int rows = 1;
+            float right = iw;
+            for (int k = 0; k < actions.Length; k++)
+            {
+                if (actions[k].Kind == UiButtonKind.Chip)
+                {
+                    continue;
+                }
+                float bw = Math.Min(iw, UiDraw.ButtonWidth(actions[k].Kind, actions[k].Label, actions[k].Icon, actions[k].Key, keys));
+                if (right - bw < -0.5f)
+                {
+                    rows++;
+                    right = iw;
+                }
+                right -= bw + UiTokens.S3;
+            }
+            return rows;
         }
 
         // The head: a tile with the thing's glyph (or the person's face), the title and a chip under it, the line the title stands on.

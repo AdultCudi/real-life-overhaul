@@ -31742,5 +31742,6 @@
   "reallife_work_confirm_accept_title": "Vender {thing}?",
   "reallife_work_confirm_accept_body": "{buyer} paga {offer} por ele. Você pagou {paid} por ele, somando o que gastou nele.",
   "reallife_work_confirm_cancel_title": "Cancelar a visita a {client}?",
-  "reallife_work_confirm_cancel_body": "{client} pediu {job}. Eles vão procurar outra pessoa."
+  "reallife_work_confirm_cancel_body": "{client} pediu {job}. Eles vão procurar outra pessoa.",
+  "reallife_work_ad_summary": "Resumo"
 }

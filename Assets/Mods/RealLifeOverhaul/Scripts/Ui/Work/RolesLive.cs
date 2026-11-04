@@ -320,9 +320,12 @@ namespace RealLifeOverhaul.Ui
             terms.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_days", "The ad runs"), Stepper = 7 });
             terms.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_boost", "Boost the ad"), Stepper = 4 });
             int cost = Prices.At(HiringRules.AdCost(days, boost == 1));
-            terms.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_ad_cost", "It costs"), Value = TechText.Money(cost) });
-            terms.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_ad_pay_range", "Pay from and up to"), Value = TechText.Rate(least) + " - " + TechText.Rate(most) });
             form.Right.Add(terms);
+            var sum = new WorkFormBand { Title = w.T("reallife_work_ad_summary", "What it comes to") };
+            sum.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_ad_going", "Going rate"), Value = TechText.Rate(going) });
+            sum.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_ad_pay_least", "Pay from"), Value = TechText.Rate(least) });
+            sum.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_ad_cost", "It costs"), Value = TechText.Money(cost) });
+            form.Right.Add(sum);
             bool seats = HiringRules.Seats(TalentGame.Shifts(_places[place]), r);
             string why = !seats ? TechText.T(TechDirector.SeatRefusal) : null;
             t.Acts.Add(new WorkAct { Kind = WorkKinds.Back, Label = w.T("reallife_work_cancel", "Cancel"), Style = UiButtonKind.Secondary, Icon = UiIcon.Back, Opens = true });

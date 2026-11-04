@@ -31742,5 +31742,6 @@
   "reallife_work_confirm_accept_title": "出售{thing}？",
   "reallife_work_confirm_accept_body": "{buyer}为它支付{offer}。你为它花了{paid}，包括你在它上面的花费。",
   "reallife_work_confirm_cancel_title": "取消去{client}的上门服务？",
-  "reallife_work_confirm_cancel_body": "{client}请求了{job}。他们会另找他人。"
+  "reallife_work_confirm_cancel_body": "{client}请求了{job}。他们会另找他人。",
+  "reallife_work_ad_summary": "合计"
 }
