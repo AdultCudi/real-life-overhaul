@@ -154,7 +154,8 @@ namespace RealLifeOverhaul.Ui
                     UiStyle.Number, UiRole.Text, m.FigureValues[i], UiFlags.Truncate);
                 if (credits)
                 {
-                    float by = UiDraw.Snap(y + UiTokens.S2 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2 + (UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Number)) - UiTokens.S1) / 2f);
+                    float labelH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)), valueH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Number));
+                    float by = UiDraw.Snap(y + UiTokens.S2 + labelH + UiTokens.S2 + (valueH - UiTokens.S1) / 2f);
                     UiDraw.Meter(s, at, UiDraw.Snap(right + vw + UiTokens.S2), by, UiTokens.S16, UiTokens.S1, (int)Math.Round(m.CreditShare * 100f), UiRole.Accent);
                 }
                 right -= UiTokens.S8;
@@ -170,7 +171,6 @@ namespace RealLifeOverhaul.Ui
             float courseW = w - credits - attend - exam - grade - state - gap * 5f - UiTokens.S4;
             float cx = x + UiTokens.S2;
             float c1 = cx + courseW + gap, c2 = c1 + credits + gap, c3 = c2 + attend + gap, c4 = c3 + exam + gap, c5 = c4 + grade + gap;
-            
             string[] heads = { m.Heads.Length > 0 ? m.Heads[0] : string.Empty, m.Heads.Length > 1 ? m.Heads[1] : string.Empty, m.Heads.Length > 2 ? m.Heads[2] : string.Empty,
                 m.Heads.Length > 3 ? m.Heads[3] : string.Empty, m.Heads.Length > 4 ? m.Heads[4] : string.Empty, m.Heads.Length > 5 ? m.Heads[5] : string.Empty };
             float[] xs = { cx, c1, c2, c3, c4, c5 }, ws = { courseW, credits, attend, exam, grade, state };
