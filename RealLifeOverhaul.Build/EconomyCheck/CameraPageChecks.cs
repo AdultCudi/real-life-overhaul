@@ -127,7 +127,7 @@ internal static partial class Program
         }
         string text = Read(@"Photos\PhotosText.cs");
         Check(text.Contains("hour.GetFormattedTime(0f, false)") && !text.Contains("GetFormattedTime(0f, true)") && text.Contains("public static string TakenOn(")
-              && Read(@"Ui\Life\GalleryScreen.cs").Contains("PhotosText.TakenOn(photo)"),
+              && Read(@"Ui\GalleryAlbumFill.cs").Contains("PhotoTimeRules.Clock(photo.Hour, photo.Minute") && Read(@"Ui\GalleryAlbumFill.cs").Contains("x.Real(photo)"),
             "photo time: the hour is written as the game's clock writes it (19:00, or 07:00 PM), never a bare 19, and the Gallery's fact keeps the computer's date");
     }
 }

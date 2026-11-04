@@ -11,10 +11,12 @@ using UnityEngine.Rendering.HighDefinition;
 namespace RealLifeOverhaul.Photos
 {
     /// <summary>
-    /// The Camera: the rear camera from where the phone is held, or the selfie through photo mode's own. Everything it
-    /// changes is first written in a <see cref="CameraHold"/> and given back once on every way out. Off while shut; while
-    /// open a frame reads a dozen of the game's flags and places the lens, allocating only on a shot. It runs before the
-    /// game's key handling, so the keys it takes do nothing else. Nothing of it is shared in Going Public.
+    /// The Camera: the rear camera from where the phone is held (a photo, a portrait or a wide shot), or the selfie through photo
+    /// mode's own. Everything it changes is first written in a <see cref="CameraHold"/> and given back once on every way out. Off
+    /// while shut; while open a frame reads a dozen of the game's flags and places the lens, and allocates only when a setting
+    /// changes or on a shot. The live filter, the exposure and the portrait's blur are one post effect volume of its own; the zoom
+    /// is the field of view. A portrait looks for its subject with one ray when the aim settles, at most five times a second. It runs
+    /// before the game's key handling, so the keys it takes do nothing else. Nothing of it is shared in Going Public.
     /// </summary>
     [DefaultExecutionOrder(-31000)]
     public sealed class CameraMode : MonoBehaviour
@@ -22,6 +24,7 @@ namespace RealLifeOverhaul.Photos
         private static readonly FeatureGuard FrameGuard = Guard.For("photos", "CameraMode", typeof(CameraMode));
 
         private const float EyeHeight = 0.08f;   // metres from the head joint up to the eyes
+        private const int ToolTimer = 0, ToolGuide = 1, ToolLevel = 2, ToolAspect = 3, ToolBoost = 4, ToolBody = 5, ToolClean = 6, ToolPose = 7;
 
         public static IModLogger Logger;
         public static CameraMode Instance { get; private set; }
@@ -38,11 +41,21 @@ namespace RealLifeOverhaul.Photos
         private Transform _root, _head;
         private GameObject _grade;
         private ColorAdjustments _color;
-        private bool _inSelfie, _seated, _grid, _shooting, _fromFlare, _dirty;
+        private DepthOfField _blur;
+        private bool _inSelfie, _seated, _shooting, _fromFlare, _dirty;
         private float _yaw, _pitch, _seatYaw, _zoom = 1f;
         private float _placedYaw = float.NaN, _placedFov = -1f;
         private int _filter;
         private CameraFrame _frame;
+        private CameraKind _kind = CameraKind.Photo;     // the rear camera's kind; the selfie is _inSelfie
+        private CameraAspect _aspect = CameraAspect.SixteenNine;
+        private CameraGuide _guide;
+        private bool _level, _boost, _hidden, _clean;
+        private int _exposure, _timer;                   // tenths of a stop; seconds
+        private float _countStart = -1f, _lastLook = -10f;
+        private int _counting;                           // the second the timer shows, 0 when it is not counting
+        private bool _lookDue;
+        private float _subject = CameraRules.FocusFar;
         private int _linedHour = -1;
         private PhotoSidecar _note;
         private bool _noted;
@@ -51,6 +64,12 @@ namespace RealLifeOverhaul.Photos
         private int _worldMask;                          // the mask the camera set on the world's clicks
         private PhotosGame.Shot _pendingShot;            // a shot under way, until its coroutine lets it go
         private Task _pendingWork;                       // the worker that has it, if one does
+        private Ui.ViewfinderActions _actions;
+        private string[] _modeWords, _filterWords, _frameWords;
+
+        private CameraKind Kind => _inSelfie ? CameraKind.Selfie : _kind;
+
+        private bool BoostOn => _boost && PhotoSidecarRules.Night(PhotosGame.Hour);
 
         private void Awake()
         {
@@ -156,7 +175,15 @@ namespace RealLifeOverhaul.Photos
             _zoom = CameraRules.ZoomLeast;
             _filter = 0;
             _frame = CameraFrame.None;
-            _grid = Settings.PhoneCameraGrid;
+            _kind = CameraKind.Photo;
+            _aspect = CameraAspect.SixteenNine;
+            _guide = Settings.PhoneCameraGrid ? CameraGuide.Thirds : CameraGuide.Off;
+            _level = _boost = _hidden = _clean = false;
+            _exposure = _timer = 0;
+            _countStart = -1f;
+            _counting = 0;
+            _lookDue = false;
+            _subject = CameraRules.FocusFar;
             _fromFlare = fromFlare;
             _toast = null;
             _flashFrom = -10f;
@@ -168,12 +195,22 @@ namespace RealLifeOverhaul.Photos
                 {
                     _view = new CameraView(transform, () => Close("its Close button"), Shoot, Flip, ToggleGrid, NextPose, Gallery, Filter, Frame);
                 }
+                if (_actions == null)
+                {
+                    _actions = new Ui.ViewfinderActions
+                    {
+                        Close = () => Close("its Close button"), Shoot = Shoot, Gallery = Gallery, Flip = Flip, Clean = ToggleClean,
+                        Mode = Mode, Filter = Filter, Frame = Frame, Tool = Tool, Lens = Lens, Zoom = ZoomStep, Exposure = ExposureStep,
+                    };
+                }
+                Words();
                 _view.Show(true);
                 _view.Busy(false);
-                _view.ForShot(false, _grid);   // the controls back, whatever an earlier shot left
                 SyncFinder(true);
+                _view.ForShot(false, _guide != CameraGuide.Off);   // the controls back, whatever an earlier shot left
+                Ui.ViewfinderHost.Newest = () => PhotosDirector.Instance != null ? PhotosDirector.Instance.LatestTexture : null;
                 _view.Latest(PhotosDirector.Instance != null ? PhotosDirector.Instance.LatestTexture : null);
-                PhotosGame.Grade(_color, _filter);
+                Grade();
                 Rear();
                 if (selfie)
                 {
@@ -190,7 +227,7 @@ namespace RealLifeOverhaul.Photos
             Logger?.Info("Camera: open (" + (_inSelfie ? "selfie" : "rear") + (fromFlare ? ", from Flare" : string.Empty) + (_seated ? ", seated" : string.Empty) + ").");
             if (Meta.Dev.Verbose)
             {
-                Logger?.Info("Camera check (opened: " + Count() + " of " + (int)HoldPart.Count + " parts of the game's held to be given back, wanted all but the selfie's): "
+                Logger?.Info("Camera check (opened: " + Count() + " of " + (int)HoldPart.Count + " parts of the game's held to be given back, wanted all but the selfie's and the body's): "
                              + (Count() >= (int)HoldPart.Count - 3 ? "PASS" : "parts missing (a camera of the game's not found)"));
             }
             return CameraRefusal.None;
@@ -229,7 +266,7 @@ namespace RealLifeOverhaul.Photos
             Quaternion r = _root.rotation;
             _hold.Take(HoldPart.Facing, r.x, r.y, r.z, r.w);
             _hold.Take(HoldPart.Grade);
-            _grade = PhotosGame.MakeGrade(transform, out _color);
+            _grade = PhotosGame.MakeGrade(transform, out _color, out _blur);
         }
 
         private int Count()
@@ -251,6 +288,8 @@ namespace RealLifeOverhaul.Photos
             }
             Active = false;
             enabled = false;
+            _countStart = -1f;
+            _counting = 0;
             try
             {
                 if (_selfie != null && _inSelfie)
@@ -309,6 +348,9 @@ namespace RealLifeOverhaul.Photos
         {
             switch (part)
             {
+                case HoldPart.Body:
+                    PhotosGame.HideBody(false);
+                    break;
                 case HoldPart.Facing:
                     if (_root != null)
                     {
@@ -319,6 +361,7 @@ namespace RealLifeOverhaul.Photos
                     PhotosGame.DropGrade(_grade);
                     _grade = null;
                     _color = null;
+                    _blur = null;
                     break;
                 case HoldPart.Lens:
                     if (_camera != null)
@@ -401,6 +444,10 @@ namespace RealLifeOverhaul.Photos
             if (_linedHour != PhotosGame.Hour)
             {
                 _linedHour = PhotosGame.Hour;
+                if (_boost && !PhotoSidecarRules.Night(_linedHour))
+                {
+                    Grade();   // morning: the boost is no longer offered, and no longer applied
+                }
                 if (_view != null && _view.KitChrome)
                 {
                     SyncFinder(false);
@@ -415,6 +462,11 @@ namespace RealLifeOverhaul.Photos
             if (PhotosGame.TakeConfirm())
             {
                 Shoot();
+            }
+            Countdown();
+            if (!Active)
+            {
+                return;
             }
             _view.Input.Take(out float dx, out float dy, out float wheel);
             float lines = Screen.height;
@@ -440,12 +492,15 @@ namespace RealLifeOverhaul.Photos
                     {
                         _yaw = CameraRules.Seated(_yaw, _seatYaw);
                     }
+                    _lookDue = true;
                 }
                 if (wheel != 0f)
                 {
-                    _zoom = CameraRules.Zoom(_zoom, wheel);
+                    _zoom = CameraRules.Zoom(_zoom, wheel, CameraRules.ZoomLeastOf(_kind), CameraRules.ZoomMostOf(_kind));
                     _dirty = true;
+                    _lookDue = true;
                 }
+                Focus();
             }
             Fades();
             if (_dirty)
@@ -454,7 +509,59 @@ namespace RealLifeOverhaul.Photos
                 Write();
             }
             _view.Lay(_frame);
+            Level();
         }
+
+        // The timer: counts in whole seconds on the real clock, and takes the shot at nought.
+        private void Countdown()
+        {
+            if (_countStart < 0f)
+            {
+                return;
+            }
+            int left = CameraRules.Counting(_timer, Time.unscaledTime - _countStart);
+            if (left != _counting)
+            {
+                _counting = left;
+                _dirty = true;
+            }
+            if (left <= 0)
+            {
+                _countStart = -1f;
+                _counting = 0;
+                _dirty = true;
+                Take();
+            }
+        }
+
+        // The portrait looks for its subject with one ray, when the aim has changed and a fifth of a second has gone since it last looked.
+        private void Focus()
+        {
+            if (_kind != CameraKind.Portrait || !CameraRules.FocusDue(_lookDue, Time.unscaledTime, _lastLook))
+            {
+                return;
+            }
+            _lookDue = false;
+            _lastLook = Time.unscaledTime;
+            _subject = PhotosGame.SubjectAt(_camera);
+            PhotosGame.Blur(_blur, true, _subject);
+        }
+
+        // The level line: where the horizon stands for the pitch, only while it is on.
+        private void Level()
+        {
+            if (_inSelfie || !_level)
+            {
+                _view.Shape(ShapeNow, GuideNow, false, 0.5f, false);
+                return;
+            }
+            _view.Shape(ShapeNow, GuideNow, true, CameraRules.HorizonAt(_pitch, CameraRules.FieldOfView(_zoom)), CameraRules.Level(_pitch));
+        }
+
+        // The old chrome keeps the whole screen: only the kit's has a shape of its own.
+        private CameraAspect ShapeNow => _view != null && _view.KitChrome ? _aspect : CameraAspect.Unknown;
+
+        private CameraGuide GuideNow => _guide;
 
         private static readonly int HotLateUpdate = HotSpots.Slot("Photos: CameraMode.LateUpdate");
         // After the animation, so the lens is placed at the head where it was drawn.
@@ -509,30 +616,42 @@ namespace RealLifeOverhaul.Photos
             if (_toast != null && toast <= 0f)
             {
                 _toast = null;
+                _dirty = true;   // the kit's chrome writes the toast away
             }
             _view.Toast(_toast, toast);
         }
 
         private void Write()
         {
-            _view.Write(_inSelfie, _zoom, _grid, _inSelfie && _selfie != null ? _selfie.PoseKey : null, _filter, _frame);
+            _view.Write(_inSelfie, _zoom, _guide != CameraGuide.Off, _inSelfie && _selfie != null ? _selfie.PoseKey : null, _filter, _frame);
             if (_view.KitChrome)
             {
                 SyncFinder(false);
             }
         }
 
+        // The words that never change while the camera is open, made once an opening.
+        private void Words()
+        {
+            _modeWords = new[]
+            {
+                Ui.UiText.T("reallife_ui_life_mode_photo"), Ui.UiText.T("reallife_ui_life_mode_selfie"),
+                Ui.UiText.T("reallife_ui_life_mode_portrait"), Ui.UiText.T("reallife_ui_life_mode_wide"),
+            };
+            _filterWords = FilterLabels();
+            _frameWords = FrameLabels();
+        }
+
         // The kit's bars, or the view's own when the screen's switch is off.
         private void SyncFinder(bool opening)
         {
-            bool kit = Ui.ViewfinderHost.Show(
-                () => Close("its Close button"), Shoot, ToggleGrid, Gallery, Filter, Frame, Mode);
+            bool kit = _actions != null && Ui.ViewfinderHost.Show(_actions);
             if (!opening)
             {
                 kit = Ui.ViewfinderHost.Wanted;
             }
             _view.KitChrome = kit;
-            _view.ForShot(false, _grid);
+            _view.ForShot(false, _guide != CameraGuide.Off);
             if (!kit)
             {
                 Ui.ViewfinderHost.Hide();
@@ -550,21 +669,41 @@ namespace RealLifeOverhaul.Photos
             }
             string place = string.IsNullOrEmpty(side.District) || string.IsNullOrEmpty(side.Place) || side.Place == side.District
                 ? side.Place : side.Place + ", " + side.District;
+            bool rear = !_inSelfie;
+            float[] lenses = CameraRules.Lenses(_kind);
             var model = new Ui.UiFinderModel
             {
-                Modes = new[] { Ui.UiText.T("reallife_ui_life_mode_photo"), Ui.UiText.T("reallife_ui_life_mode_selfie") },
-                Mode = _inSelfie ? 1 : 0,
+                Title = Ui.UiText.T("reallife_phonecam_app"),
+                Modes = _modeWords,
+                Mode = _inSelfie ? 1 : _kind == CameraKind.Portrait ? 2 : _kind == CameraKind.Wide ? 3 : 0,
                 Place = place,
-                When = PhotosGame.Hour.ToString("00", CultureInfo.InvariantCulture) + ":" + Mathf.FloorToInt(TimeHelper.CurrentMinute).ToString("00", CultureInfo.InvariantCulture)
+                When = PhotosGame.Hour.ToString("00", CultureInfo.InvariantCulture) + ":" + PhotosGame.Minute.ToString("00", CultureInfo.InvariantCulture)
                     + ", " + Ui.UiText.T(PhotoShot.Words(side.Weather)),
                 Count = Ui.UiText.Fill("reallife_ui_life_photos_today", "count", today.ToString()),
-                Filters = FilterLabels(),
+                Filters = _filterWords,
                 Filter = _filter,
-                Frames = FrameLabels(),
+                Frames = _frameWords,
                 Frame = (int)_frame,
-                Grid = _grid,
+                FilterTitle = Ui.UiText.T("reallife_phonecam_filter_title"),
+                FrameTitle = Ui.UiText.T("reallife_phonecam_frame_title"),
                 Toast = _toast,
                 Open = _toast != null ? Ui.UiText.T("reallife_ui_life_open") : null,
+                Latest = director != null && director.LatestTexture != null ? Ui.ViewfinderHost.LatestKey : null,
+                Newest = Ui.UiText.T("reallife_ui_life_newest_photo"),
+                OpenGallery = Ui.UiText.T("reallife_ui_life_open_gallery"),
+                Shoot = Ui.UiText.T("reallife_ui_life_take"),
+                Zoom = rear ? CameraRules.ZoomWords(_zoom) : null,
+                Lenses = rear ? LensWords(lenses) : new string[0],
+                Lens = rear ? CameraRules.LensAt(_kind, _zoom) : -1,
+                ZoomOut = rear && _zoom > CameraRules.ZoomLeastOf(_kind) + 0.001f,
+                ZoomIn = rear && _zoom < CameraRules.ZoomMostOf(_kind) - 0.001f,
+                Exposure = CameraRules.ExposureWords(_exposure),
+                ExposureDown = _exposure > -CameraRules.ExposureMost,
+                ExposureUp = _exposure < CameraRules.ExposureMost,
+                Tools = Tools(),
+                Countdown = _counting > 0 ? _counting.ToString(CultureInfo.InvariantCulture) : null,
+                Clean = _clean,
+                CleanBack = Ui.UiText.T("reallife_phonecam_clean_back"),
                 Move = Ui.UiText.T("reallife_ui_prompt_move"),
                 Select = Ui.UiText.T("reallife_ui_prompt_select"),
                 Back = Ui.UiText.T("reallife_ui_prompt_back"),
@@ -572,16 +711,94 @@ namespace RealLifeOverhaul.Photos
             Ui.ViewfinderHost.Apply(model);
         }
 
+        private static string[] LensWords(float[] lenses)
+        {
+            var words = new string[lenses.Length];
+            for (int i = 0; i < words.Length; i++)
+            {
+                words[i] = CameraRules.ZoomWords(lenses[i]);
+            }
+            return words;
+        }
+
+        private Ui.UiFinderTool[] Tools()
+        {
+            bool night = PhotoSidecarRules.Night(PhotosGame.Hour);
+            var tools = new System.Collections.Generic.List<Ui.UiFinderTool>(8);
+            tools.Add(new Ui.UiFinderTool
+            {
+                Id = ToolTimer, Icon = Ui.UiIcon.Timer, On = _timer > 0,
+                Label = _timer > 0 ? Ui.UiText.Fill("reallife_phonecam_timer_s", "seconds", _timer.ToString(CultureInfo.InvariantCulture)) : Ui.UiText.T("reallife_phonecam_tool_timer"),
+            });
+            tools.Add(new Ui.UiFinderTool
+            {
+                Id = ToolGuide, Icon = Ui.UiIcon.Grid, On = _guide != CameraGuide.Off,
+                Label = Ui.UiText.T(_guide == CameraGuide.Thirds ? "reallife_phonecam_guide_thirds" : _guide == CameraGuide.Square ? "reallife_phonecam_guide_square" : "reallife_phonecam_grid"),
+            });
+            if (!_inSelfie)
+            {
+                tools.Add(new Ui.UiFinderTool { Id = ToolLevel, Icon = Ui.UiIcon.Level, On = _level, Label = Ui.UiText.T("reallife_phonecam_tool_level") });
+            }
+            tools.Add(new Ui.UiFinderTool
+            {
+                Id = ToolAspect, Icon = Ui.UiIcon.Crop, On = _aspect != CameraAspect.SixteenNine, Label = Ui.UiText.T(CameraRules.AspectKeys[(int)_aspect]),
+            });
+            if (night)
+            {
+                tools.Add(new Ui.UiFinderTool { Id = ToolBoost, Icon = Ui.UiIcon.Moon, On = _boost, Label = Ui.UiText.T("reallife_phonecam_tool_boost") });
+            }
+            if (!_inSelfie)
+            {
+                tools.Add(new Ui.UiFinderTool { Id = ToolBody, Icon = Ui.UiIcon.EyeSlash, On = _hidden, Label = Ui.UiText.T("reallife_phonecam_tool_body") });
+            }
+            else if (_selfie != null && !string.IsNullOrEmpty(_selfie.PoseKey))
+            {
+                tools.Add(new Ui.UiFinderTool
+                {
+                    Id = ToolPose, Icon = Ui.UiIcon.Person, On = false, Label = PhotosText.Fill("reallife_phonecam_pose", "pose", PhotosText.T(_selfie.PoseKey)),
+                });
+            }
+            tools.Add(new Ui.UiFinderTool { Id = ToolClean, Icon = Ui.UiIcon.FrameCorners, On = _clean, Label = Ui.UiText.T("reallife_phonecam_tool_clean") });
+            return tools.ToArray();
+        }
+
         private void Mode(int mode)
         {
-            if (mode == 0 && _inSelfie)
+            if (!Active || _shooting || mode < 0 || mode > 3)
             {
-                Flip();
+                return;
             }
-            else if (mode == 1 && !_inSelfie)
+            if (mode == 1)
             {
-                StartSelfie();
+                if (!_inSelfie)
+                {
+                    StartSelfie();
+                }
             }
+            else
+            {
+                if (_inSelfie)
+                {
+                    _selfie.End();
+                    _hold.Give(HoldPart.Selfie, null);
+                    Rear();
+                }
+                SetKind(mode == 2 ? CameraKind.Portrait : mode == 3 ? CameraKind.Wide : CameraKind.Photo);
+            }
+            PhotosGame.Unselect();
+            _dirty = true;
+        }
+
+        // The rear camera's kind: its lens range, its start zoom and, for a portrait, its blur.
+        private void SetKind(CameraKind kind)
+        {
+            _kind = kind;
+            _zoom = CameraRules.ZoomStartOf(kind);
+            _placedFov = -1f;
+            _lookDue = true;
+            _lastLook = -10f;
+            PhotosGame.Blur(_blur, kind == CameraKind.Portrait && !_inSelfie, _subject);
+            _dirty = true;
         }
 
         private static string[] FilterLabels()
@@ -608,6 +825,7 @@ namespace RealLifeOverhaul.Photos
         {
             _toast = words;
             _toastUntil = Time.unscaledTime + CameraRules.ToastSeconds;
+            _dirty = true;
         }
 
         private void Rear()
@@ -619,6 +837,9 @@ namespace RealLifeOverhaul.Photos
             {
                 _camera.nearClipPlane = CameraRules.NearPlane;
             }
+            PhotosGame.Blur(_blur, _kind == CameraKind.Portrait, _subject);
+            _lookDue = true;
+            ApplyBody();
             _dirty = true;
         }
 
@@ -641,7 +862,25 @@ namespace RealLifeOverhaul.Photos
             _hold.Take(HoldPart.Selfie);
             _inSelfie = true;
             _camera.fieldOfView = CameraRules.SelfieFieldOfView;
+            PhotosGame.Blur(_blur, false, _subject);
+            ApplyBody();
             _dirty = true;
+        }
+
+        // The player's body hidden only in the rear camera, where the player may be seen looking down; the selfie is of the player.
+        private void ApplyBody()
+        {
+            bool hide = _hidden && !_inSelfie;
+            if (hide && !_hold.Held(HoldPart.Body))
+            {
+                _hold.Take(HoldPart.Body, 1f);
+                PhotosGame.HideBody(true);
+            }
+            else if (!hide && _hold.Held(HoldPart.Body))
+            {
+                _hold.Give(HoldPart.Body, null);
+                PhotosGame.HideBody(false);
+            }
         }
 
         private void Flip()
@@ -673,9 +912,10 @@ namespace RealLifeOverhaul.Photos
             PhotosGame.Unselect();
         }
 
+        // The old chrome's grid button: thirds on and off. The kit's tool cycles off, thirds and squares.
         private void ToggleGrid()
         {
-            _grid = !_grid;
+            _guide = _guide == CameraGuide.Off ? CameraGuide.Thirds : CameraGuide.Off;
             _dirty = true;
             PhotosGame.Unselect();
         }
@@ -683,7 +923,7 @@ namespace RealLifeOverhaul.Photos
         private void Filter(int filter)
         {
             _filter = CameraRules.ClampFilter(filter);
-            PhotosGame.Grade(_color, _filter);
+            Grade();
             _dirty = true;
             PhotosGame.Unselect();
         }
@@ -695,17 +935,113 @@ namespace RealLifeOverhaul.Photos
             PhotosGame.Unselect();
         }
 
+        // The filter, the exposure and the night boost, one grade.
+        private void Grade()
+        {
+            PhotosGame.Grade(_color, _filter, _exposure, BoostOn);
+        }
+
+        private void ZoomStep(int direction)
+        {
+            if (!Active || _inSelfie)
+            {
+                return;
+            }
+            _zoom = CameraRules.Zoom(_zoom, direction * CameraRules.ZoomButtonNotches, CameraRules.ZoomLeastOf(_kind), CameraRules.ZoomMostOf(_kind));
+            _lookDue = true;
+            _dirty = true;
+            PhotosGame.Unselect();
+        }
+
+        private void Lens(int index)
+        {
+            float[] lenses = CameraRules.Lenses(_kind);
+            if (Active && !_inSelfie && index >= 0 && index < lenses.Length)
+            {
+                _zoom = lenses[index];
+                _lookDue = true;
+                _dirty = true;
+            }
+            PhotosGame.Unselect();
+        }
+
+        private void ExposureStep(int direction)
+        {
+            if (!Active)
+            {
+                return;
+            }
+            _exposure = CameraRules.Exposure(_exposure, direction);
+            Grade();
+            _dirty = true;
+            PhotosGame.Unselect();
+        }
+
+        private void Tool(int tool)
+        {
+            if (!Active || _shooting)
+            {
+                return;
+            }
+            switch (tool)
+            {
+                case ToolTimer:
+                    _timer = CameraRules.Timer(_timer);
+                    break;
+                case ToolGuide:
+                    _guide = CameraRules.Guide(_guide);
+                    break;
+                case ToolLevel:
+                    _level = !_level;
+                    break;
+                case ToolAspect:
+                    _aspect = CameraRules.NextAspect(_aspect);
+                    break;
+                case ToolBoost:
+                    _boost = !_boost && PhotoSidecarRules.Night(PhotosGame.Hour);
+                    Grade();
+                    break;
+                case ToolBody:
+                    _hidden = !_hidden;
+                    ApplyBody();
+                    break;
+                case ToolClean:
+                    _clean = !_clean;
+                    break;
+                case ToolPose:
+                    NextPose();
+                    break;
+            }
+            _dirty = true;
+            PhotosGame.Unselect();
+        }
+
+        private void ToggleClean()
+        {
+            _clean = !_clean;
+            _dirty = true;
+            PhotosGame.Unselect();
+        }
+
         private void Gallery()
         {
             Close("the Gallery button");
             PhotosDirector.Instance?.OpenLatestPhoto();
         }
 
+        // The shutter: with a timer it starts the count (a second press stops it); the shot itself is Take.
         private void Shoot()
         {
             PhotosGame.Unselect();
             if (!Active || _shooting)
             {
+                return;
+            }
+            if (_countStart >= 0f)
+            {
+                _countStart = -1f;
+                _counting = 0;
+                _dirty = true;
                 return;
             }
             PhotosDirector director = PhotosDirector.Instance;
@@ -719,8 +1055,45 @@ namespace RealLifeOverhaul.Photos
                 Toast(PhotosText.Fill("reallife_phonecam_full", "cap", PhotosText.N(PhotoStoreRules.Cap)));
                 return;
             }
+            if (_timer > 0 && _view != null && _view.KitChrome)
+            {
+                _countStart = Time.unscaledTime;
+                _counting = CameraRules.Counting(_timer, 0f);
+                _dirty = true;
+                return;
+            }
+            Take();
+        }
+
+        private void Take()
+        {
+            PhotosDirector director = PhotosDirector.Instance;
+            if (!Active || _shooting || director == null || !director.Ready || PhotoStoreRules.Full(director.Count))
+            {
+                return;
+            }
             _shooting = true;
             StartCoroutine(Guard.Routine(Shot(director.Folder, PhotosGame.SaveId, _inSelfie, PhotosGame.Day, PhotosGame.Hour)));
+        }
+
+        // What the shot records beside the photo: the camera's settings, what the lens sees, the words that tag it.
+        private PhotoSidecar Note(bool selfie, CameraAspect aspect)
+        {
+            PhotoSidecar note = PhotoShot.Capture(_filter, (int)_frame);
+            note.Aspect = (int)aspect;
+            note.Kind = (int)Kind;
+            note.Zoom = selfie ? 0 : Mathf.RoundToInt(_zoom * 10f);
+            note.Exposure = _exposure;
+            note.Timer = _timer;
+            note.Boost = BoostOn;
+            if (_view != null && _view.KitChrome)
+            {
+                CameraRules.CropRect(Screen.width, Screen.height, aspect, out int x, out int y, out int w, out int h);
+                var view = PhotoSeenRules.View.Of(Screen.width, Screen.height, x, y, w, h);
+                PhotosSeen.Look(_camera, view, ref note);
+            }
+            note.Tags = PhotoSeenRules.Tokens(note, selfie);
+            return note;
         }
 
         // The controls away for the frame that is read, then the photo made on a worker. The finally lets the screen's copy
@@ -732,10 +1105,11 @@ namespace RealLifeOverhaul.Photos
             string path = null;
             try
             {
-                _note = PhotoShot.Capture(_filter, (int)_frame);
+                CameraAspect aspect = _view.KitChrome ? _aspect : CameraAspect.Unknown;
+                _note = Note(selfie, aspect);
                 _noted = true;
                 _view.Busy(true);
-                _view.ForShot(true, _grid);
+                _view.ForShot(true, _guide != CameraGuide.Off);
                 Ui.ViewfinderHost.ForShot(true);
                 yield return null;                       // a frame drawn without the controls,
                 yield return new WaitForEndOfFrame();    // read at its end
@@ -745,12 +1119,18 @@ namespace RealLifeOverhaul.Photos
                 }
                 shot = PhotosGame.Read();
                 _pendingShot = shot;
-                _view.ForShot(false, _grid);
+                _view.ForShot(false, _guide != CameraGuide.Off);
                 if (shot == null)
                 {
                     Toast(PhotosText.T("reallife_phonecam_failed"));
                     yield break;
                 }
+                if (aspect != CameraAspect.Unknown)
+                {
+                    CameraRules.CropRect(shot.Width, shot.Height, aspect, out shot.CropX, out shot.CropY, out shot.CropWidth, out shot.CropHeight);
+                    shot.Aspect = aspect;
+                }
+                shot.Frame = _frame;
                 _flashFrom = Time.unscaledTime;
                 PhotosBridges.Shutter?.Invoke();
                 DateTime taken = DateTime.Now;
@@ -781,9 +1161,10 @@ namespace RealLifeOverhaul.Photos
                     _noted = false;
                 }
                 PhotosDirector director = PhotosDirector.Instance;
-                Texture latest = director != null ? director.Added(folder, path, made) : null;
+                Texture latest = director != null ? director.Added(folder, path, made, _note) : null;
                 Logger?.Info("Camera: a " + (selfie ? "selfie" : "photo") + " saved (" + System.IO.Path.GetFileName(path)
-                    + ", " + made.Width + " x " + made.Height + ", " + (made.Bytes / 1024) + " KB).");
+                    + ", " + made.Width + " x " + made.Height + ", " + (made.Bytes / 1024) + " KB; " + aspect
+                    + ", " + _note.People + " people, " + (string.IsNullOrEmpty(_note.Business) ? "no business" : "business " + _note.Business) + ").");
                 if (Meta.Dev.Verbose)
                 {
                     Logger?.Info("Camera check (the screen read on the main thread in " + shot.ReadMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms, wanted under "
@@ -794,7 +1175,7 @@ namespace RealLifeOverhaul.Photos
                 if (Active)
                 {
                     _view.Latest(latest);
-                    Toast(PhotosText.T("reallife_phonecam_saved"));
+                    Toast(Ui.ViewfinderHost.Wanted ? Ui.UiText.T("reallife_ui_life_saved") : PhotosText.T("reallife_phonecam_saved"));
                 }
                 if (_fromFlare && Active)
                 {
@@ -816,7 +1197,7 @@ namespace RealLifeOverhaul.Photos
                 if (_view != null)
                 {
                     _view.Busy(false);              // open or shut, so the next opening has its controls
-                    _view.ForShot(false, _grid);
+                    _view.ForShot(false, _guide != CameraGuide.Off);
                 }
                 Ui.ViewfinderHost.ForShot(false);
                 PhotosGame.Shot left = shot;

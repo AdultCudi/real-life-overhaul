@@ -34,7 +34,7 @@ namespace RealLifeOverhaul.Photos
         {
             string real = Real(photo);
             return photo.Day > 0
-                ? Fill("reallife_gallery_taken", "day", photo.Day.ToString(CultureInfo.InvariantCulture), "hour", Clock(photo.Hour), "real", real)
+                ? Fill("reallife_gallery_taken", "day", photo.Day.ToString(CultureInfo.InvariantCulture), "hour", Clock(photo.Hour, photo.Minute), "real", real)
                 : real;
         }
 
@@ -49,6 +49,15 @@ namespace RealLifeOverhaul.Photos
         public static string Clock(int hour)
         {
             return hour.GetFormattedTime(0f, false);
+        }
+
+        /// <summary>
+        /// A photo's time as the game's clock writes it, with the minute when the photo stored one ("19:05"); a photo taken before the
+        /// camera stored the minute shows the hour alone ("19h", "07 PM").
+        /// </summary>
+        public static string Clock(int hour, int minute)
+        {
+            return PhotoTimeRules.Clock(hour, minute, PhotosGame.TwelveHour, T("reallife_gallery_hour_only"));
         }
 
         /// <summary>"No photos", "1 photo", "12 photos".</summary>
@@ -72,7 +81,7 @@ namespace RealLifeOverhaul.Photos
         /// <summary>When a photo was taken in the game's time, above the photo shown whole: "Today, 14:00", "Day 41, 09:00".</summary>
         public static string When(PhotoEntry photo, int today)
         {
-            string hour = Clock(photo.Hour);
+            string hour = Clock(photo.Hour, photo.Minute);
             switch (GalleryRules.WordOf(photo.Day, today))
             {
                 case GalleryDayWord.Today: return Fill("reallife_gallery_when_today", "hour", hour);

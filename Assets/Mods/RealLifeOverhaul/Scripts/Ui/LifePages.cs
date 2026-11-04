@@ -43,29 +43,10 @@ namespace RealLifeOverhaul.Ui
         public string Move, Select, Back;
     }
 
-    /// <summary>The viewfinder's chrome: the place and the weather, the modes, the filters and the frames, the shutter.</summary>
-    public sealed class UiFinderModel
-    {
-        public string[] Modes = new string[0];
-        public int Mode;
-        public string Place;
-        public string When;
-        public string Count;
-        public string[] Filters = new string[0];
-        public int Filter;
-        public string[] Frames = new string[0];
-        public int Frame;
-        public bool Grid;
-        public string GridLabel;
-        public string Toast;
-        public string Open;
-        public string Move, Select, Back;
-    }
-
     /// <summary>
     /// The life apps' pages, laid from the kit's window, board, diary and decision card. Game-free. Cost: a layout a change.
     /// </summary>
-    public static class LifePages
+    public static partial class LifePages
     {
         public const int Chip = 40, Row = 41, Add = 42, Second = 43, Locate = 44;
         public const int VMode = 50, VFilter = 51, VFrame = 52, VShutter = 53, VClose = 54, VGrid = 55, VOpen = 56;
@@ -132,11 +113,15 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>The Gallery: the album, or one photo.</summary>
         public static void Gallery(UiScene s, UiFrame frame, bool dark, IUiKeys keys, string title, UiNavEntry[] nav, int tab, bool viewing,
-            UiAlbumModel album, UiPhotoModel photo, string move, string select, string back)
+            UiAlbumModel album, UiPhotoModel photo, string move, string select, string back, UiPhotoEditModel edit = null)
         {
             s.Begin("gallery", frame.Width, frame.Height, dark);
             UiAt at = UiAppWindow.Shell(s, frame, title, UiIcon.Image, nav, tab, true, keys, out float x, out float y, out float w, out float bottom);
-            if (viewing && photo != null)
+            if (edit != null)
+            {
+                UiPhotoEdit.Lay(s, at, edit, x, y, w, bottom - y, keys);
+            }
+            else if (viewing && photo != null)
             {
                 UiPhotoViewer.Lay(s, at, photo, x, y, w, bottom - y, keys);
             }
@@ -145,99 +130,6 @@ namespace RealLifeOverhaul.Ui
                 UiAlbum.Lay(s, at, album, x, y, w, bottom - y, keys);
             }
             Bar(s, frame, keys, move, select, back, null);
-        }
-
-        /// <summary>The viewfinder chrome over the picture. The picture itself is the camera.</summary>
-        public static void Finder(UiScene s, UiFinderModel m, UiFrame frame, bool dark, IUiKeys keys)
-        {
-            s.Begin("viewfinder", frame.Width, frame.Height, dark);
-            s.Floats = true;
-            s.Pointer = frame.Pointer;
-            float y0 = UiTokens.S4;
-            float bar = 56f;
-            int top = UiDraw.Box(s, UiAt.Screen, UiTokens.S4, y0, frame.Width - UiTokens.S8, bar, UiRole.Panel, UiRole.None, UiTokens.RadiusLarge);
-            UiAt on = UiAt.Screen.In(top);
-            float x = UiTokens.S4 + UiTokens.S3;
-            float cx = x;
-            for (int i = 0; i < m.Modes.Length; i++)
-            {
-                cx = Choice(s, on, cx, y0 + UiTokens.S4, m.Modes[i], i == m.Mode, VMode, i, frame.Width * 0.4f);
-            }
-            float close = UiTokens.Control;
-            UiDraw.IconButton(s, on, frame.Width - UiTokens.S4 - UiTokens.S3 - close, y0 + (bar - close) / 2f, close, UiIcon.Close, UiRole.Text, VClose, 0, false, UiAction.Back);
-            float countW = string.IsNullOrEmpty(m.Count) ? 0f : UiDraw.Snap(Math.Min(280f, UiTextRules.Width(m.Count, UiStyle.Small) + UiTokens.S2));
-            float right = frame.Width - UiTokens.S4 - UiTokens.S3 - close - UiTokens.S3 - countW;
-            if (countW > 0f)
-            {
-                UiDraw.TextMiddle(s, on, right, y0, bar, countW, UiStyle.Small, UiRole.Text2, m.Count, UiFlags.Right | UiFlags.Truncate);
-            }
-            float midL = cx + UiTokens.S4;
-            float midW = right - UiTokens.S4 - midL;
-            if (midW >= UiTokens.S16 * 2f)
-            {
-                string line = string.IsNullOrEmpty(m.When) ? m.Place : string.IsNullOrEmpty(m.Place) ? m.When : m.Place + "  " + m.When;
-                UiDraw.TextMiddle(s, on, midL, y0, bar, midW, UiStyle.Body, UiRole.Text, line, UiFlags.Centre | UiFlags.Truncate);
-            }
-
-            float foot = 88f;
-            float fy = frame.BandY - foot - UiTokens.S4;
-            int bottom = UiDraw.Box(s, UiAt.Screen, UiTokens.S4, fy, frame.Width - UiTokens.S8, foot, UiRole.Panel, UiRole.None, UiTokens.RadiusLarge);
-            UiAt low = UiAt.Screen.In(bottom);
-            float shutter = 64f;
-            float sx = UiDraw.SnapDown((frame.Width - shutter) / 2f);
-            float sy = fy + (foot - shutter) / 2f;
-            UiDraw.IconButton(s, low, sx, sy, shutter, UiIcon.Camera, UiRole.Text, VShutter, 0, false, UiAction.Alt, true);
-            float left = sx - UiTokens.S6;
-            PlaceChoices(s, low, m.Filters, m.Filter, VFilter, UiTokens.S4 + UiTokens.S3, fy, left - UiTokens.S4 - UiTokens.S3, foot);
-            float gridX = frame.Width - UiTokens.S4 - UiTokens.S3 - close;
-            PlaceChoices(s, low, m.Frames, m.Frame, VFrame, sx + shutter + UiTokens.S6, fy, gridX - UiTokens.S3, foot);
-            UiDraw.IconButton(s, low, gridX, fy + (foot - close) / 2f, close, UiIcon.Grid, UiRole.Text, VGrid, 0, m.Grid);
-            if (!string.IsNullOrEmpty(m.Toast))
-            {
-                float tw = UiDraw.Snap(Math.Min(520f, UiTextRules.Width(m.Toast, UiStyle.Body) + UiTokens.S8));
-                float openW = string.IsNullOrEmpty(m.Open) ? 0f : UiDraw.Snap(Math.Min(160f, UiTextRules.Width(m.Open, UiStyle.Small) + UiTokens.S4));
-                float tx = UiDraw.SnapDown((frame.Width - tw - openW) / 2f);
-                float ty = fy - UiTokens.Control - UiTokens.S4;
-                int toast = UiDraw.Box(s, UiAt.Screen, tx, ty, tw + openW, UiTokens.Control, UiRole.Panel, UiRole.None, UiTokens.RadiusLarge);
-                UiDraw.TextMiddle(s, UiAt.Screen.In(toast), tx, ty, UiTokens.Control, tw, UiStyle.Body, UiRole.Text, m.Toast, UiFlags.Centre | UiFlags.Truncate);
-                if (openW > 0f)
-                {
-                    UiDraw.TextMiddle(s, UiAt.Screen.In(toast), tx + tw, ty, UiTokens.Control, openW, UiStyle.Small, UiRole.AccentText, m.Open, UiFlags.Centre | UiFlags.Truncate);
-                    UiDraw.Node(s, UiAt.Screen, tx + tw, ty, openW, UiTokens.Control, VOpen, 0, toast);
-                }
-            }
-            Bar(s, frame, keys, m.Move, m.Select, m.Back, null);
-        }
-
-        // Filter or frame chips in the room between two edges, one row, centred in the bar.
-        private static void PlaceChoices(UiScene s, UiAt at, string[] labels, int chosen, int command, float x, float y, float right, float bar)
-        {
-            if (labels == null || labels.Length == 0 || right - x < UiTokens.S16)
-            {
-                return;
-            }
-            float h = UiTokens.Chip;
-            float used = 0f;
-            var widths = new float[labels.Length];
-            int n = 0;
-            for (int i = 0; i < labels.Length; i++)
-            {
-                float bw = UiDraw.Snap(Math.Min(160f, UiTextRules.Width(labels[i], UiStyle.Button) + UiTokens.S8));
-                if (n > 0 && used + UiTokens.S2 + bw > right - x)
-                {
-                    break;
-                }
-                widths[n] = bw;
-                used += (n > 0 ? UiTokens.S2 : 0f) + bw;
-                n++;
-            }
-            float cx = x;
-            float cy = y + UiTokens.S8;
-            for (int i = 0; i < n; i++)
-            {
-                ChoiceAt(s, at, cx, cy, widths[i], h, labels[i], i == chosen, command, i);
-                cx += widths[i] + UiTokens.S2;
-            }
         }
 
         private static float Choice(UiScene s, UiAt at, float x, float y, string label, bool on, int command, int arg, float limit)
