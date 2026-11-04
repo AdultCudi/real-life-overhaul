@@ -129,6 +129,19 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\UtilitiesFace.cs" Link="Mod\Money\UtilitiesFace.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\UtilitiesFace.Card.cs" Link="Mod\Money\UtilitiesFace.Card.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\UtilitiesFace.Sheet.cs" Link="Mod\Money\UtilitiesFace.Sheet.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiOrgTree.cs" Link="Mod\UiOrgTree.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFacts.cs" Link="Mod\Company\CompanyFacts.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFacts.Pages.cs" Link="Mod\Company\CompanyFacts.Pages.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyView.cs" Link="Mod\Company\CompanyView.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyWords.cs" Link="Mod\Company\CompanyWords.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.cs" Link="Mod\Company\CompanyFace.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.Overview.cs" Link="Mod\Company\CompanyFace.Overview.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.Question.cs" Link="Mod\Company\CompanyFace.Question.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.Pages.cs" Link="Mod\Company\CompanyFace.Pages.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.Managers.cs" Link="Mod\Company\CompanyFace.Managers.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.Rota.cs" Link="Mod\Company\CompanyFace.Rota.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.Tax.cs" Link="Mod\Company\CompanyFace.Tax.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyScreen.cs" Link="Mod\Company\CompanyScreen.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookStore.cs" Link="Mod\Outlook\OutlookStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookReadings.cs" Link="Mod\Outlook\OutlookReadings.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookRules.cs" Link="Mod\Outlook\OutlookRules.cs" />
