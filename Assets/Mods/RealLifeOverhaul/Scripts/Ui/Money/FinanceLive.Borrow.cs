@@ -332,7 +332,15 @@ namespace RealLifeOverhaul.Ui
             string record = FinanceText.T("reallife_econ_business_record", "days", days.ToString(Inv), "profit", Money(profit));
             if (offer.Answer != ProductAnswer.Yes)
             {
-                q.Refused = record + " " + FinanceApp.Why(offer.Answer);
+                // The cover rule is said on a refusal too: with the days and the profit there it is the reason, with the number the takings reach.
+                int times = desk.BusinessCover(shop, offer.Bank);
+                string rule = w.F("reallife_fin_business_check",
+                    "A bank wants {need} days of takings on record and takings that cover the payment {cover} times. Yours cover it {times} times.",
+                    "need", ProductCatalogue.BusinessDaysOnRecord.ToString(Inv), "cover", ProductCatalogue.BusinessCoverTimes.ToString(Inv), "times", times.ToString(Inv));
+                q.Refused = offer.Answer == ProductAnswer.NoCover
+                    ? record + " " + w.F("reallife_fin_business_cover_no", "Your takings must cover the payment {cover} times; they cover it {times} times.",
+                        "cover", ProductCatalogue.BusinessCoverTimes.ToString(Inv), "times", times.ToString(Inv))
+                    : record + " " + FinanceApp.Why(offer.Answer) + " " + rule;
                 q.Steps = steps.ToArray();
                 q.StepMoves = moves.ToArray();
                 return;

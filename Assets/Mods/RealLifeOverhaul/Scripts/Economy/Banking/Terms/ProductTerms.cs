@@ -123,6 +123,25 @@ namespace RealLifeOverhaul.Economy
             return dailyPayment <= 0 ? takings > 0 : takings >= (long)dailyPayment * ProductCatalogue.BusinessCoverTimes;
         }
 
+        /// <summary>
+        /// The answer for a business loan once its most is worked out and capped by the cover: not enough days or no profit is NoSecurity; the days and the profit
+        /// there but the takings not covering even the least loan's payment is NoCover; otherwise Yes.
+        /// </summary>
+        public static ProductAnswer BusinessVerdict(int daysOnRecord, bool profitable, int mostAfterCover)
+        {
+            if (!HistoryOk(daysOnRecord) || !profitable)
+            {
+                return ProductAnswer.NoSecurity;
+            }
+            return mostAfterCover < CreditCatalogue.LoanLeast ? ProductAnswer.NoCover : ProductAnswer.Yes;
+        }
+
+        /// <summary>How many whole times the takings cover a daily payment; 0 with no payment worked out or no takings.</summary>
+        public static int CoverTimes(long takings, int dailyPayment)
+        {
+            return dailyPayment <= 0 || takings <= 0 ? 0 : (int)Math.Min(int.MaxValue, takings / dailyPayment);
+        }
+
         /// <summary>The most a business loan can be so its payment stays covered: <paramref name="most"/> when the takings already cover its payment, else in proportion.</summary>
         public static int CoverMost(int most, long takings, int paymentAtMost)
         {

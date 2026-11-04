@@ -256,7 +256,7 @@ namespace RealLifeOverhaul.Economy
             string record = FinanceText.T("reallife_econ_business_record", "days", days.ToString(), "profit", FinanceText.Money(profit));
             if (offer.Answer != ProductAnswer.Yes)
             {
-                if (offer.Answer == ProductAnswer.NoSecurity)
+                if (offer.Answer == ProductAnswer.NoSecurity || offer.Answer == ProductAnswer.NoCover)
                 {
                     box.Line(record);
                 }

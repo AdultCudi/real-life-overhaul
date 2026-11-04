@@ -56,16 +56,26 @@ namespace RealLifeOverhaul.Economy
             int score = CreditLedger.Value;
             offer.Most = BankRules.Most(ProductTerms.BusinessMost(score, profit), offer.Bank.Rank);
             offer.RateBp = Mathf.RoundToInt(BusinessRate(score, offer.Bank) * Multiplier * 100f);
-            if (offer.Most >= CreditCatalogue.LoanLeast)
+            bool profitable = offer.Most >= CreditCatalogue.LoanLeast;
+            if (profitable)
             {
                 LoanQuote atMost = BusinessQuote(offer.Bank, offer.Most);
                 offer.Most = ProductTerms.CoverMost(offer.Most, takings, atMost.DailyPayment + atMost.DailyInterest);
             }
-            if (!ProductTerms.HistoryOk(days) || recent <= 0 || offer.Most < CreditCatalogue.LoanLeast)
-            {
-                offer.Answer = ProductAnswer.NoSecurity;
-            }
+            offer.Answer = ProductTerms.BusinessVerdict(days, recent > 0 && profitable, offer.Most);
             return offer;
+        }
+
+        /// <summary>How many times the takings of the last 30 days on record cover the daily payment of the least loan a bank makes (rounded down): the figure a cover refusal quotes.</summary>
+        public int BusinessCover(BuildingRegistration shop, Lender bank)
+        {
+            if (shop == null || bank == null)
+            {
+                return 0;
+            }
+            long takings = (long)Books.TakingsOnRecord(shop.Address, ProductCatalogue.BusinessDaysOnRecord, out _);
+            LoanQuote least = BusinessQuote(bank, CreditCatalogue.LoanLeast);
+            return ProductTerms.CoverTimes(takings, least.DailyPayment + least.DailyInterest);
         }
 
         // The whole-point rate of a business loan at a bank: the rating's less a point, with the bank's own points, never under the floor.

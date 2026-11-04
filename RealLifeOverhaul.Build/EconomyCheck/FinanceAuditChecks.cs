@@ -373,6 +373,14 @@ internal static partial class Program
             "business loan: takings must cover the payment 20 times");
         int most = ProductTerms.CoverMost(100000, 300000, 50);   // covers: 20 x 50 = 1,000
         int scaled = ProductTerms.CoverMost(100000, 1000, 500);  // needs 10,000 of takings for 500 a day; has 1,000: a tenth of the loan
+        // Enough days and a profit, but takings that do not cover even the least loan's payment: the refusal is the cover's, not the days'.
+        int least = CreditCatalogue.LoanLeast;
+        int capped = ProductTerms.CoverMost(least * 10, 50, 50);   // takings of 50 against a payment of 50 a day: a twentieth of the loan, under the least
+        Check(ProductTerms.BusinessVerdict(34, true, capped) == ProductAnswer.NoCover && ProductTerms.BusinessVerdict(12, true, least * 10) == ProductAnswer.NoSecurity
+              && ProductTerms.BusinessVerdict(34, false, 0) == ProductAnswer.NoSecurity && ProductTerms.BusinessVerdict(34, true, least) == ProductAnswer.Yes,
+            "business loan: a business with the days but too little cover gets the cover reason, one without the days or a profit gets the days' (" + capped + ")");
+        Check(ProductTerms.CoverTimes(1000, 50) == 20 && ProductTerms.CoverTimes(1999, 100) == 19 && ProductTerms.CoverTimes(1000, 0) == 0 && ProductTerms.CoverTimes(0, 5) == 0,
+            "business loan: the refusal quotes how many whole times the takings cover the payment");
         Check(most == 100000 && scaled == 10000 && ProductTerms.CoverMost(100000, 0, 500) == 0 && ProductTerms.CoverMost(0, 1000, 5) == 0,
             "business loan: a loan the takings do not cover is cut to what they do (" + scaled + ")");
     }

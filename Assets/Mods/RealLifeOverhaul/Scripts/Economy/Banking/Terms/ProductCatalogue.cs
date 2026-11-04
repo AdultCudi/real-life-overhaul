@@ -40,7 +40,8 @@ namespace RealLifeOverhaul.Economy
         NoSecurity = 9,     // no business with takings on record to lend against
         NoCash = 10,        // the deposit or the payment is not in hand
         NothingOwed = 11,
-        Busy = 12           // something of the same kind is already under way
+        Busy = 12,          // something of the same kind is already under way
+        NoCover = 13        // a business with the days on record whose takings do not cover the payment of the least loan 20 times
     }
 
     /// <summary>
