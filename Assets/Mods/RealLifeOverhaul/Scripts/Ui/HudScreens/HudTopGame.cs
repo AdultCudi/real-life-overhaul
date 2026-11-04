@@ -107,6 +107,39 @@ namespace RealLifeOverhaul.Ui
             return true;
         }
 
+        /// <summary>
+        /// The self-check: another mod's pieces on the game's top bar (a button beside the game's own). The kit hides only the game's own
+        /// leaves by name, so they stay where the game puts them, over the world, and their buttons are the game's own, pressed as ever.
+        /// </summary>
+        public static void Survey()
+        {
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            Topbar top = uis != null ? uis.topBar : null;
+            if (top == null)
+            {
+                return;
+            }
+            Seen(top.transform.Find("Container/Left Bar"), LeftLeaves, "the left bar");
+            Seen(top.transform.Find("Container/Buttons"), RightLeaves, "the buttons at the right");
+        }
+
+        private static void Seen(Transform bar, string[] game, string where)
+        {
+            for (int i = 0; bar != null && i < bar.childCount; i++)
+            {
+                Transform leaf = bar.GetChild(i);
+                if (!leaf.gameObject.activeSelf || Array.IndexOf(game, leaf.name) >= 0 || UiHostRules.Own(leaf.name, null))
+                {
+                    continue;
+                }
+                string owner = UiForeignGame.OwnerOf(leaf);
+                if (owner != null)
+                {
+                    UiForeign.Note("hud", UiForeignGame.KindOf(leaf), owner, where + ": " + leaf.name, "it stays where the game puts it on the top bar, over the world, and works as it did");
+                }
+            }
+        }
+
         /// <summary>Everything given back as found.</summary>
         public static void End()
         {

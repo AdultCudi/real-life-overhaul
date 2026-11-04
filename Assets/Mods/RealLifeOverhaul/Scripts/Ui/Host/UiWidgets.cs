@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -32,19 +33,36 @@ namespace RealLifeOverhaul.Ui
                 return null;
             }
             Texts.Clear();
-            c.GetComponentsInChildren(false, Texts);
-            for (int i = 0; i < Texts.Count; i++)
+            try
             {
-                if (!string.IsNullOrEmpty(Texts[i].text))
+                c.GetComponentsInChildren(false, Texts);
+                for (int i = 0; i < Texts.Count; i++)
                 {
-                    return Plain(Texts[i].text);
+                    if (!string.IsNullOrEmpty(Texts[i].text))
+                    {
+                        return Plain(Texts[i].text);
+                    }
                 }
+            }
+            catch (Exception e) when (UiForeignGame.Spoilt(e, c))
+            {
+                // another mod's text threw as it was read (said once, with its mod): this one label is left empty, nothing else is touched
             }
             return null;
         }
 
         /// <summary>A text's words with the game's rich text taken off: the kit sets its own type.</summary>
-        public static string Text(TMP_Text t) => t != null ? Plain(t.text) : null;
+        public static string Text(TMP_Text t)
+        {
+            try
+            {
+                return t != null ? Plain(t.text) : null;
+            }
+            catch (Exception e) when (UiForeignGame.Spoilt(e, t))
+            {
+                return null;   // another mod's text threw (said once, with its mod): the label is left empty
+            }
+        }
 
         /// <summary>A text's colour, as the game tints it (Going Public tints relayed notices by their sender).</summary>
         public static Color Tint(Graphic g) => g != null ? g.color : Color.clear;

@@ -160,6 +160,15 @@ namespace RealLifeOverhaul.Ui
                 _shown = ExtrasName;
                 return true;
             }
+            int page = index - _tabs.Count - (_extras.Count > 0 ? 1 : 0);
+            if (page >= 0 && page < KitForOtherMods.PagesOfBizMan.Count)
+            {
+                using (HotSpots.Game())
+                {
+                    KitForOtherMods.PagesOfBizMan[page].Open();   // the mod's own page: its fault is blamed on it by the host (UiForeignGame.Caught)
+                }
+                return true;
+            }
             if (index < 0 || index >= _tabs.Count)
             {
                 return false;

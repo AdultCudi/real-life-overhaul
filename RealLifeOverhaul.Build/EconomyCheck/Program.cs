@@ -88,6 +88,13 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--other-mods")
+        {
+            UiForeignChecks();   // another author's mod on the kit's screens (UiForeignChecks.cs) and the host's own rules, alone
+            UiHostChecks();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--bizpace")
         {
             BizPaceAll();   // BizMan's open, switch and tab change alone (BizPaceChecks.cs): RLO_BIZPACE_REPORT=1 prints the figures

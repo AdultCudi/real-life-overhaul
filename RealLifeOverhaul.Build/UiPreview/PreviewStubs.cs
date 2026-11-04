@@ -92,3 +92,12 @@ namespace RealLifeOverhaul.Ui
         public static IPreviewLogger Logger;
     }
 }
+
+namespace RealLifeOverhaul.Ui
+{
+    // The game file that names another mod's faults stays out of the preview (it meets the game); UiHost only asks it.
+    public static class UiForeignGame
+    {
+        public static bool Caught(Exception e, string screenId, string screenName) => false;
+    }
+}

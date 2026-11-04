@@ -52,7 +52,7 @@ namespace RealLifeOverhaul.Ui
         public static void StepAside(Func<bool> over) => Host.StepAside(over);
 
         // The game's Contacts app as the host needs it: under the full menu, its layout the one leaf the kit hides.
-        private sealed class ContactsGameScreen : IUiGameScreen
+        private sealed class ContactsGameScreen : IUiGameScreen, IUiGameOffers
         {
             private const string Layout = "Layout 30-70";   // the app's own layout, the leaf the kit hides; anything else a mod added to the app stays
 

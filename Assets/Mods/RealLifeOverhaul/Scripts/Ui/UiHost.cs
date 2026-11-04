@@ -69,6 +69,9 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Told once when the host stops after a fault, so its owner gives the game's own screen back.</summary>
         public Action<Exception> Failed;
 
+        /// <summary>The screen's id in UiScreens, which another mod's fault is blamed on and its breaker opened for; null for a piece of the frame.</summary>
+        public string ScreenId;
+
         /// <summary>
         /// True while the screen is on its way out (the full menu closing, as View on map closes it on its way to the map):
         /// nothing is laid out or read for a screen leaving, and its owner hides it. Null for a screen that never leaves so.
@@ -112,8 +115,8 @@ namespace RealLifeOverhaul.Ui
                 _view = new UiView(transform, "Screen");
                 _view.PointerEntered = Guard.Wrap<int>(PointerEntered);
                 _view.PointerExited = Guard.Wrap<int>(PointerExited);
-                _view.PointerPressed = Guard.Wrap<int>(PointerPressed);
-                _view.Wheeled = Guard.Wrap<int, float>(Wheeled);
+                _view.PointerPressed = Guard.Wrap<int>(PressedSafe);
+                _view.Wheeled = Guard.Wrap<int, float>(WheeledSafe);
                 _view.PointerDragged = Guard.Wrap<int, UiDragPoint>(PointerDragged);
                 _view.PointerMoved = Guard.Wrap<int, UiDragPoint>(PointerMoved);
                 _view.Tracked = Tracked;
@@ -241,6 +244,10 @@ namespace RealLifeOverhaul.Ui
             try
             {
                 OnUpdate();
+            }
+            catch (Exception e) when (Foreign(e))
+            {
+                Failed?.Invoke(e);   // another mod's code threw while the screen read or pressed its piece: blamed by name, the screen the game's own, not the kit's fault
             }
             catch (Exception e)
             {
@@ -602,6 +609,53 @@ namespace RealLifeOverhaul.Ui
         // ------------------------------------------------------------------------------------------------- pointer
 
         // A hover only lifts the target's face: the focus stays where the keys or a click left it, and nothing sounds.
+        // The guard's catch counts a fault against the interface; a fault of another mod's code is caught here first (an exception filter: no
+        // cost unless one is thrown), logged once with its mod, and the screen is the game's own: the breaker, not the guard.
+        private bool Foreign(Exception e)
+        {
+            if (!UiForeignGame.Caught(e, ScreenId, _cost != null ? _cost.Name : null))
+            {
+                return false;
+            }
+            return true;
+        }
+
+        private void PressedSafe(int node)
+        {
+            try
+            {
+                PointerPressed(node);
+            }
+            catch (Exception e) when (Foreign(e))
+            {
+                Failed?.Invoke(e);
+            }
+        }
+
+        private void WheeledSafe(int clip, float notches)
+        {
+            try
+            {
+                Wheeled(clip, notches);
+            }
+            catch (Exception e) when (Foreign(e))
+            {
+                Failed?.Invoke(e);
+            }
+        }
+
+        private void PointerDragged(int node, UiDragPoint at)
+        {
+            try
+            {
+                DragCore(node, at);
+            }
+            catch (Exception e) when (Foreign(e))
+            {
+                Failed?.Invoke(e);
+            }
+        }
+
         private void PointerEntered(int node)
         {
             using var cost = Measured(UiWork.Pointer);
@@ -709,7 +763,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The pointer went down on a target or drags from it: a screen that takes hold of its targets hears where.
-        private void PointerDragged(int node, UiDragPoint at)
+        private void DragCore(int node, UiDragPoint at)
         {
             using var cost = Measured(UiWork.Pointer);
             var px = new Vector2(at.X, at.Y);

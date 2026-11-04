@@ -28,6 +28,12 @@ public static partial class UiPreviewRunner
         Add(screens, "phone_driver", "02.jpg", Moves("RRUDDLLDRRDDDLDR"), t => UiSamples.Phone(t, -1, 0, true, true));
         Add(screens, "phone_next_empty", "13.jpg", walk, t => UiSamples.Phone(t, -1, 0, false, false, false));
         Add(screens, "phone_others", "02.jpg", Moves("RRUDDLLDRDDLDR"), t => UiSamples.Phone(t, -1, 1, true));
+        // Another author's mod on the screens the kit draws over (the fake mod of the checks, UiSamples.FakeMod.cs): the phone's grid with its two apps, one with a picture
+        // of its own and one the kit marks with a letter, and BizMan with its tab in the sidebar.
+        Add(screens, "modcompat_phone", "02.jpg", Moves("RRUDDLLDRDDLDR"), t => UiSamples.PhoneFake(t, 1));
+        Add(screens, "modcompat_phone_last", "02.jpg", Moves("RRUDDLLDRDDLDR"), t => UiSamples.PhoneFake(t, 2));
+        screens.Add(new Screen { Name = "modcompat_bizman", AppName = "BizMan", Icon = UiIcon.Building, Backdrop = "13.jpg", Walk = Moves("RDDLL"),
+            Bar = () => UiSamples.ShellBar(UiSamples.RowBizMan, false), Lay = (s, f, d, k) => BizManPages.Lay(s, UiSamples.BizMan(English, "store_foreign"), f, d, k) });
         Add(screens, "phone_collapsed", "02.jpg", Moves("L"), t => UiSamples.Phone(t, -1, 0, false, false, true, true), UiPhone.ControlCommand, UiPhone.Collapse);
         // The longest words: German, the mod's own names from de.json, the game's as its German phone writes them.
         Add(screens, "phone_longest", "13.jpg", walk, t => UiSamples.Phone(German, -1, 0, false, false, true, false, true,
@@ -81,8 +87,35 @@ public static partial class UiPreviewRunner
 
     private static Sprite _bank;
 
+    private static Sprite _fake;
+
+    // The fake mod's own app picture: a small notebook page on a teal ground, painted here, as a mod ships a picture of its own.
+    private static Sprite FakePicture()
+    {
+        if (_fake == null)
+        {
+            var tex = new Texture2D(64, 64, TextureFormat.RGBA32, true);
+            for (int y = 0; y < 64; y++)
+            {
+                for (int x = 0; x < 64; x++)
+                {
+                    bool paper = x >= 14 && x < 50 && y >= 8 && y < 56;
+                    bool line = paper && y % 10 == 3 && x >= 20 && x < 44;
+                    tex.SetPixel(x, y, line ? new Color(0.35f, 0.45f, 0.6f, 1f) : paper ? new Color(0.97f, 0.95f, 0.85f, 1f) : new Color(0.15f, 0.55f, 0.5f, 1f));
+                }
+            }
+            tex.Apply();
+            _fake = Sprite.Create(tex, new Rect(0, 0, 64, 64), new Vector2(0.5f, 0.5f), 100f);
+        }
+        return _fake;
+    }
+
     private static Sprite SamplePicture(int handle)
     {
+        if (handle == FakeOtherMod.PictureHandle)
+        {
+            return FakePicture();
+        }
         if (handle != UiSamples.PictureBank)
         {
             return null;

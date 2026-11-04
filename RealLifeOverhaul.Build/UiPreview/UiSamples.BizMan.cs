@@ -280,7 +280,7 @@ internal static partial class UiSamples
         }
         if (state == "store_foreign")
         {
-            nav.Insert(7, new UiNavEntry { Icon = UiIcon.Code, Tint = UiIconTints.Of(UiIcon.Code), Label = "Ambience" });
+            nav.Insert(7, new UiNavEntry { Icon = UiIcon.Code, Tint = UiIconTints.Of(UiIcon.Code), Label = FakeOtherMod.TabWords });
         }
         m.Nav = nav.ToArray();
         m.Prompts = BizManPrompts(t, false);
@@ -296,7 +296,7 @@ internal static partial class UiSamples
             case BizManPart.Interior: m.NavSelected = 6; Interior(t, m); break;
             case BizManPart.Classic:
                 bool foreign = state == "store_foreign";
-                string page = foreign ? "Ambience" : t("bizman_menu_schedule", "Schedule");
+                string page = foreign ? FakeOtherMod.TabWords : t("bizman_menu_schedule", "Schedule");
                 m.NavSelected = foreign ? 7 : 3;
                 m.ClassicIcon = foreign ? UiIcon.Code : UiIcon.Calendar;
                 m.ClassicTitle = foreign ? t("reallife_ui_bizman_foreign_title", "Another mod adds this page").Replace("{page}", page)
