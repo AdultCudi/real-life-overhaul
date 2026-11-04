@@ -30,8 +30,10 @@ namespace RealLifeOverhaul.Ui
             float top = y + head + UiTokens.S5;
             float gap = UiTokens.S6;
             float lw = UiDraw.SnapDown((cw - gap) * 0.56f), rw = cw - gap - lw;
-            Left(s, at.InRegion(RegionMain), f, o, v, w, lay, x, top, lw, bottom, keys);
-            Right(s, at.InRegion(RegionSide), f, o, v, w, lay, x + lw + gap, top, rw, bottom, keys);
+            // With nothing waiting for the owner the left column is short, and the managers today stand under what was done for them, so that the two columns end near each other.
+            bool managersLeft = o.Lead == null && o.Waiting.Length == 0 && o.Managers.Length > 0;
+            Left(s, at.InRegion(RegionMain), f, o, v, w, lay, x, top, lw, bottom, keys, managersLeft);
+            Right(s, at.InRegion(RegionSide), f, o, v, w, lay, x + lw + gap, top, rw, bottom, keys, managersLeft);
         }
 
         // A company with one business: what waits for the owner, as cards, and the next step at the left; the business as a panel at the right, in place of a table of one row.
@@ -165,7 +167,8 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The left column: what needs the owner (the Lead, then the rest that waits) and what was done for them today.
-        private static void Left(UiScene s, UiAt at, CompanyFacts f, CompanyOverviewFacts o, CompanyView v, CompanyWords w, CompanyLayout lay, float x, float y, float lw, float bottom, IUiKeys keys)
+        private static void Left(UiScene s, UiAt at, CompanyFacts f, CompanyOverviewFacts o, CompanyView v, CompanyWords w, CompanyLayout lay, float x, float y, float lw, float bottom, IUiKeys keys,
+            bool managersLeft = false)
         {
             float cy = y;
             bool anything = o.Lead != null || o.Waiting.Length > 0;
@@ -210,16 +213,48 @@ namespace RealLifeOverhaul.Ui
                 cy = Section(s, at, lay, x, cy, lw, w.T("reallife_co_done_today", "Done for you today"), null, log);
                 if (doneWant == 0)
                 {
-                    Sentence(s, at, o.DoneNote, x, cy, lw, UiRole.Muted, 2);
-                    return;
+                    cy = Sentence(s, at, o.DoneNote, x, cy, lw, UiRole.Muted, 2);
                 }
-                int fit = (int)Math.Max(1f, Math.Floor((bottom - cy) / DoneRow));
-                int rows = Math.Min(doneWant, fit);
-                for (int i = 0; i < rows; i++)
+                else
                 {
-                    cy += DoneLine(s, at, lay, ref o.Done[i], x, cy, lw, DoneRow);
+                    float keep = managersLeft ? UiTokens.S4 + UiTokens.PairRow + UiTokens.S1 + PersonRow * Math.Min(3, o.Managers.Length) : 0f;   // the room the managers keep under the rows
+                    int fit = (int)Math.Max(1f, Math.Floor((bottom - cy - keep) / DoneRow));
+                    int rows = Math.Min(doneWant, fit);
+                    for (int i = 0; i < rows; i++)
+                    {
+                        cy += DoneLine(s, at, lay, ref o.Done[i], x, cy, lw, DoneRow);
+                    }
                 }
             }
+            if (managersLeft && bottom - cy >= UiTokens.S4 + UiTokens.PairRow + PersonRow)
+            {
+                ManagersToday(s, at, lay, o, w, x, cy + UiTokens.S4, lw, bottom, bottom);
+            }
+        }
+
+        // The managers today: who, where, and what they decided and asked; or, with none, the sentence and the link to Managers. Draws nothing below the limit.
+        private static float ManagersToday(UiScene s, UiAt at, CompanyLayout lay, CompanyOverviewFacts o, CompanyWords w, float x, float y, float rw, float bottom, float limit)
+        {
+            float cy = y;
+            CompanyButton all = new CompanyButton { Label = w.F("reallife_co_all_count", "All {count}", "count", o.Managers.Length.ToString()), Act = CompanyAct.Of(CompanyDo.Go, null,
+                CompanyView.Managers) };
+            cy = Section(s, at, lay, x, cy, rw, w.T("reallife_co_managers_today", "Managers today"), null, o.Managers.Length > 0 ? all : (CompanyButton?)null);
+            if (o.Managers.Length == 0)
+            {
+                CompanyButton open = new CompanyButton { Label = w.T("reallife_co_open_managers", "Open Managers"), Act = CompanyAct.Of(CompanyDo.Go, null, CompanyView.Managers) };
+                cy = Sentence(s, at, w.T("reallife_co_no_managers", "No manager yet. A manager decides what you hand over, and asks you what is past their limit."), x, cy, rw, UiRole.Text2, 3);
+                if (bottom - cy >= UiTokens.Control)
+                {
+                    cy += LinkRow(s, at, lay, ref open, x, cy, rw);
+                }
+                return cy;
+            }
+            int rows = (int)Math.Max(1f, Math.Floor((limit - cy) / PersonRow));
+            for (int i = 0; i < Math.Min(o.Managers.Length, rows); i++)
+            {
+                cy += ManagerLine(s, at, lay, ref o.Managers[i], x, cy, rw);
+            }
+            return cy;
         }
 
         // A row of "also waiting": the one who asks in their ring, who and what, and the link that opens it.
@@ -279,7 +314,8 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The right column: the day by business, where the costs went, the managers today.
-        private static void Right(UiScene s, UiAt at, CompanyFacts f, CompanyOverviewFacts o, CompanyView v, CompanyWords w, CompanyLayout lay, float x, float y, float rw, float bottom, IUiKeys keys)
+        private static void Right(UiScene s, UiAt at, CompanyFacts f, CompanyOverviewFacts o, CompanyView v, CompanyWords w, CompanyLayout lay, float x, float y, float rw, float bottom, IUiKeys keys,
+            bool managersLeft = false)
         {
             float cy = y;
             // Columns: the business, then three figures as wide as their words. The section's own label heads the first, so no label stands over another.
@@ -310,8 +346,8 @@ namespace RealLifeOverhaul.Ui
             {
                 cy = FilterBars(s, at, new[] { o.Districts }, o.DistrictFilter, x, cy, rw);   // the old table's district filter
             }
-            float below = UiTokens.PairRow * 3f + UiTokens.S6 * 2f + (o.CostLabels.Length + 1) * UiTokens.PairRow + (o.Managers.Length > 0 ? PersonRow * Math.Min(3, o.Managers.Length)
-                : UiTokens.Control);
+            float below = UiTokens.PairRow * 3f + UiTokens.S6 * 2f + (o.CostLabels.Length + 1) * UiTokens.PairRow + (managersLeft ? 0f : o.Managers.Length > 0
+                ? PersonRow * Math.Min(3, o.Managers.Length) : UiTokens.Control);
             int fit = (int)Math.Max(1f, Math.Floor((bottom - cy - TableRow - below) / TableRow));
             int shown = Math.Min(o.Businesses.Length, fit);
             for (int i = 0; i < shown; i++)
@@ -369,28 +405,9 @@ namespace RealLifeOverhaul.Ui
             }
             // The managers today.
             float toolsH = o.Tools != null && o.Tools.Length > 0 ? UiTokens.Control + UiTokens.S4 : 0f;   // the tools row has the foot of the column
-            if (bottom - toolsH - cy >= UiTokens.PairRow + PersonRow)
+            if (!managersLeft && bottom - toolsH - cy >= UiTokens.PairRow + PersonRow)
             {
-                CompanyButton all = new CompanyButton { Label = w.F("reallife_co_all_count", "All {count}", "count", o.Managers.Length.ToString()), Act = CompanyAct.Of(CompanyDo.Go, null,
-                    CompanyView.Managers) };
-                cy = Section(s, at, lay, x, cy, rw, w.T("reallife_co_managers_today", "Managers today"), null, o.Managers.Length > 0 ? all : (CompanyButton?)null);
-                if (o.Managers.Length == 0)
-                {
-                    CompanyButton open = new CompanyButton { Label = w.T("reallife_co_open_managers", "Open Managers"), Act = CompanyAct.Of(CompanyDo.Go, null, CompanyView.Managers) };
-                    cy = Sentence(s, at, w.T("reallife_co_no_managers", "No manager yet. A manager decides what you hand over, and asks you what is past their limit."), x, cy, rw, UiRole.Text2, 3);
-                    if (bottom - cy >= UiTokens.Control)
-                    {
-                        cy += LinkRow(s, at, lay, ref open, x, cy, rw);
-                    }
-                }
-                else
-                {
-                    int rows = (int)Math.Max(1f, Math.Floor((bottom - toolsH - cy - (string.IsNullOrEmpty(o.Note) ? 0f : UiTokens.S12)) / PersonRow));
-                    for (int i = 0; i < Math.Min(o.Managers.Length, rows); i++)
-                    {
-                        cy += ManagerLine(s, at, lay, ref o.Managers[i], x, cy, rw);
-                    }
-                }
+                cy = ManagersToday(s, at, lay, o, w, x, cy, rw, bottom, bottom - toolsH - (string.IsNullOrEmpty(o.Note) ? 0f : UiTokens.S12));
             }
             if (!string.IsNullOrEmpty(o.Note) && bottom - toolsH - cy >= UiTokens.S10)
             {
