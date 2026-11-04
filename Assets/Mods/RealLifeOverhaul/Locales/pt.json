@@ -31423,5 +31423,22 @@
   "reallife_ui_dealer_fig_takings_today": "Receita de hoje",
   "reallife_ui_dealer_fig_offers": "Ofertas à espera",
   "reallife_ui_dealer_fig_events_on": "Eventos em curso",
-  "reallife_ui_dealer_fig_missions_done": "Missões cumpridas"
+  "reallife_ui_dealer_fig_missions_done": "Missões cumpridas",
+  "reallife_ui_estate_ch_ways": "As duas formas de resolver",
+  "reallife_ui_estate_ch_contractor": "Um empreiteiro",
+  "reallife_ui_estate_ch_yourself": "Você mesmo, materiais",
+  "reallife_ui_estate_ch_service_fees": "Quanto custa uma visita marcada",
+  "reallife_ui_estate_ch_ask_market": "O aluguel pedido e o do mercado, por dia",
+  "reallife_ui_estate_ch_asking": "Pedido",
+  "reallife_ui_estate_ch_market_rent": "Aluguel do mercado",
+  "reallife_ui_estate_ch_offer_market": "A oferta e o aluguel do mercado, por dia",
+  "reallife_ui_estate_ch_their_offer": "A oferta deles",
+  "reallife_ui_estate_ch_market": "O mercado",
+  "reallife_ui_estate_ch_prices": "Preços",
+  "reallife_ui_estate_ch_district": "O bairro",
+  "reallife_ui_estate_ch_condition": "Estado",
+  "reallife_ui_dealer_ch_price": "Você paga",
+  "reallife_ui_dealer_ch_worth": "Valor",
+  "reallife_ui_dealer_ch_asking": "Pedido",
+  "reallife_ui_dealer_ch_counter": "A contraproposta"
 }

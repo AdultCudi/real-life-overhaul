@@ -372,11 +372,11 @@ namespace RealLifeOverhaul.Ui
                     eventsOn += running != null ? 1 : 0;
                     rows.Add(new UiDataRow
                     {
-                        Cells = new[] { DealerText.Event(k, 0), running != null ? running.Name
-                            : DealerText.T("reallife_dealer_days", "days", DealerCatalogue.EventDays[k].ToString(Inv)), Money(DealerDirector.EventCost(k)), DealerText.EventShort(k),
+                        Cells = new[] { DealerText.Event(k, 0), running != null ? running.Name : string.Empty, string.Empty, DealerText.EventShort(k),
                             running != null ? DealerText.T("reallife_dealer_state_event_on", "day", FinanceText.Day(running.EventUntil)) : DealerText.T("reallife_dealer_state_event_ready") },
                         Values = new[] { (int)UiIcon.Megaphone, 0, -1, 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, running != null ? UiRole.Ok : UiRole.Notice },
-                        Subs = new[] { DealerText.T("reallife_ui_dealer_growth_event"), null, null, null, null }
+                        Subs = new[] { DealerText.T("reallife_ui_dealer_growth_event") + ", " + DealerText.T("reallife_dealer_days", "days", DealerCatalogue.EventDays[k].ToString(Inv)) + ", "
+                            + Money(DealerDirector.EventCost(k)), null, null, null, null }
                     });
                     keys.Add(DealerDirector.EventRow(k));
                 }
@@ -391,11 +391,12 @@ namespace RealLifeOverhaul.Ui
                         missionsDone += done ? 1 : 0;
                         rows.Add(new UiDataRow
                         {
-                            Cells = new[] { DealerText.Mission(m), yard.Name,
-                                DealerText.T("reallife_dealer_progress", "done", progress.ToString(Inv), "target",
-                                DealerCatalogue.MissionTarget[m].ToString(Inv)), DealerText.MissionAbout(m),
+                            Cells = new[] { DealerText.Mission(m), yard.Name, Math.Min(100, progress * 100 / Math.Max(1, DealerCatalogue.MissionTarget[m])).ToString(Inv),
+                                DealerText.MissionAbout(m) + " " + DealerText.T("reallife_dealer_progress", "done", progress.ToString(Inv), "target",
+                                DealerCatalogue.MissionTarget[m].ToString(Inv)) + ".",
                                 DealerText.T(done ? "reallife_dealer_state_mission_done" : "reallife_dealer_state_mission_open") },
-                            Values = new[] { (int)UiIcon.Trophy, 0, Math.Min(100, progress * 100 / Math.Max(1, DealerCatalogue.MissionTarget[m])), 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, done ? UiRole.Ok : UiRole.Notice },
+                            Values = new[] { (int)UiIcon.Trophy, 0, Math.Min(100, progress * 100 / Math.Max(1, DealerCatalogue.MissionTarget[m])), 0, 0 },
+                            Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, done ? UiRole.Ok : UiRole.Notice },
                             Subs = new[] { DealerText.T("reallife_ui_dealer_growth_mission", "points", DealerCatalogue.MissionReward[m].ToString(Inv)), null, null, null, null }
                         });
                         keys.Add(null);
@@ -404,9 +405,10 @@ namespace RealLifeOverhaul.Ui
                     bool top = step + 1 >= DealerCatalogue.RepSteps.Length;
                     rows.Add(new UiDataRow
                     {
-                        Cells = new[] { DealerText.Step(step), yard.Name, yard.Rep.ToString(Inv)
-                            + (top ? string.Empty : " / " + DealerCatalogue.RepSteps[step + 1].ToString(Inv)), DealerText.Perk(step), string.Empty },
-                        Values = new[] { (int)UiIcon.Star, 0, top ? 100 : Math.Min(100, yard.Rep * 100 / Math.Max(1, DealerCatalogue.RepSteps[step + 1])), 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None },
+                        Cells = new[] { DealerText.Step(step), yard.Name, (top ? 100 : Math.Min(100, yard.Rep * 100 / Math.Max(1, DealerCatalogue.RepSteps[step + 1]))).ToString(Inv),
+                            DealerText.Perk(step) + (top ? string.Empty : ", " + yard.Rep.ToString(Inv) + " / " + DealerCatalogue.RepSteps[step + 1].ToString(Inv)), string.Empty },
+                        Values = new[] { (int)UiIcon.Star, 0, top ? 100 : Math.Min(100, yard.Rep * 100 / Math.Max(1, DealerCatalogue.RepSteps[step + 1])), 0, 0 },
+                        Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None },
                         Subs = new[] { DealerText.T("reallife_ui_dealer_growth_rep"), null, null, null, null }
                     });
                     keys.Add(null);

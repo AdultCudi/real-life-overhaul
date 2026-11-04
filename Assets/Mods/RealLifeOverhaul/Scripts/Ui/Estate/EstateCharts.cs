@@ -121,12 +121,13 @@ namespace RealLifeOverhaul.Ui
         // Names that collide ("41 E 37th Street" for three flats) say the unit instead: the words after the street's comma, else the row's own second cell.
         private static void Distinct(System.Collections.Generic.List<string> names, UiDataTableModel t, System.Collections.Generic.List<int> used)
         {
+            var before = names.ToArray();
             for (int i = 0; i < names.Count; i++)
             {
                 bool twice = false;
-                for (int k = 0; k < names.Count && !twice; k++)
+                for (int k = 0; k < before.Length && !twice; k++)
                 {
-                    twice = k != i && names[k] == names[i];
+                    twice = k != i && before[k] == before[i];
                 }
                 if (twice && t.Rows[used[i]].Cells != null)
                 {
@@ -135,6 +136,13 @@ namespace RealLifeOverhaul.Ui
                     names[i] = comma > 0 ? full.Substring(comma + 1).Trim() : names[i];
                 }
             }
+        }
+
+        /// <summary>A page's own few figures side by side, each named: the money (or, with a percent format, the shares) the page's words already say.</summary>
+        public static UiChartModel Few(string title, string[] names, float[] values, bool percent = false)
+        {
+            // Figures too far apart draw a hair of a bar beside a wall: such a page keeps its words.
+            return Reads(new System.Collections.Generic.List<float>(values)) ? Bars(title, names, values, null, percent ? (Func<float, string>)Percent : Dollars) : null;
         }
 
         // Bars that differ: a chart of figures all alike (every offer near the asking price) says nothing the table does not.
@@ -230,7 +238,8 @@ namespace RealLifeOverhaul.Ui
                     return false;
                 }
             }
-            return float.TryParse(digits.ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out value) && !t.StartsWith("-", StringComparison.Ordinal);
+            return float.TryParse(digits.ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out value)
+                && !t.StartsWith("-", StringComparison.Ordinal);
         }
 
         // A bar must be tall enough to read beside the tallest: a figure under a seventh of it is a strip, and the column is not charted.

@@ -31423,5 +31423,22 @@
   "reallife_ui_dealer_fig_takings_today": "今日收入",
   "reallife_ui_dealer_fig_offers": "待处理报价",
   "reallife_ui_dealer_fig_events_on": "进行中的活动",
-  "reallife_ui_dealer_fig_missions_done": "已完成任务"
+  "reallife_ui_dealer_fig_missions_done": "已完成任务",
+  "reallife_ui_estate_ch_ways": "两种修理方式",
+  "reallife_ui_estate_ch_contractor": "请承包商",
+  "reallife_ui_estate_ch_yourself": "自己动手，材料费",
+  "reallife_ui_estate_ch_service_fees": "预约上门的费用",
+  "reallife_ui_estate_ch_ask_market": "要价租金与市场租金，每天",
+  "reallife_ui_estate_ch_asking": "要价",
+  "reallife_ui_estate_ch_market_rent": "市场租金",
+  "reallife_ui_estate_ch_offer_market": "对方出价与市场租金，每天",
+  "reallife_ui_estate_ch_their_offer": "对方出价",
+  "reallife_ui_estate_ch_market": "市场",
+  "reallife_ui_estate_ch_prices": "价格",
+  "reallife_ui_estate_ch_district": "地段",
+  "reallife_ui_estate_ch_condition": "状况",
+  "reallife_ui_dealer_ch_price": "你付",
+  "reallife_ui_dealer_ch_worth": "价值",
+  "reallife_ui_dealer_ch_asking": "要价",
+  "reallife_ui_dealer_ch_counter": "对方还价"
 }

@@ -376,6 +376,7 @@ internal static partial class UiSamples
                 };
                 break;
             case "listing":
+                m.Lower = EstateCharts.Few(W(t, "reallife_ibox_sec_price_made", "What makes the price"), new[] { W(t, "reallife_ui_estate_ch_market", "The market"), W(t, "reallife_ui_estate_ch_prices", "Prices"), W(t, "reallife_ui_estate_ch_district", "The district"), W(t, "reallife_ui_estate_ch_condition", "Condition") }, new[] { 103f, 112f, 95f, 90f }, true);
                 m.Tab = 3;
                 m.DetailIcon = UiIcon.Home;
                 m.DetailTitle = "301 W 54th Street";
@@ -404,6 +405,7 @@ internal static partial class UiSamples
                 };
                 break;
             case "works_page":
+                m.Lower = EstateCharts.Few(W(t, "reallife_ui_estate_ch_service_fees", "What a booked visit costs"), new[] { "A lock", "Damp", "Fittings", "A leak", "Electrics", "Heating" }, new[] { 300f, 340f, 380f, 220f, 260f, 180f });
                 m.Tab = 2;
                 m.DetailIcon = UiIcon.Wrench;
                 m.DetailTitle = "41 E 37th Street";
@@ -440,6 +442,7 @@ internal static partial class UiSamples
                 m.Right = new[] { new UiFactCardModel { Title = W(t, "reallife_ui_estate_servicing", "Booked servicing"), Heading = true, Lines = svc.ToArray(), Actions = book.ToArray() } };
                 break;
             case "call":
+                m.Lower = EstateCharts.Few(W(t, "reallife_ui_estate_ch_ways", "The two ways to put it right"), new[] { W(t, "reallife_ui_estate_ch_contractor", "A contractor"), W(t, "reallife_ui_estate_ch_yourself", "Yourself, materials") }, new[] { 340f, 119f });
                 m.Tab = 2;
                 m.DetailIcon = UiIcon.Wrench;
                 m.DetailTitle = "41 E 37th Street, flat 4A";
@@ -468,8 +471,10 @@ internal static partial class UiSamples
             default:
                 m.Tab = 1;
                 m.DetailIcon = UiIcon.People;
-                m.DetailTitle = W(t, "reallife_estate_tenant_shops_2", "A baker");
-                m.DetailSub = "233 W 39th Street, unit 1";
+                m.DetailTitle = "Amara Kimani";
+                m.DetailFace = "Amara Kimani";
+                m.DetailSub = W(t, "reallife_estate_tenant_shops_2", "A baker") + ", 233 W 39th Street, unit 1";
+                m.Lower = EstateCharts.Few(W(t, "reallife_ui_estate_ch_offer_market", "Their offer and the market's rent, a day"), new[] { W(t, "reallife_ui_estate_ch_their_offer", "Their offer"), W(t, "reallife_ui_estate_ch_market_rent", "The market's rent") }, new[] { 206f, 214f });
                 m.DetailChip = W(t, "reallife_estate_record_good", "Good");
                 m.Left = new[]
                 {

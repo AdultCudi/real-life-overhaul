@@ -321,7 +321,8 @@ namespace RealLifeOverhaul.Ui
                 }
                 if (_s.Yards.Count > 0)
                 {
-                    _m.FigLabels = new[] { DealerText.T("reallife_ui_dealer_fig_cars"), DealerText.T("reallife_ui_dealer_fig_sold_today"), DealerText.T("reallife_ui_dealer_fig_takings_today"), DealerText.T("reallife_ui_dealer_fig_offers") };
+                    _m.FigLabels = new[] { DealerText.T("reallife_ui_dealer_fig_cars"), DealerText.T("reallife_ui_dealer_fig_sold_today"),
+                        DealerText.T("reallife_ui_dealer_fig_takings_today"), DealerText.T("reallife_ui_dealer_fig_offers") };
                     _m.FigValues = new[] { carsAll.ToString(Inv), soldAll.ToString(Inv), Money(takingsAll), dealsAll.ToString(Inv) };
                     _m.Lower = Trend(RealLifeOverhaul.Economy.Dealership.ReportKind.Revenue, null, "reallife_dealer_report_revenue");
                 }

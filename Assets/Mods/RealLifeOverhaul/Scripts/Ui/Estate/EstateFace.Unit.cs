@@ -15,11 +15,11 @@ namespace RealLifeOverhaul.Ui
             UiAt head = at.InRegion(RegionHead);
             y = TopBar(s, head, m.Back, new UiActionModel[0], x, y, w, keys);
             float lw = UiDraw.SnapDown(w * 0.44f), rx = x + lw + UiTokens.S6, rw = x + w - rx;
-            Left(s, at.InRegion(RegionLeft), at.InRegion(RegionTenant), u, x, y, lw, bottom, keys);
+            Left(s, at.InRegion(RegionLeft), at.InRegion(RegionTenant), at.InRegion(RegionChart), u, x, y, lw, bottom, keys);
             Right(s, at.InRegion(RegionNeed), at.InRegion(RegionRight), u, rx, y, rw, bottom, keys);
         }
 
-        private static void Left(UiScene s, UiAt at, UiAt tenant, EstateUnitPage u, float x, float y, float w, float bottom, IUiKeys keys)
+        private static void Left(UiScene s, UiAt at, UiAt tenant, UiAt chart, EstateUnitPage u, float x, float y, float w, float bottom, IUiKeys keys)
         {
             // The unit's head: its use's tile, its address and what it rents for, the district and the way to find it. No empty banner: the game has no photo here.
             int head = UiDraw.Tile(s, at, x, y, TileBig, UiRole.None, false);
@@ -39,7 +39,8 @@ namespace RealLifeOverhaul.Ui
             UiDraw.TextMiddle(s, at, tx, y, UiTokens.PairRow, Math.Min(distW, tw - locW - UiTokens.S3), UiStyle.Body, UiRole.Text2, u.District, UiFlags.Truncate);
             if (locW > 0f)
             {
-                UiDraw.LinkRow(s, at, tx + Math.Min(distW, tw - locW) + UiTokens.S3, y - UiDraw.SnapDown((UiTokens.Control - UiTokens.PairRow) / 2f), locW, UiTokens.Control, u.Locate, ActionCommand, u.LocateRun);
+                UiDraw.LinkRow(s, at, tx + Math.Min(distW, tw - locW) + UiTokens.S3, y - UiDraw.SnapDown((UiTokens.Control - UiTokens.PairRow) / 2f), locW, UiTokens.Control,
+                    u.Locate, ActionCommand, u.LocateRun);
             }
             y += UiTokens.PairRow + UiTokens.S4;
             if (!string.IsNullOrEmpty(u.NextLabel))
@@ -65,6 +66,11 @@ namespace RealLifeOverhaul.Ui
             {
                 y = Tenant(s, tenant, u, x, y, w, bottom);
             }
+            if (u.YearChart != null && bottom - y >= LowerLeast - 0.5f)
+            {
+                UiChart.Lay(s, chart, u.YearChart, x, y, w, UiDraw.SnapDown(bottom - y), UiChart.First);
+                return;
+            }
             if (u.YearLabels.Length > 0 && y + UiTokens.PairRow * (u.YearLabels.Length + 2) <= bottom)
             {
                 UiDraw.Text(s, at, x, y, w, UiStyle.SectionHeader, UiRole.Text2, u.YearTitle, UiFlags.Label | UiFlags.Truncate);
@@ -77,6 +83,11 @@ namespace RealLifeOverhaul.Ui
                 y += UiTokens.S1;
                 UiDraw.TextMiddle(s, at, x, y, UiTokens.PairRow, w * 0.5f, UiStyle.BodyStrong, UiRole.Text, u.YearKeptLabel, UiFlags.Label | UiFlags.Truncate);
                 UiDraw.TextMiddle(s, at, x + w * 0.5f, y, UiTokens.PairRow, w * 0.5f, UiStyle.BodyStrong, UiRole.OkText, u.YearKept, UiFlags.Right | UiFlags.Truncate);
+                y += UiTokens.PairRow + UiTokens.S3;
+            }
+            if (u.LeftChart != null && bottom - y >= LowerLeast - 0.5f)
+            {
+                UiChart.Lay(s, chart, u.LeftChart, x, y, w, UiDraw.SnapDown(bottom - y), UiChart.First);   // what is left under the unit's facts holds the unit's own figures
             }
         }
 

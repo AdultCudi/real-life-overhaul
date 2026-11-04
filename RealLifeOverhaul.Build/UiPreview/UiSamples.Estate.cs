@@ -305,6 +305,7 @@ internal static partial class UiSamples
                 EstateSwitch(runs, W(t, "reallife_estate_ten_to_let", "Look for applicants"), true),
                 EstateLink(runs, W(t, "reallife_ui_estate_applicants", "{count} applicants waiting").Replace("{count}", "2"))
             };
+            p.LeftChart = EstateCharts.Few(W(t, "reallife_ui_estate_ch_ask_market", "The asking rent and the market's, a day"), new[] { W(t, "reallife_ui_estate_ch_asking", "Asking"), W(t, "reallife_ui_estate_ch_market_rent", "The market's rent") }, new[] { 96f, 92f });
             p.Empty = new UiFactCardModel { Title = W(t, "reallife_ui_estate_empty_title", "Empty for {days} days").Replace("{days}", "12"), Chip = W(t, "reallife_ibox_chip_empty", "Empty"), ChipTone = UiRole.Warn, Lines = lines.ToArray() };
             m.Unit = p;
             return;
@@ -318,13 +319,14 @@ internal static partial class UiSamples
         p.TenantOpen = W(t, "reallife_ui_estate_open_page", "Open their page");
         runs.Add(Yes);
         p.TenantOpenRun = runs.Count - 1;
-        p.MeterLabels = new[] { W(t, "reallife_ui_estate_m_satisfaction", "Satisfaction"), W(t, "reallife_ui_estate_m_repairs", "Repairs"), W(t, "reallife_ui_estate_m_heating", "Heating"), W(t, "reallife_ui_estate_m_value", "Value for rent"), W(t, "reallife_ui_estate_m_condition", "Condition") };
-        p.MeterValues = new[] { 51, 39, 44, 62, 80 };
+        p.MeterLabels = new[] { W(t, "reallife_ui_estate_m_satisfaction", "Satisfaction"), W(t, "reallife_ui_estate_m_repairs", "Repairs"), W(t, "reallife_ui_estate_m_value", "Value for rent"), W(t, "reallife_ui_estate_m_condition", "Condition") };
+        p.MeterValues = new[] { 51, 39, 62, 80 };
         p.YearTitle = W(t, "reallife_ui_estate_year_title", "This unit over the tax year");
         p.YearLabels = new[] { W(t, "reallife_ui_estate_year_rent", "Rent due, this year"), W(t, "reallife_ui_estate_year_works", "Works and repairs") };
-        p.YearValues = new[] { "$31,200", "-$1,420" };
+        p.YearValues = new[] { "$31,200", "-$4,200" };
         p.YearKeptLabel = W(t, "reallife_ui_estate_kept", "Kept");
-        p.YearKept = "$29,780";
+        p.YearKept = "$27,000";
+        p.YearChart = EstateCharts.Few(p.YearTitle, new[] { p.YearLabels[0], p.YearLabels[1], p.YearKeptLabel }, new[] { 31200f, 4200f, 27000f });
         p.RecordTitle = W(t, "reallife_ui_estate_record_title", "Rent record");
         p.RecordNote = W(t, "reallife_ui_estate_last_months", "last {count} months").Replace("{count}", "5");
         var rec = new List<EstateRecordRow>

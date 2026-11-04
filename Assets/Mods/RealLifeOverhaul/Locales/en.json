@@ -31423,5 +31423,22 @@
   "reallife_ui_dealer_fig_takings_today": "Takings today",
   "reallife_ui_dealer_fig_offers": "Offers waiting",
   "reallife_ui_dealer_fig_events_on": "Events on",
-  "reallife_ui_dealer_fig_missions_done": "Missions done"
+  "reallife_ui_dealer_fig_missions_done": "Missions done",
+  "reallife_ui_estate_ch_ways": "The two ways to put it right",
+  "reallife_ui_estate_ch_contractor": "A contractor",
+  "reallife_ui_estate_ch_yourself": "Yourself, materials",
+  "reallife_ui_estate_ch_service_fees": "What a booked visit costs",
+  "reallife_ui_estate_ch_ask_market": "The asking rent and the market's, a day",
+  "reallife_ui_estate_ch_asking": "Asking",
+  "reallife_ui_estate_ch_market_rent": "The market's rent",
+  "reallife_ui_estate_ch_offer_market": "Their offer and the market's rent, a day",
+  "reallife_ui_estate_ch_their_offer": "Their offer",
+  "reallife_ui_estate_ch_market": "The market",
+  "reallife_ui_estate_ch_prices": "Prices",
+  "reallife_ui_estate_ch_district": "The district",
+  "reallife_ui_estate_ch_condition": "Condition",
+  "reallife_ui_dealer_ch_price": "You pay",
+  "reallife_ui_dealer_ch_worth": "Worth",
+  "reallife_ui_dealer_ch_asking": "Asking",
+  "reallife_ui_dealer_ch_counter": "Their counter"
 }

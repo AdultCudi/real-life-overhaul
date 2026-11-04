@@ -333,6 +333,7 @@ internal static partial class UiSamples
                 }
             }
         };
+        m.Lower = EstateCharts.Few(W(t, "reallife_ibox_sec_money", "Money"), new[] { W(t, "reallife_ui_dealer_ch_asking", "Asking"), W(t, "reallife_ui_dealer_your_offer", "Your offer") }, new[] { 11900f, 10700f });
     }
 
     private static void DealerAuction(UiWords t, EstateModel m, List<Func<bool>> runs, bool nobid)
@@ -595,13 +596,13 @@ internal static partial class UiSamples
         }
         var rows = new List<UiDataRow>
         {
-            Row(new[] { W(t, "reallife_dealer_event_0", "A sales weekend"), Fx(W(t, "reallife_dealer_days", "{days} days"), "days", "3"), "$4,500", W(t, "reallife_dealer_event_0_short", "More visitors"), W(t, "reallife_dealer_state_event_ready", "Ready to book") },
-                new[] { (int)UiIcon.Megaphone, 0, -1, 0, 0 }, new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Notice }, new[] { W(t, "reallife_ui_dealer_growth_event", "Event"), null, null, null, null }),
-            Row(new[] { W(t, "reallife_dealer_mission_0", "Sell ten cars"), "Pioneer Motors", Fx(W(t, "reallife_dealer_progress", "{done} of {target}"), "done", "7", "target", "10"), W(t, "reallife_dealer_mission_0_about", "Sell ten cars to buyers."), W(t, "reallife_dealer_state_mission_open", "Under way") },
+            Row(new[] { W(t, "reallife_dealer_event_0", "Open weekend"), string.Empty, string.Empty, W(t, "reallife_dealer_event_0_short", "More visitors, and more of them make an offer"), W(t, "reallife_dealer_state_event_ready", "Ready to book") },
+                new[] { (int)UiIcon.Megaphone, 0, -1, 0, 0 }, new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Notice }, new[] { W(t, "reallife_ui_dealer_growth_event", "Event") + ", " + Fx(W(t, "reallife_dealer_days", "{days} days"), "days", "3") + ", $4,500", null, null, null, null }),
+            Row(new[] { W(t, "reallife_dealer_mission_0", "Sell ten cars"), "Pioneer Motors", "70", W(t, "reallife_dealer_mission_0_about", "Sell ten cars to buyers.") + " 7 of 10.", W(t, "reallife_dealer_state_mission_open", "Under way") },
                 new[] { (int)UiIcon.Trophy, 0, 70, 0, 0 }, new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Notice }, new[] { Fx(W(t, "reallife_ui_dealer_growth_mission", "Mission, {points} points"), "points", "30"), null, null, null, null }),
-            Row(new[] { W(t, "reallife_dealer_mission_0", "Sell ten cars"), "Eastside Auto", Fx(W(t, "reallife_dealer_progress", "{done} of {target}"), "done", "2", "target", "10"), W(t, "reallife_dealer_mission_0_about", "Sell ten cars to buyers."), W(t, "reallife_dealer_state_mission_open", "Under way") },
+            Row(new[] { W(t, "reallife_dealer_mission_0", "Sell ten cars"), "Eastside Auto", "20", W(t, "reallife_dealer_mission_0_about", "Sell ten cars to buyers.") + " 2 of 10.", W(t, "reallife_dealer_state_mission_open", "Under way") },
                 new[] { (int)UiIcon.Trophy, 0, 20, 0, 0 }, new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Notice }, new[] { Fx(W(t, "reallife_ui_dealer_growth_mission", "Mission, {points} points"), "points", "30"), null, null, null, null }),
-            Row(new[] { W(t, "reallife_dealer_step_2", "Trusted"), "Pioneer Motors", "340 / 400", W(t, "reallife_dealer_perk_2", "Cheaper wholesale"), string.Empty }, new[] { (int)UiIcon.Star, 0, 85, 0, 0 },
+            Row(new[] { W(t, "reallife_dealer_step_2", "Trusted"), "Pioneer Motors", "85", W(t, "reallife_dealer_perk_2", "Cheaper wholesale") + ", 340 / 400", string.Empty }, new[] { (int)UiIcon.Star, 0, 85, 0, 0 },
                 new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None }, new[] { W(t, "reallife_ui_dealer_growth_rep", "Reputation"), null, null, null, null })
         };
         var cols = new[]

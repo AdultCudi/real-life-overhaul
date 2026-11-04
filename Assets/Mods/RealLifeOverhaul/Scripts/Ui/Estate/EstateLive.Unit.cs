@@ -139,7 +139,8 @@ namespace RealLifeOverhaul.Ui
                 HappyTerms.Of(h, n, _day, _c, out repairs, out value, out condition);
                 p.MeterLabels = new[]
                 {
-                    EstateText.T("reallife_ui_estate_m_satisfaction"), EstateText.T("reallife_ui_estate_m_repairs"), EstateText.T("reallife_ui_estate_m_value"), EstateText.T("reallife_ui_estate_m_condition")
+                    EstateText.T("reallife_ui_estate_m_satisfaction"), EstateText.T("reallife_ui_estate_m_repairs"),
+                    EstateText.T("reallife_ui_estate_m_value"), EstateText.T("reallife_ui_estate_m_condition")
                 };
                 p.MeterValues = new[] { u.Happy < 0 ? 50 : u.Happy / 10, repairs, value, condition };
                 // The year of this flat: its share of the building's year.
@@ -150,6 +151,10 @@ namespace RealLifeOverhaul.Ui
                 p.YearValues = new[] { Cash(rent), (costs > 0 ? "-" : string.Empty) + Cash(costs) };
                 p.YearKeptLabel = EstateText.T("reallife_ui_estate_kept");
                 p.YearKept = Cash(rent - costs);
+                if (rent > 0 && costs > 0)
+                {
+                    p.YearChart = EstateCharts.Few(p.YearTitle, new[] { p.YearLabels[0], p.YearLabels[1], p.YearKeptLabel }, new[] { (float)rent, costs, rent - costs });
+                }
                 NeedCard(h, n, u, p, who);
                 // The rent record: the running month if they owe, then the last months.
                 p.RecordTitle = EstateText.T("reallife_ui_estate_record_title");
@@ -323,6 +328,11 @@ namespace RealLifeOverhaul.Ui
                 }
                 card.Lines = lines.ToArray();
                 p.Empty = card;
+                if (market > 0)
+                {
+                    p.LeftChart = EstateCharts.Few(EstateText.T("reallife_ui_estate_ch_ask_market"),
+                        new[] { EstateText.T("reallife_ui_estate_ch_asking"), EstateText.T("reallife_ui_estate_ch_market_rent") }, new[] { (float)EstateCatalogue.Share(market, ask), (float)market });
+                }
                 if (steps < 0)
                 {
                     p.Empty = null;

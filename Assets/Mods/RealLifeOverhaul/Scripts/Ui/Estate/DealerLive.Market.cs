@@ -141,6 +141,9 @@ namespace RealLifeOverhaul.Ui
                         }, false))));
                 }
                 _m.Left = new[] { new UiFactCardModel { Title = DealerText.T("reallife_ibox_sec_money"), Heading = true, Lines = lines.ToArray(), Actions = actions.ToArray() } };
+                _m.Lower = EstateCharts.Few(DealerText.T("reallife_ibox_sec_money"),
+                    new[] { DealerText.T("reallife_ui_dealer_ch_price"), DealerText.T("reallife_ui_dealer_ch_worth"), DealerText.T("reallife_ui_dealer_ch_asking") },
+                    new[] { (float)price, worth, DealerRules.Asking(worth) });
             }
 
             private void UsedPage(DealerListing l)
@@ -209,6 +212,19 @@ namespace RealLifeOverhaul.Ui
                     })));
                 }
                 _m.Left = new[] { new UiFactCardModel { Title = DealerText.T("reallife_ibox_sec_money"), Heading = true, Lines = lines.ToArray(), Actions = actions.ToArray() } };
+                var cn = new List<string> { DealerText.T("reallife_ui_dealer_ch_asking"), DealerText.T("reallife_ui_dealer_your_offer") };
+                var cv = new List<float> { l.Asking, offer };
+                if (l.Countered > 0)
+                {
+                    cn.Add(DealerText.T("reallife_ui_dealer_ch_counter"));
+                    cv.Add(l.Countered);
+                }
+                if (l.Inspected)
+                {
+                    cn.Add(DealerText.T("reallife_ui_dealer_ch_worth"));
+                    cv.Add(_d.Worth(l));
+                }
+                _m.Lower = EstateCharts.Few(DealerText.T("reallife_ibox_sec_money"), cn.ToArray(), cv.ToArray());
             }
 
             // ------------------------------------------------------------------------------------------------- the auction

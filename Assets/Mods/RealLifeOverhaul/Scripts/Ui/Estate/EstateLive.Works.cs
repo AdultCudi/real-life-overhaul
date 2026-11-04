@@ -182,6 +182,9 @@ namespace RealLifeOverhaul.Ui
                 }), h.Units[unit].Let || h.Busy));
                 _m.Left = new[] { new UiFactCardModel { Title = EstateText.T("reallife_ibox_sec_terms"), Heading = true, Lines = terms.ToArray(), Actions = actions.ToArray() } };
                 _m.Right = new[] { new UiFactCardModel { Lines = new[] { UiFactLine.Say(EstateText.T("reallife_estate_app_note")) } } };
+                _m.Lower = EstateCharts.Few(EstateText.T("reallife_ui_estate_ch_offer_market"),
+                    new[] { EstateText.T("reallife_ui_estate_ch_their_offer"), EstateText.T("reallife_ui_estate_ch_market_rent") },
+                    new[] { (float)a.Offer, market });
                 return at >= 0;
             }
 
@@ -329,6 +332,8 @@ namespace RealLifeOverhaul.Ui
                 _m.Left = new[] { new UiFactCardModel { Title = EstateText.T("reallife_ibox_sec_quote"), Heading = true, Lines = lines.ToArray(), Actions = actions.ToArray() } };
                 _m.Right = new[] { new UiFactCardModel { Lines = new[] { UiFactLine.Say(EstateText.T("reallife_estate_call_what", "days",
                     EstateCatalogue.CallLapseDays.ToString(Inv), "old", EstateCatalogue.InspectCallOld.ToString(Inv))) } } };
+                _m.Lower = EstateCharts.Few(EstateText.T("reallife_ui_estate_ch_ways"), new[] { EstateText.T("reallife_ui_estate_ch_contractor"), EstateText.T("reallife_ui_estate_ch_yourself") },
+                    new[] { (float)u.CallCost, materials });
                 return true;
             }
 
@@ -386,6 +391,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 _m.Left = left.ToArray();
                 _m.Right = new[] { ServiceCard(h) };
+                _m.Lower = ServiceChart(h);
             }
 
             // A change of use: the council first, then the builders.
@@ -473,6 +479,19 @@ namespace RealLifeOverhaul.Ui
                         UiAction.Count, () => Show(() => _d.BookService(place, k)), booked));
                 }
                 return new UiFactCardModel { Title = EstateText.T("reallife_ui_estate_servicing"), Heading = true, Lines = lines.ToArray(), Actions = actions.ToArray() };
+            }
+
+            // What a booked visit costs for each kind of fault, side by side: the prices on the booking buttons, as bars.
+            private UiChartModel ServiceChart(EstateHolding h)
+            {
+                var names = new string[EstateCatalogue.CallKinds];
+                var fees = new float[EstateCatalogue.CallKinds];
+                for (int kind = 1; kind <= EstateCatalogue.CallKinds; kind++)
+                {
+                    names[kind - 1] = EstateText.Fault(kind);
+                    fees[kind - 1] = ServiceRules.Fee(h, kind, _c.Index);
+                }
+                return EstateCharts.Few(EstateText.T("reallife_ui_estate_ch_service_fees"), names, fees);
             }
         }
     }

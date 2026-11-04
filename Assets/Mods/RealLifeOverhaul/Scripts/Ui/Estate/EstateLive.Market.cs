@@ -141,6 +141,9 @@ namespace RealLifeOverhaul.Ui
                 }
                 letting.Add(UiFactLine.Say(EstateText.T("reallife_estate_listing_how")));
                 _m.Left = new[] { new UiFactCardModel { Title = EstateText.T("reallife_ibox_sec_price_made"), Heading = true, Lines = made.ToArray() } };
+                _m.Lower = EstateCharts.Few(EstateText.T("reallife_ibox_sec_price_made"), new[] { EstateText.T("reallife_ui_estate_ch_market"), EstateText.T("reallife_ui_estate_ch_prices"),
+                    EstateText.T("reallife_ui_estate_ch_district"), EstateText.T("reallife_ui_estate_ch_condition") },
+                    new[] { _s.Real / 10f, _c.Index / 10f, EstateRules.DistrictValue(income) / 10f, EstateRules.ConditionValue(cond) / 10f }, true);
                 _m.Right = new[]
                 {
                     new UiFactCardModel

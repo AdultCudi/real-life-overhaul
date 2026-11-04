@@ -207,9 +207,9 @@ namespace RealLifeOverhaul.Ui
         private static float Natural(UiDataTableModel t) => t == null ? 0f : UiDraw.Snap(UiDataTable.Chrome(t) + t.RowCount * UiDataTable.RowHeight(t));
 
         // The chart that fills the floor a short page leaves: it takes what is left, never less than it needs to read, and is not drawn where the page is full.
-        private static void LowerCard(UiScene s, UiAt at, EstateModel m, float x, float y, float w, float bottom)
+        private static void LowerCard(UiScene s, UiAt at, EstateModel m, float x, float y, float w, float bottom, float least = LowerLeast)
         {
-            if (m.Lower == null || bottom - y < LowerLeast - 0.5f)
+            if (m.Lower == null || bottom - y < least - 0.5f)
             {
                 return;
             }
@@ -346,14 +346,41 @@ namespace RealLifeOverhaul.Ui
             y += TileBig + UiTokens.S4;
             bool both = m.Left.Length > 0 && m.Right.Length > 0;
             float cw = both ? UiDraw.SnapDown((w - UiTokens.S4) / 2f) : UiDraw.SnapDown(Math.Min(w, UiTokens.S16 * 40f));
-            float colBottom = m.Lower != null ? Math.Max(y + UiTokens.S16 * 2f, Math.Min(bottom - LowerLeast - UiTokens.S3, y + Math.Max(Stack(m.Left.Length > 0 ? m.Left : m.Right, cw, keys),
-                both ? Stack(m.Right, w - cw - UiTokens.S4, keys) : 0f))) : bottom;
-            Column(s, at.InRegion(RegionLeft), m.Left.Length > 0 ? m.Left : m.Right, x, y, cw, colBottom, keys);
+            float leftH = Stack(m.Left.Length > 0 ? m.Left : m.Right, cw, keys), rightH = both ? Stack(m.Right, w - cw - UiTokens.S4, keys) : 0f;
+            float natural = y + Math.Max(leftH, rightH);
+            float leftBottom = bottom, rightBottom = bottom, chartX = x, chartW = w, chartY = 0f;
+            bool chart = false;
+            if (m.Lower != null)
+            {
+                if (bottom - natural - UiTokens.S3 >= LowerLeast - 0.5f)
+                {
+                    // Room under both columns: the chart takes the page's width.
+                    leftBottom = rightBottom = Math.Max(y + UiTokens.S16 * 2f, natural);
+                    chartY = natural + UiTokens.S3;
+                    chart = true;
+                }
+                else if (both && bottom - (y + Math.Min(leftH, rightH)) - UiTokens.S3 >= LowerLeast - 0.5f)
+                {
+                    // One column ends well short of the other: the chart stands under it, in its width, and the page stays whole.
+                    bool leftShort = leftH <= rightH;
+                    float shortBottom = y + (leftShort ? leftH : rightH);
+                    leftBottom = leftShort ? shortBottom : bottom;
+                    rightBottom = leftShort ? bottom : shortBottom;
+                    chartX = leftShort ? x : x + cw + UiTokens.S4;
+                    chartW = leftShort ? cw : w - cw - UiTokens.S4;
+                    chartY = shortBottom + UiTokens.S3;
+                    chart = true;
+                }
+            }
+            Column(s, at.InRegion(RegionLeft), m.Left.Length > 0 ? m.Left : m.Right, x, y, cw, leftBottom, keys);
             if (both)
             {
-                Column(s, at.InRegion(RegionRight), m.Right, x + cw + UiTokens.S4, y, w - cw - UiTokens.S4, colBottom, keys);
+                Column(s, at.InRegion(RegionRight), m.Right, x + cw + UiTokens.S4, y, w - cw - UiTokens.S4, rightBottom, keys);
             }
-            LowerCard(s, at, m, x, colBottom + UiTokens.S3, w, bottom);
+            if (chart)
+            {
+                UiChart.Lay(s, at.InRegion(RegionChart), m.Lower, chartX, chartY, chartW, UiDraw.SnapDown(bottom - chartY), UiChart.First);
+            }
         }
 
         // The way back at the left, the page's actions at the right (the main one last). Returns the y under them.
