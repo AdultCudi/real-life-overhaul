@@ -183,7 +183,7 @@ namespace RealLifeOverhaul.Economy
                     view.Closed();
                     Badges();
                 },
-                Kit = () => new RealLifeOverhaul.Ui.BanksScreen(RealLifeOverhaul.Ui.MoneyLive.BanksLive),
+                Kit = () => new RealLifeOverhaul.Ui.BanksScreen(RealLifeOverhaul.Ui.BanksLive.Instance),
                 KitScreen = RealLifeOverhaul.Ui.BanksScreen.ScreenId,
                 KitIcon = RealLifeOverhaul.Ui.UiIcon.Bank
             };
