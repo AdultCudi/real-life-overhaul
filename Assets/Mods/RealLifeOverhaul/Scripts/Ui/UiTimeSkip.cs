@@ -97,6 +97,16 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        /// <summary>
+        /// How fast the game's time machine runs now, in game minutes a real second (what it moves each frame divided by the frame):
+        /// the whole distance a second when it keeps a constant pace, else its speed curve's value at how far along the run is.
+        /// At least 1. The same figure the game's own machine uses (Timemachine.TimeMachine.GetSpeed).
+        /// </summary>
+        public static int Speed(float distance, bool constant, float curveValue) => Math.Max(1, (int)Math.Round(constant ? distance : curveValue));
+
+        /// <summary>How far along a run is, 0 to 1, as the game's speed curve is read: one less what is left of the distance.</summary>
+        public static float Along(float distance, float left) => 1f - Math.Min(1f, Math.Max(distance > 0f ? left / distance : 0f, 0f));
+
         /// <summary>The veil's height: the ring, the goal, the pace and Cancel under it.</summary>
         public static float Height(UiTimeSkipModel m)
         {

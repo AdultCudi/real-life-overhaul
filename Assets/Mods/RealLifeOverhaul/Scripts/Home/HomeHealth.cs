@@ -127,7 +127,7 @@ namespace RealLifeOverhaul
                 }
                 // What wears a need down is halved on easy; what restores it is not.
                 HomeState.Hygiene = HomeState.Clamp(HomeState.Hygiene + hygiene * hours * (hygiene < 0f ? Easy : 1f), 0f, 100f);
-                HomeState.Stress = HomeState.Clamp(HomeState.Stress + stress * hours * (stress > 0f ? Easy : 1f), 0f, 100f);
+                HomeState.Stress = HomeState.Clamp(HomeState.Stress + HomeBalance.Added(stress, hours, Settings.HomeEasy, stress > 0f), 0f, 100f);
                 if (!asleep && HomeTidy.HasHome)
                 {
                     HomeTidy.Change((atHome ? HomeBalance.TidyAtHome : HomeBalance.TidyAway) * hours * Easy);
