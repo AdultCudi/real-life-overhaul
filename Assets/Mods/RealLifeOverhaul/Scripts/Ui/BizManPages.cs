@@ -15,12 +15,12 @@ namespace RealLifeOverhaul.Ui
     {
         public const int Section = UiAppWindow.NavCommand;
         public const int Action = 300, Type = 301, Less = 302, More = 303, FilterOption = 304, Period = 305, Item = 306, ItemLink = 307, Toggle = 308,
-            Repeat = 309, Kind = 310, KindOption = 311, Font = 312, FontOption = 313, Uniforms = 314, FactLink = 315, Slider = 316, Classic = 317, NoteAction = 318,
+            Repeat = 309, Kind = 310, KindOption = 311, Font = 312, FontOption = 313, Uniforms = 314, FactLink = 315, Slider = 316, Classic = 317,
             Cancel = 319, Page = 320, Heading = 321, Pages = 322;
         public const int SecondColumn = 1000;         // a heading of the right column: its argument from here, the left's from 0
 
         // What an action does, its argument: the game's side presses the game's own button for each.
-        public const int DoRent = 1, DoStart = 2, DoTerminate = 3, DoPreview = 4, DoBuy = 5, DoTakeover = 6, DoBrowse = 7, DoEmployees = 8, DoSetUp = 10,
+        public const int DoRent = 1, DoStart = 2, DoTerminate = 3, DoPreview = 4, DoBuy = 5, DoTakeover = 6, DoBrowse = 7, DoEmployees = 8,
             DoRandom = 11, DoSave = 12, DoShutdown = 13, DoSaveLogo = 14, DoLogoClassic = 15, DoApplyRent = 16, DoTakeoverUnit = 17, DoMarkSale = 18, DoCancelSale = 19,
             DoOrder = 20, DoUrgent = 21, DoCancelContract = 22, DoEndContract = 23, DoEconoView = 25, DoClassic = 26, DoRandomName = 27;
         public const int DoLine = 100;                // a button a page of lines offers (the Interior tab's), its index from here
@@ -32,7 +32,7 @@ namespace RealLifeOverhaul.Ui
         public static readonly int[] Commands =
         {
             Section, Action, Type, Less, More, FilterOption, Period, Item, ItemLink, Toggle, Repeat, Kind, KindOption, Font, FontOption, Uniforms, FactLink, Slider,
-            Classic, NoteAction, Cancel, Page, Heading, Pages,
+            Classic, Cancel, Page, Heading, Pages,
             UiFirmHead.First + UiFirmHead.Name, UiFirmHead.First + UiFirmHead.Option, UiFirmHead.First + UiFirmHead.Place, UiFirmHead.First + UiFirmHead.Switch,
             UiFirmHead.First + UiFirmHead.Todo, UiFirmHead.First + UiFirmHead.Action,
             UiDataTable.First + UiDataTable.Head, UiDataTable.First + UiDataTable.Filter, UiDataTable.First + UiDataTable.Search, UiDataTable.First + UiDataTable.Row,
@@ -102,18 +102,13 @@ namespace RealLifeOverhaul.Ui
             {
                 y = Summary(s, at, m, x, y, w);
             }
-            float noteH = string.IsNullOrEmpty(m.Note) ? 0f : UiTokens.Control + UiTokens.S3;
             if (m.Table.RowCount == 0 && m.Summary.Length == 0 && string.IsNullOrEmpty(m.Table.EmptyAction))
             {
                 // Nothing owned yet: no tools and no heads over nothing, only what will fill the place and how.
                 UiDraw.EmptyState(s, at, x, y, w, bottom - y, m.Table.EmptyIcon, m.Table.EmptyTitle, m.Table.EmptyBody, null, -1, keys);
                 return;
             }
-            UiDataTable.Lay(s, at, m.Table, x, y, w, bottom - y - noteH, keys, UiDataTable.First);
-            if (noteH > 0f)
-            {
-                Note(s, at, m.Note, m.NoteActions, x, bottom - UiTokens.Control, w, keys);
-            }
+            UiDataTable.Lay(s, at, m.Table, x, y, w, bottom - y, keys, UiDataTable.First);
             if (m.FilterOpen >= 0 && m.FilterOptions != null)
             {
                 int field = s.FindNode(UiDataTable.First + UiDataTable.Filter, m.FilterOpen);
@@ -146,23 +141,6 @@ namespace RealLifeOverhaul.Ui
                 cx += tw + UiTokens.S8;
             }
             return y + SummaryH + UiTokens.S4;
-        }
-
-        // A quiet line at the foot with its glyph and the buttons it offers (another mod's part of the list, opened in the game's view).
-        private static void Note(UiScene s, UiAt at, string note, UiActionModel[] actions, float x, float y, float w, IUiKeys keys)
-        {
-            float right = x + w;
-            for (int i = actions.Length - 1; i >= 0; i--)
-            {
-                ref UiActionModel a = ref actions[i];
-                float bw = UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, a.Key, keys);
-                right -= bw;
-                UiDraw.Button(s, at, right, y, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, NoteAction, i, a.Disabled);
-                right -= UiTokens.S4;
-            }
-            UiDraw.Icon(s, at, x, y + (UiTokens.Control - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Info, UiRole.None, UiFlags.Middle, true);
-            UiDraw.TextMiddle(s, at, x + UiTokens.Icon + UiTokens.S2, y, UiTokens.Control, right - x - UiTokens.Icon - UiTokens.S2 - UiTokens.S4, UiStyle.Body, UiRole.Text2, note,
-                UiFlags.Label | UiFlags.Truncate);
         }
 
         // ------------------------------------------------------------------------------------------------- a place's page

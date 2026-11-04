@@ -44,6 +44,7 @@ namespace RealLifeOverhaul
         public static readonly GameMember RivalsFilter = Field(UiRivals, Game, "UI.Smartphone.Apps.Rivals.SelectedRivalUI", "_selectedFilter", "String");
         public static readonly GameMember RivalsMarks = Field(UiRivals, Game, "UI.Smartphone.Apps.Rivals.SelectedRivalUI", "rivalryIconsParent", "Transform");
         public static readonly GameMember RivalsMarksShown = Field(UiRivals, Game, "UI.Smartphone.Apps.Rivals.SelectedRivalUI", "activeRivalryAttacksObj", "GameObject");
+        public static readonly GameMember RivalsTabContainers = Field(UiRivals, Game, "UI.Components.TabMenu", "containersParent", "Transform");
         public static readonly GameMember RivalsOpenBusiness = Field(UiRivals, Game, "UI.Smartphone.Apps.Rivals.Tables.RivalBusinessesCellView", "cellButton", "Button");
         public static readonly GameMember RivalsOpenBuilding = Field(UiRivals, Game, "UI.Smartphone.Apps.MarketInsider.RealEstateCellView", "button", "Button");
 
@@ -58,6 +59,7 @@ namespace RealLifeOverhaul
         public static readonly GameMember MarketForSale = Field(UiMarket, Game, "UI.Smartphone.Apps.MarketInsider.RealEstateScrollerController", "onlyForSaleToggle", "Toggle");
         public static readonly GameMember MarketDemandRefresh = Method(UiMarket, Game, "UI.Smartphone.Apps.MarketInsider.MarketDemandScrollerController", "RefreshFilterAndSort", "Void");
         public static readonly GameMember MarketEstateRefresh = Method(UiMarket, Game, "UI.Smartphone.Apps.MarketInsider.RealEstateScrollerController", "RefreshFilterAndSort", "Void");
+        public static readonly GameMember MarketViewOnMap = Field(UiMarket, Game, "UI.Smartphone.Apps.MarketInsider.MarketInsiderNeighborhoodData", "viewOnMapButton", "Button");
         public static readonly GameMember MarketOpenBuilding = Field(UiMarket, Game, "UI.Smartphone.Apps.MarketInsider.RealEstateCellView", "button", "Button");
         public static readonly GameMember MarketDemandAll = Field(UiMarket, Game, "UI.Smartphone.Apps.MarketInsider.MarketDemandScrollerController", "_allModels",
             "List<MarketDemandCellView.DemandModel>");
