@@ -115,7 +115,6 @@ namespace RealLifeOverhaul.Ui
         public EstateRow[] Works = new EstateRow[0];
         public string OthersTitle, OthersCount;
         public EstateRow[] Others = new EstateRow[0];
-        public UiChartModel YearChart;                    // the flat's tax year as bars, drawn in place of its figure rows when there is room
         public string BuildingLink;                      // "The building" opens the building's own page
         public int BuildingRun = -1;
         public string EmptyTitle, EmptyBody;             // a unit with nobody in: what it asks and what to do

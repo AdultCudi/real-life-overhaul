@@ -304,7 +304,7 @@ namespace RealLifeOverhaul.Ui
                     {
                         chances.Add(new EstateRow
                         {
-                            Icon = UiIcon.Locate, Title = EstateText.District(d.Name), Sub = EstateText.T("reallife_ui_estate_reputation_n", "value", EstateText.Share(EstateCatalogue.Clamp(d.Rep, 0, 1000))),
+                            Icon = UiIcon.Locate, Title = EstateText.District(d.Name),
                             Amount = EstateText.T("reallife_ui_estate_chance_a_day", "chance", EstateText.Share(AgencyRules.InstructionChance(d.Rep, _c.Cycle))), Run = -1
                         });
                     }

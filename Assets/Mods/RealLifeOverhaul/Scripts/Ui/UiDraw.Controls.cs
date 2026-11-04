@@ -66,8 +66,9 @@ namespace RealLifeOverhaul.Ui
             float cx = x + Math.Max(pad, (w - content) / 2f);
             if (cap)
             {
-                KeyCap(s, inside, cx, y + (h - UiTokens.KeyCap) / 2f, key, keys, kind == UiButtonKind.Primary ? UiRole.OnAccent : UiRole.Track, ink);
-                OnCyan(ref s.Items[s.ItemCount - 1], kind == UiButtonKind.Primary);
+                bool onCyan = kind == UiButtonKind.Primary || kind == UiButtonKind.Chosen;   // a chosen button stands on the same cyan as the main one
+                KeyCap(s, inside, cx, y + (h - UiTokens.KeyCap) / 2f, key, keys, onCyan ? UiRole.OnAccent : UiRole.Track, ink);
+                OnCyan(ref s.Items[s.ItemCount - 1], onCyan);
                 s.Items[s.ItemCount - 1].Flags |= UiFlags.Middle | UiFlags.Centre;
                 cx += capW + UiTokens.S2;
             }

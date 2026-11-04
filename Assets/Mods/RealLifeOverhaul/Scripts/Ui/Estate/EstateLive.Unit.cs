@@ -154,18 +154,7 @@ namespace RealLifeOverhaul.Ui
                     EstateText.T("reallife_ui_estate_m_value"), EstateText.T("reallife_ui_estate_m_condition")
                 };
                 p.MeterValues = new[] { u.Happy < 0 ? 50 : u.Happy / 10, repairs, value, condition };
-                // The year of this flat: its share of the building's year.
-                int units = Math.Max(1, h.Units.Count);
-                long rent = h.RentYear / units, costs = h.CostYear / units;
-                p.YearTitle = EstateText.T("reallife_ui_estate_year_title");
-                p.YearLabels = new[] { EstateText.T("reallife_ui_estate_year_rent"), EstateText.T("reallife_ui_estate_year_works") };
-                p.YearValues = new[] { Cash(rent), (costs > 0 ? "-" : string.Empty) + Cash(costs) };
-                p.YearKeptLabel = EstateText.T("reallife_ui_estate_kept");
-                p.YearKept = Cash(rent - costs);
-                if (rent > 0 && costs > 0)
-                {
-                    p.YearChart = EstateCharts.Few(p.YearTitle, new[] { p.YearLabels[0], p.YearLabels[1], p.YearKeptLabel }, new[] { (float)rent, costs, rent - costs });
-                }
+                YearOf(h, p);
                 NeedCard(h, n, u, p, who);
                 // The rent record: the running month if they owe, then the last months.
                 p.RecordTitle = EstateText.T("reallife_ui_estate_record_title");
@@ -176,6 +165,18 @@ namespace RealLifeOverhaul.Ui
                 var works = WorkRows(h, n, u);
                 p.Works = works.ToArray();
                 p.WorksCount = works.Count > 0 ? works.Count.ToString(Inv) : null;
+            }
+
+            // The year of this flat: its share of the building's year, rent against works and what it kept.
+            private void YearOf(EstateHolding h, EstateUnitPage p)
+            {
+                int units = Math.Max(1, h.Units.Count);
+                long rent = h.RentYear / units, costs = h.CostYear / units;
+                p.YearTitle = EstateText.T("reallife_ui_estate_year_title");
+                p.YearLabels = new[] { EstateText.T("reallife_ui_estate_year_rent"), EstateText.T("reallife_ui_estate_year_works") };
+                p.YearValues = new[] { Cash(rent), (costs > 0 ? "-" : string.Empty) + Cash(costs) };
+                p.YearKeptLabel = EstateText.T("reallife_ui_estate_kept");
+                p.YearKept = Cash(rent - costs);
             }
 
             // The months of a unit's rent record, the running month first when rent is owed: what was due, how it ended, its state and its sum.
@@ -374,6 +375,7 @@ namespace RealLifeOverhaul.Ui
                 List<EstateRow> works = WorkRows(h, n, u);
                 p.Works = works.ToArray();
                 p.WorksCount = works.Count > 0 ? works.Count.ToString(Inv) : null;
+                YearOf(h, p);
                 if (steps < 0)
                 {
                     p.Empty = null;

@@ -389,6 +389,58 @@ internal static partial class Program
             }
         }
         Check(tinted >= 6 && hand == 0, "estate: the showroom's live pages (stock, deliveries, rivals, like-it, other lots) set the class colour from the game's vehicle class through CarClass and keep no rule of their own (" + tinted + " set, " + hand + " by hand)");
+
+        // A decision is a decision (the approved desk session's card): no title strip with a close, no back button over it, its answers each a target of the action
+        // kind, and the keys start on a safe answer, never on the way out; the cards that are pages of one thing end in the way out at their foot and start on it.
+        foreach (string[] one in new[] { new[] { "estate", "call" }, new[] { "estate", "applicant" }, new[] { "dealer", "deal" } })
+        {
+            bool dealerApp = one[0] == "dealer";
+            UiScene card = LayEstate(NewEstate(dealerApp, one[1], out EstateStub cardStub));
+            int start = UiFocusRules.First(card);
+            int answers = 0;
+            int leave = -1;
+            for (int i = 0; i < card.NodeCount; i++)
+            {
+                answers += card.Nodes[i].Command == EstateFace.ActionCommand && !card.Nodes[i].Disabled ? 1 : 0;
+                leave = card.Nodes[i].Command == EstateFace.BackCommand ? i : leave;
+            }
+            Check(card.FindNode(UiDraw.CloseCommand, 0) < 0 && start >= 0 && start != leave && card.Nodes[start].Command == EstateFace.ActionCommand && answers >= 2 && leave >= 0,
+                "estate: the " + one[1] + " decision has no title strip or back button, " + answers + " answers, and focus starts on an answer, not the way out");
+        }
+        foreach (string[] one in new[] { new[] { "estate", "listing" }, new[] { "estate", "works_page" }, new[] { "dealer", "used" }, new[] { "dealer", "auction" }, new[] { "dealer", "auction_new" } })
+        {
+            UiScene card = LayEstate(NewEstate(one[0] == "dealer", one[1], out EstateStub cardStub));
+            int start = UiFocusRules.First(card);
+            Check(card.FindNode(UiDraw.CloseCommand, 0) < 0 && start >= 0 && card.Nodes[start].Command == EstateFace.BackCommand && card.Nodes[start].Y >= LowestNode(card) - 0.5f,
+                "estate: the " + one[1] + " card has no title strip or back button at its top, and the keys start on the way out at its foot (focus " + start + " of " + card.NodeCount + ", y "
+                + (start >= 0 ? card.Nodes[start].Y.ToString() : "-") + ")");
+        }
+
+        // The pad reaches a table row's own button: the row's target links to it and it links back.
+        UiScene market = LayEstate(NewEstate(false, "market", out EstateStub marketStub));
+        int rowsLinked = 0, rowsActing = 0;
+        for (int i = 0; i < market.NodeCount; i++)
+        {
+            if (market.Nodes[i].Command == EstateFace.TableBase + UiDataTable.Row)
+            {
+                rowsActing++;
+                int to = market.Nodes[i].Right;
+                rowsLinked += to >= 0 && to < market.NodeCount && market.Nodes[to].Command == EstateFace.TableBase + UiDataTable.Act && market.Nodes[to].Arg == market.Nodes[i].Arg
+                    && market.Nodes[to].Left == i ? 1 : 0;
+            }
+        }
+        Check(rowsActing > 5 && rowsLinked == rowsActing, "estate: the pad goes from a table row to its own button and back (" + rowsLinked + " of " + rowsActing + " rows linked)");
+    }
+
+    // The y of the lowest target of a scene: the foot of a card.
+    private static float LowestNode(UiScene s)
+    {
+        float low = 0f;
+        for (int i = 0; i < s.NodeCount; i++)
+        {
+            low = Math.Max(low, s.Nodes[i].Y);
+        }
+        return low;
     }
 
     private static string EstateSourceRoot()

@@ -300,7 +300,7 @@ namespace RealLifeOverhaul.Ui
             float chip = string.IsNullOrEmpty(r.Chip) ? 0f : Math.Min(UiDraw.SnapDown(w * 0.46f), UiFactCard.ChipWidth(r.Chip));
             if (chip > 0f)
             {
-                UiDraw.Chip(s, on, right - chip, y + UiDraw.SnapDown((RowHeight - UiTokens.Badge - UiTokens.S1) / 2f), r.Chip, r.ChipTone, chip);
+                UiDraw.Chip(s, on, right - chip, y + UiDraw.SnapDown((RowHeight - UiTokens.Badge - UiTokens.S1) / 2f), char.ToUpperInvariant(r.Chip[0]) + r.Chip.Substring(1), r.ChipTone, chip);
                 right -= chip + UiTokens.S3;
             }
             float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title));

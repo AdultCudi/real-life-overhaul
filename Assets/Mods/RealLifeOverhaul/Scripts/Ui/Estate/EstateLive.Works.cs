@@ -328,7 +328,8 @@ namespace RealLifeOverhaul.Ui
                     {
                         Cells = new[] { h.Name, EstateText.T("reallife_ui_estate_level_n", "level", h.Level.ToString(Inv)), (h.Cond / 10).ToString(Inv), state, repair > 0 ? Money(repair) : "-",
                             h.Busy ? EstateText.T("reallife_estate_row_until", "day", h.WorkEnd.ToString(Inv)) : "-", string.Empty },
-                        Values = new[] { (int)UseIcon(h.Use), 0, h.Cond / 10, 0, 0, 0, (int)UiIcon.Locate }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, tone, UiRole.None, UiRole.None, UiRole.None },
+                        Values = new[] { (int)UseIcon(h.Use), 0, h.Cond / 10, 0, 0, 0, (int)UiIcon.Locate },
+                        Tones = new[] { UiRole.None, UiRole.None, UiRole.None, tone, UiRole.None, UiRole.None, UiRole.None },
                         Subs = new[] { EstateText.Use(h.Use) + ", " + EstateText.District(h.District), null, null, null, null, null, null }
                     });
                     keys.Add("wrk:" + h.Place);
@@ -417,7 +418,8 @@ namespace RealLifeOverhaul.Ui
                 bool open = u.CallAnswer == (int)CallAnswer.Waiting;
                 say.Choices = new[]
                 {
-                    _runs.Choice(EstateText.T("reallife_estate_btn_contractor"), new[] { EstateRuns.Said(EstateText.T("reallife_ui_estate_dec_costs", "amount", Money(u.CallCost)), UiConsequence.Loss) },
+                    _runs.Choice(EstateText.T("reallife_estate_btn_contractor"),
+                        new[] { EstateRuns.Said(EstateText.T("reallife_ui_estate_dec_costs", "amount", Money(u.CallCost)), UiConsequence.Loss) },
                         () => Show(() => _d.SendContractor(place, unit)), contractor),
                     _runs.Choice(EstateText.T("reallife_estate_btn_yourself"), new[]
                     {

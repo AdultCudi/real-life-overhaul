@@ -584,7 +584,7 @@ internal static partial class UiSamples
                 m.Related2Count = "2";
                 m.Related2 = new[]
                 {
-                    new EstateRow { Icon = UiIcon.Wrench, Title = Fx(W(t, "reallife_ui_estate_service_name", "{fault} service"), "fault", "Heating"), Sub = Fx(W(t, "reallife_ui_estate_booked_with", "Booked with {who}"), "who", "Okonkwo Heating"), Chip = Fx(W(t, "reallife_ui_estate_day", "Day {day}"), "day", "417"), ChipTone = UiRole.Notice, Amount = "$340", Run = -1 },
+                    new EstateRow { Icon = UiIcon.Wrench, Title = Fx(W(t, "reallife_ui_estate_service_name", "{fault} service"), "fault", Capital(W(t, "reallife_estate_fault_1", "the heating"))), Sub = Fx(W(t, "reallife_ui_estate_booked_with", "Booked with {who}"), "who", "Okonkwo Heating"), Chip = Fx(W(t, "reallife_ui_estate_day", "Day {day}"), "day", "417"), ChipTone = UiRole.Notice, Amount = "$340", Run = -1 },
                     new EstateRow { Icon = UiIcon.Eye, Title = W(t, "reallife_ui_estate_next_inspection", "Next inspection"), Sub = W(t, "reallife_ui_estate_last_passed", "The last one passed"), Chip = Fx(W(t, "reallife_ui_estate_in_days", "in {days} days"), "days", "9"), ChipTone = UiRole.Notice, Run = -1 }
                 };
                 break;
@@ -664,13 +664,13 @@ internal static partial class UiSamples
                         Lines = new[]
                         {
                             UiFactLine.Row(W(t, "reallife_ui_estate_service_keeps", "A visit keeps a fault down for"), Fx(W(t, "reallife_ui_estate_n_days", "{days} days"), "days", "90")),
-                            EstateLink(runs, Fx(W(t, "reallife_ui_estate_service_line", "Cancel the {fault} service on day {day}, {who}, {amount}"), "fault", "Heating", "day", "417", "who", "Okonkwo Heating", "amount", "$340"))
+                            EstateLink(runs, Fx(W(t, "reallife_ui_estate_service_line", "Cancel the {fault} service on day {day}, {who}, {amount}"), "fault", Capital(W(t, "reallife_estate_fault_1", "the heating")), "day", "417", "who", "Okonkwo Heating", "amount", "$340"))
                         }
                     }
                 };
                 m.GridTitle = W(t, "reallife_ui_estate_book_a_visit", "Book a visit");
                 var book = new List<UiActionModel>();
-                string[] faults = { "Heating", "A leak", "Electrics", "A lock", "Damp", "Fittings" };
+                string[] faults = { Capital(W(t, "reallife_estate_fault_1", "the heating")), Capital(W(t, "reallife_estate_fault_2", "a leak")), Capital(W(t, "reallife_estate_fault_3", "the electrics")), Capital(W(t, "reallife_estate_fault_4", "a lock")), Capital(W(t, "reallife_estate_fault_5", "damp")), Capital(W(t, "reallife_estate_fault_6", "the fittings")) };
                 for (int i = 0; i < faults.Length; i++)
                 {
                     book.Add(EstateButton(runs, Fx(W(t, "reallife_ui_estate_book_kind", "Book {fault}, {amount}"), "fault", faults[i], "amount", "$" + (180 + i * 40)), UiButtonKind.Secondary, UiIcon.Calendar, UiAction.Count, i == 0));
@@ -690,7 +690,7 @@ internal static partial class UiSamples
                 m.Tab = 2;
                 m.DetailIcon = UiIcon.Wrench;
                 m.DetailTitle = "41 E 37th Street, flat 4A";
-                m.DetailSub = "Heating";
+                m.DetailSub = Capital(W(t, "reallife_estate_fault_1", "the heating"));
                 m.DetailChip = W(t, "reallife_ibox_chip_open", "Open");
                 m.DetailChipTone = UiRole.Warn;
                 m.Strip = new[]
@@ -727,7 +727,7 @@ internal static partial class UiSamples
                 m.RelatedCount = "2";
                 m.Related = new[]
                 {
-                    new EstateRow { Icon = UiIcon.Wrench, Title = Fx(W(t, "reallife_ui_estate_service_name", "{fault} service"), "fault", "Heating"), Sub = Fx(W(t, "reallife_ui_estate_booked_with", "Booked with {who}"), "who", "Okonkwo Heating"), Chip = Fx(W(t, "reallife_ui_estate_day", "Day {day}"), "day", "417"), ChipTone = UiRole.Notice, Amount = "$340", Run = -1 },
+                    new EstateRow { Icon = UiIcon.Wrench, Title = Fx(W(t, "reallife_ui_estate_service_name", "{fault} service"), "fault", Capital(W(t, "reallife_estate_fault_1", "the heating"))), Sub = Fx(W(t, "reallife_ui_estate_booked_with", "Booked with {who}"), "who", "Okonkwo Heating"), Chip = Fx(W(t, "reallife_ui_estate_day", "Day {day}"), "day", "417"), ChipTone = UiRole.Notice, Amount = "$340", Run = -1 },
                     new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_estate_improve_boiler", "a new boiler"), Sub = W(t, "reallife_ui_estate_asked_by_tenant", "Asked for by the tenant, you can say no"), Chip = W(t, "reallife_ui_estate_waiting_you", "Waiting for you"), ChipTone = UiRole.Warn, Amount = "$2,900", Run = -1 }
                 };
                 m.Related2Title = W(t, "reallife_ui_estate_record_title", "Rent record");

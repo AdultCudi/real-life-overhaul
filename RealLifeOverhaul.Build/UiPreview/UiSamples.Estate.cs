@@ -261,7 +261,7 @@ internal static partial class UiSamples
         {
             m.ListA = new[]
             {
-                new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_ui_estate_service_title", "{fault}, {building}").Replace("{fault}", "Boiler service").Replace("{building}", "12 W 39th Street, flat 2"), Chip = W(t, "reallife_ui_estate_day", "Day {day}").Replace("{day}", "431"), ChipTone = UiRole.Notice, Amount = "$320", Run = -1 }
+                new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_ui_estate_service_title", "{fault}, {building}").Replace("{fault}", Capital(W(t, "reallife_estate_fault_1", "the heating"))).Replace("{building}", "12 W 39th Street, flat 2"), Chip = W(t, "reallife_ui_estate_day", "Day {day}").Replace("{day}", "431"), ChipTone = UiRole.Notice, Amount = "$320", Run = -1 }
             };
             m.ListB = new[]
             {
@@ -276,8 +276,8 @@ internal static partial class UiSamples
             runs.Add(Yes);
             m.ListA = new[]
             {
-                new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_ui_estate_service_title", "{fault}, {building}").Replace("{fault}", "Heating").Replace("{building}", "41 E 37th Street, flat 4A"), Chip = W(t, "reallife_ui_estate_day", "Day {day}").Replace("{day}", "417"), ChipTone = UiRole.Notice, Amount = "$340", Run = -1 },
-                new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_ui_estate_service_title", "{fault}, {building}").Replace("{fault}", "A lock").Replace("{building}", "233 W 39th Street"), Chip = W(t, "reallife_ui_estate_quote_asked", "Quote asked"), ChipTone = UiRole.Warn, Amount = "$410", Run = -1 }
+                new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_ui_estate_service_title", "{fault}, {building}").Replace("{fault}", Capital(W(t, "reallife_estate_fault_1", "the heating"))).Replace("{building}", "41 E 37th Street, flat 4A"), Chip = W(t, "reallife_ui_estate_day", "Day {day}").Replace("{day}", "417"), ChipTone = UiRole.Notice, Amount = "$340", Run = -1 },
+                new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_ui_estate_service_title", "{fault}, {building}").Replace("{fault}", Capital(W(t, "reallife_estate_fault_4", "a lock"))).Replace("{building}", "233 W 39th Street"), Chip = W(t, "reallife_ui_estate_quote_asked", "Quote asked"), ChipTone = UiRole.Warn, Amount = "$410", Run = -1 }
             };
             m.ListB = new[]
             {
@@ -336,6 +336,11 @@ internal static partial class UiSamples
                     Chip = late ? W(t, "reallife_ui_estate_paid_late", "Paid late") : W(t, "reallife_ui_estate_paid", "Paid"), ChipTone = late ? UiRole.Warn : UiRole.Ok, Amount = "$4,100"
                 };
             }
+            p.YearTitle = W(t, "reallife_ui_estate_year_title", "This unit over the tax year");
+            p.YearLabels = new[] { W(t, "reallife_ui_estate_year_rent", "Rent due, this year"), W(t, "reallife_ui_estate_year_works", "Works and repairs") };
+            p.YearValues = new[] { "$36,900", "-$1,100" };
+            p.YearKeptLabel = W(t, "reallife_ui_estate_kept", "Kept");
+            p.YearKept = "$35,800";
             p.WorksTitle = W(t, "reallife_ui_estate_works_here", "Works on this unit");
             p.WorksCount = "2";
             runs.Add(Yes);
@@ -347,7 +352,7 @@ internal static partial class UiSamples
             };
             var lines = new List<UiFactLine>
             {
-                EstateStep(runs, W(t, "reallife_estate_ten_asking", "Asking rent"), "105%", W(t, "reallife_estate_ten_asking_what", "Asks {amount} a month, and about {chance} of the days an applicant comes.").Replace("{amount}", "$4,100").Replace("{chance}", "12%")),
+                EstateStep(runs, W(t, "reallife_estate_ten_asking", "Asking rent"), "105%", W(t, "reallife_estate_ten_asking_what", "Asks {amount} a month, and about {chance} of the days an applicant comes.").Replace("{amount}", "$137").Replace("{chance}", "12%")),
                 EstateSwitch(runs, W(t, "reallife_estate_ten_to_let", "Look for applicants"), true)
             };
             p.Strip = new[]
@@ -386,7 +391,6 @@ internal static partial class UiSamples
         p.YearValues = new[] { "$31,200", "-$4,200" };
         p.YearKeptLabel = W(t, "reallife_ui_estate_kept", "Kept");
         p.YearKept = "$27,000";
-        p.YearChart = EstateCharts.Few(p.YearTitle, new[] { p.YearLabels[0], p.YearLabels[1], p.YearKeptLabel }, new[] { 31200f, 4200f, 27000f });
         p.RecordTitle = W(t, "reallife_ui_estate_record_title", "Rent record");
         p.RecordNote = W(t, "reallife_ui_estate_last_months", "last {count} months").Replace("{count}", "5");
         var rec = new List<EstateRecordRow>
@@ -405,7 +409,7 @@ internal static partial class UiSamples
         runs.Add(Yes);
         p.Works = new[]
         {
-            new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_ui_estate_service_name", "{fault} service").Replace("{fault}", "Heating"), Sub = W(t, "reallife_ui_estate_booked_with", "Booked with {who}").Replace("{who}", "Okonkwo Heating"), Chip = W(t, "reallife_ui_estate_day", "Day {day}").Replace("{day}", "417"), ChipTone = UiRole.Notice, Amount = "$340", Run = -1 },
+            new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_ui_estate_service_name", "{fault} service").Replace("{fault}", Capital(W(t, "reallife_estate_fault_1", "the heating"))), Sub = W(t, "reallife_ui_estate_booked_with", "Booked with {who}").Replace("{who}", "Okonkwo Heating"), Chip = W(t, "reallife_ui_estate_day", "Day {day}").Replace("{day}", "417"), ChipTone = UiRole.Notice, Amount = "$340", Run = -1 },
             new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_estate_improve_boiler", "a new boiler"), Sub = W(t, "reallife_ui_estate_asked_by_tenant", "Asked for by the tenant, you can say no"), Chip = W(t, "reallife_ui_estate_waiting_you", "Waiting for you"), ChipTone = UiRole.Warn, Amount = "$2,900", Run = -1 }
         };
         if (state == "unit_request")

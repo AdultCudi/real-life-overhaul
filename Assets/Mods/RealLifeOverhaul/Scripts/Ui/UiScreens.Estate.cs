@@ -236,7 +236,10 @@ namespace RealLifeOverhaul.Ui
                 "reallife_colour_cobalt",
                 "reallife_colour_heather",
                 "reallife_colour_mustard",
-                "reallife_colour_forest"
+                "reallife_colour_forest",
+                "reallife_estate_fault_2",
+                "reallife_estate_fault_3",
+                "reallife_estate_fault_5"
             };
         }
 

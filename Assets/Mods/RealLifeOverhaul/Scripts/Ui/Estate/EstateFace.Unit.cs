@@ -102,11 +102,6 @@ namespace RealLifeOverhaul.Ui
                     }
                 }
             }
-            if (u.YearChart != null && bottom - y >= LowerLeast - 0.5f)
-            {
-                UiChart.Lay(s, chart, u.YearChart, x, y, w, UiDraw.SnapDown(bottom - y), UiChart.First);
-                return;
-            }
             if (u.YearLabels.Length > 0 && y + UiTokens.PairRow * (u.YearLabels.Length + 2) <= bottom)
             {
                 UiDraw.Text(s, at, x, y, w, UiStyle.SectionHeader, UiRole.Text2, u.YearTitle, UiFlags.Label | UiFlags.Truncate | UiFlags.Middle);
