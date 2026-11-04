@@ -56,6 +56,12 @@ namespace RealLifeOverhaul.Economy
             return FinanceText.T(key, name, value, name2, value2, name3, value3);
         }
 
+        /// <summary>The state of a unit that stands empty: "Empty 12 days", the key's "day(s)" resolved for the number, on the old page and the kit's alike.</summary>
+        public static string Empty(int days)
+        {
+            return RealLifeOverhaul.Ui.UiPlural.Fix(FinanceText.T("reallife_estate_state_empty", "days", days.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        }
+
         /// <summary>A text with any number of its names filled in: name, value, name, value.</summary>
         public static string Fill(string key, params string[] pairs)
         {

@@ -39,20 +39,18 @@ internal static partial class UiSamples
             m.Tab = 2;
             d.Kicker = Fx(W(t, "reallife_ui_estate_dec_call_kicker", "Repair call, {place}"), "place", "41 E 37th Street, flat 4A");
             d.Title = Capital(W(t, "reallife_estate_fault_1", "the heating"));
-            d.Body = Fx(W(t, "reallife_ui_estate_dec_call_body", "{name} reported it {when}. How do you answer?"), "name", "Sofia Marchetti",
-                "when", Fx(W(t, "reallife_ui_estate_days_ago", "{days} days ago"), "days", "5"));
+            d.Body = Fx(W(t, "reallife_ui_estate_dec_call_body", "{name} reported it. How do you answer?"), "name", "Sofia Marchetti");
             d.Portrait = "Sofia Marchetti";
-            d.PortraitLines = new[] { "Nurse, Murray Hill Clinic", "34", Fx(W(t, "reallife_ui_estate_late_days", "Late {days} days"), "days", "6") };
+            d.PortraitLines = new[] { JobLine(t, "Nurse, Murray Hill Clinic"), "34", Fx(W(t, "reallife_ui_estate_late_days", "Late {days} days"), "days", "6") };
             d.FactLabels = new[] { W(t, "reallife_ui_estate_ch_contractor", "A contractor"), W(t, "reallife_ui_estate_ch_yourself", "Yourself, materials"),
                 W(t, "reallife_ui_estate_fig_reported", "Reported"), W(t, "reallife_ui_estate_fig_grace", "The tenant minds after") };
             d.FactValues = new[] { "$340", "$119", Fx(W(t, "reallife_ui_estate_days_ago", "{days} days ago"), "days", "5"), Fx(W(t, "reallife_ui_estate_n_days", "{days} days"), "days", "3") };
             d.Choices = new[]
             {
                 Choice(runs, W(t, "reallife_estate_btn_contractor", "Send a contractor"),
-                    new[] { Said(Fx(W(t, "reallife_ui_estate_dec_costs", "Costs {amount}"), "amount", "$340"), UiConsequence.Loss) }),
+                    new[] { Said(W(t, "reallife_ui_estate_dec_next_morning", "Put right the next morning")) }),
                 Choice(runs, W(t, "reallife_estate_btn_yourself", "Do it yourself"),
-                    new[] { Said(Fx(W(t, "reallife_ui_estate_dec_materials", "Materials {amount}"), "amount", "$119"), UiConsequence.Loss),
-                        Said(Fx(W(t, "reallife_ui_estate_call_minutes", "Doing it yourself takes about {minutes} minutes at the building's door."), "minutes", "120")) })
+                    new[] { Said(Fx(W(t, "reallife_ui_estate_call_minutes", "Doing it yourself takes about {minutes} minutes at the building's door."), "minutes", "120")) })
             };
             d.Start = 1;
             d.Buttons = new[] { NotNow(t) };
@@ -93,7 +91,7 @@ internal static partial class UiSamples
         m.Decision = d;
         d.Kicker = Fx(W(t, "reallife_ui_dealer_dec_deal_kicker", "Offer, {showroom}"), "showroom", "Pioneer Motors");
         d.Title = "Meridian GT coupe";
-        d.Body = Fx(W(t, "reallife_ui_dealer_dec_deal_offers", "{name} offers {offer} for your {car}, asking {asking}."), "name", "Marcus Bell", "offer", "$82,000", "car", "Meridian GT coupe", "asking", "$84,500")
+        d.Body = Fx(W(t, "reallife_ui_dealer_dec_deal_offers", "{name} made an offer for your {car}."), "name", "Marcus Bell", "car", "Meridian GT coupe")
             + " " + W(t, "reallife_ui_dealer_deal_looked", "They looked at the car {times} times before they made it.").Replace("{times}", "2");
         d.Portrait = "Marcus Bell";
         d.PortraitLines = new[] { W(t, "reallife_dealer_profile_bargain", "A bargain hunter"), W(t, "reallife_dealer_state_waiting", "Waiting") };
@@ -109,7 +107,6 @@ internal static partial class UiSamples
         {
             Choice(runs, W(t, "reallife_dealer_button_accept", "Accept"), new[]
             {
-                Said(Fx(W(t, "reallife_ui_dealer_dec_margin", "A margin of {margin}"), "margin", "$9,700"), 1),
                 Said(Fx(W(t, "reallife_dealer_deal_finance", "They would put down {deposit}% and pay over {weeks} weeks. Their rating is {grade}."), "deposit", "20", "weeks", "8", "grade", "B"))
             }),
             Choice(runs, W(t, "reallife_dealer_button_counter", "Counter"), new[] { Said(Fx(W(t, "reallife_ui_dealer_counters_left", "{left} counters left"), "left", "2")) }),

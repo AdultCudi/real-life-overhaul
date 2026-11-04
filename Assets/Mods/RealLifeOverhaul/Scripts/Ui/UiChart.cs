@@ -38,6 +38,7 @@ namespace RealLifeOverhaul.Ui
         public Func<float, string> CountFormat;     // a candle's volume as the game writes a count
         public bool Whole;                          // the values are counts: the axis steps by whole numbers (1, 2, 5 of a power of ten), never 0.5
         public int Focus = -1;                      // the point read in its card, or -1
+        public bool EvenAxis;                       // the point names stand at even steps counted back from the last point, which is always named (a series of days)
         public bool Still;                          // a chart that is read by its axes alone: its points are no targets (a figure beside a page's own, not a thing to explore)
         public UiPlotBand[] PlotBands;               // washes behind a run of the points, or null
         public int[] Marks;                          // point indices marked (a rate rise), or null
@@ -553,6 +554,19 @@ namespace RealLifeOverhaul.Ui
             }
             int every = stepped ? 1 : Math.Max(1, (int)Math.Ceiling((most + UiTokens.S3) / Math.Max(1f, slot)));
             float lw = stepped ? most + UiTokens.S1 : Math.Min(most + UiTokens.S1, slot * every - UiTokens.S1);
+            if (m.EvenAxis && !stepped)
+            {
+                // From the last point back, an even number of points apart; a name that would start left of the plot is left out, none is moved off its point.
+                for (int i = n - 1; i >= 0; i -= every)
+                {
+                    float ex = px + slot * (i + 0.5f) - lw / 2f;
+                    if (ex >= px - 0.5f)
+                    {
+                        UiDraw.Text(s, at, ex, y, lw, UiStyle.Small, UiRole.Muted, m.Points[i], UiFlags.Centre | UiFlags.Truncate | UiFlags.Middle);
+                    }
+                }
+                return;
+            }
             float kept = float.MinValue;   // the right edge of the last label drawn
             for (int i = 0; i < n; i += every)
             {

@@ -306,7 +306,8 @@ namespace RealLifeOverhaul.Ui
             float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title));
             bool two = !string.IsNullOrEmpty(r.Sub);
             float top = y + UiDraw.SnapDown((RowHeight - (two ? lh + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) : lh)) / 2f);
-            UiDraw.Text(s, on, tx, top, right - tx, UiStyle.Title, UiRole.Text, r.Title, UiFlags.Truncate | UiFlags.Middle);
+            string title = string.IsNullOrEmpty(r.Title) ? r.Title : char.ToUpperInvariant(r.Title[0]) + r.Title.Substring(1);
+            UiDraw.Text(s, on, tx, top, right - tx, UiStyle.Title, UiRole.Text, title, UiFlags.Truncate | UiFlags.Middle);
             if (two)
             {
                 UiDraw.Text(s, on, tx, top + lh, right - tx, UiStyle.Small, UiRole.Text2, r.Sub, UiFlags.Truncate | UiFlags.Middle);
@@ -452,11 +453,11 @@ namespace RealLifeOverhaul.Ui
                 {
                     below = Grid(s, at, m, rx, below, rw, keys);
                 }
-                Shares(s, at, m.ShareTitle, m.ShareLabels, m.ShareValues, rx, below, rw, m.ShareTexts);
+                Shares(s, at, m.ShareTitle, m.ShareLabels, m.ShareValues, rx, below, rw, m.ShareTexts, m.SharePlain);
             }
             else
             {
-                Shares(s, at, m.ShareTitle, m.ShareLabels, m.ShareValues, x, y + leftH, cw, m.ShareTexts);
+                Shares(s, at, m.ShareTitle, m.ShareLabels, m.ShareValues, x, y + leftH, cw, m.ShareTexts, m.SharePlain);
             }
             if (related2)
             {

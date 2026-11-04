@@ -36,7 +36,7 @@ namespace RealLifeOverhaul.Ui
             return UiDraw.Snap((string.IsNullOrEmpty(title) ? 0f : UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3) + rows * UiTokens.PairRow + UiTokens.S3);
         }
 
-        private static float Shares(UiScene s, UiAt at, string title, string[] labels, int[] values, float x, float y, float w, string[] texts = null)
+        private static float Shares(UiScene s, UiAt at, string title, string[] labels, int[] values, float x, float y, float w, string[] texts = null, bool plain = false)
         {
             int n = labels == null || values == null ? 0 : Math.Min(labels.Length, values.Length);
             if (n == 0)
@@ -56,9 +56,27 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < n; i++)
             {
                 bool said = texts != null && i < texts.Length && !string.IsNullOrEmpty(texts[i]);
+                if (plain)
+                {
+                    PlainBar(s, on, x + (i / rows) * (cw + gap), y + (i % rows) * UiTokens.PairRow, cw, labels[i], values[i], lw);
+                    continue;
+                }
                 UiDraw.GradeBar(s, on, x + (i / rows) * (cw + gap), y + (i % rows) * UiTokens.PairRow, cw, labels[i], values[i], lw, said ? null : "%", said ? texts[i] : null);
             }
             return y + rows * UiTokens.PairRow + UiTokens.S3;
+        }
+
+        // A share of a whole (the buyers by rating): one colour and its percent, never a grade, since a third of them being A is no warning.
+        private static void PlainBar(UiScene s, UiAt at, float x, float y, float w, string label, int value, float labelW)
+        {
+            float h = UiTokens.PairRow, fw = UiTextRules.Width("100%", UiStyle.BodyStrong) + UiTokens.S1;
+            UiDraw.TextMiddle(s, at, x, y, h, labelW, UiStyle.Body, UiRole.Text2, label, UiFlags.Label | UiFlags.Truncate);
+            float bx = x + labelW + UiTokens.S3, bw = w - labelW - UiTokens.S3 - fw - UiTokens.S2;
+            int track = UiDraw.Box(s, at, bx, y + (h - UiTokens.S1) / 2f, bw, UiTokens.S1, UiRole.Track, UiRole.None, UiTokens.S1 / 2f, UiFlags.Middle | UiFlags.Share);
+            UiDraw.Box(s, at.In(track), bx, y + (h - UiTokens.S1) / 2f, Math.Max(UiTokens.S1, bw * Math.Max(0, Math.Min(100, value)) / 100f), UiTokens.S1, UiRole.Accent, UiRole.None,
+                UiTokens.S1 / 2f, UiFlags.Middle | UiFlags.Share);
+            string percent = Math.Max(0, Math.Min(100, value)).ToString(System.Globalization.CultureInfo.InvariantCulture) + "%";
+            UiDraw.TextMiddle(s, at, x + w - fw, y, h, fw, UiStyle.BodyStrong, UiRole.Text, percent, UiFlags.Right);
         }
 
         private static float RelatedHeight(EstateModel m) => m.Related == null || m.Related.Length == 0 ? 0f
@@ -159,7 +177,13 @@ namespace RealLifeOverhaul.Ui
                 float bw = UiDraw.ButtonWidth(UiButtonKind.Secondary, m.FootBack, UiIcon.None, UiAction.Back, keys);
                 int way = UiDraw.Button(s, at, x + cw - UiTokens.S5 - bw, y + h - UiTokens.S6 - UiTokens.Control, bw, UiTokens.Control, UiButtonKind.Secondary, m.FootBack, UiIcon.None,
                     UiAction.Back, keys, BackCommand, 0);
-                s.FocusFirst = way;   // the keys start on the answer that commits to nothing: the card's own way out, not a close or a back at its top
+                // The keys start on the card's main action (Bid, Make an offer, Repair), never on the way out; with no enabled main action the way out is all there is.
+                int main = -1;
+                for (int i = 0; i < s.NodeCount && main < 0; i++)
+                {
+                    main = s.Nodes[i].Key == UiAction.Alt && !s.Nodes[i].Disabled ? i : -1;
+                }
+                s.FocusFirst = main >= 0 ? main : way;
             }
             for (int i = 0; i < m.Prompts.Length; i++)
             {
@@ -174,9 +198,19 @@ namespace RealLifeOverhaul.Ui
             float back = m.Card ? 0f : UiTokens.Control + UiTokens.S4;
             EstateAuction a = m.Auction;
             float lw = UiDraw.SnapDown((w - UiTokens.S6) * 0.42f), rw = w - UiTokens.S6 - lw;
-            float picH = Math.Min(UiDraw.SnapDown(lw / Math.Max(1f, a.Aspect)), UiTokens.S16 * 3f);
+            float picH = AuctionPicture(m, lw, UiFactCard.Height(a.Right, rw, keys, true), keys);
             float left = picH + UiTokens.S3 + UiFactCard.Height(a.Left, lw, keys, true) + (m.Related.Length > 0 ? UiTokens.S5 + RelatedHeight(m) : 0f);
             return back + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3 + Math.Max(left, UiFactCard.Height(a.Right, rw, keys, true));
+        }
+
+        // The car's picture: a tile of its own shape, taller where the bidding's column is, so the two columns end together and no slate stands bare under the facts.
+        private static float AuctionPicture(EstateModel m, float lw, float rightH, IUiKeys keys)
+        {
+            EstateAuction a = m.Auction;
+            float basic = Math.Min(UiDraw.SnapDown(lw / Math.Max(1f, a.Aspect)), UiTokens.S16 * 3f);
+            float rest = UiTokens.S3 + UiFactCard.Height(a.Left, lw, keys, true) + (m.Related.Length > 0 ? UiTokens.S5 + RelatedHeight(m) : 0f);
+            float slack = rightH - (basic + rest);
+            return UiDraw.SnapDown(basic + Math.Max(0f, Math.Min(slack, lw * 0.8f - basic)));
         }
 
         // A card's body as tall as its parts: the way back, the person or thing, the figures and the taller of the two columns.
@@ -267,7 +301,7 @@ namespace RealLifeOverhaul.Ui
             float each = UiDraw.SnapDown((w - UiTokens.S6 * (n - 1)) / n), bx = x;
             if (m.ShareLabels != null && m.ShareLabels.Length > 0)
             {
-                Shares(s, at, m.ShareTitle, m.ShareLabels, m.ShareValues, bx, y, each, m.ShareTexts);
+                Shares(s, at, m.ShareTitle, m.ShareLabels, m.ShareValues, bx, y, each, m.ShareTexts, m.SharePlain);
                 bx += each + UiTokens.S6;
             }
             if (m.Related != null && m.Related.Length > 0)

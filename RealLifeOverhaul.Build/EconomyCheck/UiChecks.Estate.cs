@@ -390,6 +390,35 @@ internal static partial class Program
         }
         Check(tinted >= 6 && hand == 0, "estate: the showroom's live pages (stock, deliveries, rivals, like-it, other lots) set the class colour from the game's vehicle class through CarClass and keep no rule of their own (" + tinted + " set, " + hand + " by hand)");
 
+        // No English in the pt and zh shots: the words that stood as English literals in the samples (a colour, a fault, a kind of building, a job, "Day 211") come from the locale.
+        string[] leaks = { "White", "Black", "Heating service", "the heating", "boiler", "Nurse", "Cook", "Teacher", "Accountant", "Courier, ", "Designer", "bakery", "tailor", "import firm", "Homes", "Shops", "Offices",
+            "Day ", "Quote asked", "Looking for" };
+        string englishLeak = "none";
+        foreach (string lang in new[] { "pt", "zh-cn" })
+        {
+            UiWords words = UiWords(lang);
+            foreach (bool dealerApp in new[] { false, true })
+            {
+                foreach (string state in dealerApp ? UiSamples.DealerStates : UiSamples.EstateStates)
+                {
+                    EstateModel pageModel = dealerApp ? UiSamples.Dealer(words, state) : UiSamples.Estate(words, state);
+                    var scene = new UiScene();
+                    EstateFace.Lay(scene, pageModel, UiFrame.FullMenu(16f / 9f, "Property"), true, UiDefaultKeys.Keyboard);
+                    foreach (string said in EstateTextLines(scene))
+                    {
+                        foreach (string leak in leaks)
+                        {
+                            if (said.IndexOf(leak, StringComparison.Ordinal) >= 0 && !(lang == "pt" && leak == "Designer"))   // pt writes the job the same way
+                            {
+                                englishLeak = lang + " " + (dealerApp ? "dealer " : "estate ") + state + ": " + said;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Check(englishLeak == "none", "estate: no English literal reaches the pt and zh pages (" + englishLeak + ")");
+
         // A decision is a decision (the approved desk session's card): no title strip with a close, no back button over it, its answers each a target of the action
         // kind, and the keys start on a safe answer, never on the way out; the cards that are pages of one thing end in the way out at their foot and start on it.
         foreach (string[] one in new[] { new[] { "estate", "call" }, new[] { "estate", "applicant" }, new[] { "dealer", "deal" } })
@@ -411,8 +440,8 @@ internal static partial class Program
         {
             UiScene card = LayEstate(NewEstate(one[0] == "dealer", one[1], out EstateStub cardStub));
             int start = UiFocusRules.First(card);
-            Check(card.FindNode(UiDraw.CloseCommand, 0) < 0 && start >= 0 && card.Nodes[start].Command == EstateFace.BackCommand && card.Nodes[start].Y >= LowestNode(card) - 0.5f,
-                "estate: the " + one[1] + " card has no title strip or back button at its top, and the keys start on the way out at its foot (focus " + start + " of " + card.NodeCount + ", y "
+            Check(card.FindNode(UiDraw.CloseCommand, 0) < 0 && start >= 0 && card.Nodes[start].Key == UiAction.Alt && !card.Nodes[start].Disabled && start != LowestNodeIndex(card),
+                "estate: the " + one[1] + " card has no title strip or back button at its top, and the keys start on its main action, not the way out (focus " + start + " of " + card.NodeCount + ", y "
                 + (start >= 0 ? card.Nodes[start].Y.ToString() : "-") + ")");
         }
 
@@ -432,13 +461,26 @@ internal static partial class Program
         Check(rowsActing > 5 && rowsLinked == rowsActing, "estate: the pad goes from a table row to its own button and back (" + rowsLinked + " of " + rowsActing + " rows linked)");
     }
 
-    // The y of the lowest target of a scene: the foot of a card.
-    private static float LowestNode(UiScene s)
+    private static List<string> EstateTextLines(UiScene s)
     {
-        float low = 0f;
+        var list = new List<string>(64);
+        for (int i = 0; i < s.ItemCount; i++)
+        {
+            if (s.Items[i].Kind == UiKind.Text && !string.IsNullOrEmpty(s.Items[i].Text))
+            {
+                list.Add(s.Items[i].Text);
+            }
+        }
+        return list;
+    }
+
+    // The lowest target of a scene: the way out at a card's foot.
+    private static int LowestNodeIndex(UiScene s)
+    {
+        int low = 0;
         for (int i = 0; i < s.NodeCount; i++)
         {
-            low = Math.Max(low, s.Nodes[i].Y);
+            low = s.Nodes[i].Y > s.Nodes[low].Y ? i : low;
         }
         return low;
     }

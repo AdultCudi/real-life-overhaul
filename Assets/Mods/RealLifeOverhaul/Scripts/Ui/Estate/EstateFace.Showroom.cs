@@ -218,7 +218,7 @@ namespace RealLifeOverhaul.Ui
             float lx = x, rx = x + lw + UiTokens.S6;
             // The picture takes what the bidding's column is taller by, so the two columns end together.
             float factsH = UiFactCard.Height(a.Left, lw, keys, true), rightH = UiFactCard.Height(a.Right, rw, keys, true);
-            float picH = Math.Min(UiDraw.SnapDown(lw / Math.Max(1f, a.Aspect)), UiTokens.S16 * 3f);   // the car's picture is a tile, not the page
+            float picH = AuctionPicture(m, lw, rightH, keys);   // the car's picture is a tile, as tall as the bidding column asks
             UiAt on = at.InRegion(RegionLeft);
             int pic = UiDraw.Box(s, on, lx, y, lw, picH, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
             if (!string.IsNullOrEmpty(a.Picture))

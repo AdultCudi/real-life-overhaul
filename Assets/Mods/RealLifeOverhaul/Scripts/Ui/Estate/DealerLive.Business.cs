@@ -37,8 +37,8 @@ namespace RealLifeOverhaul.Ui
                         {
                             Cells = new[] { deal.Customer, DealerGame.CarName(car.Type), Money(offer), Money(car.Asking), share.ToString(Inv), DealerText.Hours(left),
                                 deal.Stage == OfferStage.Driving ? DealerText.T("reallife_dealer_state_driving") : DealerText.T("reallife_dealer_state_waiting") },
-                            Values = new[] { 0, (int)UiIcon.Car, 0, 0, share, 0, 0 },
-                                Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, left <= 3 ? UiRole.DangerText : UiRole.None, UiRole.Warn },
+                            Values = new[] { 0, (int)ClassGlyph(car.Type), 0, 0, share, 0, 0 },
+                                Tones = new[] { UiRole.None, ClassTint(car.Type, car.Asking), UiRole.None, UiRole.None, UiRole.None, left <= 3 ? UiRole.DangerText : UiRole.None, UiRole.Warn },
                             Subs = new[] { DealerText.Profile(deal.Profile), yard.Name, null, null, null, null, null }, Hue = UiColour.HueOf(deal.Customer), Ring = UiRole.None
                         });
                         keys.Add("deal:" + deal.Id);
@@ -65,8 +65,8 @@ namespace RealLifeOverhaul.Ui
                         Cells = new[] { s.Trade ? DealerText.T("reallife_dealer_to_trade") : s.Customer, DealerGame.CarName(s.Type), Money(s.Price),
                             Money(s.Cost), string.Empty, FinanceText.Day(s.Day),
                             DealerText.T("reallife_dealer_state_sold", "margin", Money(s.Price - s.Cost)) },
-                        Values = new[] { 0, (int)UiIcon.Car, 0, 0, -1, 0, 0 },
-                            Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, s.Price < s.Cost ? UiRole.Danger : UiRole.Ok },
+                        Values = new[] { s.Trade ? UiDataTable.NoFace : 0, (int)ClassGlyph(s.Type), 0, 0, -1, 0, 0 },
+                            Tones = new[] { UiRole.None, ClassTint(s.Type, s.Price), UiRole.None, UiRole.None, UiRole.None, UiRole.None, s.Price < s.Cost ? UiRole.Danger : UiRole.Ok },
                         Subs = new[] { yard != null ? yard.Name : string.Empty, string.Empty, null, null, null, null, null }, Hue = UiColour.HueOf(s.Customer ?? string.Empty)
                     });
                     keys.Add(null);   // a car sold is history: nothing to open
@@ -192,7 +192,7 @@ namespace RealLifeOverhaul.Ui
                     FactValues = new[] { Money(offer), Money(car.Asking), Money(car.Cost), (dealMargin >= 0 ? "+" : "-") + Money(Math.Abs(dealMargin)) },
                     FactInks = new[] { UiRole.None, UiRole.None, UiRole.None, dealMargin >= 0 ? UiRole.OkText : UiRole.DangerText }
                 };
-                string body = DealerText.Fill("reallife_ui_dealer_dec_deal_offers", "name", d.Customer, "offer", Money(offer), "car", DealerGame.CarName(car.Type), "asking", Money(car.Asking));
+                string body = DealerText.T("reallife_ui_dealer_dec_deal_offers", "name", d.Customer, "car", DealerGame.CarName(car.Type));
                 if (d.Looks > 0)
                 {
                     body += " " + DealerText.T(d.Looks > 1 ? "reallife_ui_dealer_deal_looked" : "reallife_ui_dealer_deal_looked_once", "times", d.Looks.ToString(Inv));
@@ -203,10 +203,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 say.Body = body;
                 // What taking the offer brings with it: the margin, and the finance, the trade-in, the warranty and the extras the buyer asks for.
-                var accept = new List<UiConsequence>(6)
-                {
-                    EstateRuns.Said(DealerText.T("reallife_ui_dealer_dec_margin", "margin", (dealMargin >= 0 ? string.Empty : "-") + Money(Math.Abs(dealMargin))), dealMargin >= 0 ? 1 : -1)
-                };
+                var accept = new List<UiConsequence>(6);   // the margin is in the band above: the answer says what else comes with it
                 if (d.WantsFinance)
                 {
                     bool lends = yard.Finance && DealerRules.Lends(d.Score);
@@ -315,7 +312,8 @@ namespace RealLifeOverhaul.Ui
                         Cells = new[] { p.Customer, DealerGame.CarName(p.Type), Money(p.Owed), Money(p.Weekly), FinanceText.Day(p.Due),
                             p.Missed > 0 ? DealerText.T("reallife_dealer_plan_missed", "weeks", p.Missed.ToString(Inv))
                                 : DealerText.T("reallife_dealer_plan_paying", "grade", FinanceText.Grade(CreditCatalogue.GradeOf(p.Score))) },
-                        Values = new[] { 0, (int)UiIcon.Car, 0, 0, 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, p.Missed > 0 ? UiRole.Danger : UiRole.Ok },
+                        Values = new[] { 0, (int)ClassGlyph(p.Type), 0, 0, 0, 0 },
+                        Tones = new[] { UiRole.None, ClassTint(p.Type, p.Owed), UiRole.None, UiRole.None, UiRole.None, p.Missed > 0 ? UiRole.Danger : UiRole.Ok },
                         Subs = new[] { yard != null ? yard.Name : string.Empty, string.Empty, null, null, null, null }, Hue = UiColour.HueOf(p.Customer)
                     });
                     keys.Add(null);
@@ -366,6 +364,7 @@ namespace RealLifeOverhaul.Ui
                         gradeShares.Add(grades[g] * 100 / _s.Plans.Count);
                     }
                 }
+                _m.SharePlain = true;   // the buyers by rating are a mix, not a state: no grade colours
                 _m.ShareTitle = DealerText.T("reallife_ui_dealer_sh_grades");
                 _m.ShareLabels = gradeNames.ToArray();
                 _m.ShareValues = gradeShares.ToArray();
@@ -603,7 +602,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 return new UiChartModel
                 {
-                    Kind = UiChartKind.Line, Title = DealerText.T(titleKey), Points = pts.ToArray(), Still = true,
+                    Kind = UiChartKind.Line, Title = DealerText.T(titleKey), Points = pts.ToArray(), Still = true, EvenAxis = true,
                     Series = new[] { new UiSeries { Label = DealerText.T(titleKey), Values = line.ToArray(), Tint = UiRole.None } },
                     Format = v => FormatFigure(v, kind, money), AxisFormat = v => FormatFigure(v, kind, money)
                 };
@@ -643,7 +642,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 var model = new UiChartModel
                 {
-                    Kind = UiChartKind.Line, Title = DealerText.T(ReportKeys[(int)kind]), Points = pts.ToArray(),
+                    Kind = UiChartKind.Line, Title = DealerText.T(ReportKeys[(int)kind]), Points = pts.ToArray(), EvenAxis = true,
                     Series = new[]
                     {
                         new UiSeries { Label = DealerText.T(ReportKeys[(int)kind]), Values = line.ToArray(), Tint = UiRole.None },

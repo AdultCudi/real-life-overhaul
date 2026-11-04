@@ -44,8 +44,23 @@ internal static partial class Program
         }
     }
 
+    // The market rent of one unit (the offer to the company's lease rule at the merge): the floor of the unit over the rent of a square metre, never the building's.
+    private static void UnitMarketRentChecks()
+    {
+        var map = new RentMapData();
+        map.Clear(100, 30);
+        map.Add("Midtown", (int)EstateUse.Shops, 600, 900, 6, 1);   // 600 dollars a day over 900 m2 in 6 units: 20 dollars a square metre a month
+        int unit = UnitRules.MarketRentDay(map, "Midtown", (int)EstateUse.Shops, 900, 6);
+        Check(unit == 100, "estate: a unit's market rent is its share of the floor at the district's rent per square metre (" + unit + " a day for 150 m2, not the building's 600)");
+        Check(UnitRules.MarketRentDay(map, "Uptown", (int)EstateUse.Shops, 900, 6) == 100, "estate: a district with no shops falls back to the city's mean unit of that use");
+        Check(UnitRules.MarketRentDay(map, "Midtown", (int)EstateUse.Offices, 900, 6) == 0 && UnitRules.MarketRentDay(null, "Midtown", (int)EstateUse.Shops, 900, 6) == 0
+            && UnitRules.MarketRentDay(new RentMapData(), "Midtown", (int)EstateUse.Shops, 900, 6) == 0, "estate: with no read, no such use or no map the unit's market rent is 0, not a guess");
+        Check(UnitRules.MarketRentDay(map, "Midtown", (int)EstateUse.Shops, 300, 6) == 33, "estate: a smaller building's unit is smaller (" + UnitRules.MarketRentDay(map, "Midtown", (int)EstateUse.Shops, 300, 6) + " a day for 50 m2)");
+    }
+
     private static void EstateWave4()
     {
+        UnitMarketRentChecks();
         W4Tenants();
         W4RentRecord();
         W4Services();

@@ -304,7 +304,7 @@ internal static partial class UiSamples
         }
         return new UiChartModel
         {
-            Kind = UiChartKind.Line, Title = W(t, key, english), Points = days, Still = true, Whole = whole,
+            Kind = UiChartKind.Line, Title = W(t, key, english), Points = days, Still = true, Whole = whole, EvenAxis = true,
             Series = new[] { new UiSeries { Label = W(t, key, english), Values = values, Tint = UiRole.None } }, Format = format, AxisFormat = format
         };
     }
@@ -464,7 +464,7 @@ internal static partial class UiSamples
         }
         a.Right = new UiFactCardModel
         {
-            Title = Fx(W(t, "reallife_ui_dealer_bidding_on", "Bidding on the {car}"), "car", "Courier van"), Sub = Fx(W(t, "reallife_ui_dealer_colour_line", "{colour}"), "colour", "White"), Lines = lines.ToArray(),
+            Title = Fx(W(t, "reallife_ui_dealer_bidding_on", "Bidding on the {car}"), "car", "Courier van"), Sub = Fx(W(t, "reallife_ui_dealer_colour_line", "{colour}"), "colour", Colour(t, "White")), Lines = lines.ToArray(),
             Actions = new[]
             {
                 EstateButton(runs, W(t, "reallife_ui_dealer_walk_away", "Walk away"), UiButtonKind.Secondary, UiIcon.None, UiAction.Option),
@@ -488,12 +488,31 @@ internal static partial class UiSamples
 
     // A longer list for a preview: the rows again for other people, so a table stands as full as a busy showroom's.
     // Rows beyond the hand-made few, each its own person with a car of its own: a table of nine must not repeat three.
+    // The glyph and colour of the car of each row by the class its sample kind gives, and no face for a sale to the trade: the rule of the live pages.
+    private static void TintCars(List<UiDataRow> rows, string trade)
+    {
+        foreach (UiDataRow row in rows)
+        {
+            if (row.Values[1] != (int)UiIcon.Car)
+            {
+                continue;
+            }
+            CarKind kind = SampleKind(row.Cells[1]);
+            row.Values[1] = (int)CarClass.Glyph(kind);
+            row.Tones[1] = CarClass.Tint(kind, 0);
+            if (row.Cells[0] == trade)
+            {
+                row.Values[0] = UiDataTable.NoFace;
+            }
+        }
+    }
+
     private static void Pad(UiWords t, List<UiDataRow> rows, int to, params string[] names)
     {
         string[] cars = { "Halden sedan", "Sora hatchback", "Brisa roadster", "Courier van", "Dune camper van", "Marlow sedan", "Ranger pickup", "Pinecrest saloon" };
         int[] asks = { 27400, 19800, 22700, 34900, 18900, 14300, 25600, 16900 };
         int[] pct = { 88, 91, 79, 94, 85, 72, 90, 83 };
-        string[] left = { "6 h", "2 h", "9 h", "3 h", "5 h", "1 h" };
+        string[] left = { HoursShort(t, "6 h"), HoursShort(t, "2 h"), HoursShort(t, "9 h"), HoursShort(t, "3 h"), HoursShort(t, "5 h"), HoursShort(t, "1 h") };
         int first = rows.Count;
         for (int i = 0; rows.Count < to; i++)
         {
@@ -533,14 +552,15 @@ internal static partial class UiSamples
     {
         var rows = new List<UiDataRow>
         {
-            Row(new[] { "Marcus Bell", "Meridian GT coupe", "$82,000", "$84,500", "97", "4 h", W(t, "reallife_dealer_state_waiting", "Waiting") }, new[] { 0, (int)UiIcon.Car, 0, 0, 97, 0, 0 },
+            Row(new[] { "Marcus Bell", "Meridian GT coupe", "$82,000", "$84,500", "97", HoursShort(t, "4 h"), W(t, "reallife_dealer_state_waiting", "Waiting") }, new[] { 0, (int)UiIcon.Car, 0, 0, 97, 0, 0 },
                 new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Warn }, new[] { W(t, "reallife_dealer_profile_bargain", "A bargain hunter"), "Pioneer Motors", null, null, null, null, null }, UiColourHue("Marcus Bell")),
-            Row(new[] { "Amara Kimani", "Atlas pickup", "$36,900", "$38,900", "95", "1 h", W(t, "reallife_dealer_state_waiting", "Waiting") }, new[] { 0, (int)UiIcon.Car, 0, 0, 95, 0, 0 },
+            Row(new[] { "Amara Kimani", "Atlas pickup", "$36,900", "$38,900", "95", HoursShort(t, "1 h"), W(t, "reallife_dealer_state_waiting", "Waiting") }, new[] { 0, (int)UiIcon.Car, 0, 0, 95, 0, 0 },
                 new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.DangerText, UiRole.Warn }, new[] { W(t, "reallife_dealer_profile_fair", "A family"), "Pioneer Motors", null, null, null, null, null }, UiColourHue("Amara Kimani")),
             Row(new[] { W(t, "reallife_dealer_to_trade", "The trade"), "Volta SUV", "$41,200", "$34,100", string.Empty, DayWord(t, 411), Fx(W(t, "reallife_dealer_state_sold", "Sold, margin {margin}"), "margin", "$7,100") }, new[] { 0, (int)UiIcon.Car, 0, 0, -1, 0, 0 },
                 new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Ok }, new[] { "Pioneer Motors", string.Empty, null, null, null, null, null })
         };
         Pad(t, rows, 9, "Priya Nair", "Theo Brandt", "Lena Hoffmann", "Imani Cole", "Owen Park", "Yuki Tanaka");
+        TintCars(rows, W(t, "reallife_dealer_to_trade", "The trade"));
         var cols = new[]
         {
             new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_buyer", "Buyer"), Kind = UiCellKind.Person, Width = 288f },
@@ -583,6 +603,7 @@ internal static partial class UiSamples
                 new[] { UiRole.None, UiRole.None, UiRole.Warn, UiRole.None, UiRole.None, UiRole.Notice }, new[] { "Pioneer Motors", Fx(W(t, "reallife_ui_dealer_claims", "{count} claims"), "count", "1"), null, null, null, null }, UiColourHue("Theo Brandt"))
         };
         Pad(t, rows, 9, "Sofia Marchetti", "Marcus Bell", "Owen Park", "Imani Cole", "Priya Nair", "Yuki Tanaka");
+        TintCars(rows, W(t, "reallife_dealer_to_trade", "The trade"));
         var cols = new[]
         {
             new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_customer", "Customer"), Kind = UiCellKind.Person, Width = 288f },
@@ -685,7 +706,7 @@ internal static partial class UiSamples
         }
         m.Chart = new UiChartModel
         {
-            Kind = UiChartKind.Line, Title = W(t, "reallife_dealer_report_profit", "Profit"), Points = fresh ? new string[0] : points,
+            Kind = UiChartKind.Line, Title = W(t, "reallife_dealer_report_profit", "Profit"), EvenAxis = true, Points = fresh ? new string[0] : points,
             Series = fresh ? new UiSeries[0] : new[]
             {
                 new UiSeries { Label = W(t, "reallife_dealer_report_profit", "Profit"), Values = line }, new UiSeries { Label = Fx(W(t, "reallife_ui_dealer_report_average", "Average of {days} days"), "days", "7"), Values = avg }

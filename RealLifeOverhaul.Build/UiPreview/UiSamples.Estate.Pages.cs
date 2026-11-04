@@ -15,6 +15,34 @@ internal static partial class UiSamples
         return text;
     }
 
+        // A kind of building and its district in the language shown: the district is the game's own name, the kind is the locale's.
+    private static string UseIn(UiWords t, string use, string district) => W(t, "reallife_estate_use_" + use.ToLowerInvariant(), use) + ", " + district;
+
+    // A tenant's work as the people pool gives it in the language shown: "Nurse, Murray Hill Clinic", "A bakery". Names of places stay as they are.
+    private static string JobLine(UiWords t, string line)
+    {
+        string[][] shops = { new[] { "A tailor's shop", "tailor" }, new[] { "A bakery", "bakery" }, new[] { "An import firm", "import" }, new[] { "A florist", "florist" }, new[] { "A pharmacy", "pharmacy" } };
+        foreach (string[] shop in shops)
+        {
+            if (line == shop[0])
+            {
+                return W(t, "reallife_ui_estate_job_" + shop[1], shop[0]);
+            }
+        }
+        int comma = line.IndexOf(", ", StringComparison.Ordinal);
+        if (comma < 0)
+        {
+            return line;
+        }
+        string role = line.Substring(0, comma), word = role == "Software" ? "developer" : role.ToLowerInvariant();
+        return W(t, "reallife_ui_estate_job_" + word, role == "Software" ? "Developer" : role) + line.Substring(comma);
+    }
+
+    // The name of a service the way the language words it, with its first letter a capital.
+    private static string ServiceTitle(UiWords t, int fault, string english) => Capital(Fx(W(t, "reallife_ui_estate_service_name", "{fault} service"), "fault", W(t, "reallife_estate_fault_" + fault, english)));
+
+    private static string HoursShort(UiWords t, string hours) => Fx(W(t, "reallife_ui_dealer_n_hours_short", "{hours} h"), "hours", hours.Split(' ')[0]);
+
     private static UiFigureModel Fig(string label, string value) => new UiFigureModel { Label = label, Value = value };
 
     private static void TableOf(EstateModel m, UiIcon icon, string title, string sub, UiDataColumn[] cols, List<UiDataRow> rows, UiFactCardModel side, string emptyTitle, string emptyBody)
@@ -52,7 +80,7 @@ internal static partial class UiSamples
         var rows = new List<UiDataRow>();
         string late6 = W(t, "reallife_ui_estate_late_days", "Late {days} days").Replace("{days}", "6"), late14 = W(t, "reallife_ui_estate_late_days", "Late {days} days").Replace("{days}", "14");
         var needs = new List<EstateRow>();
-        foreach (string[] u in RollUnits())
+        foreach (string[] u in RollUnits(t))
         {
             if (u[6] == "empty")
             {
@@ -128,12 +156,12 @@ internal static partial class UiSamples
         }
         string[][] buildings =
         {
-            new[] { "41 E 37th Street", "Homes, Murray Hill", "1", "80", "sound", "$1,240", "home" },
-            new[] { "520 8th Avenue", "Offices, Midtown", "0", "32", "unfit", "$5,880", "office" },
-            new[] { "12 W 39th Street", "Shops, Garment District", "1", "64", "sound", "$2,060", "shop" },
-            new[] { "17 E 41st Street", "Offices, Midtown", "2", "71", "sound", "$1,780", "office" },
-            new[] { "88 W 46th Street", "Homes, Hell's Kitchen", "1", "76", "sound", "$1,420", "home" },
-            new[] { "75 W 125th Street", "Homes, Uptown", "0", "58", "sound", "$2,210", "home" }
+            new[] { "41 E 37th Street", UseIn(t, "Homes", "Murray Hill"), "1", "80", "sound", "$1,240", "home" },
+            new[] { "520 8th Avenue", UseIn(t, "Offices", "Midtown"), "0", "32", "unfit", "$5,880", "office" },
+            new[] { "12 W 39th Street", UseIn(t, "Shops", "Garment District"), "1", "64", "sound", "$2,060", "shop" },
+            new[] { "17 E 41st Street", UseIn(t, "Offices", "Midtown"), "2", "71", "sound", "$1,780", "office" },
+            new[] { "88 W 46th Street", UseIn(t, "Homes", "Hell's Kitchen"), "1", "76", "sound", "$1,420", "home" },
+            new[] { "75 W 125th Street", UseIn(t, "Homes", "Uptown"), "0", "58", "sound", "$2,210", "home" }
         };
         foreach (string[] b in buildings)
         {
@@ -164,9 +192,9 @@ internal static partial class UiSamples
         m.RelatedCount = "3";
         m.Related = new[]
         {
-            new EstateRow { Icon = UiIcon.Calendar, Title = Fx(W(t, "reallife_ui_estate_service_name", "{fault} service"), "fault", Capital(W(t, "reallife_estate_fault_6", "the fittings"))), Sub = "75 W 125th Street, Fenwick Fittings", Chip = Fx(W(t, "reallife_ui_estate_day", "Day {day}"), "day", "431"), ChipTone = UiRole.Notice, Amount = "$220", Run = -1 },
-            new EstateRow { Icon = UiIcon.Calendar, Title = Fx(W(t, "reallife_ui_estate_service_name", "{fault} service"), "fault", Capital(W(t, "reallife_estate_fault_1", "the heating"))), Sub = "41 E 37th Street, Okonkwo Heating", Chip = Fx(W(t, "reallife_ui_estate_day", "Day {day}"), "day", "417"), ChipTone = UiRole.Notice, Amount = "$340", Run = -1 },
-            new EstateRow { Icon = UiIcon.Calendar, Title = Fx(W(t, "reallife_ui_estate_service_name", "{fault} service"), "fault", Capital(W(t, "reallife_estate_fault_4", "a lock"))), Sub = "12 W 39th Street, Hartley Locks", Chip = Fx(W(t, "reallife_ui_estate_day", "Day {day}"), "day", "424"), ChipTone = UiRole.Notice, Amount = "$280", Run = -1 }
+            new EstateRow { Icon = UiIcon.Calendar, Title = ServiceTitle(t, 6, "the fittings"), Sub = "75 W 125th Street, Fenwick Fittings", Chip = Fx(W(t, "reallife_ui_estate_day", "Day {day}"), "day", "431"), ChipTone = UiRole.Notice, Amount = "$220", Run = -1 },
+            new EstateRow { Icon = UiIcon.Calendar, Title = ServiceTitle(t, 1, "the heating"), Sub = "41 E 37th Street, Okonkwo Heating", Chip = Fx(W(t, "reallife_ui_estate_day", "Day {day}"), "day", "417"), ChipTone = UiRole.Notice, Amount = "$340", Run = -1 },
+            new EstateRow { Icon = UiIcon.Calendar, Title = ServiceTitle(t, 4, "a lock"), Sub = "12 W 39th Street, Hartley Locks", Chip = Fx(W(t, "reallife_ui_estate_day", "Day {day}"), "day", "424"), ChipTone = UiRole.Notice, Amount = "$280", Run = -1 }
         };
         m.Related2Title = W(t, "reallife_ui_estate_inspections", "The city's inspections");
         m.Related2Count = "3";
@@ -184,16 +212,16 @@ internal static partial class UiSamples
         var locate = new List<int>();
         string[][] listings =
         {
-            new[] { "301 W 54th Street", "Homes, Hell's Kitchen", "$1,840,000", "80", "$7,420", "4.1%", "h" },
-            new[] { "14 Pier Street", "Shops, Garment District", "$3,260,000", "64", "$15,300", "4.7%", "s" },
-            new[] { "99 Broadway", "Offices, Midtown", "$12,400,000", "91", "$61,900", "5.0%", "o" },
-            new[] { "6 Harlem Row", "Homes, Uptown", "$980,000", "42", "$3,010", "3.1%", "h" },
-            new[] { "412 10th Avenue", "Homes, Hell's Kitchen", "$2,150,000", "73", "$8,600", "4.8%", "h" },
-            new[] { "88 Fulton Street", "Shops, Midtown", "$4,700,000", "58", "$19,400", "4.9%", "s" },
-            new[] { "250 Park Avenue, floor 11", "Offices, Midtown", "$9,300,000", "86", "$44,200", "5.7%", "o" },
-            new[] { "17 Mercer Street", "Homes, Murray Hill", "$1,420,000", "67", "$5,700", "4.2%", "h" },
-            new[] { "3 Canal Row", "Shops, Garment District", "$2,880,000", "49", "$11,900", "5.0%", "s" },
-            new[] { "60 W 57th Street", "Offices, Midtown", "$15,800,000", "93", "$72,500", "5.5%", "o" }
+            new[] { "301 W 54th Street", UseIn(t, "Homes", "Hell's Kitchen"), "$1,840,000", "80", "$7,420", "4.1%", "h" },
+            new[] { "14 Pier Street", UseIn(t, "Shops", "Garment District"), "$3,260,000", "64", "$15,300", "4.7%", "s" },
+            new[] { "99 Broadway", UseIn(t, "Offices", "Midtown"), "$12,400,000", "91", "$61,900", "5.0%", "o" },
+            new[] { "6 Harlem Row", UseIn(t, "Homes", "Uptown"), "$980,000", "42", "$3,010", "3.1%", "h" },
+            new[] { "412 10th Avenue", UseIn(t, "Homes", "Hell's Kitchen"), "$2,150,000", "73", "$8,600", "4.8%", "h" },
+            new[] { "88 Fulton Street", UseIn(t, "Shops", "Midtown"), "$4,700,000", "58", "$19,400", "4.9%", "s" },
+            new[] { "250 Park Avenue, floor 11", UseIn(t, "Offices", "Midtown"), "$9,300,000", "86", "$44,200", "5.7%", "o" },
+            new[] { "17 Mercer Street", UseIn(t, "Homes", "Murray Hill"), "$1,420,000", "67", "$5,700", "4.2%", "h" },
+            new[] { "3 Canal Row", UseIn(t, "Shops", "Garment District"), "$2,880,000", "49", "$11,900", "5.0%", "s" },
+            new[] { "60 W 57th Street", UseIn(t, "Offices", "Midtown"), "$15,800,000", "93", "$72,500", "5.5%", "o" }
         };
         foreach (string[] l in listings)
         {
@@ -257,6 +285,7 @@ internal static partial class UiSamples
         };
         if (fresh)
         {
+            v.Rows = new[] { v.Rows[0], v.Rows[6], v.Rows[7] };   // one "Not yet" for the city's rents; the player's own figures stand
             v.ChartLabels = new string[0];
             v.ChartValues = new string[0];
             v.ChartShares = new float[0];
@@ -458,6 +487,10 @@ internal static partial class UiSamples
             Row(new[] { "Marlow sedan", W(t, "reallife_estate_car_out", "Out"), "$84", "18", "$1,512", Fx(W(t, "reallife_estate_row_until", "Until day {day}"), "day", "415") }, new[] { (int)UiIcon.Car, 0, 0, 0, 0, 0 },
                 new[] { UiRole.Chart5, UiRole.Ok, UiRole.None, UiRole.None, UiRole.None, UiRole.None }, new[] { W(t, "reallife_estate_class_standard", "Standard"), null, null, null, null, null }),
             Row(new[] { "Pinecrest saloon", W(t, "reallife_estate_car_idle", "In"), "$92", "11", "$1,012", string.Empty }, new[] { (int)UiIcon.Car, 0, 0, 0, 0, 0 },
+                new[] { UiRole.Chart5, UiRole.Notice, UiRole.None, UiRole.None, UiRole.None, UiRole.None }, new[] { W(t, "reallife_estate_class_standard", "Standard"), null, null, null, null, null }),
+            Row(new[] { "Volta SUV", W(t, "reallife_estate_car_out", "Out"), "$118", "12", "$1,416", Fx(W(t, "reallife_estate_row_until", "Until day {day}"), "day", "417") }, new[] { (int)UiIcon.Car, 0, 0, 0, 0, 0 },
+                new[] { UiRole.Chart5, UiRole.Ok, UiRole.None, UiRole.None, UiRole.None, UiRole.None }, new[] { W(t, "reallife_estate_class_standard", "Standard"), null, null, null, null, null }),
+            Row(new[] { "Marlow estate", W(t, "reallife_estate_car_idle", "In"), "$79", "8", "$632", string.Empty }, new[] { (int)UiIcon.Car, 0, 0, 0, 0, 0 },
                 new[] { UiRole.Chart5, UiRole.Notice, UiRole.None, UiRole.None, UiRole.None, UiRole.None }, new[] { W(t, "reallife_estate_class_standard", "Standard"), null, null, null, null, null })
         };
         var cols = new[]
@@ -474,7 +507,8 @@ internal static partial class UiSamples
             EstateSwitch(runs, W(t, "reallife_estate_hire_cover", "Fleet cover"), true),
             UiFactLine.Row(W(t, "reallife_ui_estate_fig_cover_cost", "Cover costs"), Fx(W(t, "reallife_ui_estate_amount_a_day", "{amount} a day"), "amount", "$38")),
             UiFactLine.Row(W(t, "reallife_ui_estate_cover_pays", "Pays of a claim"), "80%"),
-            UiFactLine.Row(W(t, "reallife_ui_estate_cover_excess", "Excess"), "$100")
+            UiFactLine.Row(W(t, "reallife_ui_estate_cover_excess", "Excess"), "$100"),
+            UiFactLine.Bar(W(t, "reallife_ibox_spaces", "Spaces taken"), 50), UiFactLine.Bar(W(t, "reallife_ui_estate_sh_in_hire", "Cars in hire"), 50)
         };
         var side = new UiFactCardModel { Title = W(t, "reallife_estate_tab_hire", "Car hire"), Heading = true, Lines = lines.ToArray() };
         TableOf(m, UiIcon.Car, W(t, "reallife_estate_tab_hire", "Car hire"), "88 W 46th Street", cols, rows, side, W(t, "reallife_estate_row_no_cars", "No cars on hire"), W(t, "reallife_estate_hire_what", "Hire cars out from a lot."));
@@ -485,9 +519,6 @@ internal static partial class UiSamples
             Fig(W(t, "reallife_ui_estate_fig_cars_out", "Cars out"), "3"), Fig(W(t, "reallife_ui_estate_col_hires", "Hires"), "105"),
             Fig(W(t, "reallife_ui_estate_col_takings", "Takings"), "$10,612"), Fig(W(t, "reallife_ui_estate_fig_mean_rate", "Mean rate a day"), "$108")
         };
-        m.ShareTitle = W(t, "reallife_ui_estate_sh_lot", "The lot");
-        m.ShareLabels = new[] { W(t, "reallife_ibox_spaces", "Spaces taken"), W(t, "reallife_ui_estate_sh_in_hire", "Cars in hire") };
-        m.ShareValues = new[] { 50, 50 };
         // The cars of yours that stand within reach of the lot and could join the fleet, with the going rate each would hire at.
         string[] adds = { "Courier van", "Dune camper van", "Ranger pickup", "Boxer box truck" };
         string[] rates = { "$96", "$110", "$102", "$140" };
@@ -584,7 +615,7 @@ internal static partial class UiSamples
                 m.Related2Count = "2";
                 m.Related2 = new[]
                 {
-                    new EstateRow { Icon = UiIcon.Wrench, Title = Fx(W(t, "reallife_ui_estate_service_name", "{fault} service"), "fault", Capital(W(t, "reallife_estate_fault_1", "the heating"))), Sub = Fx(W(t, "reallife_ui_estate_booked_with", "Booked with {who}"), "who", "Okonkwo Heating"), Chip = Fx(W(t, "reallife_ui_estate_day", "Day {day}"), "day", "417"), ChipTone = UiRole.Notice, Amount = "$340", Run = -1 },
+                    new EstateRow { Icon = UiIcon.Wrench, Title = ServiceTitle(t, 1, "the heating"), Sub = Fx(W(t, "reallife_ui_estate_booked_with", "Booked with {who}"), "who", "Okonkwo Heating"), Chip = Fx(W(t, "reallife_ui_estate_day", "Day {day}"), "day", "417"), ChipTone = UiRole.Notice, Amount = "$340", Run = -1 },
                     new EstateRow { Icon = UiIcon.Eye, Title = W(t, "reallife_ui_estate_next_inspection", "Next inspection"), Sub = W(t, "reallife_ui_estate_last_passed", "The last one passed"), Chip = Fx(W(t, "reallife_ui_estate_in_days", "in {days} days"), "days", "9"), ChipTone = UiRole.Notice, Run = -1 }
                 };
                 break;
@@ -617,11 +648,11 @@ internal static partial class UiSamples
                 m.ShareValues = new[] { 100, 90, 81, 72, 50 };
                 m.ShareTexts = new[] { "$38.50", "$34.80", "$31.20", "$27.90", "$19.40" };
 
-                m.RelatedTitle = Fx(W(t, "reallife_ui_estate_also_in", "Also for sale in {district}"), "district", "Hell's Kitchen");
-                m.RelatedCount = "2";
+                m.Related2Title = Fx(W(t, "reallife_ui_estate_also_in", "Also for sale in {district}"), "district", "Hell's Kitchen");
+                m.Related2Count = "2";
                 runs.Add(Yes);
                 runs.Add(Yes);
-                m.Related = new[]
+                m.Related2 = new[]
                 {
                     new EstateRow { Icon = UiIcon.Home, Title = "412 10th Avenue", Sub = W(t, "reallife_estate_use_homes", "Homes"), Chip = Fx(W(t, "reallife_ui_estate_yield_year", "{yield} a year"), "yield", "4.8%"), ChipTone = UiRole.Notice, Amount = "$2,150,000", Run = runs.Count - 2 },
                     new EstateRow { Icon = UiIcon.Home, Title = "9 W 43rd Street", Sub = W(t, "reallife_estate_use_homes", "Homes"), Chip = Fx(W(t, "reallife_ui_estate_yield_year", "{yield} a year"), "yield", "3.9%"), ChipTone = UiRole.Notice, Amount = "$1,310,000", Run = runs.Count - 1 }
@@ -677,13 +708,12 @@ internal static partial class UiSamples
                 }
                 m.Grid = book.ToArray();
                 m.RelatedTitle = W(t, "reallife_ui_estate_calls_here", "Calls on this building");
-                m.RelatedCount = "2";
+                m.RelatedCount = "1";
                 runs.Add(Yes);
                 runs.Add(Yes);
                 m.Related = new[]
                 {
-                    new EstateRow { Face = "Sofia Marchetti", Hue = UiColourHue("Sofia Marchetti"), Title = "Heating, flat 4A", Sub = "Sofia Marchetti", Chip = W(t, "reallife_ibox_chip_open", "Open"), ChipTone = UiRole.Warn, Amount = "$340", Run = runs.Count - 2 },
-                    new EstateRow { Face = "Priya Nair", Hue = UiColourHue("Priya Nair"), Title = "A lock, flat 3A", Sub = "Priya Nair", Chip = W(t, "reallife_ibox_chip_booked", "Booked"), ChipTone = UiRole.Ok, Amount = "$410", Run = runs.Count - 1 }
+                    new EstateRow { Face = "Sofia Marchetti", Hue = UiColourHue("Sofia Marchetti"), Title = "Heating, flat 4A", Sub = "Sofia Marchetti", Chip = W(t, "reallife_ibox_chip_open", "Open"), ChipTone = UiRole.Warn, Amount = "$340", Run = runs.Count - 2 }
                 };
                 break;
             case "call":
@@ -727,7 +757,7 @@ internal static partial class UiSamples
                 m.RelatedCount = "2";
                 m.Related = new[]
                 {
-                    new EstateRow { Icon = UiIcon.Wrench, Title = Fx(W(t, "reallife_ui_estate_service_name", "{fault} service"), "fault", Capital(W(t, "reallife_estate_fault_1", "the heating"))), Sub = Fx(W(t, "reallife_ui_estate_booked_with", "Booked with {who}"), "who", "Okonkwo Heating"), Chip = Fx(W(t, "reallife_ui_estate_day", "Day {day}"), "day", "417"), ChipTone = UiRole.Notice, Amount = "$340", Run = -1 },
+                    new EstateRow { Icon = UiIcon.Wrench, Title = ServiceTitle(t, 1, "the heating"), Sub = Fx(W(t, "reallife_ui_estate_booked_with", "Booked with {who}"), "who", "Okonkwo Heating"), Chip = Fx(W(t, "reallife_ui_estate_day", "Day {day}"), "day", "417"), ChipTone = UiRole.Notice, Amount = "$340", Run = -1 },
                     new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_estate_improve_boiler", "a new boiler"), Sub = W(t, "reallife_ui_estate_asked_by_tenant", "Asked for by the tenant, you can say no"), Chip = W(t, "reallife_ui_estate_waiting_you", "Waiting for you"), ChipTone = UiRole.Warn, Amount = "$2,900", Run = -1 }
                 };
                 m.Related2Title = W(t, "reallife_ui_estate_record_title", "Rent record");

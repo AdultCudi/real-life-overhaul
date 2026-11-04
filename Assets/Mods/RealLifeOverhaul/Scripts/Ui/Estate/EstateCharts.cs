@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.Ui
             return new UiChartModel
             {
                 Kind = UiChartKind.Line, Title = title, Points = points, Series = new[] { new UiSeries { Label = label ?? title, Values = values, Tint = UiRole.None } },
-                Format = format, AxisFormat = format, Still = true
+                Format = format, AxisFormat = format, Still = true, EvenAxis = true
             };
         }
 

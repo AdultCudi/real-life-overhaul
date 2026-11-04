@@ -20,5 +20,23 @@ namespace RealLifeOverhaul.Economy
         {
             return Math.Max(1, totalSqm / Math.Max(1, units));
         }
+
+        /// <summary>
+        /// The market rent of ONE unit, dollars a day: its floor area times what a square metre rents for in its district and use (the rent map's read of
+        /// the game's buildings), the whole city's mean unit of that use where the district has none of it, 0 where the map knows neither. A building's rent
+        /// is never the answer for a unit: a shop of a building of many floors is one of its units. The estate's offer to the company's lease rule
+        /// (CompanyBridges.MarketRent: district, place, the game's own rent) at the merge: the company asks for one rented premises.
+        /// </summary>
+        public static int MarketRentDay(RentMapData map, string district, int use, int totalSqm, int units)
+        {
+            if (map == null || map.Day < 0 || use < 0 || use >= RentMapData.Uses)
+            {
+                return 0;
+            }
+            int at = map.Districts.IndexOf(district ?? string.Empty);
+            int perSqm = at >= 0 ? map.PerSqm(at, use) : -1;   // cents a month for a square metre
+            long monthly = perSqm >= 0 ? (long)UnitSqm(totalSqm, units) * perSqm / 100 : Math.Max(0, map.MeanUnit(use));
+            return (int)Math.Min(int.MaxValue / 4, monthly / Math.Max(1, map.MonthDays));
+        }
     }
 }

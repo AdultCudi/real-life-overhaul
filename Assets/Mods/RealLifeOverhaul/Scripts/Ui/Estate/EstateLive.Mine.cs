@@ -93,7 +93,7 @@ namespace RealLifeOverhaul.Ui
             {
                 if (!u.Let)
                 {
-                    chip = EstateText.T("reallife_estate_state_empty", "days", u.VoidDays.ToString(Inv));
+                    chip = EstateText.Empty(u.VoidDays);
                     tone = UiRole.Warn;
                 }
                 else if (u.CourtDay > 0)

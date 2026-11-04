@@ -103,7 +103,7 @@ internal static partial class UiSamples
     public static EstateModel Estate(UiWords t, string state)
     {
         var runs = new List<Func<bool>>();
-        EstateModel m = EstateBase(t, state == "roll_twenty" ? new[] { "20", "19", "8", null, null, null, null } : state == "roll_first" ? new[] { "1", "1", null, null, null, null, null } : state == "roll_empty" ? new string[7] : new[] { "12", "11", "8", null, null, null, null });
+        EstateModel m = EstateBase(t, state == "roll_twenty" ? new[] { "20", "19", "10", null, null, null, null } : state == "roll_first" ? new[] { "1", "1", null, null, null, null, null } : state == "roll_empty" ? new string[7] : new[] { "12", "11", "10", null, null, null, null });
         switch (state)
         {
             case "off":
@@ -163,9 +163,9 @@ internal static partial class UiSamples
     }
 
     // The twelve units of the rent roll with their tenants: one tenant to a unit wherever the units are listed.
-    private static string[][] RollUnits()
+    private static string[][] RollUnits(UiWords t)
     {
-        return new[]
+        string[][] units = new[]
         {
             new[] { "41 E 37th Street, flat 3A", "Murray Hill", "Priya Nair", "Nurse, Murray Hill Clinic", "490", "$2,600", "ok", "82" },
             new[] { "41 E 37th Street, flat 3B", "Murray Hill", "Daniel Ortiz", "Cook, Pier Street Diner", "551", "$3,300", "ok", "74" },
@@ -180,6 +180,11 @@ internal static partial class UiSamples
             new[] { "520 8th Avenue, suite 12", "Midtown", "Yuki Tanaka", "An import firm", "430", "$5,600", "notice", "33" },
             new[] { "412 10th Avenue, unit B", "Hell's Kitchen", "Chen Wei", "Chef, Harbour Kitchen", "590", "$4,800", "ok", "63" }
         };
+        foreach (string[] u in units)
+        {
+            u[3] = u[3] == null ? null : JobLine(t, u[3]);
+        }
+        return units;
     }
 
     private static void Roll(UiWords t, EstateModel m, List<Func<bool>> runs, string state)
@@ -188,11 +193,11 @@ internal static partial class UiSamples
         UiIcon home = UiIcon.Home;
         if (state == "roll_first")
         {
-            rows.Add(EstateUnitRow(t, "12 W 39th Street, flat 2", "Garment District", "Priya Nair", "Nurse, Murray Hill Clinic", W(t, "reallife_estate_row_until", "Until day {day}").Replace("{day}", "490"), "$2,600", W(t, "reallife_ui_estate_paid", "Paid"), UiRole.Ok, 82, home, false));
+            rows.Add(EstateUnitRow(t, "12 W 39th Street, flat 2", "Garment District", "Priya Nair", JobLine(t, "Nurse, Murray Hill Clinic"), W(t, "reallife_estate_row_until", "Until day {day}").Replace("{day}", "490"), "$2,600", W(t, "reallife_ui_estate_paid", "Paid"), UiRole.Ok, 82, home, false));
         }
         else if (state == "roll" || state == "roll_twenty")
         {
-            string[][] units = RollUnits();
+            string[][] units = RollUnits(t);
             if (state == "roll_twenty")
             {
                 string[][] more =
@@ -206,6 +211,10 @@ internal static partial class UiSamples
                     new[] { "250 Park Avenue, floor 12", "Midtown", "Luis Pena", "Software, Pena Labs", "430", "$8,100", "ok", "88" },
                     new[] { "6 Harlem Row, house", "Uptown", "Zoe Adler", "Teacher, Lincoln School", "380", "$2,700", "ok", "70" }
                 };
+                foreach (string[] extra in more)
+                {
+                    extra[3] = JobLine(t, extra[3]);
+                }
                 var all = new List<string[]>(units);
                 all.AddRange(more);
                 units = all.ToArray();
@@ -253,7 +262,7 @@ internal static partial class UiSamples
             var months = new string[6];
             for (int i = 0; i < months.Length; i++)
             {
-                months[i] = W(t, "reallife_ui_estate_month_n", "Month {month}").Replace("{month}", (3 + i).ToString());
+                months[i] = W(t, "reallife_ui_estate_month_n", "Month {month}").Replace("{month}", (9 + i).ToString());
             }
             m.Lower = EstateCharts.Line(W(t, "reallife_ui_estate_ring_chart", "The city's rents, a month at a time"), months, new[] { 2700f, 2740f, 2790f, 2820f, 2860f, 2900f }, W(t, "reallife_ui_estate_rv_mean_flat", "Mean rent, a flat"), EstateCharts.Dollars);
         }
@@ -277,7 +286,7 @@ internal static partial class UiSamples
             m.ListA = new[]
             {
                 new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_ui_estate_service_title", "{fault}, {building}").Replace("{fault}", Capital(W(t, "reallife_estate_fault_1", "the heating"))).Replace("{building}", "41 E 37th Street, flat 4A"), Chip = W(t, "reallife_ui_estate_day", "Day {day}").Replace("{day}", "417"), ChipTone = UiRole.Notice, Amount = "$340", Run = -1 },
-                new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_ui_estate_service_title", "{fault}, {building}").Replace("{fault}", Capital(W(t, "reallife_estate_fault_4", "a lock"))).Replace("{building}", "233 W 39th Street"), Chip = W(t, "reallife_ui_estate_quote_asked", "Quote asked"), ChipTone = UiRole.Warn, Amount = "$410", Run = -1 }
+                new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_ui_estate_service_title", "{fault}, {building}").Replace("{fault}", Capital(W(t, "reallife_estate_fault_4", "a lock"))).Replace("{building}", "233 W 39th Street"), Chip = W(t, "reallife_ibox_chip_booked", "Booked"), ChipTone = UiRole.Ok, Amount = "$410", Run = -1 }
             };
             m.ListB = new[]
             {
@@ -379,7 +388,7 @@ internal static partial class UiSamples
         p.TenantName = "Sofia Marchetti";
         p.TenantHue = UiColourHue("Sofia Marchetti");
         p.TenantRing = UiRole.Warn;
-        p.TenantLine = "Nurse, Murray Hill Clinic · 34 · " + W(t, "reallife_ui_estate_here_since", "here since day {day}").Replace("{day}", "58");
+        p.TenantLine = JobLine(t, "Nurse, Murray Hill Clinic") + " · 34 · " + W(t, "reallife_ui_estate_here_since", "here since day {day}").Replace("{day}", "58");
         p.TenantChip = W(t, "reallife_ui_estate_late_days", "Late {days} days").Replace("{days}", "6");
         p.TenantOpen = W(t, "reallife_ui_estate_open_page", "Open their page");
         runs.Add(Yes);
@@ -397,7 +406,7 @@ internal static partial class UiSamples
         {
             new EstateRecordRow { Due = W(t, "reallife_ui_estate_due_day", "Due day {day}").Replace("{day}", "406"), What = W(t, "reallife_ui_estate_not_paid_yet", "Not paid yet"), Chip = W(t, "reallife_ui_estate_late_days", "Late {days} days").Replace("{days}", "6"), ChipTone = UiRole.Warn, Amount = "$2,600" }
         };
-        string[] dues = { "376", "346", "316", "88" };
+        string[] dues = { "376", "346", "316", "286" };
         for (int i = 0; i < dues.Length; i++)
         {
             rec.Add(new EstateRecordRow { Due = W(t, "reallife_ui_estate_due_day", "Due day {day}").Replace("{day}", dues[i]), What = W(t, "reallife_ui_estate_paid_on", "Paid on day {day}").Replace("{day}", dues[i]), Chip = W(t, "reallife_ui_estate_paid", "Paid"), ChipTone = UiRole.Ok, Amount = "$2,600" });

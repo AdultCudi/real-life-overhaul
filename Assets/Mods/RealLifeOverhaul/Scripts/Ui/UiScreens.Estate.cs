@@ -174,8 +174,6 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_estate_dec_call_kicker",
                 "reallife_estate_fault_1",
                 "reallife_ui_estate_dec_call_body",
-                "reallife_ui_estate_dec_costs",
-                "reallife_ui_estate_dec_materials",
                 "reallife_ui_estate_dec_app_kicker",
                 "reallife_ui_estate_dec_app_body",
                 "reallife_ui_estate_dec_app_others",
@@ -239,7 +237,24 @@ namespace RealLifeOverhaul.Ui
                 "reallife_colour_forest",
                 "reallife_estate_fault_2",
                 "reallife_estate_fault_3",
-                "reallife_estate_fault_5"
+                "reallife_estate_fault_5",
+                "reallife_ui_estate_job_nurse",
+                "reallife_ui_estate_job_cook",
+                "reallife_ui_estate_job_accountant",
+                "reallife_ui_estate_job_designer",
+                "reallife_ui_estate_job_courier",
+                "reallife_ui_estate_job_teacher",
+                "reallife_ui_estate_job_chef",
+                "reallife_ui_estate_job_dentist",
+                "reallife_ui_estate_job_architect",
+                "reallife_ui_estate_job_developer",
+                "reallife_ui_estate_job_tailor",
+                "reallife_ui_estate_job_bakery",
+                "reallife_ui_estate_job_import",
+                "reallife_ui_estate_job_florist",
+                "reallife_ui_estate_job_pharmacy",
+                "reallife_ui_estate_dec_next_morning",
+                "reallife_ui_estate_job_nurse"
             };
         }
 
@@ -358,7 +373,6 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_dealer_sh_next_step",
                 "reallife_ui_dealer_dec_deal_kicker",
                 "reallife_ui_dealer_dec_deal_offers",
-                "reallife_ui_dealer_dec_margin",
                 "reallife_ui_dealer_dec_leaves",
                 "reallife_ui_estate_not_now",
                 "reallife_ui_dealer_l_rival",

@@ -135,7 +135,6 @@ namespace RealLifeOverhaul.Ui
         public string Picture;          // the game's picture of the car by its UiPictures key, or null for the glyph
         public float Aspect = 1.6f;
         public UiFactCardModel Left, Right;
-        public UiChartModel Bids;       // the bids so far, oldest first, as bars; null with none
         public string Face;             // a name for the person the page is about, or null
         public string[] ShareLabels = new string[0];   // the lot's condition and the like as meters with their percent
         public int[] ShareValues = new int[0];
@@ -199,6 +198,7 @@ namespace RealLifeOverhaul.Ui
         // What fills a page that is short, from the page's own figures, in place of a chart that would only repeat them: a band of figures under the head,
         // the shares as graded meters with their unit, and a list of the related things (the people, the units, the works) with the same row as the roll's.
         public UiFigureModel[] Strip = new UiFigureModel[0];
+        public bool SharePlain;                      // the shares are parts of a whole, in one colour: a rating mix is no grade
         public string ShareTitle;
         public string[] ShareLabels = new string[0];
         public int[] ShareValues = new int[0];       // 0 to 100: each shows with its percent

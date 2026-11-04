@@ -298,9 +298,6 @@ namespace RealLifeOverhaul.Ui
                         new UiFigureModel { Label = EstateText.T("reallife_ui_estate_col_takings"), Value = Cash(takingsAll) },
                         new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_mean_rate"), Value = hire.Cars.Count > 0 ? Cash(rateSum / hire.Cars.Count) : Cash(0) }
                     };
-                    _m.ShareTitle = EstateText.T("reallife_ui_estate_sh_lot");
-                    _m.ShareLabels = new[] { EstateText.T("reallife_ibox_spaces"), EstateText.T("reallife_ui_estate_sh_in_hire") };
-                    _m.ShareValues = new[] { hire.Spaces > 0 ? hire.Cars.Count * 100 / hire.Spaces : 0, hire.Cars.Count > 0 ? outNow * 100 / hire.Cars.Count : 0 };
                     _m.RelatedTitle = EstateText.T("reallife_ui_estate_add_cars");
                     _m.RelatedCount = could.Count > 0 ? could.Count.ToString(Inv) : null;
                     _m.Related = could.ToArray();
@@ -325,6 +322,9 @@ namespace RealLifeOverhaul.Ui
                     lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_fig_cover_cost"), EstateText.T("reallife_ui_estate_amount_a_day", "amount", Money(premium))));
                     lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_cover_pays"), EstateText.Share(EstateCatalogue.HireCoverPays)));
                     lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_cover_excess"), Money(EstateCatalogue.HireCoverExcess)));
+                    // The lot's own meters stand in the cover's card: the spaces its cars take and the cars out on hire.
+                    lines.Add(UiFactLine.Bar(EstateText.T("reallife_ibox_spaces"), hire.Spaces > 0 ? hire.Cars.Count * 100 / hire.Spaces : 0));
+                    lines.Add(UiFactLine.Bar(EstateText.T("reallife_ui_estate_sh_in_hire"), hire.Cars.Count > 0 ? hire.Count(HireState.Out) * 100 / hire.Cars.Count : 0));
                     if (hire.Count(HireState.Out) + hire.Count(HireState.Waiting) == 0)
                     {
                         actions.Add(_runs.Button(EstateText.T("reallife_estate_btn_close_lot"), UiButtonKind.Destructive, UiIcon.None, UiAction.Count, () => Show(() => _d.SetLot(null))));
@@ -489,6 +489,10 @@ namespace RealLifeOverhaul.Ui
                     new UiInfoRow { Label = EstateText.T("reallife_ui_estate_rv_your_let"), Value = EstateText.T("reallife_ui_estate_of", "value", let.ToString(Inv), "most", units.ToString(Inv)) },
                     new UiInfoRow { Label = EstateText.T("reallife_ui_estate_rv_your_mean"), Value = let > 0 ? Cash(rentSum / let) : notYet }
                 };
+                if (!read)
+                {
+                    rows.RemoveRange(1, 5);   // nothing is read yet: one "Not yet" for the city's rents, not a row of them; the player's own two figures stand
+                }
                 var v = new UiInfoViewModel
                 {
                     Title = EstateText.T("reallife_ui_estate_rv_title"), Icon = UiIcon.Key, HeadLabel = EstateText.T("reallife_ui_estate_rv_rent"),

@@ -248,6 +248,112 @@ internal static partial class Program
         }
     }
 
+    // The answers of the new bands, pressed through the screen against the rules the directors call: Take it on and Decline on an offered instruction (AgencyRules, the
+    // agency's own list), Send a reminder on a late unit (EstateRules.Remind) and Add to the fleet on the hire file. Each press is read back in the state.
+    private sealed class EstateAnswerSource : IEstateSource
+    {
+        public readonly EstateState S;
+        public readonly Instruction Offered;
+        public readonly EstateUnit Late;
+        public int Cash = 100000, Day = 60, Generation_;
+
+        public EstateAnswerSource(EstateState s, Instruction offered, EstateUnit late)
+        {
+            S = s;
+            Offered = offered;
+            Late = late;
+        }
+
+        public int Generation => Generation_;
+
+        public void Opened(EstateView view)
+        {
+        }
+
+        public void Fill(EstateModel m, EstateView v)
+        {
+            var runs = new EstateRuns();
+            m.Title = "Property";
+            m.Icon = UiIcon.Home;
+            m.Nav = new UiNavEntry[0];
+            m.Shape = EstateShape.Detail;
+            m.Back = "Back";
+            m.DetailTitle = "Answers";
+            var buttons = new List<UiActionModel>
+            {
+                runs.Button("Take it on", UiButtonKind.Primary, UiIcon.Check, UiAction.Alt, () =>
+                {
+                    int cost = AgencyRules.TakeCost(Offered);
+                    if (cost > 0 && Cash >= cost)
+                    {
+                        Cash -= cost;
+                        AgencyRules.Take(Offered, Day);
+                    }
+                    Generation_++;
+                }),
+                runs.Button("Decline", UiButtonKind.Secondary, UiIcon.None, UiAction.Option, () =>
+                {
+                    if (S.Agency.Find(Offered.Id) != null && Offered.Stage == (int)InstructionStage.Offered)
+                    {
+                        S.Agency.Open.Remove(Offered);
+                    }
+                    Generation_++;
+                }),
+                runs.Button("Send a reminder", UiButtonKind.Secondary, UiIcon.None, UiAction.Count, () =>
+                {
+                    EstateRules.Remind(Late);
+                    Generation_++;
+                }, Late.Reminded),
+                runs.Button("Add to the fleet", UiButtonKind.Secondary, UiIcon.Plus, UiAction.Count, () =>
+                {
+                    S.Hire.Cars.Add(new HireCar { Id = "v" + (S.Hire.Cars.Count + 1), Type = "car" });
+                    Generation_++;
+                })
+            };
+            m.Left = new[] { new UiFactCardModel { Title = "Answers", Heading = true, Lines = new UiFactLine[0], Actions = buttons.ToArray() } };
+            m.Right = new UiFactCardModel[0];
+            m.Runs = runs.ToArray();
+        }
+    }
+
+    private static void EstateAnswersPressed()
+    {
+        EstateClimate c = Climate();
+        c.DaysPerYear = 360;
+        EstateRunState run = RunEstateNew(5, 3, c);
+        EstateState st = run.S;
+        var offered = new Instruction { Id = 7, District = "Midtown", Sale = true, Sqm = 120, Value = 2000000, Ask = 1000, Stage = (int)InstructionStage.Offered, Hours = 35, Day = 70 };
+        var second = new Instruction { Id = 8, District = "Uptown", Sale = false, Sqm = 60, Value = 3000, Ask = 1000, Stage = (int)InstructionStage.Offered, Hours = 12, Day = 70 };
+        st.Agency.Open.Add(offered);
+        st.Agency.Open.Add(second);
+        EstateUnit late = st.Holdings[0].Units[0];
+        late.Tenant = 1;
+        late.Arrears = 900;
+        late.ArrearsDays = 6;
+        late.Reminded = false;
+        late.Happy = 600;
+        var src = new EstateAnswerSource(st, offered, late);
+        var screen = new EstateScreen(src, "estate");
+        int cost = AgencyRules.TakeCost(offered);
+        bool took = (EstatePress(screen, "Take it on") || EstatePress(screen, "TAKE IT ON"));
+        Check(took && offered.Stage == (int)InstructionStage.Marketing && offered.Day == 60 + EstateCatalogue.InstructionLapseDays && src.Cash == 100000 - cost && cost > 0,
+            "estate: pressing Take it on marketing the offered instruction pays its bill and starts it (" + cost + " paid, stage " + offered.Stage + ")");
+        bool again = (EstatePress(screen, "Take it on") || EstatePress(screen, "TAKE IT ON"));
+        Check(again && src.Cash == 100000 - cost, "estate: an instruction already taken costs nothing a second time");
+        var gone = new EstateAnswerSource(st, second, late);
+        var declining = new EstateScreen(gone, "estate");
+        bool declined = (EstatePress(declining, "Decline") || EstatePress(declining, "DECLINE"));
+        Check(declined && st.Agency.Find(8) == null && st.Agency.Find(7) != null, "estate: pressing Decline takes the offered instruction off the agency's list and leaves the others");
+        int happy = late.Happy;
+        bool reminded = (EstatePress(screen, "Send a reminder") || EstatePress(screen, "SEND A REMINDER"));
+        Check(reminded && late.Reminded && late.Happy == happy - EstateCatalogue.HappyReminder, "estate: pressing Send a reminder marks the unit reminded and costs the tenant's satisfaction");
+        bool twice = (EstatePress(screen, "Send a reminder") || EstatePress(screen, "SEND A REMINDER"));
+        Check(!twice && late.Happy == happy - EstateCatalogue.HappyReminder, "estate: a reminder already sent is a disabled button that does nothing");
+        int cars = st.Hire.Cars.Count;
+        bool added = (EstatePress(screen, "Add to the fleet") || EstatePress(screen, "ADD TO THE FLEET"));
+        Check(added && st.Hire.Cars.Count == cars + 1, "estate: pressing Add to the fleet puts a car on the hire file");
+    }
+
     private static bool EstatePress(EstateScreen screen, string label)
     {
         var s = new UiScene();
@@ -506,6 +612,7 @@ internal static partial class Program
         int monthDays = MacroCatalogue.MonthDays(c.DaysPerYear);
 
         EstatePressed();
+        EstateAnswersPressed();
         EstateVacancies();
         EstateRentSlot();
         EstateHandlers();

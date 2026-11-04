@@ -168,9 +168,9 @@ namespace RealLifeOverhaul.Ui
                         Run = _runs.Do(() => Show(() => _v.Pick = "mkt:" + otherPlace))
                     });
                 }
-                _m.RelatedTitle = EstateText.T("reallife_ui_estate_also_in", "district", EstateText.District(b.District));
-                _m.RelatedCount = others.Count > 0 ? others.Count.ToString(Inv) : null;
-                _m.Related = others.ToArray();
+                _m.Related2Title = EstateText.T("reallife_ui_estate_also_in", "district", EstateText.District(b.District));   // across the card, under both columns
+                _m.Related2Count = others.Count > 0 ? others.Count.ToString(Inv) : null;
+                _m.Related2 = others.ToArray();
                 return true;
             }
 

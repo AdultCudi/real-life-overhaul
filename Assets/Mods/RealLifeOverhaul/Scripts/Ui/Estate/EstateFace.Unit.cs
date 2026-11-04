@@ -80,9 +80,9 @@ namespace RealLifeOverhaul.Ui
             {
                 y = Shares(s, at, u.ShareTitle, u.ShareLabels, u.ShareValues, x, y, w);
             }
-            if (u.Empty != null)
+            if (u.Empty != null || u.Others.Length > 0)
             {
-                if (u.Works.Length > 0 && y + RowHeight * 2f < bottom)
+                if (u.Empty != null && u.Works.Length > 0 && y + RowHeight * 2f < bottom)
                 {
                     y = Section(s, at, u.WorksTitle, u.WorksCount, x, y, w);
                     for (int i = 0; i < u.Works.Length && y + RowHeight <= bottom; i++)
@@ -189,15 +189,6 @@ namespace RealLifeOverhaul.Ui
                     y += RowHeight;
                 }
                 y += UiTokens.S2;
-            }
-            if (u.Empty == null && u.Others.Length > 0 && y + RowHeight * 2f < bottom)
-            {
-                y = Section(s, at, u.OthersTitle, u.OthersCount, x, y, w);
-                for (int i = 0; i < u.Others.Length && y + RowHeight <= bottom - UiTokens.S10; i++)
-                {
-                    Row(s, at, u.Others[i], x, y, w);
-                    y += RowHeight;
-                }
             }
             if (!string.IsNullOrEmpty(u.BuildingLink) && y + UiTokens.Control <= bottom)
             {

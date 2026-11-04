@@ -235,7 +235,7 @@ namespace RealLifeOverhaul.Ui
             {
                 var lines = new List<UiConsequence>(2)
                 {
-                    EstateRuns.Said(EstateText.T("reallife_estate_state_empty", "days", h.Units[unit].VoidDays.ToString(Inv)))
+                    EstateRuns.Said(EstateText.Empty(h.Units[unit].VoidDays))
                 };
                 if (others > 0)
                 {
@@ -413,17 +413,16 @@ namespace RealLifeOverhaul.Ui
                 }
                 else
                 {
-                    say.Body = EstateText.T("reallife_ui_estate_dec_call_body", "name", first, "when", EstateText.T("reallife_ui_estate_days_ago", "days", days.ToString(Inv)));
+                    say.Body = EstateText.T("reallife_ui_estate_dec_call_body", "name", first);
                 }
                 bool open = u.CallAnswer == (int)CallAnswer.Waiting;
                 say.Choices = new[]
                 {
                     _runs.Choice(EstateText.T("reallife_estate_btn_contractor"),
-                        new[] { EstateRuns.Said(EstateText.T("reallife_ui_estate_dec_costs", "amount", Money(u.CallCost)), UiConsequence.Loss) },
+                        new[] { EstateRuns.Said(EstateText.T("reallife_ui_estate_dec_next_morning")) },
                         () => Show(() => _d.SendContractor(place, unit)), contractor),
                     _runs.Choice(EstateText.T("reallife_estate_btn_yourself"), new[]
                     {
-                        EstateRuns.Said(EstateText.T("reallife_ui_estate_dec_materials", "amount", Money(materials)), UiConsequence.Loss),
                         EstateRuns.Said(EstateText.T("reallife_ui_estate_call_minutes", "minutes", minutes.ToString(Inv)))
                     }, () => Show(() => _d.DoItYourself(place, unit)), !open)
                 };
