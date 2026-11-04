@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy
@@ -71,6 +72,19 @@ namespace RealLifeOverhaul.Economy
         public readonly Relief Relief = new Relief();
         public int NextAccountId = 1;
         public int RateAskedDay;        // the day a bank was last asked for a point off a loan's rate; 0 for never
+        public int RiseDay;             // the day the rate last rose on the player's variable debts; 0 for never
+        public int RiseExtra;           // what the rise added to the interest of those debts, a day, in whole money
+
+        /// <summary>The rate has risen on <paramref name="day"/> and added <paramref name="extraPerDay"/> a day to the variable debts. Two causes the same day add up.</summary>
+        public void NoteRise(int day, int extraPerDay)
+        {
+            if (day <= 0)
+            {
+                return;
+            }
+            RiseExtra = Math.Max(0, (RiseDay == day ? RiseExtra : 0) + Math.Max(0, extraPerDay));
+            RiseDay = day;
+        }
 
         /// <summary>The open account of a kind, or null; never a test tool's. Of several finance accounts, the first.</summary>
         public CreditAccount Account(ProductKind kind)
