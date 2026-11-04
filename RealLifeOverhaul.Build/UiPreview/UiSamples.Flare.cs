@@ -61,7 +61,7 @@ internal static partial class UiSamples
             case "reply_sheet": FlareBusiness(m, t, 1); FlareReplySheet(m, t); break;
             case "photo_picker": FlareHome(m, t, 0); FlareCompose(m, t, false); FlarePhotoPicker(m, t); break;
             case "notices_sales": FlareNotices(m, t, true); m.Tab = 1; FlareKeepOnly(m.List, 1); break;
-            case "city_new": FlareCity(m, t, false); FlareCityNew(m, t); break;
+            case "city_new": FlareCity(m, t, false); FlareCityNew(m, t); FlareNewPlayer(m, t); break;
             case "compose_report": FlareHome(m, t, 0); FlareComposeKind(m, t, 2); break;
             case "compose_moment": FlareHome(m, t, 0); FlareComposeKind(m, t, 1); break;
             case "ad_sheet": FlareBusiness(m, t, 1); FlareAdSheet(m, t); break;
@@ -223,6 +223,12 @@ internal static partial class UiSamples
             m.StoryHues[i] = UiColour.HueOf(m.Stories[i]);
         }
         m.StoryShops[2] = true;
+        // Alex and Mom are people: a painted face on the ring of their mood (Alex a great day, Mom an ordinary one), as FlareScreen.Stories fills them.
+        m.StoryPeople = new bool[m.Stories.Length];
+        m.StoryRings = new UiRole[m.Stories.Length];
+        m.StoryPeople[5] = m.StoryPeople[6] = true;
+        m.StoryRings[5] = FlareFace.MoodRing(2);
+        m.StoryRings[6] = FlareFace.MoodRing(0);
         if (tab == 2)
         {
             FlareBusinessPosts(m, t);
@@ -384,6 +390,15 @@ internal static partial class UiSamples
                 .Replace("{money}", "$1,180"), null);
         FlareNotice(m.List, UiIcon.ChartLineUp, UiRole.DangerText, false, "2d",
             t("reallife_flare_kit_notice_promo_flop", "Your post about {business} fell flat").Replace("{business}", FlareShop2), null);
+        string[] who = { "Marco Bell", "Priya Nair", "Sam Okafor", "Tess Whitaker", "Jade Rivers", "Omar Haddad", "Lila Chen", "Kenji Mori" };
+        string[] visits = { "14", "6", "5", "9", "27", "7", "11", "8" };
+        string[] money = { "$318", "$140", "$96", "$205", "$640", "$122", "$260", "$188" };
+        for (int i = 0; i < who.Length; i++)
+        {
+            FlareNotice(m.List, UiIcon.Megaphone, UiRole.Chart2, false, (3 + i).ToString(System.Globalization.CultureInfo.InvariantCulture) + "d",
+                t("reallife_flare_kit_notice_campaign", "{name} posted for {business}: {visitors} visitors, {money}").Replace("{name}", who[i]).Replace("{business}", i % 2 == 0 ? FlareShop2 : FlareShop)
+                    .Replace("{visitors}", visits[i]).Replace("{money}", money[i]), null);
+        }
     }
 
     private static void FlareNotice(FlareList list, UiIcon icon, UiRole tint, bool unread, string time, string text, string line)
@@ -823,6 +838,19 @@ internal static partial class UiSamples
         FlareCard(m.List, UiIcon.Coin, UiRole.Gold, "Glow Cosmetics", null,
             t("reallife_flare_kit_offer_card", "Pays {money} a post for {posts} posts").Replace("{money}", "$450").Replace("{posts}", "3"),
             t("reallife_flare_kit_offer_until", "Open for {days} more days").Replace("{days}", "4"), t("reallife_flare_kit_view", "View"));
+    }
+
+    // The one player of the page: a new account has no followers, no reach and no reviews anywhere on it, the side's week included (FlareScreen.Week gives these for it).
+    private static void FlareNewPlayer(FlareFaceModel m, UiWords t)
+    {
+        m.WeekFigures = new[] { "0", "0", t("reallife_flare_kit_rating_none", "Not yet") };
+        m.WeekDeltas = new[]
+        {
+            t("reallife_flare_kit_week_followers", "{change} this week").Replace("{change}", "0"), t("reallife_flare_kit_week_reach", "{change}% on last week").Replace("{change}", "0"),
+            t("reallife_flare_kit_week_no_reviews", "No reviews yet")
+        };
+        m.WeekTones = new[] { 0, 0, 0 };
+        m.Line = null;
     }
 
     // A new account: nobody follows it yet, but the city's own news is there for it, as FlareScreen.City fills it: what the residents want, the rivals' new shops and the premises to let.

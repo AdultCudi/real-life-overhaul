@@ -14,6 +14,56 @@ internal static partial class Program
         FlareRoundRing();
         FlareRoundWiring();
         FlareRoundFaces();
+        FlareRoundWords();
+    }
+
+    // Every text the Flare screens say is in Portuguese and Chinese in those languages, not the English left in their place: each key the screens' entry names and each key the samples
+    // and the code ask for has a value in pt and zh-cn that differs from the English, unless the English is a name, a number or a word the two share (a text of one word or none).
+    private static void FlareRoundWords()
+    {
+        string entry = PlayFile("Ui", "UiScreens.Flare.cs"), samples = System.IO.File.ReadAllText(System.IO.Path.GetFullPath(System.IO.Path.Combine(System.AppContext.BaseDirectory,
+            @"..\..\..\..\UiPreview\UiSamples.Flare.cs")));
+        var keys = new SortedSet<string>(StringComparer.Ordinal);
+        foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(entry + samples, "\"(reallife_flare_[a-z0-9_]+)\""))
+        {
+            keys.Add(m.Groups[1].Value);
+        }
+        var words = new Dictionary<string, Dictionary<string, string>>();
+        foreach (string lang in new[] { "en", "pt", "zh-cn" })
+        {
+            var map = new Dictionary<string, string>(StringComparer.Ordinal);
+            using (System.Text.Json.JsonDocument doc = System.Text.Json.JsonDocument.Parse(PlayFile("..", "Locales", lang + ".json").TrimStart('\uFEFF')))
+            {
+                foreach (System.Text.Json.JsonProperty p in doc.RootElement.EnumerateObject())
+                {
+                    map[p.Name] = p.Value.GetString();
+                }
+            }
+            words[lang] = map;
+        }
+        string english = "none", missing = "none";
+        foreach (string key in keys)
+        {
+            if (!words["en"].TryGetValue(key, out string en))
+            {
+                continue;   // a prefix of keys written with a number (reallife_flare_niche_) or a key of another file
+            }
+            string bare = System.Text.RegularExpressions.Regex.Replace(en, "\\{[a-z]+\\}", " ");
+            int count = System.Text.RegularExpressions.Regex.Matches(bare, "[A-Za-z]{2,}").Count;
+            foreach (string lang in new[] { "pt", "zh-cn" })
+            {
+                if (!words[lang].TryGetValue(key, out string said))
+                {
+                    missing = key + " in " + lang;
+                }
+                else if (said == en && count > 1)
+                {
+                    english = key + " in " + lang;
+                }
+            }
+        }
+        Check(missing == "none" && english == "none" && keys.Count > 300,
+            "flare round: every key of the Flare screens is in pt and zh-cn and is not the English left in its place (" + keys.Count + " keys; missing " + missing + "; English " + english + ")");
     }
 
     // The trend's tag comes from its key, never from its words in the player's language; a person's ring is their mood, a review's its stars.
@@ -22,7 +72,7 @@ internal static partial class Program
         string eating = FlareCityViews.TrendTag(FlareCityViews.TrendKindKey(3)), coffee = FlareCityViews.TrendTag(FlareCityViews.TrendKindKey(4));
         Check(eating == "eatingout" && coffee == "coffee" && FlareCityViews.TrendTag(RealLifeOverhaul.Tech.StudioViews.GenreKey(2)) == "rpg" && FlareCityViews.TrendTag("reallife_other") == null && FlareCityViews.TrendTag(null) == null,
             "flare round: a trend's tag is made from its key (" + eating + ", " + coffee + "), the same in every language");
-        Check(FlareFace.MoodRing(2) == UiRole.Ok && FlareFace.MoodRing(1) == UiRole.Ok && FlareFace.MoodRing(0) == UiRole.Warn && FlareFace.MoodRing(-1) == UiRole.Danger && FlareFace.MoodRing(-2) == UiRole.Danger
+        Check(FlareFace.MoodRing(2) == UiRole.Ok && FlareFace.MoodRing(1) == UiRole.Ok && FlareFace.MoodRing(0) == UiRole.Warn && FlareFace.MoodRing(-1) == UiRole.Danger && FlareFace.MoodRing(-2) == UiRole.None
               && FlareFace.StarRing(5) == UiRole.Ok && FlareFace.StarRing(4) == UiRole.Ok && FlareFace.StarRing(3) == UiRole.Warn && FlareFace.StarRing(2) == UiRole.Danger && FlareFace.StarRing(1) == UiRole.Danger,
             "flare round: the ring round a face is the person's mood (the social life's, -2 to +2) and a reviewer's is how they left (their stars)");
         string pages = PlayFile("Ui", "Flare", "FlareScreen.Rows.cs") + PlayFile("Ui", "Flare", "FlareScreen.Fill.cs") + PlayFile("Ui", "Flare", "FlareScreen.Desk.cs");

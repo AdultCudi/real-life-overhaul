@@ -336,12 +336,16 @@ namespace RealLifeOverhaul.Ui
             var names = new List<string>(StoriesMost);
             var hues = new List<float>(StoriesMost);
             var shops = new List<bool>(StoriesMost);
+            var people = new List<bool>(StoriesMost);
+            var rings = new List<UiRole>(StoriesMost);
             List<FlareShop> mine = _flare.MyShops();
             for (int i = 0; i < mine.Count && names.Count < StoriesMost; i++)
             {
                 names.Add(mine[i].Name ?? "?");
                 hues.Add(UiColour.HueOf(mine[i].Place));
                 shops.Add(true);
+                people.Add(false);
+                rings.Add(UiRole.None);
                 _storyKeys.Add(null);
                 _storyShops.Add(i);
             }
@@ -352,12 +356,19 @@ namespace RealLifeOverhaul.Ui
                 names.Add(name);
                 hues.Add(UiColour.HueOf(_storyPicks[i]));
                 shops.Add(false);
+                FlareRow who = default(FlareRow);
+                who.Name = name;
+                Look(_storyPicks[i], ref who);   // a friend's, an influencer's: a face on the ring of their mood
+                people.Add((who.Flags & FlareRowFlags.Person) != 0);
+                rings.Add(who.Ring);
                 _storyKeys.Add(_storyPicks[i]);
                 _storyShops.Add(-1);
             }
             _m.Stories = names.ToArray();
             _m.StoryHues = hues.ToArray();
             _m.StoryShops = shops.ToArray();
+            _m.StoryPeople = people.ToArray();
+            _m.StoryRings = rings.ToArray();
         }
 
         private bool OpenStory(int i)

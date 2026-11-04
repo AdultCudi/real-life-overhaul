@@ -50,7 +50,7 @@ namespace RealLifeOverhaul.Ui
                 float col = HireColumn(rowW, cols), fx = x + UiTokens.S4 + HireFigureX(rowW, cols);
                 for (int i = 0; i < cols; i++)
                 {
-                    UiDraw.Text(s, at, fx + i * col, cy, col - UiTokens.S3, UiStyle.SectionHeader, UiRole.Text2, labels[i * 2], UiFlags.Label | UiFlags.Right);
+                    Line(s, at, fx + i * col, cy, col - UiTokens.S3, UiStyle.SectionHeader, UiRole.Text2, labels[i * 2], UiFlags.Label | UiFlags.Right);
                 }
                 cy += UiTokens.S8;
             }
@@ -91,12 +91,12 @@ namespace RealLifeOverhaul.Ui
             Face(s, inCard, x1, cy, UiTokens.AvatarRow, d.Name, d.Hue, true, d.Ring, false);
             float tx = x1 + UiTokens.AvatarRow + UiTokens.S3, tw = x1 + w1 - tx;
             float nameW = Math.Min(UiDraw.Snap(UiTextRules.Width(d.Name, UiStyle.Number) + UiTokens.S1), tw - (d.Verified ? UiTokens.S5 : 0f));
-            UiDraw.Text(s, inCard, tx, cy, nameW, UiStyle.Number, UiRole.Text, d.Name, UiFlags.Truncate);
+            Line(s, inCard, tx, cy, nameW, UiStyle.Number, UiRole.Text, d.Name, UiFlags.Truncate);
             if (d.Verified)
             {
                 Verified(s, inCard, tx + nameW + UiTokens.S1, cy + UiTokens.S1);
             }
-            UiDraw.Text(s, inCard, tx, cy + L(UiStyle.Number), tw, UiStyle.Small, UiRole.Text2, d.Handle, UiFlags.Truncate);
+            Line(s, inCard, tx, cy + L(UiStyle.Number), tw, UiStyle.Small, UiRole.Text2, d.Handle, UiFlags.Truncate);
             cy += UiTokens.AvatarRow + UiTokens.S3;
             int figures = Math.Min(d.ForecastLabels.Length, d.ForecastFigures.Length);
             for (int i = 0; i < figures; i++)
@@ -111,12 +111,12 @@ namespace RealLifeOverhaul.Ui
             }
             // The second: where their followers in the city live.
             float by = y + UiTokens.S4;
-            UiDraw.Text(s, inCard, x2, by, w2, UiStyle.SectionHeader, UiRole.Text2, d.AudienceTitle, UiFlags.Label | UiFlags.Truncate);
+            Line(s, inCard, x2, by, w2, UiStyle.SectionHeader, UiRole.Text2, d.AudienceTitle, UiFlags.Label | UiFlags.Truncate);
             by += L(UiStyle.SectionHeader) + UiTokens.S2;
             int bars = Math.Min(d.AudienceLabels.Length, Math.Min(d.AudienceShares.Length, d.AudienceFigures.Length));
             if (bars == 0)
             {
-                UiDraw.Text(s, inCard, x2, by, w2, UiStyle.Small, UiRole.Text2, d.AudienceEmpty, UiFlags.Wrap | UiFlags.Truncate, 3);
+                Flow(s, inCard, x2, by, w2, UiStyle.Small, UiRole.Text2, d.AudienceEmpty, 3);
             }
             float labelW = UiDraw.SnapDown(w2 * 0.34f), figW = UiTokens.S10;
             for (int i = 0; i < bars; i++)
@@ -134,12 +134,12 @@ namespace RealLifeOverhaul.Ui
             }
             // The third: what their last campaigns did, and what a post like this tends to do.
             float ly = y + UiTokens.S4;
-            UiDraw.Text(s, inCard, x3, ly, w3, UiStyle.SectionHeader, UiRole.Text2, d.LastTitle, UiFlags.Label | UiFlags.Truncate);
+            Line(s, inCard, x3, ly, w3, UiStyle.SectionHeader, UiRole.Text2, d.LastTitle, UiFlags.Label | UiFlags.Truncate);
             ly += L(UiStyle.SectionHeader) + UiTokens.S2;
             int lines = Math.Min(d.LastLines.Length, Math.Min(d.LastFigures.Length, 3));
             if (lines == 0)
             {
-                UiDraw.Text(s, inCard, x3, ly, w3, UiStyle.Small, UiRole.Text2, d.LastEmpty, UiFlags.Wrap | UiFlags.Truncate, 2);
+                Flow(s, inCard, x3, ly, w3, UiStyle.Small, UiRole.Text2, d.LastEmpty, 2);
                 ly += UiDraw.Snap(UiTextRules.WrappedHeight(d.LastEmpty, UiStyle.Small, w3, 2)) + UiTokens.S2;
             }
             for (int i = 0; i < lines; i++)
@@ -155,7 +155,11 @@ namespace RealLifeOverhaul.Ui
             {
                 float room = y + HireDetailHeight - UiTokens.S4 - ly - UiTokens.S2;
                 int noteLines = Math.Max(1, Math.Min(3, (int)Math.Floor(room / L(UiStyle.Small))));
-                UiDraw.Text(s, inCard, x3, ly + UiTokens.S2, w3, UiStyle.Small, UiRole.Text2, d.Note, UiFlags.Wrap | UiFlags.Truncate, noteLines);
+                int note = Flow(s, inCard, x3, ly + UiTokens.S2, w3, UiStyle.Small, UiRole.Text2, d.Note, noteLines);
+                if ((s.Items[note].Flags & UiFlags.Wrap) != 0)
+                {
+                    s.Items[note].H = noteLines * L(UiStyle.Small);
+                }   // the room it may take, so a longer language's second line is not cut by a box measured for one
             }
         }
     }

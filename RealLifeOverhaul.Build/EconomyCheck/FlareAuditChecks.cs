@@ -28,10 +28,17 @@ internal static partial class Program
     // A host that records which call came; every call has its own count, so a press that arrives as another kind shows.
     private sealed class FlareAuditHost : IFlareKitHost
     {
-        public int Ended = -1, EndCalls, Seen, Bought, Saved;
+        public int Ended = -1, EndCalls, Seen, Bought, Saved, Opened = -1, OpenCalls;
         public string Place, Bio, Banner;
         public int Target = -1, Size = -1, Days = -1;
         public bool FailBuy;
+
+        public bool OpenHire(int influencer)
+        {
+            OpenCalls++;
+            Opened = influencer;
+            return influencer < 100;   // an influencer the director does not know cannot be hired
+        }
 
         public bool EndHire(int id)
         {
@@ -380,6 +387,17 @@ internal static partial class Program
         bool hire = kit.Press(FlareFace.SortCommand, 1, 7) && kit.Sort == 1 && kit.Press(FlareFace.NicheCommand, 4, 7) && kit.Niche == 4 && !kit.Press(FlareFace.NicheCommand, 9, 7) && kit.Niche == 4
                     && !kit.Press(FlareFace.SortCommand, 2, 7) && kit.Sort == 1;
         Check(hire, "flare audit: the hire page's order and niche are set by their presses, and a press past what was drawn does nothing");
+        // The hire table's row chooses, its button (and the card's) hires: each press arrives as its own kind with the influencer it was drawn for (w4-master 1.3 item 13).
+        host.Opened = -1;
+        bool chosen = kit.ChooseHire(14) && kit.HireSel == 14 && host.OpenCalls == 0;
+        bool opened = kit.HireOpen(14) && host.Opened == 14 && host.OpenCalls == 1 && kit.HireSel == 14;
+        bool otherRow = kit.ChooseHire(3) && kit.HireSel == 3 && host.OpenCalls == 1 && kit.HireOpen(3) && host.Opened == 3 && host.OpenCalls == 2;
+        Check(chosen && opened && otherRow && !kit.ChooseHire(-1) && !kit.HireOpen(-1) && !kit.HireOpen(500) && host.OpenCalls == 3 && host.Ended == -1 && host.Bought == 0 && host.Saved == 0,
+            "flare round: a press on an influencer's row chooses them and does not open the sheet; the Hire button opens the sheet for that influencer and chooses no other");
+        string rows = PlayFile("Ui", "Flare", "FlareScreen.Rows.cs");
+        Check(rows.Contains("return _kit.ChooseHire(r.Id);") && rows.Contains("case RowAct.Hire: return _kit.HireOpen(r.Id);")
+              && PlayFile("Ui", "Flare", "FlareFace.Hire.cs").Contains("ButtonCommand, d.Row,") && PlayFile("Ui", "Flare", "FlareFace.Rows.cs").Contains("targets ? ButtonCommand : -1, index,"),
+            "flare round: the screen routes the row's RowCommand to the choice and its ButtonCommand (the row's and the card's, with the chosen row's number) to the hire sheet");
         // End a campaign: asks, then ends that one.
         bool first = kit.End(7) && kit.EndArmed == 7 && host.EndCalls == 0;
         bool other = kit.End(9) && kit.EndArmed == 9 && host.EndCalls == 0;

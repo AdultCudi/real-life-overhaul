@@ -30,13 +30,13 @@ public static partial class UiPreviewRunner
         Add("business", "02.jpg", FlareFace.ButtonCommand, 0, "DD");
         Add("business_turning", "13.jpg", FlareFace.PickCommand, 1, "D");
         Add("business_none", "02.jpg", FlareFace.NavCommand, 6, "D");
-        Add("studio", "13.jpg", FlareFace.RowCommand, 1, "DD");
-        Add("hire", "02.jpg", FlareFace.ButtonCommand, 0, "DD");
+        Add("studio", "13.jpg", FlareFace.RowCommand, 1, null).Tour = true;
+        Add("hire", "02.jpg", FlareFace.ButtonCommand, 0, null).Tour = true;
         Add("city", "11.jpg", FlareFace.ButtonCommand, 1, "DD");
         Add("city_empty", "13.jpg", FlareFace.NavCommand, 8, "D");
         Typed(Add("compose", "13.jpg", FlareFace.SheetChipCommand, 0, "D"), FlareFace.ComposeField);
         Add("compose_promote", "02.jpg", FlareFace.SheetConfirmCommand, 0, "D");
-        Add("hire_sheet", "13.jpg", FlareFace.SheetConfirmCommand, 0, "D");
+        Add("hire_sheet", "13.jpg", FlareFace.SheetConfirmCommand, 0, null).Tour = true;
         Add("reply_sheet", "02.jpg", FlareFace.OptionCommand, 1, "D");
         Typed(Add("photo_picker", "13.jpg", FlareFace.PickerPhotoCommand, 2, "D"), FlareFace.PickerField);
         Add("notices_sales", "02.jpg", FlareFace.MarkAllCommand, 0, "DDDR");
@@ -50,9 +50,17 @@ public static partial class UiPreviewRunner
         // The wide languages, where a label is longest: the hire table's header, the sheet's chips and the city page (the owner's bar: no word cut in any language).
         foreach (string lang in new[] { "pt", "zh-cn" })
         {
-            AddIn(lang, "hire", "02.jpg", FlareFace.ButtonCommand, 0, "DD");
+            AddIn(lang, "hire", "02.jpg", FlareFace.ButtonCommand, 0, null).Tour = true;
             AddIn(lang, "compose_report", "11.jpg", FlareFace.SheetChipCommand, 2, null).Tour = true;
             AddIn(lang, "city_new", "13.jpg", FlareFace.NavCommand, 8, null).Tour = true;
+            AddIn(lang, "home", "13.jpg", FlareFace.LikeCommand, 0, "DRD");
+            AddIn(lang, "studio", "13.jpg", FlareFace.RowCommand, 1, null).Tour = true;
+            AddIn(lang, "business", "02.jpg", FlareFace.ButtonCommand, 0, "DD");
+            AddIn(lang, "profile", "13.jpg", FlareFace.TabCommand, 1, "DD");
+            AddIn(lang, "notices_sales", "02.jpg", FlareFace.MarkAllCommand, 0, "DDDR");
+            AddIn(lang, "hire_sheet", "13.jpg", FlareFace.SheetConfirmCommand, 0, null).Tour = true;
+            AddIn(lang, "ad_sheet", "13.jpg", FlareFace.SheetConfirmCommand, 0, null).Tour = true;
+            AddIn(lang, "compose_moment", "02.jpg", FlareFace.SheetChipCommand, 1, null).Tour = true;
         }
 
         Screen AddIn(string lang, string state, string backdrop, int hover, int arg, string walk)

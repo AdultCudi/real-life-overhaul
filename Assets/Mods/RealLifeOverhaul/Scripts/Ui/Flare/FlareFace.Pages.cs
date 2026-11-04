@@ -90,11 +90,13 @@ namespace RealLifeOverhaul.Ui
                 int box = UiDraw.Box(s, at, sx, sy, StoryWidth, boxH, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
                 UiAt inBox = at.In(box);
                 float rx = sx + (StoryWidth - StoryRing) / 2f;
-                int ring = UiDraw.Circle(s, inBox, rx, sy, StoryRing, StoryRing, shop ? UiRole.Accent : UiRole.Chart2);
+                bool person = i < m.StoryPeople.Length && m.StoryPeople[i];
+                UiRole mood = person && i < m.StoryRings.Length ? m.StoryRings[i] : UiRole.None;
+                int ring = UiDraw.Circle(s, inBox, rx, sy, StoryRing, StoryRing, mood != UiRole.None ? mood : shop ? UiRole.Accent : UiRole.Chart2);   // a person's ring is their mood
                 int gap = UiDraw.Circle(s, inBox.In(ring), rx + 2f, sy + 2f, StoryRing - UiTokens.S1, StoryRing - UiTokens.S1, UiRole.Panel, UiFlags.Middle | UiFlags.Centre);
-                int face = UiDraw.Avatar(s, inBox.In(gap), rx + UiTokens.S1, sy + UiTokens.S1, StoryRing - UiTokens.S2, m.Stories[i], i < m.StoryHues.Length ? m.StoryHues[i] : 0f);
+                int face = Face(s, inBox.In(gap), rx + UiTokens.S1, sy + UiTokens.S1, StoryRing - UiTokens.S2, m.Stories[i], i < m.StoryHues.Length ? m.StoryHues[i] : 0f, person, UiRole.None, false);
                 s.Items[face].Flags |= UiFlags.Middle | UiFlags.Centre;
-                UiDraw.Text(s, inBox, sx, sy + StoryRing + UiTokens.S1, StoryWidth, UiStyle.Small, UiRole.Text, m.Stories[i], UiFlags.Centre | UiFlags.Truncate);
+                Line(s, inBox, sx, sy + StoryRing + UiTokens.S1, StoryWidth, UiStyle.Small, UiRole.Text, m.Stories[i], UiFlags.Centre | UiFlags.Truncate);
                 UiDraw.Node(s, at, sx, sy, StoryWidth, boxH, StoryCommand, i, box);
                 sx += StoryWidth + UiTokens.S3;
             }
@@ -132,10 +134,10 @@ namespace RealLifeOverhaul.Ui
             float tw = x + w - tx - UiTokens.S4 - reserve;
             bool lined = !string.IsNullOrEmpty(line);
             float ty = lined ? y + UiTokens.S2 : y + (h - L(UiStyle.Number)) / 2f;
-            UiDraw.Text(s, at, tx, UiDraw.SnapDown(ty), tw, UiStyle.Number, UiRole.Text, title, UiFlags.Truncate);
+            Line(s, at, tx, UiDraw.SnapDown(ty), tw, UiStyle.Number, UiRole.Text, title, UiFlags.Truncate);
             if (lined)
             {
-                UiDraw.Text(s, at, tx, y + UiTokens.S2 + L(UiStyle.Number), tw, UiStyle.Small, UiRole.Text2, line, UiFlags.Truncate);
+                Line(s, at, tx, y + UiTokens.S2 + L(UiStyle.Number), tw, UiStyle.Small, UiRole.Text2, line, UiFlags.Truncate);
             }
             return h;
         }
@@ -198,8 +200,8 @@ namespace RealLifeOverhaul.Ui
             Face(s, inHead, hx, y + UiTokens.S4, UiTokens.AvatarRow, m.DetailName, m.DetailHue, m.DetailPerson, m.DetailRing, false);
             float lw = string.IsNullOrEmpty(m.DetailLink) ? 0f : Math.Min(UiDraw.Snap(UiTextRules.Width(m.DetailLink, UiStyle.Title) + UiTokens.S4), UiDraw.SnapDown(w * 0.4f));
             float tx = hx + UiTokens.AvatarRow + UiTokens.S3, tw = x + w - tx - lw - UiTokens.S8;
-            UiDraw.Text(s, inHead, tx, y + UiTokens.S4, tw, UiStyle.Title, UiRole.Text, m.DetailName, UiFlags.Truncate);
-            UiDraw.Text(s, inHead, tx, y + UiTokens.S4 + UiTokens.S5, tw, UiStyle.Small, UiRole.Text2, m.DetailLine, UiFlags.Truncate);
+            Line(s, inHead, tx, y + UiTokens.S4, tw, UiStyle.Title, UiRole.Text, m.DetailName, UiFlags.Truncate);
+            Line(s, inHead, tx, y + UiTokens.S4 + UiTokens.S5, tw, UiStyle.Small, UiRole.Text2, m.DetailLine, UiFlags.Truncate);
             if (lw > 0f)
             {
                 float lx = x + w - UiTokens.S4 - lw;
@@ -275,13 +277,13 @@ namespace RealLifeOverhaul.Ui
             cy = ay + UiTokens.AvatarHero + UiTokens.S2 + UiTokens.S3;
             float tx = x + UiTokens.S4, tw = w - UiTokens.S8;
             float nameW = Math.Min(UiDraw.Snap(UiTextRules.Width(p.Name, UiStyle.Hero) + UiTokens.S1), tw - (p.Verified ? UiTokens.S6 : 0f));
-            UiDraw.Text(s, at, tx, cy, nameW, UiStyle.Hero, UiRole.Text, p.Name, UiFlags.Truncate);
+            Line(s, at, tx, cy, nameW, UiStyle.Hero, UiRole.Text, p.Name, UiFlags.Truncate);
             if (p.Verified)
             {
                 Verified(s, at, tx + nameW + UiTokens.S1, cy + UiTokens.S1);
             }
             cy += L(UiStyle.Hero);
-            UiDraw.Text(s, at, tx, cy, tw, UiStyle.Small, UiRole.Text2, p.Handle, UiFlags.Truncate);
+            Line(s, at, tx, cy, tw, UiStyle.Small, UiRole.Text2, p.Handle, UiFlags.Truncate);
             cy += L(UiStyle.Small) + UiTokens.S2;
             if (!string.IsNullOrEmpty(p.Bio))
             {
@@ -298,8 +300,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     break;
                 }
-                UiDraw.Text(s, at, fx, cy, vw, UiStyle.BodyStrong, UiRole.Text, p.Figures[i]);
-                UiDraw.Text(s, at, fx + vw, cy, lw, UiStyle.Small, UiRole.Text2, p.Labels[i], UiFlags.Label);
+                Line(s, at, fx, cy, vw, UiStyle.BodyStrong, UiRole.Text, p.Figures[i]);
+                Line(s, at, fx + vw, cy, lw, UiStyle.Small, UiRole.Text2, p.Labels[i], UiFlags.Label);
                 fx += vw + lw + UiTokens.S4;
             }
             cy += L(UiStyle.BodyStrong) + UiTokens.S2;

@@ -530,9 +530,9 @@ namespace RealLifeOverhaul.Ui
             FlareDeskRules.Sort(_hireable, _kit.Sort == 1 && shops.Count > 0, chosen);
             // The one the table has chosen (the first until another is pressed, or when the filters took it out): the card under the table is theirs.
             int pick = 0;
-            for (int i = 0; i < _hireable.Count && _hireSel >= 0; i++)
+            for (int i = 0; i < _hireable.Count && _kit.HireSel >= 0; i++)
             {
-                pick = _hireable[i].Id == _hireSel ? i : pick;
+                pick = _hireable[i].Id == _kit.HireSel ? i : pick;
             }
             _m.Hire.Shown = false;
             for (int i = 0; i < _hireable.Count && _m.List.Count < InfluencersMost; i++)

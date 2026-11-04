@@ -427,12 +427,13 @@ public static partial class UiPreviewRunner
         }
     }
 
-    // The d-pad moves that reach every target of the top layer from the first: a breadth first walk of what UiFocusRules.Next gives, to the nearest target not yet reached, again
-    // and again (right, down, left, up are tried in that order, so a row is gone along and the next taken back). The log says how many of them it reached.
+    // The d-pad moves that reach every target of the top layer in the order a player reads the screen: the page's own column first, then the side, then the nav, row by row and left to
+    // right inside each (a sheet's close last); each target is reached from the one before by the shortest run of presses UiFocusRules.Next gives, and a target the d-pad cannot reach
+    // is left out. The log says how many it reached.
     private static Vector2Int[] TourOf(UiScene scene, int start)
     {
         int top = UiFocusRules.TopLayer(scene);
-        var want = new HashSet<int>();
+        var want = new List<int>();
         for (int n = 0; n < scene.NodeCount; n++)
         {
             if (scene.Nodes[n].Layer == top && !scene.Nodes[n].Disabled && !UiDraw.IsChrome(scene.Nodes[n].Command))
@@ -440,18 +441,39 @@ public static partial class UiPreviewRunner
                 want.Add(n);
             }
         }
+        want.Sort((p, q) =>
+        {
+            ref UiNode a = ref scene.Nodes[p];
+            ref UiNode b = ref scene.Nodes[q];
+            int ra = TourRank(ref a), rb = TourRank(ref b);
+            if (ra != rb)
+            {
+                return ra.CompareTo(rb);
+            }
+            float ya = a.Y + a.H / 2f, yb = b.Y + b.H / 2f;
+            if (Mathf.Abs(ya - yb) > 14f)
+            {
+                return ya.CompareTo(yb);
+            }
+            return a.X.CompareTo(b.X);
+        });
+        var sb = new System.Text.StringBuilder();
+        foreach (int w in want) { sb.Append("[" + scene.Nodes[w].Region + ":" + scene.Nodes[w].Command + "/" + scene.Nodes[w].Arg + "@" + (int)scene.Nodes[w].X + "," + (int)scene.Nodes[w].Y + "]"); }
+        Debug.Log(Tag + "tour order " + sb + " from " + start);
         var order = new[] { Right, Down, Left, Up };
         var moves = new List<Vector2Int>();
         var seen = new HashSet<int> { start };
         int at = start;
-        while (true)
+        foreach (int target in want)
         {
-            var from = new Dictionary<int, KeyValuePair<int, Vector2Int>>();
+            if (seen.Contains(target))
+            {
+                continue;
+            }
+            var from = new Dictionary<int, KeyValuePair<int, Vector2Int>> { { at, new KeyValuePair<int, Vector2Int>(-1, Vector2Int.zero) } };
             var queue = new Queue<int>();
             queue.Enqueue(at);
-            from[at] = new KeyValuePair<int, Vector2Int>(-1, Vector2Int.zero);
-            int found = -1;
-            while (queue.Count > 0 && found < 0)
+            while (queue.Count > 0 && !from.ContainsKey(target))
             {
                 int cur = queue.Dequeue();
                 foreach (Vector2Int d in order)
@@ -462,27 +484,22 @@ public static partial class UiPreviewRunner
                         continue;
                     }
                     from[next] = new KeyValuePair<int, Vector2Int>(cur, d);
-                    if (want.Contains(next) && !seen.Contains(next))
-                    {
-                        found = next;
-                        break;
-                    }
                     queue.Enqueue(next);
                 }
             }
-            if (found < 0)
+            if (!from.ContainsKey(target))
             {
-                break;
+                continue;
             }
             var path = new List<Vector2Int>();
-            for (int n = found; from[n].Key >= 0; n = from[n].Key)
+            for (int n = target; from[n].Key >= 0; n = from[n].Key)
             {
                 path.Add(from[n].Value);
                 seen.Add(n);
             }
             path.Reverse();
             moves.AddRange(path);
-            at = found;
+            at = target;
         }
         int reached = 0;
         foreach (int n in want)
@@ -491,6 +508,23 @@ public static partial class UiPreviewRunner
         }
         Debug.Log(Tag + "pad tour: " + reached + " of " + want.Count + " targets reached in " + moves.Count + " moves");
         return moves.ToArray();
+    }
+
+    // Where a target stands in the reading order: Flare's page column, its side, its nav; a sheet's close (the way out) after everything else.
+    private static int TourRank(ref UiNode n)
+    {
+        if (n.Command == FlareFace.SheetCancelCommand && n.Arg == 0)
+        {
+            return 9;
+        }
+        switch (n.Region)
+        {
+            case 12: return 0;
+            case 14: return 1;
+            case 13: return 2;
+            case 11: return 3;
+            default: return 4;
+        }
     }
 
     private static Vector2 Centre(UiScene scene, int node)

@@ -39,7 +39,7 @@ namespace RealLifeOverhaul.Ui
                 const float reachH = 96f;
                 int reach = Card(s, at, cx, cy, inner, reachH);
                 UiAt inReach = at.In(reach);
-                UiDraw.Text(s, inReach, cx + UiTokens.S4, cy + UiTokens.S3, inner - UiTokens.S8, UiStyle.SectionHeader, UiRole.Text2, b.ReachTitle, UiFlags.Label | UiFlags.Truncate);
+                Line(s, inReach, cx + UiTokens.S4, cy + UiTokens.S3, inner - UiTokens.S8, UiStyle.SectionHeader, UiRole.Text2, b.ReachTitle, UiFlags.Label | UiFlags.Truncate);
                 float ry = cy + UiTokens.S3 + L(UiStyle.SectionHeader) + UiTokens.S2;
                 if (Drawn(b.Reach))
                 {
@@ -47,7 +47,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 else
                 {
-                    UiDraw.Text(s, inReach, cx + UiTokens.S4, ry, inner - UiTokens.S8, UiStyle.Body, UiRole.Text2, b.ReachEmpty, UiFlags.Truncate);
+                    Line(s, inReach, cx + UiTokens.S4, ry, inner - UiTokens.S8, UiStyle.Body, UiRole.Text2, b.ReachEmpty, UiFlags.Truncate);
                 }
                 cy += reachH + UiTokens.S4;
             }
@@ -69,7 +69,7 @@ namespace RealLifeOverhaul.Ui
                     UiFlags.Truncate);
                 cy += WarningHeight + UiTokens.S4;
             }
-            UiDraw.Text(s, at, cx, cy, inner, UiStyle.SectionHeader, UiRole.Text2, b.ReviewsTitle, UiFlags.Label | UiFlags.Truncate);
+            Line(s, at, cx, cy, inner, UiStyle.SectionHeader, UiRole.Text2, b.ReviewsTitle, UiFlags.Label | UiFlags.Truncate);
             cy += L(UiStyle.SectionHeader) + UiTokens.S2;
             UiDraw.Box(s, at, x, cy - UiTokens.Hairline, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             List(s, at, m.List, x, cy, w, bottom - cy, keys);
@@ -98,13 +98,13 @@ namespace RealLifeOverhaul.Ui
             int card = Card(s, at, x, y, w, CardHeight);
             UiAt inCard = at.In(card);
             float ix = x + UiTokens.S4, iw = w - UiTokens.S8, cy = y + UiTokens.S4;
-            UiDraw.Text(s, inCard, ix, cy, iw, UiStyle.SectionHeader, UiRole.Text2, b.RatingTitle, UiFlags.Label | UiFlags.Truncate);
+            Line(s, inCard, ix, cy, iw, UiStyle.SectionHeader, UiRole.Text2, b.RatingTitle, UiFlags.Label | UiFlags.Truncate);
             cy += L(UiStyle.SectionHeader) + UiTokens.S3;
-            UiDraw.Text(s, inCard, ix, cy, iw, UiStyle.Hero, UiRole.Text, b.Rating, UiFlags.Truncate);
+            Line(s, inCard, ix, cy, iw, UiStyle.Hero, UiRole.Text, b.Rating, UiFlags.Truncate);
             cy += L(UiStyle.Hero) + UiTokens.S2;
             UiDraw.Stars(s, inCard, ix, cy, UiTokens.Icon, Math.Max(0, Math.Min(10, b.Halves)));
             cy += UiTokens.Icon + UiTokens.S3;
-            UiDraw.Text(s, inCard, ix, cy, iw, UiStyle.Small, UiRole.Text2, b.RatingLine, UiFlags.Truncate);
+            Line(s, inCard, ix, cy, iw, UiStyle.Small, UiRole.Text2, b.RatingLine, UiFlags.Truncate);
         }
 
         // How the reviews fall: five stars down to one, a bar each by its share of the most.
@@ -147,11 +147,12 @@ namespace RealLifeOverhaul.Ui
             int card = Card(s, at, x, y, w, h);
             UiAt inCard = at.In(card);
             float ix = x + UiTokens.S4, iw = w - UiTokens.S8, cy = y + UiTokens.S4;
-            UiDraw.Text(s, inCard, ix, cy, iw, UiStyle.SectionHeader, UiRole.Text2, title, UiFlags.Label | UiFlags.Truncate);
+            Line(s, inCard, ix, cy, iw, UiStyle.SectionHeader, UiRole.Text2, title, UiFlags.Label | UiFlags.Truncate);
             cy += L(UiStyle.SectionHeader) + UiTokens.S3;
             int n = Math.Min(figures.Length, labels.Length);
             float colW = UiDraw.SnapDown((iw - UiTokens.S3 * (columns - 1)) / columns);
-            float rowH = L(UiStyle.Number) + L(UiStyle.Small) + UiTokens.S3;
+            int labelLines = FigureLabelLines(labels, colW);
+            float rowH = L(UiStyle.Number) + L(UiStyle.Small) * labelLines + UiTokens.S3;
             for (int i = 0; i < n; i++)
             {
                 float fx = ix + (i % columns) * (colW + UiTokens.S3), fy = cy + (i / columns) * rowH;
@@ -159,9 +160,22 @@ namespace RealLifeOverhaul.Ui
                 {
                     break;
                 }
-                UiDraw.Text(s, inCard, fx, fy, colW, UiStyle.Number, UiRole.Text, figures[i], UiFlags.Truncate);
-                UiDraw.Text(s, inCard, fx, fy + L(UiStyle.Number), colW, UiStyle.Small, UiRole.Text2, labels[i], UiFlags.Truncate);
+                Line(s, inCard, fx, fy, colW, UiStyle.Number, UiRole.Text, figures[i], UiFlags.Truncate);
+                Flow(s, inCard, fx, fy + L(UiStyle.Number), colW, UiStyle.Small, UiRole.Text2, labels[i], labelLines);
             }
+        }
+
+        /// <summary>The lines the labels under a card's figures take at a column's width: one, or two where a language needs it.</summary>
+        public static int FigureLabelLines(string[] labels, float colW)
+        {
+            for (int i = 0; labels != null && i < labels.Length; i++)
+            {
+                if (UiTextRules.Width(labels[i] ?? string.Empty, UiStyle.Small) > colW)
+                {
+                    return 2;
+                }
+            }
+            return 1;
         }
 
         // ------------------------------------------------------------------------------------------------ the creator studio
@@ -196,7 +210,7 @@ namespace RealLifeOverhaul.Ui
             float lineH = creator ? tierH - creatorH - UiTokens.S3 : tierH;
             int line = Card(s, at, cx, cy, lw, lineH);
             UiAt inLine = at.In(line);
-            UiDraw.Text(s, inLine, cx + UiTokens.S4, cy + UiTokens.S4, lw - UiTokens.S8, UiStyle.SectionHeader, UiRole.Text2, st.LineTitle, UiFlags.Label | UiFlags.Truncate);
+            Line(s, inLine, cx + UiTokens.S4, cy + UiTokens.S4, lw - UiTokens.S8, UiStyle.SectionHeader, UiRole.Text2, st.LineTitle, UiFlags.Label | UiFlags.Truncate);
             float sy = cy + UiTokens.S4 + L(UiStyle.SectionHeader) + UiTokens.S3;
             if (Drawn(st.Line))
             {
@@ -207,14 +221,14 @@ namespace RealLifeOverhaul.Ui
                 float oy = cy + lineH + UiTokens.S3;
                 int income = Card(s, at, cx, oy, lw, creatorH);
                 UiAt inCreator = at.In(income);
-                UiDraw.Text(s, inCreator, cx + UiTokens.S4, oy + UiTokens.S3, lw - UiTokens.S8, UiStyle.SectionHeader, UiRole.Text2, st.CreatorTitle, UiFlags.Label | UiFlags.Truncate);
+                Line(s, inCreator, cx + UiTokens.S4, oy + UiTokens.S3, lw - UiTokens.S8, UiStyle.SectionHeader, UiRole.Text2, st.CreatorTitle, UiFlags.Label | UiFlags.Truncate);
                 float figW = UiDraw.Snap(UiTextRules.Width(st.Creator, UiStyle.Number) + UiTokens.S3);
-                UiDraw.Text(s, inCreator, cx + UiTokens.S4, oy + UiTokens.S3 + L(UiStyle.SectionHeader), figW, UiStyle.Number, UiRole.Text, st.Creator, UiFlags.Truncate);
-                UiDraw.Text(s, inCreator, cx + UiTokens.S4 + figW, oy + UiTokens.S3 + L(UiStyle.SectionHeader) + (L(UiStyle.Number) - L(UiStyle.Small)), lw - UiTokens.S8 - figW, UiStyle.Small,
+                Line(s, inCreator, cx + UiTokens.S4, oy + UiTokens.S3 + L(UiStyle.SectionHeader), figW, UiStyle.Number, UiRole.Text, st.Creator, UiFlags.Truncate);
+                Line(s, inCreator, cx + UiTokens.S4 + figW, oy + UiTokens.S3 + L(UiStyle.SectionHeader) + (L(UiStyle.Number) - L(UiStyle.Small)), lw - UiTokens.S8 - figW, UiStyle.Small,
                     UiRole.Text2, st.CreatorLine, UiFlags.Truncate);
             }
             cy += tierH + UiTokens.S3;
-            List(s, at, m.List, x, cy, w, bottom - cy, keys);
+            List(s, at, m.List, cx, cy, inner + UiTokens.S3, bottom - cy, keys);   // its rows end where the tiles and the card end
         }
 
         /// <summary>A figure on its own card: its label in small capitals, the figure, and what changed in its tone.</summary>
@@ -223,13 +237,13 @@ namespace RealLifeOverhaul.Ui
             int tile = Card(s, at, x, y, w, h);
             UiAt inTile = at.In(tile);
             float ix = x + UiTokens.S4, iw = w - UiTokens.S8, cy = y + UiTokens.S4;
-            UiDraw.Text(s, inTile, ix, cy, iw, UiStyle.SectionHeader, UiRole.Text2, label, UiFlags.Label | UiFlags.Truncate);
+            Line(s, inTile, ix, cy, iw, UiStyle.SectionHeader, UiRole.Text2, label, UiFlags.Label | UiFlags.Truncate);
             cy += L(UiStyle.SectionHeader) + UiTokens.S2;
-            UiDraw.Text(s, inTile, ix, cy, iw, UiStyle.Number, UiRole.Text, figure, UiFlags.Truncate);
+            Line(s, inTile, ix, cy, iw, UiStyle.Number, UiRole.Text, figure, UiFlags.Truncate);
             cy += L(UiStyle.Number) + UiTokens.S1;
             if (!string.IsNullOrEmpty(delta))
             {
-                UiDraw.Text(s, inTile, ix, cy, iw, UiStyle.Small, tone > 0 ? UiRole.OkText : tone < 0 ? UiRole.DangerText : UiRole.Text2, delta, UiFlags.Truncate);
+                Line(s, inTile, ix, cy, iw, UiStyle.Small, tone > 0 ? UiRole.OkText : tone < 0 ? UiRole.DangerText : UiRole.Text2, delta, UiFlags.Truncate);
             }
         }
 
@@ -244,12 +258,12 @@ namespace RealLifeOverhaul.Ui
             {
                 int card = Card(s, at, x, y, w, h);
                 inCard = at.In(card);
-                UiDraw.Text(s, inCard, ix, cy, iw, UiStyle.SectionHeader, UiRole.Text2, st.TierTitle, UiFlags.Label | UiFlags.Truncate);
+                Line(s, inCard, ix, cy, iw, UiStyle.SectionHeader, UiRole.Text2, st.TierTitle, UiFlags.Label | UiFlags.Truncate);
             }
             cy += L(UiStyle.SectionHeader) + UiTokens.S2;
             if (draw)
             {
-                UiDraw.Text(s, inCard, ix, cy, iw, UiStyle.Number, UiRole.Text, st.Tier, UiFlags.Truncate);
+                Line(s, inCard, ix, cy, iw, UiStyle.Number, UiRole.Text, st.Tier, UiFlags.Truncate);
             }
             cy += L(UiStyle.Number) + UiTokens.S3;
             if (draw)
@@ -295,6 +309,7 @@ namespace RealLifeOverhaul.Ui
         // ------------------------------------------------------------------------------------------------ In the city
 
         public const float CityBandHeight = 176f, CityBandNew = 112f;
+        private const int EmptyLines = 5;
 
         private static void CityPage(UiScene s, UiAt at, FlareFaceModel m, float x, float y, float w, float h, IUiKeys keys)
         {
@@ -307,10 +322,21 @@ namespace RealLifeOverhaul.Ui
             {
                 // A new account has no followers to count: its band is as short as its words, and the week's figures stand in a row beside them.
                 bool followers = c.Names.Length > 0;
-                float band = followers ? CityBandHeight : CityBandNew;
                 float gap = UiTokens.S4, lw = UiDraw.SnapDown((inner - gap) * (followers ? 0.6f : 0.5f)), rw = inner - lw - gap;
+                int columns = followers ? 2 : 3;
+                float band = followers ? CityBandHeight : CityBandNew;
+                if (!followers && FigureLabelLines(c.WeekLabels, UiDraw.SnapDown((rw - UiTokens.S8 - UiTokens.S3 * (columns - 1)) / columns)) > 1)
+                {
+                    band += L(UiStyle.Small);   // a label of a longer language takes a second line
+                }
+                if (!followers && !string.IsNullOrEmpty(c.DonutEmpty))
+                {
+                    // what the page says of its empty donut takes the lines a language needs (up to five)
+                    float say = UiTokens.S4 + L(UiStyle.SectionHeader) + UiTokens.S3 + UiDraw.Snap(UiTextRules.WrappedHeight(c.DonutEmpty, UiStyle.Body, lw - UiTokens.S8, EmptyLines)) + UiTokens.S4;
+                    band = Math.Max(band, UiDraw.Snap(say));
+                }
                 DonutCard(s, at, c, cx, cy, lw, band);
-                FiguresCard(s, at, c.WeekTitle, c.WeekFigures, c.WeekLabels, cx + lw + gap, cy, rw, band, followers ? 2 : 3);
+                FiguresCard(s, at, c.WeekTitle, c.WeekFigures, c.WeekLabels, cx + lw + gap, cy, rw, band, columns);
                 cy += band + UiTokens.S3;
             }
             List(s, at, m.List, cx, cy, inner + UiTokens.S3, y + h - cy, keys);   // with nothing in it the list says so once, in its own words
@@ -322,12 +348,12 @@ namespace RealLifeOverhaul.Ui
             int card = Card(s, at, x, y, w, h);
             UiAt inCard = at.In(card);
             float ix = x + UiTokens.S4, iw = w - UiTokens.S8, cy = y + UiTokens.S4;
-            UiDraw.Text(s, inCard, ix, cy, iw, UiStyle.SectionHeader, UiRole.Text2, c.DonutTitle, UiFlags.Label | UiFlags.Truncate);
+            Line(s, inCard, ix, cy, iw, UiStyle.SectionHeader, UiRole.Text2, c.DonutTitle, UiFlags.Label | UiFlags.Truncate);
             cy += L(UiStyle.SectionHeader) + UiTokens.S3;
             int n = Math.Min(c.Names.Length, Math.Min(c.Values.Length, c.Shares.Length));
             if (n == 0)
             {
-                UiDraw.Text(s, inCard, ix, cy, iw, UiStyle.Body, UiRole.Text2, c.DonutEmpty, UiFlags.Wrap | UiFlags.Truncate, 3);
+                Flow(s, inCard, ix, cy, iw, UiStyle.Body, UiRole.Text2, c.DonutEmpty, EmptyLines);
                 return;
             }
             float size = h - (cy - y) - UiTokens.S4;
@@ -336,7 +362,7 @@ namespace RealLifeOverhaul.Ui
             float used = UiDraw.Legend(s, inCard, lx, cy, x + w - UiTokens.S4 - lx, c.Names, c.Values, n);
             if (c.Rest > 0f && !string.IsNullOrEmpty(c.DonutRest) && cy + used + L(UiStyle.Small) <= y + h)
             {
-                UiDraw.Text(s, inCard, lx, cy + used + UiTokens.S1, x + w - UiTokens.S4 - lx, UiStyle.Small, UiRole.Text2, c.DonutRest, UiFlags.Truncate);
+                Line(s, inCard, lx, cy + used + UiTokens.S1, x + w - UiTokens.S4 - lx, UiStyle.Small, UiRole.Text2, c.DonutRest, UiFlags.Truncate);
             }
         }
     }

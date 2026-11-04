@@ -250,6 +250,8 @@ namespace RealLifeOverhaul.Ui
         public string[] Stories = new string[0];
         public float[] StoryHues = new float[0];
         public bool[] StoryShops = new bool[0];
+        public bool[] StoryPeople = new bool[0];         // a person's story: their painted face...
+        public UiRole[] StoryRings = new UiRole[0];      // ...inside a ring of their mood (None: the story's own colour)
         public string Search, InboxHint;     // the words typed into Explore's search or the inbox's
         public string Field, FieldHint;      // the words typed to send: a message, a reply under a post
         public int FieldArg = -1;
@@ -472,8 +474,8 @@ namespace RealLifeOverhaul.Ui
                 UiAt inCard = at.In(card);
                 Face(s, inCard, ix + UiTokens.S1, ay + UiTokens.S1, UiTokens.AvatarRow, m.MyName, m.MyHue, true, m.MyRing, false);
                 float tx = ix + UiTokens.S1 + UiTokens.AvatarRow + UiTokens.S3, tw = ix + iw - tx - UiTokens.S2;
-                UiDraw.Text(s, inCard, tx, ay + UiTokens.S1, tw, UiStyle.Title, UiRole.Text, m.MyName, UiFlags.Truncate);
-                UiDraw.Text(s, inCard, tx, ay + UiTokens.S6, tw, UiStyle.Small, UiRole.Text2, m.MyHandle, UiFlags.Truncate);
+                Line(s, inCard, tx, ay + UiTokens.S1, tw, UiStyle.Title, UiRole.Text, m.MyName, UiFlags.Truncate);
+                Line(s, inCard, tx, ay + UiTokens.S6, tw, UiStyle.Small, UiRole.Text2, m.MyHandle, UiFlags.Truncate);
                 UiDraw.Node(s, at, ix, ay, iw, UiTokens.S12, AccountCommand, 0, card);
             }
         }
@@ -536,7 +538,14 @@ namespace RealLifeOverhaul.Ui
         private static float Week(UiScene s, UiAt at, FlareFaceModel m, float x, float y, float w, float bottom)
         {
             int n = Math.Min(3, m.WeekLabels.Length);
-            const float tileH = 88f, lineH = 48f;
+            const float lineH = 48f;
+            float tileW = n > 0 ? UiDraw.SnapDown((w - UiTokens.S8 - UiTokens.S2 * (n - 1)) / n) : 0f;
+            bool twoLines = false;
+            for (int i = 0; i < n; i++)
+            {
+                twoLines |= UiTextRules.Width(At(m.WeekDeltas, i) ?? string.Empty, UiStyle.Small) > tileW - UiTokens.S6;   // a longer language's change takes a second line
+            }
+            float tileH = twoLines ? 88f + L(UiStyle.Small) : 88f;
             float title = L(UiStyle.Number), link = UiTokens.Control;
             float h = UiTokens.S4 + title + UiTokens.S3 + (n > 0 ? tileH + UiTokens.S3 : 0f) + (Drawn(m.Line) ? lineH + UiTokens.S2 : 0f) + link + UiTokens.S2;
             if (y + h > bottom)
@@ -546,7 +555,7 @@ namespace RealLifeOverhaul.Ui
             int card = Card(s, at, x, y, w, h);
             UiAt inCard = at.In(card);
             float ix = x + UiTokens.S4, iw = w - UiTokens.S8, cy = y + UiTokens.S4;
-            UiDraw.Text(s, inCard, ix, cy, iw, UiStyle.Number, UiRole.Text, m.WeekTitle, UiFlags.Label | UiFlags.Truncate);
+            Line(s, inCard, ix, cy, iw, UiStyle.Number, UiRole.Text, m.WeekTitle, UiFlags.Label | UiFlags.Truncate);
             cy += title + UiTokens.S3;
             if (n > 0)
             {
@@ -572,13 +581,14 @@ namespace RealLifeOverhaul.Ui
             int tile = UiDraw.Box(s, at, x, y, w, h, UiRole.Panel, UiRole.None, UiTokens.RadiusLarge);
             UiAt inTile = at.In(tile);
             float ix = x + UiTokens.S3, iw = w - UiTokens.S6, cy = y + UiTokens.S3;
-            UiDraw.Text(s, inTile, ix, cy, iw, UiStyle.SectionHeader, UiRole.Text2, label, UiFlags.Label | UiFlags.Truncate);
+            Line(s, inTile, ix, cy, iw, UiStyle.SectionHeader, UiRole.Text2, label, UiFlags.Label | UiFlags.Truncate);
             cy += L(UiStyle.SectionHeader) + UiTokens.S1;
-            UiDraw.Text(s, inTile, ix, cy, iw, UiStyle.Number, UiRole.Text, figure, UiFlags.Truncate);
+            Line(s, inTile, ix, cy, iw, UiStyle.Number, UiRole.Text, figure, UiFlags.Truncate);
             cy += L(UiStyle.Number) + UiTokens.S1;
             if (!string.IsNullOrEmpty(delta))
             {
-                UiDraw.Text(s, inTile, ix, cy, iw, UiStyle.Small, tone > 0 ? UiRole.OkText : tone < 0 ? UiRole.DangerText : UiRole.Text2, delta, UiFlags.Truncate);
+                UiRole ink = tone > 0 ? UiRole.OkText : tone < 0 ? UiRole.DangerText : UiRole.Text2;
+                Flow(s, inTile, ix, cy, iw, UiStyle.Small, ink, delta, 2);
             }
         }
 
@@ -601,16 +611,16 @@ namespace RealLifeOverhaul.Ui
             int card = Card(s, at, x, y, w, h);
             UiAt inCard = at.In(card);
             float ix = x + UiTokens.S4, iw = w - UiTokens.S8, cy = y + UiTokens.S4;
-            UiDraw.Text(s, inCard, ix, cy, iw, UiStyle.Number, UiRole.Text, m.TrendTitle, UiFlags.Label | UiFlags.Truncate);
+            Line(s, inCard, ix, cy, iw, UiStyle.Number, UiRole.Text, m.TrendTitle, UiFlags.Label | UiFlags.Truncate);
             cy += title + UiTokens.S2;
             for (int i = 0; i < n; i++)
             {
                 ref FlareRow r = ref list.Rows[i];
                 int face = UiDraw.Box(s, inCard, x + UiTokens.S2, cy, w - UiTokens.S4, row, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
                 UiAt inRow = inCard.In(face);
-                UiDraw.Text(s, inRow, ix, cy + UiTokens.S1, iw, UiStyle.Small, UiRole.Text2, r.Handle, UiFlags.Truncate);
-                UiDraw.Text(s, inRow, ix, cy + UiTokens.S6, iw, UiStyle.Title, UiRole.Text, r.Name, UiFlags.Truncate);
-                UiDraw.Text(s, inRow, ix, cy + UiTokens.S10 + UiTokens.S1, iw, UiStyle.Small, UiRole.Text2, r.Value, UiFlags.Truncate);
+                Line(s, inRow, ix, cy + UiTokens.S1, iw, UiStyle.Small, UiRole.Text2, r.Handle, UiFlags.Truncate);
+                Line(s, inRow, ix, cy + UiTokens.S6, iw, UiStyle.Title, UiRole.Text, r.Name, UiFlags.Truncate);
+                Line(s, inRow, ix, cy + UiTokens.S10 + UiTokens.S1, iw, UiStyle.Small, UiRole.Text2, r.Value, UiFlags.Truncate);
                 UiDraw.Node(s, inCard, x + UiTokens.S2, cy, w - UiTokens.S4, row, TrendCommand, i, face);
                 if (i + 1 < n)
                 {
@@ -640,7 +650,7 @@ namespace RealLifeOverhaul.Ui
             int card = Card(s, at, x, y, w, h);
             UiAt inCard = at.In(card);
             float ix = x + UiTokens.S4, iw = w - UiTokens.S8, cy = y + UiTokens.S4;
-            UiDraw.Text(s, inCard, ix, cy, iw, UiStyle.Number, UiRole.Text, m.WhoTitle, UiFlags.Label | UiFlags.Truncate);
+            Line(s, inCard, ix, cy, iw, UiStyle.Number, UiRole.Text, m.WhoTitle, UiFlags.Label | UiFlags.Truncate);
             cy += title + UiTokens.S2;
             for (int i = 0; i < n; i++)
             {
@@ -653,8 +663,8 @@ namespace RealLifeOverhaul.Ui
                 UiAt inRow = inCard.In(face);
                 Face(s, inRow, ix, cy + UiTokens.S2, UiTokens.AvatarRow, r.Name, r.Hue, (r.Flags & FlareRowFlags.Person) != 0, r.Ring, false);
                 float tx = ix + UiTokens.AvatarRow + UiTokens.S3, tw = bx - UiTokens.S2 - tx;
-                UiDraw.Text(s, inRow, tx, cy + UiTokens.S2, tw, UiStyle.Title, UiRole.Text, r.Name, UiFlags.Truncate);
-                UiDraw.Text(s, inRow, tx, cy + UiTokens.S2 + UiTokens.S6, tw, UiStyle.Small, UiRole.Text2, r.Handle, UiFlags.Truncate);
+                Line(s, inRow, tx, cy + UiTokens.S2, tw, UiStyle.Title, UiRole.Text, r.Name, UiFlags.Truncate);
+                Line(s, inRow, tx, cy + UiTokens.S2 + UiTokens.S6, tw, UiStyle.Small, UiRole.Text2, r.Handle, UiFlags.Truncate);
                 UiDraw.Node(s, inCard, ix, cy, bx - UiTokens.S2 - ix, row, WhoCommand, i, face);
                 Pill(s, inCard, bx, cy + (row - UiTokens.ControlSmall) / 2f, bw, word, following ? PillKind.Quiet : PillKind.Light, WhoFollowCommand, i);
                 cy += row;
@@ -693,10 +703,32 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>The ring of a face for the social life's mood, -2 a rough day to +2 a great one.</summary>
-        public static UiRole MoodRing(int mood) => mood > 0 ? UiRole.Ok : mood == 0 ? UiRole.Warn : UiRole.Danger;
+        public static UiRole MoodRing(int mood) => mood > 0 ? UiRole.Ok : mood == 0 ? UiRole.Warn : mood < -1 ? UiRole.None : UiRole.Danger;
 
         /// <summary>The ring of a review's stars: the customer's mood on leaving, four and five content, three unsure, one and two cross.</summary>
         public static UiRole StarRing(int stars) => stars >= 4 ? UiRole.Ok : stars == 3 ? UiRole.Warn : UiRole.Danger;
+
+        /// <summary>
+        /// One line of words in a line box of its own, centred on its capline as every label of the kit is: a face whose ascent is taller than the kit's (Chinese, Korean)
+        /// then stays in the band the line is given, not above it.
+        /// </summary>
+        public static int Line(UiScene s, UiAt at, float x, float y, float w, UiStyle style, UiRole ink, string text, UiFlags flags = UiFlags.None)
+        {
+            return UiDraw.TextMiddle(s, at, x, y, L(style), w, style, ink, text, flags);
+        }
+
+        /// <summary>
+        /// Words of up to <paramref name="lines"/> lines: wrapped when they need more than one at this width, else one line in its own line box (<see cref="Line"/>), so a face of
+        /// another ascent stays in its band where the words are short.
+        /// </summary>
+        public static int Flow(UiScene s, UiAt at, float x, float y, float w, UiStyle style, UiRole ink, string text, int lines)
+        {
+            if (string.IsNullOrEmpty(text) || UiTextRules.WrappedHeight(text, style, w, lines) <= UiTextRules.LineHeight(style) + 0.5f)
+            {
+                return Line(s, at, x, y, w, style, ink, text, UiFlags.Truncate);
+            }
+            return UiDraw.Text(s, at, x, y, w, style, ink, text, UiFlags.Wrap | UiFlags.Truncate, lines);
+        }
 
         /// <summary>A placeholder's words a step dimmer than the words typed over it.</summary>
         public static void Hint(UiScene s, int words)

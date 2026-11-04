@@ -57,6 +57,8 @@ namespace RealLifeOverhaul.Ui
             return _flare != null && _flare.SetProfile(bio, banner);
         }
 
+        bool IFlareKitHost.OpenHire(int influencer) => OpenHire(influencer);
+
         void IFlareKitHost.MarkNoticesSeen()
         {
             if (_flare == null || !_flare.Running)

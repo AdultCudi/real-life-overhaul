@@ -52,6 +52,11 @@ namespace RealLifeOverhaul.Ui
             columns = Math.Max(1, Math.Min(n, (int)Math.Floor((room + UiTokens.S2) / (chip + UiTokens.S2))));
             int rows = (n + columns - 1) / columns;
             columns = (n + rows - 1) / rows;   // the rows as even as they can be
+            if (columns > 1 && n > columns && n % columns == 1)
+            {
+                // a lone chip in the last row is an orphan: one more to a row if the room takes it, else one column
+                columns = (columns + 1) * chip + columns * UiTokens.S2 <= room ? columns + 1 : 1;
+            }
         }
 
         // The sheet's parts from the top: measured with draw false, laid with it true. Returns the height they take.
@@ -71,7 +76,7 @@ namespace RealLifeOverhaul.Ui
             {
                 if (draw)
                 {
-                    UiDraw.Text(s, at, x, cy, w, UiStyle.Small, UiRole.Text2, k.Line, UiFlags.Truncate);
+                    Line(s, at, x, cy, w, UiStyle.Small, UiRole.Text2, k.Line, UiFlags.Truncate);
                 }
                 cy += L(UiStyle.Small);
             }
@@ -154,7 +159,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     if (draw)
                     {
-                        UiDraw.Text(s, at, x, cy + UiTokens.S1, fw, UiStyle.Small, UiRole.Text2, k.FieldCount, UiFlags.Right);
+                        Line(s, at, x, cy + UiTokens.S1, fw, UiStyle.Small, UiRole.Text2, k.FieldCount, UiFlags.Right);
                     }
                     cy += UiTokens.S1 + L(UiStyle.Small);
                 }
@@ -208,8 +213,8 @@ namespace RealLifeOverhaul.Ui
                     bool on = k.Option == i;
                     int row = UiDraw.Box(s, at, x, cy, w, OptionHeight, on ? UiRole.RowSel : UiRole.Field, UiRole.None, UiTokens.RadiusLarge, on ? UiFlags.Selected : UiFlags.None);
                     UiAt inRow = at.In(row);
-                    UiDraw.Text(s, inRow, x + UiTokens.S4, cy + UiTokens.S2, w - UiTokens.S8, UiStyle.Title, UiRole.Text, k.Options[i], UiFlags.Truncate);
-                    UiDraw.Text(s, inRow, x + UiTokens.S4, cy + UiTokens.S2 + L(UiStyle.Title), w - UiTokens.S8, UiStyle.Small, on ? UiRole.Text : UiRole.Text2, At(k.OptionLines, i),
+                    Line(s, inRow, x + UiTokens.S4, cy + UiTokens.S2, w - UiTokens.S8, UiStyle.Title, UiRole.Text, k.Options[i], UiFlags.Truncate);
+                    Line(s, inRow, x + UiTokens.S4, cy + UiTokens.S2 + L(UiStyle.Title), w - UiTokens.S8, UiStyle.Small, on ? UiRole.Text : UiRole.Text2, At(k.OptionLines, i),
                         UiFlags.Truncate);
                     UiDraw.Node(s, at, x, cy, w, OptionHeight, OptionCommand, i, row);
                 }
@@ -232,8 +237,8 @@ namespace RealLifeOverhaul.Ui
                         float bw = i == figures - 1 ? x + w - tx : tw;
                         int tile = UiDraw.Box(s, at, tx, cy, bw, FigureHeight, UiRole.Tile, UiRole.None, UiTokens.RadiusLarge);
                         UiAt inTile = at.In(tile);
-                        UiDraw.Text(s, inTile, tx + UiTokens.S3, cy + UiTokens.S2, bw - UiTokens.S6, UiStyle.Small, UiRole.Text2, k.FigureLabels[i], UiFlags.Truncate);
-                        UiDraw.Text(s, inTile, tx + UiTokens.S3, cy + UiTokens.S2 + L(UiStyle.Small), bw - UiTokens.S6, UiStyle.Number, UiRole.Text, k.Figures[i], UiFlags.Truncate);
+                        Line(s, inTile, tx + UiTokens.S3, cy + UiTokens.S2, bw - UiTokens.S6, UiStyle.Small, UiRole.Text2, k.FigureLabels[i], UiFlags.Truncate);
+                        Line(s, inTile, tx + UiTokens.S3, cy + UiTokens.S2 + L(UiStyle.Small), bw - UiTokens.S6, UiStyle.Number, UiRole.Text, k.Figures[i], UiFlags.Truncate);
                     }
                 }
                 cy += FigureHeight + UiTokens.S3;
@@ -245,7 +250,7 @@ namespace RealLifeOverhaul.Ui
                 float rowH = UiTokens.S5;
                 if (draw)
                 {
-                    UiDraw.Text(s, at, x, cy, w, UiStyle.SectionHeader, UiRole.Text2, k.BarsTitle, UiFlags.Label | UiFlags.Truncate);
+                    Line(s, at, x, cy, w, UiStyle.SectionHeader, UiRole.Text2, k.BarsTitle, UiFlags.Label | UiFlags.Truncate);
                 }
                 cy += L(UiStyle.SectionHeader) + UiTokens.S2;
                 float barLabelW = UiDraw.SnapDown(w * 0.3f), figW = UiTokens.S12;

@@ -16,6 +16,9 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>The notifications are marked seen up to now.</summary>
         void MarkNoticesSeen();
+
+        /// <summary>The hire sheet opens for an influencer; false when it cannot (no business to hire for, or no such influencer).</summary>
+        bool OpenHire(int influencer);
     }
 
     /// <summary>
@@ -34,6 +37,7 @@ namespace RealLifeOverhaul.Ui
         public int Niche;                            // Hire: 0 every niche, then one each
         public int Sort;                             // Hire: 0 by followers, 1 by fit to the business
         public int EndArmed = -1;                    // the campaign pressed once to end, asking to be pressed again
+        public int HireSel = -1;                     // Hire: the influencer chosen in the table, whose card stands under it (-1 the first)
 
         // The ad sheet.
         public int AdTargets = 5, AdSizes = 3, AdDays = 3;   // how many of each the city offers (set by the screen from the catalogue)
@@ -59,6 +63,23 @@ namespace RealLifeOverhaul.Ui
                 case FlareFace.NicheCommand: return SetNiche(arg, niches);
                 default: return false;
             }
+        }
+
+        /// <summary>The row of an influencer pressed: they are chosen, and the card under the table is theirs. The sheet is the button's.</summary>
+        public bool ChooseHire(int influencer)
+        {
+            if (influencer < 0)
+            {
+                return false;
+            }
+            HireSel = influencer;
+            return true;
+        }
+
+        /// <summary>The Hire button of an influencer's row, or of the card under the table: the hire sheet for them.</summary>
+        public bool HireOpen(int influencer)
+        {
+            return influencer >= 0 && _host.OpenHire(influencer);
         }
 
         /// <summary>A notifications tab chosen.</summary>

@@ -37,7 +37,6 @@ namespace RealLifeOverhaul.Ui
         private int _post = -1;                  // the thread's post
         private int _shop;                       // Business: the business chosen
         private int _district;                   // Hire: the district chosen, 0 every district
-        private int _hireSel = -1;               // Hire: the influencer chosen in the table (the card under it), -1 the first
         private int _sheet;                      // the sheet open over the page
         private int _field = -1;                 // the field the typing fills
 

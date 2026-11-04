@@ -458,9 +458,8 @@ namespace RealLifeOverhaul.Ui
                 case RowAct.Review:
                 case RowAct.Note: return OpenReply(r);
                 case RowAct.Hire:
-                    _hireSel = r.Id;   // the row chooses the influencer the card under the table tells of; the button hires them
                     _dirty = true;
-                    return true;
+                    return _kit.ChooseHire(r.Id);   // the row chooses the influencer the card under the table tells of; the button hires them
                 default: return false;
             }
         }
@@ -473,7 +472,7 @@ namespace RealLifeOverhaul.Ui
             {
                 case RowAct.Review:
                 case RowAct.Note: return OpenReply(r);
-                case RowAct.Hire: return OpenHire(r.Id);
+                case RowAct.Hire: return _kit.HireOpen(r.Id);
                 case RowAct.Trend: return PromoteTrend(r.Id, r.Key);
                 case RowAct.Campaign: return _kit.End(r.Id);
                 case RowAct.Going:
