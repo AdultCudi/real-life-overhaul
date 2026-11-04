@@ -59,6 +59,39 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The sub page of the tab in view.</summary>
         public int Page => Sub[Tab];
 
+        /// <summary>Takes every choice of another view, as a screen is put in a state for the checks.</summary>
+        public void CopyFrom(CompanyView o)
+        {
+            Tab = o.Tab;
+            Question = o.Question;
+            Choice = o.Choice;
+            Typing = o.Typing;
+            TypingKind = o.TypingKind;
+            TypingId = o.TypingId;
+            Day = o.Day;
+            Amount = o.Amount;
+            Insurer = o.Insurer;
+            Kind = o.Kind;
+            Filter = o.Filter;
+            Armed = o.Armed;
+            ArmedId = o.ArmedId;
+            Folded = o.Folded;
+            Array.Copy(o.Pick, Pick, Tabs);
+            Array.Copy(o.Sub, Sub, Tabs);
+            Array.Copy(o.SubPick, SubPick, Tabs);
+            Array.Copy(o.SubArg, SubArg, Tabs);
+            FoldedNodes.Clear();
+            foreach (string f in o.FoldedNodes)
+            {
+                FoldedNodes.Add(f);
+            }
+            Later.Clear();
+            foreach (int l in o.Later)
+            {
+                Later.Add(l);
+            }
+        }
+
         /// <summary>A copy of this view's choices, for the checks.</summary>
         public CompanyView Copy()
         {

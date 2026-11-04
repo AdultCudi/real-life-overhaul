@@ -48,6 +48,7 @@ namespace RealLifeOverhaul.Ui
         public UiActionModel[] Buttons = new UiActionModel[0];
         public UiPrompt[] Prompts = new UiPrompt[0];
         public int PromptCount;
+        public int ChoiceCmd, ButtonCmd;            // the commands a choice and a button run, where a screen numbers its own (0: the card's ChoiceCommand and ButtonCommand)
     }
 
     /// <summary>
@@ -103,7 +104,7 @@ namespace RealLifeOverhaul.Ui
             }
             for (int i = 0; i < m.Choices.Length; i++)
             {
-                cy += Choice(s, at, ref m.Choices[i], i, i == m.Selected, cx, cy, inner, keys) + UiTokens.S2;
+                cy += Choice(s, at, ref m.Choices[i], i, i == m.Selected, cx, cy, inner, keys, m.ChoiceCmd > 0 ? m.ChoiceCmd : ChoiceCommand) + UiTokens.S2;
             }
             cy += UiTokens.S4;
             float total = 0f;
@@ -116,7 +117,7 @@ namespace RealLifeOverhaul.Ui
             {
                 ref UiActionModel b = ref m.Buttons[i];
                 float bw = UiDraw.ButtonWidth(b.Kind, b.Label, b.Icon, b.Key, keys);
-                UiDraw.Button(s, at, bx, cy, bw, UiTokens.Control, b.Kind, b.Label, b.Icon, b.Key, keys, ButtonCommand, i, b.Disabled);
+                UiDraw.Button(s, at, bx, cy, bw, UiTokens.Control, b.Kind, b.Label, b.Icon, b.Key, keys, m.ButtonCmd > 0 ? m.ButtonCmd : ButtonCommand, i, b.Disabled);
                 bx += bw + UiTokens.S3;
             }
             for (int i = 0; i < m.PromptCount; i++)

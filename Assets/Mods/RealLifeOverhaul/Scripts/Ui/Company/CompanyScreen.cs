@@ -115,19 +115,8 @@ namespace RealLifeOverhaul.Ui
 
         private bool Route(int command, int arg)
         {
-            if (_view.Question != 0 && _facts.Question != null)
-            {
-                // The question's card: its numbered choices and its buttons (the card's own command numbers, which no tab's page shares while it is open).
-                if (command == UiDecision.ChoiceCommand)
-                {
-                    return arg >= 0 && arg < _facts.Question.Choices.Length && Choose(arg);
-                }
-                if (command == UiDecision.ButtonCommand)
-                {
-                    return Act(arg);
-                }
-                return false;
-            }
+            // Every kind of target has a number of its own (CompanyFace), the question card's choices and buttons among them, so a number means the same on every page and
+            // in every state; only the kit's parts keep theirs (the sidebar's, the tree's, the board's), which no other kind shares.
             switch (command)
             {
                 case UiAppWindow.NavCommand:

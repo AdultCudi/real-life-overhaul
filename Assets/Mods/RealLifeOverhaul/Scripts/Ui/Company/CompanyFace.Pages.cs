@@ -467,14 +467,12 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDraw.TextMiddle(s, at, x, top + th, sh, tw, UiStyle.Small, UiRole.Text2, b.Sub, UiFlags.Truncate);
             }
-            float cx = below ? x : x + cw - chips, cy = below ? y + SwitchRow : y + (SwitchRow - UiTokens.Chip) / 2f;
+            float cx = below ? x : x + cw - chips, cy = below ? y + SwitchRow : y + Mid(SwitchRow, UiTokens.Chip);
             for (int i = 0; i < options.Length; i++)
             {
                 CompanyAct act = b.Acts != null && i < b.Acts.Length ? b.Acts[i] : default(CompanyAct);
                 int index = lay.Add(new CompanyButton { Label = options[i], Act = act, Disabled = b.Disabled });
-                float ow = UiDraw.ButtonWidth(UiButtonKind.Chip, options[i], UiIcon.None, UiAction.Count, null);
-                UiDraw.Button(s, at, cx, cy, ow, UiTokens.Chip, i == b.Chosen ? UiButtonKind.Primary : UiButtonKind.Chip, options[i], UiIcon.None, UiAction.Count, null, Opt, index, b.Disabled);
-                cx += ow + UiTokens.S2;
+                cx += ChoiceChip(s, at, cx, cy, options[i], i == b.Chosen, Opt, index, b.Disabled) + UiTokens.S2;
             }
             return below ? cy + UiTokens.Chip + UiTokens.S2 : y + SwitchRow;
         }

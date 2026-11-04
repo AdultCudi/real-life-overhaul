@@ -194,8 +194,8 @@ namespace RealLifeOverhaul.Ui
         // The right column: the day by business, where the costs went, the managers today.
         private static void Right(UiScene s, UiAt at, CompanyFacts f, CompanyOverviewFacts o, CompanyView v, CompanyWords w, CompanyLayout lay, float x, float y, float rw, float bottom, IUiKeys keys)
         {
-            float cy = Section(s, at, lay, x, y, rw, w.T("reallife_co_the_day", "The day"));
-            // Columns: the business, then three figures as wide as their words.
+            float cy = y;
+            // Columns: the business, then three figures as wide as their words. The section's own label heads the first, so no label stands over another.
             float money = 0f;
             for (int i = 0; i < o.Businesses.Length; i++)
             {
@@ -212,7 +212,7 @@ namespace RealLifeOverhaul.Ui
                 colW = UiDraw.SnapDown((rw * 0.7f - UiTokens.S3) / 3f);
                 nameW = rw - colW * 3f - UiTokens.S3;
             }
-            UiDraw.TextMiddle(s, at, x, cy, UiTokens.PairRow, nameW, UiStyle.SectionHeader, UiRole.Muted, w.T("reallife_co_col_business", "Business"), UiFlags.Label | UiFlags.Truncate);
+            UiDraw.TextMiddle(s, at, x, cy, UiTokens.PairRow, nameW, UiStyle.SectionHeader, UiRole.Text2, w.T("reallife_co_the_day", "The day"), UiFlags.Label | UiFlags.Truncate);
             UiDraw.TextMiddle(s, at, x + nameW + UiTokens.S3, cy, UiTokens.PairRow, colW, UiStyle.SectionHeader, UiRole.Muted, c1, UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
             UiDraw.TextMiddle(s, at, x + nameW + UiTokens.S3 + colW, cy, UiTokens.PairRow, colW, UiStyle.SectionHeader, UiRole.Muted, c2, UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
             UiDraw.TextMiddle(s, at, x + nameW + UiTokens.S3 + colW * 2f, cy, UiTokens.PairRow, colW, UiStyle.SectionHeader, UiRole.Muted, c3, UiFlags.Label | UiFlags.Right | UiFlags.Truncate);

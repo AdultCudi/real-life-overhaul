@@ -333,14 +333,20 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.TextMiddle(s, inside, right - rw, y, h, rw, post ? UiStyle.BodyStrong : UiStyle.Small, post ? UiRole.AccentText : chosen ? UiRole.Text : UiRole.Text2, n.Right,
                     UiFlags.Right | UiFlags.Truncate);
             }
+            int fold = -1;
             if (n.HasKids)
             {
                 // The chevron is a target of its own over the row's, made first so that it keeps its own face: a press there folds, a press elsewhere on the row chooses it.
                 float tw = Math.Max(cw, UiTokens.MinTarget), tx = UiTokens.S3 + Indent * n.Level - (tw - cw) / 2f, tyy = y + (h - tw) / 2f;
                 int cface = UiDraw.Box(s, inside, tx, tyy, tw, tw, UiRole.None, UiRole.None, UiTokens.RadiusSmall);
-                UiDraw.Node(s, at, tx, tyy, tw, tw, First + Fold, index, cface);
+                fold = UiDraw.Node(s, at, tx, tyy, tw, tw, First + Fold, index, cface);
             }
-            UiDraw.Node(s, at, 0f, y, w, h, First + Pick, index, face, false, list, stop);
+            int pick = UiDraw.Node(s, at, 0f, y, w, h, First + Pick, index, face, false, list, stop);
+            if (fold >= 0)
+            {
+                s.Nodes[pick].Left = fold;    // the d-pad: Left from a row goes to its fold, Right from the fold back to the row
+                s.Nodes[fold].Right = pick;
+            }
         }
 
         /// <summary>

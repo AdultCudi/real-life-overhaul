@@ -10,12 +10,12 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static partial class CompanyFace
     {
-        // Commands 7410 to 7449 are the Company app's own (the organisation tree's are 7400 to 7409). A command number is not unique across the kit's parts
-        // (UiAppWindow.NavCommand is 1, as UiDecision.ChoiceCommand is), so the screen tests the page or state a command belongs to before it acts.
-        public const int Act = 7410;        // a button, a switch, a stepper's step or a link: the index of its action in the layout
+        // Commands 7410 to 7449 are the Company app's own (the organisation tree's are 7400 to 7409). Every kind of target has a number of its own, and no kind shares
+        // one with another: the question card's choices and buttons run Choice and Act as the Lead's do (UiDecisionModel.ChoiceCmd, ButtonCmd), so that nothing is told
+        // apart by the state a page is in. The kit's parts keep their own numbers (the sidebar's 1, the board's 30 to 33, the tree's 7400 to 7403), which none of these meet.
+        public const int Act = 7410;        // a button, a switch or a link: the index of its action in the layout
         public const int Row = 7411;        // a row of the page's list: its index
-        public const int Choice = 7412;     // a choice of the Lead: its index
-        public const int Type = 7413;       // a typed field: the index of the action it feeds
+        public const int Choice = 7412;     // a choice of the Lead or of the question's card: its index
         public const int Cell = 7414;       // a cell of the rota's week: its day
         public const int DayHead = 7415;    // a day's column head or its hour bar: the day
         public const int Item = 7416;       // a row of a card's list: the index of its action
@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Ui
         {
             var list = new List<int>
             {
-                UiAppWindow.NavCommand, Act, Row, Choice, Type, Cell, DayHead, Item, Filter, Badge, Opt,
+                UiAppWindow.NavCommand, Act, Row, Choice, Cell, DayHead, Item, Filter, Badge, Opt, StepLess, StepMore, StepType,
                 UiOrgTree.First + UiOrgTree.Pick, UiOrgTree.First + UiOrgTree.Fold, UiOrgTree.First + UiOrgTree.All, UiOrgTree.First + UiOrgTree.Foot,
                 UiBoard.ShiftCommand, UiBoard.LaneCommand, UiBoard.DayCommand, UiBoard.ActionCommand
             };
@@ -131,6 +131,21 @@ namespace RealLifeOverhaul.Ui
             }
             UiDraw.TextMiddle(s, at, x, y, h, w - rw - (rw > 0f ? UiTokens.S3 : 0f), UiStyle.SectionHeader, UiRole.Text2, label, UiFlags.Label | UiFlags.Truncate);
             return y + h + UiTokens.S1;
+        }
+
+        /// <summary>
+        /// An option of a choice as a chip: the chosen one filled in the accent (marked chosen, so that it is a state and not a second primary action), the others quiet. It
+        /// takes the width its words need; the target runs <paramref name="command"/> with <paramref name="arg"/>. Returns the width.
+        /// </summary>
+        internal static float ChoiceChip(UiScene s, UiAt at, float x, float y, string label, bool chosen, int command, int arg, bool disabled = false)
+        {
+            float w = UiDraw.ButtonWidth(UiButtonKind.Chip, label, UiIcon.None, UiAction.Count, null);
+            int face = UiDraw.Box(s, at, x, y, w, UiTokens.Chip, chosen ? UiRole.Accent : UiRole.AccentSoft, UiRole.None, UiTokens.RadiusMedium,
+                (chosen ? UiFlags.Selected : UiFlags.None) | (disabled ? UiFlags.Disabled : UiFlags.None));
+            UiDraw.TextMiddle(s, at.In(face), x + UiTokens.S4, y, UiTokens.Chip, w - UiTokens.S4 * 2f + UiTokens.S1, UiStyle.Button, chosen ? UiRole.OnAccent : UiRole.AccentText, label,
+                UiFlags.Label | UiFlags.Centre | (disabled ? UiFlags.Disabled : UiFlags.None));
+            UiDraw.Node(s, at, x, y, w, UiTokens.Chip, command, arg, face, disabled);
+            return w;
         }
 
         /// <summary>A text link, cyan words with a hover's face, that does an action. The words end at the right edge of the box.</summary>

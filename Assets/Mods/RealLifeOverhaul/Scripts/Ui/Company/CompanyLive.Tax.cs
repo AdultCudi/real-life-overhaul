@@ -225,7 +225,7 @@ namespace RealLifeOverhaul.Ui
                     Act = CompanyAct.Of(CompanyDo.Go, "amount", -100, shown), Act2 = CompanyAct.Of(CompanyDo.Go, "amount", 100, shown), Act3 = CompanyAct.Of(CompanyDo.Go, "amount", 0, shown)
                 },
                 Buttons(
-                    Btn(w.F("reallife_co_reserve_do", "Set aside {amount}", "amount", CompanyText.Money(shown)), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.ReserveSet, null, shown), UiAction.Alt, UiIcon.Check, false,
+                    Btn(w.F("reallife_co_reserve_do", "Set aside {amount}", "amount", CompanyText.Money(shown)), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.ReserveSet, null, shown), UiAction.Count, UiIcon.Check, false,
                         shown <= 0 || cash < shown, shown <= 0 ? w.T("reallife_co_reserve_none", "Nothing to set aside") : cash < shown ? w.T("reallife_co_reserve_short", "Not enough in the cash") : null),
                     Btn(w.T("reallife_co_reserve_release", "Release"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.ReserveRelease), UiAction.Count, UiIcon.Back, true, tf.Reserve <= 0,
                         tf.Reserve <= 0 ? w.T("reallife_co_reserve_empty", "Nothing is set aside") : null))

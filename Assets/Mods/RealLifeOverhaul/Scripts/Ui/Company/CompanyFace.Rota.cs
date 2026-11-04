@@ -70,8 +70,7 @@ namespace RealLifeOverhaul.Ui
             {
                 float bw = UiDraw.ButtonWidth(UiButtonKind.Chip, views[i], UiIcon.None, UiAction.Count, null);
                 int idx = lay.Add(new CompanyButton { Label = views[i], Act = CompanyAct.Of(CompanyDo.Go, null, CompanyView.Rota, i) });
-                UiDraw.Button(s, at, vx, cy, bw, UiTokens.Chip, i == sub ? UiButtonKind.Primary : UiButtonKind.Chip, views[i], UiIcon.None, UiAction.Count, null, Act, idx);
-                vx += bw + UiTokens.S2;
+                vx += ChoiceChip(s, at, vx, cy, views[i], i == sub, Act, idx) + UiTokens.S2;
             }
             // The place's name and its mode at the right.
             string head = p.Name + (string.IsNullOrEmpty(p.Sub) ? string.Empty : "  " + p.Sub);
@@ -85,9 +84,7 @@ namespace RealLifeOverhaul.Ui
             {
                 CompanyAct act = i < p.ModeActs.Length ? p.ModeActs[i] : default(CompanyAct);
                 int idx = lay.Add(new CompanyButton { Label = p.ModeOptions[i], Act = act });
-                float ow = UiDraw.ButtonWidth(UiButtonKind.Chip, p.ModeOptions[i], UiIcon.None, UiAction.Count, null);
-                UiDraw.Button(s, at, mx, cy, ow, UiTokens.Chip, i == p.Mode ? UiButtonKind.Primary : UiButtonKind.Chip, p.ModeOptions[i], UiIcon.None, UiAction.Count, null, Opt, idx);
-                mx += ow + UiTokens.S2;
+                mx += ChoiceChip(s, at, mx, cy, p.ModeOptions[i], i == p.Mode, Opt, idx) + UiTokens.S2;
             }
             cy += UiTokens.Chip + UiTokens.S4;
             // The form.
@@ -111,9 +108,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     CompanyAct act = i < p.RepeatActs.Length ? p.RepeatActs[i] : default(CompanyAct);
                     int idx = lay.Add(new CompanyButton { Label = p.RepeatOptions[i], Act = act });
-                    float ow = UiDraw.ButtonWidth(UiButtonKind.Chip, p.RepeatOptions[i], UiIcon.None, UiAction.Count, null);
-                    UiDraw.Button(s, at, ox, cy + UiTokens.PairRow + (rowH - UiTokens.Chip) / 2f, ow, UiTokens.Chip, i == p.Repeat ? UiButtonKind.Primary : UiButtonKind.Chip, p.RepeatOptions[i], UiIcon.None, UiAction.Count, null, Opt, idx);
-                    ox += ow + UiTokens.S2;
+                    ox += ChoiceChip(s, at, ox, cy + UiTokens.PairRow + Mid(rowH, UiTokens.Chip), p.RepeatOptions[i], i == p.Repeat, Opt, idx) + UiTokens.S2;
                 }
                 fx += rw + UiTokens.S5;
             }

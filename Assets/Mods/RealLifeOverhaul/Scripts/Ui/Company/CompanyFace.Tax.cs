@@ -4,7 +4,7 @@ namespace RealLifeOverhaul.Ui
 {
     public static partial class CompanyFace
     {
-        private const float LicenceRow = 56f, LineRow = 40f, StatementRow = 28f;
+        private const float LicenceRow = 56f, LineRow = 48f, StatementRow = 28f;
 
         // Tax and licences: what needs the owner first (the tax set aside), then the licences with who handles each and what to do, and what is coming up; at the right
         // the quarter so far, the returns paid, the tools (the return, the accountant, cash off the books) and the property tax. A sub page is a card in the whole room.

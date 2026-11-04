@@ -471,7 +471,7 @@ namespace RealLifeOverhaul.Ui
                     Hours = unmanned ? CompanyText.T("reallife_rota_plan_hours", "hours", r.Sum.Hours.ToString(), "manned", r.Sum.Manned.ToString()) : CompanyText.T("reallife_rota_plan_hours_all", "hours", r.Sum.Hours.ToString()),
                     Net = shop.HasCustomers ? CompanyApp.RotaMoneyWords(r.Sum.Net) : CompanyApp.RotaMoneyWords(-r.Sum.Wages), Gain = i == 0 ? null : r.Gain > 0 ? CompanyText.T("reallife_rota_plan_gain", "amount", CompanyApp.RotaMoneyWords(r.Gain)) : null,
                     Advised = i == l.Recommended && l.Count > 1,
-                    Use = Btn(CompanyText.T(hires ? "reallife_rota_use_after" : "reallife_rota_use_plan"), hires ? UiButtonKind.Secondary : UiButtonKind.Primary, CompanyAct.Of(CompanyDo.RotaFill, place, i),
+                    Use = Btn(CompanyText.T(hires ? "reallife_rota_use_after" : "reallife_rota_use_plan"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.RotaFill, place, i),
                         UiAction.Count, UiIcon.Check, false, !usable, hires ? CompanyText.T("reallife_rota_hire_where") : refusal != null ? CompanyApp.RotaRefusedWords(refusal) : null)
                 };
             }

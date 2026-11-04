@@ -178,13 +178,14 @@ namespace RealLifeOverhaul.Ui
             var actions = new UiActionModel[buttons.Length];
             for (int i = 0; i < buttons.Length; i++)
             {
-                lay.Add(buttons[i]);   // the card's button i answers with the action at index i (UiDecision.ButtonCommand)
+                lay.Add(buttons[i]);   // the card's button i answers with the action at index i (Act, as every button does)
                 actions[i] = new UiActionModel { Label = buttons[i].Label, Kind = buttons[i].Kind, Icon = buttons[i].Icon, Key = buttons[i].Key, Disabled = buttons[i].Disabled };
             }
             var m = new UiDecisionModel
             {
                 Kicker = q.Kicker, Title = q.Title, Body = q.Body, BodyLines = 5, Faces = faces.ToArray(), FaceRoles = roles.ToArray(), FaceRings = rings.ToArray(), Speaking = faces.Count > 0 ? 0 : -1,
                 FactLabels = q.FactLabels, FactValues = q.FactValues, Choices = ChoicesOf(q), Selected = Math.Max(0, Math.Min(q.Choices.Length - 1, v.Choice)), Buttons = actions,
+                ChoiceCmd = Choice, ButtonCmd = Act,
                 Prompts = new[]
                 {
                     new UiPrompt { Action = UiAction.Move, Label = w.T("reallife_ui_prompt_move", "Move") },
