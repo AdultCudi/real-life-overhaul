@@ -21,7 +21,7 @@ namespace RealLifeOverhaul.Ui
     /// series, the hour or a button moves the generation, or the player's choice changes; nothing a frame. The Show the desk and Show on map
     /// buttons only locate; nothing here starts a shift, as the desk does that.
     /// </summary>
-    public sealed class CareerLive : IWorkSource
+    public sealed partial class CareerLive : IWorkSource
     {
         public static readonly CareerLive Instance = new CareerLive();
 
@@ -103,9 +103,11 @@ namespace RealLifeOverhaul.Ui
             ReadOpenings(d, w, study, save.Day);
             ReadApplications(w, save.Day);
             ReadProfessions(w, study);
-            ReadLadder(d);
+            ReadManagement(d, save.Day);
             ReadOwn(w, save.Day);
+            ReadOwnWork(d, w, save.Day);
             ReadCv(w, study);
+            ReadRetire(d);
         }
 
         private void ReadJob(CareersDirector d, WorkFile w, int day)
@@ -177,6 +179,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 cj.Mine = Slice(f.Ring, f.Count);
             }
+            ReadJobActs(d, w, cj, day);
             _facts.Job = cj;
         }
 
@@ -444,7 +447,7 @@ namespace RealLifeOverhaul.Ui
                             w.Job.Post.Rank).ToString() : "0" }),
                         () => Said(d.Resign(), d), null, null, null, true, true);
                     return true;
-                default: return false;
+                default: return CarryMore(act, arg, d);
             }
         }
 

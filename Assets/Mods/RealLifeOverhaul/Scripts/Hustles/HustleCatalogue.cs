@@ -43,6 +43,17 @@ namespace RealLifeOverhaul.Hustles
             CleanGain = cleanGain;
         }
 
+        /// <summary>A lot of stock: the game's own good it is made of and how many of it, so its price is the wholesale price of the game's good times the lot.</summary>
+        public ThingDef Of(string item, int lot)
+        {
+            Item = item;
+            Lot = lot;
+            return this;
+        }
+
+        public string Item;   // the game's item name of a lot of stock; null for everything else
+        public int Lot;       // how many of it a lot holds
+
         /// <summary>Only electronics are taken in by a repair shop (the city's electronics stores).</summary>
         public bool ShopFix => Kind == ThingKind.Electronics;
     }
@@ -108,10 +119,10 @@ namespace RealLifeOverhaul.Hustles
             new ThingDef("display_fridge", "reallife_hustle_thing_display_fridge", ThingKind.Machine, 1500, 120, 90, 6),
             new ThingDef("dough_mixer", "reallife_hustle_thing_dough_mixer", ThingKind.Machine, 5800, 150, 88, 6),
             new ThingDef("chest_freezer", "reallife_hustle_thing_chest_freezer", ThingKind.Machine, 1700, 120, 90, 6),
-            new ThingDef("coffee_pallet", "reallife_hustle_thing_coffee_pallet", ThingKind.Stock, 1800, 0, 100, 0),
-            new ThingDef("flour_pallet", "reallife_hustle_thing_flour_pallet", ThingKind.Stock, 900, 0, 100, 0),
-            new ThingDef("tinned_goods_lot", "reallife_hustle_thing_tinned_goods_lot", ThingKind.Stock, 1200, 0, 100, 0),
-            new ThingDef("bottled_water_lot", "reallife_hustle_thing_bottled_water_lot", ThingKind.Stock, 600, 0, 100, 0)
+            new ThingDef("sugar_lot", "reallife_hustle_thing_sugar_lot", ThingKind.Stock, 600, 0, 100, 0).Of("ba:itemname_sugar", 60),
+            new ThingDef("milk_lot", "reallife_hustle_thing_milk_lot", ThingKind.Stock, 500, 0, 100, 0).Of("ba:itemname_milk", 60),
+            new ThingDef("beer_lot", "reallife_hustle_thing_beer_lot", ThingKind.Stock, 900, 0, 100, 0).Of("ba:itemname_beer", 60),
+            new ThingDef("tomato_lot", "reallife_hustle_thing_tomato_lot", ThingKind.Stock, 400, 0, 100, 0).Of("ba:itemname_tomato", 60)
         };
 
         public static readonly GigDef[] Gigs =

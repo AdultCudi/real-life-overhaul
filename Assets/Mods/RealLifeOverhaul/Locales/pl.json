@@ -26651,10 +26651,10 @@
   "reallife_hustle_thing_display_fridge": "Lodówka ekspozycyjna",
   "reallife_hustle_thing_dough_mixer": "Mieszarka do ciasta",
   "reallife_hustle_thing_chest_freezer": "Zamrażarka skrzyniowa",
-  "reallife_hustle_thing_coffee_pallet": "Paleta ziaren kawy",
-  "reallife_hustle_thing_flour_pallet": "Paleta mąki",
-  "reallife_hustle_thing_tinned_goods_lot": "Partia konserw",
-  "reallife_hustle_thing_bottled_water_lot": "Partia wody butelkowanej",
   "reallife_hustle_kind_machine": "Maszyna",
-  "reallife_hustle_kind_stock": "Towar"
+  "reallife_hustle_kind_stock": "Towar",
+  "reallife_hustle_thing_sugar_lot": "Partia cukru",
+  "reallife_hustle_thing_milk_lot": "Partia mleka",
+  "reallife_hustle_thing_beer_lot": "Partia piwa",
+  "reallife_hustle_thing_tomato_lot": "Partia pomidorów"
 }

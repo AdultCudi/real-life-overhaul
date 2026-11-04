@@ -15,9 +15,27 @@ namespace RealLifeOverhaul.Ui
     {
         private const float LeftShare = 0.62f;
 
-        public static void Lay(UiScene s, UiAt at, CareerJob j, UiAppModel m, UtilitiesWords w, float x, float y, float cw, float bottom, IUiKeys keys)
+        public static void Lay(UiScene s, UiAt at, CareerJob j, UiAppModel m, UtilitiesWords w, List<int> head, float x, float y, float cw, float bottom, IUiKeys keys)
         {
-            y = UiAppWindow.Profile(s, at, m.Profile, m.Actions, x, y, cw, keys);
+            var top = new List<UiActionModel>(3);
+            var more = new List<UiActionModel>(6);
+            for (int i = 0; i < m.Actions.Length; i++)
+            {
+                (head.Contains(i) ? top : more).Add(m.Actions[i]);
+            }
+            y = UiAppWindow.Profile(s, at, m.Profile, top.ToArray(), x, y, cw, keys);
+            if (more.Count > 0)
+            {
+                float bx = x;
+                for (int i = 0; i < more.Count; i++)
+                {
+                    UiActionModel a = more[i];
+                    float bw = UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, a.Key, keys);
+                    UiDraw.Button(s, at, bx, y, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, a.Command, a.Arg, a.Disabled);
+                    bx += bw + UiTokens.S3;
+                }
+                y += UiTokens.Control + UiTokens.S4;
+            }
             float lw = UiDraw.SnapDown(cw * LeftShare), rw = cw - lw - UiTokens.S6, rx = x + lw + UiTokens.S6;
             // left: the next shift, the ladder, what the next rung needs, the twelve weeks
             float ly = y;
@@ -26,13 +44,13 @@ namespace RealLifeOverhaul.Ui
             if (j.Needs.Count > 0)
             {
                 ly += UiDraw.SectionHeader(s, at, x, ly, lw, w.F("reallife_work_what_needs", "What {rung} needs", "rung", j.NextRung ?? string.Empty));
-                for (int i = 0; i < j.Needs.Count && ly + UiTokens.Control < bottom - UiTokens.S16 * 3f; i++)
+                for (int i = 0; i < j.Needs.Count && ly + UiTokens.Control < bottom - UiTokens.S16 * 2f; i++)
                 {
                     ly += UiTokens.S1 + UiDraw.CheckLine(s, at, x, ly, lw, j.Needs[i].Words + (j.Needs[i].Have != null ? ", " + j.Needs[i].Have : string.Empty), j.Needs[i].Met);
                 }
                 ly += UiTokens.S3;
             }
-            if (j.Mine.Length >= 2 && bottom - ly >= UiTokens.S16 * 3f)
+            if (j.Mine.Length >= 2 && bottom - ly >= UiTokens.S16 * 2f)
             {
                 UiChart.Lay(s, at, Chart(j, w), x, ly, lw, bottom - ly);
             }

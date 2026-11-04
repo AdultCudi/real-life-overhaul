@@ -141,16 +141,7 @@ namespace RealLifeOverhaul.Careers
         // near the player's own, so the contest is a real one.
         private void SeedColleagues(StandingFile f, Job j, int day)
         {
-            int me = PerformanceNow(j);
-            int seed = StudySeed + j.Hired;
-            int top = Math.Max(0, j.Def.Ranks.Length - 1);
-            f.Peers.Add(StandingRules.Colleague(Names(), Math.Min(top, j.Post.Rank + 1), me + 8, PeerRole.Lead, day, seed, 6));
-            if (j.Post.Rank < top)
-            {
-                f.Peers.Add(StandingRules.Colleague(Names(), j.Post.Rank, me - 3 + TechRandom.Range(seed, 7761, 0, 0, -4, 8), PeerRole.UpForPost,
-                    day, seed, 8));
-            }
-            f.Peers.Add(StandingRules.Colleague(Names(), Math.Max(0, j.Post.Rank - 1), me - 6, PeerRole.Colleague, day, seed, 6));
+            StandingRules.Seed(f, j.Post.Rank, Math.Max(0, j.Def.Ranks.Length - 1), PerformanceNow(j), day, StudySeed + j.Hired, Names);
         }
 
         // A worked shift goes into the ring of the last seven with its score and pay (whole money at today's prices, as the job pays it).
@@ -179,15 +170,11 @@ namespace RealLifeOverhaul.Careers
         private bool StandingDecides(Job j, int day)
         {
             StandingFile f = Standing;
-            Peer rival = f != null ? f.UpFor() : null;
-            if (rival == null)
+            if (f == null)
             {
                 return true;
             }
-            bool mine = StandingRules.PlayerGetsPost(f, rival);
-            f.Peers.Remove(rival);
-            f.Peers.Add(StandingRules.Colleague(Names(), Math.Min(Math.Max(0, j.Def.Ranks.Length - 1), j.Post.Rank + (mine ? 1 : 0)), rival.Skill,
-                PeerRole.UpForPost, day, StudySeed + day, 4));
+            bool mine = StandingRules.Contest(f, j.Post.Rank, Math.Max(0, j.Def.Ranks.Length - 1), day, StudySeed + day, Names, out Peer rival);
             if (!mine)
             {
                 Tell2(NotificationType.Warning, "reallife_work_note_passed_over", Data("name", rival.Name, "employer",

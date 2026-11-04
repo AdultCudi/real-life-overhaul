@@ -263,6 +263,9 @@ internal static partial class UiSamples
                 Detail = "Business Maths: A, 88%, 6 credits." });
             results.Rows.Add(new WorkRow { Id = 2, Icon = UiIcon.Cap, Cells = new[] { "Spanish, Level 1", "4", "52", "C 52%" }, Status = "Repeat",
                 Tone = UiRole.Warn, Detail = "Spanish, Level 1: C, 52%. A retake can be sat." });
+            results.Chart = new UiChartModel { Kind = UiChartKind.Line, Title = "Grade point average by quarter", Points = new[] { "Quarter 1", "Quarter 2", "Quarter 3" },
+                Series = new[] { new UiSeries { Label = "Grade point average", Values = new[] { 3.1f, 3.3f, 3.4f }, Tint = UiRole.Accent } }, Format = v => v.ToString("0.0") };
+            results.Figures = new[] { new UiFigureModel { Label = "Exam: Accounting", Value = "Day 421, in 19 days" }, new UiFigureModel { Label = "Oral test: Spanish", Value = "Day 424, in 22 days" } };
             results.PeopleTitle = "Your class";
             results.PeopleCount = "by grade point average";
             results.People.Add(new WorkPerson { Name = "Priya Shah", Role = "1", Label = "GPA", Score = 100 });

@@ -51,6 +51,7 @@ namespace RealLifeOverhaul.Ui
         public WorkDo[] GridActs = new WorkDo[0];   // by the catalogue detail's buttons
         public WorkDo All;                          // the link under the people
         public WorkDo Note;                         // the link under the note
+        public SplitDetail Detail;                  // the chosen row's detail, for a split page (WorkSplit)
         public int Chosen = -1;                     // the table's row the detail shows
         public bool Back;                           // a sub page: Back steps out of it
         public Action<UiScene, UiAt, float, float, float, float, IUiKeys> Body;   // a page laid out by hand from the kit's blocks, in the room the window gives (x, y, width, bottom)

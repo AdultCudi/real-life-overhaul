@@ -42,6 +42,8 @@ namespace RealLifeOverhaul.Ui
         public readonly List<WorkPerson> People = new List<WorkPerson>(4);
         public string PeopleTitle;
         public readonly List<KeyValuePair<string, string>> Facts = new List<KeyValuePair<string, string>>(6);   // label and value pairs the catalogue's detail lists
+        public readonly List<SplitNeed> Needs = new List<SplitNeed>(6);   // requirements shown as check lines in the detail
+        public string NeedsTitle;
         public int Group = -1;                                 // a filter chip it belongs to (by the tab's chips); -1: every one
     }
 
@@ -66,6 +68,7 @@ namespace RealLifeOverhaul.Ui
         public readonly List<WorkPerson> People = new List<WorkPerson>(8);
         public string Note;
         public UiRole NoteTone = UiRole.Warn;
+        public UiChartModel Chart;                             // a line over the tab's table (the average by quarter), laid by WorkResults
         public bool Grid;                                      // laid as a catalogue of cards with the chosen one's detail beside them
         public string GridKicker;                              // what the chosen thing is, over its detail
         public bool Sub;                                       // a sub page (a person, a haggle): Back steps out of it
@@ -117,9 +120,9 @@ namespace RealLifeOverhaul.Ui
             WorkRow chosen = at >= 0 ? shown[at] : null;
             if (t.Profile == null && t.Hero == null)
             {
-                if (chosen != null)
+                if (chosen != null && shown.Count > 0)
                 {
-                    b.About(chosen.Icon, chosen.Status, chosen.Cells.Length > 0 ? chosen.Cells[0] : string.Empty, chosen.Detail);
+                    b.Page.Detail = Detail(chosen);
                 }
                 else if (!string.IsNullOrEmpty(t.Lead) && shown.Count == 0)
                 {
@@ -159,6 +162,11 @@ namespace RealLifeOverhaul.Ui
                     rows[i] = WorkBuilder.Row(r.Icon, r.Tint, r.Cells, r.Status, r.Tone, r.Grade);
                 }
                 b.Table(null, t.Columns, t.GradeColumn, rows, new WorkDo[rows.Length], at);
+                if (b.Page.Detail != null)
+                {
+                    SplitDetail detail = b.Page.Detail;
+                    b.Page.Body = (s, ats, x, y, cw, bottom, keys) => WorkSplit.Lay(s, ats, b.M, detail, at, x, y, cw, bottom, keys);
+                }
             }
             List<WorkPerson> people = chosen != null && chosen.People.Count > 0 ? chosen.People : t.People;
             if (people.Count > 0 && people.TrueForAll(x => x.Score2 < 0))
@@ -190,7 +198,31 @@ namespace RealLifeOverhaul.Ui
                 m.Note = t.Note;
                 m.NoteTone = t.NoteTone;
             }
+            if (t.Chart != null && t.Profile != null)
+            {
+                UiChartModel chart = t.Chart;
+                b.Page.Body = (s, ats, x, y, cw, bottom, keys) => WorkResults.Lay(s, ats, b.M, chart, x, y, cw, bottom, keys);
+            }
             return b.Done();
+        }
+
+        private static SplitDetail Detail(WorkRow r)
+        {
+            var d = new SplitDetail { Icon = r.Icon, Title = r.Cells.Length > 0 ? r.Cells[0] : string.Empty, Status = r.Status, Tone = r.Tone, Sentence = r.Detail, PeopleTitle = r.PeopleTitle,
+                NeedsTitle = r.NeedsTitle };
+            d.Facts.AddRange(r.Facts);
+            d.Needs.AddRange(r.Needs);
+            if (r.People.Count > 0 && r.People.TrueForAll(x => x.Score2 >= 0))
+            {
+                d.People = new UiPersonRow[r.People.Count];
+                for (int i = 0; i < d.People.Length; i++)
+                {
+                    WorkPerson p = r.People[i];
+                    d.People[i] = new UiPersonRow { Name = p.Name, Hue = UiColour.HueOf(p.Name ?? string.Empty), RoleIcon = p.Icon, Role = p.Role, FirstLabel = p.Label, First = p.Score,
+                        SecondLabel = p.Label2, Second = p.Score2 };
+                }
+            }
+            return d;
         }
 
         private static void AddActs(WorkBuilder b, List<WorkAct> acts, int rowId)

@@ -26651,10 +26651,10 @@
   "reallife_hustle_thing_display_fridge": "Vitrinekoelkast",
   "reallife_hustle_thing_dough_mixer": "Deegmixer",
   "reallife_hustle_thing_chest_freezer": "Diepvriezer",
-  "reallife_hustle_thing_coffee_pallet": "Pallet koffiebonen",
-  "reallife_hustle_thing_flour_pallet": "Pallet bloem",
-  "reallife_hustle_thing_tinned_goods_lot": "Partij conserven",
-  "reallife_hustle_thing_bottled_water_lot": "Partij flessenwater",
   "reallife_hustle_kind_machine": "Machine",
-  "reallife_hustle_kind_stock": "Voorraad"
+  "reallife_hustle_kind_stock": "Voorraad",
+  "reallife_hustle_thing_sugar_lot": "Partij suiker",
+  "reallife_hustle_thing_milk_lot": "Partij melk",
+  "reallife_hustle_thing_beer_lot": "Partij bier",
+  "reallife_hustle_thing_tomato_lot": "Partij tomaten"
 }

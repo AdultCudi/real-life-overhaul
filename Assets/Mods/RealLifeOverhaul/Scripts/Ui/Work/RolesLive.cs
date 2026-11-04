@@ -135,6 +135,16 @@ namespace RealLifeOverhaul.Ui
                     Icon = UiIcon.Close });
                 t.Rows.Add(r);
             }
+            for (int i = 0; i < h.Applicants.Count && t.People.Count < 6; i++)
+            {
+                Applicant a = h.Applicants[i];
+                Seeker hired = h.SeekerOf(a.Seeker);
+                if (a.Stage == (int)ApplyStage.Started && a.Start >= day - 30 && hired != null)
+                {
+                    t.People.Add(new WorkPerson { Name = hired.P.Name, Role = TechText.Role(hired.P.Role) + ", " + TechText.Day(a.Start), Icon = UiIcon.Person });
+                }
+            }
+            t.PeopleTitle = w.T("reallife_work_hired_month", "Hired this month");
             return t;
         }
 
@@ -180,6 +190,11 @@ namespace RealLifeOverhaul.Ui
                     sb.Append('.');
                 }
                 r.Detail = sb.ToString();
+                int teamAverage = TeamAverage(d);
+                r.NeedsTitle = w.T("reallife_work_fit_for_role", "Fit for the role");
+                r.Needs.Add(new SplitNeed { Words = w.F("reallife_work_fit_craft", "Craft above your team's average of {n}", "n", teamAverage.ToString(Inv)), Met = s.CvMain > teamAverage });
+                r.Needs.Add(new SplitNeed { Words = w.F("reallife_work_fit_pay", "Asks less than the {pay} you set", "pay", TechText.Rate(ad.PayMost)), Met = s.Ask <= ad.PayMost });
+                r.Needs.Add(new SplitNeed { Words = w.T("reallife_work_fit_refs", "References checked"), Met = a.Refs });
                 int cents = competing ? Math.Max(a.RivalBid, s.Ask) : s.Ask;
                 r.Acts.Add(new WorkAct { Kind = Offer, Arg = a.Id, Label = w.F("reallife_work_hire_at", "Hire at {pay} an hour", "pay",
                     TechText.Rate(cents)), Style = UiButtonKind.Primary, Icon = UiIcon.Check,
@@ -200,6 +215,17 @@ namespace RealLifeOverhaul.Ui
                 t.Rows.Add(r);
             }
             return t;
+        }
+
+        // The mean of the main skill of the player's own people, whole points; 0 with nobody on the payroll.
+        private static int TeamAverage(TechDirector d)
+        {
+            int sum = 0;
+            for (int i = 0; i < d.People.Count; i++)
+            {
+                sum += d.People[i].MainPoints;
+            }
+            return d.People.Count == 0 ? 0 : sum / d.People.Count;
         }
 
         private static string StageName(Applicant a) => TechText.T("reallife" + "_hire_stage_" + a.At.ToString().ToLowerInvariant());

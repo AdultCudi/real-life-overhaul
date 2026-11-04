@@ -8,7 +8,9 @@ namespace RealLifeOverhaul.Ui
     {
         None = 0, Apply = 1, ShowPost = 2, Register = 3, Interview = 4, Withdraw = 5, Accept = 6, AskSmall = 7, AskLarge = 8, Decline = 9, ShowDesk = 10,
         Resign = 11, WalkOut = 12, AskRise = 13, OpenCampus = 14, GoTab = 15, TaskYes = 16, TaskNo = 17, TaskUp = 18, TakeContract = 19, DropContract = 20,
-        Retire = 21, ShowBoard = 22, Aiming = 23, SetFilter = 24
+        Retire = 21, ShowBoard = 22, Aiming = 23, SetFilter = 24, Declare = 25, AnswerA = 26, AnswerB = 27, PolicyMore = 28, PolicyLess = 29, RotaLean = 30, RotaStandard = 31, RotaFull = 32,
+        AskShiftEarlier = 33, AskShiftLater = 34, AskEquipment = 35, AskInsurance = 36, Raise = 37, PracticeOpen = 38, PracticeClose = 39, Found = 40, FoundWith = 41, PracticeLeaveAct = 42,
+        BringColleagues = 43
     }
 
     /// <summary>One rung of the profession's ladder at the player's employer.</summary>
@@ -35,6 +37,8 @@ namespace RealLifeOverhaul.Ui
         public string RivalName;
         public int[] Mine = new int[0], Theirs = new int[0];   // the weekly score, oldest first, twelve at most
         public string NextRung;
+        public string MatterText, MatterA, MatterB;          // an office matter waiting, and its two answers
+        public bool CanDeclare;
         public readonly List<CareerShift> Shifts = new List<CareerShift>(7);
     }
 
@@ -52,6 +56,7 @@ namespace RealLifeOverhaul.Ui
         public readonly List<CareerPeer> Others = new List<CareerPeer>(3);
         public readonly List<CareerAct> Acts = new List<CareerAct>(4);   // what the chosen row can do, the first the main one
         public readonly List<string> Why = new List<string>(4);          // a reason a listed act cannot be done now ("" for none), by act
+        public int Group = -1;                              // a filter chip it belongs to (Management)
         public bool Open, Qualify, Near;                    // for the filter chips
     }
 
@@ -65,6 +70,7 @@ namespace RealLifeOverhaul.Ui
         public readonly List<CareerRow> Jobs = new List<CareerRow>(40), Applications = new List<CareerRow>(24), Professions = new List<CareerRow>(40),
             Management = new List<CareerRow>(40), Own = new List<CareerRow>(16), Cv = new List<CareerRow>(32);
         public string ManagementLine, OwnLine, CvLine;
+        public string[] ManagementChips;
         public int OpenNow, Qualify, NearYou, ApplicationsWaiting;
         public bool CanRetire;
     }
@@ -207,16 +213,24 @@ namespace RealLifeOverhaul.Ui
                     b.M.NoteTone = UiRole.Accent;
                 }
             }
-            b.Page.Body = (s, at, x, y, cw, bottom, keys) => CareerMyJob.Lay(s, at, j, b.M, w, x, y, cw, bottom, keys);
-            b.Button(w.T("reallife_work_show_desk", "Show the desk"), UiButtonKind.Secondary, UiIcon.Locate, UiAction.Option,
-                WorkBuilder.Do((int)CareerAct.ShowDesk, 0, null, true));
+            var head = new List<int> { 0, 1 };   // the first two buttons stand in the profile's head, the rest in a row under it
+            b.Button(w.T("reallife_work_show_desk", "Show the desk"), UiButtonKind.Secondary, UiIcon.Locate, UiAction.Option, WorkBuilder.Do((int)CareerAct.ShowDesk, 0, null, true));
+            b.Button(w.T("reallife_life_button_rise", "Ask for a rise"), UiButtonKind.Secondary, UiIcon.TrendUp, UiAction.Count, WorkBuilder.Do((int)CareerAct.AskRise));
+            if (j.MatterText != null)
+            {
+                b.Button(j.MatterA, UiButtonKind.Secondary, UiIcon.Check, UiAction.Count, WorkBuilder.Do((int)CareerAct.AnswerA));
+                b.Button(j.MatterB, UiButtonKind.Secondary, UiIcon.Check, UiAction.Count, WorkBuilder.Do((int)CareerAct.AnswerB));
+            }
+            if (j.CanDeclare)
+            {
+                b.Button(w.T("reallife_life_button_declare", "Declare a conflict"), UiButtonKind.Secondary, UiIcon.Warning, UiAction.Count, WorkBuilder.Do((int)CareerAct.Declare));
+            }
             if (!j.Leaving)
             {
-                b.Button(w.T("reallife_career_button_resign", "Resign"), UiButtonKind.Destructive, UiIcon.SignOut, UiAction.Count,
-                    WorkBuilder.Do((int)CareerAct.Resign));
+                b.Button(w.T("reallife_career_button_resign", "Resign"), UiButtonKind.Destructive, UiIcon.SignOut, UiAction.Count, WorkBuilder.Do((int)CareerAct.Resign));
             }
-            b.Button(w.T("reallife_life_button_rise", "Ask for a rise"), UiButtonKind.Secondary, UiIcon.TrendUp, UiAction.Count,
-                WorkBuilder.Do((int)CareerAct.AskRise));
+            b.Button(w.T("reallife_career_button_walk_out", "Walk out"), UiButtonKind.Destructive, UiIcon.SignOut, UiAction.Count, WorkBuilder.Do((int)CareerAct.WalkOut));
+            b.Page.Body = (s, at, x, y, cw, bottom, keys) => CareerMyJob.Lay(s, at, j, b.M, w, head, x, y, cw, bottom, keys);
         }
 
         private static int FirstAhead(CareerJob j)
@@ -258,50 +272,52 @@ namespace RealLifeOverhaul.Ui
             CareerRow chosen = at >= 0 ? shown[at] : null;
             if (chosen != null)
             {
-                string needs = chosen.Needs.Count == 0 ? null : w.F("reallife_work_needs_met", "{met} of {all} met", "met",
-                    Met(chosen.Needs).ToString(), "all", chosen.Needs.Count.ToString());
-                var sb = new System.Text.StringBuilder(chosen.Cells[0]);
-                sb.Append(". ").Append(chosen.Detail);
-                if (needs != null)
-                {
-                    sb.Append(' ').Append(needs).Append(": ");
-                    for (int i = 0; i < chosen.Needs.Count; i++)
-                    {
-                        sb.Append(i > 0 ? ", " : string.Empty).Append(chosen.Needs[i].Met ? string.Empty : w.T("reallife_work_not_yet",
-                            "not yet:") + " ").Append(chosen.Needs[i].Words);
-                        if (!chosen.Needs[i].Met && chosen.Needs[i].Have != null)
-                        {
-                            sb.Append(" (").Append(chosen.Needs[i].Have).Append(')');
-                        }
-                    }
-                    sb.Append('.');
-                }
-                b.About(chosen.Icon, chosen.Status, chosen.Cells[0], sb.ToString().Substring(chosen.Cells[0].Length > 0 ? Math.Min(sb.Length,
-                    chosen.Cells[0].Length + 2) : 0));
                 AddActs(b, chosen);
-                if (chosen.Others.Count > 0)
-                {
-                    var people = new UiPersonRow[chosen.Others.Count];
-                    for (int i = 0; i < people.Length; i++)
-                    {
-                        CareerPeer c = chosen.Others[i];
-                        people[i] = new UiPersonRow { Name = c.Name, Hue = c.Hue, RoleIcon = UiIcon.Person, Role = c.Role + ", " + c.Day,
-                            FirstLabel = w.T("reallife_work_record", "Record"), First = c.Score,
-                            SecondLabel = w.T("reallife_work_stand_teamwork", "Teamwork"), Second = c.Team };
-                    }
-                    b.People(w.T("reallife_work_also_applied", "Also applied"), w.F("reallife_work_n_people", "{n} people", "n",
-                        chosen.Others.Count.ToString()), people, null);
-                }
+                b.Page.Detail = DetailOf(chosen, w);
             }
             for (int i = 0; i < filters.Length; i++)
             {
                 b.Chip(filters[i], v.Filter == i, WorkBuilder.Do(WorkKinds.Filter, i, null, true));
             }
             b.Table(null, JobColumns(w), -1, RowsOf(shown), OpensOf(shown, null), at);
+            SplitOn(b, at);
             if (shown.Count == 0)
             {
                 b.About(UiIcon.Search, null, w.T("reallife_work_nothing_here", "Nothing here yet"), w.T("reallife_work_empty_jobs",
                     "No post matches this filter. Another filter, or tomorrow's board, may show one."));
+            }
+        }
+
+        // The chosen row's detail beside the table: its sentence, its needs as check lines and the people who also applied, with their faces.
+        private static SplitDetail DetailOf(CareerRow r, UtilitiesWords w)
+        {
+            var d = new SplitDetail { Icon = r.Icon, Title = r.Cells[0], Status = r.Status, Tone = r.Tone, Sentence = r.Detail,
+                NeedsTitle = r.Needs.Count == 0 ? null : w.F("reallife_work_needs_met", "{met} of {all} met", "met", Met(r.Needs).ToString(), "all", r.Needs.Count.ToString()) };
+            for (int i = 0; i < r.Needs.Count; i++)
+            {
+                d.Needs.Add(new SplitNeed { Words = r.Needs[i].Words + (!r.Needs[i].Met && r.Needs[i].Have != null ? ", " + r.Needs[i].Have : string.Empty), Met = r.Needs[i].Met });
+            }
+            if (r.Others.Count > 0)
+            {
+                d.People = new UiPersonRow[r.Others.Count];
+                for (int i = 0; i < d.People.Length; i++)
+                {
+                    CareerPeer c = r.Others[i];
+                    d.People[i] = new UiPersonRow { Name = c.Name, Hue = c.Hue, RoleIcon = UiIcon.Person, Role = c.Role + ", " + c.Day, FirstLabel = w.T("reallife_work_record", "Record"),
+                        First = c.Score, SecondLabel = w.T("reallife_work_stand_teamwork", "Teamwork"), Second = c.Team };
+                }
+                d.PeopleTitle = w.T("reallife_work_also_applied", "Also applied");
+                d.PeopleCount = w.F("reallife_work_n_people", "{n} people", "n", r.Others.Count.ToString());
+            }
+            return d;
+        }
+
+        private static void SplitOn(WorkBuilder b, int at)
+        {
+            SplitDetail detail = b.Page.Detail;
+            if (detail != null)
+            {
+                b.Page.Body = (s, ats, x, y, cw, bottom, keys) => WorkSplit.Lay(s, ats, b.M, detail, at, x, y, cw, bottom, keys);
             }
         }
 
@@ -328,12 +344,21 @@ namespace RealLifeOverhaul.Ui
             string empty)
         {
             UtilitiesWords w = b.W;
+            string[] chips = v.Tab == Management ? f.ManagementChips : null;
+            if (chips != null && v.Filter > 0)
+            {
+                list = list.FindAll(x => x.Group == v.Filter - 1);
+            }
             int at = v.Row >= 0 && v.Row < list.Count ? v.Row : list.Count > 0 ? 0 : -1;
             CareerRow chosen = at >= 0 ? list[at] : null;
+            for (int i = 0; chips != null && i < chips.Length; i++)
+            {
+                b.Chip(chips[i], v.Filter == i, WorkBuilder.Do(WorkKinds.Filter, i, null, true));
+            }
             if (chosen != null)
             {
-                b.About(chosen.Icon, chosen.Status, chosen.Cells[0], chosen.Detail);
                 AddActs(b, chosen);
+                b.Page.Detail = DetailOf(chosen, w);
             }
             else
             {
@@ -342,6 +367,7 @@ namespace RealLifeOverhaul.Ui
             if (list.Count > 0)
             {
                 b.Table(null, ColumnsFor(w, v.Tab, list), -1, RowsOf(list), OpensOf(list, null), at);
+                SplitOn(b, at);
             }
         }
 

@@ -26651,10 +26651,10 @@
   "reallife_hustle_thing_display_fridge": "진열 냉장고",
   "reallife_hustle_thing_dough_mixer": "반죽 믹서",
   "reallife_hustle_thing_chest_freezer": "냉동 쇼케이스",
-  "reallife_hustle_thing_coffee_pallet": "커피 원두 팔레트",
-  "reallife_hustle_thing_flour_pallet": "밀가루 팔레트",
-  "reallife_hustle_thing_tinned_goods_lot": "통조림 묶음",
-  "reallife_hustle_thing_bottled_water_lot": "생수 묶음",
   "reallife_hustle_kind_machine": "기계",
-  "reallife_hustle_kind_stock": "재고"
+  "reallife_hustle_kind_stock": "재고",
+  "reallife_hustle_thing_sugar_lot": "설탕 묶음",
+  "reallife_hustle_thing_milk_lot": "우유 묶음",
+  "reallife_hustle_thing_beer_lot": "맥주 묶음",
+  "reallife_hustle_thing_tomato_lot": "토마토 묶음"
 }

@@ -26651,10 +26651,10 @@
   "reallife_hustle_thing_display_fridge": "Витринный холодильник",
   "reallife_hustle_thing_dough_mixer": "Тестомес",
   "reallife_hustle_thing_chest_freezer": "Морозильный ларь",
-  "reallife_hustle_thing_coffee_pallet": "Паллета с кофейными зернами",
-  "reallife_hustle_thing_flour_pallet": "Паллета с мукой",
-  "reallife_hustle_thing_tinned_goods_lot": "Партия консервов",
-  "reallife_hustle_thing_bottled_water_lot": "Партия бутилированной воды",
   "reallife_hustle_kind_machine": "Машина",
-  "reallife_hustle_kind_stock": "Запасы"
+  "reallife_hustle_kind_stock": "Запасы",
+  "reallife_hustle_thing_sugar_lot": "Партия сахара",
+  "reallife_hustle_thing_milk_lot": "Партия молока",
+  "reallife_hustle_thing_beer_lot": "Партия пива",
+  "reallife_hustle_thing_tomato_lot": "Партия помидоров"
 }

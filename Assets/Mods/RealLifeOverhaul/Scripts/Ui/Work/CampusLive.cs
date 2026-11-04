@@ -253,6 +253,18 @@ namespace RealLifeOverhaul.Ui
                     Detail = w.F("reallife_work_result_line", "{course}: {letter}, {score}%.", "course", CareersText.Course(c.Id), "letter",
                         RosterRules.LetterOf(e.Score), "score", e.Score.ToString(Inv)) });
             }
+            var coming = new List<UiFigureModel>(3);
+            for (int i = 0; i < f.Courses.Count && coming.Count < 3; i++)
+            {
+                Enrolment e = f.Courses[i];
+                if (e.Def != null && e.ExamTo >= day && (e.At == EnrolStage.Exam || e.At == EnrolStage.Retake || e.ExamFrom > 0))
+                {
+                    int from = Math.Max(e.ExamFrom, day);
+                    coming.Add(new UiFigureModel { Label = w.F("reallife_work_exam_of", "Exam: {course}", "course", CareersText.Course(e.Course)),
+                        Value = w.F("reallife_work_in_days", "{day}, in {n} days", "day", CareersText.Day(from), "n", Math.Max(0, from - day).ToString(Inv)) });
+                }
+            }
+            t.Figures = coming.ToArray();
             if (t.Rows.Count > 0)
             {
                 string you = RealLifeOverhaul.Rivals.RivalGame.PlayerName();
@@ -266,6 +278,20 @@ namespace RealLifeOverhaul.Ui
                 t.Profile.FactLabels = new[] { t.Profile.FactLabels[0], t.Profile.FactLabels[1], w.T("reallife_work_class_rank", "Class rank") };
                 t.Profile.FactValues = new[] { t.Profile.FactValues[0], t.Profile.FactValues[1], w.F("reallife_work_rank_of", "{rank} of {all}",
                     "rank", rank.ToString(Inv), "all", list.Count.ToString(Inv)) };
+                var quarters = new List<int>(8);
+                var averages = new List<int>(8);
+                if (RosterRules.ByTerm(marks, GameCalendar.DaysPerYear, quarters, averages) >= 2)
+                {
+                    var pts = new string[averages.Count];
+                    var vals = new float[averages.Count];
+                    for (int k = 0; k < pts.Length; k++)
+                    {
+                        pts[k] = w.F("reallife_work_quarter_n", "Quarter {n}", "n", (quarters[k] + 1).ToString(Inv));
+                        vals[k] = averages[k] / 100f;
+                    }
+                    t.Chart = new UiChartModel { Kind = UiChartKind.Line, Title = w.T("reallife_work_gpa_by_term", "Grade point average by quarter"), Points = pts,
+                        Series = new[] { new UiSeries { Label = w.T("reallife_work_gpa", "Grade point average"), Values = vals, Tint = UiRole.Accent } }, Format = v => v.ToString("0.0", Inv) };
+                }
                 t.PeopleTitle = w.T("reallife_work_your_class", "Your class");
                 t.PeopleCount = w.T("reallife_work_by_gpa", "by grade point average");
                 for (int i = 0; i < list.Count && i < 8; i++)
@@ -318,6 +344,9 @@ namespace RealLifeOverhaul.Ui
                 }
                 t.Rows.Add(r);
             }
+            string whyTutor = d.CanTutor(out int tutorSkill);
+            t.Acts.Add(new WorkAct { Kind = Tutor, Label = w.T("reallife_campus_button_tutor", "Tutor a pupil"), Style = UiButtonKind.Secondary, Icon = UiIcon.Cap,
+                Why = whyTutor == null ? null : w.T(whyTutor, "You cannot tutor now.") });
             return t;
         }
 
@@ -368,6 +397,7 @@ namespace RealLifeOverhaul.Ui
                     case Pay: why = d.PayOwed(act.Arg); break;
                     case Withdraw: d.Withdraw(act.Arg); break;
                     case Graduate: why = d.Graduate(); break;
+                    case Tutor: why = d.Tutor(); break;
                     case PayChild: why = d.PayChild(ChildName(d, act.Arg)); break;
                     case DeclineChild: why = d.DeclineChild(ChildName(d, act.Arg)); break;
                     default: return false;

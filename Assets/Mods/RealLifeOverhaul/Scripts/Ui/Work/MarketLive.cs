@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Ui
     {
         public static readonly MarketLive Instance = new MarketLive();
 
-        private const int Buy = 100, Haggle = 101, Accept = 102, Counter = 103, Decline = 104, Unlist = 105, Book = 106, Cancel = 107, Send = 108, List = 109;
+        private const int Buy = 100, Haggle = 101, Accept = 102, Counter = 103, Decline = 104, Unlist = 105, Book = 106, Cancel = 107, Send = 108, List = 109, FixHome = 110, CleanHome = 111, ToShop = 112, CancelPlan = 113, WayItem = 114;
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private int _local, _wanted = -1, _readGeneration = -1;
         private WorkApp _app = new WorkApp();
@@ -140,7 +140,7 @@ namespace RealLifeOverhaul.Ui
                 int deliver = HustleRules.DeliveryFee(l.Asking, HustleGame.Level);
                 r.Facts.Add(new KeyValuePair<string, string>(w.T("reallife_work_market_price", "Market price"), worth > 0 ? HustleText.Money(worth) : "-"));
                 r.Facts.Add(new KeyValuePair<string, string>(w.T("reallife_work_condition", "Condition said"), HustleText.Condition(l.Shown)));
-                r.Facts.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_seller", "Seller"), seller != null ? seller.Name + ", " + (seller.Rating / 10f).ToString("0.0", Inv) : l.Seller));
+                r.Facts.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_seller", "Seller"), seller != null ? seller.Name + ", " + (seller.Rating / 10f).ToString("0.0", Inv) + ", " + w.F("reallife_work_sold_n", "{n} sold", "n", seller.Sold.ToString(Inv)) : l.Seller));
                 r.Facts.Add(new KeyValuePair<string, string>(w.T("reallife_work_before_money", "You have the money"), HustleGame.Cash >= l.Asking ? w.T("reallife_work_yes", "Yes") : w.T("reallife_work_no", "No")));
                 r.Facts.Add(new KeyValuePair<string, string>(w.T("reallife_work_delivery_adds", "Delivery adds"), HustleText.Money(deliver) + ", " + w.T("reallife_work_next_morning", "next morning")));
                 r.Acts.Insert(1, new WorkAct { Kind = Buy + 20, Arg = l.Id, Label = w.F("reallife_work_buy_deliver", "Buy and deliver, {price}", "price", HustleText.Money(l.Asking + deliver)), Style = UiButtonKind.Secondary, Icon = UiIcon.Truck,
@@ -190,8 +190,27 @@ namespace RealLifeOverhaul.Ui
                     r.Acts.Add(new WorkAct { Kind = Unlist, Arg = o.Id, Label = w.T("reallife_hustle_button_unlist", "Take it off sale"),
                         Style = UiButtonKind.Secondary, Icon = UiIcon.Close });
                 }
+                else if (o.State == OwnedState.Kept && o.Plan != OwnedPlan.None)
+                {
+                    r.Acts.Add(new WorkAct { Kind = CancelPlan, Arg = o.Id, Label = w.T("reallife_hustle_button_cancel_plan", "Cancel the plan"), Style = UiButtonKind.Secondary, Icon = UiIcon.Close });
+                    r.Acts.Add(new WorkAct { Kind = WayItem, Arg = o.Id, Label = w.T("reallife_hustle_button_way", "Show the way"), Style = UiButtonKind.Secondary, Icon = UiIcon.Locate, Opens = true });
+                }
+                else if (o.State == OwnedState.Waiting)
+                {
+                    r.Acts.Add(new WorkAct { Kind = WayItem, Arg = o.Id, Label = w.T("reallife_hustle_button_way", "Show the way"), Style = UiButtonKind.Primary, Icon = UiIcon.Locate, Opens = true });
+                }
                 else if (o.State == OwnedState.Kept)
                 {
+                    ThingDef def = o.Car ? null : HustleCatalogue.Thing(o.Thing);
+                    if (def != null && def.FixMinutes > 0)
+                    {
+                        r.Acts.Add(new WorkAct { Kind = def.ShopFix ? ToShop : FixHome, Arg = o.Id, Label = def.ShopFix ? w.T("reallife_hustle_button_plan_shop", "Take it to the repair shop") : w.T("reallife_hustle_button_plan_fix", "Mend it at home"),
+                            Style = UiButtonKind.Secondary, Icon = UiIcon.Wrench });
+                    }
+                    if (def != null && def.CleanGain > 0 && !o.Cleaned)
+                    {
+                        r.Acts.Add(new WorkAct { Kind = CleanHome, Arg = o.Id, Label = w.T("reallife_hustle_button_plan_clean", "Clean it at home"), Style = UiButtonKind.Secondary, Icon = UiIcon.Drop });
+                    }
                     r.Acts.Add(new WorkAct { Kind = List, Arg = o.Id, Label = w.F("reallife_work_list_at", "List at {price}", "price",
                         HustleText.Money(Math.Max(1, worth))), Style = UiButtonKind.Primary, Icon = UiIcon.Tag });
                 }
@@ -242,7 +261,11 @@ namespace RealLifeOverhaul.Ui
                     r.Acts.Add(new WorkAct { Kind = Book, Arg = g.Id, Label = w.T("reallife_hustle_button_book", "Book it"),
                         Style = UiButtonKind.Primary, Icon = UiIcon.Check });
                 }
-                else if (g.Stage == GigStage.Booked)
+                if (g.Stage == GigStage.Offered || g.Stage == GigStage.Booked)
+                {
+                    r.Acts.Add(new WorkAct { Kind = Send, Arg = g.Id, Label = w.T("reallife_hustle_button_helper", "Send a helper"), Style = UiButtonKind.Secondary, Icon = UiIcon.People });
+                }
+                if (g.Stage == GigStage.Booked)
                 {
                     r.Acts.Add(new WorkAct { Kind = Cancel, Arg = g.Id, Label = w.T("reallife_hustle_button_cancel", "Cancel"),
                         Style = UiButtonKind.Destructive, Icon = UiIcon.Close });
@@ -293,6 +316,16 @@ namespace RealLifeOverhaul.Ui
                         d.List(act.Arg, Math.Max(1, d.WorthOf(o)));
                         break;
                     case Book: d.Book(act.Arg); break;
+                    case FixHome: d.PlanAtHome(act.Arg, true); break;
+                    case CleanHome: d.PlanAtHome(act.Arg, false); break;
+                    case ToShop: d.PlanShop(act.Arg); break;
+                    case CancelPlan: d.CancelPlan(act.Arg); break;
+                    case WayItem:
+                        Owned way = s.Item(act.Arg);
+                        if (way == null) { return false; }
+                        d.ShowWay(way.Street, way.Number);
+                        break;
+                    case Send: d.Send(act.Arg); break;
                     case Cancel: d.Cancel(act.Arg); break;
                     default: return false;
                 }

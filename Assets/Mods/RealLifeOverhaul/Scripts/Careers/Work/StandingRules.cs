@@ -60,6 +60,37 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        /// <summary>
+        /// The people beside a new job: a lead a rank above, one up for the same next rung (none at the top) and one beside the player, whose
+        /// records settle near the player's own. The director calls it when a job starts a new record, and the run check calls it too.
+        /// </summary>
+        public static void Seed(StandingFile f, int rank, int top, int me, int day, int seed, Func<string> name)
+        {
+            f.Peers.Add(Colleague(name(), Math.Min(top, rank + 1), me + 8, PeerRole.Lead, day, seed, 6));
+            if (rank < top)
+            {
+                f.Peers.Add(Colleague(name(), rank, me - 3 + TechRandom.Range(seed, 7761, 0, 0, -4, 8), PeerRole.UpForPost, day, seed, 8));
+            }
+            f.Peers.Add(Colleague(name(), Math.Max(0, rank - 1), me - 6, PeerRole.Colleague, day, seed, 6));
+        }
+
+        /// <summary>
+        /// A review that would promote the player, with a colleague up for the same rung: the better record gets it. The colleague who is
+        /// passed over stays and another takes their place as the one up for the next rung. Returns true when the player gets the post.
+        /// </summary>
+        public static bool Contest(StandingFile f, int rank, int top, int day, int seed, Func<string> name, out Peer rival)
+        {
+            rival = f.UpFor();
+            if (rival == null)
+            {
+                return true;
+            }
+            bool mine = PlayerGetsPost(f, rival);
+            f.Peers.Remove(rival);
+            f.Peers.Add(Colleague(name(), Math.Min(top, rank + (mine ? 1 : 0)), rival.Skill, PeerRole.UpForPost, day, seed, 4));
+            return mine;
+        }
+
         /// <summary>Teamwork out of 100 from the standing with colleagues (minus fifteen to fifteen), the middle for none.</summary>
         public static int TeamworkOf(int favour) => TalentCatalogue.Clamp(50 + favour * 50 / LifeRules.FavourMost, 0, 100);
 

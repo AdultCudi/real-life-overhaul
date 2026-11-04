@@ -23,6 +23,9 @@ namespace RealLifeOverhaul.Ui
 
         public UiAppModel M => Page.Model;
 
+        /// <summary>How many buttons the page has so far, so a page can say which stand in its head.</summary>
+        public int Count => _buttons.Count;
+
         /// <summary>A button: its label, kind, glyph, key and what it does. With a reason in the action it is drawn disabled and the reason goes under the lead.</summary>
         public void Button(string label, UiButtonKind kind, UiIcon icon, UiAction key, WorkDo act)
         {

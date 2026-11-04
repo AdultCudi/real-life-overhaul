@@ -20,6 +20,7 @@ internal static partial class Program
         WkPosts();
         WkSellers();
         WkSaves();
+        WkRuns();
     }
 
     private static Job WkJob(int due, int worked, int late, int favour)

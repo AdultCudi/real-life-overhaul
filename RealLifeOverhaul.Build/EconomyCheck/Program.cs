@@ -94,6 +94,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--work")
+        {
+            WorkUiRules();   // the work interface's rules and its day by day runs alone (WorkRulesChecks.cs, WorkRunChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--dayspread")
         {
             DaySpreadAll();   // the game's midnight spread over frames alone (DaySpreadChecks.cs)

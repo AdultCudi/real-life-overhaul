@@ -269,6 +269,9 @@ namespace RealLifeOverhaul.Hustles
             return DealerRules.Line(at, value, x);
         }
 
+        /// <summary>The game's wholesale price of one of an item, whole money, read from the game; set by the director. Null offline: a lot then is worth its catalogue price.</summary>
+        public static Func<string, int> WholesaleOf;
+
         /// <summary>What goods of this kind are worth in this condition, at these prices.</summary>
         public static int GoodsWorth(ThingDef def, int condition, int level)
         {
@@ -277,7 +280,8 @@ namespace RealLifeOverhaul.Hustles
                 return 0;
             }
             int share = Line(HustleCatalogue.WorthAt, HustleCatalogue.WorthShare, HustleCatalogue.Clamp(condition, 0, 100));
-            return Math.Max(1, HustleCatalogue.Share(AtPrices(def.NewPrice, level), share));
+            int whole = def.Item != null && WholesaleOf != null ? WholesaleOf(def.Item) * def.Lot : 0;   // a lot of stock is worth what the game's wholesaler asks for it
+            return Math.Max(1, HustleCatalogue.Share(whole > 0 ? whole : AtPrices(def.NewPrice, level), share));
         }
 
         /// <summary>What a car is worth, as the showroom values one, less for dirt (percent, 0 clean).</summary>

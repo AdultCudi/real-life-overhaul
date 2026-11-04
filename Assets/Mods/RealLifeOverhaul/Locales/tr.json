@@ -26651,10 +26651,10 @@
   "reallife_hustle_thing_display_fridge": "Vitrin buzdolabı",
   "reallife_hustle_thing_dough_mixer": "Hamur yoğurma makinesi",
   "reallife_hustle_thing_chest_freezer": "Sandık tipi dondurucu",
-  "reallife_hustle_thing_coffee_pallet": "Kahve çekirdeği paleti",
-  "reallife_hustle_thing_flour_pallet": "Un paleti",
-  "reallife_hustle_thing_tinned_goods_lot": "Konserve ürün partisi",
-  "reallife_hustle_thing_bottled_water_lot": "Şişe su partisi",
   "reallife_hustle_kind_machine": "Makine",
-  "reallife_hustle_kind_stock": "Stok"
+  "reallife_hustle_kind_stock": "Stok",
+  "reallife_hustle_thing_sugar_lot": "Bir parti şeker",
+  "reallife_hustle_thing_milk_lot": "Bir parti süt",
+  "reallife_hustle_thing_beer_lot": "Bir parti bira",
+  "reallife_hustle_thing_tomato_lot": "Bir parti domates"
 }

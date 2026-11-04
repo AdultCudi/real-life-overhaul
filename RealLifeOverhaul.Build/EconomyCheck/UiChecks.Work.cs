@@ -90,6 +90,11 @@ internal static partial class Program
                     acts &= off ? (!d.Any || says) : screen.Press(UiAppWindow.ActionCommand, a) || d.Opens;
                     why.Append(off && !says && d.Any ? " [" + id + " tab " + tab + " action " + a + " disabled without a reason]" : string.Empty);
                 }
+                for (int g = 0; g < page.GridActs.Length; g++)
+                {
+                    bool offGrid = page.GridActs[g].Why != null || !page.GridActs[g].Any;
+                    acts &= offGrid || screen.Press(UiCatalogue.First + UiCatalogue.Action, g) || page.GridActs[g].Opens;
+                }
                 allDo &= !screen.Press(UiAppWindow.NavCommand, 99);   // a section that is not there is refused
                 var sub = WorkScreenOf(id, WorkEnglish, states[0]);
                 back &= !sub.Back() || true;

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BigAmbitions.Items;
 using Entities;
 using Extensions;
 using Helpers;
@@ -26,6 +27,20 @@ namespace RealLifeOverhaul.Hustles
         {
             var dice = new DealerDice(seed, index, 4107);
             return DealerRules.CustomerName(ref dice);
+        }
+
+        /// <summary>The wholesale price of one of the game's goods today, whole money; 0 where the game has none.</summary>
+        public static int Wholesale(string item)
+        {
+            try
+            {
+                BigAmbitions.Items.Item data = ItemsGetter.GetByName(item);
+                return data != null ? Mathf.Max(0, Mathf.RoundToInt(data.GetWholesalePrice())) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
         }
 
         /// <summary>The rivals that own a business which sells used vehicles or runs on equipment, by the shops they hold; read once a day.</summary>

@@ -170,6 +170,7 @@ namespace RealLifeOverhaul.Hustles
             bool fresh = state == null;
             _state = state ?? new HustleState { Seed = HustleRules.SeedOf(HustleGame.SeedText) };
             _sellers = SellerStore.Load(save.modData, out int _) ?? new SellerFile();
+            HustleRules.WholesaleOf = HustleGame.Wholesale;
             _running = true;
             ReadCity();
             int lost = Reconcile();

@@ -26651,10 +26651,10 @@
   "reallife_hustle_thing_display_fridge": "Kühlvitrine",
   "reallife_hustle_thing_dough_mixer": "Teigkneter",
   "reallife_hustle_thing_chest_freezer": "Gefriertruhe",
-  "reallife_hustle_thing_coffee_pallet": "Palette Kaffeebohnen",
-  "reallife_hustle_thing_flour_pallet": "Palette Mehl",
-  "reallife_hustle_thing_tinned_goods_lot": "Posten Konserven",
-  "reallife_hustle_thing_bottled_water_lot": "Posten Flaschenwasser",
   "reallife_hustle_kind_machine": "Maschine",
-  "reallife_hustle_kind_stock": "Ware"
+  "reallife_hustle_kind_stock": "Ware",
+  "reallife_hustle_thing_sugar_lot": "Posten Zucker",
+  "reallife_hustle_thing_milk_lot": "Posten Milch",
+  "reallife_hustle_thing_beer_lot": "Posten Bier",
+  "reallife_hustle_thing_tomato_lot": "Posten Tomaten"
 }

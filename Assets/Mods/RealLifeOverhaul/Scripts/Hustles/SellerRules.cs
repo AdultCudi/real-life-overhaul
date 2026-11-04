@@ -166,6 +166,16 @@ namespace RealLifeOverhaul.Hustles
         /// <summary>True when a rival lists a thing today: its own seeded chance, at most one vehicle or machine a day.</summary>
         public static bool RivalListing(int seed, int day, string rival) => Mille(seed ^ (rival ?? string.Empty).Length * 977, day, 4) < 450;
 
+        /// <summary>A listing bought: its seller has sold one more thing (their record on the Marketplace).</summary>
+        public static void NoteSale(SellerFile f, Listing l)
+        {
+            Seller s = f != null && l != null && l.SellerId > 0 ? f.Of(l.SellerId) : null;
+            if (s != null)
+            {
+                s.Sold++;
+            }
+        }
+
         /// <summary>The listings of a seller among a day's, for "more from this seller".</summary>
         public static int MoreFrom(IList<Listing> listings, int sellerId, int exceptId, List<Listing> into)
         {
