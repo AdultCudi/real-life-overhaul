@@ -516,7 +516,7 @@ namespace RealLifeOverhaul.Ui
                     Series = new[]
                     {
                         new UiSeries { Label = DealerText.T(ReportKeys[(int)kind]), Values = line.ToArray(), Tint = UiRole.None },
-                        new UiSeries { Label = DealerText.T("reallife_dealer_report_average", "days", DealerCatalogue.AverageDays.ToString(Inv)), Values = avg.ToArray(), Tint = UiRole.None }
+                        new UiSeries { Label = DealerText.T("reallife_ui_dealer_report_average", "days", DealerCatalogue.AverageDays.ToString(Inv)), Values = avg.ToArray(), Tint = UiRole.None }
                     },
                     Format = v => FormatFigure(v, kind, money), AxisFormat = v => FormatFigure(v, kind, money),
                     EmptyTitle = DealerText.T("reallife_ui_dealer_chart_empty"), EmptyBody = DealerText.T("reallife_dealer_report_none")
@@ -529,7 +529,7 @@ namespace RealLifeOverhaul.Ui
                 _m.Shape = EstateShape.Chart;
                 _m.HeadIcon = UiIcon.Chart;
                 _m.HeadTitle = DealerText.T(ReportKeys[(int)kind]);
-                _m.HeadSub = (yard != null ? yard.Name : DealerText.T("reallife_dealer_report_all")) + ", " + DealerText.T("reallife_dealer_report_sub", "days", days.ToString(Inv), "average", DealerCatalogue.AverageDays.ToString(Inv));
+                _m.HeadSub = DealerText.T("reallife_ui_dealer_report_sub", "place", yard != null ? yard.Name : DealerText.T("reallife_dealer_report_all"), "days", days.ToString(Inv), "average", DealerCatalogue.AverageDays.ToString(Inv));
                 _m.Chart = model;
                 var kinds = new UiActionModel[ReportKeys.Length];
                 for (int i = 0; i < kinds.Length; i++)

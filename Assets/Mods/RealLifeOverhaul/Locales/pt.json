@@ -31251,7 +31251,7 @@
   "reallife_ui_estate_rv_month_wait": "Ainda não, depois de dois meses",
   "reallife_ui_estate_rv_office_sqm": "Aluguel de escritório por m2",
   "reallife_ui_estate_rv_per_month": "por mês, todas as unidades",
-  "reallife_ui_estate_rv_rank_note": "aluguel por m2, o mais caro primeiro",
+  "reallife_ui_estate_rv_rank_note": "aluguel/m2, do maior",
   "reallife_ui_estate_rv_rent": "Aluguel",
   "reallife_ui_estate_rv_scale": "Aluguel por m2",
   "reallife_ui_estate_rv_shop_sqm": "Aluguel de loja por m2",
@@ -31398,5 +31398,16 @@
   "reallife_ui_estate_nav_market": "Mercado",
   "reallife_ui_estate_nav_agency": "Agência",
   "reallife_ui_estate_nav_hotel": "Hotel",
-  "reallife_ui_estate_nav_hire": "Locação"
+  "reallife_ui_estate_nav_hire": "Locação",
+  "reallife_ui_dealer_hour_ago": "há uma hora",
+  "reallife_ui_dealer_report_sub": "{place}: um ponto por dia nos últimos {days} dias, com a média dos últimos {average} dias. Aponte para um dia para ler.",
+  "reallife_ui_dealer_report_average": "Média de {days} dias",
+  "reallife_ui_dealer_filter_all": "Todos {count}",
+  "reallife_ui_dealer_filter_new": "Novos {count}",
+  "reallife_ui_dealer_filter_used": "Usados {count}",
+  "reallife_ui_dealer_filter_shop": "Na oficina {count}",
+  "reallife_ui_dealer_sort_bay": "Por vaga",
+  "reallife_ui_dealer_sort_price": "Por preço",
+  "reallife_ui_dealer_sort_days": "Há mais tempo no pátio",
+  "reallife_ui_dealer_kicker_bay": "{name}, vaga {bay}, {state}"
 }

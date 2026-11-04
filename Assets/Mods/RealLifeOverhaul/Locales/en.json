@@ -31398,5 +31398,16 @@
   "reallife_ui_estate_nav_hotel": "Hotel",
   "reallife_ui_estate_nav_hire": "Car hire",
   "reallife_news_not_yet": "Not yet: from day {day}",
-  "reallife_news_where": "Where people live"
+  "reallife_news_where": "Where people live",
+  "reallife_ui_dealer_hour_ago": "an hour ago",
+  "reallife_ui_dealer_report_sub": "{place}: a point a day for the last {days} days, with the average of the last {average} days. Point at a day to read it.",
+  "reallife_ui_dealer_report_average": "Average of {days} days",
+  "reallife_ui_dealer_filter_all": "All {count}",
+  "reallife_ui_dealer_filter_new": "New {count}",
+  "reallife_ui_dealer_filter_used": "Used {count}",
+  "reallife_ui_dealer_filter_shop": "In the workshop {count}",
+  "reallife_ui_dealer_sort_bay": "By bay number",
+  "reallife_ui_dealer_sort_price": "By price",
+  "reallife_ui_dealer_sort_days": "Longest on the lot",
+  "reallife_ui_dealer_kicker_bay": "{name}, bay {bay}, {state}"
 }

@@ -116,13 +116,13 @@ internal static partial class UiSamples
         m.RowKeys = keys;
         if (cards.Count > 0)
         {
-            c.DetailKicker = Fx(W(t, "reallife_ui_dealer_kicker_car", "{name}, {state}"), "name", "Pioneer Motors", "state", W(t, "reallife_dealer_state_on_show", "On show"));
+            c.DetailKicker = Fx(W(t, "reallife_ui_dealer_kicker_bay", "{name}, bay {bay}, {state}"), "name", "Pioneer Motors", "bay", "4", "state", W(t, "reallife_dealer_state_on_show", "On show"));
             c.DetailLabels = new[]
             {
                 W(t, "reallife_ui_dealer_l_cost", "Cost, all in"), W(t, "reallife_ibox_worth", "Worth"), W(t, "reallife_ibox_asking", "Asking"), W(t, "reallife_ui_dealer_l_margin", "Margin at asking"),
-                W(t, "reallife_ui_dealer_l_condition", "Condition"), W(t, "reallife_ui_dealer_l_km", "Mileage"), W(t, "reallife_ui_dealer_l_bay", "Bay"), W(t, "reallife_ui_dealer_l_source", "Came from")
+                W(t, "reallife_ui_dealer_l_condition", "Condition"), W(t, "reallife_ui_dealer_l_km", "Mileage"), W(t, "reallife_ui_dealer_l_source", "Came from")
             };
-            c.DetailValues = new[] { "$72,300", "$83,800", "$84,500", "+$12,200", "92%", "12,400 km", "4", W(t, "reallife_dealer_kind_used", "A private owner") + ", " + Fx(W(t, "reallife_ui_dealer_days_on_lot", "{days} days on the lot"), "days", "6") };
+            c.DetailValues = new[] { "$72,300", "$83,800", "$84,500", "+$12,200", "92%", "12,400 km", W(t, "reallife_dealer_kind_used", "A private owner") + ", " + Fx(W(t, "reallife_ui_dealer_days_on_lot", "{days} days on the lot"), "days", "6") };
             c.DetailNote = Fx(W(t, "reallife_ui_dealer_rival_asks", "{name} asks {price} for the same model."), "name", "Halden Motors", "price", "$86,900") + " "
                 + Fx(W(t, "reallife_ui_dealer_views", "Looked at by {today} today and {yesterday} yesterday."), "today", "4", "yesterday", "7") + " "
                 + Fx(W(t, "reallife_ui_dealer_looked_times", "{name} looked at it {times} times and left an offer of {offer}, in Offers."), "name", "Marcus Bell", "times", "2", "offer", "$82,000");
@@ -140,6 +140,21 @@ internal static partial class UiSamples
             m.CatalogueRuns = new[] { 0, 1, 2, 3 };
         }
         m.Catalogue = c;
+        string[][] chips = { new[] { "reallife_ui_dealer_filter_all", "All {count}", "12" }, new[] { "reallife_ui_dealer_filter_new", "New {count}", "3" }, new[] { "reallife_ui_dealer_filter_used", "Used {count}", "7" },
+            new[] { "reallife_ui_dealer_filter_shop", "In the workshop {count}", "2" } };
+        m.FilterChips = new UiActionModel[chips.Length];
+        for (int i = 0; i < chips.Length; i++)
+        {
+            runs.Add(Yes);
+            m.FilterChips[i] = new UiActionModel { Label = Fx(W(t, chips[i][0], chips[i][1]), "count", chips[i][2]), Kind = UiButtonKind.Chip, Command = EstateFace.ActionCommand, Arg = runs.Count - 1 };
+        }
+        string[][] sorts = { new[] { "reallife_ui_dealer_sort_bay", "By bay number" }, new[] { "reallife_ui_dealer_sort_price", "By price" }, new[] { "reallife_ui_dealer_sort_days", "Longest on the lot" } };
+        m.SortChips = new UiActionModel[sorts.Length];
+        for (int i = 0; i < sorts.Length; i++)
+        {
+            runs.Add(Yes);
+            m.SortChips[i] = new UiActionModel { Label = W(t, sorts[i][0], sorts[i][1]), Kind = UiButtonKind.Chip, Command = EstateFace.ActionCommand, Arg = runs.Count - 1 };
+        }
         m.HeadSub = Fx(W(t, "reallife_ui_dealer_on_lot", "On the lot, {cars} of {bays} bays"), "cars", count.ToString(), "bays", state == "stock_full" ? "12" : "20");
         m.FigLabels = new[] { W(t, "reallife_ui_dealer_stock_worth", "Stock worth") };
         m.FigValues = new[] { count == 0 ? "$0" : "$400,100" };
@@ -220,7 +235,14 @@ internal static partial class UiSamples
             new[] { "Volta SUV", "Red", "new", "4 km", "100%", "$38,200", "today", "new" },
             new[] { "Marlow sedan", "Black", "used", "88,200 km", "61%", "$11,900", "today", "ni" },
             new[] { "Courier van", "White", "auction", "31,800 km", "86%", "$29,400", "2 h", "rival" },
-            new[] { "Meridian GT coupe", "Blue", "auction", "12,400 km", "92%", "$21,800", "5 h", "lead" }
+            new[] { "Meridian GT coupe", "Blue", "auction", "12,400 km", "92%", "$21,800", "5 h", "lead" },
+            new[] { "Atlas pickup", "Grey", "new", "6 km", "100%", "$36,400", "today", "new" },
+            new[] { "Halden sedan", "Silver", "used", "64,900 km", "72%", "$18,600", "today", "ni" },
+            new[] { "Brisa roadster", "Yellow", "used", "41,300 km", "80%", "$20,900", "today", "ni" },
+            new[] { "Pinecrest saloon", "Green", "auction", "52,700 km", "69%", "$12,300", "7 h", "rival" },
+            new[] { "Boxer box truck", "White", "auction", "97,100 km", "58%", "$27,800", "9 h", "rival" },
+            new[] { "Sora hatchback", "Red", "new", "3 km", "100%", "$21,200", "today", "new" },
+            new[] { "Marlow sedan", "Blue", "used", "112,400 km", "49%", "$7,900", "today", "ni" }
         };
         foreach (string[] r in l)
         {
@@ -237,7 +259,7 @@ internal static partial class UiSamples
             new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_condition", "Condition"), Kind = UiCellKind.Text, Width = 136f },
             new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_price", "Price"), Kind = UiCellKind.Money, Width = 112f },
             new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_time", "Time"), Kind = UiCellKind.Text, Width = 96f },
-            new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_state", "State"), Kind = UiCellKind.Chip, Width = 152f }
+            new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_state", "State"), Kind = UiCellKind.Chip, Width = 216f }
         };
         var side = new UiFactCardModel
         {
@@ -314,6 +336,14 @@ internal static partial class UiSamples
             EstateStep(runs, W(t, "reallife_ui_dealer_your_bid", "Your bid"), "$30,000", Fx(W(t, "reallife_ui_dealer_bid_hint", "Bids go up by {step}, so the least you can bid is {least}."), "step", "$200", "least", nobid ? "$21,600" : "$29,600")),
             UiFactLine.Section(Fx(W(t, "reallife_ui_dealer_bidders", "Bidders, the last {count}"), "count", nobid ? "0" : "4"))
         };
+        int win = Array.FindIndex(a.Left.Lines, f => f.Kind == UiFactKind.Heading);
+        if (win >= 0)
+        {
+            var ifWin = new UiFactLine[a.Left.Lines.Length - win];
+            Array.Copy(a.Left.Lines, win, ifWin, 0, ifWin.Length);
+            Array.Resize(ref a.Left.Lines, win);
+            lines.InsertRange(lines.Count - 1, ifWin);
+        }
         if (nobid)
         {
             lines.Add(UiFactLine.Say(W(t, "reallife_ui_dealer_no_bids", "Nobody has bid yet.")));
@@ -326,7 +356,8 @@ internal static partial class UiSamples
             };
             foreach (string[] b in bids)
             {
-                lines.Add(UiFactLine.Row(b[0] + ", " + Fx(W(t, "reallife_ui_dealer_hours_ago", "{hours} hours ago"), "hours", (int.Parse(b[1]) / 60 + 1).ToString()), b[2]));
+                int ago = int.Parse(b[1]) / 60 + 1;
+                lines.Add(UiFactLine.Row(b[0] + ", " + (ago == 1 ? W(t, "reallife_ui_dealer_hour_ago", "an hour ago") : Fx(W(t, "reallife_ui_dealer_hours_ago", "{hours} hours ago"), "hours", ago.ToString())), b[2]));
             }
         }
         a.Right = new UiFactCardModel
@@ -508,7 +539,7 @@ internal static partial class UiSamples
         m.Shape = EstateShape.Chart;
         m.HeadIcon = UiIcon.Chart;
         m.HeadTitle = W(t, "reallife_dealer_report_profit", "Profit");
-        m.HeadSub = W(t, "reallife_dealer_report_all", "All showrooms") + ", " + Fx(W(t, "reallife_dealer_report_sub", "The last {days} days, with a {average} day average"), "days", "60", "average", "7");
+        m.HeadSub = Fx(W(t, "reallife_ui_dealer_report_sub", "{place}: a point a day for the last {days} days, with the average of the last {average} days. Point at a day to read it."), "place", W(t, "reallife_dealer_report_all", "All showrooms"), "days", "60", "average", "7");
         int days = fresh ? 1 : 28;
         var points = new string[days];
         var line = new float[days];
@@ -516,15 +547,22 @@ internal static partial class UiSamples
         for (int i = 0; i < days; i++)
         {
             points[i] = Fx(W(t, "reallife_ui_dealer_chart_day", "Day {day}"), "day", (187 + i).ToString());
-            line[i] = 2200f + (i * 137 % 9) * 900f - (i % 5) * 700f + i * 120f;
-            avg[i] = 3000f + i * 140f;
+            line[i] = 4200f + ((i * 137 % 9) - 4) * 650f + i * 45f;
+            float sum = 0f;
+            int n = 0;
+            for (int k = Math.Max(0, i - 6); k <= i; k++)
+            {
+                sum += 4200f + ((k * 137 % 9) - 4) * 650f + k * 45f;
+                n++;
+            }
+            avg[i] = sum / n;
         }
         m.Chart = new UiChartModel
         {
             Kind = UiChartKind.Line, Title = W(t, "reallife_dealer_report_profit", "Profit"), Points = fresh ? new string[0] : points,
             Series = fresh ? new UiSeries[0] : new[]
             {
-                new UiSeries { Label = W(t, "reallife_dealer_report_profit", "Profit"), Values = line }, new UiSeries { Label = Fx(W(t, "reallife_dealer_report_average", "{days} day average"), "days", "7"), Values = avg }
+                new UiSeries { Label = W(t, "reallife_dealer_report_profit", "Profit"), Values = line }, new UiSeries { Label = Fx(W(t, "reallife_ui_dealer_report_average", "Average of {days} days"), "days", "7"), Values = avg }
             },
             Format = v => "$" + ((int)v).ToString("N0", System.Globalization.CultureInfo.InvariantCulture), AxisFormat = v => "$" + ((int)v).ToString("N0", System.Globalization.CultureInfo.InvariantCulture),
             EmptyTitle = W(t, "reallife_ui_dealer_chart_empty", "Not enough days yet"), EmptyBody = W(t, "reallife_dealer_report_none", "The chart fills as days are kept.")

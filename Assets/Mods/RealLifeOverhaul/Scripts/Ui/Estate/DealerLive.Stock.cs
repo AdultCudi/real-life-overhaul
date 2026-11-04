@@ -38,6 +38,9 @@ namespace RealLifeOverhaul.Ui
                 int chosen = -1, cars = 0, free = 0, bays = 0, worthAll = 0;
                 StockCar picked = null;
                 DealerYard pickedYard = null;
+                // Every car in one list, so the filter chips can say how many each holds and the order can be changed.
+                var all = new List<KeyValuePair<DealerYard, StockCar>>(16);
+                int[] held = new int[4];
                 for (int y = 0; y < _s.Yards.Count; y++)
                 {
                     DealerYard yard = _s.Yards[y];
@@ -46,7 +49,33 @@ namespace RealLifeOverhaul.Ui
                     for (int c = 0; c < yard.Cars.Count; c++)
                     {
                         StockCar car = yard.Cars[c];
+                        all.Add(new KeyValuePair<DealerYard, StockCar>(yard, car));
+                        held[0]++;
+                        held[car.Source == CarSource.Wholesale ? 1 : 2]++;
+                        held[3] += car.ShopUntil > _now ? 1 : 0;
+                    }
+                }
+                int filter = Math.Max(0, Math.Min(3, _v.Filter)), sort = Math.Max(0, Math.Min(2, _v.Sort));
+                all.Sort((p, q) => sort == 1 ? q.Value.Asking.CompareTo(p.Value.Asking) : sort == 2 ? p.Value.Bought.CompareTo(q.Value.Bought) : p.Value.Spot.CompareTo(q.Value.Spot));
+                for (int k = 0; k < all.Count; k++)
+                {
+                    DealerYard yard = all[k].Key;
+                    StockCar car = all[k].Value;
+                    {
+                        bool shows = filter == 0 || (filter == 1 && car.Source == CarSource.Wholesale) || (filter == 2 && car.Source != CarSource.Wholesale) || (filter == 3 && car.ShopUntil > _now);
                         int worth = DealerDirector.Worth(car, _level), days = _day - car.Bought;
+                        cars++;
+                        worthAll += worth;
+                        if (car.Id == pickedId && shows)
+                        {
+                            chosen = cards.Count;
+                            picked = car;
+                            pickedYard = yard;
+                        }
+                        if (!shows)
+                        {
+                            continue;
+                        }
                         float aspect;
                         string picture = DealerLive.PictureOf(car.Type, out aspect);
                         cards.Add(new UiCatalogueCard
@@ -56,17 +85,9 @@ namespace RealLifeOverhaul.Ui
                             StateTone = days >= 30 ? UiRole.Danger : days >= 14 ? UiRole.Warn : UiRole.Notice
                         });
                         keys.Add("car:" + car.Id);
-                        cars++;
-                        worthAll += worth;
-                        if (car.Id == pickedId)
-                        {
-                            chosen = cards.Count - 1;
-                            picked = car;
-                            pickedYard = yard;
-                        }
                     }
                 }
-                for (int i = 0; i < _s.Deliveries.Count; i++)
+                for (int i = 0; filter == 0 && i < _s.Deliveries.Count; i++)
                 {
                     DealerDelivery q = _s.Deliveries[i];
                     DealerYard yard = _s.Yard(q.Place);
@@ -100,6 +121,22 @@ namespace RealLifeOverhaul.Ui
                     m.DetailValues = new[] { _d.Waiting().ToString(Inv), DealerText.T("reallife_dealer_sum_cars_value", "cars", cars.ToString(Inv), "free", free.ToString(Inv)), Money(worthAll) };
                     m.DetailNote = DealerText.T("reallife_ui_dealer_pick_car");
                 }
+                string[] filterKeys = { "reallife_ui_dealer_filter_all", "reallife_ui_dealer_filter_new", "reallife_ui_dealer_filter_used", "reallife_ui_dealer_filter_shop" };
+                string[] sortKeys = { "reallife_ui_dealer_sort_bay", "reallife_ui_dealer_sort_price", "reallife_ui_dealer_sort_days" };
+                _m.FilterChips = new UiActionModel[filterKeys.Length];
+                for (int i = 0; i < filterKeys.Length; i++)
+                {
+                    int at = i;
+                    _m.FilterChips[i] = _runs.Button(DealerText.T(filterKeys[i], "count", held[i].ToString(Inv)), UiButtonKind.Chip, UiIcon.None, UiAction.Count, () => Show(() => _v.Filter = at));
+                }
+                _m.FilterAt = filter;
+                _m.SortChips = new UiActionModel[sortKeys.Length];
+                for (int i = 0; i < sortKeys.Length; i++)
+                {
+                    int at = i;
+                    _m.SortChips[i] = _runs.Button(DealerText.T(sortKeys[i]), UiButtonKind.Chip, UiIcon.None, UiAction.Count, () => Show(() => _v.Sort = at));
+                }
+                _m.SortAt = sort;
                 _m.Shape = EstateShape.Catalogue;
                 _m.Catalogue = m;
                 _m.CatalogueRuns = runs.ToArray();
@@ -114,7 +151,8 @@ namespace RealLifeOverhaul.Ui
             {
                 int worth = DealerDirector.Worth(car, _level), days = _day - car.Bought;
                 int step = DealerRules.AskStepOf(worth, car.Asking);
-                m.DetailKicker = DealerText.T("reallife_ui_dealer_kicker_car", "name", yard.Name, "state", State(yard, car));
+                m.DetailKicker = car.Spot >= 0 ? DealerText.T("reallife_ui_dealer_kicker_bay", "name", yard.Name, "bay", (car.Spot + 1).ToString(Inv), "state", State(yard, car))
+                    : DealerText.T("reallife_ui_dealer_kicker_car", "name", yard.Name, "state", State(yard, car));
                 int trade = DealerRules.TradePrice(worth), margin = car.Asking - car.Cost;
                 var labels = new List<string>(8);
                 var values = new List<string>(8);
@@ -130,8 +168,6 @@ namespace RealLifeOverhaul.Ui
                 values.Add(DealerText.Condition(car.Condition));
                 labels.Add(DealerText.T("reallife_ui_dealer_l_km"));
                 values.Add(DealerText.Km(car.Km));
-                labels.Add(DealerText.T("reallife_ui_dealer_l_bay"));
-                values.Add(car.Spot >= 0 ? (car.Spot + 1).ToString(Inv) : "-");
                 labels.Add(DealerText.T("reallife_ui_dealer_l_source"));
                 values.Add(DealerText.Source(car.Source) + ", " + DealerText.T("reallife_ui_dealer_days_on_lot", "days", days.ToString(Inv)));
                 if (car.Known != 0)

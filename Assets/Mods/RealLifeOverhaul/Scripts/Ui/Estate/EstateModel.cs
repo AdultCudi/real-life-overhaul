@@ -128,6 +128,8 @@ namespace RealLifeOverhaul.Ui
         public UiChartModel Chart;
         public UiActionModel[] ChartKinds = new UiActionModel[0], ChartPlaces = new UiActionModel[0];   // the choices under a chart: what it plots, and where
         public int ChartKind, ChartPlace;
+        public UiActionModel[] FilterChips = new UiActionModel[0], SortChips = new UiActionModel[0];   // the choices over a catalogue: what shows, and in what order
+        public int FilterAt, SortAt;
         public EstateAuction Auction;
 
         // A detail page: its head, and two columns of cards.
@@ -168,5 +170,7 @@ namespace RealLifeOverhaul.Ui
         public string ChoiceFor;        // ...and what it is for
         public int Report;              // the figure the reports plot, a ReportKind
         public string ReportPlace;      // the showroom the reports are of; null for all of them
+        public int Filter;              // the stock shown: all, new, used, in the workshop
+        public int Sort;                // ...and its order: by bay, by price, by days on the lot
     }
 }

@@ -79,7 +79,7 @@ namespace RealLifeOverhaul.Ui
                         {
                             Cells = new[] { EstateText.UnitName(h, n), u.Let ? who.Name : EstateText.T("reallife_estate_row_nobody"), u.Let ? Month(u.Rent) : "-", u.Let ? EstateText.Record(u.Record) : "-", chip,
                                 u.Let && u.Happy >= 0 ? (u.Happy / 10).ToString(Inv) : string.Empty },
-                            Values = new[] { (int)UseIcon(h.Use), 0, 0, u.Let ? u.Record : -1, 0, u.Let && u.Happy >= 0 ? u.Happy / 10 : -1 },
+                            Values = new[] { (int)UseIcon(h.Use), u.Let ? 0 : UiDataTable.NoFace, 0, u.Let ? u.Record : -1, 0, u.Let && u.Happy >= 0 ? u.Happy / 10 : -1 },
                             Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, tone, UiRole.None },
                             Subs = new[] { EstateText.District(h.District), u.Let ? who.Line : null, null, null, null, null }, Hue = who.Hue, Ring = u.Let ? HappyRing(u.Happy) : UiRole.None
                         });
@@ -100,11 +100,11 @@ namespace RealLifeOverhaul.Ui
                 var cols = new[]
                 {
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_unit"), Kind = UiCellKind.Tile, Width = 0f },
-                    new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_tenant"), Kind = UiCellKind.Person, Width = 248f },
-                    new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_rent_month"), Kind = UiCellKind.Money, Width = 120f },
-                    new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_record"), Kind = UiCellKind.Meter, Width = 136f },
-                    new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_state"), Kind = UiCellKind.Chip, Width = 136f },
-                    new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_satisfaction"), Kind = UiCellKind.Meter, Width = 152f }
+                    new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_tenant"), Kind = UiCellKind.Person, Width = 208f },
+                    new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_rent_month"), Kind = UiCellKind.Money, Width = 104f },
+                    new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_record"), Kind = UiCellKind.Meter, Width = 112f },
+                    new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_state"), Kind = UiCellKind.Chip, Width = 128f },
+                    new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_satisfaction"), Kind = UiCellKind.Meter, Width = 128f }
                 };
                 var side = new UiFactCardModel
                 {

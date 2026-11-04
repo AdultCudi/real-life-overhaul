@@ -19,7 +19,7 @@ public static partial class UiPreviewRunner
                 HoverCommand = UiAppWindow.NavCommand,
                 HoverArg = 1,
                 Walk = Moves("DDR"),
-                Lay = (s, f, d, k) => EstateFace.Lay(s, UiSamples.Estate(English, st), f, d, k)
+                Lay = (s, f, d, k) => EstateFace.Lay(s, UiSamples.Estate(ModEnglish, st), f, d, k)
             });
         }
         for (int i = 0; i < UiSamples.DealerStates.Length; i++)
@@ -34,7 +34,7 @@ public static partial class UiPreviewRunner
                 HoverCommand = UiAppWindow.NavCommand,
                 HoverArg = 1,
                 Walk = Moves("DDR"),
-                Lay = (s, f, d, k) => EstateFace.Lay(s, UiSamples.Dealer(English, st), f, d, k)
+                Lay = (s, f, d, k) => EstateFace.Lay(s, UiSamples.Dealer(ModEnglish, st), f, d, k)
             });
         }
     }

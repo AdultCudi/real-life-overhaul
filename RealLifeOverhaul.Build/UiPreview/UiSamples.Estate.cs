@@ -76,7 +76,7 @@ internal static partial class UiSamples
         return new UiDataRow
         {
             Cells = new[] { unit, empty ? W(t, "reallife_estate_row_nobody", "Nobody") : tenant, lease, rent, chip, sat >= 0 ? sat.ToString() : string.Empty },
-            Values = new[] { (int)icon, 0, 0, 0, 0, sat },
+            Values = new[] { (int)icon, empty ? UiDataTable.NoFace : 0, 0, 0, 0, sat },
             Tones = new[] { UiRole.None, UiRole.None, UiRole.None, empty ? UiRole.Muted : UiRole.None, tone, UiRole.None },
             Subs = new[] { district, empty ? W(t, "reallife_ui_estate_asking_note", "Looking for a tenant") : role, null, null, null, null },
             Hue = UiColourHue(tenant), Ring = empty ? UiRole.None : sat >= 70 ? UiRole.Ok : sat >= 45 ? UiRole.Warn : UiRole.Danger
@@ -277,8 +277,8 @@ internal static partial class UiSamples
             p.MarketNote = null;
             var lines = new List<UiFactLine>
             {
-                UiFactLine.Say(W(t, "reallife_estate_ten_market", "A flat like this lets for {amount} a month. Homes yield {yield}, and the building's condition is {condition}.").Replace("{amount}", "$2,750").Replace("{yield}", "5%").Replace("{condition}", "80%")),
-                EstateStep(runs, W(t, "reallife_estate_ten_asking", "Asking rent"), "105%", W(t, "reallife_estate_ten_asking_what", "Asks {amount} a month, and about {chance} of the days an applicant comes.").Replace("{amount}", "$2,890").Replace("{chance}", "12%")),
+                UiFactLine.Say(W(t, "reallife_estate_ten_market", "A flat like this lets for {amount} a month. Homes yield {yield}, and the building's condition is {condition}.").Replace("{amount}", "$92").Replace("{use}", "homes").Replace("{yield}", "5%").Replace("{condition}", "80%")),
+                EstateStep(runs, W(t, "reallife_estate_ten_asking", "Asking rent"), "105%", W(t, "reallife_estate_ten_asking_what", "Asks {amount} a month, and about {chance} of the days an applicant comes.").Replace("{amount}", "$96").Replace("{chance}", "12%")),
                 EstateSwitch(runs, W(t, "reallife_estate_ten_to_let", "Look for applicants"), true),
                 EstateLink(runs, W(t, "reallife_ui_estate_applicants", "{count} applicants waiting").Replace("{count}", "2"))
             };

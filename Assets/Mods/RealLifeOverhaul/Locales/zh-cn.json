@@ -31398,5 +31398,16 @@
   "reallife_ui_estate_nav_market": "市场",
   "reallife_ui_estate_nav_agency": "中介",
   "reallife_ui_estate_nav_hotel": "酒店",
-  "reallife_ui_estate_nav_hire": "租车"
+  "reallife_ui_estate_nav_hire": "租车",
+  "reallife_ui_dealer_hour_ago": "1小时前",
+  "reallife_ui_dealer_report_sub": "{place}：最近{days}天每天一个点，并附最近{average}天的平均值。指向某一天即可查看。",
+  "reallife_ui_dealer_report_average": "{days}天平均值",
+  "reallife_ui_dealer_filter_all": "全部 {count}",
+  "reallife_ui_dealer_filter_new": "新车 {count}",
+  "reallife_ui_dealer_filter_used": "二手 {count}",
+  "reallife_ui_dealer_filter_shop": "维修中 {count}",
+  "reallife_ui_dealer_sort_bay": "按车位",
+  "reallife_ui_dealer_sort_price": "按价格",
+  "reallife_ui_dealer_sort_days": "停放最久",
+  "reallife_ui_dealer_kicker_bay": "{name}，{bay}号车位，{state}"
 }

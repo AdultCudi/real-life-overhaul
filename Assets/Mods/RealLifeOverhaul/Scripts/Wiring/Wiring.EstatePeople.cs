@@ -31,27 +31,43 @@ namespace RealLifeOverhaul
 
             private static ITenantPool Pool()
             {
-                PopulationState s = CityPopulation.Live;
-                return s != null && Settings.LivingPopulation ? new PoolOf(s) : null;
+                try
+                {
+                    PopulationState s = CityPopulation.Live;
+                    return s != null && Settings.LivingPopulation ? new PoolOf(s) : null;
+                }
+                catch (Exception e)
+                {
+                    Fault("EstatePeople.Pool", e);
+                    return null;
+                }
             }
 
             // The city's firms that do a tradesman's work, by their address; empty when there are none.
             private static string[] Contractors()
             {
-                PopulationState s = CityPopulation.Live;
-                if (s == null || !Settings.LivingPopulation)
+                try
                 {
+                    PopulationState s = CityPopulation.Live;
+                    if (s == null || !Settings.LivingPopulation)
+                    {
+                        return new string[0];
+                    }
+                    var firms = new List<string>(8);
+                    for (int b = 0; b < s.Businesses.Count && firms.Count < 24; b++)
+                    {
+                        if (string.Equals(s.Businesses.Type[b], TradeType, StringComparison.Ordinal) && !string.IsNullOrEmpty(s.Businesses.Key[b]))
+                        {
+                            firms.Add(s.Businesses.Key[b]);
+                        }
+                    }
+                    return firms.ToArray();
+                }
+                catch (Exception e)
+                {
+                    Fault("EstatePeople.Contractors", e);
                     return new string[0];
                 }
-                var firms = new List<string>(8);
-                for (int b = 0; b < s.Businesses.Count && firms.Count < 24; b++)
-                {
-                    if (string.Equals(s.Businesses.Type[b], TradeType, StringComparison.Ordinal) && !string.IsNullOrEmpty(s.Businesses.Key[b]))
-                    {
-                        firms.Add(s.Businesses.Key[b]);
-                    }
-                }
-                return firms.ToArray();
             }
 
             private sealed class PoolOf : ITenantPool

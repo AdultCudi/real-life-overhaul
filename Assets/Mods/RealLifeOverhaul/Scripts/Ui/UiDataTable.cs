@@ -112,6 +112,9 @@ namespace RealLifeOverhaul.Ui
         public const int CanLess = 1, CanMore = 2;   // a stepper cell's Values: which way it may step now
         public const float StepperWidth = 176f;  // px: a stepper cell's widest, room for a price between its buttons
         public const float MarkRoom = 40f;       // px: and the room before it for its warning's glyph, when its column gives it
+        /// <summary>A person cell whose value is this draws its words with no face: the row has nobody in it.</summary>
+        public const int NoFace = -2;
+
         private const float PersonRow = 48f;     // px: a row with a face and two lines
         private const float PlainRow = 40f;      // px: a row of one line, as the app window's table
         private const float PickBox = 20f;       // px: a row's pick box while picking
@@ -529,8 +532,12 @@ namespace RealLifeOverhaul.Ui
                 case UiCellKind.Person:
                 {
                     float face = UiTokens.AvatarSmall;
-                    UiDraw.Portrait(s, at, cx + UiTokens.S1, ry + (rowH - face) / 2f, face, words, row.Hue, row.Ring);   // its ring's stroke inside the step before it
-                    float tx = cx + UiTokens.S1 + face + UiTokens.S3, tw = cw - (tx - cx);
+                    bool nobody = value == NoFace;   // no one stands in the row: the words alone, with no face drawn for nobody
+                    if (!nobody)
+                    {
+                        UiDraw.Portrait(s, at, cx + UiTokens.S1, ry + (rowH - face) / 2f, face, words, row.Hue, row.Ring);   // its ring's stroke inside the step before it
+                    }
+                    float tx = nobody ? cx + UiTokens.S1 : cx + UiTokens.S1 + face + UiTokens.S3, tw = cw - (tx - cx);
                     float lh = UiTextRules.LineHeight(UiStyle.Title), sh = UiTextRules.LineHeight(UiStyle.Small);
                     float top = ry + (rowH - lh - sh) / 2f;
                     UiDraw.Text(s, at, tx, top, tw, UiStyle.Title, UiRole.Text, words, UiFlags.Truncate | UiFlags.Middle);

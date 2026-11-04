@@ -42,7 +42,12 @@ internal static partial class UiSamples
             new[] { "41 E 37th Street, flat 3A", "Murray Hill", "Priya Nair", "Nurse, Murray Hill Clinic", "$2,600", "good", "82" },
             new[] { "41 E 37th Street, flat 4A", "Murray Hill", "Sofia Marchetti", "Nurse, Murray Hill Clinic", "$2,600", "fair", "51" },
             new[] { "88 W 46th Street, flat 2", "Hell's Kitchen", "Theo Brandt", "Courier, Eastside Parcels", "$2,200", "good", "85" },
-            new[] { "75 W 125th Street, house", "Uptown", "Imani Cole", "Teacher, Lincoln School", "$3,100", "good", "90" }
+            new[] { "75 W 125th Street, house", "Uptown", "Imani Cole", "Teacher, Lincoln School", "$3,100", "good", "90" },
+            new[] { "41 E 37th Street, flat 3B", "Murray Hill", "Daniel Ortiz", "Cook, Pier Street Diner", "$3,300", "good", "74" },
+            new[] { "12 W 39th Street, first floor office", "Garment District", "Marcus Bell", "Accountant, Bell and Rowe", "$3,900", "good", "77" },
+            new[] { "17 E 41st Street, floor 6", "Midtown", "Owen Park", "Designer, Park and Lane", "$7,800", "good", "71" },
+            new[] { "520 8th Avenue, suite 12", "Midtown", "Yuki Tanaka", "An import firm", "$5,600", "fair", "33" },
+            new[] { "12 W 39th Street, ground floor shop", "Garment District", "Lena Hoffmann", "A tailor's shop", "$5,400", "good", "68" }
         };
         foreach (string[] p in people)
         {
@@ -56,11 +61,11 @@ internal static partial class UiSamples
         var cols = new[]
         {
             new UiDataColumn { Title = W(t, "reallife_ui_estate_col_unit", "Unit"), Kind = UiCellKind.Tile, Width = 0f },
-            new UiDataColumn { Title = W(t, "reallife_ui_estate_col_tenant", "Tenant"), Kind = UiCellKind.Person, Width = 248f },
-            new UiDataColumn { Title = W(t, "reallife_ui_estate_col_rent_month", "Rent a month"), Kind = UiCellKind.Money, Width = 120f },
-            new UiDataColumn { Title = W(t, "reallife_ui_estate_col_record", "Record"), Kind = UiCellKind.Meter, Width = 136f },
-            new UiDataColumn { Title = W(t, "reallife_ui_estate_col_state", "State"), Kind = UiCellKind.Chip, Width = 136f },
-            new UiDataColumn { Title = W(t, "reallife_ui_estate_col_satisfaction", "Satisfaction"), Kind = UiCellKind.Meter, Width = 152f }
+            new UiDataColumn { Title = W(t, "reallife_ui_estate_col_tenant", "Tenant"), Kind = UiCellKind.Person, Width = 208f },
+            new UiDataColumn { Title = W(t, "reallife_ui_estate_col_rent_month", "Rent a month"), Kind = UiCellKind.Money, Width = 104f },
+            new UiDataColumn { Title = W(t, "reallife_ui_estate_col_record", "Record"), Kind = UiCellKind.Meter, Width = 112f },
+            new UiDataColumn { Title = W(t, "reallife_ui_estate_col_state", "State"), Kind = UiCellKind.Chip, Width = 128f },
+            new UiDataColumn { Title = W(t, "reallife_ui_estate_col_satisfaction", "Satisfaction"), Kind = UiCellKind.Meter, Width = 128f }
         };
         var side = new UiFactCardModel
         {
@@ -86,7 +91,15 @@ internal static partial class UiSamples
             Row(new[] { "41 E 37th Street", Fx(W(t, "reallife_ui_estate_condition_level", "{condition}, level {level}"), "condition", "80%", "level", "1"), W(t, "reallife_ui_estate_sound", "Sound"), "$1,240", "-" },
                 new[] { (int)UiIcon.Home, 0, 0, 0, 0 }, new[] { UiRole.None, UiRole.None, UiRole.Ok, UiRole.None, UiRole.None }, new[] { "Homes, Murray Hill", null, null, null, null }),
             Row(new[] { "520 8th Avenue", Fx(W(t, "reallife_ui_estate_condition_level", "{condition}, level {level}"), "condition", "32%", "level", "0"), W(t, "reallife_ui_estate_unfit", "Unfit"), "$5,880", "-" },
-                new[] { (int)UiIcon.Briefcase, 0, 0, 0, 0 }, new[] { UiRole.None, UiRole.None, UiRole.Danger, UiRole.None, UiRole.None }, new[] { "Offices, Midtown", null, null, null, null })
+                new[] { (int)UiIcon.Briefcase, 0, 0, 0, 0 }, new[] { UiRole.None, UiRole.None, UiRole.Danger, UiRole.None, UiRole.None }, new[] { "Offices, Midtown", null, null, null, null }),
+            Row(new[] { "88 W 46th Street, flat 2", "A lock", W(t, "reallife_ibox_chip_booked", "Booked"), "$280", Fx(W(t, "reallife_estate_row_since", "Since day {day}"), "day", "211") }, new[] { (int)UiIcon.Wrench, 0, 0, 0, 0 },
+                new[] { UiRole.None, UiRole.None, UiRole.Ok, UiRole.None, UiRole.None }, new[] { "Hell's Kitchen", null, null, null, null }),
+            Row(new[] { "75 W 125th Street, house", "Boiler", W(t, "reallife_ibox_chip_open", "Open"), "$520", Fx(W(t, "reallife_estate_row_since", "Since day {day}"), "day", "212") }, new[] { (int)UiIcon.Wrench, 0, 0, 0, 0 },
+                new[] { UiRole.None, UiRole.None, UiRole.Warn, UiRole.None, UiRole.None }, new[] { "Uptown", null, null, null, null }),
+            Row(new[] { "12 W 39th Street", Fx(W(t, "reallife_ui_estate_condition_level", "{condition}, level {level}"), "condition", "64%", "level", "1"), W(t, "reallife_ui_estate_sound", "Sound"), "$2,060", "-" },
+                new[] { (int)UiIcon.Store, 0, 0, 0, 0 }, new[] { UiRole.None, UiRole.None, UiRole.Ok, UiRole.None, UiRole.None }, new[] { "Shops, Garment District", null, null, null, null }),
+            Row(new[] { "17 E 41st Street", Fx(W(t, "reallife_ui_estate_condition_level", "{condition}, level {level}"), "condition", "71%", "level", "2"), W(t, "reallife_ui_estate_sound", "Sound"), "$1,780", "-" },
+                new[] { (int)UiIcon.Briefcase, 0, 0, 0, 0 }, new[] { UiRole.None, UiRole.None, UiRole.Ok, UiRole.None, UiRole.None }, new[] { "Offices, Midtown", null, null, null, null })
         };
         var cols = new[]
         {
@@ -117,7 +130,13 @@ internal static partial class UiSamples
             new[] { "301 W 54th Street", "Homes, Hell's Kitchen", "$1,840,000", "80%", "$7,420", "4.1%", "h" },
             new[] { "14 Pier Street", "Shops, Garment District", "$3,260,000", "64%", "$15,300", "4.7%", "s" },
             new[] { "99 Broadway", "Offices, Midtown", "$12,400,000", "91%", "$61,900", "5.0%", "o" },
-            new[] { "6 Harlem Row, a house with a very long name that must be cut", "Homes, Uptown", "$980,000", "42%", "$3,010", "3.1%", "h" }
+            new[] { "6 Harlem Row, a house with a very long name that must be cut", "Homes, Uptown", "$980,000", "42%", "$3,010", "3.1%", "h" },
+            new[] { "412 10th Avenue", "Homes, Hell's Kitchen", "$2,150,000", "73%", "$8,600", "4.8%", "h" },
+            new[] { "88 Fulton Street", "Shops, Midtown", "$4,700,000", "58%", "$19,400", "4.9%", "s" },
+            new[] { "250 Park Avenue, floor 11", "Offices, Midtown", "$9,300,000", "86%", "$44,200", "5.7%", "o" },
+            new[] { "17 Mercer Street", "Homes, Murray Hill", "$1,420,000", "67%", "$5,700", "4.2%", "h" },
+            new[] { "3 Canal Row", "Shops, Garment District", "$2,880,000", "49%", "$11,900", "5.0%", "s" },
+            new[] { "60 W 57th Street", "Offices, Midtown", "$15,800,000", "93%", "$72,500", "5.5%", "o" }
         };
         foreach (string[] l in listings)
         {
@@ -131,7 +150,7 @@ internal static partial class UiSamples
             new UiDataColumn { Title = W(t, "reallife_ui_estate_col_building", "Building"), Kind = UiCellKind.Tile, Width = 0f },
             new UiDataColumn { Title = W(t, "reallife_ui_estate_col_price", "Price"), Kind = UiCellKind.Money, Width = 128f },
             new UiDataColumn { Title = W(t, "reallife_ui_estate_col_condition", "Condition"), Kind = UiCellKind.Text, Width = 104f },
-            new UiDataColumn { Title = W(t, "reallife_ui_estate_col_rent_month", "Rent a month"), Kind = UiCellKind.Money, Width = 120f },
+            new UiDataColumn { Title = W(t, "reallife_ui_estate_col_rent_month", "Rent a month"), Kind = UiCellKind.Money, Width = 104f },
             new UiDataColumn { Title = W(t, "reallife_ui_estate_col_yield", "Yield"), Kind = UiCellKind.Figure, Width = 96f }
         };
         var side = new UiFactCardModel
@@ -209,7 +228,7 @@ internal static partial class UiSamples
             new UiDataColumn { Title = W(t, "reallife_ui_estate_col_value", "Value"), Kind = UiCellKind.Money, Width = 128f },
             new UiDataColumn { Title = W(t, "reallife_ui_estate_col_commission", "Commission"), Kind = UiCellKind.Money, Width = 128f },
             new UiDataColumn { Title = W(t, "reallife_ui_estate_col_hours", "Hours"), Kind = UiCellKind.Figure, Width = 80f },
-            new UiDataColumn { Title = W(t, "reallife_ui_estate_col_state", "State"), Kind = UiCellKind.Chip, Width = 136f },
+            new UiDataColumn { Title = W(t, "reallife_ui_estate_col_state", "State"), Kind = UiCellKind.Chip, Width = 128f },
             new UiDataColumn { Title = W(t, "reallife_ui_estate_col_day", "Day"), Kind = UiCellKind.Date, Width = 104f }
         };
         var lines = new List<UiFactLine>();
@@ -273,7 +292,7 @@ internal static partial class UiSamples
         var cols = new[]
         {
             new UiDataColumn { Title = W(t, "reallife_ui_estate_col_car", "Car"), Kind = UiCellKind.Tile, Width = 0f },
-            new UiDataColumn { Title = W(t, "reallife_ui_estate_col_state", "State"), Kind = UiCellKind.Chip, Width = 136f },
+            new UiDataColumn { Title = W(t, "reallife_ui_estate_col_state", "State"), Kind = UiCellKind.Chip, Width = 128f },
             new UiDataColumn { Title = W(t, "reallife_ui_estate_col_rate_day", "Rate a day"), Kind = UiCellKind.Money, Width = 120f },
             new UiDataColumn { Title = W(t, "reallife_ui_estate_col_hires", "Hires"), Kind = UiCellKind.Figure, Width = 80f },
             new UiDataColumn { Title = W(t, "reallife_ui_estate_col_takings", "Takings"), Kind = UiCellKind.Money, Width = 112f },
@@ -337,7 +356,7 @@ internal static partial class UiSamples
                     },
                     new UiFactCardModel
                     {
-                        Title = W(t, "reallife_ui_estate_more", "More"), Heading = true, Lines = new[] { EstateLink(runs, W(t, "reallife_ui_estate_works_link", "Works and servicing")), UiFactLine.Say(W(t, "reallife_estate_own_cover_what", "Cover costs a little a day and pays for a fire.")) }
+                        Title = W(t, "reallife_ui_estate_more", "More"), Heading = true, Lines = new[] { EstateLink(runs, W(t, "reallife_ui_estate_works_link", "Works and servicing")), UiFactLine.Say(Fx(W(t, "reallife_estate_own_cover_what", "Cover costs a little a day and pays for a fire."), "amount", "$26", "excess", "10%")) }
                     }
                 };
                 break;

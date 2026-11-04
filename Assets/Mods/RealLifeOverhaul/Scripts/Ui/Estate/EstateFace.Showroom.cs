@@ -31,9 +31,50 @@ namespace RealLifeOverhaul.Ui
                 fx += colW[i] + UiTokens.S4;
             }
             y += h + UiTokens.S3;
+            // The filters and the order stand over the grid alone: the chosen car's detail beside it keeps the whole height.
+            float inset = FilterRow(s, at.InRegion(RegionControls), m, x, y, UiCatalogue.GridWidth(w), keys) - y;
             int columns;
-            m.TableList = UiCatalogue.Lay(s, at.InRegion(RegionCatalogue), m.Catalogue, x, y, w, bottom - y, keys, out columns, UiCatalogue.First);
+            m.TableList = UiCatalogue.Lay(s, at.InRegion(RegionCatalogue), m.Catalogue, x, y, w, bottom - y, keys, out columns, UiCatalogue.First, inset);
             m.TableClip = ClipOf(s, m.TableList);
+        }
+
+        // What shows at the left, in what order at the right, in one row where they fit and in two where they do not.
+        private static float FilterRow(UiScene s, UiAt at, EstateModel m, float x, float y, float w, IUiKeys keys)
+        {
+            if (m.FilterChips.Length == 0 && m.SortChips.Length == 0)
+            {
+                return y;
+            }
+            float fw = ChipsWidth(m.FilterChips), sw = ChipsWidth(m.SortChips);
+            if (fw + sw + UiTokens.S6 <= w)
+            {
+                ChipsAt(s, at, m.FilterChips, m.FilterAt, x, y, true, keys);
+                ChipsAt(s, at, m.SortChips, m.SortAt, x + w - sw, y, false, keys);
+                return y + UiTokens.Control + UiTokens.S3;
+            }
+            y = Chips(s, at, m.FilterChips, m.FilterAt, x, y, w, keys, true);
+            return Chips(s, at, m.SortChips, m.SortAt, x, y, w, keys, false) + UiTokens.S1;
+        }
+
+        private static float ChipsWidth(UiActionModel[] chips)
+        {
+            float w = 0f;
+            for (int i = 0; i < chips.Length; i++)
+            {
+                w += ChipWide(chips[i].Label, null) + (i > 0 ? UiTokens.S2 : 0f);
+            }
+            return w;
+        }
+
+        private static void ChipsAt(UiScene s, UiAt at, UiActionModel[] chips, int chosen, float x, float y, bool primary, IUiKeys keys)
+        {
+            for (int i = 0; i < chips.Length; i++)
+            {
+                ref UiActionModel a = ref chips[i];
+                float bw = ChipWide(a.Label, keys);
+                UiDraw.Button(s, at, x, y, bw, UiTokens.Control, i == chosen ? (primary ? UiButtonKind.Primary : UiButtonKind.Secondary) : UiButtonKind.Chip, a.Label, UiIcon.None, UiAction.Count, keys, a.Command, a.Arg, a.Disabled);
+                x += bw + UiTokens.S2;
+            }
         }
 
         // ------------------------------------------------------------------------------------------------- the reports
@@ -67,7 +108,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < chips.Length; i++)
             {
                 ref UiActionModel a = ref chips[i];
-                float bw = UiDraw.ButtonWidth(UiButtonKind.Chip, a.Label, UiIcon.None, UiAction.Count, keys);
+                float bw = ChipWide(a.Label, keys);
                 if (cx > x && cx + bw > x + w)
                 {
                     cx = x;
@@ -79,6 +120,9 @@ namespace RealLifeOverhaul.Ui
             return cy + UiTokens.Control + UiTokens.S2;
         }
 
+        // One width for a chip chosen or not, so choosing one never changes how the rows break.
+        private static float ChipWide(string label, IUiKeys keys) => Math.Max(UiDraw.ButtonWidth(UiButtonKind.Chip, label, UiIcon.None, UiAction.Count, keys), UiDraw.ButtonWidth(UiButtonKind.Primary, label, UiIcon.None, UiAction.Count, keys));
+
         private static float ChipRows(UiActionModel[] chips, float w)
         {
             if (chips == null || chips.Length == 0)
@@ -89,7 +133,7 @@ namespace RealLifeOverhaul.Ui
             float used = 0f;
             for (int i = 0; i < chips.Length; i++)
             {
-                float bw = UiDraw.Snap(UiTextRules.Width(chips[i].Label ?? string.Empty, UiStyle.Button) + UiTokens.S4 * 2f + UiTokens.S3);
+                float bw = ChipWide(chips[i].Label, null);
                 if (used > 0f && used + bw > w)
                 {
                     rows++;
@@ -107,12 +151,15 @@ namespace RealLifeOverhaul.Ui
         {
             EstateAuction a = m.Auction;
             UiAt head = at.InRegion(RegionHead);
-            y = TopBar(s, head, m.Back, new UiActionModel[0], x, y, w, keys);
+            y = TopBar(s, head, a.Back, new UiActionModel[0], x, y, w, keys);
             UiDraw.Text(s, head, x, y, w, UiStyle.SectionHeader, UiRole.Text2, a.Kicker, UiFlags.Label | UiFlags.Truncate);
             y += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3;
             float lw = UiDraw.SnapDown((w - UiTokens.S6) * 0.42f), rw = w - UiTokens.S6 - lw;
             float lx = x, rx = x + lw + UiTokens.S6;
+            // The picture takes what the bidding's column is taller by, so the two columns end together.
+            float factsH = UiFactCard.Height(a.Left, lw, keys, true), rightH = UiFactCard.Height(a.Right, rw, keys, true);
             float picH = Math.Min(UiDraw.SnapDown(lw / Math.Max(1f, a.Aspect)), UiTokens.S16 * 12f);
+            picH = Math.Max(picH, UiDraw.SnapDown(Math.Min(bottom - y, rightH) - factsH - UiTokens.S3));
             UiAt on = at.InRegion(RegionLeft);
             int pic = UiDraw.Box(s, on, lx, y, lw, picH, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
             if (!string.IsNullOrEmpty(a.Picture))
