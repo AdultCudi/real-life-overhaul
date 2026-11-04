@@ -222,7 +222,11 @@ namespace RealLifeOverhaul.Ui
         Lines,          // Rows of when, what, money (a log)
         Field,          // Text label, Value the words now, Sub the hint, Act the commit (a typed name rides in S2)
         Chips,          // Options as a row of chips
-        Meter           // Text, Number 0 to 100, Tone
+        Meter,          // Text, Number 0 to 100, Tone
+        Break,          // where the second column of a wide page begins (a narrow page runs on)
+        Items,          // Items: rows with a face or a glyph, two lines, a figure, a chip; a pressable one does its Act
+        Figures,        // Options the labels, Values the figures: up to four, side by side
+        Compare         // Text a label, Value before, Sub during (in Tone), Options two column heads for the first row of a run
     }
 
     /// <summary>A row of a card's list: a face or a tile, two lines, a figure, a chip, and what a press does.</summary>
@@ -246,6 +250,8 @@ namespace RealLifeOverhaul.Ui
     {
         public CompanyBlockKind Kind;
         public string Text, Sub, Value;
+        public string[] Values;                 // Figures: the figures under the labels in Options
+        public CompanyItem[] Items;             // Items: the rows
         public UiRole Tone = UiRole.None;
         public bool On, CanLess = true, CanMore = true, Disabled;
         public string Why;

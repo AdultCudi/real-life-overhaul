@@ -6,7 +6,7 @@ namespace RealLifeOverhaul.Ui
     {
         public const int StepLess = 7420, StepMore = 7421, StepType = 7422;   // a stepper's minus and plus, and its typed figure: the argument is the index of its first action
 
-        private const float ListRow = 56f, ListGap = 4f, SwitchRow = 48f, CardMeasure = 800f;
+        private const float ListRow = 56f, ListGap = 4f, SwitchRow = 48f, CardMeasure = 800f, TwoColumns = 1000f;   // a card's blocks run in two columns from this width, where a break says so
 
         // ------------------------------------------------------------------------------------------------- a row of a list or a card
 
@@ -236,11 +236,34 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.EmptyState(s, at, x, cy, cw, bottom - cy, UiIcon.Info, w.T("reallife_co_pick_title", "Nothing picked"), c.Empty, null, -1, keys);
                 return bottom;
             }
+            int split = -1;
+            for (int i = 0; i < c.Blocks.Length && split < 0; i++)
+            {
+                split = c.Blocks[i].Kind == CompanyBlockKind.Break ? i : -1;
+            }
+            if (split >= 0 && cw >= TwoColumns)
+            {
+                // A wide page: the blocks up to the break at the left, the rest at the right, each column as wide as a line may reach.
+                float gap = UiTokens.S8, colW = Math.Min(CardMeasure, UiDraw.SnapDown((cw - gap) / 2f)), rx = x + colW + gap, ry = cy, ly = cy;
+                for (int i = 0; i < split && ly < bottom; i++)
+                {
+                    ly = Block(s, at, lay, v, w, c.Blocks[i], x, ly, colW, bottom, keys);
+                }
+                for (int i = split + 1; i < c.Blocks.Length && ry < bottom; i++)
+                {
+                    ry = Block(s, at, lay, v, w, c.Blocks[i], rx, ry, colW, bottom, keys);
+                }
+                return Math.Max(ly, ry);
+            }
             for (int i = 0; i < c.Blocks.Length; i++)
             {
                 if (cy >= bottom)
                 {
                     break;
+                }
+                if (c.Blocks[i].Kind == CompanyBlockKind.Break)
+                {
+                    continue;
                 }
                 cy = Block(s, at, lay, v, w, c.Blocks[i], x, cy, Math.Min(cw, CardMeasure), bottom, keys);   // a row's words and its figure stay within a line's reach, however wide the window
             }
@@ -290,7 +313,17 @@ namespace RealLifeOverhaul.Ui
             {
                 factW = UiDraw.SnapDown(factsTotal / facts);
             }
-            float tx = x + size + UiTokens.S4, tw = Math.Max(0f, cw - size - UiTokens.S4 - (facts > 0 ? factsTotal + UiTokens.S4 : 0f));
+            // The figures stand beside the name they describe: the title keeps what its words need, and the facts begin after it (at the right edge only where the title is longer).
+            float want = Math.Max(UiTextRules.Width(c.Title ?? string.Empty, UiStyle.Hero), string.IsNullOrEmpty(c.Kicker) ? 0f : UiTextRules.Width(c.Kicker, UiStyle.SectionHeader));
+            want = Math.Max(want, string.IsNullOrEmpty(c.Sub) ? 0f : UiTextRules.Width(c.Sub, UiStyle.Body));
+            float chipsWant = 0f;
+            for (int i = 0; i < c.Chips.Length; i++)
+            {
+                chipsWant += UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(c.Chips[i], UiStyle.SmallStrong) + UiTokens.S2 + UiTokens.S1;
+            }
+            want = Math.Max(want, chipsWant);
+            float tx = x + size + UiTokens.S4, avail = Math.Max(0f, cw - size - UiTokens.S4 - (facts > 0 ? factsTotal + UiTokens.S6 : 0f));
+            float tw = facts > 0 ? Math.Min(avail, UiDraw.Snap(want + UiTokens.S3)) : avail;
             float cy = y;
             float kh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader));
             if (!string.IsNullOrEmpty(c.Kicker))
@@ -318,7 +351,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (facts > 0)
             {
-                float fx = x + cw - factsTotal;
+                float fx = Math.Min(tx + tw + UiTokens.S6, x + cw - factsTotal);
                 float labelH = kh + UiTokens.S1;
                 for (int i = 0; i < facts; i++)
                 {
@@ -394,9 +427,71 @@ namespace RealLifeOverhaul.Ui
                     UiDraw.Meter(s, at, x, y + UiTokens.PairRow + UiTokens.S1, cw, UiTokens.S1, Math.Max(0, b.Number), b.Tone == UiRole.None ? UiRole.Accent : b.Tone);
                     return y + UiTokens.PairRow + UiTokens.S3 + UiTokens.S2;
                 }
+                case CompanyBlockKind.Figures:
+                    return FiguresBlock(s, at, b, x, y, cw);
+                case CompanyBlockKind.Compare:
+                    return CompareBlock(s, at, b, x, y, cw);
+                case CompanyBlockKind.Items:
+                    return ItemsBlock(s, at, lay, b, x, y, cw, bottom);
                 default:
                     return y;
             }
+        }
+
+        // Up to four labelled figures side by side, as the head's facts are: the label over the figure, each as wide as its widest asks for.
+        private static float FiguresBlock(UiScene s, UiAt at, CompanyBlock b, float x, float y, float cw)
+        {
+            int n = b.Options == null || b.Values == null ? 0 : Math.Min(4, Math.Min(b.Options.Length, b.Values.Length));
+            if (n == 0)
+            {
+                return y;
+            }
+            float kh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)), vh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title));
+            float each = UiDraw.SnapDown(cw / n);
+            for (int i = 0; i < n; i++)
+            {
+                UiDraw.Text(s, at, x + i * each, y, each - UiTokens.S3, UiStyle.SectionHeader, UiRole.Text2, b.Options[i], UiFlags.Label | UiFlags.Truncate);
+                UiDraw.Text(s, at, x + i * each, y + kh + UiTokens.S1, each - UiTokens.S3, UiStyle.Title, UiRole.Text, b.Values[i], UiFlags.Truncate);
+            }
+            return y + kh + UiTokens.S1 + vh + UiTokens.S4;
+        }
+
+        // A figure before and during: the label at the left, the two figures in columns at the right, the second in its tone; two heads over the first row of a run.
+        private static float CompareBlock(UiScene s, UiAt at, CompanyBlock b, float x, float y, float cw)
+        {
+            float colW = Math.Min(UiDraw.SnapDown(cw * 0.26f), UiDraw.Snap(Math.Max(UiTextRules.Width(b.Value ?? string.Empty, UiStyle.BodyStrong), UiTextRules.Width(b.Sub ?? string.Empty, UiStyle.BodyStrong)) + UiTokens.S4));
+            colW = Math.Max(colW, UiDraw.Snap(UiTextRules.Width(b.Options != null && b.Options.Length > 1 ? b.Options[1] : string.Empty, UiStyle.SectionHeader) + UiTokens.S3));
+            float second = x + cw - colW, first = second - colW;
+            if (b.Options != null && b.Options.Length > 1)
+            {
+                float hh = UiTokens.PairRow;
+                UiDraw.TextMiddle(s, at, first, y, hh, colW, UiStyle.SectionHeader, UiRole.Text2, b.Options[0], UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
+                UiDraw.TextMiddle(s, at, second, y, hh, colW, UiStyle.SectionHeader, UiRole.Text2, b.Options[1], UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
+                y += hh;
+            }
+            UiDraw.TextMiddle(s, at, x, y, UiTokens.PairRow, Math.Max(0f, first - x - UiTokens.S3), UiStyle.Body, UiRole.Text2, b.Text ?? string.Empty, UiFlags.Label | UiFlags.Truncate);
+            UiDraw.TextMiddle(s, at, first, y, UiTokens.PairRow, colW, UiStyle.Body, UiRole.Text, b.Value ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
+            UiDraw.TextMiddle(s, at, second, y, UiTokens.PairRow, colW, UiStyle.BodyStrong, b.Tone == UiRole.None ? UiRole.Text : b.Tone, b.Sub ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
+            return y + UiTokens.PairRow + UiTokens.S1;
+        }
+
+        // Rows with a face or a glyph, two lines, a figure and a chip: the rows of a list, in a card; one that is pressable does its action.
+        private static float ItemsBlock(UiScene s, UiAt at, CompanyLayout lay, CompanyBlock b, float x, float y, float cw, float bottom)
+        {
+            int rows = b.Items != null ? b.Items.Length : 0;
+            for (int i = 0; i < rows; i++)
+            {
+                ref CompanyItem it = ref b.Items[i];
+                int face = UiDraw.Box(s, at, x, y, cw, ListRow, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
+                RowFace(s, at.In(face), x, y, cw, ListRow, it.Title, it.Sub, it.Figure, it.Note, it.Chip, it.ChipTone, it.FigureTone, it.Icon, it.Tint, it.Face, it.Hue, it.Ring, it.Grade, false, false);
+                if (it.Press && it.Act.Do != CompanyDo.None)
+                {
+                    int index = lay.Add(new CompanyButton { Label = it.Title, Act = it.Act });
+                    UiDraw.Node(s, at, x, y, cw, ListRow, Item, index, face);
+                }
+                y += ListRow + ListGap;
+            }
+            return y + UiTokens.S2;
         }
 
         // A switch with what it decides: the words and the line under them at the left, the switch at the right (its state in words, or who decides).
