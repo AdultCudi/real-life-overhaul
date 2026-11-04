@@ -86,6 +86,7 @@ namespace RealLifeOverhaul.Ui
         public UiRole Ring, HoursTone;
         public string[] Shifts;                 // seven: "07-15", or null for a day off
         public UiRole[] Tones;                  // seven: None, Warn for a shift that breaks a demand
+        public bool ToHire;                     // a person the plan would take on: a glyph tile in place of a portrait
     }
 
     /// <summary>A rung of the planner's ladder: what the plan comes to, and the button that uses it.</summary>
@@ -94,6 +95,49 @@ namespace RealLifeOverhaul.Ui
         public string Name, Line, Hours, Net, Gain;
         public bool Advised;
         public CompanyButton Use;
+        public CompanyButton Look;              // opens the rung's week to read, applying nothing
+        public string Chip;                     // a short word shown in place of Use where the plan cannot be used (yet): "Hire first", "In use"
+        public UiRole ChipTone;
+    }
+
+    /// <summary>A person on the advice page: what they ask for as a range of hours a week, and what the advised plan gives them.</summary>
+    public struct CompanyRotaFolk
+    {
+        public string Name, Role, Asks, Figure, Note;   // Asks: "20 to 32 hours a week"; Figure: the plan's hours; Note: "4 h over", or null
+        public float Hue;
+        public UiRole Ring, Tone;
+        public int Least, Most, Plan;           // the range asked (Most 0: no ceiling) and the hours the plan gives, for the bar; Least and Most both 0: no range
+    }
+
+    /// <summary>A run of hours a rung opens or closes against the hours kept now: when, what, what it is worth and why.</summary>
+    public struct CompanyRotaChange
+    {
+        public string Title, Sub, Figure;       // "Tuesday, 06:00 to 08:00 opens"; why; the money it comes to
+        public bool Opens;
+    }
+
+    /// <summary>One rung of the planner's ladder read as a week, without applying it: who works when, what it comes to, and what it changes.</summary>
+    public sealed class CompanyRotaLook
+    {
+        public string Name, Line, Why;
+        public bool Advised;
+        public string[] FigureLabels = new string[0];
+        public string[] FigureValues = new string[0];
+        public CompanyRotaPerson[] People = new CompanyRotaPerson[0];
+        public string[] DayTotals = new string[7];
+        public string TotalHours;
+        public string ChangesTitle, ChangesNone;
+        public CompanyRotaChange[] Changes = new CompanyRotaChange[0];
+        public CompanyButton Use, Back;
+        public string Chip;                     // in place of Use where the plan takes people who are not hired yet
+    }
+
+    /// <summary>The floor of crew a plan asks for hour by hour, drawn under its edit page.</summary>
+    public sealed class CompanyFloor
+    {
+        public string Title;
+        public string[] Hours = new string[0];
+        public int[] Crew = new int[0];
     }
 
     /// <summary>A place's rota: the plan form, the week by person and day, the day hour by hour, the needs, and the planner's advice.</summary>
@@ -114,6 +158,7 @@ namespace RealLifeOverhaul.Ui
         public bool Overtime;
         public CompanyAct OvertimeAct;
         public CompanyButton Copy, Fill, Back, Edit;
+        public string ModeTitle, ModePicked;                // "Planner mode"; what Auto picked, when Auto is chosen
         public string[] ModeOptions = new string[0];
         public int Mode;
         public CompanyAct[] ModeActs = new CompanyAct[0];
@@ -123,6 +168,7 @@ namespace RealLifeOverhaul.Ui
         public CompanyRotaPerson[] People = new CompanyRotaPerson[0];
         public string[] DayTotals = new string[7];
         public string TotalHours;
+        public string SummaryTitle;
         public string[] SummaryLabels = new string[0];
         public string[] SummaryValues = new string[0];
         public UiRole[] SummaryTones = new UiRole[0];
@@ -134,6 +180,8 @@ namespace RealLifeOverhaul.Ui
         public int[] Needed = new int[0];
         public string[] Legend = new string[0];
         public UiBoardModel Board;                          // the day as lanes of people on an hour ruler
+        public string[] DayFigureLabels = new string[0];    // the day's own figures under its board: served, lost, takings, wages
+        public string[] DayFigureValues = new string[0];
         // The needs by time block.
         public string NeedsTitle;
         public string[] NeedWhen = new string[0];
@@ -141,7 +189,11 @@ namespace RealLifeOverhaul.Ui
         // The planner's ladder.
         public string AdviceTitle, AdviceNote;
         public CompanyRung[] Rungs = new CompanyRung[0];
-        public CompanyBlock[] Beside = new CompanyBlock[0];     // your people, stations that would pay, stations out of order, goods that run out
+        public string FolkTitle;
+        public CompanyRotaFolk[] Folk = new CompanyRotaFolk[0]; // your people against the advised plan
+        public CompanyBlock[] Beside = new CompanyBlock[0];     // stations that would pay, stations out of order, goods that run out
+        public CompanyRotaLook Look;                            // the rung in view (read only), or null for the ladder
+        public CompanyCard RefusedCard;                         // what a place with no rota has instead, with the way on to Staff
     }
 
     /// <summary>The rota tab's facts: places with their plans, and the chosen place's page.</summary>
@@ -152,6 +204,7 @@ namespace RealLifeOverhaul.Ui
         public CompanyList Places = new CompanyList();     // a place's row, then its plans as dim rows: ids "p:<place>" and "pl:<place>:<plan>"
         public CompanyRotaPlace Place;
         public CompanyCard Edit;                            // the plan being edited (SubEdit), a generic card
+        public CompanyFloor Floor;                          // the edit page's floor of crew by hour
     }
 
     /// <summary>A licence or permit as a row of the tax tab's table: what, where, who handles it, how it stands and what to do.</summary>

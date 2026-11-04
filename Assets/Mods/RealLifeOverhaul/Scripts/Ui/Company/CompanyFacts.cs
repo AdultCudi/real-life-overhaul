@@ -295,6 +295,7 @@ namespace RealLifeOverhaul.Ui
         public UiRole Ring;
         public bool Caption;                    // a label row (a group's), no target
         public bool Dim;
+        public bool Nested;                     // a row under the one above it: indented a step (a plan under its place)
     }
 
     /// <summary>A left-hand list: its title, count, rows and the one chosen.</summary>

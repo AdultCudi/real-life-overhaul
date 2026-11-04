@@ -44,7 +44,7 @@ namespace RealLifeOverhaul.Ui
             float block = th + (string.IsNullOrEmpty(sub) ? 0f : UiTokens.S1 + sh) + (meter ? UiTokens.S2 + UiTokens.S1 : 0f);
             float top = y + UiDraw.SnapDown((h - block) / 2f);
             float nameW = Math.Min(nameFull, lw - (chipW > 0f ? chipW + UiTokens.S3 : 0f));
-            UiDraw.TextMiddle(s, inside, lx, top, th, nameW, UiStyle.Title, dim ? UiRole.Text2 : UiRole.Text, title ?? string.Empty, UiFlags.Truncate);
+            UiDraw.TextMiddle(s, inside, lx, top, th, nameW, UiStyle.Title, dim && !chosen ? UiRole.Text2 : UiRole.Text, title ?? string.Empty, UiFlags.Truncate);
             if (chipW > 0f)
             {
                 UiDraw.Chip(s, inside, lx + nameW + UiTokens.S3, top + UiDraw.SnapDown((th - UiTokens.Badge - UiTokens.S1) / 2f), chip, chipTone, chipW);
@@ -67,7 +67,8 @@ namespace RealLifeOverhaul.Ui
                 float fy = y + UiDraw.SnapDown((h - fh) / 2f);
                 if (!string.IsNullOrEmpty(figure))
                 {
-                    UiDraw.TextMiddle(s, inside, right - fw, fy, th, fw, UiStyle.BodyStrong, figureTone == UiRole.None ? UiRole.Text : figureTone, figure, UiFlags.Right | UiFlags.Truncate);
+                    UiDraw.TextMiddle(s, inside, right - fw, fy, th, fw, UiStyle.BodyStrong, figureTone == UiRole.None || (chosen && figureTone == UiRole.Muted) ? UiRole.Text : figureTone, figure,
+                        UiFlags.Right | UiFlags.Truncate);
                     fy += th + UiTokens.S1;
                 }
                 if (!string.IsNullOrEmpty(note))
@@ -162,10 +163,11 @@ namespace RealLifeOverhaul.Ui
                         continue;
                     }
                     bool chosen = r == list.Chosen;
-                    int face = UiDraw.Box(s, rowAt, 0f, ry, rw, ListRow, chosen ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusLarge, chosen ? UiFlags.Selected : UiFlags.None);
-                    RowFace(s, rowAt.In(face), 0f, ry, rw, ListRow, row.Title, row.Sub, row.Figure, row.Note, row.Chip, row.ChipTone, row.FigureTone, row.Icon, row.Tint, row.Face, row.Hue, row.Ring,
-                        -1, chosen, row.Dim);
-                    UiDraw.Node(s, rowAt, 0f, ry, rw, ListRow, Row, r, face, false, lst, r);
+                    float nest = row.Nested ? UiTokens.S6 : 0f;   // a plan stands a step in from its place
+                    int face = UiDraw.Box(s, rowAt, nest, ry, rw - nest, ListRow, chosen ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusLarge, chosen ? UiFlags.Selected : UiFlags.None);
+                    RowFace(s, rowAt.In(face), nest, ry, rw - nest, ListRow, row.Title, row.Sub, row.Figure, row.Note, row.Chip, row.ChipTone, row.FigureTone, row.Icon, row.Tint, row.Face, row.Hue,
+                        row.Ring, -1, chosen, row.Dim);
+                    UiDraw.Node(s, rowAt, nest, ry, rw - nest, ListRow, Row, r, face, false, lst, r);
                     lay.RowIds[r] = row.Id;
                 }
                 UiDraw.ScrollThumb(s, at, x + width - UiTokens.S1, cy, Math.Min(viewH, content), offset, content);
@@ -459,7 +461,8 @@ namespace RealLifeOverhaul.Ui
         // A figure before and during: the label at the left, the two figures in columns at the right, the second in its tone; two heads over the first row of a run.
         private static float CompareBlock(UiScene s, UiAt at, CompanyBlock b, float x, float y, float cw)
         {
-            float colW = Math.Min(UiDraw.SnapDown(cw * 0.26f), UiDraw.Snap(Math.Max(UiTextRules.Width(b.Value ?? string.Empty, UiStyle.BodyStrong), UiTextRules.Width(b.Sub ?? string.Empty, UiStyle.BodyStrong)) + UiTokens.S4));
+            float colW = Math.Min(UiDraw.SnapDown(cw * 0.26f), UiDraw.Snap(Math.Max(UiTextRules.Width(b.Value ?? string.Empty, UiStyle.BodyStrong),
+                UiTextRules.Width(b.Sub ?? string.Empty, UiStyle.BodyStrong)) + UiTokens.S4));
             colW = Math.Max(colW, UiDraw.Snap(UiTextRules.Width(b.Options != null && b.Options.Length > 1 ? b.Options[1] : string.Empty, UiStyle.SectionHeader) + UiTokens.S3));
             float second = x + cw - colW, first = second - colW;
             if (b.Options != null && b.Options.Length > 1)
@@ -483,7 +486,8 @@ namespace RealLifeOverhaul.Ui
             {
                 ref CompanyItem it = ref b.Items[i];
                 int face = UiDraw.Box(s, at, x, y, cw, ListRow, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
-                RowFace(s, at.In(face), x, y, cw, ListRow, it.Title, it.Sub, it.Figure, it.Note, it.Chip, it.ChipTone, it.FigureTone, it.Icon, it.Tint, it.Face, it.Hue, it.Ring, it.Grade, false, false);
+                RowFace(s, at.In(face), x, y, cw, ListRow, it.Title, it.Sub, it.Figure, it.Note, it.Chip, it.ChipTone, it.FigureTone, it.Icon, it.Tint, it.Face, it.Hue, it.Ring, it.Grade,
+                    false, false);
                 if (it.Press && it.Act.Do != CompanyDo.None)
                 {
                     int index = lay.Add(new CompanyButton { Label = it.Title, Act = it.Act });
