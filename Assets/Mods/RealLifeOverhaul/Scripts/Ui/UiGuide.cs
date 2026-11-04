@@ -51,6 +51,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_test_money_switch")
                 .Test("reallife_ui_test_economy", "reallife_ui_test_people", "reallife_ui_test_newsstand", "reallife_ui_test_ledger",
                     "reallife_ui_test_ending", "reallife_ui_test_news_switch")
+                .Test("reallife_ui_test_company", "reallife_ui_test_company_manager", "reallife_ui_test_company_rota", "reallife_ui_test_company_switch")
                 .Data(PlayTimeStore.Key)   // the time played in the city, for the pause menu's card (Ui/Pause/PlayTime)
                 .ResetData(PlayTime.Forget)
                 .Cleanup(() => UiDirector.RemoveAll("cleaned up"), 0);

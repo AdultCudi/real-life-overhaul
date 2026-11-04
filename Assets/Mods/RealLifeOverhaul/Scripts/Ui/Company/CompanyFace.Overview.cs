@@ -171,7 +171,7 @@ namespace RealLifeOverhaul.Ui
             UiDraw.TextMiddle(s, inside, tx, top + th, sh, tw, UiStyle.Small, UiRole.Text2, row.Line ?? string.Empty, UiFlags.Truncate);
             string open = UiTextRules.Cut(row.OpenLabel ?? string.Empty, UiStyle.BodyStrong, openW - UiTokens.IconSmall - UiTokens.S1);
             float ow = UiTextRules.Width(open, UiStyle.BodyStrong);
-            UiDraw.TextMiddle(s, inside, x + w - UiTokens.IconSmall - UiTokens.S1 - ow, y, WaitingRow, ow + UiTokens.S1, UiStyle.BodyStrong, UiRole.AccentText, open, UiFlags.Right);
+            UiDraw.TextMiddle(s, inside, x + w - UiTokens.IconSmall - UiDraw.LinkGap - ow - UiTokens.S1, y, WaitingRow, ow + UiTokens.S1, UiStyle.BodyStrong, UiRole.AccentText, open, UiFlags.Right);
             UiDraw.Icon(s, inside, x + w - UiTokens.IconSmall, y + (WaitingRow - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Next, UiRole.AccentText,
                 UiFlags.Middle | UiFlags.Share | UiFlags.Decor);
             UiDraw.Node(s, at, x - UiTokens.S2, y, w + UiTokens.S4, WaitingRow, Act, index, face);

@@ -205,7 +205,7 @@ internal static partial class Program
             }
         }
         watch.Stop();
-        Check(sum >= 0 && watch.ElapsedMilliseconds < 250, "lease cost: a year of the day's work for " + LeaseStore.LeasesMost + " leases is " + watch.ElapsedMilliseconds + " ms");
+        CheckSay(sum >= 0 && watch.ElapsedMilliseconds < 250, "lease cost: a year of the day's work for " + LeaseStore.LeasesMost + " leases is " + watch.ElapsedMilliseconds + " ms");
     }
 
     // The city's own leases: the same rule, from a seed alone, so what a landlord does to the player they do to the city's businesses.

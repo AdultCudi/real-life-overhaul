@@ -31456,5 +31456,8 @@
   "reallife_ui_test_company_off": "A empresa não está em funcionamento neste save, então não há nada para abrir.",
   "reallife_co_row_gap_short": "faltam {hours} h",
   "reallife_mgr_did_rota_moved": "Montou a escala da semana: {shifts} turnos, {covered} de {wanted} horas cobertas, e moveu {person} de {from} para {to}.",
-  "reallife_co_plan_ahead": "{plan} vale do dia {from} ao dia {to}: até {cap} por pessoa e {floor} horas de equipe mínima por semana em relação a este plano"
+  "reallife_co_plan_ahead": "{plan} vale do dia {from} ao dia {to}: até {cap} por pessoa e {floor} horas de equipe mínima por semana em relação a este plano",
+  "reallife_co_paid_missed": "Perdida",
+  "reallife_co_q_offer_title": "Uma oferta de um concorrente acima do meu limite",
+  "reallife_co_q_rival_pays": "Concorrente paga"
 }

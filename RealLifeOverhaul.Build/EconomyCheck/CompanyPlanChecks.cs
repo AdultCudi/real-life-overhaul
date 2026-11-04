@@ -183,7 +183,7 @@ internal static partial class Program
             RotaPlanRules.Lift(allFloor, allOpen, most, bigValue, bigTaken, bigKind, bigGroup, 2);
         }
         watch.Stop();
-        Check(watch.ElapsedMilliseconds < 500, "plan floor cost: lifting a week of " + most + " stations is " + (watch.ElapsedMilliseconds / 200.0).ToString("0.00") + " ms a time");
+        CheckSay(watch.ElapsedMilliseconds < 500, "plan floor cost: lifting a week of " + most + " stations is " + (watch.ElapsedMilliseconds / 200.0).ToString("0.00") + " ms a time");
         Check(RotaPlanRules.FloorHours(p) == (3 * 2 + 4 * 5 + 1 * 4) * RotaCatalogue.Days && RotaPlanRules.FloorHours(null) == 0, "plan floor: the hours a week the floors ask for are summed (210), none for no plan");
     }
 

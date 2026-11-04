@@ -31456,5 +31456,8 @@
   "reallife_ui_test_company_off": "The company is not running in this save, so there is nothing to open.",
   "reallife_co_row_gap_short": "{hours} h short",
   "reallife_mgr_did_rota_moved": "Wrote the week's rota: {shifts} shifts, {covered} of {wanted} hours covered, and moved {person} from {from} to {to}.",
-  "reallife_co_plan_ahead": "{plan} holds from day {from} to day {to}: up to {cap} each, and {floor} crew hours of floor a week against this plan"
+  "reallife_co_plan_ahead": "{plan} holds from day {from} to day {to}: up to {cap} each, and {floor} crew hours of floor a week against this plan",
+  "reallife_co_paid_missed": "Missed",
+  "reallife_co_q_offer_title": "A rival's offer above my limit",
+  "reallife_co_q_rival_pays": "Rival pays"
 }

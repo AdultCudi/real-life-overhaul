@@ -497,6 +497,13 @@ internal static partial class Program
         return string.Empty;
     }
 
+    // A check whose words carry a measured cost: the words are said as well, so that the cost is in the run's output (the Company app's cost lines).
+    private static void CheckSay(bool ok, string words)
+    {
+        Console.WriteLine("    " + words);
+        Check(ok, words);
+    }
+
     // The records of one part of a line, cut by a function: the part between its tag and the next, split at ';', each record handed to the cut.
     private static string CutPart(string line, string tag, string next, Func<string, string> cut)
     {

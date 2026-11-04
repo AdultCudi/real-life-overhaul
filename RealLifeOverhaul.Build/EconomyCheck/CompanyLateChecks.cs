@@ -114,7 +114,7 @@ internal static partial class Program
             }
         }
         watch.Stop();
-        Check(watch.ElapsedMilliseconds < 250, "late cost: a year of lateness for " + CompanyCatalogue.StaffMost + " staff is counted in " + watch.ElapsedMilliseconds + " ms");
+        CheckSay(watch.ElapsedMilliseconds < 250, "late cost: a year of lateness for " + CompanyCatalogue.StaffMost + " staff is counted in " + watch.ElapsedMilliseconds + " ms");
     }
 
     private static void LateSaves()

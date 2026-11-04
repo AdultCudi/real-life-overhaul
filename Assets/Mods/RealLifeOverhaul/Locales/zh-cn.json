@@ -31456,5 +31456,8 @@
   "reallife_ui_test_company_off": "这个存档里公司没有运行，没有可打开的内容。",
   "reallife_co_row_gap_short": "缺{hours}小时",
   "reallife_mgr_did_rota_moved": "编写了本周排班表：{shifts}个班次，覆盖了{wanted}小时中的{covered}小时，并把{person}从{from}调到了{to}。",
-  "reallife_co_plan_ahead": "{plan}从第{from}天持续到第{to}天：每人最多{cap}，每周最低人手{floor}小时（与本方案相比）"
+  "reallife_co_plan_ahead": "{plan}从第{from}天持续到第{to}天：每人最多{cap}，每周最低人手{floor}小时（与本方案相比）",
+  "reallife_co_paid_missed": "已逾期未交",
+  "reallife_co_q_offer_title": "竞争对手的报价超出了我的权限",
+  "reallife_co_q_rival_pays": "对手开价"
 }
