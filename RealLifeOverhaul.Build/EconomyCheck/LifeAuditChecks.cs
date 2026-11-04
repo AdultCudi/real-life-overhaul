@@ -119,7 +119,31 @@ internal static partial class Program
                 }
             }
             PlannerLogic.Arrange(_list, NowMinutes, 0);
-            into.AddRange(_list.Items);
+            PlannerList.Copy(_list.Items, into);   // as the screens' hosts do: the director's objects are reused at its next look
+        }
+
+        /// <summary>The director looking again on its own list (a reminder falling due with the app open): every object it handed out is reused.</summary>
+        public void Scramble()
+        {
+            _list.Begin(0, 9999, true);
+            for (int i = 0; i < 12; i++)
+            {
+                PlannerEntry e = _list.Add("junk", 900 + i, 0, PlannerCategory.Health, 40 + i % 3);
+                if (e != null)
+                {
+                    e.Title = "Junk " + i;
+                    e.Start = (i + 1) * 60;
+                }
+            }
+            _cal.Begin(0, 9999);
+            for (int i = 0; i < 12; i++)
+            {
+                CalendarEntry c = _cal.Add("junk", 900 + i, 0, CalendarGroup.City, 40 + i);
+                if (c != null)
+                {
+                    c.Title = "Junk " + i;
+                }
+            }
         }
 
         public string Clock(int minuteOfDay)
@@ -172,7 +196,7 @@ internal static partial class Program
                 e.Done = c.Done;
                 e.Value = c.Value;
             }
-            into.AddRange(_cal.Items);
+            CalendarList.Copy(_cal.Items, into);
         }
 
         public void Plan(int day, List<PlannerEntry> into)
@@ -292,6 +316,165 @@ internal static partial class Program
         PlannerEveryTarget();
         CalendarOpensToday();
         CalendarEveryTarget();
+        LifeAuditReview();
+    }
+
+    // What the logic review found: a Calendar that opens on today every time, entries held across the director's reuse, a hidden kind, the
+    // past day, where Back leads after Save, the singular.
+    private static void LifeAuditReview()
+    {
+        // 1. Opening again on a later day.
+        CalendarFlow c = CalRig(out PlanHost h, 40);
+        c.Build();
+        c.Press(UiDiary.DayCommand, 20);
+        c.Press(UiDiary.MonthCommand, 1);
+        h.Today = 75;
+        c.Opened();
+        c.Build();
+        int first = CalendarRules.MonthStart(CalendarRules.MonthOf(75, 360), 360);
+        Check(c.ChosenDay == 75 && c.Month == CalendarRules.MonthOf(75, 360) && c.Model.Diary.Today == 75 - first + 1 && c.Model.Today == null,
+            "life audit: the Calendar opened again on a later day stands on that day, not where it was left (chosen " + c.ChosenDay + ")");
+        c.Press(UiDiary.DayCommand, 3);
+        c.Opened(CalendarRules.MonthOf(75, 360) + 1);
+        c.Build();
+        Check(c.Month == CalendarRules.MonthOf(75, 360) + 1 && c.Model.Today != null, "life audit: opened on a month asked for (OpenAt) it stands on that month");
+        // A new day while the page stands on the old today: it follows; on another day it stays.
+        c = CalRig(out h, 40);
+        c.Build();
+        h.Today = 41;
+        c.Build();
+        Check(c.ChosenDay == 41 && c.Model.Today == null, "life audit: a new day with the Calendar open on today moves it to the new today");
+        c = CalRig(out h, 40);
+        c.Build();
+        c.Press(UiDiary.DayCommand, c.Chosen + 3);
+        c.Build();
+        h.Today = 41;
+        c.Build();
+        Check(c.ChosenDay == 43 && c.Model.Today != null, "life audit: a new day leaves a Calendar the player moved to another day where it is");
+
+        // 2. The director reusing its entries between a layout and a press.
+        PlannerFlow f = PlanRig(out PlanHost host, 1);
+        PlanScene(f);
+        EntryId want = default(EntryId);
+        string wantTitle = null;
+        for (int i = 0; i < f.Model.RowCount; i++)
+        {
+            if (f.Model.Rows[i].Title == "Marketing class")
+            {
+                want = f.Model.RowCount > 0 ? PlannerEntryIdOfRow(f, i) : want;
+                wantTitle = "Marketing class";
+                f.Press(LifePages.Locate, i);   // no place: does nothing, and must not throw
+                host.Scramble();
+                Check(f.Press(LifePages.Row, i) && f.Selected.Equals(want), "life audit: a press after the director reused its entries opens the entry that was drawn");
+                PlanScene(f);
+                Check(f.Model.Entry != null && f.Model.Entry.Title == wantTitle, "life audit: and its page is that entry's (" + (f.Model.Entry != null ? f.Model.Entry.Title : "none") + ")");
+            }
+        }
+        Check(wantTitle != null, "life audit: the reuse check found its row");
+        f = PlanRig(out host, 3);
+        PlannerNote keep = PlannerStore.AddNote("Keep me", host.Today, 9 * 60);
+        PlannerNote gone = PlannerStore.AddNote("Delete me", host.Today, 10 * 60);
+        PlanScene(f);
+        f.Press(LifePages.Row, 1);
+        PlanScene(f);
+        host.Scramble();
+        Check(f.Press(UiPlanEntry.ActionCommand, FindAction(f, "Delete")) && host.DeleteYes != null, "life audit: Delete after the entries were reused asks about the note on the page");
+        host.DeleteYes();
+        Check(PlannerStore.Note(gone.Id) == null && PlannerStore.Note(keep.Id) != null, "life audit: and it removes that note, not another");
+        f = PlanRig(out host, 3);
+        PlannerStore.AddNote("First", host.Today, 9 * 60);
+        PlannerNote second = PlannerStore.AddNote("Second", host.Today, 10 * 60);
+        PlanScene(f);
+        f.Press(LifePages.Row, 1);
+        PlanScene(f);
+        host.Scramble();
+        f.Press(UiPlanEntry.ActionCommand, FindAction(f, "Mark as done"));
+        Check(second.Done && !PlannerStore.Notes[0].Done, "life audit: Mark as done after the entries were reused ticks the note on the page");
+        f = PlanRig(out host, 0);
+        PlanScene(f);
+        host.Scramble();
+        Check(f.Press(UiBoard.ShiftCommand, 0) && f.Page == UiPlanPageKind.Entry && f.Selected.Source != "junk", "life audit: a bar of the board after the reuse opens a real entry");
+        CalendarFlow k = CalRig(out host, 40, x => x.CalSpecs.Add(new CalSpec { Day = 40, Title = "Rent", A = 1, App = "RealLifeFinance" }));
+        k.Build();
+        host.Scramble();
+        Check(k.Model.Diary.Entries[0].Title == "Rent" && k.Press(UiDiary.EntryCommand, 0) && host.OpenedApp == "RealLifeFinance", "life audit: the Calendar's entries are its own copies, kept across the reuse");
+
+        // 3. A kind hidden from the lists leaves the notes the player's own.
+        f = PlanRig(out host, 3);
+        PlannerStore.AddNote("Hidden but mine", host.Today, 9 * 60);
+        PlannerStore.Show(PlannerCategory.Note, false);
+        PlanScene(f);
+        Check(f.Press(LifePages.Row, 0) && f.Page == UiPlanPageKind.Entry, "life audit: with the notes' kind hidden a note's row still opens its page");
+        PlanScene(f);
+        Check(f.Page == UiPlanPageKind.Entry && FindAction(f, "Delete") >= 0 && FindAction(f, "Mark as done") >= 0 && FindAction(f, "Edit note") >= 0,
+            "life audit: and the page offers done, edit and delete");
+
+        // 4. The past day.
+        c = CalRig(out h, 40);
+        c.Build();
+        c.Press(UiDiary.DayCommand, c.Chosen - 2);
+        c.Build();
+        Check(c.Model.AddOff && !c.Press(LifePages.Add, 0) && h.AskedTitle == null, "life audit: Add an entry on a day gone by is drawn disabled and does nothing, as the Planner's form takes none");
+        c.Press(UiDiary.DayCommand, c.Chosen + 3);
+        c.Build();
+        Check(!c.Model.AddOff && c.Press(LifePages.Add, 0), "life audit: and a day to come takes one");
+
+        // 5. Back after Save leads where the form was opened from.
+        f = PlanRig(out host, 2);
+        PlanScene(f);
+        f.Press(UiBoard.LaneCommand, 1);
+        PlanScene(f);
+        f.Press(LifePages.Add, 0);
+        PlanScene(f);
+        f.Press(UiPlanForm.OptionCommand, UiPlanForm.OptionArg(1, 0));
+        f.Press(UiPlanForm.ActionCommand, 0);
+        PlanScene(f);
+        Check(f.Page == UiPlanPageKind.Entry && f.Back() && f.Page == UiPlanPageKind.Day, "life audit: Back after saving a note added on a day's page returns to that day");
+        f = PlanRig(out host, 2);
+        PlannerStore.AddNote("Edited", host.Today + 1, 9 * 60);
+        PlanScene(f);
+        f.Press(UiBoard.LaneCommand, 1);
+        PlanScene(f);
+        for (int i = 0; i < f.Model.RowCount; i++)
+        {
+            if (f.Model.Rows[i].Title == "Edited")
+            {
+                f.Press(LifePages.Row, i);
+            }
+        }
+        PlanScene(f);
+        f.Press(UiPlanEntry.ActionCommand, FindAction(f, "Edit note"));
+        PlanScene(f);
+        f.Press(UiPlanForm.ActionCommand, 0);
+        PlanScene(f);
+        Check(f.Page == UiPlanPageKind.Entry && f.Back() && f.Page == UiPlanPageKind.Day, "life audit: Back after editing a note opened from a day's page returns to that day");
+
+        // 6. The singular, and the unit read in the game's file.
+        c = CalRig(out h, 40, x => x.CalSpecs.Add(new CalSpec { Day = 40, Title = "One", A = 1 }));
+        c.Build();
+        Check(c.Model.Diary.ChosenTitle == "1 entry, 0 done", "life audit: a day with one entry says '1 entry' (" + c.Model.Diary.ChosenTitle + ")");
+        c = CalRig(out h, 40, x =>
+        {
+            x.CalSpecs.Add(new CalSpec { Day = 40, Title = "One", A = 1 });
+            x.CalSpecs.Add(new CalSpec { Day = 40, Title = "Two", A = 2 });
+        });
+        c.Build();
+        Check(c.Model.Diary.ChosenTitle == "2 entries, 0 done", "life audit: two entries are plural");
+        string screenText = ModSource(@"Ui\Life\CalendarScreen.cs");
+        Check(!screenText.Contains("UnitHelper") && ModSource(@"Calendar\CalendarGame.cs").Contains("UnitHelper.useImperial"), "life audit: the game's unit is read in the Calendar's game file, not the screen");
+    }
+
+    private static EntryId PlannerEntryIdOfRow(PlannerFlow f, int row)
+    {
+        // the id of an Upcoming row, read from the flow's own copies by title
+        foreach (PlannerEntry e in f.Items)
+        {
+            if (e.Title == f.Model.Rows[row].Title)
+            {
+                return e.Id;
+            }
+        }
+        return default(EntryId);
     }
 
     // ---------------------------------------------------------------- the board's hours

@@ -25,6 +25,18 @@ namespace RealLifeOverhaul.Ui
 
         public bool Dirty => _flow.Dirty;
 
+        /// <summary>The app was opened: back on today's month and day, or on the month asked for (CalendarDirector.OpenAt).</summary>
+        public void Opened()
+        {
+            _flow.Opened(_wanted);
+            _wanted = -1;
+        }
+
+        private int _wanted = -1;
+
+        /// <summary>The month the next opening is for (CalendarDirector.OpenAt).</summary>
+        public void Wanted(int month) => _wanted = month;
+
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
             if (_flow.Dirty)
@@ -77,7 +89,7 @@ namespace RealLifeOverhaul.Ui
                     return;
                 }
                 _director.Look(month);
-                into.AddRange(_director.List.Items);
+                CalendarList.Copy(_director.List.Items, into);
             }
 
             public void Plan(int day, List<PlannerEntry> into)
@@ -88,7 +100,7 @@ namespace RealLifeOverhaul.Ui
                     return;
                 }
                 planner.Look(day, day, true);
-                into.AddRange(planner.List.Items);
+                PlannerList.Copy(planner.List.Items, into);
             }
 
             public string Clock(int minuteOfDay) => PlannerText.Clock(minuteOfDay);
@@ -98,12 +110,8 @@ namespace RealLifeOverhaul.Ui
             // the sky as the camera reads it, the air's degrees as the HUD works them out, in the unit the game is set to
             public bool Weather(out string skyKey, out string skyEnglish, out int celsius, out bool imperial)
             {
-                string token = Photos.PhotoShot.Token();
-                skyKey = Photos.PhotoShot.Words(token);
                 skyEnglish = null;
-                celsius = Photos.PhotoShot.Degrees(token);
-                imperial = UnitHelper.useImperial;
-                return true;
+                return CalendarGame.Weather(out skyKey, out celsius, out imperial);
             }
 
             public string AppName(string appId) => PhoneApp.TitleOf(appId);

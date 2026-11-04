@@ -30889,6 +30889,7 @@
   "reallife_gallery_edit_crop": "Recorte",
   "reallife_gallery_edit_copy": "Cópia",
   "reallife_ui_life_of_day": "{at} de {count}, {day}",
+  "reallife_ui_life_day_line_one": "1 item, {done} feito",
   "reallife_ui_life_repeat_weekly": "Toda semana",
   "reallife_ui_life_next_head": "A seguir",
   "reallife_ui_life_next_none": "Nada mais em horário marcado",

@@ -52,6 +52,7 @@ namespace RealLifeOverhaul.Ui
         public string Title;
         public UiDiaryModel Diary;
         public string Weather;
+        public bool AddOff;                 // a day gone by takes no new entry, as the Planner's form takes none
         public string Add, Open, Today;      // Today: back to this month and day; null while the chosen day is today
         public string Move, Select, Back;
     }
@@ -152,7 +153,7 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDiary.Lay(s, at, m.Diary, x, y, w, Math.Max(UiTokens.S16 * 4f, h), keys);
             }
-            Buttons(s, at, m.Add, m.Open, x, bottom - UiTokens.Control, w, keys, m.Today);
+            Buttons(s, at, m.Add, m.Open, x, bottom - UiTokens.Control, w, keys, m.Today, m.AddOff);
             Bar(s, frame, keys, m.Move, m.Select, m.Back, null);
         }
 
@@ -280,7 +281,7 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Node(s, at, x, y, w - locate, PlanRow - UiTokens.S1, Row, index, face);
         }
 
-        private static void Buttons(UiScene s, UiAt at, string add, string second, float x, float y, float w, IUiKeys keys, string third = null)
+        private static void Buttons(UiScene s, UiAt at, string add, string second, float x, float y, float w, IUiKeys keys, string third = null, bool addOff = false)
         {
             if (string.IsNullOrEmpty(add) && string.IsNullOrEmpty(second) && string.IsNullOrEmpty(third))
             {
@@ -290,7 +291,7 @@ namespace RealLifeOverhaul.Ui
             if (!string.IsNullOrEmpty(add))
             {
                 float bw = UiDraw.ButtonWidth(UiButtonKind.Primary, add, UiIcon.None, UiAction.Alt, keys);
-                UiDraw.Button(s, at, cx, y, bw, UiTokens.Control, UiButtonKind.Primary, add, UiIcon.None, UiAction.Alt, keys, Add, 0);
+                UiDraw.Button(s, at, cx, y, bw, UiTokens.Control, UiButtonKind.Primary, add, UiIcon.None, UiAction.Alt, keys, Add, 0, addOff);
                 cx += bw + UiTokens.S3;
             }
             if (!string.IsNullOrEmpty(second) && cx < x + w - UiTokens.S16)

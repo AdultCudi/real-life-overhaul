@@ -261,17 +261,23 @@ namespace RealLifeOverhaul.Ui
                     {
                         day = note.Day;
                     }
-                    PlannerStore.Falls(note, day, out bool done);
-                    var e = new PlannerEntry
-                    {
-                        Title = note.Title, Day = day, Start = note.Start, Own = true, Done = done, Category = PlannerCategory.Note,
-                        Street = note.Street, Number = note.Number, HasPlace = note.HasPlace,
-                    };
-                    e.Id = PlannerStore.NoteEntry(note, day);
-                    _rows.Add(e);
+                    _rows.Add(NoteAsEntry(note, day));
                 }
             }
             FillList(today);
+        }
+
+        // A note as an entry of its day, read from the store itself: the Notes tab and a note's page do not depend on the kind being shown in the lists.
+        private PlannerEntry NoteAsEntry(PlannerNote note, int day)
+        {
+            PlannerStore.Falls(note, day, out bool done);
+            var e = new PlannerEntry
+            {
+                Title = note.Title, Day = day, Start = note.Start, Own = true, Done = done, Category = PlannerCategory.Note, Where = note.Place,
+                Street = note.Street, Number = note.Number, HasPlace = note.HasPlace, Id = PlannerStore.NoteEntry(note, day),
+            };
+            e.State = PlannerLogic.StateOf(e, _host.NowMinutes);
+            return e;
         }
 
         private void FillList(int today)
@@ -713,6 +719,12 @@ namespace RealLifeOverhaul.Ui
                     e = _items[i];
                     break;
                 }
+            }
+            PlannerNote own = e == null && _selId.Source == PlannerStore.NoteSourceId ? PlannerStore.Note(_selId.A) : null;
+            if (own != null && PlannerStore.Falls(own, _selDay, out _))
+            {
+                e = NoteAsEntry(own, _selDay);   // its kind is hidden from the lists: the note itself is still the player's to change
+                _items.Add(e);
             }
             if (e == null)
             {
@@ -1545,7 +1557,7 @@ namespace RealLifeOverhaul.Ui
             }
             _selId = PlannerStore.NoteEntry(note, note.Day);
             _selDay = note.Day;
-            _fromPage = UiPlanPageKind.List;
+            _fromPage = _fromFormPage == UiPlanPageKind.Entry ? _fromPage : _fromFormPage == UiPlanPageKind.Day ? UiPlanPageKind.Day : UiPlanPageKind.List;
             _page = UiPlanPageKind.Entry;
             _draftId = 0;
             _force = true;

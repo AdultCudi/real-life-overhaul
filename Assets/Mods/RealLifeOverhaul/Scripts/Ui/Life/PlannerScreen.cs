@@ -82,7 +82,7 @@ namespace RealLifeOverhaul.Ui
                     return;
                 }
                 _director.Look(fromDay, toDay, true);
-                into.AddRange(_director.List.Items);
+                PlannerList.Copy(_director.List.Items, into);   // the director reuses these objects at its next look
             }
 
             public string Clock(int minuteOfDay) => PlannerText.Clock(minuteOfDay);

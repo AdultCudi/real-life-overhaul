@@ -34,6 +34,7 @@ namespace RealLifeOverhaul.Calendar
         public readonly CalendarList List = new CalendarList();
 
         private CalendarApp _view;
+        private RealLifeOverhaul.Ui.CalendarScreen _kit;   // the kit's screen of the app, told each time the app opens
         private PhoneApp _app;
         private float _next;
         private bool _gaveUp;     // the game's phone is not built as expected: logged once, not tried again
@@ -154,9 +155,13 @@ namespace RealLifeOverhaul.Calendar
                 TitleKey = "reallife_calendar_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(), new Color32(108, 178, 255, 255), new Color32(36, 92, 196, 255), 0.42f, "AppIcon-Calendar"),
                 Build = view.Build,
-                Opened = view.Opened,
+                Opened = () =>
+                {
+                    view.Opened();
+                    _kit?.Opened();
+                },
                 Closed = view.Closed,
-                Kit = () => new RealLifeOverhaul.Ui.CalendarScreen(this),
+                Kit = () => _kit = new RealLifeOverhaul.Ui.CalendarScreen(this),
                 KitScreen = "calendar",
                 KitIcon = RealLifeOverhaul.Ui.UiIcon.Calendar,
             };
@@ -193,6 +198,7 @@ namespace RealLifeOverhaul.Calendar
             if (_app != null && Settings.Calendar)
             {
                 _view?.Want(month);
+                _kit?.Wanted(month);
                 _app.Open();
             }
         }

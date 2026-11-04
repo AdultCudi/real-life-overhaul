@@ -51,7 +51,7 @@ namespace RealLifeOverhaul.Ui
                 new UiScreenDef("calendar", UiTemplate.AppWindow, "CalendarScreen", new[]
                 {
                     "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back", "reallife_calendar_app",
-                    "reallife_calendar_month_4", "reallife_ui_life_week", "reallife_ui_life_day_line", "reallife_ui_life_nothing_day",
+                    "reallife_calendar_month_4", "reallife_ui_life_week", "reallife_ui_life_day_line", "reallife_ui_life_day_line_one", "reallife_ui_life_nothing_day",
                     "reallife_ui_life_tomorrow", "reallife_ui_life_more", "reallife_ui_life_locate", "reallife_ui_life_fact_place",
                     "reallife_ui_life_weather", "reallife_ui_hud_weather_sunny", "reallife_ui_life_add", "reallife_ui_life_open_planner",
                     "common_monday", "common_tuesday", "common_wednesday", "common_thursday", "common_friday", "common_saturday", "common_sunday",

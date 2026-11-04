@@ -60,6 +60,7 @@ namespace RealLifeOverhaul.Ui
         private readonly List<string> _apps = new List<string>(64);
         private int _month;
         private int _chosen;
+        private int _builtOn = -1;     // the game day the last look was for
         private int _sig = int.MinValue;
         private bool _force = true;
 
@@ -101,6 +102,19 @@ namespace RealLifeOverhaul.Ui
 
         public void Refresh() => _force = true;
 
+        /// <summary>The app was opened: on today's month and day, or on the month asked for with its first day (or today in it).</summary>
+        public void Opened(int month = -1)
+        {
+            ToToday();
+            if (month >= 0)
+            {
+                int year = _host.YearDays;
+                _month = MonthViewRules.Step(month, 0, CalendarRules.MonthOf(_host.Today, year));
+                int first = CalendarRules.MonthStart(_month, year);
+                _chosen = MonthViewRules.ChosenDay(_host.Today, first, CalendarRules.MonthEnd(_month, year)) - first + 1;
+            }
+        }
+
         // ---------------------------------------------------------------- what is shown
 
         public void Build()
@@ -108,6 +122,11 @@ namespace RealLifeOverhaul.Ui
             _sig = Signature();
             _force = false;
             int today = _host.Today, year = _host.YearDays;
+            if (_builtOn >= 0 && _builtOn != today && _month == CalendarRules.MonthOf(_builtOn, year) && ChosenDay == _builtOn)
+            {
+                ToToday();   // a new day while the page stood on the old today: it follows
+            }
+            _builtOn = today;
             int from = CalendarRules.MonthStart(_month, year), length = CalendarRules.MonthLength(_month, year);
             if (_chosen > length)
             {
@@ -157,6 +176,7 @@ namespace RealLifeOverhaul.Ui
             Model.Title = _t("reallife_calendar_app", "Calendar");
             Model.Add = _t("reallife_ui_life_add", "Add an entry");
             Model.Open = _t("reallife_ui_life_open_planner", "Open Planner");
+            Model.AddOff = chosenDay < today;
             Model.Today = _month == todayMonth && chosenDay == today ? null : _t("reallife_ui_life_today", "Today");
             Model.Move = _t("reallife_ui_prompt_move", "Move");
             Model.Select = _t("reallife_ui_prompt_select", "Select");
@@ -169,7 +189,8 @@ namespace RealLifeOverhaul.Ui
                 Today = today >= from && today < from + length ? today - from + 1 : 0,
                 Chosen = _chosen, PastBefore = today >= from && today < from + length ? today - from + 1 : 0,
                 Entries = _entries.ToArray(),
-                ChosenTitle = Fill("reallife_ui_life_day_line", "count", count.ToString(), "done", done.ToString()),
+                ChosenTitle = count == 1 ? Fill("reallife_ui_life_day_line_one", "done", done.ToString())
+                    : Fill("reallife_ui_life_day_line", "count", count.ToString(), "done", done.ToString()),
                 ChosenEmpty = _t("reallife_ui_life_nothing_day", "Nothing is set for this day. What you plan shows here."),
                 AheadTitle = chosenDay == today ? _t("reallife_ui_life_tomorrow", "Tomorrow") : _t("reallife_ui_life_day_after", "The next day"),
                 More = _t("reallife_ui_life_more", "+{0} more"),
@@ -270,6 +291,10 @@ namespace RealLifeOverhaul.Ui
                     return true;
                 }
                 case LifePages.Add:
+                    if (ChosenDay < _host.Today)
+                    {
+                        return false;   // the Planner's form takes no day gone by either
+                    }
                     _host.AskTitle(string.Empty, text =>
                     {
                         string clean = PlannerStore.Clean(text);
