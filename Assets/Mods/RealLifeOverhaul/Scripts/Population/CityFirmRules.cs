@@ -122,6 +122,41 @@ namespace RealLifeOverhaul.Population
             return (int)Math.Min(full, let);
         }
 
+        public const int PriceMoveLeast = 25;   // thousandths: a business whose prices move this far (2.5%) between two days has made a move worth telling
+
+        /// <summary>How far a business's prices moved between two readings, thousandths of the earlier (a fall below nought); 0 for a move too small to tell, or no earlier reading.</summary>
+        public static int PriceMove(int was, int now)
+        {
+            if (was <= 0 || now <= 0)
+            {
+                return 0;
+            }
+            int move = (int)((long)(now - was) * 1000 / was);
+            return Math.Abs(move) >= PriceMoveLeast ? move : 0;
+        }
+
+        /// <summary>
+        /// What a business of the city or of a rival did, noted for the paper and the Economy app: it opened (it is new to the table), or, for the city's, it moved its
+        /// prices. The player's and a guest's businesses are no news of the city's, and a business with no name has no story.
+        /// </summary>
+        public static void Noted(PopulationState s, in BusinessSeed bs, bool opened, int was, int now, int day)
+        {
+            if ((bs.Owner != Owner.City && bs.Owner != Owner.Rival) || string.IsNullOrEmpty(bs.Name))
+            {
+                return;
+            }
+            if (opened)
+            {
+                s.Events.Add(FirmEventKind.Opened, bs.Owner, day, 0, bs.Name);
+                return;
+            }
+            int move = bs.Owner == Owner.City ? PriceMove(was, now) : 0;
+            if (move != 0)
+            {
+                s.Events.Add(FirmEventKind.PriceMoved, Owner.City, day, move, bs.Name);
+            }
+        }
+
         public const int LeaseUp = 100;   // thousandths of a floor's jobs its firms take on a month at the most
 
         /// <summary>The jobs of a floor's firms at a level.</summary>

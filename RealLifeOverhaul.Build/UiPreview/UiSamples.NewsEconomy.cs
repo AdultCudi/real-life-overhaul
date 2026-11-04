@@ -37,7 +37,7 @@ internal static partial class UiSamples
         {
             new UiFigureModel { Label = t("reallife_econapp_tile_inflation", "Inflation a year"), Value = "6.0%", Change = "+0.6" + month, Rising = true, Good = false },
             new UiFigureModel { Label = t("reallife_econapp_tile_rate", "Bank rate"), Value = "4.00%", Change = "+0.50" + month, Rising = true, Good = false },
-            new UiFigureModel { Label = t("reallife_econapp_tile_unemployment", "Unemployment"), Value = "5.9%", Change = "+0.4" + month, Rising = true, Good = false }
+            new UiFigureModel { Label = t("reallife_econapp_tile_unemployment", "Unemployment"), Value = "5.9%", Change = "+0.4 " + NewsFill(t("reallife_news_in_days", "in {days} days"), "days", "29"), Rising = true, Good = false }
         };
         m.Chart = NewsChart(t, state == "jobs" || state == "finances" ? 30 : 120, state);
         if (state == "overview")
@@ -81,6 +81,16 @@ internal static partial class UiSamples
             m.Table = NewsDistricts(t);
             m.TableTitle = t("reallife_news_districts_pull", "Districts by pull on customers");
         }
+        else if (state == "finances")
+        {
+            string days = " " + NewsFill(t("reallife_news_in_days", "in {days} days"), "days", "119");
+            m.Figures = new[]
+            {
+                new UiFigureModel { Label = t("reallife_news_series_reserve", "Reserve"), Value = "$4,210,000", Change = "+$310,000" + days, Rising = true, Good = true },
+                new UiFigureModel { Label = t("reallife_news_series_revenue", "Revenue"), Value = "$612,000", Change = "+$48,000" + days, Rising = true, Good = true },
+                new UiFigureModel { Label = t("reallife_news_series_spending", "Spending"), Value = "$574,000", Change = "+$61,000" + days, Rising = true, Good = false }
+            };
+        }
         else if (state == "jobs")
         {
             m.Figures = new UiFigureModel[0];
@@ -120,7 +130,11 @@ internal static partial class UiSamples
         {
             new NewsMove { Mark = "HG", Head = NewsFill(rival, "who", "Huang Guo"), Detail = NewsFill(detail, "firm", "Guo Holdings", "day", "284") },
             new NewsMove { Mark = "IB", Head = NewsFill(rival, "who", "Imani Brooks"), Detail = NewsFill(detail, "firm", "Brooks Group", "day", "286") },
-            new NewsMove { Mark = "KM", Head = NewsFill(rival, "who", "Kwame Mensah"), Detail = NewsFill(detail, "firm", "Mensah Auto Group", "day", "288") }
+            new NewsMove { Mark = "KM", Head = NewsFill(rival, "who", "Kwame Mensah"), Detail = NewsFill(detail, "firm", "Mensah Auto Group", "day", "288") },
+            new NewsMove { Mark = "PL", Head = NewsFill(t("reallife_news_moved_firm_up", "{firm} raised its prices"), "firm", "Pizzeria Luigi"),
+                Detail = NewsFill(t("reallife_news_moved_firm_detail", "by {percent}%, day {day}"), "percent", "6.0", "day", "287") },
+            new NewsMove { Mark = "CB", Head = NewsFill(t("reallife_news_moved_firm_down", "{firm} cut its prices"), "firm", "Corner Bakery"),
+                Detail = NewsFill(t("reallife_news_moved_firm_detail", "by {percent}%, day {day}"), "percent", "3.5", "day", "288") }
         };
     }
 

@@ -173,6 +173,11 @@ namespace RealLifeOverhaul.Ui
         public NewsTitle[] Titles = new NewsTitle[0];
         public string StandLine;                      // the connection, over the titles
         public UiDataTableModel Shares;               // the Ledger's share prices page
+        public UiActionModel[] ReadTitles = new UiActionModel[0];   // the reading page: the papers to pick, the one open as a chip
+        public UiActionModel[] ReadDays = new UiActionModel[0];     // ... the days of the open paper's editions
+        public UiActionModel ReadPrinted;                           // ... the printed page of the edition open; Label null for none
+        public string ReadNote;                                     // ... a quiet line under the chips (a subscription that ended)
+        public string EmptyAction;                                  // the label of the button under an empty state that leads to the Titles tab; null for none
         public UiActionModel[] Actions = new UiActionModel[0];
         public UiPrompt[] Prompts = new UiPrompt[0];
         public string EmptyTitle;
@@ -204,5 +209,9 @@ namespace RealLifeOverhaul.Ui
         public const int Back = 449;       // the page's back button: one step to the page it was opened from
         public const int District = 448;   // a district row: added to UiDataTable's own offsets
         public const int Title = 450;      // a paper's action on the Newsstand: its index in Arg
+        public const int ReadTitle = 452;  // the reading page: a paper picked to read (its index in Arg)
+        public const int ReadDay = 453;    // ... a day of its editions (the day in Arg)
+        public const int ReadPrinted = 454;   // ... the edition opened as the printed page
+        public const int ToTitles = 455;   // ... the way to the Titles tab, where a paper is taken out
     }
 }

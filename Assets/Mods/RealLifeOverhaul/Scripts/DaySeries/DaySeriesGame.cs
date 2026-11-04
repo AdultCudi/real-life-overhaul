@@ -45,6 +45,13 @@ namespace RealLifeOverhaul.DaySeries
             Moves(book, day);
             Retail(book, day);
             CityRetail(book, day);
+            CityJobs(book, day);
+        }
+
+        // The city's unemployment as the population counts it, a day's reading; nothing while the population is not running.
+        private static void CityJobs(DaySeriesBook book, int day)
+        {
+            DaySeriesRules.CityJobs(book, day, Population.CityPopulation.Unemployment);
         }
 
         private static readonly List<string> CityNames = new List<string>(DaySeriesCatalogue.CityGoodsMost);

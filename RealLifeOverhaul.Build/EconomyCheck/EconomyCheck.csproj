@@ -101,6 +101,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\DaySeries\DaySeriesStore.cs" Link="Mod\DaySeries\DaySeriesStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\DaySeries\DaySeriesRules.cs" Link="Mod\DaySeries\DaySeriesRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\News\NewsRules.cs" Link="Mod\News\NewsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\News\NewsLoanFix.cs" Link="Mod\News\NewsLoanFix.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsModel.cs" Link="Mod\News\NewsModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsPages.cs" Link="Mod\News\NewsPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsPages.Parts.cs" Link="Mod\News\NewsPages.Parts.cs" />
@@ -111,6 +112,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsPeopleRules.cs" Link="Mod\News\NewsPeopleRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsPages.Stand.cs" Link="Mod\News\NewsPages.Stand.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsText.cs" Link="Mod\News\NewsText.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsReadingPage.cs" Link="Mod\News\NewsReadingPage.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\MoneyModel.cs" Link="Mod\Money\MoneyModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\MoneyPages.cs" Link="Mod\Money\MoneyPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\MoneyHost.cs" Link="Mod\Money\MoneyHost.cs" />
@@ -428,6 +430,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\NewsstandCatalogue.cs" Link="Mod\NewsstandCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\NewsstandState.cs" Link="Mod\NewsstandState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\NewsstandRules.cs" Link="Mod\NewsstandRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerOpening.cs" Link="Mod\LedgerOpening.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\NewsstandReading.cs" Link="Mod\NewsstandReading.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\NewsstandStore.cs" Link="Mod\NewsstandStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\SharedCityWire.cs" Link="Mod\SharedCityWire.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Faults\FaultModel.cs" Link="Mod\FaultModel.cs" />
@@ -1034,6 +1038,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\RegionRules.cs" Link="Mod\Population\RegionRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\GrowthRules.cs" Link="Mod\Population\GrowthRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\CityFirmRules.cs" Link="Mod\Population\CityFirmRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\FirmEventLog.cs" Link="Mod\Population\FirmEventLog.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\FirmEvent.cs" Link="Mod\Population\FirmEvent.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\FirmEventKind.cs" Link="Mod\Population\FirmEventKind.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationSim.cs" Link="Mod\Population\PopulationSim.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationStore.cs" Link="Mod\Population\PopulationStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationShare.cs" Link="Mod\Population\PopulationShare.cs" />

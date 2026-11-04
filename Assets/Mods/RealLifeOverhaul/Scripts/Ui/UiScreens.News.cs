@@ -17,7 +17,8 @@ namespace RealLifeOverhaul.Ui
             screens.Add(new UiScreenDef("newsstand", UiTemplate.AppWindow, "NewsstandScreen", NewsKeys(shared,
                 "reallife_ledger_online_app", "reallife_ledger_online_tab_titles", "reallife_ledger_online_tab_reading"))
                 .Switch(UiScreenSwitches.News));
-            screens.Add(new UiScreenDef("ledger", UiTemplate.AppWindow, "LedgerScreen", NewsKeys(shared, "reallife_ledger_title", "reallife_news_nav_markets"))
+            screens.Add(new UiScreenDef("ledger", UiTemplate.AppWindow, "LedgerScreen", NewsKeys(shared, "reallife_ledger_title", "reallife_news_nav_markets",
+                "reallife_ledger_opened_city", "reallife_ledger_head_opened_city"))
                 .Switch(UiScreenSwitches.News));
             screens.Add(new UiScreenDef("ending", UiTemplate.Decision, "EndingScreen", NewsKeys(shared,
                 "reallife_news_end_kicker", "reallife_news_end_load", "reallife_news_end_quit"))
@@ -89,10 +90,13 @@ namespace RealLifeOverhaul.Ui
                 "reallife_news_stand_sum", "reallife_news_stand_save",
                 "reallife_news_stand_sub", "reallife_news_stand_stop",
                 "reallife_news_stand_off", "reallife_news_stand_off_body", "reallife_news_stand_out", "reallife_news_stand_out_body",
+                "reallife_news_read_none", "reallife_news_read_not_held", "reallife_news_read_not_held_body", "reallife_ledger_online_to_titles",
+                "reallife_ledger_online_printed", "reallife_ledger_online_nothing", "reallife_ledger_online_box_kept", "reallife_ledger_online_gone",
+                "reallife_ledger_online_day_today", "reallife_ledger_online_day", "reallife_news_in_days",
+                "reallife_news_moved_firm_up", "reallife_news_moved_firm_down", "reallife_news_moved_firm_detail",
                 "reallife_ledger_online_name_ledger", "reallife_ledger_online_name_exchange",
                 "reallife_ledger_online_name_street", "reallife_ledger_online_name_review", "reallife_ledger_online_name_pass",
                 "reallife_news_paper_quiet", "reallife_news_paper_quiet_body",
-                "reallife_news_open_body",
                 "reallife_news_end_kicker", "reallife_news_end_body", "reallife_news_end_load", "reallife_news_end_quit",
                 "reallife_news_end_days", "reallife_news_end_worth", "reallife_news_end_shops", "reallife_news_end_staff", "reallife_news_end_rank",
                 "reallife_ledger_title",
@@ -104,7 +108,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_news_hall_mark", "reallife_news_head_growing", "reallife_news_head_overheating", "reallife_news_head_recession",
                 "reallife_news_head_slowing", "reallife_news_head_steady", "reallife_news_hold_down", "reallife_news_hold_head",
                 "reallife_news_hold_up", "reallife_news_holdings", "reallife_news_in_month", "reallife_news_index_close", "reallife_news_jobs_table",
-                "reallife_news_moved_detail", "reallife_news_moved_rival", "reallife_news_movers", "reallife_news_on_day", "reallife_news_open_head",
+                "reallife_news_moved_detail", "reallife_news_moved_rival", "reallife_news_movers", "reallife_news_on_day",
                 "reallife_news_prices_shops", "reallife_news_prices_today", "reallife_news_sectors", "reallife_news_stand_chip",
                 "reallife_news_stand_lead", "reallife_news_stand_to_read", "reallife_news_stand_week", "reallife_news_the_economy",
                 "reallife_ledger_tab_front", "reallife_ledger_tab_markets", "reallife_ledger_tab_prices", "reallife_ledger_risers",

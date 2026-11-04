@@ -19,6 +19,7 @@ namespace RealLifeOverhaul.Ui
         private static readonly int[] Mine = new int[8];
         private static readonly int[] GoodRaw = new int[NewsRules.DaysBook];
         private const int MovesMost = 6;
+        private const int RivalMovesMost = 3, FirmMovesMost = 3;   // so rivals and firms both have a place in the list
 
         private void FillPrices(NewsModel model, OutlookBook book)
         {
@@ -121,7 +122,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < names.Count; i++)
             {
                 string key = names[i];
-                if (key != null && key.Length > DaySeriesCatalogue.CityPrefix.Length && key.StartsWith(DaySeriesCatalogue.CityPrefix, StringComparison.Ordinal))
+                if (DaySeriesCatalogue.IsCityGood(key))
                 {
                     goods.Add(key.Substring(DaySeriesCatalogue.CityPrefix.Length));
                 }
@@ -209,8 +210,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < names.Count; i++)
             {
                 string key = names[i];
-                if (key == null || key.Length <= DaySeriesCatalogue.CityPrefix.Length || !key.StartsWith(DaySeriesCatalogue.CityPrefix, StringComparison.Ordinal)
-                    || series.Window(key, end, span, GoodRaw) <= 0)
+                if (!DaySeriesCatalogue.IsCityGood(key) || series.Window(key, end, span, GoodRaw) <= 0)
                 {
                     continue;
                 }
@@ -268,12 +268,13 @@ namespace RealLifeOverhaul.Ui
             };
         }
 
-        // Rivals who raised prices this week, from their moves, and City Hall only while a price policy that exists stands off the city's own.
+        // Rivals who raised prices this week, from their moves; the city's firms that moved theirs, from what the population recorded of them; and City Hall,
+        // only while a price policy that exists stands off the city's own.
         private NewsMove[] MovedThisWeek(int day)
         {
             var moves = new List<NewsMove>(MovesMost);
             RivalFile file = RivalDirector.Instance != null ? RivalDirector.Instance.File : null;
-            for (int i = 0; file != null && i < file.Moves.Count && moves.Count < MovesMost; i++)
+            for (int i = 0; file != null && i < file.Moves.Count && moves.Count < RivalMovesMost; i++)
             {
                 RivalMove move = file.Moves[i];
                 bool open = move.State != RivalMoveState.Stopped && move.State != RivalMoveState.Failed;
@@ -289,9 +290,35 @@ namespace RealLifeOverhaul.Ui
                     Detail = OutlookText.T("reallife_news_moved_detail", "firm", who.Holding, "day", move.Announced.ToString(Inv))
                 });
             }
+            AddFirms(moves, Pop, day);
             AddHall(moves, Lever.TradeLevy);
             AddHall(moves, Lever.BusinessTax);
             return moves.ToArray();
+        }
+
+        // The city's firms that moved their prices in the last week, the newest first: the firm's name as the game names it, which way and how far.
+        private static void AddFirms(List<NewsMove> moves, Population.PopulationState pop, int day)
+        {
+            if (pop == null)
+            {
+                return;
+            }
+            int added = 0;
+            for (int i = pop.Events.Count - 1; i >= 0 && added < FirmMovesMost && moves.Count < MovesMost; i--)
+            {
+                Population.FirmEvent e = pop.Events[i];
+                if (e.Kind != Population.FirmEventKind.PriceMoved || e.Day > day || day - e.Day > 7)
+                {
+                    continue;
+                }
+                added++;
+                moves.Add(new NewsMove
+                {
+                    Mark = UiDraw.Initials(e.Name),
+                    Head = OutlookText.T(e.Value > 0 ? "reallife_news_moved_firm_up" : "reallife_news_moved_firm_down", "firm", e.Name),
+                    Detail = OutlookText.T("reallife_news_moved_firm_detail", "percent", (Math.Abs(e.Value) / 10f).ToString("0.0", Inv), "day", e.Day.ToString(Inv))
+                });
+            }
         }
 
         // City Hall's own policy, named, while it stands in force.

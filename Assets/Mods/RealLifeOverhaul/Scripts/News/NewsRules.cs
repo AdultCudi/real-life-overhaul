@@ -60,6 +60,64 @@ namespace RealLifeOverhaul.Economy
             return rateRising && variableDaily > fixedDaily;
         }
 
+        /// <summary>
+        /// A figure's change over a window of days, oldest first with <paramref name="noValue"/> for a day with no reading: from its first reading to its last,
+        /// and the days between. False when the window holds fewer than two readings (there is no change to give, and a nought would be a lie); the last
+        /// reading comes out when there is one.
+        /// </summary>
+        public static bool SeriesChange(int[] window, int count, int noValue, out int last, out int change, out int days)
+        {
+            last = noValue;
+            change = 0;
+            days = 0;
+            int first = -1, end = -1;
+            for (int i = 0; i < count && i < window.Length; i++)
+            {
+                if (window[i] != noValue)
+                {
+                    first = first < 0 ? i : first;
+                    end = i;
+                }
+            }
+            if (end < 0)
+            {
+                return false;
+            }
+            last = window[end];
+            if (end == first)
+            {
+                return false;
+            }
+            change = last - window[first];
+            days = end - first;
+            return true;
+        }
+
+        /// <summary>The last readings of a window, oldest first, at most <paramref name="most"/>, the days with none left out; null when fewer than two remain.</summary>
+        public static float[] Spark(int[] window, int count, int noValue, int most)
+        {
+            int n = 0;
+            for (int i = 0; i < count && i < window.Length; i++)
+            {
+                n += window[i] != noValue ? 1 : 0;
+            }
+            if (n < 2)
+            {
+                return null;
+            }
+            int take = n < most ? n : most;
+            var spark = new float[take];
+            int at = take;
+            for (int i = count - 1; i >= 0 && at > 0; i--)
+            {
+                if (window[i] != noValue)
+                {
+                    spark[--at] = window[i];
+                }
+            }
+            return spark;
+        }
+
         /// <summary>1 when this wage is under the going rate.</summary>
         public static int Underpaid(int going, int paid) => going > 0 && paid < going ? 1 : 0;
 
