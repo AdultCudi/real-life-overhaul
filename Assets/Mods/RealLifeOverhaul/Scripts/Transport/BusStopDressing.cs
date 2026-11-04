@@ -63,6 +63,7 @@ namespace RealLifeOverhaul
         private TransitPointer _polePointer;
         private TransitPointer _benchPointer;
         private static bool _said;      // the one line that names a piece drawn plain (see Say)
+        private static bool _putBefore; // a stop has been put out since the game started
 
         public static IModLogger Logger;
 
@@ -154,7 +155,11 @@ namespace RealLifeOverhaul
         /// <summary>Stands the dressing at a stop, for a mesh made for <paramref name="walkerRadius"/>.</summary>
         public void Put(TransitStop stop, string numbers, float walkerRadius)
         {
-            using var piece = SessionWatch.Piece("transit: a bus stop being put out");
+            // The first since the game started is named apart: once it is in view its shelter, sign, lettering and paint are drawn
+            // for the first time, which is the graphics card's work, not the main thread's (a long frame's line says which).
+            using var piece = SessionWatch.Piece(_putBefore ? "transit: a bus stop being put out"
+                : "transit: the first bus stop put out since the game started (its shelter, sign, lettering and paint drawn for the first time once in view)");
+            _putBefore = true;
             _root.SetActive(false);   // moved while off, so the mesh is cut once, in the right place
             Remodel();
             Stop = stop;

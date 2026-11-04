@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using BAModAPI;
 using GleyTrafficSystem;
@@ -11,11 +12,11 @@ namespace RealLifeOverhaul
     {
         private const float Level = 3f;              // metres up or down within which a person and a car are on the same road
 
-        // The traffic cars within 90 m that the traffic system itself is driving. Four engine calls for each car out.
+        // The traffic cars within 90 m that the traffic system itself is driving. Four engine calls for each car out; a car
+        // not measured yet is left to a frame of its own (SolidGame.MeasureWaiting) and seen from the next look.
         private int GatherCars(Vector3 player, TrafficManager traffic, List<VehicleComponent> pooled)
         {
             int count = 0;
-            _game.BeginLook();
             for (int i = 0; i < pooled.Count && count < SolidRules.MostCars; i++)
             {
                 VehicleComponent car = pooled[i];
@@ -32,7 +33,7 @@ namespace RealLifeOverhaul
                 Transform body = _game.At(index, car);
                 if (body == null)
                 {
-                    continue;   // not measured yet, and enough have been at this look
+                    continue;   // not measured yet: in a frame of its own, before the next look
                 }
                 Vector3 at = body.position;
                 float dx = at.x - player.x;
@@ -61,11 +62,22 @@ namespace RealLifeOverhaul
             return count;
         }
 
+        // Each walker's transform, by its place in the game's list (a component's transform is its own for good): the walker
+        // seen there last, and its transform. Grown only when the game puts out more walkers than ever before.
+        private Pedestrian[] _walkerSeen = new Pedestrian[128];
+        private Transform[] _walkerBody = new Transform[128];
+
         private void GatherPeople(Vector3 player, List<Pedestrian> walkers)
         {
             _grid.Begin(player.x, player.z);
             const float near = SolidRules.Near * SolidRules.Near;
-            for (int i = walkers != null ? walkers.Count - 1 : -1; i >= 0; i--)
+            int walking = walkers != null ? walkers.Count : 0;
+            if (walking > _walkerSeen.Length)
+            {
+                Array.Resize(ref _walkerSeen, walking * 2);
+                Array.Resize(ref _walkerBody, walking * 2);
+            }
+            for (int i = walking - 1; i >= 0; i--)
             {
                 Pedestrian walker = walkers[i];
                 // Switched off: gone, or in somebody's hands (a casualty). The exception is somebody the mod has sent into the road.
@@ -73,7 +85,14 @@ namespace RealLifeOverhaul
                 {
                     continue;
                 }
-                Vector3 at = walker.transform.position;
+                Transform body = _walkerBody[i];
+                if ((object)_walkerSeen[i] != walker)
+                {
+                    body = walker.transform;
+                    _walkerSeen[i] = walker;
+                    _walkerBody[i] = body;
+                }
+                Vector3 at = body.position;
                 float dx = at.x - player.x;
                 float dz = at.z - player.z;
                 if (dx * dx + dz * dz > near)
@@ -95,14 +114,28 @@ namespace RealLifeOverhaul
                 }
             }
             List<BaseHuman> standing = StreetPeople.Standing(Logger);
+            List<Vector3> listed = StreetPeople.StandingPlaces;
+            List<GameObject> objects = StreetPeople.StandingObjects;
+            List<Transform> bodies = StreetPeople.StandingBodies;
+            const float beyond = (SolidRules.Near + StreetPeople.Drift) * (SolidRules.Near + StreetPeople.Drift);
+            int read = 0;
             for (int i = standing.Count - 1; i >= 0; i--)
             {
-                BaseHuman figure = standing[i];
-                if (figure == null || !figure.gameObject.activeInHierarchy)
+                // Where they were when listed, under a second ago: one that far beyond the near distance is not near now.
+                Vector3 was = listed[i];
+                float lx = was.x - player.x;
+                float lz = was.z - player.z;
+                if (lx * lx + lz * lz > beyond)
                 {
                     continue;
                 }
-                Vector3 at = figure.transform.position;
+                read++;
+                BaseHuman figure = standing[i];
+                if (figure == null || !objects[i].activeInHierarchy)
+                {
+                    continue;
+                }
+                Vector3 at = bodies[i].position;
                 float dx = at.x - player.x;
                 float dz = at.z - player.z;
                 if (dx * dx + dz * dz <= near)
@@ -153,6 +186,9 @@ namespace RealLifeOverhaul
                 }
             }
             _grid.Build();
+            _walkersMost = Mathf.Max(_walkersMost, walking);
+            _standingMost = Mathf.Max(_standingMost, standing.Count);
+            _standingReadMost = Mathf.Max(_standingReadMost, read);
         }
 
         private void Note(int person, byte kind, int source, float height)

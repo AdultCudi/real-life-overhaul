@@ -66,7 +66,31 @@ internal static partial class Program
         ("Ui/Flare/FlareFace.Rows.cs", "Measure", new[] { "if (Math.Abs(list.Measured - w) < 0.5f)" }, new string[0],
             "a feed's rows are measured once at a width; a scroll lays them by the heights kept"),
         ("Ui/Flare/FlareFace.Rows.cs", "List", new[] { "if (py + rh > offset && py < offset + vh)", "OutOfView(" }, new string[0],
-            "only the rows in view are laid out, and a target past the view's edge waits for the scroll")
+            "only the rows in view are laid out, and a target past the view's edge waits for the scroll"),
+        // A choice on the city map (the owner's log of 4 Nov 2026: a pick of a bus stop on the map at 64 to 108 ms of the mod's own
+        // scripts, all but a few of them the game's own shutting of its map run inside the click): the game's opening and shutting
+        // of its map is the game's work, its buildings, trees, lights and markers switched for the map, kept out of the click's figure.
+        ("Core/GameUi/MapPicker.cs", "ToggleMap", new[] { "using (HotSpots.Game())", "city.cityMap.Toggle(" }, new string[0],
+            "the game's own opening and shutting of its map for a choice on it is the game's work, apart from the click's"),
+        ("Core/GameUi/MapPicker.cs", "Open", new[] { "ToggleMap(city, centre, false)" }, new[] { ".cityMap.Toggle(" },
+            "the choice opens the game's map only through ToggleMap, as the game's work"),
+        ("Core/GameUi/MapPicker.cs", "Close", new[] { "ToggleMap(city, Vector3.zero, true)" }, new[] { ".cityMap.Toggle(" },
+            "the choice shuts the game's map only through ToggleMap, as the game's work"),
+        ("Core/GameUi/MapPicker.cs", "Picked", new[] { "_pickNow ??=" }, new[] { "() => pick(" }, "a pick on the map allocates nothing"),
+        ("Core/MapPlaces.Names.cs", "GoTo", new[] { "using (HotSpots.Game())" }, new string[0],
+            "a marker's click shuts the game's map as the game's work, apart from the click's"),
+        ("Transport/TransitPointer.cs", "Clicked", new[] { "HotSpots.Time(HotClicked)" }, new string[0],
+            "a click on a stop's pole, shelter or bus, which opens the stop map, is the mod's work and named"),
+        ("Transport/TransitDirector.cs", "Awake", new[] { "PrewarmPicker)" }, new string[0],
+            "the stop map's window, entries and markers are made behind the loading screen, none in play"),
+        ("Transport/TransitDirector.Stops.cs", "PrewarmPicker", new[] { "_picker.Prepare(" }, new string[0],
+            "an entry and a marker for every stop are made ahead, asleep"),
+        ("Core/SpecialNames.cs", "Awake", new[] { "PrewarmSearch)" }, new string[0],
+            "the map's search list of every building is made behind the loading screen, not at the map's first opening"),
+        ("Core/MapTreeGuard.cs", "OnMapToggled", new[] { "SceneryTrees.Prune()" }, new[] { "SceneryTrees.Dead()", "Logger" },
+            "the frame the map switches in has the one pass that keeps it openable; the check and its line wait for the next frame"),
+        ("NewBuildings/CopyLook.cs", "Start", new[] { "if (Standing.Count == 1)" }, new[] { "_onMap = Guard.Wrap<bool>(OnMap);" },
+            "one handler on the map's event for every copied building, not one a copy")
     };
 
     private static readonly Regex GameClick = new Regex(@"\.onClick\.Invoke\(\)", RegexOptions.Compiled);

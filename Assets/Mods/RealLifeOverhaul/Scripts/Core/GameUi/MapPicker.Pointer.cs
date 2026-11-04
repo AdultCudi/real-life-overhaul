@@ -205,19 +205,21 @@ namespace RealLifeOverhaul.GameUi
         public MapPicker Owner;
         public int Index;
 
+        private Action _enter, _exit, _click;   // made once each: the pointer's moves over the list allocate nothing
+
         public void OnPointerEnter(PointerEventData eventData)
         {
-            UiClone.Safe(() => Owner?.EntryEnter(Index));
+            UiClone.Safe(_enter ??= () => Owner?.EntryEnter(Index));
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
-            UiClone.Safe(() => Owner?.EntryExit(Index));
+            UiClone.Safe(_exit ??= () => Owner?.EntryExit(Index));
         }
 
         public void OnPointerClick(PointerEventData eventData)
         {
-            UiClone.Safe(() => Owner?.EntryClick(Index));
+            UiClone.Safe(_click ??= () => Owner?.EntryClick(Index));
         }
     }
 
@@ -227,19 +229,21 @@ namespace RealLifeOverhaul.GameUi
         public MapPicker Owner;
         public int Index;
 
+        private Action _enter, _exit, _click;   // made once each: the pointer's moves over the map allocate nothing
+
         public void OnPointerEnter(PointerEventData eventData)
         {
-            UiClone.Safe(() => Owner?.MarkEnter(Index));
+            UiClone.Safe(_enter ??= () => Owner?.MarkEnter(Index));
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
-            UiClone.Safe(() => Owner?.MarkExit(Index));
+            UiClone.Safe(_exit ??= () => Owner?.MarkExit(Index));
         }
 
         public void OnPointerClick(PointerEventData eventData)
         {
-            UiClone.Safe(() => Owner?.MarkClick(Index));
+            UiClone.Safe(_click ??= () => Owner?.MarkClick(Index));
         }
     }
 }

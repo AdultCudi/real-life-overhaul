@@ -17,7 +17,9 @@ namespace RealLifeOverhaul
     /// the mod's paths that missed <see cref="SceneryTrees.Forget"/>, by another mod, or by the game. Being first, it also tells
     /// the session record that the map opens or shuts before anything is changed for it (<see cref="SessionWatch.MapToggled"/>).
     /// Also Options > Tests > Check the city map with a destroyed tree. COST: a reference comparison a frame; on each opening or
-    /// closing of the map one backward walk of the tree list (about four thousand Unity null tests, no allocation).
+    /// closing of the map one backward walk of the tree list (about eight thousand Unity null tests, no allocation); with
+    /// Developer diagnostics on, its check (a second walk) and line the frame after an opening, out of the frame the map switches in.
+    /// Its frame also runs the slices of the parts' work for the map's last change that wait for the frames after it (Core/MapParts.After).
     /// </summary>
     public sealed class MapTreeGuard : MonoBehaviour
     {
@@ -63,6 +65,14 @@ namespace RealLifeOverhaul
             {
                 // the game empties its events on every load: first again when the field is not as this last saw it
                 EventHold.First(ref GlobalEvents.onCityMapToggle, _onMap, ref _seen);
+                if (MapParts.Waiting > 0)
+                {
+                    MapParts.RunLater();   // the parts' work for the map's last change, a slice a frame after it
+                }
+                if (_taken >= 0 && Time.frameCount > _takenIn)
+                {
+                    Said();
+                }
             }
             catch (Exception e)
             {
@@ -70,18 +80,31 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Runs before the game's own handler on every opening and closing of the map.
+        // Runs before the game's own handler on every opening and closing of the map: the one pass that keeps the map
+        // openable. Its check and line wait for the next frame, out of the frame the map switches in.
         private static void OnMapToggled(bool open)
         {
             SessionWatch.MapToggled(open);   // the player's camera as it was, and the frame (nothing while the record is off)
             int taken = SceneryTrees.Prune();
             if (open && Meta.Dev.Verbose)
             {
-                int left = SceneryTrees.Dead();
-                Logger?.Info("Map check (trees): " + taken + " dead tree(s) taken out of the game's list of " + TreeController.AllTrees.Count
-                    + " before the map opened; " + SceneryTrees.Forgotten + " more taken out as the mod destroyed their objects since the start; "
-                    + left + " dead left in it" + (left == 0 ? ": PASS" : ": FAIL"));
+                _taken = taken;
+                _takenIn = Time.frameCount;
             }
+        }
+
+        private static int _taken = -1;   // dead trees the last opening of the map took out, until its line is said; -1 for none to say
+        private static int _takenIn;      // ...and the frame it opened in
+
+        // The frame after the map opened, with Developer diagnostics on: a second pass to see that none is left, and the line.
+        private static void Said()
+        {
+            int taken = _taken;
+            _taken = -1;
+            int left = SceneryTrees.Dead();
+            Logger?.Info("Map check (trees): " + taken + " dead tree(s) taken out of the game's list of " + TreeController.AllTrees.Count
+                + " before the map opened; " + SceneryTrees.Forgotten + " more taken out as the mod destroyed their objects since the start; "
+                + left + " dead left in it a frame after" + (left == 0 ? ": PASS" : ": FAIL"));
         }
 
         /// <summary>Options > Tests: copies a tree, destroys the copy the plain way, then opens and shuts the map and says in Player.log whether it opened.</summary>
