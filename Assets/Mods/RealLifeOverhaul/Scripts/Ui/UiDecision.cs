@@ -152,7 +152,8 @@ namespace RealLifeOverhaul.Ui
             return Math.Max(UiDraw.Snap(h), SideHeight(m) + UiTokens.S12 * 2f);
         }
 
-        private static float ChoiceHeight(ref UiDecisionChoice c) =>
+        /// <summary>The height a choice takes: its name and one line for each consequence (a page that lays the choices in its own room, as the Lead of an app window).</summary>
+        public static float ChoiceHeight(ref UiDecisionChoice c) =>
             UiDraw.Snap(UiTokens.S3 * 2f + UiTextRules.LineHeight(UiStyle.BodyStrong) + (c.Lines?.Length ?? 0) * (UiTokens.S1 + UiTextRules.LineHeight(UiStyle.Small)));
 
         // The side's picture and its words: the faces of the people it is about in a grid, or the emblem in its ring for a
@@ -298,9 +299,12 @@ namespace RealLifeOverhaul.Ui
             return rows * Face + (rows - 1) * UiTokens.S3;
         }
 
-        // A choice: its number in the cyan, its name, its consequences under it each behind its rise or fall in its colour,
-        // its note at the right; chosen, the cyan at a fifth. Returns its height.
-        private static float Choice(UiScene s, UiAt at, ref UiDecisionChoice c, int index, bool chosen, float x, float y, float w, IUiKeys keys)
+        /// <summary>
+        /// A choice: its number in the cyan, its name, its consequences under it each behind its rise or fall in its colour, its note at the right; chosen, the
+        /// cyan at a fifth. Public so that a page can lay choices in its own room (the Company app's Lead); its press runs <paramref name="command"/>, the card's own by default.
+        /// Returns its height.
+        /// </summary>
+        public static float Choice(UiScene s, UiAt at, ref UiDecisionChoice c, int index, bool chosen, float x, float y, float w, IUiKeys keys, int command = ChoiceCommand)
         {
             float h = ChoiceHeight(ref c);
             int face = UiDraw.Box(s, at, x - UiTokens.S3, y, w + UiTokens.S3 * 2f, h, chosen ? UiRole.RowSel : UiRole.Row, UiRole.None, UiTokens.RadiusLarge,
@@ -331,7 +335,7 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.ConsequenceLine(s, inside, tx, ly, tw, ref c.Lines[i], chosen);
                 ly += lh;
             }
-            UiDraw.Node(s, at, x - UiTokens.S3, y, w + UiTokens.S3 * 2f, h, ChoiceCommand, index, face, c.Disabled, -1, 0, c.Key);
+            UiDraw.Node(s, at, x - UiTokens.S3, y, w + UiTokens.S3 * 2f, h, command, index, face, c.Disabled, -1, 0, c.Key);
             // The cap after the target, so it is not the target's own key (that is its number): the screen takes F and P itself.
             UiDraw.ChoiceCap(s, inside, x + w, ny, nameH, c.Cap, keys);
             return h;
