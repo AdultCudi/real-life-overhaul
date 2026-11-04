@@ -103,11 +103,8 @@ namespace RealLifeOverhaul.Ui
             };
             if (state.Positions.Count > 0)
             {
-                long mine = StocksFigures.YourDay(state);
-                var more = new UiFigureModel[m.Figures.Length + 1];
-                Array.Copy(m.Figures, more, m.Figures.Length);
-                more[m.Figures.Length] = new UiFigureModel { Label = words("reallife_stk_your_day", "Your day"), Value = (mine > 0 ? "+" : mine < 0 ? "-" : string.Empty) + MarketText.Money(Math.Abs(mine)), Good = mine >= 0 };
-                m.Figures = more;
+                long mine = StocksFigures.YourDay(state);   // the kit's figure row holds four: the player's day stands in the status line beside the market's
+                m.Note = words("reallife_stk_your_day", "Your day") + " " + (mine > 0 ? "+" : mine < 0 ? "-" : string.Empty) + MarketText.Money(Math.Abs(mine));
             }
             m.TapeTitle = words("reallife_stk_tape", "Who is trading");
             m.Tape = Tape(state, 0, 3, words);

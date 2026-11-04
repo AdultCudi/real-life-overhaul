@@ -463,6 +463,11 @@ namespace RealLifeOverhaul.Ui
             {
                 m.Status = Status(d);
             }
+            if (m.Page == StocksPage.Market && !string.IsNullOrEmpty(m.Note))
+            {
+                m.Status += "   " + m.Note;   // the player's day beside the market's state
+                m.Note = null;
+            }
         }
 
         public static string FounderTitle(OwnAction a, UiWords w)

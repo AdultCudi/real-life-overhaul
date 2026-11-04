@@ -30,14 +30,13 @@ internal static partial class UiSamples
                     new UiFigureModel { Label = t("reallife_mkt_col_index", "Index"), Value = "14,280", Change = "+2.40%", Good = true, Trend = new[] { 1f, 2f, 2f, 3f, 4f } },
                     new UiFigureModel { Label = t("reallife_stk_small", "Small caps"), Value = "4,120" },
                     new UiFigureModel { Label = t("reallife_stk_all", "All shares"), Value = "86,400" },
-                    new UiFigureModel { Label = t("reallife_stk_today", "Market today"), Value = "96 / 28 / 1.2m" },
-                    new UiFigureModel { Label = t("reallife_stk_your_day", "Your day"), Value = "+$39,998", Good = true }
+                    new UiFigureModel { Label = t("reallife_stk_today", "Market today"), Value = "96 / 28 / 1.2m" }
                 };
                 m.OrdersTitle = t("reallife_stk_your_orders", "Your orders");
                 m.OrdersCount = t("reallife_stk_orders_open_count", "{count} open").Replace("{count}", "2");
                 m.OrderLines = new[] { "Buy 500 HSF, limit $52.80", "Sell 2,000 GMF, limit $32.50" };
                 m.OrderValues = new[] { "$26,400", "$65,000" };
-                m.Status = "Open 09:00 to 16:00";
+                m.Status = "Open 09:00 to 16:00   " + t("reallife_stk_your_day", "Your day") + " +$39,998";
                 return true;
             case "portfolio_pays":
             case "portfolio_account":
