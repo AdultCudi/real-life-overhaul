@@ -16,8 +16,7 @@ namespace RealLifeOverhaul.Ui
         public float MoneyX;                          // px: the money pill's left edge, before the settings at the strip's corner
         public int Apps;                              // the app row's apps before All apps
         public float RowX, RowW;                      // px: the app row's left edge and its width; 0 wide for no row
-        public float PromptX, Prompts;                // px: the keys' prompts' left edge and width, before the right pills
-        public float Tools;                           // px: the top bar's small buttons' pill after the place (appended with the HUD's screens)
+        public float Tools;                          // px: the top bar's small buttons' pill after the place (appended with the HUD's screens)
         public float ToolsX;                          // px: that pill's left edge, for a button's own panel to rise over it
     }
 
@@ -32,8 +31,9 @@ namespace RealLifeOverhaul.Ui
     /// gear at the corner, which opens the game's menu. A field left empty leaves its pill out, and every pill that shows is
     /// whole: a strip the UI zoom made narrow gives up, at the left, the district, the weather's words, the weather, the
     /// place and last the day, and at the right the meters' length, the bell, the needs and the money's day, while the app
-    /// row first hands apps to All apps, down to four. While the keys lead a window's prompts stand between the row and the
-    /// right pills, which give way to them; the HUD sets them in key chips over the bar instead (<see cref="KeyChips"/>).
+    /// row first hands apps to All apps, down to four. The row and the pills know the strip's width and the model alone: the
+    /// keys' prompts are never on the strip but in key chips over it (<see cref="KeyChips"/>), so no prompt, however many or
+    /// however long in a language, moves the tray or meets a pill.
     /// The squares, the needs, the bell, the money and the gear are targets only where the model says the frame answers
     /// them (the HUD's bar). The money's change is a piece of its own (<see cref="MoneyChange"/>), rising above the bar where
     /// the HUD shows it. Game-free. Cost: a few boxes and measures a layout.
@@ -84,15 +84,14 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>
         /// Where everything stands on a strip of a width, as <see cref="StatusBar"/> draws it: the row's apps and place, each
-        /// pill's width, the money's place, and the room of the keys' prompts (<paramref name="prompts"/> px while they lead).
+        /// pill's width and the money's place.
         /// </summary>
-        public static UiPillPlan PlanPills(UiStatusModel m, float w, float prompts = 0f)
+        public static UiPillPlan PlanPills(UiStatusModel m, float w)
         {
-            var p = new UiPillPlan { Day = true, Words = true, District = true, MoneyDay = true, Meter = NeedCell, Prompts = prompts };
+            var p = new UiPillPlan { Day = true, Words = true, District = true, MoneyDay = true, Meter = NeedCell };
             if (m == null)
             {
                 p.MoneyX = w - BarEdge;
-                p.PromptX = w - BarEdge - prompts;
                 return p;
             }
             p.Time = TimeWidth(m, true);
@@ -106,9 +105,9 @@ namespace RealLifeOverhaul.Ui
             p.Settings = m.PillsPress || !string.IsNullOrEmpty(m.Money) ? SquarePill : 0f;
             p.Tools = ToolsWidth(m);
             p.Fps = FpsWidth(m);
-            // The row keeps every app it is given until the time with its day, or the right pills at their tightest (or the
-            // prompts while the keys lead), would not stand whole beside it; then apps wait under All apps, down to four.
-            float least = Math.Max(p.Time + (p.Tools > 0f ? PillGap + p.Tools : 0f), Math.Max(prompts, Pills(NeedsWidth(m, NeedTight), p.Alerts, p.Money, p.Settings)));
+            // The row keeps every app it is given until the time with its day, or the right pills at their tightest, would not
+            // stand whole beside it; then apps wait under All apps, down to four.
+            float least = Math.Max(p.Time + (p.Tools > 0f ? PillGap + p.Tools : 0f), Pills(NeedsWidth(m, NeedTight), p.Alerts, p.Money, p.Settings));
             int apps = RowApps(m);
             while (apps > 0 && (Zone(m, w, RowWidth(m, apps)) < 0f || (apps > RowLeast && Zone(m, w, RowWidth(m, apps)) < least)))
             {
@@ -123,8 +122,6 @@ namespace RealLifeOverhaul.Ui
             p.MoneyX = w - BarEdge - p.Settings - (p.Settings > 0f ? PillGap : 0f) - p.Money;
             float left = Pills(p.Time, p.Weather, p.Place, 0f);
             p.ToolsX = BarEdge + left + (left > 0f ? PillGap : 0f);
-            float pills = Pills(p.Fps, p.Needs, p.Alerts, p.Money, p.Settings);
-            p.PromptX = w - BarEdge - pills - (pills > 0f && prompts > 0f ? BarGap : 0f) - prompts;
             return p;
         }
 
@@ -180,7 +177,7 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // The right pills within their room, after the prompts while the keys lead: the meters shorten, then the bell goes,
+        // The right pills within their room: the meters shorten, then the bell goes,
         // then the needs (the bell back if it then fits alone), then the money's day under it; the gear keeps the corner.
         private static void FitRight(UiStatusModel m, ref UiPillPlan p, float room)
         {
@@ -223,11 +220,7 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        private static float Right(ref UiPillPlan p)
-        {
-            float pills = Pills(p.Fps, p.Needs, p.Alerts, p.Money, p.Settings);
-            return p.Prompts + (p.Prompts > 0f && pills > 0f ? BarGap : 0f) + pills;
-        }
+        private static float Right(ref UiPillPlan p) => Pills(p.Fps, p.Needs, p.Alerts, p.Money, p.Settings);
 
         // Pills side by side, a gap between neighbours; 0 for none.
         private static float Pills(float a, float b, float c, float d)
@@ -623,53 +616,138 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- the key chips
 
-        /// <summary>The key chips' width for the prompts a scene holds, a grid step between, as <see cref="KeyChips"/> lays them; 0 for none.</summary>
-        public static float KeyChipsWidth(UiScene s, IUiKeys keys)
+        /// <summary>px: the step between the chips' lane and the bar's top, and between two rows of chips.</summary>
+        public const float KeyChipLift = UiTokens.S2;
+
+        /// <summary>The room the chips have across a frame: from the bar's left edge to its right.</summary>
+        public static float KeyChipsRoom(UiFrame frame) => frame.Width - BarEdge * 2f;
+
+        // How many prompts, from one, make a row no wider than the room (one at least), and that row's width: the chips side by
+        // side a grid step apart.
+        private static int ChipsInRow(UiScene s, IUiKeys keys, int from, float room, out float width)
         {
-            float w = 0f;
-            for (int i = 0; keys != null && i < s.PromptCount; i++)
+            width = 0f;
+            int n = 0;
+            for (int i = from; i < s.PromptCount; i++)
             {
-                w += KeyChipWidth(ref s.Prompts[i], keys) + (i > 0 ? UiTokens.S2 : 0f);
+                float next = width + (n > 0 ? UiTokens.S2 : 0f) + KeyChipWidth(ref s.Prompts[i], keys);
+                if (n > 0 && next > room)
+                {
+                    break;
+                }
+                width = next;
+                n++;
             }
-            return w;
+            return n;
+        }
+
+        /// <summary>The widest row of the key chips a scene's prompts make in a room, a grid step between chips, as <see cref="KeyChips"/> lays them; 0 for none.</summary>
+        public static float KeyChipsWidth(UiScene s, IUiKeys keys, float room)
+        {
+            float most = 0f;
+            for (int from = 0; keys != null && from < s.PromptCount;)
+            {
+                from += ChipsInRow(s, keys, from, room, out float width);
+                most = Math.Max(most, width);
+            }
+            return most;
+        }
+
+        /// <summary>
+        /// The chips' height in a room: one row while the prompts fit it, else as many rows as they need, a grid step between.
+        /// More prompts than a row holds (a pad's every button in a long language) wrap rather than run past the screen.
+        /// </summary>
+        public static float KeyChipsHeight(UiScene s, IUiKeys keys, float room)
+        {
+            int rows = 0;
+            for (int from = 0; keys != null && from < s.PromptCount; rows++)
+            {
+                from += ChipsInRow(s, keys, from, room, out float _);
+            }
+            return rows == 0 ? 0f : rows * KeyChipHeight + (rows - 1) * UiTokens.S2;
         }
 
         private static float KeyChipWidth(ref UiPrompt p, IUiKeys keys) => Snap(ChipInset + PromptWidth(ref p, keys) + UiTokens.S2);
 
         /// <summary>
-        /// The keys' prompts as small chips in a row ending at <paramref name="right"/>, their top at <paramref name="y"/>: each
-        /// the key's cap and its words on the bar's slate, standing over the world as a game's control hints do, never a strip
-        /// of their own. The HUD stands them over the bar's right end while the keys lead (UiHud.Bar).
+        /// Where the chips stand unless a piece of the HUD is in the way: in the lane over the bar, their last row ending at the
+        /// bar's right edge, a step over the bar (<see cref="UiFrame.PromptLane"/> is theirs; a window ends above it), a step left
+        /// of the phone while it shows (<see cref="UiPhone.LeftShare"/>). With <paramref name="clearPanels"/> a panel the scene
+        /// already holds that stands over the lane (a conversation or a list docked at the right, the phone) is not covered
+        /// either: the chips end a step left of it. The HUD keeps the pieces clear itself (UiHud.Chips) and leaves it off.
         /// </summary>
-        public static void KeyChips(UiScene s, float right, float y, IUiKeys keys)
+        public static void KeyChipsPlace(UiScene s, UiFrame frame, IUiKeys keys, out float x, out float y, out float w, out float h, bool clearPanels = true)
         {
-            float total = KeyChipsWidth(s, keys);
-            s.PromptX = right - total;
-            s.PromptY = y;
-            s.PromptW = total;
-            s.PromptH = KeyChipHeight;
-            float cx = right, capY = y + ChipInset;
-            for (int i = s.PromptCount - 1; keys != null && i >= 0; i--)
+            float room = KeyChipsRoom(frame);
+            w = KeyChipsWidth(s, keys, room);
+            h = KeyChipsHeight(s, keys, room);
+            float right = frame.Width - BarEdge;
+            if (UiPhone.LeftShare < 1f)
             {
-                ref UiPrompt p = ref s.Prompts[i];
-                float cw = KeyChipWidth(ref p, keys);
-                cx -= cw;
-                int first = s.ItemCount;
-                int chip = Box(s, UiAt.Screen, cx, y, cw, KeyChipHeight, UiRole.StatusBar, UiRole.None, UiTokens.RadiusMedium);
-                UiAt on = UiAt.Screen.In(chip);
-                float kx = cx + ChipInset;
-                kx += KeyCap(s, on, kx, capY, p.Action, keys, UiRole.PromptCap, UiRole.PromptInk);
-                if (p.Action == UiAction.TabPrev)
+                right = Math.Min(right, UiPhone.RoomRight(frame) - UiTokens.S2);
+            }
+            y = frame.BandY - KeyChipLift - h;
+            // A panel moves the chips left of itself; the one to its left is then looked at again, so two panels side by side both clear.
+            for (int pass = 0; pass < 4 && w > 0f && clearPanels; pass++)
+            {
+                bool moved = false;
+                for (int i = 0; i < s.ItemCount; i++)
                 {
-                    kx += UiTokens.S1;
-                    kx += KeyCap(s, on, kx, capY, UiAction.TabNext, keys, UiRole.PromptCap, UiRole.PromptInk);
+                    ref UiItem it = ref s.Items[i];
+                    if (it.Kind == UiKind.Box && (it.Flags & (UiFlags.Panel | UiFlags.Prompt)) == UiFlags.Panel && it.Parent < 0 && it.Clip < 0
+                        && it.X < right && it.X + it.W > right - w && it.Y < y + h && it.Y + it.H > y)
+                    {
+                        right = Math.Max(BarEdge + w, it.X - UiTokens.S2);
+                        moved = true;
+                    }
                 }
-                TextMiddle(s, on, kx + UiTokens.S2, y, KeyChipHeight, UiTextRules.Width(p.Label, UiStyle.Prompt) + UiTokens.S1, UiStyle.Prompt, UiRole.PromptInk, p.Label, UiFlags.Label);
-                for (int k = first; k < s.ItemCount; k++)
+                if (!moved)
                 {
-                    s.Items[k].Flags |= UiFlags.Middle | UiFlags.Prompt | UiFlags.Chrome;
+                    break;
                 }
-                cx -= UiTokens.S2;
+            }
+            x = right - w;
+        }
+
+        /// <summary>
+        /// The keys' prompts as small chips ending at <paramref name="right"/>, the first row's top at <paramref name="y"/>: each
+        /// the key's cap and its words on the bar's slate, standing over the world as a game's control hints do, never on the
+        /// bar's own strip, where the tray and the pills stand whatever the prompts say. A row too wide for the room wraps to
+        /// the next, each ending at <paramref name="right"/>. Every status bar sets them while the keys lead (UiDraw.StatusBar).
+        /// </summary>
+        public static void KeyChips(UiScene s, float right, float y, IUiKeys keys, float room)
+        {
+            s.PromptX = right - KeyChipsWidth(s, keys, room);
+            s.PromptY = y;
+            s.PromptW = right - s.PromptX;
+            s.PromptH = KeyChipsHeight(s, keys, room);
+            float ry = y;
+            for (int from = 0; keys != null && from < s.PromptCount; ry += KeyChipHeight + UiTokens.S2)
+            {
+                int n = ChipsInRow(s, keys, from, room, out float width);
+                float cx = right - width, capY = ry + ChipInset;
+                for (int i = from; i < from + n; i++)
+                {
+                    ref UiPrompt p = ref s.Prompts[i];
+                    float cw = KeyChipWidth(ref p, keys);
+                    int first = s.ItemCount;
+                    int chip = Box(s, UiAt.Screen, cx, ry, cw, KeyChipHeight, UiRole.StatusBar, UiRole.None, UiTokens.RadiusMedium);
+                    UiAt on = UiAt.Screen.In(chip);
+                    float kx = cx + ChipInset;
+                    kx += KeyCap(s, on, kx, capY, p.Action, keys, UiRole.PromptCap, UiRole.PromptInk);
+                    if (p.Action == UiAction.TabPrev)
+                    {
+                        kx += UiTokens.S1;
+                        kx += KeyCap(s, on, kx, capY, UiAction.TabNext, keys, UiRole.PromptCap, UiRole.PromptInk);
+                    }
+                    TextMiddle(s, on, kx + UiTokens.S2, ry, KeyChipHeight, UiTextRules.Width(p.Label, UiStyle.Prompt) + UiTokens.S1, UiStyle.Prompt, UiRole.PromptInk, p.Label, UiFlags.Label);
+                    for (int k = first; k < s.ItemCount; k++)
+                    {
+                        s.Items[k].Flags |= UiFlags.Middle | UiFlags.Prompt | UiFlags.Chrome;
+                    }
+                    cx += cw + UiTokens.S2;
+                }
+                from += n;
             }
         }
 

@@ -132,7 +132,11 @@ namespace RealLifeOverhaul.Ui
         {
             WorkRow r = m.Cards[i];
             bool chosen = i == m.Chosen;
-            int face = UiDraw.Box(s, at, x, y, w, h, chosen ? UiRole.RowSel : UiRole.Row, UiRole.None, UiTokens.RadiusLarge, chosen ? UiFlags.Selected : UiFlags.None);
+            if (!chosen)
+            {
+                UiDraw.Box(s, at, x, y, w, h, UiRole.Row, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);   // the card's own fill, under a face that takes the hover fill (a step of a few per cent on a card could not be seen)
+            }
+            int face = UiDraw.Box(s, at, x, y, w, h, chosen ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusLarge, chosen ? UiFlags.Selected : UiFlags.None);
             UiAt inside = at.In(face);
             if (string.IsNullOrEmpty(r.Seller))
             {
