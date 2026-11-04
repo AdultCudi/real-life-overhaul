@@ -149,6 +149,8 @@ internal static partial class UiSamples
                 new UiInfoRow { Label = t("vehicle_auto_park_support", "Auto Park Support"), Value = t("common_yes", "Yes") },
                 new UiInfoRow { Label = t("vehicle_max_speed", "Max Speed"), Value = "118 km/h" },
                 new UiInfoRow { Label = t("reallife_tuning_fig_to100", "0 to 100 km/h"), Value = t("reallife_ui_buy_seconds", "{seconds} s").Replace("{seconds}", "14.6") },
+                new UiInfoRow { Label = t("reallife_ui_buy_fuel_use", "Fuel use"), Value = t("reallife_ui_buy_l100", "{value} L/100 km").Replace("{value}", "12.4") },
+                new UiInfoRow { Label = t("reallife_ui_buy_seats", "Seats"), Value = "2" },
                 new UiInfoRow { Label = t("reallife_ui_buy_insurance", "Insurance"), Value = t("reallife_ui_buy_a_month", "{price} a month").Replace("{price}", "$230") }
             },
             ColourLabel = t("reallife_ui_buy_colour", "Colour"),
@@ -381,8 +383,13 @@ internal static partial class UiSamples
                     new UiActionModel { Label = t("action_take", "Take"), Kind = UiButtonKind.Secondary, Key = UiAction.Count, Command = 0 },
                     new UiActionModel
                     {
+                        Label = t("reallife_ui_buy_move_to", "Move to {name}").Replace("{name}", "Harbour Depot"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Package,
+                        Key = UiAction.Count, Command = 1
+                    },
+                    new UiActionModel
+                    {
                         Label = t("reallife_ui_buy_sell_for", "Sell for {price}").Replace("{price}", "$2,407"), Kind = UiButtonKind.Primary, Icon = UiIcon.Coin,
-                        Key = UiAction.Alt, Command = 1
+                        Key = UiAction.Alt, Command = 2
                     }
                 };
         }
@@ -501,7 +508,7 @@ internal static partial class UiSamples
             new UiActionModel { Label = t("change_character_clothes_save_button", "Save clothes") + (shop ? " " + Money(140) : ""), Kind = UiButtonKind.Primary, Key = UiAction.Alt }
         };
         string all = t("reallife_ui_buy_filter_all", "All {count}").Replace("{count}", "12"), mods = t("reallife_ui_buy_filter_rlo", "RLO {count}").Replace("{count}", "7");
-        m.Filters = shop ? new[] { all, t("reallife_ui_buy_filter_owned", "Owned {count}").Replace("{count}", "2"), mods } : new[] { all, mods };
+        m.Filters = shop ? new[] { all, t("reallife_ui_buy_filter_owned", "Owned {count}").Replace("{count}", "2"), mods, t("reallife_ui_buy_filter_new", "New {count}").Replace("{count}", "2") } : new[] { all, mods };
         m.FilterCount = m.Filters.Length;
         m.Filter = 0;
         m.Searching = true;

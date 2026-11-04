@@ -38,6 +38,9 @@ namespace RealLifeOverhaul.Ui
         /// <summary>A new city: a screen that never looked as expected in the last one is looked at again.</summary>
         public static void Rearm() => Host.Rearm();
 
+        /// <summary>The game's own Market Insider view until the app closes: a press the game has no button for.</summary>
+        public static void Classic() => Host.Classic();
+
         /// <summary>The game's app as it was: the kit gone, its pieces seen and touchable again.</summary>
         public static void Remove(string why) => Host.Remove(why);
 
@@ -73,6 +76,14 @@ namespace RealLifeOverhaul.Ui
                     {
                         return "its " + Pieces[i] + " is not there";
                     }
+                }
+                bool mapButton = app.neighborhoodData != null && GameContract.MarketViewOnMap.Field?.GetValue(app.neighborhoodData) is UnityEngine.UI.Button;
+                string wrong = UiProbe.Need("Market Insider", "viewOnMapButton of the district data", mapButton)
+                               ?? UiProbe.Path("Market Insider", found.transform, "Layout 25-25-50/Row 3/RealEstateFilterPanel")   // the search field (typing, no press)
+                               ?? UiProbe.Path("Market Insider", found.transform, "Layout 25-25-50/Row 3/MarketDemandFilterPanel");
+                if (wrong != null)
+                {
+                    return wrong;
                 }
                 return app.tabTemplate == null || app.neighborhoodData == null || app.marketDemandScrollerController == null || app.realEstateScrollerController == null
                        || app.marketEventScrollerController == null

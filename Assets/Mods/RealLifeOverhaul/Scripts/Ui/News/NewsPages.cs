@@ -68,14 +68,53 @@ namespace RealLifeOverhaul.Ui
             Rest(s, at, m, x, y, w, bottom, keys);
         }
 
+        // Reading: the papers to pick, with the printed page of the Ledger's edition at the right, then the days of the paper open, a quiet line, and the
+        // paper itself in the reader. A paper that is not held, or nothing held at all, shows what to do in the room of the reader, never a blank page.
         private static void Read(UiScene s, UiAt at, NewsModel m, float x, float y, float w, float h, IUiKeys keys)
         {
+            float printed = string.IsNullOrEmpty(m.ReadPrinted.Label) ? 0f : UiDraw.ButtonWidth(m.ReadPrinted.Kind, m.ReadPrinted.Label, UiIcon.None, UiAction.Count, keys) + UiTokens.S1;
+            y = ChipRow(s, at, m.ReadTitles, x, y, w - (printed > 0f ? printed + UiTokens.S3 : 0f), keys);
+            if (printed > 0f)
+            {
+                UiDraw.Button(s, at, x + w - printed, y - UiTokens.PairRow - UiTokens.S2, printed, UiTokens.PairRow, m.ReadPrinted.Kind, m.ReadPrinted.Label, UiIcon.None, UiAction.Count, keys,
+                    m.ReadPrinted.Command, m.ReadPrinted.Arg, false);
+            }
+            y = ChipRow(s, at, m.ReadDays, x, y, w, keys);
+            if (!string.IsNullOrEmpty(m.ReadNote))
+            {
+                UiDraw.Text(s, at, x, y, w, UiStyle.Small, UiRole.Text2, m.ReadNote, UiFlags.Truncate);
+                y += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2;
+            }
             if (m.Reader != null)
             {
                 UiReader.Lay(s, at, m.Reader, x, y, w, h - y, keys);
                 return;
             }
-            Notice(s, at, m, x, y, w, h - y);
+            if (h - y >= UiTokens.S16)
+            {
+                UiDraw.EmptyState(s, at, x, y, w, h - y, m.EmptyIcon, m.EmptyTitle, m.EmptyBody, m.EmptyAction, NewsCommands.ToTitles, keys);
+            }
+        }
+
+        // A row of chips from the left, as many as the width holds. Returns the y under it, or the same y for none.
+        private static float ChipRow(UiScene s, UiAt at, UiActionModel[] chips, float x, float y, float w, IUiKeys keys)
+        {
+            if (chips == null || chips.Length == 0)
+            {
+                return y;
+            }
+            float cx = x;
+            for (int i = 0; i < chips.Length; i++)
+            {
+                float bw = UiDraw.ButtonWidth(chips[i].Kind, chips[i].Label, UiIcon.None, UiAction.Count, keys) + UiTokens.S1;   // a rounding down must not wrap the words
+                if (cx + bw > x + w)
+                {
+                    break;
+                }
+                UiDraw.Button(s, at, cx, y, bw, UiTokens.PairRow, chips[i].Kind, chips[i].Label, UiIcon.None, UiAction.Count, keys, chips[i].Command, chips[i].Arg, false);
+                cx += bw + UiTokens.S1;
+            }
+            return y + UiTokens.PairRow + UiTokens.S2;
         }
 
         private static void OneTable(UiScene s, UiAt at, NewsModel m, float x, float y, float w, float bottom, IUiKeys keys)

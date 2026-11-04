@@ -18,6 +18,16 @@ namespace RealLifeOverhaul.Calendar
 
         public static int Today => SaveGameManager.Current != null ? SaveGameManager.Current.Day : 0;
 
+        /// <summary>The weather as the camera reads it (its words' key), the air's whole degrees Celsius as the HUD works them out, and whether the game counts in imperial units.</summary>
+        public static bool Weather(out string skyKey, out int celsius, out bool imperial)
+        {
+            string token = Photos.PhotoShot.Token();
+            skyKey = Photos.PhotoShot.Words(token);
+            celsius = Photos.PhotoShot.Degrees(token);
+            imperial = UnitHelper.useImperial;
+            return true;
+        }
+
         /// <summary>No city to read: no save, a load under way, or the mod's state not read yet.</summary>
         public static bool Loading()
         {

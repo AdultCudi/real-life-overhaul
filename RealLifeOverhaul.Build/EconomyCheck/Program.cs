@@ -82,6 +82,12 @@ internal static partial class Program
             Console.WriteLine("OthersHash " + OthersFaces() + "UL");
             return 0;
         }
+        if (args.Length == 1 && args[0] == "--life-audit")
+        {
+            LifeAuditChecks();   // the Planner and the Calendar flows alone (LifeAuditChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--ui-screens")
         {
             UiScreenChecks();   // the kit screens' layout checks alone: RLO_UI_ONLY=<screen id> keeps one screen
@@ -98,6 +104,18 @@ internal static partial class Program
         if (args.Length == 1 && args[0] == "--bizpace")
         {
             BizPaceAll();   // BizMan's open, switch and tab change alone (BizPaceChecks.cs): RLO_BIZPACE_REPORT=1 prints the figures
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--toasts")
+        {
+            ToastChecks();   // (the game's toasts on the kit alone, while working on them: ToastChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--fixw2")
+        {
+            FixW2Audit();   // the logic audit's fixes of wave 2 alone (FixW2Checks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -239,6 +257,12 @@ internal static partial class Program
             UiGrids();        // (the app window's page shapes and the kit's links: UiGridChecks.cs)
             PhoneKitChecks();   // (the kit phone: its pages, nav bar, height, colours, sources: UiChecks.Phone.cs)
             ActivityKitChecks();   // (the activity panel, time skip, funeral and time of day tool on the kit: UiChecks.Activity.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--news-audit")
+        {
+            NewsAuditChecks();   // (the News audit's fixes alone, while working on them: NewsAuditChecks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -793,6 +817,7 @@ internal static partial class Program
         Studio();       // the game studio: the plan, building, the sessions, hype and reviews, the bands and no cap, ten years, the models, after launch, bonuses, rivals, old saves, the save, the screens, the texts (StudioChecks.cs)
         SectorChecks(); // the other tech firms: the shared markets from the city, the curves for the old clamps, rivals by the same rules, IT work, data centres and the cloud, the desk sessions, old saves, the save and the shared part, the screens, ten years, the costs (SectorChecks.cs)
         QuitGuards();   // the game is left or the save list opened only from the death card, never by a tab sharing its command number (QuitGuardChecks.cs)
+        NewsAuditChecks();   // the News audit: the Newsstand's Reading tab, fixing a loan's rate, the Economy app's unemployment, a business that opens (NewsAuditChecks.cs)
         BugReports();   // "Report a bug": report.txt, the user folder taken out, a log's tail, the mod's lines, nothing sent (BugReportChecks.cs)
         Rivals();       // the rival tycoons: growth, pace, bounds, counters, a takeover, a seed, the save and the texts (RivalChecks.cs)
         Wages();        // wages the mod raises: the report's 30 days reproduced, the cap, one rise a period, the repair on load, every write bounded (WageChecks.cs)
@@ -821,6 +846,7 @@ internal static partial class Program
         CinemaFixes();  // a film with a friend: rested as in the game's own cinema seat, given back on every way out (CinemaFixChecks.cs)
         PartnerTalk();    // the partner: Social's calls, texts and outings count as talking for family life (PartnerTalkChecks.cs)
         MealFixes();    // a completed meal fills once by the game's food and records bought food through the bridge
+        FixW2Audit();   // the logic audit of wave 2: the part-day slider of every shift that can stop part way, the funeral's backup, the offer's interview line, the clothes New filter, a car's fuel use and seats, the cargo move, a table's day, the rival's crew, the manager's double booking, Fill the gaps, the time skip's pace, the texts and cost lines, and 84 days (FixW2Checks.cs)
         ClientHours();  // cleaning and stocking: a client open for the walk and the work, one closing calls the job off, the clock paid up to closing (ClientHoursChecks.cs)
         TechFixes();    // the tech sector: a board that cannot hire, a pitch whose meeting never opened, the utilities asked safely, an interview cut short (TechFixChecks.cs)
         TechMoves();    // a tech firm moved by the moving company: its data follows whole, a save left behind is put back, nothing followed with a doubt (TechMoveChecks.cs)
@@ -870,6 +896,7 @@ internal static partial class Program
         HardTimesTriggers(); // a difficult moment at home comes of what is going on: each one's causes, nothing when all is well, a cause gone, the options, the save, the same state (HardTimesChecks.cs)
         MorningNotices(); // the morning line only from a sleep the game ended, with its hours; the city's news of the night packed into it; four notices' switches (MorningNewsChecks.cs)
         Hustles();      // the Marketplace: listings, worth, haggling, repairs, buyers, visits and their stars, helpers, the save, a year of it, the texts (HustleChecks.cs)
+        LifeAuditChecks();   // the Planner and the Calendar on the kit pressed through their flows: the board's hours, Jump to now, notes deleted, done and edited, the Calendar's day (LifeAuditChecks.cs)
         CalendarApp();  // the Calendar: the months of every year length, the grid, each schedule's days against its feature's own rule, an empty month, the sources, the texts (CalendarAppChecks.cs)
         Meals();        // meals and music: the seat a meal is taken to, how long it is eaten, the dance's lift and its cap, every way out, the texts (MealsChecks.cs)
         HeldUnitsChecks(); // the game leaves the mod's buildings alone: claims counted per address, the ignore list's one rule, the night's lists, every way out, nothing saved (HeldUnitsChecks.cs)

@@ -63,6 +63,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("econ_card_min", () => Guide.Percent(Economy.ProductCatalogue.CardMinimumShare))
                 .Fact("econ_card_min_least", () => Guide.Money(Economy.ProductCatalogue.CardMinimumLeast))
                 .Fact("econ_biz_days", () => Whole(Economy.ProductCatalogue.BusinessDaysOnRecord))
+                .Fact("econ_biz_cover", () => Whole(Economy.ProductCatalogue.BusinessCoverTimes))
                 .Fact("econ_biz_multiple", () => Whole(Economy.ProductCatalogue.BusinessProfitMultiple))
                 .Fact("econ_biz_points", () => Whole(-Economy.ProductCatalogue.BusinessRatePoints))
                 .Fact("econ_car_dep_low", () => Whole(Economy.ProductCatalogue.CarDepositLeast) + "%")

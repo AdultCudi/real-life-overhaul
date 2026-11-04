@@ -21,23 +21,24 @@ namespace RealLifeOverhaul.Ui
             {
                 new UiScreenDef("activity_panel", UiTemplate.Hud, "ActivityPanelScreen", ActivityWords(ActivityBarKeys, new[]
                 {
-                    "playeractivityui_timemachine", "playeractivityui_fast_forward", "common_cancel", "common_back", "common_hours", "common_hours_abbr", "workui_start",
+                    "playeractivityui_timemachine", "playeractivityui_fast_forward", "common_cancel", "common_back", "common_hours", "common_hours_abbr", "workui_start", "workui_stop",
                     "reallife_ui_activity_moving", "reallife_ui_activity_waiting", "reallife_ui_activity_done", "reallife_ui_activity_how_long", "reallife_ui_activity_work_kicker",
                     "reallife_ui_activity_work_title", "reallife_ui_activity_work_body", "reallife_ui_activity_work_for", "reallife_ui_activity_pay", "reallife_ui_activity_pay_hour",
                     "reallife_ui_activity_hours", "reallife_ui_activity_skill", "reallife_ui_activity_skill_day", "reallife_ui_activity_standing", "reallife_ui_activity_stress",
                     "reallife_ui_activity_finish", "reallife_ui_activity_before_tax", "reallife_ui_activity_work_strip", "reallife_ui_activity_hour_of", "reallife_ui_activity_earned",
-                    "reallife_ui_activity_skip_end", "reallife_ui_activity_stop", "reallife_ui_activity_shift_hours",
+                    "reallife_ui_activity_skip_end",
                     "reallife_ui_activity_fast_speed",
                 })).Switch(UiScreenSwitches.Activity),
                 new UiScreenDef("time_skip", UiTemplate.Hud, "TimeSkipScreen", ActivityWords(ActivityBarKeys, new[]
                 {
-                    "playeractivityui_timemachine", "common_cancel", "reallife_ui_skip_until", "reallife_ui_skip_to_end", "reallife_ui_skip_goal_day", "reallife_ui_skip_left",
-                    "reallife_ui_skip_until_left", "reallife_ui_skip_hours_minutes", "reallife_ui_skip_minutes",
+                    "playeractivityui_timemachine", "common_cancel", "reallife_ui_skip_until", "reallife_ui_skip_to_end", "reallife_ui_skip_goal_day", "reallife_ui_skip_pace",
+                    "reallife_ui_skip_pace_until", "reallife_ui_skip_hours_minutes", "reallife_ui_skip_minutes",
                 })).Switch(UiScreenSwitches.Activity),
                 new UiScreenDef("funeral", UiTemplate.Decision, "FuneralScreen", ActivityWords(ActivityBarKeys, new[]
                 {
                     "reallife_ui_prompt_choose", "reallife_ui_funeral_kicker", "reallife_ui_funeral_kicker_plain", "reallife_ui_funeral_title", "reallife_ui_funeral_body",
-                    "reallife_ui_funeral_age", "reallife_ui_funeral_days", "reallife_ui_funeral_backup", "reallife_ui_funeral_backup_line", "reallife_ui_funeral_menu",
+                    "reallife_ui_funeral_age", "reallife_ui_funeral_days", "reallife_ui_funeral_backup", "reallife_ui_funeral_backup_when",
+                    "reallife_ui_funeral_backup_line_plain", "reallife_ui_funeral_menu",
                     "reallife_ui_funeral_menu_line", "reallife_ui_funeral_menu_short", "reallife_ui_funeral_quit", "reallife_ui_funeral_quit_line", "reallife_ui_funeral_note",
                     "reallife_ui_funeral_note_two", "reallife_ui_funeral_you", "reallife_ui_funeral_quit_short", "reallife_ui_funeral_rival",
                     "reallife_pd_obit_lived", "reallife_pd_obit_no_business", "reallife_pd_obit_founded_one", "reallife_pd_obit_founded_many", "reallife_pd_obit_staff_one",

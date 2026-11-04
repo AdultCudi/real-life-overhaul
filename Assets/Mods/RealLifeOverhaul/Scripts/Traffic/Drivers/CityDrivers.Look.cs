@@ -57,7 +57,6 @@ namespace RealLifeOverhaul
             _cars = 0;
             Vector3 player = PlayerHelper.GetPosition();
             ReadPlayer(traffic, player, now);
-            _game.BeginLook();
             float near = DriverRules.Near * DriverRules.Near;
             float far = DriverRules.ObstaclesNear * DriverRules.ObstaclesNear;
             for (int i = 0; i < pooled.Count; i++)
@@ -75,7 +74,7 @@ namespace RealLifeOverhaul
                 Transform body = _game.At(index, car);
                 if (body == null)
                 {
-                    continue;   // not measured yet, and enough have been at this look
+                    continue;   // not measured yet: in a frame of its own (DriverGame.MeasureWaiting), before the next look
                 }
                 Vector3 at = body.position;
                 float dx = at.x - player.x;

@@ -22,7 +22,7 @@ namespace RealLifeOverhaul.Ui
     public sealed class StocksCompany
     {
         // The head.
-        public string Name, Ticker, Sector, Meta;           // Meta: "Mid cap, NYSE"
+        public string Name, Ticker, Sector, Meta;           // Meta: "Mid cap"
         public UiRole LogoTint = UiRole.Chart1;
         public string Price, ChangeMoney, ChangePercent;    // "$53.42", "+$0.69", "+1.31%"
         public int Way;                                     // 1 up, -1 down, 0 flat
@@ -50,9 +50,10 @@ namespace RealLifeOverhaul.Ui
         public StocksRow[] Position = new StocksRow[0];
         public string SignalsTitle, SignalsNone;
         public StocksSignal[] Signals = new StocksSignal[0];
-        public string AlertsTitle, AlertsNone, AlertAbove, AlertBelow;
+        public string AlertsTitle, AlertsNone, AlertSet, AlertLine;   // the card's title, its empty line, "Set an alert" and "Alert below this line"
         public StocksAlertRow[] Alerts = new StocksAlertRow[0];
         public bool AlertsFull;                             // no room for another alert
+        public bool AlertLineOff;                           // no level line is selected to stand an alert under
 
         // Written back by the layout, for the pointer: the edges of each segmented control and the room of the chart.
         public readonly float[] RangeEdges = new float[8];

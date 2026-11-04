@@ -81,7 +81,7 @@ namespace RealLifeOverhaul.Ui
             c.SignalsTitle = words("reallife_stk_signals_title", "Signals");
             c.SignalsNone = words("reallife_stk_signals_none", "Add an indicator or draw a line to see what it says");
             Position(c, state, s, words);
-            Alerts(c, state, s, words);
+            Alerts(c, state, s, v, words);
             m.PromptPlace = c.Order.Place;
             m.PromptOther = c.Big ? words("reallife_stk_small_chart", "Close the big chart") : words("reallife_stk_big_chart", "Open the big chart");
         }
@@ -95,7 +95,7 @@ namespace RealLifeOverhaul.Ui
             c.Sector = MarketText.Sector(s.Sector);
             string[] caps = { words("reallife_stk_cap_large", "Large cap"), words("reallife_stk_cap_mid", "Mid cap"), words("reallife_stk_cap_small", "Small cap") };
             int size = (int)s.Size;
-            c.Meta = caps[size >= 0 && size < caps.Length ? size : 1] + ", " + words("reallife_stk_exchange", "NYSE");
+            c.Meta = caps[size >= 0 && size < caps.Length ? size : 1];   // the market has no exchange of a real name: the size alone
             c.LogoTint = UiTokens.Chart((int)s.Sector);
             c.Price = MarketText.Price(s.Last);
             c.Way = move > 0 ? 1 : move < 0 ? -1 : 0;
@@ -186,12 +186,20 @@ namespace RealLifeOverhaul.Ui
             };
         }
 
-        private static void Alerts(StocksCompany c, MarketState state, Stock s, UiWords words)
+        /// <summary>Whether the company's so-manyth drawing (from 0, in the order drawn) is a level line: the only kind an alert can stand under.</summary>
+        public static bool SelectedLevel(ChartBook book, int stockId, int ordinal)
+        {
+            int at = ordinal >= 0 ? book.DrawingAt(stockId, ordinal) : -1;
+            return at >= 0 && book.Drawings[at].Kind == ChartMark.Level;
+        }
+
+        private static void Alerts(StocksCompany c, MarketState state, Stock s, StocksView v, UiWords words)
         {
             c.AlertsTitle = words("reallife_stk_alerts_title", "Price alerts");
             c.AlertsNone = words("reallife_stk_alerts_none", "No alert for this company");
-            c.AlertAbove = words("reallife_stk_alert_up", "Alert +5%");
-            c.AlertBelow = words("reallife_stk_alert_down", "Alert -5%");
+            c.AlertSet = words("reallife_stk_alert_set", "Set an alert");
+            c.AlertLineOff = !SelectedLevel(state.Charts, s.Id, v.Selected);
+            c.AlertLine = c.AlertLineOff ? words("reallife_stk_alert_line_off", "Pick a line first") : words("reallife_stk_alert_line", "Alert on the line");
             c.AlertsFull = state.Charts.Alerts.Count >= ChartBook.AlertsMost;
             var rows = new List<StocksAlertRow>(3);
             for (int i = 0; i < state.Charts.Alerts.Count && rows.Count < 3; i++)

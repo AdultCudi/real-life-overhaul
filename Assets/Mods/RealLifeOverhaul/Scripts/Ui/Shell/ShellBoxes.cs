@@ -13,17 +13,20 @@ namespace RealLifeOverhaul.Ui
     /// game screen, each with its own switch. The game's box stays up and live underneath, its layout unseen; the card
     /// reads its words and its negative look after the game and Going Public filled it, and presses its own buttons, so
     /// Going Public's replaced confirm still runs and GameConfirm keeps working unchanged. The mod's own message box
-    /// (Meta/MetaUi) draws on the same card. The boxes are found under the game's interface once a city, the first time
-    /// asked. Cost: nothing while no box is up; while one is, its card's input and a look at its words four times a second.
+    /// (Meta/MetaUi) draws on the same card. The boxes are found under the game's interface the first time asked in a city; one not there then (the game
+    /// builds some late, and the acknowledgement only in its main menu) is looked for again only while a box of its kind
+    /// is up (ShellBoxLook). Cost: nothing while no box is up; while one is, its card's input and a look at its words four
+    /// times a second.
     /// </summary>
     public static class ShellBoxes
     {
         private static readonly UiGameHost[] Asks = { new UiGameHost(new AskBox(true)), new UiGameHost(new AskBox(false)) };
         private static readonly UiGameHost Ack = new UiGameHost(new AckBox());
         private static readonly UiGameHost Typing = new UiGameHost(new TypeBox());
+        private static readonly ShellBoxLook Seen = new ShellBoxLook();
+        private static readonly Scene Walker = new Scene();
         private static HudConfirmUi[] _asks;
         private static AcknowledgeWarningUi _ack;
-        private static bool _looked;
 
         /// <summary>Once a second while the interface is on: each box's host put on while its switch is on, the game's own while off.</summary>
         public static void Install()
@@ -50,7 +53,7 @@ namespace RealLifeOverhaul.Ui
         /// <summary>A new city: the boxes are looked for again.</summary>
         public static void Rearm()
         {
-            _looked = false;
+            Seen.Rearm();
             _asks = null;
             _ack = null;
             for (int i = 0; i < Asks.Length; i++)
@@ -76,27 +79,59 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // The game's boxes under its interface, looked for once a city: they are no field of UIs.
-        private static void Look()
+        // The game's boxes under its interface: no field of UIs holds them. Looked for the first time a box is asked for in a
+        // city; one not found is looked for again only while a box of its kind is up, a few times at most.
+        private static bool Look(ShellBox box)
         {
-            if (_looked)
+            if (Seen.Found(box))
             {
-                return;
+                return true;
             }
-            UIs uis = InstanceBehavior<UIs>.Instance;
-            Transform canvases = uis != null ? uis.transform : null;
-            if (canvases == null)
+            bool open = Seen.Looks(box) > 0 && (box == ShellBox.Acknowledge ? AcknowledgeWarning.isOpen : GameConfirm.IsOpen);   // read only after a miss
+            bool found = Seen.Seek(box, open, Walker);
+            if (Seen.FirstMiss(box))
             {
-                return;
+                string what = box == ShellBox.Acknowledge ? "the game's acknowledgement is not in the city's interface (the game builds it in its main menu)"
+                    : box == ShellBox.MenuAsk ? "the full menu's question box was not found under the game's interface" : "the question box was not found under the game's interface";
+                UiDirector.Logger?.Warn("UI: " + what + ", so it stays the game's own until one is built; looked for again while a box is up.");
             }
-            _asks = canvases.GetComponentsInChildren<HudConfirmUi>(true);
-            AcknowledgeWarningUi[] acks = canvases.GetComponentsInChildren<AcknowledgeWarningUi>(true);
-            _ack = acks.Length > 0 ? acks[0] : null;
-            _looked = true;   // once a city either way: a box not under the game's interface stays the game's own, said once
-            if (_asks.Length == 0 || _ack == null)
+            if (Seen.FoundLate(box))
             {
-                UiDirector.Logger?.Warn("UI: " + (_asks.Length == 0 ? "the game's question boxes were" : "the game's acknowledgement was")
-                                        + " not found under its interface, so it stays the game's own in this city.");
+                UiDirector.Logger?.Info("UI: " + (box == ShellBox.Acknowledge ? "the acknowledgement" : box == ShellBox.MenuAsk ? "the full menu's question box" : "the question box")
+                                        + " was built late and is found now (look " + Seen.Looks(box) + "), so it is drawn on the RLO interface.");
+            }
+            return found;
+        }
+
+        private static HudConfirmUi AskOf(bool menu)
+        {
+            for (int i = 0; _asks != null && i < _asks.Length; i++)
+            {
+                object shown = GameContract.AskInMenu.Field != null && _asks[i] != null ? GameContract.AskInMenu.Field.GetValue(_asks[i]) : null;
+                if (shown is bool m && m == menu)
+                {
+                    return _asks[i];
+                }
+            }
+            return null;
+        }
+
+        // The walk of the game's interface for a box.
+        private sealed class Scene : IShellBoxScene
+        {
+            public bool Built => InstanceBehavior<UIs>.Instance != null && InstanceBehavior<UIs>.Instance.transform != null;
+
+            public bool Holds(ShellBox box)
+            {
+                Transform canvases = InstanceBehavior<UIs>.Instance.transform;
+                if (box == ShellBox.Acknowledge)
+                {
+                    AcknowledgeWarningUi[] acks = canvases.GetComponentsInChildren<AcknowledgeWarningUi>(true);
+                    _ack = acks.Length > 0 ? acks[0] : null;
+                    return _ack != null;
+                }
+                _asks = canvases.GetComponentsInChildren<HudConfirmUi>(true);
+                return AskOf(box == ShellBox.MenuAsk) != null;
             }
         }
 
@@ -131,19 +166,25 @@ namespace RealLifeOverhaul.Ui
 
             public Component Find()
             {
-                Look();
-                for (int i = 0; _asks != null && i < _asks.Length; i++)
+                if (!Look(_menu ? ShellBox.MenuAsk : ShellBox.HudAsk))
                 {
-                    object menu = GameContract.AskInMenu.Field != null ? GameContract.AskInMenu.Field.GetValue(_asks[i]) : null;
-                    if (_asks[i] != null && menu is bool m && m == _menu)
-                    {
-                        return Container(GameContract.AskContainer, _asks[i]);
-                    }
+                    return null;
                 }
-                return null;
+                HudConfirmUi box = AskOf(_menu);
+                return box != null ? Container(GameContract.AskContainer, box) : null;
             }
 
-            public string Check(Component found) => Owner(found) == null || Container(GameContract.AskPanel, Owner(found)) == null ? "its panel is not there" : null;
+            // The full menu's box has no panel (its field is empty in the game's scene: the words sit on its WhiteBox), so what
+            // the card needs is read: the box over the container, and its two buttons.
+            public string Check(Component found)
+            {
+                HudConfirmUi owner = Owner(found);
+                if (owner == null)
+                {
+                    return "its box is not there";
+                }
+                return GameContract.AskConfirm.Field?.GetValue(owner) == null || GameContract.AskCancel.Field?.GetValue(owner) == null ? "its buttons are not there" : null;
+            }
 
             public void Conceal(Component found, UiConceal conceal)
             {
@@ -283,11 +324,7 @@ namespace RealLifeOverhaul.Ui
 
             public UiGameKind Kind => UiGameKind.Box;
 
-            public Component Find()
-            {
-                Look();
-                return _ack != null ? Container(GameContract.AckContainer, _ack) : null;
-            }
+            public Component Find() => Look(ShellBox.Acknowledge) && _ack != null ? Container(GameContract.AckContainer, _ack) : null;
 
             public string Check(Component found) => UiWidgets.Calling(_ack, "ClickConfirm") == null ? "its confirm button is not there" : null;
 

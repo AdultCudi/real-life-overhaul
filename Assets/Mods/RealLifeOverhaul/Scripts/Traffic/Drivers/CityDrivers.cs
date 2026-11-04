@@ -51,6 +51,9 @@ namespace RealLifeOverhaul
         private long _lookTicks;     // this look's time so far
         private long _lookTotal;
         private long _lookWorst;
+        private long _startTicks;    // this look's start: the street read and its cars gathered
+        private long _startTotal;
+        private long _startWorst;    // ...the worst look's
         private float _nextReport;
         private int _carsMost, _obstaclesMost, _brakedMost, _linesMost;
 
@@ -132,6 +135,10 @@ namespace RealLifeOverhaul
             float now = Time.time;
             if (!_evaluating && now < _next)
             {
+                if (MeasureNow)
+                {
+                    MeasureWaiting();   // a car the last look saw, measured in a frame with no look
+                }
                 return;
             }
             try
@@ -144,6 +151,29 @@ namespace RealLifeOverhaul
                 {
                     Step(now);
                 }
+                if (_game.WaitedFor > MeasureWaitMost && MeasureNow)
+                {
+                    MeasureWaiting();   // no frame without a look came (a very low frame rate): after the look's slice, outside it
+                }
+            }
+            catch (Exception e)
+            {
+                Fault(e);
+            }
+        }
+
+        private const float MeasureWaitMost = 0.5f;   // seconds a car seen in a look may wait for a frame with no look to be measured in
+
+        // A car the looks saw waits to be measured, the looks are working, and no car has been measured in this frame yet.
+        private bool MeasureNow => _game.Waiting && _working && Settings.CityDrivers && ModState.Loaded && TrafficTools.Ready && TrafficTools.MeasureFree;
+
+        // One car seen in a look and not measured yet: its figures, once, outside every look (three measured inside one were
+        // most of a look of 0.9 ms). A fault is the look's (Fault): everything given back, and after three the cars are the game's alone.
+        private void MeasureWaiting()
+        {
+            try
+            {
+                _game.MeasureWaiting(Manager.GetVehicleList());
             }
             catch (Exception e)
             {
@@ -189,6 +219,7 @@ namespace RealLifeOverhaul
             {
                 _clock.Stop();
                 _lookTicks += _clock.ElapsedTicks;
+                _startTicks = _clock.ElapsedTicks;
             }
             if (cars == 0)
             {
@@ -242,9 +273,11 @@ namespace RealLifeOverhaul
         {
             _looks++;
             _lookTotal += _lookTicks;
+            _startTotal += _startTicks;
             if (_lookTicks > _lookWorst)
             {
                 _lookWorst = _lookTicks;
+                _startWorst = _startTicks;
             }
             _carsMost = Mathf.Max(_carsMost, _cars);
             _obstaclesMost = Mathf.Max(_obstaclesMost, _obstacles.Count);
@@ -304,7 +337,13 @@ namespace RealLifeOverhaul
             Logger?.Info($"Traffic check (city drivers' cost): {_looks} looks in the last minute, {average:F0} microseconds a look on average and {worst:F0} at worst, "
                          + $"over {DriverRules.SliceCars} cars a frame (wanted: under {LookWanted:F0} and {LookWorst:F0}); at most {_carsMost} cars read, "
                          + $"{_obstaclesMost} things on the roads, {_brakedMost} cars slowed at once, {_linesMost} hold line(s): "
-                         + (pass ? "PASS" : "FAIL, over budget"));
+                         + (pass ? "PASS" : "FAIL, over budget")
+                         + $"; of it the street read and its cars gathered {_startTotal * micro / _looks:F0} on average and {_startWorst * micro:F0} in the worst look"
+                         + $"; outside the looks, {_game.MeasuredOut} car(s) measured in frames of their own ({_game.MeasureWorst * micro:F0} microseconds at most) "
+                         + $"and {_game.CopiedByKind} that took the figures of a car of their kind.");
+            _game.MeasuredOut = _game.CopiedByKind = 0;
+            _game.MeasureWorst = 0L;
+            _startTotal = _startWorst = 0L;
             _looks = 0;
             _lookTotal = 0L;
             _lookWorst = 0L;

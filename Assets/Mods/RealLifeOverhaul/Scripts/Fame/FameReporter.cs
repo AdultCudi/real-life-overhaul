@@ -244,7 +244,7 @@ namespace RealLifeOverhaul.Fame
             }
             FameAsk ask = _asks[index];
             string[] keys = FameText.QuestionKeys(ask);
-            return new DialogEntry
+            var entry = new DialogEntry
             {
                 messageData = "reallife_fame_talk_line".Localize(new { text = FameText.Fill(keys[0], "promise", FameText.PromiseWords(ask.Promise)) }),
                 ConfirmTextOverride = keys[1].Localize(),
@@ -254,6 +254,23 @@ namespace RealLifeOverhaul.Fame
                 CancelTextOverride = "reallife_fame_talk_end",
                 OnCancel = Leave
             };
+            Lines(entry, DialogButton.Confirm, FamePress.Answer(ask, 0, FameVenue.Street), ask);   // what each answer does, from the rule that applies it
+            Lines(entry, DialogButton.Second, FamePress.Answer(ask, 1, FameVenue.Street), ask);
+            return entry;
+        }
+
+        // The lines under an answer: the recognition it brings from the papers, the part of the standing it moves, a promise it makes.
+        private static void Lines(DialogEntry entry, DialogButton button, FameAnswer a, FameAsk ask)
+        {
+            entry.Gets(button, "reallife_fame_says_press", "tenths", FameRules.Tenths(a.Press));
+            if (a.MoveA != 0)
+            {
+                entry.Cost(button, FameText.Fill("reallife_fame_says_part", "part", FameText.Part(a.PartA), "move", FameText.Signed(a.MoveA)), a.MoveA > 0 ? 1 : -1, a.MoveA > 0 ? 1 : -1);
+            }
+            if (a.Promises)
+            {
+                entry.Says(button, "reallife_fame_says_promise", "promise", FameText.PromiseWords(ask.Promise));
+            }
         }
 
         private static DialogEntry Answered(int index, int option)

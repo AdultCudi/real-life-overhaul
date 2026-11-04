@@ -73,7 +73,7 @@ namespace RealLifeOverhaul.Ui
                 _ways[_count++] = Way.Backup;
                 choices.Add(new UiSideChoice
                 {
-                    Name = UiText.T("reallife_ui_funeral_backup"), Line = UiText.Fill("reallife_ui_funeral_backup_line", "age", UiText.Whole(FuneralHelper.BackUpSaveAge)),
+                    Name = UiText.T("reallife_ui_funeral_backup"), Line = BackupLine(day),
                 });
             }
             _ways[_count++] = Way.Menu;
@@ -106,6 +106,18 @@ namespace RealLifeOverhaul.Ui
                 },
                 PromptCount = 3,
             };
+        }
+
+        // What the game found of its backup: the day it was made on and when its file was written; the test, with no file, says the day before.
+        private string BackupLine(int today)
+        {
+            SaveGameManager.SaveGameStruct meta = GameContract.FuneralBackupMeta.Field != null &&
+                _ui != null ? GameContract.FuneralBackupMeta.Field.GetValue(_ui) as SaveGameManager.SaveGameStruct : null;
+            int day = meta != null ? meta.day : _test ? Math.Max(1, today - 1) : 0;   // no file read and not the test: no day to name
+            DateTime saved = meta != null ? meta.lastPlayedDate : DateTime.Now;
+            return FuneralRules.Dated(day)
+                ? UiText.Fill("reallife_ui_funeral_backup_when", "day", UiText.Whole(day), "when", FuneralRules.When(saved, System.Globalization.CultureInfo.CurrentCulture))
+                : UiText.T("reallife_ui_funeral_backup_line_plain");
         }
 
         // The life in a few sentences, as the City Ledger's obituary words it (Permadeath's lines: how long they lived here,

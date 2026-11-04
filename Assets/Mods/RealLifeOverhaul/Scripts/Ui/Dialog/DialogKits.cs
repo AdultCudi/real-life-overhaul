@@ -195,8 +195,13 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The game's spoken line on its own canvas: the card's four pieces the leaves the kit hides, the card itself left as it is.
-        private sealed class MonologueGameScreen : IUiGameScreen
+        private sealed class MonologueGameScreen : IUiGameScreen, IUiGameWay, IUiGameInteract
         {
+            public bool Keys => true;         // Interact is Next and Cancel is Skip while a line shows
+
+            public bool Exclusive => false;   // only Interact is taken (IUiGameInteract), Cancel only when the line can be closed (TakesBack); no other key is touched
+
+            public bool Blocks => false;      // clicks pass to the world: the card takes only its own
             private static readonly string[] Leaves = { "Background", "Image", "Message", "Close" };
 
             public string Id => MonologueId;

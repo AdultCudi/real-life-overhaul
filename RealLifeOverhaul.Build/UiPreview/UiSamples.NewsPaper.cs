@@ -27,25 +27,9 @@ internal static partial class UiSamples
             m.Note = m.EmptyBody;
             return m;
         }
-        if (state == "reading")
+        if (state.StartsWith("reading", StringComparison.Ordinal))
         {
-            m.Tab = 1;
-            m.Shape = NewsShape.Reading;
-            m.Reader = new UiReaderModel
-            {
-                Title = t("reallife_ledger_title", "The City Ledger") + ", Tuesday, day 289",
-                Blocks = new[]
-                {
-                    new UiReaderBlock { Kind = UiReaderKind.Heading, Text = "Bank rate to rise again, by 0.25 points" },
-                    new UiReaderBlock
-                    {
-                        Kind = UiReaderKind.Paragraph,
-                        Text = "The central bank will lift its rate to 4.25% on day 291, its third rise in a month, after inflation reached 6.0%. Loans on a variable rate will cost more from the same day."
-                    },
-                    new UiReaderBlock { Kind = UiReaderKind.Heading, Text = "Crews fix nine street lights on 9th Avenue" },
-                    new UiReaderBlock { Kind = UiReaderKind.Paragraph, Text = "Residents reported a dark stretch near the Garment District. Work went on through the night." }
-                }
-            };
+            NewsReadingSample(t, m, state);
             return m;
         }
         m.Shape = NewsShape.Stand;
@@ -94,6 +78,70 @@ internal static partial class UiSamples
             }
         };
         return m;
+    }
+
+    // The opening story's words after its kicker ("OPENING:"), as the paper prints its body.
+    private static string NewsOpenedBody(UiWords t, string firm)
+    {
+        string text = NewsFill(t("reallife_ledger_opened_city", "OPENING: {firm} has opened for business in the city."), "firm", firm);
+        int cut = text.IndexOfAny(new[] { ':', '：' });
+        return cut < 0 ? text : text.Substring(cut + 1).Trim();
+    }
+
+    // The Reading tab as the live fill writes it: the papers to pick, the days of the open paper, the printed page, and the reader; or what to do for a paper you do not take.
+    private static void NewsReadingSample(UiWords t, NewsModel m, string state)
+    {
+        m.Tab = 1;
+        m.Shape = NewsShape.Reading;
+        string[] names =
+        {
+            t("reallife_ledger_online_name_ledger", "The City Ledger"), t("reallife_ledger_online_name_exchange", "The Exchange Gazette"),
+            t("reallife_ledger_online_name_street", "The Street Sheet"), t("reallife_ledger_online_name_review", "The Weekend Review")
+        };
+        int open = state == "reading_not_held" ? 2 : state == "reading_none" ? -1 : 0;
+        m.ReadTitles = new UiActionModel[names.Length];
+        for (int i = 0; i < names.Length; i++)
+        {
+            m.ReadTitles[i] = new UiActionModel { Label = names[i], Kind = i == open ? UiButtonKind.Chip : UiButtonKind.Secondary, Key = UiAction.Count, Command = NewsCommands.ReadTitle, Arg = i };
+        }
+        m.EmptyAction = t("reallife_ledger_online_to_titles", "Titles");
+        if (state == "reading_not_held")
+        {
+            m.EmptyTitle = NewsFill(t("reallife_news_read_not_held", "You do not take {title}"), "title", names[2]);
+            m.EmptyBody = NewsFill(t("reallife_news_read_not_held_body", "Take it out on the Titles tab to read it. A week of {title} costs {money}, and today's edition comes at once."),
+                "title", names[2], "money", "$3");
+            return;
+        }
+        if (state == "reading_none")
+        {
+            m.EmptyTitle = t("reallife_news_read_none", "Nothing to read yet");
+            m.EmptyBody = NewsFill(t("reallife_ledger_online_nothing", "Nothing to read yet. Subscribe on the Titles tab: today's edition comes at once, then a new one each morning at {hour}."), "hour", "06:00");
+            return;
+        }
+        string today = NewsFill(t("reallife_ledger_online_day_today", "Today, day {day}"), "day", "289");
+        string earlier = t("reallife_ledger_online_day", "{weekday}, day {day}");
+        m.ReadDays = new[]
+        {
+            new UiActionModel { Label = today, Kind = UiButtonKind.Chip, Key = UiAction.Count, Command = NewsCommands.ReadDay, Arg = 289 },
+            new UiActionModel { Label = NewsFill(earlier, "weekday", "Monday", "day", "288"), Kind = UiButtonKind.Secondary, Key = UiAction.Count, Command = NewsCommands.ReadDay, Arg = 288 },
+            new UiActionModel { Label = NewsFill(earlier, "weekday", "Sunday", "day", "287"), Kind = UiButtonKind.Secondary, Key = UiAction.Count, Command = NewsCommands.ReadDay, Arg = 287 }
+        };
+        m.ReadPrinted = new UiActionModel { Label = t("reallife_ledger_online_printed", "The printed page"), Kind = UiButtonKind.Primary, Key = UiAction.Count, Command = NewsCommands.ReadPrinted };
+        m.Reader = new UiReaderModel
+        {
+            Title = names[0] + ", Tuesday, day 289",
+            Blocks = new[]
+            {
+                new UiReaderBlock { Kind = UiReaderKind.Heading, Text = "Bank rate to rise again, by 0.25 points" },
+                new UiReaderBlock
+                {
+                    Kind = UiReaderKind.Paragraph,
+                    Text = "The central bank will lift its rate to 4.25% on day 291, its third rise in a month, after inflation reached 6.0%. Loans on a variable rate will cost more from the same day."
+                },
+                new UiReaderBlock { Kind = UiReaderKind.Heading, Text = "Crews fix nine street lights on 9th Avenue" },
+                new UiReaderBlock { Kind = UiReaderKind.Paragraph, Text = "Residents reported a dark stretch near the Garment District. Work went on through the night." }
+            }
+        };
     }
 
     private static UiEditionStory Story(string head, string body) => new UiEditionStory { Headline = head, Body = body };
@@ -216,8 +264,8 @@ internal static partial class UiSamples
                     Stories = new[]
                     {
                         Story("Huang Guo's chain raised prices", "Guo Holdings put up prices in its shops on day 284."),
-                        Story(NewsFill(t("reallife_news_open_head", "A new business opens: {firm}"), "firm", "Pizzeria Luigi"),
-                            NewsFill(t("reallife_news_open_body", "{count} firms opened in the city this year."), "count", "4")),
+                        Story(NewsFill(t("reallife_ledger_head_opened_city", "{firm} opens its doors"), "firm", "Pizzeria Luigi"),
+                            NewsOpenedBody(t, "Pizzeria Luigi")),
                         Story("Harbourside Freight lifts the index", "Its shares closed at $53.42 on a stronger quarter for deliveries.")
                     }
                 },

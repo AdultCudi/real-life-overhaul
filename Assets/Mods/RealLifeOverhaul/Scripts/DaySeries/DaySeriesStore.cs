@@ -6,7 +6,7 @@ using System.Text;
 namespace RealLifeOverhaul.DaySeries
 {
     /// <summary>
-    /// The day series as one line of the save, <c>v=1~l:{day}~d:{seed}~c:{from}|{until}~h:{plans}~s:{figures}~n:{loans}</c>.
+    /// The day series as one line of the save, <c>v=1~l:{day}~d:{seed}~c:{from}|{until}~h:{plans already held}~k:{plans the cut held}~s:{figures}~n:{loans}</c>.
     /// A figure's readings run from its first day in the window, one token each: <c>=n</c> a reading, a bare number its change
     /// from the day before, nothing "the same", and <c>n</c> a day with none. A later version adds a section at the end; this
     /// reader skips a letter it does not know. A line that is not the series, or is damaged, is kept as it was read.
@@ -38,6 +38,10 @@ namespace RealLifeOverhaul.DaySeries
             if (!string.IsNullOrEmpty(book.HeldAlready))
             {
                 t.Append("~h:").Append(DaySeriesCatalogue.Clean(book.HeldAlready));
+            }
+            if (!string.IsNullOrEmpty(book.HeldByCut))
+            {
+                t.Append("~k:").Append(DaySeriesCatalogue.Clean(book.HeldByCut));
             }
             t.Append("~s:");
             bool first = true;
@@ -160,6 +164,9 @@ namespace RealLifeOverhaul.DaySeries
                             break;
                         case 'h':
                             book.HeldAlready = body;
+                            break;
+                        case 'k':
+                            book.HeldByCut = body;
                             break;
                         case 's':
                             if (body.Length > 0)

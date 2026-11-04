@@ -170,8 +170,9 @@ internal static partial class Program
             }
             Check(pressed >= 3 && silent == 0, "finance: every answer and action shown on Rivals reaches a handler that acts (" + pressed + " pressed, " + silent + " silent)");
             string text = TextsOf(s);
-            Check(!text.Contains("Flare campaign") && !text.Contains("Hold prices") && text.Contains("Cut your prices 5% for 14 days") && text.Contains("Raising prices 4% in all shops"),
-                "finance: answers show only with a move to answer, with what the rival did, and only ones that do something");
+            Check(text.Contains("Flare campaign") && !text.Contains("Hold prices") && text.Contains("Cut your prices 5% for 14 days") && text.Contains("Raising prices 4% in all shops")
+                  && text.Contains("Forecast: 12% more customers"),
+                "finance: answers show only with a move to answer, with what the rival did, the Flare campaign with its forecast, and only ones that do something");
             string quiet = TextsOf(LayFinance(ScreenWith(FinanceFace.Rivals, "rivals_new")));
             Check(!quiet.Contains("How do you answer"), "finance: with no move to answer, Rivals shows no answers");
         }

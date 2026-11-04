@@ -162,13 +162,37 @@ namespace RealLifeOverhaul.Ui
                 _selected = 0;
                 _offset = 0f;
                 _focus = -1;
-                TabMenu menu = Find<TabMenu>("Layout 30-70 (1)/Right/SelectedRival/TabMenu");
-                if (menu != null && tab != UiRivals.League)
+                if (tab != UiRivals.League && !GameTab(tab == UiRivals.Businesses ? (Component)Businesses() : Buildings()))
                 {
-                    menu.SelectTab(tab == UiRivals.Businesses ? "Businesses" : "RealEstateProperties");
+                    UiDirector.Logger?.Info("Rivals (kit): the game's TabMenu above the " + (tab == UiRivals.Businesses ? "businesses" : "buildings")
+                                            + " table is MISSING, so the game's own Rivals view shows until the app closes");
+                    RivalsKit.Classic();
                 }
             }
             return true;
+        }
+
+        /// <summary>
+        /// The game's own tab of a table: its TabMenu is found above the table (no hierarchy path), the container the table
+        /// stands in is the ancestor under the menu's containers parent, and the menu's public SelectTab takes its name.
+        /// False when there is no TabMenu or the table is in none of its containers.
+        /// </summary>
+        internal static bool GameTab(Component table, bool select = true)
+        {
+            TabMenu menu = table != null ? table.GetComponentInParent<TabMenu>(true) : null;
+            var containers = menu != null ? GameContract.RivalsTabContainers.Field?.GetValue(menu) as Transform : null;
+            for (Transform at = table != null ? table.transform : null; containers != null && at != null; at = at.parent)
+            {
+                if (at.parent == containers)
+                {
+                    if (select)
+                    {
+                        menu.SelectTab(at.name);
+                    }
+                    return true;
+                }
+            }
+            return false;
         }
 
         // A rival chosen through the game's own leaderboard button: the game shows them, loads their tables and fires its event.
@@ -293,6 +317,7 @@ namespace RealLifeOverhaul.Ui
         private void Build()
         {
             _v.Tab = _tab;
+            _v.Today = SaveGameManager.Current != null ? SaveGameManager.Current.Day : 0;
             _v.Money = f => f.ToShortCurrencyFormat();
             League();
             ChosenPanel();
@@ -489,12 +514,6 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             return 0;
-        }
-
-        private T Find<T>(string path) where T : Component
-        {
-            Transform t = _app.transform.Find(path);
-            return t != null ? t.GetComponent<T>() : null;
         }
 
         // One line a press in Player.log, so a report shows each button reaching the game.

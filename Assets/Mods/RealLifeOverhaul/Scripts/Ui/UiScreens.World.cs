@@ -41,7 +41,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     "reallife_ui_world_offer_kicker", "reallife_ui_world_offer_hours", "reallife_ui_world_offer_hours_vary", "reallife_ui_world_offer_days",
                     "joboffer_wage_per_hour", "reallife_ui_world_offer_wage", "reallife_ui_world_offer_week", "reallife_ui_world_offer_not_now", "reallife_ui_world_offer_hired", "joboffer_accept_job",
-                    "reallife_ui_world_offer_boss", "reallife_ui_world_offer_span", "reallife_ui_world_offer_run", "reallife_ui_world_offer_and", "playerhud_currentjob_day_off",
+                    "reallife_ui_world_offer_boss", "reallife_ui_world_offer_liked", "reallife_ui_world_offer_fine", "reallife_ui_world_offer_narrow", "reallife_ui_world_offer_let_go",
+                    "reallife_ui_world_offer_span", "reallife_ui_world_offer_run", "reallife_ui_world_offer_and", "playerhud_currentjob_day_off",
                     "common_monday", "common_tuesday", "common_wednesday", "common_thursday", "common_friday", "common_saturday", "common_sunday"
                 }).Switch(UiScreenSwitches.Hud),
                 new UiScreenDef("world_private_driver", UiTemplate.Hud, "PrivateDriverScreen", new[]

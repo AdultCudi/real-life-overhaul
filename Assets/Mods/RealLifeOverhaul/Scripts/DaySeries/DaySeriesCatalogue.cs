@@ -32,6 +32,7 @@ namespace RealLifeOverhaul.DaySeries
         public const string PricePrefix = "price.";   // the player's own retail price of one good, cents. Only where they sell it. News appends it.
         public const string CityPrefix = "city.";     // the city's shop price of one good, cents, the goods the News pages follow
         public const int CityGoodsMost = 12;
+        public const string Unemployment = "city.unemployment";   // the city's unemployment among its people, thousandths of the labour force, from the population. Not a good.
 
         public static string Price(string good)
         {
@@ -43,6 +44,12 @@ namespace RealLifeOverhaul.DaySeries
         {
             string clean = Clean(good);
             return clean.Length == 0 ? string.Empty : CityPrefix + clean;
+        }
+
+        /// <summary>True for a city price line: one of the goods the News pages follow (the city's unemployment shares the prefix and is no good).</summary>
+        public static bool IsCityGood(string key)
+        {
+            return key != null && key.Length > CityPrefix.Length && key.StartsWith(CityPrefix, System.StringComparison.Ordinal) && key != Unemployment;
         }
 
         public static string Category(int index) => CategoryPrefix + index.ToString(System.Globalization.CultureInfo.InvariantCulture);

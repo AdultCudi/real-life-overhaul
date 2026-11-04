@@ -302,6 +302,78 @@ namespace RealLifeOverhaul.Markets
             return b.Realised + b.Dividends - b.Fees;
         }
 
+        /// <summary>
+        /// A gain or a loss taken on a sale: kept in the bot's lifetime figure and in today's and this week's. The figures are of the
+        /// day it is booked on, so a turn that has not come yet (a replay, a load) sets them to nothing first.
+        /// </summary>
+        public static void BookGain(Bot b, long gain, int day)
+        {
+            Turn(b, day);
+            b.Realised += gain;
+            b.DayGain += gain;
+            b.WeekGain += gain;
+        }
+
+        /// <summary>
+        /// The day's and the week's gains set to nothing when the day, and when the week, has turned. Called for every day the market
+        /// moves on, a market day or not, so a Saturday does not still say Friday's gain is today's. A day gone back to is kept.
+        /// </summary>
+        public static void Turn(Bot b, int day)
+        {
+            if (day == b.FigDay)
+            {
+                return;
+            }
+            if (day < b.FigDay)
+            {
+                return;   // a replay of an earlier day: the figures are of a later one already
+            }
+            b.DayGain = 0;
+            if (MarketCatalogue.WeekOf(day) != MarketCatalogue.WeekOf(b.FigDay))
+            {
+                b.WeekGain = 0;
+            }
+            b.FigDay = day;
+        }
+
+        /// <summary>Every hired bot's figures turned to the day.</summary>
+        public static void Turn(MarketState state, int day)
+        {
+            for (int i = 0; state != null && i < state.Bots.Count; i++)
+            {
+                Turn(state.Bots[i], day);
+            }
+        }
+
+        /// <summary>
+        /// The player's bots' and rules' realised gain: today and this week, as figures that read nothing when the day or the week is
+        /// not the one they were counted for. A firm's lifetime gain is never in them.
+        /// </summary>
+        public static void Figures(MarketState state, int day, out long today, out long week)
+        {
+            today = 0;
+            week = 0;
+            for (int i = 0; state != null && i < state.Bots.Count; i++)
+            {
+                today += DayOf(state.Bots[i], day);
+                week += WeekOf(state.Bots[i], day);
+            }
+            for (int i = 0; state != null && i < state.Rules.Count; i++)
+            {
+                if (state.Rules[i].Owner == 0)
+                {
+                    today += RuleBots.DayOf(state.Rules[i], day);
+                    week += RuleBots.WeekOf(state.Rules[i], day);
+                }
+            }
+        }
+
+        /// <summary>A bot's gain of the day asked for: nothing when it was counted for another.</summary>
+        public static long DayOf(Bot b, int day) => b.FigDay == day ? b.DayGain : 0L;
+
+        /// <summary>A bot's gain of the week the day is in: nothing when it was counted for another week.</summary>
+        public static long WeekOf(Bot b, int day) => MarketCatalogue.WeekOf(b.FigDay) == MarketCatalogue.WeekOf(day) ? b.WeekGain : 0L;
+
         public static long LossesToMakeGood(Bot b)
         {
             return Math.Max(0L, b.PayMark - Profit(b));
@@ -514,7 +586,7 @@ namespace RealLifeOverhaul.Markets
                 b.Cash += value - fee;
                 long part = h.Cost * qty / h.Shares;
                 long gain = value - fee - part;
-                b.Realised += gain;
+                BookGain(b, gain, state.Day);
                 h.Gain += gain;
                 h.Cost -= part;
                 h.Shares -= qty;

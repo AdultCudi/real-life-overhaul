@@ -24,13 +24,9 @@ namespace RealLifeOverhaul.Ui
                 "reallife_fin_answer", "reallife_fame_col_what", "reallife_fame_col_stands", "reallife_fame_col_heading", "reallife_fin_f_owed",
                 "reallife_fin_f_cash", "reallife_fin_f_worth"))
                 .Switch(UiScreenSwitches.Money));
-            screens.Add(new UiScreenDef("banks", UiTemplate.AppWindow, "BanksScreen", MoneyKeys(shared,
-                "reallife_banks_app", "reallife_bank_tab_accounts", "reallife_bank_tab_loans", "reallife_bank_tab_card",
-                "reallife_bank_tab_apply", "reallife_bank_tab_rating"))
+            screens.Add(new UiScreenDef("banks", UiTemplate.AppWindow, "BanksScreen", MoneyKeys(shared, BanksKeys()))
                 .Switch(UiScreenSwitches.Money));
-            screens.Add(new UiScreenDef("own_bank", UiTemplate.AppWindow, "OwnBankScreen", MoneyKeys(shared,
-                "reallife_ob_app", "reallife_ob_tab_bank", "reallife_ob_tab_savers", "reallife_ob_tab_lending",
-                "reallife_ob_tab_fund", "reallife_branch_tab"))
+            screens.Add(new UiScreenDef("own_bank", UiTemplate.AppWindow, "OwnBankScreen", MoneyKeys(shared, OwnBankKeys()))
                 .Switch(UiScreenSwitches.Money));
             screens.Add(new UiScreenDef("utilities", UiTemplate.AppWindow, "UtilitiesScreen", UtilitiesKeys())
                 .Switch(UiScreenSwitches.Money));

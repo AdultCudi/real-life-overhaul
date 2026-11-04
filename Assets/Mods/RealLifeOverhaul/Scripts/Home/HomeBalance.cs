@@ -257,5 +257,12 @@ namespace RealLifeOverhaul
 
         /// <summary>What is left of a need or a risk with "easy needs" on.</summary>
         public const float Easy = 0.5f;
+
+        /// <summary>
+        /// What a rate per game hour adds to a need over some hours: what wears a need down or builds stress is halved on easy
+        /// (<paramref name="easy"/>), what restores it is not. The one rule the hourly upkeep (HomeHealth) and a card that says
+        /// what a shift will add both use.
+        /// </summary>
+        public static float Added(float ratePerHour, float hours, bool easy, bool wears) => ratePerHour * hours * (wears && easy ? Easy : 1f);
     }
 }

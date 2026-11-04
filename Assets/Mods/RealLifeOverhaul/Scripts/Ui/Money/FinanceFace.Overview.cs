@@ -28,6 +28,10 @@ namespace RealLifeOverhaul.Ui
             y = UiAppWindow.Profile(s, at, profile, acts, x, y, cw, keys);
             string line = !string.IsNullOrEmpty(o.LeavesNote) ? o.LeavesNote : sc.Sentence;
             y = Sentence(s, at, line, x, y, cw);
+            if (!string.IsNullOrEmpty(o.RiseNote))
+            {
+                y = Sentence(s, at, o.RiseNote, x, y, cw, UiRole.WarnText, 2);
+            }
             float gap = UiTokens.S4;
             float h = bottom - y;
             float chartH = o.Cash30 != null && h > UiTokens.S16 * 7f ? UiDraw.SnapDown(Math.Min(UiTokens.S16 * 2.5f, h * 0.28f)) : 0f;

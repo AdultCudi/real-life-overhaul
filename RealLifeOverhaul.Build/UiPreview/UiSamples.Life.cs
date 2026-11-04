@@ -34,18 +34,18 @@ internal static partial class UiSamples
         t("reallife_ui_life_group_study", "Study"),
     };
 
-    private static string[] DayHours()
+    private static string[] DayHours(int first = 7, int last = 23)
     {
-        var hours = new string[16];
+        var hours = new string[last - first];
         for (int i = 0; i < hours.Length; i++)
         {
-            hours[i] = (7 + i).ToString("00", System.Globalization.CultureInfo.InvariantCulture) + ":00";
+            hours[i] = (first + i).ToString("00", System.Globalization.CultureInfo.InvariantCulture) + ":00";
         }
         return hours;
     }
 
     /// <summary>A busy Monday, or a day with nothing on it yet.</summary>
-    public static void PlannerToday(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool empty)
+    public static void PlannerToday(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool empty, int chosenShift = -1)
     {
         var m = new UiPlanModel
         {
@@ -57,7 +57,7 @@ internal static partial class UiSamples
         LifeBar(m, t);
         var board = new UiBoardModel
         {
-            FirstHour = 7, LastHour = 23, Hours = DayHours(), Now = empty ? -1 : 8 * 60 + 45,
+            FirstHour = 5, LastHour = 24, Hours = DayHours(5, 24), Now = empty ? -1 : 8 * 60 + 45,
             EmptyTitle = m.EmptyTitle, EmptyBody = m.EmptyBody,
         };
         if (!empty)
@@ -72,6 +72,7 @@ internal static partial class UiSamples
             };
             board.Shifts = new[]
             {
+                new UiBoardShift { Lane = 0, Start = 5 * 60 + 30, End = 6 * 60 + 30, Name = "Early supplier call", Span = "05:30 to 06:30" },
                 new UiBoardShift { Lane = 0, Start = 7 * 60, End = 8 * 60, Name = "Open Speedy Bites", Span = "07:00 to 08:00" },
                 new UiBoardShift { Lane = 4, Start = 9 * 60, End = 10 * 60 + 30, Name = "Coffee delivery", Span = "09:00 to 10:30" },
                 new UiBoardShift { Lane = 0, Start = 11 * 60, End = 12 * 60, Name = "Weekly team meeting", Span = "11:00 to 12:00" },
@@ -79,14 +80,170 @@ internal static partial class UiSamples
                 new UiBoardShift { Lane = 0, Start = 14 * 60, End = 16 * 60, Name = "Interview two developers", Span = "14:00 to 16:00" },
                 new UiBoardShift { Lane = 3, Start = 17 * 60, End = 17 * 60 + 30, Name = "Rent, 70 Fifth Avenue", Span = "17:00 to 17:30" },
                 new UiBoardShift { Lane = 1, Start = 20 * 60, End = 22 * 60, Name = "Evening class, Marketing", Span = "20:00 to 22:00" },
+                new UiBoardShift { Lane = 4, Start = 23 * 60, End = 23 * 60 + 30, Name = "Staff pay, 26 people", Span = "23:00 to 23:30" },
             };
+            board.Chosen = chosenShift;
+            m.Side = PlanSide(t);
             board.Actions = new[]
             {
                 new UiActionModel { Label = t("reallife_ui_life_jump", "Jump to now"), Kind = UiButtonKind.Secondary, Key = UiAction.Option },
                 new UiActionModel { Label = t("reallife_ui_life_add", "Add an entry"), Kind = UiButtonKind.Primary, Key = UiAction.Alt },
             };
         }
+        if (empty)
+        {
+            m.Side = PlanSide(t, true);
+        }
         m.Board = board;
+        LifePages.Planner(s, m, f, dark, k);
+    }
+
+    private static UiPlanDayModel PlanSide(UiWords t, bool empty = false) => new UiPlanDayModel
+    {
+        NextHead = t("reallife_ui_life_next_head", "Up next"), NextMore = empty ? null : t("reallife_ui_life_next_more", "{count} more today").Replace("{count}", "4"),
+        NextNone = t("reallife_ui_life_next_none", "Nothing more at a set hour"),
+        Next = empty ? new UiPlanNext[0] : new[]
+        {
+            new UiPlanNext { Time = "09:00", Icon = UiIcon.Store, Title = "Coffee delivery", Sub = "Bloom and Co, Garment District", Locate = true },
+            new UiPlanNext { Time = "11:00", Icon = UiIcon.Briefcase, Title = "Weekly team meeting", Sub = "Pioneer Game Studio", Locate = true },
+            new UiPlanNext { Time = "12:30", Icon = UiIcon.Heart, Title = "Lunch with Helga", Sub = "Hell's Kitchen", Locate = true, Warn = true },
+            new UiPlanNext { Time = "14:00", Icon = UiIcon.Briefcase, Title = "Interview two developers", Sub = "Pioneer Game Studio", Locate = true },
+        },
+        ClashLine = empty ? null : t("reallife_ui_life_clash_one", "1 clash"),
+        FreeHead = t("reallife_ui_life_free_head", "Free time"), FreeNone = t("reallife_ui_life_free_none", "No free time left"),
+        Free = empty ? new UiPlanSpan[0] : new[]
+        {
+            new UiPlanSpan { Span = "11:00 to 12:30", Length = "1 h 30 min" }, new UiPlanSpan { Span = "16:00 to 17:00", Length = "1 h" },
+            new UiPlanSpan { Span = "19:30 to 20:00", Length = "30 min" },
+        },
+        LaterHead = t("reallife_ui_life_later_head", "Later this week"),
+        Later = empty ? new UiPlanLater[0] : new[]
+        {
+            new UiPlanLater { Day = "Tuesday 3", Title = "Marketing class, Bloom and Co delivery" },
+            new UiPlanLater { Day = "Thursday 5", Title = "Thrifty Threads post due 14:00" },
+        },
+        AllDayHead = t("reallife_ui_life_all_day_head", "All day"), AllDay = empty ? new string[0] : new[] { "Ask Maria Rossi about Sunday shifts" },
+        TotalsHead = t("reallife_ui_life_totals_head", "The day"),
+        Totals = new[]
+        {
+            new UiPairModel { Key = t("reallife_ui_life_count_todo", "To do"), Value = empty ? "0" : "6" },
+            new UiPairModel { Key = t("reallife_ui_life_count_done", "Done"), Value = "1" },
+            new UiPairModel { Key = t("reallife_ui_life_money_due", "Money due"), Value = "$4,200" },
+        },
+        LocateWord = t("reallife_ui_life_locate", "Locate"),
+    };
+
+    /// <summary>A day of the week: its entries, and its box.</summary>
+    public static void PlannerDay(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t)
+    {
+        var m = new UiPlanModel
+        {
+            Title = t("reallife_planner_app", "Planner"), Tab = 2, Nav = PlanNav(t, 6, 3), Page = UiPlanPageKind.Day, DayTitle = "Tuesday (Day 3)",
+            Week = t("reallife_ui_life_week", "Week {week}").Replace("{week}", "1"), CanSettings = false,
+            Add = t("reallife_ui_life_add", "Add an entry"),
+            Rows = new[]
+            {
+                new UiPlanRow { Icon = UiIcon.Truck, Title = "Coffee delivery, Bloom and Co", Meta = "09:00", Locate = true },
+                new UiPlanRow { Icon = UiIcon.Cap, Title = "Marketing class, campus", Meta = "18:00", Locate = true },
+                new UiPlanRow { Icon = UiIcon.Coin, Title = "Staff pay, 26 people", Meta = "23:00" },
+            },
+            RowCount = 3, Side = PlanSide(t),
+        };
+        m.Side.Later = new UiPlanLater[0];
+        LifeBar(m, t);
+        LifePages.Planner(s, m, f, dark, k);
+    }
+
+    /// <summary>One entry's page: a placed one with its way, or a note of the player's own.</summary>
+    public static void PlannerEntry(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool note)
+    {
+        var e = new UiPlanEntryModel
+        {
+            Title = note ? "Ask Maria Rossi about Sunday shifts" : "Coffee delivery", Icon = note ? UiIcon.Heart : UiIcon.Store,
+            Status = note ? t("reallife_planner_state_next", "Next") : t("reallife_planner_state_clash", "Clash"), StatusTone = note ? UiRole.None : UiRole.Warn,
+            Clash = note ? null : "Clashes with Weekly team meeting, 10:00.",
+            FactsHead = t("reallife_ibox_sec_when_where", "When and where"), WhatHead = t("reallife_ibox_sec_what", "What it is"), WayHead = t("reallife_ibox_sec_getting_there", "Getting there"),
+            Facts = note
+                ? new[] { new UiPlanFact { Label = "When", Value = "Today, 09:00" }, new UiPlanFact { Label = "Where", Value = "7 Fifth Avenue" }, new UiPlanFact { Label = "Kind", Value = "Note" } }
+                : new[] { new UiPlanFact { Label = "When", Value = "Today, 09:30 to 10:30" }, new UiPlanFact { Label = "Where", Value = "Bloom and Co, Garment District" }, new UiPlanFact { Label = "Kind", Value = "Business" } },
+            Lines = note ? new string[0] : new[] { "A delivery on one of your routes.", "To pay: $320.", "If it is missed the order is sent back." },
+            WarnLine = note ? -1 : 2,
+            Way = note ? new UiPlanFact[0] : new[] { new UiPlanFact { Label = "Leave by", Value = "09:05" } },
+            WayNote = note ? null : "By the distance from where you are: about 8 min by car or taxi, 20 min on foot.",
+            ReminderLabel = t("reallife_planner_reminder_head", "Reminder"), ReminderValue = "1 hour before", ReminderLess = true, ReminderMore = true,
+            Actions = note
+                ? new[]
+                {
+                    new UiActionModel { Label = "Set destination", Kind = UiButtonKind.Primary, Icon = UiIcon.Locate, Key = UiAction.Alt },
+                    new UiActionModel { Label = t("reallife_planner_note_done", "Mark as done"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Check, Key = UiAction.Count },
+                    new UiActionModel { Label = t("reallife_planner_note_edit", "Edit note"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Gear, Key = UiAction.Count },
+                    new UiActionModel { Label = "Delete", Kind = UiButtonKind.Destructive, Icon = UiIcon.Trash, Key = UiAction.Count },
+                }
+                : new[] { new UiActionModel { Label = "Set destination", Kind = UiButtonKind.Primary, Icon = UiIcon.Locate, Key = UiAction.Alt } },
+        };
+        var m = new UiPlanModel
+        {
+            Title = t("reallife_planner_app", "Planner"), Tab = note ? 3 : 0, Nav = PlanNav(t, 6, 3), Page = UiPlanPageKind.Entry, Entry = e, CanSettings = false,
+        };
+        LifeBar(m, t);
+        LifePages.Planner(s, m, f, dark, k);
+    }
+
+    /// <summary>The note's form, or the settings.</summary>
+    public static void PlannerForm(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool settings)
+    {
+        UiPlanFormModel form;
+        if (settings)
+        {
+            string[] kinds = { "Work shifts", "Court, police and licences", "Family and friends", "Travel and hotels", "City events and elections", "Business and taxes", "Health", "My notes" };
+            var fields = new System.Collections.Generic.List<UiPlanField> { new UiPlanField { Kind = UiPlanFieldKind.Heading, Label = t("reallife_planner_settings_show", "Show") } };
+            for (int i = 0; i < kinds.Length; i++)
+            {
+                fields.Add(new UiPlanField { Kind = UiPlanFieldKind.Switch, Label = kinds[i], On = i != 3, Value = i != 3 ? t("reallife_ui_life_on", "On") : t("reallife_ui_life_off", "Off") });
+            }
+            fields.Add(new UiPlanField { Kind = UiPlanFieldKind.Heading, Label = t("reallife_planner_settings_lead", "Reminder for a new note") });
+            fields.Add(new UiPlanField { Kind = UiPlanFieldKind.Selector, Label = t("reallife_planner_reminder_head", "Reminder"), Value = "1 hour before", CanLess = true, CanMore = true });
+            form = new UiPlanFormModel
+            {
+                Title = t("reallife_ui_life_settings", "Planner settings"), Icon = UiIcon.Gear, Fields = fields.ToArray(),
+                Actions = new[] { new UiActionModel { Label = "Close", Kind = UiButtonKind.Secondary, Icon = UiIcon.Close, Key = UiAction.Count } },
+            };
+        }
+        else
+        {
+            form = new UiPlanFormModel
+            {
+                Title = t("reallife_planner_note_edit", "Edit note"), Icon = UiIcon.Info,
+                Fields = new[]
+                {
+                    new UiPlanField { Kind = UiPlanFieldKind.Text, Label = t("reallife_ui_life_f_title", "Title"), Value = "Collect the shop keys from the office", Hint = "What is it?" },
+                    new UiPlanField
+                    {
+                        Kind = UiPlanFieldKind.Choices, Label = t("reallife_ui_life_f_ready", "Ready titles"), Chosen = -1,
+                        Options = new[] { "Go shopping", "Call someone", "Meet someone", "Pay a bill", "Go to the gym", "Collect something", "Clean up at home", "Take a day off" },
+                    },
+                    new UiPlanField { Kind = UiPlanFieldKind.Selector, Label = t("reallife_ui_life_f_day", "Day"), Value = "Tomorrow", CanLess = true, CanMore = true },
+                    new UiPlanField { Kind = UiPlanFieldKind.Selector, Label = t("reallife_ui_life_f_time", "Time"), Value = "11:00", CanLess = true, CanMore = true },
+                    new UiPlanField
+                    {
+                        Kind = UiPlanFieldKind.Choices, Label = t("reallife_ui_life_f_repeat", "Repeat"), Chosen = 2,
+                        Options = new[] { "Once", "Every day", "Every week on Tuesday" },
+                    },
+                    new UiPlanField
+                    {
+                        Kind = UiPlanFieldKind.Place, Label = t("reallife_ui_life_f_place", "Place"), Value = "7 Fifth Avenue", Action = "This building", Action2 = "Remove place",
+                    },
+                    new UiPlanField { Kind = UiPlanFieldKind.Selector, Label = t("reallife_planner_reminder_head", "Reminder"), Value = "30 minutes before", CanLess = true, CanMore = true },
+                },
+                Actions = new[]
+                {
+                    new UiActionModel { Label = "Save", Kind = UiButtonKind.Primary, Icon = UiIcon.Check, Key = UiAction.Alt },
+                    new UiActionModel { Label = "Cancel", Kind = UiButtonKind.Secondary, Icon = UiIcon.Close, Key = UiAction.Count },
+                },
+            };
+        }
+        var m = new UiPlanModel { Title = t("reallife_planner_app", "Planner"), Tab = settings ? 0 : 3, Nav = PlanNav(t, 6, 3), Page = UiPlanPageKind.Form, Form = form, CanSettings = false };
+        LifeBar(m, t);
         LifePages.Planner(s, m, f, dark, k);
     }
 
@@ -132,7 +289,7 @@ internal static partial class UiSamples
         }
         m.Board = new UiBoardModel
         {
-            FirstHour = 7, LastHour = 23, Hours = DayHours(), Now = -1, Lanes = lanes,
+            FirstHour = 7, LastHour = 24, Hours = DayHours(7, 24), Now = -1, Lanes = lanes,
             Shifts = new[]
             {
                 new UiBoardShift { Lane = 0, Start = 7 * 60, End = 8 * 60, Name = "Open the shop" },
@@ -141,7 +298,7 @@ internal static partial class UiSamples
                 new UiBoardShift { Lane = 1, Start = 18 * 60, End = 20 * 60, Name = "Class" },
                 new UiBoardShift { Lane = 3, Start = 14 * 60, End = 15 * 60, Name = "Sponsored post" },
                 new UiBoardShift { Lane = 4, Start = 9 * 60, End = 17 * 60, Name = "Shift" },
-                new UiBoardShift { Lane = 6, Start = 22 * 60, End = 23 * 60, Name = "Staff pay" },
+                new UiBoardShift { Lane = 6, Start = 23 * 60, End = 23 * 60 + 30, Name = "Staff pay" },
             },
             Actions = new[] { new UiActionModel { Label = t("reallife_ui_life_add", "Add an entry"), Kind = UiButtonKind.Primary, Key = UiAction.Alt } },
         };
@@ -194,6 +351,14 @@ internal static partial class UiSamples
         };
         if (!empty)
         {
+            diary.Ahead = new[]
+            {
+                new UiDiaryEntry { Day = 3, Icon = UiIcon.Truck, Title = "Bloom and Co delivery", Value = "09:00", Date = "3 Tue" },
+                new UiDiaryEntry { Day = 3, Icon = UiIcon.Cap, Title = "Marketing class", Value = "18:00", Date = "3 Tue" },
+            };
+        }
+        if (!empty)
+        {
             diary.Entries = new[]
             {
                 new UiDiaryEntry { Day = 2, Icon = UiIcon.Store, Title = "Open Speedy Bites", Value = "07:00" },
@@ -211,7 +376,7 @@ internal static partial class UiSamples
         var m = new UiCalModel
         {
             Title = t("reallife_calendar_app", "Calendar"), Diary = diary,
-            Weather = t("reallife_ui_life_weather", "{sky}, {temp}").Replace("{sky}", t("reallife_ui_hud_weather_sunny", "Sunny")).Replace("{temp}", "18 C"),
+            Weather = t("reallife_ui_life_weather", "{sky}, {temp}").Replace("{sky}", t("reallife_ui_hud_weather_sunny", "Sunny")).Replace("{temp}", "18°C"),
             Add = t("reallife_ui_life_add", "Add an entry"), Open = t("reallife_ui_life_open_planner", "Open Planner"),
             Move = t("reallife_ui_prompt_move", "Move"), Select = t("reallife_ui_prompt_select", "Select"), Back = t("reallife_ui_prompt_back", "Back"),
         };

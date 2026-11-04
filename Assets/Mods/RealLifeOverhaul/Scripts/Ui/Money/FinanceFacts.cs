@@ -31,7 +31,8 @@ namespace RealLifeOverhaul.Ui
         Accept,          // accept a request or an invitation
         Refuse,          // refuse a request or decline an invitation
         Join,            // join an accepted invitation
-        Lobby            // push the council for a change
+        Lobby,           // push the council for a change
+        Campaign         // answer a rival's move with a campaign on Flare
     }
 
     /// <summary>What the player has chosen on the Finance screen. The screen keeps it; the source reads it to write the facts and to know what a button means.</summary>
@@ -116,6 +117,7 @@ namespace RealLifeOverhaul.Ui
     {
         public string Player;
         public string Cash, Owed, Worth, Leaves, LeavesNote;
+        public string RiseNote;               // "Your variable debts cost $X more a month after the last rise", or null
         public UiDataTableModel Debts;
         public string[] NextLabels = new string[0];
         public string[] NextValues = new string[0];
@@ -171,6 +173,7 @@ namespace RealLifeOverhaul.Ui
         public string ChartTitle, ChartTotal, ChartChange, ChartRange;
         public bool ChangeGood;
         public string WhereTitle, CameInLabel, CameIn, WentOutLabel, WentOut;
+        public string WhereNote;              // the saved ledger's reach: "Not yet before day 12", or null once it covers the 30 days
         public string[] InNames = new string[0], InValues = new string[0];
         public int[] InShare = new int[0];
         public string[] OutNames = new string[0], OutValues = new string[0];
@@ -221,6 +224,7 @@ namespace RealLifeOverhaul.Ui
         public UiProfileModel Profile;
         public string[] Labels = new string[0];
         public string[] Values = new string[0];
+        public string Reading;                // the live move in words: what it does to you and when, or null with none
         public string MovesTitle;
         public FinanceRivalMove[] Moves = new FinanceRivalMove[0];
         public string MovesNone;

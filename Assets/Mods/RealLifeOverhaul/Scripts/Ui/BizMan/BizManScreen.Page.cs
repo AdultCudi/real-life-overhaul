@@ -360,7 +360,7 @@ namespace RealLifeOverhaul.Ui
             h.Urgent = urgent.ToArray();
             h.TodoTitle = UiText.T("common_requirements");
             h.Todo = missing > 0 ? UiText.Fill("reallife_ui_bizman_needs", "missing", UiText.Whole(missing), "count", UiText.Whole(checks.Count))
-                : alerts.Count > 0 ? UiText.Fill("reallife_ui_bizman_sum_alerts", "count", UiText.Whole(alerts.Count)) : null;
+                : alerts.Count == 1 ? UiText.T("reallife_ui_bizman_sum_alert_one") : alerts.Count > 0 ? UiText.Fill("reallife_ui_bizman_sum_alerts", "count", UiText.Whole(alerts.Count)) : null;
             h.TodoTone = missing > 0 || alerts.Count > 0 ? UiRole.Warn : UiRole.Ok;
         }
 

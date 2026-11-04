@@ -56,6 +56,9 @@ namespace RealLifeOverhaul.Ledger
         /// <summary>The rival tycoons the player took over from a day up to another (not that day), with what each cost.</summary>
         public static Action<int, int, List<LedgerBeat>> Beaten;
 
+        /// <summary>The businesses of the city and of rivals that opened on the days from one day up to another (not that day), oldest first.</summary>
+        public static Action<int, int, List<LedgerOpening>> Opened;
+
         /// <summary>Test button: a takeover story's facts for a rival of the catalogue, nothing changed; null without the rivals' catalogue.</summary>
         public static Func<int, LedgerBeat> TestBeat;
 
@@ -63,6 +66,7 @@ namespace RealLifeOverhaul.Ledger
         {
             Companies = null;
             Beaten = null;
+            Opened = null;
             TestBeat = null;
             PaperDay = null;
             Paper = null;

@@ -18,7 +18,7 @@ internal static partial class UiSamples
     };
 
     /// <summary>Every state of Rivals.</summary>
-    public static readonly string[] RivalsStates = { "league", "league_faces", "league_quiet", "businesses", "buildings", "league_empty", "league_fr", "businesses_fr" };
+    public static readonly string[] RivalsStates = { "league", "league_faces", "league_quiet", "businesses", "buildings", "league_empty", "league_fr", "businesses_fr", "league_early", "league_early_income" };
 
     /// <summary>The rivals of the league sample the game has a picture of, in "league_faces" (the rest have none: painted from the sex and age the mod records).</summary>
     public static readonly string[] GameFaces = { "Huang Guo", "Thierry Laurent Moreau", "Ingrid Schneider", "Jessica Johnson", "Maya Okafor" };
@@ -194,7 +194,7 @@ internal static partial class UiSamples
 
     private static RivalsView RivalsSample(UiWords t, string state)
     {
-        var v = new RivalsView { Money = FullMoney, ChartDays = new[] { 406, 407, 408, 409, 410, 411, 412 }, ChartMoney = true, Contacts = true };
+        var v = new RivalsView { Money = FullMoney, ChartDays = new[] { 406, 407, 408, 409, 410, 411, 412 }, Today = 412, ChartMoney = true, Contacts = true };
         if (state == "league_empty")
         {
             return v;
@@ -223,6 +223,16 @@ internal static partial class UiSamples
         v.Filter = 0;
         v.Chart = state == "league_quiet" || state == "league_faces" ? new[] { 148100f, 152400f, 150900f, 158300f, 162700f, 166200f, 171900f }
             : new[] { 281300f, 276900f, 270400f, 268800f, 265100f, 263000f, 254800f };
+        if (state.StartsWith("league_early"))
+        {
+            // Day 5 as the game hands it over: its seven-day window opens at day -1 and runs out of order, a count taken over every business the
+            // rival owns (12) beside a table of their 11 shops and offices, and a week of history that never was.
+            v.Today = 5;
+            v.ChartDays = new[] { -1, 1, 0, 2, 3, 4, 5 };
+            v.Filter = state == "league_early" ? 1 : 0;
+            v.ChartMoney = state != "league_early";
+            v.Chart = state == "league_early" ? new[] { 12f, 12f, 12f, 12f, 12f, 12f, 12f } : new[] { 238000f, 241500f, 236800f, 244200f, 249800f, 252300f, 254800f };
+        }
         if (state != "league_quiet" && state != "league_faces")
         {
             v.Threats = new[]
