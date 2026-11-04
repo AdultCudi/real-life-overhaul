@@ -338,6 +338,7 @@ namespace RealLifeOverhaul.Ui
                 need.Add(wanted);
             }
             p.DayTitle = CompanyText.T("reallife_rota_day_title_short", "day", CompanyApp.RotaDayWords(dd));
+            p.DayShort = CompanyApp.RotaDayWords(dd);
             p.DayNote = CompanyApp.RotaOpenWords(shop.Open, dd);
             p.HourLabels = labels.ToArray();
             p.OnShift = on.ToArray();

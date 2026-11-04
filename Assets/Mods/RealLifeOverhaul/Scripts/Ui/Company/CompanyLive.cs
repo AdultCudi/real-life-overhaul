@@ -156,6 +156,8 @@ namespace RealLifeOverhaul.Ui
 
             public string T(string key, string english) => W.T(key, english);
 
+            public string L(string key, string english) => W.L(key, english);
+
             public string F(string key, string english, params string[] pairs) => W.F(key, english, pairs);
 
             public string Money(int amount) => CompanyText.Money(amount);

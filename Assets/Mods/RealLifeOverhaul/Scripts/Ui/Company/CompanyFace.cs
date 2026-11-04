@@ -16,13 +16,15 @@ namespace RealLifeOverhaul.Ui
         public const int Act = 7410;        // a button, a switch or a link: the index of its action in the layout
         public const int Row = 7411;        // a row of the page's list: its index
         public const int Choice = 7412;     // a choice of the Lead or of the question's card: its index
-        public const int Cell = 7414;       // a cell of the rota's week: its day
         public const int DayHead = 7415;    // a day's column head or its hour bar: the day
         public const int Item = 7416;       // a row of a card's list: the index of its action
         public const int Filter = 7417;     // a chip over a list: its index
         public const int Badge = 7418;      // a business's badge in the head: its index
         public const int Opt = 7419;        // an option of a choice: the index of its action
         public const int Last = 7449;
+
+        // The regions of a page's columns for the d-pad (the sidebar's are the kit's): a list or tree at the left, the page beside it, and a column beside that.
+        internal const byte RegionList = 3, RegionMain = 4, RegionSide = 5;
 
         /// <summary>Every command the screen answers, for the checks: its own, the tree's and the tables'.</summary>
         public static readonly int[] Commands = AllCommands();
@@ -31,8 +33,8 @@ namespace RealLifeOverhaul.Ui
         {
             var list = new List<int>
             {
-                UiAppWindow.NavCommand, Act, Row, Choice, Cell, DayHead, Item, Filter, Badge, Opt, StepLess, StepMore, StepType,
-                UiOrgTree.First + UiOrgTree.Pick, UiOrgTree.First + UiOrgTree.Fold, UiOrgTree.First + UiOrgTree.All, UiOrgTree.First + UiOrgTree.Foot,
+                UiAppWindow.NavCommand, Act, Row, Choice, DayHead, Item, Filter, Badge, Opt, StepLess, StepMore, StepType,
+                UiOrgTree.First + UiOrgTree.Pick, UiOrgTree.First + UiOrgTree.All, UiOrgTree.First + UiOrgTree.Foot,
                 UiBoard.ShiftCommand, UiBoard.LaneCommand, UiBoard.DayCommand, UiBoard.ActionCommand
             };
             return list.ToArray();
@@ -49,7 +51,7 @@ namespace RealLifeOverhaul.Ui
             s.Begin("company", frame.Width, frame.Height, dark);
             UiNavEntry[] nav = Nav(f, w);
             int tab = Math.Max(0, Math.Min(CompanyView.Tabs - 1, v.Tab));
-            string title = string.IsNullOrEmpty(f.Name) ? w.T("reallife_co_app", "Company") : f.Name;
+            string title = w.T("reallife_co_app", "Company");   // the app, as every kit app is titled: the company's own name is the overview's head, so no page repeats the window's title
             UiAt at = UiAppWindow.Shell(s, frame, title, UiIcon.Briefcase, nav, tab, false, keys, out float x, out float y, out float cw, out float bottom);
             if (!f.Ready)
             {
@@ -132,6 +134,10 @@ namespace RealLifeOverhaul.Ui
             UiDraw.TextMiddle(s, at, x, y, h, w - rw - (rw > 0f ? UiTokens.S3 : 0f), UiStyle.SectionHeader, UiRole.Text2, label, UiFlags.Label | UiFlags.Truncate);
             return y + h + UiTokens.S1;
         }
+
+        /// <summary>The width a switch needs to say a word beside its track: the word, the track (44) and the gaps the kit's switch keeps round them.</summary>
+        internal static float SwitchWidth(string word) =>
+            UiDraw.Snap(UiTextRules.Width(word ?? string.Empty, UiStyle.Body) + UiTokens.S1) + 44f + UiTokens.S3 + UiTokens.S2 * 2f;
 
         /// <summary>
         /// An option of a choice as a chip: the chosen one filled in the accent (marked chosen, so that it is a state and not a second primary action), the others quiet. It

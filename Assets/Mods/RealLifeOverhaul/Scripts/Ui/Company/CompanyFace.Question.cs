@@ -156,6 +156,41 @@ namespace RealLifeOverhaul.Ui
             return total;
         }
 
+        // The card's buttons stand in one row inside the card: when the words of a language make the row too wide, the link to the asker's page is cut to "Open", and where it still does
+        // not fit it goes (the Lead has the link, and the inbox's card has the links of the question).
+        private static CompanyButton[] FitButtons(CompanyButton[] buttons, CompanyWords w, IUiKeys keys)
+        {
+            float room = UiDecision.Width - 296f - UiTokens.S8 * 2f;
+            for (int pass = 0; pass < 2; pass++)
+            {
+                float total = 0f;
+                for (int i = 0; i < buttons.Length; i++)
+                {
+                    total += UiDraw.ButtonWidth(buttons[i].Kind, buttons[i].Label, buttons[i].Icon, buttons[i].Key, keys) + (i > 0 ? UiTokens.S3 : 0f);
+                }
+                if (total <= room)
+                {
+                    break;
+                }
+                var kept = new System.Collections.Generic.List<CompanyButton>(buttons.Length);
+                for (int i = 0; i < buttons.Length; i++)
+                {
+                    if (buttons[i].Kind != UiButtonKind.Quiet)
+                    {
+                        kept.Add(buttons[i]);
+                    }
+                    else if (pass == 0)
+                    {
+                        CompanyButton shorter = buttons[i];
+                        shorter.Label = w.T("reallife_co_open", "Open");
+                        kept.Add(shorter);
+                    }
+                }
+                buttons = kept.ToArray();
+            }
+            return buttons;
+        }
+
         /// <summary>The question as a card over the dimmed world (the decision card): the manager and the person it is about at its side, what it is, the choices and the buttons.</summary>
         internal static void LayQuestion(UiScene s, CompanyQuestion q, CompanyView v, CompanyWords w, CompanyLayout lay, UiFrame frame, bool dark, IUiKeys keys)
         {
@@ -174,7 +209,7 @@ namespace RealLifeOverhaul.Ui
                 roles.Add(q.SubjectRole);
                 rings.Add(q.SubjectRing);
             }
-            CompanyButton[] buttons = QuestionButtons(q, v, w);
+            CompanyButton[] buttons = FitButtons(QuestionButtons(q, v, w), w, keys);
             var actions = new UiActionModel[buttons.Length];
             for (int i = 0; i < buttons.Length; i++)
             {

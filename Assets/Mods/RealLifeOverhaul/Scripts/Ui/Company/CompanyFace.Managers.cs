@@ -4,7 +4,7 @@ namespace RealLifeOverhaul.Ui
 {
     public static partial class CompanyFace
     {
-        private const float TaskRow = 56f;
+        private const float TaskRow = 44f;
 
         // The managers: who decides what as a tree at the left, and at the right the page of the one chosen (the decisions they own as switches, their limits, how they
         // are doing, their log and their crew). A sub page (the inbox, the policy centre, a dashboard, the seats) is a list and a card in place of both.
@@ -34,7 +34,7 @@ namespace RealLifeOverhaul.Ui
                 ty += UiDraw.Chips(s, at, x, ty, treeW, m.Filters, m.Filters.Length, Filter) + UiTokens.S3;
             }
             UiOrgTreeModel tree = TreeModel(m, v, w, lay);
-            short list = UiOrgTree.Lay(s, at, tree, x, ty, treeW, bottom - ty, keys);
+            short list = UiOrgTree.Lay(s, at.InRegion(RegionList), tree, x, ty, treeW, bottom - ty, keys);
             lay.Offset[CompanyLayout.SlotTree] = tree.Offset;
             lay.List[CompanyLayout.SlotTree] = list;
             lay.Clip[CompanyLayout.SlotTree] = list >= 0 && list < s.ListCount ? s.Lists[list].Clip : (short)-1;
@@ -46,7 +46,7 @@ namespace RealLifeOverhaul.Ui
                     string.IsNullOrEmpty(m.Empty) ? w.T("reallife_co_mgr_none_body", "Pick a person in the tree to see what they decide, what they may spend and how they are doing.") : m.Empty, null, -1, keys);
                 return;
             }
-            ProfilePage(s, at, m.Profile, v, w, lay, px, y, pw, bottom, keys);
+            ProfilePage(s, at.InRegion(RegionMain), m.Profile, v, w, lay, px, y, pw, bottom, keys);
         }
 
         private static UiOrgTreeModel TreeModel(CompanyManagersFacts m, CompanyView v, CompanyWords w, CompanyLayout lay)
@@ -82,7 +82,7 @@ namespace RealLifeOverhaul.Ui
             return new UiOrgTreeModel
             {
                 Title = string.IsNullOrEmpty(m.TreeTitle) ? w.T("reallife_co_who_decides", "Who decides what") : m.TreeTitle, Action = action, Nodes = nodes, Chosen = chosen,
-                FootLabel = m.TreeFoot, FootIcon = UiIcon.Sliders, Offset = offset, Reveal = reveal
+                FootLabel = m.TreeFoot, FootIcon = UiIcon.Sliders, Offset = offset, Reveal = reveal, FoldTargets = false
             };
         }
 
@@ -97,6 +97,13 @@ namespace RealLifeOverhaul.Ui
             cy -= UiTokens.S2;
             float gap = UiTokens.S6;
             float c1w = UiDraw.SnapDown((pw - gap) * 0.56f), c2w = pw - gap - c1w, c2x = x + c1w + gap;
+            // The page's own buttons run along its foot across both columns: replace, stand down, hand back, the dashboard.
+            if (p.Buttons.Length > 0)
+            {
+                float footY = bottom - UiTokens.Control;
+                Buttons(s, at, lay, v, p.Buttons, x, footY, pw, keys, true);
+                bottom = footY - UiTokens.S3;
+            }
             // The left column: what they decide, and their limits.
             float ly = cy;
             if (p.Tasks.Length > 0)
@@ -110,7 +117,8 @@ namespace RealLifeOverhaul.Ui
             }
             if (p.Limits.Length > 0 || p.RouteOptions.Length > 0)
             {
-                ly = Section(s, at, lay, x, ly, c1w, p.LimitsTitle);
+                CompanyButton? all = string.IsNullOrEmpty(p.LimitsAll.Label) ? (CompanyButton?)null : p.LimitsAll;
+                ly = Section(s, at, lay, x, ly, c1w, p.LimitsTitle, null, all);
                 for (int i = 0; i < p.Limits.Length && ly + SwitchRow <= bottom; i++)
                 {
                     CompanyLimit l = p.Limits[i];
@@ -127,15 +135,12 @@ namespace RealLifeOverhaul.Ui
                     ly = Block(s, at, lay, v, w, b, x, ly, c1w, bottom, keys);
                 }
             }
-            if (p.Buttons.Length > 0 && ly + UiTokens.Control <= bottom)
-            {
-                ly = Buttons(s, at, lay, v, p.Buttons, x, ly + UiTokens.S2, c1w, keys, true);
-            }
             for (int i = 0; i < p.More.Length && ly < bottom; i++)
             {
                 ly = Block(s, at, lay, v, w, p.More[i], x, ly, c1w, bottom, keys);
             }
             // The right column: the question waiting, how they are doing, their log, their crew.
+            at = at.InRegion(RegionSide);
             float ry = cy;
             if (!string.IsNullOrEmpty(p.WaitingText))
             {
@@ -190,16 +195,18 @@ namespace RealLifeOverhaul.Ui
         private static float TaskLine(UiScene s, UiAt at, CompanyLayout lay, ref CompanyTask t, float x, float y, float w)
         {
             int index = lay.Add(new CompanyButton { Label = t.Title, Act = t.Act, Disabled = t.Disabled, Why = t.Why });
-            float size = UiTokens.IconTile;
-            int tile = UiDraw.Tile(s, at, x, y + Mid(TaskRow, size), size, UiRole.None, false);
-            float g = UiTokens.S6;
-            UiDraw.Icon(s, at.In(tile), x + (size - g) / 2f, y + (TaskRow - g) / 2f, g, t.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
-            float switchW = Math.Min(UiDraw.SnapDown(w * 0.34f), UiDraw.Snap(UiTextRules.Width(t.Who ?? string.Empty, UiStyle.Body) + 44f + UiTokens.S3 * 2f));
-            float tx = x + size + UiTokens.S3, tw = w - size - UiTokens.S3 - switchW - UiTokens.S3;
+            float switchW = Math.Min(UiDraw.SnapDown(w * 0.4f), SwitchWidth(t.Who));
+            float textW = w - switchW - UiTokens.S3;
+            UiAt inside = at;
+            float size = UiTokens.ControlSmall;
+            int tile = UiDraw.Tile(s, inside, x, y + Mid(TaskRow, size), size, UiRole.None, false);
+            float g = UiTokens.Icon;
+            UiDraw.Icon(s, inside.In(tile), x + (size - g) / 2f, y + Mid(TaskRow, size) + (size - g) / 2f, g, t.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
+            float tx = x + size + UiTokens.S3, tw = textW - size - UiTokens.S3;
             float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
             float top = y + UiDraw.SnapDown((TaskRow - th - sh) / 2f);
-            UiDraw.TextMiddle(s, at, tx, top, th, tw, UiStyle.Title, t.Disabled ? UiRole.Text2 : UiRole.Text, t.Title ?? string.Empty, UiFlags.Truncate);
-            UiDraw.TextMiddle(s, at, tx, top + th, sh, tw, UiStyle.Small, UiRole.Text2, t.Line ?? string.Empty, UiFlags.Truncate);
+            UiDraw.TextMiddle(s, inside, tx, top, th, tw, UiStyle.Title, t.Disabled ? UiRole.Text2 : UiRole.Text, t.Title ?? string.Empty, UiFlags.Truncate);
+            UiDraw.TextMiddle(s, inside, tx, top + th, sh, tw, UiStyle.Small, UiRole.Text2, t.Line ?? string.Empty, UiFlags.Truncate);
             UiDraw.Switch(s, at, x + w - switchW, y + Mid(TaskRow, UiTokens.Control), switchW, t.On, t.Who, Act, index, t.Disabled);
             return y + TaskRow;
         }

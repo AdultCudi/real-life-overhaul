@@ -40,6 +40,7 @@ namespace RealLifeOverhaul.Ui
         public UiIcon FootIcon = UiIcon.Sliders;
         public float Offset;                 // px scrolled; the block writes back the offset it took
         public int Reveal = -1;              // a row (a target's index) scrolled into view as it is laid out
+        public bool FoldTargets = true;      // the chevron is a target of its own; false: it only shows the state, and the chosen row pressed again folds it (a page short of targets)
     }
 
     /// <summary>
@@ -227,7 +228,7 @@ namespace RealLifeOverhaul.Ui
             {
                 float rh = RowHeight(ref m.Nodes[i]);
                 int stop = Stops(ref m.Nodes[i]) ? StopOfRow(m, i) : -1;
-                Row(s, inClip.Arriving(arriving++), m, i, cy, rw, list, stop);
+                Row(s, inClip.Arriving(arriving++), m, i, cy, rw, list, stop, m.FoldTargets);
                 cy += rh + RowGap;
             }
             UiDraw.ScrollThumb(s, at, x + w - UiTokens.S1, ty, Math.Min(viewH, content), offset, content);
@@ -274,7 +275,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         // One row at its place in the clip.
-        private static void Row(UiScene s, UiAt at, UiOrgTreeModel m, int index, float y, float w, short list, int stop)
+        private static void Row(UiScene s, UiAt at, UiOrgTreeModel m, int index, float y, float w, short list, int stop, bool foldTargets)
         {
             ref UiOrgNode n = ref m.Nodes[index];
             float h = RowHeight(ref n);
@@ -321,7 +322,7 @@ namespace RealLifeOverhaul.Ui
             if (two)
             {
                 float top = y + UiDraw.SnapDown((h - th - sh) / 2f);
-                UiDraw.TextMiddle(s, inside, lx, top, th, lw, UiStyle.Title, post ? UiRole.Text2 : UiRole.Text, n.Name, UiFlags.Truncate);
+                UiDraw.TextMiddle(s, inside, lx, top, th, lw, UiStyle.Title, post && !chosen ? UiRole.Text2 : UiRole.Text, n.Name, UiFlags.Truncate);
                 UiDraw.TextMiddle(s, inside, lx, top + th, sh, lw, UiStyle.Small, chosen ? UiRole.Text : UiRole.Text2, n.Sub, UiFlags.Truncate);
             }
             else
@@ -334,10 +335,10 @@ namespace RealLifeOverhaul.Ui
                     UiFlags.Right | UiFlags.Truncate);
             }
             int fold = -1;
-            if (n.HasKids)
+            if (n.HasKids && foldTargets)
             {
                 // The chevron is a target of its own over the row's, made first so that it keeps its own face: a press there folds, a press elsewhere on the row chooses it.
-                float tw = Math.Max(cw, UiTokens.MinTarget), tx = UiTokens.S3 + Indent * n.Level - (tw - cw) / 2f, tyy = y + (h - tw) / 2f;
+                float tw = Math.Max(cw, UiTokens.MinTarget), tx = UiTokens.S3 + Indent * n.Level - UiTokens.S1, tyy = y + UiDraw.SnapDown((h - tw) / 2f);
                 int cface = UiDraw.Box(s, inside, tx, tyy, tw, tw, UiRole.None, UiRole.None, UiTokens.RadiusSmall);
                 fold = UiDraw.Node(s, at, tx, tyy, tw, tw, First + Fold, index, cface);
             }

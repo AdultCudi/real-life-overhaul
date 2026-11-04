@@ -133,7 +133,6 @@ namespace RealLifeOverhaul.Ui
                     return Filter(arg);
                 case CompanyFace.Badge:
                     return OpenBusiness(arg);
-                case CompanyFace.Cell:
                 case CompanyFace.DayHead:
                     return arg >= 0 && arg < 7 && SetDay(arg);
                 case CompanyFace.StepLess:
@@ -160,10 +159,6 @@ namespace RealLifeOverhaul.Ui
             if (command == UiOrgTree.First + UiOrgTree.Pick)
             {
                 return PickNode(arg, true);
-            }
-            if (command == UiOrgTree.First + UiOrgTree.Fold)
-            {
-                return arg >= 0 && arg < _layout.TreeIds.Length && Fold(_layout.TreeIds[arg]);
             }
             if (command == UiOrgTree.First + UiOrgTree.All)
             {

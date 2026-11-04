@@ -47,6 +47,22 @@ internal static partial class Program
         var s = new UiScene();
         UiWords en = UiWords("en");
         CompanyFace.Lay(s, UiSamples.CompanyFactsOf(en, state), UiSamples.CompanyViewOf(state), UiSamples.CompanyWordsOf(en), new CompanyLayout(), UiFrame.FullMenu(16f / 9f, "Company"), true, UiDefaultKeys.Keyboard);
+        var byCommand = new SortedDictionary<int, int>();
+        for (int i = 0; i < s.NodeCount; i++)
+        {
+            byCommand[s.Nodes[i].Command] = (byCommand.ContainsKey(s.Nodes[i].Command) ? byCommand[s.Nodes[i].Command] : 0) + 1;
+        }
+        var counts = new StringBuilder();
+        foreach (KeyValuePair<int, int> kv in byCommand)
+        {
+            counts.Append(kv.Key).Append(':').Append(kv.Value).Append(' ');
+        }
+        Console.WriteLine("        targets " + s.NodeCount + " by command: " + counts);
+        for (int i = 0; i < s.NodeCount; i++)
+        {
+            UiNode n = s.Nodes[i];
+            Console.WriteLine("        node " + i + " cmd " + n.Command + "/" + n.Arg + " [" + n.X + "," + n.Y + " " + n.W + "x" + n.H + "] list " + n.List + " L" + n.Left + " R" + n.Right + " U" + n.Up + " D" + n.Down + (n.Disabled ? " disabled" : ""));
+        }
         for (int i = 0; i < s.ItemCount; i++)
         {
             UiItem it = s.Items[i];
@@ -151,13 +167,14 @@ internal static partial class Program
     }
 
     // Puts a screen in a state of its samples, with a recording source.
-    private static CompanyScreen CompanyScreenOf(string state, CompanyRecorder source, UiScene scene)
+    private static CompanyScreen CompanyScreenOf(string state, CompanyRecorder source, UiScene scene, int choice = 0)
     {
         UiWords en = UiWords("en");
         CompanyWords w = UiSamples.CompanyWordsOf(en);
         source.Facts = UiSamples.CompanyFactsOf(en, state);
         var screen = new CompanyScreen(source, w);
         screen.View.CopyFrom(UiSamples.CompanyViewOf(state));
+        screen.View.Choice = choice;
         screen.Lay(scene, UiFrame.FullMenu(16f / 9f, "Company"), true, UiDefaultKeys.Keyboard);
         return screen;
     }
@@ -222,6 +239,34 @@ internal static partial class Program
             {
                 ok = false;
                 Console.WriteLine("        company (" + state + "): target (" + t[0] + ", " + t[1] + ") " + why);
+            }
+        }
+        // A question's main button answers with the choice chosen: each choice in turn is chosen, and its answer must be the one that reaches the source.
+        bool leadShown = shown.View.Question != 0 || (shown.View.Tab == CompanyView.Overview && shown.View.Sub[CompanyView.Overview] == CompanyView.SubMain);
+        CompanyQuestion q = !leadShown ? null : shown.View.Question != 0 ? shown.Facts.Question : shown.Facts.Overview.Lead;
+        for (int c = 0; q != null && !q.Deep && c < q.Choices.Length; c++)
+        {
+            if (q.Choices[c].Disabled)
+            {
+                continue;
+            }
+            var rec = new CompanyRecorder();
+            CompanyScreen screen = CompanyScreenOf(state, rec, new UiScene(), c);
+            int main = screen.Layout.Main;
+            pressed++;
+            if (main < 0 || screen.Layout.Acts[main].Disabled)
+            {
+                ok = false;
+                Console.WriteLine("        company (" + state + "): choice " + c + " has no main button to answer it with");
+                continue;
+            }
+            drawn.Add(screen.Layout.Acts[main].Act.Do);
+            bool did = screen.Press(CompanyFace.Act, main);
+            if (!did || rec.Done.Count != 1 || !SameAct(rec.Done[0], q.Choices[c].Act, false))
+            {
+                ok = false;
+                Console.WriteLine("        company (" + state + "): choice " + c + " answered with " + (rec.Done.Count == 1 ? rec.Done[0].Do + " (" + rec.Done[0].A + ", " + rec.Done[0].B + ")" : rec.Done.Count + " actions")
+                                  + " and not the answer drawn (" + q.Choices[c].Act.Do + ")");
             }
         }
         return ok;
@@ -393,7 +438,6 @@ internal static partial class Program
                     return "the badge " + arg + " did not open its business";
                 }
                 return CompanyOnly(before, after, new[] { "Tab", "Pick0", "Sub0" });
-            case CompanyFace.Cell:
             case CompanyFace.DayHead:
             case UiBoard.DayCommand:
                 if (!done || v.Day != arg)
@@ -415,14 +459,6 @@ internal static partial class Program
                 return "the tree's node " + arg + " (" + treeId + ") was not " + (folds ? "folded or unfolded" : "picked");
             }
             return CompanyOnly(before, after, folds ? new[] { "Folds" } : new[] { "Pick2", "Sub2", "SubPick2" });
-        }
-        if (command == UiOrgTree.First + UiOrgTree.Fold)
-        {
-            if (!done || treeId == null || v.FoldedNodes.Contains(treeId) == wasFolded)
-            {
-                return "the tree's fold at " + arg + " did not fold or unfold it";
-            }
-            return CompanyOnly(before, after, new[] { "Folds" });
         }
         if (command == UiOrgTree.First + UiOrgTree.All)
         {
@@ -459,7 +495,6 @@ internal static partial class Program
             case CompanyFace.Choice: return "a choice";
             case CompanyFace.Filter: return "a chip";
             case CompanyFace.Badge: return "a badge";
-            case CompanyFace.Cell:
             case CompanyFace.DayHead: return "a day";
             case UiAppWindow.NavCommand: return "the sidebar";
             default: return "command " + command;

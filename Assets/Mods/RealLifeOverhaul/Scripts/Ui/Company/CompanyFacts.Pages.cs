@@ -14,7 +14,6 @@ namespace RealLifeOverhaul.Ui
         public string Who;                      // the word at the switch's left: the manager's first name, or "You"
         public string Why;
         public CompanyAct Act;
-        public CompanyAct Open;                 // the task's own page (its limits)
     }
 
     /// <summary>A limit of a manager: its words, its value and the two steps.</summary>
@@ -43,6 +42,7 @@ namespace RealLifeOverhaul.Ui
         public string TasksTitle, TasksHint;
         public CompanyTask[] Tasks = new CompanyTask[0];
         public string LimitsTitle;
+        public CompanyButton LimitsAll;         // the link to the page of every limit the manager keeps
         public CompanyLimit[] Limits = new CompanyLimit[0];
         public string RouteTitle, RouteSub;     // "Questions Ray cannot decide go to", "Meera Iyer picks up what you leave for a day"
         public string[] RouteOptions = new string[0];
@@ -132,7 +132,7 @@ namespace RealLifeOverhaul.Ui
         public string[] SummaryValues = new string[0];
         public UiRole[] SummaryTones = new UiRole[0];
         // The day, hour by hour.
-        public string DayTitle, DayNote;
+        public string DayTitle, DayNote, DayShort;           // "Tuesday, hour by hour", its note, and the day's name alone for a room too narrow for the whole
         public string[] HourLabels = new string[0];
         public int[] OnShift = new int[0];
         public int[] Needed = new int[0];

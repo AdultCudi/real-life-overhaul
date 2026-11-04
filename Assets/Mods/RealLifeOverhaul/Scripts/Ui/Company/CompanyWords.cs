@@ -16,6 +16,18 @@ namespace RealLifeOverhaul.Ui
 
         public string T(string key, string english) => _words(key, english);
 
+        /// <summary>A label as the kit shows one: an old row label's text with its colon taken off (":" or the full width one, with a space before it where a language writes it so).</summary>
+        public string L(string key, string english)
+        {
+            string text = _words(key, english);
+            int end = text.Length;
+            while (end > 0 && (text[end - 1] == ':' || text[end - 1] == '：' || text[end - 1] == ' ' || text[end - 1] == ' '))
+            {
+                end--;
+            }
+            return end == text.Length ? text : text.Substring(0, end);
+        }
+
         /// <summary>A text with its names filled in: pairs of a name and what goes in its place.</summary>
         public string F(string key, string english, params string[] pairs)
         {

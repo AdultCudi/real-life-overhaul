@@ -85,6 +85,7 @@ internal static partial class UiSamples
         p.SummaryValues = new[] { "1,420", "36", CM(4210), CM(2480) };
         p.SummaryTones = new[] { UiRole.None, UiRole.WarnText, UiRole.None, UiRole.OkText };
         p.DayTitle = w.F("reallife_rota_day_title_short", "{day}, hour by hour", "day", "Tuesday");
+        p.DayShort = "Tuesday";
         p.DayNote = "07:00 - 23:00";
         p.HourLabels = new[] { "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20" };
         p.OnShift = new[] { 2, 2, 3, 3, 4, 5, 5, 4, 4, 3, 3, 4, 4, 2 };
@@ -232,7 +233,7 @@ internal static partial class UiSamples
             c.Sub = w.F("reallife_co_report_days", "Days {from} to {to}, {days} days", "from", "198", "to", "201", "days", "4");
             c.Chips = new[] { "+34%" };
             c.ChipTones = new[] { UiRole.Ok };
-            c.FactLabels = new[] { w.T("reallife_co_push_cost", "Cost"), w.T("reallife_co_report_extra", "Extra takings") };
+            c.FactLabels = new[] { w.T("reallife_co_f_cost", "Cost"), w.T("reallife_co_f_extra", "Extra profit") };
             c.FactValues = new[] { CM(180), CM(210) };
             c.Blocks = new[]
             {
@@ -241,7 +242,7 @@ internal static partial class UiSamples
                 CNote(w.F("reallife_co_report_takings", "Takings: {before} before, {during} during.", "before", CM(1480), "during", CM(1690))),
                 CNote(w.F("reallife_co_report_profit", "Profit: {before} before, {during} during.", "before", CM(240), "during", CM(270))),
                 CSec(w.T("reallife_ibox_sec_money", "The money")),
-                CRow(w.T("reallife_co_report_extra", "Extra takings"), CM(210), UiRole.OkText), CRow(w.T("reallife_co_report_return", "Return on the cost"), "+34%", UiRole.OkText)
+                CRow(w.T("reallife_co_f_extra", "Extra profit"), CM(210), UiRole.OkText), CRow(w.T("reallife_co_report_return", "Return on the cost"), "+34%", UiRole.OkText)
             };
         }
         else if (pick == "push:Speedy Bites~7")
@@ -249,7 +250,7 @@ internal static partial class UiSamples
             c.Title = "Speedy Bites";
             c.Chips = new[] { w.T("reallife_ibox_chip_running", "Running") };
             c.ChipTones = new[] { UiRole.Ok };
-            c.FactLabels = new[] { w.T("reallife_co_push_cost", "Cost"), w.T("reallife_co_push_effect", "Effect on footfall") };
+            c.FactLabels = new[] { w.T("reallife_co_f_cost", "Cost"), w.T("reallife_co_f_effect", "Effect on customers") };
             c.FactValues = new[] { CM(620), "+9%" };
             c.Blocks = new[]
             {
@@ -260,15 +261,15 @@ internal static partial class UiSamples
         else
         {
             c.Title = one ? "Corner Cafe" : "Bloom & Co";
-            c.FactLabels = new[] { w.T("reallife_co_push_cost", "Cost"), w.T("reallife_co_push_effect", "Effect on footfall") };
+            c.FactLabels = new[] { w.T("reallife_co_f_cost", "Cost"), w.T("reallife_co_f_effect", "Effect on customers") };
             c.FactValues = new[] { CM(180), "+12%" };
             c.Blocks = new[]
             {
                 CSec(w.T("reallife_ibox_sec_campaign", "The campaign")),
                 new CompanyBlock { Kind = CompanyBlockKind.Choice, Text = w.T("reallife_co_push_kind", "Kind"), Options = new[] { "Flyers", "Radio", "Discount week" }, Chosen = 0, Acts = new[] { CA(CompanyDo.Go, "kind", 0), CA(CompanyDo.Go, "kind", 1), CA(CompanyDo.Go, "kind", 2) } },
                 CNote(w.T("reallife_co_push_about_flyers", "Flyers through every door nearby.")),
-                CRow(w.T("reallife_co_push_cost", "Cost"), CM(180)), CRow(w.T("reallife_co_push_length", "Length"), w.F("reallife_co_push_length_value", "{days} days from day {from}", "days", "4", "from", "215")),
-                CRow(w.T("reallife_co_push_effect", "Effect on footfall"), "+12%", UiRole.OkText),
+                CRow(w.T("reallife_co_f_cost", "Cost"), CM(180)), CRow(w.T("reallife_co_push_length", "Length"), w.F("reallife_co_push_length_value", "{days} days from day {from}", "days", "4", "from", "215")),
+                CRow(w.T("reallife_co_f_effect", "Effect on customers"), "+12%", UiRole.OkText),
                 CNote(w.F("reallife_co_push_parts", "Its own {own}, your district {district}, the economy {economy}.", "own", "+10%", "district", "110%", "economy", "100%")),
                 CBtns(CB(w.T("reallife_co_push_book", "Book the campaign"), UiButtonKind.Primary, UiAction.Alt, CA(CompanyDo.CampaignBook, "Bloom & Co~214", 0), UiIcon.Check))
             };
@@ -299,7 +300,7 @@ internal static partial class UiSamples
             p.Top = new CompanyCard
             {
                 Kicker = w.T("reallife_co_tab_cover", "Cover"), Title = w.T("reallife_co_cover_title", "Insurance"), Icon = UiIcon.ShieldCheck,
-                FactLabels = new[] { w.T("reallife_co_cover_premiums", "Premiums"), w.T("reallife_co_cover_open", "Open claims") }, FactValues = new[] { w.F("reallife_co_row_a_day", "{amount} a day", "amount", "$23"), "1" },
+                FactLabels = new[] { w.T("reallife_co_f_premiums", "Premiums"), w.T("reallife_co_f_claims_open", "Claims to put in") }, FactValues = new[] { w.F("reallife_co_row_a_day", "{amount} a day", "amount", "$23"), "1" },
                 Blocks = new[] { CSec(w.T("reallife_co_cover_what", "What cover is for")), CNote(w.T("reallife_co_cover_what_fire", "Fire cover pays for the damage a fire does.")), CNote(w.T("reallife_co_cover_what_theft", "Theft cover pays for what is stolen.")), CNote(w.T("reallife_co_cover_what_liability", "Liability cover pays when a customer is hurt.")), CNote(w.T("reallife_co_cover_pick", "Pick a business's cover to see its terms.")) }
             };
             return;
@@ -310,14 +311,14 @@ internal static partial class UiSamples
             c.Title = w.F("reallife_co_claim_title", "{cover} claim, {business}", "cover", "Fire", "business", "Speedy Bites");
             c.Chips = new[] { w.T("reallife_ibox_chip_open", "Open") };
             c.ChipTones = new[] { UiRole.Warn };
-            c.FactLabels = new[] { w.T("reallife_co_claim_excess", "Excess"), w.T("reallife_co_claim_pays", "Pays") };
+            c.FactLabels = new[] { w.T("reallife_co_f_excess", "Excess"), w.T("reallife_co_f_pays", "Pays") };
             c.FactValues = new[] { CM(400), CM(3600) };
             c.Blocks = new[]
             {
                 CNote(w.F("reallife_co_claim_open", "Put the claim in by day {day}; the insurer pays within {days} days.", "day", "220", "days", "5"), UiRole.WarnText),
                 CNote(w.F("reallife_co_claim_what_fire", "A fire on day {day} cost {amount}.", "day", "214", "amount", CM(4000))),
-                CSec(w.T("reallife_ibox_sec_money", "The money")), CRow(w.T("reallife_co_claim_insurer", "Insurer"), "Safeguard"), CRow(w.T("reallife_co_claim_most", "Most it pays"), CM(10000)),
-                CRow(w.T("reallife_co_claim_excess", "Excess"), CM(400)), CRow(w.T("reallife_co_claim_pays", "Pays"), CM(3600), UiRole.OkText),
+                CSec(w.T("reallife_ibox_sec_money", "The money")), CRow(w.T("reallife_co_claim_insurer", "Insurer"), "Safeguard"), CRow(w.T("reallife_co_f_most", "Most it counts"), CM(10000)),
+                CRow(w.T("reallife_co_f_excess", "Excess"), CM(400)), CRow(w.T("reallife_co_f_pays", "Pays"), CM(3600), UiRole.OkText),
                 CNote(w.F("reallife_co_claim_counts", "Claims count against you after {most}, and the premium rises {loading}.", "most", "2", "loading", "20%")),
                 CBtns(CB(w.T("reallife_co_claim_do", "Put the claim in"), UiButtonKind.Primary, UiAction.Alt, CA(CompanyDo.ClaimFile, null, 1), UiIcon.Check))
             };
@@ -329,7 +330,7 @@ internal static partial class UiSamples
             c.Icon = covered ? UiIcon.Fire : UiIcon.Lock;
             c.Chips = new[] { covered ? w.T("reallife_ibox_chip_covered", "Covered") : w.T("reallife_ibox_chip_not_covered", "Not covered") };
             c.ChipTones = new[] { covered ? UiRole.Ok : UiRole.Warn };
-            c.FactLabels = new[] { w.T("reallife_co_policy_premium", "Premium"), w.T("reallife_co_claim_most", "Most it pays") };
+            c.FactLabels = new[] { w.T("reallife_co_f_premium", "Premium"), w.T("reallife_co_f_most", "Most it counts") };
             c.FactValues = new[] { w.F("reallife_co_row_a_day", "{amount} a day", "amount", covered ? "$14" : "$11"), CM(covered ? 10000 : 5000) };
             var b = new List<CompanyBlock> { CSec(w.T("reallife_ibox_sec_terms", "Terms")) };
             if (covered)
@@ -476,7 +477,7 @@ internal static partial class UiSamples
             t.Card = new CompanyCard
             {
                 Kicker = w.T("reallife_co_tab_tax", "Tax and licences"), Title = w.T("reallife_co_row_accountant", "Accountant"), Icon = UiIcon.Scales, Back = back,
-                FactLabels = new[] { w.T("reallife_co_acc_hired", "Hired"), w.T("reallife_co_acc_fee", "Fee") }, FactValues = new[] { "Careful", w.F("reallife_co_row_a_month", "{amount} a month", "amount", CM(620)) },
+                FactLabels = new[] { w.T("reallife_co_f_hired", "Hired now"), w.T("reallife_co_f_fee", "Fee") }, FactValues = new[] { "Careful", w.F("reallife_co_row_a_month", "{amount} a month", "amount", CM(620)) },
                 Blocks = new[]
                 {
                     CSec(w.T("reallife_ibox_sec_terms", "Terms")),
@@ -493,7 +494,7 @@ internal static partial class UiSamples
             t.Card = new CompanyCard
             {
                 Kicker = w.T("reallife_co_tab_tax", "Tax and licences"), Title = w.F("reallife_co_hide_title", "Cash off the books at {business}", "business", "Speedy Bites"), Icon = UiIcon.Percent, Back = back,
-                FactLabels = new[] { w.T("reallife_co_hide_saved", "Tax not paid"), w.T("reallife_co_tax_risk", "Audit risk") }, FactValues = new[] { CM(310), "0.4%" },
+                FactLabels = new[] { w.T("reallife_co_f_saved", "Tax kept back"), w.T("reallife_co_f_risk", "Audit risk") }, FactValues = new[] { CM(310), "0.4%" },
                 Blocks = new[]
                 {
                     CNote(w.F("reallife_co_hide_what", "Cash you keep off the books pays no tax, at {percent}%.", "percent", "20")),
@@ -508,7 +509,7 @@ internal static partial class UiSamples
             t.Card = new CompanyCard
             {
                 Kicker = "Bloom & Co", Title = "Signage permit", Icon = UiIcon.Tag, Back = back, Chips = new[] { w.T("reallife_ibox_chip_missing", "Missing") }, ChipTones = new[] { UiRole.Danger },
-                FactLabels = new[] { w.T("reallife_co_lic_fee", "Fee"), w.T("reallife_co_lic_term", "Term") }, FactValues = new[] { CM(220), w.F("reallife_co_lic_term_value", "{days} days", "days", "90") },
+                FactLabels = new[] { w.T("reallife_co_f_fee", "Fee"), w.T("reallife_co_f_term", "Term") }, FactValues = new[] { CM(220), w.F("reallife_co_lic_term_value", "{days} days", "days", "90") },
                 Blocks = new[]
                 {
                     CNote(w.T("reallife_co_lic_missing", "Trading without it risks a fine."), UiRole.DangerText),

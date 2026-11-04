@@ -20,10 +20,10 @@ namespace RealLifeOverhaul.Ui
             float lw = UiDraw.SnapDown(Math.Min(cw * 0.22f, 320f));
             CompanyRotaPlace p = r.Place;
             float needsH = p != null && p.NeedWhen.Length > 0 ? UiTokens.PairRow + UiTokens.S1 + Math.Min(p.NeedWhen.Length, 5) * (UiTokens.PairRow + UiTokens.S1) + UiTokens.S4 : 0f;
-            ListPane(s, at, r.Places, v, w, lay, x, y, lw, bottom - needsH, keys);
+            ListPane(s, at.InRegion(RegionList), r.Places, v, w, lay, x, y, lw, bottom - needsH, keys);
             if (needsH > 0f)
             {
-                NeedsBlock(s, at, lay, p, w, x, bottom - needsH + UiTokens.S3, lw);
+                NeedsBlock(s, at.InRegion(RegionList), lay, p, w, x, bottom - needsH + UiTokens.S3, lw);
             }
             float mx = x + lw + gap, mw = cw - lw - gap;
             UiDraw.JoinColumns(s, x, x + lw, x + cw, -1);
@@ -40,10 +40,10 @@ namespace RealLifeOverhaul.Ui
             }
             if (sub == CompanyView.SubEdit && r.Edit != null)
             {
-                CardPage(s, at, r.Edit, v, w, lay, mx, y, mw, bottom, keys);
+                CardPage(s, at.InRegion(RegionMain), r.Edit, v, w, lay, mx, y, mw, bottom, keys);
                 return;
             }
-            float cy = PlanForm(s, at, lay, v, w, p, sub, mx, y, mw, keys);
+            float cy = PlanForm(s, at.InRegion(RegionMain), lay, v, w, p, sub, mx, y, mw, keys);
             if (sub == CompanyView.SubDay && p.Board != null)
             {
                 UiBoard.Lay(s, at, p.Board, mx, cy, mw, bottom - cy, keys);
@@ -55,46 +55,48 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             float hw = UiDraw.SnapDown(Math.Min(mw * 0.26f, 320f)), gw = mw - hw - gap;
-            WeekGrid(s, at, lay, v, w, p, mx, cy, gw, bottom, keys);
-            HourBars(s, at, lay, w, p, mx + gw + gap, cy, hw, bottom);
+            WeekGrid(s, at.InRegion(RegionMain), lay, v, w, p, mx, cy, gw, bottom, keys);
+            HourBars(s, at.InRegion(RegionSide), lay, w, p, mx + gw + gap, cy, hw, bottom);
         }
 
-        // The plan in view with its form: its name and state, how it repeats, the most hours each person may be given, overtime, and the buttons.
+        // The plan in view, in three rows: which view of the place (the week, the day, the planner's advice) at the left and how the planner fills it (its mode) at the right; the
+        // plan's form (its name, how it repeats, the most hours each person may be given, overtime); and the buttons along the right. Returns the y under them.
         private static float PlanForm(UiScene s, UiAt at, CompanyLayout lay, CompanyView v, CompanyWords w, CompanyRotaPlace p, int sub, float x, float y, float w2, IUiKeys keys)
         {
             float cy = y;
-            // Which view of the place: the week, the day, the planner's advice.
             string[] views = { w.T("reallife_rota_view_week", "Week"), w.T("reallife_rota_view_day", "Day"), w.T("reallife_rota_view_advice", "Advice") };
             float vx = x;
             for (int i = 0; i < views.Length; i++)
             {
-                float bw = UiDraw.ButtonWidth(UiButtonKind.Chip, views[i], UiIcon.None, UiAction.Count, null);
                 int idx = lay.Add(new CompanyButton { Label = views[i], Act = CompanyAct.Of(CompanyDo.Go, null, CompanyView.Rota, i) });
                 vx += ChoiceChip(s, at, vx, cy, views[i], i == sub, Act, idx) + UiTokens.S2;
             }
-            // The place's name and its mode at the right.
-            string head = p.Name + (string.IsNullOrEmpty(p.Sub) ? string.Empty : "  " + p.Sub);
             float modes = 0f;
             for (int i = 0; i < p.ModeOptions.Length; i++)
             {
                 modes += UiDraw.ButtonWidth(UiButtonKind.Chip, p.ModeOptions[i], UiIcon.None, UiAction.Count, null) + (i > 0 ? UiTokens.S2 : 0f);
             }
             float mx = x + w2 - modes;
-            for (int i = 0; i < p.ModeOptions.Length; i++)
+            for (int i = 0; i < p.ModeOptions.Length && mx >= vx; i++)
             {
                 CompanyAct act = i < p.ModeActs.Length ? p.ModeActs[i] : default(CompanyAct);
                 int idx = lay.Add(new CompanyButton { Label = p.ModeOptions[i], Act = act });
                 mx += ChoiceChip(s, at, mx, cy, p.ModeOptions[i], i == p.Mode, Opt, idx) + UiTokens.S2;
             }
             cy += UiTokens.Chip + UiTokens.S4;
-            // The form.
+            // The form: each field a label over its control. The day's board has no use for it, and the page keeps its targets to the board's.
             float fx = x;
             float rowH = UiTokens.Control;
+            if (sub == CompanyView.SubDay)
+            {
+                goto Buttons;
+            }
             string planName = p.PlanNames.Length > 0 && p.PlanChosen >= 0 && p.PlanChosen < p.PlanNames.Length ? p.PlanNames[p.PlanChosen] : p.Name;
             float nameW = Math.Min(UiDraw.SnapDown(w2 * 0.22f), UiDraw.Snap(UiTextRules.Width(planName ?? string.Empty, UiStyle.Title) + UiTokens.S4));
+            nameW = Math.Max(nameW, UiDraw.Snap(UiTextRules.Width(w.T("reallife_rota_plan", "Plan"), UiStyle.SectionHeader) * 1.2f + UiTokens.S2));
             UiDraw.TextMiddle(s, at, fx, cy, UiTokens.PairRow, nameW, UiStyle.SectionHeader, UiRole.Muted, w.T("reallife_rota_plan", "Plan"), UiFlags.Label | UiFlags.Truncate);
             UiDraw.TextMiddle(s, at, fx, cy + UiTokens.PairRow, rowH, nameW, UiStyle.Title, UiRole.Text, planName ?? string.Empty, UiFlags.Truncate);
-            fx += nameW + UiTokens.S4;
+            fx += nameW + UiTokens.S5;
             if (p.RepeatOptions.Length > 0)
             {
                 float rw = 0f;
@@ -102,7 +104,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     rw += UiDraw.ButtonWidth(UiButtonKind.Chip, p.RepeatOptions[i], UiIcon.None, UiAction.Count, null) + (i > 0 ? UiTokens.S2 : 0f);
                 }
-                UiDraw.TextMiddle(s, at, fx, cy, UiTokens.PairRow, rw, UiStyle.SectionHeader, UiRole.Muted, w.T("reallife_rota_repeats", "Repeats"), UiFlags.Label | UiFlags.Truncate);
+                string repeats = w.T("reallife_rota_repeats", "Repeats");
+                UiDraw.TextMiddle(s, at, fx, cy, UiTokens.PairRow, Math.Max(rw, UiDraw.Snap(UiTextRules.Width(repeats, UiStyle.SectionHeader) * 1.2f)), UiStyle.SectionHeader, UiRole.Muted, repeats, UiFlags.Label | UiFlags.Truncate);
                 float ox = fx;
                 for (int i = 0; i < p.RepeatOptions.Length; i++)
                 {
@@ -114,27 +117,30 @@ namespace RealLifeOverhaul.Ui
             }
             if (!string.IsNullOrEmpty(p.HoursValue))
             {
-                float sw = 168f;
-                UiDraw.TextMiddle(s, at, fx, cy, UiTokens.PairRow, sw, UiStyle.SectionHeader, UiRole.Muted, w.T("reallife_rota_most_hours", "Most hours each"), UiFlags.Label | UiFlags.Truncate);
+                string hoursLabel = w.T("reallife_rota_most_hours", "Most hours each");
+                float sw = Math.Max(168f, UiDraw.Snap(UiTextRules.Width(hoursLabel, UiStyle.SectionHeader) * 1.2f + UiTokens.S1));
+                UiDraw.TextMiddle(s, at, fx, cy, UiTokens.PairRow, sw, UiStyle.SectionHeader, UiRole.Muted, hoursLabel, UiFlags.Label | UiFlags.Truncate);
                 int first = lay.Add(new CompanyButton { Label = p.HoursValue, Act = p.HoursLessAct, Disabled = !p.HoursLess });
                 lay.Add(new CompanyButton { Label = p.HoursValue, Act = p.HoursMoreAct, Disabled = !p.HoursMore });
                 lay.Add(new CompanyButton { Label = p.HoursValue, Act = p.HoursTypeAct });
                 UiDraw.Stepper(s, at, fx, cy + UiTokens.PairRow, sw, p.HoursValue, p.HoursLess, p.HoursMore, StepLess, StepType, StepMore, first, false);
                 fx += sw + UiTokens.S5;
-                float ow = 120f;
-                UiDraw.TextMiddle(s, at, fx, cy, UiTokens.PairRow, ow, UiStyle.SectionHeader, UiRole.Muted, w.T("reallife_rota_overtime", "Overtime"), UiFlags.Label | UiFlags.Truncate);
-                int oi = lay.Add(new CompanyButton { Label = w.T("reallife_rota_overtime", "Overtime"), Act = p.OvertimeAct });
+                string overtime = w.T("reallife_rota_overtime", "Overtime");
+                float ow = Math.Max(UiDraw.Snap(UiTextRules.Width(overtime, UiStyle.SectionHeader) * 1.2f + UiTokens.S1), SwitchWidth(p.Overtime ? w.T("reallife_co_on", "On") : w.T("reallife_co_off", "Off")));
+                UiDraw.TextMiddle(s, at, fx, cy, UiTokens.PairRow, ow, UiStyle.SectionHeader, UiRole.Muted, overtime, UiFlags.Label | UiFlags.Truncate);
+                int oi = lay.Add(new CompanyButton { Label = overtime, Act = p.OvertimeAct });
                 UiDraw.Switch(s, at, fx, cy + UiTokens.PairRow, ow, p.Overtime, p.Overtime ? w.T("reallife_co_on", "On") : w.T("reallife_co_off", "Off"), Act, oi, false);
-                fx += ow + UiTokens.S4;
             }
-            // The buttons at the right: edit, copy, fill the gaps (the main one, F).
+            cy += UiTokens.PairRow + rowH + UiTokens.S4;
+        Buttons:
+            // The buttons along the right: edit, copy, back to the last rota, and fill the gaps (the main one, F).
             CompanyButton[] buttons = { p.Edit, p.Copy, p.Back, p.Fill };
             float total = 0f;
             for (int i = 0; i < buttons.Length; i++)
             {
                 total += string.IsNullOrEmpty(buttons[i].Label) ? 0f : UiDraw.ButtonWidth(buttons[i].Kind, buttons[i].Label, buttons[i].Icon, buttons[i].Key, keys) + UiTokens.S3;
             }
-            float bx = x + w2 - total + UiTokens.S3;
+            float bx = x + Math.Max(0f, w2 - total + UiTokens.S3);
             for (int i = 0; i < buttons.Length; i++)
             {
                 if (string.IsNullOrEmpty(buttons[i].Label))
@@ -143,10 +149,10 @@ namespace RealLifeOverhaul.Ui
                 }
                 CompanyButton b = buttons[i];
                 float bw = UiDraw.ButtonWidth(b.Kind, b.Label, b.Icon, b.Key, keys);
-                Button(s, at, lay, v, ref b, bx, cy + UiTokens.PairRow, bw, keys);
+                Button(s, at, lay, v, ref b, bx, cy, bw, keys);
                 bx += bw + UiTokens.S3;
             }
-            return cy + UiTokens.PairRow + rowH + UiTokens.S5;
+            return cy + UiTokens.Control + UiTokens.S5;
         }
 
         // The week: each person a row, each day a chip of their hours or "off", their hours at the right, the day's hours under; then the sums.
@@ -189,7 +195,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     string shift = pr.Shifts != null && d < pr.Shifts.Length ? pr.Shifts[d] : null;
                     float dx = x + personW + d * dayW + UiTokens.S1, dw = dayW - UiTokens.S2, dh = UiTokens.ControlSmall;
-                    float dy = cy + (GridRow - dh) / 2f;
+                    float dy = cy + Mid(GridRow, dh);
                     bool warn = pr.Tones != null && d < pr.Tones.Length && pr.Tones[d] != UiRole.None;
                     if (string.IsNullOrEmpty(shift))
                     {
@@ -198,7 +204,6 @@ namespace RealLifeOverhaul.Ui
                     }
                     int face = UiDraw.Box(s, at, dx, dy, dw, dh, warn ? UiRole.WarnSoft : d == p.Day ? UiRole.RowSel : UiRole.Row, UiRole.None, UiTokens.RadiusLarge, UiFlags.None);
                     UiDraw.TextMiddle(s, at.In(face), dx, dy, dh, dw, UiStyle.SmallStrong, warn ? UiRole.WarnText : UiRole.Text, shift, UiFlags.Centre | UiFlags.Truncate);
-                    UiDraw.Node(s, at, dx, dy, dw, dh, Cell, d, face);
                 }
                 UiDraw.TextMiddle(s, at, x + personW + dayW * 7f, cy, GridRow, hoursW, UiStyle.BodyStrong, pr.HoursTone == UiRole.None ? UiRole.Text : pr.HoursTone, pr.Hours ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
                 cy += GridRow;
@@ -234,8 +239,19 @@ namespace RealLifeOverhaul.Ui
         private static void HourBars(UiScene s, UiAt at, CompanyLayout lay, CompanyWords w, CompanyRotaPlace p, float x, float y, float width, float bottom)
         {
             float cy = y;
-            UiDraw.TextMiddle(s, at, x, cy, UiTokens.PairRow, width * 0.6f, UiStyle.SectionHeader, UiRole.Text2, p.DayTitle ?? string.Empty, UiFlags.Label | UiFlags.Truncate);
-            UiDraw.TextMiddle(s, at, x + width * 0.6f, cy, UiTokens.PairRow, width * 0.4f, UiStyle.Small, UiRole.AccentText, p.DayNote ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
+            string dayTitle = p.DayTitle ?? string.Empty;
+            float titleW = UiDraw.Snap(UiTextRules.Width(dayTitle, UiStyle.SectionHeader) * 1.2f + UiTokens.S1);
+            if (titleW > width)
+            {
+                dayTitle = p.DayShort ?? dayTitle;   // the day alone where the whole will not fit
+                titleW = Math.Min(width, UiDraw.Snap(UiTextRules.Width(dayTitle, UiStyle.SectionHeader) * 1.2f + UiTokens.S1));
+            }
+            UiDraw.TextMiddle(s, at, x, cy, UiTokens.PairRow, titleW, UiStyle.SectionHeader, UiRole.Text2, dayTitle, UiFlags.Label | UiFlags.Truncate);
+            float noteW = width - titleW - UiTokens.S3;
+            if (!string.IsNullOrEmpty(p.DayNote) && noteW >= UiDraw.Snap(UiTextRules.Width(p.DayNote, UiStyle.Small) + UiTokens.S1))
+            {
+                UiDraw.TextMiddle(s, at, x + width - noteW, cy, UiTokens.PairRow, noteW, UiStyle.Small, UiRole.AccentText, p.DayNote, UiFlags.Right | UiFlags.Truncate);
+            }
             cy += UiTokens.PairRow + UiTokens.S1;
             int n = Math.Min(p.HourLabels.Length, Math.Min(p.OnShift.Length, p.Needed.Length));
             int most = 1;
@@ -251,7 +267,7 @@ namespace RealLifeOverhaul.Ui
                 bool shortHere = p.OnShift[i] < p.Needed[i];
                 UiDraw.TextMiddle(s, at, x, cy, HourRow, labelW, UiStyle.Small, UiRole.Muted, p.HourLabels[i], UiFlags.Truncate);
                 float bh = UiTokens.S3;
-                float by = cy + (HourRow - bh) / 2f;
+                float by = cy + Mid(HourRow, bh);
                 UiDraw.Box(s, at, trackX, by, trackW, bh, UiRole.Track, UiRole.None, UiTokens.RadiusSmall, UiFlags.Decor);
                 float fillW = Math.Max(0f, trackW * p.OnShift[i] / most);
                 if (fillW > 0f)
@@ -312,7 +328,9 @@ namespace RealLifeOverhaul.Ui
                 float tw = width - UiTokens.S5 * 2f - bw - UiTokens.S3 - UiDraw.Snap(UiTextRules.Width(r.Hours ?? string.Empty, UiStyle.BodyStrong) + UiTokens.S4);
                 float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
                 float top = cy + UiDraw.SnapDown((rowH - th - sh) / 2f);
-                UiDraw.TextMiddle(s, inside, x + UiTokens.S4, top, th, tw, UiStyle.Title, UiRole.Text, r.Name ?? string.Empty, UiFlags.Truncate);
+                float advisedW = r.Advised ? UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(w.T("reallife_rota_advised", "Advised"), UiStyle.SmallStrong) + UiTokens.S1) : 0f;
+                float nameW = Math.Min(UiDraw.Snap(UiTextRules.Width(r.Name ?? string.Empty, UiStyle.Title) + UiTokens.S1), Math.Max(0f, tw - (advisedW > 0f ? advisedW + UiTokens.S3 : 0f)));
+                UiDraw.TextMiddle(s, inside, x + UiTokens.S4, top, th, nameW, UiStyle.Title, UiRole.Text, r.Name ?? string.Empty, UiFlags.Truncate);
                 UiDraw.TextMiddle(s, inside, x + UiTokens.S4, top + th, sh, tw, UiStyle.Small, UiRole.Text2, r.Line ?? string.Empty, UiFlags.Truncate);
                 float fx = x + width - UiTokens.S4 - bw - UiTokens.S3 - UiDraw.Snap(UiTextRules.Width(r.Hours ?? string.Empty, UiStyle.BodyStrong) + UiTokens.S4);
                 UiDraw.TextMiddle(s, inside, fx, top, th, UiDraw.Snap(UiTextRules.Width(r.Hours ?? string.Empty, UiStyle.BodyStrong) + UiTokens.S4), UiStyle.BodyStrong, UiRole.Text, r.Hours ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
@@ -323,8 +341,8 @@ namespace RealLifeOverhaul.Ui
                 }
                 if (r.Advised)
                 {
-                    UiDraw.Chip(s, inside, x + UiTokens.S4 + UiDraw.Snap(UiTextRules.Width(r.Name ?? string.Empty, UiStyle.Title)) + UiTokens.S3, top + UiDraw.SnapDown((th - UiTokens.Badge - UiTokens.S1) / 2f),
-                        w.T("reallife_rota_advised", "Advised"), UiRole.Ok, UiDraw.SnapDown(tw * 0.4f));
+                    UiDraw.Chip(s, inside, x + UiTokens.S4 + nameW + UiTokens.S3, top + UiDraw.SnapDown((th - UiTokens.Badge - UiTokens.S1) / 2f),
+                        w.T("reallife_rota_advised", "Advised"), UiRole.Ok, advisedW);
                 }
                 cy += rowH + UiTokens.S2;
             }

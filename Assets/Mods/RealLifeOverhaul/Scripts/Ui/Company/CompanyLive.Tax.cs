@@ -344,9 +344,9 @@ namespace RealLifeOverhaul.Ui
             blocks.Add(Note(CompanyText.T(late ? "reallife_co_return_late" : "reallife_co_return_due", "day", t.ReturnDue.ToString(), "amount", CompanyText.Money(TaxRules.Penalty(t.ReturnTakings)),
                 "count", t.ReturnPenalties.ToString()), late ? UiRole.DangerText : UiRole.WarnText));
             blocks.Add(Sec(w.T("reallife_ibox_sec_return", "The return")));
-            blocks.Add(Row(CompanyText.T("reallife_co_return_quarter"), t.ReturnQuarter.ToString()));
-            blocks.Add(Row(CompanyText.T("reallife_co_return_takings"), CompanyText.Money(t.ReturnTakings)));
-            blocks.Add(Row(CompanyText.T("reallife_co_return_deduct"), CompanyText.Money(t.ReturnCosts)));
+            blocks.Add(Row(CompanyText.Label("reallife_co_return_quarter"), t.ReturnQuarter.ToString()));
+            blocks.Add(Row(CompanyText.Label("reallife_co_return_takings"), CompanyText.Money(t.ReturnTakings)));
+            blocks.Add(Row(CompanyText.Label("reallife_co_return_deduct"), CompanyText.Money(t.ReturnCosts)));
             bool helped = TaxRules.Files(t.Accountant, d.Hidden() > 0);
             if (helped)
             {
@@ -378,7 +378,7 @@ namespace RealLifeOverhaul.Ui
                 options[i] = CompanyText.Accountant(i);
                 acts[i] = CompanyAct.Of(CompanyDo.Go, "kind", i);
             }
-            card.FactLabels = new[] { CompanyText.T("reallife_co_acc_hired"), CompanyText.T("reallife_co_acc_fee") };
+            card.FactLabels = new[] { w.T("reallife_co_f_hired", "Hired now"), w.T("reallife_co_f_fee", "Fee") };
             card.FactValues = new[] { CompanyText.Accountant(t.Accountant), CompanyText.T("reallife_co_row_a_month", "amount", CompanyText.Money(TaxRules.Fee(tier, d.Index, hiding))) };
             var blocks = new List<CompanyBlock>(10)
             {
@@ -429,7 +429,7 @@ namespace RealLifeOverhaul.Ui
             var card = new CompanyCard
             {
                 Kicker = w.T("reallife_co_tab_tax", "Tax and licences"), Title = CompanyText.T("reallife_co_hide_title", "business", shop.Name), Icon = UiIcon.Percent, Back = back,
-                FactLabels = new[] { CompanyText.T("reallife_co_hide_saved"), CompanyText.T("reallife_co_tax_risk") },
+                FactLabels = new[] { w.T("reallife_co_f_saved", "Tax kept back"), w.T("reallife_co_f_risk", "Audit risk") },
                 FactValues = new[] { CompanyText.Money(t.Saved), CompanyText.Share(TaxRules.AuditChance(t, d.Today) / 10) }
             };
             card.Blocks = new[]
@@ -456,7 +456,7 @@ namespace RealLifeOverhaul.Ui
                 Kicker = shop.Name, Title = CompanyText.Capital(CompanyText.Licence(kind)), Icon = LicenceIcons[Math.Min(kind, LicenceIcons.Length - 1)], Back = back,
                 Chips = new[] { CompanyText.T(valid ? "reallife_ibox_chip_valid" : l.Pending ? "reallife_co_row_lic_pending" : "reallife_ibox_chip_missing") },
                 ChipTones = new[] { valid ? UiRole.Ok : l.Pending ? UiRole.Warn : UiRole.Danger },
-                FactLabels = new[] { CompanyText.T("reallife_co_lic_fee"), CompanyText.T("reallife_co_lic_term") },
+                FactLabels = new[] { w.T("reallife_co_f_fee", "Fee"), w.T("reallife_co_f_term", "Term") },
                 FactValues = new[] { CompanyText.Money(LicenceRules.Fee(kind, d.Index)), CompanyText.T("reallife_co_lic_term_value", "days", CompanyCatalogue.LicenceTerm[kind].ToString()) }
             };
             var blocks = new List<CompanyBlock>(8)

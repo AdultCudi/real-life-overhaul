@@ -81,7 +81,7 @@ internal static partial class UiSamples
             return f;
         }
         string tab = state.Split('_')[0];
-        if (tab == "overview" || tab == "question" || tab == "lease")
+        if (tab == "overview" || state.EndsWith("question", StringComparison.Ordinal))
         {
             CompanyOverview(f, w, state);
         }

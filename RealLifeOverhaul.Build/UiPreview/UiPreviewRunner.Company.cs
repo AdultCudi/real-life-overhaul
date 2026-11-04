@@ -9,14 +9,14 @@ public static partial class UiPreviewRunner
         for (int i = 0; i < UiSamples.CompanyStates.Length; i++)
         {
             string st = UiSamples.CompanyStates[i];
-            bool card = st == "question" || st == "lease_question";
+            bool card = st.EndsWith("question", System.StringComparison.Ordinal);
             screens.Add(new Screen
             {
                 Name = "company_" + st,
                 AppName = "Company",
                 Icon = UiIcon.Briefcase,
                 Backdrop = card ? "05.jpg" : st.EndsWith("_one", System.StringComparison.Ordinal) ? "02.jpg" : i % 2 == 0 ? "13.jpg" : "02.jpg",
-                HoverCommand = card ? UiDecision.ChoiceCommand : UiAppWindow.NavCommand,
+                HoverCommand = card ? CompanyFace.Choice : UiAppWindow.NavCommand,
                 HoverArg = 1,
                 Walk = Moves("DDR"),
                 Lay = (s, f, d, k) => CompanyFace.Lay(s, UiSamples.CompanyFactsOf(English, st), UiSamples.CompanyViewOf(st), UiSamples.CompanyWordsOf(English), new CompanyLayout(), f, d, k)

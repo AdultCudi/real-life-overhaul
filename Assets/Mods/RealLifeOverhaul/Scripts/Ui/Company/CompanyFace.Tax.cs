@@ -24,12 +24,12 @@ namespace RealLifeOverhaul.Ui
             float cy = y;
             if (t.HasLead)
             {
-                cy += TaxLead(s, at, lay, v, t, x, cy, cw, keys) + UiTokens.S5;
+                cy += TaxLead(s, at.InRegion(RegionMain), lay, v, t, x, cy, cw, keys) + UiTokens.S5;
             }
             float gap = UiTokens.S6;
             float lw = UiDraw.SnapDown((cw - gap) * 0.6f), rw = cw - gap - lw;
-            Licences(s, at, lay, v, w, t, x, cy, lw, bottom, keys);
-            Statement(s, at, lay, v, w, t, x + lw + gap, cy, rw, bottom, keys);
+            Licences(s, at.InRegion(RegionMain), lay, v, w, t, x, cy, lw, bottom, keys);
+            Statement(s, at.InRegion(RegionSide), lay, v, w, t, x + lw + gap, cy, rw, bottom, keys);
         }
 
         private static float TaxLead(UiScene s, UiAt at, CompanyLayout lay, CompanyView v, CompanyTaxFacts t, float x, float y, float cw, IUiKeys keys)

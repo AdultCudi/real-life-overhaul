@@ -21,12 +21,12 @@ namespace RealLifeOverhaul.Ui
                 OffPage(s, at, w, null, null, x, y, cw, bottom, keys);
                 return;
             }
-            float head = Head(s, at, f, o, v, w, lay, x, y, cw, keys);
+            float head = Head(s, at.InRegion(RegionMain), f, o, v, w, lay, x, y, cw, keys);
             float top = y + head + UiTokens.S5;
             float gap = UiTokens.S6;
             float lw = UiDraw.SnapDown((cw - gap) * 0.56f), rw = cw - gap - lw;
-            Left(s, at, f, o, v, w, lay, x, top, lw, bottom, keys);
-            Right(s, at, f, o, v, w, lay, x + lw + gap, top, rw, bottom, keys);
+            Left(s, at.InRegion(RegionMain), f, o, v, w, lay, x, top, lw, bottom, keys);
+            Right(s, at.InRegion(RegionSide), f, o, v, w, lay, x + lw + gap, top, rw, bottom, keys);
         }
 
         // The company's head: its mark, name and what it owns as badges, and the day's result as the key figure with its spark.

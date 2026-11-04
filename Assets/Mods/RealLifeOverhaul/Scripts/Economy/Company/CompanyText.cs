@@ -37,6 +37,18 @@ namespace RealLifeOverhaul.Economy
             return FinanceText.T(key);
         }
 
+        /// <summary>An old row label as the kit writes a label: its text with the colon taken off (":" or the full width one, with a space before it where a language writes it so).</summary>
+        public static string Label(string key)
+        {
+            string text = FinanceText.T(key);
+            int end = text.Length;
+            while (end > 0 && (text[end - 1] == ':' || text[end - 1] == '：' || text[end - 1] == ' ' || text[end - 1] == ' '))
+            {
+                end--;
+            }
+            return end == text.Length ? text : text.Substring(0, end);
+        }
+
         public static string T(string key, string name, string value)
         {
             return FinanceText.T(key, name, value);

@@ -293,7 +293,7 @@ namespace RealLifeOverhaul.Ui
                 Status = CompanyText.T(post == PostState.InPost ? "reallife_mgr_in_post" : "reallife_mgr_off_sick"), StatusTone = post == PostState.InPost ? UiRole.Ok : UiRole.Warn
             };
             Face(m.Name, m.Id);
-            p.FactLabels = new[] { w.T("reallife_co_f_since", "Manager since"), w.T("reallife_co_f_wage", "Wage"), w.T("reallife_co_f_this_month", "This month"), w.T("reallife_co_f_asked", "Asked you") };
+            p.FactLabels = new[] { w.T("reallife_co_f_manager_since", "Manager since"), w.T("reallife_co_f_wage", "Wage"), w.T("reallife_co_f_this_month", "This month"), w.T("reallife_co_f_asked", "Asked you") };
             p.FactValues = new[] { CompanyText.Day(m.From), CompanyText.Wage(d.PayOf(m)) + w.T("reallife_co_per_hour", " / h"), w.F("reallife_co_f_decisions", "{count} decisions", "count", m.Decided.ToString()), asked.ToString() };
             // The question waiting for the owner, if there is one.
             if (asked > 0)
@@ -323,7 +323,7 @@ namespace RealLifeOverhaul.Ui
                 tasks.Add(new CompanyTask
                 {
                     Id = place + ":" + t, Icon = TaskIcons[Math.Min(t, TaskIcons.Length - 1)], Title = CompanyApp.TaskTitle(t), Line = wait ?? CompanyApp.TaskLine(m, task), On = on,
-                    Who = on ? FirstName(m.Name) : w.T("reallife_hier_you", "You"), Act = CompanyAct.Of(CompanyDo.TaskSet, place, t, on ? 0 : 1), Open = CompanyAct.Of(CompanyDo.Go, "mgr:" + place, CompanyView.Managers, CompanyView.SubTask, t)
+                    Who = on ? FirstName(m.Name) : w.T("reallife_hier_you", "You"), Act = CompanyAct.Of(CompanyDo.TaskSet, place, t, on ? 0 : 1)
                 });
             }
             p.Tasks = tasks.ToArray();
@@ -337,16 +337,9 @@ namespace RealLifeOverhaul.Ui
             {
                 limits.Add(LimitOf(d, place, CompanyDirector.LimitBudget, w));
             }
-            if (ManagerRules.Has(m.Tasks, ManagerTask.Marketing))
-            {
-                limits.Add(LimitOf(d, place, CompanyDirector.LimitMarketing, w));
-            }
-            if (ManagerRules.Has(m.Tasks, ManagerTask.Leases))
-            {
-                limits.Add(LimitOf(d, place, CompanyDirector.LimitLease, w));
-            }
             p.Limits = limits.ToArray();
             p.LimitsTitle = w.T("reallife_co_limits_title", "Limits and where questions go");
+            p.LimitsAll = Btn(w.T("reallife_co_all_limits", "All limits"), UiButtonKind.Quiet, CompanyAct.Of(CompanyDo.Go, "mgr:" + place, CompanyView.Managers, CompanyView.SubTask, 0));
             // Where a question they cannot decide goes: to you, or after a day to the executive of its area.
             if (d.HierarchyOn && d.HierarchyData.Deep)
             {
@@ -418,15 +411,10 @@ namespace RealLifeOverhaul.Ui
             p.CrewCount = crewTotal > 0 ? w.F("reallife_co_staff_count_n", "{count} staff", "count", crewTotal.ToString()) : null;
             p.Crew = crew.ToArray();
             // What can be done with the post.
-            var buttons = new List<CompanyButton>(4)
+            var buttons = new List<CompanyButton>(2)
             {
-                Btn(w.T("reallife_mgr_replace", "Replace"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "mgr:" + place, CompanyView.Managers, CompanyView.SubAppoint), UiAction.Count, UiIcon.People),
-                Btn(w.T("reallife_mgr_stand_down", "Stand down"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.StandDown, place), UiAction.Count, UiIcon.Close, true)
+                Btn(w.T("reallife_mgr_replace", "Replace or stand down"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "mgr:" + place, CompanyView.Managers, CompanyView.SubAppoint), UiAction.Count, UiIcon.People)
             };
-            if (m.Held.Count > 0)
-            {
-                buttons.Add(Btn(w.T("reallife_mgr_hand_back", "Hand back"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.HandBack, place), UiAction.Count, UiIcon.Back));
-            }
             if (d.HierarchyOn && d.HierarchyData.Deep)
             {
                 buttons.Add(Btn(w.T("reallife_hier_open_dashboard", "Open the dashboard"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "mgr:" + place, CompanyView.Managers, CompanyView.SubDashboard), UiAction.Count, UiIcon.ChartPie));
@@ -625,7 +613,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Id = "reg:" + area, Name = r.Name, Role = w.F("reallife_co_tree_region", "Regional, {district}", "district", CompanyDirector.AreaName(area)), Hue = UiColour.HueOf(r.Name),
                 Ring = sick ? UiRole.Warn : UiRole.Ok, Status = CompanyText.T(sick ? "reallife_mgr_off_sick" : "reallife_mgr_in_post"), StatusTone = sick ? UiRole.Warn : UiRole.Ok,
-                FactLabels = new[] { w.T("reallife_co_f_since", "Since"), w.T("reallife_co_f_places", "Places"), w.T("reallife_co_f_standing", "Standing in"), w.T("reallife_co_f_decisions_n", "Decisions") },
+                FactLabels = new[] { w.T("reallife_co_f_since", "Since"), w.T("reallife_co_f_places", "Places"), w.T("reallife_co_f_standing_in", "Standing in"), w.T("reallife_co_f_decisions_n", "Decisions") },
                 FactValues = new[] { CompanyText.Day(r.From), places.ToString(), d.StandingIn(area).ToString(), r.Decided.ToString() }
             };
             Face(r.Name, r.Id);
@@ -645,8 +633,7 @@ namespace RealLifeOverhaul.Ui
             p.More = more.ToArray();
             var buttons = new List<CompanyButton>(4)
             {
-                Btn(w.T("reallife_mgr_replace", "Replace"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "reg:" + area, CompanyView.Managers, CompanyView.SubAppoint), UiAction.Count, UiIcon.People),
-                Btn(w.T("reallife_mgr_stand_down", "Stand down"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.StandDown, area, 1), UiAction.Count, UiIcon.Close, true)
+                Btn(w.T("reallife_mgr_replace", "Replace or stand down"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "reg:" + area, CompanyView.Managers, CompanyView.SubAppoint), UiAction.Count, UiIcon.People)
             };
             if (d.HierarchyOn)
             {
@@ -661,7 +648,7 @@ namespace RealLifeOverhaul.Ui
             var p = new CompanyProfile
             {
                 Id = "crew:" + c.Id, Name = c.Name, Role = CompanyGame.SkillName(c.Id) + ", " + d.ShopName(c.Place), Hue = UiColour.HueOf(c.Name), Ring = StaffRules.StandsLow(c) ? UiRole.Danger : UiRole.Ok,
-                FactLabels = new[] { w.T("reallife_wage_row_paid", "Paid"), w.T("reallife_co_emp_standing", "Standing"), w.T("reallife_co_emp_mood", "Mood") },
+                FactLabels = new[] { w.T("reallife_co_f_paid", "Paid"), w.T("reallife_co_f_standing", "Standing"), w.T("reallife_co_f_mood", "Mood") },
                 FactValues = new[] { CompanyText.Wage(c.Paid), c.Standing.ToString(), c.Mood.ToString() }
             };
             Face(c.Name, c.Id);

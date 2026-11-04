@@ -104,7 +104,7 @@ namespace RealLifeOverhaul.Ui
         private CompanyCard StaffSummary(CompanyDirector d, CompanyState s, int under, int low, Words w)
         {
             var c = new CompanyCard { Kicker = w.T("reallife_co_tab_staff", "Staff"), Title = w.T("reallife_co_staff_title", "Your staff"), Icon = UiIcon.People };
-            c.FactLabels = new[] { w.T("reallife_co_staff_count", "Staff"), w.T("reallife_co_staff_under", "Underpaid"), w.T("reallife_co_staff_low", "Standing low") };
+            c.FactLabels = new[] { w.T("reallife_co_f_staff", "Staff"), w.T("reallife_co_f_underpaid", "Underpaid"), w.T("reallife_co_f_low", "Standing low") };
             c.FactValues = new[] { s.Staff.Count.ToString(), under.ToString(), low.ToString() };
             var blocks = new List<CompanyBlock>(12);
             int perHour, asks = d.RaisesWaiting(out perHour);
@@ -141,7 +141,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Kicker = w.T("reallife_co_tab_staff", "Staff"), Title = p.Name, Sub = CompanyText.T("reallife_co_emp_works", "business", d.ShopName(p.Place), "skill", skill), Face = true, Hue = UiColour.HueOf(p.Name),
                 Ring = p.AskDay > 0 || p.PoachDay > 0 || p.LeaveDay > 0 ? UiRole.Warn : UiRole.Ok,
-                FactLabels = new[] { w.T("reallife_wage_row_paid", "Paid"), w.T("reallife_co_emp_going", "Going rate"), w.T("reallife_co_emp_standing", "Standing"), w.T("reallife_co_emp_mood", "Mood") },
+                FactLabels = new[] { w.T("reallife_co_f_paid", "Paid"), w.T("reallife_co_f_going", "Going rate"), w.T("reallife_co_f_standing", "Standing"), w.T("reallife_co_f_mood", "Mood") },
                 FactValues = new[] { CompanyText.Wage(p.Paid), CompanyText.Wage(p.Going), p.Standing.ToString(), p.Mood.ToString() },
                 Back = new[] { Btn(w.T("reallife_co_back", "Back"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "", CompanyView.Staff), UiAction.Count, UiIcon.Back) }
             };
@@ -202,21 +202,21 @@ namespace RealLifeOverhaul.Ui
             int city = p.Wage - p.Base;
             if (city != 0 || p.Raise > 0)
             {
-                blocks.Add(Row(CompanyText.T("reallife_wage_row_game"), CompanyText.Wage(p.Base)));
+                blocks.Add(Row(CompanyText.Label("reallife_wage_row_game"), CompanyText.Wage(p.Base)));
                 if (city != 0)
                 {
-                    blocks.Add(Row(CompanyText.T("reallife_wage_row_city"), CompanyText.SignedWage(city)));
+                    blocks.Add(Row(CompanyText.Label("reallife_wage_row_city"), CompanyText.SignedWage(city)));
                 }
                 if (p.Raise > 0)
                 {
-                    blocks.Add(Row(CompanyText.T("reallife_co_emp_raise"), CompanyText.Wage(p.Raise)));
+                    blocks.Add(Row(CompanyText.Label("reallife_co_emp_raise"), CompanyText.Wage(p.Raise)));
                 }
             }
-            blocks.Add(Row(CompanyText.T("reallife_wage_row_paid"), CompanyText.Wage(p.Paid)));
-            blocks.Add(Row(CompanyText.T("reallife_co_emp_going"), CompanyText.Wage(p.Going), p.Going > p.Paid ? UiRole.WarnText : UiRole.None));
+            blocks.Add(Row(w.T("reallife_co_f_paid", "Paid"), CompanyText.Wage(p.Paid)));
+            blocks.Add(Row(w.T("reallife_co_f_going", "Going rate"), CompanyText.Wage(p.Going), p.Going > p.Paid ? UiRole.WarnText : UiRole.None));
             blocks.Add(Sec(CompanyText.T("reallife_ibox_sec_feeling")));
-            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Meter, Text = CompanyText.T("reallife_co_emp_standing"), Value = p.Standing.ToString(), Number = p.Standing, Tone = StaffRules.StandsLow(p) ? UiRole.Danger : p.Standing < 60 ? UiRole.Warn : UiRole.Ok });
-            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Meter, Text = CompanyText.T("reallife_co_emp_mood"), Value = p.Mood.ToString(), Number = p.Mood, Tone = p.Mood < 30 ? UiRole.Danger : p.Mood < 60 ? UiRole.Warn : UiRole.Ok });
+            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Meter, Text = w.T("reallife_co_f_standing", "Standing"), Value = p.Standing.ToString(), Number = p.Standing, Tone = StaffRules.StandsLow(p) ? UiRole.Danger : p.Standing < 60 ? UiRole.Warn : UiRole.Ok });
+            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Meter, Text = w.T("reallife_co_f_mood", "Mood"), Value = p.Mood.ToString(), Number = p.Mood, Tone = p.Mood < 30 ? UiRole.Danger : p.Mood < 60 ? UiRole.Warn : UiRole.Ok });
             if (p.LateDays > 0)
             {
                 blocks.Add(Row(w.T("reallife_co_emp_late", "Short days running"), p.LateDays.ToString(), UiRole.WarnText));
@@ -265,8 +265,8 @@ namespace RealLifeOverhaul.Ui
                 Note(CompanyText.T("reallife_co_overtime_by", "day", (shop.File.OvertimeAsk + CompanyCatalogue.OvertimeAnswerDays).ToString()), UiRole.WarnText),
                 Note(CompanyText.T("reallife_co_overtime_what", "hours", CompanyCatalogue.OvertimeHours.ToString(), "days", CompanyCatalogue.OvertimeDays.ToString())),
                 Sec(CompanyText.T("reallife_ibox_sec_terms")),
-                Row(CompanyText.T("reallife_co_overtime_cost"), CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(d.OvertimeCost(place)))),
-                Row(CompanyText.T("reallife_co_overtime_gain"), CompanyText.Percent(CompanyCatalogue.OvertimeFootfall)),
+                Row(CompanyText.Label("reallife_co_overtime_cost"), CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(d.OvertimeCost(place)))),
+                Row(CompanyText.Label("reallife_co_overtime_gain"), CompanyText.Percent(CompanyCatalogue.OvertimeFootfall)),
                 Buttons(
                     Btn(CompanyText.T("reallife_co_overtime_agree"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.OvertimeAnswer, place, 1), UiAction.Alt, UiIcon.Check),
                     Btn(CompanyText.T("reallife_co_overtime_refuse"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.OvertimeAnswer, place, 0), UiAction.Count, UiIcon.Close, true))

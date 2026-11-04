@@ -6,7 +6,7 @@ namespace RealLifeOverhaul.Ui
     {
         public const int StepLess = 7420, StepMore = 7421, StepType = 7422;   // a stepper's minus and plus, and its typed figure: the argument is the index of its first action
 
-        private const float ListRow = 56f, ListGap = 4f, SwitchRow = 56f;
+        private const float ListRow = 56f, ListGap = 4f, SwitchRow = 48f;
 
         // ------------------------------------------------------------------------------------------------- a row of a list or a card
 
@@ -186,22 +186,22 @@ namespace RealLifeOverhaul.Ui
             float gap = UiTokens.S6;
             float lw = UiDraw.SnapDown(Math.Min(cw * 0.34f, 420f));
             float cx = x + lw + gap, ccw = cw - lw - gap;
-            short list = ListPane(s, at, page.List, v, w, lay, x, y, lw, bottom, keys);
-            if (list >= 0)
-            {
-                UiDraw.JoinColumns(s, x, x + lw, x + cw, -1);
-            }
+            short list = ListPane(s, at.InRegion(RegionList), page.List, v, w, lay, x, y, lw, bottom, keys);
             if (page.Card != null)
             {
-                CardPage(s, at, page.Card, v, w, lay, cx, y, ccw, bottom, keys);
+                CardPage(s, at.InRegion(RegionMain), page.Card, v, w, lay, cx, y, ccw, bottom, keys);
             }
             else if (page.Top != null)
             {
-                CardPage(s, at, page.Top, v, w, lay, cx, y, ccw, bottom, keys);
+                CardPage(s, at.InRegion(RegionMain), page.Top, v, w, lay, cx, y, ccw, bottom, keys);
             }
             else
             {
-                UiDraw.EmptyState(s, at, cx, y, ccw, bottom - y, UiIcon.Info, w.T("reallife_co_pick_title", "Nothing picked"), string.IsNullOrEmpty(page.Lead) ? w.T("reallife_co_pick_body", "Pick a row at the left to see it here.") : page.Lead, null, -1, keys);
+                UiDraw.EmptyState(s, at.InRegion(RegionMain), cx, y, ccw, bottom - y, UiIcon.Info, w.T("reallife_co_pick_title", "Nothing picked"), string.IsNullOrEmpty(page.Lead) ? w.T("reallife_co_pick_body", "Pick a row at the left to see it here.") : page.Lead, null, -1, keys);
+            }
+            if (list >= 0)
+            {
+                UiDraw.JoinColumns(s, x, x + lw, x + cw, -1);   // after both columns are drawn, so that a row at the left finds the card's targets at its height
             }
         }
 
@@ -395,7 +395,7 @@ namespace RealLifeOverhaul.Ui
         private static float SwitchBlock(UiScene s, UiAt at, CompanyLayout lay, CompanyBlock b, float x, float y, float cw)
         {
             int index = lay.Add(new CompanyButton { Label = b.Text, Act = b.Act, Disabled = b.Disabled, Why = b.Why });
-            float switchW = Math.Min(UiDraw.SnapDown(cw * 0.4f), UiDraw.Snap(UiTextRules.Width(b.Value ?? string.Empty, UiStyle.Body) + 44f + UiTokens.S3 * 2f));
+            float switchW = Math.Min(UiDraw.SnapDown(cw * 0.4f), SwitchWidth(b.Value));
             float tw = cw - switchW - UiTokens.S4;
             float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
             float top = y + UiDraw.SnapDown((SwitchRow - th - (string.IsNullOrEmpty(b.Sub) ? 0f : sh)) / 2f);
@@ -404,7 +404,7 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDraw.TextMiddle(s, at, x, top + th, sh, tw, UiStyle.Small, UiRole.Text2, b.Sub, UiFlags.Truncate);
             }
-            UiDraw.Switch(s, at, x + cw - switchW, y + (SwitchRow - UiTokens.Control) / 2f, switchW, b.On, b.Value, Act, index, b.Disabled);
+            UiDraw.Switch(s, at, x + cw - switchW, y + Mid(SwitchRow, UiTokens.Control), switchW, b.On, b.Value, Act, index, b.Disabled);
             return y + SwitchRow;
         }
 
@@ -423,7 +423,7 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDraw.TextMiddle(s, at, x, top + th, sh, tw, UiStyle.Small, UiRole.Text2, b.Sub, UiFlags.Truncate);
             }
-            UiDraw.Stepper(s, at, x + cw - sw, y + (SwitchRow - UiTokens.Control) / 2f, sw, b.Value, b.CanLess && !b.Disabled, b.CanMore && !b.Disabled, StepLess, StepType, StepMore, first, b.Disabled);
+            UiDraw.Stepper(s, at, x + cw - sw, y + Mid(SwitchRow, UiTokens.Control), sw, b.Value, b.CanLess && !b.Disabled, b.CanMore && !b.Disabled, StepLess, StepType, StepMore, first, b.Disabled);
             return y + SwitchRow;
         }
 
@@ -445,7 +445,7 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDraw.TextMiddle(s, at, x, top + th, sh, tw, UiStyle.Small, UiRole.Text2, b.Sub, UiFlags.Truncate);
             }
-            UiDraw.TextField(s, at, x + cw - fw, y + (SwitchRow - UiTokens.Control) / 2f, fw, typing ? v.Typing : b.Value, b.Text, StepType, first, b.Disabled, typing);
+            UiDraw.TextField(s, at, x + cw - fw, y + Mid(SwitchRow, UiTokens.Control), fw, typing ? v.Typing : b.Value, b.Text, StepType, first, b.Disabled, typing);
             return y + SwitchRow;
         }
 
