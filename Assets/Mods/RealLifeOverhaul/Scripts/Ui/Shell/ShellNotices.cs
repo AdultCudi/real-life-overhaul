@@ -16,8 +16,9 @@ namespace RealLifeOverhaul.Ui
     /// sounds and saves every notice (Going Public's relay and the mod's own look included); the kit draws them from the
     /// game's entries after their code ran, hides only the entries' own leaves, and a click on a card runs the entry's own
     /// button. Which kind each toast is comes from its key as the game shows it (Notifications.onShow, heard after the
-    /// game's and NoticeLook's), so nothing new is saved. Cost: nothing while no notice shows; while one does, a look at the
-    /// stack four times a second and a layout when it changed.
+    /// game's and NoticeLook's), so nothing new is saved. The stack's object is on all the time, so the host shows the cards the
+    /// moment it binds (IUiGameStands) and each toast's pieces go unseen the moment the game makes it. Cost: nothing while no notice
+    /// shows; while one does, a look at the stack four times a second and a layout when it changed.
     /// </summary>
     public static class ShellNotices
     {
@@ -26,7 +27,8 @@ namespace RealLifeOverhaul.Ui
         private static readonly Dictionary<int, UiIcon> Kinds = new Dictionary<int, UiIcon>(16);   // a toast's object by its id: its kind's glyph
         private static Action<NotificationType, string, Dictionary<string, string>, float, string, Action, bool, bool> _onShow;
         private static NotificationsUI _toasts;
-        private static bool _joined;
+        private static NoticeCardsScreen _live;   // the cards' screen while the kit draws them: told of each toast as the game makes it
+        private static bool _joined, _cardsSaid, _lateSaid;
 
         /// <summary>Once a second while the interface is on: each host put on while its switch is on.</summary>
         public static void Install()
@@ -41,6 +43,7 @@ namespace RealLifeOverhaul.Ui
         {
             Cards.Remove(why);
             List.Remove(why);
+            _live = null;
             Leave();
         }
 
@@ -48,6 +51,7 @@ namespace RealLifeOverhaul.Ui
         public static void Rearm()
         {
             _toasts = null;
+            _live = null;
             Kinds.Clear();
             Cards.Rearm();
             List.Rearm();
@@ -119,7 +123,21 @@ namespace RealLifeOverhaul.Ui
             {
                 Kinds.Clear();   // the stack keeps a few at once: an old id is never asked again
             }
-            Kinds[newest.gameObject.GetInstanceID()] = Glyph(key, type);
+            int id = newest.gameObject.GetInstanceID();
+            if (Kinds.ContainsKey(id))
+            {
+                return;   // a repeat of a notice the stack shows already: the game made no new entry
+            }
+            Kinds[id] = Glyph(key, type);
+            if (_live != null)
+            {
+                _live.Arrived(newest);   // its own picture goes unseen now, before the game's fade shows any of it
+            }
+            if (Meta.Dev.Verbose && !_lateSaid && Cards.Root != null && !Cards.Showing)
+            {
+                _lateSaid = true;
+                UiDirector.Logger?.Warn("Notice check (cards): a toast was made and the kit's cards are bound but not showing (" + Cards.State + "), so the game's own toast is seen: FAIL.");
+            }
         }
 
         private static void Join()
@@ -145,8 +163,10 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- the cards
 
-        private sealed class CardsBox : IUiGameScreen
+        private sealed class CardsBox : IUiGameScreen, IUiGameStands, IUiGameOffers
         {
+            private UiConceal _conceal;   // the host's, so the entries' pieces are given back as the host gives its own back
+
             public string Id => "notice_cards";
 
             public string Name => "the notices";
@@ -167,10 +187,11 @@ namespace RealLifeOverhaul.Ui
 
             public void Conceal(Component found, UiConceal conceal)
             {
-                // The entries come and go: the screen hides each one's leaves as it arrives (NoticeCardsScreen.Look).
+                // The entries come and go: the screen hides each one's leaves as it arrives (NoticeCardsScreen.Arrived and Look), in the host's own hold.
+                _conceal = conceal;
             }
 
-            public IUiScreen Make(Component found) => new NoticeCardsScreen(found.transform);
+            public IUiScreen Make(Component found) => _live = new NoticeCardsScreen(found.transform, _conceal);
         }
 
         /// <summary>The toasts the game shows now, as notice cards; a click runs the entry's own button.</summary>
@@ -178,7 +199,7 @@ namespace RealLifeOverhaul.Ui
         {
             private const float Every = 0.25f;   // seconds between looks at the stack
             private readonly Transform _stack;
-            private readonly UiConceal _hidden = new UiConceal();
+            private readonly UiConceal _hidden;   // the host's hold on the game's pieces: given back with them when the cards go or the switch is off
             private readonly UiNoticeCardsModel _m = new UiNoticeCardsModel();
             private readonly List<Transform> _entries = new List<Transform>(8);
             private readonly Vector3[] _corners = new Vector3[4];
@@ -186,9 +207,10 @@ namespace RealLifeOverhaul.Ui
             private float _next;
             private bool _dirty = true;
 
-            public NoticeCardsScreen(Transform stack)
+            public NoticeCardsScreen(Transform stack, UiConceal hold)
             {
                 _stack = stack;
+                _hidden = hold;
                 _m.Cards = new UiNotice[UiNotices.MostCards * 2];
             }
 
@@ -214,16 +236,28 @@ namespace RealLifeOverhaul.Ui
                 Look(frame);
                 UiNotices.LayCards(s, _m, frame, dark, keys);
                 _dirty = false;
+                Said();
             }
 
             public bool Press(int command, int arg)
             {
-                if (command != UiNotices.CardCommand || arg < 0 || arg >= _entries.Count || _entries[arg] == null)
+                int at = UiNoticeRules.EntryFor(command, arg, _entries.Count);
+                if (at < 0 || _entries[at] == null)
                 {
                     return false;
                 }
                 _dirty = true;
-                return UiWidgets.Press(_entries[arg].GetComponent<Button>());
+                return UiWidgets.Press(_entries[at].GetComponent<Button>());
+            }
+
+            /// <summary>The game just made this entry: its pieces go unseen at once and the cards are laid out next frame.</summary>
+            public void Arrived(Transform entry)
+            {
+                if (_hidden.Hiding)
+                {
+                    Take(entry);   // before the kit shows, or after it went, Look takes it when it does
+                    _dirty = true;
+                }
             }
 
             public void Focused(int command, int arg)
@@ -255,15 +289,11 @@ namespace RealLifeOverhaul.Ui
                 for (int i = 0; i < _stack.childCount; i++)
                 {
                     Transform entry = _stack.GetChild(i);
-                    if (!entry.gameObject.activeSelf || entry.Find("Text") == null)
+                    if (!UiNoticeRules.IsToast(entry.gameObject.activeSelf, entry.Find("Text") != null))
                     {
                         continue;   // a template, or another mod's own child of the stack
                     }
-                    for (int c = 0; c < entry.childCount; c++)
-                    {
-                        _hidden.Add(entry.GetChild(c));
-                    }
-                    _hidden.Add(entry.GetComponent<Graphic>());
+                    Take(entry);
                     _entries.Add(entry);
                 }
                 _hidden.Hide();
@@ -288,6 +318,68 @@ namespace RealLifeOverhaul.Ui
                     float top = Screen.height - _corners[1].y;   // the stack's top in screen pixels, from the top
                     _m.Top = Math.Max(UiTokens.S4, top / Math.Max(1f, Screen.height) * frame.Height);
                 }
+            }
+
+            // One toast's pieces unseen and untouchable: each child through the hold, its own picture by its renderer.
+            private void Take(Transform entry)
+            {
+                for (int c = 0; c < entry.childCount; c++)
+                {
+                    _hidden.Add(entry.GetChild(c));
+                }
+                _hidden.Add(entry.GetComponent<Graphic>());
+            }
+
+            // The once-a-session line (developer diagnostics): the first toast drawn as a card, and how many of the game's entries are unseen.
+            private void Said()
+            {
+                if (_cardsSaid || !Meta.Dev.Verbose || _entries.Count == 0)
+                {
+                    return;
+                }
+                _cardsSaid = true;
+                int hidden = 0, pieces = 0;
+                for (int i = 0; i < _entries.Count; i++)
+                {
+                    int n = Unseen(_entries[i]);
+                    hidden += n >= 0 ? 1 : 0;
+                    pieces += Math.Max(0, n);
+                }
+                int drawn = Math.Min(_entries.Count, UiNotices.MostCards);
+                string wrong = UiNoticeRules.Wrong(_entries.Count, hidden, drawn, Cards.Showing);
+                UiDirector.Logger?.Info("Notice check (cards): " + _entries.Count + " toast(s) in the game's stack drawn as " + drawn
+                    + " notice card(s) by the kit, the game's own entry hidden in " + hidden + " of " + _entries.Count + " (" + pieces + " pieces unseen and untouchable)"
+                    + (wrong == null ? ": PASS." : ": FAIL (" + wrong + ")."));
+            }
+
+            // The pieces of an entry that are unseen and not pointed at, or -1 when any is still seen.
+            private static int Unseen(Transform entry)
+            {
+                int n = 0;
+                for (int c = 0; c < entry.childCount; c++)
+                {
+                    Transform child = entry.GetChild(c);
+                    if (UiHostRules.Shared(child.name))
+                    {
+                        continue;
+                    }
+                    CanvasGroup g = child.GetComponent<CanvasGroup>();
+                    if (g == null || g.alpha > 0.001f || g.blocksRaycasts)
+                    {
+                        return -1;
+                    }
+                    n++;
+                }
+                Graphic own = entry.GetComponent<Graphic>();
+                if (own != null)
+                {
+                    if (own.canvasRenderer.GetAlpha() > 0.001f)
+                    {
+                        return -1;
+                    }
+                    n++;
+                }
+                return n;
             }
 
             private long Signature()

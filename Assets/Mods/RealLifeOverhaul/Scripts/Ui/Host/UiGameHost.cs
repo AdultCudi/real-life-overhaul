@@ -248,8 +248,12 @@ namespace RealLifeOverhaul.Ui
             }
             _misses = 0;
             _state = Drawn;
-            _watch = found.gameObject.AddComponent<UiGameWatch>();   // on an open screen its OnEnable shows the kit at once
+            _watch = found.gameObject.AddComponent<UiGameWatch>();   // on a screen the game opens later its OnEnable shows the kit at once
             _watch.Host = this;
+            if (UiHostRules.ShowsAtBind(_screen is IUiGameStands, found.gameObject.activeInHierarchy))
+            {
+                Opened();   // an object that is on already (the toast stack) never switches on again: its OnEnable ran before the host was set
+            }
         }
 
         /// <summary>The host gone for good (an app's face replaced by a new city's): the game's screen as it was, and no more looks at it.</summary>
