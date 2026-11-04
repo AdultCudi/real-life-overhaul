@@ -8,6 +8,9 @@ The Camera and the Gallery on the phone: the photos of a save, favourites, the p
 - `CameraMode.cs`: the camera itself.
 - `GalleryRules.cs`: the Gallery (game-free).
 - `PhotoStore.cs`: the save's photos on disk.
+- `CameraRules.cs`, `PhotoPixels.cs`, `PhotoSeenRules.cs`: the camera's tools, the pixel work on the worker (cut, frame, grade, turn) and what the lens saw (game-free).
+- `GalleryQuery.cs`: the albums, search, filters and sort (game-free); the kit's face is `Ui/Life/GalleryScreen*.cs`, the picker for Flare's post sheet `Ui/Flare/FlareScreen.Photos.cs`.
+- `PhotoThumbCache.cs`: the small copies, only the photos in view, at most 120.
 
 ## Documentation
 

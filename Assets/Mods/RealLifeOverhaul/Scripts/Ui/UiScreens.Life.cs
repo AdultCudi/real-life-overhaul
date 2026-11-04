@@ -72,7 +72,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_phonecam_filter_dream", "reallife_phonecam_tool_timer", "reallife_phonecam_guide_thirds", "reallife_phonecam_tool_level", "reallife_phonecam_aspect_169",
                     "reallife_phonecam_tool_body", "reallife_phonecam_tool_clean", "reallife_phonecam_app", "reallife_ui_life_mode_portrait", "reallife_ui_life_mode_wide",
                     "reallife_phonecam_frame_polaroid", "reallife_phonecam_filter_title", "reallife_phonecam_frame_title", "reallife_ui_life_newest_photo", "reallife_ui_life_open_gallery",
-                    "reallife_ui_life_take", "reallife_phonecam_clean_back", "reallife_phonecam_pose", "reallife_selfie_pose_wave", "reallife_phonecam_aspect_43",
+                    "reallife_ui_life_take", "reallife_phonecam_clean_back", "reallife_phonecam_pose", "reallife_phonecam_aspect_43",
                     "reallife_phonecam_timer_s", "reallife_phonecam_tool_boost", "reallife_ui_hud_weather_clear",
                 }).Switch(UiScreenSwitches.Life),
             });
