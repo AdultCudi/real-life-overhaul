@@ -34,7 +34,8 @@ namespace RealLifeOverhaul.Ui
     public sealed class MarketScreen : IUiScreen, IUiTyping
     {
         private const float Every = 0.25f;   // seconds between looks at the game's app
-        private const string Row3 = "Layout 25-25-50/Row 3/";
+        private const string Row3 = "Layout 25-25-50/Row 3/";   // only for the search field (typing), no press
+        private const string DemandTab = "MarketDemands", RealEstateTab = "RealEstate";   // the names the game's MarketInsider.ChangeTab takes
         private static readonly string[] DemandHeads = { "ProductName", "Demand", "LowestMarketPrice", "ImportPriceIndex", "Providers" };   // the game's headers, in the kit's columns' order
         private static readonly string[] EstateHeads = { "Address", "BuildingType", "TotalSize", "EstimatedValue", "Price" };
         private static readonly string[] EstateFigures =
@@ -116,7 +117,7 @@ namespace RealLifeOverhaul.Ui
                 case UiAppWindow.NavCommand:
                     return District(arg);
                 case UiMarket.MapCommand:
-                    return Done(UiWidgets.Press(Find<Button>("Layout 25-25-50/Row 1/WhiteBox/Button/ViewOnMapButton")), "view the district on the map: handed to the game");
+                    return ViewOnMap();
                 case UiMarket.TableTabCommand:
                     return ShowTable(arg);
                 case UiMarket.SwitchCommand:
@@ -251,8 +252,23 @@ namespace RealLifeOverhaul.Ui
             }
             _selected = 0;
             _offset = 0f;
-            return Done(UiWidgets.Press(Find<Button>(Row3 + (estate ? "TableTabs/RealEstate" : "TableTabs/MarketDemands"))), "show the district's "
-                + (estate ? "real estate" : "demand") + ": handed to the game");
+            _app.ChangeTab(estate ? RealEstateTab : DemandTab);   // the game's own method, the one its two tab buttons call
+            return Done(true, "show the district's " + (estate ? "real estate" : "demand") + ": handed to the game");
+        }
+
+        // View on map through the game's own button, read from the district's data by its field (no hierarchy path); if the
+        // game has no such button the game's own Market Insider shows until the app closes, and Player.log says so.
+        private bool ViewOnMap()
+        {
+            Button b = GameContract.MarketViewOnMap.Field?.GetValue(_app.neighborhoodData) as Button;
+            if (b == null)
+            {
+                UiDirector.Logger?.Info("Market Insider (kit): the View on map button is MISSING (MarketInsiderNeighborhoodData.viewOnMapButton), "
+                                        + "so the game's own Market Insider view shows until the app closes");
+                MarketKit.Classic();
+                return true;
+            }
+            return Done(UiWidgets.Press(b), "view the district on the map: handed to the game");
         }
 
         // A building opens through its row's own button in the game's (unseen) table; a demand's row is chosen.

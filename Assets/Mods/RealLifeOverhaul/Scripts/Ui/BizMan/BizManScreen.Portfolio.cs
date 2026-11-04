@@ -101,8 +101,6 @@ namespace RealLifeOverhaul.Ui
             }
             _m.FilterOpen = _kinds[_kind] == Shops ? _filterOpen : -1;
             _m.FilterOptions = _m.FilterOpen >= 0 ? FilterChoices(_filterOpen, out _m.FilterChosen) : null;
-            _m.Note = null;
-            _m.NoteActions = new UiActionModel[0];
         }
 
         // What the portfolio comes to, from the rows the game's list holds: its businesses, their takings a day and their alerts.

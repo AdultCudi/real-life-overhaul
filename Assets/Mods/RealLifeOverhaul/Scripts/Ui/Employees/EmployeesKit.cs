@@ -62,9 +62,6 @@ namespace RealLifeOverhaul.Ui
             Rival.Remove(why);
         }
 
-        /// <summary>My Employees in the game's own view until it closes: something only the game's view shows.</summary>
-        public static void Classic() => Staff.Classic();
-
         // The game's My Employees, under the full menu: its layout the one leaf the kit hides.
         private sealed class StaffGameScreen : IUiGameScreen
         {

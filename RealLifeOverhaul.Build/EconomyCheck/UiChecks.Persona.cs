@@ -57,6 +57,7 @@ internal static partial class Program
             PersonaChecks();
             RivalsChecks();
             MarketChecks();
+            WiringChecks();
             DataCellChecks();
             FaceChecks();
         }
