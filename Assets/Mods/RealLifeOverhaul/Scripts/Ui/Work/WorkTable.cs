@@ -30,7 +30,11 @@ namespace RealLifeOverhaul.Ui
     {
         private const float AsideWidth = 248f;
 
-        private static float StatsHeight() => UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader) + UiTextRules.LineHeight(UiStyle.Number) + UiTokens.S1 + UiTokens.S4 * 2f);
+        private static float StatsHeight()
+        {
+            float label = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)), value = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Number));
+            return UiDraw.Snap(label + value + UiTokens.S1 + UiTokens.S4 * 2f);
+        }
 
         // Figures that sum a short list: a small capital label over the value, each in its own cell of a darker field.
         private static float StatStrip(UiScene s, UiAt at, List<KeyValuePair<string, string>> stats, float x, float y, float w)
@@ -38,7 +42,7 @@ namespace RealLifeOverhaul.Ui
             float h = StatsHeight();
             UiDraw.Box(s, at, x, y, w, h, UiRole.Field, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
             int n = Math.Min(4, stats.Count);
-            float cell = UiDraw.SnapDown((w - UiTokens.S4 * 2f) / n), lh = UiTextRules.LineHeight(UiStyle.SectionHeader);
+            float cell = UiDraw.SnapDown((w - UiTokens.S4 * 2f) / n), lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader));
             for (int i = 0; i < n; i++)
             {
                 float cx = x + UiTokens.S4 + i * cell;

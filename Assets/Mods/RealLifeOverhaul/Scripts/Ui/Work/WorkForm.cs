@@ -169,7 +169,8 @@ namespace RealLifeOverhaul.Ui
                         for (int k = 0; k <= r.More.Count; k++)
                         {
                             UiActionModel u = k == 0 ? a : r.ActAt + k < actions.Length ? actions[r.ActAt + k] : a;
-                            used += UiDraw.ButtonWidth(u.Kind, u.Label, u.Icon, UiAction.Count, keys) + (k > 0 ? UiTokens.S2 : 0f);
+                            used += (r.More.Count == 0 ? Math.Max(_buttonWidth, UiDraw.ButtonWidth(u.Kind, u.Label, u.Icon, UiAction.Count,
+                                keys)) : UiDraw.ButtonWidth(u.Kind, u.Label, u.Icon, UiAction.Count, keys)) + (k > 0 ? UiTokens.S2 : 0f);
                         }
                         float lw = Math.Max(0f, w - used - UiTokens.S3);
                         if (!string.IsNullOrEmpty(r.Label))
