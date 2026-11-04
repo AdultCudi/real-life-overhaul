@@ -128,6 +128,28 @@ namespace RealLifeOverhaul.Map25
             return found;
         }
 
+        /// <summary>
+        /// True when the middle of a drawn picture is black: nothing was drawn (the colour shader draws nothing here, or the camera's matrices put
+        /// the whole scene out of view). One pixel is read back, once, after the first draw of each picture; no colour of the map is that dark.
+        /// </summary>
+        public static bool Blank(RenderTexture target)
+        {
+            RenderTexture before = RenderTexture.active;
+            var one = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+            try
+            {
+                RenderTexture.active = target;
+                one.ReadPixels(new Rect(target.width / 2, target.height / 2, 1, 1), 0, 0);
+                Color c = one.GetPixel(0, 0);
+                return c.r + c.g + c.b < 0.02f;
+            }
+            finally
+            {
+                RenderTexture.active = before;
+                UnityEngine.Object.Destroy(one);
+            }
+        }
+
         public Map25Scene(Map25Set[] sets, Map25Chunk[] land, Map25Chunk[] roads, float minX, float minZ, float maxX, float maxZ)
         {
             _sets = sets;

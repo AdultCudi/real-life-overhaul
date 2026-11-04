@@ -49,7 +49,7 @@ namespace RealLifeOverhaul.Nav
         private readonly MaterialPropertyBlock _block = new MaterialPropertyBlock();
         private static readonly int SelectionColour = Shader.PropertyToID("_SelectionColor");
         private float _alpha;
-        private bool _masked, _dirty = true, _failed, _said;
+        private bool _masked, _dirty = true, _failed, _said, _probed;
         private readonly NavMapNames _streets = new NavMapNames();
         private float _px, _py, _pz, _heading;
         private bool _hasPlayer;
@@ -286,6 +286,17 @@ namespace RealLifeOverhaul.Nav
                 ConeRadius = Mathf.Max(30f, map.cityMapCam.distance * 0.3f), Fog = pitch < 70f
             };
             _scene.Scene.Draw(_target, _view, frame, 0);
+            if (!_probed)
+            {
+                _probed = true;
+                if (Map25Scene.Blank(_target))
+                {
+                    Logger?.Warn("Navigation: the 2.5D city map drew nothing (its picture is black), so the city map stays the game's own.");
+                    _failed = true;
+                    Release();
+                    return;
+                }
+            }
             float scale = _rect.lossyScale.x > 0.0001f ? _rect.lossyScale.x : 1f;
             _streets.Place(_rect, _view, width, height, 1f / scale, 0.3f);
             PlacePlayer();

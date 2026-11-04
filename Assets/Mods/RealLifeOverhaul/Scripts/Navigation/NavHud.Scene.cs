@@ -33,6 +33,11 @@ namespace RealLifeOverhaul.Nav
         private int _sceneRouteCount;
         private float _scenePlayerX, _scenePlayerY, _scenePlayerZ, _scenePlayerHeading;
 
+        /// <summary>True once the first draw of the picture came out black: the director then leaves the minimap flat.</summary>
+        public bool SceneBroken { get; private set; }
+
+        private bool _sceneProbed;
+
         /// <summary>True while the minimap shows the 2.5D picture and the director feeds it by <see cref="SceneFrame"/>.</summary>
         public bool SceneMode => _sceneOn;
 
@@ -149,6 +154,15 @@ namespace RealLifeOverhaul.Nav
                 _sceneFrom.Scene.Refresh();
                 var frame = new Map25Frame { Player = true, PlayerX = px, PlayerY = py - y0, PlayerZ = pz, Heading = heading, ConeRadius = metresAcross * 0.30f, Fog = _sceneTilted };
                 _sceneFrom.Scene.Draw(_sceneTarget, _sceneView, frame, 1);
+                if (!_sceneProbed)
+                {
+                    _sceneProbed = true;
+                    SceneBroken = Map25Scene.Blank(_sceneTarget);
+                    if (SceneBroken)
+                    {
+                        Logger?.Warn("Navigation: the minimap's 2.5D picture drew nothing (it is black), so the minimap stays flat.");
+                    }
+                }
                 _sceneX = px;
                 _sceneZ = pz;
                 _sceneTurn = turn;

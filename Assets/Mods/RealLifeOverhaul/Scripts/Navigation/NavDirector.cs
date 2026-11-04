@@ -309,7 +309,7 @@ namespace RealLifeOverhaul.Nav
             if (_hud != null)
             {
                 _hud.Place(Settings.MinimapSize, wantMap, lines);
-                _hud.Scene(_scene, wantMap && Settings.Minimap25 && _scene.Ready, true);
+                _hud.Scene(_scene, wantMap && Settings.Minimap25 && _scene.Ready && !_hud.SceneBroken, true);
                 SceneStrip();
                 if (lines)
                 {
