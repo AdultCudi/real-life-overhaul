@@ -14,7 +14,6 @@ namespace RealLifeOverhaul
 
         // The question box (HudConfirmUi, one for the full menu and one for the HUD): read after the game and Going Public have filled it, its buttons pressed.
         public static readonly GameMember AskContainer = Field(UiQuestions, Game, "HudConfirmUi", "container", "RectTransform");
-        public static readonly GameMember AskPanel = Field(UiQuestions, Game, "HudConfirmUi", "panel", "RectTransform");
         public static readonly GameMember AskHeader = Field(UiQuestions, Game, "HudConfirmUi", "headerLabel", "TextLocalizationComponent");
         public static readonly GameMember AskBody = Field(UiQuestions, Game, "HudConfirmUi", "bodyLabel", "TextLocalizationComponent");
         public static readonly GameMember AskConfirm = Field(UiQuestions, Game, "HudConfirmUi", "confirmButton", "Button");
