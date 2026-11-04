@@ -247,7 +247,8 @@ namespace RealLifeOverhaul.Ui
                 AskFound(director, suggested, licence, capital);
                 return true;
             }
-            GameUi.TextBox.Ask("reallife_ob_ask_name", "common_confirm", text => Safe(() => AskFound(director, OwnBankDirector.Named(text, hq), licence, capital)), null, suggested, true, OwnBankDirector.NameMost);
+            GameUi.TextBox.Ask("reallife_ob_ask_name", "common_confirm", text => Safe(() => AskFound(director, OwnBankDirector.Named(text, hq), licence, capital)), null, suggested, true,
+                OwnBankDirector.NameMost);
             return true;
         }
 
@@ -265,7 +266,8 @@ namespace RealLifeOverhaul.Ui
                 return false;
             }
             long value = OwnBankRules.SaleValue(bank);
-            Ask("reallife_ob_confirm_sell_title".Localize(new { bank = bank.Name }), "reallife_ob_confirm_sell_body".Localize(new { price = OwnBankText.Money(value), years = OwnBankCatalogue.SaleYears.ToString() }),
+            Ask("reallife_ob_confirm_sell_title".Localize(new { bank = bank.Name }), "reallife_ob_confirm_sell_body".Localize(new { price = OwnBankText.Money(value),
+                years = OwnBankCatalogue.SaleYears.ToString() }),
                 "reallife_ob_box_sell", true, () => director.Sell(value, out string why) ? null : why);
             return true;
         }

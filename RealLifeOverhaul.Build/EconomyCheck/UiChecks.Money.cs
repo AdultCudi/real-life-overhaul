@@ -80,7 +80,8 @@ internal static partial class Program
             _bankFaceChecked = true;
             BankFaceChecks();
         }
-        if (!_utilitiesFaceChecked && def.Id == "utilities")
+        if (!_utilitiesFaceChecked
+            && def.Id == "utilities")
         {
             _utilitiesFaceChecked = true;
             UtilitiesFaceChecks();

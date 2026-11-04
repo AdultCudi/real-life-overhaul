@@ -100,10 +100,12 @@ namespace RealLifeOverhaul.Ui
         {
             string kicker = f.State == 3 ? w.T("reallife_ibox_chip_closed", "Closed") : f.State == 2 ? w.T("reallife_ibox_chip_sold", "Sold") : w.T("reallife_ui_ob_kicker_new", "A bank of your own");
             string line = f.State == 3
-                ? w.F("reallife_ob_box_closed", "Closed by the regulator on {day}: {why}. Winding up {bank} left you {left}.", "bank", f.Name, "day", f.EndDay.ToString(Inv), "why", f.Why ?? string.Empty,
+                ? w.F("reallife_ob_box_closed", "Closed by the regulator on {day}: {why}. Winding up {bank} left you {left}.", "bank", f.Name, "day", f.EndDay.ToString(Inv), "why",
+                    f.Why ?? string.Empty,
                     "left", C(w, f.EndCents))
                 : f.State == 2 ? w.F("reallife_ob_box_sold", "Sold {bank} on {day} for {price}.", "bank", f.Name, "day", f.EndDay.ToString(Inv), "price", C(w, f.EndCents))
-                : w.F("reallife_ob_box_intro", "Licence: {licence}. Capital paid in before the first saver: {capital}, and kept at {ratio} or more of your loans and investments, weighted by their risk.",
+                : w.F("reallife_ob_box_intro", "Licence: {licence}. Capital paid in before the first saver: {capital}, and kept at {ratio} or more of your loans "
+                    + "and investments, weighted by their risk.",
                     "licence", C(w, f.Licence), "capital", C(w, f.FoundCapital), "ratio", Pct(f.LawRatio));
             m.Hero = new UiHeroModel { Icon = UiIcon.PiggyBank, Kicker = kicker, Title = f.State == 0 ? w.T("reallife_ob_box_found", "Found a bank") : f.Name, Line = line, Progress = -1 };
             var lines = new List<UtilitiesLine>(8)
@@ -111,7 +113,8 @@ namespace RealLifeOverhaul.Ui
                 BankParts.Pair(w.T("reallife_ibox_licence", "Licence"), C(w, f.Licence)),
                 BankParts.Pair(w.T("reallife_ui_ob_found_capital", "Capital paid in"), C(w, f.FoundCapital)),
                 BankParts.Pair(w.T("reallife_ui_ob_law", "The law's least capital"), Pct(f.LawRatio)),
-                BankParts.Check(f.HasHq ? w.F("reallife_ob_box_hq", "Run from your headquarters: {name}", "name", f.HqName) : w.T("reallife_ob_box_need_hq", "A bank is run from a headquarters. Rent one first."), f.HasHq),
+                BankParts.Check(f.HasHq ? w.F("reallife_ob_box_hq", "Run from your headquarters: {name}", "name", f.HqName) : w.T("reallife_ob_box_need_hq",
+                    "A bank is run from a headquarters. Rent one first."), f.HasHq),
                 BankParts.Say(w.F("reallife_ob_box_intro_level", "It starts as a {level}. {holds} It moves up a level as it grows.", "level", f.Level, "holds", f.CommunityHolds)),
                 BankParts.Say(w.F("reallife_ob_box_rivals", "Rival banks: savers get {savers} a year, good borrowers pay {loans}.", "savers", Rate(f.RivalSaverBp), "loans", Rate(f.RivalLoanBp)))
             };
@@ -127,7 +130,8 @@ namespace RealLifeOverhaul.Ui
             }
             if (f.State == 3 && f.Closures > 0)
             {
-                lines.Add(BankParts.Say(w.F("reallife_ob_box_closed_terms", "Your next bank pays in {capital} of capital, more than the {first} a first bank needs.", "capital", C(w, f.NextCapital), "first", C(w, f.FoundCapital))));
+                lines.Add(BankParts.Say(w.F("reallife_ob_box_closed_terms", "Your next bank pays in {capital} of capital, more than the {first} a first bank needs.", "capital", C(w,
+                    f.NextCapital), "first", C(w, f.FoundCapital))));
             }
             cards.Add(new UtilitiesCard
             {
@@ -146,7 +150,8 @@ namespace RealLifeOverhaul.Ui
                 : w.T("reallife_ob_box_level_top", "Your bank is at the top level: its loans and savings have no limit but the regulator's ratio.");
             m.Hero = new UiHeroModel
             {
-                Icon = UiIcon.PiggyBank, Kicker = f.Level, Title = f.Name, Line = f.StageWords + (f.Run ? ". " + w.T("reallife_ob_box_run", "A run on the bank: no lending until the savers stop.") : string.Empty),
+                Icon = UiIcon.PiggyBank, Kicker = f.Level, Title = f.Name, Line = f.StageWords + (f.Run ? ". " + w.T("reallife_ob_box_run",
+                    "A run on the bank: no lending until the savers stop.") : string.Empty),
                 Progress = f.NextLevel != null ? progress : -1, Note = next, NoteIcon = UiIcon.Flag
             };
             m.Figures = new[]
@@ -159,13 +164,18 @@ namespace RealLifeOverhaul.Ui
             var rows = new List<UiDataRow>(12);
             var ids = new List<string>(12);
             long assets = f.Reserves + f.Lent + f.Arrears + f.Fund;
-            AddBook(rows, ids, w, "b|reserves", "reallife_ob_row_reserves", "Reserves at the central bank", f.Reserves, w.F("reallife_ob_note_reserves", "at least {need} kept for savers", "need", C(w, f.ReserveNeed)), f.Reserves < f.ReserveNeed ? UiRole.WarnText : UiRole.None);
+            AddBook(rows, ids, w, "b|reserves", "reallife_ob_row_reserves", "Reserves at the central bank", f.Reserves, w.F("reallife_ob_note_reserves", "at least {need} kept for savers",
+                "need", C(w, f.ReserveNeed)), f.Reserves < f.ReserveNeed ? UiRole.WarnText : UiRole.None);
             AddBook(rows, ids, w, "b|loans", "reallife_ob_row_loans", "Loans", f.Lent, w.F("reallife_ob_note_share", "{share} of the assets", "share", Share(f.Lent, assets)), UiRole.None);
-            AddBook(rows, ids, w, "b|arrears", "reallife_ob_row_arrears", "Loans in arrears", f.Arrears, w.F("reallife_ob_note_written", "written off in all {lost}, come back {back}", "lost", C(w, f.LostAll), "back", C(w, f.RecoveredAll)),
+            AddBook(rows, ids, w, "b|arrears", "reallife_ob_row_arrears", "Loans in arrears", f.Arrears, w.F("reallife_ob_note_written", "written off in all {lost}, come back {back}",
+                "lost", C(w, f.LostAll), "back", C(w, f.RecoveredAll)),
                 f.Arrears > 0 ? UiRole.WarnText : UiRole.None);
-            AddBook(rows, ids, w, "b|fund", "reallife_ob_row_fund", "The fund at market prices", f.Fund, w.F("reallife_ob_note_fund", "{gain} against what it cost", "gain", Signed(w, f.Fund - f.FundCost)), UiRole.None);
-            AddBook(rows, ids, w, "b|deposits", "reallife_ob_row_deposits", "Savers' deposits", f.Deposits, w.F("reallife_ob_note_city", "{share} of the city's savings", "share", Share(f.Deposits, f.CitySavings)), UiRole.None);
-            AddBook(rows, ids, w, "b|capital", "reallife_ob_row_capital", "Capital", f.Capital, w.F("reallife_ob_note_ratio", "capital ratio {ratio}, the law's least {law}", "ratio", Pct(f.Ratio), "law", Pct(f.LawRatio)),
+            AddBook(rows, ids, w, "b|fund", "reallife_ob_row_fund", "The fund at market prices", f.Fund, w.F("reallife_ob_note_fund", "{gain} against what it cost", "gain", Signed(w,
+                f.Fund - f.FundCost)), UiRole.None);
+            AddBook(rows, ids, w, "b|deposits", "reallife_ob_row_deposits", "Savers' deposits", f.Deposits, w.F("reallife_ob_note_city", "{share} of the city's savings", "share",
+                Share(f.Deposits, f.CitySavings)), UiRole.None);
+            AddBook(rows, ids, w, "b|capital", "reallife_ob_row_capital", "Capital", f.Capital, w.F("reallife_ob_note_ratio", "capital ratio {ratio}, the law's least {law}", "ratio",
+                Pct(f.Ratio), "law", Pct(f.LawRatio)),
                 f.Ratio < f.LawRatio ? UiRole.DangerText : f.Ratio < f.WatchRatio ? UiRole.WarnText : UiRole.OkText);
             AddBook(rows, ids, w, "b|risk", "reallife_ob_row_risk", "Assets weighted by risk", f.Risk, w.T("reallife_ob_note_risk", "what the regulator measures the capital against"), UiRole.None);
             // The three rows that open a page of their own.
@@ -173,7 +183,8 @@ namespace RealLifeOverhaul.Ui
             ids.Add(LevelRow);
             rows.Add(BankParts.Row(new[] { w.T("reallife_ob_row_pay", "Your pay this month"), C(w, f.PaidMonth), PayNote(f, w) }));
             ids.Add(PayRow);
-            rows.Add(BankParts.Row(new[] { w.T("reallife_ob_row_div", "Automatic dividends"), C(w, f.DivAll), f.DivEvery == 0 ? w.T("reallife_ob_note_div_off", "Off: a dividend only when you take one.")
+            rows.Add(BankParts.Row(new[] { w.T("reallife_ob_row_div", "Automatic dividends"), C(w, f.DivAll), f.DivEvery == 0 ? w.T("reallife_ob_note_div_off",
+                "Off: a dividend only when you take one.")
                 : w.F("reallife_ob_note_div_on", "{every}: {share} of the profit kept.", "every", EveryName(f), "share", Pct(f.DivShare)) }));
             ids.Add(DivRow);
             int selected = ids.IndexOf(m.View.Row);
@@ -255,7 +266,8 @@ namespace RealLifeOverhaul.Ui
             var lines = new List<UtilitiesLine>(8)
             {
                 BankParts.Pair(w.T("reallife_ob_row_capital", "Capital"), C(w, f.Capital)),
-                BankParts.Pair(w.T("reallife_ob_box_ratio", "Capital ratio:"), w.F("reallife_ob_box_ratio_value", "{ratio} (law {law}, watched under {watch})", "ratio", Pct(f.Ratio), "law", Pct(f.LawRatio), "watch", Pct(f.WatchRatio)),
+                BankParts.Pair(w.T("reallife_ob_box_ratio", "Capital ratio:"), w.F("reallife_ob_box_ratio_value", "{ratio} (law {law}, watched under {watch})", "ratio", Pct(f.Ratio), "law",
+                    Pct(f.LawRatio), "watch", Pct(f.WatchRatio)),
                     f.Ratio < f.LawRatio ? UiRole.DangerText : f.Ratio < f.WatchRatio ? UiRole.WarnText : UiRole.Text),
                 BankParts.Pair(w.T("reallife_ob_box_year", "Last year's profit:"), Signed(w, f.YearProfit), f.YearProfit < 0 ? UiRole.DangerText : f.YearProfit > 0 ? UiRole.OkText : UiRole.Text),
                 BankParts.Pair(w.T("reallife_ob_box_value", "Sale value:"), C(w, f.SaleValue))
@@ -298,7 +310,8 @@ namespace RealLifeOverhaul.Ui
                 lines.Add(BankParts.Say(w.T("reallife_ui_ob_sell_not", "It cannot be sold while it is in breach or a run is on."), UiRole.WarnText));
                 actions.Add(BankParts.Button(w.T("reallife_ob_box_sell", "Sell the bank"), UiButtonKind.Destructive, UiIcon.Trash, MoneyAct.Sell, false, true));
             }
-            cards.Add(new UtilitiesCard { Title = w.T("reallife_ui_ob_capital_title", "Capital and sale"), Sub = f.Name, Lines = lines.ToArray(), Steps = steps, Actions = actions.ToArray() }, new[] { move });
+            cards.Add(new UtilitiesCard { Title = w.T("reallife_ui_ob_capital_title", "Capital and sale"), Sub = f.Name, Lines = lines.ToArray(), Steps = steps,
+                Actions = actions.ToArray() }, new[] { move });
         }
 
         // The month so far: what came in, what went out, what was written off and what you were paid.
@@ -313,7 +326,8 @@ namespace RealLifeOverhaul.Ui
             };
             if (f.HasLast)
             {
-                lines.Add(BankParts.Pair(w.T("reallife_ob_box_last", "Last month:"), w.F("reallife_ob_box_last_value", "income {income}, costs {costs}, profit {profit}", "income", C(w, f.LastIncome), "costs", C(w, f.LastCosts),
+                lines.Add(BankParts.Pair(w.T("reallife_ob_box_last", "Last month:"), w.F("reallife_ob_box_last_value", "income {income}, costs {costs}, profit {profit}", "income", C(w,
+                    f.LastIncome), "costs", C(w, f.LastCosts),
                     "profit", Signed(w, f.LastIncome - f.LastCosts))));
             }
             cards.Add(new UtilitiesCard { Title = w.T("reallife_ui_ob_month_title", "This month"), Heading = true, Lines = lines.ToArray() });
@@ -325,15 +339,18 @@ namespace RealLifeOverhaul.Ui
             var lines = new List<UtilitiesLine>(10)
             {
                 BankParts.Pair(w.T("reallife_ob_meter_deposits", "Savings held"), f.DepositsMost < 0 ? w.F("reallife_ob_figure_no_limit", "{now}, no limit", "now", C(w, f.Deposits))
-                    : w.F("reallife_ob_figure_of", "{now} of {most}", "now", C(w, f.Deposits), "most", C(w, f.DepositsMost)), f.DepositsMost >= 0 && f.Deposits >= f.DepositsMost ? UiRole.WarnText : UiRole.Text),
+                    : w.F("reallife_ob_figure_of", "{now} of {most}", "now", C(w, f.Deposits), "most", C(w, f.DepositsMost)),
+                        f.DepositsMost >= 0 && f.Deposits >= f.DepositsMost ? UiRole.WarnText : UiRole.Text),
                 BankParts.Pair(w.T("reallife_ob_meter_loans", "Loans, with arrears"), f.LoansMost < 0 ? w.F("reallife_ob_figure_no_limit", "{now}, no limit", "now", C(w, f.Lent + f.Arrears))
-                    : w.F("reallife_ob_figure_of", "{now} of {most}", "now", C(w, f.Lent + f.Arrears), "most", C(w, f.LoansMost)), f.LoansMost >= 0 && f.Lent + f.Arrears >= f.LoansMost ? UiRole.WarnText : UiRole.Text),
+                    : w.F("reallife_ob_figure_of", "{now} of {most}", "now", C(w, f.Lent + f.Arrears), "most", C(w, f.LoansMost)),
+                        f.LoansMost >= 0 && f.Lent + f.Arrears >= f.LoansMost ? UiRole.WarnText : UiRole.Text),
                 BankParts.Pair(w.T("reallife_ob_box_branches", "Branches"), w.F("reallife_ob_figure_of", "{now} of {most}", "now", f.BranchesNow.ToString(Inv), "most", f.BranchesMost.ToString(Inv)),
                     f.BranchesNow > f.BranchesMost ? UiRole.WarnText : UiRole.Text)
             };
             if (f.Over)
             {
-                lines.Add(BankParts.Say(w.F("reallife_ob_box_level_over", "Your bank holds more than a {level} may. It keeps all of it, and takes no more until it is under the limit or moves up.", "level", f.Level), UiRole.WarnText));
+                lines.Add(BankParts.Say(w.F("reallife_ob_box_level_over",
+                    "Your bank holds more than a {level} may. It keeps all of it, and takes no more until it is under the limit or moves up.", "level", f.Level), UiRole.WarnText));
             }
             var actions = new List<UiActionModel>(1);
             if (f.NextLevel == null)
@@ -345,7 +362,8 @@ namespace RealLifeOverhaul.Ui
                 lines.Add(BankParts.Say(w.F("reallife_ob_sec_level_next", "Next: {level}", "level", f.NextLevel), UiRole.Text));
                 lines.Add(BankParts.Check(w.F("reallife_ob_check_record", "{months} months at this level without a breach ({now} so far)", "months", f.RecordMonths.ToString(Inv),
                     "now", Math.Min(f.HeldMonths, f.RecordMonths).ToString(Inv)), f.HeldMonths >= f.RecordMonths));
-                lines.Add(BankParts.Check(w.F("reallife_ob_check_capital", "Capital of at least {least} (it has {now})", "least", C(w, f.CapitalLeast), "now", C(w, f.Capital)), f.Capital >= f.CapitalLeast));
+                lines.Add(BankParts.Check(w.F("reallife_ob_check_capital", "Capital of at least {least} (it has {now})", "least", C(w, f.CapitalLeast), "now", C(w, f.Capital)),
+                    f.Capital >= f.CapitalLeast));
                 lines.Add(BankParts.Check(w.T("reallife_ob_check_regulator", "The regulator satisfied, and no run on the bank"), f.RegulatorOk));
                 lines.Add(BankParts.Pair(w.T("reallife_ob_box_up_fee", "Licence to move up"), C(w, f.MoveFee)));
                 lines.Add(BankParts.Pair(w.T("reallife_ob_box_up_holds", "It may then hold"), f.NextTop
@@ -358,8 +376,10 @@ namespace RealLifeOverhaul.Ui
                 }
                 actions.Add(BankParts.Button(w.T("reallife_ob_box_up_button", "Move up a level"), UiButtonKind.Primary, UiIcon.Up, MoneyAct.MoveUp, true, f.MoveWhy != null));
             }
-            lines.Add(BankParts.Say(w.T("reallife_ob_box_level_note", "Moving up costs the licence of the level above less the one your bank holds. Capital put in on the Bank tab counts, and so does profit left in the bank.")));
-            cards.Add(new UtilitiesCard { Title = w.T("reallife_ob_level_title", "Your bank's level"), Sub = f.Name, Chip = f.Level, ChipTone = f.Top ? UiRole.Ok : UiRole.None, Lines = lines.ToArray(), Actions = actions.ToArray() });
+            lines.Add(BankParts.Say(w.T("reallife_ob_box_level_note",
+                "Moving up costs the licence of the level above less the one your bank holds. Capital put in on the Bank tab counts, and so does profit left in the bank.")));
+            cards.Add(new UtilitiesCard { Title = w.T("reallife_ob_level_title", "Your bank's level"), Sub = f.Name, Chip = f.Level, ChipTone = f.Top ? UiRole.Ok : UiRole.None,
+                Lines = lines.ToArray(), Actions = actions.ToArray() });
         }
 
         // The pay's page: how you are paid (a share on the steps, or a fixed sum you type), and what was paid.
@@ -369,7 +389,8 @@ namespace RealLifeOverhaul.Ui
             var moves = new List<MoneyStep>(2);
             var lines = new List<UtilitiesLine>(8);
             var actions = new List<UiActionModel>(1);
-            steps.Add(BankParts.ChoiceStep(w.T("reallife_ob_pay_head", "How you are paid"), f.PayMode == 1 ? w.T("reallife_ob_pay_mode_fixed", "A fixed sum each day") : w.T("reallife_ob_pay_mode_share", "A share of each day's profit"),
+            steps.Add(BankParts.ChoiceStep(w.T("reallife_ob_pay_head", "How you are paid"), f.PayMode == 1 ? w.T("reallife_ob_pay_mode_fixed",
+                "A fixed sum each day") : w.T("reallife_ob_pay_mode_share", "A share of each day's profit"),
                 null, f.PayMode, 2, -1, MoneyAct.PayMode, 0, new[] { 0, 1 }, out MoneyStep mode));
             moves.Add(mode);
             if (f.PayMode == 1)
@@ -389,7 +410,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     values[i] = i * 50;
                 }
-                steps.Add(BankParts.ChoiceStep(w.T("reallife_ob_pay_share", "Your share"), Pct(f.PayShare), null, Math.Max(0, Math.Min(count - 1, at)), count, -1, MoneyAct.PayShare, 0, values, out MoneyStep share));
+                steps.Add(BankParts.ChoiceStep(w.T("reallife_ob_pay_share", "Your share"), Pct(f.PayShare), null, Math.Max(0, Math.Min(count - 1, at)), count, -1, MoneyAct.PayShare, 0,
+                    values, out MoneyStep share));
                 moves.Add(share);
             }
             if (f.PayWanted > 0)
@@ -404,7 +426,8 @@ namespace RealLifeOverhaul.Ui
             lines.Add(BankParts.Pair(w.T("reallife_ob_pay_last", "Last month"), C(w, f.PaidLast)));
             lines.Add(BankParts.Pair(w.T("reallife_ob_pay_all", "In all"), C(w, f.PaidAll)));
             lines.Add(BankParts.Say(w.T("reallife_ui_ob_pay_note", "Your pay comes out of the bank's capital, and only while the bank can spare it.")));
-            cards.Add(new UtilitiesCard { Title = w.T("reallife_ob_pay_title", "Your pay"), Sub = f.Name, Lines = lines.ToArray(), Steps = steps.ToArray(), Actions = actions.ToArray() }, moves.ToArray());
+            cards.Add(new UtilitiesCard { Title = w.T("reallife_ob_pay_title", "Your pay"), Sub = f.Name, Lines = lines.ToArray(), Steps = steps.ToArray(), Actions = actions.ToArray() },
+                moves.ToArray());
         }
 
         // The dividends' page: how often and what share, the next one, the last one and what held it back.
@@ -419,7 +442,8 @@ namespace RealLifeOverhaul.Ui
             {
                 every[i] = i;
             }
-            steps.Add(BankParts.ChoiceStep(w.T("reallife_ob_div_head", "How often"), EveryName(f), null, Math.Max(0, Math.Min(n - 1, f.DivEvery)), n, -1, MoneyAct.DividendEvery, 0, every, out MoneyStep how));
+            steps.Add(BankParts.ChoiceStep(w.T("reallife_ob_div_head", "How often"), EveryName(f), null, Math.Max(0, Math.Min(n - 1, f.DivEvery)), n, -1, MoneyAct.DividendEvery, 0, every,
+                out MoneyStep how));
             moves.Add(how);
             if (f.DivEvery != 0)
             {
@@ -429,7 +453,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     values[i] = i * 50;
                 }
-                steps.Add(BankParts.ChoiceStep(w.T("reallife_ob_div_share", "Share of the profit kept"), Pct(f.DivShare), null, Math.Max(0, Math.Min(count - 1, f.DivShare / 50)), count, -1, MoneyAct.DividendShare, 0,
+                steps.Add(BankParts.ChoiceStep(w.T("reallife_ob_div_share", "Share of the profit kept"), Pct(f.DivShare), null, Math.Max(0, Math.Min(count - 1, f.DivShare / 50)), count, -1,
+                    MoneyAct.DividendShare, 0,
                     values, out MoneyStep share));
                 moves.Add(share);
                 lines.Add(BankParts.Pair(w.T("reallife_ob_div_next", "Next one at the end of"), w.Day(f.DivNextDay)));

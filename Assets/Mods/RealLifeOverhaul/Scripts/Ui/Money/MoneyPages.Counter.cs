@@ -32,7 +32,8 @@ namespace RealLifeOverhaul.Ui
                 y += UiTokens.Control;
             }
             bool cards = m.Cards.Length > 0;
-            bool left = m.Statement != null || m.Table != null || m.Table2 != null || m.Chart != null || m.Donut.Length > 0 || m.Lines.Length > 0 || m.Marks.Length > 0 || !string.IsNullOrEmpty(m.Note);
+            bool left = m.Statement != null || m.Table != null || m.Table2 != null || m.Chart != null || m.Donut.Length > 0 || m.Lines.Length > 0 || m.Marks.Length > 0
+                || !string.IsNullOrEmpty(m.Note);
             float gap = UiTokens.S4;
             if (!cards)
             {
@@ -77,7 +78,8 @@ namespace RealLifeOverhaul.Ui
                 float sw = tw * widths[i] / total;
                 bool lit = i == m.PickAt;
                 int seg = UiDraw.Box(s, on, cx, y, sw, h, lit ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusLarge, UiFlags.Share | (lit ? UiFlags.Selected : UiFlags.None));
-                UiDraw.TextMiddle(s, on.In(seg), cx + UiTokens.S1 / 2f, y, h, sw - UiTokens.S1, UiStyle.BodyStrong, lit ? UiRole.Text : UiRole.Text2, m.PickNames[i], UiFlags.Centre | UiFlags.Label | UiFlags.Truncate);
+                UiDraw.TextMiddle(s, on.In(seg), cx + UiTokens.S1 / 2f, y, h, sw - UiTokens.S1, UiStyle.BodyStrong, lit ? UiRole.Text : UiRole.Text2, m.PickNames[i],
+                    UiFlags.Centre | UiFlags.Label | UiFlags.Truncate);
                 UiDraw.Node(s, at, cx, y, sw, h, MoneyCommands.PickBank, i, seg);
                 cx += sw;
                 m.PickEdges[i] = cx;
@@ -200,7 +202,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
-                float used = UtilitiesFace.Card(s, at.InRegion(2), m.Cards[k], cx, top[col], cw, room, MoneyCommands.CardSwitch + k, MoneyCommands.CardLess + k, MoneyCommands.CardMore + k, keys, true, true);
+                float used = UtilitiesFace.Card(s, at.InRegion(2), m.Cards[k], cx, top[col], cw, room, MoneyCommands.CardSwitch + k, MoneyCommands.CardLess + k, MoneyCommands.CardMore + k,
+                    keys, true, true);
                 top[col] += used + UiTokens.S3;
             }
         }

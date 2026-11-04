@@ -46,7 +46,8 @@ namespace RealLifeOverhaul.Ui
             string chip = null;
             if (lim.Elsewhere != null)
             {
-                lines.Add(BankParts.Say(BankParts.Either(w, overdraft, "reallife_bank_overdraft_elsewhere", "Overdraft: held with {other}. You can hold one.", "reallife_bank_card_elsewhere", "Card: held with {other}. You can hold one, so close it there for one with {bank}.",
+                lines.Add(BankParts.Say(BankParts.Either(w, overdraft, "reallife_bank_overdraft_elsewhere", "Overdraft: held with {other}. You can hold one.", "reallife_bank_card_elsewhere",
+                    "Card: held with {other}. You can hold one, so close it there for one with {bank}.",
                     "other", lim.Elsewhere, "bank", bank.Name)));
                 chip = w.T("reallife_ui_bank_elsewhere", "Held elsewhere");
             }
@@ -59,8 +60,10 @@ namespace RealLifeOverhaul.Ui
             else
             {
                 lines.Add(BankParts.Pair(w.T("reallife_econ_offer_limit", "Limit:"), w.Money(lim.OfferLimit)));
-                lines.Add(BankParts.Pair(w.T("reallife_econ_offer_rate", "Rate a year:"), w.F("reallife_fin_rate_year", "{rate}% a year", "rate", (lim.OfferRate / 100f).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))));
-                lines.Add(BankParts.Say(BankParts.Either(w, overdraft, "reallife_bank_overdraft_offer", "On offer: an overdraft of {limit} at {rate}% a year from {bank}.", "reallife_bank_card_offer", "On offer: a card with a limit of {limit} at {rate}% a year from {bank}.", "bank", bank.Name,
+                lines.Add(BankParts.Pair(w.T("reallife_econ_offer_rate", "Rate a year:"), w.F("reallife_fin_rate_year", "{rate}% a year", "rate", (lim.OfferRate / 100f).ToString("0.#",
+                    System.Globalization.CultureInfo.InvariantCulture))));
+                lines.Add(BankParts.Say(BankParts.Either(w, overdraft, "reallife_bank_overdraft_offer", "On offer: an overdraft of {limit} at {rate}% a year from {bank}.",
+                    "reallife_bank_card_offer", "On offer: a card with a limit of {limit} at {rate}% a year from {bank}.", "bank", bank.Name,
                     "limit", w.Money(lim.OfferLimit), "rate", (lim.OfferRate / 100f).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))));
                 actions.Add(BankParts.Button(w.T("reallife_econ_offer_open", "Open it"), UiButtonKind.Primary, UiIcon.Check, overdraft ? MoneyAct.OpenOverdraft : MoneyAct.OpenCard, true));
             }
@@ -94,7 +97,8 @@ namespace RealLifeOverhaul.Ui
             m.Table = BankParts.Table(new[] { w.T("reallife_ui_bank_col_product", "Kind of credit"), w.T("reallife_ui_bank_col_most", "Most"), w.T("reallife_fin_col_rate", "Rate"),
                 w.T("reallife_ui_bank_col_daily", "A day"), w.T("reallife_ui_bank_col_fee", "Fee"), w.T("reallife_fin_col_state", "State") },
                 new[] { UiCellKind.Text, UiCellKind.Figure, UiCellKind.Figure, UiCellKind.Figure, UiCellKind.Figure, UiCellKind.Chip }, rows, selected,
-                w.F("reallife_bank_row_refused_all", "Nothing on offer. {bank} lends from a rating of {threshold}.", "bank", bank.Name, "threshold", f.Threshold.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                w.F("reallife_bank_row_refused_all", "Nothing on offer. {bank} lends from a rating of {threshold}.", "bank", bank.Name, "threshold",
+                    f.Threshold.ToString(System.Globalization.CultureInfo.InvariantCulture)),
                 w.T("reallife_ui_bank_apply_empty", "Nothing is on offer."), UiIcon.Plus);
             m.RowIds = ids.ToArray();
             // The same application at each bank: the rate and the answer, as lines over the table (not a second table: its rows would be a second list for the keys to reach).
@@ -107,7 +111,8 @@ namespace RealLifeOverhaul.Ui
                 BankFact b = f.Banks[i];
                 m.Lines[i] = b.Name;
                 m.LineOn[i] = b.Answer;
-                m.LineBody[i] = (b.Lends ? w.F("reallife_fin_rate_year", "{rate}% a year", "rate", b.Rate.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)) + ", " + w.Money(b.Most) + ": " : string.Empty)
+                m.LineBody[i] = (b.Lends ? w.F("reallife_fin_rate_year", "{rate}% a year", "rate", b.Rate.ToString("0.#",
+                    System.Globalization.CultureInfo.InvariantCulture)) + ", " + w.Money(b.Most) + ": " : string.Empty)
                     + (b.Answer ? w.T("reallife_ui_bank_yes", "Yes") : w.T("reallife_ui_bank_no", "No"));
             }
             if (selected < 0)
@@ -127,7 +132,8 @@ namespace RealLifeOverhaul.Ui
                 if (!f.Lends)
                 {
                     intro.Add(BankParts.Say(w.F("reallife_bank_refused", "Credit rating {score}: {bank} and every other bank lend only from {threshold}. Raise your rating first.", "bank", bank.Name,
-                        "score", f.Score.ToString(System.Globalization.CultureInfo.InvariantCulture), "threshold", f.Threshold.ToString(System.Globalization.CultureInfo.InvariantCulture)), UiRole.DangerText));
+                        "score", f.Score.ToString(System.Globalization.CultureInfo.InvariantCulture), "threshold", f.Threshold.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                            UiRole.DangerText));
                     for (int i = 0; i < f.Tips.Length; i++)
                     {
                         intro.Add(BankParts.Say(f.Tips[i]));
@@ -288,7 +294,8 @@ namespace RealLifeOverhaul.Ui
             var lines = new List<UtilitiesLine>(6)
             {
                 BankParts.Pair(w.T("reallife_ui_bank_f_rating", "Your rating"), f.Score.ToString(System.Globalization.CultureInfo.InvariantCulture)),
-                BankParts.Say(BankParts.Either(w, f.Lends, "reallife_bank_rating_lends", "{bank} lends to you. Banks lend from {threshold}.", "reallife_bank_rating_refuses", "{bank} will not lend to you. No bank lends under {threshold}.", "bank", bank.Name,
+                BankParts.Say(BankParts.Either(w, f.Lends, "reallife_bank_rating_lends", "{bank} lends to you. Banks lend from {threshold}.", "reallife_bank_rating_refuses",
+                    "{bank} will not lend to you. No bank lends under {threshold}.", "bank", bank.Name,
                     "threshold", f.Threshold.ToString(System.Globalization.CultureInfo.InvariantCulture)), f.Lends ? UiRole.OkText : UiRole.DangerText)
             };
             if (!string.IsNullOrEmpty(f.Next))

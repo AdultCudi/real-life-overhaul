@@ -8,7 +8,8 @@ internal static partial class UiSamples
 {
     public static readonly string[] MoneyBankStates =
     {
-        "accounts", "accounts_new", "accounts_long", "loans", "loans_pick", "loans_call", "overdraft", "overdraft_offer", "card", "card_offer", "apply", "apply_loan", "apply_business", "apply_finance",
+        "accounts", "accounts_new", "accounts_long", "loans", "loans_pick", "loans_call", "overdraft", "overdraft_offer", "card", "card_offer", "apply", "apply_loan", "apply_business",
+            "apply_finance",
         "apply_refused", "rating"
     };
 
@@ -72,8 +73,10 @@ internal static partial class UiSamples
         f.Banks = new[]
         {
             new BankFact { Name = a, Rank = 0, Rate = 4.8f, Most = refused ? 0 : fresh ? 60000 : 400000, Lends = !refused, Since = fresh ? 0 : 36, Owed = f.Owed, Debts = f.Debts, Answer = !refused },
-            new BankFact { Name = "Empire Federal", Rank = 1, Rate = 5.6f, Most = refused ? 0 : fresh ? 40000 : 300000, Lends = !refused, Since = fresh ? 0 : 52, Owed = fresh ? 0f : 420000f, Debts = fresh ? 0 : 1, Answer = !refused },
-            new BankFact { Name = "Metropolitan Savings", Rank = 2, Rate = 5.9f, Most = refused ? 0 : fresh ? 25000 : 250000, Lends = !refused, Since = 0, Owed = 0f, Debts = 0, Answer = !refused && !fresh }
+            new BankFact { Name = "Empire Federal", Rank = 1, Rate = 5.6f, Most = refused ? 0 : fresh ? 40000 : 300000, Lends = !refused, Since = fresh ? 0 : 52, Owed = fresh ? 0f : 420000f,
+                Debts = fresh ? 0 : 1, Answer = !refused },
+            new BankFact { Name = "Metropolitan Savings", Rank = 2, Rate = 5.9f, Most = refused ? 0 : fresh ? 25000 : 250000, Lends = !refused, Since = 0, Owed = 0f, Debts = 0,
+                Answer = !refused && !fresh }
         };
         f.Periods = new[] { "Yesterday", "7 days", "30 days" };
         f.Period = 1;
@@ -97,20 +100,26 @@ internal static partial class UiSamples
                 {
                     new BankDebt
                     {
-                        Id = "loan:1", GameLoan = true, Kind = 1, Name = "Business loan, variable", Owed = 1200000f, Total = 1500000f, Rate = "6.4%", NextAmount = 877, NextDay = 290, NextWord = "tomorrow", EndDay = 1660,
-                        State = "On time", Sound = true, Payment = 740, Left = 1371, Interest = 137f, Opened = 118, Thing = "Secured on Bloom & Co, Garment District", About = "A business loan is repaid from the shop's takings.",
+                        Id = "loan:1", GameLoan = true, Kind = 1, Name = "Business loan, variable", Owed = 1200000f, Total = 1500000f, Rate = "6.4%", NextAmount = 877, NextDay = 290,
+                            NextWord = "tomorrow", EndDay = 1660,
+                        State = "On time", Sound = true, Payment = 740, Left = 1371, Interest = 137f, Opened = 118, Thing = "Secured on Bloom & Co, Garment District",
+                            About = "A business loan is repaid from the shop's takings.",
                         PayMost = 1200000, PaySuggested = 740
                     },
                     new BankDebt
                     {
-                        Id = "acct:7", Number = 7, Kind = 5, Name = "Mortgage, 7 5th Avenue", Owed = 780000f, Total = 800000f, Rate = "4.8%", NextAmount = 363, NextDay = 290, NextWord = "tomorrow", EndDay = 2430, State = "On time", Sound = true,
-                        Payment = 363, Left = 2141, Opened = 201, Thing = "Secured on 7 5th Avenue", About = "A mortgage is repaid every day; the building is the bank's if it is not.", PayMost = 780000, PaySuggested = 363
+                        Id = "acct:7", Number = 7, Kind = 5, Name = "Mortgage, 7 5th Avenue", Owed = 780000f, Total = 800000f, Rate = "4.8%", NextAmount = 363, NextDay = 290,
+                            NextWord = "tomorrow", EndDay = 2430, State = "On time", Sound = true,
+                        Payment = 363, Left = 2141, Opened = 201, Thing = "Secured on 7 5th Avenue", About = "A mortgage is repaid every day; the building is the bank's if it is not.",
+                            PayMost = 780000, PaySuggested = 363
                     },
                     new BankDebt
                     {
                         Id = "acct:9", Number = 9, Kind = 4, Name = "Car finance, Onyx GT", Owed = 38400f, Total = 40000f, Rate = "5.9%", NextAmount = 112, NextDay = state == "loans_call" ? 287 : 290,
-                        NextWord = state == "loans_call" ? "2 days ago" : "tomorrow", EndDay = 642, State = state == "loans_call" ? "2 days late" : "On time", Sound = state != "loans_call", CallDue = state == "loans_call",
-                        Overdue = state == "loans_call" ? 224f : 0f, Payment = 112, Left = 343, Opened = 266, Thing = "Secured on the Onyx GT", About = "Car finance is repaid every day.", PayMost = 38400, PaySuggested = state == "loans_call" ? 224 : 112
+                        NextWord = state == "loans_call" ? "2 days ago" : "tomorrow", EndDay = 642, State = state == "loans_call" ? "2 days late" : "On time", Sound = state != "loans_call",
+                            CallDue = state == "loans_call",
+                        Overdue = state == "loans_call" ? 224f : 0f, Payment = 112, Left = 343, Opened = 266, Thing = "Secured on the Onyx GT", About = "Car finance is repaid every day.",
+                            PayMost = 38400, PaySuggested = state == "loans_call" ? 224 : 112
                     }
                 };
                 break;
@@ -120,7 +129,8 @@ internal static partial class UiSamples
                     Held = true,
                     Account = new BankDebt
                     {
-                        Id = "acct:4", Number = 4, Kind = 2, Name = "Overdraft, Hudson Trust", Owed = 4400f, Total = 10000f, Free = 5600, Rate = "9.8%", State = "On time", Sound = true, Opened = 140, PayMost = 4400, PaySuggested = 4400,
+                        Id = "acct:4", Number = 4, Kind = 2, Name = "Overdraft, Hudson Trust", Owed = 4400f, Total = 10000f, Free = 5600, Rate = "9.8%", State = "On time", Sound = true,
+                            Opened = 140, PayMost = 4400, PaySuggested = 4400,
                         Thing = "You may owe up to your limit; the first $500 of it is free for a day.", About = "An overdraft takes what you owe at the end of the day, up to its limit."
                     }
                 };
@@ -134,13 +144,15 @@ internal static partial class UiSamples
                     Held = true,
                     Account = new BankDebt
                     {
-                        Id = "acct:5", Number = 5, Kind = 3, Name = "Card, Hudson Trust", Owed = 4400f, Total = 20000f, Free = 15600, DrawMost = 15600, Rate = "14.2%", State = "On time", Sound = true, Minimum = 220, StatementLeft = 1800,
+                        Id = "acct:5", Number = 5, Kind = 3, Name = "Card, Hudson Trust", Owed = 4400f, Total = 20000f, Free = 15600, DrawMost = 15600, Rate = "14.2%", State = "On time",
+                            Sound = true, Minimum = 220, StatementLeft = 1800,
                         DueDay = 297, NextStatement = 311, Opened = 160, PayMost = 4400, PaySuggested = 1800, About = "A card's statement comes every 14 days; its minimum is taken on the due day."
                     }
                 };
                 f.CardMoves = new[]
                 {
-                    Move("day 288", "Stock for Speedy Bites", 2310f, 0f), Move("day 285", "Paid into the card", -1500f, 0f), Move("day 281", "Cash drawn", 3500f, 0f), Move("day 276", "Paid into the card", -800f, 0f),
+                    Move("day 288", "Stock for Speedy Bites", 2310f, 0f), Move("day 285", "Paid into the card", -1500f, 0f), Move("day 281", "Cash drawn", 3500f, 0f), Move("day 276",
+                        "Paid into the card", -800f, 0f),
                     Move("day 272", "Internet, Midtown office", 96f, 0f)
                 };
                 break;
@@ -166,7 +178,8 @@ internal static partial class UiSamples
         string no = "Not offered", on = "On offer";
         f.Products = new[]
         {
-            new BankProduct { Kind = 0, Name = "Loan by phone", Most = refused ? 0 : 400000, Rate = "4.8%", Daily = refused ? null : "$874", Fee = refused ? null : "$12,000", State = refused ? no : on, On = !refused },
+            new BankProduct { Kind = 0, Name = "Loan by phone", Most = refused ? 0 : 400000, Rate = "4.8%", Daily = refused ? null : "$874", Fee = refused ? null : "$12,000",
+                State = refused ? no : on, On = !refused },
             new BankProduct { Kind = 1, Name = "Overdraft", Most = refused ? 0 : 25000, Rate = "9.8%", State = refused ? no : on, On = !refused },
             new BankProduct { Kind = 2, Name = "Credit card", Most = refused ? 0 : 20000, Rate = "14.2%", State = refused ? "Open" : "Open", Open = true },
             new BankProduct { Kind = 3, Name = "Business loan", Most = 0, State = refused ? no : on, On = !refused },
@@ -196,7 +209,8 @@ internal static partial class UiSamples
         {
             f.Quote = new BankQuote
             {
-                Rate = "5.2% a year", Record = "Bloom & Co has 34 days of takings on record, $19,400 a day; it needs 30.", HasAmount = true, Amount = 180000, Least = 5000, Most = 400000, AmountPrev = 100000,
+                Rate = "5.2% a year", Record = "Bloom & Co has 34 days of takings on record, $19,400 a day; it needs 30.", HasAmount = true, Amount = 180000, Least = 5000, Most = 400000,
+                    AmountPrev = 100000,
                 AmountNext = 250000, AmountHint = "$5,000 to $400,000", StepLabel3 = "Business", StepText3 = "Bloom & Co, Garment District", Step3Prev = -1, Step3Next = 1,
                 Labels = new[] { "Fee", "Payment a day" }, Values = new[] { "$5,400", "$338" },
                 Note = "A business loan lends up to 20 times the shop's daily profit and takes a share of its takings."
@@ -251,8 +265,10 @@ internal static partial class UiSamples
         bool longName = state == "bank_top";
         var f = new OwnBankFacts
         {
-            Ready = true, State = 1, Day = 140, Name = longName ? "The Hudson Valley Cooperative and Mercantile Bank of the Five Boroughs" : "Pioneer Bank", Level = "Community bank", Tier = 0, StageWords = "The regulator has no complaint",
-            Licence = D(150000), FoundCapital = D(300000), HasHq = state != "bank_nohq", HqName = "7 5th Avenue", LawRatio = 100, WatchRatio = 125, RivalSaverBp = 175, RivalLoanBp = 690, CommBranches = 2,
+            Ready = true, State = 1, Day = 140, Name = longName ? "The Hudson Valley Cooperative and Mercantile Bank of the Five Boroughs" : "Pioneer Bank", Level = "Community bank",
+                Tier = 0, StageWords = "The regulator has no complaint",
+            Licence = D(150000), FoundCapital = D(300000), HasHq = state != "bank_nohq", HqName = "7 5th Avenue", LawRatio = 100, WatchRatio = 125, RivalSaverBp = 175, RivalLoanBp = 690,
+                CommBranches = 2,
             CommLoans = D(2500000), CommDeposits = D(4000000), CommunityHolds = "2 branches, $2,500,000 in loans, $4,000,000 in deposits at most", NextCapital = D(450000)
         };
         if (state == "bank_new" || state == "bank_nohq")
@@ -341,11 +357,16 @@ internal static partial class UiSamples
         };
         f.Segments = new[]
         {
-            new OwnSegmentFact { Name = "Poorly rated people", Lent = D(40000), Arrears = D(12000), Recovering = D(3000), OwnBp = 1900, RivalBp = 1800, Offset = 100, DefaultPerMille = 180, DefaultUsual = 160, Lends = false, Wanted = D(90000) },
-            new OwnSegmentFact { Name = "Fairly rated people", Lent = D(420000), Arrears = D(21000), Recovering = D(8000), OwnBp = 980, RivalBp = 940, Offset = 40, DefaultPerMille = 52, DefaultUsual = 50, Lends = true, Wanted = D(500000) },
-            new OwnSegmentFact { Name = "Well rated people", Lent = D(610000), Arrears = D(4000), Recovering = D(1000), OwnBp = 640, RivalBp = 690, Offset = -50, DefaultPerMille = 14, DefaultUsual = 15, Lends = true, Wanted = D(700000) },
-            new OwnSegmentFact { Name = "Shops", Lent = D(520000), Arrears = D(18000), Recovering = D(6000), OwnBp = 780, RivalBp = 760, Offset = 20, DefaultPerMille = 46, DefaultUsual = 45, Lends = true, Wanted = D(430000) },
-            new OwnSegmentFact { Name = "Companies", Lent = D(760000), Arrears = D(25000), Recovering = D(4000), OwnBp = 560, RivalBp = 580, Offset = -20, DefaultPerMille = 16, DefaultUsual = 15, Lends = true, Wanted = D(900000) }
+            new OwnSegmentFact { Name = "Poorly rated people", Lent = D(40000), Arrears = D(12000), Recovering = D(3000), OwnBp = 1900, RivalBp = 1800, Offset = 100, DefaultPerMille = 180,
+                DefaultUsual = 160, Lends = false, Wanted = D(90000) },
+            new OwnSegmentFact { Name = "Fairly rated people", Lent = D(420000), Arrears = D(21000), Recovering = D(8000), OwnBp = 980, RivalBp = 940, Offset = 40, DefaultPerMille = 52,
+                DefaultUsual = 50, Lends = true, Wanted = D(500000) },
+            new OwnSegmentFact { Name = "Well rated people", Lent = D(610000), Arrears = D(4000), Recovering = D(1000), OwnBp = 640, RivalBp = 690, Offset = -50, DefaultPerMille = 14,
+                DefaultUsual = 15, Lends = true, Wanted = D(700000) },
+            new OwnSegmentFact { Name = "Shops", Lent = D(520000), Arrears = D(18000), Recovering = D(6000), OwnBp = 780, RivalBp = 760, Offset = 20, DefaultPerMille = 46, DefaultUsual = 45,
+                Lends = true, Wanted = D(430000) },
+            new OwnSegmentFact { Name = "Companies", Lent = D(760000), Arrears = D(25000), Recovering = D(4000), OwnBp = 560, RivalBp = 580, Offset = -20, DefaultPerMille = 16,
+                DefaultUsual = 15, Lends = true, Wanted = D(900000) }
         };
         f.Courts = true;
         f.Strategy = 2;
@@ -381,9 +402,11 @@ internal static partial class UiSamples
         }
         f.Branches = state == "branches_none" ? new OwnBranchFact[0] : new[]
         {
-            new OwnBranchFact { Id = "7 5th Avenue|1", Name = "Headquarters, 7 5th Avenue", Visitors = 1480, Served = 1390, Lost = 90, Opened = 118, Loans = 31, Fees = D(5400), CostDay = D(420), PaidIn = D(310000), TakenOut = D(120000),
+            new OwnBranchFact { Id = "7 5th Avenue|1", Name = "Headquarters, 7 5th Avenue", Visitors = 1480, Served = 1390, Lost = 90, Opened = 118, Loans = 31, Fees = D(5400),
+                CostDay = D(420), PaidIn = D(310000), TakenOut = D(120000),
                 Lent = D(260000), Refused = 14, LastVisitors = 1420, LastServed = 1300, LastLost = 120, Week = 330, Open = true, Tellers = 3, StaffAll = 4, ServePerTeller = 60 },
-            new OwnBranchFact { Id = "3 High Street|1", Name = "3 High Street", Visitors = 610, Served = 340, Lost = 270, Opened = 41, Loans = 9, Fees = D(1700), CostDay = D(310), PaidIn = D(88000), TakenOut = D(61000),
+            new OwnBranchFact { Id = "3 High Street|1", Name = "3 High Street", Visitors = 610, Served = 340, Lost = 270, Opened = 41, Loans = 9, Fees = D(1700), CostDay = D(310),
+                PaidIn = D(88000), TakenOut = D(61000),
                 Lent = D(70000), Refused = 6, LastVisitors = 590, LastServed = 360, LastLost = 230, Week = 140, Open = true, Tellers = 1, StaffAll = 2, ServePerTeller = 60 }
         };
         f.BranchOn = true;

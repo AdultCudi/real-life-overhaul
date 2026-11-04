@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using RealLifeOverhaul.Economy;
+using RealLifeOverhaul.Ui;
 
-namespace RealLifeOverhaul.Ui
+namespace RealLifeOverhaul.Economy
 {
     /// <summary>The words the reader needs of the game: a key's text, a sentence with its names filled in, a day and money in cents.</summary>
     public interface IOwnBankSay
@@ -87,7 +87,7 @@ namespace RealLifeOverhaul.Ui
         {
             f.EndDay = b.EndDay;
             f.EndCents = b.EndCents;
-            f.Why = b.State == OwnBankState.Closed ? say.T(OwnBankText_WhyKey(b.Why)) : null;
+            f.Why = b.State == OwnBankState.Closed ? say.T(WhyKeyOf(b.Why)) : null;
             f.AgainWait = null;
             if (b.State == OwnBankState.Closed && world.AgainWhy != null)
             {
@@ -102,7 +102,7 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The year the days of a closed bank's wait are counted in; set by the game (GameCalendar.DaysPerYear), 60 offline.</summary>
         public static int GameYear = 60;
 
-        private static string OwnBankText_WhyKey(ClosedWhy why)
+        private static string WhyKeyOf(ClosedWhy why)
         {
             switch (why)
             {
@@ -120,7 +120,9 @@ namespace RealLifeOverhaul.Ui
             f.Tier = tier;
             f.Top = tier >= BankTiers.National;
             f.Stage = (int)b.Stage;
-            f.StageWords = say.F(b.Stage == Regulator.Breach ? (b.Strikes > 0 ? "reallife_ob_stage_fined" : "reallife_ob_stage_breach") : b.Stage == Regulator.Watch ? "reallife_ob_stage_watch" : "reallife_ob_stage_clear",
+            string stageKey = b.Stage == Regulator.Breach ? (b.Strikes > 0 ? "reallife_ob_stage_fined" : "reallife_ob_stage_breach")
+                : b.Stage == Regulator.Watch ? "reallife_ob_stage_watch" : "reallife_ob_stage_clear";
+            f.StageWords = say.F(stageKey,
                 "day", say.Day(b.Deadline));
             f.Run = b.Run;
             f.Reserves = b.Reserves;
@@ -156,7 +158,8 @@ namespace RealLifeOverhaul.Ui
             f.Crews = null;
             if (c.Scale > 0)
             {
-                f.Crews = say.F("reallife_endscale_ob_crews_value", "tellers", b.Crew[OwnBankCatalogue.Tellers].ToString(Inv), "tellers_need", OwnBankRules.CrewNeed(b, OwnBankCatalogue.Tellers, c.Scale).ToString(Inv),
+                f.Crews = say.F("reallife_endscale_ob_crews_value", "tellers", b.Crew[OwnBankCatalogue.Tellers].ToString(Inv), "tellers_need", OwnBankRules.CrewNeed(b,
+                    OwnBankCatalogue.Tellers, c.Scale).ToString(Inv),
                     "managers", b.Crew[OwnBankCatalogue.Managers].ToString(Inv), "managers_need", OwnBankRules.CrewNeed(b, OwnBankCatalogue.Managers, c.Scale).ToString(Inv),
                     "officers", b.Crew[OwnBankCatalogue.Officers].ToString(Inv), "officers_need", OwnBankRules.CrewNeed(b, OwnBankCatalogue.Officers, c.Scale).ToString(Inv),
                     "compliance", b.Crew[OwnBankCatalogue.Compliance].ToString(Inv), "compliance_need", OwnBankRules.CrewNeed(b, OwnBankCatalogue.Compliance, c.Scale).ToString(Inv),
@@ -232,7 +235,8 @@ namespace RealLifeOverhaul.Ui
             {
                 f.Savers[k] = new OwnSaverFact
                 {
-                    Name = say.T(OwnBankCatalogue.SaverKeys[k]), Deposits = b.Deposits[k], Pool = OwnBankRules.SavingsPool(c, k), OwnBp = OwnBankRules.SaverBp(c, b, k), RivalBp = OwnBankRules.RivalSaverBp(c, b, k),
+                    Name = say.T(OwnBankCatalogue.SaverKeys[k]), Deposits = b.Deposits[k], Pool = OwnBankRules.SavingsPool(c, k), OwnBp = OwnBankRules.SaverBp(c, b, k),
+                        RivalBp = OwnBankRules.RivalSaverBp(c, b, k),
                     Offset = b.SaverOffset[k], Wanted = OwnBankRules.SaversWanted(c, b, k, f.Trust)
                 };
             }
@@ -241,8 +245,10 @@ namespace RealLifeOverhaul.Ui
             {
                 f.Segments[j] = new OwnSegmentFact
                 {
-                    Name = say.T(OwnBankCatalogue.SegmentKeys[j]), Lent = b.Loans[j], Arrears = b.Arrears[j], Recovering = b.Recovering[j], OwnBp = OwnBankRules.LoanBp(c, b, j), RivalBp = OwnBankRules.RivalLoanBp(c, b, j),
-                    Offset = b.LoanOffset[j], DefaultPerMille = OwnBankRules.DefaultPerMille(c, b, j), DefaultUsual = OwnBankCatalogue.DefaultBase[j], Lends = b.Lending[j], Wanted = OwnBankRules.LoansWanted(c, b, j)
+                    Name = say.T(OwnBankCatalogue.SegmentKeys[j]), Lent = b.Loans[j], Arrears = b.Arrears[j], Recovering = b.Recovering[j], OwnBp = OwnBankRules.LoanBp(c, b, j),
+                        RivalBp = OwnBankRules.RivalLoanBp(c, b, j),
+                    Offset = b.LoanOffset[j], DefaultPerMille = OwnBankRules.DefaultPerMille(c, b, j), DefaultUsual = OwnBankCatalogue.DefaultBase[j], Lends = b.Lending[j],
+                        Wanted = OwnBankRules.LoansWanted(c, b, j)
                 };
             }
             f.Courts = c.Courts;
@@ -263,7 +269,8 @@ namespace RealLifeOverhaul.Ui
                 FundHolding h = b.Holdings[i];
                 long year = h.Qty * h.DpsCents * 4;
                 dividends += year;
-                f.Holdings[i] = new OwnHoldingFact { Name = string.IsNullOrEmpty(h.Ticker) ? h.Name : h.Name + " (" + h.Ticker + ")", Qty = h.Qty, Cost = h.CostCents, Value = h.Qty * h.LastCents, Year = year };
+                f.Holdings[i] = new OwnHoldingFact { Name = string.IsNullOrEmpty(h.Ticker) ? h.Name : h.Name + " (" + h.Ticker + ")", Qty = h.Qty, Cost = h.CostCents,
+                    Value = h.Qty * h.LastCents, Year = year };
             }
             f.FundDividends = dividends;
             f.FundSeries = world.FundSeries;
@@ -280,10 +287,13 @@ namespace RealLifeOverhaul.Ui
                 long cost = i < world.BranchCostDay.Length ? world.BranchCostDay[i] : 0L;
                 f.Branches[i] = new OwnBranchFact
                 {
-                    Id = br.Place, Name = br.Name, Visitors = m[BranchFigure.Visitors], Served = m[BranchFigure.Served], Lost = m[BranchFigure.Lost], Opened = m[BranchFigure.Opened], Loans = m[BranchFigure.Loans],
+                    Id = br.Place, Name = br.Name, Visitors = m[BranchFigure.Visitors], Served = m[BranchFigure.Served], Lost = m[BranchFigure.Lost], Opened = m[BranchFigure.Opened],
+                        Loans = m[BranchFigure.Loans],
                     Fees = m[BranchFigure.Fees], CostDay = cost, PaidIn = m[BranchFigure.PaidIn], TakenOut = m[BranchFigure.TakenOut], Lent = m[BranchFigure.Lent], Refused = m[BranchFigure.Refused],
-                    LastVisitors = last[BranchFigure.Visitors], LastServed = last[BranchFigure.Served], LastLost = last[BranchFigure.Lost], LastOpened = last[BranchFigure.Opened], LastLoans = last[BranchFigure.Loans],
-                    LastLent = last[BranchFigure.Lent], LastRefused = last[BranchFigure.Refused], LastFees = last[BranchFigure.Fees], LastPaidIn = last[BranchFigure.PaidIn], LastTakenOut = last[BranchFigure.TakenOut],
+                    LastVisitors = last[BranchFigure.Visitors], LastServed = last[BranchFigure.Served], LastLost = last[BranchFigure.Lost], LastOpened = last[BranchFigure.Opened],
+                        LastLoans = last[BranchFigure.Loans],
+                    LastLent = last[BranchFigure.Lent], LastRefused = last[BranchFigure.Refused], LastFees = last[BranchFigure.Fees], LastPaidIn = last[BranchFigure.PaidIn],
+                        LastTakenOut = last[BranchFigure.TakenOut],
                     Week = br.WeekServed(today), Open = i < world.BranchOpen.Length && world.BranchOpen[i], Tellers = i < world.BranchTellers.Length ? world.BranchTellers[i] : 0,
                     StaffAll = i < world.BranchStaff.Length ? world.BranchStaff[i] : 0, ServePerTeller = BranchCatalogue.ServePerTeller
                 };

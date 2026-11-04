@@ -138,7 +138,8 @@ internal static partial class Program
                     int acts = stub.Acts.Count;
                     bool done = host.Press((more ? MoneyCommands.CardMore : MoneyCommands.CardLess) + k, arg);
                     int to = more ? step.More : step.Less;
-                    bool acted = step.Act == MoneyAct.None ? host.Model.View.F[step.Field] == to : stub.Acts.Count == acts + 1 && stub.LastAct == step.Act && stub.LastValue == to && stub.LastId == step.Id;
+                    bool acted = step.Act == MoneyAct.None ? host.Model.View.F[step.Field] == to : stub.Acts.Count == acts + 1 && stub.LastAct == step.Act && stub.LastValue == to
+                        && stub.LastId == step.Id;
                     pressed++;
                     if (!done || !acted)
                     {
@@ -307,7 +308,8 @@ internal static partial class Program
         BanksBuild.Fill(ma, a, BankWords());
         BanksBuild.Fill(mb, b, BankWords());
         string ta = string.Join("\n", ma.Profile.FactValues) + ma.Statement.Balance, tb = string.Join("\n", mb.Profile.FactValues) + mb.Statement.Balance;
-        Check(ta.Contains("4.8% a year") && ta.Contains("$400,000") && ta.Contains("day 36") && ta.Contains("$1,204,300") && tb.Contains("6.1% a year") && tb.Contains("$123,000") && tb.Contains("day 71")
+        Check(ta.Contains("4.8% a year") && ta.Contains("$400,000") && ta.Contains("day 36") && ta.Contains("$1,204,300") && tb.Contains("6.1% a year") && tb.Contains("$123,000")
+            && tb.Contains("day 71")
               && tb.Contains("$777,123") && !tb.Contains("4.8%") && !tb.Contains("$1,204,300") && ma.Profile.Rating == 8 && mb.Profile.Rating == 3,
             "banks face: the rate, the most, the account's day, the cash and the standing follow the save (no 4.8%, no day of today, no constant)");
         BanksFacts other = UiSamples.BanksFactsOf("accounts");
@@ -324,7 +326,8 @@ internal static partial class Program
         BanksBuild.Fill(mr, refused, BankWords());
         var mg = new MoneyModel { App = MoneyApp.Banks, Tab = BanksBuild.Apply };
         BanksBuild.Fill(mg, UiSamples.BanksFactsOf("apply"), BankWords());
-        Check(mg.LineBody[0].EndsWith("Yes") && mr.LineBody[0].EndsWith("No") && mg.LineOn[0] && !mr.LineOn[0] && mr.Table.Rows[0].Cells[5] == "Not offered", "banks face: the answer column and the products follow the rating (a rating under the line is No at every bank)");
+        Check(mg.LineBody[0].EndsWith("Yes") && mr.LineBody[0].EndsWith("No") && mg.LineOn[0] && !mr.LineOn[0] && mr.Table.Rows[0].Cells[5] == "Not offered",
+            "banks face: the answer column and the products follow the rating (a rating under the line is No at every bank)");
 
         // Every control pressed through the host's handler, and what it does read back.
         int pressed = 0, dead = 0, unreasoned = 0;
@@ -413,7 +416,8 @@ internal static partial class Program
         var m = new MoneyModel { App = MoneyApp.OwnBank };
         OwnBankBuild.Fill(m, f, BankWords());
         int progress = OwnBankBuild.LevelProgress(f, out int met);
-        Check(m.Hero.Progress == progress && progress > 0 && progress < 100 && progress != 40, "own bank face: the hero's bar is the three conditions' real progress, not a constant 40 (" + progress + ")");
+        Check(m.Hero.Progress == progress && progress > 0 && progress < 100 && progress != 40,
+            "own bank face: the hero's bar is the three conditions' real progress, not a constant 40 (" + progress + ")");
         f.HeldMonths = 6;
         f.Capital = f.CapitalLeast;
         int full = OwnBankBuild.LevelProgress(f, out int metAll);
@@ -563,7 +567,8 @@ internal static partial class Program
         int was = b.SaverOffset[0];
         bool up = host.Press(MoneyCommands.CardMore, 0);
         LayBank(host);
-        Check(up && b.SaverOffset[0] == was + OwnBankBuild.SaverStep && stub.LastAct == MoneyAct.SaverRate, "own bank run: a plus on the savers' rate raises the real bank's offset by a step (" + was + " to " + b.SaverOffset[0] + ")");
+        Check(up && b.SaverOffset[0] == was + OwnBankBuild.SaverStep && stub.LastAct == MoneyAct.SaverRate,
+            "own bank run: a plus on the savers' rate raises the real bank's offset by a step (" + was + " to " + b.SaverOffset[0] + ")");
         host.Model.Tab = OwnBankBuild.LendingTab;
         host.Model.View.Row = "l|3";
         LayBank(host);

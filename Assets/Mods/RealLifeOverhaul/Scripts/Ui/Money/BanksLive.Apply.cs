@@ -166,7 +166,8 @@ namespace RealLifeOverhaul.Ui
             Amount(q, view, CreditCatalogue.LoanLeast, most, w);
             LoanQuote quote = PhoneLending.Quote(_bank, q.Amount, score.Value);
             q.Rate = Yearly(w, quote.AnnualRate);
-            Lines(q, L("reallife_econ_offer_fee"), Money(quote.Fee), L("reallife_econ_offer_payment"), Money(quote.DailyPayment + quote.DailyInterest), L("reallife_tab_offer_repay"), Money(q.Amount + quote.Cost));
+            Lines(q, L("reallife_econ_offer_fee"), Money(quote.Fee), L("reallife_econ_offer_payment"), Money(quote.DailyPayment + quote.DailyInterest), L("reallife_tab_offer_repay"),
+                Money(q.Amount + quote.Cost));
             var tomorrow = Books.Tomorrow(CreditLedger.File);
             q.Note = FinanceText.T("reallife_money_adds", "add", Money(quote.DailyPayment + quote.DailyInterest), "already", Money(tomorrow.Loans + tomorrow.Accounts));
         }
@@ -292,7 +293,8 @@ namespace RealLifeOverhaul.Ui
             UtilitiesWords w = W;
             checks.Add(new BankCheck
             {
-                Text = w.F("reallife_ui_bank_chk_rating", "Your rating is {score}; {bank} lends from {threshold}", "score", score.Value.ToString(Inv), "bank", _bank.Name, "threshold", f.Threshold.ToString(Inv)),
+                Text = w.F("reallife_ui_bank_chk_rating", "Your rating is {score}; {bank} lends from {threshold}", "score", score.Value.ToString(Inv), "bank", _bank.Name, "threshold",
+                    f.Threshold.ToString(Inv)),
                 Met = f.Lends
             });
             desk.Held(_bank, _debts);
@@ -308,7 +310,8 @@ namespace RealLifeOverhaul.Ui
                 int amount = f.Quote.HasAmount ? f.Quote.Amount : most;
                 checks.Add(new BankCheck
                 {
-                    Text = w.F("reallife_ui_bank_chk_limit", "{amount} is under the {most} {bank} lends you", "amount", Money(amount), "most", Money(f.Quote.HasAmount ? f.Quote.Most : most), "bank", _bank.Name),
+                    Text = w.F("reallife_ui_bank_chk_limit", "{amount} is under the {most} {bank} lends you", "amount", Money(amount), "most", Money(f.Quote.HasAmount ? f.Quote.Most : most),
+                        "bank", _bank.Name),
                     Met = f.Quote.HasAmount ? amount <= f.Quote.Most : most >= CreditCatalogue.LoanLeast
                 });
             }
@@ -463,7 +466,8 @@ namespace RealLifeOverhaul.Ui
                 case MoneyAct.PayMinimum:
                     {
                         int suggested = a.Frozen ? a.Owed : Math.Min(a.Owed, Math.Max(a.Ladder.Overdue, AccountRules.DueTomorrow(a, SaveGameManager.Current.Day)));
-                        int amount = act == MoneyAct.PayOff ? a.Owed : act == MoneyAct.PayMinimum ? a.MinimumLeft : Math.Max(1, Math.Min(a.Owed, view.F[MoneyView.FPay] > 0 ? view.F[MoneyView.FPay] : suggested));
+                        int amount = act == MoneyAct.PayOff ? a.Owed : act == MoneyAct.PayMinimum ? a.MinimumLeft : Math.Max(1, Math.Min(a.Owed,
+                            view.F[MoneyView.FPay] > 0 ? view.F[MoneyView.FPay] : suggested));
                         ProductAnswer answer = desk.Pay(a, amount, out int used);
                         if (answer == ProductAnswer.Yes)
                         {
@@ -482,7 +486,8 @@ namespace RealLifeOverhaul.Ui
                         ProductAnswer answer = desk.Draw(a, amount, out int fee);
                         if (answer == ProductAnswer.Yes)
                         {
-                            Tell(NotificationType.Success, "reallife_econ_note_drawn", new Dictionary<string, string> { { "amount", Money(amount) }, { "fee", Money(fee) }, { "owed", Money(a.Owed) } });
+                            Tell(NotificationType.Success, "reallife_econ_note_drawn", new Dictionary<string, string> { { "amount", Money(amount) }, { "fee", Money(fee) }, { "owed",
+                                Money(a.Owed) } });
                             view.F[MoneyView.FDraw] = 0;
                         }
                         return Said(answer);
@@ -550,7 +555,8 @@ namespace RealLifeOverhaul.Ui
             Lender bank = _bank;
             string kindName = FinanceText.T(ProductCatalogue.KindKeys[(int)kind]);
             GameConfirm.Show("reallife_econ_confirm_open_title".Localize(new { kind = kindName }),
-                "reallife_econ_confirm_open_body".Localize(new { kind = kindName, limit = Money(offer.Most), rate = (offer.RateBp / 100f).ToString("0.#"), lender = bank.Name, detail = FinanceApp.Detail(kind) }),
+                "reallife_econ_confirm_open_body".Localize(new { kind = kindName, limit = Money(offer.Most), rate = (offer.RateBp / 100f).ToString("0.#"), lender = bank.Name,
+                    detail = FinanceApp.Detail(kind) }),
                 () => Guarded(() =>
                 {
                     ProductAnswer answer = desk.OpenAccount(kind, bank, out CreditAccount account);
@@ -606,7 +612,8 @@ namespace RealLifeOverhaul.Ui
                     view.F[MoneyView.FAmount] = 0;
                     break;
                 case LoanAnswer.TooMuch:
-                    Tell(NotificationType.Error, "reallife_econ_note_too_much", new Dictionary<string, string> { { "lender", bank.Name }, { "most", Money(PhoneLending.MostNow(bank, CreditLedger.Value)) } });
+                    Tell(NotificationType.Error, "reallife_econ_note_too_much", new Dictionary<string, string> { { "lender", bank.Name }, { "most", Money(PhoneLending.MostNow(bank,
+                        CreditLedger.Value)) } });
                     break;
                 case LoanAnswer.TooLittle:
                     Tell(NotificationType.Error, "reallife_econ_note_too_little", new Dictionary<string, string> { { "least", Money(CreditCatalogue.LoanLeast) } });
@@ -695,7 +702,8 @@ namespace RealLifeOverhaul.Ui
                     ProductAnswer answer = desk.Approve(kind, bank, amount, deposit, term);
                     if (answer == ProductAnswer.Yes)
                     {
-                        Tell(NotificationType.Success, "reallife_econ_note_approved", new Dictionary<string, string> { { "amount", Money(amount) }, { "day", (day + ProductCatalogue.ApprovalDays).ToString() } });
+                        Tell(NotificationType.Success, "reallife_econ_note_approved", new Dictionary<string, string> { { "amount", Money(amount) }, { "day",
+                            (day + ProductCatalogue.ApprovalDays).ToString() } });
                     }
                     else
                     {
@@ -741,7 +749,8 @@ namespace RealLifeOverhaul.Ui
                     ProductAnswer done = desk.Consolidate(bank);
                     if (done == ProductAnswer.Yes)
                     {
-                        Tell(NotificationType.Success, "reallife_econ_note_consolidated", new Dictionary<string, string> { { "lender", bank.Name }, { "amount", Money(after.Owed) }, { "daily", Money(after.Daily) } });
+                        Tell(NotificationType.Success, "reallife_econ_note_consolidated", new Dictionary<string, string> { { "lender", bank.Name }, { "amount", Money(after.Owed) },
+                            { "daily", Money(after.Daily) } });
                     }
                     else
                     {

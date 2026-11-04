@@ -41,7 +41,8 @@ namespace RealLifeOverhaul.Ui
             {
                 m.Shape = MoneyShape.Table;
                 m.EmptyTitle = BankParts.Either(w, f.Ready, "reallife_ui_bank_none_title", "No banks in the city", "reallife_bank_off_title", "Not ready");
-                m.EmptyBody = BankParts.Either(w, f.Ready, "reallife_ui_bank_none_body", "The city has no bank to show yet.", "reallife_bank_off_body", "The credit rating is not running. Close the phone and open the app again in a moment.");
+                m.EmptyBody = BankParts.Either(w, f.Ready, "reallife_ui_bank_none_body", "The city has no bank to show yet.", "reallife_bank_off_body",
+                    "The credit rating is not running. Close the phone and open the app again in a moment.");
                 return;
             }
             int at = Math.Max(0, Math.Min(f.Banks.Length - 1, f.Bank));
@@ -75,7 +76,8 @@ namespace RealLifeOverhaul.Ui
             bool held = b.Since > 0 || b.Debts > 0;
             return new UiProfileModel
             {
-                Name = b.Name, Hue = 200f + b.Rank * 67f, Ring = UiRole.None, Role = w.F("reallife_ui_bank_rank", "Rank {rank} of {count}", "rank", (b.Rank + 1).ToString(Inv), "count", f.Banks.Length.ToString(Inv)),
+                Name = b.Name, Hue = 200f + b.Rank * 67f, Ring = UiRole.None, Role = w.F("reallife_ui_bank_rank", "Rank {rank} of {count}", "rank", (b.Rank + 1).ToString(Inv), "count",
+                    f.Banks.Length.ToString(Inv)),
                 RoleIcon = UiIcon.Bank, Status = held ? w.T("reallife_ui_bank_customer", "You bank here") : w.T("reallife_ui_bank_new", "No account yet"), StatusTone = held ? UiRole.Ok : UiRole.None,
                 FactLabels = new[] { w.T("reallife_ui_bank_f_rate", "Loan rate"), w.T("reallife_ui_bank_f_most", "Lends you up to"), w.T("reallife_ui_bank_f_since", "Account since"),
                     w.T("reallife_ui_bank_f_owed", "You owe here") },
@@ -119,7 +121,8 @@ namespace RealLifeOverhaul.Ui
             {
                 Title = w.T("reallife_bank_current", "Current account"), Sub = bank.Name, Chip = f.IsHouse ? w.T("reallife_ui_bank_house", "Holds your cash") : null, ChipTone = UiRole.Ok,
                 Lines = lines.ToArray(),
-                Actions = new[] { BankParts.Link(w.T("reallife_ui_bank_tab_overdraft", "Overdraft"), UiIcon.Percent, Overdraft), BankParts.Link(w.T("reallife_bank_tab_loans", "Loans"), UiIcon.ListChecks, Loans) }
+                Actions = new[] { BankParts.Link(w.T("reallife_ui_bank_tab_overdraft", "Overdraft"), UiIcon.Percent, Overdraft), BankParts.Link(w.T("reallife_bank_tab_loans", "Loans"),
+                    UiIcon.ListChecks, Loans) }
             });
         }
 
@@ -147,7 +150,8 @@ namespace RealLifeOverhaul.Ui
                 w.T("reallife_ui_bank_col_debt", "Debt"), w.T("reallife_fin_col_owed", "Owed"), w.T("reallife_fin_col_rate", "Rate"), w.T("reallife_ui_bank_col_next", "Next payment"),
                 w.T("reallife_fin_col_day", "A day"), w.T("reallife_ui_bank_col_ends", "Paid off"), w.T("reallife_fin_col_state", "State")
             }, new[] { UiCellKind.Text, UiCellKind.Figure, UiCellKind.Figure, UiCellKind.Figure, UiCellKind.Text, UiCellKind.Text, UiCellKind.Chip }, rows, selected,
-                w.F("reallife_bank_row_no_loans", "You owe {bank} nothing.", "bank", bank.Name), w.T("reallife_ui_bank_loans_empty_body", "A loan taken at this bank is listed here."), UiIcon.ListChecks);
+                w.F("reallife_bank_row_no_loans", "You owe {bank} nothing.", "bank", bank.Name), w.T("reallife_ui_bank_loans_empty_body", "A loan taken at this bank is listed here."),
+                    UiIcon.ListChecks);
             m.RowIds = ids;
             if (selected < 0)
             {
@@ -157,7 +161,8 @@ namespace RealLifeOverhaul.Ui
                     Title = w.F("reallife_ui_bank_loans_at", "Loans at {bank}", "bank", bank.Name), Sub = null,
                     Lines = new[]
                     {
-                        BankParts.Pair(w.T("reallife_bank_owed_here", "Owed to this bank:"), w.Money(f.Owed)), BankParts.Pair(w.T("reallife_econ_over_leaves", "Leaves tomorrow in all:"), w.Money(f.Tomorrow)),
+                        BankParts.Pair(w.T("reallife_bank_owed_here", "Owed to this bank:"), w.Money(f.Owed)), BankParts.Pair(w.T("reallife_econ_over_leaves", "Leaves tomorrow in all:"),
+                            w.Money(f.Tomorrow)),
                         BankParts.Pair(w.T("reallife_ui_bank_debts", "Debts here"), f.Debts.ToString(Inv)),
                         BankParts.Say(f.Debt.Length > 0 ? w.T("reallife_ui_bank_pick_debt", "Pick a debt in the list to pay it.") : w.T("reallife_ui_bank_no_debt", "You owe this bank nothing."))
                     },
@@ -196,7 +201,8 @@ namespace RealLifeOverhaul.Ui
             }
             if (d.Kind == 3 && d.DueDay > 0)
             {
-                lines.Add(BankParts.Say(w.F("reallife_econ_account_card_due", "Minimum {minimum} taken on day {day}. Unpaid of the last statement: {statement}", "minimum", w.Money(d.Minimum), "day", d.DueDay.ToString(Inv),
+                lines.Add(BankParts.Say(w.F("reallife_econ_account_card_due", "Minimum {minimum} taken on day {day}. Unpaid of the last statement: {statement}", "minimum",
+                    w.Money(d.Minimum), "day", d.DueDay.ToString(Inv),
                     "statement", w.Money(d.StatementLeft))));
             }
             else if (d.Kind == 3)
@@ -209,11 +215,13 @@ namespace RealLifeOverhaul.Ui
             }
             if (d.PlanLeft > 0f)
             {
-                lines.Add(BankParts.Say(w.F("reallife_econ_account_plan", "Plan: {left} still to pay, {payment} a day on top of the normal payment", "left", w.Money(d.PlanLeft), "payment", w.Money(d.PlanPerDay)), UiRole.WarnText));
+                lines.Add(BankParts.Say(w.F("reallife_econ_account_plan", "Plan: {left} still to pay, {payment} a day on top of the normal payment", "left", w.Money(d.PlanLeft), "payment",
+                    w.Money(d.PlanPerDay)), UiRole.WarnText));
             }
             if (d.Frozen)
             {
-                lines.Add(BankParts.Say(w.T("reallife_econ_account_arranged_pay", "In your debt arrangement: its daily payment pays this. You can pay it sooner here, and the arrangement ends once everything in it is paid.")));
+                lines.Add(BankParts.Say(w.T("reallife_econ_account_arranged_pay",
+                    "In your debt arrangement: its daily payment pays this. You can pay it sooner here, and the arrangement ends once everything in it is paid.")));
             }
             if (!string.IsNullOrEmpty(d.About))
             {
@@ -267,7 +275,8 @@ namespace RealLifeOverhaul.Ui
             }
             cards.Add(new UtilitiesCard
             {
-                Title = d.Name, Sub = d.Opened > 0 ? w.F("reallife_ui_bank_opened", "Opened on day {day}", "day", d.Opened.ToString(Inv)) : null, Chip = d.State, ChipTone = d.Sound ? UiRole.Ok : UiRole.Danger,
+                Title = d.Name, Sub = d.Opened > 0 ? w.F("reallife_ui_bank_opened", "Opened on day {day}", "day", d.Opened.ToString(Inv)) : null, Chip = d.State,
+                    ChipTone = d.Sound ? UiRole.Ok : UiRole.Danger,
                 Lines = lines.ToArray(), Steps = steps.ToArray(), Actions = actions.ToArray()
             }, moves.ToArray());
         }

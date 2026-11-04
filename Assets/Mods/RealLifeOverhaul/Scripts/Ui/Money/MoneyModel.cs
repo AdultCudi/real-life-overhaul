@@ -151,7 +151,8 @@ namespace RealLifeOverhaul.Ui
     /// <summary>A source that carries the buttons of a bank's page to the feature that owns each: the screen says what, the source does it in the game.</summary>
     public interface IMoneyActs
     {
-        /// <summary>One act of <see cref="MoneyAct"/>: the id of the thing (a debt, a segment, a branch) and the value (a target step, an amount, 1 or 0 for a switch). True when it did something.</summary>
+        /// <summary>One act of <see cref="MoneyAct"/>: the id of the thing (a debt, a segment, a branch) and the value (a target step, an amount,
+            1 or 0 for a switch). True when it did something.</summary>
         bool Do(MoneyAct act, MoneyView view, int id, int value);
     }
 

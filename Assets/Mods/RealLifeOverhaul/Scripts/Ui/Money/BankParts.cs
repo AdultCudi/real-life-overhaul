@@ -54,7 +54,8 @@ namespace RealLifeOverhaul.Ui
             for (int k = 0; k < m.Cards.Length; k++)
             {
                 m.Cards[k].Title = Plain(m.Cards[k].Title);
-                m.Cards[k].Heading = true;   // a card's title is a section's label: a page holds a profile's name, a figure and small type, no more
+                m.Cards[k].Heading = true;   // a card's title is a section's label: a page holds a profile's name,
+                    a figure and small type, no more
                 for (int i = 0; i < m.Cards[k].Steps.Length; i++)
                 {
                     m.Cards[k].Steps[i].Label = Plain(m.Cards[k].Steps[i].Label);
@@ -90,7 +91,8 @@ namespace RealLifeOverhaul.Ui
         public static UiActionModel Button(string label, UiButtonKind kind, UiIcon icon, MoneyAct act, bool main, bool disabled = false, int id = 0)
         {
             // The act in the low byte, the thing it is for (an account's number) above it.
-            return new UiActionModel { Label = label, Kind = kind, Icon = icon, Key = main ? UiAction.Alt : UiAction.Count, Command = MoneyCommands.CardAct, Arg = (int)act | (id << 8), Disabled = disabled };
+            return new UiActionModel { Label = label, Kind = kind, Icon = icon, Key = main ? UiAction.Alt : UiAction.Count, Command = MoneyCommands.CardAct, Arg = (int)act | (id << 8),
+                Disabled = disabled };
         }
 
         /// <summary>A button that opens a tab of the app.</summary>

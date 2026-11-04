@@ -141,7 +141,8 @@ namespace RealLifeOverhaul.Ui
             bool lends = most >= CreditCatalogue.LoanLeast;
             return new BankFact
             {
-                Name = lender.Name, Rank = lender.Rank, Rate = PhoneLending.RateOffered(lender, score.Value), Most = (int)Math.Floor(most), Lends = lends, Since = since, Owed = slice.Owed, Debts = slice.Debts,
+                Name = lender.Name, Rank = lender.Rank, Rate = PhoneLending.RateOffered(lender, score.Value), Most = (int)Math.Floor(most), Lends = lends, Since = since, Owed = slice.Owed,
+                    Debts = slice.Debts,
                 Answer = lends && score.Lends && BankRules.Lends(score.Value)
             };
         }
@@ -151,7 +152,8 @@ namespace RealLifeOverhaul.Ui
         {
             if (answer == ProductAnswer.BelowThreshold)
             {
-                return FinanceText.T("reallife_bank_why_threshold", "bank", bank != null ? bank.Name : FinanceText.T("reallife_econ_lender_bank"), "threshold", CreditCatalogue.LendingThreshold.ToString(Inv),
+                return FinanceText.T("reallife_bank_why_threshold", "bank", bank != null ? bank.Name : FinanceText.T("reallife_econ_lender_bank"), "threshold",
+                    CreditCatalogue.LendingThreshold.ToString(Inv),
                     "score", CreditLedger.Value.ToString(Inv));
             }
             return FinanceApp.Why(answer);
@@ -276,10 +278,14 @@ namespace RealLifeOverhaul.Ui
             int due = AccountRules.DueTomorrow(a, today);
             var d = new BankDebt
             {
-                Id = "acct:" + a.Id.ToString(Inv), Number = a.Id, Kind = KindOf(a.Kind), Name = CreditDesk.Name(a), Owed = a.Owed, Total = a.Agreed, Rate = a.RateBp > 0 ? FinanceApp.Rate(a.RateNow) : null, RateRed = s.Penalty,
-                NextAmount = next > 0 && day > 0 ? next : 0, NextDay = day, NextWord = next > 0 && day > 0 ? FinanceApp.DayWord(day, today) : null, State = FinanceText.State(a), Sound = s.InOrder && !s.Penalty,
-                Frozen = a.Frozen, CallDue = s.CallDue, PlanUsed = s.PlanUsed, PlanLeft = s.PlanLeft, PlanPerDay = s.PlanPerDay, Overdue = s.Overdue, About = FinanceApp.AboutKind(a.Kind), Opened = a.OpenedDay,
-                PayMost = a.Owed, PaySuggested = a.Frozen ? a.Owed : Math.Min(a.Owed, Math.Max(s.Overdue, due)), Minimum = a.MinimumLeft, StatementLeft = a.StatementLeft, DueDay = a.DueDay, NextStatement = a.NextDay,
+                Id = "acct:" + a.Id.ToString(Inv), Number = a.Id, Kind = KindOf(a.Kind), Name = CreditDesk.Name(a), Owed = a.Owed, Total = a.Agreed,
+                    Rate = a.RateBp > 0 ? FinanceApp.Rate(a.RateNow) : null, RateRed = s.Penalty,
+                NextAmount = next > 0 && day > 0 ? next : 0, NextDay = day, NextWord = next > 0 && day > 0 ? FinanceApp.DayWord(day, today) : null, State = FinanceText.State(a),
+                    Sound = s.InOrder && !s.Penalty,
+                Frozen = a.Frozen, CallDue = s.CallDue, PlanUsed = s.PlanUsed, PlanLeft = s.PlanLeft, PlanPerDay = s.PlanPerDay, Overdue = s.Overdue, About = FinanceApp.AboutKind(a.Kind),
+                    Opened = a.OpenedDay,
+                PayMost = a.Owed, PaySuggested = a.Frozen ? a.Owed : Math.Min(a.Owed, Math.Max(s.Overdue, due)), Minimum = a.MinimumLeft, StatementLeft = a.StatementLeft, DueDay = a.DueDay,
+                    NextStatement = a.NextDay,
                 Free = a.Free, DrawMost = a.Kind == ProductKind.CreditCard ? AccountRules.MostDraw(a) : 0
             };
             if (ProductCatalogue.Instalment(a.Kind) && a.Instalment > 0 && !a.Frozen)
@@ -428,7 +434,8 @@ namespace RealLifeOverhaul.Ui
             if (next > score.Value && score.Value < best)
             {
                 LenderTerms then = LendingTerms.For(next, BankTerms.OwnCap(_bank.Settings), BankTerms.OwnRate(_bank.Settings));
-                f.Next = FinanceText.Fill("reallife_bank_rating_next", "score", next.ToString(Inv), "bank", _bank.Name, "loan", Money(then.Cap), "rate", (then.AnnualRate * GameLoans.Multiplier).ToString("0.#", Inv),
+                f.Next = FinanceText.Fill("reallife_bank_rating_next", "score", next.ToString(Inv), "bank", _bank.Name, "loan", Money(then.Cap), "rate",
+                    (then.AnnualRate * GameLoans.Multiplier).ToString("0.#", Inv),
                     "card", Money(CreditDesk.LimitAt(ProductKind.CreditCard, next, _bank)));
             }
         }
