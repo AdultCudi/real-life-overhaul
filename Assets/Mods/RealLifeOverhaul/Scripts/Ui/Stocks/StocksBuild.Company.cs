@@ -403,7 +403,7 @@ namespace RealLifeOverhaul.Ui
                 bool band = ind == StocksInd.Bollinger;
                 lines.Add(new UiChartLine
                 {
-                    Name = name, Values = Dollars(band ? b : a), Under = band ? Dollars(c) : null, Tint = StocksIndicators.Tint(ind), Wash = band, Ind = ind
+                    Name = name, Values = Dollars(band ? b : a), Under = band ? Dollars(c) : null, Tint = StocksIndicators.Tint(ind), Tinted = band, Ind = ind
                 });
             }
             return lines.ToArray();

@@ -131,7 +131,7 @@ namespace RealLifeOverhaul.Ui
             for (int k = 0; m.Lines != null && k < m.Lines.Length; k++)
             {
                 ref UiChartLine line = ref m.Lines[k];
-                if (line.Wash && line.Values != null && line.Under != null)
+                if (line.Tinted && line.Values != null && line.Under != null)
                 {
                     for (int i = first; i < first + shown && i < line.Values.Length && i < line.Under.Length; i++)
                     {

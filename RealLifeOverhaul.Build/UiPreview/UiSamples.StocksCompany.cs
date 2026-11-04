@@ -87,7 +87,7 @@ internal static partial class UiSamples
                 upper[i] = float.IsNaN(mid[i]) ? float.NaN : mid[i] + 2f * dev;
                 lower[i] = float.IsNaN(mid[i]) ? float.NaN : mid[i] - 2f * dev;
             }
-            lines.Add(new UiChartLine { Name = Name(StocksInd.Bollinger), Values = upper, Under = lower, Tint = StocksIndicators.Tint(StocksInd.Bollinger), Wash = true, Ind = StocksInd.Bollinger });
+            lines.Add(new UiChartLine { Name = Name(StocksInd.Bollinger), Values = upper, Under = lower, Tint = StocksIndicators.Tint(StocksInd.Bollinger), Tinted = true, Ind = StocksInd.Bollinger });
         }
         if (on != null && on[(int)StocksInd.Rsi])
         {

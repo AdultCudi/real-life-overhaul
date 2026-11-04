@@ -56,7 +56,7 @@ namespace RealLifeOverhaul.Ui
 
     /// <summary>
     /// One line over the price, or in a pane. NaN until the average has a window. A band (Bollinger) has a second line under
-    /// the first and a wash between them. The cut is what the last layout drew of the window, kept so a hover lays the same
+    /// the first and a tint between them. The cut is what the last layout drew of the window, kept so a hover lays the same
     /// arrays again and allocates nothing.
     /// </summary>
     public struct UiChartLine
@@ -64,7 +64,7 @@ namespace RealLifeOverhaul.Ui
         public string Name;
         public float[] Values, Under;
         public UiRole Tint;
-        public bool Wash;
+        public bool Tinted;
         public StocksInd Ind;
         public UiChartCut Main, Low;      // what the last layout drew of the window, for each line
     }
