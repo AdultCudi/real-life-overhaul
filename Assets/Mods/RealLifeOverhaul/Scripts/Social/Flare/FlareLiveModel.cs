@@ -67,7 +67,8 @@ namespace RealLifeOverhaul.Flare
         Everyday = 12,
         Night = 13,
         Food = 14,
-        Sport = 15
+        Sport = 15,
+        Visit = 16       // one of the city's people at a real business of the city's: where they ate, trained or shopped (Place, Name, District)
     }
 
     /// <summary>The kinds of a reply of one of the city's people. Saved as a number.</summary>
@@ -328,6 +329,7 @@ namespace RealLifeOverhaul.Flare
         public int DmDay = -1;           // the last day one of the city's people wrote
         public string HostKey;           // a guest: the host and session whose NetIds this save's posts carry (FlareNetShare.NewHost)
         public int CitySeed;             // the seed of the city's people: this save's, or the host's it followed, so their names stay
+        public int PeopleFrom = -1;      // the oldest day whose people's posts (visits, shops' offers) are made: the days from it to the city day are covered; -1 none yet
 
         public FlareCase Case(int id)
         {

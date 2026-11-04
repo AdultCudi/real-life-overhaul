@@ -550,9 +550,15 @@ namespace RealLifeOverhaul.Flare
                     LiveDay(day);
                     break;
                 case 4:
-                    FacesAhead(day);   // the day's likely faces, drawn behind the next black screens
+                    if (LiveBefore(day))
+                    {
+                        _dayStep = 4;   // another day before it, the next frame (a day a step: a new city's first morning, a save from before growing)
+                    }
                     break;
                 case 5:
+                    FacesAhead(day);   // the day's likely faces, drawn behind the next black screens
+                    break;
+                case 6:
                     List<BuildingRegistration> shops = FlareGame.Businesses();
                     for (int i = 0; i < shops.Count; i++)
                     {

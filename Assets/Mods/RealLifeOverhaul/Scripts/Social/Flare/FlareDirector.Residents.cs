@@ -475,13 +475,15 @@ namespace RealLifeOverhaul.Flare
             {
                 return;
             }
-            for (int i = 0; i < _file.Posts.Count; i++)
+            int heard = 0, hearsMost = FlareLiveRules.BusinessHeardPerDay[FlareRules.Clamp(Settings.FlareBusy, 0, 2)];
+            for (int i = 0; i < _file.Posts.Count && heard < hearsMost; i++)
             {
                 FlarePost p = _file.Posts[i];
                 if (p.Day != day || p.Author != FlareAuthor.Business || p.Source != FlareSource.BusinessPost || p.Place == null || p.Arg >= FlareCityRules.StudioNewsArg)
                 {
                     continue;   // a studio's or a tech firm's news was heard as it was posted (FlareDirector.Studio, .Sector)
                 }
+                heard++;   // the first few of the day are the city's attention, as ever; the rest of its shops' posts are the feed's life
                 string key = FlareCityPass.PlaceToKey(p.Place);
                 if (key != null)
                 {

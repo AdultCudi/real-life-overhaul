@@ -74,6 +74,7 @@ namespace RealLifeOverhaul.Flare
                         case FlareTalk.Event: return 900;
                         case FlareTalk.Food:
                         case FlareTalk.Night: return 850;
+                        case FlareTalk.Visit: return place ? 800 : 0;   // where they were: that business's front
                         case FlareTalk.Weather: return 800;
                         case FlareTalk.Sport: return 800;
                         case FlareTalk.Everyday:
@@ -180,6 +181,10 @@ namespace RealLifeOverhaul.Flare
                             w.Add(FlarePhotoKind.Street);
                             w.Add(FlarePhotoKind.Park);
                             w.Add(FlarePhotoKind.Landmark);
+                            break;
+                        case FlareTalk.Visit:
+                            w.Add(FlarePhotoKind.Front, p.Place);
+                            w.Add(FlarePhotoKind.Street);
                             break;
                         case FlareTalk.Food:
                             w.Add(FlarePhotoKind.Front, place ? p.Place : null, (int)FlareNiche.Food);

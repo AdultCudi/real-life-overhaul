@@ -24,7 +24,13 @@ namespace RealLifeOverhaul.Flare
             new[] { "reallife_flare_talk_everyday_0", "reallife_flare_talk_everyday_1", "reallife_flare_talk_everyday_2" },
             new[] { "reallife_flare_talk_night_0", "reallife_flare_talk_night_1", "reallife_flare_talk_night_2" },
             new[] { "reallife_flare_talk_food_0", "reallife_flare_talk_food_1", "reallife_flare_talk_food_2" },
-            new[] { "reallife_flare_talk_sport_0", "reallife_flare_talk_sport_1", "reallife_flare_talk_sport_2" }
+            new[] { "reallife_flare_talk_sport_0", "reallife_flare_talk_sport_1", "reallife_flare_talk_sport_2" },
+            // A visit to a real business, two lines for each kind of one: food, fashion, fitness, night life, anything else (FlareLiveRules.VisitVariant).
+            new[]
+            {
+                "reallife_flare_talk_visit_0", "reallife_flare_talk_visit_1", "reallife_flare_talk_visit_2", "reallife_flare_talk_visit_3", "reallife_flare_talk_visit_4",
+                "reallife_flare_talk_visit_5", "reallife_flare_talk_visit_6", "reallife_flare_talk_visit_7", "reallife_flare_talk_visit_8", "reallife_flare_talk_visit_9"
+            }
         };
 
         private static readonly string[] ReportPostKeys =
@@ -119,6 +125,14 @@ namespace RealLifeOverhaul.Flare
         {
             "reallife_flare_biz_post_0", "reallife_flare_biz_post_1", "reallife_flare_biz_post_2", "reallife_flare_biz_post_3", "reallife_flare_biz_post_4",
             "reallife_flare_biz_post_5", "reallife_flare_biz_post_6"
+        };
+
+        // A business's offer (a post's Arg from FlareLiveRules.OfferFirst): twelve ways to say it, named for the business and its district.
+        private static readonly string[] BusinessOfferKeys =
+        {
+            "reallife_flare_biz_offer_0", "reallife_flare_biz_offer_1", "reallife_flare_biz_offer_2", "reallife_flare_biz_offer_3", "reallife_flare_biz_offer_4",
+            "reallife_flare_biz_offer_5", "reallife_flare_biz_offer_6", "reallife_flare_biz_offer_7", "reallife_flare_biz_offer_8", "reallife_flare_biz_offer_9",
+            "reallife_flare_biz_offer_10", "reallife_flare_biz_offer_11"
         };
 
         /// <summary>The tycoons' own everyday lines, by their place in the rivals' catalogue (Space Karen, Bald Luthor, The Zucc).</summary>
@@ -270,6 +284,10 @@ namespace RealLifeOverhaul.Flare
                         string figure = p.Arg == FlareCityRules.CrowdfundArg ? Money(p.Who) : p.Who.ToString(System.Globalization.CultureInfo.InvariantCulture);
                         return Fill(Of(StudioNewsKeys, p.Arg - FlareCityRules.StudioNewsArg), "name", p.Name, "game", p.Text ?? string.Empty, "figure", figure);
                     }
+                    if (p.Arg >= FlareLiveRules.OfferFirst && p.Arg < FlareLiveRules.OfferFirst + FlareLiveRules.OfferKinds)
+                    {
+                        return Fill(BusinessOfferKeys[p.Arg - FlareLiveRules.OfferFirst], "name", p.Name, "district", district);
+                    }
                     return Fill(Of(BusinessPostKeys, p.Arg), "name", p.Name, "district", district);
                 case FlareSource.Invite:
                     return Fill(InviteKeys[Pick(p.Seed, 1, InviteKeys.Length) - 1], "event", InviteName(p), "time", Hour(p.When));
@@ -351,6 +369,8 @@ namespace RealLifeOverhaul.Flare
                 case "praise": return "reallife_flare_dm_praise";       // a customer after a good review of the player's business
                 case "complaint": return "reallife_flare_dm_complaint"; // ...after a poor one
                 case "question": return "reallife_flare_dm_question";   // ...after a middling one
+                case "hello_2": return "reallife_flare_dm_hello_2";     // a neighbour's hello before any post, in another voice
+                case "hello_3": return "reallife_flare_dm_hello_3";
                 default: return "reallife_flare_dm_hello";      // claims no post
             }
         }

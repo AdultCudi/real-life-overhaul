@@ -599,14 +599,20 @@ namespace RealLifeOverhaul.Ui
             _m.List.EmptyBody = FlareText.T(_flare.CityOn ? "reallife_flare_kit_city_empty_body" : "reallife_flare_kit_city_off_body");
         }
 
-        // A post about property or work: the City Office's notices and policies, a business of the city's hiring, the bank's rate.
+        // A post about offers, property or work: the City Office's notices and policies and the bank's rate, a business of the city offering or hiring,
+        // the talk of the market and of prices. (A post's Arg is its kind times ten and a variant: the kind is read from there.)
         private static bool PropertyOrJob(FlarePost p)
         {
             if (p.Author == FlareAuthor.Official)
             {
-                return p.Arg == (int)FlareOfficialPost.Notice || p.Arg == (int)FlareOfficialPost.Policy || p.Arg == (int)FlareOfficialPost.Rate;
+                int kind = p.Arg / 10;
+                return p.Source == FlareSource.Official && (kind == (int)FlareOfficialPost.Notice || kind == (int)FlareOfficialPost.Policy || kind == (int)FlareOfficialPost.Rate);
             }
-            return p.Source == FlareSource.CityTalk && (p.Arg == (int)FlareTalk.Market || p.Arg == (int)FlareTalk.Prices);
+            if (p.Author == FlareAuthor.Business && p.Source == FlareSource.BusinessPost)
+            {
+                return p.Arg == 0 || p.Arg == 4 || (p.Arg >= FlareLiveRules.OfferFirst && p.Arg < FlareLiveRules.OfferFirst + FlareLiveRules.OfferKinds);
+            }
+            return p.Source == FlareSource.CityTalk && (p.Arg / 10 == (int)FlareTalk.Market || p.Arg / 10 == (int)FlareTalk.Prices);
         }
     }
 }

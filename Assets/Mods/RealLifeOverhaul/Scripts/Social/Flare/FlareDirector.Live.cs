@@ -146,6 +146,23 @@ namespace RealLifeOverhaul.Flare
             TextsAhead();   // the day's posts: their words asked now, each by its own minute
         }
 
+        // A day before the city day, one a step (FlareLiveRules.PeopleBefore): the city's people and its shops, so Home has a day behind it on
+        // a new city's first morning and a save from before grows to its size. True while another day waits. Cost: about a hundred posts, a step.
+        private bool LiveBefore(int day)
+        {
+            if (_file == null || _facts.Day != day || Following)
+            {
+                return false;
+            }
+            bool more = FlareLiveRules.PeopleBefore(_file, _facts, _citizens, _made, out int made);
+            if (made > 0)
+            {
+                Logger?.Info("Flare: the city's people and shops before day " + day + ": " + made + " post(s) made, down to day " + Math.Max(0, _file.Net.PeopleFrom) + ".");
+                ShareChanged(null);
+            }
+            return more;
+        }
+
         private void ReadFacts(int day)
         {
             FlareCityFacts f = _facts;

@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Ui
     public static partial class FlareFace
     {
         public const float ComposerHeight = 112f, StoriesHeight = 104f, StoryWidth = 72f, StoryRing = 56f;
-        public const int MostStories = 6;
+        public const int MostStories = 8;
 
         private static void Page(UiScene s, UiAt at, FlareFaceModel m, float x, float y, float w, float h, IUiKeys keys)
         {

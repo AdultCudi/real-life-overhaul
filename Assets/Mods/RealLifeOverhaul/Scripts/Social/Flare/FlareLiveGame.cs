@@ -15,7 +15,7 @@ namespace RealLifeOverhaul.Flare
         public static IModLogger Logger;
 
         private const string EmptyBusiness = "ba:businesstype_empty";
-        private const int ShopsMost = 24;            // the city's businesses the day's posts pick from
+        private const int ShopsMost = FlareLiveRules.ShopsSample;   // the city's businesses the day's posts pick from
 
         private static bool _filterTried, _filterOn;
         private static object _chat, _nobody;

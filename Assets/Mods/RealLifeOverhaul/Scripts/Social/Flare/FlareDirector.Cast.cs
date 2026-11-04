@@ -82,6 +82,12 @@ namespace RealLifeOverhaul.Flare
             {
                 Month(day);
             }
+            FlareGame.Districts(_districts);
+            int grown = FlareCast.TopUp(_file, day, _districts);
+            if (grown > 0)
+            {
+                Logger?.Info("Flare: the city's cast grows to its size: " + grown + " more influencer(s), " + _file.ActiveInfluencers + " in all.");
+            }
             FlareGame.Shops(_file, _shops);
             FlareGame.Rivals(_rivals);
             Names(FlareBridges.Candidates, _candidates);

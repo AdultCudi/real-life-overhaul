@@ -43,9 +43,20 @@ namespace RealLifeOverhaul.Flare
         public const int CityKeepDays = 3;             // the city's posts are kept this many days (the player's, the friends' longer)
         public const int NetworkKeepDays = 4;          // ...the players' of a session
 
-        public static readonly int[] CityTalkPerDay = { 7, 14, 24 };   // the city's people's posts, by the option: quiet, normal, busy
-        public static readonly int[] OfficialMost = { 2, 4, 6 };   // by the option
-        public static readonly int[] BusinessPerDay = { 2, 4, 7 };   // by the option
+        // What a day of the city makes, by the option (quiet, normal, busy). A city of this size is never quiet: a normal day is about a hundred posts
+        // from as many accounts (the owner, 4 Nov 2026, day 5: "very few people"; it was 7, 14 and 24 of the city's people, 2, 4 and 7 shops).
+        public static readonly int[] CityTalkPerDay = { 20, 44, 72 };   // the city's people's posts: each a different person, none twice in a day
+        public static readonly int[] CaseTalkPerDay = { 7, 14, 24 };    // ...of them the first so many may be a report to the City Office or a review, as ever (the cases and customers do not grow)
+        public static readonly int[] OfficialMost = { 3, 6, 8 };   // by the option
+        public static readonly int[] BusinessPerDay = { 6, 16, 28 };   // shops' own posts: each a different business of the sample
+        public const int ShopsSample = 60;             // the city's businesses the day's posts pick from: every n-th named one of the save's list, one pass a day
+        public const int HistoryDays = 2;              // days before a city's first day (or the update's) its people's posts are made for, so Home is never empty
+        public const int VisitShare = 500;             // per mille of a resident's post that is not a case: they were at a real business of the city's
+        public const int VisitMine = 100;              // ...per mille of those at one of the player's own (the same rules as any other business)
+        public const int OfferShare = 550;             // per mille of a business's posts that are an offer of its kind (FlareText's BusinessOfferKeys), not a thank you or a hiring
+        public static readonly int[] BusinessHeardPerDay = { 2, 4, 7 };   // ...of a day's shop posts the first so many are heard by their followers, as ever; the rest are the feed's life
+        public const int VisitFrom = 8, VisitTo = 22;  // the hours a resident posts from a business they were at
+        public const int OfferFirst = 8, OfferKinds = 12;   // a business post's Arg for an offer: Arg 8 to 19 (7 is a rival's attack, 20 on a studio's news)
 
         // What a post does to a business, per cent of its customers (inside FlareRules.BuzzMost, either way).
         public const int ReviewDays = 2;
@@ -300,7 +311,37 @@ namespace RealLifeOverhaul.Flare
         /// <summary>Which of the city's people writes a day's k-th post, as CityDay picks: for drawing their face ahead of the day.</summary>
         public static int TalkCitizen(int seed, int day, int k)
         {
-            return Wide(seed, day * 31 + k, 501) % Citizens;
+            return Deal(seed, day, k, Citizens, 510);
+        }
+
+        /// <summary>
+        /// The k-th of a day dealt out of <paramref name="count"/>: from a place and a step of the day's roll, the step coprime with the count, so
+        /// nobody comes twice in a day until all have (a day's count never nears it). The same for the same seed and day on every machine.
+        /// </summary>
+        public static int Deal(int seed, int day, int k, int count, int salt)
+        {
+            if (count <= 1)
+            {
+                return 0;
+            }
+            int start = Wide(seed, day, salt) % count;
+            int step = 1 + Wide(seed, day, salt + 1) % (count - 1);
+            while (Gcd(step, count) != 1)
+            {
+                step = step % (count - 1) + 1;
+            }
+            return (int)(((long)start + (long)k * step) % count);
+        }
+
+        private static int Gcd(int a, int b)
+        {
+            while (b != 0)
+            {
+                int t = a % b;
+                a = b;
+                b = t;
+            }
+            return a;
         }
 
         /// <summary>One of the city's people by a roll, evenly among all of them.</summary>
@@ -321,10 +362,10 @@ namespace RealLifeOverhaul.Flare
             int seed = CitySeed(f);
             int busy = FlareRules.Clamp(facts.Busy, 0, 2);
             int day = facts.Day, count = 0;
-            int talk = CityTalkPerDay[busy];
+            int talk = CityTalkPerDay[busy], cases = CaseTalkPerDay[busy];
             for (int k = 0; citizens != null && citizens.Count > 0 && k < talk; k++)
             {
-                FlarePost p = Talk(f, facts, citizens, seed, k);
+                FlarePost p = Talk(f, facts, citizens, seed, k, k < cases);
                 if (p != null)
                 {
                     f.Posts.Add(p);
@@ -333,16 +374,79 @@ namespace RealLifeOverhaul.Flare
                 }
             }
             count += Officials(f, facts, seed, OfficialMost[busy]);
-            int shops = BusinessPerDay[busy];
-            for (int k = 0; k < shops && facts.Shops.Count > 0; k++)
+            count += ShopPosts(f, facts, seed, BusinessPerDay[busy]);
+            if (f.Net.PeopleFrom < 0 || f.Net.PeopleFrom > day)
             {
-                FlareBiz b = facts.Shops[FlareRules.Roll(seed, day * 13 + k, 520) % facts.Shops.Count];
+                f.Net.PeopleFrom = day;   // the days before it are made from here, a day a step (PeopleBefore)
+            }
+            FlareRules.Prune(f);
+            return count;
+        }
+
+        /// <summary>
+        /// The people's posts of a day before the city day, one day each call, newest first: what the city's people and its shops posted, without
+        /// the reports, reviews, officials and news that belong to a day that was played (cases, customers and the paper are not made up after the
+        /// fact). Makes a new city's first morning a city with a day behind it, and a save from before this version's size grow to it in a day or two.
+        /// False when there is nothing more to make.
+        /// </summary>
+        public static bool PeopleBefore(FlareFile f, FlareCityFacts facts, IReadOnlyList<FlareCitizen> citizens, List<FlarePost> made, out int count)
+        {
+            count = 0;
+            made?.Clear();
+            if (facts == null || facts.Following)
+            {
+                return false;
+            }
+            int today = facts.Day, least = Math.Max(0, today - HistoryDays);
+            int next = f.Net.PeopleFrom < 0 || f.Net.PeopleFrom > today ? today : f.Net.PeopleFrom - 1;   // a save from before: its own day first, its first made as the old size
+            if (next < least)
+            {
+                return false;
+            }
+            int seed = CitySeed(f);
+            int busy = FlareRules.Clamp(facts.Busy, 0, 2);
+            FlareCityFacts past = next == today ? facts : PastFacts(facts, next);
+            for (int k = CaseTalkPerDay[busy]; citizens != null && citizens.Count > 0 && k < CityTalkPerDay[busy]; k++)
+            {
+                FlarePost p = Talk(f, past, citizens, seed, k, false);
+                if (p != null)
+                {
+                    f.Posts.Add(p);
+                    made?.Add(p);
+                    count++;
+                }
+            }
+            count += ShopPosts(f, past, seed, BusinessPerDay[busy]);
+            f.Net.PeopleFrom = next;
+            FlareRules.Prune(f);
+            return next > least;
+        }
+
+        // The facts of an earlier day: the same city (its shops, districts and the player's own), a quiet day of no news and fine weather.
+        private static FlareCityFacts PastFacts(FlareCityFacts today, int day)
+        {
+            var past = new FlareCityFacts { Day = day, Busy = today.Busy, Following = today.Following, RealFaults = today.RealFaults };
+            past.Districts.AddRange(today.Districts);
+            past.Shops.AddRange(today.Shops);
+            past.Mine.AddRange(today.Mine);
+            return past;
+        }
+
+        // The shops' own posts of a day: so many businesses of the sample, each a different one, rival or not (the same rules for every business
+        // that is not the player's), each of its kind of offer, at an hour the game has it open.
+        private static int ShopPosts(FlareFile f, FlareCityFacts facts, int seed, int most)
+        {
+            int day = facts.Day, count = 0, shops = facts.Shops.Count;
+            for (int k = 0; k < most && k < shops; k++)
+            {
+                FlareBiz b = facts.Shops[Deal(seed, day, k, shops, 520)];
                 if (b.Mine)
                 {
                     continue;
                 }
                 FlarePost p = New(f, day, seed, 700 + k, 9, 21, FlareAuthor.Business, -1, FlareSource.BusinessPost);
-                p.Arg = FlareRules.Roll(seed, day * 17 + k, 521) % 5;
+                p.Arg = FlareRules.Roll(seed, day * 17 + k, 521) < OfferShare ? OfferFirst + FlareRules.Roll(seed, day * 19 + k, 522) % OfferKinds
+                    : FlareRules.Roll(seed, day * 17 + k, 521) % 5;
                 p.Place = b.Place;
                 p.Name = b.Name;
                 p.District = b.District;
@@ -350,7 +454,6 @@ namespace RealLifeOverhaul.Flare
                 f.Posts.Add(p);
                 count++;
             }
-            FlareRules.Prune(f);
             return count;
         }
 
@@ -369,12 +472,23 @@ namespace RealLifeOverhaul.Flare
             };
         }
 
-        // One of the city's people's posts: who, by a roll; what about, by what they care about and what the city had today.
-        private static FlarePost Talk(FlareFile f, FlareCityFacts facts, IReadOnlyList<FlareCitizen> citizens, int seed, int k)
+        // One of the city's people's posts: who, dealt out of them so nobody posts twice in a day; what about, by what they care about and what
+        // the city had today. Only the first posts of a day (<paramref name="cases"/>) may be reports or reviews, as ever; the others are talk
+        // and visits to real businesses.
+        private static FlarePost Talk(FlareFile f, FlareCityFacts facts, IReadOnlyList<FlareCitizen> citizens, int seed, int k, bool cases)
         {
             int day = facts.Day;
-            FlareCitizen c = citizens[Wide(seed, day * 31 + k, 501) % citizens.Count];
+            FlareCitizen c = citizens[Deal(seed, day, k, citizens.Count, 510)];
             int roll = FlareRules.Roll(seed, day * 37 + k, 502);
+            if (!cases)
+            {
+                FlarePost visit = roll < VisitShare ? Visit(f, facts, c, seed, k) : null;
+                if (visit != null)
+                {
+                    return visit;
+                }
+                roll = 200 + roll % 800;   // talk, whatever the roll said: the rolls below 200 are the cases'
+            }
             // A fifth are reports or reviews: what the city's people tell the City Office, and what they think of a business.
             if (roll < 120)
             {
@@ -437,6 +551,65 @@ namespace RealLifeOverhaul.Flare
                 default: p.Topic = "city"; break;
             }
             return p;
+        }
+
+        // One of the city's people at a business of the city's, by what they like: its real name, place and district, at an hour the game has it
+        // open; null when none is open then (the post is talk instead).
+        private static FlarePost Visit(FlareFile f, FlareCityFacts facts, FlareCitizen c, int seed, int k)
+        {
+            int day = facts.Day;
+            bool mine = facts.Mine.Count > 0 && (facts.Shops.Count == 0 || FlareRules.Roll(seed, day * 71 + k, 513) < VisitMine);
+            List<FlareBiz> from = mine ? facts.Mine : facts.Shops;
+            int hour = VisitFrom + FlareRules.Roll(seed, day * 977 + k, 530) % (VisitTo - VisitFrom + 1);   // the hour New gives the post
+            int roll = FlareRules.Roll(seed, day * 73 + k, 514), like = Liking(c.Persona), at = -1;
+            for (int t = 0; t < 4; t++)
+            {
+                int pick = OpenPick(from, hour, roll + t * 37);
+                if (pick < 0)
+                {
+                    break;
+                }
+                if (like < 0 || (int)from[pick].Niche == like)
+                {
+                    at = pick;
+                    break;
+                }
+                at = at < 0 ? pick : at;   // the first open one if none is to their liking
+            }
+            if (at < 0)
+            {
+                return null;
+            }
+            FlareBiz b = from[at];
+            FlarePost p = New(f, day, seed, k, VisitFrom, VisitTo, FlareAuthor.Citizen, c.Index, FlareSource.CityTalk);
+            p.Arg = (int)FlareTalk.Visit * 10 + VisitVariant(b.Niche, FlareRules.Roll(seed, day * 79 + k, 515));
+            p.Place = b.Place;
+            p.Name = b.Name;
+            p.District = b.District;
+            p.Topic = NicheTag(b.Niche);
+            return p;
+        }
+
+        // The kind of business a person likes to be seen at, or -1 for any.
+        private static int Liking(FlarePersona persona)
+        {
+            switch (persona)
+            {
+                case FlarePersona.Foodie:
+                case FlarePersona.Commuter:
+                case FlarePersona.Retiree: return (int)FlareNiche.Food;
+                case FlarePersona.Sporty: return (int)FlareNiche.Fitness;
+                case FlarePersona.NightOwl: return (int)FlareNiche.Nightlife;
+                case FlarePersona.Parent: return (int)FlareNiche.Fashion;
+                default: return -1;
+            }
+        }
+
+        /// <summary>The variant of a visit's words (0 to 9, FlareText's TalkKeys): two for each kind of business, by a roll.</summary>
+        public static int VisitVariant(FlareNiche niche, int roll)
+        {
+            int group = niche == FlareNiche.Food ? 0 : niche == FlareNiche.Fashion ? 1 : niche == FlareNiche.Fitness ? 2 : niche == FlareNiche.Nightlife ? 3 : 4;
+            return group * 2 + roll % 2;
         }
 
         /// <summary>A topic for one of the city's people: what they care about, when the city has news of it today; something everyday otherwise.</summary>

@@ -156,6 +156,153 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
+        /// <summary>Whether the player may follow an account: not themselves, nor a friend of their own life (they already follow each other), nor a sponsor's.</summary>
+        public static bool Followable(string key)
+        {
+            return key != null && key != "me" && !(key.Length > 1 && key[0] == 'f' && char.IsDigit(key[1])) && !key.StartsWith("d:", StringComparison.Ordinal);
+        }
+
+        public const int StoryHours = 24;        // a story is an account's post of the last day
+        public const int WhoDays = 2;            // accounts to follow posted in the last two days
+        private const int Kinds = 4;             // what an account is, for the mix: a business, a resident, an influencer, an official or the paper
+
+        private static int KindOf(FlarePost p)
+        {
+            switch (p.Author)
+            {
+                case FlareAuthor.Business:
+                case FlareAuthor.Brand:
+                case FlareAuthor.Tycoon:
+                case FlareAuthor.Company: return 0;
+                case FlareAuthor.Citizen:
+                case FlareAuthor.Friend: return 1;
+                case FlareAuthor.Influencer: return 2;
+                default: return 3;
+            }
+        }
+
+        /// <summary>
+        /// The stories: accounts with a post of the last day, one each, newest first. The player's friends and the accounts they follow come first;
+        /// then what the city has been posting, a business, a resident, an influencer and an official in turn, so a new account with no follows still
+        /// sees the city. Keys into <paramref name="keys"/>, each account's newest post's place in the list into <paramref name="at"/>. Cost: one walk of the posts.
+        /// </summary>
+        public static void Stories(FlareFile f, long now, int most, List<string> keys, List<int> at)
+        {
+            keys.Clear();
+            at.Clear();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            var kind = new List<int>[Kinds];
+            for (int k = 0; k < Kinds; k++)
+            {
+                kind[k] = new List<int>(most);
+            }
+            for (int i = f.Posts.Count - 1; i >= 0 && keys.Count < most; i--)
+            {
+                FlarePost p = f.Posts[i];
+                if (p.At > now || now - p.At > StoryHours * 60L || p.ReplyTo >= 0 || p.Author == FlareAuthor.Player || p.Author == FlareAuthor.Network)
+                {
+                    continue;
+                }
+                string key = FlareLiveRules.KeyOf(p);
+                if (key == null || key == "me" || !seen.Add(key))
+                {
+                    continue;
+                }
+                if (p.Author == FlareAuthor.Friend || FlareCast.Followed(f, key))
+                {
+                    keys.Add(key);
+                    at.Add(i);
+                }
+                else if (kind[KindOf(p)].Count < most)
+                {
+                    kind[KindOf(p)].Add(i);
+                }
+            }
+            for (int round = 0; keys.Count < most; round++)
+            {
+                bool any = false;
+                for (int k = 0; k < Kinds && keys.Count < most; k++)
+                {
+                    if (round < kind[k].Count)
+                    {
+                        int i = kind[k][round];
+                        keys.Add(FlareLiveRules.KeyOf(f.Posts[i]));
+                        at.Add(i);
+                        any = true;
+                    }
+                }
+                if (!any)
+                {
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Accounts to follow: the busiest influencers, the businesses and the residents that posted in the last two days, never one already followed
+        /// or one that cannot be, in turn so the list is a mix of the city. At most <paramref name="most"/> keys. Cost: one walk of the posts and the cast.
+        /// </summary>
+        public static void WhoToFollow(FlareFile f, long now, int most, List<string> into)
+        {
+            into.Clear();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            var inf = new List<string>(most);
+            for (int pass = 0; pass < most; pass++)
+            {
+                FlareInfluencer best = null;
+                for (int i = 0; i < f.Influencers.Count; i++)
+                {
+                    FlareInfluencer c = f.Influencers[i];
+                    string key = "i:" + c.Id.ToString(CultureInfo.InvariantCulture);
+                    if (c.Active && !FlareCast.Followed(f, key) && !inf.Contains(key) && (best == null || c.Followers > best.Followers))
+                    {
+                        best = c;
+                    }
+                }
+                if (best == null)
+                {
+                    break;
+                }
+                inf.Add("i:" + best.Id.ToString(CultureInfo.InvariantCulture));
+            }
+            var biz = new List<string>(most);
+            var res = new List<string>(most);
+            for (int i = f.Posts.Count - 1; i >= 0 && (biz.Count < most || res.Count < most); i--)
+            {
+                FlarePost p = f.Posts[i];
+                if (p.At > now || now - p.At > WhoDays * 1440L || p.ReplyTo >= 0)
+                {
+                    continue;
+                }
+                int kind = KindOf(p);
+                string key = kind == 0 || kind == 1 ? FlareLiveRules.KeyOf(p) : null;
+                if (key == null || p.Author == FlareAuthor.Friend || !Followable(key) || FlareCast.Followed(f, key) || !seen.Add(key))
+                {
+                    continue;
+                }
+                List<string> to = kind == 0 ? biz : res;
+                if (to.Count < most)
+                {
+                    to.Add(key);
+                }
+            }
+            for (int round = 0; into.Count < most && (round < inf.Count || round < biz.Count || round < res.Count); round++)
+            {
+                if (round < inf.Count && into.Count < most)
+                {
+                    into.Add(inf[round]);
+                }
+                if (round < biz.Count && into.Count < most)
+                {
+                    into.Add(biz[round]);
+                }
+                if (round < res.Count && into.Count < most)
+                {
+                    into.Add(res[round]);
+                }
+            }
+        }
+
         /// <summary>Whether words hold what a search asks, whatever the case; an empty search holds everything.</summary>
         public static bool Matches(string words, string query)
         {

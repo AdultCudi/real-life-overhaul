@@ -21,6 +21,8 @@ namespace RealLifeOverhaul.Ui
         private readonly List<string> _whoKeys = new List<string>(WhoMost);
         private readonly List<string> _storyKeys = new List<string>(StoriesMost);
         private readonly List<int> _storyShops = new List<int>(StoriesMost);
+        private readonly List<string> _storyPicks = new List<string>(StoriesMost);
+        private readonly List<int> _storyAt = new List<int>(StoriesMost);
         private readonly List<string> _quick = new List<string>(4);
         private readonly List<FlareReviewNote> _notes = new List<FlareReviewNote>(ReviewsMost);
         private readonly HashSet<string> _seenKeys = new HashSet<string>();
@@ -240,36 +242,10 @@ namespace RealLifeOverhaul.Ui
 
         private static string ReviewsCount(int n) => n == 1 ? FlareText.T("reallife_flare_kit_reviews_one") : FlareText.Fill("reallife_flare_kit_reviews_count", "count", FlareText.N(n));
 
-        // Accounts to follow: the busiest influencers the player does not follow yet, then the city's businesses that posted lately.
+        // Accounts to follow: a mix of the city, the busiest influencers, the businesses and the residents that posted lately (FlareFeedRules).
         private void WhoToFollow(FlareFile file, List<string> into, int most)
         {
-            for (int pass = 0; pass < most; pass++)
-            {
-                FlareInfluencer best = null;
-                for (int i = 0; i < file.Influencers.Count; i++)
-                {
-                    FlareInfluencer inf = file.Influencers[i];
-                    string key = "i:" + inf.Id.ToString(CultureInfo.InvariantCulture);
-                    if (inf.Active && !Following(key) && !into.Contains(key) && (best == null || inf.Followers > best.Followers))
-                    {
-                        best = inf;
-                    }
-                }
-                if (best == null)
-                {
-                    break;
-                }
-                into.Add("i:" + best.Id.ToString(CultureInfo.InvariantCulture));
-            }
-            for (int i = file.Posts.Count - 1; i >= 0 && into.Count < most; i--)
-            {
-                FlarePost p = file.Posts[i];
-                string key = p.Author == FlareAuthor.Business || p.Author == FlareAuthor.Brand ? FlareLiveRules.KeyOf(p) : null;
-                if (key != null && Followable(key) && !Following(key) && !into.Contains(key))
-                {
-                    into.Add(key);
-                }
-            }
+            FlareFeedRules.WhoToFollow(file, _flare.Now, most, into);
         }
 
         // The line under an account's name: its handle and its followers, or what it is.
@@ -348,7 +324,8 @@ namespace RealLifeOverhaul.Ui
 
         private static readonly UiIcon[] ChipIcons = { UiIcon.Image, UiIcon.ChartPie, UiIcon.Megaphone, UiIcon.MapPin };
 
-        // The stories: the player's businesses first, then the accounts followed that posted in the last day, newest first.
+        // The stories: the player's businesses first, then the friends and the accounts followed that posted in the last day, then what the
+        // city has been posting (a business, a resident, an influencer, an official in turn), newest first (FlareFeedRules.Stories).
         private void Stories(FlareFile file, long now)
         {
             _storyKeys.Clear();
@@ -365,24 +342,14 @@ namespace RealLifeOverhaul.Ui
                 _storyKeys.Add(null);
                 _storyShops.Add(i);
             }
-            _seenKeys.Clear();
-            for (int i = file.Posts.Count - 1; i >= 0 && names.Count < StoriesMost; i--)
+            FlareFeedRules.Stories(file, now, StoriesMost - names.Count, _storyPicks, _storyAt);
+            for (int i = 0; i < _storyPicks.Count; i++)
             {
-                FlarePost p = file.Posts[i];
-                if (p.At > now || now - p.At > 1440 || p.ReplyTo >= 0 || Hidden(file, p))
-                {
-                    continue;
-                }
-                string key = FlareLiveRules.KeyOf(p);
-                if (key == null || key == "me" || !FlareCast.Followed(file, key) || !_seenKeys.Add(key))
-                {
-                    continue;
-                }
-                Author(p, out string name, out _, out _, out _);
+                Author(file.Posts[_storyAt[i]], out string name, out _, out _, out _);
                 names.Add(name);
-                hues.Add(UiColour.HueOf(key));
+                hues.Add(UiColour.HueOf(_storyPicks[i]));
                 shops.Add(false);
-                _storyKeys.Add(key);
+                _storyKeys.Add(_storyPicks[i]);
                 _storyShops.Add(-1);
             }
             _m.Stories = names.ToArray();
@@ -443,8 +410,8 @@ namespace RealLifeOverhaul.Ui
             {
                 TagRow(file, _trendTags[i], _trendCounts[i], now);
             }
-            var keys = new List<string>(6);
-            WhoToFollow(file, keys, 6);
+            var keys = new List<string>(ExploreWhoMost);
+            WhoToFollow(file, keys, ExploreWhoMost);
             if (keys.Count > 0)
             {
                 Section(FlareText.T("reallife_flare_kit_section_accounts"));

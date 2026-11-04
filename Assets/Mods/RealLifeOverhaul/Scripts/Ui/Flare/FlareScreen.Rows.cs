@@ -355,10 +355,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         // Whether the player may follow an account: not themselves, nor a friend of their own life (they already follow each other).
-        private static bool Followable(string key)
-        {
-            return key != null && key != "me" && !(key.Length > 1 && key[0] == 'f' && char.IsDigit(key[1])) && !key.StartsWith("d:", StringComparison.Ordinal);
-        }
+        private static bool Followable(string key) => FlareFeedRules.Followable(key);
 
         private bool Following(string key) => _flare.File != null && FlareCast.Followed(_flare.File, key);
 
