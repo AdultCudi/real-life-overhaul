@@ -39,6 +39,12 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Told when the pointer goes down on a target or drags from it: its node, the phase and the place in px of the layout.</summary>
         public System.Action<int, UiDragPoint> PointerDragged;
 
+        /// <summary>Told when the pointer moves over a target that asked for it (Tracked): its node and the place in px of the layout.</summary>
+        public System.Action<int, UiDragPoint> PointerMoved;
+
+        /// <summary>Whether a target wants the pointer's moves (IUiTracking). Set by the host.</summary>
+        public System.Func<int, bool> Tracked;
+
         /// <summary>A place on the screen as px of the layout, the root's top left its origin; false when it is off the root's plane.</summary>
         public bool ToLayout(Vector2 screen, Camera camera, out Vector2 px)
         {

@@ -143,6 +143,8 @@ namespace RealLifeOverhaul.Ui
                 _view.PointerPressed = Guard.Wrap<int>(PointerPressed);
                 _view.Wheeled = Guard.Wrap<int, float>(Wheeled);
                 _view.PointerDragged = Guard.Wrap<int, UiDragPoint>(PointerDragged);
+                _view.PointerMoved = Guard.Wrap<int, UiDragPoint>(PointerMoved);
+                _view.Tracked = Tracked;
             }
             _laidSize = Vector2.zero;
             if (_cost == null)
@@ -709,6 +711,29 @@ namespace RealLifeOverhaul.Ui
                 Layout();
             }
             return true;
+        }
+
+        // A target the screen follows the mouse across (IUiTracking): only on the layer that takes the pointer now.
+        private bool Tracked(int node)
+        {
+            return _screen is IUiTracking tracking && node >= 0 && node < _scene.NodeCount && tracking.Tracks(_scene.Nodes[node].Command) && !_typing
+                   && _scene.Nodes[node].Layer == UiFocusRules.TopLayer(_scene);
+        }
+
+        // The mouse moved over a tracked target: the screen reads where, and lays out again only if what it reads changed.
+        private void PointerMoved(int node, UiDragPoint at)
+        {
+            using var cost = Measured(UiWork.Pointer);
+            if (!(_screen is IUiTracking tracking) || node < 0 || node >= _scene.NodeCount)
+            {
+                return;
+            }
+            ref UiNode n = ref _scene.Nodes[node];
+            tracking.Moved(n.Command, n.Arg, at.X, at.Y);
+            if (_screen.Dirty)
+            {
+                Layout();
+            }
         }
 
         // The pointer went down on a target or drags from it: a screen that takes hold of its targets hears where.
