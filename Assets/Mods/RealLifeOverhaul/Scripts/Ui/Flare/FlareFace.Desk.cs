@@ -34,6 +34,23 @@ namespace RealLifeOverhaul.Ui
             BarsCard(s, at, b, cx + cw + gap, cy, cw);
             FiguresCard(s, at, b.VisitsTitle, b.Figures, b.FigureLabels, cx + (cw + gap) * 2f, cy, x + w - UiTokens.S4 - (cx + (cw + gap) * 2f), CardHeight);
             cy += CardHeight + UiTokens.S4;
+            if (!string.IsNullOrEmpty(b.ReachTitle))
+            {
+                const float reachH = 96f;
+                int reach = Card(s, at, cx, cy, inner, reachH);
+                UiAt inReach = at.In(reach);
+                UiDraw.Text(s, inReach, cx + UiTokens.S4, cy + UiTokens.S3, inner - UiTokens.S8, UiStyle.SectionHeader, UiRole.Text2, b.ReachTitle, UiFlags.Label | UiFlags.Truncate);
+                float ry = cy + UiTokens.S3 + L(UiStyle.SectionHeader) + UiTokens.S2;
+                if (Drawn(b.Reach))
+                {
+                    UiDraw.Spark(s, inReach, cx + UiTokens.S4, ry, inner - UiTokens.S8, cy + reachH - UiTokens.S3 - ry, b.Reach, UiRole.Chart2);
+                }
+                else
+                {
+                    UiDraw.Text(s, inReach, cx + UiTokens.S4, ry, inner - UiTokens.S8, UiStyle.Body, UiRole.Text2, b.ReachEmpty, UiFlags.Truncate);
+                }
+                cy += reachH + UiTokens.S4;
+            }
             if (!string.IsNullOrEmpty(b.Warning))
             {
                 int warn = UiDraw.Box(s, at, cx, cy, inner, WarningHeight, UiRole.WarnSoft, UiRole.None, UiTokens.RadiusLarge);
@@ -164,7 +181,7 @@ namespace RealLifeOverhaul.Ui
                 for (int i = 0; i < n; i++)
                 {
                     float tx = cx + i * (tw + UiTokens.S3);
-                    StatCard(s, at, tx, cy, i == n - 1 ? cx + inner - tx : tw, StatHeight, st.Labels[i], At(st.Figures, i), At(st.Deltas, i), i < st.Tones.Length ? st.Tones[i] : 0);
+                    StatCard(s, at, tx, cy, tw, StatHeight, st.Labels[i], At(st.Figures, i), At(st.Deltas, i), i < st.Tones.Length ? st.Tones[i] : 0);
                 }
                 cy += StatHeight + UiTokens.S4;
             }
@@ -269,7 +286,10 @@ namespace RealLifeOverhaul.Ui
                 FiguresCard(s, at, c.WeekTitle, c.WeekFigures, c.WeekLabels, cx + lw + gap, cy, rw, CityBandHeight);
                 cy += CityBandHeight + UiTokens.S3;
             }
-            List(s, at, m.List, cx, cy, inner, y + h - cy, keys);
+            if (!c.Shown || m.List.Count > 0)
+            {
+                List(s, at, m.List, cx, cy, inner + UiTokens.S3, y + h - cy, keys);   // a new account's page says it once, in the band
+            }
         }
 
         // The followers by district: the donut, and beside it each district named with its followers; or why there is nothing to show.
@@ -319,7 +339,7 @@ namespace RealLifeOverhaul.Ui
                 for (int i = 0; i < b.Sort.Length; i++)
                 {
                     float pw = PillWidth(b.Sort[i]);
-                    Pill(s, at, sx, cy, pw, b.Sort[i], i == b.SortChosen ? PillKind.Light : PillKind.Quiet, SortCommand, i);
+                    Pill(s, at, sx, cy, pw, b.Sort[i], i == b.SortChosen ? PillKind.Chosen : PillKind.Line, SortCommand, i);
                     sx += pw + UiTokens.S2;
                 }
                 Picks(s, at, x + UiTokens.S4, cy, w - UiTokens.S8 - sortW - UiTokens.S2, b.Picker2, b.Chosen2, NicheCommand);
@@ -328,6 +348,19 @@ namespace RealLifeOverhaul.Ui
             else
             {
                 cy += UiTokens.S2;
+            }
+            if (m.List.Count > 0 && m.List.Rows[0].Tags != null)
+            {
+                // One header for the columns: what each figure is, over its column.
+                string[] labels = m.List.Rows[0].Tags;
+                int cols = labels.Length / 2;
+                float rowW = w - UiTokens.S8 - UiTokens.S3, fx = x + UiTokens.S4 + HireFigureX(rowW, cols);
+                for (int i = 0; i < cols; i++)
+                {
+                    UiDraw.Text(s, at, fx + i * HireColumn, cy, HireColumn - UiTokens.S3, UiStyle.SectionHeader, UiRole.Text2, labels[i * 2],
+                        UiFlags.Label | UiFlags.Right | UiFlags.Wrap | UiFlags.Truncate, 2);
+                }
+                cy += UiTokens.S8;
             }
             List(s, at, m.List, x + UiTokens.S4, cy, w - UiTokens.S8, bottom - cy, keys);
         }

@@ -60,7 +60,7 @@ internal static partial class UiSamples
             case "reply_sheet": FlareBusiness(m, t, 1); FlareReplySheet(m, t); break;
             case "photo_picker": FlareHome(m, t, 0); FlareCompose(m, t, false); FlarePhotoPicker(m, t); break;
             case "notices_sales": FlareNotices(m, t, true); m.Tab = 1; FlareKeepOnly(m.List, 1); break;
-            case "city_new": FlareCity(m, t, false); m.City.Names = m.City.Values = new string[0]; m.City.Shares = new float[0]; m.City.Rest = 0f; m.City.WeekFigures = new[] { t("reallife_flare_kit_not_yet", "Not yet"), t("reallife_flare_kit_not_yet", "Not yet"), t("reallife_flare_kit_not_yet", "Not yet") }; break;
+            case "city_new": FlareCity(m, t, false); m.City.Names = m.City.Values = new string[0]; m.City.Shares = new float[0]; m.City.Rest = 0f; m.City.WeekFigures = new[] { "0", "0", "$0" }; break;
             case "compose_report": FlareHome(m, t, 0); FlareComposeKind(m, t, 2); break;
             case "compose_moment": FlareHome(m, t, 0); FlareComposeKind(m, t, 1); break;
             case "ad_sheet": FlareBusiness(m, t, 1); FlareAdSheet(m, t); break;
@@ -534,6 +534,9 @@ internal static partial class UiSamples
             + " \u00b7 12 Lexington Avenue \u00b7 " + t("reallife_flare_kit_open_hours", "open about {hours} hours a day").Replace("{hours}", "12") + " \u00b7 "
             + t("reallife_flare_kit_opened", "opened day {day}").Replace("{day}", "9");
         b.Promote = t("reallife_flare_kit_promote_ad", "Run an ad");
+        b.ReachTitle = t("reallife_flare_kit_reach_title", "Your reach each day");
+        b.ReachEmpty = t("reallife_flare_kit_reach_empty", "Not enough days yet.");
+        b.Reach = new float[] { 800, 950, 900, 1300, 1250, 2100, 1800, 2400, 2250, 3100, 2800, 3600 };
         b.Rival = t("reallife_flare_kit_rival_line", "{business} is rated {stars} stars in the same district").Replace("{business}", "Speedy Bites").Replace("{stars}", "4.1");
         b.RatingTitle = t("reallife_flare_kit_rating", "Rating");
         b.Rating = turning ? "3.6" : "4.3";
@@ -719,7 +722,7 @@ internal static partial class UiSamples
         band.WeekLabels = new[] { t("reallife_flare_kit_fig_seen", "Saw your posts"), t("reallife_flare_kit_fig_visits", "Visits brought"), t("reallife_flare_kit_fig_takings", "Takings") };
         if (!some)
         {
-            band.WeekFigures = new[] { "-", "-", "-" };
+            band.WeekFigures = new[] { "0", "0", "$0" };
             return;
         }
         band.Names = new[] { "Murray Hill", "Midtown", "Garment District", "Chelsea" };
@@ -1000,7 +1003,7 @@ internal static partial class UiSamples
         FlareSheet(m, t, FlareFace.EditSheet);
         FlareSheetModel k = m.Sheet0;
         k.Title = t("reallife_flare_kit_edit_profile", "Edit profile");
-        k.Line = t("reallife_flare_kit_compose_as", "Posting as {name}, {handle}").Replace("{name}", FlareMe).Replace("{handle}", FlareMyHandle);
+        k.Line = null;
         k.Field = true;
         k.FieldArg = FlareFace.BioField;
         k.FieldText = "Owner of Bloom Cafe and Bloom Bakery. Coffee first.";

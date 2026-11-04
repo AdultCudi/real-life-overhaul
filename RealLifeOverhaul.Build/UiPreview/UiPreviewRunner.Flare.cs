@@ -39,12 +39,12 @@ public static partial class UiPreviewRunner
         Add("hire_sheet", "13.jpg", FlareFace.SheetConfirmCommand, 0, "D");
         Add("reply_sheet", "02.jpg", FlareFace.OptionCommand, 1, "D");
         Typed(Add("photo_picker", "13.jpg", FlareFace.PickerPhotoCommand, 2, "D"), FlareFace.PickerField);
-        Add("notices_sales", "02.jpg", FlareFace.MarkAllCommand, 0, "D");
-        Add("city_new", "13.jpg", FlareFace.NavCommand, 8, "D");
-        Add("compose_report", "11.jpg", FlareFace.SheetChipCommand, 2, "D");
-        Add("compose_moment", "02.jpg", FlareFace.SheetChipCommand, 1, "D");
-        Add("ad_sheet", "13.jpg", FlareFace.SheetConfirmCommand, 0, "D");
-        Typed(Add("edit_sheet", "02.jpg", FlareFace.SheetConfirmCommand, 0, "D"), FlareFace.BioField);
+        Add("notices_sales", "02.jpg", FlareFace.MarkAllCommand, 0, "DDDR");
+        Add("city_new", "13.jpg", FlareFace.NavCommand, 8, "DDDDRD");
+        Add("compose_report", "11.jpg", FlareFace.SheetChipCommand, 2, "DDDDDDDD");
+        Add("compose_moment", "02.jpg", FlareFace.SheetChipCommand, 1, "DDDDDDRD");
+        Add("ad_sheet", "13.jpg", FlareFace.SheetConfirmCommand, 0, "DDDDDDD");
+        Typed(Add("edit_sheet", "02.jpg", FlareFace.SheetConfirmCommand, 0, "DDDD"), FlareFace.BioField);
 
         Screen Add(string state, string backdrop, int hover, int arg, string walk)
         {

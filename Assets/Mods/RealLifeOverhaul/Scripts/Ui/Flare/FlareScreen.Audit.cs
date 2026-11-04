@@ -86,7 +86,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         // A trend card's Promote: the compose sheet about the business in the trend's district, its promotion already chosen.
-        private bool PromoteTrend(int shop)
+        private bool PromoteTrend(int shop, string tag)
         {
             List<FlareShop> shops = _flare != null && _flare.Running ? _flare.MyShops() : null;
             if (shops == null || shop < 0 || shop >= shops.Count || !OpenCompose(2))
@@ -95,6 +95,7 @@ namespace RealLifeOverhaul.Ui
             }
             _place = shop;
             _promote = 1;
+            _composeTag = tag;   // the post is about the trend: its subject is the tag
             Photos(shops);
             return true;
         }
@@ -191,7 +192,7 @@ namespace RealLifeOverhaul.Ui
         private void EditSheet(FlareSheetModel k)
         {
             k.Title = FlareText.T("reallife_flare_kit_edit_profile");
-            k.Line = FlareText.Fill("reallife_flare_kit_compose_as", "name", _flare.MyName, "handle", _flare.MyHandle);
+            k.Line = null;
             k.Field = true;
             k.FieldArg = FlareFace.BioField;
             k.FieldText = _kit.Bio;

@@ -571,6 +571,12 @@ namespace RealLifeOverhaul.Flare
                         }
                     }
                     break;
+                case 7:
+                    if (!ToLetStep())
+                    {
+                        _dayStep = 7;   // the walk over the city's premises to let wants another slice, the next frame
+                    }
+                    break;
                 default:
                     _dayStep = -1;
                     FlareDayReport r = _dayReport;

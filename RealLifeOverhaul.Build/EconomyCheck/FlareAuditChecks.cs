@@ -303,11 +303,34 @@ internal static partial class Program
         };
         FlareDeskRules.WeekTotals(funnels, 20, out int seen, out int came, out long spent);
         Check(seen == 400 && came == 14 && spent == 17000, "flare audit: the week's totals add the player's posts and ads of the last seven days, not older ones and not a business page's");
+        // The city's own ads come out of the day pass (the same one the population's day runs), not out of a hand-built list: each is a business of the city's or
+        // a rival's, kept by its key for the day, and the notifications and the shared-reach line read them.
+        int dayAds = rig.C.CityAds.Count;
+        bool real = dayAds > 0 && dayAds <= FlareCityCatalogue.CityAdsKept;
+        foreach (FlareAd ad in rig.C.CityAds)
+        {
+            int b = rig.S.BusinessOfKey(ad.Place);
+            real &= !ad.Mine && b >= 0 && rig.S.Businesses.Owner[b] != (byte)RealLifeOverhaul.Population.Owner.Player && ad.From == rig.S.Day && ad.Reach == FlareCityCatalogue.CityAdReach
+                    && ad.District == rig.S.Businesses.District[b];
+        }
+        var told = new List<FlareNotice>();
+        var dayFile = FlareRules.Open(2, rig.S.Day, 30, 50);
+        FlareNoticeRules.AddDerived(dayFile, FlareLiveRules.Now(rig.S.Day, 12, 0), rig.C.CityAds, told, new List<string>(), new List<int>());
+        int rivalNotices = 0;
+        foreach (FlareNotice n in told)
+        {
+            rivalNotices += n.Kind == FlareNoticeKind.Rival && n.Figure == FlareCityCatalogue.CityAdReach ? 1 : 0;
+        }
+        FlareAd firstAd = dayAds > 0 ? rig.C.CityAds[0] : null;
+        bool shares = firstAd != null && FlareDeskRules.SharedWith(rig.C.CityAds, firstAd.District, rig.S.Day, "not~theirs") != null
+                      && FlareDeskRules.SharedWith(rig.C.CityAds, firstAd.District, rig.S.Day + 5, "not~theirs") == null;
+        Check(real && rivalNotices == Math.Min(FlareNoticeRules.RivalMost, dayAds) && shares,
+            "flare audit: the city's and the rivals' ads of the day pass reach the notifications as rival notices and the shared-reach line (" + dayAds + " ads kept, " + rivalNotices + " notices)");
         // The ad that shares the reach.
         var ads = new List<FlareAd>
         {
-            new FlareAd { Place = "z~9", Name = "Burger Barn", District = 2, Days = 2, From = 20 }, new FlareAd { Place = "a~1", Name = "Mine", District = 2, Days = 2, From = 20 },
-            new FlareAd { Place = "y~8", Name = "Elsewhere", District = 5, Days = 3, From = 20 }, new FlareAd { Place = "x~7", Name = "Over", District = 2, Days = 1, From = 10 }
+            new FlareAd { Place = "z~9", Name = "Burger Barn", District = 2, Days = 2, From = 20, Mine = false }, new FlareAd { Place = "a~1", Name = "Mine", District = 2, Days = 2, From = 20 },
+            new FlareAd { Place = "y~8", Name = "Elsewhere", District = 5, Days = 3, From = 20, Mine = false }, new FlareAd { Place = "x~7", Name = "Over", District = 2, Days = 1, From = 10, Mine = false }
         };
         FlareAd shared = FlareDeskRules.SharedWith(ads, 2, 21, "a~1");
         Check(shared != null && shared.Name == "Burger Barn" && FlareDeskRules.SharedWith(ads, 2, 25, "a~1") == null && FlareDeskRules.SharedWith(ads, 4, 21, "a~1") == null,
@@ -405,7 +428,7 @@ internal static partial class Program
             "flare audit: the compose sheet writes a moment, a report, a review and an announcement with its tone and mention, and the hire sheet its audience");
         Check(director.Contains("FlareNoticeRules.TierUp(") && director.Contains("TierDay(day);") && director.IndexOf("_file.TierSeen = tier;", StringComparison.Ordinal) < 0
               && PlayFile("Social", "Flare", "FlareDirector.Creator.cs").Contains("_city.CreatorTotal += cents;")
-              && PlayFile("Social", "Flare", "FlareDirector.Kit.cs").Contains("_city.Ads : null"),
+              && PlayFile("Social", "Flare", "FlareDirector.Kit.cs").Contains("CityAdsNamed()") && director.Contains("ToLetStep()") && PlayFile("Wiring", "Wiring.FlareCityLinks.cs").Contains("_toLetScan = new Districts.ToLetScan()"),
             "flare audit: the tier is checked on the day's round (not only in a post), the creator income paid is kept, and the notifications read the city's ads");
         // The new texts: every key the new code asks for is in the three locales.
         string en = PlayFile("..", "Locales", "en.json");

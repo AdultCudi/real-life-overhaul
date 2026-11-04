@@ -541,15 +541,16 @@ namespace RealLifeOverhaul.Ui
         {
             _m.Head = FlareText.T("reallife_flare_nav_notices");
             _m.HeadLine = _unseen > 0 ? FlareText.Fill("reallife_flare_kit_new", "count", FlareText.N(_unseen)) : FlareText.T("reallife_flare_kit_all_seen");
+            List<FlareNotice> notices = _flare.KitNotices();
             _m.Tabs = new string[NoticeTabKeys.Length];
             for (int i = 0; i < NoticeTabKeys.Length; i++)
             {
-                _m.Tabs[i] = FlareText.T(NoticeTabKeys[i]);
+                int count = i == 0 ? 0 : FlareNoticeRules.Count(notices, i);   // each tab says how many it holds
+                _m.Tabs[i] = count > 0 ? FlareText.T(NoticeTabKeys[i]) + " " + count.ToString(CultureInfo.InvariantCulture) : FlareText.T(NoticeTabKeys[i]);
             }
             _m.Tab = _kit.NoticeTab;
             _m.MarkAll = FlareText.T("reallife_flare_kit_mark_all");
             _m.MarkAllOff = _unseen == 0;
-            List<FlareNotice> notices = _flare.KitNotices();
             NeedsAnswer(file, now);
             int shown = 0;
             for (int i = 0; i < notices.Count && shown < NoticesMost; i++)

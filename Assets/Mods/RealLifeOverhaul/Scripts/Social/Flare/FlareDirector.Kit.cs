@@ -30,7 +30,7 @@ namespace RealLifeOverhaul.Flare
                 return _kitNotices;
             }
             MyPlaces();
-            FlareLiveRules.AllNotices(_file, Now, MeKey, _myPlaces, CityOn ? _city.Offers : null, _reactions, _kitNotices, KitNoticesMost, CityOn ? _city.Ads : null);
+            FlareLiveRules.AllNotices(_file, Now, MeKey, _myPlaces, CityOn ? _city.Offers : null, _reactions, _kitNotices, KitNoticesMost, CityAdsNamed());
             return _kitNotices;
         }
 

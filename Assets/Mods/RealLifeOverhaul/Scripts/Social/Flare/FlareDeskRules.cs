@@ -86,7 +86,7 @@ namespace RealLifeOverhaul.Flare
             for (int i = ads != null ? ads.Count - 1 : -1; i >= 0; i--)
             {
                 FlareAd ad = ads[i];
-                if (ad.Place != place && day >= ad.From && day < ad.From + Math.Max(1, ad.Days) && (ad.District < 0 || ad.District == district))
+                if (!ad.Mine && ad.Place != place && day >= ad.From && day < ad.From + Math.Max(1, ad.Days) && (ad.District < 0 || ad.District == district))
                 {
                     return ad;
                 }

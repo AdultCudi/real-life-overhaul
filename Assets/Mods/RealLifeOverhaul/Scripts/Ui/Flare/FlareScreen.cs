@@ -200,6 +200,10 @@ namespace RealLifeOverhaul.Ui
         public bool Press(int command, int arg)
         {
             bool done;
+            if (command != FlareFace.ButtonCommand)
+            {
+                _kit.EndArmed = -1;   // asked to end a campaign, then did something else: the question lapses
+            }
             try
             {
                 done = Pressed(command, arg);
@@ -372,6 +376,7 @@ namespace RealLifeOverhaul.Ui
         private void Show(int page)
         {
             _page = page;
+            _kit.EndArmed = -1;
             _sheet = FlareFace.NoSheet;
             _m.List.Offset = 0f;
             _m.List.Footed = false;

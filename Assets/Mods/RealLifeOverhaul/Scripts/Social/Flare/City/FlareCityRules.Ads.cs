@@ -177,6 +177,24 @@ namespace RealLifeOverhaul.Flare
             return n;
         }
 
+        /// <summary>
+        /// A city business's ad of the day kept for the kit to read: its place is the population's business key ("street|number"), the newest of
+        /// <see cref="FlareCityCatalogue.CityAdsKept"/> stay. Never the player's own (those are in <see cref="FlareCityState.Ads"/>).
+        /// </summary>
+        public static void NoteCityAd(FlareCityState c, FlareAd ad, string businessKey)
+        {
+            if (ad == null || ad.Mine || string.IsNullOrEmpty(businessKey))
+            {
+                return;
+            }
+            ad.Place = businessKey;
+            while (c.CityAds.Count >= FlareCityCatalogue.CityAdsKept)
+            {
+                c.CityAds.RemoveAt(0);
+            }
+            c.CityAds.Add(ad);
+        }
+
         /// <summary>A city business's ad of the day: its own district's residents who care for its kind, <see cref="FlareCityCatalogue.CityAdReach"/> of them.</summary>
         public static FlareAd CityAd(PopulationState s, int b, int day, int seed)
         {

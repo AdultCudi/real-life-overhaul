@@ -130,6 +130,8 @@ namespace RealLifeOverhaul.Flare
         // ---- the funnel, the ads and the voices
         public readonly List<FlareFunnel> Funnels = new List<FlareFunnel>(FlareCityCatalogue.FunnelsMost);
         public readonly List<FlareAd> Ads = new List<FlareAd>(8);
+        // The city's and the rivals' own ads of the last days, by the population's business key (not saved).
+        public readonly List<FlareAd> CityAds = new List<FlareAd>(FlareCityCatalogue.CityAdsKept);
         public readonly List<FlareOffer> Offers = new List<FlareOffer>(8);   // the city's businesses' offers of paid posts (FlareCityRules.Creator)
         public int NextOffer = 1;
         public long CreatorPaid;                     // the last creator income paid, cents (the studio shows it); saved at the end of the use columns

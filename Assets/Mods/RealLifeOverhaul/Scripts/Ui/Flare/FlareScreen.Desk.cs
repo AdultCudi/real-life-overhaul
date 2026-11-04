@@ -42,6 +42,9 @@ namespace RealLifeOverhaul.Ui
             b.Chosen = _shop;
             _m.HeadLine = BusinessLine(shop);
             b.Promote = _flare.CityOn ? FlareText.T("reallife_flare_kit_promote_ad") : null;
+            b.ReachTitle = FlareText.T("reallife_flare_kit_reach_title");
+            b.ReachEmpty = FlareText.T("reallife_flare_kit_reach_empty");
+            b.Reach = ReachLine(file);
             b.Rival = _flare.CompetitorOf(shop.Place, out string rival, out int tenths)
                 ? FlareText.Fill("reallife_flare_kit_rival_line", "business", rival, "stars", (tenths / 10f).ToString("0.0", CultureInfo.InvariantCulture)) : null;
             // The stars, as the city's residents gave them, the answered ones weighed as the reply rules say.
@@ -78,6 +81,27 @@ namespace RealLifeOverhaul.Ui
             _m.List.EmptyIcon = UiIcon.Star;
             _m.List.EmptyTitle = FlareText.T("reallife_flare_kit_no_reviews");
             _m.List.EmptyBody = FlareText.T("reallife_flare_kit_no_reviews_body");
+        }
+
+        // The account's reach a day, only the days that have one (the days before the first post are not zeros of a chart); null with fewer than two.
+        private static float[] ReachLine(FlareFile file)
+        {
+            int first = 0;
+            while (first < file.ReachDays.Length && file.ReachDays[first] <= 0)
+            {
+                first++;
+            }
+            int n = file.ReachDays.Length - first;
+            if (n < 2)
+            {
+                return null;
+            }
+            var line = new float[n];
+            for (int i = 0; i < n; i++)
+            {
+                line[i] = file.ReachDays[first + i];
+            }
+            return line;
         }
 
         // A business's line under its name: its kind, how many hours a day it is open, its address and district, and the day it opened.
@@ -128,6 +152,7 @@ namespace RealLifeOverhaul.Ui
             ref FlareRow r = ref Add(_m.List, RowAct.Review, p, key);
             r.Kind = FlareRowKind.Review;
             r.Name = name;
+            r.Hue = UiColour.HueOf(key ?? name);
             r.Stars = FlareRules.Clamp(p.Arg, 1, 5);
             r.Time = Ago(p.At, now);
             r.Text = FlareFeedRules.Plain(p.Text ?? _flare.WordsFor(p, name));
@@ -162,6 +187,7 @@ namespace RealLifeOverhaul.Ui
             r.Kind = FlareRowKind.Review;
             r.Name = _flare.ReviewerName(n.Person);
             r.Stars = FlareRules.Clamp(n.Stars, 1, 5);
+            r.Hue = UiColour.HueOf(r.Name ?? "?");
             r.Time = Ago(FlareLiveRules.Now(n.Day, FlareLiveRules.NoticeHour, 0), now);
             r.Text = NoteWords(n, shop.Name);
             if (!string.IsNullOrEmpty(n.Answer))
@@ -554,7 +580,7 @@ namespace RealLifeOverhaul.Ui
                 for (int i = 0; i < trends.Rows.Count && _m.List.Count < CardsMost; i++)
                 {
                     FlareViewRow t = trends.Rows[i];
-                    ref FlareRow r = ref Add(_m.List, mine ? RowAct.Trend : RowAct.None, null, null, mine ? ShopIn(myShops, t.Where) : 0);
+                    ref FlareRow r = ref Add(_m.List, mine ? RowAct.Trend : RowAct.None, null, mine ? TagOf(FlareText.T(t.What)) : null, mine ? ShopIn(myShops, t.Where) : 0);
                     r.Kind = FlareRowKind.Card;
                     r.Icon = UiIcon.ChartLineUp;
                     r.Tint = UiRole.OkText;
@@ -713,8 +739,7 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                string none = FlareText.T("reallife_flare_kit_not_yet");
-                c.WeekFigures = new[] { none, none, none };
+                c.WeekFigures = new[] { FlareText.N(0), FlareText.N(0), FlareText.Money(0) };   // a week with nothing measured is a real zero
             }
         }
 
@@ -742,6 +767,20 @@ namespace RealLifeOverhaul.Ui
                     : FlareText.Fill(mv.Count == 1 ? "reallife_flare_kit_move_to_let_one" : "reallife_flare_kit_move_to_let_line", "count", FlareText.N(mv.Count));
                 r.Time = outlet && mv.Day >= 0 ? Ago(FlareLiveRules.Now(mv.Day, 8, 0), now) : null;
             }
+        }
+
+        // A trend's subject as a tag: its words in lower case letters and digits only ("Eating out" is "eatingout").
+        private static string TagOf(string words)
+        {
+            var b = new System.Text.StringBuilder(words != null ? words.Length : 0);
+            for (int i = 0; words != null && i < words.Length; i++)
+            {
+                if (char.IsLetterOrDigit(words[i]))
+                {
+                    b.Append(char.ToLowerInvariant(words[i]));
+                }
+            }
+            return b.Length > 1 ? b.ToString() : null;
         }
 
         // Which of the player's businesses a trend in a district is about: the one in that district, else the first (the index the trend card's Promote opens with).

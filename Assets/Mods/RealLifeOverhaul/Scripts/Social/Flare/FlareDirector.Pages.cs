@@ -28,6 +28,12 @@ namespace RealLifeOverhaul.Flare
     {
         /// <summary>The rivals' new shops and the premises to let, into the list given. Default: none.</summary>
         public static Action<List<FlareCityMove>> CityMoves;
+
+        /// <summary>
+        /// A few hundred of the city's buildings walked for the premises to let (restart: begin a new pass): the finished map by district id once the pass
+        /// is done, else null. Called on the day's round, a step at a time. Default: none.
+        /// </summary>
+        public static Func<bool, int, Dictionary<string, int>> ToLetSlice;
     }
 
     /// <summary>
@@ -43,6 +49,33 @@ namespace RealLifeOverhaul.Flare
         private int _districtTotal;
         private int[] _districtOrder = new int[FlareDeskRules.DistrictsShown];
         private readonly List<FlareCityMove> _moves = new List<FlareCityMove>(8);
+        private readonly Dictionary<string, int> _toLetMap = new Dictionary<string, int>(16, StringComparer.Ordinal);
+        private readonly List<KeyValuePair<string, int>> _toLetOrder = new List<KeyValuePair<string, int>>(16);
+        private bool _toLetFresh = true;
+        private const int ToLetStepSize = 300, ToLetShown = 3;
+        private static readonly Comparison<KeyValuePair<string, int>> ByLets = (a, b) => b.Value != a.Value ? b.Value.CompareTo(a.Value) : string.CompareOrdinal(a.Key, b.Key);
+
+        // One slice of the day's walk over the city's premises to let (a day step): true when the pass is finished, false when it wants another step.
+        private bool ToLetStep()
+        {
+            if (FlareBridges.ToLetSlice == null)
+            {
+                return true;
+            }
+            Dictionary<string, int> done = FlareBridges.ToLetSlice(_toLetFresh, ToLetStepSize);
+            _toLetFresh = false;
+            if (done == null)
+            {
+                return false;
+            }
+            _toLetMap.Clear();
+            foreach (KeyValuePair<string, int> kv in done)
+            {
+                _toLetMap[kv.Key] = kv.Value;
+            }
+            _toLetFresh = true;
+            return true;
+        }
 
         /// <summary>The player writes their profile: the words about them and the picture across its head (null for the newest picture). Kept as the rules clean them.</summary>
         public bool SetProfile(string bio, string banner)
@@ -181,7 +214,35 @@ namespace RealLifeOverhaul.Flare
                 _moves.Clear();
                 Logger?.Error(e);
             }
+            _toLetOrder.Clear();
+            foreach (KeyValuePair<string, int> kv in _toLetMap)
+            {
+                _toLetOrder.Add(kv);
+            }
+            _toLetOrder.Sort(ByLets);
+            for (int i = 0; i < _toLetOrder.Count && i < ToLetShown; i++)
+            {
+                _moves.Add(new FlareCityMove { Kind = FlareMoveKind.ToLet, District = _toLetOrder[i].Key, Count = _toLetOrder[i].Value, Day = Save != null ? Save.Day : -1 });
+            }
             return _moves;
+        }
+
+        /// <summary>The city's and the rivals' own ads of the last days, each with its business's name (worked out once); null without the residents' side.</summary>
+        public IReadOnlyList<FlareAd> CityAdsNamed()
+        {
+            if (!CityOn)
+            {
+                return null;
+            }
+            for (int i = 0; i < _city.CityAds.Count; i++)
+            {
+                FlareAd ad = _city.CityAds[i];
+                if (ad.Name == null)
+                {
+                    ad.Name = FlareCityGame.NameOf(ad.Place);
+                }
+            }
+            return _city.CityAds;
         }
 
         /// <summary>The business of someone else's the player stands inside (a review or a report is about it); false when they stand in none or in their own.</summary>
@@ -217,7 +278,7 @@ namespace RealLifeOverhaul.Flare
             {
                 return false;
             }
-            FlareAd other = FlareDeskRules.SharedWith(_city.Ads, s.Businesses.District[b], Save.Day, place);
+            FlareAd other = FlareDeskRules.SharedWith(CityAdsNamed(), s.Businesses.District[b], Save.Day, FlareCityPass.PlaceToKey(place));
             name = other != null ? other.Name : null;
             return other != null;
         }

@@ -54,7 +54,17 @@ namespace RealLifeOverhaul.Ui
             }
             cy += UiTokens.S3;
             // The review being answered, on the bubble of what others wrote.
-            if (k.Stars > 0 || !string.IsNullOrEmpty(k.Words))
+            if (k.Stars == 0 && !string.IsNullOrEmpty(k.Words))
+            {
+                // What a deal is: a plain sentence, not a box of its own.
+                float ph = UiDraw.Snap(UiTextRules.WrappedHeight(k.Words, UiStyle.Body, w, 3));
+                if (draw)
+                {
+                    UiDraw.Text(s, at, x, cy, w, UiStyle.Body, UiRole.Text2, k.Words, UiFlags.Wrap | UiFlags.Truncate, 3);
+                }
+                cy += ph + UiTokens.S3;
+            }
+            else if (k.Stars > 0 || !string.IsNullOrEmpty(k.Words))
             {
                 float th = string.IsNullOrEmpty(k.Words) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(k.Words, UiStyle.Body, w - UiTokens.S8, 4));
                 float bh = UiTokens.S3 + (k.Stars > 0 ? UiTokens.IconSmall + UiTokens.S2 : 0f) + th + UiTokens.S3;
@@ -91,7 +101,7 @@ namespace RealLifeOverhaul.Ui
                     string shown = caret && typed
                         ? UiTextRules.LastLines(k.FieldText, UiStyle.Body, room - UiDraw.CaretRoom, SheetLines, out last)
                         : typed ? k.FieldText : k.FieldHint;
-                    UiDraw.Text(s, at.In(field), tx + lead, cy + UiTokens.S3, room - lead, UiStyle.Body, typed ? UiRole.Text : UiRole.Text2, shown,
+                    UiDraw.Text(s, at.In(field), tx + lead, cy + UiTokens.S3, room - lead, UiStyle.Body, typed ? UiRole.Text : UiRole.Muted, shown,
                         UiFlags.Wrap | UiFlags.Truncate | (typed ? UiFlags.None : UiFlags.Label), SheetLines);
                     if (caret)
                     {

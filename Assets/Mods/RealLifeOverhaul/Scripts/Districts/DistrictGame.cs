@@ -178,29 +178,6 @@ namespace RealLifeOverhaul.Districts
             return found;
         }
 
-        /// <summary>
-        /// The premises to let in each neighbourhood (the game's own id): a building for rent that nobody rents and that holds no business. One pass over
-        /// the city's buildings; the caller keeps the answer for the day (Flare in the city's page), never per frame.
-        /// </summary>
-        public static void ToLet(Dictionary<string, int> into)
-        {
-            into.Clear();
-            CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] all = GameDlc.Open(city);
-            for (int i = 0; all != null && i < all.Length; i++)
-            {
-                CityBuildingController c = all[i];
-                BuildingRegistration reg = c != null ? c.buildingRegistration : null;
-                if (reg == null || c.building == null || string.IsNullOrEmpty(c.building.Neighbourhood) || !reg.AvailableForRent || reg.RentedByPlayer
-                    || !(string.IsNullOrEmpty(reg.businessTypeName) || reg.businessTypeName == "ba:businesstype_empty"))
-                {
-                    continue;
-                }
-                into.TryGetValue(c.building.Neighbourhood, out int n);
-                into[c.building.Neighbourhood] = n + 1;
-            }
-        }
-
         /// <summary>Every district's own figures, from the game's neighbourhood data and one pass over the city's buildings.</summary>
         public static void Figures(List<MapDistrict> districts)
         {

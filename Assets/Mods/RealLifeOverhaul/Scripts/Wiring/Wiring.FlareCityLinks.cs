@@ -26,6 +26,8 @@ namespace RealLifeOverhaul
                 FlareBridges.Residents = Residents;
                 FlareBridges.Pools = Pools;
                 FlareBridges.CityMoves = CityMoves;
+                _toLetScan = new Districts.ToLetScan();   // a new map for each connect: a save loaded on the same day number starts with none
+                FlareBridges.ToLetSlice = ToLetSlice;
                 CityPopulation.DayLived += Lived;
                 PopulationAttention.Register(Source, Attention);
                 StudioBridges.Talk = Talk;
@@ -45,10 +47,27 @@ namespace RealLifeOverhaul
                 FlareBridges.ResetCity();
             }
 
-            private static readonly System.Collections.Generic.Dictionary<string, int> ToLet = new System.Collections.Generic.Dictionary<string, int>(16);
-            private static int _toLetDay = -1;
+            private static Districts.ToLetScan _toLetScan = new Districts.ToLetScan();
 
-            // The rivals' new shops (the rivals' live Outlet moves) and where premises are to let (one pass over the city's buildings, kept for the game day), for the city page.
+            // The premises to let, a few hundred buildings a call: the scan starts over when asked to, and the finished map comes back once, else null.
+            private static System.Collections.Generic.Dictionary<string, int> ToLetSlice(bool restart, int most)
+            {
+                try
+                {
+                    if (restart)
+                    {
+                        _toLetScan.Begin();
+                    }
+                    return _toLetScan.Step(most) ? _toLetScan.Done : null;
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareCityLinks.ToLetSlice", e);
+                    return _toLetScan.Done;
+                }
+            }
+
+            // The rivals' new shops (the rivals' live Outlet moves), for the city page; the premises to let are the day's own sliced scan (ToLetSlice).
             private static void CityMoves(System.Collections.Generic.List<FlareCityMove> into)
             {
                 try
@@ -65,18 +84,6 @@ namespace RealLifeOverhaul
                                 Kind = FlareMoveKind.Outlet, District = mv.District, Name = mv.Name, By = f.Tycoons[mv.Tycoon].Def.Name, Day = mv.Announced
                             });
                         }
-                    }
-                    int day = SaveGameManager.Current != null ? SaveGameManager.Current.Day : -1;
-                    if (_toLetDay != day)
-                    {
-                        _toLetDay = day;
-                        Districts.DistrictGame.ToLet(ToLet);
-                    }
-                    var order = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string, int>>(ToLet);
-                    order.Sort((a, b) => b.Value != a.Value ? b.Value.CompareTo(a.Value) : string.CompareOrdinal(a.Key, b.Key));
-                    for (int i = 0; i < order.Count && i < 3; i++)
-                    {
-                        into.Add(new FlareCityMove { Kind = FlareMoveKind.ToLet, District = order[i].Key, Count = order[i].Value, Day = day });
                     }
                 }
                 catch (Exception e)

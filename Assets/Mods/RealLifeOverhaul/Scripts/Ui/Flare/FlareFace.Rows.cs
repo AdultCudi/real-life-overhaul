@@ -210,7 +210,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 case FlareRowKind.Review:
                 {
-                    float tw = w - UiTokens.S8 - ButtonRoom(r.Button);
+                    float tw = w - ContentX - UiTokens.S4 - ActionRoom;
                     float h = UiTokens.S3 + UiTokens.S6;
                     h += string.IsNullOrEmpty(r.Text) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(r.Text, UiStyle.Body, tw, ReviewLines)) + UiTokens.S1;
                     h += string.IsNullOrEmpty(r.Line) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(r.Line, UiStyle.Small, tw - UiTokens.S3, 2)) + UiTokens.S2;
@@ -227,7 +227,7 @@ namespace RealLifeOverhaul.Ui
                     return UiTokens.S16 + UiTokens.S4;
                 case FlareRowKind.Card:
                 {
-                    float tw = w - UiTokens.S4 - UiTokens.AvatarRow - UiTokens.S3 - UiTokens.S4 - ButtonRoom(r.Button);
+                    float tw = w - UiTokens.S4 - UiTokens.AvatarRow - UiTokens.S3 - UiTokens.S4 - ActionRoom;
                     float h = UiTokens.S3 + UiTokens.S6;
                     h += string.IsNullOrEmpty(r.Text) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(r.Text, UiStyle.Body, tw, CardLines)) + UiTokens.S1;
                     h += string.IsNullOrEmpty(r.Line) ? 0f : UiTokens.S5;
@@ -241,6 +241,16 @@ namespace RealLifeOverhaul.Ui
         private static float PictureHeight(float w) => UiDraw.Snap(w / PictureAspect);
 
         private static float ButtonRoom(string words) => string.IsNullOrEmpty(words) ? 0f : PillWidth(words) + UiTokens.S3;
+
+        // The column a row's action stands in, and the room it takes: every row of a list has it, with or without an action, so the times and the buttons stand in a line.
+        public const float ActionColumn = 96f;
+        private static float ActionRoom => ActionColumn + UiTokens.S3;
+
+        // The hire table: its button and its figure columns are the same width on every row.
+        public const float HireButton = 112f, HireColumn = 104f;
+
+        /// <summary>Where the figures of a hire row start, at a row's width.</summary>
+        public static float HireFigureX(float rowWidth, int columns) => rowWidth - UiTokens.S4 - HireButton - UiTokens.S3 - columns * HireColumn;
 
         private static float BubbleWidth(ref FlareRow r, float w)
         {
@@ -416,27 +426,31 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Circle(s, inRow, UiTokens.S2, y + (h - UiTokens.StatusDot) / 2f, UiTokens.StatusDot, UiTokens.StatusDot, UiRole.Accent, UiFlags.Middle);
             }
             float gx = UiTokens.S6;
-            int disc = UiDraw.Circle(s, inRow, gx, y + UiTokens.S3, UiTokens.AvatarRow, UiTokens.AvatarRow, UiRole.Tile);
-            UiDraw.Icon(s, inRow.In(disc), gx + (UiTokens.AvatarRow - UiTokens.Icon) / 2f, y + UiTokens.S3 + (UiTokens.AvatarRow - UiTokens.Icon) / 2f, UiTokens.Icon, r.Icon,
+            float gy = y + (h - UiTokens.AvatarRow) / 2f;
+            int disc = UiDraw.Circle(s, inRow, gx, gy, UiTokens.AvatarRow, UiTokens.AvatarRow, unread ? UiRole.Panel : UiRole.Tile);
+            // a tile on every row, the unread ones on the panel's slate so it shows
+            UiDraw.Icon(s, inRow.In(disc), gx + (UiTokens.AvatarRow - UiTokens.Icon) / 2f, gy + (UiTokens.AvatarRow - UiTokens.Icon) / 2f, UiTokens.Icon, r.Icon,
                 r.Tint == UiRole.None ? UiRole.Text2 : r.Tint, UiFlags.Middle | UiFlags.Centre, true);
             float tx = gx + UiTokens.AvatarRow + UiTokens.S3;
             float timeW = string.IsNullOrEmpty(r.Time) ? 0f : UiDraw.Snap(UiTextRules.Width(r.Time, UiStyle.Small) + UiTokens.S1);
             float tw = w - tx - timeW - UiTokens.S6;
-            UiDraw.Text(s, inRow, tx, y + UiTokens.S3, tw, unread ? UiStyle.BodyStrong : UiStyle.Body, UiRole.Text, r.Text, UiFlags.Truncate);
+            bool twoLines = !string.IsNullOrEmpty(r.Line) || !string.IsNullOrEmpty(r.Value);
+            float lineY = twoLines ? gy + UiTokens.S1 : gy + (UiTokens.AvatarRow - L(UiStyle.Body)) / 2f;   // one line sits on the glyph's middle, two share it
+            UiDraw.Text(s, inRow, tx, lineY, tw, unread ? UiStyle.BodyStrong : UiStyle.Body, UiRole.Text, r.Text, UiFlags.Truncate);
             float valueW = string.IsNullOrEmpty(r.Value) ? 0f : Math.Min(UiDraw.Snap(UiTextRules.Width(r.Value, UiStyle.SmallStrong) + UiTokens.S1), UiDraw.SnapDown(tw * 0.5f));
             if (!string.IsNullOrEmpty(r.Line))
             {
-                UiDraw.Text(s, inRow, tx, y + UiTokens.S3 + UiTokens.S6, tw - valueW - (valueW > 0f ? UiTokens.S3 : 0f), UiStyle.Small, UiRole.Text2, r.Line, UiFlags.Truncate);
+                UiDraw.Text(s, inRow, tx, lineY + UiTokens.S6, tw - valueW - (valueW > 0f ? UiTokens.S3 : 0f), UiStyle.Small, UiRole.Text2, r.Line, UiFlags.Truncate);
             }
             if (valueW > 0f)
             {
                 // What the post it is about has brought, in the good news' green, at the row's right under the time.
-                UiDraw.Text(s, inRow, w - UiTokens.S4 - valueW, y + UiTokens.S3 + UiTokens.S6, valueW, UiStyle.SmallStrong, (r.Flags & FlareRowFlags.Bad) != 0 ? UiRole.DangerText : UiRole.OkText,
+                UiDraw.Text(s, inRow, w - UiTokens.S4 - valueW, lineY + UiTokens.S6, valueW, UiStyle.SmallStrong, (r.Flags & FlareRowFlags.Bad) != 0 ? UiRole.DangerText : UiRole.OkText,
                     r.Value, UiFlags.Right | UiFlags.Truncate);
             }
             if (timeW > 0f)
             {
-                UiDraw.Text(s, inRow, w - UiTokens.S4 - timeW, y + UiTokens.S3, timeW, UiStyle.Small, UiRole.Text2, r.Time, UiFlags.Right);
+                UiDraw.Text(s, inRow, w - UiTokens.S4 - timeW, lineY, timeW, UiStyle.Small, UiRole.Text2, r.Time, UiFlags.Right);
             }
             if (targets)
             {
@@ -495,8 +509,9 @@ namespace RealLifeOverhaul.Ui
             bool answered = (r.Flags & FlareRowFlags.Answered) != 0;
             int row = UiDraw.Box(s, at, 0f, y, w, h, UiRole.None, UiRole.None, 0f);
             UiAt inRow = at.In(row);
-            float bw = ButtonRoom(answered ? null : r.Button);
-            float x = UiTokens.S4, tw = w - UiTokens.S8 - bw, cy = y + UiTokens.S3;
+            float bw = ActionRoom;
+            UiDraw.Avatar(s, inRow, UiTokens.S4, y + UiTokens.S3, UiTokens.AvatarRow, r.Name, r.Hue);   // the reviewer's face, as every person has
+            float x = ContentX, tw = w - ContentX - UiTokens.S4 - bw, cy = y + UiTokens.S3;
             float sw = UiDraw.Stars(s, inRow, x, cy + UiTokens.S1, UiTokens.IconSmall, Math.Max(0, Math.Min(10, r.Stars * 2)));
             float nx = x + UiDraw.Snap(sw + UiTokens.S2);
             float timeW = string.IsNullOrEmpty(r.Time) ? 0f : UiDraw.Snap(UiTextRules.Width(r.Time, UiStyle.Small) + UiTokens.S1);
@@ -516,9 +531,9 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDraw.Text(s, inRow, x + UiTokens.S3, cy, tw - UiTokens.S3, UiStyle.Small, UiRole.Text2, r.Line, UiFlags.Wrap | UiFlags.Truncate, 2);
             }
-            if (bw > 0f)
+            if (!answered && !string.IsNullOrEmpty(r.Button))
             {
-                float pw = PillWidth(r.Button);
+                float pw = Math.Max(ActionColumn, PillWidth(r.Button));
                 Pill(s, inRow, w - UiTokens.S4 - pw, y + UiTokens.S3, pw, r.Button, PillKind.Line, targets ? ButtonCommand : -1, index, UiIcon.None, (r.Flags & FlareRowFlags.Off) != 0);
             }
             UiDraw.Box(s, inRow, 0f, y + h - UiTokens.Hairline, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
@@ -607,10 +622,11 @@ namespace RealLifeOverhaul.Ui
             int row = UiDraw.Box(s, at, 0f, y, w, h - UiTokens.S2, UiRole.Tile, UiRole.None, UiTokens.RadiusLarge);
             UiAt inRow = at.In(row);
             UiDraw.Avatar(s, inRow, UiTokens.S4, y + UiTokens.S4, UiTokens.AvatarRow, r.Name, r.Hue);
-            float pw = string.IsNullOrEmpty(r.Button) ? 0f : ButtonWidth(r.Button);
+            float pw = string.IsNullOrEmpty(r.Button) ? 0f : HireButton;
             float tx = ContentX;
-            float figuresW = UiDraw.SnapDown((w - tx - pw - UiTokens.S8) * 0.58f);
-            float tw = w - tx - pw - figuresW - UiTokens.S8;
+            int cols = r.Tags != null ? r.Tags.Length / 2 : 0;
+            float figX = HireFigureX(w, cols);
+            float tw = figX - tx - UiTokens.S3;
             bool verified = (r.Flags & FlareRowFlags.Verified) != 0;
             float nameW = Math.Min(UiDraw.Snap(UiTextRules.Width(r.Name, UiStyle.Title) + UiTokens.S1), tw - (verified ? UiTokens.S5 : 0f));
             UiDraw.Text(s, inRow, tx, y + UiTokens.S4, nameW, UiStyle.Title, UiRole.Text, r.Name, UiFlags.Truncate);
@@ -621,15 +637,10 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Text(s, inRow, tx, y + UiTokens.S4 + UiTokens.S6, tw, UiStyle.Small, UiRole.Text2, r.Handle, UiFlags.Truncate);
             // The figures: what they reach, how many answer, what a post costs, what it should bring, each a label over its figure.
             string[] figures = r.Tags;
-            int n = figures != null ? figures.Length / 2 : 0;
-            if (n > 0)
+            for (int i = 0; i < cols; i++)
             {
-                float fx = tx + tw + UiTokens.S4, fw = UiDraw.SnapDown(figuresW / n);
-                for (int i = 0; i < n; i++)
-                {
-                    UiDraw.Text(s, inRow, fx + i * fw, y + UiTokens.S4, fw - UiTokens.S2, UiStyle.Small, UiRole.Text2, figures[i * 2], UiFlags.Label | UiFlags.Truncate);
-                    UiDraw.Text(s, inRow, fx + i * fw, y + UiTokens.S4 + UiTokens.S6, fw - UiTokens.S2, UiStyle.BodyStrong, UiRole.Text, figures[i * 2 + 1], UiFlags.Truncate);
-                }
+                // The figures stand under the header's labels, right aligned in columns that are the same on every row.
+                UiDraw.TextMiddle(s, inRow, figX + i * HireColumn, y, h - UiTokens.S2, HireColumn - UiTokens.S3, UiStyle.BodyStrong, UiRole.Text, figures[i * 2 + 1], UiFlags.Right | UiFlags.Truncate);
             }
             if (pw > 0f)
             {
@@ -647,8 +658,8 @@ namespace RealLifeOverhaul.Ui
             int disc = UiDraw.Circle(s, inRow, UiTokens.S4, y + UiTokens.S3, UiTokens.AvatarRow, UiTokens.AvatarRow, UiRole.Panel);
             UiDraw.Icon(s, inRow.In(disc), UiTokens.S4 + (UiTokens.AvatarRow - UiTokens.Icon) / 2f, y + UiTokens.S3 + (UiTokens.AvatarRow - UiTokens.Icon) / 2f, UiTokens.Icon,
                 r.Icon == UiIcon.None ? UiIcon.MapPin : r.Icon, r.Tint == UiRole.None ? UiRole.Text2 : r.Tint, UiFlags.Middle | UiFlags.Centre, true);
-            float pw = string.IsNullOrEmpty(r.Button) ? 0f : PillWidth(r.Button);
-            float tx = ContentX, tw = w - tx - UiTokens.S4 - (pw > 0f ? pw + UiTokens.S3 : 0f);
+            float pw = string.IsNullOrEmpty(r.Button) ? 0f : Math.Max(ActionColumn, PillWidth(r.Button));
+            float tx = ContentX, tw = w - tx - UiTokens.S4 - ActionRoom;
             float cy = y + UiTokens.S3;
             float timeW = string.IsNullOrEmpty(r.Time) ? 0f : UiDraw.Snap(UiTextRules.Width(r.Time, UiStyle.Small) + UiTokens.S1);
             UiDraw.TextMiddle(s, inRow, tx, cy, UiTokens.S6, tw - timeW - UiTokens.S2, UiStyle.Title, UiRole.Text, r.Name, UiFlags.Truncate);

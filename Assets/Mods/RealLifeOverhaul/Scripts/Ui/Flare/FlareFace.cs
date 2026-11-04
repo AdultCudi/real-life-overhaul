@@ -119,6 +119,8 @@ namespace RealLifeOverhaul.Ui
         public string[] FigureLabels = new string[0];
         public string Warning;                           // the reviews have turned: what to do; null when they have not
         public string ReviewsTitle;
+        public string ReachTitle, ReachEmpty;            // the reach line: its title, and what it says without enough days
+        public float[] Reach;                            // ...the account's reach a day, only the days that exist
         public string Rival;                             // the business of its kind across the street and its rating; null when none is rated
         public string Promote;                           // the button that runs an ad for this business; null when it cannot
         public string[] Picker2 = new string[0];         // Hire: the niches to pick from, the first all of them...
@@ -338,10 +340,13 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Box(s, at, mx + mw, top, UiTokens.Hairline, h, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
                 Side(s, at.InRegion(RegionSide), m, mx + mw, top, sw, h);
             }
+            int firstOfPage = s.NodeCount;
             Page(s, at.InRegion(RegionMain), m, mx, top, mw, h, keys);
+            s.FocusFirst = PageStart(s, firstOfPage, m);
             if (m.Sheet != NoSheet)
             {
                 Sheet(s, m, wx, wy, ww, wh, keys);
+                s.FocusFirst = SheetStart(s, m.Sheet);
             }
             s.AddPrompt(UiAction.Move, m.Move);
             s.AddPrompt(UiAction.Confirm, m.Select);
@@ -351,6 +356,44 @@ namespace RealLifeOverhaul.Ui
             }
             s.AddPrompt(UiAction.Back, m.Back);
             UiDraw.PromptBar(s, frame, keys);
+        }
+
+        // The target focus starts on: the chosen tab of the page, else the first target the page drew; never the nav's first row, which is not where the player is.
+        private static int PageStart(UiScene s, int from, FlareFaceModel m)
+        {
+            int first = -1;
+            for (int i = from; i < s.NodeCount; i++)
+            {
+                if (s.Nodes[i].Disabled || UiDraw.IsChrome(s.Nodes[i].Command))
+                {
+                    continue;
+                }
+                first = first < 0 ? i : first;
+                if (s.Nodes[i].Command == TabCommand && s.Nodes[i].Arg == m.Tab)
+                {
+                    return i;
+                }
+            }
+            return first;
+        }
+
+        // A sheet's first target is its first field, else its first chip or option: not the close button, which is the way out.
+        private static int SheetStart(UiScene s, int sheet)
+        {
+            int field = -1, chip = -1, any = -1;
+            for (int i = 0; i < s.NodeCount; i++)
+            {
+                ref UiNode n = ref s.Nodes[i];
+                if (n.Layer != 1 || n.Disabled || UiDraw.IsChrome(n.Command))
+                {
+                    continue;
+                }
+                bool way = n.Command == SheetCancelCommand;
+                field = field < 0 && n.Command == FieldCommand ? i : field;
+                chip = chip < 0 && (n.Command == SheetChipCommand || n.Command == OptionCommand || n.Command == PickerPhotoCommand) ? i : chip;
+                any = any < 0 && !way ? i : any;
+            }
+            return field >= 0 ? field : chip >= 0 ? chip : any;
         }
 
         // ------------------------------------------------------------------------------------------------ the nav
@@ -428,7 +471,7 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Icon(s, inSearch, cx + UiTokens.S4, cy + (UiTokens.Control - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Search, UiRole.Text2, UiFlags.Middle);
                 bool caret = UiDraw.Typing(s, FieldCommand, SearchField);
                 float tx = cx + UiTokens.S4 + UiTokens.Icon + UiTokens.S3, room = cw - UiTokens.S12 - UiTokens.Icon, lead = caret ? UiDraw.CaretRoom : 0f;
-                UiDraw.TextMiddle(s, inSearch, tx + lead, cy, UiTokens.Control, room - lead, UiStyle.Body, UiRole.Text2, m.SearchHint, UiFlags.Label | UiFlags.Truncate);
+                UiDraw.TextMiddle(s, inSearch, tx + lead, cy, UiTokens.Control, room - lead, UiStyle.Body, UiRole.Muted, m.SearchHint, UiFlags.Label | UiFlags.Truncate);
                 if (caret)
                 {
                     UiDraw.CaretAfter(s, inSearch, tx, cy, UiTokens.Control, null, UiStyle.Body, room);
@@ -693,7 +736,7 @@ namespace RealLifeOverhaul.Ui
             bool caret = UiDraw.Typing(s, FieldCommand, field);   // the field that takes the keys shows where the next letter goes
             float room = x + w - tx - UiTokens.S4, lead = caret && !typed ? UiDraw.CaretRoom : 0f;
             string shown = caret && typed ? UiDraw.Typed(text, UiStyle.Body, room) : typed ? text : hint;
-            UiDraw.TextMiddle(s, inside, tx + lead, y, h, room - lead, UiStyle.Body, typed ? UiRole.Text : UiRole.Text2, shown,
+            UiDraw.TextMiddle(s, inside, tx + lead, y, h, room - lead, UiStyle.Body, typed ? UiRole.Text : UiRole.Muted, shown,
                 typed ? UiFlags.Truncate : UiFlags.Label | UiFlags.Truncate);
             if (caret)
             {

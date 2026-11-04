@@ -53,7 +53,7 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Avatar(s, inBox, x + UiTokens.S4, y + UiTokens.S4, UiTokens.AvatarRow, m.MyName, m.MyHue);
             float tx = x + ContentX, tw = w - ContentX - UiTokens.S4;
             int hint = UiDraw.Box(s, inBox, tx, y + UiTokens.S4, tw, UiTokens.Control, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
-            UiDraw.TextMiddle(s, inBox.In(hint), tx, y + UiTokens.S4, UiTokens.Control, tw, UiStyle.Body, UiRole.Text2, m.ComposerHint, UiFlags.Truncate);
+            UiDraw.TextMiddle(s, inBox.In(hint), tx, y + UiTokens.S4, UiTokens.Control, tw, UiStyle.Body, UiRole.Muted, m.ComposerHint, UiFlags.Truncate);
             UiDraw.Node(s, inBox, tx, y + UiTokens.S4, tw, UiTokens.Control, ComposerCommand, 0, hint);
             float py = y + UiTokens.S4 + UiTokens.Control + UiTokens.S3;
             float pw = ButtonWidth(m.Post);
