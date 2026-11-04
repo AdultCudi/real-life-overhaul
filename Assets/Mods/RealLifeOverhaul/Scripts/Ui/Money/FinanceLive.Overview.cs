@@ -57,6 +57,10 @@ namespace RealLifeOverhaul.Ui
             Next(labels, values, "reallife_econ_over_fines", due.Other);
             Next(labels, values, "reallife_econ_over_rent", due.Rent);
             Next(labels, values, "reallife_econ_over_wages", due.Wages);
+            RateReview(labels, values, save.Day, w);
+            o.RiseNote = file.RiseDay > 0 && file.RiseExtra > 0
+                ? w.F("reallife_fin_rise", "Your variable debts cost {money} more a month after the last rise, on day {day}.",
+                    "money", Money((float)file.RiseExtra * NewsRules.DaysMonth), "day", file.RiseDay.ToString(Inv)) : null;
             o.NextLabels = labels.ToArray();
             o.NextValues = values.ToArray();
             int kinds = 0;
@@ -93,6 +97,25 @@ namespace RealLifeOverhaul.Ui
                 labels.Add(Label(key));
                 values.Add(Money(amount));
             }
+        }
+
+        // The central bank's next rate review, a line of the list of what leaves next: the day it takes effect, and what is announced for it if it is.
+        private static void RateReview(List<string> labels, List<string> values, int today, UtilitiesWords w)
+        {
+            CityEconomyDirector city = CityEconomyDirector.Instance;
+            CityState state = city != null ? city.State : null;
+            if (state == null)
+            {
+                return;
+            }
+            int day = today + CityModel.DaysToTurn(state, city.MonthDays);
+            string value = FinanceText.Day(day);
+            if (state.Pending)
+            {
+                value += ", " + (state.PendingMove == 0 ? w.T("reallife_fin_review_hold", "held") : (state.PendingMove > 0 ? "+" : "-") + CityText.Points(state.PendingMove));
+            }
+            labels.Add(w.T("reallife_fin_review", "Rate review"));
+            values.Add(value);
         }
 
         // The loans the game keeps, the mod's own accounts, the private lender and what other features owe: a row each, and the total.

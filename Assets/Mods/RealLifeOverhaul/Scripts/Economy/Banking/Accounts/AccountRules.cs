@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy
 {
@@ -76,6 +77,24 @@ namespace RealLifeOverhaul.Economy
             long sum = (long)balance * rateBp * days + Math.Max(0L, Math.Min(carry, unit - 1));
             carry = sum % unit;
             return (int)Math.Min(int.MaxValue, sum / unit);
+        }
+
+        /// <summary>
+        /// What a rise of <paramref name="bp"/> (hundredths of a per cent) in the central bank's rate adds a day to the accounts that follow it:
+        /// the overdraft and the card, on what they hold now.
+        /// </summary>
+        public static int RiseCost(IList<CreditAccount> accounts, int bp, int daysPerYear)
+        {
+            int extra = 0;
+            for (int i = 0; accounts != null && bp > 0 && i < accounts.Count; i++)
+            {
+                CreditAccount a = accounts[i];
+                if (!a.Closed && !a.Test && !a.Frozen && ProductCatalogue.Revolving(a.Kind) && a.Owed > 0)
+                {
+                    extra += InterestADay(a.Owed, bp, daysPerYear);
+                }
+            }
+            return extra;
         }
 
         /// <summary>A day's interest on a balance, nothing carried: what an offer shows.</summary>

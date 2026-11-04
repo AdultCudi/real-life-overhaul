@@ -64,10 +64,9 @@ namespace RealLifeOverhaul.Rivals
         public static RivalMoveKind PickKind(RivalFile f, Tycoon t, RivalWorld w, int day, int tier)
         {
             int total = 0;
-            int[] weights = t.Def.Weights;
             for (int k = 0; k < (int)RivalMoveKind.Count; k++)
             {
-                total += Available(f, t, (RivalMoveKind)k, w, day, tier) ? weights[k] : 0;
+                total += Available(f, t, (RivalMoveKind)k, w, day, tier) ? Weight(t, (RivalMoveKind)k, w) : 0;
             }
             if (total <= 0)
             {
@@ -80,13 +79,25 @@ namespace RealLifeOverhaul.Rivals
                 {
                     continue;
                 }
-                at -= weights[k];
+                at -= Weight(t, (RivalMoveKind)k, w);
                 if (at < 0)
                 {
                     return (RivalMoveKind)k;
                 }
             }
             return RivalMoveKind.Count;
+        }
+
+        /// <summary>
+        /// A tycoon's liking for a kind of move today. They answer the player with the player's own two choices: a price cut of the
+        /// player's is answered by a price move of theirs, a campaign of the player's on Flare by a piece in the paper of theirs, each
+        /// <see cref="RivalCatalogue.AnswerFactor"/> times as likely while it lasts.
+        /// </summary>
+        public static int Weight(Tycoon t, RivalMoveKind kind, RivalWorld w)
+        {
+            int weight = t.Def.Weights[(int)kind];
+            bool answers = (kind == RivalMoveKind.PriceRise && w.PlayerCut) || (kind == RivalMoveKind.Press && w.PlayerCampaign);
+            return answers ? weight * RivalCatalogue.AnswerFactor : weight;
         }
 
         /// <summary>Whether a tycoon could make a kind of move today.</summary>

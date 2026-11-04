@@ -47,6 +47,40 @@ namespace RealLifeOverhaul.Ui
             return n;
         }
 
+        /// <summary>
+        /// The net of each cash category over the last <paramref name="window"/> days ending on <paramref name="endDay"/>, from the saved ledger (series
+        /// <c>cat.N</c>), into <paramref name="net"/>. A day the ledger does not hold is not counted, and is not a zero. Returns how many days it held;
+        /// <paramref name="first"/> is the earliest of them, 0 with none.
+        /// </summary>
+        public static int CategoryNet(DaySeriesBook book, int endDay, int window, long[] net, out int first)
+        {
+            first = 0;
+            if (net == null)
+            {
+                return 0;
+            }
+            Array.Clear(net, 0, net.Length);
+            int have = 0;
+            for (int d = Math.Max(1, endDay - window + 1); book != null && d <= endDay; d++)
+            {
+                bool any = false;
+                for (int i = 0; i < net.Length; i++)
+                {
+                    if (book.Get(DaySeriesCatalogue.Category(i), d, out int value))
+                    {
+                        net[i] += value;
+                        any = true;
+                    }
+                }
+                if (any)
+                {
+                    have++;
+                    first = first == 0 ? d : first;
+                }
+            }
+            return have;
+        }
+
         /// <summary>The row a choice stands on, kept inside the table (-1 when there is no row).</summary>
         public static int Clamp(int row, int rows) => rows <= 0 ? -1 : row < 0 ? 0 : row >= rows ? rows - 1 : row;
 

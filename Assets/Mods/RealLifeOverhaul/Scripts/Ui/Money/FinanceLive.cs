@@ -166,6 +166,7 @@ namespace RealLifeOverhaul.Ui
                 case FinanceAct.Counter:
                 case FinanceAct.CutPrices:
                 case FinanceAct.HoldPrices:
+                case FinanceAct.Campaign:
                 case FinanceAct.OpenHolding:
                 case FinanceAct.ShowList: return DoRival(act, v, arg);
                 case FinanceAct.Accept:

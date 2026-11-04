@@ -111,7 +111,7 @@ internal static partial class Program
         var file = new CreditFile { StartDay = 3, RateAskedDay = 77 };
         string line = CreditStore.Write(file);
         CreditFile back = CreditStore.Read(line, out _);
-        string olderLine = line.Replace("|77~d:", "~d:");
+        string olderLine = line.Replace("|77|0|0~d:", "~d:");   // (the day asked, then the rise's day and sum, are the header's last three fields)
         CreditFile older = CreditStore.Read(olderLine, out _);
         Check(back != null && back.RateAskedDay == 77 && CreditStore.Write(back) == line && olderLine != line && older != null && older.RateAskedDay == 0 && older.StartDay == 3,
             "loan talk: the day a bank was last asked for a point off comes back from the save, and a save from before has none and loads as it did");

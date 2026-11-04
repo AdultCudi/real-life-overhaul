@@ -180,6 +180,7 @@ namespace RealLifeOverhaul.Rivals
 
         public const int PressCustomers = -2;      // points of the customers' reputation (Standing)
         public const int PriceRiseCustomers = 4;   // per cent fewer customers at the player's while a rival's prices are up
+        public const int AnswerFactor = 3;         // times as likely a tycoon's price move (or piece in the paper) is while the player's price cut (or Flare campaign) lasts
         public const int PriceWarMost = 10;        // ...and never more than this, however many rises run
         public const int BorrowedLeast = 1000;     // a rival's loan at a city bank: the least, and the sum at power 1000 (scaled by the move's power)
         public const int BorrowedBase = 250000;
