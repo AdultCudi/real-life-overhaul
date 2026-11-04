@@ -286,7 +286,8 @@ namespace RealLifeOverhaul.Ui
                     Sound = s.InOrder && !s.Penalty,
                 Frozen = a.Frozen, CallDue = s.CallDue, PlanUsed = s.PlanUsed, PlanLeft = s.PlanLeft, PlanPerDay = s.PlanPerDay, Overdue = s.Overdue, About = FinanceApp.AboutKind(a.Kind),
                     Opened = a.OpenedDay,
-                PayMost = a.Owed, PaySuggested = a.Frozen ? a.Owed : Math.Min(a.Owed, Math.Max(s.Overdue, due)), Minimum = a.MinimumLeft, StatementLeft = a.StatementLeft, DueDay = a.DueDay,
+                PayMost = a.Owed, PaySuggested = BankParts.PaySuggest(KindOf(a.Kind), a.Owed, a.Frozen, a.MinimumLeft, a.StatementLeft, Math.Min(a.Owed, Math.Max(s.Overdue, due))),
+                    Minimum = a.MinimumLeft, StatementLeft = a.StatementLeft, DueDay = a.DueDay,
                     NextStatement = a.NextDay,
                 Free = a.Free, DrawMost = a.Kind == ProductKind.CreditCard ? AccountRules.MostDraw(a) : 0
             };

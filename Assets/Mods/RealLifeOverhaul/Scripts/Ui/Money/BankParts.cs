@@ -107,10 +107,15 @@ namespace RealLifeOverhaul.Ui
         public static UiRole Used(float share) => share >= 0.9f ? UiRole.DangerText : share >= 0.5f ? UiRole.WarnText : UiRole.OkText;
 
         /// <summary>An amount a card steps up and down on the round sums and takes typed: the step's figure, and what it does in the view.</summary>
-        public static UtilitiesStep AmountStep(UtilitiesWords w, string label, int value, int least, int most, int field, int card, int index, string hint, out MoneyStep move)
+        public static UtilitiesStep AmountStep(UtilitiesWords w, string label, int value, int least, int most, int field, int card, int index, string hint, out MoneyStep move,
+            int[] ladder = null, int multiple = 0)
         {
-            int up = FinanceRules.StepAmount(value, least, most, true, AmountSteps), down = FinanceRules.StepAmount(value, least, most, false, AmountSteps);
-            move = new MoneyStep { Act = MoneyAct.None, Field = field, Less = down, More = up, CanLess = down >= 0, CanMore = up >= 0, Typed = true, Low = least, High = Math.Max(least, most) };
+            int[] steps = ladder ?? AmountSteps;
+            int up = FinanceRules.StepAmount(value, least, most, true, steps), down = FinanceRules.StepAmount(value, least, most, false, steps);
+            move = new MoneyStep
+            {
+                Act = MoneyAct.None, Field = field, Less = down, More = up, CanLess = down >= 0, CanMore = up >= 0, Typed = true, Low = least, High = Math.Max(least, most), Multiple = multiple
+            };
             return new UtilitiesStep
             {
                 Label = label, Value = w.Money(value), Hint = hint, CanLess = down >= 0, CanMore = up >= 0, TypeCommand = MoneyCommands.TypeField, TypeArg = card * 8 + index
@@ -123,6 +128,19 @@ namespace RealLifeOverhaul.Ui
             int less = index > 0 ? (values != null ? values[index - 1] : index - 1) : -1, more = index < count - 1 ? (values != null ? values[index + 1] : index + 1) : -1;
             move = new MoneyStep { Act = act, Field = field, Id = id, Less = less, More = more, CanLess = index > 0, CanMore = index < count - 1 };
             return new UtilitiesStep { Label = label, Value = text, Hint = hint, CanLess = index > 0, CanMore = index < count - 1 };
+        }
+
+        /// <summary>
+        /// The payment a debt's page starts at, as the old app offered it: an overdraft the whole of what is owed, a card the least of the statement that
+        /// covers the minimum, and any other the instalment or what is overdue. In an arrangement the whole of what is owed.
+        /// </summary>
+        public static int PaySuggest(int kind, int owed, bool frozen, int minimum, int statementLeft, int fallback)
+        {
+            if (frozen || kind == 2)
+            {
+                return owed;
+            }
+            return kind == 3 ? Math.Max(minimum, Math.Min(owed, statementLeft)) : fallback;
         }
 
         /// <summary>Where a figure starts: the view's, else the suggested one, kept to its range.</summary>

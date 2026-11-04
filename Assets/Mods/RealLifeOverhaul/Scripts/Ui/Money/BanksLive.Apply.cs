@@ -53,6 +53,7 @@ namespace RealLifeOverhaul.Ui
             {
                 f.Quote = QuoteOf(f, desk, score, view, kind);
             }
+            ReadOffers(f, desk, kind);
             var checks = new List<BankCheck>(5);
             ReadChecks(f, checks, kind, desk, score);
             f.Checks = checks.ToArray();
@@ -287,6 +288,33 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        // The same application at each bank: the product picked (the loan while none is), its rate, its most and whether the bank would give it.
+        private void ReadOffers(BanksFacts f, CreditDesk desk, int kind)
+        {
+            UtilitiesWords w = W;
+            bool gate = desk.Gate() == ProductAnswer.Yes;
+            for (int i = 0; i < f.Banks.Length && i < BankTerms.Banks.Count; i++)
+            {
+                BankFact b = f.Banks[i];
+                b.OfferYes = b.Answer;
+                b.OfferRate = b.Lends ? Yearly(w, b.Rate) : null;
+                b.OfferMost = b.Lends ? b.Most : 0;
+                if (kind == OverdraftKind || kind == CardKind || kind == CarKind || kind == HomeKind)
+                {
+                    ProductOffer offer = desk.Offer(ProductOf(kind), BankTerms.Banks[i]);
+                    b.OfferYes = offer.Answer == ProductAnswer.Yes || offer.Answer == ProductAnswer.AlreadyOpen;
+                    b.OfferMost = offer.Most;
+                    b.OfferRate = offer.RateBp > 0 ? Yearly(w, offer.RateBp / 100f) : null;
+                }
+                else if (kind == BusinessKind || kind == ConsolidateKind)
+                {
+                    b.OfferYes = gate && b.Answer;
+                    b.OfferRate = null;
+                    b.OfferMost = 0;
+                }
+            }
+        }
+
         // What the bank checked, as the desk would: the rating against the line, what is overdue here, the amount against the most, and the applications on the file.
         private void ReadChecks(BanksFacts f, List<BankCheck> checks, int kind, CreditDesk desk, CreditScore score)
         {
@@ -317,7 +345,8 @@ namespace RealLifeOverhaul.Ui
             }
             checks.Add(new BankCheck
             {
-                Text = w.F("reallife_ui_bank_chk_apps", "{count} applications in the last 90 days count against you", "count", score.Applications.ToString(Inv)), Met = score.Applications <= 1
+                Text = w.F("reallife_ui_bank_chk_apps", "Applications in the last {days} days: {count}", "days", CreditCatalogue.ApplicationFadeDays.ToString(Inv),
+                    "count", score.Applications.ToString(Inv)), Met = score.Applications == 0
             });
             if (kind == BusinessKind && !string.IsNullOrEmpty(f.Quote.Record))
             {
@@ -465,7 +494,8 @@ namespace RealLifeOverhaul.Ui
                 case MoneyAct.PayOff:
                 case MoneyAct.PayMinimum:
                     {
-                        int suggested = a.Frozen ? a.Owed : Math.Min(a.Owed, Math.Max(a.Ladder.Overdue, AccountRules.DueTomorrow(a, SaveGameManager.Current.Day)));
+                        int suggested = BankParts.PaySuggest(KindOf(a.Kind), a.Owed, a.Frozen, a.MinimumLeft, a.StatementLeft,
+                            Math.Min(a.Owed, Math.Max(a.Ladder.Overdue, AccountRules.DueTomorrow(a, SaveGameManager.Current.Day))));
                         int amount = act == MoneyAct.PayOff ? a.Owed : act == MoneyAct.PayMinimum ? a.MinimumLeft : Math.Max(1, Math.Min(a.Owed,
                             view.F[MoneyView.FPay] > 0 ? view.F[MoneyView.FPay] : suggested));
                         ProductAnswer answer = desk.Pay(a, amount, out int used);

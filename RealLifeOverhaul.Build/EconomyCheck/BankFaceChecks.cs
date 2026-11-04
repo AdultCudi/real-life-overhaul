@@ -20,6 +20,7 @@ internal static partial class Program
         public MoneyAct LastAct;
         public int LastId, LastValue;
         public int Moved;
+        public int Fills;
 
         public BankStub(Action<MoneyModel> fill, Func<MoneyAct, MoneyView, int, int, bool> apply = null)
         {
@@ -29,7 +30,11 @@ internal static partial class Program
 
         public int Generation => Moved;
 
-        public void Fill(MoneyModel model) => _fill(model);
+        public void Fill(MoneyModel model)
+        {
+            Fills++;
+            _fill(model);
+        }
 
         public bool Press(MoneyModel model, int command, int arg) => false;
 
@@ -44,8 +49,12 @@ internal static partial class Program
         }
     }
 
-    private static UiScene LayBank(MoneyHost host)
+    private static UiScene LayBank(MoneyHost host, bool keep = false)
     {
+        if (!keep)
+        {
+            host.Invalidate();   // a check sets the tab and the row on the model itself: the page is read again for them
+        }
         var s = new UiScene();
         host.Lay(s, UiFrame.FullMenu(16f / 9f, "Banks"), true, UiDefaultKeys.Keyboard);
         return s;
@@ -154,6 +163,7 @@ internal static partial class Program
                     host.Typed("123456");
                     host.Submitted("123456");
                     int want = Math.Max(step.Low, Math.Min(Math.Max(step.Low, step.High), 123456));
+                    want = step.Multiple > 1 ? Math.Max(step.Low, want / step.Multiple * step.Multiple) : want;
                     pressed++;
                     if (host.Model.View.F[step.Field] != want)
                     {
@@ -188,21 +198,6 @@ internal static partial class Program
             {
                 dead++;
                 Console.WriteLine("        " + label + ": row " + r + " did not pick " + shape.RowIds[r]);
-            }
-        }
-        for (int r = 0; r < shape.RowIds2.Length; r++)
-        {
-            if (string.IsNullOrEmpty(shape.RowIds2[r]))
-            {
-                continue;
-            }
-            MoneyHost host = make(null);
-            bool done = host.Press(MoneyPages.Table2Base + UiDataTable.Row, r);
-            pressed++;
-            if (!done || !(host.Model.View.Bank == r))
-            {
-                dead++;
-                Console.WriteLine("        " + label + ": the other banks' row " + r + " did not pick the bank");
             }
         }
         for (int b = 0; b < shape.PickNames.Length; b++)
@@ -345,6 +340,20 @@ internal static partial class Program
         Check(dead == 0, "banks face: no button, step, row or switch does nothing (" + dead + " dead)");
         Check(unreasoned == 0, "banks face: a button that cannot work is drawn disabled with its reason (" + unreasoned + " without)");
 
+        Check(BankParts.PaySuggest(2, 4400, false, 0, 0, 1) == 4400 && BankParts.PaySuggest(3, 4400, false, 220, 1800, 1) == 1800 && BankParts.PaySuggest(3, 100, false, 220, 50, 1) == 220
+              && BankParts.PaySuggest(3, 900, true, 220, 50, 1) == 900 && BankParts.PaySuggest(5, 780000, false, 0, 0, 363) == 363,
+            "banks face: an overdraft starts its payment at all it owes, a card at the statement over the minimum, a loan at its instalment (not $1)");
+        MoneyHost od = BanksHost("overdraft", out _);
+        Check(TextsOf(LayBank(od)).Contains("$4,400"), "banks face: the overdraft's pay field opens on what is owed");
+        // A scroll or a focus lays the page out again, but the game is not read again for it (the audit: a wheel notch re-read the cash flow).
+        MoneyHost still = BanksHost("accounts", out BankStub stillStub);
+        LayBank(still, true);
+        int reads = stillStub.Fills;
+        still.Wheel(-1, 1f);
+        LayBank(still, true);
+        still.Press(UiAppWindow.NavCommand, 1);
+        LayBank(still, true);
+        Check(stillStub.Fills == reads + 1, "banks face: a wheel notch only lays the page out; a press reads the game once (" + (stillStub.Fills - reads) + " reads)");
         // Back steps out of a row first, then lets the game close the window; the tab key moves; the shared command 1 is only a tab here.
         MoneyHost back = BanksHost("loans_pick", out BankStub backStub);
         bool first = back.Back(), second = back.Back();
@@ -481,7 +490,7 @@ internal static partial class Program
     // ------------------------------------------------------------------------------------------------- the real bank, day by day
 
     // The port the checks put where the director is: the same fields the director's methods write, so a press changes the real OwnBank and the page is read again from it.
-    private static bool OwnPort(OwnBank b, int level, MoneyAct act, MoneyView view, int id, int value)
+    private static bool OwnPort(OwnBank b, OwnBankFacts f, int level, MoneyAct act, MoneyView view, int id, int value)
     {
         switch (act)
         {
@@ -492,11 +501,11 @@ internal static partial class Program
             case MoneyAct.FundLimit: b.FundLimit = value; return true;
             case MoneyAct.PayMode: b.PayMode = value; return true;
             case MoneyAct.PayShare: b.PayShare = value; return true;
-            case MoneyAct.PayFixed: b.PayFixed = (long)view.F[MoneyView.FPay] * 100L; return true;
+            case MoneyAct.PayFixed: b.PayFixed = OwnBankBuild.FixedPayCents(view, f); return true;
             case MoneyAct.DividendEvery: OwnBankRules.SetDividends(b, value, b.DivShare, 100); return true;
             case MoneyAct.DividendShare: OwnBankRules.SetDividends(b, b.DivEvery, value, 100); return true;
-            case MoneyAct.PutIn: OwnBankRules.PutIn(b, (long)(view.F[MoneyView.FPut] > 0 ? view.F[MoneyView.FPut] : 1000000) * 100L); return true;
-            case MoneyAct.TakeOut: return OwnBankRules.TakeOut(b, (long)(view.F[MoneyView.FPut] > 0 ? view.F[MoneyView.FPut] : 1000000) * 100L, level);
+            case MoneyAct.PutIn: OwnBankRules.PutIn(b, OwnBankBuild.PutDollars(view, f) * 100L); return true;
+            case MoneyAct.TakeOut: return OwnBankRules.TakeOut(b, OwnBankBuild.TakeDollars(view, f) * 100L, level);
             default: return true;
         }
     }
@@ -559,7 +568,12 @@ internal static partial class Program
             var fresh = new OwnBankFacts();
             OwnBankReader.Read(fresh, b, c, world, say);
             OwnBankBuild.Fill(m, fresh, BankWords());
-        }, (act, view, id, value) => OwnPort(b, c.Level, act, view, id, value));
+        }, (act, view, id, value) =>
+        {
+            var now = new OwnBankFacts();
+            OwnBankReader.Read(now, b, c, world, say);
+            return OwnPort(b, now, c.Level, act, view, id, value);
+        });
         host = new MoneyHost("own_bank", MoneyApp.OwnBank, UiIcon.PiggyBank, stub);
         host.Model.Tab = OwnBankBuild.SaversTab;
         host.Model.View.Row = "s|0";
@@ -567,7 +581,7 @@ internal static partial class Program
         int was = b.SaverOffset[0];
         bool up = host.Press(MoneyCommands.CardMore, 0);
         LayBank(host);
-        Check(up && b.SaverOffset[0] == was + OwnBankBuild.SaverStep && stub.LastAct == MoneyAct.SaverRate,
+        Check(up && b.SaverOffset[0] == was + OwnBankCatalogue.SaverOffsetStep && stub.LastAct == MoneyAct.SaverRate,
             "own bank run: a plus on the savers' rate raises the real bank's offset by a step (" + was + " to " + b.SaverOffset[0] + ")");
         host.Model.Tab = OwnBankBuild.LendingTab;
         host.Model.View.Row = "l|3";
@@ -582,7 +596,7 @@ internal static partial class Program
         bool next = host.Press(MoneyCommands.CardMore, 0);
         Check(next && b.Strategy == Math.Min(OwnBankCatalogue.Strategies - 1, strat + 1), "own bank run: a step on the fund's strategy sets the real strategy");
         bool limit = host.Press(MoneyCommands.CardMore, 1);
-        Check(limit && b.FundLimit == OwnBankBuild.FundLimitStep, "own bank run: a step on the fund's limit sets the real limit");
+        Check(limit && b.FundLimit == OwnBankCatalogue.FundLimitStep, "own bank run: a step on the fund's limit sets the real limit");
         host.Model.Tab = OwnBankBuild.BankTab;
         host.Model.View.Row = OwnBankBuild.PayRow;
         LayBank(host);
@@ -593,6 +607,23 @@ internal static partial class Program
         LayBank(host);
         bool fixedPay = host.Press(MoneyCommands.CardAct, (int)MoneyAct.PayFixed);
         Check(mode && fixedPay && b.PayMode == BankTiers.PayFixedMode && b.PayFixed == 40000, "own bank run: the owner's pay set to a fixed $400 a day reaches the real bank");
+        host.Model.View.F[MoneyView.FPay] = 0;
+        LayBank(host);
+        bool untouched = host.Press(MoneyCommands.CardAct, (int)MoneyAct.PayFixed);
+        Check(untouched && b.PayFixed == 40000, "own bank run: Set the sum with the field untouched keeps the pay the page shows ($400), not $0");
+        host.Model.View.Row = null;
+        host.Model.View.F[MoneyView.FPut] = host.Model.View.F[MoneyView.FTake] = 0;
+        LayBank(host);
+        var takeFacts = new OwnBankFacts();
+        OwnBankReader.Read(takeFacts, b, c, world, say);
+        long takeMost = OwnBankBuild.TakeMostDollars(takeFacts), stepDollars = OwnBankBuild.StepDollars(takeFacts);
+        long beforeTake = OwnBankRules.CapitalNow(b);
+        bool tookAny = takeMost >= stepDollars && host.Press(MoneyCommands.CardAct, (int)MoneyAct.TakeOut);
+        Check(takeMost < stepDollars || (tookAny && beforeTake - OwnBankRules.CapitalNow(b) == takeMost * 100L),
+            "own bank run: Take out with its field untouched takes the most the bank can spare, on the capital step (" + takeMost + " of " + stepDollars + " steps)");
+        bool plus = host.Press(MoneyCommands.CardMore, 0);
+        Check(plus && host.Model.View.F[MoneyView.FPut] % stepDollars == 0 && host.Model.View.F[MoneyView.FPut] > 0,
+            "own bank run: a plus on the capital to put in lands on a multiple of the bank's step, never $250,000 for a $100,000 step");
         host.Model.View.Row = OwnBankBuild.DivRow;
         LayBank(host);
         bool every = host.Press(MoneyCommands.CardMore, 0);

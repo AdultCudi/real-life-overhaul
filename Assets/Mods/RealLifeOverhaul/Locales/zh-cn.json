@@ -31178,7 +31178,7 @@
   "reallife_ui_bank_chk_overdue": "您在此的欠款没有逾期",
   "reallife_ui_bank_chk_rating": "您的评分为{score}；{bank}从{threshold}起放贷",
   "reallife_ui_bank_chk_limit": "{amount}低于{bank}能借给您的最高额度{most}",
-  "reallife_ui_bank_chk_apps": "过去90天内的{count}次申请会对您不利",
+  "reallife_ui_bank_chk_apps": "最近 {days} 天内的申请：{count}",
   "reallife_ui_ob_kicker_new": "您自己的银行",
   "reallife_ui_ob_found_capital": "已投入资本",
   "reallife_ui_ob_law": "法律规定的最低资本",
@@ -31207,5 +31207,7 @@
   "reallife_ui_ob_div_note": "分红从银行最低要求之上的资本中支付给您，且只有在银行有余力时才会发放。",
   "reallife_ui_ob_costs_day": "每日成本",
   "reallife_ui_ob_f_week": "本周接待",
-  "reallife_ui_bank_col_score": "评分"
+  "reallife_ui_bank_col_score": "评分",
+  "reallife_ui_ob_put": "注入",
+  "reallife_ui_ob_take": "取出"
 }

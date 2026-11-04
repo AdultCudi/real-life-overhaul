@@ -17,6 +17,9 @@ namespace RealLifeOverhaul.Ui
         public float Owed;              // what you owe it
         public int Debts;
         public bool Answer;             // the same application at this bank: yes or no, by the rating and its limit
+        public string OfferRate;        // what the product picked on Apply would cost here (the loan's rate while none is picked); null for none
+        public int OfferMost;           // and the most it would give
+        public bool OfferYes;           // and whether this bank would give it
     }
 
     /// <summary>A debt held at the bank: a game loan, an account, a card, an overdraft.</summary>
@@ -91,7 +94,7 @@ namespace RealLifeOverhaul.Ui
         public string Rate;
         public string Record;           // a business's record of takings
         public bool HasAmount;
-        public int Amount, Least, Most, AmountPrev = -1, AmountNext = -1;
+        public int Amount, Least, Most;
         public string AmountHint;
         public string[] Labels = new string[0];
         public string[] Values = new string[0];
@@ -100,10 +103,8 @@ namespace RealLifeOverhaul.Ui
         public string StepLabel1, StepText1, StepLabel2, StepText2, StepLabel3, StepText3;   // deposit, term, shop or bank: as words
         public int Step1Prev = -1, Step1Next = -1, Step2Prev = -1, Step2Next = -1, Step3Prev = -1, Step3Next = -1;   // the view's values a minus and a plus go to
         public int Step1Field = MoneyView.FDeposit, Step2Field = MoneyView.FTerm, Step3Field = MoneyView.FShop;
-        public bool CanApply = true;
         public bool HasApproval;        // a finance is approved: its cost so far and the cancel
         public string ApprovalLine;
-        public int Meter = -1;          // headroom, 0 to 100
     }
 
     /// <summary>A line of "what the bank checked": a sentence and whether it holds.</summary>

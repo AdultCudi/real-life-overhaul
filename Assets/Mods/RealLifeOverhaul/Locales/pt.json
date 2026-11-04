@@ -31178,7 +31178,7 @@
   "reallife_ui_bank_chk_overdue": "Nada que você deve aqui está atrasado",
   "reallife_ui_bank_chk_rating": "Sua classificação é {score}; o {bank} empresta a partir de {threshold}",
   "reallife_ui_bank_chk_limit": "{amount} está abaixo do máximo de {most} que o {bank} empresta a você",
-  "reallife_ui_bank_chk_apps": "{count} pedidos nos últimos 90 dias pesam contra você",
+  "reallife_ui_bank_chk_apps": "Pedidos nos últimos {days} dias: {count}",
   "reallife_ui_ob_kicker_new": "Um banco seu",
   "reallife_ui_ob_found_capital": "Capital depositado",
   "reallife_ui_ob_law": "Capital mínimo exigido pela lei",
@@ -31207,5 +31207,7 @@
   "reallife_ui_ob_div_note": "Um dividendo é pago a você com o capital que o banco mantém acima do mínimo, e só enquanto puder dispensá-lo.",
   "reallife_ui_ob_costs_day": "Custos por dia",
   "reallife_ui_ob_f_week": "Atendidos na semana",
-  "reallife_ui_bank_col_score": "Pontos"
+  "reallife_ui_bank_col_score": "Pontos",
+  "reallife_ui_ob_put": "Aportar",
+  "reallife_ui_ob_take": "Retirar"
 }

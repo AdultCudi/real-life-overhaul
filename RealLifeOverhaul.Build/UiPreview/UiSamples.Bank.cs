@@ -78,6 +78,12 @@ internal static partial class UiSamples
             new BankFact { Name = "Metropolitan Savings", Rank = 2, Rate = 5.9f, Most = refused ? 0 : fresh ? 25000 : 250000, Lends = !refused, Since = 0, Owed = 0f, Debts = 0,
                 Answer = !refused && !fresh }
         };
+        foreach (BankFact bank in f.Banks)
+        {
+            bank.OfferYes = bank.Answer;
+            bank.OfferRate = bank.Lends ? bank.Rate.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + "% a year" : null;
+            bank.OfferMost = bank.Lends ? bank.Most : 0;
+        }
         f.Periods = new[] { "Yesterday", "7 days", "30 days" };
         f.Period = 1;
         if (!fresh)
@@ -192,7 +198,7 @@ internal static partial class UiSamples
             new BankCheck { Text = refused ? "Your rating is 540; Hudson Trust lends from 580" : "Your rating is 742; Hudson Trust lends from 580", Met = !refused },
             new BankCheck { Text = "Nothing you owe here is overdue", Met = true },
             new BankCheck { Text = "$180,000 is under the $400,000 Hudson Trust lends you", Met = !refused },
-            new BankCheck { Text = "2 applications in the last 90 days count against you", Met = false }
+            new BankCheck { Text = "Applications in the last 10 days: 2", Met = false }
         };
         f.Checks = checks.ToArray();
         f.Tips = refused ? new[] { "Pay what is overdue: a late payment costs the most points.", "Keep your cards under half their limit." } : new string[0];
@@ -200,7 +206,7 @@ internal static partial class UiSamples
         {
             f.Quote = new BankQuote
             {
-                Rate = "4.8% a year", HasAmount = true, Amount = 180000, Least = 5000, Most = 400000, AmountPrev = 100000, AmountNext = 250000, AmountHint = "$5,000 to $400,000",
+                Rate = "4.8% a year", HasAmount = true, Amount = 180000, Least = 5000, Most = 400000, AmountHint = "$5,000 to $400,000",
                 Labels = new[] { "Fee", "Payment a day", "All you repay" }, Values = new[] { "$5,400", "$336", "$216,600" },
                 Note = "It adds $336 to the $1,240 that already leave each day.", Note2 = null
             };
@@ -210,8 +216,7 @@ internal static partial class UiSamples
             f.Quote = new BankQuote
             {
                 Rate = "5.2% a year", Record = "Bloom & Co has 34 days of takings on record, $19,400 a day; it needs 30.", HasAmount = true, Amount = 180000, Least = 5000, Most = 400000,
-                    AmountPrev = 100000,
-                AmountNext = 250000, AmountHint = "$5,000 to $400,000", StepLabel3 = "Business", StepText3 = "Bloom & Co, Garment District", Step3Prev = -1, Step3Next = 1,
+                    AmountHint = "$5,000 to $400,000", StepLabel3 = "Business", StepText3 = "Bloom & Co, Garment District", Step3Prev = -1, Step3Next = 1,
                 Labels = new[] { "Fee", "Payment a day" }, Values = new[] { "$5,400", "$338" },
                 Note = "A business loan lends up to 20 times the shop's daily profit and takes a share of its takings."
             };
@@ -220,7 +225,7 @@ internal static partial class UiSamples
         {
             f.Quote = new BankQuote
             {
-                Rate = "4.8% a year", HasAmount = true, Amount = 600000, Least = 20000, Most = 1200000, AmountPrev = 500000, AmountNext = 1000000, AmountHint = "$20,000 to $1,200,000",
+                Rate = "4.8% a year", HasAmount = true, Amount = 600000, Least = 20000, Most = 1200000, AmountHint = "$20,000 to $1,200,000",
                 StepLabel1 = "Deposit", StepText1 = "20%", Step1Prev = 0, Step1Next = 2, StepLabel2 = "Term", StepText2 = "600 days", Step2Prev = 1, Step2Next = 3,
                 Labels = new[] { "Price", "Your deposit", "First payment", "Interest over the term" }, Values = new[] { "$750,000", "$150,000", "$1,450", "$212,000" },
                 Note = "A mortgage is secured on the building: the bank takes it if you stop paying."
@@ -265,7 +270,9 @@ internal static partial class UiSamples
         bool longName = state == "bank_top";
         var f = new OwnBankFacts
         {
-            Ready = true, State = 1, Day = 140, Name = longName ? "The Hudson Valley Cooperative and Mercantile Bank of the Five Boroughs" : "Pioneer Bank", Level = "Community bank",
+            Ready = true, SaverLeast = -200, SaverMost = 400, SaverStep = 25, LoanLeast = -300, LoanMost = 900, LoanStep = 25, LoanFloorBp = 100, FundLimitMost = 250,
+            FundLimitStep = 50, FundWeight = 2500, CapitalStep = D(100000), State = 1, Day = 140,
+                Name = longName ? "The Hudson Valley Cooperative and Mercantile Bank of the Five Boroughs" : "Pioneer Bank", Level = "Community bank",
                 Tier = 0, StageWords = "The regulator has no complaint",
             Licence = D(150000), FoundCapital = D(300000), HasHq = state != "bank_nohq", HqName = "7 5th Avenue", LawRatio = 100, WatchRatio = 125, RivalSaverBp = 175, RivalLoanBp = 690,
                 CommBranches = 2,

@@ -52,6 +52,10 @@ namespace RealLifeOverhaul.Ui
     public sealed class OwnBankFacts
     {
         public bool Ready;              // the feature runs and a save is loaded
+        public int SaverLeast, SaverMost, SaverStep, LoanLeast, LoanMost, LoanStep;   // the rate offsets the bank may set (hundredths of a point), from OwnBankCatalogue
+        public int LoanFloorBp;         // no loan rate goes under this (CreditCatalogue.RateFloor), hundredths of a per cent
+        public int FundLimitMost, FundLimitStep, FundWeight;   // thousandths: the fund's limit, its step, and the weight the regulator counts a share at
+        public long CapitalStep;        // cents: capital goes in and comes out by this step
         public int State;               // 0 none yet, 1 running, 2 sold, 3 closed
         public int Day;
         public string Name = string.Empty;

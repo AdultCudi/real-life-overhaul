@@ -98,7 +98,7 @@ internal static partial class Program
             MoneyCommands.StepLess, MoneyCommands.StepType, MoneyCommands.StepMore, MoneyCommands.Choice, MoneyCommands.Follow, MoneyCommands.Export, MoneyCommands.Link,
             UiChart.First + UiChart.Point, UiStatement.First + UiStatement.Period, UiStatement.First + UiStatement.Group, UiStatement.First + UiStatement.Line,
             UiCatalogue.First + UiCatalogue.Card, UiCatalogue.First + UiCatalogue.Action,
-            MoneyCommands.PickBank, MoneyCommands.CardAct, MoneyCommands.Go, MoneyCommands.PeriodNext, MoneyCommands.BackOut, MoneyCommands.TypeField
+            MoneyCommands.PickBank, MoneyCommands.CardAct, MoneyCommands.Go, MoneyCommands.BackOut, MoneyCommands.TypeField
         };
         for (int k = 0; k < MoneyCommands.CardsMost; k++)
         {

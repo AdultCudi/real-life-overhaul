@@ -30,7 +30,6 @@ namespace RealLifeOverhaul.Economy
         public static BanksDirector Instance { get; private set; }
 
         /// <summary>The kit's apply at the bank showing.</summary>
-        internal void KitApply(int amount) => _view?.KitApply(amount);
 
         private PhoneApp _app;
         private BankApp _view;

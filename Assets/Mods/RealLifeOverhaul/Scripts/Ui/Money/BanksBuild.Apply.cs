@@ -110,10 +110,9 @@ namespace RealLifeOverhaul.Ui
             {
                 BankFact b = f.Banks[i];
                 m.Lines[i] = b.Name;
-                m.LineOn[i] = b.Answer;
-                m.LineBody[i] = (b.Lends ? w.F("reallife_fin_rate_year", "{rate}% a year", "rate", b.Rate.ToString("0.#",
-                    System.Globalization.CultureInfo.InvariantCulture)) + ", " + w.Money(b.Most) + ": " : string.Empty)
-                    + (b.Answer ? w.T("reallife_ui_bank_yes", "Yes") : w.T("reallife_ui_bank_no", "No"));
+                m.LineOn[i] = b.OfferYes;
+                m.LineBody[i] = (b.OfferRate != null ? b.OfferRate + ", " : string.Empty) + (b.OfferMost > 0 ? w.Money(b.OfferMost) + ": " : string.Empty)
+                    + (b.OfferYes ? w.T("reallife_ui_bank_yes", "Yes") : w.T("reallife_ui_bank_no", "No"));
             }
             if (selected < 0)
             {
@@ -214,7 +213,7 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                actions.Add(BankParts.Button(ApplyWords(w, product.Kind), UiButtonKind.Primary, UiIcon.Check, ApplyAct(product.Kind), true, !q.CanApply));
+                actions.Add(BankParts.Button(ApplyWords(w, product.Kind), UiButtonKind.Primary, UiIcon.Check, ApplyAct(product.Kind), true));
             }
             if (!string.IsNullOrEmpty(q.Note))
             {
@@ -289,7 +288,6 @@ namespace RealLifeOverhaul.Ui
             m.Table2 = BankParts.Table(new[] { w.T("reallife_ui_bank_col_score", "Score"), w.T("reallife_ui_bank_col_band", "Band"), w.T("reallife_ui_bank_col_loan", "Loan up to"),
                 w.T("reallife_fin_col_rate", "Rate"), w.T("reallife_ui_bank_col_card", "Card"), w.T("reallife_ui_bank_col_overdraft", "Overdraft"), w.T("reallife_ui_bank_col_car", "Car finance") },
                 null, rows, -1, w.T("reallife_ui_bank_none_title", "No banks in the city"), string.Empty, UiIcon.Star);
-            m.RowIds2 = new string[rows.Count];
             m.Note = w.F("reallife_money_threshold", "Lending stops under {threshold}.", "threshold", f.Threshold.ToString(System.Globalization.CultureInfo.InvariantCulture));
             var lines = new List<UtilitiesLine>(6)
             {

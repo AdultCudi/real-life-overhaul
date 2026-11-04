@@ -181,15 +181,13 @@ namespace RealLifeOverhaul.Ui
                 case MoneyAct.Found: return Found(director);
                 case MoneyAct.PutIn:
                     {
-                        long cents = Cents(view.F[MoneyView.FPut], 1000000);
-                        bool ok = director.PutIn(cents, out string why);
+                        bool ok = director.PutIn(OwnBankBuild.PutDollars(view, _facts) * 100L, out string why);
                         Warn(ok ? null : why);
                         return ok;
                     }
                 case MoneyAct.TakeOut:
                     {
-                        long cents = Cents(view.F[MoneyView.FPut], 1000000);
-                        bool ok = director.TakeOut(cents, out string why);
+                        bool ok = director.TakeOut(OwnBankBuild.TakeDollars(view, _facts) * 100L, out string why);
                         Warn(ok ? null : why);
                         return ok;
                     }
@@ -212,7 +210,7 @@ namespace RealLifeOverhaul.Ui
                 case MoneyAct.PayShare: director.SetPayShare(value); return true;
                 case MoneyAct.PayFixed:
                     {
-                        bool ok = director.SetPayFixed(Cents(view.F[MoneyView.FPay], 0), out string why);
+                        bool ok = director.SetPayFixed(OwnBankBuild.FixedPayCents(view, _facts), out string why);
                         Warn(ok ? null : why);
                         return ok;
                     }
@@ -223,7 +221,6 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        private static long Cents(int whole, int fallback) => (long)(whole > 0 ? whole : fallback) * 100L;
 
         private static int SegmentOf(string row)
         {

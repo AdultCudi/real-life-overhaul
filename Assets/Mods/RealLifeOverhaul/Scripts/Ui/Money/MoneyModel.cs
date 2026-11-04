@@ -72,7 +72,6 @@ namespace RealLifeOverhaul.Ui
         public string[] RowIds = new string[0];            // the first table's rows, as the view keeps a pick
         public string Table2Title;
         public UiDataTableModel Table2;
-        public string[] RowIds2 = new string[0];
         public string[] PeriodNames = new string[0];       // a statement's periods; the one shown is the view's
         public string Typing;                               // the digits being typed into a step's field, or null
         public short TableList = -1, TableClip = -1, Table2List = -1, Table2Clip = -1, StatementList = -1, StatementClip = -1;   // written back by the layout: where each scrolls
@@ -125,7 +124,6 @@ namespace RealLifeOverhaul.Ui
             RowIds = new string[0];
             Table2Title = null;
             Table2 = null;
-            RowIds2 = new string[0];
             PeriodNames = new string[0];
             EmptyTitle = null;
             EmptyBody = null;
@@ -179,12 +177,13 @@ namespace RealLifeOverhaul.Ui
         public bool CanLess, CanMore;
         public bool Typed;         // its figure is a field the player types into (digits)
         public int Low, High;      // the range a typed figure is kept to
+        public int Multiple;       // a typed figure is kept to a multiple of this (the capital goes in by steps); 0 or 1 for any
     }
 
     /// <summary>The player's choices on a bank page (the host's: a fill reads them, a press writes them).</summary>
     public sealed class MoneyView
     {
-        public const int FBank = 0, FProduct = 1, FAmount = 2, FDeposit = 3, FTerm = 4, FShop = 5, FPay = 6, FPeriod = 7, FDraw = 8, FPut = 9, FCount = 10;
+        public const int FBank = 0, FProduct = 1, FAmount = 2, FDeposit = 3, FTerm = 4, FShop = 5, FPay = 6, FPeriod = 7, FDraw = 8, FPut = 9, FTake = 10, FCount = 11;
 
         public const int DefaultPeriod = 1;   // the statement opens on the week (CashFlow.Week)
 
@@ -229,9 +228,9 @@ namespace RealLifeOverhaul.Ui
         public const int Link = 440;
 
         // The counter shape's own block, 900 to 959 (nobody else's: Finance uses 800 to 832, Utilities 800 to 815, and the kit's blocks are under 700):
-        // 900 a bank picked, 901 a card's button (arg the act), 902 a tab link (arg the tab), 903 a statement period, 904 back out of a sub page,
+        // 900 a bank picked, 901 a card's button (arg the act), 902 a tab link (arg the tab), 904 back out of a sub page,
         // 905 a step's typed figure (arg card x 8 + step), 910 to 919 a card's minus, 920 to 929 its plus, 930 to 939 its switch (k the card).
-        public const int PickBank = 900, CardAct = 901, Go = 902, PeriodNext = 903, BackOut = 904, TypeField = 905;
+        public const int PickBank = 900, CardAct = 901, Go = 902, BackOut = 904, TypeField = 905;
         public const int CardLess = 910, CardMore = 920, CardSwitch = 930, CardsMost = 10;
     }
 }

@@ -48,6 +48,17 @@ namespace RealLifeOverhaul.Economy
 
         public static void Read(OwnBankFacts f, OwnBank b, BankCity c, OwnBankWorld world, IOwnBankSay say)
         {
+            f.SaverLeast = OwnBankCatalogue.SaverOffsetLeast;
+            f.SaverMost = OwnBankCatalogue.SaverOffsetMost;
+            f.SaverStep = OwnBankCatalogue.SaverOffsetStep;
+            f.LoanLeast = OwnBankCatalogue.LoanOffsetLeast;
+            f.LoanMost = OwnBankCatalogue.LoanOffsetMost;
+            f.LoanStep = OwnBankCatalogue.LoanOffsetStep;
+            f.LoanFloorBp = CreditCatalogue.RateFloor * 100;
+            f.FundLimitMost = OwnBankCatalogue.FundLimitMost;
+            f.FundLimitStep = OwnBankCatalogue.FundLimitStep;
+            f.FundWeight = OwnBankCatalogue.FundWeight;
+            f.CapitalStep = OwnBankCatalogue.CapitalStepCents;
             f.Ready = world.Ready && b != null;
             if (!f.Ready)
             {

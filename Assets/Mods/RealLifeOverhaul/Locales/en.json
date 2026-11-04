@@ -31178,7 +31178,7 @@
   "reallife_ui_bank_chk_overdue": "Nothing you owe here is overdue",
   "reallife_ui_bank_chk_rating": "Your rating is {score}; {bank} lends from {threshold}",
   "reallife_ui_bank_chk_limit": "{amount} is under the {most} {bank} lends you",
-  "reallife_ui_bank_chk_apps": "{count} applications in the last 90 days count against you",
+  "reallife_ui_bank_chk_apps": "Applications in the last {days} days: {count}",
   "reallife_ui_ob_kicker_new": "A bank of your own",
   "reallife_ui_ob_found_capital": "Capital paid in",
   "reallife_ui_ob_law": "The law's least capital",
@@ -31207,5 +31207,7 @@
   "reallife_ui_ob_div_note": "A dividend is paid to you out of the capital the bank keeps over its least, and only while it can spare it.",
   "reallife_ui_ob_costs_day": "Costs a day",
   "reallife_ui_ob_f_week": "Seen this week",
-  "reallife_ui_bank_col_score": "Score"
+  "reallife_ui_bank_col_score": "Score",
+  "reallife_ui_ob_put": "Put in",
+  "reallife_ui_ob_take": "Take out"
 }

@@ -5,10 +5,6 @@ namespace RealLifeOverhaul.Ui
 {
     public static partial class OwnBankBuild
     {
-        // The rate offsets a bank may set over the rivals', hundredths of a point: the range and the step the director holds them to.
-        public const int SaverLeast = -200, SaverMost = 400, SaverStep = 25, LoanLeast = -300, LoanMost = 900, LoanStep = 25;
-        public const int FundLimitMost = 250, FundLimitStep = 50;
-
         private static string Whole(long value) => value.ToString("N0", Inv);
 
         // A rate offset on the steps the bank may take: its words (the rate it makes and its points over the rivals'), and the offsets a minus and a plus go to.
@@ -81,7 +77,7 @@ namespace RealLifeOverhaul.Ui
             }
             int kind = int.Parse(m.View.Row.Substring(2), Inv);
             OwnSaverFact pick = f.Savers[Math.Max(0, Math.Min(f.Savers.Length - 1, kind))];
-            var steps = new[] { OffsetStep(w, w.T("reallife_ob_box_rate_head", "Your rate"), pick.Offset, pick.RivalBp, SaverLeast, SaverMost, SaverStep, 0, MoneyAct.SaverRate, kind,
+            var steps = new[] { OffsetStep(w, w.T("reallife_ob_box_rate_head", "Your rate"), pick.Offset, pick.RivalBp, f.SaverLeast, f.SaverMost, f.SaverStep, 0, MoneyAct.SaverRate, kind,
                 out MoneyStep move) };
             cards.Add(new UtilitiesCard
             {
@@ -158,7 +154,8 @@ namespace RealLifeOverhaul.Ui
             }
             int seg = int.Parse(m.View.Row.Substring(2), Inv);
             OwnSegmentFact pick = f.Segments[Math.Max(0, Math.Min(f.Segments.Length - 1, seg))];
-            var steps = new[] { OffsetStep(w, w.T("reallife_ob_box_rate_head", "Your rate"), pick.Offset, pick.RivalBp, LoanLeast, LoanMost, LoanStep, 0, MoneyAct.LoanRate, seg, out MoneyStep move) };
+            var steps = new[] { OffsetStep(w, w.T("reallife_ob_box_rate_head", "Your rate"), pick.Offset, pick.RivalBp, f.LoanLeast, f.LoanMost, f.LoanStep, f.LoanFloorBp, MoneyAct.LoanRate,
+                seg, out MoneyStep move) };
             cards.Add(new UtilitiesCard
             {
                 Title = pick.Name, Sub = f.Name, Chip = pick.Lends ? w.T("reallife_ibox_chip_lending", "Lending") : w.T("reallife_ibox_chip_stopped", "Stopped"),
@@ -214,15 +211,15 @@ namespace RealLifeOverhaul.Ui
             steps.Add(BankParts.ChoiceStep(w.T("reallife_ui_ob_strategy", "Strategy"), f.Strategy >= 0 && f.Strategy < f.StrategyNames.Length ? f.StrategyNames[f.Strategy] : string.Empty, null,
                 Math.Max(0, Math.Min(sCount - 1, f.Strategy)), sCount, -1, MoneyAct.Strategy, 0, strategies, out MoneyStep strategy));
             moves.Add(strategy);
-            int limits = FundLimitMost / FundLimitStep + 1;
+            int limits = f.FundLimitMost / f.FundLimitStep + 1;
             var limitValues = new int[limits];
             for (int i = 0; i < limits; i++)
             {
-                limitValues[i] = i * FundLimitStep;
+                limitValues[i] = i * f.FundLimitStep;
             }
             steps.Add(BankParts.ChoiceStep(w.T("reallife_ui_ob_limit", "Most of the deposits it may hold"), w.F("reallife_ob_fund_limit_option", "At most {share} of the deposits", "share",
                 Pct(f.FundLimit)), null,
-                Math.Max(0, Math.Min(limits - 1, f.FundLimit / FundLimitStep)), limits, -1, MoneyAct.FundLimit, 0, limitValues, out MoneyStep limit));
+                Math.Max(0, Math.Min(limits - 1, f.FundLimit / f.FundLimitStep)), limits, -1, MoneyAct.FundLimit, 0, limitValues, out MoneyStep limit));
             moves.Add(limit);
             cards.Add(new UtilitiesCard
             {
@@ -235,7 +232,7 @@ namespace RealLifeOverhaul.Ui
                     BankParts.Pair(w.T("reallife_ob_box_fund_dividends", "Dividends a year:"), C(w, f.FundDividends)),
                     BankParts.Say(w.F("reallife_ob_box_fund_rules",
                         "Holds the {companies} largest companies its strategy allows, in even parts, rebalanced each week. The regulator counts a share at {weight} of its value.",
-                            "companies", f.StrategyCompanies.ToString(Inv), "weight", Pct(250)))
+                            "companies", f.StrategyCompanies.ToString(Inv), "weight", Pct(f.FundWeight)))
                 },
                 Steps = steps.ToArray()
             }, moves.ToArray());

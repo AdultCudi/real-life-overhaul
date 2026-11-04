@@ -16,6 +16,7 @@ namespace RealLifeOverhaul.Ui
         private readonly MoneyModel _model = new MoneyModel();
         private readonly IMoneySource _source;
         private bool _dirty = true;
+        private bool _refill = true;   // the page is filled again from the game after a press; a scroll or a focus only lays it out again
         private int _seen = -1;
         private int _typingArg = -1;
         private float _offTable, _offTable2, _offStatement;   // where each list is scrolled to: a fill makes new tables, so the host keeps the place
@@ -38,11 +39,13 @@ namespace RealLifeOverhaul.Ui
 
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
-            if (_source != null)
+            if (_source != null && (_refill || _source.Generation != _seen))
             {
                 _model.Reset();   // a tab never inherits a part (the statement, a chart, a button) from the one before it
                 _source.Fill(_model);
+                _refill = false;
             }
+            ShowTyping();
             if (_model.Table != null)
             {
                 _model.Table.Offset = _offTable;
@@ -67,13 +70,16 @@ namespace RealLifeOverhaul.Ui
             _seen = _source != null ? _source.Generation : 0;
         }
 
+        /// <summary>The page is filled again at the next layout (the checks edit the model's choices directly).</summary>
+        public void Invalidate() => _dirty = _refill = true;
+
         public bool Press(int command, int arg)
         {
             Commit();
             bool done = Route(command, arg);
             if (done)
             {
-                _dirty = true;
+                _dirty = _refill = true;
             }
             return done;
         }
@@ -92,7 +98,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 _model.Tab = arg;
                 view.Row = null;
-                view.F[MoneyView.FPay] = view.F[MoneyView.FDraw] = view.F[MoneyView.FPut] = 0;
+                view.F[MoneyView.FPay] = view.F[MoneyView.FDraw] = view.F[MoneyView.FPut] = view.F[MoneyView.FTake] = 0;
                 _offTable = _offTable2 = _offStatement = 0f;
                 return true;
             }
@@ -124,10 +130,6 @@ namespace RealLifeOverhaul.Ui
             if (command == UiDataTable.First + UiDataTable.Row)
             {
                 return PickRow(_model.RowIds, arg);
-            }
-            if (command == MoneyPages.Table2Base + UiDataTable.Row)
-            {
-                return PickRow(_model.RowIds2, arg);
             }
             if (command == UiStatement.First + UiStatement.Period)
             {
@@ -163,8 +165,7 @@ namespace RealLifeOverhaul.Ui
             return _source != null && _source.Press(_model, command, arg);
         }
 
-        // A row of the first or second table chosen: the view keeps which, and the page shows what belongs to it. A row of the Apply tab's
-        // second table is another bank, asked the same thing.
+        // A row of the table chosen: the view keeps which, and the page shows what belongs to it.
         private bool PickRow(string[] ids, int row)
         {
             if (row < 0 || row >= ids.Length || string.IsNullOrEmpty(ids[row]))
@@ -173,20 +174,10 @@ namespace RealLifeOverhaul.Ui
             }
             MoneyView view = _model.View;
             string id = ids[row];
-            if (id.StartsWith("bank:", StringComparison.Ordinal) && int.TryParse(id.Substring(5), NumberStyles.None, CultureInfo.InvariantCulture, out int bank))
-            {
-                int product = view.F[MoneyView.FProduct];
-                view.Reset(false);
-                _offTable = _offTable2 = _offStatement = 0f;
-                view.Bank = bank;
-                view.F[MoneyView.FProduct] = product;
-                view.Row = "p:" + product.ToString(CultureInfo.InvariantCulture);
-                return true;
-            }
             if (view.Row != id)
             {
                 // A new row starts its amounts over.
-                view.F[MoneyView.FPay] = view.F[MoneyView.FDraw] = view.F[MoneyView.FPut] = 0;
+                view.F[MoneyView.FPay] = view.F[MoneyView.FDraw] = view.F[MoneyView.FPut] = view.F[MoneyView.FTake] = 0;
                 if (id.StartsWith("p:", StringComparison.Ordinal))
                 {
                     view.F[MoneyView.FAmount] = view.F[MoneyView.FDeposit] = view.F[MoneyView.FTerm] = view.F[MoneyView.FShop] = 0;
@@ -241,13 +232,13 @@ namespace RealLifeOverhaul.Ui
             if (_model.Typing != null)
             {
                 _model.Typing = null;
-                _dirty = true;
+                _dirty = _refill = true;
                 return true;
             }
             if (_model.View.Row != null)
             {
                 _model.View.Row = null;
-                _dirty = true;
+                _dirty = _refill = true;
                 return true;
             }
             return false;
@@ -273,7 +264,7 @@ namespace RealLifeOverhaul.Ui
             _model.Tab = next;
             _offTable = _offTable2 = _offStatement = 0f;
             _model.View.Row = null;
-            _dirty = true;
+            _dirty = _refill = true;
         }
 
         /// <summary>F runs the page's main button and P its second: the first card button of each key.</summary>
@@ -292,7 +283,7 @@ namespace RealLifeOverhaul.Ui
                     if (list[i].Key == action && !list[i].Disabled)
                     {
                         bool done = Route(list[i].Command, list[i].Arg);
-                        _dirty = true;
+                        _dirty = _refill = true;
                         return done;
                     }
                 }
@@ -352,14 +343,14 @@ namespace RealLifeOverhaul.Ui
         public void Typed(string text)
         {
             _model.Typing = Digits(text);
-            _dirty = true;
+            _dirty = _refill = true;
         }
 
         public void Submitted(string text)
         {
             _model.Typing = Digits(text);
             Commit();
-            _dirty = true;
+            _dirty = _refill = true;
         }
 
         // The digits typed become the step's figure, kept to the range the step names; the page is filled again with it.
@@ -383,11 +374,29 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             value = Math.Max(step.Low, Math.Min(Math.Max(step.Low, step.High), value));
+            if (step.Multiple > 1)
+            {
+                value = Math.Max(step.Low, value / step.Multiple * step.Multiple);
+            }
             if (step.Act == MoneyAct.None)
             {
                 _model.View.Set(step.Field, value);
             }
-            _dirty = true;
+            _dirty = _refill = true;
+        }
+
+        // The digits being typed stand in the field of the step they are for, so the player sees what is typed.
+        private void ShowTyping()
+        {
+            if (_model.Typing == null)
+            {
+                return;
+            }
+            int card = _typingArg / 8, index = _typingArg % 8;
+            if (card >= 0 && card < _model.Cards.Length && index < _model.Cards[card].Steps.Length && _model.Cards[card].Steps[index].TypeCommand != 0)
+            {
+                _model.Cards[card].Steps[index].Value = _model.Typing;
+            }
         }
 
         private static string Digits(string text)

@@ -280,14 +280,22 @@ namespace RealLifeOverhaul.Ui
             {
                 lines.Add(BankParts.Say(w.T("reallife_ob_box_test", "Founded by a test: it pays nothing out.")));
             }
-            long step = 100000L;
-            int put = BankParts.Chosen(m.View.F[MoneyView.FPut], 1000000, 100000, 999999999);
+            long step = StepDollars(f);
             int card = cards.Next;
-            var steps = new[]
+            int[] ladder = Ladder(step);
+            int most = (int)(999999999L / step * step);
+            var steps = new List<UtilitiesStep>(2);
+            var moves = new List<MoneyStep>(2);
+            steps.Add(BankParts.AmountStep(w, w.T("reallife_ui_ob_put", "Put in"), PutDollars(m.View, f), (int)step, most, MoneyView.FPut, card, 0,
+                w.F("reallife_ui_ob_in_steps", "In whole money, in steps of {step}", "step", w.Money(step)), out MoneyStep putMove, ladder, (int)step));
+            moves.Add(putMove);
+            long takeMost = TakeMostDollars(f);
+            if (takeMost >= step)
             {
-                BankParts.AmountStep(w, w.T("reallife_ui_ob_amount", "Amount"), put, 100000, 999999999, MoneyView.FPut, card, 0,
-                    w.F("reallife_ui_ob_in_steps", "In whole money, in steps of {step}", "step", w.Money(step)), out MoneyStep move)
-            };
+                steps.Add(BankParts.AmountStep(w, w.T("reallife_ui_ob_take", "Take out"), TakeDollars(m.View, f), (int)step, (int)takeMost, MoneyView.FTake, card, 1,
+                    w.F("reallife_ui_ob_take_most", "Up to {most} can be taken out now.", "most", w.Money(takeMost)), out MoneyStep takeMove, ladder, (int)step));
+                moves.Add(takeMove);
+            }
             var actions = new List<UiActionModel>(3)
             {
                 BankParts.Button(w.T("reallife_ob_box_put_in", "Put in capital"), UiButtonKind.Primary, UiIcon.Plus, MoneyAct.PutIn, true),
@@ -296,10 +304,6 @@ namespace RealLifeOverhaul.Ui
             if (f.MostOut <= 0)
             {
                 lines.Add(BankParts.Say(w.T("reallife_ui_ob_take_none", "None can be taken out now: it would leave the bank short of capital."), UiRole.WarnText));
-            }
-            else
-            {
-                lines.Add(BankParts.Say(w.F("reallife_ui_ob_take_most", "Up to {most} can be taken out now.", "most", C(w, f.MostOut))));
             }
             if (f.Sellable)
             {
@@ -310,9 +314,52 @@ namespace RealLifeOverhaul.Ui
                 lines.Add(BankParts.Say(w.T("reallife_ui_ob_sell_not", "It cannot be sold while it is in breach or a run is on."), UiRole.WarnText));
                 actions.Add(BankParts.Button(w.T("reallife_ob_box_sell", "Sell the bank"), UiButtonKind.Destructive, UiIcon.Trash, MoneyAct.Sell, false, true));
             }
-            cards.Add(new UtilitiesCard { Title = w.T("reallife_ui_ob_capital_title", "Capital and sale"), Sub = f.Name, Lines = lines.ToArray(), Steps = steps,
-                Actions = actions.ToArray() }, new[] { move });
+            cards.Add(new UtilitiesCard { Title = w.T("reallife_ui_ob_capital_title", "Capital and sale"), Sub = f.Name, Lines = lines.ToArray(), Steps = steps.ToArray(),
+                Actions = actions.ToArray() }, moves.ToArray());
         }
+
+        // What the Bank tab's amounts start at and are kept to. The page and the button read the same figures, so what is shown is what is done.
+
+        /// <summary>The step capital goes in and comes out by, in whole money (the catalogue's: $100,000).</summary>
+        public static long StepDollars(OwnBankFacts f) => Math.Max(1L, f.CapitalStep / 100L);
+
+        /// <summary>The ladder an amount steps along: the step and its multiples.</summary>
+        private static int[] Ladder(long step)
+        {
+            int[] times = { 1, 2, 5, 10, 20, 50, 100, 500 };
+            var ladder = new int[times.Length];
+            for (int i = 0; i < times.Length; i++)
+            {
+                ladder[i] = (int)Math.Min(int.MaxValue, step * times[i]);
+            }
+            return ladder;
+        }
+
+        /// <summary>The most that can be taken out now, in whole money, on the step.</summary>
+        public static long TakeMostDollars(OwnBankFacts f)
+        {
+            long step = StepDollars(f);
+            return Math.Max(0L, f.MostOut / 100L) / step * step;
+        }
+
+        /// <summary>The capital to put in: the player's figure, else ten steps (the old page's $1,000,000).</summary>
+        public static int PutDollars(MoneyView v, OwnBankFacts f)
+        {
+            long step = StepDollars(f);
+            long value = v.F[MoneyView.FPut] > 0 ? v.F[MoneyView.FPut] : step * 10L;
+            return (int)Math.Max(step, Math.Min(999999999L / step * step, value / step * step));
+        }
+
+        /// <summary>The capital to take out: the player's figure kept to the most, else the most.</summary>
+        public static int TakeDollars(MoneyView v, OwnBankFacts f)
+        {
+            long step = StepDollars(f), most = TakeMostDollars(f);
+            long value = v.F[MoneyView.FTake] > 0 ? v.F[MoneyView.FTake] : most;
+            return (int)Math.Max(Math.Min(step, most), Math.Min(most, value / step * step));
+        }
+
+        /// <summary>The owner's fixed pay in cents the Set button sets: the figure typed, else the pay the bank has now.</summary>
+        public static long FixedPayCents(MoneyView v, OwnBankFacts f) => v.F[MoneyView.FPay] > 0 ? v.F[MoneyView.FPay] * 100L : f.PayFixed;
 
         // The month so far: what came in, what went out, what was written off and what you were paid.
         private static void MonthCard(OwnBankFacts f, UtilitiesWords w, BankCards cards)
@@ -395,8 +442,7 @@ namespace RealLifeOverhaul.Ui
             moves.Add(mode);
             if (f.PayMode == 1)
             {
-                int fixedNow = (int)Math.Min(int.MaxValue, f.PayFixed / 100);
-                int typed = BankParts.Chosen(m.View.F[MoneyView.FPay], fixedNow, 0, 999999999);
+                int typed = (int)Math.Min(int.MaxValue, FixedPayCents(m.View, f) / 100);
                 steps.Add(BankParts.AmountStep(w, w.T("reallife_ob_pay_fixed_row", "Each day"), typed, 0, 999999999, MoneyView.FPay, cards.Next, steps.Count,
                     w.F("reallife_ui_ob_now", "Now {amount} a day", "amount", C(w, f.PayFixed)), out MoneyStep fixedMove));
                 moves.Add(fixedMove);
