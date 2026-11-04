@@ -135,6 +135,32 @@ internal static partial class Program
             + walked + " steps; " + bad + "); a sheet's chips, Cancel and then its commit button come last (" + sheets + ")");
         Check(pages == "none" && pagesWalked > 40, "flare order: on every page right alone walks its column, its side, the nav and then the window's close, never to a target it has been to and never back to an earlier group ("
             + pagesWalked + " steps over " + pageStates + " pages; " + pages + ")");
+        // A group of chips never leaves one chip alone in its last row (two columns cannot spare one and take one column), and when the last two rows share, the row before keeps two.
+        string orphan = "none";
+        int grids = 0;
+        for (int n = 2; n <= 12; n++)
+        {
+            foreach (float room in new[] { 260f, 340f, 420f, 552f })
+            {
+                var chips = new string[n];
+                for (int i = 0; i < n; i++)
+                {
+                    chips[i] = i % 3 == 0 ? "Midtown" : i % 3 == 1 ? "Garment District" : "Murray Hill";
+                }
+                FlareFace.ChipGrid(chips, room, out float chip, out int columns, out bool lone);
+                if (chip <= 0f || columns < 2)
+                {
+                    continue;   // one row of their own widths, or a column of options
+                }
+                grids++;
+                int grid = (n + columns - 1) / columns, last = lone ? 2 : n - (grid - 1) * columns, before = lone ? columns - 1 : columns;
+                if (grid > 1 && (last == 1 || before < 2))
+                {
+                    orphan = n + " chips in " + room + " px: " + columns + " columns, last row " + last + ", the row before " + before;
+                }
+            }
+        }
+        Check(orphan == "none" && grids > 10, "flare order: a group of chips never leaves one chip alone in its last row (" + grids + " grids tried; " + orphan + ")");
         Check(hire == "none", "flare order: on the hire page the filter chips come before the Hire buttons, which go down the rows (" + hire + ")");
         Check(rail == "none" && rows >= 2, "flare order: the rail's Who to follow holds the same " + rows + " rows in en, pt and zh-cn (" + rail + ")");
     }

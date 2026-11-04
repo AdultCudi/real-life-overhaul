@@ -33,7 +33,7 @@ namespace RealLifeOverhaul.Ui
 
         // The chips of a group stand in a grid of equal chips, as many to a row as the room takes and the rows of the same count, so the rows end together and the d-pad's
         // down stays in its column (a plain wrap of chips of their own widths ended each row somewhere else).
-        private static void ChipGrid(string[] chips, float room, out float chip, out int columns, out bool lone)
+        internal static void ChipGrid(string[] chips, float room, out float chip, out int columns, out bool lone)
         {
             lone = false;
             int n = Math.Min(chips.Length, GroupStride);
