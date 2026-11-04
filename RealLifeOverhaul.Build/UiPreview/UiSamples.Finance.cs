@@ -10,7 +10,7 @@ internal static partial class UiSamples
     public static readonly string[] FinanceStates =
     {
         "overview", "overview_new", "overview_long", "credit", "credit_new", "borrow", "borrow_card", "borrow_finance", "borrow_refused", "cash", "cash_new", "accounts", "accounts_card",
-        "accounts_new", "rivals", "rivals_move", "rivals_new", "standing", "standing_new"
+        "accounts_new", "rivals", "rivals_move", "rivals_new", "rivals_tycoons", "standing", "standing_new"
     };
 
     public static UtilitiesWords FinanceWordsOf(UiWords t) => UtilitiesWordsOf(t);
@@ -427,6 +427,22 @@ internal static partial class UiSamples
             RichRow("Maya Okafor (you)", "Speedy Bites, Bloom & Co", 19640000f, "+3.2%", 1, new[] { 15f, 16f, 17f, 17.5f, 18f, 19f, 19.6f }, 330f),
             RichRow("Kwame Mensah", "Mensah Auto Group", 17960000f, "+0.6%", 1, new[] { 17f, 17.5f, 17.2f, 17.4f, 17.6f, 17.9f, 17.96f }, 45f)
         };
+        bool tycoons = state == "rivals_tycoons";
+        if (tycoons)
+        {
+            // The rich list's own people, so their painted faces (UiPortraits' named looks) are in the picture.
+            rows = new List<FinanceRow>
+            {
+                RichRow("Space Karen", "Karen Aerospace & Motors", 40000000f, "+2.4%", 1, new[] { 30f, 32f, 33f, 35f, 36f, 38f, 40f }, 200f),
+                RichRow("Bald Luthor", "Luthor Everything Co.", 38200000f, "+0.9%", 1, new[] { 36f, 37f, 36.5f, 37f, 37.5f, 38f, 38.2f }, 100f),
+                RichRow("The Zucc", "Zucc Social Holdings", 36900000f, "-1.2%", -1, new[] { 39f, 38.5f, 38f, 37.5f, 37.2f, 37f, 36.9f }, 130f),
+                RichRow("The Oracle of Omaha", "Berkshire-like holding", 29400000f, "+0.4%", 1, new[] { 28f, 28.5f, 28.8f, 29f, 29.1f, 29.3f, 29.4f }, 40f),
+                RichRow("Chair-Leap Bill", "Soft Wares Ltd", 23100000f, "+1.1%", 1, new[] { 21f, 21.5f, 22f, 22.4f, 22.7f, 23f, 23.1f }, 300f),
+                RichRow("Yacht Larry", "Sunset Marine", 21000000f, "-0.3%", -1, new[] { 21.4f, 21.3f, 21.2f, 21.1f, 21.1f, 21f, 21f }, 180f),
+                RichRow("Maya Okafor (you)", "Speedy Bites, Bloom & Co", 19640000f, "+3.2%", 1, new[] { 15f, 16f, 17f, 17.5f, 18f, 19f, 19.6f }, 330f),
+                RichRow("Rocket Richard", "Launchpad Capital", 17800000f, "+0.6%", 1, new[] { 17f, 17.2f, 17.4f, 17.5f, 17.6f, 17.7f, 17.8f }, 20f)
+            };
+        }
         if (fresh)
         {
             rows = new List<FinanceRow>
@@ -437,12 +453,12 @@ internal static partial class UiSamples
             };
         }
         r.Table = FinanceKitTables.Make(FinanceKitTables.RichColumns(w), rows, fresh ? 1 : 0, "Nobody yet", string.Empty, UiIcon.Trophy);
-        r.Who = fresh ? new[] { 0, 1, -1 } : new[] { 0, 1, 2, -1, 3 };
-        string name = fresh ? "Imani Brooks" : "Huang Guo";
+        r.Who = fresh ? new[] { 0, 1, -1 } : tycoons ? new[] { 0, 1, 2, 3, 4, 5, -1, 6 } : new[] { 0, 1, 2, -1, 3 };
+        string name = tycoons ? "Space Karen" : fresh ? "Imani Brooks" : "Huang Guo";
         r.Profile = new UiProfileModel
         {
-            Name = name, Hue = fresh ? 260f : 28f, Role = fresh ? "Brooks Fresh Markets" : "Burger Barn", RoleIcon = UiIcon.Store, Status = move ? "Expanding" : "Steady",
-            StatusTone = move ? UiRole.Warn : UiRole.Ok, FactLabels = new[] { "Worth", "In a week" }, FactValues = new[] { FM(fresh ? 27880000 : 31420000), fresh ? string.Empty : "+" + FM(640000) },
+            Name = name, Hue = tycoons ? 200f : fresh ? 260f : 28f, Role = tycoons ? "Karen Aerospace & Motors" : fresh ? "Brooks Fresh Markets" : "Burger Barn", RoleIcon = UiIcon.Store, Status = move ? "Expanding" : "Steady",
+            StatusTone = move ? UiRole.Warn : UiRole.Ok, FactLabels = new[] { "Worth", "In a week" }, FactValues = new[] { FM(tycoons ? 40000000 : fresh ? 27880000 : 31420000), fresh ? string.Empty : "+" + FM(640000) },
             Rating = -1
         };
         r.Labels = new[] { "Their holding", "Your shares in it" };
