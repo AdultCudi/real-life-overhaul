@@ -55,6 +55,13 @@ namespace RealLifeOverhaul.Ui
             return false;
         }
 
+        /// <summary>
+        /// True when the kit shows the moment it binds: the game's object already stands switched on and the screen is of the kind that
+        /// stays on (the toast stack). The watcher on the object can only tell of a switching on after it, so for such an object nothing
+        /// else would ever show the kit.
+        /// </summary>
+        public static bool ShowsAtBind(bool stands, bool objectOn) => stands && objectOn;
+
         /// <summary>The order a kit canvas takes over a screen drawn at this order: just above it, below the game's boxes, notices and other mods.</summary>
         public static int Above(int covered) => covered + 1;
 

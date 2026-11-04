@@ -11,6 +11,15 @@ namespace RealLifeOverhaul.Ui
     {
     }
 
+    /// <summary>
+    /// Marks a game screen whose object is switched on all the time, its contents coming and going inside it (the toast stack): the
+    /// watcher's OnEnable can never tell the host it opened, so the host shows the kit the moment it binds over an object that stands
+    /// active (UiHostRules.ShowsAtBind), and again each time the game switches the object on.
+    /// </summary>
+    public interface IUiGameStands
+    {
+    }
+
     /// <summary>One container of a game screen whose children the game made, with the names it gives them.</summary>
     public struct UiGamePart
     {

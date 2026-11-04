@@ -274,8 +274,13 @@ namespace RealLifeOverhaul
             _failed = false;
         }
 
+        private static readonly int HotClicked = HotSpots.Slot("Click: TransitCta.Clicked");
+
+        // The game's click on a stop's pole, shelter or bus: the stop map opened from it is named in a long frame's line
+        // (the game's own opening of its map in it kept apart, MapPicker.ToggleMap), as a click on the panel's button is.
         private static void Clicked()
         {
+            using var hotSpot = HotSpots.Time(HotClicked);
             TransitPointer pointer = _pointed;
             if (pointer == null)
             {

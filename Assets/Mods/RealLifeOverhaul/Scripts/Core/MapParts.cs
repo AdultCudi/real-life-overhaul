@@ -23,9 +23,48 @@ namespace RealLifeOverhaul
         private static readonly List<string> Names = new List<string>(16);
         private static readonly List<Look> Looks = new List<Look>(16);
         private static readonly List<string> Faults = new List<string>(16);   // the fault a look threw once (it is not asked again), or null
+        private static readonly List<Func<bool>> Later = new List<Func<bool>>(4);   // parts' work for the map's last change, a slice a frame
 
         /// <summary>The parts known.</summary>
         public static int Count => Names.Count;
+
+        /// <summary>Steps of the parts' work that wait for the frames after the map's last change.</summary>
+        public static int Waiting => Later.Count;
+
+        /// <summary>
+        /// Work a part still has for the map's last change, done a slice a frame in the frames after it (the map's camera takes
+        /// a second or more to fly up or down) instead of all in the frame the map switches in: <paramref name="step"/> runs
+        /// once a frame (<see cref="RunLater"/>, from Core/MapTreeGuard) until it returns false. A step already waiting is not
+        /// added twice. The step guards itself: one that throws is let go.
+        /// </summary>
+        public static void After(Func<bool> step)
+        {
+            if (step != null && !Later.Contains(step))
+            {
+                Later.Add(step);
+            }
+        }
+
+        /// <summary>Once a frame: a slice of each waiting step; nothing but a count while none waits.</summary>
+        public static void RunLater()
+        {
+            for (int i = Later.Count - 1; i >= 0; i--)
+            {
+                bool more;
+                try
+                {
+                    more = Later[i]();
+                }
+                catch (Exception)
+                {
+                    more = false;
+                }
+                if (!more)
+                {
+                    Later.RemoveAt(i);
+                }
+            }
+        }
 
         /// <summary>A part's look, once as the part starts; again under the same name, the look is replaced (a new city).</summary>
         public static void Add(string name, Look look)
