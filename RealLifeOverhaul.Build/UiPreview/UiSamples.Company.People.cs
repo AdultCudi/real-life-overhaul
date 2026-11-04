@@ -753,7 +753,7 @@ internal static partial class UiSamples
                 };
                 c.Blocks = new[]
                 {
-                    new CompanyBlock { Kind = CompanyBlockKind.Items, Items = new[] { new CompanyItem { Grade = -1, Title = "Ray Walsh", Sub = w.T("reallife_co_q_manager_asks", "Manager, asks"), Face = true, Hue = 0.55f, Ring = UiRole.Warn, Press = true, Act = CA(CompanyDo.Go, "mgr:" + place, CompanyView.Managers) } } },
+                    new CompanyBlock { Kind = CompanyBlockKind.Items, Items = new[] { new CompanyItem { Grade = -1, Title = "Ray Walsh", Sub = w.T("reallife_co_q_manager_asks", "Manager"), Face = true, Hue = 0.55f, Ring = UiRole.Warn, Press = true, Act = CA(CompanyDo.Go, "mgr:" + place, CompanyView.Managers) } } },
                     CNote(w.F("reallife_hier_say_exception", "{name} asks for {asked} an hour; the limit is {ceiling}.", "name", "Dev Kapoor", "asked", "$19.00", "ceiling", "$18.00")),
                     CBtns(CB(w.T("reallife_co_answer", "Answer"), UiButtonKind.Primary, UiAction.Alt, CA(CompanyDo.Go, "card", 1), UiIcon.Next)),
                     CBtns(CB(w.T("reallife_hier_open_staff", "Open the staff"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.Go, "emp:dev", CompanyView.Staff), UiIcon.People),

@@ -138,7 +138,7 @@ internal static partial class UiSamples
             Id = 1, Kicker = w.F("reallife_co_q_kicker_manager", "A manager's question, {place}", "place", "Speedy Bites, 7 5th Avenue"), Title = w.T("reallife_co_q_raise_title", "A raise above my limit"),
             Headline = SF("{name} asks for {pay} an hour. {manager} can approve up to {limit}.", "name", "Dev Kapoor", "pay", "$19", "manager", "Ray", "limit", "$18"),
             Body = SF("{name} has worked both registers for 41 days and covered the lunch rush all week. Another raise this month goes over {manager}'s limit.", "name", "Dev", "manager", "Ray"),
-            Asker = "Ray Walsh", AskerRole = w.T("reallife_co_q_manager_asks", "Manager, asks"), AskerHue = 0.55f, AskerRing = UiRole.Warn,
+            Asker = "Ray Walsh", AskerRole = w.T("reallife_co_q_manager_asks", "Manager"), AskerHue = 0.55f, AskerRing = UiRole.Warn,
             Subject = "Dev Kapoor", SubjectRole = w.F("reallife_co_q_cashier_days", "{skill}, {days} days", "skill", "Customer service", "days", "41"), SubjectRing = UiRole.Ok,
             FactLabels = new[] { w.T("reallife_co_q_now", "Now"), w.T("reallife_co_q_asks_for", "Asks for"), w.T("reallife_co_q_limit", "Limit"), "Covered this week" },
             FactValues = new[] { "$17 / h", "$19 / h", "$18 / h", "38 h" },
@@ -198,7 +198,7 @@ internal static partial class UiSamples
             Id = deep ? 4 : 3, Kicker = w.F("reallife_co_q_kicker_manager", "A manager's question, {place}", "place", "Speedy Bites, 7 5th Avenue"), Title = "The crew is short",
             Headline = w.F("reallife_hier_say_gap", "{staff} staff, {keep} wanted since day {day}", "staff", "7", "keep", "9", "day", "209"),
             Body = SF("Two hours a day have nobody on the grill. {manager} cannot hire past the budget this month.", "manager", "Ray"),
-            Asker = "Ray Walsh", AskerRole = w.T("reallife_co_q_manager_asks", "Manager, asks"), AskerHue = 0.55f, AskerRing = UiRole.Warn,
+            Asker = "Ray Walsh", AskerRole = w.T("reallife_co_q_manager_asks", "Manager"), AskerHue = 0.55f, AskerRing = UiRole.Warn,
             FactLabels = new[] { "Staff", "Wanted", w.T("reallife_co_q_budget", "Budget left") },
             FactValues = new[] { "7", "9", "$90" }, OpenLabel = w.F("reallife_co_open_page", "Open {name}'s page", "name", "Ray"), Open = CA(CompanyDo.Go, "mgr:Speedy Bites~7", CompanyView.Managers), Deep = deep, Selected = 0
         };
@@ -225,7 +225,7 @@ internal static partial class UiSamples
             Id = 2, Kicker = w.F("reallife_co_q_kicker_manager", "A manager's question, {place}", "place", "Hudson Warehouse, Hell's Kitchen"), Title = w.T("reallife_co_q_lease_title", "A lease is up for renewal"),
             Headline = w.F("reallife_co_q_lease_head", "The lease at {place} renews in {days} days: {rent} a month, up {rise}.", "place", "Hudson Warehouse", "days", "9", "rent", "$6,800", "rise", "8%"),
             Body = SF("{manager} may agree a rise of up to {limit}. This one is past it, so it is yours. The landlord holds the premises at the new rent from the day the lease ends.", "manager", "Omar", "limit", "5%"),
-            Asker = "Omar Haddad", AskerRole = w.T("reallife_co_q_manager_asks", "Manager, asks"), AskerHue = 0.75f, AskerRing = UiRole.Warn,
+            Asker = "Omar Haddad", AskerRole = w.T("reallife_co_q_manager_asks", "Manager"), AskerHue = 0.75f, AskerRing = UiRole.Warn,
             FactLabels = new[] { w.T("reallife_co_q_rent_now", "Rent now"), w.T("reallife_co_q_rent_offer", "Offered"), w.T("reallife_co_q_term", "New term"), w.T("reallife_co_q_rise_limit", "Rise") },
             FactValues = new[] { "$6,300", "$6,800", "24 months", "7.9%" },
             OpenLabel = w.F("reallife_co_open_page", "Open {name}'s page", "name", "Omar"), Open = CA(CompanyDo.Go, "mgr:Hudson Warehouse~4", CompanyView.Managers),

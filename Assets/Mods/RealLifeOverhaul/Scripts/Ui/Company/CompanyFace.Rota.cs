@@ -349,9 +349,20 @@ namespace RealLifeOverhaul.Ui
                 }
                 float tx = x + UiTokens.AvatarRow + UiTokens.S2, tw = personW - UiTokens.AvatarRow - UiTokens.S2;
                 float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
-                float top = cy + UiDraw.SnapDown((rowH - th - sh) / 2f);
+                // A role with what it was before takes the two lines under the name when the row has them, rather than ending in an ellipsis.
+                string role = pr.Role ?? string.Empty;
+                float roleH = UiDraw.Snap(UiTextRules.WrappedHeight(role, UiStyle.Small, tw, 2));
+                bool twoLines = roleH > sh + 1f && th + roleH <= rowH;
+                float top = cy + UiDraw.SnapDown((rowH - th - (twoLines ? roleH : sh)) / 2f);
                 UiDraw.TextMiddle(s, at, tx, top, th, tw, UiStyle.Title, UiRole.Text, pr.Name ?? string.Empty, UiFlags.Truncate);
-                UiDraw.TextMiddle(s, at, tx, top + th, sh, tw, UiStyle.Small, UiRole.Text2, pr.Role ?? string.Empty, UiFlags.Truncate);
+                if (twoLines)
+                {
+                    UiDraw.Text(s, at, tx, top + th, tw, UiStyle.Small, UiRole.Text2, role, UiFlags.Wrap | UiFlags.Truncate, 2);
+                }
+                else
+                {
+                    UiDraw.TextMiddle(s, at, tx, top + th, sh, tw, UiStyle.Small, UiRole.Text2, role, UiFlags.Truncate);
+                }
                 float dh = rowH >= 88f ? UiTokens.Control : UiTokens.ControlSmall;
                 for (int d = 0; d < 7; d++)
                 {
