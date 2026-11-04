@@ -57,6 +57,8 @@ namespace RealLifeOverhaul.Ledger
         public static readonly string TopCity = P + "_ledger_top_city";
         public static readonly string BoughtOwn = P + "_ledger_bought_own";       // a listed company took a player's company over
         public static readonly string BoughtCity = P + "_ledger_bought_city";     // ...or a city company
+        public static readonly string OpenedCity = P + "_ledger_opened_city";     // a business of the city opened, the edition after the day it did
+        public static readonly string OpenedRival = P + "_ledger_opened_rival";   // ...or a rival's
 
         /// <summary>The rivals' own one line for a takeover (RivalDirector.Paper), which the full story replaces.</summary>
         public static readonly string RivalTakeoverKey = P + "_rival_paper_done_takeover";
@@ -108,6 +110,22 @@ namespace RealLifeOverhaul.Ledger
         public static bool Story(string key)
         {
             return Kept(key) || (key != null && key.StartsWith(BoughtPrefix, StringComparison.Ordinal));
+        }
+
+        /// <summary>True for a story of a business that opened: read from the city's record on the edition's first print and kept when it is written again.</summary>
+        public static bool OpenedStory(string key)
+        {
+            return key != null && (key == OpenedCity || key == OpenedRival);
+        }
+
+        /// <summary>The story of a business that opened, naming it; null for one without a name.</summary>
+        public static LedgerPiece Opened(LedgerOpening o)
+        {
+            if (string.IsNullOrEmpty(o.Firm))
+            {
+                return null;
+            }
+            return LedgerRules.Piece(o.Rival ? OpenedRival : OpenedCity, new[] { "firm", o.Firm });
         }
 
         /// <summary>A number from 0 below <paramref name="count"/>, the same on every machine for the same seed, day and salt.</summary>

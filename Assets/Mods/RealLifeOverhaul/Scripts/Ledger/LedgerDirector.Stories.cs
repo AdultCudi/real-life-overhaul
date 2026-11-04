@@ -15,6 +15,7 @@ namespace RealLifeOverhaul.Ledger
 
         private readonly List<LedgerCompany> _companies = new List<LedgerCompany>(LedgerStories.MarksMost / 2);
         private readonly List<LedgerBeat> _beats = new List<LedgerBeat>(4);
+        private readonly List<LedgerOpening> _openings = new List<LedgerOpening>(4);
         private readonly List<LedgerPiece> _testPieces = new List<LedgerPiece>(2);
         private LedgerStoryCount _count;
 
@@ -23,6 +24,7 @@ namespace RealLifeOverhaul.Ledger
         private void StoriesInto(LedgerEdition e, int since, int day, bool fresh)
         {
             _count = default(LedgerStoryCount);
+            OpenedInto(e, since, day, fresh);
             if (!Settings.LedgerStories)
             {
                 if (_state.MarksKept)
@@ -57,6 +59,38 @@ namespace RealLifeOverhaul.Ledger
             }
             _testPieces.Clear();
             LedgerStories.Covered(e.Pieces);
+        }
+
+        // The businesses that opened since the edition before, each once: read from the city's record on the edition's first print (the window runs from the
+        // day of the last edition up to, not including, today, so a business is in the edition after its day and in no other), kept when it is written again.
+        private void OpenedInto(LedgerEdition e, int since, int day, bool fresh)
+        {
+            if (fresh)
+            {
+                if (LedgerBridges.Opened == null)
+                {
+                    return;
+                }
+                _openings.Clear();
+                LedgerBridges.Opened(since, day, _openings);
+                for (int i = 0; i < _openings.Count; i++)
+                {
+                    LedgerStories.AddOnce(e.Pieces, LedgerStories.Opened(_openings[i]));
+                }
+                return;
+            }
+            if (_state.Edition == null)
+            {
+                return;
+            }
+            for (int i = 0; i < _state.Edition.Pieces.Count; i++)
+            {
+                LedgerPiece kept = _state.Edition.Pieces[i];
+                if (kept != null && LedgerStories.OpenedStory(kept.Key))
+                {
+                    LedgerStories.AddOnce(e.Pieces, kept);
+                }
+            }
         }
 
         private void BeatenInto(List<LedgerPiece> into, int since, int day)

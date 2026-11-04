@@ -284,5 +284,11 @@ namespace RealLifeOverhaul.DaySeries
             x ^= x >> 13;
             return (int)(x % (uint)mod);
         }
+
+        /// <summary>Writes the city's unemployment (thousandths of its labour force, from the population) for a day. Nothing for a figure below nought: no population runs.</summary>
+        public static bool CityJobs(DaySeriesBook book, int day, int jobless)
+        {
+            return jobless >= 0 && book.Set(DaySeriesCatalogue.Unemployment, day, jobless);
+        }
     }
 }

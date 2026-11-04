@@ -43,6 +43,7 @@ namespace RealLifeOverhaul
                 LedgerBridges.Report = (kind, x, z, detail, amount) => News.Report((NewsKind)kind, new Vector3(x, 0f, z), detail, amount);
                 LedgerBridges.Companies = Companies;
                 LedgerBridges.Beaten = Beaten;
+                LedgerBridges.Opened = Opened;
                 LedgerBridges.TestBeat = TestBeat;
             }
 
@@ -254,6 +255,30 @@ namespace RealLifeOverhaul
                 catch (Exception ex)
                 {
                     Fault("LedgerLinks.Beaten", ex);
+                }
+            }
+
+            // The businesses the population recorded as opened on the days from 'since' up to 'day': the city's firms and the rivals', each with its name and its day.
+            private static readonly List<Population.FirmEvent> OpenedNow = new List<Population.FirmEvent>(4);
+
+            private static void Opened(int since, int day, List<LedgerOpening> into)
+            {
+                try
+                {
+                    Population.PopulationState pop = Population.PopulationDirector.Instance != null ? Population.PopulationDirector.Instance.State : null;
+                    if (pop == null)
+                    {
+                        return;
+                    }
+                    pop.Events.Between(Population.FirmEventKind.Opened, since, day, OpenedNow);
+                    for (int i = 0; i < OpenedNow.Count; i++)
+                    {
+                        into.Add(new LedgerOpening { Firm = OpenedNow[i].Name, Day = OpenedNow[i].Day, Rival = OpenedNow[i].Owner == Population.Owner.Rival });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Fault("LedgerLinks.Opened", ex);
                 }
             }
 

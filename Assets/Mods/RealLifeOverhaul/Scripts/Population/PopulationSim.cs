@@ -75,7 +75,7 @@ namespace RealLifeOverhaul.Population
             if (seeds != null)
             {
                 _seeds = seeds;
-                LabourRules.Setup(s, seeds);
+                LabourRules.Setup(s, seeds, day);   // the day's own look at the registrations: a business new to the table has opened today
                 Measure = MeasureRules.Measure(s.Buildings, s.Districts, null);
             }
             s.Day = day;

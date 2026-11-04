@@ -23,7 +23,7 @@ namespace RealLifeOverhaul.Population
     public static class PopulationStore
     {
         public const string Key = "reallife:population";
-        public const int Version = 4;   // 3: the city's growth (GrowthState) after the studio's start; 4: the measure its homes were counted by
+        public const int Version = 5;   // 3: the city's growth (GrowthState) after the studio's start; 4: the measure its homes were counted by; 5: what the firms did lately (FirmEventLog)
         private static readonly byte[] Magic = { (byte)'R', (byte)'L', (byte)'O', (byte)'P' };
 
         /// <summary>The line through the district save's zip, its pieces compressed on the workers; null when a piece failed (write it with <see cref="Encode"/>).</summary>
@@ -306,6 +306,10 @@ namespace RealLifeOverhaul.Population
             {
                 w.Int(s.Measure);
             }
+            if (version >= 5)
+            {
+                WriteEvents(w, s.Events);
+            }
             w.Flush();
         }
 
@@ -555,10 +559,43 @@ namespace RealLifeOverhaul.Population
                 ReadGrowth(r, s.Growth);   // before it the growth starts empty: the firms at the start's level, the land measured at the first month
             }
             s.Measure = version >= 4 ? r.Int() : 0;   // a line from before it counted homes above shops too (PopulationCatalogue.MeasureVersion)
+            if (version >= 5)
+            {
+                ReadEvents(r, s.Events);   // before it the firms have done nothing the log knows
+            }
             s.IndexRecords();
             GameRules.CountAll(s);
             GameRules.Start(s);
             return s;
+        }
+
+        // ---------------------------------------------------------------- what the firms did (version 5)
+
+        private static void WriteEvents(Writer w, FirmEventLog log)
+        {
+            w.Int(log.Count);
+            for (int i = 0; i < log.Count; i++)
+            {
+                FirmEvent e = log[i];
+                w.Int((int)e.Kind);
+                w.Int((int)e.Owner);
+                w.Int(e.Day);
+                w.Int(e.Value);
+                w.Text(e.Name);
+            }
+        }
+
+        private static void ReadEvents(Reader r, FirmEventLog log)
+        {
+            int n = Count(r, FirmEventLog.Most);
+            for (int i = 0; i < n; i++)
+            {
+                var kind = (FirmEventKind)r.Int();
+                var owner = (Owner)r.Int();
+                int day = r.Int();
+                int value = r.Int();
+                log.Add(kind, owner, day, value, r.Text());
+            }
         }
 
         // ---------------------------------------------------------------- the growth (version 3)

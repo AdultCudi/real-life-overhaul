@@ -241,6 +241,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--news-audit")
+        {
+            NewsAuditChecks();   // (the News audit's fixes alone, while working on them: NewsAuditChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length >= 1 && args[0] == "--studio")
         {
             Studio();       // (the game studio alone, while working on it: StudioChecks.cs; "studio" after it prints the bands and the ten years)
@@ -792,6 +798,7 @@ internal static partial class Program
         Studio();       // the game studio: the plan, building, the sessions, hype and reviews, the bands and no cap, ten years, the models, after launch, bonuses, rivals, old saves, the save, the screens, the texts (StudioChecks.cs)
         SectorChecks(); // the other tech firms: the shared markets from the city, the curves for the old clamps, rivals by the same rules, IT work, data centres and the cloud, the desk sessions, old saves, the save and the shared part, the screens, ten years, the costs (SectorChecks.cs)
         QuitGuards();   // the game is left or the save list opened only from the death card, never by a tab sharing its command number (QuitGuardChecks.cs)
+        NewsAuditChecks();   // the News audit: the Newsstand's Reading tab, fixing a loan's rate, the Economy app's unemployment, a business that opens (NewsAuditChecks.cs)
         BugReports();   // "Report a bug": report.txt, the user folder taken out, a log's tail, the mod's lines, nothing sent (BugReportChecks.cs)
         Rivals();       // the rival tycoons: growth, pace, bounds, counters, a takeover, a seed, the save and the texts (RivalChecks.cs)
         Wages();        // wages the mod raises: the report's 30 days reproduced, the cap, one rise a period, the repair on load, every write bounded (WageChecks.cs)

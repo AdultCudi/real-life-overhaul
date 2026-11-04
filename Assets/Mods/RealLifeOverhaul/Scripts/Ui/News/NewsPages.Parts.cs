@@ -5,7 +5,7 @@ namespace RealLifeOverhaul.Ui
     /// <summary>The parts the news pages share: the strip's note, a card with its label, the verdict's band and the ranked bars. Game-free.</summary>
     public static partial class NewsPages
     {
-        private const float FigureSlot = 168f;       // px: a figure of the verdict's band, its label, its number and its change
+        private const float FigureSlot = 208f;       // px: a figure of the verdict's band, its label, its number and its change
         private const float BarRow = 36f;            // px: a sector's row of bars
 
         // The window's title strip keeps a note at its right, left of the close button: the day, the edition, the price.

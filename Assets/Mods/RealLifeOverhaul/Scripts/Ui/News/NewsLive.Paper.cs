@@ -107,7 +107,6 @@ namespace RealLifeOverhaul.Ui
             Section(sections, edition, lead, UiIcon.MapPin, "reallife_ledger_sec_city", StoriesMost, LedgerSection.City);
             Section(sections, edition, lead, UiIcon.Chart, "reallife_ledger_sec_economy", StoriesMost, LedgerSection.Economy);
             Section(sections, edition, lead, UiIcon.Store, "reallife_ledger_sec_business", StoriesMost, LedgerSection.Business);
-            Openings(sections);
             Section(sections, edition, lead, UiIcon.People, "reallife_ledger_sec_around", BriefsMost, LedgerSection.People, LedgerSection.AroundTown);
             Section(sections, edition, lead, UiIcon.Cloud, "reallife_ledger_sec_weather", 2, LedgerSection.Weather);
             var model = new UiEditionModel
@@ -160,38 +159,6 @@ namespace RealLifeOverhaul.Ui
             {
                 into.Add(new UiEditionSection { Icon = icon, Label = LedgerText.T(labelKey), Stories = stories.ToArray() });
             }
-        }
-
-        // The city's firms that opened this year, named as the game names a business: a story for the business column, only when one did.
-        private static void Openings(List<UiEditionSection> sections)
-        {
-            int opened = Population.CityPopulation.FirmsOpened;
-            string firm = OpenedFirm();
-            if (opened <= 0 || firm.Length == 0)
-            {
-                return;
-            }
-            var story = new UiEditionStory
-            {
-                Headline = OutlookText.T("reallife_news_open_head", "firm", firm),
-                Body = OutlookText.T("reallife_news_open_body", "count", opened.ToString(Inv))
-            };
-            string label = LedgerText.T("reallife_ledger_sec_business");
-            for (int i = 0; i < sections.Count; i++)
-            {
-                if (sections[i].Label != label)
-                {
-                    continue;
-                }
-                var grown = new UiEditionStory[sections[i].Stories.Length + 1];
-                Array.Copy(sections[i].Stories, grown, sections[i].Stories.Length);
-                grown[grown.Length - 1] = story;
-                UiEditionSection own = sections[i];
-                own.Stories = grown;
-                sections[i] = own;
-                return;
-            }
-            sections.Add(new UiEditionSection { Icon = UiIcon.Store, Label = label, Stories = new[] { story } });
         }
 
         // The box beside the hero: the city index with its line, the bank rate, inflation and the state of the economy.
@@ -611,48 +578,37 @@ namespace RealLifeOverhaul.Ui
             return any ? line : null;
         }
 
-        // A city firm that is not the player's, named as the game names the business. Empty when none has opened.
-        private static string OpenedFirm()
+        // An edition as one paper prints it: the lead first, then the sections that title carries (the weather every title has), each piece a heading and its words.
+        private static UiReaderModel ReaderOf(LedgerEdition edition, int title)
         {
-            Population.PopulationState pop = Population.PopulationDirector.Instance != null ? Population.PopulationDirector.Instance.State : null;
-            if (pop == null || pop.Growth.Opened <= 0)
+            string name = LedgerText.T(NewsstandCatalogue.NameKeys[title]);
+            string day = LedgerText.Fill("reallife_ledger_dateline", "weekday", LedgerPage.Weekday(edition.Day), "day", Math.Max(1, edition.Day).ToString(CultureInfo.CurrentCulture));
+            var blocks = new List<UiReaderBlock>(edition.Pieces.Count * 2);
+            LedgerPiece lead = NewsstandRules.Lead(edition, title);
+            if (lead != null)
             {
-                return string.Empty;
+                AddPiece(blocks, lead);
             }
-            for (int e = pop.Employers.Count - 1; e >= 0; e--)
+            LedgerSection[] sections = NewsstandCatalogue.Sections[title];
+            for (int s = 0; s <= sections.Length; s++)
             {
-                if (pop.Employers.Players[e])
+                LedgerRules.Of(edition, s < sections.Length ? sections[s] : LedgerSection.Weather, lead, Pieces);   // the weather comes last, in every title
+                for (int i = 0; i < Pieces.Count; i++)
                 {
-                    continue;
-                }
-                string key = pop.Employers.Key[e];
-                string name = Population.PopulationGame.BusinessName(key);
-                if (!string.IsNullOrEmpty(name) && name != key)
-                {
-                    return name;
+                    AddPiece(blocks, Pieces[i]);
                 }
             }
-            return string.Empty;
+            if (blocks.Count == 0)
+            {
+                blocks.Add(new UiReaderBlock { Kind = UiReaderKind.Paragraph, Text = OutlookText.T("reallife_news_paper_quiet_body") });
+            }
+            return new UiReaderModel { Title = name + ", " + day, Blocks = blocks.ToArray() };
         }
 
-        private static UiReaderModel ReaderOf(LedgerEdition edition)
+        private static void AddPiece(List<UiReaderBlock> blocks, LedgerPiece piece)
         {
-            if (edition == null || edition.Pieces.Count == 0)
-            {
-                return new UiReaderModel
-                {
-                    Title = OutlookText.T("reallife_ledger_title"),
-                    Blocks = new[] { new UiReaderBlock { Kind = UiReaderKind.Paragraph, Text = OutlookText.T("reallife_news_paper_quiet_body") } }
-                };
-            }
-            var blocks = new List<UiReaderBlock>(edition.Pieces.Count * 2);
-            for (int i = 0; i < edition.Pieces.Count; i++)
-            {
-                blocks.Add(new UiReaderBlock { Kind = UiReaderKind.Heading, Text = PieceHead(edition.Pieces[i]) });
-                blocks.Add(new UiReaderBlock { Kind = UiReaderKind.Paragraph, Text = PieceBody(edition.Pieces[i]) });
-            }
-            string day = LedgerText.Fill("reallife_ledger_dateline", "weekday", LedgerPage.Weekday(edition.Day), "day", Math.Max(1, edition.Day).ToString(CultureInfo.CurrentCulture));
-            return new UiReaderModel { Title = OutlookText.T("reallife_ledger_title") + ", " + day, Blocks = blocks.ToArray() };
+            blocks.Add(new UiReaderBlock { Kind = UiReaderKind.Heading, Text = PieceHead(piece) });
+            blocks.Add(new UiReaderBlock { Kind = UiReaderKind.Paragraph, Text = PieceBody(piece) });
         }
     }
 }
