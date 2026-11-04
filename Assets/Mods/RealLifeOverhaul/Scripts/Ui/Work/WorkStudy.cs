@@ -291,7 +291,8 @@ namespace RealLifeOverhaul.Ui
                 float lw = UiDraw.SnapDown(colW * 0.42f), pad = UiTokens.S4;
                 float face = UiTokens.AvatarRow, fx = rx + pad;
                 int tile = UiDraw.Tile(s, at, fx, ry + (rowH - UiTokens.S1 - face) / 2f, face, UiRole.None, false);
-                UiDraw.Icon(s, at.In(tile), fx + (face - UiTokens.Icon) / 2f, ry + (rowH - UiTokens.S1 - UiTokens.Icon) / 2f, UiTokens.Icon, i < t.SkillIcons.Count ? t.SkillIcons[i] : UiIcon.Star, UiRole.None,
+                UiDraw.Icon(s, at.In(tile), fx + (face - UiTokens.Icon) / 2f, ry + (rowH - UiTokens.S1 - UiTokens.Icon) / 2f, UiTokens.Icon,
+                    i < t.SkillIcons.Count ? t.SkillIcons[i] : UiIcon.Star, UiRole.None,
                     UiFlags.Middle | UiFlags.Centre, true);
                 float lw0 = lw, tx = rx + face + UiTokens.S2;
                 lw -= face + UiTokens.S2;

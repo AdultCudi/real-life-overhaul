@@ -119,7 +119,8 @@ namespace RealLifeOverhaul.Ui
             {
                 UiActionModel a = actions[b.FootAt];
                 float bw = Math.Min(iw, UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, UiAction.Count, keys));
-                UiDraw.Button(s, at, ix + iw - bw - UiTokens.S3, y + h - UiTokens.S2 - UiTokens.Control, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, UiAction.Count, keys, a.Command, a.Arg, a.Disabled);
+                UiDraw.Button(s, at, ix + iw - bw - UiTokens.S3, y + h - UiTokens.S2 - UiTokens.Control, bw, UiTokens.Control, a.Kind, a.Label,
+                    a.Icon, UiAction.Count, keys, a.Command, a.Arg, a.Disabled);
             }
         }
 
@@ -179,7 +180,8 @@ namespace RealLifeOverhaul.Ui
                         for (int k = r.More.Count; k >= 0; k--)
                         {
                             UiActionModel b = k == 0 ? a : r.ActAt + k < actions.Length ? actions[r.ActAt + k] : a;
-                            float bw = Math.Min(right - x, r.More.Count == 0 ? Math.Max(_buttonWidth, UiDraw.ButtonWidth(b.Kind, b.Label, b.Icon, UiAction.Count, keys)) : UiDraw.ButtonWidth(b.Kind, b.Label, b.Icon, UiAction.Count, keys));
+                            float bw = Math.Min(right - x, r.More.Count == 0 ? Math.Max(_buttonWidth, UiDraw.ButtonWidth(b.Kind, b.Label, b.Icon,
+                                UiAction.Count, keys)) : UiDraw.ButtonWidth(b.Kind, b.Label, b.Icon, UiAction.Count, keys));
                             right -= bw;
                             UiDraw.Button(s, at, right, y, bw, UiTokens.Control, b.Kind, b.Label, b.Icon, UiAction.Count, keys, b.Command, b.Arg, b.Disabled);
                             right -= UiTokens.S2;

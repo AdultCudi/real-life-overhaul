@@ -11,7 +11,7 @@ internal static partial class UiSamples
         screen.View.Tab = WkTabOf("campus", state);
         if (state == "courses_full")
         {
-            screen.View.Row = 2;
+            screen.View.Row = 3;   // the forklift course, whose seats are all taken
         }
         else if (state == "courses_cooking")
         {

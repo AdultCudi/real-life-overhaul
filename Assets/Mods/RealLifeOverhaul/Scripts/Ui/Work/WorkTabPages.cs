@@ -47,7 +47,8 @@ namespace RealLifeOverhaul.Ui
             List<WorkRow> shown = Shown(t, v, out int asideRole);
             int at = v.Row >= 0 && v.Row < shown.Count ? v.Row : shown.Count > 0 ? 0 : -1;
             WorkRow chosen = at >= 0 ? shown[at] : null;
-            var m = new WorkTableModel { Stats = t.Stats.Count > 0 ? t.Stats : null, SearchHint = t.Search, Query = v.Query, Aside = t.Aside, AsideChosen = t.Aside != null ? asideRole : -1, UnderLead = t.NoteLead,
+            var m = new WorkTableModel { Stats = t.Stats.Count > 0 ? t.Stats : null, SearchHint = t.Search, Query = v.Query, Aside = t.Aside,
+                AsideChosen = t.Aside != null ? asideRole : -1, UnderLead = t.NoteLead,
                 UnderText = t.NoteText };
             m.Chips = Chips(b, t, v, w, out m.ChosenChip);
             UiDataTableModel tm = m.Table;

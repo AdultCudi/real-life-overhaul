@@ -52,7 +52,7 @@ public static partial class UiPreviewRunner
         else if ((app == "campus" && st.StartsWith("courses")) || (app == "hustle" && st.StartsWith("listings") && st != "listings_none"))
         {
             command = WorkCmd.Card;
-            arg = st == "courses_full" ? 3 : 2;   // not the chosen card: a hover on it would not show
+            arg = 2;   // not the chosen card (the full state chooses the fourth): a hover on it would not show
             walk = "RRDR";
         }
         else if (app == "campus" && st.StartsWith("studying") && st != "studying_none")

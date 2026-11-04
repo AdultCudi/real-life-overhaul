@@ -21,7 +21,8 @@ namespace RealLifeOverhaul.Ui
 
         // the actions of this app, from 100 (the screen's own are 1 to 3)
         private const int Buy = 100, Haggle = 101, Accept = 102, Counter = 103, Decline = 104, Unlist = 105, Book = 106, Cancel = 107, Send = 108,
-            List = 109, FixHome = 110, CleanHome = 111, ToShop = 112, CancelPlan = 113, WayItem = 114, BuyDeliver = 120, WayListing = 121, MakeOffer = 122, Reprice = 123, SendHelper = 124, OpenSeller = 125;
+            List = 109, FixHome = 110, CleanHome = 111, ToShop = 112, CancelPlan = 113, WayItem = 114, BuyDeliver = 120, WayListing = 121,
+                MakeOffer = 122, Reprice = 123, SendHelper = 124, OpenSeller = 125;
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private int _local, _wanted = -1, _readGeneration = -1;
         private WorkApp _app = new WorkApp();

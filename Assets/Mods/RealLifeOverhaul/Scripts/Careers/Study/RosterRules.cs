@@ -26,7 +26,8 @@ namespace RealLifeOverhaul.Careers
     /// The people in a campus's classes and what they decide: seats in a cohort that NPC students fill over time, the player's own
     /// employees who may enrol beside them, a tutor for each course whose rating moves an exam a little, a skill floor, credits, the
     /// grade point average by quarter and the player's rank in the class. Students and tutors are people of the city's one people pool
-    /// (<see cref="PeoplePool"/>), or names from the mod's catalogue while the population is off; everything else is seeded from the save's seed, the course and the day, so a load gives the same class. Game-free
+    /// (<see cref="PeoplePool"/>), or names from the mod's catalogue while the population is off; everything else is seeded from the save's seed, the
+    /// course and the day, so a load gives the same class. Game-free
     /// (EconomyCheck runs it). Cost: a few additions a call; nothing per frame.
     /// </summary>
     public static class RosterRules
