@@ -255,7 +255,8 @@ namespace RealLifeOverhaul.Ui
         // ------------------------------------------------------------------------------------------------ the founder
 
         // The old question's key for the founder's buy-back, new shares and going private (its body is the same key and "_body").
-        private static string FounderConfirmKey(OwnAction a) => a == OwnAction.BuyBack ? "reallife_lst_confirm_buyback" : a == OwnAction.Issue ? "reallife_lst_confirm_issue" : "reallife_lst_confirm_private";
+        private static string FounderConfirmKey(OwnAction a) =>
+            a == OwnAction.BuyBack ? "reallife_lst_confirm_buyback" : a == OwnAction.Issue ? "reallife_lst_confirm_issue" : "reallife_lst_confirm_private";
 
         public static StocksSheetModel FounderSheet(MarketDirector d, StocksSheetState st, UiWords w)
         {

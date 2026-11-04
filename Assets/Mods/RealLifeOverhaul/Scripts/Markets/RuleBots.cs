@@ -251,7 +251,9 @@ namespace RealLifeOverhaul.Markets
                 }
                 int limit = rule.Type == OrderType.Limit ? stock.Last : 0;
                 Position held = rule.Owner == 0 && !buy ? state.Position(stock.Id) : null;
-                long heldShares = held != null && held.Shares > 0 ? held.Shares : 0L, heldCost = held != null && held.Shares > 0 ? held.Cost : 0L;   // what a stop sells from, as it stood before the order filled
+                // What a stop sells from, as it stood before the order filled.
+                long heldShares = held != null && held.Shares > 0 ? held.Shares : 0L;
+                long heldCost = held != null && held.Shares > 0 ? held.Cost : 0L;
                 if (rule.Owner == 0)
                 {
                     if (place == null || !place(rule, stock.Id, buy, qty, limit, rule.Type))

@@ -90,7 +90,11 @@ namespace RealLifeOverhaul.Ui
                 "reallife_stk_days_span", "reallife_stk_policy_chair", "reallife_stk_policy_board", "reallife_stk_policy_proposed", "reallife_stk_policy_none", "reallife_stk_retail",
                 "reallife_stk_alert_why_full", "reallife_stk_alert_why_line", "reallife_stk_alert_why_level", "reallife_stk_alert_sheet", "reallife_stk_alert_about", "reallife_stk_alert_goes",
                 "reallife_stk_alert_over", "reallife_stk_alert_under", "reallife_stk_alert_level", "reallife_stk_alert_set_go", "reallife_stk_sh_per_day", "reallife_stk_position_value",
-                "reallife_mkt_day", "reallife_mkt_withdraw", "reallife_mkt_account_margin", "reallife_mkt_account_call", "reallife_mkt_inv_yield", "reallife_mkt_inv_sec_year", "reallife_mkt_inv_income_owed", "reallife_mkt_inv_income_all", "reallife_ibox_sec_payments", "reallife_mkt_col_money", "reallife_mkt_col_commission", "reallife_mkt_confirm_buy", "reallife_mkt_inv_work", "reallife_stk_hist_empty", "reallife_stk_hist_empty_body"
+                "reallife_mkt_day", "reallife_mkt_withdraw", "reallife_mkt_account_margin", "reallife_mkt_account_call",
+                "reallife_mkt_inv_yield", "reallife_mkt_inv_sec_year",
+                "reallife_mkt_inv_income_owed", "reallife_mkt_inv_income_all",
+                "reallife_ibox_sec_payments", "reallife_mkt_col_money", "reallife_mkt_col_commission",
+                "reallife_mkt_confirm_buy", "reallife_mkt_inv_work", "reallife_stk_hist_empty", "reallife_stk_hist_empty_body"
             }).Switch(UiScreenSwitches.Market));
         }
     }

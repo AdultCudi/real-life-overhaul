@@ -60,7 +60,8 @@ namespace RealLifeOverhaul.Ui
                 m.Title = MarketText.Fill(buy ? "reallife_mkt_inv_confirm_buy" : "reallife_mkt_inv_confirm_sell", "name", k.Name);
                 m.Big = Money(total);
                 m.About = Plain(MarketText.Fill("reallife_mkt_inv_confirm_body", "count", qty.ToString("N0"), "name", k.Name, "most", MarketTrading.MostPerOrder(k).ToString("N0"),
-                    "days", InvestRules.MarketDays(qty, k.Adv).ToString(), "total", Money(total)) + (s.Account.Margin ? string.Empty : "\n" + MarketText.T(buy ? "reallife_mkt_inv_ticket_hold" : "reallife_mkt_inv_ticket_due")));
+                    "days", InvestRules.MarketDays(qty, k.Adv).ToString(), "total", Money(total))
+                    + (s.Account.Margin ? string.Empty : "\n" + MarketText.T(buy ? "reallife_mkt_inv_ticket_hold" : "reallife_mkt_inv_ticket_due")));
                 m.SideLabels = new[] { w("reallife_mkt_col_shares", "Shares"), w("reallife_stk_sh_per_day", "A day, about"), w("reallife_stk_sh_days", "Days it takes") };
                 m.SideValues = new[] { qty.ToString("N0"), MarketTrading.MostPerOrder(k).ToString("N0"), InvestRules.MarketDays(qty, k.Adv).ToString() };
                 m.Confirm = w("reallife_mkt_inv_work", "Work it");

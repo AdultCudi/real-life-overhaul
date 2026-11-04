@@ -646,7 +646,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     bool adding = armed == "add";
                     m.Reason = Asked(MarketText.Fill(adding ? "reallife_mkt_bot_confirm_add" : "reallife_mkt_bot_confirm_take", "firm", f.Name, "amount", Money(change)),
-                        MarketText.Fill(adding ? "reallife_mkt_bot_confirm_add_body" : "reallife_mkt_bot_confirm_take_body", "firm", f.Name, "capital", Money(adding ? b.Capital + change : b.Capital - change)));
+                        MarketText.Fill(adding ? "reallife_mkt_bot_confirm_add_body" : "reallife_mkt_bot_confirm_take_body", "firm", f.Name,
+                            "capital", Money(adding ? b.Capital + change : b.Capital - change)));
                 }
                 else if (armed == "dismiss")
                 {

@@ -51,7 +51,8 @@ namespace RealLifeOverhaul.Markets
                     .Append('|').Append(r.StockId).Append('|').Append(r.Level).Append('|').Append(r.GainBp).Append('|').Append((int)r.Type)
                     .Append('|').Append(r.Budget).Append('|').Append(r.PerTrade).Append('|').Append(r.StopBp).Append('|').Append(r.OpenOnly ? 1 : 0)
                     .Append('|').Append(r.Reinvest ? 1 : 0).Append('|').Append(r.Tell ? 1 : 0).Append('|').Append(r.MaxOpen).Append('|').Append((int)r.Status)
-                    .Append('|').Append(r.Cash).Append('|').Append(0).Append('|').Append(0).Append('|').Append(r.OpenTrades)   // the two before the open trades were a cash flow's day and week, never a gain: kept as places, read as nothing
+                    // The two before the open trades were a cash flow's day and week, never a gain: kept as places, read as nothing.
+                    .Append('|').Append(r.Cash).Append('|').Append(0).Append('|').Append(0).Append('|').Append(r.OpenTrades)
                     .Append('|').Append(r.DayGain).Append('|').Append(r.WeekGain).Append('|').Append(r.FigDay).Append('|').Append(r.Shares).Append('|').Append(r.Cost);
             }
             ListingFile file = state.Listing;

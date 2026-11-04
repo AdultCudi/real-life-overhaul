@@ -209,7 +209,8 @@ namespace RealLifeOverhaul.Ui
                 Stock k = t.StockId > 0 ? s.Stock(t.StockId) : null;
                 int kind = Math.Max(0, Math.Min(TradeKindKeys.Length - 1, (int)t.Kind));
                 BotFirm firm = t.Bot > 0 ? MarketBots.Firm(t.Bot) : null;
-                string what = MarketText.T(TradeKindKeys[kind]) + (t.Test ? InvestText.Mark(MarketText.T("reallife_mkt_test_mark")) : string.Empty) + (firm != null ? InvestText.Mark(firm.Name) : string.Empty)
+                string what = MarketText.T(TradeKindKeys[kind]) + (t.Test ? InvestText.Mark(MarketText.T("reallife_mkt_test_mark")) : string.Empty)
+                    + (firm != null ? InvestText.Mark(firm.Name) : string.Empty)
                     + (t.Order > 0 ? InvestText.Mark(MarketText.T("reallife_mkt_inv_mark_worked")) : t.Back ? InvestText.Mark(MarketText.T("reallife_mkt_inv_mark_put_back")) : string.Empty);
                 rows[r] = Row(new[]
                 {
@@ -220,10 +221,12 @@ namespace RealLifeOverhaul.Ui
                         t.Value > 0 ? UiRole.OkText : t.Value < 0 ? UiRole.DangerText : UiRole.None, UiRole.None });
             }
             Account a = s.Account;
-            string note = Plain(MarketText.Fill("reallife_mkt_history_totals", "commission", MarketText.Money(a.Commission), "dividends", MarketText.Money(a.Dividends), "realised", MarketText.Money(a.Realised)));
+            string note = Plain(MarketText.Fill("reallife_mkt_history_totals", "commission", MarketText.Money(a.Commission), "dividends", MarketText.Money(a.Dividends),
+                "realised", MarketText.Money(a.Realised)));
             if (a.DividendsPaid + a.Interest + a.BorrowFees > 0)
             {
-                note += "  " + Plain(MarketText.Fill("reallife_mkt_history_costs", "paid", MarketText.Money(a.DividendsPaid), "interest", MarketText.Money(a.Interest), "fees", MarketText.Money(a.BorrowFees)));
+                note += "  " + Plain(MarketText.Fill("reallife_mkt_history_costs", "paid", MarketText.Money(a.DividendsPaid), "interest", MarketText.Money(a.Interest),
+                    "fees", MarketText.Money(a.BorrowFees)));
             }
             m.Note = note;
             m.Table = new UiDataTableModel
@@ -312,7 +315,8 @@ namespace RealLifeOverhaul.Ui
                 RealLifeOverhaul.Markets.Order o = s.Order(ids[i]);
                 Stock k = s.Stock(o.StockId);
                 int cents = o.Type == OrderType.Limit ? o.LimitCents : o.Type == OrderType.Stop ? o.StopCents : k != null ? k.Last : 0;
-                string line = w(o.Side == OrderSide.Buy ? "reallife_mkt_buy" : "reallife_mkt_sell", o.Side == OrderSide.Buy ? "Buy" : "Sell") + " " + o.Qty.ToString("N0") + " " + (k != null ? k.Ticker : string.Empty);
+                bool buying = o.Side == OrderSide.Buy;
+                string line = w(buying ? "reallife_mkt_buy" : "reallife_mkt_sell", buying ? "Buy" : "Sell") + " " + o.Qty.ToString("N0") + " " + (k != null ? k.Ticker : string.Empty);
                 if (o.Type != OrderType.Market)
                 {
                     line += ", " + OrderKindWords(o).ToLowerInvariant() + " " + MarketText.Price(cents);

@@ -434,10 +434,15 @@ namespace RealLifeOverhaul.Ui
                 string[] chips = ChipWords(w);
                 m.SideLabels = new[]
                 {
-                    w("reallife_mkt_col_state", "State"), w("reallife_stk_gain_today", "Gain realised today"), w("reallife_stk_gain_week", "Gain realised this week"), w("reallife_stk_sh_open_trades", "Open trades"),
+                    w("reallife_mkt_col_state", "State"), w("reallife_stk_gain_today", "Gain realised today"), w("reallife_stk_gain_week", "Gain realised this week"),
+                    w("reallife_stk_sh_open_trades", "Open trades"),
                     w("reallife_stk_sh_cash_left", "Budget left")
                 };
-                m.SideValues = new[] { chips[r.Chip < 0 || r.Chip >= chips.Length ? 0 : r.Chip], DerivText.Signed(RuleBots.DayOf(r, s.Day)), DerivText.Signed(RuleBots.WeekOf(r, s.Day)), r.OpenTrades.ToString(), Money(r.Cash) };
+                m.SideValues = new[]
+                {
+                    chips[r.Chip < 0 || r.Chip >= chips.Length ? 0 : r.Chip], DerivText.Signed(RuleBots.DayOf(r, s.Day)), DerivText.Signed(RuleBots.WeekOf(r, s.Day)),
+                    r.OpenTrades.ToString(), Money(r.Cash)
+                };
             }
             if (r != null && r.Owner != 0)
             {

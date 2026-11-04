@@ -10,7 +10,8 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class StocksCompanyLay
     {
-        public const int Range = 56, Type = 57, Chip = 58, AddIndicator = 59, Pick = 60, Big = 62, Side = 63, Kind = 64, Life = 65, AlertAdd = 66, PutBack = 67, AlertLine = 68;   // AlertAdd opens the alert sheet; AlertLine stands an alert under the selected level line
+        public const int Range = 56, Type = 57, Chip = 58, AddIndicator = 59, Pick = 60, Big = 62, Side = 63, Kind = 64, Life = 65, AlertAdd = 66, PutBack = 67,
+            AlertLine = 68;   // AlertAdd opens the alert sheet; AlertLine stands an alert under the selected level line
         private const float Tall = UiTokens.ControlSmall;   // px: a toolbar's row
         private const float HeadH = 64f;                    // px: the head, the logo's tile and a little over it
 
