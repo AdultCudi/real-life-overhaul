@@ -31399,5 +31399,8 @@
   "reallife_hustle_thing_coffee_pallet": "Pallet of coffee beans",
   "reallife_hustle_thing_flour_pallet": "Pallet of flour",
   "reallife_hustle_thing_tinned_goods_lot": "Lot of tinned goods",
-  "reallife_hustle_thing_bottled_water_lot": "Lot of bottled water"
+  "reallife_hustle_thing_bottled_water_lot": "Lot of bottled water",
+  "reallife_work_gpa_by_term": "Grade point average by quarter",
+  "reallife_work_quarter_n": "Quarter {n}",
+  "reallife_work_sold_n": "{n} sold"
 }

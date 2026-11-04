@@ -124,7 +124,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     b.Page.Detail = Detail(chosen);
                 }
-                else if (!string.IsNullOrEmpty(t.Lead) && shown.Count == 0)
+                else if (!string.IsNullOrEmpty(t.Lead) && shown.Count == 0 && t.AttrLabels.Length == 0 && t.Figures.Length == 0)
                 {
                     b.About(UiIcon.Search, null, w.T("reallife_work_nothing_here", "Nothing here yet"), t.Lead);
                 }

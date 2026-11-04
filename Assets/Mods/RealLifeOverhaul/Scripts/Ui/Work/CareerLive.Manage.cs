@@ -68,7 +68,7 @@ namespace RealLifeOverhaul.Ui
             if (c.Stores.Count > 0 && LadderRanks.Has(f.Rung, RungPower.Rota) && f.Rung == (int)Rung.StoreManager)
             {
                 var rota = new CareerRow { Id = 0, Icon = UiIcon.Clock, Group = GroupAsk, Cells = new[] { W.T("reallife_ladder_sec_rota",
-                    "The store's rota"), c.Stores[0].Name, CareersText.T("reallife_ladder_rota_" + c.Stores[0].Rota), "-" },
+                    "The store's rota"), c.Stores[0].Name, CareersText.T("reallife" + "_ladder_rota_" + c.Stores[0].Rota), "-" },
                     Detail = CareersText.T("reallife_ladder_sec_rota") };
                 for (int k = 0; k < 3; k++)
                 {
@@ -94,7 +94,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Outlet st = c.Stores[i];
                 _facts.Management.Add(new CareerRow { Id = i, Icon = UiIcon.Store, Group = GroupStores, Grade = st.Results, Cells = new[] { st.Name,
-                    CareersText.T("reallife_ladder_rota_" + st.Rota),
+                    CareersText.T("reallife" + "_ladder_rota_" + st.Rota),
                     CareerLadderRules.StaffAt(c, i).ToString() + " / " + st.Needed.ToString(), st.Results.ToString() }, Detail = st.Name });
             }
             if (_facts.Management.Count == 0)
@@ -107,7 +107,7 @@ namespace RealLifeOverhaul.Ui
         {
             switch (field)
             {
-                case PolicyField.Staffing: return CareersText.T("reallife_ladder_rota_" + TalentCatalogue.Clamp(value, 0, 2));
+                case PolicyField.Staffing: return CareersText.T("reallife" + "_ladder_rota_" + TalentCatalogue.Clamp(value, 0, 2));
                 case PolicyField.Escalate: return CareersText.T("reallife_ladder_days", "days", value.ToString());
                 case PolicyField.Floor: return value.ToString();
                 case PolicyField.Band: return (value / 100f).ToString("0.#", Inv) + "%";

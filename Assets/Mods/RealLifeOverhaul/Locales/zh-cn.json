@@ -31399,5 +31399,8 @@
   "reallife_hustle_thing_coffee_pallet": "一托盘咖啡豆",
   "reallife_hustle_thing_flour_pallet": "一托盘面粉",
   "reallife_hustle_thing_tinned_goods_lot": "一批罐头食品",
-  "reallife_hustle_thing_bottled_water_lot": "一批瓶装水"
+  "reallife_hustle_thing_bottled_water_lot": "一批瓶装水",
+  "reallife_work_gpa_by_term": "各季度平均绩点",
+  "reallife_work_quarter_n": "第 {n} 季度",
+  "reallife_work_sold_n": "已售 {n}"
 }

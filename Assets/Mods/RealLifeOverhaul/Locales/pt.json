@@ -31399,5 +31399,8 @@
   "reallife_hustle_thing_coffee_pallet": "Palete de grãos de café",
   "reallife_hustle_thing_flour_pallet": "Palete de farinha",
   "reallife_hustle_thing_tinned_goods_lot": "Lote de conservas",
-  "reallife_hustle_thing_bottled_water_lot": "Lote de água engarrafada"
+  "reallife_hustle_thing_bottled_water_lot": "Lote de água engarrafada",
+  "reallife_work_gpa_by_term": "Média de notas por trimestre",
+  "reallife_work_quarter_n": "Trimestre {n}",
+  "reallife_work_sold_n": "{n} vendidos"
 }
