@@ -7,7 +7,7 @@ using RealLifeOverhaul.Ui;
 /// </summary>
 internal static partial class UiSamples
 {
-    public static string[] StockStates => Join(Join(StockBaseStates, StockCompanyStates), StockOfferStates);   // joined on asking: static fields of two files start in no fixed order
+    public static string[] StockStates => Join(Join(Join(StockBaseStates, StockCompanyStates), StockOfferStates), StockAuditStates);   // joined on asking: static fields of two files start in no fixed order
 
     private static string[] Join(string[] a, string[] b)
     {
@@ -29,7 +29,7 @@ internal static partial class UiSamples
         m.PromptBack = t("reallife_ui_prompt_back", "Back");
         m.PromptMove = t("reallife_ui_prompt_move", "Move");
         m.PromptSelect = t("reallife_ui_prompt_select", "Select");
-        if (StocksOffers(m, t, state) || StocksSheet(m, t, state))
+        if (StocksOffers(m, t, state) || StocksSheet(m, t, state) || StocksAudit(m, t, state))
         {
             Nav(m, t);
             return m;
@@ -52,7 +52,7 @@ internal static partial class UiSamples
                 break;
             case "portfolio_full": Portfolio(m, t); break;
             case "orders": m.Statement = Statement(t, true); break;
-            case "history": m.Statement = Statement(t, false); break;
+            case "history": History(m, t); break;
             case "listing": Listing(m, t); break;
             default: Company(m, t, state); break;
         }
@@ -131,6 +131,25 @@ internal static partial class UiSamples
         m.Table = Table(t, boom, false);
     }
 
+    // The account's lines as the History page says them: day, company, what, shares, price, money and commission, newest first.
+    private static void History(StocksModel m, UiWords t)
+    {
+        m.Note = "Commission $3,184, dividends $14,260, gains taken $212,400";
+        m.Table = StockTable(t, new[] { t("reallife_mkt_col_company", "Company"), t("reallife_mkt_col_day", "Day"), t("reallife_mkt_col_what", "What"), t("reallife_mkt_col_shares", "Shares"),
+                t("reallife_mkt_col_price", "Price"), t("reallife_mkt_col_money", "Money"), t("reallife_mkt_col_commission", "Commission") },
+            new[] { UiCellKind.Tile, UiCellKind.Figure, UiCellKind.Text, UiCellKind.Figure, UiCellKind.Figure, UiCellKind.Figure, UiCellKind.Figure }, new[] { 0f, 88f, 224f, 104f, 100f, 120f, 112f }, new[]
+        {
+            new[] { "Greenmarket Foods", "Day 288", "Bought", "300", "$31.80", "-$9,540", "$10" }, new[] { "Merchants Union Bank", "Day 287", "Dividend", string.Empty, string.Empty, "+$7,440", string.Empty },
+            new[] { "Harbourside Freight", "Day 285", "Sold", "500", "$52.90", "+$26,450", "$27" }, new[] { "None", "Day 280", "Deposit", string.Empty, string.Empty, "-$5,000", string.Empty }
+        }, new[] { "GMF", "MUB", "HSF", null }, (int)UiIcon.Building, new[]
+        {
+            new[] { UiTokens.Chart(1), UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.DangerText, UiRole.None },
+            new[] { UiTokens.Chart(2), UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.OkText, UiRole.None },
+            new[] { UiTokens.Chart(3), UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.OkText, UiRole.None },
+            new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.DangerText, UiRole.None }
+        });
+    }
+
     private static UiDataTableModel Table(UiWords t, bool up, bool watch)
     {
         string[] names = { "Greenmarket Foods", "Steamline Coffee", "Dovemere Hotels", "Circuit Square Electronics" };
@@ -142,10 +161,10 @@ internal static partial class UiSamples
             bool rise = up ^ (i % 2 == 1);
             rows[i] = new UiDataRow
             {
-                Cells = new[] { names[i], rise ? "$42.00" : "$18.50", rise ? "+1.80%" : "-0.90%", (12000 + i * 3400).ToString() },
-                Values = new[] { (int)UiIcon.Building, 0, rise ? 1 : -1, 0 },
-                Tones = new[] { UiTokens.Chart(i), UiRole.None, UiRole.None, UiRole.None },
-                Sub = tickers[i]
+                Cells = new[] { names[i], rise ? "$42.00" : "$18.50", rise ? "+1.80%" : "-0.90%", string.Empty, (12000 + i * 3400).ToString() },
+                Values = new[] { (int)UiIcon.Building, 0, rise ? 1 : -1, 0, 0 },
+                Tones = new[] { UiTokens.Chart(i), UiRole.None, UiRole.None, rise ? UiRole.Ok : UiRole.Danger, UiRole.None },
+                Sub = tickers[i], Line = rise ? new[] { 40.1f, 40.6f, 40.2f, 41.3f, 42f } : new[] { 19.4f, 19.0f, 18.9f, 18.7f, 18.5f }
             };
         }
         return new UiDataTableModel
@@ -155,10 +174,11 @@ internal static partial class UiSamples
                 new UiDataColumn { Title = t("reallife_mkt_col_company", "Company"), Kind = UiCellKind.Tile, Sortable = true },
                 new UiDataColumn { Title = t("reallife_mkt_col_price", "Price"), Kind = UiCellKind.Figure, Width = 120f, Sortable = true },
                 new UiDataColumn { Title = t("reallife_mkt_col_today", "Today"), Kind = UiCellKind.Trend, Width = 140f, Sortable = true },
+                new UiDataColumn { Title = t("reallife_stk_five_days", "5 days"), Kind = UiCellKind.Spark, Width = 120f },
                 new UiDataColumn { Title = t("reallife_mkt_col_volume", "Volume"), Kind = UiCellKind.Figure, Width = 120f, Sortable = true }
             },
             Rows = rows, RowCount = n,
-            Filters = new[] { t("reallife_stk_filter_all", "All sectors"), t("reallife_stk_sort_movers", "Movers") },
+            Filters = new[] { t("reallife_stk_sort_movers", "Movers"), t("reallife_stk_filter_all", "All sectors"), t("reallife_stk_all", "All shares") },
             SearchPlaceholder = t("reallife_stk_search", "Find a company"),
             EmptyIcon = UiIcon.ChartLineUp
         };
@@ -189,6 +209,7 @@ internal static partial class UiSamples
 
     private static void Portfolio(StocksModel m, UiWords t)
     {
+        m.ViewLabels = new[] { t("reallife_stk_view_held", "Held"), t("reallife_stk_view_pays", "Pays"), t("reallife_stk_view_account", "Account") };
         m.Figures = new[] { new UiFigureModel { Label = t("reallife_stk_worth", "Worth"), Value = "$48,200", Change = "+3.20%", Good = true, Trend = new[] { 1f, 2f, 2f, 3f, 4f } } };
         var close = new float[40];
         for (int i = 0; i < close.Length; i++)
@@ -251,15 +272,15 @@ internal static partial class UiSamples
     private static void Listing(StocksModel m, UiWords t)
     {
         m.Hero = new UiHeroModel { Icon = UiIcon.Presentation, Kicker = "GMF", Title = "Greenmarket Foods", Line = "$20.00", Progress = 60, Note = t("reallife_stk_now", "Now") };
-        m.Note = t("reallife_stk_policy", "Pay out") + " 50%";
+        m.Note = t("reallife_stk_policy_board", "The board pays out {payout} of the reserve at each results").Replace("{payout}", "50%") + "  " + t("reallife_stk_expected_range", "Expected price {low} to {high}").Replace("{low}", "$18.00").Replace("{high}", "$22.00");
         m.Track = new UiTrackModel
         {
             Title = t("reallife_stk_stages", "Stages"),
             Steps = new[]
             {
-                new UiTrackStep { Icon = UiIcon.Check, Label = t("reallife_lst_stage_advised", "advisers engaged"), State = UiStepState.Done },
-                new UiTrackStep { Icon = UiIcon.Check, Label = t("reallife_lst_stage_auditing", "being audited"), State = UiStepState.Done },
-                new UiTrackStep { Icon = UiIcon.Check, Label = t("reallife_lst_stage_building", "the book is open"), State = UiStepState.Now },
+                new UiTrackStep { Icon = UiIcon.Check, Label = t("reallife_lst_stage_advised", "advisers engaged") + ", " + t("reallife_mkt_day", "Day {day}").Replace("{day}", "262"), State = UiStepState.Done },
+                new UiTrackStep { Icon = UiIcon.Check, Label = t("reallife_lst_stage_auditing", "being audited") + ", " + t("reallife_stk_days_span", "days {from} to {to}").Replace("{from}", "263").Replace("{to}", "270"), State = UiStepState.Done },
+                new UiTrackStep { Icon = UiIcon.Check, Label = t("reallife_lst_stage_building", "the book is open") + ", " + t("reallife_stk_days_span", "days {from} to {to}").Replace("{from}", "271").Replace("{to}", "276"), State = UiStepState.Now },
                 new UiTrackStep { Icon = UiIcon.Check, Label = t("reallife_lst_stage_priced", "priced"), State = UiStepState.Later },
                 new UiTrackStep { Icon = UiIcon.Check, Label = t("reallife_lst_stage_listed", "on the market"), State = UiStepState.Later }
             },

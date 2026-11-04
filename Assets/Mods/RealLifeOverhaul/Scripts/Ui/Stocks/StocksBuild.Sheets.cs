@@ -245,7 +245,8 @@ namespace RealLifeOverhaul.Ui
             m.Confirm = null;
             UiActionModel sell = Extra(w(deposit ? "reallife_mkt_bond_close" : "reallife_mkt_bond_sell", deposit ? "Close it" : "Sell"), true);
             m.Extras = new[] { Armed(sell, st.Armed == 0) };
-            m.Reason = st.Armed == 0 ? MarketText.Fill("reallife_mkt_bond_confirm_sell_body", "amount", BondText.Money(sale)) : null;
+            m.Reason = st.Armed == 0 ? Asked(MarketText.Fill(deposit ? "reallife_mkt_bond_confirm_close" : "reallife_mkt_bond_confirm_sell", "name", BondText.Name(h)),
+                MarketText.Fill("reallife_mkt_bond_confirm_sell_body", "amount", BondText.Money(sale))) : null;
             return m;
         }
 
@@ -453,7 +454,8 @@ namespace RealLifeOverhaul.Ui
             {
                 UiActionModel close = Extra(w(c.IsFuture ? "reallife_mkt_drv_close" : "reallife_mkt_drv_sell_back", c.IsFuture ? "Close it" : "Sell it back"), true);
                 m.Extras = new[] { Armed(close, st.Armed == 0) };
-                m.Reason = st.Armed == 0 ? MarketText.Fill("reallife_mkt_drv_confirm_close_body", "price", DerivText.Unit(d.ClosePrice(c)), "result", DerivText.Signed(made)) : null;
+                m.Reason = st.Armed == 0 ? Asked(MarketText.Fill("reallife_mkt_drv_confirm_close", "name", DerivText.Name(c)),
+                    MarketText.Fill("reallife_mkt_drv_confirm_close_body", "price", DerivText.Unit(d.ClosePrice(c)), "result", DerivText.Signed(made))) : null;
             }
             return m;
         }
@@ -597,6 +599,12 @@ namespace RealLifeOverhaul.Ui
                 fields.Add(StepField(StocksSheets.Change, w("reallife_stk_sh_change", "Add or take out"), Money(ch), ch, Math.Max(1,
                     d.BotChangeLeast), Math.Max(Math.Max(1, d.BotChangeLeast), cash), Nice(Math.Max(1, cash) / 20, Math.Max(1, d.BotChangeLeast)), true));
             }
+            if (b == null)
+            {
+                int sizeV = MarketBots.Sizes[Idx(st.V[StocksSheets.Size], MarketBots.Sizes.Length)], lossV = MarketBots.Losses[Idx(st.V[StocksSheets.Loss], MarketBots.Losses.Length)];
+                fields.Add(Note(Asked(MarketText.Fill("reallife_mkt_bot_confirm_hire", "firm", f.Name), MarketText.Fill("reallife_mkt_bot_confirm_hire_body", "firm", f.Name,
+                    "capital", Money(st.V[StocksSheets.Capital]), "size", sizeV.ToString(), "loss", lossV.ToString(), "fee", MarketText.Percent(f.FeeBp), "share", MarketText.Percent(f.ShareBp)))));
+            }
             m.Fields = fields.ToArray();
             if (b == null)
             {
@@ -606,20 +614,44 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
+                // The buttons as FirmExtra reads them. Adding or taking out capital and letting the firm go ask first, as the old app's question box did:
+                // the first press arms the button and the sheet says what it comes to, the second does it.
                 var extras = new List<UiActionModel>(4);
+                var codes = new List<string>(4);
                 if (b.Status == BotStatus.Running)
                 {
                     extras.Add(Extra(w("reallife_mkt_bot_add", "Add"), false));
+                    codes.Add("add");
                     extras.Add(Extra(w("reallife_mkt_bot_take", "Take out"), false));
+                    codes.Add("take");
                     extras.Add(Extra(w("reallife_mkt_bot_sell_up", "Sell up"), false));
+                    codes.Add("sell");
                 }
                 else if (b.Status == BotStatus.Stopped)
                 {
                     extras.Add(Extra(w("reallife_mkt_bot_restart", "Restart"), false));
+                    codes.Add("restart");
                 }
-                extras.Add(Armed(Extra(w("reallife_mkt_bot_dismiss", "Dismiss"), true), st.Armed == extras.Count));
+                extras.Add(Extra(w("reallife_mkt_bot_dismiss", "Dismiss"), true));
+                codes.Add("dismiss");
+                string armed = st.Armed >= 0 && st.Armed < codes.Count ? codes[st.Armed] : null;
+                for (int i = 0; i < extras.Count; i++)
+                {
+                    bool asks = codes[i] == "add" || codes[i] == "take" || codes[i] == "dismiss";
+                    extras[i] = Armed(extras[i], asks && st.Armed == i);
+                }
                 m.Extras = extras.ToArray();
-                m.Reason = st.Armed >= 0 ? Plain(MarketText.T("reallife_mkt_bot_confirm_dismiss_body")).Replace("{firm}", f.Name) : null;
+                long change = st.V[StocksSheets.Change];
+                if (armed == "add" || armed == "take")
+                {
+                    bool adding = armed == "add";
+                    m.Reason = Asked(MarketText.Fill(adding ? "reallife_mkt_bot_confirm_add" : "reallife_mkt_bot_confirm_take", "firm", f.Name, "amount", Money(change)),
+                        MarketText.Fill(adding ? "reallife_mkt_bot_confirm_add_body" : "reallife_mkt_bot_confirm_take_body", "firm", f.Name, "capital", Money(adding ? b.Capital + change : b.Capital - change)));
+                }
+                else if (armed == "dismiss")
+                {
+                    m.Reason = Asked(MarketText.Fill("reallife_mkt_bot_confirm_dismiss", "firm", f.Name), MarketText.Fill("reallife_mkt_bot_confirm_dismiss_body", "firm", f.Name));
+                }
             }
             return m;
         }

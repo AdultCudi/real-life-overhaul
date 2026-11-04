@@ -226,7 +226,7 @@ internal static partial class UiSamples
         var c = new StocksCompany
         {
             Name = state == "long" ? "Harbourside Freight Holdings International Corporation" : "Harbourside Freight", Ticker = "HSF", Sector = t("reallife_mkt_sector_logistics", "Logistics"),
-            Meta = t("reallife_stk_cap_mid", "Mid cap") + ", " + t("reallife_stk_exchange", "NYSE"), LogoTint = UiRole.Chart1,
+            Meta = t("reallife_stk_cap_mid", "Mid cap"), LogoTint = UiRole.Chart1,
             Price = "$53.42", ChangeMoney = "+$0.69", ChangePercent = "+1.31%", Way = 1, Watching = state == "company_limit",
             FactLabels = new[] { t("reallife_stk_open", "Open"), t("reallife_stk_high", "High"), t("reallife_stk_low", "Low"), t("reallife_mkt_col_volume", "Volume"), t("reallife_stk_cap", "Market cap"), t("reallife_mkt_col_pe", "P/E"), t("reallife_mkt_col_yield", "Yield") },
             FactValues = new[] { "$52.73", "$53.78", "$52.49", "148.2K", "$2.6B", "14.8", "2.9%" },
@@ -265,12 +265,16 @@ internal static partial class UiSamples
                 ? new[]
                 {
                     new StocksRow { Label = t("reallife_stk_row_cost", "Cost"), Value = "$26,610" }, new StocksRow { Label = t("reallife_stk_row_fee", "Fee"), Value = "$27" },
-                    new StocksRow { Label = t("reallife_stk_row_total", "Total"), Value = "$26,637" }, new StocksRow { Label = t("reallife_stk_row_most_buy", "Most you can buy"), Value = "22,590" }
+                    new StocksRow { Label = t("reallife_stk_row_total", "Total"), Value = "$26,637" }, new StocksRow { Label = t("reallife_stk_cash_after", "Cash after"), Value = "$1,177,663" },
+                    new StocksRow { Label = t("reallife_stk_position_after", "Position after"), Value = t("reallife_stk_position_value", "{shares} at {price}").Replace("{shares}", "1,700").Replace("{price}", "$45.76") },
+                    new StocksRow { Label = t("reallife_stk_row_most_buy", "Most you can buy"), Value = "22,590" }
                 }
                 : new[]
                 {
                     new StocksRow { Label = t("reallife_stk_row_price", "Price"), Value = "$53.42" }, new StocksRow { Label = t("reallife_stk_row_cost", "Cost"), Value = "$26,710" },
                     new StocksRow { Label = t("reallife_stk_row_fee", "Fee"), Value = "$27" }, new StocksRow { Label = t("reallife_stk_row_total", "Total"), Value = "$26,737" },
+                    new StocksRow { Label = t("reallife_stk_cash_after", "Cash after"), Value = "$1,177,563" },
+                    new StocksRow { Label = t("reallife_stk_position_after", "Position after"), Value = t("reallife_stk_position_value", "{shares} at {price}").Replace("{shares}", "500").Replace("{price}", "$53.42") },
                     new StocksRow { Label = t("reallife_stk_row_most_buy", "Most you can buy"), Value = "22,590" }
                 },
             Place = t("reallife_stk_place_buy", "Place buy order")
@@ -290,8 +294,9 @@ internal static partial class UiSamples
         c.Signals = StocksSignals.Read(chart, t);
         c.AlertsTitle = t("reallife_stk_alerts_title", "Price alerts");
         c.AlertsNone = t("reallife_stk_alerts_none", "No alert for this company");
-        c.AlertAbove = t("reallife_stk_alert_up", "Alert +5%");
-        c.AlertBelow = t("reallife_stk_alert_down", "Alert -5%");
+        c.AlertSet = t("reallife_stk_alert_set", "Set an alert");
+        c.AlertLine = t("reallife_stk_alert_line_off", "Pick a line first");
+        c.AlertLineOff = true;
         if (limit || full)
         {
             c.Alerts = new[]

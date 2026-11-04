@@ -53,6 +53,8 @@ namespace RealLifeOverhaul.Ui
                 case StocksSheets.Margin: return MarginSheet(d, st, w);
                 case StocksSheets.Own: return OwnSheet(d, st, p, w);
                 case StocksSheets.Founder: return FounderSheet(d, st, w);
+                case StocksSheets.Alert: return AlertSheet(d, st, w);
+                case StocksSheets.Ticket: return TicketSheet(d, st, w);
                 default: return null;
             }
         }
@@ -191,7 +193,7 @@ namespace RealLifeOverhaul.Ui
                     return m;
                 case OwnWithdraw:
                     m.Title = w("reallife_lst_withdraw", "Withdraw");
-                    m.Fields = new[] { Note(Plain(MarketText.T("reallife_lst_confirm_withdraw_body"))) };
+                    m.Fields = new[] { Note(Asked(MarketText.T("reallife_lst_confirm_withdraw"), MarketText.T("reallife_lst_confirm_withdraw_body"))) };
                     m.Confirm = w("reallife_lst_withdraw", "Withdraw");
                     return m;
                 default:
@@ -234,6 +236,9 @@ namespace RealLifeOverhaul.Ui
             {
                 fields.Add(Note(Plain(MarketText.Fill("reallife_lst_box_control", "threshold", MarketText.Percent(ListingCatalogue.TakeoverThresholdBp))), -1));
             }
+            string least = walkAt == 0 ? MarketText.Price(low) : walkAt == 1 ? MarketText.Price(ListingBook.Step((low + high) * 0.5, false)) : MarketText.T("reallife_lst_walk_any");
+            fields.Add(Note(Asked(MarketText.Fill("reallife_lst_confirm_publish", "name", name), MarketText.Fill("reallife_lst_confirm_publish_body", "name", name,
+                "share", MarketText.Percent(floatBp), "days", ListingCatalogue.BookDays.ToString(), "least", least))));
             m.Fields = fields.ToArray();
             m.Confirm = w("reallife_lst_publish", "Open the book");
             m.ConfirmOff = !all || name.Length < 2;
@@ -248,6 +253,9 @@ namespace RealLifeOverhaul.Ui
         public static int WalkOf(int at) => at == 0 ? ListingBook.WalkLow : at == 1 ? ListingBook.WalkMiddle : ListingBook.WalkAny;
 
         // ------------------------------------------------------------------------------------------------ the founder
+
+        // The old question's key for the founder's buy-back, new shares and going private (its body is the same key and "_body").
+        private static string FounderConfirmKey(OwnAction a) => a == OwnAction.BuyBack ? "reallife_lst_confirm_buyback" : a == OwnAction.Issue ? "reallife_lst_confirm_issue" : "reallife_lst_confirm_private";
 
         public static StocksSheetModel FounderSheet(MarketDirector d, StocksSheetState st, UiWords w)
         {
@@ -311,6 +319,10 @@ namespace RealLifeOverhaul.Ui
                         f.Add(Fact(w("reallife_stk_sh_reserve", "Reserve"), Money(q.Reserve)));
                         f.Add(Fact(w("reallife_stk_sh_fee", "Commission"), Money(q.Fee)));
                         f.Add(Fact(w("reallife_stk_sh_total", "Total"), Money(Math.Abs(q.Total)), q.Total > 0 ? -1 : 1));
+                        f.Add(Note(Asked(MarketText.Fill(deal ? (sell ? "reallife_lst_confirm_sell" : "reallife_lst_confirm_buy") : FounderConfirmKey(action), "name", k.Name),
+                            MarketText.Fill(deal ? "reallife_lst_confirm_deal_body" : FounderConfirmKey(action) + "_body", "count", q.Shares.ToString("N0"), "price", MarketText.Price(q.Cents),
+                                "value", Money(q.Value), "reserve", Money(q.Reserve), "fee", Money(q.Fee), "total", Money(Math.Abs(q.Total)),
+                                "days", Math.Max(1, s.YearDays / ListingCatalogue.ShortSwingYearShare).ToString()))));
                     }
                     m.Confirm = FounderTitle(action, w);
                     m.ConfirmOff = q.Why != OwnWhy.None;
