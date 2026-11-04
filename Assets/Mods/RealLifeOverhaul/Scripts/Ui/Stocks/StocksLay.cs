@@ -8,7 +8,7 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class StocksLay
     {
-        public const int Choice = 30, Tool = 31, Chip = 32, Less = 33, More = 34, Place = 35, Instead = 36, Alert = 37, Empty = 38, Shares = 39,
+        public const int Less = 33, More = 34, Place = 35, Alert = 37, Empty = 38, Shares = 39,
             Act = 50, PriceLess = 51, PriceMore = 52, PricePlain = 53, Watch = 54, Second = 200;
         private static float Entry => UiTokens.Control + UiTokens.S2;   // the sidebar's row, on the grid
 
@@ -25,13 +25,14 @@ namespace RealLifeOverhaul.Ui
             UiAt at = UiAt.Screen.In(win);
             frame.Window(out float wx, out float wy, out float ww, out float wh);
             float top = wy + UiFrame.Strip;
-            int shown = Nav(s, at, m, wx, top, wh - UiFrame.Strip);
+            bool big = m.Co != null && m.Co.Big && m.Page == StocksPage.Company;   // the chart across the window: the sidebar stands aside
+            int shown = big ? -1 : Nav(s, at, m, wx, top, wh - UiFrame.Strip);
             if (shown >= 0)
             {
                 s.FocusFirst = shown;
             }
             int page = s.NodeCount;
-            float x = wx + UiAppWindow.Sidebar + UiTokens.S5;
+            float x = wx + (big ? 0f : UiAppWindow.Sidebar) + UiTokens.S5;
             float w = wx + ww - UiTokens.S5 - x;
             float y = top + UiTokens.S4;
             float bottom = wy + wh - UiTokens.S4;
@@ -39,7 +40,7 @@ namespace RealLifeOverhaul.Ui
             {
                 y = Header(s, at, m, x, y, w, keys);
             }
-            if (!string.IsNullOrEmpty(m.EmptyTitle) && m.Table == null && m.Statement == null && m.Desk == null)
+            if (!string.IsNullOrEmpty(m.EmptyTitle) && m.Table == null && m.Statement == null && m.Co == null)
             {
                 UiDraw.EmptyState(s, at, x, y, w, bottom - y, m.EmptyIcon, m.EmptyTitle, m.EmptyBody, null, Empty, keys);
             }
@@ -204,184 +205,7 @@ namespace RealLifeOverhaul.Ui
 
         private static float Company(UiScene s, UiAt at, StocksModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
-            if (m.Head != null)
-            {
-                y = UiFirmHead.Lay(s, at, m.Head, x, y, w, keys, 90);
-            }
-            if (!string.IsNullOrEmpty(m.Note))
-            {
-                UiDraw.TextMiddle(s, at, x, y, UiTokens.PairRow, w, UiStyle.Body, UiRole.Text2, m.Note, UiFlags.Truncate);
-                y += UiTokens.PairRow + UiTokens.S2;
-            }
-            if (m.Figures != null && m.Figures.Length > 0)
-            {
-                y = UiAppWindow.Figures(s, at, m.Figures, x, y, w);
-            }
-            y = Facts(s, at, m, x, y, w);
-            float gap = UiTokens.S4;
-            float right = UiDraw.SnapDown(w * 0.34f);
-            float left = w - right - gap;
-            float tools = Tools(s, at, m, x, y, left);
-            float chartTop = y + tools;
-            if (m.Desk != null && bottom - chartTop > UiTokens.S16 * 4f)
-            {
-                UiChartDesk.Lay(s, at, m.Desk, x, chartTop, left, bottom - chartTop);
-            }
-            Ticket(s, at, m, x + left + gap, y, right, bottom, keys);
-            return bottom;
-        }
-
-        private static float Facts(UiScene s, UiAt at, StocksModel m, float x, float y, float w)
-        {
-            int n = Math.Min(m.FactLabels.Length, m.FactValues.Length);
-            if (n == 0)
-            {
-                return y;
-            }
-            int cols = n > 3 ? 2 : 1;
-            int rows = (n + cols - 1) / cols;
-            float col = UiDraw.SnapDown(w / cols);
-            for (int i = 0; i < n; i++)
-            {
-                float rx = x + (i % cols) * col;
-                float ry = y + (i / cols) * UiTokens.PairRow;
-                UiDraw.InfoRow(s, at, rx, ry, col - UiTokens.S3, m.FactLabels[i], m.FactValues[i]);
-            }
-            return y + rows * UiTokens.PairRow + UiTokens.S3;
-        }
-
-        private static float Tools(UiScene s, UiAt at, StocksModel m, float x, float y, float w)
-        {
-            float h = 0f;
-            if (m.Chips != null && m.Chips.Length > 0)
-            {
-                float cx = x;
-                for (int i = 0; i < m.Chips.Length; i++)
-                {
-                    float bw = UiDraw.ButtonWidth(UiButtonKind.Secondary, m.Chips[i], UiIcon.None, UiAction.Count, null);
-                    if (cx + bw > x + w)
-                    {
-                        break;
-                    }
-                    UiDraw.Button(s, at, cx, y, bw, UiTokens.ControlSmall, UiButtonKind.Secondary, m.Chips[i], UiIcon.None, UiAction.Count, null, Chip, i);
-                    cx += bw + UiTokens.S2;
-                }
-                h += UiTokens.ControlSmall + UiTokens.S2;
-            }
-            if (m.Tools != null && m.Tools.Length > 0)
-            {
-                float size = UiTokens.ControlSmall;
-                for (int i = 0; i < m.Tools.Length; i++)
-                {
-                    float tx = x + i * (size + UiTokens.S1);
-                    if (tx + size > x + w)
-                    {
-                        break;
-                    }
-                    UiIcon icon = i == m.Tools.Length - 1 ? UiIcon.Trash : UiIcon.Chart;
-                    UiDraw.IconButton(s, at, tx, y + h, size, icon, UiRole.None, Tool, i, i == m.Tool);
-                }
-                h += size + UiTokens.S2;
-            }
-            return h;
-        }
-
-        private static void Ticket(UiScene s, UiAt at, StocksModel m, float x, float y, float w, float bottom, IUiKeys keys)
-        {
-            StocksTicket t = m.Ticket;
-            if (t == null)
-            {
-                return;
-            }
-            float h = UiTokens.Control, small = UiTokens.ControlSmall;
-            // The buttons stand at the foot, so a short window never loses Place; what is above them gives way.
-            float placeY = bottom - h;
-            float watchY = placeY - UiTokens.S2 - small;
-            float limit = watchY - UiTokens.S2;
-            bool closing = string.IsNullOrEmpty(t.Instead);
-            if (y + h <= limit)
-            {
-                UiDraw.Choice(s, at, x, y, w, t.Side, Choice, 0, closing);
-                y += h + UiTokens.S2;
-            }
-            if (y + h <= limit)
-            {
-                Field(s, at, x, y, w, t.Kind, Choice, 1);
-                y += h + UiTokens.S2;
-            }
-            if (y + h <= limit)
-            {
-                Field(s, at, x, y, w, t.Life, Choice, 2);
-                y += h + UiTokens.S2;
-            }
-            if (y + h <= limit)
-            {
-                UiDraw.Stepper(s, at, x, y, w, t.Shares, t.CanLess, t.CanMore, Less, Shares, More, 0, false);
-                y += h + UiTokens.S2;
-            }
-            if (!string.IsNullOrEmpty(t.Price) && y + h <= limit)
-            {
-                UiDraw.Stepper(s, at, x, y, w, t.Price, true, true, PriceLess, PricePlain, PriceMore, 0, false);
-                y += h + UiTokens.S2;
-            }
-            if (!string.IsNullOrEmpty(t.PutBack) && y + h <= limit)
-            {
-                Field(s, at, x, y, w, t.PutBack, Choice, 3);
-                y += h + UiTokens.S2;
-            }
-            if (string.IsNullOrEmpty(t.Price) && !string.IsNullOrEmpty(t.Limit) && y + UiTokens.PairRow <= limit)
-            {
-                UiDraw.InfoRow(s, at, x, y, w, t.Limit, t.Max);
-                y += UiTokens.PairRow;
-            }
-            if (y + UiTokens.PairRow <= limit)
-            {
-                UiDraw.InfoRow(s, at, x, y, w, t.Cost, t.Fee);
-                y += UiTokens.PairRow;
-            }
-            if (y + UiTokens.PairRow <= limit)
-            {
-                UiDraw.InfoRow(s, at, x, y, w, t.Total, t.CashAfter);
-                y += UiTokens.PairRow;
-            }
-            if (!string.IsNullOrEmpty(t.After) && y + UiTokens.PairRow <= limit)
-            {
-                UiDraw.TextMiddle(s, at, x, y, UiTokens.PairRow, w, UiStyle.Small, UiRole.Text2, t.After, UiFlags.Truncate);
-                y += UiTokens.PairRow;
-            }
-            if (!string.IsNullOrEmpty(t.Why) && y + UiTokens.PairRow * 2f <= limit)
-            {
-                float wh = UiDraw.Snap(UiTextRules.WrappedHeight(t.Why, UiStyle.Small, w, 2));
-                UiDraw.Text(s, at, x, y, w, UiStyle.Small, t.PlaceDisabled ? UiRole.DangerText : UiRole.WarnText, t.Why, UiFlags.Wrap | UiFlags.Truncate, 2);
-                y += wh + UiTokens.S1;
-            }
-            for (int i = 0; i < m.Signals.Length && y + UiTokens.PairRow <= limit; i++)
-            {
-                UiDraw.TextMiddle(s, at, x, y, UiTokens.PairRow, w, UiStyle.Small, UiRole.Text2, m.Signals[i], UiFlags.Truncate);
-                y += UiTokens.PairRow;
-            }
-            for (int i = 0; i < m.Alerts.Length && i < 3 && y + small <= limit; i++)
-            {
-                UiDraw.Button(s, at, x, y, w, small, UiButtonKind.Quiet, m.Alerts[i], UiIcon.Bell, UiAction.Count, keys, Alert, i);
-                y += small + UiTokens.S1;
-            }
-            float ww = UiDraw.ButtonWidth(UiButtonKind.Secondary, t.Watch, UiIcon.Eye, UiAction.Count, keys);
-            UiDraw.Button(s, at, x, watchY, Math.Min(w, ww), small, UiButtonKind.Secondary, t.Watch, UiIcon.Eye, UiAction.Count, keys, Watch, 0);
-            float bw = UiDraw.ButtonWidth(UiButtonKind.Primary, t.Place, UiIcon.None, UiAction.Alt, keys);
-            UiDraw.Button(s, at, x + w - bw, placeY, bw, h, UiButtonKind.Primary, t.Place, UiIcon.None, UiAction.Alt, keys, Place, 0, t.PlaceDisabled);
-            if (!string.IsNullOrEmpty(t.Instead))
-            {
-                float iw = UiDraw.ButtonWidth(UiButtonKind.Secondary, t.Instead, UiIcon.None, UiAction.Option, keys);
-                if (iw < w - bw - UiTokens.S2)
-                {
-                    UiDraw.Button(s, at, x, placeY, iw, h, UiButtonKind.Secondary, t.Instead, UiIcon.None, UiAction.Option, keys, Instead, 0);
-                }
-            }
-        }
-
-        private static void Field(UiScene s, UiAt at, float x, float y, float w, string value, int command, int arg)
-        {
-            UiDraw.Choice(s, at, x, y, w, value, command, arg, false);
+            return m.Co != null ? StocksCompanyLay.Lay(s, at, m, x, y, w, bottom, keys) : bottom;
         }
 
         private static float Portfolio(UiScene s, UiAt at, StocksModel m, float x, float y, float w, float bottom, IUiKeys keys)

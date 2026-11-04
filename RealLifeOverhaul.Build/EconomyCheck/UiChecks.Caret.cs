@@ -33,7 +33,7 @@ internal static partial class Program
         { "SettingsScreen", new[] { UiSettingsList.SearchCommand } },
         { "StaffScreen", new[] { UiSettingsList.SearchCommand } },
         { "TextBoxScreen", new[] { UiCard.FieldCommand } },
-        { "StocksScreen", new[] { StocksLay.Shares, UiDataTable.First + UiDataTable.Search, StocksSheetLay.Type } },
+        { "StocksScreen", new[] { StocksLay.Shares, StocksLay.PricePlain, UiDataTable.First + UiDataTable.Search, StocksSheetLay.Type } },
         { "ItemsListScreen", new[] { UiItemsList.TypeCommand } },
         { "UiPartsGalleryScreen", new[] { UiPartsGallery.Field } },
         { "FlareScreen", new[] { FlareFace.FieldCommand } }

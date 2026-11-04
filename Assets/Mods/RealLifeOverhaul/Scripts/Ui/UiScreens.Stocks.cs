@@ -59,7 +59,29 @@ namespace RealLifeOverhaul.Ui
                 "reallife_stk_sh_strike", "reallife_stk_sh_strike_price", "reallife_stk_sh_tax", "reallife_stk_sh_tell_me", "reallife_stk_sh_term",
                 "reallife_stk_sh_this_week", "reallife_stk_sh_total", "reallife_stk_sh_trade_it", "reallife_stk_sh_units", "reallife_stk_sh_value",
                 "reallife_stk_sh_walk", "reallife_stk_sh_week", "reallife_stk_sh_what", "reallife_stk_sh_withdrawable", "reallife_stk_sh_you_hold",
-                "reallife_stk_sh_your_contracts"
+                "reallife_stk_sh_your_contracts",
+                "reallife_stk_tool_pointer", "reallife_stk_tool_trend", "reallife_stk_tool_level", "reallife_stk_tool_fib", "reallife_stk_tool_ray",
+                "reallife_stk_tool_rect", "reallife_stk_tool_measure", "reallife_stk_tool_note", "reallife_stk_tool_snap", "reallife_stk_delete_one",
+                "reallife_stk_delete_all", "reallife_stk_ind_sma20", "reallife_stk_ind_sma50", "reallife_stk_ind_ema20", "reallife_stk_ind_bollinger",
+                "reallife_stk_ind_rsi", "reallife_stk_ind_macd", "reallife_stk_ind_stoch", "reallife_stk_ind_atr", "reallife_stk_ind_obv",
+                "reallife_stk_ind_sma20_hint", "reallife_stk_ind_sma50_hint", "reallife_stk_ind_ema20_hint", "reallife_stk_ind_bollinger_hint",
+                "reallife_stk_ind_rsi_hint", "reallife_stk_ind_macd_hint", "reallife_stk_ind_stoch_hint", "reallife_stk_ind_atr_hint", "reallife_stk_ind_obv_hint",
+                "reallife_stk_sig_above", "reallife_stk_sig_below", "reallife_stk_sig_band_over", "reallife_stk_sig_band_under", "reallife_stk_sig_band_inside",
+                "reallife_stk_sig_reading", "reallife_stk_sig_overbought", "reallife_stk_sig_oversold", "reallife_stk_sig_neutral", "reallife_stk_sig_macd_over",
+                "reallife_stk_sig_macd_under", "reallife_stk_sig_atr", "reallife_stk_sig_obv_up", "reallife_stk_sig_obv_down", "reallife_stk_sig_level_over",
+                "reallife_stk_sig_level_under", "reallife_stk_sig_trend_over", "reallife_stk_sig_trend_under", "reallife_stk_signals_title",
+                "reallife_stk_signals_none", "reallife_stk_position_title", "reallife_stk_position_none", "reallife_stk_avg_cost", "reallife_stk_gain",
+                "reallife_stk_alerts_title", "reallife_stk_alerts_none", "reallife_stk_alert_up", "reallife_stk_alert_down", "reallife_stk_alert_above",
+                "reallife_stk_alert_below", "reallife_stk_alert_support", "reallife_stk_alert_state_on", "reallife_stk_alert_state_hit", "reallife_stk_order_title",
+                "reallife_stk_cash_line", "reallife_stk_good_for", "reallife_stk_put_back", "reallife_stk_limit_price", "reallife_stk_stop_price",
+                "reallife_stk_profit_price", "reallife_stk_row_price", "reallife_stk_row_cost", "reallife_stk_row_fee", "reallife_stk_row_total",
+                "reallife_stk_row_most_buy", "reallife_stk_row_most_sell", "reallife_stk_place_buy", "reallife_stk_place_sell", "reallife_stk_cap_large",
+                "reallife_stk_cap_mid", "reallife_stk_cap_small", "reallife_stk_exchange", "reallife_stk_close", "reallife_stk_measure", "reallife_stk_big_chart",
+                "reallife_stk_small_chart", "reallife_stk_tape_buy", "reallife_stk_tape_sell",
+                "reallife_mkt_chart_day", "reallife_mkt_frame_days", "reallife_stk_chart_empty", "reallife_stk_chart_empty_body", "reallife_mkt_sector_logistics",
+                "reallife_stk_cap", "reallife_mkt_frame_today", "reallife_mkt_frame_weeks", "reallife_mkt_frame_months", "reallife_mkt_frame_years",
+                "reallife_stk_kind_candles", "reallife_stk_kind_line", "reallife_stk_kind_area", "reallife_mkt_type_stop_loss", "reallife_mkt_type_take_profit",
+                "reallife_stk_gtc"
             }).Switch(UiScreenSwitches.Market));
         }
     }

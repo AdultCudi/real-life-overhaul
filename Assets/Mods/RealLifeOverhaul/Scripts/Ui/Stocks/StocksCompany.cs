@@ -1,0 +1,65 @@
+namespace RealLifeOverhaul.Ui
+{
+    /// <summary>An indicator on the chart, as the chip says it: its colour, its name with its settings, and an X that takes it off.</summary>
+    public struct StocksChip
+    {
+        public string Label;
+        public UiRole Tint;
+        public StocksInd Ind;
+    }
+
+    /// <summary>One alert of the company: its words ("Above $56.00") and whether it still waits.</summary>
+    public struct StocksAlertRow
+    {
+        public string Words, State;
+    }
+
+    /// <summary>
+    /// The company page: its head, the chart's toolbar, the chart and the order panel. Words are already the player's; the
+    /// layout draws it and the screen answers it. The ticket, the chart and the signals are built from the market once for a change,
+    /// and a hover or a pan only lays them out again. Plain data.
+    /// </summary>
+    public sealed class StocksCompany
+    {
+        // The head.
+        public string Name, Ticker, Sector, Meta;           // Meta: "Mid cap, NYSE"
+        public UiRole LogoTint = UiRole.Chart1;
+        public string Price, ChangeMoney, ChangePercent;    // "$53.42", "+$0.69", "+1.31%"
+        public int Way;                                     // 1 up, -1 down, 0 flat
+        public string[] FactLabels = new string[0], FactValues = new string[0];
+        public bool Watching;
+
+        // The chart's toolbar.
+        public string[] Ranges = new string[0];
+        public int Range;
+        public string[] Types = new string[0];
+        public int Type;
+        public StocksChip[] Chips = new StocksChip[0];
+        public string AddLabel;                             // "+ Indicator"
+        public bool Big;                                    // the chart is open across the window
+
+        // The indicator picker.
+        public bool PickOpen;
+        public string[] PickNames = new string[0], PickHints = new string[0];
+        public bool[] PickOn = new bool[0];
+
+        // The chart, the order, the position, what the chart says and the price alerts.
+        public UiChartDeskModel Chart;
+        public StocksTicket Order;
+        public string PositionTitle, PositionNone;
+        public StocksRow[] Position = new StocksRow[0];
+        public string SignalsTitle, SignalsNone;
+        public StocksSignal[] Signals = new StocksSignal[0];
+        public string AlertsTitle, AlertsNone, AlertAbove, AlertBelow;
+        public StocksAlertRow[] Alerts = new StocksAlertRow[0];
+        public bool AlertsFull;                             // no room for another alert
+
+        // Written back by the layout, for the pointer: the edges of each segmented control and the room of the chart.
+        public readonly float[] RangeEdges = new float[8];
+        public readonly float[] TypeEdges = new float[8];
+        public readonly float[] SideEdges = new float[8];
+        public readonly float[] KindEdges = new float[8];
+        public readonly float[] LifeEdges = new float[8];
+        public float PickX, PickY;                          // where the picker stands
+    }
+}

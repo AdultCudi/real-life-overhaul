@@ -17,6 +17,21 @@ namespace RealLifeOverhaul.Ui
         Ticket
     }
 
+    /// <summary>One labelled figure of the ticket, the position or a signal: the label says what the number is.</summary>
+    public struct StocksRow
+    {
+        public string Label, Value;
+        public UiRole Tone;               // the value's colour: None for plain, OkText or DangerText for a gain or a loss
+    }
+
+    /// <summary>One line the chart reads: a dot in its tone and the words. The indicator it speaks of is on the chart.</summary>
+    public struct StocksSignal
+    {
+        public string Words;
+        public UiRole Tone;
+        public StocksInd Ind;             // the indicator it reads, or Count when it reads a drawing
+    }
+
     /// <summary>The order ticket's figures, already in the game's words. Plain data.</summary>
     public sealed class StocksTicket
     {
@@ -25,6 +40,15 @@ namespace RealLifeOverhaul.Ui
         public string Place, Instead;
         public bool PlaceDisabled;
         public string Price, Why, Watch, PutBack;     // a limit or stop price (null at the market), why it cannot be placed, the watch button, the share of dividends put back
+        // The order panel of the company page: segmented choices and labelled rows.
+        public string Title, CashWords;               // "Order" and "Cash $1.9B"
+        public string[] Sides = new string[0], Kinds = new string[0], Lives = new string[0];
+        public int SideAt, KindAt, LifeAt;
+        public string LifeLabel, SharesLabel, PriceLabel, PutBackLabel;
+        public StocksRow[] Rows = new StocksRow[0];   // price, cost, fee, total and the most that can be bought or sold
+        public int MostRow = -1;                      // which of the rows is that most
+        public long Most;                             // the most shares the cash buys (or the holding sells), the number the row shows
+        public bool Buying = true;
     }
 
     /// <summary>
@@ -40,9 +64,9 @@ namespace RealLifeOverhaul.Ui
         public int[] GroupAt = new int[0];   // the first entry of each group
         public StocksPage Page;
         public UiFigureModel[] Figures = new UiFigureModel[0];
+        public StocksCompany Co;                                   // the company page
         public UiDataTableModel Table;
         public UiChartModel Chart;
-        public UiChartDeskModel Desk;
         public UiStatementModel Statement;
         public UiTrackModel Track;
         public UiHeroModel Hero;
@@ -52,14 +76,7 @@ namespace RealLifeOverhaul.Ui
         public string[] DonutLabels = new string[0];
         public string[] DonutValues = new string[0];
         public string Note;
-        public string[] Signals = new string[0];
-        public string[] FactLabels = new string[0];
-        public string[] FactValues = new string[0];
-        public string[] Chips = new string[0];
-        public int Tool = -1;
-        public string[] Tools = new string[0];
         public StocksTicket Ticket;
-        public string[] Alerts = new string[0];
         public string TapeTitle;
         public string[] Tape = new string[0];
         public string EmptyTitle, EmptyBody;
