@@ -243,6 +243,10 @@ namespace RealLifeOverhaul.Nav
                 {
                     Remove();
                 }
+                if (SceneWantsBase && !_graph.Finished)
+                {
+                    _graph.Step();   // the 2.5D city map alone is on: its roads are still made a step a tick
+                }
                 return;
             }
             if (!_graph.Finished)
