@@ -175,10 +175,10 @@ namespace RealLifeOverhaul.Ui
                 float nx = tx + tile + UiTokens.S3, nw = x + w - UiTokens.S3 - nx - count - (count > 0f ? UiTokens.S2 : 0f);
                 float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)), top = iy + UiDraw.SnapDown((rowH - lh - sh) / 2f);
                 UiDraw.Text(s, inside, nx, top, nw, UiStyle.Title, UiRole.Text, r.Name, UiFlags.Truncate | UiFlags.Middle);
-                UiDraw.Text(s, inside, nx, top + lh, nw, UiStyle.Small, UiRole.Text2, r.Sub, UiFlags.Truncate | UiFlags.Middle);
+                UiDraw.Text(s, inside, nx, top + lh, nw, UiStyle.Small, on ? UiRole.Text : UiRole.Text2, r.Sub, UiFlags.Truncate | UiFlags.Middle);
                 if (count > 0f)
                 {
-                    UiDraw.TextMiddle(s, inside, x + w - UiTokens.S3 - count, iy, rowH, count, UiStyle.BodyStrong, UiRole.Text2, r.Status, UiFlags.Right);
+                    UiDraw.TextMiddle(s, inside, x + w - UiTokens.S3 - count, iy, rowH, count, UiStyle.BodyStrong, on ? UiRole.Text : UiRole.Text2, r.Status, UiFlags.Right);
                 }
                 UiDraw.Node(s, at, x + UiTokens.S2, iy, w - UiTokens.S2 * 2f, rowH, WorkCmd.Aside, i, face);
                 iy += rowH;
