@@ -202,7 +202,7 @@ namespace RealLifeOverhaul.Ui
             return t;
         }
 
-        private static string StageName(Applicant a) => TechText.T("reallife_hire_stage_" + a.At.ToString().ToLowerInvariant());
+        private static string StageName(Applicant a) => TechText.T("reallife" + "_hire_stage_" + a.At.ToString().ToLowerInvariant());
 
         private WorkTab Market(HiringFile h)
         {
