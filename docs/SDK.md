@@ -139,3 +139,7 @@ This is a public community repository. Custom Unity tools that are helpful to th
 [![YouTube](https://img.shields.io/badge/YouTube-Hovgaard%20Games-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/channel/UCw5PR6gdYaWfZ0-d0WNJu1g)
 
 [![X](https://img.shields.io/badge/X-Hovgaard%20Games-000000?style=for-the-badge&logo=x&logoColor=white)](https://twitter.com/hovgaardgames)
+
+---
+
+For a mod that wants to fit the Real Life Overhaul interface (its phone apps, BizMan pages and settings rows), see [docs/reference/kit-for-other-mods.md](reference/kit-for-other-mods.md).

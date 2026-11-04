@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.GameUi;
 using TMPro;
@@ -32,6 +33,7 @@ namespace RealLifeOverhaul.Ui
         private static readonly List<Sprite> SeenPicture = new List<Sprite>(48);
         private static readonly List<Sprite> Pictures = new List<Sprite>(8);   // other mods' pictures by handle less one
         private static int _passesSeen = -1;
+        private static readonly HashSet<int> Spoilt = new HashSet<int>();   // the places whose button threw when read: shown plainly, said once, not read again
         private static bool _foldersSeen;
 
         /// <summary>Another mod's picture by its handle, for UiPictures.</summary>
@@ -44,6 +46,7 @@ namespace RealLifeOverhaul.Ui
         internal static bool Read(PhoneGridPager pager)
         {
             _passesSeen = PhoneGridPager.Passes;
+            Spoilt.Clear();   // read afresh: the places may be other buttons now
             _foldersSeen = PhoneLayoutPrefs.On;
             pager.Arranged(Buttons, Kinds, Places);
             bool changed = Items.Count != Buttons.Count;
@@ -54,26 +57,33 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < count; i++)
             {
                 Transform button = Buttons[i];
-                BadgeObjects[i] = BadgeObject(button);
-                BadgeLabels[i] = BadgeObjects[i] != null ? BadgeObjects[i].GetComponentInChildren<TMP_Text>(true) : null;
-                TitleLabels[i] = TitleLabel(button);
-                PictureImages[i] = PhoneGridPager.Picture(button);
                 ref PhoneItem it = ref fresh[i];
                 it.Id = button.name;
                 it.Kind = Kinds[i] == PhoneLayoutRules.GameItem ? PhoneItemKind.Game : Kinds[i] == PhoneLayoutRules.ModItem ? PhoneItemKind.Mod : PhoneItemKind.Other;
                 it.Folder = -1;
-                if (it.Kind == PhoneItemKind.Mod)
+                try
                 {
-                    it.First = Places[i] == PhoneLayoutRules.Dock;
-                    it.Folder = PhoneLayoutRules.FolderOf(Kinds[i], Places[i]);
+                    BadgeObjects[i] = BadgeObject(button);
+                    BadgeLabels[i] = BadgeObjects[i] != null ? BadgeObjects[i].GetComponentInChildren<TMP_Text>(true) : null;
+                    TitleLabels[i] = TitleLabel(button);
+                    PictureImages[i] = PhoneGridPager.Picture(button);
+                    if (it.Kind == PhoneItemKind.Mod)
+                    {
+                        it.First = Places[i] == PhoneLayoutRules.Dock;
+                        it.Folder = PhoneLayoutRules.FolderOf(Kinds[i], Places[i]);
+                    }
+                    if (it.Kind == PhoneItemKind.Other || !PhoneLooks.Of(it.Id, out it.Icon, out it.Tint))
+                    {
+                        it.Icon = UiIcon.None;
+                        it.Tint = UiRole.None;
+                        it.Picture = Handle(PictureImages[i] != null ? PictureImages[i].sprite : null);
+                    }
+                    Look(i, ref it);
                 }
-                if (it.Kind == PhoneItemKind.Other || !PhoneLooks.Of(it.Id, out it.Icon, out it.Tint))
+                catch (Exception e)
                 {
-                    it.Icon = UiIcon.None;
-                    it.Tint = UiRole.None;
-                    it.Picture = Handle(PictureImages[i] != null ? PictureImages[i].sprite : null);
+                    Spoiled(i, button, e, ref it);   // another mod's button threw as it was read: its tile shows what it can, the rest of the phone goes on
                 }
-                Look(i, ref it);
                 changed |= before == null || !Same(ref before[i], ref it);
             }
             Items.Begin();
@@ -106,21 +116,33 @@ namespace RealLifeOverhaul.Ui
                 {
                     return Read(pager);
                 }
-                bool on = BadgeObjects[i] != null && BadgeObjects[i].activeSelf;
-                string badge = BadgeLabels[i] != null ? BadgeLabels[i].text : null;
-                string title = TitleLabels[i] != null ? TitleLabels[i].text : null;
-                Sprite picture = PictureImages[i] != null ? PictureImages[i].sprite : null;
-                if (on == SeenBadgeOn[i] && ReferenceEquals(badge, SeenBadge[i]) && ReferenceEquals(title, SeenTitle[i]) && picture == SeenPicture[i])
+                if (Spoilt.Contains(i))
                 {
-                    continue;
+                    continue;   // its words threw once: it is shown as the first fault left it, and not read again
                 }
-                ref PhoneItem it = ref Items.Items[i];
-                if (it.Kind == PhoneItemKind.Other)
+                try
                 {
-                    it.Picture = Handle(picture);
+                    bool on = BadgeObjects[i] != null && BadgeObjects[i].activeSelf;
+                    string badge = BadgeLabels[i] != null ? BadgeLabels[i].text : null;
+                    string title = TitleLabels[i] != null ? TitleLabels[i].text : null;
+                    Sprite picture = PictureImages[i] != null ? PictureImages[i].sprite : null;
+                    if (on == SeenBadgeOn[i] && ReferenceEquals(badge, SeenBadge[i]) && ReferenceEquals(title, SeenTitle[i]) && picture == SeenPicture[i])
+                    {
+                        continue;
+                    }
+                    ref PhoneItem it = ref Items.Items[i];
+                    if (it.Kind == PhoneItemKind.Other)
+                    {
+                        it.Picture = Handle(picture);
+                    }
+                    Look(i, ref it);
+                    changed = true;
                 }
-                Look(i, ref it);
-                changed = true;
+                catch (Exception e)
+                {
+                    Spoiled(i, Buttons[i], e, ref Items.Items[i]);
+                    changed = true;
+                }
             }
             if (changed)
             {
@@ -149,6 +171,7 @@ namespace RealLifeOverhaul.Ui
         internal static void Forget()
         {
             Buttons.Clear();
+            Spoilt.Clear();
             Pictures.Clear();
             Items.Begin();
             Items.End(true);
@@ -164,6 +187,10 @@ namespace RealLifeOverhaul.Ui
             string title = TitleLabels[i] != null ? TitleLabels[i].text : null;
             it.Badge = on ? PhoneGridPager.BadgeCount(button) : 0;
             it.Title = !string.IsNullOrEmpty(title) ? title.Trim() : it.Kind == PhoneItemKind.Other ? UiText.T("reallife_phone_other_app") : button.name;
+            if (it.Kind == PhoneItemKind.Other && it.Picture <= 0)
+            {
+                it.Picture = UiForeignMark.Of(title, button.name);   // no picture of its own: the kit makes a neat one, its first letter in a hue of its own
+            }
             SeenBadgeOn[i] = on;
             SeenBadge[i] = badge;
             SeenTitle[i] = title;
@@ -173,6 +200,20 @@ namespace RealLifeOverhaul.Ui
         private static bool Same(ref PhoneItem a, ref PhoneItem b)
         {
             return a.Id == b.Id && a.Title == b.Title && a.Badge == b.Badge && a.Picture == b.Picture && a.Folder == b.Folder && a.First == b.First && a.Icon == b.Icon && a.Kind == b.Kind;
+        }
+
+        // A button another mod made threw as it was read (its words or its badge): said once with its mod's name, its tile left
+        // with its name and its kit mark and read no more, so one app's fault never takes the phone or the app grid with it.
+        private static void Spoiled(int i, Transform button, Exception e, ref PhoneItem it)
+        {
+            Spoilt.Add(i);
+            it.Title = it.Title ?? (button != null ? button.name : "?");
+            if (it.Kind == PhoneItemKind.Other && it.Picture <= 0)
+            {
+                it.Picture = UiForeignMark.Of(null, it.Id);
+            }
+            UiForeign.Note("phone", UiPieceKind.Fault, UiForeignGame.Blame(e) ?? (button != null ? button.name : "?"), e.GetType().Name + " reading the app " + it.Id,
+                "its tile is shown plainly and the rest of the phone goes on");
         }
 
         // A handle for a picture, the same for the same picture; 0 for none.

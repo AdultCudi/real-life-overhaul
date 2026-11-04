@@ -47,6 +47,20 @@ namespace RealLifeOverhaul.Ui
             return n;
         }
 
+        /// <summary>
+        /// Another mod's app as the kit draws it in the square box where a glyph would stand: its own picture when it has one (a
+        /// handle), else the mark the kit makes for it (<see cref="UiForeignMark"/>): its first letter in a hue of its own.
+        /// </summary>
+        public static void AppMark(UiScene s, UiAt at, float x, float y, float size, int picture)
+        {
+            if (picture > 0)
+            {
+                Picture(s, at, x, y, size, picture);
+                return;
+            }
+            TextMiddle(s, at, x, y, size, size, UiStyle.Hero, UiForeignMark.Tint(picture), UiForeignMark.Letter(picture), UiFlags.Centre);
+        }
+
         /// <summary>Another mod's picture by its handle in a square box, letterboxed as it was drawn; returns its item.</summary>
         public static int Picture(UiScene s, UiAt at, float x, float y, float size, int picture)
         {

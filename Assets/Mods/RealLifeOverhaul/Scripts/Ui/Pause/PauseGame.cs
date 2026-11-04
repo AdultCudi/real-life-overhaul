@@ -12,7 +12,7 @@ namespace RealLifeOverhaul.Ui
     /// reads it and writes the session's name into its field); its pieces and its own backing are hidden under the kit.
     /// The kit takes the keys over the paused world, and leaves the game's question boxes theirs.
     /// </summary>
-    internal sealed class PauseGame : IUiGameScreen, IUiGameWay
+    internal sealed class PauseGame : IUiGameScreen, IUiGameWay, IUiGameOffers
     {
         public string Id => PauseKits.PauseId;
 

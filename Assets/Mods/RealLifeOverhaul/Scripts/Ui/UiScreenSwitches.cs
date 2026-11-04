@@ -52,11 +52,11 @@ namespace RealLifeOverhaul.Ui
         /// <summary>A screen's switch label key.</summary>
         public static string LabelOf(string screenId) => LabelPrefix + screenId;
 
-        /// <summary>True unless the screen has a switch and it is off.</summary>
+        /// <summary>True unless the screen has a switch and it is off, or its breaker is open (the kit faulted on another mod's piece there).</summary>
         public static bool On(string screenId)
         {
             int at = IndexOf(screenId);
-            return at < 0 || Values[at];
+            return !UiBreaker.Tripped(screenId) && (at < 0 || Values[at]);   // a screen the kit faulted on for another mod's piece is the game's for the session
         }
 
         /// <summary>Sets a screen's switch by its option id (the options page's own); a change is told.</summary>

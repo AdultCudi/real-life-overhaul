@@ -69,6 +69,15 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             PhoneApp held = app;
+            for (int i = 0; i < Faces.Count; i++)
+            {
+                if (Faces[i].Id == def.KitScreen)
+                {
+                    Faces[i].Retire();   // the same screen on a new city's app: its old host is replaced, never piled up
+                    Faces.RemoveAt(i);
+                    break;
+                }
+            }
             Faces.Add(new UiGameHost(new ModAppScreen(def.Id, def.KitScreen, def.TitleKey, def.KitIcon, () => held.Root, def.Kit)));
         }
 
