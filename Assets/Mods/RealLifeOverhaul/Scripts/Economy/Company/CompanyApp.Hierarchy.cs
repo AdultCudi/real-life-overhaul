@@ -129,13 +129,13 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        private string KindWords(int kind)
+        internal static string KindWords(int kind)
         {
             return CompanyText.T(EscalationKeys[CompanyCatalogue.Clamp(kind, 0, EscalationKeys.Length - 1)]);
         }
 
         // Who holds an escalation now, in a few words.
-        private string HolderWords(Escalation e)
+        internal static string HolderWords(Escalation e)
         {
             if (!e.Open)
             {
@@ -148,13 +148,13 @@ namespace RealLifeOverhaul.Economy
             return CompanyText.T(e.Level == EscalationRules.LevelRegion ? "reallife_hier_held_region" : "reallife_hier_held_executive");
         }
 
-        private string PlaceWords(Escalation e)
+        internal static string PlaceWords(Escalation e)
         {
             if (e.Place.Length == 0)
             {
                 return CompanyText.T("reallife_pol_scope_company");
             }
-            ManagedPlace mp = _director.ManagedAt(e.Place);
+            ManagedPlace mp = CompanyDirector.Instance != null ? CompanyDirector.Instance.ManagedAt(e.Place) : null;
             return mp != null ? mp.Place.Name : e.Detail;
         }
 
@@ -310,51 +310,19 @@ namespace RealLifeOverhaul.Economy
             Refresh();
         }
 
-        // What an escalation says, by kind, from its figures (CompanyDirector.Escalations raises each).
+        // What an escalation says, by kind, from its figures (CompanyDirector.Escalations raises each): the words are the shared ones, which the kit's page writes too.
         private string EscalationWords(Escalation e)
         {
-            switch ((EscalationKind)e.Kind)
-            {
-                case EscalationKind.Gap:
-                    return CompanyText.T("reallife_hier_say_gap", "staff", e.A.ToString(), "keep", e.B.ToString(), "day", e.C.ToString());
-                case EscalationKind.Budget:
-                    return CompanyText.T("reallife_hier_say_budget", "spent", CompanyText.Money(e.A), "budget", CompanyText.Money(e.B));
-                case EscalationKind.Demand:
-                    return CompanyText.T(e.C == 1 ? "reallife_hier_say_demand_strike" : "reallife_hier_say_demand", "count", e.A.ToString(), "day", e.B.ToString());
-                case EscalationKind.Mood:
-                    return CompanyText.T("reallife_hier_say_mood", "standing", e.A.ToString(), "floor", e.B.ToString(), "count", e.C.ToString());
-                case EscalationKind.Wave:
-                    return CompanyText.T("reallife_hier_say_wave", "count", e.A.ToString(), "gone", e.B.ToString(), "leaving", e.C.ToString());
-                case EscalationKind.Kpi:
-                    return CompanyText.T("reallife_hier_say_kpi", "profit", CompanyText.Money(e.A), "target", CompanyText.Money(e.B), "days", e.C.ToString());
-                case EscalationKind.Exception:
-                    return CompanyText.T(e.C == 1 ? "reallife_hier_say_exception_offer" : "reallife_hier_say_exception", "name", e.Detail, "asked", CompanyText.Wage(e.A),
-                        "ceiling", CompanyText.Wage(e.B));
-                case EscalationKind.Proposal:
-                    return ProposalWords(e);
-                case EscalationKind.Lease:
-                    return CompanyText.Fill("reallife_hier_say_lease", "business", e.Detail, "days", e.C.ToString(), "rent", CompanyText.Money(_director.Monthly(e.B)),
-                        "share", CompanyText.Share(e.A > 0 ? (int)((e.B - e.A) * 1000L / e.A) : 0));
-                default:
-                    return string.Empty;
-            }
+            return EscalationSays(_director, e);
         }
 
-        // A proposal in words: the rule, from the step in force to the one proposed, and why (its figure C, by area).
-        private string ProposalWords(Escalation e)
-        {
-            int field = CompanyCatalogue.Clamp(e.A, 0, (int)PolicyField.Count - 1);
-            return CompanyText.Fill("reallife_hier_say_proposal", "who", e.Detail, "rule", RuleName((PolicyField)field), "from", StepWords((PolicyField)field, e.C),
-                "to", StepWords((PolicyField)field, e.B));
-        }
-
-        private string EntryWhat(HierarchyEntry entry)
+        internal static string EntryWhat(HierarchyEntry entry)
         {
             return CompanyText.T(PolicyCatalogue.Mod + "_hier_log_" + ((HierarchyLog)CompanyCatalogue.Clamp(entry.Kind, 0, (int)HierarchyLog.Reserve)).ToString().ToLowerInvariant());
         }
 
         // A log entry's detail in words, by kind (HierarchyLog says what each figure is).
-        private string EntryDetail(HierarchyEntry entry)
+        internal static string EntryDetail(HierarchyEntry entry)
         {
             switch ((HierarchyLog)entry.Kind)
             {
@@ -406,9 +374,9 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        private string PlaceName(string place)
+        internal static string PlaceName(string place)
         {
-            ManagedPlace mp = place != null && place.Length > 0 ? _director.ManagedAt(place) : null;
+            ManagedPlace mp = place != null && place.Length > 0 && CompanyDirector.Instance != null ? CompanyDirector.Instance.ManagedAt(place) : null;
             return mp != null ? mp.Place.Name : CompanyText.T("reallife_pol_scope_company");
         }
 
@@ -622,14 +590,15 @@ namespace RealLifeOverhaul.Economy
             box.Note(CompanyText.T(d.Way == PolicyWay.LooseUp ? "reallife_pol_way_up" : d.Way == PolicyWay.LooseDown ? "reallife_pol_way_down" : "reallife_pol_way_company"));
         }
 
-        private static string RuleName(PolicyField field)
+        internal static string RuleName(PolicyField field)
         {
             return CompanyText.T(PolicyCatalogue.Def(field).TextKey);
         }
 
         /// <summary>A rule's step in words, by what its number is (PolicyUnit).</summary>
-        internal string StepWords(PolicyField field, int step)
+        internal static string StepWords(PolicyField field, int step)
         {
+            int index = CompanyDirector.Instance != null ? CompanyDirector.Instance.Index : CompanyCatalogue.IndexStart;
             PolicyDef d = PolicyCatalogue.Def(field);
             if (step < 0)
             {
@@ -647,7 +616,7 @@ namespace RealLifeOverhaul.Economy
                         : CompanyText.T("reallife_pol_unit_days", "days", value.ToString());
                 case PolicyUnit.Money:
                     return field == PolicyField.ProfitTarget && value == PolicyCatalogue.ProfitNone ? CompanyText.T("reallife_pol_none")
-                        : CompanyText.Money(CompanyCatalogue.AtPrices(value, _director.Index));
+                        : CompanyText.Money(CompanyCatalogue.AtPrices(value, index));
                 case PolicyUnit.Choice:
                     return CompanyText.T(d.TextKey + "_" + step);
                 case PolicyUnit.OnOff:
@@ -657,7 +626,7 @@ namespace RealLifeOverhaul.Economy
                 case PolicyUnit.Percent:
                     return CompanyText.Percent(value);
                 case PolicyUnit.BudgetStep:
-                    return CompanyText.Money(CompanyCatalogue.AtPrices(ManagerCatalogue.Step(ManagerCatalogue.Budgets, value), _director.Index));
+                    return CompanyText.Money(CompanyCatalogue.AtPrices(ManagerCatalogue.Step(ManagerCatalogue.Budgets, value), index));
                 default:
                     return value.ToString();
             }
