@@ -41,6 +41,8 @@ namespace RealLifeOverhaul.Map25
         private readonly Mesh[] _landMesh, _roadMesh;
         private readonly int[][] _seen;
         private Mesh _water, _cone, _halo, _fog, _route, _ghost;
+        private readonly Map25Builder _routeBuilder = new Map25Builder(512);
+        private bool _routeOn;
         private Material _flat, _solid, _blend;
         private CommandBuffer _cmd;
         private readonly Matrix4x4[] _matrices = new Matrix4x4[3];   // the view, the GPU projection, the blocks' own
@@ -150,8 +152,8 @@ namespace RealLifeOverhaul.Map25
             _blend = Make(shader, "RealLife Map blend", 5, 10, 0, 8);
             _cmd = new CommandBuffer { name = "RealLife Map" };
             _water = Quad(minX - 20000f, WaterY, minZ - 20000f, maxX + 20000f, WaterY, maxZ + 20000f, Map25Palette.Water, 1f);
-            _cone = Fan(0f, 1.2f, 1f, 22f, new Map25Colour(0.31f, 0.72f, 0.92f), 0.20f);
-            _halo = Fan(0f, 1.2f, 0.25f, 180f, new Map25Colour(0.31f, 0.72f, 0.92f), 0.30f);
+            _cone = Fan(0f, 1.2f, 1f, 22f, new Map25Colour(0.31f, 0.72f, 0.92f), 0.17f);
+            _halo = Fan(0f, 1.2f, 0.25f, 180f, new Map25Colour(0.31f, 0.72f, 0.92f), 0.26f);
             _fog = FogQuad();
         }
 
@@ -283,19 +285,26 @@ namespace RealLifeOverhaul.Map25
         /// <summary>The route as two strips, a dark casing and the line over it (<paramref name="main"/>), and the same line again, faint, to be drawn over the blocks; null clears them.</summary>
         public void SetRoute(float[] x, float[] y, float[] z, int count, float half, float y0)
         {
-            DestroyMesh(ref _route);
-            DestroyMesh(ref _ghost);
             if (x == null || count < 2)
             {
+                _routeOn = false;
                 return;
             }
-            var b = new Map25Builder(Math.Max(64, count * 4));
-            Map25Ground.Ribbon(b, x, y, z, count, half * 1.45f, Map25Palette.RouteCasing, 1f, 0.10f, y0);
-            Map25Ground.Ribbon(b, x, y, z, count, half, Map25Palette.Route, 1f, 0.16f, y0);
-            _route = FromBuilder(b, "RealLife Map route");
-            var g = new Map25Builder(Math.Max(64, count * 2));
-            Map25Ground.Ribbon(g, x, y, z, count, half, Map25Palette.Route, 0.38f, 0.20f, y0);
-            _ghost = FromBuilder(g, "RealLife Map route ghost");
+            if (_route == null)
+            {
+                _route = new Mesh { name = "RealLife Map route", indexFormat = IndexFormat.UInt16 };
+                _ghost = new Mesh { name = "RealLife Map route ghost", indexFormat = IndexFormat.UInt16 };
+                _route.bounds = _ghost.bounds = new Bounds(Vector3.zero, new Vector3(1e6f, 1e6f, 1e6f));
+            }
+            // the two strips of the route are written into the same two meshes each time it changes: no mesh and no array is made
+            _routeBuilder.Clear();
+            Map25Ground.Ribbon(_routeBuilder, x, y, z, count, half * 1.45f, Map25Palette.RouteCasing, 1f, 0.10f, y0);
+            Map25Ground.Ribbon(_routeBuilder, x, y, z, count, half, Map25Palette.Route, 1f, 0.16f, y0);
+            Fill(_route, _routeBuilder.PositionData, _routeBuilder.ColourData, _routeBuilder.IndexData, _routeBuilder.Vertices, _routeBuilder.Indices);
+            _routeBuilder.Clear();
+            Map25Ground.Ribbon(_routeBuilder, x, y, z, count, half, Map25Palette.Route, 0.38f, 0.20f, y0);
+            Fill(_ghost, _routeBuilder.PositionData, _routeBuilder.ColourData, _routeBuilder.IndexData, _routeBuilder.Vertices, _routeBuilder.Indices);
+            _routeOn = _routeBuilder.Indices > 0;
         }
 
         /// <summary>Writes building <paramref name="hull"/>'s colours again in every detail set, as the city now tints it.</summary>
@@ -393,7 +402,7 @@ namespace RealLifeOverhaul.Map25
                     cmd.DrawMesh(blocks[k], rise, _solid, 0, 0);
                 }
             }
-            if (_route != null)
+            if (_routeOn)
             {
                 cmd.DrawMesh(_route, Matrix4x4.identity, _solid, 0, 0);
                 cmd.DrawMesh(_ghost, Matrix4x4.identity, _blend, 0, 0);

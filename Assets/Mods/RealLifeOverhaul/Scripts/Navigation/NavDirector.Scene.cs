@@ -1,5 +1,6 @@
 using System;
 using Localizor;
+using RealLifeOverhaul.Map25;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Nav
@@ -15,6 +16,9 @@ namespace RealLifeOverhaul.Nav
         private readonly NavScene _scene = new NavScene();
         private NavMap25 _map25;
         private bool _map25GaveUp;
+        private string[] _roadName;
+        private int _roadAt;
+        private bool _namesMade;
 
         // Whether the minimap's base is wanted for the 2.5D map, though the flat picture is not.
         private bool SceneWantsBase => (Settings.Map25 && !_voogle) || (Settings.Minimap25 && Settings.Minimap);
@@ -59,6 +63,37 @@ namespace RealLifeOverhaul.Nav
                 UnityEngine.Object.Destroy(_map25.gameObject);
                 _map25 = null;
             }
+            if (full && _map25 != null && !_namesMade)
+            {
+                NameRoads();
+            }
+        }
+
+        // The streets' names for the full map, two roads a slow tick (the game's own are painted on the roads the picture covers). Each road's
+        // name is the graph's (a vote of the doors beside it), found once and kept; the places of the labels are made when the last is in.
+        private void NameRoads()
+        {
+            if (!_graph.Finished || _graph.Drive == null)
+            {
+                return;
+            }
+            if (_roadName == null)
+            {
+                _roadName = new string[_graph.Roads];
+                _roadAt = 0;
+            }
+            for (int n = 0; n < 2 && _roadAt < _roadName.Length; n++)
+            {
+                _roadName[_roadAt] = _graph.StreetOf(_roadAt);
+                _roadAt++;
+            }
+            if (_roadAt >= _roadName.Length)
+            {
+                RouteSearch drive = _graph.Drive;
+                _map25.Names(Map25Names.Anchors(_graph.Road, drive.X, drive.Z, _graph.Usable, _graph.Junction, drive.Count, _roadName));
+                _roadName = null;
+                _namesMade = true;
+            }
         }
 
         // The map opened or shut: the 2.5D picture with it (the game's own camera has come to rest only later; the picture waits for it).
@@ -84,6 +119,9 @@ namespace RealLifeOverhaul.Nav
                 _map25 = null;
             }
             _map25GaveUp = false;
+            _namesMade = false;
+            _roadName = null;
+            _roadAt = 0;
             if (_scene.State != NavScene.Stage.Idle)
             {
                 _scene.Dispose();
@@ -91,6 +129,7 @@ namespace RealLifeOverhaul.Nav
         }
 
         private string _districtId, _districtText;
+        private float _stripX = float.MaxValue, _stripZ;
 
         // On the slow tick while the minimap shows its 2.5D picture: the district's name (the game's, in capitals) and the street under the player.
         private void SceneStrip()
@@ -104,7 +143,15 @@ namespace RealLifeOverhaul.Nav
             {
                 _districtId = id;
                 _districtText = string.IsNullOrEmpty(id) ? null : id.GetLocalization().ToUpperInvariant();
+                _stripX = float.MaxValue;   // the district changed: the strip is written again
             }
+            float dx = _px - _stripX, dz = _pz - _stripZ;
+            if (dx * dx + dz * dz < 36f)
+            {
+                return;   // the street is looked for again after six metres, not on every tick
+            }
+            _stripX = _px;
+            _stripZ = _pz;
             _hud.SceneStrip(_districtText, _graph.Ready ? _graph.StreetNear(_px, _py, _pz) : null);
         }
 

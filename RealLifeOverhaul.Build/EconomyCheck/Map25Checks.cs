@@ -19,8 +19,91 @@ internal static partial class Program
         Map25TintChecks(city);
         Map25GroundChecks();
         Map25FrameChecks(city);
+        Map25NameChecks();
         Map25MinimapChecks();
         Map25TextChecks();
+    }
+
+    // The street names on the full map: a label every 260 m or so along each named road, on its middle line, running the way the road runs.
+    private static void Map25NameChecks()
+    {
+        var x = new List<float>();
+        var z = new List<float>();
+        var road = new List<int>();
+        for (int lane = -1; lane <= 1; lane++)
+        {
+            for (int k = 0; k <= 100; k++)
+            {
+                x.Add(lane * 3f);
+                z.Add(k * 10f);
+                road.Add(0);
+            }
+        }
+        for (int lane = 0; lane < 2; lane++)
+        {
+            for (int k = 0; k <= 30; k++)
+            {
+                x.Add(k * 10f);
+                z.Add(500f + (lane == 0 ? -2f : 2f));
+                road.Add(1);
+            }
+        }
+        for (int k = 0; k <= 30; k++)
+        {
+            x.Add(400f + k * 10f);
+            z.Add(100f);
+            road.Add(2);
+        }
+        for (int k = 0; k <= 4; k++)
+        {
+            x.Add(900f + k * 5f);
+            z.Add(900f);
+            road.Add(3);
+        }
+        int n = x.Count;
+        var usable = new bool[n];
+        var junction = new bool[n];
+        for (int i = 0; i < n; i++)
+        {
+            usable[i] = true;
+        }
+        string[] names = { "Fifth Avenue", "Fortieth Street", null, "Alley" };
+        Map25Names found = Map25Names.Anchors(road.ToArray(), x.ToArray(), z.ToArray(), usable, junction, n, names);
+        int avenue = 0, street = 0, other = 0;
+        bool onTheMiddle = true, ways = true;
+        for (int i = 0; i < found.Count; i++)
+        {
+            if (found.Name[i] == "Fifth Avenue")
+            {
+                avenue++;
+                onTheMiddle &= Math.Abs(found.X[i]) < 0.5f;
+                ways &= Math.Abs(found.DirZ[i]) > 0.99f;
+            }
+            else if (found.Name[i] == "Fortieth Street")
+            {
+                street++;
+                onTheMiddle &= Math.Abs(found.Z[i] - 500f) < 0.5f;
+                ways &= Math.Abs(found.DirX[i]) > 0.99f;
+            }
+            else
+            {
+                other++;
+            }
+        }
+        Check(avenue == 3 && street == 1 && other == 0, "2.5D map: a named road has a label every 260 m or so, an unnamed one and one under 36 m none (" + avenue + " on the avenue, " + street + " on the street, " + other + " elsewhere)");
+        Check(onTheMiddle && ways, "2.5D map: a label stands on its road's middle line, between its lanes, and runs the way the road runs");
+        bool spaced = found.Count == 4;
+        for (int i = 0; i < found.Count && spaced; i++)
+        {
+            for (int j = i + 1; j < found.Count; j++)
+            {
+                if (found.Name[i] == found.Name[j] && found.Name[i] == "Fifth Avenue")
+                {
+                    spaced &= Math.Abs(found.Z[i] - found.Z[j]) > 250f;
+                }
+            }
+        }
+        Check(spaced, "2.5D map: two labels of one avenue are more than 250 m apart");
     }
 
     // The minimap's place, order and avoid rect are the HUD fix's (Navigation/NavPlaceRules, UiHostRules.MinimapOrder, UiMinimapChecks); the
@@ -86,7 +169,7 @@ internal static partial class Program
         bool halves = true;
         foreach (float sample in new[] { 0f, 0.0123f, 0.25f, 0.5f, 0.75f, 1f, 0.00008f, 0.9995f })
         {
-            float back = Map25Math.FromHalf(Map25Math.Half(sample));
+            float back = FromHalf(Map25Math.Half(sample));
             halves &= Math.Abs(back - sample) <= Math.Max(sample * 0.001f, 0.00001f);
         }
         Check(halves && Map25Math.Half(1f) == 0x3C00 && Map25Math.Half(0.5f) == 0x3800, "2.5D map: half floats hold a colour to a tenth of a per cent (8 bit linear would band the darks)");
@@ -107,19 +190,6 @@ internal static partial class Program
         view.Project(0f, 0f, 130f, out _, out _);
         bool near = view.Project(130f, 0f, 0f, out float ue, out _);
         Check(near && ue > 0.8f && ue < 1.3f, "2.5D map: the metres across the picture are the metres asked for, at the target");
-        bool round = true;
-        foreach (float[] spot in new[] { new[] { 0.2f, 0.3f }, new[] { 0.8f, 0.7f }, new[] { 0.5f, 0.5f } })
-        {
-            if (view.Ground(spot[0], spot[1], 0f, out float gx, out float gz) && view.Project(gx, 0f, gz, out float pu, out float pv))
-            {
-                round &= Math.Abs(pu - spot[0]) < 0.002f && Math.Abs(pv - spot[1]) < 0.002f;
-            }
-            else
-            {
-                round = false;
-            }
-        }
-        Check(round, "2.5D map: a spot of the picture and the ground it shows go back and forth");
         var chunk = new Map25Chunk { MinX = -10, MaxX = 10, MinY = 0, MaxY = 30, MinZ = -10, MaxZ = 10 };
         var away = new Map25Chunk { MinX = 5000, MaxX = 5020, MinY = 0, MaxY = 30, MinZ = 5000, MaxZ = 5020 };
         view.Look(0f, 0f, 0f, 0f, 40f, 260f, 1f);
@@ -163,7 +233,7 @@ internal static partial class Program
                 {
                     inside &= !float.IsNaN(chunk.Pos[i * 3]) && !float.IsNaN(chunk.Pos[i * 3 + 1]) && !float.IsNaN(chunk.Pos[i * 3 + 2])
                               && chunk.Pos[i * 3] >= chunk.MinX - 0.001f && chunk.Pos[i * 3] <= chunk.MaxX + 0.001f && chunk.Pos[i * 3 + 1] >= chunk.MinY - 0.001f && chunk.Pos[i * 3 + 1] <= chunk.MaxY + 0.001f;
-                    float r = Map25Math.FromHalf(chunk.Col[i * 4]), g = Map25Math.FromHalf(chunk.Col[i * 4 + 1]), b = Map25Math.FromHalf(chunk.Col[i * 4 + 2]), a = Map25Math.FromHalf(chunk.Col[i * 4 + 3]);
+                    float r = FromHalf(chunk.Col[i * 4]), g = FromHalf(chunk.Col[i * 4 + 1]), b = FromHalf(chunk.Col[i * 4 + 2]), a = FromHalf(chunk.Col[i * 4 + 3]);
                     bright &= a == 1f && r >= 0f && b >= 0f && !(r > 0.9f && g > 0.9f && b > 0.9f);   // no vertex is white or light
                 }
                 for (int i = 0; i < chunk.Indices && inside; i++)
@@ -228,6 +298,19 @@ internal static partial class Program
         gen.Generate(b1, one, 0, Map25Detail.Small);
         int small = b1.Vertices;
         Check(tall > low * 2 && small < tall, "2.5D map: a tower has more bands and a setback than a low building, and the minimap's detail has fewer than the full map's (" + tall + ", " + low + " and " + small + " vertices)");
+    }
+
+    // The number a half float's bits stand for (the check's own: the mod only writes them).
+    private static float FromHalf(ushort half)
+    {
+        int sign = (half & 0x8000) != 0 ? -1 : 1;
+        int exponent = (half >> 10) & 0x1F;
+        int mantissa = half & 0x3FF;
+        if (exponent == 0)
+        {
+            return sign * mantissa * (float)Math.Pow(2.0, -24);
+        }
+        return exponent == 31 ? (mantissa == 0 ? sign * float.PositiveInfinity : float.NaN) : sign * (1f + mantissa / 1024f) * (float)Math.Pow(2.0, exponent - 15);
     }
 
     private static bool Same(float[] a, float[] b, int count)

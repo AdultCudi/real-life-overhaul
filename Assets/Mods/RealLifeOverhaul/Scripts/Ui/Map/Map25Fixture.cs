@@ -14,16 +14,6 @@ namespace RealLifeOverhaul.Map25
         public const float AvenueGap = 250f, StreetGap = 92f, AvenueWidth = 30f, StreetWidth = 20f;
         public const int Avenues = 9, Streets = 8;
 
-        public sealed class Poi
-        {
-            public float X, Z;
-            public int Building;
-            public int Kind;           // 0 yours, 1 rival, 2 for rent, 3 job, 4 destination
-            public string Name, Sub;
-        }
-
-        public static readonly List<Poi> Pois = new List<Poi>();
-
         /// <summary>The route the previews follow: north along an avenue, east along a street, north again, west to the door.</summary>
         public static readonly float[] RouteX, RouteZ;
 
@@ -48,11 +38,6 @@ namespace RealLifeOverhaul.Map25
                 x.Add(x0 + (x1 - x0) * s / steps);
                 z.Add(z0 + (z1 - z0) * s / steps);
             }
-        }
-
-        public static void AvenueX(int i, out float x)
-        {
-            x = (i - Avenues / 2) * AvenueGap;
         }
 
         /// <summary>The buildings: every lot of every block, in two rows a block, with heights tallest near the middle.</summary>
@@ -88,7 +73,7 @@ namespace RealLifeOverhaul.Map25
                                 w = x1 - 1f - x;
                             }
                             float r = rng.Float();
-                            float h = r < 0.10f + 0.28f * core ? rng.Range(55f, 140f) : r < 0.52f ? rng.Range(24f, 55f) : rng.Range(9f, 24f);
+                            float h = r < 0.06f + 0.22f * core ? rng.Range(48f, 100f) : r < 0.50f ? rng.Range(22f, 46f) : rng.Range(9f, 22f);
                             // anticlockwise from above: x east, z north
                             hx.Add(x); hz.Add(za);
                             hx.Add(x + w); hz.Add(za);

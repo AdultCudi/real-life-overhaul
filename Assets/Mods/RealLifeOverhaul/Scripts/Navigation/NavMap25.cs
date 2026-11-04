@@ -50,6 +50,7 @@ namespace RealLifeOverhaul.Nav
         private static readonly int SelectionColour = Shader.PropertyToID("_SelectionColor");
         private float _alpha;
         private bool _masked, _dirty = true, _failed, _said;
+        private readonly NavMapNames _streets = new NavMapNames();
         private float _px, _py, _pz, _heading;
         private bool _hasPlayer;
         private float _flatX, _flatZ = 1f;
@@ -103,6 +104,13 @@ namespace RealLifeOverhaul.Nav
                 }
                 gameObject.SetActive(open);
             }
+        }
+
+        /// <summary>The street names to write on the picture, once every road has its name.</summary>
+        public void Names(Map25Names names)
+        {
+            _streets.Set(names);
+            _dirty = true;
         }
 
         /// <summary>Where the player is, for the cone and the marker (on the slow tick).</summary>
@@ -278,6 +286,8 @@ namespace RealLifeOverhaul.Nav
                 ConeRadius = Mathf.Max(30f, map.cityMapCam.distance * 0.3f), Fog = pitch < 70f
             };
             _scene.Scene.Draw(_target, _view, frame, 0);
+            float scale = _rect.lossyScale.x > 0.0001f ? _rect.lossyScale.x : 1f;
+            _streets.Place(_rect, _view, width, height, 1f / scale, 0.3f);
             PlacePlayer();
         }
 
@@ -447,6 +457,7 @@ namespace RealLifeOverhaul.Nav
             Standing = false;
             _alpha = 0f;
             _image.enabled = false;
+            _streets.Hide();
             if (_player != null && _player.gameObject.activeSelf)
             {
                 _player.gameObject.SetActive(false);

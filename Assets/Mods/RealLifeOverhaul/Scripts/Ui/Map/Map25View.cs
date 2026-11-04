@@ -22,9 +22,6 @@ namespace RealLifeOverhaul.Map25
         public float Rise = 1f;
         public float PitchDegrees = 90f;
 
-        private readonly float[] _inverse = new float[16];
-        private bool _inverseKnown;
-
         /// <summary>
         /// The minimap's camera: looking at a point on the ground, <paramref name="heading"/> degrees clockwise from north up the
         /// picture, tipped <paramref name="pitch"/> degrees from the horizon (90 looks straight down), so that <paramref name="across"/>
@@ -57,7 +54,6 @@ namespace RealLifeOverhaul.Map25
         {
             Map25Math.Multiply(Projection, View, ViewProjection);
             Map25Math.Planes(ViewProjection, Planes);
-            _inverseKnown = false;
         }
 
         /// <summary>How tall the blocks stand at a pitch: 1 at 60 degrees or less, the least at 80 or more, between them eased.</summary>
@@ -85,21 +81,6 @@ namespace RealLifeOverhaul.Map25
         public bool Project(float x, float y, float z, out float u, out float v)
         {
             return Map25Math.Project(ViewProjection, x, y, z, out u, out v);
-        }
-
-        /// <summary>The ground, at <paramref name="y"/>, a spot of the picture shows; false when the ray misses it.</summary>
-        public bool Ground(float u, float v, float y, out float x, out float z)
-        {
-            if (!_inverseKnown)
-            {
-                _inverseKnown = Map25Math.Invert(ViewProjection, _inverse);
-                if (!_inverseKnown)
-                {
-                    x = z = 0f;
-                    return false;
-                }
-            }
-            return Map25Math.Unproject(_inverse, u, v, y, out x, out z);
         }
 
         /// <summary>Whether a chunk's box (with its blocks standing <see cref="Rise"/> as tall) is in view.</summary>

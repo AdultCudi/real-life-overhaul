@@ -12,14 +12,6 @@ namespace RealLifeOverhaul.Map25
     {
         public const float Deg = 0.017453292f;
 
-        public static void Identity(float[] m)
-        {
-            for (int i = 0; i < 16; i++)
-            {
-                m[i] = i % 5 == 0 ? 1f : 0f;
-            }
-        }
-
         /// <summary>result = a * b (b is applied first). The result may not be a or b.</summary>
         public static void Multiply(float[] a, float[] b, float[] result)
         {
@@ -132,78 +124,6 @@ namespace RealLifeOverhaul.Map25
             return true;
         }
 
-        /// <summary>The ground point (at height <paramref name="y"/>) seen at a place on the picture; false when the ray does not reach it.</summary>
-        public static bool Unproject(float[] viewProjectionInverse, float u, float v, float y, out float x, out float z)
-        {
-            float nx = u * 2f - 1f, ny = v * 2f - 1f;
-            float ax, ay, az, aw, bx, by, bz, bw;
-            Transform(viewProjectionInverse, nx, ny, -1f, out ax, out ay, out az, out aw);
-            Transform(viewProjectionInverse, nx, ny, 1f, out bx, out by, out bz, out bw);
-            if (Math.Abs(aw) < 1e-9f || Math.Abs(bw) < 1e-9f)
-            {
-                x = z = 0f;
-                return false;
-            }
-            ax /= aw; ay /= aw; az /= aw;
-            bx /= bw; by /= bw; bz /= bw;
-            float dy = by - ay;
-            if (Math.Abs(dy) < 1e-6f)
-            {
-                x = z = 0f;
-                return false;
-            }
-            float t = (y - ay) / dy;
-            x = ax + (bx - ax) * t;
-            z = az + (bz - az) * t;
-            return t > 0f;
-        }
-
-        private static void Transform(float[] m, float x, float y, float z, out float ox, out float oy, out float oz, out float ow)
-        {
-            ox = m[0] * x + m[4] * y + m[8] * z + m[12];
-            oy = m[1] * x + m[5] * y + m[9] * z + m[13];
-            oz = m[2] * x + m[6] * y + m[10] * z + m[14];
-            ow = m[3] * x + m[7] * y + m[11] * z + m[15];
-        }
-
-        /// <summary>The inverse of a general 4 x 4 matrix; false when it has none.</summary>
-        public static bool Invert(float[] m, float[] inverse)
-        {
-            double[] a = new double[16];
-            for (int i = 0; i < 16; i++)
-            {
-                a[i] = m[i];
-            }
-            double[] inv = new double[16];
-            inv[0] = a[5] * a[10] * a[15] - a[5] * a[11] * a[14] - a[9] * a[6] * a[15] + a[9] * a[7] * a[14] + a[13] * a[6] * a[11] - a[13] * a[7] * a[10];
-            inv[4] = -a[4] * a[10] * a[15] + a[4] * a[11] * a[14] + a[8] * a[6] * a[15] - a[8] * a[7] * a[14] - a[12] * a[6] * a[11] + a[12] * a[7] * a[10];
-            inv[8] = a[4] * a[9] * a[15] - a[4] * a[11] * a[13] - a[8] * a[5] * a[15] + a[8] * a[7] * a[13] + a[12] * a[5] * a[11] - a[12] * a[7] * a[9];
-            inv[12] = -a[4] * a[9] * a[14] + a[4] * a[10] * a[13] + a[8] * a[5] * a[14] - a[8] * a[6] * a[13] - a[12] * a[5] * a[10] + a[12] * a[6] * a[9];
-            inv[1] = -a[1] * a[10] * a[15] + a[1] * a[11] * a[14] + a[9] * a[2] * a[15] - a[9] * a[3] * a[14] - a[13] * a[2] * a[11] + a[13] * a[3] * a[10];
-            inv[5] = a[0] * a[10] * a[15] - a[0] * a[11] * a[14] - a[8] * a[2] * a[15] + a[8] * a[3] * a[14] + a[12] * a[2] * a[11] - a[12] * a[3] * a[10];
-            inv[9] = -a[0] * a[9] * a[15] + a[0] * a[11] * a[13] + a[8] * a[1] * a[15] - a[8] * a[3] * a[13] - a[12] * a[1] * a[11] + a[12] * a[3] * a[9];
-            inv[13] = a[0] * a[9] * a[14] - a[0] * a[10] * a[13] - a[8] * a[1] * a[14] + a[8] * a[2] * a[13] + a[12] * a[1] * a[10] - a[12] * a[2] * a[9];
-            inv[2] = a[1] * a[6] * a[15] - a[1] * a[7] * a[14] - a[5] * a[2] * a[15] + a[5] * a[3] * a[14] + a[13] * a[2] * a[7] - a[13] * a[3] * a[6];
-            inv[6] = -a[0] * a[6] * a[15] + a[0] * a[7] * a[14] + a[4] * a[2] * a[15] - a[4] * a[3] * a[14] - a[12] * a[2] * a[7] + a[12] * a[3] * a[6];
-            inv[10] = a[0] * a[5] * a[15] - a[0] * a[7] * a[13] - a[4] * a[1] * a[15] + a[4] * a[3] * a[13] + a[12] * a[1] * a[7] - a[12] * a[3] * a[5];
-            inv[14] = -a[0] * a[5] * a[14] + a[0] * a[6] * a[13] + a[4] * a[1] * a[14] - a[4] * a[2] * a[13] - a[12] * a[1] * a[6] + a[12] * a[2] * a[5];
-            inv[3] = -a[1] * a[6] * a[11] + a[1] * a[7] * a[10] + a[5] * a[2] * a[11] - a[5] * a[3] * a[10] - a[9] * a[2] * a[7] + a[9] * a[3] * a[6];
-            inv[7] = a[0] * a[6] * a[11] - a[0] * a[7] * a[10] - a[4] * a[2] * a[11] + a[4] * a[3] * a[10] + a[8] * a[2] * a[7] - a[8] * a[3] * a[6];
-            inv[11] = -a[0] * a[5] * a[11] + a[0] * a[7] * a[9] + a[4] * a[1] * a[11] - a[4] * a[3] * a[9] - a[8] * a[1] * a[7] + a[8] * a[3] * a[5];
-            inv[15] = a[0] * a[5] * a[10] - a[0] * a[6] * a[9] - a[4] * a[1] * a[10] + a[4] * a[2] * a[9] + a[8] * a[1] * a[6] - a[8] * a[2] * a[5];
-            double det = a[0] * inv[0] + a[1] * inv[4] + a[2] * inv[8] + a[3] * inv[12];
-            if (Math.Abs(det) < 1e-30)
-            {
-                return false;
-            }
-            det = 1.0 / det;
-            for (int i = 0; i < 16; i++)
-            {
-                inverse[i] = (float)(inv[i] * det);
-            }
-            return true;
-        }
-
         /// <summary>The nearest half float of a number, as its sixteen bits (the vertex colours are kept in half floats: 8 bit linear bands the darks).</summary>
         public static ushort Half(float value)
         {
@@ -236,23 +156,6 @@ namespace RealLifeOverhaul.Map25
                 half++;
             }
             return (ushort)half;
-        }
-
-        /// <summary>The number a half float's bits stand for.</summary>
-        public static float FromHalf(ushort half)
-        {
-            int sign = (half & 0x8000) != 0 ? -1 : 1;
-            int exponent = (half >> 10) & 0x1F;
-            int mantissa = half & 0x3FF;
-            if (exponent == 0)
-            {
-                return sign * mantissa * (float)Math.Pow(2.0, -24);
-            }
-            if (exponent == 31)
-            {
-                return mantissa == 0 ? sign * float.PositiveInfinity : float.NaN;
-            }
-            return sign * (1f + mantissa / 1024f) * (float)Math.Pow(2.0, exponent - 15);
         }
 
         /// <summary>The engine's own conversion of a colour channel from how it is written (sRGB) to light (linear).</summary>

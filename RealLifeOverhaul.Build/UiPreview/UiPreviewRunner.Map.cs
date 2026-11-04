@@ -30,8 +30,8 @@ public static class Map25Preview
 
     public static readonly Look[] Looks =
     {
-        new Look { Name = "map25_full_flat", Width = 1920, Height = 1080, Heading = 0f, Pitch = 90f, Across = 330f, Player = true, Route = true },
-        new Look { Name = "map25_full_tilt", Width = 1920, Height = 1080, Heading = -16f, Pitch = 47f, Across = 300f, Player = true, Route = true, Fog = true },
+        new Look { Name = "map25_full_flat", Width = 1920, Height = 1080, Heading = 0f, Pitch = 90f, Across = 560f, Player = true, Route = true },
+        new Look { Name = "map25_full_tilt", Width = 1920, Height = 1080, Heading = -16f, Pitch = 47f, Across = 380f, Player = true, Route = true, Fog = true },
         new Look { Name = "map25_mini_flat", Width = 600, Height = 600, Heading = 0f, Pitch = 90f, Across = 260f, Player = true, Route = true },
         new Look { Name = "map25_mini_tilt", Width = 600, Height = 600, Heading = 0f, Pitch = 40f, Across = 260f, Player = true, Route = true, Fog = true },
         new Look { Name = "map25_close_a", Width = 1920, Height = 1080, Heading = 20f, Pitch = 38f, Across = 70f, Building = 7 },

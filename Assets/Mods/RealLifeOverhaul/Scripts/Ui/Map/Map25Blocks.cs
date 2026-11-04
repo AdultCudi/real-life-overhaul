@@ -94,8 +94,8 @@ namespace RealLifeOverhaul.Map25
     {
         private const int Most = 32;                 // corners of an outline we take
         private const float Floor = 3.0f;            // metres of the shop's ground floor band
-        private const float Awning = 0.25f;          // metres an awning stands out: little, so that from above a shop front has no bar beside it
-        private const float WindowShare = 0.12f;     // how far a window band goes to the window colour
+        private const float Awning = 0.06f;          // metres an awning stands out: hardly, so that from above a shop front has no bar beside it
+        private const float WindowShare = 0.16f;     // how far a window band goes to the window colour
 
         private readonly float[] _x = new float[Most], _z = new float[Most];
         private readonly float[] _qx = new float[Most], _qz = new float[Most];

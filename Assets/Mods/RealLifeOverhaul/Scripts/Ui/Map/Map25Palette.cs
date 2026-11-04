@@ -44,12 +44,9 @@ namespace RealLifeOverhaul.Map25
     public static class Map25Palette
     {
         public static readonly Map25Colour Water = Map25Colour.Hex(0x0F2233);
-        public static readonly Map25Colour Ground = Map25Colour.Hex(0x15202B);
         public static readonly Map25Colour Block = Map25Colour.Hex(0x1D2B38);
         public static readonly Map25Colour Avenue = Map25Colour.Hex(0x2F4357);
         public static readonly Map25Colour Street = Map25Colour.Hex(0x2A3D50);
-        public static readonly Map25Colour Lane = Map25Colour.Hex(0x1D2B38);
-        public static readonly Map25Colour Park = Map25Colour.Hex(0x1D3A35);
         public static readonly Map25Colour Window = Map25Colour.Hex(0xA9C0D3);
         public static readonly Map25Colour Lit = Map25Colour.Hex(0xF6D98A);
         public static readonly Map25Colour Ink = Map25Colour.Hex(0x050B11);

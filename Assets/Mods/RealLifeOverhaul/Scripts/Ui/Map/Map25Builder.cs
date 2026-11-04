@@ -60,6 +60,11 @@ namespace RealLifeOverhaul.Map25
         public int Vertices => _v;
         public int Indices => _i;
 
+        /// <summary>The arrays as they are, longer than what was written: for a mesh that is written again and again (the route), so nothing is copied.</summary>
+        public float[] PositionData => _pos;
+        public ushort[] ColourData => _col;
+        public ushort[] IndexData => _idx;
+
         public void Clear()
         {
             _v = 0;
