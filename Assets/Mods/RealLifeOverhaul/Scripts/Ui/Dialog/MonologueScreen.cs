@@ -66,7 +66,7 @@ namespace RealLifeOverhaul.Ui
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
             Build();
-            UiMonologue.Lay(s, _m, frame, dark);
+            UiMonologue.Lay(s, _m, frame, dark, keys);
             _dirty = false;
         }
 
@@ -94,13 +94,15 @@ namespace RealLifeOverhaul.Ui
         {
         }
 
-        public bool Back() => false;
+        // Cancel is Skip while lines wait after this one (it ends this line and each as it comes), else it closes this line.
+        public bool Back() => Press(string.IsNullOrEmpty(_m.Skip) ? UiMonologue.CloseCommand : UiMonologue.SkipCommand, 0);
 
         public void Tab(int step)
         {
         }
 
-        public bool Act(UiAction action) => false;
+        // Interact is Next: this line closed as the game's own button closes it.
+        public bool Act(UiAction action) => action == UiAction.Alt && Press(UiMonologue.CloseCommand, 0);
 
         public void Reveal(int list, int index)
         {

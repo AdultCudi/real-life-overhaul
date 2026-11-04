@@ -379,7 +379,8 @@ namespace RealLifeOverhaul
             entry.OnConfirm = () => When(kind, venue, first, false);
             entry.SecondOptionTextOverride = "reallife_social_btn_other_idea";
             entry.OnSecondOption = () => Plans(at + 1, 0);
-            return entry;
+            entry.Says(DialogButton.Confirm, "reallife_social_says_minutes", "minutes", def.Minutes.ToString());
+            return def.Cost > 0 ? entry.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_on_the_day", "amount", SocialLife.Money(def.Cost)) : entry;   // each pays their share at the outing
         }
 
         // Every place of the kind nearby is shut at every free hour of theirs looked at: a walk instead, said as such, with
@@ -576,7 +577,8 @@ namespace RealLifeOverhaul
             };
             entry.SecondOptionTextOverride = "reallife_social_btn_not_this_time";
             entry.OnSecondOption = Declined;
-            return entry;
+            entry.Says(DialogButton.Confirm, "reallife_social_says_minutes", "minutes", def.Minutes.ToString());
+            return def.Cost > 0 ? entry.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_on_the_day", "amount", SocialLife.Money(def.Cost)) : entry;
         }
 
         // Their invitation turned down, the outing they asked for or the walk they put forward in its place: the same small
