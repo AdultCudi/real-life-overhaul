@@ -13,7 +13,7 @@ namespace RealLifeOverhaul.Ui
         /// it means under it), a switch, and the buttons at the foot, the main one last. Lines that would not fit the height
         /// given are left out, never spilled. Returns the height the card takes; draws nothing when <paramref name="draw"/> is false.
         /// </summary>
-        private static float Card(UiScene s, UiAt at, UtilitiesCard c, float x, float y, float w, float limit, int switchCommand, int lessCommand, int moreCommand,
+        internal static float Card(UiScene s, UiAt at, UtilitiesCard c, float x, float y, float w, float limit, int switchCommand, int lessCommand, int moreCommand,
             IUiKeys keys, bool band, bool draw)
         {
             float pad = band ? UiTokens.S4 : 0f;
@@ -99,7 +99,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>The height a card takes at a width with everything it holds.</summary>
-        private static float CardHeight(UtilitiesCard c, float w, IUiKeys keys, bool band)
+        internal static float CardHeight(UtilitiesCard c, float w, IUiKeys keys, bool band)
         {
             float pad = band ? UiTokens.S4 : 0f, iw = w - pad * 2f;
             float cy = pad;
@@ -119,7 +119,7 @@ namespace RealLifeOverhaul.Ui
             return UiDraw.Snap(cy + pad);
         }
 
-        private static float ChipWidth(string words) => UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(words, UiStyle.SmallStrong) + UiTokens.S1);
+        internal static float ChipWidth(string words) => UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(words, UiStyle.SmallStrong) + UiTokens.S1);
 
         // A line's height: a row of a label and its value, or a sentence wrapped to four lines at most.
         private static float LineHeight(UtilitiesLine l, float w)

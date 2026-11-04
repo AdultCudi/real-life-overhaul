@@ -111,6 +111,13 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\MoneyPages.cs" Link="Mod\Money\MoneyPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\MoneyHost.cs" Link="Mod\Money\MoneyHost.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\FinanceScreen.cs" Link="Mod\Money\FinanceScreen.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\FinanceFacts.cs" Link="Mod\Money\FinanceFacts.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\FinanceRules.cs" Link="Mod\Money\FinanceRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\FinanceKitTables.cs" Link="Mod\Money\FinanceKitTables.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\FinanceFace.cs" Link="Mod\Money\FinanceFace.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\FinanceFace.Overview.cs" Link="Mod\Money\FinanceFace.Overview.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\FinanceFace.Borrow.cs" Link="Mod\Money\FinanceFace.Borrow.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\FinanceFace.Lists.cs" Link="Mod\Money\FinanceFace.Lists.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\BanksScreen.cs" Link="Mod\Money\BanksScreen.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\OwnBankScreen.cs" Link="Mod\Money\OwnBankScreen.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\UtilitiesScreen.cs" Link="Mod\Money\UtilitiesScreen.cs" />
@@ -804,6 +811,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\TypingRules.cs" Link="Mod\TypingRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiScreens.*.cs" Link="Mod\%(Filename)%(Extension)" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\IUiScreen.cs" Link="Mod\IUiScreen.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\IUiTyping.cs" Link="Mod\IUiTyping.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiGalleryScreen.cs" Link="Mod\UiGalleryScreen.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.EmptyState.cs" Link="Mod\UiDraw.EmptyState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Fields.cs" Link="Mod\UiDraw.Fields.cs" />

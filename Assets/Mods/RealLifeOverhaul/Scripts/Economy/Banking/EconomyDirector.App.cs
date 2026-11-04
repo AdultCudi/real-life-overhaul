@@ -30,7 +30,7 @@ namespace RealLifeOverhaul.Economy
                 Build = view.Build,
                 Opened = view.Opened,
                 Closed = view.Closed,
-                Kit = () => new RealLifeOverhaul.Ui.FinanceScreen(RealLifeOverhaul.Ui.MoneyLive.FinanceLive),
+                Kit = () => new RealLifeOverhaul.Ui.FinanceScreen(RealLifeOverhaul.Ui.FinanceLive.Instance, RealLifeOverhaul.Ui.FinanceLive.Words()),
                 KitScreen = RealLifeOverhaul.Ui.FinanceScreen.ScreenId,
                 KitIcon = RealLifeOverhaul.Ui.UiIcon.Wallet
             };
@@ -77,10 +77,10 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>The kit's borrow: the app's own question box.</summary>
-        internal void KitBorrow(int amount)
+        /// <summary>The kit's link to the game's loans page, where a loan is repaid early.</summary>
+        internal void KitEconoView()
         {
-            _view?.KitBorrow(amount);
+            _view?.OpenEconoView();
         }
 
         /// <summary>For the credit desk: a loan it has just made gets its mark now, so the hour does not take it for one made at a bank.</summary>
@@ -180,6 +180,7 @@ namespace RealLifeOverhaul.Economy
             if (_app != null && _view != null && _running)
             {
                 _view.Want(tab);
+                RealLifeOverhaul.Ui.FinanceLive.Want(tab);
                 _app.Open();
             }
         }
@@ -194,6 +195,7 @@ namespace RealLifeOverhaul.Economy
             if (_app != null && _view != null && _running)
             {
                 _view.WantStanding();
+                RealLifeOverhaul.Ui.FinanceLive.Want(RealLifeOverhaul.Ui.FinanceFace.Standing);
                 _app.Open();
             }
         }
@@ -203,6 +205,7 @@ namespace RealLifeOverhaul.Economy
             if (_app != null && _view != null && _running)
             {
                 _view.WantRivals();
+                RealLifeOverhaul.Ui.FinanceLive.Want(RealLifeOverhaul.Ui.FinanceFace.Rivals);
                 _app.Open();
             }
         }
@@ -212,6 +215,7 @@ namespace RealLifeOverhaul.Economy
             if (_app != null && _view != null && _running)
             {
                 _view.WantCity();
+                RealLifeOverhaul.Ui.FinanceLive.Want(RealLifeOverhaul.Ui.FinanceFace.Overview);
                 _app.Open();
             }
         }

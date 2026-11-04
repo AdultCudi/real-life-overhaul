@@ -3,16 +3,9 @@ using RealLifeOverhaul.Ui;
 
 internal static partial class UiSamples
 {
-    public static readonly string[] MoneyFinanceStates =
-    {
-        "overview", "overview_new", "overview_long", "credit", "borrow", "cash", "cash_new", "accounts", "rivals", "standing"
-    };
-
     public static readonly string[] MoneyBankStates = { "accounts", "accounts_new", "loans", "card", "apply", "rating", "long" };
 
     public static readonly string[] MoneyOwnStates = { "bank", "bank_new", "savers", "lending", "fund", "branches", "long" };
-
-    public static MoneyModel MoneyFinance(UiWords t, string state) => FinancePage(t, state);
 
     public static MoneyModel MoneyBanks(UiWords t, string state) => BanksPage(t, state);
 
@@ -36,121 +29,6 @@ internal static partial class UiSamples
     private static UiNavEntry Nav(UiWords t, string key, string english, UiIcon icon)
     {
         return new UiNavEntry { Icon = icon, Tint = UiRole.None, Label = W(t, key, english) };
-    }
-
-    private static MoneyModel FinancePage(UiWords t, string state)
-    {
-        bool fresh = state.EndsWith("_new", StringComparison.Ordinal);
-        bool longName = state == "overview_long";
-        string tab = state.Replace("_new", string.Empty).Replace("_long", string.Empty);
-        int index = tab == "credit" ? 1 : tab == "borrow" ? 2 : tab == "cash" ? 3 : tab == "accounts" ? 4 : tab == "rivals" ? 5 : tab == "standing" ? 6 : 0;
-        var m = new MoneyModel
-        {
-            App = MoneyApp.Finance,
-            Icon = UiIcon.Wallet,
-            Title = W(t, "reallife_econ_app", "Finance"),
-            Tab = index,
-            Nav = new[]
-            {
-                Nav(t, "reallife_econ_tab_overview", "Overview", UiIcon.IdCard),
-                Nav(t, "reallife_econ_tab_credit", "Credit", UiIcon.Star),
-                Nav(t, "reallife_econ_tab_borrow", "Borrow", UiIcon.Bank),
-                Nav(t, "reallife_econ_tab_cash", "Cash flow", UiIcon.ChartLineUp),
-                Nav(t, "reallife_econ_tab_accounts", "Accounts", UiIcon.Wallet),
-                Nav(t, "reallife_money_nav_rivals", "Rivals", UiIcon.Trophy),
-                Nav(t, "reallife_fame_title", "Standing", UiIcon.Star)
-            },
-            Prompts = Prompts(t, index == 1 || index == 2),
-            EmptyTitle = W(t, "reallife_money_empty_debts", "No debts yet"),
-            EmptyBody = W(t, "reallife_money_empty_loans", "A loan or a card will be listed here."),
-            EmptyIcon = UiIcon.Wallet
-        };
-        if (index == 0)
-        {
-            m.Shape = MoneyShape.Overview;
-            m.Profile = Borrower(t, fresh, longName);
-            m.Note = fresh ? null : W(t, "reallife_money_leaves", "Leaves tomorrow $1,772, four daily payments.");
-            m.DonutTitle = W(t, "reallife_money_owed", "What you owe");
-            m.Donut = fresh ? new float[0] : new[] { 62f, 18f, 12f, 8f };
-            m.DonutLabels = new[] { "Loans", "Card", "Overdraft", "Other" };
-            m.DonutValues = new[] { "$820,000", "$240,000", "$160,000", "$110,000" };
-            m.Actions = new[] { Link(t) };
-            m.Table = DebtTable(t, fresh);
-        }
-        else if (index == 1 || index == 2)
-        {
-            m.Shape = MoneyShape.Offer;
-            m.Hero = new UiHeroModel
-            {
-                Icon = UiIcon.Bank, Tint = UiRole.None,
-                Kicker = W(t, "reallife_econ_tab_borrow", "Borrow"),
-                Title = longName ? "The city's largest lender, a long counter name" : "Largest lender",
-                Line = "4.8% a year, 5 years",
-                Note = "$186 a day",
-                NoteIcon = UiIcon.Coin,
-                Progress = -1
-            };
-            m.Amount = "$250,000";
-            m.CanLess = true;
-            m.CanMore = true;
-            m.Note = W(t, "reallife_money_all", "All you repay is $339,000. Interest over the term is $89,000.");
-            m.Note2 = W(t, "reallife_money_adds", "This adds $186 to the $1,772 that already leave each day.");
-            m.Actions = new[]
-            {
-                new UiActionModel { Label = W(t, "reallife_money_take", "Take it"), Kind = UiButtonKind.Primary, Icon = UiIcon.Check, Key = UiAction.Alt, Command = UiAppWindow.ActionCommand }
-            };
-            m.Table = MoneyFeedTable(t, fresh);
-        }
-        else if (index == 3 || index == 4)
-        {
-            m.Shape = MoneyShape.Flow;
-            m.Chart = fresh ? null : LineChart(W(t, "reallife_money_where", "Cash over 30 days"), 12, 400000f, 900000f);
-            m.Note = fresh ? null : W(t, "reallife_money_coming", "Coming up: rent on day 12, wages on day 14.");
-            m.Statement = Statement(t, fresh, index == 4 ? "Everyday" : "Cash");
-            m.Actions = new[]
-            {
-                new UiActionModel { Label = W(t, "reallife_money_export", "Export"), Kind = UiButtonKind.Secondary, Icon = UiIcon.ClipboardText, Key = UiAction.Option, Command = MoneyCommands.Export }
-            };
-        }
-        else if (index == 5)
-        {
-            m.Shape = MoneyShape.League;
-            m.Profile = TycoonHead(t, fresh);
-            m.Choices = new[]
-            {
-                W(t, "reallife_money_cut", "Cut prices 5%"),
-                W(t, "reallife_money_campaign", "Flare campaign"),
-                W(t, "reallife_money_hold", "Hold prices")
-            };
-            m.ChoiceBody = new[]
-            {
-                W(t, "reallife_money_forecast", "About 40 more customers over the fortnight."),
-                W(t, "reallife_money_forecast", "About 40 more customers over the fortnight."),
-                W(t, "reallife_money_hold", "Hold your prices")
-            };
-            m.Chart = fresh ? null : LineChart(W(t, "reallife_money_worth", "Who is catching whom"), 12, 40f, 90f);
-            m.Table = LeagueTable(t, fresh);
-            m.Actions = new[]
-            {
-                new UiActionModel { Label = W(t, "reallife_money_follow", "Follow"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Megaphone, Key = UiAction.Option, Command = MoneyCommands.Follow }
-            };
-        }
-        else
-        {
-            m.Shape = MoneyShape.Factors;
-            m.Lines = new[] { "Payments", "What you owe", "History", "Legal", "Applications" };
-            m.LineBody = new[]
-            {
-                "Paid on time lately.",
-                "What you owe is a fair share of what you could borrow.",
-                "The file is still young.",
-                "No case open.",
-                "Few applications in 90 days."
-            };
-            m.Marks = fresh ? new[] { 40, 40, 20, 80, 70 } : new[] { 82, 64, 48, 90, 76 };
-            m.Note = W(t, "reallife_money_threshold", "Lending stops under 580.");
-        }
-        return m;
     }
 
     private static MoneyModel BanksPage(UiWords t, string state)
@@ -305,45 +183,6 @@ internal static partial class UiSamples
         return m;
     }
 
-    private static UiActionModel Link(UiWords t)
-    {
-        return new UiActionModel { Label = W(t, "reallife_money_economy", "Economy"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Locate, Key = UiAction.Option, Command = MoneyCommands.Link };
-    }
-
-    private static UiProfileModel Borrower(UiWords t, bool fresh, bool longName)
-    {
-        return new UiProfileModel
-        {
-            Name = longName ? "A borrower with a very long given name" : W(t, "reallife_money_you", "You"),
-            Hue = 28f,
-            Role = fresh ? "No file yet" : "Good",
-            RoleIcon = UiIcon.IdCard,
-            Status = fresh ? "New" : "642",
-            StatusTone = fresh ? UiRole.Warn : UiRole.Ok,
-            FactLabels = new[] { W(t, "reallife_money_owed", "What you owe"), W(t, "reallife_money_cash", "Cash"), "Next" },
-            FactValues = fresh ? new[] { "$0", "$12,400", "None" } : new[] { "$1,330,000", "$842,000", "Tomorrow" },
-            RatingLabel = "Score",
-            Rating = fresh ? 4 : 7
-        };
-    }
-
-    private static UiProfileModel TycoonHead(UiWords t, bool fresh)
-    {
-        return new UiProfileModel
-        {
-            Name = "Space Karen",
-            Hue = 320f,
-            Role = "Karen Aerospace & Motors",
-            RoleIcon = UiIcon.Rocket,
-            Status = fresh ? "Quiet" : W(t, "reallife_money_expanding", "Expanding"),
-            StatusTone = UiRole.Warn,
-            FactLabels = new[] { "Worth", "30 days", "90 days" },
-            FactValues = fresh ? new[] { "Not forward", "0", "0" } : new[] { "$48.2m", "Up $1.1m", "Up $4.0m" },
-            RatingLabel = "Place",
-            Rating = 8
-        };
-    }
-
     private static UiStatementModel Statement(UiWords t, bool fresh, string account)
     {
         var m = new UiStatementModel
@@ -405,90 +244,6 @@ internal static partial class UiSamples
             EmptyTitle = "No history yet",
             EmptyBody = "A day of play will draw the line."
         };
-    }
-
-    private static UiDataTableModel DebtTable(UiWords t, bool fresh)
-    {
-        var m = new UiDataTableModel
-        {
-            Columns = new[]
-            {
-                new UiDataColumn { Title = "Debt", Kind = UiCellKind.Text, Width = 0f },
-                new UiDataColumn { Title = "Owed", Kind = UiCellKind.Money, Width = UiTokens.S16 * 2f },
-                new UiDataColumn { Title = "Rate", Kind = UiCellKind.Figure, Width = UiTokens.S16 * 2f },
-                new UiDataColumn { Title = "Left", Kind = UiCellKind.Figure, Width = UiTokens.S16 * 2f }
-            },
-            EmptyTitle = W(t, "reallife_money_empty_debts", "No debts yet"),
-            EmptyBody = W(t, "reallife_money_empty_loans", "A loan or a card will be listed here."),
-            EmptyIcon = UiIcon.Bank
-        };
-        if (fresh)
-        {
-            return m;
-        }
-        m.Rows = new[]
-        {
-            Row("Largest lender", "$820,000", "4.8%", "1,240 days"),
-            Row("Card", "$240,000", "17%", "Statement"),
-            Row("Overdraft", "$160,000", "9%", "Open")
-        };
-        m.RowCount = m.Rows.Length;
-        return m;
-    }
-
-    private static UiDataTableModel MoneyFeedTable(UiWords t, bool fresh)
-    {
-        var m = new UiDataTableModel
-        {
-            Columns = new[]
-            {
-                new UiDataColumn { Title = W(t, "reallife_money_feed", "Others borrowing"), Kind = UiCellKind.Text, Width = 0f },
-                new UiDataColumn { Title = "Bank", Kind = UiCellKind.Text, Width = UiTokens.S16 * 3f },
-                new UiDataColumn { Title = "Day", Kind = UiCellKind.Figure, Width = UiTokens.S16 * 2f },
-                new UiDataColumn { Title = "Amount", Kind = UiCellKind.Money, Width = UiTokens.S16 * 2f }
-            },
-            EmptyTitle = W(t, "reallife_money_feed_empty", "Nobody else has borrowed yet"),
-            EmptyBody = W(t, "reallife_money_feed", "Others borrowing"),
-            EmptyIcon = UiIcon.People
-        };
-        if (fresh)
-        {
-            return m;
-        }
-        m.Rows = new[]
-        {
-            Row("Karen Aerospace & Motors", "Largest lender", "412", "$2,400,000"),
-            Row("Luthor Everything Co.", "Second lender", "408", "$1,100,000"),
-            Row("The Oracle of Omaha", "Third lender", "401", "$800,000")
-        };
-        m.RowCount = m.Rows.Length;
-        return m;
-    }
-
-    private static UiDataTableModel LeagueTable(UiWords t, bool fresh)
-    {
-        var m = new UiDataTableModel
-        {
-            Columns = new[]
-            {
-                new UiDataColumn { Title = "Name", Kind = UiCellKind.Person, Width = 0f },
-                new UiDataColumn { Title = "Worth", Kind = UiCellKind.Money, Width = UiTokens.S16 * 2f },
-                new UiDataColumn { Title = "30 days", Kind = UiCellKind.Trend, Width = UiTokens.S16 * 2f }
-            },
-            EmptyTitle = W(t, "reallife_money_worth", "Who is catching whom"),
-            EmptyBody = W(t, "reallife_rival_title", "Rival tycoons"),
-            EmptyIcon = UiIcon.Trophy,
-            Selected = 0
-        };
-        m.Rows = new[]
-        {
-            Person("The Oracle of Omaha", "Old money", 40f, "$2.20bn", 1),
-            Person("The Wolf in Cashmere", "Old money", 18f, "$1.40bn", 0),
-            Person("Space Karen", "Tycoon", 320f, fresh ? "$0" : "$48.2m", 1),
-            Person("You", "You", 28f, "$12.4m", 1)
-        };
-        m.RowCount = m.Rows.Length;
-        return m;
     }
 
     private static UiDataTableModel NamedAccounts(UiWords t, bool fresh, bool lending)

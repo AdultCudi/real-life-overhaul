@@ -11,9 +11,18 @@ namespace RealLifeOverhaul.Ui
         {
             string[] shared = MoneyShared();
             screens.Add(new UiScreenDef("finance", UiTemplate.AppWindow, "FinanceScreen", MoneyKeys(shared,
-                "reallife_econ_app", "reallife_econ_tab_overview", "reallife_econ_tab_credit", "reallife_econ_tab_borrow",
-                "reallife_econ_tab_cash", "reallife_econ_tab_accounts", "reallife_rival_title", "reallife_money_nav_rivals",
-                "reallife_fame_title"))
+                "reallife_econ_app", "reallife_econ_tab_overview", "reallife_econ_tab_credit", "reallife_econ_tab_borrow", "reallife_econ_tab_cash",
+                "reallife_econ_tab_accounts", "reallife_rival_title", "reallife_money_nav_rivals", "reallife_fame_title", "reallife_fin_col_debt",
+                "reallife_fin_col_owed", "reallife_fin_col_rate", "reallife_fin_col_day", "reallife_fin_col_left", "reallife_fin_group_money",
+                "reallife_fin_group_city", "reallife_fin_score",
+                "reallife_fin_owe_when", "reallife_fin_by_kind", "reallife_fin_next", "reallife_fin_city", "reallife_fin_no_debts",
+                "reallife_fin_best_today", "reallife_fin_see_offers", "reallife_fin_col_offer", "reallife_fin_col_event", "reallife_fin_col_when",
+                "reallife_fin_col_points", "reallife_fin_your_rating", "reallife_fin_score_move", "reallife_econ_credit_raise",
+                "reallife_fin_col_borrower", "reallife_fin_col_amount", "reallife_econ_offer_amount", "reallife_fin_costs_term",
+                "reallife_econ_borrow_refused_title", "reallife_fin_col_account", "reallife_fin_col_next", "reallife_fin_col_state",
+                "reallife_fin_amount", "reallife_fin_col_tycoon", "reallife_fin_col_worth", "reallife_fin_col_week", "reallife_fin_col_path",
+                "reallife_fin_answer", "reallife_fame_col_what", "reallife_fame_col_stands", "reallife_fame_col_heading", "reallife_fin_f_owed",
+                "reallife_fin_f_cash", "reallife_fin_f_worth"))
                 .Switch(UiScreenSwitches.Money));
             screens.Add(new UiScreenDef("banks", UiTemplate.AppWindow, "BanksScreen", MoneyKeys(shared,
                 "reallife_banks_app", "reallife_bank_tab_accounts", "reallife_bank_tab_loans", "reallife_bank_tab_card",
