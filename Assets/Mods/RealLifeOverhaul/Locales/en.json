@@ -31558,5 +31558,19 @@
   "reallife_co_plan_ahead": "{plan} holds from day {from} to day {to}: up to {cap} each, and {floor} crew hours of floor a week against this plan",
   "reallife_co_paid_missed": "Missed",
   "reallife_co_q_offer_title": "A rival's offer above my limit",
-  "reallife_co_q_rival_pays": "Rival pays"
+  "reallife_co_q_rival_pays": "Rival pays",
+  "reallife_co_flt_places": "All places",
+  "reallife_co_flt_none": "No place matches",
+  "reallife_co_owner_waiting": "Waiting for you",
+  "reallife_co_level_inbox": "Every question your managers pass up",
+  "reallife_co_level_policy": "Rules for the company, a region or a place",
+  "reallife_co_level_templates": "Sets of rules to put on a scope in one step",
+  "reallife_co_f_best_skill": "Best skill",
+  "reallife_co_f_wage_ask": "Wages from",
+  "reallife_mgr_sec_post": "The post",
+  "reallife_mgr_row_place": "Place",
+  "reallife_mgr_row_district": "District",
+  "reallife_hier_raised_by": "Raised on day {day} by {name}.",
+  "reallife_pol_tpl_saved": "Saved on day {day}",
+  "reallife_mgr_sec_would": "What a manager here decides"
 }

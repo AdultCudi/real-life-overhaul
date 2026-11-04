@@ -36,14 +36,28 @@ namespace RealLifeOverhaul.Ui
         public int Amount;                                     // the figure to set aside in the tax reserve; 0: what is still to set aside
         public int Insurer;                                    // the insurer chosen on a policy's page
         public int Kind;                                       // the campaign kind or the accountant's tier chosen on its page
-        public int Filter;                                     // the filter chosen over the list of a tab
+        public int Filter;                                     // the filter chosen over the list of a tab; the managers' tree: its state in the low two bits, the district's turn above
         public int Armed = -1;                                 // a destructive button's index waiting for its second press
         public string ArmedId;
         public bool Folded;                                    // the managers' tree folded to its top rows
         public readonly System.Collections.Generic.HashSet<int> Later = new System.Collections.Generic.HashSet<int>();   // questions put off ("Decide later"): the Lead asks the next one
 
-        // The tree's folds, by node id, kept across reads.
+        // The tree's folds, by node id, kept across reads: the rows the player turned from how they first stand (a manager's crew starts folded, the rest open).
         public readonly System.Collections.Generic.HashSet<string> FoldedNodes = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
+
+        /// <summary>The managers' tree's state filter (the low two bits of <see cref="Filter"/>): every place, those waiting for you, the open posts.</summary>
+        public const int StateAll = 0, StateNeeds = 1, StatePosts = 2, StateCount = 3, StateMask = 3, DistrictStep = 4;
+
+        public int State => Filter & StateMask;
+
+        /// <summary>The district the tree is cut to, as a turn through the facts' districts: 0 for every district.</summary>
+        public int District => Filter / DistrictStep;
+
+        /// <summary>A manager's crew starts folded away, so that a long tree shows the managers; the player opens it.</summary>
+        public static bool StartsFolded(string id) => id != null && id.StartsWith("mgr:", StringComparison.Ordinal);
+
+        /// <summary>Whether a tree row's rows below it are folded away now.</summary>
+        public bool IsFolded(string id) => FoldedNodes.Contains(id) != StartsFolded(id);
 
         public CompanyView()
         {

@@ -34,6 +34,8 @@ namespace RealLifeOverhaul.Ui
         public UiRole StatusTone = UiRole.Ok;
         public float Hue;
         public UiRole Ring = UiRole.Ok;
+        public UiIcon Glyph = UiIcon.None;      // a glyph on a tile in place of the face, for a post nobody holds (never a face for nobody)
+        public UiRole GlyphTint = UiRole.None;
         public string[] FactLabels = new string[0];
         public string[] FactValues = new string[0];
         public string WaitingText;              // "1 question waiting for you" over its line; null for none
@@ -71,6 +73,9 @@ namespace RealLifeOverhaul.Ui
         public string TreeTitle, TreeFoot;
         public string[] Filters = new string[0];        // "All", "Needs you", "Open posts"
         public string[] FilterIds = new string[0];      // on the policy centre: the node each scope chip picks
+        public string[] TreeDistricts = new string[0];  // each tree row's district, by its name; null for the owner and the executives (the district filter reads it)
+        public bool[] TreeNeeds = new bool[0];          // each tree row: something at its place waits for the owner (the state filter reads it)
+        public string[] Districts = new string[0];      // the districts the places stand in, in order of first appearance: the district filter turns through them
         public string Chosen;                           // the id of the row the page shows
         public CompanyProfile Profile;                  // null while nothing is chosen
         public CompanyPage Sub = new CompanyPage();     // the page of a sub page (the inbox, the policy centre, the dashboards, the seats...): a list and a card

@@ -12,13 +12,13 @@ namespace RealLifeOverhaul.Ui
 
         // A row: its face or tile, two lines, a figure at the right with a note under it, a chip, a meter. Returns nothing; the caller's node makes it a target.
         private static void RowFace(UiScene s, UiAt inside, float x, float y, float w, float h, string title, string sub, string figure, string note, string chip, UiRole chipTone,
-            UiRole figureTone, UiIcon icon, UiRole tint, bool face, float hue, UiRole ring, int grade, bool chosen, bool dim)
+            UiRole figureTone, UiIcon icon, UiRole tint, bool face, float hue, UiRole ring, int grade, bool chosen, bool dim, string faceName = null)
         {
             float size = UiTokens.IconTile;
             float tx = x + UiTokens.S3, ty = y + (h - size) / 2f;
             if (face)
             {
-                UiDraw.Portrait(s, inside, tx + UiTokens.S1, ty + UiTokens.S1, size - UiTokens.S2, title ?? string.Empty, hue, ring);
+                UiDraw.Portrait(s, inside, tx + UiTokens.S1, ty + UiTokens.S1, size - UiTokens.S2, faceName ?? title ?? string.Empty, hue, ring);
             }
             else
             {
@@ -164,7 +164,7 @@ namespace RealLifeOverhaul.Ui
                     bool chosen = r == list.Chosen;
                     int face = UiDraw.Box(s, rowAt, 0f, ry, rw, ListRow, chosen ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusLarge, chosen ? UiFlags.Selected : UiFlags.None);
                     RowFace(s, rowAt.In(face), 0f, ry, rw, ListRow, row.Title, row.Sub, row.Figure, row.Note, row.Chip, row.ChipTone, row.FigureTone, row.Icon, row.Tint, row.Face, row.Hue, row.Ring,
-                        -1, chosen, row.Dim);
+                        -1, chosen, row.Dim, row.FaceName);
                     UiDraw.Node(s, rowAt, 0f, ry, rw, ListRow, Row, r, face, false, lst, r);
                     lay.RowIds[r] = row.Id;
                 }
@@ -277,7 +277,7 @@ namespace RealLifeOverhaul.Ui
             float ring = UiTokens.S1;
             if (c.Face)
             {
-                UiDraw.Portrait(s, at, x + ring, y + ring, size - ring * 2f, c.Title, c.Hue, c.Ring);
+                UiDraw.Portrait(s, at, x + ring, y + ring, size - ring * 2f, c.FaceName ?? c.Title, c.Hue, c.Ring);
             }
             else
             {
@@ -459,7 +459,8 @@ namespace RealLifeOverhaul.Ui
         // A figure before and during: the label at the left, the two figures in columns at the right, the second in its tone; two heads over the first row of a run.
         private static float CompareBlock(UiScene s, UiAt at, CompanyBlock b, float x, float y, float cw)
         {
-            float colW = Math.Min(UiDraw.SnapDown(cw * 0.26f), UiDraw.Snap(Math.Max(UiTextRules.Width(b.Value ?? string.Empty, UiStyle.BodyStrong), UiTextRules.Width(b.Sub ?? string.Empty, UiStyle.BodyStrong)) + UiTokens.S4));
+            float colW = Math.Min(UiDraw.SnapDown(cw * 0.26f), UiDraw.Snap(Math.Max(UiTextRules.Width(b.Value ?? string.Empty, UiStyle.BodyStrong),
+                UiTextRules.Width(b.Sub ?? string.Empty, UiStyle.BodyStrong)) + UiTokens.S4));
             colW = Math.Max(colW, UiDraw.Snap(UiTextRules.Width(b.Options != null && b.Options.Length > 1 ? b.Options[1] : string.Empty, UiStyle.SectionHeader) + UiTokens.S3));
             float second = x + cw - colW, first = second - colW;
             if (b.Options != null && b.Options.Length > 1)
@@ -478,12 +479,13 @@ namespace RealLifeOverhaul.Ui
         // Rows with a face or a glyph, two lines, a figure and a chip: the rows of a list, in a card; one that is pressable does its action.
         private static float ItemsBlock(UiScene s, UiAt at, CompanyLayout lay, CompanyBlock b, float x, float y, float cw, float bottom)
         {
-            int rows = b.Items != null ? b.Items.Length : 0;
+            int rows = b.Items != null ? Math.Min(b.Items.Length, (int)Math.Max(0f, Math.Floor((bottom - y + ListGap) / (ListRow + ListGap)))) : 0;   // the rows that fit the room
             for (int i = 0; i < rows; i++)
             {
                 ref CompanyItem it = ref b.Items[i];
                 int face = UiDraw.Box(s, at, x, y, cw, ListRow, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
-                RowFace(s, at.In(face), x, y, cw, ListRow, it.Title, it.Sub, it.Figure, it.Note, it.Chip, it.ChipTone, it.FigureTone, it.Icon, it.Tint, it.Face, it.Hue, it.Ring, it.Grade, false, false);
+                RowFace(s, at.In(face), x, y, cw, ListRow, it.Title, it.Sub, it.Figure, it.Note, it.Chip, it.ChipTone, it.FigureTone, it.Icon, it.Tint, it.Face, it.Hue, it.Ring, it.Grade,
+                    false, false, it.FaceName);
                 if (it.Press && it.Act.Do != CompanyDo.None)
                 {
                     int index = lay.Add(new CompanyButton { Label = it.Title, Act = it.Act });
