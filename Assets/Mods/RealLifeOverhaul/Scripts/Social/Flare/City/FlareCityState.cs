@@ -132,6 +132,8 @@ namespace RealLifeOverhaul.Flare
         public readonly List<FlareAd> Ads = new List<FlareAd>(8);
         public readonly List<FlareOffer> Offers = new List<FlareOffer>(8);   // the city's businesses' offers of paid posts (FlareCityRules.Creator)
         public int NextOffer = 1;
+        public long CreatorPaid;                     // the last creator income paid, cents (the studio shows it); saved at the end of the use columns
+        public long CreatorTotal;                    // ...and all of them
         public int CreatorDay = -1;                  // the last day a creator income was paid (or the account reached its tier); -1 not yet
         public int ScandalDay = -1;                  // the last day a post of the player's went badly and many saw it (a pile-on): a scandal until answered
         public readonly List<FlareTrend> Trends = new List<FlareTrend>(FlareCityCatalogue.TrendsMost);   // what is trending (FlareCityRules.Trends)

@@ -23,6 +23,7 @@ namespace RealLifeOverhaul.Flare
         {
             Residents = null;
             Pools = null;
+            CityMoves = null;
         }
     }
 }

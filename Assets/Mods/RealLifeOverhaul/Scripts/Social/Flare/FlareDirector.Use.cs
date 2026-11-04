@@ -73,12 +73,7 @@ namespace RealLifeOverhaul.Flare
                     SoftenPlace(p.Place);
                 }
             }
-            int tier = (int)_file.Tier;
-            if (tier > _file.TierSeen && tier >= (int)FlareTier.Local)
-            {
-                _file.TierSeen = tier;
-                Tell(NotificationType.Success, "reallife_flare_use_tier", _openFeed, "followers", FlareText.N(_file.Followers));
-            }
+            TierDay(Save != null ? Save.Day : p.Day);
         }
 
         private FlareExpect BuildExpect(FlareCompose c, int hour)

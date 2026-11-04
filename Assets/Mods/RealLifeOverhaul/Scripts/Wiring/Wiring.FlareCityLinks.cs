@@ -25,6 +25,7 @@ namespace RealLifeOverhaul
             {
                 FlareBridges.Residents = Residents;
                 FlareBridges.Pools = Pools;
+                FlareBridges.CityMoves = CityMoves;
                 CityPopulation.DayLived += Lived;
                 PopulationAttention.Register(Source, Attention);
                 StudioBridges.Talk = Talk;
@@ -42,6 +43,46 @@ namespace RealLifeOverhaul
                 PopulationAttention.Unregister(Source);
                 CityPopulation.DayLived -= Lived;
                 FlareBridges.ResetCity();
+            }
+
+            private static readonly System.Collections.Generic.Dictionary<string, int> ToLet = new System.Collections.Generic.Dictionary<string, int>(16);
+            private static int _toLetDay = -1;
+
+            // The rivals' new shops (the rivals' live Outlet moves) and where premises are to let (one pass over the city's buildings, kept for the game day), for the city page.
+            private static void CityMoves(System.Collections.Generic.List<FlareCityMove> into)
+            {
+                try
+                {
+                    Rivals.RivalDirector rivals = Rivals.RivalDirector.Instance;
+                    Rivals.RivalFile f = rivals != null && rivals.Running && !rivals.Resting ? rivals.File : null;
+                    for (int m = 0; f != null && m < f.Moves.Count; m++)
+                    {
+                        Rivals.RivalMove mv = f.Moves[m];
+                        if (mv.Kind == Rivals.RivalMoveKind.Outlet && mv.Live && !mv.Test && mv.Tycoon >= 0 && mv.Tycoon < f.Tycoons.Length)
+                        {
+                            into.Add(new FlareCityMove
+                            {
+                                Kind = FlareMoveKind.Outlet, District = mv.District, Name = mv.Name, By = f.Tycoons[mv.Tycoon].Def.Name, Day = mv.Announced
+                            });
+                        }
+                    }
+                    int day = SaveGameManager.Current != null ? SaveGameManager.Current.Day : -1;
+                    if (_toLetDay != day)
+                    {
+                        _toLetDay = day;
+                        Districts.DistrictGame.ToLet(ToLet);
+                    }
+                    var order = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string, int>>(ToLet);
+                    order.Sort((a, b) => b.Value != a.Value ? b.Value.CompareTo(a.Value) : string.CompareOrdinal(a.Key, b.Key));
+                    for (int i = 0; i < order.Count && i < 3; i++)
+                    {
+                        into.Add(new FlareCityMove { Kind = FlareMoveKind.ToLet, District = order[i].Key, Count = order[i].Value, Day = day });
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareCityLinks.CityMoves", e);
+                }
             }
 
             // The game studio on Flare (Tech/Studio/StudioBridges): its news as its account's posts, a devlog's hype, a campaign's pledges; Flare off, nothing.

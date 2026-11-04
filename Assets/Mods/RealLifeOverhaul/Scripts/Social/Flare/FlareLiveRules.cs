@@ -23,6 +23,7 @@ namespace RealLifeOverhaul.Flare
         public long Cents;           // money brought or offered
         public string Name;          // the business it is about, as shown
         public bool Bad;             // a campaign post that flopped
+        public int Extra;            // a rival's promoted post: the population's district it is shown in, -1 the whole city
     }
 
     /// <summary>

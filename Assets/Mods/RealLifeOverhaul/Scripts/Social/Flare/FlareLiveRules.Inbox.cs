@@ -26,11 +26,14 @@ namespace RealLifeOverhaul.Flare
         public const int NoticeHour = 21;      // the evening a day's follows and a campaign's post are told at
         public const int OfferHour = 9;        // the morning an offer comes in
 
+        private static readonly List<string> _tagScratch = new List<string>(4);
+        private static readonly List<int> _countScratch = new List<int>(4);
         private static readonly Comparison<FlareNotice> Newest = (a, b) => b.At.CompareTo(a.At);
         private static readonly Comparison<FlareThread> NewestThread = (a, b) => b.At.CompareTo(a.At);
 
         /// <summary>The kit's notifications, newest first, at most <paramref name="most"/>: the feed's and the account's own records.</summary>
-        public static void AllNotices(FlareFile f, long now, string me, List<string> myPlaces, List<FlareOffer> offers, List<FlareReaction> scratch, List<FlareNotice> into, int most)
+        public static void AllNotices(FlareFile f, long now, string me, List<string> myPlaces, List<FlareOffer> offers, List<FlareReaction> scratch, List<FlareNotice> into, int most,
+            IReadOnlyList<FlareAd> ads = null)
         {
             Notices(f, now, me, myPlaces, scratch, into, int.MaxValue);
             for (int i = 0; i < into.Count; i++)
@@ -88,6 +91,7 @@ namespace RealLifeOverhaul.Flare
                     });
                 }
             }
+            FlareNoticeRules.AddDerived(f, now, ads, into, _tagScratch, _countScratch);
             into.Sort(Newest);
             if (into.Count > most)
             {

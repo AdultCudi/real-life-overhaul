@@ -278,6 +278,7 @@ namespace RealLifeOverhaul.Flare
         public string Bio;
         public string Banner;
         public int TierSeen;
+        public readonly int[] TierDays = { -1, -1, -1, -1, -1 };   // the day each tier was reached (Newcomer to Celebrity), -1 not yet or not known: the milestones' notifications
         public int ReviewWarnDay = -1;
         public int ReachDay = -1;
         public readonly int[] ReachDays = new int[FlareUseRules.ReachDays];

@@ -538,6 +538,7 @@ namespace RealLifeOverhaul.Flare
                     ReadPeople();
                     Talked(_talked);
                     _dayReport = FlareRules.Day(_file, day, FlareBridges.Standing(), _people);
+                    TierDay(day);   // a tier passed by followers alone is a milestone too, not only one passed while posting
                     Rewrite(_talked, true);
                     break;
                 case 1:
