@@ -83,7 +83,7 @@ namespace RealLifeOverhaul.Ui
             FaceSources.Player(owner);
             nodes.Add(new UiOrgNode
             {
-                Kind = UiOrgKind.Person, Level = 0, Name = w.T("reallife_hier_you", "You"), Sub = w.F("reallife_co_tree_owner_sub", "Owner, all {count} businesses", "count", d.Shops.Count.ToString()),
+                Kind = UiOrgKind.Person, Level = 0, Name = owner, Sub = w.F("reallife_co_tree_owner_sub", "Owner, all {count} businesses", "count", d.Shops.Count.ToString()),
                 Hue = UiColour.HueOf(owner), Ring = UiRole.Ok, HasKids = false
             });
             ids.Add("own");
@@ -153,6 +153,39 @@ namespace RealLifeOverhaul.Ui
             }
             m.Tree = nodes.ToArray();
             m.TreeIds = ids.ToArray();
+            TreeFilters(m, d, h);
+        }
+
+        // What the tree's two filters read, one entry for each row: the district of a place, a region or an open post by its name, and whether something at the place waits for the owner.
+        // The districts are those of every place the company has (the cap of the company is CompanyCatalogue.ShopsMost), in order of first appearance.
+        private static void TreeFilters(CompanyManagersFacts m, CompanyDirector d, HierarchyState h)
+        {
+            int n = m.TreeIds.Length;
+            m.TreeDistricts = new string[n];
+            m.TreeNeeds = new bool[n];
+            var districts = new List<string>(8);
+            for (int i = 0; i < n; i++)
+            {
+                string id = m.TreeIds[i];
+                string where = null;
+                if (id.StartsWith("mgr:", StringComparison.Ordinal) || id.StartsWith("post:", StringComparison.Ordinal))
+                {
+                    ManagedPlace mp = d.ManagedAt(id.Substring(id.IndexOf(':') + 1));
+                    where = mp != null ? CompanyText.District(mp.District) : null;
+                    m.TreeNeeds[i] = h != null && id[0] == 'm' && OpenAsksOf(h, id.Substring(4)) > 0;
+                }
+                else if (id.StartsWith("reg:", StringComparison.Ordinal))
+                {
+                    where = CompanyDirector.AreaName(id.Substring(4));
+                    m.TreeNeeds[i] = false;
+                }
+                m.TreeDistricts[i] = where;
+                if (where != null && !districts.Contains(where))
+                {
+                    districts.Add(where);
+                }
+            }
+            m.Districts = districts.ToArray();
         }
 
         private static UiOrgNode Caption(string name) => new UiOrgNode { Kind = UiOrgKind.Caption, Name = name };
@@ -540,6 +573,7 @@ namespace RealLifeOverhaul.Ui
             {
                 mine += h.Escalations[i].Open && h.Escalations[i].Level >= EscalationRules.LevelOwner ? 1 : 0;
             }
+            int managers = CountManagers(d);
             var p = new CompanyProfile
             {
                 Id = "own", Name = owner, Role = w.T("reallife_co_role_owner", "Owner"), Hue = UiColour.HueOf(owner), Ring = UiRole.Ok, Status = null,
@@ -547,20 +581,96 @@ namespace RealLifeOverhaul.Ui
                 FactValues = new[] { d.Shops.Count.ToString(), d.ManagerData.Managers.Count.ToString(), mine.ToString() }
             };
             FaceSources.Player(owner);
-            var more = new List<CompanyBlock>(12);
-            more.Add(Sec(w.T("reallife_co_owner_month", "This month")));
+            // The left column: the questions waiting for you and your managers; the right: the month and the levels.
+            var left = new List<CompanyBlock>(6);
+            var waiting = new List<CompanyItem>(3);
+            for (int i = h != null ? h.Escalations.Count - 1 : -1; i >= 0 && waiting.Count < 3; i--)
+            {
+                Escalation e = h.Escalations[i];
+                if (!e.Open || e.Level < EscalationRules.LevelOwner)
+                {
+                    continue;
+                }
+                float hue;
+                string asker = AskerOf(d, e, out hue);
+                waiting.Add(new CompanyItem
+                { Grade = -1,
+                    Title = AskTitle(e, w), FaceName = asker, Face = asker != null, Hue = hue, Ring = UiRole.Warn, Icon = UiIcon.Envelope, Sub = PlaceNameOf(d, e.Place),
+                    Figure = CompanyText.T("reallife_mgr_row_day", "day", e.Day.ToString()), Press = true, Act = CompanyAct.Of(CompanyDo.Go, "card", e.Id)
+                });
+            }
+            if (waiting.Count > 0)
+            {
+                left.Add(Sec(w.T("reallife_co_owner_waiting", "Waiting for you"), mine.ToString()));
+                left.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = waiting.ToArray() });
+            }
+            var places = new List<CompanyItem>(CrewShown + 2);
+            for (int i = 0; i < d.Managed.Count && places.Count < CrewShown + 2; i++)
+            {
+                ManagedPlace mp = d.Managed[i];
+                if (mp.Own == null)
+                {
+                    continue;
+                }
+                Face(mp.Own.Name, mp.Own.Id);
+                int count, standing = d.StandingAt(mp.Place.Place, out count);
+                places.Add(new CompanyItem
+                {
+                    Title = mp.Own.Name, Sub = mp.Place.Name, Face = true, Hue = UiColour.HueOf(mp.Own.Name), Ring = d.PostOf(mp) == PostState.InPost ? UiRole.Ok : UiRole.Warn,
+                    Grade = count > 0 ? standing : -1, Figure = count > 0 ? standing.ToString() : null, Press = true, Act = CompanyAct.Of(CompanyDo.Go, "mgr:" + mp.Place.Place, CompanyView.Managers)
+                });
+            }
+            if (places.Count > 0)
+            {
+                left.Add(Sec(w.T("reallife_mgr_sec_directory", "Your managers"), managers.ToString()));
+                left.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = places.ToArray() });
+            }
+            var month = new List<CompanyBlock>(8);
             int decided = 0, cost = 0;
             for (int i = 0; i < d.ManagerData.Managers.Count; i++)
             {
                 decided += d.ManagerData.Managers[i].Decided;
                 cost += d.MonthCostOf(d.ManagerData.Managers[i]);
             }
-            more.Add(Row(w.T("reallife_co_owner_decided", "Decisions made for you"), decided.ToString()));
-            more.Add(Row(w.T("reallife_co_owner_cost", "Managers' allowances, a month"), CompanyText.Money(cost)));
+            month.Add(Sec(w.T("reallife_co_owner_month", "This month")));
+            month.Add(Row(w.T("reallife_co_owner_decided", "Decisions made for you"), decided.ToString()));
+            month.Add(Row(w.T("reallife_co_owner_cost", "Managers' allowances, a month"), CompanyText.Money(cost)));
+            if (left.Count == 0)
+            {
+                left.AddRange(month);
+                left.Add(Note(CompanyText.T("reallife_co_no_managers")));
+                month.Clear();
+            }
+            var right = month;
+            // The businesses that have no manager yet, as rows that open the post.
+            var open = new List<CompanyItem>(2 * CrewShown);
+            int openTotal = 0;
+            for (int i = 0; i < d.Managed.Count; i++)
+            {
+                ManagedPlace mp = d.Managed[i];
+                if (mp.Own != null)
+                {
+                    continue;
+                }
+                openTotal++;
+                if (open.Count < 2 * CrewShown)
+                {
+                    open.Add(new CompanyItem
+                    {
+                        Grade = -1, Title = mp.Place.Name, Sub = CompanyApp.PlaceKindName(mp.Kind) + ", " + CompanyText.District(mp.District), Icon = UiIcon.Store, Press = true,
+                        Act = CompanyAct.Of(CompanyDo.Go, "post:" + mp.Place.Place, CompanyView.Managers)
+                    });
+                }
+            }
+            if (open.Count > 0)
+            {
+                right.Insert(0, new CompanyBlock { Kind = CompanyBlockKind.Items, Items = open.ToArray() });
+                right.Insert(0, Sec(w.T("reallife_co_tree_open_posts", "Open posts"), openTotal.ToString()));
+            }
             if (h != null)
             {
-                more.Add(Sec(w.T("reallife_co_owner_levels", "Levels")));
-                more.Add(new CompanyBlock
+                right.Add(Sec(w.T("reallife_co_owner_levels", "Levels")));
+                right.Add(new CompanyBlock
                 {
                     Kind = CompanyBlockKind.Switch, Text = w.T("reallife_co_deep_mode", "Deep Mode"), Sub = w.T("reallife_co_deep_sub",
                         "The executives, regions, the policy centre and every question's inbox"),
@@ -568,14 +678,27 @@ namespace RealLifeOverhaul.Ui
                 });
                 if (h.Deep)
                 {
-                    more.Add(Link(w.T("reallife_co_inbox", "Questions inbox"), w.F("reallife_co_inbox_open", "{count} open", "count", OpenCount(h).ToString()), CompanyAct.Of(CompanyDo.Go, null,
-                        CompanyView.Managers, CompanyView.SubInbox)));
-                    more.Add(Link(w.T("reallife_co_policy_centre", "Policy centre"), string.Empty, CompanyAct.Of(CompanyDo.Go, null, CompanyView.Managers, CompanyView.SubPolicy)));
-                    more.Add(Link(w.T("reallife_co_templates", "Templates"), (PolicyCatalogue.TemplateKeys.Length + h.Templates.Count).ToString(), CompanyAct.Of(CompanyDo.Go, null,
-                        CompanyView.Managers, CompanyView.SubTemplates)));
+                    right.Add(new CompanyBlock
+                    {
+                        Kind = CompanyBlockKind.Items, Items = new[]
+                        {
+                            new CompanyItem { Grade = -1, Title = w.T("reallife_co_inbox", "Questions inbox"), Icon = UiIcon.Envelope,
+                                Sub = w.T("reallife_co_level_inbox", "Every question your managers pass up"),
+                                Figure = w.F("reallife_co_inbox_open", "{count} open", "count", OpenCount(h).ToString()), Press = true,
+                                Act = CompanyAct.Of(CompanyDo.Go, null, CompanyView.Managers, CompanyView.SubInbox) },
+                            new CompanyItem { Grade = -1, Title = w.T("reallife_co_policy_centre", "Policy centre"), Icon = UiIcon.Sliders,
+                                Sub = w.T("reallife_co_level_policy", "Rules for the company, a region or a place"),
+                                Press = true, Act = CompanyAct.Of(CompanyDo.Go, null, CompanyView.Managers, CompanyView.SubPolicy) },
+                            new CompanyItem { Grade = -1, Title = w.T("reallife_co_templates", "Templates"), Sub = w.T("reallife_co_level_templates", "Sets of rules to put on a scope in one step"),
+                                Icon = UiIcon.ClipboardText, Figure = (PolicyCatalogue.TemplateKeys.Length + h.Templates.Count).ToString(), Press = true,
+                                Act = CompanyAct.Of(CompanyDo.Go, null, CompanyView.Managers, CompanyView.SubTemplates) }
+                        }
+                    });
                 }
             }
-            p.More = more.ToArray();
+            left.Add(new CompanyBlock { Kind = CompanyBlockKind.Break });
+            left.AddRange(right);
+            p.More = left.ToArray();
             return p;
         }
 
@@ -640,21 +763,92 @@ namespace RealLifeOverhaul.Ui
                 FactValues = new[] { CompanyText.Day(r.From), places.ToString(), d.StandingIn(area).ToString(), r.Decided.ToString() }
             };
             Face(r.Name, r.Id);
-            var more = new List<CompanyBlock>(8)
+            // How they are doing: a grade with nothing behind it yet is left out, never shown as a zero.
+            int placesAll, managed, gaps, standing, profit, score, pending;
+            d.RegionFigures(area, out placesAll, out managed, out gaps, out standing, out profit, out score, out pending);
+            var labels = new List<string>(4);
+            var values = new List<int>(4);
+            Grade(labels, values, w.T("reallife_co_g_judgement", "Judgement"), ManagerRules.Judgement(r.Skill, 0, r.Decided, r.Mistakes));
+            Grade(labels, values, w.T("reallife_co_g_speed", "Speed"), ManagerRules.Speed(r.Speeds));
+            Grade(labels, values, w.T("reallife_co_g_morale", "Crew morale"), standing > 0 ? ManagerRules.Morale(standing, 1) : -1);
+            Grade(labels, values, w.T("reallife_hier_fig_score", "Score"), managed > 0 ? score : -1);
+            p.GradesTitle = w.F("reallife_co_how_doing", "How {name} is doing", "name", FirstName(r.Name));
+            p.GradeLabels = labels.ToArray();
+            p.GradeValues = values.ToArray();
+            var more = new List<CompanyBlock>(12);
+            // Their places, each with its manager's portrait and how its crew stands.
+            var rows = new List<CompanyItem>(8);
+            int total = 0;
+            for (int i = 0; i < d.Managed.Count; i++)
             {
-                Sec(w.T("reallife_mgr_sec_manager", "Manager")),
-                Row(CompanyText.T("reallife_mgr_skill"), r.Skill.ToString() + " / " + ManagerRules.FromAfar(r.Skill).ToString()),
-                Row(CompanyText.T("reallife_mgr_allowance"), CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(d.AllowanceOf(r)))),
-                Row(CompanyText.T("reallife_mgr_pay"), CompanyText.Wage(d.PayOf(r))),
-                Row(CompanyText.T("reallife_mgr_mistakes"), r.Mistakes.ToString())
-            };
+                ManagedPlace mp = d.Managed[i];
+                if (mp.Area != area)
+                {
+                    continue;
+                }
+                total++;
+                if (rows.Count >= 2 * CrewShown)
+                {
+                    continue;
+                }
+                int count, at = d.StandingAt(mp.Place.Place, out count);
+                var item = new CompanyItem { Grade = count > 0 ? at : -1, Figure = count > 0 ? at.ToString() : null, Press = true };
+                if (mp.Own != null)
+                {
+                    Face(mp.Own.Name, mp.Own.Id);
+                    item.Title = mp.Own.Name;
+                    item.Sub = mp.Place.Name;
+                    item.Face = true;
+                    item.Hue = UiColour.HueOf(mp.Own.Name);
+                    item.Ring = d.PostOf(mp) == PostState.InPost ? UiRole.Ok : UiRole.Warn;
+                    item.Act = CompanyAct.Of(CompanyDo.Go, "mgr:" + mp.Place.Place, CompanyView.Managers);
+                }
+                else
+                {
+                    item.Title = mp.Place.Name;
+                    item.Sub = CompanyText.T("reallife_mgr_empty_post");
+                    item.Icon = UiIcon.Store;
+                    item.Act = CompanyAct.Of(CompanyDo.Go, "post:" + mp.Place.Place, CompanyView.Managers);
+                }
+                rows.Add(item);
+            }
+            more.Add(Sec(w.T("reallife_mgr_region_their_places", "Their places"), total.ToString()));
+            more.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = rows.ToArray() });
+            more.Add(new CompanyBlock { Kind = CompanyBlockKind.Break });
+            more.Add(Sec(w.T("reallife_mgr_sec_manager", "Manager")));
+            more.Add(Row(CompanyText.T("reallife_mgr_skill"), r.Skill.ToString() + " / " + ManagerRules.FromAfar(r.Skill).ToString()));
+            more.Add(Row(CompanyText.T("reallife_mgr_allowance"), CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(d.AllowanceOf(r)))));
+            more.Add(Row(CompanyText.T("reallife_mgr_pay"), CompanyText.Wage(d.PayOf(r))));
+            more.Add(Row(CompanyText.T("reallife_mgr_mistakes"), r.Mistakes.ToString()));
+            // What they did, newest first, from the hierarchy's log.
+            HierarchyState hs = d.HierarchyOn ? d.HierarchyData : null;
+            var log = new List<CompanyDone>(LogShown);
+            int did = 0;
+            for (int i = hs != null ? hs.Entries.Count - 1 : -1; i >= 0; i--)
+            {
+                HierarchyEntry en = hs.Entries[i];
+                if (en.Who != r.Name)
+                {
+                    continue;
+                }
+                did++;
+                if (log.Count < LogShown)
+                {
+                    log.Add(new CompanyDone { When = CompanyText.T("reallife_mgr_row_day", "day", en.Day.ToString()), Text = CompanyApp.EntryWhat(en) + ": " + CompanyApp.EntryDetail(en) });
+                }
+            }
+            if (log.Count > 0)
+            {
+                more.Add(Sec(w.T("reallife_co_log", "Log"), did.ToString()));
+                more.Add(new CompanyBlock { Kind = CompanyBlockKind.Lines, Rows = log.ToArray() });
+            }
             if (sick)
             {
                 more.Add(Note(CompanyText.T("reallife_mgr_region_sick"), UiRole.WarnText));
             }
             more.Add(Note(CompanyText.T("reallife_mgr_region_what")));
             p.More = more.ToArray();
-            var buttons = new List<CompanyButton>(4)
+            var buttons = new List<CompanyButton>(2)
             {
                 Btn(w.T("reallife_co_replace_or_stand", "Replace or stand down"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "reg:" + area, CompanyView.Managers, CompanyView.SubAppoint),
                     UiAction.Count, UiIcon.People)
@@ -684,17 +878,74 @@ namespace RealLifeOverhaul.Ui
 
         private CompanyProfile PostProfile(CompanyDirector d, ManagedPlace mp, Words w)
         {
+            // Who could do it: the place's own staff, best first, as portrait rows that open the appointment with that person chosen.
+            ManagerGame.StaffAt(mp.Place, d.Index, _hands);
+            var items = new List<CompanyItem>(_hands.Count);
+            int best = 0, cheapest = int.MaxValue;
+            var order = new List<int>(_hands.Count);
+            for (int i = 0; i < _hands.Count; i++)
+            {
+                order.Add(i);
+                best = Math.Max(best, _hands[i].Skill);
+                cheapest = Math.Min(cheapest, _hands[i].Wage);
+            }
+            order.Sort((a, b) => _hands[b].Skill.CompareTo(_hands[a].Skill));
+            for (int k = 0; k < order.Count && items.Count < 2 * CrewShown; k++)
+            {
+                ManagerHand h = _hands[order[k]];
+                Face(h.Name, h.Id);
+                items.Add(new CompanyItem
+                {
+                    Title = h.Name, Sub = CompanyGame.SkillName(h.Id), Face = true, Hue = UiColour.HueOf(h.Name), Ring = UiRole.None, Grade = h.Skill, Figure = CompanyText.Wage(h.Wage),
+                    Note = w.F("reallife_co_skill_n", "skill {n}", "n", h.Skill.ToString()), Press = true,
+                    Act = CompanyAct.Of(CompanyDo.Go, "post:" + mp.Place.Place, CompanyView.Managers, CompanyView.SubAppoint, 0, "mc:" + h.Id)
+                });
+            }
             var p = new CompanyProfile
             {
                 Id = "post:" + mp.Place.Place, Name = w.F("reallife_co_tree_post", "Manager of {place}", "place", mp.Place.Name), Role = CompanyApp.PlaceKindName(mp.Kind) + ", "
                     + CompanyText.District(mp.District),
-                Hue = UiColour.HueOf(mp.Place.Name), Ring = UiRole.None, Status = CompanyText.T("reallife_mgr_empty_post"), StatusTone = UiRole.Muted
+                Glyph = UiIcon.IdBadge, GlyphTint = UiRole.Muted, Status = CompanyText.T("reallife_mgr_empty_post"), StatusTone = UiRole.Muted,
+                FactLabels = new[] { w.T("reallife_co_f_staff", "Staff"), w.T("reallife_co_f_best_skill", "Best skill"), w.T("reallife_co_f_wage_ask", "Wages from") },
+                FactValues = new[] { _hands.Count.ToString(), _hands.Count > 0 ? best.ToString() : "-", _hands.Count > 0 ? CompanyText.Wage(cheapest) : "-" }
             };
-            p.More = new[]
+            var more = new List<CompanyBlock>(8)
             {
-                Note(CompanyText.T("reallife_mgr_place_none")),
-                Buttons(Btn(w.T("reallife_mgr_appoint", "Appoint"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.Go, "post:" + mp.Place.Place, CompanyView.Managers, CompanyView.SubAppoint),
-                    UiAction.Alt, UiIcon.People))
+                Sec(w.T("reallife_co_candidates", "Who could do it"), items.Count.ToString())
+            };
+            if (items.Count > 0)
+            {
+                more.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = items.ToArray() });
+            }
+            else
+            {
+                more.Add(Note(CompanyText.T("reallife_mgr_row_no_staff")));
+            }
+            more.Add(new CompanyBlock { Kind = CompanyBlockKind.Break });
+            more.Add(Sec(w.T("reallife_mgr_sec_post", "The post")));
+            more.Add(Note(CompanyText.T("reallife_mgr_place_none")));
+            more.Add(Row(w.T("reallife_mgr_row_place", "Place"), mp.Place.Name));
+            more.Add(Row(w.T("reallife_mgr_row_district", "District"), CompanyText.District(mp.District)));
+            // What a manager of this kind of place would decide, each with its own glyph and what it does.
+            int kinds = ManagerRules.Kinds(mp.Kind);
+            var would = new List<CompanyItem>(ManagerTaskCount);
+            for (int t = 0; t < (int)ManagerTask.Count; t++)
+            {
+                if (ManagerRules.Has(kinds, (ManagerTask)t))
+                {
+                    would.Add(new CompanyItem { Grade = -1, Title = CompanyApp.TaskTitle(t), Sub = CompanyApp.TaskWhat(t), Icon = TaskIcons[Math.Min(t, TaskIcons.Length - 1)] });
+                }
+            }
+            if (would.Count > 0)
+            {
+                more.Add(Sec(w.T("reallife_mgr_sec_would", "What a manager here decides"), would.Count.ToString()));
+                more.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = would.ToArray() });
+            }
+            p.More = more.ToArray();
+            p.Buttons = new[]
+            {
+                Btn(w.T("reallife_mgr_appoint", "Appoint"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.Go, "post:" + mp.Place.Place, CompanyView.Managers, CompanyView.SubAppoint), UiAction.Alt,
+                    UiIcon.People)
             };
             return p;
         }
@@ -704,8 +955,8 @@ namespace RealLifeOverhaul.Ui
             string name = CompanyDirector.SeatName(seat);
             var p = new CompanyProfile
             {
-                Id = "seat:" + (int)seat, Name = name, Role = w.T("reallife_co_role_executive", "Executive seat"), Hue = UiColour.HueOf(name), Ring = UiRole.None,
-                Status = CompanyText.T("reallife_mgr_empty_post"), StatusTone = UiRole.Muted
+                Id = "seat:" + (int)seat, Name = name, Role = w.T("reallife_co_role_executive", "Executive seat"), Hue = UiColour.HueOf(name), Ring = UiRole.None, Glyph = UiIcon.IdBadge,
+                GlyphTint = UiRole.Muted, Status = CompanyText.T("reallife_mgr_empty_post"), StatusTone = UiRole.Muted
             };
             p.More = new[]
             {

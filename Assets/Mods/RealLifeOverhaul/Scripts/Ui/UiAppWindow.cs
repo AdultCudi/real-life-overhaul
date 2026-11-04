@@ -45,6 +45,8 @@ namespace RealLifeOverhaul.Ui
         public string Name;
         public float Hue;
         public UiRole Ring = UiRole.Ok;
+        public UiIcon Glyph = UiIcon.None;         // a glyph on a tile in place of the face, for a post nobody holds
+        public UiRole GlyphTint = UiRole.None;
         public string Role;                        // "Customer Service"
         public UiIcon RoleIcon = UiIcon.Briefcase;
         public UiRole RoleTint = UiRole.None;      // None for the icon's own colour
@@ -355,7 +357,16 @@ namespace RealLifeOverhaul.Ui
         public static float Profile(UiScene s, UiAt at, UiProfileModel p, UiActionModel[] actions, float x, float y, float w, IUiKeys keys)
         {
             float ring = UiTokens.S1, face = UiTokens.AvatarHero, side = face + ring * 2f;
-            UiDraw.Portrait(s, at, x + ring, y + ring, face, p.Name, p.Hue, p.Ring);
+            if (p.Glyph != UiIcon.None)
+            {
+                int tile = UiDraw.Tile(s, at, x + ring, y + ring, face, p.GlyphTint, false);
+                float g = UiTokens.S10;
+                UiDraw.Icon(s, at.In(tile), x + ring + (face - g) / 2f, y + ring + (face - g) / 2f, g, p.Glyph, p.GlyphTint, UiFlags.Middle | UiFlags.Centre, true);
+            }
+            else
+            {
+                UiDraw.Portrait(s, at, x + ring, y + ring, face, p.Name, p.Hue, p.Ring);
+            }
             float right = Buttons(s, at, actions, x + w, y, keys);
             float tx = x + side + UiTokens.S5;
             float nameH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Hero));

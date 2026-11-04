@@ -78,6 +78,99 @@ internal static partial class Program
         Check(worst < 5.0, "company face cost: the heaviest of " + heavy.Length + " pages (" + worstState + ") lays out in " + worst.ToString("0.00") + " ms, the " + heavy.Length + " together in " + total.ToString("0.00") + " ms: one layout when the facts change or the player acts, nothing per frame");
     }
 
+    // The managers' tree and its two filters (the places waiting for you, the open posts, one district): what each keeps in the sample and in a company of the cap's size, and that a
+    // chip turns through every value and that the page keeps to the targets a layer may hold.
+    private static void CompanyFilterChecks()
+    {
+        UiWords en = UiWords("en");
+        CompanyWords words = UiSamples.CompanyWordsOf(en);
+        CompanyFacts facts = UiSamples.CompanyFactsOf(en, "managers_big");
+        Func<CompanyFacts, int, string[]> ids = (f, filter) =>
+        {
+            CompanyView v = UiSamples.CompanyViewOf("managers_big");
+            v.Filter = filter;
+            var lay = new CompanyLayout();
+            CompanyFace.Lay(new UiScene(), f, v, words, lay, UiFrame.FullMenu(16f / 9f, "Company"), true, UiDefaultKeys.Keyboard);
+            return lay.TreeIds;
+        };
+        bool Has(string[] list, string id) => Array.IndexOf(list, id) >= 0;
+        string[] all = ids(facts, 0), needs = ids(facts, CompanyView.StateNeeds), posts = ids(facts, CompanyView.StatePosts), chelsea = ids(facts, CompanyView.DistrictStep * 2);
+        string[] none = ids(facts, CompanyView.StateNeeds + CompanyView.DistrictStep * 2);
+        Check(Has(all, "mgr:Speedy Bites~7") && Has(all, "mgr:Bloom & Co~214") && Has(all, "post:Pioneer Game Studio~9") && !Has(all, "crew:dev"),
+            "company managers filter: with none set the tree shows every place and a manager's crew starts folded away");
+        Check(Has(needs, "mgr:Speedy Bites~7") && !Has(needs, "mgr:Bloom & Co~214") && !Has(needs, "post:Pioneer Game Studio~9") && Has(needs, "own"),
+            "company managers filter: waiting for you keeps the places that wait for the owner and the owner");
+        Check(Has(posts, "post:Pioneer Game Studio~9") && !Has(posts, "mgr:Speedy Bites~7") && !Has(posts, "exe:1"), "company managers filter: open posts keeps the posts and no one else");
+        Check(Has(chelsea, "mgr:Bloom & Co~214") && !Has(chelsea, "mgr:Speedy Bites~7") && !Has(chelsea, "post:Pioneer Game Studio~9"), "company managers filter: a district keeps its places only");
+        Check(Has(none, "none") && !Has(none, "mgr:Bloom & Co~214"), "company managers filter: both set to a district with nothing waiting says no place matches");
+        // A company at the cap: sixty four places over twelve districts, a third of them posts.
+        int most = RealLifeOverhaul.Economy.CompanyCatalogue.ShopsMost;
+        CompanyFacts big = UiSamples.CompanyFactsOf(en, "managers_big");
+        CompanyManagersFacts m = big.Managers;
+        var nodes = new List<UiOrgNode>();
+        var rowIds = new List<string>();
+        var where = new List<string>();
+        var wait = new List<bool>();
+        nodes.Add(m.Tree[0]);
+        rowIds.Add("cap:owner");
+        where.Add(null);
+        wait.Add(false);
+        nodes.Add(m.Tree[1]);
+        rowIds.Add("own");
+        where.Add(null);
+        wait.Add(false);
+        var districts = new List<string>();
+        for (int i = 0; i < 12; i++)
+        {
+            districts.Add("District " + (char)('A' + i));
+        }
+        for (int i = 0; i < most; i++)
+        {
+            bool post = i % 3 == 2;
+            nodes.Add(new UiOrgNode { Kind = post ? UiOrgKind.Post : UiOrgKind.Person, Level = 1, Name = "Place " + i, Sub = "Shop", HasKids = false });
+            rowIds.Add((post ? "post:p" : "mgr:p") + i);
+            where.Add(districts[i % 12]);
+            wait.Add(!post && i % 4 == 0);
+        }
+        m.Tree = nodes.ToArray();
+        m.TreeIds = rowIds.ToArray();
+        m.TreeDistricts = where.ToArray();
+        m.TreeNeeds = wait.ToArray();
+        m.Districts = districts.ToArray();
+        m.Chosen = "own";
+        m.Profile = null;
+        bool turns = true;
+        for (int d = 1; d <= districts.Count; d++)
+        {
+            string[] shown = ids(big, CompanyView.DistrictStep * d);
+            int places = 0;
+            foreach (string id in shown)
+            {
+                places += id.StartsWith("mgr:", StringComparison.Ordinal) || id.StartsWith("post:", StringComparison.Ordinal) ? 1 : 0;
+            }
+            int should = 0;
+            for (int i = 0; i < most; i++)
+            {
+                should += i % 12 == d - 1 ? 1 : 0;
+            }
+            turns &= places == should;
+        }
+        CompanyView view = UiSamples.CompanyViewOf("managers_big");
+        var scene = new UiScene();
+        CompanyFace.Lay(scene, big, view, words, new CompanyLayout(), UiFrame.FullMenu(16f / 9f, "Company"), true, UiDefaultKeys.Keyboard);
+        Check(turns && ids(big, 0).Length >= most, "company managers filter: " + most + " places in " + districts.Count + " districts: each district keeps exactly its own places (" + (turns ? "all" : "not all") + "), none is lost with no filter");
+        Check(scene.NodeCount <= UiCheckRules.MostTargets, "company managers filter: the cap of " + most + " places lays out with " + scene.NodeCount + " targets in view, within " + UiCheckRules.MostTargets);
+        // The chips turn: the state's three and the district's thirteen are each reached from the last by one press.
+        CompanyScreen screen = CompanyScreenOf("managers_big", new CompanyRecorder(), new UiScene());
+        int seen = 0;
+        for (int i = 0; i < 4; i++)
+        {
+            screen.Press(CompanyFace.Filter, (screen.View.State + 1) % CompanyView.StateCount + screen.View.District * CompanyView.DistrictStep);
+            seen |= 1 << screen.View.State;
+        }
+        Check(seen == 7 && screen.View.State == (4 % CompanyView.StateCount), "company managers filter: the state chip turns through all three values and round");
+    }
+
     private static void CompanyDump(string state)
     {
         var s = new UiScene();
@@ -178,6 +271,7 @@ internal static partial class Program
         Check(all, "company face: every target of every state runs the action drawn, as its own kind, and changes only what its kind owns (any failure is said above)");
         Console.WriteLine("    company face: " + pressed + " targets pressed in " + UiSamples.CompanyStates.Length + " states, " + drawn.Count + " kinds of action drawn");
         CompanyCost();
+        CompanyFilterChecks();
         // No action without a page that draws it, and none without the live source's handler: an orphan either way is a button nobody can press or a press nothing answers.
         var orphans = new StringBuilder();
         var unhandled = new StringBuilder();

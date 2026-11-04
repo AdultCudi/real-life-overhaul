@@ -311,7 +311,7 @@ namespace RealLifeOverhaul.Ui
             bool all = true;
             for (int i = 0; i < m.Tree.Length && i < m.TreeIds.Length; i++)
             {
-                all &= !m.Tree[i].HasKids || _view.FoldedNodes.Contains(m.TreeIds[i]);
+                all &= !m.Tree[i].HasKids || _view.IsFolded(m.TreeIds[i]);
             }
             for (int i = 0; i < m.Tree.Length && i < m.TreeIds.Length; i++)
             {
@@ -319,13 +319,14 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
-                if (all)
+                // Opened: a row that starts folded is turned, one that starts open is not; folded: the other way.
+                if (all == CompanyView.StartsFolded(m.TreeIds[i]))
                 {
-                    _view.FoldedNodes.Remove(m.TreeIds[i]);
+                    _view.FoldedNodes.Add(m.TreeIds[i]);
                 }
                 else
                 {
-                    _view.FoldedNodes.Add(m.TreeIds[i]);
+                    _view.FoldedNodes.Remove(m.TreeIds[i]);
                 }
             }
             return true;
@@ -410,7 +411,7 @@ namespace RealLifeOverhaul.Ui
             _view.Tab = a.A;
             _view.Sub[a.A] = a.B;
             _view.SubArg[a.A] = a.C;
-            _view.SubPick[a.A] = string.Empty;
+            _view.SubPick[a.A] = a.S2 ?? string.Empty;   // a page that opens on a row of its list (a candidate of a vacancy)
             if (a.S != null)
             {
                 _view.Pick[a.A] = a.S;

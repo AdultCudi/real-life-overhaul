@@ -244,6 +244,7 @@ namespace RealLifeOverhaul.Ui
         public UiRole Tint;
         public float Hue;
         public bool Face;                       // a portrait in place of a tile
+        public string FaceName;                 // whose portrait it is where the row's title is not their name (a question's, a place's); null for the title
         public UiRole Ring;
         public int Grade;                       // 0 to 100 as a meter under the lines, or -1
         public CompanyAct Act;
@@ -277,6 +278,7 @@ namespace RealLifeOverhaul.Ui
         public UiIcon Icon = UiIcon.Store;
         public UiRole Tint = UiRole.None;
         public bool Face;                       // a portrait in place of the tile
+        public string FaceName;                 // whose portrait it is where the title is not their name; null for the title
         public float Hue;
         public UiRole Ring = UiRole.Ok;
         public string[] Chips = new string[0];
@@ -298,6 +300,7 @@ namespace RealLifeOverhaul.Ui
         public UiRole Tint;
         public float Hue;
         public bool Face;
+        public string FaceName;                 // whose portrait it is where the title is not their name; null for the title
         public UiRole Ring;
         public bool Caption;                    // a label row (a group's), no target
         public bool Dim;
