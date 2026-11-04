@@ -1,4 +1,5 @@
 using System;
+using RealLifeOverhaul.Map25;
 using RealLifeOverhaul.Nav;
 
 // The 2.5D city map's logic, round 2 of the job (the reviewer's eleven must-fix): what the picture reads from the game and when (a still, open map
@@ -12,9 +13,76 @@ internal static partial class Program
     private static void Map25LogicChecks()
     {
         Map25LightsChecks();
+        Map25RedrawChecks();
         Map25LatchChecks();
         Map25LayerChecks();
         Map25SourceChecks();
+    }
+
+    // The decision to draw the picture again, and the game's zones in it: a zone the district view tints or a neighbourhood line the filters toggle moves no camera, so a
+    // still camera is drawn again for it, and for nothing else.
+    private static void Map25RedrawChecks()
+    {
+        var view = new float[16];
+        var projection = new float[16];
+        for (int i = 0; i < 16; i++)
+        {
+            view[i] = 1f + i * 0.25f;
+            projection[i] = 2f - i * 0.125f;
+        }
+        float[] lastView = (float[])view.Clone(), lastProjection = (float[])projection.Clone();
+        bool still = !NavMapMoves.Needed(false, 0, view, lastView, projection, lastProjection);
+        bool changed = NavMapMoves.Needed(true, 0, view, lastView, projection, lastProjection), sending = NavMapMoves.Needed(false, 3, view, lastView, projection, lastProjection);
+        view[5] += 0.001f;
+        bool turned = NavMapMoves.Needed(false, 0, view, lastView, projection, lastProjection);
+        view[5] = lastView[5];
+        projection[0] += 0.001f;
+        bool zoomed = NavMapMoves.Needed(false, 0, view, lastView, projection, lastProjection);
+        projection[0] = lastProjection[0];
+        Check(still && changed && sending && turned && zoomed,
+            "2.5D city map: a still camera with nothing changed and no mesh to send is not drawn again; a changed picture, a mesh to send or one number of either matrix is");
+
+        var book = new Map25ZoneBook();
+        var corners = new float[Map25Zones.MostZones * 8];
+        var colours = new Map25Colour[Map25Zones.MostZones];
+        var alphas = new float[Map25Zones.MostZones];
+        for (int z = 0; z < 2; z++)
+        {
+            Map25Zones.Corners(z * 100f, 0f, z * 100f + 80f, 60f, corners, z);
+            colours[z] = new Map25Colour(0.3f + z * 0.2f, 0.4f, 0.5f);
+            alphas[z] = 0.47f;
+        }
+        // each step is a change of the game's zones and what a still camera does about it: (take the zones, then decide with nothing else changed)
+        int drawn = 0, wrong = 0;
+        void Step(int count, bool change)
+        {
+            bool took = book.Take(corners, colours, alphas, count);
+            bool draw = NavMapMoves.Needed(took, 0, view, lastView, projection, lastProjection);
+            drawn += draw ? 1 : 0;
+            wrong += took == change && draw == change ? 0 : 1;
+        }
+        Step(0, true);                                    // the first look of a book is a change whatever it finds (the scene may hold an earlier picture's zones)
+        Step(0, false);                                   // no zone, none held
+        Step(2, true);                                    // two show: drawn
+        Step(2, false);                                   // the same two: not
+        colours[1] = new Map25Colour(0.9f, 0.2f, 0.2f);
+        Step(2, true);                                    // the district view tints one: drawn
+        Step(2, false);
+        alphas[0] = 0.30f;
+        Step(2, true);                                    // an opacity
+        Step(2, false);
+        corners[8] += 5f;
+        Step(2, true);                                    // a rectangle
+        Step(2, false);
+        Step(1, true);                                    // a neighbourhood line is toggled off in the filters: one goes
+        Step(1, false);
+        Step(0, true);                                    // all gone
+        Step(0, false);
+        book.Forget();                                    // the map opens again
+        Step(0, true);
+        Step(0, false);
+        Check(wrong == 0 && drawn == 8 && book.Count == 0,
+            "2.5D city map: a zone that shows, changes its colour or opacity, moves or goes is a reason to draw on a still camera, and the same zones are none (" + drawn + " draws in 15 looks)");
     }
 
     private static void Map25LightsChecks()
@@ -37,15 +105,20 @@ internal static partial class Program
             covered += s == 1 ? 1 : 0;
         }
         Check(frames == 7 && covered == 883 && lights.Passes == 1 && !lights.Sweeping, "2.5D city map: the map opening is one pass over the 883 buildings, 128 a frame (" + frames + " frames), each read once");
-        // a still, open map: nothing to read, nothing allocated, however long
-        int reads = 0;
+        // a still, open map: nothing to read, nothing allocated, however long (after a warm-up: the first thousands of calls of a cold process are the runtime's own
+        // work on this thread, a few kilobytes that the rule does not make)
+        int warm = 0, reads = 0;
+        for (int f = 0; f < 20000; f++)
+        {
+            warm += lights.Step(false, 11, 22, out _, out _) ? 1 : 0;
+        }
         long before = GC.GetAllocatedBytesForCurrentThread();
         for (int f = 0; f < 20000; f++)
         {
             reads += lights.Step(false, 11, 22, out _, out _) ? 1 : 0;
         }
         long bytes = GC.GetAllocatedBytesForCurrentThread() - before;
-        Check(reads == 0 && lights.Passes == 1 && bytes == 0, "2.5D city map: a still, open map reads no building in 20,000 frames and allocates nothing (" + reads + " reads, " + bytes + " bytes)");
+        Check(warm == 0 && reads == 0 && lights.Passes == 1 && bytes == 0, "2.5D city map: a still, open map reads no building in 20,000 frames and allocates nothing (" + reads + " reads, " + bytes + " bytes)");
         // the pointer comes to another building, and a card opens: one pass each
         int hover = 0;
         while (lights.Step(false, 12, 22, out _, out _) && hover < 100)
@@ -71,6 +144,30 @@ internal static partial class Program
         }
         bool quiet = !lights.Step(false, 12, 33, out _, out _);
         Check(working == 40 && after >= 1 && after <= 14 && quiet, "2.5D city map: while the game's filters have work a pass is under way every frame, once they have none one more finishes it and the map is still again (" + after + " frames after)");
+        // a toggle whose whole work fits in the frame it began in (the game works its queue inside its own update, up to 2 ms a frame): the queue is empty again when the
+        // picture looks, so only the count of buildings the game worked on says it was there
+        int worked = 0, workSeen = NavMapWork.Items;
+        Action<int> game = n => worked += n;
+        Action<int> wrapped = NavMapWork.Wrap(game);
+        for (int n = 0; n < 883; n++)
+        {
+            wrapped(1);
+        }
+        var byQueue = new NavMapLights();
+        byQueue.Reset(883);
+        bool queueSees = byQueue.Step(false, 12, 33, out _, out _);   // what the picture saw before the count: an empty queue, so nothing
+        bool took = NavMapWork.Took(ref workSeen);
+        bool tookOnce = !NavMapWork.Took(ref workSeen);
+        int passesBefore = lights.Passes;
+        bool begins = lights.Step(took, 12, 33, out int firstFrom, out _) && firstFrom == 0 && lights.Passes == passesBefore + 1;
+        int single = 1;
+        while (lights.Step(NavMapWork.Took(ref workSeen), 12, 33, out _, out _) && single < 100)
+        {
+            single++;
+        }
+        Check(worked == 883 && took && tookOnce && !queueSees && begins && single >= 7 && single <= 15 && !lights.Sweeping && !lights.Step(false, 12, 33, out _, out _),
+            "2.5D city map: a toggle whose work is done in the frame it began in (the game's queue empty again when the picture looks) still starts a pass, by the count of buildings the game worked on, and the game's own step runs every time ("
+            + worked + " buildings worked, " + single + " frames of passes)");
         // a mod that changes a look without telling the game starts a pass; one asked for while a pass is under way follows it
         lights.Poke();
         lights.Step(false, 12, 33, out _, out _);
@@ -151,6 +248,13 @@ internal static partial class Program
               && drawn.Contains("public void SetZones(") && districts.Split(new[] { "NavBridges.MapLooks" }, StringSplitOptions.None).Length - 1 >= 2 && director.Contains("NavBridges.MapLooks = PokeMap;"),
             "2.5D city map: the game's neighbourhood zones that show are read (their box, matrix and _UnlitColor) and drawn into the picture, and the district view tells the picture when it tints or clears one");
 
+        // 1b. the zones are read before the picture decides whether to draw: a change of them on a still camera is drawn
+        string show = Map25Body(map, "private void Show(CityMap map)");
+        string readZones = Map25Body(map, "private void ReadZones()");
+        int readAt = show.IndexOf("ReadZones();", StringComparison.Ordinal), decideAt = show.IndexOf("NavMapMoves.Needed(", StringComparison.Ordinal);
+        Check(readAt >= 0 && decideAt > readAt && show.Contains("NavMapMoves.Needed(_dirty,") && readZones.Contains("_zonesDrawn.Take(") && readZones.Contains("_dirty = true;") && !show.Contains("moved = _dirty"),
+            "2.5D city map: the game's zones are read before the picture decides whether to draw again, and a change of them is a reason to draw (so a zone the district view tints, or a neighbourhood line a filter toggles, shows on a still camera)");
+
         // 2. one owner of the order of the marker layer's children
         string arrange = Map25Body(scene, "private void ArrangeMap()");
         string toggled = Map25Body(mapEvents, "private void MapToggled(bool open)");
@@ -163,6 +267,13 @@ internal static partial class Program
         Check(map.Contains("NavMapLatch.Drew(NavMapLatch.Full)") && map.Contains("NavMapLatch.Mark(NavMapLatch.Full)") && !Map25Body(map, "public void Open(bool open)").Contains("_failed = false")
               && Map25Body(scene, "private bool FullWanted").Contains("NavMapLatch.Drew(") && hudScene.Contains("SceneBroken => NavMapLatch.Drew(NavMapLatch.Minimap)") && hudScene.Contains("NavMapLatch.Mark(NavMapLatch.Minimap)"),
             "2.5D city map: a black picture is latched (said once) and neither the next opening nor the director brings the picture back; the minimap's is latched the same");
+
+        // 3b. the minimap's black picture is not left up until the director's next slow tick
+        string frameBody = Map25Body(hudScene, "public void SceneFrame(");
+        int blankAt = frameBody.IndexOf("Map25Scene.Blank(", StringComparison.Ordinal), offAt = frameBody.IndexOf("Scene(_sceneFrom, false, _sceneTilted);", StringComparison.Ordinal);
+        int shownAt = frameBody.IndexOf("_scenePicture.enabled = true;", StringComparison.Ordinal);
+        Check(blankAt >= 0 && offAt > blankAt && shownAt > offAt,
+            "2.5D city map: a minimap picture that comes out black is switched off in the frame it is found and the flat pictures come back at once, not at the director's next slow tick");
 
         // 4. the map's own event whatever the minimap and the GPS are
         string slow = Map25Body(director, "private void Slow(float now)");
@@ -185,6 +296,13 @@ internal static partial class Program
         Check(Map25Count(map, "gameObject.layer") == 1 && lightsBody.Contains("gameObject.layer") && lightsBody.Contains("_lights.Step(") && lightsBody.Contains("CityMapFilters.Work.HasPendingWork") && lightsBody.Contains("MouseController.currentTargetEntity")
               && lightsBody.Contains("buildingResume") && !map.Contains("Slice") && !map.Contains("Mirror()") && !map.Contains("Harmony"),
             "2.5D city map: the buildings' layers are read only inside the pass the game's own signals start (the filters' work, the pointer, the open card, the map opening), no sweep every frame and no patch of the game's code");
+
+        // 6b. the game's look at its buildings is counted, so work done in the frame it began in is seen too
+        string follow = ModSource(@"Navigation\NavMapFollow.cs"), contract = ModSource(@"Core\GameContract.cs");
+        Check(lightsBody.Contains("NavMapWork.Took(") && lightsBody.Contains("NavMapWork.Following") && lightsBody.Contains("Input.GetMouseButtonUp(0)") && Map25Body(map, "public static NavMap25 Make(").Contains("NavMapFollow.Install(")
+              && follow.Contains("GameContract.MapWork.Off") && follow.Contains("NavMapWork.Wrap(") && follow.Contains("\"_updateAction\"") && follow.Contains("NavMapWork.Following = true;")
+              && contract.Contains("ContractBook.Part(\"map_work\"") && contract.Contains("On(ClaimedRows, MapWork)"),
+            "2.5D city map: the game's look at its buildings is counted by a step wrapped round the game's own (the contract names the piece), so work done in the frame it began in starts a pass too, and a game whose queue is not as expected falls back to a pass at every mouse release");
 
         // 7. every way of standing down gives the game's map camera its tilt back
         string release = Map25Body(map, "private void Release()");

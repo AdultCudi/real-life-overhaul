@@ -31374,5 +31374,6 @@
   "reallife_nav_map25": "City map shows buildings as 2.5D blocks",
   "reallife_opt_sec_citymap": "City map",
   "reallife_opt_tip_nav_minimap25": "The minimap shows buildings as small blocks, seen at an angle. Off, the flat minimap.",
-  "reallife_opt_tip_nav_map25": "The city map shows buildings as blocks, flat from far away and tilted as you zoom in. Off, the game's own map."
+  "reallife_opt_tip_nav_map25": "The city map shows buildings as blocks, flat from far away and tilted as you zoom in. Off, the game's own map.",
+  "reallife_contract_part_map_work": "the 2.5D city map seeing when the city map's filters have worked on its buildings"
 }

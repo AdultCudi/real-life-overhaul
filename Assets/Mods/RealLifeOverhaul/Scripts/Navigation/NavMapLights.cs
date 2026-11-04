@@ -6,9 +6,10 @@ namespace RealLifeOverhaul.Nav
     /// Which of the game's highlights the 2.5D city map has taken into its blocks, and when the game's buildings are looked at again to
     /// find out. The game tells nothing when it highlights a building (it moves it to a layer and writes a colour), so the picture
     /// reads them, but only after something that changes them: the map opening, the pointer coming to another building, the card of one opening
-    /// or shutting, the game's filters having work (a toggle queues every building, a few at a frame), and a look the mod itself changed. Each of
+    /// or shutting, the game's filters having work or having worked on a building (a toggle queues every building and the game works them a few at a frame, so a short
+    /// one is over before the picture looks: <see cref="NavMapWork"/> counts them), and a look the mod itself changed. Each of
     /// those starts one pass over all the buildings, <see cref="Slice"/> of them a frame; a pass starts another while the filters still have work, and
-    /// one more when it is done. A still, open map costs the three comparisons that ask. Game-free; EconomyCheck runs it.
+    /// one more when it is done. A still, open map costs the comparisons that ask. Game-free; EconomyCheck runs it.
     /// </summary>
     public sealed class NavMapLights
     {
@@ -205,6 +206,69 @@ namespace RealLifeOverhaul.Nav
         {
             pictureIndex = picture ? 0 : -1;
             routeIndex = route ? (picture ? 1 : 0) : -1;
+        }
+    }
+
+    /// <summary>
+    /// Whether the picture is drawn again this frame: something it shows changed (the route, a tint, a street's name, the player, a zone), its meshes are still being
+    /// sent, or the camera's matrices are not the ones it was last drawn with. A still camera with nothing changed draws nothing, which is the whole cost of an
+    /// open, still map. The decision is made after everything that can change what the picture shows has been looked at, the game's zones included: a zone the district view
+    /// tints or a neighbourhood line the filters toggle moves no camera. Game-free; EconomyCheck runs it.
+    /// </summary>
+    public static class NavMapMoves
+    {
+        /// <summary>The camera's matrices are sixteen floats each, as the engine keeps them.</summary>
+        public static bool Needed(bool changed, int meshesPending, float[] view, float[] lastView, float[] projection, float[] lastProjection)
+        {
+            if (changed || meshesPending > 0)
+            {
+                return true;
+            }
+            for (int i = 0; i < 16; i++)
+            {
+                if (view[i] != lastView[i] || projection[i] != lastProjection[i])
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// The game's look at its buildings, counted. The game keeps no word of when it has highlighted one: its filters queue every building and work them off inside its own
+    /// update, a few a frame up to two milliseconds, so a toggle whose whole work fits in the frame it began in is over before the picture looks, and an empty queue says
+    /// nothing. Each building the queue works on is counted by a step wrapped round the game's own (<see cref="Wrap"/>, put on the queue by NavMapFollow), and
+    /// <see cref="Took"/> says whether any was worked since it was last asked, whatever the queue holds now. A game whose queue could not be wrapped keeps the queue's own word
+    /// and <see cref="Following"/> false. Game-free; EconomyCheck runs it.
+    /// </summary>
+    public static class NavMapWork
+    {
+        private static int _items;
+
+        /// <summary>True once the game's step is wrapped, so that every building it works on is counted.</summary>
+        public static bool Following { get; internal set; }
+
+        /// <summary>Buildings the game's queue has worked on since the step was wrapped.</summary>
+        public static int Items => _items;
+
+        /// <summary>The game's step with a count added in front of it: the game's own always runs.</summary>
+        public static Action<T> Wrap<T>(Action<T> game)
+        {
+            return item =>
+            {
+                _items++;
+                game(item);
+            };
+        }
+
+        /// <summary>True when the queue worked on a building since <paramref name="seen"/> was taken; <paramref name="seen"/> is brought up to now.</summary>
+        public static bool Took(ref int seen)
+        {
+            int now = _items;
+            bool took = now != seen;
+            seen = now;
+            return took;
         }
     }
 }

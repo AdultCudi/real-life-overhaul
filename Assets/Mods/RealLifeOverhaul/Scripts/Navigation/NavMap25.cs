@@ -63,7 +63,9 @@ namespace RealLifeOverhaul.Nav
         private float _lastWidth, _lastHeight;
         private readonly float[] _zoneCorners = new float[Map25Zones.MostZones * 8], _zoneAlpha = new float[Map25Zones.MostZones], _matrix = new float[16];
         private readonly Map25Colour[] _zoneColour = new Map25Colour[Map25Zones.MostZones];
+        private readonly Map25ZoneBook _zonesDrawn = new Map25ZoneBook();
         private MeshFilter[] _zoneMesh;
+        private int _workSeen;
 
         /// <summary>The game's map is not drawn over: another mod owns it, or this was switched off.</summary>
         public bool Standing { get; private set; }
@@ -83,6 +85,7 @@ namespace RealLifeOverhaul.Nav
             {
                 return null;
             }
+            NavMapFollow.Install(Logger);   // once a session: the count of the buildings the game's filters work on, which says a toggle's work that ended in one frame
             var made = new GameObject(ObjectName, typeof(RectTransform));
             made.SetActive(false);
             var rect = (RectTransform)made.transform;
@@ -112,6 +115,7 @@ namespace RealLifeOverhaul.Nav
                     _dirty = true;
                     _masked = false;
                     _zonesDirty = true;
+                    _zonesDrawn.Forget();   // the scene may hold the zones an earlier picture drew: the first look at the game's puts them right whatever they are
                     _lights.Reset(_scene != null && _scene.Ready ? _scene.City.Count : 0);
                     _lights.Poke();   // the game applies its filters as it opens: one pass to find them
                 }
@@ -311,18 +315,17 @@ namespace RealLifeOverhaul.Nav
                 _camera.cullingMask = 0;   // the game's own city is not drawn behind the picture; the game gives its mask back when the map shuts
             }
             Lights();
+            if (_zonesDirty)
+            {
+                ReadZones();   // before the decision below: a zone the district view tints or a neighbourhood line the filters toggle moves no camera
+            }
             Matrix4x4 view = _camera.worldToCameraMatrix, projection = _camera.projectionMatrix;
             for (int i = 0; i < 16; i++)
             {
                 _viewMatrix[i] = view[i];
                 _projection[i] = projection[i];
             }
-            bool moved = _dirty || _scene.Scene.Pending > 0;
-            for (int i = 0; i < 16 && !moved; i++)
-            {
-                moved = _viewMatrix[i] != _lastView[i] || _projection[i] != _lastProjection[i];
-            }
-            if (!moved)
+            if (!NavMapMoves.Needed(_dirty, _scene.Scene.Pending, _viewMatrix, _lastView, _projection, _lastProjection))
             {
                 return;
             }
@@ -333,10 +336,6 @@ namespace RealLifeOverhaul.Nav
             // the scene's ground is the median street: the game's view is moved the same, so the picture lies where the game's own city does
             _view.Set(_viewMatrix, _projection, pitch, _scene.Y0);
             _scene.Scene.Refresh();
-            if (_zonesDirty)
-            {
-                ReadZones();
-            }
             // the lines and marks are a few pixels, however far the camera is: their metres are what a pixel is where the middle of the picture lies
             float gx = _px, gz = _pz;
             if (!_view.GroundAhead(out gx, out gz) && _hasPlayer)
@@ -467,8 +466,8 @@ namespace RealLifeOverhaul.Nav
             return rect;
         }
 
-        // Once a frame while the picture shows: the three things that tell the game's highlights moved (the filters have work, the pointer is on another building, another
-        // building's card is open), and, while a pass is under way, a slice of the buildings read. Nothing else is read while none changed.
+        // Once a frame while the picture shows: the things that tell the game's highlights moved (the filters have work or worked on a building since the last look, the pointer
+        // is on another building, another building's card is open), and, while a pass is under way, a slice of the buildings read. Nothing else is read while none changed.
         private void Lights()
         {
             if (_lights.Hulls != _scene.City.Count)
@@ -477,7 +476,12 @@ namespace RealLifeOverhaul.Nav
                 _lights.Poke();
             }
             UIs uis = InstanceBehavior<UIs>.Instance;
-            bool working = CityMapFilters.Work.HasPendingWork;
+            // The game works its queue inside its own update, up to two milliseconds a frame: a toggle whose work fits in the frame it began in leaves the queue empty by the time
+            // this runs. So the count of the buildings it worked on is asked every frame (NavMapFollow), and where the queue could not be counted a mouse button coming up is
+            // taken for the click that toggled a filter (its work is done by now or by the next frame, and a pass follows both).
+            bool counted = NavMapWork.Took(ref _workSeen);
+            bool released = !NavMapWork.Following && Input.GetMouseButtonUp(0);
+            bool working = counted || released || CityMapFilters.Work.HasPendingWork;
             int hover = RuntimeHelpers.GetHashCode(MouseController.currentTargetEntity);
             int selected = uis != null && uis.buildingResume != null ? RuntimeHelpers.GetHashCode(uis.buildingResume.CityBuildingController) : 0;
             if (!_lights.Step(working, hover, selected, out int from, out int to))
@@ -609,8 +613,11 @@ namespace RealLifeOverhaul.Nav
                 n++;
             }
             _zonesShown = n > 0;
-            _scene.Scene.SetZones(_zoneCorners, _zoneColour, _zoneAlpha, n, ZoneY);
-            _dirty = true;
+            if (_zonesDrawn.Take(_zoneCorners, _zoneColour, _zoneAlpha, n))
+            {
+                _scene.Scene.SetZones(_zoneCorners, _zoneColour, _zoneAlpha, n, ZoneY);
+                _dirty = true;   // a zone showed, went, changed its colour or moved: drawn again, whatever the camera does
+            }
         }
 
         // Which of the game's buildings each outline is, by address (a pass over the game's list: once, as the map first shows).

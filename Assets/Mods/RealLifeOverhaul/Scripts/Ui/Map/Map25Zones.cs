@@ -41,4 +41,51 @@ namespace RealLifeOverhaul.Map25
             corners[o + 6] = minX; corners[o + 7] = maxZ;
         }
     }
+
+    /// <summary>
+    /// The zones the picture was last given, so that reading the game's again says whether anything about them changed: one that shows or goes, a colour or an opacity,
+    /// a rectangle. The picture is drawn again on a still camera only then. The first look of a book (and the first after <see cref="Forget"/>) is a change whatever the
+    /// zones are, because the scene may still hold what an earlier picture drew. Nothing is allocated after it is made. Game-free.
+    /// </summary>
+    public sealed class Map25ZoneBook
+    {
+        private readonly float[] _corners = new float[Map25Zones.MostZones * 8], _alpha = new float[Map25Zones.MostZones];
+        private readonly Map25Colour[] _colour = new Map25Colour[Map25Zones.MostZones];
+        private int _count;
+        private bool _fresh = true;
+
+        /// <summary>Zones the book holds.</summary>
+        public int Count => _count;
+
+        /// <summary>The next look at the game's zones is a change, whatever they are.</summary>
+        public void Forget()
+        {
+            _fresh = true;
+        }
+
+        /// <summary>True, and the book holds these zones from now on, when they are not the ones it held; false when they are the same.</summary>
+        public bool Take(float[] corners, Map25Colour[] colours, float[] alphas, int count)
+        {
+            count = Math.Max(0, Math.Min(count, Map25Zones.MostZones));
+            bool same = !_fresh && count == _count;
+            for (int i = 0; same && i < count; i++)
+            {
+                same = _alpha[i] == alphas[i] && _colour[i].R == colours[i].R && _colour[i].G == colours[i].G && _colour[i].B == colours[i].B;
+                for (int k = 0; same && k < 8; k++)
+                {
+                    same = _corners[i * 8 + k] == corners[i * 8 + k];
+                }
+            }
+            if (same)
+            {
+                return false;
+            }
+            Array.Copy(corners, _corners, count * 8);
+            Array.Copy(colours, _colour, count);
+            Array.Copy(alphas, _alpha, count);
+            _count = count;
+            _fresh = false;
+            return true;
+        }
+    }
 }

@@ -147,9 +147,14 @@ namespace RealLifeOverhaul.Nav
                 if (!_sceneProbed)
                 {
                     _sceneProbed = true;
-                    if (Map25Scene.Blank(_sceneTarget) && NavMapLatch.Mark(NavMapLatch.Minimap))
+                    if (Map25Scene.Blank(_sceneTarget))
                     {
-                        Logger?.Warn("Navigation: the minimap's 2.5D picture drew nothing (it is black), so the minimap stays flat for this session.");
+                        if (NavMapLatch.Mark(NavMapLatch.Minimap))
+                        {
+                            Logger?.Warn("Navigation: the minimap's 2.5D picture drew nothing (it is black), so the minimap stays flat for this session.");
+                        }
+                        Scene(_sceneFrom, false, _sceneTilted);   // the flat pictures at once: the director's next slow tick would leave the black one up for a quarter of a second
+                        return;
                     }
                 }
                 _sceneX = px;

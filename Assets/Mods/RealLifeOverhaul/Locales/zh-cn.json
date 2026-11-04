@@ -31374,5 +31374,6 @@
   "reallife_nav_map25": "城市地图将建筑物显示为 2.5D 方块",
   "reallife_opt_sec_citymap": "城市地图",
   "reallife_opt_tip_nav_minimap25": "小地图以倾斜视角将建筑物显示为小方块。关闭时为平面小地图。",
-  "reallife_opt_tip_nav_map25": "城市地图将建筑物显示为方块，远看为平面，放大时逐渐倾斜。关闭时为游戏自带的地图。"
+  "reallife_opt_tip_nav_map25": "城市地图将建筑物显示为方块，远看为平面，放大时逐渐倾斜。关闭时为游戏自带的地图。",
+  "reallife_contract_part_map_work": "检测城市地图筛选何时处理了其建筑的2.5D城市地图"
 }

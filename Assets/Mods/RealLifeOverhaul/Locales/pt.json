@@ -31374,5 +31374,6 @@
   "reallife_nav_map25": "Mapa da cidade mostra prédios como blocos 2.5D",
   "reallife_opt_sec_citymap": "Mapa da cidade",
   "reallife_opt_tip_nav_minimap25": "O minimapa mostra prédios como pequenos blocos, vistos em ângulo. Desligado, o minimapa fica plano.",
-  "reallife_opt_tip_nav_map25": "O mapa da cidade mostra prédios como blocos, planos de longe e inclinados ao dar zoom. Desligado, o mapa original do jogo."
+  "reallife_opt_tip_nav_map25": "O mapa da cidade mostra prédios como blocos, planos de longe e inclinados ao dar zoom. Desligado, o mapa original do jogo.",
+  "reallife_contract_part_map_work": "o mapa 2.5D da cidade que detecta quando os filtros do mapa da cidade processaram seus prédios"
 }
