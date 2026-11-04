@@ -5,7 +5,7 @@ namespace RealLifeOverhaul.Hustles
     public sealed partial class HustleDirector
     {
         // A day's listings from the sellers of the book, and from the rivals that own a business that sells used vehicles or machines (read once a day).
-        // Game-free but for four reads (SellerName, ReadDealers, ShopLevel, MarketPeople): EconomyCheck plays it day by day as it stands.
+        // Game-free but for three reads (ReadDealers, ShopLevel, MarketPeople): EconomyCheck plays it day by day as it stands.
         private const int PoolWaitSeconds = 90;
         private long _waitSince;   // when the morning first found the people pool not up yet
 

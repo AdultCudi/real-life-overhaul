@@ -16,7 +16,6 @@ namespace RealLifeOverhaul.Careers
         // kept to be saved beside the name (TagPeople).
         private string NameRoll()
         {
-            PeoplePoolGame.Install();
             PoolPerson who = default(PoolPerson);
             for (int tries = 0; tries < 8; tries++)
             {

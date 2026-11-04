@@ -352,7 +352,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         // What a post asks as check lines: the qualification, the skill points, the employer's own wish and, for a step up at the player's own employer, the
-        // performance and teamwork the promotion goes by.
+        // performance the promotion goes by (the standing with colleagues counts through the review's score).
         private WorkSection NeedsOf(CareersDirector d, StudyFile study, Opening o, Profession p, bool qualified, bool eligible, WorkFile w, int day)
         {
             UtilitiesWords words = W;

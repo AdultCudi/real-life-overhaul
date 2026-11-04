@@ -25,7 +25,6 @@ namespace RealLifeOverhaul.Hustles
         /// <summary>A seller of the pool as a person of the city's one people pool (a name of the customers' catalogue while the population is off).</summary>
         public static RealLifeOverhaul.Careers.PoolPerson Seller(int seed, int index)
         {
-            RealLifeOverhaul.Careers.PeoplePoolGame.Install();
             return RealLifeOverhaul.Careers.PeoplePool.For(RealLifeOverhaul.Tech.TechRandom.Hash(seed, 4107, index) & long.MaxValue);
         }
 

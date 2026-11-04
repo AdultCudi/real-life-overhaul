@@ -2,6 +2,10 @@ using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.Careers;
 using RealLifeOverhaul.Hustles;
+using PopState = RealLifeOverhaul.Population.PopulationState;
+using PopSim = RealLifeOverhaul.Population.PopulationSim;
+using PopCity = RealLifeOverhaul.Population.CityPopulation;
+using PopSeed = RealLifeOverhaul.Population.BusinessSeed;
 using RealLifeOverhaul.Tech;
 
 // Day by day runs of the work feature, through the directors' own code: CareersDirector.People.cs (StandingDay, RecordShift, StandingDecides,
@@ -548,11 +552,16 @@ internal static partial class Program
     private static void WkRunPoolMoves()
     {
         int size = 300;
-        bool ready = true;
+        // the wait is the real one (PeoplePool.InstallWait, what the mod installs at its start) over the real city population; only the pick is a stand-in for the game's name maker
+        PopSim popSim = PopulationMade(777, out PopState pop, out List<PopSeed> popSeeds);
+        PopState liveBefore = PopCity.Live;
+        bool followingBefore = PopCity.Following;
+        PopCity.Following = false;
+        PopCity.Live = pop;
         PeoplePool.Pick = h => new PoolPerson { Id = (int)(h % size) + 1, Name = "Pool " + ((int)(h % size) + 1) };
-        PeoplePool.Find = id => id >= 1 && id <= size ? new PoolPerson { Id = id, Name = "Pool " + id } : default(PoolPerson);
-        PeoplePool.Wanted = () => true;
-        PeoplePool.Ready = () => ready;
+        PeoplePool.Wanted = null;
+        PeoplePool.Ready = null;
+        PeoplePool.InstallWait(() => true);
         try
         {
             // the others who applied: read, the pool grows and shrinks, read again
@@ -589,11 +598,12 @@ internal static partial class Program
                 "work pool run: thirty posts' other applicants are the same people after the pool grew (kept at the first read), and none is twice in one post (" + before.Count + " people)");
 
             // a job found before the population is up: no colleague is named from the catalogue for good
-            ready = false;
+            PopCity.Live = null;   // the population is not up yet
+            Check(PeoplePool.Waiting, "work pool run: the installed wait says waiting while the setting is on and the population is not up");
             var cold = new StandingRun(31);
             StandingFile early = cold.D.Standing;
             Check(early != null && early.Peers.Count == 0, "work pool run: while the population is not up yet a new job's colleagues wait (none made with a catalogue name)");
-            ready = true;
+            PopCity.Live = pop;   // it comes up
             StandingFile later = cold.D.Standing;
             bool tagged = later.Peers.Count == 3;
             var named = new HashSet<int>();
@@ -604,11 +614,11 @@ internal static partial class Program
             Check(tagged, "work pool run: once the population is up the colleagues are made, each a different person of the pool with an id");
 
             // the Marketplace's first morning before the population is up waits; the sellers it makes after have their ids and are all different
-            ready = false;
+            PopCity.Live = null;
             var cold2 = new MarketRun();
             cold2.D.RunMorning(1);
             Check(cold2.Book.Sellers.Count == 0 && cold2.S.Listings.Count == 0, "work pool run: the Marketplace's morning waits for the population instead of naming its sellers from the catalogue");
-            ready = true;
+            PopCity.Live = pop;
             cold2.D.RunMorning(1);
             var sellerIds = new HashSet<int>();
             bool allIds = cold2.Book.Sellers.Count >= SellerRules.PoolSize;
@@ -620,13 +630,21 @@ internal static partial class Program
                 }
             }
             Check(allIds, "work pool run: the sellers made once the population is up each have their pool id, and no two are the same person");
+
+            // the wait is installed at the mod's start, before any director asks, and the directors that name people all test it
+            string start = System.IO.File.ReadAllText(System.IO.Path.Combine(FindRoot(), "Assets/Mods/RealLifeOverhaul/Scripts/Core/RealLifeOverhaulMod.cs"));
+            string people = System.IO.File.ReadAllText(System.IO.Path.Combine(FindRoot(), "Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersDirector.People.cs"));
+            int waits = System.Text.RegularExpressions.Regex.Matches(people, @"PeoplePool\.WaitingFor\(ref _waitSince").Count;
+            Check(start.Contains("PeoplePoolGame.Install") && waits >= 4 && people.Contains("_waitSince = 0;"),
+                "work pool run: the wait is installed when the mod starts, and colleagues, cohorts, tutors and applicants all wait on a clock a load resets (" + waits + " waits)");
         }
         finally
         {
             PeoplePool.Pick = null;
-            PeoplePool.Find = null;
             PeoplePool.Wanted = null;
             PeoplePool.Ready = null;
+            PopCity.Live = liveBefore;
+            PopCity.Following = followingBefore;
         }
     }
 

@@ -221,7 +221,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_work_profit_at_asking", "reallife_work_profit_at_offer", "reallife_work_profit_at_worth", "reallife_work_quarter_n",
                 "reallife_work_raise_pay", "reallife_work_raise_their_pay", "reallife_work_rank_of", "reallife_work_rated", "reallife_work_rating",
                 "reallife_work_rating_of", "reallife_work_recent_shifts", "reallife_work_reference_2", "reallife_work_reference_3",
-                "reallife_work_reject_label", "reallife_work_release", "reallife_work_release_label", "reallife_work_rename", "reallife_work_repeat",
+                "reallife_work_reject_label", "reallife_work_release", "reallife_work_release_label", "reallife_work_repeat",
                 "reallife_work_results_empty_title", "reallife_work_results_n", "reallife_work_rises_label", "reallife_work_rival_ad",
                 "reallife_work_rival_ad_line", "reallife_work_rival_bid", "reallife_work_rival_for_post", "reallife_work_rival_of",
                 "reallife_work_rival_offer_line", "reallife_work_role_designer", "reallife_work_role_junior_designer", "reallife_work_roles_off",

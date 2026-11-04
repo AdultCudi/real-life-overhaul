@@ -7,7 +7,7 @@ namespace RealLifeOverhaul.Ui
     /// The kit's face for Career, Campus, Open Roles and the Marketplace: one runner over a source (IWorkSource), so each app builds its pages
     /// and the runner lays them in the app window, routes every press to the action the page names and steps back out of a sub page first.
     /// The page is read again when the source's generation moves or the player's choice changes (a tab, a row, a filter, a step); never every
-    /// frame. The old page of each app stays underneath for the per-screen switch. The screen's own commands (1200 to 1219) and the kit's parts'
+    /// frame. The old page of each app stays underneath for the per-screen switch. The screen's own commands (1400 to 1419) and the kit's parts'
     /// are told apart by the page: a number that is another part's is never answered.
     /// </summary>
     public sealed class WorkScreen : IUiScreen, IUiTyping, IUiStepping

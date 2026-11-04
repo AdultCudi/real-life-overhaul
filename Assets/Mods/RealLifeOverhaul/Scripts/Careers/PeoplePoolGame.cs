@@ -16,9 +16,7 @@ namespace RealLifeOverhaul.Careers
         internal static void Install()
         {
             PeoplePool.Pick = Pick;
-            PeoplePool.Find = Find;
-            PeoplePool.Wanted = () => Settings.LivingPopulation && !CityPopulation.Following;
-            PeoplePool.Ready = () => Live != null && Live.People.Count > 0;
+            PeoplePool.InstallWait(() => Settings.LivingPopulation);
         }
 
         // A guest following the host has the host's copy, not people of its own.
@@ -44,37 +42,6 @@ namespace RealLifeOverhaul.Careers
                     }
                 }
                 return default(PoolPerson);
-            }
-            catch (Exception e) when (Guard.Missing(e))
-            {
-                return default(PoolPerson);
-            }
-        }
-
-        private static PoolPerson Find(int id)
-        {
-            try
-            {
-                PopulationState s = Live;
-                if (s == null || id <= 0)
-                {
-                    return default(PoolPerson);
-                }
-                PersonTable p = s.People;
-                int slot = id - 1;   // the people generated first sit in the slot of their number
-                if (slot < 0 || slot >= p.Count || p.Id[slot] != id)
-                {
-                    slot = -1;
-                    for (int i = 0; i < p.Count; i++)
-                    {
-                        if (p.Id[i] == id)
-                        {
-                            slot = i;
-                            break;
-                        }
-                    }
-                }
-                return slot >= 0 ? Make(s, slot) : default(PoolPerson);
             }
             catch (Exception e) when (Guard.Missing(e))
             {

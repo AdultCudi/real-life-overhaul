@@ -353,11 +353,11 @@ namespace RealLifeOverhaul.Ui
         }
     }
 
-    /// <summary>The command numbers of the work apps' own parts (a block nobody else uses: 1200 to 1219; the kit's are not unique across parts, so
+    /// <summary>The command numbers of the work apps' own parts (a block free of the Planner's 1200 to 1213 and every other part's, found by a grep of the command numbers: 1400 to 1419; the kit's are not unique across parts, so
     /// every handler tests the page it belongs to first).</summary>
     public static class WorkCmd
     {
-        public const int Less = 1201, Type = 1202, More = 1203, Search = 1205, Card = 1206, PageTab = 1207, Aside = 1208, Sort = 1209,
-            Close = 1210, Locate = 1211, Pick = 1212, Diary = 1213, Day = 1214, NudgeLess = 1215, NudgeMore = 1216, Read = 1217;
+        public const int Less = 1401, Type = 1402, More = 1403, Search = 1405, Card = 1406, PageTab = 1407, Aside = 1408, Sort = 1409,
+            Close = 1410, Locate = 1411, Pick = 1412, Diary = 1413, Day = 1414, NudgeLess = 1415, NudgeMore = 1416, Read = 1417;
     }
 }

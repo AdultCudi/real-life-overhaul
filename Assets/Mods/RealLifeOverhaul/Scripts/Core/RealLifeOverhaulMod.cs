@@ -71,6 +71,7 @@ namespace RealLifeOverhaul
             Guard.Step("the construction company's business type", () => Construction.ConstructionType.Register());   // before any save that holds one is loaded
             Shops.ShopsDirector.Logger = context.Logger;
             Guard.Step("the new kinds of shop", Shops.ShopsDirector.Start);   // before any save that holds one is loaded
+            Guard.Step("the city's people pool for the work apps", Careers.PeoplePoolGame.Install);   // before anything asks whether the population is up: a wait that is not installed does not wait
             Population.PopulationGame.Logger = context.Logger;
             Guard.Step("the population's count in the game's customer calculators", Population.PopulationGame.InstallCalculators);   // before any customer is worked out
             Designs.DesignsDirector.Logger = context.Logger;

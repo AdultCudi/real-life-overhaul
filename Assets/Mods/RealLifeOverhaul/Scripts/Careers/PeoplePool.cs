@@ -1,5 +1,6 @@
 using System;
 using RealLifeOverhaul.Economy.Dealership;
+using RealLifeOverhaul.Population;
 using RealLifeOverhaul.Tech;
 
 namespace RealLifeOverhaul.Careers
@@ -24,14 +25,21 @@ namespace RealLifeOverhaul.Careers
         /// <summary>A grown person of the pool picked by a hash (the same hash, the same person); default when there is no pool.</summary>
         public static Func<long, PoolPerson> Pick;
 
-        /// <summary>A person of the pool by their id; false when they are gone or there is no pool.</summary>
-        public static Func<int, PoolPerson> Find;
-
         /// <summary>True when the living population is meant to run (the setting is on, and this is not a guest following the host's city).</summary>
         public static Func<bool> Wanted;
 
         /// <summary>True when the pool has people to pick from now.</summary>
         public static Func<bool> Ready;
+
+        /// <summary>
+        /// Puts the wait in place: whether the population is meant to run and whether it is up. Called once when the mod starts (PeoplePoolGame.Install), before
+        /// anything names a person, because a wait that is not installed answers "not waiting" and the first people of a session are named from the catalogue for good.
+        /// </summary>
+        public static void InstallWait(Func<bool> livingOn)
+        {
+            Wanted = () => livingOn() && !CityPopulation.Following;
+            Ready = () => !CityPopulation.Following && CityPopulation.Live != null && CityPopulation.Live.People.Count > 0;
+        }
 
         /// <summary>
         /// True while the population is meant to run but has not come up yet (it loads on a cycle of its own, seconds after the save): a person made now

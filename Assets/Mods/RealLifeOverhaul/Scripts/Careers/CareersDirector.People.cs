@@ -12,7 +12,8 @@ namespace RealLifeOverhaul.Careers
     public sealed partial class CareersDirector
     {
         private StandingFile _standing;
-        private long _waitSince;   // when the colleagues first found the people pool not up yet
+        private long _waitSince;   // when the colleagues, the cohorts, the tutors or the applicants first found the people pool not up yet
+        private const int PoolWaitSeconds = 90;
         private RosterFile _roster;
         private bool _standingRead, _rosterRead;
 
@@ -55,6 +56,7 @@ namespace RealLifeOverhaul.Careers
             _standing = null;
             _roster = null;
             _standingRead = _rosterRead = false;
+            _waitSince = 0;   // a second save in the session waits for the population as the first did
             PeopleForgotten();
         }
 
@@ -78,7 +80,7 @@ namespace RealLifeOverhaul.Careers
                     f.Others.AddRange(_standing.Others);
                     _standing = f;
                 }
-                if (_standing.Peers.Count == 0 && !PeoplePool.WaitingFor(ref _waitSince, 90))
+                if (_standing.Peers.Count == 0 && !PeoplePool.WaitingFor(ref _waitSince, PoolWaitSeconds))
                 {
                     // the colleagues are people of the city's pool, named for good: a job found before the population is up waits for it (seconds after the load)
                     SeedColleagues(_standing, j, Save != null ? Save.Day : 0);
@@ -180,6 +182,11 @@ namespace RealLifeOverhaul.Careers
             {
                 return 0;
             }
+            if (StandingRules.OthersOf(_standing, o.Id, into) == 0 && PeoplePool.WaitingFor(ref _waitSince, PoolWaitSeconds))
+            {
+                return 0;   // the others are people of the city's pool, kept for good: made when the population is up (seconds after the load)
+            }
+            into.Clear();
             if (StandingRules.OthersOf(_standing, o.Id, into) == 0)
             {
                 StandingRules.OthersDerive(StudySeed, o, Math.Max(40, Math.Min(85, ProRules.OfferPass)), into);
@@ -221,7 +228,7 @@ namespace RealLifeOverhaul.Careers
         public Intake IntakeOf(CourseDef c)
         {
             RosterFile r = Roster;
-            return r == null || c == null || !c.Timetabled || Save == null ? null : RosterRules.Ensure(r, c.Id, Save.Day);
+            return r == null || c == null || !c.Timetabled || Save == null || PeoplePool.WaitingFor(ref _waitSince, PoolWaitSeconds) ? null : RosterRules.Ensure(r, c.Id, Save.Day);
         }
 
         /// <summary>The cohort the player's enrolment sat in, if it is still kept.</summary>
@@ -235,7 +242,7 @@ namespace RealLifeOverhaul.Careers
         public Tutor TutorOf(CourseDef c)
         {
             RosterFile r = Roster;
-            return r == null || c == null ? null : RosterRules.TutorFor(r, c.Id);
+            return r == null || c == null || PeoplePool.WaitingFor(ref _waitSince, PoolWaitSeconds) ? null : RosterRules.TutorFor(r, c.Id);
         }
 
         /// <summary>Why a course cannot be enrolled in for the campus's own reasons (a skill floor, no seat), a reason key, or null.</summary>

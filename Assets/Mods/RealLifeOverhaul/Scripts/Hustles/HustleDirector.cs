@@ -509,6 +509,7 @@ namespace RealLifeOverhaul.Hustles
             _state = null;
             _broken = false;
             _gaveUp = false;
+            _waitSince = 0;   // a second save in the session waits for the population too
         }
     }
 }

@@ -516,12 +516,10 @@ internal static partial class Program
     private static void WkPool()
     {
         PeoplePool.Pick = null;
-        PeoplePool.Find = null;
         PoolPerson none = RosterRules.PersonOf(5, StudyCatalogue.Accounting, 100, 0);
         Check(none.Id == 0 && none.Name.Length > 0 && none.Name == RosterRules.PersonOf(5, StudyCatalogue.Accounting, 100, 0).Name,
             "work pool: with the population off a student is a name of the catalogue, the same every time");
         PeoplePool.Pick = h => new PoolPerson { Id = (int)(h % 500) + 1, Name = "Pool " + ((int)(h % 500) + 1) };
-        PeoplePool.Find = id => id >= 1 && id <= 500 ? new PoolPerson { Id = id, Name = "Pool " + id } : default(PoolPerson);
         try
         {
             var f = new RosterFile { Seed = 5 };
@@ -565,13 +563,12 @@ internal static partial class Program
         finally
         {
             PeoplePool.Pick = null;
-            PeoplePool.Find = null;
         }
     }
 
     private static readonly UtilitiesWords EnglishWords = new UtilitiesWords((k, e) => e, v => v.ToString(), () => System.Globalization.CultureInfo.InvariantCulture);
 
-    // A promotion goes by teamwork as the page says it does, and the chart's two lines end together however many weeks each has.
+    // Teamwork is a shown figure and gates nothing (the owner's decision of 4 Nov), and the chart's two lines end together however many weeks each has.
     private static void WkTeamworkAndChart()
     {
         var job = new CareerJob { Mine = new[] { 70, 72, 75, 74, 78 }, Theirs = new[] { 60, 62, 64, 66, 68, 70, 72, 74 }, RivalName = "Marcus Lee" };
