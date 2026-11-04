@@ -54,13 +54,14 @@ namespace RealLifeOverhaul.Economy
                 }
                 Forgotten();
                 RegionRound(day, Save.Hour);   // the regional managers appoint and replace before the escalations are handled
+                int handed = HandDownRound(day);
                 int settled = Handle(day, Save.Hour, false);
                 Week(day);
                 TellOwner();
                 if (Verbose)
                 {
                     Logger?.Info("Company check (hierarchy, day " + day + "): " + _managed.Count + " place(s) looked at, " + (_hier.NextId - raised) + " new escalation(s) or entries, "
-                                 + settled + " settled by a regional manager or an executive, " + _hier.OpenAt(EscalationRules.LevelOwner) + " waiting for you; "
+                                 + handed + " passed down, " + settled + " settled by a regional manager or an executive, " + _hier.OpenAt(EscalationRules.LevelOwner) + " waiting for you; "
                                  + ((UnityEngine.Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " ms: PASS");
                 }
             }
@@ -121,6 +122,51 @@ namespace RealLifeOverhaul.Economy
                 int first = asked > 0 && offered > 0 ? Math.Min(asked, offered) : Math.Max(asked, offered);
                 t.Oldest = first > 0 && (t.Oldest == 0 || first < t.Oldest) ? first : t.Oldest;
             }
+        }
+
+        // The owner's questions left a day, for a manager who gives them that way: passed down once to the area's executive, who tries them in the round
+        // that follows under the policy (settled, with the log's "settled by" naming them, or passed back to the owner for good).
+        private int HandDownRound(int day)
+        {
+            int handed = 0;
+            for (int i = 0; i < _hier.Escalations.Count; i++)
+            {
+                Escalation e = _hier.Escalations[i];
+                if (!e.Open || e.Level < EscalationRules.LevelOwner || e.Place.Length == 0)
+                {
+                    continue;
+                }
+                ManagedPlace mp = ManagedAt(e.Place);
+                ManagerFile m = mp != null ? mp.Own : null;
+                var kind = (EscalationKind)e.Kind;
+                if (m == null || !EscalationRules.HandsDown(kind, e.Level, e.Moved, day, e.Down, m.HandDown, ExecutiveAtWork(EscalationRules.AreaOf(kind)) != null,
+                        Rule(mp, PolicyField.Approver), Rule(mp, PolicyField.Sources)))
+                {
+                    continue;
+                }
+                e.Level = EscalationRules.LevelExecutive;
+                e.Down = true;
+                e.Moved = day;
+                HierarchyEntry entry = _hier.Log(HierarchyLog.HandedDown, (int)Rung.Owner, CompanyText.T("reallife_hier_you"), e.Place, day, Save.Hour);
+                entry.A = e.Id;
+                entry.B = e.Level;
+                entry.C = e.Kind;
+                handed++;
+                Logger?.Info("Company: the " + kind + " question of " + mp.Place.Name + ", left with you a day, was passed down to the " + EscalationRules.AreaOf(kind) + " executive.");
+            }
+            return handed;
+        }
+
+        /// <summary>A manager's switch: a question they cannot decide, left with the owner a day, passes to the area's executive (the policy decides what they may settle).</summary>
+        public void ManagerHandDown(string place, bool on)
+        {
+            ManagerFile m = ManagersOn ? OwnOf(place) : null;
+            if (m == null || m.HandDown == on)
+            {
+                return;
+            }
+            m.HandDown = on;
+            Changed();
         }
 
         private StaffTally TallyOf(string place, bool make)
@@ -900,6 +946,10 @@ namespace RealLifeOverhaul.Economy
                 return true;   // still with its approver
             }
             Escalation e = Raise(EscalationKind.Exception, mp, offer ? f.PoachOffer : f.AskTo, ceiling, offer ? 1 : 0, f.Id, f.Name, day);
+            if (e != null && mp.Own != null)
+            {
+                ManagerRules.AddSpeed(mp.Own.Speeds, day - (offer ? f.PoachDay : f.AskDay));   // the manager answered it by raising it to its approver
+            }
             return e != null;
         }
 

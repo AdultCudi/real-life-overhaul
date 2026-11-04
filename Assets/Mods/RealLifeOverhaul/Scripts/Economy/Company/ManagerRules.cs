@@ -66,6 +66,15 @@ namespace RealLifeOverhaul.Economy
         public static readonly int[] Budgets = { 0, 500, 1000, 2500, 5000, 10000, 25000, 50000 };  // a month, at prices: overtime and hires
         public const int BudgetDefault = 3;
         public const int KeepMost = 60;             // staff a place may be told to keep at most
+        public static readonly int[] MarketingSteps = { 0, 250, 500, 1000, 2500, 5000 };   // a month, at prices: campaigns a manager may start
+        public const int MarketingDefault = 2;
+        public static readonly int[] LeaseRises = { 0, 30, 50, 80, 120, 200 };             // thousandths a renewal may raise the rent that a manager agrees on their own
+        public const int LeaseDefault = 2;
+        public const int SpeedKept = 20;            // settled requests a manager's speed is the mean of
+        public const int SpeedDays = 4;             // days of waiting, on average, at which the speed grade reaches nothing: a request lapses in that time
+        public const int JudgeLearn = 8;            // decisions from which a month's own mistakes weigh as much as the skill's chance of one
+        public const int HireLate = 3;              // late days an employee is let go after, by a manager who hires and lets go
+        public const int CrewMost = 12;             // staff a manager who hires and lets go keeps a place to, at most
 
         public const int MistakeMost = 300;         // thousandths: a decision's chance of a mistake at a skill of nothing
         public const int ReviewCut = 400;           // thousandths of that chance a regional manager at a skill of 100 takes away
@@ -250,6 +259,61 @@ namespace RealLifeOverhaul.Economy
         {
             int chance = ManagerCatalogue.MistakeMost * (100 - CompanyCatalogue.Clamp(skill, 0, 100)) / 100;
             return chance * (1000 - ManagerCatalogue.ReviewCut * CompanyCatalogue.Clamp(review, 0, 100) / 100) / 1000;
+        }
+
+        /// <summary>The days a settled request waited, put at the end of a manager's ring of the last <see cref="ManagerCatalogue.SpeedKept"/>.</summary>
+        public static void AddSpeed(System.Collections.Generic.List<int> ring, int days)
+        {
+            ring.Add(CompanyCatalogue.Clamp(days, 0, 99));
+            while (ring.Count > ManagerCatalogue.SpeedKept)
+            {
+                ring.RemoveAt(0);
+            }
+        }
+
+        /// <summary>
+        /// How fast a manager answers, 0 to 100: a hundred less the mean days their last settled requests waited, scaled so that a mean of
+        /// <see cref="ManagerCatalogue.SpeedDays"/> days is nothing. -1 before any has been settled.
+        /// </summary>
+        public static int Speed(System.Collections.Generic.IList<int> ring)
+        {
+            if (ring == null || ring.Count == 0)
+            {
+                return -1;
+            }
+            long sum = 0;
+            for (int i = 0; i < ring.Count; i++)
+            {
+                sum += Math.Max(0, ring[i]);
+            }
+            long meanHundredths = sum * 100 / ring.Count;
+            return CompanyCatalogue.Clamp((int)(100 - meanHundredths / ManagerCatalogue.SpeedDays), 0, 100);
+        }
+
+        /// <summary>
+        /// A manager's judgement, 0 to 100: how rarely they err. The skill's own chance of a mistake (<see cref="MistakeChance"/>) is the grade while little
+        /// has been decided, and the month's mistakes against its decisions take over as the number grows.
+        /// </summary>
+        public static int Judgement(int skill, int review, int decided, int mistakes)
+        {
+            int expected = MistakeChance(skill, review);
+            int seen = Math.Max(0, decided);
+            int observed = seen > 0 ? (int)Math.Min(1000L, Math.Max(0, mistakes) * 1000L / seen) : expected;
+            int weight = Math.Min(seen, ManagerCatalogue.JudgeLearn);
+            int rate = (observed * weight + expected * (ManagerCatalogue.JudgeLearn - weight)) / ManagerCatalogue.JudgeLearn;
+            return CompanyCatalogue.Clamp(100 - rate * 100 / ManagerCatalogue.MistakeMost, 0, 100);
+        }
+
+        /// <summary>A manager's thrift, 0 to 100: how much of the month's budget is still there. -1 with no budget to spend.</summary>
+        public static int Thrift(int spent, int budget)
+        {
+            return budget <= 0 ? -1 : CompanyCatalogue.Clamp(100 - (int)(Math.Max(0, spent) * 100L / budget), 0, 100);
+        }
+
+        /// <summary>The crew's morale under a manager, 0 to 100: the staff's standing on average. -1 with no staff.</summary>
+        public static int Morale(int standing, int staff)
+        {
+            return staff <= 0 ? -1 : CompanyCatalogue.Clamp(standing, 0, 100);
         }
 
         /// <summary>A number from 0 to 999, always the same for the same save, day, place, kind and subject.</summary>

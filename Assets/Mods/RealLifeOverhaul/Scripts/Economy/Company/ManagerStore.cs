@@ -55,6 +55,14 @@ namespace RealLifeOverhaul.Economy
                     t.Append(k > 0 ? "/" : string.Empty).Append(Word(m.Held[k]));
                 }
                 t.Append('|').Append(Clean(m.Name));   // as last read: said if they are gone before the first read after a load
+                // After the name, in this order: a newer figure goes at the end, an older line has none (the reader's fallbacks are the starting steps).
+                t.Append('|');
+                for (int k = 0; k < m.Speeds.Count && k < ManagerCatalogue.SpeedKept; k++)
+                {
+                    t.Append(k > 0 ? "/" : string.Empty).Append(m.Speeds[k].ToString(Inv));
+                }
+                t.Append('|').Append(m.HandDown ? '1' : '0').Append('|').Append((m.MarketingStep + 1).ToString(Inv)).Append('|').Append((m.LeaseStep + 1).ToString(Inv))
+                    .Append('|').Append(m.MarketingSpent.ToString(Inv));
             }
             t.Append("^d:");
             for (int i = Math.Max(0, s.Decisions.Count - ManagerCatalogue.DecisionsKept), n = 0; i < s.Decisions.Count; i++, n++)
@@ -187,6 +195,20 @@ namespace RealLifeOverhaul.Economy
                 }
             }
             m.Name = c.Length > ManagerFields + 5 ? c[ManagerFields + 5] : string.Empty;
+            int later = ManagerFields + 6;
+            foreach (string one in Records(c.Length > later ? c[later] : string.Empty, '/'))
+            {
+                int days;
+                if (int.TryParse(one, NumberStyles.Integer, Inv, out days) && m.Speeds.Count < ManagerCatalogue.SpeedKept)
+                {
+                    m.Speeds.Add(CompanyCatalogue.Clamp(days, 0, 99));
+                }
+            }
+            m.HandDown = I(c, later + 1) != 0;
+            int marketing = I(c, later + 2), lease = I(c, later + 3);   // written one more than the step, so an older line's 0 means the starting step
+            m.MarketingStep = marketing > 0 ? Bound(marketing - 1, ManagerCatalogue.MarketingSteps) : ManagerCatalogue.MarketingDefault;
+            m.LeaseStep = lease > 0 ? Bound(lease - 1, ManagerCatalogue.LeaseRises) : ManagerCatalogue.LeaseDefault;
+            m.MarketingSpent = Math.Max(0, I(c, later + 4));
             return m;
         }
 

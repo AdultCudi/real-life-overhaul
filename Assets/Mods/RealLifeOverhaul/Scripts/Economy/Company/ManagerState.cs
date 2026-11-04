@@ -37,6 +37,11 @@ namespace RealLifeOverhaul.Economy
         public int LastDecided, LastMistakes, LastUndone, LastPaid, LastSpent;   // the month before
         public int SnapDay, SnapHour;           // when the stock was last looked at; 0 for never
         public PriceStrategy Strategy;          // how the place's prices stand: the rule a pricing plan's strategy on BizMan follows
+        public int MarketingStep = ManagerCatalogue.MarketingDefault;   // the month's marketing limit: a step of ManagerCatalogue.MarketingSteps
+        public int LeaseStep = ManagerCatalogue.LeaseDefault;           // the most a lease may rise that this manager renews on their own: a step of ManagerCatalogue.LeaseRises
+        public int MarketingSpent;              // of this month's marketing limit
+        public bool HandDown;                   // a question they cannot decide, left with the owner a day, passes to the area's executive
+        public readonly List<int> Speeds = new List<int>(ManagerCatalogue.SpeedKept);   // days the last settled requests took, the newest last
         public readonly List<StockSnap> Snaps = new List<StockSnap>(8);
         public readonly List<string> Held = new List<string>(2);   // products the player has taken back from the manager
 
@@ -57,6 +62,7 @@ namespace RealLifeOverhaul.Economy
             LastPaid = Paid;
             LastSpent = Spent;
             Decided = Mistakes = Undone = Paid = Spent = 0;
+            MarketingSpent = 0;
         }
 
         public bool Holds(string item)

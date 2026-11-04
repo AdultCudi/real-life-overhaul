@@ -110,6 +110,19 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        public const int HandDownDays = 1;      // days a question waits with the owner before it is passed down to the area's executive, where the manager gives it that way
+
+        /// <summary>
+        /// Whether a question the owner has left is passed down to the area's executive today: the manager's switch on, the executive in post, the question
+        /// still the owner's for a day, never passed down before, never a proposal (the owner's alone), and a kind the executive may settle under the
+        /// policy (<see cref="Tries"/>); a place off its targets is only ever reported to the owner.
+        /// </summary>
+        public static bool HandsDown(EscalationKind kind, int level, int moved, int day, bool down, bool optedIn, bool executiveInPost, int approverStep, int sourcesStep)
+        {
+            return optedIn && executiveInPost && !down && level >= LevelOwner && kind != EscalationKind.Proposal && day - moved >= HandDownDays
+                   && Tries(kind, LevelExecutive, approverStep, sourcesStep);
+        }
+
         /// <summary>Whether a gap that began on a day has lasted past the policy's days (it began the day the staff fell short).</summary>
         public static bool GapDue(int gapFrom, int day, int gapDaysStep)
         {

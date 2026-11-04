@@ -68,6 +68,7 @@ namespace RealLifeOverhaul.Economy
                 int askDay = f.AskDay, askTo = f.AskTo, rest = f.AskRest, standing = f.Standing, added = StaffRules.RaiseFor(f, answer);
                 StaffRules.Answer(f, answer, day);
                 m.Spent += answer == RaiseAnswer.Bonus ? bonus : 0;
+                Took(mp, who, day - askDay);
                 Decision d = Record(mp, ManagerTask.Raises, f.Id, who, day, hour, answer != fair);
                 d.A = added;
                 d.B = f.Standing - standing;
@@ -121,6 +122,7 @@ namespace RealLifeOverhaul.Economy
                 int came = f.PoachDay, offer = f.PoachOffer, rest = f.PoachRest, standing = f.Standing, raise = f.Raise;
                 string rival = f.Rival;
                 StaffRules.OfferAnswer(f, match, day);
+                Took(mp, who, day - came);
                 Decision d = Record(mp, ManagerTask.Offers, f.Id, who, day, hour, match != fair);
                 d.A = f.Raise - raise;
                 d.B = f.Standing - standing;
@@ -151,6 +153,7 @@ namespace RealLifeOverhaul.Economy
             int asked = file.OvertimeAsk, rest = file.OvertimeRest, spends = agree ? cost * CompanyCatalogue.OvertimeDays : 0;
             AnswerOvertime(place, agree);
             m.Spent += spends;
+            Took(mp, who, day - asked);
             Decision d = Record(mp, ManagerTask.Overtime, string.Empty, who, day, hour, agree != fair);
             d.A = agree ? 1 : 0;
             d.B = cost;
@@ -185,6 +188,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     CoverRules.File(c, p, day);
                 }
+                Took(mp, who, day - c.Day);
                 Decision d = Record(mp, ManagerTask.Claims, subject, who, day, hour, put != fair);
                 d.A = c.Id;
                 d.B = p.Claims > counted ? 1 : 0;

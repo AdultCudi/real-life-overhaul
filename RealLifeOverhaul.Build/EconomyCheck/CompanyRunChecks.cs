@@ -4,5 +4,6 @@ internal static partial class Program
     private static void CompanyAll()
     {
         CompanyAnswers();   // a bonus and a raise of the limit as answers (CompanyAnswerChecks.cs)
+        CompanyDown();      // the managers' grades and a question handed down to the executive (CompanyDownChecks.cs)
     }
 }

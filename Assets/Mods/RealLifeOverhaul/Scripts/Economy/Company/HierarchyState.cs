@@ -55,6 +55,7 @@ namespace RealLifeOverhaul.Economy
         public string Subject = string.Empty;   // the employee an exception is about; a rule's number for a proposal
         public string Detail = string.Empty;    // a name, as it was when raised
         public string By = string.Empty;        // who settled it or passed it on last
+        public bool Down;                       // the owner left it a day and it was passed down to the area's executive: once, never back and forth
 
         public bool Open => State == (int)EscalationState.Open;
     }

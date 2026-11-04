@@ -266,6 +266,16 @@ namespace RealLifeOverhaul.Economy
             return roll < ManagerRules.MistakeChance(skill, review);
         }
 
+        // A request settled: the days it waited go in the ring of whoever settled it, the place's manager or the regional manager who stood in.
+        private void Took(ManagedPlace mp, string who, int days)
+        {
+            ManagerFile by = MadeBy(mp, who) ?? mp.Own;
+            if (by != null)
+            {
+                ManagerRules.AddSpeed(by.Speeds, days);
+            }
+        }
+
         private Decision Record(ManagedPlace mp, ManagerTask task, string subject, string who, int day, int hour, bool mistake)
         {
             Decision d = _mgr.Add(day, hour, mp.Place.Place, task, ManagerStore.Clean(subject), ManagerStore.Clean(who));
