@@ -400,7 +400,7 @@ internal static partial class UiSamples
         }
         p.Record = rec.ToArray();
         p.WorksTitle = W(t, "reallife_ui_estate_works_here", "Works on this unit");
-        p.WorksCount = "3";
+        p.WorksCount = p.Works.Length.ToString();
         runs.Add(Yes);
         runs.Add(Yes);
         p.Works = new[]

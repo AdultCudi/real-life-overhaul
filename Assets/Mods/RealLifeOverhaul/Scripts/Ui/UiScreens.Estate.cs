@@ -217,7 +217,26 @@ namespace RealLifeOverhaul.Ui
                 "reallife_estate_stage_completing",
                 "reallife_estate_fault_6",
                 "reallife_ui_estate_record_last_tenant",
-                "reallife_ui_estate_paid_late"
+                "reallife_ui_estate_paid_late",
+                "reallife_ui_estate_fee_row",
+                "reallife_ui_estate_fee_none",
+                "reallife_ui_estate_fee_manager",
+                "reallife_ui_estate_fee_agent",
+                "reallife_ui_estate_sale_asking_share",
+                "reallife_ui_estate_sale_asking_price",
+                "reallife_ui_estate_sale_chance",
+                "reallife_ui_estate_sale_fee",
+                "reallife_ui_estate_sale_fee",
+                "reallife_ui_estate_fig_rent_owed",
+                "reallife_colour_white",
+                "reallife_colour_black",
+                "reallife_colour_grey",
+                "reallife_colour_red",
+                "reallife_colour_cream",
+                "reallife_colour_cobalt",
+                "reallife_colour_heather",
+                "reallife_colour_mustard",
+                "reallife_colour_forest"
             };
         }
 
@@ -338,7 +357,21 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_dealer_dec_deal_offers",
                 "reallife_ui_dealer_dec_margin",
                 "reallife_ui_dealer_dec_leaves",
-                "reallife_ui_estate_not_now"
+                "reallife_ui_estate_not_now",
+                "reallife_ui_dealer_l_rival",
+                "reallife_ui_dealer_l_no_rival",
+                "reallife_ui_dealer_l_looked_today",
+                "reallife_ui_dealer_l_looked_yesterday",
+                "reallife_ui_dealer_l_offer_waiting",
+                "reallife_colour_white",
+                "reallife_colour_black",
+                "reallife_colour_grey",
+                "reallife_colour_red",
+                "reallife_colour_cream",
+                "reallife_colour_cobalt",
+                "reallife_colour_heather",
+                "reallife_colour_mustard",
+                "reallife_colour_forest"
             };
         }
     }

@@ -140,12 +140,13 @@ internal static partial class UiSamples
             c.DetailLabels = new[]
             {
                 W(t, "reallife_ui_dealer_l_cost", "Cost, all in"), W(t, "reallife_ibox_worth", "Worth"), W(t, "reallife_ibox_asking", "Asking"), W(t, "reallife_ui_dealer_l_margin", "Margin at asking"),
-                W(t, "reallife_ui_dealer_l_condition", "Condition"), W(t, "reallife_ui_dealer_l_km", "Mileage"), W(t, "reallife_ui_dealer_l_source", "Came from")
+                W(t, "reallife_ui_dealer_l_condition", "Condition"), W(t, "reallife_ui_dealer_l_km", "Mileage"), W(t, "reallife_ui_dealer_l_source", "Came from"),
+                W(t, "reallife_ui_dealer_l_rival", "Cheapest rival"), W(t, "reallife_ui_dealer_l_looked_today", "Looked at today"), W(t, "reallife_ui_dealer_l_looked_yesterday", "Looked at yesterday"),
+                W(t, "reallife_ui_dealer_l_offer_waiting", "Offer waiting")
             };
-            c.DetailValues = new[] { "$72,300", "$83,800", "$84,500", "+$12,200", "92%", "12,400 km", W(t, "reallife_dealer_kind_used", "A private owner") + ", " + Fx(W(t, "reallife_ui_dealer_days_on_lot", "{days} days on the lot"), "days", "6") };
-            c.DetailNote = Fx(W(t, "reallife_ui_dealer_rival_asks", "{name} asks {price} for the same model."), "name", "Halden Motors", "price", "$86,900") + " "
-                + Fx(W(t, "reallife_ui_dealer_views", "Looked at by {today} today and {yesterday} yesterday."), "today", "4", "yesterday", "7") + " "
-                + Fx(W(t, "reallife_ui_dealer_looked_times", "{name} looked at it {times} times and left an offer of {offer}, in Offers."), "name", "Marcus Bell", "times", "2", "offer", "$82,000");
+            c.DetailValues = new[] { "$72,300", "$83,800", "$84,500", "+$12,200", "92%", "12,400 km", W(t, "reallife_dealer_kind_used", "A private owner") + ", " + Fx(W(t, "reallife_ui_dealer_days_on_lot", "{days} days on the lot"), "days", "6"),
+                "Halden Motors, $86,900", "4", "7", "Marcus Bell, $82,000" };
+            c.DetailInks = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.OkText };
             runs.Add(Yes);
             runs.Add(Yes);
             runs.Add(Yes);
@@ -229,13 +230,30 @@ internal static partial class UiSamples
             m.ShareLabels = new[] { W(t, "reallife_ibox_lot", "Places taken"), W(t, "reallife_ui_dealer_sh_looked_after", "Visitors looked after"), W(t, "reallife_ui_dealer_sh_next_step", "On the way to the next step") };
             m.ShareValues = new[] { 60, 77, 85 };
             m.Lower = DayLine(t, "reallife_dealer_report_revenue", "Takings from cars", 93500f, 21000f, 0f, EstateCharts.Dollars);
+            m.RelatedTitle = W(t, "reallife_ui_dealer_sort_days", "Longest on the lot");
+            m.RelatedCount = "3";
+            string[] oldest = { "Marlow sedan", "Dune camper van", "Volta SUV" };
+            string[] asks = { "$14,300", "$18,900", "$44,200" };
+            string[] stood = { "41", "27", "33" };
+            var longest = new EstateRow[oldest.Length];
+            for (int i = 0; i < longest.Length; i++)
+            {
+                runs.Add(Yes);
+                CarKind kind = SampleKind(oldest[i]);
+                longest[i] = new EstateRow
+                {
+                    Icon = CarClass.Glyph(kind), Tint = CarClass.Tint(kind, 0), Title = oldest[i], Sub = Fx(W(t, "reallife_ui_dealer_days_on_lot", "{days} days on the lot"), "days", stood[i]),
+                    Amount = asks[i], Run = runs.Count - 1
+                };
+            }
+            m.Related = longest;
             return;
         }
         var rows = new List<UiDataRow>
         {
             Row(new[] { "Pioneer Motors", Fx(W(t, "reallife_dealer_lot_count", "{cars} cars on {places} places"), "cars", "12", "places", "20"), "3", "31", "2", "$93,500", "6" }, new[] { (int)UiIcon.Store, 0, 0, 0, 0, 0, 0 },
                 new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.WarnText }, new[] { W(t, "reallife_dealer_step_2", "Trusted"), null, null, null, null, null, null }),
-            Row(new[] { "Eastside Auto, a showroom with a long name", Fx(W(t, "reallife_dealer_lot_count", "{cars} cars on {places} places"), "cars", "4", "places", "8"), "0", "9", "0", "$0", "0" }, new[] { (int)UiIcon.Store, 0, 0, 0, 0, 0, 0 },
+            Row(new[] { "Eastside Auto", Fx(W(t, "reallife_dealer_lot_count", "{cars} cars on {places} places"), "cars", "4", "places", "8"), "0", "9", "0", "$0", "0" }, new[] { (int)UiIcon.Store, 0, 0, 0, 0, 0, 0 },
                 new[] { UiRole.None, UiRole.None, UiRole.DangerText, UiRole.None, UiRole.None, UiRole.None, UiRole.None }, new[] { W(t, "reallife_dealer_step_0", "New"), null, null, null, null, null, null })
         };
         var cols = new[]
@@ -291,6 +309,15 @@ internal static partial class UiSamples
         };
     }
 
+    // A vehicle colour in the language shown: the game gives its own names, the preview the locale's nearest.
+    private static string Colour(UiWords t, string name)
+    {
+        string key = name == "Blue" ? "cobalt" : name == "Silver" ? "heather" : name == "Yellow" ? "mustard" : name == "Green" ? "forest" : name.ToLowerInvariant();
+        return W(t, "reallife_colour_" + key, name);
+    }
+
+    private static string DayWord(UiWords t, int day) => Fx(W(t, "reallife_ui_estate_day", "Day {day}"), "day", day.ToString());
+
     private static void DealerMarket(UiWords t, EstateModel m, List<Func<bool>> runs)
     {
         var rows = new List<UiDataRow>();
@@ -316,7 +343,7 @@ internal static partial class UiSamples
             string chip = r[7] == "new" ? W(t, "reallife_dealer_state_new", "New") : r[7] == "ni" ? W(t, "reallife_dealer_state_not_inspected", "Not inspected") : r[7] == "rival" ? Fx(W(t, "reallife_dealer_state_rival", "{rival} leads"), "rival", "Halden Motors") : W(t, "reallife_dealer_state_leading", "You lead");
             string time = r[6] == "today" ? W(t, "reallife_ui_dealer_today", "Today") : Fx(W(t, "reallife_ui_dealer_n_hours_short", "{hours} h"), "hours", r[6].Split(' ')[0]);
             rows.Add(Row(new[] { r[0], kind, r[3], r[4], r[5], time, chip }, new[] { (int)(r[2] == "auction" ? UiIcon.Tag : r[2] == "used" ? UiIcon.Car : UiIcon.Store), 0, 0, int.Parse(r[4]), 0, 0, 0 },
-                new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, r[7] == "lead" ? UiRole.Ok : r[7] == "rival" ? UiRole.Warn : UiRole.Notice }, new[] { r[1], null, null, null, null, null, null }));
+                new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, r[7] == "lead" ? UiRole.Ok : r[7] == "rival" ? UiRole.Warn : UiRole.Notice }, new[] { Colour(t, r[1]), null, null, null, null, null, null }));
         }
         var cols = new[]
         {
@@ -340,7 +367,7 @@ internal static partial class UiSamples
         m.Back = W(t, "reallife_ui_dealer_back", "Back");
         m.DetailIcon = UiIcon.Car;
         m.DetailTitle = "Marlow sedan";
-        m.DetailSub = "Black";
+        m.DetailSub = Colour(t, "Black");
         m.DetailChip = W(t, "reallife_ibox_chip_not_inspected", "Not inspected");
         m.DetailChipTone = UiRole.Warn;
         m.Card = true;
@@ -385,8 +412,8 @@ internal static partial class UiSamples
         runs.Add(Yes);
         m.Related2 = new[]
         {
-            new EstateRow { Icon = CarClass.Glyph(SampleKind("Marlow sedan")), Tint = CarClass.Tint(SampleKind("Marlow sedan"), 0), Title = "Marlow sedan", Sub = "Blue, 112,400 km", Chip = W(t, "reallife_dealer_state_not_inspected", "Not inspected"), ChipTone = UiRole.Warn, Amount = "$7,900", Run = runs.Count - 2 },
-            new EstateRow { Icon = CarClass.Glyph(SampleKind("Halden sedan")), Tint = CarClass.Tint(SampleKind("Halden sedan"), 0), Title = "Halden sedan", Sub = "Silver, 64,900 km", Chip = W(t, "reallife_dealer_state_not_inspected", "Not inspected"), ChipTone = UiRole.Warn, Amount = "$18,600", Run = runs.Count - 1 }
+            new EstateRow { Icon = CarClass.Glyph(SampleKind("Marlow sedan")), Tint = CarClass.Tint(SampleKind("Marlow sedan"), 0), Title = "Marlow sedan", Sub = Colour(t, "Blue") + ", 112,400 km", Chip = W(t, "reallife_dealer_state_not_inspected", "Not inspected"), ChipTone = UiRole.Warn, Amount = "$7,900", Run = runs.Count - 2 },
+            new EstateRow { Icon = CarClass.Glyph(SampleKind("Halden sedan")), Tint = CarClass.Tint(SampleKind("Halden sedan"), 0), Title = "Halden sedan", Sub = Colour(t, "Silver") + ", 64,900 km", Chip = W(t, "reallife_dealer_state_not_inspected", "Not inspected"), ChipTone = UiRole.Warn, Amount = "$18,600", Run = runs.Count - 1 }
         };
     }
 
@@ -461,7 +488,7 @@ internal static partial class UiSamples
 
     // A longer list for a preview: the rows again for other people, so a table stands as full as a busy showroom's.
     // Rows beyond the hand-made few, each its own person with a car of its own: a table of nine must not repeat three.
-    private static void Pad(List<UiDataRow> rows, int to, params string[] names)
+    private static void Pad(UiWords t, List<UiDataRow> rows, int to, params string[] names)
     {
         string[] cars = { "Halden sedan", "Sora hatchback", "Brisa roadster", "Courier van", "Dune camper van", "Marlow sedan", "Ranger pickup", "Pinecrest saloon" };
         int[] asks = { 27400, 19800, 22700, 34900, 18900, 14300, 25600, 16900 };
@@ -490,7 +517,7 @@ internal static partial class UiSamples
             {
                 copy.Cells[2] = "$" + (ask + ask / 14).ToString("N0");
                 copy.Cells[3] = "$" + ask.ToString("N0");
-                copy.Cells[5] = "Day " + (205 + i * 3);
+                copy.Cells[5] = DayWord(t, 385 + i * 3);
                 copy.Cells[6] = copy.Cells[6].Replace("$7,100", "$" + (ask / 14).ToString("N0"));
             }
             else
@@ -510,14 +537,14 @@ internal static partial class UiSamples
                 new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Warn }, new[] { W(t, "reallife_dealer_profile_bargain", "A bargain hunter"), "Pioneer Motors", null, null, null, null, null }, UiColourHue("Marcus Bell")),
             Row(new[] { "Amara Kimani", "Atlas pickup", "$36,900", "$38,900", "95", "1 h", W(t, "reallife_dealer_state_waiting", "Waiting") }, new[] { 0, (int)UiIcon.Car, 0, 0, 95, 0, 0 },
                 new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.DangerText, UiRole.Warn }, new[] { W(t, "reallife_dealer_profile_fair", "A family"), "Pioneer Motors", null, null, null, null, null }, UiColourHue("Amara Kimani")),
-            Row(new[] { W(t, "reallife_dealer_to_trade", "The trade"), "Volta SUV", "$41,200", "$34,100", string.Empty, "Day 211", Fx(W(t, "reallife_dealer_state_sold", "Sold, margin {margin}"), "margin", "$7,100") }, new[] { 0, (int)UiIcon.Car, 0, 0, -1, 0, 0 },
+            Row(new[] { W(t, "reallife_dealer_to_trade", "The trade"), "Volta SUV", "$41,200", "$34,100", string.Empty, DayWord(t, 411), Fx(W(t, "reallife_dealer_state_sold", "Sold, margin {margin}"), "margin", "$7,100") }, new[] { 0, (int)UiIcon.Car, 0, 0, -1, 0, 0 },
                 new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Ok }, new[] { "Pioneer Motors", string.Empty, null, null, null, null, null })
         };
-        Pad(rows, 9, "Priya Nair", "Theo Brandt", "Lena Hoffmann", "Imani Cole", "Owen Park", "Yuki Tanaka");
+        Pad(t, rows, 9, "Priya Nair", "Theo Brandt", "Lena Hoffmann", "Imani Cole", "Owen Park", "Yuki Tanaka");
         var cols = new[]
         {
-            new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_buyer", "Buyer"), Kind = UiCellKind.Person, Width = 0f },
-            new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_car", "Car"), Kind = UiCellKind.Tile, Width = 184f },
+            new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_buyer", "Buyer"), Kind = UiCellKind.Person, Width = 288f },
+            new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_car", "Car"), Kind = UiCellKind.Tile, Width = 0f },
             new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_offer", "Offer"), Kind = UiCellKind.Money, Width = 104f },
             new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_asking", "Asking"), Kind = UiCellKind.Money, Width = 104f },
             new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_against", "Against asking"), Kind = UiCellKind.Meter, Width = 120f },
@@ -548,18 +575,18 @@ internal static partial class UiSamples
     {
         var rows = new List<UiDataRow>
         {
-            Row(new[] { "Daniel Ortiz", "Halden sedan", "$18,200", "$900", "Day 218", Fx(W(t, "reallife_dealer_plan_paying", "Paying, rated {grade}"), "grade", "B") }, new[] { 0, (int)UiIcon.Car, 0, 0, 0, 0 },
+            Row(new[] { "Daniel Ortiz", "Halden sedan", "$18,200", "$900", DayWord(t, 418), Fx(W(t, "reallife_dealer_plan_paying", "Paying, rated {grade}"), "grade", "B") }, new[] { 0, (int)UiIcon.Car, 0, 0, 0, 0 },
                 new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Ok }, new[] { "Pioneer Motors", string.Empty, null, null, null, null }, UiColourHue("Daniel Ortiz")),
-            Row(new[] { "Lena Hoffmann", "Sora hatchback", "$7,300", "$420", "Day 211", Fx(W(t, "reallife_dealer_plan_missed", "{weeks} weeks missed"), "weeks", "2") }, new[] { 0, (int)UiIcon.Car, 0, 0, 0, 0 },
+            Row(new[] { "Lena Hoffmann", "Sora hatchback", "$7,300", "$420", DayWord(t, 411), Fx(W(t, "reallife_dealer_plan_missed", "{weeks} weeks missed"), "weeks", "2") }, new[] { 0, (int)UiIcon.Car, 0, 0, 0, 0 },
                 new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Danger }, new[] { "Pioneer Motors", string.Empty, null, null, null, null }, UiColourHue("Lena Hoffmann")),
-            Row(new[] { "Theo Brandt", "Volta SUV", "$1,240", string.Empty, "Day 290", W(t, "reallife_dealer_tier_extended", "Silver") }, new[] { 0, (int)UiIcon.ShieldCheck, 0, 0, 0, 0 },
+            Row(new[] { "Theo Brandt", "Volta SUV", "$1,240", string.Empty, DayWord(t, 490), W(t, "reallife_dealer_tier_extended", "Silver") }, new[] { 0, (int)UiIcon.ShieldCheck, 0, 0, 0, 0 },
                 new[] { UiRole.None, UiRole.None, UiRole.Warn, UiRole.None, UiRole.None, UiRole.Notice }, new[] { "Pioneer Motors", Fx(W(t, "reallife_ui_dealer_claims", "{count} claims"), "count", "1"), null, null, null, null }, UiColourHue("Theo Brandt"))
         };
-        Pad(rows, 9, "Sofia Marchetti", "Marcus Bell", "Owen Park", "Imani Cole", "Priya Nair", "Yuki Tanaka");
+        Pad(t, rows, 9, "Sofia Marchetti", "Marcus Bell", "Owen Park", "Imani Cole", "Priya Nair", "Yuki Tanaka");
         var cols = new[]
         {
-            new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_customer", "Customer"), Kind = UiCellKind.Person, Width = 0f },
-            new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_car", "Car"), Kind = UiCellKind.Tile, Width = 184f },
+            new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_customer", "Customer"), Kind = UiCellKind.Person, Width = 288f },
+            new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_car", "Car"), Kind = UiCellKind.Tile, Width = 0f },
             new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_owed_paid", "Owed or paid out"), Kind = UiCellKind.Money, Width = 112f },
             new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_weekly", "A week"), Kind = UiCellKind.Money, Width = 104f },
             new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_until", "Until"), Kind = UiCellKind.Date, Width = 96f },
@@ -601,7 +628,6 @@ internal static partial class UiSamples
             {
                 new UiFactCardModel
                 {
-                    Title = W(t, "reallife_ui_dealer_sec_showroom", "Showroom"), Heading = true,
                     Lines = new[] { EstateStep(runs, W(t, "reallife_ui_dealer_sec_showroom", "Showroom"), "Pioneer Motors", null) },
                     Actions = new[] { EstateButton(runs, W(t, "reallife_dealer_button_event", "Book the event"), UiButtonKind.Primary, UiIcon.Megaphone, UiAction.Alt) }
                 }
@@ -640,13 +666,13 @@ internal static partial class UiSamples
         m.HeadIcon = UiIcon.Chart;
         m.HeadTitle = W(t, "reallife_dealer_report_profit", "Profit");
         m.HeadSub = Fx(W(t, "reallife_ui_dealer_report_sub", "{place}: a point a day for the last {days} days, with the average of the last {average} days. Point at a day to read it."), "place", W(t, "reallife_dealer_report_all", "All showrooms"), "days", "60", "average", "7");
-        int days = fresh ? 1 : 28;
+        int days = fresh ? 1 : 60;
         var points = new string[days];
         var line = new float[days];
         var avg = new float[days];
         for (int i = 0; i < days; i++)
         {
-            points[i] = Fx(W(t, "reallife_ui_dealer_chart_day", "Day {day}"), "day", (187 + i).ToString());
+            points[i] = Fx(W(t, "reallife_ui_dealer_chart_day", "Day {day}"), "day", (353 + i).ToString());
             line[i] = 4200f + (float)Math.Sin(i / 5.0) * 1500f + ((i * 37 % 7) - 3) * 120f + i * 45f;
             float sum = 0f;
             int n = 0;

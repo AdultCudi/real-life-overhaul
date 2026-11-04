@@ -145,11 +145,13 @@ namespace RealLifeOverhaul.Ui
                         }
                         lines.Add(UiFactLine.Row(EstateText.T("reallife_estate_duty_costs_row"), Cash((long)h.CallsYear + h.FeesYear + h.FinesYear)));
                         int manager = h.Manager;
-                        lines.Add(_runs.Step(EstateText.T("reallife_estate_duty_who"), EstateText.Manager(manager),
-                            EstateText.T(manager == (int)EstateManager.Manager ? "reallife_estate_duty_manager_what"
-                                : manager == (int)EstateManager.Agent ? "reallife_estate_duty_agent_what" : "reallife_estate_duty_self_what",
-                                "share", EstateText.Share(EstateCatalogue.ManagerShare), "days", EstateCatalogue.AgentLetDays.ToString(Inv)),
+                        lines.Add(_runs.Step(EstateText.T("reallife_estate_duty_who"), EstateText.Manager(manager), null,
                             manager > 0, manager < EstateCatalogue.Managers - 1, () => Show(() => _d.SetManager(place, manager - 1)), () => Show(() => _d.SetManager(place, manager + 1))));
+                        // What it costs to have them run it, as a row: the figure, not a paragraph about it.
+                        lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_fee_row"), manager == (int)EstateManager.Manager
+                            ? EstateText.T("reallife_ui_estate_fee_manager", "share", EstateText.Share(EstateCatalogue.ManagerShare))
+                            : manager == (int)EstateManager.Agent ? EstateText.T("reallife_ui_estate_fee_agent", "days", EstateCatalogue.AgentLetDays.ToString(Inv))
+                            : EstateText.T("reallife_ui_estate_fee_none")));
                     }
                     bool cover = h.Cover;
                     lines.Add(_runs.Switch(EstateText.T("reallife_estate_own_cover"), cover, on => Show(() => _d.SetCover(place, on))));
@@ -185,10 +187,11 @@ namespace RealLifeOverhaul.Ui
                 {
                     int at = Math.Max(0, Math.Min(ListShares.Length - 1, _v.ListShare));
                     int share = ListShares[at], asked = EstateCatalogue.Share(value, share);
-                    lines.Add(_runs.Step(EstateText.T("reallife_estate_own_selling"), EstateText.Share(share),
-                        EstateText.T("reallife_estate_own_list_what", "amount", Money(asked), "chance",
-                            EstateText.Share(EstateRules.SaleChance(asked, value, _c.Cycle)), "fee", EstateText.Share(EstateCatalogue.AgentFee)),
+                    lines.Add(_runs.Step(EstateText.T("reallife_ui_estate_sale_asking_share"), EstateText.Share(share), null,
                         at > 0, at < ListShares.Length - 1, () => Show(() => _v.ListShare = at - 1), () => Show(() => _v.ListShare = at + 1)));
+                    lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_sale_asking_price"), Money(asked)));
+                    lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_sale_chance"), EstateText.Share(EstateRules.SaleChance(asked, value, _c.Cycle))));
+                    lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_sale_fee"), EstateText.Share(EstateCatalogue.AgentFee)));
                     actions.Add(_runs.Button(EstateText.T("reallife_estate_btn_list"), UiButtonKind.Primary, UiIcon.Tag, UiAction.Alt, () => Show(() => _d.List(place, share))));
                 }
                 return new UiFactCardModel { Title = EstateText.T("reallife_estate_own_selling"), Heading = true, Lines = lines.ToArray(), Actions = actions.ToArray() };

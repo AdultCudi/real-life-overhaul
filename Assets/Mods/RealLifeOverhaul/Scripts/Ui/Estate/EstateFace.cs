@@ -297,7 +297,7 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.TextMiddle(s, on, right - amount, y, RowHeight, amount, UiStyle.BodyStrong, r.AmountInk == UiRole.None ? UiRole.Text : r.AmountInk, r.Amount, UiFlags.Right);
                 right -= amount + UiTokens.S3;
             }
-            float chip = string.IsNullOrEmpty(r.Chip) ? 0f : Math.Min(UiDraw.SnapDown(w * 0.34f), UiFactCard.ChipWidth(r.Chip));
+            float chip = string.IsNullOrEmpty(r.Chip) ? 0f : Math.Min(UiDraw.SnapDown(w * 0.46f), UiFactCard.ChipWidth(r.Chip));
             if (chip > 0f)
             {
                 UiDraw.Chip(s, on, right - chip, y + UiDraw.SnapDown((RowHeight - UiTokens.Badge - UiTokens.S1) / 2f), r.Chip, r.ChipTone, chip);

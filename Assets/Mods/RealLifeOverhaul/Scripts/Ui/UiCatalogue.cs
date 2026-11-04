@@ -30,6 +30,7 @@ namespace RealLifeOverhaul.Ui
         public string DetailKicker;                 // what the chosen thing is ("Equipment")
         public string[] DetailLabels = new string[0];
         public string[] DetailValues = new string[0];
+        public UiRole[] DetailInks;                 // a value in its own ink (a margin in green); null or None for the main ink
         public string DetailNote;                   // a sentence on the chosen thing
         public UiActionModel[] Actions = new UiActionModel[0];   // the detail's actions, the last the main one
         public string EmptyTitle;
@@ -310,7 +311,8 @@ namespace RealLifeOverhaul.Ui
             ty += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.BodyStrong)) + UiTokens.S3;
             for (int i = 0; i < m.DetailLabels.Length && i < m.DetailValues.Length; i++)
             {
-                ty += UiDraw.InfoRow(s, at, x, ty, w, m.DetailLabels[i], m.DetailValues[i]);
+                ty += UiDraw.InfoRow(s, at, x, ty, w, m.DetailLabels[i], m.DetailValues[i], false, -1, 0,
+                    m.DetailInks != null && i < m.DetailInks.Length && m.DetailInks[i] != UiRole.None ? m.DetailInks[i] : UiRole.Text);
             }
             if (!string.IsNullOrEmpty(m.DetailNote))
             {

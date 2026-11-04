@@ -266,8 +266,6 @@ namespace RealLifeOverhaul.Ui
                     _m.OffTitle = EstateText.T("reallife_estate_row_no_agency");
                     _m.OffBody = EstateText.T("reallife_estate_agency_open_what");
                     _m.Side = AgencySide(agency);
-                    _m.Side.Title = EstateText.T("reallife_estate_tab_agency");
-                    _m.Side.Heading = true;
                     return;
                 }
                 TableShape(UiIcon.Key, EstateText.T("reallife_estate_tab_agency"), EstateGame.NameOf(agency.Office), null, null, cols, rows, keys, AgencySide(agency),

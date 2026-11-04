@@ -187,32 +187,28 @@ namespace RealLifeOverhaul.Ui
                     labels.Add(DealerText.T("reallife_dealer_car_faults"));
                     values.Add(DealerText.Faults(car.Known));
                 }
-                m.DetailLabels = labels.ToArray();
-                m.DetailValues = values.ToArray();
-                // What the other dealers ask for the same model, and who has looked at this car.
-                var note = new List<string>(3);
+                // What the other dealers ask for the same model, and who has looked at this car: rows, as the figures above, never a paragraph.
+                var inks = new List<UiRole>(12) { UiRole.None, UiRole.None, UiRole.None, margin >= 0 ? UiRole.OkText : UiRole.DangerText };
                 int rival;
                 int cheapest = RivalRules.Cheapest(_s, car.Type, out rival);
-                if (cheapest > 0 && rival >= 0)
-                {
-                    note.Add(DealerText.T("reallife_ui_dealer_rival_asks", "name", DealerCatalogue.RivalNames[rival % DealerCatalogue.RivalNames.Length], "price", Money(cheapest)));
-                }
-                else
-                {
-                    note.Add(DealerText.T("reallife_ui_dealer_no_rival"));
-                }
-                note.Add(DealerText.T("reallife_ui_dealer_views", "today", car.ViewsToday.ToString(Inv), "yesterday", car.ViewsLast.ToString(Inv)));
+                labels.Add(DealerText.T("reallife_ui_dealer_l_rival"));
+                values.Add(cheapest > 0 && rival >= 0 ? DealerCatalogue.RivalNames[rival % DealerCatalogue.RivalNames.Length] + ", " + Money(cheapest) : DealerText.T("reallife_ui_dealer_l_no_rival"));
+                labels.Add(DealerText.T("reallife_ui_dealer_l_looked_today"));
+                values.Add(car.ViewsToday.ToString(Inv));
+                labels.Add(DealerText.T("reallife_ui_dealer_l_looked_yesterday"));
+                values.Add(car.ViewsLast.ToString(Inv));
                 for (int d = 0; d < yard.Deals.Count; d++)
                 {
                     if (yard.Deals[d].Car == car.Id && yard.Deals[d].Looks > 0)
                     {
-                        note.Add(DealerText.Fill(yard.Deals[d].Looks > 1 ? "reallife_ui_dealer_looked_times" : "reallife_ui_dealer_looked_once",
-                            "name", yard.Deals[d].Customer, "times", yard.Deals[d].Looks.ToString(Inv),
-                            "offer", Money(DealerRules.Price(yard, yard.Deals[d], car))));
+                        labels.Add(DealerText.T("reallife_ui_dealer_l_offer_waiting"));
+                        values.Add(yard.Deals[d].Customer + ", " + Money(DealerRules.Price(yard, yard.Deals[d], car)));
                         break;
                     }
                 }
-                m.DetailNote = string.Join(" ", note.ToArray());
+                m.DetailLabels = labels.ToArray();
+                m.DetailValues = values.ToArray();
+                m.DetailInks = inks.ToArray();
                 var actions = new List<UiActionModel>(7);
                 int id = car.Id;
                 bool away = car.ShopUntil > _now || car.OutUntil > _now;
@@ -404,6 +400,28 @@ namespace RealLifeOverhaul.Ui
                 _m.Left = new[] { new UiFactCardModel { Title = DealerText.T("reallife_ui_dealer_terms"), Heading = true, Lines = terms.ToArray(), Actions = actions.ToArray() } };
                 _m.Right = new[] { new UiFactCardModel { Title = DealerText.T("reallife_ibox_sec_this_week"), Heading = true, Lines = now.ToArray() } };
                 _m.Lower = Trend(RealLifeOverhaul.Economy.Dealership.ReportKind.Revenue, y.Place, "reallife_dealer_report_revenue");
+                // The cars that have stood on this lot the longest, with what each asks: under the terms, where the page would otherwise be bare.
+                var oldest = new List<StockCar>(y.Cars);
+                oldest.Sort((a, b) => a.Bought.CompareTo(b.Bought));
+                var longest = new List<EstateRow>(3);
+                for (int i = 0; i < oldest.Count && longest.Count < 3; i++)
+                {
+                    StockCar c = oldest[i];
+                    int carId = c.Id;
+                    longest.Add(new EstateRow
+                    {
+                        Icon = ClassGlyph(c.Type), Tint = ClassTint(c.Type, c.Asking), Title = DealerGame.CarName(c.Type),
+                        Sub = DealerText.T("reallife_ui_dealer_days_on_lot", "days", Math.Max(0, _day - c.Bought).ToString(Inv)), Amount = Money(c.Asking),
+                        Run = _runs.Do(() => Show(() =>
+                        {
+                            _v.Tab = 1;
+                            _v.Pick = "car:" + carId;
+                        }))
+                    });
+                }
+                _m.RelatedTitle = DealerText.T("reallife_ui_dealer_sort_days");
+                _m.RelatedCount = longest.Count > 0 ? longest.Count.ToString(Inv) : null;
+                _m.Related = longest.ToArray();
             }
         }
     }

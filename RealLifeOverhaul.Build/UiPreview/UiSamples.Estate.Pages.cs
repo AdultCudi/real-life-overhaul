@@ -94,7 +94,7 @@ internal static partial class UiSamples
         };
         TableOf(m, UiIcon.People, W(t, "reallife_estate_tab_tenants", "Tenants"), Fx(W(t, "reallife_ui_estate_tenants_sub", "{let} let, {empty} empty"), "let", "11", "empty", "1"), cols, rows, null,
             W(t, "reallife_estate_row_none_managed", "You let none yourself"), W(t, "reallife_ui_estate_empty_tenants_body", "The units you let yourself appear here with their tenants and the people who apply."));
-        m.FigLabels = new[] { W(t, "reallife_ui_estate_fig_let", "Let"), W(t, "reallife_ui_estate_fig_empty_units", "Empty"), W(t, "reallife_estate_tenants_owed", "Owed"), W(t, "reallife_ui_estate_fig_mean_happy", "Mean satisfaction") };
+        m.FigLabels = new[] { W(t, "reallife_ui_estate_fig_let", "Let"), W(t, "reallife_ui_estate_fig_empty_units", "Empty"), W(t, "reallife_ui_estate_fig_rent_owed", "Rent owed to you"), W(t, "reallife_ui_estate_fig_mean_happy", "Mean satisfaction") };
         m.FigValues = new[] { "11", "1", "$8,800", "63%" };
         m.FigInks = new[] { UiRole.None, UiRole.WarnText, UiRole.DangerText, UiRole.None };
         // The late payers, with the reminder to send: what needs the landlord now, from the same units as the roll's red and amber chips.
@@ -283,7 +283,6 @@ internal static partial class UiSamples
             m.OffBody = W(t, "reallife_estate_agency_open_what", "Run the agency from an office you hold.");
             m.Side = new UiFactCardModel
             {
-                Title = W(t, "reallife_estate_tab_agency", "Agency"), Heading = true,
                 Lines = new[] { EstateStep(runs, W(t, "reallife_ui_estate_fig_office", "Office"), "7 5th Avenue", null, false, true) },
                 Actions = new[] { EstateButton(runs, W(t, "reallife_estate_btn_open_agency", "Open the agency"), UiButtonKind.Primary, UiIcon.Key, UiAction.Alt) }
             };
@@ -541,7 +540,8 @@ internal static partial class UiSamples
                         Title = W(t, "reallife_ui_estate_running", "Running it"), Heading = true,
                         Lines = new[]
                         {
-                            EstateStep(runs, W(t, "reallife_estate_duty_who", "Who runs it"), W(t, "reallife_estate_manager_self", "Yourself"), W(t, "reallife_estate_duty_self_what", "You answer every call yourself."), false, true),
+                            EstateStep(runs, W(t, "reallife_estate_duty_who", "Who runs it"), W(t, "reallife_estate_manager_self", "Yourself"), null, false, true),
+                            UiFactLine.Row(W(t, "reallife_ui_estate_fee_row", "Fee"), W(t, "reallife_ui_estate_fee_none", "None")),
                             EstateSwitch(runs, W(t, "reallife_estate_own_cover", "Landlord's cover"), true),
                             EstateLink(runs, W(t, "reallife_ui_estate_works_link", "Works and servicing"))
                         }
@@ -552,7 +552,12 @@ internal static partial class UiSamples
                     new UiFactCardModel
                     {
                         Title = W(t, "reallife_estate_own_selling", "Selling"), Heading = true,
-                        Lines = new[] { EstateStep(runs, W(t, "reallife_estate_own_selling", "Selling"), "100%", W(t, "reallife_estate_own_list_what", "Listed at {amount}, a sale comes about {chance} of the days, with a fee of {fee}.").Replace("{amount}", "$4,860,000").Replace("{chance}", "18%").Replace("{fee}", "1.5%")) },
+                        Lines = new[]
+                        {
+                            EstateStep(runs, W(t, "reallife_ui_estate_sale_asking_share", "Asking, of its worth"), "100%", null),
+                            UiFactLine.Row(W(t, "reallife_ui_estate_sale_asking_price", "Asking price"), "$4,860,000"), UiFactLine.Row(W(t, "reallife_ui_estate_sale_chance", "Chance of an offer a day"), "18%"),
+                            UiFactLine.Row(W(t, "reallife_ui_estate_sale_fee", "Selling fee"), "1.5%")
+                        },
                         Actions = new[] { EstateButton(runs, W(t, "reallife_estate_btn_list", "List for sale"), UiButtonKind.Primary, UiIcon.Tag, UiAction.Alt) }
                     }
                 };

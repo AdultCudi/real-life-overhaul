@@ -503,7 +503,7 @@ namespace RealLifeOverhaul.Ui
                 if (_s.Yards.Count == 0)
                 {
                     where.Add(UiFactLine.Say(DealerText.T("reallife_dealer_refuse_off"), UiRole.WarnText));
-                    _m.Right = new[] { new UiFactCardModel { Title = DealerText.T("reallife_ibox_sec_where"), Heading = true, Lines = where.ToArray() } };
+                    _m.Right = new[] { new UiFactCardModel { Lines = where.ToArray() } };
                     return;
                 }
                 int at = 0;
@@ -566,7 +566,7 @@ namespace RealLifeOverhaul.Ui
                 actions.Add(_runs.Button(DealerText.T("reallife_dealer_button_event"), UiButtonKind.Primary, UiIcon.Megaphone, UiAction.Alt, () => Show(() => Confirm("reallife_dealer_q_event_title",
                     DealerText.Fill("reallife_dealer_q_event", "event", DealerText.Event(kind, chosen), "name", yard.Name, "cost", Money(cost), "days", DealerCatalogue.EventDays[kind].ToString(Inv)),
                     () => _d.BookEvent(place, kind, chosen), false)), !can));
-                _m.Right = new[] { new UiFactCardModel { Title = DealerText.T("reallife_ibox_sec_where"), Heading = true, Lines = where.ToArray(), Actions = actions.ToArray() } };
+                _m.Right = new[] { new UiFactCardModel { Lines = where.ToArray(), Actions = actions.ToArray() } };   // the step names it: no second title over it
             }
 
             // ------------------------------------------------------------------------------------------------- reports
