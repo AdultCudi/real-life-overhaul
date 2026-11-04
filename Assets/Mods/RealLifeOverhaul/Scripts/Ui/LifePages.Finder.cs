@@ -346,7 +346,8 @@ namespace RealLifeOverhaul.Ui
             UiAt inside = at.In(face);
             float iw = UiTokens.Icon, lx = x + UiTokens.S4;
             UiDraw.Icon(s, inside, lx, y + (h - iw) / 2f, iw, t.Icon, UiRole.OnAccent, UiFlags.Middle | UiFlags.Decor);
-            UiDraw.TextMiddle(s, inside, lx + iw + UiTokens.S2, y, h, Math.Max(UiTokens.S4, w - UiTokens.S4 * 2f - iw - UiTokens.S2), UiStyle.Button, UiRole.OnAccent, t.Label, UiFlags.Label | UiFlags.Truncate);
+            float room = Math.Max(UiTokens.S4, w - UiTokens.S4 * 2f - iw - UiTokens.S2);
+            UiDraw.TextMiddle(s, inside, lx + iw + UiTokens.S2, y, h, room, UiStyle.Button, UiRole.OnAccent, t.Label, UiFlags.Label | UiFlags.Truncate);
             UiDraw.Node(s, at, x, y, w, h, VTool, t.Id, face);
         }
 

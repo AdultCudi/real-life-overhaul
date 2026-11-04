@@ -82,7 +82,12 @@ namespace RealLifeOverhaul.Ui
                 "reallife_flare_reply_sorry", "reallife_flare_replying_to", "reallife_flare_review_post_1", "reallife_flare_review_post_2", "reallife_flare_review_post_3",
                 "reallife_flare_review_post_4", "reallife_flare_review_post_5", "reallife_flare_send", "reallife_flare_tab_accounts", "reallife_flare_tab_following",
                 "reallife_flare_tab_foryou", "reallife_flare_tab_posts", "reallife_flare_tab_replies", "reallife_flare_tier_1", "reallife_flare_tier_2", "reallife_flare_your_boss",
-                "reallife_flare_kit_picker_title", "reallife_flare_kit_picker_search", "reallife_gallery_search", "reallife_ui_life_sort_new", "reallife_ui_life_select", "reallife_gallery_select_done", "reallife_ui_life_favourite_picked", "reallife_ui_life_share", "reallife_ui_life_delete_selected", "reallife_phonecam_app", "reallife_ui_life_empty_gallery_title", "reallife_ui_life_empty_gallery_body", "reallife_gallery_count_many", "reallife_gallery_day_today", "reallife_ui_life_photos_day", "reallife_gallery_day_yesterday", "reallife_gallery_day", "reallife_gallery_pick_none", "reallife_gallery_filter_place", "reallife_gallery_filter_business", "reallife_gallery_filter_day", "reallife_gallery_tab_all", "reallife_gallery_album_favourites", "reallife_gallery_tab_selfies", "reallife_gallery_album_businesses", "reallife_gallery_album_places", "reallife_gallery_album_flare", "reallife_flare_kit_photo_gallery",
+                "reallife_flare_kit_picker_title", "reallife_flare_kit_picker_search", "reallife_gallery_search", "reallife_ui_life_sort_new", "reallife_ui_life_select",
+                "reallife_gallery_select_done", "reallife_ui_life_favourite_picked", "reallife_ui_life_share", "reallife_ui_life_delete_selected", "reallife_phonecam_app",
+                "reallife_ui_life_empty_gallery_title", "reallife_ui_life_empty_gallery_body", "reallife_gallery_count_many", "reallife_gallery_day_today",
+                "reallife_ui_life_photos_day", "reallife_gallery_day_yesterday", "reallife_gallery_day", "reallife_gallery_pick_none", "reallife_gallery_filter_place",
+                "reallife_gallery_filter_business", "reallife_gallery_filter_day", "reallife_gallery_tab_all", "reallife_gallery_album_favourites", "reallife_gallery_tab_selfies",
+                "reallife_gallery_album_businesses", "reallife_gallery_album_places", "reallife_gallery_album_flare", "reallife_flare_kit_photo_gallery",
             }).Switch(UiScreenSwitches.Social));
         }
     }

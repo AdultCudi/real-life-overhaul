@@ -518,7 +518,8 @@ namespace RealLifeOverhaul.Photos
             side.HasMinute = original.Minute >= 0;
             PhotoSidecarFile.Write(path, side);
             Added(folder, path, made, side);
-            Logger?.Info("Gallery: an edit of " + original.Name + " saved as " + Path.GetFileName(path) + " (" + made.Width + " x " + made.Height + ", " + (made.Bytes / 1024) + " KB); the original stays.");
+            Logger?.Info("Gallery: an edit of " + original.Name + " saved as " + Path.GetFileName(path) + " (" + made.Width + " x " + made.Height
+                         + ", " + (made.Bytes / 1024) + " KB); the original stays.");
             done(Path.GetFileName(path));
         }
 

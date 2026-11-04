@@ -107,9 +107,10 @@ namespace RealLifeOverhaul.Photos
         {
             if (_held.TryGetValue(name, out Held h))
             {
-                if (h.Sprite != null)
+                Sprite sprite = h.Sprite;
+                if (sprite != null)
                 {
-                    UnityEngine.Object.Destroy(h.Sprite);
+                    UnityEngine.Object.Destroy(sprite);
                 }
                 PhotosGame.Destroy(h.Texture);
                 _held.Remove(name);

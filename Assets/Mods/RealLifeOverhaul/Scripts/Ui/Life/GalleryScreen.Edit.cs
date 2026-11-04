@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using RealLifeOverhaul.Photos;
-using Unity.Collections;
 using UI.Notification;
+using Unity.Collections;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Ui

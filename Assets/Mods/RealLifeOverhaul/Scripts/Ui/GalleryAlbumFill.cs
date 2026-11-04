@@ -244,7 +244,9 @@ namespace RealLifeOverhaul.Ui
 
         public static string PeopleWords(int people, GalleryTexts x)
         {
-            return people <= 0 ? x.T("reallife_gallery_people_none") : people == 1 ? x.T("reallife_gallery_people_one") : x.T("reallife_gallery_people_many").Replace("{count}", people.ToString(CultureInfo.InvariantCulture));
+            return people <= 0 ? x.T("reallife_gallery_people_none")
+                : people == 1 ? x.T("reallife_gallery_people_one")
+                : x.T("reallife_gallery_people_many").Replace("{count}", people.ToString(CultureInfo.InvariantCulture));
         }
 
         private static string EditKey(string token)
