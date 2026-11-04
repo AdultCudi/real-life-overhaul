@@ -74,6 +74,36 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        /// <summary>
+        /// Moves a box that stands over a card of the game's (the minimap), which the HUD must not cover, off it: nothing when
+        /// they do not meet or there is no card (<paramref name="cardW"/> 0); else to the side of the card with room, the nearer
+        /// first, a margin from it and from the screen's edge; where neither side has room (a piece nearly as wide as the screen),
+        /// to just above the card; where that is off the screen too, it stays. Pieces that stand at a fixed row (the cards at the
+        /// top centre, the activity's strip over the bar) use it; the same card moves the item panel and the world prompt by their
+        /// own rules.
+        /// </summary>
+        public static void Clear(ref float x, ref float y, float w, float h, float screenW, float cardX, float cardY, float cardW, float cardH)
+        {
+            if (cardW <= 0f || cardH <= 0f || !Overlaps(x, y, w, h, cardX, cardY, cardW, cardH))
+            {
+                return;
+            }
+            float right = (float)Math.Ceiling(cardX + cardW + Margin), left = (float)Math.Floor(cardX - Margin - w), above = (float)Math.Floor(cardY - Margin - h);
+            bool rightFits = right + w <= screenW - Margin, leftFits = left >= Margin;
+            if (rightFits && (!leftFits || Math.Abs(right - x) <= Math.Abs(left - x)))
+            {
+                x = right;
+            }
+            else if (leftFits)
+            {
+                x = left;
+            }
+            else if (above >= Margin)
+            {
+                y = above;
+            }
+        }
+
         /// <summary>Keeps a box inside the screen, <see cref="Margin"/> from its edges and above the floor; a box too big for the room keeps its top left in.</summary>
         public static void Clamp(ref float x, ref float y, float w, float h, float screenW, float floor)
         {

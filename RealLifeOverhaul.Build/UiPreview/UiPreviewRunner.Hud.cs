@@ -59,6 +59,8 @@ public static partial class UiPreviewRunner
         screens.Add(new Screen { Name = "hud_map_filters", AppName = "City map", Icon = UiIcon.MapTrifold, Backdrop = "map_rent.png",
             Lay = (s, f, d, k) => UiSamples.HudMapScene(s, f, d, k, English, false), HoverCommand = UiMapPanel.LocateCommand, HoverArg = 2, Walk = Moves("RDRDRDRDRDLDD") });
         screens.Add(Hud("hud_tools", "03.jpg", (s, f, d, k) => UiSamples.HudTools(s, f, d, k, English, true), UiToolRow.ChoiceCommand, 3, "URRRRRLLDR"));
+        screens.Add(Hud("hud_minimap", "13.jpg", (s, f, d, k) => UiSamples.HudMinimapScene(s, f, d, k, English, false), UiObjectives.LocateCommand, 0, "DDDD"));
+        screens.Add(Hud("hud_minimap_beside", "02.jpg", (s, f, d, k) => UiSamples.HudMinimapScene(s, f, d, k, English, true), UiHudNotice.ActionCommand, 0, "RR"));
         screens.Add(Hud("hud_tools_none", "00.jpg", (s, f, d, k) => UiSamples.HudTools(s, f, d, k, English, false), UiToolRow.ToolCommand, 1, "RRRRLLLL"));
     }
 
