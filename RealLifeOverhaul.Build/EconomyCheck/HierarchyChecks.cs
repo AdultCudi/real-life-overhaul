@@ -369,7 +369,9 @@ internal static partial class Program
         Check(MemberText(executives, "private void ExecutivesMonth(").Contains("HierarchyLog.Paid") && MemberText(executives, "private Escalation Propose(").Contains("HierarchyLog.Proposed")
               && ModSource(@"Economy\Company\CompanyDirector.Regions.cs").Contains("HierarchyLog.Appointed") && ModSource(@"Economy\Company\CompanyDirector.Regions.cs").Contains("HierarchyLog.Replaced")
               && MemberText(escalations, "private bool MoveOne(").Contains("HierarchyLog.Moved") && MemberText(escalations, "private bool TopUp(").Contains("HierarchyLog.TopUp")
-              && MemberText(escalations, "private void Settled(").Contains("HierarchyLog.Settled") && MemberText(escalations, "private void PassUp(").Contains("HierarchyLog.Passed"),
+              && MemberText(escalations, "private void Settled(").Contains("CompanyDay.Settled(") && MemberText(escalations, "private void PassUp(").Contains("CompanyDay.PassedUp(")
+              && MemberText(ModSource(@"Economy\Company\CompanyDay.cs"), "public static void Settled(").Contains("HierarchyLog.Settled")
+              && MemberText(ModSource(@"Economy\Company\CompanyDay.cs"), "public static void PassedUp(").Contains("HierarchyLog.Passed"),
             "hierarchy log: every decision above the managers is written down, what it changed, by whom, and each executive's month's pay");
         Dictionary<string, string>[] langs = LanguageWords(out string[] codes);
         bool words = LanguagesRead("executives' pay", langs, codes);
@@ -507,17 +509,21 @@ internal static partial class Program
         string features = ModSource(@"Meta\FeatureList.Economy.cs");
         string settings = ModSource(@"Core\Settings.cs");
         string raises = MemberText(decisions, "private void DecideRaises("), offers = MemberText(decisions, "private void DecideOffers("), hiring = MemberText(decisions, "private void DecideHiring(");
-        Check(raises.Contains("Rule(mp, PolicyField.PayBand)") && raises.Contains("PolicyRules.RaiseCeiling(") && raises.Contains("PolicyRules.RaiseDue(") && raises.Contains("ToApprover(mp, f, false")
-              && !raises.Contains("m.WageBand)") && offers.Contains("PolicyRules.RaiseCeiling(") && offers.Contains("ToApprover(mp, f, true") && !offers.Contains("Ceiling(f.Going, m.WageBand)")
-              && hiring.Contains("PolicyRules.Pick(") && !hiring.Contains("ManagerRules.Pick(") && hiring.Contains("HireFromRegion("),
+        string dayCode = ModSource(@"Economy\Company\CompanyDay.cs");
+        string dayRaise = MemberText(dayCode, "public static bool Raise("), dayHire = MemberText(dayCode, "public static HireWas Hire(");
+        Check(raises.Contains("CompanyDay.Raise(") && dayRaise.Contains("w.Rule(place, PolicyField.PayBand)") && dayRaise.Contains("PolicyRules.RaiseCeiling(") && dayRaise.Contains("PolicyRules.RaiseDue(")
+              && dayRaise.Contains("ToApprover(w, place, m, f, false") && !dayRaise.Contains("m.WageBand)") && offers.Contains("PolicyRules.RaiseCeiling(")
+              && offers.Contains("CompanyDay.ToApprover(this, mp.Place.Place, mp.Own, f, true") && !offers.Contains("Ceiling(f.Going, m.WageBand)")
+              && hiring.Contains("CompanyDay.Hire(") && dayHire.Contains("PolicyRules.Pick(") && !dayHire.Contains("ManagerRules.Pick(") && hiring.Contains("HireFromRegion("),
             "hierarchy wiring: raises, offers and hires read the pay band, the largest raise, the days between, the cap and the floor in force, and send what is past them to the approver");
-        Check(MemberText(managers, "private void Round(int day, int hour, ManagerTask task)").Contains("!PolicyAllows(mp, task)")
+        Check(MemberText(managers, "private void Round(int day, int hour, ManagerTask task)").Contains("CompanyDay.Deciding(")
+              && MemberText(dayCode, "public static bool Deciding(").Contains("w.PolicyAllows(place, task)")
               && MemberText(managers, "internal bool Manages(").Contains("PolicyAllows(ManagedAt(place), task)")
               && MemberText(managers, "internal int BudgetOf(").Contains("TopUpOf(m)") && MemberText(managers, "private void Hour(int day, int hour)").Contains("HierarchyRules.DigestDue(")
               && MemberText(managers, "public void ManagerLimit(").Contains("StoreOwn(place, "),
             "hierarchy wiring: a switch of the policy stops its kind in every round and asks you again, the budget counts its top-up, the day's notice follows the reports' rule, and a manager's band is the store's rule");
-        Check(MemberText(hierarchy, "internal int Rule(").Contains("if (!HierarchyOn)") && MemberText(hierarchy, "internal int Rule(").Contains("m.WageBand")
-              && MemberText(hierarchy, "internal int Rule(").Contains("PolicyRules.Effective("),
+        Check(MemberText(hierarchy, "internal int Rule(").Contains("if (!HierarchyOn)") && MemberText(hierarchy, "internal int Rule(").Contains("CompanyDay.RuleOff(")
+              && MemberText(dayCode, "public static int RuleOff(").Contains("m.WageBand") && MemberText(hierarchy, "internal int Rule(").Contains("PolicyRules.Effective("),
             "hierarchy wiring: switched off, every manager decides by their own band and budget and the start for the rest, as before");
         Check(MemberText(hierarchy, "partial void HierarchyLoad(").Contains("KeepOwnLimits()") && MemberText(hierarchy, "private void KeepOwnLimits(").Contains("ManagerCatalogue.WageBandDefault"),
             "hierarchy wiring: a save from before the policy keeps each manager's own band and budget as their store's rule");

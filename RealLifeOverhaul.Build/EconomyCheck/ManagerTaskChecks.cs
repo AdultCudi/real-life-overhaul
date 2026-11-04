@@ -215,7 +215,9 @@ internal static partial class Program
         string hour = MemberText(managers, "private void Hour(int day, int hour)");
         Check(hour.Contains("ManagerRules.Due(day, hour, (ManagerTask)t)") && !hour.Contains("ManagerCatalogue.RotaHour") && !hour.Contains("ManagerCatalogue.PriceHour"),
             "manager switches: the hour's decisions are made by ManagerRules.Due alone");
-        Check(MemberText(managers, "private void Round(int day, int hour, ManagerTask task)").Contains("!ManagerRules.Runs(mp.Own.Tasks, mp.Kind, task)"),
+        string daySource = ModSource(@"Economy\Company\CompanyDay.cs");
+        Check(MemberText(managers, "private void Round(int day, int hour, ManagerTask task)").Contains("!CompanyDay.Deciding(this, mp.Place.Place, mp.Kind, mp.Own, task,")
+              && MemberText(daySource, "public static bool Deciding(").Contains("ManagerRules.Runs(own.Tasks, kind, task)"),
             "manager switches: every round of decisions, the test button's too, skips a place whose switch for it is off");
         Check(Occurs(decisions, "RotaAsk(") == 1 && MemberText(decisions, "private void DecideRota(").Contains("RotaAsk(mp.Place.Place, JobManager, false)")
               && Occurs(managers, "JobManager") == 0 && Occurs(jobs, "!ManagerRotaJudged(job.Place, sheet)") == 1

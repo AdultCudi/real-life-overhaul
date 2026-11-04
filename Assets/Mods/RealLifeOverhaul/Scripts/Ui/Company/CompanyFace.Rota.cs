@@ -352,7 +352,7 @@ namespace RealLifeOverhaul.Ui
                 // A role with what it was before takes the two lines under the name when the row has them, rather than ending in an ellipsis.
                 string role = pr.Role ?? string.Empty;
                 float roleH = UiDraw.Snap(UiTextRules.WrappedHeight(role, UiStyle.Small, tw, 2));
-                bool twoLines = roleH > sh + 1f && th + roleH <= rowH;
+                bool twoLines = roleH > sh + 1f && th + roleH <= rowH + UiTokens.S2;
                 float top = cy + UiDraw.SnapDown((rowH - th - (twoLines ? roleH : sh)) / 2f);
                 UiDraw.TextMiddle(s, at, tx, top, th, tw, UiStyle.Title, UiRole.Text, pr.Name ?? string.Empty, UiFlags.Truncate);
                 if (twoLines)
