@@ -169,6 +169,10 @@ namespace RealLifeOverhaul.Ui
             {
                 UiActionModel a = actions[b.FootAt];
                 float bw = UiDraw.Snap(Math.Min(iw, UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, UiAction.Count, keys)));
+                if (!string.IsNullOrEmpty(b.FootWhy) && iw - bw - UiTokens.S3 > UiTokens.S16)
+                {
+                    UiDraw.TextMiddle(s, at, ix, y + h - UiTokens.S2 - UiTokens.Control, UiTokens.Control, iw - bw - UiTokens.S6, UiStyle.Small, UiRole.WarnText, b.FootWhy, UiFlags.Truncate);
+                }
                 UiDraw.Button(s, at, ix + iw - bw - UiTokens.S3, y + h - UiTokens.S2 - UiTokens.Control, bw, UiTokens.Control, a.Kind, a.Label,
                     a.Icon, UiAction.Count, keys, a.Command, a.Arg, a.Disabled);
             }
@@ -223,9 +227,15 @@ namespace RealLifeOverhaul.Ui
                                 keys)) : UiDraw.ButtonWidth(u.Kind, u.Label, u.Icon, UiAction.Count, keys)) + (k > 0 ? UiTokens.S2 : 0f);
                         }
                         float lw = Math.Max(0f, w - used - UiTokens.S3);
+                        float said = 0f;
                         if (!string.IsNullOrEmpty(r.Label))
                         {
+                            said = Math.Min(lw, UiTextRules.Width(r.Label, UiStyle.Body) + UiTokens.S3);
                             UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, lw, UiStyle.Body, UiRole.Text, r.Label, UiFlags.Label | UiFlags.Truncate);
+                        }
+                        if (!string.IsNullOrEmpty(r.Why) && lw - said > UiTokens.S16)
+                        {
+                            UiDraw.TextMiddle(s, at, x + said, y, UiTokens.Control, lw - said, UiStyle.Small, UiRole.WarnText, r.Why, UiFlags.Truncate);   // why the button is dimmed, beside it
                         }
                         float right = x + w - UiTokens.S3;   // the buttons end where a choice field's chooser does
                         for (int k = r.More.Count; k >= 0; k--)

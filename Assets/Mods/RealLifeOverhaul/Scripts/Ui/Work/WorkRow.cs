@@ -234,6 +234,7 @@ namespace RealLifeOverhaul.Ui
         public string Title, Count, Note;
         public readonly List<WorkFormRow> Rows = new List<WorkFormRow>(6);
         public WorkAct Foot;                   // a button under the band
+        public string FootWhy;                 // why that button is drawn dimmed, said beside it
         public int FootAt = -1;
         public bool Grow;                      // the band takes the rest of its column
     }

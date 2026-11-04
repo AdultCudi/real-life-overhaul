@@ -397,6 +397,7 @@ namespace RealLifeOverhaul.Ui
                     WorkFormRow r = band.Rows[k];
                     if (r.Act != null)
                     {
+                        r.Why = r.Act.Why;   // said in the row, beside the button that cannot be pressed
                         r.ActAt = b.Button(r.Act.Label, r.Act.Style, r.Act.Icon, UiAction.Count, WorkBuilder.Do(r.Act.Kind, r.Act.Arg, r.Act.Why, r.Act.Opens));
                         for (int m = 0; m < r.More.Count; m++)
                         {
@@ -410,6 +411,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 if (band.Foot != null)
                 {
+                    band.FootWhy = band.Foot.Why;
                     band.FootAt = b.Button(band.Foot.Label, band.Foot.Style, band.Foot.Icon, UiAction.Count, WorkBuilder.Do(band.Foot.Kind, band.Foot.Arg, band.Foot.Why, band.Foot.Opens));
                 }
             }
@@ -428,7 +430,6 @@ namespace RealLifeOverhaul.Ui
             b.Page.Amounts = amounts;
             WorkPage page = b.Done();
             UiActionModel[] actions = page.Model.Actions;
-            string why = page.Why;
             page.Body = (s, ats, x, y, cw, bottom, keys) =>
             {
                 float top = y, afterTabs = y;
@@ -437,12 +438,7 @@ namespace RealLifeOverhaul.Ui
                     afterTabs = PageTabs(s, ats, t.PersonTabs, v.PageTab, x, top);   // the tabs and the page's buttons stand in one row
                 }
                 float cy = Math.Max(afterTabs, Buttons(s, ats, pageActs, x, top, cw, keys));
-                float noteH = why != null ? WorkPanel.NoteHeight(null, why, cw) : 0f;
-                WorkForm.Lay(s, ats, form, actions, amounts, x, cy, cw, bottom - (why != null ? noteH + UiTokens.S3 : 0f), keys);
-                if (why != null)
-                {
-                    WorkPanel.Note(s, ats, UiIcon.Info, null, why, x, bottom - noteH, cw);   // the reason a button is drawn dimmed, on a field of its own and not loose at the foot
-                }
+                WorkForm.Lay(s, ats, form, actions, amounts, x, cy, cw, bottom, keys);
             };
             return page;
         }

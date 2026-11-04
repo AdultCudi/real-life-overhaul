@@ -32262,5 +32262,16 @@
   "reallife_work_not_yet_cell": "Not yet",
   "reallife_work_unknown": "Unknown",
   "reallife_work_not_set": "Not set",
-  "reallife_work_timetable_short": "{days} {hour}"
+  "reallife_work_timetable_short": "{days} {hour}",
+  "reallife_work_band_by_level": "Your skills by level",
+  "reallife_work_next_level": "{level} at {n}",
+  "reallife_work_n_to_go": "{n} to go",
+  "reallife_work_band_next_level": "Nearest the next level",
+  "reallife_work_after_fund": "you pay {n} after the fund",
+  "reallife_work_band_degrees_offered": "Degrees on offer",
+  "reallife_work_band_hardest": "Hardest to hire in",
+  "reallife_work_band_most_looking": "Most people looking",
+  "reallife_work_shortage_n": "Shortage {n}",
+  "reallife_work_looking_n": "{n} looking",
+  "reallife_work_skills_word": "Skills and wear"
 }

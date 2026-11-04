@@ -150,6 +150,7 @@ internal static partial class Program
         Check(numbers.Length == 0, "work screens: no action of an app has a number that is the screen's own or between: apps start at 100" + numbers);
         Check(chipFaults.Length == 0, "work screens: a filter chip names the rows it holds, and pressing it shows that many" + chipFaults);
         Check(pressed > 150 && kinds > 100, "work screens: the walk pressed " + pressed + " things, " + kinds + " of them buttons");
+        WorkWordsOnPages(ids);
         // The numbering is the wave's first fault: Career's actions met the screen's own filter, tab and back numbers.
         bool apart = true;
         foreach (CareerAct a in Enum.GetValues(typeof(CareerAct)))
@@ -298,6 +299,36 @@ internal static partial class Program
         ad.Lay(new UiScene(), UiFrame.FullMenu(1.78f, "Work"), true, UiDefaultKeys.Keyboard);
         Check(stepped && cycled && ad.Page.Amounts[posts].Value == 3 && ad.Page.Amounts[0].Value == 1,
             "work screens: the new ad's Posts to fill steps (to " + (posts >= 0 ? ad.Page.Amounts[posts].Value : -1) + ") and its role choice cycles (to " + ad.Page.Amounts[0].Value + ")");
+    }
+
+    // Every state of every app, laid: no key of the language file reaches a page unmade ("reallife_..."), no bare dash stands for a missing figure, and one is never plural ("1 weeks").
+    private static void WorkWordsOnPages(string[] ids)
+    {
+        var bad = new StringBuilder();
+        var plural = new System.Text.RegularExpressions.Regex(@"(^|\s)1 (weeks|days|visits|people|listings|applicants|courses|things|posts)(\s|$)");
+        int texts = 0;
+        foreach (string id in ids)
+        {
+            foreach (string st in WorkStatesOf(id))
+            {
+                var scene = new UiScene();
+                WorkScreenOf(id, WorkEnglish, st).Lay(scene, UiFrame.FullMenu(1.78f, "Work"), true, UiDefaultKeys.Keyboard);
+                for (int i = 0; i < scene.ItemCount; i++)
+                {
+                    string text = scene.Items[i].Text;
+                    if (string.IsNullOrEmpty(text))
+                    {
+                        continue;
+                    }
+                    texts++;
+                    if (text.Contains("reallife_") || text == "-" || plural.IsMatch(text))
+                    {
+                        bad.Append(" [" + id + " " + st + ": " + text + "]");
+                    }
+                }
+            }
+        }
+        Check(bad.Length == 0 && texts > 2000, "work screens: no key, bare dash or one-plural reaches a page in any state (" + texts + " texts read)" + bad);
     }
 
     // The search narrows the list and the page says so; a tab key moves between sections; the order of the pages holds.

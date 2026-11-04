@@ -309,6 +309,26 @@ internal static partial class UiSamples
             r.Acts.Add(WkAct(105, w.T("reallife_work_new_ad", "New ad"), UiButtonKind.Primary, UiIcon.Plus, null, true));
             t.Rows.Add(r);
         }
+        var byShortage = new List<object[]>(lines);
+        byShortage.Sort((a, b) => ((int)b[9]).CompareTo((int)a[9]));
+        var byLooking = new List<object[]>(lines);
+        byLooking.Sort((a, b) => ((int)b[2]).CompareTo((int)a[2]));
+        for (int pass = 0; pass < 2; pass++)
+        {
+            List<object[]> sorted = pass == 0 ? byShortage : byLooking;
+            var icons = new UiIcon[3];
+            var names = new string[3];
+            var hints = new string[3];
+            var values = new string[3];
+            for (int i = 0; i < 3; i++)
+            {
+                icons[i] = (UiIcon)sorted[i][1];
+                names[i] = RFamily(w, (string)sorted[i][0]);
+                hints[i] = pass == 0 ? w.F("reallife_work_shortage_n", "Shortage {n}", "n", ((int)sorted[i][9] / 10f).ToString("0.#") + "%") : w.F("reallife_work_looking_n", "{n} looking", "n", sorted[i][2].ToString());
+                values[i] = "$" + (int)sorted[i][7];
+            }
+            WorkBands.AddIfAny(t.Below, WorkBands.Tiles(pass == 0 ? w.T("reallife_work_band_hardest", "Hardest to hire in") : w.T("reallife_work_band_most_looking", "Most people looking"), icons, names, hints, values));
+        }
         return t;
     }
 
@@ -370,7 +390,7 @@ internal static partial class UiSamples
     {
         var t = new WorkTab { Shape = WorkShape.Table, Search = w.T("reallife_work_search_people", "Search people") };
         t.Columns = new[] { WkCol(w.T("reallife_work_col_name", "Name"), UiCellKind.Person), WkCol(w.T("reallife_work_col_role", "Role"),
-            UiCellKind.Text, 168), WkCol(w.T("reallife_work_skill_craft", "Craft"), UiCellKind.Meter, 120),
+            UiCellKind.Text, 232), WkCol(w.T("reallife_work_skill_craft", "Craft"), UiCellKind.Meter, 120),
             WkCol(w.T("reallife_work_col_pay", "Pay"), UiCellKind.Money, 80), WkCol(w.T("reallife_work_col_morale", "Morale"), UiCellKind.Meter, 112) };
         t.EmptyTitle = w.T("reallife_work_no_team_title", "Nobody is on your payroll");
         t.EmptyBody = w.T("reallife_work_no_team", "Hire from the applicants and they join here, each with a page for their file, career and contract.");
@@ -399,7 +419,11 @@ internal static partial class UiSamples
             now.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_last_review", "Last review"), "4 / 5, " + SDay(w, (int)p[7] + 21)));
             now.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_hired_on", "Joined"), SDay(w, (int)p[7])));
             r.Sections.Add(now);
-            var worn = new WorkSection { Part = WorkPart.Bars, Title = w.T("reallife_work_wear", "Wear") };
+            var worn = new WorkSection { Part = WorkPart.Bars, Title = w.T("reallife_work_skills_word", "Skills and wear") };
+            string[][] pair = { new[] { "coding", "system_design" }, new[] { "testing", "troubleshooting" }, new[] { "networking", "reliability" }, new[] { "networking", "reliability" },
+                new[] { "visual_design", "user_research" }, new[] { "troubleshooting", "networking" }, new[] { "testing", "troubleshooting" }, new[] { "networking", "reliability" } };
+            worn.Bars.Add(new WorkBar { Label = SSkill(w, "t:" + pair[i][0]), Value = System.Math.Min(100, craft + 2) });
+            worn.Bars.Add(new WorkBar { Label = SSkill(w, "t:" + pair[i][1]), Value = System.Math.Max(0, craft - 6) });
             worn.Bars.Add(new WorkBar { Label = w.T("reallife_work_burnout", "Burnout"), Value = burnout });
             r.Sections.Add(worn);
             r.Acts.Add(WkAct(111, w.T("reallife_work_open_page", "Open their page"), UiButtonKind.Primary, UiIcon.Person, null, true, r.Id));
@@ -417,8 +441,8 @@ internal static partial class UiSamples
                 wornRights.Add(w.T("reallife_work_burnout", "Burnout") + " " + burnout);
             }
         }
-        WorkBands.AddIfAny(t.Below, WorkBands.People(w.T("reallife_work_band_under_going", "Paid under the going rate"), gapNames.ToArray(), gapRoles.ToArray(), gapRights.ToArray()));
-        WorkBands.AddIfAny(t.Below, WorkBands.People(w.T("reallife_work_band_wearing", "Wearing thin"), wornNames.ToArray(), wornRoles.ToArray(), wornRights.ToArray()));
+        WorkBands.AddIfAny(t.Below, WorkBands.People(w.T("reallife_work_band_under_going", "Paid under the going rate"), gapNames.ToArray(), gapRoles.ToArray(), gapRights.ToArray(), 2));
+        WorkBands.AddIfAny(t.Below, WorkBands.People(w.T("reallife_work_band_wearing", "Wearing thin"), wornNames.ToArray(), wornRoles.ToArray(), wornRights.ToArray(), 2));
         return t;
     }
 

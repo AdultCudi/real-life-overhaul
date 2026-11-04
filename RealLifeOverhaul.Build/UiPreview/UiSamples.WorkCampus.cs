@@ -302,6 +302,11 @@ internal static partial class UiSamples
             "Teach a pupil a skill you know well, for a fee. It takes an evening."), Act = WkAct(106, w.T("reallife_campus_button_tutor",
             "Give a tutoring session"), UiButtonKind.Secondary, UiIcon.Cap) });
         form.Left.Insert(0, tutor);
+        if (state != "family_none")
+        {
+            WorkBands.AddIfAny(form.Left, WorkBands.Tiles(w.T("reallife_work_band_degrees_offered", "Degrees on offer"), new[] { UiIcon.Code }, new[] { SCourse(w, "cybersecurity") },
+                new[] { "Maya Hayes, " + w.F("reallife_work_after_fund", "you pay {n} after the fund", "n", "$0") }, new[] { "$12,000" }));
+        }
         t.Form = form;
         return t;
     }
@@ -311,7 +316,7 @@ internal static partial class UiSamples
         var t = new WorkTab { Shape = WorkShape.Table };
         t.Columns = new[] { WkCol(w.T("reallife_campus_col_school", "School"), UiCellKind.Tile), WkCol(w.T("reallife_career_col_where", "Where"), UiCellKind.Text, 160),
             WkCol(w.T("reallife_work_col_pupils", "Pupils"), UiCellKind.Text, 120), WkCol(w.T("reallife_work_col_results", "Results"),
-                UiCellKind.Meter, 160), WkCol(w.T("reallife_work_col_inspection", "Inspection"), UiCellKind.Chip, 128) };
+                UiCellKind.Meter, 160), WkCol(w.T("reallife_work_col_inspection", "Inspection"), UiCellKind.Chip, 184) };
         t.EmptyTitle = w.T("reallife_work_schools_empty_title", "No school is open yet");
         t.EmptyBody = w.T("reallife_work_no_schools", "The city's schools open as it grows.");
         string[][] schools =

@@ -116,7 +116,7 @@ internal static partial class UiSamples
         var t = new WorkTab { Shape = WorkShape.Haggle, Sub = true };
         int offer = v.Get(0, 12800);
         t.Amounts.Add(new WorkAmount { Id = 0, Value = offer, Min = 5000, Max = 14200, Step = 100, Figure = "$" + offer.ToString("N0", System.Globalization.CultureInfo.InvariantCulture) });
-        var r = new WorkRow { Id = 2, Name = "Red delivery van", Kicker = w.T("reallife_work_haggle_kicker", "Haggle with the seller"), Seller = "Huang Guo", Line = "Guo Logistics, " + w.F("reallife_work_rated", "rated {rating}", "rating", "4.1"), Status = w.T("reallife_work_tag_discount", "Sells at a discount"), Tone = UiRole.Muted,
+        var r = new WorkRow { Id = 2, Name = "Red delivery van", Kicker = w.T("reallife_work_haggle_kicker", "Haggle with the seller"), Seller = "Huang Guo", Line = "Guo Logistics, " + w.F("reallife_work_rated", "rated {rating}", "rating", "4.3"), Status = w.T("reallife_work_tag_discount", "Sells at a discount"), Tone = UiRole.Muted,
             Sentence = w.F("reallife_work_haggle_line", "{seller} asks {asking} for the {thing}, {versus} against its market price. You may make up to {n} offers, and each one they turn down makes the next harder.", "seller", "Huang Guo", "asking", "$14,200", "thing", "Red delivery van", "versus", "-12%", "n", "3"), Hint = w.T("reallife_work_your_offer", "Your offer") };
         r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_their_price", "Their price"), "$14,200"));
         r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_market_price", "Market price"), Mny(16136)));
@@ -127,7 +127,7 @@ internal static partial class UiSamples
         r.Acts.Add(new WorkAct { Kind = WorkKinds.Back, Arg = 2, Label = w.T("reallife_work_walk_away_haggle", "Walk away"), Style = UiButtonKind.Destructive, Icon = UiIcon.Back, Opens = true,
             Note = w.F("reallife_work_walk_note", "Back to the listings. The {thing} stays for sale today.", "thing", "Red delivery van"), Choice = true });
         var known = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_the_seller", "The seller") };
-        known.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_rating", "Rating"), w.F("reallife_work_rating_of", "{n} of 5", "n", "4.1")));
+        known.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_rating", "Rating"), w.F("reallife_work_rating_of", "{n} of 5", "n", "4.3")));
         known.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_sold_word", "Sold"), "5"));
         known.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_listed_now", "Listed now"), "2"));
         r.Sections.Add(known);

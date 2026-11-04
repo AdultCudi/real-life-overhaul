@@ -309,6 +309,7 @@ namespace RealLifeOverhaul.Ui
             t.EmptyTitle = w.T("reallife_work_market_empty_title", "Nobody is on the market");
             t.EmptyBody = w.T("reallife_work_market_lead", "Professionals looking for work show here by line. Post an ad and the ones who fit apply.");
             var levels = new int[TalentCatalogue.Levels];
+            var lines = new List<int[]>((int)TFamily.Count);   // family, shortage, looking, going rate: what the foot picks its two lists from
             for (int fam = 0; fam < (int)TFamily.Count; fam++)
             {
                 Array.Clear(levels, 0, levels.Length);
@@ -350,8 +351,38 @@ namespace RealLifeOverhaul.Ui
                     Text = w.T("reallife_work_market_how", "Post an ad for a role in this line and the seekers who fit apply over a few days. A shortage makes them ask more.") });
                 r.Acts.Add(Act(NewAd, 0, w.T("reallife_work_new_ad", "New ad"), UiButtonKind.Primary, UiIcon.Plus, true));
                 t.Rows.Add(r);
+                lines.Add(new[] { fam, shortage, seekers, going });
             }
+            MarketFoot(t, lines, w);
             return t;
+        }
+
+        // The Market's foot: the lines that are hardest to hire in (the biggest shortage) and the lines with the most people looking.
+        private static void MarketFoot(WorkTab t, List<int[]> lines, UtilitiesWords w)
+        {
+            var byShortage = new List<int[]>(lines);
+            byShortage.Sort((a, b) => b[1].CompareTo(a[1]));
+            var byLooking = new List<int[]>(lines);
+            byLooking.Sort((a, b) => b[2].CompareTo(a[2]));
+            MarketList(t, w.T("reallife_work_band_hardest", "Hardest to hire in"), byShortage, w, true);
+            MarketList(t, w.T("reallife_work_band_most_looking", "Most people looking"), byLooking, w, false);
+        }
+
+        private static void MarketList(WorkTab t, string title, List<int[]> sorted, UtilitiesWords w, bool byShortage)
+        {
+            int n = Math.Min(3, sorted.Count);
+            var icons = new UiIcon[n];
+            var names = new string[n];
+            var hints = new string[n];
+            var values = new string[n];
+            for (int i = 0; i < n; i++)
+            {
+                icons[i] = FamilyGlyph((TFamily)sorted[i][0]);
+                names[i] = TechText.FamilyName((TFamily)sorted[i][0]);
+                hints[i] = byShortage ? w.F("reallife_work_shortage_n", "Shortage {n}", "n", TechText.Mille(sorted[i][1])) : w.F("reallife_work_looking_n", "{n} looking", "n", sorted[i][2].ToString(Inv));
+                values[i] = sorted[i][3] > 0 ? TechText.Rate(sorted[i][3]) : WorkBuilder.None(w);
+            }
+            WorkBands.AddIfAny(t.Below, WorkBands.Tiles(title, icons, names, hints, values));
         }
 
         private static UiIcon FamilyGlyph(TFamily f)
@@ -491,7 +522,7 @@ namespace RealLifeOverhaul.Ui
         {
             UtilitiesWords w = W;
             var t = new WorkTab { Shape = WorkShape.Table, Search = w.T("reallife_work_search_people", "Search people") };
-            t.Columns = new[] { WorkBuilder.Col(w.T("reallife_work_col_name", "Name"), UiCellKind.Person), WorkBuilder.Col(w.T("reallife_work_col_role", "Role"), UiCellKind.Text, 168),
+            t.Columns = new[] { WorkBuilder.Col(w.T("reallife_work_col_name", "Name"), UiCellKind.Person), WorkBuilder.Col(w.T("reallife_work_col_role", "Role"), UiCellKind.Text, 232),
                 WorkBuilder.Col(w.T("reallife_work_skill_craft", "Craft"), UiCellKind.Meter, 120), WorkBuilder.Col(w.T("reallife_work_col_pay", "Pay"), UiCellKind.Money, 80),
                 WorkBuilder.Col(w.T("reallife_work_col_morale", "Morale"), UiCellKind.Meter, 112) };
             t.EmptyTitle = w.T("reallife_work_no_team_title", "Nobody is on your payroll");
@@ -541,7 +572,9 @@ namespace RealLifeOverhaul.Ui
                 now.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_last_review", "Last review"), f.Rating > 0 ? f.Rating.ToString(Inv) + " / 5, " + TechText.Day(f.ReviewDay) : WorkBuilder.NotYet(w)));
                 now.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_hired_on", "Joined"), TechText.Day(f.Joined)));
                 r.Sections.Add(now);
-                var worn = new WorkSection { Part = WorkPart.Bars, Title = w.T("reallife_work_wear", "Wear") };
+                var worn = new WorkSection { Part = WorkPart.Bars, Title = w.T("reallife_work_skills_word", "Skills and wear") };
+                worn.Bars.Add(new WorkBar { Label = TechText.Skill(f.Def.SkillA), Value = Math.Min(100, f.A / 1000) });
+                worn.Bars.Add(new WorkBar { Label = TechText.Skill(f.Def.SkillB), Value = Math.Min(100, f.B / 1000) });
                 worn.Bars.Add(new WorkBar { Label = w.T("reallife_work_burnout", "Burnout"), Value = Math.Max(0, Math.Min(100, f.Burnout / 10)) });
                 r.Sections.Add(worn);
                 r.Acts.Add(Act(OpenPerson, i, w.T("reallife_work_open_page", "Open their page"), UiButtonKind.Primary, UiIcon.Person, true));
@@ -553,8 +586,8 @@ namespace RealLifeOverhaul.Ui
                 t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_morale", "Average morale"), (moraleSum / d.People.Count).ToString(Inv)));
                 t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_leaving", "Leaving"), leaving.ToString(Inv)));
             }
-            WorkBands.AddIfAny(t.Below, WorkBands.People(w.T("reallife_work_band_under_going", "Paid under the going rate"), gapNames.ToArray(), gapRoles.ToArray(), gapRights.ToArray()));
-            WorkBands.AddIfAny(t.Below, WorkBands.People(w.T("reallife_work_band_wearing", "Wearing thin"), wornNames.ToArray(), wornRoles.ToArray(), wornRights.ToArray()));
+            WorkBands.AddIfAny(t.Below, WorkBands.People(w.T("reallife_work_band_under_going", "Paid under the going rate"), gapNames.ToArray(), gapRoles.ToArray(), gapRights.ToArray(), 2));
+            WorkBands.AddIfAny(t.Below, WorkBands.People(w.T("reallife_work_band_wearing", "Wearing thin"), wornNames.ToArray(), wornRoles.ToArray(), wornRights.ToArray(), 2));
             return t;
         }
 

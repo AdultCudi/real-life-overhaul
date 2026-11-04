@@ -674,6 +674,10 @@ namespace RealLifeOverhaul.Ui
                 EmptyBody = w.T("reallife_work_no_children", "A grown child who wants a degree comes to you with a course and its fee. You pay for it or decline, and what they study shows here.") };
             IReadOnlyList<ChildView> kids = d.Kids();
             int typical = TypicalDegree(d), funds = 0, offers = 0, cost = 0, toPay = 0;
+            var offerIcons = new List<UiIcon>(3);
+            var offerNames = new List<string>(3);
+            var offerHints = new List<string>(3);
+            var offerFees = new List<string>(3);
             for (int i = 0; kids != null && i < kids.Count; i++)
             {
                 ChildStudy c = d.ChildOf(kids[i].Name);
@@ -691,6 +695,11 @@ namespace RealLifeOverhaul.Ui
                     offers++;
                     cost += fee;
                     toPay += Math.Max(0, fee - kids[i].Fund);
+                    CourseDef degree = StudyCatalogue.Find(c.Course);
+                    offerIcons.Add(WorkGlyphs.Course(degree));
+                    offerNames.Add(CareersText.Course(c.Course));
+                    offerHints.Add(kids[i].Name + ", " + w.F("reallife_work_after_fund", "you pay {n} after the fund", "n", CareersText.Money(Math.Max(0, fee - kids[i].Fund))));
+                    offerFees.Add(CareersText.Money(fee));
                     k.Acts.Add(new WorkAct { Kind = PayChild, Arg = i, Label = w.T("reallife_campus_button_child_pay", "Pay for the degree"), Style = UiButtonKind.Primary, Icon = UiIcon.Check });
                     k.Acts.Add(new WorkAct { Kind = DeclineChild, Arg = i, Label = w.T("reallife_campus_button_child_decline", "Not this time"),
                         Style = UiButtonKind.Destructive, Icon = UiIcon.Close });
@@ -708,6 +717,7 @@ namespace RealLifeOverhaul.Ui
                 Act = new WorkAct { Kind = Tutor, Label = w.T("reallife_campus_button_tutor", "Give a tutoring session"),
                 Style = UiButtonKind.Secondary, Icon = UiIcon.Cap, Why = why == null ? null : w.T(why, "You cannot tutor now.") } });
             form.Left.Insert(0, tutor);
+            WorkBands.AddIfAny(form.Left, WorkBands.Tiles(w.T("reallife_work_band_degrees_offered", "Degrees on offer"), offerIcons.ToArray(), offerNames.ToArray(), offerHints.ToArray(), offerFees.ToArray()));
             t.Form = form;
             return t;
         }
@@ -757,7 +767,7 @@ namespace RealLifeOverhaul.Ui
                 EmptyBody = w.T("reallife_work_no_schools", "The city's schools open as it grows.") };
             t.Columns = new[] { WorkBuilder.Col(w.T("reallife_campus_col_school", "School"), UiCellKind.Tile), WorkBuilder.Col(w.T("reallife_career_col_where", "Where"), UiCellKind.Text, 160),
                 WorkBuilder.Col(w.T("reallife_work_col_pupils", "Pupils"), UiCellKind.Text, 120), WorkBuilder.Col(w.T("reallife_work_col_results", "Results"), UiCellKind.Meter, 160),
-                WorkBuilder.Col(w.T("reallife_work_col_inspection", "Inspection"), UiCellKind.Chip, 128) };
+                WorkBuilder.Col(w.T("reallife_work_col_inspection", "Inspection"), UiCellKind.Chip, 184) };
             RealLifeOverhaul.Schools.SchoolState s = RealLifeOverhaul.Schools.SchoolsDirector.State;
             if (!RealLifeOverhaul.Schools.SchoolsDirector.Running || s == null)
             {
