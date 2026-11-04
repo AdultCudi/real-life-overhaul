@@ -827,6 +827,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCheckRules.cs" Link="Mod\UiCheckRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiMotionRules.cs" Link="Mod\UiMotionRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiBindRules.cs" Link="Mod\UiBindRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Shell\ShellBoxLook.cs" Link="Mod\ShellBoxLook.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiScreens.cs" Link="Mod\UiScreens.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\PhoneLayoutRules.cs" Link="Mod\PhoneLayoutRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\PagerRules.cs" Link="Mod\PagerRules.cs" />
