@@ -66,6 +66,18 @@ namespace RealLifeOverhaul.Ui
         public static int Above(int covered) => covered + 1;
 
         /// <summary>
+        /// The order the minimap's card takes while the kit's HUD is up: one over the HUD's own canvas, so it is drawn over the
+        /// bottom bar and every piece on it, and still under every window. The windows that stand with the HUD up are the
+        /// game's dialogs and boxes (its canvases of order 19 to 21) and the kit's boxes over them (one or two more); the full menu,
+        /// the pause menu and an app hide the game's HUD, the card with it. The notice cards (one over the game's notifications,
+        /// order 21) are over the card by their order and keep clear of it by their place.
+        /// </summary>
+        public static int MinimapOrder(int hud) => Above(hud);
+
+        /// <summary>The order of the HUD's own modal piece (a picker, All apps while walking): one over the minimap's card, which would otherwise be drawn over it.</summary>
+        public static int ModalOrder(int hud) => Above(MinimapOrder(hud));
+
+        /// <summary>
         /// The HUD's order with the kit phone's canvas at <paramref name="phone"/> (int.MinValue: none): its own, or one over
         /// the phone's. Two canvases of one order are drawn in the order they were last switched on, and the map switches the
         /// phone off and on alone, so after it the phone stood over the bar; one order apart, the bar stays over the phone.

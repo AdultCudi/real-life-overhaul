@@ -26,7 +26,7 @@ namespace RealLifeOverhaul.Nav
             _labels = uis.playerHUD.nearestBuildingText != null ? uis.playerHUD.nearestBuildingText.transform as RectTransform : null;
             _item = uis.playerHUD.itemPanelUI != null ? uis.playerHUD.itemPanelUI.transform.Find("Panel") as RectTransform : null;
 
-            // The copy is only a picture: nothing on it is clicked, scrolled or laid out by the game.
+            // The copy is only a picture: nothing on it is clicked, scrolled or laid out by the game (but its backdrop, below, takes the pointer).
             Take<ScrollRect>(panel);
             Take<ContentSizeFitter>(panel);
             var graphics = new List<Graphic>(16);
@@ -35,7 +35,13 @@ namespace RealLifeOverhaul.Nav
             {
                 graphics[i].raycastTarget = false;
             }
-            panel.AddComponent<Canvas>();   // re-batched by itself, with the HUD canvas's order and scale
+            _canvas = panel.AddComponent<Canvas>();   // re-batched by itself; Sort lifts it over the kit's HUD when that is up
+            panel.AddComponent<GraphicRaycaster>();
+            var backdrop = panel.GetComponent<Image>();
+            if (backdrop != null)
+            {
+                backdrop.raycastTarget = true;   // the card, drawn over the kit's HUD, is what the pointer hits over it: a click there reaches neither the world nor a piece under it
+            }
 
             _head = (RectTransform)panel.transform.Find("Headline");
             Take<Button>(_head.gameObject);
@@ -178,7 +184,8 @@ namespace RealLifeOverhaul.Nav
                 UnityEngine.Object.Destroy(dormant.gameObject);
                 return null;
             }
-            // Off, then onto the HUD under everything else there, so a dialog of the game's covers it.
+            // Off, then onto the game's HUD, so it goes with the game's own hide of the interface; the game's dialogs and the kit's
+            // windows stay over it by their canvases' orders (NavHud.Sort).
             panel.SetActive(false);
             panel.transform.SetParent(uis.playerHUD.transform, false);
             panel.transform.SetAsFirstSibling();
