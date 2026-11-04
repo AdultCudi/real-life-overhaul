@@ -13,7 +13,7 @@ internal static partial class UiSamples
             W(t, "reallife_dealer_tab_lots", "Dealerships"), W(t, "reallife_dealer_tab_stock", "Stock"), W(t, "reallife_dealer_tab_market", "Market"), W(t, "reallife_dealer_tab_offers", "Offers"),
             W(t, "reallife_dealer_tab_finance", "Finance"), W(t, "reallife_dealer_tab_growth", "Growth"), W(t, "reallife_dealer_tab_reports", "Reports")
         };
-        string[] counts = { "2", "12", null, offers, null, null, null };
+        string[] counts = { "2", offers == "0" ? null : "12", null, offers == "0" ? null : "6", null, null, null };
         var nav = new UiNavEntry[7];
         for (int i = 0; i < nav.Length; i++)
         {
@@ -38,7 +38,7 @@ internal static partial class UiSamples
             case "stock":
             case "stock_empty":
             case "stock_full":
-                m = DealerBase(t, 1, "3");
+                m = DealerBase(t, 1, state == "stock_empty" ? "0" : "3");
                 Stock(t, m, runs, state);
                 break;
             case "market":
@@ -267,7 +267,7 @@ internal static partial class UiSamples
             Title = W(t, "reallife_ibox_sec_now", "Now"), Heading = true,
             Lines = new[]
             {
-                UiFactLine.Row(W(t, "reallife_dealer_cash", "Cash"), "$1,903,000"),
+                UiFactLine.Row(W(t, "reallife_dealer_cash", "Cash"), "$48,210"),
                 UiFactLine.Say(Fx(W(t, "reallife_dealer_market_sum", "{new} new, {used} used and {lots} lots at the auction today."), "new", "4", "used", "5", "lots", "4")),
                 UiFactLine.Say(W(t, "reallife_dealer_market_about", "New cars come from the wholesaler, used ones from their owners, and the auction's lots go to the highest bid."))
             }
@@ -423,7 +423,7 @@ internal static partial class UiSamples
                 UiFactLine.Say(W(t, "reallife_dealer_offers_about", "Buyers make an offer and wait for your answer."))
             }
         };
-        TableOf(m, UiIcon.Handshake, W(t, "reallife_dealer_offers_title", "Offers and sales"), Fx(W(t, "reallife_ui_dealer_offers_sub", "{waiting} offers waiting, {sold} sales kept"), "waiting", "2", "sold", "1"), cols, rows, side,
+        TableOf(m, UiIcon.Handshake, W(t, "reallife_dealer_offers_title", "Offers and sales"), Fx(W(t, "reallife_ui_dealer_offers_sub", "{waiting} offers waiting, {sold} sales kept"), "waiting", "6", "sold", "3"), cols, rows, side,
             W(t, "reallife_ui_dealer_empty_offers", "No offers or sales yet"), W(t, "reallife_dealer_offers_about", "Buyers make an offer and wait for your answer."));
     }
 
@@ -505,7 +505,7 @@ internal static partial class UiSamples
                 UiFactLine.Say(Fx(W(t, "reallife_dealer_finance_covers", "{covers} warranties, {paid} paid out."), "covers", "1", "paid", "$1,240")), UiFactLine.Say(W(t, "reallife_dealer_finance_about", "Your own finance and warranties are sold with the cars."))
             }
         };
-        TableOf(m, UiIcon.Receipt, W(t, "reallife_dealer_finance_title", "Finance and warranties"), Fx(W(t, "reallife_ui_dealer_finance_sub", "{plans} plans, {covers} warranties"), "plans", "2", "covers", "1"), cols, rows, side,
+        TableOf(m, UiIcon.Receipt, W(t, "reallife_dealer_finance_title", "Finance and warranties"), Fx(W(t, "reallife_ui_dealer_finance_sub", "{plans} plans, {covers} warranties"), "plans", "6", "covers", "3"), cols, rows, side,
             W(t, "reallife_ui_dealer_empty_finance", "No finance plans or warranties yet"), W(t, "reallife_dealer_finance_about", "Your own finance and warranties are sold with the cars."));
     }
 
@@ -579,12 +579,12 @@ internal static partial class UiSamples
         for (int i = 0; i < days; i++)
         {
             points[i] = Fx(W(t, "reallife_ui_dealer_chart_day", "Day {day}"), "day", (187 + i).ToString());
-            line[i] = 4200f + ((i * 137 % 9) - 4) * 650f + i * 45f;
+            line[i] = 4200f + (float)Math.Sin(i / 5.0) * 1500f + ((i * 37 % 7) - 3) * 120f + i * 45f;
             float sum = 0f;
             int n = 0;
             for (int k = Math.Max(0, i - 6); k <= i; k++)
             {
-                sum += 4200f + ((k * 137 % 9) - 4) * 650f + k * 45f;
+                sum += 4200f + (float)Math.Sin(k / 5.0) * 1500f + ((k * 37 % 7) - 3) * 120f + k * 45f;
                 n++;
             }
             avg[i] = sum / n;

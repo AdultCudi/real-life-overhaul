@@ -35,13 +35,17 @@ namespace RealLifeOverhaul.Ui
             {
                 _m.Shape = EstateShape.Table;
                 _m.HeadIcon = icon;
-                _m.HeadTitle = title;
-                _m.HeadSub = sub;
+                _m.HeadTitle = string.IsNullOrEmpty(sub) ? title : sub;   // named once: the sidebar says which section, the page says what it holds
+                _m.HeadSub = null;
                 _m.FigLabels = figLabels ?? new string[0];
                 _m.FigValues = figValues ?? new string[0];
                 _m.Table = new UiDataTableModel { Columns = columns, Rows = rows.ToArray(), RowCount = rows.Count, EmptyTitle = emptyTitle, EmptyBody = emptyBody, EmptyIcon = icon };
                 _m.RowKeys = keys.ToArray();
                 _m.Side = side;
+                if (side != null)
+                {
+                    side.Title = null;
+                }
             }
 
             // ------------------------------------------------------------------------------------------------- tenants
@@ -151,6 +155,7 @@ namespace RealLifeOverhaul.Ui
                 _m.Back = EstateText.T("reallife_co_back");
                 _m.DetailIcon = UiIcon.People;
                 _m.DetailTitle = EstateText.Tenant(h.Use, a.Kind);
+                _m.DetailFace = _m.DetailTitle;   // the applicant has a face, as every person has
                 _m.DetailSub = EstateText.UnitName(h, unit);
                 _m.DetailChip = EstateText.Record(a.Record);
                 _m.DetailChipTone = a.Record >= 60 ? UiRole.Ok : UiRole.Warn;

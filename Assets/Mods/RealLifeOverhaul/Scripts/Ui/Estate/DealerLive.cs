@@ -129,6 +129,7 @@ namespace RealLifeOverhaul.Ui
             {
                 m.Nav = new UiNavEntry[0];
                 m.Shape = EstateShape.Off;
+                m.OffIcon = UiIcon.Car;
                 m.OffTitle = DealerText.T("reallife_dealer_off_title");
                 m.OffBody = DealerText.T("reallife_dealer_off_body");
                 m.Runs = runs.ToArray();
@@ -217,16 +218,21 @@ namespace RealLifeOverhaul.Ui
             {
                 _m.Shape = EstateShape.Table;
                 _m.HeadIcon = icon;
-                _m.HeadTitle = title;
-                _m.HeadSub = sub;
+                _m.HeadTitle = string.IsNullOrEmpty(sub) ? title : sub;   // named once: the tab says which section, the page says what it holds
+                _m.HeadSub = null;
                 _m.Table = new UiDataTableModel { Columns = columns, Rows = rows.ToArray(), RowCount = rows.Count, EmptyTitle = emptyTitle, EmptyBody = emptyBody, EmptyIcon = icon };
                 _m.RowKeys = keys.ToArray();
                 _m.Side = side;
+                if (side != null)
+                {
+                    side.Title = null;
+                }
             }
 
-            private void DetailHead(UiIcon icon, string title, string sub, string chip, UiRole tone)
+            private void DetailHead(UiIcon icon, string title, string sub, string chip, UiRole tone, string face = null)
             {
                 _m.Shape = EstateShape.Detail;
+                _m.DetailFace = face;
                 _m.Back = DealerText.T("reallife_ui_dealer_back");
                 _m.DetailIcon = icon;
                 _m.DetailTitle = title;

@@ -150,7 +150,7 @@ namespace RealLifeOverhaul.Ui
                 int id = d.Id;
                 int offer = DealerRules.Price(yard, d, car);
                 DetailHead(UiIcon.Handshake, d.Customer, DealerText.Profile(d.Profile) + ", " + DealerGame.CarName(car.Type) + ", " + yard.Name,
-                    DealerText.T(d.Stage == OfferStage.Driving ? "reallife_ibox_chip_driving" : "reallife_dealer_state_waiting"), UiRole.Warn);
+                    DealerText.T(d.Stage == OfferStage.Driving ? "reallife_ibox_chip_driving" : "reallife_dealer_state_waiting"), UiRole.Warn, d.Customer);
                 var lines = new List<UiFactLine>(10)
                 {
                     UiFactLine.Row(DealerText.T("reallife_ibox_offer"), Money(offer), UiRole.AccentText),

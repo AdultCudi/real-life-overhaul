@@ -4,7 +4,6 @@ namespace RealLifeOverhaul.Ui
 {
     public static partial class EstateFace
     {
-        private const float HeroPicture = 132f;
         private const byte RegionNeed = 6, RegionTenant = 7;
 
         // One flat, after the mockup: its picture tile, rent and place, the next inspection, its facts, the tenant with the four things
@@ -22,27 +21,27 @@ namespace RealLifeOverhaul.Ui
 
         private static void Left(UiScene s, UiAt at, UiAt tenant, EstateUnitPage u, float x, float y, float w, float bottom, IUiKeys keys)
         {
-            int pic = UiDraw.Box(s, at, x, y, w, HeroPicture, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
-            float g = UiTokens.S16;
-            UiDraw.Icon(s, at.In(pic), x + (w - g) / 2f, y + (HeroPicture - g) / 2f, g, u.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
-            y += HeroPicture + UiTokens.S3;
+            // The unit's head: its use's tile, its address and what it rents for, the district and the way to find it. No empty banner: the game has no photo here.
+            int head = UiDraw.Tile(s, at, x, y, TileBig, UiRole.None, false);
+            UiDraw.Icon(s, at.In(head), x + (TileBig - UiTokens.S8) / 2f, y + (TileBig - UiTokens.S8) / 2f, UiTokens.S8, u.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
+            float tx = x + TileBig + UiTokens.S4, tw = w - TileBig - UiTokens.S4;
             float nh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display));
             float rentW = string.IsNullOrEmpty(u.Rent) ? 0f : UiDraw.Snap(UiTextRules.Width(u.Rent, UiStyle.Number) + UiTokens.S1);
-            UiDraw.Text(s, at, x, y, w - rentW - UiTokens.S3, UiStyle.Display, UiRole.Text, u.Title, UiFlags.Truncate);
+            UiDraw.Text(s, at, tx, y + UiTokens.S1, tw - rentW - UiTokens.S3, UiStyle.Display, UiRole.Text, u.Title, UiFlags.Truncate);
             if (rentW > 0f)
             {
                 UiDraw.Text(s, at, x + w - rentW, y, rentW, UiStyle.Number, UiRole.Text, u.Rent, UiFlags.Right);
                 UiDraw.Text(s, at, x + w - rentW, y + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Number)), rentW, UiStyle.Small, UiRole.Text2, u.RentPer, UiFlags.Right | UiFlags.Truncate);
             }
-            y += nh + UiTokens.S1;
-            float locW = string.IsNullOrEmpty(u.Locate) ? 0f : Math.Min(UiDraw.SnapDown(w * 0.4f), UiDraw.Snap(UiTextRules.Width(u.Locate, UiStyle.Body) + UiTokens.Icon + UiTokens.S4));
+            y += UiTokens.S1 + nh + UiTokens.S3;
+            float locW = string.IsNullOrEmpty(u.Locate) ? 0f : Math.Min(UiDraw.SnapDown(tw * 0.5f), UiDraw.Snap(UiTextRules.Width(u.Locate, UiStyle.Body) + UiTokens.Icon + UiTokens.S4));
             float distW = UiDraw.Snap(UiTextRules.Width(u.District ?? string.Empty, UiStyle.Body) + UiTokens.S1);
-            UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, Math.Min(distW, w - locW - UiTokens.S3), UiStyle.Body, UiRole.Text2, u.District, UiFlags.Truncate);
+            UiDraw.TextMiddle(s, at, tx, y, UiTokens.PairRow, Math.Min(distW, tw - locW - UiTokens.S3), UiStyle.Body, UiRole.Text2, u.District, UiFlags.Truncate);
             if (locW > 0f)
             {
-                UiDraw.LinkRow(s, at, x + Math.Min(distW, w - locW) + UiTokens.S3, y, locW, UiTokens.Control, u.Locate, ActionCommand, u.LocateRun);
+                UiDraw.LinkRow(s, at, tx + Math.Min(distW, tw - locW) + UiTokens.S3, y - UiDraw.SnapDown((UiTokens.Control - UiTokens.PairRow) / 2f), locW, UiTokens.Control, u.Locate, ActionCommand, u.LocateRun);
             }
-            y += UiTokens.Control + UiTokens.S1;
+            y += UiTokens.PairRow + UiTokens.S4;
             if (!string.IsNullOrEmpty(u.NextLabel))
             {
                 float lw = UiDraw.Snap(UiTextRules.Width(u.NextLabel, UiStyle.Body) + UiTokens.S2), vw = UiDraw.Snap(UiTextRules.Width(u.NextValue ?? string.Empty, UiStyle.BodyStrong) + UiTokens.S1);

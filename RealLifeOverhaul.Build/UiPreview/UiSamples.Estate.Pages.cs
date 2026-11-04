@@ -18,8 +18,8 @@ internal static partial class UiSamples
     {
         m.Shape = EstateShape.Table;
         m.HeadIcon = icon;
-        m.HeadTitle = title;
-        m.HeadSub = sub;
+        m.HeadTitle = string.IsNullOrEmpty(sub) ? title : sub;
+        m.HeadSub = null;
         m.Table = new UiDataTableModel { Columns = cols, Rows = rows.ToArray(), RowCount = rows.Count, EmptyTitle = emptyTitle, EmptyBody = emptyBody, EmptyIcon = icon };
         m.RowKeys = new string[rows.Count];
         for (int i = 0; i < rows.Count; i++)
@@ -27,6 +27,10 @@ internal static partial class UiSamples
             m.RowKeys[i] = "row:" + i;
         }
         m.Side = side;
+        if (side != null)
+        {
+            side.Title = null;
+        }
     }
 
     private static UiDataRow Row(string[] cells, int[] values, UiRole[] tones, string[] subs, float hue = 0f)
@@ -39,25 +43,29 @@ internal static partial class UiSamples
         var rows = new List<UiDataRow>();
         string[][] people =
         {
-            new[] { "41 E 37th Street, flat 3A", "Murray Hill", "Priya Nair", "Nurse, Murray Hill Clinic", "$2,600", "good", "82" },
-            new[] { "41 E 37th Street, flat 4A", "Murray Hill", "Sofia Marchetti", "Nurse, Murray Hill Clinic", "$2,600", "fair", "51" },
-            new[] { "88 W 46th Street, flat 2", "Hell's Kitchen", "Theo Brandt", "Courier, Eastside Parcels", "$2,200", "good", "85" },
-            new[] { "75 W 125th Street, house", "Uptown", "Imani Cole", "Teacher, Lincoln School", "$3,100", "good", "90" },
-            new[] { "41 E 37th Street, flat 3B", "Murray Hill", "Daniel Ortiz", "Cook, Pier Street Diner", "$3,300", "good", "74" },
-            new[] { "12 W 39th Street, first floor office", "Garment District", "Marcus Bell", "Accountant, Bell and Rowe", "$3,900", "good", "77" },
-            new[] { "17 E 41st Street, floor 6", "Midtown", "Owen Park", "Designer, Park and Lane", "$7,800", "good", "71" },
-            new[] { "520 8th Avenue, suite 12", "Midtown", "Yuki Tanaka", "An import firm", "$5,600", "fair", "33" },
-            new[] { "12 W 39th Street, ground floor shop", "Garment District", "Lena Hoffmann", "A tailor's shop", "$5,400", "good", "68" }
+            new[] { "41 E 37th Street, flat 3A", "Murray Hill", "Priya Nair", "Nurse, Murray Hill Clinic", "$2,600", "good", "82", "ok" },
+            new[] { "41 E 37th Street, flat 3B", "Murray Hill", "Daniel Ortiz", "Cook, Pier Street Diner", "$3,300", "good", "74", "ok" },
+            new[] { "41 E 37th Street, flat 4A", "Murray Hill", "Sofia Marchetti", "Nurse, Murray Hill Clinic", "$2,600", "fair", "51", "late6" },
+            new[] { "12 W 39th Street, ground floor shop", "Garment District", "Lena Hoffmann", "A tailor's shop", "$5,400", "good", "68", "ok" },
+            new[] { "12 W 39th Street, first floor office", "Garment District", "Marcus Bell", "Accountant, Bell and Rowe", "$3,900", "good", "77", "ok" },
+            new[] { "233 W 39th Street, unit 1", "Garment District", "Amara Kimani", "A bakery", "$6,200", "fair", "39", "late14" },
+            new[] { "88 W 46th Street, flat 2", "Hell's Kitchen", "Theo Brandt", "Courier, Eastside Parcels", "$2,200", "good", "85", "ok" },
+            new[] { "75 W 125th Street, house", "Uptown", "Imani Cole", "Teacher, Lincoln School", "$3,100", "good", "90", "ok" },
+            new[] { "17 E 41st Street, floor 6", "Midtown", "Owen Park", "Designer, Park and Lane", "$7,800", "good", "71", "ok" },
+            new[] { "520 8th Avenue, suite 12", "Midtown", "Yuki Tanaka", "An import firm", "$5,600", "fair", "33", "notice" },
+            new[] { "412 10th Avenue, unit B", "Hell's Kitchen", "Chen Wei", "Chef, Harbour Kitchen", "$4,800", "good", "63", "ok" }
         };
         foreach (string[] p in people)
         {
             string record = p[5] == "good" ? W(t, "reallife_estate_record_good", "Good") : W(t, "reallife_estate_record_fair", "Fair");
-            string chip = p[6] == "51" ? W(t, "reallife_ui_estate_late_days", "Late {days} days").Replace("{days}", "6") : W(t, "reallife_estate_state_paying", "Paying");
+            string chip = p[7] == "late6" ? W(t, "reallife_ui_estate_late_days", "Late {days} days").Replace("{days}", "6") : p[7] == "late14" ? W(t, "reallife_ui_estate_late_days", "Late {days} days").Replace("{days}", "14")
+                : p[7] == "notice" ? W(t, "reallife_ibox_chip_notice", "Notice given") : W(t, "reallife_estate_state_paying", "Paying");
+            UiRole tone = p[7] == "ok" ? UiRole.Ok : p[7] == "late14" ? UiRole.Danger : UiRole.Warn;
             rows.Add(Row(new[] { p[0], p[2], p[4], record, chip, p[6] }, new[] { (int)UiIcon.Home, 0, 0, p[5] == "good" ? 85 : 55, 0, int.Parse(p[6]) },
-                new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, p[6] == "51" ? UiRole.Warn : UiRole.Ok, UiRole.None }, new[] { p[1], p[3], null, null, null, null }, UiColourHue(p[2])));
+                new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, tone, UiRole.None }, new[] { p[1], p[3], null, null, null, null }, UiColourHue(p[2])));
         }
-        rows.Add(Row(new[] { "233 W 39th Street, unit 1", W(t, "reallife_estate_tenant_shops_2", "A baker"), "$6,200", W(t, "reallife_estate_record_good", "Good"), W(t, "reallife_estate_filter_applicants", "Applicants"), string.Empty },
-            new[] { (int)UiIcon.Store, 0, 0, 80, 0, -1 }, new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Ok, UiRole.None }, new[] { "Garment District", Fx(W(t, "reallife_estate_row_until", "Until day {day}"), "day", "224"), null, null, null, null }));
+        rows.Add(Row(new[] { "1 Dock Street, shop unit", W(t, "reallife_estate_tenant_shops_2", "A baker"), "$4,100", W(t, "reallife_estate_record_good", "Good"), W(t, "reallife_estate_filter_applicants", "Applicants"), string.Empty },
+            new[] { (int)UiIcon.Store, 0, 0, 80, 0, -1 }, new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Ok, UiRole.None }, new[] { "Uptown", Fx(W(t, "reallife_estate_row_until", "Until day {day}"), "day", "224"), null, null, null, null }));
         var cols = new[]
         {
             new UiDataColumn { Title = W(t, "reallife_ui_estate_col_unit", "Unit"), Kind = UiCellKind.Tile, Width = 0f },
@@ -118,7 +126,7 @@ internal static partial class UiSamples
                 UiFactLine.Say(Fx(W(t, "reallife_estate_works_market", "Works cost more when the market is dear. It stands at {market}."), "market", "104%")), UiFactLine.Say(W(t, "reallife_estate_works_what", "Pick a building to repair it, refurbish it or change what it is used for."))
             }
         };
-        TableOf(m, UiIcon.Wrench, W(t, "reallife_estate_tab_works", "Works"), Fx(W(t, "reallife_ui_estate_works_sub", "{count} to look at"), "count", "4"), cols, rows, side, W(t, "reallife_estate_row_nothing_owned", "You own no building"),
+        TableOf(m, UiIcon.Wrench, W(t, "reallife_estate_tab_works", "Works"), Fx(W(t, "reallife_ui_estate_works_sub", "{count} to look at"), "count", rows.Count.ToString()), cols, rows, side, W(t, "reallife_estate_row_nothing_owned", "You own no building"),
             W(t, "reallife_ui_estate_empty_works_body", "Repair calls and works on your buildings appear here."));
     }
 

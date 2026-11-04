@@ -36,6 +36,13 @@ namespace RealLifeOverhaul.Ui
                 UiInfoView.Lay(s, m.Rents, frame, dark, keys);   // the city's rents stand over the world with no window, as every info view
                 return;
             }
+            Tidy(m);
+            if (m.Lower == null)
+            {
+                // A short page is filled with a chart of its own figures: its table's graded or money column, or its cards' money rows.
+                m.Lower = (m.Shape == EstateShape.Roll || m.Shape == EstateShape.Table) && m.Table != null ? EstateCharts.FromTable(m.Table)
+                    : m.Shape == EstateShape.Detail ? EstateCharts.FromCards(m.Left, m.Right, !string.IsNullOrEmpty(m.DetailTitle) ? m.DetailTitle : m.Title) : null;
+            }
             s.Begin("estate", frame.Width, frame.Height, dark);
             UiAt at = UiAppWindow.Shell(s, frame, m.Title, m.Icon, m.Nav, m.Tab, m.TabsAcross, keys, out float x, out float y, out float w, out float bottom);
             switch (m.Shape)
@@ -62,7 +69,7 @@ namespace RealLifeOverhaul.Ui
                     ChartPage(s, at, m, x, y, w, bottom, keys);
                     break;
                 default:
-                    UiDraw.EmptyState(s, at, x, y, w, bottom - y, UiIcon.Home, m.OffTitle, m.OffBody, null, -1, keys);
+                    UiDraw.EmptyState(s, at, x, y, w, bottom - y, m.OffIcon, m.OffTitle, m.OffBody, null, -1, keys);
                     break;
             }
             for (int i = 0; i < m.Prompts.Length; i++)
@@ -112,7 +119,7 @@ namespace RealLifeOverhaul.Ui
                     UiStyle.Number, ink, m.FigValues[i], UiFlags.Right | UiFlags.Truncate);
                 fx += colW[i] + UiTokens.S6;
             }
-            return TileBig + UiTokens.S3;
+            return TileBig + UiTokens.S3 + (linkW > 0f ? UiTokens.S3 : 0f);
         }
 
         // ------------------------------------------------------------------------------------------------- the rent roll and a tab's table
@@ -121,16 +128,89 @@ namespace RealLifeOverhaul.Ui
         {
             y += Head(s, at.InRegion(RegionHead), m, x, y, w);
             float listsH = m.ListA.Length > 0 || m.ListB.Length > 0 || !string.IsNullOrEmpty(m.ListAEmpty) || !string.IsNullOrEmpty(m.ListBEmpty) ? ListsHeight(m) : 0f;
-            float th = bottom - y - (listsH > 0f ? listsH + UiTokens.S3 : 0f);
+            float lowerLeast = m.Lower != null ? LowerLeast + UiTokens.S3 : 0f;
+            float room = bottom - y - (listsH > 0f ? listsH + UiTokens.S3 : 0f) - lowerLeast;
+            float th = Math.Max(UiTokens.S16, Math.Min(Natural(m.Table), room));
+            if (m.Lower == null || Natural(m.Table) > room)
+            {
+                // A table that fills the page keeps the lists at the foot and the chart out: the page is whole without it.
+                th = bottom - y - (listsH > 0f ? listsH + UiTokens.S3 : 0f);
+                m.Lower = null;
+            }
             m.TableList = UiDataTable.Lay(s, at.InRegion(RegionTable), m.Table, x, y, w, th, keys, TableBase);
             m.TableClip = ClipOf(s, m.TableList);
+            float under = y + th + UiTokens.S3;
             if (listsH > 0f)
             {
-                float ly = bottom - listsH, half = UiDraw.SnapDown((w - UiTokens.S6) * ListWidthShare);
+                float ly = m.Lower != null ? under : bottom - listsH, half = UiDraw.SnapDown((w - UiTokens.S6) * ListWidthShare);
+                under = ly + listsH + UiTokens.S3;
                 UiAt lists = at.InRegion(RegionLists);
                 List(s, lists, m.ListATitle, m.ListALink, m.ListALinkRun, m.ListAEmpty, m.ListA, x, ly, half, listsH);
                 List(s, lists, m.ListBTitle, m.ListBLink, m.ListBLinkRun, m.ListBEmpty, m.ListB, x + half + UiTokens.S6, ly, w - half - UiTokens.S6, listsH);
             }
+            LowerCard(s, at, m, x, under, w, bottom);
+        }
+
+        private const float LowerLeast = 200f;
+
+        // What the pages say, put in one style before they are drawn: a state chip begins with a capital, an empty cell is blank (no stray hyphen),
+        // a graded figure carries its percent, and a side box that only repeats the section's name has no title.
+        private static void Tidy(EstateModel m)
+        {
+            UiDataTableModel t = m.Table;
+            for (int c = 0; t != null && t.Columns != null && c < t.Columns.Length; c++)
+            {
+                UiCellKind kind = t.Columns[c].Kind;
+                for (int r = 0; t.Rows != null && r < t.Rows.Length; r++)
+                {
+                    string[] cells = t.Rows[r].Cells;
+                    if (cells == null || c >= cells.Length || cells[c] == null)
+                    {
+                        continue;
+                    }
+                    string v = cells[c];
+                    if (v == "-")
+                    {
+                        cells[c] = string.Empty;
+                    }
+                    else if (kind == UiCellKind.Chip && v.Length > 0 && char.IsLower(v[0]))
+                    {
+                        cells[c] = char.ToUpperInvariant(v[0]) + v.Substring(1);
+                    }
+                    else if ((kind == UiCellKind.Meter) && v.Length > 0 && v.Length <= 3 && char.IsDigit(v[v.Length - 1]))
+                    {
+                        cells[c] = v + "%";
+                    }
+                }
+            }
+            CapRows(m.ListA);
+            CapRows(m.ListB);
+        }
+
+        private static void CapRows(EstateRow[] rows)
+        {
+            for (int i = 0; rows != null && i < rows.Length; i++)
+            {
+                string chip = rows[i].Chip;
+                if (!string.IsNullOrEmpty(chip) && char.IsLower(chip[0]))
+                {
+                    rows[i].Chip = char.ToUpperInvariant(chip[0]) + chip.Substring(1);
+                }
+            }
+        }
+
+        // The height a table takes with every row showing.
+        private static float Natural(UiDataTableModel t) => t == null ? 0f : UiDraw.Snap(UiDataTable.Chrome(t) + t.RowCount * UiDataTable.RowHeight(t));
+
+        // The chart that fills the floor a short page leaves: it takes what is left, never less than it needs to read, and is not drawn where the page is full.
+        private static void LowerCard(UiScene s, UiAt at, EstateModel m, float x, float y, float w, float bottom)
+        {
+            if (m.Lower == null || bottom - y < LowerLeast - 0.5f)
+            {
+                return;
+            }
+            y = UiDraw.Snap(y);
+            UiChart.Lay(s, at.InRegion(RegionChart), m.Lower, x, y, w, UiDraw.SnapDown(bottom - y), UiChart.First);
         }
 
         private const int ListRows = 2;
@@ -211,14 +291,19 @@ namespace RealLifeOverhaul.Ui
         private static void TablePage(UiScene s, UiAt at, EstateModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
             y += Head(s, at.InRegion(RegionHead), m, x, y, w);
-            float sw = m.Side != null ? Math.Min(SideWidth, UiDraw.SnapDown(w * 0.34f)) : 0f;
+            bool side = m.Side != null && Acts(m.Side);
+            float sw = side ? Math.Min(SideWidth, UiDraw.SnapDown(w * 0.34f)) : 0f;
             float tw = w - (sw > 0f ? sw + UiTokens.S4 : 0f);
-            m.TableList = UiDataTable.Lay(s, at.InRegion(RegionTable), m.Table, x, y, tw, bottom - y, keys, TableBase);
+            float room = bottom - y - (m.Lower != null ? LowerLeast + UiTokens.S3 : 0f);
+            float sideH = side ? UiFactCard.Height(m.Side, sw, keys, true) : 0f;
+            float th = m.Lower != null ? Math.Max(UiTokens.S16, Math.Min(Math.Max(Natural(m.Table), sideH), room)) : bottom - y;
+            m.TableList = UiDataTable.Lay(s, at.InRegion(RegionTable), m.Table, x, y, tw, th, keys, TableBase);
             m.TableClip = ClipOf(s, m.TableList);
-            if (m.Side != null)
+            if (side)
             {
-                UiFactCard.Lay(s, at.InRegion(RegionRight), m.Side, x + tw + UiTokens.S4, y, sw, bottom - y, keys, true);
+                UiFactCard.Lay(s, at.InRegion(RegionRight), m.Side, x + tw + UiTokens.S4, y, sw, th, keys, true);
             }
+            LowerCard(s, at, m, x, y + th + UiTokens.S3, w, bottom);
         }
 
         // ------------------------------------------------------------------------------------------------- a page about one thing
@@ -227,8 +312,15 @@ namespace RealLifeOverhaul.Ui
         {
             UiAt head = at.InRegion(RegionHead);
             y = TopBar(s, head, m.Back, m.DetailActions, x, y, w, keys);
-            int tile = UiDraw.Tile(s, head, x, y, TileBig, UiRole.None, false);
-            UiDraw.Icon(s, head.In(tile), x + (TileBig - UiTokens.S8) / 2f, y + (TileBig - UiTokens.S8) / 2f, UiTokens.S8, m.DetailIcon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
+            if (!string.IsNullOrEmpty(m.DetailFace))
+            {
+                UiDraw.Portrait(s, head, x, y, TileBig, m.DetailFace, UiColour.HueOf(m.DetailFace), UiRole.None);
+            }
+            else
+            {
+                int tile = UiDraw.Tile(s, head, x, y, TileBig, UiRole.None, false);
+                UiDraw.Icon(s, head.In(tile), x + (TileBig - UiTokens.S8) / 2f, y + (TileBig - UiTokens.S8) / 2f, UiTokens.S8, m.DetailIcon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
+            }
             float tx = x + TileBig + UiTokens.S4;
             float chip = string.IsNullOrEmpty(m.DetailChip) ? 0f : UiFactCard.ChipWidth(m.DetailChip);
             float nh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display));
@@ -250,11 +342,14 @@ namespace RealLifeOverhaul.Ui
             y += TileBig + UiTokens.S4;
             bool both = m.Left.Length > 0 && m.Right.Length > 0;
             float cw = both ? UiDraw.SnapDown((w - UiTokens.S4) / 2f) : UiDraw.SnapDown(Math.Min(w, UiTokens.S16 * 40f));
-            Column(s, at.InRegion(RegionLeft), m.Left.Length > 0 ? m.Left : m.Right, x, y, cw, bottom, keys);
+            float colBottom = m.Lower != null ? Math.Max(y + UiTokens.S16 * 2f, Math.Min(bottom - LowerLeast - UiTokens.S3, y + Math.Max(Stack(m.Left.Length > 0 ? m.Left : m.Right, cw, keys),
+                both ? Stack(m.Right, w - cw - UiTokens.S4, keys) : 0f))) : bottom;
+            Column(s, at.InRegion(RegionLeft), m.Left.Length > 0 ? m.Left : m.Right, x, y, cw, colBottom, keys);
             if (both)
             {
-                Column(s, at.InRegion(RegionRight), m.Right, x + cw + UiTokens.S4, y, w - cw - UiTokens.S4, bottom, keys);
+                Column(s, at.InRegion(RegionRight), m.Right, x + cw + UiTokens.S4, y, w - cw - UiTokens.S4, colBottom, keys);
             }
+            LowerCard(s, at, m, x, colBottom + UiTokens.S3, w, bottom);
         }
 
         // The way back at the left, the page's actions at the right (the main one last). Returns the y under them.
@@ -276,6 +371,35 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Button(s, at, x, y, bw, h, UiButtonKind.Secondary, back, UiIcon.Back, UiAction.Count, keys, BackCommand, 0, false);
             }
             return y + h + UiTokens.S4;
+        }
+
+        // A card's lines or buttons act when it holds a step, a switch, a link or a button: a card of words alone is not a side box worth its room.
+        private static bool Acts(UiFactCardModel c)
+        {
+            if (c.Actions.Length > 0)
+            {
+                return true;
+            }
+            for (int i = 0; i < c.Lines.Length; i++)
+            {
+                UiFactKind k = c.Lines[i].Kind;
+                if (k == UiFactKind.Step || k == UiFactKind.Switch || k == UiFactKind.Link)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // The height a column of cards takes with all of them whole.
+        private static float Stack(UiFactCardModel[] cards, float w, IUiKeys keys)
+        {
+            float h = 0f;
+            for (int i = 0; i < cards.Length; i++)
+            {
+                h += UiFactCard.Height(cards[i], w, keys, true) + UiTokens.S3;
+            }
+            return h;
         }
 
         private static void Column(UiScene s, UiAt at, UiFactCardModel[] cards, float x, float y, float w, float bottom, IUiKeys keys)

@@ -52,7 +52,7 @@ namespace RealLifeOverhaul.Ui
             return sb.ToString();
         }
 
-        public static UiFactLine Row(string label, string value, UiRole ink = UiRole.None) => new UiFactLine { Kind = UiFactKind.Row, Label = Plain(label), Value = Plain(value), Ink = ink };
+        public static UiFactLine Row(string label, string value, UiRole ink = UiRole.None) => new UiFactLine { Kind = UiFactKind.Row, Label = Plain(label)?.TrimEnd(':'), Value = Plain(value), Ink = ink };
 
         public static UiFactLine Say(string words, UiRole ink = UiRole.None) => new UiFactLine { Kind = UiFactKind.Sentence, Value = Plain(words), Ink = ink };
 

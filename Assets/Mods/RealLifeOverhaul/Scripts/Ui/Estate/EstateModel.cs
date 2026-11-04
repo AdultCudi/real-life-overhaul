@@ -98,6 +98,7 @@ namespace RealLifeOverhaul.Ui
         public int Tab;
         public EstateShape Shape;
         public string OffTitle, OffBody;
+        public UiIcon OffIcon = UiIcon.Home;   // the glyph of the page that says the feature is off: the app's own
         public UiPrompt[] Prompts = new UiPrompt[0];
         public string DayWords;                      // "Mon, Day 214" at the strip's right is the host's; kept for the head's sub line
 
@@ -131,6 +132,8 @@ namespace RealLifeOverhaul.Ui
         public int ChartKind, ChartPlace;
         public UiActionModel[] FilterChips = new UiActionModel[0], SortChips = new UiActionModel[0];   // the choices over a catalogue: what shows, and in what order
         public int FilterAt, SortAt;
+        public string DetailFace;   // a person the page is about: their portrait stands where the tile would
+        public UiChartModel Lower;   // the chart that fills what a short page leaves under its table or its cards (real figures of the page), or null
         public string SearchHint, SearchCount, Query;   // a search over a catalogue: its placeholder, how many it holds, and the words typed (null SearchHint: no field)
         public EstateAuction Auction;
 

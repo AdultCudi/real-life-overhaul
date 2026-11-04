@@ -37,6 +37,7 @@ namespace RealLifeOverhaul.Ui
         public Func<float, string> AxisFormat;      // a tick's value, shorter where the game has a short form ("$40k"), or null for Format
         public Func<float, string> CountFormat;     // a candle's volume as the game writes a count
         public int Focus = -1;                      // the point read in its card, or -1
+        public bool Still;                          // a chart that is read by its axes alone: its points are no targets (a figure beside a page's own, not a thing to explore)
         public UiPlotBand[] PlotBands;               // washes behind a run of the points, or null
         public int[] Marks;                          // point indices marked (a rate rise), or null
         public string EmptyTitle;
@@ -122,7 +123,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     Candle(s, inColumn, m, i, sx, slot, plotTop, ph, lo, hi);
                 }
-                if (n <= MostTargets)
+                if (n <= MostTargets && !m.Still)
                 {
                     UiDraw.Node(s, on, sx, plotTop, slot, drawH, command + Point, i, column);
                 }

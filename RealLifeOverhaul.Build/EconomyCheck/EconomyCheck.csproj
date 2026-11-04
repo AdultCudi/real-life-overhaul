@@ -721,6 +721,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFontMetrics.Data.cs" Link="Mod\UiFontMetrics.Data.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiTextRules.cs" Link="Mod\UiTextRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiScene.cs" Link="Mod\UiScene.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPlural.cs" Link="Mod\UiPlural.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiAction.cs" Link="Mod\UiAction.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiIcon.cs" Link="Mod\UiIcon.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiIconRaster.cs" Link="Mod\UiIconRaster.cs" />
@@ -886,6 +887,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFactCard.cs" Link="Mod\UiFactCard.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\EstateModel.cs" Link="Mod\Estate\EstateModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\EstateRuns.cs" Link="Mod\Estate\EstateRuns.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\EstateCharts.cs" Link="Mod\Estate\EstateCharts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\EstateFace.cs" Link="Mod\Estate\EstateFace.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\EstateFace.Unit.cs" Link="Mod\Estate\EstateFace.Unit.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\EstateFace.Showroom.cs" Link="Mod\Estate\EstateFace.Showroom.cs" />

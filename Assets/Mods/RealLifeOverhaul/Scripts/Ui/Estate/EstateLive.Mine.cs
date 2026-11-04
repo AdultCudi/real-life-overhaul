@@ -204,21 +204,9 @@ namespace RealLifeOverhaul.Ui
                 _m.RowKeys = keys.ToArray();
                 // The two lists under it: what is due for repair, and the other landlords of the city.
                 _m.ListATitle = EstateText.T("reallife_ui_estate_due_repair");
-                _m.ListALink = EstateText.T("reallife_ui_estate_all_works");
-                _m.ListALinkRun = _runs.Do(() => Show(() =>
-                {
-                    _v.Tab = Array.IndexOf(NavTab, EstateDirector.TabWorks);
-                    _v.Pick = null;
-                }));
                 _m.ListAEmpty = EstateText.T("reallife_ui_estate_no_repairs");
                 _m.ListA = RepairRows();
                 _m.ListBTitle = EstateText.T("reallife_ui_estate_other_landlords");
-                _m.ListBLink = EstateText.T("reallife_ui_estate_see_market");
-                _m.ListBLinkRun = _runs.Do(() => Show(() =>
-                {
-                    _v.Tab = Array.IndexOf(NavTab, EstateDirector.TabMarket);
-                    _v.Pick = null;
-                }));
                 _m.ListBEmpty = EstateText.T("reallife_ui_estate_no_landlords");
                 _m.ListB = LandlordRows();
             }
@@ -284,7 +272,7 @@ namespace RealLifeOverhaul.Ui
                         {
                             Icon = UiIcon.Wrench, Title = EstateText.T("reallife_ui_estate_service_title", "fault", EstateText.Fault(v.Kind), "building", h.Name), Sub = null,
                             Chip = EstateText.T("reallife_ui_estate_day", "day", v.Day.ToString(Inv)), ChipTone = UiRole.Notice, Amount = Money(v.Fee),
-                            Run = _runs.Do(() => Show(() => OpenWorks(pick)))
+                            Run = -1
                         });
                     }
                     for (int n = 0; h.Managed && n < h.Units.Count && rows.Count < 6; n++)
@@ -300,7 +288,7 @@ namespace RealLifeOverhaul.Ui
                         {
                             Icon = UiIcon.Wrench, Title = EstateText.T("reallife_ui_estate_service_title", "fault", EstateText.Fault(u.Call), "building", EstateText.UnitName(h, n)), Sub = null,
                             Chip = EstateText.T(booked ? "reallife_ibox_chip_booked" : "reallife_ui_estate_quote_asked"), ChipTone = booked ? UiRole.Ok : UiRole.Warn, Amount = Money(u.CallCost),
-                            Run = _runs.Do(() => Show(() => OpenWorks(pick)))
+                            Run = -1
                         });
                     }
                 }

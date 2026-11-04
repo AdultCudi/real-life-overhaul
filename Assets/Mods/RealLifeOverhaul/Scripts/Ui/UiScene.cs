@@ -187,6 +187,10 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Adds an item and returns its index.</summary>
         public int Add(ref UiItem item)
         {
+            if (item.Kind == UiKind.Text && item.Text != null && item.Text.IndexOf('(') >= 0)
+            {
+                item.Text = UiPlural.Fix(item.Text);   // "3 day(s)" reads "3 days", "1 day(s)" reads "1 day"
+            }
             if (ItemCount == Items.Length)
             {
                 Array.Resize(ref Items, Items.Length * 2);
