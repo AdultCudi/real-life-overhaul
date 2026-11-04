@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using RealLifeOverhaul.Economy;
 
 namespace RealLifeOverhaul.Rivals
 {
@@ -85,7 +86,76 @@ namespace RealLifeOverhaul.Rivals
                 Join(b, c.Cost);
                 Join(b, c.Move);
             }
+            for (int i = 0; i < f.Outlets.Count; i++)
+            {
+                WriteOutlet(b, f.Outlets[i]);
+            }
             return b.ToString();
+        }
+
+        // O|move|tycoon|district|type|next hire|hires|let go|raises|renewals|holds|rent paid|wages paid|the lease (its fields joined by ',')|the crew (people split by '/', their fields by ',')
+        private static void WriteOutlet(StringBuilder b, RivalOutlet o)
+        {
+            b.Append("\nO|").Append(o.Move.ToString(Inv));
+            Join(b, o.Tycoon);
+            b.Append('|').Append(Clean(o.District)).Append('|').Append(Clean(o.Type));
+            Join(b, o.NextHire, o.Hires, o.LetGo, o.Raises, o.Renewals, o.Holds);
+            Join(b, o.Rent, o.Wages);
+            var lease = new StringBuilder(96);
+            LeaseStore.Record(lease, o.Lease);
+            b.Append('|').Append(lease.ToString().Replace('|', ','));
+            b.Append('|');
+            for (int i = 0; i < o.Crew.Count && i < RivalFirms.CrewMost; i++)
+            {
+                StaffFile s = o.Crew[i];
+                b.Append(i > 0 ? "/" : string.Empty).Append(Clean(s.Id).Replace(',', ' ').Replace('/', ' ')).Append(',').Append(s.Skill.ToString(Inv)).Append(',').Append(s.Base.ToString(Inv)).Append(',')
+                    .Append(s.Raise.ToString(Inv)).Append(',').Append(s.Standing.ToString(Inv)).Append(',').Append(s.UnderDays.ToString(Inv)).Append(',').Append(s.AskDay.ToString(Inv)).Append(',')
+                    .Append(s.AskTo.ToString(Inv)).Append(',').Append(s.AskRest.ToString(Inv)).Append(',').Append(s.LateDays.ToString(Inv));
+            }
+        }
+
+        private static void Outlet(RivalFile f, string[] c)
+        {
+            if (c.Length < 15 || f.Outlets.Count >= RivalFirms.OutletsMost * f.Tycoons.Length)
+            {
+                return;
+            }
+            int tycoon = I(c, 2);
+            LeaseFile lease = LeaseStore.Parse(c[13].Split(','));
+            if (tycoon < 0 || tycoon >= f.Tycoons.Length || lease == null)
+            {
+                return;
+            }
+            var o = new RivalOutlet
+            {
+                Move = I(c, 1), Tycoon = tycoon, District = c[3], Type = c[4], Lease = lease, NextHire = Math.Max(1, I(c, 5)), Hires = I(c, 6), LetGo = I(c, 7), Raises = I(c, 8), Renewals = I(c, 9),
+                Holds = I(c, 10), Rent = L(c, 11), Wages = L(c, 12)
+            };
+            lease.District = o.District;
+            lease.Name = RivalFirms.Key(o);
+            foreach (string person in c[14].Length == 0 ? new string[0] : c[14].Split('/'))
+            {
+                string[] p = person.Split(',');
+                if (p.Length < 10 || o.Crew.Count >= RivalFirms.CrewMost)
+                {
+                    continue;
+                }
+                StaffFile s = StaffRules.Hire(p[0], 0);
+                s.Place = RivalFirms.Key(o);
+                s.Name = p[0];
+                s.Skill = I(p, 1);
+                s.Base = s.Wage = I(p, 2);
+                s.Raise = I(p, 3);
+                s.Standing = I(p, 4);
+                s.UnderDays = I(p, 5);
+                s.AskDay = I(p, 6);
+                s.AskTo = I(p, 7);
+                s.AskRest = I(p, 8);
+                s.LateDays = I(p, 9);
+                s.DayHours = RivalFirms.HoursADay * 100;
+                o.Crew.Add(s);
+            }
+            f.Outlets.Add(o);
         }
 
         /// <summary>A line into a file; null if it is not the rivals' or cannot be read. <paramref name="version"/> is the line's own.</summary>
@@ -118,6 +188,7 @@ namespace RealLifeOverhaul.Rivals
                         case "T": Tycoon(f, c); break;
                         case "M": Move(f, c); break;
                         case "C": Counter(f, c); break;
+                        case "O": Outlet(f, c); break;
                         // (a line of a later version's: left out)
                     }
                 }

@@ -15,13 +15,12 @@ namespace RealLifeOverhaul.Economy
     /// <summary>
     /// One named plan of a business's rota: how the planner weighs the week while it is in use. The rota planner's own mode (Auto, Staff first, Lean) stays the
     /// business's; a plan adds what the player can ask of any week: the most hours each person may be placed, whether overtime may go past it, the least crew
-    /// in a block of hours, the shifts a person may work a day, the weeks it repeats on and the days it holds for. Saved under <see cref="RotaPlanStore.Key"/>.
+    /// in a block of hours, the weeks it repeats on and the days it holds for. Saved under <see cref="RotaPlanStore.Key"/>.
     /// </summary>
     public sealed class RotaPlanFile
     {
         public int Id;
         public string Name = string.Empty;
-        public int Shifts = 1;                  // shifts a person works in a day at most: 1 or 2
         public int From, To;                    // the first and the last day it holds for; 0 and 0 for always
         public int Parity;                      // RotaPlanRules.Every, Odd or Even: the weeks it applies to
         public int Hours = RotaPlanRules.HoursStart;   // most hours a week for each person
@@ -247,7 +246,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return null;
             }
-            var copy = new RotaPlanFile { Id = set.NextId++, Name = Name(name), Shifts = from.Shifts, Hours = from.Hours, Overtime = from.Overtime };
+            var copy = new RotaPlanFile { Id = set.NextId++, Name = Name(name), Hours = from.Hours, Overtime = from.Overtime };
             for (int i = 0; i < from.Blocks.Count; i++)
             {
                 copy.Blocks.Add(from.Blocks[i]);
@@ -271,7 +270,6 @@ namespace RealLifeOverhaul.Economy
         /// <summary>A plan put right: its numbers inside what the planner can use, its blocks sorted, inside the day, none overlapping, at most <see cref="BlocksMost"/>.</summary>
         public static void Tidy(RotaPlanFile p)
         {
-            p.Shifts = CompanyCatalogue.Clamp(p.Shifts, 1, 2);
             p.Hours = p.Hours <= 0 ? 0 : CompanyCatalogue.Clamp(p.Hours, HoursLeast, HoursTop);
             p.Parity = CompanyCatalogue.Clamp(p.Parity, Every, Even);
             p.From = Math.Max(0, p.From);
@@ -338,7 +336,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     RotaPlanFile p = s.Plans[k];
                     t.Append(k > 0 ? ";" : string.Empty);
-                    t.Append(p.Id.ToString(Inv)).Append(',').Append(p.Shifts.ToString(Inv)).Append(',').Append(p.From.ToString(Inv)).Append(',').Append(p.To.ToString(Inv)).Append(',')
+                    t.Append(p.Id.ToString(Inv)).Append(',').Append(p.From.ToString(Inv)).Append(',').Append(p.To.ToString(Inv)).Append(',')
                         .Append(p.Parity.ToString(Inv)).Append(',').Append(p.Hours.ToString(Inv)).Append(',').Append(p.Overtime ? '1' : '0').Append(',');
                     for (int b = 0; b < p.Blocks.Count && b < RotaPlanRules.BlocksMost; b++)
                     {
@@ -378,16 +376,16 @@ namespace RealLifeOverhaul.Economy
                 foreach (string record in c[3].Length == 0 ? new string[0] : c[3].Split(';'))
                 {
                     string[] f = record.Split(',');
-                    if (f.Length < 9 || set.Plans.Count >= RotaPlanRules.PlansMost || set.Find(I(f, 0)) != null)
+                    if (f.Length < 8 || set.Plans.Count >= RotaPlanRules.PlansMost || set.Find(I(f, 0)) != null)
                     {
                         continue;
                     }
                     var p = new RotaPlanFile
                     {
-                        Id = Math.Max(1, I(f, 0, 1)), Shifts = I(f, 1, 1), From = I(f, 2), To = I(f, 3), Parity = I(f, 4), Hours = I(f, 5, RotaPlanRules.HoursStart),
-                        Overtime = I(f, 6) != 0, Name = RotaPlanRules.Name(f[8])
+                        Id = Math.Max(1, I(f, 0, 1)), From = I(f, 1), To = I(f, 2), Parity = I(f, 3), Hours = I(f, 4, RotaPlanRules.HoursStart),
+                        Overtime = I(f, 5) != 0, Name = RotaPlanRules.Name(f[7])
                     };
-                    foreach (string block in f[7].Length == 0 ? new string[0] : f[7].Split('/'))
+                    foreach (string block in f[6].Length == 0 ? new string[0] : f[6].Split('/'))
                     {
                         string[] b = block.Split('-');
                         if (b.Length == 3 && p.Blocks.Count < RotaPlanRules.BlocksMost)

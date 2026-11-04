@@ -163,6 +163,24 @@ namespace RealLifeOverhaul.Economy
             return f.AskDay == 0 && f.PoachDay == 0 && f.LeaveDay == 0 && f.Going > f.Paid && day >= f.AskRest;
         }
 
+        /// <summary>
+        /// A new member of staff's file: the standing a hire starts at (the company's esteem lifts it), nothing asked, nothing offered, nobody late. The player's company
+        /// makes one when a hire turns up in the game, a rival's firm when it hires, by this alone.
+        /// </summary>
+        public static StaffFile Hire(string id, int esteem)
+        {
+            return new StaffFile { Id = id, Standing = CompanyCatalogue.Clamp(CompanyCatalogue.StandingStart + esteem, 0, CompanyCatalogue.StandingMost) };
+        }
+
+        /// <summary>Somebody let go: they leave with nothing asked, nothing offered, and no lateness counted against them.</summary>
+        public static void LetGo(StaffFile f)
+        {
+            f.AskDay = f.AskTo = 0;
+            f.PoachDay = f.PoachOffer = 0;
+            f.LateDays = 0;
+            f.UnderDays = 0;
+        }
+
         /// <summary>The raise an answer gives, hundredths an hour.</summary>
         public static int RaiseFor(StaffFile f, RaiseAnswer answer)
         {
@@ -196,7 +214,7 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>
         /// What a raise adds to the wages over a year of the game, for a card's consequence line: its hundredths an hour over a working day's
-        /// hours (hundredths) for each day of the year, in whole money.
+        /// hours (hundredths) for each working day of the year (<paramref name="daysPerYear"/>), in whole money.
         /// </summary>
         public static int YearOf(int raise, int dayHours, int daysPerYear)
         {

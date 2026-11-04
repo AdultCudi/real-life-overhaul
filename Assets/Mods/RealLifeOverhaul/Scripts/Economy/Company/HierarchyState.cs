@@ -249,6 +249,18 @@ namespace RealLifeOverhaul.Economy
             return e;
         }
 
+        /// <summary>An escalation closed: its state and the day, who closed it where that is known, and one more settled for the week when it was resolved.</summary>
+        public void Close(Escalation e, EscalationState state, string who, int day)
+        {
+            e.State = (int)state;
+            e.Moved = day;
+            if (!string.IsNullOrEmpty(who))
+            {
+                e.By = HierarchyStore.Clean(who);
+            }
+            Settled += state == EscalationState.Resolved ? 1 : 0;
+        }
+
         /// <summary>A log entry at the end, the oldest let go past the number kept.</summary>
         public HierarchyEntry Log(HierarchyLog kind, int level, string who, string place, int day, int hour)
         {

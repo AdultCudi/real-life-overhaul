@@ -22,6 +22,7 @@ namespace RealLifeOverhaul.Ui
         Dismiss,            // escalation A dismissed
         TryNow,             // Deep Mode: escalation A tried at the level that holds it
         Pass,               // Deep Mode: escalation A passed up
+        LeaseAnswer,        // the landlord's offer for the place S answered, with or without an escalation: renew 0, hold over 1, haggle 4
         // staff
         RaiseAnswer,        // the raise asked by employee S: answer A (agree, offer less, refuse, bonus)
         RaiseGive,          // a raise given to employee S unasked

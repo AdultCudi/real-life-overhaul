@@ -47,15 +47,15 @@ internal static partial class UiSamples
             "cap", w.F("reallife_rota_hours_n", "{hours} h", "hours", "32"), "floor", "+8");
         p.RepeatOptions = new[] { w.T("reallife_rota_repeat_every", "Every week"), w.T("reallife_rota_repeat_odd", "Odd weeks"), w.T("reallife_rota_repeat_even", "Even weeks") };
         p.Repeat = 0;
-        p.RepeatActs = new[] { CA(CompanyDo.PlanChange, p.Id, 1, 4, 0), CA(CompanyDo.PlanChange, p.Id, 1, 4, 1), CA(CompanyDo.PlanChange, p.Id, 1, 4, 2) };
+        p.RepeatActs = new[] { CA(CompanyDo.PlanChange, p.Id, 1, 3, 0), CA(CompanyDo.PlanChange, p.Id, 1, 3, 1), CA(CompanyDo.PlanChange, p.Id, 1, 3, 2) };
         p.HoursValue = w.F("reallife_rota_hours_n", "{hours} h", "hours", "40");
         p.HoursLess = true;
         p.HoursMore = true;
-        p.HoursLessAct = CA(CompanyDo.PlanChange, p.Id, 1, 5, 36);
-        p.HoursMoreAct = CA(CompanyDo.PlanChange, p.Id, 1, 5, 44);
-        p.HoursTypeAct = CA(CompanyDo.PlanChange, p.Id, 1, 5);
+        p.HoursLessAct = CA(CompanyDo.PlanChange, p.Id, 1, 4, 36);
+        p.HoursMoreAct = CA(CompanyDo.PlanChange, p.Id, 1, 4, 44);
+        p.HoursTypeAct = CA(CompanyDo.PlanChange, p.Id, 1, 4);
         p.Overtime = false;
-        p.OvertimeAct = CA(CompanyDo.PlanChange, p.Id, 1, 6, 1);
+        p.OvertimeAct = CA(CompanyDo.PlanChange, p.Id, 1, 5, 1);
         p.Edit = CB(w.T("reallife_rota_edit", "Edit"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.Go, null, CompanyView.Rota, CompanyView.SubEdit), UiIcon.Sliders);
         p.Copy = CB(w.T("reallife_rota_copy", "Copy plan"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.PlanCopy, p.Id, 1), UiIcon.ClipboardText);
         p.Back = CB(w.T("reallife_rota_back", "Back to the last rota"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.RotaBack, p.Id), UiIcon.Back, false, null, true);
@@ -156,16 +156,14 @@ internal static partial class UiSamples
             c.Blocks = new[]
             {
                 new CompanyBlock { Kind = CompanyBlockKind.Field, Text = w.T("reallife_rota_plan_name", "Name"), Value = other ? "Quiet week" : "Standard week", Sub = w.T("reallife_rota_plan_name_hint", "Up to 24 letters"), Act = CA(CompanyDo.PlanChange, p.Id, 1, 0, 0, "Standard week") },
-                new CompanyBlock { Kind = CompanyBlockKind.Choice, Text = w.T("reallife_rota_shifts_a_day", "Shifts a person works in a day"), Options = new[] { w.T("reallife_rota_shifts_one", "One"), w.T("reallife_rota_shifts_two", "Two") }, Chosen = 0,
-                    Acts = new[] { CA(CompanyDo.PlanChange, p.Id, 1, 1, 1), CA(CompanyDo.PlanChange, p.Id, 1, 1, 2) } },
                 new CompanyBlock { Kind = CompanyBlockKind.Stepper, Text = w.T("reallife_rota_first_day", "First day it holds for"), Sub = w.T("reallife_rota_range_hint", "Leave both empty for every week"), Value = w.T("reallife_rota_always", "Always"), CanLess = false, CanMore = true,
-                    Act = CA(CompanyDo.PlanChange, p.Id, 1, 2, 0), Act2 = CA(CompanyDo.PlanChange, p.Id, 1, 2, 214), Act3 = CA(CompanyDo.PlanChange, p.Id, 1, 2) },
+                    Act = CA(CompanyDo.PlanChange, p.Id, 1, 1, 0), Act2 = CA(CompanyDo.PlanChange, p.Id, 1, 1, 214), Act3 = CA(CompanyDo.PlanChange, p.Id, 1, 1) },
                 CSec(w.T("reallife_rota_needs", "Needs by time"), w.F("reallife_rota_blocks_count", "{count} of {most}", "count", "3", "most", "4")),
                 CNote(w.T("reallife_rota_needs_what", "A floor of crew in a block of hours, whatever the customers say.")),
-                new CompanyBlock { Kind = CompanyBlockKind.Stepper, Text = "07-11", Value = w.F("reallife_rota_needs_crew", "{count} on shift", "count", "2"), CanLess = true, CanMore = true, Act = CA(CompanyDo.PlanChange, p.Id, 1, 8, 1, "0"), Act2 = CA(CompanyDo.PlanChange, p.Id, 1, 8, 3, "0"), Act3 = CA(CompanyDo.PlanChange, p.Id, 1, 8, 0, "0") },
-                new CompanyBlock { Kind = CompanyBlockKind.Stepper, Text = "11-15", Value = w.F("reallife_rota_needs_crew", "{count} on shift", "count", "4"), CanLess = true, CanMore = true, Act = CA(CompanyDo.PlanChange, p.Id, 1, 8, 3, "1"), Act2 = CA(CompanyDo.PlanChange, p.Id, 1, 8, 5, "1"), Act3 = CA(CompanyDo.PlanChange, p.Id, 1, 8, 0, "1") },
-                CBtns(CB(w.T("reallife_rota_block_add", "Add a block"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.PlanChange, p.Id, 1, 7, 715), UiIcon.Plus),
-                    CB(w.T("reallife_rota_block_remove", "Remove the last"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.PlanChange, p.Id, 1, 9, 0, "1"), UiIcon.Close, false, null, true)),
+                new CompanyBlock { Kind = CompanyBlockKind.Stepper, Text = "07-11", Value = w.F("reallife_rota_needs_crew", "{count} on shift", "count", "2"), CanLess = true, CanMore = true, Act = CA(CompanyDo.PlanChange, p.Id, 1, 7, 1, "0"), Act2 = CA(CompanyDo.PlanChange, p.Id, 1, 7, 3, "0"), Act3 = CA(CompanyDo.PlanChange, p.Id, 1, 7, 0, "0") },
+                new CompanyBlock { Kind = CompanyBlockKind.Stepper, Text = "11-15", Value = w.F("reallife_rota_needs_crew", "{count} on shift", "count", "4"), CanLess = true, CanMore = true, Act = CA(CompanyDo.PlanChange, p.Id, 1, 7, 3, "1"), Act2 = CA(CompanyDo.PlanChange, p.Id, 1, 7, 5, "1"), Act3 = CA(CompanyDo.PlanChange, p.Id, 1, 7, 0, "1") },
+                CBtns(CB(w.T("reallife_rota_block_add", "Add a block"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.PlanChange, p.Id, 1, 6, 715), UiIcon.Plus),
+                    CB(w.T("reallife_rota_block_remove", "Remove the last"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.PlanChange, p.Id, 1, 8, 0, "1"), UiIcon.Close, false, null, true)),
                 other
                     ? CBtns(CB(w.T("reallife_rota_use_this", "Use this plan"), UiButtonKind.Primary, UiAction.Alt, CA(CompanyDo.PlanUse, p.Id, 2), UiIcon.Check),
                         CB(w.T("reallife_rota_plan_new", "New plan"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.PlanNew, p.Id), UiIcon.Plus),

@@ -67,7 +67,7 @@ internal static partial class Program
         Check(LeaseRules.Rise(Seed, "a~1", 2, 60, -80) == calm, "lease rise: a pressure under nothing adds nothing");
         // The offer is the rent's rise in all over the game's rent.
         var l = new LeaseFile { Place = "Main~1", Start = 100, Term = 360, Rent = 200, Rise = 40 };
-        int offer = LeaseRules.Offer(l, Seed, 30, 0);
+        int offer = LeaseRules.Offer(l, Seed, 30, 0, 0);
         Check(offer == 40 + LeaseRules.Rise(Seed, "Main~1", 1, 30, 0) && offer >= 40, "lease offer: what is agreed already and the rise asked now (" + offer + ")");
         l.Offer = 120;
         Check(LeaseRules.RentAt(200, 120) == 224 && LeaseRules.RentAt(200, 0) == 200 && LeaseRules.RentAt(0, 500) == 0 && LeaseRules.RentAt(200, -50) == 200,
@@ -82,7 +82,7 @@ internal static partial class Program
         // The day the offer is made: inside the notice, once.
         var due = new LeaseFile { Place = "Main~1", Start = 100, Term = 360 };
         Check(!LeaseRules.OfferDue(due, due.End - LeaseRules.NoticeDays - 1) && LeaseRules.OfferDue(due, due.End - LeaseRules.NoticeDays) && LeaseRules.OfferDue(due, due.End - 1)
-              && !LeaseRules.OfferDue(due, due.End), "lease offer: made from fourteen days before the end, never earlier and never after it");
+              && LeaseRules.OfferDue(due, due.End) && LeaseRules.OfferDue(due, due.End + 40), "lease offer: made from fourteen days before the end, never earlier, and still made once the lease has ended (days skipped past the whole notice)");
         due.Offer = 50;
         due.Asked = 300;
         Check(!LeaseRules.OfferDue(due, due.End - 5), "lease offer: made once");
@@ -163,7 +163,7 @@ internal static partial class Program
                 }
                 else if (LeaseRules.OfferDue(l, day))
                 {
-                    l.Offer = LeaseRules.Offer(l, Seed, 40, 0);
+                    l.Offer = LeaseRules.Offer(l, Seed, 40, 0, 0);
                     l.Asked = day;
                     offers++;
                     if (day % 2 == 0)
@@ -199,7 +199,7 @@ internal static partial class Program
                 }
                 else if (LeaseRules.OfferDue(many[i], day))
                 {
-                    many[i].Offer = LeaseRules.Offer(many[i], Seed, 30, 0);
+                    many[i].Offer = LeaseRules.Offer(many[i], Seed, 30, 0, 0);
                     many[i].Asked = day;
                 }
             }
@@ -214,7 +214,7 @@ internal static partial class Program
         // The very same function: a city lease of a district and a player's lease with the same key and renewal get the same rise.
         string key = "Midtown#3";
         var theirs = new LeaseFile { Place = key, Start = 0, Term = 360, Rent = 100, Rise = 0 };
-        Check(LeaseRules.Offer(theirs, Seed, 35, 12) == LeaseRules.Rise(Seed, key, 1, 35, 12), "city leases: a business of the city and the player's meet one rule (the same rise for the same key, renewal, trend and pressure)");
+        Check(LeaseRules.Offer(theirs, Seed, 35, 12, 0) == LeaseRules.Rise(Seed, key, 1, 35, 12), "city leases: a business of the city and the player's meet one rule (the same rise for the same key, renewal, trend and pressure)");
         int renewed = 0, sum = 0, days = 0;
         bool deterministic = true;
         for (int day = 1; day <= 1080; day++)
@@ -268,20 +268,23 @@ internal static partial class Program
         var s = new LeaseState { TrendDay = 300 };
         s.Trend.Add(20);
         s.Trend.Add(35);
-        s.Leases.Add(new LeaseFile { Place = "Main~1", Start = 100, Term = 360, Rent = 200, Rise = 40, Offer = 90, Asked = 450, Renewals = 2, Hold = false, Last = 30, Answer = LeaseRules.Accepted, Haggled = true });
+        s.Leases.Add(new LeaseFile { Place = "Main~1", Start = 100, Term = 360, Rent = 200, Rise = 40, Offer = 90, Asked = 450, Renewals = 2, Hold = false, Last = 30, Answer = LeaseRules.Accepted, Haggled = true, Told = 455 });
         s.Leases.Add(new LeaseFile { Place = "Harbour Road~4", Start = 10, Term = 30, Rent = 75, Rise = 0, Renewals = 0, Hold = true });
         string line = LeaseStore.Write(s);
         LeaseState back = LeaseStore.Read(line, out int version);
         bool same = back != null && version == LeaseStore.Version && back.TrendDay == 300 && back.Trend.Count == 2 && back.Trend[1] == 35 && back.Leases.Count == 2;
         LeaseFile a = same ? back.Leases[0] : null;
         same = same && a.Place == "Main~1" && a.Start == 100 && a.Term == 360 && a.Rent == 200 && a.Rise == 40 && a.Offer == 90 && a.Asked == 450 && a.Renewals == 2 && a.Last == 30
-               && a.Answer == LeaseRules.Accepted && a.Haggled && back.Leases[1].Hold && back.Leases[1].Place == "Harbour Road~4";
+               && a.Answer == LeaseRules.Accepted && a.Haggled && a.Told == 455 && back.Leases[1].Told == 0 && back.Leases[1].Hold && back.Leases[1].Place == "Harbour Road~4";
         Check(same, "lease save: every lease, the ring and the day round trip");
         Check(LeaseStore.Write(back) == line, "lease save: writing what was read gives the same line");
         Check(LeaseStore.Read("v=1", out _) == null && LeaseStore.Read("not a line", out _) == null && LeaseStore.Read("", out _) == null, "lease save: a line that is not the leases' is refused");
-        string older = line.Replace("Main~1|1|1;", "Main~1;").Replace("Harbour Road~4|0|0", "Harbour Road~4");   // the records without their answer and their flag
+        string older = line.Replace("Main~1|1|1|455;", "Main~1;").Replace("Harbour Road~4|0|0|0", "Harbour Road~4");   // the records without their answer, their flag and the day the owner was told
         LeaseState old = LeaseStore.Read(older, out version);
-        Check(old != null && old.Leases.Count == 2 && old.Leases[0].Answer == 0 && !old.Leases[0].Haggled, "lease save: a record from before the answer and the flag loads with neither");
+        Check(old != null && old.Leases.Count == 2 && old.Leases[0].Answer == 0 && !old.Leases[0].Haggled && old.Leases[0].Told == 0, "lease save: a record from before the answer, the flag and the day told loads with none of them");
+        string noTold = line.Replace("|455;", ";");   // a record from before the day the owner was told only
+        LeaseState before = LeaseStore.Read(noTold, out version);
+        Check(before != null && before.Leases.Count == 2 && before.Leases[0].Answer == LeaseRules.Accepted && before.Leases[0].Told == 0, "lease save: a record from before the day the owner was told loads with the rest and none told");
         string wild = line.Replace("|450|", "|-5|").Replace("|90|", "|99999|");
         LeaseState bound = LeaseStore.Read(wild, out version);
         Check(bound != null && bound.Leases[0].Asked == 0 && bound.Leases[0].Offer <= 4 * LeaseRules.RiseMost, "lease save: figures out of range are bounded on reading");

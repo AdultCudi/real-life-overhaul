@@ -35,6 +35,7 @@ namespace RealLifeOverhaul.Economy
         private int[] _hireWage = new int[8], _hireGoing = new int[8], _hireSkill = new int[8];
         private int[] _rotaHoursNow = new int[16], _rotaHoursAfter = new int[16];   // each worker's hours in the week now and in the new one (ManagerRules.Rota)
 
+        // A manager's answers to the requests for a raise at a place: each is CompanyDay.Raise, the one entry the run of the checks calls too.
         private void DecideRaises(ManagedPlace mp, int skill, int review, string who, int day, int hour)
         {
             if (!On(CompanyPart.Staff) || mp.Shop == null)
@@ -43,50 +44,16 @@ namespace RealLifeOverhaul.Economy
             }
             ManagerFile m = mp.Own;
             List<StaffFile> staff = _state.Staff;
-            int band = Rule(mp, PolicyField.PayBand), most = Rule(mp, PolicyField.RaiseMost), every = Rule(mp, PolicyField.RaiseEvery);
             for (int i = 0; i < staff.Count; i++)
             {
                 StaffFile f = staff[i];
-                if (f.AskDay == 0 || f.Place != mp.Place.Place || f.Id == m.Id)
+                if (f.AskDay == 0 || !CompanyDay.Raise(this, mp.Place.Place, m, f, skill, review, who, day, hour))
                 {
-                    continue;   // a manager's own request is the player's to answer
+                    continue;
                 }
-                // The policy's ceiling: the band, the largest raise and the days between two (PolicyRules); at its start, the band alone.
-                int ceiling = PolicyRules.RaiseDue(LastRaise(mp, f.Id), day, every) ? PolicyRules.RaiseCeiling(f.Paid, f.Going, band, most) : f.Paid, roll;
-                RaiseAnswer asked = ManagerRules.RaiseAnswerFor(f.Paid, f.AskTo, ceiling, false);
-                if (asked != RaiseAnswer.Agree && ToApprover(mp, f, false, ceiling, day))
-                {
-                    continue;   // past what the manager may agree: left open for whoever the policy names to approve it
-                }
-                // A refusal is a one-off bonus instead when the month's budget left covers it (the bonus comes out of that budget).
-                int bonus = BonusOf(mp.Place.Place), left = ManagerRules.Left(BudgetOf(m), m.Spent);
-                RaiseAnswer fair = ManagerRules.OrBonus(asked, bonus, left, false);
-                bool slip = Slips(skill, review, day, mp.Place.Place, ManagerTask.Raises, f.Id, out roll);
-                RaiseAnswer answer = ManagerRules.OrBonus(ManagerRules.RaiseAnswerFor(f.Paid, f.AskTo, ceiling, slip), bonus, left, slip);
-                if (answer == RaiseAnswer.Bonus && !Cost(bonus, CompanyGame.BonusKey, mp.Shop, f.Name, CostKind.Wages, null, "a one-off bonus given by the manager in place of a raise"))
-                {
-                    answer = RaiseAnswer.Refuse;   // the cash does not cover it: the request is refused as before
-                }
-                int askDay = f.AskDay, askTo = f.AskTo, rest = f.AskRest, standing = f.Standing, added = StaffRules.RaiseFor(f, answer);
-                StaffRules.Answer(f, answer, day);
-                m.Spent += answer == RaiseAnswer.Bonus ? bonus : 0;
-                Took(mp, who, day - askDay);
-                Decision d = Record(mp, ManagerTask.Raises, f.Id, who, day, hour, answer != fair);
-                d.A = added;
-                d.B = f.Standing - standing;
-                d.C = askDay;
-                d.D = askTo;
-                d.E = rest;
-                d.F = (int)answer;
-                d.Detail = ManagerStore.Word(f.Name);
-                d.G = answer == RaiseAnswer.Bonus ? bonus : 0;
-                if (answer == RaiseAnswer.Bonus)
-                {
-                    d.State = DecisionState.Closed;   // the money is paid: nothing to put back
-                }
-                Logger?.Info("Company: " + who + " (manager, skill " + skill + ") answered " + f.Name + "'s request for " + askTo + " an hour (hundredths): " + answer
-                             + "; the ceiling is " + ceiling + " (" + ManagerCatalogue.Step(ManagerCatalogue.WageBands, band) + " thousandths of the going rate "
-                             + f.Going + ")" + (answer != fair ? ", a mistake: " + fair + " was the answer" : string.Empty) + ".");
+                Decision d = _mgr.Decisions[_mgr.Decisions.Count - 1];
+                Logger?.Info("Company: " + who + " (manager, skill " + skill + ") answered " + f.Name + "'s request for " + d.D + " an hour (hundredths): " + (RaiseAnswer)d.F
+                             + (d.Mistake ? ", a mistake" : string.Empty) + ".");
             }
             Recount();
         }
@@ -115,7 +82,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 int ceiling = PolicyRules.RaiseCeiling(f.Paid, f.Going, band, most), roll;
                 bool fair = ManagerRules.Match(f.PoachOffer, ceiling, false);
-                if (!fair && ToApprover(mp, f, true, ceiling, day))
+                if (!fair && CompanyDay.ToApprover(this, mp.Place.Place, mp.Own, f, true, ceiling, day, hour))
                 {
                     continue;   // past the band: left open for whoever the policy names to approve it
                 }
@@ -593,51 +560,52 @@ namespace RealLifeOverhaul.Economy
                 m.Keep = mp.Place.Staff;
             }
             LetGoLate(mp, who, day, hour);   // somebody late three days running, if the board has somebody for their place: the hire below fills it
-            if (m.Keep - mp.Place.Staff <= 0)
+            if (!CompanyDay.Wants(m, mp.Place.Staff))
             {
-                return;
+                return;   // the crew is there, or it is twelve: past that the owner hires (the gap is raised to them)
             }
-            BuildingRegistration reg = mp.Place.Reg;
             int count = ReadCandidates(mp);
             if (count == 0)
             {
                 HireFromRegion(mp, who, day, hour);   // the policy's next source: the region's other boards
                 return;
             }
-            int left = ManagerRules.Left(BudgetOf(m), m.Spent), roll;
-            int band = Rule(mp, PolicyField.PayBand), cap = Rule(mp, PolicyField.HirePayCap), floor = Rule(mp, PolicyField.SkillFloor);
-            bool slip = Slips(skill, review, day, mp.Place.Place, ManagerTask.Hiring, string.Empty, out roll);
-            // The policy's pick: the band, the hiring cap and the skill floor; at the policy's start the same pick as ManagerRules.Pick.
-            int fair = PolicyRules.Pick(_hireWage, _hireGoing, _hireSkill, count, band, cap, floor, left, false);
-            int pick = PolicyRules.Pick(_hireWage, _hireGoing, _hireSkill, count, band, cap, floor, left, slip);
-            if (pick < 0)
+            string name;
+            _letGoFor = mp;   // the place being hired for, for the game's hire
+            CompanyDay.HireWas was = CompanyDay.Hire(this, mp.Place.Place, m, count, _hireWage, _hireGoing, _hireSkill, _take ?? (_take = TakeCandidate), skill, review, who, day, hour, out name);
+            _letGoFor = null;
+            if (was == CompanyDay.HireWas.None)
             {
                 if (Verbose)
                 {
-                    Logger?.Info("Company check (managers, hiring at " + mp.Place.Name + "): " + count + " candidate(s) from the job board, none inside the wage band "
-                                 + ManagerCatalogue.Step(ManagerCatalogue.WageBands, band) + ", the hiring cap " + PolicyCatalogue.Value(PolicyField.HirePayCap, cap)
-                                 + ", the skill floor " + PolicyCatalogue.Value(PolicyField.SkillFloor, floor) + " and the " + left + " left of the budget: PASS");
+                    Logger?.Info("Company check (managers, hiring at " + mp.Place.Name + "): " + count + " candidate(s) from the job board, none inside the wage band, the hiring cap, the skill floor and the "
+                                 + ManagerRules.Left(BudgetOf(m), m.Spent) + " left of the budget: PASS");
                 }
+                _candidates.Clear();
                 HireFromRegion(mp, who, day, hour);
                 return;
             }
-            EmployeeInstance e = _candidates[pick];
-            string name = ManagerGame.NameOf(e), id = e.id;
-            if (!ManagerGame.Hire(e, reg))
+            if (was == CompanyDay.HireWas.Failed)
             {
+                _candidates.Clear();
                 return;
             }
-            int cost = ManagerRules.HireCost(_hireWage[pick]);
-            m.Spent += cost;
             mp.Place.Staff++;
-            Decision d = Record(mp, ManagerTask.Hiring, id, who, day, hour, pick != fair);
-            d.A = _hireWage[pick];
-            d.B = _hireSkill[pick];
-            d.C = cost;
-            d.Detail = ManagerStore.Word(name);
+            Decision d = _mgr.Decisions[_mgr.Decisions.Count - 1];
             _candidates.Clear();
             Logger?.Info("Company: " + who + " (manager, skill " + skill + ") hired " + name + " (skill " + d.B + ", " + d.A + " an hour in hundredths) from the job board of "
-                         + mp.Place.Name + " to keep " + m.Keep + " staff; " + cost + " of the month's budget" + (pick != fair ? ", a mistake: a better candidate was there" : string.Empty) + ".");
+                         + mp.Place.Name + " to keep " + m.Keep + " staff; " + d.C + " of the month's budget" + (d.Mistake ? ", a mistake: a better candidate was there" : string.Empty) + ".");
+        }
+
+        private CompanyDay.Taker _take;
+
+        // The game's own hire of a candidate on the place's board (CompanyDay.Hire's take).
+        private bool TakeCandidate(int pick, out string id, out string name)
+        {
+            EmployeeInstance e = _candidates[pick];
+            name = ManagerGame.NameOf(e);
+            id = e.id;
+            return ManagerGame.Hire(e, _letGoFor.Place.Reg);
         }
 
         // The place's own job board's candidates read into the arrays the pick looks at: their pay now, the going rate for them and their skill. Their number.
@@ -667,46 +635,34 @@ namespace RealLifeOverhaul.Economy
 
         // Somebody late three days running (StaffRules.LateDay) is let go the game's own way (Core/StaffLeave) when the place's job board has somebody to
         // hire in their place inside the wage band, the skill floor and the month's budget (ManagerRules.LetGo): a place is never left short by it, never
-        // the last of its staff, never the manager themselves. The hire that follows in the same pass keeps the crew at the number kept.
+        // the last of its staff, never the manager themselves (CompanyDay.LetGo, the one entry the run of the checks calls too). The hire that follows in
+        // the same pass keeps the crew at the number kept.
         private bool LetGoLate(ManagedPlace mp, string who, int day, int hour)
         {
-            ManagerFile m = mp.Own;
-            StaffFile worst = null;
-            for (int i = 0; i < _state.Staff.Count; i++)
+            _letGoFor = mp;
+            bool let = CompanyDay.LetGo(this, mp.Place.Place, mp.Own, mp.Place.Staff, _hasReplacement ?? (_hasReplacement = HasReplacement), who, day, hour);
+            _letGoFor = null;
+            if (let)
             {
-                StaffFile f = _state.Staff[i];
-                if (f.Place == mp.Place.Place && f.Id != m.Id && f.LeaveDay == 0 && f.LateDays >= ManagerCatalogue.HireLate && (worst == null || f.LateDays > worst.LateDays))
-                {
-                    worst = f;
-                }
+                mp.Place.Staff--;
+                Decision d = _mgr.Decisions[_mgr.Decisions.Count - 1];
+                Logger?.Info("Company: " + who + " (manager) let " + d.Detail + " go from " + mp.Place.Name + " after " + d.D + " late day(s) running; the job board has somebody to take their place.");
             }
-            if (worst == null || mp.Place.Staff <= 1)
-            {
-                return false;
-            }
-            int count = ReadCandidates(mp), left = ManagerRules.Left(BudgetOf(m), m.Spent);
+            return let;
+        }
+
+        private ManagedPlace _letGoFor;
+        private Func<bool> _hasReplacement;
+
+        // Whether the job board of the place being looked at has somebody to hire inside the policy's band, cap, skill floor and the month's budget.
+        private bool HasReplacement()
+        {
+            ManagedPlace mp = _letGoFor;
+            int count = ReadCandidates(mp), left = ManagerRules.Left(BudgetOf(mp.Own), mp.Own.Spent);
             bool replace = count > 0 && PolicyRules.Pick(_hireWage, _hireGoing, _hireSkill, count, Rule(mp, PolicyField.PayBand), Rule(mp, PolicyField.HirePayCap),
                 Rule(mp, PolicyField.SkillFloor), left, false) >= 0;
             _candidates.Clear();
-            if (!ManagerRules.LetGo(worst.LateDays, replace))
-            {
-                return false;
-            }
-            EmployeeInstance e = CompanyGame.Employee(worst.Id);
-            if (e == null || CompanyBridges.Leave == null || !CompanyBridges.Leave(e))
-            {
-                return false;
-            }
-            int days = worst.LateDays;
-            worst.LateDays = 0;
-            mp.Place.Staff--;
-            Decision d = Record(mp, ManagerTask.Hiring, worst.Id, who, day, hour, false);
-            d.F = 1;   // let go; a hire has none
-            d.D = days;
-            d.State = DecisionState.Closed;   // a resignation is the game's own: nothing to put back
-            d.Detail = ManagerStore.Word(worst.Name);
-            Logger?.Info("Company: " + who + " (manager) let " + worst.Name + " go from " + mp.Place.Name + " after " + days + " late day(s) running; the job board has somebody to take their place.");
-            return true;
+            return replace;
         }
 
         private Decision LastSet(ManagerTask task, string place, string subject)

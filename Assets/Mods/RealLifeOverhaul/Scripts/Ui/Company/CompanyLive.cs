@@ -75,6 +75,13 @@ namespace RealLifeOverhaul.Ui
                 case CompanyDirector.TabRota:
                     _wantedPick = kind == "rota:" ? "p:" + rest : pick;
                     break;
+                case CompanyDirector.TabOverview:
+                    if (kind == "ls:")
+                    {
+                        _wantedQuestion = LeaseRules.QuestionId(rest);   // the landlord's offer, answered whether the hierarchy runs or not
+                        _wantedPick = string.Empty;
+                    }
+                    break;
                 case CompanyDirector.TabTax:
                     if (pick == "ret")
                     {
@@ -158,7 +165,7 @@ namespace RealLifeOverhaul.Ui
             // An escalation open as a card.
             if (v.Question != 0)
             {
-                Escalation e = d.HierarchyOn ? d.HierarchyData.Find(v.Question) : null;
+                Escalation e = v.Question < 0 ? d.LeaseQuestion(v.Question) : d.HierarchyOn ? d.HierarchyData.Find(v.Question) : null;
                 if (e != null && e.Open)
                 {
                     f.Question = QuestionOf(d, e, w, true);

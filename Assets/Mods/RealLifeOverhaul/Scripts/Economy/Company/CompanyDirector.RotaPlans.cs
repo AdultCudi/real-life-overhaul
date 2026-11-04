@@ -170,7 +170,7 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
-        public const int PlanName = 0, PlanShifts = 1, PlanFrom = 2, PlanTo = 3, PlanParity = 4, PlanHours = 5, PlanOvertime = 6, PlanBlock = 7, PlanBlockCrew = 8, PlanBlockDelete = 9;
+        public const int PlanName = 0, PlanFrom = 1, PlanTo = 2, PlanParity = 3, PlanHours = 4, PlanOvertime = 5, PlanBlock = 6, PlanBlockCrew = 7, PlanBlockDelete = 8;
 
         /// <summary>One figure of a plan changed (name by <see cref="RotaPlanRename"/>); the plan is put right and read again. For a block, <paramref name="at"/> is its place.</summary>
         public void RotaPlanChange(string place, int id, int field, int value, int at = 0)
@@ -183,7 +183,6 @@ namespace RealLifeOverhaul.Economy
             }
             switch (field)
             {
-                case PlanShifts: p.Shifts = value; break;
                 case PlanFrom: p.From = value; break;
                 case PlanTo: p.To = value; break;
                 case PlanParity: p.Parity = value; break;

@@ -279,12 +279,7 @@ namespace RealLifeOverhaul.Economy
 
         private Decision Record(ManagedPlace mp, ManagerTask task, string subject, string who, int day, int hour, bool mistake)
         {
-            Decision d = _mgr.Add(day, hour, mp.Place.Place, task, ManagerStore.Clean(subject), ManagerStore.Clean(who));
-            d.Mistake = mistake;
-            ManagerFile by = MadeBy(mp, who) ?? mp.Own;   // the regional manager standing in for one off sick counts their own
-            by.Decided++;
-            by.Mistakes += mistake ? 1 : 0;
-            return d;
+            return CompanyDay.Written(_mgr, MadeBy(mp, who) ?? mp.Own, mp.Place.Place, task, subject, who, day, hour, mistake);   // the regional manager standing in for one off sick counts their own
         }
 
         /// <summary>The month's budget of a manager, at today's prices, with what the finance chief or the owner added this month.</summary>
@@ -356,10 +351,9 @@ namespace RealLifeOverhaul.Economy
                     ManagedPlace mp = _managed[i];
                     int skill, review;
                     string who;
-                    if (mp.Own == null || !ManagerRules.Runs(mp.Own.Tasks, mp.Kind, task) || !PolicyAllows(mp, task) || mp.Place.Reg == null
-                        || !GoingPublic.Mine(mp.Place.Reg) || !Decider(mp, out skill, out review, out who))
+                    if (!CompanyDay.Deciding(this, mp.Place.Place, mp.Kind, mp.Own, task, out skill, out review, out who))
                     {
-                        continue;
+                        continue;   // the managers' switch, a manager with this work, the policy, the company's own place, somebody who can decide today
                     }
                     Decide(task, mp, skill, review, who, day, hour);
                 }

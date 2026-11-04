@@ -220,8 +220,8 @@ namespace RealLifeOverhaul.Ui
             return p;
         }
 
-        // The editable figures of a plan, as the director numbers them (CompanyDirector.PlanShifts and the rest).
-        private const int RotaPlanFieldName = CompanyDirector.PlanName, RotaPlanFieldShifts = CompanyDirector.PlanShifts, RotaPlanFieldFrom = CompanyDirector.PlanFrom,
+        // The editable figures of a plan, as the director numbers them (CompanyDirector.PlanName and the rest).
+        private const int RotaPlanFieldName = CompanyDirector.PlanName, RotaPlanFieldFrom = CompanyDirector.PlanFrom,
             RotaPlanFieldTo = CompanyDirector.PlanTo, RotaPlanFieldParity = CompanyDirector.PlanParity, RotaPlanFieldHours = CompanyDirector.PlanHours,
             RotaPlanFieldOvertime = CompanyDirector.PlanOvertime, RotaPlanFieldBlock = CompanyDirector.PlanBlock, RotaPlanFieldBlockCrew = CompanyDirector.PlanBlockCrew,
             RotaPlanFieldBlockDelete = CompanyDirector.PlanBlockDelete;
@@ -603,12 +603,6 @@ namespace RealLifeOverhaul.Ui
             {
                 Kind = CompanyBlockKind.Field, Text = w.T("reallife_rota_plan_name", "Name"), Value = plan.Name, Sub = CompanyText.T("reallife_rota_plan_name_hint"),
                 Act = CompanyAct.Of(CompanyDo.PlanChange, place, id, RotaPlanFieldName, 0, plan.Name)
-            });
-            var shifts = new[] { CompanyText.T("reallife_rota_shifts_one"), CompanyText.T("reallife_rota_shifts_two") };
-            blocks.Add(new CompanyBlock
-            {
-                Kind = CompanyBlockKind.Choice, Text = w.T("reallife_rota_shifts_a_day", "Shifts a person works in a day"), Options = shifts, Chosen = Math.Max(0, Math.Min(1, plan.Shifts - 1)),
-                Acts = new[] { CompanyAct.Of(CompanyDo.PlanChange, place, id, RotaPlanFieldShifts, 1), CompanyAct.Of(CompanyDo.PlanChange, place, id, RotaPlanFieldShifts, 2) }
             });
             blocks.Add(new CompanyBlock
             {

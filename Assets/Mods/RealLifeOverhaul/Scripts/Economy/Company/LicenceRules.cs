@@ -42,8 +42,8 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>
         /// The licences a business needs by what it is: the four the first version asked, a fire safety certificate where food is served at tables or a crowd gathers,
-        /// an outdoor seating permit where there are tables, a delivery vehicle permit with a driver on the staff, and bonded storage where spirits or goods
-        /// are held in bulk. A bit each.
+        /// an outdoor seating permit where there are tables, a delivery vehicle permit with a driver on the staff, and bonded storage in a warehouse, where
+        /// goods are held in bulk. A bit each.
         /// </summary>
         public static int Needs(LicenceSite s)
         {

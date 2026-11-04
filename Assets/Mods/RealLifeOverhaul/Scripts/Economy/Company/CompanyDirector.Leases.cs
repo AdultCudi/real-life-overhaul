@@ -86,6 +86,21 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The city's trend of renewal rises, per mille, and what a rival buying up a district adds there.</summary>
         internal int LeaseTrend => LeaseRules.TrendOf(_leases.Trend);
 
+        /// <summary>The trend of renewal rises as it stands, per mille; 0 while the leases do not run.</summary>
+        public int CityTrend => LeasesOn ? LeaseRules.TrendOf(_leases.Trend) : 0;
+
+        /// <summary>
+        /// A rival's lease renewed with this rise, per mille over its rent: kept with the month's, so that what the rivals' landlords ask is part of the trend the player's
+        /// landlords ask by (the city's month, <see cref="LeaseRules.KeepTrend"/>).
+        /// </summary>
+        public void RivalRenewed(string district, int risePermille)
+        {
+            if (LeasesOn)
+            {
+                _leases.RivalRenewed(risePermille);
+            }
+        }
+
         internal static int Pressure(string district)
         {
             try
@@ -152,7 +167,7 @@ namespace RealLifeOverhaul.Economy
                     }
                     else if (LeaseRules.OfferDue(l, day))
                     {
-                        MakeOffer(l, shop, day);
+                        MakeOffer(l, shop, day);   // also for a lease that ended while days were skipped: renewed at the landlord's figure
                     }
                 }
                 _leases.Leases.Sort((a, b) => a.End.CompareTo(b.End));
@@ -163,18 +178,10 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // The city's leases: once a month, the renewals its landlords made in the districts the player rents in, by the same rule, set the trend.
+        // The city's leases: once a month, the renewals its landlords made in the districts the player rents in and those the rivals' leases made, by the same rule, set
+        // the trend (LeaseRules.CityMonth, which the run of the checks calls too).
         private void CityMonth(int day, int monthDays)
         {
-            if (_leases.TrendDay == 0)
-            {
-                _leases.TrendDay = day;   // the first month starts today: nothing to look back on
-                return;
-            }
-            if (day - _leases.TrendDay < monthDays)
-            {
-                return;
-            }
             _leaseDistricts.Clear();
             for (int i = 0; i < _shops.Count; i++)
             {
@@ -183,53 +190,51 @@ namespace RealLifeOverhaul.Economy
                     _leaseDistricts.Add(_shops[i].District);
                 }
             }
-            int sum = 0, renewed = 0, trend = LeaseRules.TrendOf(_leases.Trend);
-            for (int d = _leases.TrendDay; d < _leases.TrendDay + monthDays; d++)
+            int renewed = LeaseRules.CityMonth(_leases, _state.Seed, _leaseDistricts, day, monthDays, CityPressure);
+            if (renewed >= 0 && Verbose)
             {
-                for (int k = 0; k < _leaseDistricts.Count; k++)
-                {
-                    int count;
-                    sum += LeaseRules.CityDay(_state.Seed, _leaseDistricts[k], d, monthDays, trend, Pressure(_leaseDistricts[k]), out count);
-                    renewed += count;
-                }
-            }
-            if (_leaseDistricts.Count > 0)
-            {
-                LeaseRules.KeepTrend(_leases.Trend, sum, renewed);
-            }
-            _leases.TrendDay += monthDays;
-            if (Verbose)
-            {
-                Logger?.Info("Company check (leases, the city's month): " + renewed + " renewal(s) of the city's leases in " + _leaseDistricts.Count + " district(s), the trend now "
+                Logger?.Info("Company check (leases, the city's month): " + renewed + " renewal(s) of the city's and the rivals' leases in " + _leaseDistricts.Count + " district(s), the trend now "
                              + LeaseRules.TrendOf(_leases.Trend) + " per mille: PASS");
             }
         }
+
+        private static int CityPressure(string district, int day) => Pressure(district);
 
         // The landlord's offer, fourteen days before the lease ends: a manager with the Leases task answers it at their hour inside their limit; otherwise
         // the owner is asked, as an escalation where the hierarchy runs and as a notice always.
         private void MakeOffer(LeaseFile l, CompanyShop shop, int day)
         {
-            l.Offer = LeaseRules.Offer(l, _state.Seed, LeaseTrend, Pressure(l.District));
-            l.Asked = day;
-            l.Answer = 0;
-            int days = l.End - day;
-            Logger?.Info("Company: the landlord of " + shop.Name + " asks " + LeaseRules.RentAt(l.Rent, l.Offer) + " a day (the game's rent " + l.Rent + ", " + l.Offer + " per mille over it, "
-                         + LeaseRules.OfferOver(l) + " over what is paid now) when the lease ends in " + days + " day(s), on day " + l.End + ".");
             ManagedPlace mp = ManagedAt(l.Place);
-            if (mp != null && mp.Own != null && ManagerRules.Runs(mp.Own.Tasks, mp.Kind, ManagerTask.Leases))
+            bool manager = mp != null && mp.Own != null && ManagerRules.Runs(mp.Own.Tasks, mp.Kind, ManagerTask.Leases);
+            int end = l.End;
+            OfferWas was = CompanyDay.Offer(this, l.Place, l, manager, LeaseTrend, Pressure(l.District), MarketOf(l), MonthDays, day);
+            int asked = was == OfferWas.Renewed ? l.Rise : l.Offer;
+            Logger?.Info("Company: the landlord of " + shop.Name + " asks " + LeaseRules.RentAt(l.Rent, asked) + " a day (the game's rent " + l.Rent + ", " + asked + " per mille over it) when the lease ends in "
+                         + (end - day) + " day(s), on day " + end + ": "
+                         + (was == OfferWas.Renewed ? "the days were skipped past the end, so it is renewed at their figure" : was == OfferWas.Manager ? "the manager answers it" : "the owner is asked") + ".");
+            if (was == OfferWas.Renewed)
             {
-                return;   // their hour is this morning's: inside their limit they answer it, past it they raise it to the owner
+                Settled(l, shop, day);
             }
-            AskOwner(l, shop, mp, day);
         }
 
-        // The owner asked: a notice that opens the Company app on the question, and an escalation where the hierarchy runs.
-        private void AskOwner(LeaseFile l, CompanyShop shop, ManagedPlace mp, int day)
+        // The market rent a day for a lease's premises, from the one function the property feature feeds (CompanyBridges.MarketRent); 0 where it knows none.
+        private static int MarketOf(LeaseFile l)
         {
-            if (HierarchyOn && mp != null && _hier.OpenOf(EscalationKind.Lease, l.Place) == null)
+            try
             {
-                Raise(EscalationKind.Lease, mp, LeaseRules.RentAt(l.Rent, l.Running), LeaseRules.RentAt(l.Rent, l.Offer), l.End - day, string.Empty, shop.Name, day);
+                return CompanyBridges.MarketRent != null ? Math.Max(0, CompanyBridges.MarketRent(l.District, l.Place, l.Rent)) : 0;
             }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
+        // The owner told of an offer (once for an offer: CompanyDay.Ask, which raises the escalation where the hierarchy runs): a notice that opens the Company app
+        // on the lease question. The question is answered from the app whether the hierarchy runs or not.
+        private void TellLease(LeaseFile l, CompanyShop shop, int day)
+        {
             Tell(NotificationType.Warning, "reallife_co_note_lease_offer", new Dictionary<string, string>
             {
                 { "business", shop.Name }, { "days", (l.End - day).ToString(CultureInfo.InvariantCulture) }, { "rent", CompanyText.Money(Monthly(LeaseRules.RentAt(l.Rent, l.Offer))) },
@@ -246,14 +251,7 @@ namespace RealLifeOverhaul.Economy
         // The lease came to its end and its answer was applied (or the landlord renewed at their own figure): said once, and the question closed.
         private void Settled(LeaseFile l, CompanyShop shop, int day)
         {
-            if (_hier != null)
-            {
-                Escalation e = _hier.OpenOf(EscalationKind.Lease, l.Place);
-                if (e != null)
-                {
-                    Close(e, EscalationState.Lapsed, string.Empty, day);
-                }
-            }
+            CompanyDay.LeaseClosed(this, l.Place, day);
             Logger?.Info("Company: the lease of " + shop.Name + " " + (l.Hold ? "was not renewed: month to month at the rent paid now and a premium of " + CompanyText.Share(LeaseRules.HoldPremium)
                                                                   : "was renewed for " + l.Term + " days to day " + l.End + ", the rent " + LeaseRules.RentAt(l.Rent, l.Rise) + " a day") + ".");
             Notify(NotificationType.Info, l.Hold ? "reallife_co_note_lease_hold" : "reallife_co_note_lease_renewed", new Dictionary<string, string>
@@ -271,18 +269,9 @@ namespace RealLifeOverhaul.Economy
         public void LeaseAnswer(string place, bool accept)
         {
             LeaseFile l = LeaseAt(place);
-            if (l == null || !LeaseRules.Respond(l, Save.Day, accept))
+            if (!CompanyDay.OwnerAnswers(this, place, l, accept, CompanyText.T("reallife_hier_you"), Save.Day))
             {
                 return;
-            }
-            Escalation e = _hier != null ? _hier.OpenOf(EscalationKind.Lease, place) : null;
-            if (e != null)
-            {
-                string who = CompanyText.T("reallife_hier_you");
-                Close(e, EscalationState.Resolved, who, Save.Day);
-                HierarchyEntry entry = _hier.Log(HierarchyLog.Settled, (int)Rung.Owner, who, place, Save.Day, Save.Hour);
-                entry.A = e.Id;
-                entry.B = e.Kind;
             }
             Logger?.Info("Company: the lease of " + ShopName(place) + ": the offer " + (accept ? "accepted" : "declined") + " by the owner, from day " + l.End + ".");
             Changed();
@@ -292,15 +281,11 @@ namespace RealLifeOverhaul.Economy
         public bool LeaseHaggle(string place)
         {
             LeaseFile l = LeaseAt(place);
-            if (l == null || !LeaseRules.CanHaggle(l, Save.Day))
+            bool asked;
+            bool less = CompanyDay.OwnerHaggles(this, place, l, Save.Day, out asked);
+            if (!asked)
             {
                 return false;
-            }
-            bool less = LeaseRules.Haggle(l, _state.Seed, Save.Day);
-            Escalation e = _hier != null ? _hier.OpenOf(EscalationKind.Lease, place) : null;
-            if (e != null)
-            {
-                e.B = LeaseRules.RentAt(l.Rent, l.Offer);
             }
             Notify(less ? NotificationType.Success : NotificationType.Warning, less ? "reallife_co_note_lease_less" : "reallife_co_note_lease_same",
                 new Dictionary<string, string> { { "business", ShopName(place) }, { "rent", CompanyText.Money(Monthly(LeaseRules.RentAt(l.Rent, l.Offer))) } }, 8f);
@@ -308,36 +293,65 @@ namespace RealLifeOverhaul.Economy
             return less;
         }
 
-        // A manager with the Leases task, at their hour: an offer inside their rise limit is answered by them; past it, the owner is asked. A mistake is a
-        // meaner answer: a fair offer declined, never one past the limit accepted.
+        // A manager with the Leases task, at their hour (CompanyDay.Lease, the one entry the run of the checks calls too): an offer inside their rise limit is answered
+        // by them; past it, the owner is asked, once. A mistake is a meaner answer: a fair offer declined, never one past the limit accepted.
         private void DecideLeases(ManagedPlace mp, int skill, int review, string who, int day, int hour)
         {
             LeaseFile l = LeasesOn ? _leases.Of(mp.Place.Place) : null;
-            if (l == null || !LeaseRules.Waiting(l, day) || mp.Shop == null)
+            if (l == null || mp.Shop == null)
             {
                 return;
             }
-            ManagerFile m = mp.Own;
-            int limit = ManagerCatalogue.Step(ManagerCatalogue.LeaseRises, m.LeaseStep);
-            bool fair = LeaseRules.Within(l, limit);
-            Took(mp, who, day - l.Asked);
-            if (!fair)
+            LeaseHour was = CompanyDay.Lease(this, mp.Place.Place, mp.Own, l, skill, review, who, day, hour);
+            if (was == LeaseHour.Accepted || was == LeaseHour.Declined)
             {
-                AskOwner(l, mp.Shop, mp, day);   // past the limit: it comes to the owner
-                return;
+                Decision d = _mgr.Decisions[_mgr.Decisions.Count - 1];
+                Logger?.Info("Company: " + who + " (manager, skill " + skill + ") " + (was == LeaseHour.Accepted ? "accepted" : "declined") + " the landlord's offer for " + mp.Place.Name + ": " + d.C
+                             + " a day against " + d.B + ", " + d.D + " per mille more" + (d.Mistake ? ", a mistake" : string.Empty) + ".");
             }
-            int roll;
-            bool slip = Slips(skill, review, day, mp.Place.Place, ManagerTask.Leases, string.Empty, out roll);
-            bool accept = fair && !slip;
-            LeaseRules.Respond(l, day, accept);
-            Decision d = Record(mp, ManagerTask.Leases, string.Empty, who, day, hour, accept != fair);
-            d.A = accept ? 1 : 0;
-            d.B = LeaseRules.RentAt(l.Rent, l.Running);
-            d.C = LeaseRules.RentAt(l.Rent, l.Offer);
-            d.D = LeaseRules.OfferOver(l);
-            d.E = l.End;
-            Logger?.Info("Company: " + who + " (manager, skill " + skill + ") " + (accept ? "accepted" : "declined") + " the landlord's offer for " + mp.Place.Name + ": " + d.C
-                         + " a day against " + d.B + ", " + d.D + " per mille more, inside their limit of " + limit + (accept != fair ? ", a mistake" : string.Empty) + ".");
+            else if (was == LeaseHour.PassedUp)
+            {
+                Logger?.Info("Company: " + who + " (manager) passed the landlord's offer for " + mp.Place.Name + " up to the owner, " + LeaseRules.OfferOver(l) + " per mille over the rent now, past their limit.");
+            }
+        }
+
+        /// <summary>
+        /// The question a landlord's offer asks the owner when it is theirs to answer (the offer made, not answered, and asked of them: <see cref="LeaseFile.Told"/>), as a
+        /// question that stands in no state: the hierarchy off, or none raised. Null for a number that is no lease's, or for a lease that waits for nobody.
+        /// </summary>
+        internal Escalation LeaseQuestion(int number)
+        {
+            for (int i = 0; LeasesOn && i < _leases.Leases.Count; i++)
+            {
+                LeaseFile l = _leases.Leases[i];
+                if (LeaseRules.QuestionId(l.Place) == number && l.Told != 0 && LeaseRules.Waiting(l, Today))
+                {
+                    return LeaseAsked(l);
+                }
+            }
+            return null;
+        }
+
+        /// <summary>The leases waiting on the owner, each as the question it asks: those the hierarchy has no open question for (it has none while it is off).</summary>
+        internal void LeaseQuestions(List<Escalation> into)
+        {
+            for (int i = 0; LeasesOn && i < _leases.Leases.Count; i++)
+            {
+                LeaseFile l = _leases.Leases[i];
+                if (l.Told != 0 && LeaseRules.Waiting(l, Today) && (!HierarchyOn || _hier.OpenOf(EscalationKind.Lease, l.Place) == null))
+                {
+                    into.Add(LeaseAsked(l));
+                }
+            }
+        }
+
+        private Escalation LeaseAsked(LeaseFile l)
+        {
+            return new Escalation
+            {
+                Id = LeaseRules.QuestionId(l.Place), Kind = (int)EscalationKind.Lease, Place = l.Place, Level = EscalationRules.LevelOwner, Day = l.Told, Moved = l.Told,
+                State = (int)EscalationState.Open, A = LeaseRules.RentAt(l.Rent, l.Running), B = LeaseRules.RentAt(l.Rent, l.Offer), C = l.End - Today, Detail = l.Name
+            };
         }
 
         // The question a lease asks the owner, in words, for the escalation's page.

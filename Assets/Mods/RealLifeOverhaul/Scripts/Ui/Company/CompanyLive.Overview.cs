@@ -135,18 +135,27 @@ namespace RealLifeOverhaul.Ui
         private void ReadWaiting(CompanyOverviewFacts o, CompanyFacts f, CompanyDirector d, CompanyView v, Words w)
         {
             var rows = new List<CompanyWaiting>(8);
-            if (d.HierarchyOn)
+            if (d.HierarchyOn || d.LeasesOn)
             {
-                HierarchyState h = d.HierarchyData;
                 Escalation first = null;
                 var rest = new List<Escalation>(8);
-                for (int i = 0; i < h.Escalations.Count; i++)
+                var held = new List<Escalation>(8);
+                if (d.HierarchyOn)
                 {
-                    Escalation e = h.Escalations[i];
-                    if (!e.Open || e.Level < EscalationRules.LevelOwner)
+                    HierarchyState h = d.HierarchyData;
+                    for (int i = 0; i < h.Escalations.Count; i++)
                     {
-                        continue;
+                        Escalation e = h.Escalations[i];
+                        if (e.Open && e.Level >= EscalationRules.LevelOwner)
+                        {
+                            held.Add(e);
+                        }
                     }
+                }
+                d.LeaseQuestions(held);   // a landlord's offer is the owner's to answer with the hierarchy off, or with no question raised for it
+                for (int i = 0; i < held.Count; i++)
+                {
+                    Escalation e = held[i];
                     if (first == null && !v.Later.Contains(e.Id))
                     {
                         first = e;

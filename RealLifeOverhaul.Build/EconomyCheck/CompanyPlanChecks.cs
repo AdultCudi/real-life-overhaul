@@ -196,9 +196,8 @@ internal static partial class Program
         first.Hours = 40;
         first.Overtime = true;
         first.Blocks.Add(new RotaBlock { From = 7, To = 10, Crew = 2 });
-        first.Shifts = 2;
         RotaPlanFile copy = RotaPlanRules.Copy(set, first.Id, "Standard week copy");
-        Check(copy != null && copy.Id == 2 && copy.Name == "Standard week copy" && copy.Hours == 40 && copy.Overtime && copy.Shifts == 2 && copy.Blocks.Count == 1 && copy.Blocks[0].Crew == 2,
+        Check(copy != null && copy.Id == 2 && copy.Name == "Standard week copy" && copy.Hours == 40 && copy.Overtime && copy.Blocks.Count == 1 && copy.Blocks[0].Crew == 2,
             "plan copy: a new number, the name given, the figures and the floor of the plan it was made from");
         first.Blocks.Add(new RotaBlock { From = 12, To = 14, Crew = 3 });
         Check(copy.Blocks.Count == 1, "plan copy: the copy is its own, a change to the first does not reach it");
@@ -211,12 +210,12 @@ internal static partial class Program
         Check(RotaPlanRules.Add(set, "Too many") == null && RotaPlanRules.Copy(set, 1, "Too many") == null && set.Plans.Count == RotaPlanRules.PlansMost, "plan new: at most " + RotaPlanRules.PlansMost + " plans a business");
         Check(RotaPlanRules.Copy(set, 99, "x") == null, "plan copy: of a plan there is not, nothing");
         // Putting a plan right.
-        var wild = new RotaPlanFile { Shifts = 9, Hours = 3, Parity = 7, From = -4, To = -9 };
+        var wild = new RotaPlanFile { Hours = 3, Parity = 7, From = -4, To = -9 };
         wild.Blocks.Add(new RotaBlock { From = 20, To = 30, Crew = 99 });
         wild.Blocks.Add(new RotaBlock { From = 5, To = 5, Crew = 0 });
         wild.Blocks.Add(new RotaBlock { From = 6, To = 9, Crew = 3 });
         RotaPlanRules.Tidy(wild);
-        bool fine = wild.Shifts == 2 && wild.Hours == RotaPlanRules.HoursLeast && wild.Parity == RotaPlanRules.Even && wild.From == 0 && wild.To == 0 && wild.Blocks.Count <= RotaPlanRules.BlocksMost;
+        bool fine = wild.Hours == RotaPlanRules.HoursLeast && wild.Parity == RotaPlanRules.Even && wild.From == 0 && wild.To == 0 && wild.Blocks.Count <= RotaPlanRules.BlocksMost;
         int end = 0;
         for (int i = 0; i < wild.Blocks.Count; i++)
         {
@@ -238,7 +237,7 @@ internal static partial class Program
     {
         var sets = new Dictionary<string, RotaPlanSet>();
         RotaPlanSet a = PlanSet(new RotaPlanFile { Id = 1, Name = "Standard week", Hours = 40, Overtime = false },
-            new RotaPlanFile { Id = 2, Name = "Holiday, week", From = 220, To = 227, Parity = RotaPlanRules.Odd, Hours = 32, Overtime = true, Shifts = 2 });
+            new RotaPlanFile { Id = 2, Name = "Holiday, week", From = 220, To = 227, Parity = RotaPlanRules.Odd, Hours = 32, Overtime = true });
         a.Plans[0].Blocks.Add(new RotaBlock { From = 7, To = 10, Crew = 2 });
         a.Plans[0].Blocks.Add(new RotaBlock { From = 17, To = 21, Crew = 5 });
         a.Active = 1;
@@ -250,7 +249,7 @@ internal static partial class Program
         RotaPlanSet r = ok && back.ContainsKey("Main Street~12") ? back["Main Street~12"] : null;
         bool same = ok && back.Count == 2 && r != null && r.Plans.Count == 2 && r.Active == 1 && r.NextId == 3 && r.Plans[0].Name == "Standard week" && r.Plans[0].Hours == 40
                     && r.Plans[0].Blocks.Count == 2 && r.Plans[0].Blocks[1].From == 17 && r.Plans[0].Blocks[1].Crew == 5 && r.Plans[1].From == 220 && r.Plans[1].To == 227
-                    && r.Plans[1].Parity == RotaPlanRules.Odd && r.Plans[1].Overtime && r.Plans[1].Shifts == 2 && r.Plans[1].Name == "Holiday  week" && back["Harbour~4"].Plans[0].Id == 3;
+                    && r.Plans[1].Parity == RotaPlanRules.Odd && r.Plans[1].Overtime && r.Plans[1].Name == "Holiday  week" && back["Harbour~4"].Plans[0].Id == 3;
         Check(same, "plan save: every plan, its weeks, days, hours, overtime, shifts and floor, and which is chosen, round trip");
         Check(RotaPlanStore.Write(back) == line, "plan save: writing what was read gives the same line");
         Check(RotaPlanStore.Read("v=2^p:x|1|2|", new Dictionary<string, RotaPlanSet>()) == false, "plan save: a line of another version is refused");

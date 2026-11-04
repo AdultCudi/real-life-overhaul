@@ -134,9 +134,16 @@ namespace RealLifeOverhaul.Economy
         /// <summary>What a rival buying up a district adds to the rises landlords ask at a lease's renewal there, per mille; 0 where none does.</summary>
         public static Func<string, int> Pressure;
 
+        /// <summary>
+        /// The one function the property feature feeds: the market rent a day for a lease's premises (the district, the place and the game's rent a day now), whole
+        /// money; 0 or null where it knows none. A landlord's offer moves toward it (LeaseRules.Offer); the city's rise ring stays the lease rules'.
+        /// </summary>
+        public static Func<string, string, int, int> MarketRent;
+
         public static void Reset()
         {
             Pressure = null;
+            MarketRent = null;
             Professionals = null;
             HireProfessional = null;
             Comfort = null;
@@ -220,7 +227,7 @@ namespace RealLifeOverhaul.Economy
         private static readonly string[] CrowdTypes = { "nightclub", "cinema", "theater", "casino" };                                  // many people in one room: a fire safety certificate
         // tables: an outdoor seating permit and a fire safety certificate; the last two: Scripts/Shops
         private static readonly string[] SeatingTypes = { "coffeeshop", "fastfoodrestaurant", "teabar", "icecreamparlour" };
-        private static readonly string[] CellarTypes = { "liquorstore", "wholesalestore", "importexport" };                            // goods held in bulk: bonded storage
+        private static readonly string[] CellarTypes = { "warehouse" };                                                                // goods held in bulk: bonded storage
         private static readonly string[] WellOffTypes = { "jewelrystore", "electronicsstore", "cardealership", "furniturestore", "clothingstore", "nightclub" };
         private static readonly string[] PriceTypes = { "supermarket", "fastfoodrestaurant", "fruitandvegetablestore", "liquorstore", "gasstation", "giftshop", "tobacconist" };
         private const string DeliveryDriver = "ba:skill_deliverydriver";
@@ -568,7 +575,7 @@ namespace RealLifeOverhaul.Economy
                     {
                         continue;
                     }
-                    f = new StaffFile { Id = e.id, Standing = CompanyCatalogue.Clamp(CompanyCatalogue.StandingStart + CompanyBridges.EsteemNow(), 0, CompanyCatalogue.StandingMost) };
+                    f = StaffRules.Hire(e.id, CompanyBridges.EsteemNow());
                     staff.Add(f);
                     ById[e.id] = f;
                 }

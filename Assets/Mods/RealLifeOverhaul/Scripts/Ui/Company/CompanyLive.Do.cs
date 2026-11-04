@@ -61,6 +61,16 @@ namespace RealLifeOverhaul.Ui
                 case CompanyDo.Dismiss:
                     d.HierarchyDismiss(a.A);
                     return true;
+                case CompanyDo.LeaseAnswer:
+                    if (a.A == CompanyDirector.AnswerHaggle)
+                    {
+                        d.LeaseHaggle(a.S);
+                    }
+                    else
+                    {
+                        d.LeaseAnswer(a.S, a.A == CompanyDirector.AnswerAgree);
+                    }
+                    return true;
                 case CompanyDo.TryNow:
                     d.HierarchyTryNow(a.A);
                     return true;

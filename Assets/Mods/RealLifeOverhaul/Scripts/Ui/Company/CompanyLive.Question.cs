@@ -163,13 +163,7 @@ namespace RealLifeOverhaul.Ui
         // About what a raise costs over a year: the difference an hour over the hours a working day holds and the working days of a year.
         private static int YearCost(StaffFile f, int deltaHundredths)
         {
-            if (deltaHundredths <= 0 || f.DayHours <= 0)
-            {
-                return 0;
-            }
-            long perDay = (long)deltaHundredths * f.DayHours / 10000L;   // whole money a working day
-            long days = (long)CompanyGame.DaysPerYear * 5 / 7;
-            return (int)Math.Min(int.MaxValue / 4, perDay * days);
+            return StaffRules.YearOf(deltaHundredths, f.DayHours, CompanyGame.DaysPerYear * 5 / 7);
         }
 
         // A landlord's offer at a lease's renewal: renew, haggle for less (once) or hold over month to month.
@@ -190,21 +184,21 @@ namespace RealLifeOverhaul.Ui
                 new CompanyChoice
                 {
                     Name = w.T("reallife_co_q_c_renew", "Renew at the offered rent"), Button = w.T("reallife_co_q_renew_do", "Renew the lease"), Note = w.T("reallife_co_q_standing_note", "standing"),
-                    Act = CompanyAct.Of(CompanyDo.Settle, null, e.Id, CompanyDirector.AnswerAgree),
+                    Act = CompanyAct.Of(CompanyDo.LeaseAnswer, e.Place, CompanyDirector.AnswerAgree),
                     Lines = new[] { new CompanyConsequence { Text = w.F("reallife_co_q_rent_year", "About {amount} a year more in rent", "amount", w.Money(yearMore)), Tone = UiConsequence.Loss,
                         Change = 1 } }
                 },
                 new CompanyChoice
                 {
                     Name = w.T("reallife_co_q_c_haggle", "Haggle for a smaller rise"), Button = w.T("reallife_co_q_haggle_do", "Haggle"), Note = w.T("reallife_co_q_once_note", "once"),
-                    Act = CompanyAct.Of(CompanyDo.Settle, null, e.Id, CompanyDirector.AnswerHaggle), Disabled = l != null && l.Haggled, Why = l != null && l.Haggled ? w.T("reallife_co_q_haggled",
+                    Act = CompanyAct.Of(CompanyDo.LeaseAnswer, e.Place, CompanyDirector.AnswerHaggle), Disabled = l != null && l.Haggled, Why = l != null && l.Haggled ? w.T("reallife_co_q_haggled",
                         "The landlord was asked once already.") : null,
                     Lines = new[] { new CompanyConsequence { Text = w.T("reallife_co_q_haggle_line", "The landlord may meet you half way, or hold firm"), Tone = 0, Change = 0 } }
                 },
                 new CompanyChoice
                 {
                     Name = w.T("reallife_co_q_c_hold", "Hold over, month to month"), Button = w.T("reallife_co_q_hold_do", "Hold over"), Note = w.T("reallife_co_q_nocost_note", "no cost"),
-                    Act = CompanyAct.Of(CompanyDo.Settle, null, e.Id, CompanyDirector.AnswerRefuse),
+                    Act = CompanyAct.Of(CompanyDo.LeaseAnswer, e.Place, CompanyDirector.AnswerRefuse),
                     Lines = new[] { new CompanyConsequence { Text = w.T("reallife_co_q_hold_line", "A premium on the rent, and no term to rely on"), Tone = -1, Change = 1 } }
                 }
             };

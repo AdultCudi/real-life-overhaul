@@ -68,6 +68,7 @@ namespace RealLifeOverhaul.Economy
         public static readonly int[] Budgets = { 0, 500, 1000, 2500, 5000, 10000, 25000, 50000 };  // a month, at prices: overtime and hires
         public const int BudgetDefault = 3;
         public const int KeepMost = 60;             // staff a place may be told to keep at most
+        public const int HireCrewMost = 12;         // crew a manager hires a place up to: past it the gap is the owner's (the hierarchy raises it)
         public static readonly int[] MarketingSteps = { 0, 250, 500, 1000, 2500, 5000 };   // a month, at prices: campaigns a manager may start
         public const int MarketingDefault = 2;
         public static readonly int[] LeaseRises = { 0, 30, 50, 80, 120, 200 };             // thousandths a renewal may raise the rent that a manager agrees on their own

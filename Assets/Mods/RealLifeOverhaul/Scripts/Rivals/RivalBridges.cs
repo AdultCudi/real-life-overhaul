@@ -36,6 +36,12 @@ namespace RealLifeOverhaul.Rivals
         /// <summary>The playthrough's id the stock market keeps, for a new file's seed. Default: none (the money is used).</summary>
         public static Func<ulong> Playthrough;
 
+        // ---- the rivals' own businesses (RivalFirms): what the city's landlords have been asking, and a rival's renewal told to the company that sets that trend
+        /// <summary>What the city's landlords have been asking at a renewal, per mille. Default: nothing known (the landlord's own draw alone).</summary>
+        public static Func<int> LeaseTrend;
+        /// <summary>A rival's lease renewed in a district with this rise, per mille over its rent. Default: nobody is told.</summary>
+        public static Action<string, int> LeaseRenewed;
+
         // ---- the stock market (Markets)
         /// <summary>The market runs on this machine on its own (not following another player's). Default: no.</summary>
         public static Func<bool> MarketHere;
@@ -98,6 +104,8 @@ namespace RealLifeOverhaul.Rivals
 
         public static void Reset()
         {
+            LeaseTrend = null;
+            LeaseRenewed = null;
             Worth = null;
             Cycle = null;
             Playthrough = null;
