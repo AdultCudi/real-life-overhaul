@@ -31389,7 +31389,7 @@
   "reallife_ui_test_estate": "在测试包中打开房产",
   "reallife_ui_test_estate_rents": "打开租金地图",
   "reallife_ui_test_dealer": "在测试包中打开汽车展厅",
-  "reallife_ui_test_estate_switch": "把房产和汽车展厅切回旧页面，然后重新开启房产",
+  "reallife_ui_test_estate_switch": "把房产和汽车展厅切回旧页面再切回来",
   "reallife_ui_estate_nav_mine": "我的",
   "reallife_ui_estate_nav_tenants": "租户",
   "reallife_ui_estate_nav_works": "工程",

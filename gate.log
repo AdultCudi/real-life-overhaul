@@ -1,0 +1,13 @@
+CatalogueCheck: 2 CHECK(S) FAILED
+CatalogueCheck fail: EstateLive.Unit.cs: "reallife_ui_estate_bed_" is not in en.json
+CatalogueCheck fail: options: the test button reallife_ui_test_estate_switch has 15 words (at most 13): Flip Property and the Car Showroom back to the old pages, then Property on again
+NavCheck: ALL CHECKS PASSED (18206)
+EconomyCheck: 2 of 755255 CHECKS FAILED
+EconomyCheck fail: uptown front: the layout takes 299 ms; 539 buildings and 11 + 183 fillers are about 0.4 s of copies behind the loading screen (wanted under 2.7 s)
+EconomyCheck fail: flare city costs: a slice of the residents' day stays near its 2 ms (18.21 ms at worst, 55 slices, 150 ms in all over three days)
+PlannerCheck: ALL CHECKS PASSED (225)
+ContractCheck: ALL CHECKS PASSED (5439)
+StandardCheck: ALL CHECKS PASSED (163092)
+check.pl non-zero counts: 0
+locales: LOCALES OK
+STOP: NOT EVERY CHECK PASSED
