@@ -188,7 +188,7 @@ namespace RealLifeOverhaul.Ui
             ref PhoneItem it = ref _items.Items[entry];
             tile = new UiPhoneApp
             {
-                Icon = it.Picture > 0 ? UiIcon.None : it.Icon != UiIcon.None ? it.Icon : PhoneLooks.OtherMods, Tint = it.Tint, Label = it.Title, Badge = it.Badge,
+                Icon = it.Picture != 0 ? UiIcon.None : it.Icon != UiIcon.None ? it.Icon : PhoneLooks.OtherMods, Tint = it.Tint, Label = it.Title, Badge = it.Badge,
                 Picture = it.Picture, Minis = minis
             };
         }
