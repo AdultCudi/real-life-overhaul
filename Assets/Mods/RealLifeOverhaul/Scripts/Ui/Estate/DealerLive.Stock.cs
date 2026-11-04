@@ -117,7 +117,7 @@ namespace RealLifeOverhaul.Ui
                 var m = new UiCatalogueModel
                 {
                     Cards = cards.ToArray(), CardCount = cards.Count, Chosen = chosen,
-                    EmptyTitle = DealerText.T("reallife_dealer_row_no_dealership"), EmptyBody = DealerText.T("reallife_ui_dealer_empty_stock_body"), EmptyIcon = UiIcon.Car
+                    EmptyTitle = DealerText.T(_s.Yards.Count == 0 ? "reallife_dealer_row_no_dealership" : "reallife_dealer_empty_stock"), EmptyBody = DealerText.T("reallife_ui_dealer_empty_stock_body"), EmptyIcon = UiIcon.Car
                 };
                 var runs = new List<int>(8);
                 if (picked != null)
@@ -386,6 +386,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 _m.Left = new[] { new UiFactCardModel { Title = DealerText.T("reallife_ibox_sec_now"), Heading = true, Lines = now.ToArray() } };
                 _m.Right = new[] { new UiFactCardModel { Title = DealerText.T("reallife_ui_dealer_terms"), Heading = true, Lines = terms.ToArray(), Actions = actions.ToArray() } };
+                _m.Lower = Trend(RealLifeOverhaul.Economy.Dealership.ReportKind.Revenue, y.Place, "reallife_dealer_report_revenue");
             }
         }
     }

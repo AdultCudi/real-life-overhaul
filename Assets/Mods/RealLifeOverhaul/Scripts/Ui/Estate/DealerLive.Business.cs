@@ -459,6 +459,7 @@ namespace RealLifeOverhaul.Ui
                     UiFactLine.Say(DealerText.T("reallife_dealer_event_campaigns"))
                 };
                 _m.Left = new[] { new UiFactCardModel { Title = DealerText.T("reallife_ibox_sec_terms"), Heading = true, Lines = terms.ToArray() } };
+                _m.Lower = Trend(RealLifeOverhaul.Economy.Dealership.ReportKind.Visitors, null, "reallife_dealer_report_visitors");
                 var where = new List<UiFactLine>(5);
                 var actions = new List<UiActionModel>(1);
                 if (_s.Yards.Count == 0)

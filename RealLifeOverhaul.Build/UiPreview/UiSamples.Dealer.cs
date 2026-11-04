@@ -32,6 +32,7 @@ internal static partial class UiSamples
                 m = DealerBase(t, 1, null);
                 m.Nav = new UiNavEntry[0];
                 m.Shape = EstateShape.Off;
+                m.OffIcon = UiIcon.Car;
                 m.OffTitle = W(t, "reallife_dealer_off_title", "The Car Showroom is off");
                 m.OffBody = W(t, "reallife_dealer_off_body", "Turn it on in Mod settings, or load a city to run a showroom.");
                 break;
@@ -107,7 +108,7 @@ internal static partial class UiSamples
         var c = new UiCatalogueModel
         {
             Cards = cards.ToArray(), CardCount = cards.Count, Chosen = cards.Count > 0 ? 0 : -1,
-            EmptyTitle = W(t, "reallife_dealer_row_no_dealership", "No dealership yet"), EmptyBody = W(t, "reallife_ui_dealer_empty_stock_body", "The cars you buy appear here with their pictures, their prices and their days on the lot."), EmptyIcon = UiIcon.Car
+            EmptyTitle = W(t, "reallife_dealer_empty_stock", "No car stands on the lots of the showrooms shown."), EmptyBody = W(t, "reallife_ui_dealer_empty_stock_body", "The cars you buy appear here with their pictures, their prices and their days on the lot."), EmptyIcon = UiIcon.Car
         };
         var keys = new string[cards.Count];
         for (int i = 0; i < keys.Length; i++)
@@ -201,6 +202,7 @@ internal static partial class UiSamples
                     Actions = new[] { EstateButton(runs, W(t, "reallife_dealer_button_relay", "Lay the lot out again"), UiButtonKind.Secondary, UiIcon.Grid, UiAction.Count) }
                 }
             };
+            m.Lower = DayLine(t, "reallife_dealer_report_revenue", "Takings from cars", 9000f, 5200f, 600f, EstateCharts.Dollars);
             return;
         }
         var rows = new List<UiDataRow>
@@ -592,6 +594,7 @@ internal static partial class UiSamples
                     Actions = new[] { EstateButton(runs, W(t, "reallife_dealer_button_event", "Book the event"), UiButtonKind.Primary, UiIcon.Megaphone, UiAction.Alt) }
                 }
             };
+            m.Lower = DayLine(t, "reallife_dealer_report_visitors", "Visitors", 24f, 8f, 1.2f, v => ((int)Math.Round(v)).ToString());
             return;
         }
         var rows = new List<UiDataRow>

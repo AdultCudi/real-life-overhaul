@@ -259,8 +259,8 @@ internal static partial class UiSamples
             actions.Add(EstateButton(runs, W(t, "reallife_estate_btn_close_agency", "Close the agency"), UiButtonKind.Destructive, UiIcon.None, UiAction.Count));
         }
         var side = new UiFactCardModel { Title = W(t, "reallife_estate_tab_agency", "Agency"), Heading = true, Lines = lines.ToArray(), Actions = actions.ToArray() };
-        TableOf(m, UiIcon.Key, W(t, "reallife_estate_tab_agency", "Agency"), closed ? W(t, "reallife_estate_row_no_agency", "No agency yet") : "7 5th Avenue", cols, rows, side,
-            closed ? W(t, "reallife_estate_row_no_agency", "No agency yet") : W(t, "reallife_estate_row_no_instructions", "No instructions"), W(t, "reallife_estate_agency_open_what", "Run the agency from an office you hold."));
+        TableOf(m, UiIcon.Key, W(t, "reallife_estate_tab_agency", "Agency"), closed ? string.Empty : "7 5th Avenue", cols, rows, side,
+            closed ? W(t, "reallife_estate_row_no_agency", "No agency yet") : W(t, "reallife_estate_row_no_instructions", "No instructions"), closed ? string.Empty : W(t, "reallife_estate_agency_open_what", "Run the agency from an office you hold."));
         if (!closed)
         {
             m.Lower = EstateCharts.Bars(W(t, "reallife_estate_agency_reputation", "Reputation by district"), new[] { "Midtown", "Uptown", "Garment District", "Murray Hill" }, new[] { 62f, 48f, 55f, 31f }, null, EstateCharts.Percent);

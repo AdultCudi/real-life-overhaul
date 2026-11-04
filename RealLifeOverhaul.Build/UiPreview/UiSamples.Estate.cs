@@ -217,7 +217,7 @@ internal static partial class UiSamples
         m.Shape = EstateShape.Roll;
         m.HeadIcon = home;
         m.HeadTitle = W(t, "reallife_ui_estate_roll_title", "The rent roll");
-        m.HeadSub = W(t, "reallife_ui_estate_roll_sub", "{units} units in {buildings} buildings, {waiting} waiting for you").Replace("{units}", state == "roll" ? "12" : state == "roll_twenty" ? "20" : "1").Replace("{buildings}", state == "roll" ? "9" : state == "roll_twenty" ? "13" : "1").Replace("{waiting}", "2");
+        m.HeadSub = state == "roll_empty" ? null : W(t, "reallife_ui_estate_roll_sub", "{units} units in {buildings} buildings, {waiting} waiting for you").Replace("{units}", state == "roll" ? "12" : state == "roll_twenty" ? "20" : "1").Replace("{buildings}", state == "roll" ? "9" : state == "roll_twenty" ? "13" : "1").Replace("{waiting}", "2");
         m.FigLabels = new[] { W(t, "reallife_ui_estate_fig_due", "Due"), W(t, "reallife_ui_estate_fig_collected", "Collected"), W(t, "reallife_ui_estate_fig_arrears", "In arrears"), W(t, "reallife_ui_estate_fig_empty", "Empty, asking") };
         m.FigValues = state == "roll_twenty" ? new[] { "$86,500", "$77,700", "$8,800", "$4,100" } : state == "roll" ? new[] { "$47,500", "$38,700", "$8,800", "$4,100" } : state == "roll_first" ? new[] { "$2,600", "$2,600", "$0", "$0" } : new[] { "$0", "$0", "$0", "$0" };
         m.FigInks = new[] { UiRole.None, UiRole.None, state.StartsWith("roll_t") || state == "roll" ? UiRole.DangerText : UiRole.None, state.StartsWith("roll_t") || state == "roll" ? UiRole.WarnText : UiRole.None };

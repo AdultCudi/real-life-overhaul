@@ -240,8 +240,8 @@ namespace RealLifeOverhaul.Ui
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_day"), Kind = UiCellKind.Date, Width = 104f }
                 };
                 TableShape(UiIcon.Key, EstateText.T("reallife_estate_tab_agency"), agency.Running ? EstateGame.NameOf(agency.Office)
-                    : EstateText.T("reallife_estate_row_no_agency"), null, null, cols, rows, keys, AgencySide(agency),
-                    EstateText.T(agency.Running ? "reallife_estate_row_no_instructions" : "reallife_estate_row_no_agency"), EstateText.T("reallife_estate_agency_open_what"));
+                    : string.Empty, null, null, cols, rows, keys, AgencySide(agency),
+                    EstateText.T(agency.Running ? "reallife_estate_row_no_instructions" : "reallife_estate_row_no_agency"), agency.Running ? EstateText.T("reallife_estate_agency_open_what") : string.Empty);
                 if (agency.Running)
                 {
                     var names = new List<string>(6);
