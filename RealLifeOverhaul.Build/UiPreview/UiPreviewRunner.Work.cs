@@ -22,7 +22,7 @@ public static partial class UiPreviewRunner
             {
                 Name = id + "_" + st, AppName = title, Icon = icon, Backdrop = id == "career" && st.StartsWith("my_job") ? "05.jpg" : i % 2 == 0 ? "13.jpg" : "02.jpg",
                 Bar = () => UiSamples.ShellBar(4, false), HoverCommand = UiAppWindow.NavCommand, HoverArg = 1, Walk = Moves("DDR"),
-                Lay = (s, f, d, k) => make(English, st).Lay(s, f, d, k)
+                Lay = (s, f, d, k) => make(ModEnglish, st).Lay(s, f, d, k)
             });
         }
     }
