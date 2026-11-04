@@ -63,6 +63,24 @@ namespace RealLifeOverhaul.Photos
         }
 
         /// <summary>
+        /// Reads the sidecar beside each listed photo into its entry, on the worker that listed the folder: a few hundred
+        /// small files once when a save is followed, never on a frame. A photo with no sidecar, or one that cannot be read, keeps no facts.
+        /// </summary>
+        public static int ReadSides(string folder, List<PhotoEntry> photos)
+        {
+            int read = 0;
+            for (int i = 0; i < photos.Count; i++)
+            {
+                if (PhotoSidecarFile.Read(Path.Combine(folder, photos[i].Name), out PhotoSidecar side))
+                {
+                    photos[i].Take(side);
+                    read++;
+                }
+            }
+            return read;
+        }
+
+        /// <summary>
         /// The path for a new photo, numbered past any of the same second and never a file that is there; makes the folder
         /// and writes save.txt. Null, and nothing to write over, if every number of that second is taken.
         /// </summary>

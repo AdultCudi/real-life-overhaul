@@ -15,9 +15,17 @@ namespace RealLifeOverhaul.Ui
         private static ViewfinderScreen _screen;
         private static bool _up;
 
+        private static Func<string, Sprite> _next;
+        private static Sprite _latest;
+        private static Texture _latestOf;
+
+        /// <summary>The newest photo's small copy, asked for by the chrome's thumbnail; set by the camera.</summary>
+        public static Func<Texture> Newest;
+
         public static bool Wanted => UiDirector.On && UiFonts.Ready && UiScreenSwitches.On("viewfinder");
 
-        public static bool Show(Action close, Action shoot, Action grid, Action gallery, Action<int> filter, Action<int> frame, Action<int> mode)
+        /// <summary>Shows the chrome; false, nothing shown, when the kit's switch is off or the kit is not up.</summary>
+        public static bool Show(ViewfinderActions actions)
         {
             if (!Wanted)
             {
@@ -50,13 +58,12 @@ namespace RealLifeOverhaul.Ui
                 _host.View.Scale = UiTokens.CanvasPerPx;
                 _host.Exclusive = false;
             }
-            _screen.OnClose = close;
-            _screen.OnShutter = shoot;
-            _screen.OnGrid = grid;
-            _screen.OnOpenGallery = gallery;
-            _screen.OnFilter = filter;
-            _screen.OnFrame = frame;
-            _screen.OnMode = mode;
+            _screen.Actions = actions;
+            if (UiPictures.Find != Find)
+            {
+                _next = UiPictures.Find;
+                UiPictures.Find = Find;
+            }
             _root.SetActive(true);
             _host.Show();
             _up = true;
@@ -66,6 +73,7 @@ namespace RealLifeOverhaul.Ui
         public static void Hide()
         {
             _up = false;
+            DropLatest();
             if (_host != null)
             {
                 _host.Hide();
@@ -90,22 +98,49 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
-            _screen.Model.Modes = model.Modes;
-            _screen.Model.Mode = model.Mode;
-            _screen.Model.Place = model.Place;
-            _screen.Model.When = model.When;
-            _screen.Model.Count = model.Count;
-            _screen.Model.Filters = model.Filters;
-            _screen.Model.Filter = model.Filter;
-            _screen.Model.Frames = model.Frames;
-            _screen.Model.Frame = model.Frame;
-            _screen.Model.Grid = model.Grid;
-            _screen.Model.Toast = model.Toast;
-            _screen.Model.Open = model.Open;
-            _screen.Model.Move = model.Move;
-            _screen.Model.Select = model.Select;
-            _screen.Model.Back = model.Back;
+            _screen.Model.Take(model);
             _screen.Touch();
+        }
+
+        /// <summary>The picture key of the newest photo on the chrome: answered here, from the camera's small copy of it.</summary>
+        public const string LatestKey = "viewfinder:latest";
+
+        // The thumbnail's sprite, cut from the small copy once and made again when the newest photo changes; let go when the chrome hides.
+        private static Sprite Find(string key)
+        {
+            if (key != LatestKey)
+            {
+                return _next != null ? _next(key) : null;
+            }
+            Texture texture = Newest != null ? Newest() : null;
+            if (texture == null)
+            {
+                DropLatest();
+                return null;
+            }
+            if (_latest == null || _latestOf != texture)
+            {
+                DropLatest();
+                var t2 = texture as Texture2D;
+                if (t2 == null)
+                {
+                    return null;
+                }
+                _latest = Sprite.Create(t2, new Rect(0f, 0f, t2.width, t2.height), new Vector2(0.5f, 0.5f), 100f);
+                _latest.name = "RealLifeOverhaul Newest Photo";
+                _latestOf = texture;
+            }
+            return _latest;
+        }
+
+        private static void DropLatest()
+        {
+            if (_latest != null)
+            {
+                UnityEngine.Object.Destroy(_latest);
+            }
+            _latest = null;
+            _latestOf = null;
         }
     }
 }

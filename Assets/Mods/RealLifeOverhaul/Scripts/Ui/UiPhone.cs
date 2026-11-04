@@ -15,7 +15,7 @@ namespace RealLifeOverhaul.Ui
         public int Picture;          // another mod's own picture (UiPictures), drawn instead of the glyph; 0 or less for none
         public bool Folder;          // a folder: Minis are its first apps' glyphs
         public UiIcon[] Minis;
-        public bool HasPicture => Picture > 0;
+        public bool HasPicture => Picture != 0;   // its own picture, or the mark the kit makes (UiForeignMark)
     }
 
     /// <summary>What the phone shows: its name, the time, a page of tiles, what comes next, the radio and the pages.</summary>
@@ -400,7 +400,7 @@ namespace RealLifeOverhaul.Ui
             else if (app.HasPicture)
             {
                 float p = Glyph + UiTokens.S2;
-                UiDraw.Picture(s, inside, tx + (Tile - p) / 2f, y + (Tile - p) / 2f, p, app.Picture);
+                UiDraw.AppMark(s, inside, tx + (Tile - p) / 2f, y + (Tile - p) / 2f, p, app.Picture);
             }
             else
             {

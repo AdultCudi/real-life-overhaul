@@ -193,9 +193,9 @@ namespace RealLifeOverhaul.Ui
             float tx = x + UiTokens.S2;
             int tile = UiDraw.Tile(s, inside, tx, y + (h - RowTile) / 2f, RowTile, r.Tint, false);
             float g = UiTokens.S6;
-            if (r.Picture > 0)
+            if (r.Picture != 0)
             {
-                UiDraw.Picture(s, inside.In(tile), tx + (RowTile - g) / 2f, y + (h - g) / 2f, g, r.Picture);   // another mod's app: its own picture, as on the phone
+                UiDraw.AppMark(s, inside.In(tile), tx + (RowTile - g) / 2f, y + (h - g) / 2f, g, r.Picture);   // another mod's app: its own picture or the kit's mark, as on the phone
             }
             else
             {

@@ -22,21 +22,31 @@ namespace RealLifeOverhaul.Ui
 
         private void FillPrices(NewsModel model, OutlookBook book)
         {
-            int bp = BasketChange(book, out string led);
+            int bp = BasketChange(book, out string led, out int fromDay);
             model.Chip = led.Length > 0 ? OutlookText.T("reallife_news_chip_led", "good", led) : model.Chip;
-            model.Lead = BasketSentence(bp);
-            model.Body = led.Length > 0 ? OutlookText.T("reallife_news_led", "good", led) : string.Empty;
-            model.Figures = new[]
+            if (fromDay > 0)
             {
-                new UiFigureModel
+                // No month of prices is kept yet: the basket has no change to give, so the page says from which day, never that prices held still.
+                model.Lead = OutlookText.T("reallife_news_basket_label") + ": " + OutlookText.T("reallife_news_not_yet", "day", fromDay.ToString(Inv));
+                model.Body = string.Empty;
+                model.Figures = new UiFigureModel[0];
+            }
+            else
+            {
+                model.Lead = BasketSentence(bp);
+                model.Body = led.Length > 0 ? OutlookText.T("reallife_news_led", "good", led) : string.Empty;
+                model.Figures = new[]
                 {
-                    Label = OutlookText.T("reallife_news_basket_label"),
-                    Value = (bp > 0 ? "+" : string.Empty) + (bp / 100f).ToString("0.0", Inv) + "%",
-                    Change = OutlookText.T("reallife_news_in_month"),
-                    Rising = bp > 0,
-                    Good = bp <= 0
-                }
-            };
+                    new UiFigureModel
+                    {
+                        Label = OutlookText.T("reallife_news_basket_label"),
+                        Value = (bp > 0 ? "+" : string.Empty) + (bp / 100f).ToString("0.0", Inv) + "%",
+                        Change = OutlookText.T("reallife_news_in_month"),
+                        Rising = bp > 0,
+                        Good = bp <= 0
+                    }
+                };
+            }
             model.TableTitle = OutlookText.T("reallife_news_prices_shops");
             model.Table = RetailTable(true);
             model.SideChart = GoodsChart();
@@ -44,14 +54,32 @@ namespace RealLifeOverhaul.Ui
             model.Moves = MovedThisWeek(Look.Day);
         }
 
-        // The basket's change over a month in basis points, and the kind of goods that led it ("" for none).
-        private int BasketChange(OutlookBook book, out string led)
+        // The basket's change over a month in basis points, and the kind of goods that led it ("" for none). While the book keeps less than a month of prices,
+        // fromDay is the first day there will be one (the month's change is then 0 and means nothing); 0 when there is one.
+        private int BasketChange(OutlookBook book, out string led, out int fromDay)
         {
             int now = Look.Prices;
             int then = now;
+            fromDay = 0;
             if (book != null && book.Get(OutlookCatalogue.Prices, book.LastDay - NewsRules.DaysMonth, out int earlier))
             {
                 then = earlier;
+            }
+            else
+            {
+                int first = book != null ? book.LastDay : Look.Day;
+                if (book != null && book.Window(OutlookCatalogue.Prices, book.LastDay, OutlookCatalogue.HistoryDays, GoodRaw) > 0)
+                {
+                    for (int i = 0; i < OutlookCatalogue.HistoryDays && i < GoodRaw.Length; i++)
+                    {
+                        if (GoodRaw[i] != OutlookCatalogue.NoValue)
+                        {
+                            first = book.LastDay - (Math.Min(OutlookCatalogue.HistoryDays, GoodRaw.Length) - 1 - i);
+                            break;
+                        }
+                    }
+                }
+                fromDay = first + NewsRules.DaysMonth;
             }
             led = string.Empty;
             int best = 0;

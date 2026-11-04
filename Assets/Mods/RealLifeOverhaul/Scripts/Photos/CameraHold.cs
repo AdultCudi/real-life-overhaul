@@ -9,6 +9,7 @@ namespace RealLifeOverhaul.Photos
     public enum HoldPart
     {
         Selfie,       // photo mode's selfie pose (Leisure/Photo/Selfie): it puts back its own
+        Body,         // the player's body drawn or hidden by the camera's own choice (1 hidden): its renderers switched back on
         Facing,       // the body's facing: x, y, z, w of its rotation
         Grade,        // the filter's grade (a volume of the camera's own): nothing to read, it is taken away
         Lens,         // the field of view and the near plane

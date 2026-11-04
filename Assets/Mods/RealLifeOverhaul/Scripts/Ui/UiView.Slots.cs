@@ -38,6 +38,8 @@ namespace RealLifeOverhaul.Ui
         private sealed class ImageSlot : Slot
         {
             public Image Image;
+            public Sprite Source, Cut;   // a cover picture: the sprite asked for and its crop to the box (made when either changes)
+            public int Shape;            // the box's shape the crop was cut for (UiCover.ShapeOf)
         }
 
         private sealed class AvatarSlot : Slot
@@ -184,6 +186,31 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        // A picture cropped to its box's shape (cover): a sprite over the same texture, cut when the picture or the shape changes.
+        private static Sprite CoverCut(ImageSlot slot, Sprite source, float w, float h)
+        {
+            int shape = UiCover.ShapeOf(w, h);
+            if (slot.Cut != null && slot.Source == source && slot.Shape == shape)
+            {
+                return slot.Cut;
+            }
+            if (slot.Cut != null)
+            {
+                UnityEngine.Object.Destroy(slot.Cut);
+                slot.Cut = null;
+            }
+            slot.Source = source;
+            slot.Shape = shape;
+            Rect whole = source.textureRect;
+            UiCover.Cut(whole.width, whole.height, w, h, out float cx, out float cy, out float cw, out float ch);
+            if (cw >= whole.width && ch >= whole.height)
+            {
+                return source;   // already the box's shape
+            }
+            slot.Cut = Sprite.Create(source.texture, new Rect(whole.x + cx, whole.y + cy, cw, ch), new Vector2(0.5f, 0.5f), source.pixelsPerUnit, 0, SpriteMeshType.FullRect);
+            return slot.Cut;
+        }
+
         // An engine text set up as the kit draws every text: no rich text, no auto size, no margins, not clickable.
         private static void Plain(TextMeshProUGUI t)
         {
@@ -265,8 +292,13 @@ namespace RealLifeOverhaul.Ui
                 {
                     // The layout gave the box the picture's own shape, so it fills it unstretched; one the game cannot find shows nothing.
                     Place(slot.Rect, it.X, it.Y, it.W, it.H);
-                    Image picture = ((ImageSlot)slot).Image;
+                    var pictureSlot = (ImageSlot)slot;
+                    Image picture = pictureSlot.Image;
                     Sprite sprite = UiPictures.Find != null ? UiPictures.Find(it.Text) : null;
+                    if ((it.Flags & UiFlags.Cover) != 0 && sprite != null)
+                    {
+                        sprite = CoverCut(pictureSlot, sprite, it.W, it.H);   // cropped once per picture and shape, nothing per frame
+                    }
                     if (picture.sprite != sprite)
                     {
                         picture.sprite = sprite;

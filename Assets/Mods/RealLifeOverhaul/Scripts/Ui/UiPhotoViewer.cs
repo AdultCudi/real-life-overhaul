@@ -93,17 +93,25 @@ namespace RealLifeOverhaul.Ui
             float limit = x + w - back - UiTokens.S2;
             if (m.Actions != null)
             {
+                // Too many words for the room: the buttons that have an icon keep it alone, so the last ones (delete) are never lost.
+                float need = 0f;
+                for (int i = 0; i < m.Actions.Length; i++)
+                {
+                    ref UiActionModel b0 = ref m.Actions[i];
+                    need += (string.IsNullOrEmpty(b0.Label) ? back : UiDraw.ButtonWidth(b0.Kind, b0.Label, b0.Icon, b0.Key, keys)) + UiTokens.S2;
+                }
+                bool compact = need > limit - cx + UiTokens.S2;
                 for (int i = 0; i < m.Actions.Length && cx < limit; i++)
                 {
                     ref UiActionModel a = ref m.Actions[i];
-                    bool iconOnly = string.IsNullOrEmpty(a.Label);
+                    bool iconOnly = string.IsNullOrEmpty(a.Label) || (compact && a.Icon != UiIcon.None);
                     if (iconOnly)
                     {
                         if (cx + back > limit)
                         {
                             break;
                         }
-                        UiDraw.IconButton(s, at, cx, y, back, a.Icon, UiRole.Text, Action, i, false, a.Key);
+                        UiDraw.IconButton(s, at, cx, y, back, a.Icon, UiRole.Text, Action, i, a.Kind == UiButtonKind.Primary, a.Key);
                         cx += back + UiTokens.S2;
                         continue;
                     }
