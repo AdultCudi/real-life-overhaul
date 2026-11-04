@@ -173,7 +173,7 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDraw.Text(s, at, x + pad, next, iw * 0.5f, UiStyle.Body, quiet, r.NextLabel, UiFlags.Truncate);
                 string when = r.NextValue ?? string.Empty;
-                if (UiTextRules.Width(when, UiStyle.BodyStrong) > iw - UiTextRules.Width(r.NextLabel, UiStyle.Body) - UiTokens.S3 && when.LastIndexOf(' ') > 0)
+                if (UiTextRules.Width(when, UiStyle.BodyStrong) > Math.Min(iw * 0.5f, iw - UiTextRules.Width(r.NextLabel, UiStyle.Body) - UiTokens.S3) && when.LastIndexOf(' ') > 0)
                 {
                     when = when.Substring(when.LastIndexOf(' ') + 1);   // the days do not fit beside the label: the hour alone is kept, never cut
                 }

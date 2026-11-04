@@ -405,7 +405,7 @@ namespace RealLifeOverhaul.Ui
             {
                 rivalAds += h.RivalAds[i].Family == (int)r.Family && h.RivalAds[i].To > day ? 1 : 0;
             }
-            WorkBands.AddIfAny(form.Below, WorkBands.Pairs(w.T("reallife_work_band_market_for", "The market for it"),
+            WorkBands.AddIfAny(form.Left, WorkBands.Pairs(w.T("reallife_work_band_market_for", "The market for it"),
                 new[] { w.T("reallife_work_col_looking", "Looking"), w.T("reallife_work_col_rival_ads", "Rival ads"), w.T("reallife_work_shortage", "Shortage") },
                 new[] { looking.ToString(Inv), rivalAds.ToString(Inv), TechText.Mille(d.ShortageOf(r.Family)) }));
         }

@@ -321,11 +321,19 @@ public static partial class UiPreviewRunner
                 int hover = shot.Screen.HoverCommand >= 0 ? scene.FindNode(shot.Screen.HoverCommand, shot.Screen.HoverArg) : -1;
                 if (hover < 0 || scene.Nodes[hover].Layer != top)
                 {
+                    // the named target is not on the page: the biggest target of the top layer that is not the focus and not a bar across the window, a row or a card before a close button
                     hover = -1;
-                    for (int n = 0; n < scene.NodeCount && hover < 0; n++)
+                    float biggest = 0f;
+                    for (int n = 0; n < scene.NodeCount; n++)
                     {
-                        hover = scene.Nodes[n].Layer == top && n != focus ? n : -1;
+                        scene.NodeBox(n, out float nx, out float ny, out float nw, out float nh);
+                        if (scene.Nodes[n].Layer == top && n != focus && nw < frame.Width * 0.8f && ny < FootY && nw * nh > biggest)
+                        {
+                            biggest = nw * nh;
+                            hover = n;
+                        }
                     }
+                    Debug.Log("[UiPreview] hover target missing for " + shot.Screen.Name + ": using node " + hover);
                 }
                 view.SetHover(hover);
             }
@@ -386,6 +394,7 @@ public static partial class UiPreviewRunner
     private static void FocusPath(RectTransform parent, UiScene scene, int start, Vector2Int[] moves)
     {
         var stops = new List<Vector2> { Centre(scene, start) };
+        var small = new List<bool> { IsSmall(scene, start) };
         int at = start;
         foreach (Vector2Int m in moves)
         {
@@ -394,8 +403,14 @@ public static partial class UiPreviewRunner
             {
                 continue;
             }
+            scene.NodeBox(next, out float nbx, out float nby, out float nbw, out float nbh);
+            if (nby >= FootY || nby < 80f)
+            {
+                continue;   // the app tray under the window and the window's close are not part of a page's walk
+            }
             at = next;
             stops.Add(Centre(scene, at));
+            small.Add(IsSmall(scene, at));
         }
         RectTransform layer = UiView.NewRect(parent, "FocusPath");
         UiView.Stretch(layer);
@@ -403,6 +418,10 @@ public static partial class UiPreviewRunner
         for (int i = 1; i < stops.Count; i++)
         {
             Vector2 a = stops[i - 1], b = stops[i];
+            if (Vector2.Distance(a, b) > 700f || (small[i - 1] || small[i]) && Mathf.Abs(a.x - b.x) > 40f)
+            {
+                continue;   // a jump across the page (a list to its detail) is left unjoined: a line over the page would cross its words and figures
+            }
             RectTransform seg = UiView.NewRect(layer, "Step" + i);
             seg.pivot = new Vector2(0f, 0.5f);
             seg.anchoredPosition = new Vector2(a.x, -a.y);
@@ -431,10 +450,33 @@ public static partial class UiPreviewRunner
         }
     }
 
+    private static bool IsSmall(UiScene scene, int node)
+    {
+        scene.NodeBox(node, out float x, out float y, out float w, out float h);
+        return w < 300f && h < 80f;
+    }
+
+    private const float FootY = 950f;   // px: under the window of an app, the key lane and the tray
+
+    // Where a stop's number is drawn: on a control's middle, but beside a row (in the gutter at its left) and on the corner of a card, so no figure or word is covered.
     private static Vector2 Centre(UiScene scene, int node)
     {
         scene.NodeBox(node, out float x, out float y, out float w, out float h);
-        return new Vector2((x + w / 2f) * UiTokens.CanvasPerPx, (y + h / 2f) * UiTokens.CanvasPerPx);
+        float cx = x + w / 2f, cy = y + h / 2f;
+        if (w >= 240f && h < 100f)
+        {
+            cx = x - 10f;
+        }
+        else if (w >= 120f && h >= 100f)
+        {
+            cx = x + w - 12f;
+            cy = y + 12f;
+        }
+        else if (w < 300f && h < 80f)
+        {
+            cx = x;   // a button or a field: on its left edge, so its label stays whole
+        }
+        return new Vector2(cx * UiTokens.CanvasPerPx, cy * UiTokens.CanvasPerPx);
     }
 
     private static string English(string key, string english) => english;
@@ -457,10 +499,12 @@ public static partial class UiPreviewRunner
                 if (own != null && own.faceInfo.pointSize > 0f)
                 {
                     var face = asset.faceInfo;
-                    float scale = face.pointSize / own.faceInfo.pointSize;
+                    float scale = (float)face.pointSize / own.faceInfo.pointSize;
                     face.ascentLine = own.faceInfo.ascentLine * scale;
                     face.descentLine = own.faceInfo.descentLine * scale;
                     face.lineHeight = own.faceInfo.lineHeight * scale;
+                    Debug.Log("[UiPreview] face metrics: own point " + own.faceInfo.pointSize + " ascent " + own.faceInfo.ascentLine + " descent " + own.faceInfo.descentLine + " line " + own.faceInfo.lineHeight + " scale " + own.faceInfo.scale
+                        + " | fallback point " + face.pointSize + " ascent " + face.ascentLine + " descent " + face.descentLine + " line " + face.lineHeight + " scale " + face.scale + " (was ascent " + asset.faceInfo.ascentLine + " line " + asset.faceInfo.lineHeight + ")");
                     asset.faceInfo = face;
                 }
                 Debug.Log("[UiPreview] Chinese and Korean fall back to " + path);

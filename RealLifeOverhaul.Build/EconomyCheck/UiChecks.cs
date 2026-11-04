@@ -739,7 +739,7 @@ internal static partial class Program
                         Check(UiCheckRules.Overlaps(s, say) == 0, "ui screens: nothing overlaps its siblings: " + where);
                         Check(UiCheckRules.Spills(s, say) == 0, "ui screens: nothing spills out of its parent: " + where);
                         Check(UiCheckRules.OffGrid(s, say) == 0, "ui screens: every box on the 4 px grid: " + where);
-                        Check(UiCheckRules.Unfit(s, say) == 0, "ui screens: every label fits whole: " + where);
+                        Check(UiCheckRules.Unfit(s, say) == 0, "ui screens: every label fits whole, and a wrapped text's box holds every line it wraps to: " + where);
                         Check(UiCheckRules.SmallTargets(s, say) == 0, "ui screens: every target at least the least size: " + where);
                         Check(UiCheckRules.TooSmall(s, say) == 0, "ui screens: no text under the smallest size: " + where);
                         Check(UiCheckRules.Crowded(s, say) == 0, "ui screens: one primary action a layer, and no crowd: " + where);
@@ -853,6 +853,18 @@ internal static partial class Program
         Check(UiCheckRules.OffGrid(s, null) > 0, "ui rules: a box off the grid is found");
         UiDraw.Text(s, UiAt.Screen.In(panel), 8f, 320f, 40f, UiStyle.Body, UiRole.Text, "A label far too long for its box", UiFlags.Label);
         Check(UiCheckRules.Unfit(s, null) > 0, "ui rules: a label that does not fit is found");
+        var tall = new UiScene();
+        tall.Begin("tall", 400f, 400f, true);
+        int wrapped = UiDraw.Text(tall, UiAt.Screen, 8f, 8f, 120f, UiStyle.Body, UiRole.Text, "A wrapped text that takes three lines in a narrow box of words", UiFlags.Wrap, 4);
+        Check(UiCheckRules.Unfit(tall, null) == 0, "ui rules: a wrapped text in a box as tall as its lines passes");
+        tall.Items[wrapped].H = UiTextRules.LineHeight(UiStyle.Body);
+        Check(UiCheckRules.Unfit(tall, null) > 0, "ui rules: a wrapped text in a box lower than the lines it wraps to is found");
+        string han = "一二三四五六七八九十";
+        float hanWide = UiTextRules.Width(han, UiStyle.Body);
+        UiTextRules.EmInHand = true;
+        Check(UiTextRules.Lines(han, UiStyle.Body, hanWide + 1f, 0, out float _) == 2 && UiTextRules.Lines("abcdefghij", UiStyle.Body, UiTextRules.Width("abcdefghij", UiStyle.Body) + 1f, 0, out float _) == 1,
+            "ui rules: Chinese text keeps an em in hand where TextMeshPro breaks it early, so it is laid in the lines it is drawn in, and Latin text does not");
+        UiTextRules.EmInHand = false;
         UiDraw.Text(s, UiAt.Screen.In(panel), 8f, 360f, 300f, UiStyle.Body, UiRole.Panel, "Words in the panel's own colour", UiFlags.None);
         Check(UiCheckRules.LowContrast(s, null) > 0, "ui rules: words that do not stand out are found");
         UiDraw.Node(s, UiAt.Screen, 500f, 500f, 20f, 20f, 1, 0, -1);

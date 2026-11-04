@@ -29,7 +29,7 @@ namespace RealLifeOverhaul.Ui
             float end = Column(s, at, m.Left, actions, amounts, x, y, cw, bottom, keys);
             if (two)
             {
-                end = Math.Max(end, Column(s, at, m.Right, actions, amounts, x + cw + gap, y, UiDraw.SnapDown(w - cw - gap), bottom, keys));
+                end = Math.Max(end, Column(s, at, m.Right, actions, amounts, x + cw + gap, y, w - cw - gap, bottom, keys));
             }
             if (m.Below.Count > 0)
             {
@@ -48,7 +48,7 @@ namespace RealLifeOverhaul.Ui
                 return y;
             }
             int cols = Math.Min(w >= 880f ? 3 : 2, bands.Count);
-            float gap = UiTokens.S4, cw = UiDraw.SnapDown((w - gap * (cols - 1)) / cols), end = y;
+            float gap = cols == 2 ? UiTokens.S6 : UiTokens.S4, cw = UiDraw.SnapDown((w - gap * (cols - 1)) / cols), end = y;   // two bands stand under a form's two columns
             var none = new UiActionModel[0];
             var noAmounts = new WorkAmount[0];
             for (int i = 0; i < bands.Count && i < cols * 2; i++)
@@ -60,7 +60,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
-                Band(s, at, bands[i], none, noAmounts, x + col * (cw + gap), top, cw, h, keys);
+                float bx = x + col * (cw + gap);
+                Band(s, at, bands[i], none, noAmounts, bx, top, col == cols - 1 ? x + w - bx : cw, h, keys);   // the last band reaches the right edge the list above reaches
                 end = Math.Max(end, top + h);
             }
             return end;

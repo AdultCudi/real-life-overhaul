@@ -50,11 +50,11 @@ internal static partial class UiSamples
         // name, kind glyph, price, against worth, seller, group, tag
         object[][] list =
         {
-            new object[] { "Blue sport coupe", UiIcon.Car, "$38,500", -4, "Marco Bellini", 0, null }, new object[] { "Red delivery van", UiIcon.Truck, "$14,200", -12, "Huang Guo", 0, "Rival" },
+            new object[] { "Blue sport coupe", UiIcon.Car, "$38,500", -4, "Marco Bellini", 0, null }, new object[] { "Red delivery van", UiIcon.Package, "$14,200", -12, "Huang Guo", 0, "Rival" },
             new object[] { "Box truck", UiIcon.Truck, "$27,900", -6, "Harbourside Freight HSF", 0, null }, new object[] { "Tan minibus", UiIcon.Train, "$19,400", 3, "Amara Nwosu", 0, null },
             new object[] { "k:espresso_machine", UiIcon.Coffee, "$1,950", -9, "Sofia Marin", 1, null }, new object[] { "k:commercial_grill", UiIcon.Fire, "$2,300", -3, "Hana Okada", 1, null },
-            new object[] { "k:display_fridge", UiIcon.Thermometer, "$1,150", -15, "Leo Park", 1, "Discount" }, new object[] { "k:dough_mixer", UiIcon.Gear, "$4,600", 5, "Colm Doyle", 1, null },
-            new object[] { "k:chest_freezer", UiIcon.CloudSnow, "$1,380", -5, "Ada Voss", 1, null }, new object[] { "k:armchair", UiIcon.Sofa, "$320", -8, "Nia Brooks", 2, null },
+            new object[] { "k:display_fridge", UiIcon.Thermometer, "$1,150", -15, "Leo Park", 1, "Discount" }, new object[] { "k:dough_mixer", UiIcon.Factory, "$4,600", 5, "Colm Doyle", 1, null },
+            new object[] { "k:chest_freezer", UiIcon.CloudSnow, "$1,380", -5, "Ada Voss", 1, null }, new object[] { "k:armchair", UiIcon.Home, "$320", -8, "Nia Brooks", 2, null },
             new object[] { "k:sofa", UiIcon.Sofa, "$890", 2, "Tomas Reyes", 2, null }, new object[] { "k:table", UiIcon.ForkKnife, "$740", -11, "Priya Shah", 2, null },
             new object[] { "k:coffee_pallet", UiIcon.Coffee, "$1,530", -15, "Colm Doyle", 3, null }, new object[] { "k:flour_pallet", UiIcon.ShoppingBag, "$1,140", -12, "Huang Guo", 3, "Rival" },
             new object[] { "k:milk_lot", UiIcon.Drop, "$690", -9, "Leo Park", 3, null }
@@ -154,9 +154,9 @@ internal static partial class UiSamples
     // What the player owns from the Marketplace: one fixture for Yours and Offers, so the thing a buyer bids on is a thing that is on sale.
     private static readonly object[][] MarketOwned =
     {
-        new object[] { "k:sofa", UiIcon.Sofa, "kept", 890, 0, 960, 0, 405, "Tomas Reyes", 80 }, new object[] { "k:dough_mixer", UiIcon.Gear, "listed", 3900, 150, 4600, 4600, 398, "Colm Doyle", 78 },
-        new object[] { "Old cargo van", UiIcon.Truck, "waiting", 6200, 0, 6900, 0, 411, "Harbourside Freight HSF", 61 }, new object[] { "k:display_fridge", UiIcon.Thermometer, "listed", 980, 40, 1140, 1150, 401, "Leo Park", 84 },
-        new object[] { "k:armchair", UiIcon.Sofa, "delivering", 300, 25, 320, 0, 412, "Nia Brooks", 90 }, new object[] { "k:espresso_machine", UiIcon.Coffee, "fix", 1700, 0, 1950, 0, 395, "Sofia Marin", 48 }
+        new object[] { "k:sofa", UiIcon.Sofa, "kept", 890, 0, 960, 0, 405, "Tomas Reyes", 80 }, new object[] { "k:dough_mixer", UiIcon.Factory, "listed", 3900, 150, 4600, 4600, 398, "Colm Doyle", 78 },
+        new object[] { "Old cargo van", UiIcon.Package, "waiting", 6200, 0, 6900, 0, 411, "Harbourside Freight HSF", 61 }, new object[] { "k:display_fridge", UiIcon.Thermometer, "listed", 980, 40, 1140, 1150, 401, "Leo Park", 84 },
+        new object[] { "k:armchair", UiIcon.Home, "delivering", 300, 25, 320, 0, 412, "Nia Brooks", 90 }, new object[] { "k:espresso_machine", UiIcon.Coffee, "fix", 1700, 0, 1950, 0, 395, "Sofia Marin", 48 }
     };
 
 
@@ -176,7 +176,7 @@ internal static partial class UiSamples
     private static WorkTab MarketYours(UtilitiesWords w, WorkView v)
     {
         var t = new WorkTab { Shape = WorkShape.Table, Search = w.T("reallife_work_search_yours", "Search your things") };
-        t.Columns = new[] { WkCol(w.T("reallife_work_col_thing", "Thing"), UiCellKind.Tile), WkCol(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 172), WkCol(w.T("reallife_work_col_paid", "Paid"), UiCellKind.Money, 88),
+        t.Columns = new[] { WkCol(w.T("reallife_work_col_thing", "Thing"), UiCellKind.Tile), WkCol(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 220), WkCol(w.T("reallife_work_col_paid", "Paid"), UiCellKind.Money, 88),
             WkCol(w.T("reallife_work_col_worth", "Worth now"), UiCellKind.Money, 96) };
         t.EmptyTitle = w.T("reallife_work_no_yours_title", "You own nothing from here");
         t.EmptyBody = w.T("reallife_work_no_yours", "What you buy comes here to fix, clean, list or keep.");
@@ -272,6 +272,8 @@ internal static partial class UiSamples
             facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_profit_at_offer", "Your profit at their offer"), Mny(offer - cost)));
             facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_profit_at_asking", "Your profit at your asking"), Mny(asking - cost)));
             facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_worth", "Worth now"), Mny((int)item[5])));
+            facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_condition_now", "Condition now"), (int)item[9] + "%"));
+            facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_counters_so_far", "Counters so far"), i.ToString()));
             r.Sections.Add(facts);
             r.Acts.Add(WkAct(102, w.F("reallife_work_accept_at", "Accept {offer}", "offer", Mny(offer)), UiButtonKind.Primary, UiIcon.Check, null, false, r.Id));
             r.Acts.Add(WkAct(103, w.T("reallife_hustle_button_counter", "Counter"), UiButtonKind.Secondary, UiIcon.Arrows, null, false, r.Id));
@@ -322,6 +324,10 @@ internal static partial class UiSamples
             facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_helper_fee", "A helper takes"), Mny((int)g[6])));
             facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_your_take", "You keep with a helper"), Mny((int)g[4] - (int)g[6])));
             r.Sections.Add(facts);
+            var before = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_your_record_at", "Your record at it") };
+            before.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_done_before", "Done before"), "1"));
+            before.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_stars_average", "Stars on average"), job == Sx(w, "reallife_hustle_gig_moving") ? "5.0" : job == Sx(w, "reallife_hustle_gig_detailing") ? "4.5" : "4.0"));
+            r.Sections.Add(before);
             if (kind == "asked")
             {
                 r.Acts.Add(WkAct(106, w.T("reallife_hustle_button_book", "Book it"), UiButtonKind.Primary, UiIcon.Check, null, false, r.Id));

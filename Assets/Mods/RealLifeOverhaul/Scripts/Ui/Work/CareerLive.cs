@@ -141,7 +141,9 @@ namespace RealLifeOverhaul.Ui
                 Title = d.JobTitle(j), Employer = CareersText.Employer(j.Post.Employer), Pay = W.F("reallife_career_row_rate", "{rate} an hour",
                     "rate", CareersText.Rate(Prices.At(j.Pay))),
                 Hours = CareersText.Week(p), Months = Math.Max(0, (day - j.Hired) / 30).ToString(Inv) + " " + W.T("reallife_work_months", "months"),
-                NextTitle = W.T("reallife_work_next_shift", "Next shift"), NextLine = CareersText.Week(p), Desk = d.DeskLine(j), Leaving = j.NoticeEnd > 0,
+                NextTitle = W.T("reallife_work_next_shift", "Next shift"), NextLine = CareersText.Week(p), Desk = d.DeskToday(j) ?? W.F("reallife_work_desk_short", "Your desk is at {employer}.", "employer", CareersText.Employer(j.Post.Employer)),
+                Leaving = j.NoticeEnd > 0,
+                ShiftTicks = new[] { (p.Hour % 24).ToString("00", Inv) + ":00", ((p.Hour + p.Hours / 2) % 24).ToString("00", Inv) + ":00", ((p.Hour + p.Hours) % 24).ToString("00", Inv) + ":00" },
                 Progress = j.Due > 0 ? Math.Min(100, j.Worked * 100 / Math.Max(1, j.Due)) : -1
             };
             cj.Status = j.NoticeEnd > 0 ? W.T("reallife_ibox_chip_leaving", "Leaving") : j.Late == 0
@@ -425,9 +427,9 @@ namespace RealLifeOverhaul.Ui
             {
                 Spell s = wf.History[i];
                 icons.Add(WorkGlyphs.Profession(s.Prof));
-                titles.Add(CareersText.Title(s.Prof, s.Top) + ", " + CareersText.Employer(s.Employer));
-                hints.Add(CareersText.Day(s.From) + " " + words.T("reallife_work_cv_to", "to") + " " + CareersText.Day(s.To));
-                notes.Add(CareersText.Fill("reallife_career_row_spell", "leaving", CareersText.Leaving(s.Leaving), "reference", CareersText.Reference(s.Reference)));
+                titles.Add(CareersText.Title(s.Prof, s.Top));
+                hints.Add(CareersText.Employer(s.Employer));
+                notes.Add(CareersText.Leaving(s.Leaving));
             }
             CareerPages.NewPlayerSupport(words, _facts, paid ? CareersText.Money(Prices.At(wf.BenefitWeek)) : null, paid ? CareersText.Day(wf.BenefitUntil) : null,
                 wf.AgencyUntil > today ? CareersText.Day(wf.AgencyUntil) : null, icons.ToArray(), titles.ToArray(), hints.ToArray(), notes.ToArray());
@@ -462,11 +464,11 @@ namespace RealLifeOverhaul.Ui
                 var steps = new WorkSection { Part = WorkPart.Checks, Title = words.T("reallife_work_where_it_stands", "Where it stands") };
                 steps.Checks.Add(new WorkNeed { Words = words.F("reallife_work_sent_on", "Sent on {day}", "day", CareersText.Day(a.Day)), Met = true });
                 bool interviewed = a.Stage >= (int)ApplyStep.Interview && a.Stage != (int)ApplyStep.Sent;
-                steps.Checks.Add(new WorkNeed { Words = words.T("reallife_work_step_interview", "Interview"), Met = interviewed,
+                steps.Checks.Add(new WorkNeed { Words = words.T("reallife_work_step_interview", "Interview"), Met = interviewed, Pending = true,
                     Have = a.At == ApplyStep.Interview ? CareersText.Day(a.InterviewDay) : null });
                 bool offered = a.Stage >= (int)ApplyStep.Offered;
-                steps.Checks.Add(new WorkNeed { Words = words.T("reallife_work_step_offer", "Offer"), Met = offered, Have = a.At == ApplyStep.Offered ? CareersText.Rate(Prices.At(a.Offer)) : null });
-                steps.Checks.Add(new WorkNeed { Words = words.T("reallife_work_step_start_desk", "Start at your desk"), Met = a.At == ApplyStep.Accepted });
+                steps.Checks.Add(new WorkNeed { Words = words.T("reallife_work_step_offer", "Offer"), Met = offered, Pending = true, Have = a.At == ApplyStep.Offered ? CareersText.Rate(Prices.At(a.Offer)) : null });
+                steps.Checks.Add(new WorkNeed { Words = words.T("reallife_work_step_start_desk", "Start at your desk"), Met = a.At == ApplyStep.Accepted, Pending = true });
                 r.Sections.Add(steps);
                 switch (a.At)
                 {
@@ -657,6 +659,7 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             CareerPages.ProfessionsBands(words, tab, posts3, pays, icons, courses.ToArray(), opens.ToArray());
+            CareerPages.ProfessionsBands(words, _facts.Jobs, posts3, pays, icons, courses.ToArray(), opens.ToArray());   // a short, filtered list of jobs keeps them under it
         }
 
         // ------------------------------------------------------------------------------------------------- doing

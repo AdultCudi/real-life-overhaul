@@ -70,6 +70,7 @@ namespace RealLifeOverhaul.Ui
         public string Title;                        // "Cinder Valley"
         public string Line;                         // "Simulation, 64% made"
         public int Progress = -1;                   // 0 to 100, or -1 for no bar
+        public string[] Ticks;                      // the hours under the bar, the first at its left, the last at its right: where in the shift the bar stands
         public UiStyle TitleStyle = UiStyle.Display; // the title's size: the figures' size, or the number size for a line of words (a shift's hours)
         public string Note;                         // "Playtest in 6 days"
         public UiIcon NoteIcon = UiIcon.Calendar;
@@ -435,6 +436,14 @@ namespace RealLifeOverhaul.Ui
             if (hero.Progress >= 0)
             {
                 UiDraw.Meter(s, at, ix, cy + UiTokens.S2, iw, UiTokens.S1, hero.Progress, UiRole.Accent);
+                int ticks = hero.Ticks == null ? 0 : hero.Ticks.Length;
+                float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)), tw = UiDraw.SnapDown(iw / Math.Max(1, ticks));
+                for (int i = 0; i < ticks; i++)
+                {
+                    UiFlags align = i == 0 ? UiFlags.None : i == ticks - 1 ? UiFlags.Right : UiFlags.Centre;
+                    float tx0 = i == 0 ? ix : i == ticks - 1 ? ix + iw - tw : ix + (iw - tw) * i / (ticks - 1);
+                    UiDraw.Text(s, at, tx0, cy + UiTokens.S2 + UiTokens.S1 + UiTokens.S1, tw, UiStyle.Small, UiRole.Text2, hero.Ticks[i], align | UiFlags.Truncate);
+                }
             }
             if (noteW > 0f)
             {
@@ -449,7 +458,8 @@ namespace RealLifeOverhaul.Ui
         private static float HeroHeight(UiHeroModel hero)
         {
             float words = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(hero.TitleStyle))
-                          + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)) + (hero.Progress >= 0 ? UiTokens.S2 + UiTokens.S1 : 0f);
+                          + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)) + (hero.Progress >= 0 ? UiTokens.S2 + UiTokens.S1 : 0f)
+                          + (hero.Progress >= 0 && hero.Ticks != null && hero.Ticks.Length > 0 ? UiTokens.S1 * 2f + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) : 0f);
             return UiDraw.Snap(UiTokens.S4 * 2f + Math.Max(HeroTile, words));
         }
 

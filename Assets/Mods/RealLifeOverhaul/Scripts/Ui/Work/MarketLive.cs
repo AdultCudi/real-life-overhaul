@@ -382,7 +382,7 @@ namespace RealLifeOverhaul.Ui
         {
             UtilitiesWords w = W;
             var t = new WorkTab { Shape = WorkShape.Table, Search = w.T("reallife_work_search_yours", "Search your things") };
-            t.Columns = new[] { WorkBuilder.Col(w.T("reallife_work_col_thing", "Thing"), UiCellKind.Tile), WorkBuilder.Col(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 152),
+            t.Columns = new[] { WorkBuilder.Col(w.T("reallife_work_col_thing", "Thing"), UiCellKind.Tile), WorkBuilder.Col(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 220),
                 WorkBuilder.Col(w.T("reallife_work_col_paid", "Paid"), UiCellKind.Money, 88), WorkBuilder.Col(w.T("reallife_work_col_worth", "Worth now"), UiCellKind.Money, 96) };
             t.EmptyTitle = w.T("reallife_work_no_yours_title", "You own nothing from here");
             t.EmptyBody = w.T("reallife_work_no_yours", "What you buy comes here to fix, clean, list or keep.");
@@ -565,6 +565,8 @@ namespace RealLifeOverhaul.Ui
                     deal.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_profit_at_offer", "Your profit at their offer"), HustleText.Money(o.Offer - cost)));
                     deal.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_profit_at_asking", "Your profit at your asking"), HustleText.Money(asking - cost)));
                     deal.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_worth", "Worth now"), HustleText.Money(d.WorthOf(item))));
+                    deal.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_condition_now", "Condition now"), item.Condition.ToString(Inv) + "%"));
+                    deal.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_counters_so_far", "Counters so far"), o.Counters.ToString(Inv)));
                     r.Sections.Add(deal);
                 }
                 r.Acts.Add(Act(Accept, o.Id, w.F("reallife_work_accept_at", "Accept {offer}", "offer", HustleText.Money(o.Offer)), UiButtonKind.Primary, UiIcon.Check));
@@ -644,6 +646,22 @@ namespace RealLifeOverhaul.Ui
                 visit.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_helper_fee", "A helper takes"), HustleText.Money(helper)));
                 visit.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_your_take", "You keep with a helper"), HustleText.Money(g.Pay - helper)));
                 r.Sections.Add(visit);
+                int sameDone = 0, sameStars = 0;
+                for (int k = 0; k < s.Gigs.Count; k++)
+                {
+                    if (s.Gigs[k].Stage == GigStage.Done && s.Gigs[k].Kind == g.Kind)
+                    {
+                        sameDone++;
+                        sameStars += s.Gigs[k].Rating;
+                    }
+                }
+                if (sameDone > 0)
+                {
+                    var before = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_your_record_at", "Your record at it") };
+                    before.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_done_before", "Done before"), sameDone.ToString(Inv)));
+                    before.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_stars_average", "Stars on average"), (sameStars / (float)sameDone).ToString("0.0", Inv)));
+                    r.Sections.Add(before);
+                }
                 open++;
                 payAll += g.Pay;
                 if (g.Stage == GigStage.Offered)

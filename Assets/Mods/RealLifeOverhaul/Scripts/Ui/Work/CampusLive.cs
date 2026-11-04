@@ -155,8 +155,8 @@ namespace RealLifeOverhaul.Ui
                         && !RosterRules.CanJoin(intake) ? w.T("reallife_study_why_seats", "Every seat of this course is taken.") : null;
                 int seatsLeft = intake != null ? RosterRules.Left(intake) : -1;
                 string tag = CareersText.Kind(c.Kind);
-                var r = new WorkRow { Id = c.Id, Icon = WorkGlyphs.Course(c), Name = CareersText.Course(c.Id), Sub = d.PlaceOf(c, StudyMode.FullTime), Line = CareersText.About(c), Status = tag,
-                    Tone = c.Kind == CourseKind.Short || c.Kind == CourseKind.Certificate ? UiRole.Muted : UiRole.Accent, Group = WorkGlyphs.Subject(c), FootRight = feeWords,
+                var r = new WorkRow { Id = c.Id, Icon = WorkGlyphs.Course(c), Name = CareersText.Course(c.Id), Sub = d.PlaceOf(c, StudyMode.FullTime), Line = CareersText.About(c), Status = seatsLeft == 0 ? w.T("reallife_work_full", "Full") : tag,
+                    Tone = seatsLeft == 0 ? UiRole.Warn : c.Kind == CourseKind.Short || c.Kind == CourseKind.Certificate ? UiRole.Muted : UiRole.Accent, Group = WorkGlyphs.Subject(c), FootRight = feeWords,
                     FootLeft = c.Timetabled ? WorkBuilder.Weeks(w, Math.Max(1, StudyRules.Length(c, StudyMode.FullTime) / 7)) : CareersText.Mode(StudyMode.Distance) };
                 if (c.Timetabled)
                 {
@@ -774,7 +774,7 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             CampusBands.FamilyRecord(w, form, uniIcons.ToArray(), uniNames.ToArray(), uniHints.ToArray(), uniPaid.ToArray(),
-                sf != null && sf.Taught > 0 ? w.F("reallife_work_n_hours", "{n} hours", "n", (sf.Taught / 60).ToString(Inv)) : null,
+                sf != null && sf.Taught > 0 ? w.F("reallife_work_n_hours", "{n} h", "n", (sf.Taught / 60).ToString(Inv)) : null,
                 sf != null ? CareersText.Cents(sf.LoanCents) : null, sf != null && sf.LoanTaken > 0 ? CareersText.Cents(sf.LoanTaken) : null, sf != null ? CareersText.Cents(sf.LoanRepaid) : null);
             t.Form = form;
             return t;

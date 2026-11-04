@@ -96,7 +96,7 @@ internal static partial class UiSamples
                 Title = SRank(w, "warehouse", 1), Employer = "Harbourside Freight HSF", Pay = SPerHour(w, "$21.50"), Hours = SWeek(w, 0, 4, 9, 17),
                     Months = SMonths(w, (Today - 82) / 30), Status = w.T("reallife_work_status_on_time", "On time"),
                 NextTitle = w.T("reallife_work_next_shift", "Next shift"), NextLine = SWeek(w, 0, 4, 9, 17),
-                    Desk = Sf(w, "reallife_career_desk_at", "what", Sx(w, "reallife_desk_what_machine"), "employer", "Harbourside Freight HSF", "address", "Pier 9, Hudson Yards"),
+                    Desk = Sx(w, "reallife_career_desk_how"), ShiftTicks = new[] { "09:00", "13:00", "17:00" },
                 NextNote = "Hudson Yards depot", Progress = 0, Performance = 82, Punctuality = 94, Teamwork = 71, Reliability = 88,
                     WeekHours = "32 / 40", WeekPay = "$688", PaidNote = SWd(w, 4),
                 RivalName = "Marcus Lee", Mine = new[] { 71, 72, 74, 73, 77, 78, 77, 79, 81, 80, 81, 82 }, Theirs = new[] { 70, 71, 72, 70, 74, 75,
@@ -142,10 +142,8 @@ internal static partial class UiSamples
             CareerPages.NewPlayerBands(w, f, 62, 2, 1, 0, new[] { SCourse(w, "forklift"), SCourse(w, "customer_service"), SCourse(w, "business") },
                 new[] { SRank(w, "warehouse", 0), SRank(w, "bar", 0), SRank(w, "accountancy", 0) });
             CareerPages.NewPlayerSupport(w, f, "$310", SDay(w, 440), SDay(w, 431), new[] { UiIcon.Package, UiIcon.Coffee },
-                new[] { SRank(w, "warehouse", 1) + ", Harbourside Freight HSF", SRank(w, "bar", 0) + ", The Anchor" },
-                new[] { SDay(w, 301) + " " + Sx(w, "reallife_work_cv_to") + " " + SDay(w, 388), SDay(w, 188) + " " + Sx(w, "reallife_work_cv_to") + " " + SDay(w, 290) },
-                new[] { Sf(w, "reallife_career_row_spell", "leaving", Sx(w, "reallife_work_leaving_redundant"), "reference", Sx(w, "reallife_work_reference_3")),
-                    Sf(w, "reallife_career_row_spell", "leaving", Sx(w, "reallife_work_leaving_resigned"), "reference", Sx(w, "reallife_work_reference_2")) });
+                new[] { SRank(w, "warehouse", 1), SRank(w, "bar", 0) }, new[] { "Harbourside Freight HSF", "The Anchor" },
+                new[] { Sx(w, "reallife_work_leaving_redundant"), Sx(w, "reallife_work_leaving_resigned") });
         }
         return f;
     }
@@ -219,9 +217,9 @@ internal static partial class UiSamples
                 Status = st, Tone = tone, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, tone }, Chip = st, ChipTone = tone };
             var stands = new WorkSection { Part = WorkPart.Checks, Title = w.T("reallife_work_where_it_stands", "Where it stands") };
             stands.Checks.Add(new WorkNeed { Words = Sf(w, "reallife_work_sent_on", "day", SDay(w, sentDay)), Met = true });
-            stands.Checks.Add(new WorkNeed { Words = Sx(w, "reallife_work_step_interview"), Met = step == 1 || step == 2 || step == 4, Have = step == 1 ? SDay(w, 413) + ", 10:00" : null });
-            stands.Checks.Add(new WorkNeed { Words = Sx(w, "reallife_work_step_offer"), Met = step == 2 || step == 4, Have = step == 2 ? SPerHour(w, rate) : null });
-            stands.Checks.Add(new WorkNeed { Words = Sx(w, "reallife_work_step_start_desk"), Met = step == 4 });
+            stands.Checks.Add(new WorkNeed { Words = Sx(w, "reallife_work_step_interview"), Met = step == 1 || step == 2 || step == 4, Pending = true, Have = step == 1 ? SDay(w, 413) + ", 10:00" : null });
+            stands.Checks.Add(new WorkNeed { Words = Sx(w, "reallife_work_step_offer"), Met = step == 2 || step == 4, Pending = true, Have = step == 2 ? SPerHour(w, rate) : null });
+            stands.Checks.Add(new WorkNeed { Words = Sx(w, "reallife_work_step_start_desk"), Met = step == 4, Pending = true });
             r.Sections.Add(stands);
             var terms = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_the_post", "The post") };
             terms.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_pay", "Pay"), SPerHour(w, rate)));
@@ -320,6 +318,9 @@ internal static partial class UiSamples
         pro.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_open_to_you", "Open to you"), openTo.ToString()));
         pro.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_pay_range", "Starting pay"), Sf(w, "reallife_career_row_hours", "from", "$16.50", "to", "$24.00")));
         CareerPages.ProfessionsBands(w, pro, new[] { SRank(w, "warehouse", 2) + ", Harbourside Freight HSF", SRank(w, "accountancy", 0) + ", Uptown Savings", SRank(w, "chef", 0) + ", Burger Barn, Broadway" },
+            new[] { "$33.00", "$22.00", "$19.00" }, new[] { UiIcon.Trophy, UiIcon.Bank, UiIcon.ForkKnife },
+            new[] { SCourse(w, "forklift"), SCourse(w, "customer_service"), SCourse(w, "business") }, new[] { SRank(w, "guard", 0), SRank(w, "nursing", 0), SRank(w, "it_support", 0) });
+        CareerPages.ProfessionsBands(w, f.Jobs, new[] { SRank(w, "warehouse", 2) + ", Harbourside Freight HSF", SRank(w, "accountancy", 0) + ", Uptown Savings", SRank(w, "chef", 0) + ", Burger Barn, Broadway" },
             new[] { "$33.00", "$22.00", "$19.00" }, new[] { UiIcon.Trophy, UiIcon.Bank, UiIcon.ForkKnife },
             new[] { SCourse(w, "forklift"), SCourse(w, "customer_service"), SCourse(w, "business") }, new[] { SRank(w, "guard", 0), SRank(w, "nursing", 0), SRank(w, "it_support", 0) });
     }

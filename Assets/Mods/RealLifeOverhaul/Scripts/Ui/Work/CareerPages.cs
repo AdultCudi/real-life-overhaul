@@ -32,6 +32,7 @@ namespace RealLifeOverhaul.Ui
     public sealed class CareerJob
     {
         public string Title, Employer, Pay, Hours, Months, Status, Desk, Ladder, NextTitle, NextLine, NextNote;
+        public string[] ShiftTicks;                             // the hours the shift runs through, from its start to its end
         public UiRole StatusTone = UiRole.Ok;
         public int Progress = -1;
         public int Performance = -1, Punctuality = -1, Teamwork = -1, Reliability = -1;   // -1: not measured yet
@@ -178,7 +179,7 @@ namespace RealLifeOverhaul.Ui
             };
             b.M.Profile = p;
             b.M.Hero = new UiHeroModel { Icon = UiIcon.Clock, Tint = UiRole.None, Kicker = j.NextTitle, Title = j.NextLine,
-                TitleStyle = UiStyle.Number, Line = j.Desk, Progress = j.Progress, Note = j.NextNote };
+                TitleStyle = UiStyle.Number, Line = j.Desk, Progress = j.Progress, Ticks = j.ShiftTicks, Note = j.NextNote };
             var labels = new List<string>(4);
             var values = new List<int>(4);
             void Mark(string key, string english, int value)

@@ -58,13 +58,13 @@ public static partial class UiPreviewRunner
         {
             command = UiDataTable.First + UiDataTable.Row;
             arg = 2;
-            walk = "DDDDR";
+            walk = st.StartsWith("offers") ? "DRR" : "DDDR";
         }
         else if ((app == "campus" && st.StartsWith("courses")) || (app == "hustle" && st.StartsWith("listings") && st != "listings_none"))
         {
             command = WorkCmd.Card;
             arg = 2;   // not the chosen card (the full state chooses the fourth): a hover on it would not show
-            walk = "RRDR";
+            walk = "RRRDLLL";
         }
         else if (app == "campus" && st.StartsWith("studying") && st != "studying_none")
         {

@@ -37,6 +37,20 @@ namespace RealLifeOverhaul.Ui
 
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
+            bool before = UiTextRules.EmInHand;
+            UiTextRules.EmInHand = true;
+            try
+            {
+                LayPage(s, frame, dark, keys);
+            }
+            finally
+            {
+                UiTextRules.EmInHand = before;
+            }
+        }
+
+        private void LayPage(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
+        {
             int wanted = _source.TakeWanted();
             if (wanted >= 0)
             {

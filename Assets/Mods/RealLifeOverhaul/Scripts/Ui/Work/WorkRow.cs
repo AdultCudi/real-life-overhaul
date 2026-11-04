@@ -22,6 +22,7 @@ namespace RealLifeOverhaul.Ui
     {
         public string Words;
         public bool Met;
+        public bool Pending;        // not met because it has not come yet, not because anything is wrong: an empty circle, not a warning
         public string Have;
     }
 

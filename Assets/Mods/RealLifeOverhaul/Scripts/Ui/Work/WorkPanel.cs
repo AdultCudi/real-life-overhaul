@@ -212,7 +212,7 @@ namespace RealLifeOverhaul.Ui
                     {
                         WorkNeed n = sec.Checks[i];
                         float have = string.IsNullOrEmpty(n.Have) ? 0f : Math.Min(w * 0.4f, UiTextRules.Width(n.Have, UiStyle.Body) + UiTokens.S2);
-                        UiDraw.CheckLine(s, at, x, y, w - have - (have > 0f ? UiTokens.S2 : 0f), n.Words, n.Met);
+                        UiDraw.CheckLine(s, at, x, y, w - have - (have > 0f ? UiTokens.S2 : 0f), n.Words, n.Met, n.Pending);
                         if (have > 0f)
                         {
                             UiDraw.TextMiddle(s, at, x + w - have, y, UiTokens.PairRow, have, UiStyle.Body, UiRole.Text2, n.Have, UiFlags.Right | UiFlags.Truncate);

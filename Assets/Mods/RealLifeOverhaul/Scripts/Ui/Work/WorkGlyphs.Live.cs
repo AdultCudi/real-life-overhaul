@@ -103,7 +103,11 @@ namespace RealLifeOverhaul.Ui
             if (car)
             {
                 string kind = (id ?? string.Empty).ToLowerInvariant();   // a lorry or a van is not drawn as a saloon
-                return kind.Contains("truck") || kind.Contains("van") || kind.Contains("lorry") || kind.Contains("pickup") ? UiIcon.Truck : kind.Contains("bus") ? UiIcon.Train : UiIcon.Car;
+                if (kind.Contains("van") || kind.Contains("pickup"))
+                {
+                    return UiIcon.Package;   // a van carries goods; a lorry is the truck
+                }
+                return kind.Contains("truck") || kind.Contains("lorry") ? UiIcon.Truck : kind.Contains("bus") ? UiIcon.Train : UiIcon.Car;
             }
             switch (id)
             {
@@ -113,7 +117,8 @@ namespace RealLifeOverhaul.Ui
                 case "television": return UiIcon.Monitor;
                 case "speaker": return UiIcon.SpeakerHigh;
                 case "camera": return UiIcon.Camera;
-                case "sofa": case "armchair": return UiIcon.Sofa;
+                case "sofa": return UiIcon.Sofa;
+                case "armchair": return UiIcon.Home;
                 case "table": return UiIcon.ForkKnife;
                 case "bookcase": return UiIcon.Books;
                 case "jacket": case "coat": case "suit": return UiIcon.ShoppingBag;
@@ -122,7 +127,7 @@ namespace RealLifeOverhaul.Ui
                 case "commercial_grill": return UiIcon.Fire;
                 case "display_fridge": return UiIcon.Thermometer;
                 case "chest_freezer": return UiIcon.CloudSnow;
-                case "dough_mixer": return UiIcon.Gear;
+                case "dough_mixer": return UiIcon.Factory;
                 case "milk_lot": return UiIcon.Drop;
                 case "beer_lot": return UiIcon.Coffee;
                 case "tomato_lot": return UiIcon.ForkKnife;

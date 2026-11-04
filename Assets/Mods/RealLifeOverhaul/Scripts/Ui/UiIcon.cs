@@ -238,7 +238,7 @@ namespace RealLifeOverhaul.Ui
                     return UiRole.Chart3;
                 case UiIcon.ChartPie: case UiIcon.CloudSun: case UiIcon.Sun: case UiIcon.Percent: case UiIcon.GenrePuzzle: case UiIcon.GenreRacing: case UiIcon.Hammer:
                     return UiRole.Chart4;
-                case UiIcon.ChartLineUp: case UiIcon.Tag: case UiIcon.GenreAdventure: case UiIcon.Briefcase:
+                case UiIcon.ChartLineUp: case UiIcon.Tag: case UiIcon.GenreAdventure: case UiIcon.Briefcase: case UiIcon.Truck:
                     return UiRole.Chart2;
                 case UiIcon.Cpu: case UiIcon.GameController: case UiIcon.Code: case UiIcon.Database: case UiIcon.HardDrives: case UiIcon.IdCard:
                     return UiRole.CatTech;
@@ -254,7 +254,7 @@ namespace RealLifeOverhaul.Ui
                     return UiRole.CatRetail;
                 case UiIcon.ForkKnife: case UiIcon.Coffee:
                     return UiRole.CatFood;
-                case UiIcon.Building: case UiIcon.Truck: case UiIcon.Wrench: case UiIcon.Factory: case UiIcon.Package: case UiIcon.GenreHorror:
+                case UiIcon.Building: case UiIcon.Wrench: case UiIcon.Factory: case UiIcon.Package: case UiIcon.GenreHorror:
                     return UiRole.CatIndustry;
                 default:
                     return UiRole.Text2;   // the chrome's own: search, close, the arrows, the clock's controls, settings

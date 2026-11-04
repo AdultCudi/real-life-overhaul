@@ -80,11 +80,11 @@ internal static partial class UiSamples
     }
 
     // The rival firms with an ad open in the line of the role, with what each pays over the going rate.
-    private static void RolesRivals(UtilitiesWords w, WorkRow r, int at)
+    private static void RolesRivals(UtilitiesWords w, WorkRow r, int at, int count)
     {
         var rivals = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_rivals_hiring", "Rivals hiring in this line") };
         string[] firms = { "Lumen Systems", "Redwater Digital", "Atlas Hosting" };
-        for (int k = 0; k < 2; k++)
+        for (int k = 0; k < count && k < 3; k++)
         {
             rivals.People.Add(new WorkPerson { Name = firms[(at + k) % firms.Length], Role = RLevel(w, k == 0 ? "mid" : "senior") + ", " + w.F("reallife_work_closes_on", "Closes {day}", "day", SDay(w, 416 + k * 3)),
                 Right = "+" + (4 + k * 3) + "%", Ring = UiRole.Warn });
@@ -130,7 +130,7 @@ internal static partial class UiSamples
             going.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_offers_out", "Offers out"), (came / 5).ToString()));
             r.Sections.Add(going);
             RolesBest(w, r, i);
-            RolesRivals(w, r, i);
+            RolesRivals(w, r, i, 2);
             if (hiredName[i] != null)
             {
                 var hired = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_hired_via_ad", "Hired through this ad"), Note = "1" };
@@ -210,7 +210,7 @@ internal static partial class UiSamples
         // the foot: who is already on the team in this role, and what the market holds for it
         WorkBands.AddIfAny(form.Below, WorkBands.People(w.T("reallife_work_band_already_team", "Already on your team"), new[] { "Mira Solberg" },
             new[] { RRole(w, "ux_designer") + ", " + RLevel(w, "mid") + ", Pioneer Game Studio" }, new[] { "$31.00" }));
-        WorkBands.AddIfAny(form.Below, WorkBands.Pairs(w.T("reallife_work_band_market_for", "The market for it"),
+        WorkBands.AddIfAny(form.Left, WorkBands.Pairs(w.T("reallife_work_band_market_for", "The market for it"),
             new[] { w.T("reallife_work_col_looking", "Looking"), w.T("reallife_work_col_rival_ads", "Rival ads"), w.T("reallife_work_shortage", "Shortage") }, new[] { "6", "2", "4.5%" }));
         t.Form = form;
         t.Acts.Add(WkAct(WorkKinds.Back, w.T("reallife_work_cancel", "Cancel"), UiButtonKind.Secondary, UiIcon.Back, null, true));
@@ -341,7 +341,7 @@ internal static partial class UiSamples
                     Right = "$" + (going - k * 3 + 2) + ".00", Ring = UiRole.Ok });
             }
             r.Sections.Add(here);
-            RolesRivals(w, r, i);
+            RolesRivals(w, r, i, rivalAds);
             r.Sections.Add(new WorkSection { Part = WorkPart.Note, Lead = w.T("reallife_work_market_how_lead", "How to hire from here."), NoteIcon = UiIcon.Info,
                 Text = w.T("reallife_work_market_how", "Post an ad for a role in this line and the seekers who fit apply over a few days. A shortage makes them ask more.") });
             r.Acts.Add(WkAct(105, w.T("reallife_work_new_ad", "New ad"), UiButtonKind.Primary, UiIcon.Plus, null, true));

@@ -82,8 +82,8 @@ internal static partial class UiSamples
             string fee = "$" + c.Fee.ToString("N0", System.Globalization.CultureInfo.InvariantCulture), weeks = WorkBuilder.Weeks(w, c.Weeks);
             string timetable = Sf(w, "reallife_study_timetable", "days", SDays(w, c.D1, c.D2), "hour", c.Hour.ToString("00") + ":00");
             string tag = Sx(w, c.Kind == 0 ? "reallife_study_kind_short" : "reallife_study_kind_vocational");
-            var r = new WorkRow { Id = i + 1, Icon = c.Icon, Name = SCourse(w, c.Key), Sub = Sx(w, "reallife_study_campus_school"), Line = Sx(w, "reallife_study_about_" + c.Key), Status = tag,
-                Tone = c.Kind == 0 ? UiRole.Muted : UiRole.Accent, Group = c.Group, NextLabel = w.T("reallife_work_next_class", "Next class"), NextValue = Sf(w, "reallife_work_timetable_short", "days", SDays(w, c.D1, c.D2), "hour", c.Hour.ToString("00") + ":00"), FootLeft = weeks, FootRight = fee };
+            var r = new WorkRow { Id = i + 1, Icon = c.Icon, Name = SCourse(w, c.Key), Sub = Sx(w, "reallife_study_campus_school"), Line = Sx(w, "reallife_study_about_" + c.Key), Status = seats == 0 ? w.T("reallife_work_full", "Full") : tag,
+                Tone = seats == 0 ? UiRole.Warn : c.Kind == 0 ? UiRole.Muted : UiRole.Accent, Group = c.Group, NextLabel = w.T("reallife_work_next_class", "Next class"), NextValue = Sf(w, "reallife_work_timetable_short", "days", SDays(w, c.D1, c.D2), "hour", c.Hour.ToString("00") + ":00"), FootLeft = weeks, FootRight = fee };
             r.Title = r.Name;
             r.HeadSub = r.Sub;
             r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_length", "Length"), weeks));
@@ -290,10 +290,10 @@ internal static partial class UiSamples
             k1.Acts.Add(WkAct(104, w.T("reallife_campus_button_child_pay", "Pay for the degree"), UiButtonKind.Primary, UiIcon.Check, null, false, 0));
             k1.Acts.Add(WkAct(105, w.T("reallife_campus_button_child_decline", "Not this time"), UiButtonKind.Destructive, UiIcon.Close, null, false, 0));
             t.Kids.Add(k1);
-            var k2 = new WorkKid { Name = "Theo Hayes", Role = w.T("reallife_work_after_growing", "University comes later"), Ring = UiRole.Ok, Fund = 34,
+            var k2 = new WorkKid { Name = "Theo Hayes", Role = SCourse(w, "business"), Ring = UiRole.Ok, Fund = 34,
                 FundLabel = w.T("reallife_work_college_fund", "College fund"), FundNote = w.F("reallife_work_fund_of", "{fund} of {cost}", "fund", "$5,100", "cost", "$15,000"),
                 FactLabels = new[] { w.T("reallife_work_kid_age", "Age"), w.T("reallife_work_kid_school", "School"), w.T("reallife_work_col_state", "State") },
-                FactValues = new[] { "9", w.T("reallife_work_school_private", "Private school"), Sx(w, "reallife_campus_child_home") } };
+                FactValues = new[] { "20", w.T("reallife_work_school_private", "Private school"), Sx(w, "reallife_campus_child_studying") } };
             t.Kids.Add(k2);
             CampusBands.FamilyBand(w, form, "$14,400", 1, "$12,000", "$0");
         }
@@ -313,8 +313,8 @@ internal static partial class UiSamples
         }
         if (state != "family_none")
         {
-            CampusBands.FamilyRecord(w, form, new[] { UiIcon.Cap }, new[] { SCourse(w, "business") }, new[] { "Maya Hayes, " + w.F("reallife_work_until_day", "until {day}", "day", SDay(w, 540)) },
-                new[] { "$3,000" }, w.F("reallife_work_n_hours", "{n} hours", "n", "14"), "$4,200", "$9,000", "$4,800");
+            CampusBands.FamilyRecord(w, form, new[] { UiIcon.Cap }, new[] { SCourse(w, "business") }, new[] { "Theo Hayes, " + w.F("reallife_work_until_day", "until {day}", "day", SDay(w, 540)) },
+                new[] { "$3,000" }, w.F("reallife_work_n_hours", "{n} h", "n", "14"), "$4,200", "$9,000", "$4,800");
         }
         t.Form = form;
         return t;

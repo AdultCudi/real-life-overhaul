@@ -34,13 +34,13 @@ namespace RealLifeOverhaul.Ui
             see.Rows.Add(Pair(w.T("reallife_work_see_apps", "Applications waiting"), applications.ToString()));
             f.NewBelow.Add(see);
             var doors = new WorkFormBand { Title = w.T("reallife_work_band_doors", "Courses that open a door") };
-            for (int i = 0; i < courses.Length && i < 3; i++)
+            for (int i = 0; i < courses.Length && i < 2; i++)
             {
                 doors.Rows.Add(Tile(UiIcon.Cap, courses[i], w.F("reallife_work_opens_post", "Opens: {post}", "post", opens[i]), null));
             }
             if (doors.Rows.Count > 0)
             {
-                f.NewBelow.Add(doors);
+                f.NewBelow.Add(doors);   // two: the page's foot has room for three bands over two
             }
         }
 
@@ -62,7 +62,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (help.Rows.Count > 0)
             {
-                f.NewBelow.Add(help);
+                f.NewBelow.Insert(Math.Min(1, f.NewBelow.Count), help);   // the short bands first, so the foot's second row has room
             }
             var last = new WorkFormBand { Title = w.T("reallife_work_band_last_jobs", "Your last jobs") };
             for (int i = 0; i < titles.Length && i < 2; i++)
@@ -71,7 +71,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (last.Rows.Count > 0)
             {
-                f.NewBelow.Add(last);
+                f.NewBelow.Insert(Math.Min(2, f.NewBelow.Count), last);
             }
         }
 
