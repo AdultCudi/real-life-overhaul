@@ -37,7 +37,7 @@ namespace RealLifeOverhaul.Ui
                 if (h.Use == (int)EstateUse.Homes)
                 {
                     int bedrooms = UnitRules.Bedrooms(sqm);
-                    labels.Add(bedrooms == 0 ? EstateText.T("reallife_ui_estate_studio") : EstateText.T("reallife_ui_estate_bedrooms", "count", bedrooms.ToString(Inv)));
+                    labels.Add(EstateText.T("reallife_ui_estate_bed_" + Math.Min(5, bedrooms).ToString(Inv)));
                 }
                 else
                 {

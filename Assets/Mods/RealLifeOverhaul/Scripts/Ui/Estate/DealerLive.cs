@@ -201,7 +201,7 @@ namespace RealLifeOverhaul.Ui
             {
                 int cars = _d.CarCount(), offers = _d.Waiting(), lots = _s.Yards.Count;
                 string[] counts = { lots > 0 ? lots.ToString(Inv) : string.Empty, cars > 0 ? cars.ToString(Inv) : string.Empty, string.Empty, offers > 0 ? offers.ToString(Inv) : string.Empty, string.Empty, string.Empty, string.Empty };
-                UiIcon[] icons = { UiIcon.Store, UiIcon.Car, UiIcon.Tag, UiIcon.Handshake, UiIcon.Receipt, UiIcon.TrendUp, UiIcon.Chart };
+                UiIcon[] icons = { UiIcon.Store, UiIcon.Car, UiIcon.Tag, UiIcon.Handshake, UiIcon.Receipt, UiIcon.Rocket, UiIcon.Chart };
                 var nav = new UiNavEntry[NavTab.Length];
                 for (int i = 0; i < nav.Length; i++)
                 {

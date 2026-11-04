@@ -84,11 +84,11 @@ namespace RealLifeOverhaul.Ui
         private static float Tenant(UiScene s, UiAt at, EstateUnitPage u, float x, float y, float w, float bottom)
         {
             float hh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader));
-            UiDraw.Text(s, at, x, y, w, UiStyle.SectionHeader, UiRole.Text2, u.TenantTitle, UiFlags.Label | UiFlags.Truncate);
-            if (!string.IsNullOrEmpty(u.TenantOpen))
+            float olw = string.IsNullOrEmpty(u.TenantOpen) ? 0f : Math.Min(UiDraw.SnapDown(w * 0.5f), UiDraw.Snap(UiTextRules.Width(u.TenantOpen, UiStyle.Body) + UiTokens.Icon + UiTokens.S4));
+            UiDraw.Text(s, at, x, y, w - olw - (olw > 0f ? UiTokens.S3 : 0f), UiStyle.SectionHeader, UiRole.Text2, u.TenantTitle, UiFlags.Label | UiFlags.Truncate);
+            if (olw > 0f)
             {
-                float lw = Math.Min(UiDraw.SnapDown(w * 0.5f), UiDraw.Snap(UiTextRules.Width(u.TenantOpen, UiStyle.Body) + UiTokens.Icon + UiTokens.S4));
-                UiDraw.LinkRow(s, at, x + w - lw, y - (UiTokens.Control - hh) / 2f, lw, UiTokens.Control, u.TenantOpen, ActionCommand, u.TenantOpenRun);
+                UiDraw.LinkRow(s, at, x + w - olw, y - UiDraw.SnapDown((UiTokens.Control - hh) / 2f), olw, UiTokens.Control, u.TenantOpen, ActionCommand, u.TenantOpenRun);
             }
             y += hh + UiTokens.S3;
             float face = UiTokens.AvatarHero;
@@ -100,7 +100,7 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Text(s, at, tx, y + UiTokens.S1, nameW, UiStyle.Number, UiRole.Text, u.TenantName, UiFlags.Truncate);
             if (chip > 0f)
             {
-                UiDraw.Chip(s, at, tx + nameW + UiTokens.S3, y + UiTokens.S1 + (nameH - UiTokens.Badge - UiTokens.S1) / 2f, u.TenantChip, u.TenantChipTone, chip);
+                UiDraw.Chip(s, at, tx + nameW + UiTokens.S3, y + UiTokens.S1 + UiDraw.SnapDown((nameH - UiTokens.Badge - UiTokens.S1) / 2f), u.TenantChip, u.TenantChipTone, chip);
             }
             UiDraw.Text(s, at, tx, y + UiTokens.S1 + nameH + UiTokens.S1, x + w - tx, UiStyle.Body, UiRole.Text2, u.TenantLine, UiFlags.Truncate);
             y += face + UiTokens.S3;
@@ -213,10 +213,10 @@ namespace RealLifeOverhaul.Ui
         private static float Section(UiScene s, UiAt at, string title, string note, float x, float y, float w)
         {
             float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader));
-            UiDraw.Text(s, at, x, y, w, UiStyle.SectionHeader, UiRole.Text2, title, UiFlags.Label | UiFlags.Truncate);
-            if (!string.IsNullOrEmpty(note))
+            float nw = string.IsNullOrEmpty(note) ? 0f : Math.Min(UiDraw.SnapDown(w * 0.4f), UiDraw.Snap(UiTextRules.Width(note, UiStyle.Small) + UiTokens.S1));
+            UiDraw.Text(s, at, x, y, w - nw - (nw > 0f ? UiTokens.S3 : 0f), UiStyle.SectionHeader, UiRole.Text2, title, UiFlags.Label | UiFlags.Truncate);
+            if (nw > 0f)
             {
-                float nw = Math.Min(UiDraw.SnapDown(w * 0.4f), UiDraw.Snap(UiTextRules.Width(note, UiStyle.Small) + UiTokens.S1));
                 UiDraw.Text(s, at, x + w - nw, y, nw, UiStyle.Small, UiRole.AccentText, note, UiFlags.Right | UiFlags.Truncate);
             }
             return y + lh + UiTokens.S2;
@@ -225,7 +225,7 @@ namespace RealLifeOverhaul.Ui
         // A month of the record: its due day, how it ended, its chip and its sum. A hairline between the lines.
         private static float RecordLine(UiScene s, UiAt at, EstateRecordRow r, float x, float y, float w)
         {
-            float h = UiTokens.S10 - UiTokens.S1;
+            float h = UiTokens.S10;
             float dueW = UiDraw.SnapDown(w * 0.22f), amountW = UiDraw.SnapDown(w * 0.16f), chip = string.IsNullOrEmpty(r.Chip) ? 0f : UiFactCard.ChipWidth(r.Chip);
             UiDraw.TextMiddle(s, at, x, y, h, dueW, UiStyle.Small, UiRole.Muted, r.Due, UiFlags.Truncate);
             float right = x + w;
@@ -233,12 +233,12 @@ namespace RealLifeOverhaul.Ui
             right -= amountW + UiTokens.S3;
             if (chip > 0f)
             {
-                UiDraw.Chip(s, at, right - chip, y + (h - UiTokens.Badge - UiTokens.S1) / 2f, r.Chip, r.ChipTone, chip);
+                UiDraw.Chip(s, at, right - chip, y + UiDraw.SnapDown((h - UiTokens.Badge - UiTokens.S1) / 2f), r.Chip, r.ChipTone, chip);
                 right -= chip + UiTokens.S3;
             }
             UiDraw.TextMiddle(s, at, x + dueW, y, h, Math.Max(UiTokens.S8, right - x - dueW), UiStyle.Body, UiRole.Text2, r.What, UiFlags.Truncate);
             UiDraw.Box(s, at, x, y + h, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
-            return y + h + UiTokens.S1;
+            return y + h;
         }
     }
 }

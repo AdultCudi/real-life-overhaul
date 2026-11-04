@@ -382,7 +382,7 @@ namespace RealLifeOverhaul.Ui
                     Title = DealerText.T("reallife_dealer_growth_title"), Heading = true,
                     Lines = new[] { UiFactLine.Say(DealerText.T("reallife_dealer_growth_events")), UiFactLine.Say(DealerText.T("reallife_dealer_growth_rep")), UiFactLine.Say(DealerText.T("reallife_dealer_growth_missions")) }
                 };
-                TableShape(UiIcon.TrendUp, DealerText.T("reallife_dealer_growth_title"), DealerText.T("reallife_ui_dealer_growth_sub"), cols, rows, keys, side, DealerText.T("reallife_dealer_row_no_dealership"), DealerText.T("reallife_dealer_growth_events"));
+                TableShape(UiIcon.Rocket, DealerText.T("reallife_dealer_growth_title"), DealerText.T("reallife_ui_dealer_growth_sub"), cols, rows, keys, side, DealerText.T("reallife_dealer_row_no_dealership"), DealerText.T("reallife_dealer_growth_events"));
             }
 
             private readonly List<int> _kinds = new List<int>(6);

@@ -192,10 +192,11 @@ namespace RealLifeOverhaul.Ui
                 {
                     EstateText.T("reallife_ui_estate_group_mine"), null, null, EstateText.T("reallife_ui_estate_group_market"), EstateText.T("reallife_ui_estate_group_business"), null, null
                 };
+                string[] NavKeys = { "reallife_ui_estate_nav_mine", "reallife_ui_estate_nav_tenants", "reallife_ui_estate_nav_works", "reallife_ui_estate_nav_market", "reallife_ui_estate_nav_agency", "reallife_ui_estate_nav_hotel", "reallife_ui_estate_nav_hire" };
                 var nav = new UiNavEntry[NavTab.Length];
                 for (int i = 0; i < nav.Length; i++)
                 {
-                    nav[i] = new UiNavEntry { Icon = icons[i], Tint = UiRole.None, Label = EstateText.T(EstateTables.Tabs[NavTab[i]]), Count = counts[i], Group = groups[i] };
+                    nav[i] = new UiNavEntry { Icon = icons[i], Tint = UiRole.None, Label = EstateText.T(NavKeys[i]), Count = counts[i], Group = groups[i] };
                 }
                 return nav;
             }

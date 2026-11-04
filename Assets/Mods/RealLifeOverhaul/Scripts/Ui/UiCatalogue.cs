@@ -274,12 +274,30 @@ namespace RealLifeOverhaul.Ui
                 ty += s.Items[note].H;
             }
             // The actions under what they act on, the main one last at the right, as the hero's actions stand by it.
-            float by = Math.Min(UiDraw.Snap(ty + UiTokens.S5), y + h - UiTokens.Control);
+            // Buttons that do not fit the width wrap to a row under (a detail with many things to do), the main one still first at the right.
+            int rows = 1;
+            float used = 0f;
+            for (int i = m.Actions.Length - 1; i >= 0; i--)
+            {
+                float need = Math.Min(w, UiDraw.ButtonWidth(m.Actions[i].Kind, m.Actions[i].Label, m.Actions[i].Icon, m.Actions[i].Key, keys));
+                if (used > 0f && used + need > w)
+                {
+                    rows++;
+                    used = 0f;
+                }
+                used += need + UiTokens.S3;
+            }
+            float by = Math.Min(UiDraw.Snap(ty + UiTokens.S5), y + h - rows * UiTokens.Control - (rows - 1) * UiTokens.S2);
             float right = x + w;
             for (int i = m.Actions.Length - 1; i >= 0; i--)
             {
                 ref UiActionModel a = ref m.Actions[i];
-                float bw = Math.Min(right - x, UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, a.Key, keys));
+                float bw = Math.Min(w, UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, a.Key, keys));
+                if (right - bw < x)
+                {
+                    right = x + w;
+                    by += UiTokens.Control + UiTokens.S2;
+                }
                 right -= bw;
                 UiDraw.Button(s, at, right, by, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, command + Action, i, a.Disabled || c.Disabled);
                 right -= UiTokens.S3;

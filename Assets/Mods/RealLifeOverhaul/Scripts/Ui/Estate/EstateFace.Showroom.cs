@@ -48,8 +48,8 @@ namespace RealLifeOverhaul.Ui
             float chartH = Math.Max(UiTokens.S16 * 4f, bottom - y - ch - UiTokens.S3);
             UiChart.Lay(s, at.InRegion(RegionChart), m.Chart, x, y, cw, chartH, UiChart.First);
             float cy = y + chartH + UiTokens.S3;
-            cy = Chips(s, controls, m.ChartKinds, m.ChartKind, x, cy, cw, keys);
-            Chips(s, controls, m.ChartPlaces, m.ChartPlace, x, cy, cw, keys);
+            cy = Chips(s, controls, m.ChartKinds, m.ChartKind, x, cy, cw, keys, true);
+            Chips(s, controls, m.ChartPlaces, m.ChartPlace, x, cy, cw, keys, false);
             if (m.Side != null)
             {
                 UiFactCard.Lay(s, at.InRegion(RegionRight), m.Side, x + cw + UiTokens.S4, y, sw, bottom - y, keys, true);
@@ -57,7 +57,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         // A row of choices as chips, the chosen one filled; they wrap under each other. Returns the y under them.
-        private static float Chips(UiScene s, UiAt at, UiActionModel[] chips, int chosen, float x, float y, float w, IUiKeys keys)
+        private static float Chips(UiScene s, UiAt at, UiActionModel[] chips, int chosen, float x, float y, float w, IUiKeys keys, bool primary)
         {
             if (chips == null || chips.Length == 0)
             {
@@ -73,7 +73,7 @@ namespace RealLifeOverhaul.Ui
                     cx = x;
                     cy += UiTokens.Control + UiTokens.S1;
                 }
-                UiDraw.Button(s, at, cx, cy, bw, UiTokens.Control, i == chosen ? UiButtonKind.Primary : UiButtonKind.Chip, a.Label, UiIcon.None, UiAction.Count, keys, a.Command, a.Arg, a.Disabled);
+                UiDraw.Button(s, at, cx, cy, bw, UiTokens.Control, i == chosen ? (primary ? UiButtonKind.Primary : UiButtonKind.Secondary) : UiButtonKind.Chip, a.Label, UiIcon.None, UiAction.Count, keys, a.Command, a.Arg, a.Disabled);
                 cx += bw + UiTokens.S2;
             }
             return cy + UiTokens.Control + UiTokens.S2;
@@ -102,26 +102,24 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- the auction
 
-        // A lot of the trade auction over the dimmed world: the car and what it is worth at the left, the bidding at the right, the answer at its foot.
-        private static void Auction(UiScene s, EstateAuction a, UiFrame frame, IUiKeys keys)
+        // A lot of the trade auction as a page of the window: the car and what it is worth at the left, the bidding at the right.
+        private static void Auction(UiScene s, UiAt at, EstateModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
-            float fw = frame.Width, fh = frame.Height - UiFrame.Strip;
-            UiDraw.Box(s, UiAt.Screen, 0f, 0f, fw, frame.Height, UiRole.Scrim, UiRole.None, 0f, UiFlags.Decor);
-            float pw = Math.Min(UiDraw.SnapDown(fw * 0.88f), UiTokens.S16 * 64f), pad = UiTokens.S5;
-            float ph = Math.Min(UiDraw.SnapDown(fh * 0.8f), UiTokens.S16 * 38f);
-            float px = UiDraw.SnapDown((fw - pw) / 2f), py = UiDraw.SnapDown((fh - ph) / 2f);
-            int panel = UiDraw.Box(s, UiAt.Screen, px, py, pw, ph, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
-            UiAt on = UiAt.Screen.In(panel);
-            float y = UiDraw.TitleStrip(s, on, px, py, pw, a.Icon, a.Kicker, true) + UiTokens.S4;
-            float lw = UiDraw.SnapDown((pw - pad * 3f) * 0.42f), rw = pw - pad * 3f - lw;
-            float lx = px + pad, rx = lx + lw + pad;
-            float picH = UiDraw.SnapDown(lw / Math.Max(1f, a.Aspect));
+            EstateAuction a = m.Auction;
+            UiAt head = at.InRegion(RegionHead);
+            y = TopBar(s, head, m.Back, new UiActionModel[0], x, y, w, keys);
+            UiDraw.Text(s, head, x, y, w, UiStyle.SectionHeader, UiRole.Text2, a.Kicker, UiFlags.Label | UiFlags.Truncate);
+            y += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3;
+            float lw = UiDraw.SnapDown((w - UiTokens.S6) * 0.42f), rw = w - UiTokens.S6 - lw;
+            float lx = x, rx = x + lw + UiTokens.S6;
+            float picH = Math.Min(UiDraw.SnapDown(lw / Math.Max(1f, a.Aspect)), UiTokens.S16 * 12f);
+            UiAt on = at.InRegion(RegionLeft);
             int pic = UiDraw.Box(s, on, lx, y, lw, picH, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
             if (!string.IsNullOrEmpty(a.Picture))
             {
                 var item = new UiItem
                 {
-                    Kind = UiKind.Picture, Flags = UiFlags.Middle | UiFlags.Centre, X = lx, Y = y, W = lw, H = picH, Text = a.Picture, Value = 1f, Clip = on.Clip, Node = -1, Layer = on.Layer, Order = on.Order,
+                    Kind = UiKind.Picture, Flags = UiFlags.Middle | UiFlags.Centre, X = lx, Y = y, W = lw, H = picH, Text = a.Picture, Value = a.Aspect, Clip = on.Clip, Node = -1, Layer = on.Layer, Order = on.Order,
                     Parent = pic, Alpha = 1f
                 };
                 s.Add(ref item);
@@ -131,8 +129,8 @@ namespace RealLifeOverhaul.Ui
                 float g = UiTokens.S16;
                 UiDraw.Icon(s, on.In(pic), lx + (lw - g) / 2f, y + (picH - g) / 2f, g, a.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
             }
-            UiFactCard.Lay(s, on.InRegion(RegionLeft), a.Left, lx, y + picH + UiTokens.S3, lw, py + ph - pad - (y + picH + UiTokens.S3), keys, false);
-            UiFactCard.Lay(s, on.InRegion(RegionRight), a.Right, rx, y, rw, py + ph - pad - y, keys, false);
+            UiFactCard.Lay(s, on, a.Left, lx, y + picH + UiTokens.S3, lw, bottom - (y + picH + UiTokens.S3), keys, true);
+            UiFactCard.Lay(s, at.InRegion(RegionRight), a.Right, rx, y, rw, bottom - y, keys, true);
         }
     }
 }

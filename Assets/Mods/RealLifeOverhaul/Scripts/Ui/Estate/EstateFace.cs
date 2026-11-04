@@ -36,17 +36,6 @@ namespace RealLifeOverhaul.Ui
                 UiInfoView.Lay(s, m.Rents, frame, dark, keys);   // the city's rents stand over the world with no window, as every info view
                 return;
             }
-            if (m.Shape == EstateShape.Auction && m.Auction != null)
-            {
-                s.Begin("estate", frame.Width, frame.Height, dark);
-                Auction(s, m.Auction, frame, keys);
-                for (int i = 0; i < m.Prompts.Length; i++)
-                {
-                    s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
-                }
-                UiDraw.PromptBar(s, frame, keys);
-                return;
-            }
             s.Begin("estate", frame.Width, frame.Height, dark);
             UiAt at = UiAppWindow.Shell(s, frame, m.Title, m.Icon, m.Nav, m.Tab, m.TabsAcross, keys, out float x, out float y, out float w, out float bottom);
             switch (m.Shape)
@@ -62,6 +51,9 @@ namespace RealLifeOverhaul.Ui
                     break;
                 case EstateShape.Detail:
                     DetailPage(s, at, m, x, y, w, bottom, keys);
+                    break;
+                case EstateShape.Auction:
+                    Auction(s, at, m, x, y, w, bottom, keys);
                     break;
                 case EstateShape.Catalogue:
                     CataloguePage(s, at, m, x, y, w, bottom, keys);
@@ -87,6 +79,7 @@ namespace RealLifeOverhaul.Ui
         // A glyph on its tile, the page's title and a line under it, and up to four figures at the right. Returns the height.
         private static float Head(UiScene s, UiAt at, EstateModel m, float x, float y, float w)
         {
+            float linkW = string.IsNullOrEmpty(m.TableLink) || m.Shape != EstateShape.Table ? 0f : Math.Min(UiDraw.SnapDown(w * 0.3f), UiDraw.Snap(UiTextRules.Width(m.TableLink, UiStyle.Body) + UiTokens.Icon + UiTokens.S4));
             int tile = UiDraw.Tile(s, at, x, y, TileBig, UiRole.None, false);
             float g = UiTokens.S8;
             UiDraw.Icon(s, at.In(tile), x + (TileBig - g) / 2f, y + (TileBig - g) / 2f, g, m.HeadIcon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
@@ -102,7 +95,12 @@ namespace RealLifeOverhaul.Ui
             float room = x + w - tx - (figW > 0f ? figW + UiTokens.S6 : 0f);
             UiDraw.Text(s, at, tx, y + UiTokens.S1, room, UiStyle.Display, UiRole.Text, m.HeadTitle, UiFlags.Truncate);
             float nh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display));
-            UiDraw.Text(s, at, tx, y + UiTokens.S1 + nh + UiTokens.S1, room, UiStyle.Body, UiRole.Text2, m.HeadSub, UiFlags.Truncate);
+            UiDraw.Text(s, at, tx, y + UiTokens.S1 + nh + UiTokens.S2, room - (linkW > 0f ? linkW + UiTokens.S3 : 0f), UiStyle.Body, UiRole.Text2, m.HeadSub, UiFlags.Truncate);
+            if (linkW > 0f)
+            {
+                float sub = y + UiTokens.S1 + nh + UiTokens.S2;
+                UiDraw.LinkRow(s, at, tx + room - linkW, sub - UiDraw.SnapDown((UiTokens.Control - UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body))) / 2f), linkW, UiTokens.Control, m.TableLink, ActionCommand, m.TableLinkRun);
+            }
             float fx = x + w - figW;
             for (int i = 0; i < n; i++)
             {
@@ -143,11 +141,11 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
-            UiDraw.TextMiddle(s, at, x, y, UiTokens.PairRow, w - UiTokens.S16 * 2f, UiStyle.SectionHeader, UiRole.Text2, title, UiFlags.Label | UiFlags.Truncate);
-            if (!string.IsNullOrEmpty(link))
+            float lw = string.IsNullOrEmpty(link) ? 0f : Math.Min(UiDraw.SnapDown(w * 0.5f), UiDraw.Snap(UiTextRules.Width(link, UiStyle.Body) + UiTokens.Icon + UiTokens.S4));
+            UiDraw.TextMiddle(s, at, x, y, UiTokens.PairRow, w - lw - (lw > 0f ? UiTokens.S3 : 0f), UiStyle.SectionHeader, UiRole.Text2, title, UiFlags.Label | UiFlags.Truncate);
+            if (lw > 0f)
             {
-                float lw = Math.Min(UiDraw.SnapDown(w * 0.5f), UiDraw.Snap(UiTextRules.Width(link, UiStyle.Body) + UiTokens.Icon + UiTokens.S4));
-                UiDraw.LinkRow(s, at, x + w - lw, y - (UiTokens.Control - UiTokens.PairRow) / 2f, lw, UiTokens.Control, link, ActionCommand, linkRun);
+                UiDraw.LinkRow(s, at, x + w - lw, y - UiDraw.SnapDown((UiTokens.Control - UiTokens.PairRow) / 2f), lw, UiTokens.Control, link, ActionCommand, linkRun);
             }
             float ry = y + UiTokens.PairRow + UiTokens.S2;
             if (rows.Length == 0)
@@ -168,9 +166,9 @@ namespace RealLifeOverhaul.Ui
         /// <summary>A short row: a glyph (or a face) on its tile, a title with a line under it, a state chip and an amount; the whole row a target when it has a run.</summary>
         internal static void Row(UiScene s, UiAt at, EstateRow r, float x, float y, float w)
         {
-            int face = UiDraw.Box(s, at, x - UiTokens.S2, y, w + UiTokens.S4, RowHeight - UiTokens.S1, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
+            int face = UiDraw.Box(s, at, x - UiTokens.S2, y, w + UiTokens.S4, RowHeight, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
             UiAt on = at.In(face);
-            float tile = UiTokens.ControlSmall, ty = y + (RowHeight - UiTokens.S1 - tile) / 2f;
+            float tile = UiTokens.ControlSmall, ty = y + UiDraw.SnapDown((RowHeight - tile) / 2f);
             if (!string.IsNullOrEmpty(r.Face))
             {
                 UiDraw.Portrait(s, on, x, ty, tile, r.Face, r.Hue, UiRole.None);
@@ -184,18 +182,18 @@ namespace RealLifeOverhaul.Ui
             float amount = string.IsNullOrEmpty(r.Amount) ? 0f : UiDraw.Snap(UiTextRules.Width(r.Amount, UiStyle.BodyStrong) + UiTokens.S1);
             if (amount > 0f)
             {
-                UiDraw.TextMiddle(s, on, right - amount, y, RowHeight - UiTokens.S1, amount, UiStyle.BodyStrong, r.AmountInk == UiRole.None ? UiRole.Text : r.AmountInk, r.Amount, UiFlags.Right);
+                UiDraw.TextMiddle(s, on, right - amount, y, RowHeight, amount, UiStyle.BodyStrong, r.AmountInk == UiRole.None ? UiRole.Text : r.AmountInk, r.Amount, UiFlags.Right);
                 right -= amount + UiTokens.S3;
             }
             float chip = string.IsNullOrEmpty(r.Chip) ? 0f : Math.Min(UiDraw.SnapDown(w * 0.34f), UiFactCard.ChipWidth(r.Chip));
             if (chip > 0f)
             {
-                UiDraw.Chip(s, on, right - chip, y + (RowHeight - UiTokens.S1 - UiTokens.Badge - UiTokens.S1) / 2f, r.Chip, r.ChipTone, chip);
+                UiDraw.Chip(s, on, right - chip, y + UiDraw.SnapDown((RowHeight - UiTokens.Badge - UiTokens.S1) / 2f), r.Chip, r.ChipTone, chip);
                 right -= chip + UiTokens.S3;
             }
             float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title));
             bool two = !string.IsNullOrEmpty(r.Sub);
-            float top = y + (RowHeight - UiTokens.S1 - (two ? lh + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) : lh)) / 2f;
+            float top = y + UiDraw.SnapDown((RowHeight - (two ? lh + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) : lh)) / 2f);
             UiDraw.Text(s, on, tx, top, right - tx, UiStyle.Title, UiRole.Text, r.Title, UiFlags.Truncate | UiFlags.Middle);
             if (two)
             {
@@ -203,7 +201,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (r.Run >= 0)
             {
-                UiDraw.Node(s, at, x - UiTokens.S2, y, w + UiTokens.S4, RowHeight - UiTokens.S1, ActionCommand, r.Run, face);
+                UiDraw.Node(s, at, x - UiTokens.S2, y, w + UiTokens.S4, RowHeight, ActionCommand, r.Run, face);
             }
         }
 
@@ -212,11 +210,6 @@ namespace RealLifeOverhaul.Ui
             y += Head(s, at.InRegion(RegionHead), m, x, y, w);
             float sw = m.Side != null ? Math.Min(SideWidth, UiDraw.SnapDown(w * 0.34f)) : 0f;
             float tw = w - (sw > 0f ? sw + UiTokens.S4 : 0f);
-            if (!string.IsNullOrEmpty(m.TableLink))
-            {
-                float lw = Math.Min(UiDraw.SnapDown(tw * 0.5f), UiDraw.Snap(UiTextRules.Width(m.TableLink, UiStyle.Body) + UiTokens.Icon + UiTokens.S4));
-                UiDraw.LinkRow(s, at.InRegion(RegionHead), x + tw - lw, y - UiTokens.Control - UiTokens.S1, lw, UiTokens.Control, m.TableLink, ActionCommand, m.TableLinkRun);
-            }
             m.TableList = UiDataTable.Lay(s, at.InRegion(RegionTable), m.Table, x, y, tw, bottom - y, keys, TableBase);
             m.TableClip = ClipOf(s, m.TableList);
             if (m.Side != null)
@@ -236,18 +229,18 @@ namespace RealLifeOverhaul.Ui
             float tx = x + TileBig + UiTokens.S4;
             float chip = string.IsNullOrEmpty(m.DetailChip) ? 0f : UiFactCard.ChipWidth(m.DetailChip);
             float nh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display));
-            UiDraw.Text(s, head, tx, y + UiTokens.S1, x + w - tx - (chip > 0f ? chip + UiTokens.S3 : 0f), UiStyle.Display, UiRole.Text, m.DetailTitle, UiFlags.Truncate);
+            float nameW = Math.Min(x + w - tx - (chip > 0f ? chip + UiTokens.S3 : 0f), UiDraw.Snap(UiTextRules.Width(m.DetailTitle ?? string.Empty, UiStyle.Display) + UiTokens.S1));
+            UiDraw.Text(s, head, tx, y + UiTokens.S1, nameW, UiStyle.Display, UiRole.Text, m.DetailTitle, UiFlags.Truncate);
             if (chip > 0f)
             {
-                float nameW = Math.Min(x + w - tx - chip - UiTokens.S3, UiDraw.Snap(UiTextRules.Width(m.DetailTitle ?? string.Empty, UiStyle.Display) + UiTokens.S1));
-                UiDraw.Chip(s, head, tx + nameW + UiTokens.S3, y + UiTokens.S1 + (nh - UiTokens.Badge - UiTokens.S1) / 2f, m.DetailChip, m.DetailChipTone, chip);
+                UiDraw.Chip(s, head, tx + nameW + UiTokens.S3, y + UiTokens.S1 + UiDraw.SnapDown((nh - UiTokens.Badge - UiTokens.S1) / 2f), m.DetailChip, m.DetailChipTone, chip);
             }
-            float subY = y + UiTokens.S1 + nh + UiTokens.S1;
+            float subY = y + UiTokens.S2 + nh + UiTokens.S1;
             float subRoom = x + w - tx;
             if (!string.IsNullOrEmpty(m.DetailLocate))
             {
                 float lw = Math.Min(UiDraw.SnapDown(subRoom * 0.4f), UiDraw.Snap(UiTextRules.Width(m.DetailLocate, UiStyle.Body) + UiTokens.Icon + UiTokens.S4));
-                UiDraw.LinkRow(s, head, x + w - lw, subY - (UiTokens.Control - UiTokens.PairRow) / 2f, lw, UiTokens.Control, m.DetailLocate, ActionCommand, m.DetailLocateRun);
+                UiDraw.LinkRow(s, head, x + w - lw, subY - UiDraw.SnapDown((UiTokens.Control - UiTokens.PairRow) / 2f), lw, UiTokens.Control, m.DetailLocate, ActionCommand, m.DetailLocateRun);
                 subRoom -= lw + UiTokens.S3;
             }
             UiDraw.Text(s, head, tx, subY, subRoom, UiStyle.Body, UiRole.Text2, m.DetailSub, UiFlags.Truncate);

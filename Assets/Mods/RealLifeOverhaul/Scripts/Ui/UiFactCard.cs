@@ -69,7 +69,7 @@ namespace RealLifeOverhaul.Ui
     public static class UiFactCard
     {
         private const float StepLabel = 0.36f;   // of a card's width, a step's name
-        private const int SentenceLines = 4;
+        private const int SentenceLines = 8;
 
         /// <summary>Draws the card; returns the height it takes (never more than <paramref name="limit"/>).</summary>
         public static float Lay(UiScene s, UiAt at, UiFactCardModel c, float x, float y, float w, float limit, IUiKeys keys, bool band)
@@ -163,7 +163,7 @@ namespace RealLifeOverhaul.Ui
                     return UiTokens.Control;
                 case UiFactKind.Step:
                 {
-                    float hint = string.IsNullOrEmpty(l.Hint) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(l.Hint, UiStyle.Small, w, 2)) + UiTokens.S1;
+                    float hint = string.IsNullOrEmpty(l.Hint) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(l.Hint, UiStyle.Small, w, 4)) + UiTokens.S1;
                     return UiTokens.Control + hint + UiTokens.S2;
                 }
                 case UiFactKind.Heading:
@@ -190,7 +190,7 @@ namespace RealLifeOverhaul.Ui
                     UiDraw.Text(s, at, x + UiTokens.Icon + UiTokens.S2, y + UiTokens.S1, w - UiTokens.Icon - UiTokens.S2, UiStyle.Body, UiRole.Text2, l.Value, UiFlags.Wrap | UiFlags.Label, SentenceLines);
                     break;
                 case UiFactKind.Meter:
-                    UiDraw.GradeBar(s, at, x, y, w, l.Label, l.Fill, 0f);
+                    UiDraw.GradeBar(s, at, x, y, w, l.Label, l.Fill, Math.Min(UiDraw.SnapDown(w * 0.5f), UiDraw.Snap(UiTextRules.Width(l.Label ?? string.Empty, UiStyle.Body) + UiTokens.S2)));
                     break;
                 case UiFactKind.Link:
                     UiDraw.LinkRow(s, at, x, y, w, UiTokens.Control, l.Value, l.Command, l.Arg);
@@ -222,7 +222,7 @@ namespace RealLifeOverhaul.Ui
             UiDraw.TextMiddle(s, at.In(field), fx + UiTokens.S2, y, UiTokens.Control, fw - UiTokens.S4, UiStyle.BodyStrong, UiRole.Text, l.Value, UiFlags.Centre | UiFlags.Truncate);
             if (!string.IsNullOrEmpty(l.Hint))
             {
-                UiDraw.Text(s, at, x, y + UiTokens.Control + UiTokens.S1, w, UiStyle.Small, UiRole.Text2, l.Hint, UiFlags.Wrap | UiFlags.Label, 2);
+                UiDraw.Text(s, at, x, y + UiTokens.Control + UiTokens.S1, w, UiStyle.Small, UiRole.Text2, l.Hint, UiFlags.Wrap | UiFlags.Label, 4);
             }
         }
 
