@@ -74,6 +74,9 @@ namespace RealLifeOverhaul.Ui
 
         // Laid out: the strip's width, as wide as its words, meter, clock and buttons need (StripPlace writes it).
         public float StripW;
+
+        // Appended with the minimap's place (4 Nov 2026): px of the layout, the mod's minimap card the strip keeps clear of; 0 wide for none.
+        public float AvoidX, AvoidY, AvoidW, AvoidH;
     }
 
     /// <summary>
@@ -189,12 +192,17 @@ namespace RealLifeOverhaul.Ui
             return c;
         }
 
-        /// <summary>The strip's place: centred over the status bar's apps, a grid step above the bar.</summary>
-        public static void StripPlace(UiFrame frame, UiActivityModel m, out float x, out float y)
+        /// <summary>The strip's place: centred over the status bar's apps, a grid step above the bar, and off the minimap's card where it stands there.</summary>
+        public static void StripPlace(UiFrame frame, UiActivityModel m, out float x, out float y) =>
+            StripPlace(frame, m, m.AvoidX, m.AvoidY, m.AvoidW, m.AvoidH, out x, out y);
+
+        /// <summary>The strip's place for a layout that has its own px: the card to keep clear of is that layout's, not the model's.</summary>
+        public static void StripPlace(UiFrame frame, UiActivityModel m, float cardX, float cardY, float cardW, float cardH, out float x, out float y)
         {
             m.StripW = Width(frame, m);
             x = UiDraw.SnapDown((frame.Width - m.StripW) / 2f);
             y = frame.BandY - UiTokens.S3 - Height(m);
+            UiHudRules.Clear(ref x, ref y, m.StripW, Height(m), frame.Width, cardX, cardY, cardW, cardH);
         }
 
         /// <summary>

@@ -385,6 +385,7 @@ namespace RealLifeOverhaul.Ui
                 m.ActivityClear = ActivityStrip != null ? ActivityStrip() : null;
                 sig = sig * 31 + (m.ActivityClear != null ? 1 + (int)m.ActivityClear.State : 0);
                 sig = sig * 31 + PhoneBox(m);
+                sig = sig * 31 + MinimapBox(m);
             }
             if (sig != _signature)
             {
@@ -392,6 +393,13 @@ namespace RealLifeOverhaul.Ui
                 host.Screen.Dirty = true;
                 Place(true);
             }
+        }
+
+        // The minimap's card in the layout's px, for the pieces that keep clear of it; its place is part of what the HUD is laid out from.
+        private static int MinimapBox(UiHudModel m)
+        {
+            UiMinimapBox.Read(FrameWidth, FrameHeight, out m.AvoidX, out m.AvoidY, out m.AvoidW, out m.AvoidH);
+            return UiMinimapBox.Stamp(m.AvoidX, m.AvoidY, m.AvoidW, m.AvoidH);
         }
 
         private static int SidesSample(UiHudModel m)
