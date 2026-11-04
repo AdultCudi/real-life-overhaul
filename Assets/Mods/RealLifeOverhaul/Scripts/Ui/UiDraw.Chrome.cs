@@ -96,14 +96,14 @@ namespace RealLifeOverhaul.Ui
         /// line and even room above and below it. In its middle the app row, big tiles in the player's order (the open one in
         /// the chosen tone, its news counted on a tile's corner, All apps last); at its left and right the pills (UiDraw.HudBar:
         /// the time with the game's speed, the weather, the place; the needs, the alerts, the money and the settings at the
-        /// corner). While the keys lead their prompts stand between the row and the right pills; with the mouse leading no
-        /// prompt shows, as the mouse does it by pointing, as the game's own bar works.
+        /// corner). While the keys lead their prompts stand as chips in the lane over the bar (UiDraw.KeyChips), never on the
+        /// strip, so the tray keeps its place whatever they say; with the mouse leading no prompt shows, as in the game's own bar.
         /// </summary>
         public static void StatusBar(UiScene s, UiFrame frame, IUiKeys keys) => StatusBar(s, frame, keys, true);
 
         /// <summary>
-        /// The status bar, its prompts in it (<paramref name="prompts"/>) or left to the caller, as the HUD sets the game's
-        /// control hints in key chips over the bar's right end (UiDraw.KeyChips).
+        /// The status bar, its prompts as key chips over it (<paramref name="prompts"/>) or left to the caller, as the HUD sets
+        /// the game's control hints where its other pieces leave room (UiHud.Bar).
         /// </summary>
         public static void StatusBar(UiScene s, UiFrame frame, IUiKeys keys, bool prompts)
         {
@@ -116,12 +116,11 @@ namespace RealLifeOverhaul.Ui
             {
                 s.AddPrompt(UiAction.View, m.AllAppsLabel);   // the pad's View opens All apps from anywhere: said while a pad leads
             }
-            float room = frame.Pointer || !prompts ? 0f : PromptsWidth(s, keys);
-            UiPillPlan p = PlanPills(m, w, room);
-            s.PromptX = 0f;
-            s.PromptY = y;
-            s.PromptW = w;
-            s.PromptH = frame.Band;   // the bar is there for the prompts either way: they show while the keys lead
+            UiPillPlan p = PlanPills(m, w);
+            s.PromptX = BarEdge;
+            s.PromptY = y - UiFrame.PromptLane;
+            s.PromptW = w - BarEdge * 2f;
+            s.PromptH = UiFrame.PromptLane;   // the lane is there for the prompts either way: they show while the keys lead
             int row = s.NodeCount;
             if (m != null)
             {
@@ -130,7 +129,8 @@ namespace RealLifeOverhaul.Ui
             int rowEnd = s.NodeCount;
             if (!frame.Pointer && prompts)
             {
-                Prompts(s, p.PromptX, y, p.PromptX + room, frame.Band, keys);
+                KeyChipsPlace(s, frame, keys, out float cx, out float cy, out float cw, out float _);
+                KeyChips(s, cx + cw, cy, keys, KeyChipsRoom(frame));
             }
             if (m != null)
             {
@@ -155,17 +155,6 @@ namespace RealLifeOverhaul.Ui
             return false;
         }
 
-        // The keys' prompts' width as Prompts lays them: each key's cap and its words, a gap between.
-        private static float PromptsWidth(UiScene s, IUiKeys keys)
-        {
-            float w = 0f;
-            for (int i = 0; i < s.PromptCount; i++)
-            {
-                w += PromptWidth(ref s.Prompts[i], keys) + (i > 0 ? UiTokens.S6 : 0f);
-            }
-            return Snap(w);
-        }
-
         /// <summary>A status pill: an icon in its tint and its words. Returns its width.</summary>
         public static float Pill(UiScene s, UiAt at, float x, float y, UiIcon icon, UiRole tint, string text, UiRole ink)
         {
@@ -184,37 +173,6 @@ namespace RealLifeOverhaul.Ui
 
         private static float PillWidth(UiIcon icon, string text) =>
             Snap(UiTokens.S2 + (icon != UiIcon.None ? UiTokens.Icon + UiTokens.S2 : 0f) + UiTextRules.Width(text, UiStyle.Body) + UiTokens.S1 + UiTokens.S3);
-
-        // The keys' prompts at the right of a row, while the keys lead: each key's cap and its words.
-        private static void Prompts(UiScene s, float x, float y, float right, float h, IUiKeys keys)
-        {
-            s.PromptX = x;
-            s.PromptY = y;
-            s.PromptW = right - x;
-            s.PromptH = h;
-            float cx = right;
-            float capY = y + (h - UiTokens.KeyCap) / 2f;
-            for (int i = s.PromptCount - 1; i >= 0; i--)
-            {
-                ref UiPrompt p = ref s.Prompts[i];
-                float lw = UiTextRules.Width(p.Label, UiStyle.Prompt) + UiTokens.S1;
-                float pw = PromptWidth(ref p, keys);
-                cx -= pw;
-                int first = s.ItemCount;
-                float kx = cx + KeyCap(s, UiAt.Screen, cx, capY, p.Action, keys, UiRole.PromptCap, UiRole.PromptInk);
-                if (p.Action == UiAction.TabPrev)
-                {
-                    kx += UiTokens.S1;
-                    kx += KeyCap(s, UiAt.Screen, kx, capY, UiAction.TabNext, keys, UiRole.PromptCap, UiRole.PromptInk);
-                }
-                TextMiddle(s, UiAt.Screen, kx + UiTokens.S2, y, h, lw, UiStyle.Prompt, UiRole.PromptInk, p.Label, UiFlags.Label);
-                for (int k = first; k < s.ItemCount; k++)
-                {
-                    s.Items[k].Flags |= UiFlags.Middle | UiFlags.Prompt | UiFlags.Chrome;
-                }
-                cx -= UiTokens.S6;
-            }
-        }
 
         /// <summary>A section's darker band inside a panel, as Cities: Skylines II parts its sections.</summary>
         public static int Band(UiScene s, UiAt at, float x, float y, float w, float h) => Box(s, at, x, y, w, h, UiRole.Band, UiRole.None, 0f, UiFlags.Decor);
