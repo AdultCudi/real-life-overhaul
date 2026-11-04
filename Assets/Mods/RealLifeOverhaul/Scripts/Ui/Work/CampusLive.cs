@@ -394,7 +394,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Month = name, Weekdays = weekdays, Lead = RealLifeOverhaul.Calendar.MonthViewRules.Lead(from), Length = length,
                     Today = thisMonth ? today - from + 1 : 0, Chosen = chosen, PastBefore = thisMonth ? today - from + 1 : 0,
-                Entries = entries.ToArray(),
+                Entries = WorkSkills.Tinted(entries),
                     ChosenTitle = weekdays[(RealLifeOverhaul.Calendar.MonthViewRules.Lead(from) + chosen - 1) % 7] + " " + chosen.ToString(Inv) + " " + name,
                     ChosenEmpty = UiText.T("reallife_work_diary_empty"),
                 AheadTitle = UiText.T("reallife_work_diary_ahead"), CanBack = true, CanOn = true
@@ -713,7 +713,8 @@ namespace RealLifeOverhaul.Ui
             }
             var tutor = new WorkFormBand { Title = w.T("reallife_work_tutor_title", "Tutor a pupil") };
             string why = d.CanTutor(out int _);
-            tutor.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_tutor_note", "Teach a pupil a skill you know well, for a fee. It takes an evening."),
+            tutor.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = w.T("reallife_work_tutor_note", "Teach a pupil a skill you know well, for a fee. It takes an evening.") });
+            tutor.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = string.Empty,
                 Act = new WorkAct { Kind = Tutor, Label = w.T("reallife_campus_button_tutor", "Give a tutoring session"),
                 Style = UiButtonKind.Secondary, Icon = UiIcon.Cap, Why = why == null ? null : w.T(why, "You cannot tutor now.") } });
             form.Left.Insert(0, tutor);

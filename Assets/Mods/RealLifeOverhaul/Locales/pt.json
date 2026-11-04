@@ -31833,8 +31833,6 @@
   "reallife_own_registration": "Registro",
   "reallife_own_found_title": "Fundar uma empresa",
   "reallife_own_colleagues_label": "Colegas esperando",
-  "reallife_own_alone_label": "Sozinho",
-  "reallife_own_with_label": "Com colegas",
   "reallife_own_practice_leave_label": "Saída para sua atividade",
   "reallife_own_contracts": "Contratos",
   "reallife_work_due_day": "Vence {day}",
@@ -32221,7 +32219,7 @@
   "reallife_work_due_offer": "Responder à oferta",
   "reallife_work_due_answer": "Aguardar resposta",
   "reallife_work_band_record": "Seu histórico, na avaliação deles",
-  "reallife_work_stand_colleagues": "Com colegas",
+  "reallife_work_stand_colleagues": "Colegas",
   "reallife_work_band_best": "Melhores salários para você",
   "reallife_work_band_door_away": "A um curso de distância",
   "reallife_work_band_own_record": "Seu histórico",
@@ -32272,5 +32270,6 @@
   "reallife_work_band_most_looking": "Mais gente procurando",
   "reallife_work_shortage_n": "Falta {n}",
   "reallife_work_looking_n": "{n} procurando",
-  "reallife_work_skills_word": "Habilidades e desgaste"
+  "reallife_work_skills_word": "Habilidades e desgaste",
+  "reallife_work_shift_days": "Dias"
 }

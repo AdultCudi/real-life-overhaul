@@ -31833,8 +31833,6 @@
   "reallife_own_registration": "注册",
   "reallife_own_found_title": "创办公司",
   "reallife_own_colleagues_label": "同事等待中",
-  "reallife_own_alone_label": "独自创业",
-  "reallife_own_with_label": "与同事一起",
   "reallife_own_practice_leave_label": "为你的执业离职",
   "reallife_own_contracts": "合同",
   "reallife_work_due_day": "截止{day}",
@@ -32221,7 +32219,7 @@
   "reallife_work_due_offer": "回复录用通知",
   "reallife_work_due_answer": "等待答复",
   "reallife_work_band_record": "雇主评估你的履历",
-  "reallife_work_stand_colleagues": "与同事的关系",
+  "reallife_work_stand_colleagues": "同事",
   "reallife_work_band_best": "对你开放的最高薪",
   "reallife_work_band_door_away": "差一门课",
   "reallife_work_band_own_record": "你的履历",
@@ -32272,5 +32270,6 @@
   "reallife_work_band_most_looking": "求职者最多",
   "reallife_work_shortage_n": "缺口{n}",
   "reallife_work_looking_n": "{n}人在找",
-  "reallife_work_skills_word": "技能与损耗"
+  "reallife_work_skills_word": "技能与损耗",
+  "reallife_work_shift_days": "天数"
 }

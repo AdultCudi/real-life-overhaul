@@ -502,7 +502,8 @@ internal static partial class UiSamples
             contract.Foot = WkAct(127, w.T("reallife_work_set_arrangement", "Set this arrangement"), UiButtonKind.Primary, UiIcon.Check, work == 0 ? w.T("reallife_work_already_set", "It is set so.") : null);
             form.Left.Add(contract);
             var terms = new WorkFormBand { Title = w.T("reallife_work_terms_title", "Terms and leaving") };
-            terms.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = Sf(w, "reallife_roles_contract_clause_off", "percent", "10%"),
+            terms.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = Sf(w, "reallife_roles_contract_clause_off", "percent", "10%") });
+            terms.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = string.Empty,
                 Act = WkAct(128, w.T("reallife_roles_button_clause", "Add a restraint clause"), UiButtonKind.Secondary, UiIcon.Lock) });
             terms.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_lay_off_label", "Lay them off"),
                 Act = WkAct(129, w.T("reallife_roles_button_lay_off", "Lay off"), UiButtonKind.Destructive, UiIcon.SignOut) });

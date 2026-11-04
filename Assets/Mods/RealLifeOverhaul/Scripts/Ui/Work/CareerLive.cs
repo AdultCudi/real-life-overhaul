@@ -316,7 +316,7 @@ namespace RealLifeOverhaul.Ui
                 r.Figures.Add(new KeyValuePair<string, string>(words.T("reallife_work_col_hours", "Hours"), CareersText.HourSpan(p)));
                 r.Sections.Add(needs);
                 var shift = new WorkSection { Part = WorkPart.Pairs, Title = words.T("reallife_work_the_shift", "The shift") };
-                shift.Pairs.Add(new KeyValuePair<string, string>(words.T("reallife_work_days_word", "Days"), CareersText.DaySpan(p.Days)));
+                shift.Pairs.Add(new KeyValuePair<string, string>(words.T("reallife_work_shift_days", "Days"), CareersText.DaySpan(p.Days)));
                 r.Sections.Add(shift);
                 if (mine > 0)
                 {

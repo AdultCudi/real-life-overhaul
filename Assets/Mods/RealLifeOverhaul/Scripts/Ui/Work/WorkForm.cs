@@ -124,7 +124,7 @@ namespace RealLifeOverhaul.Ui
                 case WorkField.Person: return 48f;
                 case WorkField.Bar: return UiTokens.PairRow + UiTokens.S1;
                 case WorkField.Label: return UiTokens.PairRow + UiTokens.S1;
-                case WorkField.Text: return UiTextRules.WrappedHeight(r.Value ?? string.Empty, UiStyle.Body, w, 4) + UiTokens.S2;
+                case WorkField.Text: return UiDraw.Snap(UiTextRules.WrappedHeight(r.Value ?? string.Empty, UiStyle.Body, w, 4) + UiTokens.S2);
                 case WorkField.Tile: return 48f;
                 case WorkField.Check: return UiTokens.PairRow + UiTokens.S1;
                 case WorkField.Nudge: return UiTokens.Control + UiTokens.S1;
@@ -230,8 +230,9 @@ namespace RealLifeOverhaul.Ui
                         float said = 0f;
                         if (!string.IsNullOrEmpty(r.Label))
                         {
-                            said = Math.Min(lw, UiTextRules.Width(r.Label, UiStyle.Body) + UiTokens.S3);
-                            UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, lw, UiStyle.Body, UiRole.Text, r.Label, UiFlags.Label | UiFlags.Truncate);
+                            said = Math.Min(lw, UiDraw.Snap(UiTextRules.Width(r.Label, UiStyle.Body) + UiTokens.S4));
+                            UiStyle ink = UiTextRules.Width(r.Label, UiStyle.Body) > lw ? UiStyle.Small : UiStyle.Body;   // a label the long buttons beside it leave no room for stands in the small cut
+                            UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, string.IsNullOrEmpty(r.Why) ? lw : said, ink, UiRole.Text, r.Label, UiFlags.Label | UiFlags.Truncate);
                         }
                         if (!string.IsNullOrEmpty(r.Why) && lw - said > UiTokens.S16)
                         {

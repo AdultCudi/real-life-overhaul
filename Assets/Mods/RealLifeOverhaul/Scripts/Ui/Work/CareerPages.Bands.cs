@@ -70,7 +70,7 @@ namespace RealLifeOverhaul.Ui
                 var mine = new WorkFormBand { Title = w.T("reallife_work_band_record", "Your record, as they weigh it") };
                 mine.Rows.Add(Meter(w.T("reallife_work_stand_performance", "Performance"), record[0]));
                 mine.Rows.Add(Meter(w.T("reallife_work_stand_punctuality", "Punctuality"), record[1]));
-                mine.Rows.Add(Meter(w.T("reallife_work_stand_colleagues", "With colleagues"), record[2]));
+                mine.Rows.Add(Meter(w.T("reallife_work_stand_colleagues", "Colleagues"), record[2]));
                 mine.Rows.Add(Meter(w.T("reallife_work_stand_reliability", "Reliability"), record[3]));
                 apps.Below.Add(mine);
             }

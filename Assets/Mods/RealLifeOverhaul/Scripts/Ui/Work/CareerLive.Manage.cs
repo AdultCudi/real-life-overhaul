@@ -381,10 +381,10 @@ namespace RealLifeOverhaul.Ui
             if (j != null && j.NoticeEnd <= 0)
             {
                 string why = d.CanFoundLeave(j);
-                leave.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = words.T("reallife_own_alone_label", "On your own"),
+                leave.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = string.Empty,
                     Act = Act(CareerAct.Found, 0, words.T("reallife_own_button_found", "Leave to found a company"),
                     UiButtonKind.Secondary, UiIcon.Building, false, why == null ? null : words.T(why, "You cannot found a company from this job.")) });
-                leave.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = words.T("reallife_own_with_label", "With colleagues"), Act = Act(CareerAct.FoundWith, 0,
+                leave.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = string.Empty, Act = Act(CareerAct.FoundWith, 0,
                     words.T("reallife_own_button_found_colleagues", "Leave to found one, taking colleagues"), UiButtonKind.Secondary, UiIcon.People,
                     false, why == null && d.ColleaguesFirm() != null ? null : words.T("reallife_work_no_colleagues", "No colleagues would come with you.")) });
                 if (d.CanPracticeLeave(j) == null)

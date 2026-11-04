@@ -167,7 +167,7 @@ internal static partial class UiSamples
                 {
                     entries.Add(new UiDiaryEntry { Day = day, Icon = UiIcon.Coffee, Title = w.F("reallife_work_diary_class", "Class: {course}", "course", barista), Short = barista, Value = "10:00" });
                 }
-                if (weekday == 1 || weekday == 3)
+                if ((weekday == 1 || weekday == 3) && day <= 23)
                 {
                     entries.Add(new UiDiaryEntry { Day = day, Icon = UiIcon.Heart, Title = w.F("reallife_work_diary_class", "Class: {course}", "course", care), Short = care, Value = "09:00" });
                 }
@@ -177,7 +177,7 @@ internal static partial class UiSamples
             entries.Add(new UiDiaryEntry { Day = 23, Icon = UiIcon.Scales, Title = w.F("reallife_work_diary_exam", "Exam: {course}", "course", barista), Short = barista, Value = "10:00" });
             entries.Sort((a, b) => a.Day.CompareTo(b.Day));   // in date order, as the live diary sorts it
         }
-        m.Entries = entries.ToArray();
+        m.Entries = WorkSkills.Tinted(entries);
         t.Diary = new WorkDiary { Month = m };
         return t;
     }
@@ -298,8 +298,8 @@ internal static partial class UiSamples
             CampusBands.FamilyBand(w, form, "$0", 0, "$0", "$0");
         }
         var tutor = new WorkFormBand { Title = w.T("reallife_work_tutor_title", "Tutor a pupil") };
-        tutor.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_tutor_note",
-            "Teach a pupil a skill you know well, for a fee. It takes an evening."), Act = WkAct(106, w.T("reallife_campus_button_tutor",
+        tutor.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = w.T("reallife_work_tutor_note", "Teach a pupil a skill you know well, for a fee. It takes an evening.") });
+        tutor.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = string.Empty, Act = WkAct(106, w.T("reallife_campus_button_tutor",
             "Give a tutoring session"), UiButtonKind.Secondary, UiIcon.Cap) });
         form.Left.Insert(0, tutor);
         if (state != "family_none")

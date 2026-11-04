@@ -3,6 +3,17 @@ namespace RealLifeOverhaul.Ui
     /// <summary>A skill's glyph by its key (the part of reallife_study_skill_{key} after the prefix): each skill its own, so a page of skills is not one repeated icon. Game-free.</summary>
     public static class WorkSkills
     {
+        /// <summary>The diary's entries as an array, a heart (the red of a warning on the page's dark) drawn in the warm tone so it stands out from what is under it.</summary>
+        public static UiDiaryEntry[] Tinted(System.Collections.Generic.List<UiDiaryEntry> entries)
+        {
+            UiDiaryEntry[] all = entries.ToArray();
+            for (int i = 0; i < all.Length; i++)
+            {
+                all[i].Tint = all[i].Icon == UiIcon.Heart ? UiRole.Warn : all[i].Tint;
+            }
+            return all;
+        }
+
         public static UiIcon Glyph(string key)
         {
             switch (key)

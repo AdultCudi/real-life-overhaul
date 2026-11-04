@@ -31833,8 +31833,6 @@
   "reallife_own_registration": "Registration",
   "reallife_own_found_title": "Found a company",
   "reallife_own_colleagues_label": "Colleagues waiting",
-  "reallife_own_alone_label": "On your own",
-  "reallife_own_with_label": "With colleagues",
   "reallife_own_practice_leave_label": "Leave for your practice",
   "reallife_own_contracts": "Contracts",
   "reallife_work_due_day": "Due {day}",
@@ -32221,7 +32219,7 @@
   "reallife_work_due_offer": "Answer the offer",
   "reallife_work_due_answer": "Wait for an answer",
   "reallife_work_band_record": "Your record, as they weigh it",
-  "reallife_work_stand_colleagues": "With colleagues",
+  "reallife_work_stand_colleagues": "Colleagues",
   "reallife_work_band_best": "Best paid open to you",
   "reallife_work_band_door_away": "A course away",
   "reallife_work_band_own_record": "Your record",
@@ -32272,5 +32270,6 @@
   "reallife_work_band_most_looking": "Most people looking",
   "reallife_work_shortage_n": "Shortage {n}",
   "reallife_work_looking_n": "{n} looking",
-  "reallife_work_skills_word": "Skills and wear"
+  "reallife_work_skills_word": "Skills and wear",
+  "reallife_work_shift_days": "Days"
 }

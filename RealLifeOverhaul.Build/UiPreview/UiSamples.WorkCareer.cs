@@ -72,7 +72,7 @@ internal static partial class UiSamples
         r.Acts.Add(new WorkAct { Kind = 101, Arg = id, Label = w.T("reallife_career_button_map", "Show on map"), Style = UiButtonKind.Secondary, Icon = UiIcon.Locate, Opens = true });
         r.Sections.Add(checks);
         var shift = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_the_shift", "The shift") };
-        shift.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_days_word", "Days"), Sf(w, "reallife_career_row_hours", "from", SWd(w, 0), "to", SWd(w, 4))));
+        shift.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_shift_days", "Days"), Sf(w, "reallife_career_row_hours", "from", SWd(w, 0), "to", SWd(w, 4))));
         r.Sections.Add(shift);
         var against2 = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_pay_against", "Against your pay") };
         against2.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_your_pay_now", "Your pay now"), SPerHour(w, "$21.50")));
@@ -378,8 +378,8 @@ internal static partial class UiSamples
         practice.Foot = WkAct(134, w.T("reallife_own_button_close_practice", "Close the practice"), UiButtonKind.Destructive, UiIcon.Close);
         form.Left.Add(practice);
         var found = new WorkFormBand { Title = w.T("reallife_own_found_title", "Found a company") };
-        found.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = Sx(w, "reallife_own_alone_label"), Act = WkAct(135, w.T("reallife_own_button_found", "Leave to found a company"), UiButtonKind.Secondary, UiIcon.Building) });
-        found.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = Sx(w, "reallife_own_with_label"), Act = WkAct(136, Sx(w, "reallife_own_button_found_colleagues"), UiButtonKind.Secondary, UiIcon.People,
+        found.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = string.Empty, Act = WkAct(135, w.T("reallife_own_button_found", "Leave to found a company"), UiButtonKind.Secondary, UiIcon.Building) });
+        found.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = string.Empty, Act = WkAct(136, Sx(w, "reallife_own_button_found_colleagues"), UiButtonKind.Secondary, UiIcon.People,
             w.T("reallife_work_no_colleagues", "No colleagues would come with you.")) });
         form.Left.Add(found);
         var contracts = new WorkFormBand { Title = w.T("reallife_own_contracts", "Contracts"), Count = "3" };
@@ -387,8 +387,8 @@ internal static partial class UiSamples
         contracts.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = Sf(w, "reallife_work_due_day", "day", SDay(w, 415)), Act = WkAct(116, w.T("reallife_own_button_take", "Take it on"), UiButtonKind.Primary, UiIcon.Check, null, false, 40) });
         contracts.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Label = "Hollis and Sons", Hint = SPro(w, "carpenter") + ", " + Sx(w, "reallife_own_step_taken"), Value = "$640", Icon = UiIcon.Hammer });
         contracts.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = Sf(w, "reallife_work_due_day", "day", SDay(w, 418)), Act = WkAct(117, w.T("reallife_own_button_drop", "Drop it"), UiButtonKind.Destructive, UiIcon.Close, null, false, 41) });
-        contracts.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Label = "Ingrid Solberg", Hint = SPro(w, "carpenter") + ", " + Sx(w, "reallife_own_step_offered"), Value = "$310", Icon = UiIcon.Wrench });
-        contracts.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = Sf(w, "reallife_work_due_day", "day", SDay(w, 421)), Act = WkAct(116, w.T("reallife_own_button_take", "Take it on"), UiButtonKind.Primary, UiIcon.Check, null, false, 42) });
+        contracts.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Label = "Ingrid Solberg", Hint = SPro(w, "carpenter") + ", " + Sx(w, "reallife_own_step_taken"), Value = "$310", Icon = UiIcon.Wrench });
+        contracts.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = Sf(w, "reallife_work_due_day", "day", SDay(w, 421)), Act = WkAct(117, w.T("reallife_own_button_drop", "Drop it"), UiButtonKind.Destructive, UiIcon.Close, null, false, 42) });
         form.Right.Add(contracts);
         CareerPages.OwnBands(w, form, 5, 1280, new[] { "Rose Wilder", "Hollis and Sons", "Aldous Burke" }, new[] { "$180", "$640", "$420" },
             new[] { SDay(w, 380), SDay(w, 392), SDay(w, 404) });

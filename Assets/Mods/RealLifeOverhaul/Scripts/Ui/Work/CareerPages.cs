@@ -191,7 +191,7 @@ namespace RealLifeOverhaul.Ui
             }
             Mark("reallife_work_stand_performance", "Performance", j.Performance);
             Mark("reallife_work_stand_punctuality", "Punctuality", j.Punctuality);
-            Mark("reallife_work_stand_colleagues", "With colleagues", j.Teamwork);
+            Mark("reallife_work_stand_colleagues", "Colleagues", j.Teamwork);
             Mark("reallife_work_stand_reliability", "Reliability", j.Reliability);
             b.M.AttributesTitle = w.T("reallife_work_standing", "Standing");
             b.M.AttributeLabels = labels.ToArray();
@@ -204,7 +204,7 @@ namespace RealLifeOverhaul.Ui
                     CareerPeer c = j.Peers[i];
                     people[i] = new UiPersonRow { Name = c.Name, Hue = c.Hue, RoleIcon = UiIcon.Person, Role = c.Tag != null ? c.Role + ", " + c.Tag : c.Role,
                         FirstLabel = w.T("reallife_work_stand_performance", "Performance"), First = c.Score,
-                        SecondLabel = w.T("reallife_work_stand_colleagues", "With colleagues"), Second = c.Team };
+                        SecondLabel = w.T("reallife_work_stand_colleagues", "Colleagues"), Second = c.Team };
                 }
                 b.M.People = people;
                 b.M.PeopleTitle = w.T("reallife_work_on_shift", "On shift with you");
