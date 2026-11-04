@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Dialogs;
 using Entities;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using Streets.Pedestrians;
 using UnityEngine;
 
@@ -321,6 +322,12 @@ namespace RealLifeOverhaul.Street
             if (_chat.Menu == 0)
             {
                 AskAhead(ask, data);
+            }
+            int left = Math.Max(0, StreetRules.Turns(_chat) - _chat.Turns);   // their time: each answer of yours uses one of the turns they have for you
+            entry.Says(DialogButton.Confirm, "reallife_street_says_turn", "left", left.ToString());
+            if (ask == StreetAsk.Invite)
+            {
+                entry.Says(DialogButton.Confirm, "reallife_street_says_invite");
             }
             return entry;
         }

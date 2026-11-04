@@ -292,7 +292,7 @@ internal static partial class Program
             "own desk hours sources: the last choice is kept in the save under reallife:own_desk_hours and read back, a save without it at 8");
         Check(skip.Contains("public interface ISlidingShift : ISkippableShift") && skip.Contains("return _slide != null && _shift != null && _state == PlayerActivityState.NotStarted && _slide.SlideMost > _slide.SlideLeast;")
               && skip.Contains("_total = Mathf.Max(1, _shift.SkipMinutes);") && MethodText(skip, "private IEnumerator Begin()").Contains("_total = Mathf.Max(1, _shift.SkipMinutes);")
-              && facts.Contains("a is ShiftSkip skip && skip.Slides && m.HasDuration"),
+              && facts.Contains("if (skip.Slides && m.HasDuration)"),
             "own desk hours sources: the game's work panel shows the slider before the start only, the clock runs the hours chosen, and the card says when they end");
         Check(desk.Split(new[] { "OwnDeskRules.StintMinutes" }, StringSplitOptions.None).Length - 1 == 2
               && MethodText(desk, "public LabelInfo[] SkipLabels()").Contains("OwnDeskRules.StintMinutes") && MethodText(desk, "internal void OwnDeskLine(InfoBox box, FirmPlace firm)").Contains("OwnDeskRules.StintMinutes"),

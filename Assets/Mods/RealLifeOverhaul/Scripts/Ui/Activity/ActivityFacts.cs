@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using BigAmbitions.DayNightCycle;
 using PlayerActivity;
 using RealLifeOverhaul.Careers;
@@ -32,13 +33,69 @@ namespace RealLifeOverhaul.Ui
                 Desk(desk, m);
                 return;
             }
-            if (a is ShiftSkip skip && skip.Slides && m.HasDuration)
+            if (a is ShiftSkip skip)
             {
-                // a shift whose hours are the player's to pick (an own desk stint): the ends of the slider, and the time the hours give
-                m.DurationFrom = ActivityRead.Words("common_hours_abbr", new { hours = a.GetMinSliderValue() });
-                m.DurationTo = ActivityRead.Words("common_hours_abbr", new { hours = a.GetMaxSliderValue() });
-                m.Finish = UiText.Fill("reallife_ui_activity_finish", "time", TimeHelper.Now().AddMinutes(skip.ChosenMinutes).GetFormattedTime());
+                Shift(skip, m);
             }
+        }
+
+        // A shift left to the clock (a gig, a vendor's cart, an own desk stint, a bank counter): before it starts the ends of the slider
+        // and the time its hours give, with the sum they pay, the stress they add and the skill they train where the shift says them
+        // (IShiftFacts: the very sums it settles with); while it runs the hour it has got to and what it has earned.
+        private static void Shift(ShiftSkip skip, UiActivityModel m)
+        {
+            IShiftFacts facts = skip.Facts;
+            if (m.State == UiActivityState.NotStarted)
+            {
+                int minutes = skip.ChosenMinutes;
+                if (facts != null)
+                {
+                    m.Lines = Facts(facts, minutes, m.Lines);
+                }
+                if (skip.Slides && m.HasDuration)
+                {
+                    m.DurationFrom = ActivityRead.Words("common_hours_abbr", new { hours = skip.GetMinSliderValue() });
+                    m.DurationTo = ActivityRead.Words("common_hours_abbr", new { hours = skip.GetMaxSliderValue() });
+                    m.Finish = UiText.Fill("reallife_ui_activity_finish", "time", TimeHelper.Now().AddMinutes(minutes).GetFormattedTime());
+                    if (facts != null && facts.PayFor(minutes) > 0)
+                    {
+                        m.Sum = UiText.Fill("reallife_ui_activity_before_tax", "money", CareersText.Money(facts.PayFor(minutes)));
+                    }
+                }
+                return;
+            }
+            if (facts != null && (m.State == UiActivityState.Started || m.State == UiActivityState.Running))
+            {
+                int total = Math.Max(1, skip.TotalMinutes), done = Math.Max(0, Math.Min(skip.DoneMinutes, total));
+                m.Kicker = UiText.T("reallife_ui_activity_work_strip");
+                m.MeterLeft = UiText.Fill("reallife_ui_activity_hour_of", "hour", UiText.Whole(ShiftFactsRules.HourOf(done, total)), "hours", UiText.Whole(ShiftFactsRules.HoursOf(total)));
+                m.MeterRight = UiText.Fill("reallife_ui_activity_earned", "money", CareersText.Money(facts.PayFor(done)));
+                m.SkipLabel = UiText.T("reallife_ui_activity_skip_end");
+            }
+        }
+
+        // The card's rows with the stress the hours add and the skill they train after the shift's own lines.
+        private static UiInfoRow[] Facts(IShiftFacts facts, int minutes, UiInfoRow[] lines)
+        {
+            var rows = new List<UiInfoRow>(lines);
+            int stress = (int)Math.Round(ShiftFactsRules.Stress(facts.StressRate, minutes, Settings.HomeEasy), MidpointRounding.AwayFromZero);
+            if (stress > 0)
+            {
+                rows.Add(new UiInfoRow { Label = UiText.T("reallife_ui_activity_stress"), Value = "+" + UiText.Whole(stress) + "%", Ink = UiRole.WarnText });
+            }
+            string skill = facts.SkillKey;
+            float points = facts.SkillFor(minutes);
+            if (!string.IsNullOrEmpty(skill) && points > 0f)
+            {
+                rows.Add(new UiInfoRow
+                {
+                    Label = UiText.T("reallife_ui_activity_skill"),
+                    Value = UiText.Fill("reallife_ui_activity_skill_day", "skill", ActivityRead.SkillName(skill), "amount", points.ToString(points < 1f ? "0.00" :
+                        "0.0", System.Globalization.CultureInfo.InvariantCulture)),
+                    Ink = UiRole.OkText,
+                });
+            }
+            return rows.ToArray();
         }
 
         // A working day at a desk: the job's own figures, read from the careers' file as the job's pages show them.

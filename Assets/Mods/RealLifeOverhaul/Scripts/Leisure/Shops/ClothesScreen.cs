@@ -205,6 +205,7 @@ namespace RealLifeOverhaul.Leisure
                 if (mode == GridMode.Shop)
                 {
                     ClothesShop.Trying = false;
+                    ClothesSeen.Commit();   // what the shop showed is seen: its New filter lists only what comes after
                 }
                 CharacterData player = Player();
                 bool saved = player != null && !ReferenceEquals(player.elements, _piecesBefore);

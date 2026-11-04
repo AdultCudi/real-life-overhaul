@@ -47,6 +47,7 @@ namespace RealLifeOverhaul.Ui
     public sealed class RivalsView
     {
         public int Tab;
+        public int Today;                           // the game's day now: the chart shows no day after it, the week's column waits for day 8
         public RivalEntry[] League = new RivalEntry[0];
         public int Chosen;                          // the leaderboard's line the game shows
         public bool Contacts;                       // the game offers Open in Contacts for them
@@ -76,6 +77,74 @@ namespace RealLifeOverhaul.Ui
         public const string App = "Rivals";
         public const int ColumnRank = 0, ColumnChange = 4;
 
+        /// <summary>The first day a game has: no chart shows an earlier one (the game's own chart labels the week before day 1 as Day 0 and Day -1).</summary>
+        public const int FirstDay = 1;
+
+        /// <summary>The day the league's week column starts: the game keeps seven days of history, so before day 8 a week back would be a day that never was.</summary>
+        public const int WeekFrom = 8;
+
+        /// <summary>True from the day a week's change is a real comparison.</summary>
+        public static bool WeekShown(int today) => today >= WeekFrom;
+
+        /// <summary>
+        /// The chart's points as the game's chart gives them (its seven-day window may open before day 1, hold days out of order or twice, and
+        /// run past today), made the days that exist: none before <see cref="FirstDay"/> or after <paramref name="today"/> (0 for no
+        /// limit), oldest first, a day once (its last value).
+        /// </summary>
+        public static void Tidy(int[] days, float[] values, int today, out int[] outDays, out float[] outValues)
+        {
+            int n = days != null && values != null ? Math.Min(days.Length, values.Length) : 0;
+            var d = new int[n];
+            var v = new float[n];
+            int k = 0;
+            for (int i = 0; i < n; i++)
+            {
+                if (days[i] < FirstDay || (today > 0 && days[i] > today))
+                {
+                    continue;
+                }
+                int at = 0;
+                while (at < k && d[at] < days[i])
+                {
+                    at++;
+                }
+                if (at < k && d[at] == days[i])
+                {
+                    v[at] = values[i];
+                    continue;
+                }
+                for (int j = k; j > at; j--)
+                {
+                    d[j] = d[j - 1];
+                    v[j] = v[j - 1];
+                }
+                d[at] = days[i];
+                v[at] = values[i];
+                k++;
+            }
+            outDays = new int[k];
+            outValues = new float[k];
+            Array.Copy(d, outDays, k);
+            Array.Copy(v, outValues, k);
+        }
+
+        /// <summary>
+        /// A count chart moved to the table's count: the game charts every business a rival owns (30) while its table and league list the
+        /// shops and offices (29). The last point becomes the table's count and the days before keep their steps from it. Nothing for no count.
+        /// </summary>
+        public static void MatchCount(float[] values, int count)
+        {
+            if (values == null || values.Length == 0 || count < 0)
+            {
+                return;
+            }
+            float shift = count - values[values.Length - 1];
+            for (int i = 0; i < values.Length; i++)
+            {
+                values[i] = Math.Max(0f, values[i] + shift);
+            }
+        }
+
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
         public static void Rivals(UiRivalsModel m, UiWords t, RivalsView v)
@@ -95,7 +164,7 @@ namespace RealLifeOverhaul.Ui
             Head(m, t, v, chosen, who, m.Tab);
             m.ChartTabs = v.Filters ?? new string[0];
             m.ChartTab = v.Filter;
-            Chart(m.Chart, t, v);
+            Chart(m.Chart, t, v, chosen >= 0 ? who.Businesses : -1);
             m.ThreatsTitle = t("reallife_ui_rivals_rivalry", "Their moves against you");
             m.Threats = v.Threats ?? new UiRivalThreat[0];
             m.Table = new UiDataTableModel();
@@ -177,7 +246,7 @@ namespace RealLifeOverhaul.Ui
                 new UiDataColumn { Title = t("common_name", "Name"), Kind = UiCellKind.Person },
                 new UiDataColumn { Title = t("common_weekly_income", "Weekly Income"), Kind = UiCellKind.Money, Width = 136f },
                 new UiDataColumn { Title = t("common_businesses", "Businesses"), Kind = UiCellKind.Figure, Width = 104f },
-                new UiDataColumn { Title = t("reallife_ui_rivals_week", "Week"), Kind = UiCellKind.Trend, Width = 96f },
+                new UiDataColumn { Title = WeekTitle(t, v.Today), Kind = UiCellKind.Trend, Width = 104f },
             };
             table.Rows = new UiDataRow[v.League.Length];
             int rank = 0;
@@ -185,7 +254,7 @@ namespace RealLifeOverhaul.Ui
             {
                 ref RivalEntry e = ref v.League[i];
                 rank++;
-                float change = Change(e.WeeklyIncome, e.WeekAgo);
+                float change = WeekShown(v.Today) ? Change(e.WeeklyIncome, e.WeekAgo) : float.NaN;   // no week before day 8: no figure rather than a made one
                 table.Rows[i] = new UiDataRow
                 {
                     Cells = new[]
@@ -205,6 +274,10 @@ namespace RealLifeOverhaul.Ui
             table.EmptyTitle = t("reallife_ui_rivals_none", "No rivals yet");
             table.EmptyBody = t("reallife_ui_rivals_none_body", "The city's other tycoons show here once rivals are on in this game, ranked with you by their weekly income.");
         }
+
+        // The week column's title: what it compares, or from which day it starts while the game has no week of history to compare.
+        private static string WeekTitle(UiWords t, int today) => WeekShown(today) ? t("reallife_ui_rivals_week", "Week")
+            : StaffViews.Fill(t("reallife_ui_rivals_week_from", "From day {day}"), "day", Whole(WeekFrom));
 
         private static void BusinessTable(UiRivalsModel m, UiWords t, RivalsView v)
         {
@@ -290,19 +363,35 @@ namespace RealLifeOverhaul.Ui
         };
 
         // The chosen rival's development as the game charts it: its last days under the filter chosen, money or a count.
-        private static void Chart(UiChartModel c, UiWords t, RivalsView v)
+        private static void Chart(UiChartModel c, UiWords t, RivalsView v, int tableCount)
         {
             c.Kind = UiChartKind.Line;
             c.Title = t("rivals_business_development", "Business Development");
-            int n = v.Chart != null ? v.Chart.Length : 0;
+            // The game's seven-day window is cut to the days that exist, in order, and a count agrees with the table's.
+            int[] game = v.ChartDays;
+            if (game == null || v.Chart == null || game.Length < v.Chart.Length)
+            {
+                game = new int[v.Chart != null ? v.Chart.Length : 0];
+                for (int i = 0; i < game.Length; i++)
+                {
+                    game[i] = v.ChartDays != null && i < v.ChartDays.Length ? v.ChartDays[i] : i + 1;
+                }
+            }
+            Tidy(game, v.Chart, v.Today, out int[] days, out float[] values);
+            if (!v.ChartMoney)
+            {
+                MatchCount(values, tableCount);
+            }
+            int n = values.Length;
             c.Points = new string[n];
             for (int i = 0; i < n; i++)
             {
-                c.Points[i] = StaffViews.Fill(t("common_day_number", "Day {number}"), "number", Whole(v.ChartDays != null && i < v.ChartDays.Length ? v.ChartDays[i] : i + 1));
+                c.Points[i] = StaffViews.Fill(t("common_day_number", "Day {number}"), "number", Whole(days[i]));
             }
             c.Reads = null;
             string label = v.Filters != null && v.Filter >= 0 && v.Filter < v.Filters.Length ? v.Filters[v.Filter] : c.Title;
-            c.Series = new[] { new UiSeries { Label = label, Values = v.Chart ?? new float[0], Tint = UiRole.Accent } };
+            c.Series = new[] { new UiSeries { Label = label, Values = values, Tint = UiRole.Accent } };
+            c.Whole = !v.ChartMoney;
             Func<float, string> count = f => Whole((int)Math.Round(f));
             c.Format = v.ChartMoney ? (v.Money ?? count) : count;
             c.AxisFormat = c.Format;

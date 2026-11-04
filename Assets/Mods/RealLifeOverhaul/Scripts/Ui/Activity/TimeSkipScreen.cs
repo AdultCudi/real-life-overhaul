@@ -91,19 +91,27 @@ namespace RealLifeOverhaul.Ui
                 // The game's own line says why time passes; the goal and what is left go under it.
                 _m.Goal = info;
                 _m.GoalTime = null;
-                _m.Pace = when != null ? UiText.Fill("reallife_ui_skip_until_left", "time", when, "left", rest) : null;
+                _m.Pace = when != null ? UiText.Fill("reallife_ui_skip_pace_until", "speed", UiText.Whole(Speed(distance, left)), "time", when, "left", rest) : null;
             }
             else
             {
                 bool working = PlayerActivity.PlayerActivityUI.IsPanelOpen;
                 _m.Goal = UiText.T(working ? "reallife_ui_skip_to_end" : "reallife_ui_skip_until");
                 _m.GoalTime = when;
-                _m.Pace = goal != null ? UiText.Fill("reallife_ui_skip_left", "left", rest) : null;
+                _m.Pace = goal != null ? UiText.Fill("reallife_ui_skip_pace", "speed", UiText.Whole(Speed(distance, left)), "left", rest) : null;
             }
             _m.CanCancel = _machine.cancelButton != null && _machine.cancelButton.gameObject.activeSelf;
             _m.CancelLabel = UiText.T("common_cancel");
             _m.Prompts = _m.CanCancel ? new[] { new UiPrompt { Action = UiAction.Back, Label = UiText.T("common_cancel") } } : new UiPrompt[0];
             _m.PromptCount = _m.Prompts.Length;
+        }
+
+        // The pace the machine keeps now, as the game works it out (a constant pace is the whole distance a second, else the curve at how far along).
+        private int Speed(float distance, float left)
+        {
+            bool constant = GameContract.SkipConstant.Field != null && GameContract.SkipConstant.Field.GetValue(_machine) is bool c && c;
+            float curve = !constant && _machine.timeSpeedCurve != null ? _machine.timeSpeedCurve.Evaluate(UiTimeSkip.Along(distance, left)) : 0f;
+            return UiTimeSkip.Speed(distance, constant, curve);
         }
 
         // The goal's time, and its day when it is not today: "07:00", or "Day 413, 07:00".

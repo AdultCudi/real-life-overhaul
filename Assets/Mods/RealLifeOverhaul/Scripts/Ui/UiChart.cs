@@ -36,6 +36,7 @@ namespace RealLifeOverhaul.Ui
         public Func<float, string> Format;          // a value as the game writes it, in a card and at a line's end
         public Func<float, string> AxisFormat;      // a tick's value, shorter where the game has a short form ("$40k"), or null for Format
         public Func<float, string> CountFormat;     // a candle's volume as the game writes a count
+        public bool Whole;                          // the values are counts: the axis steps by whole numbers (1, 2, 5 of a power of ten), never 0.5
         public int Focus = -1;                      // the point read in its card, or -1
         public bool Still;                          // a chart that is read by its axes alone: its points are no targets (a figure beside a page's own, not a thing to explore)
         public UiPlotBand[] PlotBands;               // washes behind a run of the points, or null
@@ -217,7 +218,25 @@ namespace RealLifeOverhaul.Ui
         public static void Scale(UiChartModel m, out float lo, out float hi, out float step)
         {
             Range(m, out lo, out hi);
+            if (hi - lo < 1e-6f && m.Kind != UiChartKind.Bars)
+            {
+                // One value all through (a count that has not moved): the line stands in the middle of a real range, a tenth of the
+                // value (at least one) either side, never on the foot of an axis from one whole number to the next.
+                float half = Math.Max(1f, Math.Abs(lo) * 0.1f);
+                bool positive = lo >= 0f;
+                lo -= half;
+                hi += half;
+                if (positive && lo < 0f)
+                {
+                    hi -= lo;   // a count at nothing keeps its foot at nothing
+                    lo = 0f;
+                }
+            }
             step = NiceStep(hi - lo, Intervals);
+            if (m.Whole)
+            {
+                step = WholeStep(step);
+            }
             lo = (float)Math.Floor(lo / step + 1e-4) * step;
             hi = (float)Math.Ceiling(hi / step - 1e-4) * step;
             if (hi - lo < step * 0.5f)
@@ -241,6 +260,18 @@ namespace RealLifeOverhaul.Ui
             double unit = raw / power;
             double nice = unit <= 1.0 ? 1.0 : unit <= 2.0 ? 2.0 : unit <= 2.5 ? 2.5 : unit <= 5.0 ? 5.0 : 10.0;
             return (float)(nice * power);
+        }
+
+        /// <summary>A round step for counts: 1, 2, 5 of a power of ten, never a half (so no two ticks of a count read alike).</summary>
+        public static float WholeStep(float step)
+        {
+            if (step <= 1f)
+            {
+                return 1f;
+            }
+            double power = Math.Pow(10, Math.Floor(Math.Log10(step) + 1e-6));
+            double unit = step / power;
+            return (float)((unit <= 1.0 + 1e-6 ? 1.0 : unit <= 2.0 + 1e-6 ? 2.0 : 5.0) * power);
         }
 
         /// <summary>Whether a value is a whole number of a round step (the axis's own test).</summary>

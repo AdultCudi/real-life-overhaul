@@ -157,6 +157,7 @@ namespace RealLifeOverhaul.Ui
             }
             r.Labels = labels.ToArray();
             r.Values = values.ToArray();
+            r.Reading = Reading(live, def, w);
             FlareDirector flare = FlareDirector.Instance;
             r.CanFollow = t.Active && flare != null && flare.File != null && !FlareCast.Followed(flare.File, TycoonKey(who));
             r.FollowLabel = w.F("reallife_fin_follow_name", "Follow {name}", "name", def.Name);
@@ -166,10 +167,88 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // The answers that do something now, and only with a move of theirs to answer (a takeover aside, which a move does not need).
+        // The profile's words about the move that is live: what it is, what it does to you and when. Built from the move itself.
+        private static string Reading(RivalMove live, TycoonDef def, UtilitiesWords w)
+        {
+            if (live == null)
+            {
+                return null;
+            }
+            string size = RivalText.Size(live);
+            string when = live.State == RivalMoveState.Running
+                ? w.F("reallife_fin_read_runs", "It runs until day {end}.", "end", live.End.ToString(Inv))
+                : w.F("reallife_fin_read_comes", "It comes on day {land}.", "land", live.Land.ToString(Inv));
+            string business = string.IsNullOrEmpty(live.Name) ? RivalText.T("reallife_rival_your_business") : live.Name;
+            string effect;
+            switch (live.Kind)
+            {
+                case RivalMoveKind.Outlet:
+                    effect = w.F("reallife_fin_read_outlet", "About {size} fewer customers at {business}.", "size", size, "business", business);
+                    break;
+                case RivalMoveKind.PriceRise:
+                    effect = w.F("reallife_fin_read_prices", "About {size} fewer customers at your shops while their prices are up.", "size", size);
+                    break;
+                case RivalMoveKind.Property:
+                    effect = w.F("reallife_fin_read_property", "Buildings for sale in {district} cost {size} more.", "district", RivalGame.DistrictName(live.District), "size", size);
+                    break;
+                case RivalMoveKind.Poach:
+                    effect = w.F("reallife_fin_read_poach", "They offer {size} over the going rate to your best person.", "size", size);
+                    break;
+                case RivalMoveKind.Lobby:
+                    effect = w.F("reallife_fin_read_lobby", "Inspectors call more often at your businesses, {size} more.", "size", size);
+                    break;
+                case RivalMoveKind.Suit:
+                    effect = w.F("reallife_fin_read_suit", "They claim {size} from you in court.", "size", size);
+                    break;
+                case RivalMoveKind.Press:
+                    effect = w.F("reallife_fin_read_press", "Customers think a little less of {business}.", "business", business);
+                    break;
+                case RivalMoveKind.Stake:
+                    effect = w.T("reallife_fin_read_stake", "They press your board with the shares they hold.");
+                    break;
+                case RivalMoveKind.Bid:
+                    effect = w.T("reallife_fin_read_bid", "Their bid wins only if you hold too few of your own shares.");
+                    break;
+                case RivalMoveKind.Borrowed:
+                    effect = w.F("reallife_fin_read_borrowed", "They borrowed {size} at a city bank.", "size", size);
+                    break;
+                default:
+                    effect = w.F("reallife_fin_read_shares", "They bought {size} of shares.", "size", size);
+                    break;
+            }
+            return w.F("reallife_fin_read", "{name} is {what}. {effect} {when}", "name", def.Name, "what", RivalText.What(live), "effect", effect, "when", when);
+        }
+
+        // The answers that do something now, and only with a move of theirs to answer (a takeover aside, which a move does not need): the
+        // Flare campaign and the price cut first, each with its forecast, then the counters.
         private FinanceAnswer[] Answers(RivalDirector director, int who, RivalMove live, UtilitiesWords w, int day)
         {
-            var list = new List<FinanceAnswer>(6);
+            var list = new List<FinanceAnswer>(8);
+            DaySeriesBook book = DaySeriesDirector.Book;
+            bool hitsCustomers = live != null && (live.Kind == RivalMoveKind.PriceRise || live.Kind == RivalMoveKind.Outlet || live.Kind == RivalMoveKind.Press);
+            if (hitsCustomers)
+            {
+                FinanceAnswer campaign = CampaignAnswer(live, w);
+                if (campaign != null)
+                {
+                    list.Add(campaign);
+                }
+            }
+            if (live != null && (live.Kind == RivalMoveKind.PriceRise || live.Kind == RivalMoveKind.Outlet) && book != null && CompanyDirector.Instance != null)
+            {
+                bool cut = DaySeriesRules.CutOn(book, day);
+                bool can = cut || CompanyDirector.Instance.CanCut();
+                string forecast = w.F("reallife_fin_cut_forecast", "Forecast: about {customers} more customers a day while it lasts.", "customers", DaySeriesRules.CutCustomers.ToString(Inv));
+                list.Add(new FinanceAnswer
+                {
+                    Title = cut ? w.T("reallife_fin_hold_prices", "End the price cut and hold your prices") : w.F("reallife_fin_cut_prices",
+                        "Cut your prices {percent}% for {days} days", "percent", DaySeriesRules.CutPercent.ToString(Inv), "days", DaySeriesRules.CutDays.ToString(Inv)),
+                    Hint = !can ? w.T("reallife_fin_cut_none", "Not now: none of your pricing plans has a price the plan sets.")
+                        : cut ? w.F("reallife_fin_cut_on", "The cut runs until day {day}. Ending it takes off only the holds it put on.", "day", book.CutUntil.ToString(Inv))
+                        : w.T("reallife_fin_cut_hint", "Your own shops' prices go down and the plans it moved are held. They go back by themselves at the end.") + " " + forecast,
+                    Act = cut ? FinanceAct.HoldPrices : FinanceAct.CutPrices, On = can
+                });
+            }
             for (int k = 0; k < (int)RivalCounter.Count; k++)
             {
                 var kind = (RivalCounter)k;
@@ -188,20 +267,62 @@ namespace RealLifeOverhaul.Ui
                         "money", Money(cost)), Act = FinanceAct.Counter, Arg = k, On = true
                 });
             }
-            DaySeriesBook book = DaySeriesDirector.Book;
-            if (live != null && (live.Kind == RivalMoveKind.PriceRise || live.Kind == RivalMoveKind.Outlet) && book != null && CompanyDirector.Instance != null)
-            {
-                bool cut = DaySeriesRules.CutOn(book, day);
-                list.Add(new FinanceAnswer
-                {
-                    Title = cut ? w.T("reallife_fin_hold_prices", "End the price cut and hold your prices") : w.F("reallife_fin_cut_prices",
-                        "Cut your prices {percent}% for {days} days", "percent", DaySeriesRules.CutPercent.ToString(Inv), "days", DaySeriesRules.CutDays.ToString(Inv)),
-                    Hint = cut ? w.F("reallife_fin_cut_on", "The cut runs until day {day}. Ending it puts the pricing plans back to what they were.", "day", book.CutUntil.ToString(Inv))
-                        : w.T("reallife_fin_cut_hint", "Your own shops' prices go down and your pricing plans are held. They go back by themselves at the end."),
-                    Act = cut ? FinanceAct.HoldPrices : FinanceAct.CutPrices, On = true
-                });
-            }
             return list.ToArray();
+        }
+
+        // The Flare campaign as an answer: a plan of influencers for a week at the business the move hits, with what it costs and the forecast
+        // from the company's own quote (what it adds, per cent) and what the business takes a day. Null where Flare is off.
+        private FinanceAnswer CampaignAnswer(RivalMove live, UtilitiesWords w)
+        {
+            FlareDirector flare = FlareDirector.Instance;
+            if (flare == null || !flare.Running)
+            {
+                return null;
+            }
+            BuildingRegistration reg = CampaignShop(live);
+            string title = w.F("reallife_fin_campaign", "Run a Flare campaign at {business}", "business", reg != null ? RivalGame.Name(reg) : RivalText.T("reallife_rival_your_business"));
+            string place = reg != null ? BusinessGame.Place(reg) : null;
+            int cost = 0, percent = 0;
+            string why = null;
+            if (place == null || !flare.HireQuote(place, FlareDeal.Plan, -1, out cost, out percent, out why))
+            {
+                return new FinanceAnswer
+                {
+                    Title = title, On = false, Act = FinanceAct.Campaign,
+                    Hint = w.F("reallife_fin_not_now", "Not now: {reason}", "reason", FlareText.T(why ?? "reallife_flare_hire_no_shop"))
+                };
+            }
+            int days = CompanyCatalogue.CampaignDays[FlareCast.FirstDealKind + (int)FlareDeal.Plan];
+            long gain = DaySeriesRules.CampaignForecast((long)Math.Round(BusinessGame.DailyRevenue(reg)), percent, days);
+            return new FinanceAnswer
+            {
+                Title = title, On = true, Act = FinanceAct.Campaign,
+                Hint = w.F("reallife_fin_campaign_hint", "Influencers post for {days} days. Costs {cost}. Forecast: {percent}% more customers, about {gain} more takings.",
+                    "days", days.ToString(Inv), "cost", Money(cost), "percent", percent.ToString(Inv), "gain", Money(gain))
+            };
+        }
+
+        // The business a move hits, else the player's best: where a campaign is run.
+        private BuildingRegistration CampaignShop(RivalMove live)
+        {
+            BuildingRegistration reg = live != null ? RivalGame.Business(live.Place) : null;
+            if (reg != null)
+            {
+                return reg;
+            }
+            Books.Businesses(_shops);
+            BuildingRegistration best = null;
+            float most = -1f;
+            for (int i = 0; i < _shops.Count; i++)
+            {
+                float took = BusinessGame.DailyRevenue(_shops[i]);
+                if (took > most)
+                {
+                    most = took;
+                    best = _shops[i];
+                }
+            }
+            return best;
         }
 
         // You and the one chosen over the days both have: money in full figures, never a raw number.
@@ -249,6 +370,7 @@ namespace RealLifeOverhaul.Ui
                 case FinanceAct.ShowList: return director.ShowList();
                 case FinanceAct.HoldPrices: return ReleaseCut();
                 case FinanceAct.CutPrices: return CutPrices();
+                case FinanceAct.Campaign: return AskCampaign(v);
             }
             if (who < 0 || who >= RivalCatalogue.TycoonCount)
             {
@@ -313,7 +435,7 @@ namespace RealLifeOverhaul.Ui
             return true;
         }
 
-        // A price cut on the player's own shops: asked first, held in the day series' book so it ends by itself.
+        // A price cut on the player's own shops: asked first, held in the day series' book so it ends by itself. It is on only if it moved a price.
         private bool CutPrices()
         {
             DaySeriesBook book = DaySeriesDirector.Book;
@@ -323,15 +445,27 @@ namespace RealLifeOverhaul.Ui
                 return false;
             }
             UtilitiesWords w = W;
+            if (!CompanyDirector.Instance.CanCut())
+            {
+                Tell(UI.Notification.NotificationType.Warning, "reallife_fin_note_cut_none");
+                return false;
+            }
             GameConfirm.Show(w.T("reallife_fin_cut_title", "Cut your prices?"),
-                w.F("reallife_fin_cut_body", "Your own shops' prices go down {percent}% for {days} days and your pricing plans are held while it lasts. "
+                w.F("reallife_fin_cut_body", "Your own shops' prices go down {percent}% for {days} days and the pricing plans it moves are held while it lasts. "
                     + "They go back by themselves at the end.", "percent", DaySeriesRules.CutPercent.ToString(Inv),
                     "days", DaySeriesRules.CutDays.ToString(Inv)),
                 () => Guarded(() =>
                 {
-                    book.CutFrom = day;
-                    book.CutUntil = day + DaySeriesRules.CutDays;
-                    CompanyDirector.Instance.CutPlans(DaySeriesRules.CutPercent);
+                    int moved = DaySeriesGame.StartCut(book, day);
+                    if (moved > 0)
+                    {
+                        Tell(UI.Notification.NotificationType.Success, "reallife_fin_note_cut_done", new Dictionary<string, string> { { "count", moved.ToString(Inv) } });
+                    }
+                    else
+                    {
+                        Tell(UI.Notification.NotificationType.Warning, "reallife_fin_note_cut_none");
+                    }
+                    Moved();
                 }), null, "reallife_rival_confirm_yes", "common_cancel", false, false);
             return true;
         }
@@ -339,14 +473,55 @@ namespace RealLifeOverhaul.Ui
         private bool ReleaseCut()
         {
             DaySeriesBook book = DaySeriesDirector.Book;
-            if (book == null || book.CutFrom <= 0 || CompanyDirector.Instance == null)
+            if (book == null || book.CutFrom <= 0)
             {
                 return false;
             }
-            CompanyDirector.Instance.ReleaseCut(book.HeldAlready);
-            book.CutFrom = 0;
-            book.CutUntil = 0;
-            book.HeldAlready = string.Empty;
+            DaySeriesGame.EndCut(book);
+            return true;
+        }
+
+        // The Flare campaign answer: the game's own question with the cost and the forecast, then the hire as Flare's own Hire does it.
+        private bool AskCampaign(FinanceView v)
+        {
+            FlareDirector flare = FlareDirector.Instance;
+            RivalDirector director = RivalDirector.Instance;
+            RivalFile file = director != null ? director.File : null;
+            if (flare == null || !flare.Running || file == null)
+            {
+                return false;
+            }
+            RivalMove live = null;
+            RivalRules.RichList(file, RivalGame.Worth(), Prices.Level, RivalGame.PlayerName(), _rich);
+            int who = v.Rival >= 0 && v.Rival < _rich.Count ? _rich[v.Rival].Who : RichRow.Player;
+            for (int i = file.Moves.Count - 1; i >= 0 && live == null; i--)
+            {
+                live = file.Moves[i].Tycoon == who && file.Moves[i].Live ? file.Moves[i] : null;
+            }
+            BuildingRegistration reg = CampaignShop(live);
+            string place = reg != null ? BusinessGame.Place(reg) : null;
+            UtilitiesWords w = W;
+            int cost = 0, percent = 0;
+            string why = null;
+            if (place == null || !flare.HireQuote(place, FlareDeal.Plan, -1, out cost, out percent, out why))
+            {
+                Tell(UI.Notification.NotificationType.Warning, why ?? "reallife_flare_hire_no_shop");
+                return false;
+            }
+            int days = CompanyCatalogue.CampaignDays[FlareCast.FirstDealKind + (int)FlareDeal.Plan];
+            long gain = DaySeriesRules.CampaignForecast((long)Math.Round(BusinessGame.DailyRevenue(reg)), percent, days);
+            string name = RivalGame.Name(reg);
+            GameConfirm.Show(w.F("reallife_fin_campaign_title", "Run a campaign at {business}?", "business", name),
+                w.F("reallife_fin_campaign_body", "Influencers post about {business} for {days} days. It costs {cost}. Forecast: {percent}% more customers, about {gain} more takings.",
+                    "business", name, "days", days.ToString(Inv), "cost", Money(cost), "percent", percent.ToString(Inv), "gain", Money(gain)),
+                () => Guarded(() =>
+                {
+                    if (!flare.Hire(place, FlareDeal.Plan, -1))
+                    {
+                        Tell(UI.Notification.NotificationType.Warning, "reallife_flare_hire_cannot");
+                    }
+                    Moved();
+                }), null, "reallife_rival_confirm_yes", "common_cancel", false, false);
             return true;
         }
     }

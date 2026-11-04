@@ -150,23 +150,50 @@ namespace RealLifeOverhaul.Ui
             {
                 ry += Facts(s, ron, null, r.Labels, r.Values, rx, ry, rw, Math.Min(UiTokens.S16 * 2f, bottom - ry)) + UiTokens.S3;
             }
-            ry = Moves(s, ron, r, rx, ry, rw, bottom);
-            if (r.Answers.Length > 0 && bottom - ry > UiTokens.S16 * 2f)
+            ry = Sentence(s, ron, r.Reading, rx, ry, rw, UiRole.Text, 4);
+            // The answers come first: each is a numbered choice with what it does and its forecast, as many hints as the column holds. What is left
+            // is for the moves.
+            float footH = r.CanHolding || !string.IsNullOrEmpty(r.ListLabel) ? UiTokens.Control + UiTokens.S2 : 0f;
+            int shown = Math.Min(r.Answers.Length, 9);
+            float movesMin = r.Moves.Length > 0 ? UiTokens.Control + 2f * (UiTokens.PairRow + UiTokens.S1) : 0f;
+            float extra = bottom - footH - ry - movesMin - (shown > 0 ? UiTokens.Control + shown * UiTokens.Control : 0f);
+            var hint = new float[shown];
+            for (int i = 0; i < shown; i++)
+            {
+                hint[i] = string.IsNullOrEmpty(r.Answers[i].Hint) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(r.Answers[i].Hint, UiStyle.Body, rw, 3)) + UiTokens.S2;
+                if (hint[i] <= extra)
+                {
+                    extra -= hint[i];
+                }
+                else
+                {
+                    hint[i] = 0f;   // no room for this one's words: the button alone, its tooltip says the rest
+                }
+            }
+            float answersH = 0f;
+            for (int i = 0; i < shown; i++)
+            {
+                answersH += UiTokens.Control + hint[i];
+            }
+            ry = Moves(s, ron, r, rx, ry, rw, bottom - footH - (shown > 0 ? UiTokens.Control + answersH : 0f));
+            if (shown > 0)
             {
                 ry = Title(s, ron, r.AnswersTitle, rx, ry, rw);
-                for (int i = 0; i < r.Answers.Length && i < 3; i++)
+                for (int i = 0; i < shown; i++)
                 {
                     FinanceAnswer a = r.Answers[i];
                     var key = (UiAction)((int)UiAction.Pick1 + i);
-                    string label = a.Title;   // the key cap on the button says its number
-                    float bw = Math.Min(rw, UiDraw.ButtonWidth(UiButtonKind.Secondary, label, UiIcon.None, key, keys));
-                    if (ry + UiTokens.Control > bottom)
+                    float bw = Math.Min(rw, UiDraw.ButtonWidth(UiButtonKind.Secondary, a.Title, UiIcon.None, key, keys));
+                    if (ry + UiTokens.Control > bottom - footH)
                     {
                         break;
                     }
-                    UiDraw.Button(s, ron, rx, ry, bw, UiTokens.Control, UiButtonKind.Secondary, label, UiIcon.None, key, keys, Answer, i, !a.On);
+                    UiDraw.Button(s, ron, rx, ry, bw, UiTokens.Control, UiButtonKind.Secondary, a.Title, UiIcon.None, key, keys, Answer, i, !a.On);
                     ry += UiTokens.Control;
-                    ry = Sentence(s, ron, a.Hint, rx, ry, rw, a.On ? UiRole.Text2 : UiRole.Muted, 2);
+                    if (hint[i] > 0f)
+                    {
+                        ry = Sentence(s, ron, a.Hint, rx, ry, rw, a.On ? UiRole.Text2 : UiRole.Muted, 3);
+                    }
                 }
             }
             // Their holding in the Stocks app and the rich list as the paper prints it: the way on from this page.
@@ -186,9 +213,9 @@ namespace RealLifeOverhaul.Ui
         }
 
         // What they did lately, dated, the live one marked.
-        private static float Moves(UiScene s, UiAt at, FinanceRivalsFacts r, float x, float y, float w, float bottom)
+        private static float Moves(UiScene s, UiAt at, FinanceRivalsFacts r, float x, float y, float w, float limit)
         {
-            if (r.Profile == null || bottom - y < UiTokens.S16 * 2f)
+            if (r.Profile == null || limit - y < UiTokens.Control + UiTokens.PairRow)
             {
                 return y;
             }
@@ -198,7 +225,7 @@ namespace RealLifeOverhaul.Ui
                 return Sentence(s, at, r.MovesNone, x, y, w, UiRole.Text2, 2);
             }
             float dayW = UiDraw.SnapDown(UiTokens.S16 * 1.4f);
-            for (int i = 0; i < r.Moves.Length && y + UiTokens.PairRow <= bottom - UiTokens.S16 * 2f; i++)
+            for (int i = 0; i < r.Moves.Length && y + UiTokens.PairRow <= limit; i++)
             {
                 FinanceRivalMove m = r.Moves[i];
                 if (m.Live)

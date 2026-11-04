@@ -10,7 +10,7 @@ internal static partial class UiSamples
     public static readonly string[] FinanceStates =
     {
         "overview", "overview_new", "overview_long", "credit", "credit_new", "borrow", "borrow_card", "borrow_finance", "borrow_refused", "cash", "cash_new", "accounts", "accounts_card",
-        "accounts_new", "rivals", "rivals_move", "rivals_new", "rivals_tycoons", "standing", "standing_new"
+        "accounts_new", "rivals", "rivals_move", "rivals_cut", "rivals_blocked", "rivals_new", "rivals_tycoons", "standing", "standing_new"
     };
 
     public static UtilitiesWords FinanceWordsOf(UiWords t) => UtilitiesWordsOf(t);
@@ -25,7 +25,7 @@ internal static partial class UiSamples
             : tab == "rivals" ? FinanceFace.Rivals : tab == "standing" ? FinanceFace.Standing : FinanceFace.Overview;
         v.Offer = state == "borrow_card" ? 4 : state == "borrow_finance" ? 6 : 0;
         v.Period = state == "cash_new" ? 1 : 2;
-        v.Rival = state == "rivals_move" || state == "rivals" ? 0 : state == "rivals_new" ? 1 : 0;
+        v.Rival = state == "rivals_move" || state == "rivals_cut" || state == "rivals_blocked" || state == "rivals" ? 0 : state == "rivals_new" ? 1 : 0;
         v.Account = state == "accounts_card" ? "acct:2" : "acct:1";
         v.Standing = "wealth";
         return v;
@@ -91,6 +91,7 @@ internal static partial class UiSamples
         o.Worth = FM(fresh ? 61200f : 1966000f);
         o.EconomyApp = true;
         o.LeavesNote = fresh ? null : "Leaves tomorrow " + FM(1772) + ", four daily payments.";
+        o.RiseNote = fresh ? null : "Your variable debts cost " + FM(3600) + " more a month after the last rise, on day 281.";
         o.CityLabels = new[] { "Bank rate", "Prices", "The economy" };
         o.CityValues = new[] { "4.00%", "6.0% above last year", "Slowdown, month 3" };
         o.BestOn = true;
@@ -102,8 +103,8 @@ internal static partial class UiSamples
         if (fresh)
         {
             o.Debts = FinanceKitTables.Make(FinanceKitTables.DebtColumns(w), new List<FinanceRow>(), 0, "No debts", string.Empty, UiIcon.Bank);
-            o.NextLabels = new[] { "Rent", "Wages" };
-            o.NextValues = new[] { FM(350), FM(1200) };
+            o.NextLabels = new[] { "Rent", "Wages", "Rate review" };
+            o.NextValues = new[] { FM(350), FM(1200), "Day 30" };
             return;
         }
         var rows = new List<FinanceRow>
@@ -122,8 +123,8 @@ internal static partial class UiSamples
         o.Donut = new[] { 63.4f, 33.3f, 2.7f, 0.5f };
         o.DonutLabels = new[] { "Business loans", "Mortgage", "Car finance", "Credit card" };
         o.DonutValues = new[] { "63.4%", "33.3%", "2.7%", "0.5%" };
-        o.NextLabels = new[] { "Day 290, four daily payments", "Day 297, card minimum", "Rent", "Wages" };
-        o.NextValues = new[] { FM(1772), FM(384), FM(2840), FM(7880) };
+        o.NextLabels = new[] { "Day 290, four daily payments", "Day 297, card minimum", "Rent", "Wages", "Rate review" };
+        o.NextValues = new[] { FM(1772), FM(384), FM(2840), FM(7880), "Day 291, +0.25" };
     }
 
     private static FinanceRow DebtRow(string name, string lender, float owed, string rate, float perDay, string left)
@@ -330,13 +331,14 @@ internal static partial class UiSamples
             c.Reach = "The game keeps movements from day 283.";
         }
         c.Statement = st;
-        c.WhereTitle = null;
-        c.CameInLabel = fresh ? "Came in, 5 days" : "Came in, 30 days";
+        c.WhereTitle = "Where it went, 30 days";
+        c.WhereNote = fresh ? "Not yet before day 2: the ledger holds 4 of 30 days." : null;
+        c.CameInLabel = "More came in than went out";
         c.CameIn = fresh ? "+" + FM(1200) : "+" + FM(568480);
         c.InNames = fresh ? new[] { "Takings" } : new[] { "Takings", "Dividends and interest" };
         c.InValues = fresh ? new[] { FM(1200) } : new[] { FM(562300), FM(6180) };
         c.InShare = fresh ? new[] { 100 } : new[] { 99, 1 };
-        c.WentOutLabel = "Went out";
+        c.WentOutLabel = "More went out than came in";
         c.WentOut = fresh ? "-" + FM(1450) : "-" + FM(480060);
         c.OutNames = fresh ? new[] { "Wages", "Rent" } : new[] { "Wages", "Stock", "Loan payments", "Rent", "Bills" };
         c.OutValues = fresh ? new[] { FM(1100), FM(350) } : new[] { FM(236400), FM(141200), FM(53160), FM(42660), FM(6640) };
@@ -418,6 +420,7 @@ internal static partial class UiSamples
         FinanceRivalsFacts r = f.Rivals;
         bool fresh = state == "rivals_new";
         bool move = state == "rivals_move";
+        bool live0 = move || state == "rivals_cut" || state == "rivals_blocked";
         r.Headline = fresh ? "You are 4th of 9. The next move comes by day 14." : "You are 4th of 9, with " + FM(19640000) + ". Huang Guo is ahead.";
         var rows = new List<FinanceRow>
         {
@@ -457,8 +460,8 @@ internal static partial class UiSamples
         string name = tycoons ? "Space Karen" : fresh ? "Imani Brooks" : "Huang Guo";
         r.Profile = new UiProfileModel
         {
-            Name = name, Hue = tycoons ? 200f : fresh ? 260f : 28f, Role = tycoons ? "Karen Aerospace & Motors" : fresh ? "Brooks Fresh Markets" : "Burger Barn", RoleIcon = UiIcon.Store, Status = move ? "Expanding" : "Steady",
-            StatusTone = move ? UiRole.Warn : UiRole.Ok, FactLabels = new[] { "Worth", "In a week" }, FactValues = new[] { FM(tycoons ? 40000000 : fresh ? 27880000 : 31420000), fresh ? string.Empty : "+" + FM(640000) },
+            Name = name, Hue = tycoons ? 200f : fresh ? 260f : 28f, Role = tycoons ? "Karen Aerospace & Motors" : fresh ? "Brooks Fresh Markets" : "Burger Barn", RoleIcon = UiIcon.Store, Status = live0 ? "Making a move" : "Quiet",
+            StatusTone = live0 ? UiRole.Warn : UiRole.Muted, FactLabels = new[] { "Worth", "In a week" }, FactValues = new[] { FM(tycoons ? 40000000 : fresh ? 27880000 : 31420000), fresh ? string.Empty : "+" + FM(640000) },
             Rating = -1
         };
         r.Labels = new[] { "Their holding", "Your shares in it" };
@@ -467,17 +470,27 @@ internal static partial class UiSamples
         r.MovesNone = "No moves yet.";
         r.Moves = fresh ? new FinanceRivalMove[0] : new[]
         {
-            new FinanceRivalMove { Day = "Day 287", What = move ? "Raising prices 4% in all shops" : "Bought up buildings in Midtown", Live = move },
+            new FinanceRivalMove { Day = "Day 287", What = live0 ? "Raising prices 4% in all shops" : "Bought up buildings in Midtown", Live = live0 },
             new FinanceRivalMove { Day = "Day 281", What = "Borrowed $1,800,000" },
             new FinanceRivalMove { Day = "Day 277", What = "Bought 8,000 HSF shares" }
         };
-        r.AnswersTitle = "How do you answer the new shop?";
-        r.Answers = move ? new[]
+        bool cutOn = state == "rivals_cut", blocked = state == "rivals_blocked";
+        bool live = move || cutOn || blocked;
+        r.Reading = live ? "Huang Guo is raising prices 4% in all shops. About 4% fewer customers at your shops while their prices are up. It runs until day 301." : null;
+        r.AnswersTitle = "How do you answer?";
+        r.Answers = !live ? new FinanceAnswer[0] : new[]
         {
-            new FinanceAnswer { Title = "Cut your prices 5% for 14 days", Hint = "Your shops take about 3 customers an hour from the move. Cheaper prices win some back and take about $1,900 a day in takings.", Act = FinanceAct.CutPrices, On = true },
+            blocked
+                ? new FinanceAnswer { Title = "Run a Flare campaign at Speedy Bites", Hint = "Not now: a campaign is booked there already.", Act = FinanceAct.Campaign, On = false }
+                : new FinanceAnswer { Title = "Run a Flare campaign at Speedy Bites", Hint = "Influencers post for 7 days. Costs $4,200. Forecast: 12% more customers, about $15,400 more takings.", Act = FinanceAct.Campaign, On = true },
+            cutOn
+                ? new FinanceAnswer { Title = "End the price cut and hold your prices", Hint = "The cut runs until day 301. Ending it takes off only the holds it put on.", Act = FinanceAct.HoldPrices, On = true }
+                : blocked
+                    ? new FinanceAnswer { Title = "Cut your prices 5% for 14 days", Hint = "Not now: none of your pricing plans has a price the plan sets.", Act = FinanceAct.CutPrices, On = false }
+                    : new FinanceAnswer { Title = "Cut your prices 5% for 14 days", Hint = "Your own shops' prices go down and the plans it moved are held. They go back by themselves at the end. Forecast: about 3 more customers a day while it lasts.", Act = FinanceAct.CutPrices, On = true },
             new FinanceAnswer { Title = "Outbid them for the building", Hint = "Costs $210,000 and stops the move. They may try again in 20 days.", Act = FinanceAct.Counter, Arg = 0, On = true },
             new FinanceAnswer { Title = "Lobby the council back", Hint = "Not now: they are resting.", Act = FinanceAct.Counter, Arg = 3, On = false }
-        } : new FinanceAnswer[0];
+        };
         r.CanFollow = true;
         r.FollowLabel = "Follow " + name;
         r.CanHolding = !fresh;

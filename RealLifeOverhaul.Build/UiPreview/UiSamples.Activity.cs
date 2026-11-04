@@ -35,7 +35,7 @@ internal static partial class UiSamples
                 new UiInfoRow { Label = t("reallife_ui_activity_hours", "Hours"), Value = Pick("09:00 to 17:00, Monday to Friday", "09:00 bis 17:00, Montag bis Freitag") },
                 new UiInfoRow
                 {
-                    Label = t("reallife_ui_activity_skill", "Skill"), Value = t("reallife_ui_activity_skill_day", "{skill} +{amount} a day").Replace("{skill}", Pick("Game design", "Spieldesign")).Replace("{amount}", "6"),
+                    Label = t("reallife_ui_activity_skill", "Skill"), Value = t("reallife_ui_activity_skill_day", "{skill} +{amount} this shift").Replace("{skill}", Pick("Game design", "Spieldesign")).Replace("{amount}", "6"),
                     Ink = UiRole.OkText,
                 },
                 new UiInfoRow { Label = t("reallife_ui_activity_standing", "Standing with the team"), Value = "+3", Ink = UiRole.OkText },
@@ -59,6 +59,51 @@ internal static partial class UiSamples
         return m;
     }
 
+    /// <summary>
+    /// A shift of the drinks cart left to the clock, the card the gig jobs now have: the stress and the skill the hours give, the slider
+    /// from one hour to the whole shift with the finish and the sum before tax; while it runs, the hour and what is earned.
+    /// </summary>
+    public static UiActivityModel ActivityCart(UiWords t, IUiKeys k, UiActivityState state)
+    {
+        bool before = state == UiActivityState.NotStarted;
+        var m = new UiActivityModel
+        {
+            State = state, Icon = UiIcon.Coffee, Bar = true,
+            Headline = before ? Pick("Work the drinks cart", "Am Getraenkewagen arbeiten") : t("reallife_ui_activity_work_strip", "Working day"),
+            Place = Pick("Drinks cart", "Getraenkewagen"), PlaceLines = new[] { "Fifth Avenue", "Midtown" },
+            Lines = new[]
+            {
+                new UiInfoRow { Label = Pick("Pay", "Lohn"), Value = Pick("12 customers, about $184 at 85%", "12 Kunden, etwa 184 $ bei 85 %") },
+                new UiInfoRow
+                {
+                    Label = t("reallife_ui_activity_stress", "Stress"), Value = "+6%", Ink = UiRole.WarnText,
+                },
+                new UiInfoRow
+                {
+                    Label = t("reallife_ui_activity_skill", "Skill"), Value = t("reallife_ui_activity_skill_day", "{skill} +{amount} this shift").Replace("{skill}", Pick("Customer service", "Kundenservice")).Replace("{amount}", "0.24"),
+                    Ink = UiRole.OkText,
+                },
+            },
+            HasDuration = before, DurationLabel = t("reallife_ui_activity_how_long", "How long"), DurationValue = t("common_hours", "{hours} hours").Replace("{hours}", "2"), DurationShare = 1f / 3f,
+            DurationFrom = t("common_hours_abbr", "{hours} h").Replace("{hours}", "1"), DurationTo = t("common_hours_abbr", "{hours} h").Replace("{hours}", "4"),
+            Finish = t("reallife_ui_activity_finish", "You finish at {time}").Replace("{time}", "12:00"), Sum = t("reallife_ui_activity_before_tax", "{money} before tax").Replace("{money}", "$92"),
+            Buttons = new[]
+            {
+                GameButton(t("common_cancel", "Cancel"), UiButtonKind.Secondary, GameKey(k, "Esc", UiIcon.PadB), true),
+                GameButton(t("workui_start", "Start working"), UiButtonKind.Primary, GameKey(k, "F", UiIcon.PadX)),
+            },
+            HasProgress = !before, Progress = new UiProgressModel { Share = 0.4f },
+            MeterLeft = t("reallife_ui_activity_hour_of", "Hour {hour} of {hours}").Replace("{hour}", "1").Replace("{hours}", "2"),
+            MeterRight = t("reallife_ui_activity_earned", "Earned {money}").Replace("{money}", "$31"), Clock = before ? "10:00" : "10:50",
+        };
+        if (!before)
+        {
+            m.Kicker = t("reallife_ui_activity_work_strip", "Working day");
+        }
+        Running(m, t, k, state, t("reallife_ui_activity_skip_end", "Skip to the end"));
+        return m;
+    }
+
     // The strip's parts as the game's panel gives them while it runs: the time machine, fast forward, Stop on Escape.
     private static void Running(UiActivityModel m, UiWords t, IUiKeys k, UiActivityState state, string skip)
     {
@@ -71,7 +116,7 @@ internal static partial class UiSamples
         m.FastKey = GameKey(k, "P", UiIcon.PadY);
         m.StripButtons = state == UiActivityState.Moving
             ? new[] { GameButton(t("common_cancel", "Cancel"), UiButtonKind.Secondary, GameKey(k, "Esc", UiIcon.PadB)) }
-            : new[] { GameButton(t("reallife_ui_activity_stop", "Stop"), UiButtonKind.Secondary, GameKey(k, "Esc", UiIcon.PadB)) };
+            : new[] { GameButton(t("workui_stop", "Stop"), UiButtonKind.Secondary, GameKey(k, "Esc", UiIcon.PadB)) };
         m.StateWords = state == UiActivityState.Moving ? t("reallife_ui_activity_moving", "On your way") : state == UiActivityState.Waiting ? t("reallife_ui_activity_waiting", "Waiting for it to start")
             : state == UiActivityState.Finished ? t("reallife_ui_activity_done", "Done") : null;
     }
@@ -190,8 +235,8 @@ internal static partial class UiSamples
         {
             Title = t("playeractivityui_timemachine", "Skip time"), Clock = "14:20", Day = "Monday (Day 2)",
             Goal = info ? "You're being taken to the closest medical center" : t("reallife_ui_skip_to_end", "Skipping to the end at"), GoalTime = info ? null : "17:00",
-            Pace = info ? t("reallife_ui_skip_until_left", "Until {time}, {left} to go").Replace("{time}", "16:00").Replace("{left}", t("reallife_ui_skip_hours_minutes", "{hours} h {minutes} min").Replace("{hours}", "1").Replace("{minutes}", "40"))
-                : t("reallife_ui_skip_left", "{left} to go").Replace("{left}", t("reallife_ui_skip_hours_minutes", "{hours} h {minutes} min").Replace("{hours}", "2").Replace("{minutes}", "40")),
+            Pace = info ? t("reallife_ui_skip_pace_until", "Fast forward x{speed}. Until {time}, {left} to go").Replace("{speed}", "60").Replace("{time}", "16:00").Replace("{left}", t("reallife_ui_skip_hours_minutes", "{hours} h {minutes} min").Replace("{hours}", "1").Replace("{minutes}", "40"))
+                : t("reallife_ui_skip_pace", "Fast forward x{speed}, {left} to go").Replace("{speed}", "60").Replace("{left}", t("reallife_ui_skip_hours_minutes", "{hours} h {minutes} min").Replace("{hours}", "2").Replace("{minutes}", "40")),
             Share = 0.67f, CanCancel = !info, CancelLabel = t("common_cancel", "Cancel"),
             Prompts = info ? new UiPrompt[0] : new[] { new UiPrompt { Action = UiAction.Back, Label = t("common_cancel", "Cancel") } }, PromptCount = info ? 0 : 1,
         };
@@ -230,7 +275,7 @@ internal static partial class UiSamples
         {
             choices.Add(new UiSideChoice
             {
-                Name = t("reallife_ui_funeral_backup", "Load the backup"), Line = t("reallife_ui_funeral_backup_line", "Return to the backup saved when you turned {age}").Replace("{age}", "70"),
+                Name = t("reallife_ui_funeral_backup", "Load the backup"), Line = t("reallife_ui_funeral_backup_when", "Return to day {day}, saved {when}").Replace("{day}", "211").Replace("{when}", "3 Nov, 06:10"),
             });
         }
         choices.Add(new UiSideChoice

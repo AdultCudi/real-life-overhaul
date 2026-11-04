@@ -23,8 +23,9 @@ namespace RealLifeOverhaul.Ui
     /// top centre: their picture on its tile at the left, their name in the cyan where it is known with where the line
     /// stands among those to come at the right of that row, the line wrapped under it, and under that how far it has been
     /// said with Skip and Next at its end, which the game's own close answers (the next line comes as the game's queue
-    /// sends it). It takes no key, as walking keeps the keys: the pointer answers it, and the game's own sound plays the
-    /// line. Commands: <see cref="CloseCommand"/> (Next, or the cross) and <see cref="SkipCommand"/>. Game-free. Cost: a
+    /// sends it). The pointer answers it, and so do two keys while it shows: Interact is Next and Cancel is Skip (Cancel closes
+    /// the line when no Skip shows), the others staying the player's to walk with; the game's own sound plays the line.
+    /// Commands: <see cref="CloseCommand"/> (Next, or the cross) and <see cref="SkipCommand"/>. Game-free. Cost: a
     /// layout a line and one a step of its bar.
     /// </summary>
     public static class UiMonologue
@@ -36,10 +37,10 @@ namespace RealLifeOverhaul.Ui
         private const float Bar = 4f;         // px: the bar of how far the line has been said
         private const int LineMost = 6;
 
-        public static void Lay(UiScene s, UiMonologueModel m, UiFrame frame, bool dark)
+        public static void Lay(UiScene s, UiMonologueModel m, UiFrame frame, bool dark, IUiKeys keys = null)
         {
             s.Begin("monologue", frame.Width, frame.Height, dark);
-            s.Pointer = true;   // the keys stay the player's: the card is answered by pointing
+            s.Pointer = true;   // the pointer answers it; the keys, where the host gives them (keys not null), are Interact for Next and Cancel for Skip, and walking keeps the rest
             s.Floats = true;
             if (m == null || string.IsNullOrEmpty(m.Line))
             {
@@ -90,14 +91,15 @@ namespace RealLifeOverhaul.Ui
             // Under the line: how far it has been said, then Skip (while more wait) and Next at the card's right.
             float by = ty + headH + UiDraw.Snap(lineH) + UiTokens.S3, bh = UiTokens.ControlSmall;
             float right = x + Width - UiTokens.S4;
-            float nextW = UiDraw.ButtonWidth(UiButtonKind.Primary, m.Next, UiIcon.None, UiAction.Count, null);
+            UiAction nextKey = keys != null ? UiAction.Alt : UiAction.Count, skipKey = keys != null ? UiAction.Back : UiAction.Count;
+            float nextW = UiDraw.ButtonWidth(UiButtonKind.Primary, m.Next, UiIcon.None, nextKey, keys);
             float bx = right - nextW;
-            UiDraw.Button(s, at, bx, by, nextW, bh, UiButtonKind.Primary, m.Next, UiIcon.None, UiAction.Count, null, CloseCommand, 0);
+            UiDraw.Button(s, at, bx, by, nextW, bh, UiButtonKind.Primary, m.Next, UiIcon.None, nextKey, keys, CloseCommand, 0);
             if (!string.IsNullOrEmpty(m.Skip))
             {
-                float skipW = UiDraw.ButtonWidth(UiButtonKind.Secondary, m.Skip, UiIcon.None, UiAction.Count, null);
+                float skipW = UiDraw.ButtonWidth(UiButtonKind.Secondary, m.Skip, UiIcon.None, skipKey, keys);
                 bx -= skipW + UiTokens.S3;
-                UiDraw.Button(s, at, bx, by, skipW, bh, UiButtonKind.Secondary, m.Skip, UiIcon.None, UiAction.Count, null, SkipCommand, 0);
+                UiDraw.Button(s, at, bx, by, skipW, bh, UiButtonKind.Secondary, m.Skip, UiIcon.None, skipKey, keys, SkipCommand, 0);
             }
             if (m.Progress >= 0 && bx - UiTokens.S4 > tx)
             {

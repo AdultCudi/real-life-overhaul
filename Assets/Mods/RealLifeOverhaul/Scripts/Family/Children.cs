@@ -477,11 +477,12 @@ namespace RealLifeOverhaul.Family
             string key = care == Care.You ? "reallife_family_care_offer_you" : care == Care.Partner ? "reallife_family_care_offer_partner"
                 : care == Care.Nursery ? "reallife_family_care_offer_nursery" : "reallife_family_care_offer_nanny";
             int cost = care == Care.Nursery ? FamilyBalance.NurseryPerMonth : care == Care.Nanny ? FamilyBalance.NannyPerMonth : 0;
-            return FamilyTalk.Either(FamilyText.Say(key, Args.Us.Cost(cost)), "reallife_family_plan_choose", () =>
+            DialogEntry offer = FamilyTalk.Either(FamilyText.Say(key, Args.Us.Cost(cost)), "reallife_family_plan_choose", () =>
             {
                 FamilyState.S.CareChoice = (int)care;
                 return FamilyTalk.Close("reallife_family_care_set", Args.Us.With(FamilyText.T(CareName(care))));
             }, "reallife_family_plan_other", () => CareStep(index + 1));
+            return cost > 0 ? offer.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_month", "amount", FamilyText.Money(cost)) : offer;   // the nursery or the nanny, a month
         }
 
         public static DialogEntry PocketStep(int child)
@@ -490,7 +491,9 @@ namespace RealLifeOverhaul.Family
             ChildRecord c = s.Children[child];
             c.Pocket = (c.Pocket + 1) % FamilyBalance.PocketLevels;
             return FamilyTalk.Either(FamilyText.Say("reallife_family_pocket_set", Args.Us.Kid(c.Name).Cost(FamilyBalance.PocketMoney(c.Pocket))),
-                "reallife_family_pocket_change", () => PocketStep(child), "reallife_family_menu_back", () => FamilyPhone.FamilyMenu(0));
+                "reallife_family_pocket_change", () => PocketStep(child), "reallife_family_menu_back", () => FamilyPhone.FamilyMenu(0))
+                .Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_week", "amount", FamilyText.Money(FamilyBalance.PocketMoney((c.Pocket +
+                    1) % FamilyBalance.PocketLevels)));   // the next level's, a week
         }
 
         public static DialogEntry FundStep(int child)

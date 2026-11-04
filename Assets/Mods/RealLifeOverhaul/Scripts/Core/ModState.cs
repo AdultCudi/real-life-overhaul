@@ -117,6 +117,7 @@ namespace RealLifeOverhaul
             LastEventId = null;
             Leisure.LeisureState.Reset();
             Economy.SendNowLimit.Reset();
+            Leisure.ClothesSeen.Reset();
             CharacterCatalogue.Leave();   // no save, no picks of the mod's looks
         }
 
@@ -145,6 +146,7 @@ namespace RealLifeOverhaul
             PendingFineDue = ReadFloat(data, KeyPendingFineDue);
 
             Economy.SendNowLimit.ReadSave(data);   // the routes BizMan sent today; an older save has none
+            Leisure.ClothesSeen.ReadSave(data);   // the garments the clothes shop has shown, for its New filter; an older save has none
             Leisure.LeisureState.ReadSave(data);   // records, landmarks, the clothes bought, outfits
             CharacterCatalogue.ReadSave(data);   // the player's picks of the mod's own hair and clothes, by id
 
@@ -227,6 +229,7 @@ namespace RealLifeOverhaul
             CharacterCatalogue.WriteSave(data);
             Leisure.LeisureState.WriteSave(data);
             Economy.SendNowLimit.WriteSave(data, TimeHelper.CurrentDay);
+            Leisure.ClothesSeen.WriteSave(data);
             return removed;
         }
 

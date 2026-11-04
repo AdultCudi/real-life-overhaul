@@ -245,24 +245,31 @@ namespace RealLifeOverhaul.Ui
             return UiDraw.Icon(s, at, x + UiDraw.SnapDown((w - glyph) / 2f), y + UiDraw.SnapDown((h - glyph) / 2f), glyph, c.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
         }
 
+        // How many rows above the first the detail's actions need, the main one last in the bottom row, as the foot lays them out.
+        private static float ActionRows(UiCatalogueModel m, float w, IUiKeys keys)
+        {
+            float row = 0f, used = 0f;
+            for (int i = m.Actions.Length - 1; i >= 0; i--)
+            {
+                float need = Math.Min(w, UiDraw.ButtonWidth(m.Actions[i].Kind, m.Actions[i].Label, m.Actions[i].Icon, m.Actions[i].Key, keys));
+                if (used > 0f && used + UiTokens.S3 + need > w)
+                {
+                    row++;
+                    used = 0f;
+                }
+                used += (used > 0f ? UiTokens.S3 : 0f) + need;
+            }
+            return row;
+        }
+
         // The chosen card's detail: its picture large, what it is in capitals, its name in the figures' size, its price,
         // its facts as compact rows, a sentence on it, and its actions at the foot, the main one last.
         private static void Detail(UiScene s, UiAt at, UiCatalogueModel m, float x, float y, float w, float h, IUiKeys keys, int command)
         {
-            // Buttons that do not fit the width wrap to a row under (a detail with many things to do), the main one still first at the right.
-            int rows = 1;
-            float used = 0f;
-            for (int i = m.Actions.Length - 1; i >= 0; i--)
-            {
-                float need = Math.Min(w, UiDraw.ButtonWidth(m.Actions[i].Kind, m.Actions[i].Label, m.Actions[i].Icon, m.Actions[i].Key, keys));
-                if (used > 0f && used + need > w)
-                {
-                    rows++;
-                    used = 0f;
-                }
-                used += need + UiTokens.S3;
-            }
-            float actionsH = rows * UiTokens.Control + (rows - 1) * UiTokens.S2;
+            // Actions that do not all fit one row wrap into rows above the main one, which stays last in the bottom row.
+            float step = UiTokens.Control + UiTokens.S1;
+            float extra = ActionRows(m, w, keys);
+            float actionsH = (extra + 1f) * UiTokens.Control + extra * UiTokens.S1;
             // The picture takes what the facts and the actions leave of the column, at most its own height: a short window gets a shorter picture, never a cut sentence.
             float restH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1
                 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display)) + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.BodyStrong))
@@ -307,20 +314,20 @@ namespace RealLifeOverhaul.Ui
                 int note = UiDraw.Text(s, at, x, ty, w, UiStyle.Body, UiRole.Text2, m.DetailNote, UiFlags.Wrap | UiFlags.Label, lines);
                 ty += s.Items[note].H;
             }
-            // The actions under what they act on, the main one last at the right, as the hero's actions stand by it.
-            float by = Math.Min(UiDraw.Snap(ty + UiTokens.S5), y + h - actionsH);
-            float right = x + w;
+            // The actions under what they act on, the main one last at the right in the bottom row, as the hero's actions stand by it.
+            float by = Math.Min(UiDraw.Snap(ty + UiTokens.S5 + extra * step), y + h - UiTokens.Control);
+            float right = x + w, rowY = by;
             for (int i = m.Actions.Length - 1; i >= 0; i--)
             {
                 ref UiActionModel a = ref m.Actions[i];
                 float bw = Math.Min(w, UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, a.Key, keys));
-                if (right - bw < x)
+                if (right < x + w && right - bw < x)
                 {
                     right = x + w;
-                    by += UiTokens.Control + UiTokens.S2;
+                    rowY -= step;
                 }
                 right -= bw;
-                UiDraw.Button(s, at, right, by, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, command + Action, i, a.Disabled || c.Disabled);
+                UiDraw.Button(s, at, right, rowY, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, command + Action, i, a.Disabled || c.Disabled);
                 right -= UiTokens.S3;
             }
         }

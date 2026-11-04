@@ -180,6 +180,10 @@ namespace RealLifeOverhaul.Ui
             {
                 return TakeTitle(arg);
             }
+            if (_app == NewsApp.Stand && (command == NewsCommands.ReadTitle || command == NewsCommands.ReadDay || command == NewsCommands.ReadPrinted || command == NewsCommands.ToTitles))
+            {
+                return PressRead(model, command, arg);
+            }
             return command == UiAppWindow.NavCommand || command == UiDataTable.First + UiDataTable.Row
                 || command == UiChart.First + UiChart.Point || command == UiEdition.StoryCommand || command == UiEdition.LeadCommand;
         }
@@ -213,14 +217,13 @@ namespace RealLifeOverhaul.Ui
             model.Lead = OutlookText.T(VerdictHeads[(int)verdict < VerdictHeads.Length ? (int)verdict : 1]);
             model.Body = OutlookText.Words.VerdictLine(verdict, Look);
             model.ChipTone = verdict == OutlookVerdict.Growing ? UiRole.OkText : verdict == OutlookVerdict.Recession ? UiRole.DangerText : UiRole.WarnText;
-            model.Figures = model.Shape == NewsShape.Overview || model.Shape == NewsShape.Finances ? Figures() : new UiFigureModel[0];
+            model.Figures = model.Shape == NewsShape.Overview ? Figures() : model.Shape == NewsShape.Finances ? FinanceFigures(book) : new UiFigureModel[0];
             model.Chart = Chart(book, model.Shape);
             if (model.Shape == NewsShape.Overview && model.Figures.Length == 3)
             {
                 int span = NewsRules.Span(_range);
                 model.Figures[0].Trend = Tail(Inflation, span);
                 model.Figures[1].Trend = Tail(Rate, span);
-                model.Figures[2].Trend = Tail(Wages, span);
                 int back = Math.Max(0, span - 1 - NewsRules.DaysMonth);
                 float rateMove = Rate[span - 1] - Rate[back];
                 if (Math.Abs(rateMove) >= 0.005f)
@@ -274,15 +277,73 @@ namespace RealLifeOverhaul.Ui
             return new UiNavEntry { Icon = icon, Tint = UiRole.None, Label = OutlookText.T(key) };
         }
 
+        // The three key figures of the overview: inflation and the bank rate over a month, and the city's unemployment over the range chosen.
         private UiFigureModel[] Figures()
         {
             return new[]
             {
                 Fig("reallife_econapp_tile_inflation", (Look.Inflation / 100f).ToString("0.0", Inv) + "%", Look.MonthChange / 100f, "0.0"),
                 Fig("reallife_econapp_tile_rate", (Look.RateBp / 100f).ToString("0.00", Inv) + "%", 0f, "0.00"),
-                Fig("reallife_econapp_tile_unemployment", (Look.Unemployment / 10f).ToString("0.0", Inv) + "%", 0f, "0.0")
+                Jobless()
             };
         }
+
+        // The city's unemployment as the population counts it (the book's own reading while the population is not running), its change over the range from its own
+        // day series, and that series as the spark. With under two days of it there is no change to give: the figure says so by showing none, never a nought.
+        private UiFigureModel Jobless()
+        {
+            int now = Population.CityPopulation.Unemployment;
+            now = now >= 0 ? now : Look.Unemployment;
+            DaySeriesBook series = DaySeriesDirector.Book;
+            var fig = new UiFigureModel { Label = OutlookText.T("reallife_econapp_tile_unemployment"), Value = (now / 10f).ToString("0.0", Inv) + "%" };
+            if (series == null || series.LastDay <= 0)
+            {
+                return fig;
+            }
+            int span = NewsRules.Span(_range);
+            series.Window(DaySeriesCatalogue.Unemployment, series.LastDay, span, Raw);
+            fig.Trend = NewsRules.Spark(Raw, span, DaySeriesCatalogue.NoValue, 12);
+            if (NewsRules.SeriesChange(Raw, span, DaySeriesCatalogue.NoValue, out _, out int change, out int days) && change != 0)
+            {
+                fig.Change = (change > 0 ? "+" : "-") + (Math.Abs(change) / 10f).ToString("0.0", Inv) + " " + OutlookText.T("reallife_news_in_days", "days", days.ToString(Inv));
+                fig.Rising = change > 0;
+                fig.Good = change < 0;
+            }
+            return fig;
+        }
+
+        // The council's books on the Finances page: the reserve, a week's takings and a week's spending, each with its change over the range and its line.
+        private UiFigureModel[] FinanceFigures(OutlookBook book)
+        {
+            return new[]
+            {
+                BookFigure(book, OutlookCatalogue.Reserve, "reallife_news_series_reserve", Look.Reserve, false),
+                BookFigure(book, OutlookCatalogue.Revenue, "reallife_news_series_revenue", Look.Revenue, false),
+                BookFigure(book, OutlookCatalogue.Spending, "reallife_news_series_spending", Look.Spending, true)
+            };
+        }
+
+        // A money figure of the council's: its value now, and its change over the range from the book (kept in thousands) when the book holds two readings.
+        private UiFigureModel BookFigure(OutlookBook book, string key, string label, long now, bool lowerIsGood)
+        {
+            var fig = new UiFigureModel { Label = OutlookText.T(label), Value = MoneyOf(now) };
+            if (book == null || book.LastDay <= 0)
+            {
+                return fig;
+            }
+            int span = NewsRules.Span(_range);
+            book.Window(key, book.LastDay, span, Raw);
+            fig.Trend = NewsRules.Spark(Raw, span, OutlookCatalogue.NoValue, 12);
+            if (NewsRules.SeriesChange(Raw, span, OutlookCatalogue.NoValue, out _, out int change, out int days) && change != 0)
+            {
+                fig.Change = (change > 0 ? "+" : "-") + MoneyOf(Math.Abs((long)change) * 1000L) + " " + OutlookText.T("reallife_news_in_days", "days", days.ToString(Inv));
+                fig.Rising = change > 0;
+                fig.Good = lowerIsGood ? change < 0 : change > 0;
+            }
+            return fig;
+        }
+
+        private static string MoneyOf(long money) => LedgerText.Money((int)Math.Max(int.MinValue, Math.Min(int.MaxValue, money)));
 
         // A figure with its change over the month in words ("+0.6 in a month"), or none when it did not move.
         private static UiFigureModel Fig(string key, string value, float change, string format)
@@ -645,7 +706,7 @@ namespace RealLifeOverhaul.Ui
                     Target = 1
                 });
             }
-            int saving = LoanSaving(out _);
+            int saving = LoanSaving();
             if (saving > 0)
             {
                 list.Add(new NewsAdvice
@@ -693,37 +754,6 @@ namespace RealLifeOverhaul.Ui
                 });
             }
             return list.ToArray();
-        }
-
-        private static int LoanSaving(out int index)
-        {
-            index = -1;
-            var live = new List<LoanView>(4);
-            GameLoans.Read(live);
-            int best = 0;
-            int at = -1;
-            for (int i = 0; i < live.Count; i++)
-            {
-                if (live[i].Remaining > best && live[i].Interest > 0)
-                {
-                    best = (int)live[i].Remaining;
-                    at = i;
-                }
-            }
-            if (at < 0)
-            {
-                return 0;
-            }
-            int score = CreditLedger.Value;
-            int own = Look.RateBp;
-            int saving = NewsRules.Offer(best, live[at].Interest, score, own, AccountRules.DaysPerYear, out int fixedDaily);
-            bool rising = Look.Pending && Look.PendingMove > 0;
-            if (!NewsRules.WillFix(rising || saving > 0, live[at].Interest, fixedDaily))
-            {
-                return 0;
-            }
-            index = at;
-            return saving;
         }
 
         private static bool Defensive()
@@ -1100,7 +1130,7 @@ namespace RealLifeOverhaul.Ui
         {
             if (target == 4)
             {
-                return FixLoan();
+                return NewsLoanFix.Press(FixDesk);   // the question first; the loan is changed only on yes
             }
             if (target == 1)
             {
@@ -1116,45 +1146,6 @@ namespace RealLifeOverhaul.Ui
                 return PhoneApp.OpenById(OutlookDirector.AppId);
             }
             return PhoneApp.OpenById(EconomyDirector.AppId);
-        }
-
-        private static bool FixLoan()
-        {
-            int saving = LoanSaving(out int index);
-            if (saving <= 0 || index < 0 || CreditLedger.File == null)
-            {
-                return PhoneApp.OpenById(EconomyDirector.AppId);
-            }
-            var live = new List<LoanView>(4);
-            GameLoans.Read(live);
-            if (index >= live.Count)
-            {
-                return false;
-            }
-            LoanMark mark = null;
-            for (int i = 0; i < CreditLedger.File.Loans.Count; i++)
-            {
-                LoanMark one = CreditLedger.File.Loans[i];
-                if (one.Street == live[index].Street && one.Number == live[index].Number)
-                {
-                    mark = one;
-                    break;
-                }
-            }
-            if (mark == null)
-            {
-                return PhoneApp.OpenById(EconomyDirector.AppId);
-            }
-            int interest = live[index].Interest;
-            int payment = live[index].Payment;
-            NewsRules.Offer((int)live[index].Remaining, interest, CreditLedger.Value, Look.RateBp, AccountRules.DaysPerYear, out int fixedDaily);
-            LoanHolds.Begin(mark, LoanHold.Fixed, ref interest, ref payment, GameLoans.Multiplier, AccountRules.DaysPerYear);
-            mark.OwnInterest = fixedDaily;
-            mark.OwnPayment = payment;
-            LoanHolds.Apply(mark, ref interest, ref payment, GameLoans.Multiplier, AccountRules.DaysPerYear);
-            GameLoans.WriteTerms(live[index], interest, payment);
-            CreditLedger.Touch();
-            return true;
         }
 
         private static bool EndChoice(int arg)

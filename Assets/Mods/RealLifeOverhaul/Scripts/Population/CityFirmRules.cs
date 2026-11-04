@@ -122,6 +122,16 @@ namespace RealLifeOverhaul.Population
             return (int)Math.Min(full, let);
         }
 
+        /// <summary>A business of the city or of a rival that is new to the table has opened: noted for the paper with its name and its day.
+        /// The player's and a guest's are no news of the city's, and a business with no name has no story.</summary>
+        public static void Opened(PopulationState s, in BusinessSeed bs, int day)
+        {
+            if ((bs.Owner == Owner.City || bs.Owner == Owner.Rival) && !string.IsNullOrEmpty(bs.Name))
+            {
+                s.Events.Add(FirmEventKind.Opened, bs.Owner, day, 0, bs.Name);
+            }
+        }
+
         public const int LeaseUp = 100;   // thousandths of a floor's jobs its firms take on a month at the most
 
         /// <summary>The jobs of a floor's firms at a level.</summary>

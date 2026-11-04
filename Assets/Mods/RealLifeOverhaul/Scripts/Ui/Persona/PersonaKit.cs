@@ -76,6 +76,11 @@ namespace RealLifeOverhaul.Ui
                         return "its " + Blocks[i] + " is not there";
                     }
                 }
+                string sorts = UiProbe.Need("Persona", "PersonalGoalsUI (its sort methods)", root.GetComponentInChildren<PersonalGoalsUI>(true) != null);
+                if (sorts != null)
+                {
+                    return sorts;
+                }
                 return root.GetComponentInChildren<CharacterInfo>(true) == null || root.GetComponentInChildren<CharacterStats>(true) == null
                        || root.GetComponentInChildren<EducationInfo>(true) == null || root.GetComponentInChildren<PersonalGoalsUI>(true) == null
                     ? "its facts, stats, education or goals are not there" : null;

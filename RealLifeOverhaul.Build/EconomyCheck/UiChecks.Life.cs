@@ -7,12 +7,15 @@ internal static partial class Program
     private static readonly int[] LifePlanCommands =
     {
         UiAppWindow.NavCommand, LifePages.Chip, LifePages.Row, LifePages.Add, LifePages.Second, LifePages.Locate,
-        UiBoard.ShiftCommand, UiBoard.LaneCommand, UiBoard.DayCommand, UiBoard.ActionCommand,
+        UiBoard.ShiftCommand, UiBoard.LaneCommand, UiBoard.DayCommand, UiBoard.ActionCommand, LifePages.Today,
+        UiPlanDay.RowCommand, UiPlanDay.LocateCommand, UiPlanDay.LaterCommand, UiPlanPage.BackCommand, UiPlanPage.SettingsCommand,
+        UiPlanEntry.ActionCommand, UiPlanEntry.LessCommand, UiPlanEntry.MoreCommand,
+        UiPlanForm.FieldCommand, UiPlanForm.LessCommand, UiPlanForm.MoreCommand, UiPlanForm.OptionCommand, UiPlanForm.ActionCommand, UiPlanForm.PlaceCommand,
     };
 
     private static readonly int[] LifeCalCommands =
     {
-        UiDiary.DayCommand, UiDiary.MonthCommand, UiDiary.EntryCommand, LifePages.Add, LifePages.Second,
+        UiDiary.DayCommand, UiDiary.MonthCommand, UiDiary.EntryCommand, LifePages.Add, LifePages.Second, LifePages.Today,
     };
 
     private static readonly int[] LifeGalleryCommands =
@@ -46,6 +49,18 @@ internal static partial class Program
                     Lay = (s, f, d, k, t) => UiSamples.PlannerNotes(s, f, d, k, t, false) });
                 cases.Add(new UiScreenCase { Def = def, Name = "planner (no notes)", Title = "Planner", Commands = LifePlanCommands,
                     Lay = (s, f, d, k, t) => UiSamples.PlannerNotes(s, f, d, k, t, true) });
+                cases.Add(new UiScreenCase { Def = def, Name = "planner (jumped to now)", Title = "Planner", Commands = LifePlanCommands,
+                    Lay = (s, f, d, k, t) => UiSamples.PlannerToday(s, f, d, k, t, false, 4) });
+                cases.Add(new UiScreenCase { Def = def, Name = "planner (a day)", Title = "Planner", Commands = LifePlanCommands,
+                    Lay = (s, f, d, k, t) => UiSamples.PlannerDay(s, f, d, k, t) });
+                cases.Add(new UiScreenCase { Def = def, Name = "planner (an entry)", Title = "Planner", Commands = LifePlanCommands,
+                    Lay = (s, f, d, k, t) => UiSamples.PlannerEntry(s, f, d, k, t, false) });
+                cases.Add(new UiScreenCase { Def = def, Name = "planner (a note's page)", Title = "Planner", Commands = LifePlanCommands,
+                    Lay = (s, f, d, k, t) => UiSamples.PlannerEntry(s, f, d, k, t, true) });
+                cases.Add(new UiScreenCase { Def = def, Name = "planner (the note form)", Title = "Planner", Commands = LifePlanCommands,
+                    Lay = (s, f, d, k, t) => UiSamples.PlannerForm(s, f, d, k, t, false) });
+                cases.Add(new UiScreenCase { Def = def, Name = "planner (settings)", Title = "Planner", Commands = LifePlanCommands,
+                    Lay = (s, f, d, k, t) => UiSamples.PlannerForm(s, f, d, k, t, true) });
                 break;
             case "calendar":
                 cases.Add(new UiScreenCase { Def = def, Name = "calendar (a full month)", Title = "Calendar", Commands = LifeCalCommands,

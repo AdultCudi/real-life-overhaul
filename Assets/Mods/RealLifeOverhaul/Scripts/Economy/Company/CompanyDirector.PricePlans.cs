@@ -6,6 +6,7 @@ using Buildings.Office.Headquarters;
 using Controllers;
 using Entities;
 using Helpers;
+using RealLifeOverhaul.DaySeries;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
@@ -38,29 +39,57 @@ namespace RealLifeOverhaul.Economy
         internal bool PlanHasYesterday(string id) => id != null && _pricePlans.TryGetValue(id, out PricePlanFile f) && f.Yesterday.Count > 0;
 
         /// <summary>
-        /// Cuts the player's own plans by <paramref name="percent"/> and holds them, so the daily reprice does not put the
-        /// prices back. Another player's plan is never touched. Returns how many prices moved.
+        /// The player's own plans as the price cut sees them (<see cref="PriceCutRules"/>): the ones a cut can move, whether each is held, and
+        /// the cut and the hold themselves. Another player's plan is never listed. Taken once for a cut or its end, never per frame.
         /// </summary>
-        internal int CutPlans(int percent)
+        private sealed class PlanHolds : IPlanHolds
         {
-            GameInstance save = Save;
-            if (!PricePlansOn || save == null || save.pricingManagerPlans == null || percent <= 0 || percent >= 50)
+            private readonly CompanyDirector _director;
+            private readonly List<PricingManagerPlan> _plans = new List<PricingManagerPlan>(8);
+
+            internal PlanHolds(CompanyDirector director)
             {
-                return 0;
-            }
-            int changed = 0;
-            for (int i = 0; i < save.pricingManagerPlans.Count; i++)
-            {
-                PricingManagerPlan plan = save.pricingManagerPlans[i];
-                if (!PlanMine(plan) || plan.appliedPrices == null)
+                _director = director;
+                GameInstance save = Save;
+                for (int i = 0; director.PricePlansOn && save != null && save.pricingManagerPlans != null && i < save.pricingManagerPlans.Count; i++)
                 {
-                    continue;
+                    PricingManagerPlan plan = save.pricingManagerPlans[i];
+                    if (PlanMine(plan) && !string.IsNullOrEmpty(plan.id))
+                    {
+                        _plans.Add(plan);
+                    }
                 }
-                PricePlanFile file = PlanFile(plan.id);
-                PriceStrategy strategy = file.Strategy;
-                strategy.Hold = true;
-                file.Strategy = strategy;
-                for (int p = 0; p < plan.appliedPrices.Count; p++)
+            }
+
+            public int Count => _plans.Count;
+
+            public string IdAt(int index) => _plans[index].id;
+
+            public bool Held(int index) => _director.PlanStrategy(_plans[index].id).Hold;
+
+            public bool Cuttable(int index)
+            {
+                PricingManagerPlan plan = _plans[index];
+                for (int p = 0; plan.appliedPrices != null && p < plan.appliedPrices.Count; p++)
+                {
+                    RetailPrice price = plan.appliedPrices[p];
+                    if (price != null && !string.IsNullOrEmpty(price.itemName) && price.price > 0f && !plan.IsManuallyPriced(price.itemName))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            public int Cut(int index, int percent)
+            {
+                PricingManagerPlan plan = _plans[index];
+                if (percent <= 0 || percent >= 50)
+                {
+                    return 0;
+                }
+                int changed = 0;
+                for (int p = 0; plan.appliedPrices != null && p < plan.appliedPrices.Count; p++)
                 {
                     RetailPrice price = plan.appliedPrices[p];
                     if (price == null || string.IsNullOrEmpty(price.itemName) || price.price <= 0f || plan.IsManuallyPriced(price.itemName))
@@ -70,31 +99,50 @@ namespace RealLifeOverhaul.Economy
                     plan.ApplySuggestedPrice(price.itemName, price.price * (100 - percent) / 100f);
                     changed++;
                 }
+                return changed;
             }
-            return changed;
-        }
 
-        /// <summary>The hold a price cut put on the player's plans, taken off. A plan that was already held stays held.</summary>
-        internal void ReleaseCut(string alreadyHeld)
-        {
-            GameInstance save = Save;
-            if (!PricePlansOn || save == null || save.pricingManagerPlans == null)
+            public void SetHeld(int index, bool held)
             {
-                return;
-            }
-            for (int i = 0; i < save.pricingManagerPlans.Count; i++)
-            {
-                PricingManagerPlan plan = save.pricingManagerPlans[i];
-                if (!PlanMine(plan) || string.IsNullOrEmpty(plan.id) || (alreadyHeld != null && alreadyHeld.IndexOf(plan.id, StringComparison.Ordinal) >= 0))
-                {
-                    continue;
-                }
-                PricePlanFile file = PlanFile(plan.id);
+                PricePlanFile file = _director.PlanFile(_plans[index].id);
                 PriceStrategy strategy = file.Strategy;
-                strategy.Hold = false;
+                strategy.Hold = held;
                 file.Strategy = strategy;
             }
         }
+
+        /// <summary>
+        /// Starts the price cut: the player's plans cut and held so the daily reprice does not put the prices back, what was held before
+        /// recorded in the book. Returns how many prices moved; with none, nothing is held and the book is untouched.
+        /// </summary>
+        internal int StartCut(DaySeriesBook book, int day)
+        {
+            if (!PricePlansOn || Save == null)
+            {
+                return 0;
+            }
+            int moved = PriceCutRules.Start(book, new PlanHolds(this), day);
+            if (moved > 0)
+            {
+                PricePlansSave(Save);
+                Changed();
+            }
+            return moved;
+        }
+
+        /// <summary>Ends the price cut: the holds it put on come off and the holds already there stay.</summary>
+        internal void EndCut(DaySeriesBook book)
+        {
+            PriceCutRules.End(book, PricePlansOn && Save != null ? new PlanHolds(this) : null);
+            if (PricePlansOn && Save != null)
+            {
+                PricePlansSave(Save);
+                Changed();
+            }
+        }
+
+        /// <summary>Whether a cut would move any price now: a pricing plan of the player's, running, with a price the plan manages.</summary>
+        internal bool CanCut() => PricePlansOn && Save != null && PriceCutRules.Possible(new PlanHolds(this));
 
         /// <summary>A plan's strategy set from its page: kept, and the plan's prices worked out by it at once (the hold aside).</summary>
         internal void SetPlanStrategy(PricingManagerPlan plan, PriceStrategy s)

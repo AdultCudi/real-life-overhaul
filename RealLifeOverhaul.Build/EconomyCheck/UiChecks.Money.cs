@@ -75,7 +75,13 @@ internal static partial class Program
             _moneyChecked = true;
             MoneyRuleChecks();
         }
-        if (!_utilitiesFaceChecked && def.Id == "utilities")
+        if (!_bankFaceChecked && def.Id == "own_bank")
+        {
+            _bankFaceChecked = true;
+            BankFaceChecks();
+        }
+        if (!_utilitiesFaceChecked
+            && def.Id == "utilities")
         {
             _utilitiesFaceChecked = true;
             UtilitiesFaceChecks();
@@ -91,8 +97,19 @@ internal static partial class Program
             UiAppWindow.NavCommand, UiAppWindow.ActionCommand, UiAppWindow.RowCommand, UiAppWindow.MoreCommand, UiAppWindow.NoteCommand,
             MoneyCommands.StepLess, MoneyCommands.StepType, MoneyCommands.StepMore, MoneyCommands.Choice, MoneyCommands.Follow, MoneyCommands.Export, MoneyCommands.Link,
             UiChart.First + UiChart.Point, UiStatement.First + UiStatement.Period, UiStatement.First + UiStatement.Group, UiStatement.First + UiStatement.Line,
-            UiCatalogue.First + UiCatalogue.Card, UiCatalogue.First + UiCatalogue.Action
+            UiCatalogue.First + UiCatalogue.Card, UiCatalogue.First + UiCatalogue.Action,
+            MoneyCommands.PickBank, MoneyCommands.CardAct, MoneyCommands.Go, MoneyCommands.BackOut, MoneyCommands.TypeField
         };
+        for (int k = 0; k < MoneyCommands.CardsMost; k++)
+        {
+            list.Add(MoneyCommands.CardLess + k);
+            list.Add(MoneyCommands.CardMore + k);
+            list.Add(MoneyCommands.CardSwitch + k);
+        }
+        for (int i = 0; i <= UiDataTable.MassAnswer; i++)
+        {
+            list.Add(MoneyPages.Table2Base + i);
+        }
         for (int i = 0; i <= UiDataTable.MassAnswer; i++)
         {
             list.Add(UiDataTable.First + i);
@@ -118,10 +135,6 @@ internal static partial class Program
         var other = new DaySeriesBook { Seed = DaySeriesRules.DefaultSeed };
         DaySeriesRules.Borrow(other, 20, new[] { "Luthor Everything Co.", "Karen Aerospace & Motors" }, new[] { 20000000, 40000000 }, 3, new[] { 2000000, 2000000, 2000000 });
         Check(book.LoanCount == other.LoanCount, "day series: the same seed and day borrow the same number, whoever asks");
-        Check(DaySeriesRules.DailyPayment(100000, 480, 365) > 0 && DaySeriesRules.Interest(100000, DaySeriesRules.DailyPayment(100000, 480, 365), 365) > 0,
-            "day series: a loan's daily payment and its interest over the term are both worked out");
-        Check(DaySeriesRules.HistoryOk(34) && !DaySeriesRules.HistoryOk(29) && DaySeriesRules.CoverOk(2000, 100) && !DaySeriesRules.CoverOk(1000, 100),
-            "day series: a business loan wants 30 days of takings and takings that cover the payment 20 times");
         Check(DaySeriesRules.Headroom(579, CreditCatalogue.LendingThreshold, 800) == 0 && DaySeriesRules.Headroom(800, CreditCatalogue.LendingThreshold, 800) == 100
               && DaySeriesRules.Headroom(690, CreditCatalogue.LendingThreshold, 800) > 0 && DaySeriesRules.Headroom(690, CreditCatalogue.LendingThreshold, 800) < 100,
             "day series: headroom is how far the rating sits over 580, and nothing under it");
@@ -130,6 +143,7 @@ internal static partial class Program
         Check(n == 3 && parts[0] + parts[1] + parts[2] == 1000, "day series: named accounts sum to the pool");
         Check(DaySeriesRules.WorthUnits(2200000000L) == 2200000 && DaySeriesRules.CutFootfall(new DaySeriesBook { CutFrom = 5, CutUntil = 19 }, 10) == 3
               && DaySeriesRules.CutFootfall(new DaySeriesBook { CutFrom = 5, CutUntil = 19 }, 19) == 0, "day series: worth is kept in thousands, and a price cut lasts 14 days");
+        FinanceAuditChecks();
         Check(DaySeriesCatalogue.Clean("a|b;c") == "a b c", "day series: a name cannot break the save line");
         string kept = DaySeriesStore.Write(book);
         Check(kept.Contains("~n:") && kept.StartsWith("v=1"), "day series: loans share the one line");

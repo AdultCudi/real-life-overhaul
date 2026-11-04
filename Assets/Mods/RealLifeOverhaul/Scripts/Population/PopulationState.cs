@@ -632,6 +632,7 @@ namespace RealLifeOverhaul.Population
         public readonly CityBooks Books = new CityBooks();
         public readonly List<PersonLink> Links = new List<PersonLink>(64);
         public readonly GrowthState Growth = new GrowthState();
+        public readonly FirmEventLog Events = new FirmEventLog();   // what the city's and the rivals' firms did lately (a business opened, prices moved): saved at the line's end
         public int[] RentIndex = new int[0];     // thousandths of the game's own rent, by district
         public DistrictFigures[] Figures = new DistrictFigures[0];
         public int[] WantFlats = new int[0];     // households that looked for a flat in each district this month and found none

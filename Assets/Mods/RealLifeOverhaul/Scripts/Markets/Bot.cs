@@ -87,6 +87,8 @@ namespace RealLifeOverhaul.Markets
         public long HighWater;       // its worth after the last profit share: the share is only of profit above it
         public int Trades, Closed, Wins;   // fills; holdings sold whole, and how many for more than they cost
         public long Realised, Fees, Commission, Dividends;
+        public long DayGain, WeekGain;   // Realised, but only of today and of this week: set to nothing at the day and the week turn (MarketBots.Turn)
+        public int FigDay;               // the day DayGain and WeekGain are counted for
         public int Month;            // MarketCatalogue.MonthOf of the month its statement counts
         public long MonthWorth;      // its worth at the start of that month
         public int MonthTrades, MonthDays;   // fills in it, and market days hired in it

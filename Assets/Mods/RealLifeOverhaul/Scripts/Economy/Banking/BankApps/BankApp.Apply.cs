@@ -197,9 +197,7 @@ namespace RealLifeOverhaul.Economy
             });
             InfoBox.Button(buttons, InfoBox.Additional, "common_cancel", ClosePick);
         }
-
-        /// <summary>The kit's Apply: the same question the page asks.</summary>
-        internal void KitApply(int amount) => ApplyLoan(amount);
+
 
         // The game's own question box: everything the loan costs is said before it is taken.
         private void ApplyLoan(int amount)

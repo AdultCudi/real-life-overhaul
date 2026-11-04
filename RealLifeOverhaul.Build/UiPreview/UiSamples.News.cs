@@ -5,7 +5,7 @@ internal static partial class UiSamples
 {
     public static readonly string[] NewsEconomyStates = { "overview", "prices", "jobs", "districts", "markets", "finances", "insights", "quiet" };
     public static readonly string[] NewsPeopleStates = { "day60", "day5", "district" };
-    public static readonly string[] NewsStandStates = { "titles", "reading", "offline", "outage" };
+    public static readonly string[] NewsStandStates = { "titles", "reading", "reading_days", "reading_not_held", "reading_none", "offline", "outage" };
     public static readonly string[] NewsPaperStates = { "busy", "quiet", "markets", "prices", "special" };
     public static readonly string[] NewsEndingStates = { "card" };
     public static readonly string[] NewsHomeStates = { "home" };

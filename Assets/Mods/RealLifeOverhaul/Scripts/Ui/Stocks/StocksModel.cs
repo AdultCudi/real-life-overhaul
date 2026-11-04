@@ -79,6 +79,14 @@ namespace RealLifeOverhaul.Ui
         public StocksTicket Ticket;
         public string TapeTitle;
         public string[] Tape = new string[0];
+        public string OrdersTitle, OrdersCount;                    // the Market's open-orders box: "Your orders" and "2 open"
+        public string[] OrderLines = new string[0], OrderValues = new string[0];   // what each open order is, and its value
+        public string[] ViewLabels = new string[0];                // the Portfolio's views: Held, Pays, Account
+        public int View;                                           // which one is up
+        public readonly float[] ViewEdges = new float[8];          // written back by the layout: the edges of the segmented choice
+        public string RowsTitle, Banner;                           // a page's card of labelled rows, and the line over it (a margin call)
+        public StocksRow[] Rows = new StocksRow[0];
+        public UiRole BannerTone = UiRole.WarnText;
         public string EmptyTitle, EmptyBody;
         public UiIcon EmptyIcon = UiIcon.ChartLineUp;
         public string PromptBack, PromptMove, PromptSelect, PromptPlace, PromptOther;

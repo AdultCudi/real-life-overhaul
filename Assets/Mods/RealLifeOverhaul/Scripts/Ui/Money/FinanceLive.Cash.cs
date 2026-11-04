@@ -49,18 +49,8 @@ namespace RealLifeOverhaul.Ui
                 c.ChartRange = w.F("reallife_fin_day_range", "Day {from} to {to}", "from", _days[0].ToString(Inv), "to", _days[n - 1].ToString(Inv));
             }
             c.ChartTitle = shown > 0 ? c.ChartTitle : w.T("reallife_fin_cash_chart", "Cash");
-            // Where it went, by kind: the biggest first.
-            c.WhereTitle = null;
-            Kinds(flow, true, out c.InNames, out c.InValues, out c.InShare);
-            Kinds(flow, false, out c.OutNames, out c.OutValues, out c.OutShare);
-            c.CameInLabel = w.F("reallife_fin_came_in", "Came in, {period}", "period", c.Periods[v.Period].ToLowerInvariant());
-            c.CameIn = "+" + Money(flow.In);
-            c.WentOutLabel = w.T("reallife_fin_went_out", "Went out");
-            c.WentOut = "-" + Money(-flow.Out);
-            float net = flow.In + flow.Out;
-            c.NetLabel = w.T("reallife_fin_cash_changed", "Cash changed by");
-            c.Net = (net >= 0f ? "+" : "-") + Money(Math.Abs(net));
-            c.NetGood = net >= 0f;
+            // Where it went, 30 days: the saved ledger, a day at a time, so it reaches a month the game's own movements do not.
+            Where(c, w, day);
             Coming(c, w, save);
         }
 
@@ -119,26 +109,56 @@ namespace RealLifeOverhaul.Ui
             return new UiStatementGroup { Label = label, Total = (net >= 0f ? "+" : "-") + Money(Math.Abs(net)), TotalGood = net >= 0f, Lines = lines.ToArray() };
         }
 
+        // Where it went in the last 30 days, from the saved category series (written each day for the day before): the kinds where more came in
+        // than went out, and those where more went out, the biggest five of each with a bar. A day before the book began is not a day and not a
+        // zero: the note says how many of the 30 the book holds.
+        private void Where(FinanceCashFacts c, UtilitiesWords w, int day)
+        {
+            DaySeriesBook book = DaySeriesDirector.Book;
+            var net = new long[CashCategory.Count];
+            int have = FinanceRules.CategoryNet(book, day - 1, DaySeriesRules.CashWindow, net, out int first);   // the ledger holds yesterday as its newest day
+            c.WhereTitle = w.F("reallife_fin_where", "Where it went, {days} days", "days", DaySeriesRules.CashWindow.ToString(Inv));
+            c.WhereNote = have >= DaySeriesRules.CashWindow ? null : have == 0
+                ? w.T("reallife_fin_where_none", "Not yet: the ledger fills in from tomorrow, a day at a time.")
+                : w.F("reallife_fin_where_part", "Not yet before day {first}: the ledger holds {have} of {days} days.", "first", first.ToString(Inv), "have", have.ToString(Inv),
+                    "days", DaySeriesRules.CashWindow.ToString(Inv));
+            Kinds(net, true, out c.InNames, out c.InValues, out c.InShare);
+            Kinds(net, false, out c.OutNames, out c.OutValues, out c.OutShare);
+            long came = 0, went = 0;
+            for (int i = 0; i < net.Length; i++)
+            {
+                came += net[i] > 0 ? net[i] : 0;
+                went += net[i] < 0 ? -net[i] : 0;
+            }
+            c.CameInLabel = w.T("reallife_fin_where_in", "More came in than went out");
+            c.CameIn = "+" + Money(came);
+            c.WentOutLabel = w.T("reallife_fin_where_out", "More went out than came in");
+            c.WentOut = "-" + Money(went);
+            c.NetLabel = w.T("reallife_fin_cash_changed", "Cash changed by");
+            c.Net = (came >= went ? "+" : "-") + Money(Math.Abs(came - went));
+            c.NetGood = came >= went;
+        }
+
         // The biggest five kinds of money in or out, each with its share of the biggest, for a bar.
-        private static void Kinds(CashFlow flow, bool money, out string[] names, out string[] values, out int[] shares)
+        private static void Kinds(long[] net, bool money, out string[] names, out string[] values, out int[] shares)
         {
             var order = new List<int>(CashCategory.Count);
-            for (int i = 0; i < CashCategory.Count; i++)
+            for (int i = 0; i < net.Length; i++)
             {
-                if ((money ? flow.CategoryIn[i] : -flow.CategoryOut[i]) > 0f)
+                if ((money ? net[i] : -net[i]) > 0L)
                 {
                     order.Add(i);
                 }
             }
-            order.Sort((a, b) => (money ? flow.CategoryIn[b] : -flow.CategoryOut[b]).CompareTo(money ? flow.CategoryIn[a] : -flow.CategoryOut[a]));
+            order.Sort((a, b) => (money ? net[b] : -net[b]).CompareTo(money ? net[a] : -net[a]));
             int n = Math.Min(5, order.Count);
             names = new string[n];
             values = new string[n];
             shares = new int[n];
-            float top = n > 0 ? (money ? flow.CategoryIn[order[0]] : -flow.CategoryOut[order[0]]) : 0f;
+            float top = n > 0 ? Math.Abs((float)net[order[0]]) : 0f;
             for (int i = 0; i < n; i++)
             {
-                float amount = money ? flow.CategoryIn[order[i]] : -flow.CategoryOut[order[i]];
+                float amount = Math.Abs((float)net[order[i]]);
                 names[i] = FinanceText.T(CashCategory.Keys[order[i]]);
                 values[i] = Money(amount);
                 shares[i] = FinanceRules.Share(amount, top);
