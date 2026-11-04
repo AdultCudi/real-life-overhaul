@@ -321,11 +321,10 @@ namespace RealLifeOverhaul.Ui
 
         private void Today(FactoryWorkstationInstance item, BigAmbitions.Factories.Recipes.Recipe made, BuildingRegistration reg, int perHour)
         {
-            Heading(UiText.T("reallife_ui_bizops_today"));
             int now = SaveGameManager.Current != null ? SaveGameManager.Current.Hour : 0;
             if (now < BizOpsRules.TodayFrom)
             {
-                InfoLine(UiText.T("reallife_ui_bizops_today_made"), UiText.T("reallife_ui_bizops_today_not_yet"));
+                InfoLine(UiText.T("reallife_ui_bizops_today"), UiText.T("reallife_ui_bizops_today_not_yet"));
                 return;
             }
             for (int h = 0; h < Worked.Length; h++)
@@ -336,21 +335,7 @@ namespace RealLifeOverhaul.Ui
             int pieces = BizOpsRules.TodayMade(hours, perHour);
             BigAmbitions.Items.Item output = BigAmbitions.Items.ItemsGetter.GetByName(made.output.item);
             long worth = BizOpsRules.TodayWorth(pieces, output != null ? output.wholesalePrice : 0f);
-            float inputs = 0f;
-            for (int i = 0; made.ingredients != null && i < made.ingredients.Count; i++)
-            {
-                BigAmbitions.Items.Item part = BigAmbitions.Items.ItemsGetter.GetByName(made.ingredients[i].item);
-                inputs += part != null ? made.ingredients[i].amount * part.wholesalePrice * hours : 0f;
-            }
-            InfoLine(UiText.T("reallife_ui_bizops_today_made"), UiText.Fill("reallife_ui_bizops_today_about", "count", UiText.Whole(pieces)));
-            if (worth > 0L)
-            {
-                InfoLine(UiText.T("reallife_ui_bizops_today_worth"), UiText.Fill("reallife_ui_bizops_today_money", "amount", ((float)worth).ToCurrencyFormat()));
-            }
-            if (inputs > 0f)
-            {
-                InfoLine(UiText.T("reallife_ui_bizops_today_inputs"), UiText.Fill("reallife_ui_bizops_today_money", "amount", ((float)BizOpsRules.TodayWorth(1, inputs)).ToCurrencyFormat()));
-            }
+            InfoLine(UiText.T("reallife_ui_bizops_today"), UiText.Fill("reallife_ui_bizops_today_line", "count", UiText.Whole(pieces), "amount", ((float)worth).ToCurrencyFormat()));
         }
 
         // A group's production, from the game's own table: each thing made, how many an hour, the stock and how long it lasts.

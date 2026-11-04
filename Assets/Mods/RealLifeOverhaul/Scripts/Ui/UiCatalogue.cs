@@ -274,14 +274,31 @@ namespace RealLifeOverhaul.Ui
                 ty += s.Items[note].H;
             }
             // The actions under what they act on, the main one last at the right, as the hero's actions stand by it.
-            float by = Math.Min(UiDraw.Snap(ty + UiTokens.S5), y + h - UiTokens.Control);
-            float right = x + w;
+            // When they do not all fit one row they wrap: the main one stays last in the bottom row, the others stand in rows above it.
+            float step = UiTokens.Control + UiTokens.S1, row = 0f, used = 0f;
+            for (int i = m.Actions.Length - 1; i >= 0; i--)
+            {
+                float need = Math.Min(w, UiDraw.ButtonWidth(m.Actions[i].Kind, m.Actions[i].Label, m.Actions[i].Icon, m.Actions[i].Key, keys)) + UiTokens.S3;
+                if (used > 0f && used + need - UiTokens.S3 > w)
+                {
+                    row++;
+                    used = 0f;
+                }
+                used += need;
+            }
+            float by = Math.Min(UiDraw.Snap(ty + UiTokens.S5 + row * step), y + h - UiTokens.Control);
+            float right = x + w, rowY = by;
             for (int i = m.Actions.Length - 1; i >= 0; i--)
             {
                 ref UiActionModel a = ref m.Actions[i];
-                float bw = Math.Min(right - x, UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, a.Key, keys));
+                float bw = Math.Min(w, UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, a.Key, keys));
+                if (right < x + w && right - bw < x)
+                {
+                    right = x + w;
+                    rowY -= step;
+                }
                 right -= bw;
-                UiDraw.Button(s, at, right, by, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, command + Action, i, a.Disabled || c.Disabled);
+                UiDraw.Button(s, at, right, rowY, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, command + Action, i, a.Disabled || c.Disabled);
                 right -= UiTokens.S3;
             }
         }

@@ -31134,12 +31134,7 @@
   "reallife_ui_buy_move_none": "Nothing moved: {name} has no room for these goods.",
   "reallife_ui_buy_filter_new": "New {count}",
   "reallife_ui_bizops_today": "This table today",
-  "reallife_ui_bizops_today_made": "Made since 06:00",
   "reallife_ui_bizops_today_not_yet": "Not yet: from 06:00",
-  "reallife_ui_bizops_today_about": "About {count}",
-  "reallife_ui_bizops_today_worth": "Worth at wholesale",
-  "reallife_ui_bizops_today_inputs": "Ingredients used",
-  "reallife_ui_bizops_today_money": "About {amount}",
   "reallife_ui_bizops_run_at": "{when}, {time}",
   "reallife_ui_bizops_rival_crew": "Nearest rival's crew",
   "reallife_ui_bizops_rival_crew_value": "{count} staff at {name}",
@@ -31151,5 +31146,6 @@
   "reallife_street_says_invite": "You pay your share when you meet",
   "reallife_fame_says_press": "{tenths} recognition from the papers",
   "reallife_fame_says_part": "{part} {move}",
-  "reallife_fame_says_promise": "You promise: {promise}"
+  "reallife_fame_says_promise": "You promise: {promise}",
+  "reallife_ui_bizops_today_line": "About {count} made, worth about {amount}"
 }

@@ -31134,12 +31134,7 @@
   "reallife_ui_buy_move_none": "Nada foi movido: {name} não tem espaço para estes produtos.",
   "reallife_ui_buy_filter_new": "Novas {count}",
   "reallife_ui_bizops_today": "Esta bancada hoje",
-  "reallife_ui_bizops_today_made": "Feito desde 06:00",
   "reallife_ui_bizops_today_not_yet": "Ainda não: a partir de 06:00",
-  "reallife_ui_bizops_today_about": "Cerca de {count}",
-  "reallife_ui_bizops_today_worth": "Valor no atacado",
-  "reallife_ui_bizops_today_inputs": "Ingredientes usados",
-  "reallife_ui_bizops_today_money": "Cerca de {amount}",
   "reallife_ui_bizops_run_at": "{when}, {time}",
   "reallife_ui_bizops_rival_crew": "Equipe do rival mais próximo",
   "reallife_ui_bizops_rival_crew_value": "{count} funcionários em {name}",
@@ -31151,5 +31146,6 @@
   "reallife_street_says_invite": "Você paga sua parte quando se encontrarem",
   "reallife_fame_says_press": "{tenths} de reconhecimento da imprensa",
   "reallife_fame_says_part": "{part} {move}",
-  "reallife_fame_says_promise": "Você promete: {promise}"
+  "reallife_fame_says_promise": "Você promete: {promise}",
+  "reallife_ui_bizops_today_line": "Cerca de {count} feitas, valendo cerca de {amount}"
 }

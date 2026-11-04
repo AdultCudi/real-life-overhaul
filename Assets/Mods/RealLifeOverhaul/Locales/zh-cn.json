@@ -31134,12 +31134,7 @@
   "reallife_ui_buy_move_none": "未移动任何货物：{name} 没有空间放这些货物。",
   "reallife_ui_buy_filter_new": "新增 {count}",
   "reallife_ui_bizops_today": "这台工作台今天",
-  "reallife_ui_bizops_today_made": "06:00 后已制作",
   "reallife_ui_bizops_today_not_yet": "尚未：从 06:00 开始",
-  "reallife_ui_bizops_today_about": "约 {count}",
-  "reallife_ui_bizops_today_worth": "按批发价计算的价值",
-  "reallife_ui_bizops_today_inputs": "已用原料",
-  "reallife_ui_bizops_today_money": "约 {amount}",
   "reallife_ui_bizops_run_at": "{when}，{time}",
   "reallife_ui_bizops_rival_crew": "最近对手的员工",
   "reallife_ui_bizops_rival_crew_value": "{name} 有 {count} 名员工",
@@ -31151,5 +31146,6 @@
   "reallife_street_says_invite": "见面时你支付自己的那份",
   "reallife_fame_says_press": "{tenths} 报纸声望",
   "reallife_fame_says_part": "{part} {move}",
-  "reallife_fame_says_promise": "你承诺：{promise}"
+  "reallife_fame_says_promise": "你承诺：{promise}",
+  "reallife_ui_bizops_today_line": "约 {count} 件，价值约 {amount}"
 }

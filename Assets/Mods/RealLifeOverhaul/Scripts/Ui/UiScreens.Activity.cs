@@ -21,7 +21,7 @@ namespace RealLifeOverhaul.Ui
             {
                 new UiScreenDef("activity_panel", UiTemplate.Hud, "ActivityPanelScreen", ActivityWords(ActivityBarKeys, new[]
                 {
-                    "playeractivityui_timemachine", "playeractivityui_fast_forward", "common_cancel", "common_back", "common_hours", "common_hours_abbr", "workui_start",
+                    "playeractivityui_timemachine", "playeractivityui_fast_forward", "common_cancel", "common_back", "common_hours", "common_hours_abbr", "workui_start", "workui_stop",
                     "reallife_ui_activity_moving", "reallife_ui_activity_waiting", "reallife_ui_activity_done", "reallife_ui_activity_how_long", "reallife_ui_activity_work_kicker",
                     "reallife_ui_activity_work_title", "reallife_ui_activity_work_body", "reallife_ui_activity_work_for", "reallife_ui_activity_pay", "reallife_ui_activity_pay_hour",
                     "reallife_ui_activity_hours", "reallife_ui_activity_skill", "reallife_ui_activity_skill_day", "reallife_ui_activity_standing", "reallife_ui_activity_stress",

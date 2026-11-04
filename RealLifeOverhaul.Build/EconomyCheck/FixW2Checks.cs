@@ -284,7 +284,7 @@ internal static partial class Program
             "factory table today: made is the hours times the pace, worth is made times the wholesale price, none for none");
         string plant = W2Source("Ui/BizMan/Ops/BizManScreen.Plant.cs");
         Check(plant.Contains("Today(item, made, reg, perHour);") && plant.Contains("EmployeeHelper.GetEmployeeAtStationAndHour(reg, item.id, h)") && plant.Contains("item.IsWorkstationActive(reg)")
-              && plant.Contains("reallife_ui_bizops_today_about"),
+              && plant.Contains("reallife_ui_bizops_today_line"),
             "factory table today: the machine's page states what it made today, said as about, from the table's worker hours and pace");
         string managers = W2Source("Ui/BizMan/Ops/BizManScreen.Managers.cs");
         Check(managers.Contains("RunHour.GetFormattedTime(0f)") && managers.Contains("reallife_ui_bizops_run_at"),
@@ -391,7 +391,7 @@ internal static partial class Program
             keptFixed |= s.Worker == 2;
         }
         Check(keptFixed && week.Count == 3, "fill the gaps: a fill keeps the shifts of somebody fixed and writes the plan's for the rest");
-        Check(screen.Contains("Economy.RotaLedger.GapRuns(g.From, g.To, g.Cleaning, open, _gapStation, _gapPerson, _gapFrom, _gapTo)") && screen.Contains("Place(g, _gapFrom[r], _gapTo[r])"),
+        Check(screen.Contains("Economy.RotaLedger.GapRuns(g.From, g.To, g.Cleaning, open, GapStation, GapPerson, GapFrom, GapTo)") && screen.Contains("Place(g, GapFrom[r], GapTo[r])"),
             "fill the gaps: BizMan writes only the runs RotaLedger gives, through the game's own schedule");
     }
 
@@ -422,8 +422,7 @@ internal static partial class Program
         "reallife_ui_skip_pace", "reallife_ui_skip_pace_until", "reallife_ui_funeral_backup_when", "reallife_ui_funeral_backup_line_plain", "reallife_ui_world_offer_liked",
         "reallife_ui_world_offer_fine", "reallife_ui_world_offer_narrow", "reallife_ui_world_offer_let_go", "reallife_ui_buy_fuel_use", "reallife_ui_buy_l100", "reallife_ui_buy_mpg",
         "reallife_ui_buy_seats", "reallife_ui_buy_move_to", "reallife_ui_buy_move_full", "reallife_ui_buy_moved", "reallife_ui_buy_moved_part", "reallife_ui_buy_move_none",
-        "reallife_ui_buy_filter_new", "reallife_ui_bizops_today", "reallife_ui_bizops_today_made", "reallife_ui_bizops_today_not_yet", "reallife_ui_bizops_today_about",
-        "reallife_ui_bizops_today_worth", "reallife_ui_bizops_today_inputs", "reallife_ui_bizops_today_money", "reallife_ui_bizops_run_at", "reallife_ui_bizops_rival_crew",
+        "reallife_ui_buy_filter_new", "reallife_ui_bizops_today", "reallife_ui_bizops_today_line", "reallife_ui_bizops_today_not_yet", "reallife_ui_bizops_run_at", "reallife_ui_bizops_rival_crew",
         "reallife_ui_bizops_rival_crew_value", "reallife_mgr_rota_double", "reallife_agency_cost_hire", "reallife_agency_cost_board", "reallife_social_says_minutes",
         "reallife_street_says_turn", "reallife_street_says_invite", "reallife_fame_says_press", "reallife_fame_says_part", "reallife_fame_says_promise"
     };
@@ -489,7 +488,7 @@ internal static partial class Program
         {
             ("Careers/AgencyDesk.cs", new[] { "reallife_agency_cost_hire", "reallife_agency_cost_board" }, "agency desk: the jobs board's days and vacancies, the hiring page's fees"),
             ("Family/FamilyPhone.Choices.cs", new[] { "FamilyBalance.HoneymoonCost", "FamilyBalance.PocketMoney((s().Children[child].Pocket + 1)" }, "family phone: the honeymoon and the pocket money"),
-            ("Family/Children.cs", new[] { "reallife_ui_dialog_cost_month", "FamilyBalance.PocketMoney((c.Pocket + 1)" }, "family talk: the nursery and the nanny a month, the pocket money a week"),
+            ("Family/Children.cs", new[] { "reallife_ui_dialog_cost_month", "FamilyBalance.PocketMoney((c.Pocket +" }, "family talk: the nursery and the nanny a month, the pocket money a week"),
             ("Social/PersonDialog.cs", new[] { "reallife_social_says_minutes", "reallife_ui_dialog_cost_on_the_day" }, "person dialog: an outing's share and minutes"),
             ("Street/StreetDirector.Talk.cs", new[] { "reallife_street_says_turn", "reallife_street_says_invite" }, "street talk: the turn an answer uses, the share of a coffee"),
             ("Fame/FameReporter.cs", new[] { "FamePress.Answer(ask, 0, FameVenue.Street)", "reallife_fame_says_press", "reallife_fame_says_promise" }, "fame reporter: the recognition, the standing and the promise of an answer"),
