@@ -203,6 +203,7 @@ namespace RealLifeOverhaul.Ui
         public readonly FlareBusinessModel Business = new FlareBusinessModel();
         public readonly FlareStudioModel Studio = new FlareStudioModel();
         public readonly FlareSheetModel Sheet0 = new FlareSheetModel();
+        public readonly FlarePickerModel Picker = new FlarePickerModel();
     }
 
     /// <summary>
@@ -219,16 +220,17 @@ namespace RealLifeOverhaul.Ui
         public const int Pages = 9;
 
         // The sheets.
-        public const int NoSheet = 0, ComposeSheet = 1, HireSheet = 2, ReplySheet = 3;
+        public const int NoSheet = 0, ComposeSheet = 1, HireSheet = 2, ReplySheet = 3, PhotosSheet = 4;
 
         // The text fields (FieldCommand's argument): which one typing fills.
-        public const int ComposeField = 0, SearchField = 1, InboxField = 2, ReplyField = 3, ThreadField = 4;
+        public const int ComposeField = 0, SearchField = 1, InboxField = 2, ReplyField = 3, ThreadField = 4, PickerField = 5;
 
         public const int NavCommand = 300, PostCommand = 301, AccountCommand = 302, TabCommand = 303, ComposerCommand = 304, ChipCommand = 305,
             StoryCommand = 306, FieldCommand = 307, RowCommand = 308, AuthorCommand = 309, LikeCommand = 310, CommentCommand = 311, RepostCommand = 312,
             ShareCommand = 313, TagCommand = 314, FollowCommand = 315, ButtonCommand = 316, SearchCommand = 317, StudioLinkCommand = 318, TrendCommand = 319,
             WhoCommand = 320, WhoFollowCommand = 321, PickCommand = 322, OptionCommand = 323, SheetChipCommand = 324, SheetConfirmCommand = 325,
-            SheetCancelCommand = 326, SendCommand = 327, BackCommand = 328, ProfileFollowCommand = 329, QuickCommand = 330, DetailCommand = 331;
+            SheetCancelCommand = 326, SendCommand = 327, BackCommand = 328, ProfileFollowCommand = 329, QuickCommand = 330, DetailCommand = 331,
+            PickerPhotoCommand = 332, PickerAlbumCommand = 333;
 
         /// <summary>Every command the face gives its targets, for the checks.</summary>
         public static readonly int[] Commands =
@@ -236,7 +238,7 @@ namespace RealLifeOverhaul.Ui
             NavCommand, PostCommand, AccountCommand, TabCommand, ComposerCommand, ChipCommand, StoryCommand, FieldCommand, RowCommand, AuthorCommand,
             LikeCommand, CommentCommand, RepostCommand, ShareCommand, TagCommand, FollowCommand, ButtonCommand, SearchCommand, StudioLinkCommand,
             TrendCommand, WhoCommand, WhoFollowCommand, PickCommand, OptionCommand, SheetChipCommand, SheetConfirmCommand, SheetCancelCommand,
-            SendCommand, BackCommand, ProfileFollowCommand, QuickCommand, DetailCommand
+            SendCommand, BackCommand, ProfileFollowCommand, QuickCommand, DetailCommand, PickerPhotoCommand, PickerAlbumCommand
         };
 
         public const int MostTargets = 48;          // a layer's targets at most (UiCheckRules.MostTargets): rows past them wait for the scroll

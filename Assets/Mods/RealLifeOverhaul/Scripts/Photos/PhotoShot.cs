@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.Photos
     {
         public static PhotoSidecar Capture(int filter, int frame)
         {
-            var side = new PhotoSidecar { Filter = filter, Frame = frame, Day = PhotosGame.Day, Hour = PhotosGame.Hour, Weather = Token() };
+            var side = new PhotoSidecar { Filter = filter, Frame = frame, Day = PhotosGame.Day, Hour = PhotosGame.Hour, Minute = PhotosGame.Minute, HasMinute = true, Weather = Token() };
             Place(ref side);
             side.Celsius = Degrees(side.Weather);
             return side;

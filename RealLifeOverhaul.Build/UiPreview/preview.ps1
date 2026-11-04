@@ -37,14 +37,14 @@ $gameFiles = @('UiGame*.cs', 'UiDirector*.cs', 'UiText.cs', 'UiGuide.cs')
 } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike '*Live.cs' -and $_.Name -notlike '*Live.*.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike '*Live.cs' -and $_.Name -notlike '*Live.*.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
-Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\News') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike 'NewsLive*.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
+Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\News') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike 'NewsLive*.cs' -and $_.Name -ne 'NewsPeopleRules.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui') -Filter *.cs | Where-Object {
     $name = $_.Name
     -not ($gameFiles | Where-Object { $name -like $_ })
 } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Copy-Item (Join-Path $PSScriptRoot 'PreviewStubs.cs') (Join-Path $preview 'Kit')
 # The phone's model and screen, and the pages' and folders' rules they stand on: game-free, outside the kit's own folder.
-@('Scripts\Ui\Phone\PhoneItems.cs', 'Scripts\Ui\Phone\PhoneScreen.cs', 'Scripts\Core\GameUi\PagerRules.cs', 'Scripts\Core\GameUi\PhoneLayoutRules.cs', 'Scripts\Ui\Host\UiCost.cs', 'Scripts\DaySeries\DaySeriesBook.cs', 'Scripts\DaySeries\DaySeriesCatalogue.cs') | ForEach-Object {
+@('Scripts\Ui\Phone\PhoneItems.cs', 'Scripts\Ui\Phone\PhoneScreen.cs', 'Scripts\Core\GameUi\PagerRules.cs', 'Scripts\Core\GameUi\PhoneLayoutRules.cs', 'Scripts\Ui\Host\UiCost.cs', 'Scripts\Photos\GalleryQuery.cs', 'Scripts\Photos\GalleryRules.cs', 'Scripts\Photos\PhotoStoreRules.cs', 'Scripts\Photos\PhotoStore.cs', 'Scripts\Photos\PhotoSidecarFile.cs', 'Scripts\Photos\PhotoSidecarRules.cs', 'Scripts\Photos\PhotoSeenRules.cs', 'Scripts\Photos\CameraRules.cs', 'Scripts\Core\PhotoThumbs.cs', 'Scripts\DaySeries\DaySeriesBook.cs', 'Scripts\DaySeries\DaySeriesCatalogue.cs') | ForEach-Object {
     Copy-Item (Join-Path $repo (Join-Path 'Assets\Mods\RealLifeOverhaul' $_)) (Join-Path $preview 'Kit')
 }
 # A Windows font with Chinese and Korean, for the shots in those languages: the game falls back to its own Noto fonts.

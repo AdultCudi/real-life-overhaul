@@ -9,13 +9,10 @@ namespace RealLifeOverhaul.Ui
         static partial void AddNews(List<UiScreenDef> screens)
         {
             string[] shared = NewsShared();
-            screens.Add(new UiScreenDef("economy", UiTemplate.AppWindow, "EconomyScreen", NewsKeys(shared,
-                "reallife_econapp_app", "reallife_news_nav_overview", "reallife_news_nav_prices", "reallife_news_nav_jobs",
-                "reallife_news_nav_districts", "reallife_news_nav_markets", "reallife_news_nav_finances", "reallife_news_nav_insights",
-                "reallife_news_nav_people"))
+            screens.Add(new UiScreenDef("economy", UiTemplate.AppWindow, "EconomyScreen", NewsKeys(shared, EconomyWords()))
                 .Switch(UiScreenSwitches.News));
-            screens.Add(new UiScreenDef("people", UiTemplate.InfoView, "PeopleScreen", NewsKeys(shared,
-                "reallife_news_people_title", "reallife_news_rent_link", "reallife_news_busy_link"))
+            screens.Add(new UiScreenDef("people", UiTemplate.AppWindow, "PeopleScreen", NewsKeys(shared,
+                EconomyWords("reallife_news_people_title", "reallife_news_rent_link", "reallife_news_busy_link")))
                 .Switch(UiScreenSwitches.News));
             screens.Add(new UiScreenDef("newsstand", UiTemplate.AppWindow, "NewsstandScreen", NewsKeys(shared,
                 "reallife_ledger_online_app", "reallife_ledger_online_tab_titles", "reallife_ledger_online_tab_reading"))
@@ -25,10 +22,27 @@ namespace RealLifeOverhaul.Ui
             screens.Add(new UiScreenDef("ending", UiTemplate.Decision, "EndingScreen", NewsKeys(shared,
                 "reallife_news_end_kicker", "reallife_news_end_load", "reallife_news_end_quit"))
                 .Switch(UiScreenSwitches.News));
-            screens.Add(new UiScreenDef("household", UiTemplate.InfoPanel, "HouseholdScreen", NewsKeys(shared, "reallife_news_home_title"))
+            screens.Add(new UiScreenDef("household", UiTemplate.AppWindow, "HouseholdScreen", NewsKeys(shared,
+                EconomyWords("reallife_news_home_title", "reallife_news_rent_link")))
                 .Switch(UiScreenSwitches.News));
-            screens.Add(new UiScreenDef("renters", UiTemplate.AppWindow, "RentersScreen", NewsKeys(shared, "reallife_news_rent_link"))
+            screens.Add(new UiScreenDef("renters", UiTemplate.AppWindow, "RentersScreen", NewsKeys(shared,
+                EconomyWords("reallife_news_rent_link", "reallife_news_people_title")))
                 .Switch(UiScreenSwitches.News));
+        }
+
+        // The Economy window's own words: its name and its tabs. The pages opened from a tab (the people, the renters, a household) stand in the same window.
+        private static string[] EconomyWords(params string[] more)
+        {
+            string[] own =
+            {
+                "reallife_econapp_app", "reallife_news_nav_overview", "reallife_news_nav_prices", "reallife_news_nav_jobs",
+                "reallife_news_nav_districts", "reallife_news_nav_markets", "reallife_news_nav_finances", "reallife_news_nav_insights",
+                "reallife_news_nav_people"
+            };
+            var all = new string[own.Length + more.Length];
+            own.CopyTo(all, 0);
+            more.CopyTo(all, own.Length);
+            return all;
         }
 
         private static string[] NewsKeys(string[] shared, params string[] own)
@@ -71,7 +85,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_news_income_title", "reallife_news_income_work", "reallife_news_income_middle", "reallife_news_income_upper",
                 "reallife_news_legend", "reallife_news_scale", "reallife_news_low", "reallife_news_high",
                 "reallife_news_rent_link", "reallife_news_busy_link", "reallife_news_home_title",
-                "reallife_news_empty_rent", "reallife_news_empty_rent_body",
+                "reallife_news_empty_rent", "reallife_news_empty_rent_body", "reallife_news_not_yet", "reallife_news_where",
                 "reallife_news_stand_sum", "reallife_news_stand_save",
                 "reallife_news_stand_sub", "reallife_news_stand_stop",
                 "reallife_news_stand_off", "reallife_news_stand_off_body", "reallife_news_stand_out", "reallife_news_stand_out_body",

@@ -190,6 +190,16 @@ ICONS = [
     ("ToolSnap", "magnet", "bold", "8f2b700696fa755437dfa1a6458a63ed89c337deffd715855800ebe8132ee59b"),
     ("Expand", "arrows-out", "bold", "0ca920a5995da8e36ac9f744766f95adf63c781968b6f989539a95e93060c62d"),
     ("Shrink", "arrows-in", "bold", "033baba7ff0a4f380be329c28a64f2d435cc85732505950e9e21c6b6818c8014"),
+    ("Timer", "timer", "duotone", "fda04f76dea917e8196fabe509c0fe283ab0d4edca4001a0f965901905e4f0c5"),
+    ("Crop", "crop", "duotone", "c984b4135e3ecf587146c75ee3c4d54abb565241a655c14f314d9ba519a4494f"),
+    ("Rotate", "arrow-clockwise", "duotone", "66db0c380b84dcb949ab83e2670443c012c72e73c59197e1173cc9abc3abc781"),
+    ("Exposure", "plus-minus", "duotone", "10d1a1fe7c422d59fb0f16444344e45336083e206f607b52a10bdbe1d594cc1d"),
+    ("Level", "align-center-horizontal-simple", "duotone", "96c4f770af24c3df114a727831dc3b10f3b2bd75ea6d7c7d2f32a52bbaa04692"),
+    ("FlipCamera", "camera-rotate", "duotone", "00a393c9766ed671dc5dfd7641892f25ea4cfcc2bbfa0022fd709e2a8046b2f7"),
+    ("EyeSlash", "eye-slash", "duotone", "7f411a87d8cd961217d0a15ee31dba79bf00d5396585092ae0e0e919d317a534"),
+    ("FrameCorners", "frame-corners", "duotone", "191a46ae6739f685a87b18d2a39d5115d5c812a3b5a3fd01257de19f5905566a"),
+    ("Funnel", "funnel", "duotone", "ba1eb55b4d6abd28131ac98dc5269957291f76d09ed3de4eef78c21c8cf73bb7"),
+    ("PortraitFocus", "user-focus", "duotone", "7e0815457e65da664500eb64b4a38b5f6bfcfd3ddc7b02728bf83a423911bfd8"),
 ]
 
 # Phosphor's fill weight of every duotone icon, its second variant: the chunky solid glyph a toolbar's tile asks for
@@ -314,6 +324,16 @@ FILLS = {
     "Upload": "3d1c38449725c61048e136e7ab491b020fbf92bffc5581c3abf59b363323d8af",
     "Books": "308aa85d7c0f3aedebc77ac3a3dff0ac47d5957a4cd80f5a134304300ce8a138",
     "Download": "dee151da85ad71e90a882a556481e2069a154b8892063c9f91b621a0e06ad479",
+    "Timer": "6cd85224477ca070b3a97b44ed3da8dc8e39c9fd76c529a69852e0abd352ce12",
+    "Crop": "40fe628a321f48377e5aebd41da80b5d3ce8318fb1d7cdfda30afe86c98716c6",
+    "Rotate": "78963c5a0ad83b74ab6b382640759bc3b8b4f57afb770e7575ad884586476bd6",
+    "Exposure": "58c4989636ed62c97ae271521eaf4f741ced691eca7719a80e78d258d17e6403",
+    "Level": "68f19f3c539982a658dbacb6844d819df76ff3389e8d371b0046764d75c3b6d0",
+    "FlipCamera": "4ae415ae66182a66085050aee5d34fef5cc2a6d25aeb8452a8b01916c8cae8df",
+    "EyeSlash": "fc34ad807da63ae5f99a235618cddc1b2bef8d98d7c95004d38b61312540b90d",
+    "FrameCorners": "33896f65db543919b48a3a20bb17eacd7747e877af026d49c82da28e5c9fdeb6",
+    "Funnel": "fd3cd3e6c43a5f76b34e1bb987061c7bff95133d94d4d72668c123e782747417",
+    "PortraitFocus": "fdfd93a0bf89db5ac8c7f72ef581f890def3df830f5233da62bdc7e98ee77be3",
 }
 
 # The shapes an icon may be drawn with, and the attributes each may carry. Anything else stops the run, so an icon is never

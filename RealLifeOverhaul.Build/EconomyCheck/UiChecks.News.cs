@@ -16,7 +16,7 @@ internal static partial class Program
         }
         else if (def.Id == "people")
         {
-            Each(cases, def, "People", UiSamples.NewsPeopleStates, (s, f, dark, k, t, st) => NewsPages.Lay(s, UiSamples.NewsPeople(t, st), f, dark, k));
+            Each(cases, def, "Economy", UiSamples.NewsPeopleStates, (s, f, dark, k, t, st) => NewsPages.Lay(s, UiSamples.NewsPeople(t, st), f, dark, k));
         }
         else if (def.Id == "newsstand")
         {
@@ -32,11 +32,11 @@ internal static partial class Program
         }
         else if (def.Id == "household")
         {
-            Each(cases, def, "Home", UiSamples.NewsHomeStates, (s, f, dark, k, t, st) => NewsPages.Lay(s, UiSamples.NewsHome(t, st), f, dark, k));
+            Each(cases, def, "Economy", UiSamples.NewsHomeStates, (s, f, dark, k, t, st) => NewsPages.Lay(s, UiSamples.NewsHome(t, st), f, dark, k));
         }
         else if (def.Id == "renters")
         {
-            Each(cases, def, "Top rents", UiSamples.NewsRentStates, (s, f, dark, k, t, st) => NewsPages.Lay(s, UiSamples.NewsRent(t, st), f, dark, k));
+            Each(cases, def, "Economy", UiSamples.NewsRentStates, (s, f, dark, k, t, st) => NewsPages.Lay(s, UiSamples.NewsRent(t, st), f, dark, k));
         }
         if (!_newsChecked && def.Id == "economy")
         {
@@ -75,7 +75,7 @@ internal static partial class Program
             UiEdition.StoryCommand, UiEdition.LeadCommand, UiReader.AnchorCommand, UiReader.RelatedCommand, UiReader.ContentsCommand,
             UiDecision.ChoiceCommand, UiDecision.ButtonCommand, UiInfoView.ViewCommand,
             UiInfoPanel.TabCommand, UiInfoPanel.LinkCommand, UiInfoPanel.FooterCommand,
-            NewsCommands.Link, NewsCommands.Rent, NewsCommands.Busy, NewsCommands.Home, NewsCommands.Title,
+            NewsCommands.Link, NewsCommands.Rent, NewsCommands.Busy, NewsCommands.Home, NewsCommands.Back, NewsCommands.Title,
             NewsCommands.District + UiDataTable.Row
         };
         for (int i = 0; i <= UiDataTable.MassAnswer; i++)
@@ -111,6 +111,7 @@ internal static partial class Program
         Check(ledger < 8.0, "news: the Ledger opens in " + ledger.ToString("0.000") + " ms, under 8 ms");
         Check(!HasPlaceholder(overview) && !HasPlaceholder(paper), "news: no page shows placeholder text");
         NewsFinishChecks(scene, frame);
+        NewsPeopleChecks();
     }
 
     // The News finish: the paper's title, the ending's facts, the Newsstand's one action and the prices page's own lead.
