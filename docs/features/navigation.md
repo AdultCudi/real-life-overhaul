@@ -240,3 +240,51 @@ The option "Buildings and water on the minimap" (on by default; off, the minimap
   Every load after that: one read, one drawing on a pool thread, one upload.
 - **Not seen running**: whether every piece of ground the city stands on has something solid under it far from the player, and what the palette's dark blue looks like on the panel.
   The tests "minimap, buildings and water alone" and "minimap, mark three buildings" are for judging both, and the two `Minimap check` lines say what was made.
+
+## The city map and the minimap in 2.5D (`Scripts/Ui/Map`, `NavScene`, `NavMap25`, `NavHud.Scene`)
+
+The owner's call (3 Nov 2026): the maps look flat seen from straight above, and chunky buildings rise when the view is tilted or turned. Two options, both on by default: "City map shows buildings as 2.5D blocks" (`nav_map25`) and "Minimap shows buildings as 2.5D blocks" (`nav_minimap25`). Off, the game's own city map and the flat minimap are as they were. Display only: nothing is saved or sent.
+
+```
+Ui/Map/  (game-free except Map25Scene, which uses only the engine, so the preview draws with it too)
+  Map25Math     matrices as the engine keeps them, view, frustum, a place on the picture and back, half floats, a seeded generator
+  Map25Palette  the mockups' colours and the shading rules (light from the west, a darker foot, podium and crown)
+  Map25Mesh     vertices and triangles into growing arrays, handed out as chunks (16 bit indices, colours as half floats)
+  Map25Blocks   one building: walls shaded by the way they face, windows as bands, cornice, parapet rim, setback, water tank,
+                air conditioners, stair hut, shop awnings on the north and south walls, lit windows on towers, contact shadow
+  Map25Set      the whole city in 192 m chunks and two details (full map, minimap); a tint rewrites one building's vertices
+  Map25Ground   the land as a marching squares outline of the water grid, the roads as a band a lane, the route's strip, the view cone
+  Map25View     the camera (the minimap's own, or the game's two matrices), its planes, the pitch rule
+  Map25Fixture  a made-up city of the game's size for the checks and the previews
+  Map25Scene    meshes from chunks a slice at a time, the command buffer, the one draw into a render texture, the self-test
+Navigation/
+  NavScene      makes the city from NavBase's outlines (with each building's ground and height, file format 3) and the road graph, on a
+                pool thread, then the meshes at 0.6 ms a frame
+  NavMap25      the full map: the picture under the game's pins, the game's camera, the pitch, the tint read back from the game
+  NavHud.Scene  the minimap: the picture in its view, the pins placed by the camera, drawn when the view moved a pixel
+  NavDirector.Scene  when it is made and shown, and let go
+```
+
+- **Why not the game's own city.** The game's map is its real buildings under a camera; the approved details (bands, parapets, tanks, awnings, cornices) cannot be made from its meshes, and flattening them needs a shader of our own. The mod's blocks are drawn from the footprints the minimap already measured, so the full map draws about fifty chunks where the game draws a whole city, and the game's own city is not drawn while ours shows.
+- **One render, outside the game's pipeline.** A command buffer with the engine's own colour shader (`Hidden/Internal-Colored`) into an sRGB render texture, run from LateUpdate: no light, no exposure, no volume, so the picture is the mockup's at any hour. A 16 pixel self-test at the first use reads back where a mark lands and which way the depth runs (the built-in pipeline and a scriptable one differ in both) and picks the projection and the depth test that work; if none does, or the shader is missing, the feature stands down with one line and the game's own map and the flat minimap stay.
+- **The full map** is drawn when the game's camera has come to rest on the map's (the blend is over), fades in over 0.4 s, and sets the camera's culling mask to none; the game gives its mask back when the map shuts (it sets it on every toggle). The picture is the first child of the game's pin layer (`CityMap.poiTemplate`'s parent), so every pin, the route line and the filters panel lie over it, and the pins and the route line (projected by that same camera) land on the blocks. Picking, hover and filters stay the game's: the game picks through the real colliders, and a tint or hover is read back from each building (the layer `BuildingsOutlined` and `_SelectionColor` in the property block of its `lodVersion`), 128 buildings a frame, and written into the blocks. The camera's pitch follows its distance (`Map25View.PitchFor`): flat from 300 m, the game's own 47 degrees from 200 m, so the map the player opens from afar is a flat map and the buildings rise as they come close; the pitch is moved along the arc `CityMapCam` itself keeps. It stands down, and the game's mask is given back, in subway mode, taxi mode and with Voogle Route on (that mod draws its route as world lines on the map's layer).
+- **The minimap** draws the minimap's detail (a band every three floors) from a camera of its own, 40 degrees down, heading up when the minimap turns, into a render texture the size of its view; the route is a strip in the picture, the player's view cone and halo lie on the ground under the blocks, the destination and the pins are the panel's own objects placed by projection. Drawn again only when the view has moved a pixel's worth, turned half a degree or changed its scale, at most 30 times a second; nothing is drawn while the player stands still.
+- **Memory** while on (model: the owner's 883 buildings; the game's real heights are read in the game): about 5.8 MB for the full set and 3.1 MB for the minimap's of vertices and indices, a third of it again in the engine's CPU copy (the meshes stay readable so a tint can be written), 1 MB of roads and 0.3 MB of land; the full map's render texture (the screen, at most 2560 on the long side, 2x multisampled up to about 1920 x 1080, with depth) only while the map is open; the minimap's (its view, 4x multisampled) only while it shows. Nothing while both options are off.
+
+### Cost
+
+| when | what | cost (measured outside the game on a made-up city of 780 buildings, .NET) |
+|---|---|---|
+| once per game build | each building's ground and height, with its outline | in the one measure `NavBase` already does (0.8 ms a frame at most); the file grows by 8 bytes a building |
+| once per city load | the blocks, both details, the roads and the land | 45 ms and 30 ms on a pool thread (Mono is several times slower); then the meshes at 0.6 ms a frame for some 300 frames of chunks |
+| per tint | one building drawn again into two sets | 20 microseconds and a few hundred bytes of garbage; the chunk's colours (40 KB) sent when the picture is next drawn |
+| per frame, map shut, minimap flat | nothing | no object |
+| per frame, full map open and still | the camera's matrices compared with the last, a slice of 128 buildings read for a tint | a few microseconds |
+| per frame, full map moving | the view, the chunks in view (about 10 of 44), one command buffer of at most 50 draws | 3 microseconds of arithmetic here, 0 bytes; the draw is the engine's |
+| per frame, minimap moving | the same into a small texture, at most 30 a second | the same; nothing while standing still |
+
+EconomyCheck's `Map25Checks.cs` (`--map25` runs them alone, `RLO_MAP25_REPORT=1` prints the figures) pins the build, the vertex and triangle budget, byte for byte repeatability, that a tint changes one building's colours and nothing else, the flat view's lack of height, the land's area, the roads, the route's strip and the frame's arithmetic (0 bytes, under 60 microseconds).
+
+### Not verified (the game could not be run)
+
+That `Hidden/Internal-Colored` is found and draws in the game's player (the self-test says so in the log line "the 2.5D map is made"), the picture's place under the game's panels (it is the first child of the pin layer, whose canvas order is the game's), that the pins and the route line land on the roofs (the game's pin offsets are for its own buildings), that a highlighted building's layer and property block read as described, that the game restores its culling mask on every toggle as its code says, the real heights, and the look in the real city. Each has a fallback that leaves the game's own map.

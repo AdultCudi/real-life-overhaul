@@ -31369,5 +31369,7 @@
   "reallife_ui_bizops_legend_closed": "Horas fechadas",
   "reallife_ui_bizops_legend_add": "Toque numa hora para pôr um turno",
   "reallife_ui_bizops_legend_cleaning": "Estações de limpeza aceitam qualquer hora",
-  "reallife_ui_bizops_legend_blocked": "Não pode receber a pessoa escolhida"
+  "reallife_ui_bizops_legend_blocked": "Não pode receber a pessoa escolhida",
+  "reallife_nav_minimap25": "Minimapa mostra prédios como blocos 2.5D",
+  "reallife_nav_map25": "Mapa da cidade mostra prédios como blocos 2.5D"
 }

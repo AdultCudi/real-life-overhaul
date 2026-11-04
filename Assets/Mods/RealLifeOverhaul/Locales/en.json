@@ -31369,5 +31369,7 @@
   "reallife_ui_bizops_legend_closed": "Closed hours",
   "reallife_ui_bizops_legend_add": "Press an hour to add a shift",
   "reallife_ui_bizops_legend_cleaning": "Cleaning stations take any hour",
-  "reallife_ui_bizops_legend_blocked": "Cannot take the chosen person"
+  "reallife_ui_bizops_legend_blocked": "Cannot take the chosen person",
+  "reallife_nav_minimap25": "Minimap shows buildings as 2.5D blocks",
+  "reallife_nav_map25": "City map shows buildings as 2.5D blocks"
 }

@@ -28,7 +28,7 @@ namespace RealLifeOverhaul.Nav
         // On the slow tick: begun once the roads are there, let go when its option or the minimap is switched off.
         private void BaseWanted(bool wantMap)
         {
-            if (!wantMap || !Settings.MinimapBase)
+            if ((!wantMap || !Settings.MinimapBase) && !SceneWantsBase)
             {
                 if (!_base.Idle)
                 {
@@ -63,7 +63,7 @@ namespace RealLifeOverhaul.Nav
             {
                 _base.Redraw();   // the mod's own buildings changed (Scripts/NewBuildings): the same city drawn again with them
             }
-            if (_base.Picture != null)
+            if (_base.Picture != null && Settings.MinimapBase)
             {
                 if (_hud != null && (!_baseGiven || _baseShown != _base.Picture))
                 {

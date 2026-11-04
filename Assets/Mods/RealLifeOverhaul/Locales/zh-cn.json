@@ -31369,5 +31369,7 @@
   "reallife_ui_bizops_legend_closed": "歇业时间",
   "reallife_ui_bizops_legend_add": "点按某个小时以添加班次",
   "reallife_ui_bizops_legend_cleaning": "清洁工位任何时间都可排班",
-  "reallife_ui_bizops_legend_blocked": "无法安排所选人员"
+  "reallife_ui_bizops_legend_blocked": "无法安排所选人员",
+  "reallife_nav_minimap25": "小地图将建筑物显示为 2.5D 方块",
+  "reallife_nav_map25": "城市地图将建筑物显示为 2.5D 方块"
 }

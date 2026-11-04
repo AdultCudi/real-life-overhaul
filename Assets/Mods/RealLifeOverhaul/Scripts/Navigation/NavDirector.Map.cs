@@ -34,6 +34,7 @@ namespace RealLifeOverhaul.Nav
         private void MapToggled(bool open)
         {
             _mapOpen = open;
+            OpenPicture(open && !_voogle && Settings.Map25);
             if (_broken || _voogle || !Settings.Gps || _mapGaveUp)
             {
                 if (_map != null)

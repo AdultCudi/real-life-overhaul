@@ -42,10 +42,12 @@ namespace RealLifeOverhaul.Nav
         private readonly List<long> _hullKey = new List<long>(2048);   // each outline's building by its address (NavBaseMath.BuildingKey)
         private readonly List<float> _hullX = new List<float>(8192);
         private readonly List<float> _hullZ = new List<float>(8192);
+        private readonly List<float> _hullFoot = new List<float>(2048), _hullHeight = new List<float>(2048);   // each outline's ground and height, for the 2.5D map
         private readonly float[] _cornerX = new float[8], _cornerZ = new float[8];
         private readonly float[] _outX = new float[17], _outZ = new float[17];
         private readonly List<MeshRenderer> _more = new List<MeshRenderer>(16);   // the mod's own buildings' boxes, asked for at each drawing
         private readonly List<float> _moreX = new List<float>(128), _moreZ = new List<float>(128);
+        private readonly List<float> _moreFoot = new List<float>(16), _moreHeight = new List<float>(16);
         private readonly List<int> _moreStart = new List<int>(16);
         private int _moreStamp;     // NavBridges.MoreBuildingsStamp when the picture was drawn
         private int _moreDrawn;     // outlines of the mod's own on the picture
@@ -69,6 +71,10 @@ namespace RealLifeOverhaul.Nav
 
         /// <summary>What the picture was drawn from, kept for the checks and the tests.</summary>
         public NavBaseData Data => _stage == Stage.Done ? _data : null;
+
+        /// <summary>The city with the mod's own buildings on top, as the picture was last drawn: the 2.5D map's blocks are made from it, and made again when it is a new one.</summary>
+        public NavBaseData Drawn => _stage == Stage.Done ? _drawnData ?? _data : null;
+        private NavBaseData _drawnData;
 
         /// <summary>True while there is work to do in <see cref="Step"/>.</summary>
         public bool Busy => _stage == Stage.Buildings || _stage == Stage.Water || _stage == Stage.Drawing;
@@ -176,8 +182,10 @@ namespace RealLifeOverhaul.Nav
                 {
                     _data = kept;
                     _fromFile = true;
-                    if (_kept != null && _keptPrint == PrintOf(WithMore(kept), Width, Height, OriginX, OriginZ, PerMetre, _building, _water))
+                    NavBaseData withMore = WithMore(kept);
+                    if (_kept != null && _keptPrint == PrintOf(withMore, Width, Height, OriginX, OriginZ, PerMetre, _building, _water))
                     {
+                        _drawnData = withMore;
                         Picture = _kept;   // the same city drawn the same way as at an earlier load
                         _stage = Stage.Done;
                         Logger?.Info("Navigation: the minimap's buildings and water are the picture made at an earlier load (the same city, size and colours): "
@@ -205,6 +213,8 @@ namespace RealLifeOverhaul.Nav
             _hullKey.Clear();
             _hullX.Clear();
             _hullZ.Clear();
+            _hullFoot.Clear();
+            _hullHeight.Clear();
             _cursor = 0;
             _asked = 0;
             _frames = 0;
@@ -250,10 +260,12 @@ namespace RealLifeOverhaul.Nav
             double took = 0.0;
             while (_cursor < buildings.Length)
             {
-                int corners = NotMeasured(buildings[_cursor]) ? 0 : NavBaseGame.Outline(buildings[_cursor], _cornerX, _cornerZ);
+                float low = 0f, high = 0f;
+                int corners = NotMeasured(buildings[_cursor]) ? 0 : NavBaseGame.Outline(buildings[_cursor], _cornerX, _cornerZ, out low, out high);
                 int outline = corners >= 3 ? NavBaseMath.Hull(_cornerX, _cornerZ, corners, _outX, _outZ, 0) : 0;
                 if (outline >= 3)
                 {
+                    Stand(outline, low, high);
                     _hullStart.Add(_hullX.Count);
                     _hullKey.Add(NavBaseGame.KeyOf(buildings[_cursor]));
                     for (int i = 0; i < outline; i++)
@@ -288,6 +300,8 @@ namespace RealLifeOverhaul.Nav
             _data.HullKey = _hullKey.ToArray();
             _data.HullX = _hullX.ToArray();
             _data.HullZ = _hullZ.ToArray();
+            _data.HullFoot = _hullFoot.ToArray();
+            _data.HullHeight = _hullHeight.ToArray();
             using var piece = SessionWatch.Piece("the minimap's buildings");
             NavBaseWater.Prepare(_data);
             // from over every roof to under the lowest road
@@ -306,6 +320,23 @@ namespace RealLifeOverhaul.Nav
             _depth = highest - lowest + Sky + 60f;
             _cursor = 0;
             _stage = Stage.Water;
+        }
+
+        // The ground a building stands on is the street beside it (the nearest lane point within 150 m), its height what rises above that.
+        private void Stand(int outline, float low, float high)
+        {
+            float cx = 0f, cz = 0f;
+            for (int i = 0; i < outline; i++)
+            {
+                cx += _outX[i];
+                cz += _outZ[i];
+            }
+            cx /= outline;
+            cz /= outline;
+            int street = _graph.Places.Nearest(cx, cz, StreetReach);
+            float foot = street >= 0 ? _graph.Drive.Y[street] : low;
+            _hullFoot.Add(foot);
+            _hullHeight.Add(Mathf.Clamp(high - foot, 3f, 400f));
         }
 
         private void Squares()
@@ -420,6 +451,8 @@ namespace RealLifeOverhaul.Nav
             _moreX.Clear();
             _moreZ.Clear();
             _moreStart.Clear();
+            _moreFoot.Clear();
+            _moreHeight.Clear();
             NavBridges.MoreBuildings?.Invoke(_more);
             for (int i = 0; i < _more.Count; i++)
             {
@@ -429,6 +462,9 @@ namespace RealLifeOverhaul.Nav
                 {
                     continue;
                 }
+                Bounds box = _more[i].bounds;
+                _moreFoot.Add(box.min.y);
+                _moreHeight.Add(Mathf.Clamp(box.size.y, 3f, 400f));
                 _moreStart.Add(_moreX.Count);
                 for (int k = 0; k < outline; k++)
                 {
@@ -437,13 +473,14 @@ namespace RealLifeOverhaul.Nav
                 }
             }
             _more.Clear();
-            return city.With(_moreX, _moreZ, _moreStart);
+            return city.With(_moreX, _moreZ, _moreStart, _moreFoot, _moreHeight);
         }
 
         private void Draw(bool settle)
         {
             _moreStamp = MoreStamp();
             NavBaseData drawn = WithMore(_data);
+            _drawnData = drawn;
             _moreDrawn = _moreStart.Count;
             _job = new Job
             {

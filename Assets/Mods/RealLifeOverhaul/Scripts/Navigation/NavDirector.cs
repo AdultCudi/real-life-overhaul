@@ -104,6 +104,7 @@ namespace RealLifeOverhaul.Nav
             GlobalEvents.onCityMapToggle -= _onMap;
             Remove();
             _base.Drop(false);   // the picture is kept for the next load of the same city
+            SceneRemove();
             _graph.Dispose();
             RoadGraph.Forget();   // the city's one road graph goes with it
             NavMarks.Reset();
@@ -155,6 +156,7 @@ namespace RealLifeOverhaul.Nav
                 {
                     _base.Step(SaveGameManager.Current != null && !LoadScene.isLoading);
                 }
+                SceneStep();
                 if (_showing && Settings.Minimap)
                 {
                     View();
@@ -190,7 +192,14 @@ namespace RealLifeOverhaul.Nav
             _heading = _follow.eulerAngles.y;
             float speed = _driving && _body != null ? _body.velocity.magnitude : 0f;
             _metres = NavView.Ease(_metres, NavView.MetresAcross(Settings.MinimapZoom, speed), Time.unscaledDeltaTime, 1.6f);
-            _hud.Frame(_px, _pz, _heading, ViewHeading(_heading), _metres, Settings.MinimapRotate);
+            if (_hud.SceneMode)
+            {
+                _hud.SceneFrame(_px, _py, _pz, _heading, ViewHeading(_heading), _metres, Settings.MinimapRotate, NavMarks.All);
+            }
+            else
+            {
+                _hud.Frame(_px, _pz, _heading, ViewHeading(_heading), _metres, Settings.MinimapRotate);
+            }
         }
 
         // Degrees clockwise from north of what is ahead on the screen; a camera looking straight down has its screen's up as
@@ -227,6 +236,7 @@ namespace RealLifeOverhaul.Nav
                              + ", and nothing of this mod's is on the city map (" + (_map == null ? "no object there: PASS" : "FAIL: its route object is still there") + ").");
             }
             BaseWanted(wantMap);
+            SceneWanted(wantMap);
             if (!wantMap && !wantGps)
             {
                 if (_hud != null || _map != null || _hasGoal)
@@ -295,6 +305,7 @@ namespace RealLifeOverhaul.Nav
             if (_hud != null)
             {
                 _hud.Place(Settings.MinimapSize, wantMap, lines);
+                _hud.Scene(_scene, wantMap && Settings.Minimap25 && _scene.Ready, true);
                 if (lines)
                 {
                     _hud.Lines(_line1, _line2);
@@ -308,8 +319,12 @@ namespace RealLifeOverhaul.Nav
                     _nextMarks = now + MarksEvery;
                     NavMarks.Gather(_hasGoal ? _guider : null);
                     _hud.MarksChanged();
+                    _hud.SceneMarksChanged();
                 }
-                _hud.Marks(NavMarks.All, _px, _pz, _metres);
+                if (!_hud.SceneMode)
+                {
+                    _hud.Marks(NavMarks.All, _px, _pz, _metres);
+                }
                 if (!_hudSaid && Meta.Dev.Verbose)
                 {
                     _hudSaid = true;

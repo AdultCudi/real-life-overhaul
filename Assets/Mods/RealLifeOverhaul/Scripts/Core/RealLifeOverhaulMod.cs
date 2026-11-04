@@ -1329,6 +1329,10 @@ namespace RealLifeOverhaul
                     v => Settings.MinimapZoom = v, Meta.SettingsTable.SliderPercent)
                 .AddToggle(Settings.MinimapBaseId, "reallife_nav_base", Settings.MinimapBase,
                     v => Settings.MinimapBase = v)
+                .AddToggle(Settings.Minimap25Id, "reallife_nav_minimap25", Settings.Minimap25,
+                    v => Settings.Minimap25 = v)
+                .AddToggle(Settings.Map25Id, "reallife_nav_map25", Settings.Map25,
+                    v => Settings.Map25 = v)
                 .AddButton("reallife_nav_test_station", () => Nav.NavDirector.Instance?.TestStation())
                 .AddButton("reallife_nav_test_far", () => Nav.NavDirector.Instance?.TestFar())
                 .AddButton("reallife_nav_test_clear", () => Nav.NavDirector.Instance?.TestClear())
