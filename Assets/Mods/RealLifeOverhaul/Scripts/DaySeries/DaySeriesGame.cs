@@ -23,15 +23,9 @@ namespace RealLifeOverhaul.DaySeries
             {
                 return;
             }
-            if (book.CutFrom > 0 && day >= book.CutUntil)
+            if (PriceCutRules.Due(book, day))
             {
-                if (CompanyDirector.Instance != null)
-                {
-                    CompanyDirector.Instance.ReleaseCut(book.HeldAlready);
-                }
-                book.CutFrom = 0;
-                book.CutUntil = 0;
-                book.HeldAlready = string.Empty;
+                EndCut(book);   // the 14 days are over: the holds the cut put on come off, the player's own stay
             }
             long cash = RivalGame.Cash;
             book.Set(DaySeriesCatalogue.Cash, day, DaySeriesRules.ClampDollars(cash));
@@ -45,6 +39,25 @@ namespace RealLifeOverhaul.DaySeries
             Moves(book, day);
             Retail(book, day);
             CityRetail(book, day);
+        }
+
+        /// <summary>Ends the price cut at once or at its end: the one place the book and the player's plans are put back together.</summary>
+        public static void EndCut(DaySeriesBook book)
+        {
+            if (CompanyDirector.Instance != null)
+            {
+                CompanyDirector.Instance.EndCut(book);
+            }
+            else
+            {
+                PriceCutRules.End(book, null);
+            }
+        }
+
+        /// <summary>Starts the price cut today. Returns how many prices moved; a cut that moved none is not on.</summary>
+        public static int StartCut(DaySeriesBook book, int day)
+        {
+            return CompanyDirector.Instance != null ? CompanyDirector.Instance.StartCut(book, day) : 0;
         }
 
         private static readonly List<string> CityNames = new List<string>(DaySeriesCatalogue.CityGoodsMost);

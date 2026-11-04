@@ -71,6 +71,8 @@ namespace RealLifeOverhaul.Rivals
         // ---- the company (Economy/Company)
         public static Func<bool> StaffOn;
         public static RivalOffer Offer;
+        /// <summary>The player has a campaign running today at a business, hired on Flare or booked from the company. Default: no.</summary>
+        public static Func<bool> CampaignOn;
 
         // ---- the courts (Justice)
         public static Func<bool> CourtOn;
@@ -120,6 +122,7 @@ namespace RealLifeOverhaul.Rivals
             Footfall = null;
             StaffOn = null;
             Offer = null;
+            CampaignOn = null;
             CourtOn = null;
             Sue = null;
             Customers = null;

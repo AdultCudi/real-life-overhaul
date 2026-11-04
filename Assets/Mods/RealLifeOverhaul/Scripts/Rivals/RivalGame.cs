@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Helpers;
 using Localizor;
+using RealLifeOverhaul.DaySeries;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Markets;
 using UI.Notification;
@@ -46,6 +47,8 @@ namespace RealLifeOverhaul.Rivals
             into.Issues = RivalBridges.Ask(RivalBridges.IssuesOn);
             into.Court = RivalBridges.Ask(RivalBridges.CourtOn) && RivalBridges.Sue != null;
             into.Paper = RivalBridges.Ask(RivalBridges.PaperOn);
+            into.PlayerCut = DaySeriesRules.CutOn(DaySeriesDirector.Book, Day);
+            into.PlayerCampaign = RivalBridges.Ask(RivalBridges.CampaignOn);
             Books.Businesses(Regs);
             for (int i = 0; i < Regs.Count; i++)
             {
