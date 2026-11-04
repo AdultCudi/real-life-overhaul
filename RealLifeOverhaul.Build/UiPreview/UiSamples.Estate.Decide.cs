@@ -37,8 +37,8 @@ internal static partial class UiSamples
         if (state == "call")
         {
             m.Tab = 2;
-            d.Kicker = Fx(W(t, "reallife_ui_estate_dec_call_kicker", "Repair call, {place}"), "place", "41 E 37th Street, flat 4A");
-            d.Title = Capital(W(t, "reallife_estate_fault_1", "the heating"));
+            d.Kicker = Fx(W(t, "reallife_ui_estate_dec_call_kicker", "Repair call, {place}"), "place", UnitName(t, "41 E 37th Street", 3));
+            d.Title = Capital(W(t, "reallife_estate_fault_noun_1", "heating"));
             d.Body = Fx(W(t, "reallife_ui_estate_dec_call_body", "{name} reported it. How do you answer?"), "name", "Sofia Marchetti");
             d.Portrait = "Sofia Marchetti";
             d.PortraitLines = new[] { JobLine(t, "Nurse, Murray Hill Clinic"), "34", Fx(W(t, "reallife_ui_estate_late_days", "Late {days} days"), "days", "6") };
@@ -59,7 +59,7 @@ internal static partial class UiSamples
         // The applicant: a person who wants the empty unit.
         m.Tab = 1;
         d.Kicker = Fx(W(t, "reallife_ui_estate_dec_app_kicker", "Applicant, {district}"), "district", "Uptown");
-        d.Title = "1 Dock Street, shop unit";
+        d.Title = "1 Dock Street";
         d.Body = Fx(W(t, "reallife_ui_estate_dec_app_body", "Their offer stands until day {day}, for a lease of {days} days. Do you let the unit to them?"), "day", "421", "days", "150");
         d.Portrait = "Kofi Mensah";
         d.PortraitLines = new[] { W(t, "reallife_estate_tenant_shops_2", "A baker"), W(t, "reallife_estate_record_good", "Good") };

@@ -283,12 +283,21 @@ namespace RealLifeOverhaul.Ui
         private static int FootBlocks(EstateModel m) => (m.ShareLabels != null && m.ShareLabels.Length > 0 ? 1 : 0) + (m.Related != null && m.Related.Length > 0 ? 1 : 0)
             + (m.Related2 != null && m.Related2.Length > 0 ? 1 : 0);
 
+        // One list alone across a wide page would stand its name and its figures 800 px apart: it runs in two columns, half the rows in each.
+        private static bool FootPaired(EstateModel m, float w) =>
+            FootBlocks(m) == 1 && m.Related != null && m.Related.Length >= 2 && (m.ShareLabels == null || m.ShareLabels.Length == 0) && w >= UiTokens.S16 * 16f;
+
         private static float FootHeight(EstateModel m, float w)
         {
             int n = FootBlocks(m);
             if (n == 0)
             {
                 return 0f;
+            }
+            if (FootPaired(m, w))
+            {
+                int rows = (Math.Min(m.Related.Length, Math.Max(1, m.RelatedRows)) + 1) / 2;
+                return UiDraw.Snap(UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2 + rows * RowHeight);
             }
             float each = UiDraw.SnapDown((w - UiTokens.S6 * (n - 1)) / n);
             float h = m.ShareLabels != null && m.ShareLabels.Length > 0 ? SharesHeight(m.ShareLabels, m.ShareValues, m.ShareTitle, each) : 0f;
@@ -297,6 +306,17 @@ namespace RealLifeOverhaul.Ui
 
         private static void Foot(UiScene s, UiAt at, EstateModel m, float x, float y, float w, float bottom)
         {
+            if (FootPaired(m, w))
+            {
+                UiAt on = at.InRegion(RegionLists);
+                float ry = Section(s, on, m.RelatedTitle, m.RelatedCount, x, y, w), half = UiDraw.SnapDown((w - UiTokens.S6) / 2f);
+                int count = Math.Min(m.Related.Length, Math.Max(1, m.RelatedRows)), left = (count + 1) / 2;
+                for (int i = 0; i < count; i++)
+                {
+                    Row(s, on, m.Related[i], i < left ? x : x + half + UiTokens.S6, ry + (i < left ? i : i - left) * RowHeight, half);
+                }
+                return;
+            }
             int n = FootBlocks(m);
             float each = UiDraw.SnapDown((w - UiTokens.S6 * (n - 1)) / n), bx = x;
             if (m.ShareLabels != null && m.ShareLabels.Length > 0)

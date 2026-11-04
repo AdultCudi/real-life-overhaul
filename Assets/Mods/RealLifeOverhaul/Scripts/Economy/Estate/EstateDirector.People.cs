@@ -60,7 +60,7 @@ namespace RealLifeOverhaul.Economy
                     if (done)
                     {
                         Tell(NotificationType.Success, "reallife_estate_note_service_done",
-                            Data("building", h.Name, "fault", EstateText.Fault(b.Kind), "amount", EstateText.Money(b.Fee)), TabWorks, "own:" + h.Place);
+                            Data("building", h.Name, "fault", EstateText.FaultNoun(b.Kind), "amount", EstateText.Money(b.Fee)), TabWorks, "own:" + h.Place);
                     }
                     else
                     {

@@ -160,6 +160,13 @@ namespace RealLifeOverhaul.Economy
             "reallife_estate_fault_0", "reallife_estate_fault_1", "reallife_estate_fault_2", "reallife_estate_fault_3", "reallife_estate_fault_4", "reallife_estate_fault_5",
             "reallife_estate_fault_6"
         };
+        // The fault as a bare noun, for a sentence that brings its own article or preposition ("Heating service"): FaultKeys carry their article ("the heating"), so a
+        // sentence that adds one again said "Cancel the the heating service".
+        private static readonly string[] FaultNounKeys =
+        {
+            "reallife_estate_fault_noun_0", "reallife_estate_fault_noun_1", "reallife_estate_fault_noun_2", "reallife_estate_fault_noun_3", "reallife_estate_fault_noun_4",
+            "reallife_estate_fault_noun_5", "reallife_estate_fault_noun_6"
+        };
         private static readonly string[] GrievanceKeys =
         {
             "reallife_estate_grievance_rent", "reallife_estate_grievance_building", "reallife_estate_grievance_repair", "reallife_estate_grievance_notice", "reallife_estate_grievance_order"
@@ -181,6 +188,12 @@ namespace RealLifeOverhaul.Economy
         public static string Fault(int kind)
         {
             return T(FaultKeys[EstateCatalogue.Clamp(kind, 0, FaultKeys.Length - 1)]);
+        }
+
+        /// <summary>A repair call's fault as a bare noun ("heating", "lock"): for the sentences that give their own article, such as "{fault} service".</summary>
+        public static string FaultNoun(int kind)
+        {
+            return T(FaultNounKeys[EstateCatalogue.Clamp(kind, 0, FaultNounKeys.Length - 1)]);
         }
 
         /// <summary>What a tenant complains of (EstateRules.Grievance).</summary>

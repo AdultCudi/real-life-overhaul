@@ -236,7 +236,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     Cells = new[] { unitName, u.Let ? who.Name : EstateText.T("reallife_estate_row_nobody"), u.Let ? EstateText.T("reallife_estate_row_until", "day", u.Until.ToString(Inv)) : "-",
                         u.Let ? Month(u.Rent) : Month(EstateCatalogue.Share(EstateRules.UnitRent(h, _c), u.Ask)), chip, u.Let && u.Happy >= 0 ? (u.Happy / 10).ToString(Inv) : string.Empty },
-                    Values = new[] { (int)UseIcon(h.Use), u.Let ? 0 : UiDataTable.NoFace, 0, 0, 0, u.Let && u.Happy >= 0 ? u.Happy / 10 : -1 },
+                    Values = new[] { (int)UseIcon(h.Use), u.Let ? 0 : UiDataTable.GlyphFace(UiIcon.People), 0, 0, 0, u.Let && u.Happy >= 0 ? u.Happy / 10 : -1 },
                     Tones = new[] { UiRole.None, UiRole.None, UiRole.None, u.Let ? UiRole.None : UiRole.Muted, tone, UiRole.None },
                     Subs = new[] { EstateText.District(h.District), u.Let ? who.Line : EstateText.T("reallife_ui_estate_asking_note"), null, null, null, null },
                     Hue = who.Hue,
@@ -283,7 +283,7 @@ namespace RealLifeOverhaul.Ui
                         string pick = "wrk:" + h.Place;
                         rows.Add(new EstateRow
                         {
-                            Icon = UiIcon.Wrench, Title = EstateText.T("reallife_ui_estate_service_title", "fault", EstateText.Fault(v.Kind), "building", h.Name), Sub = null,
+                            Icon = UiIcon.Wrench, Title = EstateText.T("reallife_ui_estate_service_title", "fault", EstateText.FaultNoun(v.Kind), "building", h.Name), Sub = null,
                             Chip = EstateText.T("reallife_ui_estate_day", "day", v.Day.ToString(Inv)), ChipTone = UiRole.Notice, Amount = Money(v.Fee),
                             Run = -1
                         });
@@ -299,7 +299,7 @@ namespace RealLifeOverhaul.Ui
                         bool booked = u.CallAnswer == (int)CallAnswer.Contractor;
                         rows.Add(new EstateRow
                         {
-                            Icon = UiIcon.Wrench, Title = EstateText.T("reallife_ui_estate_service_title", "fault", EstateText.Fault(u.Call), "building", EstateText.UnitName(h, n)), Sub = null,
+                            Icon = UiIcon.Wrench, Title = EstateText.T("reallife_ui_estate_service_title", "fault", EstateText.FaultNoun(u.Call), "building", EstateText.UnitName(h, n)), Sub = null,
                             Chip = EstateText.T(booked ? "reallife_ibox_chip_booked" : "reallife_ui_estate_quote_asked"), ChipTone = booked ? UiRole.Ok : UiRole.Warn, Amount = Money(u.CallCost),
                             Run = -1
                         });

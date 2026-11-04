@@ -80,7 +80,7 @@ namespace RealLifeOverhaul.Ui
                         ServiceBooking v = h.Services[b];
                         works.Add(new EstateRow
                         {
-                            Icon = UiIcon.Wrench, Title = EstateText.T("reallife_ui_estate_service_name", "fault", EstateText.Fault(v.Kind)), Sub = ContractorName(v.Contractor),
+                            Icon = UiIcon.Wrench, Title = EstateText.T("reallife_ui_estate_service_name", "fault", EstateText.FaultNoun(v.Kind)), Sub = ContractorName(v.Contractor),
                             Chip = EstateText.T("reallife_ui_estate_day", "day", v.Day.ToString(Inv)), ChipTone = UiRole.Notice, Amount = Money(v.Fee), Run = -1
                         });
                     }

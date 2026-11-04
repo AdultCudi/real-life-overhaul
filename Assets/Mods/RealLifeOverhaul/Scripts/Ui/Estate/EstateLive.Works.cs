@@ -85,7 +85,7 @@ namespace RealLifeOverhaul.Ui
                             Cells = new[] { EstateText.UnitName(h, n), u.Let ? who.Name : EstateText.T("reallife_estate_row_nobody"), u.Let
                                 ? Month(u.Rent) : "-", u.Let ? EstateText.Record(u.Record) : "-", chip,
                                 u.Let && u.Happy >= 0 ? (u.Happy / 10).ToString(Inv) : string.Empty },
-                            Values = new[] { (int)UseIcon(h.Use), u.Let ? 0 : UiDataTable.NoFace, 0, u.Let ? u.Record : -1, 0, u.Let && u.Happy >= 0 ? u.Happy / 10 : -1 },
+                            Values = new[] { (int)UseIcon(h.Use), u.Let ? 0 : UiDataTable.GlyphFace(UiIcon.People), 0, u.Let ? u.Record : -1, 0, u.Let && u.Happy >= 0 ? u.Happy / 10 : -1 },
                             Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, tone, UiRole.None },
                             Subs = new[] { EstateText.District(h.District), u.Let ? who.Line : null, null, null, null, null }, Hue = who.Hue, Ring = u.Let ? HappyRing(u.Happy) : UiRole.None
                         });
@@ -563,7 +563,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     ServiceBooking v = h.Services[b];
                     int at = v.Kind;   // the booking by its kind: a morning's re-sorting never cancels another
-                    lines.Add(_runs.Link(EstateText.Fill("reallife_ui_estate_service_line", "fault", EstateText.Fault(v.Kind), "day",
+                    lines.Add(_runs.Link(EstateText.Fill("reallife_ui_estate_service_line", "fault", EstateText.FaultNoun(v.Kind), "day",
                         v.Day.ToString(Inv), "who", ContractorName(v.Contractor), "amount", Money(v.Fee)),
                         () => Show(() => _d.CancelService(place, at))));
                 }
@@ -572,7 +572,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     int k = kind;
                     bool booked = h.Services.Exists(s => s.Kind == k) || h.Services.Count >= EstateCatalogue.ServicesMost || !Duties;
-                    actions.Add(_runs.Button(EstateText.T("reallife_ui_estate_book_kind", "fault", EstateText.Fault(kind), "amount",
+                    actions.Add(_runs.Button(EstateText.T("reallife_ui_estate_book_kind", "fault", EstateText.FaultNoun(kind), "amount",
                         Money(ServiceRules.Fee(h, kind, _c.Index))), UiButtonKind.Secondary, UiIcon.Calendar,
                         UiAction.Count, () => Show(() => _d.BookService(place, k)), booked));
                 }

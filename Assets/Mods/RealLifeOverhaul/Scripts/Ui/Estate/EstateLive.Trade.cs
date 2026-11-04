@@ -32,7 +32,8 @@ namespace RealLifeOverhaul.Ui
                 var rates = new List<EstateRow>(8);
                 int soldAll = 0, roomsAll = 0;
                 long takingsAll = 0, costsAll = 0, keptYear = 0;
-                var said = new List<EstateRow>(3);
+                var said = new List<EstateRow>(8);
+                int saidMost = _s.Hotels.Count * EstateCatalogue.RoomTypes;   // as many reviews as the rates beside them have rows, so the two lists end together
                 for (int i = 0; i < _s.Hotels.Count; i++)
                 {
                     HotelFile f = _s.Hotels[i];
@@ -42,7 +43,7 @@ namespace RealLifeOverhaul.Ui
                     takingsAll += f.Takings;
                     costsAll += f.Costs;
                     keptYear += (long)f.TakingsYear - f.CostsYear;
-                    for (int r = 0; r < f.Reviews.Length && said.Count < 3; r++)
+                    for (int r = 0; r < f.Reviews.Length && said.Count < saidMost; r++)
                     {
                         if (f.Reviews[r] != 0)
                         {
@@ -301,6 +302,7 @@ namespace RealLifeOverhaul.Ui
                     _m.RelatedTitle = EstateText.T("reallife_ui_estate_add_cars");
                     _m.RelatedCount = could.Count > 0 ? could.Count.ToString(Inv) : null;
                     _m.Related = could.ToArray();
+                    _m.RelatedRows = 8;   // the cars within reach run in two columns of four
                 }
             }
 

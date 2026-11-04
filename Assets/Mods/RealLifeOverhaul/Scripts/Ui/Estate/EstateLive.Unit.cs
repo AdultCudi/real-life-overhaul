@@ -274,7 +274,7 @@ namespace RealLifeOverhaul.Ui
                     ServiceBooking v = h.Services[b];
                     rows.Add(new EstateRow
                     {
-                        Icon = UiIcon.Wrench, Title = EstateText.T("reallife_ui_estate_service_name", "fault", EstateText.Fault(v.Kind)),
+                        Icon = UiIcon.Wrench, Title = EstateText.T("reallife_ui_estate_service_name", "fault", EstateText.FaultNoun(v.Kind)),
                         Sub = EstateText.T("reallife_ui_estate_booked_with", "who", ContractorName(v.Contractor)), Chip = EstateText.T("reallife_ui_estate_day", "day", v.Day.ToString(Inv)),
                         ChipTone = UiRole.Notice, Amount = Money(v.Fee), Run = _runs.Do(() => Show(() => OpenWorks("wrk:" + place)))
                     });

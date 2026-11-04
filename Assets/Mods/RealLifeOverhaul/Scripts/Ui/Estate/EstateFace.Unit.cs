@@ -101,7 +101,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (u.Strip.Length > 0)
             {
-                y = UiAppWindow.Figures(s, at, u.Strip, x, y, w) - UiTokens.S2;
+                y = UiAppWindow.Figures(s, at, u.Strip, x, y, w) - UiTokens.S2 + Gap(0f);
             }
             if (!string.IsNullOrEmpty(u.TenantName) && y + UiTokens.S16 * 2f < bottom)
             {
@@ -109,7 +109,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (u.ShareLabels.Length > 0 && y + SharesHeight(u.ShareLabels, u.ShareValues, u.ShareTitle, w) <= bottom)
             {
-                y = Shares(s, at, u.ShareTitle, u.ShareLabels, u.ShareValues, x, y, w);
+                y = Shares(s, at, u.ShareTitle, u.ShareLabels, u.ShareValues, x, y, w) + Gap(0f);
             }
             if (u.Empty != null || u.Others.Length > 0)
             {

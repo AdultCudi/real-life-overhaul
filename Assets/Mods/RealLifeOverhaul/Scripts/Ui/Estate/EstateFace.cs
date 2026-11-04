@@ -134,7 +134,10 @@ namespace RealLifeOverhaul.Ui
                     UiStyle.Number, ink, m.FigValues[i], UiFlags.Right | UiFlags.Truncate | UiFlags.Middle);
                 fx += colW[i] + UiTokens.S6;
             }
-            return TileBig + UiTokens.S3 + (linkW > 0f ? UiTokens.S3 : 0f);
+            // A line under the title ends where the tile's room does, so the band or the table under the head would touch it (the fleet's stars): such a head gives it a gap.
+            float lineEnd = UiTokens.S1 + nh + UiTokens.S2 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body));
+            bool hasLine = !string.IsNullOrEmpty(m.HeadSub) || m.HeadStars >= 0;
+            return Math.Max(TileBig + UiTokens.S3, hasLine ? lineEnd + UiTokens.S2 : 0f) + (linkW > 0f ? UiTokens.S3 : 0f);
         }
 
         // ------------------------------------------------------------------------------------------------- the rent roll and a tab's table
@@ -152,7 +155,9 @@ namespace RealLifeOverhaul.Ui
                 th = bottom - y - (listsH > 0f ? listsH + UiTokens.S3 : 0f);
                 m.Lower = null;
             }
+            float[] widths = Spread(m.Table, w);
             m.TableList = UiDataTable.Lay(s, at.InRegion(RegionTable), m.Table, x, y, w, th, keys, TableBase);
+            Unspread(m.Table, widths);
             m.TableClip = ClipOf(s, m.TableList);
             float under = y + th + UiTokens.S3;
             if (listsH > 0f)
@@ -188,6 +193,10 @@ namespace RealLifeOverhaul.Ui
                     {
                         cells[c] = string.Empty;
                     }
+                    else if ((kind == UiCellKind.Person || kind == UiCellKind.Date) && v.Length > 0 && char.IsLower(v[0]))
+                    {
+                        cells[c] = char.ToUpperInvariant(v[0]) + v.Substring(1);   // "nobody" and "day 490" begin as the rows around them do
+                    }
                     else if (kind == UiCellKind.Chip && v.Length > 0 && char.IsLower(v[0]))
                     {
                         cells[c] = char.ToUpperInvariant(v[0]) + v.Substring(1);
@@ -215,6 +224,78 @@ namespace RealLifeOverhaul.Ui
                 {
                     rows[i].Chip = char.ToUpperInvariant(chip[0]) + chip.Substring(1);
                 }
+            }
+        }
+
+        // A table's one wide column (the name, the car, the unit) would take every pixel the fixed columns leave, so its figures stood 500 to 900 px from the name it belongs to.
+        // The wide column takes what its names need instead and the room it gives up is shared by the columns beside it, so the figures stand near their names and evenly
+        // between each other, as a statement's columns do. The widths are the table's own again after the lay, so a resized window works them out anew. Returns the widths
+        // to put back, or null when the table is left as it is.
+        private static float[] Spread(UiDataTableModel t, float w)
+        {
+            if (t == null || t.Columns == null || t.Columns.Length < 3 || t.Rows == null)
+            {
+                return null;
+            }
+            int flex = -1, flexes = 0, shared = 0;
+            float fixedW = 0f;
+            for (int c = 0; c < t.Columns.Length; c++)
+            {
+                ref UiDataColumn col = ref t.Columns[c];
+                if (col.Width <= 0f)
+                {
+                    flex = c;
+                    flexes++;
+                    continue;
+                }
+                fixedW += Math.Max(col.Width, UiDraw.Snap(UiTextRules.Width(col.Title ?? string.Empty, UiStyle.SectionHeader) + UiTokens.S1 + (col.Sortable ? UiTokens.IconSmall + UiTokens.S1 : 0f)));
+                shared += col.Kind == UiCellKind.Action ? 0 : 1;
+            }
+            if (flexes != 1 || shared == 0 || (t.Columns[flex].Kind != UiCellKind.Tile && t.Columns[flex].Kind != UiCellKind.Person))
+            {
+                return null;
+            }
+            // The kit keeps S4 at the row's right and the pick boxes' room at its left.
+            float room = w - UiTokens.S4 - (string.IsNullOrEmpty(t.PickWords) ? 0f : 20f + UiTokens.S3) - fixedW - UiTokens.S4 * (t.Columns.Length - 1);
+            float need = UiDraw.Snap(UiTextRules.Width(t.Columns[flex].Title ?? string.Empty, UiStyle.SectionHeader) + UiTokens.S1);
+            bool tile = t.Columns[flex].Kind == UiCellKind.Tile;
+            float lead = (tile ? UiTokens.ControlSmall + UiTokens.S3 : UiTokens.AvatarSmall + UiTokens.S1 + UiTokens.S3) + UiTokens.S1;
+            for (int r = 0; r < t.Rows.Length; r++)
+            {
+                UiDataRow row = t.Rows[r];
+                string words = row.Cells != null && flex < row.Cells.Length ? row.Cells[flex] : null;
+                string line = row.Subs != null && flex < row.Subs.Length && row.Subs[flex] != null ? row.Subs[flex] : row.Sub;
+                float seen = Math.Max(string.IsNullOrEmpty(words) ? 0f : UiTextRules.Width(words, UiStyle.Title), string.IsNullOrEmpty(line) ? 0f : UiTextRules.Width(line, UiStyle.Small));
+                need = Math.Max(need, UiDraw.Snap(lead + seen));
+            }
+            float keep = Math.Max(UiTokens.S16 * 5f, need + UiTokens.S4);
+            float extra = room - keep;
+            if (extra < UiTokens.S16 * 2.5f)
+            {
+                return null;   // the hole is small: the table stands as the kit lays it
+            }
+            var saved = new float[t.Columns.Length];
+            float each = UiDraw.SnapDown(extra / shared);
+            for (int c = 0; c < saved.Length; c++)
+            {
+                saved[c] = t.Columns[c].Width;
+                if (c == flex)
+                {
+                    t.Columns[c].Width = keep + (extra - each * shared);
+                }
+                else if (t.Columns[c].Width > 0f && t.Columns[c].Kind != UiCellKind.Action)
+                {
+                    t.Columns[c].Width += each;
+                }
+            }
+            return saved;
+        }
+
+        private static void Unspread(UiDataTableModel t, float[] widths)
+        {
+            for (int c = 0; widths != null && c < widths.Length; c++)
+            {
+                t.Columns[c].Width = widths[c];
             }
         }
 
@@ -341,7 +422,9 @@ namespace RealLifeOverhaul.Ui
             float room = bottom - y - foot - (m.Lower != null ? LowerLeast + UiTokens.S3 : 0f);
             float sideH = side ? UiFactCard.Height(m.Side, sw, keys, true) : 0f;
             float th = m.Lower != null || foot > 0f ? Math.Max(UiTokens.S16, Math.Min(Math.Max(Natural(m.Table), sideH), room)) : bottom - y;
+            float[] widths = Spread(m.Table, tw);
             m.TableList = UiDataTable.Lay(s, at.InRegion(RegionTable), m.Table, x, y, tw, th, keys, TableBase);
+            Unspread(m.Table, widths);
             m.TableClip = ClipOf(s, m.TableList);
             if (side)
             {

@@ -68,8 +68,8 @@ namespace RealLifeOverhaul.Ui
                     {
                         Cells = new[] { DealerGame.CarName(l.Type), DealerText.Kind(l.Kind), DealerText.Km(l.Km), Mathf.Clamp(shown, 0, 100).ToString(Inv),
                             Money(l.Kind == ListingKind.Used && l.Countered > 0 ? l.Countered : l.Asking), state, chip },
-                        Values = new[] { (int)(auction ? UiIcon.Tag : l.Kind == ListingKind.Used ? UiIcon.Car : UiIcon.Store), 0, 0, Mathf.Clamp(shown, 0, 100), 0, 0, 0 },
-                        Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, auction
+                        Values = new[] { (int)ClassGlyph(l.Type), 0, 0, Mathf.Clamp(shown, 0, 100), 0, 0, 0 },   // the car by its class, as on every tab: the kind of listing has its own column
+                        Tones = new[] { ClassTint(l.Type, l.Asking), UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, auction
                             ? (l.Leader == 0 ? UiRole.Ok : l.Leader > 0 ? UiRole.Warn : UiRole.Notice) : UiRole.Notice },
                         Subs = new[] { DealerGame.ColourName(l.Colour), null, null, null, null, null, null },
                         Pictures = new[] { DealerLive.PictureOf(l.Type, out float _), null, null, null, null, null, null }
@@ -107,7 +107,7 @@ namespace RealLifeOverhaul.Ui
             private void NewPage(DealerListing l)
             {
                 int worth = _d.Worth(l);
-                DetailHead(UiIcon.Store, DealerGame.CarName(l.Type), DealerGame.ColourName(l.Colour), DealerText.T("reallife_dealer_state_new"), UiRole.Notice);
+                DetailHead(ClassGlyph(l.Type), DealerGame.CarName(l.Type), DealerGame.ColourName(l.Colour), DealerText.T("reallife_dealer_state_new"), UiRole.Notice);
                 var lines = new List<UiFactLine> { UiFactLine.Row(DealerText.T("reallife_ui_dealer_l_km"), DealerText.Km(l.Km)) };
                 string yard = YardStep(lines);
                 DealerYard to = yard != null ? _s.Yard(yard) : null;
@@ -147,7 +147,7 @@ namespace RealLifeOverhaul.Ui
             private void UsedPage(DealerListing l)
             {
                 int lid = l.Id;
-                DetailHead(UiIcon.Car, DealerGame.CarName(l.Type), DealerGame.ColourName(l.Colour),
+                DetailHead(ClassGlyph(l.Type), DealerGame.CarName(l.Type), DealerGame.ColourName(l.Colour),
                     DealerText.T(l.Inspected ? "reallife_ibox_chip_inspected" : "reallife_ibox_chip_not_inspected"), l.Inspected ? UiRole.Ok : UiRole.Warn);
                 _m.Card = true;
                 _m.FootBack = DealerText.T("reallife_ui_estate_not_now");
@@ -317,6 +317,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 else
                 {
+                    right.Add(UiFactLine.Section(DealerText.T("reallife_ui_dealer_bids_chart")));   // the empty list has its heading too, or its line reads as the last of "If you win"
                     right.Add(UiFactLine.Say(DealerText.T("reallife_ui_dealer_no_bids")));
                 }
                 for (int i = 0; i < l.BidLogCount && i < DealerCatalogue.BidsKept; i++)

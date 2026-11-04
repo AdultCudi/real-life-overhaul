@@ -65,7 +65,7 @@ namespace RealLifeOverhaul.Ui
                         Cells = new[] { s.Trade ? DealerText.T("reallife_dealer_to_trade") : s.Customer, DealerGame.CarName(s.Type), Money(s.Price),
                             Money(s.Cost), string.Empty, FinanceText.Day(s.Day),
                             DealerText.T("reallife_dealer_state_sold", "margin", Money(s.Price - s.Cost)) },
-                        Values = new[] { s.Trade ? UiDataTable.NoFace : 0, (int)ClassGlyph(s.Type), 0, 0, -1, 0, 0 },
+                        Values = new[] { s.Trade ? UiDataTable.GlyphFace(UiIcon.Store) : 0, (int)ClassGlyph(s.Type), 0, 0, -1, 0, 0 },
                             Tones = new[] { UiRole.None, ClassTint(s.Type, s.Price), UiRole.None, UiRole.None, UiRole.None, UiRole.None, s.Price < s.Cost ? UiRole.Danger : UiRole.Ok },
                         Subs = new[] { yard != null ? yard.Name : string.Empty, string.Empty, null, null, null, null, null }, Hue = UiColour.HueOf(s.Customer ?? string.Empty)
                     });
@@ -99,10 +99,10 @@ namespace RealLifeOverhaul.Ui
                 TableShape(UiIcon.Handshake, DealerText.T("reallife_dealer_offers_title"),
                     DealerText.T("reallife_ui_dealer_offers_sub", "waiting", waiting.ToString(Inv), "sold", (rows.Count - waiting).ToString(Inv)), cols, rows, keys, null,
                     DealerText.T("reallife_ui_dealer_empty_offers"), DealerText.T("reallife_dealer_offers_about"));
-                var rivals = new List<EstateRow>(3);
-                for (int y = 0; y < _s.Yards.Count && rivals.Count < 3; y++)
+                var rivals = new List<EstateRow>(6);   // six at most: they run in two columns of three under the table
+                for (int y = 0; y < _s.Yards.Count && rivals.Count < 6; y++)
                 {
-                    for (int d = 0; d < _s.Yards[y].Deals.Count && rivals.Count < 3; d++)
+                    for (int d = 0; d < _s.Yards[y].Deals.Count && rivals.Count < 6; d++)
                     {
                         StockCar rc = _s.Yards[y].Car(_s.Yards[y].Deals[d].Car);
                         int rivalAt;
@@ -125,6 +125,7 @@ namespace RealLifeOverhaul.Ui
                 _m.RelatedTitle = DealerText.T("reallife_ui_dealer_rivals_ask");
                 _m.RelatedCount = rivals.Count > 0 ? rivals.Count.ToString(Inv) : null;
                 _m.Related = rivals.ToArray();
+                _m.RelatedRows = 6;
                 _m.FigLabels = new[] { DealerText.T("reallife_dealer_sum_waiting"), DealerText.T("reallife_ui_dealer_fig_best_offer"),
                     DealerText.T("reallife_ui_dealer_fig_sold_today"), DealerText.T("reallife_ui_dealer_fig_margin_today") };
                 _m.FigValues = new[] { waiting.ToString(Inv), best > 0 ? Money(best) : string.Empty, sold.ToString(Inv), Money(margin) };

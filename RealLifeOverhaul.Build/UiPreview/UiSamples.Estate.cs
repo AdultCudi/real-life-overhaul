@@ -76,7 +76,7 @@ internal static partial class UiSamples
         return new UiDataRow
         {
             Cells = new[] { unit, empty ? W(t, "reallife_estate_row_nobody", "Nobody") : tenant, lease, rent, chip, sat >= 0 ? sat.ToString() : string.Empty },
-            Values = new[] { (int)icon, empty ? UiDataTable.NoFace : 0, 0, 0, 0, sat },
+            Values = new[] { (int)icon, empty ? UiDataTable.GlyphFace(UiIcon.People) : 0, 0, 0, 0, sat },
             Tones = new[] { UiRole.None, UiRole.None, UiRole.None, empty ? UiRole.Muted : UiRole.None, tone, UiRole.None },
             Subs = new[] { district, empty ? W(t, "reallife_ui_estate_asking_note", "Looking for a tenant") : role, null, null, null, null },
             Hue = UiColourHue(tenant), Ring = empty ? UiRole.None : sat >= 70 ? UiRole.Ok : sat >= 45 ? UiRole.Warn : UiRole.Danger
@@ -165,20 +165,21 @@ internal static partial class UiSamples
     // The twelve units of the rent roll with their tenants: one tenant to a unit wherever the units are listed.
     private static string[][] RollUnits(UiWords t)
     {
+        // The name of a unit the way the live page says it: a building of one unit is its own name, a building of several is "building, unit n" through the locale's key.
         string[][] units = new[]
         {
-            new[] { "41 E 37th Street, flat 3A", "Murray Hill", "Priya Nair", "Nurse, Murray Hill Clinic", "490", "$2,600", "ok", "82" },
-            new[] { "41 E 37th Street, flat 3B", "Murray Hill", "Daniel Ortiz", "Cook, Pier Street Diner", "551", "$3,300", "ok", "74" },
-            new[] { "41 E 37th Street, flat 4A", "Murray Hill", "Sofia Marchetti", "Nurse, Murray Hill Clinic", "462", "$2,600", "late", "51" },
-            new[] { "12 W 39th Street, ground floor shop", "Garment District", "Lena Hoffmann", "A tailor's shop", "620", "$5,400", "ok", "68" },
-            new[] { "12 W 39th Street, first floor office", "Garment District", "Marcus Bell", "Accountant, Bell and Rowe", "505", "$3,900", "ok", "77" },
-            new[] { "233 W 39th Street, unit 1", "Garment District", "Amara Kimani", "A bakery", "480", "$6,200", "late14", "39" },
-            new[] { "88 W 46th Street, flat 2", "Hell's Kitchen", "Theo Brandt", "Courier, Eastside Parcels", "533", "$2,200", "ok", "85" },
-            new[] { "75 W 125th Street, house", "Uptown", "Imani Cole", "Teacher, Lincoln School", "650", "$3,100", "ok", "90" },
-            new[] { "1 Dock Street, shop unit", "Uptown", null, null, "-", "$4,100", "empty", "-1" },
-            new[] { "17 E 41st Street, floor 6", "Midtown", "Owen Park", "Designer, Park and Lane", "572", "$7,800", "ok", "71" },
-            new[] { "520 8th Avenue, suite 12", "Midtown", "Yuki Tanaka", "An import firm", "430", "$5,600", "notice", "33" },
-            new[] { "412 10th Avenue, unit B", "Hell's Kitchen", "Chen Wei", "Chef, Harbour Kitchen", "590", "$4,800", "ok", "63" }
+            new[] { UnitName(t, "41 E 37th Street", 1), "Murray Hill", "Priya Nair", "Nurse, Murray Hill Clinic", "490", "$2,600", "ok", "82", "h" },
+            new[] { UnitName(t, "41 E 37th Street", 2), "Murray Hill", "Daniel Ortiz", "Cook, Pier Street Diner", "551", "$3,300", "ok", "74", "h" },
+            new[] { UnitName(t, "41 E 37th Street", 3), "Murray Hill", "Sofia Marchetti", "Nurse, Murray Hill Clinic", "462", "$2,600", "late", "51", "h" },
+            new[] { UnitName(t, "12 W 39th Street", 1), "Garment District", "Lena Hoffmann", "A tailor's shop", "620", "$5,400", "ok", "68", "s" },
+            new[] { UnitName(t, "12 W 39th Street", 2), "Garment District", "Marcus Bell", "Accountant, Bell and Rowe", "505", "$3,900", "ok", "77", "o" },
+            new[] { "233 W 39th Street", "Garment District", "Amara Kimani", "A bakery", "480", "$6,200", "late14", "39", "s" },
+            new[] { "88 W 46th Street", "Hell's Kitchen", "Theo Brandt", "Courier, Eastside Parcels", "533", "$2,200", "ok", "85", "h" },
+            new[] { "75 W 125th Street", "Uptown", "Imani Cole", "Teacher, Lincoln School", "650", "$3,100", "ok", "90", "h" },
+            new[] { "1 Dock Street", "Uptown", null, null, "-", "$4,100", "empty", "-1", "s" },
+            new[] { "17 E 41st Street", "Midtown", "Owen Park", "Designer, Park and Lane", "572", "$7,800", "ok", "71", "o" },
+            new[] { "520 8th Avenue", "Midtown", "Yuki Tanaka", "An import firm", "430", "$5,600", "notice", "33", "o" },
+            new[] { "412 10th Avenue", "Hell's Kitchen", "Chen Wei", "Chef, Harbour Kitchen", "590", "$4,800", "ok", "63", "h" }
         };
         foreach (string[] u in units)
         {
@@ -193,7 +194,7 @@ internal static partial class UiSamples
         UiIcon home = UiIcon.Home;
         if (state == "roll_first")
         {
-            rows.Add(EstateUnitRow(t, "12 W 39th Street, flat 2", "Garment District", "Priya Nair", JobLine(t, "Nurse, Murray Hill Clinic"), W(t, "reallife_estate_row_until", "Until day {day}").Replace("{day}", "490"), "$2,600", W(t, "reallife_ui_estate_paid", "Paid"), UiRole.Ok, 82, home, false));
+            rows.Add(EstateUnitRow(t, "12 W 39th Street", "Garment District", "Priya Nair", JobLine(t, "Nurse, Murray Hill Clinic"), W(t, "reallife_estate_row_until", "Until day {day}").Replace("{day}", "490"), "$2,600", W(t, "reallife_ui_estate_paid", "Paid"), UiRole.Ok, 82, home, false));
         }
         else if (state == "roll" || state == "roll_twenty")
         {
@@ -202,14 +203,14 @@ internal static partial class UiSamples
             {
                 string[][] more =
                 {
-                    new[] { "60 W 57th Street, flat 5", "Midtown", "Ana Souza", "Dentist, Park Smiles", "300", "$3,800", "ok", "79" },
-                    new[] { "60 W 57th Street, flat 6", "Midtown", "Ben Carter", "Teacher, Lincoln School", "341", "$3,800", "ok", "72" },
-                    new[] { "3 Canal Row, shop", "Garment District", "Ines Duarte", "A florist", "410", "$4,400", "ok", "81" },
-                    new[] { "17 Mercer Street, house", "Murray Hill", "Tom Okafor", "Nurse, Murray Hill Clinic", "365", "$2,900", "ok", "66" },
-                    new[] { "88 Fulton Street, shop", "Midtown", "Ravi Shah", "A pharmacy", "490", "$5,200", "ok", "84" },
-                    new[] { "250 Park Avenue, floor 11", "Midtown", "Mia Lang", "Architect, Lang Studio", "455", "$8,100", "ok", "75" },
-                    new[] { "250 Park Avenue, floor 12", "Midtown", "Luis Pena", "Software, Pena Labs", "430", "$8,100", "ok", "88" },
-                    new[] { "6 Harlem Row, house", "Uptown", "Zoe Adler", "Teacher, Lincoln School", "380", "$2,700", "ok", "70" }
+                    new[] { UnitName(t, "60 W 57th Street", 1), "Midtown", "Ana Souza", "Dentist, Park Smiles", "300", "$3,800", "ok", "79", "h" },
+                    new[] { UnitName(t, "60 W 57th Street", 2), "Midtown", "Ben Carter", "Teacher, Lincoln School", "341", "$3,800", "ok", "72", "h" },
+                    new[] { "3 Canal Row", "Garment District", "Ines Duarte", "A florist", "410", "$4,400", "ok", "81", "s" },
+                    new[] { "17 Mercer Street", "Murray Hill", "Tom Okafor", "Nurse, Murray Hill Clinic", "365", "$2,900", "ok", "66", "h" },
+                    new[] { "88 Fulton Street", "Midtown", "Ravi Shah", "A pharmacy", "490", "$5,200", "ok", "84", "s" },
+                    new[] { UnitName(t, "250 Park Avenue", 1), "Midtown", "Mia Lang", "Architect, Lang Studio", "455", "$8,100", "ok", "75", "o" },
+                    new[] { UnitName(t, "250 Park Avenue", 2), "Midtown", "Luis Pena", "Software, Pena Labs", "430", "$8,100", "ok", "88", "o" },
+                    new[] { "6 Harlem Row", "Uptown", "Zoe Adler", "Teacher, Lincoln School", "380", "$2,700", "ok", "70", "h" }
                 };
                 foreach (string[] extra in more)
                 {
@@ -226,14 +227,14 @@ internal static partial class UiSamples
                     : u[6] == "late14" ? W(t, "reallife_ui_estate_late_days", "Late {days} days").Replace("{days}", "14") : u[6] == "notice" ? W(t, "reallife_ibox_chip_notice", "Notice given") : W(t, "reallife_estate_state_empty", "Empty {days} days").Replace("{days}", "12");
                 UiRole tone = u[6] == "ok" ? UiRole.Ok : u[6] == "late14" ? UiRole.Danger : UiRole.Warn;
                 rows.Add(EstateUnitRow(t, u[0], u[1], u[2], u[3], empty ? "-" : W(t, "reallife_estate_row_until", "Until day {day}").Replace("{day}", u[4]), u[5], chip, tone, int.Parse(u[7]),
-                    u[0].Contains("shop") || u[0].Contains("bakery") ? UiIcon.Store : u[0].Contains("office") || u[0].Contains("suite") || u[0].Contains("floor") ? UiIcon.Briefcase : home, empty));
+                    UseGlyph(u[8]), empty));
             }
         }
         m.Shape = EstateShape.Roll;
         m.HeadIcon = home;
         m.HeadTitle = W(t, "reallife_ui_estate_roll_title", "The rent roll");
         m.HeadSub = state == "roll_empty" ? null : state == "roll_first" ? W(t, "reallife_ui_estate_roll_sub_clear", "{units} unit(s) in {buildings} building(s), nothing waiting for you").Replace("{units}", "1").Replace("{buildings}", "1")
-                : W(t, "reallife_ui_estate_roll_sub", "{units} unit(s) in {buildings} building(s), {waiting} waiting for you").Replace("{units}", state == "roll" ? "12" : "20").Replace("{buildings}", state == "roll" ? "9" : "13").Replace("{waiting}", "2");
+                : W(t, "reallife_ui_estate_roll_sub", "{units} unit(s) in {buildings} building(s), {waiting} waiting for you").Replace("{units}", state == "roll" ? "12" : "20").Replace("{buildings}", state == "roll" ? "9" : "15").Replace("{waiting}", "2");
         m.FigLabels = new[] { W(t, "reallife_ui_estate_fig_due", "Due"), W(t, "reallife_ui_estate_fig_collected", "Collected"), W(t, "reallife_ui_estate_fig_arrears", "In arrears"), W(t, "reallife_ui_estate_fig_empty", "Empty, asking") };
         m.FigValues = state == "roll_twenty" ? new[] { "$86,500", "$77,700", "$8,800", "$4,100" } : state == "roll" ? new[] { "$47,500", "$38,700", "$8,800", "$4,100" } : state == "roll_first" ? new[] { "$2,600", "$2,600", "$0", "$0" } : new[] { "$0", "$0", "$0", "$0" };
         m.FigInks = new[] { UiRole.None, UiRole.None, state.StartsWith("roll_t") || state == "roll" ? UiRole.DangerText : UiRole.None, state.StartsWith("roll_t") || state == "roll" ? UiRole.WarnText : UiRole.None };
@@ -270,7 +271,7 @@ internal static partial class UiSamples
         {
             m.ListA = new[]
             {
-                new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_ui_estate_service_title", "{fault}, {building}").Replace("{fault}", Capital(W(t, "reallife_estate_fault_1", "the heating"))).Replace("{building}", "12 W 39th Street, flat 2"), Chip = W(t, "reallife_ui_estate_day", "Day {day}").Replace("{day}", "431"), ChipTone = UiRole.Notice, Amount = "$320", Run = -1 }
+                new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_ui_estate_service_title", "{fault}, {building}").Replace("{fault}", Capital(W(t, "reallife_estate_fault_noun_1", "heating"))).Replace("{building}", "12 W 39th Street"), Chip = W(t, "reallife_ui_estate_day", "Day {day}").Replace("{day}", "431"), ChipTone = UiRole.Notice, Amount = "$320", Run = -1 }
             };
             m.ListB = new[]
             {
@@ -285,8 +286,8 @@ internal static partial class UiSamples
             runs.Add(Yes);
             m.ListA = new[]
             {
-                new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_ui_estate_service_title", "{fault}, {building}").Replace("{fault}", Capital(W(t, "reallife_estate_fault_1", "the heating"))).Replace("{building}", "41 E 37th Street, flat 4A"), Chip = W(t, "reallife_ui_estate_day", "Day {day}").Replace("{day}", "417"), ChipTone = UiRole.Notice, Amount = "$340", Run = -1 },
-                new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_ui_estate_service_title", "{fault}, {building}").Replace("{fault}", Capital(W(t, "reallife_estate_fault_4", "a lock"))).Replace("{building}", "233 W 39th Street"), Chip = W(t, "reallife_ibox_chip_booked", "Booked"), ChipTone = UiRole.Ok, Amount = "$410", Run = -1 }
+                new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_ui_estate_service_title", "{fault}, {building}").Replace("{fault}", Capital(W(t, "reallife_estate_fault_noun_1", "heating"))).Replace("{building}", UnitName(t, "41 E 37th Street", 3)), Chip = W(t, "reallife_ui_estate_day", "Day {day}").Replace("{day}", "417"), ChipTone = UiRole.Notice, Amount = "$340", Run = -1 },
+                new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_ui_estate_service_title", "{fault}, {building}").Replace("{fault}", Capital(W(t, "reallife_estate_fault_noun_4", "lock"))).Replace("{building}", "233 W 39th Street"), Chip = W(t, "reallife_ibox_chip_booked", "Booked"), ChipTone = UiRole.Ok, Amount = "$410", Run = -1 }
             };
             m.ListB = new[]
             {
@@ -300,7 +301,7 @@ internal static partial class UiSamples
     {
         m.Shape = EstateShape.Unit;
         m.Back = W(t, "reallife_co_back", "Back");
-        var p = new EstateUnitPage { Title = "41 E 37th Street, flat 4A", District = "Murray Hill", Locate = W(t, "reallife_ui_estate_locate", "Locate"), Rent = "$2,600", RentPer = W(t, "reallife_ui_estate_a_month", "a month") };
+        var p = new EstateUnitPage { Title = UnitName(t, "41 E 37th Street", 3), District = "Murray Hill", Locate = W(t, "reallife_ui_estate_locate", "Locate"), Rent = "$2,600", RentPer = W(t, "reallife_ui_estate_a_month", "a month") };
         runs.Add(Yes);
         p.LocateRun = runs.Count - 1;
         p.NextLabel = W(t, "reallife_ui_estate_next_inspection", "Next inspection");
@@ -318,13 +319,13 @@ internal static partial class UiSamples
         runs.Add(Yes);
         p.Others = new[]
         {
-            new EstateRow { Face = "Priya Nair", Hue = UiColourHue("Priya Nair"), Title = "Priya Nair", Sub = "41 E 37th Street, flat 3A", Chip = W(t, "reallife_ui_estate_paid", "Paid"), ChipTone = UiRole.Ok, Amount = "$2,600", Run = runs.Count - 2 },
-            new EstateRow { Face = "Daniel Ortiz", Hue = UiColourHue("Daniel Ortiz"), Title = "Daniel Ortiz", Sub = "41 E 37th Street, flat 3B", Chip = W(t, "reallife_ui_estate_paid", "Paid"), ChipTone = UiRole.Ok, Amount = "$3,300", Run = runs.Count - 1 }
+            new EstateRow { Face = "Priya Nair", Hue = UiColourHue("Priya Nair"), Title = "Priya Nair", Sub = UnitName(t, "41 E 37th Street", 1), Chip = W(t, "reallife_ui_estate_paid", "Paid"), ChipTone = UiRole.Ok, Amount = "$2,600", Run = runs.Count - 2 },
+            new EstateRow { Face = "Daniel Ortiz", Hue = UiColourHue("Daniel Ortiz"), Title = "Daniel Ortiz", Sub = UnitName(t, "41 E 37th Street", 2), Chip = W(t, "reallife_ui_estate_paid", "Paid"), ChipTone = UiRole.Ok, Amount = "$3,300", Run = runs.Count - 1 }
         };
         if (state == "unit_empty")
         {
             // The one empty unit of the roll: the shop of 1 Dock Street, with its own tenancy history, its works and the people who asked for it.
-            p.Title = "1 Dock Street, shop unit";
+            p.Title = "1 Dock Street";
             p.District = "Uptown";
             p.Icon = UiIcon.Store;
             p.Rent = "$4,100";
@@ -356,7 +357,7 @@ internal static partial class UiSamples
             runs.Add(Yes);
             p.Works = new[]
             {
-                new EstateRow { Icon = UiIcon.Wrench, Title = ServiceTitle(t, 6, "the fittings"), Sub = Fx(W(t, "reallife_ui_estate_booked_with", "Booked with {who}"), "who", "Fenwick Fittings"), Chip = Fx(W(t, "reallife_ui_estate_day", "Day {day}"), "day", "431"), ChipTone = UiRole.Notice, Amount = "$220", Run = runs.Count - 2 },
+                new EstateRow { Icon = UiIcon.Wrench, Title = ServiceTitle(t, 6, "fittings"), Sub = Fx(W(t, "reallife_ui_estate_booked_with", "Booked with {who}"), "who", "Fenwick Fittings"), Chip = Fx(W(t, "reallife_ui_estate_day", "Day {day}"), "day", "431"), ChipTone = UiRole.Notice, Amount = "$220", Run = runs.Count - 2 },
                 new EstateRow { Icon = UiIcon.Eye, Title = W(t, "reallife_ui_estate_next_inspection", "Next inspection"), Sub = W(t, "reallife_ui_estate_last_passed", "The last one passed"), Chip = Fx(W(t, "reallife_ui_estate_in_days", "in {days} days"), "days", "9"), ChipTone = UiRole.Notice, Run = runs.Count - 1 }
             };
             var lines = new List<UiFactLine>
@@ -417,7 +418,7 @@ internal static partial class UiSamples
         runs.Add(Yes);
         p.Works = new[]
         {
-            new EstateRow { Icon = UiIcon.Wrench, Title = ServiceTitle(t, 1, "the heating"), Sub = W(t, "reallife_ui_estate_booked_with", "Booked with {who}").Replace("{who}", "Okonkwo Heating"), Chip = W(t, "reallife_ui_estate_day", "Day {day}").Replace("{day}", "417"), ChipTone = UiRole.Notice, Amount = "$340", Run = -1 },
+            new EstateRow { Icon = UiIcon.Wrench, Title = ServiceTitle(t, 1, "heating"), Sub = W(t, "reallife_ui_estate_booked_with", "Booked with {who}").Replace("{who}", "Okonkwo Heating"), Chip = W(t, "reallife_ui_estate_day", "Day {day}").Replace("{day}", "417"), ChipTone = UiRole.Notice, Amount = "$340", Run = -1 },
             new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_estate_improve_boiler", "a new boiler"), Sub = W(t, "reallife_ui_estate_asked_by_tenant", "Asked for by the tenant, you can say no"), Chip = W(t, "reallife_ui_estate_waiting_you", "Waiting for you"), ChipTone = UiRole.Warn, Amount = "$2,900", Run = -1 }
         };
         p.WorksCount = p.Works.Length.ToString();

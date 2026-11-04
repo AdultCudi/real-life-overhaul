@@ -23,7 +23,12 @@ public static partial class UiPreviewRunner
         command = UiAppWindow.NavCommand;
         arg = m.Tab == 1 ? 2 : 1;
         walk = "DDR";
-        if (m.Shape == EstateShape.Rents)
+        if (m.Shape == EstateShape.Off)
+        {
+            command = UiDraw.CloseCommand;   // a page that says the app is off has the window's close and nothing else under the pointer
+            arg = 0;
+        }
+        else if (m.Shape == EstateShape.Rents)
         {
             command = UiInfoView.ViewCommand;
             arg = 1;
@@ -42,13 +47,26 @@ public static partial class UiPreviewRunner
         }
     }
 
+    // The pad's walk of a card: every target of it in reading order (EstateTour), where a page keeps the short walk down its sidebar and across.
+    private static Vector2Int[] EstateWalk(EstateModel m, string walk)
+    {
+        if (!m.Card && m.Shape != EstateShape.Decide && m.Shape != EstateShape.Auction)
+        {
+            return Moves(walk);
+        }
+        var scene = new UiScene();
+        EstateFace.Lay(scene, m, UiFrame.FullMenu(16f / 9f, "Property"), true, UiDefaultKeys.XboxPad);
+        return Moves(EstateTour.Walk(scene, UiFocusRules.First(scene)));
+    }
+
     static partial void AddEstate(List<Screen> screens)
     {
         for (int i = 0; i < UiSamples.EstateStates.Length; i++)
         {
             string st = UiSamples.EstateStates[i];
             bool rents = st.StartsWith("rents", System.StringComparison.Ordinal);
-            EstateTargets(UiSamples.Estate(ModEnglish, st), out int hoverCommand, out int hoverArg, out string walk);
+            EstateModel sample = UiSamples.Estate(ModEnglish, st);
+            EstateTargets(sample, out int hoverCommand, out int hoverArg, out string walk);
             screens.Add(new Screen
             {
                 Name = "estate_" + st,
@@ -57,14 +75,15 @@ public static partial class UiPreviewRunner
                 Backdrop = rents ? "tint_city.jpg" : st.StartsWith("unit", System.StringComparison.Ordinal) || st == "building" ? "12.jpg" : i % 2 == 0 ? "13.jpg" : "02.jpg",
                 HoverCommand = hoverCommand,
                 HoverArg = hoverArg,
-                Walk = Moves(walk),
+                Walk = EstateWalk(sample, walk),
                 Lay = (s, f, d, k) => EstateFace.Lay(s, UiSamples.Estate(ModEnglish, st), f, d, k)
             });
         }
         for (int i = 0; i < UiSamples.DealerStates.Length; i++)
         {
             string st = UiSamples.DealerStates[i];
-            EstateTargets(UiSamples.Dealer(ModEnglish, st), out int hoverCommand, out int hoverArg, out string walk);
+            EstateModel sample = UiSamples.Dealer(ModEnglish, st);
+            EstateTargets(sample, out int hoverCommand, out int hoverArg, out string walk);
             screens.Add(new Screen
             {
                 Name = "dealer_" + st,
@@ -73,7 +92,7 @@ public static partial class UiPreviewRunner
                 Backdrop = st.StartsWith("auction", System.StringComparison.Ordinal) ? "02.jpg" : i % 2 == 0 ? "13.jpg" : "08.jpg",
                 HoverCommand = hoverCommand,
                 HoverArg = hoverArg,
-                Walk = Moves(walk),
+                Walk = EstateWalk(sample, walk),
                 Lay = (s, f, d, k) => EstateFace.Lay(s, UiSamples.Dealer(ModEnglish, st), f, d, k)
             });
         }
