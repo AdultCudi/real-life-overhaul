@@ -35,7 +35,9 @@ namespace RealLifeOverhaul.Ui
                     "common_vehicle", "itempanelui_vehicle_fuel", "itempanelui_maintenance_condition", "itempanelui_vehicle_parkingzone", "itempanelui_parkingzone_legal_payed",
                     "itempanelui_parkingzone_illegal", "itempanelui_buttons_park_vehicle", "itempanelui_buttons_auto_park", "itempanelui_buttons_sleep", "itempanelui_sell",
                     "itempanelui_buttons_discard", "itempanelui_buttons_place_box", "itempanelui_buttons_leave", "common_cargo", "reallife_ui_buy_readings",
-                    "reallife_ui_buy_speed", "reallife_ui_buy_yours", "reallife_ui_buy_not_yours", "reallife_ui_buy_slots", "reallife_ui_buy_in_hands", "reallife_ui_buy_unpaid_total",
+                    "reallife_ui_buy_speed", "reallife_ui_buy_move_to", "reallife_ui_buy_move_full", "reallife_ui_buy_fuel_use", "reallife_ui_buy_l100",
+                    "reallife_ui_buy_mpg", "reallife_ui_buy_seats", "reallife_ui_buy_yours", "reallife_ui_buy_not_yours", "reallife_ui_buy_slots",
+                    "reallife_ui_buy_in_hands", "reallife_ui_buy_unpaid_total",
                     "reallife_ui_buy_more", "reallife_ui_buy_minigame", "reallife_ui_buy_range", "reallife_ui_buy_range_value", "reallife_ui_buy_speed_of",
                     "reallife_ui_buy_manage_cargo", "reallife_ui_buy_sell_for"
                 }).Switch(UiScreenSwitches.Buy),
@@ -55,7 +57,8 @@ namespace RealLifeOverhaul.Ui
                     "character_customization_skin_color", "common_apply_changes", "common_revert", "intro_tooltip_randomize_appearance", "dialog_leave_button",
                     "reallife_clothes_screen_owned", "reallife_creator_tag", "reallife_ui_buy_colour", "reallife_ui_buy_strength", "reallife_ui_buy_weight",
                     "reallife_ui_buy_empty_grid", "reallife_ui_buy_empty_grid_body", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back",
-                    "reallife_ui_buy_filter_all", "reallife_ui_buy_filter_owned", "reallife_ui_buy_filter_rlo", "reallife_ui_buy_find", "reallife_ui_buy_basket", "reallife_ui_buy_to_pay",
+                    "reallife_ui_buy_filter_all", "reallife_ui_buy_filter_owned", "reallife_ui_buy_filter_rlo", "reallife_ui_buy_filter_new", "reallife_ui_buy_find",
+                    "reallife_ui_buy_basket", "reallife_ui_buy_to_pay",
                     "reallife_ui_buy_reset", "reallife_ui_buy_piece", "reallife_ui_buy_style", "reallife_ui_buy_free"
                 }).Switch(UiScreenSwitches.Buy),
                 new UiScreenDef("garage_shop", UiTemplate.InfoPanel, null, new[]   // drawn and checked; the shop still opens its list (Garage/GarageShop)

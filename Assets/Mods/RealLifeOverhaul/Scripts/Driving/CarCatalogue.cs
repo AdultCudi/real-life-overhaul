@@ -93,6 +93,38 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>
+        /// How many people a car seats, the driver included: the real model's own count (the game keeps no seat count for its cars), and
+        /// by kind for a type the table does not know. At least 1; a car the mod leaves alone seats the one who rides it.
+        /// </summary>
+        public static int Seats(string typeName, CarKind kind)
+        {
+            string name = typeName ?? string.Empty;
+            if (name.StartsWith(Prefix, System.StringComparison.Ordinal))
+            {
+                name = name.Substring(Prefix.Length);
+            }
+            switch (name)
+            {
+                case "limo": return 8;
+                case "vordpony": return 4;
+                case "umcdesert":
+                case "umcdesertdeliveryjob":
+                case "mersaididash": return 3;
+            }
+            switch (kind)
+            {
+                case CarKind.Economy:
+                case CarKind.Saloon:
+                case CarKind.Luxury:
+                case CarKind.Utility: return 5;
+                case CarKind.Sports: return 2;
+                case CarKind.Van: return 3;
+                case CarKind.Truck: return 2;
+                default: return 1;
+            }
+        }
+
         /// <summary>A type the table does not know: placed by the tier the game itself gave it, its cargo room and its luxury flag.</summary>
         public static CarSpec Guess(in CarTraits t)
         {

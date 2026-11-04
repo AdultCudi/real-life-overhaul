@@ -28,6 +28,8 @@ namespace RealLifeOverhaul.Ui
         private CargoItem _detailOf;   // the stack the detail was made for, and its packs then
         private int _detailPacks;
         private string _sell;          // "Sell for $2,407": the chosen stack's own Sell, or null for the game's word
+        private Entities.Warehouse _to;   // the player's warehouse the vehicle stands at, for Move to a warehouse; null for none
+        private CargoItem _chosen;     // the chosen stack as the game made it, for the same
         private const int Quick = 3;   // days: goods that keep no longer out of the cold say so on their tile
         private readonly string[] _quickWords = new string[Quick + 1];
 
@@ -85,6 +87,10 @@ namespace RealLifeOverhaul.Ui
             }
             if (command == UiCargo.CatalogueCommand + UiCatalogue.Action)
             {
+                if (arg >= 0 && arg < _buttons.Count && _buttons[arg] == null)
+                {
+                    return !_actions[arg].Disabled && Again(Moved());   // the mod's own: the stack to the warehouse the vehicle stands at
+                }
                 return arg >= 0 && arg < _buttons.Count && Again(UiWidgets.Press(_buttons[arg]));
             }
             return command == UiCargo.SellAllCommand && Again(UiWidgets.Press(BuyKits.Get<Button>(GameContract.CargoSellAll, _ui)));
@@ -191,7 +197,9 @@ namespace RealLifeOverhaul.Ui
             {
                 c.Chosen = 0;
             }
-            Detail(items != null && items.Count == _stacks.Count && c.Chosen >= 0 ? items[c.Chosen] as CargoItem : null);
+            _chosen = items != null && items.Count == _stacks.Count && c.Chosen >= 0 ? items[c.Chosen] as CargoItem : null;
+            _to = CargoMove.Target(holder);
+            Detail(_chosen);
             ReadActions(c.Chosen >= 0 ? _stacks[c.Chosen].GetComponent<CargoItemUi>() : null);
             Button all = BuyKits.Get<Button>(GameContract.CargoSellAll, _ui);
             _m.SellAll = all != null ? BuyKits.Words(all) ?? UiText.T("bizman_inventory_sell_all") : null;
@@ -291,6 +299,7 @@ namespace RealLifeOverhaul.Ui
                 Button act = BuyKits.Get<Button>(GameContract.SlotAction, stack);
                 Add(act, BuyKits.Words(BuyKits.Get<Component>(GameContract.SlotActionLabel, stack)), UiButtonKind.Secondary, UiIcon.None, UiAction.Count);
                 Add(BuyKits.Get<Button>(GameContract.SlotDiscard, stack), UiText.T("itempanelui_buttons_discard"), UiButtonKind.Destructive, UiIcon.Trash, UiAction.Count);
+                AddMove();
                 Add(BuyKits.Get<Button>(GameContract.SlotSell, stack), _sell ?? UiText.T("itempanelui_sell"), UiButtonKind.Primary, UiIcon.Coin, UiAction.Alt);
             }
             if (_m.Catalogue.Actions.Length != _actions.Count)
@@ -303,6 +312,28 @@ namespace RealLifeOverhaul.Ui
                 _sb.Append(_actions[i].Label).Append(_actions[i].Disabled ? '-' : '+');
             }
         }
+
+        // Move to a warehouse (Ui/Buy/CargoMove): only for a vehicle that stands at a warehouse of the player's, and for a stack that is
+        // paid for and not sealed; drawn disabled, saying why, when the warehouse has no shelf for it. Its button is the mod's own (null).
+        private void AddMove()
+        {
+            CargoInstance first = _chosen != null && _chosen.cargoInstances != null && _chosen.cargoInstances.Count > 0 ? _chosen.cargoInstances[0] : null;
+            CargoMoveState state = CargoMoveRules.Can(_to != null && first != null, _chosen != null && _chosen.paid, first != null && first.IsSealed,
+                _to != null && first != null && CargoMove.Room(_to, first));
+            if (!CargoMoveRules.Shown(state))
+            {
+                return;
+            }
+            _buttons.Add(null);
+            _actions.Add(new UiActionModel
+            {
+                Label = UiText.Fill(CargoMoveRules.LabelKey(state), "name", _to.GetDisplayName()), Kind = UiButtonKind.Secondary, Icon = UiIcon.Package, Key = UiAction.Count,
+                Command = _actions.Count, Disabled = state != CargoMoveState.Ready
+            });
+        }
+
+        // The press of Move to a warehouse: the chosen stack's packs onto the warehouse's storage; true when any went.
+        private bool Moved() => _to != null && _chosen != null && CargoMove.Move(_ui.currentCargoHolder, _chosen, _to) > 0;
 
         private void Add(Button b, string label, UiButtonKind kind, UiIcon icon, UiAction key)
         {
