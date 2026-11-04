@@ -296,10 +296,15 @@ namespace RealLifeOverhaul.Economy
                 EstateGame.ReadAgency(_state.Agency);
                 ApplyProperty(today);
             }
+            EstateExtraStore.Read(_state, save.modData);
             ReadHotels(today);
             if (On(EstatePart.Hire))
             {
                 HireReconcile();
+            }
+            if (On(EstatePart.Property))
+            {
+                QueueRents(today);
             }
             FindVisit();
             BuildAlerts(today);
@@ -528,6 +533,10 @@ namespace RealLifeOverhaul.Economy
                     NewYear(day);
                 }
                 Part(EstatePart.Property, "the day", () => PropertyDay(day));
+                if (On(EstatePart.Property))
+                {
+                    QueueRents(day);
+                }
                 Part(EstatePart.Hotel, "the day", () => HotelDay(day));
                 if (On(EstatePart.Hire) || _state.Hire.Cars.Count > 0)
                 {
@@ -645,6 +654,7 @@ namespace RealLifeOverhaul.Economy
                 save.modData = new Dictionary<string, string>();
             }
             save.modData[EstateStore.Key] = EstateStore.Write(_state);
+            EstateExtraStore.Write(_state, save.modData);
             if (_beforeTests != null)
             {
                 save.modData[EstateStore.TestKey] = _beforeTests;

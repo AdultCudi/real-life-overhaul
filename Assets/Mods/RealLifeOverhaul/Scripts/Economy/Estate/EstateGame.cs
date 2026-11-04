@@ -35,6 +35,12 @@ namespace RealLifeOverhaul.Economy
         /// <summary>A district's households taking or looking for a flat against the city's, thousandths, by the game's district id; 0 for none. Default: none.</summary>
         public static Func<string, int> HousingIn;
 
+        /// <summary>The people a unit can be let to: the shared people pool, or null while the population does not run. Default: none.</summary>
+        public static Func<ITenantPool> Pool;
+
+        /// <summary>The city's firms that do a tradesman's work, by their address key, for a booked service; empty for none. Default: none.</summary>
+        public static Func<string[]> Contractors;
+
         public static void Reset()
         {
             RentLever = null;
@@ -43,6 +49,8 @@ namespace RealLifeOverhaul.Economy
             Changed = null;
             Premium = null;
             People = null;
+            Pool = null;
+            Contractors = null;
             HousingIn = null;
         }
     }

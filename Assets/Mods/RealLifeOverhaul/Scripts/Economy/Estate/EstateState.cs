@@ -44,6 +44,17 @@ namespace RealLifeOverhaul.Economy
         public int PlanEach;            // an instalment
         public int QuitDay;             // the day an unhappy tenant has said they go; 0 for none
 
+        // Wave 4: a named tenant, the rent record and what a tenant asks for (EstateTenants.cs); saved apart, under reallife:estate_tenants.
+        public int PersonId;            // the shared people pool's person who lives or works here; 0 for none
+        public int PersonSince;         // the day they came
+        public readonly RentPayment[] Payments = new RentPayment[EstateCatalogue.PaymentsKept];   // newest first
+        public int PaymentCount;
+        public int PeriodFrom, PeriodLate, PeriodPaid;   // the running month of the record: its first day, days missed in it, the day the last arrears were met
+        public int Improve;             // an improvement the tenant has asked for (EstateImprove); 0 for none
+        public int ImproveDay, ImproveCost;
+        public int Refused;             // improvements refused in this lease
+        public int Strain;              // thousandths added to the chance of a missed day by the tenant's job and wage; read each morning, not saved
+
         public bool Let => Tenant >= 0;
         public bool Paying => Tenant >= 0 && (Arrears == 0 || OnPlan);
 
@@ -55,6 +66,12 @@ namespace RealLifeOverhaul.Economy
             Happy = -1;
             Call = CallDay = CallCost = CallAnswer = CallDue = Moans = PlanEach = QuitDay = 0;
             Reminded = PlanAsked = OnPlan = false;
+            PersonId = PersonSince = PaymentCount = PeriodFrom = PeriodLate = PeriodPaid = 0;
+            Improve = ImproveDay = ImproveCost = Refused = Strain = 0;
+            for (int i = 0; i < Payments.Length; i++)
+            {
+                Payments[i] = default(RentPayment);
+            }
         }
 
         /// <summary>The arrears are paid: what belonged to that spell of them is over.</summary>
@@ -119,6 +136,10 @@ namespace RealLifeOverhaul.Economy
         public int CallsYear, FeesYear, FinesYear;   // of CostYear: repair calls, an agent's or a manager's fees, the city's fines
         public int TopUpDay;            // the last night the rental income option was settled; not saved
         public int NextApplicant = 1;   // applicants are numbered across the building's units
+        public int LastInspectDay, LastInspectScore;   // the city's last inspection: its day and the score it gave (wave 4, reallife:estate_tenants)
+        public int LastInspect;         // InspectResult
+        public readonly List<ServiceBooking> Services = new List<ServiceBooking>(EstateCatalogue.ServicesMost);
+        public readonly int[] ServiceUntil = new int[EstateCatalogue.CallKinds + 1];   // by call kind: the last day a service keeps its faults down
 
         // read from the game, not saved
         public int Base;                // the game's own value of it
@@ -367,6 +388,9 @@ namespace RealLifeOverhaul.Economy
         public readonly List<HotelFile> Hotels = new List<HotelFile>(2);
         public readonly HireFile Hire = new HireFile();
         public readonly List<SoldBuilding> Sold = new List<SoldBuilding>(4);
+        public readonly int[] RentRing = new int[EstateCatalogue.RentRingKept];   // the city's mean rent a flat, dollars a month, oldest first (wave 4: reallife:estate_rent_ring)
+        public int RentRingCount, RentRingMonth;   // how many are kept, and the month number of the last
+        public readonly List<LandlordMark> Marks = new List<LandlordMark>(EstateCatalogue.LandlordsMost);   // other landlords' mean flat rent at the last month's turn
 
         /// <summary>The sale remembered of a building, or null.</summary>
         public SoldBuilding SoldOf(string place)

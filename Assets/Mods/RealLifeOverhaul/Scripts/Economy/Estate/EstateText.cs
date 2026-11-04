@@ -161,6 +161,17 @@ namespace RealLifeOverhaul.Economy
         public static readonly string[] ManagerKeys = { "reallife_estate_manager_self", "reallife_estate_manager_agent", "reallife_estate_manager_manager" };
 
         /// <summary>A repair call's fault, by its kind.</summary>
+        private static readonly string[] ImproveKeys =
+        {
+            "reallife_estate_improve_none", "reallife_estate_improve_boiler", "reallife_estate_improve_windows", "reallife_estate_improve_kitchen", "reallife_estate_improve_decorate"
+        };
+
+        /// <summary>What a tenant asked to have improved (<see cref="EstateImprove"/>).</summary>
+        public static string Improve(int kind)
+        {
+            return T(ImproveKeys[EstateCatalogue.Clamp(kind, 0, ImproveKeys.Length - 1)]);
+        }
+
         public static string Fault(int kind)
         {
             return T(FaultKeys[EstateCatalogue.Clamp(kind, 0, FaultKeys.Length - 1)]);

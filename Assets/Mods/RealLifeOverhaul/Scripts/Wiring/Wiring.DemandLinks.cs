@@ -27,6 +27,7 @@ namespace RealLifeOverhaul
                 OwnBankBridges.Branch = BranchPeople;
                 EstateBridges.People = EstatePeople;
                 EstateBridges.HousingIn = HousingIn;
+                EstatePeopleLinks.Connect();
                 DealerBridges.Buyers = CarBuyers;
                 OnlineBridges.People = Online;
                 HustleBridges.Sellers = Sellers;
@@ -49,6 +50,7 @@ namespace RealLifeOverhaul
                 OwnBankBridges.Branch = null;
                 EstateBridges.People = null;
                 EstateBridges.HousingIn = null;
+                EstatePeopleLinks.Disconnect();
                 DealerBridges.Reset();
                 OnlineBridges.People = null;
                 HustleBridges.Sellers = null;

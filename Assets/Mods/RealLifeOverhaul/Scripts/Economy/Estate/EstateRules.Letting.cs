@@ -346,7 +346,7 @@ namespace RealLifeOverhaul.Economy
                     return d;
                 }
             }
-            else if (Roll(seed, day, ForMiss, key) < (duties ? UnhappyMiss(MissChance(u.Record, c.Cycle), u.Happy) : MissChance(u.Record, c.Cycle)))
+            else if (Roll(seed, day, ForMiss, key) < TenantRules.Strained(duties ? UnhappyMiss(MissChance(u.Record, c.Cycle), u.Happy) : MissChance(u.Record, c.Cycle), u.Strain))
             {
                 u.Arrears = u.Rent;
                 u.ArrearsDays = 1;
