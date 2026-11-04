@@ -70,6 +70,16 @@ namespace RealLifeOverhaul.Markets
         public int HitDay;
     }
 
+    /// <summary>Why an alert was not set. Not saved.</summary>
+    public enum AlertWhy : byte
+    {
+        None = 0,
+        Full,            // the player keeps as many as they may
+        BadLevel,        // above must be over the price now, below under it: else it would fire on the next candle
+        NoLine,          // there is no drawn level to stand an alert under
+        NoStock
+    }
+
     /// <summary>A plain reading of the indicators at the last candle. 1 with the move, -1 against, 0 nothing to say.</summary>
     public struct ChartSignal
     {
@@ -232,6 +242,83 @@ namespace RealLifeOverhaul.Markets
             Alerts.Add(alert);
             Touch();
             return true;
+        }
+
+        /// <summary>
+        /// An alert at a price the player set: above it or below it. A level the price is on or past already would fire on the next candle, so
+        /// it is refused as <see cref="AlertWhy.BadLevel"/>; so is one with no room left.
+        /// </summary>
+        public AlertWhy SetAlert(int stockId, AlertKind kind, int cents, int lastCents)
+        {
+            AlertWhy why = CheckAlert(stockId, kind, cents, lastCents);
+            if (why != AlertWhy.None)
+            {
+                return why;
+            }
+            return AddAlert(new PriceAlert { StockId = stockId, Kind = kind, Cents = cents, Drawing = -1 }) ? AlertWhy.None : AlertWhy.Full;
+        }
+
+        /// <summary>Whether <see cref="SetAlert"/> would set this alert, and if not, why. Changes nothing: the sheet asks it as the level is moved.</summary>
+        public AlertWhy CheckAlert(int stockId, AlertKind kind, int cents, int lastCents)
+        {
+            if (stockId <= 0 || lastCents <= 0)
+            {
+                return AlertWhy.NoStock;
+            }
+            if (Alerts.Count >= AlertsMost)
+            {
+                return AlertWhy.Full;
+            }
+            if (kind == AlertKind.Support || cents <= 0 || (kind == AlertKind.Above ? cents <= lastCents : cents >= lastCents))
+            {
+                return AlertWhy.BadLevel;
+            }
+            return AlertWhy.None;
+        }
+
+        /// <summary>
+        /// An alert for when the price falls to a drawn level: the company's <paramref name="ordinal"/>th drawing (from 0, in the order drawn),
+        /// which must be a level line (support or resistance) under the price now. The alert follows the line, not its price: a drawing taken
+        /// off takes it too.
+        /// </summary>
+        public AlertWhy SetLineAlert(int stockId, int ordinal, int lastCents)
+        {
+            int at = DrawingAt(stockId, ordinal);
+            if (at < 0 || Drawings[at].Kind != ChartMark.Level)
+            {
+                return AlertWhy.NoLine;
+            }
+            if (Alerts.Count >= AlertsMost)
+            {
+                return AlertWhy.Full;
+            }
+            int level = Drawings[at].FromCents;
+            if (level <= 0 || lastCents <= level)
+            {
+                return AlertWhy.BadLevel;
+            }
+            for (int i = 0; i < Alerts.Count; i++)
+            {
+                if (Alerts[i].Kind == AlertKind.Support && Alerts[i].Drawing == at && !Alerts[i].Hit)
+                {
+                    return AlertWhy.None;   // one stands under this line already: not a second
+                }
+            }
+            return AddAlert(new PriceAlert { StockId = stockId, Kind = AlertKind.Support, Cents = level, Drawing = at }) ? AlertWhy.None : AlertWhy.Full;
+        }
+
+        /// <summary>The place in <see cref="Drawings"/> of a company's so-manyth drawing (from 0), or -1.</summary>
+        public int DrawingAt(int stockId, int ordinal)
+        {
+            int seen = 0;
+            for (int i = 0; i < Drawings.Count; i++)
+            {
+                if (Drawings[i].StockId == stockId && seen++ == ordinal)
+                {
+                    return i;
+                }
+            }
+            return -1;
         }
 
         public bool RemoveAlert(int index)

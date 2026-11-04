@@ -375,6 +375,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\BookBids.cs" Link="Mod\BookBids.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\DeskStore.cs" Link="Mod\DeskStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\StocksMath.cs" Link="Mod\StocksMath.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\StocksFigures.cs" Link="Mod\StocksFigures.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketTape.cs" Link="Mod\MarketTape.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketLife.cs" Link="Mod\MarketLife.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.cs" Link="Mod\MarketEngine.cs" />

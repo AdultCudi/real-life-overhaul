@@ -58,6 +58,10 @@ namespace RealLifeOverhaul.Ui
             {
                 return _parts.Name ?? string.Empty;
             }
+            if (_sheet.Kind == StocksSheets.Alert)
+            {
+                return (_sheet.V[_typedId] / 100.0).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);   // a price is typed in dollars
+            }
             return _sheet.V[_typedId].ToString();
         }
 
@@ -71,6 +75,10 @@ namespace RealLifeOverhaul.Ui
             if (f.Kind == StocksFieldKind.Text)
             {
                 _parts.Name = text ?? string.Empty;
+            }
+            else if (_sheet.Kind == StocksSheets.Alert)
+            {
+                _sheet.V[_typedId] = StocksSheetState.TypedPrice(text, f.Min, f.Max, _sheet.V[_typedId]);
             }
             else
             {
@@ -140,6 +148,13 @@ namespace RealLifeOverhaul.Ui
                 case StocksSheets.Founder:
                     FounderDefaults(s, key);
                     break;
+                case StocksSheets.Alert:
+                {
+                    Stock k = s.Stock(key);
+                    v[StocksSheets.AlertKindAt] = 0;
+                    v[StocksSheets.AlertLevel] = k != null ? StocksBuild.AlertStart(k.Last, true) : 1;
+                    break;
+                }
             }
         }
 
@@ -337,6 +352,15 @@ namespace RealLifeOverhaul.Ui
                 case StocksSheets.Firm:
                     FirmChanged(s, id);
                     break;
+                case StocksSheets.Alert:
+                {
+                    Stock k = s.Stock(_sheet.Key);
+                    if (id == StocksSheets.AlertKindAt && k != null)
+                    {
+                        _sheet.V[StocksSheets.AlertLevel] = StocksBuild.AlertStart(k.Last, _sheet.V[StocksSheets.AlertKindAt] == 0);   // the level follows its side
+                    }
+                    break;
+                }
                 case StocksSheets.Rule:
                     if (_sheet.Key < 0 && (id == StocksSheets.RuleKind || id == StocksSheets.RuleStock))
                     {
@@ -485,6 +509,18 @@ namespace RealLifeOverhaul.Ui
                         return false;
                     }
                     return OpenRule(order[arg]);
+                }
+                case StocksPage.History:
+                {
+                    // A trade of a company opens that company; a deposit or an interest line has none.
+                    int at = second ? -1 : StocksBuild.TradeAt(s, arg);
+                    Stock traded = at >= 0 && s.Trades[at].StockId > 0 ? s.Stock(s.Trades[at].StockId) : null;
+                    if (traded == null)
+                    {
+                        return false;
+                    }
+                    OpenCompany(traded.Id);
+                    return true;
                 }
                 case StocksPage.Orders:
                 {
@@ -643,6 +679,8 @@ namespace RealLifeOverhaul.Ui
                 case StocksSheets.Margin: done = MoveMargin(); break;
                 case StocksSheets.Own: done = OwnStep(); break;
                 case StocksSheets.Founder: done = FounderStep(); break;
+                case StocksSheets.Alert: done = SetAlert(); break;
+                case StocksSheets.Ticket: done = PlaceTicket(); break;
                 default: done = false; break;
             }
             _dirty = true;
@@ -881,6 +919,10 @@ namespace RealLifeOverhaul.Ui
             switch (codes[index])
             {
                 case "add":
+                    if (!Armed(index, index))
+                    {
+                        return false;
+                    }
                     done = _market.AddBotCapital(f.Id, amount, out why);
                     if (done)
                     {
@@ -889,6 +931,10 @@ namespace RealLifeOverhaul.Ui
                     }
                     break;
                 case "take":
+                    if (!Armed(index, index))
+                    {
+                        return false;
+                    }
                     done = _market.TakeBotCapital(f.Id, amount, out why);
                     if (done && MarketBots.Hired(_market.State, f.Id) != null)
                     {
@@ -1007,6 +1053,26 @@ namespace RealLifeOverhaul.Ui
             if (!_market.Cancel(o.Id))
             {
                 Refused(MarketText.Why(_market.Behind ? OrderWhy.Behind : OrderWhy.Held, k));
+                return false;
+            }
+            _sheet.Close();
+            return true;
+        }
+
+        // The alert written in the sheet, set on the chart book: told why when the level is on the wrong side of the price.
+        private bool SetAlert()
+        {
+            MarketState s = _market.State;
+            Stock k = s.Stock(_sheet.Key);
+            if (k == null)
+            {
+                return false;
+            }
+            bool above = _sheet.V[StocksSheets.AlertKindAt] == 0;
+            AlertWhy why = s.Charts.SetAlert(k.Id, above ? AlertKind.Above : AlertKind.Below, (int)_sheet.V[StocksSheets.AlertLevel], k.Last);
+            if (why != AlertWhy.None)
+            {
+                Refused(StocksBuild.AlertWhyWords(why, Words));
                 return false;
             }
             _sheet.Close();

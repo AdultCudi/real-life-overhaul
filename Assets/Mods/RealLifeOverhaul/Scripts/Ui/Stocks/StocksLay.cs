@@ -10,6 +10,7 @@ namespace RealLifeOverhaul.Ui
     {
         public const int Less = 33, More = 34, Place = 35, Alert = 37, Empty = 38, Shares = 39,
             Act = 50, PriceLess = 51, PriceMore = 52, PricePlain = 53, Watch = 54, Second = 200;
+        public const int View = 70, OrderRow = 71;   // the Portfolio's views (Held, Pays, Account) and a row of the Market's open orders; 70 to 79 are the desk's own
         private static float Entry => UiTokens.Control + UiTokens.S2;   // the sidebar's row, on the grid
 
         public static void Lay(UiScene s, StocksModel m, UiFrame frame, bool dark, IUiKeys keys)
@@ -40,6 +41,10 @@ namespace RealLifeOverhaul.Ui
             {
                 y = Header(s, at, m, x, y, w, keys);
             }
+            if (m.Page == StocksPage.Portfolio && m.ViewLabels.Length > 1)
+            {
+                y = Views(s, at, m, x, y, w);
+            }
             if (!string.IsNullOrEmpty(m.EmptyTitle) && m.Table == null && m.Statement == null && m.Co == null)
             {
                 UiDraw.EmptyState(s, at, x, y, w, bottom - y, m.EmptyIcon, m.EmptyTitle, m.EmptyBody, null, Empty, keys);
@@ -51,7 +56,7 @@ namespace RealLifeOverhaul.Ui
                     case StocksPage.Company: y = Company(s, at, m, x, y, w, bottom, keys); break;
                     case StocksPage.Portfolio: y = Portfolio(s, at, m, x, y, w, bottom, keys); break;
                     case StocksPage.Orders:
-                    case StocksPage.History: Statement(s, at, m, x, y, w, bottom, keys); break;
+                    case StocksPage.History: NoteTable(s, at, m, x, y, w, bottom, keys); break;
                     case StocksPage.Listing: y = Listing(s, at, m, x, y, w, bottom, keys); break;
                     case StocksPage.Bots:
                     case StocksPage.Bonds:
@@ -181,18 +186,62 @@ namespace RealLifeOverhaul.Ui
             {
                 y = UiAppWindow.Figures(s, at, m.Figures, x, y, w);
             }
-            if (m.Tape != null && m.Tape.Length > 0)
+            bool tape = m.Tape != null && m.Tape.Length > 0, orders = m.OrderLines != null && m.OrderLines.Length > 0;
+            if (tape || orders)
             {
-                y = Tape(s, at, m, x, y, w);
+                // The tape and the player's open orders side by side, one row of cards; the tape alone takes the width when nothing is open.
+                float gap = UiTokens.S3;
+                float tw = tape && orders ? UiDraw.SnapDown((w - gap) * 0.55f) : w;
+                float h = UiTokens.S2 + UiTokens.PairRow + Math.Max(1, Math.Max(tape ? Math.Min(3, m.Tape.Length) : 0, orders ? Math.Min(3, m.OrderLines.Length) : 0)) * UiTokens.PairRow;
+                if (tape)
+                {
+                    Tape(s, at, m, x, y, tw, h);
+                }
+                if (orders)
+                {
+                    Orders(s, at, m, tape ? x + tw + gap : x, y, tape ? w - tw - gap : w, h);
+                }
+                y += h + UiTokens.S3;
             }
             Table(s, at, m, x, y, w, bottom, keys);
             return bottom;
         }
 
-        private static float Tape(UiScene s, UiAt at, StocksModel m, float x, float y, float w)
+        // The portfolio's three views as one segmented choice over the page: what is held, what it pays, the account.
+        private static float Views(UiScene s, UiAt at, StocksModel m, float x, float y, float w)
+        {
+            float width = Math.Min(w, UiSegments.Width(m.ViewLabels, UiStyle.Nav));
+            UiSegments.Lay(s, at, x, y, width, UiTokens.ControlSmall, m.ViewLabels, m.View, View, m.ViewEdges, false);
+            return y + UiTokens.ControlSmall + UiTokens.S3;
+        }
+
+        // The open orders: what each is and what it is worth, a row a press opens.
+        private static void Orders(UiScene s, UiAt at, StocksModel m, float x, float y, float w, float h)
+        {
+            int card = UiDraw.Box(s, at, x, y, w, h, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
+            UiAt on = at.In(card);
+            float count = string.IsNullOrEmpty(m.OrdersCount) ? 0f : Math.Min(w * 0.4f, UiTextRules.Width(m.OrdersCount, UiStyle.Small) + UiTokens.S1);
+            UiDraw.TextMiddle(s, on, x + UiTokens.S3, y + UiTokens.S1, UiTokens.PairRow, w - UiTokens.S6 - count, UiStyle.SectionHeader, UiRole.Text, m.OrdersTitle, UiFlags.Label | UiFlags.Truncate);
+            if (count > 0f)
+            {
+                UiDraw.TextMiddle(s, on, x + w - UiTokens.S3 - count, y + UiTokens.S1, UiTokens.PairRow, count, UiStyle.Small, UiRole.Text2, m.OrdersCount, UiFlags.Right | UiFlags.Truncate);
+            }
+            int n = Math.Min(3, m.OrderLines.Length);
+            for (int i = 0; i < n; i++)
+            {
+                float ry = y + UiTokens.S1 + UiTokens.PairRow + i * UiTokens.PairRow;
+                float vw = Math.Min(w * 0.4f, UiTextRules.Width(m.OrderValues[i], UiStyle.BodyStrong) + UiTokens.S1);
+                int face = UiDraw.Box(s, on, x + UiTokens.S1, ry, w - UiTokens.S2, UiTokens.PairRow, UiRole.None, UiRole.None, UiTokens.RadiusMedium);
+                UiAt row = on.In(face);
+                UiDraw.TextMiddle(s, row, x + UiTokens.S3, ry, UiTokens.PairRow, w - UiTokens.S6 - vw - UiTokens.S2, UiStyle.Body, UiRole.Text2, m.OrderLines[i], UiFlags.Truncate);
+                UiDraw.TextMiddle(s, row, x + w - UiTokens.S3 - vw, ry, UiTokens.PairRow, vw, UiStyle.BodyStrong, UiRole.Text, m.OrderValues[i], UiFlags.Right | UiFlags.Truncate);
+                UiDraw.Node(s, on, x + UiTokens.S1, ry, w - UiTokens.S2, UiTokens.PairRow, OrderRow, i, face);
+            }
+        }
+
+        private static float Tape(UiScene s, UiAt at, StocksModel m, float x, float y, float w, float h)
         {
             int n = Math.Min(3, m.Tape.Length);
-            float h = UiTokens.S2 + UiTokens.PairRow + n * UiTokens.PairRow;
             UiDraw.Box(s, at, x, y, w, h, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
             UiDraw.TextMiddle(s, at, x + UiTokens.S3, y + UiTokens.S1, UiTokens.PairRow, w - UiTokens.S6, UiStyle.SectionHeader, UiRole.Text, m.TapeTitle, UiFlags.Label | UiFlags.Truncate);
             for (int i = 0; i < n; i++)
@@ -208,8 +257,72 @@ namespace RealLifeOverhaul.Ui
             return m.Co != null ? StocksCompanyLay.Lay(s, at, m, x, y, w, bottom, keys) : bottom;
         }
 
+        // The Pays and the Account views: figures, the margin call over a card of labelled rows, and (Pays) the payments to come under it.
+        private static float Rows(UiScene s, UiAt at, StocksModel m, float x, float y, float w, float bottom, IUiKeys keys)
+        {
+            if (m.Figures != null && m.Figures.Length > 0)
+            {
+                y = UiAppWindow.Figures(s, at, m.Figures, x, y, w);
+            }
+            if (!string.IsNullOrEmpty(m.Banner))
+            {
+                float bh = UiTokens.Control;
+                UiDraw.Box(s, at, x, y, w, bh, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
+                UiDraw.Icon(s, at, x + UiTokens.S3, y + (bh - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Warning, UiRole.None, UiFlags.Middle, true);
+                float bx = x + UiTokens.S3 + UiTokens.Icon + UiTokens.S2;
+                UiDraw.TextMiddle(s, at, bx, y, bh, x + w - UiTokens.S3 - bx, UiStyle.BodyStrong, m.BannerTone, m.Banner, UiFlags.Truncate);
+                y += bh + UiTokens.S3;
+            }
+            if (m.Rows != null && m.Rows.Length > 0)
+            {
+                float ch = UiTokens.S2 + UiTokens.PairRow + m.Rows.Length * UiTokens.PairRow + UiTokens.S2;
+                if (y + ch < bottom)
+                {
+                    int card = UiDraw.Box(s, at, x, y, w, ch, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
+                    UiAt on = at.In(card);
+                    UiDraw.TextMiddle(s, on, x + UiTokens.S3, y + UiTokens.S1, UiTokens.PairRow, w - UiTokens.S6, UiStyle.SectionHeader, UiRole.Muted, m.RowsTitle, UiFlags.Label | UiFlags.Truncate);
+                    for (int i = 0; i < m.Rows.Length; i++)
+                    {
+                        UiDraw.InfoRow(s, on, x + UiTokens.S3, y + UiTokens.S1 + UiTokens.PairRow + i * UiTokens.PairRow, w - UiTokens.S6, m.Rows[i].Label, m.Rows[i].Value, false, -1, 0,
+                            m.Rows[i].Tone != UiRole.None ? m.Rows[i].Tone : UiRole.Text);
+                    }
+                    y += ch + UiTokens.S3;
+                }
+            }
+            if (m.Table != null)
+            {
+                if (!string.IsNullOrEmpty(m.TableTitle) && bottom - y > UiTokens.S16 * 3f)
+                {
+                    UiDraw.TextMiddle(s, at, x, y, UiTokens.PairRow, w, UiStyle.SectionHeader, UiRole.Text2, m.TableTitle, UiFlags.Label | UiFlags.Truncate);
+                    y += UiTokens.PairRow + UiTokens.S1;
+                }
+                Table(s, at, m, x, y, w, bottom, keys);
+            }
+            return bottom;
+        }
+
+        // A line of words over a table: the History's totals over its trades; a statement when the page has one (the samples').
+        private static void NoteTable(UiScene s, UiAt at, StocksModel m, float x, float y, float w, float bottom, IUiKeys keys)
+        {
+            if (m.Statement != null)
+            {
+                Statement(s, at, m, x, y, w, bottom, keys);
+                return;
+            }
+            if (!string.IsNullOrEmpty(m.Note))
+            {
+                UiDraw.TextMiddle(s, at, x, y, UiTokens.PairRow, w, UiStyle.Body, UiRole.Text2, m.Note, UiFlags.Truncate);
+                y += UiTokens.PairRow + UiTokens.S2;
+            }
+            Table(s, at, m, x, y, w, bottom, keys);
+        }
+
         private static float Portfolio(UiScene s, UiAt at, StocksModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
+            if (m.View != 0)
+            {
+                return Rows(s, at, m, x, y, w, bottom, keys);
+            }
             if (m.Figures != null && m.Figures.Length > 0)
             {
                 y = UiAppWindow.Figures(s, at, m.Figures, x, y, w);
