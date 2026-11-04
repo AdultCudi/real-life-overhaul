@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using RealLifeOverhaul.Ui;
 
 // The Company app's people tabs: Staff and Managers with their sub pages. Samples' own names; the live source reads the player's people.
@@ -92,6 +93,9 @@ internal static partial class UiSamples
         }
     }
 
+    private static CompanyItem WhoRow(string name, string place, float hue, int grade, string figure, string id, UiRole ring) =>
+        new CompanyItem { Title = name, Sub = place, Face = true, Hue = hue, Ring = ring, Grade = grade, Figure = figure, Press = true, Act = CA(CompanyDo.Go, "emp:" + id, CompanyView.Staff) };
+
     private static CompanyCard StaffSummary(CompanyWords w, bool one)
     {
         var c = new CompanyCard { Title = w.T("reallife_co_staff_title", "Your staff"), Icon = UiIcon.People };
@@ -130,6 +134,21 @@ internal static partial class UiSamples
                         Grade = -1, Press = true, Act = CA(CompanyDo.Go, "emp:maya", CompanyView.Staff) }
                 }
             });
+        }
+        if (!one)
+        {
+            blocks.Add(CSec(w.T("reallife_co_staff_under_sec", "Paid under the going rate"), "4"));
+            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = new[]
+            {
+                WhoRow("Sana Malik", "Pioneer Game Studio", 0.25f, -1, "-$2.00", "sana", UiRole.Warn), WhoRow("Dev Kapoor", "Speedy Bites", 0.35f, -1, "-$2.00", "dev", UiRole.Warn),
+                WhoRow("Maya Okafor", "Bloom & Co", 0.6f, -1, "-$1.50", "maya", UiRole.Warn), WhoRow("Rui Tanaka", "Speedy Bites", 0.5f, -1, "-$0.90", "rui", UiRole.Warn)
+            } });
+            blocks.Add(CSec(w.T("reallife_co_strike_low_sec", "Who stands low"), "5"));
+            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = new[]
+            {
+                WhoRow("Rui Tanaka", "Speedy Bites", 0.5f, 28, "28", "rui", UiRole.Danger), WhoRow("Sana Malik", "Pioneer Game Studio", 0.25f, 31, "31", "sana", UiRole.Danger),
+                WhoRow("Ines Duarte", "Speedy Bites", 0.15f, 33, "33", "ines", UiRole.Danger), WhoRow("Hana Sato", "Speedy Bites", 0.8f, 35, "35", "hana", UiRole.Danger)
+            } });
         }
         blocks.Add(new CompanyBlock
         {
@@ -227,8 +246,8 @@ internal static partial class UiSamples
         b.Add(CRow(w.T("reallife_co_emp_hours_day", "Hours a day"), w.F("reallife_rota_hours_n", "{hours} h", "hours", "8")));
         b.Add(CRow(w.T("reallife_tab_co_col_day_pay", "Pay a day"), offer ? "$132" : "$136"));
         b.Add(CSec(w.T("reallife_co_emp_raises_sec", "Recent raises")));
-        b.Add(CRow("Day 188", "+$0.50", UiRole.OkText));
-        b.Add(CRow("Day 131", "+$1.00", UiRole.OkText));
+        b.Add(CRow(w.F("reallife_mgr_row_day", "Day {day}", "day", "188"), "+$0.50", UiRole.OkText));
+        b.Add(CRow(w.F("reallife_mgr_row_day", "Day {day}", "day", "131"), "+$1.00", UiRole.OkText));
         c.Blocks = b.ToArray();
         return c;
     }
@@ -259,7 +278,7 @@ internal static partial class UiSamples
             CRow(w.T("reallife_co_emp_hours_day", "Hours a day"), w.F("reallife_rota_hours_n", "{hours} h", "hours", "8")),
             CRow(w.T("reallife_tab_co_col_day_pay", "Pay a day"), "$192"),
             CSec(w.T("reallife_co_emp_raises_sec", "Recent raises")),
-            CRow("Day 150", "+$1.00", UiRole.OkText)
+            CRow(w.F("reallife_mgr_row_day", "Day {day}", "day", "150"), "+$1.00", UiRole.OkText)
         };
         return c;
     }
@@ -473,10 +492,10 @@ internal static partial class UiSamples
         p.LogOpen = CA(CompanyDo.Go, "mgr:" + place, CompanyView.Managers, CompanyView.SubDecision);
         p.Log = new[]
         {
-            new CompanyDone { When = "Day 214", Text = w.F("reallife_mgr_did_stock", "Reordered stock for {count} products, a {day}-day cover", "count", "6", "day", "3"), Money = "-" + CM(410), Tone = -1 },
-            new CompanyDone { When = "Day 214", Text = w.F("reallife_mgr_did_raise_agree", "Agreed a raise of {raise} for {name}", "name", "Lena Adler", "raise", "$0.50"), Money = "-" + CM(390), Tone = -1 },
-            new CompanyDone { When = "Day 213", Text = w.F("reallife_mgr_did_prices", "Changed {count} prices", "count", "4"), Money = "+" + CM(85), Tone = 1 },
-            new CompanyDone { When = "Day 212", Text = w.F("reallife_mgr_did_rota", "Wrote the rota: {shifts} shifts, {covered} of {wanted} hours covered", "shifts", "24", "covered", "112", "wanted", "112"), Money = "no cost" }
+            new CompanyDone { When = w.F("reallife_mgr_row_day", "Day {day}", "day", "214"), Text = w.F("reallife_mgr_did_stock", "Reordered stock for {count} products, a {day}-day cover", "count", "6", "day", "3"), Money = "-" + CM(410), Tone = -1 },
+            new CompanyDone { When = w.F("reallife_mgr_row_day", "Day {day}", "day", "214"), Text = w.F("reallife_mgr_did_raise_agree", "Agreed a raise of {raise} for {name}", "name", "Lena Adler", "raise", "$0.50"), Money = "-" + CM(390), Tone = -1 },
+            new CompanyDone { When = w.F("reallife_mgr_row_day", "Day {day}", "day", "213"), Text = w.F("reallife_mgr_did_prices", "Changed {count} prices", "count", "4"), Money = "+" + CM(85), Tone = 1 },
+            new CompanyDone { When = w.F("reallife_mgr_row_day", "Day {day}", "day", "212"), Text = w.F("reallife_mgr_did_rota", "Wrote the rota: {shifts} shifts, {covered} of {wanted} hours covered", "shifts", "24", "covered", "112", "wanted", "112"), Money = "no cost" }
         };
         p.CrewTitle = w.F("reallife_co_crew_title", "{name}'s crew", "name", "Ray");
         p.CrewCount = w.F("reallife_co_staff_count_n", "{count} staff", "count", "9");
@@ -512,9 +531,9 @@ internal static partial class UiSamples
                 Kind = CompanyBlockKind.Items, Items = new[]
                 {
                     new CompanyItem { Grade = -1, Title = w.T("reallife_co_q_raise_title", "A raise above my limit"), FaceName = "Ray Walsh", Sub = "Speedy Bites", Face = true, Hue = 0.55f, Ring = UiRole.Warn,
-                        Figure = "Day 214", Press = true, Act = CA(CompanyDo.Go, "card", 1) },
+                        Figure = w.F("reallife_mgr_row_day", "Day {day}", "day", "214"), Press = true, Act = CA(CompanyDo.Go, "card", 1) },
                     new CompanyItem { Grade = -1, Title = w.T("reallife_co_q_lease_title", "A lease is up for renewal"), FaceName = "Omar Haddad", Sub = "Hudson Warehouse", Face = true, Hue = 0.75f, Ring = UiRole.Warn,
-                        Figure = "Day 213", Press = true, Act = CA(CompanyDo.Go, "card", 2) }
+                        Figure = w.F("reallife_mgr_row_day", "Day {day}", "day", "213"), Press = true, Act = CA(CompanyDo.Go, "card", 2) }
                 }
             });
             more.Add(CSec(w.T("reallife_mgr_sec_directory", "Your managers"), "6"));
@@ -538,22 +557,7 @@ internal static partial class UiSamples
         {
             more.Add(CNote(w.T("reallife_co_no_managers", "No manager yet. A manager decides what you hand over, and asks you what is past their limit.")));
             more.Add(CSec(w.T("reallife_co_hand_over", "What you can hand over"), "10"));
-            more.Add(new CompanyBlock
-            {
-                Kind = CompanyBlockKind.Items, Items = new[]
-                {
-                    new CompanyItem { Grade = -1, Title = "Raises", Sub = "Up to 110% of the going rate", Icon = UiIcon.Coin },
-                    new CompanyItem { Grade = -1, Title = "Rival offers", Sub = "Up to 110% of the going rate", Icon = UiIcon.Handshake },
-                    new CompanyItem { Grade = -1, Title = "Overtime", Sub = "A $400 budget a month", Icon = UiIcon.Clock },
-                    new CompanyItem { Grade = -1, Title = "Insurance claims", Sub = "Files within the window", Icon = UiIcon.ShieldCheck },
-                    new CompanyItem { Grade = -1, Title = "Stock", Sub = "Keeps 3 days of stock", Icon = UiIcon.Package },
-                    new CompanyItem { Grade = -1, Title = "Prices", Sub = "Between 90% and 115%", Icon = UiIcon.Tag },
-                    new CompanyItem { Grade = -1, Title = "Rota", Sub = "Written Sundays at 18:00", Icon = UiIcon.Calendar },
-                    new CompanyItem { Grade = -1, Title = "Hiring", Sub = "Keeps the place at 9", Icon = UiIcon.People },
-                    new CompanyItem { Grade = -1, Title = "Marketing", Sub = "A $500 limit a month", Icon = UiIcon.Megaphone },
-                    new CompanyItem { Grade = -1, Title = "Leases", Sub = "Up to a 5% rise", Icon = UiIcon.Key }
-                }
-            });
+            more.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = HandOverRows(w) });
             more.Add(new CompanyBlock { Kind = CompanyBlockKind.Break });
         }
         more.Add(CSec(w.T("reallife_co_owner_levels", "Levels")));
@@ -576,6 +580,22 @@ internal static partial class UiSamples
         }
         p.More = more.ToArray();
         return p;
+    }
+
+    // The ten decisions a manager can own, as rows with their glyph: what a post hands over.
+    private static CompanyItem[] HandOverRows(CompanyWords w)
+    {
+        string[] keys = { "raises", "offers", "overtime", "claims", "stock", "prices", "rota", "hiring", "marketing", "leases" };
+        string[] titles = { "Raises", "Rival offers", "Overtime", "Insurance claims", "Stock", "Prices", "Rota", "Hiring", "Marketing", "Leases" };
+        string[] lines = { "Up to 110% of the going rate", "Up to 110% of the going rate", "A $400 budget a month", "Files within the window", "Keeps 3 days of stock", "Between 90% and 115%",
+            "Written Sundays at 18:00", "Keeps the place at 9", "A $500 limit a month", "Up to a 5% rise" };
+        UiIcon[] glyphs = { UiIcon.Coin, UiIcon.Handshake, UiIcon.Clock, UiIcon.ShieldCheck, UiIcon.Package, UiIcon.Tag, UiIcon.Calendar, UiIcon.People, UiIcon.Megaphone, UiIcon.Key };
+        var rows = new CompanyItem[keys.Length];
+        for (int i = 0; i < rows.Length; i++)
+        {
+            rows[i] = new CompanyItem { Grade = -1, Title = w.T("reallife_mgr_task_" + keys[i], titles[i]), Sub = lines[i], Icon = glyphs[i] };
+        }
+        return rows;
     }
 
     // The businesses that have no manager yet, as rows that open the post.
@@ -624,11 +644,11 @@ internal static partial class UiSamples
             {
                 Kind = CompanyBlockKind.Lines, Rows = new[]
                 {
-                    new CompanyDone { When = "Day 214", Text = w.F("reallife_mgr_did_stock", "Reordered stock for {count} products, a {day}-day cover", "count", "6", "day", "3"), Money = "-" + CM(410), Tone = -1 },
-                    new CompanyDone { When = "Day 213", Text = w.F("reallife_mgr_did_prices", "Changed {count} prices", "count", "4"), Money = "+" + CM(85), Tone = 1 },
-                    new CompanyDone { When = "Day 211", Text = w.F("reallife_mgr_did_rota", "Wrote the rota: {shifts} shifts, {covered} of {wanted} hours covered", "shifts", "24", "covered", "112", "wanted", "112") },
-                    new CompanyDone { When = "Day 210", Text = w.F("reallife_mgr_did_prices", "Changed {count} prices", "count", "2"), Money = "+" + CM(40), Tone = 1 },
-                    new CompanyDone { When = "Day 208", Text = w.F("reallife_mgr_did_stock", "Reordered stock for {count} products, a {day}-day cover", "count", "3", "day", "3"), Money = "-" + CM(220), Tone = -1 }
+                    new CompanyDone { When = w.F("reallife_mgr_row_day", "Day {day}", "day", "214"), Text = w.F("reallife_mgr_did_stock", "Reordered stock for {count} products, a {day}-day cover", "count", "6", "day", "3"), Money = "-" + CM(410), Tone = -1 },
+                    new CompanyDone { When = w.F("reallife_mgr_row_day", "Day {day}", "day", "213"), Text = w.F("reallife_mgr_did_prices", "Changed {count} prices", "count", "4"), Money = "+" + CM(85), Tone = 1 },
+                    new CompanyDone { When = w.F("reallife_mgr_row_day", "Day {day}", "day", "211"), Text = w.F("reallife_mgr_did_rota", "Wrote the rota: {shifts} shifts, {covered} of {wanted} hours covered", "shifts", "24", "covered", "112", "wanted", "112") },
+                    new CompanyDone { When = w.F("reallife_mgr_row_day", "Day {day}", "day", "210"), Text = w.F("reallife_mgr_did_prices", "Changed {count} prices", "count", "2"), Money = "+" + CM(40), Tone = 1 },
+                    new CompanyDone { When = w.F("reallife_mgr_row_day", "Day {day}", "day", "208"), Text = w.F("reallife_mgr_did_stock", "Reordered stock for {count} products, a {day}-day cover", "count", "3", "day", "3"), Money = "-" + CM(220), Tone = -1 }
                 }
             },
             CNote(w.T("reallife_mgr_region_what", "A regional manager looks over the places of a district and stands in for a manager who is off sick."))
@@ -672,11 +692,11 @@ internal static partial class UiSamples
             {
                 Kind = CompanyBlockKind.Items, Items = new[]
                 {
-                    new CompanyItem { Grade = -1, Title = "Raises", Sub = "Up to 110% of the going rate", Icon = UiIcon.Coin },
-                    new CompanyItem { Grade = -1, Title = "Overtime", Sub = "A $400 budget a month", Icon = UiIcon.Clock },
+                    new CompanyItem { Grade = -1, Title = w.T("reallife_mgr_task_raises", "Raises"), Sub = "Up to 110% of the going rate", Icon = UiIcon.Coin },
+                    new CompanyItem { Grade = -1, Title = w.T("reallife_mgr_task_overtime", "Overtime"), Sub = "A $400 budget a month", Icon = UiIcon.Clock },
                     new CompanyItem { Grade = -1, Title = "Stock", Sub = "Keeps 3 days of stock", Icon = UiIcon.Package },
-                    new CompanyItem { Grade = -1, Title = "Prices", Sub = "Between 90% and 115%", Icon = UiIcon.Tag },
-                    new CompanyItem { Grade = -1, Title = "Rota", Sub = "Written Sundays at 18:00", Icon = UiIcon.Calendar },
+                    new CompanyItem { Grade = -1, Title = w.T("reallife_mgr_task_prices", "Prices"), Sub = "Between 90% and 115%", Icon = UiIcon.Tag },
+                    new CompanyItem { Grade = -1, Title = w.T("reallife_co_tab_rota", "Rota"), Sub = "Written Sundays at 18:00", Icon = UiIcon.Calendar },
                     new CompanyItem { Grade = -1, Title = "Hiring", Sub = "Keeps the place at 9", Icon = UiIcon.People }
                 }
             }
@@ -715,6 +735,9 @@ internal static partial class UiSamples
                 c.Blocks = new[]
                 {
                     CRow(w.T("reallife_mgr_mistake_chance", "Chance of a mistake"), "7.2%"),
+                    new CompanyBlock { Kind = CompanyBlockKind.Meter, Text = w.T("reallife_mgr_mistake_chance", "Chance of a mistake"), Value = "7.2%", Number = 14, Tone = UiRole.Warn },
+                    CSec(w.T("reallife_mgr_sec_would_own", "What this person would own"), "10"),
+                    new CompanyBlock { Kind = CompanyBlockKind.Items, Items = HandOverRows(w) },
                     CNote(w.F("reallife_mgr_appoint_replaces", "This replaces {name}.", "name", "Ray Walsh")),
                     CBtns(CB(w.T("reallife_mgr_appoint", "Appoint"), UiButtonKind.Primary, UiAction.Alt, CA(CompanyDo.Appoint, "lena", 0, 0, 0, place), UiIcon.Check),
                         CB(w.T("reallife_mgr_stand_down", "Stand down"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.StandDown, place, 0), UiIcon.Close, false, null, true),
@@ -730,11 +753,11 @@ internal static partial class UiSamples
                     Title = w.F("reallife_co_decisions_of", "{name}'s decisions", "name", "Ray"), Count = "5", Chosen = 0,
                     Rows = new[]
                     {
-                        new CompanyRow { Id = "md:1", Title = "Stock", Sub = w.F("reallife_mgr_did_stock", "Reordered stock for {count} products, a {day}-day cover", "count", "6", "day", "3"), Icon = UiIcon.Package, Figure = "Day 214", Note = "Ray Walsh", Chip = w.T("reallife_mgr_state_done", "Done"), ChipTone = UiRole.Ok },
-                        new CompanyRow { Id = "md:2", Title = "Raises", Sub = w.F("reallife_mgr_did_raise_agree", "Agreed a raise of {raise} for {name}", "name", "Lena Adler", "raise", "$0.50"), Icon = UiIcon.Coin, Figure = "Day 214", Note = "Ray Walsh", Chip = w.T("reallife_mgr_state_done", "Done"), ChipTone = UiRole.Ok },
-                        new CompanyRow { Id = "md:3", Title = "Prices", Sub = w.F("reallife_mgr_did_prices", "Changed {count} prices", "count", "4"), Icon = UiIcon.Tag, Figure = "Day 213", Note = "Ray Walsh", Chip = w.T("reallife_mgr_state_done", "Done"), ChipTone = UiRole.Ok },
-                        new CompanyRow { Id = "md:4", Title = "Rota", Sub = w.F("reallife_mgr_did_rota", "Wrote the rota: {shifts} shifts, {covered} of {wanted} hours covered", "shifts", "24", "covered", "112", "wanted", "112"), Icon = UiIcon.Calendar, Figure = "Day 212", Note = "Ray Walsh", Chip = w.T("reallife_mgr_state_done", "Done"), ChipTone = UiRole.Muted },
-                        new CompanyRow { Id = "md:5", Title = "Stock", Sub = w.F("reallife_mgr_did_stock", "Reordered stock for {count} products, a {day}-day cover", "count", "4", "day", "3"), Icon = UiIcon.Package, Figure = "Day 211", Note = "Ray Walsh", Chip = w.T("reallife_mgr_state_undone", "Undone"), ChipTone = UiRole.Muted }
+                        new CompanyRow { Id = "md:1", Title = "Stock", Sub = w.F("reallife_mgr_did_stock", "Reordered stock for {count} products, a {day}-day cover", "count", "6", "day", "3"), Icon = UiIcon.Package, Figure = w.F("reallife_mgr_row_day", "Day {day}", "day", "214"), Note = "-$410", Chip = w.T("reallife_mgr_state_done", "Done"), ChipTone = UiRole.Ok },
+                        new CompanyRow { Id = "md:2", Title = w.T("reallife_mgr_task_raises", "Raises"), Sub = w.F("reallife_mgr_did_raise_agree", "Agreed a raise of {raise} for {name}", "name", "Lena Adler", "raise", "$0.50"), Icon = UiIcon.Coin, Figure = w.F("reallife_mgr_row_day", "Day {day}", "day", "214"), Note = "-$390", Chip = w.T("reallife_mgr_state_done", "Done"), ChipTone = UiRole.Ok },
+                        new CompanyRow { Id = "md:3", Title = w.T("reallife_mgr_task_prices", "Prices"), Sub = w.F("reallife_mgr_did_prices", "Changed {count} prices", "count", "4"), Icon = UiIcon.Tag, Figure = w.F("reallife_mgr_row_day", "Day {day}", "day", "213"), Note = "+$85", Chip = w.T("reallife_mgr_state_done", "Done"), ChipTone = UiRole.Ok },
+                        new CompanyRow { Id = "md:4", Title = w.T("reallife_co_tab_rota", "Rota"), Sub = w.F("reallife_mgr_did_rota", "Wrote the rota: {shifts} shifts, {covered} of {wanted} hours covered", "shifts", "24", "covered", "112", "wanted", "112"), Icon = UiIcon.Calendar, Figure = w.F("reallife_mgr_row_day", "Day {day}", "day", "212"), Note = "Ray Walsh", Chip = w.T("reallife_mgr_state_done", "Done"), ChipTone = UiRole.Muted },
+                        new CompanyRow { Id = "md:5", Title = "Stock", Sub = w.F("reallife_mgr_did_stock", "Reordered stock for {count} products, a {day}-day cover", "count", "4", "day", "3"), Icon = UiIcon.Package, Figure = w.F("reallife_mgr_row_day", "Day {day}", "day", "211"), Note = "-$300", Chip = w.T("reallife_mgr_state_undone", "Undone"), ChipTone = UiRole.Muted }
                     }
                 };
                 var c = new CompanyCard
@@ -751,6 +774,12 @@ internal static partial class UiSamples
                     CRow("Cola", w.F("reallife_mgr_dec_from_to", "{before} to {after}", "before", "48", "after", "96")),
                     CRow("Salad", w.F("reallife_mgr_dec_from_to", "{before} to {after}", "before", "20", "after", "40")),
                     CRow("Napkins", w.F("reallife_mgr_dec_from_to", "{before} to {after}", "before", "300", "after", "600")),
+                    CSec(w.T("reallife_mgr_sec_before", "Before it")),
+                    new CompanyBlock { Kind = CompanyBlockKind.Lines, Rows = new[]
+                    {
+                        new CompanyDone { When = w.F("reallife_co_day_hour", "Day {day}, {hour}", "day", "211", "hour", "08:00"), Text = "Ray Walsh: " + w.F("reallife_mgr_did_stock", "Reordered stock for {count} products, a {day}-day cover", "count", "4", "day", "3"), Money = "-$300", Tone = -1 },
+                        new CompanyDone { When = w.F("reallife_co_day_hour", "Day {day}, {hour}", "day", "208", "hour", "08:00"), Text = "Ray Walsh: " + w.F("reallife_mgr_did_stock", "Reordered stock for {count} products, a {day}-day cover", "count", "5", "day", "3"), Money = "-$355", Tone = -1 }
+                    } },
                     CNote(w.T("reallife_mgr_dec_undo_what", "Undoing cancels the order if it has not been delivered.")),
                     CBtns(CB(w.T("reallife_mgr_undo", "Undo"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.Undo, null, 1), UiIcon.Back, false, null, true))
                 };
@@ -769,7 +798,7 @@ internal static partial class UiSamples
                     list.Add(new CompanyRow { Id = "mk:" + k, Title = titles[k], Sub = lines[k], Icon = glyphs[k], Chip = owns[k] ? "Ray" : w.T("reallife_hier_you", "You"), ChipTone = owns[k] ? UiRole.Ok : UiRole.Muted });
                 }
                 page.List = new CompanyList { Title = w.F("reallife_co_decisions_owns", "Decisions {name} owns", "name", "Ray"), Count = "10", Rows = list.ToArray(), Chosen = 0 };
-                var c = new CompanyCard { Kicker = "Speedy Bites", Title = "Raises", Icon = UiIcon.Coin, Back = CBack(w, "mgr:" + place, CompanyView.Managers) };
+                var c = new CompanyCard { Kicker = "Speedy Bites", Title = w.T("reallife_mgr_task_raises", "Raises"), Icon = UiIcon.Coin, Back = CBack(w, "mgr:" + place, CompanyView.Managers) };
                 c.Blocks = new[]
                 {
                     CNote("The manager answers a request for a raise inside the limit you set, and asks you about anything above it."),
@@ -777,6 +806,16 @@ internal static partial class UiSamples
                     new CompanyBlock { Kind = CompanyBlockKind.Stepper, Text = w.T("reallife_co_lim_raise", "Raise limit"), Sub = w.T("reallife_co_lim_raise_sub", "Of the going rate, above the pay now"), Value = "110%", CanLess = true, CanMore = true,
                         Act = CA(CompanyDo.LimitSet, place, 0, 1), Act2 = CA(CompanyDo.LimitSet, place, 0, 3), Act3 = CA(CompanyDo.LimitSet, place, 0, 2) }
                 };
+                c.Blocks = c.Blocks.Concat(new[]
+                {
+                    CSec(w.T("reallife_co_log", "Log"), "3"),
+                    new CompanyBlock { Kind = CompanyBlockKind.Lines, Rows = new[]
+                    {
+                        new CompanyDone { When = w.F("reallife_co_day_hour", "Day {day}, {hour}", "day", "214", "hour", "08:00"), Text = "Ray Walsh: " + w.F("reallife_mgr_did_raise_agree", "Agreed a raise of {raise} for {name}", "name", "Lena Adler", "raise", "$0.50"), Money = "-$390", Tone = -1 },
+                        new CompanyDone { When = w.F("reallife_co_day_hour", "Day {day}, {hour}", "day", "188", "hour", "08:00"), Text = "Ray Walsh: " + w.F("reallife_mgr_did_raise_agree", "Agreed a raise of {raise} for {name}", "name", "Dev Kapoor", "raise", "$0.50"), Money = "-$390", Tone = -1 },
+                        new CompanyDone { When = w.F("reallife_co_day_hour", "Day {day}, {hour}", "day", "131", "hour", "08:00"), Text = "Ray Walsh: " + w.F("reallife_mgr_did_raise_agree", "Agreed a raise of {raise} for {name}", "name", "Maya Okafor", "raise", "$1.00"), Money = "-$780", Tone = -1 }
+                    } }
+                }).ToArray();
                 page.Card = c;
                 break;
             }
@@ -788,9 +827,9 @@ internal static partial class UiSamples
                     Title = w.T("reallife_co_inbox", "Questions inbox"), Count = "3", Chosen = 0,
                     Rows = new[]
                     {
-                        new CompanyRow { Id = "he:1", Title = w.T("reallife_co_q_raise_title", "A raise above my limit"), FaceName = "Ray Walsh", Face = true, Hue = 0.55f, Ring = UiRole.Warn, Sub = "Speedy Bites", Figure = "Day 214", Note = w.T("reallife_hier_you", "You"), Chip = open, ChipTone = UiRole.Warn },
-                        new CompanyRow { Id = "he:2", Title = w.T("reallife_co_q_lease_title", "A lease is up for renewal"), FaceName = "Meera Iyer", Face = true, Hue = 0.75f, Ring = UiRole.Ok, Sub = "Hudson Warehouse", Figure = "Day 213", Note = "Meera Iyer", Chip = open, ChipTone = UiRole.Accent },
-                        new CompanyRow { Id = "he:3", Title = "Budget", FaceName = "Tessa Brandt", Face = true, Hue = 0.9f, Ring = UiRole.Ok, Sub = "Bloom & Co", Figure = "Day 211", Note = "Tessa Brandt", Chip = "Settled", ChipTone = UiRole.Muted }
+                        new CompanyRow { Id = "he:1", Title = w.T("reallife_co_q_raise_title", "A raise above my limit"), FaceName = "Ray Walsh", Face = true, Hue = 0.55f, Ring = UiRole.Warn, Sub = "Speedy Bites", Figure = w.F("reallife_mgr_row_day", "Day {day}", "day", "214"), Note = w.T("reallife_hier_you", "You"), Chip = open, ChipTone = UiRole.Warn },
+                        new CompanyRow { Id = "he:2", Title = w.T("reallife_co_q_lease_title", "A lease is up for renewal"), FaceName = "Meera Iyer", Face = true, Hue = 0.75f, Ring = UiRole.Ok, Sub = "Hudson Warehouse", Figure = w.F("reallife_mgr_row_day", "Day {day}", "day", "213"), Note = "Meera Iyer", Chip = open, ChipTone = UiRole.Accent },
+                        new CompanyRow { Id = "he:3", Title = w.T("reallife_co_q_budget", "Budget"), FaceName = "Tessa Brandt", Face = true, Hue = 0.9f, Ring = UiRole.Ok, Sub = "Bloom & Co", Figure = w.F("reallife_mgr_row_day", "Day {day}", "day", "211"), Note = "Tessa Brandt", Chip = w.T("reallife_hier_log_settled", "Settled"), ChipTone = UiRole.Muted }
                     }
                 };
                 var c = new CompanyCard
@@ -820,7 +859,7 @@ internal static partial class UiSamples
                 var rows = new List<CompanyRow>
                 {
                     new CompanyRow { Caption = true, Title = w.T("reallife_pol_cat_hiring", "Hiring") },
-                    new CompanyRow { Id = "pf:0", Title = w.T("reallife_pol_field_skill_floor", "Least skill hired"), Icon = CompanyGlyphs.Policy(0), Figure = "None", Sub = w.T("reallife_pol_as_above", "As above") },
+                    new CompanyRow { Id = "pf:0", Title = w.T("reallife_pol_field_skill_floor", "Least skill hired"), Icon = CompanyGlyphs.Policy(0), Figure = w.T("reallife_co_sick_none", "None"), Sub = w.T("reallife_pol_as_above", "As above") },
                     new CompanyRow { Id = "pf:1", Title = "Most a hire is paid", Icon = CompanyGlyphs.Policy(1), Figure = "100%", Sub = w.T("reallife_pol_as_above", "As above") },
                     new CompanyRow { Caption = true, Title = w.T("reallife_pol_cat_pay", "Pay") },
                     new CompanyRow { Id = "pf:3", Title = w.T("reallife_pol_field_pay_band", "Pay band"), Icon = CompanyGlyphs.Policy(3), Figure = "110%", Sub = w.T("reallife_pol_set_here_row", "Set here"), Chip = w.T("reallife_co_held", "Held"), ChipTone = UiRole.Warn },
@@ -930,8 +969,8 @@ internal static partial class UiSamples
                     Title = w.T("reallife_hier_dash_pending", "Questions here"), Count = "2", Chosen = -1,
                     Rows = new[]
                     {
-                        new CompanyRow { Id = "he:1", Title = w.T("reallife_co_q_raise_title", "A raise above my limit"), FaceName = "Ray Walsh", Face = true, Hue = 0.55f, Ring = UiRole.Warn, Sub = w.T("reallife_hier_you", "You"), Figure = "Day 214", Chip = open, ChipTone = UiRole.Warn },
-                        new CompanyRow { Id = "he:7", Title = "Budget", FaceName = "Ray Walsh", Face = true, Hue = 0.55f, Ring = UiRole.Ok, Sub = "Ray Walsh", Figure = "Day 201", Chip = "Settled", ChipTone = UiRole.Muted }
+                        new CompanyRow { Id = "he:1", Title = w.T("reallife_co_q_raise_title", "A raise above my limit"), FaceName = "Ray Walsh", Face = true, Hue = 0.55f, Ring = UiRole.Warn, Sub = w.T("reallife_hier_you", "You"), Figure = w.F("reallife_mgr_row_day", "Day {day}", "day", "214"), Chip = open, ChipTone = UiRole.Warn },
+                        new CompanyRow { Id = "he:7", Title = w.T("reallife_co_q_budget", "Budget"), FaceName = "Ray Walsh", Face = true, Hue = 0.55f, Ring = UiRole.Ok, Sub = "Ray Walsh", Figure = w.F("reallife_mgr_row_day", "Day {day}", "day", "201"), Chip = w.T("reallife_hier_log_settled", "Settled"), ChipTone = UiRole.Muted }
                     }
                 };
                 var c = new CompanyCard
@@ -971,7 +1010,7 @@ internal static partial class UiSamples
                 page.List = new CompanyList
                 {
                     Title = w.T("reallife_hier_dash_pending", "Questions here"), Count = "1", Chosen = -1,
-                    Rows = new[] { new CompanyRow { Id = "he:2", Title = w.T("reallife_co_q_lease_title", "A lease is up for renewal"), FaceName = "Omar Haddad", Face = true, Hue = 0.75f, Ring = UiRole.Warn, Sub = "Hudson Warehouse", Figure = "Day 213", Chip = w.T("reallife_hier_state_open", "Open"), ChipTone = UiRole.Warn } }
+                    Rows = new[] { new CompanyRow { Id = "he:2", Title = w.T("reallife_co_q_lease_title", "A lease is up for renewal"), FaceName = "Omar Haddad", Face = true, Hue = 0.75f, Ring = UiRole.Warn, Sub = "Hudson Warehouse", Figure = w.F("reallife_mgr_row_day", "Day {day}", "day", "213"), Chip = w.T("reallife_hier_state_open", "Open"), ChipTone = UiRole.Warn } }
                 };
                 var c = new CompanyCard
                 {
@@ -1047,7 +1086,7 @@ internal static partial class UiSamples
                     c.Blocks = new[]
                     {
                         CNote(w.T("reallife_hier_seat_what_coo", "The operating chief answers what the managers pass up and watches their targets.")),
-                        CRow(w.T("reallife_mgr_since", "Since"), "Day 60"), CRow(w.T("reallife_hier_col_role", "Role"), "Operations, senior"), CRow(w.T("reallife_hier_going", "Going rate"), "$48.00"),
+                        CRow(w.T("reallife_mgr_since", "Since"), w.F("reallife_mgr_row_day", "Day {day}", "day", "60")), CRow(w.T("reallife_hier_col_role", "Role"), "Operations, senior"), CRow(w.T("reallife_hier_going", "Going rate"), "$48.00"),
                         CRow(w.T("reallife_mgr_allowance", "Allowance"), w.F("reallife_co_row_a_day", "{amount} a day", "amount", "$96")), CRow(w.T("reallife_hier_paid_month", "Paid this month"), CM(2880)),
                         CRow(w.T("reallife_hier_area_open", "Open in their area"), "2"), CRow(w.T("reallife_hier_area_settled", "Settled this week"), "7"), CRow(w.T("reallife_mgr_decided", "Decided"), "41 / 38"),
                         CBtns(CB(w.T("reallife_mgr_stand_down", "Stand down"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.SeatStandDown, null, 1), UiIcon.Close, false, null, true))

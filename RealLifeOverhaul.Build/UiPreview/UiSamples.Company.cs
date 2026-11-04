@@ -388,13 +388,13 @@ internal static partial class UiSamples
             Kind = CompanyBlockKind.Items, Items = panel
                 ? new[]
                 {
-                    new CompanyItem { Title = "Hygiene certificate", Icon = UiIcon.Drop, Sub = "Day 140", Chip = w.T("reallife_co_row_lic_valid", "Valid"), ChipTone = UiRole.Ok, Grade = -1, Press = true, Act = CA(CompanyDo.Go, "lic:Corner Cafe~12:0", CompanyView.Tax, CompanyView.SubLicence) },
+                    new CompanyItem { Title = "Hygiene certificate", Icon = UiIcon.Drop, Sub = w.F("reallife_mgr_row_day", "Day {day}", "day", "140"), Chip = w.T("reallife_co_row_lic_valid", "Valid"), ChipTone = UiRole.Ok, Grade = -1, Press = true, Act = CA(CompanyDo.Go, "lic:Corner Cafe~12:0", CompanyView.Tax, CompanyView.SubLicence) },
                     new CompanyItem { Title = "Signage permit", Icon = UiIcon.Tag, Chip = w.T("reallife_co_row_lic_missing", "Missing"), ChipTone = UiRole.Danger, Grade = -1, Press = true, Act = CA(CompanyDo.Go, "lic:Corner Cafe~12:3", CompanyView.Tax, CompanyView.SubLicence) }
                 }
                 : new[]
                 {
-                    new CompanyItem { Title = "Hygiene certificate", Icon = UiIcon.Drop, Sub = "Day 260", Chip = w.T("reallife_co_row_lic_auto", "Renews itself"), ChipTone = UiRole.Ok, Grade = -1, Press = true, Act = CA(CompanyDo.Go, "lic:Speedy Bites~7:0", CompanyView.Tax, CompanyView.SubLicence) },
-                    new CompanyItem { Title = "Fire safety", Icon = UiIcon.Fire, Sub = "Day 217", Chip = w.T("reallife_co_row_lic_soon", "Runs out soon"), ChipTone = UiRole.Warn, Grade = -1, Press = true, Act = CA(CompanyDo.Go, "lic:Speedy Bites~7:4", CompanyView.Tax, CompanyView.SubLicence) },
+                    new CompanyItem { Title = "Hygiene certificate", Icon = UiIcon.Drop, Sub = w.F("reallife_mgr_row_day", "Day {day}", "day", "260"), Chip = w.T("reallife_co_row_lic_auto", "Renews itself"), ChipTone = UiRole.Ok, Grade = -1, Press = true, Act = CA(CompanyDo.Go, "lic:Speedy Bites~7:0", CompanyView.Tax, CompanyView.SubLicence) },
+                    new CompanyItem { Title = "Fire safety", Icon = UiIcon.Fire, Sub = w.F("reallife_mgr_row_day", "Day {day}", "day", "217"), Chip = w.T("reallife_co_row_lic_soon", "Runs out soon"), ChipTone = UiRole.Warn, Grade = -1, Press = true, Act = CA(CompanyDo.Go, "lic:Speedy Bites~7:4", CompanyView.Tax, CompanyView.SubLicence) },
                     new CompanyItem { Title = "Signage permit", Icon = UiIcon.Tag, Chip = w.T("reallife_co_row_lic_missing", "Missing"), ChipTone = UiRole.Danger, Grade = -1, Press = true, Act = CA(CompanyDo.Go, "lic:Speedy Bites~7:3", CompanyView.Tax, CompanyView.SubLicence) }
                 }
         });
@@ -407,9 +407,9 @@ internal static partial class UiSamples
         {
             Kind = CompanyBlockKind.Items, Items = new[]
             {
-                new CompanyItem { Title = "Fire", Icon = UiIcon.Fire, Chip = panel ? w.T("reallife_ibox_chip_not_covered", "Not covered") : w.T("reallife_ibox_chip_covered", "Covered"), ChipTone = panel ? UiRole.Warn : UiRole.Ok, Grade = -1, Press = true,
+                new CompanyItem { Title = w.T("reallife_co_cover_fire", "Fire"), Icon = UiIcon.Fire, Chip = panel ? w.T("reallife_ibox_chip_not_covered", "Not covered") : w.T("reallife_ibox_chip_covered", "Covered"), ChipTone = panel ? UiRole.Warn : UiRole.Ok, Grade = -1, Press = true,
                     Act = CA(CompanyDo.Go, panel ? "pol:Corner Cafe~12:0" : "pol:Speedy Bites~7:0", CompanyView.Cover) },
-                new CompanyItem { Title = "Theft", Icon = UiIcon.Lock, Chip = w.T("reallife_ibox_chip_not_covered", "Not covered"), ChipTone = UiRole.Warn, Grade = -1, Press = true,
+                new CompanyItem { Title = w.T("reallife_co_cover_theft", "Theft"), Icon = UiIcon.Lock, Chip = w.T("reallife_ibox_chip_not_covered", "Not covered"), ChipTone = UiRole.Warn, Grade = -1, Press = true,
                     Act = CA(CompanyDo.Go, panel ? "pol:Corner Cafe~12:1" : "pol:Speedy Bites~7:1", CompanyView.Cover) }
             }
         });

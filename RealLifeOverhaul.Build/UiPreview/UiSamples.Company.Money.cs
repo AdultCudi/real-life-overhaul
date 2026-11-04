@@ -28,7 +28,7 @@ internal static partial class UiSamples
             rows.Add(new CompanyRow { Id = "push:Bloom & Co~214", Title = "Bloom & Co", Sub = w.T("reallife_co_none", "None"), Icon = UiIcon.Store });
             rows.Add(new CompanyRow { Id = "push:Pioneer Game Studio~9", Title = "Pioneer Game Studio", Sub = w.T("reallife_co_none", "None"), Icon = UiIcon.Store });
             rows.Add(new CompanyRow { Caption = true, Title = w.T("reallife_co_reports", "Reports") });
-            rows.Add(new CompanyRow { Id = "rep:0", Title = "Flyers", Sub = "Bloom & Co, Day 201", Icon = UiIcon.ClipboardText, Figure = "+24%", FigureTone = UiRole.OkText, Note = w.F("reallife_co_row_extra", "{amount} extra", "amount", CM(180)) });
+            rows.Add(new CompanyRow { Id = "rep:0", Title = w.T("reallife_co_campaign_flyers", "Flyers"), Sub = "Bloom & Co, Day 201", Icon = UiIcon.ClipboardText, Figure = "+24%", FigureTone = UiRole.OkText, Note = w.F("reallife_co_row_extra", "{amount} extra", "amount", CM(180)) });
             rows.Add(new CompanyRow { Id = "rep:1", Title = "Discount week", Sub = "Speedy Bites, Day 188", Icon = UiIcon.ClipboardText, Figure = "+6%", FigureTone = UiRole.OkText, Note = w.F("reallife_co_row_less", "{amount} less", "amount", CM(40)) });
         }
         p.List = new CompanyList { Title = w.T("reallife_co_tab_marketing", "Marketing"), Count = one ? "1" : "3", Rows = rows.ToArray() };
@@ -87,7 +87,7 @@ internal static partial class UiSamples
                 new CompanyBlock { Kind = CompanyBlockKind.Meter, Text = w.F("reallife_co_push_progress", "Day {done} of {days}", "done", "2", "days", "4"), Value = w.F("reallife_co_push_left", "{count} days left", "count", "2"), Number = 50, Tone = UiRole.Ok },
                 CNote(w.F("reallife_co_push_report_due", "A report comes on day {day}.", "day", "220")),
                 CSec(w.T("reallife_co_push_earlier", "Earlier campaigns here")),
-                new CompanyBlock { Kind = CompanyBlockKind.Items, Items = new[] { new CompanyItem { Title = "Discount week", Sub = "Day 188", Icon = UiIcon.ClipboardText, Figure = "+6%", FigureTone = UiRole.OkText, Note = w.F("reallife_co_row_less", "{amount} less", "amount", CM(40)), Grade = -1, Press = true, Act = CA(CompanyDo.Go, "rep:1", CompanyView.Marketing) } } }
+                new CompanyBlock { Kind = CompanyBlockKind.Items, Items = new[] { new CompanyItem { Title = "Discount week", Sub = w.F("reallife_mgr_row_day", "Day {day}", "day", "188"), Icon = UiIcon.ClipboardText, Figure = "+6%", FigureTone = UiRole.OkText, Note = w.F("reallife_co_row_less", "{amount} less", "amount", CM(40)), Grade = -1, Press = true, Act = CA(CompanyDo.Go, "rep:1", CompanyView.Marketing) } } }
             };
         }
         else
@@ -100,7 +100,7 @@ internal static partial class UiSamples
                 CSec(w.T("reallife_ibox_sec_campaign", "The campaign")),
                 new CompanyBlock { Kind = CompanyBlockKind.Items, Items = new[]
                 {
-                    new CompanyItem { Title = "Flyers", Icon = UiIcon.Megaphone, Tint = UiRole.None, Press = true, Grade = -1, Sub = w.F("reallife_co_lic_term_value", "{days} days", "days", "4"), Figure = "+12%", FigureTone = UiRole.OkText, Note = CM(180), Chip = w.T("reallife_ui_bizops_pick", "Picked"), ChipTone = UiRole.Ok, Act = CA(CompanyDo.Go, "kind", 0) },
+                    new CompanyItem { Title = w.T("reallife_co_campaign_flyers", "Flyers"), Icon = UiIcon.Megaphone, Tint = UiRole.None, Press = true, Grade = -1, Sub = w.F("reallife_co_lic_term_value", "{days} days", "days", "4"), Figure = "+12%", FigureTone = UiRole.OkText, Note = CM(180), Chip = w.T("reallife_ui_bizops_pick", "Picked"), ChipTone = UiRole.Ok, Act = CA(CompanyDo.Go, "kind", 0) },
                     new CompanyItem { Title = "Radio", Icon = UiIcon.Megaphone, Tint = UiRole.None, Press = true, Grade = -1, Sub = w.F("reallife_co_lic_term_value", "{days} days", "days", "4"), Figure = "+9%", FigureTone = UiRole.OkText, Note = CM(620), Act = CA(CompanyDo.Go, "kind", 1) },
                     new CompanyItem { Title = "Discount week", Icon = UiIcon.Megaphone, Tint = UiRole.None, Press = true, Grade = -1, Sub = w.F("reallife_co_lic_term_value", "{days} days", "days", "7"), Figure = "+6%", FigureTone = UiRole.OkText, Note = CM(40), Act = CA(CompanyDo.Go, "kind", 2) }
                 } },
@@ -109,7 +109,7 @@ internal static partial class UiSamples
                 CRow(w.T("reallife_co_f_effect", "Effect on customers"), "+12%", UiRole.OkText),
                 CNote(w.F("reallife_co_push_parts", "Its own {own}, your district {district}, the economy {economy}.", "own", "+10%", "district", "110%", "economy", "100%")),
                 one ? CNote(string.Empty) : CSec(w.T("reallife_co_push_earlier", "Earlier campaigns here")),
-                one ? CNote(string.Empty) : new CompanyBlock { Kind = CompanyBlockKind.Items, Items = new[] { new CompanyItem { Title = "Flyers", Sub = "Day 201", Icon = UiIcon.ClipboardText, Figure = "+24%", FigureTone = UiRole.OkText, Note = w.F("reallife_co_row_extra", "{amount} extra", "amount", CM(180)), Grade = -1, Press = true, Act = CA(CompanyDo.Go, "rep:0", CompanyView.Marketing) } } },
+                one ? CNote(string.Empty) : new CompanyBlock { Kind = CompanyBlockKind.Items, Items = new[] { new CompanyItem { Title = w.T("reallife_co_campaign_flyers", "Flyers"), Sub = w.F("reallife_mgr_row_day", "Day {day}", "day", "201"), Icon = UiIcon.ClipboardText, Figure = "+24%", FigureTone = UiRole.OkText, Note = w.F("reallife_co_row_extra", "{amount} extra", "amount", CM(180)), Grade = -1, Press = true, Act = CA(CompanyDo.Go, "rep:0", CompanyView.Marketing) } } },
                 CBtns(CB(w.T("reallife_co_push_book", "Book the campaign"), UiButtonKind.Primary, UiAction.Alt, CA(CompanyDo.CampaignBook, "Bloom & Co~214", 0), UiIcon.Check))
             };
         }
@@ -213,6 +213,19 @@ internal static partial class UiSamples
 
     // ------------------------------------------------------------------------------------------------- Tax and licences
 
+    private static CompanyItem[] AccountantTermRows(CompanyWords w)
+    {
+        int[] fees = { 300, 700, 1500 }, saves = { 20, 40, 70 }, risks = { 1000, 800, 600 };
+        var terms = new CompanyItem[3];
+        for (int i = 0; i < 3; i++)
+        {
+            terms[i] = new CompanyItem { Title = w.T("reallife_co_accountant_" + i, i == 0 ? "Quay Street Bookkeeping" : i == 1 ? "Marlow & Finch" : "Ashdown Chartered"),
+                Sub = w.F("reallife_co_acc_terms_line", "saves {saves} of the tax, audit risk {risk} of the usual", "saves", saves[i] / 10f + "%", "risk", risks[i] / 10 + "%"),
+                Figure = w.F("reallife_co_row_a_month", "{amount} a month", "amount", CM(fees[i])), Press = true, Grade = -1, Act = CA(CompanyDo.Go, "acc", CompanyView.Tax, CompanyView.SubAccountant) };
+        }
+        return terms;
+    }
+
     private static string CompanyTextCapital(string s) => string.IsNullOrEmpty(s) ? s : char.ToUpperInvariant(s[0]) + s.Substring(1);
 
     private static void CompanyTax(CompanyFacts f, CompanyWords w, string state)
@@ -229,29 +242,29 @@ internal static partial class UiSamples
         t.LicencesTitle = w.T("reallife_co_licences", "Licences and permits");
         t.LicencesEmpty = w.T("reallife_co_lic_intro", "A business needs permits to trade.");
         var lic = new List<CompanyLicence>();
-        lic.Add(new CompanyLicence { Id = "lic:Speedy Bites~7:0", Icon = UiIcon.Drop, Name = "Hygiene certificate", Place = "Speedy Bites", Manager = "Ray Walsh", ManagerHue = 0.55f, State = w.T("reallife_co_row_lic_auto", "Renews itself"), StateTone = UiRole.Ok, Day = "Day 241", Open = CA(CompanyDo.Go, "lic:Speedy Bites~7:0", CompanyView.Tax, CompanyView.SubLicence) });
-        lic.Add(new CompanyLicence { Id = "lic:Speedy Bites~7:4", Icon = UiIcon.Fire, Name = "Fire safety", Place = "Speedy Bites", Manager = "Ray Walsh", ManagerHue = 0.55f, State = w.T("reallife_co_row_lic_soon", "Runs out soon"), StateTone = UiRole.Warn, Day = "Day 217", Open = CA(CompanyDo.Go, "lic:Speedy Bites~7:4", CompanyView.Tax, CompanyView.SubLicence),
+        lic.Add(new CompanyLicence { Id = "lic:Speedy Bites~7:0", Icon = UiIcon.Drop, Name = "Hygiene certificate", Place = "Speedy Bites", Manager = "Ray Walsh", ManagerHue = 0.55f, State = w.T("reallife_co_row_lic_auto", "Renews itself"), StateTone = UiRole.Ok, Day = w.F("reallife_mgr_row_day", "Day {day}", "day", "241"), Open = CA(CompanyDo.Go, "lic:Speedy Bites~7:0", CompanyView.Tax, CompanyView.SubLicence) });
+        lic.Add(new CompanyLicence { Id = "lic:Speedy Bites~7:4", Icon = UiIcon.Fire, Name = "Fire safety", Place = "Speedy Bites", Manager = "Ray Walsh", ManagerHue = 0.55f, State = w.T("reallife_co_row_lic_soon", "Runs out soon"), StateTone = UiRole.Warn, Day = w.F("reallife_mgr_row_day", "Day {day}", "day", "217"), Open = CA(CompanyDo.Go, "lic:Speedy Bites~7:4", CompanyView.Tax, CompanyView.SubLicence),
             HasAction = true, Action = CB(w.T("reallife_co_lic_renew", "Renew"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.LicenceBuy, "Speedy Bites~7", 4), UiIcon.Check) });
         lic.Add(new CompanyLicence { Id = "lic:Bloom & Co~214:3", Icon = UiIcon.Tag, Name = "Signage permit", Place = "Bloom & Co", Manager = "Tessa Brandt", ManagerHue = 0.9f, State = w.T("reallife_co_row_lic_missing", "Missing"), StateTone = UiRole.Danger, Open = CA(CompanyDo.Go, "lic:Bloom & Co~214:3", CompanyView.Tax, CompanyView.SubLicence),
             HasAction = true, Action = CB(w.T("reallife_co_lic_buy", "Apply"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.LicenceBuy, "Bloom & Co~214", 3), UiIcon.Check) });
-        lic.Add(new CompanyLicence { Id = "lic:Hudson Warehouse~4:7", Icon = UiIcon.Lock, Name = "Bonded storage", Place = "Hudson Warehouse", Manager = "Omar Haddad", ManagerHue = 0.75f, State = w.T("reallife_co_row_lic_pending", "Pending"), StateTone = UiRole.Warn, Day = "Day 216", Open = CA(CompanyDo.Go, "lic:Hudson Warehouse~4:7", CompanyView.Tax, CompanyView.SubLicence) });
-        lic.Add(new CompanyLicence { Id = "lic:Bloom & Co~214:0", Icon = UiIcon.Drop, Name = "Hygiene certificate", Place = "Bloom & Co", Manager = "Tessa Brandt", ManagerHue = 0.9f, State = w.T("reallife_co_row_lic_valid", "Valid"), StateTone = UiRole.Ok, Day = "Day 250", Open = CA(CompanyDo.Go, "lic:Bloom & Co~214:0", CompanyView.Tax, CompanyView.SubLicence) });
+        lic.Add(new CompanyLicence { Id = "lic:Hudson Warehouse~4:7", Icon = UiIcon.Lock, Name = "Bonded storage", Place = "Hudson Warehouse", Manager = "Omar Haddad", ManagerHue = 0.75f, State = w.T("reallife_co_row_lic_pending", "Pending"), StateTone = UiRole.Warn, Day = w.F("reallife_mgr_row_day", "Day {day}", "day", "216"), Open = CA(CompanyDo.Go, "lic:Hudson Warehouse~4:7", CompanyView.Tax, CompanyView.SubLicence) });
+        lic.Add(new CompanyLicence { Id = "lic:Bloom & Co~214:0", Icon = UiIcon.Drop, Name = "Hygiene certificate", Place = "Bloom & Co", Manager = "Tessa Brandt", ManagerHue = 0.9f, State = w.T("reallife_co_row_lic_valid", "Valid"), StateTone = UiRole.Ok, Day = w.F("reallife_mgr_row_day", "Day {day}", "day", "250"), Open = CA(CompanyDo.Go, "lic:Bloom & Co~214:0", CompanyView.Tax, CompanyView.SubLicence) });
         if (one)
         {
             lic.Clear();
-            lic.Add(new CompanyLicence { Id = "lic:Corner Cafe~12:0", Icon = UiIcon.Drop, Name = CompanyTextCapital(w.T("reallife_co_licence_hygiene", "food hygiene")), Place = "Corner Cafe", State = w.T("reallife_co_row_lic_valid", "Valid"), StateTone = UiRole.Ok, Day = "Day 140",
+            lic.Add(new CompanyLicence { Id = "lic:Corner Cafe~12:0", Icon = UiIcon.Drop, Name = CompanyTextCapital(w.T("reallife_co_licence_hygiene", "food hygiene")), Place = "Corner Cafe", State = w.T("reallife_co_row_lic_valid", "Valid"), StateTone = UiRole.Ok, Day = w.F("reallife_mgr_row_day", "Day {day}", "day", "140"),
                 Open = CA(CompanyDo.Go, "lic:Corner Cafe~12:0", CompanyView.Tax, CompanyView.SubLicence) });
             lic.Add(new CompanyLicence { Id = "lic:Corner Cafe~12:3", Icon = UiIcon.Tag, Name = "Signage permit", Place = "Corner Cafe", State = w.T("reallife_co_row_lic_missing", "Missing"), StateTone = UiRole.Danger, Open = CA(CompanyDo.Go, "lic:Corner Cafe~12:3", CompanyView.Tax, CompanyView.SubLicence),
                 HasAction = true, Action = CB(w.T("reallife_co_lic_buy", "Apply"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.LicenceBuy, "Corner Cafe~12", 3), UiIcon.Check) });
         }
         t.Licences = lic.ToArray();
         t.LicencesCount = lic.Count.ToString();
-        t.ComingUp = one ? new[] { new CompanyDone { When = "Day 90", Text = w.F("reallife_co_coming_quarter", "Quarter {quarter} closes", "quarter", "1"), Open = CA(CompanyDo.Go, "ret", CompanyView.Tax, CompanyView.SubReturn) } } : new[]
+        t.ComingUp = one ? new[] { new CompanyDone { When = w.F("reallife_mgr_row_day", "Day {day}", "day", "90"), Text = w.F("reallife_co_coming_quarter", "Quarter {quarter} closes", "quarter", "1"), Open = CA(CompanyDo.Go, "ret", CompanyView.Tax, CompanyView.SubReturn) } } : new[]
         {
-            new CompanyDone { When = "Day 217", Text = w.F("reallife_co_coming_licence", "{licence} runs out at {business}", "licence", "Fire safety", "business", "Speedy Bites") },
-            new CompanyDone { When = "Day 218", Text = w.F("reallife_co_coming_return", "Return for quarter {quarter} is due", "quarter", "2"), Open = CA(CompanyDo.Go, "ret", CompanyView.Tax, CompanyView.SubReturn) },
-            new CompanyDone { When = "Day 218", Text = w.F("reallife_co_coming_topup", "{name} tops up the reserve", "name", "Noah Feldman"), Money = "-" + CM(1840), Tone = -1 },
-            new CompanyDone { When = "Day 230", Text = w.F("reallife_co_coming_accountant", "{name}'s fee", "name", "Careful accountant"), Money = "-" + CM(620), Tone = -1 }
+            new CompanyDone { When = w.F("reallife_mgr_row_day", "Day {day}", "day", "217"), Text = w.F("reallife_co_coming_licence", "{licence} runs out at {business}", "licence", "Fire safety", "business", "Speedy Bites") },
+            new CompanyDone { When = w.F("reallife_mgr_row_day", "Day {day}", "day", "218"), Text = w.F("reallife_co_coming_return", "Return for quarter {quarter} is due", "quarter", "2"), Open = CA(CompanyDo.Go, "ret", CompanyView.Tax, CompanyView.SubReturn) },
+            new CompanyDone { When = w.F("reallife_mgr_row_day", "Day {day}", "day", "218"), Text = w.F("reallife_co_coming_topup", "{name} tops up the reserve", "name", "Noah Feldman"), Money = "-" + CM(1840), Tone = -1 },
+            new CompanyDone { When = w.F("reallife_mgr_row_day", "Day {day}", "day", "230"), Text = w.F("reallife_co_coming_accountant", "{name}'s fee", "name", "Careful accountant"), Money = "-" + CM(620), Tone = -1 }
         };
         t.QuarterTitle = w.T("reallife_co_quarter_so_far", "This quarter so far");
         t.QuarterRange = w.F("reallife_co_quarter_range", "Q{quarter}, day {from} to {to}", "quarter", one ? "1" : "3", "from", one ? "1" : "181", "to", one ? "90" : "270");
@@ -279,8 +292,8 @@ internal static partial class UiSamples
         t.PaidEmpty = w.T("reallife_co_paid_none", "No return has been settled yet.");
         t.Paid = one ? new CompanyItem[0] : new[]
         {
-            new CompanyItem { Title = w.F("reallife_co_row_quarter", "Quarter {quarter}", "quarter", "1"), Sub = "Day 96", Figure = CM(3120), Chip = w.T("reallife_ibox_chip_late", "Late"), ChipTone = UiRole.Warn },
-            new CompanyItem { Title = w.F("reallife_co_row_quarter", "Quarter {quarter}", "quarter", "4"), Sub = "Day 7", Figure = CM(2980), Chip = w.T("reallife_co_paid_on_time", "On time"), ChipTone = UiRole.Ok }
+            new CompanyItem { Title = w.F("reallife_co_row_quarter", "Quarter {quarter}", "quarter", "1"), Sub = w.F("reallife_mgr_row_day", "Day {day}", "day", "96"), Figure = CM(3120), Chip = w.T("reallife_ibox_chip_late", "Late"), ChipTone = UiRole.Warn },
+            new CompanyItem { Title = w.F("reallife_co_row_quarter", "Quarter {quarter}", "quarter", "4"), Sub = w.F("reallife_mgr_row_day", "Day {day}", "day", "7"), Figure = CM(2980), Chip = w.T("reallife_co_paid_on_time", "On time"), ChipTone = UiRole.Ok }
         };
         t.ToolsTitle = w.T("reallife_co_tax_tools", "Return, accountant and books");
         t.Tools = new[]
@@ -299,15 +312,7 @@ internal static partial class UiSamples
             t.QuarterDay = 7;
             t.QuarterDayText = w.F("reallife_co_quarter_day", "Day {day} of {days}", "day", "7", "days", "90");
             t.TermsTitle = w.T("reallife_co_acc_terms_sec", "What an accountant costs");
-            int[] fees = { 300, 700, 1500 }, saves = { 20, 40, 70 }, risks = { 1000, 800, 600 };
-            var terms = new CompanyItem[3];
-            for (int i = 0; i < 3; i++)
-            {
-                terms[i] = new CompanyItem { Title = w.T("reallife_co_accountant_" + i, i == 0 ? "Quay Street Bookkeeping" : i == 1 ? "Marlow & Finch" : "Ashdown Chartered"),
-                    Sub = w.F("reallife_co_acc_terms_line", "saves {saves} of the tax, audit risk {risk} of the usual", "saves", saves[i] / 10f + "%", "risk", risks[i] / 10 + "%"),
-                    Figure = w.F("reallife_co_row_a_month", "{amount} a month", "amount", CM(fees[i])), Press = true, Grade = -1, Act = CA(CompanyDo.Go, "acc", CompanyView.Tax, CompanyView.SubAccountant) };
-            }
-            t.Terms = terms;
+            t.Terms = AccountantTermRows(w);
             t.ExtraTitle = w.T("reallife_co_lic_not_needed", "Permits this business does not need");
             string[] kinds = { "fire", "seating", "delivery", "bonded" }, names = { "fire safety certificate", "outdoor seating permit", "delivery vehicle permit", "bonded storage permit" };
             int[] permitFees = { 350, 250, 200, 600 }, days = { 60, 30, 30, 60 };
@@ -361,6 +366,7 @@ internal static partial class UiSamples
                     CNote(w.F("reallife_co_acc_files", "Files the return for you within {days} days.", "days", "7")), new CompanyBlock { Kind = CompanyBlockKind.Break },
                     CNote(w.F("reallife_co_acc_saves", "Saves {share} of the tax.", "share", "4%"), UiRole.OkText),
                     CNote(w.F("reallife_co_acc_risk", "Adds {share} to the audit risk.", "share", "0.2%")), CNote(w.T("reallife_co_acc_honest_stays", "Stays if you take cash off the books, and files an honest return.")),
+                    CSec(w.T("reallife_co_acc_terms_sec", "What an accountant costs")), new CompanyBlock { Kind = CompanyBlockKind.Items, Items = AccountantTermRows(w) },
                     CBtns(CB(w.T("reallife_co_acc_hire", "Hire"), UiButtonKind.Primary, UiAction.Alt, CA(CompanyDo.AccountantHire, null, 2), UiIcon.Check),
                         CB(w.T("reallife_co_acc_dismiss", "Let go"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.AccountantDismiss), UiIcon.Close, false, null, true))
                 }

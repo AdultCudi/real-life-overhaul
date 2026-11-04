@@ -473,6 +473,8 @@ namespace RealLifeOverhaul.Ui
                 Note(CompanyText.T("reallife_co_acc_saves", "share", CompanyText.Share(CompanyCatalogue.AccountantSaving[tier])), UiRole.OkText),
                 Note(CompanyText.T("reallife_co_acc_risk", "share", CompanyText.Share(CompanyCatalogue.AccountantRisk[tier])))
             };
+            blocks.Add(Sec(w.T("reallife_co_acc_terms_sec", "What an accountant costs")));
+            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = AccountantTerms(d, t, w) });
             if (tier == 0)
             {
                 blocks.Add(Note(CompanyText.T("reallife_co_acc_careless", "chance", CompanyText.Share(CompanyCatalogue.AccountantErrorChance), "more",

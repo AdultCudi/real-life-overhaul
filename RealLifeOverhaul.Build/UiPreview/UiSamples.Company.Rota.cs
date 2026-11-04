@@ -69,7 +69,7 @@ internal static partial class UiSamples
         {
             rows.Add(new CompanyRow { Id = "p:Corner Cafe~12", Title = "Corner Cafe", Sub = "Cafe, " + w.F("reallife_co_rota_open", "open {hours} h a week", "hours", "84"), Icon = UiIcon.Calendar,
                 Figure = w.F("reallife_co_row_gap_short", "{hours} h short", "hours", "14"), FigureTone = UiRole.WarnText, Note = w.F("reallife_co_tree_staff", "{count} staff", "count", "2") });
-            rows.Add(new CompanyRow { Id = "pl:Corner Cafe~12:1", Title = "Standard week", Sub = w.T("reallife_rota_repeat_every", "Every week"), Icon = UiIcon.ClipboardText, Dim = true, Nested = true,
+            rows.Add(new CompanyRow { Id = "pl:Corner Cafe~12:1", Title = w.T("reallife_rota_plan_standard", "Standard week"), Sub = w.T("reallife_rota_repeat_every", "Every week"), Icon = UiIcon.ClipboardText, Dim = true, Nested = true,
                 Chip = inUse, ChipTone = UiRole.Ok });
             rows.Add(new CompanyRow { Id = "pl:Corner Cafe~12:2", Title = "Quiet week", Sub = w.F("reallife_rota_plan_range", "Days {from} to {to}", "from", "190", "to", "196"), Icon = UiIcon.ClipboardText,
                 Dim = true, Nested = true });
@@ -78,16 +78,16 @@ internal static partial class UiSamples
         {
             rows.Add(new CompanyRow { Id = "p:Speedy Bites~7", Title = "Speedy Bites", Sub = "Restaurant, " + w.F("reallife_co_rota_open", "open {hours} h a week", "hours", "112"), Icon = UiIcon.Calendar,
                 Figure = w.T("reallife_rota_row_covered", "Covered"), FigureTone = UiRole.OkText, Note = w.F("reallife_co_tree_staff", "{count} staff", "count", "9") });
-            rows.Add(new CompanyRow { Id = "pl:Speedy Bites~7:1", Title = "Standard week", Sub = w.T("reallife_rota_repeat_every", "Every week"), Icon = UiIcon.ClipboardText, Dim = true, Nested = true,
+            rows.Add(new CompanyRow { Id = "pl:Speedy Bites~7:1", Title = w.T("reallife_rota_plan_standard", "Standard week"), Sub = w.T("reallife_rota_repeat_every", "Every week"), Icon = UiIcon.ClipboardText, Dim = true, Nested = true,
                 Chip = inUse, ChipTone = UiRole.Ok });
             rows.Add(new CompanyRow { Id = "pl:Speedy Bites~7:2", Title = "Quiet week", Sub = w.T("reallife_rota_repeat_odd", "Odd weeks"), Icon = UiIcon.ClipboardText, Dim = true, Nested = true });
             rows.Add(new CompanyRow { Id = "pl:Speedy Bites~7:3", Title = "Holiday week", Sub = w.F("reallife_rota_plan_range", "Days {from} to {to}", "from", "220", "to", "226"),
                 Icon = UiIcon.ClipboardText, Dim = true, Nested = true });
             rows.Add(new CompanyRow { Id = "p:Bloom & Co~214", Title = "Bloom & Co", Sub = "Shop, " + w.F("reallife_co_rota_open", "open {hours} h a week", "hours", "72"), Icon = UiIcon.Calendar,
                 Figure = w.F("reallife_co_row_gap_short", "{hours} h short", "hours", "6"), FigureTone = UiRole.WarnText, Note = w.F("reallife_co_tree_staff", "{count} staff", "count", "5") });
-            rows.Add(new CompanyRow { Id = "pl:Bloom & Co~214:1", Title = "Standard week", Sub = w.T("reallife_rota_repeat_every", "Every week"), Icon = UiIcon.ClipboardText, Dim = true, Nested = true,
+            rows.Add(new CompanyRow { Id = "pl:Bloom & Co~214:1", Title = w.T("reallife_rota_plan_standard", "Standard week"), Sub = w.T("reallife_rota_repeat_every", "Every week"), Icon = UiIcon.ClipboardText, Dim = true, Nested = true,
                 Chip = inUse, ChipTone = UiRole.Ok });
-            rows.Add(new CompanyRow { Id = "p:Hudson Warehouse~4", Title = "Hudson Warehouse", Sub = "Warehouse", Icon = UiIcon.Calendar, Figure = w.T("reallife_rota_row_none", "No rota"),
+            rows.Add(new CompanyRow { Id = "p:Hudson Warehouse~4", Title = "Hudson Warehouse", Sub = w.T("reallife_mgr_kind_warehouse", "Warehouse"), Icon = UiIcon.Calendar, Figure = w.T("reallife_rota_row_none", "No rota"),
                 FigureTone = UiRole.Muted, Note = w.F("reallife_co_tree_staff", "{count} staff", "count", "4") });
         }
         r.Places = new CompanyList { Title = w.T("reallife_rota_tab", "Rota"), Count = one ? "1" : "3", Rows = rows.ToArray(), Chosen = -1 };
@@ -111,7 +111,7 @@ internal static partial class UiSamples
             }
             p.RefusedCard = new CompanyCard
             {
-                Title = "Hudson Warehouse", Sub = "Warehouse", Icon = UiIcon.Calendar, Chips = new[] { w.T("reallife_rota_row_none", "No rota") }, ChipTones = new[] { UiRole.Muted },
+                Title = "Hudson Warehouse", Sub = w.T("reallife_mgr_kind_warehouse", "Warehouse"), Icon = UiIcon.Calendar, Chips = new[] { w.T("reallife_rota_row_none", "No rota") }, ChipTones = new[] { UiRole.Muted },
                 Blocks = new[]
                 {
                     CNote(p.Refused), CSec(w.T("reallife_rota_has_title", "What it has")),

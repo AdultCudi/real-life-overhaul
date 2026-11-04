@@ -454,7 +454,7 @@ namespace RealLifeOverhaul.Ui
                     return y + UiTokens.PairRow + UiTokens.S1;
                 }
                 case CompanyBlockKind.Note:
-                    return Sentence(s, at, b.Text, x, y, cw, b.Tone == UiRole.None ? UiRole.Text2 : b.Tone, 4);
+                    return Sentence(s, at, b.Text, x, y + UiTokens.S2, cw, b.Tone == UiRole.None ? UiRole.Text2 : b.Tone, 4) + UiTokens.S2;
                 case CompanyBlockKind.Buttons:
                     return Buttons(s, at, lay, v, b.Buttons, x, y, cw, keys, true) + UiTokens.S3;
                 case CompanyBlockKind.Switch:

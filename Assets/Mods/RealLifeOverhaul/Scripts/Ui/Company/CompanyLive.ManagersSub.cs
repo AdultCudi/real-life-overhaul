@@ -164,6 +164,22 @@ namespace RealLifeOverhaul.Ui
                 if (!region)
                 {
                     blocks.Add(Row(CompanyText.T("reallife_mgr_mistake_chance"), CompanyText.Share(ManagerRules.MistakeChance(h.Skill, review))));
+                    blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Meter, Text = CompanyText.T("reallife_mgr_mistake_chance"), Value = CompanyText.Share(ManagerRules.MistakeChance(h.Skill, review)),
+                        Number = Math.Min(100, ManagerRules.MistakeChance(h.Skill, review) / 5), Tone = UiRole.Warn });
+                    var would = new List<CompanyItem>(ManagerTaskCount);
+                    int kinds = ManagerRules.Kinds(mp.Kind);
+                    for (int t = 0; t < (int)ManagerTask.Count; t++)
+                    {
+                        if (ManagerRules.Has(kinds, (ManagerTask)t))
+                        {
+                            would.Add(new CompanyItem { Grade = -1, Title = CompanyApp.TaskTitle(t), Sub = CompanyApp.TaskWhat(t), Icon = TaskIcons[Math.Min(t, TaskIcons.Length - 1)] });
+                        }
+                    }
+                    if (would.Count > 0)
+                    {
+                        blocks.Add(Sec(w.T("reallife_mgr_sec_would_own", "What this person would own"), would.Count.ToString()));
+                        blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = would.ToArray() });
+                    }
                 }
                 string holds = region ? d.RegionHeldBy(h.Id) : null;
                 if (holds != null && holds != key)
@@ -210,7 +226,7 @@ namespace RealLifeOverhaul.Ui
                 rows.Add(new CompanyRow
                 {
                     Id = "md:" + dec.Id, Title = CompanyApp.TaskTitle(dec.Task), Sub = CompanyApp.DecisionWords(dec), Icon = TaskIcons[Math.Min(dec.Task, TaskIcons.Length - 1)],
-                    Figure = CompanyText.T("reallife_mgr_row_day", "day", dec.Day.ToString()), Note = dec.Who,
+                    Figure = CompanyText.T("reallife_mgr_row_day", "day", dec.Day.ToString()), Note = MoneyOrWho(dec, w),
                     Chip = CompanyApp.DecisionStateName((int)dec.State) + (dec.Mistake ? CompanyText.T("reallife_mgr_row_mistake") : string.Empty),
                     ChipTone = dec.Mistake && dec.Open ? UiRole.Warn : dec.State == DecisionState.Done ? UiRole.Ok : UiRole.Muted
                 });
@@ -289,10 +305,40 @@ namespace RealLifeOverhaul.Ui
             {
                 blocks.Add(Note(CompanyText.T("reallife_mgr_dec_undo_what")));
             }
+            CompanyBlock before = EarlierOfKind(d, dec, mp.Place.Place, w);
+            if (before != null)
+            {
+                blocks.Add(Sec(w.T("reallife_mgr_sec_before", "Before it")));
+                blocks.Add(before);
+            }
             blocks.Add(Buttons(Btn(CompanyText.T("reallife_mgr_undo"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Undo, null, dec.Id), UiAction.Count, UiIcon.Back, true, state != 0,
                 state != 0 && why != null ? CompanyText.T(why) : null)));
             card.Blocks = blocks.ToArray();
             return card;
+        }
+
+        // The money a decision moved, or who made it where it moved none: the figure at the right of its row.
+        private static string MoneyOrWho(Decision dec, Words w)
+        {
+            int tone;
+            string money = DecisionMoney(dec, w, out tone);
+            return string.IsNullOrEmpty(money) ? dec.Who : money;
+        }
+
+        // The last decisions of the same kind at the place before this one, as the log's rows with their money; null where there is none.
+        private static CompanyBlock EarlierOfKind(CompanyDirector d, Decision dec, string place, Words w)
+        {
+            var rows = new List<CompanyDone>(4);
+            ManagerState ms = d.ManagerData;
+            for (int i = ms.Decisions.Count - 1; i >= 0 && rows.Count < 4; i--)
+            {
+                Decision o = ms.Decisions[i];
+                if (o.Id != dec.Id && o.Place == place && o.Task == dec.Task && o.Id < dec.Id)
+                {
+                    rows.Add(DoneOf(o, d, w));
+                }
+            }
+            return rows.Count == 0 ? null : new CompanyBlock { Kind = CompanyBlockKind.Lines, Rows = rows.ToArray() };
         }
 
         // ------------------------------------------------------------------------------------------------- a kind of decision
@@ -376,6 +422,20 @@ namespace RealLifeOverhaul.Ui
                     blocks.Add(Stepper(d, m, place, CompanyDirector.LimitPriceHigh, w));
                     PriceStrategyBlocks(blocks, m, place);
                     break;
+            }
+            var ofKind = new List<CompanyDone>(5);
+            for (int i = d.ManagerData.Decisions.Count - 1; i >= 0 && ofKind.Count < 5; i--)
+            {
+                Decision o = d.ManagerData.Decisions[i];
+                if (o.Place == place && o.Task == t)
+                {
+                    ofKind.Add(DoneOf(o, d, w));
+                }
+            }
+            if (ofKind.Count > 0)
+            {
+                blocks.Add(Sec(w.T("reallife_co_log", "Log"), ofKind.Count.ToString()));
+                blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Lines, Rows = ofKind.ToArray() });
             }
             card.Blocks = blocks.ToArray();
             page.Card = card;

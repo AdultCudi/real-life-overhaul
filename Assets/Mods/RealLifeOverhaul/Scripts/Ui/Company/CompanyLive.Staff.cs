@@ -257,6 +257,11 @@ namespace RealLifeOverhaul.Ui
                     blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = asking.ToArray() });
                 }
             }
+            if (!few)
+            {
+                AddPeopleWho(blocks, d, s, w, true, w.T("reallife_co_staff_under_sec", "Paid under the going rate"));
+                AddPeopleWho(blocks, d, s, w, false, w.T("reallife_co_strike_low_sec", "Who stands low"));
+            }
             SickBlocks(blocks, s, w);
             blocks.Add(Note(CompanyText.T("reallife_co_staff_market")));
             if (!few)
@@ -265,6 +270,39 @@ namespace RealLifeOverhaul.Ui
             }
             c.Blocks = blocks.ToArray();
             return c;
+        }
+
+        // Up to four people, the ones paid furthest under the going rate or standing lowest, as rows with what is wrong: the summary names whom it counts.
+        private static void AddPeopleWho(List<CompanyBlock> blocks, CompanyDirector d, CompanyState s, Words w, bool underpaid, string title)
+        {
+            var who = new List<StaffFile>(s.Staff.Count);
+            for (int i = 0; i < s.Staff.Count; i++)
+            {
+                StaffFile p = s.Staff[i];
+                if (underpaid ? StaffRules.Underpaid(p, 1) : StaffRules.StandsLow(p))
+                {
+                    who.Add(p);
+                }
+            }
+            who.Sort((a, b) => underpaid ? (b.Going - b.Paid).CompareTo(a.Going - a.Paid) : a.Standing.CompareTo(b.Standing));
+            if (who.Count == 0)
+            {
+                return;
+            }
+            var items = new List<CompanyItem>(4);
+            for (int i = 0; i < who.Count && i < 4; i++)
+            {
+                StaffFile p = who[i];
+                Face(p.Name, p.Id);
+                items.Add(new CompanyItem
+                {
+                    Title = p.Name, Sub = d.ShopName(p.Place), Face = true, Hue = UiColour.HueOf(p.Name), Ring = underpaid ? UiRole.Warn : UiRole.Danger, Press = true,
+                    Grade = underpaid ? -1 : p.Standing, Figure = underpaid ? "-" + CompanyText.Wage(Math.Max(0, p.Going - p.Paid)) : p.Standing.ToString(),
+                    Act = CompanyAct.Of(CompanyDo.Go, "emp:" + p.Id, CompanyView.Staff)
+                });
+            }
+            blocks.Add(Sec(title, who.Count.ToString()));
+            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = items.ToArray() });
         }
 
         // The sick pay policy: one label, its choice, and what the choice does to pay and standing.
