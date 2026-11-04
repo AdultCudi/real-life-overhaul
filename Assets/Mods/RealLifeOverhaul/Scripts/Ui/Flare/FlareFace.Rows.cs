@@ -654,7 +654,8 @@ namespace RealLifeOverhaul.Ui
             {
                 Verified(s, inRow, tx + nameW + UiTokens.S1, UiDraw.SnapDown(ty));
             }
-            UiDraw.Text(s, inRow, tx, UiDraw.SnapDown(ty) + L(UiStyle.Title) + UiTokens.S1, tw, UiStyle.Small, UiRole.Text2, r.Handle, UiFlags.Truncate);
+            UiDraw.Text(s, inRow, tx, UiDraw.SnapDown(ty) + L(UiStyle.Title) + UiTokens.S1, tw, UiStyle.Small, chosen ? UiRole.Text : UiRole.Text2, r.Handle,
+                UiFlags.Truncate);
             // The figures: what they reach, how many answer, what a post costs, what it should bring, right aligned in columns that are the same on every row.
             string[] figures = r.Tags;
             for (int i = 0; i < cols; i++)
