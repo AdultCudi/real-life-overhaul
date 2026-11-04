@@ -184,9 +184,14 @@ namespace RealLifeOverhaul.Ui
         // then the needs (the bell back if it then fits alone), then the money's day under it; the gear keeps the corner.
         private static void FitRight(UiStatusModel m, ref UiPillPlan p, float room)
         {
-            if (Right(ref p) > room)
+            if (p.Fps > 0f && Right(ref p) > room)
             {
-                p.Fps = 0f;   // the figure is the first of the right pills to give way: the needs, the bell and the money are the bar's own
+                // The figure keeps its place if the needs' meters, made as short as they go, leave it room; else it goes at once and the
+                // bar stays as it was without it. The needs, the bell and the money are the bar's own.
+                UiPillPlan trial = p;
+                trial.Meter = NeedTight;
+                trial.Needs = NeedsWidth(m, NeedTight);
+                p.Fps = Right(ref trial) > room ? 0f : p.Fps;
             }
             if (Right(ref p) > room && p.Needs > 0f)
             {

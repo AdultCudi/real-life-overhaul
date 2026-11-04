@@ -31125,5 +31125,11 @@
   "reallife_ui_bizman_sum_alert_one": "1 alert",
   "reallife_ui_bizops_goods_one": "1 good",
   "reallife_ui_bizops_output_one": "Output 1 piece an hour",
-  "reallife_ui_rivals_week_from": "From day {day}"
+  "reallife_ui_rivals_week_from": "From day {day}",
+  "reallife_ui_bizops_lane_blocked": "No matching skill",
+  "reallife_ui_bizops_legend_open": "Open hours",
+  "reallife_ui_bizops_legend_closed": "Closed hours",
+  "reallife_ui_bizops_legend_add": "Press an hour to add a shift",
+  "reallife_ui_bizops_legend_cleaning": "Cleaning stations take any hour",
+  "reallife_ui_bizops_legend_blocked": "Cannot take the chosen person"
 }

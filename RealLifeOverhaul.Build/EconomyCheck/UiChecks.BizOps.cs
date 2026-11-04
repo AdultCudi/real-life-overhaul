@@ -126,6 +126,118 @@ internal static partial class Program
     }
 
     // An item of the scene whose words are these (the kit lays words whole; the text cuts a long one when it is drawn).
+    // The lanes' shades: every lane in the open hours is one shade (nothing laid over it), the closed hours are darker on every lane but a
+    // cleaning station (which takes any hour), a lane that cannot take the chosen person is dimmed with its reason where its warning goes,
+    // a + stands on each free hour a press would fill (every one while a person is chosen, one under the mouse otherwise), and the board
+    // says what each shade means.
+    private static void BizOpsShadeChecks()
+    {
+        UiWords t = UiWords("en");
+        UiFrame frame = UiFrame.FullMenu(16f / 9f, "BizMan");
+        string fault = null;
+        int lanesChecked = 0, pluses = 0, dimmed = 0, aimed = 0;
+        foreach (string state in new[] { "schedule_full", "schedule_tens", "schedule_place" })
+        {
+            var s = new UiScene();
+            BizManModel m = UiSamples.BizOps(t, state);
+            BizManPages.Lay(s, m, frame, true, UiDefaultKeys.Keyboard);
+            UiBoardModel bd = m.Ops.Board;
+            float perHour = bd.RulerW / Math.Max(1, bd.LastHour - bd.FirstHour);
+            var closed = new bool[bd.Lanes.Length, BizOpsRules.Hours];
+            var dim = new bool[bd.Lanes.Length];
+            var plus = new bool[bd.Lanes.Length, BizOpsRules.Hours];
+            var aim = new bool[bd.Lanes.Length, BizOpsRules.Hours];
+            for (int k = 0; k < s.ItemCount; k++)
+            {
+                UiItem it = s.Items[k];
+                if (it.Clip < 0 || (it.Kind != UiKind.Box && it.Kind != UiKind.Icon))
+                {
+                    continue;
+                }
+                int lane = (int)Math.Floor(it.Y / UiBoard.LaneHeight);
+                if (lane < 0 || lane >= bd.Lanes.Length)
+                {
+                    continue;
+                }
+                float rx = bd.RulerX - s.Clips[it.Clip].X;
+                for (int h = 0; h < BizOpsRules.Hours; h++)
+                {
+                    float mid = rx + (h + 0.5f) * perHour;
+                    bool covers = it.X <= mid && mid <= it.X + it.W;
+                    if (it.Kind == UiKind.Box && it.Fill == UiRole.Field && (it.Flags & UiFlags.Decor) != 0 && it.H > UiTokens.S4)
+                    {
+                        closed[lane, h] |= covers;
+                    }
+                    else if (it.Kind == UiKind.Box && it.Fill == UiRole.Scrim && covers)
+                    {
+                        dim[lane] = true;
+                    }
+                    else if (it.Kind == UiKind.Box && it.Fill == UiRole.AccentSoft && covers)
+                    {
+                        aim[lane, h] = true;
+                    }
+                    else if (it.Kind == UiKind.Icon && it.Icon == UiIcon.Plus && Math.Abs(it.X + it.W / 2f - mid) < 1f)
+                    {
+                        plus[lane, h] = true;
+                    }
+                }
+            }
+            for (int i = 0; i < bd.Lanes.Length; i++)
+            {
+                lanesChecked++;
+                UiBoardLane lane = bd.Lanes[i];
+                bool blocked = !string.IsNullOrEmpty(lane.Blocked);
+                dimmed += dim[i] ? 1 : 0;
+                for (int h = 0; h < BizOpsRules.Hours; h++)
+                {
+                    bool open = bd.OpenHours[h];
+                    pluses += plus[i, h] ? 1 : 0;
+                    aimed += aim[i, h] ? 1 : 0;
+                    string at = state + ", lane " + i + ", hour " + h;
+                    if (!lane.Cleaning && closed[i, h] == open && fault == null)
+                    {
+                        fault = at + (open ? ": an open hour is shaded as closed" : ": a closed hour is not shaded");
+                    }
+                    if (lane.Cleaning && closed[i, h] && fault == null)
+                    {
+                        fault = at + ": a cleaning station's hour is shaded as shut";
+                    }
+                    if (open && !lane.Cleaning && !blocked && !aim[i, h] && !dim[i] && closed[i, h] && fault == null)
+                    {
+                        fault = at + ": an open hour has a shade of its own with no reason";
+                    }
+                    if (plus[i, h] != UiBoard.ShowsPlus(bd, i, h) && fault == null)
+                    {
+                        fault = at + (plus[i, h] ? ": a + stands where a press places nothing" : ": a free hour has no +");
+                    }
+                    if (aim[i, h] && !(i == bd.HoverLane && h == bd.HoverHour) && fault == null)
+                    {
+                        fault = at + ": a lifted cell that is not under the mouse";
+                    }
+                }
+                if (blocked != dim[i] && fault == null)
+                {
+                    fault = state + ", lane " + i + (blocked ? ": a lane that cannot take the person is not dimmed" : ": a lane is dimmed with no reason");
+                }
+            }
+            bool said = OpsSays(s, bd.LegendOpen) && OpsSays(s, bd.LegendClosed) && OpsSays(s, bd.LegendAdd) && OpsSays(s, bd.LegendCleaning)
+                        && (state != "schedule_place" || (OpsSays(s, bd.LegendBlocked) && OpsSays(s, bd.Lanes[3].Blocked) && bd.Placing != null));
+            if (!said && fault == null)
+            {
+                fault = state + ": the legend does not say what the shades mean (open " + OpsSays(s, bd.LegendOpen) + ", closed " + OpsSays(s, bd.LegendClosed) + ", add " + OpsSays(s, bd.LegendAdd)
+                        + ", cleaning " + OpsSays(s, bd.LegendCleaning) + ", blocked " + OpsSays(s, bd.LegendBlocked) + ", reason " + OpsSays(s, bd.Lanes[3].Blocked) + ")";
+            }
+        }
+        Check(fault == null && lanesChecked >= 15 && pluses >= 20 && dimmed == 1 && aimed == 1,
+            "bizops: the lanes keep one shade through the open hours, the closed hours darker (a cleaning station's not), a lane that cannot take the chosen person dimmed with its reason, "
+            + "a + on each free hour a press would fill, and a legend saying what each shade means (" + lanesChecked + " lanes, " + pluses + " plus signs, " + dimmed + " dimmed, " + aimed + " aimed"
+            + (fault == null ? "" : "; " + fault) + ")");
+        string src = File.ReadAllText(System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizMan\Ops\BizManScreen.Schedule.cs")));
+        Check(src.Contains("ScheduleHelper.HasSkillForWorkstation(id, whoId)") && src.Contains("BizOpsRules.CanStart(open, taken, cleaning, h)") && src.Contains("public bool Tracks(int command) => command == UiBoard.LaneCommand")
+              && src.Contains("if (arg != _hoverLane || hour != _hoverHour)"),
+            "bizops: the screen gives each lane the game's own skill test and hour rule, and lays out again for the hour under the mouse only when the lane or the hour changes");
+    }
+
     private static bool OpsSays(UiScene s, string words)
     {
         for (int i = 0; words != null && i < s.ItemCount; i++)
@@ -140,6 +252,7 @@ internal static partial class Program
 
     private static void BizOpsLayoutChecks()
     {
+        BizOpsShadeChecks();
         UiWords t = UiWords("en");
         UiFrame frame = UiFrame.FullMenu(16f / 9f, "BizMan");
         var s = new UiScene();

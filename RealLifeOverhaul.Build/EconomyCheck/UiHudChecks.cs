@@ -126,7 +126,8 @@ internal static partial class Program
         }
         Check(fault == null, "hud: the frames a second stands before the needs only while the game's show-FPS option is on, clear of the app row, and gives way first when the right pills do not fit, and never displaces the time, the money or the gear" + (fault == null ? "" : " (" + fault + ")"));
         UiPillPlan narrow = UiDraw.PlanPills(on, UiHudRules.LeastWidth), narrowOff = UiDraw.PlanPills(off, UiHudRules.LeastWidth);
-        Check(narrow.Money > 0f && narrow.Needs >= narrowOff.Needs, "hud: on the narrowest strip the figure gives way before the needs, the bell or the money do");
+        Check(narrow.Money > 0f && narrow.Needs > 0f && (narrow.Fps == 0f ? narrow.Needs == narrowOff.Needs && narrow.Alerts == narrowOff.Alerts : narrow.Alerts == narrowOff.Alerts),
+            "hud: on the narrowest strip the figure either fits with the needs' meters at their shortest or is dropped, and never costs the needs, the bell or the money");
         var s = new UiScene();
         Func<UiStatusModel> was = UiChrome.Bar;
         bool saysOn, saysOff;

@@ -95,6 +95,7 @@ public static partial class UiPreviewRunner
                 break;
             case "schedule_full":
             case "schedule_tens":
+            case "schedule_place":
             case "schedule_long":
                 screen.FocusCommand = UiBoard.ShiftCommand;
                 screen.FocusArg = 0;

@@ -31125,5 +31125,11 @@
   "reallife_ui_bizman_sum_alert_one": "1 alerta",
   "reallife_ui_bizops_goods_one": "1 produto",
   "reallife_ui_bizops_output_one": "Produção de 1 peça por hora",
-  "reallife_ui_rivals_week_from": "A partir do dia {day}"
+  "reallife_ui_rivals_week_from": "A partir do dia {day}",
+  "reallife_ui_bizops_lane_blocked": "Falta a habilidade certa",
+  "reallife_ui_bizops_legend_open": "Horas de funcionamento",
+  "reallife_ui_bizops_legend_closed": "Horas fechadas",
+  "reallife_ui_bizops_legend_add": "Toque numa hora para pôr um turno",
+  "reallife_ui_bizops_legend_cleaning": "Estações de limpeza aceitam qualquer hora",
+  "reallife_ui_bizops_legend_blocked": "Não pode receber a pessoa escolhida"
 }

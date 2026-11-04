@@ -17,7 +17,7 @@ internal static partial class UiSamples
 {
     public static readonly string[] BizOpsStates =
     {
-        "schedule_empty", "schedule_full", "schedule_tens", "schedule_drag", "schedule_picker", "schedule_hours", "schedule_none", "schedule_closed", "schedule_long", "pricing", "pricing_none",
+        "schedule_empty", "schedule_full", "schedule_tens", "schedule_place", "schedule_drag", "schedule_picker", "schedule_hours", "schedule_none", "schedule_closed", "schedule_long", "pricing", "pricing_none",
         "pricing_unassigned", "logistics", "logistics_sent", "purchasing", "hr", "hr_assign", "headhunters", "headhunters_replace", "factory", "factory_missing",
         "factory_none", "warehouse_drivers", "warehouse_stock", "warehouse_empty", "schedule_auto_fill_confirm", "no_manager_popup", "pricing_plan"
     };
@@ -167,7 +167,7 @@ internal static partial class UiSamples
     private static BizManModel OpsSchedule(UiWords t, string state)
     {
         bool longNames = state == "schedule_long", none = state == "schedule_none", closed = state == "schedule_closed";
-        bool full = state == "schedule_full" || state == "schedule_tens" || state == "schedule_drag" || state == "schedule_picker" || state == "schedule_hours" || state == "schedule_auto_fill_confirm"
+        bool full = state == "schedule_full" || state == "schedule_tens" || state == "schedule_place" || state == "schedule_drag" || state == "schedule_picker" || state == "schedule_hours" || state == "schedule_auto_fill_confirm"
                     || longNames;
         BizManModel m = OpsStore(t, longNames);
         BizOpsModel o = m.Ops;
@@ -224,6 +224,46 @@ internal static partial class UiSamples
                         Span = t("reallife_ui_bizops_span", "{from} to {to}").Replace("{from}", OpsHour(OpsShifts[i, 1])).Replace("{to}", OpsHour(OpsShifts[i, 2] % BizOpsRules.Hours))
                     };
                 }
+            }
+        }
+        if (board.Lanes != null)
+        {
+            // Each lane's own state as the screen gives it: the hours a shift may start at (open and not taken, any hour for the cleaning
+            // station, none on a closed day), the shades' words under the board, and for "schedule_place" the person chosen beside it.
+            bool place = state == "schedule_place";
+            for (int i = 0; i < board.Lanes.Length; i++)
+            {
+                bool cleaning = i == board.Lanes.Length - 1;
+                int free = 0;
+                for (int h = 0; h < BizOpsRules.Hours && !closed; h++)
+                {
+                    bool taken = false;
+                    for (int k = 0; board.Shifts != null && k < board.Shifts.Length; k++)
+                    {
+                        taken |= board.Shifts[k].Lane == i && h * 60 >= board.Shifts[k].Start && h * 60 < board.Shifts[k].End;
+                    }
+                    free |= !taken && (cleaning || board.OpenHours[h]) ? 1 << h : 0;
+                }
+                board.Lanes[i].Cleaning = cleaning;
+                board.Lanes[i].Free = free;
+                if (place && i == 3)
+                {
+                    board.Lanes[i].Blocked = t("reallife_ui_bizops_lane_blocked", "No matching skill");
+                }
+            }
+            board.LegendOpen = t("reallife_ui_bizops_legend_open", "Open hours");
+            board.LegendClosed = t("reallife_ui_bizops_legend_closed", "Closed hours");
+            board.LegendAdd = t("reallife_ui_bizops_legend_add", "Press an hour to add a shift");
+            board.LegendCleaning = t("reallife_ui_bizops_legend_cleaning", "Cleaning stations take any hour");
+            board.LegendBlocked = place ? t("reallife_ui_bizops_legend_blocked", "Cannot take the chosen person") : null;
+            if (place)
+            {
+                board.Placing = "Aaliyah Brooks";
+            }
+            if (state == "schedule_tens")
+            {
+                board.HoverLane = 1;   // the mouse resting on a free hour of the second register, before Priya's shift
+                board.HoverHour = 7;
             }
         }
         if (state == "schedule_drag")
