@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using RealLifeOverhaul;
 
 // The bus network (Scripts/Transport/TransitPlan, TransitEta, Core/RouteSearch): the timetable hour by hour
@@ -713,6 +714,30 @@ internal static partial class Program
                 }
             }
         }
+        // The stop map's journeys (Transport/TransitTrips.From, in the click that opens the map): from one stop to every other
+        // of the city's, timed over every stop of the made-up city, with nothing allocated. The rest of the opening (the
+        // window's entries and markers written, the game's own opening of its map) is the game's engine: the owner's
+        // Player.log says it ("Transit check (stop map)": the window filled and the game's opening apart).
+        TransitPlan.From(net, 0, now, call, best);   // compiled before it is timed
+        long allocBefore = GC.GetAllocatedBytesForCurrentThread();
+        var planWatch = Stopwatch.StartNew();
+        int plans = 0;
+        for (int round = 0; round < 3; round++)
+        {
+            for (int from = 0; from < net.Places; from++)
+            {
+                TransitPlan.From(net, from, now, call, best);
+                plans++;
+            }
+        }
+        planWatch.Stop();
+        long planAlloc = GC.GetAllocatedBytesForCurrentThread() - allocBefore;
+        double planMs = planWatch.Elapsed.TotalMilliseconds / Math.Max(1, plans);
+        Console.WriteLine("  Bus layout: the stop map's journeys from one stop to all " + net.Places + " others planned in " + planMs.ToString("F3", CultureInfo.InvariantCulture)
+                          + " ms on average over " + plans + " (" + planAlloc + " bytes allocated in all)");
+        Check(planMs < 1.0, "bus layout cost: the stop map's journeys from one stop to every other are planned in under 1 ms (" + planMs.ToString("F3", CultureInfo.InvariantCulture) + " ms)");
+        Check(planAlloc == 0, "bus layout cost: planning the stop map's journeys allocates nothing (" + planAlloc + " bytes over " + plans + ")");
+
         // The lines joined through their transfer points: a place two lines share, or two places a short walk apart.
         var joined = new bool[net.Lines];
         var queue = new Queue<int>();

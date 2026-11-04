@@ -32,7 +32,8 @@ internal static partial class Program
         ("Navigation/NavDirector.cs", "Navigation/NavDirector.Map.cs", "OnMap", "route on the map",
             "the route drawn on the open map, its object off once it shuts"),
         ("NewBuildings/CopyLook.cs", "NewBuildings/CopyLook.cs", "OnMap", "copied buildings",
-            "a copied building drawn as its box on the map, its detail drawn again once it shuts"),
+            "a copied building drawn as its box on the map, its detail drawn again once it shuts: one handler for every copy, those near the "
+            + "player in the frame the map switches in, the rest a slice a frame after it (Core/MapParts.After)"),
         ("Performance/ModCulling.cs", "Performance/ModCulling.cs", "MapToggled", "the mod's far things",
             "the mod's far things drawn on the open map and hidden again after it, 64 a frame until none waits"),
         ("Performance/ModCulling.cs", "Performance/ModCulling.cs", "MapClosed", "the mod's far things",
