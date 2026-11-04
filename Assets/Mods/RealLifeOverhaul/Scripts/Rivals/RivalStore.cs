@@ -108,7 +108,8 @@ namespace RealLifeOverhaul.Rivals
             for (int i = 0; i < o.Crew.Count && i < RivalFirms.CrewMost; i++)
             {
                 StaffFile s = o.Crew[i];
-                b.Append(i > 0 ? "/" : string.Empty).Append(Clean(s.Id).Replace(',', ' ').Replace('/', ' ')).Append(',').Append(s.Skill.ToString(Inv)).Append(',').Append(s.Base.ToString(Inv)).Append(',')
+                b.Append(i > 0 ? "/" : string.Empty).Append(Clean(s.Id).Replace(',', ' ').Replace('/',
+                    ' ')).Append(',').Append(s.Skill.ToString(Inv)).Append(',').Append(s.Base.ToString(Inv)).Append(',')
                     .Append(s.Raise.ToString(Inv)).Append(',').Append(s.Standing.ToString(Inv)).Append(',').Append(s.UnderDays.ToString(Inv)).Append(',').Append(s.AskDay.ToString(Inv)).Append(',')
                     .Append(s.AskTo.ToString(Inv)).Append(',').Append(s.AskRest.ToString(Inv)).Append(',').Append(s.LateDays.ToString(Inv));
             }

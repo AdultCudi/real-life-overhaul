@@ -66,9 +66,10 @@ namespace RealLifeOverhaul.Economy
 
     /// <summary>
     /// Leases, game-free (EconomyCheck compiles them): a term seeded for each place, the landlord's offer 14 days before it ends (what the city's
-    /// own landlords have been asking in the district, plus a seeded spread, plus what a rival buying up the district adds), what each answer comes
-    /// to, and the city's own leases, which renew by the very same rule (<see cref="Offer"/>) from a seed and a district alone, so they need no state.
-    /// The player's renewals and the city's use one function: whatever a landlord does to the player, they do to the city's businesses.
+    /// own landlords have been asking in the district, plus a seeded spread, plus what a rival buying up the district adds, moved toward the market rent
+    /// where the property feature knows one), what each answer comes to. The city's own leases renew by the very same rule from a seed and a district
+    /// alone, so they need no state, and they are a trend only: they set the figure the landlords ask by and move no rent. The leases that are real are
+    /// the player's and the rivals' businesses' (Rivals/RivalFirms), whose renewals add to that trend.
     /// </summary>
     public static class LeaseRules
     {
@@ -78,7 +79,7 @@ namespace RealLifeOverhaul.Economy
         public const int HoldPremium = 100;         // per mille over the game's rent while month to month
         public const int HaggleChance = 400;        // per mille that a landlord halves their rise when asked once
         public const int TrendKept = 12;            // months of the city's renewals kept
-        public const int CityLeases = 8;            // the city's own leases in a district that are followed (stateless: from the seed alone)
+        public const int CityLeases = 8;            // the city's own leases in a district that are followed: a trend only, stateless from the seed, with no rent of their own
         public const int PressureShare = 500;       // per mille of a rival's buying up in the district that lands on a renewal's rise
         public const int MarketShare = 300;         // per mille of the way a landlord moves their ask from the rise they would ask to the market rent, where one is known
         public static readonly int[] TermMonths = { 6, 12, 12, 24, 36 };

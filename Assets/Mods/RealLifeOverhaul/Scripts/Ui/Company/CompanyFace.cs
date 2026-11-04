@@ -43,6 +43,8 @@ namespace RealLifeOverhaul.Ui
         public static void Lay(UiScene s, CompanyFacts f, CompanyView v, CompanyWords w, CompanyLayout lay, UiFrame frame, bool dark, IUiKeys keys)
         {
             lay.Reset();
+            _layNow = lay;
+            _viewNow = v;
             if (v.Question != 0 && f.Question != null)
             {
                 LayQuestion(s, f.Question, v, w, lay, frame, dark, keys);
@@ -55,8 +57,8 @@ namespace RealLifeOverhaul.Ui
             UiAt at = UiAppWindow.Shell(s, frame, title, UiIcon.Briefcase, nav, tab, false, keys, out float x, out float y, out float cw, out float bottom);
             if (!f.Ready)
             {
-                UiDraw.EmptyState(s, at, x, y, cw, bottom - y, UiIcon.Briefcase, string.IsNullOrEmpty(f.OffTitle) ? w.T("reallife_co_off_title", "The company is not running") : f.OffTitle,
-                    string.IsNullOrEmpty(f.OffBody) ? w.T("reallife_co_off_body", "Load a save with the economy switched on to run your company.") : f.OffBody, null, -1, keys);
+                OffPage(s, at, w, string.IsNullOrEmpty(f.OffTitle) ? w.T("reallife_co_off_title", "The company is not running") : f.OffTitle,
+                    string.IsNullOrEmpty(f.OffBody) ? w.T("reallife_co_off_body", "Load a save with the economy switched on to run your company.") : f.OffBody, x, y, cw, bottom, keys);
             }
             else
             {
@@ -76,13 +78,11 @@ namespace RealLifeOverhaul.Ui
                 s.AddPrompt(i == 0 ? UiAction.Move : i == 1 ? UiAction.Confirm : UiAction.Back,
                     w.T(i == 0 ? "reallife_ui_prompt_move" : i == 1 ? "reallife_ui_prompt_select" : "reallife_ui_prompt_back", i == 0 ? "Move" : i == 1 ? "Select" : "Back"));
             }
+            // Move, Select, Back and the page's main action, as the other apps' bars hold: the app row keeps its tiles (a fifth, long prompt pushed the bar over them). The second
+            // action keeps its key on its own button.
             if (lay.Main >= 0 && !lay.Acts[lay.Main].Disabled)
             {
-                s.AddPrompt(UiAction.Alt, lay.Acts[lay.Main].Label);
-            }
-            if (lay.Second >= 0 && !lay.Acts[lay.Second].Disabled)
-            {
-                s.AddPrompt(UiAction.Option, lay.Acts[lay.Second].Label);
+                s.AddPrompt(UiAction.Alt, UiTextRules.Cut(lay.Acts[lay.Main].Label ?? string.Empty, UiStyle.BodyStrong, 168f));
             }
             UiDraw.PromptBar(s, frame, keys);
         }
@@ -197,11 +197,16 @@ namespace RealLifeOverhaul.Ui
             {
                 total += Math.Min(w, UiDraw.ButtonWidth(buttons[i].Kind, buttons[i].Label, buttons[i].Icon, buttons[i].Key, keys)) + (i > 0 ? UiTokens.S3 : 0f);
             }
-            float cx = left ? x : x + Math.Max(0f, w - total);
+            float cx = left || total > w ? x : x + Math.Max(0f, w - total);
             string why = null;
             for (int i = 0; i < buttons.Length; i++)
             {
                 float bw = Math.Min(w, UiDraw.ButtonWidth(buttons[i].Kind, buttons[i].Label, buttons[i].Icon, buttons[i].Key, keys));
+                if (cx > x + 0.5f && cx + bw > x + w + 0.5f)
+                {
+                    cx = x;   // a row that is wider than the room goes on a line below (a language's longer words in a column of half a page)
+                    y += UiTokens.Control + UiTokens.S2;
+                }
                 Button(s, at, lay, v, ref buttons[i], cx, y, bw, keys);
                 cx += bw + UiTokens.S3;
                 if (buttons[i].Disabled && !string.IsNullOrEmpty(buttons[i].Why) && why == null)
@@ -266,8 +271,33 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The page that stands in place of a tab whose part is off or stopped: the words, and the way to switch it on.</summary>
         internal static void OffPage(UiScene s, UiAt at, CompanyWords w, string title, string body, float x, float y, float cw, float bottom, IUiKeys keys)
         {
-            UiDraw.EmptyState(s, at, x, y, cw, bottom - y, UiIcon.Gear, string.IsNullOrEmpty(title) ? w.T("reallife_co_part_off_title", "This part is switched off") : title,
-                string.IsNullOrEmpty(body) ? w.T("reallife_co_part_off", "Switch it on in Options, Economy, to run this part of the company.") : body, null, -1, keys);
+            string head = string.IsNullOrEmpty(title) ? w.T("reallife_co_part_off_title", "This part is switched off") : title;
+            string say = string.IsNullOrEmpty(body) ? w.T("reallife_co_part_off", "Switch it on in Options, Economy, to run this part of the company.") : body;
+            CompanyLayout lay = _layNow;
+            CompanyView v = _viewNow;
+            if (lay == null || v == null)
+            {
+                UiDraw.EmptyState(s, at, x, y, cw, bottom - y, UiIcon.Gear, head, say, null, -1, keys);
+                return;
+            }
+            float pad = UiTokens.S5, width = Math.Min(cw, 720f), size = UiTokens.IconTile;
+            float tx = x + pad + size + UiTokens.S4, tw = width - pad * 2f - size - UiTokens.S4;
+            float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), bh = UiDraw.Snap(UiTextRules.WrappedHeight(say, UiStyle.Body, tw, 4));
+            string section = v.Tab == CompanyView.Rota ? "rota" : v.Tab == CompanyView.Managers ? "managers" : "company";
+            CompanyButton link = new CompanyButton { Label = w.T("reallife_set_link", "Settings"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Gear, Act = CompanyAct.Of(CompanyDo.OpenOptions,
+                section) };
+            float bw = Math.Min(tw, UiDraw.ButtonWidth(link.Kind, link.Label, link.Icon, link.Key, keys));
+            float h = pad * 2f + th + UiTokens.S1 + bh + UiTokens.S4 + UiTokens.Control;
+            UiAt band = Band(s, at, x, y, width, h);
+            int tile = UiDraw.Tile(s, band, x + pad, y + pad, size, UiRole.None, false);
+            float g = UiTokens.S6;
+            UiDraw.Icon(s, band.In(tile), x + pad + (size - g) / 2f, y + pad + (size - g) / 2f, g, UiIcon.Gear, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
+            UiDraw.TextMiddle(s, band, tx, y + pad, th, tw, UiStyle.Title, UiRole.Text, head, UiFlags.Truncate);
+            UiDraw.Text(s, band, tx, y + pad + th + UiTokens.S1, tw, UiStyle.Body, UiRole.Text2, say, UiFlags.Wrap | UiFlags.Truncate, 4);
+            Button(s, band, lay, v, ref link, tx, y + pad + th + UiTokens.S1 + bh + UiTokens.S4, bw, keys);
         }
+
+        private static CompanyLayout _layNow;   // the layout and the view of the page being laid out: the page of a part that is off needs them for its link, from any tab's face
+        private static CompanyView _viewNow;
     }
 }

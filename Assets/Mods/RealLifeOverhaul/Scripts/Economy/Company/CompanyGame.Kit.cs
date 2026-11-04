@@ -147,6 +147,57 @@ namespace RealLifeOverhaul.Economy
 
         public static void OpenSale(string place) => ServicesDirector.OpenSale(place);
 
+        /// <summary>
+        /// The nearest business of the same kind in a shop's district that a rival owns, and the mean of the game's last seven daily takings for it: the game's own estimate
+        /// (BuildingRegistration.dailyIncomes, which the game keeps twenty days of for every business a rival owns). False where there is none. Read when a business's page
+        /// is read, never per frame.
+        /// </summary>
+        internal static bool RivalNear(CompanyShop shop, out string name, out int daily)
+        {
+            name = null;
+            daily = 0;
+            try
+            {
+                List<BuildingRegistration> all = Save != null ? Save.BuildingRegistrations : null;
+                BuildingRegistration mine = shop != null ? shop.Reg : null;
+                if (all == null || mine == null)
+                {
+                    return false;
+                }
+                float best = float.MaxValue;
+                for (int i = 0; i < all.Count; i++)
+                {
+                    BuildingRegistration r = all[i];
+                    if (r == null || string.IsNullOrEmpty(r.businessOwnerRivalId) || r.RentedByPlayer || string.IsNullOrEmpty(r.BusinessName) || r.dailyIncomes == null || r.dailyIncomes.Count == 0
+                        || !string.Equals(r.businessTypeName, mine.businessTypeName, StringComparison.Ordinal) || !string.Equals(GameRegistrations.District(r), shop.District,
+                            StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+                    // Nearness by the address: the same street first, by how far apart the numbers are, then the rest of the district.
+                    float away = string.Equals(r.StreetName, mine.StreetName, StringComparison.Ordinal) ? Mathf.Abs(r.StreetNumber - mine.StreetNumber) : 100000f;
+                    if (away < best)
+                    {
+                        best = away;
+                        name = r.BusinessName;
+                        int from = Mathf.Max(0, r.dailyIncomes.Count - 7);
+                        float sum = 0f;
+                        for (int k = from; k < r.dailyIncomes.Count; k++)
+                        {
+                            sum += r.dailyIncomes[k];
+                        }
+                        daily = Mathf.RoundToInt(Mathf.Max(0f, sum / (r.dailyIncomes.Count - from)));
+                    }
+                }
+                return name != null;
+            }
+            catch (Exception)
+            {
+                name = null;
+                return false;
+            }
+        }
+
         /// <summary>The company's line in the stock market (Markets/Listing); null where it is not listed.</summary>
         public static string ListingLine()
         {

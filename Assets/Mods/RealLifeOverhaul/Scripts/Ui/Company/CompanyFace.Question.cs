@@ -194,20 +194,21 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The question as a card over the dimmed world (the decision card): the manager and the person it is about at its side, what it is, the choices and the buttons.</summary>
         internal static void LayQuestion(UiScene s, CompanyQuestion q, CompanyView v, CompanyWords w, CompanyLayout lay, UiFrame frame, bool dark, IUiKeys keys)
         {
-            var faces = new System.Collections.Generic.List<string>(2);
-            var roles = new System.Collections.Generic.List<string>(2);
-            var rings = new System.Collections.Generic.List<UiRole>(2);
-            if (!string.IsNullOrEmpty(q.Asker))
+            // The person it is about, large in the side (a question with no one it is about: the one who asks), with what they are and who asks under their name; two small
+            // faces in a column of empty slate said less.
+            string hero = !string.IsNullOrEmpty(q.Subject) ? q.Subject : q.Asker;
+            var lines = new System.Collections.Generic.List<string>(2);
+            if (!string.IsNullOrEmpty(q.Subject) && !string.IsNullOrEmpty(q.SubjectRole))
             {
-                faces.Add(q.Asker);
-                roles.Add(q.AskerRole);
-                rings.Add(q.AskerRing);
+                lines.Add(q.SubjectRole);
             }
-            if (!string.IsNullOrEmpty(q.Subject))
+            if (!string.IsNullOrEmpty(q.Asker) && !string.IsNullOrEmpty(q.Subject))
             {
-                faces.Add(q.Subject);
-                roles.Add(q.SubjectRole);
-                rings.Add(q.SubjectRing);
+                lines.Add(w.F("reallife_co_q_asked_by", "Asked by {name}", "name", q.Asker));
+            }
+            else if (!string.IsNullOrEmpty(q.Asker) && !string.IsNullOrEmpty(q.AskerRole))
+            {
+                lines.Add(q.AskerRole);
             }
             CompanyButton[] buttons = FitButtons(QuestionButtons(q, v, w), w, keys);
             var actions = new UiActionModel[buttons.Length];
@@ -218,8 +219,7 @@ namespace RealLifeOverhaul.Ui
             }
             var m = new UiDecisionModel
             {
-                Kicker = q.Kicker, Title = q.Title, Body = q.Body, BodyLines = 5, Faces = faces.ToArray(), FaceRoles = roles.ToArray(), FaceRings = rings.ToArray(), Speaking = faces.Count > 0 ? 0
-                    : -1,
+                Kicker = q.Kicker, Title = q.Title, Body = q.Body, BodyLines = 5, Portrait = string.IsNullOrEmpty(hero) ? null : hero, PortraitLines = lines.ToArray(),
                 FactLabels = q.FactLabels, FactValues = q.FactValues, Choices = ChoicesOf(q), Selected = Math.Max(0, Math.Min(q.Choices.Length - 1, v.Choice)), Buttons = actions,
                 ChoiceCmd = Choice, ButtonCmd = Act,
                 Prompts = new[]

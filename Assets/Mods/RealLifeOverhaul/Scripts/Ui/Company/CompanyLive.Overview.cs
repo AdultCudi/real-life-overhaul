@@ -31,31 +31,66 @@ namespace RealLifeOverhaul.Ui
                     s.FirstDay).ToString())
                 : w.F("reallife_co_head_line", "Head office {place}, {staff} staff, {managers} managers, run since Day {day}", "place", where, "staff", s.Staff.Count.ToString(),
                     "managers", managers.ToString(), "day", Math.Max(1, s.FirstDay).ToString());
-            ReadBusinesses(o, d, w);
+            ReadBusinesses(o, d, v, w);
             ReadResult(o, d, w);
             ReadWaiting(o, f, d, v, w);
             ReadDone(o, d, w);
             ReadCosts(o, d, w);
             ReadManagersToday(o, d, w);
             ReadTools(o, w);
+            if (d.Shops.Count == 1)
+            {
+                o.Shop = BusinessCard(d, d.Shops[0], w, false);   // one business: its panel stands where a table of one row would
+            }
+            if (managers == 0 && s.Staff.Count > 0 && d.ManagersOn)
+            {
+                o.Next = new CompanyWaiting
+                {
+                    Name = w.T("reallife_co_next_title", "Next: hire a manager"), Line = w.T("reallife_co_next_line", "A manager answers what you hand over, and asks you what is past their limit."),
+                    Icon = UiIcon.People, OpenLabel = w.T("reallife_co_open_managers", "Open Managers"), Open = CompanyAct.Of(CompanyDo.Go, null, CompanyView.Managers)
+                };
+            }
         }
 
-        private static void ReadBusinesses(CompanyOverviewFacts o, CompanyDirector d, Words w)
+        private static void ReadBusinesses(CompanyOverviewFacts o, CompanyDirector d, CompanyView v, Words w)
         {
             IReadOnlyList<CompanyShop> shops = d.Shops;
-            o.Businesses = new CompanyBusiness[shops.Count];
+            // The districts the businesses stand in: the day table can be shown for one of them (the old table's district filter; a company keeps up to 64 businesses).
+            var districts = new List<string>(8);
+            for (int i = 0; i < shops.Count; i++)
+            {
+                string name = CompanyText.District(shops[i].District);
+                if (!string.IsNullOrEmpty(name) && !districts.Contains(name))
+                {
+                    districts.Add(name);
+                }
+            }
+            int pick = districts.Count > 1 ? CompanyCatalogue.Clamp(v.Filter & 63, 0, districts.Count) : 0;
+            if (districts.Count > 1)
+            {
+                var options = new List<string>(districts.Count + 1) { w.T("reallife_co_f_all_districts", "All districts") };
+                options.AddRange(districts);
+                o.Districts = new CompanyFilterBar { Options = options.ToArray(), Chosen = pick, Shift = 0, Bits = 6, Step = options.Count > 4 };
+                o.DistrictFilter = v.Filter;
+            }
+            string only = pick > 0 ? districts[pick - 1] : null;
+            var list = new List<CompanyBusiness>(shops.Count);
             long takings = 0, costs = 0;
             bool any = false;
             for (int i = 0; i < shops.Count; i++)
             {
                 CompanyShop shop = shops[i];
+                if (only != null && CompanyText.District(shop.District) != only)
+                {
+                    continue;
+                }
                 int profit = shop.Profit, cost = shop.Takings - shop.Profit;
-                o.Businesses[i] = new CompanyBusiness
+                list.Add(new CompanyBusiness
                 {
                     Place = shop.File.Place, Name = shop.Name, Mark = CompanyFace.Initials(shop.Name), HasBooks = shop.HasBooks,
                     Takings = shop.HasBooks ? w.Money(shop.Takings) : null, Costs = shop.HasBooks ? w.Money(cost) : null,
                     Result = shop.HasBooks ? Signed(profit, w) : null, ResultTone = profit > 0 ? 1 : profit < 0 ? -1 : 0, Waiting = ShopWaiting(d, shop) > 0
-                };
+                });
                 if (shop.HasBooks)
                 {
                     any = true;
@@ -63,6 +98,8 @@ namespace RealLifeOverhaul.Ui
                     costs += cost;
                 }
             }
+            o.Businesses = list.ToArray();
+            o.TotalLabel = only != null ? w.F("reallife_co_in_district", "In {district}", "district", only) : w.T("reallife_co_all_businesses", "All businesses");
             if (any)
             {
                 long result = takings - costs;
@@ -371,39 +408,51 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- a business's page
 
-        private CompanyCard BusinessCard(CompanyDirector d, CompanyShop shop, Words w)
+        private static readonly UiIcon[] CoverIcons = { UiIcon.Fire, UiIcon.Lock, UiIcon.ShieldCheck };
+
+        // A business as a card: as its own page (a head with the figures beside the name, then two columns: how it stands at the left, its licences, cover, campaign and what can be
+        // done at the right) or, with <paramref name="page"/> false, as the panel of a company that has one business (its figures and the same rows, in one column).
+        private CompanyCard BusinessCard(CompanyDirector d, CompanyShop shop, Words w, bool page = true)
         {
             CompanyState s = d.State;
             ShopFile file = shop.File;
             int day = d.Today;
             int waiting = ShopWaiting(d, shop);
-            var c = new CompanyCard
-            {
-                Kicker = w.T("reallife_co_business", "Business"), Title = shop.Name, Sub = CompanyText.District(shop.District), Icon = UiIcon.Store,
-                Chips = new[] { waiting > 0 ? CompanyText.T("reallife_co_state_waiting", "count", waiting.ToString()) : CompanyText.T("reallife_co_state_in_order") },
-                ChipTones = new[] { waiting > 0 ? UiRole.Warn : UiRole.Ok },
-                Back = new[] { new CompanyButton { Label = w.T("reallife_co_back", "Back"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Back, Act = CompanyAct.Of(CompanyDo.Go, "",
-                    CompanyView.Overview) } }
-            };
-            var facts = new List<string>(4);
+            var c = new CompanyCard();
+            var labels = new List<string>(4);
             var values = new List<string>(4);
-            facts.Add(w.T("reallife_co_f_staff", "Staff"));
+            labels.Add(w.T("reallife_co_f_staff", "Staff"));
             values.Add(shop.Staff.ToString());
             if (shop.HasBooks)
             {
-                facts.Add(w.T("reallife_co_f_takings", "Takings"));
+                labels.Add(w.T("reallife_co_f_takings", "Takings"));
                 values.Add(w.Money(shop.Takings));
-                facts.Add(w.T("reallife_co_f_profit", "Profit"));
+                labels.Add(w.T("reallife_co_f_profit", "Profit"));
                 values.Add(Signed(shop.Profit, w));
             }
             if (shop.Staff > 0)
             {
-                facts.Add(w.T("reallife_co_f_standing", "Standing"));
+                labels.Add(w.T("reallife_co_f_standing", "Standing"));
                 values.Add((shop.Standing / shop.Staff).ToString());
             }
-            c.FactLabels = facts.ToArray();
-            c.FactValues = values.ToArray();
-            var blocks = new List<CompanyBlock>(16);
+            var blocks = new List<CompanyBlock>(24);
+            if (page)
+            {
+                c.Kicker = w.T("reallife_co_business", "Business");
+                c.Title = shop.Name;
+                c.Sub = CompanyText.District(shop.District);
+                c.Icon = UiIcon.Store;
+                c.Chips = new[] { waiting > 0 ? CompanyText.T("reallife_co_state_waiting", "count", waiting.ToString()) : CompanyText.T("reallife_co_state_in_order") };
+                c.ChipTones = new[] { waiting > 0 ? UiRole.Warn : UiRole.Ok };
+                c.Back = new[] { new CompanyButton { Label = w.T("reallife_co_back", "Back"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Back, Act = CompanyAct.Of(CompanyDo.Go, "",
+                    CompanyView.Overview) } };
+                c.FactLabels = labels.ToArray();
+                c.FactValues = values.ToArray();
+            }
+            else
+            {
+                blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Figures, Options = labels.ToArray(), Values = values.ToArray() });
+            }
             blocks.Add(Sec(w.T("reallife_co_sec_state", "How it stands")));
             if (d.On(CompanyPart.Staff) && file.StrikeFrom > 0)
             {
@@ -411,24 +460,79 @@ namespace RealLifeOverhaul.Ui
                     UiRole.DangerText));
             }
             ManagedPlace mp = d.ManagedAt(file.Place);
-            if (mp != null && mp.Own != null)
-            {
-                blocks.Add(Row(w.T("reallife_co_r_manager", "Manager"), mp.Own.Name));
-            }
+            blocks.Add(Row(w.T("reallife_co_r_manager", "Manager"), mp != null && mp.Own != null ? mp.Own.Name : CompanyText.T("reallife_co_none")));
             blocks.Add(Row(w.T("reallife_co_r_district_income", "District income"), shop.Income.ToString()));
+            LeaseFile lease = d.LeaseAt(file.Place);
+            if (lease != null)
+            {
+                string rent = w.Money(d.Monthly(LeaseRules.RentAt(lease.Rent, lease.Running)));
+                blocks.Add(Row(w.T("reallife_co_r_lease", "Lease"), lease.Hold ? w.F("reallife_co_lease_hold", "Month to month, {rent} a month", "rent", rent)
+                    : w.F("reallife_co_lease_renews", "Day {day}, {rent} a month", "day", lease.End.ToString(), "rent", rent)));
+            }
+            string rival;
+            int takes;
+            if (CompanyGame.RivalNear(shop, out rival, out takes))
+            {
+                blocks.Add(Row(w.T("reallife_co_r_rival", "Nearest rival"), w.F("reallife_co_rival_line", "{name}, about {amount} a day (the game's estimate)", "name", rival, "amount",
+                    w.Money(takes))));
+            }
             if (!shop.HasBooks)
             {
                 blocks.Add(Note(CompanyText.T("reallife_co_shop_no_books"), UiRole.None));
             }
+            if (file.Hide > 0 && Settings.EconomyCompanyHide)
+            {
+                blocks.Add(Row(w.T("reallife_co_r_hidden", "Cash off the books"), file.Hide + "%"));
+            }
+            if (d.On(CompanyPart.Licences))
+            {
+                var items = new List<CompanyItem>(8);
+                for (int k = 0; k < CompanyCatalogue.LicenceKinds; k++)
+                {
+                    if (!LicenceRules.Needed(shop.Needs, k))
+                    {
+                        continue;
+                    }
+                    Licence l = file.Permits[k];
+                    bool valid = LicenceRules.Valid(l, day), soon = valid && l.Until - day < CompanyCatalogue.LicenceRemindDays, pending = !valid && l.Pending;
+                    items.Add(new CompanyItem
+                    {
+                        Title = CompanyText.Capital(CompanyText.Licence(k)), Icon = LicenceIcons[Math.Min(k, LicenceIcons.Length - 1)], Tint = UiRole.None, Press = true,
+                        Sub = valid ? CompanyText.Day(l.Until) : pending ? CompanyText.Day(l.Decide) : null,
+                        Chip = CompanyText.T(pending ? "reallife_co_row_lic_pending" : !valid ? "reallife_co_row_lic_missing" : l.Auto ? "reallife_co_row_lic_auto" : soon ? "reallife_co_row_lic_soon"
+                            : "reallife_co_row_lic_valid"),
+                        ChipTone = pending ? UiRole.Warn : !valid ? UiRole.Danger : soon && !l.Auto ? UiRole.Warn : UiRole.Ok, Grade = -1,
+                        Act = CompanyAct.Of(CompanyDo.Go, "lic:" + file.Place + ":" + k, CompanyView.Tax, CompanyView.SubLicence)
+                    });
+                }
+                if (items.Count > 0)
+                {
+                    blocks.Add(Sec(w.T("reallife_co_r_licences", "Licences")));
+                    blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = items.ToArray() });
+                }
+            }
+            if (page)
+            {
+                blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Break });   // the licences with how it stands at the left, the cover, the campaign and what can be done at the right
+            }
             if (d.On(CompanyPart.Cover))
             {
-                string cover = string.Empty;
+                var items = new List<CompanyItem>(3);
                 for (int k = 0; k < file.Cover.Length; k++)
                 {
-                    cover += file.Cover[k].Active ? (cover.Length > 0 ? ", " : string.Empty) + CompanyText.Cover(k) : string.Empty;
+                    bool held = file.Cover[k].Active;
+                    items.Add(new CompanyItem
+                    {
+                        Title = CompanyText.Capital(CompanyText.Cover(k)), Icon = CoverIcons[Math.Min(k, CoverIcons.Length - 1)], Tint = UiRole.None, Press = true, Grade = -1,
+                        Chip = CompanyText.T(held ? "reallife_ibox_chip_covered" : "reallife_ibox_chip_not_covered"), ChipTone = held ? UiRole.Ok : UiRole.Warn,
+                        Act = CompanyAct.Of(CompanyDo.Go, "pol:" + file.Place + ":" + k, CompanyView.Cover)
+                    });
                 }
-                blocks.Add(Link(w.T("reallife_co_r_cover", "Cover held"), cover.Length > 0 ? cover : CompanyText.T("reallife_co_none"), CompanyAct.Of(CompanyDo.Go, "pol:" + file.Place + ":0",
-                    CompanyView.Cover)));
+                if (items.Count > 0)
+                {
+                    blocks.Add(Sec(w.T("reallife_co_r_cover", "Cover held")));
+                    blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = items.ToArray() });
+                }
             }
             if (d.On(CompanyPart.Marketing))
             {
@@ -436,17 +540,6 @@ namespace RealLifeOverhaul.Ui
                     ? CompanyText.T(file.Pushing(day) ? "reallife_co_shop_campaign_on" : "reallife_co_shop_campaign_booked", "campaign", CompanyText.Campaign(file.Push), "day",
                         (file.Pushing(day) ? file.PushEnd - 1 : file.PushFrom).ToString()) : CompanyText.T("reallife_co_none"), CompanyAct.Of(CompanyDo.Go, "biz:"
                             + file.Place, CompanyView.Marketing)));
-            }
-            if (d.On(CompanyPart.Licences))
-            {
-                int missing = LicenceRules.Missing(file, shop.Needs, day);
-                blocks.Add(Link(w.T("reallife_co_r_licences", "Licences"), missing != 0 ? CompanyText.T("reallife_co_shop_licences_missing", "list", CompanyText.Licences(missing))
-                    : CompanyText.T("reallife_co_shop_licences_held"),
-                    CompanyAct.Of(CompanyDo.Go, null, CompanyView.Tax), missing != 0 ? UiRole.WarnText : UiRole.None));
-            }
-            if (file.Hide > 0 && Settings.EconomyCompanyHide)
-            {
-                blocks.Add(Row(w.T("reallife_co_r_hidden", "Cash off the books"), file.Hide + "%"));
             }
             blocks.Add(Sec(w.T("reallife_co_sec_do", "What you can do here")));
             var buttons = new List<CompanyButton>(3)

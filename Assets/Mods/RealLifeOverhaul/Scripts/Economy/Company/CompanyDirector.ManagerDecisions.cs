@@ -578,7 +578,8 @@ namespace RealLifeOverhaul.Economy
             {
                 if (Verbose)
                 {
-                    Logger?.Info("Company check (managers, hiring at " + mp.Place.Name + "): " + count + " candidate(s) from the job board, none inside the wage band, the hiring cap, the skill floor and the "
+                    Logger?.Info("Company check (managers, hiring at " + mp.Place.Name + "): " + count
+                        + " candidate(s) from the job board, none inside the wage band, the hiring cap, the skill floor and the "
                                  + ManagerRules.Left(BudgetOf(m), m.Spent) + " left of the budget: PASS");
                 }
                 _candidates.Clear();
@@ -646,7 +647,8 @@ namespace RealLifeOverhaul.Economy
             {
                 mp.Place.Staff--;
                 Decision d = _mgr.Decisions[_mgr.Decisions.Count - 1];
-                Logger?.Info("Company: " + who + " (manager) let " + d.Detail + " go from " + mp.Place.Name + " after " + d.D + " late day(s) running; the job board has somebody to take their place.");
+                Logger?.Info("Company: " + who + " (manager) let " + d.Detail + " go from " + mp.Place.Name + " after " + d.D
+                    + " late day(s) running; the job board has somebody to take their place.");
             }
             return let;
         }

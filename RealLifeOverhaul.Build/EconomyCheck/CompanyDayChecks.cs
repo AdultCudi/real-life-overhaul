@@ -129,6 +129,12 @@ internal static partial class Program
         LeaseHour third = CompanyDay.Lease(world, m.Place, m, l, 70, 0, m.Name, Epoch + 5, 9);
         Check(third == LeaseHour.Accepted || third == LeaseHour.Declined, "day entries: an offer that is inside the limit again is the manager's to answer (" + third + ")");
         Check(CompanyDay.OwnerAnswers(world, m.Place, new LeaseFile { Place = "Nowhere~1" }, true, "You", Epoch + 6) == false, "day entries: the owner's answer to a lease with no offer does nothing");
+        // The lease question has a number of its own when no escalation stands behind it, and the notice that opens it maps to that number.
+        int elm = LeaseRules.QuestionId("Elm~7");
+        string uiDir = FindCompanyDirectory() != null ? FindCompanyDirectory().Replace(System.IO.Path.Combine("Scripts", "Economy", "Company"), System.IO.Path.Combine("Scripts", "Ui", "Company")) : null;
+        string liveText = uiDir != null ? SourceText(uiDir, "CompanyLive.cs") : string.Empty;
+        Check(elm < 0 && elm == LeaseRules.QuestionId("Elm~7") && elm != LeaseRules.QuestionId("Dock~4") && liveText.Contains("kind == \"ls:\"") && liveText.Contains("LeaseRules.QuestionId(rest)"),
+            "lease question: a lease with no escalation behind it has a number of its own (negative, the same each time), and the notice's \"ls:\" pick opens it, hierarchy or none");
         // A manager hires a place up to twelve crew; past that the gap is the owner's.
         Check(CompanyDay.Wants(new ManagerFile { Keep = 20 }, 11) && !CompanyDay.Wants(new ManagerFile { Keep = 20 }, 12) && !CompanyDay.Wants(new ManagerFile { Keep = 6 }, 6) && CompanyDay.Wants(new ManagerFile { Keep = 6 }, 5),
             "day entries: a manager hires while the crew they are told to keep is not there and it is under " + ManagerCatalogue.HireCrewMost + ", and no further");

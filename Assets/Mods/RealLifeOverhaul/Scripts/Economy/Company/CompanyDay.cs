@@ -302,7 +302,8 @@ namespace RealLifeOverhaul.Economy
             HierarchyState h = w.Hierarchy;
             if (h != null && h.OpenOf(EscalationKind.Lease, place) == null)
             {
-                Escalate(w, EscalationKind.Lease, place, w.Managers.At(place), LeaseRules.RentAt(l.Rent, l.Running), LeaseRules.RentAt(l.Rent, l.Offer), l.End - day, string.Empty, l.Name, day, w.Hour);
+                Escalate(w, EscalationKind.Lease, place, w.Managers.At(place), LeaseRules.RentAt(l.Rent, l.Running), LeaseRules.RentAt(l.Rent, l.Offer), l.End - day, string.Empty, l.Name, day,
+                    w.Hour);
             }
             w.LeaseNotice(place, l, day);
             return true;

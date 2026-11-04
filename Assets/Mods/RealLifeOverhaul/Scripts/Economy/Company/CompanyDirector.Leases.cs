@@ -209,9 +209,11 @@ namespace RealLifeOverhaul.Economy
             int end = l.End;
             OfferWas was = CompanyDay.Offer(this, l.Place, l, manager, LeaseTrend, Pressure(l.District), MarketOf(l), MonthDays, day);
             int asked = was == OfferWas.Renewed ? l.Rise : l.Offer;
-            Logger?.Info("Company: the landlord of " + shop.Name + " asks " + LeaseRules.RentAt(l.Rent, asked) + " a day (the game's rent " + l.Rent + ", " + asked + " per mille over it) when the lease ends in "
+            Logger?.Info("Company: the landlord of " + shop.Name + " asks " + LeaseRules.RentAt(l.Rent, asked) + " a day (the game's rent " + l.Rent + ", " + asked
+                + " per mille over it) when the lease ends in "
                          + (end - day) + " day(s), on day " + end + ": "
-                         + (was == OfferWas.Renewed ? "the days were skipped past the end, so it is renewed at their figure" : was == OfferWas.Manager ? "the manager answers it" : "the owner is asked") + ".");
+                         + (was == OfferWas.Renewed ? "the days were skipped past the end, so it is renewed at their figure" : was == OfferWas.Manager ? "the manager answers it"
+                             : "the owner is asked") + ".");
             if (was == OfferWas.Renewed)
             {
                 Settled(l, shop, day);
@@ -311,7 +313,8 @@ namespace RealLifeOverhaul.Economy
             }
             else if (was == LeaseHour.PassedUp)
             {
-                Logger?.Info("Company: " + who + " (manager) passed the landlord's offer for " + mp.Place.Name + " up to the owner, " + LeaseRules.OfferOver(l) + " per mille over the rent now, past their limit.");
+                Logger?.Info("Company: " + who + " (manager) passed the landlord's offer for " + mp.Place.Name + " up to the owner, " + LeaseRules.OfferOver(l)
+                    + " per mille over the rent now, past their limit.");
             }
         }
 

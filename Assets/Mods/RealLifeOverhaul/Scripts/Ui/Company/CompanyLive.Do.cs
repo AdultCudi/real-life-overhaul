@@ -61,6 +61,12 @@ namespace RealLifeOverhaul.Ui
                 case CompanyDo.Dismiss:
                     d.HierarchyDismiss(a.A);
                     return true;
+                case CompanyDo.OpenOptions:
+                    if (Meta.SettingsApp.Installed)
+                    {
+                        Meta.SettingsApp.Open("s:" + (string.IsNullOrEmpty(a.S) ? "company" : a.S));
+                    }
+                    return true;
                 case CompanyDo.LeaseAnswer:
                     if (a.A == CompanyDirector.AnswerHaggle)
                     {

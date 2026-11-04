@@ -732,7 +732,8 @@ namespace RealLifeOverhaul.Economy
                 return false;
             }
             Recount();
-            Logger?.Info("Company: " + who + " agreed the " + (e.C == 1 ? "match of a rival's offer" : "raise") + " of " + e.Detail + " past the band" + (owner ? string.Empty : ", inside the approver's ceiling") + ".");
+            Logger?.Info("Company: " + who + " agreed the " + (e.C == 1 ? "match of a rival's offer" : "raise") + " of " + e.Detail + " past the band" + (owner ? string.Empty
+                : ", inside the approver's ceiling") + ".");
             return true;
         }
 

@@ -101,7 +101,11 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.TextMiddle(s, at, x, cy, UiTokens.Control, width - rw - UiTokens.S3, UiStyle.SectionHeader, UiRole.Text, list.Title, UiFlags.Label | UiFlags.Truncate);
                 cy += UiTokens.Control;
             }
-            if (list.Filters != null && list.Filters.Length > 1)
+            if (list.Bars != null && list.Bars.Length > 0)
+            {
+                cy = FilterBars(s, at, list.Bars, list.Filter, x, cy, width);
+            }
+            else if (list.Filters != null && list.Filters.Length > 1)
             {
                 // The filters as chips in rows, the chosen one filled (a state, so not a second primary).
                 float fx = x, fy = cy;
@@ -175,6 +179,60 @@ namespace RealLifeOverhaul.Ui
                 cy += Math.Min(viewH, content);
             }
             return result;
+        }
+
+        // The filter bars over a list, one row each (a bar of chips wraps within the width; a stepping bar is one chip): the chosen option filled, a press puts its option in the
+        // list's filter number.
+        internal static float FilterBars(UiScene s, UiAt at, CompanyFilterBar[] bars, int filter, float x, float y, float width)
+        {
+            float fx = x, fy = y;
+            bool fresh = true;   // nothing yet in this row of chips
+            for (int b = 0; b < bars.Length; b++)
+            {
+                CompanyFilterBar bar = bars[b];
+                int count = bar.Options.Length;
+                if (count < 2)
+                {
+                    continue;
+                }
+                int now = Math.Max(0, Math.Min(count - 1, bar.Chosen));
+                if (bar.Step)
+                {
+                    // Stepping chips share a row where they fit side by side.
+                    string label = string.IsNullOrEmpty(bar.Label) ? bar.Options[now] : bar.Label.Replace("{choice}", bar.Options[now]);
+                    float cw1 = Math.Min(width, UiDraw.ButtonWidth(UiButtonKind.Chip, label, UiIcon.None, UiAction.Count, null));
+                    if (!fresh && fx + cw1 > x + width)
+                    {
+                        fx = x;
+                        fy += UiTokens.Chip + UiTokens.S2;
+                    }
+                    ChoiceChip(s, at, fx, fy, label, now > 0, Filter, bar.With(filter, (now + 1) % count));
+                    fx += cw1 + UiTokens.S2;
+                    fresh = false;
+                    continue;
+                }
+                if (!fresh)
+                {
+                    fx = x;
+                    fy += UiTokens.Chip + UiTokens.S2;   // a bar of chips has a row of its own
+                }
+                for (int i = bar.Toggle ? 1 : 0; i < count; i++)
+                {
+                    float cwid = Math.Min(width, UiDraw.ButtonWidth(UiButtonKind.Chip, bar.Options[i], UiIcon.None, UiAction.Count, null));
+                    if (fx > x && fx + cwid > x + width)
+                    {
+                        fx = x;
+                        fy += UiTokens.Chip + UiTokens.S2;
+                    }
+                    ChoiceChip(s, at, fx, fy, bar.Options[i], i == now, Filter, bar.With(filter, bar.Toggle && i == now ? 0 : i));
+                    fx += cwid + UiTokens.S2;
+                }
+                fresh = false;
+                fx = x;
+                fy += UiTokens.Chip + UiTokens.S2;
+                fresh = true;   // the next bar starts a row of its own
+            }
+            return (fresh ? fy : fy + UiTokens.Chip + UiTokens.S2) + UiTokens.S1;
         }
 
         // ------------------------------------------------------------------------------------------------- a page of a list and a card
@@ -336,8 +394,16 @@ namespace RealLifeOverhaul.Ui
             cy += nameH + UiTokens.S1;
             if (!string.IsNullOrEmpty(c.Sub))
             {
-                UiDraw.TextMiddle(s, at, tx, cy, UiTokens.PairRow, tw, UiStyle.Body, UiRole.Text2, c.Sub, UiFlags.Truncate);
-                cy += UiTokens.PairRow + UiTokens.S1;
+                if (UiTextRules.Width(c.Sub, UiStyle.Body) <= tw)
+                {
+                    UiDraw.TextMiddle(s, at, tx, cy, UiTokens.PairRow, tw, UiStyle.Body, UiRole.Text2, c.Sub, UiFlags.Truncate);
+                    cy += UiTokens.PairRow + UiTokens.S1;
+                }
+                else
+                {
+                    int subId = UiDraw.Text(s, at, tx, cy, tw, UiStyle.Body, UiRole.Text2, c.Sub, UiFlags.Wrap | UiFlags.Truncate, 2);   // two lines, never a sentence cut mid way where there is room
+                    cy = UiDraw.Snap(s.Items[subId].Y + s.Items[subId].H) + UiTokens.S1;
+                }
             }
             float chipX = tx;
             for (int i = 0; i < c.Chips.Length; i++)
@@ -459,7 +525,8 @@ namespace RealLifeOverhaul.Ui
         // A figure before and during: the label at the left, the two figures in columns at the right, the second in its tone; two heads over the first row of a run.
         private static float CompareBlock(UiScene s, UiAt at, CompanyBlock b, float x, float y, float cw)
         {
-            float colW = Math.Min(UiDraw.SnapDown(cw * 0.26f), UiDraw.Snap(Math.Max(UiTextRules.Width(b.Value ?? string.Empty, UiStyle.BodyStrong), UiTextRules.Width(b.Sub ?? string.Empty, UiStyle.BodyStrong)) + UiTokens.S4));
+            float colW = Math.Min(UiDraw.SnapDown(cw * 0.26f), UiDraw.Snap(Math.Max(UiTextRules.Width(b.Value ?? string.Empty, UiStyle.BodyStrong), UiTextRules.Width(b.Sub ?? string.Empty,
+                UiStyle.BodyStrong)) + UiTokens.S4));
             colW = Math.Max(colW, UiDraw.Snap(UiTextRules.Width(b.Options != null && b.Options.Length > 1 ? b.Options[1] : string.Empty, UiStyle.SectionHeader) + UiTokens.S3));
             float second = x + cw - colW, first = second - colW;
             if (b.Options != null && b.Options.Length > 1)
@@ -483,7 +550,8 @@ namespace RealLifeOverhaul.Ui
             {
                 ref CompanyItem it = ref b.Items[i];
                 int face = UiDraw.Box(s, at, x, y, cw, ListRow, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
-                RowFace(s, at.In(face), x, y, cw, ListRow, it.Title, it.Sub, it.Figure, it.Note, it.Chip, it.ChipTone, it.FigureTone, it.Icon, it.Tint, it.Face, it.Hue, it.Ring, it.Grade, false, false);
+                RowFace(s, at.In(face), x, y, cw, ListRow, it.Title, it.Sub, it.Figure, it.Note, it.Chip, it.ChipTone, it.FigureTone, it.Icon, it.Tint, it.Face, it.Hue, it.Ring, it.Grade, false,
+                    false);
                 if (it.Press && it.Act.Do != CompanyDo.None)
                 {
                     int index = lay.Add(new CompanyButton { Label = it.Title, Act = it.Act });

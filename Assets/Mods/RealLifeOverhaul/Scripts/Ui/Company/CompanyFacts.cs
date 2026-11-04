@@ -17,6 +17,7 @@ namespace RealLifeOverhaul.Ui
         OpenCleaning,       // open the cleaning company
         OpenBank,           // open the player's own bank
         OpenStocks,         // open the company's line in Stocks
+        OpenOptions,        // open the mod's options at the section S ("company", "rota", "managers"): the way to switch a part on
         // questions waiting on the owner
         Settle,             // escalation A settled with answer B (agree 0, refuse 1, bonus 3, limit 4, haggle 5)
         Dismiss,            // escalation A dismissed
@@ -206,6 +207,11 @@ namespace RealLifeOverhaul.Ui
         public CompanyButton[] Tools = new CompanyButton[0];     // Open cleaning, Open your bank, the listing: only what is there
         public string Note;                     // a line under the right column (the stock market line)
         public bool PartOff;                    // the company's parts are off
+        public CompanyCard Shop;                // a company with one business shows it as a panel where the day table would have one row
+        public CompanyWaiting Next;             // the next step where nothing else fills the page (hire a manager); Name null for none
+        public CompanyFilterBar Districts;      // chips over the day table where the businesses stand in several districts; null for none
+        public int DistrictFilter;              // the filter number the bar keeps its choice in
+        public string TotalLabel;               // what the table's total row is the total of: all of them, or one district's
     }
 
     /// <summary>One block of a card (a generic page): a section label, a row, a note, buttons, a switch, a stepper, a choice, grades or dated lines.</summary>
@@ -297,6 +303,26 @@ namespace RealLifeOverhaul.Ui
         public bool Dim;
     }
 
+    /// <summary>
+    /// One dimension of a list's filter, drawn as a row of chips or as one chip that steps through its options. The list's filter is one number: this dimension keeps its choice
+    /// in <see cref="Bits"/> bits from bit <see cref="Shift"/>, so a press of a chip is the whole number with this choice put in (a list may have several bars).
+    /// </summary>
+    public sealed class CompanyFilterBar
+    {
+        public string[] Options = new string[0];
+        public int Chosen;
+        public int Shift, Bits = 3;
+        public string Label;                    // a stepping chip's words with "{choice}" in them ("Sort: {choice}"); null for the options as chips
+        public bool Step;                       // one chip showing the choice; a press goes to the next option, and round to the first
+        public bool Toggle;                     // chips for the options after the first only: the first is "all", what none chosen means, and pressing the chosen chip goes back to it
+
+        /// <summary>The filter number with option <paramref name="option"/> chosen in this bar, the other bars' choices kept.</summary>
+        public int With(int filter, int option) => (filter & ~(((1 << Bits) - 1) << Shift)) | (option << Shift);
+
+        /// <summary>This bar's choice in a filter number.</summary>
+        public int In(int filter) => (filter >> Shift) & ((1 << Bits) - 1);
+    }
+
     /// <summary>A left-hand list: its title, count, rows and the one chosen.</summary>
     public sealed class CompanyList
     {
@@ -307,6 +333,7 @@ namespace RealLifeOverhaul.Ui
         public CompanyButton[] Tools = new CompanyButton[0];     // buttons under the title ("New plan")
         public string[] Filters = new string[0];                 // chips above the rows
         public int Filter;
+        public CompanyFilterBar[] Bars = new CompanyFilterBar[0];   // filters in several dimensions, in rows above the rows (instead of Filters); Filter is then the whole number
     }
 
     /// <summary>A card and the list that picks it, with the words for an empty room.</summary>

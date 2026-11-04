@@ -18,6 +18,15 @@ namespace RealLifeOverhaul.Ui
             }
             if (v.Sub[CompanyView.Tax] != CompanyView.SubMain && t.Card != null)
             {
+                // A licence, the accountant, the return or cash off the books opens at the right of the licences: the list stays where it was and the card is its detail.
+                float gapD = UiTokens.S6;
+                if (cw >= 1000f && t.Licences.Length > 0)
+                {
+                    float lwD = UiDraw.SnapDown((cw - gapD) * 0.44f), rwD = cw - gapD - lwD;
+                    Licences(s, at.InRegion(RegionMain), lay, v, w, t, x, y, lwD, bottom, keys, true);
+                    CardPage(s, at.InRegion(RegionSide), t.Card, v, w, lay, x + lwD + gapD, y, rwD, bottom, keys);
+                    return;
+                }
                 CardPage(s, at, t.Card, v, w, lay, x, y, cw, bottom, keys);
                 return;
             }
@@ -28,8 +37,8 @@ namespace RealLifeOverhaul.Ui
             }
             float gap = UiTokens.S6;
             float lw = UiDraw.SnapDown((cw - gap) * 0.6f), rw = cw - gap - lw;
-            Licences(s, at.InRegion(RegionMain), lay, v, w, t, x, cy, lw, bottom, keys);
-            Statement(s, at.InRegion(RegionSide), lay, v, w, t, x + lw + gap, cy, rw, bottom, keys);
+            bool paidLeft = Licences(s, at.InRegion(RegionMain), lay, v, w, t, x, cy, lw, bottom, keys);
+            Statement(s, at.InRegion(RegionSide), lay, v, w, t, x + lw + gap, cy, rw, bottom, keys, paidLeft);
         }
 
         private static float TaxLead(UiScene s, UiAt at, CompanyLayout lay, CompanyView v, CompanyTaxFacts t, float x, float y, float cw, IUiKeys keys)
@@ -72,8 +81,9 @@ namespace RealLifeOverhaul.Ui
             return h;
         }
 
-        // The licences: what, where, who handles it, how it stands, when, and the button; then what is coming up.
-        private static void Licences(UiScene s, UiAt at, CompanyLayout lay, CompanyView v, CompanyWords w, CompanyTaxFacts t, float x, float y, float width, float bottom, IUiKeys keys)
+        // The licences: what, where, who handles it, how it stands, when, and the button; then what is coming up, and the returns paid when the column has the room (true when drawn here).
+        private static bool Licences(UiScene s, UiAt at, CompanyLayout lay, CompanyView v, CompanyWords w, CompanyTaxFacts t, float x, float y, float width, float bottom, IUiKeys keys,
+            bool compact = false)
         {
             float cy = Section(s, at, lay, x, y, width, t.LicencesTitle, t.LicencesCount);
             int comingNeed = t.ComingUp.Length > 0 ? (int)(UiTokens.PairRow + UiTokens.S1 + Math.Min(t.ComingUp.Length, 3) * DoneRow + UiTokens.S4) : 0;
@@ -82,15 +92,16 @@ namespace RealLifeOverhaul.Ui
             {
                 cy = Sentence(s, at, t.LicencesEmpty, x, cy, width, UiRole.Text2, 3);
             }
-            bool showManager = width >= 640f;
+            // Beside a card (compact) a row is the licence, where, and how it stands: the day and the button are on the card.
+            bool showManager = !compact && width >= 640f;
             float managerW = showManager ? Math.Min(UiDraw.SnapDown(width * 0.2f), 168f) : 0f;
-            float stateW = Math.Min(UiDraw.SnapDown(width * 0.2f), 176f), dayW = 76f;
+            float stateW = Math.Min(UiDraw.SnapDown(width * (compact ? 0.3f : 0.2f)), 176f), dayW = compact ? 0f : 76f;
             int rows = Math.Min(t.Licences.Length, fit);
             // The button's column is as wide as the widest button of the rows in view, so that the manager, the state and the day stand in the same place in every row.
             float actCol = 0f;
             for (int i = 0; i < rows; i++)
             {
-                if (t.Licences[i].HasAction)
+                if (!compact && t.Licences[i].HasAction)
                 {
                     CompanyButton a = t.Licences[i].Action;
                     actCol = Math.Max(actCol, Math.Min(UiDraw.SnapDown(width * 0.2f), UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, a.Key, keys)));
@@ -100,11 +111,12 @@ namespace RealLifeOverhaul.Ui
             {
                 ref CompanyLicence l = ref t.Licences[i];
                 float actW = 0f;
-                if (l.HasAction)
+                if (!compact && l.HasAction)
                 {
                     actW = Math.Min(UiDraw.SnapDown(width * 0.2f), UiDraw.ButtonWidth(l.Action.Kind, l.Action.Label, l.Action.Icon, l.Action.Key, keys));
                 }
-                int face = UiDraw.Box(s, at, x, cy, width, LicenceRow, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
+                bool open = compact && string.Equals(l.Id, v.Picked, StringComparison.Ordinal);
+                int face = UiDraw.Box(s, at, x, cy, width, LicenceRow, open ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusLarge, open ? UiFlags.Selected : UiFlags.None);
                 UiAt inside = at.In(face);
                 float size = UiTokens.IconTile;
                 int tile = UiDraw.Tile(s, inside, x + UiTokens.S1, cy + Mid(LicenceRow, size), size, UiRole.None, false);
@@ -118,7 +130,7 @@ namespace RealLifeOverhaul.Ui
                 float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
                 float top = cy + UiDraw.SnapDown((LicenceRow - th - sh) / 2f);
                 UiDraw.TextMiddle(s, inside, tx, top, th, tw, UiStyle.Title, UiRole.Text, l.Name ?? string.Empty, UiFlags.Truncate);
-                UiDraw.TextMiddle(s, inside, tx, top + th, sh, tw, UiStyle.Small, UiRole.Text2, l.Place ?? string.Empty, UiFlags.Truncate);
+                UiDraw.TextMiddle(s, inside, tx, top + th, sh, tw, UiStyle.Small, open ? UiRole.Text : UiRole.Text2, l.Place ?? string.Empty, UiFlags.Truncate);
                 if (showManager && !string.IsNullOrEmpty(l.Manager))
                 {
                     float ps = UiTokens.AvatarSmall - UiTokens.S2;
@@ -126,7 +138,10 @@ namespace RealLifeOverhaul.Ui
                     UiDraw.TextMiddle(s, inside, mx + ps + UiTokens.S2, cy, LicenceRow, managerW - ps - UiTokens.S2, UiStyle.Small, UiRole.Text2, l.Manager, UiFlags.Truncate);
                 }
                 UiDraw.Chip(s, inside, sx, cy + (LicenceRow - UiTokens.Badge - UiTokens.S1) / 2f, l.State ?? string.Empty, l.StateTone, stateW);
-                UiDraw.TextMiddle(s, inside, rx, cy, LicenceRow, dayW, UiStyle.Small, UiRole.Text2, l.Day ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
+                if (dayW > 0f)
+                {
+                    UiDraw.TextMiddle(s, inside, rx, cy, LicenceRow, dayW, UiStyle.Small, UiRole.Text2, l.Day ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
+                }
                 if (l.Open.Do != CompanyDo.None)
                 {
                     int index = lay.Add(new CompanyButton { Label = l.Name, Act = l.Open });
@@ -154,11 +169,38 @@ namespace RealLifeOverhaul.Ui
                 {
                     cy += DoneLine(s, at, lay, ref t.ComingUp[i], x, cy, width, DoneRow);
                 }
+                cy += UiTokens.S4;
             }
+            PaidList(s, at, lay, t, x, cy, width, bottom, out bool drawn);
+            return drawn;
+        }
+
+        // The returns paid this year (or the sentence that none is settled yet), when they fit under what is already in the column: the y after them, or y when they do not fit.
+        private static float PaidList(UiScene s, UiAt at, CompanyLayout lay, CompanyTaxFacts t, float x, float y, float width, float bottom, out bool drawn)
+        {
+            float cy = y;
+            drawn = false;
+            if (t.Paid.Length > 0 && bottom - cy >= UiTokens.PairRow + LineRow * t.Paid.Length)
+            {
+                cy = Section(s, at, lay, x, cy, width, t.PaidTitle);
+                for (int i = 0; i < t.Paid.Length && cy + LineRow <= bottom; i++)
+                {
+                    cy += LineItem(s, at, lay, ref t.Paid[i], x, cy, width);
+                }
+                drawn = true;
+                return cy + UiTokens.S3;
+            }
+            if (t.Paid.Length == 0 && !string.IsNullOrEmpty(t.PaidEmpty) && bottom - cy >= UiTokens.PairRow * 2f)
+            {
+                cy = Section(s, at, lay, x, cy, width, t.PaidTitle);
+                drawn = true;
+                return Sentence(s, at, t.PaidEmpty, x, cy, width, UiRole.Muted, 2) + UiTokens.S3;
+            }
+            return y;
         }
 
         // The right column: the quarter so far, the reserve's controls, the returns paid, the tools, the property tax.
-        private static void Statement(UiScene s, UiAt at, CompanyLayout lay, CompanyView v, CompanyWords w, CompanyTaxFacts t, float x, float y, float width, float bottom, IUiKeys keys)
+        private static void Statement(UiScene s, UiAt at, CompanyLayout lay, CompanyView v, CompanyWords w, CompanyTaxFacts t, float x, float y, float width, float bottom, IUiKeys keys, bool paidLeft)
         {
             float cy = Section(s, at, lay, x, y, width, t.QuarterTitle, t.QuarterRange);
             for (int i = 0; i < t.Quarter.Length && cy + StatementRow <= bottom; i++)
@@ -173,19 +215,9 @@ namespace RealLifeOverhaul.Ui
                 cy = Block(s, at, lay, v, w, t.ReserveControls[i], x, cy, width, bottom, keys);
             }
             cy += UiTokens.S3;
-            if (t.Paid.Length > 0 && bottom - cy >= UiTokens.PairRow + LineRow)
+            if (!paidLeft)
             {
-                cy = Section(s, at, lay, x, cy, width, t.PaidTitle);
-                for (int i = 0; i < t.Paid.Length && cy + LineRow <= bottom; i++)
-                {
-                    cy += LineItem(s, at, lay, ref t.Paid[i], x, cy, width);
-                }
-                cy += UiTokens.S3;
-            }
-            else if (t.Paid.Length == 0 && !string.IsNullOrEmpty(t.PaidEmpty) && bottom - cy >= UiTokens.PairRow * 2f)
-            {
-                cy = Section(s, at, lay, x, cy, width, t.PaidTitle);
-                cy = Sentence(s, at, t.PaidEmpty, x, cy, width, UiRole.Muted, 2);
+                cy = PaidList(s, at, lay, t, x, cy, width, bottom, out bool _);
             }
             if (t.Tools.Length > 0 && bottom - cy >= UiTokens.PairRow + LineRow)
             {

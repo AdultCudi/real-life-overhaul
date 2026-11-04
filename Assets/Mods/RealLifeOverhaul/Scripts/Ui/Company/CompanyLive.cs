@@ -257,7 +257,7 @@ namespace RealLifeOverhaul.Ui
         private static void ReadCounts(CompanyFacts f, CompanyDirector d, CompanyView v)
         {
             CompanyState s = d.State;
-            f.Counts[CompanyView.Staff] = s.Staff.Count > 0 ? s.Staff.Count.ToString() : null;
+            f.Counts[CompanyView.Staff] = d.On(CompanyPart.Staff) && s.Staff.Count > 0 ? s.Staff.Count.ToString() : null;
             int managers = d.ManagersOn && d.ManagerData != null ? d.ManagerData.Managers.Count : 0;
             f.Counts[CompanyView.Managers] = managers > 0 ? managers.ToString() : null;
             int licences = 0, claims = 0, campaigns = 0;
@@ -273,7 +273,7 @@ namespace RealLifeOverhaul.Ui
             int tax = licences + (d.On(CompanyPart.Tax) && s.Tax.ReturnWaiting ? 1 : 0);
             f.Counts[CompanyView.Tax] = tax > 0 ? tax.ToString() : null;
             f.Counts[CompanyView.Cover] = claims > 0 ? claims.ToString() : null;
-            f.Counts[CompanyView.Marketing] = campaigns > 0 ? campaigns.ToString() : null;
+            f.Counts[CompanyView.Marketing] = d.On(CompanyPart.Marketing) && campaigns > 0 ? campaigns.ToString() : null;
         }
     }
 }

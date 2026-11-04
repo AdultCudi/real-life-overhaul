@@ -21,12 +21,90 @@ namespace RealLifeOverhaul.Ui
                 OffPage(s, at, w, null, null, x, y, cw, bottom, keys);
                 return;
             }
+            if (o.Shop != null)
+            {
+                OneShop(s, at, f, o, v, w, lay, x, y, cw, bottom, keys);
+                return;
+            }
             float head = Head(s, at.InRegion(RegionMain), f, o, v, w, lay, x, y, cw, keys);
             float top = y + head + UiTokens.S5;
             float gap = UiTokens.S6;
             float lw = UiDraw.SnapDown((cw - gap) * 0.56f), rw = cw - gap - lw;
             Left(s, at.InRegion(RegionMain), f, o, v, w, lay, x, top, lw, bottom, keys);
             Right(s, at.InRegion(RegionSide), f, o, v, w, lay, x + lw + gap, top, rw, bottom, keys);
+        }
+
+        // A company with one business: what waits for the owner, as cards, and the next step at the left; the business as a panel at the right, in place of a table of one row.
+        private static void OneShop(UiScene s, UiAt at, CompanyFacts f, CompanyOverviewFacts o, CompanyView v, CompanyWords w, CompanyLayout lay, float x, float y, float cw, float bottom,
+            IUiKeys keys)
+        {
+            UiAt main = at.InRegion(RegionMain);
+            float head = Head(s, main, f, o, v, w, lay, x, y, cw, keys);
+            float top = y + head + UiTokens.S5, gap = UiTokens.S6;
+            float lw = UiDraw.SnapDown((cw - gap) * 0.5f), rw = cw - gap - lw, cy = top;
+            if (o.Lead != null)
+            {
+                cy += LeadCard(s, main, o.Lead, v, w, lay, x, cy, lw, keys) + UiTokens.S5;
+            }
+            if (o.Waiting.Length > 0)
+            {
+                cy = Section(s, main, lay, x, cy, lw, o.Lead != null ? w.T("reallife_co_also_waiting", "Also waiting") : w.T("reallife_co_waiting_for_you", "Waiting for you"), o.WaitingCount);
+                for (int i = 0; i < o.Waiting.Length && cy < bottom - UiTokens.Control; i++)
+                {
+                    cy += WaitingCard(s, main, lay, v, ref o.Waiting[i], x, cy, lw, keys) + UiTokens.S3;
+                }
+                cy += UiTokens.S2;
+            }
+            if (o.Next.Name != null && cy < bottom - UiTokens.Control)
+            {
+                cy = Section(s, main, lay, x, cy, lw, w.T("reallife_co_next_step", "Next step"));
+                cy += WaitingCard(s, main, lay, v, ref o.Next, x, cy, lw, keys) + UiTokens.S4;
+            }
+            if (o.Done.Length > 0 && bottom - cy >= UiTokens.PairRow + UiTokens.S1 + DoneRow)
+            {
+                CompanyButton log = new CompanyButton { Label = w.T("reallife_co_managers_log", "Managers' log"), Act = CompanyAct.Of(CompanyDo.Go, null, CompanyView.Managers) };
+                cy = Section(s, main, lay, x, cy, lw, w.T("reallife_co_done_today", "Done for you today"), null, log);
+                int fit = (int)Math.Max(1f, Math.Floor((bottom - cy) / DoneRow));
+                for (int i = 0; i < Math.Min(o.Done.Length, fit); i++)
+                {
+                    cy += DoneLine(s, main, lay, ref o.Done[i], x, cy, lw, DoneRow);
+                }
+            }
+            float rx = x + lw + gap;
+            float toolsH = o.Tools != null && o.Tools.Length > 0 ? UiTokens.Control + UiTokens.S4 : 0f;
+            CardPage(s, at.InRegion(RegionSide), o.Shop, v, w, lay, rx, top, rw, bottom - toolsH, keys);
+            ToolsRow(s, at.InRegion(RegionSide), lay, v, o, rx, rw, bottom, keys);
+        }
+
+        // One thing that waits for the owner, as a card of its own: who or what, the line under it and the button that opens it. A page of few things is made of cards, not rows.
+        private static float WaitingCard(UiScene s, UiAt at, CompanyLayout lay, CompanyView v, ref CompanyWaiting row, float x, float y, float w, IUiKeys keys)
+        {
+            float pad = UiTokens.S4, size = UiTokens.AvatarRow;
+            CompanyButton b = new CompanyButton { Label = row.OpenLabel, Act = row.Open, Kind = UiButtonKind.Secondary, Icon = UiIcon.Next };
+            float bw = Math.Min(UiDraw.SnapDown(w * 0.38f), UiDraw.ButtonWidth(b.Kind, b.Label, b.Icon, b.Key, keys));
+            float tx = x + pad + size + UiTokens.S3, tw = Math.Max(0f, w - pad * 2f - size - UiTokens.S3 - bw - UiTokens.S3);
+            float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), lh = string.IsNullOrEmpty(row.Line) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(row.Line, UiStyle.Small, tw, 3));
+            float h = Math.Max(size, th + (lh > 0f ? UiTokens.S1 + lh : 0f)) + pad * 2f;
+            int box = UiDraw.Box(s, at, x, y, w, h, UiRole.Row, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
+            UiAt inside = at.In(box);
+            if (row.Icon != UiIcon.None)
+            {
+                int tile = UiDraw.Tile(s, inside, x + pad, y + Mid(h, size), size, UiRole.None, false);
+                float g = UiTokens.S6;
+                UiDraw.Icon(s, inside.In(tile), x + pad + (size - g) / 2f, y + Mid(h, size) + (size - g) / 2f, g, row.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
+            }
+            else
+            {
+                UiDraw.Portrait(s, inside, x + pad, y + Mid(h, size), size, row.Name, row.Hue, row.Ring);
+            }
+            float top = y + UiDraw.SnapDown((h - th - (lh > 0f ? UiTokens.S1 + lh : 0f)) / 2f);
+            UiDraw.TextMiddle(s, inside, tx, top, th, tw, UiStyle.Title, UiRole.Text, row.Name ?? string.Empty, UiFlags.Truncate);
+            if (lh > 0f)
+            {
+                UiDraw.Text(s, inside, tx, top + th + UiTokens.S1, tw, UiStyle.Small, UiRole.Text2, row.Line, UiFlags.Wrap | UiFlags.Truncate, 3);
+            }
+            Button(s, inside, lay, v, ref b, x + w - pad - bw, y + Mid(h, UiTokens.Control), bw, keys);
+            return h;
         }
 
         // The company's head: its mark, name and what it owns as badges, and the day's result as the key figure with its spark.
@@ -97,14 +175,12 @@ namespace RealLifeOverhaul.Ui
             }
             else if (!anything)
             {
-                float h = Math.Min(UiDraw.SnapDown(bottom - cy) , 176f);
+                float h = UiTokens.IconTile + UiTokens.S4 * 2f;
                 UiAt band = Band(s, at, x, cy, lw, h);
-                UiDraw.Icon(s, band, x + UiTokens.S5, cy + UiTokens.S5, UiTokens.IconTile, UiIcon.Check, UiRole.None, UiFlags.Middle, true);
-                float tx = x + UiTokens.S5 + UiTokens.IconTile + UiTokens.S4, tw = lw - UiTokens.S5 * 2f - UiTokens.IconTile - UiTokens.S4;
-                UiDraw.TextMiddle(s, band, tx, cy + UiTokens.S5, UiTokens.IconTile, tw, UiStyle.Title, UiRole.Text, w.T("reallife_co_quiet_title", "Nothing is waiting for you"),
+                UiDraw.Icon(s, band, x + UiTokens.S4, cy + UiTokens.S4, UiTokens.IconTile, UiIcon.Check, UiRole.None, UiFlags.Middle, true);
+                float tx = x + UiTokens.S4 + UiTokens.IconTile + UiTokens.S4, tw = lw - UiTokens.S4 * 2f - UiTokens.IconTile - UiTokens.S4;
+                UiDraw.TextMiddle(s, band, tx, cy + UiTokens.S4, UiTokens.IconTile, tw, UiStyle.Title, UiRole.Text, w.T("reallife_co_quiet_title", "Nothing is waiting for you"),
                     UiFlags.Label | UiFlags.Truncate);
-                Sentence(s, band, w.T("reallife_co_quiet_body", "A manager's question, a licence about to run out, a gap in the rota or a claim to put in comes here first."), tx, cy + UiTokens.S5
-                    + UiTokens.IconTile + UiTokens.S1, tw, UiRole.Text2, 4);
                 cy += h + UiTokens.S5;
             }
             int doneWant = o.Done.Length;
@@ -230,6 +306,10 @@ namespace RealLifeOverhaul.Ui
             UiDraw.TextMiddle(s, at, x + nameW + UiTokens.S3 + colW, cy, UiTokens.PairRow, colW, UiStyle.SectionHeader, UiRole.Muted, c2, UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
             UiDraw.TextMiddle(s, at, x + nameW + UiTokens.S3 + colW * 2f, cy, UiTokens.PairRow, colW, UiStyle.SectionHeader, UiRole.Muted, c3, UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
             cy += UiTokens.PairRow + UiTokens.S1;
+            if (o.Districts != null && o.Districts.Options.Length > 2)
+            {
+                cy = FilterBars(s, at, new[] { o.Districts }, o.DistrictFilter, x, cy, rw);   // the old table's district filter
+            }
             float below = UiTokens.PairRow * 3f + UiTokens.S6 * 2f + (o.CostLabels.Length + 1) * UiTokens.PairRow + (o.Managers.Length > 0 ? PersonRow * Math.Min(3, o.Managers.Length)
                 : UiTokens.Control);
             int fit = (int)Math.Max(1f, Math.Floor((bottom - cy - TableRow - below) / TableRow));
@@ -264,7 +344,8 @@ namespace RealLifeOverhaul.Ui
             }
             if (!string.IsNullOrEmpty(o.TotalResult))
             {
-                Pair(s, at, x, cy, TableRow, nameW, UiStyle.BodyStrong, UiRole.Text, w.T("reallife_co_all_businesses", "All businesses"), UiStyle.Body, UiRole.Text, null);
+                Pair(s, at, x, cy, TableRow, nameW, UiStyle.BodyStrong, UiRole.Text, string.IsNullOrEmpty(o.TotalLabel) ? w.T("reallife_co_all_businesses", "All businesses") : o.TotalLabel,
+                    UiStyle.Body, UiRole.Text, null);
                 UiDraw.TextMiddle(s, at, x + nameW + UiTokens.S3, cy, TableRow, colW, UiStyle.BodyStrong, UiRole.Text, o.TotalTakings ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
                 UiDraw.TextMiddle(s, at, x + nameW + UiTokens.S3 + colW, cy, TableRow, colW, UiStyle.BodyStrong, UiRole.Text, o.TotalCosts ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
                 UiDraw.TextMiddle(s, at, x + nameW + UiTokens.S3 + colW * 2f, cy, TableRow, colW, UiStyle.BodyStrong, ToneInk(o.TotalTone), o.TotalResult, UiFlags.Right | UiFlags.Truncate);
@@ -287,7 +368,8 @@ namespace RealLifeOverhaul.Ui
                 cy += UiTokens.S4;
             }
             // The managers today.
-            if (bottom - cy >= UiTokens.PairRow + PersonRow)
+            float toolsH = o.Tools != null && o.Tools.Length > 0 ? UiTokens.Control + UiTokens.S4 : 0f;   // the tools row has the foot of the column
+            if (bottom - toolsH - cy >= UiTokens.PairRow + PersonRow)
             {
                 CompanyButton all = new CompanyButton { Label = w.F("reallife_co_all_count", "All {count}", "count", o.Managers.Length.ToString()), Act = CompanyAct.Of(CompanyDo.Go, null,
                     CompanyView.Managers) };
@@ -303,14 +385,14 @@ namespace RealLifeOverhaul.Ui
                 }
                 else
                 {
-                    int rows = (int)Math.Max(1f, Math.Floor((bottom - cy - (string.IsNullOrEmpty(o.Note) ? 0f : UiTokens.S12)) / PersonRow));
+                    int rows = (int)Math.Max(1f, Math.Floor((bottom - toolsH - cy - (string.IsNullOrEmpty(o.Note) ? 0f : UiTokens.S12)) / PersonRow));
                     for (int i = 0; i < Math.Min(o.Managers.Length, rows); i++)
                     {
                         cy += ManagerLine(s, at, lay, ref o.Managers[i], x, cy, rw);
                     }
                 }
             }
-            if (!string.IsNullOrEmpty(o.Note) && bottom - cy >= UiTokens.S10)
+            if (!string.IsNullOrEmpty(o.Note) && bottom - toolsH - cy >= UiTokens.S10)
             {
                 Sentence(s, at, o.Note, x, cy + UiTokens.S2, rw, UiRole.Text2, 3, UiStyle.Small);
             }
