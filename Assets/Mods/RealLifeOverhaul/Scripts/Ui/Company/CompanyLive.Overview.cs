@@ -393,7 +393,7 @@ namespace RealLifeOverhaul.Ui
             string line = CompanyGame.ListingLine();
             if (!string.IsNullOrEmpty(line))
             {
-                o.Note = line;
+                // (the share's price is the Stocks app's: the button opens it, the line is not repeated on a page that is about the company's people and books)
                 tools.Add(new CompanyButton { Label = w.T("reallife_co_open_stocks", "Open in Stocks"), Kind = UiButtonKind.Secondary, Icon = UiIcon.ChartLineUp,
                     Act = CompanyAct.Of(CompanyDo.OpenStocks) });
             }
@@ -564,7 +564,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (!page)
             {
-                CompanyFace.AsideSections(blocks, w.T("reallife_co_r_licences", "Licences"), w.T("reallife_co_r_cover", "Cover held"));   // the panel of a one business company
+                CompanyFace.AsideSections(blocks, w.T("reallife_co_r_licences", "Licences"));   // the panel of a one business company
             }
             c.Blocks = blocks.ToArray();
             return c;

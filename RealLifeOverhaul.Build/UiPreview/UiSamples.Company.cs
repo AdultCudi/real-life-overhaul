@@ -313,7 +313,6 @@ internal static partial class UiSamples
             CB(w.T("reallife_co_open_bank", "Open your bank"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.OpenBank), UiIcon.Bank),
             CB(w.T("reallife_co_open_stocks", "Open in Stocks"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.OpenStocks), UiIcon.ChartLineUp)
         };
-        o.Note = SF("Listed as {code}: {price} a share, {change} today", "code", "PIO", "price", "$41.20", "change", "+1.8%");
         o.Districts = new CompanyFilterBar { Options = new[] { w.T("reallife_co_f_all_districts", "All districts"), "Midtown", "Hell's Kitchen" }, Chosen = 0, Shift = 0, Bits = 6 };
         o.DistrictFilter = 0;
         o.TotalLabel = w.T("reallife_co_all_businesses", "All businesses");
@@ -443,7 +442,7 @@ internal static partial class UiSamples
         }
         if (panel)
         {
-            CompanyFace.AsideSections(blocks, w.T("reallife_co_r_licences", "Licences"), w.T("reallife_co_r_cover", "Cover held"));
+            CompanyFace.AsideSections(blocks, w.T("reallife_co_r_licences", "Licences"));
         }
         c.Blocks = blocks.ToArray();
         return c;

@@ -554,6 +554,7 @@ internal static partial class UiSamples
                     new CompanyItem { Grade = -1, Title = "Leases", Sub = "Up to a 5% rise", Icon = UiIcon.Key }
                 }
             });
+            more.Add(new CompanyBlock { Kind = CompanyBlockKind.Break });
         }
         more.Add(CSec(w.T("reallife_co_owner_levels", "Levels")));
         more.Add(new CompanyBlock { Kind = CompanyBlockKind.Switch, Text = w.T("reallife_co_deep_mode", "Deep Mode"), Sub = w.T("reallife_co_deep_sub", "The executives, regions, the policy centre and every question's inbox"),

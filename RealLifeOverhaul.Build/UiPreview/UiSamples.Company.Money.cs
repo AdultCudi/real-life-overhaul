@@ -239,7 +239,7 @@ internal static partial class UiSamples
         if (one)
         {
             lic.Clear();
-            lic.Add(new CompanyLicence { Id = "lic:Corner Cafe~12:0", Icon = UiIcon.Drop, Name = w.T("reallife_co_licence_hygiene", "food hygiene"), Place = "Corner Cafe", State = w.T("reallife_co_row_lic_valid", "Valid"), StateTone = UiRole.Ok, Day = "Day 140",
+            lic.Add(new CompanyLicence { Id = "lic:Corner Cafe~12:0", Icon = UiIcon.Drop, Name = CompanyTextCapital(w.T("reallife_co_licence_hygiene", "food hygiene")), Place = "Corner Cafe", State = w.T("reallife_co_row_lic_valid", "Valid"), StateTone = UiRole.Ok, Day = "Day 140",
                 Open = CA(CompanyDo.Go, "lic:Corner Cafe~12:0", CompanyView.Tax, CompanyView.SubLicence) });
             lic.Add(new CompanyLicence { Id = "lic:Corner Cafe~12:3", Icon = UiIcon.Tag, Name = "Signage permit", Place = "Corner Cafe", State = w.T("reallife_co_row_lic_missing", "Missing"), StateTone = UiRole.Danger, Open = CA(CompanyDo.Go, "lic:Corner Cafe~12:3", CompanyView.Tax, CompanyView.SubLicence),
                 HasAction = true, Action = CB(w.T("reallife_co_lic_buy", "Apply"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.LicenceBuy, "Corner Cafe~12", 3), UiIcon.Check) });
