@@ -182,10 +182,6 @@ namespace RealLifeOverhaul.Ui
                     _typeCommand = WorkCmd.Search;
                     _typeArg = 0;
                     return _page.Typing;   // a press on the field starts the typing, which the host carries
-                case WorkCmd.Field:
-                    _typeCommand = WorkCmd.Field;
-                    _typeArg = arg;
-                    return true;
                 case WorkCmd.Type:
                     _typeCommand = WorkCmd.Type;
                     _typeArg = arg;
@@ -348,10 +344,6 @@ namespace RealLifeOverhaul.Ui
                 {
                     return _view.Query ?? string.Empty;
                 }
-                if (_typeCommand == WorkCmd.Field)
-                {
-                    return _view.Text ?? string.Empty;
-                }
                 return _page != null && _typeArg >= 0 && _typeArg < _page.Amounts.Length ? _page.Amounts[_typeArg].Value.ToString(CultureInfo.InvariantCulture) : string.Empty;
             }
         }
@@ -363,10 +355,6 @@ namespace RealLifeOverhaul.Ui
                 _view.Query = text ?? string.Empty;
                 _view.Row = -1;
                 _view.Offset = 0f;
-            }
-            else if (_typeCommand == WorkCmd.Field)
-            {
-                _view.Text = text ?? string.Empty;
             }
             else if (_page != null && _typeArg >= 0 && _typeArg < _page.Amounts.Length)
             {

@@ -26,10 +26,14 @@ namespace RealLifeOverhaul.Ui
             }
             bool two = m.Right.Count > 0;
             float gap = UiTokens.S6, cw = two ? UiDraw.SnapDown((w - gap) / 2f) : w;
-            Column(s, at, m.Left, actions, amounts, x, y, cw, bottom, keys);
+            float end = Column(s, at, m.Left, actions, amounts, x, y, cw, bottom, keys);
             if (two)
             {
-                Column(s, at, m.Right, actions, amounts, x + cw + gap, y, UiDraw.SnapDown(w - cw - gap), bottom, keys);
+                end = Math.Max(end, Column(s, at, m.Right, actions, amounts, x + cw + gap, y, UiDraw.SnapDown(w - cw - gap), bottom, keys));
+            }
+            if (m.Below.Count > 0)
+            {
+                Strip(s, at, m.Below, x, end, w, bottom, keys);   // what fills the foot under both columns: related lists and meters, drawn only where they fit
             }
         }
 
@@ -78,7 +82,7 @@ namespace RealLifeOverhaul.Ui
             return off;
         }
 
-        private static void Column(UiScene s, UiAt at, List<WorkFormBand> bands, UiActionModel[] actions, WorkAmount[] amounts, float x, float y, float w, float bottom, IUiKeys keys)
+        private static float Column(UiScene s, UiAt at, List<WorkFormBand> bands, UiActionModel[] actions, WorkAmount[] amounts, float x, float y, float w, float bottom, IUiKeys keys)
         {
             for (int i = 0; i < bands.Count; i++)
             {
@@ -92,6 +96,7 @@ namespace RealLifeOverhaul.Ui
                 Band(s, at, b, actions, amounts, x, y, w, h, keys);
                 y += h + UiTokens.S4;
             }
+            return y;
         }
 
         public static float Height(WorkFormBand b, float w)
@@ -255,10 +260,6 @@ namespace RealLifeOverhaul.Ui
                     break;
                 case WorkField.Check:
                     UiDraw.CheckLine(s, at, x, y, w, r.Label, r.On);
-                    break;
-                case WorkField.Input:
-                    UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, UiDraw.SnapDown(w * 0.38f), UiStyle.Body, UiRole.Text, r.Label, UiFlags.Label | UiFlags.Truncate);
-                    UiDraw.TextField(s, at, x + UiDraw.SnapDown(w * 0.4f), y, w - UiDraw.SnapDown(w * 0.4f), r.Value, r.Hint, WorkCmd.Field, Math.Max(0, r.Field2), false);
                     break;
                 case WorkField.Bar:
                     UiDraw.TextMiddle(s, at, x, y, UiTokens.PairRow, UiDraw.SnapDown(w * 0.34f), UiStyle.Body, UiRole.Text, r.Bar.Label, UiFlags.Truncate);

@@ -51,7 +51,7 @@ internal static partial class UiSamples
     private static string SCourse(UtilitiesWords w, string key) => Sx(w, "reallife_study_course_" + key);
 
     /// <summary>A skill's name: reallife_study_skill_{key}.</summary>
-    private static string SSkill(UtilitiesWords w, string key) => Sx(w, "reallife_study_skill_" + key);
+    private static string SSkill(UtilitiesWords w, string key) => key.StartsWith("t:") ? Sx(w, "reallife_talent_skill_" + key.Substring(2)) : Sx(w, "reallife_study_skill_" + key);
 
     /// <summary>"you have 14".</summary>
     private static string SHave(UtilitiesWords w, int n) => Sf(w, "reallife_work_you_have", "n", n.ToString());

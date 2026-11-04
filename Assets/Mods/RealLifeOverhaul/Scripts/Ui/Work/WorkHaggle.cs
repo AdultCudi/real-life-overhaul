@@ -34,13 +34,20 @@ namespace RealLifeOverhaul.Ui
             {
                 float chip = Math.Min(Side - UiTokens.S4 * 2f, UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(r.Status, UiStyle.SmallStrong) + UiTokens.S1));
                 UiDraw.Chip(s, on, cx + UiDraw.SnapDown((Side - chip) / 2f), ny, r.Status, r.Tone, chip);
+                ny += UiTokens.Badge + UiTokens.S1;
+            }
+            // what is known of the seller: their stars, what they have sold and what else they list
+            ny += UiTokens.S3;
+            for (int i = 0; i < r.Sections.Count && ny + WorkPanel.Height(r.Sections[i], Side - UiTokens.S4 * 2f) <= cy + ch - UiTokens.S3; i++)
+            {
+                ny += WorkPanel.Section(s, on, r.Sections[i], cx + UiTokens.S4, ny, Side - UiTokens.S4 * 2f, amounts, keys) + UiTokens.S2;
             }
             // the card's words at the right
             float tx = UiDraw.Snap(cx + Side + UiTokens.S8), ty = cy + UiTokens.S8;
             UiDraw.Text(s, on, tx, ty, inner, UiStyle.SectionHeader, UiRole.Text2, r.Kicker, UiFlags.Label | UiFlags.Truncate);
             ty += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2;
-            UiDraw.Text(s, on, tx, ty, inner, UiStyle.AppTitle, UiRole.AccentText, r.Name, UiFlags.Label | UiFlags.Truncate);
-            ty += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.AppTitle)) + UiTokens.S4;
+            UiDraw.Text(s, on, tx, ty, inner, UiStyle.Hero, UiRole.Text, r.Name, UiFlags.Truncate);
+            ty += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Hero)) + UiTokens.S4;
             if (!string.IsNullOrEmpty(r.Sentence))
             {
                 int id = UiDraw.Text(s, on, tx, ty, inner, UiStyle.Body, UiRole.Text2, r.Sentence, UiFlags.Wrap | UiFlags.Truncate, 3);
@@ -96,7 +103,7 @@ namespace RealLifeOverhaul.Ui
         private static float Need(WorkRow r, int choices, bool offer, string why, float inner)
         {
             float h = UiTokens.S8;
-            h += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.AppTitle)) + UiTokens.S4;
+            h += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Hero)) + UiTokens.S4;
             if (!string.IsNullOrEmpty(r.Sentence))
             {
                 h += UiTextRules.WrappedHeight(r.Sentence, UiStyle.Body, inner, 3) + UiTokens.S4;
@@ -113,6 +120,10 @@ namespace RealLifeOverhaul.Ui
             h += string.IsNullOrEmpty(why) ? 0f : UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
             float side = UiTokens.S8 + UiTokens.AvatarHero + UiTokens.S4 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)) + UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small))
                 + UiTokens.S3 + UiTokens.Badge + UiTokens.S8;
+            for (int i = 0; i < r.Sections.Count; i++)
+            {
+                side += WorkPanel.Height(r.Sections[i], Side - UiTokens.S4 * 2f) + UiTokens.S2;
+            }
             return UiDraw.Snap(Math.Max(side, h + UiTokens.S6));
         }
     }

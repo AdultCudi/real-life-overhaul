@@ -68,6 +68,12 @@ namespace RealLifeOverhaul.Careers
 
         public static string Stage(EnrolStage stage) => T(Mod + "_study_stage_" + stage.ToString().ToLowerInvariant());
 
+        /// <summary>A timetable for a card's narrow line: "Mon, Wed 10:00" (no word between the days and the hour).</summary>
+        public static string TimetableShort(int days, int hour)
+        {
+            return days == 0 ? T("reallife_study_timetable_none") : T("reallife_work_timetable_short", "days", DayList(days), "hour", Hour(hour));
+        }
+
         /// <summary>A timetable: its days, short ("Mon, Wed, Fri"), and the hour: "Mon, Wed, Fri at 10:00".</summary>
         public static string Timetable(int days, int hour)
         {

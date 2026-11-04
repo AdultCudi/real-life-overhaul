@@ -145,6 +145,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\CareerPages.cs" Link="Mod\Work\CareerPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\CareerPages.Bands.cs" Link="Mod\Work\CareerPages.Bands.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\CampusBands.cs" Link="Mod\Work\CampusBands.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\WorkBands.cs" Link="Mod\Work\WorkBands.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\WorkSkills.cs" Link="Mod\Work\WorkSkills.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\WorkTabPages.cs" Link="Mod\Work\WorkTabPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\FinanceFace.Overview.cs" Link="Mod\Money\FinanceFace.Overview.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\FinanceFace.Borrow.cs" Link="Mod\Money\FinanceFace.Borrow.cs" />

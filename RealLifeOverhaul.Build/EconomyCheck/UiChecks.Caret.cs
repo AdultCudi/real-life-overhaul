@@ -39,7 +39,7 @@ internal static partial class Program
         { "GalleryScreen", new[] { UiAlbum.Search } },
         { "FlareScreen", new[] { FlareFace.FieldCommand } },
         { "FinanceScreen", new[] { FinanceFace.AmountType } },
-        { "WorkScreen", new[] { WorkCmd.Search, WorkCmd.Field, WorkCmd.Type } },
+        { "WorkScreen", new[] { WorkCmd.Search, WorkCmd.Type } },
         { "BanksScreen", new[] { MoneyCommands.TypeField } },
         { "OwnBankScreen", new[] { MoneyCommands.TypeField } }
     };

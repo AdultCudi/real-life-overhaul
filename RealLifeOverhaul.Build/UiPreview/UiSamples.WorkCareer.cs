@@ -36,7 +36,6 @@ internal static partial class UiSamples
     {
         string qualify = w.T("reallife_work_you_qualify", "You qualify");
         string title = SRank(w, p.Prof, p.Rank) + p.Suffix, pay = WkRate(p.Pay), hours = SHours(w, p.From, p.To);
-        string week = SWeek(w, 0, 4, p.From, p.To);
         bool sameEmployer = p.Employer == "Harbourside Freight HSF" && p.Prof == "warehouse";
         // what it needs, as the live source lists it: the qualification, the skill points, the employer's wish, and at the player's own employer the promotion's bars
         var checks = new WorkSection { Part = WorkPart.Checks, Title = w.T("reallife_work_what_it_needs", "What it needs") };
@@ -67,11 +66,14 @@ internal static partial class UiSamples
         r.ChipTone = UiRole.Accent;
         r.HeadSub = p.Where;
         r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_career_col_pay", "Pay"), SPerHour(w, pay)));
-        r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_hours", "Hours"), week));
+        r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_hours", "Hours"), hours));
         r.Acts.Add(new WorkAct { Kind = 100, Arg = id, Label = w.T("reallife_career_button_apply", "Apply"), Style = UiButtonKind.Primary, Icon = UiIcon.Check,
             Why = p.Open == 3 ? w.T("reallife_work_why_unqualified", "You do not hold what that post needs.") : null });
         r.Acts.Add(new WorkAct { Kind = 101, Arg = id, Label = w.T("reallife_career_button_map", "Show on map"), Style = UiButtonKind.Secondary, Icon = UiIcon.Locate, Opens = true });
         r.Sections.Add(checks);
+        var shift = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_the_shift", "The shift") };
+        shift.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_days_word", "Days"), Sf(w, "reallife_career_row_hours", "from", SWd(w, 0), "to", SWd(w, 4))));
+        r.Sections.Add(shift);
         var against2 = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_pay_against", "Against your pay") };
         against2.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_your_pay_now", "Your pay now"), SPerHour(w, "$21.50")));
         against2.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_difference", "The difference"), WorkBuilder.Percent(p.Against)));
@@ -258,7 +260,7 @@ internal static partial class UiSamples
         apps.NoteText = w.T("reallife_work_apps_note", "An employer weighs your record against anyone else who applied. Ask for a little more only when your record is strong.");
         CareerPages.ApplicationsBands(w, apps, new[] { 413, 414, 416 }, new[] { SDay(w, 413) + ", 10:00", SDay(w, 414), SDay(w, 416) }, new[] { 1, 0, 2 },
             new[] { SRank(w, "warehouse", 2) + ", Harbourside Freight HSF", SRank(w, "bar", 0) + ", Brewed Beans, 5th Avenue", SRank(w, "accountancy", 0) + ", Uptown Savings" },
-            new[] { "Marcus Lee", "Marcus Lee", "Nia Brooks" }, new[] { 79, 79, 74 }, new[] { 82, 94, 71, 88 });
+            new[] { 82, 94, 71, 88 });
         f.ApplicationsWaiting = apps.Rows.Count;
     }
 
@@ -273,7 +275,7 @@ internal static partial class UiSamples
             new object[] { "it_support", UiIcon.Code, 9, 17, 2400, 1, false, new[] { 2400, 3000, 3900 } }, new object[] { "nursing", UiIcon.Heartbeat, 9, 17, 1850, 1, false, new[] { 1850, 2400, 3000, 3700 } },
             new object[] { "guard", UiIcon.ShieldCheck, 22, 6, 2000, 2, false, new[] { 2000, 2500, 3200 } }, new object[] { "sales", UiIcon.ShoppingBag, 10, 18, 1800, 3, true, new[] { 1800, 2300, 2900, 3600 } }
         };
-        string[] firms = { "Harbourside Freight HSF", "Brewed Beans, 5th Avenue", "Uptown Savings" };
+        string[] firms = { "Harbourside Freight HSF", "Brewed Beans, 5th Avenue", "Uptown Savings", "Quill Software", "Midtown Fitness", "The Hudson Hotel" };
         int posts = 0, openTo = 0;
         for (int i = 0; i < trades.Length; i++)
         {
@@ -300,9 +302,9 @@ internal static partial class UiSamples
             needs.Checks.Add(new WorkNeed { Words = Sf(w, "reallife_work_need_skill_points", "n", "40"), Met = true });
             r.Sections.Add(needs);
             var hiring = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_hiring_now", "Hiring now"), Note = count.ToString() };
-            for (int k = 0; k < System.Math.Min(3, count); k++)
+            for (int k = 0; k < System.Math.Min(6, count); k++)
             {
-                hiring.People.Add(new WorkPerson { Name = firms[(i + k) % 3], Role = SRank(w, key, 0), Right = pay, Icon = UiIcon.Store });
+                hiring.People.Add(new WorkPerson { Name = firms[(i + k) % firms.Length], Role = SRank(w, key, 0), Right = pay, Icon = UiIcon.Store });
             }
             r.Sections.Add(hiring);
             r.Acts.Add(WkAct(WorkKinds.GoTab, w.T("reallife_career_button_vacancies", "Vacancies"), UiButtonKind.Primary, UiIcon.Search, null, true, CareerPages.Jobs));
@@ -334,38 +336,33 @@ internal static partial class UiSamples
         stand.Rows.Add(new WorkFormRow { Field = WorkField.Bar, Bar = new WorkBar { Label = Sx(w, "reallife_ladder_row_staffing"), Value = 81 } });
         stand.Rows.Add(new WorkFormRow { Field = WorkField.Bar, Bar = new WorkBar { Label = Sx(w, "reallife_ladder_row_morale_avg"), Value = 74 } });
         form.Left.Add(stand);
-        var policy = new WorkFormBand { Title = w.T("reallife_work_group_policy", "Policy") };
-        man.Amounts.Add(new WorkAmount { Id = 0, Value = 1, Min = 0, Max = 2, Words = new[] { Sx(w, "reallife_ladder_rota_0"), Sx(w, "reallife_ladder_rota_1"), Sx(w, "reallife_ladder_rota_2") }, Figure = Sx(w, "reallife_ladder_rota_1") });
-        man.Amounts.Add(new WorkAmount { Id = 1, Value = 3, Min = 1, Max = 7, Figure = Sf(w, "reallife_ladder_days", "days", "3") });
-        policy.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = Sx(w, "reallife_ladder_policy_staffing"), Stepper = 0 });
-        policy.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = Sx(w, "reallife_ladder_policy_escalate"), Stepper = 1 });
-        policy.Rows.Add(new WorkFormRow { Field = WorkField.Switch, Label = w.T("reallife_ladder_aiming", "Put my name forward"), On = true, Act = WkAct(119, w.T("reallife_ladder_aiming", "Put my name forward"), UiButtonKind.Secondary, UiIcon.Check) });
-        form.Left.Add(policy);
+        var next = new WorkFormBand { Title = Sx(w, "reallife_ladder_sec_next") };
+        next.Rows.Add(new WorkFormRow { Field = WorkField.Check, Label = Sf(w, "reallife_ladder_need_score", "have", "78", "need", "80"), On = false });
+        next.Rows.Add(new WorkFormRow { Field = WorkField.Check, Label = Sf(w, "reallife_ladder_need_stores", "have", "2", "need", "2"), On = true });
+        next.Rows.Add(new WorkFormRow { Field = WorkField.Check, Label = Sf(w, "reallife_ladder_need_recommend", "boss", "Pilar Duran"), On = true });
+        next.Rows.Add(new WorkFormRow { Field = WorkField.Switch, Label = w.T("reallife_ladder_aiming", "Put my name forward"), On = true, Act = WkAct(119, w.T("reallife_ladder_aiming", "Put my name forward"), UiButtonKind.Secondary, UiIcon.Check) });
+        form.Left.Add(next);
         var ask = new WorkFormBand { Title = w.T("reallife_ladder_sec_requests", "Your requests") };
         ask.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = Sx(w, "reallife_work_ask_shift"), Act = WkAct(128, w.T("reallife_work_ask_shift_earlier", "Ask for it earlier"), UiButtonKind.Secondary, UiIcon.Back) });
         ask.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = string.Empty, Act = WkAct(129, w.T("reallife_work_ask_shift_later", "Ask for it later"), UiButtonKind.Secondary, UiIcon.Next) });
         ask.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = Sx(w, "reallife_work_ask_equipment_label"), Act = WkAct(130, w.T("reallife_work_ask_equipment", "Ask for equipment"), UiButtonKind.Secondary, UiIcon.Wrench) });
         ask.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = Sx(w, "reallife_work_ask_insurance_label"), Act = WkAct(131, w.T("reallife_work_ask_insurance", "Ask for insurance"), UiButtonKind.Secondary, UiIcon.ShieldCheck,
             w.T("reallife_work_granted", "Already granted.")) });
-        form.Left.Add(ask);
-        var staff = new WorkFormBand { Title = w.T("reallife_work_group_staff", "Staff"), Count = w.F("reallife_work_n_people", "{n} people", "n", "3") };
-        string[] names = { "Oleg Kozlov", "Nia Brooks", "Priya Shah" };
-        int[] morale = { 76, 66, 81 };
+        form.Right.Add(ask);
+        string[] names = { "Oleg Kozlov", "Nia Brooks", "Priya Shah", "Tomas Reyes", "Ada Voss", "Leo Park" };
+        int[] morale = { 76, 66, 81, 72, 88, 69 };
+        var staff = new WorkFormBand { Title = w.T("reallife_work_group_staff", "Staff"), Count = w.F("reallife_work_n_people", "{n} people", "n", names.Length.ToString()) };
         for (int i = 0; i < names.Length; i++)
         {
-            staff.Rows.Add(new WorkFormRow { Field = WorkField.Person, Person = new WorkPerson { Name = names[i], Role = "Hudson Yards depot, $" + (17 + i) + ".00", Right = Sf(w, "reallife_work_morale_n", "n", morale[i].ToString()),
-                Ring = morale[i] < 70 ? UiRole.Warn : UiRole.Ok }, Act = WkAct(132, w.T("reallife_work_raise_their_pay", "Raise their pay"), UiButtonKind.Secondary, UiIcon.TrendUp, null, false, i + 1) });
+            staff.Rows.Add(new WorkFormRow { Field = WorkField.Person, Person = new WorkPerson { Name = names[i], Role = (i < 4 ? "Hudson Yards depot" : "Pier 9 cold store") + ", $" + (17 + i % 3) + ".00",
+                Right = Sf(w, "reallife_work_morale_n", "n", morale[i].ToString()), Ring = morale[i] < 70 ? UiRole.Warn : UiRole.Ok },
+                Act = WkAct(132, w.T("reallife_work_raise_their_pay", "Raise their pay"), UiButtonKind.Secondary, UiIcon.TrendUp, null, false, i + 1) });
         }
         form.Right.Add(staff);
         var stores = new WorkFormBand { Title = w.T("reallife_work_group_stores", "Stores"), Count = "2" };
         stores.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Label = "Hudson Yards depot", Hint = Sx(w, "reallife_ladder_rota_1") + ", 8 / 10", Value = Sf(w, "reallife_work_results_n", "n", "82"), Icon = UiIcon.Store });
         stores.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Label = "Pier 9 cold store", Hint = Sx(w, "reallife_ladder_rota_0") + ", 5 / 6", Value = Sf(w, "reallife_work_results_n", "n", "74"), Icon = UiIcon.Store });
         form.Right.Add(stores);
-        var next = new WorkFormBand { Title = Sx(w, "reallife_ladder_sec_next") };
-        next.Rows.Add(new WorkFormRow { Field = WorkField.Check, Label = Sf(w, "reallife_ladder_need_score", "have", "78", "need", "80"), On = false });
-        next.Rows.Add(new WorkFormRow { Field = WorkField.Check, Label = Sf(w, "reallife_ladder_need_stores", "have", "2", "need", "2"), On = true });
-        next.Rows.Add(new WorkFormRow { Field = WorkField.Check, Label = Sf(w, "reallife_ladder_need_recommend", "boss", "Pilar Duran"), On = true });
-        form.Right.Add(next);
         man.Form = form;
     }
 
@@ -385,13 +382,15 @@ internal static partial class UiSamples
         found.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = Sx(w, "reallife_own_with_label"), Act = WkAct(136, Sx(w, "reallife_own_button_found_colleagues"), UiButtonKind.Secondary, UiIcon.People,
             w.T("reallife_work_no_colleagues", "No colleagues would come with you.")) });
         form.Left.Add(found);
-        var contracts = new WorkFormBand { Title = w.T("reallife_own_contracts", "Contracts"), Count = "2" };
+        var contracts = new WorkFormBand { Title = w.T("reallife_own_contracts", "Contracts"), Count = "3" };
         contracts.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Label = "Rose Wilder", Hint = SPro(w, "carpenter") + ", " + Sx(w, "reallife_own_step_offered"), Value = "$180", Icon = UiIcon.Wrench });
         contracts.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = Sf(w, "reallife_work_due_day", "day", SDay(w, 415)), Act = WkAct(116, w.T("reallife_own_button_take", "Take it on"), UiButtonKind.Primary, UiIcon.Check, null, false, 40) });
         contracts.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Label = "Hollis and Sons", Hint = SPro(w, "carpenter") + ", " + Sx(w, "reallife_own_step_taken"), Value = "$640", Icon = UiIcon.Hammer });
         contracts.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = Sf(w, "reallife_work_due_day", "day", SDay(w, 418)), Act = WkAct(117, w.T("reallife_own_button_drop", "Drop it"), UiButtonKind.Destructive, UiIcon.Close, null, false, 41) });
+        contracts.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Label = "Ingrid Solberg", Hint = SPro(w, "carpenter") + ", " + Sx(w, "reallife_own_step_offered"), Value = "$310", Icon = UiIcon.Wrench });
+        contracts.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = Sf(w, "reallife_work_due_day", "day", SDay(w, 421)), Act = WkAct(116, w.T("reallife_own_button_take", "Take it on"), UiButtonKind.Primary, UiIcon.Check, null, false, 42) });
         form.Right.Add(contracts);
-        CareerPages.OwnBands(w, form, 5, 1280, 34, new[] { "Rose Wilder", "Hollis and Sons", "Aldous Burke" }, new[] { "$180", "$640", "$420" },
+        CareerPages.OwnBands(w, form, 5, 1280, new[] { "Rose Wilder", "Hollis and Sons", "Aldous Burke" }, new[] { "$180", "$640", "$420" },
             new[] { SDay(w, 380), SDay(w, 392), SDay(w, 404) });
         own.Form = form;
     }
@@ -414,6 +413,9 @@ internal static partial class UiSamples
             new CareerSpell { Title = SCourse(w, "customer_service"), Employer = SDay(w, 205), Dates = Sx(w, "reallife_study_grade_2"), Icon = UiIcon.Cap, Tone = UiRole.Ok }
         };
         CareerPages.CvPage(w, cv, "Jordan Hayes", SRank(w, "warehouse", 1), "Harbourside Freight HSF", spells, quals, 3, 13, "$38,420", 2, "$4,120", 40, 55,
-            new[] { SSkill(w, "handling"), SSkill(w, "first_aid"), SSkill(w, "driving") }, new[] { 74, 55, 66 }, w.T("reallife_work_why_retire", "You can retire from age 55."));
+            new[] { SSkill(w, "handling"), SSkill(w, "first_aid"), SSkill(w, "driving") }, new[] { 74, 55, 66 }, w.T("reallife_work_why_retire", "You can retire from age 55."), false, f.Job,
+            new[] { UiIcon.Coffee, UiIcon.Heart, UiIcon.ForkKnife }, new[] { SCourse(w, "barista"), SCourse(w, "care_worker"), SCourse(w, "chef") },
+            new[] { w.T("reallife_work_under_way", "Under way"), w.T("reallife_work_under_way", "Under way"), w.T("reallife_work_not_started", "Not started") },
+            new[] { w.F("reallife_work_attended_pct", "{n}% attended", "n", "100"), w.F("reallife_work_attended_pct", "{n}% attended", "n", "91"), w.T("reallife_work_not_started", "Not started") });
     }
 }

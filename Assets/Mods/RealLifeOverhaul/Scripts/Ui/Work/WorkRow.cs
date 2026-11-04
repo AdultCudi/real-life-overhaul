@@ -192,6 +192,7 @@ namespace RealLifeOverhaul.Ui
         public string GainTitle;
         public readonly List<WorkBar> Gains = new List<WorkBar>(8);
         public string EmptyTitle, EmptyBody;
+        public readonly List<WorkFormBand> Below = new List<WorkFormBand>(2);   // bands under the transcript's column: what the degrees ask, in what the page cannot say in its lines
     }
 
     /// <summary>A child at university or in school: their profile, their college fund as a meter, and what can be done.</summary>
@@ -207,7 +208,7 @@ namespace RealLifeOverhaul.Ui
     /// <summary>A form's control: a label with a stepper, a switch, a choice or a figure, or a person or a button beneath.</summary>
     public enum WorkField : byte
     {
-        Label, Stepper, Switch, Choice, Button, Person, Bar, Text, Tile, Check, Input, Nudge
+        Label, Stepper, Switch, Choice, Button, Person, Bar, Text, Tile, Check, Nudge
     }
 
     /// <summary>One row of a form band: a label with its control, a figure, a person or a button.</summary>
@@ -225,7 +226,6 @@ namespace RealLifeOverhaul.Ui
         public UiIcon Icon = UiIcon.None;
         public UiRole Tone = UiRole.Ok;
         public string Why;
-        public int Field2 = -1;                // for an input: the field's place among the page's typed fields
     }
 
     /// <summary>A band of a form: a capitals title, a count, and its rows.</summary>
@@ -244,6 +244,7 @@ namespace RealLifeOverhaul.Ui
         public readonly List<WorkFormBand> Left = new List<WorkFormBand>(4), Right = new List<WorkFormBand>(4);
         public string Lead;                    // a sentence over the form
         public UiProfileModel Head;
+        public readonly List<WorkFormBand> Below = new List<WorkFormBand>(3);   // bands under both columns, up to three across: what fills the foot of a short page
     }
 
     /// <summary>One tab of an app: its shape, and everything the shape needs. Game-free.</summary>

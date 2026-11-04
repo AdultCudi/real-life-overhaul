@@ -44,43 +44,33 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        /// <summary>The foot of the Applications list: what is due and when, who else applied for those posts, and the record the employers weigh.</summary>
-        public static void ApplicationsBands(UtilitiesWords w, WorkTab apps, int[] days, string[] whens, int[] kinds, string[] posts, string[] rivals, int[] rivalScores, int[] record)
+        /// <summary>The foot of the Applications list: what is due and when, and the record the employers weigh (who else applied for a post is in its detail).</summary>
+        public static void ApplicationsBands(UtilitiesWords w, WorkTab apps, int[] days, string[] whens, int[] kinds, string[] posts, int[] record)
         {
             var due = new WorkFormBand { Title = w.T("reallife_work_band_due", "What is due") };
-            var also = new WorkFormBand { Title = w.T("reallife_work_band_rivals", "Who else applied") };
             var order = new List<int>(whens.Length);
             for (int i = 0; i < whens.Length; i++)
             {
                 order.Add(i);
             }
             order.Sort((a, b) => days[a] != days[b] ? days[a].CompareTo(days[b]) : a.CompareTo(b));   // what is due first, in date order
-            for (int n = 0; n < order.Count && n < 3; n++)
+            for (int n = 0; n < order.Count && n < 4; n++)
             {
                 int i = order[n];
                 string what = kinds[i] == 1 ? w.T("reallife_work_due_interview", "Attend the interview") : kinds[i] == 2 ? w.T("reallife_work_due_offer", "Answer the offer")
                     : w.T("reallife_work_due_answer", "Wait for an answer");
                 due.Rows.Add(Tile(kinds[i] == 1 ? UiIcon.Calendar : kinds[i] == 2 ? UiIcon.Handshake : UiIcon.Clock, what, posts[i], whens[i]));
-                if (rivals != null && i < rivals.Length && !string.IsNullOrEmpty(rivals[i]))
-                {
-                    also.Rows.Add(new WorkFormRow { Field = WorkField.Person, Person = new WorkPerson { Name = rivals[i], Role = posts[i],
-                        Right = w.F("reallife_work_performance_n", "performance {n}", "n", rivalScores[i].ToString()), Ring = UiRole.Ok } });
-                }
             }
             if (due.Rows.Count > 0)
             {
                 apps.Below.Add(due);
-            }
-            if (also.Rows.Count > 0)
-            {
-                apps.Below.Add(also);
             }
             if (record != null && record.Length == 4 && record[0] >= 0)
             {
                 var mine = new WorkFormBand { Title = w.T("reallife_work_band_record", "Your record, as they weigh it") };
                 mine.Rows.Add(Meter(w.T("reallife_work_stand_performance", "Performance"), record[0]));
                 mine.Rows.Add(Meter(w.T("reallife_work_stand_punctuality", "Punctuality"), record[1]));
-                mine.Rows.Add(Meter(w.T("reallife_work_stand_teamwork", "Teamwork"), record[2]));
+                mine.Rows.Add(Meter(w.T("reallife_work_stand_colleagues", "With colleagues"), record[2]));
                 mine.Rows.Add(Meter(w.T("reallife_work_stand_reliability", "Reliability"), record[3]));
                 apps.Below.Add(mine);
             }
@@ -109,13 +99,13 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        /// <summary>Own work's right column: the practice's record, and the contracts finished lately.</summary>
-        public static void OwnBands(UtilitiesWords w, WorkFormModel form, int finished, int earned, int reputation, string[] clients, string[] fees, string[] days)
+        /// <summary>Own work's record: the contracts finished and what they earned beside the contracts, and the ones finished lately under the practice.</summary>
+        public static void OwnBands(UtilitiesWords w, WorkFormModel form, int finished, int earned, string[] clients, string[] fees, string[] days)
         {
             var record = new WorkFormBand { Title = w.T("reallife_work_band_own_record", "Your record") };
             record.Rows.Add(Pair(w.T("reallife_work_own_finished", "Contracts finished"), finished.ToString()));
             record.Rows.Add(Pair(w.T("reallife_work_own_earned", "Earned from contracts"), "$" + earned.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)));
-            record.Rows.Add(Meter(w.T("reallife_work_own_standing", "Reputation"), reputation));
+            record.Rows.Add(Pair(w.T("reallife_work_own_average", "Average fee"), finished > 0 ? "$" + (earned / finished).ToString("N0", System.Globalization.CultureInfo.InvariantCulture) : "$0"));
             form.Right.Add(record);
             var lately = new WorkFormBand { Title = w.T("reallife_work_band_own_lately", "Finished lately") };
             for (int i = 0; i < clients.Length && i < 3; i++)
@@ -124,7 +114,41 @@ namespace RealLifeOverhaul.Ui
             }
             if (lately.Rows.Count > 0)
             {
-                form.Right.Add(lately);
+                form.Left.Add(lately);
+            }
+        }
+
+        // The CV's foot: the courses under way (the qualifications still to come) and, in work, where the next rung leads and what it asks.
+        private static void CvBelow(UtilitiesWords w, WorkFormModel form, CareerJob job, UiIcon[] icons, string[] names, string[] hints, string[] values)
+        {
+            if (names != null && names.Length > 0)
+            {
+                var studying = new WorkFormBand { Title = w.T("reallife_work_band_studying_now", "Studying now"), Count = names.Length.ToString() };
+                for (int i = 0; i < names.Length && i < 3; i++)
+                {
+                    studying.Rows.Add(Tile(icons[i], names[i], hints[i], values[i]));
+                }
+                form.Below.Add(studying);
+            }
+            CareerRung next = null;
+            for (int i = 0; job != null && next == null && i < job.Rungs.Count; i++)
+            {
+                next = job.Rungs[i].State == 2 ? job.Rungs[i] : null;
+            }
+            if (next != null)
+            {
+                int met = 0;
+                for (int i = 0; i < job.Needs.Count; i++)
+                {
+                    met += job.Needs[i].Met ? 1 : 0;
+                }
+                var leads = new WorkFormBand { Title = w.T("reallife_work_band_leads", "Where this leads") };
+                leads.Rows.Add(Tile(UiIcon.Trophy, next.Title, w.F("reallife_work_needs_met", "{met} of {all} met", "met", met.ToString(), "all", job.Needs.Count.ToString()), next.Pay));
+                for (int i = 0; i < job.Needs.Count && i < 3; i++)
+                {
+                    leads.Rows.Add(new WorkFormRow { Field = WorkField.Check, Label = job.Needs[i].Words, On = job.Needs[i].Met });
+                }
+                form.Below.Add(leads);
             }
         }
 
@@ -133,7 +157,8 @@ namespace RealLifeOverhaul.Ui
         /// reference each, the skills as bars, the qualifications, and the pension with the way to retire.
         /// </summary>
         public static void CvPage(UtilitiesWords w, WorkTab cv, string name, string title, string employer, List<CareerSpell> spells, List<CareerSpell> quals, int jobsHeld, int monthsWorked,
-            string earned, int goodRefs, string pot, int age, int retireAge, string[] skills, int[] skillValues, string whyNot, bool retired = false)
+            string earned, int goodRefs, string pot, int age, int retireAge, string[] skills, int[] skillValues, string whyNot, bool retired = false, CareerJob job = null,
+            UiIcon[] studyIcons = null, string[] studyNames = null, string[] studyHints = null, string[] studyValues = null)
         {
             cv.Shape = WorkShape.Form;
             var form = new WorkFormModel();
@@ -183,6 +208,7 @@ namespace RealLifeOverhaul.Ui
                     Why = whyNot };
             }
             form.Right.Add(pension);
+            CvBelow(w, form, job, studyIcons, studyNames, studyHints, studyValues);
             cv.Form = form;
         }
     }

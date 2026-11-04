@@ -147,7 +147,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_work_show_school", "reallife_work_skill_after", "reallife_work_skill_claimed", "reallife_work_skill_craft", "reallife_work_skill_floor",
                 "reallife_work_skill_found", "reallife_work_skill_ideas", "reallife_work_skill_reliability", "reallife_work_skill_team",
                 "reallife_work_skills_empty_title", "reallife_work_skills_lead", "reallife_work_so_far_title", "reallife_work_sold_n", "reallife_work_sort_newest",
-                "reallife_work_spent_on", "reallife_work_stand_performance", "reallife_work_stand_teamwork", "reallife_work_standing", "reallife_work_starts_day",
+                "reallife_work_spent_on", "reallife_work_stand_performance", "reallife_work_stand_colleagues", "reallife_work_standing", "reallife_work_starts_day",
                 "reallife_work_starts_of", "reallife_work_stat_ads_cost", "reallife_work_stat_best_offer", "reallife_work_stat_best_results",
                 "reallife_work_stat_earned", "reallife_work_stat_in_all", "reallife_work_stat_interviews", "reallife_work_stat_leaving", "reallife_work_stat_morale",
                 "reallife_work_stat_offers", "reallife_work_stat_offers_open", "reallife_work_stat_on_sale", "reallife_work_stat_open_posts",

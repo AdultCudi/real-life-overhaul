@@ -15,7 +15,7 @@ internal static partial class Program
     {
         UiAppWindow.NavCommand, UiAppWindow.ActionCommand, UiAppWindow.RowCommand, UiAppWindow.MoreCommand, UiAppWindow.PersonCommand,
             UiDataTable.First + UiDataTable.Row, UiDataTable.First + UiDataTable.Act, UiDataTable.First + UiDataTable.Clear,
-        WorkCmd.Less, WorkCmd.Type, WorkCmd.More, WorkCmd.Field, WorkCmd.Search, WorkCmd.Card, WorkCmd.PageTab, WorkCmd.Aside, WorkCmd.Pick,
+        WorkCmd.Less, WorkCmd.Type, WorkCmd.More, WorkCmd.Search, WorkCmd.Card, WorkCmd.PageTab, WorkCmd.Aside, WorkCmd.Pick,
             WorkCmd.Sort, WorkCmd.NudgeLess, WorkCmd.NudgeMore, WorkCmd.Read,
         UiDiary.DayCommand, UiDiary.MonthCommand, UiDiary.EntryCommand, UiChart.First + UiChart.Point, UiTrack.First + UiTrack.Step,
         UiReader.AnchorCommand, UiReader.RelatedCommand, UiReader.ContentsCommand
@@ -298,11 +298,6 @@ internal static partial class Program
         ad.Lay(new UiScene(), UiFrame.FullMenu(1.78f, "Work"), true, UiDefaultKeys.Keyboard);
         Check(stepped && cycled && ad.Page.Amounts[posts].Value == 3 && ad.Page.Amounts[0].Value == 1,
             "work screens: the new ad's Posts to fill steps (to " + (posts >= 0 ? ad.Page.Amounts[posts].Value : -1) + ") and its role choice cycles (to " + ad.Page.Amounts[0].Value + ")");
-        // a name typed into the contract's field is kept
-        WorkScreen contract = LaidWork("open_roles", "person_contract");
-        contract.Press(WorkCmd.Field, 0);
-        contract.Typed("Kenji M.");
-        Check(contract.TypingCommand == WorkCmd.Field && contract.TypingText == "Kenji M.", "work screens: a name typed into a person's contract is kept");
     }
 
     // The search narrows the list and the page says so; a tab key moves between sections; the order of the pages holds.
@@ -321,7 +316,7 @@ internal static partial class Program
         WorkScreen courses = LaidWork("campus", "courses");
         int cards = courses.Page.Cards.Cards.Length;
         courses.Press(WorkCmd.Search, 0);
-        courses.Typed("plumber");
+        courses.Typed("plumbing");
         courses.Lay(new UiScene(), UiFrame.FullMenu(1.78f, "Work"), true, UiDefaultKeys.Keyboard);
         Check(cards > 8 && courses.Page.Cards.Cards.Length == 1, "work screens: Campus's search narrows the courses (" + cards + ", then " + courses.Page.Cards.Cards.Length + ")");
         // a tab key turns the sections round

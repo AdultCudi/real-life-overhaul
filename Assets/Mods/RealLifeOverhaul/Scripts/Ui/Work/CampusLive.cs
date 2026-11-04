@@ -157,21 +157,20 @@ namespace RealLifeOverhaul.Ui
                 string tag = CareersText.Kind(c.Kind);
                 var r = new WorkRow { Id = c.Id, Icon = WorkGlyphs.Course(c), Name = CareersText.Course(c.Id), Sub = d.PlaceOf(c, StudyMode.FullTime), Line = CareersText.About(c), Status = tag,
                     Tone = c.Kind == CourseKind.Short || c.Kind == CourseKind.Certificate ? UiRole.Muted : UiRole.Accent, Group = WorkGlyphs.Subject(c), FootRight = feeWords,
-                    FootLeft = c.Timetabled ? w.F("reallife_work_n_weeks", "{n} weeks", "n", Math.Max(1, StudyRules.Length(c,
-                        StudyMode.FullTime) / 7).ToString(Inv)) : CareersText.Mode(StudyMode.Distance) };
+                    FootLeft = c.Timetabled ? WorkBuilder.Weeks(w, Math.Max(1, StudyRules.Length(c, StudyMode.FullTime) / 7)) : CareersText.Mode(StudyMode.Distance) };
                 if (c.Timetabled)
                 {
                     r.NextLabel = w.T("reallife_work_next_class", "Next class");
-                    r.NextValue = CareersText.Timetable(StudyRules.Days(c, StudyMode.FullTime), StudyRules.Hour(c, StudyMode.FullTime));
+                    r.NextValue = CareersText.TimetableShort(StudyRules.Days(c, StudyMode.FullTime), StudyRules.Hour(c, StudyMode.FullTime));
                 }
                 r.Title = r.Name;
                 r.HeadSub = r.Sub;
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_length", "Length"), r.FootLeft));
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_fee", "Fee"), feeWords));
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_classes", "Classes"), c.Timetabled ? CareersText.Timetable(StudyRules.Days(c, StudyMode.FullTime),
-                    StudyRules.Hour(c, StudyMode.FullTime)) : "-"));
+                    StudyRules.Hour(c, StudyMode.FullTime)) : WorkBuilder.None(w)));
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_seats", "Seats left"), intake != null ? (seatsLeft == 0 ? w.T("reallife_work_full", "Full")
-                    : w.F("reallife_work_seats_of", "{n} of {all}", "n", seatsLeft.ToString(Inv), "all", intake.Capacity.ToString(Inv))) : "-"));
+                    : w.F("reallife_work_seats_of", "{n} of {all}", "n", seatsLeft.ToString(Inv), "all", intake.Capacity.ToString(Inv))) : WorkBuilder.None(w)));
                 var learn = new WorkSection { Part = WorkPart.Bars, Title = w.T("reallife_work_you_will_learn", "What you will learn"),
                     Note = w.T("reallife_work_skill_after", "skill after the course") };
                 learn.Bars.Add(new WorkBar { Label = CareersText.Skill(c.SkillA), Value = Math.Min(100, StudyRules.Points(f, c.SkillA)), Note = "+" + c.GainA.ToString(Inv) });
@@ -308,12 +307,12 @@ namespace RealLifeOverhaul.Ui
                 live.Add(e);
                 CourseDef c = e.Def;
                 int next = StudyRules.NextClass(e, day, CareersGame.MinuteOfDay, -1);
-                string attended = e.Seen > 0 ? (e.Done * 100 / e.Seen).ToString(Inv) + "%" : "-";
+                string attended = e.Seen > 0 ? (e.Done * 100 / e.Seen).ToString(Inv) + "%" : WorkBuilder.NotYet(w);
                 bool examOpen = e.At == EnrolStage.Exam || e.At == EnrolStage.Retake;
                 var r = new WorkRow { Id = c.Id, Icon = WorkGlyphs.Course(c), Name = CareersText.Course(c.Id), Sub = d.PlaceOf(c, (StudyMode)e.Mode),
-                    Status = examOpen ? w.T("reallife_work_exam_open", "Exam open") : w.T("reallife_work_under_way", "Under way"), Tone = examOpen ? UiRole.Warn : UiRole.Accent };
+                    Status = examOpen ? w.T("reallife_work_exam_open", "Exam open") : StartsOrUnderWay(w, e, next, day), Tone = examOpen ? UiRole.Warn : e.Seen == 0 && next > 0 && next / (24 * 60) > day ? UiRole.Muted : UiRole.Accent };
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_next", "Next class"),
-                    next > 0 ? CareersText.Day(next / (24 * 60)) + " " + CareersText.TimeOfDay(next % (24 * 60)) : "-"));
+                    next > 0 ? CareersText.Day(next / (24 * 60)) + " " + CareersText.TimeOfDay(next % (24 * 60)) : WorkBuilder.None(w)));
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_attended", "Attended"), attended));
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_homework", "Homework"), w.F("reallife_work_n_of_n", "{n} of {all}",
                     "n", e.Homework.ToString(Inv), "all", StudyRules.HomeworkSet(e).ToString(Inv))));
@@ -329,6 +328,13 @@ namespace RealLifeOverhaul.Ui
             }
             t.Diary = new WorkDiary { Month = DiaryOf(live, day, view) };
             return t;
+        }
+
+        // A course booked ahead says on which day it starts; one that has begun says it is under way.
+        private static string StartsOrUnderWay(UtilitiesWords w, Enrolment e, int next, int day)
+        {
+            return e.Seen == 0 && next > 0 && next / (24 * 60) > day ? w.F("reallife_work_starts_day", "Starts day {n}", "n", (next / (24 * 60)).ToString(Inv))
+                : w.T("reallife_work_under_way", "Under way");
         }
 
         private static readonly string[] MonthKeys =
@@ -425,8 +431,8 @@ namespace RealLifeOverhaul.Ui
                 int term = e.Start / quarter;
                 AddMark(terms, term, quarter, w, new WorkMark { Id = c.Id, Icon = WorkGlyphs.Course(c), Course = CareersText.Course(c.Id), Place = d.PlaceOf(c, (StudyMode)e.Mode),
                     Credits = RosterRules.CreditsOf(c).ToString(Inv), Attendance = StudyRules.Attendance(e).ToString(Inv) + "%", AttendanceGrade = StudyRules.Attendance(e),
-                    Exam = passed || failed ? e.Score.ToString(Inv) : "-", ExamGrade = passed || failed ? e.Score : -1, Letter = passed || failed ? RosterRules.LetterOf(e.Score) : null,
-                    Percent = passed || failed ? e.Score.ToString(Inv) + "%" : "-", LetterGrade = passed || failed ? e.Score : -1,
+                    Exam = passed || failed ? e.Score.ToString(Inv) : WorkBuilder.NotYet(w), ExamGrade = passed || failed ? e.Score : -1, Letter = passed || failed ? RosterRules.LetterOf(e.Score) : null,
+                    Percent = passed || failed ? e.Score.ToString(Inv) + "%" : WorkBuilder.NotYet(w), LetterGrade = passed || failed ? e.Score : -1,
                     Status = passed ? (c.Cert >= 0 || c.Kind == CourseKind.Certificate ? w.T("reallife_work_licence_won", "Licence won") : w.T("reallife_work_passed", "Passed"))
                         : failed ? w.T("reallife_work_repeat", "Repeat") : w.T("reallife_work_left", "Left"), Tone = passed ? UiRole.Ok : failed ? UiRole.Warn : UiRole.Muted });
             }
@@ -440,8 +446,8 @@ namespace RealLifeOverhaul.Ui
                 }
                 results++;
                 AddMark(terms, e.Start / quarter, quarter, w, new WorkMark { Id = c.Id, Icon = WorkGlyphs.Course(c), Course = CareersText.Course(c.Id), Place = d.PlaceOf(c, (StudyMode)e.Mode),
-                    Credits = RosterRules.CreditsOf(c).ToString(Inv), Attendance = StudyRules.Attendance(e).ToString(Inv) + "%", AttendanceGrade = StudyRules.Attendance(e), Exam = "-", Percent = "-",
-                    Status = w.T("reallife_work_under_way", "Under way"), Tone = UiRole.Accent });
+                    Credits = RosterRules.CreditsOf(c).ToString(Inv), Attendance = StudyRules.Attendance(e).ToString(Inv) + "%", AttendanceGrade = StudyRules.Attendance(e), Exam = WorkBuilder.NotYet(w), Percent = WorkBuilder.NotYet(w),
+                    Status = StartsOrUnderWay(w, e, StudyRules.NextClass(e, day, CareersGame.MinuteOfDay, -1), day), Tone = UiRole.Accent });
             }
             if (results == 0)
             {
@@ -455,7 +461,7 @@ namespace RealLifeOverhaul.Ui
             var list = new List<ClassLine>(RosterRules.SeatsDefault + 1);
             int rank = RosterRules.Rank(intake, you, Math.Max(0, gpa), list);
             s.FigureLabels = new[] { w.T("reallife_work_gpa_short", "GPA"), w.T("reallife_work_credits_word", "Credits"), w.T("reallife_work_class_rank", "Class rank") };
-            s.FigureValues = new[] { gpa >= 0 ? (gpa / 100f).ToString("0.0", Inv) : "-", credits.ToString(Inv), w.F("reallife_work_rank_of",
+            s.FigureValues = new[] { gpa >= 0 ? (gpa / 100f).ToString("0.0", Inv) : WorkBuilder.NotYet(w), credits.ToString(Inv), w.F("reallife_work_rank_of",
                 "{rank} of {all}", "rank", rank.ToString(Inv), "all", list.Count.ToString(Inv)) };
             s.TranscriptTitle = w.T("reallife_work_transcript", "Transcript");
             s.Heads = new[] { w.T("reallife_campus_col_course", "Course"), w.T("reallife_work_col_credits", "Credits"), w.T("reallife_work_col_attendance", "Attendance"),
@@ -466,7 +472,14 @@ namespace RealLifeOverhaul.Ui
             }
             s.TotalLabel = w.T("reallife_work_total_label", "Credits earned, grade point average");
             s.TotalCredits = w.F("reallife_work_n_credits", "{n} credits", "n", credits.ToString(Inv));
-            s.TotalGpa = gpa >= 0 ? (gpa / 100f).ToString("0.0", Inv) : "-";
+            s.TotalGpa = gpa >= 0 ? (gpa / 100f).ToString("0.0", Inv) : WorkBuilder.NotYet(w);
+            var next = new List<CourseDef>(3);
+            Candidates(f, -1, 3, next);
+            WorkFormBand nextBand = CampusBands.CourseTiles(w.T("reallife_work_band_courses_next", "Courses you could take next"), CourseNames(next), CourseAdds(w, next, -1), CourseFees(d, next), 2);
+            if (nextBand.Rows.Count > 0)
+            {
+                s.Below.Add(nextBand);
+            }
             var quarters = new List<int>(8);
             var averages = new List<int>(8);
             if (RosterRules.ByTerm(marks, GameCalendar.DaysPerYear, quarters, averages) >= 2)
@@ -546,6 +559,7 @@ namespace RealLifeOverhaul.Ui
             var t = new WorkTab { Shape = WorkShape.Skills, Title = w.T("reallife_campus_tab_skills", "Skills"), Lead = w.T("reallife_work_skills_lead", "What your courses and work have taught you."),
                 EmptyTitle = w.T("reallife_work_skills_empty_title", "No skills yet"), EmptyBody = w.T("reallife_work_no_skills",
                     "Courses and work teach them. Enrol on a course and its skills grow here.") };
+            int strongest = -1, weakest = -1, sum = 0;
             for (int s = 0; s < Skills.Count; s++)
             {
                 int points = StudyRules.Points(f, s);
@@ -560,10 +574,97 @@ namespace RealLifeOverhaul.Ui
                     CourseDef c = StudyCatalogue.All[i];
                     place = CareersDirector.Offered(c) && (c.SkillA == s || (c.SkillB == s && c.GainB > 0)) ? CareersText.Course(c.Id) : null;
                 }
-                t.SkillIcons.Add(place != null ? UiIcon.Cap : UiIcon.Briefcase);
-                t.SkillPlaces.Add(place != null ? w.F("reallife_work_taught_in", "Taught in {course}", "course", place) : w.T("reallife_work_taught_at_work", "Learned at work"));
+                string key = StudyCatalogue.SkillKey(s);
+                t.SkillIcons.Add(WorkSkills.Glyph(key.Substring(key.LastIndexOf("skill_", StringComparison.Ordinal) + "skill_".Length)));
+                t.SkillPlaces.Add(CampusBands.SkillLine(w, Math.Min(100, points), place != null ? w.F("reallife_work_taught_in", "Taught in {course}", "course", place)
+                    : w.T("reallife_work_taught_at_work", "Learned at work")));
+                strongest = strongest < 0 || points > StudyRules.Points(f, strongest) ? s : strongest;
+                weakest = weakest < 0 || points < StudyRules.Points(f, weakest) ? s : weakest;
+                sum += Math.Min(100, points);
+            }
+            if (t.Skills.Count > 0)
+            {
+                var help = new List<CourseDef>(3);
+                Candidates(f, weakest, 3, help);
+                var rusty = new List<int>(3);   // the skills that have slipped below the best the player once had, the biggest drop first
+                for (int s = 0; s < Skills.Count; s++)
+                {
+                    rusty.Add(StudyRules.Points(f, s) > 0 && f.Best[s] / 1000 - StudyRules.Points(f, s) >= RustyDrop ? s : -1);
+                }
+                rusty.RemoveAll(s => s < 0);
+                rusty.Sort((a, b) => (f.Best[b] / 1000 - StudyRules.Points(f, b)).CompareTo(f.Best[a] / 1000 - StudyRules.Points(f, a)));
+                int shown = Math.Min(3, rusty.Count);
+                var icons = new UiIcon[shown];
+                var names = new string[shown];
+                var bests = new string[shown];
+                var drops = new string[shown];
+                for (int i = 0; i < shown; i++)
+                {
+                    string key = StudyCatalogue.SkillKey(rusty[i]);
+                    icons[i] = WorkSkills.Glyph(key.Substring(key.LastIndexOf("skill_", StringComparison.Ordinal) + "skill_".Length));
+                    names[i] = CareersText.Skill(rusty[i]);
+                    bests[i] = w.F("reallife_work_once_reached", "Once reached {n}", "n", Math.Min(100, f.Best[rusty[i]] / 1000).ToString(Inv));
+                    drops[i] = "-" + (f.Best[rusty[i]] / 1000 - StudyRules.Points(f, rusty[i])).ToString(Inv);
+                }
+                CampusBands.SkillsBands(w, t, CareersText.Skill(strongest) + " " + Math.Min(100, StudyRules.Points(f, strongest)),
+                    CareersText.Skill(weakest) + " " + Math.Min(100, StudyRules.Points(f, weakest)), sum / t.Skills.Count, CourseNames(help), CourseAdds(w, help, weakest), CourseFees(d, help),
+                    icons, names, bests, drops);
             }
             return t;
+        }
+
+        private const int RustyDrop = 3;   // points under the best a skill once stood at before it counts as rusty
+
+        // The courses a student could take now, the cheapest first, none of them held or under way; those that teach one skill first when a skill is asked for.
+        private static void Candidates(StudyFile f, int skill, int most, List<CourseDef> into)
+        {
+            for (int i = 0; i < StudyCatalogue.All.Length; i++)
+            {
+                CourseDef c = StudyCatalogue.All[i];
+                if (CareersDirector.Offered(c) && StudyRules.CanEnrol(f, c, StudyMode.FullTime) == EnrolRefusal.None
+                    && (skill < 0 || c.SkillA == skill || (c.SkillB == skill && c.GainB > 0)))
+                {
+                    into.Add(c);
+                }
+            }
+            into.Sort((a, b) => a.Fee.CompareTo(b.Fee));
+            if (into.Count > most)
+            {
+                into.RemoveRange(most, into.Count - most);
+            }
+        }
+
+        private static string[] CourseNames(List<CourseDef> list)
+        {
+            var names = new string[list.Count];
+            for (int i = 0; i < names.Length; i++)
+            {
+                names[i] = CareersText.Course(list[i].Id);
+            }
+            return names;
+        }
+
+        // What each course adds: the gain in its first skill, or in the skill asked for.
+        private static string[] CourseAdds(UtilitiesWords w, List<CourseDef> list, int skill)
+        {
+            var adds = new string[list.Count];
+            for (int i = 0; i < adds.Length; i++)
+            {
+                CourseDef c = list[i];
+                bool second = skill >= 0 && c.SkillA != skill && c.SkillB == skill;
+                adds[i] = w.F("reallife_work_course_adds", "+{n} {skill}", "n", (second ? c.GainB : c.GainA).ToString(Inv), "skill", CareersText.Skill(second ? c.SkillB : c.SkillA));
+            }
+            return adds;
+        }
+
+        private static string[] CourseFees(CareersDirector d, List<CourseDef> list)
+        {
+            var fees = new string[list.Count];
+            for (int i = 0; i < fees.Length; i++)
+            {
+                fees[i] = CareersText.Money(Prices.At(StudyRules.Fee(list[i], d.GrantFor(list[i]))));
+            }
+            return fees;
         }
 
         private WorkTab Family(CareersDirector d)
@@ -572,13 +673,24 @@ namespace RealLifeOverhaul.Ui
             var t = new WorkTab { Shape = WorkShape.Profiles, EmptyTitle = w.T("reallife_work_no_kids_title", "No child is at university yet"),
                 EmptyBody = w.T("reallife_work_no_children", "A grown child who wants a degree comes to you with a course and its fee. You pay for it or decline, and what they study shows here.") };
             IReadOnlyList<ChildView> kids = d.Kids();
+            int typical = TypicalDegree(d), funds = 0, offers = 0, cost = 0, toPay = 0;
             for (int i = 0; kids != null && i < kids.Count; i++)
             {
                 ChildStudy c = d.ChildOf(kids[i].Name);
-                var k = new WorkKid { Name = kids[i].Name, Ring = UiRole.Ok, Role = c != null && c.Course >= 0 ? CareersText.Course(c.Course) : w.T("reallife_work_no_course_yet", "No course yet"),
-                    FactLabels = new[] { w.T("reallife_work_col_state", "State") }, FactValues = new[] { c != null ? c.At.ToString() : "-" } };
-                if (c != null && c.At == ChildStep.Offered)
+                bool offered = c != null && c.At == ChildStep.Offered && c.Course >= 0;
+                var k = new WorkKid { Name = kids[i].Name, Ring = UiRole.Ok, Fund = typical > 0 ? Math.Max(0, Math.Min(100, kids[i].Fund * 100 / typical)) : -1,
+                    Role = c != null && c.Course >= 0 ? CareersText.Course(c.Course) : kids[i].Grown ? w.T("reallife_work_no_course_yet", "No course yet") : w.T("reallife_work_after_growing", "University comes later"),
+                    FundLabel = w.T("reallife_work_college_fund", "College fund"),
+                    FundNote = typical > 0 ? w.F("reallife_work_fund_of", "{fund} of {cost}", "fund", CareersText.Money(kids[i].Fund), "cost", CareersText.Money(typical)) : CareersText.Money(kids[i].Fund),
+                    FactLabels = new[] { w.T("reallife_work_kid_age", "Age"), w.T("reallife_work_kid_school", "School"), w.T("reallife_work_col_state", "State") },
+                    FactValues = new[] { ((int)kids[i].Age).ToString(Inv), SchoolWords(w, kids[i].School), ChildState(w, kids[i], c) } };
+                funds += kids[i].Fund;
+                if (offered)
                 {
+                    int fee = Prices.At(StudyRules.Fee(StudyCatalogue.Find(c.Course), 0));
+                    offers++;
+                    cost += fee;
+                    toPay += Math.Max(0, fee - kids[i].Fund);
                     k.Acts.Add(new WorkAct { Kind = PayChild, Arg = i, Label = w.T("reallife_campus_button_child_pay", "Pay for the degree"), Style = UiButtonKind.Primary, Icon = UiIcon.Check });
                     k.Acts.Add(new WorkAct { Kind = DeclineChild, Arg = i, Label = w.T("reallife_campus_button_child_decline", "Not this time"),
                         Style = UiButtonKind.Destructive, Icon = UiIcon.Close });
@@ -586,14 +698,55 @@ namespace RealLifeOverhaul.Ui
                 t.Kids.Add(k);
             }
             var form = new WorkFormModel();
+            if (t.Kids.Count > 0)
+            {
+                CampusBands.FamilyBand(w, form, CareersText.Money(funds), offers, CareersText.Money(cost), CareersText.Money(toPay));
+            }
             var tutor = new WorkFormBand { Title = w.T("reallife_work_tutor_title", "Tutor a pupil") };
             string why = d.CanTutor(out int _);
             tutor.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_tutor_note", "Teach a pupil a skill you know well, for a fee. It takes an evening."),
                 Act = new WorkAct { Kind = Tutor, Label = w.T("reallife_campus_button_tutor", "Give a tutoring session"),
                 Style = UiButtonKind.Secondary, Icon = UiIcon.Cap, Why = why == null ? null : w.T(why, "You cannot tutor now.") } });
-            form.Left.Add(tutor);
+            form.Left.Insert(0, tutor);
             t.Form = form;
             return t;
+        }
+
+        // What a degree costs as a rule: the mean fee of the degrees on offer, the figure a college fund is measured against.
+        private static int TypicalDegree(CareersDirector d)
+        {
+            long sum = 0;
+            int n = 0;
+            for (int i = 0; i < StudyCatalogue.All.Length; i++)
+            {
+                CourseDef c = StudyCatalogue.All[i];
+                if (c.Higher && CareersDirector.Offered(c))
+                {
+                    sum += Prices.At(StudyRules.Fee(c, 0));
+                    n++;
+                }
+            }
+            return n > 0 ? (int)(sum / n) : 0;
+        }
+
+        private static string SchoolWords(UtilitiesWords w, int school)
+        {
+            return school == 2 ? w.T("reallife_work_school_private", "Private school") : school == 1 ? w.T("reallife_work_school_state", "State school") : w.T("reallife_work_school_none", "No school yet");
+        }
+
+        private static string ChildState(UtilitiesWords w, ChildView kid, ChildStudy c)
+        {
+            if (c == null)
+            {
+                return kid.Grown ? w.T("reallife_campus_child_grown", "Grown up") : w.T("reallife_campus_child_home", "At home");
+            }
+            switch (c.At)
+            {
+                case ChildStep.Offered: return w.T("reallife_campus_child_offered", "A place offered");
+                case ChildStep.Studying: return w.T("reallife_campus_child_studying", "At university");
+                case ChildStep.Graduated: return w.T("reallife_campus_child_graduated", "Graduated");
+                default: return w.T("reallife_campus_child_declined", "Turned it down");
+            }
         }
 
         // The city's schools as a market (Scripts/Schools): league order, pupils against places, results and the inspection's grade.
@@ -611,6 +764,7 @@ namespace RealLifeOverhaul.Ui
                 return t;
             }
             int[] order = RealLifeOverhaul.Schools.SchoolRules.League(s);
+            int pupils = 0, places = 0, best = -1;
             for (int r = 0; r < order.Length; r++)
             {
                 RealLifeOverhaul.Schools.SchoolFile f = s.Files[order[r]];
@@ -620,20 +774,32 @@ namespace RealLifeOverhaul.Ui
                 var row = new WorkRow { Id = f.Id, Icon = UiIcon.Building, Name = name, Sub = RealLifeOverhaul.Schools.SchoolsText.Owner(f.Owner),
                     Status = grade, Tone = tone, Chip = grade, ChipTone = tone,
                     Cells = new[] { null, RealLifeOverhaul.Schools.SchoolsGame.District(def.District),
-                        f.Pupils.ToString(Inv) + " / " + f.Places.ToString(Inv), f.Results >= 0 ? f.Results.ToString(Inv) + "%" : "-", grade },
+                        f.Pupils.ToString(Inv) + " / " + f.Places.ToString(Inv), f.Results >= 0 ? f.Results.ToString(Inv) + "%" : WorkBuilder.NotYet(w), grade },
                     Values = new[] { 0, 0, 0, Math.Max(0, f.Results), 0 }, HeadSub = RealLifeOverhaul.Schools.SchoolsGame.District(def.District) };
                 row.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_pupils", "Pupils"), f.Pupils.ToString(Inv) + " / " + f.Places.ToString(Inv)));
-                row.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_results", "Results"), f.Results >= 0 ? f.Results.ToString(Inv) + "%" : "-"));
+                row.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_results", "Results"), f.Results >= 0 ? f.Results.ToString(Inv) + "%" : WorkBuilder.NotYet(w)));
                 var facts = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_the_school", "The school") };
                 facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_owner", "Owner"), RealLifeOverhaul.Schools.SchoolsText.Owner(f.Owner)));
                 facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_teachers", "Teachers"), f.Teachers.ToString(Inv)));
                 facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_waiting", "Families waiting"), f.Waiting.ToString(Inv)));
+                facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_school_fee", "A pupil's day"), f.Fee > 0 ? CareersText.Money(f.Fee) : w.T("reallife_work_school_free", "Free")));
+                facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_scholarships", "Scholarships"), f.Scholar.ToString(Inv) + "%"));
+                if (f.Inspected > 0)
+                {
+                    facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_last_inspected", "Last inspected"), CareersText.Day(f.Inspected)));
+                }
                 row.Sections.Add(facts);
                 var marks = new WorkSection { Part = WorkPart.Bars, Title = w.T("reallife_work_how_it_does", "How it does") };
                 marks.Bars.Add(new WorkBar { Label = w.T("reallife_work_col_results", "Results"), Value = Math.Max(0, Math.Min(100, f.Results)) });
                 marks.Bars.Add(new WorkBar { Label = w.T("reallife_work_teachers_skill", "Teachers' skill"), Value = Math.Max(0, Math.Min(100, f.Skill)) });
                 marks.Bars.Add(new WorkBar { Label = w.T("reallife_work_places_filled", "Places filled"), Value = f.Places > 0 ? Math.Min(100, f.Pupils * 100 / f.Places) : 0 });
                 row.Sections.Add(marks);
+                if (f.Head != 0)
+                {
+                    var head = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_the_head", "The head") };
+                    head.People.Add(new WorkPerson { Name = RealLifeOverhaul.Schools.SchoolsGame.Person(f.Head), Role = w.F("reallife_work_head_skill_line", "Head teacher, skill {n}", "n", f.HeadSkill.ToString(Inv)) });
+                    row.Sections.Add(head);
+                }
                 if (f.Id == RealLifeOverhaul.Schools.SchoolRules.CampusId)
                 {
                     row.Locate = new WorkAct { Kind = ShowMain, Arg = f.Id, Label = w.T("reallife_work_show_school", "Show school"), Opens = true };
@@ -641,7 +807,14 @@ namespace RealLifeOverhaul.Ui
                         Style = UiButtonKind.Primary, Icon = UiIcon.Locate, Opens = true });
                 }
                 t.Rows.Add(row);
+                pupils += f.Pupils;
+                places += f.Places;
+                best = Math.Max(best, f.Results);
             }
+            t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_pupils", "Pupils in all"), pupils.ToString("N0", Inv)));
+            t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_places", "Places"), places.ToString("N0", Inv)));
+            t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_best_results", "Best results"), best >= 0 ? best.ToString(Inv) + "%" : WorkBuilder.NotYet(w)));
+            CampusBands.SchoolsBands(w, t);
             return t;
         }
 

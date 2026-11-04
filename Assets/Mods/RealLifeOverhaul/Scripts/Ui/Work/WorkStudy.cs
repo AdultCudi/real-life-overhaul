@@ -129,6 +129,11 @@ namespace RealLifeOverhaul.Ui
                     }
                     Bar(s, at, m.Gains[i], gx, gy, colW);
                 }
+                ly += (m.Gains.Count + 1) / 2 * (UiTokens.PairRow + UiTokens.S1) + UiTokens.S3;
+            }
+            if (m.Below.Count > 0)
+            {
+                WorkForm.Strip(s, at, m.Below, x, ly, lw, bottom, keys);
             }
             float ry = y;
             if (m.Chart != null)

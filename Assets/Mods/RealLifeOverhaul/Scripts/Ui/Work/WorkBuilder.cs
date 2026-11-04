@@ -81,6 +81,18 @@ namespace RealLifeOverhaul.Ui
             rows.Sort((a, b) => b.Order.CompareTo(a.Order));
         }
 
+        /// <summary>"1 week", "6 weeks": one is not a plural.</summary>
+        public static string Weeks(UtilitiesWords w, int n) => n == 1 ? w.T("reallife_work_one_week", "1 week") : w.F("reallife_work_n_weeks", "{n} weeks", "n", n.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+        /// <summary>A figure that has no value yet, said in words (never a bare dash).</summary>
+        public static string NotYet(UtilitiesWords w) => w.T("reallife_work_not_yet_cell", "Not yet");
+
+        /// <summary>A figure the source cannot give, said in words.</summary>
+        public static string Unknown(UtilitiesWords w) => w.T("reallife_work_unknown", "Unknown");
+
+        /// <summary>There is none, said in words.</summary>
+        public static string None(UtilitiesWords w) => w.T("reallife_work_none_word", "None");
+
         public static string Percent(int value) => (value >= 0 ? "+" : string.Empty) + value.ToString(System.Globalization.CultureInfo.InvariantCulture) + "%";
 
         public static string Number(int n) => n.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);

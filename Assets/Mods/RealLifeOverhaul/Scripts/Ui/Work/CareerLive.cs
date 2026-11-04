@@ -313,8 +313,11 @@ namespace RealLifeOverhaul.Ui
                     Mask = (open ? 1 : 0) | (eligible ? 2 : 0) | (near ? 4 : 0)
                 };
                 r.Figures.Add(new KeyValuePair<string, string>(words.T("reallife_career_col_pay", "Pay"), words.F("reallife_career_row_rate", "{rate} an hour", "rate", CareersText.Rate(pay))));
-                r.Figures.Add(new KeyValuePair<string, string>(words.T("reallife_work_col_hours", "Hours"), CareersText.Week(p)));
+                r.Figures.Add(new KeyValuePair<string, string>(words.T("reallife_work_col_hours", "Hours"), CareersText.HourSpan(p)));
                 r.Sections.Add(needs);
+                var shift = new WorkSection { Part = WorkPart.Pairs, Title = words.T("reallife_work_the_shift", "The shift") };
+                shift.Pairs.Add(new KeyValuePair<string, string>(words.T("reallife_work_days_word", "Days"), CareersText.DaySpan(p.Days)));
+                r.Sections.Add(shift);
                 if (mine > 0)
                 {
                     var against2 = new WorkSection { Part = WorkPart.Pairs, Title = words.T("reallife_work_pay_against", "Against your pay") };
@@ -484,9 +487,6 @@ namespace RealLifeOverhaul.Ui
             var whens = new List<string>(3);
             var kinds = new List<int>(3);
             var posts = new List<string>(3);
-            var rivals = new List<string>(3);
-            var scores = new List<int>(3);
-            var others = new List<Peer>(StandingRules.OthersPerPostMost);
             for (int i = w.Applications.Count - 1; i >= 0; i--)
             {
                 Careers.Application a = w.Applications[i];
@@ -503,14 +503,6 @@ namespace RealLifeOverhaul.Ui
                 whens.Add(CareersText.Day(day));
                 kinds.Add(interview ? 1 : offer ? 2 : 0);
                 posts.Add(CareersText.Title(a.Post.Prof, a.Post.Rank) + ", " + CareersText.Employer(a.Post.Employer));
-                d.AlsoApplied(a.Post, others);
-                Peer best = null;
-                for (int k = 0; k < others.Count; k++)
-                {
-                    best = best == null || others[k].Score > best.Score ? others[k] : best;
-                }
-                rivals.Add(best != null ? best.Name : null);
-                scores.Add(best != null ? best.Score : 0);
             }
             tab.Stats.Add(new KeyValuePair<string, string>(words.T("reallife_work_stat_waiting_answer", "Waiting for an answer"), waiting.ToString(Inv)));
             tab.Stats.Add(new KeyValuePair<string, string>(words.T("reallife_work_stat_interviews", "Interviews"), interviews.ToString(Inv)));
@@ -524,7 +516,7 @@ namespace RealLifeOverhaul.Ui
                     record = new[] { s.Performance, s.Punctuality, s.Teamwork, s.Reliability };
                 }
             }
-            CareerPages.ApplicationsBands(words, tab, days.ToArray(), whens.ToArray(), kinds.ToArray(), posts.ToArray(), rivals.ToArray(), scores.ToArray(), record);
+            CareerPages.ApplicationsBands(words, tab, days.ToArray(), whens.ToArray(), kinds.ToArray(), posts.ToArray(), record);
         }
 
         private static WorkAct Act(CareerAct act, int arg, string label, UiButtonKind style, UiIcon icon, bool opens = false, string why = null)
@@ -576,6 +568,7 @@ namespace RealLifeOverhaul.Ui
                     needs.Checks.Add(new WorkNeed { Words = CareersText.Course(first.Quals[0]), Met = held });
                 }
                 r.Sections.Add(needs);
+                r.Sections.Add(HiringNow(w, p, open, words));
                 r.Acts.Add(new WorkAct { Kind = WorkKinds.GoTab, Arg = CareerPages.Jobs, Label = words.T("reallife_career_button_vacancies",
                     "Vacancies"), Style = UiButtonKind.Primary, Icon = UiIcon.Search, Opens = true });
                 r.Acts.Add(Act(CareerAct.OpenCampus, p.Id, words.T("reallife_career_button_see_courses", "See the courses"), UiButtonKind.Secondary, UiIcon.Books, true));
@@ -583,6 +576,24 @@ namespace RealLifeOverhaul.Ui
             }
             ProfessionsFoot(words, study, tab);
         }
+
+        // The posts open now in one profession, each with its employer, its rung and its pay: as many rows as the count says (the list is never shorter than the number over it).
+        private static WorkSection HiringNow(WorkFile w, Profession p, int open, UtilitiesWords words)
+        {
+            var hiring = new WorkSection { Part = WorkPart.People, Title = words.T("reallife_work_hiring_now", "Hiring now"), Note = open.ToString(Inv) };
+            int day = SaveGameManager.Current.Day;
+            for (int k = 0; k < w.Openings.Count && hiring.People.Count < HiringRows; k++)
+            {
+                Opening o = w.Openings[k];
+                if (o.Prof == p.Id && o.Open(day))
+                {
+                    hiring.People.Add(new WorkPerson { Name = CareersText.Employer(o.Employer), Role = CareersText.Title(o.Prof, o.Rank), Right = CareersText.Rate(Prices.At(o.Pay)), Icon = UiIcon.Store });
+                }
+            }
+            return hiring;
+        }
+
+        private const int HiringRows = 6;
 
         // The Professions list's figures and its foot: the posts open, the professions open to the player, the starting pay, the best paid posts they could take, and the courses a door away.
         private void ProfessionsFoot(UtilitiesWords words, StudyFile study, WorkTab tab)

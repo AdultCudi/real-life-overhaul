@@ -78,7 +78,7 @@ namespace RealLifeOverhaul.Ui
             }
             var staff = new WorkFormBand { Title = words.T("reallife_work_group_staff", "Staff") };
             int people = 0;
-            for (int i = 0; i < c.People.Count && people < 4; i++)
+            for (int i = 0; i < c.People.Count && people < StaffShown; i++)
             {
                 Colleague p = c.People[i];
                 if (p.Role != (int)Rung.Frontline)
@@ -424,6 +424,8 @@ namespace RealLifeOverhaul.Ui
             return t;
         }
 
+        private const int StaffShown = 6;
+
         // Own work's record: the contracts finished, what they earned and the practice's name, and the last three finished.
         private static void OwnFoot(WorkFile w, WorkFormModel form)
         {
@@ -450,8 +452,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (finished > 0 || w.Practice.Open)
             {
-                CareerPages.OwnBands(Words(), form, finished, (int)Math.Min(int.MaxValue, earned), w.Practice.Open ? Math.Max(0, Math.Min(100, w.Practice.Reputation)) : 0,
-                    clients.ToArray(), fees.ToArray(), days.ToArray());
+                CareerPages.OwnBands(Words(), form, finished, (int)Math.Min(int.MaxValue, earned), clients.ToArray(), fees.ToArray(), days.ToArray());
             }
         }
 
@@ -512,11 +513,28 @@ namespace RealLifeOverhaul.Ui
                 earned += w.History[i].Earned;
                 days += Math.Max(0, w.History[i].To - w.History[i].From);
             }
+            var studyIcons = new List<UiIcon>(3);
+            var studyNames = new List<string>(3);
+            var studyHints = new List<string>(3);
+            var studyValues = new List<string>(3);
+            for (int i = 0; i < study.Courses.Count && studyNames.Count < 3; i++)
+            {
+                Enrolment e = study.Courses[i];
+                if (e.Def == null)
+                {
+                    continue;
+                }
+                bool examOpen = e.At == EnrolStage.Exam || e.At == EnrolStage.Retake;
+                studyIcons.Add(WorkGlyphs.Course(e.Def));
+                studyNames.Add(CareersText.Course(e.Course));
+                studyHints.Add(examOpen ? words.T("reallife_work_exam_open", "Exam open") : words.T("reallife_work_under_way", "Under way"));
+                studyValues.Add(e.Seen > 0 ? words.F("reallife_work_attended_pct", "{n}% attended", "n", (e.Done * 100 / e.Seen).ToString(Inv)) : words.T("reallife_work_not_started", "Not started"));
+            }
             string why = d.CanRetire();
             _facts.CanRetire = why == null;
             CareerPages.CvPage(words, t, _facts.Player, w.Job != null ? CareersText.Title(w.Job.Post.Prof, w.Job.Post.Rank) : null, w.Job != null ? CareersText.Employer(w.Job.Post.Employer) : null,
                 spells, quals, jobs, days / 30, CareersText.Cents(earned), good, CareersText.Cents(w.Pension), CareersGame.AgeYears(), LifeRules.RetireEarlyAge, skills.ToArray(), values.ToArray(),
-                why == null ? null : words.T(why, "You cannot retire yet."), w.Retired > 0);
+                why == null ? null : words.T(why, "You cannot retire yet."), w.Retired > 0, _facts.Job, studyIcons.ToArray(), studyNames.ToArray(), studyHints.ToArray(), studyValues.ToArray());
             return t;
         }
 

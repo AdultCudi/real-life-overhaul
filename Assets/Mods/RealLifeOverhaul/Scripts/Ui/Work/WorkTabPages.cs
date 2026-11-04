@@ -437,10 +437,11 @@ namespace RealLifeOverhaul.Ui
                     afterTabs = PageTabs(s, ats, t.PersonTabs, v.PageTab, x, top);   // the tabs and the page's buttons stand in one row
                 }
                 float cy = Math.Max(afterTabs, Buttons(s, ats, pageActs, x, top, cw, keys));
-                WorkForm.Lay(s, ats, form, actions, amounts, x, cy, cw, bottom - (why != null ? UiTokens.Control : 0f), keys);
+                float noteH = why != null ? WorkPanel.NoteHeight(null, why, cw) : 0f;
+                WorkForm.Lay(s, ats, form, actions, amounts, x, cy, cw, bottom - (why != null ? noteH + UiTokens.S3 : 0f), keys);
                 if (why != null)
                 {
-                    UiDraw.Text(s, ats, x, bottom - UiTokens.Control + UiTokens.S2, cw, UiStyle.Small, UiRole.WarnText, why, UiFlags.Truncate);
+                    WorkPanel.Note(s, ats, UiIcon.Info, null, why, x, bottom - noteH, cw);   // the reason a button is drawn dimmed, on a field of its own and not loose at the foot
                 }
             };
             return page;

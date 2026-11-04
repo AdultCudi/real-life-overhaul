@@ -188,7 +188,7 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        private static float Section(UiScene s, UiAt at, WorkSection sec, float x, float y, float w, WorkAmount[] amounts, IUiKeys keys)
+        public static float Section(UiScene s, UiAt at, WorkSection sec, float x, float y, float w, WorkAmount[] amounts, IUiKeys keys)
         {
             if (sec.Part == WorkPart.Note)
             {
@@ -357,7 +357,7 @@ namespace RealLifeOverhaul.Ui
     /// every handler tests the page it belongs to first).</summary>
     public static class WorkCmd
     {
-        public const int Less = 1201, Type = 1202, More = 1203, Field = 1204, Search = 1205, Card = 1206, PageTab = 1207, Aside = 1208, Sort = 1209,
+        public const int Less = 1201, Type = 1202, More = 1203, Search = 1205, Card = 1206, PageTab = 1207, Aside = 1208, Sort = 1209,
             Close = 1210, Locate = 1211, Pick = 1212, Diary = 1213, Day = 1214, NudgeLess = 1215, NudgeMore = 1216, Read = 1217;
     }
 }

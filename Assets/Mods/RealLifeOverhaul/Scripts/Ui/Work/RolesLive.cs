@@ -74,7 +74,7 @@ namespace RealLifeOverhaul.Ui
             if (_app.Ready && h != null && save != null)
             {
                 int day = save.Day;
-                _app.Tabs[0] = view.Sub == 3 ? NewAdTab(d, view) : Jobs(d, h, day);
+                _app.Tabs[0] = view.Sub == 3 ? NewAdTab(d, h, day, view) : Jobs(d, h, day);
                 _app.Tabs[1] = view.Sub == 1 ? ApplicantPage(d, h, day, view) : Applicants(d, h, day, view);
                 _app.Tabs[3] = Search(d, h, day, view);
                 _app.Tabs[4] = view.Sub == 2 ? PersonPage(d, day, view) : Team(d, day);
@@ -162,6 +162,15 @@ namespace RealLifeOverhaul.Ui
                     hired.Add(h.Applicants[i]);
                 }
             }
+            int openPosts = 0, waiting = 0;
+            var payIcons = new List<UiIcon>(3);
+            var payNames = new List<string>(3);
+            var payHints = new List<string>(3);
+            var payValues = new List<string>(3);
+            var closeIcons = new List<UiIcon>(3);
+            var closeNames = new List<string>(3);
+            var closeHints = new List<string>(3);
+            var closeValues = new List<string>(3);
             for (int i = 0; i < h.Ads.Count; i++)
             {
                 JobAd ad = h.Ads[i];
@@ -169,13 +178,34 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
-                int came = 0;
+                int came = 0, shortlisted = 0, offers = 0;
                 for (int k = 0; k < h.Applicants.Count; k++)
                 {
-                    came += h.Applicants[k].Ad == ad.Id && h.Applicants[k].Live ? 1 : 0;
+                    Applicant a = h.Applicants[k];
+                    bool mine = a.Ad == ad.Id && a.Live;
+                    came += mine ? 1 : 0;
+                    shortlisted += mine && a.Stage == (int)ApplyStage.Shortlisted ? 1 : 0;
+                    offers += mine && (a.Stage == (int)ApplyStage.Offered || a.Stage == (int)ApplyStage.Countered) ? 1 : 0;
                 }
                 int left = HireOffers.ToFill(h, ad), posts = HireOffers.Posts(ad);
                 bool open = ad.Open(day);
+                if (open)
+                {
+                    openPosts += left;
+                    waiting += came;
+                    int goingNow = d.GoingFor(ad.Role, ad.Level);
+                    payIcons.Add(RoleGlyph(ad.Role));
+                    payNames.Add(TechText.Role(ad.Role) + ", " + TechText.Level(ad.Level));
+                    payHints.Add(w.F("reallife_work_going_n", "Going rate {rate}", "rate", TechText.Rate(goingNow)));
+                    payValues.Add(TechText.Rate(ad.PayMost) + (goingNow > 0 ? " (" + WorkBuilder.Percent((ad.PayMost - goingNow) * 100 / goingNow) + ")" : string.Empty));
+                    if (ad.To - day <= 7)
+                    {
+                        closeIcons.Add(RoleGlyph(ad.Role));
+                        closeNames.Add(TechText.Role(ad.Role) + ", " + TechText.Level(ad.Level));
+                        closeHints.Add(w.F("reallife_work_closes_on", "Closes {day}", "day", TechText.Day(ad.To)));
+                        closeValues.Add(w.F("reallife_work_n_applicants", "{n} applicants", "n", came.ToString(Inv)));
+                    }
+                }
                 string state = open ? (ad.To - day <= 3 ? w.F("reallife_work_ad_closes_in", "Closes in {n} days", "n", Math.Max(0, ad.To - day).ToString(Inv)) : w.T("reallife_work_ad_open", "Open"))
                     : w.T("reallife_work_ad_closed", "Closed");
                 UiRole tone = open && ad.To - day > 3 ? UiRole.Ok : UiRole.Warn;
@@ -193,7 +223,12 @@ namespace RealLifeOverhaul.Ui
                 facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_ad_boosted", "Boosted"), ad.Boost ? w.T("reallife_work_yes", "Yes") : w.T("reallife_work_no", "No")));
                 facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_ad_going", "Going rate"), TechText.Rate(d.GoingFor(ad.Role, ad.Level))));
                 r.Sections.Add(facts);
-                var hiredHere = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_hired_month", "Hired this month") };
+                var going = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_how_it_goes", "How it is going") };
+                going.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_applicants", "Applicants"), came.ToString(Inv)));
+                going.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_shortlisted_n", "On your shortlist"), shortlisted.ToString(Inv)));
+                going.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_offers_out", "Offers out"), offers.ToString(Inv)));
+                r.Sections.Add(going);
+                var hiredHere = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_hired_via_ad", "Hired through this ad") };
                 for (int k = 0; k < hired.Count && hiredHere.People.Count < 3; k++)
                 {
                     Seeker s = h.SeekerOf(hired[k].Seeker);
@@ -224,18 +259,23 @@ namespace RealLifeOverhaul.Ui
                 var r = new WorkRow { Id = 900 + i, Icon = UiIcon.Flag, Name = TechText.FamilyName((TFamily)family) + ", " + TechText.Level(ra.Level),
                     Sub = ra.Rival, Status = w.T("reallife_work_rival_ad", "Rival ad"),
                     Tone = UiRole.Muted, Chip = w.T("reallife_work_rival_ad", "Rival ad"), ChipTone = UiRole.Muted, Group = 900 + i,
-                    Cells = new[] { null, "-", "-", first >= 0 ? TechText.Rate(d.GoingFor(first, ra.Level) * (10000 + ra.PayBp) / 10000) : "-", w.T("reallife_work_rival_ad", "Rival ad") },
+                    Cells = new[] { null, string.Empty, string.Empty, first >= 0 ? TechText.Rate(d.GoingFor(first, ra.Level) * (10000 + ra.PayBp) / 10000) : string.Empty, w.T("reallife_work_rival_ad", "Rival ad") },
                     Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Muted },
                     Sentence = w.F("reallife_work_rival_ad_line", "{rival} hires the same line and pays {bp} over the going rate. Their applicants may take an offer before yours.", "rival", ra.Rival,
                         "bp", TechText.Bp(ra.PayBp)) };
                 t.Rows.Add(r);
             }
+            t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_open_posts", "Open posts"), openPosts.ToString(Inv)));
+            t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_waiting", "Applicants waiting"), waiting.ToString(Inv)));
+            t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_hired_month", "Hired this month"), hired.Count.ToString(Inv)));
+            WorkBands.AddIfAny(t.Below, WorkBands.Tiles(w.T("reallife_work_band_pay_vs_going", "Your pay against the going rate"), payIcons.ToArray(), payNames.ToArray(), payHints.ToArray(), payValues.ToArray()));
+            WorkBands.AddIfAny(t.Below, WorkBands.Tiles(w.T("reallife_work_band_closing", "Closing soon"), closeIcons.ToArray(), closeNames.ToArray(), closeHints.ToArray(), closeValues.ToArray()));
             return t;
         }
 
         // ------------------------------------------------------------------------------------------------- the new ad
 
-        private WorkTab NewAdTab(TechDirector d, WorkView v)
+        private WorkTab NewAdTab(TechDirector d, HiringFile h, int day, WorkView v)
         {
             UtilitiesWords w = W;
             var t = new WorkTab { Shape = WorkShape.Form, Sub = true };
@@ -326,11 +366,44 @@ namespace RealLifeOverhaul.Ui
             sum.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_ad_pay_least", "Pay from"), Value = TechText.Rate(least) });
             sum.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_ad_cost", "It costs"), Value = TechText.Money(cost) });
             form.Right.Add(sum);
+            NewAdFoot(d, h, day, r, form);
             bool seats = HiringRules.Seats(TalentGame.Shifts(_places[place]), r);
             string why = !seats ? TechText.T(TechDirector.SeatRefusal) : null;
             t.Acts.Add(new WorkAct { Kind = WorkKinds.Back, Label = w.T("reallife_work_cancel", "Cancel"), Style = UiButtonKind.Secondary, Icon = UiIcon.Back, Opens = true });
             t.Acts.Add(new WorkAct { Kind = PostAd, Label = w.T("reallife_hire_button_post", "Post the ad"), Style = UiButtonKind.Primary, Icon = UiIcon.Check, Why = why });
             return t;
+        }
+
+        // The new ad's foot: who of the team already does this role, and what the market holds for its line (the seekers, the rival ads and the shortage).
+        private void NewAdFoot(TechDirector d, HiringFile h, int day, RoleDef r, WorkFormModel form)
+        {
+            UtilitiesWords w = W;
+            var names = new List<string>(3);
+            var roles = new List<string>(3);
+            var pays = new List<string>(3);
+            for (int i = 0; i < d.People.Count && names.Count < 3; i++)
+            {
+                Person p = d.People[i];
+                if (p.File.Role == r.Id)
+                {
+                    names.Add(p.Name);
+                    roles.Add(TechText.Role(p.File.Role) + ", " + TechText.Level(p.File.Level) + ", " + p.Business);
+                    pays.Add(TechText.Rate(p.Game != null ? TalentGame.PaidCents(p.Game) : p.File.GameWage));
+                }
+            }
+            WorkBands.AddIfAny(form.Below, WorkBands.People(w.T("reallife_work_band_already_team", "Already on your team"), names.ToArray(), roles.ToArray(), pays.ToArray()));
+            int looking = 0, rivalAds = 0;
+            for (int i = 0; i < h.Seekers.Count; i++)
+            {
+                looking += !h.Seekers[i].Taken && !h.Seekers[i].Passive && h.Seekers[i].P.Def.Family == r.Family ? 1 : 0;
+            }
+            for (int i = 0; i < h.RivalAds.Count; i++)
+            {
+                rivalAds += h.RivalAds[i].Family == (int)r.Family && h.RivalAds[i].To > day ? 1 : 0;
+            }
+            WorkBands.AddIfAny(form.Below, WorkBands.Pairs(w.T("reallife_work_band_market_for", "The market for it"),
+                new[] { w.T("reallife_work_col_looking", "Looking"), w.T("reallife_work_col_rival_ads", "Rival ads"), w.T("reallife_work_shortage", "Shortage") },
+                new[] { looking.ToString(Inv), rivalAds.ToString(Inv), TechText.Mille(d.ShortageOf(r.Family)) }));
         }
 
         private static WorkAmount Choice(int id, int value, string[] words) => new WorkAmount { Id = id, Value = Math.Max(0,

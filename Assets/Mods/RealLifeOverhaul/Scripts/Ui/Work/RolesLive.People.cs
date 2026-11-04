@@ -337,10 +337,10 @@ namespace RealLifeOverhaul.Ui
                 var r = new WorkRow { Id = fam, Icon = FamilyGlyph((TFamily)fam), Name = TechText.FamilyName((TFamily)fam),
                     Sub = w.F("reallife_work_your_ads_n", "{n} of your ads open", "n", yours.ToString(Inv)),
                     Cells = new[] { null, seekers.ToString(Inv), levels[0].ToString(Inv), levels[1].ToString(Inv), seniors.ToString(Inv),
-                        openings.ToString(Inv), going > 0 ? TechText.Rate(going) : "-" },
+                        openings.ToString(Inv), going > 0 ? TechText.Rate(going) : WorkBuilder.None(w) },
                     Values = new[] { 0, Math.Min(100, seekers * 6), 0, 0, 0, 0, 0 } };
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_looking", "Looking"), seekers.ToString(Inv)));
-                r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_going_rate", "Going rate"), going > 0 ? TechText.Rate(going) : "-"));
+                r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_going_rate", "Going rate"), going > 0 ? TechText.Rate(going) : WorkBuilder.None(w)));
                 var facts = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_the_line", "The line") };
                 facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_shortage", "Shortage"), TechText.Mille(shortage)));
                 facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_rival_ads", "Rival ads"), openings.ToString(Inv)));
@@ -456,6 +456,20 @@ namespace RealLifeOverhaul.Ui
                 running.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = w.T("reallife_work_no_searches", "No search is running. A brief brings three candidates in a few days.") });
             }
             form.Right.Add(running);
+            var seekNames = new List<string>(3);
+            var seekRoles = new List<string>(3);
+            var seekAsks = new List<string>(3);
+            for (int i = 0; i < h.Seekers.Count && seekNames.Count < 3; i++)
+            {
+                Seeker s = h.Seekers[i];
+                if (!s.Taken && !s.Passive && s.P.Def.Family == r.Family && s.P.Level >= least)
+                {
+                    seekNames.Add(s.P.Name);
+                    seekRoles.Add(TechText.Role(s.P.Role) + ", " + TechText.Level(s.P.Level));
+                    seekAsks.Add(TechText.Rate(s.Ask));
+                }
+            }
+            WorkBands.AddIfAny(form.Below, WorkBands.People(w.T("reallife_work_band_on_market", "On the market now"), seekNames.ToArray(), seekRoles.ToArray(), seekAsks.ToArray()));
             var office = new WorkFormBand { Title = w.T("reallife_work_office_campaigns", "Recruitment office") };
             for (int i = 0; i < h.Campaigns.Count; i++)
             {
@@ -484,11 +498,35 @@ namespace RealLifeOverhaul.Ui
             t.EmptyBody = w.T("reallife_work_no_team", "Hire from the applicants and they join here, each with a page for their file, career and contract.");
             t.EmptyIcon = UiIcon.People;
             int year = GameCalendar.DaysPerYear;
+            var gapNames = new List<string>(3);
+            var gapRoles = new List<string>(3);
+            var gapRights = new List<string>(3);
+            var wornNames = new List<string>(3);
+            var wornRoles = new List<string>(3);
+            var wornRights = new List<string>(3);
+            long payroll = 0;
+            int moraleSum = 0, leaving = 0;
             for (int i = 0; i < d.People.Count && i < 60; i++)
             {
                 Person p = d.People[i];
                 Profile f = p.File;
                 int paid = p.Game != null ? TalentGame.PaidCents(p.Game) : f.GameWage;
+                payroll += paid;
+                moraleSum += f.Morale / 10;
+                leaving += f.NoticeEnd > 0 ? 1 : 0;
+                int goingPay = p.Game != null ? PaidWage.Cents(f.Going, Prices.Level, 0) : f.Going;
+                if (goingPay - paid >= GapMost)
+                {
+                    gapNames.Add(p.Name);
+                    gapRoles.Add(w.F("reallife_work_paid_going", "Paid {paid}, going {going}", "paid", TechText.Rate(paid), "going", TechText.Rate(goingPay)));
+                    gapRights.Add("-" + TechText.Rate(goingPay - paid));
+                }
+                if (f.Burnout / 10 >= WornFrom)
+                {
+                    wornNames.Add(p.Name);
+                    wornRoles.Add(TechText.Role(f.Role) + ", " + TechText.Level(f.Level));
+                    wornRights.Add(w.T("reallife_work_burnout", "Burnout") + " " + (f.Burnout / 10).ToString(Inv));
+                }
                 string state = TalentRules.OfferOpen(f, day) ? TechText.T("reallife_roles_state_offer") : f.NoticeEnd > 0 ? TechText.T("reallife_roles_state_leaving", "day", f.NoticeEnd.ToString())
                     : f.RaiseAsk > 0 ? TechText.T("reallife_roles_state_asks", "percent", TechText.Bp(f.RaiseAsk)) : null;
                 var r = new WorkRow { Id = i, Person = p.Name, Name = p.Name, Sub = p.Business, Ring = state != null ? UiRole.Warn : UiRole.Ok,
@@ -497,15 +535,30 @@ namespace RealLifeOverhaul.Ui
                         string.Empty, UiButtonKind.Secondary, UiIcon.Person, true) };
                 r.Title = p.Name;
                 r.Sentence = state ?? TechText.Role(f.Role) + ", " + p.Business;
-                var attrs = new WorkSection { Part = WorkPart.Bars, Title = w.T("reallife_work_attributes", "Attributes") };
-                attrs.Bars.Add(new WorkBar { Label = w.T("reallife_work_skill_craft", "Craft"), Value = Math.Min(100, p.MainPoints) });
-                attrs.Bars.Add(new WorkBar { Label = w.T("reallife_work_col_morale", "Morale"), Value = Math.Max(0, Math.Min(100, f.Morale / 10)) });
-                r.Sections.Add(attrs);
+                // what the row does not say: what the person is worth on the market, when they were last looked at, and how worn they are
+                var now = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_now", "Now") };
+                now.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_going_pay", "Going pay"), TechText.Rate(goingPay)));
+                now.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_last_review", "Last review"), f.Rating > 0 ? f.Rating.ToString(Inv) + " / 5, " + TechText.Day(f.ReviewDay) : WorkBuilder.NotYet(w)));
+                now.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_hired_on", "Joined"), TechText.Day(f.Joined)));
+                r.Sections.Add(now);
+                var worn = new WorkSection { Part = WorkPart.Bars, Title = w.T("reallife_work_wear", "Wear") };
+                worn.Bars.Add(new WorkBar { Label = w.T("reallife_work_burnout", "Burnout"), Value = Math.Max(0, Math.Min(100, f.Burnout / 10)) });
+                r.Sections.Add(worn);
                 r.Acts.Add(Act(OpenPerson, i, w.T("reallife_work_open_page", "Open their page"), UiButtonKind.Primary, UiIcon.Person, true));
                 t.Rows.Add(r);
             }
+            if (d.People.Count > 0)
+            {
+                t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_payroll", "Payroll an hour"), TechText.Money((int)(payroll / 100))));
+                t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_morale", "Average morale"), (moraleSum / d.People.Count).ToString(Inv)));
+                t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_leaving", "Leaving"), leaving.ToString(Inv)));
+            }
+            WorkBands.AddIfAny(t.Below, WorkBands.People(w.T("reallife_work_band_under_going", "Paid under the going rate"), gapNames.ToArray(), gapRoles.ToArray(), gapRights.ToArray()));
+            WorkBands.AddIfAny(t.Below, WorkBands.People(w.T("reallife_work_band_wearing", "Wearing thin"), wornNames.ToArray(), wornRoles.ToArray(), wornRights.ToArray()));
             return t;
         }
+
+        private const int GapMost = 200, WornFrom = 20;   // cents an hour a person may be paid under the going pay before it is shown, and the burnout from which they are wearing thin
 
         // ------------------------------------------------------------------------------------------------- a team person's page
 
@@ -537,6 +590,20 @@ namespace RealLifeOverhaul.Ui
                 FactValues = new[] { TechText.Rate(paid), TechText.Day(p.Joined), TechText.Mille(p.Morale) } } };
             t.Form = form;
             string key = p.Id;
+            var mates = new List<string>(3);
+            var mateRoles = new List<string>(3);
+            var matePays = new List<string>(3);
+            for (int i = 0; i < d.People.Count && mates.Count < 3; i++)
+            {
+                Person m = d.People[i];
+                if (i != view.Pick && m.Business == person.Business)
+                {
+                    mates.Add(m.Name);
+                    mateRoles.Add(TechText.Role(m.File.Role) + ", " + TechText.Level(m.File.Level));
+                    matePays.Add(TechText.Rate(m.Game != null ? TalentGame.PaidCents(m.Game) : m.File.GameWage));
+                }
+            }
+            WorkBands.AddIfAny(form.Below, WorkBands.People(w.T("reallife_work_band_same_team", "On the same team"), mates.ToArray(), mateRoles.ToArray(), matePays.ToArray()));
             if (view.PageTab == 0)
             {
                 var attrs = new WorkFormBand { Title = w.T("reallife_work_attributes", "Attributes") };
@@ -566,7 +633,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 now.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_going_pay", "Going pay"), Value = TechText.Rate(p.Going) });
                 now.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_last_review", "Last review"),
-                    Value = p.Rating > 0 ? p.Rating.ToString(Inv) + " / 5, " + TechText.Day(p.ReviewDay) : "-" });
+                    Value = p.Rating > 0 ? p.Rating.ToString(Inv) + " / 5, " + TechText.Day(p.ReviewDay) : WorkBuilder.NotYet(w) });
                 form.Right.Add(now);
             }
             else if (view.PageTab == 1)

@@ -20,7 +20,8 @@ namespace RealLifeOverhaul.Ui
         public static string SkillLine(UtilitiesWords w, int points, string place) => w.F("reallife_work_skill_line", "{level}, {place}", "level", Level(w, points), "place", place);
 
         /// <summary>The skills page's foot: what is strongest and weakest, and the courses that would raise the weakest (each with what it adds and its fee).</summary>
-        public static void SkillsBands(UtilitiesWords w, WorkTab t, string strongest, string weakest, int average, string[] courses, string[] adds, string[] fees)
+        public static void SkillsBands(UtilitiesWords w, WorkTab t, string strongest, string weakest, int average, string[] courses, string[] adds, string[] fees,
+            UiIcon[] rustyIcons, string[] rustyNames, string[] rustyBest, string[] rustyDrop)
         {
             var figures = new WorkFormBand { Title = w.T("reallife_work_band_skill_figures", "Where you stand") };
             figures.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_skill_strongest", "Strongest"), Value = strongest });
@@ -28,15 +29,31 @@ namespace RealLifeOverhaul.Ui
             figures.Rows.Add(new WorkFormRow { Field = WorkField.Bar, Bar = new WorkBar { Label = w.T("reallife_work_skill_average", "Average level"), Value = Math.Max(0, Math.Min(100, average)) } });
             figures.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_skill_known", "Skills you have"), Value = t.Skills.Count.ToString() });
             t.Below.Add(figures);
-            var help = new WorkFormBand { Title = w.T("reallife_work_band_courses_help", "Courses that would help") };
-            for (int i = 0; i < courses.Length && i < 3; i++)
-            {
-                help.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Icon = UiIcon.Cap, Label = courses[i], Hint = adds[i], Value = fees[i] });
-            }
+            WorkFormBand help = CourseTiles(w.T("reallife_work_band_courses_help", "Courses that would help"), courses, adds, fees);
             if (help.Rows.Count > 0)
             {
                 t.Below.Add(help);
             }
+            if (rustyNames.Length > 0)
+            {
+                var rusty = new WorkFormBand { Title = w.T("reallife_work_band_rusty", "Gone rusty") };
+                for (int i = 0; i < rustyNames.Length && i < 3; i++)
+                {
+                    rusty.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Icon = rustyIcons[i], Label = rustyNames[i], Hint = rustyBest[i], Value = rustyDrop[i] });
+                }
+                t.Below.Add(rusty);
+            }
+        }
+
+        /// <summary>A band of courses, each a tile with what it adds under its name and its fee at the right: the foot of Skills and of Results.</summary>
+        public static WorkFormBand CourseTiles(string title, string[] courses, string[] adds, string[] fees, int most = 3)
+        {
+            var band = new WorkFormBand { Title = title };
+            for (int i = 0; i < courses.Length && i < most; i++)
+            {
+                band.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Icon = UiIcon.Cap, Label = courses[i], Hint = adds[i], Value = fees[i] });
+            }
+            return band;
         }
 
         /// <summary>The family page's foot: the funds the children have, against what the degrees on offer cost.</summary>

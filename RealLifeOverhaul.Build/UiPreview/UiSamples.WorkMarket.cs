@@ -50,20 +50,20 @@ internal static partial class UiSamples
         // name, kind glyph, price, against worth, seller, group, tag
         object[][] list =
         {
-            new object[] { "Blue sport coupe", UiIcon.Car, "$38,500", -4, "Marco Bellini", 0, null }, new object[] { "Red delivery van", UiIcon.Car, "$14,200", -12, "Huang Guo", 0, "Rival" },
-            new object[] { "Box truck", UiIcon.Car, "$27,900", -6, "Harbourside Freight HSF", 0, null }, new object[] { "Tan minibus", UiIcon.Car, "$19,400", 3, "Amara Nwosu", 0, null },
-            new object[] { "Espresso machine", UiIcon.Coffee, "$1,950", -9, "Sofia Marin", 1, null }, new object[] { "Commercial grill", UiIcon.Fire, "$2,300", -3, "Hana Okada", 1, null },
-            new object[] { "Display fridge", UiIcon.Thermometer, "$1,150", -15, "Leo Park", 1, "Discount" }, new object[] { "Dough mixer", UiIcon.Cpu, "$4,600", 5, "Colm Doyle", 1, null },
-            new object[] { "Lounge armchair", UiIcon.Sofa, "$320", -8, "Nia Brooks", 2, null }, new object[] { "Corner sofa", UiIcon.Sofa, "$890", 2, "Tomas Reyes", 2, null },
-            new object[] { "Dining set", UiIcon.ForkKnife, "$740", -11, "Priya Shah", 2, null }, new object[] { "Chest freezer", UiIcon.Thermometer, "$1,380", -5, "Ada Voss", 2, null },
-            new object[] { "Coffee pallet", UiIcon.Package, "$1,530", -15, "Colm Doyle", 3, null }, new object[] { "Flour, 60 sacks", UiIcon.Package, "$1,140", -12, "Huang Guo", 3, "Rival" },
-            new object[] { "Milk crates, 40", UiIcon.Package, "$690", -9, "Leo Park", 3, null }
+            new object[] { "Blue sport coupe", UiIcon.Car, "$38,500", -4, "Marco Bellini", 0, null }, new object[] { "Red delivery van", UiIcon.Truck, "$14,200", -12, "Huang Guo", 0, "Rival" },
+            new object[] { "Box truck", UiIcon.Truck, "$27,900", -6, "Harbourside Freight HSF", 0, null }, new object[] { "Tan minibus", UiIcon.Train, "$19,400", 3, "Amara Nwosu", 0, null },
+            new object[] { "k:espresso_machine", UiIcon.Coffee, "$1,950", -9, "Sofia Marin", 1, null }, new object[] { "k:commercial_grill", UiIcon.Fire, "$2,300", -3, "Hana Okada", 1, null },
+            new object[] { "k:display_fridge", UiIcon.Thermometer, "$1,150", -15, "Leo Park", 1, "Discount" }, new object[] { "k:dough_mixer", UiIcon.Gear, "$4,600", 5, "Colm Doyle", 1, null },
+            new object[] { "k:chest_freezer", UiIcon.CloudSnow, "$1,380", -5, "Ada Voss", 1, null }, new object[] { "k:armchair", UiIcon.Sofa, "$320", -8, "Nia Brooks", 2, null },
+            new object[] { "k:sofa", UiIcon.Sofa, "$890", 2, "Tomas Reyes", 2, null }, new object[] { "k:table", UiIcon.ForkKnife, "$740", -11, "Priya Shah", 2, null },
+            new object[] { "k:coffee_pallet", UiIcon.Coffee, "$1,530", -15, "Colm Doyle", 3, null }, new object[] { "k:flour_pallet", UiIcon.ShoppingBag, "$1,140", -12, "Huang Guo", 3, "Rival" },
+            new object[] { "k:milk_lot", UiIcon.Drop, "$690", -9, "Leo Park", 3, null }
         };
         for (int i = 0; i < list.Length; i++)
         {
             object[] p = list[i];
-            string seller = (string)p[4];
-            var r = new WorkRow { Id = i + 1, Icon = (UiIcon)p[1], Name = (string)p[0], Price = (string)p[2], Under = WorkBuilder.Percent((int)p[3]), UnderValue = (int)p[3], Seller = seller, Group = (int)p[5],
+            string seller = (string)p[4], itemName = ((string)p[0]).StartsWith("k:") ? Sx(w, "reallife_hustle_thing_" + ((string)p[0]).Substring(2)) : (string)p[0];
+            var r = new WorkRow { Id = i + 1, Icon = (UiIcon)p[1], Name = itemName, Price = (string)p[2], Under = WorkBuilder.Percent((int)p[3]), UnderValue = (int)p[3], Seller = seller, Group = (int)p[5],
                 Status = (string)p[6] == null ? null : (string)p[6] == "Rival" ? w.T("reallife_work_tag_rival", "Rival") : w.T("reallife_work_tag_discount_short", "Discount"), Tone = UiRole.Muted };
             bool car = (int)p[5] == 0;
             r.Title = r.Name;
@@ -72,7 +72,7 @@ internal static partial class UiSamples
             r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_asking", "Asking"), (string)p[2]));
             r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_market_price", "Market price"), Mny(worthRaw)));
             var sec = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_the_seller", "The seller") };
-            sec.People.Add(new WorkPerson { Name = seller, Role = i == 1 || i == 13 ? w.F("reallife_work_rival_of", "{firm}, a rival", "firm", "Guo Logistics") : w.F("reallife_work_sold_n", "{n} sold", "n", (3 + i % 3).ToString()), Right = "4.1", Ring = UiRole.None });
+            sec.People.Add(new WorkPerson { Name = seller, Role = i == 1 || i == 13 ? w.F("reallife_work_rival_of", "{firm}, a rival", "firm", "Guo Logistics") : w.F("reallife_work_sold_n", "{n} sold", "n", (3 + i % 3).ToString()), Right = (3.6f + (i * 7 % 12) / 10f).ToString("0.0"), Halves = SHalves(36 + i * 7 % 12), Ring = UiRole.None });
             r.Sections.Add(sec);
             var facts = new WorkSection { Part = WorkPart.Pairs, Title = car ? w.T("reallife_work_the_vehicle", "The vehicle") : w.T("reallife_work_the_thing", "The thing") };
             facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_condition", "Condition as listed"), Cond(w, 82)));
@@ -92,7 +92,7 @@ internal static partial class UiSamples
             if (i == 1)
             {
                 var more = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_more_from", "More from this seller"), Note = w.F("reallife_work_n_listings", "{n} listings", "n", "2") };
-                more.People.Add(new WorkPerson { Name = "Flour, 60 sacks", Role = "Stock lot", Right = "$1,140", Icon = UiIcon.Package });
+                more.People.Add(new WorkPerson { Name = Sx(w, "reallife_hustle_thing_flour_pallet"), Role = w.T("reallife_work_kind_stock", "Stock lot"), Right = "$1,140", Icon = UiIcon.ShoppingBag });
                 r.Sections.Add(more);
             }
             var before = new WorkSection { Part = WorkPart.Checks, Title = w.T("reallife_work_before_buy", "Before you buy") };
@@ -116,33 +116,53 @@ internal static partial class UiSamples
         var t = new WorkTab { Shape = WorkShape.Haggle, Sub = true };
         int offer = v.Get(0, 12800);
         t.Amounts.Add(new WorkAmount { Id = 0, Value = offer, Min = 5000, Max = 14200, Step = 100, Figure = "$" + offer.ToString("N0", System.Globalization.CultureInfo.InvariantCulture) });
-        var r = new WorkRow { Id = 2, Name = "Red delivery van", Kicker = w.T("reallife_work_haggle_kicker", "Haggle with the seller"), Seller = "Huang Guo", Line = "Guo Logistics, a rival, rated 4.1", Status = w.T("reallife_work_tag_discount", "Sells at a discount"), Tone = UiRole.Muted,
-            Sentence = w.F("reallife_work_haggle_line", "{seller} asks {asking} for the {thing}, {versus} against its market price. You may make up to {n} offers, and each one they turn down makes the next harder.", "seller", "Huang Guo", "asking", "$14,200", "thing", "van", "versus", "-12%", "n", "3"), Hint = w.T("reallife_work_your_offer", "Your offer") };
+        var r = new WorkRow { Id = 2, Name = "Red delivery van", Kicker = w.T("reallife_work_haggle_kicker", "Haggle with the seller"), Seller = "Huang Guo", Line = "Guo Logistics, " + w.F("reallife_work_rated", "rated {rating}", "rating", "4.1"), Status = w.T("reallife_work_tag_discount", "Sells at a discount"), Tone = UiRole.Muted,
+            Sentence = w.F("reallife_work_haggle_line", "{seller} asks {asking} for the {thing}, {versus} against its market price. You may make up to {n} offers, and each one they turn down makes the next harder.", "seller", "Huang Guo", "asking", "$14,200", "thing", "Red delivery van", "versus", "-12%", "n", "3"), Hint = w.T("reallife_work_your_offer", "Your offer") };
         r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_their_price", "Their price"), "$14,200"));
         r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_market_price", "Market price"), Mny(16136)));
-        r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_offers_left", "Offers left"), "3 of 3"));
+        r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_offers_left", "Offers left"), w.F("reallife_work_n_of_m", "{n} of {m}", "n", "3", "m", "3")));
         r.Acts.Add(new WorkAct { Kind = 103, Arg = 2, Label = w.F("reallife_work_make_offer", "Offer {amount}", "amount", "$" + offer.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)), Style = UiButtonKind.Primary, Icon = UiIcon.Check,
             Note = w.T("reallife_work_offer_note", "They may accept, counter or turn it down."), Choice = true });
         r.Acts.Add(new WorkAct { Kind = 100, Arg = 2, Label = w.T("reallife_work_pay_asking", "Pay the asking price"), Style = UiButtonKind.Secondary, Icon = UiIcon.Coin, Note = w.F("reallife_work_pay_asking_note", "Buy now at {price}, no more haggling.", "price", "$14,200"), Choice = true });
         r.Acts.Add(new WorkAct { Kind = WorkKinds.Back, Arg = 2, Label = w.T("reallife_work_walk_away_haggle", "Walk away"), Style = UiButtonKind.Destructive, Icon = UiIcon.Back, Opens = true,
-            Note = w.F("reallife_work_walk_note", "Back to the listings. The {thing} stays for sale today.", "thing", "van"), Choice = true });
+            Note = w.F("reallife_work_walk_note", "Back to the listings. The {thing} stays for sale today.", "thing", "Red delivery van"), Choice = true });
+        var known = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_the_seller", "The seller") };
+        known.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_rating", "Rating"), w.F("reallife_work_rating_of", "{n} of 5", "n", "4.1")));
+        known.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_sold_word", "Sold"), "5"));
+        known.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_listed_now", "Listed now"), "2"));
+        r.Sections.Add(known);
+        var facts = new WorkFormBand { Title = w.T("reallife_work_the_vehicle", "The vehicle") };
+        facts.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_condition", "Condition as listed"), Value = Cond(w, 82) });
+        facts.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_km", "Driven"), Value = "61,400 km" });
+        facts.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_cargo", "Cargo"), Value = "14" });
+        facts.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_fuel_tank", "Fuel tank"), Value = "90 l" });
+        r.Bands.Add(facts);
+        r.Bands.Add(WorkBands.Tiles(w.T("reallife_work_more_from", "More from this seller"), new[] { UiIcon.ShoppingBag }, new[] { Sx(w, "reallife_hustle_thing_flour_pallet") },
+            new[] { w.T("reallife_work_kind_stock", "Stock lot") }, new[] { "$1,140" }));
+        var before = new WorkFormBand { Title = w.T("reallife_work_before_buy", "Before you buy") };
+        before.Rows.Add(new WorkFormRow { Field = WorkField.Check, Label = w.F("reallife_work_you_have_money", "You have the {price}", "price", "$14,200"), On = true });
+        before.Rows.Add(new WorkFormRow { Field = WorkField.Check, Label = w.T("reallife_work_room_to_keep", "Room for it among your things"), On = true });
+        r.Bands.Add(before);
         t.Haggle = r;
         return t;
     }
 
-    private static string Cond(UtilitiesWords w, int percent) => w.T("reallife_work_cond_good", "Good") + ", " + percent + "%";
+    private static string Cond(UtilitiesWords w, int percent) => Sf(w, "reallife_hustle_condition_good", "percent", percent.ToString());
 
     private static string Mny(int n) => "$" + n.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
 
     // What the player owns from the Marketplace: one fixture for Yours and Offers, so the thing a buyer bids on is a thing that is on sale.
     private static readonly object[][] MarketOwned =
     {
-        new object[] { "Corner sofa", UiIcon.Sofa, "kept", 890, 0, 960, 0, 405, "Tomas Reyes", 80 }, new object[] { "Dough mixer", UiIcon.Cpu, "listed", 3900, 150, 4600, 4600, 398, "Colm Doyle", 78 },
-        new object[] { "Old cargo van", UiIcon.Car, "waiting", 6200, 0, 6900, 0, 411, "Harbourside Freight HSF", 61 }, new object[] { "Display fridge", UiIcon.Thermometer, "listed", 980, 40, 1140, 1150, 401, "Leo Park", 84 },
-        new object[] { "Lounge armchair", UiIcon.Sofa, "delivering", 300, 25, 320, 0, 412, "Nia Brooks", 90 }, new object[] { "Espresso machine", UiIcon.Coffee, "fix", 1700, 0, 1950, 0, 395, "Sofia Marin", 48 }
+        new object[] { "k:sofa", UiIcon.Sofa, "kept", 890, 0, 960, 0, 405, "Tomas Reyes", 80 }, new object[] { "k:dough_mixer", UiIcon.Gear, "listed", 3900, 150, 4600, 4600, 398, "Colm Doyle", 78 },
+        new object[] { "Old cargo van", UiIcon.Truck, "waiting", 6200, 0, 6900, 0, 411, "Harbourside Freight HSF", 61 }, new object[] { "k:display_fridge", UiIcon.Thermometer, "listed", 980, 40, 1140, 1150, 401, "Leo Park", 84 },
+        new object[] { "k:armchair", UiIcon.Sofa, "delivering", 300, 25, 320, 0, 412, "Nia Brooks", 90 }, new object[] { "k:espresso_machine", UiIcon.Coffee, "fix", 1700, 0, 1950, 0, 395, "Sofia Marin", 48 }
     };
 
-    private static string FinanceDay(int day) => "day " + day;
+    private static string FinanceDay(int day) => "Day " + day;
+
+    // A thing's name: "k:" and a key of the catalogue is its name in the player's words, anything else a name the game gives (a vehicle's).
+    private static string MName(UtilitiesWords w, string name) => name.StartsWith("k:") ? Sx(w, "reallife_hustle_thing_" + name.Substring(2)) : name;
 
     private static WorkTab MarketYours(UtilitiesWords w, WorkView v)
     {
@@ -155,7 +175,7 @@ internal static partial class UiSamples
         for (int i = 0; i < MarketOwned.Length; i++)
         {
             object[] p = MarketOwned[i];
-            string name = (string)p[0], kind = (string)p[2];
+            string name = MName(w, (string)p[0]), kind = (string)p[2];
             int paid = (int)p[3], spent = (int)p[4], worth = (int)p[5], asking = (int)p[6];
             string state = kind == "kept" ? w.T("reallife_hustle_state_kept", "Yours") : kind == "listed" ? w.T("reallife_hustle_state_listed", "For sale")
                 : kind == "waiting" ? w.F("reallife_hustle_state_to_collect_by", "Collect by day {day}", "day", "415") : kind == "delivering" ? w.T("reallife_hustle_state_delivering", "On its way")
@@ -194,7 +214,7 @@ internal static partial class UiSamples
             }
             else if (kind == "kept")
             {
-                r.Acts.Add(WkAct(109, w.F("reallife_work_list_at", "List at {price}", "price", Mny(worth)), UiButtonKind.Primary, UiIcon.Tag, null, false, r.Id));
+                r.Acts.Add(WkAct(109, w.F("reallife_work_list_at", "List at {price}", "price", Mny(worth * (840 + v.Get(0, 12) * 12) / 1000)), UiButtonKind.Primary, UiIcon.Tag, null, false, r.Id));
                 r.Acts.Add(WkAct(110, w.T("reallife_hustle_button_plan_fix", "Fix it at home"), UiButtonKind.Secondary, UiIcon.Wrench, null, false, r.Id));
                 r.Acts.Add(WkAct(111, w.T("reallife_hustle_button_plan_clean", "Clean it at home"), UiButtonKind.Secondary, UiIcon.Drop, null, false, r.Id));
             }
@@ -230,12 +250,12 @@ internal static partial class UiSamples
             object[] item = MarketOwned[(int)o[0]];
             int asking = (int)o[2], offer = (int)o[3], cost = (int)item[3] + (int)item[4], pct = (offer - asking) * 100 / asking;
             best = System.Math.Max(best, offer);
-            var r = new WorkRow { Id = i + 1, Icon = (UiIcon)item[1], Name = (string)item[0], Sub = w.F("reallife_work_listed_at_line", "Listed at {price}", "price", Mny(asking)),
+            var r = new WorkRow { Id = i + 1, Icon = (UiIcon)item[1], Name = MName(w, (string)item[0]), Sub = w.F("reallife_work_bought_day", "Bought {day}", "day", FinanceDay((int)item[7])),
                 Cells = new[] { null, (string)o[1], Mny(asking), Mny(offer), WorkBuilder.Percent(pct) }, Values = new[] { 0, 0, 0, 0, pct < 0 ? -1 : 1 } };
             r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_offer", "Offer"), Mny(offer)));
             r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_asking", "Asking"), Mny(asking)));
             var sec = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_the_buyer", "The buyer") };
-            sec.People.Add(new WorkPerson { Name = (string)o[1], Role = w.F("reallife_work_buyer_counters", "{n} counters so far", "n", i.ToString()) });
+            sec.People.Add(new WorkPerson { Name = (string)o[1], Role = w.F("reallife_work_buyer_counters", "{n} counters so far", "n", i.ToString())});
             r.Sections.Add(sec);
             var facts = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_the_deal", "The deal") };
             facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_what_it_cost", "What it cost you"), Mny(cost)));
@@ -266,30 +286,29 @@ internal static partial class UiSamples
         // client, job, address, window, pay, state, helper fee
         object[][] gigs =
         {
-            new object[] { "Rose Wilder", "Handyman", "14 Elm Street", "Today 14:00", 130, "asked", 39 }, new object[] { "Dev Malhotra", "Detailing", "8 Birch Row", "Tomorrow 10:00", 95, "booked", 29 },
-            new object[] { "Imogen Pratt", "Move", "3 Quay Road, then 21 Pine Street", "Tomorrow 15:00", 210, "asked", 63 }, new object[] { "Callum Reid", "Handyman", "40 Mill Lane", "Day 415 09:00", 120, "helper", 36 }
+            new object[] { "Rose Wilder", "reallife_hustle_gig_handyman", "14 Elm Street", "", 130, "asked", 39, 412, "14:00" }, new object[] { "Dev Malhotra", "reallife_hustle_gig_detailing", "8 Birch Row", "", 95, "booked", 29, 413, "10:00" },
+            new object[] { "Imogen Pratt", "reallife_hustle_gig_moving", "3 Quay Road, then 21 Pine Street", "", 210, "asked", 63, 413, "15:00" }, new object[] { "Callum Reid", "reallife_hustle_gig_handyman", "40 Mill Lane", "", 120, "helper", 36, 415, "09:00" }
         };
         int worth = 0;
         for (int i = 0; i < gigs.Length; i++)
         {
             object[] g = gigs[i];
             string kind = (string)g[5];
+            string job = Sx(w, (string)g[1]);
+            string when = SDay(w, (int)g[7]) + " " + (string)g[8];
             string state = kind == "booked" ? w.T("reallife_hustle_state_booked", "Booked") : kind == "helper" ? w.F("reallife_hustle_state_helper", "A helper, done at {time}", "time", "12:00") : w.T("reallife_hustle_state_asked", "Asked for");
             UiRole tone = kind == "asked" ? UiRole.Accent : UiRole.Ok;
             worth += (int)g[4];
-            var r = new WorkRow { Id = i + 1, Person = (string)g[0], Name = (string)g[0], Sub = (string)g[2], Ring = UiRole.Ok, Cells = new[] { null, (string)g[1], (string)g[3], Mny((int)g[4]), state }, Status = state, Tone = tone,
+            var r = new WorkRow { Id = i + 1, Person = (string)g[0], Name = (string)g[0], Sub = (string)g[2], Ring = UiRole.Ok, Cells = new[] { null, job, when, Mny((int)g[4]), state }, Status = state, Tone = tone,
                 Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, tone } };
             r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_pay", "Pay"), Mny((int)g[4])));
-            r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_when", "When"), (string)g[3]));
+            r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_when", "When"), when));
             var facts = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_the_visit", "The visit") };
-            facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_job", "Job"), (string)g[1]));
+            facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_job", "Job"), job));
             facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_at", "At"), (string)g[2]));
             facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_helper_fee", "A helper takes"), Mny((int)g[6])));
             facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_your_take", "You keep with a helper"), Mny((int)g[4] - (int)g[6])));
             r.Sections.Add(facts);
-            var who = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_the_client", "The client") };
-            who.People.Add(new WorkPerson { Name = (string)g[0], Role = w.F("reallife_work_client_visits", "{n} visits so far", "n", (i + 1).ToString()), Ring = UiRole.Ok });
-            r.Sections.Add(who);
             if (kind == "asked")
             {
                 r.Acts.Add(WkAct(106, w.T("reallife_hustle_button_book", "Book it"), UiButtonKind.Primary, UiIcon.Check, null, false, r.Id));
