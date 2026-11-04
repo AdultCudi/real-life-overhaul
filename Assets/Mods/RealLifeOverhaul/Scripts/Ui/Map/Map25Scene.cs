@@ -292,9 +292,8 @@ namespace RealLifeOverhaul.Map25
             }
             if (_route == null)
             {
-                _route = new Mesh { name = "RealLife Map route", indexFormat = IndexFormat.UInt16 };
-                _ghost = new Mesh { name = "RealLife Map route ghost", indexFormat = IndexFormat.UInt16 };
-                _route.bounds = _ghost.bounds = new Bounds(Vector3.zero, new Vector3(1e6f, 1e6f, 1e6f));
+                _route = Empty("RealLife Map route");
+                _ghost = Empty("RealLife Map route ghost");
             }
             // the two strips of the route are written into the same two meshes each time it changes: no mesh and no array is made
             _routeBuilder.Clear();
@@ -413,6 +412,14 @@ namespace RealLifeOverhaul.Map25
                 cmd.DrawMesh(_fog, Matrix4x4.identity, _blend, 0, 0);
             }
             Graphics.ExecuteCommandBuffer(cmd);
+        }
+
+        // A mesh to be written into again and again, never culled by its box.
+        private static Mesh Empty(string name)
+        {
+            var mesh = new Mesh { name = name, indexFormat = IndexFormat.UInt16 };
+            mesh.bounds = new Bounds(Vector3.zero, new Vector3(1e6f, 1e6f, 1e6f));
+            return mesh;
         }
 
         private static void DropMaterial(ref Material material)
