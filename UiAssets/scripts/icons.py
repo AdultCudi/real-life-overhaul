@@ -179,6 +179,17 @@ ICONS = [
     ("Upload", "upload-simple", "duotone", "f95c3c5150c3c15e27828fd1600cc8b00a60c236b7c911da89941da4bfdb336e"),
     ("Books", "books", "duotone", "7898d95403db718d42cd3e4d8b9785a2c295076d500d4adbc174bd817167a303"),
     ("Download", "download-simple", "duotone", "68ffe027868f3e33b2788d5cc246dbcb47a86f210b39a2866ab7e2d1cddee9a4"),
+    ("ToolCursor", "crosshair", "bold", "cb8556097f1484cbd969a2184cdd053ba797e6bfab1d26af4a45c80c2a3d4736"),
+    ("ToolTrend", "line-segment", "bold", "d42385d3eeccac9bb1b6848ad6ba7ec3bdaf3d65cb3b6f352d750411a8951ea4"),
+    ("ToolLevel", "arrows-out-line-horizontal", "bold", "278ff4e8fd05a855e973ef49b82af25ddbe38b4dbea0f9b919e28e2c17873248"),
+    ("ToolFib", "text-align-justify", "bold", "836ca30495096d188203a0c5ba65132b1e3f9c7bb11633a9b413d211e14661b3"),
+    ("ToolRay", "arrow-line-right", "bold", "bc729d7f66840096625de8809e5b879c8f23938338839190a62d528f6d0b9996"),
+    ("ToolRect", "rectangle", "bold", "145ee233dcc88fd083bc3fb19d4d2c3435143b4afe72ef900f41dc2877f7dcab"),
+    ("ToolMeasure", "ruler", "bold", "af0be341c9df709e4e5df249eda88c773dbf6b068145e42d78c0cb31ca66a6ab"),
+    ("ToolText", "text-t", "bold", "ca48a422f871e674081c74d6b29fdfd04b7aa86604e0acdab64387146bc7124b"),
+    ("ToolSnap", "magnet", "bold", "8f2b700696fa755437dfa1a6458a63ed89c337deffd715855800ebe8132ee59b"),
+    ("Expand", "arrows-out", "bold", "0ca920a5995da8e36ac9f744766f95adf63c781968b6f989539a95e93060c62d"),
+    ("Shrink", "arrows-in", "bold", "033baba7ff0a4f380be329c28a64f2d435cc85732505950e9e21c6b6818c8014"),
 ]
 
 # Phosphor's fill weight of every duotone icon, its second variant: the chunky solid glyph a toolbar's tile asks for
