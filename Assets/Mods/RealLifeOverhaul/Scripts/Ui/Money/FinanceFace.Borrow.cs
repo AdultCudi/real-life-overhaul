@@ -155,7 +155,7 @@ namespace RealLifeOverhaul.Ui
                 UiChart.Lay(s, ron, c.Chart, rx, ry, rw, h);
                 ry += h + UiTokens.S3;
             }
-            if (c.InNames.Length + c.OutNames.Length > 0 && bottom - ry > UiTokens.S16 * 2f)
+            if ((c.InNames.Length + c.OutNames.Length > 0 || !string.IsNullOrEmpty(c.WhereNote)) && bottom - ry > UiTokens.S16 * 2f)
             {
                 ry += Where(s, ron, c, w, rx, ry, rw, bottom - ry) + UiTokens.S3;
             }
@@ -174,8 +174,10 @@ namespace RealLifeOverhaul.Ui
         {
             float row = UiTokens.PairRow + UiTokens.S1;
             int inRows = c.InNames.Length, outRows = c.OutNames.Length;
-            float want = UiTokens.S2 + (string.IsNullOrEmpty(c.WhereTitle) ? 0f : UiTokens.Control) + (inRows > 0 ? row * (inRows + 1)
-                : 0f) + (outRows > 0 ? row * (outRows + 1) : 0f) + row * 2f + UiTokens.S2;
+            float pad0 = UiTokens.S4;
+            float noteH = string.IsNullOrEmpty(c.WhereNote) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(c.WhereNote, UiStyle.Body, w2 - pad0 * 2f, 2)) + UiTokens.S2;
+            float want = UiTokens.S2 + (string.IsNullOrEmpty(c.WhereTitle) ? 0f : UiTokens.Control) + noteH + (inRows > 0 ? row * (inRows + 1)
+                : 0f) + (outRows > 0 ? row * (outRows + 1) : 0f) + (inRows + outRows > 0 ? row * 2f : 0f) + UiTokens.S2;
             int cut = 0;
             while (want > limit && (inRows > 1 || outRows > 1) && cut < 12)
             {
@@ -194,9 +196,14 @@ namespace RealLifeOverhaul.Ui
             UiAt on = Band(s, at, x, y, w2, h);
             float pad = UiTokens.S4, ix = x + pad, iw = w2 - pad * 2f;
             float cy = Title(s, on, c.WhereTitle, ix, y + UiTokens.S2, iw);
-            cy = BarRows(s, on, c.CameInLabel, c.CameIn, c.InNames, c.InValues, c.InShare, inRows, UiRole.Ok, ix, cy, iw, y + h);
-            cy = BarRows(s, on, c.WentOutLabel, c.WentOut, c.OutNames, c.OutValues, c.OutShare, outRows, UiRole.Warn, ix, cy, iw, y + h);
-            if (!string.IsNullOrEmpty(c.Net) && cy + UiTokens.PairRow <= y + h)
+            if (!string.IsNullOrEmpty(c.WhereNote))
+            {
+                cy = Sentence(s, on, c.WhereNote, ix, cy, iw, UiRole.Text2, 2);
+            }
+            bool titled = !string.IsNullOrEmpty(c.WhereTitle);
+            cy = BarRows(s, on, c.CameInLabel, c.CameIn, c.InNames, c.InValues, c.InShare, inRows, UiRole.Ok, ix, cy, iw, y + h, titled);
+            cy = BarRows(s, on, c.WentOutLabel, c.WentOut, c.OutNames, c.OutValues, c.OutShare, outRows, UiRole.Warn, ix, cy, iw, y + h, titled);
+            if (inRows + outRows > 0 && !string.IsNullOrEmpty(c.Net) && cy + UiTokens.PairRow <= y + h)
             {
                 Pair(s, on, ix, cy, UiTokens.PairRow, iw, UiStyle.BodyStrong, UiRole.Text, c.NetLabel, UiStyle.BodyStrong, c.NetGood ? UiRole.OkText : UiRole.DangerText, c.Net);
             }
@@ -204,14 +211,14 @@ namespace RealLifeOverhaul.Ui
         }
 
         private static float BarRows(UiScene s, UiAt at, string label, string total, string[] names, string[] values, int[] shares, int rows,
-            UiRole tone, float x, float y, float w, float limit)
+            UiRole tone, float x, float y, float w, float limit, bool titled)
         {
             if (rows <= 0)
             {
                 return y;
             }
             float h = UiTokens.PairRow;
-            Pair(s, at, x, y, h, w, UiStyle.SectionHeader, UiRole.Text2, label, UiStyle.SmallStrong, UiRole.Text2, total);
+            Pair(s, at, x, y, h, w, titled ? UiStyle.SmallStrong : UiStyle.SectionHeader, UiRole.Text2, label, UiStyle.SmallStrong, UiRole.Text2, total);
             y += h + UiTokens.S1;
             float nameW = UiDraw.SnapDown(w * 0.34f), valW = UiDraw.SnapDown(w * 0.28f);
             float barX = x + nameW + UiTokens.S2, barW = w - nameW - valW - UiTokens.S4;

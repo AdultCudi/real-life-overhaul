@@ -100,6 +100,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\DaySeries\DaySeriesBook.cs" Link="Mod\DaySeries\DaySeriesBook.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\DaySeries\DaySeriesStore.cs" Link="Mod\DaySeries\DaySeriesStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\DaySeries\DaySeriesRules.cs" Link="Mod\DaySeries\DaySeriesRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\DaySeries\PriceCutRules.cs" Link="Mod\DaySeries\PriceCutRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\News\NewsRules.cs" Link="Mod\News\NewsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsModel.cs" Link="Mod\News\NewsModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsPages.cs" Link="Mod\News\NewsPages.cs" />
