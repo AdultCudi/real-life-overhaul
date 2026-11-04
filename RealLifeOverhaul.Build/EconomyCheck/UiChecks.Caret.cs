@@ -38,7 +38,8 @@ internal static partial class Program
         { "UiPartsGalleryScreen", new[] { UiPartsGallery.Field } },
         { "GalleryScreen", new[] { UiAlbum.Search } },
         { "FlareScreen", new[] { FlareFace.FieldCommand } },
-        { "FinanceScreen", new[] { FinanceFace.AmountType } }
+        { "FinanceScreen", new[] { FinanceFace.AmountType } },
+        { "EstateScreen", new[] { EstateFace.SearchCommand } }
     };
 
     private static void UiCaretChecks()

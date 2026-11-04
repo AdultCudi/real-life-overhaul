@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Economy.Dealership;
+using RealLifeOverhaul.Ui;
 
 // A hundred days of the property business and of the car dealership as their directors run them, for what the interface conversion added. The
 // directors call the game-free day entries (EstateDay: People, Services, Unit, Ring; DealerDay: Morning, with DealerRules and RivalRules for the
@@ -171,11 +173,208 @@ internal static partial class Program
         return data;
     }
 
+
+    // ------------------------------------------------------------------------------------------------- the new actions, pressed through the screen
+
+    // A source that writes a unit's page from a real state with the new actions on it, each carrying the very rule the director's method runs
+    // (ImproveRules.Accept and Refuse, ServiceRules.Book and Cancel), so a press goes screen -> run -> rule -> state, and the state is read back.
+    private sealed class EstateActionSource : IEstateSource
+    {
+        public readonly EstateState S;
+        public readonly EstateClimate C;
+        public int Cash, Day = 40, Generation_;
+
+        public EstateActionSource(EstateState s, EstateClimate c)
+        {
+            S = s;
+            C = c;
+        }
+
+        public int Generation => Generation_;
+
+        public void Opened(EstateView view)
+        {
+        }
+
+        public void Fill(EstateModel m, EstateView v)
+        {
+            EstateHolding h = S.Holdings[0];
+            EstateUnit u = h.Units[0];
+            var runs = new EstateRuns();
+            m.Title = "Property";
+            m.Icon = UiIcon.Home;
+            m.Nav = new UiNavEntry[0];
+            m.Shape = EstateShape.Detail;
+            m.Back = "Back";
+            m.DetailIcon = UiIcon.Home;
+            m.DetailTitle = h.Name;
+            var buttons = new List<UiActionModel>();
+            if (u.Improve > 0)
+            {
+                buttons.Add(runs.Button("Pay for it", UiButtonKind.Primary, UiIcon.Check, UiAction.Alt, () =>
+                {
+                    Cash -= u.ImproveCost;
+                    ImproveRules.Accept(h, u);
+                    Generation_++;
+                }));
+                buttons.Add(runs.Button("Say no", UiButtonKind.Secondary, UiIcon.None, UiAction.Count, () =>
+                {
+                    ImproveRules.Refuse(u);
+                    Generation_++;
+                }));
+            }
+            buttons.Add(runs.Button("Book a service", UiButtonKind.Secondary, UiIcon.Wrench, UiAction.Count, () =>
+            {
+                ServiceRules.Book(h, 2, Day, ServiceRules.Earliest(Day), "Run Trades|1", ServiceRules.Fee(h, 2, C.Index));
+                Generation_++;
+            }, h.Services.Count > 0));
+            if (h.Services.Count > 0)
+            {
+                buttons.Add(runs.Button("Cancel it", UiButtonKind.Secondary, UiIcon.None, UiAction.Count, () =>
+                {
+                    ServiceRules.Cancel(h, 0);
+                    Generation_++;
+                }));
+            }
+            m.Left = new[] { new UiFactCardModel { Title = "The unit", Heading = true, Lines = new[] { UiFactLine.Row("Happy", u.Happy.ToString()) }, Actions = buttons.ToArray() } };
+            m.Right = new UiFactCardModel[0];
+            m.Runs = runs.ToArray();
+        }
+    }
+
+    private static bool EstatePress(EstateScreen screen, string label)
+    {
+        var s = new UiScene();
+        screen.Lay(s, UiFrame.FullMenu(16f / 9f, "Property"), true, UiDefaultKeys.Keyboard);
+        for (int i = 0; i < s.ItemCount; i++)
+        {
+            if (s.Items[i].Kind == UiKind.Text && s.Items[i].Text == label && s.Items[i].Node >= 0)
+            {
+                ref UiNode n = ref s.Nodes[s.Items[i].Node];
+                return screen.Press(n.Command, n.Arg);
+            }
+        }
+        // The label sits on a button whose node is its parent's.
+        for (int i = 0; i < s.ItemCount; i++)
+        {
+            if (s.Items[i].Kind == UiKind.Text && s.Items[i].Text == label)
+            {
+                for (int k = 0; k < s.NodeCount; k++)
+                {
+                    ref UiNode n = ref s.Nodes[k];
+                    if (n.Command == EstateFace.ActionCommand && s.Items[i].X >= n.X && s.Items[i].X <= n.X + n.W && s.Items[i].Y >= n.Y && s.Items[i].Y <= n.Y + n.H)
+                    {
+                        return screen.Press(n.Command, n.Arg);
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private static void EstatePressed()
+    {
+        EstateClimate c = Climate();
+        c.DaysPerYear = 360;
+        EstateRunState run = RunEstateNew(5, 3, c);
+        var src = new EstateActionSource(run.S, c);
+        EstateHolding h = run.S.Holdings[0];
+        EstateUnit u = h.Units[0];
+        u.Improve = 1;
+        u.ImproveDay = 38;
+        u.ImproveCost = ImproveRules.Quote(h, 1, c.Index);
+        u.Happy = 300;
+        var screen = new EstateScreen(src, "estate");
+        bool a = EstatePress(screen, "PAY FOR IT") || EstatePress(screen, "Pay for it");
+        Check(a && u.Improve == 0 && u.Happy > 300 && src.Cash < 0, "pressing a request's button pays for the improvement through the screen: the request is gone, the tenant gladder (" + u.Happy + "), the money spent (" + src.Cash + ")");
+        u.Improve = 2;
+        u.ImproveDay = 38;
+        u.ImproveCost = 900;
+        bool b = EstatePress(screen, "SAY NO") || EstatePress(screen, "Say no");
+        Check(b && u.Improve == 0 && u.Refused == 1 && ImproveRules.QuitMore(u) > 0, "pressing the other button refuses it: the refusal is counted and the tenant is likelier to quit");
+        bool booked = EstatePress(screen, "BOOK A SERVICE") || EstatePress(screen, "Book a service");
+        Check(booked && h.Services.Count == 1 && h.Services[0].Kind == 2 && h.Services[0].Day >= src.Day + EstateCatalogue.ServiceDaysAhead, "pressing Book a service puts a visit in the building's list for a day at least " + EstateCatalogue.ServiceDaysAhead + " ahead");
+        bool again = EstatePress(screen, "BOOK A SERVICE") || EstatePress(screen, "Book a service");
+        Check(!again && h.Services.Count == 1, "a service already booked cannot be booked twice: the button is disabled and answers nothing");
+        bool cancelled = EstatePress(screen, "CANCEL IT") || EstatePress(screen, "Cancel it");
+        Check(cancelled && h.Services.Count == 0, "pressing Cancel takes the booking off the list");
+    }
+
+
+    // ------------------------------------------------------------------------------------------------- every action of the live sources has a handler
+
+    // The game side of both screens reads the directors and carries every button to them. Each registration of a button, a link, a switch or a step in
+    // the Live files must carry a handler (a director's method, a change of the view, a confirmation, a jump into the game): none is empty, none is a
+    // bare "return true". The count is printed so a page that lost its actions is seen.
+    private static void EstateHandlers()
+    {
+        string root = EstateSourceRoot();
+        if (root == null)
+        {
+            Check(false, "the Live files of the two apps were found for the handler scan");
+            return;
+        }
+        var kinds = new[] { "_runs.Button(", "_runs.Link(", "_runs.Switch(", "_runs.Step(", "Act(runs," };
+        var handlers = new[] { "_d.", "Show(", "Open(", "Confirm(", "EstateGame.", "DealerGame.", "GameUi", "PopulationScreen", "Locate(", "ShowroomView", "_v.", "Pay", "Want(" };
+        int found = 0, bare = 0, files = 0;
+        string bareAt = "none";
+        foreach (string file in Directory.GetFiles(root, "*Live*.cs"))
+        {
+            files++;
+            string text = File.ReadAllText(file);
+            foreach (string kind in kinds)
+            {
+                int at = 0;
+                while ((at = text.IndexOf(kind, at, StringComparison.Ordinal)) >= 0)
+                {
+                    int open = text.IndexOf('(', at);
+                    int depth = 0, end = open;
+                    bool quote = false;
+                    for (; end < text.Length; end++)
+                    {
+                        char ch = text[end];
+                        if (ch == '"' && text[end - 1] != '\\')
+                        {
+                            quote = !quote;
+                        }
+                        if (quote)
+                        {
+                            continue;
+                        }
+                        depth += ch == '(' ? 1 : ch == ')' ? -1 : 0;
+                        if (depth == 0 && ch == ')')
+                        {
+                            break;
+                        }
+                    }
+                    string call = text.Substring(at, Math.Min(text.Length - at, end - at + 1));
+                    found++;
+                    bool any = false;
+                    foreach (string h in handlers)
+                    {
+                        any |= call.Contains(h);
+                    }
+                    if (!any || call.Contains("=> { }") || call.Contains("() => true)"))
+                    {
+                        bare++;
+                        bareAt = System.IO.Path.GetFileName(file) + ": " + call.Substring(0, Math.Min(90, call.Length));
+                    }
+                    at = at + kind.Length;
+                }
+            }
+        }
+        Console.WriteLine("  live actions: " + found + " registered in " + files + " files");
+        Check(found >= 80 && bare == 0, "every button, link, switch and step of the live sources carries a handler (" + found + " registered, " + bare + " bare: " + bareAt + ")");
+    }
+
     private static void EstateRun()
     {
         EstateClimate c = Climate();
         c.DaysPerYear = 360;
         int monthDays = MacroCatalogue.MonthDays(c.DaysPerYear);
+
+        EstatePressed();
+        EstateHandlers();
 
         // ---- one city, a hundred and twenty days, a save on day 30 and an old save at the same place
         EstateRunState run = RunEstateNew(11, 4, c);

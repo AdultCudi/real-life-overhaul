@@ -11,7 +11,7 @@ namespace RealLifeOverhaul.Ui
     public static partial class EstateFace
     {
         // The block 3000 to 3019 is this screen's: the kit's own commands repeat across parts (a kit nav is 1, a decision's choice is 1).
-        public const int ActionCommand = 3000, StepLess = 3001, StepMore = 3002, BackCommand = 3003;
+        public const int ActionCommand = 3000, StepLess = 3001, StepMore = 3002, BackCommand = 3003, SearchCommand = 3010;
         public const int TableBase = UiDataTable.First;
         private const float HeadHeight = 64f, RowHeight = 48f, TileBig = 56f, ListWidthShare = 0.5f, SideWidth = 360f;
         private const byte RegionTable = 1, RegionLeft = 2, RegionRight = 3, RegionLists = 4, RegionHead = 5;
@@ -21,7 +21,7 @@ namespace RealLifeOverhaul.Ui
 
         private static int[] AllCommands()
         {
-            var list = new List<int> { UiAppWindow.NavCommand, ActionCommand, StepLess, StepMore, BackCommand };
+            var list = new List<int> { UiAppWindow.NavCommand, ActionCommand, StepLess, StepMore, BackCommand, SearchCommand };
             for (int i = 0; i <= UiDataTable.MassAnswer; i++)
             {
                 list.Add(TableBase + i);

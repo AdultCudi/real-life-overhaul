@@ -21,7 +21,12 @@ namespace RealLifeOverhaul.Ui
                 colW[i] = UiDraw.Snap(UiTextRules.Width(m.FigLabels[i] + " " + m.FigValues[i], UiStyle.Body) + UiTokens.S2);
                 figW += colW[i] + UiTokens.S4;
             }
-            UiDraw.TextMiddle(s, head, x, y, h, Math.Max(UiTokens.S16, w - figW), UiStyle.Title, UiRole.Text, m.HeadSub, UiFlags.Truncate);
+            float searchW = string.IsNullOrEmpty(m.SearchHint) ? 0f : Math.Min(UiDraw.SnapDown(w * 0.3f), UiTokens.S16 * 5f);
+            UiDraw.TextMiddle(s, head, x, y, h, Math.Max(UiTokens.S16, w - figW - (searchW > 0f ? searchW + UiTokens.S4 : 0f)), UiStyle.Title, UiRole.Text, m.HeadSub, UiFlags.Truncate);
+            if (searchW > 0f)
+            {
+                UiDraw.Search(s, head, x + w - figW - searchW, y, searchW, m.SearchHint, m.Query, m.SearchCount, SearchCommand);
+            }
             float fx = x + w - figW + UiTokens.S4;
             for (int i = 0; i < n; i++)
             {

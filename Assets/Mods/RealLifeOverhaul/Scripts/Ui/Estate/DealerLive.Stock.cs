@@ -56,6 +56,7 @@ namespace RealLifeOverhaul.Ui
                     }
                 }
                 int filter = Math.Max(0, Math.Min(3, _v.Filter)), sort = Math.Max(0, Math.Min(2, _v.Sort));
+                string query = (_v.Query ?? string.Empty).Trim();
                 all.Sort((p, q) => sort == 1 ? q.Value.Asking.CompareTo(p.Value.Asking) : sort == 2 ? p.Value.Bought.CompareTo(q.Value.Bought) : p.Value.Spot.CompareTo(q.Value.Spot));
                 for (int k = 0; k < all.Count; k++)
                 {
@@ -63,6 +64,7 @@ namespace RealLifeOverhaul.Ui
                     StockCar car = all[k].Value;
                     {
                         bool shows = filter == 0 || (filter == 1 && car.Source == CarSource.Wholesale) || (filter == 2 && car.Source != CarSource.Wholesale) || (filter == 3 && car.ShopUntil > _now);
+                        shows &= query.Length == 0 || DealerGame.CarName(car.Type).IndexOf(query, StringComparison.CurrentCultureIgnoreCase) >= 0;
                         int worth = DealerDirector.Worth(car, _level), days = _day - car.Bought;
                         cars++;
                         worthAll += worth;
@@ -137,6 +139,9 @@ namespace RealLifeOverhaul.Ui
                     _m.SortChips[i] = _runs.Button(DealerText.T(sortKeys[i]), UiButtonKind.Chip, UiIcon.None, UiAction.Count, () => Show(() => _v.Sort = at));
                 }
                 _m.SortAt = sort;
+                _m.SearchHint = cars > 0 ? DealerText.T("reallife_ui_dealer_search") : null;
+                _m.SearchCount = query.Length > 0 ? cards.Count.ToString(Inv) : null;
+                _m.Query = _v.Query;
                 _m.Shape = EstateShape.Catalogue;
                 _m.Catalogue = m;
                 _m.CatalogueRuns = runs.ToArray();

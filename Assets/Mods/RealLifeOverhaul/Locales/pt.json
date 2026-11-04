@@ -31409,5 +31409,6 @@
   "reallife_ui_dealer_sort_bay": "Por vaga",
   "reallife_ui_dealer_sort_price": "Por preço",
   "reallife_ui_dealer_sort_days": "Há mais tempo no pátio",
-  "reallife_ui_dealer_kicker_bay": "{name}, vaga {bay}, {state}"
+  "reallife_ui_dealer_kicker_bay": "{name}, vaga {bay}, {state}",
+  "reallife_ui_dealer_search": "Buscar um modelo"
 }

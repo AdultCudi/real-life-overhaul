@@ -155,6 +155,7 @@ internal static partial class UiSamples
             runs.Add(Yes);
             m.SortChips[i] = new UiActionModel { Label = W(t, sorts[i][0], sorts[i][1]), Kind = UiButtonKind.Chip, Command = EstateFace.ActionCommand, Arg = runs.Count - 1 };
         }
+        m.SearchHint = count > 0 ? W(t, "reallife_ui_dealer_search", "Search a model") : null;
         m.HeadSub = Fx(W(t, "reallife_ui_dealer_on_lot", "On the lot, {cars} of {bays} bays"), "cars", count.ToString(), "bays", state == "stock_full" ? "12" : "20");
         m.FigLabels = new[] { W(t, "reallife_ui_dealer_stock_worth", "Stock worth") };
         m.FigValues = new[] { count == 0 ? "$0" : "$400,100" };

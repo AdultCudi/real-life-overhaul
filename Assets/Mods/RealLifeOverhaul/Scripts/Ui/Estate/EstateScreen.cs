@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Ui
     /// with the buttons the old app had, every one a run of the source. The page is written again when the source's generation moves or the
     /// player pressed something, and nothing a frame.
     /// </summary>
-    public sealed class EstateScreen : IUiScreen
+    public sealed class EstateScreen : IUiScreen, IUiTyping
     {
         public const string ScreenId = "estate";
 
@@ -166,6 +166,18 @@ namespace RealLifeOverhaul.Ui
 
         public void Focused(int command, int arg)
         {
+        }
+
+        /// <summary>The stock's search field takes the keys when it is pressed (the host starts it).</summary>
+        public int TypingCommand => EstateFace.SearchCommand;
+
+        public string TypingText => _view.Query ?? string.Empty;
+
+        public void Typed(string text)
+        {
+            _view.Query = text;
+            _view.Offset = 0f;
+            _dirty = true;
         }
 
         public bool Back()

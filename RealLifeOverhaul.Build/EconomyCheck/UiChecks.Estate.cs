@@ -176,7 +176,7 @@ internal static partial class Program
                 for (int i = 0; i < s.NodeCount; i++)
                 {
                     ref UiNode n = ref s.Nodes[i];
-                    if (!n.Disabled && n.Command != UiAppWindow.NavCommand && known.Contains(n.Command) && n.Command != UiChart.First + UiChart.Point && n.Command != UiInfoView.ViewCommand)
+                    if (!n.Disabled && n.Command != UiAppWindow.NavCommand && n.Command != EstateFace.SearchCommand && known.Contains(n.Command) && n.Command != UiChart.First + UiChart.Point && n.Command != UiInfoView.ViewCommand)
                     {
                         targets.Add(new[] { n.Command, n.Arg });
                     }

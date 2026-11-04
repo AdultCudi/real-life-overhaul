@@ -130,6 +130,7 @@ namespace RealLifeOverhaul.Ui
         public int ChartKind, ChartPlace;
         public UiActionModel[] FilterChips = new UiActionModel[0], SortChips = new UiActionModel[0];   // the choices over a catalogue: what shows, and in what order
         public int FilterAt, SortAt;
+        public string SearchHint, SearchCount, Query;   // a search over a catalogue: its placeholder, how many it holds, and the words typed (null SearchHint: no field)
         public EstateAuction Auction;
 
         // A detail page: its head, and two columns of cards.

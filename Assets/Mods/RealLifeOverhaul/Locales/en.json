@@ -31409,5 +31409,6 @@
   "reallife_ui_dealer_sort_bay": "By bay number",
   "reallife_ui_dealer_sort_price": "By price",
   "reallife_ui_dealer_sort_days": "Longest on the lot",
-  "reallife_ui_dealer_kicker_bay": "{name}, bay {bay}, {state}"
+  "reallife_ui_dealer_kicker_bay": "{name}, bay {bay}, {state}",
+  "reallife_ui_dealer_search": "Search a model"
 }
