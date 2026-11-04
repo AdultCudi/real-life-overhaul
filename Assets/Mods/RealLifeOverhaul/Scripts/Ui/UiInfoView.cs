@@ -25,6 +25,12 @@ namespace RealLifeOverhaul.Ui
         public string ScaleLabel;                  // what the city is coloured by ("Rent by block")
         public string ScaleLow, ScaleHigh;
         public UiRole[] ScaleSteps;                // the map's colours low to high, as the game file tints the city; null for the kit's five
+        public string ChartNote;                   // beside the first donut's title ("612 listings"); null for none
+        public string RankTitle;                   // a ranked list under the legend ("Districts"); null for none
+        public string RankNote;                    // its note at the right ("rent per m2, dearest first")
+        public string[] RankLabels = new string[0];
+        public string[] RankValues = new string[0];
+        public int[] RankFills = new int[0];       // 0 to 100: each row's bar on the ramp
         public UiPrompt[] Prompts = new UiPrompt[0];
         public int PromptCount;
     }
@@ -73,8 +79,8 @@ namespace RealLifeOverhaul.Ui
                 cy += UiDraw.InfoRow(s, at, ix, cy, iw, m.Rows[i].Label, m.Rows[i].Value, false, -1, 0, m.Rows[i].Ink == UiRole.None ? UiRole.Text : m.Rows[i].Ink);
             }
             cy += UiTokens.S2;
-            cy = Donut(s, at, m.ChartTitle, m.ChartLabels, m.ChartValues, m.ChartShares, px, cy, ix, iw);
-            cy = Donut(s, at, m.Chart2Title, m.Chart2Labels, m.Chart2Values, m.Chart2Shares, px, cy, ix, iw);
+            cy = Donut(s, at, m.ChartTitle, m.ChartLabels, m.ChartValues, m.ChartShares, px, cy, ix, iw, m.ChartNote);
+            cy = Donut(s, at, m.Chart2Title, m.Chart2Labels, m.Chart2Values, m.Chart2Shares, px, cy, ix, iw, null);
             if (!string.IsNullOrEmpty(m.LegendTitle))
             {
                 float by = cy + UiTokens.S3;
@@ -82,8 +88,10 @@ namespace RealLifeOverhaul.Ui
                 by += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3;
                 UiDraw.Text(s, at, ix, by, iw, UiStyle.Body, UiRole.Text2, m.ScaleLabel, UiFlags.Label | UiFlags.Truncate);
                 by += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)) + UiTokens.S2;
-                UiDraw.Scale(s, at, ix, by, iw, m.ScaleLow, m.ScaleHigh, m.ScaleSteps ?? Steps);
+                by += UiDraw.Scale(s, at, ix, by, iw, m.ScaleLow, m.ScaleHigh, m.ScaleSteps ?? Steps);
+                cy = by + UiTokens.S3;
             }
+            Ranked(s, at, m, ix, cy, iw);
             for (int i = 0; i < m.PromptCount; i++)
             {
                 s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
@@ -108,13 +116,47 @@ namespace RealLifeOverhaul.Ui
                 h += UiTokens.S3 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)) + UiTokens.S2
                      + UiDraw.Snap(UiTokens.S2 + UiTokens.S1 + UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S4;
             }
-            return UiDraw.Snap(h);
+            return UiDraw.Snap(h + RankHeight(m));
+        }
+
+        private const float RankRow = 24f;
+
+        private static float RankHeight(UiInfoViewModel m) =>
+            string.IsNullOrEmpty(m.RankTitle) || m.RankLabels == null || m.RankLabels.Length == 0 ? 0f
+                : UiTokens.S3 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3 + m.RankLabels.Length * RankRow + UiTokens.S3;
+
+        // The districts ranked: a dot in the ramp's colour, the name, a bar on the ramp and its figure.
+        private static void Ranked(UiScene s, UiAt at, UiInfoViewModel m, float ix, float cy, float iw)
+        {
+            if (RankHeight(m) <= 0f)
+            {
+                return;
+            }
+            float ty = cy + UiTokens.S3;
+            UiDraw.Text(s, at, ix, ty, iw * 0.45f, UiStyle.SectionHeader, UiRole.Text, m.RankTitle, UiFlags.Label | UiFlags.Truncate);
+            if (!string.IsNullOrEmpty(m.RankNote))
+            {
+                UiDraw.Text(s, at, ix + iw * 0.45f, ty, iw * 0.55f, UiStyle.Small, UiRole.Muted, m.RankNote, UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
+            }
+            float ry = ty + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3;
+            float lw = UiDraw.SnapDown(iw * 0.34f), vw = UiDraw.Snap(UiTextRules.Width("$000.00", UiStyle.BodyStrong) + UiTokens.S2);
+            for (int i = 0; i < m.RankLabels.Length; i++)
+            {
+                int fill = i < m.RankFills.Length ? Math.Max(0, Math.Min(100, m.RankFills[i])) : 0;
+                UiRole tone = fill >= 80 ? UiRole.Ramp5 : fill >= 60 ? UiRole.Ramp4 : fill >= 40 ? UiRole.Ramp3 : fill >= 20 ? UiRole.Ramp2 : UiRole.Ramp1;
+                UiDraw.Box(s, at, ix, ry + (RankRow - UiTokens.S2) / 2f, UiTokens.S2, UiTokens.S2, tone, UiRole.None, UiTokens.S1, UiFlags.Decor);
+                UiDraw.TextMiddle(s, at, ix + UiTokens.S4, ry, RankRow, lw - UiTokens.S4, UiStyle.Body, UiRole.Text, m.RankLabels[i], UiFlags.Truncate);
+                float bx = ix + lw + UiTokens.S2, bw = iw - lw - vw - UiTokens.S4;
+                UiDraw.Meter(s, at, bx, ry + (RankRow - UiTokens.S1) / 2f, bw, UiTokens.S1, fill, tone);
+                UiDraw.TextMiddle(s, at, ix + iw - vw, ry, RankRow, vw, UiStyle.BodyStrong, UiRole.Text, i < m.RankValues.Length ? m.RankValues[i] : string.Empty, UiFlags.Right | UiFlags.Truncate);
+                ry += RankRow;
+            }
         }
 
         private static float ChartHeight(string[] labels) =>
             UiTokens.S3 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3 + Math.Max(DonutSize, (labels == null ? 0 : labels.Length) * 20f) + UiTokens.S4;
 
-        private static float Donut(UiScene s, UiAt at, string title, string[] labels, string[] values, float[] shares, float px, float cy, float ix, float iw)
+        private static float Donut(UiScene s, UiAt at, string title, string[] labels, string[] values, float[] shares, float px, float cy, float ix, float iw, string note)
         {
             if (shares == null || shares.Length == 0)
             {
@@ -123,7 +165,11 @@ namespace RealLifeOverhaul.Ui
             float bh = ChartHeight(labels);
             UiDraw.Band(s, at, px, cy, Width, bh);
             float by = cy + UiTokens.S3;
-            UiDraw.Text(s, at, ix, by, iw, UiStyle.SectionHeader, UiRole.Text, title, UiFlags.Label | UiFlags.Truncate);
+            UiDraw.Text(s, at, ix, by, iw * 0.55f, UiStyle.SectionHeader, UiRole.Text, title, UiFlags.Label | UiFlags.Truncate);
+            if (!string.IsNullOrEmpty(note))
+            {
+                UiDraw.Text(s, at, ix + iw * 0.55f, by, iw * 0.45f, UiStyle.Small, UiRole.Muted, note, UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
+            }
             by += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3;
             UiDraw.Donut(s, at, ix, by, DonutSize, shares, shares.Length);
             int n = labels == null ? 0 : labels.Length;

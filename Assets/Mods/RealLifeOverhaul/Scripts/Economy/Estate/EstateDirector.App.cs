@@ -27,8 +27,12 @@ namespace RealLifeOverhaul.Economy
             return data;
         }
 
+        /// <summary>Moves with every change to the property business: the kit's page is written again when it does.</summary>
+        public int Revision { get; private set; }
+
         public void Open(int tab, string pick)
         {
+            Ui.EstateLive.Want(tab, pick);
             if (_app != null && _view != null && _running)
             {
                 _view.Want(tab, pick);
@@ -72,6 +76,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Something has changed: the Planner's rows and the badge are made again, and the app's page if it is open.</summary>
         internal void Changed()
         {
+            Revision++;
             if (!_running || Save == null)
             {
                 return;

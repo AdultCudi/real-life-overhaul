@@ -438,15 +438,19 @@ namespace RealLifeOverhaul.Economy
             }
             var view = new EstateApp(this);
             bool tryAgain;
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_estate_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(), new Color32(96, 190, 150, 255), new Color32(34, 120, 96, 255), 0.42f, "AppIcon-Property"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out tryAgain);
+                Closed = view.Closed,
+                Kit = () => new RealLifeOverhaul.Ui.EstateScreen(RealLifeOverhaul.Ui.EstateLive.Instance),
+                KitScreen = RealLifeOverhaul.Ui.EstateScreen.ScreenId,
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Home
+            };
+            _app = PhoneApp.Install(def, out tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -458,6 +462,7 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             _view = view;
+            RealLifeOverhaul.Ui.UiShell.Face(_app, def);   // the kit's face over the app, once its switch is on (Ui/Shell/UiShell.Tick)
             Badge();
         }
 

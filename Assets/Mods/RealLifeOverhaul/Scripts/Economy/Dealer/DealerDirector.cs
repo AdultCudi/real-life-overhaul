@@ -284,15 +284,19 @@ namespace RealLifeOverhaul.Economy.Dealership
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new DealerApp(this);
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_dealer_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(), new Color32(92, 160, 230, 255), new Color32(36, 84, 164, 255), 0.42f, "AppIcon-Dealer"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out bool tryAgain);
+                Closed = view.Closed,
+                Kit = () => new RealLifeOverhaul.Ui.EstateScreen(RealLifeOverhaul.Ui.DealerLive.Instance, RealLifeOverhaul.Ui.DealerLive.ScreenId),
+                KitScreen = RealLifeOverhaul.Ui.DealerLive.ScreenId,
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Car
+            };
+            _app = PhoneApp.Install(def, out bool tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -304,6 +308,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 return;
             }
             _view = view;
+            RealLifeOverhaul.Ui.UiShell.Face(_app, def);   // the kit's face over the app, once its switch is on (Ui/Shell/UiShell.Tick)
             Badge();
         }
 
@@ -567,8 +572,12 @@ namespace RealLifeOverhaul.Economy.Dealership
             Notifications.Show(type, key, data, 11f, null, Guard.Wrap(() => Open(tab, pick)), true, false);
         }
 
+        /// <summary>Moves with every change to the dealership: the kit's page is written again when it does.</summary>
+        public int Revision { get; private set; }
+
         public void Open(int tab, string pick)
         {
+            Ui.DealerLive.Want(tab, pick);
             if (_app != null && _view != null && _running)
             {
                 _view.Want(tab, pick);
@@ -599,6 +608,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         /// <summary>Something has changed: the badge and the app if it is open; and a word when more offers wait for the player.</summary>
         internal void Changed()
         {
+            Revision++;
             if (!_running || Save == null)
             {
                 return;

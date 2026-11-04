@@ -33,12 +33,23 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Back at the city closes the screen.</summary>
         public Action Close;
 
+        /// <summary>A page another screen asked for (a landlord's tenant, a person of the pool): taken at the next layout, once.</summary>
+        public static ViewTarget? Wanted;
+
         public string Id => "population";
 
         public bool Dirty => _dirty;
 
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
+            if (Wanted.HasValue)
+            {
+                _way.Clear();
+                _at = Wanted.Value;
+                _name = null;
+                _fresh = true;
+                Wanted = null;
+            }
             _view = Build(_at) ?? Build(ViewTarget.To(ViewKind.City, 0));
             UiDashboardModel m = _view != null ? PopulationPages.Model(_view, UiText.Words, PopulationText.Money, PopulationGame.NameOf, UiText.Place, _name)
                 : new UiDashboardModel { Table = new UiTableModel { EmptyTitle = UiText.T("reallife_ui_page_empty") } };
