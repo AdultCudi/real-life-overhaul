@@ -34,6 +34,37 @@ namespace RealLifeOverhaul.Ui
     }
 
     /// <summary>
+    /// The rules of the game's toast stack the kit draws cards over, game-free so EconomyCheck holds them: which entry of the stack is a
+    /// toast, which entry a card's press runs, and what the once-a-session line may call a pass. Cost: a few comparisons.
+    /// </summary>
+    public static class UiNoticeRules
+    {
+        /// <summary>An entry of the stack is a toast when it is switched on and has the game's Text child; a template or another mod's own child is not.</summary>
+        public static bool IsToast(bool standing, bool hasText) => standing && hasText;
+
+        /// <summary>The entry a press runs: a card's number, as drawn, when the command is a card's and the entry is still there; else -1.</summary>
+        public static int EntryFor(int command, int arg, int entries) => command == UiNotices.CardCommand && arg >= 0 && arg < entries ? arg : -1;
+
+        /// <summary>Why the cards are not what the once-a-session line should call a pass (null when they are): drawn, and every toast's own entry unseen.</summary>
+        public static string Wrong(int toasts, int hidden, int drawn, bool showing)
+        {
+            if (!showing)
+            {
+                return "the kit's cards are not showing";
+            }
+            if (toasts <= 0 || drawn <= 0)
+            {
+                return "no card was drawn for the " + toasts + " toast(s)";
+            }
+            if (hidden < toasts)
+            {
+                return "the game's own entry is still seen in " + (toasts - hidden) + " of " + toasts + " toast(s)";
+            }
+            return null;
+        }
+    }
+
+    /// <summary>
     /// The game's notices in the kit's parts. The cards: slate cards where the game's stack sits at the top right, each
     /// with its kind's glyph on a tile in its own colour, the header in the title's style with its age at the right in the
     /// quiet grey, the rest in at most three lines; three at once stand S2 apart. They take no key (a toast never steals
