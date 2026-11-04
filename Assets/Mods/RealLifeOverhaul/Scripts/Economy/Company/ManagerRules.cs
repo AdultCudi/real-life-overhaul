@@ -205,6 +205,48 @@ namespace RealLifeOverhaul.Economy
             return fill.CoveredHours > now.CoveredHours || placedAfter > placedNow ? RotaCall.Write : RotaCall.NoBetter;
         }
 
+        /// <summary>
+        /// Double bookings in a week as it stands: a person on two stations in the same hour. Counts the hours (cells) with a person on
+        /// two or more stations, and names the first: the person's place in the planner's list and the cell (day * 24 + hour). The
+        /// same sum BizMan's problem list names for the shown day (the kit's schedule), so the manager and the player see one problem.
+        /// Cost: one pass over the week's cells, each against the others of its hour.
+        /// </summary>
+        public static int DoubleBooked(RotaPlan plan, int stations, int workers, out int worker, out int cell)
+        {
+            worker = -1;
+            cell = -1;
+            int count = 0;
+            int width = Math.Min(stations, plan.Stations);
+            int cells = width > 0 ? Math.Min(RotaCatalogue.Cells, plan.At.Length / plan.Stations) : 0;
+            for (int c = 0; c < cells; c++)
+            {
+                bool counted = false;
+                for (int s = 0; s < width && !counted; s++)
+                {
+                    int w = plan.At[c * plan.Stations + s];
+                    if (w < 0 || w >= workers)
+                    {
+                        continue;
+                    }
+                    for (int t = s + 1; t < width; t++)
+                    {
+                        if (plan.At[c * plan.Stations + t] == w)
+                        {
+                            count++;
+                            counted = true;
+                            if (cell < 0)
+                            {
+                                worker = w;
+                                cell = c;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            return count;
+        }
+
         // Each worker's hours in a week: one for every cell of a station they hold.
         private static void Count(RotaPlan plan, int stations, int workers, int[] hours)
         {

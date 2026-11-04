@@ -741,6 +741,12 @@ namespace RealLifeOverhaul.Ui
                 values.Add(UiText.Fill("reallife_ui_bizops_of", "count", UiText.Whole(covered), "most", UiText.Whole(open)));
                 warn.Add(covered < open);
             }
+            if (!hq && RivalCrew.Nearest(b.buildingRegistration, out string rival, out int rivalStaff))
+            {
+                labels.Add(UiText.T("reallife_ui_bizops_rival_crew"));   // the nearest rival of the same kind: its head count, as the game keeps it
+                values.Add(UiText.Fill("reallife_ui_bizops_rival_crew_value", "count", UiText.Whole(rivalStaff), "name", rival));
+                warn.Add(false);
+            }
             if (_weekPlanned != null)
             {
                 labels.Add(UiText.T("reallife_ui_bizops_week_planned"));
@@ -892,22 +898,13 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
-                int h = g.From;
-                while (h < g.To)
+                int runs = GapRuns(g, open);
+                for (int r = 0; r < runs; r++)
                 {
-                    while (h < g.To && !FreeAt(g, open, h))
-                    {
-                        h++;
-                    }
-                    int from = h;
-                    while (h < g.To && FreeAt(g, open, h))
-                    {
-                        h++;
-                    }
-                    if (h > from && Place(g, from, h))
+                    if (Place(g, GapFrom[r], GapTo[r]))
                     {
                         written++;
-                        hours += h - from;
+                        hours += GapTo[r] - GapFrom[r];
                     }
                 }
             }
@@ -923,23 +920,27 @@ namespace RealLifeOverhaul.Ui
             return true;
         }
 
-        // An hour of a planned shift free to write: open (the cleaning keeps every hour), its station with no shift then,
-        // and its person with none anywhere and the skill it takes (the game's own test).
-        private static bool FreeAt(RotaGapShift g, bool[] open, int hour)
+        // The runs of hours of a planned shift free to write (RotaLedger.GapRuns, the rule the checks run): the station's lane as the
+        // game has it, and the person with no shift anywhere then and the skill it takes (the game's own test).
+        private static readonly bool[] GapStation = new bool[BizOpsRules.Hours], GapPerson = new bool[BizOpsRules.Hours];
+        private static readonly int[] GapFrom = new int[BizOpsRules.Hours], GapTo = new int[BizOpsRules.Hours];
+
+        private static int GapRuns(RotaGapShift g, bool[] open)
         {
-            if (!g.Cleaning && (open == null || hour >= open.Length || !open[hour]))
-            {
-                return false;
-            }
+            Array.Clear(GapStation, 0, GapStation.Length);
             List<WorkShift> lane = ScheduleHelper.GetWorkShiftsByWorkstationId(g.Station);
             for (int i = 0; lane != null && i < lane.Count; i++)
             {
-                if (lane[i] != null && hour >= lane[i].startingHour && hour < lane[i].endingHour)
+                for (int h = lane[i] != null ? Math.Max(0, lane[i].startingHour) : 0; lane[i] != null && h < lane[i].endingHour && h < GapStation.Length; h++)
                 {
-                    return false;
+                    GapStation[h] = true;
                 }
             }
-            return ScheduleHelper.IsEmployeeAvailable(g.Station, g.Worker, hour);
+            for (int h = g.From; h < g.To && h < GapPerson.Length; h++)
+            {
+                GapPerson[h] = ScheduleHelper.IsEmployeeAvailable(g.Station, g.Worker, h);
+            }
+            return Economy.RotaLedger.GapRuns(g.From, g.To, g.Cleaning, open, GapStation, GapPerson, GapFrom, GapTo);
         }
 
         // A run of a planned shift written as the game's own new shift, its end the plan's; taken back where a demand of the

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Entities;
+using Extensions;
 using UI.Notification;
 
 namespace RealLifeOverhaul.Economy
@@ -471,6 +472,7 @@ namespace RealLifeOverhaul.Economy
                              : call == RotaCall.NoBetter ? "left as it is, a new one mends nothing"
                              : call == RotaCall.LeavesOut ? "left as it is, a new one would take somebody off the rota"
                              : "left as it is, a new one would leave hours with nobody that have somebody now") + ".");
+            NameDoubleBooking(mp, sheet, who);
             if (call == RotaCall.Write)
             {
                 return true;   // who asked stays for ManagerRotaWritten
@@ -488,6 +490,30 @@ namespace RealLifeOverhaul.Economy
             }
             return false;
         }
+
+        // The manager's rota check names a double booking the week as it stands has (a person on two stations in the same hour), as the
+        // schedule's problem list does for the day shown: who, which day and hour, and where. Once a week a place, with the rota.
+        private void NameDoubleBooking(ManagedPlace mp, RotaSheet sheet, string who)
+        {
+            int doubles = ManagerRules.DoubleBooked(sheet.Now, sheet.Problem.Stations, sheet.Problem.Workers, out int worker, out int cell);
+            if (doubles <= 0 || worker < 0 || worker >= sheet.Workers.Count || sheet.Workers[worker] == null || sheet.Workers[worker].characterData == null)
+            {
+                return;
+            }
+            string person = sheet.Workers[worker].characterData.name;
+            Logger?.Info("Company: " + who + " (manager of " + mp.Place.Name + ") found " + doubles + " hour(s) of the week's rota with a person on two stations at once, the first "
+                         + person + " on day " + (cell / RotaCatalogue.Hours + 1) + " at " + cell % RotaCatalogue.Hours + ":00.");
+            Notify(NotificationType.Warning, "reallife_mgr_rota_double", new Dictionary<string, string>
+            {
+                { "manager", who }, { "name", person }, { "place", mp.Place.Name }, { "hour", (cell % RotaCatalogue.Hours).GetFormattedTime(0f) },
+                { "day", CompanyText.T(DayKeys[cell / RotaCatalogue.Hours]) }, { "count", doubles.ToString() }
+            }, 12f);
+        }
+
+        private static readonly string[] DayKeys =
+        {
+            "common_monday", "common_tuesday", "common_wednesday", "common_thursday", "common_friday", "common_saturday", "common_sunday"
+        };
 
         /// <summary>The weekly rota taken back from a place's manager: a week of theirs waiting to be worked out is dropped.</summary>
         private void ManagerRotaDropped(string place)
