@@ -27,6 +27,7 @@ namespace RealLifeOverhaul.Ui
             public int High;
             public string[] Choices;
             public UiSettingRow Row;
+            public KitForOtherMods.Setting Mod;   // a row another mod added through the kit's interface (Line is null then)
         }
 
         private struct FindLine
@@ -233,6 +234,50 @@ namespace RealLifeOverhaul.Ui
                 }
                 AddControl(line);
             }
+            AddModRows(tabs[group]);
+        }
+
+        // The rows other mods added (KitForOtherMods.AddSetting), after the interface's own section: on and off, each its mod's own to set.
+        private void AddModRows(SettingsTab tab)
+        {
+            bool here = false;
+            for (int i = 0; i < tab.Group.Sections.Count; i++)
+            {
+                here |= tab.Group.Sections[i].Id == "ui";
+            }
+            if (!here || KitForOtherMods.SettingRows.Count == 0)
+            {
+                return;
+            }
+            AddHeading(T("reallife_ui_shell_other_mods"), UiIcon.Code);
+            for (int i = 0; i < KitForOtherMods.SettingRows.Count; i++)
+            {
+                Slot slot = Take();
+                slot.Kind = SlotKind.Switch;
+                slot.Line = null;
+                slot.Guide = null;
+                slot.Choices = null;
+                slot.Mod = KitForOtherMods.SettingRows[i];
+                slot.Row = new UiSettingRow { Control = UiSettingControl.Switch, Name = slot.Mod.Label };
+                WriteMod(slot);
+            }
+        }
+
+        // A mod's row read as it stands: its own getter, guarded, as every call into another mod's code is.
+        private void WriteMod(Slot slot)
+        {
+            bool on = false;
+            try
+            {
+                on = slot.Mod.Get();
+            }
+            catch (Exception e)
+            {
+                UiForeign.Note("settings", UiPieceKind.Fault, UiForeignGame.Blame(e) ?? slot.Mod.Id, e.GetType().Name + " reading its row", "its row reads as off");
+            }
+            slot.Value = on ? 1 : 0;
+            slot.Row.On = on;
+            slot.Row.Value = on ? T("reallife_meta_on") : T("reallife_meta_off");
         }
 
         private void FillTests()
@@ -378,6 +423,12 @@ namespace RealLifeOverhaul.Ui
                 Slot slot = _slots[i];
                 if (slot.Line == null)
                 {
+                    if (slot.Mod != null)
+                    {
+                        int before = slot.Value;
+                        WriteMod(slot);
+                        _dirty |= before != slot.Value;
+                    }
                     continue;
                 }
                 int value = slot.Kind == SlotKind.Switch || slot.Kind == SlotKind.Slider || slot.Kind == SlotKind.Choice ? OptionsLayout.AppValue(slot.Line) : slot.Value;
@@ -516,6 +567,7 @@ namespace RealLifeOverhaul.Ui
             }
             Slot slot = _slots[_used];
             _used++;
+            slot.Mod = null;
             return slot;
         }
 
@@ -615,6 +667,20 @@ namespace RealLifeOverhaul.Ui
             }
             if (slot.Kind == SlotKind.Switch)
             {
+                if (slot.Mod != null)
+                {
+                    try
+                    {
+                        slot.Mod.Set(slot.Value == 0);
+                    }
+                    catch (Exception e)
+                    {
+                        UiForeign.Note("settings", UiPieceKind.Fault, UiForeignGame.Blame(e) ?? slot.Mod.Id, e.GetType().Name + " setting its row", "the row is left as it was");
+                    }
+                    WriteMod(slot);
+                    _dirty = true;
+                    return true;
+                }
                 return Set(slot, slot.Value == 0 ? 1 : 0, true);
             }
             if (slot.Kind == SlotKind.Slider)

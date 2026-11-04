@@ -61,6 +61,7 @@ namespace RealLifeOverhaul.Ui
             UiIcons.Own = UiGame.OwnIcon;
             HudLive.ActivityStrip = () => ActivityKit.Strip;   // the activity panel's strip: the HUD keeps clear of it and never draws it twice
             RealLifeOverhaul.GameUi.GameSprites.Want(UiGame.OwnIconNames);
+            UiForeignGame.Start(line => Logger?.Info(line), line => Logger?.Warn(line));
             UiShell.Start();
             ShellModBox.Start();
             UiScreenSwitches.Changed = Guard.Wrap(SwitchesChanged);
@@ -92,6 +93,8 @@ namespace RealLifeOverhaul.Ui
             DialogKits.Remove(why);
             UiShell.Remove(why);
             ShellPages.Remove(why);
+            KitForOtherMods.Remove(why);
+            UiForeignWindows.Release();
             ShellBoxes.Remove(why);
             BuyKits.Remove(why);
             PauseKits.Remove(why);
@@ -208,6 +211,7 @@ namespace RealLifeOverhaul.Ui
             MarketKit.Install();
             DialogKits.Install();
             ShellPages.Install();
+            KitForOtherMods.Install();
             UiShell.Tick();
             ShellBoxes.Install();
             BuyKits.Install();
@@ -227,6 +231,7 @@ namespace RealLifeOverhaul.Ui
             {
                 _said = 2;
                 Logger?.Info(Said());
+                UiForeignCheck.Run(Logger);   // the self-check: other mods' pieces on the kit's screens, and how each is held
             }
         }
 

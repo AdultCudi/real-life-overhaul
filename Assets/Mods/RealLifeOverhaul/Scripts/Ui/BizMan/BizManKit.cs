@@ -41,7 +41,7 @@ namespace RealLifeOverhaul.Ui
         public static void StepAside(System.Func<bool> over) => Host.StepAside(over);
 
         // The game's BizMan as the host needs it: under the full menu, its list and its business page's layout the leaves the kit hides.
-        private sealed class BizManGameScreen : IUiGameScreen
+        private sealed class BizManGameScreen : IUiGameScreen, IUiGameOffers
         {
             public const string Layout = "Layout 30-70";   // the business page's own layout; anything else a mod put on the page stays
 
