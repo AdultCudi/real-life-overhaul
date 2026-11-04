@@ -667,12 +667,6 @@ namespace RealLifeOverhaul.Ui
             }).ToString();
         }
 
-        private T Find<T>(string path) where T : Component
-        {
-            Transform t = _app.transform.Find(path);
-            return t != null ? t.GetComponent<T>() : null;
-        }
-
         // One line a press in Player.log, so a report shows each button reaching the game.
         private static bool Done(bool done, string what)
         {
