@@ -37,7 +37,7 @@ namespace RealLifeOverhaul.Map25
 
         private readonly Map25Set[] _sets;           // the detail sets: 0 is the full map's, 1 the minimap's (one when only one is wanted)
         private readonly Map25Chunk[] _land, _roads;
-        private readonly Mesh[][] _blocks, _shadows;
+        private readonly Mesh[][] _blocks, _contacts;
         private readonly Mesh[] _landMesh, _roadMesh;
         private readonly int[][] _seen;
         private Mesh _water, _cone, _halo, _fog, _route, _ghost;
@@ -156,15 +156,15 @@ namespace RealLifeOverhaul.Map25
             _land = land;
             _roads = roads;
             _blocks = new Mesh[sets.Length][];
-            _shadows = new Mesh[sets.Length][];
+            _contacts = new Mesh[sets.Length][];
             _seen = new int[sets.Length][];
             _total = land.Length + roads.Length;
             for (int s = 0; s < sets.Length; s++)
             {
                 _blocks[s] = new Mesh[sets[s].Blocks.Length];
-                _shadows[s] = new Mesh[sets[s].Shadows.Length];
+                _contacts[s] = new Mesh[sets[s].Contacts.Length];
                 _seen[s] = new int[sets[s].Blocks.Length];
-                _total += _blocks[s].Length + _shadows[s].Length;
+                _total += _blocks[s].Length + _contacts[s].Length;
             }
             _landMesh = new Mesh[land.Length];
             _roadMesh = new Mesh[roads.Length];
@@ -221,12 +221,12 @@ namespace RealLifeOverhaul.Map25
                             break;
                         }
                         k -= _blocks[s].Length;
-                        if (k < _shadows[s].Length)
+                        if (k < _contacts[s].Length)
                         {
-                            _shadows[s][k] = FromChunk(_sets[s].Shadows[k], "RealLife Map shadows " + s + "." + k, false);
+                            _contacts[s][k] = FromChunk(_sets[s].Contacts[k], "RealLife Map contacts " + s + "." + k, false);
                             break;
                         }
-                        k -= _shadows[s].Length;
+                        k -= _contacts[s].Length;
                     }
                 }
                 _cursor++;
@@ -404,15 +404,15 @@ namespace RealLifeOverhaul.Map25
             rise.m11 = view.Rise;
             int which = detail < _sets.Length ? detail : 0;
             Map25Set set = _sets[which];
-            Mesh[] shadows = _shadows[which];
+            Mesh[] contacts = _contacts[which];
             Mesh[] blocks = _blocks[which];
             if (view.Rise > 0.1f)
             {
-                for (int k = 0; k < shadows.Length; k++)
+                for (int k = 0; k < contacts.Length; k++)
                 {
-                    if (shadows[k] != null && view.Sees(set.Shadows[k], false))
+                    if (contacts[k] != null && view.Sees(set.Contacts[k], false))
                     {
-                        cmd.DrawMesh(shadows[k], Matrix4x4.identity, _blend, 0, 0);
+                        cmd.DrawMesh(contacts[k], Matrix4x4.identity, _blend, 0, 0);
                     }
                 }
             }
@@ -466,7 +466,7 @@ namespace RealLifeOverhaul.Map25
         {
             var groups = new System.Collections.Generic.List<Mesh[]> { _landMesh, _roadMesh };
             groups.AddRange(_blocks);
-            groups.AddRange(_shadows);
+            groups.AddRange(_contacts);
             foreach (Mesh[] group in groups)
             {
                 for (int i = 0; i < group.Length; i++)

@@ -522,7 +522,7 @@ namespace RealLifeOverhaul.Map25
         /// in two layers (a wide faint one and a tight stronger one) that read as a soft edge. Written as translucent flat polygons
         /// at <paramref name="groundY"/>.
         /// </summary>
-        public void Shadow(Map25Builder b, Map25City city, int i, float groundY)
+        public void Contact(Map25Builder b, Map25City city, int i, float groundY)
         {
             int start = city.HullStart[i];
             int n = city.HullStart[i + 1] - start;

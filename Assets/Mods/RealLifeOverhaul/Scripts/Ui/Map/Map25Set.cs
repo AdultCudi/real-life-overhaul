@@ -14,7 +14,7 @@ namespace RealLifeOverhaul.Map25
         private const int Flush = 58000;   // vertices at which a chunk is closed before the next building (a building never reaches 7,000)
 
         public Map25Chunk[] Blocks = new Map25Chunk[0];
-        public Map25Chunk[] Shadows = new Map25Chunk[0];
+        public Map25Chunk[] Contacts = new Map25Chunk[0];
         public int[] ChunkOf = new int[0], First = new int[0], Count = new int[0];
         public int Vertices, Triangles;
         public double Milliseconds;
@@ -64,7 +64,7 @@ namespace RealLifeOverhaul.Map25
             var builder = new Map25Builder(16384);
             var shade = new Map25Builder(4096);
             var blocks = new List<Map25Chunk>(128);
-            var shadows = new List<Map25Chunk>(128);
+            var contacts = new List<Map25Chunk>(128);
             for (int c = 0; c < cellsX * cellsZ; c++)
             {
                 for (int at = counts[c]; at < counts[c + 1]; at++)
@@ -76,13 +76,13 @@ namespace RealLifeOverhaul.Map25
                     }
                     if (shade.Vertices > Flush)
                     {
-                        shadows.Add(shade.ToChunk());
+                        contacts.Add(shade.ToChunk());
                     }
                     set.ChunkOf[i] = blocks.Count;
                     set.First[i] = builder.Vertices;
                     generator.Generate(builder, city, i, detail);
                     set.Count[i] = builder.Vertices - set.First[i];
-                    generator.Shadow(shade, city, i, groundY);
+                    generator.Contact(shade, city, i, groundY);
                 }
                 if (builder.Vertices > 0)
                 {
@@ -90,20 +90,20 @@ namespace RealLifeOverhaul.Map25
                 }
                 if (shade.Vertices > 0)
                 {
-                    shadows.Add(shade.ToChunk());
+                    contacts.Add(shade.ToChunk());
                 }
             }
             set.Blocks = blocks.ToArray();
-            set.Shadows = shadows.ToArray();
+            set.Contacts = contacts.ToArray();
             for (int k = 0; k < set.Blocks.Length; k++)
             {
                 set.Vertices += set.Blocks[k].Vertices;
                 set.Triangles += set.Blocks[k].Indices / 3;
             }
-            for (int k = 0; k < set.Shadows.Length; k++)
+            for (int k = 0; k < set.Contacts.Length; k++)
             {
-                set.Vertices += set.Shadows[k].Vertices;
-                set.Triangles += set.Shadows[k].Indices / 3;
+                set.Vertices += set.Contacts[k].Vertices;
+                set.Triangles += set.Contacts[k].Indices / 3;
             }
             set.Milliseconds = (System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
             return set;

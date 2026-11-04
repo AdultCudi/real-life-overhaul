@@ -486,7 +486,7 @@ internal static partial class Program
         long bytes = GC.GetAllocatedBytesForCurrentThread() - before;
         if (Environment.GetEnvironmentVariable("RLO_MAP25_REPORT") == "1")
         {
-            Console.WriteLine("map25 frame: " + microseconds.ToString("F2") + " us, " + bytes + " bytes in 5000 frames, " + drawn / 5000.0 + " chunks of " + (map.Full.Blocks.Length + map.Full.Shadows.Length) + " drawn a frame");
+            Console.WriteLine("map25 frame: " + microseconds.ToString("F2") + " us, " + bytes + " bytes in 5000 frames, " + drawn / 5000.0 + " chunks of " + (map.Full.Blocks.Length + map.Full.Contacts.Length) + " drawn a frame");
         }
         Check(bytes == 0, "2.5D map: a frame's own arithmetic (the view, the chunks in view, 32 pins) allocates nothing (" + bytes + " bytes in 5,000 frames)");
         Check(microseconds < 60.0, "2.5D map: that arithmetic costs under 60 microseconds a frame (" + microseconds.ToString("F2") + ")");
