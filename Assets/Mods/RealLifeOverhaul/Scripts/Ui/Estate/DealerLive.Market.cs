@@ -234,7 +234,8 @@ namespace RealLifeOverhaul.Ui
                     int oid = o.Id;
                     like.Add(new EstateRow
                     {
-                        Icon = UiIcon.Car, Title = DealerGame.CarName(o.Type), Sub = DealerGame.ColourName(o.Colour) + ", " + DealerText.Km(o.Km), Amount = Money(o.Asking),
+                        Icon = ClassGlyph(o.Type), Tint = ClassTint(o.Type, o.Asking), Title = DealerGame.CarName(o.Type),
+                        Sub = DealerGame.ColourName(o.Colour) + ", " + DealerText.Km(o.Km), Amount = Money(o.Asking),
                         Chip = DealerText.T(o.Inspected ? "reallife_dealer_state_inspected" : "reallife_dealer_state_not_inspected"), ChipTone = o.Inspected ? UiRole.Ok : UiRole.Warn,
                         Run = _runs.Do(() => Show(() => _v.Pick = "list:" + oid))
                     });
@@ -264,8 +265,7 @@ namespace RealLifeOverhaul.Ui
                 var a = new EstateAuction
                 {
                     Kicker = DealerText.T("reallife_ui_dealer_auction_kicker"), Title = DealerGame.CarName(l.Type), Picture = picture, Aspect = aspect, Back = DealerText.T("reallife_ui_dealer_back"),
-                    Icon = DealerGame.CarName(l.Type).ToLowerInvariant().Contains("truck")
-                        || DealerGame.CarName(l.Type).ToLowerInvariant().Contains("van") || DealerGame.CarName(l.Type).ToLowerInvariant().Contains("pickup") ? UiIcon.Truck : UiIcon.Car
+                    Icon = ClassGlyph(l.Type)
                 };
                 var facts = new List<UiFactLine>(10)
                 {
@@ -344,10 +344,9 @@ namespace RealLifeOverhaul.Ui
                         continue;
                     }
                     int oid = o.Id;
-                    string glyph = DealerGame.CarName(o.Type).ToLowerInvariant();
                     other.Add(new EstateRow
                     {
-                        Icon = glyph.Contains("truck") || glyph.Contains("pickup") || glyph.Contains("van") ? UiIcon.Truck : UiIcon.Car, Title = DealerGame.CarName(o.Type),
+                        Icon = ClassGlyph(o.Type), Tint = ClassTint(o.Type, o.Asking), Title = DealerGame.CarName(o.Type),
                         Sub = DealerText.T("reallife_ui_dealer_n_hours_left", "hours", Mathf.Max(0, o.Ends - _now).ToString(Inv)), Amount = Money(o.Asking),
                         Chip = AuctionState(o), ChipTone = o.Leader == 0 ? UiRole.Ok : o.Leader > 0 ? UiRole.Warn : UiRole.Notice,
                         Run = _runs.Do(() => Show(() => _v.Pick = "list:" + oid))

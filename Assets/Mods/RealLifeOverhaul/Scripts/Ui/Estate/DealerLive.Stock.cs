@@ -9,12 +9,10 @@ namespace RealLifeOverhaul.Ui
     {
         private sealed partial class Page
         {
-            // A car's glyph by its body: the work vehicles wear the truck, the rest the car, so a lot of them is not one repeated picture.
-            private static UiIcon CarGlyph(string type)
-            {
-                string t = (type ?? string.Empty).ToLowerInvariant();
-                return t.Contains("truck") || t.Contains("pickup") || t.Contains("van") || t.Contains("bus") || t.Contains("camper") ? UiIcon.Truck : UiIcon.Car;
-            }
+            // A car's glyph by body and its colour by class: the game's own class of the vehicle type (CarClass), so every page of the showroom dresses one car the same way.
+            private static UiIcon ClassGlyph(string type) => CarClass.Glyph(DealerGame.KindOf(type));
+
+            private static UiRole ClassTint(string type, int price) => CarClass.Tint(DealerGame.KindOf(type), price);
 
             private string State(DealerYard yard, StockCar car)
             {
@@ -89,7 +87,7 @@ namespace RealLifeOverhaul.Ui
                         string picture = DealerLive.PictureOf(car.Type, out aspect);
                         cards.Add(new UiCatalogueCard
                         {
-                            Picture = picture, Aspect = aspect, Icon = CarGlyph(car.Type), Name = DealerGame.CarName(car.Type), Figure = Money(car.Asking),
+                            Picture = picture, Aspect = aspect, Icon = ClassGlyph(car.Type), Tint = ClassTint(car.Type, car.Asking), Name = DealerGame.CarName(car.Type), Figure = Money(car.Asking),
                             State = days >= 1 ? DealerText.T("reallife_ui_dealer_days_chip", "days", days.ToString(Inv)) : DealerText.T("reallife_ui_dealer_today"),
                             StateTone = days >= 30 ? UiRole.Danger : days >= 14 ? UiRole.Warn : UiRole.Notice
                         });
@@ -104,7 +102,7 @@ namespace RealLifeOverhaul.Ui
                     string picture = DealerLive.PictureOf(q.Type, out aspect);
                     cards.Add(new UiCatalogueCard
                     {
-                        Picture = picture, Aspect = aspect, Icon = UiIcon.Truck, Name = DealerGame.CarName(q.Type), Figure = Money(q.Cost),
+                        Picture = picture, Aspect = aspect, Icon = ClassGlyph(q.Type), Tint = ClassTint(q.Type, q.Cost), Name = DealerGame.CarName(q.Type), Figure = Money(q.Cost),
                         State = DealerText.T(q.Told ? "reallife_dealer_state_way_waiting" : "reallife_dealer_state_way", "when",
                             DealerText.When(q.Due)), StateTone = q.Told ? UiRole.Danger : UiRole.Warn, Disabled = true
                     });

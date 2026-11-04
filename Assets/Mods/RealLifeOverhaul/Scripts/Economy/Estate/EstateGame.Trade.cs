@@ -193,6 +193,13 @@ namespace RealLifeOverhaul.Economy
             return string.IsNullOrEmpty(type) ? string.Empty : LocalizorManager.IsLocalizedKey(type) ? type.GetLocalization() : type;
         }
 
+        /// <summary>The class of a vehicle type as the mod reads it for its gearbox (CarCatalogue): what the pages colour a car by.</summary>
+        public static CarKind KindOf(string type)
+        {
+            Vehicles.VehicleTypes.VehicleType t = string.IsNullOrEmpty(type) ? null : Vehicles.VehicleTypes.VehicleTypeHelper.GetVehicleType(type);
+            return t == null ? CarKind.Untouched : CarCatalogue.For(type, new CarTraits(true, false, t.maxSpeed, t.maxCargoCapacity, t.isLuxuryCar, 1200f)).Kind;
+        }
+
         public static int CarPrice(VehicleInstance v)
         {
             return v != null && v.VehicleType != null ? Mathf.RoundToInt(Mathf.Max(0f, v.VehicleType.price)) : 0;

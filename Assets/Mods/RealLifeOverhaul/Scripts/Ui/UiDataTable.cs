@@ -468,9 +468,10 @@ namespace RealLifeOverhaul.Ui
                     int node = Cell(s, inside, m, ref row, c, cx[c] - x, ry, cw[c], rowH, sel, command, r);
                     stop = stop < 0 ? node : stop;
                 }
+                int rowNode = -1;
                 if (!steps)
                 {
-                    UiDraw.Node(s, inClip, 0f, ry, w, rowH, command + Row, r, face, false, list, r);
+                    rowNode = UiDraw.Node(s, inClip, 0f, ry, w, rowH, command + Row, r, face, false, list, r);
                 }
                 else if (stop >= 0)
                 {
@@ -483,7 +484,13 @@ namespace RealLifeOverhaul.Ui
                     if (m.Columns[c].Kind == UiCellKind.Action)
                     {
                         // Laid after the row's own target, so the button over it takes its press.
-                        ActButton(s, inside, ref row, c, cx[c] - x, ry, cw[c], rowH, command, r, list);
+                        int button = ActButton(s, inside, ref row, c, cx[c] - x, ry, cw[c], rowH, command, r, list);
+                        if (button >= 0 && rowNode >= 0)
+                        {
+                            // The pad goes from the row to its button and back by links of their own: the nearest-target search never leaves a list for its own row's button.
+                            s.Nodes[rowNode].Right = button;
+                            s.Nodes[button].Left = rowNode;
+                        }
                     }
                     else if (sel && m.Columns[c].Kind == UiCellKind.Stepper && m.Columns[c].OnChosen)
                     {
@@ -507,12 +514,12 @@ namespace RealLifeOverhaul.Ui
         }
 
         // A row's action at the right of its cell: its icon on a slate tile in its colour, a target of its own.
-        private static void ActButton(UiScene s, UiAt at, ref UiDataRow row, int c, float cx, float ry, float cw, float rowH, int command, int r, short list)
+        private static int ActButton(UiScene s, UiAt at, ref UiDataRow row, int c, float cx, float ry, float cw, float rowH, int command, int r, short list)
         {
             int value = row.Values != null && c < row.Values.Length ? row.Values[c] : 0;
             if (value <= 0)
             {
-                return;
+                return -1;
             }
             UiRole tint = row.Tones != null && c < row.Tones.Length ? row.Tones[c] : UiRole.None;
             float size = UiTokens.ControlSmall;
@@ -521,7 +528,9 @@ namespace RealLifeOverhaul.Ui
             {
                 s.Nodes[node].List = list;   // a row's own button is of its list: the pad that reaches the list reaches it
                 s.Nodes[node].Index = r;
+                return node;
             }
+            return -1;
         }
 
         // A cell by its column's kind, its box from cx to cx + cw in the row. Returns a stepper's typed figure, the target that

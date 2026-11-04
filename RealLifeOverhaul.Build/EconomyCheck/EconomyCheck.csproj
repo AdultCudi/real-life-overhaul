@@ -919,6 +919,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\EstateModel.cs" Link="Mod\Estate\EstateModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\EstateRuns.cs" Link="Mod\Estate\EstateRuns.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\EstateCharts.cs" Link="Mod\Estate\EstateCharts.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\CarClass.cs" Link="Mod\Estate\CarClass.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\EstateFace.cs" Link="Mod\Estate\EstateFace.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\EstateFace.Unit.cs" Link="Mod\Estate\EstateFace.Unit.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\EstateFace.Showroom.cs" Link="Mod\Estate\EstateFace.Showroom.cs" />

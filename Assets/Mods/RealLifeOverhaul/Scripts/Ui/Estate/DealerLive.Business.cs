@@ -113,10 +113,9 @@ namespace RealLifeOverhaul.Ui
                         }
                         RivalRules.Cheapest(_s, rc.Type, out rivalAt);
                         int gap = cheapest - rc.Asking;
-                        string rn = DealerGame.CarName(rc.Type).ToLowerInvariant();
                         rivals.Add(new EstateRow
                         {
-                            Icon = rn.Contains("truck") || rn.Contains("pickup") || rn.Contains("van") ? UiIcon.Truck : UiIcon.Car, Title = DealerGame.CarName(rc.Type),
+                            Icon = ClassGlyph(rc.Type), Tint = ClassTint(rc.Type, cheapest), Title = DealerGame.CarName(rc.Type),
                             Sub = rivalAt >= 0 ? DealerCatalogue.RivalNames[rivalAt % DealerCatalogue.RivalNames.Length] : string.Empty, Amount = Money(cheapest),
                             Chip = DealerText.T(gap >= 0 ? "reallife_ui_dealer_over_you" : "reallife_ui_dealer_under_you", "amount",
                                 Money(Math.Abs(gap))), ChipTone = gap >= 0 ? UiRole.Ok : UiRole.Warn, Run = -1

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using RealLifeOverhaul;
 using RealLifeOverhaul.Ui;
 
 // Property and the Car Showroom on the kit: every state laid out at every frame in every language (UiCases), and the rules wave 3 broke: a tab draws
@@ -60,8 +61,7 @@ internal static partial class Program
     {
         private readonly bool _dealer;
         private readonly string _state;
-        private static readonly string[] EstateTabs = { "roll", "tenants", "works", "market", "agency", "hotel", "hire" };
-        private static readonly string[] DealerTabs = { "lots", "stock", "market", "offers", "finance", "growth", "reports" };
+        private readonly int _pinnedTab;   // the tab a variant state (roll_twenty, stock_full, agency_closed) stands on, or -1: there the state's own sample is laid
         public int Calls;
         public int Fired = -1, FiredCount;   // the run that last fired (its index) and how many fired: a recording source
         public EstateModel Last;
@@ -70,6 +70,7 @@ internal static partial class Program
         {
             _dealer = dealer;
             _state = state;
+            _pinnedTab = EstateVariantTab(dealer, state);
         }
 
         public int Generation => 0;
@@ -82,8 +83,8 @@ internal static partial class Program
         {
             Calls++;
             bool sub = v.Pick != null;
-            string[] tabs = _dealer ? DealerTabs : EstateTabs;
-            string name = sub ? _state : tabs[Math.Max(0, Math.Min(tabs.Length - 1, v.Tab))];
+            string[] tabs = _dealer ? DealerTabNames : EstateTabNames;
+            string name = sub || (_pinnedTab >= 0 && v.Tab == _pinnedTab) ? _state : tabs[Math.Max(0, Math.Min(tabs.Length - 1, v.Tab))];
             EstateModel from = _dealer ? UiSamples.Dealer(Words, name) : UiSamples.Estate(Words, name);
             foreach (FieldInfo f in typeof(EstateModel).GetFields())
             {
@@ -114,8 +115,29 @@ internal static partial class Program
 
     private static readonly string[] EstateSubStates =
     {
-        "unit_late", "unit_request", "unit_empty", "building", "listing", "works_page", "call", "applicant", "rents", "yard", "used", "auction", "auction_new", "deal", "event"
+        "unit_late", "unit_request", "unit_empty", "building", "listing", "works_page", "call", "applicant", "rents", "rents_new", "yard", "used", "auction", "auction_new", "deal", "event"
     };
+
+    // The pages the sidebar or the tabs give, by name, in their order.
+    private static readonly string[] EstateTabNames = { "roll", "tenants", "works", "market", "agency", "hotel", "hire" };
+    private static readonly string[] DealerTabNames = { "lots", "stock", "market", "offers", "finance", "growth", "reports" };
+
+    // The states that are a tab's page in another condition (twenty units, an empty lot, a closed agency): the tab they stand on, or -1 for a state that is not one.
+    private static int EstateVariantTab(bool dealer, string state)
+    {
+        if (dealer)
+        {
+            return state == "stock_empty" || state == "stock_full" ? 1 : state == "reports_new" ? 6 : state == "off" ? 0 : -1;
+        }
+        return state == "roll_twenty" || state == "roll_first" || state == "roll_empty" || state == "off" ? 0 : state == "agency_closed" ? 4 : -1;
+    }
+
+    // A state's own tab: the page it lays, so the check presses each tab page as the player meets it (a tab state opens on its tab; a sub page opens from the first).
+    private static int EstateTabOf(bool dealer, string state)
+    {
+        int at = Array.IndexOf(dealer ? DealerTabNames : EstateTabNames, state);
+        return at >= 0 ? at : Math.Max(0, EstateVariantTab(dealer, state));
+    }
 
     private static EstateScreen NewEstate(bool dealer, string state, out EstateStub stub)
     {
@@ -124,6 +146,10 @@ internal static partial class Program
         if (Array.IndexOf(EstateSubStates, state) >= 0)
         {
             screen.View.Pick = "sub:" + state;
+        }
+        else
+        {
+            screen.View.Tab = EstateTabOf(dealer, state);
         }
         return screen;
     }
@@ -179,8 +205,9 @@ internal static partial class Program
         }
 
         // Every action of every state does something: a target the screen draws enabled is answered, and one it cannot answer is drawn disabled.
-        int pressed = 0, silent = 0, wrong = 0;
+        int pressed = 0, silent = 0, wrong = 0, catalogueActions = 0, rowActions = 0;
         string quiet = "none", crossed = "none";
+        var perPage = new Dictionary<string, int>();
         var known = new List<int>(EstateCommandsAll);
         foreach (bool dealer in new[] { false, true })
         {
@@ -197,6 +224,7 @@ internal static partial class Program
                         targets.Add(new[] { n.Command, n.Arg });
                     }
                 }
+                perPage[(dealer ? "dealer " : "estate ") + state] = targets.Count;
                 foreach (int[] target in targets)
                 {
                     EstateScreen screen = NewEstate(dealer, state, out EstateStub recorder);
@@ -223,6 +251,12 @@ internal static partial class Program
                     else if (target[0] == UiCatalogue.First + UiCatalogue.Action && recorder.Last != null && target[1] >= 0 && target[1] < recorder.Last.CatalogueRuns.Length)
                     {
                         want = recorder.Last.CatalogueRuns[target[1]];
+                        catalogueActions++;
+                    }
+                    else if (target[0] == EstateFace.TableBase + UiDataTable.Act && recorder.Last != null && target[1] >= 0 && target[1] < recorder.Last.RowRuns.Length)
+                    {
+                        want = recorder.Last.RowRuns[target[1]];   // a table row's own button (Locate) runs the run its row names
+                        rowActions++;
                     }
                     else
                     {
@@ -237,6 +271,20 @@ internal static partial class Program
                 }
             }
         }
+        // Every tab page of both apps was laid and pressed (rule 13): the market's Locate buttons and the showroom's detail actions among them.
+        string bare = "none";
+        foreach (bool dealer in new[] { false, true })
+        {
+            foreach (string tab in dealer ? DealerTabNames : EstateTabNames)
+            {
+                if (!perPage.TryGetValue((dealer ? "dealer " : "estate ") + tab, out int n) || n == 0)
+                {
+                    bare = (dealer ? "dealer " : "estate ") + tab;
+                }
+            }
+        }
+        Check(bare == "none" && rowActions >= 8 && catalogueActions >= 3,
+            "estate: every tab page of both apps was laid and its actions pressed through the recording source (" + rowActions + " table buttons, " + catalogueActions + " detail actions; a tab with none: " + bare + ")");
         Check(pressed > 150 && silent == 0, "estate: every action of every state of both apps does something (" + pressed + " pressed, " + silent + " silent: " + quiet + ")");
         Check(wrong == 0, "estate: every target reaches the run it was drawn for, and a row, card or back press runs none (" + wrong + " crossed: " + crossed + ")");
 
@@ -313,6 +361,34 @@ internal static partial class Program
         }
         Check(danger == "none", "estate: no screen of the two apps quits the game or loads a save (" + danger + ")");
         Check(root != null, "estate: the screens' source folder was found for the quit guard");
+
+        // The class a car wears is one game-free rule, set by the live pages as well as the previews: the glyph by body and the colour by class.
+        Check(CarClass.Work(CarKind.Van) && CarClass.Work(CarKind.Truck) && !CarClass.Work(CarKind.Utility) && !CarClass.Work(CarKind.Sports)
+            && CarClass.Glyph(CarKind.Truck) == UiIcon.Truck && CarClass.Glyph(CarKind.Economy) == UiIcon.Car
+            && CarClass.Tint(CarKind.Economy, 90000) == UiRole.Chart4 && CarClass.Tint(CarKind.Saloon, 5000) == UiRole.Chart5 && CarClass.Tint(CarKind.Utility, 5000) == UiRole.Chart5
+            && CarClass.Tint(CarKind.Sports, 5000) == UiRole.Chart7 && CarClass.Tint(CarKind.Luxury, 5000) == UiRole.Chart7
+            && CarClass.Tint(CarKind.Van, 90000) == UiRole.CatIndustry && CarClass.Tint(CarKind.Truck, 100) == UiRole.CatIndustry
+            && CarClass.Tint(CarKind.Untouched, CarClass.Cheap - 1) == UiRole.Chart4 && CarClass.Tint(CarKind.Untouched, CarClass.Cheap) == UiRole.Chart5
+            && CarClass.Tint(CarKind.Untouched, CarClass.Middle - 1) == UiRole.Chart5 && CarClass.Tint(CarKind.Untouched, CarClass.Middle) == UiRole.Chart7,
+            "estate: the class rule colours a car by the kind the game's vehicle table gives it (work vehicles in the industry colour; amber, blue and violet by class, by price band where the table has none)");
+        // The real vehicle types go through the same table: a hatchback, a saloon, a supercar, a van and a box truck.
+        Check(CarCatalogue.For("ba:vehicletype_honzamimic", new CarTraits(true, false, 60, 8, false, 1200f)).Kind == CarKind.Economy
+            && CarCatalogue.For("ba:vehicletype_bima320", new CarTraits(true, false, 70, 8, false, 1200f)).Kind == CarKind.Saloon
+            && CarCatalogue.For("ba:vehicletype_anselmoaf90", new CarTraits(true, false, 100, 4, true, 1200f)).Kind == CarKind.Sports
+            && CarCatalogue.For("ba:vehicletype_mersaididash", new CarTraits(true, false, 60, 20, false, 1200f)).Kind == CarKind.Van
+            && CarCatalogue.For("ba:vehicletype_deliverytruck", new CarTraits(true, false, 50, 40, false, 1200f)).Kind == CarKind.Truck,
+            "estate: the game's own vehicle types fall into the classes the showroom colours by");
+        int tinted = 0, hand = 0;
+        if (root != null)
+        {
+            foreach (string file in Directory.GetFiles(root, "DealerLive*.cs"))
+            {
+                string text = File.ReadAllText(file);
+                tinted += System.Text.RegularExpressions.Regex.Matches(text, @"ClassTint\(").Count;
+                hand += System.Text.RegularExpressions.Regex.Matches(text, @"Contains\(""(truck|pickup|van)""\)").Count;
+            }
+        }
+        Check(tinted >= 6 && hand == 0, "estate: the showroom's live pages (stock, deliveries, rivals, like-it, other lots) set the class colour from the game's vehicle class through CarClass and keep no rule of their own (" + tinted + " set, " + hand + " by hand)");
     }
 
     private static string EstateSourceRoot()

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RealLifeOverhaul;
 using RealLifeOverhaul.Ui;
 
 // The Car Showroom's samples: the stock as a catalogue (empty, a few cars, a full lot), the market, an auction, the offers, the money and the reports.
@@ -88,8 +89,6 @@ internal static partial class UiSamples
 
     private static UiCatalogueCard Car(string name, string price, string days, UiRole tone)
     {
-        string n = name.ToLowerInvariant();
-        bool work = n.Contains("truck") || n.Contains("pickup") || n.Contains("van");
         int amount = 0;
         foreach (char ch in price)
         {
@@ -98,9 +97,17 @@ internal static partial class UiSamples
                 amount = amount * 10 + (ch - '0');
             }
         }
-        // The glyph in the colour of its class: work vehicles in the industry colour, then amber for the cheap, blue for the middle and violet for the dear.
-        UiRole tint = work ? UiRole.CatIndustry : amount < 20000 ? UiRole.Chart4 : amount < 45000 ? UiRole.Chart5 : UiRole.Chart7;
-        return new UiCatalogueCard { Icon = work ? UiIcon.Truck : UiIcon.Car, Tint = tint, Name = name, Figure = price, State = days, StateTone = tone };
+        // The same rule as the live pages: CarClass, given the kind the game's own vehicle type would have.
+        CarKind kind = SampleKind(name);
+        return new UiCatalogueCard { Icon = CarClass.Glyph(kind), Tint = CarClass.Tint(kind, amount), Name = name, Figure = price, State = days, StateTone = tone };
+    }
+
+    // The kind the game's table (CarCatalogue) gives the sample cars' stand-ins: a van and a truck work, the rest by body.
+    private static CarKind SampleKind(string name)
+    {
+        string n = name.ToLowerInvariant();
+        return n.Contains("truck") ? CarKind.Truck : n.Contains("van") ? CarKind.Van : n.Contains("coupe") || n.Contains("roadster") ? CarKind.Sports
+            : n.Contains("hatchback") ? CarKind.Economy : n.Contains("suv") || n.Contains("pickup") ? CarKind.Utility : CarKind.Saloon;
     }
 
     private static void Stock(UiWords t, EstateModel m, List<Func<bool>> runs, string state)
@@ -377,8 +384,8 @@ internal static partial class UiSamples
         runs.Add(Yes);
         m.Related2 = new[]
         {
-            new EstateRow { Icon = UiIcon.Car, Tint = UiRole.Chart4, Title = "Marlow sedan", Sub = "Blue, 112,400 km", Chip = W(t, "reallife_dealer_state_not_inspected", "Not inspected"), ChipTone = UiRole.Warn, Amount = "$7,900", Run = runs.Count - 2 },
-            new EstateRow { Icon = UiIcon.Car, Tint = UiRole.Chart4, Title = "Halden sedan", Sub = "Silver, 64,900 km", Chip = W(t, "reallife_dealer_state_not_inspected", "Not inspected"), ChipTone = UiRole.Warn, Amount = "$18,600", Run = runs.Count - 1 }
+            new EstateRow { Icon = CarClass.Glyph(SampleKind("Marlow sedan")), Tint = CarClass.Tint(SampleKind("Marlow sedan"), 0), Title = "Marlow sedan", Sub = "Blue, 112,400 km", Chip = W(t, "reallife_dealer_state_not_inspected", "Not inspected"), ChipTone = UiRole.Warn, Amount = "$7,900", Run = runs.Count - 2 },
+            new EstateRow { Icon = CarClass.Glyph(SampleKind("Halden sedan")), Tint = CarClass.Tint(SampleKind("Halden sedan"), 0), Title = "Halden sedan", Sub = "Silver, 64,900 km", Chip = W(t, "reallife_dealer_state_not_inspected", "Not inspected"), ChipTone = UiRole.Warn, Amount = "$18,600", Run = runs.Count - 1 }
         };
     }
 
@@ -443,9 +450,9 @@ internal static partial class UiSamples
         runs.Add(Yes);
         m.Related = new[]
         {
-            new EstateRow { Icon = UiIcon.Car, Tint = UiRole.Chart5, Title = "Meridian GT coupe", Sub = Fx(W(t, "reallife_ui_dealer_n_hours_left", "{hours} hours left"), "hours", "5"), Chip = W(t, "reallife_dealer_state_leading", "You lead"), ChipTone = UiRole.Ok, Amount = "$21,800", Run = runs.Count - 3 },
-            new EstateRow { Icon = UiIcon.Car, Tint = UiRole.Chart4, Title = "Pinecrest saloon", Sub = Fx(W(t, "reallife_ui_dealer_n_hours_left", "{hours} hours left"), "hours", "7"), Chip = Fx(W(t, "reallife_dealer_state_rival", "{rival} leads"), "rival", "Halden Motors"), ChipTone = UiRole.Warn, Amount = "$12,300", Run = runs.Count - 2 },
-            new EstateRow { Icon = UiIcon.Truck, Tint = UiRole.CatIndustry, Title = "Boxer box truck", Sub = Fx(W(t, "reallife_ui_dealer_n_hours_left", "{hours} hours left"), "hours", "9"), Chip = Fx(W(t, "reallife_dealer_state_rival", "{rival} leads"), "rival", "Crossway Cars"), ChipTone = UiRole.Warn, Amount = "$27,800", Run = runs.Count - 1 }
+            new EstateRow { Icon = CarClass.Glyph(SampleKind("Meridian GT coupe")), Tint = CarClass.Tint(SampleKind("Meridian GT coupe"), 0), Title = "Meridian GT coupe", Sub = Fx(W(t, "reallife_ui_dealer_n_hours_left", "{hours} hours left"), "hours", "5"), Chip = W(t, "reallife_dealer_state_leading", "You lead"), ChipTone = UiRole.Ok, Amount = "$21,800", Run = runs.Count - 3 },
+            new EstateRow { Icon = CarClass.Glyph(SampleKind("Pinecrest saloon")), Tint = CarClass.Tint(SampleKind("Pinecrest saloon"), 0), Title = "Pinecrest saloon", Sub = Fx(W(t, "reallife_ui_dealer_n_hours_left", "{hours} hours left"), "hours", "7"), Chip = Fx(W(t, "reallife_dealer_state_rival", "{rival} leads"), "rival", "Halden Motors"), ChipTone = UiRole.Warn, Amount = "$12,300", Run = runs.Count - 2 },
+            new EstateRow { Icon = CarClass.Glyph(SampleKind("Boxer box truck")), Tint = CarClass.Tint(SampleKind("Boxer box truck"), 0), Title = "Boxer box truck", Sub = Fx(W(t, "reallife_ui_dealer_n_hours_left", "{hours} hours left"), "hours", "9"), Chip = Fx(W(t, "reallife_dealer_state_rival", "{rival} leads"), "rival", "Crossway Cars"), ChipTone = UiRole.Warn, Amount = "$27,800", Run = runs.Count - 1 }
         };
         m.Auction = a;
     }
@@ -524,9 +531,9 @@ internal static partial class UiSamples
         m.RelatedCount = "3";
         m.Related = new[]
         {
-            new EstateRow { Icon = UiIcon.Car, Tint = UiRole.Chart7, Title = "Meridian GT coupe", Sub = "Halden Motors", Chip = Fx(W(t, "reallife_ui_dealer_over_you", "{amount} over yours"), "amount", "$2,400"), ChipTone = UiRole.Ok, Amount = "$86,900", Run = -1 },
-            new EstateRow { Icon = UiIcon.Truck, Tint = UiRole.CatIndustry, Title = "Atlas pickup", Sub = "Crossway Cars", Chip = Fx(W(t, "reallife_ui_dealer_under_you", "{amount} under yours"), "amount", "$1,100"), ChipTone = UiRole.Warn, Amount = "$37,800", Run = -1 },
-            new EstateRow { Icon = UiIcon.Car, Tint = UiRole.Chart4, Title = "Sora hatchback", Sub = "Pier Street Autos", Chip = Fx(W(t, "reallife_ui_dealer_over_you", "{amount} over yours"), "amount", "$600"), ChipTone = UiRole.Ok, Amount = "$20,400", Run = -1 }
+            new EstateRow { Icon = CarClass.Glyph(SampleKind("Meridian GT coupe")), Tint = CarClass.Tint(SampleKind("Meridian GT coupe"), 0), Title = "Meridian GT coupe", Sub = "Halden Motors", Chip = Fx(W(t, "reallife_ui_dealer_over_you", "{amount} over yours"), "amount", "$2,400"), ChipTone = UiRole.Ok, Amount = "$86,900", Run = -1 },
+            new EstateRow { Icon = CarClass.Glyph(SampleKind("Atlas pickup")), Tint = CarClass.Tint(SampleKind("Atlas pickup"), 0), Title = "Atlas pickup", Sub = "Crossway Cars", Chip = Fx(W(t, "reallife_ui_dealer_under_you", "{amount} under yours"), "amount", "$1,100"), ChipTone = UiRole.Warn, Amount = "$37,800", Run = -1 },
+            new EstateRow { Icon = CarClass.Glyph(SampleKind("Sora hatchback")), Tint = CarClass.Tint(SampleKind("Sora hatchback"), 0), Title = "Sora hatchback", Sub = "Pier Street Autos", Chip = Fx(W(t, "reallife_ui_dealer_over_you", "{amount} over yours"), "amount", "$600"), ChipTone = UiRole.Ok, Amount = "$20,400", Run = -1 }
         };
     }
 
